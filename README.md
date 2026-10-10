@@ -3,7 +3,7 @@
 Idle / autobattler inspiré de DOFUS, jouable dans le navigateur (PC et mobile).
 Vos héros combattent automatiquement : à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.
 
-**Jouer :** https://mathiss29.github.io/dofousxen/
+**Jouer :** https://mathiss29.github.io/DofousXen/
 
 ## Contenu (v2)
 - Incarnam et Astrub : 18 sous-zones, 79 monstres et leurs archimonstres, 5 donjons avec leurs vraies clés
