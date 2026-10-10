@@ -1,0 +1,4 @@
+data/raw/
+data/probe/
+*.log
+__pycache__/
