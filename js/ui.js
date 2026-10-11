@@ -720,6 +720,7 @@ function charEquipView(c, st) {
     ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies actives</h2></div><div class="pad">${sets}</div></div>` : ""}
     <p class="note xs">▲ en vert : un objet plus intéressant est disponible dans le sac pour cet emplacement.</p></div>`;
 }
+const CONTENT_MAX = 120; // niveau maximal du contenu actuel
 const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());
 const tgtTxt = (n) => (n >= 9 ? "tous les ennemis" : n > 1 ? `${n} cibles` : "");
 function fxLine(f) {
@@ -740,7 +741,7 @@ function fxLine(f) {
   }
   return "";
 }
-function spellDesc(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return g.fx.map(fxLine).filter(Boolean).join(" · ") + (g.fx.some((f) => f.fb) ? ` <span class="muted">(effet simplifié)</span>` : ""); }
+function spellDesc(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return g.fx.map(fxLine).filter(Boolean).join(" · ") + (g.fx.some((f) => f.fb) ? ` <span class="muted">(effet simplifié)</span>` : g.fx.some((f) => f.adapt) ? ` <span class="muted" title="Effet de placement ou d'état du jeu original, adapté au combat automatique">(adapté)</span>` : ""); }
 const spIcon = (sp) => `<span class="spicon" style="--c:${elVar(spEl(sp))}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}</span>`;
 function zoneOptions() {
   const opts = [];
@@ -765,6 +766,7 @@ function charSpellsView(c) {
   const pairs = {}; CLASSES[c.cls].spells.forEach((sp) => { (pairs[sp.pair] = pairs[sp.pair] || [])[sp.variant ? 1 : 0] = sp; });
   const eqIds = new Set(eq.map((x) => x.id));
   const pairHtml = Object.values(pairs).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl).map((pr) => `<div class="sppair">${pr.map((sp) => { if (!sp) return `<div class="spcard empty"></div>`;
+    if (sp.lvl > CONTENT_MAX) return `<div class="spcard later" data-tip="${h(sp.name)} : ${h(spellDesc(sp, sp.lvl).replace(/<[^>]+>/g, ""))}">${spIcon(sp)}<div class="grow" style="min-width:0"><div class="name">${h(sp.name)} <span class="tag soft">variante</span></div><div class="xs muted">niv. ${sp.lvl} · arrivera avec le contenu au-delà du niveau ${CONTENT_MAX}</div></div></div>`;
     const ok = sp.lvl <= c.lvl; const on = eqIds.has(sp.id);
     return `<div class="spcard ${on ? "on" : ""} ${ok ? "" : "locked"}">${spIcon(sp)}<div class="grow" style="min-width:0"><div class="name">${h(sp.name)} ${sp.variant ? `<span class="tag soft">variante</span>` : ""}</div><div class="xs muted">${ok ? meta(sp) : `niv. ${sp.lvl}`}</div><div class="xs">${spellDesc(sp, Math.max(c.lvl, sp.lvl))}</div></div>
       ${ok ? (on ? `<span class="tag">équipé</span>` : `<button class="btn sm" data-act="spadd" data-id="${sp.id}" ${eq.length >= N && !eq.some((x) => E.spellDef(c.cls, x.id).pair === sp.pair) ? "disabled" : ""}>Équiper</button>`) : ""}</div>`; }).join("")}</div>`).join("");
@@ -1211,7 +1213,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <p class="note">Version 3.0 « Builds et contenu » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
+      <p class="note">Version 3.0.1 « Builds et contenu » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {

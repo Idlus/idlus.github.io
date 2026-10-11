@@ -177,7 +177,7 @@
     if (k === "heal") return "ally_low";
     if (k === "summon") return "no_summon";
     if (k === "shield") return "ally_shield";
-    if (k === "buff") return "first_turn";
+    if (k === "buff") return g.fx.some((f) => f.k === "buff" && f.st === "pui" && (f.t || 1) >= 3) ? "first_turn" : "always";
 
     return "always";
   };
@@ -204,7 +204,7 @@
     const byPair = {};
     known.forEach((sp) => { const cur = byPair[sp.pair]; if (!cur || spellScore(c, sp, st) > spellScore(c, cur, st)) byPair[sp.pair] = sp; });
     const kinds = { summon: 0, heal: 0, prot: 0 }; const cap = { summon: 1, heal: 1, prot: 1 };
-    const cands = Object.values(byPair).map((sp) => { const k = E.spellKind(E.spellGrade(sp, c.lvl)); const g = E.spellGrade(sp, c.lvl); const weak = g.fx.every((f) => f.fb) || (k === "heal" && E.spellPower(g) < 8 + c.lvl * 0.15);
+    const cands = Object.values(byPair).map((sp) => { const k = E.spellKind(E.spellGrade(sp, c.lvl)); const g = E.spellGrade(sp, c.lvl); const weak = g.fx.every((f) => f.fb) || (k === "heal" && !g.fx.some((f) => f.k === "healpct") && E.spellPower(g) < 8 + c.lvl * 0.15);
       return { sp, k, cat: weak ? "fill" : k === "summon" ? "summon" : k === "heal" ? "heal" : k === "shield" || k === "buff" ? "prot" : "atk", sc: spellScore(c, sp, st) }; });
     const atk = cands.filter((x) => x.cat === "atk").sort((a, b) => b.sc - a.sc);
     const util = cands.filter((x) => x.cat !== "atk" && x.cat !== "fill").sort((a, b) => b.sc - a.sc);
@@ -578,7 +578,7 @@
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
   E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100];
-  E.CLASS_POW = {"iop":[0.65,0.65,0.65,0.65,0.69,0.77,0.75,0.68],"cra":[1.15,1.14,1.26,1.25,0.98,0.74,0.65,0.65],"eni":[1.13,1.13,1.08,1.06,1,0.99,1.04,1.04],"feca":[0.92,0.89,0.88,0.92,0.96,0.98,1,1.02],"osa":[0.86,0.8,0.75,0.76,0.76,0.76,0.76,0.74],"enu":[1.15,1.23,1.24,1.24,1.22,1.22,1.24,1.38],"sram":[1.12,1.06,1.03,1.08,1.1,1.06,1.04,1.05],"xelor":[0.99,0.96,1,1.01,1,0.98,0.98,1.09],"eca":[1.03,1.4,1.29,0.88,0.65,0.65,0.65,0.75],"sadi":[0.66,0.65,0.65,0.66,0.68,0.69,0.72,0.75],"sacri":[1.17,1.08,1.11,1.2,1.28,1.29,1.28,1.08],"panda":[0.65,0.65,0.65,0.67,0.67,0.65,0.65,0.66],"roub":[1.09,1.08,1.06,1.01,0.93,0.94,1,1.15],"zobal":[1.5,1.37,1.5,1.5,1.5,1.5,1.32,0.98],"steam":[0.88,0.86,0.9,0.91,0.95,1,1.02,1.01],"elio":[0.93,1.04,1.31,1.34,1.5,1.5,1.5,1.45],"hupper":[0.89,0.94,0.93,0.96,1.04,1.11,1.11,1.2],"ougi":[0.84,0.84,0.94,1.02,1.13,1.2,1.23,1.24],"forge":[1.29,1.32,1.26,1.27,1.28,1.23,1.2,1.11]};
+  E.CLASS_POW = {"iop":[0.65,0.65,0.65,0.65,0.79,0.95,0.83,0.67],"cra":[1.24,1.26,1.48,1.49,1.06,0.73,0.65,0.65],"eni":[1.34,1.23,1.13,1.1,1.01,0.99,1.09,1.15],"feca":[0.95,0.91,0.89,0.93,0.98,1.01,1.03,1.05],"osa":[0.82,0.78,0.72,0.71,0.71,0.74,0.76,0.74],"enu":[1.12,1.21,1.24,1.25,1.23,1.25,1.29,1.46],"sram":[1.13,1.1,1.08,1.13,1.15,1.11,1.09,1.13],"xelor":[0.96,0.96,1.01,1.04,1.03,0.99,0.96,1.06],"eca":[1.06,1.5,1.37,0.8,0.65,0.65,0.65,0.73],"sadi":[0.65,0.65,0.65,0.65,0.65,0.67,0.7,0.74],"sacri":[1.17,1.08,1.12,1.22,1.31,1.32,1.31,1.1],"panda":[0.66,0.65,0.65,0.65,0.65,0.65,0.65,0.65],"roub":[1.11,1.09,1.07,0.98,0.86,0.89,1,1.19],"zobal":[1.5,1.35,1.5,1.5,1.5,1.5,1.39,1.02],"steam":[0.81,0.82,0.87,0.87,0.91,0.96,0.98,0.99],"elio":[0.98,1.12,1.38,1.4,1.5,1.5,1.5,1.43],"hupper":[0.84,0.9,0.89,0.9,0.99,1.09,1.09,1.18],"ougi":[0.94,0.92,0.97,1.02,1.14,1.19,1.22,1.24],"forge":[1.27,1.31,1.25,1.27,1.3,1.24,1.19,1.11]};
   E.classPow = (cls, lvl) => {
     const t = E.CLASS_POW[cls]; if (!t) return (CLASSES[cls] && CLASSES[cls].pow) || 1;
     const L = E.POW_LVLS; if (lvl <= L[0]) return t[0]; if (lvl >= L[L.length - 1]) return t[t.length - 1];
@@ -670,6 +670,13 @@
     if (kind === "heal" && !alive(F, "c").some((a) => a.hp < a.hpMax)) return { ok: false };
     if (kind === "summon" && alive(F, "c").filter((a) => a.summon && a.owner === F.ents.indexOf(e)).length >= SUM_LIMIT(e)) return { ok: false };
     if (kind === "shield" && !g.fx.some((f) => f.k === "shield" && (f.all ? allies.some((a) => !(a.shield > 0)) : !(e.shield > 0)))) return { ok: false };
+    if (kind === "buff") { // pas de bonus déjà actif, pas d'affaiblissement déjà posé sur la cible
+      const bf = g.fx.filter((f) => f.k === "buff" && f.st !== "pa");
+      if (bf.length && !g.fx.some((f) => f.k === "buff" && f.st === "pa") && bf.every((f) => (f.all ? allies : [e]).every((t) => (t.buffs || []).some((b) => b.name === sp.name && b.turns > 0)))) return { ok: false };
+      const db = g.fx.filter((f) => ["weaken", "vuln", "apdrain"].includes(f.k));
+      if (!bf.length && db.length) { const t0 = pickFoes(S, F, e, slot, 1, forced)[0]; if (!t0) return { ok: false };
+        if (db.every((f) => (f.k === "apdrain" ? t0.paLoss > 0 : (t0.debuffs || []).some((d) => d[f.k === "weaken" ? "weak" : "vuln"] && d.turns > 0)))) return { ok: false }; }
+    }
     let classMult = 1;
     if (e.cls === "iop" && e.stack >= 5 && ["dmg", "aoe", "drain", "dot"].includes(kind)) { classMult *= 1.5; e.stack = 0; parts.push("Colère !"); }
     if (e.cls === "panda" && (e.nCast + 1) % 3 === 0) classMult *= 1.3;

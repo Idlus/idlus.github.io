@@ -191,11 +191,56 @@
     });
     g.fx = out; return g;
   };
+  /* 3.0.1 : effets « de repli » (placement, états…) remplacés par un effet adapté au rôle du sort, qui évolue avec son niveau */
+  const ADAPT = {
+    pui: ["Tirs Éloignés", "Neutral", "Transcendance", "Cycle Élémentaire", "Polarité", "Kyrja", "Vajra", "Crépuscule", "Étreinte de Valkyr", "Holmgang", "Masque de l'Hystérique", "Violence", "Vindicte", "Massacre", "Concentration de Chakra", "Poudre", "Pandanlku", "Harmonie", "Fluctuation", "Rituel de Jashin", "Folie Sanguinaire", "Courant Quadramental", "Tarot d'Ecaflip", "Mot de Solidarité", "Décadence", "Instabilité"],
+    puiAll: ["Cortège Sauvage", "Appel de la Meute", "Communion Animale", "Boîte à Outils", "Liens du Sang", "Comédie"],
+    do: ["Bond", "Déambulation", "Odyssée", "Sillage", "Résonance", "Propagation", "Téléportation", "Bond du Félin", "Entrechat", "Attirance", "Transposition", "Détonateur", "Étoupille", "Aimantation", "Kaboom", "Croisement", "Masque du Psychopathe", "Débandade", "Aspiration", "Plongée", "Piston", "Submersion", "Aiguillage", "Récursivité", "Berserk", "Pivot", "Exode", "Exil", "Gangrène", "Poursuite", "Acharnement", "Nouvelle Lune", "Prédation", "Coup pour Coup", "Duel", "Varappe", "Brassage", "Armadur", "Transfiguration", "Piège Magnétique", "Imposture", "Empreinte", "Convection", "Répulsion Runique", "Sentinelle", "Vendetta", "Fosse Commune", "Dérobade", "Excursion"],
+    cri: ["Pas Chassé", "Astrolabe", "Bonne Pioche", "Odorat", "Compas", "Boussole", "Convergence", "Pistage", "Flair", "Clef du Trésor", "Invisibilité", "Brume", "Tir Perçant", "Prémonition", "Espace-temps", "Faille"],
+    pa: ["Précipitation", "Vingt-cinquième Heure", "Piqûre Motivante", "Picole", "Relais Spirituel"],
+    shield: ["Tir de Repli", "Mot d'Envol", "Rempart", "Fortification", "Renfort", "Bouclier Féca", "Masque du Pleutre", "Masque du Couard", "Karcham", "Chamrak", "Stabilisation", "Casemate", "Retraite Anticipée", "Bouclier Élémentaire", "Entourloupe", "Conservation", "Reuche", "Ataraxie", "Rémanence"],
+    shieldAll: ["Vitalité", "Transhumance", "Bergerie", "Trêve", "Sacrifice", "Redistribution", "Laisse Spirituelle"],
+    heal: ["Portail", "Errance", "Fougue", "Secourisme", "Perfusion", "Ronce Apaisante", "Proie", "Rémission", "Seconde Chance", "Fuite du Temps", "Rembobinage", "Bombance", "Lait de Bambou", "Prisme Runique", "Conjuration", "Prohibition", "Dernier Souffle"],
+    healAll: ["Don Naturel", "Distribution", "Raulebaque"],
+    weaken: ["Mot de Frayeur", "Peur", "Friction", "Épouvante", "Maladresse", "Panique", "Aboiement", "Momification", "Stupeur"],
+    vuln: ["Gibier", "Souillure", "Flou Temporel"],
+    apdrain: ["Emprise", "Interruption", "Paradoxe", "Désynchronisation", "Piège d'Immobilisation"],
+  };
+  const ADAPT_OF = {}; for (const k in ADAPT) ADAPT[k].forEach((n) => (ADAPT_OF[n] = k));
+  const adaptFx = (kind, L) => {
+    switch (kind) {
+      case "pui": return [{ k: "buff", st: "pui", v: Math.round(25 + L * 0.6), t: 2 }];
+      case "puiAll": return [{ k: "buff", st: "pui", v: Math.round(15 + L * 0.4), t: 2, all: true }];
+      case "do": return [{ k: "buff", st: "do", v: Math.round(4 + L / 6), t: 2 }];
+      case "cri": return [{ k: "buff", st: "cri", v: Math.round(8 + L / 15), t: 2 }];
+      case "pa": return [{ k: "buff", st: "pa", v: L >= 60 ? 2 : 1 }];
+      case "shield": return [{ k: "shield", pct: Math.round(10 + L / 12), t: 2 }];
+      case "shieldAll": return [{ k: "shield", pct: Math.round(8 + L / 15), t: 2, all: true }];
+      case "heal": return [{ k: "healpct", v: Math.round(8 + L / 15), n: 1 }];
+      case "healAll": return [{ k: "healpct", v: Math.round(5 + L / 20), n: 9 }];
+      case "weaken": return [{ k: "weaken", v: Math.round(15 + L / 10), t: 1, n: 1 }];
+      case "vuln": return [{ k: "vuln", v: Math.round(10 + L / 12), t: 2, n: 1 }];
+      case "apdrain": return [{ k: "apdrain", v: L >= 80 ? 2 : 1, n: 1 }];
+    }
+    return null;
+  };
+  const fixFallback = (sp) => {
+    sp.grades.forEach((g) => {
+      if (!g.fx.some((f) => f.fb)) return;
+      const L = g.lvl; const kind = ADAPT_OF[sp.name];
+      const dmgFb = g.fx.filter((f) => f.fb && ["dmg", "dot", "drain"].includes(f.k));
+      if (dmgFb.length) { // dégâts « de repli » constants : mis à l'échelle du niveau
+        dmgFb.forEach((f) => { const mn = Math.round((10 + L * 0.22) * (f.k === "dot" ? 0.6 : 1)); f.min = mn; f.max = mn + 4; delete f.fb; f.adapt = 1; });
+      }
+      if (kind) { const nf = adaptFx(kind, L); g.fx = g.fx.filter((f) => !f.fb).concat(nf.map((f) => Object.assign(f, { adapt: 1 }))); }
+      else g.fx.forEach((f) => { if (f.fb && f.k === "buff" && f.st === "pui") { f.v = Math.round(20 + L * 0.5); f.t = 2; delete f.fb; f.adapt = 1; } else if (f.fb && f.k === "heal") { delete f.fb; f.k = "healpct"; f.v = Math.round(8 + L / 15); delete f.min; delete f.max; f.adapt = 1; } });
+    });
+  };
   const elOfGrade = (g) => { if (g.fx.some((x) => x.el === "best")) return "best"; const f = g.fx.find((x) => x.el && ["dmg", "drain", "dot"].includes(x.k)); return f ? f.el : null; };
   for (const cls in CLASSES) {
     const kit = (G.CLASS_KITS || {})[cls]; if (!kit) continue;
     const list = [];
-    kit.forEach((pair, pi) => pair.forEach((sp, vi) => { if (!sp.grades.length) return; sp.grades.forEach(collapseEl);
+    kit.forEach((pair, pi) => pair.forEach((sp, vi) => { if (!sp.grades.length) return; sp.grades.forEach(collapseEl); fixFallback(sp);
       list.push({ id: "s" + sp.id, name: sp.name, icon: sp.icon, desc: sp.desc, pair: pi, variant: vi === 1, lvl: sp.grades[0].lvl, grades: sp.grades, el: elOfGrade(sp.grades[sp.grades.length - 1]) }); }));
     CLASSES[cls].spells = list;
     // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
@@ -257,6 +302,21 @@
   /* nombre de pièces par panoplie */
   for (const k in ITEMS) { const sid = ITEMS[k].set; if (sid && SETS[sid]) SETS[sid].size = (SETS[sid].size || 0) + 1; }
 
+  /* 3.0.1 : sous-zones de transition 68-86 (mêmes monstres, fenêtre de niveaux resserrée) */
+  {
+    const ADD = [
+      ["koalaks", { id: "koa_bordure", name: "Bordure de Kaliptus", lvl: [68, 78], deco: "forest", monsters: ["m747", "m746", "m748"] }],
+      ["koalaks", { id: "koa_pentes", name: "Pentes du Canyon", lvl: [76, 86], deco: "quarry", monsters: ["m746", "m751", "m752", "m785"] }],
+      ["abraknyde", { id: "abr_oree", name: "Orée de la Forêt Sombre", lvl: [74, 82], deco: "forest", monsters: ["m254", "m253"] }],
+    ];
+    for (const [zid, sub] of ADD) {
+      const z = G.ZONES.find((x) => x.id === zid || x.subs.some((s2) => s2.id === (zid === "abraknyde" ? "abr_sombre" : "koa_kaliptus")));
+      if (!z || z.subs.some((s2) => s2.id === sub.id) || !sub.monsters.every((k) => G.MONSTERS[k])) continue;
+      z.subs.push(sub); z.subs.sort((x, y) => x.lvl[0] - y.lvl[0] || x.lvl[1] - y.lvl[1]);
+    }
+  }
+  /* récolte des sous-zones de transition : celle de la sous-zone d'origine */
+  [["koa_bordure", "koa_kaliptus"], ["koa_pentes", "koa_canyon"], ["abr_oree", "abr_sombre"]].forEach(([n, o]) => { if (HARVEST[o] && !HARVEST[n]) HARVEST[n] = HARVEST[o]; });
   /* ---------- Trophées de sous-zone (paliers de chasse) ---------- */
   ZONES.forEach((z) => z.subs.forEach((s) => {
     const l = s.lvl[0];
@@ -306,6 +366,17 @@
     { id: "rare", name: "Composants rares", icon: "✨", types: [-2] },
     { id: "divers", name: "Divers", icon: "📦", types: [] },
   ];
+  /* 3.0.1 : ingrédients de clés absents des données de drop → ajoutés aux monstres de la sous-zone du donjon */
+  {
+    const KEY_FIX = { "Mâchoire du Chafer Draugr": ["donjon_squelettes", 5], "Fragment de Pierre Polie": ["pitons_craqueleur", 5],
+      "Première partie de la clef du labyrinthe du Dragon Cochon": ["antre_dragon_cochon", 4], "Deuxième partie de la clef du labyrinthe du Dragon Cochon": ["antre_dragon_cochon", 4],
+      "Fragment de cerveau poli": ["goulet_rasboul", 5] };
+    for (const [res, [did, rate]] of Object.entries(KEY_FIX)) {
+      if (!G.DUNGEONS[did] || Object.values(G.MONSTERS).some((m) => m.drops.some(([r]) => r === res))) continue;
+      G.ZONES.forEach((z) => z.subs.forEach((sub) => { if (sub.dungeon !== did) return; sub.monsters.forEach((k) => { const m = G.MONSTERS[k]; if (m && !m.drops.some(([r]) => r === res)) m.drops.push([res, rate]); }); }));
+      if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
+    }
+  }
   { const gem = Object.values(G.RES).find((r) => r.type === 50) || Object.values(G.RES)[0];
     G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 }; }
   const RES_CAT_OF = (name) => {

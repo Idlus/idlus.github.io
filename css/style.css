@@ -622,3 +622,5 @@ nav.main button{position:relative}
   .arena .ent.summon .sprite{max-height:34px}
   .arena .ent.summon .hpb{width:34px}
 }
+.spcard.later{opacity:.45;padding:6px 8px}
+.spcard.later .spicon{filter:grayscale(1)}

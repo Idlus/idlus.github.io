@@ -5,6 +5,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Jouer :** https://mathiss29.github.io/DofousXen/
 
+## 3.0.1 (correctifs)
+- Toutes les clés de donjon sont fabricables (Squelettes, Pitons, Dragon Cochon, Goulet : ingrédients ajoutés aux monstres de la zone)
+- Les 178 sorts de placement ou d'état ont un effet adapté au combat automatique (bonus, bouclier, soin, affaiblissement, PA…) qui évolue avec leur niveau
+- Nouvelles sous-zones de transition : Bordure de Kaliptus (68-78), Orée de la Forêt Sombre (74-82), Pentes du Canyon (76-86)
+- Variantes au-delà du niveau 120 repliées ; équilibrage des classes recalculé
+
 ## Nouveautés v3 « Builds et contenu »
 - Vrais sorts de DOFUS 3 pour les 19 classes (jusqu'au niveau 120) avec leurs variantes (gratuites) ; 6 emplacements, 7 au niveau 50, 8 au niveau 100
 - IA de combat revue : protections et invocations d'abord, puis l'attaque la plus rentable par PA ; règle de ciblage par sort
