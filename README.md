@@ -5,9 +5,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Jouer :** https://mathiss29.github.io/idlus/ (installable sur téléphone et PC)
 
+**Discord :** https://discord.gg/9ApPgWjPUM
+
 ## 3.0.3 (application installable)
 - PWA : icône, plein écran, jeu hors connexion (service worker), bouton « Installer » et guide iPhone
 - Nouvelle adresse : https://mathiss29.github.io/idlus/
+- Serveur Discord, bouton « Rejoindre » sur l'Accueil et « Signaler un bug » dans les Options
 
 ## 3.0.2 (équilibrage des classes)
 - Classes rééquilibrées par leurs sorts et passifs (Iop, Pandawa, Sadida, Zobal, Eliotrope, Crâ) ; correctif de puissance limité à ×0,8–×1,2

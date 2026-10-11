@@ -15,11 +15,13 @@ const ui = {
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
 const GAME_VERSION = "3.0.3";
+const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
   { v: "3.0.3", name: "Application installable", items: [
     "idlus s'installe sur téléphone et PC comme une vraie application : icône, plein écran, lancement instantané",
     "Le jeu fonctionne hors connexion (les images sont gardées au fil de la partie)",
     "Bouton « Installer » dans les Options, avec un guide pour iPhone",
+    "Le serveur Discord d'idlus est ouvert : bouton sur l'Accueil et « Signaler un bug » dans les Options",
     "Nouvelle adresse : mathiss29.github.io/idlus" ] },
   { v: "3.0.2", name: "Équilibrage des classes", items: [
     "Les 19 classes sont rééquilibrées par leurs sorts et passifs : les écarts de puissance entre classes sont bien plus faibles",
@@ -281,6 +283,10 @@ function consHtml() {
   return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy">${C.icon}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
 }
 function renderHome() {
+  renderHomeInner();
+  if (ui.home !== "havre") $("#main").insertAdjacentHTML("beforeend", `<section class="panel discordcard"><div class="pad row"><span class="dico">💬</span><span class="grow"><b>Rejoignez la communauté idlus sur Discord</b><br><span class="small muted">Annonces des mises à jour, aide, builds, et vos idées pour la suite du jeu.</span></span><a class="btn primary" href="${DISCORD}" target="_blank" rel="noopener">Rejoindre</a></div></section>`);
+}
+function renderHomeInner() {
   const team = E.team(S); const main = team[0] || S.chars[0];
   const deco = S.dungeon ? "dungeon" : S.sub ? subDeco(S.sub) : "sky";
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
@@ -1240,6 +1246,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
+      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">💬 Discord</a><button class="btn sm" data-act="reportbug">🐞 Signaler un bug</button></div>
       <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">📲 Installer idlus</button>`}</div>
       <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
@@ -1383,6 +1390,9 @@ document.addEventListener("click", (ev) => {
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
     case "installgame": installGame(); return;
+    case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nAppareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"}\nNavigateur : ${navigator.userAgent.slice(0, 120)}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :`;
+      const open = () => window.open(DISCORD, "_blank", "noopener");
+      try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : collez-le dans #bugs."); open(); }, open); } catch (e) { open(); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); changelogSheet(); return;

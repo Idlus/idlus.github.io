@@ -638,3 +638,8 @@ nav.main button{position:relative}
   .status{top:env(safe-area-inset-top)}
   body{overscroll-behavior-y:none}
 }
+.discordcard{border-color:rgba(88,101,242,.6)}
+.discordcard .row{align-items:center;gap:12px}
+.discordcard .dico{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:#5865f2;font-size:22px;flex:none}
+@media (max-width:640px){.discordcard .row{flex-wrap:wrap}.discordcard .btn{width:100%;justify-content:center}}
+a.btn{text-decoration:none}
