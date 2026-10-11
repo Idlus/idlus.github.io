@@ -49,7 +49,7 @@ function heroCard(c, size = "", opts = {}) {
   const st = E.charStats(S, c); const el = E.domEl(st); const fi = E.frameIdx(c.lvl); const C = CLASSES[c.cls];
   const rad = E.radiantWorn(S, c); const orn = c.orn && E.ornUnlocked(S, c.orn) ? c.orn : null;
   const need = E.xpNeed(c.lvl);
-  const stats3 = size === "big" ? [["vit", st.hpMax], [D.CLASSES[c.cls].main, st[D.CLASSES[c.cls].main]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [D.CLASSES[c.cls].main, st[D.CLASSES[c.cls].main]], ["pa", st.pa]];
+  const stats3 = size === "big" ? [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa]];
   let ornHtml = "", ornCls = "";
   if (orn === "ailes" && S.align) { const r = E.alignRankIdx(S); ornCls = `o-ailes side-${S.align.side}${c.wing ? " wing-" + c.wing : ""}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
   else if (orn === "couronne") ornHtml = `<span class="orn crown">👑</span>`;
@@ -440,10 +440,12 @@ function renderCombat() {
   $("#main").innerHTML = `
   <div class="pagehead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
+      ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid">
     <div class="panel">
       <div class="arena" id="arena"></div>
+      <div class="chalbar" id="chalbar"></div>
       <div class="pad" style="padding-bottom:0" id="cbar">${consBar(false)}</div>
       <div id="await"></div>
       <div class="herotabs">${team.map((c) => `<button data-act="combatcid" data-id="${c.id}" aria-pressed="${ui.combatCid === c.id}">${head(c)}${h(c.name)}</button>`).join("")}</div>
@@ -459,21 +461,21 @@ function renderCombat() {
 `;
   ui.arena = null; updateCombat(true);
 }
-function spellTip(sp) { return `${sp.name} · ${sp.pa} PA${sp.cd ? ` · relance ${sp.cd} tour${sp.cd > 1 ? "s" : ""}` : ""}${sp.casts ? ` · ${sp.casts} lancers/tour` : ""} — ${spellDesc(sp).replace(/<[^>]+>/g, "").trim()}`; }
+function spellTip(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return `${sp.name} · ${g.pa} PA${g.cd ? ` · relance ${g.cd} tour${g.cd > 1 ? "s" : ""}` : ""}${g.casts ? ` · ${g.casts} lancer${g.casts > 1 ? "s" : ""}/tour` : ""} — ${spellDesc(sp, lvl).replace(/<[^>]+>/g, "").trim()}`; }
+const spEl = (sp) => (sp.el && sp.el !== "best" ? sp.el : sp.el === "best" ? "n" : "buff");
 function spellBarFor(c, ent, F) {
-  const slots = c.spells.slice(0, 6);
+  const N = E.spellSlots(c); const slots = c.spells.slice(0, N);
   const A = F && F.await && ent && F.ents[F.await.ei] === ent ? F.await : null;
   const lastCast = {};
   if (F && ent) { const idx = F.ents.indexOf(ent); F.fx.forEach((f) => { if (f.k === "cast" && f.s === idx) lastCast[f.sp] = f.seq; }); }
-  const html = Array.from({ length: 6 }, (_, i) => {
+  const html = Array.from({ length: N }, (_, i) => {
     const x = slots[i]; if (!x) return `<div class="sp empty"></div>`;
-    const sp = E.spellDef(c.cls, x.id); const cd = ent && ent.cd ? (ent.cd[sp.id] || 0) : 0;
+    const sp = E.spellDef(c.cls, x.id); if (!sp) return `<div class="sp empty"></div>`; const g = E.spellGrade(sp, c.lvl); const cd = ent && ent.cd ? (ent.cd[sp.id] || 0) : 0;
     const cast = F && lastCast[sp.id] !== undefined && F.seq - lastCast[sp.id] <= 1;
-    const el = sp.el || (sp.type.startsWith("heal") ? "a" : "buff");
     const can = A ? E.manualCanCast(S, sp) : false;
-    return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(el)}" data-tip="${h(spellTip(sp))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${sp.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
+    return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-tip="${h(spellTip(sp, c.lvl))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${g.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
   }).join("");
-  return { html, names: Array.from({ length: 6 }, (_, i) => `<div>${slots[i] ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") };
+  return { html, names: Array.from({ length: N }, (_, i) => `<div>${slots[i] && E.spellDef(c.cls, slots[i].id) ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") };
 }
 function buildArena(F) {
   const arena = $("#arena"); if (!arena) return;
@@ -485,6 +487,7 @@ function buildArena(F) {
   }
   const side = (s) => F.ents.map((e, i) => [e, i]).filter(([e]) => e.side === s);
   const entHtml = ([e, i]) => {
+    if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
       return `<div class="ent hero ${rad ? "radiant" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div></div>`; }
@@ -493,6 +496,19 @@ function buildArena(F) {
   arena.innerHTML = sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub) + `<div class="turn" id="turn">${h(F.label)}</div>
     <div class="side l">${side("c").map(entHtml).join("")}</div><div class="side r">${side("m").map(entHtml).join("")}</div><div class="result" id="fresult"></div>`;
   arena.querySelectorAll(".ent").forEach((n) => (ui.arena.nodes[+n.dataset.i] = n));
+  ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
+}
+/* bandeau des challenges et mécaniques de boss */
+function chalBarHtml(F) {
+  const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> 🎯 Respecter</label>`;
+  if (!F) return "";
+  const ch = (F.chals || []).map((c) => { const C = E.CHALLENGES[c.id]; const done = F.over;
+    const state = !c.ok ? "ko" : done && F.result === "win" ? "ok" : "run";
+    const extra = c.id === "rapide" ? ` (${c.turns} tours)` : c.id === "elitiste" && F.ents[c.target] ? ` : ${F.ents[c.target].name}` : "";
+    return `<span class="chal ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}">${state === "ko" ? "✕" : state === "ok" ? "✓" : "🎯"} ${h(C.name)}${h(extra)} <b>+${c.bonus} %</b></span>`; }).join("");
+  const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">⚠ ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
+  const streak = S.chalStreak > 1 ? `<span class="xs muted">série ×${S.chalStreak}</span>` : "";
+  return `${ch}${streak}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : ""); s.textContent = txt; s.style.setProperty("--c", color);
@@ -512,6 +528,12 @@ function updateCombat(force) {
   const F = S.fight; const arena = $("#arena"); if (!arena) return;
   if (!ui.arena || ui.arena.el !== arena || ui.arena.fid !== (F ? F.id : null) || ui.arena.theme !== isDark()) buildArena(F);
   const A = ui.arena;
+  if (F && A.nEnts !== undefined && F.ents.length > A.nEnts) {
+    for (let i = A.nEnts; i < F.ents.length; i++) { const e = F.ents[i]; const side = A.el.querySelector(e.side === "c" ? ".side.l" : ".side.r"); if (!side) continue;
+      side.insertAdjacentHTML("beforeend", A.entHtml([e, i])); A.nodes[i] = side.lastElementChild; }
+    A.nEnts = F.ents.length;
+  }
+  const cb = $("#chalbar"); if (cb) { const ch = chalBarHtml(F); if (cb.dataset.k !== ch) { cb.innerHTML = ch; cb.dataset.k = ch; } }
   if (F) {
     F.ents.forEach((e, i) => {
       const n = A.nodes[i]; if (!n) return;
@@ -524,7 +546,8 @@ function updateCombat(force) {
     if (AW) {
       const me = F.ents[AW.ei]; if (me && ui.combatCid !== me.cid) { ui.combatCid = me.cid; document.querySelectorAll(".herotabs button").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.id === me.cid)); }
       const spd = ui.manualSpell ? E.spellDef(me.cls, ui.manualSpell) : null;
-      const wantAlly = spd && spd.type === "heal"; const wantFoe = spd && ["dmg", "drain", "poison"].includes(spd.type);
+      const spk = spd ? E.spellKind(E.spellGrade(spd, me.lvl)) : null;
+      const wantAlly = spk === "heal"; const wantFoe = ["dmg", "drain", "dot", "aoe"].includes(spk);
       F.ents.forEach((e, i) => { const n = A.nodes[i]; if (!n) return; n.classList.toggle("targetable", !!(e.alive && ((wantFoe && e.side === "m") || (wantAlly && e.side === "c")))); n.classList.toggle("turnnow", i === AW.ei); });
       const left = Math.max(0, Math.ceil(E.MANUAL_TIMEOUT - (F.dur - AW.t)));
       const html = `<div class="awaitbar">🎯 À vous : <b>${h(me.name)}</b> · ${AW.pa} PA · ${spd ? (wantFoe || wantAlly ? `choisissez ${wantAlly ? "un allié" : "un ennemi"} pour ${h(spd.name)}` : "") : "choisissez un sort"} <button class="btn sm" data-act="mend">Fin du tour</button><span class="cnt">auto dans ${left} s</span></div>`;
@@ -559,13 +582,13 @@ function updateCombat(force) {
   if (c) {
     const ent = F ? F.ents.find((e) => e.side === "c" && e.cid === c.id) : null;
     const bar = spellBarFor(c, ent, F); const sp = $("#spells");
-    if (sp && sp.dataset.k !== bar.html) { sp.innerHTML = bar.html; sp.dataset.k = bar.html; $("#spnames").innerHTML = bar.names; }
+    if (sp && sp.dataset.k !== bar.html) { sp.innerHTML = bar.html; sp.dataset.k = bar.html; $("#spnames").innerHTML = bar.names; const n = E.spellSlots(c); sp.style.gridTemplateColumns = $("#spnames").style.gridTemplateColumns = `repeat(${n},1fr)`; }
     const st = ent ? ent.st : E.charStats(S, c);
     let used = 0;
-    if (F && ent) { const idx = F.ents.indexOf(ent); const casts = F.fx.filter((f) => f.k === "cast" && f.s === idx); const lastSeq = casts.length ? casts[casts.length - 1].seq : -1; casts.filter((f) => f.seq === lastSeq).forEach((f) => { const d = E.spellDef(c.cls, f.sp); if (d) used += d.pa; }); }
+    if (F && ent) { const idx = F.ents.indexOf(ent); const casts = F.fx.filter((f) => f.k === "cast" && f.s === idx); const lastSeq = casts.length ? casts[casts.length - 1].seq : -1; casts.filter((f) => f.seq === lastSeq).forEach((f) => { const d = E.spellDef(c.cls, f.sp); if (d) used += E.spellGrade(d, c.lvl).pa; }); }
     const pips = $("#pips"); const ph = Array.from({ length: st.pa }, (_, i) => `<i class="${i < st.pa - used ? "" : "off"}"></i>`).join("");
     if (pips && pips.dataset.k !== ph) { pips.innerHTML = ph; pips.dataset.k = ph; }
-    const sn = $("#stratName"); if (sn) sn.textContent = c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : "personnalisée";
+    const sn = $("#stratName"); if (sn) sn.textContent = c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : c.spellsManual ? "personnalisée" : "automatique";
   }
 }
 function lootHtml(F) {
@@ -576,6 +599,8 @@ function lootHtml(F) {
   el.innerHTML = `<div class="stack" style="gap:8px">
     <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length ? `<div class="loot">${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
+    ${r.chal ? `<p class="small" style="color:var(--good);font-weight:700">🎯 Challenges : +${r.chal} % XP et butin</p>` : ""}
+    ${r.lootPen ? `<p class="note xs">Monstres bien plus faibles que votre meilleur héros : butin réduit (×${Math.round(r.lootPen * 100) / 100}).</p>` : ""}
     ${r.auto ? `<p class="note">${r.auto} objet${r.auto > 1 ? "s" : ""} traité${r.auto > 1 ? "s" : ""} par les règles automatiques.</p>` : ""}
     ${r.cons ? `<p class="small" style="color:var(--archi);font-weight:800">🍬 Bonbon Sagesse obtenu !</p>` : ""}
     ${r.items.length ? `<div class="list">${r.items.filter((u) => S.items[u]).map((u) => `<div class="li ${S.items[u].radiant ? "radiant" : ""}">${itemIcon(S.items[u])}<span class="grow">${itemName(S.items[u])}</span></div>`).join("")}</div>` : ""}</div>`;
@@ -631,8 +656,11 @@ function renderHeroes() {
 }
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
-const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3 };
-function itemScore(c, it) { if (!it) return 0; const main = CLASSES[c.cls].main; let sc = 0; for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.5) : 1); return sc; }
+const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3, rn: 3, dcri: 2.5, dsort: 7, dt: 4, df: 4, de: 4, da: 4, dn: 1, xt: 2, xf: 2, xe: 2, xa: 2, xn: 2 };
+const buildMain = (c) => (["fo", "ine", "cha", "age"].includes(c.autoStat) ? c.autoStat : CLASSES[c.cls].main);
+function itemScore(c, it) { if (!it) return 0; const main = buildMain(c); const mdmg = ELEMENTS[STATS[main].el].dmg; let sc = 0;
+  for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.5) : ["dt", "df", "de", "da"].includes(k) ? (k === mdmg ? 1 : 0.2) : 1);
+  if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5; return sc; }
 function slotUpgrade(c, s) {
   const want = s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s;
   const cur = S.items[c.equip[s]]; const curSc = itemScore(c, cur); let best = 0;
@@ -677,7 +705,7 @@ function charEquipView(c, st) {
         return `<div class="li ${it.radiant ? "radiant" : ""}">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by.name)}` : ""}</span><br>${deltaHtml(c, ui.slot, it.uid)}</span>
           <button class="btn sm primary" data-act="equip" data-uid="${it.uid}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. " + T.lvl : "Équiper"}</button></div>`; }).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div></div>`;
   }
-  const mainK = CLASSES[c.cls].main;
+  const mainK = buildMain(c);
   return `<div class="stack">
     <div class="panel"><div class="pad">
       <div class="doll">
@@ -692,21 +720,28 @@ function charEquipView(c, st) {
     ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies actives</h2></div><div class="pad">${sets}</div></div>` : ""}
     <p class="note xs">▲ en vert : un objet plus intéressant est disponible dans le sac pour cet emplacement.</p></div>`;
 }
-function spellDesc(sp) {
-  const el = sp.el ? eld(sp.el) + " " : "";
-  switch (sp.type) {
-    case "dmg": return `${el}${sp.min}–${sp.max} dégâts${sp.casts ? ` (×${sp.casts} par tour)` : ""}${sp.weaken ? `, la cible frappe ${sp.weaken} % moins fort` : ""}`;
-    case "aoe": return `${el}${sp.min}–${sp.max} à tous les ennemis`;
-    case "drain": return `${el}${sp.min}–${sp.max}, rend la moitié en PV`;
-    case "poison": return `${el}${sp.min}–${sp.max} par tour pendant ${sp.turns} tours`;
-    case "heal": return `Soigne ${sp.min}–${sp.max} l'allié le plus blessé`;
-    case "healall": return `Soigne ${sp.min}–${sp.max} toute l'équipe`;
-    case "buff": return `${sp.pui ? `+${sp.pui} Puissance` : `+${sp.cri} % critique`} pendant ${sp.turns} tours (${sp.target === "allies" ? "équipe" : "lanceur"})`;
-    case "shield": return `Bouclier de ${sp.pct} % des PV (${sp.target === "allies" ? "équipe" : "lanceur"})`;
+const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());
+const tgtTxt = (n) => (n >= 9 ? "tous les ennemis" : n > 1 ? `${n} cibles` : "");
+function fxLine(f) {
+  const v = `${f.min}${f.max !== f.min ? "–" + f.max : ""}`; const el = f.el ? (f.el === "best" ? `<span class="eld" style="--c:var(--gold2)" title="Meilleur élément">★</span>` : eld(f.el)) : "";
+  switch (f.k) {
+    case "dmg": return `${el} ${v} ${EL_NAME(f.el)}${f.n > 1 ? ` (${tgtTxt(f.n)})` : ""}`;
+    case "drain": return `${el} ${v} ${EL_NAME(f.el)}, vole la moitié en PV${f.n > 1 ? ` (${tgtTxt(f.n)})` : ""}`;
+    case "dot": return `${el} poison ${v}/tour pendant ${f.t || 2} tours${f.n > 1 ? ` (${tgtTxt(f.n)})` : ""}`;
+    case "heal": return `soigne ${v}${f.self ? " (lanceur)" : f.n > 1 ? " (équipe)" : ""}`;
+    case "healpct": return `soigne ${f.v} % des PV`;
+    case "shield": return `bouclier ${f.pct} % des PV${f.all ? " (équipe)" : ""}, ${f.t || 1} t.`;
+    case "buff": return `+${f.v} ${(STATS[f.st] || {}).short || f.st}${f.all ? " (équipe)" : ""}${f.st !== "pa" ? `, ${f.t || 1} t.` : ""}`;
+    case "apdrain": return `−${f.v} PA à la cible`;
+    case "weaken": return `la cible frappe ${f.v} % moins fort`;
+    case "vuln": return `la cible subit +${f.v} % de dégâts, ${f.t || 1} t.`;
+    case "summon": { const m = (D.SUMMONS || {})[String(f.mid)]; return `invoque ${m ? h(m.name) : "une créature"}`; }
+    case "leech": return `vol de vie ${f.v} %`;
   }
   return "";
 }
-const spIcon = (sp) => `<span class="spicon" style="--c:${elVar(sp.el || (sp.type.startsWith("heal") ? "a" : "buff"))}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}</span>`;
+function spellDesc(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return g.fx.map(fxLine).filter(Boolean).join(" · ") + (g.fx.some((f) => f.fb) ? ` <span class="muted">(effet simplifié)</span>` : ""); }
+const spIcon = (sp) => `<span class="spicon" style="--c:${elVar(spEl(sp))}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}</span>`;
 function zoneOptions() {
   const opts = [];
   ZONES.forEach((z) => z.subs.forEach((s) => { if (E.subUnlocked(S, s.id)) opts.push([s.id, `${z.name} · ${s.name}`]); }));
@@ -714,8 +749,7 @@ function zoneOptions() {
   return opts;
 }
 function charSpellsView(c) {
-  const eq = c.spells; const known = E.knownSpells(c);
-  const avail = known.filter((s) => !eq.find((x) => x.id === s.id)); const locked = CLASSES[c.cls].spells.filter((s) => s.lvl > c.lvl);
+  const eq = c.spells; const N = E.spellSlots(c); const known = E.knownSpells(c);
   const zopts = zoneOptions(); const zname = (k) => (zopts.find((o) => o[0] === k) || [k, k])[1];
   const presets = Array.from({ length: E.MAX_PRESETS }, (_, i) => {
     const p = c.presets[i]; const zones = Object.entries(c.zonePreset || {}).filter(([, v]) => v === i).map(([k]) => k);
@@ -726,20 +760,44 @@ function charSpellsView(c) {
       <span class="row" style="gap:4px"><button class="btn sm ${c.activePreset === i ? "" : "primary"}" data-act="pload" data-i="${i}">${c.activePreset === i ? "Active" : "Charger"}</button><button class="btn sm" data-act="psave" data-i="${i}" title="Remplacer par les sorts actuels">Écraser</button><button class="btn sm" data-act="pdel" data-i="${i}">✕</button>
       <select class="small" data-act="pzone" data-i="${i}" aria-label="Activer automatiquement dans une zone"><option value="">Auto. dans…</option>${zopts.map(([v, n]) => `<option value="${h(v)}">${h(n)}</option>`).join("")}</select></span></div>`;
   }).join("");
+  const meta = (sp) => { const g = E.spellGrade(sp, c.lvl); return `${g.pa} PA${g.cd ? ` · relance ${g.cd} t.` : ""}${g.casts ? ` · ${g.casts}×/tour` : ""}`; };
+  // paires sort / variante
+  const pairs = {}; CLASSES[c.cls].spells.forEach((sp) => { (pairs[sp.pair] = pairs[sp.pair] || [])[sp.variant ? 1 : 0] = sp; });
+  const eqIds = new Set(eq.map((x) => x.id));
+  const pairHtml = Object.values(pairs).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl).map((pr) => `<div class="sppair">${pr.map((sp) => { if (!sp) return `<div class="spcard empty"></div>`;
+    const ok = sp.lvl <= c.lvl; const on = eqIds.has(sp.id);
+    return `<div class="spcard ${on ? "on" : ""} ${ok ? "" : "locked"}">${spIcon(sp)}<div class="grow" style="min-width:0"><div class="name">${h(sp.name)} ${sp.variant ? `<span class="tag soft">variante</span>` : ""}</div><div class="xs muted">${ok ? meta(sp) : `niv. ${sp.lvl}`}</div><div class="xs">${spellDesc(sp, Math.max(c.lvl, sp.lvl))}</div></div>
+      ${ok ? (on ? `<span class="tag">équipé</span>` : `<button class="btn sm" data-act="spadd" data-id="${sp.id}" ${eq.length >= N && !eq.some((x) => E.spellDef(c.cls, x.id).pair === sp.pair) ? "disabled" : ""}>Équiper</button>`) : ""}</div>`; }).join("")}</div>`).join("");
+  // simulateur
+  const res = ui.simRes || 0;
+  const sim = eq.map((x) => { const sp = E.spellDef(c.cls, x.id); const k = E.spellKind(E.spellGrade(sp, c.lvl)); if (!["dmg", "aoe", "drain", "dot", "heal"].includes(k)) return "";
+    const r = E.spellEstimate(S, c, sp, res);
+    return `<tr><td>${spIcon(sp)} ${h(sp.name)}</td><td class="num">${k === "heal" ? `+${fmt(r.heal)}` : `${fmt(r.min)}–${fmt(r.max)}`}</td><td class="num">${k === "heal" ? "" : fmt(r.avg)}</td><td class="num">${k === "heal" ? "" : `${fmt(r.turn)} <span class="xs muted">(${r.casts}×${r.tgts > 1 ? `, ${r.tgts >= 9 ? "zone" : r.tgts + " cibles"}` : ""})</span>`}</td></tr>`; }).join("");
+  const st = E.charStats(S, c); const rec = CLASSES[c.cls].elRec;
   return `<div class="stack">
+  <div class="panel"><div class="phead"><h2>Profil de build</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">
+    <label class="row small"><span class="muted">Élément principal :</span>
+      <select data-act="autostat" data-id="${c.id}">${["fo", "ine", "cha", "age"].map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name} (${ELEMENTS[STATS[k].el].name})${k === rec ? " ★ conseillé" : ""}</option>`).join("")}<option value="vit" ${c.autoStat === "vit" ? "selected" : ""}>Vitalité (tank)</option><option value="" ${!c.autoStat ? "selected" : ""}>Manuel</option></select></label>
+    <p class="xs muted">Les points de caractéristiques vont dans cet élément ; la sélection automatique des sorts et les flèches d'équipement le privilégient.</p>
+    <label class="row small"><input type="checkbox" data-act="spauto" ${c.spellsManual ? "" : "checked"}> Choisir automatiquement les meilleurs sorts à chaque niveau</label>
+    <label class="row small"><input type="checkbox" data-act="chaloff" ${c.chalOff ? "checked" : ""}> Ce héros ignore les challenges</label>
+  </div></div>
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">préréglages de sorts, activables automatiquement par zone</span></div><div class="pad stack" style="gap:8px">${presets}</div></div>
   <div class="grid2">
-    <div class="panel"><div class="phead"><h2>Sorts équipés</h2><span class="muted xs">${eq.length}/6 · lancés dans cet ordre</span></div>
-      <div class="list">${eq.map((x, i) => { const sp = E.spellDef(c.cls, x.id);
+    <div class="panel"><div class="phead"><h2>Sorts équipés</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span></div>
+      <p class="note xs" style="margin:6px 12px 0">L'IA lance d'abord invocations, protections et soins (dans l'ordre de la liste, si leur condition est remplie), puis l'attaque qui fait le plus de dégâts par PA.</p>
+      <div class="list">${eq.map((x, i) => { const sp = E.spellDef(c.cls, x.id); if (!sp) return "";
         return `<div class="li"><div class="spellrow"><div class="ord"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Monter">▲</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === eq.length - 1 ? "disabled" : ""} aria-label="Descendre">▼</button></div>
-          ${spIcon(sp)}<div style="min-width:0"><div class="name">${h(sp.name)} <span class="muted xs">${sp.pa} PA${sp.cd ? ` · relance ${sp.cd} t.` : ""}</span></div><div class="xs muted">${spellDesc(sp)}</div>
-          <select class="small" data-act="spcond" data-i="${i}" aria-label="Condition">${Object.entries(CONDITIONS).map(([k, n]) => `<option value="${k}" ${x.cond === k ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+          ${spIcon(sp)}<div style="min-width:0"><div class="name">${h(sp.name)} <span class="muted xs">${meta(sp)}</span></div><div class="xs muted">${spellDesc(sp, c.lvl)}</div>
+          <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:3px"><select class="small" data-act="spcond" data-i="${i}" aria-label="Condition">${Object.entries(CONDITIONS).map(([k, n]) => `<option value="${k}" ${x.cond === k ? "selected" : ""}>${n}</option>`).join("")}</select>
+          <select class="small" data-act="sptgt" data-i="${i}" aria-label="Cible">${Object.entries(D.TARGETS).map(([k, n]) => `<option value="${k}" ${(x.tgt || "low") === k ? "selected" : ""}>🎯 ${n}</option>`).join("")}</select></div></div>
           <button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div></div>`; }).join("") || `<div class="empty">Aucun sort équipé : ce héros ne fera rien en combat.</div>`}</div></div>
-    <div class="panel"><div class="phead"><h2>Sorts disponibles</h2></div>
-      <div class="list">${avail.map((sp) => `<div class="li">${spIcon(sp)}<span class="grow"><span class="name">${h(sp.name)}</span> <span class="muted xs">${sp.pa} PA</span><br><span class="xs muted">${spellDesc(sp)}</span></span><button class="btn sm" data-act="spadd" data-id="${sp.id}" ${eq.length >= 6 ? "disabled" : ""}>Équiper</button></div>`).join("")}
-        ${locked.map((sp) => `<div class="li" style="opacity:.55">${spIcon(sp)}<span class="grow"><span class="name">${h(sp.name)}</span><br><span class="xs muted">${spellDesc(sp)}</span></span><span class="tag soft">niv. ${sp.lvl}</span></div>`).join("")}
-        ${!avail.length && !locked.length ? `<div class="empty">Tous les sorts sont équipés.</div>` : ""}</div></div>
-  </div></div>`;
+    <div class="panel"><div class="phead"><h2>Simulateur de dégâts</h2><select class="small" data-act="simres" aria-label="Résistance de la cible">${[0, 10, 20, 30, 40].map((r) => `<option value="${r}" ${res === r ? "selected" : ""}>Cible ${r} % rés.</option>`).join("")}</select></div>
+      <div class="pad"><table class="simtab"><thead><tr><th>Sort</th><th>Jet</th><th>Moy.*</th><th>Par tour</th></tr></thead><tbody>${sim || `<tr><td colspan="4" class="muted">Aucun sort offensif équipé.</td></tr>`}</tbody></table>
+      <p class="xs muted">* moyenne avec ${Math.min(60, 5 + st.cri)} % de coups critiques. Estimation hors bonus de combat (buffs, marques, passifs).</p></div></div>
+  </div>
+  <div class="panel"><div class="phead"><h2>Sorts et variantes</h2><span class="xs muted">une seule des deux versions peut être équipée · variantes gratuites</span></div><div class="pad stack" style="gap:8px">${pairHtml}</div></div>
+  </div>`;
 }
 
 /* ---------- INVENTAIRE ---------- */
@@ -1153,21 +1211,26 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <p class="note">Version 2.7 « Équilibrage » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
+      <p class="note">Version 3.0 « Builds et contenu » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
   const res = Object.entries(r.res).sort((a, b) => b[1] - a[1]);
   openSheet(`<h2>Pendant votre absence</h2>
     <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a continué à ${Math.round(E.OFFLINE_RATE * 100 + E.bonus(S, "offrate"))} % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : "Votre équipe ne chassait pas ; seuls les héros en récolte ont travaillé."}</p>
-    ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${h(n)} : niveau ${a} → ${b}`).join("<br>")}</p>` : ""}
-    ${res.length ? `<div class="list small" style="max-height:240px;overflow:auto">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><span class="num">+${fmt(q)}</span></div>`).join("")}</div>` : ""}
+    ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
+    ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `⬆ ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
+    ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
+    ${(r.newItems || []).filter((u) => S.items[u]).length ? `<h3 class="sec">Objets obtenus</h3><div class="list small" style="max-height:220px;overflow:auto">${r.newItems.filter((u) => S.items[u]).map((u) => { const it = S.items[u]; const T = ITEMS[it.tpl];
+        const best = E.team(S).filter((c) => T.lvl <= c.lvl).map((c) => { const sl = T.slot === "anneau" ? (c.equip.anneau1 ? "anneau2" : "anneau1") : T.slot === "dofus" ? null : T.slot; const cur = sl ? S.items[c.equip[sl]] : null; return { c, gain: itemScore(c, it) - itemScore(c, cur) }; }).sort((a, b) => b.gain - a.gain)[0];
+        return `<div class="li">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span>${best && best.gain > 1 ? `<br><span class="xs" style="color:var(--good)">▲ mieux pour ${h(best.c.name)}</span>` : ""}</span>${best && best.gain > 1 ? `<button class="btn sm" data-act="offequip" data-uid="${u}" data-id="${best.c.id}">Équiper</button>` : ""}</div>`; }).join("")}</div>` : ""}
+    ${res.length ? `<h3 class="sec">Ressources</h3><div class="list small" style="max-height:240px;overflow:auto">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><span class="num">+${fmt(q)}</span></div>`).join("")}</div>` : ""}
     <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
 }
 function migrationSheet(list) {
-  openSheet(`<h2>Bienvenue dans la v2.7 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
+  openSheet(`<h2>Bienvenue dans la v3 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
-    <p class="small muted">Nouveautés à découvrir : l'onglet Quêtes, le Havre-Sac (Accueil), la Forgemagie et la récolte par héros (Métiers). Conseil : une nouvelle partie permet de profiter de la quête principale depuis le début.</p>
+    <p class="small muted">Nouveautés à découvrir : les vrais sorts de DOFUS et leurs variantes (Héros › Sorts), le profil de build et le simulateur de dégâts, les challenges (bouton 🎯 en combat), les mécaniques de boss et les nouvelles zones jusqu'au niveau 120.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
 }
 
@@ -1246,11 +1309,12 @@ document.addEventListener("click", (ev) => {
     case "almanax": { const r = E.almanaxOffer(S); if (r) { toast(r); return; } break; }
     case "manual": S.settings.manual = d.v === "1"; toast(S.settings.manual ? "Mode manuel : à chaque tour d'un héros, choisissez un sort puis une cible." : "Mode automatique."); break;
     case "mspell": { const F = S.fight; if (!F || !F.await) return; const me = F.ents[F.await.ei]; const sp = E.spellDef(me.cls, d.id);
-      if (["dmg", "drain", "poison", "heal"].includes(sp.type)) { ui.manualSpell = ui.manualSpell === sp.id ? null : sp.id; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
+      if (["dmg", "drain", "dot", "aoe", "heal"].includes(E.spellKind(E.spellGrade(sp, me.lvl)))) { ui.manualSpell = ui.manualSpell === sp.id ? null : sp.id; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
       const r = E.manualCast(S, sp.id, null); if (r) toast(r); ui.manualSpell = null; updateCombat(false); return; }
     case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
+    case "offequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } t.replaceWith(Object.assign(document.createElement("span"), { className: "tag good", textContent: "équipé" })); dirty = true; return; }
     case "usecons": { if (d.id === "potion_savoir") { openSheet(`<h2>📘 Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
     case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
@@ -1277,9 +1341,9 @@ document.addEventListener("click", (ev) => {
     case "slot": ui.slot = d.slot || null; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
-    case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; c.activePreset = null; break; }
-    case "sprem": c.spells.splice(+d.i, 1); c.activePreset = null; break;
-    case "spadd": if (c.spells.length < 6) { const sp = E.spellDef(c.cls, d.id); c.spells.push({ id: d.id, cond: sp.type.startsWith("heal") ? "ally_low" : sp.type === "aoe" ? "enemy_many" : "always" }); c.activePreset = null; } break;
+    case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; c.activePreset = null; c.spellsManual = true; break; }
+    case "sprem": c.spells.splice(+d.i, 1); c.activePreset = null; c.spellsManual = true; break;
+    case "spadd": { const r = E.equipSpell(S, c, d.id); if (r) { toast(r); return; } c.activePreset = null; break; }
     case "psave": { const old = c.presets[+d.i]; const name = old ? old.name : (prompt("Nom de la stratégie :", ["Farm", "Boss", "Solo", "Donjon"][+d.i] || "Stratégie") || "").trim(); if (!old && !name) return; E.savePreset(S, c.id, +d.i, name); toast("Stratégie enregistrée."); break; }
     case "pload": E.applyPreset(S, c.id, +d.i); toast(`Stratégie « ${c.presets[+d.i].name} » chargée.`); break;
     case "pdel": E.deletePreset(S, c.id, +d.i); break;
@@ -1316,8 +1380,14 @@ document.addEventListener("click", (ev) => {
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
   const c = ui.cid ? char(ui.cid) : null;
-  if (a === "autostat") { const x = char(+t.dataset.id); x.autoStat = t.value || null; E.autoAllocate(S, x); }
-  else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; }
+  if (a === "autostat") { const x = char(+t.dataset.id); x.autoStat = t.value || null; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
+  else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; c.spellsManual = true; }
+  else if (a === "sptgt") { c.spells[+t.dataset.i].tgt = t.value; c.activePreset = null; c.spellsManual = true; }
+  else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }
+  else if (a === "chaloff") c.chalOff = t.checked;
+  else if (a === "simres") ui.simRes = +t.value;
+  else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
+  else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }

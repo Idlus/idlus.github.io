@@ -584,3 +584,41 @@ nav.main button{position:relative}
 .hcard.o-heros{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #c9962e,0 0 24px rgba(255,215,100,.7)}
 .hcard.o-avis{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 4px #8a6038,0 0 0 7px #3a2a18}
 .hcard.o-almanax{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 22px rgba(120,200,255,.7)}
+
+/* ===== v3 « Builds et contenu » ===== */
+.azchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--panel2,rgba(127,127,127,.12));cursor:pointer}
+.chalbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 14px 0;font-size:12px;min-height:8px}
+.chalbar:empty{display:none}
+.chal{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:rgba(127,127,127,.12);font-weight:600}
+.chal b{color:var(--gold2)}
+.chal.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.chal.ko{opacity:.55;text-decoration:line-through}
+.chal.ko b{color:inherit}
+.mech{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,#e0533d 18%,transparent);color:#e0533d;font-weight:700}
+.chaltog{display:inline-flex;align-items:center;gap:4px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ent.summon .sprite{transform:scale(.8);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--gold2) 60%,transparent))}
+.ent.summon .medal{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--gold2);color:#fff}
+.sppair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.spcard{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:12px;background:rgba(127,127,127,.08);border:1.5px solid transparent;min-width:0}
+.spcard.on{border-color:var(--gold2);background:color-mix(in srgb,var(--gold2) 10%,transparent)}
+.spcard.locked{opacity:.5}
+.spcard.empty{background:transparent}
+.spcard .name{font-weight:700;font-size:13px}
+.spcard .btn,.spcard .tag{flex:none;align-self:center}
+.simtab{width:100%;border-collapse:collapse;font-size:12.5px}
+.simtab th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;padding:4px 4px}
+.simtab td{padding:4px;border-top:1px solid rgba(127,127,127,.15);vertical-align:middle}
+.simtab td:first-child{display:flex;align-items:center;gap:6px}
+.simtab .spicon{width:22px;height:22px}
+@media (max-width:640px){
+  .sppair{grid-template-columns:1fr}
+  .chalbar{padding:6px 10px 0;font-size:11px}
+  .simtab{font-size:11.5px}
+}
+.arena .ent.summon{width:auto;min-width:0}
+.arena .ent.summon .sprite{max-height:46px}
+@media (max-width:640px){
+  .arena .ent.summon .who{display:none}
+  .arena .ent.summon .sprite{max-height:34px}
+  .arena .ent.summon .hpb{width:34px}
+}

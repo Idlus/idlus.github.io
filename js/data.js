@@ -31,16 +31,29 @@
     rf:  { name: "% Rés. Feu",      short: "Ré Feu",   w: 6, pts: 1 },
     re:  { name: "% Rés. Eau",      short: "Ré Eau",   w: 6, pts: 1 },
     ra:  { name: "% Rés. Air",      short: "Ré Air",   w: 6, pts: 1 },
+    rn:  { name: "% Rés. Neutre",   short: "Ré Neu",   w: 6, pts: 1 },
+    dcri:{ name: "Dommages critiques", short: "Do Cri", w: 5, pts: 1 },
+    dt:  { name: "Dommages Terre",  short: "Do Ter",   w: 5, pts: 1 },
+    df:  { name: "Dommages Feu",    short: "Do Feu",   w: 5, pts: 1 },
+    de:  { name: "Dommages Eau",    short: "Do Eau",   w: 5, pts: 1 },
+    da:  { name: "Dommages Air",    short: "Do Air",   w: 5, pts: 1 },
+    dn:  { name: "Dommages Neutre", short: "Do Neu",   w: 5, pts: 1 },
+    xt:  { name: "Rés. Terre fixe", short: "Rf Ter",   w: 2, pts: 1 },
+    xf:  { name: "Rés. Feu fixe",   short: "Rf Feu",   w: 2, pts: 1 },
+    xe:  { name: "Rés. Eau fixe",   short: "Rf Eau",   w: 2, pts: 1 },
+    xa:  { name: "Rés. Air fixe",   short: "Rf Air",   w: 2, pts: 1 },
+    xn:  { name: "Rés. Neutre fixe",short: "Rf Neu",   w: 2, pts: 1 },
+    dsort:{ name: "% Dommages aux sorts", short: "% Do Sorts", w: 15, pts: 1 },
   };
-  const STAT_ORDER = ["vit","sa","fo","ine","cha","age","pui","do","cri","so","pp","ini","pa","rt","rf","re","ra"];
+  const STAT_ORDER = ["vit","sa","fo","ine","cha","age","pui","do","cri","dcri","dt","df","de","da","dn","dsort","so","pp","ini","pa","rt","rf","re","ra","rn","xt","xf","xe","xa","xn"];
   const BASE_STATS = ["vit","sa","fo","ine","cha","age"];
 
   const ELEMENTS = {
-    n: { name: "Neutre", stat: "fo",  res: null },
-    t: { name: "Terre",  stat: "fo",  res: "rt" },
-    f: { name: "Feu",    stat: "ine", res: "rf" },
-    e: { name: "Eau",    stat: "cha", res: "re" },
-    a: { name: "Air",    stat: "age", res: "ra" },
+    n: { name: "Neutre", stat: "fo",  res: "rn", dmg: "dn", fix: "xn" },
+    t: { name: "Terre",  stat: "fo",  res: "rt", dmg: "dt", fix: "xt" },
+    f: { name: "Feu",    stat: "ine", res: "rf", dmg: "df", fix: "xf" },
+    e: { name: "Eau",    stat: "cha", res: "re", dmg: "de", fix: "xe" },
+    a: { name: "Air",    stat: "age", res: "ra", dmg: "da", fix: "xa" },
   };
 
   const RUNE_TIERS = [
@@ -48,7 +61,7 @@
     { key: "pa", label: "Pa Rune", mult: 3 },
     { key: "ra", label: "Ra Rune", mult: 10 },
   ];
-  const RUNE_SIMPLE_ONLY = ["pa", "do", "cri", "so", "rt", "rf", "re", "ra"];
+  const RUNE_SIMPLE_ONLY = ["pa", "do", "cri", "so", "rt", "rf", "re", "ra", "rn", "dcri", "dt", "df", "de", "da", "dn", "xt", "xf", "xe", "xa", "xn", "dsort"];
 
   /* ---------- Classes & sorts ----------
      Noms et icônes : sorts de DOFUS 3. Effets simplifiés pour le combat automatique.
@@ -122,6 +135,79 @@
   Object.assign(CLASSES, EXTRA_CLASSES);
   // ajustements d'équilibrage des kits simplifiés (simulation sur 8 h)
   Object.entries({ panda: 1.22, forge: 1.22, roub: 1.14, zobal: 1.14, elio: 1.2, enu: 1.1, eni: 1.05 }).forEach(([k, v]) => (CLASSES[k].pow = v));
+  /* ---------- v3 : vrais kits de DOFUS 3 (22 paires sort / variante par classe, DofusDB) ----------
+     Chaque sort a des grades (niveau requis, PA, relance, effets). Le joueur équipe l'un OU l'autre sort d'une paire. */
+  const SIGNATURE = {
+    iop: "Colère : chaque sort lancé ajoute une charge ; à 5 charges, le sort suivant inflige +50 % de dégâts.",
+    cra: "Œil de lynx : joue en premier au premier tour ; ses attaques à cible unique marquent la cible (+10 % de dégâts subis pour 2 tours).",
+    eni: "Mots liés : un soin renforce la prochaine attaque de 15 %, une attaque renforce le prochain soin de 15 %.",
+    sacri: "Souffrance : +2 % de dégâts par coup reçu pendant le combat (jusqu'à +30 %).",
+    xelor: "Distorsion temporelle : 10 % de chances de rejouer son tour.",
+    feca: "Armure du Féca : boucliers +25 %, et l'équipe subit 5 % de dégâts en moins.",
+    osa: "Dompteur : invocations +30 % de PV et de dégâts, deux invocations à la fois.",
+    enu: "Chercheur de trésors : +20 % de butin et de kamas pour l'équipe.",
+    sram: "Larcin : poisons et pièges +25 %, 10 % de chances de butin supplémentaire.",
+    eca: "Coup de chance : dégâts aléatoires (×0,7 à ×1,5), archimonstres et Rayonnants ×1,5.",
+    sadi: "Enfant de la nature : poisons et invocations +20 %.",
+    panda: "Ivresse : un sort sur trois inflige +30 % ; consommables 25 % plus longs.",
+    roub: "Artificier : sorts de zone et poisons +15 %, +15 % contre les groupes de 4 monstres ou plus.",
+    zobal: "Masques : un masque par combat (attaque, défense ou soins).",
+    steam: "Mécanicien : invocations (tourelles) +30 %.",
+    elio: "Portails : +15 % de dégâts avec les sorts de zone.",
+    hupper: "Runes élémentaires : +10 % en changeant d'élément ; après 4 éléments différents, +30 % sur le sort suivant.",
+    ougi: "Proie : +5 % de dégâts par coup sur la même cible (max +25 %), +20 % de viandes.",
+    forge: "Perce-armure : ignore 50 % des résistances des boss.",
+  };
+  /* lignes identiques dans plusieurs éléments (ex. Huppermage, sorts « meilleur élément ») : une seule ligne dans le meilleur élément du lanceur */
+  /* Nettoyage des lignes d'effets : DofusDB liste souvent des variantes (aléatoires ou conditionnelles) d'un même effet.
+     - même valeur dans plusieurs éléments → une ligne « meilleur élément »
+     - même élément (ou même stat) avec des valeurs différentes → une seule ligne moyenne */
+  const collapseEl = (g) => {
+    const out = []; const byVal = {}; const byKind = {};
+    const avg = (a, b, w) => Math.round((a * w + b) / (w + 1));
+    g.fx.forEach((f) => {
+      if (["dmg", "drain", "dot"].includes(f.k) && f.el) {
+        const kv = [f.k, f.min, f.max, f.n, f.t || 0].join("|");
+        if (byVal[kv] && byVal[kv].el !== f.el) { byVal[kv].el = "best"; return; }
+        const kk = f.k + "|" + f.el;
+        if (byKind[kk]) { const c = byKind[kk]; c.min = avg(c.min, f.min, c._w); c.max = avg(c.max, f.max, c._w); c.n = Math.max(c.n || 1, f.n || 1); c._w++; return; }
+        const c = Object.assign({}, f, { _w: 1 }); byVal[kv] = c; byKind[kk] = c; out.push(c); return;
+      }
+      if (["heal", "shield", "buff", "healpct", "vuln", "weaken", "apdrain"].includes(f.k)) {
+        const kk = f.k + "|" + (f.st || "") + "|" + (f.self ? 1 : 0);
+        if (byKind[kk]) { const c = byKind[kk]; ["min", "max", "pct", "v"].forEach((x) => { if (f[x] !== undefined && c[x] !== undefined) c[x] = avg(c[x], f[x], c._w); }); c._w++; return; }
+        const c = Object.assign({}, f, { _w: 1 }); byKind[kk] = c; out.push(c); return;
+      }
+      out.push(f);
+    });
+    out.forEach((f) => delete f._w);
+    // 3 éléments ou plus : élément aléatoire / au choix → une ligne « meilleur élément » moyenne
+    ["dmg", "drain"].forEach((k) => {
+      const ls = out.filter((f) => f.k === k && f.el && f.el !== "n");
+      const els = new Set(ls.map((f) => f.el));
+      if (!(els.size >= 3 || (els.has("best") && ls.length >= 2))) return;
+      const m = Object.assign({}, ls[0], { el: "best", min: Math.round(ls.reduce((a, f) => a + f.min, 0) / ls.length), max: Math.round(ls.reduce((a, f) => a + f.max, 0) / ls.length), n: Math.max(...ls.map((f) => f.n || 1)) });
+      const i = out.indexOf(ls[0]); ls.forEach((f) => out.splice(out.indexOf(f), 1)); out.splice(i, 0, m);
+    });
+    g.fx = out; return g;
+  };
+  const elOfGrade = (g) => { if (g.fx.some((x) => x.el === "best")) return "best"; const f = g.fx.find((x) => x.el && ["dmg", "drain", "dot"].includes(x.k)); return f ? f.el : null; };
+  for (const cls in CLASSES) {
+    const kit = (G.CLASS_KITS || {})[cls]; if (!kit) continue;
+    const list = [];
+    kit.forEach((pair, pi) => pair.forEach((sp, vi) => { if (!sp.grades.length) return; sp.grades.forEach(collapseEl);
+      list.push({ id: "s" + sp.id, name: sp.name, icon: sp.icon, desc: sp.desc, pair: pi, variant: vi === 1, lvl: sp.grades[0].lvl, grades: sp.grades, el: elOfGrade(sp.grades[sp.grades.length - 1]) }); }));
+    CLASSES[cls].spells = list;
+    // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
+    const EL2ST = { t: "fo", f: "ine", e: "cha", a: "age" }; const sc = { t: [], f: [], e: [], a: [] };
+    list.forEach((sp) => { if (sp.lvl > 60 || !sc[sp.el]) return; const g = sp.grades.filter((x) => x.lvl <= 60).pop() || sp.grades[0];
+      const p = g.fx.reduce((s2, f) => s2 + (["dmg", "drain", "dot"].includes(f.k) ? ((f.min + f.max) / 2) * (f.n > 1 ? Math.min(f.n, 3) * 0.85 : 1) * (f.k === "dot" ? (f.t || 2) * 0.8 : 1) : 0), 0) / Math.max(1, g.pa);
+      if (p > 0) sc[sp.el].push(p); });
+    const val = (arr) => arr.sort((x, y) => y - x).slice(0, 3).reduce((s2, x, i) => s2 + x * (i < 3 ? 1 : 0), 0) + (arr.length >= 3 ? 0 : -5 * (3 - arr.length));
+    const bestE = Object.keys(sc).sort((x, y) => val(sc[y]) - val(sc[x]))[0];
+    CLASSES[cls].elRec = EL2ST[bestE];
+    CLASSES[cls].signature = SIGNATURE[cls] || "";
+  }
   const CLASS_ORDER = ["feca", "osa", "enu", "sram", "xelor", "eca", "eni", "iop", "cra", "sadi", "sacri", "panda", "roub", "zobal", "steam", "elio", "hupper", "ougi", "forge"];
 
   const CONDITIONS = {
@@ -132,7 +218,10 @@
     enemy_many:  "Si 3 ennemis ou plus",
     enemy_one:   "S'il reste 1 seul ennemi",
     boss:        "Contre un boss",
+    no_summon:   "Si je n'ai pas d'invocation",
+    ally_shield: "Si un allié n'a pas de bouclier",
   };
+  const TARGETS = { low: "PV les plus bas", high: "PV les plus hauts", boss: "Boss / le plus fort d'abord", mark: "Cible marquée ou vulnérable" };
 
   /* ---------- Métiers ---------- */
   const GATHER_NAMES = { paysan: "Paysan", bucheron: "Bûcheron", mineur: "Mineur", alchimiste: "Alchimiste", pecheur: "Pêcheur" };
@@ -267,10 +356,16 @@
     rf: "Réduit les dégâts Feu reçus de 1 % par point (50 % maximum).",
     re: "Réduit les dégâts Eau reçus de 1 % par point (50 % maximum).",
     ra: "Réduit les dégâts Air reçus de 1 % par point (50 % maximum).",
+    rn: "Réduit les dégâts Neutre reçus de 1 % par point (50 % maximum).",
+    dcri: "+1 dégât ajouté à chaque coup critique.",
+    dt: "+1 dégât fixe sur les sorts Terre.", df: "+1 dégât fixe sur les sorts Feu.", de: "+1 dégât fixe sur les sorts Eau.", da: "+1 dégât fixe sur les sorts Air.", dn: "+1 dégât fixe sur les sorts Neutre.",
+    xt: "Retire 1 point de dégât à chaque attaque Terre reçue.", xf: "Retire 1 point de dégât à chaque attaque Feu reçue.", xe: "Retire 1 point de dégât à chaque attaque Eau reçue.", xa: "Retire 1 point de dégât à chaque attaque Air reçue.", xn: "Retire 1 point de dégât à chaque attaque Neutre reçue.",
+    dsort: "+1 % de dégâts sur tous les sorts.",
     hpMax: "Points de vie : 50 + 5 par niveau + Vitalité (+5 par famille de monstres complétée).",
   };
 
-  const DATA = { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
+  const SUMMONS = G.SUMMONS || {};
+  const DATA = { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
                  MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;

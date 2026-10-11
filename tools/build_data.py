@@ -48,7 +48,26 @@ ZONES = [
               (12, 'ama_gelees', 'beach', 52, 64), (243, 'ama_pitons', 'quarry', 57, 72)]},
     {'id': 'cania', 'name': 'Plaines de Cania', 'desc': 'Vastes plaines, lacs de Blops et robots du Massif.', 'theme': 'wheat',
      'subs': [(334, 'can_baie', 'beach', 33, 48), (178, 'can_porkass', 'meadow', 38, 52), (56, 'can_lac', 'lake', 50, 62),
-              (68, 'can_champs', 'wheat', 49, 66), (54, 'can_massif', 'quarry', 50, 66), (70, 'can_plaines', 'quarry', 57, 72)]},
+              (68, 'can_champs', 'wheat', 49, 66), (54, 'can_massif', 'quarry', 50, 66), (70, 'can_plaines', 'quarry', 57, 72),
+              (521, 'can_pics', 'quarry', 78, 86), (55, 'can_penates', 'grave', 98, 106), (1038, 'can_bibliotheque', 'city', 98, 112), (523, 'can_cirque', 'quarry', 106, 116)]},
+    {'id': 'sidimote', 'name': 'Landes de Sidimote', 'desc': 'Terres désolées, roulottes des Magik Riktus et repaire du Meulou.', 'theme': 'grave',
+     'subs': [(57, 'sid_desolation', 'grave', 58, 66), (526, 'sid_roulottes', 'meadow', 78, 86), (522, 'sid_hurlements', 'grave', 88, 96)]},
+    {'id': 'koalaks', 'name': 'Montagne des Koalaks', 'desc': 'Forêts de Kaliptus, lacs enchantés et canyon sauvage.', 'theme': 'forest',
+     'subs': [(234, 'koa_kaliptus', 'forest', 56, 82), (231, 'koa_lacs', 'lake', 56, 82), (253, 'koa_canyon', 'quarry', 66, 92), (275, 'koa_morhkitu', 'forest', 98, 112), (230, 'koa_cimetiere', 'grave', 98, 112)]},
+    {'id': 'abrak', 'name': 'Forêt des Abraknydes', 'desc': 'La sombre forêt des arbres vivants.', 'theme': 'forest',
+     'subs': [(168, 'abr_sombre', 'forest', 70, 86)]},
+    {'id': 'moon', 'name': 'Île de Moon', 'desc': 'Jungle et pirates de l\'île du terrible Moon.', 'theme': 'beach',
+     'subs': [(167, 'moon_crane', 'beach', 78, 86), (165, 'moon_jungle', 'forest', 88, 96)]},
+    {'id': 'dragoeufs', 'name': 'Terres des Dragoeufs', 'desc': 'Le village, les souterrains et le sanctuaire des Dragoeufs.', 'theme': 'quarry',
+     'subs': [(315, 'dra_village', 'city', 88, 96), (316, 'dra_souterrains', 'cave', 88, 96), (314, 'dra_sanctuaire', 'mine', 108, 116)]},
+    {'id': 'otomai', 'name': "Île d'Otomaï", 'desc': 'Plaines, tourbières et villages de l\'île du savant Otomaï.', 'theme': 'forest',
+     'subs': [(454, 'oto_plaines', 'meadow', 90, 101), (457, 'oto_tourbiere', 'sewer', 89, 104), (471, 'oto_tourbiere2', 'sewer', 89, 104), (468, 'oto_zoths', 'city', 110, 128), (469, 'oto_canopee', 'forest', 110, 128)]},
+    {'id': 'minotoror', 'name': 'Île du Minotoror', 'desc': 'L\'île et le labyrinthe du Minotoror.', 'theme': 'quarry',
+     'subs': [(209, 'mino_ile', 'beach', 100, 122), (319, 'mino_labyrinthe', 'cave', 104, 122)]},
+    {'id': 'pandala', 'name': 'Île de Pandala', 'desc': 'L\'île des Pandawas, divisée entre les éléments.', 'theme': 'meadow',
+     'subs': [(942, 'pan_plantala', 'meadow', 98, 106), (941, 'pan_akwadala', 'lake', 118, 126), (944, 'pan_terrdala', 'quarry', 118, 126)]},
+    {'id': 'frigost', 'name': 'Île de Frigost', 'desc': 'L\'île gelée : le port, la bourgade et les champs de glace.', 'theme': 'sky',
+     'subs': [(600, 'fri_port', 'beach', 78, 86), (601, 'fri_bourgade', 'city', 78, 86), (602, 'fri_champs', 'sky', 108, 116)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
@@ -63,6 +82,23 @@ DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (284, 'donjon_bworks', 'ama_bworks'),
     (755, 'nid_kwakwa', 'ama_craqueleurs'),
     (493, 'clos_blops', 'can_lac'),
+    (756, 'labo_brumen', 'sid_desolation'),
+    (243, 'pitons_craqueleur', 'ama_pitons'),
+    (846, 'bateau_chouque', 'moon_crane'),
+    (888, 'chapiteau_riktus', 'sid_roulottes'),
+    (175, 'domaine_ancestral', 'abr_sombre'),
+    (223, 'caverne_koulosse', 'koa_canyon'),
+    (213, 'taniere_meulou', 'sid_hurlements'),
+    (847, 'arbre_moon', 'moon_jungle'),
+    (154, 'antre_dragon_cochon', 'dra_souterrains'),
+    (919, 'repaire_kharnozor', 'dra_village'),
+    (211, 'biblio_corbac', 'can_bibliotheque'),
+    (470, 'goulet_rasboul', 'oto_plaines'),
+    (946, 'bambusaie_damadrya', 'pan_plantala'),
+    (210, 'labyrinthe_minotoror', 'mino_labyrinthe'),
+    (325, 'antre_crocabulia', 'dra_sanctuaire'),
+    (617, 'serre_royalmouth', 'fri_champs'),
+    (254, 'repaire_skeunk', 'koa_cimetiere'),
 ]
 EXCLUDE_NAMES = ("d'Halouine", 'Ballotin')
 EXCLUDE_RACES = {32, 147, 250}  # avis de recherche, poutchs
@@ -73,7 +109,11 @@ STAT = {125: ('vit', 1), 153: ('vit', -1), 124: ('sa', 1), 156: ('sa', -1), 118:
         138: ('pui', 1), 186: ('pui', -1), 112: ('do', 1), 145: ('do', -1), 115: ('cri', 1), 171: ('cri', -1),
         178: ('so', 1), 179: ('so', -1), 176: ('pp', 1), 177: ('pp', -1), 174: ('ini', 1), 175: ('ini', -1),
         111: ('pa', 1), 168: ('pa', -1), 210: ('rt', 1), 215: ('rt', -1), 213: ('rf', 1), 218: ('rf', -1),
-        211: ('re', 1), 216: ('re', -1), 212: ('ra', 1), 217: ('ra', -1)}
+        211: ('re', 1), 216: ('re', -1), 212: ('ra', 1), 217: ('ra', -1), 214: ('rn', 1), 219: ('rn', -1),
+        418: ('dcri', 1), 419: ('dcri', -1), 422: ('dt', 1), 423: ('dt', -1), 424: ('df', 1), 425: ('df', -1),
+        426: ('de', 1), 427: ('de', -1), 428: ('da', 1), 429: ('da', -1), 430: ('dn', 1), 431: ('dn', -1),
+        240: ('xt', 1), 245: ('xt', -1), 241: ('xe', 1), 246: ('xe', -1), 242: ('xa', 1), 247: ('xa', -1),
+        243: ('xf', 1), 248: ('xf', -1), 244: ('xn', 1), 249: ('xn', -1), 2812: ('dsort', 1), 2813: ('dsort', -1)}
 SLOT_BY_TYPE = {1: 'amulette', 9: 'anneau', 10: 'ceinture', 11: 'bottes', 16: 'coiffe', 17: 'cape',
                 2: 'arme', 3: 'arme', 4: 'arme', 5: 'arme', 6: 'arme', 7: 'arme', 8: 'arme', 19: 'arme', 271: 'arme', 82: 'bouclier'}
 JOB = {11: 'forgeron', 13: 'sculpteur', 15: 'cordonnier', 16: 'bijoutier', 27: 'tailleur', 60: 'faconneur', 65: 'bricoleur'}
@@ -85,7 +125,7 @@ GATHER = {  # métier -> [(nom, niveau requis)]
     'pecheur': [('Greuvette', 1), ('Truite', 10), ('Crabe Sourimi', 20), ('Poisson-Chaton', 40)],
 }
 BREEDS = {'feca': 1, 'osa': 2, 'enu': 3, 'sram': 4, 'xelor': 5, 'eca': 6, 'eni': 7, 'iop': 8, 'cra': 9, 'sadi': 10, 'sacri': 11, 'panda': 12, 'roub': 13, 'zobal': 14, 'steam': 15, 'elio': 16, 'hupper': 17, 'ougi': 18, 'forge': 20}
-MAX_CRAFT_LVL = 72
+MAX_CRAFT_LVL = 125
 
 # ------------------------------------------------------------------ load
 log('Chargement…')
@@ -200,7 +240,8 @@ for z in ZONES:
 # ------------------------------------------------------------------ dungeons
 dg_out = {}
 for dsub, gid, access in DUNGEONS:
-    d = next(x for x in dungeons_raw if x.get('subarea') == dsub)
+    d = next((x for x in dungeons_raw if x.get('subarea') == dsub and x.get('bosses')), None)
+    if not d: log('!! donjon introuvable pour la sous-zone', dsub); continue
     boss = monsters[d['bosses'][0]]
     GAME_M[mkey(boss)] = monster_entry(boss, boss=True)
     pool = []
@@ -216,7 +257,8 @@ for dsub, gid, access in DUNGEONS:
     keyname = fr(key)
     RES.setdefault(keyname, {'id': key['id'], 'icon': key['iconId'], 'lvl': key['level'], 'price': max(1, key.get('price') or 1), 'type': 84})
     images['i'][f"{key['iconId']}.png"] = key.get('img') or f"https://api.dofusdb.fr/img/items/{key['iconId']}.png"
-    nrooms = 3 if lvl <= 20 else 4 if lvl <= 45 else 5
+    nrooms = 3 if lvl <= 20 else 4 if lvl <= 45 else 5 if lvl <= 90 else 6
+    if not pool: log('!! donjon sans monstres', fr(d)); continue
     base = min(GAME_M[k]['lvl'][0] for k in pool)
     rooms = []
     for r in range(nrooms):
@@ -239,7 +281,7 @@ for z in zones_out:
 seen_res = set()
 for sk in sorted(skills, key=lambda x: x.get('levelMin', 0)):
     j = GJOB.get(sk.get('parentJobId')); rid = sk.get('gatheredRessourceItem') or -1
-    if not j or rid <= 0 or sk.get('levelMin', 1) > 100: continue
+    if not j or rid <= 0 or sk.get('levelMin', 1) > 120: continue
     it = items.get(rid)
     if not it: continue
     n = reg_res(it)
@@ -281,8 +323,21 @@ def stats_of(effects):
 def ing_list(r):
     return [[fr(items[i]), q] for i, q in zip(r['ingredientIds'], r['quantities']) if i in items]
 
+# ressources intermédiaires (planches, substrats, alliages, préparations…) fabricables à partir de ressources disponibles
+INTER_TYPES = {95, 183, 40, 179, 48, 60, 70, 71}
+INTER = {}
+for _ in range(5):
+    for rid, r in recipes.items():
+        it = items.get(rid)
+        if not it or it.get('typeId') not in INTER_TYPES or it.get('level', 999) > MAX_CRAFT_LVL: continue
+        n = fr(it)
+        if n in INTER: continue
+        ings = ing_list(r)
+        if ings and all(x in available for x, _ in ings):
+            INTER[n] = {'it': it, 'ing': ings}; available.add(n)
+log(f"Ressources intermédiaires fabricables : {len(INTER)}")
 # équipements craftables avec les ressources disponibles
-craftable = set()
+craftable = set(); SIMPLIFIED = {}
 for rid, r in recipes.items():
     it = items.get(rid)
     if not it or it['typeId'] not in SLOT_BY_TYPE or it.get('level', 999) > MAX_CRAFT_LVL: continue
@@ -290,7 +345,12 @@ for rid, r in recipes.items():
     ings = ing_list(r)
     if ings and all(n in available for n, _ in ings):
         craftable.add(rid)
-log(f"Équipements : {len(equip_ids)} lâchés par les monstres, {len(craftable)} craftables avec les ressources du jeu")
+    elif ings and it.get('level', 1) >= 50:
+        # recette simplifiée : jusqu'à 2 ingrédients d'un contenu pas encore présent dans le jeu sont retirés
+        miss = [n for n, _ in ings if n not in available]
+        if len(miss) <= 2 and len(ings) - len(miss) >= 2:
+            craftable.add(rid); SIMPLIFIED[rid] = miss
+log(f"Équipements : {len(equip_ids)} lâchés par les monstres, {len(craftable)} craftables avec les ressources du jeu ({len(SIMPLIFIED)} recettes simplifiées)")
 
 # ingrédients manquants les plus fréquents (pour info)
 miss = {}
@@ -312,7 +372,9 @@ for iid in sorted(equip_ids | craftable):
     if it.get('itemSetId', -1) > 0:
         o['set'] = f"s{it['itemSetId']}"
     if iid in craftable:
-        r = recipes[iid]; o['craft'] = {'job': JOB[r['jobId']], 'ing': ing_list(r)}
+        r = recipes[iid]; ings = [x for x in ing_list(r) if x[0] not in SIMPLIFIED.get(iid, [])]
+        o['craft'] = {'job': JOB[r['jobId']], 'ing': ings}
+        if iid in SIMPLIFIED: o['craft']['simpl'] = len(SIMPLIFIED[iid])
     ITEMS[f"i{iid}"] = o
     images['i'][f"{it['iconId']}.png"] = it.get('img') or f"https://api.dofusdb.fr/img/items/{it['iconId']}.png"
 
@@ -347,6 +409,17 @@ for gid, d in dg_out.items():
         missing = [n for n, _ in ings if n not in available]
         SPECIAL[d['key']] = {'job': 'bricoleur', 'lvl': 1 if d['lvl'] <= 15 else 10, 'ing': ings}
         if missing: log(f"!! Clé {d['key']} : ingrédients sans source dans le jeu : {missing}")
+used_inter = {n for o in ITEMS.values() if o.get('craft') for n, _ in o['craft']['ing'] if n in INTER}
+for _ in range(3):
+    for n in list(used_inter):
+        for x, _q in INTER[n]['ing']:
+            if x in INTER: used_inter.add(x)
+for n in sorted(used_inter):
+    I = INTER[n]; reg_res(I['it'])
+    for x, _q in I['ing']:
+        if x not in RES and x in item_by_name: reg_res(item_by_name[x])
+    SPECIAL[n] = {'job': 'bricoleur', 'lvl': max(1, I['it'].get('level', 1) // 2), 'ing': I['ing'], 'inter': True}
+log(f"Intermédiaires utilisés par les recettes : {len(used_inter)}")
 bag = item_by_name.get('Baguette Rikiki')
 if bag:
     r = recipes.get(bag['id'])
@@ -410,10 +483,132 @@ STAT_ICONS = {'vit': 'tx_vitality', 'sa': 'tx_wisdom', 'fo': 'tx_strength', 'ine
               'pa': 'tx_actionPoints', 'rt': 'tx_strengthRes', 'rf': 'tx_intelligenceRes', 're': 'tx_chanceRes', 'ra': 'tx_agilityRes', 'rn': 'tx_neutralRes', 'pm': 'tx_movementPoints'}
 images['c'] = {f"{k}.png": f"https://dofusdb.fr/icons/characteristics/{v}.png" for k, v in STAT_ICONS.items()}
 
+# ------------------------------------------------------------------ v3 : sorts (classes + monstres)
+RAW3 = os.path.join(ROOT, 'data', 'raw3')
+EL_DMG = {96: 'e', 97: 't', 98: 'a', 99: 'f', 100: 'n'}
+EL_VOL = {91: 'e', 92: 't', 93: 'a', 94: 'f', 95: 'n'}
+EL_PCT = {85: 'e', 86: 't', 87: 'a', 88: 'f', 89: 'n', 1068: 'e', 1070: 't', 1067: 'a', 1069: 'f', 1071: 'n', 275: 'e', 276: 't', 277: 'a', 278: 'f', 279: 'n'}
+HEALS = {108: 'f', 2998: 'e', 3000: 't', 2999: 'a'}
+BUFF_STAT = {138: 'pui', 112: 'do', 115: 'cri', 118: 'fo', 126: 'ine', 123: 'cha', 119: 'age', 178: 'so', 418: 'dcri'}
+SUMMON = {181, 1011, 1008, 405}
+def ntargets(z):
+    if not z: return 1
+    sh, p1 = z.get('shape', 80), z.get('param1', 0)
+    if sh in (65, 97): return 9
+    if sh == 80 or not p1: return 1
+    return 2 if p1 == 1 else 3 if p1 == 2 else 9
+def dice(e):
+    a, b = e.get('diceNum') or 0, e.get('diceSide') or 0
+    if not b: b = a
+    if a > b: a, b = b, a
+    return a, b
+def convert_fx(effects, desc=''):
+    fx = []
+    for e in effects or []:
+        aid = e.get('effectId'); a, b = dice(e); dur = e.get('duration') or 0; m = e.get('targetMask') or ''
+        n = ntargets(e.get('zoneDescr')); selfish = ('C' in m and 'a' not in m and 'g' not in m)
+        if aid in EL_DMG and b > 0:
+            fx.append({'k': 'dot' if dur > 0 else 'dmg', 'el': EL_DMG[aid], 'min': a, 'max': b, 'n': n, **({'t': min(dur, 4)} if dur > 0 else {})})
+        elif aid in EL_VOL and b > 0: fx.append({'k': 'drain', 'el': EL_VOL[aid], 'min': a, 'max': b, 'n': n})
+        elif aid == 2822 and b > 0: fx.append({'k': 'dmg', 'el': 'best', 'min': a, 'max': b, 'n': n})
+        elif aid in EL_PCT and b > 0: fx.append({'k': 'dmg', 'el': EL_PCT[aid], 'min': max(1, a), 'max': max(2, b), 'n': n, 'pct': 1})
+        elif aid in HEALS and b > 0: fx.append({'k': 'heal', 'min': a, 'max': b, 'n': n if not selfish else 1, 'self': selfish})
+        elif aid == 1109 and b > 0: fx.append({'k': 'healpct', 'v': b, 'n': n if not selfish else 1, 'self': selfish})
+        elif aid in (1020, 1039) and b > 0: fx.append({'k': 'shield', 'pct': min(40, b if aid == 1039 else max(5, b // 10)), 'all': 'a' in m or 'g' in m or n > 1, 't': max(1, min(dur or 2, 3))})
+        elif aid in BUFF_STAT and b > 0: fx.append({'k': 'buff', 'st': BUFF_STAT[aid], 'v': b, 't': max(1, min(dur or 2, 4)), 'all': ('a' in m or 'g' in m) and not selfish})
+        elif aid in (1079, 101, 168) and b > 0 and 'A' in m: fx.append({'k': 'apdrain', 'v': min(3, b), 'n': n})
+        elif aid in (1080, 169, 127) and b > 0 and 'A' in m: fx.append({'k': 'weaken', 'v': min(30, 8 * b), 't': max(1, min(dur or 1, 3)), 'n': n})
+        elif aid == 1163 and 'A' in m: fx.append({'k': 'vuln', 'v': max(5, min(30, abs((a or b) - 100) or 10)), 't': max(1, min(dur or 2, 3)), 'n': n})
+        elif aid == 776 and b > 0 and 'A' in m: fx.append({'k': 'vuln', 'v': min(15, b), 't': max(1, min(dur or 2, 3)), 'n': n})
+        elif aid in SUMMON: fx.append({'k': 'summon', 'mid': e.get('diceNum') or e.get('value') or 0})
+        elif aid == 111 and b > 0 and selfish: fx.append({'k': 'buff', 'st': 'pa', 'v': min(2, b), 't': 1, 'all': False})
+        elif aid in (786, 2973): fx.append({'k': 'leech', 'v': b or a or 20})
+    # fusionne les dégâts identiques (mêmes élément/cibles)
+    out = []
+    for f in fx:
+        if out and f['k'] in ('dmg', 'drain') and out[-1]['k'] == f['k'] and out[-1]['el'] == f['el'] and out[-1]['n'] == f['n']:
+            out[-1]['min'] += f['min']; out[-1]['max'] += f['max']; continue
+        out.append(f)
+    if not any(f['k'] in ('dmg', 'drain', 'dot', 'heal', 'healpct', 'shield', 'buff', 'summon') for f in out):
+        d = desc.lower()
+        el = next((v for k, v in (('terre', 't'), ('feu', 'f'), ('eau', 'e'), ('air', 'a'), ('neutre', 'n')) if 'dommages ' + k in d or 'dégâts ' + k in d), None)
+        if el: out.append({'k': 'dot' if ('piège' in d or 'glyphe' in d or 'bombe' in d) else 'dmg', 'el': el, 'min': 8, 'max': 12, 'n': 3 if ('zone' in d or 'glyphe' in d) else 1, 'fb': 1, **({'t': 2} if ('piège' in d or 'glyphe' in d or 'bombe' in d) else {})})
+        elif 'soign' in d or 'soin' in d: out.append({'k': 'heal', 'min': 8, 'max': 12, 'n': 1, 'fb': 1})
+        elif 'invoque' in d: out.append({'k': 'summon', 'mid': 0})
+        else: out.append({'k': 'buff', 'st': 'pui', 'v': 20, 't': 2, 'all': False, 'fb': 1})
+    return out
+CLASS_KITS = {}
+cs = json.load(open(os.path.join(RAW3, 'class_spells.json'), encoding='utf-8'))
+CL = {l['id']: l for l in cs['levels']}; CS = {x['id']: x for x in cs['spells']}
+def spell_out(sp):
+    grades = []
+    for lid in sp.get('spellLevels', []):
+        L = CL.get(lid)
+        if not L: continue
+        grades.append({'lvl': max(1, L.get('minPlayerLevel') or 1), 'pa': L.get('apCost') or 3, 'cd': L.get('minCastInterval') or 0,
+                       'casts': L.get('maxCastPerTurn') or 0, 'fx': convert_fx(L.get('effects'), (sp.get('description') or {}).get('fr', ''))})
+    grades.sort(key=lambda g: g['lvl'])
+    ic = sp.get('iconId'); images['s'][f"{ic}.png"] = sp.get('img') or f"https://api.dofusdb.fr/img/spells/sort_{ic}.png"
+    SPELL_IMG[sp['name']['fr']] = ic
+    return {'id': sp['id'], 'name': sp['name']['fr'], 'icon': ic, 'desc': (sp.get('description') or {}).get('fr', ''), 'grades': grades}
+for cls, bid in BREEDS.items():
+    pairs = []
+    for v in sorted([v for v in cs['variants'] if v['breedId'] == bid], key=lambda v: v['id']):
+        sps = [CS[i] for i in v['spellIds'] if i in CS]
+        if len(sps) < 1: continue
+        outs = [spell_out(x) for x in sps]
+        outs.sort(key=lambda o: (o['grades'][0]['lvl'] if o['grades'] else 999))
+        pairs.append(outs)
+    pairs.sort(key=lambda p: p[0]['grades'][0]['lvl'] if p[0]['grades'] else 999)
+    CLASS_KITS[cls] = pairs
+log('Kits de classe :', {c: len(p) for c, p in CLASS_KITS.items()})
+SUMMONS = {}
+for pairs in CLASS_KITS.values():
+    for pr in pairs:
+        for sp in pr:
+            for g in sp['grades']:
+                for f in g['fx']:
+                    if f['k'] == 'summon' and f.get('mid') in monsters:
+                        mm = monsters[f['mid']]; SUMMONS[str(f['mid'])] = {'name': fr(mm), 'img': mm['gfxId']}
+                        images['m'][f"{mm['gfxId']}.png"] = mm.get('img') or f"https://api.dofusdb.fr/img/monsters/{mm['gfxId']}.png"
+log('Invocations :', len(SUMMONS))
+# sorts de monstres
+msp_path = os.path.join(RAW3, 'monster_spells.json')
+mids = sorted({m['dbid'] for m in GAME_M.values()})
+cache = json.load(open(msp_path, encoding='utf-8')) if os.path.exists(msp_path) else {'spells': [], 'levels': [], 'mids': []}
+need = [i for i in mids if i not in set(cache.get('mids', []))]
+if need and FETCH_IMAGES:
+    want = {s for i in need for s in (monsters[i].get('spells') or [])}
+    have = {x['id'] for x in cache['spells']}
+    ids = sorted(want - have); new_sp = []
+    for i in range(0, len(ids), 40):
+        q = '&'.join(f'id[$in][]={x}' for x in ids[i:i + 40]); new_sp += get_json(f'https://api.dofusdb.fr/spells?{q}&$limit=50&lang=fr')['data']
+    lids = sorted({l for x in new_sp for l in x.get('spellLevels', [])}); new_lv = []
+    for i in range(0, len(lids), 40):
+        q = '&'.join(f'id[$in][]={x}' for x in lids[i:i + 40]); new_lv += get_json(f'https://api.dofusdb.fr/spell-levels?{q}&$limit=50&lang=fr')['data']
+    cache['spells'] += new_sp; cache['levels'] += new_lv; cache['mids'] = sorted(set(cache.get('mids', [])) | set(need))
+    json.dump(cache, open(msp_path, 'w', encoding='utf-8'), ensure_ascii=False)
+MS = {x['id']: x for x in cache['spells']}; ML = {l['id']: l for l in cache['levels']}
+nsp = 0
+for k, gm in GAME_M.items():
+    m = monsters[gm['dbid']]; lst = []
+    for idx, sid in enumerate(m.get('spells') or []):
+        sp = MS.get(sid)
+        if not sp or not sp.get('spellLevels'): continue
+        try: g = int((m.get('spellGrades') or [])[idx].split(';')[-1].split(',')[0])
+        except Exception: g = len(sp['spellLevels'])
+        L = ML.get(sp['spellLevels'][min(len(sp['spellLevels']), max(1, g)) - 1])
+        if not L: continue
+        fx = [f for f in convert_fx(L.get('effects'), (sp.get('description') or {}).get('fr', '')) if not f.get('fb') and f['k'] != 'summon']
+        if not fx: continue
+        lst.append({'n': sp['name']['fr'], 'cd': min(4, L.get('minCastInterval') or 0), 'fx': fx})
+    if lst: gm['sp'] = lst[:3]; nsp += 1
+log(f"Monstres avec sorts : {nsp}/{len(GAME_M)}")
+
 # ------------------------------------------------------------------ write
 os.makedirs(os.path.join(OUT, 'js'), exist_ok=True)
 GD = {'MONSTERS': GAME_M, 'ZONES': zones_out, 'DUNGEONS': dg_out, 'ITEMS': ITEMS, 'SETS': SETS, 'SPECIAL_CRAFTS': SPECIAL,
-      'GATHER_JOBS': gather_out, 'HARVEST': HARVEST, 'RES': RES, 'SPELL_IMG': SPELL_IMG, 'HEADS': HEADS, 'RACES': RACES,
+      'GATHER_JOBS': gather_out, 'HARVEST': HARVEST, 'CLASS_KITS': CLASS_KITS, 'SUMMONS': SUMMONS, 'RES': RES, 'SPELL_IMG': SPELL_IMG, 'HEADS': HEADS, 'RACES': RACES,
       'META': {'source': 'DofusDB (https://dofusdb.fr) — contenu © Ankama Games', 'built': time.strftime('%Y-%m-%d')}}
 js = ('/* Généré par tools/build_data.py — ne pas modifier à la main. Données DOFUS via DofusDB, © Ankama Games. */\n'
       '(function (root) {\n  const GAMEDATA = ' + json.dumps(GD, ensure_ascii=False, separators=(',', ':')) + ';\n'
