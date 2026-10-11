@@ -7,11 +7,11 @@
 (function (root) {
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
-  const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, GATHER_JOBS, CRAFT_JOBS,
-          MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, EMBLEM, FREE_SPIRIT, NAMES } = D;
+  const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, GATHER_JOBS, CRAFT_JOBS, DOFUS_SLOTS,
+          MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const E = {};
-  E.VERSION = 2;
+  E.VERSION = 3;
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
@@ -48,7 +48,7 @@
 
   /* ---------------- Courbes ---------------- */
   E.MAX_LVL = 200;
-  E.xpNeed = (l) => Math.floor(55 * Math.pow(l, 2.22));                // XP pour passer du niveau l à l+1
+  E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7));                // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
   E.emblemXpNeed = (l) => Math.floor(5 + 0.5 * Math.pow(l, 1.25));     // poids de runes pour passer au niveau suivant
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
@@ -63,11 +63,12 @@
       sub: null, hunting: false,
       progress: { wins: {}, bossKills: {} },
       history: [], zoneStats: {}, seenDrops: {}, radiants: 0,
+      cons: {}, boosts: {}, trophies: {}, families: {}, huntSeen: {},
       jobs: {}, crafts: {}, coef: {},
       emblem: { lvl: 1, xp: 0, stats: {}, perks: {} },
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
-      settings: { speed: 1, theme: "dark" },
+      settings: { theme: "dark", auto: { action: "none", q: 40, keepSets: true } },
       journal: [],
       dungeon: null,
     };
@@ -94,17 +95,70 @@
   E.team = (S) => S.chars.filter((c) => c.inTeam).slice(0, 8);
   E.freeSpirit = (S) => FREE_SPIRIT[Math.max(1, E.team(S).length)] || 0;
   E.isSolo = (S) => E.team(S).length === 1;
+  /* Passifs de classe */
+  E.teamHas = (S, cls) => E.team(S).some((c) => c.cls === cls);
+  E.rosterHas = (S, cls) => S.chars.some((c) => c.cls === cls);
+  E.archiMult = (S) => (E.teamHas(S, "eca") ? 1.5 : 1);
+  E.radiantMult = (S) => (E.teamHas(S, "eca") ? 1.5 : 1);
+
+  /* Consommables & bonus temporaires (durée en temps réel, cumulable jusqu'à 8 h) */
+  E.BOOST_MAX_S = 8 * 3600;
+  E.boostPct = (S, kind, at = Date.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
+  E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - Date.now()) / 1000) : 0; };
+  E.useConsumable = (S, id) => {
+    const C = CONSUMABLES[id]; if (!C) return "Objet inconnu.";
+    if (!(S.cons[id] > 0)) return "Vous n'en avez plus.";
+    const now = Date.now(); const b = S.boosts[C.boost];
+    if (b && b.until > now && b.pct !== C.pct) return "Un autre bonus de ce type est déjà actif.";
+    const dur = C.dur * (E.teamHas(S, "panda") ? 1.25 : 1) * 1000;
+    const start = b && b.until > now ? b.until : now;
+    const until = Math.min(now + E.BOOST_MAX_S * 1000, start + dur);
+    if (until <= start) return "Durée maximale atteinte (8 h).";
+    S.boosts[C.boost] = { pct: C.pct, until };
+    S.cons[id]--; if (!S.cons[id]) delete S.cons[id];
+    return null;
+  };
+
+  /* Paliers de chasse */
+  E.huntTier = (S, key) => { const n = S.bestiary[key] || 0; let t = -1; HUNT_TIERS.forEach((h, i) => { if (n >= h.n) t = i; }); return t; };
+  const RACE_MONS = {};
+  for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.archiOf && !m.boss && m.race !== undefined) (RACE_MONS[m.race] = RACE_MONS[m.race] || []).push(k); }
+  E.RACE_MONS = RACE_MONS;
+  E.familyBonusVit = (S) => Object.keys(S.families || {}).length * 5;
+  const checkHunt = (S, keys) => {
+    keys.forEach((k) => {
+      const t = E.huntTier(S, k); const prev = S.huntSeen[k] ?? -1;
+      if (t > prev) { S.huntSeen[k] = t; for (let i = prev + 1; i <= t; i++) note(S, `Palier ${HUNT_TIERS[i].name} : ${MONSTERS[k].name}`, i >= 2 ? "up" : "info"); }
+    });
+    // familles complètes (tous au palier Traqueur)
+    for (const r in RACE_MONS) {
+      if (S.families[r]) continue;
+      if (RACE_MONS[r].every((k) => E.huntTier(S, k) >= 1)) { S.families[r] = 1; note(S, `Famille complète : ${D.RACES[r] || r} ! +5 Vitalité pour tous vos héros.`, "rare"); }
+    }
+    // trophées de sous-zone
+    Object.values(SUBS).forEach((sub) => {
+      if (S.trophies[sub.id]) return;
+      if (sub.monsters.every((k) => E.huntTier(S, k) >= 1)) {
+        S.trophies[sub.id] = 1;
+        if (E.itemCount(S) < E.ITEM_CAP) { E.rollItem(S, "trophee_" + sub.id, { radiant: false }); note(S, `Trophée obtenu : ${sub.name} !`, "rare"); }
+      }
+    });
+  };
+  E.checkHunt = checkHunt;
 
   /* ---------------- Sorts ---------------- */
-  const defaultCond = (sp) => (sp.type === "heal" ? "ally_low" : sp.type === "healall" ? "ally_low"
-    : sp.type === "buff" || sp.type === "shield" ? "always" : sp.type === "aoe" ? "enemy_many" : "always");
+  const defaultCond = (sp, c) => {
+    if (sp.type === "heal" || sp.type === "healall") return "ally_low";
+    if (sp.type === "aoe") { const single = c ? E.knownSpells(c).filter((x) => x.type === "dmg" || x.type === "drain").length : 2; return single >= 2 ? "enemy_many" : "always"; }
+    return "always";
+  };
   E.spellDef = (cls, id) => CLASSES[cls].spells.find((s) => s.id === id);
   E.knownSpells = (c) => CLASSES[c.cls].spells.filter((s) => s.lvl <= c.lvl);
   // Ajoute automatiquement les sorts débloqués tant qu'il reste de la place (6 max)
   E.refreshSpells = (c) => {
     E.knownSpells(c).forEach((sp) => {
       if (c.spells.length < 6 && !c.spells.find((x) => x.id === sp.id) && !(c.knownSeen || []).includes(sp.id)) {
-        c.spells.push({ id: sp.id, cond: defaultCond(sp) });
+        c.spells.push({ id: sp.id, cond: defaultCond(sp, c) });
       }
     });
     c.knownSeen = E.knownSpells(c).map((s) => s.id);
@@ -144,7 +198,7 @@
       addStats(st, S.emblem.stats);
       if (S.emblem.lvl >= 1000) st.pa += 1;
     }
-    st.hpMax = Math.round(50 + 5 * c.lvl + st.vit);
+    st.hpMax = Math.round(50 + 5 * c.lvl + st.vit + E.familyBonusVit(S));
     st.pa = Math.min(12, 6 + (c.lvl >= 100 ? 1 : 0) + st.pa);
     st.ini += 100 + c.lvl * 5 + st.fo + st.ine + st.cha + st.age;
     return st;
@@ -181,7 +235,7 @@
     const T = ITEMS[tpl]; const roll = {};
     for (const k in T.stats) { const [a, b] = T.stats[k]; roll[k] = ri(a, b); }
     const it = { uid: S.nextUid++, tpl, stats: Object.assign({}, roll) };
-    const chance = opts.radiant === true ? 1 : E.RADIANT_CHANCE * (opts.archi ? 5 : 1) * (S.radiantBoost || 1);
+    const chance = opts.radiant === true ? 1 : E.RADIANT_CHANCE * (opts.archi ? 5 : 1) * E.radiantMult(S);
     if (opts.radiant !== false && rnd() < chance) {
       it.radiant = E.radiantBonus(); it.roll = roll;
       for (const k in it.stats) if (it.stats[k] > 0) it.stats[k] = Math.ceil(it.stats[k] * (1 + it.radiant / 100));
@@ -201,6 +255,7 @@
   E.equippedBy = (S, uid) => S.chars.find((c) => Object.values(c.equip).includes(uid));
   E.slotFor = (c, it) => {
     const slot = ITEMS[it.tpl].slot;
+    if (slot === "dofus") return DOFUS_SLOTS.find((s) => !c.equip[s]) || "dofus1";
     if (slot !== "anneau") return slot;
     if (!c.equip.anneau1) return "anneau1";
     if (!c.equip.anneau2) return "anneau2";
@@ -220,12 +275,17 @@
       if (ou && S.items[ou] && S.items[ou].tpl === it.tpl) return "Vous portez déjà cet anneau.";
       c.equip[o] = uid; return null;
     }
+    if (T.slot === "dofus") {
+      const o = slotOverride && slotOverride.startsWith("dofus") ? slotOverride : E.slotFor(c, it);
+      if (DOFUS_SLOTS.some((s) => s !== o && c.equip[s] && S.items[c.equip[s]] && S.items[c.equip[s]].tpl === it.tpl)) return "Vous portez déjà ce trophée.";
+      c.equip[o] = uid; return null;
+    }
     c.equip[slotOverride || T.slot] = uid; return null;
   };
   E.unequip = (S, cid, slot) => { const c = S.chars.find((x) => x.id === cid); if (c) delete c.equip[slot]; };
 
   E.sellItem = (S, uid) => {
-    const it = S.items[uid]; if (!it || E.equippedBy(S, uid)) return 0;
+    const it = S.items[uid]; if (!it || E.equippedBy(S, uid) || it.locked) return 0;
     const T = ITEMS[it.tpl]; const p = Math.round(T.lvl * 6 * (0.6 + E.itemQuality(it) * 0.6) * (it.radiant ? 5 : 1));
     delete S.items[uid]; S.kamas += p; return p;
   };
@@ -246,10 +306,7 @@
   E.subUnlocked = (S, sid) => {
     const s = SUBS[sid]; if (!s || !E.zoneUnlocked(S, s.zone)) return false;
     if (s.requiresItem) return (S.res[s.requiresItem] || 0) > 0;
-    if (s.idx === 0) return true;
-    const z = ZONES.find((x) => x.id === s.zone);
-    let prev = z.subs[s.idx - 1]; if (prev.hidden) prev = z.subs[s.idx - 2];
-    return (S.progress.wins[prev.id] || 0) >= E.WINS_TO_UNLOCK;
+    return true;
   };
   E.dungeonUnlocked = (S, did) => E.subUnlocked(S, DUNGEON_SUB[did]);
   E.setSub = (S, sid) => {
@@ -298,7 +355,7 @@
     const m = MONSTERS[key];
     const hp = Math.round((15 + lvl * 8.5) * base.hp * (archi ? 2.2 : 1));
     return {
-      side: "m", key, base: id, name: m.name, img: m.img, lvl, archi, boss: !!m.boss,
+      side: "m", key, base: id, race: base.race, name: m.name, img: m.img, lvl, archi, boss: !!m.boss,
       hpMax: hp, hp, el: m.el, atk: m.atk || "Attaque", res: m.res,
       dmg: (3 + lvl * 0.95) * (base.dmg || 1) * (archi ? 1.4 : 1),
       ini: 50 + lvl * 4 + (m.boss ? 100 : 0), attacks: m.boss ? 2 : 1,
@@ -308,7 +365,7 @@
   const charEntity = (S, c) => {
     const st = E.charStats(S, c);
     const fs = E.freeSpirit(S);
-    const hpMax = Math.round(st.hpMax * (1 + fs / 200));
+    const hpMax = Math.round(st.hpMax * (1 + fs / 200) * (E.teamHas(S, "osa") ? 1.05 : 1));
     return {
       side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax,
       ini: st.ini, buffs: [], dots: [], shield: 0, alive: true, cd: {}, weaken: 0,
@@ -322,7 +379,8 @@
     for (let i = 0; i < size; i++) {
       const id = pick(sub.monsters); const m = MONSTERS[id];
       const lvl = ri(Math.max(m.lvl[0], sub.lvl[0]), Math.min(m.lvl[1], sub.lvl[1]) || m.lvl[1]);
-      g.push(monsterEntity(id, Math.max(1, lvl), { archi: rnd() < E.ARCHI_CHANCE * (S.archiBoost || 1) }));
+      const fl = E.huntTier(S, id) >= 3 ? 2 : 1;
+      g.push(monsterEntity(id, Math.max(1, lvl), { archi: rnd() < E.ARCHI_CHANCE * E.archiMult(S) * fl }));
     }
     return g;
   };
@@ -360,7 +418,8 @@
   };
 
   const newRound = (F) => {
-    F.order = F.ents.filter((e) => e.alive).sort((a, b) => b.ini - a.ini).map((e) => F.ents.indexOf(e));
+    const ini = (e) => e.ini + (F.round === 1 && e.cls === "cra" ? 1e7 : 0);
+    F.order = F.ents.filter((e) => e.alive).sort((a, b) => ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
     F.oi = 0;
   };
   const flog = (F, txt, cls = "") => { F.log.push({ txt, cls }); if (F.log.length > 40) F.log.shift(); };
@@ -373,13 +432,14 @@
     let v = raw;
     // résistances
     let res = 0;
-    if (tgt.side === "m") res = tgt.res[el] || 0;
+    if (tgt.side === "m") { res = tgt.res[el] || 0; if (tgt.boss && src && src.cls === "forge" && res > 0) res *= 0.5; }
     else {
       const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0;
       res += tgt.resBonus || 0;
     }
     res = Math.min(50, res);
     v = v * (1 - res / 100);
+    if (tgt.side === "c") v *= (F && F.feca ? 0.95 : 1) * (tgt.mask === "def" ? 0.9 : 1);
     v = Math.max(1, Math.round(v));
     if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
     tgt.hp -= v;
@@ -388,7 +448,7 @@
     return v;
   };
 
-  const charDamage = (S, F, e, sp, mult = 1) => {
+  const charDamage = (S, F, e, sp, mult = 1, tgt = null) => {
     const el = sp.el || "n";
     const stat = e.st[ELEMENTS[el].stat] || 0;
     const pui = e.st.pui + buffSum(e, "pui");
@@ -397,11 +457,23 @@
     if (crit) v = v * 1.3 + 3;
     v *= 1 + e.dmgBonus / 100;
     v *= mult;
+    // passifs de classe
+    if (tgt && tgt.boss && e.cls === "iop") v *= 1.1;
+    if (e.cls === "sacri") v *= 1 + 0.3 * (1 - e.hp / e.hpMax);
+    if (e.cls === "roub" && alive(F, "m").length >= 4) v *= 1.15;
+    if (e.cls === "elio" && sp.type === "aoe") v *= 1.15;
+    if (e.cls === "hupper" && e.lastEl && e.lastEl !== el) v *= 1.1;
+    if (e.cls === "ougi" && tgt) { e.stack = e.lastTgt === tgt ? Math.min(5, (e.stack || 0) + 1) : 0; e.lastTgt = tgt; v *= 1 + 0.05 * e.stack; }
+    if (e.mask === "atk") v *= 1.15;
+    v *= (CLASSES[e.cls] && CLASSES[e.cls].pow) || 1;
+    // palier Expert : +10 % contre la famille
+    if (tgt && tgt.race !== undefined && F.expertRaces && F.expertRaces.has(tgt.race)) v *= 1.1;
+    e.lastEl = el;
     return { v, crit };
   };
   const healAmount = (e, sp) => {
     const pui = e.st.pui + buffSum(e, "pui");
-    return rf(sp.min, sp.max) * (1 + (e.st.ine + pui) / 100) + e.st.so;
+    return (rf(sp.min, sp.max) * (1 + (e.st.ine + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 : 1) * (e.mask === "soin" ? 1.15 : 1);
   };
   const doHeal = (t, v, F) => {
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
@@ -429,7 +501,7 @@
     switch (sp.type) {
       case "dmg": case "drain": case "poison": {
         const t = lowest(foes); if (!t) return false;
-        const { v, crit } = charDamage(S, F, e, sp);
+        const { v, crit } = charDamage(S, F, e, sp, 1, t);
         if (sp.type === "poison") {
           t.dots.push({ v: v, turns: sp.turns, el: sp.el, src: e.name });
           flog(F, `${e.name} lance ${sp.name} sur ${t.name} (poison ${sp.turns} tours)`, "c");
@@ -446,7 +518,7 @@
       case "aoe": {
         if (!foes.length) return false;
         const parts = [];
-        foes.forEach((t) => { const { v } = charDamage(S, F, e, sp, 0.85); const d = dealDamage(F, e, t, v, sp.el); parts.push(d); });
+        foes.forEach((t) => { const { v } = charDamage(S, F, e, sp, 0.85, t); const d = dealDamage(F, e, t, v, sp.el); parts.push(d); });
         flog(F, `${e.name} · ${sp.name} : −${parts.join(" / −")}`, "c");
         foes.forEach((t) => { if (!t.alive) flog(F, `${t.name} est vaincu.`, "ko"); });
         return true;
@@ -490,6 +562,12 @@
     }
     if (!cast) flog(F, `${e.name} passe son tour.`, "dim");
     e.lastCast = F.seq;
+    if (c.cls === "xelor" && !e.replayed && cast && rnd() < 0.1 && alive(F, "m").length) {
+      e.replayed = true; flog(F, `${e.name} distord le temps et rejoue !`, "buff");
+      for (const k in e.cd) if (e.cd[k] > 0) e.cd[k]--;
+      charTurn(S, F, e);
+    }
+    e.replayed = false;
   };
 
   const monsterTurn = (S, F, e) => {
@@ -522,7 +600,11 @@
   /* Bonus de combat liés à l'Esprit Libre et à l'Emblème */
   const applyFightBonuses = (S, F) => {
     const fs = E.freeSpirit(S); const solo = E.isSolo(S); const pk = S.emblem.perks;
+    F.feca = E.teamHas(S, "feca");
+    F.expertRaces = new Set();
+    for (const r in RACE_MONS) if (RACE_MONS[r].some((k) => E.huntTier(S, k) >= 2)) F.expertRaces.add(+r);
     F.ents.filter((e) => e.side === "c").forEach((e) => {
+      if (e.cls === "zobal") e.mask = pick(["atk", "def", "soin"]);
       e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0);
       e.resBonus = solo && pk[500] === "res" ? 8 : 0;
       e.regen = solo && pk[500] === "heal" ? 5 : 0;
@@ -562,7 +644,7 @@
     mons.forEach((m) => {
       let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1);
       xp += x;
-      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1));
+      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.2 : 1));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); }
     });
@@ -571,25 +653,33 @@
     team.forEach((c) => {
       const st = E.charStats(S, c);
       const diff = c.lvl - maxLvl;
-      const pen = diff > 10 ? Math.max(0.15, 1 - (diff - 10) * 0.06) : 1;
-      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * (opts.xpMult || 1));
+      const pen = E.xpPenalty(diff);
+      const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
+      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1));
       out.xp[c.id] = g;
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.teamHas(S, "enu") ? 1.2 : 1);
+    const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
     const seen = (k, what) => { (S.seenDrops[k] = S.seenDrops[k] || {})[what] = 1; };
     mons.forEach((m) => {
       const T = MONSTERS[m.base || m.key]; const q = m.archi ? 3 : 1;
-      T.drops.forEach(([r, rate]) => { if (rnd() * 100 < Math.min(100, rate * (rate >= 100 ? 1 : dm))) { addRes(S, r, q); out.res[r] = (out.res[r] || 0) + q; seen(m.key, r); } });
+      const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
+      const rolls = 1 + (E.teamHas(S, "sram") && rnd() < 0.1 ? 1 : 0);
+      for (let rr = 0; rr < rolls; rr++)
+      T.drops.forEach(([r, rate]) => { const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); if (rnd() * 100 < Math.min(100, rate * (rate >= 100 ? 1 : mm))) { addRes(S, r, q); out.res[r] = (out.res[r] || 0) + q; seen(m.key, r); } });
+      if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
         if (rnd() * 100 < Math.min(100, rate * E.ITEM_DROP_SCALE * dm)) {
           seen(m.key, tpl);
           if (E.itemCount(S) >= E.ITEM_CAP) { note(S, `Sac plein : ${ITEMS[tpl].name} perdu.`, "warn"); return; }
-          const it = E.rollItem(S, tpl, { archi: m.archi }); out.items.push(it.uid);
+          const it = E.rollItem(S, tpl, { archi: m.archi });
+          const auto = E.applyAuto(S, it);
+          if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
         }
       });
       // clés de donjon
@@ -601,6 +691,18 @@
     return out;
   };
   E.giveRewards = giveRewards;
+  E.BONBON_RATE = 0.02;
+  /* Pénalité d'XP quand les monstres sont trop faibles pour le héros */
+  E.xpPenalty = (diff) => (diff > 4 ? Math.max(0.05, 1 - (diff - 4) * 0.1) : 1);
+  /* Règles automatiques de vente / brisage des objets lâchés */
+  E.applyAuto = (S, it) => {
+    const A = S.settings.auto; if (!A || A.action === "none" || it.radiant || it.locked) return null;
+    const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
+    if (E.itemQuality(it) * 100 >= A.q) return null;
+    if (A.action === "sell") { E.sellItem(S, it.uid); return "sell"; }
+    if (A.action === "break") { E.breakItem(S, it.uid, null); return "break"; }
+    return null;
+  };
   E.ITEM_DROP_SCALE = 0.12; // les taux réels de DOFUS sont pensés pour des combats de plusieurs minutes
 
   E.giveXp = (S, c, g) => {
@@ -625,6 +727,7 @@
       S.stats.wins++;
       const mons = F.ents.filter((e) => e.side === "m");
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon });
+      checkHunt(S, [...new Set(mons.map((m) => m.key))]);
       if (!S.dungeon) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       const xpTot = Object.values(F.rewards.xp).reduce((a, b) => a + b, 0);
       flog(F, `Victoire ! +${xpTot} XP, +${F.rewards.kamas} kamas`, "win");
@@ -683,7 +786,7 @@
   E.PAUSE_MS = 1400;
   E.tick = (S, dtMs) => {
     S.stats.playtime += dtMs / 1000;
-    const sp = S.settings.speed || 1;
+    const sp = 1;
     // combat
     S.acc = (S.acc || 0) + dtMs * sp;
     let guard = 0;
@@ -704,11 +807,12 @@
 
   /* ---------------- Récolte ---------------- */
   E.gatherTime = (lvl) => 9 / (1 + lvl * 0.02);
+  E.gatherMult = (S, job) => ((job === "bucheron" || job === "alchimiste") && E.rosterHas(S, "sadi") ? 0.8 : 1) * (job === "pecheur" && E.rosterHas(S, "steam") ? 0.75 : 1);
   const gatherTick = (S, dt) => {
     for (const j in S.jobs) {
       const J = S.jobs[j]; if (!J.target) continue;
       const def = GATHER_JOBS[j].items.find((x) => x[0] === J.target); if (!def || def[1] > J.lvl) continue;
-      J.prog += dt; const t = E.gatherTime(J.lvl);
+      J.prog += dt; const t = E.gatherTime(J.lvl) * E.gatherMult(S, j);
       let n = 0;
       while (J.prog >= t && n < 100000) {
         J.prog -= t; n++;
@@ -798,6 +902,7 @@
   E.breakItem = (S, uid, focus) => {
     const it = S.items[uid]; if (!it) return "Objet introuvable.";
     if (E.equippedBy(S, uid)) return "Retirez d'abord cet objet.";
+    if (it.locked) return "Objet protégé par le cadenas.";
     const p = E.breakPreview(S, uid, focus);
     const got = {};
     for (const k in p.weights) {
@@ -881,14 +986,19 @@
     let wins = 0;
     const wasDungeon = S.dungeon; S.dungeon = null;
     const sub = SUBS[S.sub]; const teamSize = E.team(S).length;
+    // part de l'absence couverte par le bonus d'XP
+    const b = S.boosts && S.boosts.xp; const now = Date.now(); const startT = now - seconds * 1000;
+    const covered = b ? clamp((b.until - startT) / (seconds * 1000), 0, 1) : 0;
+    const xpBoost = b ? b.pct * covered : 0;
     for (let i = 0; hunting && i < fights; i++) {
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      giveRewards(S, g, {});
+      giveRewards(S, g, { xpBoost });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
     }
     S.dungeon = wasDungeon;
+    if (hunting) checkHunt(S, sub.monsters);
     gatherTick(S, eff);
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
@@ -926,6 +1036,13 @@
       Object.values(SUBS).forEach((s) => { if (!s.hidden && s.lvl[0] <= top - 2 && E.zoneUnlocked(S, s.zone)) S.progress.wins[s.id] = Math.max(S.progress.wins[s.id] || 0, E.WINS_TO_UNLOCK); });
       report.push("Sorts et équipements réinitialisés pour la v2");
     }
+    if (S.v < 3) {
+      S.settings.speed = 1;
+      if (!S.settings.auto) S.settings.auto = { action: "none", q: 40, keepSets: true };
+      // paliers déjà atteints : pas de notification en rafale
+      S.huntSeen = {}; for (const k in S.bestiary) if (MONSTERS[k]) S.huntSeen[k] = E.huntTier(S, k);
+      report.push("Nouveautés v2.5 : 19 classes, paliers de chasse, consommables, inventaire et équipement revus. Toutes les sous-zones sont ouvertes.");
+    }
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });
     Object.keys(CRAFT_JOBS).forEach((j) => { if (!S.crafts[j]) S.crafts[j] = fresh.crafts[j]; });
@@ -936,7 +1053,10 @@
       E.refreshSpells(c);
       for (const sl in c.equip) if (!S.items[c.equip[sl]]) delete c.equip[sl];
     });
+    for (const k of ["cons", "boosts", "trophies", "families", "huntSeen"]) if (!S[k]) S[k] = {};
+    if (!S.settings.auto) S.settings.auto = { action: "none", q: 40, keepSets: true };
     S.migration = report.length ? report : null;
+    if (S.v < 3) { const ev = E.events.length; checkHunt(S, Object.keys(S.bestiary).filter((k) => MONSTERS[k])); E.events.length = ev; S.journal = S.journal.filter((j) => !/^Palier /.test(j.txt)); }
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
     S.v = E.VERSION;
     return S;

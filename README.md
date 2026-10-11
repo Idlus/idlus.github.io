@@ -5,11 +5,14 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Jouer :** https://mathiss29.github.io/DofousXen/
 
-## Contenu (v2)
+## Contenu (v2.5)
 - Incarnam et Astrub : 18 sous-zones, 79 monstres et leurs archimonstres, 5 donjons avec leurs vraies clés
 - 313 équipements réels (drops et crafts), 38 panoplies, 179 ressources, taux de drop de DOFUS
 - Objets Rayonnants (très rares, +10 à +50 % de stats), Emblème du Solitaire (niv. 1 à 1000), brisage et runes
 - Stratégies de sorts par zone, historique et rendement par zone, bestiaire
+- 19 classes (kits simplifiés aux vrais sorts de DOFUS 3) avec un passif unique chacune
+- Paliers de chasse, familles et trophées de sous-zone, consommables (Bonbon Sagesse)
+- Équipement façon DOFUS (bouclier, 6 emplacements Dofus/trophées), inventaire en grille avec règles automatiques, infobulles des stats
 
 ## Structure
 - `index.html`, `css/`, `js/` : le jeu (sans dépendance, hébergé sur GitHub Pages)

@@ -5,11 +5,11 @@
 (function () {
 "use strict";
 const D = window.DATA, E = window.ENGINE;
-const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, SPELL_IMG, EMBLEM } = D;
+const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, SPELL_IMG, EMBLEM, HUNT_TIERS, CONSUMABLES, STAT_HELP } = D;
 
 let S = null;
 const ui = {
-  tab: "home", world: "map", zoneView: null, hero: "stats", cid: null, slot: null, inv: "items", slotFilter: "all", ate: "recolte",
+  tab: "home", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", ate: "recolte",
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 const LS_KEY = "dofousxen-save";
@@ -31,13 +31,16 @@ const statLine = (k, v) => `${v > 0 ? "+" : ""}${fmt(v)} ${STATS[k].name.replace
 const imgM = (key) => (MONSTERS[key] ? `assets/m/${MONSTERS[key].img}.png` : "");
 const imgI = (icon) => `assets/i/${icon}.png`;
 const resImg = (name) => (RES[name] ? imgI(RES[name].icon) : "");
-const itemImg = (tpl) => (ITEMS[tpl] ? imgI(ITEMS[tpl].icon) : "");
+const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mimg ? `assets/m/${T.mimg}.png` : imgI(T.icon); };
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
 const logoImg = (cls) => `assets/h/${cls}_logo.png`;
 const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : "");
-const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${im(headImg(c), "", c.name)}</span>`;
-const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k, v]) => `<span class="chip ${v < 0 ? "neg" : ""}" style="--c:var(--el-${k})" title="Résistance ${ELEMENTS[k].name}">${v > 0 ? "+" : ""}${v}%</span>`).join("");
+const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
+const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`;
+const sIco = (k) => (["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "so", "pp", "ini", "pa", "rt", "rf", "re", "ra"].includes(k) ? `<img class="sico" src="assets/c/${k}.png" alt="" loading="lazy">` : "");
+const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name.replace("% ", "") : "Points de vie") + " — " + STAT_HELP[k])}"` : "");
+const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k, v]) => `<span class="chip ${v < 0 ? "neg" : ""}" style="--c:var(--el-${k})" data-tip="Résistance ${ELEMENTS[k].name} : ${v} %">${v > 0 ? "+" : ""}${v}%</span>`).join("");
 
 const ICONS = {
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
@@ -108,13 +111,6 @@ function subItems(sub) {
   sub.monsters.forEach((k) => MONSTERS[k].items.forEach(([t, p]) => { if (!ITEMS[t]) return; const e = map.get(t) || { t, p: 0 }; e.p = Math.max(e.p, p); map.set(t, e); }));
   return [...map.values()].sort((a, b) => ITEMS[a.t].lvl - ITEMS[b.t].lvl);
 }
-function lockReason(sid) {
-  const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
-  if (!E.zoneUnlocked(S, z.id)) return `Battez ${MONSTERS[DUNGEONS[z.requires.boss].boss].name} (${DUNGEONS[z.requires.boss].name})`;
-  if (s.requiresItem) return `Il faut : ${s.requiresItem} (Bricoleur)`;
-  let prev = z.subs[s.idx - 1]; if (prev && prev.hidden) prev = z.subs[s.idx - 2];
-  return prev ? `${S.progress.wins[prev.id] || 0}/${E.WINS_TO_UNLOCK} victoires dans ${prev.name}` : "";
-}
 
 /* ---------- navigation & bandeau ---------- */
 function renderNav() {
@@ -125,10 +121,12 @@ function statusHtml() {
   const team = E.team(S);
   const where = S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0);
+  const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home">DofousXen</button>
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     <span class="it"><span class="dot ${S.hunting || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it">📍 <span>${h(where)}</span></span>
+    ${xpb ? `<span class="it boostchip" data-tip="Bonbon Sagesse : +${xpb} % d'expérience">🍬 +${xpb} % XP · <span id="stBoost">${dur(E.boostLeft(S, "xp"))}</span></span>` : ""}
     <span class="it hide-sm">⚔ <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     <button class="ic-btn" data-act="theme" title="Jour / Nuit" aria-label="Changer de thème">${isDark() ? "☀" : "☾"}</button>
     <button class="ic-btn" data-act="options" title="Options" aria-label="Options">⚙</button>`;
@@ -136,6 +134,16 @@ function statusHtml() {
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; }
 
 /* ---------- écran de départ ---------- */
+function classPick(sel, sexSel) {
+  return `<div class="classgrid">${CLASS_ORDER.map((id) => { const c = CLASSES[id];
+    return `<button class="clsbtn" data-act="startcls" data-cls="${id}" aria-pressed="${sel === id}" data-tip="${h(c.desc + " — Passif : " + c.passive.name + " : " + c.passive.desc)}">
+      <span class="emb" style="--cc:${c.color}">${headTag(id, sel === id ? sexSel : c.sex, c.name)}</span><b>${c.name}</b></button>`; }).join("")}</div>`;
+}
+function classInfo(id) {
+  const c = CLASSES[id];
+  return `<div class="clsinfo"><span class="emb" style="--cc:${c.color};width:56px;height:56px">${im(logoImg(id), "", c.name)}</span>
+    <div><b style="font-size:17px">${c.name}</b><div class="small muted">${h(c.desc)}</div><div class="small" style="margin-top:4px"><span class="tag soft">Passif</span> <b>${h(c.passive.name)}</b> : ${h(c.passive.desc)}</div></div></div>`;
+}
 function renderStart() {
   renderStatus(); renderNav();
   const sex = ui.startSex || CLASSES[ui.startCls].sex;
@@ -145,22 +153,25 @@ function renderStart() {
     <p class="muted" style="text-align:center;margin:0">Un idle inspiré de DOFUS : vos héros combattent seuls, à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.</p>
     <div class="panel"><div class="pad stack">
       <h2>Choisissez votre premier héros</h2>
-      <div class="classpick">${Object.entries(CLASSES).map(([id, c]) => `
-        <button data-act="startcls" data-cls="${id}" aria-pressed="${ui.startCls === id}">
-          <span class="row"><span class="emb" style="--cc:${c.color}">${im(logoImg(id), "", c.name)}</span><span class="head lg" style="--cc:${c.color}">${im(`assets/h/${id}_${ui.startCls === id ? sex : c.sex}.png`, "", "")}</span></span>
-          <strong style="font-size:17px">${c.name}</strong><span class="small muted">${h(c.desc)}</span>
-        </button>`).join("")}</div>
+      ${classPick(ui.startCls, sex)}
+      ${classInfo(ui.startCls)}
       <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
-      <label class="stack" style="gap:4px"><span class="small muted">Nom du héros</span><input type="text" id="startName" maxlength="20" value="${h(D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
+      <label class="stack" style="gap:4px"><span class="small muted">Nom du héros</span><input type="text" id="startName" maxlength="20" value="${h(ui.startName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
       <div><button class="btn primary" data-act="startgame">Commencer l'aventure</button></div>
     </div></div>
-    <details class="panel"><summary class="pad" style="cursor:pointer;font-weight:800">Reprendre une partie (importer une sauvegarde, y compris de la v1)</summary>
+    <details class="panel"><summary class="pad" style="cursor:pointer;font-weight:800">Reprendre une partie (importer une sauvegarde)</summary>
       <div class="pad stack" style="padding-top:0"><textarea id="imp" placeholder="Collez ici le texte de votre sauvegarde exportée"></textarea>
       <div class="row"><button class="btn sm" data-act="import">Importer</button><span id="impmsg" class="minus small"></span></div></div></details>
   </section>`;
 }
-
 /* ---------- ACCUEIL ---------- */
+function consHtml() {
+  const list = Object.entries(S.cons || {}).filter(([, n]) => n > 0);
+  const xpb = E.boostPct(S, "xp");
+  return `${xpb ? `<div class="row" style="margin-bottom:8px"><span class="tag good">Actif</span> <b>+${xpb} % d'XP</b> <span class="muted small">encore ${dur(E.boostLeft(S, "xp"))}</span></div>` : ""}
+    ${list.length ? `<div class="list">${list.map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy">🍬</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span><button class="btn sm primary" data-act="usecons" data-id="${id}">Utiliser</button></div>`; }).join("")}</div>`
+    : `<p class="note">Aucun consommable. Le Bonbon Sagesse (+10 % d'XP pendant 1 h) tombe parfois sur les boss de donjon (2 %).</p>`}`;
+}
 function renderHome() {
   const team = E.team(S); const main = team[0] || S.chars[0];
   const deco = S.dungeon ? "dungeon" : S.sub ? subDeco(S.sub) : "sky";
@@ -170,7 +181,7 @@ function renderHome() {
   const archis = Object.values(S.archis).reduce((a, b) => a + b, 0);
   $("#main").innerHTML = `
   <section class="hero-banner">
-    <div class="scene">${sceneSVG(deco, 220, "home" + (S.sub || ""))}<div class="troupe" style="justify-content:flex-end;padding-right:5%">${team.map((c) => `<span class="ent hero" style="width:clamp(54px,10vw,80px)"><span class="medal" style="--cc:${CLASSES[c.cls].color}">${im(headImg(c), "", c.name)}</span></span>`).join("")}</div></div>
+    <div class="scene">${sceneSVG(deco, 220, "home" + (S.sub || ""))}<div class="troupe" style="justify-content:flex-end;padding-right:5%">${team.map((c) => `<span class="ent hero" style="width:clamp(54px,10vw,80px)"><span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span></span>`).join("")}</div></div>
     <div class="inner">
       <div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div></div>
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">⚔ Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">🗺 Choisir une zone</button>`}</div>
@@ -182,13 +193,16 @@ function renderHome() {
     <div class="kpi"><b class="num">${E.freeSpirit(S)} %</b><span>Esprit Libre (${team.length} héros)</span></div>
     <div class="kpi"><b class="num" style="color:var(--archi)">${archis}</b><span>archimonstres vaincus</span></div>
     <div class="kpi"><b class="num" style="color:var(--gold)">${S.radiants || 0}</b><span>objets rayonnants</span></div>
-    <div class="kpi"><b class="num">${dur(S.stats.playtime)}</b><span>de jeu</span></div>
+    <div class="kpi"><b class="num">${Object.keys(S.trophies || {}).length}</b><span>trophées · ${Object.keys(S.families || {}).length} familles</span></div>
   </section>
   <section class="grid2">
     <div class="panel"><div class="phead"><h2>Rendement${zkey ? " · " + h(E.SUBS[zkey].name) : ""}</h2></div><div class="pad">${rateHtml(rate)}</div></div>
-    <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad">${historyHtml(8)}</div></div>
+    <div class="panel"><div class="phead"><h2>Consommables</h2></div><div class="pad">${consHtml()}</div></div>
   </section>
-  <section class="panel" style="margin-top:14px"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 12).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></section>`;
+  <section class="grid2" style="margin-top:14px">
+    <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad">${historyHtml(8)}</div></div>
+    <div class="panel"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 10).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></div>
+  </section>`;
 }
 function rateHtml(rate) {
   if (!rate) return `<p class="note">Les statistiques apparaissent après quelques combats dans une zone : XP, kamas et ressources par heure, pour comparer les zones.</p>`;
@@ -216,6 +230,23 @@ function renderWorld() {
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>
     <div class="stack">${body}</div>`;
 }
+function lockReason(sid) {
+  const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
+  if (!E.zoneUnlocked(S, z.id)) return `Battez ${MONSTERS[DUNGEONS[z.requires.boss].boss].name} (${DUNGEONS[z.requires.boss].name})`;
+  if (s.requiresItem) return `Il faut : ${s.requiresItem} (Bricoleur)`;
+  return "";
+}
+function lvlHint(s) {
+  const top = Math.max(...E.team(S).map((c) => c.lvl));
+  const cls = top < s.lvl[0] - 3 ? "minus" : top > s.lvl[1] + 4 ? "muted" : "plus";
+  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${top > s.lvl[1] + 4 ? " Au-delà, l'expérience gagnée diminue." : ""}">Conseillé : niv. ${s.lvl[0]}–${s.lvl[1]}</span>`;
+}
+function tierBadge(k) {
+  const t = E.huntTier(S, k); const n = S.bestiary[k] || 0; const next = HUNT_TIERS[t + 1];
+  return `<div class="tierline" data-tip="${h(HUNT_TIERS.map((x, i) => `${i <= t ? "✓" : "·"} ${x.name} (${x.n}) : ${x.desc}`).join(" | "))}">
+    ${t >= 0 ? `<span class="tier t${t}">${HUNT_TIERS[t].name}</span>` : `<span class="tier">Aucun palier</span>`}
+    ${next ? `<span class="bar"><i style="width:${pct(n, next.n)}%"></i></span><span class="xs muted num">${fmt(n)}/${fmt(next.n)}</span>` : `<span class="xs muted">max</span>`}</div>`;
+}
 function zonePanel(z) {
   const zu = E.zoneUnlocked(S, z.id);
   return `<section class="panel"><div class="zonehead"><div><h2>${h(z.name)}</h2><div class="small muted">${h(z.desc)} · niveaux ${h(z.lvl)}</div></div>${zu ? "" : `<span class="tag soft">🔒 ${h(lockReason(z.subs[0].id))}</span>`}</div>
@@ -224,8 +255,8 @@ function zonePanel(z) {
       if (s.hidden && !un) return `<div class="subcard locked"><div class="scene">${sceneSVG("cave", 96, s.id)}</div><div class="body"><b>Lieu caché</b><span class="lockmsg">On raconte qu'un objet permet de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></div></div>`;
       const wins = S.progress.wins[s.id] || 0;
       return `<button class="subcard ${un ? "" : "locked"} ${here ? "here" : ""}" data-act="zoneview" data-id="${s.id}">
-        <div class="scene">${sceneSVG(s.deco, 96, s.id)}<div class="troupe">${s.monsters.slice(0, 4).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
-        <div class="body"><div class="row between"><b>${h(s.name)}</b><span class="xs muted num">niv. ${s.lvl[0]}–${s.lvl[1]}</span></div>
+        <div class="scene">${sceneSVG(s.deco, 96, s.id)}<div class="troupe">${s.monsters.slice(0, 4).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div>${S.trophies && S.trophies[s.id] ? `<span class="trophymark" data-tip="Trophée obtenu">🏆</span>` : ""}</div>
+        <div class="body"><div class="row between"><b>${h(s.name)}</b>${lvlHint(s)}</div>
           ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}${s.dungeon ? " · donjon" : ""}</span>` : `<span class="lockmsg">🔒 ${h(lockReason(s.id))}</span>`}</div>
       </button>`; }).join("")}</div></section>`;
 }
@@ -234,17 +265,17 @@ function renderZoneView(sid) {
   const here = S.hunting && S.sub === sid && !S.dungeon;
   const res = subResources(s); const its = subItems(s); const rate = E.zoneRate(S, sid);
   const dg = s.dungeon ? DUNGEONS[s.dungeon] : null;
-  const nx = z.subs[s.idx + 1]; const wins = S.progress.wins[sid] || 0;
+  const trophyDone = S.trophies && S.trophies[sid]; const traq = s.monsters.filter((k) => E.huntTier(S, k) >= 1).length;
   $("#main").innerHTML = `
   <div class="row" style="margin-bottom:10px"><button class="btn sm" data-act="zoneback">← Carte</button></div>
   <section class="panel">
-    <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>niv. ${s.lvl[0]} – ${s.lvl[1]}</div>
+    <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
     <div class="pad stack">
       <div class="row">${!un ? `<span class="tag soft">🔒 ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>⚔ Partir chasser</button>`}
-        <span class="small muted">${E.team(S).length} héros · Esprit Libre +${E.freeSpirit(S)} %</span></div>
+        <span class="small muted">${E.team(S).length} héros · Esprit Libre +${E.freeSpirit(S)} % · ${lvlHint(s)}</span></div>
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
-      ${nx && !nx.hidden && un && wins < E.WINS_TO_UNLOCK && !E.subUnlocked(S, nx.id) ? `<div><div class="row between small"><span>Déblocage de <b>${h(nx.name)}</b></span><span class="num">${wins}/${E.WINS_TO_UNLOCK} victoires</span></div><div class="bar"><i style="width:${pct(wins, E.WINS_TO_UNLOCK)}%"></i></div></div>` : ""}
+      <div><div class="row between small"><span data-tip="Quand tous les monstres de la zone atteignent le palier Traqueur (250 tués), vous recevez le trophée de la zone, à équiper dans un emplacement Dofus/Trophée.">🏆 Trophée ${h(s.name)}${trophyDone ? " : obtenu" : ""}</span><span class="num">${traq}/${s.monsters.length} monstres Traqueur</span></div><div class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></div></div>
       <h3 class="sec">Monstres</h3>
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
@@ -278,22 +309,26 @@ function dungeonsHtml() {
 }
 function encyclopediaHtml() {
   const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
-  const total = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].archiOf).length; const met = Object.keys(S.bestiary).filter((k) => !MONSTERS[k]?.archiOf).length;
-  const subs = z.subs.map((s) => `<h3 class="sec">${h(s.name)}</h3><div class="mons">${s.monsters.map((k) => encCard(k)).join("")}</div>`).join("");
+  const total = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].archiOf).length; const met = Object.keys(S.bestiary).filter((k) => MONSTERS[k] && !MONSTERS[k].archiOf).length;
+  const subs = z.subs.map((s) => `<h3 class="sec">${h(s.name)} ${S.trophies && S.trophies[s.id] ? "🏆" : ""}</h3><div class="mons">${s.monsters.map((k) => encCard(k)).join("")}</div>`).join("");
   const dgs = Object.entries(DUNGEONS).filter(([id]) => E.SUBS[E.DUNGEON_SUB[id]]?.zone === z.id).map(([id, d]) => `<h3 class="sec">${h(d.name)}</h3><div class="mons">${encCard(d.boss)}</div>`).join("");
+  const fams = Object.entries(E.RACE_MONS).map(([r, ks]) => { const done = S.families && S.families[r]; const n = ks.filter((k) => E.huntTier(S, k) >= 1).length;
+    return `<div class="famrow ${done ? "done" : ""}"><b>${h(D.RACES[r] || r)}</b><span class="xs muted num">${n}/${ks.length} Traqueur</span>${done ? `<span class="tag good">+5 Vi</span>` : ""}</div>`; }).join("");
   return `<section class="panel"><div class="phead"><h2>Bestiaire</h2><span class="small muted num">${met}/${total} monstres rencontrés</span></div>
     <div class="pad"><div class="seg">${ZONES.map((x) => `<button data-act="enczone" data-v="${x.id}" aria-pressed="${x.id === z.id}">${h(x.name)}</button>`).join("")}</div>
-    <p class="note" style="margin-top:8px">Les butins d'un monstre se dévoilent quand vous les obtenez pour la première fois.</p>${subs}${dgs}</div></section>`;
+    <p class="note" style="margin-top:8px">Paliers de chasse par monstre : ${HUNT_TIERS.map((t) => `<b>${t.name}</b> (${t.n}) ${t.desc.toLowerCase()}`).join(" · ")}.</p>${subs}${dgs}</div></section>
+  <section class="panel"><div class="phead"><h2>Familles</h2><span class="xs muted">tous les monstres d'une famille au palier Traqueur : +5 Vitalité pour tous vos héros</span></div><div class="pad famgrid">${fams}</div></section>`;
 }
 function encCard(k) {
-  const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const a = m.archi;
-  const drops = m.drops.map(([n, p]) => seen[n] ? `<span title="${h(n)} · ${p} %">${im(resImg(n), "ico sm", n)}</span>` : `<span class="icobox" style="width:26px;height:26px;font-size:12px;color:var(--muted)" title="Inconnu">?</span>`).join("");
+  const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const a = m.archi; const t = E.huntTier(S, k);
+  const reveal = t >= 0;
+  const drops = m.drops.map(([n, p]) => seen[n] || reveal ? `<span class="dropico" data-tip="${h(n)} · ${p} %">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</span>` : `<span class="icobox" style="width:26px;height:26px;font-size:12px;color:var(--muted)" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("");
   return `<div class="mcard ${kills ? "" : "unknown"}" style="align-items:flex-start">${im(imgM(k), "mimg", m.name)}
-    <div style="min-width:0" class="stack"><div><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0]}–${m.lvl[1]} · <span class="num">${fmt(kills)}</span> tués</div></div>
+    <div style="min-width:0;flex:1" class="stack"><div><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0]}–${m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}</div></div>
+    ${m.boss ? `<div class="xs muted num">${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>` : tierBadge(k)}
     <div class="row" style="gap:4px">${drops}</div>
     ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}</div>` : ""}</div></div>`;
 }
-
 /* ---------- COMBAT ---------- */
 function renderCombat() {
   const team = E.team(S); const fs = E.freeSpirit(S);
@@ -303,7 +338,6 @@ function renderCombat() {
   $("#main").innerHTML = `
   <div class="pagehead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row"><span class="small muted">Équipe de ${team.length}${fs ? ` · Esprit Libre <b style="color:var(--action)">+${fs} %</b>` : ""}</span>
-      <span class="seg" aria-label="Vitesse">${[1, 2, 4].map((v) => `<button data-act="speed" data-v="${v}" aria-pressed="${S.settings.speed === v}">×${v}</button>`).join("")}</span>
       ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid">
     <div class="panel">
@@ -318,7 +352,7 @@ function renderCombat() {
       <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad" id="fhist">${historyHtml(6)}</div></div>
     </div>
   </section>
-  ${!dg && S.hunting && sub ? (() => { const z = ZONES.find((x) => x.id === sub.zone); const nx = z.subs[sub.idx + 1]; const w = S.progress.wins[sub.id] || 0; return nx && !nx.hidden && !E.subUnlocked(S, nx.id) ? `<p class="note" style="margin-top:10px">Victoires ici : <b class="num">${w}/${E.WINS_TO_UNLOCK}</b> pour débloquer ${h(nx.name)}.</p>` : ""; })() : ""}`;
+`;
   ui.arena = null; updateCombat(true);
 }
 function spellBarFor(c, ent, F) {
@@ -410,17 +444,20 @@ function lootHtml(F) {
   el.innerHTML = `<div class="stack" style="gap:8px">
     <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length ? `<div class="loot">${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
+    ${r.auto ? `<p class="note">${r.auto} objet${r.auto > 1 ? "s" : ""} traité${r.auto > 1 ? "s" : ""} par les règles automatiques.</p>` : ""}
+    ${r.cons ? `<p class="small" style="color:var(--archi);font-weight:800">🍬 Bonbon Sagesse obtenu !</p>` : ""}
     ${r.items.length ? `<div class="list">${r.items.filter((u) => S.items[u]).map((u) => `<div class="li ${S.items[u].radiant ? "radiant" : ""}">${itemIcon(S.items[u])}<span class="grow">${itemName(S.items[u])}</span></div>`).join("")}</div>` : ""}</div>`;
 }
 
 /* ---------- objets ---------- */
 const itemIcon = (it) => `<span class="icobox ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}</span>`;
-function itemName(it) { return `<span class="iname ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}`; }
+function itemName(it) { return `<span class="iname ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ' <span title="Protégé">🔒</span>' : ""}`; }
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   return Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
-    return `<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span>`; }).join("<br>");
+    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("");
 }
+function tplStatsHtml(T) { return Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
 function deltaHtml(c, slot, uid) {
   const cur = E.charStats(S, c); const saved = Object.assign({}, c.equip); let nw;
   if (uid) {
@@ -439,49 +476,63 @@ function deltaHtml(c, slot, uid) {
 /* ---------- HÉROS ---------- */
 function renderHeroes() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
-  const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1);
+  const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
   $("#main").innerHTML = `
   <div class="pagehead"><h1>Héros</h1><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
   <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span>${h(x.name)} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
     ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
   <section class="panel" style="margin-bottom:12px"><div class="pad stack">
-    <div class="row between"><div class="row">${head(c, true)}<div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${CLASSES[c.cls].name} · niveau ${c.lvl}</div></div></div>
-      <div class="row"><span class="small muted num">${fmt(st.hpMax)} PV · ${st.pa} PA · Prospe ${fmt(st.pp)}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button></div></div>
+    <div class="row between"><div class="row">${head(c, true)}<div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl}</div></div></div>
+      <div class="row"><span class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b></span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button></div></div>
     <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
   </div></section>
-  <nav class="subtabs">${[["stats", "Caractéristiques"], ["equip", "Équipement"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}</button>`).join("")}</nav>
-  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c) : charSpellsView(c)}</section>`;
+  <nav class="subtabs">${[["equip", "Équipement"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}</button>`).join("")}</nav>
+  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : charSpellsView(c)}</section>`;
+}
+function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
+const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
+function dollSlot(c, s) {
+  const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
+  return `<button class="dslot ${it ? "filled" : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
+    ${it ? im(itemImg(it.tpl), "", T.name) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 function charStatsView(c, st) {
   return `<div class="grid2">
     <div class="panel"><div class="phead"><h2>Points à répartir</h2><b class="num" style="font-size:20px">${c.pts}</b></div>
-      <div class="list">${BASE_STATS.map((k) => { const el = STATS[k].el;
-        return `<div class="li">${el ? eld(el) : `<span class="eld" style="--c:var(--gold)">${k === "vit" ? "V" : "S"}</span>`}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${k === "sa" ? "3 points = 1" : ""}</span></span>
+      <div class="list">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${k === "sa" ? "3 points = 1" : ""}</span></span>
           <span class="num" style="min-width:42px;text-align:right">${fmt(c.alloc[k])}</span>
-          <button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k) ? "disabled" : ""}>+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k) ? "disabled" : ""}>+10</button></div>`; }).join("")}</div>
+          <button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k) ? "disabled" : ""}>+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k) ? "disabled" : ""}>+10</button></div>`).join("")}</div>
       <div class="pad stack" style="padding-top:6px"><label class="row small"><span class="muted">Répartition automatique :</span>
         <select data-act="autostat" data-id="${c.id}"><option value="">Aucune</option>${BASE_STATS.map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>
         <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points</button></div></div></div>
-    <div class="panel"><div class="phead"><h2>Statistiques totales</h2></div><div class="pad stack">
-      <div class="statgrid num"><div class="s"><span>Points de vie</span><b>${fmt(st.hpMax)}</b></div>${STAT_ORDER.map((k) => `<div class="s"><span>${STATS[k].name.replace("% ", "")}</span><b>${fmtStatVal(k, st[k])}</b></div>`).join("")}</div>
-      <p class="note">Les dégâts d'un sort augmentent avec la caractéristique de son élément et la Puissance.${E.isSolo(S) && c.inTeam ? " L'Emblème du Solitaire est actif." : ""}</p></div></div></div>`;
+    <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
+      <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}</div>
+      <p class="note">${E.isSolo(S) && c.inTeam ? "L'Emblème du Solitaire est actif. " : ""}${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
 }
-function charEquipView(c) {
+function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
-  const sets = Object.entries(counts).map(([id, n]) => { const b = E.setBonus(id, n);
-    return `<div class="li"><span class="grow"><span class="name">${h(SETS[id].name)}</span> <span class="muted xs">${n} pièce${n > 1 ? "s" : ""}</span></span><span class="small">${b ? Object.entries(b).map(([k, v]) => statLine(k, v)).join(", ") : "<span class='muted'>pas encore de bonus</span>"}</span></div>`; }).join("");
+  const sets = Object.entries(counts).filter(([id]) => SETS[id]).map(([id, n]) => { const b = E.setBonus(id, n);
+    return `<div class="li"><span class="grow"><span class="name">${h(SETS[id].name)}</span> <span class="muted xs">${n} pièce${n > 1 ? "s" : ""}</span></span><span class="small">${b ? Object.entries(b).map(([k, v]) => `${sIco(k)}${statLine(k, v)}`).join(", ") : "<span class='muted'>pas encore de bonus</span>"}</span></div>`; }).join("");
   let pick = "";
   if (ui.slot) {
-    const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot;
-    const cands = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl);
+    const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
+    const cands = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || E.itemQuality(b) - E.itemQuality(a));
     pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
-      <div class="list">${cands.map((it) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid);
+      <div class="list">${cands.slice(0, 40).map((it) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid);
         return `<div class="li ${it.radiant ? "radiant" : ""}">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by.name)}` : ""}</span><br>${deltaHtml(c, ui.slot, it.uid)}</span>
-          <button class="btn sm primary" data-act="equip" data-uid="${it.uid}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. " + T.lvl : "Équiper"}</button></div>`; }).join("") || `<div class="empty">Aucun objet de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres.</div>`}</div></div>`;
+          <button class="btn sm primary" data-act="equip" data-uid="${it.uid}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. " + T.lvl : "Équiper"}</button></div>`; }).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div></div>`;
   }
+  const mainK = CLASSES[c.cls].main;
   return `<div class="stack">
-    <div class="slots">${Object.keys(SLOTS).map((s) => { const it = S.items[c.equip[s]];
-      return `<button class="slot" data-act="slot" data-slot="${s}" aria-pressed="${ui.slot === s}">${it ? itemIcon(it) : `<span class="icobox" style="opacity:.5"></span>`}<span style="min-width:0"><span class="sl">${SLOTS[s]}</span><br>${it ? `<span class="small">${itemName(it)}</span>` : `<span class="small muted">Vide</span>`}</span></button>`; }).join("")}</div>
+    <div class="panel"><div class="pad">
+      <div class="doll">
+        <div class="dcol">${DOLL_L.map((s) => dollSlot(c, s)).join("")}</div>
+        <div class="dcenter"><span class="medal big" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>
+          <b>${h(c.name)}</b><span class="xs muted">${CLASSES[c.cls].name} niv. ${c.lvl}</span>
+          <div class="dstats">${["hpMax", "pa", mainK, "pui", "pp", "sa"].map((k) => `<span${tipAttr(k)}>${sIco(k) || "❤"}<b class="num">${k === "hpMax" ? fmt(st.hpMax) : fmtStatVal(k, st[k])}</b></span>`).join("")}</div></div>
+        <div class="dcol">${DOLL_R.map((s) => dollSlot(c, s)).join("")}</div>
+        <div class="drow">${dollSlot(c, "arme")}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
+      </div></div></div>
     ${pick}
     ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies</h2></div><div class="list">${sets}</div></div>` : ""}</div>`;
 }
@@ -536,29 +587,99 @@ function charSpellsView(c) {
 }
 
 /* ---------- INVENTAIRE ---------- */
+
+function invGroups() {
+  const q = (ui.invSearch || "").trim().toLowerCase(); const filt = ui.slotFilter;
+  const groups = new Map();
+  Object.values(S.items).forEach((it) => {
+    const T = ITEMS[it.tpl];
+    if (filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
+    if (q && !T.name.toLowerCase().includes(q)) return;
+    const g = groups.get(it.tpl) || { tpl: it.tpl, items: [] }; g.items.push(it); groups.set(it.tpl, g);
+  });
+  const arr = [...groups.values()];
+  arr.forEach((g) => { g.best = Math.max(...g.items.map((x) => E.itemQuality(x))); g.rad = g.items.some((x) => x.radiant); g.lock = g.items.some((x) => x.locked); g.eq = g.items.some((x) => E.equippedBy(S, x.uid)); });
+  const sort = ui.invSort || "lvl";
+  arr.sort((a, b) => (b.rad - a.rad) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
+  return arr;
+}
+function invDetail(tpl) {
+  const T = ITEMS[tpl]; if (!T) return "";
+  const copies = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
+  if (!copies.length) return "";
+  return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2>${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
+    <div class="pad xs">${tplStatsHtml(T)}</div>
+    <div class="list">${copies.map((it) => { const by = E.equippedBy(S, it.uid);
+      return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow"><b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
+        <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button>
+          <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${it.locked ? "Retirer le cadenas" : "Protéger de la vente et du brisage"}">${it.locked ? "🔒" : "🔓"}</button>
+          ${by || it.locked ? "" : `<button class="btn sm" data-act="sellitem" data-uid="${it.uid}">Vendre</button><button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
+}
+function autoRulesHtml() {
+  const A = S.settings.auto;
+  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">⚙ Règles automatiques ${A.action !== "none" ? `<span class="tag good">${A.action === "sell" ? "Vente" : "Brisage"} si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}</summary>
+    <div class="pad stack" style="padding-top:0;gap:8px">
+      <p class="note">S'applique aux objets lâchés par les monstres. Les objets Rayonnants, protégés par cadenas et équipés ne sont jamais touchés.</p>
+      <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="sell" ${A.action === "sell" ? "selected" : ""}>Vendre</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
+        <label class="row small">si le jet est inférieur à <input type="number" min="0" max="100" step="5" data-act="autoq" value="${A.q}" style="width:70px"> %</label>
+        <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
+      <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
+}
 function renderInventory() {
-  const items = Object.values(S.items); const filt = ui.slotFilter;
-  const shown = items.filter((it) => filt === "all" || (filt === "radiant" ? it.radiant : ITEMS[it.tpl].slot === filt))
-    .sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || a.tpl.localeCompare(b.tpl));
+  const items = Object.values(S.items);
   const res = Object.entries(S.res).sort((a, b) => a[0].localeCompare(b[0], "fr"));
   const runes = Object.entries(S.runes).sort((a, b) => E.runeInfo(b[0]).weight - E.runeInfo(a[0]).weight);
   let body = "";
   if (ui.inv === "items") {
-    body = `<div class="pad row" style="padding-bottom:6px"><select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"]].map(([v, n]) => `<option value="${v}" ${filt === v ? "selected" : ""}>${n}</option>`).join("")}</select>
-      <span class="muted small num">${items.length}/${E.ITEM_CAP} objets</span></div>
-      <div class="list">${shown.map((it) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid);
-        return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot]} · jet ${Math.round(E.itemQuality(it) * 100)} %${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</span><br><span class="small">${itemStatsHtml(it)}</span></span>
-          <span class="stack" style="gap:4px;align-items:flex-end">${by ? `<span class="tag good">${h(by.name)}</span>` : `<button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button><button class="btn sm" data-act="sellitem" data-uid="${it.uid}">Vendre</button>`}</span></div>`; }).join("") || `<div class="empty">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>`;
+    const groups = invGroups();
+    const detail = ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
+    body = `${autoRulesHtml()}
+      <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
+        <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
+        <span class="muted small num">${items.length}/${E.ITEM_CAP} objets · ${groups.length} types</span></div>
+      <div class="invlayout ${detail ? "withdetail" : ""}">
+        ${detail}
+        <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
+          return `<button class="itile ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
+            ${im(itemImg(g.tpl), "", T.name)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">🔒</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
+      </div>`;
   } else if (ui.inv === "res") {
-    body = `<p class="note pad" style="padding-bottom:0">Les ressources et objets sont partagés entre tous vos héros.</p><div class="list">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${h(n)}</span>${E.isKey(n) ? ` <span class="tag">Clé</span>` : SPECIAL_CRAFTS[n] ? ` <span class="tag">Spécial</span>` : ""}</span><span class="num">${fmt(q)}</span>
-      ${E.resPrice(n) ? `<button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="1">Vendre 1</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="${q}">Tout (${fmt(E.resPrice(n) * q)} k)</button>` : ""}</div>`).join("") || `<div class="empty">Aucune ressource pour le moment.</div>`}</div>`;
+    body = `<section class="panel"><p class="note pad" style="padding-bottom:0">Les ressources et objets sont partagés entre tous vos héros.</p><div class="list">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${h(n)}</span>${E.isKey(n) ? ` <span class="tag">Clé</span>` : SPECIAL_CRAFTS[n] ? ` <span class="tag">Spécial</span>` : ""}</span><span class="num">${fmt(q)}</span>
+      ${E.resPrice(n) ? `<button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="1">Vendre 1</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="${q}">Tout (${fmt(E.resPrice(n) * q)} k)</button>` : ""}</div>`).join("") || `<div class="empty">Aucune ressource pour le moment.</div>`}</div></section>`;
+  } else if (ui.inv === "cons") {
+    body = `<section class="panel"><div class="pad">${consHtml()}</div></section>`;
   } else {
-    body = `<div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); return `<div class="li"><span class="eld" style="--c:var(--gold)">ᚱ</span><span class="grow"><span class="name">${E.runeName(k)}</span> <span class="muted xs">+${i.pts} ${STATS[i.stat].name} · poids ${i.weight}</span></span><span class="num">${fmt(q)}</span></div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets dans les Ateliers pour en obtenir.</div>`}</div>`;
+    body = `<section class="panel"><div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); return `<div class="li">${sIco(i.stat)}<span class="grow"><span class="name">${E.runeName(k)}</span> <span class="muted xs">+${i.pts} ${STATS[i.stat].name} · poids ${i.weight}</span></span><span class="num">${fmt(q)}</span></div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets dans les Ateliers pour en obtenir.</div>`}</div></section>`;
   }
+  const nc = Object.values(S.cons || {}).reduce((a, b) => a + b, 0);
   $("#main").innerHTML = `<div class="pagehead"><h1>Inventaire</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
-    <nav class="subtabs">${[["items", "Équipements"], ["res", "Ressources"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}">${n}</button>`).join("")}</nav>
-    <section class="panel">${body}</section>`;
+    <nav class="subtabs">${[["items", "Équipements"], ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}">${n}</button>`).join("")}</nav>
+    <div class="stack">${body}</div>`;
 }
+/* ---------- infobulles ---------- */
+function tipItemHtml(uid) {
+  const it = S.items[uid]; if (!it) return "";
+  const T = ITEMS[it.tpl]; const c = ui.cid ? char(ui.cid) : S.chars[0];
+  let cmp = "";
+  if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">Pour ${h(c.name)} : ${deltaHtml(c, slot, uid)}</div>`; }
+  return `<b>${h(T.name)}</b> <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${cmp}`;
+}
+let tipEl = null;
+function showTip(target) {
+  if (!tipEl) { tipEl = document.createElement("div"); tipEl.className = "tooltip"; document.body.appendChild(tipEl); }
+  const html = target.dataset.tipitem ? tipItemHtml(+target.dataset.tipitem) : h(target.dataset.tip);
+  if (!html) return hideTip();
+  tipEl.innerHTML = html; tipEl.style.display = "block";
+  const r = target.getBoundingClientRect(); const w = tipEl.offsetWidth, hh = tipEl.offsetHeight;
+  let x = r.left + r.width / 2 - w / 2; x = Math.max(8, Math.min(window.innerWidth - w - 8, x));
+  let y = r.top - hh - 8; if (y < 8) y = r.bottom + 8;
+  tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
+}
+function hideTip() { if (tipEl) tipEl.style.display = "none"; }
+const canHover = window.matchMedia && window.matchMedia("(hover: hover)").matches;
+document.addEventListener("mouseover", (ev) => { if (!canHover || !S) return; const t = ev.target.closest("[data-tip],[data-tipitem]"); if (t) showTip(t); else hideTip(); });
+document.addEventListener("scroll", hideTip, true);
 
 /* ---------- ATELIERS ---------- */
 function ingHtml(ing, mult = 1) {
@@ -637,9 +758,9 @@ function recruitSheet() {
   const cost = E.recruitCost(S.chars.length + 1); const top = Math.max(...S.chars.map((c) => c.lvl)); const sex = ui.startSex || CLASSES[ui.startCls].sex;
   openSheet(`<h2>Recruter un héros</h2>
     <p class="small muted">Coût : <b>${cost ? fmt(cost) + " kamas" : "gratuit"}</b> (vous avez ${fmt(S.kamas)}). La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus le bonus Esprit Libre diminue.</p>
-    <div class="classpick">${Object.entries(CLASSES).map(([id, c]) => `<button data-act="startcls" data-cls="${id}" aria-pressed="${ui.startCls === id}"><span class="row"><span class="emb" style="--cc:${c.color};width:44px;height:44px">${im(logoImg(id), "", "")}</span><strong>${c.name}</strong></span><span class="xs muted">${h(c.desc)}</span></button>`).join("")}</div>
+    ${classPick(ui.startCls, sex)}${classInfo(ui.startCls)}
     <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
-    <label class="stack" style="gap:4px"><span class="small muted">Nom</span><input type="text" id="recName" maxlength="20" value="${h(D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
+    <label class="stack" style="gap:4px"><span class="small muted">Nom</span><input type="text" id="recName" maxlength="20" value="${h(ui.recName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
     <div class="row"><button class="btn primary" data-act="recruit" ${S.kamas < cost ? "disabled" : ""}>Recruter</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function giveSheet(uid) {
@@ -658,7 +779,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <p class="note">Version 2.0 · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
+      <p class="note">Version 2.5 · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
@@ -670,9 +791,9 @@ function offlineSheet(r) {
     <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
 }
 function migrationSheet(list) {
-  openSheet(`<h2>Bienvenue dans la v2 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
+  openSheet(`<h2>Bienvenue dans la v2.5 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
-    <p class="small muted">Les monstres, objets et sorts sont maintenant ceux de DOFUS. Pensez à rééquiper vos héros et à choisir leurs sorts.</p>
+    <p class="small muted">Pensez à jeter un œil à l'encyclopédie (paliers de chasse) et aux règles automatiques de l'inventaire.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
 }
 
@@ -698,6 +819,9 @@ function setTheme(v) { S.settings.theme = v; document.documentElement.dataset.th
 
 /* ---------- actions ---------- */
 document.addEventListener("click", (ev) => {
+  const tipT = ev.target.closest("[data-tip],[data-tipitem]");
+  if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
+  hideTip();
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.tab) { if (!S) return; ui.tab = t.dataset.tab; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
@@ -705,12 +829,16 @@ document.addEventListener("click", (ev) => {
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
-    case "startcls": ui.startCls = d.cls; ui.startSex = null; if (!S) renderStart(); else recruitSheet(); return;
-    case "startsex": ui.startSex = d.v; if (!S) renderStart(); else recruitSheet(); return;
+    case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; if (!S) renderStart(); else recruitSheet(); return; }
+    case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; if (!S) renderStart(); else recruitSheet(); return; }
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
     case "theme": setTheme(isDark() ? "light" : "dark"); break;
     case "settheme": setTheme(d.v); optionsSheet(); render(); return;
-    case "speed": S.settings.speed = +d.v; break;
+    case "usecons": { const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.id].name} : +${CONSUMABLES[d.id].pct} % d'XP activé.`); break; }
+    case "invsel": ui.invSel = d.tpl || null; break;
+    case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
+    case "autotoggle": ui.autoOpen = !t.parentElement.open; return;
+    case "autonow": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && E.applyAuto(S, it)) n++; }); toast(n ? `${n} objet${n > 1 ? "s" : ""} traité${n > 1 ? "s" : ""}.` : "Aucun objet concerné."); break; }
     case "leavedg": E.leaveDungeon(S); break;
     case "stophunt": msg(E.stopHunt(S)); break;
     case "hunt": { const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
@@ -738,7 +866,7 @@ document.addEventListener("click", (ev) => {
     case "pdel": E.deletePreset(S, c.id, +d.i); break;
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
-    case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; closeSheet(); ui.cid = nc.id; break; }
+    case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
     case "invtab": ui.inv = d.v; break;
     case "givesheet": giveSheet(+d.uid); return;
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
@@ -752,7 +880,7 @@ document.addEventListener("click", (ev) => {
     case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
-    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
+    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
     case "feed": { const r = E.feedRune(S, d.k, +d.q); if (r) toast(`+${fmt(r.xp)} XP d'Emblème${r.gained ? `, +${r.gained} ${STATS[E.runeInfo(d.k).stat].short}` : ""}`); break; }
     case "askline": ui.confirm = "line:" + d.k; break;
     case "remline": E.removeEmblemLine(S, d.k); ui.confirm = null; break;
@@ -777,11 +905,17 @@ document.addEventListener("change", (ev) => {
   else if (a === "focus") ui.focus = t.value;
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
   else if (a === "craftonly") ui.craftOnly = t.checked;
+  else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
+  else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
+  else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
+  else if (a === "invsort") ui.invSort = t.value;
   else return;
   dirty = true; render();
 });
 document.addEventListener("input", (ev) => {
-  const t = ev.target; if (t.dataset.act !== "craftsearch") return;
+  const t = ev.target;
+  if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act !== "craftsearch") return;
   ui.craftSearch = t.value; const pos = t.selectionStart; renderWorkshop(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
 });
 
@@ -807,6 +941,7 @@ function loop() {
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
+    const sb = $("#stBoost"); if (sb) { const left = E.boostLeft(S, "xp"); if (left > 0) sb.textContent = dur(left); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "ateliers" && ui.ate === "recolte") {

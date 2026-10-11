@@ -60,8 +60,8 @@ STAT = {125: ('vit', 1), 153: ('vit', -1), 124: ('sa', 1), 156: ('sa', -1), 118:
         111: ('pa', 1), 168: ('pa', -1), 210: ('rt', 1), 215: ('rt', -1), 213: ('rf', 1), 218: ('rf', -1),
         211: ('re', 1), 216: ('re', -1), 212: ('ra', 1), 217: ('ra', -1)}
 SLOT_BY_TYPE = {1: 'amulette', 9: 'anneau', 10: 'ceinture', 11: 'bottes', 16: 'coiffe', 17: 'cape',
-                2: 'arme', 3: 'arme', 4: 'arme', 5: 'arme', 6: 'arme', 7: 'arme', 8: 'arme', 19: 'arme', 271: 'arme'}
-JOB = {11: 'forgeron', 13: 'sculpteur', 15: 'cordonnier', 16: 'bijoutier', 27: 'tailleur', 65: 'bricoleur'}
+                2: 'arme', 3: 'arme', 4: 'arme', 5: 'arme', 6: 'arme', 7: 'arme', 8: 'arme', 19: 'arme', 271: 'arme', 82: 'bouclier'}
+JOB = {11: 'forgeron', 13: 'sculpteur', 15: 'cordonnier', 16: 'bijoutier', 27: 'tailleur', 60: 'faconneur', 65: 'bricoleur'}
 GATHER = {  # métier -> [(nom, niveau requis)]
     'paysan': [('Blé', 1), ('Orge', 20), ('Avoine', 40)],
     'bucheron': [('Bois de Frêne', 1), ('Bois de Châtaignier', 20), ('Bois de Noyer', 40)],
@@ -69,7 +69,7 @@ GATHER = {  # métier -> [(nom, niveau requis)]
     'alchimiste': [('Ortie', 1), ('Sauge', 20), ('Trèfle à 5 feuilles', 40)],
     'pecheur': [('Greuvette', 1), ('Truite', 10), ('Crabe Sourimi', 20), ('Poisson-Chaton', 40)],
 }
-BREEDS = {'iop': 8, 'cra': 9, 'eni': 7}
+BREEDS = {'feca': 1, 'osa': 2, 'enu': 3, 'sram': 4, 'xelor': 5, 'eca': 6, 'eni': 7, 'iop': 8, 'cra': 9, 'sadi': 10, 'sacri': 11, 'panda': 12, 'roub': 13, 'zobal': 14, 'steam': 15, 'elio': 16, 'hupper': 17, 'ougi': 18, 'forge': 20}
 MAX_CRAFT_LVL = 45
 
 # ------------------------------------------------------------------ load
@@ -80,6 +80,7 @@ items = {i['id']: i for i in load('items')}
 recipes = {r['resultId']: r for r in load('recipes')}
 isets = {s['id']: s for s in load('item-sets')}
 dungeons_raw = load('dungeons')
+races = {r['id']: r['name']['fr'] for r in load('monster-races')}
 breeds = {b['id']: b for b in load('breeds')}
 item_by_name = {}
 for i in sorted(items.values(), key=lambda x: x['id']):
@@ -87,7 +88,7 @@ for i in sorted(items.values(), key=lambda x: x['id']):
 
 def fr(o): return o['name']['fr'] if isinstance(o.get('name'), dict) else str(o.get('name'))
 
-images = {'m': {}, 'i': {}, 's': {}, 'h': {}}  # dossier -> {fichier: url}
+images = {'m': {}, 'i': {}, 's': {}, 'h': {}, 'c': {}}  # dossier -> {fichier: url}
 
 # ------------------------------------------------------------------ resources registry
 RES = {}  # nom -> {id, icon, lvl, price, type}
@@ -140,7 +141,7 @@ def monster_entry(m, boss=False, archi_of=None):
         else:
             drops.append([reg_res(it), round(pct, 2)])
     hpavg = statistics.mean(grade(m, k)['lifePoints'] for k in range(5))
-    e = {'name': fr(m), 'dbid': m['id'], 'img': m['gfxId'], 'lvl': [lo, hi], 'el': el_of(r), 'res': r,
+    e = {'name': fr(m), 'dbid': m['id'], 'img': m['gfxId'], 'lvl': [lo, hi], 'el': el_of(r), 'res': r, 'race': m['race'],
          'realHp': round(hpavg), 'drops': drops, 'eq': eq}
     if boss: e['boss'] = True
     if archi_of: e['archiOf'] = archi_of
@@ -329,6 +330,7 @@ for m in GAME_M.values():
 
 # ------------------------------------------------------------------ spells & heads
 SPELL_IMG = {}
+CLASS_SPELLS_RAW = {}
 def get_json(u):
     with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30) as r:
         return json.loads(r.read())
@@ -340,8 +342,21 @@ if FETCH_IMAGES:
             for sp in get_json(f'https://api.dofusdb.fr/spells?{q}&$limit=50&lang=fr')['data']:
                 ic = sp.get('iconId')
                 SPELL_IMG[sp['name']['fr']] = ic
+                lv = (sp.get('spellLevels') or [None])[0]
+                info = {'id': sp['id'], 'name': sp['name']['fr'], 'icon': ic, 'desc': (sp.get('description') or {}).get('fr', ''), 'order': ids.index(sp['id']), 'lv': lv}
+                CLASS_SPELLS_RAW.setdefault(cls, []).append(info)
                 images['s'][f"{ic}.png"] = sp.get('img') or f"https://api.dofusdb.fr/img/spells/sort_{ic}.png"
-    log(f"Sorts de classe : {len(SPELL_IMG)} icônes")
+    allv = [x['lv'] for L in CLASS_SPELLS_RAW.values() for x in L if x.get('lv')]
+    LV = {}
+    for i in range(0, len(allv), 40):
+        q = '&'.join(f'id[$in][]={x}' for x in allv[i:i + 40])
+        for L in get_json(f'https://api.dofusdb.fr/spell-levels?{q}&$limit=50&lang=fr')['data']:
+            LV[L['id']] = L
+    for L in CLASS_SPELLS_RAW.values():
+        for x in L:
+            v = LV.get(x.pop('lv', None))
+            if v: x.update({'pa': v.get('apCost'), 'cd': v.get('minCastInterval'), 'casts': v.get('maxCastPerTurn'), 'range': v.get('range')})
+    log(f"Sorts de classe : {len(SPELL_IMG)} icônes, {len(LV)} niveaux")
 HEADS = {}
 for cls, bid in BREEDS.items():
     b = breeds[bid]
@@ -349,11 +364,16 @@ for cls, bid in BREEDS.items():
         fn = f"{cls}_{g[0]}.png"; images['h'][fn] = url
     HEADS[cls] = {'m': f"{cls}_m.png", 'f': f"{cls}_f.png"}
     images['h'][f"{cls}_logo.png"] = b.get('imgTransparent')
+RACES = {str(m['race']): races.get(m['race'], '') for m in GAME_M.values()}
+STAT_ICONS = {'vit': 'tx_vitality', 'sa': 'tx_wisdom', 'fo': 'tx_strength', 'ine': 'tx_intelligence', 'cha': 'tx_chance', 'age': 'tx_agility',
+              'pui': 'tx_damagesPercent', 'do': 'tx_damage', 'cri': 'tx_crit', 'so': 'tx_heal', 'pp': 'tx_prospecting', 'ini': 'tx_initiative',
+              'pa': 'tx_actionPoints', 'rt': 'tx_strengthRes', 'rf': 'tx_intelligenceRes', 're': 'tx_chanceRes', 'ra': 'tx_agilityRes', 'rn': 'tx_neutralRes', 'pm': 'tx_movementPoints'}
+images['c'] = {f"{k}.png": f"https://dofusdb.fr/icons/characteristics/{v}.png" for k, v in STAT_ICONS.items()}
 
 # ------------------------------------------------------------------ write
 os.makedirs(os.path.join(OUT, 'js'), exist_ok=True)
 GD = {'MONSTERS': GAME_M, 'ZONES': zones_out, 'DUNGEONS': dg_out, 'ITEMS': ITEMS, 'SETS': SETS, 'SPECIAL_CRAFTS': SPECIAL,
-      'GATHER_JOBS': gather_out, 'RES': RES, 'SPELL_IMG': SPELL_IMG, 'HEADS': HEADS,
+      'GATHER_JOBS': gather_out, 'RES': RES, 'SPELL_IMG': SPELL_IMG, 'HEADS': HEADS, 'RACES': RACES,
       'META': {'source': 'DofusDB (https://dofusdb.fr) — contenu © Ankama Games', 'built': time.strftime('%Y-%m-%d')}}
 js = ('/* Généré par tools/build_data.py — ne pas modifier à la main. Données DOFUS via DofusDB, © Ankama Games. */\n'
       '(function (root) {\n  const GAMEDATA = ' + json.dumps(GD, ensure_ascii=False, separators=(',', ':')) + ';\n'
@@ -382,3 +402,4 @@ if FETCH_IMAGES:
         n = sum(ex.map(dl, jobs))
     log(f"Images : {n} nouvelles / {len(jobs)} au total")
 open(os.path.join(OUT, 'report.txt'), 'w', encoding='utf-8').write('\n'.join(report))
+json.dump(CLASS_SPELLS_RAW, open(os.path.join(OUT, 'class_spells_raw.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
