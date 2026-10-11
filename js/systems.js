@@ -1,5 +1,5 @@
 /* ============================================================================
-   SYSTÈMES v2.6 — DofousXen
+   SYSTÈMES v2.6 — Idlus
    Havre-Sac, Forgemagie, Almanax, Alignement (Bonta / Brâkmar), Quêtes,
    Avis de recherche, Succès, Ornements, cadres de carte de héros.
    Logique pure (pas de DOM), branchée sur le moteur via E.bonus / E.emit.

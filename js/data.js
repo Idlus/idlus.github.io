@@ -1,5 +1,5 @@
 /* ============================================================================
-   DONNÉES DU JEU — DofousXen (v2)
+   DONNÉES DU JEU — Idlus (v2)
    ----------------------------------------------------------------------------
    Ce fichier contient les règles propres au jeu (caractéristiques, classes,
    sorts, Emblème…). Le contenu tiré de DOFUS (zones, sous-zones, monstres,

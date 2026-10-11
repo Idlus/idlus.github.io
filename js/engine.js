@@ -1,5 +1,5 @@
 /* ============================================================================
-   MOTEUR DU JEU — DofousXen (v2)
+   MOTEUR DU JEU — Idlus (v2)
    Logique pure : état, combats automatiques, progression, objets, métiers,
    brisage, Emblème du Solitaire, donjons, progression hors-ligne.
    Aucune dépendance au DOM : testable dans Node.
