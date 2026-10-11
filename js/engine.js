@@ -322,6 +322,29 @@
   /* Objets Rayonnants : très rares, +10 à +50 % sur les statistiques positives de l'objet */
   E.RADIANT_CHANCE = 1 / 400;
   E.radiantBonus = () => Math.round(10 + 40 * Math.pow(rnd(), 2.2));
+  /* Raretés (3.2) : déduites de l'origine de l'objet. Pour en ajouter une plus tard (ex. Mythique),
+     ajouter une entrée ici (dans l'ordre croissant) et la donner aux objets via ITEMS[x].rarity ou la règle ci-dessous. */
+  E.RARITIES = [
+    { id: "commun", name: "Commun", color: "#b3aa96" },
+    { id: "peu", name: "Peu commun", color: "#6fd06a" },
+    { id: "rare", name: "Rare", color: "#5fbfff" },
+    { id: "epique", name: "Épique", color: "#c77dff" },
+    { id: "legendaire", name: "Légendaire", color: "#ff9d3c" },
+  ];
+  E.RARITY = Object.fromEntries(E.RARITIES.map((r, i) => [r.id, Object.assign({ rank: i }, r)]));
+  let rarityCache = null;
+  E.rarityOf = (tpl) => {
+    if (!rarityCache) {
+      rarityCache = {};
+      const drop = {};
+      for (const k in MONSTERS) (MONSTERS[k].items || []).forEach(([id]) => { drop[id] = MONSTERS[k].boss ? "epique" : drop[id] === "epique" ? "epique" : "rare"; });
+      for (const id in ITEMS) {
+        const T = ITEMS[id];
+        rarityCache[id] = E.RARITY[T.rarity] ? T.rarity : T.slot === "dofus" ? "legendaire" : drop[id] || (T.set ? "peu" : "commun");
+      }
+    }
+    return rarityCache[tpl] || "commun";
+  };
   E.rollItem = (S, tpl, opts = {}) => {
     const T = ITEMS[tpl]; const roll = {};
     for (const k in T.stats) { const [a, b] = T.stats[k]; roll[k] = ri(a, b); }

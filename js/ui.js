@@ -14,15 +14,22 @@ const ui = {
 };
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.3";
+const GAME_VERSION = "3.2.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
-  { v: "3.1.3", name: "Petit lot", items: [
+  { v: "3.2.1", name: "Petit lot", items: [
     "Tenues : enregistrez jusqu'à 3 équipements complets par héros (chasse, donjon, prospection…) et remettez-les en un clic ; leurs objets sont protégés de la vente et du brisage",
     "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Monde › Donjons)",
     "Entrée des boss : nom en grand, stasis et mécaniques au début du combat ; un flash marque la seconde phase",
     "Moments de récompense : grand encart pour un objet Rayonnant, chaque palier de 10 niveaux et chaque premier passage de stasis (désactivable dans les Options)",
     "Partager un build : un code à copier sur Discord avec les sorts, les caractéristiques et l'équipement d'un héros ; collez celui d'un autre joueur pour le consulter, l'appliquer à un héros de la même classe ou mettre ses objets fabricables dans la liste de courses" ] },
+  { v: "3.2.0", name: "Héros en pied", items: [
+    "Raretés d'objets : Commun, Peu commun, Rare, Épique et Légendaire, selon la façon d'obtenir l'objet (fabriqué, en panoplie, lâché par un monstre, par un boss de donjon, trophées)",
+    "La couleur de rareté apparaît partout : sac, fiche héros, butin, infobulles et fiche d'objet ; filtre et tri par rareté dans l'Inventaire",
+    "Fiche héros en pied : votre personnage au centre de son équipement, comme dans DOFUS",
+    "Cartes de héros allégées : le héros en pied, un liseré et un ruban à la couleur du cadre",
+    "Les objets Rayonnants gardent leur effet, par-dessus la rareté"
+  ] },
   { v: "3.1.2", name: "Nouvelle interface", items: [
     "Nouveau thème « Émeraude » aux couleurs du logo DOFUS 3 (l'ancien thème « Nuit violette » reste disponible dans les Options)",
     "Nouveau logo idlus : l'œuf émeraude, aussi sur l'application installée",
@@ -157,7 +164,6 @@ const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name
 const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k, v]) => `<span class="chip ${v < 0 ? "neg" : ""}" style="--c:var(--el-${k})" data-tip="Résistance ${ELEMENTS[k].name} : ${v} %">${v > 0 ? "+" : ""}${v}%</span>`).join("");
 
 /* ---------- carte de héros (v2.6) ---------- */
-const symImg = (cls) => `assets/h/${cls}_sym.png`;
 const EL_ICON = { t: "fo", f: "ine", e: "cha", a: "age", n: "vit" };
 function heroCard(c, size = "", opts = {}) {
   const st = E.charStats(S, c); const el = E.domEl(st); const fi = E.frameIdx(c.lvl); const C = CLASSES[c.cls];
@@ -174,7 +180,7 @@ function heroCard(c, size = "", opts = {}) {
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
   return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}`)}">
-    ${ornHtml}<div class="in"><div class="art">${im(logoImg(c.cls), "wm")}${im(symImg(c.cls), "sym", C.name)}<span class="hd">${headTag(c.cls, c.sex, c.name)}</span><span class="lv">${c.lvl}</span><span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
+    ${ornHtml}<div class="in"><div class="art">${lookImg(c, "hlook")}<span class="lv">${c.lvl}</span><span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
     <div class="nm"><b>${h(c.name)}</b><span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}</div>
     <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
     <div class="st3">${stats3.map(([k, v]) => `<span>${sIco(k)}${typeof v === "number" ? fmt(v) : v}</span>`).join("")}</div></div><span class="tier">${E.FRAMES[fi]}</span></button>`;
@@ -855,8 +861,12 @@ function lootHtml(F) {
 }
 
 /* ---------- objets ---------- */
-const itemIcon = (it) => `<span class="icobox ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}</span>`;
-function itemName(it) { return `<span class="iname ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
+const rar = (tpl) => E.RARITY[E.rarityOf(tpl)];
+const rarCls = (tpl) => `rr r-${E.rarityOf(tpl)}`;
+const rarTag = (tpl) => { const r = rar(tpl); return `<span class="rtag ${rarCls(tpl)}">${r.name}</span>`; };
+(() => { const st = document.createElement("style"); st.textContent = E.RARITIES.map((r) => `.r-${r.id}{--rc:${r.color}}`).join(""); document.head.appendChild(st); })();
+const itemIcon = (it) => `<span class="icobox ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}</span>`;
+function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   return Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
@@ -918,7 +928,7 @@ function slotUpgrade(c, s) {
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
-  return `<button class="dslot ${it ? "filled" : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
+  return `<button class="dslot ${it ? "filled " + rarCls(it.tpl) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
     ${it ? im(itemImg(it.tpl), "", T.name) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
@@ -967,7 +977,7 @@ function charEquipView(c, st) {
     <div class="panel"><div class="pad">
       <div class="doll">
         <div class="dcol">${DOLL_L.map((s) => dollSlot(c, s)).join("")}</div>
-        <div class="dcenter"><span class="medal big" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>
+        <div class="dcenter" style="--cc:${CLASSES[c.cls].color}"><div class="dfig">${lookImg(c, "dlook")}<span class="dlv">Niveau ${c.lvl}</span></div>
           <b>${h(c.name)}</b><span class="xs muted">${CLASSES[c.cls].name} niv. ${c.lvl}</span>
           <div class="dstats">${["hpMax", "pa", mainK, "pui", "pp", "sa"].map((k) => `<span${tipAttr(k)}>${sIco(k) || "❤"}<b class="num">${k === "hpMax" ? fmt(st.hpMax) : fmtStatVal(k, st[k])}</b></span>`).join("")}</div></div>
         <div class="dcol">${DOLL_R.map((s) => dollSlot(c, s)).join("")}</div>
@@ -1112,21 +1122,21 @@ function invGroups() {
   const groups = new Map();
   Object.values(S.items).forEach((it) => {
     const T = ITEMS[it.tpl];
-    if (filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
+    if (filt === "radiant" ? !it.radiant : filt && filt.startsWith("r:") ? E.rarityOf(it.tpl) !== filt.slice(2) : filt !== "all" && T.slot !== filt) return;
     if (q && !T.name.toLowerCase().includes(q)) return;
     const g = groups.get(it.tpl) || { tpl: it.tpl, items: [] }; g.items.push(it); groups.set(it.tpl, g);
   });
   const arr = [...groups.values()];
   arr.forEach((g) => { g.best = Math.max(...g.items.map((x) => E.itemQuality(x))); g.rad = g.items.some((x) => x.radiant); g.lock = g.items.some((x) => x.locked); g.eq = g.items.some((x) => E.equippedBy(S, x.uid)); });
   const sort = ui.invSort || "lvl";
-  arr.sort((a, b) => (b.rad - a.rad) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
+  arr.sort((a, b) => (b.rad - a.rad) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "rar" ? rar(b.tpl).rank - rar(a.tpl).rank || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
   return arr;
 }
 function invDetail(tpl) {
   const T = ITEMS[tpl]; if (!T) return "";
   const copies = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
   if (!copies.length) return "";
-  return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2>${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
+  return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2 class="iname ${rarCls(tpl)}">${h(T.name)}</h2><div class="xs muted">${rarTag(tpl)} niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
     <div class="pad xs">${tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
       ${ui.cid && char(ui.cid) && T.lvl <= char(ui.cid).lvl ? `<div class="row" style="margin-top:6px">${miniDoll(char(ui.cid), T.slot)}</div>` : ""}</div>
     <div class="list">${copies.map((it) => { const by = E.equippedBy(S, it.uid);
@@ -1222,13 +1232,13 @@ function renderInventory() {
     const detail = ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
     body = `${autoRulesHtml()}
       <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
-        <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
-        <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
+        <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"], ...E.RARITIES.map((r) => ["r:" + r.id, "Rareté : " + r.name])].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["rar", "Rareté"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
         <span class="muted small num">${items.length}/${E.itemCap(S)} objets · ${groups.length} types</span></div>
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
         <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
-          return `<button class="itile ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
+          return `<button class="itile ${rarCls(g.tpl)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
             ${im(itemImg(g.tpl), "", T.name)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
       </div>`;
   } else if (ui.inv === "res") {
@@ -1250,7 +1260,7 @@ function tipItemHtml(uid) {
   let cmp = "";
   if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">Pour ${h(c.name)} : ${deltaHtml(c, slot, uid)}</div>`; }
   const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
-  return `<b>${h(T.name)}</b> <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
+  return `<b class="iname ${rarCls(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
 }
 let tipEl = null;
 function showTip(target) {

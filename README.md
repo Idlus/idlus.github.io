@@ -7,7 +7,7 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
-## 3.1.3 « Petit lot »
+## 3.2.1 « Petit lot »
 - Tenues : 3 équipements complets enregistrables par héros, remis en un clic (objets protégés de la vente et du brisage)
 - Mutateur de la semaine : un donjon par semaine avec un modificateur imposé, +25 % d'XP et de butin, +50 % de poussière
 - Entrée des boss (nom, stasis, mécaniques) et flash de seconde phase
@@ -19,6 +19,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 - Écran de combat : arène adaptative en quinconce, bande des challenges, vue compacte, arène fixe et onglets sur mobile
 - Icônes : menus en médaillons, objets officiels DOFUS (kamas, poussières, clés, coffres, challenges) à la place des émojis
 - 3.1.1 : stasis plus exigeante (dégâts ×1,2 par niveau), fabrication des parchemins
+
+## 3.2 « Héros en pied »
+- Raretés d'objets (Commun, Peu commun, Rare, Épique, Légendaire) selon leur origine, visibles partout, avec filtre et tri dans l'Inventaire
+- Fiche héros en pied : le personnage au centre de son équipement
+- Cartes de héros allégées : héros en pied, liseré et ruban à la couleur du cadre
 
 ## 3.1 « Donjons et classes »
 - Héros en pied (rendus d'apparence DOFUS), têtes et palettes au choix, coiffes et capes visibles (64 objets pour commencer)
