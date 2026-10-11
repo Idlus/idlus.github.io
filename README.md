@@ -7,6 +7,17 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 3.1.2 « Nouvelle interface »
+- Thème Émeraude (couleurs du logo DOFUS 3), thème Nuit violette en option ; nouveau logo (œuf émeraude)
+- Écran de combat : arène adaptative en quinconce, bande des challenges, vue compacte, arène fixe et onglets sur mobile
+- Icônes : menus en médaillons, objets officiels DOFUS (kamas, poussières, clés, coffres, challenges) à la place des émojis
+- 3.1.1 : stasis plus exigeante (dégâts ×1,2 par niveau), fabrication des parchemins
+
+## 3.2 « Héros en pied »
+- Raretés d'objets (Commun, Peu commun, Rare, Épique, Légendaire) selon leur origine, visibles partout, avec filtre et tri dans l'Inventaire
+- Fiche héros en pied : le personnage au centre de son équipement
+- Cartes de héros allégées : héros en pied, liseré et ruban à la couleur du cadre
+
 ## 3.1 « Donjons et classes »
 - Héros en pied (rendus d'apparence DOFUS), têtes et palettes au choix, coiffes et capes visibles (64 objets pour commencer)
 - Stasis 1 à 10 dans chaque donjon : synchronisation, élites, modificateurs, seconde phase, temps limité, boss légendaire ; coffres, poussière de stasis, parchemins, records, ornement
