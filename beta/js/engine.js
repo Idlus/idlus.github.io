@@ -281,6 +281,19 @@
     while (done < n) { const cost = E.pointCost(stat, c.alloc[stat]); if (c.pts < cost) break; c.alloc[stat]++; c.pts -= cost; done++; }
     return done > 0;
   };
+  /* 3.2.3 : retirer des points (mode manuel) ; on rend le coût du palier où se trouvait le point */
+  E.deallocate = (S, cid, stat, n) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c || !BASE_STATS.includes(stat)) return false;
+    let done = 0;
+    while (done < n && c.alloc[stat] > 0) { c.alloc[stat]--; c.pts += E.pointCost(stat, c.alloc[stat]); done++; }
+    return done > 0;
+  };
+  /* passer d'un mode à l'autre sans rien perdre : le manuel garde les points placés, l'automatique retrouve son dernier réglage */
+  E.setAllocMode = (S, c, auto) => {
+    if (!auto) { if (c.autoStat) c.autoLast = c.autoStat; c.autoStat = null; return; }
+    if (!c.autoStat) c.autoStat = c.autoLast || CLASSES[c.cls].main;
+    E.autoAllocate(S, c);
+  };
   /* répartition automatique : élément principal jusqu'au palier choisi, puis Vitalité */
   E.AUTO_CAPS = [100, 200, 300, 9999];
   E.autoAllocate = (S, c) => {

@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.2.2";
+const GAME_VERSION = "3.2.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.2.3", name: "Répartition au choix", items: [
+    "Répartition des points : choisissez Automatique ou Manuelle pour chaque héros (onglet Caractéristiques). En manuel, des boutons −1 et −10 rendent les points sans frais, et une pastille rouge sur l'onglet signale les points qui restent à placer",
+    "Passer en manuel garde les points déjà placés ; revenir en automatique retrouve la caractéristique choisie avant" ] },
   { v: "3.2.2", name: "Confort", items: [
     "Pourquoi j'ai perdu ? : après une défaite, l'onglet Butin explique en une phrase ce qui a manqué (« cause : action »), avec les faits du combat et jusqu'à trois objets conseillés (dans le sac, à fabriquer, à looter)",
     "Objectifs épinglés : une bande sous la barre du haut suit jusqu'à 3 objectifs partout dans le jeu (quête principale d'office, avis de recherche, mission d'alignement, liste de courses, niveau d'un héros, succès)",
@@ -965,7 +968,7 @@ function renderHeroes() {
       ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (onglet Quêtes).</p>`}
     </div>
   </div></section>
-  <nav class="subtabs">${[["equip", "Équipement"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}</button>`).join("")}</nav>
+  <nav class="subtabs">${[["equip", "Équipement"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : charSpellsView(c)}</section>`;
 }
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
@@ -998,18 +1001,22 @@ function charStatsView(c, st) {
   const sc = c.scrolls || {};
   const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3 points = 1" : k === "vit" ? "1 point = 1" : `${cost} point${cost > 1 ? "s" : ""} = 1${cur >= 100 ? ` (palier ${Math.floor(cur / 100) * 100})` : ""}`; };
   const scrollsOwned = (k) => (S.cons["parch_" + k + "_p"] || 0) + (S.cons["parch_" + k + "_g"] || 0);
-  const dust = S.res[E.POUSSIERE] || 0;
+  const dust = S.res[E.POUSSIERE] || 0; const manual = !c.autoStat;
   return `<div class="grid2">
-    <div class="panel"><div class="phead"><h2>Points à répartir</h2><b class="num" style="font-size:20px">${c.pts}</b></div>
+    <div class="panel"><div class="phead"><h2>Points à répartir</h2><b class="num ptsleft ${manual && c.pts ? "on" : ""}" style="font-size:20px">${c.pts}</b></div>
+      <div class="pad stack" style="padding-bottom:6px">
+        <div class="row small"><span class="muted">Répartition :</span><span class="seg">${[[1, "Automatique"], [0, "Manuelle"]].map(([v, n]) => `<button data-act="allocmode" data-id="${c.id}" data-v="${v}" aria-pressed="${!manual === !!v}">${n}</button>`).join("")}</span></div>
+        ${manual ? `<p class="note xs" style="margin:0">Mode manuel : les 5 points gagnés à chaque niveau vous attendent ici. Les boutons − rendent les points, sans frais.</p>`
+          : `<label class="row small"><span class="muted">Caractéristique :</span>
+          <select data-act="autostat" data-id="${c.id}">${BASE_STATS.map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>`}
+        ${c.autoStat && E.ELEM_STATS.includes(c.autoStat) ? `<label class="row small"><span class="muted">jusqu'à</span><select data-act="autocap" data-id="${c.id}">${E.AUTO_CAPS.map((v) => `<option value="${v}" ${(c.autoCap || 200) === v ? "selected" : ""}>${v >= 9999 ? "sans limite" : v}</option>`).join("")}</select><span class="muted">puis</span>
+          <select data-act="autothen" data-id="${c.id}">${["vit", "sa", ...E.ELEM_STATS.filter((k) => k !== c.autoStat)].map((k) => `<option value="${k}" ${(c.autoThen || "vit") === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>` : ""}
+      </div>
       <div class="list">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${costTxt(k)}</span>
           <div class="scrollbar" title="Parchemins"><i style="width:${(sc[k] || 0)}%"></i></div><span class="xs muted">${IC("quetes")} ${sc[k] || 0}/${E.SCROLL_MAX}${scrollsOwned(k) ? ` · <a href="#" data-act="usescroll" data-k="${k}">${scrollsOwned(k)} à utiliser</a>` : ""}${dust && E.scrollRoom(c, k) > 0 ? (() => { const cc = E.scrollCraftCost(S, k); return ` · <a href="#" data-act="craftscroll" data-k="${k}" title="Fabriquer un Petit parchemin (+1) avec de la poussière de stasis">Fabriquer (${cc.dust} ✨ · ${fmt(cc.kamas)} k)</a>`; })() : ""}</span></span>
           <span class="num" style="min-width:58px;text-align:right">${fmt(c.alloc[k])}${sc[k] ? `<span class="xs" style="color:var(--gold2)"> +${sc[k]}</span>` : ""}</span>
-          <button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""}>+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""}>+10</button></div>`).join("")}</div>
+          <span class="allocbtns">${manual ? `<button class="btn sm" data-act="dealloc" data-k="${k}" data-n="10" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 10 en ${STATS[k].name}">−10</button><button class="btn sm" data-act="dealloc" data-k="${k}" data-n="1" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 1 en ${STATS[k].name}">−1</button>` : ""}<button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 1 en ${STATS[k].name}">+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 10 en ${STATS[k].name}">+10</button></span></div>`).join("")}</div>
       <div class="pad stack" style="padding-top:6px">
-        <label class="row small"><span class="muted">Répartition automatique :</span>
-          <select data-act="autostat" data-id="${c.id}"><option value="">Manuelle</option>${BASE_STATS.map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>
-        ${c.autoStat && E.ELEM_STATS.includes(c.autoStat) ? `<label class="row small"><span class="muted">jusqu'à</span><select data-act="autocap" data-id="${c.id}">${E.AUTO_CAPS.map((v) => `<option value="${v}" ${(c.autoCap || 200) === v ? "selected" : ""}>${v >= 9999 ? "sans limite" : v}</option>`).join("")}</select><span class="muted">puis</span>
-          <select data-act="autothen" data-id="${c.id}">${["vit", "sa", ...E.ELEM_STATS.filter((k) => k !== c.autoStat)].map((k) => `<option value="${k}" ${(c.autoThen || "vit") === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>` : ""}
         <p class="note xs">Au-delà de 100 dans une caractéristique d'élément, il faut 2 points pour gagner 1, puis 3 au-delà de 200 et 4 au-delà de 300. La Vitalité reste à 1 pour 1. Les parchemins s'ajoutent hors paliers.</p>
         <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
@@ -1862,6 +1869,8 @@ document.addEventListener("click", (ev) => {
     case "herotab": ui.hero = d.v; ui.slot = null; break;
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
+    case "dealloc": E.deallocate(S, c.id, d.k, +d.n); break;
+    case "allocmode": { const x = char(+d.id); E.setAllocMode(S, x, d.v === "1"); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); break; }
     case "resetpts": E.resetPoints(S, +d.id); toast("Points réinitialisés" + (char(+d.id).autoStat ? " et redistribués." : ".")); break;
     case "craftscroll": { ev.preventDefault(); const r = E.craftScroll(S, d.k); if (r) { toast(r); return; } toast(`Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le avec le lien « à utiliser ».`); break; }
     case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
@@ -1923,7 +1932,7 @@ document.addEventListener("click", (ev) => {
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
   const c = ui.cid ? char(ui.cid) : null;
-  if (a === "autostat") { const x = char(+t.dataset.id); x.autoStat = t.value || null; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
+  if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
   else if (a === "autocap") { const x = char(+t.dataset.id); x.autoCap = +t.value; E.autoAllocate(S, x); }
   else if (a === "autothen") { const x = char(+t.dataset.id); x.autoThen = t.value; E.autoAllocate(S, x); }
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; c.spellsManual = true; }
