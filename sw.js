@@ -1,7 +1,7 @@
 /* idlus — service worker : jeu jouable hors ligne.
    Fichiers du jeu (html/js/css/json) : réseau d'abord (les mises à jour arrivent tout de suite), cache en secours.
    Images et polices : cache d'abord (elles ne changent pas), mises en cache au fil de la partie. */
-const VERSION = "3.1.2";
+const VERSION = "3.2.0";
 const CORE = "idlus-core-" + VERSION, MEDIA = "idlus-media-v2";
 const PRECACHE = ["./", "index.html", "css/style.css", "js/gamedata.js", "js/looks.js", "js/data.js", "js/engine.js", "js/systems.js", "js/ui.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CORE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())); });

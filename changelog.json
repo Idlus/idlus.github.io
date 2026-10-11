@@ -1,6 +1,17 @@
 {
-  "version": "3.1.2",
+  "version": "3.2.0",
   "versions": [
+    {
+      "v": "3.2.0",
+      "name": "Héros en pied",
+      "items": [
+        "Raretés d'objets : Commun, Peu commun, Rare, Épique et Légendaire, selon la façon d'obtenir l'objet (fabriqué, en panoplie, lâché par un monstre, par un boss de donjon, trophées)",
+        "La couleur de rareté apparaît partout : sac, fiche héros, butin, infobulles et fiche d'objet ; filtre et tri par rareté dans l'Inventaire",
+        "Fiche héros en pied : votre personnage au centre de son équipement, comme dans DOFUS",
+        "Cartes de héros allégées : le héros en pied, un liseré et un ruban à la couleur du cadre",
+        "Les objets Rayonnants gardent leur effet, par-dessus la rareté"
+      ]
+    },
     {
       "v": "3.1.2",
       "name": "Nouvelle interface",
