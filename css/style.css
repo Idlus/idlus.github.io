@@ -944,3 +944,51 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
 @keyframes celeIn{0%{opacity:0;transform:translateY(-14px) scale(.85)}100%{opacity:1;transform:none}}
 @keyframes celeOut{to{opacity:0;transform:translateY(-10px) scale(.95)}}
 @keyframes rays{to{transform:rotate(360deg)}}
+
+/* ===================== 3.2.2 « Confort » ===================== */
+/* bande d'objectifs épinglés */
+.objs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--panel);border:2px solid var(--frame);border-radius:12px;padding:5px 8px;margin:-4px 0 12px}
+.obj{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border-radius:999px;padding:3px 9px 3px 6px;font-size:12.5px;font-weight:800;box-shadow:inset 0 0 0 1.5px var(--frame);cursor:pointer;min-width:0;max-width:100%;transition:box-shadow .15s}
+.obj:hover{box-shadow:inset 0 0 0 2px var(--gold)}
+.obj.auto{box-shadow:inset 0 0 0 2px #ffb95c}
+.obj.done{box-shadow:inset 0 0 0 2px #3fb35d;background:rgba(63,179,93,.14)}
+.obj .uico{width:16px;height:16px;flex:none}
+.obj .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.obj .mini{width:54px;height:6px;border-radius:4px;background:rgba(0,0,0,.45);overflow:hidden;flex:none}
+.obj .mini i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.obj.done .mini i{background:#3fb35d}
+.obj .pt{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.obj .x{color:var(--muted);font-weight:900;padding:0 2px;margin-left:2px;border-radius:50%}
+.obj .x:hover{color:var(--danger)}
+.objs .cnt{margin-left:auto;font-size:11px;font-weight:800;color:var(--muted)}
+@media (max-width:640px){.objs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.objs::-webkit-scrollbar{display:none}.obj{flex:none}.obj .lbl{max-width:130px}.objs .cnt{display:none}}
+.pinbtn.on{background:#ffb95c;color:#2a1a08;box-shadow:none}
+.pinbtn.on .gl{stroke:#2a1a08}
+span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#ffb95c;white-space:nowrap}
+.ach .grow{flex:1;min-width:0}.ach .pinbtn{flex:none}
+/* temps estimé */
+.eta{display:inline-flex;align-items:center;font-size:11.5px;font-weight:800;color:var(--gold2);white-space:nowrap}
+.eta::before{content:"⏱";margin-right:3px;font-size:11px}
+.eta.no{color:var(--muted);white-space:normal}
+.xpwrap{cursor:help;padding:2px 0}
+.xptip{margin-top:4px}
+.hrow.clk{cursor:pointer}.hrow.clk:hover{box-shadow:inset 0 0 0 2px var(--frame)}
+/* pourquoi j'ai perdu */
+.loss{background:linear-gradient(180deg,rgba(255,107,107,.12),rgba(255,107,107,.04));border:2px solid rgba(255,107,107,.45);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.loss .ttl{font-family:var(--font-title);color:#ffb3b3;font-size:16px;display:flex;align-items:center;gap:6px}
+.loss .ttl .gl{stroke:#ffb3b3}
+.loss .advice{font-size:14px;font-weight:700;line-height:1.35}
+.loss .facts{display:flex;flex-wrap:wrap;gap:6px}
+.loss .pill.bad{background:rgba(255,107,107,.16);color:#ff8a8a}.loss .pill.gold{background:rgba(var(--glw),.18);color:var(--gold2)}
+.loss .sec{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.sugg{display:flex;flex-direction:column;gap:6px}
+.sugg .sl{display:flex;align-items:center;gap:8px;background:var(--panel2);border:2px solid var(--frame);border-radius:12px;padding:6px 10px}
+.sugg .sl .icobox{width:36px;height:36px}.sugg .sl .icobox img{width:30px;height:30px}
+.sugg .sl .t{flex:1;min-width:0;font-size:13px}
+.sugg .sl .t small{display:block;color:var(--muted);font-weight:700;font-size:11.5px}
+.toast.loss{border-color:rgba(255,107,107,.6)}
+/* notifications (Options) */
+.notifs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.notifs .opt{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel2);border:2px solid var(--frame);border-radius:12px;padding:7px 10px;cursor:pointer}
+.notifs .opt input{width:18px;height:18px;accent-color:var(--gold);flex:none}
+@media (max-width:640px){.sugg .sl{flex-wrap:wrap}.sugg .sl .t{flex-basis:calc(100% - 46px)}.sugg .sl .btn,.sugg .sl .tag.good{margin-left:auto}}

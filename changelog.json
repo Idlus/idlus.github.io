@@ -1,6 +1,16 @@
 {
-  "version": "3.2.1",
+  "version": "3.2.2",
   "versions": [
+    {
+      "v": "3.2.2",
+      "name": "Confort",
+      "items": [
+        "Pourquoi j'ai perdu ? : après une défaite, l'onglet Butin explique en une phrase ce qui a manqué (« cause : action »), avec les faits du combat et jusqu'à trois objets conseillés (dans le sac, à fabriquer, à looter)",
+        "Objectifs épinglés : une bande sous la barre du haut suit jusqu'à 3 objectifs partout dans le jeu (quête principale d'office, avis de recherche, mission d'alignement, liste de courses, niveau d'un héros, succès)",
+        "Temps estimé : survolez (ou touchez) la barre d'XP d'un héros pour voir quand il passe le niveau suivant ; la liste de courses et les clés de donjon indiquent dans combien de temps tout sera réuni",
+        "Notifications : six évènements au choix dans les Options, avec une notification du navigateur quand l'onglet est en arrière-plan (sac plein, défaite, objectif atteint, liste de courses prête, palier de niveau, Rayonnant ou archimonstre)"
+      ]
+    },
     {
       "v": "3.2.1",
       "name": "Petit lot",
