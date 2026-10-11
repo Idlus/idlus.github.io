@@ -1,6 +1,21 @@
 {
-  "version": "3.1.1",
+  "version": "3.1.2",
   "versions": [
+    {
+      "v": "3.1.2",
+      "name": "Nouvelle interface",
+      "items": [
+        "Nouveau thème « Émeraude » aux couleurs du logo DOFUS 3 (l'ancien thème « Nuit violette » reste disponible dans les Options)",
+        "Nouveau logo idlus : l'œuf émeraude, aussi sur l'application installée",
+        "Écran de combat refait : arène qui s'adapte au nombre de héros, personnages en quinconce, plus aucune tête coupée, nom et vie sous les pieds",
+        "Bande des challenges au-dessus de l'arène, dernière action juste en dessous, halo sur le héros qui joue",
+        "Vue « Compacte » (une carte par combattant), automatique sur téléphone à partir de 6 héros",
+        "Sur téléphone : l'arène reste visible en haut quand on fait défiler, onglets Sorts / Journal / Butin",
+        "Menus en médaillons et objets officiels de DOFUS à la place des émojis (kamas, poussières, clés, coffres, challenges…)",
+        "Notifications regroupées (« 3 héros passent niveau 59 ») et nouveautés de mise à jour dans un petit bouton ✨",
+        "Correctif : la tête du Forgelance ne flotte plus à côté de son corps"
+      ]
+    },
     {
       "v": "3.1.1",
       "name": "Stasis plus exigeante",
