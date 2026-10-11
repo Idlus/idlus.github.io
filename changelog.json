@@ -1,6 +1,17 @@
 {
-  "version": "3.2.0",
+  "version": "3.2.1",
   "versions": [
+    {
+      "v": "3.2.1",
+      "name": "Petit lot",
+      "items": [
+        "Tenues : enregistrez jusqu'à 3 équipements complets par héros (chasse, donjon, prospection…) et remettez-les en un clic ; leurs objets sont protégés de la vente et du brisage",
+        "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Monde › Donjons)",
+        "Entrée des boss : nom en grand, stasis et mécaniques au début du combat ; un flash marque la seconde phase",
+        "Moments de récompense : grand encart pour un objet Rayonnant, chaque palier de 10 niveaux et chaque premier passage de stasis (désactivable dans les Options)",
+        "Partager un build : un code à copier sur Discord avec les sorts, les caractéristiques et l'équipement d'un héros ; collez celui d'un autre joueur pour le consulter, l'appliquer à un héros de la même classe ou mettre ses objets fabricables dans la liste de courses"
+      ]
+    },
     {
       "v": "3.2.0",
       "name": "Héros en pied",

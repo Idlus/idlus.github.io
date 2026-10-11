@@ -7,6 +7,13 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 3.2.1 « Petit lot »
+- Tenues : 3 équipements complets enregistrables par héros, remis en un clic (objets protégés de la vente et du brisage)
+- Mutateur de la semaine : un donjon par semaine avec un modificateur imposé, +25 % d'XP et de butin, +50 % de poussière
+- Entrée des boss (nom, stasis, mécaniques) et flash de seconde phase
+- Moments de récompense : objet Rayonnant, palier de 10 niveaux, premier passage de stasis
+- Codes de build à partager (sorts, caractéristiques, équipement), à lire et appliquer
+
 ## 3.1.2 « Nouvelle interface »
 - Thème Émeraude (couleurs du logo DOFUS 3), thème Nuit violette en option ; nouveau logo (œuf émeraude)
 - Écran de combat : arène adaptative en quinconce, bande des challenges, vue compacte, arène fixe et onglets sur mobile
