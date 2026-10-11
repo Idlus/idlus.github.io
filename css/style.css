@@ -1017,3 +1017,32 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .room .chev{color:var(--muted)}
 @media (min-width:641px){.msum,.room .chev{display:none}.room header{cursor:default}}
 @media (max-width:640px){.room header{cursor:pointer}.room:not(.open)>:not(header){display:none}.room.open .msum{display:none}.room.open .chev{transform:rotate(180deg)}.hvsum{grid-template-columns:repeat(3,1fr)}.rooms,.mlist{grid-template-columns:1fr}}
+
+/* ===== 3.3.0 « Combat vivant » ===== */
+.arena .ent.hero.back .lookwrap,.arena .ent.hero.back .medal{transform:scale(.8);transform-origin:bottom center}
+.arena .ent.hero.back .look{filter:brightness(.88) saturate(.9) drop-shadow(0 6px 6px rgba(0,0,0,.35))}
+.arena .ent.hero.back.dead .look{filter:grayscale(1) brightness(.6)}
+.ent .rowmk{display:inline-flex;vertical-align:-2px;margin-right:2px;color:#8fd0ff}
+.ent .rowmk .uico{width:12px;height:12px}
+.ent.card.front{box-shadow:inset 3px 0 0 #8fd0ff}
+.ent.m.champ img.sprite{filter:drop-shadow(0 0 7px #ffc94a) drop-shadow(0 0 2px #ffc94a) drop-shadow(0 6px 4px rgba(0,0,0,.35))}
+.ent.m.champ .who{color:#ffd76a}
+.ent.card.champ{box-shadow:inset 0 0 0 2px #ffc94a}
+.ent .crown{position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:#ffc94a;z-index:2;filter:drop-shadow(0 1px 1px #000)}
+.ent .crown .uico{width:20px;height:20px;fill:#ffc94a;stroke:#7a5a12}
+.ent .mrole{display:block;width:max-content;margin:1px auto 0;font-size:9.5px;font-weight:900;padding:0 6px;border-radius:999px;background:rgba(160,110,255,.3);color:#e2d4ff;box-shadow:0 0 0 1px rgba(160,110,255,.6)}
+.champwin{border:2px solid rgba(255,201,74,.55);background:linear-gradient(180deg,rgba(255,201,74,.12),rgba(255,201,74,.03));border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.champwin .ttl{font-family:var(--font-title);color:#ffc94a;font-size:15px;display:flex;align-items:center;gap:6px}
+.champwin .ttl .uico{fill:#ffc94a;stroke:#7a5a12}
+.champwin .pill.gold{background:rgba(255,201,74,.18);color:#ffd76a}
+.plines{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pline{background:var(--panel2);border:2px solid var(--frame);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.pline.front{border-color:#4d78a8}
+.pline .lt{font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pline .lt .uico{color:#8fd0ff}
+.pcard{display:flex;align-items:center;gap:8px;background:var(--panel3);border-radius:10px;padding:5px 8px;min-width:0}
+.pcard .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.pcard .tx b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.placement.flash{animation:placeflash 1.6s ease-out}
+@keyframes placeflash{0%,40%{box-shadow:0 0 0 3px var(--gold),var(--shadow)}100%{box-shadow:var(--shadow)}}
+@media (max-width:640px){.plines{grid-template-columns:1fr}.pcard .btn{padding:4px 8px}}
