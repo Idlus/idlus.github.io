@@ -1,0 +1,25 @@
+# Vérification automatique à chaque push et pull request :
+# syntaxe des fichiers JS, combat simulé avec le moteur, démarrage du jeu dans Chromium.
+name: Tests
+on:
+  push:
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Syntaxe JS
+        run: npm run check
+      - name: Combat simulé (moteur)
+        run: npm run test:fight
+      - name: Installation de Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Démarrage du jeu dans le navigateur
+        run: npm run test:smoke
