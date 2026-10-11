@@ -196,7 +196,7 @@ function statusHtml() {
   const where = S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0);
   const xpb = E.boostPct(S, "xp");
-  return `<button class="brand" data-tab="home">Idlus</button>
+  return `<button class="brand" data-tab="home">idlus</button>
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it">📍 <span>${h(where)}</span></span>
@@ -223,7 +223,7 @@ function renderStart() {
   const sex = ui.startSex || CLASSES[ui.startCls].sex;
   $("#main").innerHTML = `
   <section class="start stack">
-    <div class="logo">Idlus</div>
+    <div class="logo">idlus</div>
     <p class="muted" style="text-align:center;margin:0">Un idle inspiré de DOFUS : vos héros combattent seuls, à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.</p>
     <div class="panel"><div class="pad stack">
       <h2>Choisissez votre premier héros</h2>
