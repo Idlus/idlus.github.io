@@ -734,11 +734,17 @@
 
   const killed = (F, tgt) => {
     if (tgt.alive) return; const idx = F.ents.indexOf(tgt); if (F.deaths.includes(idx)) return; F.deaths.push(idx);
-    if (tgt.side === "c" && !tgt.summon) failChal(F, "survivant", `${tgt.name} est tombé`);
+    if (tgt.side === "c" && !tgt.summon) { failChal(F, "survivant", `${tgt.name} est tombé`); const lh = F.lastHit && F.lastHit.t === idx ? F.lastHit : null; (F.deathInfo = F.deathInfo || []).push({ i: idx, r: F.round, by: lh ? lh.s : -1, el: lh ? lh.el : null }); }
     if (tgt.side === "m") {
       const el = chal(F, "elitiste"); if (el && idx !== el.target && F.ents[el.target].alive) failChal(F, "elitiste", "mauvais monstre tué en premier");
       const od = chal(F, "ordonne"); if (od) { const higher = alive(F, "m").some((m) => m.lvl > tgt.lvl); if (higher) failChal(F, "ordonne", "ordre non respecté"); }
     }
+  };
+  /* 3.2.2 : suivi des dégâts pour « Pourquoi j'ai perdu ? » */
+  const trackHit = (F, src, tgt, v, el) => {
+    const ti = F.ents.indexOf(tgt); const si = src ? F.ents.indexOf(src) : -1; const k = el || "n";
+    if (tgt.side === "c" && !tgt.summon) { F.taken = F.taken || {}; F.taken[k] = (F.taken[k] || 0) + v; tgt.taken = tgt.taken || {}; tgt.taken[k] = (tgt.taken[k] || 0) + v; F.lastHit = { t: ti, s: si, el: k }; }
+    else if (tgt.side === "m" && src && src.side === "c") { F.dealt = F.dealt || {}; F.dealt[ti] = (F.dealt[ti] || 0) + v; const o = src.summon ? F.ents[src.owner] : src; if (o) o.dealt = (o.dealt || 0) + v; }
   };
   const dealDamage = (F, src, tgt, raw, el) => {
     let v = raw;
@@ -753,6 +759,7 @@
     v = Math.max(1, Math.round(v));
     if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
     tgt.hp -= v;
+    if (F) trackHit(F, src, tgt, v, el);
     if (tgt.side === "c" && src && src.side === "m" && F && F.glyph === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
     if (tgt.side === "c" && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
@@ -801,6 +808,7 @@
   };
   const doHeal = (t, v, F) => {
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
+    if (F && t.side === "c" && !t.summon && g > 0) F.healed = (F.healed || 0) + g;
     if (F && F.fx && g > 0) F.fx.push({ seq: F.seq, k: "heal", t: F.ents.indexOf(t), v: g });
     return g;
   };
@@ -1372,6 +1380,8 @@
     } else {
       E.chalResolve(S, F, true);
       flog(F, why || "Défaite… l'équipe se repose.", "lose");
+      try { F.loss = E.lossReport(S, F); } catch (e) { F.loss = null; }
+      if (F.loss) { S.losses = (S.losses || []).filter((x) => x && x.t); S.losses.unshift(F.loss); if (S.losses.length > 6) S.losses.length = 6; E.events.push({ kind: "loss", txt: F.loss.txt, rep: F.loss }); }
       E.autoZone(S, false);
       if (S.dungeon) {
         if ((S.cons.fiole_resu || 0) > 0 && !S.dungeon.revived) { S.cons.fiole_resu--; if (!S.cons.fiole_resu) delete S.cons.fiole_resu; S.dungeon.revived = true; note(S, `Fiole de Résurrection : l'équipe se relève et recommence la salle (${DUNGEONS[S.dungeon.id].name}).`, "rare"); }
@@ -1387,6 +1397,7 @@
     const xpTot = Object.values(r.xp).reduce((a, b) => a + b, 0);
     const nres = Object.values(r.res).reduce((a, b) => a + b, 0);
     S.history.unshift({ t: Date.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length });
+    if (F.loss) F.loss.t = S.history[0].t; // même horodatage : le rapport s'ouvre depuis « Derniers combats »
     if (S.history.length > 30) S.history.length = 30;
     if (zkey) {
       const z = S.zoneStats[zkey] = S.zoneStats[zkey] || { f: 0, w: 0, s: 0, xp: 0, k: 0, r: 0, i: 0 };
@@ -1397,6 +1408,236 @@
     const z = S.zoneStats[zkey]; if (!z || z.s < 1) return null;
     const h = 3600 / z.s;
     return { fights: z.f, winRate: z.w / z.f, xpH: z.xp * h, kH: z.k * h, rH: z.r * h, iH: z.i * h };
+  };
+
+  /* ---------------- 3.2.2 « Confort » : temps estimé ---------------- */
+  /* arrondis volontairement grossiers : on n'a pas la précision d'une minute */
+  E.etaTxt = (sec) => {
+    if (sec === null || sec === undefined || !isFinite(sec)) return null;
+    if (sec <= 0) return "maintenant";
+    if (sec < 300) return "moins de 5 min";
+    if (sec < 3600) return `≈ ${Math.max(5, Math.round(sec / 300) * 5)} min`;
+    if (sec < 3 * 3600) { const h2 = Math.floor(sec / 3600); const m = Math.round((sec % 3600) / 600) * 10; return m >= 60 ? `≈ ${h2 + 1} h` : m ? `≈ ${h2} h ${m} min` : `≈ ${h2} h`; }
+    if (sec < 86400) return `≈ ${Math.round(sec / 3600)} h`;
+    if (sec < 7 * 86400) return "plus d'une journée";
+    return "plus d'une semaine";
+  };
+  E.ETA_MIN_FIGHTS = 5;
+  /* durée moyenne d'un cycle de combat (combat + pause), en secondes, d'après les mesures de la zone en cours */
+  E.fightCycle = (S) => {
+    const zkey = S.dungeon ? "dg:" + S.dungeon.id : S.hunting ? S.sub : null; if (!zkey) return null;
+    const z = S.zoneStats[zkey]; if (z && z.f >= E.ETA_MIN_FIGHTS) return { s: z.s / z.f, win: z.w / z.f, zkey };
+    const rec = S.stats.recent; if (rec.length >= 3) return { s: rec.reduce((a, r) => a + r.d, 0) / rec.length + E.PAUSE_MS / 1000, win: rec.reduce((a, r) => a + r.w, 0) / rec.length, zkey };
+    return null;
+  };
+  /* rythme d'obtention d'une ressource, par heure : récolte en cours et/ou chasse dans la zone en cours */
+  E.resRateH = (S, name) => {
+    let h = 0; const src = [];
+    S.chars.forEach((c) => { if (c.job && c.job.res === name) { const per = E.gatherPeriod(S, c); if (per > 0) { h += (3600 / per) * (1 + S.jobs[c.job.job].lvl / 200); src.push("récolte"); } } });
+    const sub = S.hunting && !S.dungeon && S.sub ? SUBS[S.sub] : null;
+    if (sub) {
+      const cyc = E.fightCycle(S);
+      if (cyc) {
+        const team = E.team(S).length; const grp = (1 + Math.min(8, team + 1)) / 2;
+        const dm = E.dropMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
+        let per = 0;
+        sub.monsters.forEach((k) => { const m = MONSTERS[k]; if (!m) return; const d = m.drops.find(([r]) => r === name); const tq = E.huntTier(S, k) >= 1 ? 1.05 : 1;
+          if (d) per += Math.min(1, E.resRate(d[1]) * dm * tq / 100) / sub.monsters.length;
+          if (sub.dungeon && DUNGEONS[sub.dungeon] && DUNGEONS[sub.dungeon].key === name) per += Math.min(1, DUNGEONS[sub.dungeon].keyDrop * dm / 100) / sub.monsters.length; });
+        if (per > 0) { h += (3600 / cyc.s) * cyc.win * grp * per; src.push(sub.name); }
+      }
+    }
+    if (h > 0) return { h, src: src.join(" + ") };
+    // nulle part dans l'activité en cours : meilleure sous-zone connue
+    let best = null;
+    Object.values(SUBS).forEach((s) => { if (s.hidden || !E.subUnlocked(S, s.id)) return; s.monsters.forEach((k) => { const m = MONSTERS[k]; const d = m && m.drops.find(([r]) => r === name); if (d && (!best || d[1] > best.p)) best = { p: d[1], where: s.name }; }); });
+    if (!best) Object.entries(DUNGEONS).forEach(([id, dg]) => { if (dg.key === name && E.dungeonUnlocked(S, id)) best = { p: dg.keyDrop, where: SUBS[DUNGEON_SUB[id]].name }; });
+    return { h: 0, where: best ? best.where : null };
+  };
+  /* temps avant d'avoir tous les ingrédients d'une recette : le plus lent des ingrédients manquants */
+  E.needEta = (S, ing) => {
+    let sec = 0, stuck = null;
+    for (const [r, q] of ing) {
+      const miss = q - (S.res[r] || 0); if (miss <= 0) continue;
+      const rate = E.resRateH(S, r);
+      if (!rate.h) { stuck = { res: r, where: rate.where }; continue; }
+      sec = Math.max(sec, (miss / rate.h) * 3600);
+    }
+    if (stuck) return { sec: null, stuck };
+    return { sec };
+  };
+  E.shopIng = (S, e) => e.k === "tpl" ? (ITEMS[e.id] && ITEMS[e.id].craft ? ITEMS[e.id].craft.ing : []) : e.k === "special" ? (SPECIAL_CRAFTS[e.id] ? SPECIAL_CRAFTS[e.id].ing : []) : E.toolLvl(S, e.id) < E.TOOL_MAX ? E.toolCost(S, e.id).ing : [];
+  E.shopName = (S, e) => e.k === "tpl" ? (ITEMS[e.id] ? ITEMS[e.id].name : String(e.id)) : e.k === "special" ? e.id : `${E.toolCost(S, e.id).name} (${GATHER_JOBS[e.id].name})`;
+  E.needEtaTxt = (S, ing) => { const e = E.needEta(S, ing); if (e.stuck) return e.stuck.where ? `${e.stuck.res} : pas dans cette zone (zone : ${e.stuck.where})` : `${e.stuck.res} : pas dans cette zone`; return e.sec === 0 ? "tout est réuni" : E.etaTxt(e.sec); };
+  /* XP par heure d'un héros, d'après le rendement mesuré de la zone en cours, réparti selon la sagesse et les niveaux */
+  E.heroXpH = (S, c) => {
+    if (!c || c.job || !c.inTeam || c.lvl >= E.MAX_LVL) return null;
+    const zkey = S.dungeon ? "dg:" + S.dungeon.id : S.hunting ? S.sub : null; if (!zkey) return null;
+    const z = S.zoneStats[zkey]; if (!z || z.f < E.ETA_MIN_FIGHTS || z.xp <= 0) return null;
+    const rate = E.zoneRate(S, zkey); const team = E.team(S); if (!team.find((x) => x.id === c.id)) return null;
+    const ml = S.dungeon ? DUNGEONS[S.dungeon.id].lvl : SUBS[zkey] ? (SUBS[zkey].lvl[0] + SUBS[zkey].lvl[1]) / 2 : c.lvl;
+    const f = (x) => (1 + E.charStats(S, x).sa / 100) * E.xpPenalty(x.lvl - ml);
+    const tot = team.reduce((a, x) => a + f(x), 0); if (!tot) return null;
+    return rate.xpH * f(c) / tot;
+  };
+  E.lvlEta = (S, c, target) => {
+    const xpH = E.heroXpH(S, c); if (!xpH) return null;
+    const t = Math.min(E.MAX_LVL, target || c.lvl + 1); if (t <= c.lvl) return 0;
+    let need = -c.xp; for (let l = c.lvl; l < t; l++) need += E.xpNeed(l);
+    return Math.max(0, need / xpH * 3600);
+  };
+
+  /* ---------------- 3.2.2 : objectifs épinglés ---------------- */
+  E.MAX_PINS = 3;
+  E.pinKey = (p) => `${p.k}:${p.id !== undefined ? p.id : ""}:${p.cid !== undefined ? p.cid : ""}:${p.n !== undefined ? p.n : ""}`;
+  /* la quête principale est toujours en tête ; les objectifs disparus (avis expiré, recette retirée) sont retirés sans message */
+  E.pins = (S) => {
+    S.pins = (S.pins || []).filter((p) => p && E.pinInfo(S, p));
+    const out = []; if (E.questStep && E.questStep(S)) out.push({ k: "quest", auto: true });
+    return out.concat(S.pins);
+  };
+  E.pinned = (S, p) => (S.pins || []).some((x) => E.pinKey(x) === E.pinKey(p));
+  E.togglePin = (S, p) => {
+    S.pins = S.pins || [];
+    const i = S.pins.findIndex((x) => E.pinKey(x) === E.pinKey(p));
+    if (i >= 0) { S.pins.splice(i, 1); return null; }
+    if (E.pins(S).length >= E.MAX_PINS) return `${E.MAX_PINS} objectifs maximum : retirez-en un d'abord.`;
+    if (p.k === "lvl") { const c = S.chars.find((x) => x.id === p.cid); if (!c) return "Héros introuvable."; p = Object.assign({ from: c.lvl + c.xp / E.xpNeed(c.lvl) }, p); }
+    S.pins.push(p); return null;
+  };
+  /* progression numérique des succès qui en ont une */
+  E.achProgress = (S, id) => {
+    const top = Math.max(...S.chars.map((c) => c.lvl)); const cnt = S.cnt || {}; let m;
+    if ((m = /^lvl(\d+)$/.exec(id))) return [top, +m[1]];
+    if ((m = /^win(\d+)$/.exec(id))) return [S.stats.wins, +m[1]];
+    if ((m = /^archi(\d+)$/.exec(id))) return [Object.values(S.archis).reduce((a, b) => a + b, 0), +m[1]];
+    if ((m = /^fam(\d+)$/.exec(id))) return [Object.keys(S.families).length, +m[1]];
+    if ((m = /^tro(\d+)$/.exec(id))) return [Object.keys(S.trophies).length, +m[1]];
+    if ((m = /^rad(\d+)$/.exec(id))) return [S.radiants || 0, +m[1]];
+    if ((m = /^craft(\d+)$/.exec(id))) return [cnt.craft || 0, +m[1]];
+    if ((m = /^harv(\d+)$/.exec(id))) return [cnt.harvest || 0, +m[1]];
+    if ((m = /^fm(\d+)$/.exec(id))) return [cnt.fm || 0, +m[1]];
+    if ((m = /^alm(\d+)$/.exec(id))) return [cnt.almanax || 0, +m[1]];
+    if ((m = /^bty(\d+)$/.exec(id))) return [cnt.bounty || 0, +m[1]];
+    if ((m = /^havre(\d+)$/.exec(id))) return [E.havreTotal ? E.havreTotal(S) : 0, +m[1]];
+    if ((m = /^team(\d+)$/.exec(id))) return [S.chars.length, +m[1]];
+    if (id === "emb100") return [S.emblem.lvl, 100];
+    if ((m = /^dg_(.+)$/.exec(id)) && DUNGEONS[m[1]]) return [S.progress.bossKills[m[1]] ? 1 : 0, 1];
+    return null;
+  };
+  /* état d'un objectif : libellé, progression a/b, texte, terminé, et où aller */
+  E.pinInfo = (S, p) => {
+    switch (p.k) {
+      case "quest": { const q = E.questStep(S); if (!q) return null; const [a, b] = E.questProgress(S); return { k: "quest", label: q.title, a, b, txt: `${a}/${b}`, done: a >= b, go: { tab: "quests", qt: "main" } }; }
+      case "bounty": { const bt = (S.bounties || []).find((x) => x.id === p.id); if (!bt) return null; return { k: "bounty", label: MONSTERS[bt.key].name, a: bt.prog, b: bt.n, txt: `${bt.prog}/${bt.n}`, done: bt.prog >= bt.n, go: { tab: "quests", qt: "bounty" } }; }
+      case "align": { const q = S.alignQuest; if (!q) return null; return { k: "align", label: q.title, a: q.prog, b: q.n, txt: `${q.prog}/${q.n}`, done: q.prog >= q.n, go: { tab: "quests", qt: "align" } }; }
+      case "shop": { const e = (S.shop || []).find((x) => x.k === p.sk && x.id === p.id); if (!e) return null; const ing = E.shopIng ? E.shopIng(S, e) : []; const ok = ing.filter(([r, q]) => (S.res[r] || 0) >= q).length;
+        const eta = ing.length ? E.needEta(S, ing) : { sec: null }; return { k: "shop", label: E.shopName ? E.shopName(S, e) : String(e.id), a: ok, b: ing.length, txt: ok >= ing.length && ing.length ? "prêt" : eta.sec !== null && eta.sec !== undefined ? E.etaTxt(eta.sec) : `${ok}/${ing.length}`, done: !!ing.length && ok >= ing.length, go: { tab: "home" } }; }
+      case "lvl": { const c = S.chars.find((x) => x.id === p.cid); if (!c || !p.n) return null; const cur = c.lvl + (c.lvl < E.MAX_LVL ? c.xp / E.xpNeed(c.lvl) : 0); const from = p.from !== undefined ? p.from : c.lvl; const eta = E.lvlEta(S, c, p.n);
+        return { k: "lvl", label: `${c.name} niv. ${p.n}`, a: Math.max(0, cur - from), b: Math.max(0.01, p.n - from), txt: c.lvl >= p.n ? "atteint" : eta !== null && eta !== undefined ? E.etaTxt(eta) : `niv. ${c.lvl}`, done: c.lvl >= p.n, go: { tab: "heroes", cid: c.id } }; }
+      case "ach": { const a = (E.ACH || []).find((x) => x.id === p.id); if (!a) return null; const pr = E.achProgress(S, p.id); const done = !!(S.ach || {})[p.id];
+        return { k: "ach", label: a.name, a: pr ? Math.min(pr[0], pr[1]) : done ? 1 : 0, b: pr ? pr[1] : 1, txt: pr ? `${Math.min(pr[0], pr[1]).toLocaleString("fr-FR")}/${pr[1].toLocaleString("fr-FR")}` : done ? "obtenu" : "en cours", done, go: { tab: "quests", qt: "ach" } }; }
+    }
+    return null;
+  };
+
+  /* ---------------- 3.2.2 : « Pourquoi j'ai perdu ? » ---------------- */
+  /* objets qui améliorent une caractéristique d'un héros : dans le sac, à fabriquer, à looter (jusqu'à un de chaque) */
+  let DROP_IDX = null;
+  const dropIndex = () => { if (DROP_IDX) return DROP_IDX; DROP_IDX = {}; for (const k in MONSTERS) (MONSTERS[k].items || []).forEach(([t, p]) => { if (!DROP_IDX[t] || DROP_IDX[t].p < p) DROP_IDX[t] = { m: k, p }; }); return DROP_IDX; };
+  const slotCur = (S, c, T, stat) => {
+    if (T.slot === "dofus") return null;
+    if (T.slot === "anneau") { const a = S.items[c.equip.anneau1], b = S.items[c.equip.anneau2]; return Math.min(a ? a.stats[stat] || 0 : 0, b ? b.stats[stat] || 0 : 0); }
+    const cur = S.items[c.equip[T.slot]]; return cur ? cur.stats[stat] || 0 : 0;
+  };
+  E.gearSuggest = (S, c, stat) => {
+    const out = []; const used = new Set();
+    // 1. déjà dans le sac (ni porté par ce héros, ni par un autre)
+    let best = null;
+    for (const uid in S.items) { const it = S.items[uid]; const T = ITEMS[it.tpl]; if (!T || T.lvl > c.lvl || !(it.stats[stat] > 0) || E.equippedBy(S, uid)) continue;
+      const cur = slotCur(S, c, T, stat); if (cur === null) continue; const gain = it.stats[stat] - cur; if (gain > 0 && (!best || gain > best.gain)) best = { k: "bag", uid: +uid, tpl: it.tpl, gain, v: it.stats[stat] }; }
+    if (best) { out.push(best); used.add(best.tpl); }
+    // 2. à fabriquer
+    best = null;
+    for (const t in ITEMS) { const T = ITEMS[t]; if (!T.craft || T.lvl > c.lvl || T.lvl < c.lvl - 40 || used.has(t) || !T.stats[stat] || !(T.stats[stat][1] > 0)) continue;
+      const cur = slotCur(S, c, T, stat); if (cur === null) continue; const gain = T.stats[stat][1] - cur; if (gain <= 0) continue;
+      const miss = T.craft.ing.filter(([r, q]) => (S.res[r] || 0) < q).map(([r, q]) => [r, q - (S.res[r] || 0)]);
+      const sc = gain - miss.length * 2; if (!best || sc > best.sc) best = { k: "craft", tpl: t, gain, v: T.stats[stat][1], miss, sc }; }
+    if (best) { out.push(best); used.add(best.tpl); }
+    // 3. à looter
+    best = null; const DI = dropIndex();
+    for (const t in DI) { const T = ITEMS[t]; if (!T || T.lvl > c.lvl || T.lvl < c.lvl - 40 || used.has(t) || !T.stats[stat] || !(T.stats[stat][1] > 0)) continue;
+      const cur = slotCur(S, c, T, stat); if (cur === null) continue; const gain = T.stats[stat][1] - cur; if (gain <= 0) continue;
+      const sc = gain * (0.5 + DI[t].p / 100); if (!best || sc > best.sc) best = { k: "loot", tpl: t, gain, v: T.stats[stat][1], m: DI[t].m, p: DI[t].p, sc }; }
+    if (best) out.push(best);
+    return out;
+  };
+  const healSpellOf = (S, c) => { for (const x of c.spells) { const d = E.spellDef(c.cls, x.id); if (d && ["heal", "drain"].includes(E.spellKind(E.spellGrade(d, c.lvl)))) return { sp: d, slot: x }; } return null; };
+  E.lossReport = (S, F) => {
+    const heroes = F.ents.filter((e) => e.side === "c" && !e.summon); const mons = F.ents.filter((e) => e.side === "m");
+    if (!heroes.length || !mons.length) return null;
+    const dinfo = F.deathInfo || []; const first = dinfo[0] || null;
+    const taken = F.taken || {}; const totTaken = Object.values(taken).reduce((a, b) => a + b, 0);
+    const topEl = Object.entries(taken).sort((a, b) => b[1] - a[1])[0];
+    const boss = F.bossIdx !== undefined ? F.ents[F.bossIdx] : null;
+    const target = boss || mons.slice().sort((a, b) => b.hpMax - a.hpMax)[0];
+    const tgtPct = Math.round(Math.max(0, target.hp) / target.hpMax * 100);
+    const healed = F.healed || 0;
+    const team = E.team(S); const avgLvl = Math.round(team.reduce((a, c) => a + c.lvl, 0) / Math.max(1, team.length));
+    const dg = F.dungeonId ? DUNGEONS[F.dungeonId] : null; const sub = !dg && F.sub ? SUBS[F.sub] : null;
+    const placeLvl = dg ? dg.lvl : sub ? sub.lvl[1] : avgLvl; const placeName = dg ? dg.name : sub ? sub.name : "cette zone";
+    const k = F.stasis || 0; const SI = dg ? E.stasisInfo(S, F.dungeonId) : null;
+    const dealt = F.dealt || {}; const totDealt = Object.values(dealt).reduce((a, b) => a + b, 0);
+    const charOf = (e) => S.chars.find((c) => c.id === e.cid);
+    const R = { t: Date.now(), label: F.label, round: F.round, cause: "close", txt: "", facts: [], gear: [], cid: null, stat: null, did: F.dungeonId || null, sub: F.sub || null };
+    const sn = (stat) => STATS[stat].name.replace("% ", "");
+    const gearTxt = (c, stat, what) => {
+      const g = E.gearSuggest(S, c, stat); R.gear = g; R.cid = c.id; R.stat = stat;
+      if (g[0] && g[0].k === "bag") return `équipe-lui ${ITEMS[g[0].tpl].name} de ton sac (+${g[0].gain} ${sn(stat)}).`;
+      if (g[0] && g[0].k === "craft") return `fabrique-lui ${ITEMS[g[0].tpl].name} (+${g[0].gain} ${sn(stat)}${g[0].miss.length ? `, il manque ${g[0].miss.map(([r, q]) => `${q} ${r}`).join(", ")}` : ", tout est réuni"}).`;
+      if (g[0] && g[0].k === "loot") return `cherche ${ITEMS[g[0].tpl].name} sur ${MONSTERS[g[0].m].name} (+${g[0].gain} ${sn(stat)}).`;
+      return what;
+    };
+    const elDe = (el) => (/^[AEIOUÉ]/.test(ELEMENTS[el].name) ? `d'${ELEMENTS[el].name}` : `de ${ELEMENTS[el].name}`);
+    // 1. un héros tombe tôt
+    if (first && first.r <= 3) {
+      const e = F.ents[first.i]; const c = charOf(e); const ht = e.taken || {}; const hs = Object.values(ht).reduce((a, b) => a + b, 0);
+      const te = Object.entries(ht).sort((a, b) => b[1] - a[1])[0];
+      if (c && te && te[0] !== "n" && hs && te[1] / hs > 0.6) {
+        const el = te[0]; const rk = ELEMENTS[el].res; const res = e.st[rk] || 0;
+        if (res < 15) { R.cause = "res"; R.el = el; R.txt = `${c.name} meurt tour ${first.r} sous ${Math.round(te[1] / hs * 100)} % ${elDe(el)} : ${gearTxt(c, rk, `monte sa résistance ${ELEMENTS[el].name} (cape, ceinture, amulette).`)}`; }
+      }
+      if (!R.txt && c) { R.cause = "vit"; R.txt = `${c.name} meurt tour ${first.r} avec ${e.hpMax.toLocaleString("fr-FR")} PV : ${gearTxt(c, "vit", "mets ses points en Vitalité ou retire-le de l'équipe pour ce combat.")}`; }
+    }
+    // 2. soins insuffisants
+    if (!R.txt) { const hl = heroes.map(charOf).filter(Boolean).map((c) => ({ c, h: healSpellOf(S, c) })).find((x) => x.h);
+      if (hl && totTaken > 0 && healed < totTaken * 0.2) { R.cause = "heal"; const cond = hl.h.slot.cond;
+        R.txt = `Tu perds ${totTaken.toLocaleString("fr-FR")} PV et n'en soignes que ${healed.toLocaleString("fr-FR")} : ${cond && cond !== "ally_low" && cond !== "always" ? `règle ${hl.h.sp.name} de ${hl.c.name} sur « un allié est blessé ».` : `mets ${hl.h.sp.name} en premier dans les sorts de ${hl.c.name}.`}`; R.cid = hl.c.id; } }
+    // 3. pas assez de dégâts
+    if (!R.txt && tgtPct > 50) { R.cause = "dmg";
+      const weak = heroes.filter((e) => charOf(e) && !healSpellOf(S, charOf(e))).sort((a, b) => (a.dealt || 0) - (b.dealt || 0))[0] || heroes[0]; const c = charOf(weak);
+      if (c) { const main = c.autoStat && STATS[c.autoStat] && STATS[c.autoStat].el ? c.autoStat : CLASSES[c.cls].main; const el = STATS[main] && STATS[main].el ? ELEMENTS[STATS[main].el].name : "";
+        const low = (c.alloc[main] || 0) < Math.min(100, c.lvl * 3) && c.pts + (c.alloc.vit || 0) > 20;
+        R.txt = `${target.name} garde ${tgtPct} % de PV au tour ${F.round} : ${low ? `${c.name} tape ${el}, mets ses points en ${STATS[main].name} plutôt qu'en Vitalité.` : gearTxt(c, main, `améliore l'arme et l'amulette de ${c.name}.`)}`; R.cid = c.id; } }
+    // 4. équipe sous le niveau
+    if (!R.txt && avgLvl < placeLvl - 3) { R.cause = "lvl"; const cand = E.autoZoneTarget(S); const best = cand && cand.find((s) => s.id !== F.sub);
+      R.txt = `Ton équipe est niveau ${avgLvl}, ${placeName} demande ${placeLvl} : farme encore un peu${best ? ` en ${best.name}` : ""}.`; }
+    // 5. stasis trop haute
+    if (!R.txt && dg && k > 1 && SI && SI.max >= k - 1) { R.cause = "stasis"; const mods = (S.dungeon && S.dungeon.mods) || F.mods || [];
+      R.txt = `Tu réussis en stasis ${k - 1} mais pas en ${k} : redescends d'un cran${mods.length ? ` ou retente sans « ${E.STASIS_MODS[mods[0]].name} »` : ""}.`; }
+    // 6. mauvaise cible
+    if (!R.txt && boss && totDealt > 0 && (dealt[F.bossIdx] || 0) / totDealt < 0.3) { R.cause = "target"; const c = charOf(heroes.slice().sort((a, b) => (b.dealt || 0) - (a.dealt || 0))[0]);
+      R.txt = `Tes sorts visent le plus proche, ${boss.name} reste derrière : règle ${c ? c.name : "tes héros"} sur « Boss / le plus fort d'abord ».`; if (c) R.cid = c.id; }
+    if (!R.txt) R.txt = `C'était serré au tour ${F.round} : réessaie, ${target.name} n'avait plus que ${tgtPct} % de PV.`;
+    // faits
+    if (first) { const by = first.by >= 0 ? F.ents[first.by] : null; R.facts.push({ k: "killer", txt: `${F.ents[first.i].name} tombe tour ${first.r}${by ? ` (${by.name})` : ""}` }); }
+    if (topEl && totTaken) R.facts.push({ k: "el", txt: `Élément subi : ${ELEMENTS[topEl[0]].name} ${Math.round(topEl[1] / totTaken * 100)} %` });
+    R.facts.push({ k: "hp", txt: `PV perdus : ${totTaken.toLocaleString("fr-FR")}` });
+    if (totTaken) R.facts.push({ k: "heal", txt: `Soins : ${healed.toLocaleString("fr-FR")}` });
+    const zkey = F.dungeonId ? "dg:" + F.dungeonId : F.sub; let streak = 1; for (const hrow of S.history) { if (hrow.z !== zkey) break; if (hrow.w) break; streak++; }
+    if (streak >= 2) R.facts.push({ k: "streak", txt: `Défaite ${streak} fois de suite ici` });
+    R.tgt = { name: target.name, pct: tgtPct };
+    return R;
   };
 
   /* Challenges : bonus des challenges réussis + série (+0,5 % par succès consécutif, max +5 %) */

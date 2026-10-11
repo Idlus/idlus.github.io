@@ -1,7 +1,7 @@
 /* idlus — service worker : jeu jouable hors ligne.
    Fichiers du jeu (html/js/css/json) : réseau d'abord (les mises à jour arrivent tout de suite), cache en secours.
    Images et polices : cache d'abord (elles ne changent pas), mises en cache au fil de la partie. */
-const VERSION = "3.2.1";
+const VERSION = "3.2.2";
 const CORE = "idlus-core-" + VERSION, MEDIA = "idlus-media-v2";
 const PRECACHE = ["./", "index.html", "css/style.css", "js/gamedata.js", "js/looks.js", "js/data.js", "js/engine.js", "js/systems.js", "js/ui.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CORE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())); });
@@ -20,4 +20,9 @@ self.addEventListener("fetch", (e) => {
   if (u.origin !== location.origin) return;
   e.respondWith(fetch(req).then((res) => { if (res.ok) { const cp = res.clone(); caches.open(CORE).then((c) => c.put(req, cp)); } return res; })
     .catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match("index.html"))));
+});
+/* 3.2.2 : un clic sur une notification ramène sur le jeu */
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => { const c = cs.find((x) => "focus" in x); return c ? c.focus() : self.clients.openWindow("./"); }));
 });

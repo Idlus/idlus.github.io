@@ -14,9 +14,14 @@ const ui = {
 };
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.2.1";
+const GAME_VERSION = "3.2.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.2.2", name: "Confort", items: [
+    "Pourquoi j'ai perdu ? : après une défaite, l'onglet Butin explique en une phrase ce qui a manqué (« cause : action »), avec les faits du combat et jusqu'à trois objets conseillés (dans le sac, à fabriquer, à looter)",
+    "Objectifs épinglés : une bande sous la barre du haut suit jusqu'à 3 objectifs partout dans le jeu (quête principale d'office, avis de recherche, mission d'alignement, liste de courses, niveau d'un héros, succès)",
+    "Temps estimé : survolez (ou touchez) la barre d'XP d'un héros pour voir quand il passe le niveau suivant ; la liste de courses et les clés de donjon indiquent dans combien de temps tout sera réuni",
+    "Notifications : six évènements au choix dans les Options, avec une notification du navigateur quand l'onglet est en arrière-plan (sac plein, défaite, objectif atteint, liste de courses prête, palier de niveau, Rayonnant ou archimonstre)" ] },
   { v: "3.2.1", name: "Petit lot", items: [
     "Tenues : enregistrez jusqu'à 3 équipements complets par héros (chasse, donjon, prospection…) et remettez-les en un clic ; leurs objets sont protégés de la vente et du brisage",
     "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Monde › Donjons)",
@@ -121,7 +126,9 @@ const GL = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.9l7.6-3.8M8.2 13.1l7.6 3.8"/>',
   frame: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/>',
-  star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>' };
+  star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>',
+  pin: '<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>' };
 const GLF = { flame: '<path fill="#ffb347" stroke="#c2410c" stroke-width="1.2" d="M12 2.5c1 3.5 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.4.3 1.8 1.2 2.9 2.4 3.3-.6-3.3-.3-6.3.5-8.9z"/><path fill="#ffe08a" d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.8 1.6-2.6 2.1-4.2 1.2 1.2 3.1 2.2 3.1 4.2A2.6 2.6 0 0 1 12 21z"/>',
   sparkle: '<path fill="#e2f5ae" stroke="none" d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/><path fill="#dcbb74" stroke="none" d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>' };
 const G = (n, c = "") => GLF[n] ? `<svg class="uico ${c}" viewBox="0 0 24 24" aria-hidden="true">${GLF[n]}</svg>` : `<svg class="uico gl ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GL[n] || ""}</svg>`;
@@ -224,12 +231,16 @@ function bestSource(r) {
   const m = L.find((x) => x.m); if (!m) return r === E.RARE_COMPONENT ? "trouvailles de récolte, boss et coffres" : "source inconnue";
   const s = subOfMon(m.m); return `${MONSTERS[m.m].name}${s ? " (" + (typeof s === "string" ? DUNGEONS[s].name : s.name) + ")" : ""} · ${E.resRate(m.p).toFixed(1).replace(".", ",")} %`;
 }
-function shopIng(e) { return e.k === "tpl" ? (ITEMS[e.id] && ITEMS[e.id].craft ? ITEMS[e.id].craft.ing : []) : e.k === "special" ? (SPECIAL_CRAFTS[e.id] ? SPECIAL_CRAFTS[e.id].ing : []) : E.toolLvl(S, e.id) < E.TOOL_MAX ? E.toolCost(S, e.id).ing : []; }
-function shopName(e) { return e.k === "tpl" ? ITEMS[e.id].name : e.k === "special" ? e.id : `${E.toolCost(S, e.id).name} (${GATHER_JOBS[e.id].name})`; }
+function shopIng(e) { return E.shopIng(S, e); }
+function shopName(e) { return E.shopName(S, e); }
+/* 3.2.2 : bouton « suivre » (bande d'objectifs) */
+function pinBtn(p, label) { const on = E.pinned(S, p); return `<button class="btn sm pinbtn ${on ? "on" : ""}" data-act="pin" data-p="${h(JSON.stringify(p))}" data-tip="${on ? "Ne plus suivre dans la bande d'objectifs" : "Suivre dans la bande d'objectifs, en haut de l'écran"}">${G("pin")}${label ? " " + h(label) : ""}</button>`; }
+/* temps estimé avant d'avoir tous les ingrédients (3.2.2) */
+function etaLine(ing) { const e = E.needEta(S, ing); if (e.stuck) return `<span class="eta no">${h(e.stuck.res)} : pas dans l'activité en cours${e.stuck.where ? ` · zone : ${h(e.stuck.where)}` : ""}</span>`; if (!e.sec) return ""; return `<span class="eta">${h(E.etaTxt(e.sec))}</span>`; }
 function shopListHtml() {
   return S.shop.map((e, i) => { const ing = shopIng(e); const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q); const ok = !miss.length && ing.length;
-    return `<div class="qcard ${ok ? "cur" : ""}"><span class="qnum">${ok ? "✓" : G("cart")}</span><div class="grow"><b>${h(shopName(e))}</b>${ok ? ` <span class="tag good">tout est réuni</span>` : ""}${ingHtml(ing)}
-      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div><button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
+    return `<div class="qcard ${ok ? "cur" : ""}"><span class="qnum">${ok ? "✓" : G("cart")}</span><div class="grow"><b>${h(shopName(e))}</b>${ok ? ` <span class="tag good">tout est réuni</span>` : ` ${etaLine(ing)}`}${ingHtml(ing)}
+      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div>${ok ? "" : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
 }
 
 const ICONS = {
@@ -327,7 +338,24 @@ function statusHtml() {
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
     <button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
+/* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
+const PIN_ICO = { quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
+function objsHtml() {
+  if (!S) return ""; const pins = E.pins(S); if (!pins.length) return "";
+  return pins.map((p) => { const i = E.pinInfo(S, p); if (!i) return ""; const key = E.pinKey(p); const done = p.done || i.done;
+    const ico = PIN_ICO[i.k] ? IC(PIN_ICO[i.k]) : i.k === "shop" ? G("cart") : G("up");
+    return `<span class="obj ${p.auto ? "auto" : ""} ${done ? "done" : ""}" data-act="pingo" data-key="${h(key)}" data-tip="${h(`${i.label} · ${done ? "objectif atteint" : i.txt}${p.auto ? " · la quête principale est toujours suivie" : ""}`)}">${ico}<span class="lbl">${h(i.label)}</span><span class="mini"><i style="width:${done ? 100 : pct(i.a, i.b)}%"></i></span><span class="pt num">${done ? "✓" : h(i.txt)}</span>${p.auto ? "" : `<span class="x" data-act="unpin" data-key="${h(key)}" title="Ne plus suivre">×</span>`}</span>`; }).join("") + `<span class="cnt">${pins.length}/${E.MAX_PINS}</span>`;
+}
+function renderObjs() { const el = $("#objs"); if (!el) return; const html = objsHtml(); if (el.dataset.k === html) return; el.dataset.k = html; el.innerHTML = html; el.style.display = html ? "" : "none"; }
+const findPin = (key) => E.pins(S).find((p) => E.pinKey(p) === key);
+/* un objectif atteint reste affiché en vert jusqu'au prochain changement d'écran */
+function checkPins() {
+  let changed = false;
+  E.pins(S).forEach((p) => { if (p.auto) return; const i = E.pinInfo(S, p); if (i && i.done && !p.done) { p.done = Date.now(); changed = true; toast(`Objectif atteint : ${i.label}`, "rare"); notify("pin", "Objectif atteint", i.label); } });
+  if (changed) renderObjs();
+}
+function clearDonePins() { if (!S || !S.pins) return; const n = S.pins.length; S.pins = S.pins.filter((p) => !(p.done && Date.now() - p.done > 1500)); if (S.pins.length !== n) dirty = true; }
 let rszT = null; window.addEventListener("resize", () => { clearTimeout(rszT); rszT = setTimeout(() => { if (S && ui.tab === "combat" && ui.arena) { if (ui.arena.view !== combatView()) render(); else placeEnts(S.fight); } }, 150); });
 
 /* ---------- écran de départ ---------- */
@@ -442,7 +470,7 @@ function rateHtml(rate) {
 function historyHtml(n) {
   const rows = S.history.slice(0, n);
   if (!rows.length) return `<p class="note">Aucun combat pour l'instant.</p>`;
-  return `<div class="hist">${rows.map((r) => `<div class="hrow"><span class="${r.w ? "w" : "l"}">${r.w ? "Victoire" : "Défaite"}</span><span class="z">${h(r.label)} <span class="muted xs num">${r.d} s</span></span><span class="x xs muted">${r.w ? `+${fmt(r.xp)} XP · ${fmt(r.k)} k · ${r.r} res.${r.i ? ` · ${r.i} obj.` : ""}` : ""}</span></div>`).join("")}</div>`;
+  return `<div class="hist">${rows.map((r) => `<div class="hrow ${!r.w && (S.losses || []).some((x) => x.t === r.t) ? "clk" : ""}" ${!r.w && (S.losses || []).some((x) => x.t === r.t) ? `data-act="losssheet" data-t="${r.t}" data-tip="Pourquoi j'ai perdu ?"` : ""}><span class="${r.w ? "w" : "l"}">${r.w ? "Victoire" : "Défaite"}</span><span class="z">${h(r.label)} <span class="muted xs num">${r.d} s</span></span><span class="x xs muted">${r.w ? `+${fmt(r.xp)} XP · ${fmt(r.k)} k · ${r.r} res.${r.i ? ` · ${r.i} obj.` : ""}` : ""}</span></div>`).join("")}</div>`;
 }
 
 /* ---------- MONDE ---------- */
@@ -596,7 +624,7 @@ function dungeonSheet(did) {
         ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       <div class="keybox"><span>${im(resImg(dg.key), "ico sm", dg.key)} ${h(dg.key)} : <b>${keys}</b></span>${R ? `<button class="btn sm" data-act="dgcraftkey" data-id="${did}" ${E.canCraft(S, R) ? "" : "disabled"}>${IC("metiers")} Fabriquer une clé</button>` : ""}</div>
-      ${R && !E.canCraft(S, R) ? `<div class="xs muted">Recette :</div>${ingHtml(R.ing)}` : ""}
+      ${R && !E.canCraft(S, R) ? `<div class="xs muted">Recette${!keys ? ` · clé fabricable ${etaLine(R.ing) || "<span class=\"eta\">bientôt</span>"}` : ""} :</div>${ingHtml(R.ing)}` : ""}
     </div>
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<label class="small row" style="gap:6px">Enchaîner <select data-act="dgchain">${chainOpts.map((x) => `<option value="${x}" ${(ui.dgChain || 1) === x ? "selected" : ""}>${x}×</option>`).join("")}</select></label>
       <button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}</button>` : `<span class="small muted">${G("lock")} Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
@@ -844,9 +872,21 @@ function updateCombat(force) {
     const sn = $("#stratName"); if (sn) sn.textContent = c.activePreset !== undefined && c.activePreset !== null && c.presets[c.activePreset] ? c.presets[c.activePreset].name : c.spellsManual ? "personnalisée" : "automatique";
   }
 }
+/* ---------- 3.2.2 : « Pourquoi j'ai perdu ? » ---------- */
+function lossHtml(R) {
+  const c = R.cid ? char(R.cid) : null; const stat = R.stat && STATS[R.stat];
+  const gear = (R.gear || []).filter((g) => ITEMS[g.tpl] && (g.k !== "bag" || S.items[g.uid]));
+  const GK = { bag: ["dans ton sac", "Équiper", (g) => `data-act="lossequip" data-uid="${g.uid}" data-id="${R.cid}"`], craft: ["à fabriquer", "Liste de courses", (g) => `data-act="shoppin" data-k="tpl" data-id="${g.tpl}"`], loot: ["à looter", "Voir", (g) => { const s = subOfMon(g.m); return typeof s === "string" ? `data-act="dgopen" data-id="${s}"` : s ? `data-act="zoneview" data-id="${s.id}" data-gotab="world"` : ""; }] };
+  return `<div class="loss"><div class="ttl">${G("warn")} Défaite au tour ${R.round}</div><div class="advice">${h(R.txt)}</div>
+    <div class="facts">${R.facts.map((f) => `<span class="pill ${f.k === "killer" ? "bad" : f.k === "streak" ? "gold" : ""}">${h(f.txt)}</span>`).join("")}</div>
+    ${gear.length && c ? `<div class="sec">Équipement conseillé pour ${h(c.name)}${stat ? ` (${h(stat.name.replace("% ", ""))})` : ""}</div><div class="sugg">${gear.map((g) => { const T = ITEMS[g.tpl]; const [tag, btn, attrs] = GK[g.k]; const it = g.k === "bag" ? S.items[g.uid] : null; const miss = g.k === "craft" ? g.miss : null; const eta = miss && miss.length ? E.needEtaTxt(S, T.craft.ing) : null;
+      return `<div class="sl">${it ? itemIcon(it) : `<span class="icobox ${rarCls(g.tpl)}">${im(itemImg(g.tpl), "", T.name)}</span>`}<div class="t"><b>${h(T.name)}</b> <span class="tag soft">${tag}</span><small>${stat ? `+${fmt(g.v)} ${h(stat.name.replace("% ", ""))}` : ""} · niv. ${T.lvl}${miss ? miss.length ? ` · manque ${miss.map(([r, q]) => `${q} ${h(r)}`).join(", ")}${eta ? ` (${h(eta)})` : ""}` : " · tout est réuni" : ""}${g.k === "loot" ? ` · ${h(MONSTERS[g.m].name)} · ${g.p} %` : ""}</small></div>${g.k === "craft" && S.shop.some((e) => e.id === g.tpl) ? `<span class="tag good">dans la liste</span>` : `<button class="btn sm" ${attrs(g)}>${btn}</button>`}</div>`; }).join("")}</div>` : ""}
+    <div class="row">${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche de ${h(c.name)}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
+}
+function lossSheet(t) { const R = (S.losses || []).find((x) => x.t === +t); if (!R) return; openSheet(`<h2>${h(R.label)}</h2><div class="small">${lossHtml(R)}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
 function lootHtml(F) {
   const el = $("#floot"); if (!el) return;
-  if (F.result !== "win" || !F.rewards) { el.innerHTML = `<p class="note">Défaite. L'équipe se relève et repart.</p>`; $("#fres").textContent = "Défaite"; return; }
+  if (F.result !== "win" || !F.rewards) { el.innerHTML = F.loss ? lossHtml(F.loss) : `<p class="note">Défaite. L'équipe se relève et repart.</p>`; $("#fres").textContent = "Défaite"; return; }
   const r = F.rewards; const res = Object.entries(r.res);
   $("#fres").textContent = "Victoire";
   el.innerHTML = `<div class="stack" style="gap:8px">
@@ -889,6 +929,17 @@ function deltaHtml(c, slot, uid) {
 }
 
 /* ---------- HÉROS ---------- */
+/* 3.2.2 : temps estimé avant le niveau suivant, au survol de la barre d'XP */
+const lvlGoal = (c) => Math.min(E.MAX_LVL, (Math.floor(c.lvl / 10) + 1) * 10);
+function xpTipTxt(c) {
+  if (c.lvl >= E.MAX_LVL) return "Niveau maximum.";
+  if (c.job) return "En récolte : pas d'XP de combat pour l'instant.";
+  if (!c.inTeam) return "Hors équipe : pas d'XP pour l'instant.";
+  if (!S.hunting && !S.dungeon) return "À l'arrêt : lancez une chasse pour gagner de l'XP.";
+  const xpH = E.heroXpH(S, c); if (!xpH) return "Estimation disponible après quelques combats dans cette zone.";
+  const eta = E.lvlEta(S, c, c.lvl + 1); const g = lvlGoal(c); const eg = g > c.lvl + 1 ? E.lvlEta(S, c, g) : null;
+  return `Niveau ${c.lvl + 1} dans ${E.etaTxt(eta)}${eg !== null ? ` · niveau ${g} dans ${E.etaTxt(eg)}` : ""} · ≈ ${fmt(xpH)} XP/h ici. L'estimation suit le rythme réel et bouge si vous changez de zone.`;
+}
 function renderHeroes() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
   const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
@@ -900,9 +951,9 @@ function renderHeroes() {
     <div style="padding:14px 0 10px">${heroCard(c, "big", { act: "noop" })}</div>
     <div class="grow stack" style="min-width:240px">
       <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}</div></div>
-      <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
+      <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}</div>
       <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button></div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>${c.lvl < E.MAX_LVL ? pinBtn({ k: "lvl", cid: c.id, n: lvlGoal(c) }, `Suivre le niveau ${lvlGoal(c)}`) : ""}</div>
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
         ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
@@ -1392,7 +1443,7 @@ function mainQuestHtml() {
   return `<section class="panel"><div class="phead"><h2>Quête principale</h2><span class="small muted num">${Math.min(cur, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}</span></div><div class="pad stack" style="gap:8px">
     ${E.MAIN_QUEST.map((q, i) => `<div class="qcard ${i < cur ? "done" : i === cur ? "cur" : ""}" ${i > cur + 2 ? 'style="opacity:.35"' : ""}><span class="qnum">${i < cur ? "✓" : i + 1}</span><div class="grow"><b>${i > cur + 2 ? "???" : h(q.title)}</b><div class="small muted">${i > cur + 2 ? "Terminez les étapes précédentes." : h(q.txt)}</div>
       ${i === cur && qp ? `<div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}
-      ${i <= cur + 2 && E.questExtraText(i) ? `<div class="xs" style="margin-top:4px">${IC("coffre")} <span class="muted">${i < cur ? "Reçu" : "Récompense"} :</span> ${h(E.questExtraText(i))}</div>` : ""}</div>${i === cur && q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>`).join("")}</div></section>`;
+      ${i <= cur + 2 && E.questExtraText(i) ? `<div class="xs" style="margin-top:4px">${IC("coffre")} <span class="muted">${i < cur ? "Reçu" : "Récompense"} :</span> ${h(E.questExtraText(i))}</div>` : ""}</div>${i === cur ? `<span class="pinbtn auto" data-tip="La quête principale est toujours suivie dans la bande d'objectifs">${G("pin")} suivie</span>` : ""}${i === cur && q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>`).join("")}</div></section>`;
 }
 function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
@@ -1407,7 +1458,7 @@ function bountiesHtml() {
       return `<div class="bounty"><span class="wanted">AVIS DE RECHERCHE</span>${im(imgM(b.key), "", m.name)}<b>${h(m.name)}</b><span class="xs">${b.dg ? "Boss · " : ""}${h(where)} · niv. ${m.lvl[0]}–${m.lvl[1]}</span>
         <div class="row" style="width:100%"><div class="bar grow"><i style="width:${pct(b.prog, b.n)}%"></i></div><span class="num small">${b.prog}/${b.n}</span></div>
         <span class="small">Prime : <span class="coin"></span> <b>${fmt(b.kamas)}</b> · XP${S.align ? ` · +${b.axp} alignement` : ""}</span>
-        <div class="row">${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) && !S.cons.parchemin_avis ? "disabled" : ""}>Changer · ${S.cons.parchemin_avis ? IC("quetes") + " gratuit" : fmt(E.rerollCost(S)) + " k"}</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
+        <div class="row">${pinBtn({ k: "bounty", id: b.id })}${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) && !S.cons.parchemin_avis ? "disabled" : ""}>Changer · ${S.cons.parchemin_avis ? IC("quetes") + " gratuit" : fmt(E.rerollCost(S)) + " k"}</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
     <p class="small muted">Avis remplis : <b>${fmt(S.cnt.bounty || 0)}</b> · chaque avis rapporte 1 jeton de chasseur (2 pour un boss) et parfois un coffre.${S.cons.parchemin_avis ? ` · ${S.cons.parchemin_avis} Parchemin${S.cons.parchemin_avis > 1 ? "s" : ""} d'Avis : changement gratuit.` : ""}</p>
     ${shopHtml("prime")}`;
 }
@@ -1427,7 +1478,7 @@ function alignHtml() {
       <div>${A.lvl < 100 ? `<div class="row between xs muted"><span>vers le niveau ${A.lvl + 1}</span><span class="num">${fmt(A.xp)} / ${fmt(E.alignNeed(A.lvl))}</span></div><div class="bar"><i style="width:${pct(A.xp, E.alignNeed(A.lvl))}%"></i></div>` : `<span class="tag good">Niveau maximum</span>`}</div>
       <div class="row small">${O.ranks.map((n, i) => `<span class="tag ${i < r ? "good" : "soft"}">${i + 1}. ${h(n)} (${(i + 1) * 20})</span>`).join("")}</div>
       <div class="small">Bonus actuels : <b class="plus">+${2 * r} % ${side.bonusName}</b> (camp) · <b class="plus">${h(E.ORDER_BONUS[A.order].txt.replace("par rang", ""))}× ${r}</b> (ordre)</div>
-      ${q ? `<div class="qcard cur"><span class="qnum">${IC("combat")}</span><div class="grow"><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(q.prog, q.n)}%"></i></div><span class="num small">${q.prog}/${q.n}</span></div><div class="xs muted">Récompense : ${fmt(q.axp)} points d'alignement, ${fmt(q.kamas)} kamas</div></div>${q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>` : ""}
+      ${q ? `<div class="qcard cur"><span class="qnum">${IC("combat")}</span><div class="grow"><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(q.prog, q.n)}%"></i></div><span class="num small">${q.prog}/${q.n}</span></div><div class="xs muted">Récompense : ${fmt(q.axp)} points d'alignement, ${fmt(q.kamas)} kamas</div></div>${pinBtn({ k: "align" })}${q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>` : ""}
       <div class="row small"><span class="muted">Changer d'ordre :</span>${Object.entries(side.orders).filter(([oid]) => oid !== A.order).map(([oid, O2]) => `<button class="btn sm" data-act="align" data-side="${A.side}" data-order="${oid}">${h(O2.name)}</button>`).join("")}
         <span class="xs muted">Insignes : <b>${fmt(S.tokens.insignes || 0)}</b> (3 par mission, 5 pour un boss)</span>
         ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
@@ -1448,7 +1499,7 @@ function achHtml() {
   const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = Object.keys(S.ach).length;
   const ICO = { Progression: G("star"), Combat: IC("combat"), Donjons: IC("cle"), Chasse: IC("carte"), Objets: IC("dofus"), Métiers: IC("pioche"), Forgemagie: IC("forge"), Quêtes: IC("quetes"), Alignement: IC("ailes"), "Havre-Sac": IC("havre") };
   return `<section class="panel"><div class="phead"><h2>Ornements</h2><span class="xs muted">à équiper dans Héros (contour de la carte)</span></div><div class="pad achgrid">${Object.entries(E.ORN).map(([id, O]) => `<div class="ach ${E.ornUnlocked(S, id) ? "ok" : ""}"><span class="ic">${E.ornUnlocked(S, id) ? G("sparkle") : G("lock")}</span><span><b>${h(O.name(S))}</b><br><span class="xs muted">${h(O.req)}</span></span></div>`).join("")}</div></section>
-    <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span><b>${h(a.name)}</b><br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span></div>`).join("")}</div>`).join("")}</div></section>`;
+    <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
 function renderQuests() {
   const tabs = [["main", "Quête principale"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["ach", "Succès"]];
@@ -1517,12 +1568,38 @@ function gatherSheet() {
     </div>
     <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
+/* ---------- 3.2.2 : notifications ---------- */
+const NOTIF_EV = [["bag", "Sac plein", "les nouveaux objets sont perdus"], ["loss", "Combat perdu", "avec le conseil « Pourquoi j'ai perdu ? »"], ["pin", "Objectif atteint", "un objectif de la bande du haut"], ["shop", "Liste de courses prête", "tout est réuni pour un objet ou une clé"], ["lvl", "Palier de niveau", "tous les 10 niveaux"], ["rare", "Rayonnant ou archimonstre", "peut être fréquent"]];
+const NOTIF_DEF = { bag: true, loss: true, pin: true, shop: true, lvl: true, rare: false };
+const notifOn = (k) => { const n = S.settings.notif || {}; return n[k] === undefined ? NOTIF_DEF[k] : !!n[k]; };
+const notifPerm = () => (typeof Notification === "undefined" ? "none" : Notification.permission);
+function notifOptionsHtml() {
+  const perm = notifPerm(); const on = !!S.settings.notifBrowser && perm === "granted";
+  return `<div class="stack" style="gap:6px"><div><b>${G("bell")} Notifications</b><br><span class="muted">Un petit message dans le jeu, et une notification du navigateur quand l'onglet est en arrière-plan.</span></div>
+    <div class="row"><span class="muted">Hors de l'onglet</span>${perm === "none" ? `<span class="tag soft">Non disponible sur ce navigateur</span>` : perm === "denied" ? `<span class="tag warn">Bloquées par le navigateur</span><span class="xs muted">autorisez-les dans les réglages du site</span>` : perm === "granted" ? `<span class="seg">${[[true, "Activées"], [false, "Coupées"]].map(([v, n]) => `<button data-act="setnotifb" data-v="${v ? 1 : 0}" aria-pressed="${on === v}">${n}</button>`).join("")}</span>` : `<button class="btn sm primary" data-act="notifask">Autoriser</button>`}</div>
+    <div class="notifs">${NOTIF_EV.map(([k, n, d]) => `<label class="opt"><span><b>${h(n)}</b><br><span class="xs muted">${h(d)}</span></span><input type="checkbox" data-act="setnotif" data-k="${k}" ${notifOn(k) ? "checked" : ""}></label>`).join("")}</div>
+    <p class="xs muted" style="margin:0">Fiable sur ordinateur. Sur téléphone, seulement tant que l'onglet reste ouvert (sur iPhone, uniquement si le jeu est installé sur l'écran d'accueil). Au plus une notification par minute.</p></div>`;
+}
+let notifLast = 0, notifHeld = [];
+function notify(kind, title, body) {
+  if (!S || !notifOn(kind)) return;
+  if (!S.settings.notifBrowser || notifPerm() !== "granted" || document.visibilityState === "visible") return;
+  const now = Date.now();
+  if (now - notifLast < 60000) { notifHeld.push(title); clearTimeout(notify._to); notify._to = setTimeout(() => { const n = notifHeld.length; if (!n) return; const t = n === 1 ? notifHeld[0] : `${n} évènements pendant votre absence`; notifHeld = []; showNotif(t, n === 1 ? body : ""); }, 60000 - (now - notifLast) + 50); return; }
+  notifLast = now; showNotif(title, body);
+}
+function showNotif(title, body) {
+  if (document.visibilityState === "visible") return;
+  const opts = { body: body || "", icon: "icons/icon-192.png", badge: "icons/icon-192.png", tag: "idlus", renotify: false, silent: true };
+  try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then((r) => r.showNotification(`idlus · ${title}`, opts)).catch(() => { try { new Notification(`idlus · ${title}`, opts); } catch (e) {} }); else new Notification(`idlus · ${title}`, opts); } catch (e) {}
+}
 function optionsSheet() {
   openSheet(`<h2>Options</h2>
     <div class="stack small">
       <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[[false, "Complètes"], [true, "Réduites"]].map(([v, n]) => `<button data-act="setreduced" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.reduced === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
+      ${notifOptionsHtml()}
       <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
@@ -1588,7 +1665,7 @@ function checkNewVersion() {
 }
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
-  renderNav(); renderStatus(); renderUpdBar();
+  clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
@@ -1683,6 +1760,15 @@ document.addEventListener("click", (ev) => {
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
     case "setcele": S.settings.cele = d.v === "1"; dirty = true; optionsSheet(); return;
+    case "pin": { const p = JSON.parse(d.p); const r = E.togglePin(S, p); if (r) { toast(r); return; } toast(E.pinned(S, p) ? "Objectif suivi dans la bande du haut." : "Objectif retiré de la bande."); renderObjs(); if ($("#sheet").innerHTML) { dirty = true; return; } break; }
+    case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "heroes") break; return; }
+    case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
+    case "xptip": ui.xpTip = ui.xpTip === ui.cid ? null : ui.cid; renderHeroes(); return;
+    case "notifask": { if (typeof Notification === "undefined") return; Notification.requestPermission().then((p) => { if (p === "granted") { S.settings.notifBrowser = true; toast("Notifications autorisées."); } dirty = true; optionsSheet(); }); return; }
+    case "setnotifb": S.settings.notifBrowser = d.v === "1"; dirty = true; optionsSheet(); return;
+    case "losssheet": lossSheet(d.t); return;
+    case "lossequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } toast(`Équipé sur ${char(+d.id).name}.`); break; }
+    case "lossgo": ui.tab = "heroes"; ui.cid = +d.id; ui.hero = d.v || "equip"; closeSheet(); window.scrollTo(0, 0); break;
     case "hometab": ui.home = d.v; break;
     case "havre": { const r = E.buyHavre(S, d.id); if (r) { toast(r); return; } toast(`${E.HAVRE.find((x) => x.id === d.id).name} amélioré !`); break; }
     case "mettab": ui.met = d.v; ui.confirm = null; break;
@@ -1835,6 +1921,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "chaloff") c.chalOff = t.checked;
   else if (a === "simres") ui.simRes = +t.value;
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
+  else if (a === "setnotif") { S.settings.notif = S.settings.notif || {}; S.settings.notif[t.dataset.k] = t.checked; dirty = true; return; }
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
   else if (a === "dgsort") ui.dgSort = t.value;
@@ -1890,7 +1977,12 @@ function loop() {
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     E.tick(S, dt); S.lastTick = Date.now();
     sinceSave += dt; sinceView += dt;
-    if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; } if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind); }); dirty = true; }
+    if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
+        if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
+        if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
+        const lv = /^(.+) passe niveau (\d+) !$/.exec(ev.txt || ""); if (lv && +lv[2] % 10 === 0) notify("lvl", `${lv[1]} passe niveau ${lv[2]}`, "");
+        else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets sont perdus : faites de la place.");
+        else if (ev.kind === "radiant" || /^Archimonstre vaincu/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
@@ -1905,7 +1997,8 @@ function loop() {
     sinceRes += dt;
     if (sinceRes > 2500) { sinceRes = 0; const now = Date.now();
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
-      S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); e.ok = !!ok; });
+      S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
+      checkPins(); if (!$("#sheet").innerHTML) renderObjs();
       const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => (b.textContent = dur(E.boostLeft(S, b.dataset.boostleft))));
     }
   }
