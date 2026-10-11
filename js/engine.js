@@ -315,6 +315,8 @@
     E.events.push({ txt, kind });
   };
   E.note = note;
+  /* moments de récompense (3.1.3) : grands écrans côté interface, sans entrée de journal */
+  E.celebrate = (data) => { E.events.push(Object.assign({ kind: "cele", txt: "" }, data)); };
 
   /* ---------------- Objets ---------------- */
   /* Objets Rayonnants : très rares, +10 à +50 % sur les statistiques positives de l'objet */
@@ -330,6 +332,7 @@
       for (const k in it.stats) if (it.stats[k] > 0) it.stats[k] = Math.ceil(it.stats[k] * (1 + it.radiant / 100));
       S.radiants = (S.radiants || 0) + 1;
       note(S, `✦ Objet Rayonnant : ${T.name} (+${it.radiant} %) !`, "radiant");
+      E.celebrate({ t: "radiant", tpl, pct: it.radiant });
     }
     S.items[it.uid] = it; return it;
   };
@@ -375,7 +378,7 @@
   E.unequip = (S, cid, slot) => { const c = S.chars.find((x) => x.id === cid); if (c) delete c.equip[slot]; };
 
   E.sellItem = (S, uid) => {
-    const it = S.items[uid]; if (!it || E.equippedBy(S, uid) || it.locked) return 0;
+    const it = S.items[uid]; if (!it || E.equippedBy(S, uid) || it.locked || E.inGear(S, uid)) return 0;
     const T = ITEMS[it.tpl]; const p = Math.round(T.lvl * 6 * (0.6 + E.itemQuality(it) * 0.6) * (it.radiant ? 5 : 1));
     delete S.items[uid]; S.kamas += p; return p;
   };
@@ -436,6 +439,74 @@
     if (idx === null || idx === undefined || idx < 0) delete c.zonePreset[zkey]; else c.zonePreset[zkey] = idx;
   };
   E.applyZonePresets = (S, zkey) => { S.chars.forEach((c) => { const i = c.zonePreset && c.zonePreset[zkey]; if (i !== undefined && c.presets[i]) E.applyPreset(S, c.id, i); }); };
+
+  /* ---------------- Tenues (3.1.3) : préréglages d'équipement ---------------- */
+  E.MAX_GEAR = 3;
+  E.saveGear = (S, cid, idx, name) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c || idx < 0 || idx >= E.MAX_GEAR) return;
+    c.gear = c.gear || [];
+    c.gear[idx] = { name: (name || (c.gear[idx] && c.gear[idx].name) || `Tenue ${idx + 1}`).slice(0, 24), eq: Object.assign({}, c.equip) };
+  };
+  /* remet la tenue : les objets portés par un autre héros changent de main, les objets vendus ou brisés sont ignorés */
+  E.applyGear = (S, cid, idx) => {
+    const c = S.chars.find((x) => x.id === cid); const g = c && c.gear && c.gear[idx]; if (!g) return null;
+    let missing = 0;
+    for (const sl of Object.keys(c.equip)) if (!g.eq[sl]) delete c.equip[sl];
+    for (const [sl, uid] of Object.entries(g.eq)) {
+      if (c.equip[sl] === uid) continue;
+      const it = S.items[uid];
+      if (!it || ITEMS[it.tpl].lvl > c.lvl) { missing++; continue; }
+      const other = E.equippedBy(S, uid); if (other) for (const k in other.equip) if (other.equip[k] === uid) delete other.equip[k];
+      c.equip[sl] = uid;
+    }
+    E.emit(S, "equip", {});
+    return { missing };
+  };
+  E.deleteGear = (S, cid, idx) => { const c = S.chars.find((x) => x.id === cid); if (c && c.gear) c.gear[idx] = null; };
+  E.gearMissing = (S, c, g) => Object.values(g.eq).filter((uid) => !S.items[uid]).length;
+  /* un objet rangé dans une tenue est protégé comme un objet porté (ni vendu, ni brisé) */
+  E.inGear = (S, uid) => S.chars.find((c) => (c.gear || []).some((g) => g && Object.values(g.eq).includes(uid))) || null;
+
+  /* ---------------- Codes de build (3.1.3) : partager sorts, caractéristiques et équipement ---------------- */
+  E.BUILD_PREFIX = "IDLUS1-";
+  const b64e = (str) => (typeof btoa !== "undefined" ? btoa(unescape(encodeURIComponent(str))) : Buffer.from(str, "utf8").toString("base64"));
+  const b64d = (str) => (typeof atob !== "undefined" ? decodeURIComponent(escape(atob(str))) : Buffer.from(str, "base64").toString("utf8"));
+  E.buildCode = (S, c) => {
+    const eq = {}; for (const sl in c.equip) { const it = S.items[c.equip[sl]]; if (it) eq[sl] = it.tpl; }
+    const o = { v: 1, cls: c.cls, lvl: c.lvl, n: c.name, st: Object.assign({}, c.alloc), as: c.autoStat || "", ac: c.autoCap || 200, at: c.autoThen || "vit",
+      sp: c.spells.map((x) => [x.id, x.cond || "", x.tgt || "low"]), eq };
+    return E.BUILD_PREFIX + b64e(JSON.stringify(o));
+  };
+  /* lecture d'un code collé par un autre joueur : tout est vérifié, rien n'est exécuté */
+  E.parseBuild = (txt) => {
+    const t = String(txt || "").trim().replace(/\s+/g, "");
+    if (!t.startsWith(E.BUILD_PREFIX) || t.length > 4000) return null;
+    let o; try { o = JSON.parse(b64d(t.slice(E.BUILD_PREFIX.length))); } catch (e) { return null; }
+    if (!o || typeof o !== "object" || !CLASSES[o.cls]) return null;
+    const lvl = clamp(Math.round(+o.lvl || 1), 1, E.MAX_LVL || 200);
+    const st = {}; BASE_STATS.forEach((k) => (st[k] = clamp(Math.round(+((o.st || {})[k]) || 0), 0, 2000)));
+    const sp = (Array.isArray(o.sp) ? o.sp : []).filter((x) => Array.isArray(x) && E.spellDef(o.cls, x[0])).slice(0, 8)
+      .map(([id, cond, tgt]) => ({ id, cond: D.CONDITIONS[cond] ? cond : undefined, tgt: D.TARGETS[tgt] ? tgt : "low" }));
+    const eq = {}; for (const [sl, tpl] of Object.entries(o.eq || {})) if (D.SLOTS[sl] && ITEMS[tpl]) eq[sl] = tpl;
+    return { cls: o.cls, lvl, name: String(o.n || "").slice(0, 20), st, as: BASE_STATS.includes(o.as) ? o.as : "", ac: E.AUTO_CAPS.includes(+o.ac) ? +o.ac : 200,
+      at: BASE_STATS.includes(o.at) ? o.at : "vit", sp, eq };
+  };
+  E.applyBuild = (S, cid, b) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c || !b) return "Héros introuvable.";
+    if (c.cls !== b.cls) return `Ce build est pour un ${CLASSES[b.cls].name}.`;
+    c.spells = b.sp.filter((x) => E.spellDef(c.cls, x.id).lvl <= c.lvl).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+    c.spellsManual = true; c.activePreset = null;
+    c.autoStat = b.as || null; c.autoCap = b.ac; c.autoThen = b.at;
+    c.pts = (c.lvl - 1) * 5; BASE_STATS.forEach((k) => (c.alloc[k] = 0));
+    if (c.autoStat) E.autoAllocate(S, c);
+    else { // même répartition, ramenée au niveau du héros
+      const r = b.lvl > 1 ? Math.min(1, (c.lvl - 1) / (b.lvl - 1)) : 1;
+      BASE_STATS.slice().sort((x, y) => b.st[y] - b.st[x]).forEach((k) => { const want = Math.floor(b.st[k] * r); if (want > 0) E.allocate(S, c.id, k, want); });
+      if (c.pts > 0) E.allocate(S, c.id, b.at || "vit", c.pts);
+    }
+    E.refreshSpells(c, E.charStats(S, c));
+    return null;
+  };
 
   /* ---------------- Création des entités de combat ---------------- */
   /* 3.1 : compensation des paliers de caractéristiques (les héros ont moins de stat d'élément à haut niveau) */
@@ -545,9 +616,27 @@
   E.stasisMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: Math.pow(1.2, k - 1), rew: 1 + 0.15 * (k - 1) });
   /* caractéristique des parchemins de chaque donjon (élément du boss) */
   E.dungeonScrollStat = (did) => { const dg = DUNGEONS[did]; const el = (MONSTERS[dg.boss] || {}).el; const ids = Object.keys(DUNGEONS).sort(); if (ids.indexOf(did) % 5 === 4) return "sa"; return { t: "fo", f: "ine", e: "cha", a: "age" }[el] || "vit"; };
-  const pickMods = (n) => { const ks = Object.keys(E.STASIS_MODS); const out = []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
+  const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
+  /* Mutateur de la semaine (3.1.3) : chaque semaine, un donjon reçoit un modificateur imposé (à toutes les stasis)
+     et donne +25 % d'XP et de butin, +50 % de poussière. Dès la stasis 6, il remplace un des modificateurs tirés au sort. */
+  E.WEEKLY_REW = 1.25; E.WEEKLY_DUST = 1.5;
+  E.WEEKLY_MODS = ["enrages", "blindes", "vampires", "nombreux"]; // « Véloces » exclu : trop punitif sans équipement (simulation)
+  E.weekIdx = (t = Date.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC)
+  E.weekEnd = (t = Date.now()) => ((E.weekIdx(t) + 1) * 7 - 3) * 86400000;
+  E.weekly = (S, t = Date.now()) => {
+    const w = E.weekIdx(t);
+    if (S.weekly && S.weekly.w === w && DUNGEONS[S.weekly.did]) return S.weekly;
+    const ids = Object.keys(DUNGEONS).sort().filter((d) => E.dungeonUnlocked(S, d)); if (!ids.length) return null;
+    const top = Math.max(...S.chars.map((c) => c.lvl));
+    const near = ids.filter((d) => DUNGEONS[d].lvl <= top + 5 && DUNGEONS[d].lvl >= top - 40);
+    const pool = near.length ? near : ids.filter((d) => DUNGEONS[d].lvl <= Math.max(top + 5, Math.min(...ids.map((x) => DUNGEONS[x].lvl))));
+    let x = Math.imul(w ^ 0x9e3779b9, 0x85ebca6b) >>> 0; x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0;
+    const mods = E.WEEKLY_MODS;
+    S.weekly = { w, did: pool[x % pool.length], mod: mods[(x >>> 8) % mods.length] };
+    return S.weekly;
+  };
   const applyStasis = (S, F, mons, room, isBoss) => {
-    const D2 = S.dungeon; const k = D2.stasis || 1; if (k <= 1) return mons;
+    const D2 = S.dungeon; const k = D2.stasis || 1; if (k <= 1 && !(D2.mods || []).length) return mons;
     const M = E.stasisMult(k); const mods = D2.mods || [];
     mons.forEach((m) => {
       m.hpMax = m.hp = Math.round(m.hpMax * M.hp); m.dmg *= M.dmg;
@@ -599,7 +688,7 @@
     const ents = team.map((c) => charEntity(S, c)).concat(mons);
     var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
-    F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0;
+    F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null;
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: null, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
@@ -975,7 +1064,7 @@
   const avgDmg = (s) => { const f = s.fx.find((x) => x.k === "dmg" || x.k === "drain" || x.k === "dot"); return f ? (f.min + f.max) / 2 * (f.k === "dot" ? 0.8 : 1) : 0; };
   const bossMech = (S, F, e) => {
     e.mturn = (e.mturn || 0) + 1; const M = e.mech;
-    if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, e.hpMax * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m");
+    if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, e.hpMax * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(e) });
       if (F.dungeonId) { const dg = DUNGEONS[F.dungeonId]; for (let i = 0; i < 2; i++) { const m = monsterEntity(pick(dg.bossMobs), Math.max(1, e.lvl - 3)); m.minion = true; F.ents.push(m); F.order.push(F.ents.indexOf(m)); F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(m) }); } } }
     if (M.includes("enrage") && !e.enraged && e.hp < e.hpMax * 0.5) { e.enraged = true; e.dmg *= 1.4; e.debuffs.push({ vuln: 15, turns: 999 }); flog(F, `${e.name} entre dans une rage folle !`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Rage !" }); }
     if (M.includes("shield") && e.shieldPhase === 1 && e.hp < e.hpMax * 0.5) { e.shieldPhase = 2; e.shield += Math.round(e.hpMax * 0.2); flog(F, `${e.name} se couvre d'une carapace !`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Carapace" }); }
@@ -1193,7 +1282,7 @@
   E.xpPenalty = (diff) => (diff > 4 ? Math.max(0.05, 1 - (diff - 4) * 0.1) : 1);
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
-    const A = S.settings.auto; if (!A || it.radiant || it.locked) return null;
+    const A = S.settings.auto; if (!A || it.radiant || it.locked || E.inGear(S, it.uid)) return null;
     if (A.recycle) {
       const q = E.itemQuality(it);
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
@@ -1211,7 +1300,7 @@
 
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) return false;
-    c.xp += g; let up = false;
+    c.xp += g; let up = false; const from = c.lvl;
     while (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) {
       c.xp -= E.xpNeed(c.lvl); c.lvl++; c.pts += 5; up = true;
     }
@@ -1219,6 +1308,7 @@
       E.autoAllocate(S, c); E.refreshSpells(c, E.charStats(S, c));
       note(S, `${c.name} passe niveau ${c.lvl} !`, "up");
       E.emit(S, "level", { cid: c.id, lvl: c.lvl });
+      if (Math.floor(c.lvl / 10) > Math.floor(from / 10)) E.celebrate({ t: "lvl", cid: c.id, lvl: Math.floor(c.lvl / 10) * 10, frame: Math.floor(c.lvl / 20) > Math.floor(from / 20) });
       const nw = CLASSES[c.cls].spells.filter((s) => s.lvl === c.lvl);
       nw.forEach((s) => note(S, `${c.name} apprend ${s.name}.`, "up"));
     }
@@ -1232,7 +1322,7 @@
       S.stats.wins++;
       const mons = F.ents.filter((e) => e.side === "m");
       const cb = E.chalResolve(S, F);
-      const sr = F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1;
+      const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1);
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr, dropMult: (1 + cb / 100) * sr * (F.roulette === "jackpot" ? 2 : 1), treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
@@ -1346,9 +1436,10 @@
   E.stasisClear = (S, D2, rew) => {
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
-    const dust = k * 2 + (k >= 4 ? 4 : 0); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
+    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
     if (!SI.firsts[k]) { SI.firsts[k] = Date.now();
       const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
+      E.celebrate({ t: "stasis", did, k, chest });
       if (k === 10) { let n = 0; E.team(S).forEach((c) => { c.stasisScrolls = c.stasisScrolls || {}; if (!c.stasisScrolls[did]) { c.stasisScrolls[did] = 1; n++; } });
         if (n) { E.addCons(S, "parch_" + stat + "_g", n); out.push(`${n} × ${CONSUMABLES["parch_" + stat + "_g"].name}`); } }
     }
@@ -1367,8 +1458,9 @@
     if (S.dungeon) return "Vous êtes déjà en donjon.";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
+    const W = E.weekly(S); const wk = W && W.did === did ? W.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
-      mods: k >= 7 ? pickMods(2) : k >= 6 ? pickMods(1) : [], eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
+      mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: wk || undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
     SI.sel = k;
     S.fight = null; S.pause = 0;
     E.applyZonePresets(S, "dg:" + did);
@@ -1560,6 +1652,7 @@
     const it = S.items[uid]; if (!it) return "Objet introuvable.";
     if (E.equippedBy(S, uid)) return "Retirez d'abord cet objet.";
     if (it.locked) return "Objet protégé par le cadenas.";
+    if (E.inGear(S, uid)) return `Objet rangé dans une tenue de ${E.inGear(S, uid).name}.`;
     const p = E.breakPreview(S, uid, focus);
     const got = {};
     for (const k in p.weights) {

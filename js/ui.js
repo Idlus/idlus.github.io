@@ -14,9 +14,15 @@ const ui = {
 };
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.2";
+const GAME_VERSION = "3.1.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.1.3", name: "Petit lot", items: [
+    "Tenues : enregistrez jusqu'à 3 équipements complets par héros (chasse, donjon, prospection…) et remettez-les en un clic ; leurs objets sont protégés de la vente et du brisage",
+    "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Monde › Donjons)",
+    "Entrée des boss : nom en grand, stasis et mécaniques au début du combat ; un flash marque la seconde phase",
+    "Moments de récompense : grand encart pour un objet Rayonnant, chaque palier de 10 niveaux et chaque premier passage de stasis (désactivable dans les Options)",
+    "Partager un build : un code à copier sur Discord avec les sorts, les caractéristiques et l'équipement d'un héros ; collez celui d'un autre joueur pour le consulter, l'appliquer à un héros de la même classe ou mettre ses objets fabricables dans la liste de courses" ] },
   { v: "3.1.2", name: "Nouvelle interface", items: [
     "Nouveau thème « Émeraude » aux couleurs du logo DOFUS 3 (l'ancien thème « Nuit violette » reste disponible dans les Options)",
     "Nouveau logo idlus : l'œuf émeraude, aussi sur l'application installée",
@@ -105,6 +111,8 @@ const GL = {
   up: '<path d="M12 20V5M5 11l7-7 7 7"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/>',
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.4"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.9l7.6-3.8M8.2 13.1l7.6 3.8"/>',
   frame: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>' };
 const GLF = { flame: '<path fill="#ffb347" stroke="#c2410c" stroke-width="1.2" d="M12 2.5c1 3.5 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.4.3 1.8 1.2 2.9 2.4 3.3-.6-3.3-.3-6.3.5-8.9z"/><path fill="#ffe08a" d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.8 1.6-2.6 2.1-4.2 1.2 1.2 3.1 2.2 3.1 4.2A2.6 2.6 0 0 1 12 21z"/>',
@@ -524,11 +532,19 @@ function dgDifficulty(did, k) {
   let sc = k - cap + (SI.max >= k ? -0.4 : 0) + (k < 4 ? Math.max(0, dg.lvl - L) / 8 : 0);
   return sc < -1 ? { k: "easy", txt: "Facile" } : sc < 0.3 ? { k: "mid", txt: "Équilibré" } : { k: "risk", txt: k >= 5 && g < 40 ? "Risqué · équipement requis" : "Risqué" };
 }
+/* Mutateur de la semaine (3.1.3) */
+function weeklyLeft() { return dur((E.weekEnd() - Date.now()) / 1000).replace(/ \d+ min$/, ""); }
+function weeklyBanner() {
+  const W = E.weekly(S); if (!W) return "";
+  const M = E.STASIS_MODS[W.mod]; const dg = DUNGEONS[W.did];
+  return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de la semaine</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>`;
+}
 function dungeonCard(did) {
   const dg = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did); const ks = dgKeyState(did); const SI = (S.stasis || {})[did] || { max: 0, sel: 1 };
   const fav = (S.dgFav || []).includes(did); const d = dgDifficulty(did, SI.sel || 1);
   return `<div class="dgcard ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">
     <span class="fav ${fav ? "on" : ""}" data-act="dgfav" data-id="${did}" title="Favori">${fav ? "★" : "☆"}</span>
+    ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de la semaine">${G("star")} Semaine</span>` : ""}
     ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
     <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
       <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
@@ -543,6 +559,7 @@ function dungeonsHtml() {
     <div class="pad stack" style="gap:10px">
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
         <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
+      ${weeklyBanner()}
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
       <div class="dggrid">${list.map(dungeonCard).join("") || `<div class="empty">Aucun donjon dans ce filtre.</div>`}</div></div></section>`;
 }
@@ -555,18 +572,20 @@ function dungeonSheet(did) {
   const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
   const loot = (B.items || []).filter(([t]) => ITEMS[t]).slice(0, 12).map(([t, r]) => { const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(ITEMS[t].name)} · niv. ${ITEMS[t].lvl}${own ? " · déjà obtenu" : ""}">${im(itemImg(t), "", ITEMS[t].name)}</span>`; }).join("");
   const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
+  const W = E.weekly(S); const wk = W && W.did === did ? E.STASIS_MODS[W.mod] : null;
   const chainMax = Math.max(1, keys); const chainOpts = [1, 3, 5, 10].filter((x) => x === 1 || x <= chainMax);
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
+      ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de la semaine : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b>, jusqu'à lundi (encore ${weeklyLeft()}).</span></div>` : ""}
       <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}</ul></div>
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
-        <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
-        ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal.</p>`}
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
+        ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de la semaine" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${IC("coffre")} Premier passage : ${k >= 8 ? "Coffre en or" : k >= 4 ? "Coffre en argent" : "Coffre en bois"}`}</li>
-        <li>${IC("poussiere")} ${k * 2 + (k >= 4 ? 4 : 0)} Poussières de stasis à chaque victoire</li>
+        <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
         ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
@@ -714,6 +733,7 @@ function buildArena(F) {
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
   placeEnts(F); stickyCheck();
+  if (F.bossIdx !== undefined && F.round === 1 && !F.over && ui.bossIntro !== F.id) bossIntro(F);
 }
 /* bandeau des challenges et mécaniques de boss */
 const CHAL_ICON = (id) => IC("chal_" + (["survivant", "versatile", "econome", "focus", "elitiste", "ordonne", "incurable", "elementaire", "rapide", "chacun", "barbare"].includes(id) ? id : "focus"), "mono");
@@ -727,7 +747,7 @@ function chalBarHtml(F) {
   const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> ${G("target")} Respecter les challenges</label>`;
   if (!F) return "";
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
-  const st = F.stasis > 1 ? `<span class="pill">Stasis ${F.stasis}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>` : "";
+  const st = F.stasis > 1 || F.weekly ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}` : "";
   return `${st}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small) {
@@ -791,6 +811,7 @@ function updateCombat(force) {
         else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
         else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) { floatAt(n, "+" + f.v, "#7ee06a"); burst(n, "h"); } }
         else if (f.k === "buff") { const n = A.nodes[f.t]; if (n && A.view !== "compact") floatAt(n, f.txt, "var(--gold2)", true); }
+        else if (f.k === "phase") phaseFlash();
       });
     }
     if (F.log.length !== A.lastLog || force) {
@@ -871,7 +892,7 @@ function renderHeroes() {
       <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}</div></div>
       <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
       <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button></div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button></div>
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
         ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
@@ -953,8 +974,54 @@ function charEquipView(c, st) {
         <div class="drow">${dollSlot(c, "arme")}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
       </div></div></div>
     ${pick}
+    ${gearHtml(c)}
     ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies actives</h2></div><div class="pad">${sets}</div></div>` : ""}
     <p class="note xs">▲ en vert : un objet plus intéressant est disponible dans le sac pour cet emplacement.</p></div>`;
+}
+/* Codes de build (3.1.3) : à coller sur Discord, lisibles par un autre joueur */
+function buildPreview(b, c) {
+  const C = CLASSES[b.cls];
+  const stats = BASE_STATS.filter((k) => b.st[k] > 0).sort((x, y) => b.st[y] - b.st[x]).map((k) => `<span class="pill">${sIco(k)} ${fmt(b.st[k])} ${h(STATS[k].name)}</span>`).join("");
+  const sps = b.sp.map((x) => { const d = E.spellDef(b.cls, x.id); return `<span class="bsp" data-tip="${h(spellTip(d, b.lvl))}">${spIcon(d)}<span class="xs">${h(d.name)}</span>${d.lvl > (c ? c.lvl : 999) ? `<span class="xs muted">niv. ${d.lvl}</span>` : ""}</span>`; }).join("");
+  const eqs = Object.entries(b.eq).map(([sl, t]) => { const T = ITEMS[t]; const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(T.name)} · niv. ${T.lvl}${own ? " · vous en avez un" : T.craft ? " · fabricable" : ""}">${im(itemImg(t), "", T.name)}</span>`; }).join("");
+  const craftable = Object.values(b.eq).filter((t) => ITEMS[t].craft && !S.shop.some((e) => e.id === t));
+  const same = c && c.cls === b.cls;
+  return `<div class="buildprev stack" style="gap:8px"><div class="row" style="gap:10px">${headTag(b.cls, C.sex)}<div><b>${h(b.name || "Build")}</b> <span class="muted small">${h(C.name)} niv. ${b.lvl}</span><div class="xs muted">${b.as ? `Répartition automatique : ${h(STATS[b.as].name)}${E.ELEM_STATS.includes(b.as) ? ` jusqu'à ${b.ac >= 9999 ? "sans limite" : b.ac}, puis ${h(STATS[b.at].name)}` : ""}` : "Répartition manuelle"}</div></div></div>
+    ${stats ? `<div class="row" style="gap:4px;flex-wrap:wrap">${stats}</div>` : ""}
+    <div><div class="xs muted">Sorts</div><div class="bsps">${sps || `<span class="muted xs">Aucun</span>`}</div></div>
+    ${eqs ? `<div><div class="xs muted">Équipement (en couleur : vous en avez un)</div><div class="row" style="gap:4px;flex-wrap:wrap">${eqs}</div></div>` : ""}
+    <div class="row" style="gap:6px;flex-wrap:wrap">${same ? `<button class="btn sm primary" data-act="buildapply">Appliquer à ${h(c.name)}</button>` : `<span class="small muted">Pour l'appliquer, choisissez un ${h(C.name)} dans vos héros.</span>`}
+      ${craftable.length ? `<button class="btn sm" data-act="buildshop">${G("cart")} Ajouter ${craftable.length} objet${craftable.length > 1 ? "s" : ""} fabricable${craftable.length > 1 ? "s" : ""} à la liste de courses</button>` : ""}</div>
+    ${same ? `<p class="note xs" style="margin:0">Appliquer remplace les sorts et la répartition des caractéristiques de ${h(c.name)}. L'équipement n'est pas copié.</p>` : ""}</div>`;
+}
+function buildSheet(cid) {
+  const c = char(cid) || char(ui.cid); ui.buildCid = c.id;
+  const code = E.buildCode(S, c);
+  openSheet(`<h2>Partager un build</h2>
+    <div class="stack small" style="gap:12px">
+      <div><b>Le build de ${h(c.name)}</b> <span class="muted">(sorts, caractéristiques et équipement)</span>
+        <textarea id="buildOut" readonly rows="3">${h(code)}</textarea>
+        <div class="row" style="gap:6px"><button class="btn sm primary" data-act="buildcopy">Copier le code</button><span class="xs muted">À coller sur Discord ou à envoyer à un ami.</span></div></div>
+      <div><b>Lire un build</b> <span class="muted">(collez le code d'un autre joueur)</span>
+        <textarea id="buildIn" rows="3" placeholder="${E.BUILD_PREFIX}…">${h(ui.buildIn || "")}</textarea>
+        <div class="row" style="gap:6px"><button class="btn sm" data-act="buildread">Lire</button><span id="buildMsg" class="minus small"></span></div></div>
+      ${ui.buildRead ? buildPreview(ui.buildRead, c) : ""}
+    </div>
+    <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* Tenues : équipement complet enregistré, remis en un clic */
+function gearOn(c, g) { const a = Object.entries(g.eq), b = Object.entries(c.equip); return a.length === b.length && a.every(([sl, u]) => c.equip[sl] === u); }
+function gearHtml(c) {
+  const rows = Array.from({ length: E.MAX_GEAR }, (_, i) => {
+    const g = (c.gear || [])[i];
+    if (!g) return `<div class="preset"><span class="grow small muted">Emplacement ${i + 1} vide</span><button class="btn sm" data-act="gsave" data-i="${i}">Enregistrer l'équipement actuel</button></div>`;
+    const on = gearOn(c, g); const miss = E.gearMissing(S, c, g);
+    return `<div class="preset ${on ? "on" : ""}" style="flex-wrap:wrap"><span class="grow"><b>${h(g.name)}</b> <span class="xs muted">${Object.keys(g.eq).length} objet${Object.keys(g.eq).length > 1 ? "s" : ""}${miss ? ` · <span class="minus">${miss} introuvable${miss > 1 ? "s" : ""}</span>` : ""}</span>
+      <span class="row" style="gap:3px;margin-top:4px">${Object.values(g.eq).map((u) => S.items[u] ? `<img src="${itemImg(S.items[u].tpl)}" alt="" data-tipitem="${u}" style="width:24px;height:24px;border-radius:5px;background:var(--panel3)">` : "").join("")}</span></span>
+      <span class="row" style="gap:4px"><button class="btn sm ${on ? "" : "primary"}" data-act="gload" data-i="${i}" ${on ? "disabled" : ""}>${on ? "Portée" : "Mettre"}</button><button class="btn sm" data-act="gsave" data-i="${i}" title="Remplacer par l'équipement actuel">Écraser</button><button class="btn sm" data-act="gren" data-i="${i}" title="Renommer">${G("edit")}</button><button class="btn sm" data-act="gdel" data-i="${i}" title="Supprimer">✕</button></span></div>`;
+  }).join("");
+  return `<div class="panel"><div class="phead"><h2>Tenues</h2><span class="xs muted">changer tout l'équipement en un clic</span></div><div class="pad stack" style="gap:6px">${rows}
+    <p class="note xs" style="margin:0">Les objets d'une tenue sont protégés : ils ne sont ni vendus ni brisés, même par les règles automatiques. S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
 }
 const CONTENT_MAX = 120; // niveau maximal du contenu actuel
 const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());
@@ -1445,6 +1512,7 @@ function optionsSheet() {
     <div class="stack small">
       <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[[false, "Complètes"], [true, "Réduites"]].map(([v, n]) => `<button data-act="setreduced" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.reduced === v}">${n}</button>`).join("")}</span></div>
+      <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
       <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
@@ -1521,6 +1589,48 @@ function render() {
   else if (ui.tab === "quests") renderQuests();
   else { ui.tab = "home"; renderHome(); }
 }
+/* Moments de récompense (3.1.3) : un grand encart à la fois, qui se ferme seul ou d'un clic */
+const celeQ = []; let celeOn = null;
+function celebrate(ev) {
+  if (S.settings.cele === false) return;
+  const last = celeQ[celeQ.length - 1];
+  if (ev.t === "lvl" && last && last.t === "lvl" && last.lvl === ev.lvl) { last.cids.push(ev.cid); last.frame = last.frame || ev.frame; return; }
+  if (celeQ.length >= 4) return;
+  celeQ.push(ev.t === "lvl" ? Object.assign({ cids: [ev.cid] }, ev) : ev);
+  if (!celeOn) { celeOn = "wait"; setTimeout(nextCele, 60); }
+}
+function celeHtml(ev) {
+  if (ev.t === "radiant") { const T = ITEMS[ev.tpl];
+    return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
+  if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
+    return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
+  if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
+    return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
+  return "";
+}
+function nextCele() {
+  const box = $("#cele"); if (!box) return;
+  const ev = celeQ.shift(); if (!ev) { celeOn = null; box.innerHTML = ""; return; }
+  const html = celeHtml(ev); if (!html) { nextCele(); return; }
+  celeOn = ev;
+  box.innerHTML = `<div class="cele ${ev.t} ${S.settings.reduced ? "still" : ""}" data-act="celeclose" role="status">${!S.settings.reduced ? `<span class="cele-rays"></span>` : ""}${html}</div>`;
+  clearTimeout(box._to); box._to = setTimeout(closeCele, ev.t === "lvl" ? 2800 : 3600);
+}
+function closeCele() { const box = $("#cele"); if (!box) return; const n = box.firstElementChild; if (n && !S.settings.reduced) { n.classList.add("out"); setTimeout(nextCele, 220); } else nextCele(); }
+/* Entrée des boss (3.1.3) : nom en grand, stasis et mécaniques, au début du combat */
+function bossIntro(F) {
+  const b = F.ents[F.bossIdx]; const arena = $("#arena"); if (!b || !arena) return;
+  ui.bossIntro = F.id;
+  const d = document.createElement("div"); d.className = "bossintro" + (b.legend ? " legend" : "") + (S.settings.reduced ? " still" : "");
+  d.innerHTML = `<div class="bi-k">${F.stasis > 1 ? `Stasis ${F.stasis} · ` : ""}${b.legend ? "Boss légendaire" : "Boss"}</div><div class="bi-n">${h(b.name)}</div><div class="bi-m">${(b.mech || []).map((m) => `<span>${G("warn")} ${h(E.BOSS_MECHS[m].name)}</span>`).join("")}</div>`;
+  arena.appendChild(d); setTimeout(() => d.remove(), 2600);
+}
+function phaseFlash() {
+  const arena = $("#arena"); if (!arena) return; pulse(arena, "flash");
+  const d = document.createElement("div"); d.className = "bossintro phase" + (S.settings.reduced ? " still" : "");
+  d.innerHTML = `<div class="bi-n">Seconde phase !</div><div class="bi-k">Le boss se régénère et appelle des renforts</div>`;
+  arena.appendChild(d); setTimeout(() => d.remove(), 1900);
+}
 let lvlToast = null;
 function toast(txt, kind) {
   const box = $("#toasts");
@@ -1562,6 +1672,7 @@ document.addEventListener("click", (ev) => {
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
+    case "setcele": S.settings.cele = d.v === "1"; dirty = true; optionsSheet(); return;
     case "hometab": ui.home = d.v; break;
     case "havre": { const r = E.buyHavre(S, d.id); if (r) { toast(r); return; } toast(`${E.HAVRE.find((x) => x.id === d.id).name} amélioré !`); break; }
     case "mettab": ui.met = d.v; ui.confirm = null; break;
@@ -1662,6 +1773,16 @@ document.addEventListener("click", (ev) => {
     case "psave": { const old = c.presets[+d.i]; const name = old ? old.name : (prompt("Nom de la stratégie :", ["Farm", "Boss", "Solo", "Donjon"][+d.i] || "Stratégie") || "").trim(); if (!old && !name) return; E.savePreset(S, c.id, +d.i, name); toast("Stratégie enregistrée."); break; }
     case "pload": E.applyPreset(S, c.id, +d.i); toast(`Stratégie « ${c.presets[+d.i].name} » chargée.`); break;
     case "pdel": E.deletePreset(S, c.id, +d.i); break;
+    case "buildsheet": ui.buildRead = null; ui.buildIn = ""; buildSheet(+d.id); return;
+    case "buildcopy": { const ta = $("#buildOut"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Code du build copié."), () => { ta.select(); toast("Sélectionnez puis copiez le texte."); }); } catch (e) { ta.select(); } return; }
+    case "buildread": { ui.buildIn = $("#buildIn").value; const b = E.parseBuild(ui.buildIn); if (!b) { ui.buildRead = null; const m = $("#buildMsg"); if (m) m.textContent = "Ce texte n'est pas un code de build valide."; return; } ui.buildRead = b; buildSheet(ui.buildCid); return; }
+    case "buildapply": { const b = ui.buildRead; const tc = char(ui.buildCid); if (!b || !tc) return; const r = E.applyBuild(S, tc.id, b); if (r) { toast(r); return; } dirty = true; toast(`Build appliqué à ${tc.name}.`); closeSheet(); ui.cid = tc.id; ui.hero = "spells"; break; }
+    case "buildshop": { const b = ui.buildRead; if (!b) return; let n = 0; Object.values(b.eq).forEach((t) => { if (ITEMS[t].craft && !S.shop.some((e) => e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); dirty = true; toast(`${n} objet${n > 1 ? "s" : ""} ajouté${n > 1 ? "s" : ""} à la liste de courses (Accueil).`); buildSheet(ui.buildCid); return; }
+    case "celeclose": clearTimeout($("#cele")._to); closeCele(); return;
+    case "gsave": { const old = (c.gear || [])[+d.i]; const name = old ? old.name : (prompt("Nom de la tenue :", ["Chasse", "Donjon", "Prospection"][+d.i] || "Tenue") || "").trim(); if (!old && !name) return; E.saveGear(S, c.id, +d.i, name); toast("Tenue enregistrée."); break; }
+    case "gload": { const r = E.applyGear(S, c.id, +d.i); if (r) toast(`Tenue « ${c.gear[+d.i].name} » portée.${r.missing ? ` ${r.missing} objet${r.missing > 1 ? "s" : ""} introuvable${r.missing > 1 ? "s" : ""} ou de niveau trop élevé.` : ""}`); break; }
+    case "gren": { const g = (c.gear || [])[+d.i]; if (!g) return; const name = (prompt("Nouveau nom :", g.name) || "").trim(); if (!name) return; g.name = name.slice(0, 24); break; }
+    case "gdel": E.deleteGear(S, c.id, +d.i); break;
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
     case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
@@ -1677,7 +1798,7 @@ document.addEventListener("click", (ev) => {
     case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
-    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
+    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
     case "feed": { const r = E.feedRune(S, d.k, +d.q); if (r) toast(`+${fmt(r.xp)} XP d'Emblème${r.gained ? `, +${r.gained} ${STATS[E.runeInfo(d.k).stat].short}` : ""}`); break; }
     case "askline": ui.confirm = "line:" + d.k; break;
     case "remline": E.removeEmblemLine(S, d.k); ui.confirm = null; break;
@@ -1759,7 +1880,7 @@ function loop() {
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     E.tick(S, dt); S.lastTick = Date.now();
     sinceSave += dt; sinceView += dt;
-    if (E.events.length) { E.events.splice(0).forEach((ev) => { if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind); }); dirty = true; }
+    if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; } if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
