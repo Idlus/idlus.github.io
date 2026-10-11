@@ -37,3 +37,18 @@ assert.ok(S.chars[0].xp > 0 || S.chars[0].lvl > 1, "aucune expérience gagnée")
 const back = E.deserialize(E.serialize(S));
 assert.strictEqual(back.stats.fights, S.stats.fights, "sauvegarde / chargement incohérents");
 console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} victoires, niveau ${S.chars[0].lvl}`);
+
+// 3.2.3 : répartition manuelle, retrait de points et retour en automatique sans perte
+{
+  const R = E.newState("Test", "iop"); const c = R.chars[0]; c.lvl = 40; E.resetPoints(R, c.id);
+  const total = (x) => x.pts + ["vit", "sa", "fo", "ine", "cha", "age"].reduce((a, k) => { let s = 0; for (let i = 0; i < x.alloc[k]; i++) s += E.pointCost(k, i); return a + s; }, 0);
+  assert.strictEqual(total(c), 195, "points de départ incohérents");
+  const main = c.autoStat; E.setAllocMode(R, c, false);
+  assert.strictEqual(c.autoStat, null, "le mode manuel n'est pas activé");
+  E.deallocate(R, c.id, main, 30); E.allocate(R, c.id, "vit", 5);
+  assert.strictEqual(total(c), 195, "retirer des points en perd ou en crée");
+  E.setAllocMode(R, c, true);
+  assert.strictEqual(c.autoStat, main, "le retour en automatique ne retrouve pas la caractéristique");
+  assert.ok(c.pts < E.pointCost(main, c.alloc[main]) && total(c) === 195, "le retour en automatique ne dépense pas les points");
+  console.log("ok - répartition manuelle et retour en automatique");
+}
