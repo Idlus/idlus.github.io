@@ -138,26 +138,27 @@
   /* ---------- v3 : vrais kits de DOFUS 3 (22 paires sort / variante par classe, DofusDB) ----------
      Chaque sort a des grades (niveau requis, PA, relance, effets). Le joueur équipe l'un OU l'autre sort d'une paire. */
   const SIGNATURE = {
-    iop: "Colère : chaque sort lancé ajoute une charge ; à 6 charges, le sort suivant inflige +40 % de dégâts. +10 % contre les boss ; Vigueur : vole 8 % des dégâts infligés.",
-    cra: "Œil de lynx : joue en premier au premier tour ; ses attaques à cible unique marquent la cible (+10 % de dégâts subis pour 2 tours) ; tireur à distance, subit 15 % de dégâts en moins.",
-    eni: "Mots liés : un soin renforce la prochaine attaque de 15 %, une attaque renforce le prochain soin de 15 %.",
-    sacri: "Souffrance : +2 % de dégâts par coup reçu pendant le combat (jusqu'à +30 %).",
-    xelor: "Distorsion temporelle : 10 % de chances de rejouer son tour.",
-    feca: "Armure du Féca : boucliers +25 %, et l'équipe subit 5 % de dégâts en moins.",
-    osa: "Dompteur : invocations +30 % de PV et de dégâts, deux invocations à la fois.",
-    enu: "Chercheur de trésors : +20 % de butin et de kamas pour l'équipe.",
-    sram: "Larcin : poisons et pièges +25 %, 10 % de chances de butin supplémentaire.",
-    eca: "Coup de chance : dégâts aléatoires (×0,7 à ×1,5), archimonstres et Rayonnants ×1,5.",
-    sadi: "Enfant de la nature : poisons et invocations +10 %.",
-    panda: "Ivresse : un sort sur trois inflige +20 % ; consommables 25 % plus longs.",
-    roub: "Artificier : sorts de zone et poisons +15 %, +15 % contre les groupes de 4 monstres ou plus.",
-    zobal: "Masques : change de masque selon la situation : Psychopathe (+30 % de dégâts), Pleutre (−20 % de dégâts subis sous 45 % de PV), Hystérique (soigne l'équipe de 4 % par tour quand un allié est blessé).",
-    steam: "Mécanicien : invocations (tourelles) +30 %.",
-    elio: "Portails : +25 % de dégâts avec les sorts de zone ; le premier sort de zone du tour donne un bouclier de 8 % des PV ; vole 10 % des dégâts infligés.",
-    hupper: "Runes élémentaires : +10 % en changeant d'élément ; après 4 éléments différents, +30 % sur le sort suivant.",
-    ougi: "Proie : +5 % de dégâts par coup sur la même cible (max +25 %), +20 % de viandes.",
-    forge: "Perce-armure : ignore 50 % des résistances des boss.",
+    iop: "Colère : chaque sort lancé ajoute 1 charge (max 6). À 6 charges, la prochaine attaque inflige +40 % de dégâts et vide la jauge. Vigueur : vole 8 % des dégâts infligés. +10 % de dégâts contre les boss.",
+    cra: "Distance : +40 % de dégâts au tour 1, puis −10 % par tour (+30 % au tour 2, +20 % au tour 3, +10 % au tour 4, plus rien ensuite). Œil de lynx : joue en premier au tour 1, et ses attaques à cible unique marquent la cible (+10 % de dégâts subis pendant 2 tours).",
+    eni: "Mots liés : un soin rend la prochaine attaque 15 % plus forte, une attaque rend le prochain soin 15 % plus fort. Soins +10 %.",
+    feca: "Glyphes : au début de chacun de ses tours, pose un glyphe pour toute l'équipe jusqu'à son tour suivant, dans cet ordre : Protection (−10 % de dégâts subis), Renvoi (15 % des dégâts reçus renvoyés à l'attaquant), Soin (chaque allié récupère 3 % de ses PV max). Boucliers +25 %.",
+    osa: "Dressage : jusqu'à 2 invocations à la fois, avec +30 % de PV ; elles gagnent la moitié de la Puissance et des Dommages de l'Osamodas. +5 % de PV pour toute l'équipe.",
+    enu: "Pelle : ses attaques à cible unique ont 10 % de chances de retirer 1 PA (une fois par monstre et par tour). Trésors : chaque monstre qu'il achève a 15 % de chances de laisser une ressource en plus. Chercheur : +15 % de butin et de kamas pour l'équipe (ne se cumule pas entre plusieurs Enutrof).",
+    sram: "Larcin : poisons et pièges +25 %, et 10 % de chances par monstre de tirer son butin une seconde fois.",
+    xelor: "Horloge : chaque sort lancé avance l'horloge d'1 heure. À 12 heures, elle sonne : tous les alliés gagnent 1 PA à leur prochain tour et leurs sorts se rechargent 1 tour plus vite. L'horloge repart à zéro.",
+    eca: "Roulette : au début de chaque combat, la roue tourne pour toute l'équipe : Pile (40 %) +20 % de dégâts, Face (40 %) +15 % de soins et de boucliers, Jackpot (10 %) butin ×2, Perdu (10 %) −5 % de dégâts. Chanceux : archimonstres et objets Rayonnants ×1,5.",
+    sadi: "Ronces : ses poisons s'empilent jusqu'à 3 fois sur une même cible. Arbre : tant qu'une de ses invocations est en vie, elle attire 50 % des attaques des monstres.",
+    sacri: "Souffrance : +2 % de dégâts par coup reçu pendant le combat (jusqu'à +30 %), et jusqu'à +30 % de dégâts quand ses PV baissent.",
+    panda: "Ivresse : chaque sort ajoute 1 niveau d'ivresse (max 5). Chaque niveau donne +6 % de dégâts mais 3 % de chances de rater son attaque. À 5 niveaux, après son tour, le Pandawa cuve : il passe son tour suivant et l'ivresse retombe à 0. Consommables 25 % plus longs.",
+    roub: "Artificier : sorts de zone et poisons +15 %, et +15 % de dégâts contre les groupes de 4 monstres ou plus.",
+    zobal: "Masques : change de masque au début de son tour selon la situation : Psychopathe (+30 % de dégâts) par défaut, Pleutre (−20 % de dégâts subis) sous 45 % de PV, Hystérique (soigne toute l'équipe de 4 % par tour) quand un allié a moins de 50 % de PV.",
+    steam: "Tourelles : ses invocations font +40 % de dégâts et les monstres les ciblent rarement.",
+    elio: "Portails : +25 % de dégâts avec les sorts de zone ; le premier sort de zone de chaque tour donne un bouclier de 8 % de ses PV. Vole 10 % des dégâts infligés.",
+    hupper: "Runes : +10 % de dégâts en changeant d'élément ; après avoir utilisé les 4 éléments, le sort suivant fait +30 %.",
+    ougi: "Proie : +5 % de dégâts par coup porté à la même cible (max +25 %), remis à zéro en changeant de cible. +20 % de viandes récoltées.",
+    forge: "Postures : au début de son tour, Lance si ses PV dépassent 50 % (+20 % de dégâts, ignore 50 % des résistances des boss), sinon Rempart (−25 % de dégâts subis, chaque attaque lui donne un bouclier de 5 % de ses PV).",
   };
+
   /* lignes identiques dans plusieurs éléments (ex. Huppermage, sorts « meilleur élément ») : une seule ligne dans le meilleur élément du lanceur */
   /* Nettoyage des lignes d'effets : DofusDB liste souvent des variantes (aléatoires ou conditionnelles) d'un même effet.
      - même valeur dans plusieurs éléments → une ligne « meilleur élément »
@@ -256,6 +257,7 @@
     const bestE = Object.keys(sc).sort((x, y) => val(sc[y]) - val(sc[x]))[0];
     CLASSES[cls].elRec = EL2ST[bestE];
     CLASSES[cls].signature = SIGNATURE[cls] || "";
+    if (SIGNATURE[cls]) { const sig = SIGNATURE[cls]; const i = sig.indexOf(" : "); CLASSES[cls].passive = Object.assign({}, CLASSES[cls].passive, { name: sig.slice(0, i), desc: sig.charAt(i + 3).toUpperCase() + sig.slice(i + 4) }); }
   }
   const CLASS_ORDER = ["feca", "osa", "enu", "sram", "xelor", "eca", "eni", "iop", "cra", "sadi", "sacri", "panda", "roub", "zobal", "steam", "elio", "hupper", "ougi", "forge"];
 
@@ -353,6 +355,11 @@
     coffre_argent:     { name: "Coffre en argent",   icon: "🎁", kind: "chest", tier: 1, desc: "Ressources, kamas et un consommable." },
     coffre_or:         { name: "Coffre en or",       icon: "💰", kind: "chest", tier: 2, desc: "Beaucoup de ressources, de kamas et un consommable rare." },
   };
+  /* 3.1 : parchemins de caractéristiques (Petit +1, Grand +3), jusqu'à +100 par caractéristique et par héros */
+  [["fo", "Force"], ["ine", "Intelligence"], ["cha", "Chance"], ["age", "Agilité"], ["vit", "Vitalité"], ["sa", "Sagesse"]].forEach(([k, n]) => {
+    CONSUMABLES["parch_" + k + "_p"] = { name: "Petit parchemin de " + n, icon: "📜", kind: "scroll", stat: k, v: 1, desc: `+1 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };
+    CONSUMABLES["parch_" + k + "_g"] = { name: "Grand parchemin de " + n, icon: "📜", kind: "scroll", stat: k, v: 3, desc: `+3 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };
+  });
   /* Catégories du sac (types d'objets DOFUS) */
   const RES_CATS = [
     { id: "bois", name: "Bois", icon: "🪵", types: [38, 96, 98, 185, 95] },
@@ -382,7 +389,8 @@
     }
   }
   { const gem = Object.values(G.RES).find((r) => r.type === 50) || Object.values(G.RES)[0];
-    G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 }; }
+    G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 };
+    G.RES["Poussière de stasis"] = { id: 0, icon: gem.icon, lvl: 1, price: 15, type: -2 }; }
   const RES_CAT_OF = (name) => {
     const r = G.RES[name]; if (!r) return name.startsWith("Clef") ? "cle" : "divers";
     if (r.type === -2) return "rare";

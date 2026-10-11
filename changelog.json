@@ -1,6 +1,18 @@
 {
-  "version": "3.0.3",
+  "version": "3.1.0",
   "versions": [
+    {
+      "v": "3.1.0",
+      "name": "Donjons et classes",
+      "items": [
+        "Héros en pied : de vrais personnages DOFUS en combat, avec 8 têtes et 6 palettes au choix (Héros › 🎨 Apparence), et 64 coiffes et capes visibles sur le héros",
+        "Stasis : 10 niveaux de difficulté par donjon (synchronisation au niveau de l'équipe dès la stasis 4, élites, modificateurs, boss légendaire), avec coffres, poussière et parchemins",
+        "Nouveau menu des donjons : fiche détaillée, état de la clé, butin, records, estimation de difficulté, favoris et bouton « Enchaîner »",
+        "Challenges mis en avant : encart en direct dans l'arène, série 🔥 dans la barre du haut, détail des bonus en fin de combat",
+        "Nouveaux passifs : Glyphes (Féca), Horloge (Xélor), Pelle (Enutrof), Roulette (Ecaflip), Ronces (Sadida), Ivresse (Pandawa), Postures (Forgelance), Distance (Crâ), Dressage (Osamodas), Tourelles (Steamer), avec une jauge sous chaque héros",
+        "Caractéristiques : paliers officiels de DOFUS (au-delà de 100, il faut plus de points), réinitialisation gratuite, répartition auto avec palier, parchemins de caractéristiques (+100 max)"
+      ]
+    },
     {
       "v": "3.0.3",
       "name": "Application installable",

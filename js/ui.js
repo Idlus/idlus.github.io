@@ -14,9 +14,16 @@ const ui = {
 };
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.3";
+const GAME_VERSION = "3.1.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.1.0", name: "Donjons et classes", items: [
+    "Héros en pied : de vrais personnages DOFUS en combat, avec 8 têtes et 6 palettes au choix (Héros › 🎨 Apparence), et 64 coiffes et capes visibles sur le héros",
+    "Stasis : 10 niveaux de difficulté par donjon (synchronisation au niveau de l'équipe dès la stasis 4, élites, modificateurs, boss légendaire), avec coffres, poussière et parchemins",
+    "Nouveau menu des donjons : fiche détaillée, état de la clé, butin, records, estimation de difficulté, favoris et bouton « Enchaîner »",
+    "Challenges mis en avant : encart en direct dans l'arène, série 🔥 dans la barre du haut, détail des bonus en fin de combat",
+    "Nouveaux passifs : Glyphes (Féca), Horloge (Xélor), Pelle (Enutrof), Roulette (Ecaflip), Ronces (Sadida), Ivresse (Pandawa), Postures (Forgelance), Distance (Crâ), Dressage (Osamodas), Tourelles (Steamer), avec une jauge sous chaque héros",
+    "Caractéristiques : paliers officiels de DOFUS (au-delà de 100, il faut plus de points), réinitialisation gratuite, répartition auto avec palier, parchemins de caractéristiques (+100 max)" ] },
   { v: "3.0.3", name: "Application installable", items: [
     "idlus s'installe sur téléphone et PC comme une vraie application : icône, plein écran, lancement instantané",
     "Le jeu fonctionne hors connexion (les images sont gardées au fil de la partie)",
@@ -49,6 +56,7 @@ const h = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<"
 const fmt = (n) => Math.floor(n).toLocaleString("fr-FR");
 const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
 const char = (id) => S.chars.find((c) => c.id === id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dur = (s) => { s = Math.round(s); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60); return hh ? `${hh} h ${mm} min` : mm ? `${mm} min` : `${s} s`; };
 const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "à l'instant" : s < 3600 ? `il y a ${Math.floor(s / 60)} min` : `il y a ${Math.floor(s / 3600)} h`; };
 const elVar = (el) => (el === "buff" ? "var(--buff)" : `var(--el-${el || "n"})`);
@@ -66,6 +74,32 @@ const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
 const logoImg = (cls) => `assets/h/${cls}_logo.png`;
 const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : "");
 const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
+/* ---------- Apparence des héros (3.1) ---------- */
+const LK = (typeof LOOKS !== "undefined" && LOOKS) || { CLASS_LOOKS: {}, ITEM_SKINS: {}, PALETTES: [] };
+const lookLocal = (cls, sex, hi) => `assets/look/${cls}_${sex === "f" ? "f" : "m"}_${hi || 0}.webp`;
+function lookUrl(c, opts = {}) {
+  const L = LK.CLASS_LOOKS[c.cls]; if (!L) return null; const sx = c.sex === "f" ? "f" : "m"; const D2 = L[sx]; const hi = Math.max(0, Math.min(D2.heads.length - 1, c.head || 0));
+  const skins = [D2.body, D2.heads[hi]];
+  if (!opts.bare && c.equip) ["coiffe", "cape"].forEach((sl) => { const it = S && S.items[c.equip[sl]]; const sk = it && LK.ITEM_SKINS[it.tpl]; if (sk) skins.push(sk); });
+  const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
+  const cols = D2.colors.slice(); if (pal && pal.c) pal.c.forEach((v, i) => (cols[i + 1] = v));
+  if (skins.length === 2 && (!pal || !pal.c)) return lookLocal(c.cls, sx, hi);
+  const look = `{1|${skins.join(",")}|${cols.map((v, i) => `${i + 1}=${v}`).join(",")}|140}`;
+  let hex = ""; for (const ch of unescape(encodeURIComponent(look))) hex += ch.charCodeAt(0).toString(16).padStart(2, "0");
+  return `https://static.ankama.com/dofus/renderer/look/${hex}/full/1/200_200-10.png`;
+}
+const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0); return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
+function lookSheet(c) {
+  const L = LK.CLASS_LOOKS[c.cls]; if (!L) return;
+  const sx = c.sex === "f" ? "f" : "m";
+  openSheet(`<h2>Apparence de ${h(c.name)}</h2>
+    <div class="lookprev">${lookImg(c, "lookbig")}</div>
+    <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
+    <div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>
+    <div class="small"><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    <p class="xs muted">${Object.keys(LK.ITEM_SKINS).length} coiffes et capes apparaissent déjà sur les héros ; les autres arriveront au fil des mises à jour.</p>
+    <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
+}
 const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`;
 const sIco = (k) => (["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "so", "pp", "ini", "pa", "rt", "rf", "re", "ra"].includes(k) ? `<img class="sico" src="assets/c/${k}.png" alt="" loading="lazy">` : "");
 const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name.replace("% ", "") : "Points de vie") + " — " + STAT_HELP[k])}"` : "");
@@ -229,6 +263,7 @@ function statusHtml() {
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it">📍 <span>${h(where)}</span></span>
+    ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +0,5 % d'XP et de butin par combat (max +5 %). Elle retombe à zéro au premier échec.">🔥 <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => b.icon).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">📅 Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">⚔ <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
@@ -272,7 +307,7 @@ const BOOST_INFO = { xp: ["🍬", "Bonbon Sagesse", "+10 % XP"], drop: ["🍭", 
 function activeBoosts() { return Object.keys(BOOST_INFO).filter((k) => E.boostPct(S, k) > 0).map((k) => ({ k, icon: BOOST_INFO[k][0], name: BOOST_INFO[k][1], txt: BOOST_INFO[k][2], left: E.boostLeft(S, k) })); }
 /* Barre de raccourcis des consommables (combat + accueil) */
 function consBar(full) {
-  const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]);
+  const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id] && (full || CONSUMABLES[id].kind !== "scroll"));
   const act = activeBoosts();
   const items = owned.map(([id, n]) => { const C = CONSUMABLES[id];
     return `<button class="cbtn ${C.auto ? "auto" : ""}" ${C.auto ? "" : `data-act="usecons" data-id="${id}"`} data-tip="${h(`${C.name} ×${n} — ${C.desc}${C.auto ? "" : " (cliquez pour utiliser)"}`)}"><span class="ci">${C.icon}</span><b class="num">${n}</b>${C.auto ? `<i>auto</i>` : ""}</button>`; }).join("");
@@ -429,18 +464,69 @@ function monCard(k, opts = {}) {
     <div class="res" style="margin-top:3px">${resChips(m.res)}</div>
     ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}</div>` : ""}</div></div>`;
 }
+/* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
+function dgStars(did) { const SI = (S.stasis || {})[did] || { max: 0 }; const k = S.progress.bossKills[did] ? 1 : 0; return `<span class="stars" title="Terminé · stasis 5 · stasis 10">${k ? "✓" : "·"}<b class="${SI.max >= 5 ? "on" : ""}">★</b><b class="${SI.max >= 10 ? "on" : ""}">★</b></span>`; }
+function dgKeyState(did) { const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
+  if (keys) return { k: "ok", txt: `${keys} clé${keys > 1 ? "s" : ""}` }; if (R && E.canCraft(S, R)) return { k: "craft", txt: "clé fabricable" }; return { k: "no", txt: "pas de clé" }; }
+function dgDifficulty(did, k) {
+  const team = E.team(S); if (!team.length) return { k: "risk", txt: "Aucun héros" };
+  const L = team.reduce((a, c) => a + c.lvl, 0) / team.length; const dg = DUNGEONS[did]; const eff = k >= 4 ? L : dg.lvl;
+  const SI = (S.stasis || {})[did] || { max: 0 };
+  let sc = (eff - L) / 8 + (k - 1) * 0.18 - (team.length - 1) * 0.25 + (SI.max >= k ? -0.6 : 0) + (k >= 4 ? 0.4 : 0);
+  return sc < 0 ? { k: "easy", txt: "Facile" } : sc < 0.8 ? { k: "mid", txt: "Équilibré" } : { k: "risk", txt: "Risqué" };
+}
 function dungeonCard(did) {
-  const dg = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did); const keys = S.res[dg.key] || 0; const kills = S.progress.bossKills[did] || 0;
-  const R = SPECIAL_CRAFTS[dg.key];
-  return `<div class="mcard" style="align-items:flex-start">${im(imgM(dg.boss), "mimg", MONSTERS[dg.boss].name)}
-    <div class="grow stack" style="gap:6px"><div class="row between"><div><b>${h(dg.name)}</b><div class="xs muted">Boss ${h(MONSTERS[dg.boss].name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles${kills ? ` · vaincu ${kills} fois` : ""}</div></div>
-      <button class="btn sm ${keys && un ? "primary" : ""}" data-act="enterdg" data-id="${did}" ${keys && un && !S.dungeon ? "" : "disabled"}>Entrer</button></div>
-      <div class="small row">${im(resImg(dg.key), "ico sm", dg.key)} ${h(dg.key)} : <b class="num">${keys}</b></div>
-      ${R ? `<div class="xs muted">Recette (Bricoleur) :</div>${ingHtml(R.ing)}` : ""}
-      ${un ? "" : `<div class="xs muted">🔒 Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</div>`}</div></div>`;
+  const dg = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did); const ks = dgKeyState(did); const SI = (S.stasis || {})[did] || { max: 0, sel: 1 };
+  const fav = (S.dgFav || []).includes(did); const d = dgDifficulty(did, SI.sel || 1);
+  return `<div class="dgcard ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">
+    <span class="fav ${fav ? "on" : ""}" data-act="dgfav" data-id="${did}" title="Favori">${fav ? "★" : "☆"}</span>
+    ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
+    <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
+      <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
+        ${un ? `<span class="pill key ${ks.k}">🗝 ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">🔒 ${h(E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
 }
 function dungeonsHtml() {
-  return `<section class="panel"><div class="pad stack">${Object.keys(DUNGEONS).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl).map(dungeonCard).join("")}</div></section>`;
+  const all = Object.keys(DUNGEONS); const f = ui.dgFilter || "all";
+  const list = all.filter((id) => f === "all" ? true : f === "open" ? E.dungeonUnlocked(S, id) : f === "key" ? dgKeyState(id).k !== "no" && E.dungeonUnlocked(S, id) : (S.dgFav || []).includes(id))
+    .sort((a, b) => ui.dgSort === "zone" ? E.SUBS[E.DUNGEON_SUB[a]].zone.localeCompare(E.SUBS[E.DUNGEON_SUB[b]].zone) || DUNGEONS[a].lvl - DUNGEONS[b].lvl : DUNGEONS[a].lvl - DUNGEONS[b].lvl);
+  const done = all.filter((d) => S.progress.bossKills[d]).length; const s5 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 5).length; const s10 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 10).length;
+  return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10</span></div>
+    <div class="pad stack" style="gap:10px">
+      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
+        <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
+      <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
+      <div class="dggrid">${list.map(dungeonCard).join("") || `<div class="empty">Aucun donjon dans ce filtre.</div>`}</div></div></section>`;
+}
+function dungeonSheet(did) {
+  const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
+  const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(10, SI.max + 1)); ui.dgStasis = k;
+  const M = E.stasisMult(k); const stat = E.dungeonScrollStat(did); const d = dgDifficulty(did, k);
+  const mechs = E.bossMechs(did).map((m) => `<li><b>${h(E.BOSS_MECHS[m].name)}</b> : ${h(E.BOSS_MECHS[m].desc)}</li>`).join("");
+  const steps = E.STASIS_STEPS.filter(([n]) => n <= k && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
+  const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
+  const loot = (B.items || []).filter(([t]) => ITEMS[t]).slice(0, 12).map(([t, r]) => { const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(ITEMS[t].name)} · niv. ${ITEMS[t].lvl}${own ? " · déjà obtenu" : ""}">${im(itemImg(t), "", ITEMS[t].name)}</span>`; }).join("");
+  const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
+  const chainMax = Math.max(1, keys); const chainOpts = [1, 3, 5, 10].filter((x) => x === 1 || x <= chainMax);
+  openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
+    <div class="stack small" style="gap:10px">
+      <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}</ul></div>
+      <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
+        <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
+        ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal.</p>`}
+        ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
+      <div><b>Récompenses</b><ul class="dglist">
+        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `🎁 Premier passage : ${k >= 8 ? "Coffre en or" : k >= 4 ? "Coffre en argent" : "Coffre en bois"}`}</li>
+        <li>✨ ${k * 2 + (k >= 4 ? 4 : 0)} Poussières de stasis à chaque victoire</li>
+        <li>📜 Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
+        ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
+      ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
+      <div class="keybox"><span>${im(resImg(dg.key), "ico sm", dg.key)} ${h(dg.key)} : <b>${keys}</b></span>${R ? `<button class="btn sm" data-act="dgcraftkey" data-id="${did}" ${E.canCraft(S, R) ? "" : "disabled"}>🔨 Fabriquer une clé</button>` : ""}</div>
+      ${R && !E.canCraft(S, R) ? `<div class="xs muted">Recette :</div>${ingHtml(R.ing)}` : ""}
+    </div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<label class="small row" style="gap:6px">Enchaîner <select data-act="dgchain">${chainOpts.map((x) => `<option value="${x}" ${(ui.dgChain || 1) === x ? "selected" : ""}>${x}×</option>`).join("")}</select></label>
+      <button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}</button>` : `<span class="small muted">🔒 Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
+      <button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function encyclopediaHtml() {
   const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
@@ -477,7 +563,7 @@ function renderCombat() {
       ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid">
     <div class="panel">
-      <div class="arena" id="arena"></div>
+      <div class="arenawrap"><div class="arena" id="arena"></div><div class="chalov" id="chalov"></div></div>
       <div class="chalbar" id="chalbar"></div>
       <div class="pad" style="padding-bottom:0" id="cbar">${consBar(false)}</div>
       <div id="await"></div>
@@ -523,7 +609,7 @@ function buildArena(F) {
     if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
-      return `<div class="ent hero ${rad ? "radiant" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div></div>`; }
+      return `<div class="ent hero ${rad ? "radiant" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="pas"></div>${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
     return `<div class="ent ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} niv. ${e.lvl}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   arena.innerHTML = sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub) + `<div class="turn" id="turn">${h(F.label)}</div>
@@ -532,16 +618,19 @@ function buildArena(F) {
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
 }
 /* bandeau des challenges et mécaniques de boss */
+const CHAL_ICON = { survivant: "🛡️", versatile: "🔁", econome: "💰", focus: "🎯", elitiste: "👑", ordonne: "📶", incurable: "🚫", elementaire: "🔥", rapide: "⏱️", chacun: "🤝", barbare: "🪓" };
+function chalOverlayHtml(F) {
+  if (!F || !(F.chals || []).length) return "";
+  return F.chals.map((c) => { const C = E.CHALLENGES[c.id]; const state = !c.ok ? "ko" : F.over && F.result === "win" ? "ok" : "run";
+    const sub = c.id === "rapide" ? `<div class="prog"><i style="width:${Math.min(100, (F.round / c.turns) * 100)}%"></i></div>` : `<div class="d">${h(c.id === "elitiste" && F.ents[c.target] ? "Cible : " + F.ents[c.target].name : C.desc)}</div>`;
+    return `<div class="chx ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}"><div class="ic">${state === "ok" ? "✓" : state === "ko" ? "✕" : CHAL_ICON[c.id] || "🎯"}</div><div class="tx"><div class="t">${h(C.name)}${c.id === "rapide" ? ` · tour ${Math.min(F.round, c.turns)}/${c.turns}` : ""}</div>${state === "ko" && c.why ? `<div class="d">${h(c.why)}</div>` : sub}</div><div class="bon">+${c.bonus} %</div></div>`; }).join("");
+}
 function chalBarHtml(F) {
-  const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> 🎯 Respecter</label>`;
+  const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> 🎯 Respecter les challenges</label>`;
   if (!F) return "";
-  const ch = (F.chals || []).map((c) => { const C = E.CHALLENGES[c.id]; const done = F.over;
-    const state = !c.ok ? "ko" : done && F.result === "win" ? "ok" : "run";
-    const extra = c.id === "rapide" ? ` (${c.turns} tours)` : c.id === "elitiste" && F.ents[c.target] ? ` : ${F.ents[c.target].name}` : "";
-    return `<span class="chal ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}">${state === "ko" ? "✕" : state === "ok" ? "✓" : "🎯"} ${h(C.name)}${h(extra)} <b>+${c.bonus} %</b></span>`; }).join("");
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">⚠ ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
-  const streak = S.chalStreak > 1 ? `<span class="xs muted">série ×${S.chalStreak}</span>` : "";
-  return `${ch}${streak}${mech}<span style="margin-left:auto"></span>${tog}`;
+  const st = F.stasis > 1 ? `<span class="pill">Stasis ${F.stasis}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>` : "";
+  return `${st}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : ""); s.textContent = txt; s.style.setProperty("--c", color);
@@ -567,12 +656,14 @@ function updateCombat(force) {
     A.nEnts = F.ents.length;
   }
   const cb = $("#chalbar"); if (cb) { const ch = chalBarHtml(F); if (cb.dataset.k !== ch) { cb.innerHTML = ch; cb.dataset.k = ch; } }
+  const co = $("#chalov"); if (co) { const ch = chalOverlayHtml(F); if (co.dataset.k !== ch) { co.innerHTML = ch; co.dataset.k = ch; const ar = $("#arena"); if (ar) ar.classList.toggle("haschal", !!ch); } }
   if (F) {
     F.ents.forEach((e, i) => {
       const n = A.nodes[i]; if (!n) return;
       n.querySelector(".hpb i").style.width = pct(e.hp, e.hpMax) + "%";
       n.querySelector(".hpb b").style.transform = `scaleX(${Math.min(1, (e.shield || 0) / e.hpMax)})`;
       n.classList.toggle("dead", !e.alive);
+      if (e.side === "c" && !e.summon) { const pn = n.querySelector(".pas"); if (pn) { const P = E.passiveInfo(e, F); const html = P ? `${h(P.n)}${P.m ? ` <span class="pg">${Array.from({ length: Math.min(P.m, 12) }, (_, k) => `<i class="${k < Math.round(P.v * Math.min(P.m, 12) / P.m) ? "on" : ""}"></i>`).join("")}</span>` : ""}` : ""; if (pn.dataset.k !== html) { pn.innerHTML = html; pn.dataset.k = html; } } }
     });
     // mode manuel : héros à qui c'est le tour, cibles possibles
     const AW = F.await && !F.over ? F.await : null; const aw = $("#await");
@@ -632,7 +723,8 @@ function lootHtml(F) {
   el.innerHTML = `<div class="stack" style="gap:8px">
     <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length ? `<div class="loot">${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
-    ${r.chal ? `<p class="small" style="color:var(--good);font-weight:700">🎯 Challenges : +${r.chal} % XP et butin</p>` : ""}
+    ${(F.chals || []).length ? `<div class="chalres"><div class="h">🎯 Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>🔥 Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
+    ${r.stasis ? `<p class="small" style="color:var(--gold2);font-weight:700">⏳ Stasis ${r.stasis.k} : ${h(r.stasis.out.join(", "))}</p>` : ""}
     ${r.lootPen ? `<p class="note xs">Monstres bien plus faibles que votre meilleur héros : butin réduit (×${Math.round(r.lootPen * 100) / 100}).</p>` : ""}
     ${r.auto ? `<p class="note">${r.auto} objet${r.auto > 1 ? "s" : ""} traité${r.auto > 1 ? "s" : ""} par les règles automatiques.</p>` : ""}
     ${r.cons ? `<p class="small" style="color:var(--archi);font-weight:800">🍬 Bonbon Sagesse obtenu !</p>` : ""}
@@ -677,7 +769,7 @@ function renderHeroes() {
       <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}</div></div>
       <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
       <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">⛏ ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">⛏ Envoyer récolter</button>`}</div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">⛏ ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">⛏ Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">🎨 Apparence</button></div>
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
         ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
@@ -714,14 +806,22 @@ function setBlock(setId, worn) {
     ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statLine(k, v)).join(", ")}</span></div>`).join("") || `<div class="muted">Aucun bonus.</div>`}</div>`;
 }
 function charStatsView(c, st) {
+  const sc = c.scrolls || {};
+  const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3 points = 1" : k === "vit" ? "1 point = 1" : `${cost} point${cost > 1 ? "s" : ""} = 1${cur >= 100 ? ` (palier ${Math.floor(cur / 100) * 100})` : ""}`; };
+  const scrollsOwned = (k) => (S.cons["parch_" + k + "_p"] || 0) + (S.cons["parch_" + k + "_g"] || 0);
   return `<div class="grid2">
     <div class="panel"><div class="phead"><h2>Points à répartir</h2><b class="num" style="font-size:20px">${c.pts}</b></div>
-      <div class="list">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${k === "sa" ? "3 points = 1" : ""}</span></span>
-          <span class="num" style="min-width:42px;text-align:right">${fmt(c.alloc[k])}</span>
-          <button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k) ? "disabled" : ""}>+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k) ? "disabled" : ""}>+10</button></div>`).join("")}</div>
-      <div class="pad stack" style="padding-top:6px"><label class="row small"><span class="muted">Répartition automatique :</span>
-        <select data-act="autostat" data-id="${c.id}"><option value="">Aucune</option>${BASE_STATS.map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>
-        <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points</button></div></div></div>
+      <div class="list">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${costTxt(k)}</span>
+          <div class="scrollbar" title="Parchemins"><i style="width:${(sc[k] || 0)}%"></i></div><span class="xs muted">📜 ${sc[k] || 0}/${E.SCROLL_MAX}${scrollsOwned(k) ? ` · <a href="#" data-act="usescroll" data-k="${k}">${scrollsOwned(k)} à utiliser</a>` : ""}</span></span>
+          <span class="num" style="min-width:58px;text-align:right">${fmt(c.alloc[k])}${sc[k] ? `<span class="xs" style="color:var(--gold2)"> +${sc[k]}</span>` : ""}</span>
+          <button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""}>+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""}>+10</button></div>`).join("")}</div>
+      <div class="pad stack" style="padding-top:6px">
+        <label class="row small"><span class="muted">Répartition automatique :</span>
+          <select data-act="autostat" data-id="${c.id}"><option value="">Manuelle</option>${BASE_STATS.map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>
+        ${c.autoStat && E.ELEM_STATS.includes(c.autoStat) ? `<label class="row small"><span class="muted">jusqu'à</span><select data-act="autocap" data-id="${c.id}">${E.AUTO_CAPS.map((v) => `<option value="${v}" ${(c.autoCap || 200) === v ? "selected" : ""}>${v >= 9999 ? "sans limite" : v}</option>`).join("")}</select><span class="muted">puis</span>
+          <select data-act="autothen" data-id="${c.id}">${["vit", "sa", ...E.ELEM_STATS.filter((k) => k !== c.autoStat)].map((k) => `<option value="${k}" ${(c.autoThen || "vit") === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>` : ""}
+        <p class="note xs">Au-delà de 100 dans une caractéristique d'élément, il faut 2 points pour gagner 1, puis 3 au-delà de 200 et 4 au-delà de 300. La Vitalité reste à 1 pour 1. Les parchemins s'ajoutent hors paliers.</p>
+        <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
       <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}</div>
       <p class="note">${E.isSolo(S) && c.inTeam ? "L'Emblème du Solitaire est actif. " : ""}${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
@@ -1265,9 +1365,9 @@ function offlineSheet(r) {
     <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
 }
 function migrationSheet(list) {
-  openSheet(`<h2>Bienvenue dans la v3 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
+  openSheet(`<h2>Votre partie a été mise à jour</h2><p class="small">Niveaux, kamas, objets, ressources, métiers et Emblème sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
-    <p class="small muted">Nouveautés à découvrir : les vrais sorts de DOFUS et leurs variantes (Héros › Sorts), le profil de build et le simulateur de dégâts, les challenges (bouton 🎯 en combat), les mécaniques de boss et les nouvelles zones jusqu'au niveau 120.</p>
+    <p class="small muted">À découvrir : la stasis des donjons (Monde › Donjons), l'apparence de vos héros (Héros › 🎨 Apparence), les nouveaux passifs et les parchemins de caractéristiques.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
 }
 
@@ -1390,6 +1490,10 @@ document.addEventListener("click", (ev) => {
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
     case "installgame": installGame(); return;
+    case "looksheet": ui.lookCid = +d.id; lookSheet(char(+d.id)); return;
+    case "looksex": { const x = char(ui.lookCid); x.sex = d.v; dirty = true; lookSheet(x); render(); return; }
+    case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
+    case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nAppareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"}\nNavigateur : ${navigator.userAgent.slice(0, 120)}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :`;
       const open = () => window.open(DISCORD, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : collez-le dans #bugs."); open(); }, open); } catch (e) { open(); } return; }
@@ -1399,8 +1503,11 @@ document.addEventListener("click", (ev) => {
     case "reloadgame": saveNow(); location.reload(); return;
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;
     case "offequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } t.replaceWith(Object.assign(document.createElement("span"), { className: "tag good", textContent: "équipé" })); dirty = true; return; }
-    case "usecons": { if (d.id === "potion_savoir") { openSheet(`<h2>📘 Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
+    case "usecons": { if (CONSUMABLES[d.id] && CONSUMABLES[d.id].kind === "scroll") { const C = CONSUMABLES[d.id];
+        openSheet(`<h2>📜 ${h(C.name)}</h2><p class="small muted">${h(C.desc)} Choisissez le héros.</p><div class="list">${S.chars.map((x) => `<div class="li">${head(x)}<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${STATS[C.stat].name} par parchemins : ${(x.scrolls || {})[C.stat] || 0}/${E.SCROLL_MAX}</span></span><button class="btn sm primary" data-act="scrollto" data-id="${x.id}" data-sid="${d.id}" ${E.scrollRoom(x, C.stat) <= 0 ? "disabled" : ""}>Utiliser</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
+      if (d.id === "potion_savoir") { openSheet(`<h2>📘 Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
+    case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }
     case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
     case "invsel": ui.invSel = d.tpl || null; break;
     case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
@@ -1413,7 +1520,12 @@ document.addEventListener("click", (ev) => {
     case "zoneback": ui.zoneView = null; break;
     case "worldtab": ui.world = d.v; break;
     case "enczone": ui.encZone = d.v; break;
-    case "enterdg": { const r = E.enterDungeon(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; break; }
+    case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? ui.dgChain || 1 : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
+    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = 1; dungeonSheet(d.id); return; }
+    case "dgfav": { ev.stopPropagation(); S.dgFav = S.dgFav || []; const i = S.dgFav.indexOf(d.id); if (i >= 0) S.dgFav.splice(i, 1); else S.dgFav.push(d.id); break; }
+    case "dgfilter": ui.dgFilter = d.v; break;
+    case "dgstasis": ui.dgStasis = +d.v; dungeonSheet(ui.dgSel); return;
+    case "dgcraftkey": { const r = E.craftSpecial(S, DUNGEONS[d.id].key); if (typeof r === "string") { toast(r); return; } toast("Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
     case "combatcid": ui.combatCid = +d.id; break;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
@@ -1421,7 +1533,10 @@ document.addEventListener("click", (ev) => {
     case "herotab": ui.hero = d.v; ui.slot = null; break;
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
-    case "resetpts": E.resetPoints(S, +d.id); break;
+    case "resetpts": E.resetPoints(S, +d.id); toast("Points réinitialisés" + (char(+d.id).autoStat ? " et redistribués." : ".")); break;
+    case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
+      for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
+      toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }
     case "slot": ui.slot = d.slot || null; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
@@ -1465,6 +1580,8 @@ document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
   const c = ui.cid ? char(ui.cid) : null;
   if (a === "autostat") { const x = char(+t.dataset.id); x.autoStat = t.value || null; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
+  else if (a === "autocap") { const x = char(+t.dataset.id); x.autoCap = +t.value; E.autoAllocate(S, x); }
+  else if (a === "autothen") { const x = char(+t.dataset.id); x.autoThen = t.value; E.autoAllocate(S, x); }
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "sptgt") { c.spells[+t.dataset.i].tgt = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }
@@ -1473,6 +1590,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
+  else if (a === "dgsort") ui.dgSort = t.value;
+  else if (a === "dgchain") { ui.dgChain = +t.value; return; }
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
   else if (a === "setorn") { msg(E.setOrn(S, +t.dataset.id, t.value)); }

@@ -158,6 +158,13 @@
     const C = D.CONSUMABLES[id];
     const take = () => { S.cons[id]--; if (!S.cons[id]) delete S.cons[id]; };
     if (C.auto) return "Cet objet s'utilise automatiquement au bon moment.";
+    if (C.kind === "scroll") {
+      const c = S.chars.find((x) => x.id === arg); if (!c) return "Choisissez un héros.";
+      const room = E.scrollRoom(c, C.stat); if (room <= 0) return `${c.name} a déjà +${E.SCROLL_MAX} ${D.STATS[C.stat].name} grâce aux parchemins.`;
+      take(); c.scrolls = c.scrolls || {}; c.scrolls[C.stat] = (c.scrolls[C.stat] || 0) + Math.min(C.v, room);
+      E.emit(S, "scroll", { cid: c.id, stat: C.stat });
+      return null;
+    }
     if (id === "potion_savoir") {
       const J = S.jobs[arg]; if (!J) return "Choisissez un métier.";
       take(); J.xp += Math.max(E.jobXpNeed(J.lvl), 0);
@@ -255,6 +262,7 @@
     lauriers:  { name: () => "Lauriers", req: "Obtenir 20 succès", ok: (S) => Object.keys(S.ach || {}).length >= 20 },
     flammes:   { name: () => "Flammes Rayonnantes", req: "Porter 3 objets Rayonnants en même temps sur un héros", ok: (S) => !!(S.ornSeen && S.ornSeen.flammes) },
     solitaire: { name: () => "Aura du Solitaire", req: "Emblème du Solitaire niveau 100", ok: (S) => S.emblem.lvl >= 100 },
+    stasis:    { name: () => "Sceau du Maître de la stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!S.unlocks.stasis10 },
   };
   E.ORN = ORN;
   E.ornUnlocked = (S, id) => !!ORN[id] && ORN[id].ok(S);
@@ -347,7 +355,7 @@
   const QX = {
     0: { lot: "inc_route" }, 1: { cons: "bonbon_sagesse" }, 2: { item: "inc_paturages" }, 3: { lot: "inc_foret" }, 4: { cons: "potion_savoir" },
     5: { key: "grange_tournesol", cons: "bonbon_sagesse" }, 6: { item: "ast_cite" }, 7: { res: [["Bois de Frêne", 20], ["Fer", 20], ["Blé", 15]] }, 8: { cons: "coffre_bois" },
-    9: { cons: "fiole_resu" }, 10: { key: "cour_bouftou_royal", furn: "Trophée du Tournesol Affamé" }, 11: { cons: "bonbon_recolteur" }, 12: { cons: "parchemin_avis", n: 2 },
+    9: { cons: "fiole_resu" }, 10: { key: "cour_bouftou_royal", furn: "Trophée du Tournesol Affamé", scrolls: true }, 11: { cons: "bonbon_recolteur" }, 12: { cons: "parchemin_avis", n: 2 },
     13: { item: "ast_tainela", furn: "Trophée du Bouftou Royal", cons: "bonbon_sagesse" }, 14: { cons: "coffre_argent" }, 15: { cons: "bonbon_royal" }, 16: { cons: "cristal_fm", n: 2 },
     17: { key: "donjon_bworks", furn: "Trophée du Scarabosse Doré" }, 18: { item: "can_porkass" }, 19: { cons: "fiole_resu", furn: "Trophée de la Bworkette" }, 20: { cons: "coffre_or" },
     21: { furn: "Trophée du Blop Coco Royal", orn: "heros" },
@@ -365,7 +373,7 @@
     const x = QX[i]; if (!x) return ""; const p = [];
     if (x.key) p.push(DUNGEONS[x.key].key); if (x.item) p.push(`un objet de ${SUBS[x.item] ? SUBS[x.item].name : "la zone"} (bon jet)`);
     if (x.lot) p.push(`ressources de ${SUBS[x.lot] ? SUBS[x.lot].name : "la zone"}`); if (x.res) p.push(x.res.map(([r, q]) => `${q} × ${r}`).join(", "));
-    if (x.cons) p.push(`${x.n ? x.n + " × " : ""}${D.CONSUMABLES[x.cons].name}`); if (x.furn) p.push(`meuble « ${x.furn} »`); if (x.orn) p.push("un ornement exclusif");
+    if (x.cons) p.push(`${x.n ? x.n + " × " : ""}${D.CONSUMABLES[x.cons].name}`); if (x.furn) p.push(`meuble « ${x.furn} »`); if (x.scrolls) p.push("un Petit parchemin de chaque caractéristique"); if (x.orn) p.push("un ornement exclusif");
     return p.join(", ");
   };
   const giveQuestExtra = (S, i) => {
@@ -376,6 +384,7 @@
     if (x.res) x.res.forEach(([r, q]) => (S.res[r] = (S.res[r] || 0) + q));
     if (x.cons) E.addCons(S, x.cons, x.n || 1);
     if (x.furn && !S.furniture.includes(x.furn)) S.furniture.push(x.furn);
+    if (x.scrolls) ["fo", "ine", "cha", "age", "vit", "sa"].forEach((k) => E.addCons(S, "parch_" + k + "_p", 1));
     return E.questExtraText(i);
   };
   const questReward = (i) => ({ kamas: 80 + i * 60, xp: 0.35 });
