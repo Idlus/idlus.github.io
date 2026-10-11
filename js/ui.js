@@ -51,9 +51,12 @@ function heroCard(c, size = "", opts = {}) {
   const need = E.xpNeed(c.lvl);
   const stats3 = size === "big" ? [["vit", st.hpMax], [D.CLASSES[c.cls].main, st[D.CLASSES[c.cls].main]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [D.CLASSES[c.cls].main, st[D.CLASSES[c.cls].main]], ["pa", st.pa]];
   let ornHtml = "", ornCls = "";
-  if (orn === "ailes" && S.align) { const r = E.alignRankIdx(S); ornCls = `o-ailes side-${S.align.side}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
+  if (orn === "ailes" && S.align) { const r = E.alignRankIdx(S); ornCls = `o-ailes side-${S.align.side}${c.wing ? " wing-" + c.wing : ""}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
   else if (orn === "couronne") ornHtml = `<span class="orn crown">👑</span>`;
   else if (orn === "lauriers") ornHtml = `<span class="orn laurel l">🌿</span><span class="orn laurel r">🌿</span>`;
+  else if (orn === "heros") ornHtml = `<span class="orn crown">🎖</span>`;
+  else if (orn === "avis") ornHtml = `<span class="orn seal">📜</span>`;
+  else if (orn === "almanax") ornHtml = `<span class="orn seal">📅</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const job = c.job ? `<span class="jobtag">⛏ ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
   return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}`)}">
@@ -75,12 +78,39 @@ function wingSVG(side) {
 }
 function fsGauge() {
   const team = E.team(S); const fs = E.freeSpirit(S); const solo = team.length === 1;
-  const sub = solo ? `Emblème du Solitaire actif (niv. ${S.emblem.lvl})` : team.length ? `${team.length} héros · ${8 - team.length} place${8 - team.length > 1 ? "s" : ""} libre${8 - team.length > 1 ? "s" : ""}` : "aucun héros ne chasse";
-  return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %.">
+  const syn = E.synergy(S);
+  const sub = solo ? `Emblème du Solitaire actif (niv. ${S.emblem.lvl})` : team.length ? `${team.length} héros${syn ? ` · Synergie +${syn} %` : ""}` : "aucun héros ne chasse";
+  return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
     <span class="flame"><i></i></span><span class="txt"><b>${solo ? "Solitaire" : "Esprit Libre"} +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
 }
 function questAlert() { return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); }
 const jobImg = (j) => `assets/j/${j}.png`;
+/* ---------- index des ressources : sources et usages ---------- */
+let RIDX = null;
+function resIndex() {
+  if (RIDX) return RIDX; const src = {}, use = {};
+  const add = (o, k, v) => (o[k] = o[k] || []).push(v);
+  for (const k in MONSTERS) { const m = MONSTERS[k]; m.drops.forEach(([r, p]) => add(src, r, { m: k, p })); }
+  for (const j in GATHER_JOBS) GATHER_JOBS[j].items.forEach(([r, l]) => add(src, r, { job: j, lvl: l }));
+  for (const t in ITEMS) { const T = ITEMS[t]; if (T.craft) T.craft.ing.forEach(([r, q]) => add(use, r, { tpl: t, q })); }
+  for (const n in SPECIAL_CRAFTS) SPECIAL_CRAFTS[n].ing.forEach(([r, q]) => add(use, r, { special: n, q }));
+  for (const j in GATHER_JOBS) for (let L = 1; L <= E.TOOL_MAX; L++) E.toolRecipe(j, L).ing.forEach(([r, q]) => add(use, r, { tool: j, L, q }));
+  for (const r in src) src[r].sort((a, b) => (b.p || 0) - (a.p || 0));
+  return (RIDX = { src, use });
+}
+const subOfMon = (k) => Object.values(E.SUBS).find((s) => s.monsters.includes(k)) || (Object.entries(DUNGEONS).find(([, d]) => d.boss === k || d.rooms.some((r) => r.mobs.includes(k))) || [])[0];
+function bestSource(r) {
+  const L = resIndex().src[r] || []; const g = L.find((x) => x.job); if (g) return `${GATHER_JOBS[g.job].name} niv. ${g.lvl}`;
+  const m = L.find((x) => x.m); if (!m) return r === E.RARE_COMPONENT ? "trouvailles de récolte, boss et coffres" : "source inconnue";
+  const s = subOfMon(m.m); return `${MONSTERS[m.m].name}${s ? " (" + (typeof s === "string" ? DUNGEONS[s].name : s.name) + ")" : ""} · ${E.resRate(m.p).toFixed(1).replace(".", ",")} %`;
+}
+function shopIng(e) { return e.k === "tpl" ? (ITEMS[e.id] && ITEMS[e.id].craft ? ITEMS[e.id].craft.ing : []) : e.k === "special" ? (SPECIAL_CRAFTS[e.id] ? SPECIAL_CRAFTS[e.id].ing : []) : E.toolLvl(S, e.id) < E.TOOL_MAX ? E.toolCost(S, e.id).ing : []; }
+function shopName(e) { return e.k === "tpl" ? ITEMS[e.id].name : e.k === "special" ? e.id : `${E.toolCost(S, e.id).name} (${GATHER_JOBS[e.id].name})`; }
+function shopListHtml() {
+  return S.shop.map((e, i) => { const ing = shopIng(e); const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q); const ok = !miss.length && ing.length;
+    return `<div class="qcard ${ok ? "cur" : ""}"><span class="qnum">${ok ? "✓" : "🛒"}</span><div class="grow"><b>${h(shopName(e))}</b>${ok ? ` <span class="tag good">tout est réuni</span>` : ""}${ingHtml(ing)}
+      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div><button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
+}
 
 const ICONS = {
   metiers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-3 3-6-6 3-3z"/><path d="M11 7L3 15l3 3 8-8"/><path d="M6 21c0-2 2-3 4-3"/></svg>',
@@ -170,7 +200,7 @@ function statusHtml() {
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it">📍 <span>${h(where)}</span></span>
-    ${xpb ? `<span class="it boostchip" data-tip="Bonbon Sagesse : +${xpb} % d'expérience">🍬 +${xpb} % XP · <span id="stBoost">${dur(E.boostLeft(S, "xp"))}</span></span>` : ""}
+    ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => b.icon).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">📅 Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">⚔ <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     <button class="ic-btn" data-act="options" title="Options" aria-label="Options">⚙</button>`;
@@ -209,12 +239,19 @@ function renderStart() {
   </section>`;
 }
 /* ---------- ACCUEIL ---------- */
+const BOOST_INFO = { xp: ["🍬", "Bonbon Sagesse", "+10 % XP"], drop: ["🍭", "Bonbon Prospecteur", "+10 % butin"], kamas: ["🪙", "Bonbon Doré", "+15 % kamas"], gather: ["🌾", "Bonbon Récolteur", "+15 % récolte"], archi: ["🎯", "Bonbon Traqueur", "archis ×1,5"], royal: ["👑", "Bonbon Royal", "+10 % XP/butin/kamas"] };
+function activeBoosts() { return Object.keys(BOOST_INFO).filter((k) => E.boostPct(S, k) > 0).map((k) => ({ k, icon: BOOST_INFO[k][0], name: BOOST_INFO[k][1], txt: BOOST_INFO[k][2], left: E.boostLeft(S, k) })); }
+/* Barre de raccourcis des consommables (combat + accueil) */
+function consBar(full) {
+  const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]);
+  const act = activeBoosts();
+  const items = owned.map(([id, n]) => { const C = CONSUMABLES[id];
+    return `<button class="cbtn ${C.auto ? "auto" : ""}" ${C.auto ? "" : `data-act="usecons" data-id="${id}"`} data-tip="${h(`${C.name} ×${n} — ${C.desc}${C.auto ? "" : " (cliquez pour utiliser)"}`)}"><span class="ci">${C.icon}</span><b class="num">${n}</b>${C.auto ? `<i>auto</i>` : ""}</button>`; }).join("");
+  return `<div class="consbar">${act.map((b) => `<span class="cact" data-tip="${h(`${b.name} : ${b.txt}`)}">${b.icon} ${h(b.txt)} <b class="num" data-boostleft="${b.k}">${dur(b.left)}</b></span>`).join("")}${S.fmShield ? `<span class="cact" data-tip="La prochaine forgemagie ne peut rien faire baisser">💎 Cristal actif</span>` : ""}
+    ${items || (full ? `<span class="xs muted">Aucun consommable. Quêtes, avis de recherche, coffres et boss en donnent.</span>` : "")}</div>`;
+}
 function consHtml() {
-  const list = Object.entries(S.cons || {}).filter(([, n]) => n > 0);
-  const xpb = E.boostPct(S, "xp");
-  return `${xpb ? `<div class="row" style="margin-bottom:8px"><span class="tag good">Actif</span> <b>+${xpb} % d'XP</b> <span class="muted small">encore ${dur(E.boostLeft(S, "xp"))}</span></div>` : ""}
-    ${list.length ? `<div class="list">${list.map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy">🍬</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span><button class="btn sm primary" data-act="usecons" data-id="${id}">Utiliser</button></div>`; }).join("")}</div>`
-    : `<p class="note">Aucun consommable. Le Bonbon Sagesse (+10 % d'XP pendant 1 h) tombe parfois sur les boss de donjon (2 %).</p>`}`;
+  return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy">${C.icon}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
 }
 function renderHome() {
   const team = E.team(S); const main = team[0] || S.chars[0];
@@ -251,9 +288,10 @@ function renderHome() {
     <div class="kpi"><b class="num">${E.havreTotal(S)}</b><span>améliorations du Havre-Sac</span></div>
   </section>
   <section class="grid2">
-    <div class="panel"><div class="phead"><h2>Consommables</h2></div><div class="pad">${consHtml()}</div></div>
+    <div class="panel"><div class="phead"><h2>Consommables</h2></div><div class="pad">${consBar(true)}</div></div>
     <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad">${historyHtml(6)}</div></div>
   </section>
+  ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>🛒 Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 10).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></section>`;
 }
 function havreHtml() {
@@ -263,7 +301,8 @@ function havreHtml() {
       return `<div class="hv"><div class="top"><span class="em">${H.icon}</span><div class="grow"><b>${h(H.name)}</b><div class="xs muted">+${H.per}${h(H.unit)} par niveau</div></div><span class="lvlpill">${l}/${H.max}</span></div>
         <div class="small">Actuel : <b class="plus">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</b></div>
         <div class="pipsbar">${Array.from({ length: Math.min(H.max, 50) }, (_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</div>
-        <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; }).join("")}</div></div></section>`;
+        <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; }).join("")}</div></div></section>
+    <section class="panel" style="margin-top:14px"><div class="phead"><h2>🪑 Meubles en attente</h2><span class="xs muted">ils prendront place dans le Havre-Sac lors de la mise à jour « housing »</span></div><div class="pad">${S.furniture.length ? `<div class="row">${S.furniture.map((f) => `<span class="tag soft">🪑 ${h(f)}</span>`).join("")}</div>` : `<p class="note">Aucun meuble pour l'instant : la quête principale, la série d'Almanax et le Comptoir de la cité en donnent.</p>`}</div></section>`;
 }
 function rateHtml(rate) {
   if (!rate) return `<p class="note">Les statistiques apparaissent après quelques combats dans une zone : XP, kamas et ressources par heure, pour comparer les zones.</p>`;
@@ -343,8 +382,6 @@ function renderZoneView(sid) {
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${r.p} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
-      ${(E.HARVEST[sid] || []).length ? `<h3 class="sec">Récolte</h3><div class="loot">${E.harvestJobs(sid).map((j) => `<div class="lcard">${im(jobImg(j), "joblogo sm", D.GATHER_JOBS[j].name)}<div><div class="n">${h(D.GATHER_JOBS[j].name)} <span class="muted xs">niv. ${S.jobs[j].lvl}</span></div><div class="p">${E.harvestList(sid, j).map((x) => `<span class="${x[2] <= S.jobs[j].lvl ? "" : "muted"}" style="${x[2] <= S.jobs[j].lvl ? "" : "opacity:.6"}">${h(x[0])}${x[2] > 1 ? ` (${x[2]})` : ""}</span>`).join(", ")}</div></div></div>`).join("")}</div>
-        ${un ? `<div><button class="btn sm" data-act="gathersheet" data-sub="${sid}">⛏ Envoyer un héros récolter ici</button></div>` : ""}` : ""}
       ${its.length ? `<h3 class="sec">Équipements à looter</h3><div class="loot">${its.map((e) => `<div class="lcard"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${(e.p * E.ITEM_DROP_SCALE).toFixed(2).replace(".", ",")} %</span></div></div></div>`).join("")}</div>` : ""}
       ${dg ? `<h3 class="sec">Donjon</h3>${dungeonCard(s.dungeon)}` : ""}
     </div>
@@ -407,6 +444,7 @@ function renderCombat() {
   <section class="grid2 combatgrid">
     <div class="panel">
       <div class="arena" id="arena"></div>
+      <div class="pad" style="padding-bottom:0" id="cbar">${consBar(false)}</div>
       <div id="await"></div>
       <div class="herotabs">${team.map((c) => `<button data-act="combatcid" data-id="${c.id}" aria-pressed="${ui.combatCid === c.id}">${head(c)}${h(c.name)}</button>`).join("")}</div>
       <div class="pabar">PA <span class="pips" id="pips"></span><span style="margin-left:auto">Stratégie : <b id="stratName" style="color:var(--ink)">—</b> <button class="btn sm" data-act="gospells">Modifier</button></span></div>
@@ -580,9 +618,10 @@ function renderHeroes() {
     <div class="grow stack" style="min-width:240px">
       <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}</div></div>
       <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
-      <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">⛏ ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)} (${h(E.SUBS[c.job.sub].name)})</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">⛏ Envoyer récolter</button>`}</div>
+      <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">⛏ ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">⛏ Envoyer récolter</button>`}</div>
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
+        ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
       ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (onglet Quêtes).</p>`}
     </div>
@@ -633,7 +672,7 @@ function charEquipView(c, st) {
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
     const cands = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || E.itemQuality(b) - E.itemQuality(a));
-    pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
+    pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">⚒ Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
       <div class="list">${cands.slice(0, 40).map((it) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid);
         return `<div class="li ${it.radiant ? "radiant" : ""}">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by.name)}` : ""}</span><br>${deltaHtml(c, ui.slot, it.uid)}</span>
           <button class="btn sm primary" data-act="equip" data-uid="${it.uid}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. " + T.lvl : "Équiper"}</button></div>`; }).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div></div>`;
@@ -740,6 +779,65 @@ function miniDoll(c, slot) {
   return `<span class="xs muted">Pour ${h(c.name)} :</span><span class="row" style="gap:3px">${all.concat(slot === "dofus" ? D.DOFUS_SLOTS : []).map((s) => { const it = S.items[c.equip[s]]; const on = want.includes(s);
     return `<span class="dslot ${on ? "hl" : ""} ${it ? "filled" : ""}" style="width:30px;height:30px;border-radius:8px;cursor:default" data-tip="${h(SLOTS[s])}${it ? " : " + h(ITEMS[it.tpl].name) : " : vide"}">${it ? `<img src="${itemImg(it.tpl)}" style="width:24px;height:24px" alt="">` : ""}</span>`; }).join("")}</span>`;
 }
+/* ---------- Sac : ressources (v2.7) ---------- */
+function resRarity(n) { const L = (resIndex().src[n] || []).filter((x) => x.m); if (!L.length) return n === E.RARE_COMPONENT ? "epique" : ""; const best = Math.max(...L.map((x) => (MONSTERS[x.m].boss || MONSTERS[x.m].archiOf ? 0 : x.p))); return best === 0 ? "epique" : best < 1 ? "epique" : best < 5 ? "rare" : ""; }
+const RAR = { rare: ["Rare", "#5fbfff"], epique: ["Épique", "#c77dff"] };
+function usefulNow() {
+  const set = new Set(); const A = E.almanax(S); if (!A.done) set.add(A.res);
+  for (const j in GATHER_JOBS) if (E.toolLvl(S, j) < E.TOOL_MAX) E.toolCost(S, j).ing.forEach(([r]) => set.add(r));
+  S.shop.forEach((e) => shopIng(e).forEach(([r]) => set.add(r)));
+  Object.entries(DUNGEONS).forEach(([id, d]) => { if (E.dungeonUnlocked(S, id) && SPECIAL_CRAFTS[d.key]) SPECIAL_CRAFTS[d.key].ing.forEach(([r]) => set.add(r)); });
+  return set;
+}
+function resTabHtml() {
+  const IX = resIndex(); const cats = D.RES_CATS; const all = Object.entries(S.res).filter(([, q]) => q > 0);
+  if (!ui.newResDone) { ui.newRes = new Set(all.map(([n]) => n).filter((n) => !S.resSeen[n])); all.forEach(([n]) => (S.resSeen[n] = 1)); ui.newResDone = true; }
+  const cnt = {}; all.forEach(([n]) => { const c = D.RES_CAT_OF(n); cnt[c] = (cnt[c] || 0) + 1; });
+  const cat = ui.resCat || "all"; const q = (ui.resQ || "").trim().toLowerCase(); const f = ui.resF || "all"; const now = f === "now" ? usefulNow() : null;
+  let list = all.filter(([n]) => (cat === "all" || D.RES_CAT_OF(n) === cat) && (!q || n.toLowerCase().includes(q)));
+  if (f === "recipe") list = list.filter(([n]) => IX.use[n]);
+  if (f === "now") list = list.filter(([n]) => now.has(n));
+  if (f === "unused") list = list.filter(([n]) => !IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT);
+  if (f === "new") list = list.filter(([n]) => ui.newRes.has(n));
+  if (f === "fav") list = list.filter(([n]) => S.resFav[n]);
+  const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
+  list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
+  const unused = all.filter(([n]) => !IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT && !S.resFav[n] && E.resPrice(n));
+  const unusedVal = unused.reduce((a, [n, qq]) => a + E.resPrice(n) * qq, 0);
+  const picked = ui.resPicked || new Set(); const pickVal = [...picked].reduce((a, n) => a + E.resPrice(n) * (S.res[n] || 0), 0);
+  const detail = ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
+  const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
+    return ui.resView === "list"
+      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${ui.resPick ? `<input type="checkbox" data-act="respick" data-n="${h(n)}" ${sel ? "checked" : ""}>` : ""}${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
+      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="${ui.resPick ? "respick" : "ressel"}" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}</button>`; };
+  return `<div class="row resbar">
+      <div class="catchips"><button data-act="rescat" data-v="all" aria-pressed="${cat === "all"}">Tout <b>${all.length}</b></button>${cats.filter((c) => cnt[c.id]).map((c) => `<button data-act="rescat" data-v="${c.id}" aria-pressed="${cat === c.id}">${c.icon} ${h(c.name)} <b>${cnt[c.id]}</b></button>`).join("")}</div></div>
+    <div class="row invbar"><input type="text" id="resSearch" data-act="ressearch" placeholder="Rechercher une ressource…" value="${h(ui.resQ || "")}">
+      <select data-act="resf">${[["all", "Toutes"], ["recipe", "Utiles pour une recette"], ["now", "Utiles maintenant"], ["unused", "Inutilisées"], ["new", "Nouvelles"], ["fav", "Favorites"]].map(([v, n]) => `<option value="${v}" ${f === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+      <select data-act="ressort">${[["name", "Nom"], ["qty", "Quantité"], ["lvl", "Niveau"], ["value", "Valeur totale"], ["recent", "Récentes"]].map(([v, n]) => `<option value="${v}" ${so === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
+      <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span>
+      <button class="btn sm ${ui.resPick ? "primary" : ""}" data-act="respickmode">${ui.resPick ? "Fin de la sélection" : "Sélection multiple"}</button></div>
+    ${ui.resPick ? `<div class="awaitbar" style="margin:0">${picked.size} ressource${picked.size > 1 ? "s" : ""} sélectionnée${picked.size > 1 ? "s" : ""} <button class="btn sm danger" data-act="sellpicked" ${picked.size ? "" : "disabled"}>Vendre la sélection · ${fmt(pickVal)} k</button></div>` : ""}
+    <div class="row small">${unused.length ? (ui.confirm === "sellunused" ? `<span>Vendre ${unused.length} ressources inutilisées (hors favorites) pour ${fmt(unusedVal)} kamas ?</span><button class="btn sm danger" data-act="sellunused">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="asksellunused">Vendre les ressources inutilisées · ${fmt(unusedVal)} k</button>`) : ""}<span class="xs muted">Les ressources sont partagées entre tous vos héros.</span></div>
+    <div class="invlayout ${detail ? "withdetail" : ""}">${detail}
+      ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
+}
+function resDetail(n) {
+  const IX = resIndex(); const qq = S.res[n] || 0; const r = resRarity(n); const src = IX.src[n] || []; const use = IX.use[n] || [];
+  const A = E.almanax(S);
+  const srcHtml = src.slice(0, 8).map((x) => x.job ? `<div class="li">${im(jobImg(x.job), "joblogo sm", GATHER_JOBS[x.job].name)}<span class="grow">${GATHER_JOBS[x.job].name} niv. ${x.lvl}</span><button class="btn sm" data-act="gathersheet" data-job="${x.job}">⛏ Récolter</button></div>`
+    : (() => { const sb = subOfMon(x.m); const isSub = sb && typeof sb !== "string"; return `<div class="li">${im(imgM(x.m), "ico", MONSTERS[x.m].name)}<span class="grow">${S.bestiary[x.m] ? h(MONSTERS[x.m].name) : "???"} <span class="xs muted">${sb ? h(isSub ? sb.name : DUNGEONS[sb].name) : ""}</span></span><span class="pct">${E.resRate(x.p).toFixed(1).replace(".", ",")} %</span>${isSub ? `<button class="btn sm" data-act="zoneview" data-id="${sb.id}" data-gotab="world">Y aller</button>` : ""}</div>`; })()).join("");
+  const useHtml = use.slice(0, 10).map((u) => u.tpl ? `<div class="li"><span class="icobox">${im(itemImg(u.tpl), "", ITEMS[u.tpl].name)}</span><span class="grow">${h(ITEMS[u.tpl].name)} <span class="xs muted">niv. ${ITEMS[u.tpl].lvl} · ${u.q} requis</span></span>${E.canCraft(S, ITEMS[u.tpl].craft) ? `<span class="tag good">fabricable</span>` : ""}</div>`
+    : u.special ? `<div class="li"><span class="grow">🗝 ${h(u.special)} <span class="xs muted">${u.q} requis</span></span></div>` : `<div class="li"><span class="grow">🔨 ${h(E.TOOL_NAMES[u.tool])} ${u.L} <span class="xs muted">(${GATHER_JOBS[u.tool].name}) · ${u.q} requis</span></span></div>`).join("");
+  return `<div class="panel invdetail"><div class="phead"><div class="row">${im(resImg(n), "ico lg", n)}<div><h2>${h(n)}</h2><div class="xs muted">${h(D.RES_CATS.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(qq)} en stock · ${fmt(E.resPrice(n))} k l'unité ${r ? `· <b style="color:${RAR[r][1]}">${RAR[r][0]}</b>` : ""}</div></div></div><button class="btn sm" data-act="ressel" data-n="">✕</button></div>
+    <div class="pad stack" style="gap:8px">
+      <div class="row">${E.resPrice(n) ? `<button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="1">Vendre 1</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="10">Vendre 10</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="${qq}">Tout · ${fmt(E.resPrice(n) * qq)} k</button>` : ""}<button class="btn sm" data-act="resfav" data-n="${h(n)}">${S.resFav[n] ? "★ Favori" : "☆ Épingler"}</button></div>
+      ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">le surplus est vendu automatiquement</span></label>` : ""}
+      ${A.res === n && !A.done ? `<div class="tag good">📅 Offrande de l'Almanax du jour (${A.qty})</div>` : ""}
+      <h3 class="sec">D'où elle vient</h3><div class="list">${srcHtml || `<div class="empty">${n === E.RARE_COMPONENT ? "Trouvailles de récolte, coffres et boss." : "Source inconnue."}</div>`}</div>
+      <h3 class="sec">À quoi elle sert</h3><div class="list">${useHtml || `<div class="empty">N'entre dans aucune recette du jeu : vous pouvez la vendre.</div>`}${use.length > 10 ? `<div class="empty">… et ${use.length - 10} autres recettes.</div>` : ""}</div>
+    </div></div>`;
+}
 function autoRulesHtml() {
   const A = S.settings.auto;
   return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">⚙ Règles automatiques ${A.action !== "none" ? `<span class="tag good">${A.action === "sell" ? "Vente" : "Brisage"} si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}</summary>
@@ -748,6 +846,7 @@ function autoRulesHtml() {
       <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="sell" ${A.action === "sell" ? "selected" : ""}>Vendre</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
         <label class="row small">si le jet est inférieur à <input type="number" min="0" max="100" step="5" data-act="autoq" value="${A.q}" style="width:70px"> %</label>
         <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
+      <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="sell" ${A.recycle === "sell" ? "selected" : ""}>vendre si j'ai déjà mieux ou égal</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
 function renderInventory() {
@@ -770,8 +869,7 @@ function renderInventory() {
             ${im(itemImg(g.tpl), "", T.name)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">🔒</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
       </div>`;
   } else if (ui.inv === "res") {
-    body = `<section class="panel"><p class="note pad" style="padding-bottom:0">Les ressources et objets sont partagés entre tous vos héros.</p><div class="list">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${h(n)}</span>${E.isKey(n) ? ` <span class="tag">Clé</span>` : SPECIAL_CRAFTS[n] ? ` <span class="tag">Spécial</span>` : ""}</span><span class="num">${fmt(q)}</span>
-      ${E.resPrice(n) ? `<button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="1">Vendre 1</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="${q}">Tout (${fmt(E.resPrice(n) * q)} k)</button>` : ""}</div>`).join("") || `<div class="empty">Aucune ressource pour le moment.</div>`}</div></section>`;
+    body = resTabHtml();
   } else if (ui.inv === "cons") {
     body = `<section class="panel"><div class="pad">${consHtml()}</div></section>`;
   } else {
@@ -826,7 +924,7 @@ function craftHtml() {
       <section class="panel"><div class="list">${recipes.map((r) => { const ok = E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req;
         const stats = r.T ? Object.entries(r.T.stats).map(([k, [a, b]]) => `${a === b ? a : a + " à " + b} ${STATS[k].short}`).join(", ") : (E.isKey(r.special) ? "Clé de donjon" : "Objet spécial");
         return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span> <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
-          <button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
+          <span class="row" style="gap:4px"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? "🛒 ✓" : "🛒"}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button></span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
   return body;
 }
 function brisageHtml() {
@@ -843,20 +941,30 @@ function brisageHtml() {
           <button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}</div></section>`;
   return body;
 }
+function toolHtml(id) {
+  const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">🔨 <b>${h(E.TOOL_NAMES[id])} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${tl * 8} % de vitesse)</span></div>`;
+  const R = E.toolCost(S, id); const lvOk = S.jobs[id].lvl >= R.lvl; const ok = lvOk && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q);
+  const pinned = S.shop.some((e) => e.k === "tool" && e.id === id);
+  return `<div class="toolbox"><div class="row between small"><span>🔨 Outil actuel : <b>${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "aucun"}</b> <span class="xs muted">(+${tl * 8} % de vitesse)</span></span><span class="xs muted">prochain : <b>${h(R.name)}</b></span></div>
+    ${ingHtml(R.ing)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
+    <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? "🛒 ✓" : "🛒"}</button></div></div>`;
+}
 function recolteHtml() {
   const workers = S.chars.filter((c) => c.job);
-  const jobs = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const tl = E.toolLvl(S, id); const tc = E.toolCost(S, id); const ws = workers.filter((c) => c.job.job === id);
+  const fil = S.filon && S.filon.until > Date.now() ? S.filon : null;
+  const jobs = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const ws = workers.filter((c) => c.job.job === id);
     const nextRes = J.items.find(([, l]) => l > s.lvl);
     return `<div class="panel"><div class="phead"><div class="row">${im(jobImg(id), "joblogo", J.name)}<div><h2>${J.name}</h2><span class="xs muted">${ws.length ? ws.map((c) => h(c.name)).join(", ") + " récolte" + (ws.length > 1 ? "nt" : "") : "personne ne récolte"}</span></div></div><span class="lvlpill">niv. ${s.lvl}</span></div>
       <div class="pad stack" style="gap:8px">
         <div><div class="row between xs muted"><span>Expérience</span><span class="num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))}</span></div><div class="bar xp"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div></div>
-        ${ws.map((c) => `<div class="row small">${head(c)}<span class="grow">${im(resImg(c.job.res), "ico sm", c.job.res)} ${h(c.job.res)} <span class="xs muted">· ${h(E.SUBS[c.job.sub].name)} · ${E.gatherPeriod(S, c).toFixed(1)} s</span></span></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div>`).join("")}
-        <div class="row small"><span>🔨 Outil niv. <b>${tl}</b>/${E.TOOL_MAX} <span class="xs muted">(+${tl * 8} % de vitesse)</span></span>
-          ${tl < E.TOOL_MAX ? `<button class="btn sm" data-act="tool" data-job="${id}" ${S.kamas >= tc.kamas && (S.res[tc.res] || 0) >= tc.qty ? "" : "disabled"} data-tip="${h(`Améliorer : ${fmt(tc.kamas)} kamas + ${tc.qty} × ${tc.res} (vous en avez ${fmt(S.res[tc.res] || 0)})`)}">Améliorer · ${fmt(tc.kamas)} k + ${tc.qty} ${h(tc.res)}</button>` : `<span class="tag good">max</span>`}</div>
+        ${ws.map((c) => `<div class="row small">${head(c)}<span class="grow">${im(resImg(c.job.res), "ico sm", c.job.res)} ${h(c.job.res)} <span class="xs muted">· ${E.gatherPeriod(S, c).toFixed(1)} s</span>${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</span><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div>`).join("")}
+        <button class="btn sm" data-act="gathersheet" data-job="${id}" style="align-self:flex-start">⛏ Envoyer un héros</button>
+        ${toolHtml(id)}
         <div class="xs muted">Ressources : ${J.items.map(([r, l]) => `<span style="${l > s.lvl ? "opacity:.5" : ""}">${h(r)} (${l})</span>`).join(" · ")}${nextRes ? ` — prochaine : ${h(nextRes[0])} au niveau ${nextRes[1]}` : ""}</div>
       </div></div>`; }).join("");
-  return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter dans une sous-zone. Envoyer un héros récolter le retire des combats (l'Esprit Libre de l'équipe augmente !). 1 % de chances de trouvaille (×5) à chaque récolte. Hors ligne, la récolte continue au même rythme que la chasse.</p>
-    <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `⛏ ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)} (${h(E.SUBS[c.job.sub].name)})` : c.inTeam ? "⚔ Chasse avec l'équipe" : "Au repos"}</span></span>
+  return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter la ressource de son choix. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). De temps en temps, un filon rare double le rendement d'une ressource pendant 10 minutes.</p>
+    ${fil ? `<div class="awaitbar" style="margin:0">✨ Filon de <b>${h(fil.res)}</b> : rendement ×2 encore ${dur((fil.until - Date.now()) / 1000)}</div>` : ""}
+    <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `⛏ ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)}` : c.inTeam ? "⚔ Chasse avec l'équipe" : "Au repos"}</span></span>
       ${c.job ? `<button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler</button>` : `<button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">⛏ Récolter</button>`}</div>`).join("")}</div></section>
     <div class="grid2">${jobs}</div>`;
 }
@@ -867,7 +975,17 @@ function renderMetiers() {
     <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`;
 }
 function fmHtml() {
-  const items = Object.values(S.items).sort((a, b) => ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0));
+  const F = ui.fmF || (ui.fmF = { q: "", slot: "all", sort: "lvl", cid: "", eq: false, runes: false, fav: false });
+  const runeStats = new Set(Object.keys(S.runes).filter((k) => S.runes[k] > 0).map((k) => k.split(":")[1]));
+  let items = Object.values(S.items).filter((x) => { const T = ITEMS[x.tpl]; const by = E.equippedBy(S, x.uid);
+    if (F.q && !T.name.toLowerCase().includes(F.q.toLowerCase())) return false;
+    if (F.slot !== "all" && T.slot !== F.slot) return false;
+    if (F.cid && (!by || by.id !== +F.cid)) return false;
+    if (F.eq && !by) return false; if (F.fav && !x.fav) return false;
+    if (F.runes && !Object.keys(T.stats).some((k) => runeStats.has(k) && T.stats[k][1] > 0)) return false;
+    return !T.trophy; });
+  items.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || (F.sort === "jet" ? E.itemQuality(b) - E.itemQuality(a) : F.sort === "fm" ? (b.fm || 0) - (a.fm || 0) : ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0)));
+  const total = items.length; items = items.slice(0, 120);
   if (!ui.fmSel || !S.items[ui.fmSel]) ui.fmSel = null;
   const it = ui.fmSel ? S.items[ui.fmSel] : null;
   let detail = `<div class="empty">Choisissez un objet à forgemager.</div>`;
@@ -877,10 +995,16 @@ function fmHtml() {
       ${Object.keys(T.stats).map((k) => { const [mn, mx] = T.stats[k]; const cur = it.stats[k] || 0; const runes = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.split(":")[1] === k);
         const cap = mx > 0 ? mx + Math.max(1, Math.ceil(mx * 0.25)) : mx;
         return `<div class="fmline"><div><span class="statl">${sIco(k)}<b class="${cur > mx ? "bonus" : ""}">${statLine(k, cur)}</b></span> <span class="xs muted">jet ${mn} à ${mx}${mx > 0 ? ` · exo jusqu'à ${cap}` : ""}</span>
-          <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}`;
+          <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}
+      ${it.fmLog && it.fmLog.length ? `<h3 class="sec">Historique</h3><div class="list">${it.fmLog.map((l) => `<div class="li xs"><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span><span class="grow">${h(l.txt)}</span><span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}`;
   }
   return `<p class="note">La forgemagie améliore les jets d'un objet avec des runes (obtenues au brisage) et des kamas. En dessous du jet maximum, la réussite est élevée ; au-delà (« exo »), c'est risqué. Un échec détruit la rune et peut faire baisser une autre caractéristique.</p>
-    <div class="grid2"><section class="panel"><div class="phead"><h2>Objets</h2><span class="xs muted">${items.length}</span></div><div class="list" style="max-height:520px;overflow:auto">${items.map((x) => `<div class="li ${x.radiant ? "radiant" : ""} ${ui.fmSel === x.uid ? "selrow" : ""}" style="${ui.fmSel === x.uid ? "box-shadow:inset 0 0 0 2px var(--gold)" : ""}">${itemIcon(x)}<span class="grow">${itemName(x)} <span class="xs muted">niv. ${ITEMS[x.tpl].lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${E.equippedBy(S, x.uid) ? " · porté par " + h(E.equippedBy(S, x.uid).name) : ""}</span></span><button class="btn sm ${ui.fmSel === x.uid ? "primary" : ""}" data-act="fmsel" data-uid="${x.uid}">Choisir</button></div>`).join("") || `<div class="empty">Aucun objet.</div>`}</div></section>
+    <div class="row invbar"><input type="text" id="fmSearch" data-act="fmsearch" placeholder="Rechercher un objet…" value="${h(F.q)}">
+      <select data-act="fmslot">${[["all", "Tous"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"]].map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+      <select data-act="fmcid"><option value="">Tous les héros</option>${S.chars.map((c) => `<option value="${c.id}" ${+F.cid === c.id ? "selected" : ""}>Porté par ${h(c.name)}</option>`).join("")}</select>
+      <select data-act="fmsort">${[["lvl", "Niveau"], ["jet", "Jet"], ["fm", "Forgemagies"]].map(([v, n]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select></div>
+    <div class="row small">${[["eq", "Équipés seulement"], ["runes", "Runes disponibles"], ["fav", "★ Favoris"]].map(([k, n]) => `<button class="btn sm ${F[k] ? "primary" : ""}" data-act="fmtoggle" data-k="${k}">${n}</button>`).join("")}<span class="xs muted">${total} objet${total > 1 ? "s" : ""}</span></div>
+    <div class="grid2"><section class="panel"><div class="phead"><h2>Objets</h2><span class="xs muted">${total > 120 ? "120 premiers" : total}</span></div><div class="list" style="max-height:560px;overflow:auto">${items.map((x) => `<div class="li ${x.radiant ? "radiant" : ""}" style="${ui.fmSel === x.uid ? "box-shadow:inset 0 0 0 2px var(--gold)" : ""}"><button class="btn sm" data-act="fmfav" data-uid="${x.uid}" title="Favori">${x.fav ? "★" : "☆"}</button>${itemIcon(x)}<span class="grow">${itemName(x)} <span class="xs muted">niv. ${ITEMS[x.tpl].lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${x.fm ? ` · ⚒ ${x.fm}` : ""}${E.equippedBy(S, x.uid) ? " · porté par " + h(E.equippedBy(S, x.uid).name) : ""}</span></span><button class="btn sm ${ui.fmSel === x.uid ? "primary" : ""}" data-act="fmsel" data-uid="${x.uid}">Choisir</button></div>`).join("") || `<div class="empty">Aucun objet ne correspond.</div>`}</div></section>
     <section class="panel"><div class="phead"><h2>Établi du forgemage</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad stack" style="gap:8px">${detail}</div></section></div>`;
 }
 function renderForge() {
@@ -894,7 +1018,15 @@ function mainQuestHtml() {
   const cur = S.quest.step; const qp = E.questProgress(S);
   return `<section class="panel"><div class="phead"><h2>Quête principale</h2><span class="small muted num">${Math.min(cur, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}</span></div><div class="pad stack" style="gap:8px">
     ${E.MAIN_QUEST.map((q, i) => `<div class="qcard ${i < cur ? "done" : i === cur ? "cur" : ""}" ${i > cur + 2 ? 'style="opacity:.35"' : ""}><span class="qnum">${i < cur ? "✓" : i + 1}</span><div class="grow"><b>${i > cur + 2 ? "???" : h(q.title)}</b><div class="small muted">${i > cur + 2 ? "Terminez les étapes précédentes." : h(q.txt)}</div>
-      ${i === cur && qp ? `<div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}</div>${i === cur && q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>`).join("")}</div></section>`;
+      ${i === cur && qp ? `<div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}
+      ${i <= cur + 2 && E.questExtraText(i) ? `<div class="xs" style="margin-top:4px">🎁 <span class="muted">${i < cur ? "Reçu" : "Récompense"} :</span> ${h(E.questExtraText(i))}</div>` : ""}</div>${i === cur && q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>`).join("")}</div></section>`;
+}
+function shopHtml(id) {
+  const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
+  return `<section class="panel"><div class="phead"><h2>${Sh.icon} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
+    <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
+      return `<div class="hv"><div class="top"><span class="em">${C ? C.icon : it.wing ? "🪽" : it.furn ? "🪑" : it.orn ? "🖼" : "🏷"}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? "Meuble pour le futur Havre-Sac" : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte"}</div></div></div>
+        <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
 function bountiesHtml() {
   return `<p class="note">Trois avis de recherche adaptés à votre niveau. Ils se remplissent automatiquement en chassant (ou en battant le boss demandé) et rapportent kamas, expérience et points d'alignement. Un nouvel avis remplace aussitôt celui qui est rempli.</p>
@@ -902,8 +1034,9 @@ function bountiesHtml() {
       return `<div class="bounty"><span class="wanted">AVIS DE RECHERCHE</span>${im(imgM(b.key), "", m.name)}<b>${h(m.name)}</b><span class="xs">${b.dg ? "Boss · " : ""}${h(where)} · niv. ${m.lvl[0]}–${m.lvl[1]}</span>
         <div class="row" style="width:100%"><div class="bar grow"><i style="width:${pct(b.prog, b.n)}%"></i></div><span class="num small">${b.prog}/${b.n}</span></div>
         <span class="small">Prime : <span class="coin"></span> <b>${fmt(b.kamas)}</b> · XP${S.align ? ` · +${b.axp} alignement` : ""}</span>
-        <div class="row">${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) ? "disabled" : ""}>Changer · ${fmt(E.rerollCost(S))} k</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
-    <p class="small muted">Avis remplis : <b>${fmt(S.cnt.bounty || 0)}</b></p>`;
+        <div class="row">${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) && !S.cons.parchemin_avis ? "disabled" : ""}>Changer · ${S.cons.parchemin_avis ? "📜 gratuit" : fmt(E.rerollCost(S)) + " k"}</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
+    <p class="small muted">Avis remplis : <b>${fmt(S.cnt.bounty || 0)}</b> · chaque avis rapporte 1 jeton de chasseur (2 pour un boss) et parfois un coffre.${S.cons.parchemin_avis ? ` · ${S.cons.parchemin_avis} Parchemin${S.cons.parchemin_avis > 1 ? "s" : ""} d'Avis : changement gratuit.` : ""}</p>
+    ${shopHtml("prime")}`;
 }
 function alignHtml() {
   const top = Math.max(...S.chars.map((c) => c.lvl));
@@ -923,8 +1056,9 @@ function alignHtml() {
       <div class="small">Bonus actuels : <b class="plus">+${2 * r} % ${side.bonusName}</b> (camp) · <b class="plus">${h(E.ORDER_BONUS[A.order].txt.replace("par rang", ""))}× ${r}</b> (ordre)</div>
       ${q ? `<div class="qcard cur"><span class="qnum">⚔</span><div class="grow"><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(q.prog, q.n)}%"></i></div><span class="num small">${q.prog}/${q.n}</span></div><div class="xs muted">Récompense : ${fmt(q.axp)} points d'alignement, ${fmt(q.kamas)} kamas</div></div>${q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>` : ""}
       <div class="row small"><span class="muted">Changer d'ordre :</span>${Object.entries(side.orders).filter(([oid]) => oid !== A.order).map(([oid, O2]) => `<button class="btn sm" data-act="align" data-side="${A.side}" data-order="${oid}">${h(O2.name)}</button>`).join("")}
+        <span class="xs muted">Insignes : <b>${fmt(S.tokens.insignes || 0)}</b> (3 par mission, 5 pour un boss)</span>
         ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
-    </div></section>`;
+    </div></section>${shopHtml("cite")}`;
 }
 function almanaxHtml() {
   const A = E.almanax(S); const d = new Date(); const have = S.res[A.res] || 0;
@@ -933,6 +1067,8 @@ function almanaxHtml() {
       <div class="grow stack" style="gap:6px"><div>Offrande du jour : ${im(resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="small muted">(vous en avez ${fmt(have)})</span></div>
         <div>Bonus du jour : <b class="plus">${h(A.bonus.name)}</b> jusqu'à minuit, et <span class="coin"></span> ${fmt(A.kamas)} kamas</div>
         <div>${A.done ? `<span class="tag good">Offrande faite aujourd'hui ✓</span>` : `<button class="btn primary" data-act="almanax" ${have >= A.qty ? "" : "disabled"}>Faire l'offrande</button>`}</div></div></div>
+    <div><b>Série : ${S.almStreak.n || 0} jour${(S.almStreak.n || 0) > 1 ? "s" : ""}</b> <span class="xs muted">(un jour manqué fait redescendre d'un palier)</span>
+      <div class="row" style="margin-top:6px">${E.ALM_TIERS.map((t) => { const R = E.ALM_TIERS_R[t]; const txt = R.lot ? "lot de ressources" : R.cons ? CONSUMABLES[R.cons].name : R.furn ? `meuble « ${R.furn} »` : `titre « ${R.title} » + ornement`; return `<span class="tag ${(S.almStreak.n || 0) >= t ? "good" : "soft"}">${t} j : ${h(txt)}</span>`; }).join("")}<span class="tag soft">puis tous les 30 j : Coffre en or</span></div></div>
     <p class="note">L'offrande change chaque jour et dépend de votre niveau. Les ressources viennent des monstres ; consultez l'encyclopédie pour savoir qui les lâche.</p></div></section>`;
 }
 function achHtml() {
@@ -994,23 +1130,19 @@ function giveSheet(uid) {
 }
 function gatherSheet() {
   const g = ui.gs; const c = char(g.cid) || S.chars[0]; g.cid = c.id;
-  const subsFor = (job) => Object.values(E.SUBS).filter((s) => E.subUnlocked(S, s.id) && E.harvestList(s.id, job).length);
-  if (!g.job) g.job = g.sub ? (E.harvestJobs(g.sub)[0] || "paysan") : (c.job ? c.job.job : "bucheron");
-  let subs = subsFor(g.job);
-  if (!g.sub || !subs.find((s) => s.id === g.sub)) { const lv = S.jobs[g.job].lvl; g.sub = (subs.filter((s) => E.harvestList(s.id, g.job).some((x) => x[2] <= lv)).sort((a, b) => Math.max(...E.harvestList(b.id, g.job).filter((x) => x[2] <= lv).map((x) => x[2])) - Math.max(...E.harvestList(a.id, g.job).filter((x) => x[2] <= lv).map((x) => x[2])))[0] || subs[0] || {}).id; }
-  const list = g.sub ? E.harvestList(g.sub, g.job) : []; const lv = S.jobs[g.job].lvl;
-  if (!g.res || !list.find((x) => x[0] === g.res && x[2] <= lv)) g.res = (list.filter((x) => x[2] <= lv).pop() || [])[0];
-  const jobsHere = Object.keys(GATHER_JOBS);
+  if (!g.job) g.job = c.job ? c.job.job : "bucheron";
+  const list = E.jobRes(g.job); const lv = S.jobs[g.job].lvl;
+  if (!g.res || !list.find((x) => x[0] === g.res && x[1] <= lv)) g.res = (c.job && c.job.job === g.job ? c.job.res : null) || (list.filter((x) => x[1] <= lv).pop() || [])[0];
+  const per = E.gatherTime(lv) / E.gatherSpeed(S, g.job, c);
   openSheet(`<h2>⛏ Envoyer récolter</h2>
     <p class="small muted">Le héros quitte l'équipe de chasse pendant qu'il récolte. Les niveaux de métier sont communs à tous vos héros.</p>
     <div class="stack" style="gap:8px">
       <label class="row small"><span style="min-width:90px">Héros</span><select data-act="gs" data-k="cid">${S.chars.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.name)} (niv. ${x.lvl})${x.job ? " — récolte déjà" : ""}</option>`).join("")}</select></label>
-      <label class="row small"><span style="min-width:90px">Métier</span><select data-act="gs" data-k="job">${jobsHere.map((j) => `<option value="${j}" ${j === g.job ? "selected" : ""}>${GATHER_JOBS[j].name} (niv. ${S.jobs[j].lvl})</option>`).join("")}</select></label>
-      <label class="row small"><span style="min-width:90px">Sous-zone</span><select data-act="gs" data-k="sub">${subs.map((x) => `<option value="${x.id}" ${x.id === g.sub ? "selected" : ""}>${h(ZONES.find((z) => z.id === x.zone).name)} · ${h(x.name)}</option>`).join("") || `<option>Aucune sous-zone accessible</option>`}</select></label>
-      <label class="row small"><span style="min-width:90px">Ressource</span><select data-act="gs" data-k="res">${list.map((x) => `<option value="${h(x[0])}" ${x[0] === g.res ? "selected" : ""} ${x[2] > lv ? "disabled" : ""}>${h(x[0])}${x[2] > lv ? ` (niv. ${x[2]})` : ""}</option>`).join("")}</select></label>
-      ${g.res ? `<div class="row small">${im(resImg(g.res), "ico", g.res)}<span>${E.gatherTime(lv) / E.gatherSpeed(S, g.job) < 100 ? `≈ ${(E.gatherTime(lv) / E.gatherSpeed(S, g.job)).toFixed(1)} s par récolte` : ""} · en stock : ${fmt(S.res[g.res] || 0)}</span></div>` : ""}
+      <div class="row small"><span style="min-width:90px">Métier</span>${Object.keys(GATHER_JOBS).map((j) => `<button class="jobpick ${j === g.job ? "on" : ""}" data-act="gsjob" data-v="${j}" data-tip="${h(GATHER_JOBS[j].name)} niv. ${S.jobs[j].lvl}">${im(jobImg(j), "joblogo sm", GATHER_JOBS[j].name)}</button>`).join("")}</div>
+      <div class="respick">${list.map(([r, l]) => `<button class="${r === g.res ? "on" : ""}" data-act="gsres" data-v="${h(r)}" ${l > lv ? "disabled" : ""} data-tip="${h(r)} · niveau ${l}${l > lv ? " (verrouillé)" : ""} · en stock : ${fmt(S.res[r] || 0)}">${im(resImg(r), "ico", r)}<span class="xs">${h(r)}</span>${l > lv ? `<i class="xs">niv. ${l}</i>` : ""}</button>`).join("")}</div>
+      ${g.res ? `<div class="small muted">≈ ${per.toFixed(1)} s par récolte${E.filonOn(S, g.res) ? " · <b class='plus'>filon actif ×2 !</b>" : ""}${c.cls === "sadi" && (g.job === "bucheron" || g.job === "alchimiste") ? " · passif Sadida" : ""}${c.cls === "steam" && g.job === "pecheur" ? " · passif Steamer" : ""}</div>` : ""}
     </div>
-    <div class="row"><button class="btn primary" data-act="gsgo" ${g.res && g.sub ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
+    <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function optionsSheet() {
   openSheet(`<h2>Options</h2>
@@ -1021,7 +1153,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <p class="note">Version 2.6 « Krosmoz » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
+      <p class="note">Version 2.7 « Équilibrage » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
@@ -1033,7 +1165,7 @@ function offlineSheet(r) {
     <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
 }
 function migrationSheet(list) {
-  openSheet(`<h2>Bienvenue dans la v2.6 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
+  openSheet(`<h2>Bienvenue dans la v2.7 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
     <p class="small muted">Nouveautés à découvrir : l'onglet Quêtes, le Havre-Sac (Accueil), la Forgemagie et la récolte par héros (Métiers). Conseil : une nouvelle partie permet de profiter de la quête principale depuis le début.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
@@ -1069,7 +1201,7 @@ document.addEventListener("click", (ev) => {
   hideTip();
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
-  if (t.dataset.tab) { if (!S) return; ui.tab = t.dataset.tab; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
@@ -1085,14 +1217,30 @@ document.addEventListener("click", (ev) => {
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
     case "qtab": ui.qt = d.v; ui.confirm = null; break;
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
-    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : (ui.cid || S.chars[0].id), sub: d.sub || null }; if (d.sub) { const free = S.chars.find((x) => !x.job && !x.inTeam) || S.chars.find((x) => !x.job); if (!d.cid && free) ui.gs.cid = free.id; } gatherSheet(); return;
-    case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.sub, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }
+    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
+    case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;
+    case "gsres": ui.gs.res = d.v; gatherSheet(); return;
+    case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
     case "tool": msg(E.upgradeTool(S, d.job)); break;
+    case "shoppin": { const i = S.shop.findIndex((e) => e.k === d.k && e.id === d.id); if (i >= 0) { S.shop.splice(i, 1); toast("Retiré de la liste de courses."); } else { S.shop.push({ k: d.k, id: d.id }); toast("Ajouté à la liste de courses (Accueil)."); } break; }
+    case "shopdel": S.shop.splice(+d.i, 1); break;
+    case "rescat": ui.resCat = d.v; break;
+    case "resview": ui.resView = d.v; break;
+    case "ressel": ui.resSel = d.n || null; break;
+    case "resfav": if (S.resFav[d.n]) delete S.resFav[d.n]; else S.resFav[d.n] = 1; break;
+    case "respickmode": ui.resPick = !ui.resPick; ui.resPicked = new Set(); break;
+    case "respick": { ui.resPicked = ui.resPicked || new Set(); if (ui.resPicked.has(d.n)) ui.resPicked.delete(d.n); else ui.resPicked.add(d.n); break; }
+    case "sellpicked": { let k = 0; (ui.resPicked || new Set()).forEach((n) => (k += E.sellRes(S, n, S.res[n] || 0))); ui.resPicked = new Set(); ui.resPick = false; toast(`Vendu pour ${fmt(k)} kamas.`); break; }
+    case "asksellunused": ui.confirm = "sellunused"; break;
+    case "sellunused": { const IX = resIndex(); let k = 0; Object.keys(S.res).forEach((n) => { if (!IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT && !S.resFav[n]) k += E.sellRes(S, n, S.res[n]); }); ui.confirm = null; toast(`Ressources inutilisées vendues : ${fmt(k)} kamas.`); break; }
+    case "fmfav": { const it = S.items[+d.uid]; if (it) it.fav = !it.fav; break; }
+    case "fmtoggle": ui.fmF[d.k] = !ui.fmF[d.k]; break;
     case "fmsel": ui.fmSel = +d.uid; break;
     case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; window.scrollTo(0, 0); break;
     case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
     case "reroll": msg(E.rerollBounty(S, +d.id)); break;
+    case "buyshop": msg(E.buyShop(S, d.shop, d.id)); break;
     case "align": { const r = E.chooseAlign(S, d.side, d.order); ui.confirm = null; if (r) { toast(r); return; } break; }
     case "asktraitre": ui.confirm = "traitre"; break;
     case "almanax": { const r = E.almanaxOffer(S); if (r) { toast(r); return; } break; }
@@ -1103,7 +1251,9 @@ document.addEventListener("click", (ev) => {
     case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
-    case "usecons": { const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.id].name} : +${CONSUMABLES[d.id].pct} % d'XP activé.`); break; }
+    case "usecons": { if (d.id === "potion_savoir") { openSheet(`<h2>📘 Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
+      const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
+    case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
     case "invsel": ui.invSel = d.tpl || null; break;
     case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
     case "autotoggle": ui.autoOpen = !t.parentElement.open; return;
@@ -1136,7 +1286,7 @@ document.addEventListener("click", (ev) => {
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
     case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
-    case "invtab": ui.inv = d.v; break;
+    case "invtab": ui.inv = d.v; ui.newResDone = false; break;
     case "givesheet": giveSheet(+d.uid); return;
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
     case "sellitem": { const p = E.sellItem(S, +d.uid); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
@@ -1169,21 +1319,31 @@ document.addEventListener("change", (ev) => {
   if (a === "autostat") { const x = char(+t.dataset.id); x.autoStat = t.value || null; E.autoAllocate(S, x); }
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; }
   else if (a === "slotfilter") ui.slotFilter = t.value;
-  else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; if (k === "job") { ui.gs.sub = null; ui.gs.res = null; } if (k === "sub") ui.gs.res = null; gatherSheet(); return; }
+  else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
   else if (a === "setorn") { msg(E.setOrn(S, +t.dataset.id, t.value)); }
+  else if (a === "setwing") { E.setWing(S, +t.dataset.id, t.value); }
   else if (a === "focus") ui.focus = t.value;
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
   else if (a === "craftonly") ui.craftOnly = t.checked;
   else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
+  else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
+  else if (a === "resf") ui.resF = t.value;
+  else if (a === "ressort") ui.resSort = t.value;
+  else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu automatiquement.`); }
+  else if (a === "fmslot") ui.fmF.slot = t.value;
+  else if (a === "fmsort") ui.fmF.sort = t.value;
+  else if (a === "fmcid") ui.fmF.cid = t.value;
   else if (a === "invsort") ui.invSort = t.value;
   else return;
   dirty = true; render();
 });
 document.addEventListener("input", (ev) => {
   const t = ev.target;
+  if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "fmsearch") { ui.fmF.q = t.value; const pos = t.selectionStart; renderForge(); const n = $("#fmSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act !== "craftsearch") return;
   ui.craftSearch = t.value; const pos = t.selectionStart; renderMetiers(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
@@ -1202,7 +1362,7 @@ function loadSave() {
 }
 
 /* ---------- boucle ---------- */
-let last = performance.now(), sinceSave = 0, sinceView = 0;
+let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRes = {};
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
@@ -1212,7 +1372,7 @@ function loop() {
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
-    const sb = $("#stBoost"); if (sb) { const left = E.boostLeft(S, "xp"); if (left > 0) sb.textContent = dur(left); else renderStatus(); }
+    const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
@@ -1221,6 +1381,13 @@ function loop() {
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
     else if (ui.tab === "quests" && ui.qt !== "ach" && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
+    // ressources récemment obtenues + liste de courses prête
+    sinceRes += dt;
+    if (sinceRes > 2500) { sinceRes = 0; const now = Date.now();
+      for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
+      S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) toast(`🛒 Tout est réuni pour : ${shopName(e)} !`, "rare"); e.ok = !!ok; });
+      const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => (b.textContent = dur(E.boostLeft(S, b.dataset.boostleft))));
+    }
   }
   setTimeout(loop, 120);
 }

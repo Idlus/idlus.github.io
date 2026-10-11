@@ -184,8 +184,45 @@
   ];
 
   /* ---------- Consommables ---------- */
+  /* kind : boost (bonus temporaire) · util (effet immédiat ou automatique) · chest (coffre à ouvrir) */
   const CONSUMABLES = {
-    bonbon_sagesse: { name: "Bonbon Sagesse", boost: "xp", pct: 10, dur: 3600, desc: "+10 % d'expérience pendant 1 h. Les durées s'additionnent (8 h maximum).", src: "2 % sur les boss de donjon" },
+    bonbon_sagesse:    { name: "Bonbon Sagesse",     icon: "🍬", kind: "boost", boost: "xp",     pct: 10, dur: 3600, desc: "+10 % d'expérience pendant 1 h." },
+    bonbon_prospecteur:{ name: "Bonbon Prospecteur", icon: "🍭", kind: "boost", boost: "drop",   pct: 10, dur: 3600, desc: "+10 % de butin pendant 1 h." },
+    bonbon_dore:       { name: "Bonbon Doré",        icon: "🪙", kind: "boost", boost: "kamas",  pct: 15, dur: 3600, desc: "+15 % de kamas pendant 1 h." },
+    bonbon_recolteur:  { name: "Bonbon Récolteur",   icon: "🌾", kind: "boost", boost: "gather", pct: 15, dur: 3600, desc: "+15 % de vitesse de récolte pendant 1 h." },
+    bonbon_traqueur:   { name: "Bonbon Traqueur",    icon: "🎯", kind: "boost", boost: "archi",  pct: 50, dur: 1800, desc: "Chances d'archimonstre ×1,5 pendant 30 min." },
+    bonbon_royal:      { name: "Bonbon Royal",       icon: "👑", kind: "boost", boost: "royal",  pct: 10, dur: 1800, desc: "+10 % d'expérience, de butin et de kamas pendant 30 min." },
+    fiole_resu:        { name: "Fiole de Résurrection", icon: "🧪", kind: "util", auto: true, desc: "Automatique : en donjon, une défaite ne fait pas perdre la clé, l'équipe recommence la salle (une fois par donjon)." },
+    potion_savoir:     { name: "Potion de Savoir",   icon: "📘", kind: "util", desc: "Donne environ un niveau d'expérience au métier de récolte de votre choix (au moins 25 % d'un niveau)." },
+    parchemin_avis:    { name: "Parchemin d'Avis",   icon: "📜", kind: "util", auto: true, desc: "Utilisé automatiquement quand vous changez un avis de recherche : le changement est gratuit." },
+    cristal_fm:        { name: "Cristal de Forgemagie", icon: "💎", kind: "util", desc: "La prochaine forgemagie ne peut pas faire baisser une autre caractéristique." },
+    coffre_bois:       { name: "Coffre en bois",     icon: "📦", kind: "chest", tier: 0, desc: "Quelques ressources et des kamas." },
+    coffre_argent:     { name: "Coffre en argent",   icon: "🎁", kind: "chest", tier: 1, desc: "Ressources, kamas et un consommable." },
+    coffre_or:         { name: "Coffre en or",       icon: "💰", kind: "chest", tier: 2, desc: "Beaucoup de ressources, de kamas et un consommable rare." },
+  };
+  /* Catégories du sac (types d'objets DOFUS) */
+  const RES_CATS = [
+    { id: "bois", name: "Bois", icon: "🪵", types: [38, 96, 98, 185, 95] },
+    { id: "minerai", name: "Minerais", icon: "⛏", types: [39, 40, 50, 51, 152] },
+    { id: "plante", name: "Plantes", icon: "🌿", types: [35, 36, 46, 58, 68, 108, 119] },
+    { id: "cereale", name: "Céréales", icon: "🌾", types: [34, 52] },
+    { id: "poisson", name: "Poissons", icon: "🐟", types: [41] },
+    { id: "peau", name: "Peaux & cuirs", icon: "🟫", types: [59, 56] },
+    { id: "laine", name: "Laines & poils", icon: "🧶", types: [57, 54, 55, 61, 53] },
+    { id: "os", name: "Os & carapaces", icon: "🦴", types: [47, 107, 111] },
+    { id: "viande", name: "Viandes", icon: "🍖", types: [63, 69] },
+    { id: "corps", name: "Yeux, ailes, pattes…", icon: "👁", types: [109, 106, 103, 104, 65, 105] },
+    { id: "essence", name: "Essences & liquides", icon: "🧪", types: [110, 48, 60, 70, 71, 66, 229, 228] },
+    { id: "cle", name: "Clés", icon: "🗝", types: [84] },
+    { id: "rare", name: "Composants rares", icon: "✨", types: [-2] },
+    { id: "divers", name: "Divers", icon: "📦", types: [] },
+  ];
+  { const gem = Object.values(G.RES).find((r) => r.type === 50) || Object.values(G.RES)[0];
+    G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 }; }
+  const RES_CAT_OF = (name) => {
+    const r = G.RES[name]; if (!r) return name.startsWith("Clef") ? "cle" : "divers";
+    if (r.type === -2) return "rare";
+    const c = RES_CATS.find((x) => x.types.includes(r.type)); return c ? c.id : "divers";
   };
 
   /* ---------- Emblème du Solitaire ---------- */
@@ -234,7 +271,7 @@
   };
 
   const DATA = { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
-                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, STAT_HELP, META: G.META };
+                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;
 })(typeof window !== "undefined" ? window : globalThis);

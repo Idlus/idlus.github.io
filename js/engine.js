@@ -11,7 +11,7 @@
           MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const E = {};
-  E.VERSION = 4;
+  E.VERSION = 5;
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -51,7 +51,9 @@
 
   /* ---------------- Courbes ---------------- */
   E.MAX_LVL = 200;
-  E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7));                // XP pour passer du niveau l à l+1
+  /* Courbe v2.7 : early game rapide jusqu'à 60, retour progressif à la courbe normale vers 75 */
+  E.xpCurveMult = (l) => (l <= 55 ? 0.13 : l < 75 ? 0.13 + (0.87 * (l - 55)) / 20 : 1);
+  E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7) * E.xpCurveMult(l)); // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
   E.emblemXpNeed = (l) => Math.floor(5 + 0.5 * Math.pow(l, 1.25));     // poids de runes pour passer au niveau suivant
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
@@ -71,7 +73,7 @@
       emblem: { lvl: 1, xp: 0, stats: {}, perks: {} },
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
-      settings: { theme: "dark", auto: { action: "none", q: 40, keepSets: true } },
+      settings: { theme: "dark", auto: { action: "sell", q: 50, keepSets: true, recycle: "sell" } },
       journal: [],
       dungeon: null,
     };
@@ -98,19 +100,23 @@
   E.team = (S) => S.chars.filter((c) => c.inTeam && !c.job).slice(0, 8);
   E.freeSpirit = (S) => FREE_SPIRIT[Math.max(1, E.team(S).length)] || 0;
   E.isSolo = (S) => E.team(S).length === 1;
+  /* Synergie : +2 % de dégâts et d'XP par classe différente (équipe de 2 héros ou plus) */
+  E.synergy = (S) => { const t = E.team(S); if (t.length < 2) return 0; return new Set(t.map((c) => c.cls)).size * 2; };
   /* Passifs de classe */
   E.teamHas = (S, cls) => E.team(S).some((c) => c.cls === cls);
   E.rosterHas = (S, cls) => S.chars.some((c) => c.cls === cls);
-  E.archiMult = (S) => (E.teamHas(S, "eca") ? 1.5 : 1);
+  E.archiMult = (S) => (E.teamHas(S, "eca") ? 1.5 : 1) * (1 + E.boostPct(S, "archi") / 100);
   E.radiantMult = (S) => (E.teamHas(S, "eca") ? 1.5 : 1);
 
   /* Consommables & bonus temporaires (durée en temps réel, cumulable jusqu'à 8 h) */
   E.BOOST_MAX_S = 8 * 3600;
   E.boostPct = (S, kind, at = Date.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
   E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - Date.now()) / 1000) : 0; };
-  E.useConsumable = (S, id) => {
+  E.addCons = (S, id, n = 1) => { S.cons[id] = (S.cons[id] || 0) + n; };
+  E.useConsumable = (S, id, arg) => {
     const C = CONSUMABLES[id]; if (!C) return "Objet inconnu.";
     if (!(S.cons[id] > 0)) return "Vous n'en avez plus.";
+    if (C.kind !== "boost") return E.useSpecial ? E.useSpecial(S, id, arg) : "Inutilisable.";
     const now = Date.now(); const b = S.boosts[C.boost];
     if (b && b.until > now && b.pct !== C.pct) return "Un autre bonus de ce type est déjà actif.";
     const dur = C.dur * (E.teamHas(S, "panda") ? 1.25 : 1) * 1000;
@@ -615,7 +621,7 @@
     for (const r in RACE_MONS) if (RACE_MONS[r].some((k) => E.huntTier(S, k) >= 2)) F.expertRaces.add(+r);
     F.ents.filter((e) => e.side === "c").forEach((e) => {
       if (e.cls === "zobal") e.mask = pick(["atk", "def", "soin"]);
-      e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0) + E.bonus(S, "dmg");
+      e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0) + E.bonus(S, "dmg") + E.synergy(S);
       e.resBonus = solo && pk[500] === "res" ? 8 : 0;
       e.regen = solo && pk[500] === "heal" ? 5 : 0;
     });
@@ -675,7 +681,10 @@
   };
 
   /* ---------------- Récompenses ---------------- */
-  E.teamProspection = (S) => E.team(S).reduce((s, c) => s + E.charStats(S, c).pp, 0);
+  E.teamProspectionRaw = (S) => E.team(S).reduce((s, c) => s + E.charStats(S, c).pp, 0);
+  /* Prospection d'équipe dégressive : 100 % jusqu'à 100, 50 % de 100 à 300, 25 % au-delà */
+  E.effProspection = (pp) => (pp <= 100 ? pp : pp <= 300 ? 100 + (pp - 100) / 2 : 200 + (pp - 300) / 4);
+  E.teamProspection = (S) => E.effProspection(E.teamProspectionRaw(S));
   E.dropMult = (S) => {
     const solo = E.isSolo(S);
     return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (solo && S.emblem.perks[250] === "drop" ? 1.15 : 1) * (1 + E.bonus(S, "drop") / 100);
@@ -699,13 +708,14 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + E.bonus(S, "xp") / 100));
+      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
       out.xp[c.id] = g;
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
     S.kamas += out.kamas;
     // Butin
     const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.teamHas(S, "enu") ? 1.2 : 1);
+    const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
     const seen = (k, what) => { (S.seenDrops[k] = S.seenDrops[k] || {})[what] = 1; };
@@ -713,14 +723,17 @@
       const T = MONSTERS[m.base || m.key]; const q = m.archi ? 3 : 1;
       const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
       const rolls = 1 + (E.teamHas(S, "sram") && rnd() < 0.1 ? 1 : 0);
+      const gotR = new Set();
       for (let rr = 0; rr < rolls; rr++)
-      T.drops.forEach(([r, rate]) => { const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); if (rnd() * 100 < Math.min(100, rate * (rate >= 100 ? 1 : mm))) { addRes(S, r, q); out.res[r] = (out.res[r] || 0) + q; seen(m.key, r); } });
+      T.drops.forEach(([r, rate]) => { if (gotR.has(r)) return; const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); const base = E.resRate(rate); if (rnd() * 100 < Math.min(100, base * mm)) { gotR.add(r); addRes(S, r, q); out.res[r] = (out.res[r] || 0) + q; seen(m.key, r); } });
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
         if (rnd() * 100 < Math.min(100, rate * E.ITEM_DROP_SCALE * dm)) {
           seen(m.key, tpl);
-          if (E.itemCount(S) >= E.itemCap(S)) { note(S, `Sac plein : ${ITEMS[tpl].name} perdu.`, "warn"); return; }
+          const T2 = ITEMS[tpl];
+          if (T2.lvl < topL - E.LOW_ITEM_GAP) { const k = Math.round(T2.lvl * 4 + 10); S.kamas += k; out.kamas += k; out.conv = (out.conv || 0) + 1; return; }
+          if (E.itemCount(S) >= E.itemCap(S)) { note(S, `Sac plein : ${T2.name} perdu.`, "warn"); return; }
           const it = E.rollItem(S, tpl, { archi: m.archi });
           const auto = E.applyAuto(S, it);
           if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
@@ -735,19 +748,29 @@
     return out;
   };
   E.giveRewards = giveRewards;
+  /* Taux de ressources v2.7 : divisés par 2 (×0,4 ; les ressources « garanties » à 100 % tombent à 35 %) */
+  E.RES_RATE_SCALE = 0.4;
+  E.resRate = (rate) => (rate >= 100 ? 35 : rate * E.RES_RATE_SCALE);
   E.BONBON_RATE = 0.02;
   /* Pénalité d'XP quand les monstres sont trop faibles pour le héros */
   E.xpPenalty = (diff) => (diff > 4 ? Math.max(0.05, 1 - (diff - 4) * 0.1) : 1);
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
-    const A = S.settings.auto; if (!A || A.action === "none" || it.radiant || it.locked) return null;
+    const A = S.settings.auto; if (!A || it.radiant || it.locked) return null;
+    if (A.recycle) {
+      const q = E.itemQuality(it);
+      const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
+      if (better) { if (A.recycle === "break") E.breakItem(S, it.uid, null); else E.sellItem(S, it.uid); return "recycle"; }
+    }
+    if (A.action === "none") return null;
     const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
     if (E.itemQuality(it) * 100 >= A.q) return null;
     if (A.action === "sell") { E.sellItem(S, it.uid); return "sell"; }
     if (A.action === "break") { E.breakItem(S, it.uid, null); return "break"; }
     return null;
   };
-  E.ITEM_DROP_SCALE = 0.12; // les taux réels de DOFUS sont pensés pour des combats de plusieurs minutes
+  E.ITEM_DROP_SCALE = 0.04; // v2.7 : les objets sont bien plus rares (×1/3)
+  E.LOW_ITEM_GAP = 20;       // objet 20 niveaux sous le meilleur héros : converti en kamas
 
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) return false;
@@ -782,6 +805,7 @@
         const dg = DUNGEONS[S.dungeon.id];
         if (S.dungeon.room >= dg.rooms.length) {
           S.progress.bossKills[S.dungeon.id] = (S.progress.bossKills[S.dungeon.id] || 0) + 1;
+          E.bossChest(S, S.dungeon.id, F.rewards);
           E.emit(S, "dungeon", { id: S.dungeon.id });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
           S.dungeon = null;
@@ -791,7 +815,10 @@
       Object.keys(SUBS).forEach((s) => { if (!prevUnlocked.has(s) && E.subUnlocked(S, s)) note(S, `Nouvelle sous-zone : ${SUBS[s].name}`, "up"); });
     } else {
       flog(F, why || "Défaite… l'équipe se repose.", "lose");
-      if (S.dungeon) { note(S, `Échec dans ${DUNGEONS[S.dungeon.id].name}. La clé est perdue.`, "warn"); S.dungeon = null; }
+      if (S.dungeon) {
+        if ((S.cons.fiole_resu || 0) > 0 && !S.dungeon.revived) { S.cons.fiole_resu--; if (!S.cons.fiole_resu) delete S.cons.fiole_resu; S.dungeon.revived = true; note(S, `Fiole de Résurrection : l'équipe se relève et recommence la salle (${DUNGEONS[S.dungeon.id].name}).`, "rare"); }
+        else { note(S, `Échec dans ${DUNGEONS[S.dungeon.id].name}. La clé est perdue.`, "warn"); S.dungeon = null; }
+      }
     }
     S.stats.recent.push({ d: Math.round(F.dur * 10) / 10, w: win ? 1 : 0 });
     if (S.stats.recent.length > 20) S.stats.recent.shift();
@@ -811,6 +838,16 @@
     const z = S.zoneStats[zkey]; if (!z || z.s < 1) return null;
     const h = 3600 / z.s;
     return { fights: z.f, winRate: z.w / z.f, xpH: z.xp * h, kH: z.k * h, rH: z.r * h, iH: z.i * h };
+  };
+
+  /* Coffre de boss : un objet garanti des monstres du donjon (niveau proche du boss) */
+  E.bossChest = (S, did, rew) => {
+    const dg = DUNGEONS[did]; const pool = new Set();
+    [dg.boss, ...dg.rooms.flatMap((r) => r.mobs)].forEach((k) => (MONSTERS[k].items || []).forEach(([t]) => { if (ITEMS[t] && ITEMS[t].lvl <= dg.lvl + 5 && ITEMS[t].lvl >= dg.lvl - 25) pool.add(t); }));
+    const arr = [...pool]; if (!arr.length || E.itemCount(S) >= E.itemCap(S)) return;
+    const tpl = pick(arr); const it = E.rollItem(S, tpl, {});
+    note(S, `Coffre du boss : ${ITEMS[tpl].name} !`, "rare");
+    if (rew) rew.items.push(it.uid);
   };
 
   /* ---------------- Donjons ---------------- */
@@ -861,51 +898,68 @@
   E.harvestJobs = (sid) => [...new Set((HARVEST[sid] || []).map((x) => x[1]))];
   E.harvestList = (sid, job) => (HARVEST[sid] || []).filter((x) => x[1] === job);
   E.gatherTime = (lvl) => 8 / (1 + lvl * 0.025);
-  E.gatherMult = (S, job) => ((job === "bucheron" || job === "alchimiste") && E.rosterHas(S, "sadi") ? 0.8 : 1) * (job === "pecheur" && E.rosterHas(S, "steam") ? 0.75 : 1);
+  /* passif de métier : seulement pour le héros qui récolte lui-même */
+  E.gatherMult = (S, job, c) => (c && c.cls === "sadi" && (job === "bucheron" || job === "alchimiste") ? 0.8 : 1) * (c && c.cls === "steam" && job === "pecheur" ? 0.75 : 1);
+  /* ---- Outils : vraies recettes (ressources de plusieurs métiers + ressources de monstres + composants rares) ---- */
   E.TOOL_MAX = 10;
+  E.TOOL_NAMES = { paysan: "Faux", bucheron: "Hache", mineur: "Pioche", alchimiste: "Serpe", pecheur: "Canne" };
+  E.RARE_COMPONENT = "Éclat de trouvaille";
   E.toolLvl = (S, job) => (S.tools && S.tools[job]) || 0;
-  E.toolCost = (S, job) => {
-    const l = E.toolLvl(S, job); const items = GATHER_JOBS[job].items; const r = items[Math.min(items.length - 1, Math.floor(l / 2))][0];
-    return { kamas: Math.round(250 * Math.pow(2, l)), res: r, qty: 15 + l * 10 };
+  const MON_RES = (() => { const m = new Map(); for (const k in MONSTERS) { const mo = MONSTERS[k]; if (mo.boss || mo.archiOf) continue; mo.drops.forEach(([r, p]) => { if (p >= 8 && !E.isKey(r)) m.set(r, Math.min(m.get(r) || 999, mo.lvl[0])); }); } return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])); })();
+  const hsh = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return (x >>> 0) / 4294967296; };
+  E.toolRecipe = (job, L) => { // recette pour passer l'outil au niveau L (1..10)
+    const own = GATHER_JOBS[job].items; const tier = (j) => GATHER_JOBS[j].items[Math.min(GATHER_JOBS[j].items.length - 1, Math.floor((L - 1) / 2))][0];
+    const other = job === "bucheron" ? "mineur" : "bucheron";
+    const pool = MON_RES.filter(([, l]) => Math.abs(l - L * 6) <= 8); const mr = (pool.length ? pool : MON_RES)[Math.floor(hsh(job + L) * (pool.length || MON_RES.length))][0];
+    const ing = [[tier(job), 10 + L * 8], [tier(other), 6 + L * 5], [mr, 4 + L * 3]];
+    if (L >= 5) ing.push([E.RARE_COMPONENT, (L - 4) * 2]);
+    const matTier = own[Math.min(own.length - 1, Math.floor((L - 1) / 2))][0];
+    return { name: `${E.TOOL_NAMES[job]} ${L}`, mat: matTier, lvl: Math.max(1, (L - 1) * 8), kamas: Math.round(200 * Math.pow(1.9, L - 1)), ing };
   };
+  E.toolCost = (S, job) => E.toolRecipe(job, E.toolLvl(S, job) + 1);
   E.upgradeTool = (S, job) => {
     const l = E.toolLvl(S, job); if (l >= E.TOOL_MAX) return "Outil au niveau maximum.";
-    const c = E.toolCost(S, job);
-    if (S.kamas < c.kamas) return `Il faut ${c.kamas} kamas.`;
-    if ((S.res[c.res] || 0) < c.qty) return `Il faut ${c.qty} × ${c.res}.`;
-    S.kamas -= c.kamas; S.res[c.res] -= c.qty; if (!S.res[c.res]) delete S.res[c.res];
-    S.tools[job] = l + 1; note(S, `Outil de ${GATHER_JOBS[job].name} amélioré (niveau ${l + 1}).`, "up"); return null;
+    const R = E.toolRecipe(job, l + 1);
+    if (S.jobs[job].lvl < R.lvl) return `${GATHER_JOBS[job].name} niveau ${R.lvl} requis.`;
+    if (S.kamas < R.kamas) return `Il faut ${R.kamas} kamas.`;
+    const miss = R.ing.filter(([r, q]) => (S.res[r] || 0) < q); if (miss.length) return `Il manque : ${miss.map(([r, q]) => `${q - (S.res[r] || 0)} × ${r}`).join(", ")}.`;
+    S.kamas -= R.kamas; R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
+    S.tools[job] = l + 1; note(S, `Outil fabriqué : ${R.name} (${GATHER_JOBS[job].name}).`, "up"); E.emit(S, "tool", { job }); return null;
   };
-  E.gatherSpeed = (S, job) => (1 + E.toolLvl(S, job) * 0.08) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job);
-  E.gatherPeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job) : 0; };
+  E.gatherSpeed = (S, job, c) => (1 + E.toolLvl(S, job) * 0.08) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job, c);
+  E.gatherPeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job, c) : 0; };
   E.FIND_CHANCE = 0.01;
-  E.setJob = (S, cid, job, sid, res) => {
+  E.jobRes = (job) => GATHER_JOBS[job].items; // [[ressource, niveau]]
+  E.setJob = (S, cid, job, res) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
     if (S.dungeon && c.inTeam && !c.job) return "Impossible pendant un donjon.";
     if (!job) { if (c.job) { c.job = null; S.fight = S.dungeon ? S.fight : null; note(S, `${c.name} revient chasser.`, "info"); } return null; }
-    if (!E.subUnlocked(S, sid)) return "Sous-zone verrouillée.";
-    const list = E.harvestList(sid, job); if (!list.length) return "Rien à récolter ici pour ce métier.";
-    const lvl = S.jobs[job].lvl;
-    const pickRes = res && list.find((x) => x[0] === res && x[2] <= lvl) ? res : (list.filter((x) => x[2] <= lvl).pop() || [])[0];
-    if (!pickRes) return `${GATHER_JOBS[job].name} niveau ${list[0][2]} requis ici.`;
-    const was = !!c.job; c.job = { job, sub: sid, res: pickRes, prog: 0 };
+    const list = E.jobRes(job); const lvl = S.jobs[job].lvl;
+    const pickRes = res && list.find((x) => x[0] === res && x[1] <= lvl) ? res : (list.filter((x) => x[1] <= lvl).pop() || [])[0];
+    if (!pickRes) return "Ressource verrouillée.";
+    const was = !!c.job; c.job = { job, res: pickRes, prog: 0 };
     if (!was) S.fight = S.dungeon ? S.fight : null;
-    note(S, `${c.name} récolte : ${pickRes} (${SUBS[sid].name}).`, "info");
+    note(S, `${c.name} récolte : ${pickRes}.`, "info");
     return null;
   };
+  /* Filons rares : en moyenne un toutes les 2 h de récolte, 10 min, rendement ×2 sur une ressource */
+  E.FILON_EVERY_S = 7200; E.FILON_DUR_S = 600;
+  E.filonOn = (S, res, at = Date.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
   const gatherTick = (S, dt, opts = {}) => {
     let total = 0;
     S.chars.forEach((c) => {
       const W = c.job; if (!W) return; const J = S.jobs[W.job]; if (!J) { c.job = null; return; }
-      const def = E.harvestList(W.sub, W.job).find((x) => x[0] === W.res); if (!def || def[2] > J.lvl) return;
+      const def = E.jobRes(W.job).find((x) => x[0] === W.res); if (!def || def[1] > J.lvl) return;
       W.prog += dt; const t = E.gatherPeriod(S, c);
       let n = 0;
       while (W.prog >= t && n < 200000) {
         W.prog -= t; n++;
         let q = 1; if (rnd() < J.lvl / 200) q++;
-        if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "rare"); }
+        if (!opts.quiet && !(S.filon && S.filon.until > Date.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: Date.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
+        if (E.filonOn(S, W.res)) q *= 2;
+        if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "rare"); }
         addRes(S, W.res, q); total += q;
-        J.xp += 10 + def[2] * 1.0;
+        J.xp += 10 + def[1] * 1.0;
         while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "up"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
       }
       if (n) E.emit(S, "harvest", { res: W.res, n });

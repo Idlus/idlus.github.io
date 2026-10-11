@@ -73,8 +73,25 @@
     S.almanax = { day: A.day, kind: A.bonus.kind, pct: A.bonus.pct };
     S.kamas += A.kamas; S.cnt.almanax = (S.cnt.almanax || 0) + 1;
     note(S, `Offrande à l'Almanax acceptée : ${A.bonus.name} jusqu'à minuit.`, "rare");
+    // série de jours consécutifs (un jour manqué fait redescendre d'un palier)
+    const st = S.almStreak; const yest = dayKey(Date.now() - 864e5);
+    if (st.last === yest) st.n++;
+    else if (!st.last) st.n = 1;
+    else { const lower = E.ALM_TIERS.filter((x) => x < st.n).pop() || 0; st.n = lower + 1; }
+    st.last = A.day;
+    const R = E.ALM_TIERS_R[st.n] || (st.n > 30 && st.n % 30 === 0 ? { cons: "coffre_or" } : null);
+    if (R) {
+      let txt = "";
+      if (R.lot) txt = resLot(S, 3, 5, 10).join(", ");
+      if (R.cons) { E.addCons(S, R.cons); txt = D.CONSUMABLES[R.cons].name; }
+      if (R.furn && !S.furniture.includes(R.furn)) { S.furniture.push(R.furn); txt = `meuble « ${R.furn} »`; }
+      if (R.title) { if (!S.titlesExtra.includes(R.title)) S.titlesExtra.push(R.title); S.unlocks.almanax = 1; txt = `titre « ${R.title} » et ornement de l'Almanax`; }
+      note(S, `Série d'Almanax : ${st.n} jours ! Récompense : ${txt}.`, "rare");
+    }
     E.emit(S, "almanax", {}); return null;
   };
+  E.ALM_TIERS = [3, 7, 14, 30];
+  E.ALM_TIERS_R = { 3: { lot: 1 }, 7: { cons: "coffre_argent" }, 14: { furn: "Calendrier de l'Almanax" }, 30: { title: "Fidèle de l'Almanax" } };
   const almBonus = (S, kind) => (S.almanax && S.almanax.day === dayKey() && S.almanax.kind === kind ? S.almanax.pct : 0);
 
   /* ---------------- Alignement : Bonta ou Brâkmar ---------------- */
@@ -124,8 +141,70 @@
     let b = 0;
     const H = HAVRE.find((x) => x.id === kind); if (H) b += E.havreLvl(S, kind) * H.per;
     b += almBonus(S, kind) + alignBonus(S, kind);
+    if (kind === "drop" || kind === "kamas" || kind === "gather") b += E.boostPct(S, kind);
+    if (kind === "xp" || kind === "drop" || kind === "kamas") b += E.boostPct(S, "royal");
     return b;
   };
+
+  /* ---------------- Consommables spéciaux (utilitaires et coffres) ---------------- */
+  const resLot = (S, n, qmin, qmax) => {
+    const top = topLvl(S); const pool = ALM_POOL.filter(([, l]) => l <= top + 3 && l >= top - 25); const P = pool.length ? pool : ALM_POOL.slice(0, 10);
+    const got = [];
+    for (let i = 0; i < n; i++) { const [r] = P[Math.floor(rnd() * P.length)]; const q = qmin + Math.floor(rnd() * (qmax - qmin + 1)); S.res[r] = (S.res[r] || 0) + q; got.push(`${q} × ${r}`); }
+    return got;
+  };
+  E.resLot = resLot;
+  E.useSpecial = (S, id, arg) => {
+    const C = D.CONSUMABLES[id];
+    const take = () => { S.cons[id]--; if (!S.cons[id]) delete S.cons[id]; };
+    if (C.auto) return "Cet objet s'utilise automatiquement au bon moment.";
+    if (id === "potion_savoir") {
+      const J = S.jobs[arg]; if (!J) return "Choisissez un métier.";
+      take(); J.xp += Math.max(E.jobXpNeed(J.lvl), 0);
+      while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; }
+      note(S, `Potion de Savoir : ${D.GATHER_JOBS[arg].name} niveau ${J.lvl}.`, "up"); return null;
+    }
+    if (id === "cristal_fm") { if (S.fmShield) return "Un Cristal est déjà actif."; take(); S.fmShield = true; note(S, "Cristal de Forgemagie actif : la prochaine forgemagie ne peut rien faire baisser.", "info"); return null; }
+    if (C.kind === "chest") {
+      take(); const top = topLvl(S); const k = Math.round((40 + top * 12) * (1 + C.tier * 1.5)); S.kamas += k;
+      const lot = resLot(S, 2 + C.tier, 3 + C.tier * 2, 6 + C.tier * 4);
+      let extra = "";
+      if (C.tier >= 1) { const pool = C.tier === 2 ? ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"] : ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "parchemin_avis"]; const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); extra = `, ${D.CONSUMABLES[g].name}`; }
+      if (C.tier === 2 && rnd() < 0.5) { S.res[E.RARE_COMPONENT] = (S.res[E.RARE_COMPONENT] || 0) + 2; extra += `, 2 × ${E.RARE_COMPONENT}`; }
+      note(S, `${C.name} : ${k.toLocaleString("fr-FR")} kamas, ${lot.join(", ")}${extra}.`, "rare"); return null;
+    }
+    return "Inutilisable.";
+  };
+
+  /* ---------------- Comptoirs : Bureau des primes (jetons) et Comptoir de la cité (insignes) ---------------- */
+  const SHOPS = {
+    prime: { name: "Bureau des primes", cur: "jetons", curName: "Jetons de chasseur", icon: "🎟", items: [
+      { id: "b1", cons: "bonbon_sagesse", cost: 4 }, { id: "b2", cons: "bonbon_prospecteur", cost: 4 }, { id: "b3", cons: "bonbon_dore", cost: 4 }, { id: "b4", cons: "bonbon_recolteur", cost: 4 },
+      { id: "b5", cons: "parchemin_avis", cost: 2 }, { id: "b6", cons: "bonbon_traqueur", cost: 6 }, { id: "b7", cons: "fiole_resu", cost: 8 },
+      { id: "t1", title: "Traqueur de primes", cost: 20 }, { id: "o1", orn: "avis", name: "Ornement « Avis de recherche »", cost: 30 }, { id: "t2", title: "Fléau des hors-la-loi", cost: 60 } ] },
+    cite: { name: "Comptoir de la cité", cur: "insignes", curName: "Insignes de cité", icon: "🎖", items: [
+      { id: "w1", wing: "or", name: "Ailes dorées", cost: 20 }, { id: "w2", wing: "argent", name: "Ailes argentées", cost: 20 }, { id: "w3", wing: "sombre", name: "Ailes sombres", cost: 30 },
+      { id: "c1", cons: "bonbon_royal", cost: 12 }, { id: "f1", furn: "Bannière de la cité", cost: 15 }, { id: "f2", furn: "Statue de l'Ordre", cost: 40 },
+      { id: "t3", titleSide: true, cost: 25 } ] },
+  };
+  E.SHOPS = SHOPS;
+  E.shopItemName = (S, it) => it.cons ? D.CONSUMABLES[it.cons].name : it.title ? `Titre « ${it.title} »` : it.titleSide ? `Titre « Champion de ${S.align ? ALIGN[S.align.side].name : "la cité"} »` : it.furn ? `Meuble : ${it.furn}` : it.name;
+  E.shopOwned = (S, it) => (it.title && S.titlesExtra.includes(it.title)) || (it.titleSide && S.align && S.titlesExtra.includes(`Champion de ${ALIGN[S.align.side].name}`)) || (it.orn && S.unlocks[it.orn]) || (it.wing && S.unlocks["wing_" + it.wing]) || (it.furn && S.furniture.includes(it.furn));
+  E.buyShop = (S, shop, id) => {
+    const Sh = SHOPS[shop]; const it = Sh && Sh.items.find((x) => x.id === id); if (!it) return "Article inconnu.";
+    if (shop === "cite" && !S.align) return "Choisissez d'abord un alignement.";
+    if (E.shopOwned(S, it)) return "Déjà obtenu.";
+    if ((S.tokens[Sh.cur] || 0) < it.cost) return `Il faut ${it.cost} ${Sh.curName.toLowerCase()}.`;
+    S.tokens[Sh.cur] -= it.cost;
+    if (it.cons) E.addCons(S, it.cons);
+    if (it.title) S.titlesExtra.push(it.title);
+    if (it.titleSide) S.titlesExtra.push(`Champion de ${ALIGN[S.align.side].name}`);
+    if (it.orn) S.unlocks[it.orn] = 1;
+    if (it.wing) S.unlocks["wing_" + it.wing] = 1;
+    if (it.furn) S.furniture.push(it.furn);
+    note(S, `${Sh.name} : ${E.shopItemName(S, it)} obtenu.`, "up"); return null;
+  };
+  E.setWing = (S, cid, w) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; c.wing = w && S.unlocks["wing_" + w] ? w : null; };
 
   /* ---------------- Forgemagie : améliorer les jets avec des runes et des kamas ---------------- */
   E.fmInfo = (S, uid, runeKey) => {
@@ -140,6 +219,7 @@
     const kamas = Math.round(15 + T.lvl * 2.5 * (add / STATS[k].pts));
     return { ok: true, stat: k, cur, add, nv, mx, cap, chance, kamas, over: nv > mx };
   };
+  const fmLog = (it, txt, ok) => { (it.fmLog = it.fmLog || []).unshift({ t: Date.now(), txt, ok }); if (it.fmLog.length > 6) it.fmLog.length = 6; };
   E.forgemage = (S, uid, runeKey) => {
     const it = S.items[uid]; if (!it) return { err: "Objet introuvable." };
     if (!(S.runes[runeKey] > 0)) return { err: "Vous n'avez pas cette rune." };
@@ -150,18 +230,25 @@
     E.emit(S, "fm", {});
     if (rnd() < f.chance) {
       it.stats[f.stat] = f.nv; if (it.roll && it.roll[f.stat] !== undefined) it.roll[f.stat] = Math.min(f.mx, (it.roll[f.stat] || 0) + f.add);
-      return { ok: true, txt: `Succès : +${f.add} ${STATS[f.stat].name}${f.over ? " (exo-jet !)" : ""}` };
+      if (S.fmShield) S.fmShield = false;
+      const txt = `Succès : +${f.add} ${STATS[f.stat].name}${f.over ? " (exo-jet !)" : ""}`; fmLog(it, txt, true);
+      return { ok: true, txt };
     }
     let loss = "";
-    if (rnd() < 0.35) {
+    if (S.fmShield) { S.fmShield = false; loss = " (le Cristal protège l'objet)"; }
+    else if (rnd() < 0.35) {
       const T = ITEMS[it.tpl]; const others = Object.keys(it.stats).filter((k) => k !== f.stat && it.stats[k] > T.stats[k][0] && it.stats[k] > 0);
       if (others.length) { const k = others[Math.floor(rnd() * others.length)]; const d = Math.max(1, Math.round(STATS[k].pts * (k === "vit" ? 1 : 1))); it.stats[k] = Math.max(T.stats[k][0], it.stats[k] - d); loss = ` et perd ${d} ${STATS[k].name}`; }
     }
-    return { ok: false, txt: `Échec : la rune se brise${loss}.` };
+    const txt = `Échec : ${E.runeName(runeKey)} se brise${loss}.`; fmLog(it, txt, false);
+    return { ok: false, txt };
   };
 
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
   const ORN = {
+    heros:     { name: () => "Écharpe du Héros d'Amakna", req: "Terminer la quête principale", ok: (S) => S.quest && S.quest.step >= Q.length },
+    avis:      { name: () => "Cadre « Avis de recherche »", req: "Bureau des primes (30 jetons)", ok: (S) => !!S.unlocks.avis },
+    almanax:   { name: () => "Sceau de l'Almanax", req: "Série d'Almanax de 30 jours", ok: (S) => !!S.unlocks.almanax },
     ailes:     { name: (S) => (S.align ? `Ailes de ${ALIGN[S.align.side].name}` : "Ailes d'alignement"), req: "Choisir un alignement (Bonta ou Brâkmar) — elles grandissent avec le rang", ok: (S) => !!S.align },
     couronne:  { name: () => "Couronne du Maître des donjons", req: "Vaincre chaque boss de donjon au moins une fois", ok: (S) => Object.keys(DUNGEONS).every((d) => S.progress.bossKills[d]) },
     epines:    { name: () => "Épines d'Archimonstre", req: "Vaincre 25 archimonstres", ok: (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= 25 },
@@ -203,15 +290,17 @@
   E.fillBounties = fillBounties;
   E.rerollCost = (S) => 30 * topLvl(S);
   E.rerollBounty = (S, id) => {
-    const c = E.rerollCost(S); if (S.kamas < c) return `Il faut ${c} kamas.`;
     const i = S.bounties.findIndex((b) => b.id === id); if (i < 0) return "Avis introuvable.";
-    S.kamas -= c; S.bounties.splice(i, 1); fillBounties(S); return null;
+    if ((S.cons.parchemin_avis || 0) > 0) { S.cons.parchemin_avis--; if (!S.cons.parchemin_avis) delete S.cons.parchemin_avis; }
+    else { const c = E.rerollCost(S); if (S.kamas < c) return `Il faut ${c} kamas.`; S.kamas -= c; }
+    S.bounties.splice(i, 1); fillBounties(S); return null;
   };
   const completeBounty = (S, b) => {
     S.kamas += b.kamas; giveTeamXp(S, b.xp); if (S.align) E.giveAlignXp(S, b.axp);
     S.cnt.bounty = (S.cnt.bounty || 0) + 1;
-    let extra = ""; if (b.dg && rnd() < 0.15) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; extra = " + Bonbon Sagesse"; }
-    note(S, `Avis de recherche rempli : ${MONSTERS[b.key].name} (+${b.kamas.toLocaleString("fr-FR")} kamas${extra}).`, "rare");
+    const tk = b.dg ? 2 : 1; S.tokens.jetons = (S.tokens.jetons || 0) + tk;
+    let extra = ""; const r = rnd(); if (r < 0.05) { E.addCons(S, "coffre_argent"); extra = ", Coffre en argent"; } else if (r < 0.25) { E.addCons(S, "coffre_bois"); extra = ", Coffre en bois"; }
+    note(S, `Avis de recherche rempli : ${MONSTERS[b.key].name} (+${b.kamas.toLocaleString("fr-FR")} kamas, +${tk} jeton${tk > 1 ? "s" : ""}${extra}).`, "rare");
     E.emit(S, "bounty", {});
   };
 
@@ -254,16 +343,52 @@
     }
     return [0, 1];
   };
-  const questReward = (i) => ({ kamas: 80 + i * 60, xp: 0.35, bonbon: i === 5 || i === 13 || i === 21 });
+  /* Récompenses à thème de la quête principale (en plus des kamas et de l'XP) */
+  const QX = {
+    0: { lot: "inc_route" }, 1: { cons: "bonbon_sagesse" }, 2: { item: "inc_paturages" }, 3: { lot: "inc_foret" }, 4: { cons: "potion_savoir" },
+    5: { key: "grange_tournesol", cons: "bonbon_sagesse" }, 6: { item: "ast_cite" }, 7: { res: [["Bois de Frêne", 20], ["Fer", 20], ["Blé", 15]] }, 8: { cons: "coffre_bois" },
+    9: { cons: "fiole_resu" }, 10: { key: "cour_bouftou_royal", furn: "Trophée du Tournesol Affamé" }, 11: { cons: "bonbon_recolteur" }, 12: { cons: "parchemin_avis", n: 2 },
+    13: { item: "ast_tainela", furn: "Trophée du Bouftou Royal", cons: "bonbon_sagesse" }, 14: { cons: "coffre_argent" }, 15: { cons: "bonbon_royal" }, 16: { cons: "cristal_fm", n: 2 },
+    17: { key: "donjon_bworks", furn: "Trophée du Scarabosse Doré" }, 18: { item: "can_porkass" }, 19: { cons: "fiole_resu", furn: "Trophée de la Bworkette" }, 20: { cons: "coffre_or" },
+    21: { furn: "Trophée du Blop Coco Royal", orn: "heros" },
+  };
+  E.QUEST_EXTRA = QX;
+  const rewardItem = (S, sid) => {
+    const sub = SUBS[sid]; if (!sub || E.itemCount(S) >= E.itemCap(S)) return null; const top = topLvl(S);
+    const pool = [...new Set(sub.monsters.flatMap((k) => (MONSTERS[k].items || []).map(([t]) => t)))].filter((t) => ITEMS[t] && ITEMS[t].lvl <= Math.max(top, 3));
+    if (!pool.length) return null; const tpl = pool.sort((a, b) => ITEMS[b].lvl - ITEMS[a].lvl)[Math.floor(rnd() * Math.min(3, pool.length))];
+    const it = E.rollItem(S, tpl, { radiant: false }); const T = ITEMS[tpl];
+    for (const k in T.stats) { const [a, b] = T.stats[k]; it.stats[k] = Math.max(it.stats[k], Math.round(a + (b - a) * (0.8 + rnd() * 0.2))); }
+    return T.name;
+  };
+  E.questExtraText = (i) => {
+    const x = QX[i]; if (!x) return ""; const p = [];
+    if (x.key) p.push(DUNGEONS[x.key].key); if (x.item) p.push(`un objet de ${SUBS[x.item] ? SUBS[x.item].name : "la zone"} (bon jet)`);
+    if (x.lot) p.push(`ressources de ${SUBS[x.lot] ? SUBS[x.lot].name : "la zone"}`); if (x.res) p.push(x.res.map(([r, q]) => `${q} × ${r}`).join(", "));
+    if (x.cons) p.push(`${x.n ? x.n + " × " : ""}${D.CONSUMABLES[x.cons].name}`); if (x.furn) p.push(`meuble « ${x.furn} »`); if (x.orn) p.push("un ornement exclusif");
+    return p.join(", ");
+  };
+  const giveQuestExtra = (S, i) => {
+    const x = QX[i]; if (!x) return "";
+    if (x.key) S.res[DUNGEONS[x.key].key] = (S.res[DUNGEONS[x.key].key] || 0) + 1;
+    if (x.item) rewardItem(S, x.item);
+    if (x.lot) { const sub = SUBS[x.lot]; const drops = [...new Set(sub.monsters.flatMap((k) => MONSTERS[k].drops.map(([r]) => r)))].slice(0, 3); drops.forEach((r) => (S.res[r] = (S.res[r] || 0) + 6)); }
+    if (x.res) x.res.forEach(([r, q]) => (S.res[r] = (S.res[r] || 0) + q));
+    if (x.cons) E.addCons(S, x.cons, x.n || 1);
+    if (x.furn && !S.furniture.includes(x.furn)) S.furniture.push(x.furn);
+    return E.questExtraText(i);
+  };
+  const questReward = (i) => ({ kamas: 80 + i * 60, xp: 0.35 });
   const checkQuest = (S) => {
     let guard = 0;
     while (guard++ < 5) {
       const q = E.questStep(S); if (!q) return; const [a, b] = E.questProgress(S); if (a < b) return;
       const r = questReward(S.quest.step);
       S.quest = { step: S.quest.step + 1, prog: 0 };
-      note(S, `Quête terminée : ${q.title} (+${r.kamas} kamas${r.bonbon ? ", Bonbon Sagesse" : ""})`, "rare");
+      const ex = giveQuestExtra(S, S.quest.step - 1);
+      note(S, `Quête terminée : ${q.title} (+${r.kamas} kamas${ex ? ", " + ex : ""})`, "rare");
       if (S.quest.step >= Q.length) note(S, "Quête principale achevée : vous êtes un Héros d'Amakna !", "rare");
-      S.kamas += r.kamas; if (r.bonbon) S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; giveTeamXp(S, r.xp);
+      S.kamas += r.kamas; giveTeamXp(S, r.xp);
     }
   };
 
@@ -288,7 +413,9 @@
   const completeAlignQuest = (S) => {
     const q = S.alignQuest; S.alignQuest = null; newAlignQuest(S);
     S.kamas += q.kamas; S.cnt.alignq = (S.cnt.alignq || 0) + 1;
-    note(S, `Mission d'alignement accomplie : ${q.title} (+${q.kamas} kamas).`, "up");
+    const ins = q.t === "boss" ? 5 : 3; S.tokens.insignes = (S.tokens.insignes || 0) + ins;
+    let extra = ""; if (rnd() < 0.25) { E.addCons(S, "coffre_bois"); extra = ", Coffre en bois"; }
+    note(S, `Mission d'alignement accomplie : ${q.title} (+${q.kamas} kamas, +${ins} insignes${extra}).`, "up");
     E.giveAlignXp(S, q.axp);
   };
 
@@ -324,7 +451,7 @@
     });
   };
   E.checkAch = checkAch;
-  E.titles = (S) => ACH.filter((a) => a.title && S.ach[a.id]).map((a) => a.title);
+  E.titles = (S) => ACH.filter((a) => a.title && S.ach[a.id]).map((a) => a.title).concat(S.titlesExtra || []);
   E.setTitle = (S, cid, t) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; c.title = t && E.titles(S).includes(t) ? t : null; };
 
   /* ---------------- Branchements sur les événements du moteur ---------------- */
@@ -362,6 +489,8 @@
     if (S.alignQuest && S.alignQuest.prog >= S.alignQuest.n) completeAlignQuest(S);
     // ornement des flammes
     if (!S.ornSeen.flammes && S.chars.some((c) => E.radiantWorn(S, c) >= 3)) { S.ornSeen.flammes = 1; note(S, "Ornement débloqué : Flammes Rayonnantes !", "rare"); }
+    // limites de stock : le surplus est vendu automatiquement
+    if (type === "win" || type === "harvest") for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0) E.sellRes(S, n, ex); }
     checkQuest(S);
     if (type !== "harvest" || (S._achT || 0) + 1500 < Date.now()) { S._achT = Date.now(); checkAch(S); }
   };
@@ -375,6 +504,9 @@
     if (S.align === undefined) S.align = null;
     if (S.alignQuest === undefined) S.alignQuest = null;
     if (!S.tools) S.tools = {};
+    for (const k of ["tokens", "unlocks", "almStreak", "resCap", "resSeen", "resFav", "resT"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
+    if (!S.almStreak.n) S.almStreak.n = 0;
+    for (const k of ["titlesExtra", "furniture", "shop"]) if (!Array.isArray(S[k])) S[k] = [];
   };
   const baseNew = E.newState;
   E.newState = (name, cls) => { const S = baseNew(name, cls); initState(S); fillBounties(S); return S; };
@@ -391,6 +523,11 @@
       (S.migration = S.migration || []).push("v2.6 : thème Krosmoz, Havre-Sac, forgemagie, Almanax, quêtes, avis de recherche, succès, alignement, récolte par héros, combat manuel, Amakna et Cania (6 nouveaux donjons).");
       // succès déjà mérités : pas de pluie de kamas rétroactive
       ACH.forEach((a) => { if (a.test(S)) S.ach[a.id] = 1; });
+    }
+    if (oldV < 5) {
+      S.chars.forEach((c) => { if (c.job && c.job.sub) delete c.job.sub; });
+      if (S.settings.auto && S.settings.auto.recycle === undefined) S.settings.auto.recycle = false;
+      (S.migration = S.migration || []).push("v2.7 : progression plus rapide jusqu'au niveau 60, objets et ressources plus rares, Synergie d'équipe, outils fabriqués, filons, nouveaux consommables et coffres, récompenses de quêtes, Bureau des primes, sac et forgemagie réorganisés.");
     }
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
     return S;
