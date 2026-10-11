@@ -137,18 +137,182 @@
   };
 
   /* ---------------- Bonus combinés ---------------- */
-  /* Plafond commun (préparation de la 4.0) : Havre-Sac, Almanax, alignement, bonbons et, plus tard, meubles, familiers et Dofus
-     s'additionnent sans dépasser ces valeurs. Maximum atteignable en 3.2 : XP +140 %, butin +150 %, kamas +165 %. */
-  E.BONUS_CAP = { xp: 150, drop: 150, kamas: 175 };
+  /* Plafond commun : Havre-Sac, meubles, Almanax, alignement, bonbons et, plus tard, familiers et Dofus s'additionnent
+     sans dépasser ces valeurs (relevées pour le Havre-Sac 4.0 afin que les meubles comptent toujours).
+     Hors ligne : 24 h et 80 % d'efficacité au total, base comprise. */
+  E.BONUS_CAP = { xp: 175, drop: 175, kamas: 200, offtime: 16, offrate: 55 };
   E.bonus = (S, kind) => Math.min(rawBonus(S, kind), E.BONUS_CAP[kind] ?? Infinity);
   const rawBonus = (S, kind) => {
     let b = 0;
     const H = HAVRE.find((x) => x.id === kind); if (H) b += E.havreLvl(S, kind) * H.per;
-    b += almBonus(S, kind) + alignBonus(S, kind);
+    b += almBonus(S, kind) * (1 + E.furnBonus(S, "almanax") / 100) + alignBonus(S, kind) + E.furnBonus(S, kind);
     if (kind === "drop" || kind === "kamas" || kind === "gather") b += E.boostPct(S, kind);
     if (kind === "xp" || kind === "drop" || kind === "kamas") b += E.boostPct(S, "royal");
     return b;
   };
+
+  /* ---------------- Havre-Sac 4.0 : pièces, meubles, entraînement, atelier ---------------- */
+  /* Les 8 améliorations ci-dessus restent telles quelles ; elles sont rangées par pièce. Un meuble n'agit
+     qu'une fois placé, dans la pièce qui correspond à son effet, et les places sont limitées. */
+  E.ROOMS = [
+    { id: "biblio",   name: "Bibliothèque",         icon: "parchemin_or", color: "#7fb3ff", desc: "Savoir et expérience",      ups: ["xp"],
+      slots: (S) => 2 + (E.havreLvl(S, "xp") >= 25 ? 1 : 0), nextSlot: (S) => (E.havreLvl(S, "xp") < 25 ? 25 : 0), up: "xp" },
+    { id: "trophees", name: "Salle des trophées",   icon: "trophee",      color: "#e8c063", desc: "Butin et trophées de boss", ups: ["drop"],
+      slots: (S) => 3 + (E.havreLvl(S, "drop") >= 20 ? 1 : 0) + (E.havreLvl(S, "drop") >= 40 ? 1 : 0), nextSlot: (S) => { const l = E.havreLvl(S, "drop"); return l < 20 ? 20 : l < 40 ? 40 : 0; }, up: "drop" },
+    { id: "entrain",  name: "Salle d'entraînement", icon: "combat",       color: "#ff8a6b", desc: "Endurance et héros au repos", ups: ["hp"], post: "train" },
+    { id: "reserve",  name: "Réserve",              icon: "coffre",       color: "#c99a2e", desc: "Kamas et place dans le sac", ups: ["kamas", "bag"], slots: () => 2 },
+    { id: "jardin",   name: "Jardin",               icon: "pioche",       color: "#8fd16a", desc: "Récolte",                   ups: ["gather"], slots: () => 2 },
+    { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate"], slots: () => 2 },
+    { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier" },
+    { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#8a8a8a", desc: "Familiers et montures",     ups: [], soon: true },
+  ];
+  E.room = (id) => E.ROOMS.find((r) => r.id === id);
+  E.roomSlots = (S, id) => { const R = E.room(id); return R && R.slots ? R.slots(S) : 0; };
+
+  /* Catalogue des meubles. kind : xp, drop, kamas (%), gather (% de vitesse), hp (% de PV), offrate (% d'efficacité
+     hors ligne), offtime (heures hors ligne), bag (places), almanax (bonus du jour de l'Almanax, en % de plus). */
+  const FURN = {
+    "Statue de l'Ordre":       { room: "biblio",  kind: "xp",      v: 3,  src: "Comptoir de la cité" },
+    "Calendrier de l'Almanax": { room: "biblio",  kind: "almanax", v: 50, src: "14 jours d'Almanax d'affilée" },
+    "Étagère de grimoires":    { room: "biblio",  kind: "xp",      v: 2,  src: "Bricoleur niveau 60" },
+    "Globe des Douze":         { room: "biblio",  kind: "xp",      v: 3,  src: "Succès : vaincre des monstres dans chaque sous-zone jusqu'au niveau 100" },
+    "Bannière de la cité":     { room: "reserve", kind: "kamas",   v: 3,  src: "Comptoir de la cité" },
+    "Tirelire Bouftou":        { room: "reserve", kind: "kamas",   v: 2,  src: "Butin rare à Astrub", zone: "astrub" },
+    "Coffre en frêne":         { room: "reserve", kind: "bag",     v: 10, src: "Bricoleur niveau 30" },
+    "Coffre en merisier":      { room: "reserve", kind: "bag",     v: 25, src: "Bricoleur niveau 120" },
+    "Épouvantail d'Amakna":    { room: "jardin",  kind: "gather",  v: 5,  src: "Butin rare à Amakna", zone: "amakna" },
+    "Arrosoir de Cania":       { room: "jardin",  kind: "gather",  v: 5,  src: "Bricoleur niveau 40" },
+    "Bonsaï de Pandala":       { room: "jardin",  kind: "gather",  v: 8,  src: "Butin rare à Pandala", zone: "pandala" },
+    "Ruche":                   { room: "jardin",  kind: "gather",  v: 10, src: "Succès : 10 000 ressources récoltées" },
+    "Tapis de Koalak":         { room: "chambre", kind: "offrate", v: 3,  src: "Butin rare aux Koalaks", zone: "koalaks" },
+    "Lit à baldaquin":         { room: "chambre", kind: "offtime", v: 1,  src: "Bricoleur niveau 80" },
+    "Lanterne d'Otomaï":       { room: "chambre", kind: "offrate", v: 3,  src: "Butin rare à Otomaï", zone: "otomai" },
+  };
+  /* Trophées de boss : gagnés à la première victoire en stasis 5. Force selon le niveau du donjon :
+     1 % avant 60, 2 % de 60 à 119, 3 % de 120 à 159, 4 % ensuite ; la récolte compte double. */
+  const TROPHY = {
+    crypte_kardorim: ["Trophée de Kardorim", "xp"], grange_tournesol: ["Trophée du Tournesol Affamé", "gather"],
+    chateau_ensable: ["Trophée de Mob l'Éponge", "kamas"], cour_bouftou_royal: ["Trophée du Bouftou Royal", "hp"],
+    cache_kankreblath: ["Trophée de Kankreblath", "drop"], donjon_tofus: ["Trophée du Batofu", "xp"],
+    donjon_squelettes: ["Trophée du Chafer Rōnin", "hp"], donjon_scarafeuilles: ["Trophée du Scarabosse Doré", "drop"],
+    donjon_bworks: ["Trophée de la Bworkette", "kamas"], nid_kwakwa: ["Trophée du Kwakwa", "xp"],
+    clos_blops: ["Trophée du Blop Coco Royal", "drop"], labo_brumen: ["Trophée de Nelween", "xp"],
+    pitons_craqueleur: ["Trophée du Craqueleur Légendaire", "hp"], bateau_chouque: ["Trophée du Chouque", "kamas"],
+    chapiteau_riktus: ["Trophée de Choudini", "drop"], domaine_ancestral: ["Trophée de l'Abraknyde Ancestral", "gather"],
+    caverne_koulosse: ["Trophée du Koulosse", "hp"], taniere_meulou: ["Trophée du Meulou", "xp"],
+    arbre_moon: ["Trophée de Moon", "drop"], antre_dragon_cochon: ["Trophée du Dragon Cochon", "kamas"],
+    repaire_kharnozor: ["Trophée de Kharnozor", "offrate"], biblio_corbac: ["Trophée du Maître Corbac", "xp"],
+    goulet_rasboul: ["Trophée de Silf le Rasboul Majeur", "kamas"], bambusaie_damadrya: ["Trophée de Damadrya", "gather"],
+    labyrinthe_minotoror: ["Trophée du Minotoror", "hp"], antre_crocabulia: ["Trophée de Crocabulia", "drop"],
+    serre_royalmouth: ["Trophée du Royalmouth", "kamas"], repaire_skeunk: ["Trophée de Skeunk", "xp"],
+  };
+  E.TROPHY_STASIS = 5;
+  E.trophyPct = (lvl) => (lvl < 60 ? 1 : lvl < 120 ? 2 : lvl < 160 ? 3 : 4);
+  for (const did in TROPHY) {
+    const dg = DUNGEONS[did]; if (!dg) continue; const [name, kind] = TROPHY[did];
+    FURN[name] = { room: "trophees", kind, v: E.trophyPct(dg.lvl) * (kind === "gather" ? 2 : 1), src: `${dg.name}, première victoire en stasis ${E.TROPHY_STASIS}`, trophy: did };
+  }
+  E.FURN = FURN;
+  E.trophyOf = (did) => (TROPHY[did] ? TROPHY[did][0] : null);
+  const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de vitesse de récolte", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac" };
+  E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
+  E.giveFurn = (S, name, why) => {
+    if (!name || S.furniture.includes(name)) return false;
+    S.furniture.push(name); note(S, `Nouveau meuble : ${name}${why ? ` (${why})` : ""} ! À placer dans le Havre-Sac.`, "rare"); return true;
+  };
+  E.placed = (S, room) => ((S.placed && S.placed[room]) || []);
+  E.isPlaced = (S, name) => { const F = FURN[name]; return !!F && E.placed(S, F.room).includes(name); };
+  E.placeFurn = (S, name) => {
+    const F = FURN[name]; if (!F || !S.furniture.includes(name)) return "Meuble inconnu.";
+    if (E.isPlaced(S, name)) return null;
+    const list = (S.placed[F.room] = S.placed[F.room] || []);
+    if (list.length >= E.roomSlots(S, F.room)) return `${E.room(F.room).name} : plus de place. Retirez d'abord un meuble.`;
+    list.push(name); return null;
+  };
+  E.unplaceFurn = (S, name) => { for (const r in S.placed) S.placed[r] = S.placed[r].filter((x) => x !== name); return null; };
+  E.furnBonus = (S, kind) => {
+    let b = 0;
+    for (const r in S.placed || {}) for (const n of S.placed[r]) { const F = FURN[n]; if (F && F.kind === kind) b += F.v; }
+    return b;
+  };
+  const checkFurn = (S, type, data) => {
+    if (type === "win" && data.sub && SUBS[data.sub]) {
+      const z = SUBS[data.sub].zone;
+      for (const n in FURN) if (FURN[n].zone === z && !S.furniture.includes(n) && rnd() < E.FURN_DROP) E.giveFurn(S, n, "butin rare");
+    }
+    if (type === "harvest" && (S.cnt.harvest || 0) >= 10000) E.giveFurn(S, "Ruche", "succès");
+    if (type === "win" && !S.furniture.includes("Globe des Douze") && S.progress && S.progress.wins) {
+      if (Object.values(SUBS).every((s) => s.lvl[1] > 100 || (S.progress.wins[s.id] || 0) > 0)) E.giveFurn(S, "Globe des Douze", "succès");
+    }
+  };
+  E.FURN_DROP = 1 / 1500; // par victoire dans la zone
+
+  /* Salle d'entraînement : un héros hors de l'équipe gagne 25 % de l'XP moyenne de l'équipe, sans combattre. */
+  E.TRAIN_SHARE = 0.25;
+  E.trainee = (S) => {
+    const c = S.training != null ? S.chars.find((x) => x.id === S.training) : null;
+    if (!c || c.inTeam || c.job || E.atelierHero(S) === c) { S.training = null; return null; }
+    return c;
+  };
+  E.setTraining = (S, cid) => {
+    if (cid == null) { S.training = null; return null; }
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
+    if (c.inTeam) return "Ce héros est dans l'équipe : retirez-le d'abord de l'équipe.";
+    if (c.job) return "Ce héros récolte : rappelez-le d'abord.";
+    if (E.atelierHero(S) === c) return "Ce héros travaille à l'atelier.";
+    S.training = cid; note(S, `${c.name} s'entraîne au Havre-Sac.`, "info"); return null;
+  };
+
+  /* Atelier : se construit une fois ; un héros affecté y fabrique une recette toutes les 20 min, même hors ligne. */
+  E.ATELIER_COST = 50000; E.ATELIER_PERIOD_S = 1200;
+  E.buildAtelier = (S) => {
+    if (S.atelier.built) return "L'atelier est déjà construit.";
+    if (S.kamas < E.ATELIER_COST) return `Il faut ${E.ATELIER_COST.toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= E.ATELIER_COST; S.atelier.built = true; note(S, "L'atelier est construit !", "up"); return null;
+  };
+  E.atelierHero = (S) => (S.atelier && S.atelier.cid != null ? S.chars.find((x) => x.id === S.atelier.cid) || null : null);
+  E.atelierRecipe = (rec) => {
+    if (!rec) return null;
+    if (rec.k === "tpl") { const T = ITEMS[rec.id]; return T && T.craft ? { name: T.name, job: T.craft.job, lvl: E.craftReq(rec.id), ing: T.craft.ing } : null; }
+    const R = D.SPECIAL_CRAFTS[rec.id]; return R ? { name: rec.id, job: R.job, lvl: R.lvl, ing: R.ing } : null;
+  };
+  E.setAtelier = (S, cid, rec) => {
+    const A = S.atelier; if (!A.built) return "Construisez d'abord l'atelier.";
+    if (cid == null) { const c = E.atelierHero(S); A.cid = null; A.prog = 0; A.stall = null; if (c) note(S, `${c.name} quitte l'atelier.`, "info"); return null; }
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
+    const R = E.atelierRecipe(rec); if (!R) return "Choisissez une recette.";
+    if (S.crafts[R.job].lvl < R.lvl) return `${D.CRAFT_JOBS[R.job].name} niveau ${R.lvl} requis.`;
+    if (A.cid !== cid) {
+      if (S.dungeon && c.inTeam && !c.job) return "Impossible pendant un donjon.";
+      if (c.inTeam && !c.job && E.team(S).length <= 1) return "Il faut au moins un personnage dans l'équipe.";
+      if (c.inTeam) { c.inTeam = false; S.fight = S.dungeon ? S.fight : null; }
+      c.job = null; if (S.training === cid) S.training = null;
+      A.prog = 0;
+    }
+    A.cid = cid; A.rec = { k: rec.k, id: rec.id }; A.stall = null;
+    note(S, `${c.name} fabrique à l'atelier : ${R.name}.`, "info"); return null;
+  };
+  E.atelierTick = (S, sec, opts = {}) => {
+    const A = S.atelier; if (!A || !A.built || A.cid == null) return 0;
+    const c = E.atelierHero(S); if (!c || c.inTeam || c.job) { A.cid = null; A.prog = 0; return 0; }
+    A.prog = (A.prog || 0) + sec; let n = 0;
+    while (A.prog >= E.ATELIER_PERIOD_S && n < 500) {
+      const r = A.rec && A.rec.k === "tpl" ? E.craftItem(S, A.rec.id) : A.rec ? E.craftSpecial(S, A.rec.id) : "Aucune recette.";
+      if (typeof r === "string") { if (A.stall !== r && !opts.quiet) note(S, `Atelier en pause : ${r}`, "info"); A.stall = r; A.prog = E.ATELIER_PERIOD_S; break; }
+      A.stall = null; A.prog -= E.ATELIER_PERIOD_S; A.made = (A.made || 0) + 1; n++;
+    }
+    return n;
+  };
+
+  /* Meubles fabriqués par le Bricoleur */
+  const FURN_CRAFTS = {
+    "Coffre en frêne":      { lvl: 30,  ing: [["Bois de Frêne", 40], ["Bois de Châtaignier", 15], ["Fer", 20]] },
+    "Arrosoir de Cania":    { lvl: 40,  ing: [["Cuivre", 30], ["Bronze", 20], ["Bois de Noyer", 15]] },
+    "Étagère de grimoires": { lvl: 60,  ing: [["Bois de Chêne", 40], ["Kobalte", 20], ["Houblon", 20]] },
+    "Lit à baldaquin":      { lvl: 80,  ing: [["Bois d'Érable", 40], ["Lin", 30], ["Manganèse", 15]] },
+    "Coffre en merisier":   { lvl: 120, ing: [["Bois de Merisier", 50], ["Argent", 25], ["Malt", 20]] },
+  };
+  for (const n in FURN_CRAFTS) D.SPECIAL_CRAFTS[n] = Object.assign({ job: "bricoleur", furn: true, unique: true }, FURN_CRAFTS[n]);
 
   /* ---------------- Consommables spéciaux (utilitaires et coffres) ---------------- */
   const resLot = (S, n, qmin, qmax) => {
@@ -479,6 +643,7 @@
   };
   const onEvent = (S, type, data) => {
     const q = E.questStep(S);
+    checkFurn(S, type, data);
     if (type === "win") {
       data.mons.forEach((m) => {
         if (q && q.t === "kill" && data.sub === q.sub) S.quest.prog++;
@@ -520,6 +685,13 @@
     for (const k of ["tokens", "unlocks", "almStreak", "resCap", "resSeen", "resFav", "resT"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
     if (!S.almStreak.n) S.almStreak.n = 0;
     for (const k of ["titlesExtra", "furniture", "shop"]) if (!Array.isArray(S[k])) S[k] = [];
+    // Havre-Sac 4.0
+    if (!S.placed || typeof S.placed !== "object") S.placed = {};
+    for (const r in S.placed) S.placed[r] = (S.placed[r] || []).filter((n) => FURN[n] && FURN[n].room === r && S.furniture.includes(n)).slice(0, E.roomSlots(S, r));
+    if (!S.atelier || typeof S.atelier !== "object") S.atelier = { built: false, cid: null, rec: null, prog: 0, made: 0 };
+    if (S.training === undefined) S.training = null;
+    // trophées déjà mérités (stasis 5 passée avant le Havre-Sac 4.0)
+    for (const did in S.stasis || {}) { const t = E.trophyOf(did); if (t && S.stasis[did].max >= E.TROPHY_STASIS && !S.furniture.includes(t)) S.furniture.push(t); }
   };
   const baseNew = E.newState;
   E.newState = (name, cls) => { const S = baseNew(name, cls); initState(S); fillBounties(S); return S; };
