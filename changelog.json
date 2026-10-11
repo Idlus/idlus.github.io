@@ -1,6 +1,17 @@
 {
-  "version": "3.2.3",
+  "version": "3.3.0",
   "versions": [
+    {
+      "v": "3.3.0",
+      "name": "Combat vivant",
+      "items": [
+        "Placement de l'équipe (onglet Héros) : chaque héros est en première ligne ou à l'arrière. Les monstres visent la première ligne 3 fois sur 4 tant qu'elle tient debout. Placement automatique par défaut (les héros les plus solides devant), modifiable à la main",
+        "Monstres à mécanique spéciale : les Rôdeurs (Bwork Archer, Chafers furtifs, Corbacs…) visent l'arrière, les Bondisseurs (Tofus, Moskitos, Kwaks de Vent) ignorent les rangées",
+        "Monstres Champions en chasse : environ un combat sur 100, un monstre devient Champion (PV ×2, dégâts +20 %, un pouvoir parmi six). Récompense : XP ×3, butin ×2, une ressource garantie et deux fois plus de chances de Rayonnant. Quatre succès, jusqu'à 1 000 Champions",
+        "Un décor pour chacun des 28 donjons, salle du boss plus sombre avec des torches, et météo en chasse (pluie, neige, lucioles, sable) ; option « Effets de décor » pour les appareils lents",
+        "Pourquoi j'ai perdu ? signale un héros fragile tombé en première ligne, avec un bouton vers le placement ; la notification « Évènement rare » couvre aussi les Champions"
+      ]
+    },
     {
       "v": "3.2.3",
       "name": "Répartition au choix",
