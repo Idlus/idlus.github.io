@@ -15,6 +15,8 @@
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
+  E.trainee = () => null;     // héros à la Salle d'entraînement (systems.js)
+  E.atelierTick = () => 0;    // atelier du Havre-Sac (systems.js)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
@@ -1345,6 +1347,12 @@
       out.xp[c.id] = g;
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
+    // Salle d'entraînement du Havre-Sac : une part de l'XP moyenne de l'équipe
+    const tr = E.trainee(S);
+    if (tr && team.length) {
+      const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.TRAIN_SHARE);
+      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, g)) out.ups.push([tr.name, tr.lvl]); }
+    }
     S.kamas += out.kamas;
     // Butin
     const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.teamHas(S, "enu") ? 1.15 : 1);
@@ -1802,6 +1810,7 @@
         if (n) { E.addCons(S, "parch_" + stat + "_g", n); out.push(`${n} × ${CONSUMABLES["parch_" + stat + "_g"].name}`); } }
     }
     if (k >= 6 && rnd() < 0.01 + (k - 6) * 0.005) { E.addCons(S, "parch_" + stat + "_p", 1); out.push(CONSUMABLES["parch_" + stat + "_p"].name); note(S, `Butin rare : ${CONSUMABLES["parch_" + stat + "_p"].name} !`, "rare"); }
+    if (k >= (E.TROPHY_STASIS || 5) && E.trophyOf && E.giveFurn) { const tr = E.trophyOf(did); if (tr && E.giveFurn(S, tr, "trophée de boss")) out.push(tr); }
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (k === 10) S.unlocks.stasis10 = true;
@@ -1849,6 +1858,7 @@
     }
     // récolte
     gatherTick(S, dtMs / 1000);
+    E.atelierTick(S, dtMs / 1000);
   };
 
   /* ---------------- Récolte (v2.6) ----------------
@@ -1949,10 +1959,10 @@
     const R = SPECIAL_CRAFTS[name]; if (!R) return "Recette inconnue.";
     const J = S.crafts[R.job];
     if (J.lvl < R.lvl) return `${CRAFT_JOBS[R.job].name} niveau ${R.lvl} requis.`;
-    if (R.unique && (S.res[name] || 0) > 0) return "Vous possédez déjà cet objet.";
+    if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)))) return "Vous possédez déjà cet objet.";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
-    addRes(S, name, 1);
+    if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else addRes(S, name, 1);
     craftXp(S, R.job, 20 + R.lvl * 3);
     E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
@@ -2109,6 +2119,7 @@
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
     gatherTick(S, eff, { quiet: true });
+    E.atelierTick(S, eff, { quiet: true });
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }
