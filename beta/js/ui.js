@@ -457,15 +457,96 @@ function renderHomeInner() {
   ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 10).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></section>`;
 }
+/* ---------- 4.0 : Havre-Sac en pièces ---------- */
+const hvPips = (l, m) => `<div class="pipsbar">${Array.from({ length: Math.min(m, 50) }, (_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</div>`;
+const hvUp = (H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S, H.id); const max = l >= H.max;
+  return `<div class="upl"><div class="row between"><span><b>${h(H.name)}</b> <span class="lvlpill">${l}/${H.max}</span></span><span class="plus small">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</span></div>${hvPips(l, H.max)}
+    <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; };
+const furnIco = (n) => IC(E.FURN[n] && E.FURN[n].trophy ? "trophee" : "havre");
+const hvSlots = (R) => {
+  const n = E.roomSlots(S, R.id); const P = E.placed(S, R.id); const next = R.nextSlot ? R.nextSlot(S) : 0;
+  const owned = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
+  return `<div class="fslots"><div class="xs muted">Meubles ${P.length}/${n}</div>${Array.from({ length: n }, (_, i) => P[i]
+    ? `<div class="fslot full">${furnIco(P[i])}<span class="grow"><b>${h(P[i])}</b><i>${h(E.furnEffect(P[i]))}</i></span><button class="btn sm" data-act="funplace" data-v="${h(P[i])}">Retirer</button></div>`
+    : `<button class="fslot empty" data-act="fpick" data-v="${R.id}" ${owned ? "" : "disabled"}>${owned ? `+ Placer un meuble (${owned} disponible${owned > 1 ? "s" : ""})` : "Aucun meuble à placer ici"}</button>`).join("")}
+    ${next ? `<span class="fslot lock">${IC("cle")} Une place de plus au niveau ${next} de la pièce</span>` : ""}</div>`;
+};
+const roomSum = (R) => {
+  const p = R.ups.map((id) => { const H = E.HAVRE.find((x) => x.id === id); return `+${fmt(E.havreLvl(S, id) * H.per)}${H.unit.split(" (")[0]}`; });
+  if (R.slots) p.push(`meubles ${E.placed(S, R.id).length}/${E.roomSlots(S, R.id)}`);
+  if (R.post === "train") { const t = E.trainee(S); p.push(t ? `${t.name} s'entraîne` : "personne à l'entraînement"); }
+  if (R.post === "atelier") { const c = E.atelierHero(S); p.push(!S.atelier.built ? `à construire · ${fmt(E.ATELIER_COST)} k` : c ? `${c.name} fabrique` : "personne à l'atelier"); }
+  return p.join(" · ");
+};
+function roomBody(R) {
+  if (R.soon) return `<p class="note">Les familiers et les montures s'installeront ici à la prochaine étape de la 4.0.</p>`;
+  let b = "";
+  if (R.post === "train") { const t = E.trainee(S);
+    b = t ? `<div class="trainee">${head(t)}<div class="grow"><b>${h(t.name)}</b> <span class="xs muted">${CLASSES[t.cls].name} niv. ${t.lvl}</span><div class="xs">Gagne <b class="plus">${Math.round(E.TRAIN_SHARE * 100)} %</b> de l'XP moyenne de l'équipe, sans combattre</div><div class="bar xp"><i style="width:${t.lvl >= E.MAX_LVL ? 100 : pct(t.xp, E.xpNeed(t.lvl))}%"></i></div></div><button class="btn sm" data-act="trainpick">Changer</button></div>`
+      : `<div class="trainee"><div class="grow small">Un héros hors de l'équipe peut s'entraîner ici : il gagne <b class="plus">${Math.round(E.TRAIN_SHARE * 100)} %</b> de l'XP moyenne de l'équipe, sans combattre.</div><button class="btn sm primary" data-act="trainpick">Choisir</button></div>`; }
+  if (R.post === "atelier") { const A = S.atelier;
+    if (!A.built) return `<p class="note">Un héros affecté à l'atelier fabrique une recette toutes les ${E.ATELIER_PERIOD_S / 60} min, même hors ligne, tant que les ressources suffisent. Il quitte l'équipe pendant ce temps.</p><button class="btn sm ${S.kamas >= E.ATELIER_COST ? "primary" : ""}" data-act="atbuild" ${S.kamas >= E.ATELIER_COST ? "" : "disabled"}>Construire · ${fmt(E.ATELIER_COST)} k</button>`;
+    const c = E.atelierHero(S); const Rc = E.atelierRecipe(A.rec);
+    b = c && Rc ? `<div class="trainee">${head(c)}<div class="grow"><b>${h(c.name)}</b> <span class="xs muted">fabrique</span> <b>${h(Rc.name)}</b><div class="xs ${A.stall ? "ko" : "muted"}">${A.stall ? `En pause : ${h(A.stall)}` : `Prochaine fabrication dans ${Math.max(1, Math.ceil((E.ATELIER_PERIOD_S - (A.prog || 0)) / 60))} min · ${fmt(A.made || 0)} fabriqué${(A.made || 0) > 1 ? "s" : ""}`}</div><div class="bar"><i style="width:${pct(A.prog || 0, E.ATELIER_PERIOD_S)}%"></i></div>${ingHtml(Rc.ing)}</div></div>
+      <div class="row"><button class="btn sm" data-act="atpick">Changer</button><button class="btn sm" data-act="atstop">Rappeler ${h(c.name)}</button></div>`
+      : `<p class="note">Choisissez un héros et une recette : l'atelier la fabrique toutes les ${E.ATELIER_PERIOD_S / 60} min, même hors ligne.</p><button class="btn sm primary" data-act="atpick">Affecter un héros</button>`;
+  }
+  return b + R.ups.map((id) => hvUp(E.HAVRE.find((x) => x.id === id))).join("") + (R.slots ? hvSlots(R) : "");
+}
+const restLabel = (c) => (E.trainee(S) === c ? "À l'entraînement (Havre-Sac)" : E.atelierHero(S) === c ? "À l'atelier (Havre-Sac)" : "Au repos (hors équipe)");
 function havreHtml() {
+  const placedN = E.ROOMS.reduce((s, R) => s + E.placed(S, R.id).length, 0), slotsN = E.ROOMS.reduce((s, R) => s + E.roomSlots(S, R.id), 0);
+  const t = E.trainee(S);
+  const free = S.furniture.filter((f) => E.FURN[f] && !E.isPlaced(S, f)).sort((a, b) => E.FURN[a].room.localeCompare(E.FURN[b].room));
+  const left = Object.keys(E.FURN).filter((f) => E.FURN[f].trophy && !S.furniture.includes(f)).length;
+  const room = (R) => { const open = ui.hvRoom === R.id;
+    return `<article class="room ${open ? "open" : ""} ${R.soon || (R.post === "atelier" && !S.atelier.built) ? "locked" : ""} ${R.soon ? "soon" : ""}" style="--rc:${R.color}">
+      <header data-act="hvroom" data-v="${R.id}"><span class="rico">${IC(R.icon)}</span><div class="grow"><h3>${h(R.name)}</h3><div class="xs muted">${h(R.desc)}</div><div class="xs plus msum">${h(roomSum(R))}</div></div>${R.soon ? `<span class="tag soft">Bientôt</span>` : ""}<span class="chev">▾</span></header>
+      ${roomBody(R)}</article>`; };
   return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
-    <div class="pad stack"><p class="note">Votre refuge personnel. Chaque amélioration est permanente et s'applique à toute l'équipe ; son prix augmente à chaque niveau.</p>
-    <div class="hvgrid">${E.HAVRE.map((H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S, H.id); const max = l >= H.max;
-      return `<div class="hv"><div class="top"><span class="em">${emo(H.icon)}</span><div class="grow"><b>${h(H.name)}</b><div class="xs muted">+${H.per}${h(H.unit)} par niveau</div></div><span class="lvlpill">${l}/${H.max}</span></div>
-        <div class="small">Actuel : <b class="plus">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</b></div>
-        <div class="pipsbar">${Array.from({ length: Math.min(H.max, 50) }, (_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</div>
-        <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; }).join("")}</div></div></section>
-    <section class="panel" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Meubles en attente</h2><span class="xs muted">ils prendront place dans le Havre-Sac lors de la mise à jour « housing »</span></div><div class="pad">${S.furniture.length ? `<div class="row">${S.furniture.map((f) => `<span class="tag soft">${IC("havre")} ${h(f)}</span>`).join("")}</div>` : `<p class="note">Aucun meuble pour l'instant : la quête principale, la série d'Almanax et le Comptoir de la cité en donnent.</p>`}</div></section>`;
+    <div class="pad stack"><div class="hvsum">
+      <div><b class="num plus">+${fmt(E.bonus(S, "xp"))} %</b><span>expérience</span></div><div><b class="num plus">+${fmt(E.bonus(S, "drop"))} %</b><span>butin</span></div><div><b class="num plus">+${fmt(E.bonus(S, "kamas"))} %</b><span>kamas</span></div>
+      <div><b class="num">${placedN} / ${slotsN}</b><span>meubles placés</span></div><div><b class="num">${t ? h(t.name) : "—"}</b><span>à l'entraînement</span></div></div>
+    <p class="xs muted">Bonus totaux, plafonnés à +${E.BONUS_CAP.xp} % d'XP, +${E.BONUS_CAP.drop} % de butin et +${E.BONUS_CAP.kamas} % de kamas.</p>
+    <div class="rooms">${E.ROOMS.map(room).join("")}</div></div></section>
+    <section class="panel" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Meubles à placer</h2><span class="xs muted">un meuble agit seulement une fois placé</span></div><div class="pad stack"><div class="mlist">
+      ${free.map((f) => { const F = E.FURN[f]; const full = E.placed(S, F.room).length >= E.roomSlots(S, F.room);
+        return `<div class="mitem"><span class="rico">${furnIco(f)}</span><div class="grow"><b>${h(f)}</b><div class="xs muted">${h(E.furnEffect(f))} · ${h(E.room(F.room).name)}${full ? " (pleine)" : ""}</div></div><button class="btn sm ${full ? "" : "primary"}" data-act="fplace" data-v="${h(f)}" ${full ? "disabled" : ""}>Placer</button></div>`; }).join("")}
+      ${free.length ? "" : `<p class="note">${S.furniture.some((f) => E.FURN[f]) ? "Tous vos meubles sont placés." : "Aucun meuble pour l'instant : les trophées de boss, le Comptoir de la cité, le Bricoleur, l'Almanax et les butins rares de certaines zones en donnent."}</p>`}
+      <div class="mitem dim"><span class="rico">${IC("cle")}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog">Catalogue</button></div>
+    </div></div></section>`;
+}
+function furnPickSheet(room) {
+  const R = E.room(room); const list = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === room && !E.isPlaced(S, f));
+  openSheet(`<h2>${IC(R.icon)} ${h(R.name)} : placer un meuble</h2><div class="list">${list.map((f) => `<div class="li"><span class="rico">${furnIco(f)}</span><span class="grow"><b>${h(f)}</b><br><span class="xs plus">${h(E.furnEffect(f))}</span></span><button class="btn sm primary" data-act="fplace" data-v="${h(f)}">Placer</button></div>`).join("") || `<div class="empty">Aucun meuble pour cette pièce.</div>`}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+function furnCatalogSheet() {
+  const rows = Object.keys(E.FURN).sort((a, b) => E.ROOMS.findIndex((r) => r.id === E.FURN[a].room) - E.ROOMS.findIndex((r) => r.id === E.FURN[b].room));
+  openSheet(`<h2>${IC("havre")} Catalogue des meubles</h2><p class="small muted">${S.furniture.filter((f) => E.FURN[f]).length} / ${rows.length} obtenus.</p><div class="list">${rows.map((f) => { const F = E.FURN[f]; const got = S.furniture.includes(f);
+    return `<div class="li ${got ? "" : "dim"}"><span class="rico">${furnIco(f)}</span><span class="grow"><b>${h(f)}</b> <span class="xs muted">${h(E.room(F.room).name)}</span><br><span class="xs plus">${h(E.furnEffect(f))}</span> <span class="xs muted">· ${h(F.src)}</span></span>${got ? `<span class="tag good">Obtenu</span>` : ""}</div>`; }).join("")}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+function trainSheet() {
+  const list = S.chars.filter((c) => !c.inTeam && !c.job && E.atelierHero(S) !== c); const t = E.trainee(S);
+  openSheet(`<h2>${IC("combat")} Salle d'entraînement</h2><p class="small muted">Seul un héros hors de l'équipe, qui ne récolte pas et ne travaille pas à l'atelier, peut s'entraîner. Retirez un héros de l'équipe depuis sa fiche pour le rendre disponible.</p>
+    <div class="list">${list.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">${CLASSES[c.cls].name} niv. ${c.lvl}</span></span>${t === c ? `<span class="tag good">À l'entraînement</span>` : `<button class="btn sm primary" data-act="trainset" data-id="${c.id}">Entraîner</button>`}</div>`).join("") || `<div class="empty">Aucun héros disponible : tous sont dans l'équipe ou occupés.</div>`}</div>
+    <div class="row">${t ? `<button class="btn" data-act="trainset" data-id="">Arrêter l'entraînement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+function atelierSheet() {
+  const a = ui.at; const A = S.atelier;
+  const job = a.job; const J = S.crafts[job] || { lvl: 1 };
+  let recs = job === "bricoleur"
+    ? Object.entries(SPECIAL_CRAFTS).filter(([n, R]) => R.lvl <= J.lvl && !(R.furn && S.furniture.includes(n))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing }))
+    : Object.entries(ITEMS).filter(([id, T]) => T.craft && T.craft.job === job && E.craftReq(id) <= J.lvl).map(([id, T]) => ({ k: "tpl", id, name: T.name, lvl: T.lvl, ing: T.craft.ing }));
+  recs.sort((x, y) => (E.canCraft(S, y) - E.canCraft(S, x)) || y.lvl - x.lvl); const total = recs.length; recs = recs.slice(0, 40);
+  const heroes = S.chars.filter((c) => !c.job);
+  openSheet(`<h2>${IC("forge")} Atelier</h2><p class="small muted">Le héros quitte l'équipe et fabrique la recette toutes les ${E.ATELIER_PERIOD_S / 60} min, même hors ligne. Les recettes dépendent du niveau de vos métiers.</p>
+    <div class="stack" style="gap:8px">
+      <div class="small"><b>Héros</b></div><div class="row">${heroes.map((c) => `<button class="btn sm ${a.cid === c.id ? "primary" : ""}" data-act="atcid" data-id="${c.id}">${h(c.name)} <span class="xs">niv. ${c.lvl}${c.inTeam ? " · équipe" : ""}</span></button>`).join("")}</div>
+      <nav class="subtabs" style="margin:0">${Object.entries(CRAFT_JOBS).map(([id, c]) => `<button data-act="atjob" data-v="${id}" aria-pressed="${job === id}">${c.name} <span class="num xs">${(S.crafts[id] || {}).lvl || 1}</span></button>`).join("")}</nav>
+      <div class="list">${recs.map((r) => `<div class="li"><span class="grow"><b>${h(r.name)}</b> <span class="xs muted">niv. ${r.lvl}</span>${ingHtml(r.ing)}</span><button class="btn sm ${a.rec && a.rec.id === r.id ? "primary" : ""}" data-act="atrec" data-k="${r.k}" data-v="${h(r.id)}">${a.rec && a.rec.id === r.id ? "Choisie" : "Choisir"}</button></div>`).join("") || `<div class="empty">Aucune recette à ce niveau de métier.</div>`}</div>
+      ${total > recs.length ? `<p class="xs muted">${total - recs.length} autres recettes : les fabricables maintenant sont en premier.</p>` : ""}
+    </div>
+    <div class="row"><button class="btn primary" data-act="atgo" ${a.cid != null && a.rec ? "" : "disabled"}>Lancer</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function rateHtml(rate) {
   if (!rate) return `<p class="note">Les statistiques apparaissent après quelques combats dans une zone : XP, kamas et ressources par heure, pour comparer les zones.</p>`;
@@ -961,7 +1042,7 @@ function renderHeroes() {
       <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}</div></div>
       <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}</div>
       <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>${c.lvl < E.MAX_LVL ? pinBtn({ k: "lvl", cid: c.id, n: lvlGoal(c) }, `Suivre le niveau ${lvlGoal(c)}`) : ""}</div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : restLabel(c)}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>${c.lvl < E.MAX_LVL ? pinBtn({ k: "lvl", cid: c.id, n: lvlGoal(c) }, `Suivre le niveau ${lvlGoal(c)}`) : ""}</div>
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
         ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
@@ -1400,7 +1481,7 @@ function recolteHtml() {
       </div></div>`; }).join("");
   return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter la ressource de son choix. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). De temps en temps, un filon rare double le rendement d'une ressource pendant 10 minutes.</p>
     ${fil ? `<div class="awaitbar" style="margin:0">${G("sparkle")} Filon de <b>${h(fil.res)}</b> : rendement ×2 encore ${dur((fil.until - Date.now()) / 1000)}</div>` : ""}
-    <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `${IC("pioche")} ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)}` : c.inTeam ? IC("combat") + " Chasse avec l'équipe" : "Au repos"}</span></span>
+    <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `${IC("pioche")} ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)}` : c.inTeam ? IC("combat") + " Chasse avec l'équipe" : restLabel(c)}</span></span>
       ${c.job ? `<button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler</button>` : `<button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}</div>`).join("")}</div></section>
     <div class="grid2">${jobs}</div>`;
 }
@@ -1461,7 +1542,7 @@ function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
   return `<section class="panel"><div class="phead"><h2>${emo(Sh.icon)} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
     <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
-      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? "Meuble pour le futur Havre-Sac" : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte"}</div></div></div>
+      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
 function bountiesHtml() {
@@ -1785,6 +1866,20 @@ document.addEventListener("click", (ev) => {
     case "lossgo": ui.tab = "heroes"; ui.cid = +d.id; ui.hero = d.v || "equip"; closeSheet(); window.scrollTo(0, 0); break;
     case "hometab": ui.home = d.v; break;
     case "havre": { const r = E.buyHavre(S, d.id); if (r) { toast(r); return; } toast(`${E.HAVRE.find((x) => x.id === d.id).name} amélioré !`); break; }
+    case "hvroom": ui.hvRoom = ui.hvRoom === d.v ? null : d.v; break;
+    case "fpick": furnPickSheet(d.v); return;
+    case "fcatalog": furnCatalogSheet(); return;
+    case "fplace": { const r = E.placeFurn(S, d.v); if (r) { toast(r); return; } closeSheet(); toast(`${d.v} placé !`); break; }
+    case "funplace": E.unplaceFurn(S, d.v); break;
+    case "trainpick": trainSheet(); return;
+    case "trainset": { const r = E.setTraining(S, d.id === "" ? null : +d.id); if (r) { toast(r); return; } closeSheet(); break; }
+    case "atbuild": { const r = E.buildAtelier(S); if (r) { toast(r); return; } break; }
+    case "atpick": { const A = S.atelier; const R0 = E.atelierRecipe(A.rec); ui.at = { cid: A.cid, rec: A.rec, job: R0 ? R0.job : "bricoleur" }; atelierSheet(); return; }
+    case "atcid": ui.at.cid = +d.id; atelierSheet(); return;
+    case "atjob": ui.at.job = d.v; atelierSheet(); return;
+    case "atrec": ui.at.rec = { k: d.k, id: d.v }; atelierSheet(); return;
+    case "atgo": { const r = E.setAtelier(S, ui.at.cid, ui.at.rec); if (r) { toast(r); return; } closeSheet(); break; }
+    case "atstop": E.setAtelier(S, null); break;
     case "mettab": ui.met = d.v; ui.confirm = null; break;
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
     case "qtab": ui.qt = d.v; ui.confirm = null; break;
