@@ -14,8 +14,13 @@ const ui = {
 };
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.0.2";
+const GAME_VERSION = "3.0.3";
 const CHANGELOG = [
+  { v: "3.0.3", name: "Application installable", items: [
+    "idlus s'installe sur téléphone et PC comme une vraie application : icône, plein écran, lancement instantané",
+    "Le jeu fonctionne hors connexion (les images sont gardées au fil de la partie)",
+    "Bouton « Installer » dans les Options, avec un guide pour iPhone",
+    "Nouvelle adresse : mathiss29.github.io/idlus" ] },
   { v: "3.0.2", name: "Équilibrage des classes", items: [
     "Les 19 classes sont rééquilibrées par leurs sorts et passifs : les écarts de puissance entre classes sont bien plus faibles",
     "Iop : Colère à 6 charges (+40 %), Concentration 2 fois par tour, nouveau passif Vigueur (vol de vie 8 %)",
@@ -1235,7 +1240,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button></div>
+      <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">📲 Installer idlus</button>`}</div>
       <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
@@ -1260,10 +1265,27 @@ function migrationSheet(list) {
 }
 
 /* ---------- rendu ---------- */
+/* ---------- Application installable (PWA) ---------- */
+let installEvt = null;
+const isStandalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; renderUpdBar(); });
+window.addEventListener("appinstalled", () => { installEvt = null; if (S) { S.installed = true; dirty = true; } toast("idlus est installé ! Retrouvez-le sur votre écran d'accueil.", "rare"); renderUpdBar(); });
+const canInstall = () => !isStandalone() && (installEvt || isIOS());
+function installGame() {
+  if (installEvt) { installEvt.prompt(); installEvt.userChoice.then(() => { installEvt = null; renderUpdBar(); }); return; }
+  openSheet(`<h2>📲 Installer idlus</h2>${isIOS() ? `<ol class="small" style="line-height:1.7;padding-left:20px">
+      <li>Ouvrez cette page dans <b>Safari</b>.</li>
+      <li>Touchez le bouton <b>Partager</b> <span style="font-size:18px">⎋</span> (le carré avec une flèche vers le haut).</li>
+      <li>Choisissez <b>« Sur l'écran d'accueil »</b>, puis <b>Ajouter</b>.</li></ol>`
+    : `<p class="small">Dans le menu de votre navigateur (⋮ ou ⋯), choisissez <b>« Installer l'application »</b> ou <b>« Ajouter à l'écran d'accueil »</b>.</p>`}
+    <p class="xs muted">Votre partie est conservée : l'application utilise la même sauvegarde que le site.</p><div><button class="btn primary" data-act="closesheet">Compris</button></div>`);
+}
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
   if (ui.newVersion) html += `<div class="updbar new"><span>🆕 La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
+  if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>📲 Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (S && S.seenVersion !== GAME_VERSION) {
     const missed = CHANGELOG.filter((c) => !S.seenVersion || vNum(c.v) > vNum(S.seenVersion)); const cur = CHANGELOG[0];
     html += `<div class="updbar"><div class="grow"><div><b>✨ Mise à jour ${h(cur.v)} « ${h(cur.name)} » appliquée</b>${missed.length > 1 ? ` <span class="xs muted">(+ ${missed.length - 1} version${missed.length > 2 ? "s" : ""} précédente${missed.length > 2 ? "s" : ""})</span>` : ""}</div>
@@ -1360,6 +1382,8 @@ document.addEventListener("click", (ev) => {
     case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
+    case "installgame": installGame(); return;
+    case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); changelogSheet(); return;
     case "reloadgame": saveNow(); location.reload(); return;
@@ -1527,8 +1551,10 @@ function start() {
     render();
     if (S.migration) { migrationSheet(S.migration); S.migration = null; }
     else if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r);
+    S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
   loop();
+  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
   setTimeout(checkNewVersion, 20000); setInterval(checkNewVersion, 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }

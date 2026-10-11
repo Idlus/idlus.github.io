@@ -3,7 +3,11 @@
 Idle / autobattler inspiré de DOFUS, jouable dans le navigateur (PC et mobile).
 Vos héros combattent automatiquement : à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.
 
-**Jouer :** https://mathiss29.github.io/DofousXen/ (bientôt : mathiss29.github.io/idlus)
+**Jouer :** https://mathiss29.github.io/idlus/ (installable sur téléphone et PC)
+
+## 3.0.3 (application installable)
+- PWA : icône, plein écran, jeu hors connexion (service worker), bouton « Installer » et guide iPhone
+- Nouvelle adresse : https://mathiss29.github.io/idlus/
 
 ## 3.0.2 (équilibrage des classes)
 - Classes rééquilibrées par leurs sorts et passifs (Iop, Pandawa, Sadida, Zobal, Eliotrope, Crâ) ; correctif de puissance limité à ×0,8–×1,2

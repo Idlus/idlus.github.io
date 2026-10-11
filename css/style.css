@@ -632,3 +632,9 @@ nav.main button{position:relative}
 .updbar.new{align-items:center;border-color:rgba(126,224,106,.55);background:rgba(126,224,106,.1)}
 .updbar.new span{flex:1}
 @media (max-width:640px){.updbar{flex-direction:column}.updbar .col{flex-direction:row}.updbar.new{flex-direction:row;flex-wrap:wrap}.updbar.new span{flex:1 1 100%}}
+/* application installée (3.0.3) : respect des encoches */
+@media (display-mode: standalone){
+  .app{padding-top:env(safe-area-inset-top);padding-left:max(env(safe-area-inset-left),0px);padding-right:max(env(safe-area-inset-right),0px)}
+  .status{top:env(safe-area-inset-top)}
+  body{overscroll-behavior-y:none}
+}
