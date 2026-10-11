@@ -17,6 +17,8 @@ jobs:
         run: npm run check
       - name: Combat simulé (moteur)
         run: npm run test:fight
+      - name: Équilibrage des stasis (informatif, n'échoue pas)
+        run: npm run sim || true
       - name: Installation de Chromium
         run: |
           npm ci --no-audit --no-fund

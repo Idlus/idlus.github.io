@@ -137,7 +137,11 @@
   };
 
   /* ---------------- Bonus combinés ---------------- */
-  E.bonus = (S, kind) => {
+  /* Plafond commun (préparation de la 4.0) : Havre-Sac, Almanax, alignement, bonbons et, plus tard, meubles, familiers et Dofus
+     s'additionnent sans dépasser ces valeurs. Maximum atteignable en 3.2 : XP +140 %, butin +150 %, kamas +165 %. */
+  E.BONUS_CAP = { xp: 150, drop: 150, kamas: 175 };
+  E.bonus = (S, kind) => Math.min(rawBonus(S, kind), E.BONUS_CAP[kind] ?? Infinity);
+  const rawBonus = (S, kind) => {
     let b = 0;
     const H = HAVRE.find((x) => x.id === kind); if (H) b += E.havreLvl(S, kind) * H.per;
     b += almBonus(S, kind) + alignBonus(S, kind);
