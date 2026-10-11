@@ -12,7 +12,9 @@ const ui = {
   tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "main", fmSel: null, manualSpell: null,
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
-const LS_KEY = "dofousxen-save";
+/* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
+const BETA = /\/beta\//.test(location.pathname);
+const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
 const GAME_VERSION = "3.2.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
@@ -369,12 +371,14 @@ function classInfo(id) {
   return `<div class="clsinfo"><span class="emb" style="--cc:${c.color};width:56px;height:56px">${im(logoImg(id), "", c.name)}</span>
     <div><b style="font-size:17px">${c.name}</b><div class="small muted">${h(c.desc)}</div><div class="small" style="margin-top:4px"><span class="tag soft">Passif</span> <b>${h(c.passive.name)}</b> : ${h(c.passive.desc)}</div></div></div>`;
 }
+const hasPublicSave = () => { try { return !!localStorage.getItem("dofousxen-save"); } catch (e) { return false; } };
 function renderStart() {
   renderStatus(); renderNav();
   const sex = ui.startSex || CLASSES[ui.startCls].sex;
   $("#main").innerHTML = `
   <section class="start stack">
     <div class="logo">idlus</div>
+    ${BETA && hasPublicSave() ? `<div class="panel"><div class="pad stack"><b>Version de test</b><span class="small muted">Votre partie du jeu public n'est pas modifiée ici. Vous pouvez en faire une copie pour tester les nouveautés avec vos héros.</span><div><button class="btn primary" data-act="frompublic">Copier ma partie du jeu public</button></div></div></div>` : ""}
     <p class="muted" style="text-align:center;margin:0">Un idle inspiré de DOFUS : vos héros combattent seuls, à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.</p>
     <div class="panel"><div class="pad stack">
       <h2>Choisissez votre premier héros</h2>
@@ -387,6 +391,7 @@ function renderStart() {
     <details class="panel"><summary class="pad" style="cursor:pointer;font-weight:800">Reprendre une partie (importer une sauvegarde)</summary>
       <div class="pad stack" style="padding-top:0"><textarea id="imp" placeholder="Collez ici le texte de votre sauvegarde exportée"></textarea>
       <div class="row"><button class="btn sm" data-act="import">Importer</button><span id="impmsg" class="minus small"></span></div></div></details>
+    ${readCopies().length ? `<details class="panel"${ui.confirm && ui.confirm.startsWith("restore") ? " open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800">Restaurer une copie de secours</summary><div class="pad stack small" style="padding-top:0">${copiesHtml()}</div></details>` : ""}
   </section>`;
 }
 /* ---------- ACCUEIL ---------- */
@@ -1602,6 +1607,7 @@ function optionsSheet() {
       ${notifOptionsHtml()}
       <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
+      <div class="stack" style="gap:6px"><div><b>Copies de secours</b> <span class="muted">(une toutes les 10 min de jeu, et une avant chaque mise à jour)</span></div>${copiesHtml()}</div>
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
@@ -1650,6 +1656,7 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
+  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span><a class="btn sm" href="../">Jeu public</a></div>`;
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
@@ -1901,10 +1908,14 @@ document.addEventListener("click", (ev) => {
     case "perk": E.choosePerk(S, +d.t, d.id); break;
     case "savenow": saveNow(true); return;
     case "copyexp": { const ta = $("#exp"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Sauvegarde copiée."), () => { ta.select(); toast("Sélectionnez puis copiez le texte."); }); } catch (e) { ta.select(); } return; }
-    case "import": { try { const txt = decodeURIComponent(escape(atob($("#imp").value.trim()))); const N = E.deserialize(txt); S = N; ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); closeSheet(); ui.tab = "home"; render(); toast("Sauvegarde importée."); if (S.migration) { migrationSheet(S.migration); S.migration = null; } } catch (e) { const m = $("#impmsg"); if (m) m.textContent = "Ce texte n'est pas une sauvegarde valide."; } return; }
+    case "import": { try { const txt = decodeURIComponent(escape(atob($("#imp").value.trim()))); const N = E.deserialize(txt); if (S) pushCopy(E.serialize(S), "avant", S); S = N; ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); closeSheet(); ui.tab = "home"; render(); toast("Sauvegarde importée."); if (S.migration) { migrationSheet(S.migration); S.migration = null; } } catch (e) { const m = $("#impmsg"); if (m) m.textContent = "Ce texte n'est pas une sauvegarde valide."; } return; }
     case "askreset": ui.confirm = "reset"; optionsSheet(); return;
+    case "askrestore": ui.confirm = "restore" + d.i; if (S) optionsSheet(); else renderStart(); return;
+    case "cancelrestore": ui.confirm = null; if (S) optionsSheet(); else renderStart(); return;
+    case "restorecopy": restoreCopy(+d.i); return;
+    case "frompublic": { try { const txt = localStorage.getItem("dofousxen-save"); S = E.deserialize(txt); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); ui.tab = "home"; render(); toast("Partie du jeu public copiée dans la version de test."); } catch (e) { toast("Aucune partie du jeu public à copier."); } return; }
     case "cancelreset": ui.confirm = null; optionsSheet(); return;
-    case "reset": S = null; ui.confirm = null; closeSheet(); try { localStorage.removeItem(LS_KEY); } catch (e) {} render(); return;
+    case "reset": if (S) pushCopy(E.serialize(S), "avant", S); S = null; ui.confirm = null; closeSheet(); try { localStorage.removeItem(LS_KEY); } catch (e) {} render(); return;
     default: return;
   }
   dirty = true; render();
@@ -1960,12 +1971,52 @@ document.addEventListener("input", (ev) => {
 let dirty = false, lastSaveOk = 0;
 function saveNow(manual) {
   if (!S) return; S.savedAt = Date.now(); S.lastTick = Date.now();
-  try { localStorage.setItem(LS_KEY, E.serialize(S)); lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); }
+  try { const txt = E.serialize(S); localStorage.setItem(LS_KEY, txt); lastSaveOk = Date.now(); dirty = false; if (Date.now() - lastCopy() > COPY_EVERY) pushCopy(txt, "auto", S); if (manual) toast("Partie sauvegardée."); }
   catch (e) { if (manual) toast("Impossible de sauvegarder dans ce navigateur."); }
 }
+/* Copies de secours, à côté de la sauvegarde : 3 copies tournantes (une toutes les 10 min de jeu),
+   une avant chaque mise à jour du jeu et une avant chaque restauration. Si la sauvegarde est illisible, la plus récente prend le relais. */
+const COPY_KEY = LS_KEY + "-copies", VER_KEY = LS_KEY + "-version", COPY_EVERY = 10 * 60 * 1000, COPY_MAX = { auto: 3, maj: 1, avant: 1 };
+let restoredCopy = null;
+function readCopies() { try { const a = JSON.parse(localStorage.getItem(COPY_KEY) || "[]"); return Array.isArray(a) ? a.filter((c) => c && typeof c.txt === "string") : []; } catch (e) { return []; } }
+function writeCopies(a) {
+  a.sort((x, y) => y.t - x.t);
+  while (a.length) { try { localStorage.setItem(COPY_KEY, JSON.stringify(a)); return; } catch (e) { a.pop(); } } // place insuffisante : on lâche la plus ancienne
+  try { localStorage.removeItem(COPY_KEY); } catch (e) {}
+}
+function pushCopy(txt, why, st, v) {
+  if (!txt) return;
+  const meta = st && st.chars ? { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length } : {};
+  const a = readCopies(), same = a.filter((c) => c.why === why).sort((x, y) => y.t - x.t).slice(0, COPY_MAX[why] - 1);
+  writeCopies([Object.assign({ t: Date.now(), why, v: v || GAME_VERSION, txt }, meta), ...same, ...a.filter((c) => c.why !== why)]);
+}
+const lastCopy = () => Math.max(0, ...readCopies().filter((c) => c.why === "auto").map((c) => c.t));
 function loadSave() {
-  try { const t = localStorage.getItem(LS_KEY); if (t) return E.deserialize(t); } catch (e) {}
+  let raw = null;
+  try { raw = localStorage.getItem(LS_KEY); if (raw) return E.deserialize(raw); } catch (e) {}
+  if (!raw) return null;
+  for (const c of readCopies()) { try { const st = E.deserialize(c.txt); restoredCopy = c; return st; } catch (e) {} } // sauvegarde illisible : copie la plus récente
   return null;
+}
+/* Avant de lancer une nouvelle version du jeu, on garde la partie telle qu'elle était. */
+function copyBeforeUpdate(st) {
+  try {
+    const prev = localStorage.getItem(VER_KEY);
+    if (prev !== GAME_VERSION) { const raw = localStorage.getItem(LS_KEY); if (raw && !restoredCopy) pushCopy(raw, "maj", st, prev || "précédente"); localStorage.setItem(VER_KEY, GAME_VERSION); }
+  } catch (e) {}
+}
+function restoreCopy(i) {
+  const c = readCopies()[i]; if (!c) return;
+  let N; try { N = E.deserialize(c.txt); } catch (e) { toast("Cette copie est illisible."); return; }
+  if (S) pushCopy(E.serialize(S), "avant", S);
+  S = N; ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); ui.confirm = null; closeSheet(); ui.tab = "home"; render();
+  toast(`Copie du ${copyDate(c.t)} restaurée.`);
+}
+const copyDate = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+function copiesHtml() {
+  const a = readCopies(); if (!a.length) return `<div class="muted">Aucune copie pour l'instant.</div>`;
+  const why = { auto: "copie automatique", maj: "avant la mise à jour", avant: "avant le dernier remplacement de partie" };
+  return a.map((c, i) => `<div class="row"><span>${h(copyDate(c.t))} · ${why[c.why] || "copie"}${c.why === "maj" && c.v ? ` (version ${h(c.v)})` : ""}${c.lvl ? ` · ${c.n} héros, niveau ${c.lvl} max` : ""}</span>${ui.confirm === "restore" + i ? `<span class="minus">La partie actuelle sera remplacée.</span> <button class="btn sm danger" data-act="restorecopy" data-i="${i}">Restaurer</button> <button class="btn sm" data-act="cancelrestore">Annuler</button>` : `<button class="btn sm" data-act="askrestore" data-i="${i}">Restaurer</button>`}</div>`).join("");
 }
 
 /* ---------- boucle ---------- */
@@ -2012,6 +2063,8 @@ window.addEventListener("pagehide", () => saveNow());
 
 function start() {
   S = loadSave();
+  copyBeforeUpdate(S);
+  if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
   if (S) {
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
