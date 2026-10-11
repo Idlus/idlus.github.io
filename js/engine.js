@@ -527,6 +527,7 @@
 
   /* ---------------- Stasis (3.1) ---------------- */
   E.STASIS_MAX = 10;
+  E.STASIS_TL = { room: 15, boss: 24 };
   E.STASIS_MODS = {
     enrages:   { name: "Enragés",     desc: "Les monstres infligent +25 % de dégâts sous 50 % de PV." },
     blindes:   { name: "Blindés",     desc: "Les monstres commencent le combat avec un bouclier de 15 % de leurs PV." },
@@ -538,10 +539,10 @@
     [1, "Le donjon normal."], [2, "Monstres renforcés."], [3, "Le boss gagne une mécanique supplémentaire."],
     [4, "Synchronisation : les monstres prennent le niveau de votre meilleur héros."], [5, "Une salle d'élite (monstre Élite : PV ×2, +15 % de dégâts pour ses alliés)."],
     [6, "Un modificateur de donjon."], [7, "Deux modificateurs de donjon."], [8, "Le boss a une seconde phase sous 30 % de PV."],
-    [9, "Temps limité : 12 tours par salle, 18 contre le boss."], [10, "Boss légendaire : 3 mécaniques, butin exclusif."],
+    [9, "Temps limité : 15 tours par salle, 24 contre le boss."], [10, "Boss légendaire : 3 mécaniques, butin exclusif."],
   ];
   E.stasisInfo = (S, did) => { S.stasis = S.stasis || {}; return (S.stasis[did] = S.stasis[did] || { max: 0, sel: 1, firsts: {}, best: {} }); };
-  E.stasisMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: 1 + 0.08 * (k - 1), rew: 1 + 0.12 * (k - 1) });
+  E.stasisMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: Math.pow(1.2, k - 1), rew: 1 + 0.15 * (k - 1) });
   /* caractéristique des parchemins de chaque donjon (élément du boss) */
   E.dungeonScrollStat = (did) => { const dg = DUNGEONS[did]; const el = (MONSTERS[dg.boss] || {}).el; const ids = Object.keys(DUNGEONS).sort(); if (ids.indexOf(did) % 5 === 4) return "sa"; return { t: "fo", f: "ine", e: "cha", a: "age" }[el] || "vit"; };
   const pickMods = (n) => { const ks = Object.keys(E.STASIS_MODS); const out = []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
@@ -1032,7 +1033,7 @@
     }
     F.seq++; if (F.fx.length > 80) F.fx.splice(0, F.fx.length - 80);
     if (F.oi >= F.order.length) { F.round++; newRound(F); if (F.round > 60) return endFight(S, false, "Le combat s'éternise : retraite.");
-      const lim = F.bossIdx !== undefined ? 18 : 12; if (F.stasis >= 9 && F.round > lim) return endFight(S, false, `Stasis 9 : le temps est écoulé (${lim} tours maximum dans cette salle).`); }
+      const lim = F.bossIdx !== undefined ? E.STASIS_TL.boss : E.STASIS_TL.room; if (F.stasis >= 9 && F.round > lim) return endFight(S, false, `Stasis 9 : le temps est écoulé (${lim} tours maximum dans cette salle).`); }
     const e = F.ents[F.order[F.oi++]];
     if (!e || !e.alive) return E.step(S);
     if (!startOfTurn(S, F, e)) return checkEnd(S);

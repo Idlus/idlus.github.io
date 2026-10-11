@@ -1,6 +1,18 @@
 {
-  "version": "3.1.0",
+  "version": "3.1.1",
   "versions": [
+    {
+      "v": "3.1.1",
+      "name": "Stasis plus exigeante",
+      "items": [
+        "Stasis rééquilibrée : les dégâts des monstres augmentent de 20 % par niveau (cumulatifs) ; sans équipement, la stasis 5 n'est plus faisable",
+        "Paliers visés : sans stuff jusqu'à la stasis 4, avec un bon stuff stasis 6-7, la stasis 10 réservée aux équipes optimisées",
+        "Récompenses revues à la hausse : +15 % d'XP et de butin par niveau de stasis (au lieu de +12 %)",
+        "Stasis 9 : 15 tours par salle et 24 contre le boss (la difficulté vient désormais des monstres, pas du chrono)",
+        "L'estimation de difficulté des donjons tient compte de l'équipement de l'équipe",
+        "Fabrication des parchemins de caractéristiques avec la poussière de stasis, directement depuis l'onglet Caractéristiques"
+      ]
+    },
     {
       "v": "3.1.0",
       "name": "Donjons et classes",

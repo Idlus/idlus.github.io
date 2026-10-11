@@ -14,9 +14,16 @@ const ui = {
 };
 const LS_KEY = "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.1.0";
+const GAME_VERSION = "3.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.1.1", name: "Stasis plus exigeante", items: [
+    "Stasis rééquilibrée : les dégâts des monstres augmentent de 20 % par niveau (cumulatifs) ; sans équipement, la stasis 5 n'est plus faisable",
+    "Paliers visés : sans stuff jusqu'à la stasis 4, avec un bon stuff stasis 6-7, la stasis 10 réservée aux équipes optimisées",
+    "Récompenses revues à la hausse : +15 % d'XP et de butin par niveau de stasis (au lieu de +12 %)",
+    "Stasis 9 : 15 tours par salle et 24 contre le boss (la difficulté vient désormais des monstres, pas du chrono)",
+    "L'estimation de difficulté des donjons tient compte de l'équipement de l'équipe",
+    "Fabrication des parchemins de caractéristiques avec la poussière de stasis, directement depuis l'onglet Caractéristiques" ] },
   { v: "3.1.0", name: "Donjons et classes", items: [
     "Héros en pied : de vrais personnages DOFUS en combat, avec 8 têtes et 6 palettes au choix (Héros › 🎨 Apparence), et 64 coiffes et capes visibles sur le héros",
     "Stasis : 10 niveaux de difficulté par donjon (synchronisation au niveau de l'équipe dès la stasis 4, élites, modificateurs, boss légendaire), avec coffres, poussière et parchemins",
@@ -470,10 +477,14 @@ function dgKeyState(did) { const dg = DUNGEONS[did]; const keys = S.res[dg.key] 
   if (keys) return { k: "ok", txt: `${keys} clé${keys > 1 ? "s" : ""}` }; if (R && E.canCraft(S, R)) return { k: "craft", txt: "clé fabricable" }; return { k: "no", txt: "pas de clé" }; }
 function dgDifficulty(did, k) {
   const team = E.team(S); if (!team.length) return { k: "risk", txt: "Aucun héros" };
-  const L = team.reduce((a, c) => a + c.lvl, 0) / team.length; const dg = DUNGEONS[did]; const eff = k >= 4 ? L : dg.lvl;
+  const L = team.reduce((a, c) => a + c.lvl, 0) / team.length; const dg = DUNGEONS[did];
   const SI = (S.stasis || {})[did] || { max: 0 };
-  let sc = (eff - L) / 8 + (k - 1) * 0.18 - (team.length - 1) * 0.25 + (SI.max >= k ? -0.6 : 0) + (k >= 4 ? 0.4 : 0);
-  return sc < 0 ? { k: "easy", txt: "Facile" } : sc < 0.8 ? { k: "mid", txt: "Équilibré" } : { k: "risk", txt: "Risqué" };
+  /* puissance d'équipement moyenne (stat principale + vitalité/3 apportées par le stuff et les parchemins) */
+  const g = team.reduce((a, c) => { const st = E.charStats(S, c, { solo: false }); const m = CLASSES[c.cls].main;
+    return a + Math.max(0, st[m] - (c.alloc[m] || 0)) + Math.max(0, st.vit - (c.alloc.vit || 0)) / 3; }, 0) / team.length / 2;
+  const cap = 3.5 + g / (50 * (0.7 + L / 200)) + (team.length - 4) * 0.4;
+  let sc = k - cap + (SI.max >= k ? -0.4 : 0) + (k < 4 ? Math.max(0, dg.lvl - L) / 8 : 0);
+  return sc < -1 ? { k: "easy", txt: "Facile" } : sc < 0.3 ? { k: "mid", txt: "Équilibré" } : { k: "risk", txt: k >= 5 && g < 40 ? "Risqué · équipement requis" : "Risqué" };
 }
 function dungeonCard(did) {
   const dg = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did); const ks = dgKeyState(did); const SI = (S.stasis || {})[did] || { max: 0, sel: 1 };
@@ -809,10 +820,11 @@ function charStatsView(c, st) {
   const sc = c.scrolls || {};
   const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3 points = 1" : k === "vit" ? "1 point = 1" : `${cost} point${cost > 1 ? "s" : ""} = 1${cur >= 100 ? ` (palier ${Math.floor(cur / 100) * 100})` : ""}`; };
   const scrollsOwned = (k) => (S.cons["parch_" + k + "_p"] || 0) + (S.cons["parch_" + k + "_g"] || 0);
+  const dust = S.res[E.POUSSIERE] || 0;
   return `<div class="grid2">
     <div class="panel"><div class="phead"><h2>Points à répartir</h2><b class="num" style="font-size:20px">${c.pts}</b></div>
       <div class="list">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${costTxt(k)}</span>
-          <div class="scrollbar" title="Parchemins"><i style="width:${(sc[k] || 0)}%"></i></div><span class="xs muted">📜 ${sc[k] || 0}/${E.SCROLL_MAX}${scrollsOwned(k) ? ` · <a href="#" data-act="usescroll" data-k="${k}">${scrollsOwned(k)} à utiliser</a>` : ""}</span></span>
+          <div class="scrollbar" title="Parchemins"><i style="width:${(sc[k] || 0)}%"></i></div><span class="xs muted">📜 ${sc[k] || 0}/${E.SCROLL_MAX}${scrollsOwned(k) ? ` · <a href="#" data-act="usescroll" data-k="${k}">${scrollsOwned(k)} à utiliser</a>` : ""}${dust && E.scrollRoom(c, k) > 0 ? (() => { const cc = E.scrollCraftCost(S, k); return ` · <a href="#" data-act="craftscroll" data-k="${k}" title="Fabriquer un Petit parchemin (+1) avec de la poussière de stasis">Fabriquer (${cc.dust} ✨ · ${fmt(cc.kamas)} k)</a>`; })() : ""}</span></span>
           <span class="num" style="min-width:58px;text-align:right">${fmt(c.alloc[k])}${sc[k] ? `<span class="xs" style="color:var(--gold2)"> +${sc[k]}</span>` : ""}</span>
           <button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""}>+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""}>+10</button></div>`).join("")}</div>
       <div class="pad stack" style="padding-top:6px">
@@ -1534,6 +1546,7 @@ document.addEventListener("click", (ev) => {
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
     case "resetpts": E.resetPoints(S, +d.id); toast("Points réinitialisés" + (char(+d.id).autoStat ? " et redistribués." : ".")); break;
+    case "craftscroll": { ev.preventDefault(); const r = E.craftScroll(S, d.k); if (r) { toast(r); return; } toast(`Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le avec le lien « à utiliser ».`); break; }
     case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
       for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }
