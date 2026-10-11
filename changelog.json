@@ -1,6 +1,14 @@
 {
-  "version": "3.2.2",
+  "version": "3.2.3",
   "versions": [
+    {
+      "v": "3.2.3",
+      "name": "Répartition au choix",
+      "items": [
+        "Répartition des points : choisissez Automatique ou Manuelle pour chaque héros (onglet Caractéristiques). En manuel, des boutons −1 et −10 rendent les points sans frais, et une pastille rouge sur l'onglet signale les points qui restent à placer",
+        "Passer en manuel garde les points déjà placés ; revenir en automatique retrouve la caractéristique choisie avant"
+      ]
+    },
     {
       "v": "3.2.2",
       "name": "Confort",
