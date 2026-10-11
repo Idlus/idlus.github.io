@@ -40,6 +40,15 @@ ZONES = [
      'subs': [(95, 'ast_cite', 'city'), (99, 'ast_souterrains', 'cave'), (173, 'ast_prairies', 'meadow'), (98, 'ast_champs', 'wheat'),
               (335, 'ast_calanques', 'beach'), (30, 'ast_tainela', 'meadow'), (97, 'ast_foret', 'forest'), (96, 'ast_carrieres', 'quarry'),
               (100, 'ast_egouts', 'sewer'), (102, 'ast_cimetiere', 'grave'), (843, 'ast_planque', 'cave')]},
+    {'id': 'amakna', 'name': 'Amakna', 'desc': 'Le royaume du Roi Allister : campagnes, forêts, cimetière et montagne des Craqueleurs.', 'theme': 'meadow',
+     'subs': [(485, 'ama_campagne', 'meadow', 14, 22), (4, 'ama_foret', 'forest', 14, 40), (5, 'ama_bouftous', 'meadow', 20, 32),
+              (179, 'ama_boos', 'grave', 20, 32), (3, 'ama_ingalsse', 'wheat', 30, 42), (6, 'ama_cimetiere', 'grave', 24, 44),
+              (276, 'ama_gobelins', 'quarry', 30, 42), (170, 'ama_scarafeuilles', 'meadow', 32, 44), (22, 'ama_foret_malefique', 'forest', 33, 45),
+              (8, 'ama_bworks', 'quarry', 30, 52), (2, 'ama_craqueleurs', 'quarry', 40, 52), (181, 'ama_cloaque', 'sewer', 50, 62),
+              (12, 'ama_gelees', 'beach', 52, 64), (243, 'ama_pitons', 'quarry', 57, 72)]},
+    {'id': 'cania', 'name': 'Plaines de Cania', 'desc': 'Vastes plaines, lacs de Blops et robots du Massif.', 'theme': 'wheat',
+     'subs': [(334, 'can_baie', 'beach', 33, 48), (178, 'can_porkass', 'meadow', 38, 52), (56, 'can_lac', 'lake', 50, 62),
+              (68, 'can_champs', 'wheat', 49, 66), (54, 'can_massif', 'quarry', 50, 66), (70, 'can_plaines', 'quarry', 57, 72)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
@@ -48,6 +57,12 @@ DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (336, 'chateau_ensable', 'ast_calanques'),
     (82, 'cour_bouftou_royal', 'ast_tainela'),
     (842, 'cache_kankreblath', 'ast_planque'),
+    (201, 'donjon_tofus', 'ama_ingalsse'),
+    (516, 'donjon_squelettes', 'ama_cimetiere'),
+    (297, 'donjon_scarafeuilles', 'ama_scarafeuilles'),
+    (284, 'donjon_bworks', 'ama_bworks'),
+    (755, 'nid_kwakwa', 'ama_craqueleurs'),
+    (493, 'clos_blops', 'can_lac'),
 ]
 EXCLUDE_NAMES = ("d'Halouine", 'Ballotin')
 EXCLUDE_RACES = {32, 147, 250}  # avis de recherche, poutchs
@@ -70,7 +85,7 @@ GATHER = {  # métier -> [(nom, niveau requis)]
     'pecheur': [('Greuvette', 1), ('Truite', 10), ('Crabe Sourimi', 20), ('Poisson-Chaton', 40)],
 }
 BREEDS = {'feca': 1, 'osa': 2, 'enu': 3, 'sram': 4, 'xelor': 5, 'eca': 6, 'eni': 7, 'iop': 8, 'cra': 9, 'sadi': 10, 'sacri': 11, 'panda': 12, 'roub': 13, 'zobal': 14, 'steam': 15, 'elio': 16, 'hupper': 17, 'ougi': 18, 'forge': 20}
-MAX_CRAFT_LVL = 45
+MAX_CRAFT_LVL = 72
 
 # ------------------------------------------------------------------ load
 log('Chargement…')
@@ -88,7 +103,7 @@ for i in sorted(items.values(), key=lambda x: x['id']):
 
 def fr(o): return o['name']['fr'] if isinstance(o.get('name'), dict) else str(o.get('name'))
 
-images = {'m': {}, 'i': {}, 's': {}, 'h': {}, 'c': {}}  # dossier -> {fichier: url}
+images = {'m': {}, 'i': {}, 's': {}, 'h': {}, 'c': {}, 'j': {}}  # dossier -> {fichier: url}
 
 # ------------------------------------------------------------------ resources registry
 RES = {}  # nom -> {id, icon, lvl, price, type}
@@ -153,7 +168,9 @@ def mkey(m): return f"m{m['id']}"
 zones_out = []
 for z in ZONES:
     subs = []
-    for sid, gid, deco in z['subs']:
+    for tup in z['subs']:
+        sid, gid, deco = tup[:3]
+        win = tup[3:] if len(tup) > 3 else None
         s = subareas[sid]
         mons, archis = [], []
         for mid in s['monsters']:
@@ -162,6 +179,7 @@ for z in ZONES:
                 continue
             if m['race'] == ARCHI_RACE: continue
             if m.get('isBoss'): continue
+            if win and not (win[0] <= grade(m, 0)['level'] <= win[1]): continue
             GAME_M[mkey(m)] = monster_entry(m)
             mons.append(mkey(m))
             a = monsters.get(m.get('correspondingMiniBossId') or 0)
@@ -189,6 +207,7 @@ for dsub, gid, access in DUNGEONS:
     for mid in d.get('monsters', []):
         m = monsters.get(mid)
         if not m or mid in d['bosses']: continue
+        if grade(m, 0)['level'] > grade(boss, 4)['level'] + 4 or m['race'] == ARCHI_RACE or m.get('isBoss'): continue
         k = mkey(m)
         if k not in GAME_M: GAME_M[k] = monster_entry(m)
         pool.append(k)
@@ -197,7 +216,7 @@ for dsub, gid, access in DUNGEONS:
     keyname = fr(key)
     RES.setdefault(keyname, {'id': key['id'], 'icon': key['iconId'], 'lvl': key['level'], 'price': max(1, key.get('price') or 1), 'type': 84})
     images['i'][f"{key['iconId']}.png"] = key.get('img') or f"https://api.dofusdb.fr/img/items/{key['iconId']}.png"
-    nrooms = 3 if lvl <= 20 else 4
+    nrooms = 3 if lvl <= 20 else 4 if lvl <= 45 else 5
     base = min(GAME_M[k]['lvl'][0] for k in pool)
     rooms = []
     for r in range(nrooms):
@@ -209,15 +228,35 @@ for dsub, gid, access in DUNGEONS:
             if s['id'] == access: s['dungeon'] = gid
     log(f"Donjon {fr(d)}: boss {fr(boss)} niv {lvl}, clé {keyname}, salles {len(rooms)}")
 
-# ------------------------------------------------------------------ gather
-gather_out = {}
-for job, lst in GATHER.items():
-    arr = []
-    for name, lv in lst:
-        it = item_by_name.get(name)
-        if not it: log('!! ressource de récolte introuvable', name); continue
-        reg_res(it); arr.append([name, lv])
-    gather_out[job] = arr
+# ------------------------------------------------------------------ gather (métiers de récolte, depuis les compétences DofusDB)
+GJOB = {28: 'paysan', 2: 'bucheron', 24: 'mineur', 26: 'alchimiste', 36: 'pecheur'}
+skills = load('skills')
+gather_out = {j: [] for j in GJOB.values()}
+HARVEST = {}
+sub_game = {}
+for z in zones_out:
+    for s_ in z['subs']: sub_game[s_['dbid']] = s_['id']
+seen_res = set()
+for sk in sorted(skills, key=lambda x: x.get('levelMin', 0)):
+    j = GJOB.get(sk.get('parentJobId')); rid = sk.get('gatheredRessourceItem') or -1
+    if not j or rid <= 0 or sk.get('levelMin', 1) > 100: continue
+    it = items.get(rid)
+    if not it: continue
+    n = reg_res(it)
+    if (j, n) not in seen_res:
+        seen_res.add((j, n)); gather_out[j].append([n, sk.get('levelMin', 1)])
+    for sub, cnt in it.get('resourcesBySubarea') or []:
+        g = sub_game.get(sub)
+        if g: HARVEST.setdefault(g, []).append([n, j, sk.get('levelMin', 1), cnt])
+for g in HARVEST: HARVEST[g].sort(key=lambda x: (x[2], x[1]))
+log('Récolte :', {j: len(v) for j, v in gather_out.items()}, '| sous-zones avec ressources :', len(HARVEST))
+JOBS_ALL = {**GJOB, 11: 'forgeron', 13: 'sculpteur', 15: 'cordonnier', 16: 'bijoutier', 27: 'tailleur', 60: 'faconneur', 65: 'bricoleur'}
+for jj in load('jobs'):
+    if jj['id'] in JOBS_ALL and jj.get('img'):
+        images['j'][f"{JOBS_ALL[jj['id']]}.png"] = jj['img'].replace('.jpg', '.png')
+for bid_ in (24049, 24076):
+    it = items.get(1920 if bid_ == 24049 else 2308)
+    images['i'][f"{bid_}.png"] = f"https://api.dofusdb.fr/img/items/{bid_}.png"
 
 # ------------------------------------------------------------------ availability & crafts
 available = set(RES.keys())
@@ -364,6 +403,7 @@ for cls, bid in BREEDS.items():
         fn = f"{cls}_{g[0]}.png"; images['h'][fn] = url
     HEADS[cls] = {'m': f"{cls}_m.png", 'f': f"{cls}_f.png"}
     images['h'][f"{cls}_logo.png"] = b.get('imgTransparent')
+    images['h'][f"{cls}_sym.png"] = b.get('img')
 RACES = {str(m['race']): races.get(m['race'], '') for m in GAME_M.values()}
 STAT_ICONS = {'vit': 'tx_vitality', 'sa': 'tx_wisdom', 'fo': 'tx_strength', 'ine': 'tx_intelligence', 'cha': 'tx_chance', 'age': 'tx_agility',
               'pui': 'tx_damagesPercent', 'do': 'tx_damage', 'cri': 'tx_crit', 'so': 'tx_heal', 'pp': 'tx_prospecting', 'ini': 'tx_initiative',
@@ -373,7 +413,7 @@ images['c'] = {f"{k}.png": f"https://dofusdb.fr/icons/characteristics/{v}.png" f
 # ------------------------------------------------------------------ write
 os.makedirs(os.path.join(OUT, 'js'), exist_ok=True)
 GD = {'MONSTERS': GAME_M, 'ZONES': zones_out, 'DUNGEONS': dg_out, 'ITEMS': ITEMS, 'SETS': SETS, 'SPECIAL_CRAFTS': SPECIAL,
-      'GATHER_JOBS': gather_out, 'RES': RES, 'SPELL_IMG': SPELL_IMG, 'HEADS': HEADS, 'RACES': RACES,
+      'GATHER_JOBS': gather_out, 'HARVEST': HARVEST, 'RES': RES, 'SPELL_IMG': SPELL_IMG, 'HEADS': HEADS, 'RACES': RACES,
       'META': {'source': 'DofusDB (https://dofusdb.fr) — contenu © Ankama Games', 'built': time.strftime('%Y-%m-%d')}}
 js = ('/* Généré par tools/build_data.py — ne pas modifier à la main. Données DOFUS via DofusDB, © Ankama Games. */\n'
       '(function (root) {\n  const GAMEDATA = ' + json.dumps(GD, ensure_ascii=False, separators=(',', ':')) + ';\n'

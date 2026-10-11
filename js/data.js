@@ -163,7 +163,10 @@
     if (!m.items) m.items = [];
   }
   const ZONES = G.ZONES, DUNGEONS = G.DUNGEONS, ITEMS = G.ITEMS, SETS = G.SETS, SPECIAL_CRAFTS = G.SPECIAL_CRAFTS;
-  const RES = G.RES, SPELL_IMG = G.SPELL_IMG, HEADS = G.HEADS, RACES = G.RACES || {};
+  const RES = G.RES, SPELL_IMG = G.SPELL_IMG, HEADS = G.HEADS, RACES = G.RACES || {}, HARVEST = G.HARVEST || {};
+
+  /* nombre de pièces par panoplie */
+  for (const k in ITEMS) { const sid = ITEMS[k].set; if (sid && SETS[sid]) SETS[sid].size = (SETS[sid].size || 0) + 1; }
 
   /* ---------- Trophées de sous-zone (paliers de chasse) ---------- */
   ZONES.forEach((z) => z.subs.forEach((s) => {
@@ -231,7 +234,7 @@
   };
 
   const DATA = { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
-                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, STAT_HELP, META: G.META };
+                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;
 })(typeof window !== "undefined" ? window : globalThis);

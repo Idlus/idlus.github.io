@@ -11,7 +11,10 @@
           MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const E = {};
-  E.VERSION = 3;
+  E.VERSION = 4;
+  /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
+  E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
+  E.emit = () => {};          // E.emit(S, type, data)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
@@ -64,7 +67,7 @@
       progress: { wins: {}, bossKills: {} },
       history: [], zoneStats: {}, seenDrops: {}, radiants: 0,
       cons: {}, boosts: {}, trophies: {}, families: {}, huntSeen: {},
-      jobs: {}, crafts: {}, coef: {},
+      jobs: {}, crafts: {}, coef: {}, tools: {}, finds: 0,
       emblem: { lvl: 1, xp: 0, stats: {}, perks: {} },
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
@@ -72,7 +75,7 @@
       journal: [],
       dungeon: null,
     };
-    Object.keys(GATHER_JOBS).forEach((j) => (S.jobs[j] = { lvl: 1, xp: 0, target: GATHER_JOBS[j].items[0][0], prog: 0 }));
+    Object.keys(GATHER_JOBS).forEach((j) => (S.jobs[j] = { lvl: 1, xp: 0 }));
     Object.keys(CRAFT_JOBS).forEach((j) => (S.crafts[j] = { lvl: 1, xp: 0 }));
     E.addChar(S, cls || "iop", name || "Aventurier", 1);
     note(S, `${S.chars[0].name} arrive sur Incarnam.`, "info");
@@ -92,7 +95,7 @@
     return c;
   };
 
-  E.team = (S) => S.chars.filter((c) => c.inTeam).slice(0, 8);
+  E.team = (S) => S.chars.filter((c) => c.inTeam && !c.job).slice(0, 8);
   E.freeSpirit = (S) => FREE_SPIRIT[Math.max(1, E.team(S).length)] || 0;
   E.isSolo = (S) => E.team(S).length === 1;
   /* Passifs de classe */
@@ -140,7 +143,7 @@
       if (S.trophies[sub.id]) return;
       if (sub.monsters.every((k) => E.huntTier(S, k) >= 1)) {
         S.trophies[sub.id] = 1;
-        if (E.itemCount(S) < E.ITEM_CAP) { E.rollItem(S, "trophee_" + sub.id, { radiant: false }); note(S, `Trophée obtenu : ${sub.name} !`, "rare"); }
+        if (E.itemCount(S) < E.itemCap(S)) { E.rollItem(S, "trophee_" + sub.id, { radiant: false }); note(S, `Trophée obtenu : ${sub.name} !`, "rare"); }
       }
     });
   };
@@ -252,6 +255,7 @@
   E.qualityTier = (q) => (q >= 0.999 ? "parfait" : q >= 0.8 ? "excellent" : q >= 0.5 ? "bon" : "commun");
   E.itemCount = (S) => Object.keys(S.items).length;
   E.ITEM_CAP = 300;
+  E.itemCap = (S) => E.ITEM_CAP + Math.round(E.bonus(S, "bag"));
   E.equippedBy = (S, uid) => S.chars.find((c) => Object.values(c.equip).includes(uid));
   E.slotFor = (c, it) => {
     const slot = ITEMS[it.tpl].slot;
@@ -273,14 +277,14 @@
       const o = slotOverride || E.slotFor(c, it); const otherSlot = o === "anneau1" ? "anneau2" : "anneau1";
       const ou = c.equip[otherSlot];
       if (ou && S.items[ou] && S.items[ou].tpl === it.tpl) return "Vous portez déjà cet anneau.";
-      c.equip[o] = uid; return null;
+      c.equip[o] = uid; E.emit(S, "equip", {}); return null;
     }
     if (T.slot === "dofus") {
       const o = slotOverride && slotOverride.startsWith("dofus") ? slotOverride : E.slotFor(c, it);
       if (DOFUS_SLOTS.some((s) => s !== o && c.equip[s] && S.items[c.equip[s]] && S.items[c.equip[s]].tpl === it.tpl)) return "Vous portez déjà ce trophée.";
       c.equip[o] = uid; return null;
     }
-    c.equip[slotOverride || T.slot] = uid; return null;
+    c.equip[slotOverride || T.slot] = uid; E.emit(S, "equip", {}); return null;
   };
   E.unequip = (S, cid, slot) => { const c = S.chars.find((x) => x.id === cid); if (c) delete c.equip[slot]; };
 
@@ -365,7 +369,7 @@
   const charEntity = (S, c) => {
     const st = E.charStats(S, c);
     const fs = E.freeSpirit(S);
-    const hpMax = Math.round(st.hpMax * (1 + fs / 200) * (E.teamHas(S, "osa") ? 1.05 : 1));
+    const hpMax = Math.round(st.hpMax * (1 + fs / 200) * (E.teamHas(S, "osa") ? 1.05 : 1) * (1 + E.bonus(S, "hp") / 100));
     return {
       side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax,
       ini: st.ini, buffs: [], dots: [], shield: 0, alive: true, cd: {}, weaken: 0,
@@ -386,7 +390,7 @@
   };
 
   E.startFight = (S) => {
-    const team = E.team(S);
+    const team = E.team(S); if (!team.length) return null;
     let mons, label;
     if (S.dungeon) {
       const dg = DUNGEONS[S.dungeon.id]; const r = S.dungeon.room;
@@ -494,13 +498,15 @@
     }
   };
 
-  const castSpell = (S, F, e, sp) => {
+  const castSpell = (S, F, e, sp, forced) => {
     const foes = alive(F, "m"); const allies = alive(F, "c");
+    const fFoe = forced && forced.alive && forced.side === "m" ? forced : null;
+    const fAlly = forced && forced.alive && forced.side === "c" ? forced : null;
     const lowest = (arr) => arr.slice().sort((a, b) => a.hp - b.hp)[0];
     const lowestPct = (arr) => arr.slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0];
     switch (sp.type) {
       case "dmg": case "drain": case "poison": {
-        const t = lowest(foes); if (!t) return false;
+        const t = fFoe || lowest(foes); if (!t) return false;
         const { v, crit } = charDamage(S, F, e, sp, 1, t);
         if (sp.type === "poison") {
           t.dots.push({ v: v, turns: sp.turns, el: sp.el, src: e.name });
@@ -524,7 +530,7 @@
         return true;
       }
       case "heal": {
-        const t = lowestPct(allies); if (!t || t.hp >= t.hpMax) return false;
+        const t = fAlly || lowestPct(allies); if (!t || t.hp >= t.hpMax) return false;
         const h = doHeal(t, healAmount(e, sp), F);
         flog(F, `${e.name} · ${sp.name} → ${t.name} : +${h} PV`, "heal"); return true;
       }
@@ -547,9 +553,13 @@
     return false;
   };
 
-  const charTurn = (S, F, e) => {
+  /* Mode manuel : le joueur choisit sorts et cibles ; retour en automatique après 10 s sans action */
+  E.MANUAL_TIMEOUT = 10;
+  E.manualOn = (S) => !!(S.settings && S.settings.manual && S.manualLive);
+  const charTurn = (S, F, e, paStart) => {
     const c = S.chars.find((x) => x.id === e.cid); if (!c) return;
-    let pa = e.st.pa; let cast = 0;
+    if (paStart === undefined && E.manualOn(S)) { F.await = { ei: F.ents.indexOf(e), pa: e.st.pa, t: F.dur, n: 0, casts: {} }; return; }
+    let pa = paStart !== undefined ? paStart : e.st.pa; let cast = 0;
     for (const slot of c.spells) {
       const sp = E.spellDef(c.cls, slot.id); if (!sp || sp.lvl > c.lvl) continue;
       const casts = sp.casts || 1;
@@ -560,7 +570,7 @@
         if (castSpell(S, F, e, sp)) { pa -= sp.pa; cast++; if (sp.cd) e.cd[sp.id] = sp.cd + 1; F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), sp: sp.id }); } else break;
       }
     }
-    if (!cast) flog(F, `${e.name} passe son tour.`, "dim");
+    if (!cast && paStart === undefined) flog(F, `${e.name} passe son tour.`, "dim");
     e.lastCast = F.seq;
     if (c.cls === "xelor" && !e.replayed && cast && rnd() < 0.1 && alive(F, "m").length) {
       e.replayed = true; flog(F, `${e.name} distord le temps et rejoue !`, "buff");
@@ -605,7 +615,7 @@
     for (const r in RACE_MONS) if (RACE_MONS[r].some((k) => E.huntTier(S, k) >= 2)) F.expertRaces.add(+r);
     F.ents.filter((e) => e.side === "c").forEach((e) => {
       if (e.cls === "zobal") e.mask = pick(["atk", "def", "soin"]);
-      e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0);
+      e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0) + E.bonus(S, "dmg");
       e.resBonus = solo && pk[500] === "res" ? 8 : 0;
       e.regen = solo && pk[500] === "heal" ? 5 : 0;
     });
@@ -616,6 +626,12 @@
     let F = S.fight;
     if (!F || F.over) return;
     if (F.dmgInit !== true) { applyFightBonuses(S, F); F.dmgInit = true; }
+    if (F.await) {
+      if (E.manualOn(S) && F.dur - F.await.t <= E.MANUAL_TIMEOUT) return;
+      const A = F.await; F.await = null; const e = F.ents[A.ei];
+      if (e && e.alive) { F.seq++; if (!A.n) flog(F, `${e.name} joue en automatique.`, "dim"); charTurn(S, F, e, A.pa); }
+      return checkEnd(S);
+    }
     F.seq++; if (F.fx.length > 60) F.fx.splice(0, F.fx.length - 60);
     if (F.oi >= F.order.length) { F.round++; newRound(F); if (F.round > 60) return endFight(S, false, "Le combat s'éternise : retraite."); }
     const e = F.ents[F.order[F.oi++]];
@@ -630,11 +646,39 @@
     else if (!alive(F, "c").length) endFight(S, false);
   };
 
+  E.manualCanCast = (S, sp) => {
+    const F = S.fight; const A = F && F.await; if (!A) return false; const e = F.ents[A.ei];
+    return sp.pa <= A.pa && !((e.cd[sp.id] || 0) > 0) && (A.casts[sp.id] || 0) < (sp.casts || 1);
+  };
+  E.manualCast = (S, spellId, targetIdx) => {
+    const F = S.fight; const A = F && F.await; if (!A || F.over) return "Ce n'est pas votre tour.";
+    const e = F.ents[A.ei]; const c = S.chars.find((x) => x.id === e.cid);
+    if (!c || !c.spells.find((x) => x.id === spellId)) return "Sort non équipé.";
+    const sp = E.spellDef(c.cls, spellId); if (!sp) return "Sort inconnu.";
+    if (!E.manualCanCast(S, sp)) return sp.pa > A.pa ? "Pas assez de PA." : "Sort en recharge.";
+    const tgt = targetIdx !== undefined && targetIdx !== null ? F.ents[targetIdx] : null;
+    F.seq++;
+    if (!castSpell(S, F, e, sp, tgt)) return "Aucune cible valable.";
+    A.pa -= sp.pa; A.n++; A.casts[sp.id] = (A.casts[sp.id] || 0) + 1; A.t = F.dur;
+    if (sp.cd) e.cd[sp.id] = sp.cd + 1;
+    F.fx.push({ seq: F.seq, k: "cast", s: A.ei, sp: sp.id });
+    checkEnd(S);
+    if (F.over) { F.await = null; return null; }
+    const any = c.spells.some((x) => { const d = E.spellDef(c.cls, x.id); return d && d.lvl <= c.lvl && E.manualCanCast(S, d); });
+    if (!any) E.manualEnd(S);
+    return null;
+  };
+  E.manualEnd = (S) => {
+    const F = S.fight; const A = F && F.await; if (!A) return;
+    const e = F.ents[A.ei]; if (!A.n) flog(F, `${e.name} passe son tour.`, "dim");
+    F.await = null; e.lastCast = F.seq;
+  };
+
   /* ---------------- Récompenses ---------------- */
   E.teamProspection = (S) => E.team(S).reduce((s, c) => s + E.charStats(S, c).pp, 0);
   E.dropMult = (S) => {
     const solo = E.isSolo(S);
-    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (solo && S.emblem.perks[250] === "drop" ? 1.15 : 1);
+    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (solo && S.emblem.perks[250] === "drop" ? 1.15 : 1) * (1 + E.bonus(S, "drop") / 100);
   };
 
   const giveRewards = (S, mons, opts = {}) => {
@@ -644,7 +688,7 @@
     mons.forEach((m) => {
       let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1);
       xp += x;
-      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.2 : 1));
+      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.2 : 1) * (1 + E.bonus(S, "kamas") / 100));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); }
     });
@@ -655,7 +699,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1));
+      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + E.bonus(S, "xp") / 100));
       out.xp[c.id] = g;
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
@@ -676,7 +720,7 @@
         if (!ITEMS[tpl]) return;
         if (rnd() * 100 < Math.min(100, rate * E.ITEM_DROP_SCALE * dm)) {
           seen(m.key, tpl);
-          if (E.itemCount(S) >= E.ITEM_CAP) { note(S, `Sac plein : ${ITEMS[tpl].name} perdu.`, "warn"); return; }
+          if (E.itemCount(S) >= E.itemCap(S)) { note(S, `Sac plein : ${ITEMS[tpl].name} perdu.`, "warn"); return; }
           const it = E.rollItem(S, tpl, { archi: m.archi });
           const auto = E.applyAuto(S, it);
           if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
@@ -714,6 +758,7 @@
     if (up) {
       E.refreshSpells(c); E.autoAllocate(S, c);
       note(S, `${c.name} passe niveau ${c.lvl} !`, "up");
+      E.emit(S, "level", { cid: c.id, lvl: c.lvl });
       const nw = CLASSES[c.cls].spells.filter((s) => s.lvl === c.lvl);
       nw.forEach((s) => note(S, `${c.name} apprend ${s.name}.`, "up"));
     }
@@ -728,6 +773,7 @@
       const mons = F.ents.filter((e) => e.side === "m");
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon });
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
+      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null });
       if (!S.dungeon) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       const xpTot = Object.values(F.rewards.xp).reduce((a, b) => a + b, 0);
       flog(F, `Victoire ! +${xpTot} XP, +${F.rewards.kamas} kamas`, "win");
@@ -736,6 +782,7 @@
         const dg = DUNGEONS[S.dungeon.id];
         if (S.dungeon.room >= dg.rooms.length) {
           S.progress.bossKills[S.dungeon.id] = (S.progress.bossKills[S.dungeon.id] || 0) + 1;
+          E.emit(S, "dungeon", { id: S.dungeon.id });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
           S.dungeon = null;
           if (S.hunting && S.sub) E.applyZonePresets(S, S.sub);
@@ -805,23 +852,65 @@
     gatherTick(S, dtMs / 1000);
   };
 
-  /* ---------------- Récolte ---------------- */
-  E.gatherTime = (lvl) => 9 / (1 + lvl * 0.02);
+  /* ---------------- Récolte (v2.6) ----------------
+     Un héros fait une seule activité : chasser (dans l'équipe) OU récolter dans une sous-zone.
+     Les niveaux de métier sont communs au compte ; plusieurs héros peuvent exercer le même métier. */
+  const HARVEST = {};
+  for (const sid in D.HARVEST || {}) { const seen = new Set(); HARVEST[sid] = D.HARVEST[sid].filter((x) => { const k = x[0] + "|" + x[1]; if (seen.has(k)) return false; seen.add(k); return true; }); }
+  E.HARVEST = HARVEST;
+  E.harvestJobs = (sid) => [...new Set((HARVEST[sid] || []).map((x) => x[1]))];
+  E.harvestList = (sid, job) => (HARVEST[sid] || []).filter((x) => x[1] === job);
+  E.gatherTime = (lvl) => 8 / (1 + lvl * 0.025);
   E.gatherMult = (S, job) => ((job === "bucheron" || job === "alchimiste") && E.rosterHas(S, "sadi") ? 0.8 : 1) * (job === "pecheur" && E.rosterHas(S, "steam") ? 0.75 : 1);
-  const gatherTick = (S, dt) => {
-    for (const j in S.jobs) {
-      const J = S.jobs[j]; if (!J.target) continue;
-      const def = GATHER_JOBS[j].items.find((x) => x[0] === J.target); if (!def || def[1] > J.lvl) continue;
-      J.prog += dt; const t = E.gatherTime(J.lvl) * E.gatherMult(S, j);
+  E.TOOL_MAX = 10;
+  E.toolLvl = (S, job) => (S.tools && S.tools[job]) || 0;
+  E.toolCost = (S, job) => {
+    const l = E.toolLvl(S, job); const items = GATHER_JOBS[job].items; const r = items[Math.min(items.length - 1, Math.floor(l / 2))][0];
+    return { kamas: Math.round(250 * Math.pow(2, l)), res: r, qty: 15 + l * 10 };
+  };
+  E.upgradeTool = (S, job) => {
+    const l = E.toolLvl(S, job); if (l >= E.TOOL_MAX) return "Outil au niveau maximum.";
+    const c = E.toolCost(S, job);
+    if (S.kamas < c.kamas) return `Il faut ${c.kamas} kamas.`;
+    if ((S.res[c.res] || 0) < c.qty) return `Il faut ${c.qty} × ${c.res}.`;
+    S.kamas -= c.kamas; S.res[c.res] -= c.qty; if (!S.res[c.res]) delete S.res[c.res];
+    S.tools[job] = l + 1; note(S, `Outil de ${GATHER_JOBS[job].name} amélioré (niveau ${l + 1}).`, "up"); return null;
+  };
+  E.gatherSpeed = (S, job) => (1 + E.toolLvl(S, job) * 0.08) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job);
+  E.gatherPeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job) : 0; };
+  E.FIND_CHANCE = 0.01;
+  E.setJob = (S, cid, job, sid, res) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
+    if (S.dungeon && c.inTeam && !c.job) return "Impossible pendant un donjon.";
+    if (!job) { if (c.job) { c.job = null; S.fight = S.dungeon ? S.fight : null; note(S, `${c.name} revient chasser.`, "info"); } return null; }
+    if (!E.subUnlocked(S, sid)) return "Sous-zone verrouillée.";
+    const list = E.harvestList(sid, job); if (!list.length) return "Rien à récolter ici pour ce métier.";
+    const lvl = S.jobs[job].lvl;
+    const pickRes = res && list.find((x) => x[0] === res && x[2] <= lvl) ? res : (list.filter((x) => x[2] <= lvl).pop() || [])[0];
+    if (!pickRes) return `${GATHER_JOBS[job].name} niveau ${list[0][2]} requis ici.`;
+    const was = !!c.job; c.job = { job, sub: sid, res: pickRes, prog: 0 };
+    if (!was) S.fight = S.dungeon ? S.fight : null;
+    note(S, `${c.name} récolte : ${pickRes} (${SUBS[sid].name}).`, "info");
+    return null;
+  };
+  const gatherTick = (S, dt, opts = {}) => {
+    let total = 0;
+    S.chars.forEach((c) => {
+      const W = c.job; if (!W) return; const J = S.jobs[W.job]; if (!J) { c.job = null; return; }
+      const def = E.harvestList(W.sub, W.job).find((x) => x[0] === W.res); if (!def || def[2] > J.lvl) return;
+      W.prog += dt; const t = E.gatherPeriod(S, c);
       let n = 0;
-      while (J.prog >= t && n < 100000) {
-        J.prog -= t; n++;
-        let q = 1; if (rnd() < J.lvl / 250) q++;
-        addRes(S, J.target, q);
-        J.xp += 6 + def[1] * 0.6;
-        while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[j].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[j].name} niveau ${J.lvl}`, "up"); }
+      while (W.prog >= t && n < 200000) {
+        W.prog -= t; n++;
+        let q = 1; if (rnd() < J.lvl / 200) q++;
+        if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "rare"); }
+        addRes(S, W.res, q); total += q;
+        J.xp += 10 + def[2] * 1.0;
+        while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "up"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
       }
-    }
+      if (n) E.emit(S, "harvest", { res: W.res, n });
+    });
+    return total;
   };
   E.gatherTick = gatherTick;
 
@@ -833,10 +922,11 @@
     const J = S.crafts[T.craft.job];
     if (J.lvl < E.craftReq(tpl)) return `${CRAFT_JOBS[T.craft.job].name} niveau ${E.craftReq(tpl)} requis.`;
     if (!E.canCraft(S, T.craft)) return "Ressources insuffisantes.";
-    if (E.itemCount(S) >= E.ITEM_CAP) return "Sac plein.";
+    if (E.itemCount(S) >= E.itemCap(S)) return "Sac plein.";
     T.craft.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
     const it = E.rollItem(S, tpl);
     craftXp(S, T.craft.job, 12 + T.lvl * 3);
+    E.emit(S, "craft", { tpl });
     return it;
   };
   E.craftSpecial = (S, name) => {
@@ -848,6 +938,7 @@
     R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
     addRes(S, name, 1);
     craftXp(S, R.job, 20 + R.lvl * 3);
+    E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
     return null;
   };
@@ -972,16 +1063,16 @@
   E.OFFLINE_RATE = 0.25;
   E.OFFLINE_MAX_S = 8 * 3600;
   E.catchUp = (S, seconds) => {
-    seconds = Math.min(seconds, E.OFFLINE_MAX_S);
+    seconds = Math.min(seconds, E.OFFLINE_MAX_S + E.bonus(S, "offtime") * 3600);
     if (seconds < 60) return null;
-    const eff = seconds * E.OFFLINE_RATE;
+    const eff = seconds * (E.OFFLINE_RATE + E.bonus(S, "offrate") / 100);
     const rec = S.stats.recent;
     const avg = rec.length ? rec.reduce((s, r) => s + r.d, 0) / rec.length : 15;
     const winRate = rec.length ? rec.reduce((s, r) => s + r.w, 0) / rec.length : 0.5;
     const cycle = avg + E.PAUSE_MS / 1000;
     const fights = Math.min(5000, Math.floor(eff / cycle));
     const before = { kamas: S.kamas, res: Object.assign({}, S.res), lvls: S.chars.map((c) => c.lvl), items: E.itemCount(S) };
-    const hunting = S.hunting && S.sub && SUBS[S.sub];
+    const hunting = S.hunting && S.sub && SUBS[S.sub] && E.team(S).length;
     const evLen = E.events.length;
     let wins = 0;
     const wasDungeon = S.dungeon; S.dungeon = null;
@@ -995,11 +1086,12 @@
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
       giveRewards(S, g, { xpBoost });
+      E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
     }
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
-    gatherTick(S, eff);
+    gatherTick(S, eff, { quiet: true });
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }
@@ -1011,7 +1103,7 @@
   };
 
   /* ---------------- Sauvegarde ---------------- */
-  const TRANSIENT = ["fight", "acc", "pause"];
+  const TRANSIENT = ["fight", "acc", "pause", "manualLive"];
   E.serialize = (S) => {
     const o = {}; for (const k in S) if (!TRANSIENT.includes(k)) o[k] = S[k];
     return JSON.stringify(o);

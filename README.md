@@ -5,20 +5,22 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Jouer :** https://mathiss29.github.io/DofousXen/
 
-## Contenu (v2.5)
-- Incarnam et Astrub : 18 sous-zones, 79 monstres et leurs archimonstres, 5 donjons avec leurs vraies clés
-- 313 équipements réels (drops et crafts), 38 panoplies, 179 ressources, taux de drop de DOFUS
-- Objets Rayonnants (très rares, +10 à +50 % de stats), Emblème du Solitaire (niv. 1 à 1000), brisage et runes
-- Stratégies de sorts par zone, historique et rendement par zone, bestiaire
-- 19 classes (kits simplifiés aux vrais sorts de DOFUS 3) avec un passif unique chacune
-- Paliers de chasse, familles et trophées de sous-zone, consommables (Bonbon Sagesse)
-- Équipement façon DOFUS (bouclier, 6 emplacements Dofus/trophées), inventaire en grille avec règles automatiques, infobulles des stats
+## Contenu (v2.6 « Krosmoz »)
+- 4 zones : Incarnam, Astrub, Amakna et les Plaines de Cania — 38 sous-zones, monstres réels jusqu'au niveau ~70 et leurs archimonstres
+- 11 donjons avec leurs vrais boss et leurs clés (dont Tofus, Squelettes, Scarafeuilles, Bworks, Kwakwa, Blops)
+- 474 équipements réels, 72 panoplies (bonus affichés palier par palier), objets Rayonnants
+- 19 classes avec passif ; carte de héros avec 10 cadres (un tous les 20 niveaux) + cadre Krosmoz au niveau 200, ornements et titres
+- Combat automatique ou manuel (choix du sort et de la cible, retour en auto après 10 s), effets visuels par élément
+- Quête principale, avis de recherche, alignement Bonta / Brâkmar (ordres, rangs, missions), Almanax quotidien, 57 succès
+- Havre-Sac (améliorations permanentes en kamas), forgemagie (runes + kamas, exo-jets), brisage, Emblème du Solitaire
+- Métiers : un héros = une activité (chasse ou récolte dans une sous-zone), outils, trouvailles, vraie barre d'XP
+- Paliers de chasse, familles, trophées, consommables, progression hors ligne
 
 ## Structure
 - `index.html`, `css/`, `js/` : le jeu (sans dépendance, hébergé sur GitHub Pages)
 - `js/gamedata.js` : données générées depuis DofusDB (ne pas modifier à la main)
-- `js/data.js` : règles du jeu (classes, sorts, Emblème…) · `js/engine.js` : moteur · `js/ui.js` : interface
-- `assets/` : images (monstres `m/`, objets `i/`, sorts `s/`, héros `h/`)
+- `js/data.js` : règles du jeu (classes, sorts, Emblème…) · `js/engine.js` : moteur · `js/systems.js` : Havre-Sac, quêtes, alignement, forgemagie, succès · `js/ui.js` : interface
+- `assets/` : images (monstres `m/`, objets `i/`, sorts `s/`, héros `h/`, stats `c/`, métiers `j/`)
 - `tools/import_dofusdb.py` puis `tools/build_data.py` : import et génération des données
 
 ## Mentions

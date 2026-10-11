@@ -9,7 +9,7 @@ const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITION
 
 let S = null;
 const ui = {
-  tab: "home", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", ate: "recolte",
+  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "main", fmSel: null, manualSpell: null,
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 const LS_KEY = "dofousxen-save";
@@ -42,7 +42,50 @@ const sIco = (k) => (["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri"
 const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name.replace("% ", "") : "Points de vie") + " — " + STAT_HELP[k])}"` : "");
 const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k, v]) => `<span class="chip ${v < 0 ? "neg" : ""}" style="--c:var(--el-${k})" data-tip="Résistance ${ELEMENTS[k].name} : ${v} %">${v > 0 ? "+" : ""}${v}%</span>`).join("");
 
+/* ---------- carte de héros (v2.6) ---------- */
+const symImg = (cls) => `assets/h/${cls}_sym.png`;
+const EL_ICON = { t: "fo", f: "ine", e: "cha", a: "age", n: "vit" };
+function heroCard(c, size = "", opts = {}) {
+  const st = E.charStats(S, c); const el = E.domEl(st); const fi = E.frameIdx(c.lvl); const C = CLASSES[c.cls];
+  const rad = E.radiantWorn(S, c); const orn = c.orn && E.ornUnlocked(S, c.orn) ? c.orn : null;
+  const need = E.xpNeed(c.lvl);
+  const stats3 = size === "big" ? [["vit", st.hpMax], [D.CLASSES[c.cls].main, st[D.CLASSES[c.cls].main]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [D.CLASSES[c.cls].main, st[D.CLASSES[c.cls].main]], ["pa", st.pa]];
+  let ornHtml = "", ornCls = "";
+  if (orn === "ailes" && S.align) { const r = E.alignRankIdx(S); ornCls = `o-ailes side-${S.align.side}`; const w = wingSVG(S.align.side); ornHtml = `<img class="orn badge" src="assets/i/${E.ALIGN[S.align.side].badge}.png" alt="">${w.replace('class="orn wing"', 'class="orn wing l"')}${w.replace('class="orn wing"', 'class="orn wing r"')}`; opts.ws = (0.7 + r * 0.12).toFixed(2); }
+  else if (orn === "couronne") ornHtml = `<span class="orn crown">👑</span>`;
+  else if (orn === "lauriers") ornHtml = `<span class="orn laurel l">🌿</span><span class="orn laurel r">🌿</span>`;
+  if (orn && orn !== "ailes") ornCls = "o-" + orn;
+  const job = c.job ? `<span class="jobtag">⛏ ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
+  return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}`)}">
+    ${ornHtml}<div class="in"><div class="art">${im(logoImg(c.cls), "wm")}${im(symImg(c.cls), "sym", C.name)}<span class="hd">${headTag(c.cls, c.sex, c.name)}</span><span class="lv">${c.lvl}</span><span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
+    <div class="nm"><b>${h(c.name)}</b><span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}</div>
+    <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
+    <div class="st3">${stats3.map(([k, v]) => `<span>${sIco(k)}${typeof v === "number" ? fmt(v) : v}</span>`).join("")}</div></div><span class="tier">${E.FRAMES[fi]}</span></button>`;
+}
+/* ailes d'alignement (dessin générique : plumes claires / membranes sombres) */
+function wingSVG(side) {
+  if (side === "bonta") {
+    const F = [[38, 52], [16, 58], [-6, 54], [-28, 46], [-48, 36]];
+    return `<svg class="orn wing" viewBox="0 0 64 100" aria-hidden="true"><defs><linearGradient id="wgb" x1="0" x2="1"><stop offset="0" stop-color="#7fb2ff"/><stop offset=".55" stop-color="#e8f2ff"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>
+      <g fill="url(#wgb)" stroke="#4f8fe0" stroke-width="1.2">${F.map(([a, l]) => `<ellipse cx="${60 - l / 2}" cy="20" rx="${l / 2}" ry="7.5" transform="rotate(${a} 60 20)"/>`).join("")}</g><circle cx="58" cy="20" r="6" fill="#ffe08a" stroke="#c9962e"/></svg>`;
+  }
+  return `<svg class="orn wing" viewBox="0 0 64 100" aria-hidden="true"><defs><linearGradient id="wgr" x1="0" x2="1"><stop offset="0" stop-color="#3a0a0a"/><stop offset=".6" stop-color="#b3261e"/><stop offset="1" stop-color="#ff7a4a"/></linearGradient></defs>
+    <path d="M60 20 L4 2 Q14 28 6 44 Q18 40 20 60 Q30 52 36 72 Q42 56 58 56 Z" fill="url(#wgr)" stroke="#1a0505" stroke-width="1.5"/>
+    <path d="M60 20 L10 10 M60 20 L14 42 M60 20 L26 58 M60 20 L40 66" stroke="#1a0505" stroke-width="1.3" opacity=".7"/><circle cx="58" cy="20" r="6" fill="#ff9a4a" stroke="#5a1010"/></svg>`;
+}
+function fsGauge() {
+  const team = E.team(S); const fs = E.freeSpirit(S); const solo = team.length === 1;
+  const sub = solo ? `Emblème du Solitaire actif (niv. ${S.emblem.lvl})` : team.length ? `${team.length} héros · ${8 - team.length} place${8 - team.length > 1 ? "s" : ""} libre${8 - team.length > 1 ? "s" : ""}` : "aucun héros ne chasse";
+  return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %.">
+    <span class="flame"><i></i></span><span class="txt"><b>${solo ? "Solitaire" : "Esprit Libre"} +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
+}
+function questAlert() { return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); }
+const jobImg = (j) => `assets/j/${j}.png`;
+
 const ICONS = {
+  metiers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-3 3-6-6 3-3z"/><path d="M11 7L3 15l3 3 8-8"/><path d="M6 21c0-2 2-3 4-3"/></svg>',
+  forge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 9h12a4 4 0 0 1-4 4H9l-1 4h8v3H6v-3l1-4H6a2 2 0 0 1-2-2V9z"/><path d="M16 9l4-2"/><path d="M18 3l1 2M21 4l-2 1"/></svg>',
+  quests: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 3h11v15a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-2h11v2a3 3 0 0 0 3 3"/><path d="M7 3a3 3 0 0 0-3 3v1h3"/><path d="M10 8h5M10 12h5"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
   world: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg>',
   combat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20 14 10M14 4l6 6-3 1-3-3-1-3zM5 15l4 4M3 21l2-2"/></svg>',
@@ -50,7 +93,7 @@ const ICONS = {
   inv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
   ateliers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 21l8-8M14 4l6 6-4 4-6-6 4-4z"/><path d="M4 9h5M6.5 6.5v5"/></svg>',
 };
-const TABS = [["home", "Accueil"], ["world", "Monde"], ["combat", "Combat"], ["heroes", "Héros"], ["inv", "Inventaire"], ["ateliers", "Ateliers"]];
+const TABS = [["home", "Accueil", "Accueil"], ["world", "Monde", "Monde"], ["combat", "Combat", "Combat"], ["heroes", "Héros", "Héros"], ["inv", "Inventaire", "Sac"], ["metiers", "Métiers", "Métiers"], ["forge", "Forgemagie", "Forge"], ["quests", "Quêtes", "Quêtes"]];
 
 /* ---------- décors de scène (SVG déterministe) ---------- */
 const DECOS = {
@@ -69,7 +112,7 @@ const DECOS = {
   sewer:  { day: { sky: ["#5d6b55", "#93a283"], far: "#4a5643", near: "#3a4434", d: "pipes" }, night: { sky: ["#11160f", "#273022"], far: "#1f281b", near: "#161d13", d: "pipes" } },
   dungeon:{ day: { sky: ["#6e2420", "#c0592f"], far: "#4a2a24", near: "#33201c", d: "pillars" }, night: { sky: ["#1e0b0d", "#4a1715"], far: "#2a1513", near: "#1a0d0c", d: "pillars" } },
 };
-const isDark = () => document.documentElement.dataset.theme === "dark";
+const isDark = () => true; // thème unique « Krosmoz doré »
 const seeded = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return () => { x += 0x6D2B79F5; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 let svgId = 0;
 function sceneSVG(deco, H, seed) {
@@ -114,7 +157,8 @@ function subItems(sub) {
 
 /* ---------- navigation & bandeau ---------- */
 function renderNav() {
-  $("#nav").innerHTML = S ? TABS.map(([id, n]) => `<button data-tab="${id}" ${ui.tab === id ? 'aria-current="page"' : ""}>${ICONS[id]}<span>${n}</span></button>`).join("") : "";
+  const badge = (id) => (id === "quests" && S && questAlert() ? '<span class="navdot"></span>' : "");
+  $("#nav").innerHTML = S ? TABS.map(([id, n, sh]) => `<button data-tab="${id}" ${ui.tab === id ? 'aria-current="page"' : ""}>${ICONS[id] || ICONS.ateliers}<span class="lbl-l">${n}</span><span class="lbl-s">${sh}</span>${badge(id)}</button>`).join("") : "";
 }
 function statusHtml() {
   if (!S) return "";
@@ -124,11 +168,11 @@ function statusHtml() {
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home">DofousXen</button>
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
-    <span class="it"><span class="dot ${S.hunting || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
+    <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it">📍 <span>${h(where)}</span></span>
     ${xpb ? `<span class="it boostchip" data-tip="Bonbon Sagesse : +${xpb} % d'expérience">🍬 +${xpb} % XP · <span id="stBoost">${dur(E.boostLeft(S, "xp"))}</span></span>` : ""}
+    ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">📅 Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">⚔ <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
-    <button class="ic-btn" data-act="theme" title="Jour / Nuit" aria-label="Changer de thème">${isDark() ? "☀" : "☾"}</button>
     <button class="ic-btn" data-act="options" title="Options" aria-label="Options">⚙</button>`;
 }
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; }
@@ -176,10 +220,13 @@ function renderHome() {
   const team = E.team(S); const main = team[0] || S.chars[0];
   const deco = S.dungeon ? "dungeon" : S.sub ? subDeco(S.sub) : "sky";
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
-    : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b>` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
+    : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b>` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
   const zkey = S.dungeon ? null : S.sub; const rate = zkey ? E.zoneRate(S, zkey) : null;
   const archis = Object.values(S.archis).reduce((a, b) => a + b, 0);
-  $("#main").innerHTML = `
+  const tabs = `<nav class="subtabs">${[["apercu", "Aperçu"], ["havre", "Havre-Sac"]].map(([id, n]) => `<button data-act="hometab" data-v="${id}" aria-pressed="${ui.home === id}">${n}</button>`).join("")}</nav>`;
+  if (ui.home === "havre") { $("#main").innerHTML = tabs + havreHtml(); return; }
+  const q = E.questStep(S); const qp = E.questProgress(S); const A = E.almanax(S);
+  $("#main").innerHTML = tabs + `
   <section class="hero-banner">
     <div class="scene">${sceneSVG(deco, 220, "home" + (S.sub || ""))}<div class="troupe" style="justify-content:flex-end;padding-right:5%">${team.map((c) => `<span class="ent hero" style="width:clamp(54px,10vw,80px)"><span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span></span>`).join("")}</div></div>
     <div class="inner">
@@ -187,22 +234,36 @@ function renderHome() {
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">⚔ Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">🗺 Choisir une zone</button>`}</div>
     </div>
   </section>
+  <section class="panel" style="margin-top:14px"><div class="phead"><h2>Vos héros</h2>${fsGauge()}</div><div class="cardrow" style="padding-left:14px">${S.chars.map((c) => heroCard(c, "sm")).join("")}</div></section>
+  <section class="grid2" style="margin-top:14px">
+    <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
+      ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
+      <div class="small">📜 Avis de recherche : ${(S.bounties || []).map((b) => `<span class="tag soft">${h(MONSTERS[b.key].name)} ${b.prog}/${b.n}</span>`).join(" ") || "aucun"}</div>
+      <div class="small">📅 Almanax : ${A.done ? `<span class="tag good">offrande faite · ${h(A.bonus.name)}</span>` : `${A.qty} × ${h(A.res)} → ${h(A.bonus.name)} <button class="btn sm" data-act="goquest" data-v="almanax">Offrir</button>`}</div></div></div>
+    <div class="panel"><div class="phead"><h2>Rendement${zkey ? " · " + h(E.SUBS[zkey].name) : ""}</h2></div><div class="pad">${rateHtml(rate)}</div></div>
+  </section>
   <section class="kpis" style="margin:14px 0">
     <div class="kpi"><b class="num">${Math.max(...S.chars.map((c) => c.lvl))}</b><span>niveau max</span></div>
     <div class="kpi"><b class="num">${fmt(S.stats.wins)}</b><span>victoires</span></div>
-    <div class="kpi"><b class="num">${E.freeSpirit(S)} %</b><span>Esprit Libre (${team.length} héros)</span></div>
     <div class="kpi"><b class="num" style="color:var(--archi)">${archis}</b><span>archimonstres vaincus</span></div>
     <div class="kpi"><b class="num" style="color:var(--gold)">${S.radiants || 0}</b><span>objets rayonnants</span></div>
-    <div class="kpi"><b class="num">${Object.keys(S.trophies || {}).length}</b><span>trophées · ${Object.keys(S.families || {}).length} familles</span></div>
+    <div class="kpi"><b class="num">${Object.keys(S.ach || {}).length}/${E.ACH.length}</b><span>succès</span></div>
+    <div class="kpi"><b class="num">${E.havreTotal(S)}</b><span>améliorations du Havre-Sac</span></div>
   </section>
   <section class="grid2">
-    <div class="panel"><div class="phead"><h2>Rendement${zkey ? " · " + h(E.SUBS[zkey].name) : ""}</h2></div><div class="pad">${rateHtml(rate)}</div></div>
     <div class="panel"><div class="phead"><h2>Consommables</h2></div><div class="pad">${consHtml()}</div></div>
+    <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad">${historyHtml(6)}</div></div>
   </section>
-  <section class="grid2" style="margin-top:14px">
-    <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad">${historyHtml(8)}</div></div>
-    <div class="panel"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 10).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></div>
-  </section>`;
+  <section class="panel" style="margin-top:14px"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 10).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></section>`;
+}
+function havreHtml() {
+  return `<section class="panel"><div class="phead"><h2>🏠 Havre-Sac</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
+    <div class="pad stack"><p class="note">Votre refuge personnel. Chaque amélioration est permanente et s'applique à toute l'équipe ; son prix augmente à chaque niveau.</p>
+    <div class="hvgrid">${E.HAVRE.map((H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S, H.id); const max = l >= H.max;
+      return `<div class="hv"><div class="top"><span class="em">${H.icon}</span><div class="grow"><b>${h(H.name)}</b><div class="xs muted">+${H.per}${h(H.unit)} par niveau</div></div><span class="lvlpill">${l}/${H.max}</span></div>
+        <div class="small">Actuel : <b class="plus">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</b></div>
+        <div class="pipsbar">${Array.from({ length: Math.min(H.max, 50) }, (_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</div>
+        <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; }).join("")}</div></div></section>`;
 }
 function rateHtml(rate) {
   if (!rate) return `<p class="note">Les statistiques apparaissent après quelques combats dans une zone : XP, kamas et ressources par heure, pour comparer les zones.</p>`;
@@ -236,10 +297,12 @@ function lockReason(sid) {
   if (s.requiresItem) return `Il faut : ${s.requiresItem} (Bricoleur)`;
   return "";
 }
+function topTeamLvl() { const t = E.team(S); return Math.max(...(t.length ? t : S.chars).map((c) => c.lvl)); }
 function lvlHint(s) {
-  const top = Math.max(...E.team(S).map((c) => c.lvl));
+  const top = topTeamLvl();
   const cls = top < s.lvl[0] - 3 ? "minus" : top > s.lvl[1] + 4 ? "muted" : "plus";
-  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${top > s.lvl[1] + 4 ? " Au-delà, l'expérience gagnée diminue." : ""}">Conseillé : niv. ${s.lvl[0]}–${s.lvl[1]}</span>`;
+  const pen = Math.round((1 - E.xpPenalty(top - s.lvl[1])) * 100);
+  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${s.lvl[1]}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de 4 : −10 % d'XP par niveau d'écart.">XP −${pen} %</span>` : ""}`;
 }
 function tierBadge(k) {
   const t = E.huntTier(S, k); const n = S.bestiary[k] || 0; const next = HUNT_TIERS[t + 1];
@@ -280,6 +343,8 @@ function renderZoneView(sid) {
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${r.p} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
+      ${(E.HARVEST[sid] || []).length ? `<h3 class="sec">Récolte</h3><div class="loot">${E.harvestJobs(sid).map((j) => `<div class="lcard">${im(jobImg(j), "joblogo sm", D.GATHER_JOBS[j].name)}<div><div class="n">${h(D.GATHER_JOBS[j].name)} <span class="muted xs">niv. ${S.jobs[j].lvl}</span></div><div class="p">${E.harvestList(sid, j).map((x) => `<span class="${x[2] <= S.jobs[j].lvl ? "" : "muted"}" style="${x[2] <= S.jobs[j].lvl ? "" : "opacity:.6"}">${h(x[0])}${x[2] > 1 ? ` (${x[2]})` : ""}</span>`).join(", ")}</div></div></div>`).join("")}</div>
+        ${un ? `<div><button class="btn sm" data-act="gathersheet" data-sub="${sid}">⛏ Envoyer un héros récolter ici</button></div>` : ""}` : ""}
       ${its.length ? `<h3 class="sec">Équipements à looter</h3><div class="loot">${its.map((e) => `<div class="lcard"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${(e.p * E.ITEM_DROP_SCALE).toFixed(2).replace(".", ",")} %</span></div></div></div>`).join("")}</div>` : ""}
       ${dg ? `<h3 class="sec">Donjon</h3>${dungeonCard(s.dungeon)}` : ""}
     </div>
@@ -337,11 +402,12 @@ function renderCombat() {
   const title = dg ? dg.name : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
   <div class="pagehead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
-    <div class="row"><span class="small muted">Équipe de ${team.length}${fs ? ` · Esprit Libre <b style="color:var(--action)">+${fs} %</b>` : ""}</span>
+    <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid">
     <div class="panel">
       <div class="arena" id="arena"></div>
+      <div id="await"></div>
       <div class="herotabs">${team.map((c) => `<button data-act="combatcid" data-id="${c.id}" aria-pressed="${ui.combatCid === c.id}">${head(c)}${h(c.name)}</button>`).join("")}</div>
       <div class="pabar">PA <span class="pips" id="pips"></span><span style="margin-left:auto">Stratégie : <b id="stratName" style="color:var(--ink)">—</b> <button class="btn sm" data-act="gospells">Modifier</button></span></div>
       <div class="spells" id="spells"></div><div class="spnames" id="spnames"></div>
@@ -355,8 +421,10 @@ function renderCombat() {
 `;
   ui.arena = null; updateCombat(true);
 }
+function spellTip(sp) { return `${sp.name} · ${sp.pa} PA${sp.cd ? ` · relance ${sp.cd} tour${sp.cd > 1 ? "s" : ""}` : ""}${sp.casts ? ` · ${sp.casts} lancers/tour` : ""} — ${spellDesc(sp).replace(/<[^>]+>/g, "").trim()}`; }
 function spellBarFor(c, ent, F) {
   const slots = c.spells.slice(0, 6);
+  const A = F && F.await && ent && F.ents[F.await.ei] === ent ? F.await : null;
   const lastCast = {};
   if (F && ent) { const idx = F.ents.indexOf(ent); F.fx.forEach((f) => { if (f.k === "cast" && f.s === idx) lastCast[f.sp] = f.seq; }); }
   const html = Array.from({ length: 6 }, (_, i) => {
@@ -364,7 +432,8 @@ function spellBarFor(c, ent, F) {
     const sp = E.spellDef(c.cls, x.id); const cd = ent && ent.cd ? (ent.cd[sp.id] || 0) : 0;
     const cast = F && lastCast[sp.id] !== undefined && F.seq - lastCast[sp.id] <= 1;
     const el = sp.el || (sp.type.startsWith("heal") ? "a" : "buff");
-    return `<div class="sp ${cast ? "cast" : ""}" style="--c:${elVar(el)}" title="${h(sp.name)} · ${sp.pa} PA">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${sp.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
+    const can = A ? E.manualCanCast(S, sp) : false;
+    return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(el)}" data-tip="${h(spellTip(sp))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${sp.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
   }).join("");
   return { html, names: Array.from({ length: 6 }, (_, i) => `<div>${slots[i] ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") };
 }
@@ -379,8 +448,9 @@ function buildArena(F) {
   const side = (s) => F.ents.map((e, i) => [e, i]).filter(([e]) => e.side === s);
   const entHtml = ([e, i]) => {
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
-      return `<div class="ent hero" data-i="${i}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div></div>`; }
-    return `<div class="ent ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""}" data-i="${i}" title="${h(e.name)} niv. ${e.lvl}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
+      const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
+      return `<div class="ent hero ${rad ? "radiant" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div></div>`; }
+    return `<div class="ent ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} niv. ${e.lvl}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   arena.innerHTML = sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub) + `<div class="turn" id="turn">${h(F.label)}</div>
     <div class="side l">${side("c").map(entHtml).join("")}</div><div class="side r">${side("m").map(entHtml).join("")}</div><div class="result" id="fresult"></div>`;
@@ -389,6 +459,15 @@ function buildArena(F) {
 function floatAt(node, txt, color, small) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : ""); s.textContent = txt; s.style.setProperty("--c", color);
   node.appendChild(s); setTimeout(() => s.remove(), 1150);
+}
+function burst(node, el) {
+  if (S.settings.reduced) return;
+  const b = document.createElement("span"); b.className = "fxb " + el;
+  const n = el === "t" ? 9 : 8;
+  for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n + Math.random() * 0.6; const r = 26 + Math.random() * 22; const p = document.createElement("i");
+    p.style.setProperty("--dx", Math.cos(a) * r + "px"); p.style.setProperty("--dy", (Math.sin(a) * r - (el === "f" ? 18 : 0)) + "px"); p.style.setProperty("--rot", Math.round(Math.random() * 360) + "deg"); p.style.animationDelay = Math.random() * 0.08 + "s"; b.appendChild(p); }
+  const ring = document.createElement("span"); ring.className = "ring"; ring.style.setProperty("--c", el === "h" ? "#7ee06a" : elVar(el));
+  node.appendChild(b); node.appendChild(ring); setTimeout(() => { b.remove(); ring.remove(); }, 800);
 }
 function pulse(node, cls) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
 function updateCombat(force) {
@@ -402,13 +481,28 @@ function updateCombat(force) {
       n.querySelector(".hpb b").style.transform = `scaleX(${Math.min(1, (e.shield || 0) / e.hpMax)})`;
       n.classList.toggle("dead", !e.alive);
     });
+    // mode manuel : héros à qui c'est le tour, cibles possibles
+    const AW = F.await && !F.over ? F.await : null; const aw = $("#await");
+    if (AW) {
+      const me = F.ents[AW.ei]; if (me && ui.combatCid !== me.cid) { ui.combatCid = me.cid; document.querySelectorAll(".herotabs button").forEach((b) => b.setAttribute("aria-pressed", +b.dataset.id === me.cid)); }
+      const spd = ui.manualSpell ? E.spellDef(me.cls, ui.manualSpell) : null;
+      const wantAlly = spd && spd.type === "heal"; const wantFoe = spd && ["dmg", "drain", "poison"].includes(spd.type);
+      F.ents.forEach((e, i) => { const n = A.nodes[i]; if (!n) return; n.classList.toggle("targetable", !!(e.alive && ((wantFoe && e.side === "m") || (wantAlly && e.side === "c")))); n.classList.toggle("turnnow", i === AW.ei); });
+      const left = Math.max(0, Math.ceil(E.MANUAL_TIMEOUT - (F.dur - AW.t)));
+      const html = `<div class="awaitbar">🎯 À vous : <b>${h(me.name)}</b> · ${AW.pa} PA · ${spd ? (wantFoe || wantAlly ? `choisissez ${wantAlly ? "un allié" : "un ennemi"} pour ${h(spd.name)}` : "") : "choisissez un sort"} <button class="btn sm" data-act="mend">Fin du tour</button><span class="cnt">auto dans ${left} s</span></div>`;
+      if (aw && aw.dataset.k !== html) { aw.innerHTML = html; aw.dataset.k = html; }
+    } else {
+      if (aw && aw.innerHTML) { aw.innerHTML = ""; aw.dataset.k = ""; }
+      if (ui.manualSpell) ui.manualSpell = null;
+      A.nodes.forEach((n) => n && n.classList.remove("targetable", "turnnow"));
+    }
     const fresh = F.fx.filter((f) => f.seq > A.lastSeq);
     if (fresh.length) {
       A.lastSeq = Math.max(...fresh.map((f) => f.seq));
       fresh.forEach((f) => {
         if (f.k === "cast") pulse(A.nodes[f.s], "act");
-        else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); } }
-        else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) floatAt(n, "+" + f.v, "#7ee06a"); }
+        else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
+        else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) { floatAt(n, "+" + f.v, "#7ee06a"); burst(n, "h"); } }
         else if (f.k === "buff") { const n = A.nodes[f.t]; if (n) floatAt(n, f.txt, "var(--gold2)", true); }
       });
     }
@@ -481,20 +575,43 @@ function renderHeroes() {
   <div class="pagehead"><h1>Héros</h1><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
   <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span>${h(x.name)} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
     ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
-  <section class="panel" style="margin-bottom:12px"><div class="pad stack">
-    <div class="row between"><div class="row">${head(c, true)}<div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl}</div></div></div>
-      <div class="row"><span class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b></span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button></div></div>
-    <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
+  <section class="panel" style="margin-bottom:12px"><div class="pad row" style="gap:18px;align-items:flex-start">
+    <div style="padding:14px 0 10px">${heroCard(c, "big", { act: "noop" })}</div>
+    <div class="grow stack" style="min-width:240px">
+      <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}</div></div>
+      <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>
+      <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}</div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">⛏ ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)} (${h(E.SUBS[c.job.sub].name)})</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : "Au repos (hors équipe)"}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">⛏ Envoyer récolter</button>`}</div>
+      <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
+        <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
+      ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (onglet Quêtes).</p>`}
+    </div>
   </div></section>
   <nav class="subtabs">${[["equip", "Équipement"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : charSpellsView(c)}</section>`;
 }
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
+const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3 };
+function itemScore(c, it) { if (!it) return 0; const main = CLASSES[c.cls].main; let sc = 0; for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.5) : 1); return sc; }
+function slotUpgrade(c, s) {
+  const want = s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s;
+  const cur = S.items[c.equip[s]]; const curSc = itemScore(c, cur); let best = 0;
+  for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (T.slot !== want || T.lvl > c.lvl || E.equippedBy(S, it.uid)) continue; if ((want === "anneau" || want === "dofus") && Object.entries(c.equip).some(([sl, u]) => sl !== s && S.items[u] && S.items[u].tpl === it.tpl)) continue; const sc = itemScore(c, it); if (sc > curSc * 1.05 + 1 && sc > best) best = sc; }
+  return best > 0;
+}
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
-  return `<button class="dslot ${it ? "filled" : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
+  const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
+  return `<button class="dslot ${it ? "filled" : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
     ${it ? im(itemImg(it.tpl), "", T.name) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
+}
+/* Panoplie : paliers de bonus, ceux actifs en vert */
+function setBlock(setId, worn) {
+  const Z = SETS[setId]; if (!Z) return "";
+  const tiers = Object.entries(Z.bonus).sort((a, b) => +a[0] - +b[0]);
+  return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>
+    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statLine(k, v)).join(", ")}</span></div>`).join("") || `<div class="muted">Aucun bonus.</div>`}</div>`;
 }
 function charStatsView(c, st) {
   return `<div class="grid2">
@@ -511,8 +628,7 @@ function charStatsView(c, st) {
 }
 function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
-  const sets = Object.entries(counts).filter(([id]) => SETS[id]).map(([id, n]) => { const b = E.setBonus(id, n);
-    return `<div class="li"><span class="grow"><span class="name">${h(SETS[id].name)}</span> <span class="muted xs">${n} pièce${n > 1 ? "s" : ""}</span></span><span class="small">${b ? Object.entries(b).map(([k, v]) => `${sIco(k)}${statLine(k, v)}`).join(", ") : "<span class='muted'>pas encore de bonus</span>"}</span></div>`; }).join("");
+  const sets = Object.entries(counts).filter(([id]) => SETS[id]).map(([id, n]) => setBlock(id, n)).join("");
   let pick = "";
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
@@ -534,7 +650,8 @@ function charEquipView(c, st) {
         <div class="drow">${dollSlot(c, "arme")}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
       </div></div></div>
     ${pick}
-    ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies</h2></div><div class="list">${sets}</div></div>` : ""}</div>`;
+    ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies actives</h2></div><div class="pad">${sets}</div></div>` : ""}
+    <p class="note xs">▲ en vert : un objet plus intéressant est disponible dans le sac pour cet emplacement.</p></div>`;
 }
 function spellDesc(sp) {
   const el = sp.el ? eld(sp.el) + " " : "";
@@ -608,12 +725,20 @@ function invDetail(tpl) {
   const copies = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
   if (!copies.length) return "";
   return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2>${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
-    <div class="pad xs">${tplStatsHtml(T)}</div>
+    <div class="pad xs">${tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
+      ${ui.cid && char(ui.cid) && T.lvl <= char(ui.cid).lvl ? `<div class="row" style="margin-top:6px">${miniDoll(char(ui.cid), T.slot)}</div>` : ""}</div>
     <div class="list">${copies.map((it) => { const by = E.equippedBy(S, it.uid);
       return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow"><b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
-        <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button>
+        <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button><button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">⚒</button>
           <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${it.locked ? "Retirer le cadenas" : "Protéger de la vente et du brisage"}">${it.locked ? "🔒" : "🔓"}</button>
           ${by || it.locked ? "" : `<button class="btn sm" data-act="sellitem" data-uid="${it.uid}">Vendre</button><button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
+}
+/* mini-silhouette : emplacement de l'objet sélectionné en surbrillance */
+function miniDoll(c, slot) {
+  const want = slot === "anneau" ? ["anneau1", "anneau2"] : slot === "dofus" ? D.DOFUS_SLOTS : [slot];
+  const all = ["coiffe", "amulette", "anneau1", "anneau2", "cape", "ceinture", "bottes", "bouclier", "arme"];
+  return `<span class="xs muted">Pour ${h(c.name)} :</span><span class="row" style="gap:3px">${all.concat(slot === "dofus" ? D.DOFUS_SLOTS : []).map((s) => { const it = S.items[c.equip[s]]; const on = want.includes(s);
+    return `<span class="dslot ${on ? "hl" : ""} ${it ? "filled" : ""}" style="width:30px;height:30px;border-radius:8px;cursor:default" data-tip="${h(SLOTS[s])}${it ? " : " + h(ITEMS[it.tpl].name) : " : vide"}">${it ? `<img src="${itemImg(it.tpl)}" style="width:24px;height:24px" alt="">` : ""}</span>`; }).join("")}</span>`;
 }
 function autoRulesHtml() {
   const A = S.settings.auto;
@@ -637,7 +762,7 @@ function renderInventory() {
       <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
         <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
         <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
-        <span class="muted small num">${items.length}/${E.ITEM_CAP} objets · ${groups.length} types</span></div>
+        <span class="muted small num">${items.length}/${E.itemCap(S)} objets · ${groups.length} types</span></div>
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
         <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
@@ -663,7 +788,8 @@ function tipItemHtml(uid) {
   const T = ITEMS[it.tpl]; const c = ui.cid ? char(ui.cid) : S.chars[0];
   let cmp = "";
   if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">Pour ${h(c.name)} : ${deltaHtml(c, slot, uid)}</div>`; }
-  return `<b>${h(T.name)}</b> <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${cmp}`;
+  const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
+  return `<b>${h(T.name)}</b> <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
 }
 let tipEl = null;
 function showTip(target) {
@@ -685,17 +811,8 @@ document.addEventListener("scroll", hideTip, true);
 function ingHtml(ing, mult = 1) {
   return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; return `<span class="${have >= q * mult ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b></span>`; }).join("")}</div>`;
 }
-function renderWorkshop() {
+function craftHtml() {
   let body = "";
-  if (ui.ate === "recolte") {
-    body = `<p class="note">Chaque métier récolte en continu, même pendant les combats et à 25 % hors-ligne. Les ressources plus rares se débloquent avec le niveau du métier.</p>
-    <div class="grid2">${Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const t = E.gatherTime(s.lvl);
-      return `<div class="panel"><div class="phead"><h2>${J.name}</h2><span class="num">niv. ${s.lvl}</span></div><div class="pad stack" style="gap:8px">
-        <div class="bar xp"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div>
-        <div class="row">${im(resImg(s.target), "ico", s.target)}<label class="row small grow"><span class="muted">Récolter</span><select data-act="gather" data-job="${id}">${J.items.map(([r, l]) => `<option value="${h(r)}" ${s.target === r ? "selected" : ""} ${l > s.lvl ? "disabled" : ""}>${h(r)}${l > s.lvl ? ` (niv. ${l})` : ""}</option>`).join("")}</select></label></div>
-        <div class="bar green" data-gprog="${id}"><i style="width:${pct(s.prog, t)}%"></i></div>
-        <div class="xs muted num">${t.toFixed(1)} s par récolte · stock : ${fmt(S.res[s.target] || 0)}</div></div></div>`; }).join("")}</div>`;
-  } else if (ui.ate === "craft") {
     const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const q = ui.craftSearch.trim().toLowerCase();
     let recipes = job === "bricoleur"
       ? Object.entries(SPECIAL_CRAFTS).map(([n, R]) => ({ special: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }))
@@ -710,7 +827,10 @@ function renderWorkshop() {
         const stats = r.T ? Object.entries(r.T.stats).map(([k, [a, b]]) => `${a === b ? a : a + " à " + b} ${STATS[k].short}`).join(", ") : (E.isKey(r.special) ? "Clé de donjon" : "Objet spécial");
         return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span> <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
           <button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
-  } else if (ui.ate === "brisage") {
+  return body;
+}
+function brisageHtml() {
+  let body = "";
     const items = Object.values(S.items).filter((it) => !E.equippedBy(S, it.uid)).sort((a, b) => ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl);
     const focusOpts = `<option value="">Aucun focus</option>${STAT_ORDER.filter((k) => k !== "pa").map((k) => `<option value="${k}" ${ui.focus === k ? "selected" : ""}>Focus ${STATS[k].name}</option>`).join("")}`;
     const breakable = items.filter((it) => !it.radiant);
@@ -721,9 +841,111 @@ function renderWorkshop() {
         const est = Object.entries(p.weights).map(([k, w]) => `${STATS[k].short} ≈ ${(w / (STATS[k].w * STATS[k].pts)).toFixed(1)}`).join(", ");
         return `<div class="li ${it.radiant ? "radiant" : ""}">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · coefficient <span class="${p.coef < 60 ? "minus" : ""}">${p.coef} %</span></span><br><span class="xs muted">Runes simples estimées : ${est || "aucune"}</span></span>
           <button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}</div></section>`;
-  } else body = emblemView();
-  $("#main").innerHTML = `<div class="pagehead"><h1>Ateliers</h1></div>
-    <nav class="subtabs">${[["recolte", "Récolte"], ["craft", "Artisanat"], ["brisage", "Brisage"], ["embleme", "Emblème"]].map(([id, n]) => `<button data-act="atetab" data-v="${id}" aria-pressed="${ui.ate === id}">${n}</button>`).join("")}</nav>
+  return body;
+}
+function recolteHtml() {
+  const workers = S.chars.filter((c) => c.job);
+  const jobs = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const tl = E.toolLvl(S, id); const tc = E.toolCost(S, id); const ws = workers.filter((c) => c.job.job === id);
+    const nextRes = J.items.find(([, l]) => l > s.lvl);
+    return `<div class="panel"><div class="phead"><div class="row">${im(jobImg(id), "joblogo", J.name)}<div><h2>${J.name}</h2><span class="xs muted">${ws.length ? ws.map((c) => h(c.name)).join(", ") + " récolte" + (ws.length > 1 ? "nt" : "") : "personne ne récolte"}</span></div></div><span class="lvlpill">niv. ${s.lvl}</span></div>
+      <div class="pad stack" style="gap:8px">
+        <div><div class="row between xs muted"><span>Expérience</span><span class="num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))}</span></div><div class="bar xp"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div></div>
+        ${ws.map((c) => `<div class="row small">${head(c)}<span class="grow">${im(resImg(c.job.res), "ico sm", c.job.res)} ${h(c.job.res)} <span class="xs muted">· ${h(E.SUBS[c.job.sub].name)} · ${E.gatherPeriod(S, c).toFixed(1)} s</span></span></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div>`).join("")}
+        <div class="row small"><span>🔨 Outil niv. <b>${tl}</b>/${E.TOOL_MAX} <span class="xs muted">(+${tl * 8} % de vitesse)</span></span>
+          ${tl < E.TOOL_MAX ? `<button class="btn sm" data-act="tool" data-job="${id}" ${S.kamas >= tc.kamas && (S.res[tc.res] || 0) >= tc.qty ? "" : "disabled"} data-tip="${h(`Améliorer : ${fmt(tc.kamas)} kamas + ${tc.qty} × ${tc.res} (vous en avez ${fmt(S.res[tc.res] || 0)})`)}">Améliorer · ${fmt(tc.kamas)} k + ${tc.qty} ${h(tc.res)}</button>` : `<span class="tag good">max</span>`}</div>
+        <div class="xs muted">Ressources : ${J.items.map(([r, l]) => `<span style="${l > s.lvl ? "opacity:.5" : ""}">${h(r)} (${l})</span>`).join(" · ")}${nextRes ? ` — prochaine : ${h(nextRes[0])} au niveau ${nextRes[1]}` : ""}</div>
+      </div></div>`; }).join("");
+  return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter dans une sous-zone. Envoyer un héros récolter le retire des combats (l'Esprit Libre de l'équipe augmente !). 1 % de chances de trouvaille (×5) à chaque récolte. Hors ligne, la récolte continue au même rythme que la chasse.</p>
+    <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `⛏ ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)} (${h(E.SUBS[c.job.sub].name)})` : c.inTeam ? "⚔ Chasse avec l'équipe" : "Au repos"}</span></span>
+      ${c.job ? `<button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler</button>` : `<button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">⛏ Récolter</button>`}</div>`).join("")}</div></section>
+    <div class="grid2">${jobs}</div>`;
+}
+function renderMetiers() {
+  const tabs = [["recolte", "Récolte"], ["craft", "Artisanat"]];
+  $("#main").innerHTML = `<div class="pagehead"><h1>Métiers</h1></div>
+    <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="mettab" data-v="${id}" aria-pressed="${ui.met === id}">${n}</button>`).join("")}</nav>
+    <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`;
+}
+function fmHtml() {
+  const items = Object.values(S.items).sort((a, b) => ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0));
+  if (!ui.fmSel || !S.items[ui.fmSel]) ui.fmSel = null;
+  const it = ui.fmSel ? S.items[ui.fmSel] : null;
+  let detail = `<div class="empty">Choisissez un objet à forgemager.</div>`;
+  if (it) {
+    const T = ITEMS[it.tpl];
+    detail = `<div class="row">${itemIcon(it)}<div><b>${itemName(it)}</b><div class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · ${it.fm} forgemagie${it.fm > 1 ? "s" : ""}` : ""}</div></div></div>
+      ${Object.keys(T.stats).map((k) => { const [mn, mx] = T.stats[k]; const cur = it.stats[k] || 0; const runes = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.split(":")[1] === k);
+        const cap = mx > 0 ? mx + Math.max(1, Math.ceil(mx * 0.25)) : mx;
+        return `<div class="fmline"><div><span class="statl">${sIco(k)}<b class="${cur > mx ? "bonus" : ""}">${statLine(k, cur)}</b></span> <span class="xs muted">jet ${mn} à ${mx}${mx > 0 ? ` · exo jusqu'à ${cap}` : ""}</span>
+          <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}`;
+  }
+  return `<p class="note">La forgemagie améliore les jets d'un objet avec des runes (obtenues au brisage) et des kamas. En dessous du jet maximum, la réussite est élevée ; au-delà (« exo »), c'est risqué. Un échec détruit la rune et peut faire baisser une autre caractéristique.</p>
+    <div class="grid2"><section class="panel"><div class="phead"><h2>Objets</h2><span class="xs muted">${items.length}</span></div><div class="list" style="max-height:520px;overflow:auto">${items.map((x) => `<div class="li ${x.radiant ? "radiant" : ""} ${ui.fmSel === x.uid ? "selrow" : ""}" style="${ui.fmSel === x.uid ? "box-shadow:inset 0 0 0 2px var(--gold)" : ""}">${itemIcon(x)}<span class="grow">${itemName(x)} <span class="xs muted">niv. ${ITEMS[x.tpl].lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${E.equippedBy(S, x.uid) ? " · porté par " + h(E.equippedBy(S, x.uid).name) : ""}</span></span><button class="btn sm ${ui.fmSel === x.uid ? "primary" : ""}" data-act="fmsel" data-uid="${x.uid}">Choisir</button></div>`).join("") || `<div class="empty">Aucun objet.</div>`}</div></section>
+    <section class="panel"><div class="phead"><h2>Établi du forgemage</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad stack" style="gap:8px">${detail}</div></section></div>`;
+}
+function renderForge() {
+  const tabs = [["fm", "Forgemagie"], ["brisage", "Brisage"], ["embleme", "Emblème"]];
+  $("#main").innerHTML = `<div class="pagehead"><h1>Forgemagie</h1></div>
+    <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="fgtab" data-v="${id}" aria-pressed="${ui.fg === id}">${n}</button>`).join("")}</nav>
+    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "embleme" ? emblemView() : fmHtml()}</section>`;
+}
+/* ---------- QUÊTES ---------- */
+function mainQuestHtml() {
+  const cur = S.quest.step; const qp = E.questProgress(S);
+  return `<section class="panel"><div class="phead"><h2>Quête principale</h2><span class="small muted num">${Math.min(cur, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}</span></div><div class="pad stack" style="gap:8px">
+    ${E.MAIN_QUEST.map((q, i) => `<div class="qcard ${i < cur ? "done" : i === cur ? "cur" : ""}" ${i > cur + 2 ? 'style="opacity:.35"' : ""}><span class="qnum">${i < cur ? "✓" : i + 1}</span><div class="grow"><b>${i > cur + 2 ? "???" : h(q.title)}</b><div class="small muted">${i > cur + 2 ? "Terminez les étapes précédentes." : h(q.txt)}</div>
+      ${i === cur && qp ? `<div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}</div>${i === cur && q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>`).join("")}</div></section>`;
+}
+function bountiesHtml() {
+  return `<p class="note">Trois avis de recherche adaptés à votre niveau. Ils se remplissent automatiquement en chassant (ou en battant le boss demandé) et rapportent kamas, expérience et points d'alignement. Un nouvel avis remplace aussitôt celui qui est rempli.</p>
+    <div class="bgrid">${(S.bounties || []).map((b) => { const m = MONSTERS[b.key]; const where = b.dg ? DUNGEONS[b.dg].name : E.SUBS[b.sub] ? E.SUBS[b.sub].name : "";
+      return `<div class="bounty"><span class="wanted">AVIS DE RECHERCHE</span>${im(imgM(b.key), "", m.name)}<b>${h(m.name)}</b><span class="xs">${b.dg ? "Boss · " : ""}${h(where)} · niv. ${m.lvl[0]}–${m.lvl[1]}</span>
+        <div class="row" style="width:100%"><div class="bar grow"><i style="width:${pct(b.prog, b.n)}%"></i></div><span class="num small">${b.prog}/${b.n}</span></div>
+        <span class="small">Prime : <span class="coin"></span> <b>${fmt(b.kamas)}</b> · XP${S.align ? ` · +${b.axp} alignement` : ""}</span>
+        <div class="row">${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) ? "disabled" : ""}>Changer · ${fmt(E.rerollCost(S))} k</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
+    <p class="small muted">Avis remplis : <b>${fmt(S.cnt.bounty || 0)}</b></p>`;
+}
+function alignHtml() {
+  const top = Math.max(...S.chars.map((c) => c.lvl));
+  if (!S.align) {
+    const can = top >= E.ALIGN_MIN_LVL;
+    return `<section class="panel"><div class="phead"><h2>Alignement</h2>${can ? "" : `<span class="tag soft">🔒 niveau ${E.ALIGN_MIN_LVL}</span>`}</div><div class="pad stack">
+      <p class="small">Choisissez votre camp : Bonta, la cité blanche, ou Brâkmar, la cité sombre. Puis un ordre. Les missions d'alignement, les avis de recherche et les boss de donjon vous feront monter en rang : vos ailes grandissent et vos bonus augmentent.${can ? "" : ` Atteignez le niveau ${E.ALIGN_MIN_LVL} pour choisir (votre meilleur héros est niveau ${top}).`}</p>
+      <div class="alignpick">${Object.entries(E.ALIGN).map(([sid, A]) => `<div class="alignside" style="--c:${A.color}"><img class="badge" src="assets/i/${A.badge}.png" alt=""><h2 style="text-align:center">${A.name}</h2>
+        <div class="xs muted" style="text-align:center">Camp : +2 % de ${A.bonusName} par rang</div>
+        ${Object.entries(A.orders).map(([oid, O]) => `<div class="row between"><span><b>${h(O.name)}</b><br><span class="xs muted">${h(E.ORDER_BONUS[oid].txt)}</span></span><button class="btn sm ${can ? "primary" : ""}" data-act="align" data-side="${sid}" data-order="${oid}" ${can ? "" : "disabled"}>Rejoindre</button></div>`).join("")}</div>`).join("")}</div></div></section>`;
+  }
+  const A = S.align; const side = E.ALIGN[A.side]; const O = side.orders[A.order]; const r = E.alignRankIdx(S); const q = S.alignQuest;
+  return `<section class="panel"><div class="phead"><div class="row"><img src="assets/i/${side.badge}.png" alt="" style="width:48px;height:48px;object-fit:contain"><div><h2>${side.adj} · ${h(O.name)}</h2><div class="small muted">Rang : <b style="color:var(--gold2)">${h(E.alignRankName(S))}</b> · niveau d'alignement ${A.lvl}/100</div></div></div></div>
+    <div class="pad stack" style="gap:10px">
+      <div>${A.lvl < 100 ? `<div class="row between xs muted"><span>vers le niveau ${A.lvl + 1}</span><span class="num">${fmt(A.xp)} / ${fmt(E.alignNeed(A.lvl))}</span></div><div class="bar"><i style="width:${pct(A.xp, E.alignNeed(A.lvl))}%"></i></div>` : `<span class="tag good">Niveau maximum</span>`}</div>
+      <div class="row small">${O.ranks.map((n, i) => `<span class="tag ${i < r ? "good" : "soft"}">${i + 1}. ${h(n)} (${(i + 1) * 20})</span>`).join("")}</div>
+      <div class="small">Bonus actuels : <b class="plus">+${2 * r} % ${side.bonusName}</b> (camp) · <b class="plus">${h(E.ORDER_BONUS[A.order].txt.replace("par rang", ""))}× ${r}</b> (ordre)</div>
+      ${q ? `<div class="qcard cur"><span class="qnum">⚔</span><div class="grow"><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(q.prog, q.n)}%"></i></div><span class="num small">${q.prog}/${q.n}</span></div><div class="xs muted">Récompense : ${fmt(q.axp)} points d'alignement, ${fmt(q.kamas)} kamas</div></div>${q.sub ? `<button class="btn sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}</div>` : ""}
+      <div class="row small"><span class="muted">Changer d'ordre :</span>${Object.entries(side.orders).filter(([oid]) => oid !== A.order).map(([oid, O2]) => `<button class="btn sm" data-act="align" data-side="${A.side}" data-order="${oid}">${h(O2.name)}</button>`).join("")}
+        ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
+    </div></section>`;
+}
+function almanaxHtml() {
+  const A = E.almanax(S); const d = new Date(); const have = S.res[A.res] || 0;
+  return `<section class="panel"><div class="phead"><h2>📅 Almanax</h2><span class="small muted">offrandes : ${S.cnt.almanax || 0}</span></div><div class="pad stack">
+    <div class="almanax"><div class="cal"><b>${d.getDate()}</b><span>${d.toLocaleDateString("fr-FR", { month: "short" })}</span></div>
+      <div class="grow stack" style="gap:6px"><div>Offrande du jour : ${im(resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="small muted">(vous en avez ${fmt(have)})</span></div>
+        <div>Bonus du jour : <b class="plus">${h(A.bonus.name)}</b> jusqu'à minuit, et <span class="coin"></span> ${fmt(A.kamas)} kamas</div>
+        <div>${A.done ? `<span class="tag good">Offrande faite aujourd'hui ✓</span>` : `<button class="btn primary" data-act="almanax" ${have >= A.qty ? "" : "disabled"}>Faire l'offrande</button>`}</div></div></div>
+    <p class="note">L'offrande change chaque jour et dépend de votre niveau. Les ressources viennent des monstres ; consultez l'encyclopédie pour savoir qui les lâche.</p></div></section>`;
+}
+function achHtml() {
+  const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = Object.keys(S.ach).length;
+  const ICO = { Progression: "⭐", Combat: "⚔", Donjons: "🏰", Chasse: "🏹", Objets: "✦", Métiers: "⛏", Forgemagie: "⚒", Quêtes: "📜", Alignement: "🪽", "Havre-Sac": "🏠" };
+  return `<section class="panel"><div class="phead"><h2>Ornements</h2><span class="xs muted">à équiper dans Héros (contour de la carte)</span></div><div class="pad achgrid">${Object.entries(E.ORN).map(([id, O]) => `<div class="ach ${E.ornUnlocked(S, id) ? "ok" : ""}"><span class="ic">${E.ornUnlocked(S, id) ? "✨" : "🔒"}</span><span><b>${h(O.name(S))}</b><br><span class="xs muted">${h(O.req)}</span></span></div>`).join("")}</div></section>
+    <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? "🏆" : "·"}</span><span><b>${h(a.name)}</b><br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span></div>`).join("")}</div>`).join("")}</div></section>`;
+}
+function renderQuests() {
+  const tabs = [["main", "Quête principale"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["ach", "Succès"]];
+  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
+  $("#main").innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div>
+    <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${ui.qt === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${body}</section>`;
 }
 function emblemView() {
@@ -770,30 +992,50 @@ function giveSheet(uid) {
       return `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="muted xs">niv. ${c.lvl}</span><br>${deltaHtml(c, slot, uid)}</span><button class="btn sm primary" data-act="giveto" data-id="${c.id}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. trop bas" : "Équiper"}</button></div>`; }).join("")}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
+function gatherSheet() {
+  const g = ui.gs; const c = char(g.cid) || S.chars[0]; g.cid = c.id;
+  const subsFor = (job) => Object.values(E.SUBS).filter((s) => E.subUnlocked(S, s.id) && E.harvestList(s.id, job).length);
+  if (!g.job) g.job = g.sub ? (E.harvestJobs(g.sub)[0] || "paysan") : (c.job ? c.job.job : "bucheron");
+  let subs = subsFor(g.job);
+  if (!g.sub || !subs.find((s) => s.id === g.sub)) { const lv = S.jobs[g.job].lvl; g.sub = (subs.filter((s) => E.harvestList(s.id, g.job).some((x) => x[2] <= lv)).sort((a, b) => Math.max(...E.harvestList(b.id, g.job).filter((x) => x[2] <= lv).map((x) => x[2])) - Math.max(...E.harvestList(a.id, g.job).filter((x) => x[2] <= lv).map((x) => x[2])))[0] || subs[0] || {}).id; }
+  const list = g.sub ? E.harvestList(g.sub, g.job) : []; const lv = S.jobs[g.job].lvl;
+  if (!g.res || !list.find((x) => x[0] === g.res && x[2] <= lv)) g.res = (list.filter((x) => x[2] <= lv).pop() || [])[0];
+  const jobsHere = Object.keys(GATHER_JOBS);
+  openSheet(`<h2>⛏ Envoyer récolter</h2>
+    <p class="small muted">Le héros quitte l'équipe de chasse pendant qu'il récolte. Les niveaux de métier sont communs à tous vos héros.</p>
+    <div class="stack" style="gap:8px">
+      <label class="row small"><span style="min-width:90px">Héros</span><select data-act="gs" data-k="cid">${S.chars.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.name)} (niv. ${x.lvl})${x.job ? " — récolte déjà" : ""}</option>`).join("")}</select></label>
+      <label class="row small"><span style="min-width:90px">Métier</span><select data-act="gs" data-k="job">${jobsHere.map((j) => `<option value="${j}" ${j === g.job ? "selected" : ""}>${GATHER_JOBS[j].name} (niv. ${S.jobs[j].lvl})</option>`).join("")}</select></label>
+      <label class="row small"><span style="min-width:90px">Sous-zone</span><select data-act="gs" data-k="sub">${subs.map((x) => `<option value="${x.id}" ${x.id === g.sub ? "selected" : ""}>${h(ZONES.find((z) => z.id === x.zone).name)} · ${h(x.name)}</option>`).join("") || `<option>Aucune sous-zone accessible</option>`}</select></label>
+      <label class="row small"><span style="min-width:90px">Ressource</span><select data-act="gs" data-k="res">${list.map((x) => `<option value="${h(x[0])}" ${x[0] === g.res ? "selected" : ""} ${x[2] > lv ? "disabled" : ""}>${h(x[0])}${x[2] > lv ? ` (niv. ${x[2]})` : ""}</option>`).join("")}</select></label>
+      ${g.res ? `<div class="row small">${im(resImg(g.res), "ico", g.res)}<span>${E.gatherTime(lv) / E.gatherSpeed(S, g.job) < 100 ? `≈ ${(E.gatherTime(lv) / E.gatherSpeed(S, g.job)).toFixed(1)} s par récolte` : ""} · en stock : ${fmt(S.res[g.res] || 0)}</span></div>` : ""}
+    </div>
+    <div class="row"><button class="btn primary" data-act="gsgo" ${g.res && g.sub ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
+}
 function optionsSheet() {
   openSheet(`<h2>Options</h2>
     <div class="stack small">
-      <div class="row"><span class="muted">Thème</span><span class="seg">${[["dark", "Nuit"], ["light", "Jour"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "dark") === v}">${n}</button>`).join("")}</span></div>
+      <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[[false, "Complètes"], [true, "Réduites"]].map(([v, n]) => `<button data-act="setreduced" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.reduced === v}">${n}</button>`).join("")}</span></div>
       <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <p class="note">Version 2.5 · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
+      <p class="note">Version 2.6 « Krosmoz » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
   const res = Object.entries(r.res).sort((a, b) => b[1] - a[1]);
   openSheet(`<h2>Pendant votre absence</h2>
-    <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a continué à 25 % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : "Votre équipe se reposait ; seuls les métiers de récolte ont travaillé."}</p>
+    <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a continué à ${Math.round(E.OFFLINE_RATE * 100 + E.bonus(S, "offrate"))} % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : "Votre équipe ne chassait pas ; seuls les héros en récolte ont travaillé."}</p>
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${h(n)} : niveau ${a} → ${b}`).join("<br>")}</p>` : ""}
     ${res.length ? `<div class="list small" style="max-height:240px;overflow:auto">${res.map(([n, q]) => `<div class="li">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><span class="num">+${fmt(q)}</span></div>`).join("")}</div>` : ""}
     <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
 }
 function migrationSheet(list) {
-  openSheet(`<h2>Bienvenue dans la v2.5 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
+  openSheet(`<h2>Bienvenue dans la v2.6 !</h2><p class="small">Votre partie a été convertie : niveaux, kamas, ressources, métiers et Emblème sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
-    <p class="small muted">Pensez à jeter un œil à l'encyclopédie (paliers de chasse) et aux règles automatiques de l'inventaire.</p>
+    <p class="small muted">Nouveautés à découvrir : l'onglet Quêtes, le Havre-Sac (Accueil), la Forgemagie et la récolte par héros (Métiers). Conseil : une nouvelle partie permet de profiter de la quête principale depuis le début.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
 }
 
@@ -806,7 +1048,10 @@ function render() {
   else if (ui.tab === "combat") renderCombat();
   else if (ui.tab === "heroes") renderHeroes();
   else if (ui.tab === "inv") renderInventory();
-  else renderWorkshop();
+  else if (ui.tab === "metiers") renderMetiers();
+  else if (ui.tab === "forge") renderForge();
+  else if (ui.tab === "quests") renderQuests();
+  else { ui.tab = "home"; renderHome(); }
 }
 function toast(txt, kind) {
   const box = $("#toasts"); const d = document.createElement("div");
@@ -815,7 +1060,7 @@ function toast(txt, kind) {
   setTimeout(() => d.remove(), kind === "rare" || kind === "radiant" ? 6500 : 3500);
 }
 const msg = (r) => { if (typeof r === "string") toast(r); };
-function setTheme(v) { S.settings.theme = v; document.documentElement.dataset.theme = v; const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = v === "dark" ? "#120e0a" : "#efe3c4"; }
+function setTheme() { if (S) S.settings.theme = "dark"; document.documentElement.dataset.theme = "dark"; document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); }
 
 /* ---------- actions ---------- */
 document.addEventListener("click", (ev) => {
@@ -823,6 +1068,7 @@ document.addEventListener("click", (ev) => {
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
+  if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
   if (t.dataset.tab) { if (!S) return; ui.tab = t.dataset.tab; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
@@ -832,8 +1078,31 @@ document.addEventListener("click", (ev) => {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; if (!S) renderStart(); else recruitSheet(); return; }
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; if (!S) renderStart(); else recruitSheet(); return; }
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
-    case "theme": setTheme(isDark() ? "light" : "dark"); break;
-    case "settheme": setTheme(d.v); optionsSheet(); render(); return;
+    case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
+    case "hometab": ui.home = d.v; break;
+    case "havre": { const r = E.buyHavre(S, d.id); if (r) { toast(r); return; } toast(`${E.HAVRE.find((x) => x.id === d.id).name} amélioré !`); break; }
+    case "mettab": ui.met = d.v; ui.confirm = null; break;
+    case "fgtab": ui.fg = d.v; ui.confirm = null; break;
+    case "qtab": ui.qt = d.v; ui.confirm = null; break;
+    case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
+    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : (ui.cid || S.chars[0].id), sub: d.sub || null }; if (d.sub) { const free = S.chars.find((x) => !x.job && !x.inTeam) || S.chars.find((x) => !x.job); if (!d.cid && free) ui.gs.cid = free.id; } gatherSheet(); return;
+    case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.sub, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }
+    case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
+    case "tool": msg(E.upgradeTool(S, d.job)); break;
+    case "fmsel": ui.fmSel = +d.uid; break;
+    case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; window.scrollTo(0, 0); break;
+    case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
+    case "reroll": msg(E.rerollBounty(S, +d.id)); break;
+    case "align": { const r = E.chooseAlign(S, d.side, d.order); ui.confirm = null; if (r) { toast(r); return; } break; }
+    case "asktraitre": ui.confirm = "traitre"; break;
+    case "almanax": { const r = E.almanaxOffer(S); if (r) { toast(r); return; } break; }
+    case "manual": S.settings.manual = d.v === "1"; toast(S.settings.manual ? "Mode manuel : à chaque tour d'un héros, choisissez un sort puis une cible." : "Mode automatique."); break;
+    case "mspell": { const F = S.fight; if (!F || !F.await) return; const me = F.ents[F.await.ei]; const sp = E.spellDef(me.cls, d.id);
+      if (["dmg", "drain", "poison", "heal"].includes(sp.type)) { ui.manualSpell = ui.manualSpell === sp.id ? null : sp.id; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
+      const r = E.manualCast(S, sp.id, null); if (r) toast(r); ui.manualSpell = null; updateCombat(false); return; }
+    case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
+    case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
+    case "noop": return;
     case "usecons": { const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.id].name} : +${CONSUMABLES[d.id].pct} % d'XP activé.`); break; }
     case "invsel": ui.invSel = d.tpl || null; break;
     case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
@@ -872,7 +1141,6 @@ document.addEventListener("click", (ev) => {
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
     case "sellitem": { const p = E.sellItem(S, +d.uid); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
     case "sellres": { const p = E.sellRes(S, d.n, +d.q); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
-    case "atetab": ui.ate = d.v; ui.confirm = null; break;
     case "craftjob": ui.craftJob = d.v; break;
     case "craftonly": ui.craftOnly = t.checked; break;
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
@@ -901,7 +1169,9 @@ document.addEventListener("change", (ev) => {
   if (a === "autostat") { const x = char(+t.dataset.id); x.autoStat = t.value || null; E.autoAllocate(S, x); }
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; }
   else if (a === "slotfilter") ui.slotFilter = t.value;
-  else if (a === "gather") { S.jobs[t.dataset.job].target = t.value; S.jobs[t.dataset.job].prog = 0; }
+  else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; if (k === "job") { ui.gs.sub = null; ui.gs.res = null; } if (k === "sub") ui.gs.res = null; gatherSheet(); return; }
+  else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
+  else if (a === "setorn") { msg(E.setOrn(S, +t.dataset.id, t.value)); }
   else if (a === "focus") ui.focus = t.value;
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
   else if (a === "craftonly") ui.craftOnly = t.checked;
@@ -916,7 +1186,7 @@ document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act !== "craftsearch") return;
-  ui.craftSearch = t.value; const pos = t.selectionStart; renderWorkshop(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+  ui.craftSearch = t.value; const pos = t.selectionStart; renderMetiers(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
 });
 
 /* ---------- sauvegarde ---------- */
@@ -937,6 +1207,7 @@ const isEditing = () => { const a = document.activeElement; return a && (a.tagNa
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
+    S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     E.tick(S, dt); S.lastTick = Date.now();
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind); }); dirty = true; }
@@ -944,10 +1215,11 @@ function loop() {
     const sb = $("#stBoost"); if (sb) { const left = E.boostLeft(S, "xp"); if (left > 0) sb.textContent = dur(left); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
     if (ui.tab === "combat") updateCombat(false);
-    else if (ui.tab === "ateliers" && ui.ate === "recolte") {
-      document.querySelectorAll("[data-gprog]").forEach((b) => { const s = S.jobs[b.dataset.gprog]; b.firstElementChild.style.width = pct(s.prog, E.gatherTime(s.lvl)) + "%"; });
-      if (sinceView > 4000 && !isEditing()) { sinceView = 0; renderWorkshop(); }
-    } else if (ui.tab === "home" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
+    else if (ui.tab === "metiers" && ui.met === "recolte") {
+      document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; });
+      if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
+    } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
+    else if (ui.tab === "quests" && ui.qt !== "ach" && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
   }
   setTimeout(loop, 120);
