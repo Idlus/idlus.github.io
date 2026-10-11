@@ -1,0 +1,48 @@
+{
+  "version": "3.0.3",
+  "versions": [
+    {
+      "v": "3.0.3",
+      "name": "Application installable",
+      "items": [
+        "idlus s'installe sur téléphone et PC comme une vraie application : icône, plein écran, lancement instantané",
+        "Le jeu fonctionne hors connexion (les images sont gardées au fil de la partie)",
+        "Bouton « Installer » dans les Options, avec un guide pour iPhone",
+        "Le serveur Discord d'idlus est ouvert : bouton sur l'Accueil et « Signaler un bug » dans les Options",
+        "Nouvelle adresse : mathiss29.github.io/idlus"
+      ]
+    },
+    {
+      "v": "3.0.2",
+      "name": "Équilibrage des classes",
+      "items": [
+        "Les 19 classes sont rééquilibrées par leurs sorts et passifs : les écarts de puissance entre classes sont bien plus faibles",
+        "Iop : Colère à 6 charges (+40 %), Concentration 2 fois par tour, nouveau passif Vigueur (vol de vie 8 %)",
+        "Zobal : masque choisi selon la situation (attaque +30 %, défense, soutien) ; Eliotrope : bouclier de portail et vol de vie",
+        "Crâ : subit 15 % de dégâts en moins, Pas Chassé protège, Flèche Cinglante (niv. 12) et Dispersion (niv. 34) plus tôt",
+        "Pandawa et Sadida : bonus de classe réduits (+20 % et +10 %)",
+        "Ce bandeau vous résume chaque mise à jour, et le jeu vous prévient quand une nouvelle version est en ligne"
+      ]
+    },
+    {
+      "v": "3.0.1",
+      "name": "Correctifs",
+      "items": [
+        "Toutes les clés de donjon sont fabricables",
+        "178 sorts de placement ou d'état ont un effet adapté au combat automatique",
+        "Sous-zones de transition 68-86 (Kaliptus, Forêt Sombre, Canyon)",
+        "Nouveau nom : idlus"
+      ]
+    },
+    {
+      "v": "3.0",
+      "name": "Builds et contenu",
+      "items": [
+        "Vrais sorts de DOFUS 3 et variantes, 6 à 8 emplacements",
+        "Profil de build, simulateur de dégâts, nouvelles caractéristiques",
+        "Challenges, mécaniques de boss, invocations",
+        "Contenu jusqu'au niveau 120 et 17 nouveaux donjons"
+      ]
+    }
+  ]
+}

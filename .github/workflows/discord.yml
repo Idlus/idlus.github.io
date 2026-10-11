@@ -1,0 +1,17 @@
+# Annonce automatique des mises à jour sur Discord quand version.json change.
+# Nécessite le secret DISCORD_WEBHOOK (Settings › Secrets and variables › Actions).
+name: Annonce Discord
+on:
+  push:
+    branches: [main]
+    paths: [version.json]
+jobs:
+  annonce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/post_discord.js
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
