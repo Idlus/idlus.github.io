@@ -1,0 +1,9 @@
+data/raw/
+data/probe/
+*.log
+__pycache__/
+node_modules/
+# fichiers de test
+*.png.tmp
+/upd_*.png
+/t*.png

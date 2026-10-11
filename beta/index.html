@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr" data-theme="emerald">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>idlus</title>
+<meta name="description" content="Idle / autobattler inspiré de DOFUS : farm, optimisation d'équipement, donjons et archimonstres. Projet de fan gratuit.">
+<meta name="theme-color" content="#0d100b">
+<link rel="icon" href="icons/favicon-64.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="idlus">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kavoon&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=3.2.2">
+</head>
+<body>
+<div class="app">
+  <header id="status" class="status"></header>
+  <div id="objs" class="objs" style="display:none" aria-label="Objectifs suivis"></div>
+  <nav class="main" id="nav" aria-label="Menu principal"></nav>
+  <div id="updbar"></div>
+  <main id="main"></main>
+  <p class="footer">Idlus · projet de fan gratuit et non commercial, sans lien avec Ankama Games. DOFUS, ses noms et ses visuels © Ankama Games · Données : <a href="https://dofusdb.fr" target="_blank" rel="noopener" style="color:inherit">DofusDB</a>.</p>
+</div>
+<div id="sheet"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div id="cele"></div>
+<script src="js/gamedata.js?v=3.2.2"></script>
+<script src="js/looks.js?v=3.2.2"></script>
+<script src="js/data.js?v=3.2.2"></script>
+<script src="js/engine.js?v=3.2.2"></script>
+<script src="js/systems.js?v=3.2.2"></script>
+<script src="js/ui.js?v=3.2.2"></script>
+</body>
+</html>
