@@ -13,6 +13,28 @@ const ui = {
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 const LS_KEY = "dofousxen-save";
+/* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
+const GAME_VERSION = "3.0.2";
+const CHANGELOG = [
+  { v: "3.0.2", name: "Équilibrage des classes", items: [
+    "Les 19 classes sont rééquilibrées par leurs sorts et passifs : les écarts de puissance entre classes sont bien plus faibles",
+    "Iop : Colère à 6 charges (+40 %), Concentration 2 fois par tour, nouveau passif Vigueur (vol de vie 8 %)",
+    "Zobal : masque choisi selon la situation (attaque +30 %, défense, soutien) ; Eliotrope : bouclier de portail et vol de vie",
+    "Crâ : subit 15 % de dégâts en moins, Pas Chassé protège, Flèche Cinglante (niv. 12) et Dispersion (niv. 34) plus tôt",
+    "Pandawa et Sadida : bonus de classe réduits (+20 % et +10 %)",
+    "Ce bandeau vous résume chaque mise à jour, et le jeu vous prévient quand une nouvelle version est en ligne" ] },
+  { v: "3.0.1", name: "Correctifs", items: [
+    "Toutes les clés de donjon sont fabricables",
+    "178 sorts de placement ou d'état ont un effet adapté au combat automatique",
+    "Sous-zones de transition 68-86 (Kaliptus, Forêt Sombre, Canyon)",
+    "Nouveau nom : idlus" ] },
+  { v: "3.0", name: "Builds et contenu", items: [
+    "Vrais sorts de DOFUS 3 et variantes, 6 à 8 emplacements",
+    "Profil de build, simulateur de dégâts, nouvelles caractéristiques",
+    "Challenges, mécaniques de boss, invocations",
+    "Contenu jusqu'au niveau 120 et 17 nouveaux donjons" ] },
+];
+const vNum = (v) => v.split(".").map(Number).reduce((a, x, i) => a + x * Math.pow(1000, 2 - i), 0);
 
 /* ---------- utilitaires ---------- */
 const $ = (s) => document.querySelector(s);
@@ -1213,7 +1235,8 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <p class="note">Version 3.0.1 « Builds et contenu » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
+      <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button></div>
+      <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
@@ -1237,9 +1260,30 @@ function migrationSheet(list) {
 }
 
 /* ---------- rendu ---------- */
+function renderUpdBar() {
+  const el = $("#updbar"); if (!el) return;
+  let html = "";
+  if (ui.newVersion) html += `<div class="updbar new"><span>🆕 La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
+  if (S && S.seenVersion !== GAME_VERSION) {
+    const missed = CHANGELOG.filter((c) => !S.seenVersion || vNum(c.v) > vNum(S.seenVersion)); const cur = CHANGELOG[0];
+    html += `<div class="updbar"><div class="grow"><div><b>✨ Mise à jour ${h(cur.v)} « ${h(cur.name)} » appliquée</b>${missed.length > 1 ? ` <span class="xs muted">(+ ${missed.length - 1} version${missed.length > 2 ? "s" : ""} précédente${missed.length > 2 ? "s" : ""})</span>` : ""}</div>
+      <ul>${cur.items.slice(0, 4).map((x) => `<li>${h(x)}</li>`).join("")}</ul></div>
+      <div class="col"><button class="btn sm" data-act="changelog">Tout voir</button><button class="btn sm primary" data-act="updseen">OK</button></div></div>`;
+  }
+  if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
+}
+function changelogSheet() {
+  openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${h(x)}</li>`).join("")}</ul></div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
+}
+/* nouvelle version en ligne pendant que le jeu est ouvert */
+function checkNewVersion() {
+  try { fetch("version.json?t=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (j && j.v && vNum(j.v) > vNum(GAME_VERSION) && ui.newVersion !== j.v && ui.hiddenV !== j.v) { ui.newVersion = j.v; renderUpdBar(); }
+  }).catch(() => {}); } catch (e) {}
+}
 function render() {
-  if (!S) return renderStart();
-  renderNav(); renderStatus();
+  if (!S) { renderUpdBar(); return renderStart(); }
+  renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
@@ -1274,7 +1318,7 @@ document.addEventListener("click", (ev) => {
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; if (!S) renderStart(); else recruitSheet(); return; }
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; if (!S) renderStart(); else recruitSheet(); return; }
-    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
+    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
     case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
     case "hometab": ui.home = d.v; break;
     case "havre": { const r = E.buyHavre(S, d.id); if (r) { toast(r); return; } toast(`${E.HAVRE.find((x) => x.id === d.id).name} amélioré !`); break; }
@@ -1316,6 +1360,10 @@ document.addEventListener("click", (ev) => {
     case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
+    case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
+    case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); changelogSheet(); return;
+    case "reloadgame": saveNow(); location.reload(); return;
+    case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;
     case "offequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } t.replaceWith(Object.assign(document.createElement("span"), { className: "tag good", textContent: "équipé" })); dirty = true; return; }
     case "usecons": { if (d.id === "potion_savoir") { openSheet(`<h2>📘 Potion de Savoir</h2><p class="small muted">Choisissez le métier qui reçoit l'expérience.</p><div class="list">${Object.entries(GATHER_JOBS).map(([j, J]) => `<div class="li">${im(jobImg(j), "joblogo sm", J.name)}<span class="grow"><b>${J.name}</b> <span class="xs muted">niv. ${S.jobs[j].lvl}</span></span><button class="btn sm primary" data-act="savoir" data-job="${j}">Choisir</button></div>`).join("")}</div><div><button class="btn" data-act="closesheet">Annuler</button></div>`); return; }
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
@@ -1481,6 +1529,8 @@ function start() {
     else if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r);
   } else render();
   loop();
+  setTimeout(checkNewVersion, 20000); setInterval(checkNewVersion, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }
 window.DX = { get S() { return S; }, ui, render, E };
 start();

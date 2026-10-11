@@ -138,8 +138,8 @@
   /* ---------- v3 : vrais kits de DOFUS 3 (22 paires sort / variante par classe, DofusDB) ----------
      Chaque sort a des grades (niveau requis, PA, relance, effets). Le joueur équipe l'un OU l'autre sort d'une paire. */
   const SIGNATURE = {
-    iop: "Colère : chaque sort lancé ajoute une charge ; à 5 charges, le sort suivant inflige +50 % de dégâts.",
-    cra: "Œil de lynx : joue en premier au premier tour ; ses attaques à cible unique marquent la cible (+10 % de dégâts subis pour 2 tours).",
+    iop: "Colère : chaque sort lancé ajoute une charge ; à 6 charges, le sort suivant inflige +40 % de dégâts. +10 % contre les boss ; Vigueur : vole 8 % des dégâts infligés.",
+    cra: "Œil de lynx : joue en premier au premier tour ; ses attaques à cible unique marquent la cible (+10 % de dégâts subis pour 2 tours) ; tireur à distance, subit 15 % de dégâts en moins.",
     eni: "Mots liés : un soin renforce la prochaine attaque de 15 %, une attaque renforce le prochain soin de 15 %.",
     sacri: "Souffrance : +2 % de dégâts par coup reçu pendant le combat (jusqu'à +30 %).",
     xelor: "Distorsion temporelle : 10 % de chances de rejouer son tour.",
@@ -148,12 +148,12 @@
     enu: "Chercheur de trésors : +20 % de butin et de kamas pour l'équipe.",
     sram: "Larcin : poisons et pièges +25 %, 10 % de chances de butin supplémentaire.",
     eca: "Coup de chance : dégâts aléatoires (×0,7 à ×1,5), archimonstres et Rayonnants ×1,5.",
-    sadi: "Enfant de la nature : poisons et invocations +20 %.",
-    panda: "Ivresse : un sort sur trois inflige +30 % ; consommables 25 % plus longs.",
+    sadi: "Enfant de la nature : poisons et invocations +10 %.",
+    panda: "Ivresse : un sort sur trois inflige +20 % ; consommables 25 % plus longs.",
     roub: "Artificier : sorts de zone et poisons +15 %, +15 % contre les groupes de 4 monstres ou plus.",
-    zobal: "Masques : un masque par combat (attaque, défense ou soins).",
+    zobal: "Masques : change de masque selon la situation : Psychopathe (+30 % de dégâts), Pleutre (−20 % de dégâts subis sous 45 % de PV), Hystérique (soigne l'équipe de 4 % par tour quand un allié est blessé).",
     steam: "Mécanicien : invocations (tourelles) +30 %.",
-    elio: "Portails : +15 % de dégâts avec les sorts de zone.",
+    elio: "Portails : +25 % de dégâts avec les sorts de zone ; le premier sort de zone du tour donne un bouclier de 8 % des PV ; vole 10 % des dégâts infligés.",
     hupper: "Runes élémentaires : +10 % en changeant d'élément ; après 4 éléments différents, +30 % sur le sort suivant.",
     ougi: "Proie : +5 % de dégâts par coup sur la même cible (max +25 %), +20 % de viandes.",
     forge: "Perce-armure : ignore 50 % des résistances des boss.",
@@ -196,9 +196,9 @@
     pui: ["Tirs Éloignés", "Neutral", "Transcendance", "Cycle Élémentaire", "Polarité", "Kyrja", "Vajra", "Crépuscule", "Étreinte de Valkyr", "Holmgang", "Masque de l'Hystérique", "Violence", "Vindicte", "Massacre", "Concentration de Chakra", "Poudre", "Pandanlku", "Harmonie", "Fluctuation", "Rituel de Jashin", "Folie Sanguinaire", "Courant Quadramental", "Tarot d'Ecaflip", "Mot de Solidarité", "Décadence", "Instabilité"],
     puiAll: ["Cortège Sauvage", "Appel de la Meute", "Communion Animale", "Boîte à Outils", "Liens du Sang", "Comédie"],
     do: ["Bond", "Déambulation", "Odyssée", "Sillage", "Résonance", "Propagation", "Téléportation", "Bond du Félin", "Entrechat", "Attirance", "Transposition", "Détonateur", "Étoupille", "Aimantation", "Kaboom", "Croisement", "Masque du Psychopathe", "Débandade", "Aspiration", "Plongée", "Piston", "Submersion", "Aiguillage", "Récursivité", "Berserk", "Pivot", "Exode", "Exil", "Gangrène", "Poursuite", "Acharnement", "Nouvelle Lune", "Prédation", "Coup pour Coup", "Duel", "Varappe", "Brassage", "Armadur", "Transfiguration", "Piège Magnétique", "Imposture", "Empreinte", "Convection", "Répulsion Runique", "Sentinelle", "Vendetta", "Fosse Commune", "Dérobade", "Excursion"],
-    cri: ["Pas Chassé", "Astrolabe", "Bonne Pioche", "Odorat", "Compas", "Boussole", "Convergence", "Pistage", "Flair", "Clef du Trésor", "Invisibilité", "Brume", "Tir Perçant", "Prémonition", "Espace-temps", "Faille"],
+    cri: ["Astrolabe", "Bonne Pioche", "Odorat", "Compas", "Boussole", "Convergence", "Pistage", "Flair", "Clef du Trésor", "Invisibilité", "Brume", "Tir Perçant", "Prémonition", "Espace-temps", "Faille"],
     pa: ["Précipitation", "Vingt-cinquième Heure", "Piqûre Motivante", "Picole", "Relais Spirituel"],
-    shield: ["Tir de Repli", "Mot d'Envol", "Rempart", "Fortification", "Renfort", "Bouclier Féca", "Masque du Pleutre", "Masque du Couard", "Karcham", "Chamrak", "Stabilisation", "Casemate", "Retraite Anticipée", "Bouclier Élémentaire", "Entourloupe", "Conservation", "Reuche", "Ataraxie", "Rémanence"],
+    shield: ["Pas Chassé", "Tir de Repli", "Mot d'Envol", "Rempart", "Fortification", "Renfort", "Bouclier Féca", "Masque du Pleutre", "Masque du Couard", "Karcham", "Chamrak", "Stabilisation", "Casemate", "Retraite Anticipée", "Bouclier Élémentaire", "Entourloupe", "Conservation", "Reuche", "Ataraxie", "Rémanence"],
     shieldAll: ["Vitalité", "Transhumance", "Bergerie", "Trêve", "Sacrifice", "Redistribution", "Laisse Spirituelle"],
     heal: ["Portail", "Errance", "Fougue", "Secourisme", "Perfusion", "Ronce Apaisante", "Proie", "Rémission", "Seconde Chance", "Fuite du Temps", "Rembobinage", "Bombance", "Lait de Bambou", "Prisme Runique", "Conjuration", "Prohibition", "Dernier Souffle"],
     healAll: ["Don Naturel", "Distribution", "Raulebaque"],
@@ -242,6 +242,10 @@
     const list = [];
     kit.forEach((pair, pi) => pair.forEach((sp, vi) => { if (!sp.grades.length) return; sp.grades.forEach(collapseEl); fixFallback(sp);
       list.push({ id: "s" + sp.id, name: sp.name, icon: sp.icon, desc: sp.desc, pair: pi, variant: vi === 1, lvl: sp.grades[0].lvl, grades: sp.grades, el: elOfGrade(sp.grades[sp.grades.length - 1]) }); }));
+    // 3.0.2 : retouches de kits
+    const tweak = (n, fn) => { const sp = list.find((x) => x.name === n); if (sp) fn(sp); };
+    if (cls === "iop") tweak("Concentration", (sp) => sp.grades.forEach((g) => (g.casts = Math.min(g.casts || 2, 2))));
+    if (cls === "cra") { tweak("Flèche Cinglante", (sp) => { sp.grades[0].lvl = 12; sp.lvl = 12; }); tweak("Flèche de Dispersion", (sp) => { sp.grades[0].lvl = 34; sp.lvl = 34; }); }
     CLASSES[cls].spells = list;
     // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
     const EL2ST = { t: "fo", f: "ine", e: "cha", a: "age" }; const sc = { t: [], f: [], e: [], a: [] };

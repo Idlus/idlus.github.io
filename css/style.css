@@ -624,3 +624,11 @@ nav.main button{position:relative}
 }
 .spcard.later{opacity:.45;padding:6px 8px}
 .spcard.later .spicon{filter:grayscale(1)}
+/* bandeau de mise à jour (3.0.2) */
+#updbar:empty{display:none}
+.updbar{display:flex;gap:12px;align-items:flex-start;margin:10px 0 8px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(240,195,90,.16),rgba(155,77,255,.14));border:1.5px solid rgba(240,195,90,.45);box-shadow:var(--shadow);font-size:13.5px}
+.updbar ul{margin:6px 0 0;padding-left:18px;line-height:1.45}
+.updbar .col{display:flex;flex-direction:column;gap:6px;flex:none}
+.updbar.new{align-items:center;border-color:rgba(126,224,106,.55);background:rgba(126,224,106,.1)}
+.updbar.new span{flex:1}
+@media (max-width:640px){.updbar{flex-direction:column}.updbar .col{flex-direction:row}.updbar.new{flex-direction:row;flex-wrap:wrap}.updbar.new span{flex:1 1 100%}}

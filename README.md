@@ -5,6 +5,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Jouer :** https://mathiss29.github.io/DofousXen/ (bientôt : mathiss29.github.io/idlus)
 
+## 3.0.2 (équilibrage des classes)
+- Classes rééquilibrées par leurs sorts et passifs (Iop, Pandawa, Sadida, Zobal, Eliotrope, Crâ) ; correctif de puissance limité à ×0,8–×1,2
+- Bandeau « mise à jour appliquée » avec résumé, notes de mise à jour dans les options, alerte quand une nouvelle version est en ligne (`version.json`)
+
 ## 3.0.1 (correctifs)
 - Toutes les clés de donjon sont fabricables (Squelettes, Pitons, Dragon Cochon, Goulet : ingrédients ajoutés aux monstres de la zone)
 - Les 178 sorts de placement ou d'état ont un effet adapté au combat automatique (bonus, bouclier, soin, affaiblissement, PA…) qui évolue avec leur niveau
