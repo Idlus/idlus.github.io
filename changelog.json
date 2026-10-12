@@ -1,6 +1,45 @@
 {
-  "version": "0.1.24.2",
+  "version": "0.1.25.1",
   "versions": [
+    {
+      "v": "0.1.25.1",
+      "name": "Défi à portée de main",
+      "items": [
+        "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
+        "Accueil : une carte « Défi du jour » sous la bannière (donjon, stasis, modificateurs, ton record, ta série, le contenu du coffre). « Lancer le défi » le joue tout de suite et montre le résultat",
+        "Le coffre du jour est chiffré : environ combien de kamas, et combien de Poussières de stasis",
+        "Nouveau bouton « Changer d'équipe » sur la page du défi et après une défaite : comme le hasard est fixe, il faut changer quelque chose pour faire mieux",
+        "Une pastille sur l'onglet Défi tant que le défi du jour n'est pas réussi ; dans Monde › Donjons, le grand encart devient une ligne qui mène à la page"
+      ]
+    },
+    {
+      "v": "0.1.25",
+      "name": "Options rangées",
+      "items": [
+        "Le menu Options est rangé en 5 onglets : Affichage, Sons, Jeu, Sauvegarde (« Compte » quand tu es en ligne) et Aide. Il rouvre le dernier onglet utilisé",
+        "Une carte par thème, le nom du réglage à gauche et le choix à droite ; les cases à cocher restent à côté de leur texte",
+        "Jeu regroupe les consignes d'absence, les protecteurs de ressources et le code cadeau ; Sauvegarde regroupe les copies de secours, l'export / import et « Nouvelle partie » dans une carte rouge à part",
+        "Rien n'est supprimé et tes réglages gardent leur valeur ; le bouton « Régler » du résumé d'absence ouvre directement l'onglet Jeu"
+      ]
+    },
+    {
+      "v": "0.1.24.4",
+      "name": "Combat en vue",
+      "items": [
+        "Expédition : le combat se suit par défaut. Partir, ou choisir une porte Combat, Élite ou Boss, ouvre l'onglet Combat ; entre deux combats, les portes de l'étage s'affichent au-dessus de la scène, et les fiches (relique, bénédiction, coffre, Marchand) s'y ouvrent aussi",
+        "La page Expédition reste là pour le campement, les reliques, les bénédictions et les règnes (bouton « Voir l'expédition » dans l'onglet Combat)"
+      ]
+    },
+    {
+      "v": "0.1.24.3",
+      "name": "Chasser à son rythme",
+      "items": [
+        "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
+        "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",
+        "Les héros ne lancent plus de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans attaquer, jusqu'à la retraite au tour 60)",
+        "Sans équipement, on perd toujours souvent à partir des zones 32-40"
+      ]
+    },
     {
       "v": "0.1.24.2",
       "name": "Percepteurs à 5 %",
