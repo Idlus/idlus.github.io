@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.4 « Encore plus posés » (bêta)
+- Combats encore un peu ralentis : 780 ms par action. Récompenses par combat relevées d'autant, gains par heure inchangés.
+
 ## 0.1.3 « Combats plus posés » (bêta)
 - Combats environ 25 % moins rapides (650 ms par action au lieu de 520) pour mieux voir les animations.
 - Récompenses par combat relevées d'autant : XP, butin et kamas par heure inchangés, aussi hors ligne.

@@ -1,6 +1,14 @@
 {
-  "version": "0.1.3",
+  "version": "0.1.4",
   "versions": [
+    {
+      "v": "0.1.4",
+      "name": "Encore plus posés",
+      "items": [
+        "Les combats ralentissent encore un peu : une action toutes les 0,78 seconde (0,52 avant la 0.1.3)",
+        "Les récompenses par combat suivent : gains par heure toujours inchangés"
+      ]
+    },
     {
       "v": "0.1.3",
       "name": "Combats plus posés",
