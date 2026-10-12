@@ -1,6 +1,19 @@
 {
-  "version": "0.1.15",
+  "version": "0.1.16",
   "versions": [
+    {
+      "v": "0.1.16",
+      "name": "Classements",
+      "items": [
+        "Nouvel onglet Classements (famille Aventure) : Niveau de l'équipe (chaque renaissance compte 200 niveaux), Donjons, Album, Succès et Premiers ; ta place est toujours affichée",
+        "Filtre par classe : le meilleur Iop, le meilleur Crâ… (le plus haut héros de cette classe, renaissances comprises)",
+        "Records de donjon vérifiés : quand tu termines une stasis plus haute, le serveur rejoue la stasis avec ton équipe et donne le temps officiel ; la plus haute stasis gagne, puis le combat le plus rapide",
+        "Donjons de la semaine : un par tranche de niveau, les mêmes pour tout le monde ; les 3 premiers de chacun portent le titre « Maître de la semaine » la semaine suivante",
+        "Premiers : le premier héros au niveau 200 et le premier joueur à finir chaque donjon en stasis 10 sont gravés pour toujours",
+        "Profil des joueurs : un clic sur un pseudo montre son équipe, l'équipement de chaque héros et ses records",
+        "Anti-triche : un progrès impossible (ou une partie retouchée par le panel de test) met la partie « en vérification » : elle joue normalement mais n'apparaît plus dans les classements"
+      ]
+    },
     {
       "v": "0.1.15",
       "name": "Comptes en ligne",

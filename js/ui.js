@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.15";
+const GAME_VERSION = "0.1.16";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.16", name: "Classements", items: [
+    "Nouvel onglet Classements (famille Aventure) : Niveau de l'équipe (chaque renaissance compte 200 niveaux), Donjons, Album, Succès et Premiers ; ta place est toujours affichée",
+    "Filtre par classe : le meilleur Iop, le meilleur Crâ… (le plus haut héros de cette classe, renaissances comprises)",
+    "Records de donjon vérifiés : quand tu termines une stasis plus haute, le serveur rejoue la stasis avec ton équipe et donne le temps officiel ; la plus haute stasis gagne, puis le combat le plus rapide",
+    "Donjons de la semaine : un par tranche de niveau, les mêmes pour tout le monde ; les 3 premiers de chacun portent le titre « Maître de la semaine » la semaine suivante",
+    "Premiers : le premier héros au niveau 200 et le premier joueur à finir chaque donjon en stasis 10 sont gravés pour toujours",
+    "Profil des joueurs : un clic sur un pseudo montre son équipe, l'équipement de chaque héros et ses records",
+    "Anti-triche : un progrès impossible (ou une partie retouchée par le panel de test) met la partie « en vérification » : elle joue normalement mais n'apparaît plus dans les classements" ] },
   { v: "0.1.15", name: "Comptes en ligne", items: [
     "Compte Idlus : connexion avec Discord ou par un lien reçu par e-mail (sans mot de passe), et un pseudo unique choisi une seule fois",
     "Ta partie est gardée en ligne : envoi toutes les 30 secondes et quand tu quittes l'onglet, pour la retrouver sur un autre ordinateur ou ton téléphone",
@@ -502,7 +510,7 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]].concat(window.ONLINE && window.ONLINE.enabled ? [["ladder", "Classements", "trophee"]] : []) },
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
 ];
@@ -3795,6 +3803,7 @@ function render() {
   else if (ui.tab === "forge") renderForge();
   else if (ui.tab === "quests") renderQuests();
   else if (ui.tab === "ren") renderRenaissance();
+  else if (ui.tab === "ladder") renderLadder();
   else { ui.tab = "home"; renderHome(); }
 }
 /* Moments de récompense (3.1.3) : un grand encart à la fois, qui se ferme seul ou d'un clic */
@@ -3891,6 +3900,7 @@ document.addEventListener("click", (ev) => {
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
   if (ON && a && a.startsWith("on-")) { onAct(a, t); return; }
+  if (ON && a && a.startsWith("lb-")) { lbAct(a, t); return; }
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -4146,6 +4156,7 @@ document.addEventListener("click", (ev) => {
 });
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
+  if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
   if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
   else if (a === "autocap") { const x = char(+t.dataset.id); x.autoCap = +t.value; E.autoAllocate(S, x); }
@@ -4236,7 +4247,7 @@ function copyBeforeUpdate(st) { SV.beforeUpdate(st, restoredCopy); }
    Pendant le jeu : envoi toutes les 30 s et quand on quitte l'onglet, pastille dans la barre du haut. */
 const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null;
 let booted = false, sincePush = 0;
-const onMeta = (st) => (st && st.chars ? { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length } : {});
+const onMeta = (st) => (st && st.chars ? Object.assign(window.VERIFY ? window.VERIFY.summary(E, st) : {}, { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length }) : {});
 const onLive = () => !!(ON && ON.user && ON.profile && booted && S);
 function openGate(html) { hideTip(); $("#sheet").innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
 const DISCORD_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.6 5.3A17 17 0 0 0 15.4 4l-.5 1a15.6 15.6 0 0 0-5.8 0l-.5-1a17 17 0 0 0-4.2 1.3C1.7 9.3 1 13.2 1.3 17a17 17 0 0 0 5.2 2.6l1.1-1.8c-.6-.2-1.2-.5-1.7-.8l.4-.3a12 12 0 0 0 11.4 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.3-2.9-11.7ZM8.7 14.7c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg>`;
@@ -4310,14 +4321,14 @@ async function takeRemote(info) {
   if (cur) pushCopy(cur, "avant", booted ? S : null);
   SV.write(txt); ON.setLink({ uid: ON.user.id, base: info.updated_at, savedAt: st.savedAt || 0 }); ON.setState("ok");
   if (!booted) return bootGame();
-  closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark");
+  closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); recBoot = recSnap();
   const gap = (E.now() - (S.lastTick || E.now())) / 1000; const r = gap > 60 ? E.catchUp(S, gap) : null; render();
   if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r); else toast("Partie en ligne chargée.");
 }
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); renderPill(); return r; });
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") recSubmit(); renderPill(); return r; });
 }
 async function onConflictLive() {
   let info; try { info = await ON.remoteInfo(); } catch (e) { ON.setState("offline"); return; }
@@ -4393,6 +4404,171 @@ async function onBoot() {
   if (!user) { if (ON.link().skip && !err) return bootGame(); return loginScreen(err); }
   ui.onMailSent = null;
   return onAfterLogin();
+}
+
+/* ---------- 0.1.16 : classements (js/verify.js + fonction serveur « record ») ----------
+   Niveau (avec filtre par classe), Donjons (de la semaine ou depuis toujours), Album, Succès, Premiers.
+   Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
+const VF = window.VERIFY;
+const LB = { tab: "lvl", cls: "", dmode: "week", did: null, cache: {} };
+const LB_TABS = [["lvl", "Niveau"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
+const cmed = (cls) => (CLASSES[cls] ? `<span class="cm" style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
+const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
+const weekNow = () => VF.weekIdx(E.now());
+const weekList = () => VF.weeklyDungeons(DUNGEONS, weekNow());
+function lbDefaultDid() {
+  const top = S ? Math.max(...S.chars.map((c) => c.lvl)) : 1; const wl = weekList();
+  return (wl.find((x) => x.bracket === VF.bracketOf(top)) || wl[0] || {}).did;
+}
+/* Requête d'un classement, gardée 60 s. */
+async function lbFetch() {
+  const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
+  const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did].join("|");
+  const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
+  const out = { at: Date.now(), rows: [], me: null, score: null };
+  const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
+  if (t === "lvl" && LB.cls) {
+    const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score }));
+    const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
+    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
+  } else if (t === "lvl" || t === "album" || t === "succ") {
+    const col = t === "lvl" ? "level" : t === "album" ? "album" : "succes";
+    const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : `${v} succès`);
+    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}`).order(col, { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]) }));
+    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+  } else if (t === "dj") {
+    const did = LB.did || lbDefaultDid(); LB.did = did;
+    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true });
+    if (LB.dmode === "week") {
+      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      out.rows = (data || []).map(rec);
+      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+    } else {
+      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      out.rows = (data || []).map(rec);
+      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).eq("user_id", me).limit(1);
+        if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: await count(db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${m[0].k},and(k.eq.${m[0].k},t.lt.${m[0].t})`)) }); }
+    }
+  } else if (t === "first") {
+    const { data } = await db.from("firsts").select("kind,key,label,pseudo,user_id,at").order("at", { ascending: true }).limit(300);
+    out.rows = data || [];
+  }
+  LB.cache[key] = out; return out;
+}
+function lbRowHtml(r, i, me) {
+  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+}
+function lbListHtml(d) {
+  if (LB.tab === "first") {
+    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200 et le premier à finir chaque donjon en stasis 10 seront gravés ici pour toujours.</div>`;
+    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${IC(r.kind === "lvl200" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
+  }
+  const me = ON.user && ON.user.id;
+  if (!d.rows.length) return `<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
+  const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
+  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls)}<span class="nm">${h(r.p)}</span><span class="sc">${h(r.sc)}</span></button>`; }).join("");
+  const inTop = d.me && d.rows.some((r) => r.u === me);
+  return `<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
+}
+function renderLadder() {
+  if (!ON) { ui.tab = "home"; return renderHome(); }
+  const wl = weekList(), dids = Object.keys(DUNGEONS).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || DUNGEONS[a].name.localeCompare(DUNGEONS[b].name));
+  if (!LB.did) LB.did = lbDefaultDid();
+  const wEnd = Math.max(0, ((weekNow() + 1) * 7 - 3) * 86400000 - E.now());
+  const head = LB.tab === "lvl" ? `<div class="row between"><span class="small muted">Niveau de l'équipe : la somme des niveaux de tes héros ; chaque renaissance compte ${VF.REB_LVL} niveaux.</span>
+      <select data-act="lb-cls" aria-label="Classe"><option value="">Toutes les classes</option>${CLASS_ORDER.map((c) => `<option value="${c}" ${LB.cls === c ? "selected" : ""}>Meilleur ${h(CLASSES[c].name)}</option>`).join("")}</select></div>`
+    : LB.tab === "dj" ? `<div class="row"><span class="seg">${[["week", "Cette semaine"], ["all", "Depuis toujours"]].map(([v, n]) => `<button data-act="lb-dmode" data-v="${v}" aria-pressed="${LB.dmode === v}">${n}</button>`).join("")}</span>
+      ${LB.dmode === "all" ? `<select data-act="lb-did" aria-label="Donjon">${dids.map((d) => `<option value="${d}" ${LB.did === d ? "selected" : ""}>${h(DUNGEONS[d].name)} (niv. ${DUNGEONS[d].lvl})</option>`).join("")}</select>` : ""}</div>
+      ${LB.dmode === "week" ? `<div class="panel"><div class="pad stack"><div class="row between"><b>${IC("cle")} Donjons de la semaine</b><span class="tag good">fin dans ${wEnd >= 86400000 ? `${Math.floor(wEnd / 86400000)} j ${Math.floor((wEnd % 86400000) / 3600000)} h` : dur(wEnd / 1000)}</span></div>
+        <span class="small muted">Un donjon par tranche de niveau, le même pour tout le monde. La stasis la plus haute gagne, puis le combat le plus rapide (temps mesuré par le serveur). Les 3 premiers de chaque donjon portent le titre « Maître de la semaine » la semaine suivante.</span>
+        <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
+    : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
+    : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (213 au total)." : "Succès débloqués."}</span>`;
+  const login = ON.user ? "" : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
+  $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
+    <nav class="subtabs">${LB_TABS.map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
+    <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
+  const key = [LB.tab, LB.cls, LB.dmode, LB.did].join("|");
+  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did].join("|")) el.innerHTML = lbListHtml(d); })
+    .catch(() => { const el = $("#lbList"); if (el) el.innerHTML = `<div class="empty">Classement indisponible : pas de connexion au serveur.</div>`; });
+}
+async function lbProfile(u) {
+  if (!u) return;
+  openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
+  const db = ON.db();
+  try {
+    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes").eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
+    if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+    const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
+    ui.lbProf = { u, heroes };
+    openSheet(`<div class="row">${cmed(p.main)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
+      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
+      <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
+      <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
+      <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  } catch (e) { openSheet(`<h2>Profil</h2><div class="empty">Pas de connexion au serveur.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
+}
+function lbGearHtml(x) {
+  if (!x) return "";
+  const g = (x.gear || []).filter((t) => ITEMS[t]);
+  return `<div class="stack" style="gap:6px"><span class="small"><b>Équipement de ${h(x.name || CLASSES[x.cls].name)}</b></span>${g.length ? `<div class="gearrow">${g.map((t) => `<span class="icobox ${rarCls(t)}" data-tip="${h(ITEMS[t].name)} (niv. ${ITEMS[t].lvl})">${im(itemImg(t), "", ITEMS[t].name)}</span>`).join("")}</div>` : `<span class="small muted">Aucun objet équipé.</span>`}</div>`;
+}
+/* Envoi des records au serveur : après chaque envoi de partie réussi, un donjon à la fois. */
+let recBusy = false, recBoot = null;
+const recSnap = () => { const o = {}; for (const did in (S && S.stasis) || {}) { const SI = S.stasis[did]; o[did] = { k: SI.max || 0, ct: (SI.best && SI.best[SI.max]) || 0 }; } return o; };
+function recQueue() {
+  const sent = ON.link().rec || {}, out = [];
+  for (const did in S.stasis || {}) {
+    const SI = S.stasis[did], k = SI.max || 0; if (!k || !DUNGEONS[did]) continue;
+    const s = sent[did], ct = (SI.best && SI.best[k]) || 0;
+    if (!s || k > s.k || (k === s.k && ct && s.ct && ct < s.ct * 0.95)) out.push(did);
+  }
+  const fresh = (did) => { const b = (recBoot || {})[did]; const SI = S.stasis[did]; return !b || SI.max > b.k || ((SI.best || {})[SI.max] || 0) < b.ct; };
+  return out.sort((a, b) => fresh(b) - fresh(a));
+}
+async function recSubmit() {
+  if (!onLive() || recBusy || S.panelUsed) return; const q = recQueue(); if (!q.length) return;
+  const did = q[0], b = (recBoot || {})[did], SI = S.stasis[did], isFresh = !b || SI.max > b.k || ((SI.best || {})[SI.max] || 0) < b.ct;
+  recBusy = true; const r = await ON.submitRecord(did); recBusy = false;
+  if (!r || r.net || r.err === "trop tôt") return;
+  const l = ON.link(); const rec = l.rec || {}; rec[did] = { k: SI.max, ct: (SI.best || {})[SI.max] || 0 }; ON.setLink({ rec });
+  if (recBoot) recBoot[did] = rec[did];
+  Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
+  if (r.ok && (r.improved || r.weekImproved) && isFresh) recordSheet(r);
+}
+function recordSheet(r) {
+  if ($("#sheet").innerHTML) { toast(`Record vérifié : ${r.dname}, stasis ${r.k} en ${recTime(r.t)} (${r.rank}e).`, "rare"); return; }
+  openSheet(`<h2>${r.first ? "Premier au monde !" : "Nouveau record !"}</h2><div class="bigrec">Stasis ${r.k} · ${recTime(r.t)}</div><span class="small muted" style="text-align:center">${h(r.dname)}${r.week ? ", donjon de la semaine" : ""}</span>
+    <div class="chk"><div><span class="okc">✓</span><span>Partie envoyée au serveur</span></div><div><span class="okc">✓</span><span>Le serveur a rejoué la stasis avec ton équipe et l'a terminée en ${recTime(r.t)} (temps officiel)</span></div>
+    <div><span class="okc">✓</span><span><b>Record vérifié</b> : ${r.rank}${r.rank === 1 ? "er" : "e"} sur ce donjon${r.week ? ` · ${r.weekRank}${r.weekRank === 1 ? "er" : "e"} cette semaine` : ""}</span></div>
+    ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis 10 : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}</div>
+    <div class="row"><button class="btn primary" data-act="lb-goto" data-v="${h(r.did)}" data-w="${r.week ? 1 : 0}">Voir le classement</button><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* Titre « Maître de la semaine » : porté la semaine qui suit un podium. */
+const WEEK_TITLE = "Maître de la semaine";
+async function lbTitles() {
+  if (!onLive()) return;
+  try {
+    const { data } = await ON.db().from("lb_week").select("did,r").eq("w", weekNow() - 1).eq("user_id", ON.user.id).lte("r", 3).limit(1);
+    S.titlesExtra = S.titlesExtra || []; const has = S.titlesExtra.includes(WEEK_TITLE);
+    if (data && data.length && !has) { S.titlesExtra.push(WEEK_TITLE); dirty = true; toast(`Podium de la semaine passée : titre « ${WEEK_TITLE} » débloqué pour cette semaine (onglet Héros).`, "rare"); }
+    else if (data && !data.length && has) { S.titlesExtra = S.titlesExtra.filter((t) => t !== WEEK_TITLE); S.chars.forEach((c) => { if (c.title === WEEK_TITLE) c.title = null; }); dirty = true; }
+  } catch (e) {}
+}
+function lbAct(a, t) {
+  const d = t.dataset;
+  switch (a) {
+    case "lb-tab": LB.tab = d.v; break;
+    case "lb-dmode": LB.dmode = d.v; break;
+    case "lb-wk": LB.did = d.v; break;
+    case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;
+    case "lb-hero": { ui.lbHero = +d.v; const p = ui.lbProf; const g = $("#lbGear"); if (p && g) g.innerHTML = lbGearHtml(p.heroes[ui.lbHero]); document.querySelectorAll('[data-act="lb-hero"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); return; }
+    case "lb-goto": closeSheet(); LB.tab = "dj"; LB.did = d.v; LB.dmode = d.w === "1" ? "week" : "all"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return;
+  }
+  renderLadder();
 }
 function restoreCopy(i) {
   const c = readCopies()[i]; if (!c) return;
@@ -4485,6 +4661,7 @@ function bootGame(pushNow) {
     else if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r);
     S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
+  if (onLive()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});

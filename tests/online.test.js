@@ -27,17 +27,20 @@ const MOCK = () => {
   const put = (d) => localStorage.setItem("__mock", JSON.stringify(d));
   const ts = () => new Date(Date.now()).toISOString().replace("Z", "000Z").replace(/\.(\d{3})000Z$/, ".$1" + String(Math.floor(Math.random() * 1000)).padStart(3, "0") + "Z");
   const q = (table) => {
-    const f = []; let ins = null;
-    const run = () => { const d = db(); let rows = table === "profiles" ? d.profiles : Object.entries(d.saves).map(([user_id, s]) => Object.assign({ user_id }, s));
-      f.forEach(([k, v, like]) => { rows = rows.filter((r) => like ? String(r[k]).toLowerCase() === v.toLowerCase() : r[k] === v); }); return rows; };
+    const f = []; let ins = null, ord = [], lim = 1e9, head = false;
+    const rowsOf = () => { const d = db(); if (table === "profiles") return d.profiles; if (table === "saves") return Object.entries(d.saves).map(([user_id, s]) => Object.assign({ user_id }, s)); return (d.views || {})[table] || []; };
+    const run = () => { let rows = rowsOf().slice(); f.forEach((fn) => { rows = rows.filter(fn); });
+      ord.slice().reverse().forEach(([k, asc]) => rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * (asc ? 1 : -1))); return rows.slice(0, lim); };
     const b = {
-      select: () => b, limit: () => b,
-      eq: (k, v) => { f.push([k, v]); return b; }, ilike: (k, v) => { f.push([k, v.replace(/\\/g, ""), true]); return b; },
+      select: (c, o) => { head = !!(o && o.head); return b; }, limit: (n) => { lim = n; return b; }, order: (k, o) => { ord.push([k, !o || o.ascending !== false]); return b; },
+      eq: (k, v) => { f.push((r) => r[k] === v); return b; }, gt: (k, v) => { f.push((r) => r[k] > v); return b; }, lte: (k, v) => { f.push((r) => r[k] <= v); return b; },
+      or: () => { f.push(() => false); return b; },
+      ilike: (k, v) => { v = v.replace(/\\/g, ""); f.push((r) => String(r[k]).toLowerCase() === v.toLowerCase()); return b; },
       insert: (o) => { ins = o; return b; },
       maybeSingle: () => Promise.resolve({ data: run()[0] || null, error: null }),
       then: (ok, ko) => {
         if (ins) { const d = db(); if (d.profiles.some((p) => p.pseudo.toLowerCase() === ins.pseudo.toLowerCase())) return Promise.resolve({ error: { message: "duplicate key" } }).then(ok, ko); d.profiles.push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
-        return Promise.resolve({ data: run(), error: null }).then(ok, ko);
+        const rows = run(); return Promise.resolve(head ? { count: rows.length, error: null } : { data: rows, error: null }).then(ok, ko);
       },
     };
     return b;
@@ -53,6 +56,7 @@ const MOCK = () => {
       linkIdentity: async () => ({ error: null }),
     },
     from: q,
+    functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
       const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
       if (window.__offline) throw new Error("Failed to fetch");
@@ -132,6 +136,23 @@ const MOCK = () => {
     await page.evaluate(() => { window.__offline = true; }); await page.click("#onPill"); await page.waitForTimeout(400);
     if ((await page.getAttribute("#onPill", "data-st")) !== "offline") fail("pastille hors ligne absente");
     await page.evaluate(() => { window.__offline = false; });
+    // 7b. classements : liste, onglets, profil, record vérifié
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const H = [{ cls: "iop", lvl: 120, ren: 1, name: "Grokk", gear: [] }];
+      d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
+        lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }] };
+      localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.click('#nav [data-fam="adv"]'); await page.click('#subnav [data-tab="ladder"]');
+    await page.waitForSelector(".podium .pod", { timeout: 10000 });
+    if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
+    for (const tb of ["dj", "album", "succ", "first", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
+    await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
+    if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");
+    await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 }); await page.click('[data-act="closesheet"].btn');
+    await page.evaluate(() => { const S = window.DX.S; const did = Object.keys(window.DATA.DUNGEONS)[0]; S.stasis = S.stasis || {}; S.stasis[did] = { max: 3, sel: 3, firsts: {}, best: { 3: 80 } }; window.DX.saveNow(); });
+    await page.click("#onPill"); await page.waitForSelector(".bigrec", { timeout: 8000 });
+    if (!/Stasis 3/.test(await page.textContent(".bigrec"))) fail("fiche de record incorrecte");
+    await page.click('[data-act="lb-goto"]'); await page.waitForTimeout(300);
+    m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.16 « Classements » (bêta)
+- Multijoueur, étape 3 : onglet Classements (Niveau avec filtre par classe, Donjons de la semaine et depuis toujours, Album, Succès, Premiers), profils des joueurs. Les records de donjon sont rejoués par la fonction serveur `supabase/functions/record` (même moteur que le jeu, assemblé par `tools/build_server.js`) ; base dans `supabase/classements.sql`, appliquée avec la fonction par le workflow « Serveur en ligne ».
+
 ## 0.1.15 « Comptes en ligne » (bêta)
 - Multijoueur, étape 2 : compte (Discord ou lien par e-mail, pseudo unique) et sauvegarde en ligne sur Supabase (`js/online.js`, base dans `supabase/schema.sql`), pastille de sauvegarde, choix entre deux versions de la partie, partie « Compte » dans les Options.
 
