@@ -16,9 +16,16 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.9";
+const GAME_VERSION = "0.1.9.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.9.1", name: "Barre et page Équipe", items: [
+    "Nouvelle barre de navigation en 4 familles : Accueil, Aventure, Équipe et Artisanat, avec leurs pages juste en dessous ; de la place pour les prochains onglets",
+    "Sur PC, un cadre « Combat en cours » donne le donjon et la salle (ou la zone de chasse) depuis n'importe quelle page ; sur téléphone, Combat devient le gros bouton du centre",
+    "Nouvelle page Équipe : une carte par héros avec son activité, son XP, sa monture et ce qui l'attend (points à répartir, meilleur équipement, familier affamé) ; chaque alerte est un bouton",
+    "Bouton « Réorganiser » : un plateau pour glisser les héros entre la première ligne, l'arrière, la récolte, la salle d'entraînement et le repos (sur téléphone : toucher le héros, puis la zone)",
+    "« Tout équiper au mieux » met le meilleur objet libre du sac dans chaque emplacement des héros de l'équipe",
+    "Étoile ★ du héros principal : son symbole de classe devient l'icône de l'onglet Héros ; l'Accueil prend le logo d'Idlus et le Havre-Sac son sac" ] },
   { v: "0.1.9", name: "Montures", items: [
     "Montures : 41 couleurs officielles de dragodindes (dès le niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), avec leurs bonus DOFUS au niveau 100",
     "Capture au filet : avec un filet dans le sac (2 000 kamas, ou Bricoleur niveau 40), chaque victoire aux Plaines Rocheuses, aux Plaines herbeuses d'Otomaï ou à la Plaine de Sakaï peut capturer une monture sauvage, hors ligne aussi",
@@ -195,6 +202,7 @@ const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLAS
 /* ---------- icônes 3.1.2 : objets officiels + glyphes ---------- */
 const IC = (n, c = "") => `<img class="uico ${c}" src="assets/ui/${n}.webp" alt="" loading="lazy">`;
 const GL = {
+  swap: '<path d="M7 4v16M7 4 3.5 7.5M7 4l3.5 3.5M17 20V4M17 20l-3.5-3.5M17 20l3.5-3.5"/>',
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
@@ -221,7 +229,6 @@ const G = (n, c = "") => GLF[n] ? `<svg class="uico ${c}" viewBox="0 0 24 24" ar
 /* émojis des données (consommables, Havre-Sac, boutiques…) → icônes officielles */
 const EMO = { "📜": "quetes", "🧪": "teinture", "📦": "coffre", "🍬": "bonbon", "🍭": "bonbon", "🪙": "kamas", "🎯": "bonbon", "👑": "couronne", "📘": "parchemin_or", "💎": "cristal", "🎁": "coffre", "💰": "bourse", "🗝": "cle", "✨": "poussiere", "⛏": "pioche", "📚": "parchemin_or", "🏺": "trophee", "🥊": "combat", "🌿": "pioche", "🎒": "sac", "🛏": "havre", "🎩": "couronne", "🎟": "carte", "🎖": "trophee", "🌾": "bonbon", "🪽": "ailes", "🪑": "havre" };
 const emo = (e) => { const k = String(e || "").replace(/\ufe0f/g, ""); return EMO[k] ? IC(EMO[k]) : `<span class="uemo">${h(e || "")}</span>`; };
-const NAV_MED = { home: "havre", world: "monde", combat: "combat", heroes: "dofus", inv: "sac", metiers: "metiers", forge: "forge", quests: "quetes" };
 const med = (n, sz = "") => `<i class="med ${sz}"><img src="assets/ui/${n}.webp" alt=""></i>`;
 const CATICO = {};
 const catIco = (c) => { if (!(c.id in CATICO)) { const best = Object.entries(RES).filter(([, r]) => c.types.includes(r.type)).sort((a, b) => a[1].lvl - b[1].lvl)[0]; CATICO[c.id] = best ? `<img class="uico" src="${resImg(best[0])}" alt="" loading="lazy">` : ""; } return CATICO[c.id] || emo(c.icon); };
@@ -356,7 +363,17 @@ const ICONS = {
   inv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
   ateliers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 21l8-8M14 4l6 6-4 4-6-6 4-4z"/><path d="M4 9h5M6.5 6.5v5"/></svg>',
 };
-const TABS = [["home", "Accueil", "Accueil"], ["world", "Monde", "Monde"], ["combat", "Combat", "Combat"], ["heroes", "Héros", "Héros"], ["inv", "Inventaire", "Sac"], ["metiers", "Métiers", "Métiers"], ["forge", "Forgemagie", "Forge"], ["quests", "Quêtes", "Quêtes"]];
+/* 0.1.9.1 : barre en 4 familles (Accueil, Aventure, Équipe, Artisanat), leurs pages juste en dessous.
+   Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
+const NAV = [
+  { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
+  { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"]] },
+  { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
+];
+const famOf = (tab) => NAV.find((F) => F.pages.some((p) => p[0] === tab)) || NAV[0];
+const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
+const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
 
 /* ---------- décors de scène (SVG déterministe) ---------- */
 const DECOS = {
@@ -481,9 +498,29 @@ function subItems(sub) {
 
 /* ---------- navigation & bandeau ---------- */
 function renderNav() {
-  const badge = (id) => (id === "quests" && S && questAlert() ? '<span class="navdot"></span>' : "");
-  $("#nav").innerHTML = S ? TABS.map(([id, n, sh]) => `<button data-tab="${id}" ${ui.tab === id ? 'aria-current="page"' : ""}>${med(NAV_MED[id] || "carte")}<span class="lbl-l">${n}</span><span class="lbl-s">${sh}</span>${badge(id)}</button>`).join("") : "";
+  if (!S) { $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; return; }
+  const F = famOf(ui.tab); const fight = ui.tab === "combat";
+  ui.famLast = ui.famLast || {}; if (!fight) ui.famLast[F.id] = [ui.tab, ui.home];
+  const nAl = teamAlerts().length; const qd = questAlert();
+  const dot = (on, n) => (n ? `<span class="navcnt">${n}</span>` : on ? '<span class="navdot"></span>' : "");
+  const fam = (G) => { const l = ui.famLast[G.id] || [G.pages[0][0], G.pages[0][3]];
+    return `<button data-tab="${l[0]}" ${l[0] === "home" ? `data-home="${l[1] || "apercu"}"` : ""} data-fam="${G.id}" ${G === F ? 'aria-current="page"' : ""}>${med(G.ic)}<span>${G.n}</span>${dot(G.id === "adv" && qd, G.id === "team" ? nAl : 0)}</button>`; };
+  $("#nav").className = "main fams" + (fight ? " infight" : "");
+  $("#nav").innerHTML = fam(NAV[0]) + fam(NAV[1]) + `<button class="navfight" data-tab="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>` + fam(NAV[2]) + fam(NAV[3]) + `<span id="navlive">${navLiveHtml()}</span>`;
+  const cur = ui.tab === "home" ? (ui.home === "havre" ? "havre" : "apercu") : null;
+  $("#subnav").innerHTML = F.pages.map(([tab, n, ic, hm]) => { const on = tab === ui.tab && (!hm || hm === cur);
+    return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot(tab === "quests" && qd, tab === "team" ? nAl : 0)}</button>`; }).join("");
 }
+/* cadre « Combat en cours » (PC) : donjon et salle, ou zone de chasse ; rafraîchi par la boucle */
+function navLiveHtml() {
+  if (!S || ui.tab === "combat" || !E.team(S).length) return "";
+  const dg = S.dungeon && DUNGEONS[S.dungeon.id];
+  if (!dg && !(S.hunting && S.sub)) return "";
+  const where = dg ? dg.name : E.SUBS[S.sub].name;
+  const sub = dg ? `salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}${S.dungeon.stasis ? ` · stasis ${S.dungeon.stasis}` : ""}` : "chasse en cours";
+  return `<button class="navlive" data-tab="combat" title="Voir le combat"><span class="pulse"></span><span class="tx"><b>Combat en cours</b><small>${h(where)} · ${sub}</small></span></button>`;
+}
+function updNavLive() { const el = $("#navlive"); if (!el) return; const v = navLiveHtml(); if (el.dataset.v !== v) { el.innerHTML = v; el.dataset.v = v; } }
 function statusHtml() {
   if (!S) return "";
   const team = E.team(S);
@@ -584,13 +621,13 @@ function renderHome() {
   if (ui.home !== "havre") $("#main").insertAdjacentHTML("beforeend", `<section class="panel discordcard"><div class="pad row"><span class="dico">${G("chat")}</span><span class="grow"><b>Rejoignez la communauté idlus sur Discord</b><br><span class="small muted">Annonces des mises à jour, aide, builds, et vos idées pour la suite du jeu.</span></span><a class="btn primary" href="${DISCORD}" target="_blank" rel="noopener">Rejoindre</a></div></section>`);
 }
 function renderHomeInner() {
-  const team = E.team(S); const main = team[0] || S.chars[0];
+  const team = E.team(S); const main = mainHero();
   const deco = S.dungeon ? dgDeco(S.dungeon.id) : S.sub ? subDeco(S.sub) : "sky";
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
     : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b> ${starsHtml(S.sub, true)}` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
   const zkey = S.dungeon ? null : S.sub; const rate = zkey ? E.zoneRate(S, zkey) : null;
   const archis = Object.values(S.archis).reduce((a, b) => a + b, 0);
-  const tabs = `<nav class="subtabs">${[["apercu", "Aperçu"], ["havre", "Havre-Sac"]].map(([id, n]) => `<button data-act="hometab" data-v="${id}" aria-pressed="${ui.home === id}">${n}</button>`).join("")}</nav>`;
+  const tabs = ""; // Aperçu / Havre-Sac : dans la barre de navigation depuis la 0.1.9.1
   if (ui.home === "havre") { $("#main").innerHTML = tabs + havreHtml(); return; }
   const q = E.questStep(S); const qp = E.questProgress(S); const A = E.almanax(S);
   $("#main").innerHTML = tabs + `
@@ -1597,6 +1634,90 @@ function xpTipTxt(c) {
   const eta = E.lvlEta(S, c, c.lvl + 1); const g = lvlGoal(c); const eg = g > c.lvl + 1 ? E.lvlEta(S, c, g) : null;
   return `Niveau ${c.lvl + 1} dans ${E.etaTxt(eta)}${eg !== null ? ` · niveau ${g} dans ${E.etaTxt(eg)}` : ""} · ≈ ${fmt(xpH)} XP/h ici. L'estimation suit le rythme réel et bouge si vous changez de zone.`;
 }
+/* ---------- 0.1.9.1 : page Équipe (tableau de bord des héros + plateau « Réorganiser ») ---------- */
+let alertCache = { t: 0, v: [] };
+/* ce qui attend chaque héros : points à répartir (répartition manuelle), meilleur objet libre, familier affamé */
+function teamAlerts(force) {
+  if (!S) return [];
+  if (!force && Date.now() - alertCache.t < 2000) return alertCache.v;
+  const v = [];
+  S.chars.forEach((c) => {
+    if (!c.autoStat && c.pts > 0) v.push({ c, k: "pts", t: `${c.pts} point${c.pts > 1 ? "s" : ""} à répartir` });
+    if (c.inTeam && !c.job && EQ_SLOTS.some((s) => slotUpgrade(c, s))) v.push({ c, k: "gear", t: "Meilleur équipement dispo" });
+    const P = E.petOf && E.petOf(S, c); if (P && P.hungry) v.push({ c, k: "pet", t: "Familier affamé" });
+  });
+  alertCache = { t: Date.now(), v }; return v;
+}
+const teamZone = (c) => (c.job ? "job" : E.trainee(S) === c ? "train" : E.atelierHero(S) === c ? "atelier" : !c.inTeam ? "rest" : E.frontSet(S).has(c.id) ? "f" : "b");
+const TZ = { f: ["Première ligne", "reçoit 3 coups sur 4"], b: ["Arrière", "exposé si la première ligne tombe"], job: ["Récolte", "hors de l'équipe"], train: ["Salle d'entraînement", `${Math.round(E.TRAIN_SHARE * 100)} % de l'XP de l'équipe`], rest: ["Repos", "hors de l'équipe"] };
+function actPill(c) {
+  const z = teamZone(c);
+  if (z === "job") return `<span class="tpill job">${IC("pioche")} Récolte · ${h(c.job.res)}</span>`;
+  if (z === "train") return `<span class="tpill train">${IC("havre")} Salle d'entraînement</span>`;
+  if (z === "atelier") return `<span class="tpill train">${IC("metiers")} À l'atelier</span>`;
+  if (z === "rest") return `<span class="tpill rest">Au repos</span>`;
+  return `<span class="tpill hunt">${IC("combat")} ${S.dungeon ? "Donjon" : "Chasse"} · ${z === "f" ? "première ligne" : "arrière"}</span>`;
+}
+function teamCard(c, al) {
+  const C = CLASSES[c.cls]; const need = E.xpNeed(c.lvl); const M = E.mountOf && E.mountOf(S, c); const z = teamZone(c);
+  const mt = M ? `<span class="tmount">${im(mountImg(M.sp, M.c), "tmimg")}<span>${h(E.mountName(M))} · ${M.lvl}</span>${M.lvl < E.MOUNT_MAX ? `<span class="xpb"><i style="width:${pct(M.xp, E.mountXpNeed(M.sp, M.lvl))}%"></i></span>` : ""}</span>` : `<span class="tmount muted">Pas de monture</span>`;
+  const inT = c.inTeam && !c.job;
+  return `<div class="tcard ${inT ? "" : "out"}" style="--cc:${C.color}">
+    <button class="tart" data-act="teamgo" data-id="${c.id}" data-v="equip" title="Ouvrir la fiche de ${h(c.name)}">${lookImg(c, "tlook")}</button>
+    <div class="tmain">
+      <div class="thead"><button class="tstar ${mainHero() === c ? "on" : ""}" data-act="setmain" data-id="${c.id}" title="Héros principal" aria-label="Faire de ${h(c.name)} le héros principal">★</button><span class="tnm"><b>${h(c.name)}</b><span class="xs muted">${C.name}</span></span><span class="tlv">${c.lvl}</span></div>
+      <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
+      <div class="tal">${actPill(c)}${al.map((a) => `<button class="talert" data-act="teamfix" data-id="${c.id}" data-v="${a.k}">● ${h(a.t)}</button>`).join("")}${al.length ? "" : `<span class="talert ok">Rien à faire</span>`}</div>
+      ${mt}
+    </div>
+    <div class="tact">${z === "atelier" ? `<button class="btn sm" data-act="teamgo" data-id="${c.id}" data-v="havre">Voir l'atelier</button>` : `<button class="btn sm" data-act="teammove" data-id="${c.id}" data-v="${inT ? "rest" : "b"}">${inT ? "Retirer de l'équipe" : "Mettre en équipe"}</button>`}<button class="btn sm" data-act="teamgo" data-id="${c.id}" data-v="equip">Fiche</button></div>
+  </div>`;
+}
+function teamBoardHtml() {
+  const zone = (z) => { const list = S.chars.filter((c) => (z === "rest" ? ["rest", "atelier"].includes(teamZone(c)) : teamZone(c) === z));
+    const n = z === "f" ? `${list.length} / ${E.frontMax(E.team(S).length)}` : z === "b" ? `${list.length}` : z === "train" ? `${list.length} / 1` : `${list.length}`;
+    const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tgt = sel && teamZone(sel) !== z;
+    return `<div class="tzone ${tgt ? "target" : ""}" data-act="teamdrop" data-v="${z}" data-zone="${z}"><div class="tzt"><b>${TZ[z][0]}</b><span class="xs muted">${TZ[z][1]} · ${n}</span></div><div class="tslots">${list.map((c) => { const at = teamZone(c) === "atelier";
+      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at ? `disabled title="Travaille à l'atelier du Havre-Sac"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b>${h(c.name)} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
+  return `<div class="tboard"><p class="note xs" style="margin:0">${canHover ? "Glissez un héros d'une zone à l'autre, ou cliquez sur lui puis sur une zone." : "Touchez un héros, puis la zone où l'envoyer."}${ui.teamSel != null && char(ui.teamSel) ? ` <b>${h(char(ui.teamSel).name)}</b> est choisi.` : ""} Pour la récolte, le jeu vous demande la ressource.</p>
+    <div class="tcols"><div class="tcol">${zone("f")}${zone("b")}</div><div class="tcol">${zone("job")}${zone("train")}${zone("rest")}</div></div></div>`;
+}
+/* envoie un héros dans une zone du plateau ; renvoie un message d'erreur ou null */
+function teamMove(cid, z) {
+  const c = char(cid); if (!c) return "Héros introuvable.";
+  const from = teamZone(c); if (from === z) return null;
+  if (from === "atelier") return `${c.name} travaille à l'atelier : rappelez-le depuis le Havre-Sac.`;
+  if (S.dungeon && (["f", "b"].includes(from) !== ["f", "b"].includes(z))) return "Impossible de changer l'équipe en donjon.";
+  if (z === "job") { ui.gs = { cid: c.id, job: c.job ? c.job.job : null }; gatherSheet(); return null; }
+  if (["f", "b"].includes(z)) {
+    if (!["f", "b"].includes(from)) {
+      if (E.team(S).length >= 8) return "8 héros au plus dans l'équipe.";
+      if (from === "train") E.setTraining(S, null);
+      if (from === "job") { const r = E.setJob(S, c.id, null); if (r) return r; }
+      if (!c.inTeam) { const r = E.toggleTeam(S, c.id); if (r) return r; }
+      const r = E.setRow(S, c.id, z); return r && z === "f" ? null : r;
+    }
+    return E.setRow(S, c.id, z);
+  }
+  /* repos ou salle d'entraînement : le héros quitte l'équipe ou la récolte */
+  if (["f", "b"].includes(from)) { if (from === "f" && E.frontSet(S).size <= 1 && E.team(S).length > 1) return "Il faut au moins un héros en première ligne."; const r = E.toggleTeam(S, c.id); if (r) return r; }
+  if (from === "job") { const r = E.setJob(S, c.id, null); if (r) return r; if (c.inTeam) { const r2 = E.toggleTeam(S, c.id); if (r2) return r2; } }
+  if (from === "train" && z === "rest") return E.setTraining(S, null);
+  if (z === "train") return E.setTraining(S, c.id);
+  return null;
+}
+function renderTeam() {
+  const al = teamAlerts(true); const team = E.team(S); const board = !!ui.teamBoard;
+  const by = (z) => S.chars.filter((c) => teamZone(c) === z).length; const fs = E.frontSet(S);
+  const gearN = al.filter((a) => a.k === "gear").length;
+  $("#main").innerHTML = `<div class="pagehead"><h1>Équipe</h1><span class="small muted">${team.length} / 8 dans l'équipe</span><span class="grow"></span>
+    ${board ? "" : gearN ? `<button class="btn sm" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
+    <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button></div>
+  <section class="tsum"><div class="k"><b class="num">${team.length} / 8</b><span>en équipe</span></div><div class="k"><b class="num">${team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–"}</b><span>niveau moyen</span></div>
+    <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
+    ${S.chars.length < 8 ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
+  ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
+}
 function renderHeroes() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
   const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
@@ -1643,12 +1764,16 @@ const buildMain = (c) => (["fo", "ine", "cha", "age"].includes(c.autoStat) ? c.a
 function itemScore(c, it) { if (!it) return 0; const main = buildMain(c); const mdmg = ELEMENTS[STATS[main].el].dmg; let sc = 0;
   for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.5) : ["dt", "df", "de", "da"].includes(k) ? (k === mdmg ? 1 : 0.2) : 1);
   if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5; return sc; }
-function slotUpgrade(c, s) {
+/* meilleur objet libre (porté par personne) pour un emplacement, s'il fait nettement mieux que l'actuel */
+function bestFor(c, s) {
   const want = s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s;
-  const cur = S.items[c.equip[s]]; const curSc = itemScore(c, cur); let best = 0;
-  for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (T.slot !== want || T.lvl > c.lvl || E.equippedBy(S, it.uid)) continue; if ((want === "anneau" || want === "dofus") && Object.entries(c.equip).some(([sl, u]) => sl !== s && S.items[u] && S.items[u].tpl === it.tpl)) continue; const sc = itemScore(c, it); if (sc > curSc * 1.05 + 1 && sc > best) best = sc; }
-  return best > 0;
+  const cur = S.items[c.equip[s]]; const curSc = itemScore(c, cur); let best = 0, uid = null;
+  for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (T.slot !== want || T.lvl > c.lvl || E.equippedBy(S, it.uid)) continue; if ((want === "anneau" || want === "dofus") && Object.entries(c.equip).some(([sl, u]) => sl !== s && S.items[u] && S.items[u].tpl === it.tpl)) continue; const sc = itemScore(c, it); if (sc > curSc * 1.05 + 1 && sc > best) { best = sc; uid = it.uid; } }
+  return uid;
 }
+const slotUpgrade = (c, s) => !!bestFor(c, s);
+const EQ_SLOTS = ["arme", "coiffe", "cape", "amulette", "anneau1", "anneau2", "ceinture", "bottes", "bouclier", ...D.DOFUS_SLOTS];
+function equipBest(c) { let n = 0; for (const s of EQ_SLOTS) { const u = bestFor(c, s); if (u && !E.equip(S, c.id, u, s)) n++; } return n; }
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
@@ -2513,6 +2638,7 @@ function render() {
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
+  else if (ui.tab === "team") renderTeam();
   else if (ui.tab === "heroes") renderHeroes();
   else if (ui.tab === "inv") renderInventory();
   else if (ui.tab === "metiers") renderMetiers();
@@ -2596,7 +2722,7 @@ document.addEventListener("click", (ev) => {
   hideTip();
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
-  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
@@ -2718,6 +2844,18 @@ document.addEventListener("click", (ev) => {
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
     case "selchar": ui.cid = +d.id; ui.slot = null; break;
+    case "setmain": S.mainHero = +d.id; dirty = true; toast(`${char(+d.id).name} devient le héros principal.`); break;
+    case "teamgo": { if (d.v === "havre") { ui.tab = "home"; ui.home = "havre"; } else { ui.cid = +d.id; ui.tab = "heroes"; ui.hero = d.v; ui.slot = null; } closeSheet(); render(); window.scrollTo(0, 0); return; }
+    case "teamfix": { const cc = char(+d.id); if (d.v === "gear") { const n = equipBest(cc); toast(n ? `${cc.name} : ${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.` : "Rien de mieux à équiper."); dirty = true; break; }
+      ui.cid = cc.id; ui.tab = "heroes"; ui.hero = d.v === "pts" ? "stats" : "pet"; ui.slot = null; render(); window.scrollTo(0, 0); return; }
+    case "teamequipall": { let n = 0; E.team(S).forEach((x) => (n += equipBest(x))); toast(n ? `${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.` : "Rien de mieux à équiper."); dirty = true; break; }
+    case "teamboard": ui.teamBoard = !ui.teamBoard; ui.teamSel = null; break;
+    case "teamsel": { const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tc = char(+d.id);
+      /* un héros est déjà choisi et on touche un héros d'une autre zone : on l'y envoie */
+      if (sel && tc && sel !== tc && teamZone(sel) !== teamZone(tc)) { ui.teamSel = null; const z = teamZone(tc) === "atelier" ? "rest" : teamZone(tc); msg(teamMove(sel.id, z)); dirty = true; break; }
+      ui.teamSel = ui.teamSel === +d.id ? null : +d.id; break; }
+    case "teamdrop": { if (ui.teamSel == null) return; const id = ui.teamSel; ui.teamSel = null; msg(teamMove(id, d.v)); dirty = true; break; }
+    case "teammove": msg(teamMove(+d.id, d.v)); dirty = true; break;
     case "setrow": { const r = E.setRow(S, +d.id, d.v); if (r) { toast(r); return; } dirty = true; break; }
     case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
     case "lossplace": ui.tab = "heroes"; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
@@ -2904,6 +3042,12 @@ function copiesHtml() {
   return a.map((c, i) => `<div class="row"><span>${h(copyDate(c.t))} · ${why[c.why] || "copie"}${c.why === "maj" && c.v ? ` (version ${h(c.v)})` : ""}${c.lvl ? ` · ${c.n} héros, niveau ${c.lvl} max` : ""}</span>${ui.confirm === "restore" + i ? `<span class="minus">La partie actuelle sera remplacée.</span> <button class="btn sm danger" data-act="restorecopy" data-i="${i}">Restaurer</button> <button class="btn sm" data-act="cancelrestore">Annuler</button>` : `<button class="btn sm" data-act="askrestore" data-i="${i}">Restaurer</button>`}</div>`).join("");
 }
 
+/* 0.1.9.1 : glisser-déposer du plateau « Réorganiser » de la page Équipe (souris) */
+document.addEventListener("dragstart", (ev) => { const t = ev.target.closest && ev.target.closest("[data-tok]"); if (!t) return; ev.dataTransfer.setData("text/plain", t.dataset.tok); ev.dataTransfer.effectAllowed = "move"; });
+document.addEventListener("dragover", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (!z) return; ev.preventDefault(); document.querySelectorAll(".tzone.over").forEach((x) => x !== z && x.classList.remove("over")); z.classList.add("over"); });
+document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("over"); });
+document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (!z || !S) return; ev.preventDefault(); const id = +ev.dataTransfer.getData("text/plain"); if (!id) return; ui.teamSel = null; msg(teamMove(id, z.dataset.zone)); dirty = true; render(); });
+
 /* ---------- boucle ---------- */
 let testSpeed = 1; // panel de test (béta uniquement) : accélération du temps
 let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRes = {};
@@ -2929,11 +3073,12 @@ function loop() {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; });
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
+    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderTeam(); renderNav(); }
     else if (ui.tab === "quests" && ui.qt !== "ach" && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;
-    if (sinceRes > 2500) { sinceRes = 0; const now = Date.now();
+    if (sinceRes > 2500) { sinceRes = 0; const now = Date.now(); updNavLive();
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
       S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
       checkPins(); if (!$("#sheet").innerHTML) renderObjs();

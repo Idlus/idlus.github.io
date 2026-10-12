@@ -1,6 +1,18 @@
 {
-  "version": "0.1.9",
+  "version": "0.1.9.1",
   "versions": [
+    {
+      "v": "0.1.9.1",
+      "name": "Barre et page Équipe",
+      "items": [
+        "Nouvelle barre de navigation en 4 familles : Accueil, Aventure, Équipe et Artisanat, avec leurs pages juste en dessous ; de la place pour les prochains onglets",
+        "Sur PC, un cadre « Combat en cours » donne le donjon et la salle (ou la zone de chasse) depuis n'importe quelle page ; sur téléphone, Combat devient le gros bouton du centre",
+        "Nouvelle page Équipe : une carte par héros avec son activité, son XP, sa monture et ce qui l'attend (points à répartir, meilleur équipement, familier affamé) ; chaque alerte est un bouton",
+        "Bouton « Réorganiser » : un plateau pour glisser les héros entre la première ligne, l'arrière, la récolte, la salle d'entraînement et le repos (sur téléphone : toucher le héros, puis la zone)",
+        "« Tout équiper au mieux » met le meilleur objet libre du sac dans chaque emplacement des héros de l'équipe",
+        "Étoile ★ du héros principal : son symbole de classe devient l'icône de l'onglet Héros ; l'Accueil prend le logo d'Idlus et le Havre-Sac son sac"
+      ]
+    },
     {
       "v": "0.1.9",
       "name": "Montures",

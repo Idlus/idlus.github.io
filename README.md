@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.9.1 « Barre et page Équipe » (bêta)
+- **Barre de navigation en 4 familles** (Accueil, Aventure, Équipe, Artisanat) avec leurs pages en dessous, cadre « Combat en cours » sur PC et gros bouton Combat au centre sur téléphone.
+- **Page Équipe** : une carte par héros (activité, XP, monture, alertes qui se règlent d'un clic), plateau « Réorganiser » à glisser, « Tout équiper au mieux », héros principal choisi avec l'étoile.
 ## 0.1.9 « Montures » (bêta)
 - **Montures** : 41 couleurs officielles de dragodindes (niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), bonus DOFUS au niveau 100. Capture au filet dans trois zones sauvages (hors ligne aussi), croissance par une part de l'XP du héros, enclos du Havre-Sac pour l'élevage (naissances en 8 h, croisements connus, bicolores, objets d'élevage), carnet de l'éleveur et arbre généalogique.
 ## 0.1.8.2 « Forgemagie » (bêta)
