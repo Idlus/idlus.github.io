@@ -100,7 +100,7 @@ async function main() {
   let gid = process.env.DISCORD_GUILD_ID;
   if (!gid) { const gs = await api("GET", "/users/@me/guilds"); if (gs.length !== 1) throw new Error(`Le robot est sur ${gs.length} serveurs : précise DISCORD_GUILD_ID.`); gid = gs[0].id; }
   const guild = await api("GET", `/guilds/${gid}`); console.log("Serveur :", guild.name);
-  if (!guild.icon) { await api("PATCH", `/guilds/${gid}`, { icon: "data:image/png;base64," + require("fs").readFileSync(__dirname + "/../icons/icon-512.png").toString("base64") }); console.log("Icône du serveur mise en place."); }
+  if (!guild.icon) { await api("PATCH", `/guilds/${gid}`, { icon: "data:image/png;base64," + require("fs").readFileSync(__dirname + "/../icons/discord.png").toString("base64") }); console.log("Icône du serveur mise en place."); }
 
   const roles = {}; const have = await api("GET", `/guilds/${gid}/roles`);
   for (const r of ROLES) {

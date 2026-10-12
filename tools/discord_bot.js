@@ -1,6 +1,7 @@
 /* Messages automatiques du robot idlus sur Discord (jeton dans DISCORD_BOT_TOKEN).
    node tools/discord_bot.js beta <changelog.json de la branche beta>  → annonce dans #bêta-nouveautés la dernière entrée des nouveautés de la version de test, si elle n'y est pas déjà
    node tools/discord_bot.js semaine                                  → publie dans #annonces le mutateur de la semaine
+   node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
 const GAME = "https://mathiss29.github.io/idlus/", BETA = GAME + "beta/";
@@ -37,7 +38,11 @@ async function main() {
     if (last.some((m) => (m.embeds || []).some((e) => e.title === embed.title && Date.now() - Date.parse(m.timestamp) < 6 * 86400000))) return console.log("Déjà publié cette semaine.");
     await api("POST", `/channels/${ch}/messages`, { embeds: [embed], allowed_mentions: { parse: [] } });
     console.log("Publié :", embed.title);
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine"); process.exit(1); }
+  } else if (cmd === "icone") {
+    const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
+    await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
+    console.log("Icône du serveur remplacée.");
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | icone [image.png]"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
