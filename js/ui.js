@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.8";
+const GAME_VERSION = "0.1.8.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.8.1", name: "Étoiles de zone", items: [
+    "Étoiles de zone : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chaque étoile donne +10 % d'XP et de butin dans cette zone",
+    "Les étoiles fondent pendant qu'on y chasse (une toutes les 30 min, hors ligne aussi) : changer de zone de temps en temps rapporte plus",
+    "Les étoiles s'affichent sur la carte, dans la fiche de la zone et sur l'Accueil ; les parties existantes commencent avec 5 étoiles partout" ] },
   { v: "0.1.8", name: "Familiers et montiliers", items: [
     "140 familiers et montiliers officiels, avec leurs vraies icônes : un emplacement Familier sur la fiche du héros, dès le niveau 10",
     "Ils grandissent en mangeant les ressources du sac (un repas toutes les 30 min, même hors ligne) ; leur nourriture préférée compte double ; vous protégez les ressources de votre choix",
@@ -569,7 +573,7 @@ function renderHomeInner() {
   const team = E.team(S); const main = team[0] || S.chars[0];
   const deco = S.dungeon ? dgDeco(S.dungeon.id) : S.sub ? subDeco(S.sub) : "sky";
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
-    : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b>` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
+    : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b> ${starsHtml(S.sub, true)}` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
   const zkey = S.dungeon ? null : S.sub; const rate = zkey ? E.zoneRate(S, zkey) : null;
   const archis = Object.values(S.archis).reduce((a, b) => a + b, 0);
   const tabs = `<nav class="subtabs">${[["apercu", "Aperçu"], ["havre", "Havre-Sac"]].map(([id, n]) => `<button data-act="hometab" data-v="${id}" aria-pressed="${ui.home === id}">${n}</button>`).join("")}</nav>`;
@@ -746,6 +750,14 @@ function tierBadge(k) {
     ${t >= 0 ? `<span class="tier t${t}">${HUNT_TIERS[t].name}</span>` : `<span class="tier">Aucun palier</span>`}
     ${next ? `<span class="bar"><i style="width:${pct(n, next.n)}%"></i></span><span class="xs muted num">${fmt(n)}/${fmt(next.n)}</span>` : `<span class="xs muted">max</span>`}</div>`;
 }
+/* 0.1.8.1 : étoiles de zone (+10 % d'XP et de butin chacune, montent sans chasse, fondent en chassant) */
+function starsHtml(sid, long = false) {
+  const n = E.zoneStars(S, sid); const k = Math.floor(n); const pctB = k * E.STAR_PCT;
+  const next = k >= E.STAR_MAX ? "" : ` · prochaine dans ${dur((k + 1 - n) * E.STAR_GROW_S)}`;
+  const here = S.hunting && S.sub === sid && !S.dungeon;
+  const tip = `Étoiles de zone : +${E.STAR_PCT} % d'XP et de butin par étoile. Une zone où personne ne chasse gagne une étoile toutes les ${E.STAR_GROW_S / 3600} h (${E.STAR_MAX} au plus) ; elles fondent en chassant, une toutes les ${E.STAR_MELT_S / 60} min.${here ? "" : next}`;
+  return `<span class="zstars ${k ? "" : "none"}" data-tip="${h(tip)}">${"★".repeat(k)}<i>${"★".repeat(E.STAR_MAX - k)}</i>${long ? `<b>+${pctB} %</b>` : ""}</span>`;
+}
 /* 0.1 : la carte se lit par tranche de niveaux (sous-zones classées par leur niveau minimum) */
 const MAP_TIERS = [[1, 40], [41, 80], [81, 120], [121, 160], [161, 200]];
 const tierOf = (lvl) => { const i = MAP_TIERS.findIndex((b) => lvl <= b[1]); return i < 0 ? MAP_TIERS.length - 1 : i; };
@@ -772,7 +784,7 @@ function zonePanel(z, tier = -1, open = false) {
       return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
         <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${isBest ? `<span class="tag best" data-tip="La zone qui rapporte le plus d'XP à votre équipe sans être trop dure">${G("star")}<span class="bt"> Meilleure zone</span></span>` : ""}</span>
-          <span class="sr-sub">${lvlHint(s)}</span>
+          <span class="sr-sub">${lvlHint(s)}${un ? starsHtml(s.id) : ""}</span>
           ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
 }
@@ -813,6 +825,7 @@ function renderZoneView(sid) {
     <div class="pad stack">
       <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}
         <span class="small muted">${E.team(S).length} héros · Esprit Libre +${E.freeSpirit(S)} % · ${lvlHint(s)}</span></div>
+      ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
       <div><div class="row between small"><span data-tip="Quand tous les monstres de la zone atteignent le palier Traqueur (250 tués), vous recevez le trophée de la zone, à équiper dans un emplacement Dofus/Trophée.">${IC("trophee")} Trophée ${h(s.name)}${trophyDone ? " : obtenu" : ""}</span><span class="num">${traq}/${s.monsters.length} monstres Traqueur</span></div><div class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></div></div>
       <h3 class="sec">Monstres</h3>

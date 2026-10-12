@@ -7,6 +7,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.8.1 « Étoiles de zone » (bêta)
+- **Étoiles de zone** : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus), +10 % d'XP et de butin chacune ; elles fondent en chassant (une toutes les 30 min). Changer de zone rapporte plus.
 ## 0.1.8 « Familiers et montiliers » (bêta)
 - **140 familiers et montiliers officiels** : un emplacement Familier sur la fiche du héros (dès le niveau 10, montiliers dès le niveau 60).
 - Ils grandissent en mangeant les ressources du sac, un repas toutes les 30 minutes même hors ligne ; la nourriture préférée compte double et vous protégez les ressources de votre choix.
