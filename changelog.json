@@ -1,6 +1,14 @@
 {
-  "version": "0.1.28",
+  "version": "0.1.28.1",
   "versions": [
+    {
+      "v": "0.1.28.1",
+      "name": "Défi au tableau",
+      "items": [
+        "Quêtes › Tableau du jour : une ligne « Défi du jour » sous la quête principale (donjon, stasis, « à faire » ou « ✓ réussi ») qui ouvre la page Défi",
+        "La pastille sur Quêtes compte aussi le défi du jour tant qu'il n'est pas réussi"
+      ]
+    },
     {
       "v": "0.1.28",
       "name": "Journal de quêtes",

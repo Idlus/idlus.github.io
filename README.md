@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.28.1 « Défi au tableau » (bêta)
+- Mathis (question 6 du fil Défi du jour) : `defiLine()` affichée dans le tableau du jour de Quêtes (js/questui.js) ; `defiTodo()` compte dans `QUI.todo` (pastille de Quêtes). Les deux sont exposées dans `window.DX.social`.
+
 ## 0.1.28 « Journal de quêtes » (bêta)
 - Mathis : refonte du menu Quêtes (maquette validée « 1A 2A 3A 4A 5A 6A 7A 8A »). Rendu dans `js/questui.js` (`window.QUI` : `render`, `act` pour les actions `qj-*`, `todo` pour la pastille) et `css/quetes.css` (classes `.qj-*`). `ui.qt` vaut `jour` par défaut et en entrant dans Quêtes par la barre ; pages `jour`, `almanax`, `bounty`, `commandes`, `temples`, `main`, `dofus`, `align`, `ach`, `orn`, `shops`. Les pages Almanax, Avis, Commandes, Temples et Alignement restent rendues par ui.js (leur `<p class="note">` de tête passe derrière le « ? »). Les boutiques ne sont plus en bas des pages : `shopLink(id)` met un raccourci vers Quêtes › Comptoirs.
 

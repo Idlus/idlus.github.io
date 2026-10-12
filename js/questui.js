@@ -30,12 +30,13 @@
   const almState = (s) => { const A = E.almanax(s); const have = s.res[A.res] || 0; return { A, have, ready: !A.done && have >= A.qty }; };
   const cmdReady = (s, o) => o.got < o.n && (s.res[o.res] || 0) >= o.n - o.got;
   const templeLeft = (s) => { const T = E.templeState(s); return E.templeClasses(s).filter((k) => !T.done[k]); };
-  /* ce qui est prêt maintenant : offrande, commandes à livrer en entier, Dopeuls à défier */
+  /* ce qui est prêt maintenant : offrande, commandes à livrer en entier, Dopeuls à défier, défi du jour */
   function todo(s) {
     if (!s || !s.chars || !s.chars.length) return 0;
     let n = almState(s).ready ? 1 : 0;
     n += E.cmdState(s).list.filter((o) => cmdReady(s, o)).length;
     n += templeLeft(s).length;
+    if (X().defiTodo && X().defiTodo()) n += 1; // 0.1.28.1 : défi du jour pas encore réussi
     return n;
   }
   const untilMidnight = () => { const t = E.now(); const d = new Date(t); d.setHours(24, 0, 0, 0); const m = Math.max(0, Math.round((d - t) / 60000)); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
@@ -117,7 +118,7 @@
       <div class="row">${pend ? `<span class="xs muted grow">Le Dopeul ${h(CLASSES[pend].name)} ${T.fighting ? "affronte l'équipe" : "arrive au prochain combat"}.</span>` : left.length ? `<button class="btn sm primary" data-act="vi-tfight" data-v="${left[0]}">Défier ${h(CLASSES[left[0]].name)}</button>` : ""}<button class="btn sm" data-act="qtab" data-v="temples">Ouvrir</button></div></article>`;
     // les cartes terminées descendent en bas
     const cards = [[alm, A.done], [avis, false], [cmd, cdone === C.list.length], [tpl, cls.length && !left.length]].sort((x, y) => x[1] - y[1]).map((c) => c[0]).join("");
-    return `<div class="qj-ph"><h2>Aujourd'hui</h2><span class="grow"></span><span class="xs muted">${IC("almanax")} Tout se renouvelle à minuit, dans <b class="num">${untilMidnight()}</b></span></div>${hero}<div class="qj-day">${cards}</div>`;
+    return `<div class="qj-ph"><h2>Aujourd'hui</h2><span class="grow"></span><span class="xs muted">${IC("almanax")} Tout se renouvelle à minuit, dans <b class="num">${untilMidnight()}</b></span></div>${hero}${X().defiLine ? X().defiLine() : ""}<div class="qj-day">${cards}</div>`;
   }
 
   /* ---------- quête principale ---------- */
