@@ -1,6 +1,16 @@
 {
-  "version": "0.1.28.5",
+  "version": "0.1.29",
   "versions": [
+    {
+      "v": "0.1.29",
+      "name": "Sablier de Xélor",
+      "items": [
+        "Nouveau : le Sablier de Xélor, dans la barre du haut à côté des kamas. Il fait filer le temps ×2 ou ×3 : combats, donjons, expédition, récolte, ateliers, familiers et enclos",
+        "Le sablier se remplit tout seul de 3 h par jour, même jeu fermé, et garde jusqu'à 9 h. ×2 vide 1 minute de réserve par minute, ×3 en vide 2 : ×3 donne le même temps en plus, juste plus vite",
+        "Sablier vide : retour à ×1 tout seul, rien n'est perdu. Les gains hors ligne et les bonus à durée (potions, événements, Almanax) ne changent pas",
+        "Il se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim ») et arrive plein : 9 h de temps rapide. Avant, un clic sur le sablier explique comment l'ouvrir"
+      ]
+    },
     {
       "v": "0.1.28.5",
       "name": "Presque fabricable",
