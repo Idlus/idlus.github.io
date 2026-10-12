@@ -10,7 +10,7 @@
   const E = root.ENGINE || (typeof require !== "undefined" ? require("./engine.js") : null);
   const { STATS, STAT_ORDER, RUNE_SIMPLE_ONLY, MONSTERS, DUNGEONS, ITEMS, RES, CLASSES } = D;
   const SUBS = E.SUBS;
-  const rnd = () => Math.random();
+  const rnd = () => E.rnd(); // même hasard que le moteur (réglable, rejouable par le serveur)
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const topLvl = (S) => Math.max(...S.chars.map((c) => c.lvl));
   const note = (S, t, k) => E.note(S, t, k);
@@ -49,7 +49,7 @@
     { kind: "kamas", pct: 20, name: "+20 % de kamas" },
     { kind: "gather", pct: 25, name: "+25 % de vitesse de récolte" },
   ];
-  const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const dayKey = (t = E.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   E.dayKey = dayKey;
   const hashStr = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return (x >>> 0) / 4294967296; };
   const ALM_POOL = (() => {
@@ -57,7 +57,7 @@
     Object.values(MONSTERS).forEach((mo) => { if (mo.boss || mo.archiOf) return; mo.drops.forEach(([r, p]) => { if (p >= 5 && !E.isKey(r)) m.set(r, Math.min(m.get(r) || 999, mo.lvl[0])); }); });
     return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]));
   })();
-  E.almanax = (S, t = Date.now()) => {
+  E.almanax = (S, t = E.now()) => {
     const day = dayKey(t); const top = topLvl(S);
     const pool = ALM_POOL.filter(([, l]) => l <= Math.max(8, top + 2));
     const h1 = hashStr("alm" + day), h2 = hashStr("bonus" + day);
@@ -75,7 +75,7 @@
     S.kamas += A.kamas; S.cnt.almanax = (S.cnt.almanax || 0) + 1;
     note(S, `Offrande à l'Almanax acceptée : ${A.bonus.name} jusqu'à minuit.`, "rare");
     // série de jours consécutifs (un jour manqué fait redescendre d'un palier)
-    const st = S.almStreak; const yest = dayKey(Date.now() - 864e5);
+    const st = S.almStreak; const yest = dayKey(E.now() - 864e5);
     if (st.last === yest) st.n++;
     else if (!st.last) st.n = 1;
     else { const lower = E.ALM_TIERS.filter((x) => x < st.n).pop() || 0; st.n = lower + 1; }
@@ -465,7 +465,7 @@
     const kamas = Math.round((15 + T.lvl * 2.5 * (add / STATS[k].pts)) * (1 - J.lvl * 0.005));
     return { ok: true, stat: k, cur, add, nv, mx, cap, chance, kamas, over: nv > mx, well: it.well || 0, wellOk, wellCost };
   };
-  const fmLog = (it, txt, ok) => { (it.fmLog = it.fmLog || []).unshift({ t: Date.now(), txt, ok }); if (it.fmLog.length > 6) it.fmLog.length = 6; };
+  const fmLog = (it, txt, ok) => { (it.fmLog = it.fmLog || []).unshift({ t: E.now(), txt, ok }); if (it.fmLog.length > 6) it.fmLog.length = 6; };
   E.forgemage = (S, uid, runeKey) => {
     const it = S.items[uid]; if (!it) return { err: "Objet introuvable." };
     if (!(S.runes[runeKey] > 0)) return { err: "Vous n'avez pas cette rune." };
@@ -588,15 +588,15 @@
     for (const k in cfg.goals || {}) { const [, mx] = T.stats[k] || [0, 0]; if (mx <= 0) continue; const cap = mx + Math.max(1, Math.ceil(mx * 0.25)); const v = clamp(Math.round(+cfg.goals[k] || mx), 1, cap); if (v > (it.stats[k] || 0)) goals[k] = v; }
     if (!Object.keys(goals).length) return "Choisissez au moins un objectif au-dessus du jet actuel.";
     const plan = { uid, name: T.name, goals, runes: E.FM_PLAN_RUNES[cfg.runes] ? cfg.runes : "all", budget: Math.max(0, Math.round(+cfg.budget || 0)), floor: E.FM_PLAN_FLOOR[cfg.floor] ? cfg.floor : "pct",
-      base: Object.assign({}, it.stats), spent: 0, prog: 0, tries: 0, ok: 0, log: [], done: null, t0: Date.now() };
+      base: Object.assign({}, it.stats), spent: 0, prog: 0, tries: 0, ok: 0, log: [], done: null, t0: E.now() };
     const plans = E.fmPlans(S); plans.push(plan); while (plans.length > 6) { const i = plans.findIndex((p) => p.done); if (i < 0) break; plans.splice(i, 1); }
     note(S, `Plan de forgemagie lancé : ${T.name}.`, "info"); return null;
   };
-  E.stopFmPlan = (S, uid, drop) => { const plans = E.fmPlans(S); const i = plans.findIndex((p) => p.uid === uid && (drop ? !!p.done : !p.done)); if (i < 0) return; if (drop) plans.splice(i, 1); else { plans[i].done = "Arrêté"; plans[i].at = Date.now(); } };
+  E.stopFmPlan = (S, uid, drop) => { const plans = E.fmPlans(S); const i = plans.findIndex((p) => p.uid === uid && (drop ? !!p.done : !p.done)); if (i < 0) return; if (drop) plans.splice(i, 1); else { plans[i].done = "Arrêté"; plans[i].at = E.now(); } };
   E.fmPlanGoalsLeft = (S, plan) => { const it = S.items[plan.uid]; if (!it) return []; return Object.keys(plan.goals).filter((k) => (it.stats[k] || 0) < plan.goals[k]); };
   const PLAN_TIERS = { all: ["ra", "pa", ""], simple: [""], hi: ["ra", "pa"] };
-  const planLog = (plan, txt, ok) => { plan.log.unshift({ t: Date.now(), txt, ok }); if (plan.log.length > 8) plan.log.length = 8; };
-  const endPlan = (S, plan, why, quiet) => { plan.done = why; plan.at = Date.now(); if (why === "Objectifs atteints") S.cnt.fmPlanOk = (S.cnt.fmPlanOk || 0) + 1; if (!quiet) note(S, `Plan ${plan.name} : ${why}.`, why === "Objectifs atteints" ? "up" : "info"); };
+  const planLog = (plan, txt, ok) => { plan.log.unshift({ t: E.now(), txt, ok }); if (plan.log.length > 8) plan.log.length = 8; };
+  const endPlan = (S, plan, why, quiet) => { plan.done = why; plan.at = E.now(); if (why === "Objectifs atteints") S.cnt.fmPlanOk = (S.cnt.fmPlanOk || 0) + 1; if (!quiet) note(S, `Plan ${plan.name} : ${why}.`, why === "Objectifs atteints" ? "up" : "info"); };
   /* une tentative : retourne false quand le plan s'arrête */
   const fmPlanStep = (S, plan, quiet) => {
     const it = S.items[plan.uid]; if (!it) { endPlan(S, plan, "Objet disparu", quiet); return false; }
@@ -646,9 +646,9 @@
   E.PROT_RE = { paysan: /Épouvantail|Tournesol|Bouftou|Champ|Blé|Pissenlit/, bucheron: /Abrak|Arbre|Chêne|Tronk|Bambou|Kokoko/, mineur: /Roche|Golem|Mineur|Crocabulia|Kobalte|Craqueleur|Cristal/, alchimiste: /Ortie|Fleur|Rose|Champa|Mandragore|Trèfle|Menthe/, pecheur: /Crabe|Poisson|Kraken|Crustorail|Moule|Mérulor|Gobus|Crevette|Pichon/ };
   E.PROT_TITLE = { paysan: "Protecteur des céréales", bucheron: "Protecteur des bois", mineur: "Protecteur des minerais", alchimiste: "Protecteur des plantes", pecheur: "Protecteur des poissons" };
   const protPool = {}; const protMons = (job) => protPool[job] || (protPool[job] = Object.keys(MONSTERS).filter((k) => E.PROT_RE[job] && E.PROT_RE[job].test(MONSTERS[k].name) && !MONSTERS[k].boss && !MONSTERS[k].archiOf));
-  E.protActive = (S, now = Date.now()) => (S.protector && S.protector.until > now ? S.protector : null);
+  E.protActive = (S, now = E.now()) => (S.protector && S.protector.until > now ? S.protector : null);
   E.protSpawn = (S, c, W) => {
-    if (S.settings && S.settings.protOff) return; const now = Date.now();
+    if (S.settings && S.settings.protOff) return; const now = E.now();
     if (E.protActive(S, now) || (S.protCalm || 0) > now || rnd() >= E.PROT_CHANCE) return;
     const pool = protMons(W.job); if (!pool.length) return;
     const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
@@ -668,7 +668,7 @@
     return { mons, label: `${E.PROT_TITLE[P.job]} · ${sub.name}` };
   };
   E.protEnd = (S, win) => {
-    const P = S.protector; if (!P) return; const now = Date.now();
+    const P = S.protector; if (!P) return; const now = E.now();
     S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000;
     if (win) {
       S.protBoost = { res: P.res, until: now + E.PROT_BOOST_S * 1000 };
@@ -677,9 +677,9 @@
       note(S, `${E.PROT_TITLE[P.job]} vaincu ! ${P.res} ×2 pendant 20 min, +10 ${P.res} et +3 ${E.RARE_COMPONENT}.`, "rare");
     } else note(S, `${E.PROT_TITLE[P.job]} l'emporte et repart avec son ${P.res}.`, "warn");
   };
-  E.protMult = (S, res) => (S.protBoost && S.protBoost.res === res && S.protBoost.until > Date.now() ? 2 : 1);
+  E.protMult = (S, res) => (S.protBoost && S.protBoost.res === res && S.protBoost.until > E.now() ? 2 : 1);
   E.protExpire = (S) => { const P = S.protector; if (P && P.fighting && !(S.fight && S.fight.prot && !S.fight.over)) P.fighting = false;
-    if (P && !P.fighting && P.until <= Date.now()) { S.protector = null; S.protCalm = Date.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); } };
+    if (P && !P.fighting && P.until <= E.now()) { S.protector = null; S.protCalm = E.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); } };
 
 
 
@@ -736,7 +736,7 @@
     if (d.t) p.push(`titre « ${d.t} »`);
     if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name(null)} »`);
     return p.join(", "); };
-  E.redeemGift = (S, code, now = Date.now()) => {
+  E.redeemGift = (S, code, now = E.now()) => {
     const r = E.readGift(code); if (r.err) return r;
     const d = r.data; S.gifts = S.gifts || {};
     if (S.gifts[d.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
@@ -794,13 +794,13 @@
     const taken = new Set((S.bounties || []).map((b) => b.key));
     if (dgs.length && rnd() < 0.25) {
       const d = dgs[Math.floor(rnd() * dgs.length)]; const dg = DUNGEONS[d];
-      if (!taken.has(dg.boss)) return { id: Date.now() + Math.floor(rnd() * 1e6), key: dg.boss, dg: d, n: 1, prog: 0, kamas: Math.round(dg.lvl * 60), xp: 0.25, axp: 120 };
+      if (!taken.has(dg.boss)) return { id: E.now() + Math.floor(rnd() * 1e6), key: dg.boss, dg: d, n: 1, prog: 0, kamas: Math.round(dg.lvl * 60), xp: 0.25, axp: 120 };
     }
     for (let tries = 0; tries < 20; tries++) {
       const s = pool[Math.floor(rnd() * pool.length)]; const k = s.monsters[Math.floor(rnd() * s.monsters.length)];
       if (taken.has(k)) continue;
       const m = MONSTERS[k]; const n = 12 + Math.floor(rnd() * 4) * 6;
-      return { id: Date.now() + Math.floor(rnd() * 1e6), key: k, sub: s.id, n, prog: 0, kamas: Math.round(n * (m.lvl[0] + 5) * 2.2), xp: 0.08 + n / 600, axp: 30 + n };
+      return { id: E.now() + Math.floor(rnd() * 1e6), key: k, sub: s.id, n, prog: 0, kamas: Math.round(n * (m.lvl[0] + 5) * 2.2), xp: 0.08 + n / 600, axp: 30 + n };
     }
     return null;
   };
@@ -991,7 +991,7 @@
     ACH.forEach((a) => {
       if (S.ach[a.id]) return;
       if (!a.test(S)) return;
-      S.ach[a.id] = Date.now(); S.kamas += a.kamas;
+      S.ach[a.id] = E.now(); S.kamas += a.kamas;
       note(S, `Succès : ${a.name}${a.title ? ` — titre « ${a.title} »` : ""} (+${a.kamas.toLocaleString("fr-FR")} kamas)`, "rare");
     });
   };
@@ -1038,7 +1038,7 @@
     // limites de stock : le surplus est vendu automatiquement
     if (type === "win" || type === "harvest") for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0) E.sellRes(S, n, ex); }
     checkQuest(S);
-    if (type !== "harvest" || (S._achT || 0) + 1500 < Date.now()) { S._achT = Date.now(); checkAch(S); }
+    if (type !== "harvest" || (S._achT || 0) + 1500 < E.now()) { S._achT = E.now(); checkAch(S); }
   };
   E.refreshSystems = (S) => { initState(S); fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S); checkQuest(S); if (E.refreshArchis) E.refreshArchis(S); checkAch(S); };
 

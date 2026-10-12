@@ -198,7 +198,7 @@
     const p = PETS[id]; if (!p) return null;
     const have = E.petOwned(S, id);
     if (have) { have.g = Math.min(100, have.g + E.PET_DUP_G); E.note(S, `${p.name} en double : il nourrit le vôtre (+${E.PET_DUP_G} % de croissance).`, "rare"); return have; }
-    const uid = S.petUid++; const P = S.pets[uid] = { uid, id, g: 0, t: 0, got: Date.now() };
+    const uid = S.petUid++; const P = S.pets[uid] = { uid, id, g: 0, t: 0, got: E.now() };
     E.note(S, `${isMonti(id) ? "Montilier" : "Familier"} obtenu : ${p.name}${why ? " (" + why + ")" : ""} !`, "rare");
     E.celebrate({ t: "pet", id });
     // porté d'office par le premier héros de l'équipe qui n'en a pas

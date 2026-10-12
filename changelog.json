@@ -1,6 +1,17 @@
 {
-  "version": "0.1.13.2",
+  "version": "0.1.13.3",
   "versions": [
+    {
+      "v": "0.1.13.3",
+      "name": "Fondations du multijoueur",
+      "items": [
+        "Rien ne change pour vous en jeu : cette version prépare le terrain du multijoueur, en coulisses",
+        "La sauvegarde a maintenant son propre module : elle pourra passer en ligne, sur un serveur, sans toucher au reste du jeu (copies de secours et reprise de partie inchangées)",
+        "Le jeu lit l'heure à un seul endroit : plus tard, le serveur pourra imposer la sienne pour éviter la triche en avançant l'horloge de l'appareil",
+        "Tout le hasard du jeu passe par le même tirage : une partie peut être rejouée à l'identique, ce qui servira au serveur pour vérifier les combats (Kolizéum)",
+        "La liste officielle des 74 actions d'un joueur (équiper, chasser, forger…) est écrite : c'est ce que le jeu enverra au serveur"
+      ]
+    },
     {
       "v": "0.1.13.2",
       "name": "Classes et donjons",

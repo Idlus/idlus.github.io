@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.13.3 « Fondations du multijoueur » (bêta)
+- Aucun changement en jeu : sauvegarde dans son propre module (prête à passer en ligne), heure et hasard du jeu réglables à un seul endroit, liste officielle des actions du joueur.
+
 ## 0.1.13.2 « Classes et donjons » (bêta)
 - Tynril et Kankreblath adoucis ; classes plus proches les unes des autres (Xélor, Huppermage, Enutrof, Eniripsa, Éliotrope, Écaflip, Roublard, Ouginak).
 

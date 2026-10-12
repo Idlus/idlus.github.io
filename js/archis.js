@@ -11,7 +11,7 @@
   const E = root.ENGINE || (typeof require !== "undefined" ? require("./engine.js") : null);
   const { MONSTERS, ZONES, DUNGEONS, ITEMS, CONSUMABLES, SPECIAL_CRAFTS } = D;
   const SUBS = E.SUBS;
-  const rnd = () => (E.rnd ? E.rnd() : Math.random());
+  const rnd = () => E.rnd();
 
   /* ---------- les archimonstres, rangés par zone ---------- */
   E.ARCHIS = {};
@@ -48,7 +48,7 @@
     if (souls(S)[k]) return "dup";
     if (!(E.stones(S) > 0)) { E.note(S, `Pas de Pierre d'âme : l'âme de ${m.name} s'est échappée.`, "warn"); return "nostone"; }
     S.cons.pierre_ame--; if (!S.cons.pierre_ame) delete S.cons.pierre_ame;
-    souls(S)[k] = Date.now(); S.cnt = S.cnt || {}; S.cnt.souls = E.soulCount(S);
+    souls(S)[k] = E.now(); S.cnt = S.cnt || {}; S.cnt.souls = E.soulCount(S);
     E.note(S, `Âme capturée : ${m.name} (${S.cnt.souls} / ${E.ARCHI_TOTAL}) !`, "rare");
     if (!opts.offline && E.celebrate) E.celebrate({ t: "soul", key: k });
     E.emit(S, "soul", { key: k, zone: E.ARCHIS[k].zone });
@@ -200,7 +200,7 @@
     E.DOFUS_ORDER.forEach((id) => {
       const Df = E.DOFUS[id]; const Q = dq(S, id); let guard = 0;
       while (!Q.done && guard++ < 8) {
-        const st = Df.steps[Q.step]; if (!st) { Q.done = Date.now(); E.giveDofus(S, id, "quête terminée"); break; }
+        const st = Df.steps[Q.step]; if (!st) { Q.done = E.now(); E.giveDofus(S, id, "quête terminée"); break; }
         if (st.t === "ocre") break; // l'Ocre est donné par le dernier palier
         const [a, b] = E.dofusStepProgress(S, id, Q.step); if (a < b) break;
         Q.step++; Q.prog = 0;

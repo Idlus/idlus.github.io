@@ -4,7 +4,7 @@
   "description": "Outils de test d'idlus (le jeu lui-même n'a besoin d'aucune installation).",
   "scripts": {
     "check": "for f in js/*.js sw.js tools/*.js tests/*.js; do node --check \"$f\" || exit 1; done",
-    "test:fight": "node tests/fight.test.js",
+    "test:fight": "node tests/fight.test.js && node tests/core.test.js",
     "test:smoke": "node tests/smoke.test.js",
     "sim": "node tools/simulate.js",
     "test": "npm run check && npm run test:fight && npm run test:smoke"

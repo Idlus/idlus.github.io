@@ -34,6 +34,11 @@
   let rnd = Math.random;
   E.setRng = (f) => { rnd = f; };
   E.rnd = () => rnd();
+  /* Horloge du jeu : toute la logique lit l'heure ici (jamais Date.now() directement).
+     Aujourd'hui c'est l'heure de l'appareil ; demain le serveur pourra imposer la sienne (anti-triche). */
+  let clock = () => Date.now();
+  E.setClock = (f) => { clock = f || (() => Date.now()); };
+  E.now = () => clock();
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rf = (a, b) => a + rnd() * (b - a);
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
@@ -81,7 +86,7 @@
   /* ---------------- État initial ---------------- */
   E.newState = (name, cls) => {
     const S = {
-      v: E.VERSION, created: Date.now(), savedAt: 0, lastTick: Date.now(),
+      v: E.VERSION, created: E.now(), savedAt: 0, lastTick: E.now(),
       kamas: 0, nextUid: 1, nextCid: 1,
       chars: [], items: {}, res: {}, runes: {},
       sub: null, hunting: false, zstars: {},
@@ -133,14 +138,14 @@
 
   /* Consommables & bonus temporaires (durée en temps réel, cumulable jusqu'à 8 h) */
   E.BOOST_MAX_S = 8 * 3600;
-  E.boostPct = (S, kind, at = Date.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
-  E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - Date.now()) / 1000) : 0; };
+  E.boostPct = (S, kind, at = E.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
+  E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - E.now()) / 1000) : 0; };
   E.addCons = (S, id, n = 1) => { S.cons[id] = (S.cons[id] || 0) + n; };
   E.useConsumable = (S, id, arg) => {
     const C = CONSUMABLES[id]; if (!C) return "Objet inconnu.";
     if (!(S.cons[id] > 0)) return "Vous n'en avez plus.";
     if (C.kind !== "boost") return E.useSpecial ? E.useSpecial(S, id, arg) : "Inutilisable.";
-    const now = Date.now(); const b = S.boosts[C.boost];
+    const now = E.now(); const b = S.boosts[C.boost];
     if (b && b.until > now && b.pct !== C.pct) return "Un autre bonus de ce type est déjà actif.";
     const dur = C.dur * (E.teamHas(S, "panda") ? 1.25 : 1) * 1000;
     const start = b && b.until > now ? b.until : now;
@@ -347,7 +352,7 @@
   /* ---------------- Journal & événements ---------------- */
   E.events = [];
   const note = (S, txt, kind = "info") => {
-    S.journal.unshift({ t: Date.now(), txt, kind });
+    S.journal.unshift({ t: E.now(), txt, kind });
     if (S.journal.length > 60) S.journal.length = 60;
     E.events.push({ txt, kind });
   };
@@ -485,17 +490,17 @@
      S.zstars[sid] = { s: étoiles au moment at, at } ; sans fiche, la zone accumule depuis la création de la partie. */
   E.STAR_MAX = 5; E.STAR_GROW_S = 7200; E.STAR_MELT_S = 1800; E.STAR_PCT = 10;
   const huntingHere = (S, sid) => S.hunting && S.sub === sid && !S.dungeon;
-  E.zoneStars = (S, sid, now = Date.now()) => {
+  E.zoneStars = (S, sid, now = E.now()) => {
     const rec = S.zstars && S.zstars[sid];
     if (!rec) return clamp((now - (S.created || now)) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
     if (huntingHere(S, sid)) return rec.s;
     return clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
   };
   /* fige la valeur courante (à l'arrivée dans la zone : la fonte part de là) */
-  const pinStars = (S, sid, now = Date.now()) => { if (!S.zstars) S.zstars = {}; const rec = S.zstars[sid]; /* 0.1.10.2 : la pousse est comptée même si S.sub vient de passer sur cette zone */
+  const pinStars = (S, sid, now = E.now()) => { if (!S.zstars) S.zstars = {}; const rec = S.zstars[sid]; /* 0.1.10.2 : la pousse est comptée même si S.sub vient de passer sur cette zone */
     S.zstars[sid] = { s: rec ? clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX) : E.zoneStars(S, sid, now), at: now }; };
   /* fonte pendant la chasse : dtS secondes de chasse dans la zone courante */
-  E.starsTick = (S, dtS, now = Date.now()) => {
+  E.starsTick = (S, dtS, now = E.now()) => {
     if (!S.hunting || !S.sub || S.dungeon) return;
     if (!S.zstars || !S.zstars[S.sub]) pinStars(S, S.sub, now);
     const rec = S.zstars[S.sub]; rec.s = Math.max(0, rec.s - dtS / E.STAR_MELT_S); rec.at = now;
@@ -514,7 +519,7 @@
     const avg = team.reduce((s, c) => s + c.lvl, 0) / team.length;
     return Object.values(SUBS).filter((s) => !s.hidden && E.subUnlocked(S, s.id) && s.lvl[0] <= avg + 1 && s.lvl[1] >= avg - 4);
   };
-  E.roam = (S, t = Date.now(), offline = false) => {
+  E.roam = (S, t = E.now(), offline = false) => {
     if (!E.roamOn(S) || t - (S.roamAt || 0) < E.ROAM_GAP_S * 1000) return null;
     const cur = Math.floor(E.zoneStars(S, S.sub, t)); if (cur >= E.STAR_MAX - 1) return null;
     const best = E.roamCands(S).filter((s) => s.id !== S.sub).map((s) => ({ s, n: Math.floor(E.zoneStars(S, s.id, t)) })).filter((x) => x.n >= Math.max(E.ROAM_MIN, cur + 2))
@@ -895,9 +900,9 @@
      et donne +25 % d'XP et de butin, +50 % de poussière. Dès la stasis 6, il remplace un des modificateurs tirés au sort. */
   E.WEEKLY_REW = 1.25; E.WEEKLY_DUST = 1.5;
   E.WEEKLY_MODS = ["enrages", "blindes", "vampires", "nombreux"]; // « Véloces » exclu : trop punitif sans équipement (simulation)
-  E.weekIdx = (t = Date.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC)
-  E.weekEnd = (t = Date.now()) => ((E.weekIdx(t) + 1) * 7 - 3) * 86400000;
-  E.weekly = (S, t = Date.now()) => {
+  E.weekIdx = (t = E.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC)
+  E.weekEnd = (t = E.now()) => ((E.weekIdx(t) + 1) * 7 - 3) * 86400000;
+  E.weekly = (S, t = E.now()) => {
     const w = E.weekIdx(t);
     if (S.weekly && S.weekly.w === w && DUNGEONS[S.weekly.did]) return S.weekly;
     const ids = Object.keys(DUNGEONS).sort().filter((d) => E.dungeonUnlocked(S, d)); if (!ids.length) return null;
@@ -913,12 +918,12 @@
      et donnent un petit bonus. Une course commencée garde son bonus jusqu'au bout. Les donjons ne tournent pas hors ligne. */
   E.FLASH_MS = 20 * 60000; E.FLASH_REW = 1.12; E.FLASH_DUST = 1.25;
   E.FLASH_MODS = ["enrages", "blindes", "vampires", "nombreux", "champions", "ruse", "renforts"];
-  E.flashIdx = (t = Date.now()) => Math.floor(t / E.FLASH_MS);
-  E.flashEnd = (t = Date.now()) => (E.flashIdx(t) + 1) * E.FLASH_MS;
+  E.flashIdx = (t = E.now()) => Math.floor(t / E.FLASH_MS);
+  E.flashEnd = (t = E.now()) => (E.flashIdx(t) + 1) * E.FLASH_MS;
   /* Tranches fixes, identiques pour tous les joueurs (Mathis, 0.1) */
   E.FLASH_TIERS = [["bas", 1, 79], ["milieu", 80, 149], ["haut", 150, 200]];
   const flashCache = {};
-  E.flash = (S, t = Date.now()) => {
+  E.flash = (S, t = E.now()) => {
     const f = E.flashIdx(t); if (flashCache.k === f) return flashCache.v;
     const ids = Object.keys(DUNGEONS).sort();
     let x = Math.imul(f ^ 0x7f4a7c15, 0x85ebca6b) >>> 0;
@@ -1920,7 +1925,7 @@
     const r = F.rewards || { xp: {}, kamas: 0, res: {}, items: [] };
     const xpTot = Object.values(r.xp).reduce((a, b) => a + b, 0);
     const nres = Object.values(r.res).reduce((a, b) => a + b, 0);
-    S.history.unshift({ t: Date.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length });
+    S.history.unshift({ t: E.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length });
     if (F.loss) F.loss.t = S.history[0].t; // même horodatage : le rapport s'ouvre depuis « Derniers combats »
     if (S.history.length > 30) S.history.length = 30;
     if (zkey) {
@@ -2113,7 +2118,7 @@
     const k = F.stasis || 0; const SI = dg ? E.stasisInfo(S, F.dungeonId) : null;
     const dealt = F.dealt || {}; const totDealt = Object.values(dealt).reduce((a, b) => a + b, 0);
     const charOf = (e) => S.chars.find((c) => c.id === e.cid);
-    const R = { t: Date.now(), label: F.label, round: F.round, cause: "close", txt: "", facts: [], gear: [], cid: null, stat: null, did: F.dungeonId || null, sub: F.sub || null };
+    const R = { t: E.now(), label: F.label, round: F.round, cause: "close", txt: "", facts: [], gear: [], cid: null, stat: null, did: F.dungeonId || null, sub: F.sub || null };
     const sn = (stat) => STATS[stat].name.replace("% ", "");
     const gearTxt = (c, stat, what) => {
       const g = E.gearSuggest(S, c, stat); R.gear = g; R.cid = c.id; R.stat = stat;
@@ -2235,7 +2240,7 @@
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
     const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
-    if (!SI.firsts[k]) { SI.firsts[k] = Date.now();
+    if (!SI.firsts[k]) { SI.firsts[k] = E.now();
       const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
       if (E.firstPassStones) E.firstPassStones(S, k, out); // 0.1.13 : Pierres d'âme
       E.celebrate({ t: "stasis", did, k, chest });
@@ -2358,7 +2363,7 @@
   };
   /* Filons rares : en moyenne un toutes les 2 h de récolte, 10 min, rendement ×2 sur une ressource */
   E.FILON_EVERY_S = 7200; E.FILON_DUR_S = 600;
-  E.filonOn = (S, res, at = Date.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
+  E.filonOn = (S, res, at = E.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
   const gatherTick = (S, dt, opts = {}) => {
     let total = 0;
     S.chars.forEach((c) => {
@@ -2369,7 +2374,7 @@
       while (W.prog >= t && n < 200000) {
         W.prog -= t; n++;
         let q = 1; if (rnd() < J.lvl / 200) q++;
-        if (!opts.quiet && !(S.filon && S.filon.until > Date.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: Date.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
+        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
         if (E.filonOn(S, W.res)) q *= 2;
         q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
         if (!opts.quiet) E.protSpawn(S, c, W);
@@ -2429,7 +2434,7 @@
     const s = STATS[stat]; return { stat, tier, pts: tier === "ga" ? 1 : s.pts * mult, weight: tier === "ga" ? s.w : s.w * s.pts * mult, exo: tier === "ga" };
   };
   E.COEF_REGEN_MIN = 6; // +1 % toutes les 6 minutes
-  E.getCoef = (S, tpl, now = Date.now()) => {
+  E.getCoef = (S, tpl, now = E.now()) => {
     const c = S.coef[tpl]; if (!c) return 100;
     const gained = Math.floor((now - c.t) / (E.COEF_REGEN_MIN * 60000));
     return Math.min(100, c.v + gained);
@@ -2472,7 +2477,7 @@
       const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05) * exoMult);
       for (const rk in r) { S.runes[rk] = (S.runes[rk] || 0) + r[rk]; got[rk] = (got[rk] || 0) + r[rk]; }
     }
-    S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: Date.now() };
+    S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: E.now() };
     delete S.items[uid];
     return got;
   };
@@ -2527,7 +2532,7 @@
     const wasDungeon = S.dungeon; S.dungeon = null;
     let sub = SUBS[S.sub]; const teamSize = E.team(S).length; const roamed = [];
     // part de l'absence couverte par le bonus d'XP
-    const b = S.boosts && S.boosts.xp; const now = Date.now(); const startT = now - seconds * 1000;
+    const b = S.boosts && S.boosts.xp; const now = E.now(); const startT = now - seconds * 1000;
     const covered = b ? clamp((b.until - startT) / (seconds * 1000), 0, 1) : 0;
     const xpBoost = b ? b.pct * covered : 0;
     for (let i = 0; hunting && i < fights; i++) {
@@ -2635,6 +2640,52 @@
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
     S.v = E.VERSION;
     return S;
+  };
+
+  /* ---------------- Actions du joueur ----------------
+     La liste officielle de tout ce qu'un joueur peut faire qui change sa partie.
+     En multijoueur, c'est exactement ce que le jeu enverra au serveur : { action, arguments }.
+     Le serveur appliquera E.act(S, action, ...arguments) avec ce même moteur, et refusera tout le reste.
+     Chaque action prend la partie S en premier argument et renvoie null / undefined si tout va bien,
+     sinon un message d'erreur (ou un résultat). Le temps qui passe (E.tick, E.catchUp) n'est pas une action :
+     c'est le serveur qui le fera avancer avec son horloge (E.setClock).
+     Nouvelle fonction du moteur appelée par un bouton du jeu et qui modifie la partie : l'ajouter ici.
+     Encore modifiés directement par l'écran (à transformer en actions avec les comptes en ligne) :
+     apparence des héros, favoris et verrous d'objets, liste de courses, objectifs épinglés terminés, réglages. */
+  E.ACTIONS = {
+    // héros et équipe
+    recruit: "recruter un héros", toggleTeam: "entrer ou sortir de l'équipe", setRow: "placer un héros (ligne)", setPlaceAuto: "placement automatique",
+    allocate: "dépenser un point de caractéristique", deallocate: "retirer un point", resetPoints: "réinitialiser les points",
+    setAllocMode: "répartition auto ou manuelle", autoAllocate: "relancer la répartition auto", equipSpell: "placer un sort dans la barre",
+    setTitle: "choisir un titre", setOrn: "choisir un ornement", setWing: "choisir des ailes",
+    renaissance: "Renaissance d'un héros", chooseAlign: "choisir un alignement", setTraining: "envoyer en salle d'entraînement",
+    // équipement
+    equip: "équiper un objet", unequip: "retirer un objet", sellItem: "vendre un objet", breakItem: "briser un objet",
+    saveGear: "enregistrer un équipement", applyGear: "porter un équipement enregistré", deleteGear: "supprimer un équipement enregistré",
+    applyBuild: "appliquer un build partagé", applyAuto: "réglages du tri automatique",
+    savePreset: "enregistrer un préréglage", loadPreset: "charger un préréglage", applyPreset: "appliquer un préréglage", deletePreset: "supprimer un préréglage",
+    saveComp: "enregistrer une composition", applyComp: "appliquer une composition", delComp: "supprimer une composition", setZonePreset: "préréglage par zone",
+    // chasse, donjons, combat
+    startHunt: "partir chasser", stopHunt: "arrêter de chasser", enterDungeon: "entrer en donjon", leaveDungeon: "quitter le donjon",
+    manualCast: "lancer un sort (mode manuel)", manualEnd: "finir son tour (mode manuel)", protFight: "affronter le protecteur",
+    toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
+    // métiers, forge, ressources
+    setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", sellRes: "vendre des ressources",
+    craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftScroll: "fabriquer un parchemin",
+    forgemage: "forgemager", feedForgemage: "forgemagie en série", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
+    fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
+    useConsumable: "utiliser un consommable", buyShop: "acheter en boutique", buyNets: "acheter des filets",
+    // Havre-Sac, familiers, montures
+    buyHavre: "agrandir le Havre-Sac", placeFurn: "placer un meuble", unplaceFurn: "ranger un meuble",
+    buildAtelier: "construire l'atelier", setAtelier: "choisir la recette de l'atelier", buildEnclos: "construire l'enclos",
+    equipPet: "équiper un familier", equipMount: "équiper une monture", setMountShare: "part d'XP pour la monture",
+    startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement",
+    // divers
+    almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
+  };
+  E.act = (S, name, ...args) => {
+    if (!Object.prototype.hasOwnProperty.call(E.ACTIONS, name) || typeof E[name] !== "function") return `Action inconnue : ${name}`;
+    return E[name](S, ...args);
   };
 
   root.ENGINE = E;
