@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.14.1";
+const GAME_VERSION = "0.1.14.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.14.2", name: "Île des Wabbits", items: [
+    "Nouvelle zone : l'Île des Wabbits (niveau 40 à 120, après le Bouftou Royal) avec l'Île de la Cawotte, l'Îlot de la Couronne, l'Îlot des Tombeaux, l'Îlot de Waldo et les Laboratoires abandonnés, 14 monstres, 8 archimonstres et leurs récoltes",
+    "Deux donjons : le Château du Wa Wabbit (niveau 60) et le Terrier du Wa Wabbit (Wa Wobot, niveau 80), avec leurs clés, leurs trophées et 73 nouveaux objets dont 11 panoplies (Wa, Wabbit, Cawotte, Wa Wobot, Wabbit Garou…)",
+    "Le Dofus Cawotte tombe désormais du Wa Wabbit, dans son château, comme dans DOFUS ; sa quête se fait sur l'île",
+    "Les 8 archimonstres de l'île comptent dans l'album (213 âmes) et dans le palier « Cania, Sidimote et Wabbits » d'Éternelle moisson" ] },
   { v: "0.1.14.1", name: "Héros plus malin", items: [
     "En combat, le héros prépare tout son tour au lieu de lancer toujours la même attaque : sort de zone face à un groupe, gros coup sur le boss, élément auquel la cible résiste le moins, coup de grâce sur un monstre presque mort, et plus de dégâts perdus sur un monstre déjà vaincu",
     "Il utilise mieux tous ses PA en combinant ses sorts, et lance donc des attaques qui ne servaient jamais ; ses invocations, protections et soins passent toujours en premier, dans l'ordre de la barre et selon leurs conditions" ] },
@@ -540,7 +545,7 @@ Object.assign(DECOS, {
   dg_serre:    DGD(["#14262a", "#5a9a8a"], "#2f5a4a", "#22443a", "glass"),
   dg_skeunk:   DGD(["#1e0e1e", "#8a3a1a"], "#3a1e1e", "#2a1414", "tombs"),
 });
-const DG_DECO = { crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk" };
+const DG_DECO = { chateau_wa_wabbit: "dg_sable", terrier_wa_wabbit: "dg_labo", crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk" };
 const dgDeco = (did) => DG_DECO[did] || "dungeon";
 /* météo des zones de chasse : selon le décor, la neige pour les zones glacées */
 const subWeather = (sid) => { const sb = E.SUBS[sid]; if (!sb) return ""; if (/givre|gel[ée]e|glace|neige|Frigost/i.test(sb.name)) return "snow";

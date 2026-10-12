@@ -61,7 +61,7 @@
   E.OCRE_TIERS = [
     { name: "Astrub", zones: ["astrub"], rew: { cons: ["pierre_ame", 10], kamas: 20000 }, txt: "10 Pierres d'âme et 20 000 kamas" },
     { name: "Amakna", zones: ["amakna"], rew: { title: "Moissonneur", kamas: 50000 }, txt: "Titre « Moissonneur » et 50 000 kamas" },
-    { name: "Cania et Sidimote", zones: ["cania", "sidimote"], rew: { cons: ["parfum_piste", 5], kamas: 100000 }, txt: "5 Parfums de pistage et 100 000 kamas" },
+    { name: "Cania, Sidimote et Wabbits", zones: ["cania", "sidimote", "wabbit"], rew: { cons: ["parfum_piste", 5], kamas: 100000 }, txt: "5 Parfums de pistage et 100 000 kamas" },
     { name: "Koalaks, Abraknydes et Moon", zones: ["koalaks", "abrak", "moon"], rew: { furn: E.ARCHI_FURN, orn: "ame", kamas: 200000 }, txt: "Meuble « Autel des âmes », ornement « Âme violette » et 200 000 kamas" },
     { name: "Dragoeufs, Otomaï et Minotoror", zones: ["dragoeufs", "otomai", "minotoror"], rew: { cons: ["bonbon_royal", 3], kamas: 400000 }, txt: "3 Bonbons Royaux et 400 000 kamas" },
     { name: "Pandala et Grobe", zones: ["pandala", "grobe"], rew: { dofus: "ocre", title: "Éternel Moissonneur" }, txt: "Dofus Ocre (+1 PA) et titre « Éternel Moissonneur »" },
@@ -98,7 +98,7 @@
      Turquoise (dragon de l'Eau) la Dame des Eaux, Domakuro le Maître Corbac (encre noire), Glaces Missiz Frizz, Argenté Scintillant la déesse Ilyzaelle */
   const L = [
     ["cacao", "Dofus Cacao", 50, 23029, { tac: 10 }, "cour_bouftou_royal", [dg("cour_bouftou_royal", 3), { t: "kill", zone: "astrub", n: 150 }, dg("cour_bouftou_royal", 5)]],
-    ["cawotte", "Dofus Cawotte", 60, 23006, { sa: 60 }, "grange_tournesol", [dg("grange_tournesol", 3), { t: "harvest", res: "Orge", n: 200 }, { t: "soul", zone: "astrub", n: 5 }, dg("grange_tournesol", 6)]],
+    ["cawotte", "Dofus Cawotte", 60, 23006, { sa: 60 }, "chateau_wa_wabbit", [dg("chateau_wa_wabbit", 3), { t: "kill", zone: "wabbit", n: 150 }, { t: "soul", zone: "wabbit", n: 5 }, dg("chateau_wa_wabbit", 6)]],
     ["dokoko", "Dokoko", 80, 23022, {}, "arbre_moon", [dg("arbre_moon", 3), { t: "chal", chal: "survivant", n: 50 }, { t: "soul", zone: "moon", n: 3 }, dg("arbre_moon", 6, { nodown: true })]],
     ["kaliptus", "Dofus Kaliptus", 100, 23010, { pp: 30 }, "caverne_koulosse", [{ t: "kill", zone: "koalaks", n: 200 }, dg("caverne_koulosse", 3), { t: "almanax", n: 7 }, { t: "soul", zone: "koalaks", n: 5 }]],
     ["emeraude", "Dofus Émeraude", 100, 23002, { vit: 200 }, "antre_crocabulia", [dg("antre_crocabulia", 4), { t: "harvest", res: "Bois de Chêne", n: 300 }, { t: "soul", zone: "dragoeufs", n: 3 }, dg("antre_crocabulia", 8)]],
@@ -191,7 +191,7 @@
       case "soul": return `Capturer ${st.n} âme${st.n > 1 ? "s" : ""} d'archimonstres de la zone ${E.zoneName(st.zone)}`;
       case "almanax": return `Faire ${st.n} offrandes à l'Almanax`;
       case "perfect": return `Posséder ${st.n > 1 ? st.n + " objets Parfaits" : "un objet Parfait"} (toutes les caractéristiques au jet maximum)`;
-      case "ocre": return "Éternelle moisson : capturer l'âme des 205 archimonstres, palier par palier";
+      case "ocre": return "Éternelle moisson : capturer l'âme de tous les archimonstres, palier par palier";
     }
     return "";
   };

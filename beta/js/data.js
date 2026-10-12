@@ -420,6 +420,9 @@
       if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
     }
   }
+  /* 0.1.14.2 : la Clef du Château du Wa Wabbit demandait trois morceaux de clef introuvables → ressources des Wabbits de l'île */
+  { const C = G.SPECIAL_CRAFTS["Clef du Château du Wa Wabbit"];
+    if (C) C.ing = [["Patte de Wabbit", 3], ["Queue de Black Wabbit", 3], ["Moustaches de Tiwabbit", 3], ["Viande Ladre", 2], ["Carpe d'Iem", 2], ["Menthe Sauvage", 2], ["Houblon", 2]]; }
   { const gem = Object.values(G.RES).find((r) => r.type === 50) || Object.values(G.RES)[0];
     G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 };
     G.RES["Poussière de stasis"] = { id: 0, icon: gem.icon, lvl: 1, price: 15, type: -2 }; }
