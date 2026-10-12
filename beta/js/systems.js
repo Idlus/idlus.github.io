@@ -968,6 +968,13 @@
   [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r}`, `Atteindre le niveau d'alignement ${r * 20}.`, (S) => E.alignRankIdx(S) >= r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
   [[10, ""], [50, ""]].forEach(([n]) => add("havre" + n, "Havre-Sac", `Havre-Sac ×${n}`, `Acheter ${n} améliorations du Havre-Sac.`, (S) => E.havreTotal(S) >= n, 100 * n));
   [2, 4, 8].forEach((n) => add("team" + n, "Progression", `${n} héros`, `Avoir ${n} héros.`, (S) => S.chars.length >= n, 250 * n));
+  /* 0.1.10 : idoles */
+  add("idol1", "Idoles", "Première idole", "Fabriquer une idole chez le Bricoleur.", (S) => (S.cnt.idols || 0) >= 1, 500);
+  add("idol12", "Idoles", "Douze idoles", "Posséder 12 idoles.", (S) => (S.cnt.idols || 0) >= 12, 2000);
+  add("idol36", "Idoles", "Collection complète", "Posséder les 36 idoles.", (S) => (S.cnt.idols || 0) >= 36, 10000, { title: "l'Idolâtre" });
+  add("idolsix", "Idoles", "Six statuettes", "Gagner un combat avec 6 idoles actives.", (S) => (S.cnt.idolSix || 0) >= 1, 1500);
+  add("idol100", "Idoles", "Score 100", "Gagner un combat avec un score d'idoles de 100 ou plus.", (S) => (S.cnt.idolBest || 0) >= 100, 5000, { title: "le Téméraire" });
+  add("idol200", "Idoles", "Score 200", "Gagner un combat avec un score d'idoles de 200 ou plus.", (S) => (S.cnt.idolBest || 0) >= 200, 20000, { title: "Maître des idoles" });
   E.ACH = ACH;
   const checkAch = (S) => {
     ACH.forEach((a) => {
