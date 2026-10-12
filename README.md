@@ -7,6 +7,16 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.7 « Les 19 classes » (bêta)
+- Pièges du Sram, ronces du Sadida, tourelle du Steamer qui tombe du ciel, fil de lumière de l'Osamodas : chaque classe a son passif visible.
+
+## 0.1.6 « Passifs visibles » (bêta)
+- **Chaque classe montre son passif en combat** : Colère du Iop, horloge du Xélor, roue de l'Ecaflip, glyphes du Féca, masques du Zobal, postures du Forgelance, ivresse du Pandawa, marques du Crâ et de l'Ouginak…
+
+## 0.1.5 « Pionniers » (bêta)
+- Récompense des testeurs : chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier ».
+- Au lancement du multijoueur (1.0), les testeurs qui ont le rôle Pionnier sur le Discord les retrouveront.
+
 ## 0.1.4 « Encore plus posés » (bêta)
 - Combats encore un peu ralentis : 780 ms par action. Récompenses par combat relevées d'autant, gains par heure inchangés.
 

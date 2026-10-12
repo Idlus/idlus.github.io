@@ -1,6 +1,33 @@
 {
-  "version": "0.1.4",
+  "version": "0.1.7",
   "versions": [
+    {
+      "v": "0.1.7",
+      "name": "Les 19 classes",
+      "items": [
+        "Sram : des piques sortent du sol sous les monstres qu'il a empoisonnés",
+        "Sadida : ses ronces se comptent sur la cible (×1 à ×3) et son Arbre ondule",
+        "Steamer : sa tourelle tombe du ciel dans un nuage de vapeur ; Osamodas : un fil de lumière le relie à ses invocations"
+      ]
+    },
+    {
+      "v": "0.1.6",
+      "name": "Passifs visibles",
+      "items": [
+        "Chaque classe montre son passif en combat : flammes de Colère du Iop, horloge du Xélor, glyphes du Féca sous toute l'équipe, masques du Zobal, postures du Forgelance",
+        "La roue de l'Ecaflip tourne au début du combat et s'arrête sur Pile, Face, Jackpot ou Perdu",
+        "Le Pandawa titube puis s'endort, le Sacrieur rougit en souffrant, les runes de l'Huppermage s'allument",
+        "Viseur rouge du Crâ et crocs de l'Ouginak sur leur cible ; mots de l'Eniripsa, portails de l'Eliotrope, trésors de l'Enutrof"
+      ]
+    },
+    {
+      "v": "0.1.5",
+      "name": "Pionniers",
+      "items": [
+        "Merci de tester ! Chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier » (Héros → Titre et Ornement)",
+        "Récompense exclusive : au lancement du multijoueur, tout le monde repart de zéro, mais les testeurs qui ont le rôle Pionnier sur le Discord retrouveront ce titre et cet ornement"
+      ]
+    },
     {
       "v": "0.1.4",
       "name": "Encore plus posés",
