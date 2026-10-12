@@ -16,9 +16,16 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.26.1";
+const GAME_VERSION = "0.1.27";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.27", name: "Cadres de métal", items: [
+    "Nouveaux cadres de héros en métal : Bois, Bronze, Argent, Or et Émeraude, chacun en deux rangs (I puis II, un nouveau cadre tous les 20 niveaux), puis Krosmoz au niveau 200",
+    "Le cadre est en relief avec des rivets ; des coins forgés apparaissent dès le Bronze et grandissent à chaque métal, et des joyaux ornent le ruban dès l'Or",
+    "Le nom du rang s'affiche dans un ruban sous la carte au lieu de cacher le haut du héros",
+    "Les héros renés gardent leur cadre de feu",
+    "Ton médaillon prend le cadre de ton héros principal dans les Classements, le chat et la guilde (anneau double au rang II, petit joyau dès l'Or) ; le podium affiche aussi le rang",
+  ] },
   { v: "0.1.26.1", name: "Défi à portée de main", items: [
     "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
     "Accueil : une carte « Défi du jour » sous la bannière (donjon, stasis, modificateurs, ton record, ta série, le contenu du coffre). « Lancer le défi » le joue tout de suite et montre le résultat",
@@ -4373,10 +4380,11 @@ async function defiSubmit(r) {
 /* ---------- classement du défi (onglet Classements) ---------- */
 async function lbDefiFetch(out) {
   const db = ON.db(), me = ON.user && ON.user.id, day = E.defiDay(), tier = LB.dtier || defiTierCur();
-  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team });
-  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
+  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team, fl: r.main_lvl });
+  const ml = LB.ml ? ",main_lvl" : "";
+  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
   out.rows = (data || []).map(rec);
-  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
   const { data: y } = await db.from("lb_defi").select("pseudo,r").eq("day", day - 1).eq("tier", tier).lte("r", 3).order("r", { ascending: true }).limit(3);
   out.yest = (y || []).map((x) => x.pseudo);
 }
@@ -5352,7 +5360,10 @@ async function onBoot() {
 const VF = window.VERIFY;
 const LB = { tab: "lvl", cls: "", dmode: "week", did: null, cache: {} };
 const LB_TABS = [["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
-const cmed = (cls) => (CLASSES[cls] ? `<span class="cm" style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+/* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
+const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
+const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+const lbLvl = (score) => score - Math.max(0, Math.floor((score - 1) / VF.REB_LVL)) * VF.REB_LVL;
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
 const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
 const weekNow = () => VF.weekIdx(E.now());
@@ -5364,32 +5375,34 @@ function lbDefaultDid() {
 /* Requête d'un classement, gardée 60 s. */
 async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
+  if (LB.ml === undefined) { const { error } = await db.from("lb_level").select("main_lvl").limit(1); LB.ml = !error; } // 0.1.26 : niveau du héros principal (cadre du médaillon)
   const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
   if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score }));
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
     const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
-    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
+    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
     const col = t === "lvl" ? "level" : t === "album" ? "album" : "succes";
     const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : `${v} succès`);
-    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}`).order(col, { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]) }));
-    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
+    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
-    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true });
+    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true, fl: r.main_lvl });
+    const ml = LB.ml ? ",main_lvl" : "";
     if (LB.dmode === "week") {
-      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
-      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
     } else {
-      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
-      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).eq("user_id", me).limit(1);
+      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).eq("user_id", me).limit(1);
         if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: await count(db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${m[0].k},and(k.eq.${m[0].k},t.lt.${m[0].t})`)) }); }
     }
   } else if (t === "defi") {
@@ -5401,7 +5414,7 @@ async function lbFetch() {
   LB.cache[key] = out; return out;
 }
 function lbRowHtml(r, i, me) {
-  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "first") {
@@ -5412,7 +5425,7 @@ function lbListHtml(d) {
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
   if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
-  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls)}<span class="nm">${h(r.p)}</span><span class="sc">${h(r.sc)}</span></button>`; }).join("");
+  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(r.p)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
   return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
 }
@@ -5444,12 +5457,12 @@ async function lbProfile(u) {
   openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
   const db = ON.db();
   try {
-    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes").eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
+    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
-    openSheet(`<div class="row">${cmed(p.main)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
-      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
+    openSheet(`<div class="row">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
+      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
