@@ -1,0 +1,18 @@
+# Met en place le serveur Discord (salons, rôles, permissions, textes) avec le robot idlus. Relançable sans risque.
+# Nécessite le secret DISCORD_BOT_TOKEN (Settings › Secrets and variables › Actions) et le robot invité sur le serveur.
+name: Mise en place du Discord
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-qpzsh8]
+    paths: [tools/discord_setup.js, .github/workflows/discord-setup.yml]
+jobs:
+  serveur:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_setup.js
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
