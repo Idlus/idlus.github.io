@@ -377,6 +377,16 @@
     { id: "rare", name: "Composants rares", icon: "✨", types: [-2] },
     { id: "divers", name: "Divers", icon: "📦", types: [] },
   ];
+  /* 0.1 : le niveau maximum est 200 (DofusDB donne des grades 220 aux boss et monstres des donjons de niveau 200) */
+  {
+    const cap = (v) => Math.min(200, v);
+    for (const k in G.MONSTERS) { const m = G.MONSTERS[k]; if (m.lvl && m.lvl[1] > 200) m.lvl = [cap(m.lvl[0]), cap(m.lvl[1])]; }
+    for (const k in G.DUNGEONS) { const d = G.DUNGEONS[k]; d.lvl = cap(d.lvl); (d.rooms || []).forEach((r) => { r.lvl = cap(r.lvl); }); }
+    /* une sous-zone peut donner accès à plusieurs donjons (ex. Labyrinthe du Minotoror et Salle du Minotot) */
+    G.ZONES.forEach((z) => z.subs.forEach((s) => { const ds = Object.keys(G.DUNGEONS).filter((d) => G.DUNGEONS[d].access === s.id).sort((a, b) => G.DUNGEONS[a].lvl - G.DUNGEONS[b].lvl);
+      if (s.dungeon && !ds.includes(s.dungeon)) ds.unshift(s.dungeon); if (ds.length) { s.dungeons = ds; s.dungeon = ds[0]; } }));
+    G.ZONES.forEach((z) => { z.subs.forEach((s) => { if (s.lvl[1] > 200) s.lvl = [cap(s.lvl[0]), 200]; }); if (typeof z.lvl === "string") z.lvl = z.lvl.replace(/\d+/g, (n) => cap(+n)); });
+  }
   /* 3.0.1 : ingrédients de clés absents des données de drop → ajoutés aux monstres de la sous-zone du donjon */
   {
     const KEY_FIX = { "Mâchoire du Chafer Draugr": ["donjon_squelettes", 5], "Fragment de Pierre Polie": ["pitons_craqueleur", 5],

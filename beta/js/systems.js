@@ -610,6 +610,9 @@
   [[1, ""], [10, ""], [25, "Chasseur d'Archis"]].forEach(([n, t]) => add("archi" + n, "Combat", n === 1 ? "Premier archimonstre" : `${n} archimonstres`, `Vaincre ${n} archimonstre${n > 1 ? "s" : ""}.`, (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= n, 300 * n, t ? { title: t } : {}));
   [[10, ""], [100, ""], [500, ""], [1000, "Tueur de Champions"]].forEach(([n, t]) => add("champ" + n, "Chasse", `${n.toLocaleString("fr-FR")} Champions`, `Vaincre ${n.toLocaleString("fr-FR")} monstres Champions en chasse.`, (S) => (S.champs || 0) >= n, Math.round(Math.sqrt(n) * 120), t ? { title: t } : {}));
   Object.entries(DUNGEONS).sort((a, b) => a[1].lvl - b[1].lvl).forEach(([id, d]) => add("dg_" + id, "Donjons", d.name, `Vaincre ${MONSTERS[d.boss].name}.`, (S) => !!S.progress.bossKills[id], d.lvl * 30));
+  /* 0.1 : un succès par mécanique unique de boss (stasis 5+, aucun héros à terre pendant le combat du boss) */
+  Object.entries(E.BOSS_SIGS).forEach(([did, mk]) => { const d = DUNGEONS[did], M = E.BOSS_MECHS[mk]; if (!d || !M) return;
+    add("sig_" + did, "Donjons", M.name, `Vaincre ${MONSTERS[d.boss].name} en stasis 5 ou plus sans qu'aucun héros ne tombe pendant le combat du boss.`, (S) => !!(S.sigWins || {})[did], d.lvl * 60, { title: M.title }); });
   add("dg_all", "Donjons", "Maître des donjons", "Vaincre tous les boss de donjon.", (S) => Object.keys(DUNGEONS).every((d) => S.progress.bossKills[d]), 5000, { title: "Maître des donjons" });
   [1, 5, 10].forEach((n) => add("fam" + n, "Chasse", `${n} famille${n > 1 ? "s" : ""}`, `Compléter ${n} famille${n > 1 ? "s" : ""} de monstres (palier Traqueur).`, (S) => Object.keys(S.families).length >= n, 400 * n));
   [1, 10, 25].forEach((n) => add("tro" + n, "Chasse", `${n} trophée${n > 1 ? "s" : ""}`, `Obtenir ${n} trophée${n > 1 ? "s" : ""} de sous-zone.`, (S) => Object.keys(S.trophies).length >= n, 300 * n));

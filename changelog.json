@@ -1,6 +1,14 @@
 {
-  "version": "3.4.0",
+  "version": "3.4.1",
   "versions": [
+    {
+      "v": "3.4.1",
+      "name": "Discord",
+      "items": [
+        "« Signaler un bug » (Options) ouvre directement le forum Bugs du Discord, même si vous n'êtes pas encore sur le serveur : le modèle de rapport est copié, il suffit d'ouvrir un fil et de le coller",
+        "Le serveur Discord s'agrandit : salons d'entraide, de builds et de captures, forums Bugs et Idées (votez avec 👍), salons de la version de test et mutateur de la semaine annoncé chaque lundi"
+      ]
+    },
     {
       "v": "3.4.0",
       "name": "Havre-Sac",

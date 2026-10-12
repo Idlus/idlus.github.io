@@ -7,7 +7,7 @@ const data = JSON.parse(fs.readFileSync(__dirname + "/../changelog.json", "utf8"
 const v = process.argv.slice(2).find((a) => !a.startsWith("--")) || data.version; const c = data.versions.find((x) => x.v === v);
 if (!c) { console.log("Version introuvable :", v); process.exit(1); }
 const URL_GAME = "https://mathiss29.github.io/idlus/";
-const body = JSON.stringify({
+const payload = {
   username: "idlus", avatar_url: URL_GAME + "icons/icon-192.png",
   embeds: [{
     title: `✨ Mise à jour ${c.v} « ${c.name} »`, url: URL_GAME, color: 0xf0c35a,
@@ -15,9 +15,15 @@ const body = JSON.stringify({
     thumbnail: { url: URL_GAME + "icons/icon-192.png" },
     footer: { text: "idlus · projet de fan non officiel" }, timestamp: new Date().toISOString(),
   }],
-});
+};
+(async () => {
+// mentionne le rôle « Notif mises à jour » si le robot (DISCORD_BOT_TOKEN) peut retrouver son identifiant
+if (process.env.DISCORD_BOT_TOKEN && !DRY) try { const D = require("./discord_api.js"); const r = await D.roleId(await D.guildId(), "Notif mises à jour");
+  if (r) Object.assign(payload, { content: `<@&${r}>`, allowed_mentions: { roles: [r] } }); } catch (e) { console.log("Rôle de notification introuvable :", e.message); }
+const body = JSON.stringify(payload);
 if (DRY) { process.stdout.write(body); process.exit(0); }
 const u = new URL(hook);
 const req = https.request({ hostname: u.hostname, path: u.pathname + u.search, method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } },
   (res) => { let d = ""; res.on("data", (x) => (d += x)); res.on("end", () => { console.log("Discord :", res.statusCode, d.slice(0, 200)); process.exit(res.statusCode < 300 ? 0 : 1); }); });
 req.on("error", (e) => { console.error(e.message); process.exit(1); }); req.end(body);
+})();
