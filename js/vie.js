@@ -175,8 +175,8 @@
   };
   /* Comptoir des temples (monnaie : Doplons) */
   if (E.SHOPS && !E.SHOPS.temple) E.SHOPS.temple = { name: "Comptoir des temples", cur: "doplons", curName: "Doplons", icon: "🪙", items: [
-    { id: "d1", cons: "coffre_bois", cost: 2 }, { id: "d2", cons: "parchemin_avis", cost: 2 }, { id: "d3", cons: "pierre_ame", cost: 4 },
-    { id: "d4", cons: "potion_savoir", cost: 6 }, { id: "d5", cons: "coffre_argent", cost: 8 }, { id: "d6", tresor: true, name: "Parchemin de chasse au trésor", cost: 5 },
+    { id: "d1", cons: "coffre_bois", cost: 3 }, { id: "d2", cons: "parchemin_avis", cost: 2 }, { id: "d3", cons: "pierre_ame", cost: 4 },
+    { id: "d4", cons: "potion_savoir", cost: 6 }, { id: "d5", cons: "coffre_argent", cost: 10 }, { id: "d10", cons: "coffre_or", cost: 25 }, { id: "d6", tresor: true, name: "Parchemin de chasse au trésor", cost: 5 },
     ...["fo", "ine", "cha", "age", "vit", "sa"].map((k, i) => ({ id: "p" + i, cons: "parch_" + k + "_p", cost: 6 })),
     { id: "d7", cons: "bonbon_royal", cost: 14 }, { id: "d8", title: "Ombre du temple", cost: 30 }, { id: "d9", orn: "dopeul", name: "Ornement « Reflet du temple »", cost: 50 },
   ] };

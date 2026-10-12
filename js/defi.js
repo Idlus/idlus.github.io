@@ -36,6 +36,7 @@
   ];
   E.DEFI_MODS = ["enrages", "blindes", "vampires", "nombreux", "champions", "renforts", "ruse"];
   E.DEFI_TITLE = "Habitué du défi";
+  E.DEFI_PURSE_K = 500;
   const hash = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); x = Math.imul(x ^ (x >>> 15), 0x85ebca6b); return (x ^ (x >>> 13)) >>> 0; };
   E.defiTier = (id) => E.DEFI_TIERS.find((x) => x.id === id) || null;
   E.defi = (tid, day = E.defiDay()) => {
@@ -130,13 +131,15 @@
     st.tries.unshift({ tier: tid, win: r.win, turns: r.turns, hp: r.hp, team: team.map((x) => x.name), n: out.n, t: now }); if (st.tries.length > 12) st.tries.length = 12;
     S.cnt = S.cnt || {}; S.cnt.defiTries = (S.cnt.defiTries || 0) + 1;
     if (r.win && !st.chest) {
-      st.chest = true; S.kamas += r.kamas; E.addRes(S, E.POUSSIERE, r.dust);
-      out.chest = { kamas: r.kamas, dust: r.dust };
+      const kam = Math.max(r.kamas, E.DEFI_PURSE_K * topTeam(S)); // 0.1.30 : Bourse du défi, au moins 500 kamas par niveau
+      st.chest = true; S.kamas += kam; E.addRes(S, E.POUSSIERE, r.dust);
+      out.chest = { kamas: kam, dust: r.dust };
       const ss = S.defiStreak; ss.n = ss.last === day - 1 ? ss.n + 1 : 1; ss.last = day; ss.best = Math.max(ss.best || 0, ss.n);
       ss.days = (ss.days || []).concat([day]).slice(-30);
       out.streak = ss.n;
-      if (ss.n >= 30 && !S.unlocks.sablier) { S.unlocks.sablier = 1; out.orn = true; }
-      E.note(S, `Défi du jour réussi en ${r.turns} tours : ${r.kamas.toLocaleString("fr-FR")} kamas et ${r.dust} ${E.POUSSIERE} (série : ${ss.n} jour${ss.n > 1 ? "s" : ""}).`, "rare");
+      if (ss.n === 7) { E.addCons(S, "coffre_or"); out.bonus = "coffre_or"; } // 0.1.30 : série de 7 jours
+      if (ss.n >= 30 && !S.unlocks.sablier) { S.unlocks.sablier = 1; out.orn = true; E.addCons(S, "coffre_douze"); out.bonus = "coffre_douze"; }
+      E.note(S, `Défi du jour réussi en ${r.turns} tours. Bourse du défi : ${kam.toLocaleString("fr-FR")} kamas et ${r.dust} ${E.POUSSIERE} (série : ${ss.n} jour${ss.n > 1 ? "s" : ""})${out.bonus ? `. Série récompensée : ${D.CONSUMABLES[out.bonus].name} !` : ""}.`, "rare");
       if (E.checkAch) E.checkAch(S);
     }
     return out;
