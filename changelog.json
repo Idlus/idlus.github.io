@@ -1,6 +1,13 @@
 {
-  "version": "0.1.9.2",
+  "version": "0.1.9.3",
   "versions": [
+    {
+      "v": "0.1.9.3",
+      "name": "Passif visible",
+      "items": [
+        "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des 19 classes) ; la fenêtre défile au lieu de rétrécir son contenu"
+      ]
+    },
     {
       "v": "0.1.9.2",
       "name": "Exotique",
