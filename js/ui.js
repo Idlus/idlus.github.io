@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.3";
+const GAME_VERSION = "3.4.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.4.4", name: "Nouvelle adresse", items: [
+    "Le jeu a une nouvelle adresse plus simple : idlus.github.io",
+    "L'ancienne adresse renvoie automatiquement vers la nouvelle et ta partie te suit : elle est reprise si ce navigateur n'a encore aucune partie à la nouvelle adresse" ] },
   { v: "3.4.3", name: "Passif visible", items: [
     "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes) ; la fenêtre défile au lieu de rétrécir son contenu" ] },
   { v: "3.4.2", name: "Symboles de classe", items: [
@@ -2227,7 +2230,20 @@ function pushCopy(txt, why, st, v) {
   writeCopies([Object.assign({ t: Date.now(), why, v: v || GAME_VERSION, txt }, meta), ...same, ...a.filter((c) => c.why !== why)]);
 }
 const lastCopy = () => Math.max(0, ...readCopies().filter((c) => c.why === "auto").map((c) => c.t));
+/* Déménagement de l'adresse du jeu : l'ancienne adresse renvoie ici avec la sauvegarde dans l'adresse (#transfert=…).
+   On ne la reprend que si ce navigateur n'a encore aucune partie ici, puis on retire le texte de l'adresse. */
+function takeTransfer() {
+  const m = /^#transfert=(.+)$/.exec(location.hash || ""); if (!m) return;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  try {
+    if (localStorage.getItem(LS_KEY)) return;
+    const txt = decodeURIComponent(escape(atob(decodeURIComponent(m[1])))); E.deserialize(txt);
+    localStorage.setItem(LS_KEY, txt); transferred = true;
+  } catch (e) {}
+}
+let transferred = false;
 function loadSave() {
+  takeTransfer();
   let raw = null;
   try { raw = localStorage.getItem(LS_KEY); if (raw) return E.deserialize(raw); } catch (e) {}
   if (!raw) return null;
@@ -2301,6 +2317,7 @@ function start() {
   S = loadSave();
   copyBeforeUpdate(S);
   if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
+  if (transferred) setTimeout(() => toast("Partie récupérée depuis l'ancienne adresse du jeu. Bienvenue sur la nouvelle !", "rare"), 600);
   if (S) {
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;

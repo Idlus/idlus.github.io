@@ -3,9 +3,12 @@
 Idle / autobattler inspiré de DOFUS, jouable dans le navigateur (PC et mobile).
 Vos héros combattent automatiquement : à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.
 
-**Jouer :** https://mathiss29.github.io/idlus/ (installable sur téléphone et PC)
+**Jouer :** https://idlus.github.io/ (installable sur téléphone et PC)
 
 **Discord :** https://discord.gg/9ApPgWjPUM
+
+## 3.4.4 « Nouvelle adresse »
+- Le jeu s'ouvre maintenant sur **idlus.github.io** ; l'ancienne adresse y renvoie et la partie du navigateur suit le joueur.
 
 ## 3.4.3 « Passif visible »
 - **Recruter un héros** : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes).

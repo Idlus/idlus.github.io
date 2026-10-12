@@ -1,0 +1,14 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>idlus a déménagé</title><meta name="robots" content="noindex">
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f1a12;color:#e9f3e1;font:16px/1.5 system-ui,sans-serif;text-align:center;padding:20px}a{color:#9be15d;font-weight:700}</style></head>
+<body><div><h1>idlus a déménagé</h1><p>Le jeu est maintenant sur <a id="go" href="__NEW__">__NEW_TXT__</a>.<br>Ta partie te suit automatiquement, un instant…</p></div>
+<script>
+/* Ancienne adresse du jeu : on emporte la sauvegarde de ce navigateur vers la nouvelle adresse (#transfert=…), puis on y va. */
+(function () {
+  var NEW = "__NEW__", KEY = "__KEY__", url = NEW;
+  try { var txt = localStorage.getItem(KEY); if (txt) url = NEW + "#transfert=" + encodeURIComponent(btoa(unescape(encodeURIComponent(txt)))); } catch (e) {}
+  try { if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); }); } catch (e) {}
+  document.getElementById("go").href = url;
+  setTimeout(function () { location.replace(url); }, 300);
+})();
+</script></body></html>

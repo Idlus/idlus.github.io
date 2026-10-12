@@ -1,6 +1,14 @@
 {
-  "version": "3.4.3",
+  "version": "3.4.4",
   "versions": [
+    {
+      "v": "3.4.4",
+      "name": "Nouvelle adresse",
+      "items": [
+        "Le jeu a une nouvelle adresse plus simple : idlus.github.io",
+        "L'ancienne adresse renvoie automatiquement vers la nouvelle et ta partie te suit : elle est reprise si ce navigateur n'a encore aucune partie à la nouvelle adresse"
+      ]
+    },
     {
       "v": "3.4.3",
       "name": "Passif visible",

@@ -7,7 +7,7 @@
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
-const GAME = "https://mathiss29.github.io/idlus/", BETA = GAME + "beta/";
+const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
 const DRY = process.argv.includes("--print"); const [cmd, file] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 
 function betaMessage(c) {
