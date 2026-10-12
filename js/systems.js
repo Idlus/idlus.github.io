@@ -404,7 +404,7 @@
   E.FM_MAX = 100;
   E.fmJob = (S) => S.fmJob || (S.fmJob = { lvl: 1, xp: 0 });
   E.fmNeed = (l) => 20 + 30 * l;
-  E.FM_PERKS = [[30, "Les échecs ne font baisser une caractéristique qu'une fois sur quatre (une sur trois avant)"], [60, "Un Cristal de Forgemagie offert par jour : le premier échec de la journée ne fait rien baisser"], [100, "Titre « Grand Forgemage » ; les runes exotiques (PA, PM, portée) arriveront à ce niveau"]];
+  E.FM_PERKS = [[30, "Les échecs ne font baisser une caractéristique qu'une fois sur quatre (une sur trois avant)"], [60, "Un Cristal de Forgemagie offert par jour : le premier échec de la journée ne fait rien baisser"], [100, "Titre « Grand Forgemage » et accès aux runes exotiques (+1 PA, +1 PM ou +1 Portée sur un objet de niveau 150 ou plus)"]];
   E.fmGainXp = (S, x) => {
     const J = E.fmJob(S); if (J.lvl >= E.FM_MAX) return; J.xp += x;
     while (J.lvl < E.FM_MAX && J.xp >= E.fmNeed(J.lvl)) { J.xp -= E.fmNeed(J.lvl); J.lvl++; if (J.lvl % 10 === 0 || E.FM_PERKS.some(([l]) => l === J.lvl)) note(S, `Forgemage niveau ${J.lvl}`, "up"); }
@@ -423,6 +423,7 @@
   E.transmuteTargets = () => STAT_ORDER.filter((k) => k !== "pa" && STATS[k] && STATS[k].pts > 0);
   E.fuseRunes = (S, key, dir) => {
     const [tier, stat] = key.split(":"); if (!STATS[stat]) return "Rune inconnue.";
+    if (tier === "ga") return "Une rune exotique ne se fusionne pas.";
     if (RUNE_SIMPLE_ONLY.includes(stat)) return "Cette caractéristique n'existe qu'en rune simple.";
     const take = (k, n) => { S.runes[k] -= n; if (!S.runes[k]) delete S.runes[k]; };
     const give = (k, n) => { S.runes[k] = (S.runes[k] || 0) + n; };
@@ -437,6 +438,7 @@
   };
   E.transmute = (S, key, toStat) => {
     const [tier, stat] = key.split(":"); if (!STATS[stat] || !E.transmuteTargets().includes(toStat)) return "Caractéristique impossible.";
+    if (tier === "ga") return "Une rune exotique ne se transmute pas.";
     if (toStat === stat) return "Choisissez une autre caractéristique.";
     if (tier && RUNE_SIMPLE_ONLY.includes(toStat)) return "Cette caractéristique n'existe qu'en rune simple : transmutez des runes simples.";
     if ((S.runes[key] || 0) < E.TRANSMUTE_N) return `Il faut ${E.TRANSMUTE_N} runes.`;
@@ -496,6 +498,143 @@
     const txt = `Échec : ${E.runeName(runeKey)} se brise${loss}.`; fmLog(it, txt, false);
     return { ok: false, txt };
   };
+
+
+  /* ---------------- Runes exotiques (0.1.9.1) : +1 PA, +1 PM ou +1 Portée sur un objet qui n'a pas la caractéristique ----------------
+     Rune Ga (PA, PM, Po). Objet niveau 150+, un seul exo par objet, un seul exo PA porté par héros, pas sur les Dofus et trophées.
+     Forgemage niveau 100 requis. Échec : seule la rune est perdue (ni baisse, ni puits). Brisage d'un objet exo : l'exo est perdu, runes ×2.
+     Sources : coffres de boss niveau 150+ (stasis 7+ : Ga PM ou Ga Po 1/40 ; stasis 8+ : Ga PA 1/100), atelier de runes (runes Ra + Éclats + kamas),
+     archimonstres de niveau 150+ (1/25, Ga PM ou Ga Po). */
+  E.EXO_STATS = ["pa", "pm", "po"];
+  E.EXO = { pa: { chance: 0.10, kamas: 150000 }, pm: { chance: 0.12, kamas: 90000 }, po: { chance: 0.12, kamas: 90000 } };
+  E.EXO_LVL = 150; E.EXO_FM_LVL = 100;
+  E.EXO_CRAFT = { pa: { ra: 25, eclat: 5, kamas: 150000 }, pm: { ra: 10, eclat: 3, kamas: 50000 }, po: { ra: 10, eclat: 3, kamas: 50000 } };
+  E.EXO_DROP = { pmpo: 1 / 40, pa: 1 / 100, archi: 1 / 25 };
+  E.exoKey = (stat) => E.runeKey("ga", stat);
+  E.exoOk = (it) => { const T = ITEMS[it.tpl]; return !!T && T.lvl >= E.EXO_LVL && T.slot !== "dofus" && !T.trophy; };
+  E.exoInfo = (S, uid, stat) => {
+    const it = S.items[uid]; if (!it || !E.EXO[stat]) return { ok: false, why: "Objet introuvable." };
+    const T = ITEMS[it.tpl]; const X = E.EXO[stat]; const key = E.exoKey(stat);
+    const base = { stat, key, chance: X.chance, kamas: X.kamas, have: S.runes[key] || 0 };
+    if (T.slot === "dofus" || T.trophy) return Object.assign(base, { ok: false, why: "Pas d'exo sur les Dofus et les trophées." });
+    if (T.lvl < E.EXO_LVL) return Object.assign(base, { ok: false, why: `Objet de niveau ${E.EXO_LVL} ou plus requis.` });
+    if (it.exo) return Object.assign(base, { ok: false, why: `Cet objet a déjà un exo (${STATS[it.exo].name}).` });
+    if (T.stats[stat]) return Object.assign(base, { ok: false, why: "L'objet a déjà cette caractéristique." });
+    if (E.fmJob(S).lvl < E.EXO_FM_LVL) return Object.assign(base, { ok: false, why: `Forgemage niveau ${E.EXO_FM_LVL} requis.` });
+    if (!(S.runes[key] > 0)) return Object.assign(base, { ok: false, why: `Il faut une ${E.runeName(key)}.` });
+    if (S.kamas < X.kamas) return Object.assign(base, { ok: false, why: `Il faut ${X.kamas} kamas.` });
+    return Object.assign(base, { ok: true });
+  };
+  E.exoForge = (S, uid, stat) => {
+    const f = E.exoInfo(S, uid, stat); if (!f.ok) return { err: f.why };
+    const it = S.items[uid]; const T = ITEMS[it.tpl];
+    S.kamas -= f.kamas; S.runes[f.key]--; if (!S.runes[f.key]) delete S.runes[f.key];
+    S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1; S.cnt.exoTry = (S.cnt.exoTry || 0) + 1;
+    E.emit(S, "fm", {});
+    if (rnd() < f.chance) {
+      it.exo = stat; S.cnt.exo = (S.cnt.exo || 0) + 1; E.fmGainXp(S, 400);
+      const txt = `Exo réussi : +1 ${STATS[stat].name} !`; fmLog(it, txt, true);
+      note(S, `${T.name} : forgemagie exotique réussie, +1 ${STATS[stat].name} !`, "rare");
+      E.celebrate({ t: "exo", tpl: it.tpl, stat }); E.emit(S, "exo", { stat });
+      return { ok: true, txt };
+    }
+    E.fmGainXp(S, 200);
+    const txt = `Échec : la ${E.runeName(f.key)} se brise (l'objet est intact).`; fmLog(it, txt, false);
+    return { ok: false, txt };
+  };
+  /* atelier de runes : des runes Ra d'une même caractéristique + Éclats de trouvaille + kamas → 1 rune Ga */
+  E.exoCraftInfo = (S, stat, fromKey) => {
+    const C = E.EXO_CRAFT[stat]; if (!C) return { ok: false, why: "Rune inconnue." };
+    const [tier] = (fromKey || "").split(":"); const have = S.runes[fromKey] || 0; const ecl = S.res[E.RARE_COMPONENT] || 0;
+    const base = { stat, fromKey, need: C.ra, have, eclat: C.eclat, haveEclat: ecl, kamas: C.kamas };
+    if (tier !== "ra") return Object.assign(base, { ok: false, why: "Choisissez une rune Ra." });
+    if (have < C.ra) return Object.assign(base, { ok: false, why: `Il faut ${C.ra} ${E.runeName(fromKey)}.` });
+    if (ecl < C.eclat) return Object.assign(base, { ok: false, why: `Il faut ${C.eclat} ${E.RARE_COMPONENT}.` });
+    if (S.kamas < C.kamas) return Object.assign(base, { ok: false, why: `Il faut ${C.kamas} kamas.` });
+    return Object.assign(base, { ok: true });
+  };
+  E.exoCraft = (S, stat, fromKey) => {
+    const f = E.exoCraftInfo(S, stat, fromKey); if (!f.ok) return f.why;
+    S.runes[fromKey] -= f.need; if (!S.runes[fromKey]) delete S.runes[fromKey];
+    S.res[E.RARE_COMPONENT] -= f.eclat; S.kamas -= f.kamas;
+    const k = E.exoKey(stat); S.runes[k] = (S.runes[k] || 0) + 1; return null;
+  };
+  const giveExoRune = (S, stat, out, why) => { const k = E.exoKey(stat); S.runes[k] = (S.runes[k] || 0) + 1; S.cnt.exoRunes = (S.cnt.exoRunes || 0) + 1; if (out) out.push(E.runeName(k)); note(S, `${why} : ${E.runeName(k)} !`, "rare"); };
+  E.exoDrop = (S, lvl, k, out) => {
+    if (lvl < E.EXO_LVL || k < 7) return;
+    if (k >= 8 && rnd() < E.EXO_DROP.pa) giveExoRune(S, "pa", out, "Coffre du boss");
+    else if (rnd() < E.EXO_DROP.pmpo) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", out, "Coffre du boss");
+  };
+  E.exoArchi = (S, m) => { if ((m.lvl || 0) >= E.EXO_LVL && rnd() < E.EXO_DROP.archi) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", null, `Archimonstre ${m.name}`); };
+
+  /* ---------------- Forgemagie automatique (0.1.9.1) : un plan par objet, tourne en jeu comme hors ligne ----------------
+     Plan : objectifs (caractéristique → jet visé), runes autorisées, budget de kamas, plancher. Une tentative toutes les 10 min
+     (8 min au Forgemage 50, 6 min au 100), 2 plans en parallèle, pas de héros à affecter. Le plan s'arrête quand les objectifs sont
+     atteints, que les runes ou le budget manquent, ou que le plancher est touché. */
+  E.FM_PLAN_MAX = 2;
+  E.fmPlanPeriod = (S) => { const l = E.fmJob(S).lvl; return l >= 100 ? 360 : l >= 50 ? 480 : 600; };
+  E.fmPlans = (S) => S.fmPlans || (S.fmPlans = []);
+  E.fmPlanOf = (S, uid) => E.fmPlans(S).find((p) => p.uid === uid && !p.done);
+  E.fmPlanActive = (S) => E.fmPlans(S).filter((p) => !p.done);
+  E.FM_PLAN_RUNES = { all: "Celles du sac (Ra, Pa puis simples)", simple: "Simples seulement", hi: "Pa et Ra seulement" };
+  E.FM_PLAN_FLOOR = { pct: "Arrêter si une autre caractéristique baisse de plus de 5 %", first: "Arrêter à la première baisse", never: "Ne jamais s'arrêter (le puits encaisse)" };
+  E.startFmPlan = (S, uid, cfg) => {
+    const it = S.items[uid]; if (!it) return "Objet introuvable."; const T = ITEMS[it.tpl];
+    if (T.trophy) return "Pas de forgemagie sur un trophée.";
+    if (E.fmPlanOf(S, uid)) return "Cet objet a déjà un plan en cours.";
+    if (E.fmPlanActive(S).length >= E.FM_PLAN_MAX) return `${E.FM_PLAN_MAX} plans en parallèle au maximum.`;
+    const goals = {};
+    for (const k in cfg.goals || {}) { const [, mx] = T.stats[k] || [0, 0]; if (mx <= 0) continue; const cap = mx + Math.max(1, Math.ceil(mx * 0.25)); const v = clamp(Math.round(+cfg.goals[k] || mx), 1, cap); if (v > (it.stats[k] || 0)) goals[k] = v; }
+    if (!Object.keys(goals).length) return "Choisissez au moins un objectif au-dessus du jet actuel.";
+    const plan = { uid, name: T.name, goals, runes: E.FM_PLAN_RUNES[cfg.runes] ? cfg.runes : "all", budget: Math.max(0, Math.round(+cfg.budget || 0)), floor: E.FM_PLAN_FLOOR[cfg.floor] ? cfg.floor : "pct",
+      base: Object.assign({}, it.stats), spent: 0, prog: 0, tries: 0, ok: 0, log: [], done: null, t0: Date.now() };
+    const plans = E.fmPlans(S); plans.push(plan); while (plans.length > 6) { const i = plans.findIndex((p) => p.done); if (i < 0) break; plans.splice(i, 1); }
+    note(S, `Plan de forgemagie lancé : ${T.name}.`, "info"); return null;
+  };
+  E.stopFmPlan = (S, uid, drop) => { const plans = E.fmPlans(S); const i = plans.findIndex((p) => p.uid === uid && (drop ? !!p.done : !p.done)); if (i < 0) return; if (drop) plans.splice(i, 1); else { plans[i].done = "Arrêté"; plans[i].at = Date.now(); } };
+  E.fmPlanGoalsLeft = (S, plan) => { const it = S.items[plan.uid]; if (!it) return []; return Object.keys(plan.goals).filter((k) => (it.stats[k] || 0) < plan.goals[k]); };
+  const PLAN_TIERS = { all: ["ra", "pa", ""], simple: [""], hi: ["ra", "pa"] };
+  const planLog = (plan, txt, ok) => { plan.log.unshift({ t: Date.now(), txt, ok }); if (plan.log.length > 8) plan.log.length = 8; };
+  const endPlan = (S, plan, why, quiet) => { plan.done = why; plan.at = Date.now(); if (why === "Objectifs atteints") S.cnt.fmPlanOk = (S.cnt.fmPlanOk || 0) + 1; if (!quiet) note(S, `Plan ${plan.name} : ${why}.`, why === "Objectifs atteints" ? "up" : "info"); };
+  /* une tentative : retourne false quand le plan s'arrête */
+  const fmPlanStep = (S, plan, quiet) => {
+    const it = S.items[plan.uid]; if (!it) { endPlan(S, plan, "Objet disparu", quiet); return false; }
+    const left = E.fmPlanGoalsLeft(S, plan); if (!left.length) { endPlan(S, plan, "Objectifs atteints", quiet); return false; }
+    /* la plus grosse rune qui reste sous l'objectif ; sinon la plus petite qui le dépasse (jusqu'au plafond), comme à la main */
+    let best = null, over = null;
+    for (const k of left) for (const tier of PLAN_TIERS[plan.runes]) {
+      if (tier && RUNE_SIMPLE_ONLY.includes(k)) continue;
+      const key = E.runeKey(tier, k); if (!(S.runes[key] > 0)) continue;
+      const f = E.fmInfo(S, plan.uid, key); if (!f || !f.ok) continue;
+      if (f.nv <= plan.goals[k]) { if (!best || f.add > best.f.add) best = { key, f }; }
+      else if (!over || f.add < over.f.add) over = { key, f };
+    }
+    if (!best) best = over;
+    if (!best) { endPlan(S, plan, "Plus de runes adaptées", quiet); return false; }
+    if (plan.budget && plan.spent + best.f.kamas > plan.budget) { endPlan(S, plan, "Budget atteint", quiet); return false; }
+    if (S.kamas < best.f.kamas) { endPlan(S, plan, "Kamas insuffisants", quiet); return false; }
+    const r = E.forgemage(S, plan.uid, best.key); if (r.err) { endPlan(S, plan, r.err, quiet); return false; }
+    plan.tries++; plan.spent += best.f.kamas; if (r.ok) plan.ok++;
+    planLog(plan, `${E.runeName(best.key)} : ${r.txt}`, r.ok);
+    if (!r.ok && plan.floor !== "never") {
+      for (const k in plan.base) { const v = it.stats[k] || 0, b = plan.base[k]; if (b <= 0) continue;
+        if ((plan.floor === "first" && v < b) || (plan.floor === "pct" && v < b * 0.95)) { endPlan(S, plan, `Plancher touché (${STATS[k].name} ${b} → ${v})`, quiet); return false; } }
+    }
+    if (!E.fmPlanGoalsLeft(S, plan).length) { endPlan(S, plan, "Objectifs atteints", quiet); return false; }
+    return true;
+  };
+  E.fmPlanTick = (S, sec, opts = {}) => {
+    const plans = E.fmPlanActive(S); if (!plans.length) return []; const period = E.fmPlanPeriod(S); const out = [];
+    for (const plan of plans) {
+      const t0 = plan.tries, ok0 = plan.ok, k0 = plan.spent; plan.prog = (plan.prog || 0) + sec; let n = 0;
+      while (!plan.done && plan.prog >= period && n < 300) { plan.prog -= period; n++; if (!fmPlanStep(S, plan, opts.quiet)) break; }
+      if (plan.tries > t0 || plan.done) { const it = S.items[plan.uid];
+        out.push({ name: plan.name, tries: plan.tries - t0, ok: plan.ok - ok0, kamas: plan.spent - k0, done: plan.done,
+          txt: Object.keys(plan.goals).map((k) => `${STATS[k].name} ${it ? it.stats[k] || 0 : "?"}/${plan.goals[k]}`).join(", ") }); }
+    }
+    return out;
+  };
+  E.fmPlanEta = (S, plan) => Math.max(0, E.fmPlanPeriod(S) - (plan.prog || 0));
 
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
   const ORN = {
@@ -701,6 +840,9 @@
   [[1, ""], [50, "Forgemage"]].forEach(([n, t]) => add("fm" + n, "Forgemagie", n === 1 ? "Première forgemagie" : `${n} forgemagies`, `Tenter ${n} forgemagie${n > 1 ? "s" : ""}.`, (S) => (S.cnt.fm || 0) >= n, 50 * n, t ? { title: t } : {}));
   [[1, ""], [10, "le Perfectionniste"]].forEach(([n, t]) => add("parf" + n, "Forgemagie", n === 1 ? "Premier objet Parfait" : `${n} objets Parfaits`, `Posséder ${n} objet${n > 1 ? "s" : ""} Parfait${n > 1 ? "s" : ""} (toutes les caractéristiques au jet maximum).`, (S) => E.perfectCount(S) >= n, 800 * n, t ? { title: t } : {}));
   add("fmjob100", "Forgemagie", "Grand Forgemage", "Métier de Forgemage niveau 100.", (S) => E.fmJob(S).lvl >= 100, 5000, { title: "Grand Forgemage" });
+  add("exo1", "Forgemagie", "Exotique", "Réussir une forgemagie exotique (+1 PA, PM ou Portée).", (S) => (S.cnt.exo || 0) >= 1, 10000, { title: "l'Exotique" });
+  add("exopa", "Forgemagie", "Un PA de plus", "Porter un objet exo PA.", (S) => S.chars.some((c) => Object.values(c.equip).some((u) => S.items[u] && S.items[u].exo === "pa")), 20000);
+  add("fmplan10", "Forgemagie", "Forgemagie automatique", "10 plans de forgemagie terminés avec leurs objectifs atteints.", (S) => (S.cnt.fmPlanOk || 0) >= 10, 3000);
   [[1, ""], [7, ""], [30, "Dévot d'Almanax"]].forEach(([n, t]) => add("alm" + n, "Quêtes", `${n} offrande${n > 1 ? "s" : ""}`, `Faire ${n} offrande${n > 1 ? "s" : ""} à l'Almanax.`, (S) => (S.cnt.almanax || 0) >= n, 150 * n, t ? { title: t } : {}));
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
   add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= Q.length, 8000, { title: "Héros d'Amakna" });

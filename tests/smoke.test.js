@@ -41,16 +41,27 @@ const server = http.createServer((req, res) => {
     const ok = await page.evaluate(() => !!(window.DX && window.DX.S && window.DX.S.chars.length));
     if (!ok) errors.push("la partie n'a pas démarré");
 
-    const tabs = await page.$$eval("#nav [data-tab]", (bs) => bs.map((b) => b.dataset.tab));
-    for (const t of tabs) {
-      await page.click(`#nav [data-tab="${t}"]`);
-      await page.waitForTimeout(300);
-      const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
-      if (!filled) errors.push(`onglet ${t} vide`);
+    // 0.1.9.1 : chaque famille de la barre, puis chacune de ses pages (rangée du dessous)
+    const fams = await page.$$eval("#nav [data-fam]", (bs) => bs.map((b) => b.dataset.fam));
+    const tabs = [];
+    for (const f of fams) {
+      await page.click(`#nav [data-fam="${f}"]`);
+      await page.waitForTimeout(200);
+      const n = await page.$$eval("#subnav [data-tab]", (bs) => bs.length);
+      for (let i = 0; i < n; i++) {
+        const b = page.locator("#subnav [data-tab]").nth(i);
+        const t = (await b.getAttribute("data-tab")) + ((await b.getAttribute("data-home")) ? "/" + (await b.getAttribute("data-home")) : "");
+        await b.click();
+        await page.waitForTimeout(300);
+        const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
+        if (!filled) errors.push(`onglet ${t} vide`);
+        tabs.push(t);
+      }
     }
     // une chasse dans la première sous-zone, affichée dans l'onglet Combat
     await page.evaluate(() => { const { E, S } = window.DX; E.startHunt(S, Object.keys(E.SUBS)[0]); });
-    await page.click('#nav [data-tab="combat"]');
+    await page.click('#nav [data-fam="adv"]');
+    await page.click('#subnav [data-tab="combat"]');
     await page.waitForFunction(() => window.DX.S.fight, null, { timeout: 15000 });
     await page.waitForTimeout(2000);
     console.log(`Onglets visités : ${tabs.join(", ")}`);

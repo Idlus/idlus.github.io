@@ -1,6 +1,38 @@
 {
-  "version": "0.1.9",
+  "version": "0.1.9.3",
   "versions": [
+    {
+      "v": "0.1.9.3",
+      "name": "Passif visible",
+      "items": [
+        "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des 19 classes) ; la fenêtre défile au lieu de rétrécir son contenu"
+      ]
+    },
+    {
+      "v": "0.1.9.2",
+      "name": "Exotique",
+      "items": [
+        "Runes exotiques : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée à un objet de niveau 150 ou plus qui n'a pas la caractéristique (un seul exo par objet, un seul exo PA porté par héros, pas sur les Dofus et trophées). Forgemage niveau 100 requis ; 10 % de réussite pour le PA, 12 % pour le PM et la Portée, sans aide du puits ni du métier ; un échec ne casse que la rune",
+        "Portée, nouvelle caractéristique tactique : chaque point donne 20 % de chances qu'un sort à une cible touche un ennemi de plus",
+        "Où trouver les runes Ga : coffres de boss des donjons de niveau 150+ en stasis 7 (1 sur 40, Ga PM ou Ga Po) et en stasis 8 (Ga PA, 1 sur 100), archimonstres de niveau 150+ (1 sur 25), ou l'onglet Runes (10 runes Ra d'une même caractéristique + 3 Éclats de trouvaille + 50 000 kamas pour une Ga PM ou Ga Po ; 25 runes Ra + 5 Éclats + 150 000 kamas pour une Ga PA)",
+        "Brisage d'un objet exo : l'exo est perdu, mais l'objet rend ses runes ×2",
+        "Forgemagie automatique : depuis l'établi, « Automatiser » lance un plan sur un objet (jets visés, runes autorisées, budget de kamas, plancher) ; une tentative toutes les 10 min (8 min au Forgemage 50, 6 min au 100), en jeu comme hors ligne, 2 plans en parallèle, sans héros à affecter. Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes ou le budget manquent, ou que le plancher est touché ; le journal et le résumé d'absence racontent ce qui s'est passé",
+        "Succès : « Exotique » (titre l'Exotique), « Un PA de plus », « Forgemagie automatique »",
+        "Code de diagnostic pour les bugs : le bouton « Signaler un bug » copie aussi la version, l'appareil, l'onglet ouvert, un résumé de la partie (héros, zone, donjon) et les 5 dernières erreurs du jeu, à coller dans le forum Bugs du Discord ; bouton « Copier le diagnostic » dans les Options"
+      ]
+    },
+    {
+      "v": "0.1.9.1",
+      "name": "Barre et page Équipe",
+      "items": [
+        "Nouvelle barre de navigation en 4 familles : Accueil, Aventure, Équipe et Artisanat, avec leurs pages juste en dessous ; de la place pour les prochains onglets",
+        "Sur PC, un cadre « Combat en cours » donne le donjon et la salle (ou la zone de chasse) depuis n'importe quelle page ; sur téléphone, Combat devient le gros bouton du centre",
+        "Nouvelle page Équipe : une carte par héros avec son activité, son XP, sa monture et ce qui l'attend (points à répartir, meilleur équipement, familier affamé) ; chaque alerte est un bouton",
+        "Bouton « Réorganiser » : un plateau pour glisser les héros entre la première ligne, l'arrière, la récolte, la salle d'entraînement et le repos (sur téléphone : toucher le héros, puis la zone)",
+        "« Tout équiper au mieux » met le meilleur objet libre du sac dans chaque emplacement des héros de l'équipe",
+        "Étoile ★ du héros principal : son symbole de classe devient l'icône de l'onglet Héros ; l'Accueil prend le logo d'Idlus et le Havre-Sac son sac"
+      ]
+    },
     {
       "v": "0.1.9",
       "name": "Montures",

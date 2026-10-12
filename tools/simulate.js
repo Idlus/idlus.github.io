@@ -3,7 +3,7 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
+   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    --tactique : donne aux héros des stats tactiques (Tacle, Fuite, PM, Retrait, Esquive, Invocation) :
      moyen = valeurs d'un héros avec un bon familier ; plafond = tout au maximum ; un nom de stat = cette stat seule, au maximum.
@@ -74,6 +74,9 @@ if (TACT && !TACT_P[TACT]) throw new Error("Profil tactique inconnu : " + TACT);
 if (TACT) { E.tactLog = {}; const cs = E.charStats; E.charStats = (S, c, o) => { const st = cs(S, c, o); if (c._row) Object.assign(st, TACT_P[TACT][c._row]); return st; }; }
 /* --familiers : chaque héros porte, adulte, le meilleur familier de son niveau pour son élément (montilier élémentaire dès 60) */
 const FAM = flag("familiers");
+/* --exo pa|pm|po : chaque héros porte un objet exo (0.1.9.2), sur son arme (ou sa coiffe) */
+const EXO = arg("exo", "");
+const giveExo = (S) => { if (!EXO || !["pa", "pm", "po"].includes(EXO)) return; S.chars.forEach((c) => { const uid = c.equip.arme || c.equip.coiffe; const it = uid && S.items[uid]; if (it) it.exo = EXO; }); };
 const petFor = (c) => { const main = D.CLASSES[c.cls].main;
   const ok = Object.keys(E.PETS).filter((id) => { const p = E.PETS[id]; return p.kind !== "boss" && p.fam !== "l" && c.lvl >= E.petReqLvl(id) && p.lvl <= c.lvl && (p.stats[main] || p.stats.pui); });
   const val = (id) => { const st = E.PETS[id].stats; return (st[main] || 0) + (st.pui || 0) * 1.2 + (st.cri || 0) * 4; };
@@ -91,7 +94,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
-  S.chars.forEach((c) => { gearUp(S, c, prof); E.refreshSpells(c, E.charStats(S, c)); }); givePets(S); giveMounts(S); tagRows(S);
+  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
     S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });

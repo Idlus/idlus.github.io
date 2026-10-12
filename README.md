@@ -7,6 +7,17 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.9.3 « Passif visible » (bêta)
+- **Recruter un héros** : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes).
+
+## 0.1.9.2 « Exotique » (bêta)
+- **Runes exotiques** : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée (nouvelle caractéristique : 20 % de chances par point qu'un sort à une cible touche un ennemi de plus) à un objet de niveau 150+ (Forgemage 100, 10-12 % de réussite, un échec ne casse que la rune, un seul exo par objet et un seul exo PA par héros). Sources : coffres de boss 150+ en stasis 7-8, archimonstres 150+, ou l'onglet Runes (runes Ra + Éclats + kamas). Un objet exo brisé rend ses runes ×2.
+- **Forgemagie automatique** : un plan par objet (jets visés, runes, budget, plancher), une tentative toutes les 10 min (6 min au Forgemage 100) en jeu comme hors ligne, 2 plans en parallèle.
+- **Code de diagnostic** : le bouton « Signaler un bug » copie la version, l'appareil, l'onglet, un résumé de la partie et les 5 dernières erreurs (bouton « Copier le diagnostic » dans les Options).
+
+## 0.1.9.1 « Barre et page Équipe » (bêta)
+- **Barre de navigation en 4 familles** (Accueil, Aventure, Équipe, Artisanat) avec leurs pages en dessous, cadre « Combat en cours » sur PC et gros bouton Combat au centre sur téléphone.
+- **Page Équipe** : une carte par héros (activité, XP, monture, alertes qui se règlent d'un clic), plateau « Réorganiser » à glisser, « Tout équiper au mieux », héros principal choisi avec l'étoile.
 ## 0.1.9 « Montures » (bêta)
 - **Montures** : 41 couleurs officielles de dragodindes (niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), bonus DOFUS au niveau 100. Capture au filet dans trois zones sauvages (hors ligne aussi), croissance par une part de l'XP du héros, enclos du Havre-Sac pour l'élevage (naissances en 8 h, croisements connus, bicolores, objets d'élevage), carnet de l'éleveur et arbre généalogique.
 ## 0.1.8.2 « Forgemagie » (bêta)
