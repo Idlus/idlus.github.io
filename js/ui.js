@@ -23,6 +23,12 @@ const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord
 const CHANGELOG = [
   { v: "0.1.27", name: "Panel de test réservé", items: [
     "Le panel de test de la version de test est maintenant réservé à Mathis : le bouton n'apparaît que sur son compte admin, vérifié par le serveur" ] },
+  { v: "0.1.26.1", name: "Défi à portée de main", items: [
+    "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
+    "Accueil : une carte « Défi du jour » sous la bannière (donjon, stasis, modificateurs, ton record, ta série, le contenu du coffre). « Lancer le défi » le joue tout de suite et montre le résultat",
+    "Le coffre du jour est chiffré : environ combien de kamas, et combien de Poussières de stasis",
+    "Nouveau bouton « Changer d'équipe » sur la page du défi et après une défaite : comme le hasard est fixe, il faut changer quelque chose pour faire mieux",
+    "Une pastille sur l'onglet Défi tant que le défi du jour n'est pas réussi ; dans Monde › Donjons, le grand encart devient une ligne qui mène à la page" ] },
   { v: "0.1.26", name: "Codes cadeaux", items: [
     "Codes cadeaux courts et faciles à taper (par exemple HALLOWEEN26), gardés par le serveur : on ne peut plus les deviner ni les fabriquer en lisant le jeu",
     "Un code peut avoir un nombre d'utilisations limité, une date de fin, et être réservé aux joueurs avec un compte. Sans compte, un code sert une fois par partie",
@@ -665,7 +671,7 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.26.1 : page Défi du jour
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
 ].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
@@ -807,7 +813,7 @@ function renderNav() {
   $("#nav").innerHTML = fam(NAV[0]) + fam(NAV[1]) + `<button class="navfight" data-tab="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>` + NAV.slice(2).map(fam).join("") + `<span id="navlive">${navLiveHtml()}</span>`;
   const cur = ui.tab === "home" ? (ui.home === "havre" ? "havre" : "apercu") : null;
   $("#subnav").innerHTML = F.pages.map(([tab, n, ic, hm]) => { const on = tab === ui.tab && (!hm || hm === cur);
-    return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot(tab === "quests" && qd, tab === "team" ? nAl : 0)}</button>`; }).join("");
+    return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot((tab === "quests" && qd) || (tab === "defi" && defiTodo()), tab === "team" ? nAl : 0)}</button>`; }).join("");
 }
 /* cadre « Combat en cours » (PC) : donjon et salle, ou zone de chasse ; rafraîchi par la boucle */
 function navLiveHtml() {
@@ -938,6 +944,7 @@ function renderHomeInner() {
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div>
     </div>
   </section>
+  ${defiHomeCard()}
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>Vos héros</h2>${fsGauge()}</div><div class="cardrow" style="padding-left:14px">${S.chars.map((c) => heroCard(c, "sm")).join("")}</div></section>
   <section class="grid2" style="margin-top:14px">
     <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
@@ -1255,7 +1262,7 @@ function dungeonsHtml() {
     <div class="pad stack" style="gap:10px">
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
         <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
-      ${defiBanner()}
+      ${defiLine()}
       ${weeklyBanner()}
       ${flashBanner()}
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
@@ -3979,6 +3986,7 @@ function render() {
   else if (ui.tab === "ren") renderRenaissance();
   else if (ui.tab === "carnet") renderCarnet();
   else if (ui.tab === "ladder") renderLadder();
+  else if (ui.tab === "defi") renderDefi();
   else if (ui.tab === "exp" && window.EXPUI) window.EXPUI.render($("#main"));
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
@@ -4177,7 +4185,7 @@ function pageGo(id) {
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
-    case "defi": go("world", "world", "dungeons"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
+    case "defi": go("defi"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
@@ -4291,7 +4299,68 @@ function defiSheet(r) {
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
     ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
     ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (onLive() ? "Envoi au serveur pour le classement…" : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
-    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button><button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${r.win ? "" : `<button class="btn" data-tab="team">Changer d'équipe</button>`}<button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* ---------- 0.1.26.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons ---------- */
+const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
+/* récompense du coffre : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
+function defiReward(tid) {
+  const def = E.defi(tid); const dust = def.k * 2 + (def.k >= 4 ? 4 : 0);
+  const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
+  if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? r.kamas : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
+  return `${ui.dfEst.kamas ? `≈ ${fmt(ui.dfEst.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
+}
+const defiLeftTxt = () => dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "");
+function defiHomeCard() {
+  if (!E.team(S).length) return "";
+  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid]; const streak = E.defiStreakNow(S); const T = E.defiTier(tid);
+  const tries = st.tries.filter((x) => x.tier === tid).length;
+  const state = best ? `<span class="tag good">✓ réussi en ${best.turns} tours</span>` : `<span class="muted">${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`;
+  return `<section class="panel dfhome ${st.chest ? "done" : ""}"><div class="dfh-in">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
+    <div class="grow dfh-txt"><span class="wk">${G("target")} Défi du jour <span class="xs muted">· palier ${h(T.name)} · nouveau dans ${defiLeftTxt()}</span></span>
+      <span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span>${def.mods.map(modChip).join("")}</span>
+      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ coffre du jour ouvert" : `${IC("coffre")} coffre : ${defiReward(tid)}`}</span></span></div>
+    <div class="dfh-btns"><button class="btn" data-tab="defi">Voir le défi</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}">${best ? "Battre mon record" : "Lancer le défi"}</button></div></div></section>`;
+}
+function defiLine() {
+  if (!E.team(S).length) return "";
+  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const st = E.defiState(S); const dg = DUNGEONS[def.did];
+  return `<button class="dfline" data-tab="defi"><span class="wk">${G("target")} Défi du jour</span><span class="grow"><b>${h(dg.name)}</b> · stasis ${def.k}</span>${st.chest ? `<span class="tag good">✓ réussi</span>` : `<span class="tag">à faire</span>`}<span class="chev">›</span></button>`;
+}
+function renderDefi() {
+  if (!E.team(S).length) { $("#main").innerHTML = `<section class="panel"><div class="empty">Il faut au moins un héros dans l'équipe pour relever le défi du jour.</div></section>`; return; }
+  const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S);
+  const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("");
+  const goal = (n, lab, ok) => `<div class="df-goal ${ok ? "ok" : ""}"><div class="row between"><span class="small"><b>${n} jours de suite</b> · ${lab}</span><span class="xs num">${ok ? "✓ obtenu" : `${Math.min(streak, n)}/${n}`}</span></div><div class="bar"><i style="width:${ok ? 100 : pct(Math.min(streak, n), n)}%"></i></div></div>`;
+  const rules = `<div class="panel"><div class="phead"><h2>${IC("quetes")} Comment ça marche</h2></div><div class="pad"><ul class="dglist small">
+      <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
+      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts ou de composition pour faire mieux.</li>
+      <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
+      <li>La première victoire du jour ouvre le coffre et fait avancer ta série.</li></ul></div></div>`;
+  $("#main").innerHTML = `${defiBanner()}
+  <section class="grid2" style="margin-top:14px">
+    <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
+      <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<span class="small"><b class="num">${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>
+        <div class="small">${st.chest ? "✓ Coffre du jour ouvert. Reviens demain pour continuer la série." : `${IC("coffre")} Coffre à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
+        ${goal(7, `titre « ${h(E.DEFI_TITLE)} »`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi »", (ss.best || 0) >= 30)}
+        <b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
+    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : rules}
+  </section>
+  ${ON ? `<section style="margin-top:14px">${rules}</section>` : ""}`;
+  if (ON) defiLbFill(tid);
+}
+async function defiLbFill(tid) {
+  const box = () => $("#dfLb");
+  try {
+    if (!ON.db || !ON.db()) { const b = box(); if (b) b.innerHTML = `<p class="note">Connecte-toi pour voir le classement.</p>`; return; }
+    const keep = LB.dtier; LB.dtier = tid; const out = { rows: [], me: null };
+    await lbDefiFetch(out); LB.dtier = keep;
+    const b = box(); if (!b || ui.tab !== "defi") return;
+    const yest = out.yest && out.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${out.yest.map(h).join(" · ")}</div>` : "";
+    b.innerHTML = yest + (out.rows.length ? `<div class="lbt">${out.rows.slice(0, 5).map((r, i) => lbRowHtml(r, i)).join("")}${out.me && out.me.rank > 5 ? lbRowHtml(out.me, 0, true) : ""}</div>` : `<p class="note">Personne n'a encore réussi ce palier aujourd'hui. À toi de jouer !</p>`);
+  } catch (e) { const b = box(); if (b) b.innerHTML = `<p class="note">Classement indisponible pour l'instant.</p>`; }
 }
 /* le serveur rejoue le défi avec la partie en ligne : on l'envoie d'abord */
 async function defiSubmit(r) {
@@ -5443,7 +5512,7 @@ function lbAct(a, t) {
     case "lb-tab": LB.tab = d.v; break;
     case "lb-dmode": LB.dmode = d.v; break;
     case "lb-dtier": LB.dtier = d.v; break;
-    case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
+    case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "lb-wk": LB.did = d.v; break;
     case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;
     case "lb-hero": { ui.lbHero = +d.v; const p = ui.lbProf; const g = $("#lbGear"); if (p && g) g.innerHTML = lbGearHtml(p.heroes[ui.lbHero]); document.querySelectorAll('[data-act="lb-hero"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); return; }

@@ -9,6 +9,17 @@
       ]
     },
     {
+      "v": "0.1.26.1",
+      "name": "Défi à portée de main",
+      "items": [
+        "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
+        "Accueil : une carte « Défi du jour » sous la bannière (donjon, stasis, modificateurs, ton record, ta série, le contenu du coffre). « Lancer le défi » le joue tout de suite et montre le résultat",
+        "Le coffre du jour est chiffré : environ combien de kamas, et combien de Poussières de stasis",
+        "Nouveau bouton « Changer d'équipe » sur la page du défi et après une défaite : comme le hasard est fixe, il faut changer quelque chose pour faire mieux",
+        "Une pastille sur l'onglet Défi tant que le défi du jour n'est pas réussi ; dans Monde › Donjons, le grand encart devient une ligne qui mène à la page"
+      ]
+    },
+    {
       "v": "0.1.26",
       "name": "Codes cadeaux",
       "items": [
