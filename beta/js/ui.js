@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.12.3";
+const GAME_VERSION = "0.1.12.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.12.4", name: "Sram et Crâ", items: [
+    "Sram : ses pièges frappent dès qu'ils sont posés, avec des dégâts à la hauteur de son niveau (avant : un petit poison lent, qui le rendait bien plus faible que les autres classes à partir du niveau 140)",
+    "Crâ : la Balise Tactique et la Balise de Survie restent des outils (vulnérabilité, puissance, soins) et ne frappent presque plus ; la Flèche Dévorante perd son énorme vol de vie et fait 30 % de dégâts en moins. Le Crâ était de loin la classe la plus forte à haut niveau" ] },
   { v: "0.1.12.3", name: "L'équipement compte", items: [
     "Les monstres sont plus forts à partir du niveau 30 : une équipe sans équipement perd presque tous ses combats de chasse, et en donjon elle échoue ou passe tout juste la stasis 1. Aux premiers niveaux, rien ne change",
     "En chasse, les groupes comptent au moins 4 monstres dès les zones de niveau 25 ; les combats durent plus longtemps, mais chaque monstre donne plus d'XP, de butin et de kamas : une équipe bien équipée gagne autant par heure qu'avant",
