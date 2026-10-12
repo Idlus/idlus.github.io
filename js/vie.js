@@ -169,9 +169,9 @@
   }
   /* le combat a disparu sans fin normale (chasse arrêtée, donjon…) : le Dopeul reste disponible */
   const tick0 = E.tick;
-  E.tick = (S, dt) => {
+  E.tick = (S, dt, realMs) => {
     const T = S && S.temple; if (T && T.fighting && !(S.fight && S.fight.dopeul)) T.fighting = null;
-    return tick0(S, dt);
+    return tick0(S, dt, realMs);
   };
   /* Comptoir des temples (monnaie : Doplons) */
   if (E.SHOPS && !E.SHOPS.temple) E.SHOPS.temple = { name: "Comptoir des temples", cur: "doplons", curName: "Doplons", icon: "🪙", items: [

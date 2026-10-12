@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.28.4";
+const GAME_VERSION = "0.1.29";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.29", name: "Sablier de Xélor", items: [
+    "Nouveau : le Sablier de Xélor, dans la barre du haut à côté des kamas. Il fait filer le temps ×2 ou ×3 : combats, donjons, expédition, récolte, ateliers, familiers et enclos",
+    "Le sablier se remplit tout seul de 3 h par jour, même jeu fermé, et garde jusqu'à 9 h. ×2 vide 1 minute de réserve par minute, ×3 en vide 2 : ×3 donne le même temps en plus, juste plus vite",
+    "Sablier vide : retour à ×1 tout seul, rien n'est perdu. Les gains hors ligne et les bonus à durée (potions, événements, Almanax) ne changent pas",
+    "Il se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim ») et arrive plein : 9 h de temps rapide. Avant, un clic sur le sablier explique comment l'ouvrir",
+  ] },
   { v: "0.1.28.4", name: "Double gain dans le chat", items: [
     "Le chat rappelle aussi l'événement « Double gain » (XP et butin x2 pour tout le monde) tant qu'il dure",
   ] },
@@ -738,6 +744,7 @@ function statusHtml() {
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
+    ${sabHtml()}
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it hide-sm">${IC("monde")} <span>${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
@@ -746,6 +753,31 @@ function statusHtml() {
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
+}
+/* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
+const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
+function sabHtml() {
+  const B = E.sab(S);
+  if (!B.open) return `<button class="it sabpill lock" data-act="sabinfo" data-tip="Vitesse ×2 / ×3 : se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim »)."><span class="sb">⏳</span>${G("lock")}<span class="hide-sm">Vitesse</span></button>`;
+  return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="Sablier de Xélor : réserve de temps rapide (+3 h par jour)"><span class="sb">⏳</span><b class="num" id="stSab">${sabLeft(B.r)}</b></button><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}">×${v}</button>`).join("")}</span></span>`;
+}
+function sabSheet() {
+  const B = E.sab(S); const fill = Math.round((B.r / E.SAB_MAX) * 100);
+  openSheet(`<h2>⏳ Sablier de Xélor</h2>
+    ${B.open ? `<p style="margin:0">Le temps file plus vite tant que le sablier n'est pas vide : combats, donjons, expédition, récolte, ateliers, familiers et enclos.</p>
+    <div class="bar"><i style="width:${fill}%"></i></div>
+    <div class="row between small"><span>Réserve : <b class="num">${sabLeft(B.r)}</b> / ${E.SAB_MAX / 3600} h</span><span class="muted">+3 h par jour, même jeu fermé</span></div>
+    <div class="row"><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}">×${v}</button>`).join("")}</span></div>`
+    : `<p style="margin:0"><b>Pas encore débloqué.</b> Terminez Incarnam (quête principale « La Crypte de Kardorim ») et le sablier s'ouvre, déjà plein : ${E.SAB_MAX / 3600} h de temps rapide.</p>
+    <p class="small muted" style="margin:0">Quête en cours : ${h((E.questStep(S) || {}).title || "—")} (étape ${Math.min((S.quest && S.quest.step) || 0, E.SAB_UNLOCK_STEP) + 1} sur ${E.SAB_UNLOCK_STEP}).</p>`}
+    <ul class="small" style="margin:0;padding-left:18px">
+      <li><b>×2</b> : 1 minute de réserve par minute.</li>
+      <li><b>×3</b> : 2 minutes de réserve par minute. Même temps gagné qu'en ×2, juste plus vite.</li>
+      <li>Sablier vide : retour à ×1 tout seul, rien n'est perdu.</li>
+      <li>Jeu fermé : le sablier se remplit, les gains hors ligne ne changent pas.</li>
+      <li>Les bonus à durée (potions, événements, donjons Éclair, Almanax) restent en vrai temps.</li>
+    </ul>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); if (BETA) renderUpdBar(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
@@ -1522,7 +1554,8 @@ function pulse(node, cls) { if (!node) return; node.classList.remove(cls); void 
 const animLvl = () => (S && S.settings.anim) || (S && S.settings.reduced ? "sober" : "full");
 const axOn = () => animLvl() !== "none";
 const axFull = () => animLvl() === "full";
-const axSpd = () => Math.min(1, Math.max(0.25, 1 / (BETA ? testSpeed : 1)));
+const axSpd = () => Math.min(1, Math.max(0.25, 1 / ((BETA ? testSpeed : 1) * sabNow()))); // 0.1.29 : les animations suivent aussi le Sablier de Xélor
+const sabNow = () => (S && S.sablier && S.sablier.open && S.sablier.r > 0 ? S.sablier.spd || 1 : 1);
 const axRnd = (a, b) => a + Math.random() * (b - a);
 const axBody = (n) => (n && n.querySelector(".lookwrap,.medal,img.sprite")) || n;
 function axPt(A, n, k = 0.5) { const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height * k }; }
@@ -4845,6 +4878,8 @@ document.addEventListener("click", (ev) => {
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
+    case "sabinfo": sabSheet(); return;
+    case "sabspd": { const r = E.sabSet(S, d.v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": saveNow(); location.reload(); return;
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;
     case "offequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } t.replaceWith(Object.assign(document.createElement("span"), { className: "tag good", textContent: "équipé" })); dirty = true; return; }
@@ -5473,7 +5508,9 @@ function loop() {
   if (S) {
     if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (onglet Héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
-    E.tick(S, dt * (BETA ? testSpeed : 1)); S.lastTick = E.now();
+    { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.tick(S, real * m, real);
+      if (sp0 > 1 && S.sablier.spd === 1) { toast("Sablier de Xélor vide : retour à la vitesse normale.", "info"); renderStatus(); } }
+    S.lastTick = E.now();
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
@@ -5482,6 +5519,7 @@ function loop() {
         else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets sont perdus : faites de la place.");
         else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
+    const sab = $("#stSab"); if (sab && S.sablier) { const v = sabLeft(S.sablier.r); if (sab.textContent !== v) sab.textContent = v; }
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
     if (ui.tab === "combat") updateCombat(false);

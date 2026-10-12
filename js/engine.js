@@ -2382,8 +2382,8 @@
   E.STEP_MS = 780; // 0.1.3-0.1.4 : combats plus posés (520 ms avant)
   E.PACE_REW = 780 / 520; // compense : les gains par heure restent les mêmes qu'avec 520 ms
   E.PAUSE_MS = 1400;
-  E.tick = (S, dtMs) => {
-    S.stats.playtime += dtMs / 1000;
+  E.tick = (S, dtMs, realMs) => {
+    S.stats.playtime += (realMs == null ? dtMs : realMs) / 1000; // 0.1.29 : le temps de jeu reste le vrai temps, même en vitesse ×2 / ×3
     const sp = 1;
     // combat
     S.acc = (S.acc || 0) + dtMs * sp;
@@ -2615,6 +2615,41 @@
     if (S.dungeon) return "Impossible de changer l'équipe en donjon.";
     if (E.expActive && E.expActive(S)) return "Impossible de changer l'équipe en expédition.";
     c.inTeam = !c.inTeam; S.fight = null; return null;
+  };
+
+  /* ---------------- 0.1.29 : Sablier de Xélor (vitesse ×2 / ×3) ----------------
+     Le sablier se remplit en vrai temps (jeu ouvert ou fermé) de SAB_RATE par seconde, jusqu'à SAB_MAX.
+     La vitesse ×2 retire 1 s de réserve par seconde, ×3 en retire 2 : la réserve est du « temps de jeu en plus ».
+     Il se débloque à la fin d'Incarnam (quête principale « La Crypte de Kardorim » terminée). Hors ligne, rien n'accélère. */
+  E.SAB_RATE = 7.5 / 60;          // +7 min 30 par heure = 3 h par jour
+  E.SAB_MAX = 9 * 3600;           // 3 jours de réserve
+  E.SAB_UNLOCK_STEP = 6;          // étapes de la quête principale à finir (jusqu'à la Crypte de Kardorim)
+  E.sabUnlocked = (S) => !!(S.sablier && S.sablier.open) || !!(S.quest && S.quest.step >= E.SAB_UNLOCK_STEP);
+  E.sab = (S) => {
+    if (!S.sablier) S.sablier = { r: E.SAB_MAX, at: E.now(), spd: 1, open: false }; // plein au départ
+    const B = S.sablier, now = E.now();
+    if (!(B.at <= now)) B.at = now; // horloge revenue en arrière : on ne rend rien
+    B.r = Math.min(E.SAB_MAX, Math.max(0, (+B.r || 0) + ((now - B.at) / 1000) * E.SAB_RATE)); B.at = now;
+    if (!B.open && E.sabUnlocked(S)) { B.open = true; note(S, "Sablier de Xélor débloqué : le temps peut filer ×2 ou ×3 (barre du haut).", "rare"); }
+    if (![1, 2, 3].includes(B.spd)) B.spd = 1;
+    return B;
+  };
+  /* vitesse réellement appliquée pour realMs millisecondes de vrai temps ; vide la réserve en conséquence */
+  E.sabSpend = (S, realMs) => {
+    const B = E.sab(S); if (!B.open || B.spd === 1) return 1;
+    const need = (realMs / 1000) * (B.spd - 1);
+    if (need <= B.r) { B.r -= need; return B.spd; }
+    // la réserve se termine pendant ce pas : on finit ce qui reste puis retour à ×1
+    const m = 1 + (B.spd - 1) * (B.r / need); B.r = 0; B.spd = 1;
+    note(S, "Sablier de Xélor vide : retour à la vitesse normale. Il se remplit tout seul (3 h par jour).", "info");
+    return m;
+  };
+  E.sabSet = (S, v) => {
+    const B = E.sab(S); v = +v;
+    if (!B.open) return "Le Sablier de Xélor se débloque à la fin d'Incarnam : terminez la quête « La Crypte de Kardorim ».";
+    if (![1, 2, 3].includes(v)) return "Vitesse inconnue.";
+    if (v > 1 && B.r < 1) return "Le sablier est vide : il se remplit tout seul (3 h par jour).";
+    B.spd = v; return null;
   };
 
   /* ---------------- Hors-ligne ---------------- */
