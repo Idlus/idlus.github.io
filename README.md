@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.11.2 « Aperçu des sorts » (bêta)
+- **Ce que fera ton héros** (Sorts & stratégies) : sorts lancés aux 3 premiers tours, PA utilisés et dégâts, joués par le vrai moteur de combat (Chasse ou Boss).
+- **Conseils** avec bouton (attaques jamais choisies, condition bloquante, PA perdus, élément hors profil) et **Ranger au mieux** (meilleur ordre des sorts de soutien, avec Annuler).
+
 ## 0.1.11.1 « Barre de sorts » (bêta)
 - **Sorts & stratégies** refait : barre de sorts avec la condition sous chaque case, fiche du sort à côté (dégâts, conditions et cibles en boutons, variante en un clic), grimoire par paires sort / variante, glisser-déposer sur PC, stratégies en onglets.
 - Correction : les variantes des niveaux 125 à 200 se débloquent à leur niveau (elles affichaient encore « au-delà du niveau 120 »).

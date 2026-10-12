@@ -1,6 +1,16 @@
 {
-  "version": "0.1.11.1",
+  "version": "0.1.11.2",
   "versions": [
+    {
+      "v": "0.1.11.2",
+      "name": "Aperçu des sorts",
+      "items": [
+        "Sorts & stratégies : nouveau bloc « Ce que fera ton héros » qui montre les sorts lancés aux 3 premiers tours, les PA utilisés et les dégâts. Il est joué par le vrai moteur de combat (moyenne de 3 combats), en Chasse (ta zone ou une zone de ton niveau) ou contre un Boss de ton niveau",
+        "Conseils automatiques avec un bouton pour régler : attaques jamais choisies (une autre fait plus de dégâts par PA), sort bloqué par sa condition, PA non utilisés avec le sort qui pourrait les remplir, sorts dont l'élément ne profite pas du profil (avec la variante du bon élément quand elle existe)",
+        "Bilan sous l'aperçu : dégâts sur 3 tours et répartition des éléments des sorts d'attaque",
+        "Bouton « Ranger au mieux » : le héros lance ses sorts de soutien dans l'ordre de la barre, le bouton essaie tous leurs ordres et garde celui qui fait le plus de dégâts, avec « Annuler »"
+      ]
+    },
     {
       "v": "0.1.11.1",
       "name": "Barre de sorts",
