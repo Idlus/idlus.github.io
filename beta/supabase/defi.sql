@@ -21,6 +21,6 @@ drop policy if exists "défi lisible" on public.defi;
 create policy "défi lisible" on public.defi for select using (true);
 create or replace view public.lb_defi as
   select d.user_id, p.pseudo, l.main, d.day, d.tier, d.turns, d.hp, d.team, d.at,
-    rank() over (partition by d.day, d.tier order by d.turns asc, d.hp desc, d.at asc) as r
+    rank() over (partition by d.day, d.tier order by d.turns asc, d.hp desc, d.at asc) as r, l.main_lvl
   from public.defi d join public.ladder l on l.user_id = d.user_id join public.profiles p on p.id = d.user_id where not l.flagged;
 grant select on public.lb_defi to anon, authenticated;
