@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.12.3 « L'équipement compte » (bêta)
+- Monstres plus forts dès le niveau 30 : sans équipement, une équipe perd en chasse et échoue ou passe tout juste la stasis 1 en donjon ; XP et butin par monstre en proportion, gains par heure inchangés pour une équipe bien équipée.
+
 ## 0.1.12.2 « Nouvelle adresse » (bêta)
 - Le jeu s'ouvre maintenant sur idlus.github.io ; l'ancienne adresse y renvoie et la partie du navigateur suit le joueur.
 

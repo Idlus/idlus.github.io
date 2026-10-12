@@ -627,6 +627,22 @@
   /* 0.1 : au-delà du niveau 100, les objets DofusDB grimpent bien plus vite que les monstres ; PV et dégâts montent jusqu'à ×1,4 et ×1,35 au niveau 200 (simulation) */
   E.MON_HI = { hp: 1.4, dmg: 1.35 };
   const HI = (l, x) => 1 + (x - 1) * Math.max(0, Math.min(1, (l - 100) / 100));
+  /* 0.1.12.3 : sans équipement, une équipe doit perdre (sauf aux premiers niveaux) : PV et dégâts des monstres multipliés
+     selon leur niveau, par paliers [niveau, ×PV, ×dégâts] reliés en ligne droite, séparément en chasse et en donjon ;
+     « rew » rend l'XP et le butin par monstre en proportion des PV en plus */
+  E.MON_POW = {
+    hunt: [[15, 1, 1], [30, 4.5, 4]],
+    dg: [[20, 1, 1], [90, 1.3, 2.2], [130, 1.3, 2.2], [180, 1.1, 1.6]],
+    minGroup: (sub) => (sub && sub.lvl && sub.lvl[1] >= 25 ? 4 : 1), rew: 0.57,
+  };
+  E.monPow = (l, k, where) => {
+    const P = E.MON_POW[where], j = k === "hp" ? 1 : 2;
+    if (l <= P[0][0]) return P[0][j];
+    for (let i = 1; i < P.length; i++) if (l < P[i][0]) { const a = P[i - 1], b = P[i]; return a[j] + (b[j] - a[j]) * (l - a[0]) / (b[0] - a[0]); }
+    return P[P.length - 1][j];
+  };
+  E.powRew = (mons, where) => { const pw = mons.reduce((a, m) => a + E.monPow(m.lvl, "hp", where), 0) / Math.max(1, mons.length); return Math.max(1, 1 + (pw - 1) * E.MON_POW.rew); };
+  const powMons = (mons, where) => mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * E.monPow(m.lvl, "hp", where)); m.dmg *= E.monPow(m.lvl, "dmg", where); });
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
     const archi = !!opts.archi && !!base.archi;
@@ -730,7 +746,7 @@
   };
 
   E.makeGroup = (S, sub, teamSize) => {
-    const IX = E.idolFx(S, null); const size = Math.min(8, ri(1, Math.min(8, teamSize + 1)) + (IX ? IX.extra : 0)); // 0.1.10 : idoles Farle et Nahuss
+    const IX = E.idolFx(S, null); const size = Math.min(8, ri(Math.max(1, Math.min(teamSize, E.MON_POW.minGroup(sub))), Math.min(8, teamSize + 1)) + (IX ? IX.extra : 0)); // 0.1.10 : idoles Farle et Nahuss
     const g = [];
     for (let i = 0; i < size; i++) {
       const id = pick(sub.monsters); const m = MONSTERS[id];
@@ -985,6 +1001,7 @@
       if (pg) { mons = pg.mons; label = pg.label; }
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
+    powMons(mons, S.dungeon ? "dg" : "hunt");
     if (IX) applyIdols(IX, mons);
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
@@ -1000,6 +1017,7 @@
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
+    F.powRew = E.powRew(mons, S.dungeon ? "dg" : "hunt"); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: null, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     newRound(F);
@@ -1853,7 +1871,7 @@
       const mons = F.ents.filter((e) => e.side === "m" && !e.fake);
       const cb = E.chalResolve(S, F);
       const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1) * (1 + (F.idolBonus || 0) / 100);
-      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.roulette === "jackpot" ? 2 : 1), kamasMult: E.PACE_REW, treasure: F.treasure || 0 });
+      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1), dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1), kamasMult: E.PACE_REW * (F.powRew || 1), treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
@@ -2509,7 +2527,7 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW, dropMult: E.PACE_REW * (1 + E.podBonus(S)), kamasMult: E.PACE_REW });
+      const pr = E.powRew(g, "hunt"); giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW * pr, dropMult: E.PACE_REW * (1 + E.podBonus(S)) * pr, kamasMult: E.PACE_REW * pr });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne

@@ -1,6 +1,15 @@
 {
-  "version": "0.1.12.2",
+  "version": "0.1.12.3",
   "versions": [
+    {
+      "v": "0.1.12.3",
+      "name": "L'équipement compte",
+      "items": [
+        "Les monstres sont plus forts à partir du niveau 30 : une équipe sans équipement perd presque tous ses combats de chasse, et en donjon elle échoue ou passe tout juste la stasis 1. Aux premiers niveaux, rien ne change",
+        "En chasse, les groupes comptent au moins 4 monstres dès les zones de niveau 25 ; les combats durent plus longtemps, mais chaque monstre donne plus d'XP, de butin et de kamas : une équipe bien équipée gagne autant par heure qu'avant",
+        "Paliers de donjon revus : bien équipé, une équipe vise la stasis 5 à 7 ; une équipe optimisée, la stasis 8 à 10"
+      ]
+    },
     {
       "v": "0.1.12.2",
       "name": "Nouvelle adresse",

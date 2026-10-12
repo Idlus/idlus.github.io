@@ -138,7 +138,7 @@ if (arg("chasse", "")) {
 }
 
 /* ---------- tableau ---------- */
-const PROFS = [["aucun", "sans équipement", [4, 4]], ["bon", "bon équipement", [6, 7]], ["optimise", "équipe optimisée", [10, 10]]];
+const PROFS = [["aucun", "sans équipement", [0, 1]], ["bon", "bon équipement", [5, 7]], ["optimise", "équipe optimisée", [8, 10]]];
 const ONLY = arg("profils", ""); const PRF = ONLY ? PROFS.filter(([p]) => ONLY.split(",").includes(p)) : PROFS;
 const results = [];
 for (const did of DUNS) {
@@ -161,4 +161,4 @@ for (const did of DUNS) {
 }
 if (JSON_OUT) console.log(JSON.stringify({ results, tact: E.tactLog }, null, 1));
 else if (E.tactLog) console.log("déclenchements :", JSON.stringify(E.tactLog));
-else console.log(`\nStasis la plus haute réussie au moins 1 fois sur 2 (${CLS.length} équipes × ${TRIES} essais). Cibles : sans équipement 4, bon équipement 6-7, optimisé 10.`);
+else console.log(`\nStasis la plus haute réussie au moins 1 fois sur 2 (${CLS.length} équipes × ${TRIES} essais). Cibles : sans équipement 0-1, bon équipement 5-7, optimisé 8-10.`);
