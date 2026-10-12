@@ -16,6 +16,16 @@
       ]
     },
     {
+      "v": "0.1.10.2",
+      "name": "Chasse itinérante",
+      "items": [
+        "Chasse itinérante : une case « Itinérante » à côté de « Suivre mon niveau » sur l'écran de combat. Après une victoire, l'équipe part vers une zone de son niveau (sans perte d'XP) qui a au moins 2 étoiles de plus que la zone actuelle, au plus une fois toutes les 10 minutes, en jeu comme hors ligne",
+        "En échange, l'XP et le butin baissent de 15 % tant que la case est cochée. Elle rapporte surtout quand le jeu tourne longtemps ; si tu changes de zone toi-même, garde-la décochée",
+        "Le résumé d'absence liste les zones visitées, et l'infobulle de la case montre les 10 dernières",
+        "Correction : en changeant de zone, les étoiles gagnées par la nouvelle zone depuis votre dernier passage n'étaient pas toujours comptées"
+      ]
+    },
+    {
       "v": "0.1.10.1",
       "name": "Récoltes et panoplies",
       "items": [
