@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.29.4 « Héros disponible »
+« Envoyer un héros » d'un métier : `gatherPick(job)` (ui.js) choisit le héros par défaut : libre, puis au Havre-Sac, puis chasseur, puis récolteur d'un autre métier, et en dernier celui déjà sur ce métier (égalité : héros sélectionné).
+
 ## 0.1.29.3 « Protecteur à portée »
 Protecteurs : `E.protWhy` (seuls bloquants : donjon, expédition, équipe vide) ; `E.protFight` rappelle les héros d'équipe qui récoltent et lance la chasse si besoin, mémorisé dans `protector.back` puis rendu par `E.protRestore` (via `S.protBack` dans `E.protExpire`) à la fin du combat ou au départ du protecteur. Bulle d'aide `protector` dans welcome.js.
 
