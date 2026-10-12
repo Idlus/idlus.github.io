@@ -1,6 +1,14 @@
 {
-  "version": "0.1.13",
+  "version": "0.1.13.1",
   "versions": [
+    {
+      "v": "0.1.13.1",
+      "name": "Dofus à leur place",
+      "items": [
+        "Chaque Dofus tombe maintenant du boss qui lui correspond dans DOFUS : Cawotte dans la Grange du Tournesol Affamé (les champs), Dokoko à l'Arbre de Moon, Kaliptus chez le Koulosse (Koalaks), Émeraude chez Crocabulia, Turquoise (dragon de l'Eau) chez la Dame des Eaux, Domakuro chez le Maître Corbac, Dofus des Glaces chez Missiz Frizz, Argenté Scintillant chez la déesse Ilyzaelle",
+        "Les quêtes de ces Dofus mènent à ces mêmes donjons ; la fiche de chaque donjon montre son Dofus"
+      ]
+    },
     {
       "v": "0.1.13",
       "name": "Archimonstres et Dofus",

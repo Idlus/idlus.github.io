@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.13.1 « Dofus à leur place » (bêta)
+- Chaque Dofus tombe du boss qui lui correspond dans DOFUS (Cawotte : Tournesol Affamé, Dokoko : Arbre de Moon, Kaliptus : Koulosse, Émeraude : Crocabulia, Turquoise : Dame des Eaux, Domakuro : Maître Corbac, Glaces : Missiz Frizz, Argenté Scintillant : Ilyzaelle) ; les quêtes suivent.
+
 ## 0.1.13 « Archimonstres et Dofus » (bêta)
 - **Album des archimonstres** (bouton « Âmes ») : les 205 archimonstres par zone ; une **Pierre d'âme** en sac capture l'âme d'un archimonstre vaincu (Bricoleur 25, premier passage des stasis, Bureau des primes). **Parfum de pistage** (×2, 2 h) et meuble **Autel des âmes** (×1,4).
 - **Éternelle moisson** : six paliers d'âmes par groupes de zones, récompenses à chaque palier, le **Dofus Ocre** (+1 PA) au bout.

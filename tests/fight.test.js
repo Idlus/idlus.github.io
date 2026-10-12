@@ -220,15 +220,16 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // quête : étape donjon validée par la meilleure stasis, étape chasse par les victoires dans la zone, Dofus donné à la fin
   E.stasisInfo(S, "cour_bouftou_royal").max = 3; E.emit(S, "dungeon", { id: "cour_bouftou_royal", stasis: 3, chals: [], down: 0 });
   assert.strictEqual(E.dofusQuest(S, "cacao").step, 1, "étape 1 du Cacao validée");
-  const sub = Object.values(E.SUBS).find((s) => s.zone === "amakna"); for (let i = 0; i < 50; i++) E.emit(S, "win", { mons: [{ key: "m52" }, { key: "m52" }, { key: "m52" }], sub: sub.id, chals: [], down: 0 });
-  assert.strictEqual(E.dofusQuest(S, "cacao").step, 2, "150 monstres d'Amakna"); const nb = Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length;
-  E.stasisInfo(S, "donjon_bworks").max = 4; E.refreshArchis(S); assert.ok(E.dofusQuest(S, "cacao").done, "quête du Cacao terminée");
+  const sub = Object.values(E.SUBS).find((s) => s.zone === "astrub"); for (let i = 0; i < 50; i++) E.emit(S, "win", { mons: [{ key: "m52" }, { key: "m52" }, { key: "m52" }], sub: sub.id, chals: [], down: 0 });
+  assert.strictEqual(E.dofusQuest(S, "cacao").step, 2, "150 monstres d'Astrub"); const nb = Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length;
+  E.stasisInfo(S, "cour_bouftou_royal").max = 5; E.refreshArchis(S); assert.ok(E.dofusQuest(S, "cacao").done, "quête du Cacao terminée");
   assert.strictEqual(Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length, nb + 1, "Dofus donné par la quête");
   // étape avec challenge : seulement si le challenge est réussi
-  E.emit(S, "dungeon", { id: "nid_kwakwa", stasis: 4, chals: [], down: 0 }); E.stasisInfo(S, "nid_kwakwa").max = 4; E.refreshArchis(S); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 1, "Dokoko étape 1");
+  E.stasisInfo(S, "arbre_moon").max = 3; E.refreshArchis(S); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 1, "Dokoko étape 1");
   for (let i = 0; i < 50; i++) E.emit(S, "win", { mons: [{ key: "m52" }], sub: sub.id, chals: ["survivant"], down: 0 }); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 2, "50 Survivant");
-  E.emit(S, "dungeon", { id: "nid_kwakwa", stasis: 6, chals: [], down: 1 }); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 2, "héros à terre : pas validé");
-  E.emit(S, "dungeon", { id: "nid_kwakwa", stasis: 6, chals: [], down: 0 }); assert.ok(E.dofusQuest(S, "dokoko").done && E.dofusOwned(S, "dokoko"), "Dokoko obtenu");
+  E.addCons(S, "pierre_ame", 6); E.archisOf("moon").slice(0, 3).forEach((a) => E.captureSoul(S, { key: a.k, name: a.name })); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 3, "3 âmes de Moon");
+  E.emit(S, "dungeon", { id: "arbre_moon", stasis: 6, chals: [], down: 1 }); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 3, "héros à terre : pas validé");
+  E.emit(S, "dungeon", { id: "arbre_moon", stasis: 6, chals: [], down: 0 }); assert.ok(E.dofusQuest(S, "dokoko").done && E.dofusOwned(S, "dokoko"), "Dokoko obtenu");
   // Dokoko en combat : le porteur récupère 3 % de ses PV au début de son tour
   const dk = Object.values(S.items).find((x) => x.tpl === "dofus_dokoko"); assert.strictEqual(E.equip(S, c.id, dk.uid), null, "Dokoko équipé");
   E.startHunt(S, firstSub); E.startFight(S); const F = S.fight; const e = F.ents.find((x) => x.side === "c" && x.cid === c.id); e.hp = Math.round(e.hpMax / 2); const hp = e.hp; E.dofusTurn(S, F, e);

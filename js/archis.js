@@ -93,24 +93,27 @@
      kill (monstres vaincus dans une zone), harvest (ressource récoltée), chal (victoires avec ce challenge réussi), soul (âmes d'une zone),
      almanax (offrandes), perfect (objets parfaits possédés), ocre (les six paliers) */
   const dg = (id, k, x) => Object.assign({ t: "dg", dg: id, k }, x || {});
+  /* chaque Dofus tombe du boss qui lui correspond dans DOFUS (Mathis : « le drop doit bien représenter le donjon ») :
+     Cawotte les champs (le Wa Wabbit n'est pas dans le jeu), Dokoko l'Arbre de Moon, Kaliptus les Koalaks, Émeraude Crocabulia,
+     Turquoise (dragon de l'Eau) la Dame des Eaux, Domakuro le Maître Corbac (encre noire), Glaces Missiz Frizz, Argenté Scintillant la déesse Ilyzaelle */
   const L = [
-    ["cacao", "Dofus Cacao", 50, 23029, { tac: 10 }, "cour_bouftou_royal", [dg("cour_bouftou_royal", 3), { t: "kill", zone: "amakna", n: 150 }, dg("donjon_bworks", 4)]],
-    ["cawotte", "Dofus Cawotte", 60, 23006, { sa: 60 }, "clos_blops", [dg("grange_tournesol", 3), { t: "harvest", res: "Orge", n: 200 }, dg("clos_blops", 4), { t: "soul", zone: "amakna", n: 5 }]],
-    ["dokoko", "Dokoko", 80, 23022, {}, "nid_kwakwa", [dg("nid_kwakwa", 4), { t: "chal", chal: "survivant", n: 50 }, dg("nid_kwakwa", 6, { nodown: true })]],
-    ["kaliptus", "Dofus Kaliptus", 100, 23010, { pp: 30 }, "bambusaie_damadrya", [{ t: "kill", zone: "pandala", n: 200 }, dg("bambusaie_damadrya", 3), { t: "almanax", n: 7 }, { t: "soul", zone: "pandala", n: 3 }]],
-    ["emeraude", "Dofus Émeraude", 100, 23002, { vit: 200 }, "domaine_ancestral", [dg("domaine_ancestral", 4), { t: "harvest", res: "Bois de Chêne", n: 300 }, dg("caverne_koulosse", 6), dg("domaine_ancestral", 8)]],
-    ["dolmanax", "Dolmanax", 100, 23018, { fo: 70, ine: 70, cha: 70, age: 70 }, "repaire_kharnozor", [{ t: "kill", zone: "koalaks", n: 300 }, dg("repaire_kharnozor", 5), { t: "soul", zone: "koalaks", n: 10 }]],
+    ["cacao", "Dofus Cacao", 50, 23029, { tac: 10 }, "cour_bouftou_royal", [dg("cour_bouftou_royal", 3), { t: "kill", zone: "astrub", n: 150 }, dg("cour_bouftou_royal", 5)]],
+    ["cawotte", "Dofus Cawotte", 60, 23006, { sa: 60 }, "grange_tournesol", [dg("grange_tournesol", 3), { t: "harvest", res: "Orge", n: 200 }, { t: "soul", zone: "astrub", n: 5 }, dg("grange_tournesol", 6)]],
+    ["dokoko", "Dokoko", 80, 23022, {}, "arbre_moon", [dg("arbre_moon", 3), { t: "chal", chal: "survivant", n: 50 }, { t: "soul", zone: "moon", n: 3 }, dg("arbre_moon", 6, { nodown: true })]],
+    ["kaliptus", "Dofus Kaliptus", 100, 23010, { pp: 30 }, "caverne_koulosse", [{ t: "kill", zone: "koalaks", n: 200 }, dg("caverne_koulosse", 3), { t: "almanax", n: 7 }, { t: "soul", zone: "koalaks", n: 5 }]],
+    ["emeraude", "Dofus Émeraude", 100, 23002, { vit: 200 }, "antre_crocabulia", [dg("antre_crocabulia", 4), { t: "harvest", res: "Bois de Chêne", n: 300 }, { t: "soul", zone: "dragoeufs", n: 3 }, dg("antre_crocabulia", 8)]],
+    ["dolmanax", "Dolmanax", 100, 23018, { fo: 70, ine: 70, cha: 70, age: 70 }, "repaire_kharnozor", [{ t: "kill", zone: "dragoeufs", n: 300 }, dg("repaire_kharnozor", 5), dg("repaire_kharnozor", 7)]],
     ["pourpre", "Dofus Pourpre", 110, 23001, { pui: 80 }, "antre_dragon_cochon", [dg("antre_dragon_cochon", 4), { t: "chal", chal: "barbare", n: 100 }, dg("antre_dragon_cochon", 7)]],
-    ["dotruche", "Dotruche", 110, 23019, { so: 25 }, "voliere_haute_truche", [dg("tofulailler_royal", 4), dg("voliere_haute_truche", 5), { t: "soul", zone: "dragoeufs", n: 5 }]],
-    ["domakuro", "Domakuro", 120, 23032, { inv: 1 }, "repaire_skeunk", [dg("biblio_corbac", 4), { t: "chal", chal: "elitiste", n: 30 }, dg("repaire_skeunk", 6)]],
-    ["turquoise", "Dofus Turquoise", 160, 23003, { cri: 10 }, "canopee_kimbo", [dg("arbre_moon", 5), dg("canopee_kimbo", 5), { t: "perfect", n: 1 }, dg("canopee_kimbo", 8)]],
+    ["dotruche", "Dotruche", 110, 23019, { so: 25 }, "voliere_haute_truche", [dg("tofulailler_royal", 4), dg("voliere_haute_truche", 5), { t: "soul", zone: "cania", n: 5 }]],
+    ["domakuro", "Domakuro", 120, 23032, { inv: 1 }, "biblio_corbac", [dg("biblio_corbac", 4), { t: "chal", chal: "elitiste", n: 30 }, dg("biblio_corbac", 7)]],
+    ["turquoise", "Dofus Turquoise", 160, 23003, { cri: 10 }, "vallee_dame_eaux", [dg("vallee_dame_eaux", 5), { t: "kill", zone: "pandala", n: 300 }, { t: "perfect", n: 1 }, dg("vallee_dame_eaux", 8)]],
     ["ocre", "Dofus Ocre", 160, 23012, { pa: 1 }, null, [{ t: "ocre" }]],
-    ["vulbis", "Dofus Vulbis", 180, 23004, { pm: 1 }, "donjon_harebourg", [dg("taniere_givrefoux", 6), { t: "dgs", dgs: ["cavernes_kolosso", "antichambre_gloursons"], k: 7 }, dg("forgefroide_frizz", 8), dg("donjon_harebourg", 9)]],
+    ["vulbis", "Dofus Vulbis", 180, 23004, { pm: 1 }, "donjon_harebourg", [dg("taniere_givrefoux", 6), { t: "dgs", dgs: ["cavernes_kolosso", "antichambre_gloursons"], k: 7 }, dg("donjon_harebourg", 7), dg("donjon_harebourg", 9)]],
     ["ivoire", "Dofus Ivoire", 180, 23011, { rt: 4, rf: 4, re: 4, ra: 4, rn: 4 }, "palais_nidas", [dg("palais_nidas", 5), dg("aquadome_merkator", 7), dg("palais_nidas", 9)]],
     ["ebene", "Dofus Ébène", 180, 23007, { fui: 40 }, "pyramide_ombre", [dg("pyramide_ombre", 5), dg("trone_cour_sombre", 6), dg("pyramide_ombre", 8, { chal: "chacun" })]],
-    ["glaces", "Dofus des Glaces", 180, 23005, { dt: 25, df: 25, de: 25, da: 25, dn: 25 }, "labo_nileza", [{ t: "dgs", dgs: ["labo_nileza", "transporteur_sylargh", "salons_klime", "forgefroide_frizz"], k: 6 }, dg("donjon_harebourg", 7), { t: "chal", chal: "incurable", n: 20 }]],
+    ["glaces", "Dofus des Glaces", 180, 23005, { dt: 25, df: 25, de: 25, da: 25, dn: 25 }, "forgefroide_frizz", [{ t: "dgs", dgs: ["labo_nileza", "transporteur_sylargh", "salons_klime"], k: 6 }, { t: "chal", chal: "incurable", n: 20 }, dg("forgefroide_frizz", 8)]],
     ["sylvestre", "Dofus Sylvestre", 180, 23036, { po: 1 }, "antre_korriandre", [dg("antre_korriandre", 5), { t: "soul", zone: "abrak", n: 3 }, dg("antre_korriandre", 8)]],
-    ["argente", "Dofus Argenté Scintillant", 180, 23027, { vit: 300 }, "oeil_vortex", [dg("belvedere_ilyzaelle", 5), dg("oeil_vortex", 6), dg("defi_chaloeil", 8)]],
+    ["argente", "Dofus Argenté Scintillant", 180, 23027, { vit: 300 }, "belvedere_ilyzaelle", [dg("oeil_vortex", 5), dg("defi_chaloeil", 6), dg("belvedere_ilyzaelle", 8)]],
     ["cauchemar", "Dofus du Cauchemar", 180, 23034, { ini: 1000 }, "chambre_tal_kasha", [dg("chambre_tal_kasha", 5), { t: "chal", chal: "rapide", n: 50 }, dg("chambre_tal_kasha", 8)]],
   ];
   E.DOFUS = {}; E.DOFUS_ORDER = [];

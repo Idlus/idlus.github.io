@@ -1,7 +1,7 @@
 /* idlus — service worker : jeu jouable hors ligne.
    Fichiers du jeu (html/js/css/json) : réseau d'abord (les mises à jour arrivent tout de suite), cache en secours.
    Images et polices : cache d'abord (elles ne changent pas), mises en cache au fil de la partie. */
-const VERSION = "0.1.13";
+const VERSION = "0.1.13.1";
 /* La version de test (/beta/) a ses propres caches : chaque service worker ne nettoie que les siens. */
 const P = /\/beta\/$/.test(self.registration.scope) ? "idlus-beta-" : "idlus-";
 const CORE = P + "core-" + VERSION, MEDIA = P + "media-v7";

@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.13";
+const GAME_VERSION = "0.1.13.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.13.1", name: "Dofus à leur place", items: [
+    "Chaque Dofus tombe maintenant du boss qui lui correspond dans DOFUS : Cawotte dans la Grange du Tournesol Affamé (les champs), Dokoko à l'Arbre de Moon, Kaliptus chez le Koulosse (Koalaks), Émeraude chez Crocabulia, Turquoise (dragon de l'Eau) chez la Dame des Eaux, Domakuro chez le Maître Corbac, Dofus des Glaces chez Missiz Frizz, Argenté Scintillant chez la déesse Ilyzaelle",
+    "Les quêtes de ces Dofus mènent à ces mêmes donjons ; la fiche de chaque donjon montre son Dofus",
+  ] },
   { v: "0.1.13", name: "Archimonstres et Dofus", items: [
     "Album des archimonstres (bouton « Âmes » sur la carte du monde, dans les zones et sur la page Équipe) : les 205 archimonstres rangés par zone, jamais croisés, vaincus ou à l'âme capturée, avec leur sous-zone pour savoir où chasser",
     "Pierre d'âme : quand un archimonstre est vaincu, une pierre en sac capture son âme automatiquement (une par archimonstre). Recette chez le Bricoleur (niveau 25, 5 pierres), 1 à 3 pierres au premier passage de chaque stasis, 3 jetons au Bureau des primes",
