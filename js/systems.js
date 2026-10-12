@@ -8,7 +8,7 @@
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
   const E = root.ENGINE || (typeof require !== "undefined" ? require("./engine.js") : null);
-  const { STATS, MONSTERS, DUNGEONS, ITEMS, RES, CLASSES } = D;
+  const { STATS, STAT_ORDER, RUNE_SIMPLE_ONLY, MONSTERS, DUNGEONS, ITEMS, RES, CLASSES } = D;
   const SUBS = E.SUBS;
   const rnd = () => Math.random();
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -388,7 +388,58 @@
   };
   E.setWing = (S, cid, w) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; c.wing = w && S.unlocks["wing_" + w] ? w : null; };
 
-  /* ---------------- Forgemagie : améliorer les jets avec des runes et des kamas ---------------- */
+  /* ---------------- Métier de Forgemage (0.1.8.2) ----------------
+     Niveau 1 à 100, commun au compte : chaque tentative donne de l'expérience, les runes inutiles aussi (à la place de l'ancien Emblème).
+     Paliers : +0,1 % de réussite et −0,5 % de kamas par niveau ; 30 : les échecs font moins souvent baisser une caractéristique ;
+     60 : un Cristal offert par jour ; 100 : titre « Grand Forgemage » (et plus tard les runes exotiques). */
+  E.FM_MAX = 100;
+  E.fmJob = (S) => S.fmJob || (S.fmJob = { lvl: 1, xp: 0 });
+  E.fmNeed = (l) => 20 + 30 * l;
+  E.FM_PERKS = [[30, "Les échecs ne font baisser une caractéristique qu'une fois sur quatre (une sur trois avant)"], [60, "Un Cristal de Forgemagie offert par jour : le premier échec de la journée ne fait rien baisser"], [100, "Titre « Grand Forgemage » ; les runes exotiques (PA, PM, portée) arriveront à ce niveau"]];
+  E.fmGainXp = (S, x) => {
+    const J = E.fmJob(S); if (J.lvl >= E.FM_MAX) return; J.xp += x;
+    while (J.lvl < E.FM_MAX && J.xp >= E.fmNeed(J.lvl)) { J.xp -= E.fmNeed(J.lvl); J.lvl++; if (J.lvl % 10 === 0 || E.FM_PERKS.some(([l]) => l === J.lvl)) note(S, `Forgemage niveau ${J.lvl}`, "up"); }
+    if (J.lvl >= E.FM_MAX) J.xp = 0;
+  };
+  /* nourrir le forgemage avec des runes : 3 XP par point de poids */
+  E.feedForgemage = (S, key, qty) => {
+    const have = S.runes[key] || 0; const n = Math.min(have, qty); if (n <= 0) return null;
+    const xp = E.runeInfo(key).weight * 3 * n; E.fmGainXp(S, xp);
+    S.runes[key] -= n; if (!S.runes[key]) delete S.runes[key];
+    return { xp, n };
+  };
+  /* ---------------- Fusion et transmutation des runes (0.1.8.2) ---------------- */
+  E.RUNE_FUSE_N = 3; E.TRANSMUTE_N = 5;
+  E.transmuteCost = (tier) => (tier === "ra" ? 2000 : tier === "pa" ? 600 : 200);
+  E.transmuteTargets = () => STAT_ORDER.filter((k) => k !== "pa" && STATS[k] && STATS[k].pts > 0);
+  E.fuseRunes = (S, key, dir) => {
+    const [tier, stat] = key.split(":"); if (!STATS[stat]) return "Rune inconnue.";
+    if (RUNE_SIMPLE_ONLY.includes(stat)) return "Cette caractéristique n'existe qu'en rune simple.";
+    const take = (k, n) => { S.runes[k] -= n; if (!S.runes[k]) delete S.runes[k]; };
+    const give = (k, n) => { S.runes[k] = (S.runes[k] || 0) + n; };
+    if (dir === "up") {
+      const next = tier === "" ? "pa" : tier === "pa" ? "ra" : null; if (!next) return "Une rune Ra ne se fusionne pas.";
+      if ((S.runes[key] || 0) < E.RUNE_FUSE_N) return `Il faut ${E.RUNE_FUSE_N} runes.`;
+      take(key, E.RUNE_FUSE_N); give(E.runeKey(next, stat), 1); return null;
+    }
+    const prev = tier === "ra" ? "pa" : tier === "pa" ? "" : null; if (prev === null) return "Une rune simple ne se casse pas.";
+    if (!(S.runes[key] > 0)) return "Aucune rune.";
+    take(key, 1); give(E.runeKey(prev, stat), E.RUNE_FUSE_N); return null;
+  };
+  E.transmute = (S, key, toStat) => {
+    const [tier, stat] = key.split(":"); if (!STATS[stat] || !E.transmuteTargets().includes(toStat)) return "Caractéristique impossible.";
+    if (toStat === stat) return "Choisissez une autre caractéristique.";
+    if (tier && RUNE_SIMPLE_ONLY.includes(toStat)) return "Cette caractéristique n'existe qu'en rune simple : transmutez des runes simples.";
+    if ((S.runes[key] || 0) < E.TRANSMUTE_N) return `Il faut ${E.TRANSMUTE_N} runes.`;
+    const cost = E.transmuteCost(tier); if (S.kamas < cost) return `Il faut ${cost} kamas.`;
+    S.kamas -= cost; S.runes[key] -= E.TRANSMUTE_N; if (!S.runes[key]) delete S.runes[key];
+    const nk = E.runeKey(tier, toStat); S.runes[nk] = (S.runes[nk] || 0) + 1; return null;
+  };
+
+  /* ---------------- Forgemagie : améliorer les jets avec des runes et des kamas ----------------
+     Puits (0.1.8.2) : ce qu'un objet perd sur un échec remplit son puits (en poids de caractéristiques) ; tant que le puits couvre
+     la rune tentée, la réussite gagne +25 % et un échec ne fait rien baisser ; une réussite vide le puits d'autant. */
+  E.WELL_BONUS = 0.25;
   E.fmInfo = (S, uid, runeKey) => {
     const it = S.items[uid]; if (!it) return null; const T = ITEMS[it.tpl]; const ri = E.runeInfo(runeKey); const k = ri.stat;
     if (!T.stats[k]) return { ok: false, why: "Cette caractéristique n'existe pas sur l'objet." };
@@ -397,9 +448,10 @@
     const cap = mx + Math.max(1, Math.ceil(mx * 0.25));
     if (nv > cap) return { ok: false, why: `Maximum atteint (${cap}).`, cur, cap, mx };
     const tierPen = ri.tier === "ra" ? 0.75 : ri.tier === "pa" ? 0.88 : 1;
-    const chance = clamp((nv <= mx ? 0.85 : 0.5 - 0.35 * (nv - mx) / Math.max(1, cap - mx)) * tierPen, 0.08, 0.95);
-    const kamas = Math.round(15 + T.lvl * 2.5 * (add / STATS[k].pts));
-    return { ok: true, stat: k, cur, add, nv, mx, cap, chance, kamas, over: nv > mx };
+    const J = E.fmJob(S); const wellCost = add * STATS[k].w; const wellOk = (it.well || 0) >= wellCost;
+    const chance = clamp((nv <= mx ? 0.85 : 0.5 - 0.35 * (nv - mx) / Math.max(1, cap - mx)) * tierPen + J.lvl * 0.001 + (wellOk ? E.WELL_BONUS : 0), 0.08, 0.95);
+    const kamas = Math.round((15 + T.lvl * 2.5 * (add / STATS[k].pts)) * (1 - J.lvl * 0.005));
+    return { ok: true, stat: k, cur, add, nv, mx, cap, chance, kamas, over: nv > mx, well: it.well || 0, wellOk, wellCost };
   };
   const fmLog = (it, txt, ok) => { (it.fmLog = it.fmLog || []).unshift({ t: Date.now(), txt, ok }); if (it.fmLog.length > 6) it.fmLog.length = 6; };
   E.forgemage = (S, uid, runeKey) => {
@@ -410,17 +462,27 @@
     S.kamas -= f.kamas; S.runes[runeKey]--; if (!S.runes[runeKey]) delete S.runes[runeKey];
     S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1;
     E.emit(S, "fm", {});
+    const T = ITEMS[it.tpl]; const J = E.fmJob(S); const wasPerfect = E.isPerfect(it);
     if (rnd() < f.chance) {
       it.stats[f.stat] = f.nv; if (it.roll && it.roll[f.stat] !== undefined) it.roll[f.stat] = Math.min(f.mx, (it.roll[f.stat] || 0) + f.add);
       if (S.fmShield) S.fmShield = false;
-      const txt = `Succès : +${f.add} ${STATS[f.stat].name}${f.over ? " (exo-jet !)" : ""}`; fmLog(it, txt, true);
-      return { ok: true, txt };
+      if (f.wellOk) it.well = Math.max(0, (it.well || 0) - f.wellCost);
+      E.fmGainXp(S, (10 + T.lvl / 2) * 2);
+      const perfect = !wasPerfect && E.isPerfect(it);
+      if (perfect) note(S, `${T.name} est désormais Parfait !`, "rare");
+      const txt = `Succès : +${f.add} ${STATS[f.stat].name}${f.over ? " (exo-jet !)" : ""}${perfect ? " · objet Parfait" : ""}`; fmLog(it, txt, true);
+      return { ok: true, txt, perfect };
     }
+    E.fmGainXp(S, 10 + T.lvl / 2);
     let loss = "";
     if (S.fmShield) { S.fmShield = false; loss = " (le Cristal protège l'objet)"; }
-    else if (rnd() < 0.35) {
-      const T = ITEMS[it.tpl]; const others = Object.keys(it.stats).filter((k) => k !== f.stat && it.stats[k] > T.stats[k][0] && it.stats[k] > 0);
-      if (others.length) { const k = others[Math.floor(rnd() * others.length)]; const d = Math.max(1, Math.round(STATS[k].pts * (k === "vit" ? 1 : 1))); it.stats[k] = Math.max(T.stats[k][0], it.stats[k] - d); loss = ` et perd ${d} ${STATS[k].name}`; }
+    else if (f.wellOk) loss = " (le puits protège l'objet)";
+    else if (rnd() < (J.lvl >= 30 ? 0.25 : 0.35)) {
+      const others = Object.keys(it.stats).filter((k) => k !== f.stat && it.stats[k] > T.stats[k][0] && it.stats[k] > 0);
+      if (others.length) {
+        if (J.lvl >= 60 && J.day !== dayKey()) { J.day = dayKey(); loss = " (Cristal du forgemage offert aujourd'hui)"; }
+        else { const k = others[Math.floor(rnd() * others.length)]; const d = Math.max(1, STATS[k].pts); it.stats[k] = Math.max(T.stats[k][0], it.stats[k] - d); it.well = (it.well || 0) + d * STATS[k].w; loss = ` et perd ${d} ${STATS[k].name} (le puits se remplit)`; }
+      }
     }
     const txt = `Échec : ${E.runeName(runeKey)} se brise${loss}.`; fmLog(it, txt, false);
     return { ok: false, txt };
@@ -436,7 +498,7 @@
     epines:    { name: () => "Épines d'Archimonstre", req: "Vaincre 25 archimonstres", ok: (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= 25 },
     lauriers:  { name: () => "Lauriers", req: "Obtenir 20 succès", ok: (S) => Object.keys(S.ach || {}).length >= 20 },
     flammes:   { name: () => "Flammes Rayonnantes", req: "Porter 3 objets Rayonnants en même temps sur un héros", ok: (S) => !!(S.ornSeen && S.ornSeen.flammes) },
-    solitaire: { name: () => "Aura du Solitaire", req: "Emblème du Solitaire niveau 100", ok: (S) => S.emblem.lvl >= 100 },
+    solitaire: { name: () => "Aura du Solitaire", req: "Ancien Emblème du Solitaire niveau 100 (retiré en 0.1.8.2 : seuls ceux qui l'avaient le gardent)", ok: (S) => !!(S.unlocks && S.unlocks.solitaire) },
     stasis:    { name: () => "Sceau du Maître de la stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!S.unlocks.stasis10 },
     pionnier:  { name: () => "Pousse du Pionnier", req: "Tester la version de test avant le multijoueur (récompense exclusive)", ok: (S) => !!S.unlocks.pionnier },
   };
@@ -628,7 +690,8 @@
   [[10, ""], [100, ""]].forEach(([n]) => add("craft" + n, "Métiers", `${n} fabrications`, `Fabriquer ${n} objets.`, (S) => (S.cnt.craft || 0) >= n, 20 * n));
   [[1000, ""], [10000, "Main verte"]].forEach(([n, t]) => add("harv" + n, "Métiers", `${n.toLocaleString("fr-FR")} récoltes`, `Récolter ${n.toLocaleString("fr-FR")} ressources.`, (S) => (S.cnt.harvest || 0) >= n, Math.round(n / 2), t ? { title: t } : {}));
   [[1, ""], [50, "Forgemage"]].forEach(([n, t]) => add("fm" + n, "Forgemagie", n === 1 ? "Première forgemagie" : `${n} forgemagies`, `Tenter ${n} forgemagie${n > 1 ? "s" : ""}.`, (S) => (S.cnt.fm || 0) >= n, 50 * n, t ? { title: t } : {}));
-  add("emb100", "Forgemagie", "Solitaire aguerri", "Emblème du Solitaire niveau 100.", (S) => S.emblem.lvl >= 100, 3000, { title: "le Solitaire" });
+  [[1, ""], [10, "le Perfectionniste"]].forEach(([n, t]) => add("parf" + n, "Forgemagie", n === 1 ? "Premier objet Parfait" : `${n} objets Parfaits`, `Posséder ${n} objet${n > 1 ? "s" : ""} Parfait${n > 1 ? "s" : ""} (toutes les caractéristiques au jet maximum).`, (S) => E.perfectCount(S) >= n, 800 * n, t ? { title: t } : {}));
+  add("fmjob100", "Forgemagie", "Grand Forgemage", "Métier de Forgemage niveau 100.", (S) => E.fmJob(S).lvl >= 100, 5000, { title: "Grand Forgemage" });
   [[1, ""], [7, ""], [30, "Dévot d'Almanax"]].forEach(([n, t]) => add("alm" + n, "Quêtes", `${n} offrande${n > 1 ? "s" : ""}`, `Faire ${n} offrande${n > 1 ? "s" : ""} à l'Almanax.`, (S) => (S.cnt.almanax || 0) >= n, 150 * n, t ? { title: t } : {}));
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
   add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= Q.length, 8000, { title: "Héros d'Amakna" });

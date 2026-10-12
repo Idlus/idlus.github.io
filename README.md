@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.8.2 « Forgemagie » (bêta)
+- **Forgemagie revue** : puits (les pertes protègent les tentatives suivantes), onglet Runes (fusion, transmutation, nourrir le forgemage), métier de Forgemage niveau 1 à 100, objets Parfaits (+2 %). L'Emblème du Solitaire est retiré, les runes investies sont rendues.
+
 ## 0.1.8.1 « Étoiles de zone » (bêta)
 - **Étoiles de zone** : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus), +10 % d'XP et de butin chacune ; elles fondent en chassant (une toutes les 30 min). Changer de zone rapporte plus.
 ## 0.1.8 « Familiers et montiliers » (bêta)
