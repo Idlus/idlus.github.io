@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.11.1 « Barre de sorts » (bêta)
+- **Sorts & stratégies** refait : barre de sorts avec la condition sous chaque case, fiche du sort à côté (dégâts, conditions et cibles en boutons, variante en un clic), grimoire par paires sort / variante, glisser-déposer sur PC, stratégies en onglets.
+- Correction : les variantes des niveaux 125 à 200 se débloquent à leur niveau (elles affichaient encore « au-delà du niveau 120 »).
+
 ## 0.1.11 « Idoles » (bêta)
 - **36 idoles** en 9 familles, 4 par famille : chacune rend les combats plus durs et apporte un score ; **+0,5 % d'XP et de butin par point**, en plus de la stasis (jusqu'à +102,5 % en chasse, +30 % en donjon où le score compte jusqu'à 60).
 - Jusqu'à 6 actives, une par famille ; doublon avec un modificateur de stasis ignoré ; 3 jeux d'idoles enregistrables.

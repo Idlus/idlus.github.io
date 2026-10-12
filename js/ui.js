@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.11";
+const GAME_VERSION = "0.1.11.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.11.1", name: "Barre de sorts", items: [
+    "Sorts & stratégies refait : les sorts équipés forment une barre de sorts comme en combat, avec leur coût en PA et leur condition écrite sous chaque case",
+    "On touche un sort pour ouvrir sa fiche : description, dégâts estimés (avec la résistance de la cible), « Quand le lancer ? » et « Sur qui ? » en boutons, échange avec la variante en un clic, déplacement et retrait",
+    "Grimoire par paires : chaque sort est affiché à côté de sa variante, filtres Tous / Dégâts / Soutien, niveau écrit sur les sorts verrouillés ; un clic l'ajoute à la barre (il remplace le sort sélectionné si la barre est pleine)",
+    "Sur PC : on glisse un sort de la barre pour changer sa place, ou du grimoire vers une case ; la fiche complète s'affiche au survol",
+    "Stratégies en onglets (fini les 4 lignes vides) avec « + Nouvelle stratégie », et le profil de build sur la même ligne",
+    "Correction : les variantes des niveaux 125 à 200 n'indiquent plus « arrivera avec le contenu au-delà du niveau 120 », elles se débloquent à leur niveau",
+  ] },
   { v: "0.1.11", name: "Idoles", items: [
     "Idoles : 36 statuettes en 9 familles (Vie, Dégâts, Protection, Nombre, Tempo, Rythme, Soins, Résistances, Critiques), 4 par famille. Chacune rend les combats plus durs (monstres plus résistants, plus nombreux, plus rapides, soins annulés…) et apporte un score",
     "Bonus : +0,5 % d'XP et de butin par point de score, en plus de la stasis et hors du plafond des bonus permanents (jusqu'à +102,5 % en chasse ; en donjon le score compte jusqu'à 60, soit +30 %)",
@@ -2371,7 +2379,6 @@ function gearHtml(c) {
   return `<div class="panel"><div class="phead"><h2>Tenues</h2><span class="xs muted">changer tout l'équipement en un clic</span></div><div class="pad stack" style="gap:6px">${rows}
     <p class="note xs" style="margin:0">Les objets d'une tenue sont protégés : ils ne sont ni vendus ni brisés, même par les règles automatiques. S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
 }
-const CONTENT_MAX = 120; // niveau maximal du contenu actuel
 const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());
 const tgtTxt = (n) => (n >= 9 ? "tous les ennemis" : n > 1 ? `${n} cibles` : "");
 function fxLine(f) {
@@ -2400,57 +2407,98 @@ function zoneOptions() {
   Object.entries(DUNGEONS).forEach(([id, d]) => { if (E.dungeonUnlocked(S, id)) opts.push(["dg:" + id, `Donjon · ${d.name}`]); });
   return opts;
 }
-function charSpellsView(c) {
-  const eq = c.spells; const N = E.spellSlots(c); const known = E.knownSpells(c);
-  const zopts = zoneOptions(); const zname = (k) => (zopts.find((o) => o[0] === k) || [k, k])[1];
-  const presets = Array.from({ length: E.MAX_PRESETS }, (_, i) => {
-    const p = c.presets[i]; const zones = Object.entries(c.zonePreset || {}).filter(([, v]) => v === i).map(([k]) => k);
-    if (!p) return `<div class="preset"><span class="grow small muted">Emplacement ${i + 1} vide</span><button class="btn sm" data-act="psave" data-i="${i}">Enregistrer les sorts actuels</button></div>`;
-    return `<div class="preset ${c.activePreset === i ? "on" : ""}" style="flex-wrap:wrap"><span class="grow"><b>${h(p.name)}</b> <span class="xs muted">${p.spells.length} sorts</span>
-      <span class="row" style="gap:4px;margin-top:4px">${p.spells.map((x) => { const d = E.spellDef(c.cls, x.id); return d && spellImg(d.name) ? `<img src="${spellImg(d.name)}" alt="${h(d.name)}" title="${h(d.name)}" style="width:22px;height:22px;border-radius:5px">` : ""; }).join("")}</span>
-      ${zones.length ? `<span class="row" style="gap:4px;margin-top:4px">${zones.map((z) => `<span class="tag soft">${h(zname(z))} <span data-act="pzonedel" data-z="${h(z)}" style="cursor:pointer">✕</span></span>`).join("")}</span>` : ""}</span>
-      <span class="row" style="gap:4px"><button class="btn sm ${c.activePreset === i ? "" : "primary"}" data-act="pload" data-i="${i}">${c.activePreset === i ? "Active" : "Charger"}</button><button class="btn sm" data-act="psave" data-i="${i}" title="Remplacer par les sorts actuels">Écraser</button><button class="btn sm" data-act="pdel" data-i="${i}">✕</button>
-      <select class="small" data-act="pzone" data-i="${i}" aria-label="Activer automatiquement dans une zone"><option value="">Auto. dans…</option>${zopts.map(([v, n]) => `<option value="${h(v)}">${h(n)}</option>`).join("")}</select></span></div>`;
-  }).join("");
-  const meta = (sp) => { const g = E.spellGrade(sp, c.lvl); return `${g.pa} PA${g.cd ? ` · relance ${g.cd} t.` : ""}${g.casts ? ` · ${g.casts}×/tour` : ""}`; };
-  // paires sort / variante
-  const pairs = {}; CLASSES[c.cls].spells.forEach((sp) => { (pairs[sp.pair] = pairs[sp.pair] || [])[sp.variant ? 1 : 0] = sp; });
-  const eqIds = new Set(eq.map((x) => x.id));
-  const pairHtml = Object.values(pairs).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl).map((pr) => `<div class="sppair">${pr.map((sp) => { if (!sp) return `<div class="spcard empty"></div>`;
-    if (sp.lvl > CONTENT_MAX) return `<div class="spcard later" data-tip="${h(sp.name)} : ${h(spellDesc(sp, sp.lvl).replace(/<[^>]+>/g, ""))}">${spIcon(sp)}<div class="grow" style="min-width:0"><div class="name">${h(sp.name)} <span class="tag soft">variante</span></div><div class="xs muted">niv. ${sp.lvl} · arrivera avec le contenu au-delà du niveau ${CONTENT_MAX}</div></div></div>`;
-    const ok = sp.lvl <= c.lvl; const on = eqIds.has(sp.id);
-    return `<div class="spcard ${on ? "on" : ""} ${ok ? "" : "locked"}">${spIcon(sp)}<div class="grow" style="min-width:0"><div class="name">${h(sp.name)} ${sp.variant ? `<span class="tag soft">variante</span>` : ""}</div><div class="xs muted">${ok ? meta(sp) : `niv. ${sp.lvl}`}</div><div class="xs">${spellDesc(sp, Math.max(c.lvl, sp.lvl))}</div></div>
-      ${ok ? (on ? `<span class="tag">équipé</span>` : `<button class="btn sm" data-act="spadd" data-id="${sp.id}" ${eq.length >= N && !eq.some((x) => E.spellDef(c.cls, x.id).pair === sp.pair) ? "disabled" : ""}>Équiper</button>`) : ""}</div>`; }).join("")}</div>`).join("");
-  // simulateur
-  const res = ui.simRes || 0;
-  const sim = eq.map((x) => { const sp = E.spellDef(c.cls, x.id); const k = E.spellKind(E.spellGrade(sp, c.lvl)); if (!["dmg", "aoe", "drain", "dot", "heal"].includes(k)) return "";
+/* ---------- Sorts : barre de sorts, fiche du sort et grimoire par paires (0.1.11.1) ---------- */
+const COND_SHORT = { always: "", first_turn: "1er tour", ally_low: "Allié bas", self_low: "PV < 50 %", enemy_many: "3+ ennemis", enemy_one: "1 ennemi", boss: "Boss", no_summon: "Sans invoc.", ally_shield: "Sans bouclier" };
+const KIND_NAME = { dmg: "Dégâts", aoe: "Dégâts de zone", drain: "Vol de vie", dot: "Poison", heal: "Soin", shield: "Bouclier", buff: "Bonus", summon: "Invocation" };
+const spKindOf = (c, sp) => E.spellKind(E.spellGrade(sp, c.lvl));
+const spMeta = (c, sp) => { const g = E.spellGrade(sp, Math.max(c.lvl, sp.lvl)); return `${g.pa} PA${g.cd ? ` · relance ${g.cd} t.` : ""}${g.casts ? ` · ${g.casts}×/tour` : ""}`; };
+const spTip = (c, sp) => `${sp.name} · ${spMeta(c, sp)}${sp.lvl > c.lvl ? ` · niveau ${sp.lvl}` : ""} — ${spellDesc(sp, Math.max(c.lvl, sp.lvl)).replace(/<[^>]+>/g, "")}`;
+/* place un sort dans la barre : remplace sa variante si elle y est ; sinon l'ajoute, ou remplace la case « at » si la barre est pleine (ou si replace) */
+function spPlace(c, id, at, replace) {
+  const sp = E.spellDef(c.cls, id); if (!sp || sp.lvl > c.lvl) return `${sp ? sp.name : "Ce sort"} se débloque au niveau ${sp ? sp.lvl : "?"}.`;
+  const N = E.spellSlots(c); const pi = c.spells.findIndex((x) => E.spellDef(c.cls, x.id).pair === sp.pair);
+  let idx;
+  if (pi >= 0) { if (c.spells[pi].id === id) idx = pi; else { E.equipSpell(S, c, id); idx = pi; } }
+  else if (c.spells.length < N && !(replace && at < c.spells.length)) { E.equipSpell(S, c, id); idx = c.spells.length - 1; }
+  else { const k = at !== undefined && at < c.spells.length ? at : c.spells.length - 1; c.spells.splice(k, 1); E.equipSpell(S, c, id); c.spells.splice(k, 0, c.spells.pop()); idx = k; }
+  if (at !== undefined && replace === "move" && idx !== at) { const [m] = c.spells.splice(idx, 1); c.spells.splice(Math.min(at, c.spells.length), 0, m); idx = Math.min(at, c.spells.length - 1); }
+  c.spellsManual = true; c.activePreset = null; ui.spSel = idx; return null;
+}
+function spMove(c, from, to) { if (from === to || from < 0 || from >= c.spells.length) return; const [m] = c.spells.splice(from, 1); to = Math.min(to, c.spells.length); c.spells.splice(to, 0, m); ui.spSel = to; c.spellsManual = true; c.activePreset = null; }
+function spDetailHtml(c) {
+  const eq = c.spells; const i = Math.min(ui.spSel || 0, Math.max(0, eq.length - 1)); const x = eq[i];
+  if (!x) return `<div class="spdet"><h2>Aucun sort équipé</h2><p class="small muted">Ce héros ne fera rien en combat. Touche un sort du grimoire pour le placer dans la barre.</p></div>`;
+  const sp = E.spellDef(c.cls, x.id); if (!sp) return "";
+  const k = spKindOf(c, sp); const res = ui.simRes || 0; const st = E.charStats(S, c);
+  const other = CLASSES[c.cls].spells.find((s) => s.pair === sp.pair && s.id !== sp.id);
+  let est = "";
+  if (["dmg", "aoe", "drain", "dot", "heal"].includes(k)) {
     const r = E.spellEstimate(S, c, sp, res);
-    return `<tr><td>${spIcon(sp)} ${h(sp.name)}</td><td class="num">${k === "heal" ? `+${fmt(r.heal)}` : `${fmt(r.min)}–${fmt(r.max)}`}</td><td class="num">${k === "heal" ? "" : fmt(r.avg)}</td><td class="num">${k === "heal" ? "" : `${fmt(r.turn)} <span class="xs muted">(${r.casts}×${r.tgts > 1 ? `, ${r.tgts >= 9 ? "zone" : r.tgts + " cibles"}` : ""})</span>`}</td></tr>`; }).join("");
-  const st = E.charStats(S, c); const rec = CLASSES[c.cls].elRec;
-  return `<div class="stack">
-  <div class="panel"><div class="phead"><h2>Profil de build</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">
-    <label class="row small"><span class="muted">Élément principal :</span>
-      <select data-act="autostat" data-id="${c.id}">${["fo", "ine", "cha", "age"].map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name} (${ELEMENTS[STATS[k].el].name})${k === rec ? " ★ conseillé" : ""}</option>`).join("")}<option value="vit" ${c.autoStat === "vit" ? "selected" : ""}>Vitalité (tank)</option><option value="" ${!c.autoStat ? "selected" : ""}>Manuel</option></select></label>
-    <p class="xs muted">Les points de caractéristiques vont dans cet élément ; la sélection automatique des sorts et les flèches d'équipement le privilégient.</p>
-    <label class="row small"><input type="checkbox" data-act="spauto" ${c.spellsManual ? "" : "checked"}> Choisir automatiquement les meilleurs sorts à chaque niveau</label>
-    <label class="row small"><input type="checkbox" data-act="chaloff" ${c.chalOff ? "checked" : ""}> Ce héros ignore les challenges</label>
-  </div></div>
-  <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">préréglages de sorts, activables automatiquement par zone</span></div><div class="pad stack" style="gap:8px">${presets}</div></div>
-  <div class="grid2">
-    <div class="panel"><div class="phead"><h2>Sorts équipés</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span></div>
-      <p class="note xs" style="margin:6px 12px 0">L'IA lance d'abord invocations, protections et soins (dans l'ordre de la liste, si leur condition est remplie), puis l'attaque qui fait le plus de dégâts par PA.</p>
-      <div class="list">${eq.map((x, i) => { const sp = E.spellDef(c.cls, x.id); if (!sp) return "";
-        return `<div class="li"><div class="spellrow"><div class="ord"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Monter">▲</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === eq.length - 1 ? "disabled" : ""} aria-label="Descendre">▼</button></div>
-          ${spIcon(sp)}<div style="min-width:0"><div class="name">${h(sp.name)} <span class="muted xs">${meta(sp)}</span></div><div class="xs muted">${spellDesc(sp, c.lvl)}</div>
-          <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:3px"><select class="small" data-act="spcond" data-i="${i}" aria-label="Condition">${Object.entries(CONDITIONS).map(([k, n]) => `<option value="${k}" ${x.cond === k ? "selected" : ""}>${n}</option>`).join("")}</select>
-          <select class="small" data-act="sptgt" data-i="${i}" aria-label="Cible">${Object.entries(D.TARGETS).map(([k, n]) => `<option value="${k}" ${(x.tgt || "low") === k ? "selected" : ""}>🎯 ${n}</option>`).join("")}</select></div></div>
-          <button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div></div>`; }).join("") || `<div class="empty">Aucun sort équipé : ce héros ne fera rien en combat.</div>`}</div></div>
-    <div class="panel"><div class="phead"><h2>Simulateur de dégâts</h2><select class="small" data-act="simres" aria-label="Résistance de la cible">${[0, 10, 20, 30, 40].map((r) => `<option value="${r}" ${res === r ? "selected" : ""}>Cible ${r} % rés.</option>`).join("")}</select></div>
-      <div class="pad"><table class="simtab"><thead><tr><th>Sort</th><th>Jet</th><th>Moy.*</th><th>Par tour</th></tr></thead><tbody>${sim || `<tr><td colspan="4" class="muted">Aucun sort offensif équipé.</td></tr>`}</tbody></table>
-      <p class="xs muted">* moyenne avec ${Math.min(60, 5 + st.cri)} % de coups critiques. Estimation hors bonus de combat (buffs, marques, passifs).</p></div></div>
-  </div>
-  <div class="panel"><div class="phead"><h2>Sorts et variantes</h2><span class="xs muted">une seule des deux versions peut être équipée · variantes gratuites</span></div><div class="pad stack" style="gap:8px">${pairHtml}</div></div>
+    est = `<div class="spest"><div class="row" style="justify-content:space-between;gap:6px"><b>${k === "heal" ? `Soigne ≈ ${fmt(r.heal)}` : `${fmt(r.min)}–${fmt(r.max)} dégâts`}</b>
+      <select class="small" data-act="simres" aria-label="Résistance de la cible">${[0, 10, 20, 30, 40].map((v) => `<option value="${v}" ${res === v ? "selected" : ""}>Cible ${v} % rés.</option>`).join("")}</select></div>
+      ${k === "heal" ? "" : `<div class="xs muted">moyenne ${fmt(r.avg)} avec ${Math.min(60, 5 + st.cri)} % de critiques · ≈ ${fmt(r.turn)} par tour (${r.casts}×${r.tgts > 1 ? `, ${r.tgts >= 9 ? "zone" : r.tgts + " cibles"}` : ""})</div>`}</div>`;
+  }
+  const varHtml = other ? `<div class="splab">${sp.variant ? "Sort de base" : "Variante"}</div>${other.lvl <= c.lvl
+    ? `<button class="spvar" data-act="spg" data-id="${other.id}">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">${spMeta(c, other)}</span></span><span class="btn sm">⇄ Échanger</span></button>`
+    : `<div class="spvar off">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">se débloque au niveau ${other.lvl}</span></span>🔒</div>`}` : "";
+  return `<div class="spdet">
+    <div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2>${h(sp.name)}</h2><div class="xs muted">${KIND_NAME[k] || ""} · ${spMeta(c, sp)}</div></div></div>
+    <div class="small">${spellDesc(sp, c.lvl)}</div>${est}
+    <div class="splab">Quand le lancer ?</div><div class="spchips">${Object.entries(CONDITIONS).map(([v, n]) => `<button class="spc ${x.cond === v ? "on" : ""}" data-act="spcondc" data-k="${v}">${n}</button>`).join("")}</div>
+    ${["summon", "buff", "shield"].includes(k) ? "" : `<div class="splab">Sur qui ?</div><div class="spchips">${Object.entries(D.TARGETS).map(([v, n]) => `<button class="spc ${(x.tgt || "low") === v ? "on" : ""}" data-act="sptgtc" data-k="${v}">${n}</button>`).join("")}</div>`}
+    ${varHtml}
+    <div class="row" style="gap:6px"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Avancer">◀</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === eq.length - 1 ? "disabled" : ""} aria-label="Reculer">▶</button><span class="grow xs muted">case ${i + 1} sur ${E.spellSlots(c)}</span><button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div>
   </div>`;
+}
+function charSpellsView(c) {
+  const eq = c.spells; const N = E.spellSlots(c);
+  if ((ui.spSel || 0) >= Math.max(eq.length, 1) && (ui.spSel || 0) >= N) ui.spSel = 0;
+  const sel = ui.spSel || 0;
+  const zopts = zoneOptions(); const zname = (k) => (zopts.find((o) => o[0] === k) || [k, k])[1];
+  // stratégies en onglets
+  const ap = c.activePreset; const p = ap !== null && ap !== undefined ? c.presets[ap] : null;
+  const free = c.presets.findIndex((x, i) => !x && i < E.MAX_PRESETS); const freeIdx = free >= 0 ? free : c.presets.length < E.MAX_PRESETS ? c.presets.length : -1;
+  const zones = p ? Object.entries(c.zonePreset || {}).filter(([, v]) => v === ap).map(([k]) => k) : [];
+  const strat = `<div class="row" style="gap:6px">${Array.from({ length: E.MAX_PRESETS }, (_, i) => c.presets[i] ? `<button class="spc big ${ap === i ? "on" : ""}" data-act="pload" data-i="${i}">${h(c.presets[i].name)}</button>` : "").join("")}
+      ${freeIdx >= 0 ? `<button class="spc big" data-act="psave" data-i="${freeIdx}" title="Enregistre les sorts actuels comme nouvelle stratégie">+ Nouvelle stratégie</button>` : ""}
+      ${!p && c.presets.some(Boolean) ? `<span class="xs muted">sorts modifiés : aucune stratégie active</span>` : ""}</div>
+    ${p ? `<div class="row" style="gap:6px"><span class="xs muted">« ${h(p.name)} » :</span><button class="btn sm" data-act="psave" data-i="${ap}">Écraser avec les sorts actuels</button><button class="btn sm" data-act="pdel" data-i="${ap}">Supprimer</button>
+      <select class="small" data-act="pzone" data-i="${ap}" aria-label="Activer automatiquement dans une zone"><option value="">Charger auto. dans…</option>${zopts.map(([v, n]) => `<option value="${h(v)}">${h(n)}</option>`).join("")}</select>
+      ${zones.map((z) => `<span class="tag soft">${h(zname(z))} <span data-act="pzonedel" data-z="${h(z)}" style="cursor:pointer" aria-label="Retirer">✕</span></span>`).join("")}</div>` : ""}`;
+  const rec = CLASSES[c.cls].elRec;
+  const setup = `<div class="row" style="gap:6px 16px">
+    <label class="row small" style="gap:6px" data-tip="Les points de caractéristiques vont dans cet élément ; la sélection automatique des sorts et les flèches d'équipement le privilégient."><span class="muted">Profil :</span><select data-act="autostat" data-id="${c.id}">${["fo", "ine", "cha", "age"].map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name} (${ELEMENTS[STATS[k].el].name})${k === rec ? " ★ conseillé" : ""}</option>`).join("")}<option value="vit" ${c.autoStat === "vit" ? "selected" : ""}>Vitalité (tank)</option><option value="" ${!c.autoStat ? "selected" : ""}>Manuel</option></select></label>
+    <label class="row small" style="gap:6px"><input type="checkbox" data-act="spauto" ${c.spellsManual ? "" : "checked"}> Sorts automatiques à chaque niveau</label>
+    <label class="row small" style="gap:6px"><input type="checkbox" data-act="chaloff" ${c.chalOff ? "checked" : ""}> Ignorer les challenges</label></div>`;
+  // barre
+  const slots = Array.from({ length: 8 }, (_, i) => {
+    if (i >= N) return `<div class="spslotw"><div class="spslot lock" data-tip="Case débloquée au niveau ${i === 6 ? 50 : 100}">🔒</div><span class="spcl">niv. ${i === 6 ? 50 : 100}</span></div>`;
+    const x = eq[i]; const sp = x && E.spellDef(c.cls, x.id);
+    if (!sp) return `<div class="spslotw"><button class="spslot empty ${sel === i ? "sel" : ""}" data-act="spsel" data-i="${i}" data-spslot="${i}" aria-label="Case ${i + 1} vide">+</button><span class="spcl"></span></div>`;
+    const g = E.spellGrade(sp, c.lvl);
+    return `<div class="spslotw"><button class="spslot ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-spdrag="s${i}" draggable="true" data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}"><span class="n">${i + 1}</span>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span class="pa">${g.pa}</span></button><span class="spcl ${COND_SHORT[x.cond] ? "on" : ""}">${COND_SHORT[x.cond] !== undefined ? COND_SHORT[x.cond] : h(CONDITIONS[x.cond] || "")}</span></div>`;
+  }).join("");
+  // grimoire par paires
+  const F = ui.spFilt || "all"; const eqIds = new Set(eq.map((x) => x.id));
+  const pairs = {}; CLASSES[c.cls].spells.forEach((sp) => { (pairs[sp.pair] = pairs[sp.pair] || [])[sp.variant ? 1 : 0] = sp; });
+  const isAtk = (sp) => ["dmg", "aoe", "drain", "dot"].includes(spKindOf(c, sp));
+  const one = (sp, has) => { const ok = sp.lvl <= c.lvl;
+    return `<button class="gsp ${eqIds.has(sp.id) ? "on" : has ? "off" : ""} ${ok ? "" : "lock"}" style="--c:${elVar(spEl(sp))}" data-act="spg" data-id="${sp.id}" ${ok ? `data-spdrag="g${sp.id}" draggable="true"` : ""} data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}${ok ? "" : `<span class="lv">niv. ${sp.lvl}</span>`}</button>`; };
+  const grim = Object.values(pairs).filter((pr) => pr[0] || pr[1]).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl)
+    .filter((pr) => F === "all" || pr.some((sp) => sp && (F === "atk" ? isAtk(sp) : !isAtk(sp))))
+    .map((pr) => { const list = pr.filter(Boolean); const has = list.some((sp) => eqIds.has(sp.id));
+      return `<div class="sppt ${has ? "has" : ""}"><div class="two">${list.map((sp) => one(sp, has)).join(`<span class="or">ou</span>`)}</div><div class="nm">${list.map((sp) => h(sp.name)).join(" / ")}</div></div>`; }).join("");
+  return `<div class="stack spells2">
+  <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
+  <div class="spgrid">
+    <div class="panel spbarp"><div class="phead"><h2>Barre de sorts</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span></div>
+      <div class="pad stack" style="gap:8px"><div class="spbar">${slots}</div>
+      <p class="xs muted">En combat, le héros lance d'abord ses invocations, protections et soins (de gauche à droite, si leur condition est remplie), puis l'attaque qui fait le plus de dégâts par PA.${canHover ? " Glisse un sort pour changer sa place." : ""}</p></div></div>
+    <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
+    <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
+      <div class="pad stack" style="gap:8px"><div class="sppairs">${grim}</div>
+      <p class="xs muted">${canHover ? "Glisse un sort sur une case de la barre, ou clique dessus pour l'ajouter. Survole un sort pour lire sa fiche." : "Touche un sort pour l'ajouter à la barre ; si elle est pleine, il remplace le sort sélectionné."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
+  </div></div>`;
 }
 
 /* ---------- INVENTAIRE ---------- */
@@ -3366,8 +3414,16 @@ document.addEventListener("click", (ev) => {
     case "slot": ui.slot = d.slot || null; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
-    case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; c.activePreset = null; c.spellsManual = true; break; }
-    case "sprem": c.spells.splice(+d.i, 1); c.activePreset = null; c.spellsManual = true; break;
+    case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; if (j < 0 || j >= c.spells.length) return; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; ui.spSel = j; c.activePreset = null; c.spellsManual = true; break; }
+    case "sprem": c.spells.splice(+d.i, 1); ui.spSel = Math.max(0, Math.min(+d.i, c.spells.length - 1)); c.activePreset = null; c.spellsManual = true; break;
+    case "spsel": ui.spSel = +d.i; break;
+    case "spfilt": ui.spFilt = d.k; break;
+    case "spcondc": case "sptgtc": { const x = c.spells[ui.spSel || 0]; if (!x) return; x[a === "spcondc" ? "cond" : "tgt"] = d.k; c.activePreset = null; c.spellsManual = true; break; }
+    case "spg": { const i = c.spells.findIndex((x) => x.id === d.id); if (i >= 0) { ui.spSel = i; break; }
+      const full = c.spells.length >= E.spellSlots(c); const sel = ui.spSel || 0; const old = full && c.spells[sel] ? E.spellDef(c.cls, c.spells[sel].id) : null;
+      const r = spPlace(c, d.id, sel); if (r) { toast(r); return; }
+      const sp = E.spellDef(c.cls, d.id); const was = c.spells.length && old && !c.spells.some((x) => x.id === old.id) ? old : null;
+      toast(was ? `${sp.name} remplace ${was.name}.` : `${sp.name} est dans la barre.`); break; }
     case "spadd": { const r = E.equipSpell(S, c, d.id); if (r) { toast(r); return; } c.activePreset = null; break; }
     case "psave": { const old = c.presets[+d.i]; const name = old ? old.name : (prompt("Nom de la stratégie :", ["Farm", "Boss", "Solo", "Donjon"][+d.i] || "Stratégie") || "").trim(); if (!old && !name) return; E.savePreset(S, c.id, +d.i, name); toast("Stratégie enregistrée."); break; }
     case "pload": E.applyPreset(S, c.id, +d.i); toast(`Stratégie « ${c.presets[+d.i].name} » chargée.`); break;
@@ -3536,6 +3592,14 @@ function copiesHtml() {
 document.addEventListener("dragstart", (ev) => { const t = ev.target.closest && ev.target.closest("[data-tok]"); if (!t) return; ev.dataTransfer.setData("text/plain", t.dataset.tok); ev.dataTransfer.effectAllowed = "move"; });
 document.addEventListener("dragover", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (!z) return; ev.preventDefault(); document.querySelectorAll(".tzone.over").forEach((x) => x !== z && x.classList.remove("over")); z.classList.add("over"); });
 document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("over"); });
+/* barre de sorts : glisser un sort de la barre ou du grimoire sur une case */
+document.addEventListener("dragstart", (ev) => { const t = ev.target.closest && ev.target.closest("[data-spdrag]"); if (!t) return; ev.dataTransfer.setData("text/plain", "sp:" + t.dataset.spdrag); ev.dataTransfer.effectAllowed = "move"; hideTip(); });
+document.addEventListener("dragover", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (!z) return; ev.preventDefault(); document.querySelectorAll(".spslot.over").forEach((e) => e !== z && e.classList.remove("over")); z.classList.add("over"); });
+document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("over"); });
+document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (!z || !S) return; const v = ev.dataTransfer.getData("text/plain"); if (!v.startsWith("sp:")) return; ev.preventDefault();
+  const c = char(ui.cid); if (!c) return; const to = +z.dataset.spslot; const k = v.slice(3);
+  if (k[0] === "s") spMove(c, +k.slice(1), to); else { const r = spPlace(c, k.slice(1), to, "move"); if (r) toast(r); }
+  dirty = true; render(); });
 document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (!z || !S) return; ev.preventDefault(); const id = +ev.dataTransfer.getData("text/plain"); if (!id) return; ui.teamSel = null; msg(teamMove(id, z.dataset.zone)); dirty = true; render(); });
 
 /* ---------- boucle ---------- */

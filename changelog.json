@@ -1,6 +1,18 @@
 {
-  "version": "0.1.11",
+  "version": "0.1.11.1",
   "versions": [
+    {
+      "v": "0.1.11.1",
+      "name": "Barre de sorts",
+      "items": [
+        "Sorts & stratégies refait : les sorts équipés forment une barre de sorts comme en combat, avec leur coût en PA et leur condition écrite sous chaque case",
+        "On touche un sort pour ouvrir sa fiche : description, dégâts estimés (avec la résistance de la cible), « Quand le lancer ? » et « Sur qui ? » en boutons, échange avec la variante en un clic, déplacement et retrait",
+        "Grimoire par paires : chaque sort est affiché à côté de sa variante, filtres Tous / Dégâts / Soutien, niveau écrit sur les sorts verrouillés ; un clic l'ajoute à la barre (il remplace le sort sélectionné si la barre est pleine)",
+        "Sur PC : on glisse un sort de la barre pour changer sa place, ou du grimoire vers une case ; la fiche complète s'affiche au survol",
+        "Stratégies en onglets (fini les 4 lignes vides) avec « + Nouvelle stratégie », et le profil de build sur la même ligne",
+        "Correction : les variantes des niveaux 125 à 200 n'indiquent plus « arrivera avec le contenu au-delà du niveau 120 », elles se débloquent à leur niveau"
+      ]
+    },
     {
       "v": "0.1.11",
       "name": "Idoles",
