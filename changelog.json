@@ -1,6 +1,15 @@
 {
-  "version": "0.1.19.1",
+  "version": "0.1.19.2",
   "versions": [
+    {
+      "v": "0.1.19.2",
+      "name": "Regarder le combat",
+      "items": [
+        "Défi du jour : nouveau bouton « Regarder le combat » (après un essai, ou « Regarder » dans l'encart du défi) qui rejoue le défi sur l'écran de combat, salle par salle, avec les animations",
+        "C'est exactement le combat que compte le score : même équipe, même hasard ; regarder ne compte pas comme un essai",
+        "Vitesse ×1, ×2 ou ×4, et un résumé à la fin avec « Revoir » et « Retour au défi »"
+      ]
+    },
     {
       "v": "0.1.19.1",
       "name": "Discord dans le chat",

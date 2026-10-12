@@ -56,29 +56,50 @@
   /* ---------- le combat, joué d'un coup sur une copie de la partie ----------
      Renvoie { win, turns, hp (% de PV de l'équipe à la fin), rooms: [{ turns, win }], kamas, dust }. */
   const mulberry = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  E.defiSim = (S, def, now = E.now()) => {
-    const rng0 = E.getRng(), clock0 = E.getClock(), evLen = E.events.length;
+  /* Le défi pas à pas : une copie de la partie, son propre hasard (graine du jour) et une heure fixe.
+     E.defiSim le joue d'un coup ; « Regarder le combat » appelle E.defiWatchStep au rythme de l'écran :
+     le même hasard est tiré dans le même ordre, donc c'est exactement le même combat. */
+  E.defiWatch = (S, def, now = E.now()) => {
+    const S2 = JSON.parse(E.serialize(S));
+    S2.fight = null; S2.pause = 0; S2.acc = 0; S2.hunting = false; S2.protector = null; S2.manualLive = false;
+    S2.settings = Object.assign({}, S2.settings, { manual: false });
+    S2.cons = Object.assign({}, S2.cons); delete S2.cons.fiole_resu; // pas de seconde chance : le même défi pour tous
+    const dg = DUNGEONS[def.did]; const team = E.team(S2);
+    const W = { def, now, S2, rng: mulberry(def.seed), rooms: [], hp: 0, kam: 0, done: false, win: false };
+    if (!team.length || !dg) { W.done = true; W.err = "Il faut au moins un héros dans l'équipe."; return W; }
+    S2.dungeon = { id: def.did, room: 0, stasis: def.k, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: def.mods.slice(), eliteRoom: def.k >= 5 ? Math.floor(dg.rooms.length / 2) : -1, defi: def.tier };
+    W.nRooms = dg.rooms.length + 1;
+    return W;
+  };
+  /* Un pas : "start" (nouvelle salle), "step" (une action), "over" (fin de la salle), "end" (défi terminé). */
+  E.defiWatchStep = (W) => {
+    if (W.done) return "end";
+    const rng0 = E.getRng(), clock0 = E.getClock(), evLen = E.events.length; const S2 = W.S2;
     try {
-      E.setRng(mulberry(def.seed)); E.setClock(() => now);
-      const S2 = JSON.parse(E.serialize(S));
-      S2.fight = null; S2.pause = 0; S2.acc = 0; S2.hunting = false; S2.protector = null; S2.manualLive = false;
-      S2.settings = Object.assign({}, S2.settings, { manual: false });
-      S2.cons = Object.assign({}, S2.cons); delete S2.cons.fiole_resu; // pas de seconde chance : le même défi pour tous
-      const dg = DUNGEONS[def.did]; const team = E.team(S2); if (!team.length || !dg) return { win: false, turns: 0, hp: 0, rooms: [], err: "Il faut au moins un héros dans l'équipe." };
-      S2.dungeon = { id: def.did, room: 0, stasis: def.k, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: def.mods.slice(), eliteRoom: def.k >= 5 ? Math.floor(dg.rooms.length / 2) : -1, defi: def.tier };
-      const rooms = []; let hp = 0, kam = 0;
-      for (let guard = 0; guard < 20 && S2.dungeon; guard++) {
-        const F = E.startFight(S2); if (!F) break;
-        for (let g = 0; g < 20000 && !F.over; g++) E.step(S2);
-        const heroes = F.ents.filter((e) => e.side === "c" && !e.summon);
-        hp = Math.round(100 * heroes.reduce((a, e) => a + Math.max(0, e.alive ? e.hp : 0), 0) / Math.max(1, heroes.reduce((a, e) => a + e.hpMax, 0)));
-        rooms.push({ turns: F.round, win: F.result === "win", boss: F.bossIdx !== undefined });
-        if (F.rewards) kam += F.rewards.kamas || 0; // seulement les kamas du combat (pas les succès de la copie)
-        if (F.result !== "win") break;
+      E.setRng(W.rng); E.setClock(() => W.now);
+      let F = S2.fight;
+      if (F && F.over) { S2.fight = null; F = null; }
+      if (!F) {
+        if (!S2.dungeon || W.rooms.length >= 20) return finish(W);
+        F = E.startFight(S2); return F ? "start" : finish(W);
       }
-      const win = rooms.length === dg.rooms.length + 1 && rooms.every((r) => r.win);
-      return { win, turns: rooms.reduce((a, r) => a + r.turns, 0), hp: win ? hp : 0, rooms, kamas: Math.round(kam), dust: def.k * 2 + (def.k >= 4 ? 4 : 0) };
+      E.step(S2);
+      if (!F.over && F.round <= 200) return "step";
+      const heroes = F.ents.filter((e) => e.side === "c" && !e.summon);
+      W.hp = Math.round(100 * heroes.reduce((a, e) => a + Math.max(0, e.alive ? e.hp : 0), 0) / Math.max(1, heroes.reduce((a, e) => a + e.hpMax, 0)));
+      W.rooms.push({ turns: F.round, win: F.result === "win", boss: F.bossIdx !== undefined });
+      if (F.rewards) W.kam += F.rewards.kamas || 0; // seulement les kamas du combat (pas les succès de la copie)
+      if (F.result !== "win" || !S2.dungeon) finish(W);
+      return "over";
     } finally { E.setRng(rng0); E.setClock(clock0); E.events.length = evLen; }
+  };
+  const finish = (W) => { W.done = true; W.win = W.rooms.length === W.nRooms && W.rooms.every((r) => r.win); return "end"; };
+  E.defiResult = (W) => ({ win: W.win, turns: W.rooms.reduce((a, r) => a + r.turns, 0), hp: W.win ? W.hp : 0, rooms: W.rooms, kamas: Math.round(W.kam), dust: W.def.k * 2 + (W.def.k >= 4 ? 4 : 0) });
+  E.defiSim = (S, def, now = E.now()) => {
+    const W = E.defiWatch(S, def, now);
+    if (W.err) return { win: false, turns: 0, hp: 0, rooms: [], err: W.err };
+    for (let g = 0; g < 500000 && !W.done; g++) E.defiWatchStep(W);
+    return E.defiResult(W);
   };
   /* meilleur score : moins de tours, puis plus de PV */
   E.defiBetter = (a, b) => !!a && a.win && (!b || !b.win || a.turns < b.turns || (a.turns === b.turns && a.hp > b.hp));

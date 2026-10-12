@@ -33,6 +33,9 @@ const r1 = E.defiSim(G, def, t), r2 = E.defiSim(G, def, t);
 assert.deepStrictEqual(r1, r2, "même résultat à chaque essai");
 assert.strictEqual(E.serialize(G), before, "la vraie partie ne bouge pas");
 const r3 = E.defiSim(JSON.parse(before), def, t); assert.strictEqual(r3.turns, r1.turns, "le serveur (partie relue) trouve le même résultat");
+const WT = E.defiWatch(G, def, t); let n0 = 0;
+while (!WT.done && n0++ < 500000) { E.defiWatchStep(WT); E.rnd(); E.rnd(); } // l'écran et le reste du jeu tirent du hasard entre deux pas
+assert.deepStrictEqual(E.defiResult(WT), r1, "« Regarder le combat » montre exactement le même combat");
 console.log("ok - défi : combat identique à chaque essai et pour le serveur");
 
 // 4. Coffre une fois par jour, série stricte (7 jours = titre).
