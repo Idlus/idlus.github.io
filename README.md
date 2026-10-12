@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.1 « Mutateur éclair » (bêta)
+- **Mutateur éclair** : toutes les 20 minutes, 3 donjons (10-79, 80-149, 150-200) avec un modificateur et +12 % d'XP et de butin.
+- **Nouveaux modificateurs** : Champions, Boss rusé, Renforts.
+
 ## 0.1.0 « Niveau 200 » (bêta)
 - **Nouvelle numérotation** : 0.x jusqu'au multijoueur (1.0).
 - **Niveau 200** : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200, nouvelles régions.

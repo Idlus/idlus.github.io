@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.0";
+const GAME_VERSION = "0.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.1", name: "Mutateur éclair", items: [
+    "Mutateur éclair : toutes les 20 minutes, 3 donjons (niveaux 10-79, 80-149 et 150-200, les mêmes pour tous) reçoivent un modificateur et donnent +12 % d'XP et de butin, +25 % de poussière",
+    "Une course commencée garde le bonus jusqu'au bout ; l'onglet Donjons montre le temps restant et les 3 donjons suivants",
+    "3 nouveaux modificateurs : Champions (un Champion par salle), Boss rusé (une mécanique de plus) et Renforts (deux serviteurs de plus avec le boss)",
+    "Le mutateur de la semaine ne change pas" ] },
   { v: "0.1.0", name: "Niveau 200 (bêta)", items: [
     "Nouvelle numérotation : le jeu repart à 0.1 jusqu'au multijoueur, qui sera la 1.0",
     "Niveau 200 : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200 et de nouvelles régions (Frigost, Saharach, Harebourg, Sakaï, Sufokia, Dimensions divines…)",

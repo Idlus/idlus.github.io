@@ -1,6 +1,16 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "versions": [
+    {
+      "v": "0.1.1",
+      "name": "Mutateur éclair",
+      "items": [
+        "Mutateur éclair : toutes les 20 minutes, 3 donjons (niveaux 10-79, 80-149 et 150-200, les mêmes pour tous) reçoivent un modificateur et donnent +12 % d'XP et de butin, +25 % de poussière",
+        "Une course commencée garde le bonus jusqu'au bout ; l'onglet Donjons montre le temps restant et les 3 donjons suivants",
+        "3 nouveaux modificateurs : Champions (un Champion par salle), Boss rusé (une mécanique de plus) et Renforts (deux serviteurs de plus avec le boss)",
+        "Le mutateur de la semaine ne change pas"
+      ]
+    },
     {
       "v": "0.1.0",
       "name": "Niveau 200 (bêta)",
