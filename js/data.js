@@ -44,7 +44,19 @@
     xa:  { name: "Rés. Air fixe",   short: "Rf Air",   w: 2, pts: 1 },
     xn:  { name: "Rés. Neutre fixe",short: "Rf Neu",   w: 2, pts: 1 },
     dsort:{ name: "% Dommages aux sorts", short: "% Do Sorts", w: 15, pts: 1 },
+    /* 0.1.8 : stats tactiques (familiers et montiliers) ; hors STAT_ORDER, affichées seulement quand on en a */
+    tac: { name: "Tacle",      short: "Tacle", w: 2, pts: 1 },
+    fui: { name: "Fuite",      short: "Fuite", w: 2, pts: 1 },
+    pm:  { name: "PM",         short: "PM",    w: 60, pts: 1 },
+    po:  { name: "Portée",     short: "Po",    w: 50, pts: 1 }, /* 0.1.9.1 : seulement par forgemagie exotique */
+    rpa: { name: "Retrait PA", short: "Ret PA", w: 2, pts: 1 },
+    rpm: { name: "Retrait PM", short: "Ret PM", w: 2, pts: 1 },
+    epa: { name: "Esquive PA", short: "Esq PA", w: 2, pts: 1 },
+    epm: { name: "Esquive PM", short: "Esq PM", w: 2, pts: 1 },
+    inv: { name: "Invocation", short: "Invoc", w: 60, pts: 1 },
+    pod: { name: "Pods",       short: "Pods",  w: 0.1, pts: 1 },
   };
+  const TACT_ORDER = ["pm","po","tac","fui","rpa","rpm","epa","epm","inv","pod"];
   const STAT_ORDER = ["vit","sa","fo","ine","cha","age","pui","do","cri","dcri","dt","df","de","da","dn","dsort","so","pp","ini","pa","rt","rf","re","ra","rn","xt","xf","xe","xa","xn"];
   const BASE_STATS = ["vit","sa","fo","ine","cha","age"];
 
@@ -60,6 +72,7 @@
     { key: "",   label: "Rune",    mult: 1 },
     { key: "pa", label: "Pa Rune", mult: 3 },
     { key: "ra", label: "Ra Rune", mult: 10 },
+    { key: "ga", label: "Ga Rune", mult: 1 }, /* 0.1.9.1 : rune exotique (PA, PM, Portée), +1 sur un objet qui n'a pas la caractéristique */
   ];
   const RUNE_SIMPLE_ONLY = ["pa", "do", "cri", "so", "rt", "rf", "re", "ra", "rn", "dcri", "dt", "df", "de", "da", "dn", "xt", "xf", "xe", "xa", "xn", "dsort"];
 
@@ -246,7 +259,21 @@
     // 3.0.2 : retouches de kits
     const tweak = (n, fn) => { const sp = list.find((x) => x.name === n); if (sp) fn(sp); };
     if (cls === "iop") tweak("Concentration", (sp) => sp.grades.forEach((g) => (g.casts = Math.min(g.casts || 2, 2))));
-    if (cls === "cra") { tweak("Flèche Cinglante", (sp) => { sp.grades[0].lvl = 12; sp.lvl = 12; }); tweak("Flèche de Dispersion", (sp) => { sp.grades[0].lvl = 34; sp.lvl = 34; }); }
+    if (cls === "cra") { tweak("Flèche Cinglante", (sp) => { sp.grades[0].lvl = 12; sp.lvl = 12; }); tweak("Flèche de Dispersion", (sp) => { sp.grades[0].lvl = 34; sp.lvl = 34; });
+      // 0.1.12.4 : la Flèche Dévorante cumulait un vol de vie énorme et des dégâts de zone, bien au-dessus de tous les autres sorts
+      [["Flèche Dévorante", 0.7]].forEach(([n, k]) => tweak(n, (sp) => sp.grades.forEach((g) => { g.fx = g.fx.filter((f) => f.k !== "drain"); g.fx.forEach((f) => { if (f.k === "dmg") { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } }); }))); }
+    // 0.1.12.4 : les pièges du Sram frappent dès qu'ils sont posés (avant : petit poison de repli, lent et faible)
+    if (cls === "sram") list.forEach((sp) => sp.grades.forEach((g) => g.fx.forEach((f) => { if (f.k === "dot" && f.adapt) { f.k = "dmg"; f.min = Math.round(f.min / 0.6 * 0.8); f.max = f.min + 4; delete f.t; } })));
+    // 0.1.14.4 : une attaque bien plus faible que les meilleures de sa classe à son niveau n'était jamais lancée :
+    // ses dégâts remontent jusqu'à 75 % de la 2e meilleure attaque (par PA), au plus ×1,5
+    const powPa = (g) => g.fx.reduce((a, f) => a + (["dmg", "drain", "dot"].includes(f.k) && f.min !== undefined ? ((f.min + f.max) / 2) * (f.n > 1 ? 1 + (Math.min(f.n, 3) - 1) * 0.35 : 1) * (f.k === "dot" ? (f.t || 2) * 0.6 : 1) : 0), 0) / Math.max(1, g.pa);
+    const atkGrades = list.flatMap((sp) => sp.grades.map((g) => ({ sp, g, v: powPa(g) }))).filter((x) => x.v > 0);
+    atkGrades.forEach((x) => {
+      const ref = atkGrades.filter((y) => y.sp !== x.sp && y.g.lvl <= Math.max(x.g.lvl, x.sp.lvl) && !atkGrades.some((z) => z.sp === y.sp && z.g.lvl > y.g.lvl && z.g.lvl <= x.g.lvl)).map((y) => y.v).sort((a, b) => b - a)[1];
+      if (!ref || x.v >= ref * 0.75) return;
+      const k = Math.min(1.5, (ref * 0.75) / x.v);
+      x.g.fx.forEach((f) => { if (["dmg", "drain", "dot"].includes(f.k) && f.min !== undefined) { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } });
+    });
     CLASSES[cls].spells = list;
     // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
     const EL2ST = { t: "fo", f: "ine", e: "cha", a: "age" }; const sc = { t: [], f: [], e: [], a: [] };
@@ -351,6 +378,7 @@
     potion_savoir:     { name: "Potion de Savoir",   icon: "📘", kind: "util", desc: "Donne environ un niveau d'expérience au métier de récolte de votre choix (au moins 25 % d'un niveau)." },
     parchemin_avis:    { name: "Parchemin d'Avis",   icon: "📜", kind: "util", auto: true, desc: "Utilisé automatiquement quand vous changez un avis de recherche : le changement est gratuit." },
     cristal_fm:        { name: "Cristal de Forgemagie", icon: "💎", kind: "util", desc: "La prochaine forgemagie ne peut pas faire baisser une autre caractéristique." },
+    filet:             { name: "Filet de capture", icon: "🪢", kind: "util", auto: true, desc: "Automatique : en chassant dans une zone de montures sauvages, chaque victoire peut capturer une monture. Le filet n'est utilisé que si la capture réussit." },
     coffre_bois:       { name: "Coffre en bois",     icon: "📦", kind: "chest", tier: 0, desc: "Quelques ressources et des kamas." },
     coffre_argent:     { name: "Coffre en argent",   icon: "🎁", kind: "chest", tier: 1, desc: "Ressources, kamas et un consommable." },
     coffre_or:         { name: "Coffre en or",       icon: "💰", kind: "chest", tier: 2, desc: "Beaucoup de ressources, de kamas et un consommable rare." },
@@ -377,6 +405,20 @@
     { id: "rare", name: "Composants rares", icon: "✨", types: [-2] },
     { id: "divers", name: "Divers", icon: "📦", types: [] },
   ];
+  /* 0.1 : le niveau maximum est 200 (DofusDB donne des grades 220 aux boss et monstres des donjons de niveau 200) */
+  {
+    const cap = (v) => Math.min(200, v);
+    // 0.1.12.5 : le Tynril Ahuri résistait à 50 % (plafond) au Feu, à l'Eau et à l'Air en plus de ses « Quatre humeurs » : seules les humeurs restent
+    if (G.MONSTERS.m1087) G.MONSTERS.m1087.res = {};
+    // 0.1.12.5 : Kankreblath frappait toute l'équipe à chaque tour (Blathération sans temps de recharge)
+    if (G.MONSTERS.m3945) (G.MONSTERS.m3945.sp || []).forEach((sp) => { if (sp.n === "Blathération") sp.cd = Math.max(sp.cd || 0, 1); });
+    for (const k in G.MONSTERS) { const m = G.MONSTERS[k]; if (m.lvl && m.lvl[1] > 200) m.lvl = [cap(m.lvl[0]), cap(m.lvl[1])]; }
+    for (const k in G.DUNGEONS) { const d = G.DUNGEONS[k]; d.lvl = cap(d.lvl); (d.rooms || []).forEach((r) => { r.lvl = cap(r.lvl); }); }
+    /* une sous-zone peut donner accès à plusieurs donjons (ex. Labyrinthe du Minotoror et Salle du Minotot) */
+    G.ZONES.forEach((z) => z.subs.forEach((s) => { const ds = Object.keys(G.DUNGEONS).filter((d) => G.DUNGEONS[d].access === s.id).sort((a, b) => G.DUNGEONS[a].lvl - G.DUNGEONS[b].lvl);
+      if (s.dungeon && !ds.includes(s.dungeon)) ds.unshift(s.dungeon); if (ds.length) { s.dungeons = ds; s.dungeon = ds[0]; } }));
+    G.ZONES.forEach((z) => { z.subs.forEach((s) => { if (s.lvl[1] > 200) s.lvl = [cap(s.lvl[0]), 200]; }); if (typeof z.lvl === "string") z.lvl = z.lvl.replace(/\d+/g, (n) => cap(+n)); });
+  }
   /* 3.0.1 : ingrédients de clés absents des données de drop → ajoutés aux monstres de la sous-zone du donjon */
   {
     const KEY_FIX = { "Mâchoire du Chafer Draugr": ["donjon_squelettes", 5], "Fragment de Pierre Polie": ["pitons_craqueleur", 5],
@@ -388,6 +430,9 @@
       if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
     }
   }
+  /* 0.1.14.2 : la Clef du Château du Wa Wabbit demandait trois morceaux de clef introuvables → ressources des Wabbits de l'île */
+  { const C = G.SPECIAL_CRAFTS["Clef du Château du Wa Wabbit"];
+    if (C) C.ing = [["Patte de Wabbit", 3], ["Queue de Black Wabbit", 3], ["Moustaches de Tiwabbit", 3], ["Viande Ladre", 2], ["Carpe d'Iem", 2], ["Menthe Sauvage", 2], ["Houblon", 2]]; }
   { const gem = Object.values(G.RES).find((r) => r.type === 50) || Object.values(G.RES)[0];
     G.RES["Éclat de trouvaille"] = { id: 0, icon: gem.icon, lvl: 30, price: 60, type: -2 };
     G.RES["Poussière de stasis"] = { id: 0, icon: gem.icon, lvl: 1, price: 15, type: -2 }; }
@@ -398,30 +443,21 @@
   };
 
   /* ---------- Emblème du Solitaire ---------- */
-  const EMBLEM = {
-    maxLvl: 1000,
-    lines: [[1, 2], [100, 3], [400, 4], [700, 5]],
-    cap: { vit: 2, sa: 0.3, fo: 0.5, ine: 0.5, cha: 0.5, age: 0.5, pui: 0.3, do: 0.04, cri: 0.02, so: 0.05, pp: 0.25, ini: 3, rt: 0.02, rf: 0.02, re: 0.02, ra: 0.02 },
-    ranks: [[1, "Novice"], [100, "Aguerri"], [250, "Vétéran"], [400, "Expert"], [500, "Maître"], [700, "Grand Maître"], [850, "Légendaire"], [1000, "Transcendé"]],
-    perks: {
-      250: [
-        { id: "brisage", name: "Briseur d'âmes", desc: "+15 % de runes obtenues au brisage" },
-        { id: "drop",    name: "Chasseur solitaire", desc: "+15 % de chances de butin en solo" },
-        { id: "xp",      name: "Sage errant", desc: "+15 % d'expérience en solo" },
-      ],
-      500: [
-        { id: "dmg",     name: "Dernier debout", desc: "+15 % de dégâts en solo" },
-        { id: "res",     name: "Peau de Craqueleur", desc: "+8 % de résistance à tous les éléments en solo" },
-        { id: "heal",    name: "Second souffle", desc: "Régénère 5 % des PV max à chaque tour en solo" },
-      ],
-    },
-  };
-
   const FREE_SPIRIT = { 1: 100, 2: 80, 3: 60, 4: 40, 5: 25, 6: 15, 7: 5, 8: 0 };
   const NAMES = ["Goultard", "Tristepin", "Évangelyne", "Amalia", "Ruel", "Kerubim", "Grougaloragran", "Lou", "Joris", "Atcham", "Yugo", "Bakara", "Otomaï", "Dally", "Simone", "Toross"];
 
   /* Explications des caractéristiques (infobulles) */
   const STAT_HELP = {
+    tac: "Première ligne : +1 % par point de bloquer un Rôdeur ou un Bondisseur qui vise l'arrière (le Tacle de toute la ligne s'additionne, 60 % au plus).",
+    fui: "Arrière : +0,5 % par point d'éviter une attaque qui vise l'arrière (30 % au plus).",
+    pm: "Tout héros a 3 PM. Chaque PM en plus : +3 % d'esquiver une attaque en première ligne (15 % au plus).",
+    po: "Chaque point de Portée : +20 % de chances qu'un sort à une cible touche un ennemi de plus (60 % au plus). Seule une forgemagie exotique en donne.",
+    rpa: "+0,4 % par point d'affaiblir le monstre touché : −20 % de dégâts à sa prochaine attaque (−10 % pour un boss), 20 % au plus.",
+    rpm: "+0,5 % par point de faire jouer le monstre touché en dernier au tour suivant ; un Bondisseur ne peut plus sauter (25 % au plus).",
+    epa: "+0,5 % par point de résister à la Glace, au Mutisme, à la Pétrification et aux retraits de PA (50 % au plus).",
+    epm: "+0,5 % par point de résister à la Terreur et à l'Enracinement (50 % au plus).",
+    inv: "Une invocation de plus en même temps (3 au plus).",
+    pod: "+5 % de butin pendant l'absence par 100 Pods dans l'équipe (50 % au plus).",
     vit: "+1 point de vie par point.",
     sa: "+1 % d'expérience gagnée par point.",
     fo: "+1 % de dégâts Terre et Neutre par point, +1 Initiative.",
@@ -448,8 +484,8 @@
   };
 
   const SUMMONS = G.SUMMONS || {};
-  const DATA = { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
-                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
+  const DATA = { STATS, STAT_ORDER, TACT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
+                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;
 })(typeof window !== "undefined" ? window : globalThis);

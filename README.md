@@ -7,6 +7,140 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.14.4 « La grande 0.1 »
+- Niveau 200, familiers et montures, idoles, Renaissance, archimonstres et Dofus, combats animés, barre de sorts et héros plus malin, équilibrage « l'équipement compte ». Le détail suit, étape par étape.
+
+## 0.1.14.3 « Monstres et héros »
+- Familles de monstres (mode « Complètes ») : 29 familles attaquent chacune à leur façon au lieu de simplement foncer. Le Tofu vole en zigzag et picore trois fois dans une gerbe de plumes, le Bouftou gratte le sol puis donne un coup de boule qui repousse le héros, le Champa lâche un nuage de spores, le Craqueleur arrache un rocher et le lance en cloche, l'Arakne tisse une toile, la Larve glisse en laissant une traînée, le Piou pique du ciel, le Moskito pique en zigzag, le Prespic lance une volée de piquants, le Bwork abat sa massue, le Blop rebondit, le Chafer lance un os boomerang, l'Abraknyde fait pousser des racines, le Mulou mord, le Wabbit donne un coup de patte, la Crocodaille claque des mâchoires, les Dragoeufs soufflent le feu, le Scarafeuille lève un tourbillon de feuilles, le Kanigrou boxe, les Fantômes traversent le héros, le Koalak cogne avec un os, Sangliers et cochons chargent dans la boue, le Rat fait un croc-en-jambe, les pirates donnent des coups de sabre, les Pandas un coup de pied tournant, les Kitsous une ruée de feu, les plantes un nuage de pollen, les robots un coup de piston ; les autres monstres gardent leur attaque habituelle
+- Héros en difficulté : sous 25 % de vie, le héros bat comme un cœur (teinte rouge), une vignette rouge pulse sur l'arène et une pastille « en danger » apparaît sous sa barre de vie
+- Poses de victoire : à la fin d'un combat gagné, chaque classe a sa pose (le Iop bondit l'épée levée, le Crâ tire une flèche vers le ciel, l'Eniripsa tourne dans une gerbe de bulles, le Féca lève son bouclier, l'Enutrof fait pleuvoir des kamas, le Sram disparaît et réapparaît, le Xélor fait tourner une rune, l'Écaflip lance ses cartes, le Sadida fait voler des feuilles, le Sacrieur se frappe la poitrine, le Pandawa boit un coup, le Roublard jongle avec ses bombes, le Zobal fait tourner son masque, le Steamer lâche de la vapeur, l'Éliotrope passe par un portail, l'Huppermage fait tourner ses quatre runes, l'Ouginak hurle, le Forgelance plante sa lance)
+- Les boss reconnus comme une famille (Bouftou Royal, Tofu Royal…) utilisent aussi l'attaque de leur famille quand ils ne lancent pas leur sort
+## 0.1.14.2 « Île des Wabbits »
+- Nouvelle zone : l'Île des Wabbits (niveau 40 à 120) et ses deux donjons, le Château du Wa Wabbit et le Terrier du Wa Wabbit ; le Dofus Cawotte tombe du Wa Wabbit et sa quête se fait sur l'île.
+
+## 0.1.14.1 « Héros plus malin »
+- En combat, le héros prépare tout son tour : zone face à un groupe, gros coup sur le boss, élément le moins résisté, coup de grâce.
+
+## 0.1.14 « Boss mis en scène »
+- Mise en scène des boss (mode d'animation « Complètes ») : chacune des 22 mécaniques de boss a maintenant sa propre scène dans l'arène au lieu d'un simple bandeau : Rage (vapeur et veines), Carapace (plaques qui se referment en dôme), Attaque dévastatrice (le boss aspire l'air puis lâche une onde de choc), Point faible (cible qui se fissure au coup suivant, ×1,5 affiché), Séisme (pics de pierre sous la première ligne), Riposte (parade puis contre-coup pendant le tour du héros), Reflet (double miroir et éclat au coup reçu), Miasmes (brume qui traverse l'arène), Dévoreur (le serviteur est avalé), Brise-garde (les boucliers volent en éclats), Putréfaction, Change-peau (l'ancienne peau se détache, la nouvelle teinte reste), Condamnation (crâne à compte à rebours relié au boss, puis guillotine), Mutisme (lettres qui tombent, cadenas), Terreur (ombre géante), Frénésie, Totems (dôme doré), Âmes liées (fil d'âme et dégâts qui filent vers le serviteur), Immortel (le boss part en cendres et renaît), Compte à rebours (vignette rouge et chiffre dès le tour 15)
+- Les 20 boss à signature ont leur scène : Distorsion du temps, Fournaise et givre, Tapis roulant, Grand banquet, Inventions (plan bleu et bombe), Marée, Sacrifice, Dédoublement, Regard pétrifiant, Aspiration, Toucher doré, Larcin, Charge du taureau, Quatre humeurs, À l'abordage, Glyphes pair et impair (glyphe permanent sous Kimbo, bleu ou rouge selon le tour, ×1,4 et ×0,7 affichés), Horloge (engrenages, pendule et compteur de tours), Racines, Glace éternelle, Appétit d'Ougah
+- Sorts signature de boss : une attaque sur trois environ, dix boss emblématiques lancent leur sort à eux, purement visuel et sans changer les dégâts : Bouftou Royal (Boule de laine), Batofu (Nuée de Tofus), Blop Coco Royal (Rebond gluant), Craqueleur Légendaire (Avalanche), Le Chouque (Barriques), Moon (Tambour de Moon), Dragon Cochon (Ronds de fumée), Tofu Royal (Plongeon royal), Crocabulia (Battement d'ailes), Shogun Tofugawa (Trait d'encre)
+- Entrée du boss : en arrivant dans sa salle, son portrait s'affiche en grand avec sa stasis, son niveau et ses mécaniques, il rugit, puis saute en place dans un nuage de poussière avant « Combat ! »
+- Phases de boss : à 50 % de ses PV, bandeau « Phase 2 », le boss se fissure, s'assombrit et une aura rouge pulse derrière lui ; à 25 %, « Phase 3 », les fissures s'embrasent et il tremble sans arrêt (purement visuel)
+- Mort du boss : écran qui blanchit, le boss bascule lourdement et s'efface dans une pluie de kamas et d'étincelles, « Vaincu ! » à son nom
+- En mode « Sobres », les boss gardent leur simple bandeau comme avant ; les familles de monstres et les poses des héros arriveront dans un prochain lot
+## 0.1.13.3 « Fondations du multijoueur »
+- Aucun changement en jeu : sauvegarde dans son propre module (prête à passer en ligne), heure et hasard du jeu réglables à un seul endroit, liste officielle des actions du joueur.
+
+
+## 0.1.13.2 « Classes et donjons »
+- Tynril et Kankreblath adoucis ; classes plus proches les unes des autres (Xélor, Huppermage, Enutrof, Eniripsa, Éliotrope, Écaflip, Roublard, Ouginak).
+
+## 0.1.13.1 « Dofus à leur place »
+- Chaque Dofus tombe du boss qui lui correspond dans DOFUS (Cawotte : Tournesol Affamé, Dokoko : Arbre de Moon, Kaliptus : Koulosse, Émeraude : Crocabulia, Turquoise : Dame des Eaux, Domakuro : Maître Corbac, Glaces : Missiz Frizz, Argenté Scintillant : Ilyzaelle) ; les quêtes suivent.
+
+## 0.1.13 « Archimonstres et Dofus »
+- **Album des archimonstres** (bouton « Âmes ») : les 205 archimonstres par zone ; une **Pierre d'âme** en sac capture l'âme d'un archimonstre vaincu (Bricoleur 25, premier passage des stasis, Bureau des primes). **Parfum de pistage** (×2, 2 h) et meuble **Autel des âmes** (×1,4).
+- **Éternelle moisson** : six paliers d'âmes par groupes de zones, récompenses à chaque palier, le **Dofus Ocre** (+1 PA) au bout.
+- **Les 18 Dofus** avec leurs vrais bonus, chacun par une quête (Quêtes › Dofus) ou en butin très rare du boss de son donjon (1/1 000 dès la stasis 5) ; copies pour les autres héros chez le Bricoleur (Poussière de stasis). Succès et titres.
+
+## 0.1.12.4 « Sram et Crâ »
+- Les pièges du Sram frappent dès qu'ils sont posés ; les balises du Crâ ne frappent presque plus et la Flèche Dévorante perd son vol de vie.
+
+## 0.1.12.3 « L'équipement compte »
+- Monstres plus forts dès le niveau 30 : sans équipement, une équipe perd en chasse et échoue ou passe tout juste la stasis 1 en donjon ; XP et butin par monstre en proportion, gains par heure inchangés pour une équipe bien équipée.
+
+## 0.1.12.2 « Nouvelle adresse »
+- Le jeu s'ouvre maintenant sur idlus.github.io ; l'ancienne adresse y renvoie et la partie du navigateur suit le joueur.
+
+## 0.1.12.1 « Identité du Phénix »
+- Un héros rené se reconnaît partout : cadre de feu animé sur sa carte, flammes derrière lui, nom en lettres de feu, foyer sous ses pieds en combat, médaillon dans les listes.
+
+## 0.1.12 « Renaissance »
+- Au niveau 200, un héros peut renaître (Équipe › Renaissance) : il repart au niveau 1 en gardant apparence, titres, ornements, Dofus, familier, monture et parchemins ; l'équipement va dans le sac. Chaque renaissance donne +30 % d'XP au héros et un Éveil au choix (8 Éveils communs en 3 rangs, Éveil de classe aux renaissances V et X) ; 10 renaissances au plus. Médaillon, auras, titres, ornement « Ailes du Phénix » et 3 succès.
+- Courbe d'XP : au-delà du niveau 100, l'XP demandée baisse progressivement (première montée 1 → 200 ≈ 250 h équipé au lieu de 1 400 h). Simulateur : `--renaissance N`.
+
+## 0.1.11.2 « Aperçu des sorts »
+- **Ce que fera ton héros** (Sorts & stratégies) : sorts lancés aux 3 premiers tours, PA utilisés et dégâts, joués par le vrai moteur de combat (Chasse ou Boss).
+- **Conseils** avec bouton (attaques jamais choisies, condition bloquante, PA perdus, élément hors profil) et **Ranger au mieux** (meilleur ordre des sorts de soutien, avec Annuler).
+
+## 0.1.11.1 « Barre de sorts »
+- **Sorts & stratégies** refait : barre de sorts avec la condition sous chaque case, fiche du sort à côté (dégâts, conditions et cibles en boutons, variante en un clic), grimoire par paires sort / variante, glisser-déposer sur PC, stratégies en onglets.
+- Correction : les variantes des niveaux 125 à 200 se débloquent à leur niveau (elles affichaient encore « au-delà du niveau 120 »).
+
+## 0.1.11 « Idoles »
+- **36 idoles** en 9 familles, 4 par famille : chacune rend les combats plus durs et apporte un score ; **+0,5 % d'XP et de butin par point**, en plus de la stasis (jusqu'à +102,5 % en chasse, +30 % en donjon où le score compte jusqu'à 60).
+- Jusqu'à 6 actives, une par famille ; doublon avec un modificateur de stasis ignoré ; 3 jeux d'idoles enregistrables.
+- Fabriquées une fois chez le **Bricoleur** ; statuette teintée et animée selon le rang et la famille. Bouton « Idoles » en combat, en chasse, sur la fiche de donjon et la page Équipe. Six succès.
+## 0.1.10.2 « Chasse itinérante »
+- **Chasse itinérante** : option sur l'écran de combat, l'équipe suit les étoiles de zone toute seule (en jeu et hors ligne), en échange de 15 % d'XP et de butin en moins.
+- Correction : les étoiles gagnées par une zone sont bien comptées quand on y revient.
+
+## 0.1.10.1 « Récoltes et panoplies »
+- **Protecteurs de ressources** : en récoltant, un gardien apparaît parfois (environ une récolte sur 60) ; le battre en chasse double cette récolte pendant 20 min (+10 ressources, +3 Éclats). Désactivable.
+- **Codes cadeaux** : champ dans les Options, un code par partie (outil `tools/code_cadeau.js` pour les créer).
+- **Carnet de panoplies** (Inventaire › Panoplies) : pièces possédées ou manquantes, où les obtenir, bonus par palier.
+- **Compositions d'équipe** (page Équipe) : 3 équipes enregistrées, changement en un clic, suggestion dans la fiche de donjon.
+
+## 0.1.10 « Sorts signature »
+- **Sorts signature** : 2 sorts par classe (38) ont une animation unique, liée à ce qu'ils font dans DOFUS (Colère de Iop, Attaque Mortelle, Sablier de Xélor, Tout ou Rien, Mot Interdit, Mascarade, Mégabombe, Cataclysme…). Les actions suivantes attendent la fin du sort ; uniquement avec les animations « Complètes ».
+## 0.1.9.3 « Passif visible »
+- **Recruter un héros** : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes).
+
+## 0.1.9.2 « Exotique »
+- **Runes exotiques** : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée (nouvelle caractéristique : 20 % de chances par point qu'un sort à une cible touche un ennemi de plus) à un objet de niveau 150+ (Forgemage 100, 10-12 % de réussite, un échec ne casse que la rune, un seul exo par objet et un seul exo PA par héros). Sources : coffres de boss 150+ en stasis 7-8, archimonstres 150+, ou l'onglet Runes (runes Ra + Éclats + kamas). Un objet exo brisé rend ses runes ×2.
+- **Forgemagie automatique** : un plan par objet (jets visés, runes, budget, plancher), une tentative toutes les 10 min (6 min au Forgemage 100) en jeu comme hors ligne, 2 plans en parallèle.
+- **Code de diagnostic** : le bouton « Signaler un bug » copie la version, l'appareil, l'onglet, un résumé de la partie et les 5 dernières erreurs (bouton « Copier le diagnostic » dans les Options).
+
+## 0.1.9.1 « Barre et page Équipe »
+- **Barre de navigation en 4 familles** (Accueil, Aventure, Équipe, Artisanat) avec leurs pages en dessous, cadre « Combat en cours » sur PC et gros bouton Combat au centre sur téléphone.
+- **Page Équipe** : une carte par héros (activité, XP, monture, alertes qui se règlent d'un clic), plateau « Réorganiser » à glisser, « Tout équiper au mieux », héros principal choisi avec l'étoile.
+## 0.1.9 « Montures »
+- **Montures** : 41 couleurs officielles de dragodindes (niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), bonus DOFUS au niveau 100. Capture au filet dans trois zones sauvages (hors ligne aussi), croissance par une part de l'XP du héros, enclos du Havre-Sac pour l'élevage (naissances en 8 h, croisements connus, bicolores, objets d'élevage), carnet de l'éleveur et arbre généalogique.
+## 0.1.8.2 « Forgemagie »
+- **Forgemagie revue** : puits (les pertes protègent les tentatives suivantes), onglet Runes (fusion, transmutation, nourrir le forgemage), métier de Forgemage niveau 1 à 100, objets Parfaits (+2 %). L'Emblème du Solitaire est retiré, les runes investies sont rendues.
+
+## 0.1.8.1 « Étoiles de zone »
+- **Étoiles de zone** : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus), +10 % d'XP et de butin chacune ; elles fondent en chassant (une toutes les 30 min). Changer de zone rapporte plus.
+## 0.1.8 « Familiers et montiliers »
+- **140 familiers et montiliers officiels** : un emplacement Familier sur la fiche du héros (dès le niveau 10, montiliers dès le niveau 60).
+- Ils grandissent en mangeant les ressources du sac, un repas toutes les 30 minutes même hors ligne ; la nourriture préférée compte double et vous protégez les ressources de votre choix.
+- Familiers de zone en chasse (1 chance sur 2 000), familiers rares de boss en stasis 7+, montiliers en stasis 6+ (garantis à la 60e victoire), montiliers légendaires +1 PA en stasis 8+.
+- Stats tactiques : Tacle, Fuite, PM, Retrait et Esquive PA/PM, Invocation et Pods. Rôdeurs et Bondisseurs dans les donjons de niveau 150 à 200.
+
+## 0.1.7 « Les 19 classes »
+- Pièges du Sram, ronces du Sadida, tourelle du Steamer qui tombe du ciel, fil de lumière de l'Osamodas : chaque classe a son passif visible.
+
+## 0.1.6 « Passifs visibles »
+- **Chaque classe montre son passif en combat** : Colère du Iop, horloge du Xélor, roue de l'Ecaflip, glyphes du Féca, masques du Zobal, postures du Forgelance, ivresse du Pandawa, marques du Crâ et de l'Ouginak…
+
+## 0.1.5 « Pionniers »
+- Récompense des testeurs : chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier ».
+- Au lancement du multijoueur (1.0), les testeurs qui ont le rôle Pionnier sur le Discord les retrouveront.
+
+## 0.1.4 « Encore plus posés »
+- Combats encore un peu ralentis : 780 ms par action. Récompenses par combat relevées d'autant, gains par heure inchangés.
+
+## 0.1.3 « Combats plus posés »
+- Combats environ 25 % moins rapides (650 ms par action au lieu de 520) pour mieux voir les animations.
+- Récompenses par combat relevées d'autant : XP, butin et kamas par heure inchangés, aussi hors ligne.
+
+## 0.1.2 « Combat animé »
+- **Sorts qui voyagent** avec la patte de chaque classe (bond du Iop, flèches du Crâ, cartes de l'Ecaflip, portails de l'Eliotrope…).
+- **Critiques, états visibles, chutes des monstres, boss qui préviennent** ; réglage Complètes / Sobres / Aucune.
+
+## 0.1.1 « Mutateur éclair »
+- **Mutateur éclair** : toutes les 20 minutes, 3 donjons (10-79, 80-149, 150-200) avec un modificateur et +12 % d'XP et de butin.
+- **Nouveaux modificateurs** : Champions, Boss rusé, Renforts.
+
+## 0.1.0 « Niveau 200 »
+- **Nouvelle numérotation** : 0.x jusqu'au multijoueur (1.0).
+- **Niveau 200** : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200, nouvelles régions.
+- **Carte** : tranches de niveaux, régions repliables, meilleure zone, progression par région.
+- **Mécaniques** : rôles de monstres, 22 mécaniques de boss, 20 signatures avec succès et titre, cible prioritaire.
+- **Clés de donjon** : panneau de recette clair avec un bouton vers chaque source.
+- **Petit groupe** : bonus en donjon pour les équipes de 1 ou 2 héros.
+
 ## 3.4.4 « Nouvelle adresse »
 - Le jeu s'ouvre maintenant sur **idlus.github.io** ; l'ancienne adresse y renvoie et la partie du navigateur suit le joueur.
 

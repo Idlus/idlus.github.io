@@ -8,19 +8,37 @@
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
   const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, GATHER_JOBS, CRAFT_JOBS, DOFUS_SLOTS,
-          MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
+          MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const E = {};
-  E.VERSION = 7;
+  E.VERSION = 9;
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
   E.trainee = () => null;     // héros à la Salle d'entraînement (systems.js)
   E.atelierTick = () => 0;    // atelier du Havre-Sac (systems.js)
+  E.fmPlanTick = () => [];    // forgemagie automatique (systems.js, 0.1.9.1)
+  E.protSpawn = () => {};     // protecteurs de ressources (systems.js, 0.1.10.1)
+  E.protMult = () => 1;
+  E.protGroup = () => null;
+  E.protEnd = () => {};
+  E.protExpire = () => {};
+  E.compWin = () => {};       // compositions d'équipe (systems.js, 0.1.10.1)
+  E.exoDrop = () => {};       // runes exotiques des coffres de boss (systems.js)
+  E.exoArchi = () => {};      // runes exotiques des archimonstres (systems.js)
+  E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
+  E.idolFx = () => null; E.idolOwned = () => false; E.giveIdol = () => false; // 0.1.10 : idoles (js/idols.js)
+  E.mountStats = () => null; E.mountHunt = () => null; E.mountXpShare = () => 0; E.stableXp = () => {}; E.enclosTick = () => {}; // montures (mounts.js)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
   E.setRng = (f) => { rnd = f; };
+  E.rnd = () => rnd();
+  /* Horloge du jeu : toute la logique lit l'heure ici (jamais Date.now() directement).
+     Aujourd'hui c'est l'heure de l'appareil ; demain le serveur pourra imposer la sienne (anti-triche). */
+  let clock = () => Date.now();
+  E.setClock = (f) => { clock = f || (() => Date.now()); };
+  E.now = () => clock();
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rf = (a, b) => a + rnd() * (b - a);
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
@@ -34,7 +52,7 @@
   ZONES.forEach((z) => z.subs.forEach((s, i) => (SUBS[s.id] = Object.assign({}, s, { zone: z.id, idx: i }))));
   E.SUBS = SUBS;
   const DUNGEON_SUB = {};
-  Object.values(SUBS).forEach((s) => { if (s.dungeon) DUNGEON_SUB[s.dungeon] = s.id; });
+  Object.values(SUBS).forEach((s) => (s.dungeons || (s.dungeon ? [s.dungeon] : [])).forEach((d) => { DUNGEON_SUB[d] = s.id; }));
   E.DUNGEON_SUB = DUNGEON_SUB;
 
   /* Niveau de référence d'une ressource (pour son prix) */
@@ -53,31 +71,39 @@
 
   /* ---------------- Courbes ---------------- */
   E.MAX_LVL = 200;
-  /* v3 : plus rapide de 40 à 62, rampe jusqu'à 80, puis de plus en plus lent au-delà de 100 */
-  E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : 1 + (l - 100) * 0.04);
+  /* v3 : plus rapide de 40 à 62, rampe jusqu'à 80 ; 0.1.12 : au-delà de 100, l'XP demandée baisse progressivement (moitié vers 160, un tiers à 200) :
+     la pente ajoutée en 0.1.0 est retirée, 100 → 200 prenait 1 100 h de plus que 1 → 100 (simulation, équipe équipée) */
+  E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : Math.pow(100 / l, 1.5));
   E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7) * E.xpCurveMult(l)); // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
-  E.emblemXpNeed = (l) => Math.floor(5 + 0.5 * Math.pow(l, 1.25));     // poids de runes pour passer au niveau suivant
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
+  /* 0.1.12 Renaissance : bonus d'XP propre au héros (hors plafond commun) et rang d'un Éveil */
+  E.REN_MAX = 10; E.REN_XP = 0.3;
+  E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
+  E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
   E.recruitCost = (n) => (n <= 1 ? 0 : Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
 
   /* ---------------- État initial ---------------- */
   E.newState = (name, cls) => {
     const S = {
-      v: E.VERSION, created: Date.now(), savedAt: 0, lastTick: Date.now(),
+      v: E.VERSION, created: E.now(), savedAt: 0, lastTick: E.now(),
       kamas: 0, nextUid: 1, nextCid: 1,
       chars: [], items: {}, res: {}, runes: {},
-      sub: null, hunting: false,
+      sub: null, hunting: false, zstars: {},
       progress: { wins: {}, bossKills: {} },
       history: [], zoneStats: {}, seenDrops: {}, radiants: 0,
       cons: {}, boosts: {}, trophies: {}, families: {}, huntSeen: {},
       jobs: {}, crafts: {}, coef: {}, tools: {}, finds: 0,
-      emblem: { lvl: 1, xp: 0, stats: {}, perks: {} },
+      fmJob: { lvl: 1, xp: 0 }, // 0.1.8.2 : métier de Forgemage
+      fmPlans: [], // 0.1.9.1 : forgemagie automatique
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
       settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "sell", q: 50, keepSets: true, recycle: "sell" } },
       journal: [],
       dungeon: null,
+      pets: {}, petUid: 1, petKeep: {}, petLuck: {},
+      mounts: {}, mountUid: 1, mountSeen: {}, enclos: { built: false, pairs: [], births: 0 },
+      idols: { own: {}, active: [], presets: [] },
     };
     Object.keys(GATHER_JOBS).forEach((j) => (S.jobs[j] = { lvl: 1, xp: 0 }));
     Object.keys(CRAFT_JOBS).forEach((j) => (S.crafts[j] = { lvl: 1, xp: 0 }));
@@ -112,14 +138,14 @@
 
   /* Consommables & bonus temporaires (durée en temps réel, cumulable jusqu'à 8 h) */
   E.BOOST_MAX_S = 8 * 3600;
-  E.boostPct = (S, kind, at = Date.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
-  E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - Date.now()) / 1000) : 0; };
+  E.boostPct = (S, kind, at = E.now()) => { const b = S.boosts && S.boosts[kind]; return b && b.until > at ? b.pct : 0; };
+  E.boostLeft = (S, kind) => { const b = S.boosts && S.boosts[kind]; return b ? Math.max(0, (b.until - E.now()) / 1000) : 0; };
   E.addCons = (S, id, n = 1) => { S.cons[id] = (S.cons[id] || 0) + n; };
   E.useConsumable = (S, id, arg) => {
     const C = CONSUMABLES[id]; if (!C) return "Objet inconnu.";
     if (!(S.cons[id] > 0)) return "Vous n'en avez plus.";
     if (C.kind !== "boost") return E.useSpecial ? E.useSpecial(S, id, arg) : "Inutilisable.";
-    const now = Date.now(); const b = S.boosts[C.boost];
+    const now = E.now(); const b = S.boosts[C.boost];
     if (b && b.until > now && b.pct !== C.pct) return "Un autre bonus de ce type est déjà actif.";
     const dur = C.dur * (E.teamHas(S, "panda") ? 1.25 : 1) * 1000;
     const start = b && b.until > now ? b.until : now;
@@ -259,15 +285,16 @@
   E.charStats = (S, c, opts = {}) => {
     const st = zeroStats();
     BASE_STATS.forEach((k) => (st[k] += (c.alloc[k] || 0) + ((c.scrolls || {})[k] || 0)));
-    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) addStats(st, it.stats); });
+    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) { addStats(st, E.isPerfect(it) ? E.perfectStats(it) : it.stats); if (it.exo) st[it.exo] = (st[it.exo] || 0) + 1; } }); // 0.1.8.2 : objets parfaits ; 0.1.9.1 : exo
+    const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
+    const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
-    const solo = opts.solo !== undefined ? opts.solo : (E.isSolo(S) && c.inTeam);
-    if (solo) {
-      addStats(st, S.emblem.stats);
-      if (S.emblem.lvl >= 1000) st.pa += 1;
+    st.hpMax = Math.round((50 + 5 * c.lvl + st.vit + E.familyBonusVit(S)) * (1 + 0.05 * E.eveil(c, "robu")));
+    if (c.eveils) { // 0.1.12 : Éveils de la Renaissance
+      const ec = E.eveil(c, "ecorce"); if (ec) ["rt", "rf", "re", "ra", "rn"].forEach((k) => (st[k] = (st[k] || 0) + 3 * ec));
+      st.cri += 3 * E.eveil(c, "lame"); st.pp += 15 * E.eveil(c, "pros");
     }
-    st.hpMax = Math.round(50 + 5 * c.lvl + st.vit + E.familyBonusVit(S));
     st.pa = Math.min(12, 6 + (c.lvl >= 100 ? 1 : 0) + st.pa);
     st.ini += 100 + c.lvl * 5 + st.fo + st.ine + st.cha + st.age;
     return st;
@@ -325,7 +352,7 @@
   /* ---------------- Journal & événements ---------------- */
   E.events = [];
   const note = (S, txt, kind = "info") => {
-    S.journal.unshift({ t: Date.now(), txt, kind });
+    S.journal.unshift({ t: E.now(), txt, kind });
     if (S.journal.length > 60) S.journal.length = 60;
     E.events.push({ txt, kind });
   };
@@ -397,6 +424,7 @@
     if (!c || !it) return "Objet introuvable.";
     const T = ITEMS[it.tpl];
     if (T.lvl > c.lvl) return `Niveau ${T.lvl} requis.`;
+    if (it.exo === "pa" && Object.values(c.equip).some((u) => u !== uid && S.items[u] && S.items[u].exo === "pa")) return "Ce héros porte déjà un objet exo PA (un seul par héros).";
     const other = E.equippedBy(S, uid);
     if (other) for (const k in other.equip) if (other.equip[k] === uid) delete other.equip[k];
     // un anneau identique ne peut être porté deux fois (comme dans Dofus)
@@ -408,7 +436,7 @@
     }
     if (T.slot === "dofus") {
       const o = slotOverride && slotOverride.startsWith("dofus") ? slotOverride : E.slotFor(c, it);
-      if (DOFUS_SLOTS.some((s) => s !== o && c.equip[s] && S.items[c.equip[s]] && S.items[c.equip[s]].tpl === it.tpl)) return "Vous portez déjà ce trophée.";
+      if (DOFUS_SLOTS.some((s) => s !== o && c.equip[s] && S.items[c.equip[s]] && S.items[c.equip[s]].tpl === it.tpl)) return ITEMS[it.tpl].dofus ? "Ce héros porte déjà ce Dofus." : "Vous portez déjà ce trophée.";
       c.equip[o] = uid; return null;
     }
     c.equip[slotOverride || T.slot] = uid; E.emit(S, "equip", {}); return null;
@@ -448,12 +476,63 @@
   E.startHunt = (S, sid) => {
     if (S.dungeon) return "Vous êtes en donjon.";
     if (!E.setSub(S, sid)) return "Sous-zone verrouillée.";
+    pinStars(S, sid); // les étoiles cessent de monter et fondent à partir de maintenant
     S.hunting = true; S.fight = null; S.pause = E.PAUSE_MS;
     E.applyZonePresets(S, sid);
     note(S, `Chasse : ${SUBS[sid].name}`, "info");
     return null;
   };
   E.stopHunt = (S) => { if (S.dungeon) return "Quittez d'abord le donjon."; S.hunting = false; S.fight = null; return null; };
+
+  /* ---------------- Étoiles de zone (0.1.8.1) ----------------
+     Une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chacune donne +10 % d'XP et de butin.
+     Elles fondent pendant qu'on y chasse (une toutes les 30 min, en ligne comme hors ligne).
+     S.zstars[sid] = { s: étoiles au moment at, at } ; sans fiche, la zone accumule depuis la création de la partie. */
+  E.STAR_MAX = 5; E.STAR_GROW_S = 7200; E.STAR_MELT_S = 1800; E.STAR_PCT = 10;
+  const huntingHere = (S, sid) => S.hunting && S.sub === sid && !S.dungeon;
+  E.zoneStars = (S, sid, now = E.now()) => {
+    const rec = S.zstars && S.zstars[sid];
+    if (!rec) return clamp((now - (S.created || now)) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
+    if (huntingHere(S, sid)) return rec.s;
+    return clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
+  };
+  /* fige la valeur courante (à l'arrivée dans la zone : la fonte part de là) */
+  const pinStars = (S, sid, now = E.now()) => { if (!S.zstars) S.zstars = {}; const rec = S.zstars[sid]; /* 0.1.10.2 : la pousse est comptée même si S.sub vient de passer sur cette zone */
+    S.zstars[sid] = { s: rec ? clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX) : E.zoneStars(S, sid, now), at: now }; };
+  /* fonte pendant la chasse : dtS secondes de chasse dans la zone courante */
+  E.starsTick = (S, dtS, now = E.now()) => {
+    if (!S.hunting || !S.sub || S.dungeon) return;
+    if (!S.zstars || !S.zstars[S.sub]) pinStars(S, S.sub, now);
+    const rec = S.zstars[S.sub]; rec.s = Math.max(0, rec.s - dtS / E.STAR_MELT_S); rec.at = now;
+  };
+  E.starBonus = (S) => (S.hunting && S.sub && !S.dungeon ? Math.floor(E.zoneStars(S, S.sub)) * E.STAR_PCT : 0); // étoiles entières seulement
+
+  /* ---------------- Chasse itinérante (0.1.10.2) ----------------
+     Option : après une victoire, l'équipe part vers la zone de son niveau (sans perte d'XP) qui a le plus d'étoiles,
+     si elle en a au moins 2 de plus que la zone actuelle, au plus une fois toutes les 10 min, en ligne comme hors ligne.
+     En échange (demande de Mathis) : XP et butin réduits de E.ROAM_MALUS tant que l'option est active. */
+  E.ROAM_MALUS = 0.15; E.ROAM_GAP_S = 600; E.ROAM_MIN = 2;
+  E.roamOn = (S) => !!(S.settings && S.settings.roam && S.hunting && S.sub && !S.dungeon);
+  E.roamMult = (S) => (E.roamOn(S) ? 1 - E.ROAM_MALUS : 1);
+  E.roamCands = (S) => {
+    const team = E.team(S); if (!team.length) return [];
+    const avg = team.reduce((s, c) => s + c.lvl, 0) / team.length;
+    return Object.values(SUBS).filter((s) => !s.hidden && E.subUnlocked(S, s.id) && s.lvl[0] <= avg + 1 && s.lvl[1] >= avg - 4);
+  };
+  E.roam = (S, t = E.now(), offline = false) => {
+    if (!E.roamOn(S) || t - (S.roamAt || 0) < E.ROAM_GAP_S * 1000) return null;
+    const cur = Math.floor(E.zoneStars(S, S.sub, t)); if (cur >= E.STAR_MAX - 1) return null;
+    const best = E.roamCands(S).filter((s) => s.id !== S.sub).map((s) => ({ s, n: Math.floor(E.zoneStars(S, s.id, t)) })).filter((x) => x.n >= Math.max(E.ROAM_MIN, cur + 2))
+      .sort((a, b) => b.n - a.n || (b.s.lvl[0] + b.s.lvl[1]) - (a.s.lvl[0] + a.s.lvl[1]))[0];
+    if (!best) return null;
+    if (!S.zstars) S.zstars = {};
+    if (S.zstars[S.sub]) S.zstars[S.sub].at = t; // la zone quittée recommence à gagner des étoiles à partir de maintenant
+    S.roamAt = t;
+    if (offline) { if (!E.setSub(S, best.s.id)) return null; pinStars(S, best.s.id, t); }
+    else { if (E.startHunt(S, best.s.id)) return null; note(S, `Chasse itinérante : l'équipe part pour ${best.s.name} (${"★".repeat(best.n)}).`, "up"); }
+    S.roamLog = [best.s.id].concat(S.roamLog || []).slice(0, 10); S._az = 0; S.stats.recent.length = 0;
+    return best.s;
+  };
 
   /* ---------------- Stratégies (préréglages de sorts) ---------------- */
   E.MAX_PRESETS = 4;
@@ -550,18 +629,39 @@
   /* 3.1 : compensation des paliers de caractéristiques (les héros ont moins de stat d'élément à haut niveau) */
   E.MON_HP_CURVE = [[36, 1], [48, 0.8], [64, 0.78], [76, 0.74], [88, 0.66], [100, 0.64], [120, 0.6], [200, 0.5]];
   E.monHpLvl = (l) => { const T = E.MON_HP_CURVE; if (l <= T[0][0]) return 1; for (let i = 1; i < T.length; i++) if (l <= T[i][0]) { const [a, va] = T[i - 1], [b, vb] = T[i]; return va + (vb - va) * (l - a) / (b - a); } return T[T.length - 1][1]; };
+  /* 0.1 : au-delà du niveau 100, les objets DofusDB grimpent bien plus vite que les monstres ; PV et dégâts montent jusqu'à ×1,4 et ×1,35 au niveau 200 (simulation) */
+  E.MON_HI = { hp: 1.4, dmg: 1.35 };
+  const HI = (l, x) => 1 + (x - 1) * Math.max(0, Math.min(1, (l - 100) / 100));
+  /* 0.1.12.3 : sans équipement, une équipe doit perdre (sauf aux premiers niveaux) : PV et dégâts des monstres multipliés
+     selon leur niveau, par paliers [niveau, ×PV, ×dégâts] reliés en ligne droite, séparément en chasse et en donjon ;
+     « rew » rend l'XP et le butin par monstre en proportion des PV en plus */
+  E.MON_POW = {
+    hunt: [[15, 1, 1], [30, 4.5, 4]],
+    dg: [[20, 1, 1], [90, 1.3, 2.2], [130, 1.3, 2.2], [180, 1.1, 1.6]],
+    minGroup: (sub) => (sub && sub.lvl && sub.lvl[1] >= 25 ? 4 : 1), rew: 0.57,
+  };
+  E.monPow = (l, k, where) => {
+    const P = E.MON_POW[where], j = k === "hp" ? 1 : 2;
+    if (l <= P[0][0]) return P[0][j];
+    for (let i = 1; i < P.length; i++) if (l < P[i][0]) { const a = P[i - 1], b = P[i]; return a[j] + (b[j] - a[j]) * (l - a[0]) / (b[0] - a[0]); }
+    return P[P.length - 1][j];
+  };
+  E.powRew = (mons, where) => { const pw = mons.reduce((a, m) => a + E.monPow(m.lvl, "hp", where), 0) / Math.max(1, mons.length); return Math.max(1, 1 + (pw - 1) * E.MON_POW.rew); };
+  // 0.1.12.5 : donjons bien plus durs que les autres de leur niveau (simulation) : PV et dégâts de leurs monstres ×
+  E.DG_EASE = { cache_kankreblath: 0.9, labo_tynril: 0.8 };
+  const powMons = (mons, where, did) => { const k = (did && E.DG_EASE[did]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * E.monPow(m.lvl, "hp", where) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
     const archi = !!opts.archi && !!base.archi;
     const key = archi ? base.archi : id;
     const m = MONSTERS[key];
-    const hp = Math.round((15 + lvl * 8.5) * base.hp * (archi ? 2.2 : 1) * (lvl > 60 ? 1 + (lvl - 60) * 0.012 : 1) * E.monHpLvl(lvl));
+    const hp = Math.round((15 + lvl * 8.5) * base.hp * (archi ? 2.2 : 1) * (lvl > 60 ? 1 + (lvl - 60) * 0.012 : 1) * E.monHpLvl(lvl) * HI(lvl, E.MON_HI.hp));
     return {
       side: "m", key, base: id, race: base.race, name: m.name, img: m.img, lvl, archi, boss: !!m.boss,
       hpMax: hp, hp, el: m.el, atk: m.atk || "Attaque", res: m.res, sp: m.sp || base.sp || null, cds: {},
-      dmg: (3 + lvl * 0.95) * (base.dmg || 1) * (archi ? 1.4 : 1),
+      dmg: (3 + lvl * 0.95) * (base.dmg || 1) * (archi ? 1.4 : 1) * HI(lvl, E.MON_HI.dmg),
       ini: 50 + lvl * 4 + (m.boss ? 100 : 0), attacks: m.boss ? 2 : 1,
-      buffs: [], dots: [], debuffs: [], shield: 0, alive: true, weaken: 0, paLoss: 0, role: E.monRole(id),
+      buffs: [], dots: [], debuffs: [], shield: 0, alive: true, weaken: 0, paLoss: 0, role: E.monRole(id, lvl),
     };
   };
   const charEntity = (S, c) => {
@@ -571,14 +671,24 @@
     return {
       side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax,
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
+      evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
     };
   };
+  /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
+  E.SMALL_TEAM = { 1: { hp: 30, dr: 15, name: "Solo" }, 2: { hp: 15, dr: 7.5, name: "Duo" } };
   E.ARCHI_CHANCE = 1 / 400;
 
   /* ---------------- 3.3.0 « Combat vivant » : placement, monstres spéciaux, Champions ---------------- */
   /* Placement : chaque héros est en première ligne (« f ») ou à l'arrière (« b »). Les attaques sur une seule cible
      visent la première ligne 3 fois sur 4 tant qu'elle tient debout. Placement automatique par défaut (S.placeAuto). */
   E.FRONT_P = 0.75;
+  /* 0.1 (essai) : stats tactiques. [gain en % par point, plafond en %] ; pm : par PM au-delà de 3.
+     Les monstres n'en ont pas encore ; seuls les héros les portent (familiers, plus tard équipements). */
+  E.TACT = { po: [20, 60], tac: [1, 60], fui: [0.5, 30], pm: [3, 15], rpa: [0.4, 20], rpaV: 20, rpaBoss: 10, rpm: [0.5, 25], epa: [0.5, 50], epm: [0.5, 50], invMax: 3 };
+  E.tact = (st, k) => { const t = E.TACT[k]; return st ? Math.min(t[1], (st[k] || 0) * t[0]) : 0; };
+  E.tactLog = null;
+  /* Esquive PA/PM des monstres : dès le niveau 100, +0,4 % par niveau (40 % au plus), +10 pour les boss, Coriaces et Chefs */
+  E.monDodge = (m) => (m.lvl > 100 ? Math.min(40, (m.lvl - 100) * 0.4) + (m.boss || m.role === "coriace" || m.role === "chef" ? 10 : 0) : 0); // le simulateur compte ici combien de fois chaque effet se déclenche
   E.frontMax = (n) => Math.max(1, Math.ceil(n / 2));
   E.avgRes = (st) => { const ks = Object.values(ELEMENTS).map((x) => x.res).filter(Boolean); return ks.length ? ks.reduce((a, k) => a + Math.min(50, st[k] || 0), 0) / ks.length : 0; };
   /* classes faites pour encaisser : bonus pour le placement automatique (à PV égaux, elles passent devant) */
@@ -607,10 +717,21 @@
   E.setPlaceAuto = (S, on) => { S.placeAuto = !!on; if (!on) { const cur = E.frontSet(Object.assign({}, S, { placeAuto: true })); E.team(S).forEach((x) => (x.row = cur.has(x.id) ? "f" : "b")); } };
   /* monstres à mécanique spéciale : le Rôdeur vise l'arrière, le Bondisseur ignore les rangées */
   E.MON_ROLES = {
-    rodeur: { name: "Rôdeur", desc: "Vise l'arrière 3 fois sur 4.", re: /Archer|Furtif|Invisible|Corbac|Assassin|Fourbe|Sournois|Ninja/ },
-    bond:   { name: "Bondisseur", desc: "Ignore les rangées : frappe n'importe quel héros.", re: /^Tofu|Moskito|Kwak(ere)? de Vent|Pious|Bondi|Lapino/ },
+    rodeur: { name: "Rôdeur", desc: "Vise l'arrière 3 fois sur 4.", re: /Archer|Furtif|Invisible|Corbac|Assassin|Fourbe|Sournois|Ninja|Vigie pirate|Harpirate|Marôdeur|Éperfide|Chevrotine|Sapeur|Tsume-bozu|Harpille|Nocturlabe|Paspartou|Doublure/ }, /* 0.1 : Rôdeurs et Bondisseurs de fin de jeu (niv. 150-200) */
+    bond:   { name: "Bondisseur", desc: "Ignore les rangées : frappe n'importe quel héros.", re: /^Tofu|Moskito|Kwak(ere)? de Vent|Pious|Bondi|Lapino|Bitouf Aérien|Glouragan|Vindeux|Kanihilan|Panterreur|Morfrelon|Rykaon|Wolvero|Lévitrof|Fancrôme/ },
+    /* 0.1 : dix rôles de plus ; les plus simples dès le niveau 25, les autres dès le niveau 100 */
+    kamikaze: { name: "Kamikaze", min: 100, desc: "En mourant, explose sur la première ligne.", re: /Explosif|Boumbardier|Pétartifoux|Kamikabz|Craqueboule|Tofukaz|Boombata|Cramikaz|Mécanofoux|Crachefoux|Déminoboule|Canondorf|Bomb/ },
+    soigneur: { name: "Soigneur", min: 100, desc: "Tous les 2 tours, soigne l'allié le plus blessé (10 % de ses PV).", re: /Soignante|Shamansot|Meupette|Prêtre|Toubibz|Médibwork|Kokom|Guérisseur|Docteur|Madura|Soryo|Gélikan|Chaman|Fleuro|Floribonde|Mère Veilleuse|Meliglours/ },
+    chef:     { name: "Chef de meute", min: 100, desc: "Ses alliés font +10 % de dégâts tant qu'il est debout.", re: /Chef|Capitaine|Roi |Mama|Maman|Sergent|Commandant|Dame du Hasard|Père |Maître Zoth|Don / },
+    invoc:    { name: "Invocateur", min: 100, desc: "Tous les 3 tours, appelle un petit monstre (3 au plus).", re: /Invocat|Mage|Maître|Gob-trotteur|Maho|Kamasterisk|Magouille|Momistik|Drakoalak|Sorcier|Dragminster|Shinibaru/ },
+    protect:  { name: "Protecteur", min: 100, desc: "Tous les 3 tours, protège ses alliés d'un bouclier (10 % de leurs PV).", re: /Gard(e|ien)|Guerrite|Blindur|Chevalier|Cavalier|Guerrier|Soldat|Trémorse|Kaskargo|Kabushido|Kwamouraï|Sramouraï/ },
+    maudit:   { name: "Maudit", min: 100, desc: "Ses coups réduisent de 30 % les soins reçus pendant 2 tours.", re: /Fant|Spectr|Chafer|Esprit|Esprigné|Feutôme|Momie|Mominotor|\bBoo\b|Sinistro|Ectorche|Kaonashi|Jiangshi|Yomi|Phorr|Phozami/ },
+    sangsue:  { name: "Sangsue", min: 100, desc: "Récupère 20 % des dégâts qu'il inflige.", re: /Vampire|Buveur|Chauve|Noctul|Strigide|Minoskito|^Rat |Ratl|Ramane|Milirat|Mâchassin|Viandargh|Sangsue/ },
+    poison:   { name: "Empoisonneur", min: 25, desc: "Ses coups empoisonnent pendant 3 tours.", re: /Arak|Scorb|Scorp|Serp|Fung|Champ|Larv|Gelée|Fistul|Puceron|Bubox|Pyrasite|Gastroth|Mofette|Toxo|Lucrane/ },
+    coriace:  { name: "Coriace", min: 25, desc: "−30 % de dégâts subis tant qu'il a plus de la moitié de ses PV.", re: /Craq|Golem|Crabe|Tortue|Roch|Élémenterre|Stalak|Cuirboule|Karkanik|Masticroc|Gruche|Brikablak|Scarafeuille|Kwoan|Granduk|Robot|Robionicle|Malle Outillée|Boufmouth de guerre/ },
+    esquive:  { name: "Insaisissable", min: 25, desc: "Esquive 20 % des coups.", re: /Wabbit|Chacha|Renar|Lapin|Kanig|Kanib|Kaniblou|Chak|Félyg|Panth|Orfélin|Écurouille|Milimulou|Souris|Kilibriss|Fourbasse|Chasquatch|Ronronchon|Tigrimas/ },
   };
-  E.monRole = (key) => { const m = MONSTERS[key]; if (!m || m.boss) return null; for (const k in E.MON_ROLES) if (E.MON_ROLES[k].re.test(m.name)) return k; return null; };
+  E.monRole = (key, lvl) => { const m = MONSTERS[key]; if (!m || m.boss) return null; for (const k in E.MON_ROLES) { const R = E.MON_ROLES[k]; if (R.re.test(m.name)) return lvl !== undefined && R.min && lvl < R.min ? null : k; } return null; };
   /* Champions de chasse : 1 combat sur 100, un monstre du groupe devient Champion (PV ×2, dégâts +20 %, un pouvoir) */
   E.CHAMP_CHANCE = 1 / 100;
   E.CHAMP_POWERS = {
@@ -632,7 +753,7 @@
   };
 
   E.makeGroup = (S, sub, teamSize) => {
-    const size = ri(1, Math.min(8, teamSize + 1));
+    const IX = E.idolFx(S, null); const size = Math.min(8, ri(Math.max(1, Math.min(teamSize, E.MON_POW.minGroup(sub))), Math.min(8, teamSize + 1)) + (IX ? IX.extra : 0)); // 0.1.10 : idoles Farle et Nahuss
     const g = [];
     for (let i = 0; i < size; i++) {
       const id = pick(sub.monsters); const m = MONSTERS[id];
@@ -645,14 +766,73 @@
   };
 
   /* ---------------- Mécaniques de boss ---------------- */
+  /* min : niveau de donjon à partir duquel la mécanique peut être tirée ; tip : ce qui aide (conseils avant d'entrer) */
   E.BOSS_MECHS = {
-    enrage: { name: "Rage", desc: "Sous 50 % de PV, il frappe 40 % plus fort mais subit 15 % de dégâts en plus." },
-    summon: { name: "Renforts", desc: "Tous les 3 tours, appelle un serviteur ; tant qu'un serviteur vit, le boss se soigne." },
-    shield: { name: "Carapace", desc: "Se protège d'un bouclier au début du combat puis à 50 % de PV." },
-    charge: { name: "Attaque dévastatrice", desc: "Prépare une attaque sur toute l'équipe, lancée le tour suivant : boucliers et soins conseillés." },
+    enrage:   { name: "Rage", min: 1, tip: "dégâts", desc: "Sous 50 % de PV, il frappe 40 % plus fort mais subit 15 % de dégâts en plus." },
+    summon:   { name: "Renforts", min: 1, tip: "zone", desc: "Tous les 3 tours, appelle un serviteur ; tant qu'un serviteur vit, le boss se soigne." },
+    shield:   { name: "Carapace", min: 1, tip: "dégâts", desc: "Se protège d'un bouclier au début du combat puis à 50 % de PV." },
+    charge:   { name: "Attaque dévastatrice", min: 1, tip: "boucliers", desc: "Prépare une attaque sur toute l'équipe, lancée le tour suivant : boucliers et soins conseillés." },
+    weakspot: { name: "Point faible", min: 1, tip: "dégâts", desc: "Un tour sur trois, il expose son point faible et subit 50 % de dégâts en plus." },
+    festin:   { name: "Festin", min: 25, tip: "dégâts", desc: "Se soigne de 30 % des dégâts qu'il inflige." },
+    seisme:   { name: "Séisme", min: 25, tip: "boucliers", desc: "Tous les 4 tours, frappe fort toute la première ligne." },
+    riposte:  { name: "Riposte", min: 25, tip: "tank", desc: "Chaque coup reçu a 20 % de chance de déclencher un contre." },
+    reflet:   { name: "Reflet", min: 40, tip: "soins", desc: "Un tour sur quatre, renvoie 30 % des dégâts reçus." },
+    miasmes:  { name: "Miasmes", min: 40, tip: "soins", desc: "Toute l'équipe perd des PV à chaque tour du boss, de plus en plus." },
+    devoreur: { name: "Dévoreur", min: 40, tip: "zone", desc: "Tous les 3 tours, mange un de ses serviteurs pour se soigner de 15 %." },
+    brise:    { name: "Brise-garde", min: 60, tip: "soins", desc: "Tous les 3 tours, détruit les boucliers des héros." },
+    putrefaction: { name: "Putréfaction", min: 60, tip: "boucliers", desc: "Tous les 4 tours, les soins reçus par l'équipe baissent de 50 % pendant 2 tours." },
+    peau:     { name: "Change-peau", min: 60, tip: "éléments", desc: "Change d'élément tous les 3 tours et résiste à 50 % à cet élément." },
+    condamne: { name: "Condamnation", min: 80, tip: "boucliers", desc: "Marque un héros ; deux tours plus tard, le frappe très fort sauf s'il a un bouclier (moitié moins fort contre un héros seul)." },
+    mutisme:  { name: "Mutisme", min: 80, tip: "équipe", desc: "Tous les 4 tours, un héros ne peut lancer que ses sorts sans recharge pendant 2 tours (jamais contre un héros seul)." },
+    terreur:  { name: "Terreur", min: 80, tip: "tank", desc: "Tous les 4 tours, fait reculer un héros de la première ligne pendant 2 tours (jamais le dernier héros devant)." },
+    frenesie: { name: "Frénésie", min: 100, tip: "résistance", desc: "Joue deux fois tous les 4 tours." },
+    totems:   { name: "Totems", min: 100, tip: "zone", desc: "Invoque 2 totems ; il est invulnérable tant qu'ils vivent." },
+    liens:    { name: "Âmes liées", min: 100, tip: "zone", desc: "Partage ses PV avec un serviteur lié : les dégâts sont répartis entre eux." },
+    immortel: { name: "Immortel", min: 120, tip: "dégâts", desc: "Revient une fois à la vie avec 25 % de ses PV." },
+    rebours:  { name: "Compte à rebours", min: 140, tip: "dégâts", desc: "Au tour 20, anéantit l'équipe : il faut le battre avant." },
+    /* signatures : une par grand boss, jamais tirées au hasard */
+    distorsion: { sig: true, title: "Gardien du temps", name: "Distorsion du temps", tip: "équipe", desc: "Tous les 4 tours, rallonge d'un tour la recharge des sorts des héros et leur retire 1 PA." },
+    fournaise:  { sig: true, title: "Forgeur de givre", name: "Fournaise et givre", tip: "éléments", desc: "Résiste à 50 % à tous les éléments sauf un, qui change tous les 2 tours." },
+    tapis:      { sig: true, title: "Équilibriste", name: "Tapis roulant", tip: "tank", desc: "Tous les 3 tours, la première ligne et l'arrière échangent leur place." },
+    banquet:    { sig: true, title: "Convive de Klime", name: "Grand banquet", tip: "zone", desc: "Tous les 3 tours, mange un serviteur : +15 % de PV et +10 % de dégâts." },
+    inventions: { sig: true, title: "Démineur", name: "Inventions", tip: "zone", desc: "Tous les 4 tours, pose une bombe qui explose sur toute l'équipe 3 tours plus tard si on ne la détruit pas." },
+    maree:      { sig: true, title: "Brise-lames", name: "Marée montante", tip: "boucliers", desc: "Tous les 3 tours, une vague frappe tous les héros de l'arrière." },
+    sacrifice:  { sig: true, title: "Briseur de liens", name: "Sacrifice", tip: "zone", desc: "Ses serviteurs encaissent la moitié des dégâts qu'elle reçoit." },
+    double:     { sig: true, title: "Pourfendeur de doubles", name: "Dédoublement", tip: "dégâts", desc: "À 50 % de PV, crée un double qui a ses mécaniques." },
+    petrif:     { sig: true, title: "Regard d'acier", name: "Regard pétrifiant", tip: "équipe", desc: "Tous les 3 tours, pétrifie un héros qui passe son tour." },
+    aspiration: { sig: true, title: "Œil du cyclone", name: "Aspiration", tip: "soins", desc: "Tous les 3 tours, absorbe les boucliers des héros et les change en PV pour lui." },
+    dore:       { sig: true, title: "Cœur d'or", name: "Toucher doré", tip: "équipe", desc: "Tous les 4 tours, change un héros en or 2 tours : il ne joue plus mais ne prend plus de coups." },
+    larcin:     { sig: true, title: "Incorruptible", name: "Larcin", tip: "soins", desc: "Tous les 3 tours, vole le bouclier et les bonus d'un héros et garde le bouclier pour elle." },
+    taureau:    { sig: true, title: "Toréador", name: "Charge du taureau", tip: "tank", desc: "Tous les 3 tours, fonce sur le héros le moins résistant, même à l'arrière." },
+    humeurs:    { sig: true, title: "Lunatique", name: "Quatre humeurs", tip: "éléments", desc: "Change d'élément tous les 3 tours et résiste à 75 % à cet élément." },
+    abordage:   { sig: true, title: "Corsaire", name: "À l'abordage", tip: "zone", desc: "Tous les 4 tours, appelle 2 pirates d'un coup." },
+    glyphes:    { sig: true, title: "Maître des glyphes", name: "Glyphes pair et impair", tip: "dégâts", desc: "Aux tours pairs il subit 40 % de dégâts en plus, aux tours impairs 30 % de moins." },
+    horloge:    { sig: true, title: "Horloger", name: "Horloge", tip: "dégâts", desc: "Au tour 20, l'équipe est anéantie : il faut le battre avant." },
+    racines:    { sig: true, title: "Déracineur", name: "Racines", tip: "équipe", desc: "Tous les 3 tours, enracine un héros de l'arrière : il ne peut plus soigner pendant 2 tours." },
+    glace:      { sig: true, title: "Brise-glace", name: "Glace éternelle", tip: "équipe", desc: "Tous les 3 tours, gèle un héros qui passe son tour." },
+    appetit:    { sig: true, title: "Indigeste", name: "Appétit d'Ougah", tip: "zone", desc: "Tous les 3 tours, dévore un de ses serviteurs pour se soigner de 15 %." },
   };
-  E.bossMechs = (did) => { const dg = DUNGEONS[did]; if (!dg) return []; const keys = Object.keys(E.BOSS_MECHS); let x = 0; for (const ch of did) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
-    const a = keys[x % 4], b = keys[(x >>> 3) % 4]; return dg.lvl < 25 ? [a] : a === b ? [a, keys[(x % 4 + 1) % 4]] : [a, b]; };
+  E.BOSS_SIGS = { donjon_harebourg: "distorsion", forgefroide_frizz: "fournaise", transporteur_sylargh: "tapis", salons_klime: "banquet", labo_nileza: "inventions",
+    aquadome_merkator: "maree", belvedere_ilyzaelle: "sacrifice", chambre_tal_kasha: "double", defi_chaloeil: "petrif", oeil_vortex: "aspiration", palais_nidas: "dore",
+    trone_cour_sombre: "larcin", labyrinthe_minotoror: "taureau", labo_tynril: "humeurs", epave_grolandais: "abordage", canopee_kimbo: "glyphes", horologium_xlii: "horloge",
+    antre_korriandre: "racines", cavernes_kolosso: "glace", temple_ougah: "appetit" };
+  E.TIP_TXT = { "dégâts": "Beaucoup de dégâts", zone: "Sorts de zone", boucliers: "Boucliers", soins: "Soins", tank: "Une première ligne solide", "éléments": "Plusieurs éléments", "équipe": "Une équipe complète", "résistance": "Résistances" };
+  E.bossSeen = (S, did) => !!((S.bossSeen || {})[did] || S.progress.bossKills[did]);
+  /* conseils avant d'entrer : ce qui aide contre les mécaniques du boss */
+  E.bossTips = (did) => [...new Set(E.bossMechs(did).map((k) => E.BOSS_MECHS[k].tip))].map((t) => E.TIP_TXT[t]).filter(Boolean);
+  E.mechPool = (lvl) => Object.keys(E.BOSS_MECHS).filter((k) => !E.BOSS_MECHS[k].sig && E.BOSS_MECHS[k].min <= lvl);
+  /* mécaniques fixes par donjon : 1 (niv. < 25), 2 (< 160), 3 (160+), plus la signature du boss ; mêmes mécaniques à chaque visite */
+  E.bossMechs = (did) => {
+    const dg = DUNGEONS[did]; if (!dg) return [];
+    let x = 0; for (const ch of did) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
+    const n = dg.lvl < 25 ? 1 : dg.lvl < 160 ? 2 : 3;
+    const sig = E.BOSS_SIGS[did]; const clash = { humeurs: "peau", horloge: "rebours", appetit: "devoreur", banquet: "devoreur" }[sig];
+    const pool = (dg.lvl < 25 ? ["enrage", "summon", "shield", "charge"] : E.mechPool(dg.lvl)).filter((k) => k !== clash); const out = [];
+    const HEALS = ["festin", "devoreur", "appetit", "banquet"]; // 0.1.12.5 : un seul mécanisme de soin par boss (Kankreblath cumulait Festin et Dévoreur)
+    for (let i = 0; out.length < n && i < 40; i++) { const k = pool[x % pool.length]; if (!out.includes(k) && !(HEALS.includes(k) && out.concat(sig || []).some((o) => HEALS.includes(o)))) out.push(k); x = (Math.imul(x ^ (x >>> 15), 0x2c1b3c6d) + 0x9e3779b9) >>> 0; }
+    if (sig) out.push(sig);
+    return out;
+  };
 
   /* ---------------- Challenges ---------------- */
   E.CHALLENGES = {
@@ -700,6 +880,10 @@
     veloces:   { name: "Véloces",     desc: "Les monstres jouent avant vos héros." },
     vampires:  { name: "Vampiriques", desc: "Les monstres volent 15 % des dégâts qu'ils infligent." },
     nombreux:  { name: "En nombre",   desc: "Un monstre de plus dans chaque salle." },
+    /* 0.1 : modificateurs propres au mutateur éclair (jamais tirés au hasard en stasis 6-7) */
+    champions: { name: "Champions",   desc: "Un monstre de chaque salle est un Champion (PV ×2, un pouvoir, butin doublé).", flash: true },
+    ruse:      { name: "Boss rusé",   desc: "Le boss a une mécanique de plus.", flash: true },
+    renforts:  { name: "Renforts",    desc: "Deux serviteurs de plus aux côtés du boss.", flash: true },
   };
   E.STASIS_STEPS = [
     [1, "Le donjon normal."], [2, "Monstres renforcés."], [3, "Le boss gagne une mécanique supplémentaire."],
@@ -711,14 +895,14 @@
   E.stasisMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: Math.pow(1.2, k - 1), rew: 1 + 0.15 * (k - 1) });
   /* caractéristique des parchemins de chaque donjon (élément du boss) */
   E.dungeonScrollStat = (did) => { const dg = DUNGEONS[did]; const el = (MONSTERS[dg.boss] || {}).el; const ids = Object.keys(DUNGEONS).sort(); if (ids.indexOf(did) % 5 === 4) return "sa"; return { t: "fo", f: "ine", e: "cha", a: "age" }[el] || "vit"; };
-  const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
+  const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS).filter((x) => !E.STASIS_MODS[x].flash); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
   /* Mutateur de la semaine (3.1.3) : chaque semaine, un donjon reçoit un modificateur imposé (à toutes les stasis)
      et donne +25 % d'XP et de butin, +50 % de poussière. Dès la stasis 6, il remplace un des modificateurs tirés au sort. */
   E.WEEKLY_REW = 1.25; E.WEEKLY_DUST = 1.5;
   E.WEEKLY_MODS = ["enrages", "blindes", "vampires", "nombreux"]; // « Véloces » exclu : trop punitif sans équipement (simulation)
-  E.weekIdx = (t = Date.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC)
-  E.weekEnd = (t = Date.now()) => ((E.weekIdx(t) + 1) * 7 - 3) * 86400000;
-  E.weekly = (S, t = Date.now()) => {
+  E.weekIdx = (t = E.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC)
+  E.weekEnd = (t = E.now()) => ((E.weekIdx(t) + 1) * 7 - 3) * 86400000;
+  E.weekly = (S, t = E.now()) => {
     const w = E.weekIdx(t);
     if (S.weekly && S.weekly.w === w && DUNGEONS[S.weekly.did]) return S.weekly;
     const ids = Object.keys(DUNGEONS).sort().filter((d) => E.dungeonUnlocked(S, d)); if (!ids.length) return null;
@@ -730,6 +914,29 @@
     S.weekly = { w, did: pool[x % pool.length], mod: mods[(x >>> 8) % mods.length] };
     return S.weekly;
   };
+  /* Mutateur éclair (0.1) : toutes les 20 minutes, 3 donjons (niveaux 1-79, 80-149, 150-200) reçoivent un modificateur
+     et donnent un petit bonus. Une course commencée garde son bonus jusqu'au bout. Les donjons ne tournent pas hors ligne. */
+  E.FLASH_MS = 20 * 60000; E.FLASH_REW = 1.12; E.FLASH_DUST = 1.25;
+  E.FLASH_MODS = ["enrages", "blindes", "vampires", "nombreux", "champions", "ruse", "renforts"];
+  E.flashIdx = (t = E.now()) => Math.floor(t / E.FLASH_MS);
+  E.flashEnd = (t = E.now()) => (E.flashIdx(t) + 1) * E.FLASH_MS;
+  /* Tranches fixes, identiques pour tous les joueurs (Mathis, 0.1) */
+  E.FLASH_TIERS = [["bas", 1, 79], ["milieu", 80, 149], ["haut", 150, 200]];
+  const flashCache = {};
+  E.flash = (S, t = E.now()) => {
+    const f = E.flashIdx(t); if (flashCache.k === f) return flashCache.v;
+    const ids = Object.keys(DUNGEONS).sort();
+    let x = Math.imul(f ^ 0x7f4a7c15, 0x85ebca6b) >>> 0;
+    const mods = E.FLASH_MODS.slice(); const out = [];
+    for (const [tier, lo, hi] of E.FLASH_TIERS) {
+      const pool = ids.filter((d) => DUNGEONS[d].lvl >= lo && DUNGEONS[d].lvl <= hi); if (!pool.length) continue;
+      x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; x = Math.imul(x ^ (x >>> 16), 0x27d4eb2f) >>> 0;
+      out.push({ did: pool[x % pool.length], mod: mods.splice((x >>> 8) % mods.length, 1)[0], tier });
+    }
+    flashCache.k = f; flashCache.v = out;
+    return out;
+  };
+  E.flashOf = (S, did, t) => E.flash(S, t).find((x) => x.did === did) || null;
   const applyStasis = (S, F, mons, room, isBoss) => {
     const D2 = S.dungeon; const k = D2.stasis || 1; if (k <= 1 && !(D2.mods || []).length) return mons;
     const M = E.stasisMult(k); const mods = D2.mods || [];
@@ -740,22 +947,42 @@
       if (mods.includes("vampires")) m.vamp = 0.15;
       if (mods.includes("enrages")) m.enrageMod = true;
     });
+    if (mods.includes("champions") && !isBoss && mons.length) E.makeChampion(mons[mons.length - 1]);
+    if (mods.includes("ruse") && isBoss && mons[0] && mons[0].mech) { const keys = E.mechPool(DUNGEONS[D2.id] ? DUNGEONS[D2.id].lvl : 1).filter((x) => !mons[0].mech.includes(x)); if (keys.length) mons[0].mech = mons[0].mech.concat([pick(keys)]); }
     if (k >= 5 && !isBoss && room === D2.eliteRoom && mons.length) { const el = mons[0]; el.elite = true; el.hpMax = el.hp = el.hpMax * 2; el.name = el.name + " (Élite)"; }
     if (isBoss) { const b = mons[0];
-      if (k >= 3) { const keys = Object.keys(E.BOSS_MECHS).filter((x) => !b.mech.includes(x)); if (keys.length) b.mech = b.mech.concat([pick(keys)]); }
+      const pool = E.mechPool(DUNGEONS[D2.id] ? DUNGEONS[D2.id].lvl : 1);
+      if (k >= 3) { const keys = pool.filter((x) => !b.mech.includes(x)); if (keys.length) b.mech = b.mech.concat([pick(keys)]); }
       if (k >= 8) b.phase2 = true;
-      if (k >= 10) { b.legend = true; b.name = b.name + " Légendaire"; b.hpMax = b.hp = Math.round(b.hpMax * 1.5); const keys = Object.keys(E.BOSS_MECHS).filter((x) => !b.mech.includes(x)); while (b.mech.length < 3 && keys.length) b.mech.push(keys.splice(Math.floor(rnd() * keys.length), 1)[0]); }
+      if (k >= 10) { b.legend = true; b.name = b.name + " Légendaire"; b.hpMax = b.hp = Math.round(b.hpMax * 1.5); const keys = pool.filter((x) => !b.mech.includes(x)); while (b.mech.length < 3 && keys.length) b.mech.push(keys.splice(Math.floor(rnd() * keys.length), 1)[0]); }
     }
+    return mons;
+  };
+  /* 0.1.10 : idoles — contraintes posées sur les monstres au début du combat (voir js/idols.js) */
+  const applyIdols = (X, mons, opts = {}) => {
+    mons.forEach((m) => {
+      if (X.hpMul !== 1) m.hpMax = m.hp = Math.round(m.hpMax * X.hpMul);
+      if (X.dmgMul !== 1) m.dmg *= X.dmgMul;
+      if (X.enrage) m.enrageMod = true;
+      if (X.first) m.ini += 1e6;
+      if (X.vamp) m.vamp = Math.max(m.vamp || 0, X.vamp);
+      if (X.monCrit) { m.crit = (m.crit || 0) + X.monCrit; m.dcri = (m.dcri || 0) + (X.monDcri || 0); }
+      if (X.noDot) m.noDot = true;
+    });
+    if (X.payo && !opts.late) { const t = mons.filter((m) => !m.boss).sort((a, b) => b.hpMax - a.hpMax)[0]; if (t) { t.hpMax = t.hp = t.hpMax * 3; t.payo = true; } }
+    if (X.champion && !opts.late && !mons.some((m) => m.champ)) { const c = mons.filter((m) => !m.archi && !m.boss); if (c.length) E.makeChampion(c[c.length - 1]); }
+    mons.forEach((m) => { if (X.shield0) m.shield = Math.max(m.shield || 0, Math.round(m.hpMax * X.shield0 / 100)); });
     return mons;
   };
   E.startFight = (S) => {
     const team = E.team(S); if (!team.length) return null;
+    const IX = E.idolFx(S, S.dungeon);
     let mons, label, bossIdx = -1;
     if (S.dungeon) {
       const dg = DUNGEONS[S.dungeon.id]; const r = S.dungeon.room;
       if (r < dg.rooms.length) {
         const room = dg.rooms[r]; const k = S.dungeon.stasis || 1;
-        const n = clamp(Math.round(ri(room.size[0], room.size[1]) * (0.3 + team.length * 0.25)) + ((S.dungeon.mods || []).includes("nombreux") ? 1 : 0), 1, 8);
+        const n = clamp(Math.round(ri(room.size[0], room.size[1]) * (0.3 + team.length * 0.25)) + ((S.dungeon.mods || []).includes("nombreux") ? 1 : 0) + (IX ? IX.extra : 0), 1, 8);
         const lv = k >= 4 ? Math.max(room.lvl, S.dungeon.syncLvl || 0) : room.lvl;
         mons = []; for (let i = 0; i < n; i++) mons.push(monsterEntity(pick(room.mobs), lv + ri(0, 1)));
         applyStasis(S, null, mons, r, false);
@@ -765,9 +992,9 @@
         const k = S.dungeon.stasis || 1; const blv = k >= 4 ? Math.max(bm.lvl[0], (S.dungeon.syncLvl || 0) + 2) : bm.lvl[0];
         const boss = monsterEntity(dg.boss, blv);
         const hk = (1 + team.length * 1.1) / 5; boss.hpMax = boss.hp = Math.round(boss.hpMax * hk);
-        boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0;
+        boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0; (S.bossSeen = S.bossSeen || {})[S.dungeon.id] = 1;
         mons = [boss];
-        const extra = clamp(team.length - 1, 0, 7);
+        const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0), 0, 7);
         const mlv = k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));
         applyStasis(S, null, mons, -1, true);
@@ -778,15 +1005,27 @@
       if (!sub || !S.hunting) return null;
       mons = E.makeGroup(S, sub, team.length);
       label = sub.name;
+      const pg = E.protGroup(S, sub, team, monsterEntity); // 0.1.10.1 : protecteur de ressources
+      if (pg) { mons = pg.mons; label = pg.label; }
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
+    powMons(mons, S.dungeon ? "dg" : "hunt", S.dungeon && S.dungeon.id);
+    if (IX) applyIdols(IX, mons);
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
+    if (IX && IX.heroPa) ents.forEach((e) => { if (e.side === "c") e.st = Object.assign({}, e.st, { pa: Math.max(1, e.st.pa - IX.heroPa) }); });
+    if (IX && IX.resMain) { const cnt = {}; ents.forEach((e) => { if (e.side === "c") { const k = bestEl(e.st); cnt[k] = (cnt[k] || 0) + 1; } }); IX.resEl = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || null; }
+    /* 0.1 : bonus « petit groupe » en donjon (solo et duo) */
+    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : null;
+    if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
-    F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null;
+    if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
+    F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
+    F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
+    F.powRew = E.powRew(mons, S.dungeon ? "dg" : "hunt"); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: null, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     newRound(F);
@@ -795,8 +1034,9 @@
 
   const newRound = (F) => {
     const ini = (e) => e.ini + (F.round === 1 && e.cls === "cra" ? 1e7 : 0);
-    F.order = F.ents.filter((e) => e.alive).sort((a, b) => ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
+    F.order = F.ents.filter((e) => e.alive).sort((a, b) => (a.slowR === F.round) - (b.slowR === F.round) || ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
     F.oi = 0;
+    if (F.round === 1 && F.idol && F.idol.major) F.order = F.order.concat(F.order.filter((i) => F.ents[i].side === "m")); // idole Major
     const r = chal(F, "rapide"); if (r && F.round > r.turns) failChal(F, "rapide", `plus de ${r.turns} tours`);
   };
   const flog = (F, txt, cls = "") => { F.log.push({ txt, cls }); if (F.log.length > 40) F.log.shift(); };
@@ -809,6 +1049,12 @@
   const killed = (F, tgt) => {
     if (tgt.alive) return; const idx = F.ents.indexOf(tgt); if (F.deaths.includes(idx)) return; F.deaths.push(idx);
     if (tgt.side === "c" && !tgt.summon) { failChal(F, "survivant", `${tgt.name} est tombé`); const lh = F.lastHit && F.lastHit.t === idx ? F.lastHit : null; (F.deathInfo = F.deathInfo || []).push({ i: idx, r: F.round, by: lh ? lh.s : -1, el: lh ? lh.el : null }); }
+    if (tgt.side === "m" && tgt.role === "kamikaze" && !tgt.boom) { tgt.boom = true; const fr = alive(F, "c").filter((h) => rowOf(h) === "f");
+      if (fr.length) { flog(F, `${tgt.name} explose en mourant !`, "m"); fr.forEach((h) => dealDamage(F, null, h, tgt.dmg * 1.5 * rf(0.9, 1.1), tgt.el === "n" ? null : tgt.el)); } }
+    if (tgt.side === "m" && F.idol) { // 0.1.10 : idoles Chokwa et Serpi
+      if (F.idol.chokwa) alive(F, "m").forEach((m) => { if (m.hp < m.hpMax) doHeal(m, m.hpMax * F.idol.chokwa / 100, F); });
+      if (F.idol.reinforce && !F.reinforced && !tgt.summon && !tgt.fake) { F.reinforced = true; const r = applyIdols(F.idol, [monsterEntity(tgt.base || tgt.key, tgt.lvl)], { late: true })[0]; r.reinf = true; F.ents.push(r); flog(F, `Un renfort arrive : ${r.name} (idole Serpi) !`, "m"); }
+    }
     if (tgt.side === "m") {
       const el = chal(F, "elitiste"); if (el && idx !== el.target && F.ents[el.target].alive) failChal(F, "elitiste", "mauvais monstre tué en premier");
       const od = chal(F, "ordonne"); if (od) { const higher = alive(F, "m").some((m) => m.lvl > tgt.lvl); if (higher) failChal(F, "ordonne", "ordre non respecté"); }
@@ -823,28 +1069,64 @@
   const dealDamage = (F, src, tgt, raw, el) => {
     let v = raw;
     let res = 0;
-    if (tgt.side === "m") { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; }
+    if (tgt.side === "m") { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; if (F && F.idol) { res += F.idol.resAll; if (F.idol.resMain && el && el === F.idol.resEl) res += F.idol.resMain; } }
     else if (tgt.st) { const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0; res += tgt.resBonus || 0; }
     res = Math.min(50, res);
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
     if (src) v *= 1 - Math.min(60, debSum(src, "weak")) / 100;
-    if (tgt.side === "c") { v *= (F && F.glyph === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
+    if (tgt.side === "c") { v *= (F && F.glyph === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1) * (1 - (tgt.smallDr || 0) / 100); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
+    /* 0.1 : rôles de monstres et mécaniques de boss qui changent les dégâts reçus */
+    if (F && tgt.side === "c" && tgt.gold > 0) return 0;
+    if (F && tgt.side === "m") {
+      if (tgt.role === "esquive" && src && src.side === "c" && rnd() < 0.2) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Esquive" }); return 0; }
+      if (tgt.mech && tgt.mech.includes("totems") && alive(F, "m").some((m) => m.totem)) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Invulnérable" }); return 0; }
+      if (tgt.role === "coriace" && tgt.hp > tgt.hpMax * 0.5) v *= 0.7;
+      if (tgt.weakOpen) v *= 1.5;
+      if (tgt.mech) {
+        if (tgt.mech.includes("glyphes")) v *= F.round % 2 === 0 ? 1.4 : 0.7;
+        if (tgt.skinEl && el === tgt.skinEl) v *= tgt.mech.includes("humeurs") ? 0.25 : 0.5;
+        if (tgt.openEl && el !== tgt.openEl) v *= 0.5;
+      }
+    }
     v = Math.max(1, Math.round(v));
+    if (F && tgt.side === "m" && tgt.mech) { // une partie des dégâts part sur un serviteur
+      const share = (m) => { const p = Math.min(m.hp, Math.round(v * 0.5)); if (p <= 0) return; v -= p; m.hp -= p; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(m), s: -1, v: p, el: el || "n" }); if (m.hp <= 0) { m.hp = 0; m.alive = false; killed(F, m); } };
+      const link = tgt.mech.includes("liens") ? alive(F, "m").find((m) => m.linked) : null; if (link) share(link);
+      else if (tgt.mech.includes("sacrifice")) { const ms = alive(F, "m").filter((m) => m.minion); if (ms.length) share(pick(ms)); }
+    }
     if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
     tgt.hp -= v;
     if (F) trackHit(F, src, tgt, v, el);
     if (tgt.side === "c" && src && src.side === "m" && F && F.glyph === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
     if (tgt.side === "c" && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
+    if (tgt.hp <= 0 && F && tgt.mech && tgt.mech.includes("immortel") && !tgt.revived) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} refuse de mourir et se relève !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
+    if (tgt.hp <= 0 && F && tgt.side === "m" && F.idol && F.idol.revive && !tgt.revived && !tgt.summon) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * F.idol.revive / 100); flog(F, `${tgt.name} revient à la vie (idole Sakai) !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0) { tgt.hp = 0; tgt.alive = false; killed(F, tgt); }
+    if (F && src && v > 0) {
+      if (src.side === "m" && tgt.side === "c") {
+        if (src.role === "sangsue" && src.alive) doHeal(src, v * 0.2, F);
+        if (src.role === "poison" && tgt.alive && tgt.dots.filter((d) => d.role).length < 2) tgt.dots.push({ v: Math.max(1, v * 0.25), turns: 3, el, src: src.name, role: true });
+        if (src.role === "maudit" && tgt.alive) tgt.debuffs.push({ healcut: 30, turns: 2 });
+      }
+      if (src.side === "c" && !src.summon && tgt.side === "m" && tgt.alive && src.st) {
+        const me = 1 - E.monDodge(tgt) / 100; // les monstres de haut niveau esquivent une partie des retraits
+        if (!(tgt.weakNext > 0) && E.tact(src.st, "rpa") > 0 && rnd() * 100 < E.tact(src.st, "rpa") * me) { tgt.weakNext = tgt.boss ? E.TACT.rpaBoss : E.TACT.rpaV; tlog("rpa"); }
+        if (tgt.slowR !== F.round + 1 && E.tact(src.st, "rpm") > 0 && rnd() * 100 < E.tact(src.st, "rpm") * me) { tgt.slowR = F.round + 1; tlog("rpm"); }
+      }
+      if (src.side === "c" && !src.summon && tgt.side === "m" && src.alive) {
+        if (tgt.reflect) { const r = Math.max(1, Math.round(v * 0.3)); src.hp -= r; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(src), s: F.ents.indexOf(tgt), v: r, el: "n" }); if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
+        if (tgt.alive && tgt.mech && tgt.mech.includes("riposte") && !F.riposting && rnd() < 0.2 && src.alive) { F.riposting = true; const r = dealDamage(F, tgt, src, tgt.dmg * 0.6 * rf(0.9, 1.1), tgt.el === "n" ? null : tgt.el); F.riposting = false; flog(F, `${tgt.name} riposte sur ${src.name} (−${r}).`, "m"); }
+      }
+    }
     if (F && F.fx) F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(tgt), s: src ? F.ents.indexOf(src) : -1, v, el: el || "n" });
     return v;
   };
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
-  E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100];
-  E.CLASS_POW = {"iop":[0.8,0.8,0.8,0.89,1.2,1.2,1.2,0.98],"cra":[1.2,1.2,1.2,1.2,1.16,0.82,0.8,0.8],"eni":[1.2,1.19,1.07,1.02,0.98,1,1.1,1.17],"feca":[1.02,0.98,0.93,0.95,0.99,1,1,1.02],"osa":[0.94,0.92,0.92,0.91,0.91,0.93,0.97,0.97],"enu":[1.02,1.06,1.06,1.07,1.1,1.11,1.13,1.16],"sram":[1.04,1.03,1.02,1.01,1.01,1.04,1.07,1.04],"xelor":[0.98,1.02,1.03,1.03,1.02,0.99,0.96,1],"eca":[1.2,1.2,1.2,1.03,0.8,0.8,0.8,0.86],"sadi":[0.8,0.81,0.81,0.82,0.86,0.91,0.95,0.98],"sacri":[1.01,0.98,0.98,1.03,1.08,1.11,1.1,1.06],"panda":[0.91,0.87,0.84,0.86,0.88,0.85,0.84,0.86],"roub":[1.01,0.98,0.99,0.95,0.89,0.87,0.9,0.93],"zobal":[1.11,1.06,1.07,1.15,1.2,1.2,1.11,0.96],"steam":[0.81,0.81,0.83,0.84,0.88,0.92,0.94,0.98],"elio":[0.95,1.06,1.18,1.2,1.2,1.2,1.2,1.2],"hupper":[0.82,0.85,0.84,0.84,0.93,1.02,1.06,1.14],"ougi":[1.05,1.03,1.01,1.02,1.05,1.08,1.09,1.09],"forge":[0.97,1,0.99,1,1.02,1.03,1.04,1]};
+  E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
+  E.CLASS_POW = {"iop":[0.8,0.8,0.8,0.89,1.2,1.2,1.2,0.98,0.98,0.98,0.98,0.98],"cra":[1.2,1.2,1.2,1.2,1.16,0.82,0.8,0.8,0.8,0.8,0.8,0.8],"eni":[1.2,1.19,1.07,1.02,0.98,1,1.1,1.17,1.25,1.5,1.25,1.17],"feca":[1.02,0.98,0.93,0.95,0.99,1,1,1.02,1.02,1.02,1.02,1.02],"osa":[0.94,0.92,0.92,0.91,0.91,0.93,0.97,0.97,0.97,0.97,0.97,0.97],"enu":[1.02,1.06,1.06,1.07,1.1,1.11,1.13,1.16,1.3,1.16,1.05,1.3],"sram":[1.04,1.03,1.02,1.01,1.01,1.04,1.07,1.04,1.04,1.04,1.04,1.04],"xelor":[0.98,1.02,1.03,1.03,1.02,0.99,0.96,1,1,1.15,1.22,1],"eca":[1.2,1.2,0.75,0.75,0.8,0.8,0.8,0.86,0.86,0.86,0.86,0.86],"sadi":[0.8,0.81,0.81,0.82,0.86,0.91,0.95,0.98,0.98,0.98,0.98,0.98],"sacri":[1.01,0.98,0.98,1.03,1.08,1.11,1.1,1.06,1.06,1.06,1.06,1.06],"panda":[0.91,0.87,0.84,0.86,0.88,0.85,0.84,0.86,0.86,0.86,0.86,0.86],"roub":[1.01,0.98,0.85,0.85,1.01,0.99,1.02,1.05,1.05,1.05,1.17,1.05],"zobal":[1.11,1.06,1.07,1.15,1.2,1.2,1.11,0.96,0.96,0.96,0.96,0.96],"steam":[0.81,0.81,0.83,0.84,0.88,0.92,0.94,0.98,0.98,0.98,0.98,0.98],"elio":[0.95,1.06,1.4,1.35,1.2,1.2,1.2,1.2,1.2,1.2,1.2,0.95],"hupper":[0.82,0.85,0.84,0.84,0.93,1.02,1.06,1.14,1.14,1.22,1.3,1.08],"ougi":[1.05,1.03,1.01,1.02,1.05,1.08,1.09,1.09,1.09,0.95,0.92,0.95],"forge":[0.97,1,0.99,1,1.02,1.03,1.04,1,1,1,1,1]}; // 0.1.12.5 : paliers 120, 140, 170 et 200 ajoutés pour régler les hauts niveaux
   E.classPow = (cls, lvl) => {
     const t = E.CLASS_POW[cls]; if (!t) return (CLASSES[cls] && CLASSES[cls].pow) || 1;
     const L = E.POW_LVLS; if (lvl <= L[0]) return t[0]; if (lvl >= L[L.length - 1]) return t[t.length - 1];
@@ -856,21 +1138,24 @@
     const E2 = ELEMENTS[el]; const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
     const pui = e.st.pui + buffSum(e, "pui");
     let v = rf(f.min, f.max) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + e.st.do + buffSum(e, "do") + (e.st[E2.dmg] || 0);
-    const crit = rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri"));
+    const crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri"));
     if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri");
     v *= 1 + (e.dmgBonus || 0) / 100;
     v *= 1 + (e.st.dsort || 0) / 100;
     v *= mult;
-    // passifs et mécaniques de classe
+    // 0.1.12 : Éveils de la Renaissance (Fureur, Premier sang)
+    if (e.ev) { v *= 1 + 0.04 * (e.ev.fureur || 0); if (F && F.round === 1) v *= 1 + 0.08 * (e.ev.premier || 0); }
+    // passifs et mécaniques de classe (evc : rang de l'Éveil de classe, 0 à 2, qui renforce le passif)
+    const evc = e.evc || 0;
     if (tgt && tgt.boss && e.cls === "iop") v *= 1.1;
-    if (e.cls === "sacri") v *= (1 + 0.3 * (1 - e.hp / e.hpMax)) * (1 + 0.02 * (e.suffer || 0));
-    if (e.cls === "roub" && alive(F, "m").length >= 4) v *= 1.15;
-    if (e.cls === "hupper" && e.lastEl && e.lastEl !== el) v *= 1.1;
-    if (e.cls === "ougi" && tgt) { e.ougi = e.lastTgt === tgt ? Math.min(5, (e.ougi || 0) + 1) : 0; e.lastTgt = tgt; v *= 1 + 0.05 * e.ougi; }
-    if (e.posture === "lance") v *= 1.2;
-    if (e.cls === "cra") v *= 1 + Math.max(0, 0.4 - 0.1 * ((F ? F.round : 1) - 1));
-    if (e.cls === "panda") v *= 1 + 0.06 * (e.ivresse || 0);
-    if (e.mask === "atk") v *= 1.3;
+    if (e.cls === "sacri") v *= (1 + (0.3 + 0.06 * evc) * (1 - e.hp / e.hpMax)) * (1 + (0.02 + 0.004 * evc) * (e.suffer || 0));
+    if (e.cls === "roub" && alive(F, "m").length >= 4) v *= 1.15 + 0.05 * evc;
+    if (e.cls === "hupper" && e.lastEl && e.lastEl !== el) v *= 1.1 + 0.05 * evc;
+    if (e.cls === "ougi" && tgt) { e.ougi = e.lastTgt === tgt ? Math.min(5, (e.ougi || 0) + 1) : 0; e.lastTgt = tgt; v *= 1 + (0.05 + 0.01 * evc) * e.ougi; }
+    if (e.posture === "lance") v *= 1.2 + 0.05 * evc;
+    if (e.cls === "cra") v *= 1 + Math.max(0, 0.4 + 0.1 * evc - 0.1 * ((F ? F.round : 1) - 1));
+    if (e.cls === "panda") v *= 1 + (0.06 + 0.015 * evc) * (e.ivresse || 0);
+    if (e.mask === "atk") v *= 1.3 + 0.1 * evc;
     v *= E.classPow(e.cls, e.lvl);
     if (tgt && tgt.race !== undefined && F.expertRaces && F.expertRaces.has(tgt.race)) v *= 1.1;
     e.lastEl = el;
@@ -878,9 +1163,12 @@
   };
   const healAmount = (e, f) => {
     const pui = e.st.pui + buffSum(e, "pui");
-    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 : 1) * (e.mask === "soin" ? 1.25 : 1);
+    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0));
   };
+  E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
+    if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
+    if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; }
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
     if (F && t.side === "c" && !t.summon && g > 0) F.healed = (F.healed || 0) + g;
     if (F && F.fx && g > 0) F.fx.push({ seq: F.seq, k: "heal", t: F.ents.indexOf(t), v: g });
@@ -913,18 +1201,25 @@
       const fo = (chal(F, "focus") || chal(F, "chacun")) && F.cs.focus[e.cid] !== undefined ? F.ents[F.cs.focus[e.cid]] : null; if (!prim && fo && fo.alive) prim = fo;
     }
     const rule = (slot && slot.tgt) || "low";
+    if (rule === "low" && !prim) { // 0.1 : cible prioritaire de l'équipe
+      const focus = (S.settings && S.settings.focus) || "auto";
+      const inv = (m) => m.mech && m.mech.includes("totems") && foes.some((x) => x.totem);
+      const prio = (m) => (m.bomb ? 5 : m.totem ? 4 : 0) + (inv(m) ? -9 : 0) + (focus === "auto" && ["soigneur", "chef", "invoc", "protect"].includes(m.role) ? 2 : 0) + (focus === "boss" && m.boss ? 2 : 0);
+      const best = foes.slice().sort((a, b) => prio(b) - prio(a) || a.hp - b.hp);
+      if (prio(best[0]) > 0 || foes.some(inv)) prim = best[0];
+    }
     const sorted = foes.slice().sort(rule === "high" ? (a, b) => b.hp - a.hp : rule === "boss" ? (a, b) => (b.boss ? 1e6 : 0) + b.lvl - ((a.boss ? 1e6 : 0) + a.lvl) : rule === "mark" ? (a, b) => ((b.mark > 0 ? 1e6 : 0) + debSum(b, "vuln") * 1e3 - b.hp) - ((a.mark > 0 ? 1e6 : 0) + debSum(a, "vuln") * 1e3 - a.hp) : (a, b) => a.hp - b.hp);
     if (!prim) prim = sorted[0];
     return [prim, ...sorted.filter((x) => x !== prim)].slice(0, Math.max(1, n));
   };
-  const SUM_LIMIT = (e) => (e.cls === "osa" ? 2 : 1);
+  const SUM_LIMIT = (e) => Math.min(E.TACT.invMax, (e.cls === "osa" ? 2 : 1) + ((e.st && e.st.inv) || 0));
   const makeSummon = (S, F, e, f) => {
     const own = F.ents.indexOf(e);
     if (alive(F, "c").filter((a) => a.summon && a.owner === own).length >= SUM_LIMIT(e)) return null;
-    const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 : 1;
+    const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 + 0.15 * (e.evc || 0) : 1;
     const hp = Math.round(e.hpMax * 0.35 * boost);
     const s = { side: "c", summon: true, owner: own, name: info.name || "Invocation", img: info.img || null, cls: e.cls, lvl: e.lvl, hpMax: hp, hp, ini: e.ini - 1,
-      dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e),
+      dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 + 0.1 * (e.evc || 0) : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) * (e.cls === "cra" ? 0.35 : e.cls === "roub" ? 0.6 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e), // 0.1.12.4 : les balises du Crâ sont des outils, pas des combattants ; 0.1.14.4 : bombes du Roublard un peu moins fortes
       turret: e.cls === "steam", tree: e.cls === "sadi", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
     F.ents.push(s); F.order.push(F.ents.indexOf(s));
     F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(s) });
@@ -948,23 +1243,28 @@
         if (db.every((f) => (f.k === "apdrain" ? t0.paLoss > 0 : (t0.debuffs || []).some((d) => d[f.k === "weaken" ? "weak" : "vuln"] && d.turns > 0)))) return { ok: false }; }
     }
     let classMult = 1;
-    if (e.cls === "iop" && e.stack >= 6 && ["dmg", "aoe", "drain", "dot"].includes(kind)) { classMult *= 1.4; e.stack = 0; parts.push("Colère !"); }
+    if (e.cls === "iop" && e.stack >= 6 - (e.evc || 0) && ["dmg", "aoe", "drain", "dot"].includes(kind)) { classMult *= 1.4; e.stack = 0; parts.push("Colère !"); }
     if (e.cls === "panda" && ["dmg", "aoe", "drain", "dot"].includes(kind) && rnd() < 0.03 * (e.ivresse || 0)) { e.ivresse = Math.min(5, (e.ivresse || 0) + 1); flog(F, `${e.name} · ${sp.name} → raté, l'ivresse fait tituber le Pandawa !`, "dim"); return { ok: true, extraPa: 0 }; }
-    if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3; e.els = []; }
-    if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15; e.eniDmg = false; }
+    if (F.idol && F.idol.fail && ["dmg", "aoe", "drain", "dot", "heal"].includes(kind) && rnd() < F.idol.fail) { flog(F, `${e.name} · ${sp.name} → échec (idole Yushe) !`, "dim"); return { ok: true, extraPa: 0 }; }
+    if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3 + 0.1 * (e.evc || 0); e.els = []; }
+    if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15 + 0.05 * (e.evc || 0); e.eniDmg = false; }
     let leech = 0; let dealt = 0; const hitIdx = [];
     for (const f of g.fx) {
       if (f.k === "leech") { leech = f.v; continue; }
       if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
-        const ts = pickFoes(S, F, e, slot, f.n, forced); if (!ts.length) continue;
-        let m = f.n > 1 ? 0.85 * (e.cls === "elio" ? 1.25 : 1) * (e.cls === "roub" ? 1.15 : 1) : 1;
-        if (f.k === "dot") m *= 0.55 * (e.cls === "sram" ? 1.25 : 1) * (e.cls === "roub" ? 1.15 : 1);
+        let nT = f.n; // 0.1.9.1 : Portée (exo) : un sort à une cible touche un ennemi de plus, 20 % par point
+        if (nT === 1 && f.k !== "dot" && e.st && e.st.po > 0 && rnd() * 100 < Math.min(E.TACT.po[1], e.st.po * E.TACT.po[0])) { nT = 2; tlog("po"); }
+        const ts = pickFoes(S, F, e, slot, nT, forced); if (!ts.length) continue;
+        let m = f.n > 1 ? 0.85 * (e.cls === "elio" ? 1.25 + 0.1 * (e.evc || 0) : 1) * (e.cls === "roub" ? 1.15 : 1) : 1;
+        if (f.n > 1 && F.idol && F.idol.aoeMul !== 1) m *= F.idol.aoeMul; // idole Gilimin
+        if (f.k === "dot") m *= 0.55 * (e.cls === "sram" ? 1.25 + 0.1 * (e.evc || 0) : 1) * (e.cls === "roub" ? 1.15 : 1);
         const vals = [];
         ts.forEach((t) => {
           const r = charDamage(S, F, e, f, m * classMult, t);
-          if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
+          if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
-            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
+            if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
+            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el) { if (F.cs.el === null) F.cs.el = r.el; else if (F.cs.el !== r.el) failChal(F, "elementaire", "deux éléments utilisés"); }
@@ -978,8 +1278,8 @@
         ts.forEach((t) => { if (t) tot += doHeal(t, (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1), F); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
       } else if (f.k === "shield") {
-        const ts = f.all ? alive(F, "c") : [e]; const k = e.cls === "feca" ? 1.25 : 1;
-        ts.forEach((t) => { t.shield = Math.max(t.shield || 0, Math.round(t.hpMax * f.pct / 100 * k * (F.roulette === "face" ? 1.15 : 1))); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: `Bouclier ${t.shield}` }); });
+        const ts = f.all ? alive(F, "c") : [e]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0));
+        ts.forEach((t) => { t.shield = Math.max(t.shield || 0, Math.round(t.hpMax * f.pct / 100 * k * (F.roulette === "face" ? 1.15 : 1) * (F.idol && F.idol.shieldHalf ? 0.5 : 1))); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: `Bouclier ${t.shield}` }); });
         parts.push("bouclier"); ok = true;
       } else if (f.k === "buff") {
         if (f.st === "pa") { extraPa += f.v; parts.push(`+${f.v} PA`); ok = true; continue; }
@@ -1002,7 +1302,7 @@
     if (e.cls === "iop") e.stack = Math.min(6, (e.stack || 0) + 1);
     if (e.cls === "panda") e.ivresse = Math.min(5, (e.ivresse || 0) + 1);
     if (e.posture === "rempart" && dealt) e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.05));
-    if (e.cls === "xelor") { e.clock = (e.clock || 0) + 1; if (e.clock >= 12) { e.clock = 0; alive(F, "c").filter((a) => !a.summon).forEach((a) => { a.paBonus = 1; for (const k in a.cd) if (a.cd[k] > 0) a.cd[k]--; }); flog(F, `L'horloge de ${e.name} sonne midi : +1 PA pour l'équipe au prochain tour, sorts rechargés plus vite.`, "buff"); } }
+    if (e.cls === "xelor") { e.clock = (e.clock || 0) + 1; if (e.clock >= 12 - (e.evc || 0)) { e.clock = 0; alive(F, "c").filter((a) => !a.summon).forEach((a) => { a.paBonus = 1; for (const k in a.cd) if (a.cd[k] > 0) a.cd[k]--; }); flog(F, `L'horloge de ${e.name} sonne midi : +1 PA pour l'équipe au prochain tour, sorts rechargés plus vite.`, "buff"); } }
     e.nCast = (e.nCast || 0) + 1;
     // challenges liés aux sorts
     const cs = F.cs; const key = e.cid;
@@ -1052,15 +1352,64 @@
       return s2 + v;
     }, 0);
   };
+  /* 0.1.13.4 « Héros plus malin » : le héros prépare tout son tour. Pour chaque combinaison d'attaques qui tient dans ses PA,
+     il estime les dégâts vraiment utiles : résistances de chaque cible (et peau du boss), PV restants (pas de dégâts perdus
+     sur un monstre déjà mort), bonus quand un monstre tombe (coup de grâce), zone seulement s'il y a plusieurs ennemis.
+     Il lance ensuite le sort le plus utile de la meilleure combinaison, puis recommence avec la situation nouvelle. */
+  E.PLAN = { kill: 0.3, depth: 5 };
+  const atkFx = (F, e, g) => { const pui = e.st.pui + buffSum(e, "pui"); const pw = E.classPow(e.cls, e.lvl);
+    return g.fx.filter((f) => ["dmg", "drain", "dot"].includes(f.k)).map((f) => {
+      const el = f.el === "best" ? bestEl(e.st) : f.el || "n"; const E2 = ELEMENTS[el] || ELEMENTS.n;
+      const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
+      let v = (((f.min + f.max) / 2) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + (e.st.do || 0) + (e.st[E2.dmg] || 0)) * pw * (f.n > 1 ? 0.85 : 1);
+      if (f.k === "dot") v *= 0.55 * (f.t || 2) * 0.85; // un poison arrive plus tard : un peu moins utile
+      if (f.k === "drain" && e.hp < e.hpMax * 0.7) v *= 1.15;
+      return { v, el, n: f.n || 1, dot: f.k === "dot" };
+    }); };
+  const planGain = (fx, foes, hp) => { // dégâts utiles d'un sort sur l'état estimé (hp modifié en place)
+    let gain = 0;
+    for (const f of fx) {
+      const order = foes.map((m, i) => i).filter((i) => hp[i] > 0).sort((x, y) => hp[x] - hp[y]).slice(0, f.n);
+      for (const i of order) { const t = foes[i]; if (f.dot && t.noDot) continue;
+        let r = Math.min(50, (t.res || {})[f.el] || 0); let d = f.v * (1 - r / 100);
+        if (t.skinEl && t.skinEl === f.el) d *= t.mech && t.mech.includes("humeurs") ? 0.25 : 0.5;
+        if (t.shield) d = Math.max(d * 0.3, d - t.shield);
+        const used = Math.min(d, hp[i]); gain += used; hp[i] -= used;
+        if (hp[i] <= 0) gain += E.PLAN.kill * t.hpMax; }
+    }
+    return gain;
+  };
+  const planTurn = (F, e, cands, pa) => { // cands : [{ idx, g, left }] ; renvoie l'idx à lancer
+    const foes = alive(F, "m"); const hp0 = foes.map((m) => m.hp);
+    const fxOf = cands.map((c) => atkFx(F, e, c.g));
+    let best = { v: -1, first: null };
+    const rec = (from, pa, left, hp, total, first, firstGain, depth) => {
+      if (total > best.v || (total === best.v && first !== null && best.first === null)) best = { v: total, first, firstGain };
+      if (depth >= E.PLAN.depth) return;
+      for (let k = from; k < cands.length; k++) {
+        const c = cands[k]; if (c.g.pa > pa || left[k] <= 0) continue;
+        const h2 = hp.slice(); const gn = planGain(fxOf[k], foes, h2);
+        if (gn <= 0) continue;
+        left[k]--;
+        const f2 = first === null || gn > firstGain ? k : first; // dans la combinaison, on commence par le sort le plus utile
+        rec(k, pa - c.g.pa, left, h2, total + gn, f2, f2 === k ? gn : firstGain, depth + 1);
+        left[k]++;
+      }
+    };
+    rec(0, pa, cands.map((c) => c.left), hp0, 0, null, 0, 0);
+    return best.first === null ? null : cands[best.first].idx;
+  };
   const castLimit = (g) => (g.casts > 0 ? Math.min(g.casts, 3) : 1);
   const charTurn = (S, F, e, paStart) => {
     const c = S.chars.find((x) => x.id === e.cid); if (!c) return;
     if (paStart === undefined) {
       F.cs.turnCasts[e.cid] = {}; F.cs.hitTurn[e.cid] = new Set(); e.portal = false;
+      if (e.stun > 0) { e.stun--; flog(F, `${e.name} ne peut pas bouger et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
+      if (e.gold > 0) { e.gold--; flog(F, `${e.name} est une statue d'or et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cuve) { e.cuve = false; e.ivresse = 0; flog(F, `${e.name} cuve son ivresse et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cls === "feca") { e.glyphI = ((e.glyphI ?? -1) + 1) % 3; const gk = ["prot", "renvoi", "soin"][e.glyphI]; F.glyph = gk;
         flog(F, `${e.name} pose un Glyphe ${gk === "prot" ? "de Protection (−10 % de dégâts subis)" : gk === "renvoi" ? "de Renvoi (15 % des dégâts renvoyés)" : "de Soin (+3 % des PV)"}.`, "buff");
-        if (gk === "soin") alive(F, "c").forEach((a) => doHeal(a, a.hpMax * 0.03, F)); }
+        if (gk === "soin") alive(F, "c").forEach((a) => doHeal(a, a.hpMax * (0.03 + 0.01 * (e.evc || 0)), F)); }
       if (e.cls === "forge") { const np = e.hp > e.hpMax * 0.5 ? "lance" : "rempart"; if (np !== e.posture) { e.posture = np; flog(F, `${e.name} passe en posture ${np === "lance" ? "Lance (+20 % de dégâts)" : "Rempart (−25 % de dégâts subis)"}.`, "buff"); } }
       if (e.cls === "zobal") { // masque adapté à la situation
         const hurt = alive(F, "c").filter((a) => !a.summon && a !== e && a.hp < a.hpMax * 0.5).length;
@@ -1071,7 +1420,7 @@
     }
     if (paStart === undefined && E.manualOn(S)) { F.await = { ei: F.ents.indexOf(e), pa: Math.max(1, e.st.pa - (e.paLoss || 0)), t: F.dur, n: 0, casts: {} }; e.paLoss = 0; return; }
     let pa = paStart !== undefined ? paStart : Math.max(1, e.st.pa - (e.paLoss || 0) + (e.paBonus || 0)); e.paLoss = 0; e.paBonus = 0; let cast = 0;
-    /* IA v3 : sorts utilitaires dans l'ordre de la barre, puis l'attaque qui rapporte le plus de dégâts par PA */
+    /* IA v4 : sorts utilitaires dans l'ordre de la barre, puis la meilleure combinaison d'attaques du tour (planTurn) */
     const nCast = {}; const blocked = new Set();
     for (let guard = 0; guard < 30; guard++) {
       if (!alive(F, "m").length) return endHeroTurn(S, F, e);
@@ -1081,11 +1430,21 @@
         const sp = E.spellDef(c.cls, slot.id); if (!sp || sp.lvl > c.lvl) return;
         const g = E.spellGrade(sp, c.lvl);
         if ((nCast[idx] || 0) >= castLimit(g) || (e.cd[sp.id] || 0) > 0 || g.pa > pa) return;
-        if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g)) return;
+        if ((e.silence > 0 && g.cd) || (e.rooted > 0 && E.spellKind(g) === "heal")) return;
+        if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g) || (F.idol && F.idol.heals === "none" && E.spellKind(g) === "heal")) return;
         const k = E.spellKind(g);
         const v = ["dmg", "aoe", "drain", "dot"].includes(k) ? spellValue(F, e, g) / Math.max(1, g.pa) : 1e6 - idx;
         if (v > bestV) { bestV = v; best = { slot, idx, sp, g }; }
       });
+      if (best && ["dmg", "aoe", "drain", "dot"].includes(E.spellKind(best.g))) { // attaque : la meilleure combinaison du tour
+        const cands = [];
+        c.spells.forEach((slot, idx) => { if (blocked.has(idx)) return; const sp = E.spellDef(c.cls, slot.id); if (!sp || sp.lvl > c.lvl) return; const g = E.spellGrade(sp, c.lvl);
+          if (!["dmg", "aoe", "drain", "dot"].includes(E.spellKind(g)) || (nCast[idx] || 0) >= castLimit(g) || (e.cd[sp.id] || 0) > 0 || g.pa > pa || (e.silence > 0 && g.cd)) return;
+          if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g)) return;
+          cands.push({ idx, g, sp, slot, left: Math.min(castLimit(g) - (nCast[idx] || 0), g.cd ? 1 : 9) }); });
+        const pick = cands.length > 1 ? planTurn(F, e, cands, pa) : null;
+        const pc = pick !== null && cands.find((x) => x.idx === pick); if (pc) best = { slot: pc.slot, idx: pc.idx, sp: pc.sp, g: pc.g };
+      }
       if (!best) break;
       F.seq++;
       const r = castSpell(S, F, e, best.sp, null, best.slot);
@@ -1121,28 +1480,40 @@
      les invocations se tiennent en première ligne */
   const rowOf = (t) => (t.summon ? "f" : t.row || "f");
   const pickHero = (F, targets, e) => {
+    if (targets.some((t) => t.gold > 0) && targets.some((t) => !(t.gold > 0))) targets = targets.filter((t) => !(t.gold > 0));
     const tree = targets.find((t) => t.tree && t.summon); if (tree && rnd() < 0.5) return tree;
     if (e && e.champ === "traqueur") { const hs = targets.filter((t) => !t.summon); if (hs.length) return hs.sort((a, b) => a.hp - b.hp)[0]; }
     let pool = targets;
-    if (!(e && e.role === "bond")) {
-      const fr = targets.filter((t) => rowOf(t) === "f"), bk = targets.filter((t) => rowOf(t) === "b");
-      if (fr.length && bk.length) { const pf = e && e.role === "rodeur" ? 1 - E.FRONT_P : E.FRONT_P; pool = rnd() < pf ? fr : bk; }
-    }
+    const fr = targets.filter((t) => rowOf(t) === "f"), bk = targets.filter((t) => rowOf(t) === "b");
+    const tacle = () => { const p = Math.min(E.TACT.tac[1], fr.reduce((a, t) => a + (t.st ? (t.st.tac || 0) * E.TACT.tac[0] : 0), 0)); if (p > 0 && rnd() * 100 < p) { tlog("tac"); return true; } return false; };
+    const bond = e && e.role === "bond" && !(e.slowR === F.round);
+    if (!bond) {
+      if (fr.length && bk.length) { const pf = e && e.role === "rodeur" ? 1 - E.FRONT_P : E.FRONT_P; pool = rnd() < pf ? fr : bk; if (pool === bk && e && e.role === "rodeur" && tacle()) pool = fr; }
+    } else if (fr.length && bk.length) { const w0 = targets[Math.floor(rnd() * targets.length)]; if (rowOf(w0) === "b" && tacle()) pool = fr; }
     const w = pool.map((t) => (t.turret ? 0.3 : 1)); let r = rnd() * w.reduce((a, b) => a + b, 0);
     for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; } return pool[pool.length - 1];
   };
+  const tlog = (k) => { if (E.tactLog) E.tactLog[k] = (E.tactLog[k] || 0) + 1; };
+  const dodged = (F, t, e) => { if (!t || t.summon || !t.st || (F.idol && F.idol.noDodge)) return false;
+    // le Tacle des monstres de haut niveau (même valeur que leur Esquive) réduit la Fuite et l'esquive des héros
+    const p = (rowOf(t) === "b" ? E.tact(t.st, "fui") : Math.min(E.TACT.pm[1], (t.st.pm || 0) * E.TACT.pm[0])) * (1 - (e ? E.monDodge(e) : 0) / 100);
+    if (p > 0 && rnd() * 100 < p) { tlog(rowOf(t) === "b" ? "fui" : "pm"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: "Esquive" }); return true; } return false; };
+  const resists = (h, k) => { const p = E.tact(h.st, k); if (p > 0 && rnd() * 100 < p) { tlog(k); return true; } return false; };
+  const monCrit = (e, v) => (e.crit && rnd() * 100 < e.crit ? v * 1.25 + (e.dcri || 0) : v); // idoles Hadibel et Tigel
   const monsterTurn = (S, F, e) => {
-    let attacks = e.attacks;
+    const skip = e.mech ? bossMech(S, F, e) : false;
+    if (e.role) roleTurn(S, F, e);
+    if (skip || !e.alive || !alive(F, "c").length) return;
+    let attacks = e.attacks + (e.extraAtk || 0); if (e.extraAtk) flog(F, `${e.name} est pris de frénésie et frappe deux fois !`, "m"); e.extraAtk = 0;
     if (e.paLoss >= 2) { attacks = Math.max(0, attacks - 1); flog(F, `${e.name} manque de PA et frappe moins.`, "dim"); }
-    const lowPa = e.paLoss === 1 ? 0.85 : 1; e.paLoss = 0;
-    if (e.mech) bossMech(S, F, e);
+    const lowPa = (e.paLoss === 1 ? 0.85 : 1) * (1 - (e.weakNext || 0) / 100); e.paLoss = 0; e.weakNext = 0;
     if (e.charging === "fire") { e.charging = false; const heroes = alive(F, "c"); flog(F, `${e.name} déclenche son attaque dévastatrice !`, "m");
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * 2.2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); }); return; }
-    const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (alive(F, "m").some((m) => m.champ === "meneur" && m !== e) ? 1.1 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
+    const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (alive(F, "m").some((m) => (m.champ === "meneur" || m.role === "chef") && m !== e) ? 1.1 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
     const dmgSpells = (e.sp || []).filter((s) => s.fx.some((f) => f.k === "dmg" || f.k === "drain" || f.k === "dot"));
     const refAvg = dmgSpells.length ? dmgSpells.reduce((a, s) => a + avgDmg(s), 0) / dmgSpells.length : 1;
     for (let k = 0; k < attacks; k++) {
-      const targets = alive(F, "c"); if (!targets.length) return;
+      const targets = alive(F, "c"); if (!targets.length || !e.alive) return;
       let sp = null;
       if (e.sp && rnd() < 0.85) {
         const allyHurt = alive(F, "m").some((m) => m.hp / m.hpMax < 0.6);
@@ -1150,24 +1521,24 @@
         if (ok.length) sp = pick(ok);
       }
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
-      if (!sp) { const t = pickHero(F, targets, e); const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
+      if (!sp) { const t = pickHero(F, targets, e); if (dodged(F, t, e)) { flog(F, `${t.name} esquive l'attaque de ${e.name}.`, "dim"); continue; } const d = dealDamage(F, e, t, monCrit(e, e.dmg * mdmg * lowPa * rf(0.85, 1.15)), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
       if (sp.cd) e.cds[sp.n] = sp.cd + 1;
       const parts = []; let didDmg = false;
       for (const f of sp.fx) {
         if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
           if (didDmg) continue; didDmg = true; // une seule ligne de dégâts par sort (les autres sont des variantes)
           const ratio = refAvg ? clamp(avgDmg({ fx: [f] }) / refAvg, 0.5, 1.8) : 1;
-          const ts = f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)];
-          const base = e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15);
+          const ts = (f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)]).filter((t) => !dodged(F, t, e));
+          const base = monCrit(e, e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15));
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
           ts.forEach((t) => { if (f.k === "dot") t.dots.push({ v: base * 0.5, turns: f.t || 2, el, src: e.name }); else { const d = dealDamage(F, e, t, base, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
           parts.push(f.k === "dot" ? `poison sur ${ts.map((t) => t.name).join(", ")}` : hits.join(", "));
         } else if (f.k === "heal" || f.k === "healpct") {
-          const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; const h = doHeal(t, f.k === "healpct" ? t.hpMax * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
+          const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (!t) continue; const h = doHeal(t, f.k === "healpct" ? t.hpMax * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
         } else if (f.k === "shield") { e.shield = Math.max(e.shield, Math.round(e.hpMax * Math.min(20, f.pct) / 100)); parts.push("bouclier");
         } else if (f.k === "buff") { e.buffs.push({ mdmg: 20, turns: 2 }); parts.push("se renforce");
-        } else if (f.k === "apdrain") { const t = pick(targets); t.paLoss = Math.min(2, (t.paLoss || 0) + 1); parts.push(`−1 PA à ${t.name}`);
+        } else if (f.k === "apdrain") { const t = pick(targets); if (resists(t, "epa")) continue; t.paLoss = Math.min(2, (t.paLoss || 0) + 1); parts.push(`−1 PA à ${t.name}`);
         } else if (f.k === "weaken") { const t = pick(targets); t.debuffs.push({ weak: 15, turns: 1 }); parts.push(`affaiblit ${t.name}`);
         } else if (f.k === "vuln") { const t = pick(targets); t.debuffs.push({ vuln: 10, turns: 2 }); parts.push(`rend ${t.name} vulnérable`); }
       }
@@ -1176,19 +1547,85 @@
     }
   };
   const avgDmg = (s) => { const f = s.fx.find((x) => x.k === "dmg" || x.k === "drain" || x.k === "dot"); return f ? (f.min + f.max) / 2 * (f.k === "dot" ? 0.8 : 1) : 0; };
+  /* monstre appelé par une mécanique : serviteur (donne du butin) ou objet de mécanique (totem, bombe, invocation : sans butin) */
+  const spawnMon = (F, key, lvl, o = {}) => {
+    const m = monsterEntity(key, Math.max(1, lvl)); m.minion = true; m.role = null;
+    if (o.hp) m.hpMax = m.hp = Math.max(1, Math.round(o.hp)); if (o.dmg !== undefined) m.dmg = o.dmg;
+    ["name", "fake", "totem", "bomb", "fuse", "linked", "attacks", "isDouble", "mech", "mturn"].forEach((k) => { if (o[k] !== undefined) m[k] = o[k]; });
+    if (o.attacks === 0) m.sp = null;
+    F.ents.push(m); F.order.push(F.ents.indexOf(m)); F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(m) });
+    return m;
+  };
+  const mobKey = (F, e) => { const dg = F.dungeonId && DUNGEONS[F.dungeonId]; return dg && dg.bossMobs && dg.bossMobs.length ? pick(dg.bossMobs) : e.base || e.key; };
+  const heroesOf = (F) => alive(F, "c").filter((h) => !h.summon);
+  /* rôles des monstres : soin, bouclier, invocation */
+  const roleTurn = (S, F, e) => {
+    e.rt = (e.rt || 0) + 1;
+    if (e.role === "soigneur" && e.rt % 2 === 0) { const t = alive(F, "m").filter((m) => m.hp < m.hpMax * 0.9 && !m.fake).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (t) { const h = doHeal(t, t.hpMax * 0.1, F); if (h) flog(F, `${e.name} soigne ${t.name} (+${h}).`, "m"); } }
+    if (e.role === "protect" && e.rt % 3 === 1) { alive(F, "m").forEach((m) => { m.shield = Math.max(m.shield || 0, Math.round(m.hpMax * 0.1)); }); flog(F, `${e.name} protège ses alliés d'un bouclier.`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Protection" }); }
+    if (e.role === "invoc" && e.rt % 3 === 0 && (e.invN || 0) < 3 && alive(F, "m").length < 10) { e.invN = (e.invN || 0) + 1; const m = spawnMon(F, e.base || e.key, e.lvl - 5, { fake: true, name: `${e.name} (invoqué)` }); m.hpMax = m.hp = Math.round(m.hpMax * 0.35); m.dmg *= 0.5; flog(F, `${e.name} invoque un allié !`, "m"); }
+  };
+  const ELS4 = ["t", "f", "e", "a"];
   const bossMech = (S, F, e) => {
-    e.mturn = (e.mturn || 0) + 1; const M = e.mech;
-    if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, e.hpMax * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(e) });
-      if (F.dungeonId) { const dg = DUNGEONS[F.dungeonId]; for (let i = 0; i < 2; i++) { const m = monsterEntity(pick(dg.bossMobs), Math.max(1, e.lvl - 3)); m.minion = true; F.ents.push(m); F.order.push(F.ents.indexOf(m)); F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(m) }); } } }
-    if (M.includes("enrage") && !e.enraged && e.hp < e.hpMax * 0.5) { e.enraged = true; e.dmg *= 1.4; e.debuffs.push({ vuln: 15, turns: 999 }); flog(F, `${e.name} entre dans une rage folle !`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Rage !" }); }
-    if (M.includes("shield") && e.shieldPhase === 1 && e.hp < e.hpMax * 0.5) { e.shieldPhase = 2; e.shield += Math.round(e.hpMax * 0.2); flog(F, `${e.name} se couvre d'une carapace !`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Carapace" }); }
-    if (M.includes("summon")) {
-      const minions = alive(F, "m").filter((m) => m.minion);
+    e.mturn = (e.mturn || 0) + 1; const M = e.mech; const t = e.mturn; const has = (k) => M.includes(k); const ei = F.ents.indexOf(e); let skip = false;
+    const say = (txt, tag) => { flog(F, txt, "m"); if (tag) F.fx.push({ seq: F.seq, k: "buff", t: ei, txt: tag }); };
+    const hitAll = (list, mult) => list.forEach((h) => { const d = dealDamage(F, e, h, e.dmg * mult * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!h.alive) flog(F, `${h.name} est à terre (−${d}).`, "ko"); });
+    const victim = (list) => (list.length ? pick(list) : null);
+    if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, e.hpMax * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: ei });
+      if (F.dungeonId) for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl - 3); }
+    if (has("enrage") && !e.enraged && e.hp < e.hpMax * 0.5) { e.enraged = true; e.dmg *= 1.4; e.debuffs.push({ vuln: 15, turns: 999 }); say(`${e.name} entre dans une rage folle !`, "Rage !"); }
+    if (has("shield") && e.shieldPhase === 1 && e.hp < e.hpMax * 0.5) { e.shieldPhase = 2; e.shield += Math.round(e.hpMax * 0.2); say(`${e.name} se couvre d'une carapace !`, "Carapace"); }
+    if (has("summon")) {
+      const minions = alive(F, "m").filter((m) => m.minion && !m.fake);
       if (minions.length) { const h = doHeal(e, e.hpMax * 0.04, F); if (h) flog(F, `${e.name} est soigné par ses serviteurs (+${h}).`, "m"); }
-      if (e.mturn % 3 === 0 && minions.length < 3 && F.dungeonId) { const dg = DUNGEONS[F.dungeonId]; const m = monsterEntity(pick(dg.bossMobs), Math.max(1, e.lvl - 3)); m.minion = true; F.ents.push(m); F.order.push(F.ents.indexOf(m)); flog(F, `${e.name} appelle ${m.name} en renfort !`, "m"); F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(m) }); }
+      if (t % 3 === 0 && minions.length < 3 && F.dungeonId) { const m = spawnMon(F, mobKey(F, e), e.lvl - 3); flog(F, `${e.name} appelle ${m.name} en renfort !`, "m"); }
     }
-    if (M.includes("charge") && e.mturn % 3 === 2 && !e.charging) { e.charging = "ready"; flog(F, `${e.name} prépare une attaque dévastatrice… (protégez l'équipe !)`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "⚠ Charge" }); }
+    if (has("abordage") && t % 4 === 0 && alive(F, "m").length < 9) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl - 3); say(`${e.name} crie « À l'abordage ! » : deux pirates arrivent.`, "Abordage"); }
+    if (has("weakspot")) { e.weakOpen = t % 3 === 0; if (e.weakOpen) say(`${e.name} expose son point faible !`, "Point faible"); }
+    if (has("festin")) e.vamp = Math.max(e.vamp || 0, 0.3);
+    if (has("reflet")) { e.reflect = t % 4 === 0; if (e.reflect) say(`${e.name} se couvre d'un reflet : il renvoie une partie des dégâts.`, "Reflet"); }
+    if (has("miasmes")) { const p = Math.min(0.05, 0.01 + 0.005 * t); heroesOf(F).forEach((h) => dealDamage(F, null, h, h.hpMax * p, null)); flog(F, `Les miasmes de ${e.name} rongent l'équipe (−${Math.round(p * 100)} % des PV).`, "m"); }
+    if ((has("devoreur") || has("appetit") || has("banquet")) && t % 3 === 0 && (has("banquet") || e.hp < e.hpMax * 0.9)) {
+      const m = alive(F, "m").find((x) => x.minion && !x.totem && !x.bomb && !x.linked);
+      if (m) { m.hp = 0; m.alive = false; const h = doHeal(e, e.hpMax * 0.15, F); if (has("banquet")) e.dmg *= 1.1; say(`${e.name} dévore ${m.name} (+${h} PV${has("banquet") ? ", +10 % de dégâts" : ""}) !`, "Festin"); }
+    }
+    if (has("brise") && t % 3 === 0 && alive(F, "c").some((h) => h.shield > 0)) { alive(F, "c").forEach((h) => (h.shield = 0)); say(`${e.name} brise les boucliers de l'équipe !`, "Brise-garde"); }
+    if (has("aspiration") && t % 3 === 0) { const sum = alive(F, "c").reduce((a, h) => a + (h.shield || 0), 0); if (sum > 0) { alive(F, "c").forEach((h) => (h.shield = 0)); const h = doHeal(e, sum, F); say(`${e.name} aspire les boucliers de l'équipe (+${h} PV) !`, "Aspiration"); } }
+    if (has("larcin") && t % 3 === 0) { const v = heroesOf(F).filter((h) => h.shield > 0 || h.buffs.length).sort((a, b) => (b.shield || 0) - (a.shield || 0))[0];
+      if (v) { e.shield = (e.shield || 0) + (v.shield || 0); v.shield = 0; v.buffs = []; say(`${e.name} détrousse ${v.name} : bouclier et bonus volés !`, "Larcin"); } }
+    if (has("putrefaction") && t % 4 === 0) { F.rot = F.round + 2; say(`${e.name} répand la putréfaction : soins de l'équipe −50 % pendant 2 tours.`, "Putréfaction"); }
+    if ((has("peau") || has("humeurs")) && t % 3 === 1) { e.skinEl = pick(ELS4.filter((x) => x !== e.skinEl)); say(`${e.name} change de peau : il résiste à l'élément ${ELEMENTS[e.skinEl].name}.`, ELEMENTS[e.skinEl].name); }
+    if (has("fournaise") && t % 2 === 1) { e.openEl = pick(ELS4.filter((x) => x !== e.openEl)); say(`${e.name} ne craint plus que l'élément ${ELEMENTS[e.openEl].name}.`, ELEMENTS[e.openEl].name); }
+    if (has("condamne")) {
+      if (e.doom && e.doom.t <= t) { const h = F.ents[e.doom.i]; e.doom = null;
+        if (h && h.alive) { if (h.shield > 0) { h.shield = 0; say(`${e.name} frappe ${h.name}, mais son bouclier encaisse la condamnation !`); } else { const d = dealDamage(F, e, h, e.dmg * (heroesOf(F).length > 1 ? 3 : 1.5) * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} exécute la condamnation sur ${h.name} (−${d}) !`); } } }
+      else if (!e.doom && t % 4 === 1) { const h = victim(heroesOf(F)); if (h) { e.doom = { i: F.ents.indexOf(h), t: t + 2 }; say(`${e.name} condamne ${h.name} : un bouclier sur lui avant 2 tours !`, "Condamnation"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(h), txt: "Condamné" }); } }
+    }
+    if (has("mutisme") && t % 4 === 2 && heroesOf(F).length > 1) { const h = victim(heroesOf(F)); if (h && !resists(h, "epa")) { h.silence = 3; say(`${e.name} rend ${h.name} muet : sorts à recharge interdits pendant 2 tours.`, "Mutisme"); } }
+    if (has("racines") && t % 3 === 0) { const back = heroesOf(F).filter((h) => rowOf(h) === "b"); const h = victim(back.length ? back : heroesOf(F)); if (h && !resists(h, "epm")) { h.rooted = 3; say(`${e.name} enracine ${h.name} : il ne peut plus soigner pendant 2 tours.`, "Racines"); } }
+    if (has("terreur") && t % 4 === 3) { const fr = heroesOf(F).filter((h) => rowOf(h) === "f"); if (fr.length > 1) { const h = pick(fr); if (resists(h, "epm")) say(`${h.name} résiste à la Terreur.`); else { h.fearRow = "f"; h.row = "b"; h.fearT = 3; say(`${e.name} terrifie ${h.name}, qui recule à l'arrière !`, "Terreur"); } } }
+    if (has("tapis") && t % 3 === 0) { heroesOf(F).forEach((h) => { h.row = rowOf(h) === "f" ? "b" : "f"; if (h.fearT) h.fearRow = h.fearRow === "f" ? "b" : "f"; }); say(`Le tapis roulant de ${e.name} échange la première ligne et l'arrière !`, "Tapis roulant"); }
+    if ((has("petrif") || has("glace")) && t % 3 === 0 && heroesOf(F).length > 1) { const h = pick(heroesOf(F).filter((x) => !(x.stun > 0))); if (h && !resists(h, "epa")) { h.stun = 1; say(has("glace") ? `${e.name} gèle ${h.name}, qui passera son tour.` : `Le regard de ${e.name} pétrifie ${h.name}, qui passera son tour.`, has("glace") ? "Glace" : "Pétrification"); } }
+    if (has("dore") && t % 4 === 2 && heroesOf(F).length > 1) { const h = pick(heroesOf(F)); h.gold = 2; say(`${e.name} change ${h.name} en or pour 2 tours.`, "Toucher doré"); }
+    if (has("distorsion") && t % 4 === 0) { heroesOf(F).forEach((h) => { for (const k in h.cd) if (h.cd[k] > 0) h.cd[k]++; if (!resists(h, "epa")) h.paLoss = Math.max(h.paLoss || 0, 1); }); say(`${e.name} distord le temps : recharges rallongées et −1 PA pour l'équipe.`, "Distorsion"); }
+    if (has("frenesie") && t % 4 === 0) e.extraAtk = 1;
+    if (has("totems") && (t === 1 || (t % 6 === 0 && !alive(F, "m").some((m) => m.totem)))) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, totem: true, name: "Totem", hp: e.hpMax * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} dresse deux totems : il est invulnérable tant qu'ils tiennent debout !`, "Totems"); }
+    if (has("liens") && !e.linkDone) { e.linkDone = true; spawnMon(F, mobKey(F, e), e.lvl, { fake: true, linked: true, name: "Âme liée", hp: e.hpMax * 0.3 }); say(`${e.name} lie son âme à un serviteur : les dégâts sont partagés.`, "Âmes liées"); }
+    if (has("inventions")) {
+      alive(F, "m").filter((m) => m.bomb).forEach((b) => { b.fuse--; if (b.fuse <= 0) { b.hp = 0; b.alive = false; flog(F, `La bombe de ${e.name} explose !`, "m"); hitAll(heroesOf(F), 2.5); } else flog(F, `Une bombe va exploser dans ${b.fuse} tour${b.fuse > 1 ? "s" : ""}.`, "m"); });
+      if (t % 4 === 1) { spawnMon(F, mobKey(F, e), e.lvl, { fake: true, bomb: true, fuse: 3, name: "Bombe", hp: e.hpMax * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} pose une bombe : détruisez-la avant 3 tours !`, "Bombe"); }
+    }
+    if (has("double") && !e.isDouble && !e.doubled && e.hp < e.hpMax * 0.5) { e.doubled = true; const m = spawnMon(F, e.key, e.lvl, { fake: true, isDouble: true, name: `Double de ${e.name}`, hp: e.hpMax * 0.4, dmg: e.dmg * 0.7, mech: M.filter((x) => x !== "double"), mturn: 0 }); m.attacks = e.attacks; say(`${e.name} se dédouble !`, "Dédoublement"); }
+    if ((has("rebours") || has("horloge")) && !e.isDouble) {
+      if (F.round >= 20) { heroesOf(F).concat(alive(F, "c").filter((h) => h.summon)).forEach((h) => { h.hp = 0; h.alive = false; killed(F, h); }); say(`${e.name} : le temps est écoulé, l'équipe est anéantie !`, "Temps écoulé"); return true; }
+      if (F.round >= 15) say(`${e.name} : plus que ${20 - F.round} tour${20 - F.round > 1 ? "s" : ""} avant l'anéantissement !`);
+    }
+    if (has("seisme") && t % 4 === 0) { const fr = alive(F, "c").filter((h) => rowOf(h) === "f"); if (fr.length) { say(`${e.name} fait trembler le sol sous la première ligne !`, "Séisme"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(fr, 1.6); skip = true; } }
+    if (has("maree") && t % 3 === 0) { const bk = heroesOf(F).filter((h) => rowOf(h) === "b"); if (bk.length) { say(`La marée de ${e.name} submerge l'arrière !`, "Marée"); F.fx.push({ seq: F.seq, k: "cast", s: ei }); hitAll(bk, 1.4); skip = true; } }
+    if (has("taureau") && t % 3 === 0 && !skip) { const h = heroesOf(F).sort((a, b) => a.hpMax - b.hpMax)[0]; if (h) { F.fx.push({ seq: F.seq, k: "cast", s: ei }); const d = dealDamage(F, e, h, e.dmg * 2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} charge ${h.name} tête baissée (−${d}) !`, "Charge"); skip = true; } }
+    if (has("charge") && t % 3 === 2 && !e.charging) { e.charging = "ready"; say(`${e.name} prépare une attaque dévastatrice… (protégez l'équipe !)`, "⚠ Charge"); }
     else if (e.charging === "ready") e.charging = "fire";
+    return skip;
   };
 
   const startOfTurn = (S, F, e) => {
@@ -1198,28 +1635,36 @@
       d.turns--; return d.turns > 0 && e.alive;
     });
     if (!e.alive) { flog(F, `${e.name} est vaincu.`, "ko"); return false; }
+    if (E.dofusTurn) E.dofusTurn(S, F, e); // 0.1.13 : Dokoko
+    if (F.idol) { // 0.1.10 : idoles Dokoko, Jiva, Abdinde, Kori
+      if (e.side === "c" && !e.summon && F.idol.hpLoss) { const v = dealDamage(F, null, e, e.hpMax * F.idol.hpLoss / 100, null); flog(F, `${e.name} perd ${v} PV (idole).`, "dim"); if (!e.alive) { flog(F, `${e.name} est vaincu.`, "ko"); return false; } }
+      if (e.side === "m") { if (F.idol.monRegen && e.hp < e.hpMax) { const g = doHeal(e, e.hpMax * F.idol.monRegen / 100, F); if (g) flog(F, `${e.name} récupère ${g} PV (idole).`, "dim"); } if (F.idol.shieldRegen) e.shield = (e.shield || 0) + Math.round(e.hpMax * F.idol.shieldRegen / 100); }
+    }
     e.buffs = e.buffs.filter((b) => --b.turns >= 0);
     e.debuffs = (e.debuffs || []).filter((b) => --b.turns >= 0);
     if (e.mark > 0) e.mark--;
     if (e.cd) for (const k in e.cd) if (e.cd[k] > 0) e.cd[k]--;
     if (e.cds) for (const k in e.cds) if (e.cds[k] > 0) e.cds[k]--;
     if (e.side === "c" && e.regen) doHeal(e, e.hpMax * e.regen / 100, F);
+    if (e.side === "c") { if (e.silence > 0) e.silence--; if (e.rooted > 0) e.rooted--; if (e.fearT > 0 && --e.fearT === 0) { e.row = e.fearRow || "f"; flog(F, `${e.name} reprend courage et revient en première ligne.`, "dim"); } }
     return true;
   };
 
-  /* Bonus de combat liés à l'Esprit Libre et à l'Emblème */
+  /* Bonus de combat liés à l'Esprit Libre */
   const applyFightBonuses = (S, F) => {
-    const fs = E.freeSpirit(S); const solo = E.isSolo(S); const pk = S.emblem.perks;
+    const fs = E.freeSpirit(S);
     F.feca = E.teamHas(S, "feca");
     if (E.teamHas(S, "eca")) { const r = rnd(); F.roulette = r < 0.4 ? "pile" : r < 0.8 ? "face" : r < 0.9 ? "jackpot" : "perdu";
       flog(F, `Roulette de l'Ecaflip : ${F.roulette === "pile" ? "Pile ! +20 % de dégâts pour l'équipe" : F.roulette === "face" ? "Face ! +15 % de soins et de boucliers" : F.roulette === "jackpot" ? "JACKPOT ! Butin ×2 sur ce combat" : "Perdu… −5 % de dégâts pour l'équipe"}.`, "buff"); }
     F.expertRaces = new Set();
     for (const r in RACE_MONS) if (RACE_MONS[r].some((k) => E.huntTier(S, k) >= 2)) F.expertRaces.add(+r);
-    F.ents.filter((e) => e.side === "c" && !e.summon).forEach((e) => {
+    const heroes0 = F.ents.filter((e) => e.side === "c" && !e.summon);
+    const meneur = heroes0.reduce((a, e) => a + ((e.ev || {}).meneur || 0), 0); // 0.1.12 : Éveil Meneur, +1 % pour toute l'équipe par rang
+    const ecaEv = Math.max(0, ...heroes0.filter((e) => e.cls === "eca").map((e) => e.evc || 0)); // Éveil de classe Ecaflip : Pile +25/+30 %
+    heroes0.forEach((e) => {
       if (e.cls === "zobal") e.mask = "atk";
-      e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0) + E.bonus(S, "dmg") + E.synergy(S) + (F.roulette === "pile" ? 20 : F.roulette === "perdu" ? -5 : 0);
-      e.resBonus = solo && pk[500] === "res" ? 8 : 0;
-      e.regen = solo && pk[500] === "heal" ? 5 : 0;
+      e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + meneur + (F.roulette === "pile" ? 20 + 5 * ecaEv : F.roulette === "perdu" ? -5 : 0);
+      e.resBonus = 0; e.regen = 0;
     });
   };
 
@@ -1249,6 +1694,48 @@
     else if (!alive(F, "c").filter((x) => !x.summon).length) endFight(S, false);
   };
 
+  /* 0.1.11.2 : aperçu des 3 premiers tours d'un héros, joué par le vrai moteur de combat sur une copie de la partie
+     mode "hunt" : un groupe de sa zone de chasse (ou d'une zone de son niveau) · mode "boss" : la salle du boss d'un donjon de son niveau
+     spells : barre à tester (sinon celle du héros) · seeds : nombre de combats (dégâts moyens ; les lancers affichés sont ceux du 1er) */
+  E.spellPreview = (S, cid, mode, spells, seeds = 3) => {
+    const c0 = S.chars.find((x) => x.id === cid); if (!c0) return null;
+    const evLen = E.events.length; const rng0 = rnd; const base = JSON.stringify(S); let out = null;
+    try {
+      for (let k = 0; k < seeds; k++) {
+        let seed = 7919 * (k + 1);
+        rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        const S2 = JSON.parse(base); const c = S2.chars.find((x) => x.id === cid);
+        if (spells) c.spells = spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+        S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
+        if (!(c.inTeam && !c.job)) S2.chars.forEach((x) => (x.inTeam = x.id === cid));
+        c.job = null;
+        let label;
+        if (mode === "boss") {
+          const ids = Object.keys(DUNGEONS).filter((id) => DUNGEONS[id].lvl <= c.lvl + 5).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl);
+          const did = ids[0] || Object.keys(DUNGEONS)[0]; const dg = DUNGEONS[did];
+          S2.dungeon = { id: did, room: dg.rooms.length, stasis: 1, chain: 1, t: 0, syncLvl: c.lvl, mods: [], eliteRoom: -1 };
+          label = `${MONSTERS[dg.boss].name} (${dg.name})`;
+        } else {
+          let sid = S.hunting && S.sub && SUBS[S.sub] && SUBS[S.sub].lvl && Math.abs(SUBS[S.sub].lvl[1] - c.lvl) <= 30 ? S.sub : null;
+          if (!sid) sid = Object.keys(SUBS).filter((s) => SUBS[s].lvl && SUBS[s].monsters && SUBS[s].monsters.length).sort((a, b) => Math.abs((SUBS[a].lvl[0] + SUBS[a].lvl[1]) / 2 - c.lvl) - Math.abs((SUBS[b].lvl[0] + SUBS[b].lvl[1]) / 2 - c.lvl))[0];
+          S2.hunting = true; S2.sub = sid; label = SUBS[sid].name;
+        }
+        const F = E.startFight(S2); if (!F) return null;
+        const hi = F.ents.findIndex((e) => e.side === "c" && e.cid === cid && !e.summon); const he = F.ents[hi]; if (hi < 0) return null;
+        const rounds = [1, 2, 3].map((r) => ({ r, casts: [], pa: 0, dmg: 0 }));
+        let lastSeq = -1, dealt = 0;
+        const grab = () => {
+          F.fx.forEach((f) => { if (f.seq <= lastSeq) return; if (f.k === "cast" && f.s === hi && f.sp && F.round <= 3) { const d = E.spellDef(c.cls, f.sp); const g = d && E.spellGrade(d, c.lvl); rounds[F.round - 1].casts.push(f.sp); rounds[F.round - 1].pa += g ? g.pa : 0; } });
+          lastSeq = F.seq; if (F.round <= 3) { rounds[F.round - 1].dmg += (he.dealt || 0) - dealt; } dealt = he.dealt || 0;
+        };
+        for (let g = 0; g < 600 && !F.over && F.round <= 3; g++) { E.step(S2); grab(); }
+        const res = { mode, label, mons: F.ents.filter((e) => e.side === "m").length, paMax: he.st.pa, rounds, end: F.over ? F.result : null, endRound: Math.min(3, F.round), total: rounds.reduce((a, r) => a + r.dmg, 0) };
+        if (!out) out = res; else { out.rounds.forEach((r, i) => (r.dmgSum = (r.dmgSum || r.dmg) + res.rounds[i].dmg)); out.totalSum = (out.totalSum || out.total) + res.total; out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); res.rounds.forEach((r) => r.casts.forEach((id) => out.casted.add(id))); }
+      }
+      if (out) { out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); out.rounds.forEach((r) => (r.dmg = Math.round((r.dmgSum || r.dmg) / seeds))); out.total = Math.round((out.totalSum || out.total) / seeds); }
+    } finally { rnd = rng0; E.events.length = evLen; }
+    return out;
+  };
   /* Simulateur de dégâts (interface) : estimation par lancer et par tour contre une cible à « res » % de résistance */
   E.spellEstimate = (S, c, sp, res = 0) => {
     const st = E.charStats(S, c); const g = E.spellGrade(sp, c.lvl);
@@ -1286,7 +1773,7 @@
   };
   E.manualCanCast = (S, sp) => {
     const F = S.fight; const A = F && F.await; if (!A) return false; const e = F.ents[A.ei]; const g = E.spellGrade(sp, e.lvl);
-    return g.pa <= A.pa && !((e.cd[sp.id] || 0) > 0) && (A.casts[sp.id] || 0) < castLimit(g);
+    return g.pa <= A.pa && !((e.cd[sp.id] || 0) > 0) && (A.casts[sp.id] || 0) < castLimit(g) && !(e.silence > 0 && g.cd) && !(e.rooted > 0 && E.spellKind(g) === "heal");
   };
   E.manualCast = (S, spellId, targetIdx) => {
     const F = S.fight; const A = F && F.await; if (!A || F.over) return "Ce n'est pas votre tour.";
@@ -1320,20 +1807,19 @@
   E.effProspection = (pp) => (pp <= 100 ? pp : pp <= 300 ? 100 + (pp - 100) / 2 : 200 + (pp - 300) / 4);
   E.teamProspection = (S) => E.effProspection(E.teamProspectionRaw(S));
   E.dropMult = (S) => {
-    const solo = E.isSolo(S);
-    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (solo && S.emblem.perks[250] === "drop" ? 1.15 : 1) * (1 + E.bonus(S, "drop") / 100);
+    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
   };
 
   const giveRewards = (S, mons, opts = {}) => {
-    const team = E.team(S); const solo = E.isSolo(S); const fs = E.freeSpirit(S);
+    const team = E.team(S); const fs = E.freeSpirit(S);
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
       let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1);
       xp += x;
-      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100));
+      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
-      if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); }
+      if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); if (E.captureSoul && E.captureSoul(S, m, opts) === "new") (out.souls = out.souls || []).push(m.key); } // 0.1.13 : âme pour l'album
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
@@ -1343,19 +1829,21 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c));
       out.xp[c.id] = g;
+      g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
+    E.stableXp(S, team.length ? team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length : 0); // Mangeoire de l'enclos
     // Salle d'entraînement du Havre-Sac : une part de l'XP moyenne de l'équipe
     const tr = E.trainee(S);
     if (tr && team.length) {
       const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.trainShare(S, tr));
-      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, g)) out.ups.push([tr.name, tr.lvl]); }
+      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, Math.round(g * E.renXpMult(tr)) - E.mountXpShare(S, tr, g))) out.ups.push([tr.name, tr.lvl]); }
     }
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.teamHas(S, "enu") ? 1.15 : 1);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -1383,12 +1871,14 @@
         }
       });
       // clés de donjon
-      if (!opts.dungeon && sub && sub.dungeon && sub.monsters.includes(m.base || m.key)) {
-        const dg = DUNGEONS[sub.dungeon];
+      if (!opts.dungeon && sub && sub.dungeon && sub.monsters.includes(m.base || m.key)) (sub.dungeons || [sub.dungeon]).forEach((did) => {
+        const dg = DUNGEONS[did]; if (!dg) return;
         if (rnd() * 100 < dg.keyDrop * dm) { addRes(S, dg.key, 1); out.res[dg.key] = (out.res[dg.key] || 0) + 1; note(S, `Butin : ${dg.key}`, "loot"); }
-      }
+      });
       if (lp < 1) out.lootPen = Math.min(out.lootPen || 1, lp); }
     });
+    if (!opts.dungeon && sub && E.petHunt(S, S.sub)) out.pet = true; // familier de la sous-zone
+    if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
     return out;
@@ -1440,15 +1930,17 @@
   const endFight = (S, win, why) => {
     const F = S.fight; F.over = true; F.result = win ? "win" : "lose";
     S.stats.fights++;
+    if (F.prot) E.protEnd(S, win);
     if (win) {
       S.stats.wins++;
-      const mons = F.ents.filter((e) => e.side === "m");
+      const mons = F.ents.filter((e) => e.side === "m" && !e.fake);
       const cb = E.chalResolve(S, F);
-      const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1);
-      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr, dropMult: (1 + cb / 100) * sr * (F.roulette === "jackpot" ? 2 : 1), treasure: F.treasure || 0 });
+      const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1) * (1 + (F.idolBonus || 0) / 100);
+      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1), dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1), kamasMult: E.PACE_REW * (F.powRew || 1), treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
+      if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
-      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null });
+      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null, stasis: F.stasis || 0, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
       if (!S.dungeon) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       const xpTot = Object.values(F.rewards.xp).reduce((a, b) => a + b, 0);
       flog(F, `Victoire ! +${xpTot} XP, +${F.rewards.kamas} kamas`, "win");
@@ -1456,10 +1948,11 @@
       if (S.dungeon) {
         const dg = DUNGEONS[S.dungeon.id];
         if (S.dungeon.room >= dg.rooms.length) {
-          S.progress.bossKills[S.dungeon.id] = (S.progress.bossKills[S.dungeon.id] || 0) + 1;
+          S.progress.bossKills[S.dungeon.id] = (S.progress.bossKills[S.dungeon.id] || 0) + 1; E.compWin(S, S.dungeon.id); // 0.1.10.1
+          if (E.BOSS_SIGS[S.dungeon.id] && (S.dungeon.stasis || 1) >= 5 && !(F.deathInfo || []).length) (S.sigWins = S.sigWins || {})[S.dungeon.id] = 1;
           E.bossChest(S, S.dungeon.id, F.rewards);
           E.stasisClear(S, S.dungeon, F.rewards);
-          E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1 });
+          E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
           const chainD = S.dungeon; S.dungeon = null;
           if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); }
@@ -1468,6 +1961,7 @@
       }
       Object.keys(SUBS).forEach((s) => { if (!prevUnlocked.has(s) && E.subUnlocked(S, s)) note(S, `Nouvelle sous-zone : ${SUBS[s].name}`, "up"); });
       E.autoZone(S, true);
+      E.roam(S); // 0.1.10.2 : chasse itinérante
     } else {
       E.chalResolve(S, F, true);
       flog(F, why || "Défaite… l'équipe se repose.", "lose");
@@ -1487,7 +1981,7 @@
     const r = F.rewards || { xp: {}, kamas: 0, res: {}, items: [] };
     const xpTot = Object.values(r.xp).reduce((a, b) => a + b, 0);
     const nres = Object.values(r.res).reduce((a, b) => a + b, 0);
-    S.history.unshift({ t: Date.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length });
+    S.history.unshift({ t: E.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length });
     if (F.loss) F.loss.t = S.history[0].t; // même horodatage : le rapport s'ouvre depuis « Derniers combats »
     if (S.history.length > 30) S.history.length = 30;
     if (zkey) {
@@ -1530,11 +2024,11 @@
       const cyc = E.fightCycle(S);
       if (cyc) {
         const team = E.team(S).length; const grp = (1 + Math.min(8, team + 1)) / 2;
-        const dm = E.dropMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
+        const dm = E.dropMult(S) * E.PACE_REW * (E.teamHas(S, "enu") ? 1.15 : 1);
         let per = 0;
         sub.monsters.forEach((k) => { const m = MONSTERS[k]; if (!m) return; const d = m.drops.find(([r]) => r === name); const tq = E.huntTier(S, k) >= 1 ? 1.05 : 1;
           if (d) per += Math.min(1, E.resRate(d[1]) * dm * tq / 100) / sub.monsters.length;
-          if (sub.dungeon && DUNGEONS[sub.dungeon] && DUNGEONS[sub.dungeon].key === name) per += Math.min(1, DUNGEONS[sub.dungeon].keyDrop * dm / 100) / sub.monsters.length; });
+          (sub.dungeons || (sub.dungeon ? [sub.dungeon] : [])).forEach((did) => { if (DUNGEONS[did] && DUNGEONS[did].key === name) per += Math.min(1, DUNGEONS[did].keyDrop * dm / 100) / sub.monsters.length; }); });
         if (per > 0) { h += (3600 / cyc.s) * cyc.win * grp * per; src.push(sub.name); }
       }
     }
@@ -1567,7 +2061,7 @@
     const z = S.zoneStats[zkey]; if (!z || z.f < E.ETA_MIN_FIGHTS || z.xp <= 0) return null;
     const rate = E.zoneRate(S, zkey); const team = E.team(S); if (!team.find((x) => x.id === c.id)) return null;
     const ml = S.dungeon ? DUNGEONS[S.dungeon.id].lvl : SUBS[zkey] ? (SUBS[zkey].lvl[0] + SUBS[zkey].lvl[1]) / 2 : c.lvl;
-    const f = (x) => (1 + E.charStats(S, x).sa / 100) * E.xpPenalty(x.lvl - ml);
+    const f = (x) => (1 + E.charStats(S, x).sa / 100) * E.xpPenalty(x.lvl - ml) * E.renXpMult(x);
     const tot = team.reduce((a, x) => a + f(x), 0); if (!tot) return null;
     return rate.xpH * f(c) / tot;
   };
@@ -1613,7 +2107,6 @@
     if ((m = /^bty(\d+)$/.exec(id))) return [cnt.bounty || 0, +m[1]];
     if ((m = /^havre(\d+)$/.exec(id))) return [E.havreTotal ? E.havreTotal(S) : 0, +m[1]];
     if ((m = /^team(\d+)$/.exec(id))) return [S.chars.length, +m[1]];
-    if (id === "emb100") return [S.emblem.lvl, 100];
     if ((m = /^dg_(.+)$/.exec(id)) && DUNGEONS[m[1]]) return [S.progress.bossKills[m[1]] ? 1 : 0, 1];
     return null;
   };
@@ -1681,7 +2174,7 @@
     const k = F.stasis || 0; const SI = dg ? E.stasisInfo(S, F.dungeonId) : null;
     const dealt = F.dealt || {}; const totDealt = Object.values(dealt).reduce((a, b) => a + b, 0);
     const charOf = (e) => S.chars.find((c) => c.id === e.cid);
-    const R = { t: Date.now(), label: F.label, round: F.round, cause: "close", txt: "", facts: [], gear: [], cid: null, stat: null, did: F.dungeonId || null, sub: F.sub || null };
+    const R = { t: E.now(), label: F.label, round: F.round, cause: "close", txt: "", facts: [], gear: [], cid: null, stat: null, did: F.dungeonId || null, sub: F.sub || null };
     const sn = (stat) => STATS[stat].name.replace("% ", "");
     const gearTxt = (c, stat, what) => {
       const g = E.gearSuggest(S, c, stat); R.gear = g; R.cid = c.id; R.stat = stat;
@@ -1770,14 +2263,14 @@
     return cand;
   };
   E.autoZone = (S, win) => {
-    if (!S.settings || !S.settings.autoZone || S.dungeon || !S.hunting || !S.sub) return;
+    if (!S.settings || !(S.settings.autoZone || S.settings.roam) || S.dungeon || !S.hunting || !S.sub) return; // l'itinérante redescend aussi après 3 défaites sur 6
     S._az = (S._az || 0) + 1;
     const rec = S.stats.recent.slice(-6); const losses = rec.filter((r) => !r.w).length;
     const cand = E.autoZoneTarget(S); if (!cand) return;
     const cur = SUBS[S.sub]; let target = null;
     if (!win && losses >= 3) { // trop dur : on redescend
       target = cand.find((s) => (s.lvl[0] + s.lvl[1]) < (cur.lvl[0] + cur.lvl[1]));
-    } else if (win && S._az >= 12 && losses === 0) { // tout va bien : on monte si possible
+    } else if (S.settings.autoZone && win && S._az >= 12 && losses === 0) { // tout va bien : on monte si possible
       const best = cand[0];
       if (best && (best.lvl[0] + best.lvl[1]) > (cur.lvl[0] + cur.lvl[1])) target = best;
     }
@@ -1802,15 +2295,19 @@
   E.stasisClear = (S, D2, rew) => {
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
-    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
-    if (!SI.firsts[k]) { SI.firsts[k] = Date.now();
+    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
+    if (!SI.firsts[k]) { SI.firsts[k] = E.now();
       const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
+      if (E.firstPassStones) E.firstPassStones(S, k, out); // 0.1.13 : Pierres d'âme
       E.celebrate({ t: "stasis", did, k, chest });
       if (k === 10) { let n = 0; E.team(S).forEach((c) => { c.stasisScrolls = c.stasisScrolls || {}; if (!c.stasisScrolls[did]) { c.stasisScrolls[did] = 1; n++; } });
         if (n) { E.addCons(S, "parch_" + stat + "_g", n); out.push(`${n} × ${CONSUMABLES["parch_" + stat + "_g"].name}`); } }
     }
     if (k >= 6 && rnd() < 0.01 + (k - 6) * 0.005) { E.addCons(S, "parch_" + stat + "_p", 1); out.push(CONSUMABLES["parch_" + stat + "_p"].name); note(S, `Butin rare : ${CONSUMABLES["parch_" + stat + "_p"].name} !`, "rare"); }
     if (k >= (E.TROPHY_STASIS || 5) && E.trophyOf && E.giveFurn) { const tr = E.trophyOf(did); if (tr && E.giveFurn(S, tr, "trophée de boss")) out.push(tr); }
+    E.petBoss(S, did, k, out); // familiers rares et montiliers
+    E.exoDrop(S, DUNGEONS[did].lvl, k, out); // 0.1.9.1 : runes exotiques
+    if (E.dofusDrop) E.dofusDrop(S, did, k, out); // 0.1.13 : Dofus en butin très rare du boss
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (k === 10) S.unlocks.stasis10 = true;
@@ -1825,9 +2322,9 @@
     if (S.dungeon) return "Vous êtes déjà en donjon.";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
-    const W = E.weekly(S); const wk = W && W.did === did ? W.mod : null;
+    const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
-      mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: wk || undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
+      mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
     SI.sel = k;
     S.fight = null; S.pause = 0;
     E.applyZonePresets(S, "dg:" + did);
@@ -1837,7 +2334,8 @@
   E.leaveDungeon = (S) => { if (S.dungeon) { note(S, "Vous quittez le donjon (clé perdue).", "warn"); S.dungeon = null; S.fight = null; if (S.hunting && S.sub) E.applyZonePresets(S, S.sub); } };
 
   /* ---------------- Boucle principale ---------------- */
-  E.STEP_MS = 520;
+  E.STEP_MS = 780; // 0.1.3-0.1.4 : combats plus posés (520 ms avant)
+  E.PACE_REW = 780 / 520; // compense : les gains par heure restent les mêmes qu'avec 520 ms
   E.PAUSE_MS = 1400;
   E.tick = (S, dtMs) => {
     S.stats.playtime += dtMs / 1000;
@@ -1856,9 +2354,14 @@
       S.fight.dur += E.STEP_MS / 1000;
       E.step(S);
     }
+    E.starsTick(S, dtMs / 1000);
     // récolte
     gatherTick(S, dtMs / 1000);
+    E.protExpire(S);
     E.atelierTick(S, dtMs / 1000);
+    E.fmPlanTick(S, dtMs / 1000);
+    E.petTick(S, dtMs);
+    E.enclosTick(S, dtMs);
   };
 
   /* ---------------- Récolte (v2.6) ----------------
@@ -1916,7 +2419,7 @@
   };
   /* Filons rares : en moyenne un toutes les 2 h de récolte, 10 min, rendement ×2 sur une ressource */
   E.FILON_EVERY_S = 7200; E.FILON_DUR_S = 600;
-  E.filonOn = (S, res, at = Date.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
+  E.filonOn = (S, res, at = E.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
   const gatherTick = (S, dt, opts = {}) => {
     let total = 0;
     S.chars.forEach((c) => {
@@ -1927,8 +2430,10 @@
       while (W.prog >= t && n < 200000) {
         W.prog -= t; n++;
         let q = 1; if (rnd() < J.lvl / 200) q++;
-        if (!opts.quiet && !(S.filon && S.filon.until > Date.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: Date.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
+        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
         if (E.filonOn(S, W.res)) q *= 2;
+        q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
+        if (!opts.quiet) E.protSpawn(S, c, W);
         if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "rare"); }
         addRes(S, W.res, q); total += q;
         J.xp += 10 + def[1] * 1.0;
@@ -1941,7 +2446,7 @@
   E.gatherTick = gatherTick;
 
   /* ---------------- Artisanat ---------------- */
-  E.craftReq = (tpl) => Math.max(1, Math.floor(ITEMS[tpl].lvl / 2));
+  E.craftReq = (tpl) => Math.max(1, Math.floor(ITEMS[tpl].lvl / 3)); // 0.1.14.4 : métier au tiers du niveau de l’objet (avant : moitié), pour s’équiper à temps face aux monstres renforcés
   E.canCraft = (S, recipe, n = 1) => recipe.ing.every(([r, q]) => (S.res[r] || 0) >= q * n);
   E.craftItem = (S, tpl) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";
@@ -1959,10 +2464,11 @@
     const R = SPECIAL_CRAFTS[name]; if (!R) return "Recette inconnue.";
     const J = S.crafts[R.job];
     if (J.lvl < R.lvl) return `${CRAFT_JOBS[R.job].name} niveau ${R.lvl} requis.`;
-    if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)))) return "Vous possédez déjà cet objet.";
+    if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)) || (R.idol && E.idolOwned(S, R.idol)))) return "Vous possédez déjà cet objet.";
+    if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Quêtes › Dofus).";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
-    if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else addRes(S, name, 1);
+    if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.dofus) E.giveDofus(S, R.dofus, "copie du Bricoleur"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);
     craftXp(S, R.job, 20 + R.lvl * 3);
     E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
@@ -1977,14 +2483,14 @@
   E.runeKey = (tier, stat) => `${tier}:${stat}`;
   E.runeName = (key) => {
     const [tier, stat] = key.split(":"); const s = STATS[stat];
-    return tier === "pa" ? `Rune Pa ${s.short}` : tier === "ra" ? `Rune Ra ${s.short}` : `Rune ${s.short}`;
+    return tier === "pa" ? `Rune Pa ${s.short}` : tier === "ra" ? `Rune Ra ${s.short}` : tier === "ga" ? `Rune Ga ${s.short}` : `Rune ${s.short}`;
   };
   E.runeInfo = (key) => {
     const [tier, stat] = key.split(":"); const mult = tier === "pa" ? 3 : tier === "ra" ? 10 : 1;
-    const s = STATS[stat]; return { stat, tier, pts: s.pts * mult, weight: s.w * s.pts * mult };
+    const s = STATS[stat]; return { stat, tier, pts: tier === "ga" ? 1 : s.pts * mult, weight: tier === "ga" ? s.w : s.w * s.pts * mult, exo: tier === "ga" };
   };
   E.COEF_REGEN_MIN = 6; // +1 % toutes les 6 minutes
-  E.getCoef = (S, tpl, now = Date.now()) => {
+  E.getCoef = (S, tpl, now = E.now()) => {
     const c = S.coef[tpl]; if (!c) return 100;
     const gained = Math.floor((now - c.t) / (E.COEF_REGEN_MIN * 60000));
     return Math.min(100, c.v + gained);
@@ -1993,10 +2499,9 @@
     const it = S.items[uid]; if (!it) return null;
     const T = ITEMS[it.tpl]; const coef = E.getCoef(S, it.tpl);
     const lvlMult = 1 + T.lvl * 3 / 200;
-    const perk = S.emblem.perks[250] === "brisage" ? 1.15 : 1;
     const w = {};
     const rad = it.radiant ? 1.5 : 1;
-    for (const k in it.stats) { const v = it.stats[k]; if (v > 0) w[k] = v * STATS[k].w * lvlMult * coef / 100 * perk * rad; }
+    for (const k in it.stats) { const v = it.stats[k]; if (v > 0) w[k] = v * STATS[k].w * lvlMult * coef / 100 * rad; }
     if (focus && w[focus] !== undefined) {
       let tot = 0; for (const k in w) tot += k === focus ? w[k] : w[k] * 0.5;
       for (const k in w) delete w[k]; w[focus] = tot;
@@ -2016,55 +2521,33 @@
     if (rem > 0 && rnd() < rem / base) { const k = E.runeKey("", stat); out[k] = (out[k] || 0) + 1; }
     return out;
   };
+  E.EXO_BREAK_MULT = 2;
   E.breakItem = (S, uid, focus) => {
     const it = S.items[uid]; if (!it) return "Objet introuvable.";
     if (E.equippedBy(S, uid)) return "Retirez d'abord cet objet.";
     if (it.locked) return "Objet protégé par le cadenas.";
     if (E.inGear(S, uid)) return `Objet rangé dans une tenue de ${E.inGear(S, uid).name}.`;
     const p = E.breakPreview(S, uid, focus);
-    const got = {};
+    const got = {}; const exoMult = it.exo ? E.EXO_BREAK_MULT : 1; // 0.1.9.1 : un objet exo rend ses runes ×2 (l'exo est perdu)
     for (const k in p.weights) {
-      const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05));
+      const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05) * exoMult);
       for (const rk in r) { S.runes[rk] = (S.runes[rk] || 0) + r[rk]; got[rk] = (got[rk] || 0) + r[rk]; }
     }
-    S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: Date.now() };
+    S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: E.now() };
     delete S.items[uid];
     return got;
   };
 
-  /* ---------------- Emblème du Solitaire ---------------- */
-  E.emblemLines = (lvl) => EMBLEM.lines.filter(([l]) => lvl >= l).pop()[1];
-  E.emblemRank = (lvl) => EMBLEM.ranks.filter(([l]) => lvl >= l).pop()[1];
-  E.emblemCap = (stat, lvl) => {
-    if (stat === "pa") return 0;
-    const f = EMBLEM.cap[stat] || 0; return Math.floor(f * (lvl + 10) * (lvl >= 850 ? 1.5 : 1));
+  /* ---------------- Objets parfaits (0.1.8.2) : toutes les caractéristiques positives au jet maximum ---------------- */
+  E.PERFECT_PCT = 2;
+  E.isPerfect = (it) => {
+    const T = ITEMS[it.tpl]; if (!T || T.trophy) return false; let n = 0;
+    for (const k in T.stats) { const [, mx] = T.stats[k]; if (mx <= 0) continue; n++; if ((it.stats[k] || 0) < mx) return false; }
+    return n > 0;
   };
-  E.feedRune = (S, key, qty) => {
-    const have = S.runes[key] || 0; const n = Math.min(have, qty); if (n <= 0) return null;
-    const em = S.emblem; const info = E.runeInfo(key);
-    let gained = 0, xp = 0;
-    for (let i = 0; i < n; i++) {
-      const lines = Object.keys(em.stats);
-      const canAdd = lines.includes(info.stat) || lines.length < E.emblemLines(em.lvl);
-      if (canAdd) {
-        const cap = E.emblemCap(info.stat, em.lvl); const cur = em.stats[info.stat] || 0;
-        const add = Math.max(0, Math.min(info.pts, cap - cur));
-        if (add > 0 || cur > 0) { em.stats[info.stat] = cur + add; gained += add; }
-      }
-      xp += info.weight; em.xp += info.weight;
-      while (em.lvl < EMBLEM.maxLvl && em.xp >= E.emblemXpNeed(em.lvl)) {
-        em.xp -= E.emblemXpNeed(em.lvl); em.lvl++;
-        if (em.lvl % 50 === 0 || EMBLEM.ranks.some(([l]) => l === em.lvl)) note(S, `Emblème du Solitaire niveau ${em.lvl} (${E.emblemRank(em.lvl)})`, "up");
-      }
-    }
-    S.runes[key] -= n; if (!S.runes[key]) delete S.runes[key];
-    return { gained, xp, n };
-  };
-  E.removeEmblemLine = (S, stat) => { delete S.emblem.stats[stat]; };
-  E.choosePerk = (S, tier, id) => {
-    if (S.emblem.lvl < tier || S.emblem.perks[tier]) return false;
-    S.emblem.perks[tier] = id; return true;
-  };
+  /* +2 % sur chaque caractéristique positive (au moins +1) */
+  E.perfectStats = (it) => { const o = {}; for (const k in it.stats) { const v = it.stats[k]; o[k] = v > 0 ? v + Math.max(1, Math.round(v * E.PERFECT_PCT / 100)) : v; } return o; };
+  E.perfectCount = (S) => Object.values(S.items).filter(E.isPerfect).length;
 
   /* ---------------- Recrutement & équipe ---------------- */
   E.recruit = (S, cls, name) => {
@@ -2098,28 +2581,33 @@
     const winRate = rec.length ? rec.reduce((s, r) => s + r.w, 0) / rec.length : 0.5;
     const cycle = avg + E.PAUSE_MS / 1000;
     const fights = Math.min(5000, Math.floor(eff / cycle));
-    const before = { kamas: S.kamas, res: Object.assign({}, S.res), lvls: S.chars.map((c) => c.lvl), items: E.itemCount(S), uids: new Set(Object.keys(S.items)), archis: Object.assign({}, S.archis), xp: S.chars.map((c) => c.xp) };
+    const before = { kamas: S.kamas, res: Object.assign({}, S.res), lvls: S.chars.map((c) => c.lvl), items: E.itemCount(S), uids: new Set(Object.keys(S.items)), archis: Object.assign({}, S.archis), souls: Object.assign({}, S.souls || {}), xp: S.chars.map((c) => c.xp) };
     const hunting = S.hunting && S.sub && SUBS[S.sub] && E.team(S).length;
     const evLen = E.events.length;
     let wins = 0;
     const wasDungeon = S.dungeon; S.dungeon = null;
-    const sub = SUBS[S.sub]; const teamSize = E.team(S).length;
+    let sub = SUBS[S.sub]; const teamSize = E.team(S).length; const roamed = [];
     // part de l'absence couverte par le bonus d'XP
-    const b = S.boosts && S.boosts.xp; const now = Date.now(); const startT = now - seconds * 1000;
+    const b = S.boosts && S.boosts.xp; const now = E.now(); const startT = now - seconds * 1000;
     const covered = b ? clamp((b.until - startT) / (seconds * 1000), 0, 1) : 0;
     const xpBoost = b ? b.pct * covered : 0;
     for (let i = 0; hunting && i < fights; i++) {
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      giveRewards(S, g, { xpBoost, offline: true });
+      const pr = E.powRew(g, "hunt"); giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW * pr, dropMult: E.PACE_REW * (1 + E.podBonus(S)) * pr, kamasMult: E.PACE_REW * pr });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
+      E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne
+      if (S.settings.roam) { const tz = startT + (i + 1) * seconds * 1000 / fights; if (E.roam(S, tz, true)) { roamed.push(SUBS[S.sub].name); sub = SUBS[S.sub]; } }
     }
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
     gatherTick(S, eff, { quiet: true });
     E.atelierTick(S, eff, { quiet: true });
+    const fmPlans = E.fmPlanTick(S, eff, { quiet: true }); // 0.1.9.1 : la forgemagie automatique continue
+    E.petTick(S, seconds * 1000); // les familiers mangent en temps réel
+    E.enclosTick(S, seconds * 1000); // les naissances continuent
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }
@@ -2128,7 +2616,8 @@
       items: E.itemCount(S) - before.items,
       newItems: Object.keys(S.items).filter((u) => !before.uids.has(u)).sort((a, b) => ITEMS[S.items[b].tpl].lvl - ITEMS[S.items[a].tpl].lvl).slice(0, 30),
       archis: Object.keys(S.archis).filter((k) => (S.archis[k] || 0) > (before.archis[k] || 0)),
-      winRate: winRate, fightLen: Math.round(cycle),
+      souls: Object.keys(S.souls || {}).filter((k) => !before.souls[k]), stones: (S.cons && S.cons.pierre_ame) || 0,
+      winRate: winRate, fightLen: Math.round(cycle), fmPlans, roamed,
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
   };
@@ -2175,6 +2664,21 @@
       S.chars.forEach((c) => { c.scrolls = c.scrolls || {}; c.autoCap = c.autoCap || 200; if (c.head === undefined) c.head = c.id % 8; c.palette = c.palette || "classique"; c.pts = (c.lvl - 1) * 5; BASE_STATS.forEach((k) => (c.alloc[k] = 0)); if (!c.autoStat) c.autoStat = CLASSES[c.cls].main; E.autoAllocate(S, c); });
       report.push("Nouveautés 3.1 : les points de caractéristiques suivent maintenant les paliers de DOFUS (au-delà de 100, il faut plus de points pour gagner 1). Vos points ont été redistribués automatiquement : élément principal jusqu'à 200, puis Vitalité. La réinitialisation est gratuite et illimitée.");
     }
+    if (S.v < 8 && S.emblem) {
+      // 0.1.8.2 : l'Emblème du Solitaire disparaît ; les runes investies sont rendues en runes simples, le titre et l'ornement restent acquis
+      const em = S.emblem; let W = em.xp || 0; for (let l = 1; l < (em.lvl || 1); l++) W += Math.floor(5 + 0.5 * Math.pow(l, 1.25));
+      const lines = Object.keys(em.stats || {}).filter((k) => STATS[k] && em.stats[k] > 0); const tot = lines.reduce((a, k) => a + em.stats[k] * STATS[k].w, 0) || 1;
+      const got = [];
+      (lines.length ? lines : ["vit"]).forEach((k) => { const share = lines.length ? em.stats[k] * STATS[k].w / tot : 1; const n = Math.floor(W * share / (STATS[k].w * STATS[k].pts)); if (n > 0) { const key = E.runeKey("", k); S.runes[key] = (S.runes[key] || 0) + n; got.push(`${n} ${E.runeName(key)}`); } });
+      if ((em.lvl || 0) >= 100) { S.unlocks = S.unlocks || {}; S.unlocks.solitaire = true; }
+      if (S.ach && S.ach.emb100) { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes("le Solitaire")) S.titlesExtra.push("le Solitaire"); }
+      delete S.emblem;
+      report.push(`0.1.8.2 : l'Emblème du Solitaire disparaît (il ne servait qu'en solo). ${got.length ? "Runes rendues : " + got.join(", ") + "." : "Aucune rune n'y avait été investie."} Les runes nourrissent maintenant le métier de Forgemage (onglet Forgemagie).`);
+    }
+    if (S.v < 9) { // 0.1.12 : nouvelle courbe d'XP au-delà du niveau 100 ; les héros qui ont déjà l'XP du niveau suivant montent tout de suite
+      const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) E.giveXp(S, c, 0); }); E.events.length = ev;
+      report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Équipe › Renaissance).");
+    }
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });
     Object.keys(CRAFT_JOBS).forEach((j) => { if (!S.crafts[j]) S.crafts[j] = fresh.crafts[j]; });
@@ -2192,6 +2696,52 @@
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
     S.v = E.VERSION;
     return S;
+  };
+
+  /* ---------------- Actions du joueur ----------------
+     La liste officielle de tout ce qu'un joueur peut faire qui change sa partie.
+     En multijoueur, c'est exactement ce que le jeu enverra au serveur : { action, arguments }.
+     Le serveur appliquera E.act(S, action, ...arguments) avec ce même moteur, et refusera tout le reste.
+     Chaque action prend la partie S en premier argument et renvoie null / undefined si tout va bien,
+     sinon un message d'erreur (ou un résultat). Le temps qui passe (E.tick, E.catchUp) n'est pas une action :
+     c'est le serveur qui le fera avancer avec son horloge (E.setClock).
+     Nouvelle fonction du moteur appelée par un bouton du jeu et qui modifie la partie : l'ajouter ici.
+     Encore modifiés directement par l'écran (à transformer en actions avec les comptes en ligne) :
+     apparence des héros, favoris et verrous d'objets, liste de courses, objectifs épinglés terminés, réglages. */
+  E.ACTIONS = {
+    // héros et équipe
+    recruit: "recruter un héros", toggleTeam: "entrer ou sortir de l'équipe", setRow: "placer un héros (ligne)", setPlaceAuto: "placement automatique",
+    allocate: "dépenser un point de caractéristique", deallocate: "retirer un point", resetPoints: "réinitialiser les points",
+    setAllocMode: "répartition auto ou manuelle", autoAllocate: "relancer la répartition auto", equipSpell: "placer un sort dans la barre",
+    setTitle: "choisir un titre", setOrn: "choisir un ornement", setWing: "choisir des ailes",
+    renaissance: "Renaissance d'un héros", chooseAlign: "choisir un alignement", setTraining: "envoyer en salle d'entraînement",
+    // équipement
+    equip: "équiper un objet", unequip: "retirer un objet", sellItem: "vendre un objet", breakItem: "briser un objet",
+    saveGear: "enregistrer un équipement", applyGear: "porter un équipement enregistré", deleteGear: "supprimer un équipement enregistré",
+    applyBuild: "appliquer un build partagé", applyAuto: "réglages du tri automatique",
+    savePreset: "enregistrer un préréglage", loadPreset: "charger un préréglage", applyPreset: "appliquer un préréglage", deletePreset: "supprimer un préréglage",
+    saveComp: "enregistrer une composition", applyComp: "appliquer une composition", delComp: "supprimer une composition", setZonePreset: "préréglage par zone",
+    // chasse, donjons, combat
+    startHunt: "partir chasser", stopHunt: "arrêter de chasser", enterDungeon: "entrer en donjon", leaveDungeon: "quitter le donjon",
+    manualCast: "lancer un sort (mode manuel)", manualEnd: "finir son tour (mode manuel)", protFight: "affronter le protecteur",
+    toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
+    // métiers, forge, ressources
+    setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", sellRes: "vendre des ressources",
+    craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftScroll: "fabriquer un parchemin",
+    forgemage: "forgemager", feedForgemage: "forgemagie en série", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
+    fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
+    useConsumable: "utiliser un consommable", buyShop: "acheter en boutique", buyNets: "acheter des filets",
+    // Havre-Sac, familiers, montures
+    buyHavre: "agrandir le Havre-Sac", placeFurn: "placer un meuble", unplaceFurn: "ranger un meuble",
+    buildAtelier: "construire l'atelier", setAtelier: "choisir la recette de l'atelier", buildEnclos: "construire l'enclos",
+    equipPet: "équiper un familier", equipMount: "équiper une monture", setMountShare: "part d'XP pour la monture",
+    startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement",
+    // divers
+    almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
+  };
+  E.act = (S, name, ...args) => {
+    if (!Object.prototype.hasOwnProperty.call(E.ACTIONS, name) || typeof E[name] !== "function") return `Action inconnue : ${name}`;
+    return E[name](S, ...args);
   };
 
   root.ENGINE = E;
