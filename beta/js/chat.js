@@ -72,7 +72,7 @@
     const list = el.querySelector(".ch-list"); const atEnd = !list || list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
-    el.className = "chat"; el.innerHTML = headHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
+    el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
     const nl = el.querySelector(".ch-list"); if (nl && (atEnd || !keepScroll)) nl.scrollTop = nl.scrollHeight; else if (nl && list) nl.scrollTop = list.scrollTop;
     if (focus && $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
   }
@@ -84,6 +84,9 @@
     const n = C.unread + C.unreadP;
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
+  /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
+  const DISCORD = "https://discord.gg/9ApPgWjPUM";
+  const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener">${X().G("chat")}<span>Une question, un bug, une idée ? <b>Rejoins le serveur Discord</b></span></a>`;
   function headHtml() {
     const tab = (k, n, extra) => `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${n}${extra || ""}</button>`;
     return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}<span class="ch-tab lock" data-tip="Le chat de guilde arrivera avec les guildes.">${X().G("lock")} Guilde</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;

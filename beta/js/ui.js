@@ -16,9 +16,16 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.19";
+const GAME_VERSION = "0.1.19.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.19.2", name: "Regarder le combat", items: [
+    "Défi du jour : nouveau bouton « Regarder le combat » (après un essai, ou « Regarder » dans l'encart du défi) qui rejoue le défi sur l'écran de combat, salle par salle, avec les animations",
+    "C'est exactement le combat que compte le score : même équipe, même hasard ; regarder ne compte pas comme un essai",
+    "Vitesse ×1, ×2 ou ×4, et un résumé à la fin avec « Revoir » et « Retour au défi »",
+  ] },
+  { v: "0.1.19.1", name: "Discord dans le chat", items: [
+    "En haut du chat, un bandeau invite à rejoindre le serveur Discord pour poser une question, signaler un bug ou proposer une idée" ] },
   { v: "0.1.19", name: "Se montrer", items: [
     "Défi du jour (Aventure › Donjons) : chaque jour à minuit (heure de Paris), un donjon, une stasis, deux modificateurs et le même hasard pour tout le monde, dans trois paliers : Découverte (1-60), Aventure (61-140) et Légende (141-200)",
     "Le combat du défi se joue d'un coup, en automatique, avec ton équipe du moment (jusqu'à 8 héros, idoles, familiers et montures compris) ; le moins de tours gagne, puis le plus de PV restants ; essais illimités, le meilleur score du jour est gardé",
@@ -1234,6 +1241,7 @@ function encCard(k) {
 }
 /* ---------- COMBAT ---------- */
 function renderCombat() {
+  if (ui.watch) return renderWatch();
   const team = E.team(S); const fs = E.freeSpirit(S);
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   if (!ui.combatCid || !team.find((c) => c.id === ui.combatCid)) ui.combatCid = team[0] && team[0].id;
@@ -2387,7 +2395,7 @@ function axWheel(A, res) {
   w.animate([{ opacity: 0, transform: "translateX(-50%) scale(.6)" }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.08 }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.9 }, { opacity: 0, transform: "translateX(-50%) scale(1)" }], { duration: 3000, fill: "forwards" }); axLater(w, 3050);
 }
 function updateCombat(force) {
-  const F = S.fight; const arena = $("#arena"); if (!arena) return;
+  const F = ui.watch ? ui.watch.W.S2.fight : S.fight; const arena = $("#arena"); if (!arena) return;
   if (!ui.arena || ui.arena.el !== arena || ui.arena.fid !== (F ? F.id : null) || ui.arena.theme !== isDark() || ui.arena.view !== combatView()) buildArena(F);
   const A = ui.arena;
   if (F && A.nEnts !== undefined && F.ents.length > A.nEnts) {
@@ -3827,6 +3835,7 @@ function checkNewVersion() {
 }
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
+  if (ui.watch && ui.tab !== "combat") watchStop();
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
@@ -4118,7 +4127,7 @@ function defiBanner() {
       <div class="df-best">${best ? `<b class="num">${best.turns}</b><span>tours, ton record du jour</span>` : `<b class="num">–</b><span>${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`}</div></div>
     <div class="df-foot">${defiDots()}<span class="xs"><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b>${streak < 7 ? ` · titre à 7` : streak < 30 ? ` · ornement à 30` : ""}</span>
       <span class="xs">${st.chest ? `✓ coffre du jour ouvert` : `${IC("coffre")} coffre du jour à ouvrir`}</span><span class="grow"></span>
-      ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}${ON ? `<button class="btn sm" data-act="sm-dboard" data-v="${tid}">Classement</button>` : ""}<button class="btn primary" data-act="sm-dplay" data-v="${tid}">Lancer le défi</button></div></div>`;
+      ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}<button class="btn sm" data-act="sm-watch" data-v="${tid}" data-tip="Le combat joué sous tes yeux, avec ton équipe actuelle (ne compte pas comme un essai)">Regarder</button>${ON ? `<button class="btn sm" data-act="sm-dboard" data-v="${tid}">Classement</button>` : ""}<button class="btn primary" data-act="sm-dplay" data-v="${tid}">Lancer le défi</button></div></div>`;
 }
 let defiLast = null;
 function defiPlay(tid) {
@@ -4145,7 +4154,7 @@ function defiSheet(r) {
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
     ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
     ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (onLive() ? "Envoi au serveur pour le classement…" : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
-    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button><button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* le serveur rejoue le défi avec la partie en ligne : on l'envoie d'abord */
 async function defiSubmit(r) {
@@ -4269,9 +4278,57 @@ function cardX() {
   toast("Colle ensuite l'image dans le message (Copier l'image, puis Ctrl+V).");
 }
 
+/* ---------- 0.1.19.2 : « Regarder le combat » du défi du jour ----------
+   Le défi est rejoué pas à pas sur l'écran de combat (E.defiWatchStep), avec le même hasard que le score. */
+function watchStart(tid) {
+  if (!E.defiTierOk(S, tid)) { toast("Ce palier n'est plus pour ton équipe.", "warn"); return; }
+  watchStop(); const def = E.defi(tid); const W = E.defiWatch(S, def, E.now());
+  if (W.err) { toast(W.err, "warn"); return; }
+  E.defiWatchStep(W); ui.watch = { W, tid, spd: (ui.watch && ui.watch.spd) || 1, timer: null };
+  closeSheet(); ui.tab = "combat"; ui.arena = null; render(); window.scrollTo(0, 0); watchTick();
+}
+function watchStop() { if (ui.watch && ui.watch.timer) clearTimeout(ui.watch.timer); ui.watch = null; ui.arena = null; }
+function watchTick() {
+  const w = ui.watch; if (!w) return;
+  const r = E.defiWatchStep(w.W);
+  if (r === "start") ui.arena = null;
+  updateCombat(r === "start"); watchHead();
+  if (r === "end" || w.W.done) { watchEnd(); return; }
+  w.timer = setTimeout(watchTick, (r === "over" ? E.PAUSE_MS * 1.3 : E.STEP_MS) / w.spd);
+}
+function watchHead() {
+  const w = ui.watch; if (!w) return; const W = w.W; const n = Math.min(W.rooms.length + (W.S2.fight && !W.S2.fight.over ? 1 : 0), W.nRooms) || 1;
+  const el = $("#wroom"); if (el) el.textContent = n >= W.nRooms ? "salle du boss" : `salle ${n} sur ${W.nRooms}`;
+}
+function watchEnd() {
+  const w = ui.watch; const el = $("#watchEnd"); if (!w || !el) return; const R = E.defiResult(w.W);
+  el.innerHTML = `<div class="row between" style="gap:10px;flex-wrap:wrap"><span><b>${R.win ? `Défi réussi en ${R.turns} tours` : `Défaite en salle ${R.rooms.length}`}</b><br><span class="small muted">${R.win ? `PV restants : ${R.hp} %. ` : ""}C'est exactement le combat que compte le score.</span></span>
+    <span class="row" style="gap:6px"><button class="btn sm" data-act="sm-watch" data-v="${w.tid}">Revoir</button><button class="btn sm primary" data-act="sm-wquit">Retour au défi</button></span></div>`;
+}
+function renderWatch() {
+  const w = ui.watch; const W = w.W; const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
+  $("#main").innerHTML = `<div class="pagehead combathead"><div><div class="small muted">${G("target")} Défi du jour · ${h(T.name)} · <span id="wroom"></span></div><h1>${h(dg.name)}</h1></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Stasis ${W.def.k}</span>${W.def.mods.map(modChip).join("")}
+      <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
+  <section class="panel combatpanel watchpanel">
+    <div class="arenasticky">
+      <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog">${[["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
+      <div class="arenawrap"><div class="arena" id="arena"></div></div>
+      <div class="ftick" id="turn"></div>
+    </div>
+    <div class="chalbar" id="chalbar"></div><div id="await"></div>
+    <div class="pad" id="watchEnd"></div>
+    <div class="log" id="flog"></div>
+    <div hidden><span id="fres"></span><div id="floot"></div></div>
+  </section>`;
+  ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd();
+}
 function smAct(a, t) {
   const d = t.dataset;
   switch (a) {
+    case "sm-watch": watchStart(d.v); return;
+    case "sm-wspd": if (ui.watch) { ui.watch.spd = +d.v; document.querySelectorAll('[data-act="sm-wspd"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } return;
+    case "sm-wquit": { const tid = ui.watch ? ui.watch.tid : null; watchStop(); if (tid) ui.defiTier = tid; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return; }
     case "sm-dtier": ui.defiTier = d.v; render(); return;
     case "sm-dplay": defiPlay(d.v); return;
     case "sm-dlast": if (defiLast) defiSheet(defiLast); else { const st = E.defiState(S); const x = st.tries[0]; if (x) toast(`Dernier essai : ${x.win ? `${x.turns} tours` : "défaite"}.`); } return;
