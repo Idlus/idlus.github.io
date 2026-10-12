@@ -6,7 +6,7 @@ Idle game de fan inspiré de DOFUS, par Mathis. Jeu : https://mathiss29.github.i
 - SPA en JavaScript sans build : `index.html`, `css/style.css`, `js/gamedata.js`, `js/looks.js`, `js/data.js`, `js/engine.js` (combat, stasis, équilibrage), `js/systems.js`, `js/ui.js` (rendu, CHANGELOG, GAME_VERSION).
 - Sauvegarde dans localStorage sous la clé `dofousxen-save` (ne pas renommer). Migrations via `E.VERSION` dans engine.js.
 - PWA : `sw.js` (VERSION = version du jeu ; MEDIA = cache des images, à incrémenter si une image change de contenu sans changer de nom), `manifest.webmanifest`, `icons/`.
-- Visuels : `assets/look` (héros en pied, rendus Ankama ; le Forgelance est recomposé à la main), `assets/ui` (icônes officielles), `assets/m`, `assets/s`, `assets/i`.
+- Visuels : `assets/look` (héros en pied, rendus Ankama ; le Forgelance est recomposé par le jeu à partir du rendu DofusDB, voir `forgeLook` dans ui.js), `assets/ui` (icônes officielles), `assets/m`, `assets/s`, `assets/i`.
 - Thèmes : `data-theme="emerald"` (défaut) et `"dark"` (Nuit violette).
 
 ## Publier une version

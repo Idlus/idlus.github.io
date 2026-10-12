@@ -4,13 +4,13 @@
 const VERSION = "0.1.1";
 /* La version de test (/beta/) a ses propres caches : chaque service worker ne nettoie que les siens. */
 const P = /\/beta\/$/.test(self.registration.scope) ? "idlus-beta-" : "idlus-";
-const CORE = P + "core-" + VERSION, MEDIA = P + "media-v5";
+const CORE = P + "core-" + VERSION, MEDIA = P + "media-v6";
 const PRECACHE = ["./", "index.html", "css/style.css", "js/gamedata.js", "js/looks.js", "js/data.js", "js/engine.js", "js/systems.js", "js/ui.js", "js/admin.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CORE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => (k.startsWith(P + "core-") && k !== CORE) || (k.startsWith(P + "media-") && k !== MEDIA)).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
-const isMedia = (u) => /\/(assets|icons)\//.test(u.pathname) || /fonts\.(gstatic|googleapis)\.com$/.test(u.hostname) || (u.hostname === "static.ankama.com" && u.pathname.startsWith("/dofus/renderer/"));
+const isMedia = (u) => /\/(assets|icons)\//.test(u.pathname) || /fonts\.(gstatic|googleapis)\.com$/.test(u.hostname) || (u.hostname === "static.ankama.com" && u.pathname.startsWith("/dofus/renderer/")) || u.hostname === "renderer.dofusdb.fr";
 self.addEventListener("fetch", (e) => {
   const req = e.request; if (req.method !== "GET") return;
   const u = new URL(req.url);

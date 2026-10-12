@@ -182,23 +182,72 @@ const lookLocal = (cls, sex, hi) => `assets/look/${cls}_${sex === "f" ? "f" : "m
 function lookUrl(c, opts = {}) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return null; const sx = c.sex === "f" ? "f" : "m"; const D2 = L[sx]; const hi = Math.max(0, Math.min(D2.heads.length - 1, c.head || 0));
   const skins = [D2.body, D2.heads[hi]];
-  if (!opts.bare && c.equip) ["coiffe", "cape"].forEach((sl) => { const it = S && S.items[c.equip[sl]]; const sk = it && LK.ITEM_SKINS[it.tpl]; if (sk) skins.push(sk); });
+  if (!opts.bare && c.equip) ["coiffe", "cape"].forEach((sl) => { const it = S && S.items[c.equip[sl]]; const sk = it && LK.ITEM_SKINS[it.tpl]; if (sk && !(c.cls === "forge" && sl === "coiffe")) skins.push(sk); }); // le moteur de rendu ne pose aucune coiffe sur le Forgelance
   const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
   const cols = D2.colors.slice(); if (pal && pal.c) pal.c.forEach((v, i) => (cols[i + 1] = v));
-  if (c.cls === "forge" || (skins.length === 2 && (!pal || !pal.c))) return lookLocal(c.cls, sx, hi); // Forgelance : rendu Ankama défaillant (tête détachée), on garde nos images recomposées
+  if (skins.length === 2 && (!pal || !pal.c)) return lookLocal(c.cls, sx, hi);
+  if (c.cls === "forge") return forgeLook(skins, cols, sx, hi); // Forgelance : tête recollée sur le cou (voir forgeLook)
   const look = `{1|${skins.join(",")}|${cols.map((v, i) => `${i + 1}=${v}`).join(",")}|140}`;
   let hex = ""; for (const ch of unescape(encodeURIComponent(look))) hex += ch.charCodeAt(0).toString(16).padStart(2, "0");
   return `https://static.ankama.com/dofus/renderer/look/${hex}/full/1/200_200-10.png`;
 }
-const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0); return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
+/* Forgelance : les moteurs de rendu (Ankama et DofusDB) dessinent sa tête à côté du corps et sans ses couleurs.
+   On demande à DofusDB (qui autorise la lecture des pixels) le corps seul et la tête seule, on cale la tête sur l'ombre au sol
+   (repère commun aux deux images), on la pose sur le cou et on colore la peau quand elle arrive pâle. Résultat gardé en mémoire et dans le navigateur. */
+const FORGE_NECK = [-290, -420], FORGE_KEY = "idlus-forge-v1", FORGE = { map: null, wait: {} };
+const forgeHex = (skins, cols) => { let x = ""; for (const ch of `{1|${skins.join(",")}|${cols.map((v, i) => `${i + 1}=${v}`).join(",")}|140}`) x += ch.charCodeAt(0).toString(16).padStart(2, "0"); return `https://renderer.dofusdb.fr/look/${x}/full/1/300_300.png`; };
+function forgeStore() { if (!FORGE.map) { FORGE.map = new Map(); try { (JSON.parse(localStorage.getItem(FORGE_KEY)) || []).forEach(([k, v]) => FORGE.map.set(k, v)); } catch (e) { /* stockage indisponible */ } } return FORGE.map; }
+function forgeLook(skins, cols, sx, hi) {
+  const key = skins.join("-") + "_" + cols.join("-"), m = forgeStore();
+  if (m.has(key)) return { src: m.get(key), key };
+  if (!FORGE.wait[key]) FORGE.wait[key] = forgeCompose(skins, cols).then((url) => {
+    m.delete(key); m.set(key, url); while (m.size > 12) m.delete(m.keys().next().value);
+    try { localStorage.setItem(FORGE_KEY, JSON.stringify([...m])); } catch (e) { /* stockage plein : on garde en mémoire */ }
+    document.querySelectorAll(`img[data-fk="${key}"]`).forEach((im) => (im.src = url));
+  }).catch(() => {}); // hors ligne : l'image locale reste
+  return { src: lookLocal("forge", sx, hi), key };
+}
+const forgeLoad = (u) => new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = "anonymous"; i.onload = () => ok(i); i.onerror = ko; i.src = u; });
+const forgePix = (img) => { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; const x = c.getContext("2d"); x.drawImage(img, 0, 0); return { c, d: x.getImageData(0, 0, c.width, c.height) }; };
+function forgeShadow(d, W, H) { // bas de l'ombre au sol, largeur et centre juste au-dessus
+  const on = (x, y) => d[(y * W + x) * 4 + 3] > 4; let y = H - 1; while (y > 0) { let x = 0; while (x < W && !on(x, y)) x++; if (x < W) break; y--; }
+  const yy = y - 6; let x0 = W, x1 = -1; for (let x = 0; x < W; x++) if (on(x, yy)) { if (x < x0) x0 = x; x1 = x; } return { y, w: Math.max(1, x1 - x0), cx: (x0 + x1) / 2 };
+}
+function forgeTint(d, cols) { // certaines têtes arrivent avec la peau non colorée (beige pâle) : on lui donne la couleur de peau ; le casque reste en métal
+  const skin = [(cols[0] >> 16) & 255, (cols[0] >> 8) & 255, cols[0] & 255];
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue; const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (mx < 150 || mx - mn < 18 || !(r > b + 15 && r >= g) || (mx - mn) / mx > 0.3) continue;
+    const k = Math.min(1.2, (r * 0.3 + g * 0.59 + b * 0.11) / 215); d[i] = Math.min(255, skin[0] * k); d[i + 1] = Math.min(255, skin[1] * k); d[i + 2] = Math.min(255, skin[2] * k);
+  }
+}
+async function forgeCompose(skins, cols) {
+  const [B, Hd] = await Promise.all([forgeLoad(forgeHex([skins[0], ...skins.slice(2)], cols)), forgeLoad(forgeHex([skins[1]], cols))]);
+  const b = forgePix(B), h = forgePix(Hd), W = b.c.width, H = b.c.height, HW = h.c.width, HH = h.c.height, d = h.d.data;
+  const sb = forgeShadow(b.d.data, W, H), sh = forgeShadow(d, HW, HH), k = sb.w / sh.w;
+  let cut = HH, run = 0, best = 0; // l'ombre de la tête seule est sous la plus grande bande vide : on l'efface
+  for (let y = 0; y < HH; y++) { let x = 0; while (x < HW && d[(y * HW + x) * 4 + 3] <= 4) x++; if (x === HW) { if (++run > best) { best = run; cut = y; } } else run = 0; }
+  d.fill(0, cut * HW * 4); forgeTint(d, cols); h.c.getContext("2d").putImageData(h.d, 0, 0);
+  const pad = 400, out = document.createElement("canvas"); out.width = W; out.height = H + pad; const o = out.getContext("2d");
+  o.drawImage(B, 0, pad); o.drawImage(h.c, sb.cx - sh.cx * k + FORGE_NECK[0], pad + sb.y - sh.y * k + FORGE_NECK[1], HW * k, HH * k);
+  // recadrage comme les rendus Ankama (200 × 200, personnage sur ~90 % de la hauteur, centré)
+  const od = o.getImageData(0, 0, out.width, out.height).data; let x0 = W, y0 = out.height, x1 = 0, y1 = 0;
+  for (let y = 0; y < out.height; y++) for (let x = 0; x < W; x++) if (od[(y * W + x) * 4 + 3] > 4) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const S = 300, sc = Math.min(S * 0.905 / (y1 - y0), S * 0.9 / (x1 - x0)), fin = document.createElement("canvas"); fin.width = fin.height = S;
+  fin.getContext("2d").drawImage(out, x0, y0, x1 - x0, y1 - y0, (S - (x1 - x0) * sc) / 2, S * 0.045, (x1 - x0) * sc, (y1 - y0) * sc);
+  return fin.toDataURL("image/webp", 0.9);
+}
+const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0);
+  if (typeof u === "object") return `<img class="${cls}" src="${u.src}" data-fk="${u.key}" alt="" loading="lazy">`; // Forgelance recomposé (image locale en attendant)
+  return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
 function lookSheet(c) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return;
   const sx = c.sex === "f" ? "f" : "m";
   openSheet(`<h2>Apparence de ${h(c.name)}</h2>
     <div class="lookprev">${lookImg(c, "lookbig")}</div>
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
-    ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
-    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec son illustration officielle : une seule tête, ses couleurs d'origine, sans coiffe ni cape visibles.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${`<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
+    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance porte son casque de classe ; les coiffes ne s'affichent pas encore sur lui (les capes, si).</p>` : ""}<div class="small"><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
     <p class="xs muted">${Object.keys(LK.ITEM_SKINS).length} coiffes et capes apparaissent déjà sur les héros ; les autres arriveront au fil des mises à jour.</p>
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
@@ -470,11 +519,11 @@ function classInfo(id, sex, hd) {
 }
 /* Choix de la tête dès la création du héros */
 function headPick(id, sex) {
-  const L = LK.CLASS_LOOKS[id]; const sx = sex === "f" ? "f" : "m"; if (!L || id === "forge" || L[sx].heads.length < 2) return "";
+  const L = LK.CLASS_LOOKS[id]; const sx = sex === "f" ? "f" : "m"; if (!L || L[sx].heads.length < 2) return "";
   const cur = Math.min(ui.startHead || 0, L[sx].heads.length - 1);
   return `<div class="stack" style="gap:4px"><span class="small muted">Tête</span><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${cur === i ? "on" : ""}" data-act="starthead" data-v="${i}" aria-pressed="${cur === i}"><img src="${lookLocal(id, sx, i)}" alt="Tête ${i + 1}"></button>`).join("")}</div></div>`;
 }
-const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return id === "forge" ? 0 : Math.min(ui.startHead || 0, n - 1); };
+const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return Math.min(ui.startHead || 0, n - 1); };
 const hasPublicSave = () => { try { return !!localStorage.getItem("dofousxen-save"); } catch (e) { return false; } };
 function renderStart() {
   renderStatus(); renderNav();
