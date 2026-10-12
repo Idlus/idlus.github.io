@@ -2934,3 +2934,34 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .enclink:hover{text-decoration:underline}
 .encmore{width:26px;height:26px;border-radius:8px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:11px;font-weight:800;cursor:pointer;padding:0;align-self:flex-start}
 @media (max-width:760px){.enckpis{grid-template-columns:repeat(2,minmax(0,1fr))}.enckpi.archi{grid-column:1/-1}}
+/* 0.1.32.1 : têtes des héros toujours visibles à côté de la fiche */
+.fichewrap{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:12px;align-items:start}
+.fichemain{min-width:0}
+.hrail{position:sticky;top:calc(var(--sth,56px) + 12px);z-index:20;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px 8px;background:var(--panel);border:2px solid var(--gold2);border-radius:20px;box-shadow:var(--shadow);max-height:calc(100vh - var(--sth,56px) - 24px)}
+.hr-t{font-size:9.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--gold2)}
+.hr-list{display:flex;flex-direction:column;align-items:center;gap:12px;overflow-y:auto;scrollbar-width:none;padding:3px 4px 6px;min-height:0}
+.hr-list::-webkit-scrollbar{display:none}
+.hr-h{position:relative;flex:none;display:grid;place-items:center;border:0;background:none;padding:0;cursor:pointer;border-radius:50%}
+.hr-h .head{width:44px;height:44px;opacity:.78;transition:transform .15s,opacity .15s,box-shadow .15s}
+.hr-h:hover .head,.hr-h:focus-visible .head{opacity:1;transform:scale(1.08)}
+.hr-h.out .head{opacity:.45;filter:saturate(.6)}
+.hr-h.on .head{opacity:1;filter:none;box-shadow:0 0 0 3px var(--gold),0 0 14px rgba(var(--glw),.5)}
+.hr-h:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.hr-lv{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:900;line-height:13px;background:var(--panel2);border:1px solid var(--gold2);border-radius:8px;padding:0 4px;color:var(--ink);pointer-events:none}
+.hr-g,.hr-p{position:absolute;top:-3px;min-width:13px;height:13px;border-radius:7px;border:2px solid var(--panel);pointer-events:none}
+.hr-g{right:-3px;background:#7ee06a}
+.hr-p{left:-3px;background:#f0b54a;color:#2a1d08;font-size:8.5px;font-weight:900;line-height:9px;text-align:center;font-style:normal;padding:0 2px}
+.hr-add .head{font-size:20px;font-weight:900;color:var(--ink);border-style:dashed}
+.hr-name{display:none}
+.hr-kb{font-size:9px;font-weight:800;color:var(--muted);text-align:center;line-height:1.5;border-top:1px solid var(--line);padding-top:6px;width:100%}
+.hr-kb kbd{font:inherit;display:inline-block;border:1px solid var(--line);border-radius:4px;padding:0 3px;margin:0 1px}
+@media (max-width:859px){
+  .fichewrap{grid-template-columns:minmax(0,1fr)}
+  .fiche .chips{display:none}
+  .hrail{order:-1;top:var(--sth,56px);flex-direction:column;align-items:stretch;gap:2px;margin:0 -14px 12px;padding:6px 0 6px;border-width:0 0 2px;border-radius:0 0 16px 16px;max-height:none}
+  .hr-t,.hr-kb{display:none}
+  .hr-list{flex-direction:row;gap:9px;overflow-x:auto;overflow-y:visible;padding:4px 14px 9px}
+  .hr-h .head{width:40px;height:40px}
+  .hr-name{display:block;text-align:center;font-size:12.5px;font-weight:800;color:var(--ink);padding:0 14px}
+  .hr-name small{font-weight:600;color:var(--muted);font-size:12px}
+}
