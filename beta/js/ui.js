@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.24";
+const GAME_VERSION = "0.1.24.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.24.1", name: "Artisans et temples", items: [
+    "Commandes d'artisans (Quêtes › Commandes) : chaque jour, 3 artisans demandent des ressources (récolte de tes métiers ou butin des monstres de tes zones). Livraison en plusieurs fois possible ; kamas et XP de métier à la clé, une commande « urgente » paie ×1,5. Chaque artisan monte en rang (3, 10, 25 commandes : +10 % de kamas par rang), tout livrer dans la journée offre un coffre, et la première commande changée chaque jour est gratuite",
+    "Temples et Dopeuls (Quêtes › Temples) : une fois par jour et par classe, pour chaque classe de ton équipe ou de ta réserve, le Dopeul de la classe vient défier l'équipe là où elle chasse. C'est le reflet sombre de ton héros, à son niveau : une équipe bien équipée gagne la plupart du temps, sans équipement elle perd. Une défaite ne coûte rien, le temple reste ouvert",
+    "Les victoires rapportent des Doplons (plus le héros est haut niveau, plus il y en a ; +3 tous les 7 jours d'affilée), à dépenser au Comptoir des temples : coffres, Pierre d'âme, Potion de Savoir, petits parchemins de caractéristiques, parchemin de chasse au trésor, titre « Ombre du temple » et ornement « Reflet du temple ». 10 temples différents conquis donnent le titre « Maître des temples »",
+    "Sons (Options) : quelques sons discrets pour un niveau gagné, un butin rare, un boss vaincu, une âme ou un Dofus, un coffre, une commande livrée et un Dopeul vaincu. Coupés par défaut, avec réglage du volume, option « à chaque victoire » et option « même onglet caché ». Rien ne sonne au retour d'absence",
+    "Consignes d'absence (Options, et lien dans le résumé d'absence) : suivre les étoiles seulement pendant l'absence, revenir à sa zone au retour, limite de banque (le surplus gagné pendant l'absence est vendu, jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes), offrande à l'Almanax et livraison des commandes prêtes au retour. Le résumé d'absence dit ce qui a été fait",
+    "Succès : Premier client, Fournisseur officiel (titre), Tablier d'artisan (ornement), Face à son reflet, Habitué des temples. Les commandes entrent dans le bilan des kamas du Carnet",
+    "Le test de la chasse au trésor ne dépend plus du hasard" ] },
   { v: "0.1.24", name: "L'Expédition sans fin", items: [
     "Nouveau mode Aventure › Expédition, dès le niveau 10, sans clé : des étages sans fin adaptés au niveau de ton équipe à l'entrée (monstres et boss des zones à ± 10 niveaux), de plus en plus forts (étage 10 ≈ stasis 4, 20 ≈ 7, 30 ≈ 10, puis sans limite). XP et butin +4 % par étage",
     "À chaque étage, 2 ou 3 portes, les mêmes pour tout le monde : Combat, Élite (Champions, plus d'Éclats, relique rare), Trésor (kamas, ressources, relique, un piège), Autel (une bénédiction), Repos (soins et héros ranimés), Marchand (reliques contre Éclats). Un boss de donjon tous les 5 étages, un coffre de palier tous les 10. Longue-vue du campement : voir les monstres derrière les portes",
@@ -553,6 +561,8 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "ame") ornHtml = `<span class="orn seal">💜</span>`;
   else if (orn === "sablier") ornHtml = `<span class="orn seal">⏳</span>`;
   else if (orn === "boussole") ornHtml = `<span class="orn seal">🧭</span>`;
+  else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
+  else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
@@ -1431,7 +1441,7 @@ function buildArena(F) {
   const pasDiv = `<div class="pas"></div>`;
   const entHtml = view === "compact" ? ([e, i]) => {
     const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: "m", name: e.name } : null;
-    const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
+    const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.dop ? `<span class="cico dop">${im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
     const rn = c && c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : "";
     return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
   } : ([e, i]) => {
@@ -1439,7 +1449,7 @@ function buildArena(F) {
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
       return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
-    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
+    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "compact"
@@ -3583,7 +3593,7 @@ function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
   return `<section class="panel"><div class="phead"><h2>${emo(Sh.icon)} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
     <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
-      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte"}</div></div></div>
+      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
 function bountiesHtml() {
@@ -3636,8 +3646,8 @@ function achHtml() {
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
 function renderQuests() {
-  const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["ach", "Succès"]];
-  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
+  const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["commandes", "Commandes"], ["temples", "Temples"], ["ach", "Succès"]];
+  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "commandes" ? commandesHtml() : ui.qt === "temples" ? templesHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${ui.qt === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${body}</section>`;
@@ -3822,6 +3832,8 @@ function optionsSheet() {
     <div class="stack small">
       ${accountHtml()}
       ${displayOptionsHtml()}
+      ${soundOptionsHtml()}
+      ${consignesHtml()}
       <div class="row"><b>Découvertes</b> <span class="muted">(les bulles d'aide)</span><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche</button></div>
       <label class="row"><input type="checkbox" data-act="setprot" ${!S.settings.protOff ? "checked" : ""}> <span><b>Protecteurs de ressources</b> <span class="muted">(un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min)</span></span></label>
       <div class="stack" style="gap:6px"><div><b>Code cadeau</b> <span class="muted">(donné sur le Discord ; un code par partie)</span></div><div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${Object.keys(S.gifts || {}).length ? `<span class="xs muted">${Object.keys(S.gifts).length} code${Object.keys(S.gifts).length > 1 ? "s" : ""} déjà utilisé${Object.keys(S.gifts).length > 1 ? "s" : ""}</span>` : ""}</div>
@@ -3845,6 +3857,7 @@ function offlineSheet(r) {
     ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
     ${r.roamed && r.roamed.length ? `<p class="small">${G("star")} Chasse itinérante : ${r.roamed.map(h).join(" → ")}</p>` : ""}
+    ${r.consigne && r.consigne.length ? `<p class="small">${IC("quetes")} <b>Consignes</b> : ${r.consigne.map(h).join(" ")} <button class="btn sm" data-act="vi-optcons">Régler</button></p>` : ""}
     ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
     ${r.souls && r.souls.length ? `<p class="small" style="color:var(--archi)">💜 Âmes capturées : ${r.souls.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")} · ${r.stones} Pierre${r.stones > 1 ? "s" : ""} d'âme restante${r.stones > 1 ? "s" : ""}</p>` : r.archis && r.archis.length && !r.stones ? `<p class="small muted">Aucune Pierre d'âme en sac : les âmes se sont échappées.</p>` : ""}
@@ -4128,7 +4141,7 @@ function pageGo(id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
     case "defi": go("world", "world", "dungeons"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
-    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break;
+    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
     case "inv": go("inv", "inv", "items"); break; case "invres": go("inv", "inv", "res"); break; case "invcons": go("inv", "inv", "cons"); break; case "sets": go("inv", "inv", "sets"); break;
@@ -4546,6 +4559,93 @@ function tresorHtml() {
   const next = (T.n || 0) < 10 ? `titre « ${E.TRESOR_TITLE} » à 10` : (T.n || 0) < 50 ? "ornement « Boussole dorée » à 50" : "titre et ornement obtenus";
   return `${cur}${stock}${lastT}<p class="xs muted" style="margin:0">${fmt(T.n || 0)} trésor${(T.n || 0) > 1 ? "s" : ""} trouvé${(T.n || 0) > 1 ? "s" : ""} · ${next}.</p>`;
 }
+/* ======================= 0.1.24.1 « Artisans et temples » : commandes, temples, sons, consignes ======================= */
+function commandesHtml() {
+  const C = E.cmdState(S); const cost = E.cmdSwapCost(S);
+  const done = C.list.filter((o) => o.got >= o.n).length;
+  return `<p class="note">Chaque jour, trois artisans passent commande. Livre ce que tu as en banque (une partie suffit pour commencer) : kamas et XP de métier à la clé. Plus tu livres un artisan, plus il paie (+10 % par rang). Tout livrer dans la journée offre un coffre.</p>
+    <div class="vi-cmds">${C.list.map((o) => { const have = S.res[o.res] || 0; const left = o.n - o.got; const ok = o.got >= o.n; const r = E.cmdRank(S, o.art); const fav = S.resFav && S.resFav[o.res];
+      return `<div class="vi-cmd ${ok ? "done" : ""} ${o.urgent ? "urgent" : ""}">${o.urgent ? `<span class="vi-urg">Urgent · ×1,5</span>` : ""}
+        <div class="row"><span class="vi-art">${IC(o.kind === "g" ? "pioche" : "metiers")}</span><div class="grow"><b>${h(E.CMD_ARTS[o.art])}</b><div class="xs muted">${h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art]).name)} · rang ${r} ${"★".repeat(r)}${"☆".repeat(3 - r)}</div></div></div>
+        <div class="row">${im(resImg(o.res), "ico", o.res)}<span class="grow"><b>${o.n} × ${h(o.res)}</b>${fav ? ` <span class="tag soft" data-tip="Ressource marquée en favori dans l'inventaire">★ favori</span>` : ""}<br><span class="xs muted">en banque : ${fmt(have)}</span></span></div>
+        <div class="row"><div class="bar grow"><i style="width:${pct(o.got, o.n)}%"></i></div><span class="num small">${o.got}/${o.n}</span></div>
+        <div class="small">Paie : <span class="coin"></span> <b>${fmt(E.cmdReward(S, o))}</b> · <b>${fmt(o.jxp)}</b> XP ${h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art]).name)}</div>
+        <div class="row">${ok ? `<span class="tag good">Livrée ✓</span>` : `<button class="btn sm ${have ? "primary" : ""}" data-act="vi-deliver" data-id="${o.id}" ${have ? "" : "disabled"}>Livrer ${Math.min(have, left) || ""}</button>${o.got ? "" : `<button class="btn sm" data-act="vi-swap" data-id="${o.id}" ${S.kamas < cost ? "disabled" : ""}>Changer · ${cost ? fmt(cost) + " k" : "gratuit"}</button>`}`}</div></div>`; }).join("")}</div>
+    <p class="small muted">Commandes livrées : <b>${fmt(C.n || 0)}</b> · aujourd'hui ${done}/${C.list.length}${C.bonus === C.day ? ` · <span class="plus">prime du jour reçue ✓</span>` : ""}. Les ressources de récolte viennent de tes métiers, celles des artisans des monstres de tes zones.</p>`;
+}
+function templesHtml() {
+  const T = E.templeState(S); const own = new Set(E.templeClasses(S)); const beat = Object.keys(T.beat).length;
+  const pend = T.pend || T.fighting;
+  return `<p class="note">Dans chaque temple t'attend le Dopeul de ta classe : un reflet de ton héros, à son niveau. Un combat par classe et par jour, pour chaque classe de ton équipe ou de ta réserve. Le Dopeul vient défier l'équipe là où elle chasse. Une victoire rapporte des Doplons (plus le héros est haut niveau, plus il y en a), et 7 jours d'affilée donnent +3 Doplons.</p>
+    ${pend ? `<div class="vi-pend">${IC("combat")} <span class="grow">Le Dopeul ${h(CLASSES[pend].name)} ${T.fighting ? "affronte l'équipe" : "arrive au prochain combat"}.</span>${T.fighting ? `<button class="btn sm" data-act="vi-view">Voir le combat</button>` : `<button class="btn sm" data-act="vi-tcancel">Annuler</button>`}</div>` : ""}
+    <div class="vi-temples">${D.CLASS_ORDER.map((k) => { const c = E.templeHero(S, k); const CL = CLASSES[k]; const done = T.done[k]; const n = T.beat[k] || 0;
+      return `<div class="vi-temple ${c ? "" : "off"} ${done ? "done" : ""}" style="--cc:${CL.color}"><i class="med halo" style="--cc:${CL.color}"><img src="${symImg(k)}" alt=""></i>
+        <b>${h(CL.name)}</b><span class="xs muted">${c ? `Dopeul niv. ${c.lvl} · ${E.doplons(c.lvl)} 🪙` : "aucun héros"}</span>${n ? `<span class="xs">vaincu ${n}×</span>` : ""}
+        ${c ? (done ? `<span class="tag good">Vaincu ✓</span>` : `<button class="btn sm ${pend ? "" : "primary"}" data-act="vi-tfight" data-v="${k}" ${pend ? "disabled" : ""}>Défier</button>`) : ""}</div>`; }).join("")}</div>
+    <p class="small muted">Temples conquis : <b>${beat}</b> / ${D.CLASS_ORDER.length} · ${E.TEMPLE_TITLE_N} classes différentes donnent le titre « ${h(E.TEMPLE_TITLE)} » · série : ${T.streak.n || 0} jour${(T.streak.n || 0) > 1 ? "s" : ""}.</p>
+    ${shopHtml("temple")}`;
+}
+function consignesHtml() {
+  const C = E.consigne(S); const ck = (k, b, s) => `<label class="row"><input type="checkbox" data-act="vi-cons" data-k="${k}" ${C[k] ? "checked" : ""}> <span><b>${b}</b> <span class="muted">${s}</span></span></label>`;
+  return `<div class="stack" style="gap:6px" id="consignes"><div><b>Consignes d'absence</b> <span class="muted">(ce que fait l'équipe quand le jeu est fermé ; le résumé d'absence te le raconte)</span></div>
+    ${ck("roam", "Suivre les étoiles pendant l'absence", `(chasse itinérante seulement quand tu n'es pas là, avec ses −${Math.round(E.ROAM_MALUS * 100)} %)`)}
+    ${ck("back", "Revenir à ma zone au retour", "(si l'équipe a changé de zone)")}
+    <label class="row"><span><b>Limite de banque</b> <span class="muted">(le surplus gagné pendant l'absence est vendu ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes)</span></span><input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>
+    ${ck("alm", "Faire l'offrande à l'Almanax au retour", "(si tu as les ressources)")}
+    ${ck("cmd", "Livrer les commandes prêtes au retour", "(seulement quand tout est en banque)")}</div>`;
+}
+/* ---------- sons : synthétisés dans le navigateur, coupés par défaut ---------- */
+const SND = { ctx: null, last: 0, kinds: {}, live: true };
+const sndCfg = () => (S && S.settings.snd) || { on: false, vol: 50, all: false, bg: false };
+function sndCtx() { try { if (!SND.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; SND.ctx = new AC(); } if (SND.ctx.state === "suspended") SND.ctx.resume(); return SND.ctx; } catch (e) { return null; } }
+const SND_DEF = {
+  win: [[523, 0, 0.09], [659, 0.08, 0.12]], level: [[523, 0, 0.1], [659, 0.09, 0.1], [784, 0.18, 0.1], [1047, 0.27, 0.22]],
+  rare: [[1319, 0, 0.07, "triangle"], [1760, 0.06, 0.07, "triangle"], [2093, 0.12, 0.16, "triangle"]], boss: [[392, 0, 0.14, "square"], [523, 0.13, 0.14, "square"], [659, 0.26, 0.14, "square"], [784, 0.39, 0.3, "square"]],
+  coin: [[1568, 0, 0.05, "triangle"], [2093, 0.05, 0.12, "triangle"]], gong: [[196, 0, 0.6, "sine"], [294, 0.02, 0.5, "sine"]], magic: [[880, 0, 0.12, "sine"], [1109, 0.1, 0.12, "sine"], [1319, 0.2, 0.12, "sine"], [1760, 0.3, 0.3, "sine"]],
+};
+function sndPlay(kind, force) {
+  const cfg = sndCfg(); if (!force && (!cfg.on || !SND.live)) return; if (!force && !cfg.bg && document.visibilityState !== "visible") return;
+  const now = performance.now(); if (!force && (now - SND.last < 300 || now - (SND.kinds[kind] || 0) < 1500)) return; SND.last = now; SND.kinds[kind] = now;
+  const ctx = sndCtx(); const notes = SND_DEF[kind]; if (!ctx || !notes) return;
+  const vol = Math.max(0, Math.min(1, (cfg.vol == null ? 50 : cfg.vol) / 100)) * 0.18; const t0 = ctx.currentTime + 0.01;
+  notes.forEach(([f, at, len, type]) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type || "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + len);
+    o.connect(g); g.connect(ctx.destination); o.start(t0 + at); o.stop(t0 + at + len + 0.05); });
+}
+(function sndHooks() {
+  const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
+    if (type === "level") sndPlay("level"); else if (type === "dungeon") sndPlay("boss"); else if (type === "soul" || type === "dofus" || type === "ren") sndPlay("magic");
+    else if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win"); } return r; };
+  const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S && (kind === "rare" || kind === "radiant") && /Butin|Rayonnant|Trésor|archimonstre/i.test(txt)) sndPlay(/Trésor/.test(txt) ? "coin" : "rare"); return r; };
+  const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
+})();
+function soundOptionsHtml() {
+  const c = sndCfg();
+  return `<div class="stack" style="gap:6px"><div><b>Sons</b> <span class="muted">(niveau gagné, butin rare, boss, coffre, Dopeul ; coupés par défaut)</span></div>
+    <div class="row"><label class="row"><input type="checkbox" data-act="vi-snd" data-k="on" ${c.on ? "checked" : ""}> Activer</label><span class="muted">Volume</span><input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button></div>
+    <label class="row"><input type="checkbox" data-act="vi-snd" data-k="all" ${c.all ? "checked" : ""}> <span>Aussi à chaque victoire <span class="muted">(discret, mais fréquent)</span></span></label>
+    <label class="row"><input type="checkbox" data-act="vi-snd" data-k="bg" ${c.bg ? "checked" : ""}> <span>Même quand l'onglet est caché</span></label></div>`;
+}
+function viChange(a, t) {
+  if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
+  else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource sera vendu.` : "Plus de limite de banque."); }
+  else if (a === "vi-snd") { S.settings.snd = Object.assign(sndCfg(), { [t.dataset.k]: t.checked }); if (t.dataset.k === "on" && t.checked) sndPlay("level", true); }
+  else if (a === "vi-vol") { S.settings.snd = Object.assign(sndCfg(), { vol: +t.value }); sndPlay("coin", true); }
+  dirty = true;
+}
+function viAct(a, t) {
+  const d = t.dataset;
+  const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
+  switch (a) {
+    case "vi-deliver": if (run("cmdDeliver", +d.id)) render(); return;
+    case "vi-swap": if (run("cmdSwap", +d.id)) { toast("Nouvelle commande."); render(); } return;
+    case "vi-tfight": if (run("templeFight", d.v)) { toast(`Le Dopeul ${CLASSES[d.v].name} arrive au prochain combat.`, "rare"); render(); } return;
+    case "vi-tcancel": if (run("templeCancel")) render(); return;
+    case "vi-view": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
+    case "vi-test": sndPlay("level", true); return;
+    case "vi-optcons": pageGo("consignes"); return;
+  }
+}
 function suAct(a, t) {
   const d = t.dataset;
   const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
@@ -4602,6 +4702,7 @@ document.addEventListener("click", (ev) => {
   if (a && /^(ch|adm)-/.test(a)) return; // chat et panel admin : js/chat.js
   if (a && a.startsWith("sm-")) { if (S) smAct(a, t); return; }
   if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
+  if (a && a.startsWith("vi-")) { if (S) viAct(a, t); return; }
   if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 0.1.24 : Expédition sans fin (js/expui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
@@ -4876,6 +4977,7 @@ document.addEventListener("click", (ev) => {
 });
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
+  if (a.startsWith("vi-")) { viChange(a, t); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
   if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }

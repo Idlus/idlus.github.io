@@ -21,7 +21,7 @@
   const live = (S) => !!(S && Array.isArray(S.chars) && S.stats);
 
   /* ======================= CARNET DE BORD ======================= */
-  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Ventes au jeu", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", tresor: "Chasse au trésor", expedition: "Expédition", autre: "Autres" };
+  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Ventes au jeu", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", commande: "Commandes d'artisans", tresor: "Chasse au trésor", expedition: "Expédition", autre: "Autres" };
   E.CARNET_OUT = { fm: "Forgemagie", havre: "Havre-Sac", craft: "Artisanat et clés", monture: "Montures", boutique: "Boutique", hdv: "Hôtel de vente", idole: "Idoles", donjon: "Donjons", autre: "Autres" };
   const ACT_CAT = {
     sellItem: "vente", sellRes: "vente",
@@ -97,6 +97,8 @@
   };
   /* gains marqués pendant le temps qui passe (coffre du trésor…) : pas comptés deux fois */
   const tag = (S, amount, cat) => { const C = E.carnet(S); ledger(S, E.now(), amount, cat); C.tag = (C.tag || 0) + amount; };
+  /* 0.1.23.2 : les autres modules (js/vie.js) ajoutent leurs actions au bilan des kamas */
+  E.carnetCat = (o) => Object.assign(ACT_CAT, o);
 
   const tick0 = E.tick;
   E.tick = (S, dtMs) => {
@@ -376,6 +378,7 @@
   /* ======================= actions, succès, ornement ======================= */
   Object.assign(E.ACTIONS, { tresorClaim: "prendre le parchemin de chasse du jour", tresorStart: "ouvrir un parchemin de chasse", tresorGo: "suivre l'indice", tresorFight: "affronter le gardien du trésor", tresorQuit: "abandonner la chasse au trésor" });
   wrapActions();
+  E.carnetWrap = wrapActions;
   if (E.ACH) {
     const has = (id) => E.ACH.some((a) => a.id === id);
     const addA = (o) => { if (!has(o.id)) E.ACH.push(o); };
