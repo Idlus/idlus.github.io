@@ -3,7 +3,7 @@ name: Icône du Discord
 on:
   workflow_dispatch:
   push:
-    branches: [main, claude/project-thread-qpzsh8]
+    branches: [main]
     paths: [icons/discord.png]
 jobs:
   icone:
