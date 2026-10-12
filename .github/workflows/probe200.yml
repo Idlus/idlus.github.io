@@ -1,0 +1,31 @@
+name: Sonde niveau 200
+# Importe DofusDB (inaccessible depuis l'espace de travail de Claude) et dépose un rapport sur la branche de travail.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/project-thread-4c70nw']
+    paths: ['tools/probe_200.py', '.github/workflows/probe200.yml']
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Import DofusDB
+        run: |
+          EPS="super-areas areas subareas dungeons monster-races item-types item-sets monsters items"
+          python3 tools/import_dofusdb.py $EPS
+          python3 tools/import_dofusdb.py $EPS
+      - name: Rapport
+        run: python3 tools/probe_200.py
+      - name: Dépôt du rapport sur la branche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add tools/probe/rapport_200.md
+          git commit -m "Sonde niveau 200 : rapport DofusDB" || echo "rien à committer"
+          git push
