@@ -576,6 +576,8 @@
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
     };
   };
+  /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
+  E.SMALL_TEAM = { 1: { hp: 30, dr: 15, name: "Solo" }, 2: { hp: 15, dr: 7.5, name: "Duo" } };
   E.ARCHI_CHANCE = 1 / 400;
 
   /* ---------------- 3.3.0 « Combat vivant » : placement, monstres spéciaux, Champions ---------------- */
@@ -675,9 +677,9 @@
     brise:    { name: "Brise-garde", min: 60, tip: "soins", desc: "Tous les 3 tours, détruit les boucliers des héros." },
     putrefaction: { name: "Putréfaction", min: 60, tip: "boucliers", desc: "Tous les 4 tours, les soins reçus par l'équipe baissent de 50 % pendant 2 tours." },
     peau:     { name: "Change-peau", min: 60, tip: "éléments", desc: "Change d'élément tous les 3 tours et résiste à 50 % à cet élément." },
-    condamne: { name: "Condamnation", min: 80, tip: "boucliers", desc: "Marque un héros ; deux tours plus tard, le frappe très fort sauf s'il a un bouclier." },
-    mutisme:  { name: "Mutisme", min: 80, tip: "équipe", desc: "Tous les 4 tours, un héros ne peut lancer que ses sorts sans recharge pendant 2 tours." },
-    terreur:  { name: "Terreur", min: 80, tip: "tank", desc: "Tous les 4 tours, fait reculer un héros de la première ligne pendant 2 tours." },
+    condamne: { name: "Condamnation", min: 80, tip: "boucliers", desc: "Marque un héros ; deux tours plus tard, le frappe très fort sauf s'il a un bouclier (moitié moins fort contre un héros seul)." },
+    mutisme:  { name: "Mutisme", min: 80, tip: "équipe", desc: "Tous les 4 tours, un héros ne peut lancer que ses sorts sans recharge pendant 2 tours (jamais contre un héros seul)." },
+    terreur:  { name: "Terreur", min: 80, tip: "tank", desc: "Tous les 4 tours, fait reculer un héros de la première ligne pendant 2 tours (jamais le dernier héros devant)." },
     frenesie: { name: "Frénésie", min: 100, tip: "résistance", desc: "Joue deux fois tous les 4 tours." },
     totems:   { name: "Totems", min: 100, tip: "zone", desc: "Invoque 2 totems ; il est invulnérable tant qu'ils vivent." },
     liens:    { name: "Âmes liées", min: 100, tip: "zone", desc: "Partage ses PV avec un serviteur lié : les dégâts sont répartis entre eux." },
@@ -855,6 +857,9 @@
     }
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
+    /* 0.1 : bonus « petit groupe » en donjon (solo et duo) */
+    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : null;
+    if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
@@ -904,7 +909,7 @@
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
     if (src) v *= 1 - Math.min(60, debSum(src, "weak")) / 100;
-    if (tgt.side === "c") { v *= (F && F.glyph === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
+    if (tgt.side === "c") { v *= (F && F.glyph === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1) * (1 - (tgt.smallDr || 0) / 100); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
     /* 0.1 : rôles de monstres et mécaniques de boss qui changent les dégâts reçus */
     if (F && tgt.side === "c" && tgt.gold > 0) return 0;
     if (F && tgt.side === "m") {
@@ -1346,10 +1351,10 @@
     if (has("fournaise") && t % 2 === 1) { e.openEl = pick(ELS4.filter((x) => x !== e.openEl)); say(`${e.name} ne craint plus que l'élément ${ELEMENTS[e.openEl].name}.`, ELEMENTS[e.openEl].name); }
     if (has("condamne")) {
       if (e.doom && e.doom.t <= t) { const h = F.ents[e.doom.i]; e.doom = null;
-        if (h && h.alive) { if (h.shield > 0) { h.shield = 0; say(`${e.name} frappe ${h.name}, mais son bouclier encaisse la condamnation !`); } else { const d = dealDamage(F, e, h, e.dmg * 3 * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} exécute la condamnation sur ${h.name} (−${d}) !`); } } }
+        if (h && h.alive) { if (h.shield > 0) { h.shield = 0; say(`${e.name} frappe ${h.name}, mais son bouclier encaisse la condamnation !`); } else { const d = dealDamage(F, e, h, e.dmg * (heroesOf(F).length > 1 ? 3 : 1.5) * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} exécute la condamnation sur ${h.name} (−${d}) !`); } } }
       else if (!e.doom && t % 4 === 1) { const h = victim(heroesOf(F)); if (h) { e.doom = { i: F.ents.indexOf(h), t: t + 2 }; say(`${e.name} condamne ${h.name} : un bouclier sur lui avant 2 tours !`, "Condamnation"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(h), txt: "Condamné" }); } }
     }
-    if (has("mutisme") && t % 4 === 2) { const h = victim(heroesOf(F)); if (h) { h.silence = 3; say(`${e.name} rend ${h.name} muet : sorts à recharge interdits pendant 2 tours.`, "Mutisme"); } }
+    if (has("mutisme") && t % 4 === 2 && heroesOf(F).length > 1) { const h = victim(heroesOf(F)); if (h) { h.silence = 3; say(`${e.name} rend ${h.name} muet : sorts à recharge interdits pendant 2 tours.`, "Mutisme"); } }
     if (has("racines") && t % 3 === 0) { const back = heroesOf(F).filter((h) => rowOf(h) === "b"); const h = victim(back.length ? back : heroesOf(F)); if (h) { h.rooted = 3; say(`${e.name} enracine ${h.name} : il ne peut plus soigner pendant 2 tours.`, "Racines"); } }
     if (has("terreur") && t % 4 === 3) { const fr = heroesOf(F).filter((h) => rowOf(h) === "f"); if (fr.length > 1) { const h = pick(fr); h.fearRow = "f"; h.row = "b"; h.fearT = 3; say(`${e.name} terrifie ${h.name}, qui recule à l'arrière !`, "Terreur"); } }
     if (has("tapis") && t % 3 === 0) { heroesOf(F).forEach((h) => { h.row = rowOf(h) === "f" ? "b" : "f"; if (h.fearT) h.fearRow = h.fearRow === "f" ? "b" : "f"; }); say(`Le tapis roulant de ${e.name} échange la première ligne et l'arrière !`, "Tapis roulant"); }

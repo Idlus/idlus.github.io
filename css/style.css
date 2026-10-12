@@ -890,6 +890,8 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
 .wkbadge .uico{width:11px;height:11px}
 .wkbox{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:rgba(var(--glw),.12);border:1px solid rgba(var(--glw),.45)}
 .wkbox>.uico{flex:none;margin-top:2px;color:var(--gold2)}
+.smallbox{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame)}
+.smallbox>.uico{flex:none;margin-top:2px;color:var(--good,#5fd38a)}
 @media (max-width:520px){.weekly{flex-wrap:wrap}.weekly .wrew{flex-direction:row;gap:6px;align-items:baseline;width:100%;justify-content:flex-start}.weekly .wrew b{font-size:16px}}
 
 .bsps{display:flex;gap:6px;flex-wrap:wrap}
