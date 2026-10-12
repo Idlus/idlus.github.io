@@ -7,8 +7,17 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.14 « Boss mis en scène » (bêta)
+- Mise en scène des boss (mode d'animation « Complètes ») : chacune des 22 mécaniques de boss a maintenant sa propre scène dans l'arène au lieu d'un simple bandeau : Rage (vapeur et veines), Carapace (plaques qui se referment en dôme), Attaque dévastatrice (le boss aspire l'air puis lâche une onde de choc), Point faible (cible qui se fissure au coup suivant, ×1,5 affiché), Séisme (pics de pierre sous la première ligne), Riposte (parade puis contre-coup pendant le tour du héros), Reflet (double miroir et éclat au coup reçu), Miasmes (brume qui traverse l'arène), Dévoreur (le serviteur est avalé), Brise-garde (les boucliers volent en éclats), Putréfaction, Change-peau (l'ancienne peau se détache, la nouvelle teinte reste), Condamnation (crâne à compte à rebours relié au boss, puis guillotine), Mutisme (lettres qui tombent, cadenas), Terreur (ombre géante), Frénésie, Totems (dôme doré), Âmes liées (fil d'âme et dégâts qui filent vers le serviteur), Immortel (le boss part en cendres et renaît), Compte à rebours (vignette rouge et chiffre dès le tour 15)
+- Les 20 boss à signature ont leur scène : Distorsion du temps, Fournaise et givre, Tapis roulant, Grand banquet, Inventions (plan bleu et bombe), Marée, Sacrifice, Dédoublement, Regard pétrifiant, Aspiration, Toucher doré, Larcin, Charge du taureau, Quatre humeurs, À l'abordage, Glyphes pair et impair (glyphe permanent sous Kimbo, bleu ou rouge selon le tour, ×1,4 et ×0,7 affichés), Horloge (engrenages, pendule et compteur de tours), Racines, Glace éternelle, Appétit d'Ougah
+- Sorts signature de boss : une attaque sur trois environ, dix boss emblématiques lancent leur sort à eux, purement visuel et sans changer les dégâts : Bouftou Royal (Boule de laine), Batofu (Nuée de Tofus), Blop Coco Royal (Rebond gluant), Craqueleur Légendaire (Avalanche), Le Chouque (Barriques), Moon (Tambour de Moon), Dragon Cochon (Ronds de fumée), Tofu Royal (Plongeon royal), Crocabulia (Battement d'ailes), Shogun Tofugawa (Trait d'encre)
+- Entrée du boss : en arrivant dans sa salle, son portrait s'affiche en grand avec sa stasis, son niveau et ses mécaniques, il rugit, puis saute en place dans un nuage de poussière avant « Combat ! »
+- Phases de boss : à 50 % de ses PV, bandeau « Phase 2 », le boss se fissure, s'assombrit et une aura rouge pulse derrière lui ; à 25 %, « Phase 3 », les fissures s'embrasent et il tremble sans arrêt (purement visuel)
+- Mort du boss : écran qui blanchit, le boss bascule lourdement et s'efface dans une pluie de kamas et d'étincelles, « Vaincu ! » à son nom
+- En mode « Sobres », les boss gardent leur simple bandeau comme avant ; les familles de monstres et les poses des héros arriveront dans un prochain lot
 ## 0.1.13.3 « Fondations du multijoueur » (bêta)
 - Aucun changement en jeu : sauvegarde dans son propre module (prête à passer en ligne), heure et hasard du jeu réglables à un seul endroit, liste officielle des actions du joueur.
+
 
 ## 0.1.13.2 « Classes et donjons » (bêta)
 - Tynril et Kankreblath adoucis ; classes plus proches les unes des autres (Xélor, Huppermage, Enutrof, Eniripsa, Éliotrope, Écaflip, Roublard, Ouginak).
@@ -20,7 +29,6 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 - **Album des archimonstres** (bouton « Âmes ») : les 205 archimonstres par zone ; une **Pierre d'âme** en sac capture l'âme d'un archimonstre vaincu (Bricoleur 25, premier passage des stasis, Bureau des primes). **Parfum de pistage** (×2, 2 h) et meuble **Autel des âmes** (×1,4).
 - **Éternelle moisson** : six paliers d'âmes par groupes de zones, récompenses à chaque palier, le **Dofus Ocre** (+1 PA) au bout.
 - **Les 18 Dofus** avec leurs vrais bonus, chacun par une quête (Quêtes › Dofus) ou en butin très rare du boss de son donjon (1/1 000 dès la stasis 5) ; copies pour les autres héros chez le Bricoleur (Poussière de stasis). Succès et titres.
-=======
 
 ## 0.1.12.4 « Sram et Crâ » (bêta)
 - Les pièges du Sram frappent dès qu'ils sont posés ; les balises du Crâ ne frappent presque plus et la Flèche Dévorante perd son vol de vie.
