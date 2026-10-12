@@ -64,3 +64,18 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   assert.ok(L.quest.step > stepAlm, "l'étape Dévotion doit être validée par l'offrande du jour");
   console.log("ok - offrande du jour déjà faite : étape Dévotion validée");
 }
+
+// Fabrication en série (0.1.30.1) : ×N = N fabrications une par une (jets séparés), limitée par les ressources et le sac.
+{
+  E.setClock(() => T0);
+  const S = E.newState("Serie", "iop");
+  const tpl = Object.keys(D.ITEMS).find((t) => D.ITEMS[t].craft && D.ITEMS[t].lvl <= 3);
+  const T = D.ITEMS[tpl];
+  T.craft.ing.forEach(([r, q]) => E.addRes(S, r, q * 7));
+  assert.strictEqual(E.craftCount(S, "tpl", tpl), 7, "7 exemplaires possibles");
+  const before = E.itemCount(S); const r = E.craftMany(S, "tpl", tpl, 10);
+  assert.strictEqual(r.n, 7, "s'arrête quand les ressources manquent"); assert.ok(r.err, "raison de l'arrêt");
+  assert.strictEqual(E.itemCount(S) - before, 7, "7 objets dans le sac"); assert.strictEqual(new Set(r.items.map((it) => it.uid)).size, 7, "7 objets distincts");
+  assert.strictEqual(E.craftCount(S, "tpl", tpl), 0); assert.strictEqual(typeof E.craftMany(S, "tpl", tpl, 10), "string", "plus rien à fabriquer");
+  console.log("ok - fabrication en série");
+}

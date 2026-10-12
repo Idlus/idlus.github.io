@@ -2810,3 +2810,6 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .ctl-emo{display:grid;place-items:center;width:78%;height:78%;font-size:24px}.ctl-emo .uico,.ctl-emo .chestico{width:100%;height:100%}
 .ctl-names{font-size:12.5px;color:var(--ink);margin-top:6px;text-align:center;font-weight:700}
 .ctl-grid .itile{width:52px}.ctl-lvl{left:0;right:0;top:-1px;text-align:center;font-size:9px;white-space:nowrap}
+/* 0.1.30.1 : boutons de fabrication (×10, Max) qui passent à la ligne sur téléphone */
+.craftbtns { gap: 4px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
+@media (max-width: 600px) { .craftbtns { max-width: 132px; } }
