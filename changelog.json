@@ -1,6 +1,14 @@
 {
-  "version": "0.1.12.3",
+  "version": "0.1.12.4",
   "versions": [
+    {
+      "v": "0.1.12.4",
+      "name": "Sram et Crâ",
+      "items": [
+        "Sram : ses pièges frappent dès qu'ils sont posés, avec des dégâts à la hauteur de son niveau (avant : un petit poison lent, qui le rendait bien plus faible que les autres classes à partir du niveau 140)",
+        "Crâ : la Balise Tactique et la Balise de Survie restent des outils (vulnérabilité, puissance, soins) et ne frappent presque plus ; la Flèche Dévorante perd son énorme vol de vie et fait 30 % de dégâts en moins. Le Crâ était de loin la classe la plus forte à haut niveau"
+      ]
+    },
     {
       "v": "0.1.12.3",
       "name": "L'équipement compte",

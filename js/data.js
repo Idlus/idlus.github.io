@@ -259,7 +259,11 @@
     // 3.0.2 : retouches de kits
     const tweak = (n, fn) => { const sp = list.find((x) => x.name === n); if (sp) fn(sp); };
     if (cls === "iop") tweak("Concentration", (sp) => sp.grades.forEach((g) => (g.casts = Math.min(g.casts || 2, 2))));
-    if (cls === "cra") { tweak("Flèche Cinglante", (sp) => { sp.grades[0].lvl = 12; sp.lvl = 12; }); tweak("Flèche de Dispersion", (sp) => { sp.grades[0].lvl = 34; sp.lvl = 34; }); }
+    if (cls === "cra") { tweak("Flèche Cinglante", (sp) => { sp.grades[0].lvl = 12; sp.lvl = 12; }); tweak("Flèche de Dispersion", (sp) => { sp.grades[0].lvl = 34; sp.lvl = 34; });
+      // 0.1.12.4 : la Flèche Dévorante cumulait un vol de vie énorme et des dégâts de zone, bien au-dessus de tous les autres sorts
+      [["Flèche Dévorante", 0.7]].forEach(([n, k]) => tweak(n, (sp) => sp.grades.forEach((g) => { g.fx = g.fx.filter((f) => f.k !== "drain"); g.fx.forEach((f) => { if (f.k === "dmg") { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } }); }))); }
+    // 0.1.12.4 : les pièges du Sram frappent dès qu'ils sont posés (avant : petit poison de repli, lent et faible)
+    if (cls === "sram") list.forEach((sp) => sp.grades.forEach((g) => g.fx.forEach((f) => { if (f.k === "dot" && f.adapt) { f.k = "dmg"; f.min = Math.round(f.min / 0.6 * 0.8); f.max = f.min + 4; delete f.t; } })));
     CLASSES[cls].spells = list;
     // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
     const EL2ST = { t: "fo", f: "ine", e: "cha", a: "age" }; const sc = { t: [], f: [], e: [], a: [] };
