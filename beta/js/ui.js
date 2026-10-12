@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.24.4";
+const GAME_VERSION = "0.1.25";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.25", name: "Options rangées", items: [
+    "Le menu Options est rangé en 5 onglets : Affichage, Sons, Jeu, Sauvegarde (« Compte » quand tu es en ligne) et Aide. Il rouvre le dernier onglet utilisé",
+    "Une carte par thème, le nom du réglage à gauche et le choix à droite ; les cases à cocher restent à côté de leur texte",
+    "Jeu regroupe les consignes d'absence, les protecteurs de ressources et le code cadeau ; Sauvegarde regroupe les copies de secours, l'export / import et « Nouvelle partie » dans une carte rouge à part",
+    "Rien n'est supprimé et tes réglages gardent leur valeur ; le bouton « Régler » du résumé d'absence ouvre directement l'onglet Jeu" ] },
   { v: "0.1.24.4", name: "Combat en vue", items: [
     "Expédition : le combat se suit par défaut. Partir, ou choisir une porte Combat, Élite ou Boss, ouvre l'onglet Combat ; entre deux combats, les portes de l'étage s'affichent au-dessus de la scène, et les fiches (relique, bénédiction, coffre, Marchand) s'y ouvrent aussi",
     "La page Expédition reste là pour le campement, les reliques, les bénédictions et les règnes (bouton « Voir l'expédition » dans l'onglet Combat)",
@@ -3823,10 +3828,10 @@ const notifOn = (k) => { const n = S.settings.notif || {}; return n[k] === undef
 const notifPerm = () => (typeof Notification === "undefined" ? "none" : Notification.permission);
 function notifOptionsHtml() {
   const perm = notifPerm(); const on = !!S.settings.notifBrowser && perm === "granted";
-  return `<div class="stack" style="gap:6px"><div><b>${G("bell")} Notifications</b><br><span class="muted">Un petit message dans le jeu, et une notification du navigateur quand l'onglet est en arrière-plan.</span></div>
-    <div class="row"><span class="muted">Hors de l'onglet</span>${perm === "none" ? `<span class="tag soft">Non disponible sur ce navigateur</span>` : perm === "denied" ? `<span class="tag warn">Bloquées par le navigateur</span><span class="xs muted">autorisez-les dans les réglages du site</span>` : perm === "granted" ? `<span class="seg">${[[true, "Activées"], [false, "Coupées"]].map(([v, n]) => `<button data-act="setnotifb" data-v="${v ? 1 : 0}" aria-pressed="${on === v}">${n}</button>`).join("")}</span>` : `<button class="btn sm primary" data-act="notifask">Autoriser</button>`}</div>
-    <div class="notifs">${NOTIF_EV.map(([k, n, d]) => `<label class="opt"><span><b>${h(n)}</b><br><span class="xs muted">${h(d)}</span></span><input type="checkbox" data-act="setnotif" data-k="${k}" ${notifOn(k) ? "checked" : ""}></label>`).join("")}</div>
-    <p class="xs muted" style="margin:0">Fiable sur ordinateur. Sur téléphone, seulement tant que l'onglet reste ouvert (sur iPhone, uniquement si le jeu est installé sur l'écran d'accueil). Au plus une notification par minute.</p></div>`;
+  return optSec(`${G("bell")} Notifications`, "un petit message dans le jeu, et une notification du navigateur quand l'onglet est en arrière-plan",
+      optLine("Hors de l'onglet", "", perm === "none" ? `<span class="tag soft">Non disponible sur ce navigateur</span>` : perm === "denied" ? `<span class="tag warn">Bloquées par le navigateur</span><span class="xs muted">autorisez-les dans les réglages du site</span>` : perm === "granted" ? `<span class="seg">${[[true, "Activées"], [false, "Coupées"]].map(([v, n]) => `<button data-act="setnotifb" data-v="${v ? 1 : 0}" aria-pressed="${on === v}">${n}</button>`).join("")}</span>` : `<button class="btn sm primary" data-act="notifask">Autoriser</button>`)
+    + `<div class="notifs">${NOTIF_EV.map(([k, n, d]) => `<label class="opt"><span><b>${h(n)}</b><br><span class="xs muted">${h(d)}</span></span><input type="checkbox" data-act="setnotif" data-k="${k}" ${notifOn(k) ? "checked" : ""}></label>`).join("")}</div>
+    <p class="xs muted" style="margin:0">Fiable sur ordinateur. Sur téléphone, seulement tant que l'onglet reste ouvert (sur iPhone, uniquement si le jeu est installé sur l'écran d'accueil). Au plus une notification par minute.</p>`);
 }
 let notifLast = 0, notifHeld = [];
 function notify(kind, title, body) {
@@ -3841,27 +3846,35 @@ function showNotif(title, body) {
   const opts = { body: body || "", icon: "icons/icon-192.png", badge: "icons/icon-192.png", tag: "idlus", renotify: false, silent: true };
   try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then((r) => r.showNotification(`idlus · ${title}`, opts)).catch(() => { try { new Notification(`idlus · ${title}`, opts); } catch (e) {} }); else new Notification(`idlus · ${title}`, opts); } catch (e) {}
 }
+/* 0.1.25 : les Options rangées en onglets ; une carte par thème, chaque réglage sur une ligne (nom et explication à gauche, choix à droite) */
+const OPT_TABS = [["affichage", "Affichage"], ["sons", "Sons"], ["jeu", "Jeu"], ["sauvegarde", "Sauvegarde"], ["aide", "Aide"]];
+const optSec = (t, hint, body, id) => `<section class="optsec"${id ? ` id="${id}"` : ""}><div class="optsec-h"><b>${t}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</div>${body}</section>`;
+const optName = (n, hint, tip) => `<span class="optname"${tip ? ` data-tip="${h(tip)}"` : ""}><b>${n}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</span>`;
+const optLine = (n, hint, ctl, tip) => `<div class="optline">${optName(n, hint, tip)}<span class="optctl">${ctl}</span></div>`;
+const optChk = (attrs, on, n, hint) => `<label class="optline optchk">${optName(n, hint)}<input type="checkbox" ${attrs} ${on ? "checked" : ""}></label>`;
 function optionsSheet() {
-  openSheet(`<h2>Options</h2>
-    <div class="stack small">
-      ${accountHtml()}
-      ${displayOptionsHtml()}
-      ${soundOptionsHtml()}
-      ${consignesHtml()}
-      <div class="row"><b>Découvertes</b> <span class="muted">(les bulles d'aide)</span><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche</button></div>
-      <label class="row"><input type="checkbox" data-act="setprot" ${!S.settings.protOff ? "checked" : ""}> <span><b>Protecteurs de ressources</b> <span class="muted">(un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min)</span></span></label>
-      <div class="stack" style="gap:6px"><div><b>Code cadeau</b> <span class="muted">(donné sur le Discord ; un code par partie)</span></div><div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${Object.keys(S.gifts || {}).length ? `<span class="xs muted">${Object.keys(S.gifts).length} code${Object.keys(S.gifts).length > 1 ? "s" : ""} déjà utilisé${Object.keys(S.gifts).length > 1 ? "s" : ""}</span>` : ""}</div>
-      ${notifOptionsHtml()}
-      <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${ON && ON.user && ON.profile ? " et sur ton compte en ligne" : ""}${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
-      <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
-      <div class="stack" style="gap:6px"><div><b>Copies de secours</b> <span class="muted">(une toutes les 10 min de jeu, et une avant chaque mise à jour)</span></div>${copiesHtml()}</div>
-      <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
-      <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
-      <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>
-      <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>
-      <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
-    </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  const tab = OPT_TABS.some(([k]) => k === ui.optTab) ? ui.optTab : "affichage";
+  const nGift = Object.keys(S.gifts || {}).length;
+  let body = "";
+  if (tab === "affichage") body = displayOptionsHtml();
+  else if (tab === "sons") body = soundOptionsHtml() + notifOptionsHtml();
+  else if (tab === "jeu") body = consignesHtml()
+    + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
+    + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
+  else if (tab === "sauvegarde") body = (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
+    + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
+    + optSec("Copies de secours", "une toutes les 10 min de jeu, et une avant chaque mise à jour", `<div class="stack small" style="gap:6px">${copiesHtml()}</div>`)
+    + optSec("Changer d'appareil", "copie la sauvegarde ici, puis colle-la sur l'autre appareil", `<div class="stack" style="gap:6px"><b class="small">Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><div><button class="btn sm" data-act="copyexp">Copier</button></div>
+      <b class="small">Importer</b> <span class="xs muted">remplace la partie actuelle ; les sauvegardes v1 sont converties</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><div><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div></div>`)
+    + `<section class="optsec danger"><div class="optsec-h"><b>Nouvelle partie</b><span class="xs muted">efface toute la progression de cet appareil</span></div><div>${ui.confirm === "reset" ? `<span class="minus small">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div></section>`;
+  else body = optSec("Découvertes", "les bulles d'aide déjà vues, et la recherche dans tout le jeu", `<div class="row"><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche <span class="xs muted">Ctrl+K</span></button></div>`)
+    + optSec("Le jeu", "", `<div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>`)
+    + optSec("Un souci ?", "le diagnostic se colle avec le message, dans le forum Bugs du Discord", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
+    + `<p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>`;
+  openSheet(`<div class="opthead"><h2>${G("gear")} Options</h2><button class="btn sm" data-act="closesheet" aria-label="Fermer">✕</button></div>
+    <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
+    <div class="optbody small">${body}</div>
+    <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
   if (S) E.tipMark(S, "offline");
@@ -4060,15 +4073,16 @@ function applyDisplay() {
 }
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
-  return `<div class="stack" style="gap:8px"><div><b>Affichage</b> <span class="muted">(se voit tout de suite)</span></div>
-    <div class="row"><span class="muted">Taille du texte</span><span class="seg">${E.TEXT_SIZES.map((v) => `<button data-act="settext" data-v="${v}" aria-pressed="${z === v}">${v} %</button>`).join("")}</span></div>
-    <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
-    <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]].map(([v, n]) => `<button data-act="setanim" data-v="${v}" aria-pressed="${animLvl() === v}">${n}</button>`).join("")}</span></div>
-    <div class="row"><span class="muted" data-tip="Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.">Mouvements réduits</span><span class="seg">${[["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]].map(([v, n]) => `<button data-act="setmotion" data-v="${v}" aria-pressed="${m === v}">${n}</button>`).join("")}</span></div>
-    <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
-    <label class="row"><input type="checkbox" data-act="setcontrast" ${S.settings.contrast ? "checked" : ""}> <span><b>Contraste renforcé</b> <span class="muted">(texte plus foncé, bordures plus nettes)</span></span></label>
-    <label class="row"><input type="checkbox" data-act="setdecofx" ${S.settings.decofx !== false ? "checked" : ""}> <span><b>Effets de décor</b> <span class="muted">(météo et premier plan dans l'arène ; à couper sur un appareil lent)</span></span></label>
-  </div>`;
+  const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
+  return optSec("Écran", "se voit tout de suite",
+      optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v} %`]), z))
+    + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
+    + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes"))
+    + optSec("Combat", "",
+      optLine("Animations", "", seg("setanim", [["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]], animLvl()))
+    + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
+    + optLine("Écrans de récompense", "objet Rayonnant, palier de 10 niveaux, stasis", `<span class="seg">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span>`)
+    + optChk(`data-act="setdecofx"`, S.settings.decofx !== false, "Effets de décor", "météo et premier plan dans l'arène ; à couper sur un appareil lent"));
 }
 /* ---- bulles de découverte ---- */
 const tipCtx = () => ({ online: !!ON, user: !!(ON && ON.user), now: E.now() });
@@ -4155,12 +4169,12 @@ function pageGo(id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
     case "defi": go("world", "world", "dungeons"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
-    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
+    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
     case "inv": go("inv", "inv", "items"); break; case "invres": go("inv", "inv", "res"); break; case "invcons": go("inv", "inv", "cons"); break; case "sets": go("inv", "inv", "sets"); break;
     case "recolte": go("metiers", "met", "recolte"); break; case "craft": go("metiers", "met", "craft"); break;
-    case "options": case "account": optionsSheet(); break; case "archis": archiSheet(); break; case "idols": idolSheet(); break; case "tips": tipsSheet(); break; case "changelog": changelogSheet(); break;
+    case "options": optionsSheet(); break; case "account": ui.optTab = "sauvegarde"; optionsSheet(); break; case "archis": archiSheet(); break; case "idols": idolSheet(); break; case "tips": tipsSheet(); break; case "changelog": changelogSheet(); break;
   }
 }
 function searchGo(r) {
@@ -4600,13 +4614,13 @@ function templesHtml() {
     ${shopHtml("temple")}`;
 }
 function consignesHtml() {
-  const C = E.consigne(S); const ck = (k, b, s) => `<label class="row"><input type="checkbox" data-act="vi-cons" data-k="${k}" ${C[k] ? "checked" : ""}> <span><b>${b}</b> <span class="muted">${s}</span></span></label>`;
-  return `<div class="stack" style="gap:6px" id="consignes"><div><b>Consignes d'absence</b> <span class="muted">(ce que fait l'équipe quand le jeu est fermé ; le résumé d'absence te le raconte)</span></div>
-    ${ck("roam", "Suivre les étoiles pendant l'absence", `(chasse itinérante seulement quand tu n'es pas là, avec ses −${Math.round(E.ROAM_MALUS * 100)} %)`)}
-    ${ck("back", "Revenir à ma zone au retour", "(si l'équipe a changé de zone)")}
-    <label class="row"><span><b>Limite de banque</b> <span class="muted">(le surplus gagné pendant l'absence est vendu ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes)</span></span><input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>
-    ${ck("alm", "Faire l'offrande à l'Almanax au retour", "(si tu as les ressources)")}
-    ${ck("cmd", "Livrer les commandes prêtes au retour", "(seulement quand tout est en banque)")}</div>`;
+  const C = E.consigne(S); const ck = (k, b, s) => optChk(`data-act="vi-cons" data-k="${k}"`, C[k], b, s);
+  return optSec("Consignes d'absence", "ce que fait l'équipe quand le jeu est fermé ; le résumé d'absence te le raconte",
+      ck("roam", "Suivre les étoiles pendant l'absence", `chasse itinérante seulement quand tu n'es pas là, avec ses −${Math.round(E.ROAM_MALUS * 100)} %`)
+    + ck("back", "Revenir à ma zone au retour", "si l'équipe a changé de zone")
+    + `<label class="optline">${optName("Limite de banque", "le surplus gagné pendant l'absence est vendu ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes")}<input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>`
+    + ck("alm", "Faire l'offrande à l'Almanax au retour", "si tu as les ressources")
+    + ck("cmd", "Livrer les commandes prêtes au retour", "seulement quand tout est en banque"), "consignes");
 }
 /* ---------- sons : synthétisés dans le navigateur, coupés par défaut ---------- */
 const SND = { ctx: null, last: 0, kinds: {}, live: true };
@@ -4635,10 +4649,11 @@ function sndPlay(kind, force) {
 })();
 function soundOptionsHtml() {
   const c = sndCfg();
-  return `<div class="stack" style="gap:6px"><div><b>Sons</b> <span class="muted">(niveau gagné, butin rare, boss, coffre, Dopeul ; coupés par défaut)</span></div>
-    <div class="row"><label class="row"><input type="checkbox" data-act="vi-snd" data-k="on" ${c.on ? "checked" : ""}> Activer</label><span class="muted">Volume</span><input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button></div>
-    <label class="row"><input type="checkbox" data-act="vi-snd" data-k="all" ${c.all ? "checked" : ""}> <span>Aussi à chaque victoire <span class="muted">(discret, mais fréquent)</span></span></label>
-    <label class="row"><input type="checkbox" data-act="vi-snd" data-k="bg" ${c.bg ? "checked" : ""}> <span>Même quand l'onglet est caché</span></label></div>`;
+  return optSec("Sons", "niveau gagné, butin rare, boss, coffre, Dopeul ; coupés par défaut",
+      optChk(`data-act="vi-snd" data-k="on"`, c.on, "Activer les sons", "")
+    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button>`)
+    + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Aussi à chaque victoire", "discret, mais fréquent")
+    + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Même quand l'onglet est caché", ""));
 }
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
@@ -4865,6 +4880,7 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
+    case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     case "selchar": ui.cid = +d.id; ui.slot = null; break;
     case "setmain": S.mainHero = +d.id; dirty = true; toast(`${char(+d.id).name} devient le héros principal.`); break;
     case "teamgo": { if (d.v === "havre") { ui.tab = "home"; ui.home = "havre"; } else { ui.cid = +d.id; ui.tab = "heroes"; ui.hero = d.v; ui.slot = null; } closeSheet(); render(); window.scrollTo(0, 0); return; }
@@ -5183,9 +5199,9 @@ function pillHtml() {
 function renderPill() { const el = $("#onPill"); if (!el) return renderStatus(); if (el.dataset.st !== ON.state) el.outerHTML = pillHtml(); }
 function accountHtml() {
   if (!ON) return "";
-  if (!ON.user) return `<div class="stack" style="gap:6px"><div><b>Compte</b> <span class="muted">(pas connecté : la partie n'est gardée que sur cet appareil)</span></div><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
+  if (!ON.user) return `<div class="stack" style="gap:6px"><span class="xs muted">Pas connecté : la partie n'est gardée que sur cet appareil.</span><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
   const id = ON.identities(), conf = ui.confirm === "ondelete";
-  return `<div class="stack" style="gap:8px"><b>Compte</b>
+  return `<div class="stack" style="gap:8px">
     <div class="kvg"><span class="muted">Pseudo</span><b>${h((ON.profile && ON.profile.pseudo) || "—")}</b><span></span>
     <span class="muted">Discord</span>${id.discord ? `<b>${h(id.discord)}</b><span class="tag good">lié</span>` : `<span class="muted">non lié</span><button class="btn sm" data-act="on-linkdiscord">Lier</button>`}
     <span class="muted">E-mail</span>${id.email ? `<b class="oneline">${h(id.email)}</b><span></span>` : `<span class="muted">aucun</span><span></span>`}

@@ -2632,3 +2632,24 @@ button.xp-door{cursor:pointer}button.xp-door:hover{border-color:var(--gold)}
 img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.dop{filter:brightness(.4) saturate(.35) hue-rotate(220deg) drop-shadow(0 0 6px #9b4dff) drop-shadow(0 0 2px #c79bff)}
 .arena .ent.m img.sprite.dop{object-fit:contain;transform:scaleX(-1)}
 @media (max-width:520px){.vi-cmds{grid-template-columns:1fr}.vi-temples{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* 0.1.25 : Options en onglets, une carte par thème */
+.opthead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.opthead h2{margin:0;display:flex;align-items:center;gap:8px}
+.opttabs{position:sticky;top:-16px;z-index:3;background:var(--panel);margin:-4px -16px 0;padding:8px 16px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;border-bottom:2px solid var(--frame)}
+.opttabs::-webkit-scrollbar{display:none}
+.opttabs button{white-space:nowrap;flex:none}
+.optbody{display:flex;flex-direction:column;gap:10px}
+.optsec{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.optsec.danger{border-color:var(--bad,#c0392b)}
+.optsec-h{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}
+.optsec-h>b{font-size:14.5px;display:flex;align-items:center;gap:6px}
+.optline{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--frame) 45%,transparent)}
+.optsec-h+.optline{border-top:0;padding-top:2px}
+.optline.optchk{cursor:pointer;flex-wrap:nowrap}
+.optline input[type=checkbox]{width:20px;height:20px;accent-color:var(--gold);flex:none;margin:0}
+.optname{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1 1 180px}
+.optctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.optsec .notifs{margin-top:6px}
+.optsec textarea{width:100%;box-sizing:border-box}
+@media (max-width:560px){.opttabs{gap:4px}.opttabs button{padding:5px 9px;font-size:12.5px}.optline:not(.optchk) .optctl{width:100%}}
+@media (min-width:700px){.sheet:has(.opttabs){height:min(88vh,820px)}.sheet:has(.opttabs)>div:last-child{margin-top:auto}}
