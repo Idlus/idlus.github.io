@@ -16,9 +16,11 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.2";
+const GAME_VERSION = "3.4.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.4.3", name: "Passif visible", items: [
+    "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes) ; la fenêtre défile au lieu de rétrécir son contenu" ] },
   { v: "3.4.2", name: "Symboles de classe", items: [
     "Écran de départ et recrutement : chaque classe est représentée par son symbole officiel, sur une case à sa couleur, et le panneau de la classe montre le héros en pied (Masculin ou Féminin)",
     "Choisissez la tête de votre héros dès sa création (rangée « Tête » sous Apparence)",
