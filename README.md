@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.12.1 « Identité du Phénix » (bêta)
+- Un héros rené se reconnaît partout : cadre de feu animé sur sa carte, flammes derrière lui, nom en lettres de feu, foyer sous ses pieds en combat, médaillon dans les listes.
+
 ## 0.1.12 « Renaissance » (bêta)
 - Au niveau 200, un héros peut renaître (Équipe › Renaissance) : il repart au niveau 1 en gardant apparence, titres, ornements, Dofus, familier, monture et parchemins ; l'équipement va dans le sac. Chaque renaissance donne +30 % d'XP au héros et un Éveil au choix (8 Éveils communs en 3 rangs, Éveil de classe aux renaissances V et X) ; 10 renaissances au plus. Médaillon, auras, titres, ornement « Ailes du Phénix » et 3 succès.
 - Courbe d'XP : au-delà du niveau 100, l'XP demandée baisse progressivement (première montée 1 → 200 ≈ 250 h équipé au lieu de 1 400 h). Simulateur : `--renaissance N`.

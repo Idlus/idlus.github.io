@@ -1,6 +1,15 @@
 {
-  "version": "0.1.12",
+  "version": "0.1.12.1",
   "versions": [
+    {
+      "v": "0.1.12.1",
+      "name": "Identité du Phénix",
+      "items": [
+        "Un héros rené se reconnaît partout : cadre de feu animé autour de sa carte (à la place du cadre de niveau, dont l'étiquette reste en bas), flammes et braises derrière lui, nom en lettres de feu avec « ✦ III », couleur qui suit le palier (Braise, Flamme, Brasier, Phénix)",
+        "En combat : un foyer de flammes sous ses pieds et son chiffre de renaissance sous son nom (vue scène et vue compacte)",
+        "Page Équipe, choix du héros et plateau Réorganiser : nom doré et médaillon pour les héros renés"
+      ]
+    },
     {
       "v": "0.1.12",
       "name": "Renaissance",

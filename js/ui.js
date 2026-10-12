@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.12";
+const GAME_VERSION = "0.1.12.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.12.1", name: "Identité du Phénix", items: [
+    "Un héros rené se reconnaît partout : cadre de feu animé autour de sa carte (à la place du cadre de niveau, dont l'étiquette reste en bas), flammes et braises derrière lui, nom en lettres de feu avec « ✦ III », couleur qui suit le palier (Braise, Flamme, Brasier, Phénix)",
+    "En combat : un foyer de flammes sous ses pieds et son chiffre de renaissance sous son nom (vue scène et vue compacte)",
+    "Page Équipe, choix du héros et plateau Réorganiser : nom doré et médaillon pour les héros renés" ] },
   { v: "0.1.12", name: "Renaissance", items: [
     "Renaissance : au niveau 200, un héros peut renaître à la Statue du Phénix (Équipe › Renaissance, ou le bouton sur sa fiche). Il repart au niveau 1 en gardant son apparence, ses titres et ornements, ses Dofus et trophées (toujours équipés), son familier, sa monture et ses parchemins ; son équipement est rangé dans le sac",
     "Chaque renaissance donne à ce héros +30 % d'XP (en plus du plafond commun) et un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
@@ -361,8 +365,8 @@ function heroCard(c, size = "", opts = {}) {
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
   return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}`)}">
-    ${ornHtml}<div class="in"><div class="art">${lookImg(c, "hlook")}<span class="lv">${c.lvl}</span>${c.ren ? `<span class="renm" title="Renaissance ${E.roman(c.ren)}">${E.roman(c.ren)}</span>` : ""}<span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
-    <div class="nm"><b>${h(c.name)}</b><span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}</div>
+    ${ornHtml}<div class="in"><div class="art">${lookImg(c, "hlook")}<span class="lv">${c.lvl}</span>${c.ren ? `<span class="renm" title="Renaissance ${E.roman(c.ren)}">${E.roman(c.ren)}</span><span class="rembers"><i></i><i></i><i></i><i></i></span>` : ""}<span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
+    <div class="nm"><b class="${c.ren ? "rname" : ""}">${h(c.name)}</b>${c.ren ? `<span class="rstar">✦ ${E.roman(c.ren)}</span>` : ""}<span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}</div>
     <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
     <div class="st3">${stats3.map(([k, v]) => `<span>${sIco(k)}${typeof v === "number" ? fmt(v) : v}</span>`).join("")}</div></div><span class="tier">${E.FRAMES[fi]}</span></button>`;
 }
@@ -1228,12 +1232,13 @@ function buildArena(F) {
   const entHtml = view === "compact" ? ([e, i]) => {
     const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: "m", name: e.name } : null;
     const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
-    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
+    const rn = c && c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : "";
+    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
   } : ([e, i]) => {
     if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
-      return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
+      return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
     return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
@@ -2006,7 +2011,7 @@ function teamCard(c, al) {
   return `<div class="tcard ${inT ? "" : "out"}" style="--cc:${C.color}">
     <button class="tart" data-act="teamgo" data-id="${c.id}" data-v="equip" title="Ouvrir la fiche de ${h(c.name)}">${lookImg(c, "tlook")}</button>
     <div class="tmain">
-      <div class="thead"><button class="tstar ${mainHero() === c ? "on" : ""}" data-act="setmain" data-id="${c.id}" title="Héros principal" aria-label="Faire de ${h(c.name)} le héros principal">★</button><span class="tnm"><b>${h(c.name)}</b><span class="xs muted">${C.name}</span></span><span class="tlv">${c.lvl}</span></div>
+      <div class="thead"><button class="tstar ${mainHero() === c ? "on" : ""}" data-act="setmain" data-id="${c.id}" title="Héros principal" aria-label="Faire de ${h(c.name)} le héros principal">★</button><span class="tnm"><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline">${E.roman(c.ren)}</span>` : ""}</b><span class="xs muted">${C.name}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}</span></span><span class="tlv">${c.lvl}</span></div>
       <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
       <div class="tal">${actPill(c)}${al.map((a) => `<button class="talert" data-act="teamfix" data-id="${c.id}" data-v="${a.k}">● ${h(a.t)}</button>`).join("")}${al.length ? "" : `<span class="talert ok">Rien à faire</span>`}</div>
       ${mt}
@@ -2019,7 +2024,7 @@ function teamBoardHtml() {
     const n = z === "f" ? `${list.length} / ${E.frontMax(E.team(S).length)}` : z === "b" ? `${list.length}` : z === "train" ? `${list.length} / 1` : `${list.length}`;
     const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tgt = sel && teamZone(sel) !== z;
     return `<div class="tzone ${tgt ? "target" : ""}" data-act="teamdrop" data-v="${z}" data-zone="${z}"><div class="tzt"><b>${TZ[z][0]}</b><span class="xs muted">${TZ[z][1]} · ${n}</span></div><div class="tslots">${list.map((c) => { const at = teamZone(c) === "atelier";
-      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at ? `disabled title="Travaille à l'atelier du Havre-Sac"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b>${h(c.name)} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
+      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at ? `disabled title="Travaille à l'atelier du Havre-Sac"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline sm">${E.roman(c.ren)}</span>` : ""} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
   return `<div class="tboard"><p class="note xs" style="margin:0">${canHover ? "Glissez un héros d'une zone à l'autre, ou cliquez sur lui puis sur une zone." : "Touchez un héros, puis la zone où l'envoyer."}${ui.teamSel != null && char(ui.teamSel) ? ` <b>${h(char(ui.teamSel).name)}</b> est choisi.` : ""} Pour la récolte, le jeu vous demande la ressource.</p>
     <div class="tcols"><div class="tcol">${zone("f")}${zone("b")}</div><div class="tcol">${zone("job")}${zone("train")}${zone("rest")}</div></div></div>`;
 }
@@ -2079,7 +2084,7 @@ function renderHeroes() {
   const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
   $("#main").innerHTML = `
   <div class="pagehead"><h1>Héros</h1><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
-  <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span>${h(x.name)} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
+  <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
     ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
   ${placementHtml()}
   <section class="panel" style="margin-bottom:12px"><div class="pad row" style="gap:18px;align-items:flex-start">
