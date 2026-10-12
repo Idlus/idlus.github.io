@@ -1,6 +1,14 @@
 {
-  "version": "0.1.29.1",
+  "version": "0.1.29.3",
   "versions": [
+    {
+      "v": "0.1.29.3",
+      "name": "Protecteur à portée",
+      "items": [
+        "Protecteurs de ressources : le bouton « Combattre » n'est plus grisé quand vos héros récoltent. Il fait revenir les héros de l'équipe et lance la chasse, puis chacun reprend la récolte après le combat",
+        "Le bandeau du protecteur explique ce que fera le bouton, et une bulle d'aide présente les protecteurs la première fois"
+      ]
+    },
     {
       "v": "0.1.29.1",
       "name": "Badge du créateur",
