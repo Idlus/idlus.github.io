@@ -1346,6 +1346,8 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .mtshare .seg{flex-wrap:wrap}.mtshare .seg button{white-space:nowrap}
 /* 0.1.8.2 : objets parfaits */
 .tag.perfect{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1a08;border-color:var(--gold);font-weight:800}
+.tag.exo{background:linear-gradient(135deg,#7b3fe4,#c04ad9);color:#fff;border-color:#9b5cf0;font-weight:800}
+.fmline.exo{border:1px dashed #9b5cf0}
 .iname.perfect{color:var(--gold2)}
 /* ===== 0.1.9.1 : barre en 4 familles, pages juste en dessous, page Équipe ===== */
 nav.main.fams{align-items:stretch}

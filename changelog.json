@@ -1,6 +1,18 @@
 {
-  "version": "0.1.9.1",
+  "version": "0.1.9.2",
   "versions": [
+    {
+      "v": "0.1.9.2",
+      "name": "Exotique",
+      "items": [
+        "Runes exotiques : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée à un objet de niveau 150 ou plus qui n'a pas la caractéristique (un seul exo par objet, un seul exo PA porté par héros, pas sur les Dofus et trophées). Forgemage niveau 100 requis ; 10 % de réussite pour le PA, 12 % pour le PM et la Portée, sans aide du puits ni du métier ; un échec ne casse que la rune",
+        "Portée, nouvelle caractéristique tactique : chaque point donne 20 % de chances qu'un sort à une cible touche un ennemi de plus",
+        "Où trouver les runes Ga : coffres de boss des donjons de niveau 150+ en stasis 7 (1 sur 40, Ga PM ou Ga Po) et en stasis 8 (Ga PA, 1 sur 100), archimonstres de niveau 150+ (1 sur 25), ou l'onglet Runes (10 runes Ra d'une même caractéristique + 3 Éclats de trouvaille + 50 000 kamas pour une Ga PM ou Ga Po ; 25 runes Ra + 5 Éclats + 150 000 kamas pour une Ga PA)",
+        "Brisage d'un objet exo : l'exo est perdu, mais l'objet rend ses runes ×2",
+        "Forgemagie automatique : depuis l'établi, « Automatiser » lance un plan sur un objet (jets visés, runes autorisées, budget de kamas, plancher) ; une tentative toutes les 10 min (8 min au Forgemage 50, 6 min au 100), en jeu comme hors ligne, 2 plans en parallèle, sans héros à affecter. Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes ou le budget manquent, ou que le plancher est touché ; le journal et le résumé d'absence racontent ce qui s'est passé",
+        "Succès : « Exotique » (titre l'Exotique), « Un PA de plus », « Forgemagie automatique »"
+      ]
+    },
     {
       "v": "0.1.9.1",
       "name": "Barre et page Équipe",

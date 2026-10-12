@@ -17,6 +17,9 @@
   E.emit = () => {};          // E.emit(S, type, data)
   E.trainee = () => null;     // héros à la Salle d'entraînement (systems.js)
   E.atelierTick = () => 0;    // atelier du Havre-Sac (systems.js)
+  E.fmPlanTick = () => [];    // forgemagie automatique (systems.js, 0.1.9.1)
+  E.exoDrop = () => {};       // runes exotiques des coffres de boss (systems.js)
+  E.exoArchi = () => {};      // runes exotiques des archimonstres (systems.js)
   E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
   E.mountStats = () => null; E.mountHunt = () => null; E.mountXpShare = () => 0; E.stableXp = () => {}; E.enclosTick = () => {}; // montures (mounts.js)
 
@@ -75,6 +78,7 @@
       cons: {}, boosts: {}, trophies: {}, families: {}, huntSeen: {},
       jobs: {}, crafts: {}, coef: {}, tools: {}, finds: 0,
       fmJob: { lvl: 1, xp: 0 }, // 0.1.8.2 : métier de Forgemage
+      fmPlans: [], // 0.1.9.1 : forgemagie automatique
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
       settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "sell", q: 50, keepSets: true, recycle: "sell" } },
@@ -263,7 +267,7 @@
   E.charStats = (S, c, opts = {}) => {
     const st = zeroStats();
     BASE_STATS.forEach((k) => (st[k] += (c.alloc[k] || 0) + ((c.scrolls || {})[k] || 0)));
-    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) addStats(st, E.isPerfect(it) ? E.perfectStats(it) : it.stats); }); // 0.1.8.2 : objets parfaits
+    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) { addStats(st, E.isPerfect(it) ? E.perfectStats(it) : it.stats); if (it.exo) st[it.exo] = (st[it.exo] || 0) + 1; } }); // 0.1.8.2 : objets parfaits ; 0.1.9.1 : exo
     const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
     const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
     const counts = E.setCounts(S, c);
@@ -398,6 +402,7 @@
     if (!c || !it) return "Objet introuvable.";
     const T = ITEMS[it.tpl];
     if (T.lvl > c.lvl) return `Niveau ${T.lvl} requis.`;
+    if (it.exo === "pa" && Object.values(c.equip).some((u) => u !== uid && S.items[u] && S.items[u].exo === "pa")) return "Ce héros porte déjà un objet exo PA (un seul par héros).";
     const other = E.equippedBy(S, uid);
     if (other) for (const k in other.equip) if (other.equip[k] === uid) delete other.equip[k];
     // un anneau identique ne peut être porté deux fois (comme dans Dofus)
@@ -610,7 +615,7 @@
   E.FRONT_P = 0.75;
   /* 0.1 (essai) : stats tactiques. [gain en % par point, plafond en %] ; pm : par PM au-delà de 3.
      Les monstres n'en ont pas encore ; seuls les héros les portent (familiers, plus tard équipements). */
-  E.TACT = { tac: [1, 60], fui: [0.5, 30], pm: [3, 15], rpa: [0.4, 20], rpaV: 20, rpaBoss: 10, rpm: [0.5, 25], epa: [0.5, 50], epm: [0.5, 50], invMax: 3 };
+  E.TACT = { po: [20, 60], tac: [1, 60], fui: [0.5, 30], pm: [3, 15], rpa: [0.4, 20], rpaV: 20, rpaBoss: 10, rpm: [0.5, 25], epa: [0.5, 50], epm: [0.5, 50], invMax: 3 };
   E.tact = (st, k) => { const t = E.TACT[k]; return st ? Math.min(t[1], (st[k] || 0) * t[0]) : 0; };
   E.tactLog = null;
   /* Esquive PA/PM des monstres : dès le niveau 100, +0,4 % par niveau (40 % au plus), +10 pour les boss, Coriaces et Chefs */
@@ -1139,7 +1144,9 @@
     for (const f of g.fx) {
       if (f.k === "leech") { leech = f.v; continue; }
       if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
-        const ts = pickFoes(S, F, e, slot, f.n, forced); if (!ts.length) continue;
+        let nT = f.n; // 0.1.9.1 : Portée (exo) : un sort à une cible touche un ennemi de plus, 20 % par point
+        if (nT === 1 && f.k !== "dot" && e.st && e.st.po > 0 && rnd() * 100 < Math.min(E.TACT.po[1], e.st.po * E.TACT.po[0])) { nT = 2; tlog("po"); }
+        const ts = pickFoes(S, F, e, slot, nT, forced); if (!ts.length) continue;
         let m = f.n > 1 ? 0.85 * (e.cls === "elio" ? 1.25 : 1) * (e.cls === "roub" ? 1.15 : 1) : 1;
         if (f.k === "dot") m *= 0.55 * (e.cls === "sram" ? 1.25 : 1) * (e.cls === "roub" ? 1.15 : 1);
         const vals = [];
@@ -1596,7 +1603,7 @@
       xp += x;
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
-      if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); }
+      if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); }
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
@@ -2079,6 +2086,7 @@
     if (k >= 6 && rnd() < 0.01 + (k - 6) * 0.005) { E.addCons(S, "parch_" + stat + "_p", 1); out.push(CONSUMABLES["parch_" + stat + "_p"].name); note(S, `Butin rare : ${CONSUMABLES["parch_" + stat + "_p"].name} !`, "rare"); }
     if (k >= (E.TROPHY_STASIS || 5) && E.trophyOf && E.giveFurn) { const tr = E.trophyOf(did); if (tr && E.giveFurn(S, tr, "trophée de boss")) out.push(tr); }
     E.petBoss(S, did, k, out); // familiers rares et montiliers
+    E.exoDrop(S, DUNGEONS[did].lvl, k, out); // 0.1.9.1 : runes exotiques
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (k === 10) S.unlocks.stasis10 = true;
@@ -2129,6 +2137,7 @@
     // récolte
     gatherTick(S, dtMs / 1000);
     E.atelierTick(S, dtMs / 1000);
+    E.fmPlanTick(S, dtMs / 1000);
     E.petTick(S, dtMs);
     E.enclosTick(S, dtMs);
   };
@@ -2249,11 +2258,11 @@
   E.runeKey = (tier, stat) => `${tier}:${stat}`;
   E.runeName = (key) => {
     const [tier, stat] = key.split(":"); const s = STATS[stat];
-    return tier === "pa" ? `Rune Pa ${s.short}` : tier === "ra" ? `Rune Ra ${s.short}` : `Rune ${s.short}`;
+    return tier === "pa" ? `Rune Pa ${s.short}` : tier === "ra" ? `Rune Ra ${s.short}` : tier === "ga" ? `Rune Ga ${s.short}` : `Rune ${s.short}`;
   };
   E.runeInfo = (key) => {
     const [tier, stat] = key.split(":"); const mult = tier === "pa" ? 3 : tier === "ra" ? 10 : 1;
-    const s = STATS[stat]; return { stat, tier, pts: s.pts * mult, weight: s.w * s.pts * mult };
+    const s = STATS[stat]; return { stat, tier, pts: tier === "ga" ? 1 : s.pts * mult, weight: tier === "ga" ? s.w : s.w * s.pts * mult, exo: tier === "ga" };
   };
   E.COEF_REGEN_MIN = 6; // +1 % toutes les 6 minutes
   E.getCoef = (S, tpl, now = Date.now()) => {
@@ -2287,15 +2296,16 @@
     if (rem > 0 && rnd() < rem / base) { const k = E.runeKey("", stat); out[k] = (out[k] || 0) + 1; }
     return out;
   };
+  E.EXO_BREAK_MULT = 2;
   E.breakItem = (S, uid, focus) => {
     const it = S.items[uid]; if (!it) return "Objet introuvable.";
     if (E.equippedBy(S, uid)) return "Retirez d'abord cet objet.";
     if (it.locked) return "Objet protégé par le cadenas.";
     if (E.inGear(S, uid)) return `Objet rangé dans une tenue de ${E.inGear(S, uid).name}.`;
     const p = E.breakPreview(S, uid, focus);
-    const got = {};
+    const got = {}; const exoMult = it.exo ? E.EXO_BREAK_MULT : 1; // 0.1.9.1 : un objet exo rend ses runes ×2 (l'exo est perdu)
     for (const k in p.weights) {
-      const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05));
+      const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05) * exoMult);
       for (const rk in r) { S.runes[rk] = (S.runes[rk] || 0) + r[rk]; got[rk] = (got[rk] || 0) + r[rk]; }
     }
     S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: Date.now() };
@@ -2369,6 +2379,7 @@
     if (hunting) checkHunt(S, sub.monsters);
     gatherTick(S, eff, { quiet: true });
     E.atelierTick(S, eff, { quiet: true });
+    const fmPlans = E.fmPlanTick(S, eff, { quiet: true }); // 0.1.9.1 : la forgemagie automatique continue
     E.petTick(S, seconds * 1000); // les familiers mangent en temps réel
     E.enclosTick(S, seconds * 1000); // les naissances continuent
     E.events.length = evLen; // pas de pluie de notifications
@@ -2379,7 +2390,7 @@
       items: E.itemCount(S) - before.items,
       newItems: Object.keys(S.items).filter((u) => !before.uids.has(u)).sort((a, b) => ITEMS[S.items[b].tpl].lvl - ITEMS[S.items[a].tpl].lvl).slice(0, 30),
       archis: Object.keys(S.archis).filter((k) => (S.archis[k] || 0) > (before.archis[k] || 0)),
-      winRate: winRate, fightLen: Math.round(cycle),
+      winRate: winRate, fightLen: Math.round(cycle), fmPlans,
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
   };
