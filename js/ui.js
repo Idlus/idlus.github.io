@@ -5196,7 +5196,7 @@ function accountHtml() {
     <span class="muted">Discord</span>${id.discord ? `<b>${h(id.discord)}</b><span class="tag good">lié</span>` : `<span class="muted">non lié</span><button class="btn sm" data-act="on-linkdiscord">Lier</button>`}
     <span class="muted">E-mail</span>${id.email ? `<b class="oneline">${h(id.email)}</b><span></span>` : `<span class="muted">aucun</span><span></span>`}
     <span class="muted">Sauvegarde</span>${pillHtml() || `<span class="muted">—</span>`}<button class="btn sm" data-act="on-pill">Envoyer</button></div>
-    <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte.</span>
+    <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}${ON.mail ? "Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte." : ""}</span>
     ${conf ? `<div class="stack" style="gap:6px"><span class="minus small">Ton compte, ton pseudo et ta partie en ligne seront effacés pour toujours. La partie reste sur cet appareil. Tape ton pseudo pour confirmer :</span><div class="row"><input type="text" id="onDelPseudo" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm danger" data-act="on-delete">Supprimer</button><button class="btn sm" data-act="cancelreset">Annuler</button></div></div>`
     : `<div class="row"><button class="btn sm" data-act="on-logout">Se déconnecter</button><button class="btn sm danger" data-act="on-askdelete">Supprimer le compte</button></div>`}</div>`;
 }
