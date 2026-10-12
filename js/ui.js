@@ -125,6 +125,7 @@ const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mim
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
 const logoImg = (cls) => `assets/h/${cls}_logo.png`;
+const symImg = (cls) => `assets/h/${cls}_sym.png`;
 const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : "");
 const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
 /* ---------- icônes 3.1.2 : objets officiels + glyphes ---------- */
@@ -442,13 +443,14 @@ let rszT = null; window.addEventListener("resize", () => { clearTimeout(rszT); r
 /* ---------- écran de départ ---------- */
 function classPick(sel, sexSel) {
   return `<div class="classgrid">${CLASS_ORDER.map((id) => { const c = CLASSES[id];
-    return `<button class="clsbtn" data-act="startcls" data-cls="${id}" aria-pressed="${sel === id}" data-tip="${h(c.desc + " — Passif : " + c.passive.name + " : " + c.passive.desc)}">
-      <span class="emb" style="--cc:${c.color}">${headTag(id, sel === id ? sexSel : c.sex, c.name)}</span><b>${c.name}</b></button>`; }).join("")}</div>`;
+    return `<button class="clsbtn" style="--cc:${c.color}" data-act="startcls" data-cls="${id}" aria-pressed="${sel === id}" data-tip="${h(c.desc + " — Passif : " + c.passive.name + " : " + c.passive.desc)}">
+      <span class="csym">${im(symImg(id), "", c.name)}</span><b>${c.name}</b></button>`; }).join("")}</div>`;
 }
-function classInfo(id) {
+function classInfo(id, sex) {
   const c = CLASSES[id];
-  return `<div class="clsinfo"><span class="emb" style="--cc:${c.color};width:56px;height:56px">${im(logoImg(id), "", c.name)}</span>
-    <div><b style="font-size:17px">${c.name}</b><div class="small muted">${h(c.desc)}</div><div class="small" style="margin-top:4px"><span class="tag soft">Passif</span> <b>${h(c.passive.name)}</b> : ${h(c.passive.desc)}</div></div></div>`;
+  return `<div class="clsinfo" style="--cc:${c.color}"><span class="csym">${im(symImg(id), "", c.name)}</span>
+    <div class="grow"><b style="font-size:17px">${c.name}</b><div class="small muted">${h(c.desc)}</div><div class="small" style="margin-top:4px"><span class="tag soft">Passif</span> <b>${h(c.passive.name)}</b> : ${h(c.passive.desc)}</div></div>
+    ${im(lookLocal(id, sex || c.sex, 0), "clook")}</div>`;
 }
 const hasPublicSave = () => { try { return !!localStorage.getItem("dofousxen-save"); } catch (e) { return false; } };
 function renderStart() {
@@ -462,7 +464,7 @@ function renderStart() {
     <div class="panel"><div class="pad stack">
       <h2>Choisissez votre premier héros</h2>
       ${classPick(ui.startCls, sex)}
-      ${classInfo(ui.startCls)}
+      ${classInfo(ui.startCls, sex)}
       <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
       <label class="stack" style="gap:4px"><span class="small muted">Nom du héros</span><input type="text" id="startName" maxlength="20" value="${h(ui.startName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
       <div><button class="btn primary" data-act="startgame">Commencer l'aventure</button></div>
@@ -1737,7 +1739,7 @@ function recruitSheet() {
   const cost = E.recruitCost(S.chars.length + 1); const top = Math.max(...S.chars.map((c) => c.lvl)); const sex = ui.startSex || CLASSES[ui.startCls].sex;
   openSheet(`<h2>Recruter un héros</h2>
     <p class="small muted">Coût : <b>${cost ? fmt(cost) + " kamas" : "gratuit"}</b> (vous avez ${fmt(S.kamas)}). La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus le bonus Esprit Libre diminue.</p>
-    ${classPick(ui.startCls, sex)}${classInfo(ui.startCls)}
+    ${classPick(ui.startCls, sex)}${classInfo(ui.startCls, sex)}
     <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
     <label class="stack" style="gap:4px"><span class="small muted">Nom</span><input type="text" id="recName" maxlength="20" value="${h(ui.recName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
     <div class="row"><button class="btn primary" data-act="recruit" ${S.kamas < cost ? "disabled" : ""}>Recruter</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
