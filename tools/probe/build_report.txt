@@ -133,4 +133,4 @@ Kits de classe : {'feca': 22, 'osa': 22, 'enu': 22, 'sram': 22, 'xelor': 22, 'ec
 Invocations : 75
 Monstres avec sorts : 835/839
 gamedata.js : 1743 Ko, 839 monstres, 1683 ressources, 1707 objets
-Images : 1723 nouvelles / 4360 au total
+Images : 0 nouvelles / 4360 au total
