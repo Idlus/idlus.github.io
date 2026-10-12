@@ -32,7 +32,7 @@ const CHANGELOG = [
     "L'Expédition sans fin (Aventure › Expédition) : étages sans fin, portes, reliques, bénédictions des Douze et Campement",
     "Carnet de bord (Équipe › Carnet), chasse au trésor (Monde › Trésor), commandes d'artisans et temples des Dopeuls (Quêtes), sons discrets et consignes d'absence",
     "Journal de quêtes rangé en 3 familles avec un tableau du jour, challenges qui rapportent plus, cadres de héros en métal (Bois à Krosmoz), menu Options rangé en 5 onglets",
-    "Ta partie est gardée. Au lancement de la version 1.0, tout le monde repartira de zéro (les parties sont encore calculées sur ton appareil)" ] },
+    "Ta partie est gardée" ] },
   { v: "0.1.20.1", name: "Bouftous apprivoisés", items: [
     "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
     "Les groupes d'au moins 4 monstres arrivent avec les zones 32-40 (avant : dès les zones 22-30)",
@@ -233,7 +233,7 @@ const CHANGELOG = [
     "Viseur rouge du Crâ et crocs de l'Ouginak sur leur cible ; mots de l'Eniripsa, portails de l'Eliotrope, trésors de l'Enutrof" ] },
   { v: "0.1.5", name: "Pionniers", items: [
     "Merci de tester ! Chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier » (Héros → Titre et Ornement)",
-    "Récompense exclusive : au lancement du multijoueur, tout le monde repart de zéro, mais les testeurs qui ont le rôle Pionnier sur le Discord retrouveront ce titre et cet ornement" ] },
+    "Récompense exclusive des testeurs de la première heure" ] },
   { v: "0.1.4", name: "Encore plus posés", items: [
     "Les combats ralentissent encore un peu : une action toutes les 0,78 seconde (0,52 avant la 0.1.3)",
     "Les récompenses par combat suivent : gains par heure toujours inchangés" ] },
