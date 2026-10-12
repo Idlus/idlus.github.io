@@ -86,7 +86,7 @@
   E.giveMount = (S, sp, c, why, opts = {}) => {
     if (!MOUNTS[sp] || !(isBico(c) ? MOUNTS[sp].bico[c] : MOUNTS[sp].cols[c])) return null;
     if (E.stableN(S) >= E.stableCap(S)) { if (!opts.quiet) note(S, `Écurie pleine (${E.stableCap(S)} places) : ${MOUNTS[sp].name} ${E.colourName(sp, c)} relâché${sp === "dd" ? "e" : ""}.`, "warn"); return null; }
-    const uid = S.mountUid++; const M = S.mounts[uid] = { uid, sp, c, lvl: 1, xp: 0, kids: 0, got: Date.now() };
+    const uid = S.mountUid++; const M = S.mounts[uid] = { uid, sp, c, lvl: 1, xp: 0, kids: 0, got: E.now() };
     const neu = !(S.mountSeen[sp] && S.mountSeen[sp][c]); E.seeColour(S, sp, c);
     note(S, `${neu ? "Nouvelle couleur : " : "Monture : "}${E.mountName(M)}${why ? " (" + why + ")" : ""} !`, "rare");
     E.celebrate({ t: "mount", uid, neu });

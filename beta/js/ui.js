@@ -4,7 +4,7 @@
    ========================================================================== */
 (function () {
 "use strict";
-const D = window.DATA, E = window.ENGINE;
+const D = window.DATA, E = window.ENGINE, SV = window.SAVE;
 const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, SPELL_IMG, RUNE_SIMPLE_ONLY, HUNT_TIERS, CONSUMABLES, STAT_HELP } = D;
 
 let S = null;
@@ -16,9 +16,16 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.13.2";
+const GAME_VERSION = "0.1.13.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.13.3", name: "Fondations du multijoueur", items: [
+    "Rien ne change pour vous en jeu : cette version prépare le terrain du multijoueur, en coulisses",
+    "La sauvegarde a maintenant son propre module : elle pourra passer en ligne, sur un serveur, sans toucher au reste du jeu (copies de secours et reprise de partie inchangées)",
+    "Le jeu lit l'heure à un seul endroit : plus tard, le serveur pourra imposer la sienne pour éviter la triche en avançant l'horloge de l'appareil",
+    "Tout le hasard du jeu passe par le même tirage : une partie peut être rejouée à l'identique, ce qui servira au serveur pour vérifier les combats (Kolizéum)",
+    "La liste officielle des 74 actions d'un joueur (équiper, chasser, forger…) est écrite : c'est ce que le jeu enverra au serveur",
+  ] },
   { v: "0.1.13.2", name: "Classes et donjons", items: [
     "Laboratoire du Tynril : le Tynril Ahuri ne résiste plus à moitié au Feu, à l'Eau et à l'Air en plus de ses Quatre humeurs, et les monstres du donjon sont un peu moins forts",
     "Cache de Kankreblath : Kankreblath ne frappe plus toute l'équipe à chaque tour, et les monstres du donjon sont un peu moins forts ; un boss n'a plus qu'un seul moyen de se soigner",
@@ -276,7 +283,7 @@ const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
 const char = (id) => S.chars.find((c) => c.id === id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dur = (s) => { s = Math.round(s); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60); return hh ? `${hh} h ${mm} min` : mm ? `${mm} min` : `${s} s`; };
-const ago = (t) => { const s = (Date.now() - t) / 1000; return s < 60 ? "à l'instant" : s < 3600 ? `il y a ${Math.floor(s / 60)} min` : `il y a ${Math.floor(s / 3600)} h`; };
+const ago = (t) => { const s = (E.now() - t) / 1000; return s < 60 ? "à l'instant" : s < 3600 ? `il y a ${Math.floor(s / 60)} min` : `il y a ${Math.floor(s / 3600)} h`; };
 const elVar = (el) => (el === "buff" ? "var(--buff)" : `var(--el-${el || "n"})`);
 const eld = (el) => `<span class="eld" style="--c:${elVar(el)}" title="${ELEMENTS[el || "n"].name}">${ELEMENTS[el || "n"].name[0]}</span>`;
 const fmtStatVal = (k, v) => (["cri", "rt", "rf", "re", "ra"].includes(k) ? `${fmt(v)} %` : fmt(v));
@@ -649,10 +656,10 @@ const findPin = (key) => E.pins(S).find((p) => E.pinKey(p) === key);
 /* un objectif atteint reste affiché en vert jusqu'au prochain changement d'écran */
 function checkPins() {
   let changed = false;
-  E.pins(S).forEach((p) => { if (p.auto) return; const i = E.pinInfo(S, p); if (i && i.done && !p.done) { p.done = Date.now(); changed = true; toast(`Objectif atteint : ${i.label}`, "rare"); notify("pin", "Objectif atteint", i.label); } });
+  E.pins(S).forEach((p) => { if (p.auto) return; const i = E.pinInfo(S, p); if (i && i.done && !p.done) { p.done = E.now(); changed = true; toast(`Objectif atteint : ${i.label}`, "rare"); notify("pin", "Objectif atteint", i.label); } });
   if (changed) renderObjs();
 }
-function clearDonePins() { if (!S || !S.pins) return; const n = S.pins.length; S.pins = S.pins.filter((p) => !(p.done && Date.now() - p.done > 1500)); if (S.pins.length !== n) dirty = true; }
+function clearDonePins() { if (!S || !S.pins) return; const n = S.pins.length; S.pins = S.pins.filter((p) => !(p.done && E.now() - p.done > 1500)); if (S.pins.length !== n) dirty = true; }
 let rszT = null; window.addEventListener("resize", () => { clearTimeout(rszT); rszT = setTimeout(() => { if (S && ui.tab === "combat" && ui.arena) { if (ui.arena.view !== combatView()) render(); else placeEnts(S.fight); } }, 150); });
 
 /* ---------- écran de départ ---------- */
@@ -674,7 +681,7 @@ function headPick(id, sex) {
   return `<div class="stack" style="gap:4px"><span class="small muted">Tête</span><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${cur === i ? "on" : ""}" data-act="starthead" data-v="${i}" aria-pressed="${cur === i}"><img src="${lookLocal(id, sx, i)}" alt="Tête ${i + 1}"></button>`).join("")}</div></div>`;
 }
 const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return id === "forge" ? 0 : Math.min(ui.startHead || 0, n - 1); };
-const hasPublicSave = () => { try { return !!localStorage.getItem("dofousxen-save"); } catch (e) { return false; } };
+const hasPublicSave = () => !!SV.store().get("dofousxen-save");
 function renderStart() {
   renderStatus(); renderNav();
   const sex = ui.startSex || CLASSES[ui.startCls].sex;
@@ -1015,14 +1022,14 @@ function dgDifficulty(did, k) {
   return sc < -1 ? { k: "easy", txt: "Facile" } : sc < 0.3 ? { k: "mid", txt: "Équilibré" } : { k: "risk", txt: k >= 5 && g < 40 ? "Risqué · équipement requis" : "Risqué" };
 }
 /* Mutateur de la semaine (3.1.3) */
-function weeklyLeft() { return dur((E.weekEnd() - Date.now()) / 1000).replace(/ \d+ min$/, ""); }
+function weeklyLeft() { return dur((E.weekEnd() - E.now()) / 1000).replace(/ \d+ min$/, ""); }
 function weeklyBanner() {
   const W = E.weekly(S); if (!W) return "";
   const M = E.STASIS_MODS[W.mod]; const dg = DUNGEONS[W.did];
   return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de la semaine</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>`;
 }
 /* Mutateur éclair (0.1) : 3 donjons toutes les 20 minutes */
-function flashLeft() { const m = Math.max(1, Math.ceil((E.flashEnd() - Date.now()) / 60000)); return `${m} min`; }
+function flashLeft() { const m = Math.max(1, Math.ceil((E.flashEnd() - E.now()) / 60000)); return `${m} min`; }
 function flashBanner() {
   const L = E.flash(S); if (!L.length) return "";
   const N = E.flash(S, E.flashEnd()); const rew = Math.round((E.FLASH_REW - 1) * 100);
@@ -1335,14 +1342,14 @@ function archiBtn(cls = "btn sm") {
   return `<button class="${cls} archibtn ${n ? "on" : ""}" data-act="archis" data-tip="Album des archimonstres : ${n} âme${n > 1 ? "s" : ""} capturée${n > 1 ? "s" : ""} sur ${E.ARCHI_TOTAL}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}">${IC("dofus")} Âmes <b class="num">${n}</b> / ${E.ARCHI_TOTAL}</button>`;
 }
 function archiPill(F) {
-  const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > Date.now() ? Math.round((b.until - Date.now()) / 1000) : 0;
+  const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > E.now() ? Math.round((b.until - E.now()) / 1000) : 0;
   const here = F && F.ents.some((e) => e.side === "m" && e.archi && e.alive);
   const odds = Math.round(1 / E.archiOdds(S));
   return `<span class="pill archipill ${here ? "good" : ""}" data-act="archis" data-tip="Chance d'archimonstre : 1 sur ${odds} par monstre${left ? ` (Parfum de pistage encore ${dur(left)})` : ""}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme pour capturer les âmes.` : "Sans Pierre d'âme, l'âme d'un archimonstre vaincu s'échappe."}">${here ? "Archimonstre ! " : ""}🔮 ${st} pierre${st > 1 ? "s" : ""}${left ? ` · 🧴 ${dur(left)}` : ""}</span>`;
 }
 function archiSheet() {
   const zones = E.ARCHI_ZONES; if (!ui.az || !zones.includes(ui.az)) ui.az = zones.find((z) => E.soulCount(S, z) < E.archisOf(z).length) || zones[0];
-  const f = ui.azf || "all"; const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > Date.now() ? Math.round((b.until - Date.now()) / 1000) : 0;
+  const f = ui.azf || "all"; const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > E.now() ? Math.round((b.until - E.now()) / 1000) : 0;
   const tot = E.soulCount(S); const tier = E.ocreTier(S); const odds = Math.round(1 / E.archiOdds(S));
   const tabs = zones.map((z) => { const L = E.archisOf(z); const d = E.soulCount(S, z);
     return `<button class="ztab ${z === ui.az ? "on" : ""} ${d === L.length ? "done" : ""}" data-act="aztab" data-v="${z}"><b>${h(archiZoneName(z))}</b><span class="num">${d} / ${L.length}</span><span class="bar"><i style="width:${pct(d, L.length)}%"></i></span></button>`; }).join("");
@@ -2927,16 +2934,16 @@ function toolHtml(id) {
 }
 /* 0.1.10.1 : protecteur de ressources (bandeau Métiers, Accueil et combat) */
 function protBar() {
-  const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > Date.now() ? S.protBoost : null;
+  const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null;
   let out = "";
   if (P) { const err = P.fighting ? null : E.protCanFight(S); const M = MONSTERS[P.mon];
-    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - Date.now()) / 1000)}.`}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>Combattre</button>`}</div>`; }
-  if (B) out += `<div class="awaitbar" style="margin:0">${G("sparkle")} Protecteur vaincu : récolte de <b>${h(B.res)}</b> ×2 encore ${dur((B.until - Date.now()) / 1000)}</div>`;
+    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - E.now()) / 1000)}.`}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>Combattre</button>`}</div>`; }
+  if (B) out += `<div class="awaitbar" style="margin:0">${G("sparkle")} Protecteur vaincu : récolte de <b>${h(B.res)}</b> ×2 encore ${dur((B.until - E.now()) / 1000)}</div>`;
   return out;
 }
 function recolteHtml() {
   const workers = S.chars.filter((c) => c.job);
-  const fil = S.filon && S.filon.until > Date.now() ? S.filon : null;
+  const fil = S.filon && S.filon.until > E.now() ? S.filon : null;
   const jobs = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const ws = workers.filter((c) => c.job.job === id);
     const nextRes = J.items.find(([, l]) => l > s.lvl);
     return `<div class="panel"><div class="phead"><div class="row">${im(jobImg(id), "joblogo", J.name)}<div><h2>${J.name}</h2><span class="xs muted">${ws.length ? ws.map((c) => h(c.name)).join(", ") + " récolte" + (ws.length > 1 ? "nt" : "") : "personne ne récolte"}</span></div></div><span class="lvlpill">niv. ${s.lvl}</span></div>
@@ -2949,7 +2956,7 @@ function recolteHtml() {
       </div></div>`; }).join("");
   return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter la ressource de son choix. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). De temps en temps, un filon rare double le rendement d'une ressource pendant 10 minutes, et un protecteur de ressources peut surgir : battez-le avec l'équipe pour doubler la récolte 20 minutes.</p>
     ${protBar()}
-    ${fil ? `<div class="awaitbar" style="margin:0">${G("sparkle")} Filon de <b>${h(fil.res)}</b> : rendement ×2 encore ${dur((fil.until - Date.now()) / 1000)}</div>` : ""}
+    ${fil ? `<div class="awaitbar" style="margin:0">${G("sparkle")} Filon de <b>${h(fil.res)}</b> : rendement ×2 encore ${dur((fil.until - E.now()) / 1000)}</div>` : ""}
     <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `${IC("pioche")} ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)}` : c.inTeam ? IC("combat") + " Chasse avec l'équipe" : restLabel(c)}</span></span>
       ${c.job ? `<button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler</button>` : `<button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}</div>`).join("")}</div></section>
     <div class="grid2">${jobs}</div>`;
@@ -3699,9 +3706,9 @@ document.addEventListener("click", (ev) => {
     case "askrestore": ui.confirm = "restore" + d.i; if (S) optionsSheet(); else renderStart(); return;
     case "cancelrestore": ui.confirm = null; if (S) optionsSheet(); else renderStart(); return;
     case "restorecopy": restoreCopy(+d.i); return;
-    case "frompublic": { try { const txt = localStorage.getItem("dofousxen-save"); S = E.deserialize(txt); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); ui.tab = "home"; render(); toast("Partie du jeu public copiée dans la version de test."); } catch (e) { toast("Aucune partie du jeu public à copier."); } return; }
+    case "frompublic": { try { const txt = SV.store().get("dofousxen-save"); S = E.deserialize(txt); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); ui.tab = "home"; render(); toast("Partie du jeu public copiée dans la version de test."); } catch (e) { toast("Aucune partie du jeu public à copier."); } return; }
     case "cancelreset": ui.confirm = null; optionsSheet(); return;
-    case "reset": if (S) pushCopy(E.serialize(S), "avant", S); S = null; ui.confirm = null; closeSheet(); try { localStorage.removeItem(LS_KEY); } catch (e) {} render(); return;
+    case "reset": if (S) pushCopy(E.serialize(S), "avant", S); S = null; ui.confirm = null; closeSheet(); SV.remove(); render(); return;
     default: return;
   }
   dirty = true; render();
@@ -3767,55 +3774,30 @@ document.addEventListener("input", (ev) => {
 
 /* ---------- sauvegarde ---------- */
 let dirty = false, lastSaveOk = 0;
+/* La lecture et l'écriture de la partie sont dans js/save.js (support interchangeable : navigateur aujourd'hui, serveur demain). */
+SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
 function saveNow(manual) {
-  if (!S) return; S.savedAt = Date.now(); S.lastTick = Date.now();
-  try { const txt = E.serialize(S); localStorage.setItem(LS_KEY, txt); lastSaveOk = Date.now(); dirty = false; if (Date.now() - lastCopy() > COPY_EVERY) pushCopy(txt, "auto", S); if (manual) toast("Partie sauvegardée."); }
-  catch (e) { if (manual) toast("Impossible de sauvegarder dans ce navigateur."); }
+  if (!S) return; S.savedAt = E.now(); S.lastTick = E.now();
+  let ok = false; try { ok = SV.write(E.serialize(S), S); } catch (e) {}
+  if (ok) { lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); }
+  else if (manual) toast("Impossible de sauvegarder dans ce navigateur.");
 }
-/* Copies de secours, à côté de la sauvegarde : 3 copies tournantes (une toutes les 10 min de jeu),
-   une avant chaque mise à jour du jeu et une avant chaque restauration. Si la sauvegarde est illisible, la plus récente prend le relais. */
-const COPY_KEY = LS_KEY + "-copies", VER_KEY = LS_KEY + "-version", COPY_EVERY = 10 * 60 * 1000, COPY_MAX = { auto: 3, maj: 1, avant: 1 };
-let restoredCopy = null;
-function readCopies() { try { const a = JSON.parse(localStorage.getItem(COPY_KEY) || "[]"); return Array.isArray(a) ? a.filter((c) => c && typeof c.txt === "string") : []; } catch (e) { return []; } }
-function writeCopies(a) {
-  a.sort((x, y) => y.t - x.t);
-  while (a.length) { try { localStorage.setItem(COPY_KEY, JSON.stringify(a)); return; } catch (e) { a.pop(); } } // place insuffisante : on lâche la plus ancienne
-  try { localStorage.removeItem(COPY_KEY); } catch (e) {}
-}
-function pushCopy(txt, why, st, v) {
-  if (!txt) return;
-  const meta = st && st.chars ? { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length } : {};
-  const a = readCopies(), same = a.filter((c) => c.why === why).sort((x, y) => y.t - x.t).slice(0, COPY_MAX[why] - 1);
-  writeCopies([Object.assign({ t: Date.now(), why, v: v || GAME_VERSION, txt }, meta), ...same, ...a.filter((c) => c.why !== why)]);
-}
-const lastCopy = () => Math.max(0, ...readCopies().filter((c) => c.why === "auto").map((c) => c.t));
+const readCopies = () => SV.copies(), pushCopy = (txt, why, st, v) => SV.pushCopy(txt, why, st, v);
+let restoredCopy = null, transferred = false;
 /* Déménagement de l'adresse du jeu : l'ancienne adresse renvoie ici avec la sauvegarde dans l'adresse (#transfert=…).
    On ne la reprend que si ce navigateur n'a encore aucune partie ici, puis on retire le texte de l'adresse. */
-function takeTransfer() {
-  const m = /^#transfert=(.+)$/.exec(location.hash || ""); if (!m) return;
+function transferText() {
+  const m = /^#transfert=(.+)$/.exec(location.hash || ""); if (!m) return null;
   try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
-  try {
-    if (localStorage.getItem(LS_KEY)) return;
-    const txt = decodeURIComponent(escape(atob(decodeURIComponent(m[1])))); E.deserialize(txt);
-    localStorage.setItem(LS_KEY, txt); transferred = true;
-  } catch (e) {}
+  try { return decodeURIComponent(escape(atob(decodeURIComponent(m[1])))); } catch (e) { return null; }
 }
-let transferred = false;
 function loadSave() {
-  takeTransfer();
-  let raw = null;
-  try { raw = localStorage.getItem(LS_KEY); if (raw) return E.deserialize(raw); } catch (e) {}
-  if (!raw) return null;
-  for (const c of readCopies()) { try { const st = E.deserialize(c.txt); restoredCopy = c; return st; } catch (e) {} } // sauvegarde illisible : copie la plus récente
-  return null;
+  const r = SV.load(transferText());
+  restoredCopy = r.restored; transferred = r.transferred;
+  return r.state;
 }
 /* Avant de lancer une nouvelle version du jeu, on garde la partie telle qu'elle était. */
-function copyBeforeUpdate(st) {
-  try {
-    const prev = localStorage.getItem(VER_KEY);
-    if (prev !== GAME_VERSION) { const raw = localStorage.getItem(LS_KEY); if (raw && !restoredCopy) pushCopy(raw, "maj", st, prev || "précédente"); localStorage.setItem(VER_KEY, GAME_VERSION); }
-  } catch (e) {}
-}
+function copyBeforeUpdate(st) { SV.beforeUpdate(st, restoredCopy); }
 function restoreCopy(i) {
   const c = readCopies()[i]; if (!c) return;
   let N; try { N = E.deserialize(c.txt); } catch (e) { toast("Cette copie est illisible."); return; }
@@ -3853,7 +3835,7 @@ function loop() {
   if (S) {
     if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (onglet Héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
-    E.tick(S, dt * (BETA ? testSpeed : 1)); S.lastTick = Date.now();
+    E.tick(S, dt * (BETA ? testSpeed : 1)); S.lastTick = E.now();
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
@@ -3874,7 +3856,7 @@ function loop() {
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;
-    if (sinceRes > 2500) { sinceRes = 0; const now = Date.now(); updNavLive();
+    if (sinceRes > 2500) { sinceRes = 0; const now = E.now(); updNavLive();
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
       S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
       checkPins(); if (!$("#sheet").innerHTML) renderObjs();
@@ -3885,7 +3867,7 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") saveNow();
-  else if (S) { const gap = (Date.now() - (S.lastTick || Date.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r); } last = performance.now(); }
+  else if (S) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r); } last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
@@ -3897,7 +3879,7 @@ function start() {
   if (S) {
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
-    const gap = (Date.now() - (S.lastTick || Date.now())) / 1000;
+    const gap = (E.now() - (S.lastTick || E.now())) / 1000;
     const r = gap > 60 ? E.catchUp(S, gap) : null;
     render();
     if (S.migration) { migrationSheet(S.migration); S.migration = null; }
