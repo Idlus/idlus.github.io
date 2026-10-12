@@ -4,6 +4,7 @@
 const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js");
+require("../js/pets.js");
 const D = require("../js/data.js");
 
 // aléatoire reproductible (mulberry32)
@@ -101,4 +102,19 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   }
   E.flash = realFlash; E.dungeonUnlocked = realUnl;
   console.log(`ok - mutateur éclair : ${L.map((x) => x.mod).join(", ")} ; ${E.FLASH_MODS.length} modificateurs joués jusqu'au bout`);
+}
+// 0.1.8 : familiers et montiliers (repas, croissance, stats, obtention, sauvegarde)
+{
+  const S6 = E.newState("Test", "iop"); const c = S6.chars[0]; c.lvl = 70;
+  const ids = Object.keys(E.PETS); assert.ok(ids.length >= 140, "familiers manquants");
+  ids.forEach((id) => { const p = E.PETS[id]; assert.ok(p.icon && Object.keys(p.stats).length, id + " sans icône ou bonus"); for (const k in p.stats) assert.ok(D.STATS[k], `${id} : stat inconnue ${k}`); assert.ok(p.kind === "zone" ? E.SUBS[p.sub] : D.DUNGEONS[p.dg], id + " sans lieu"); });
+  const before = E.charStats(S6, c).age;
+  const P = E.givePet(S6, "siroko"); assert.strictEqual(c.pet, P.uid, "le montilier doit être porté d'office");
+  assert.ok(E.charStats(S6, c).age > before, "le montilier doit donner de l'Agilité");
+  S6.res["Blé"] = 1000; S6.petKeep["Blé"] = true; E.petTick(S6, 3 * 3600e3); assert.strictEqual(P.g, 0, "une ressource protégée ne se mange pas");
+  delete S6.petKeep["Blé"]; E.petTick(S6, 10 * 3600e3); assert.strictEqual(P.g, 20, "20 repas en 10 h");
+  const S7 = E.deserialize(E.serialize ? E.serialize(S6) : JSON.stringify(S6)); assert.ok(S7.pets[P.uid] && S7.chars[0].pet === P.uid, "familier perdu à la sauvegarde");
+  const old = JSON.parse(JSON.stringify(S6)); delete old.pets; delete old.petKeep; delete old.petLuck; delete old.petUid; delete old.chars[0].pet; const S8 = E.deserialize(JSON.stringify(old)); assert.ok(S8.pets && S8.petKeep && S8.petUid === 1, "ancienne sauvegarde sans familiers");
+  let n = 0; for (let i = 0; i < 60; i++) { const o = []; E.petBoss(S6, "plateau_ush", 6, o); n += o.length; } assert.ok(n >= 1, "garantie du montilier à la 60e victoire");
+  console.log(`ok - familiers : ${ids.length} familiers et montiliers, repas, croissance, garantie`);
 }

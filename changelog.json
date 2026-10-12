@@ -1,6 +1,16 @@
 {
-  "version": "0.1.7",
+  "version": "0.1.8",
   "versions": [
+    {
+      "v": "0.1.8",
+      "name": "Familiers et montiliers",
+      "items": [
+        "140 familiers et montiliers officiels, avec leurs vraies icônes : un emplacement Familier sur la fiche du héros, dès le niveau 10",
+        "Ils grandissent en mangeant les ressources du sac (un repas toutes les 30 min, même hors ligne) ; leur nourriture préférée compte double ; vous protégez les ressources de votre choix",
+        "Chaque sous-zone de chasse cache son familier (rare) ; les boss en stasis 6 et plus gardent des familiers rares et 25 montiliers, dont 4 légendaires à +1 PA",
+        "Nouvelles stats tactiques : Tacle, Fuite, PM, Retrait et Esquive PA/PM, Invocation et Pods. Des Rôdeurs et Bondisseurs arrivent dans les donjons de fin de jeu"
+      ]
+    },
     {
       "v": "0.1.7",
       "name": "Les 19 classes",

@@ -1286,3 +1286,28 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 @keyframes axteth{50%{opacity:.35}}
 .reduced .arena.v2 .ent[data-pv="tree"] img.sprite,.reduced .axteth{animation:none}
 @media (prefers-reduced-motion:reduce){.arena.v2 .ent[data-pv="tree"] img.sprite,.axteth{animation:none}}
+
+/* 0.1.8 : familiers et montiliers */
+.dslot.pet{border-style:dashed}.dslot.pet.filled{border-style:solid}
+.dslot.pet.monti{border-color:var(--gold);box-shadow:0 0 10px rgba(179,224,92,.25)}
+.dslot .pgrow{position:absolute;left:6px;bottom:4px;height:3px;border-radius:2px;background:var(--gold);max-width:calc(100% - 12px)}
+.petcard{display:flex;gap:10px;align-items:center;width:100%}
+.petcard .peticon{flex:none;width:52px;height:52px;border-radius:12px;background:radial-gradient(circle,var(--panel3),var(--panel2));border:1px solid var(--frame);display:grid;place-items:center}
+.petcard .peticon img{width:44px;height:44px;object-fit:contain}
+.petcard.big .peticon{width:76px;height:76px}.petcard.big .peticon img{width:64px;height:64px}
+.petcard.monti .peticon{border-color:var(--gold)}.petcard.f-l .peticon{border-color:#ffd36b;box-shadow:0 0 12px rgba(255,211,107,.3)}
+.pbar{position:relative;height:16px;border-radius:999px;background:var(--panel3);overflow:hidden;max-width:360px}
+.pbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--gold),var(--gold2));opacity:.75}
+.pbar span{position:relative;font-size:11px;font-weight:800;padding-left:8px;line-height:16px}
+.pbon{color:var(--gold2)}.warnt{color:var(--action)}
+.pill.keep{cursor:pointer;border:1px solid var(--frame);background:var(--panel2);color:var(--ink);border-radius:999px;padding:3px 9px;font-size:12px}
+.pill.keep.on{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--panel2))}
+.petgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.pettile{display:grid;grid-template-columns:40px 1fr;grid-template-rows:auto auto auto;column-gap:8px;align-items:center;padding:6px 8px;border-radius:12px;background:var(--panel2);border:1px solid var(--frame);opacity:.55;min-width:0}
+.pettile img{grid-row:1/4;width:40px;height:40px;object-fit:contain;filter:grayscale(1) brightness(.7)}
+.pettile.own{opacity:1}.pettile.own img{filter:none}.pettile.own{border-color:var(--gold)}
+.pettile b{font-size:12.5px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pettile span{font-size:11px;color:var(--muted);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pettile .where{font-size:10.5px}
+.pettile.f-l{border-color:#ffd36b}
+.cele-art .celepet{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 5px 8px rgba(0,0,0,.45))}

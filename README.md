@@ -7,6 +7,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.8 « Familiers et montiliers » (bêta)
+- **140 familiers et montiliers officiels** : un emplacement Familier sur la fiche du héros (dès le niveau 10, montiliers dès le niveau 60).
+- Ils grandissent en mangeant les ressources du sac, un repas toutes les 30 minutes même hors ligne ; la nourriture préférée compte double et vous protégez les ressources de votre choix.
+- Familiers de zone en chasse (1 chance sur 2 000), familiers rares de boss en stasis 7+, montiliers en stasis 6+ (garantis à la 60e victoire), montiliers légendaires +1 PA en stasis 8+.
+- Stats tactiques : Tacle, Fuite, PM, Retrait et Esquive PA/PM, Invocation et Pods. Rôdeurs et Bondisseurs dans les donjons de niveau 150 à 200.
+
 ## 0.1.7 « Les 19 classes » (bêta)
 - Pièges du Sram, ronces du Sadida, tourelle du Steamer qui tombe du ciel, fil de lumière de l'Osamodas : chaque classe a son passif visible.
 
