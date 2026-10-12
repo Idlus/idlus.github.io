@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.17";
+const GAME_VERSION = "0.1.18";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.18", name: "Chat et panel admin", items: [
+    "Chat général pour les joueurs connectés : une fenêtre en bas à droite sur ordinateur (le jeu se décale pour lui laisser la place), une bulle au-dessus de la barre du bas sur téléphone ; on peut lire sans compte, et écrire avec un compte et un pseudo",
+    "Chaque message montre la classe, le niveau du héros principal et son titre ; un clic sur un pseudo permet de voir son profil, de lui écrire en privé, d'ignorer ses messages ou de le signaler",
+    "Messages privés : onglet « Privé » avec la liste des conversations ; personne d'autre ne les voit",
+    "Montrer un objet : bouton « Montrer dans le chat » sur la fiche d'un objet ; dans le message, un clic sur l'objet ouvre sa fiche",
+    "Annonces automatiques dans le chat : les « Premiers », un nouveau numéro 1 d'un donjon, un héros au niveau 200, une Renaissance, un Dofus obtenu",
+    "Protections vérifiées par le serveur : liens et gros mots refusés, un message toutes les 4 secondes, 200 caractères, pas deux fois le même message ; le chat garde 48 heures de messages",
+    "Panel admin (réservé à Mathis, et aux modérateurs avec moins de pouvoirs) : vue d'ensemble et journal, fiche de chaque joueur (muet 1 h ou 24 h, bannir du chat, mettre en vérification, changer un pseudo, suspendre le compte), signalements, joueurs en vérification, annonces en bandeau, réglages du chat (niveau minimum pour écrire) et nomination des modérateurs ; le panel de test reste à part" ] },
   { v: "0.1.17", name: "Bienvenue", items: [
     "Bulles de découverte : 18 courtes explications qui apparaissent une seule fois, la première fois qu'un système se présente (combat automatique, premier objet, clés et stasis, Havre-Sac, étoiles de zone, familiers…) ; « Compris » ou « Plus tard », au plus une toutes les 2 minutes, jamais pendant un combat manuel ni une entrée de boss",
     "Au premier lancement, une question : « Tu connais DOFUS ? » ; avec oui, les bulles sur ce que tout joueur de DOFUS connaît (caractéristiques, Almanax, familiers, alignement, forgemagie, montures, archimonstres) sont sautées",

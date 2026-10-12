@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.18 « Chat et panel admin » (bêta)
+- Multijoueur : chat général et messages privés en temps réel (Supabase Realtime), objets montrés dans les messages, annonces automatiques (Premiers, numéros 1, niveau 200, Renaissance, Dofus), ignorer et signaler. Panel admin côté serveur (joueurs, sanctions, signalements, vérification, annonces en bandeau, modérateurs). Interface dans `js/chat.js`, règles et fonctions dans `supabase/chat.sql` (appliqué par le workflow « Serveur en ligne »).
+
 ## 0.1.17 « Bienvenue » (bêta)
 - Lot Bienvenue : bulles de découverte (18, une seule fois chacune, question « Tu connais DOFUS ? » au départ, carnet dans les Options), recherche rapide (Ctrl+K, « / » ou la loupe : objets, monstres, donjons, zones, pages… avec fiche « où le trouver »), Options › Affichage (taille du texte, mouvements réduits, contraste renforcé). La rareté des objets est retirée de l'affichage. Logique dans `js/welcome.js`, test `tests/welcome.test.js`.
 
