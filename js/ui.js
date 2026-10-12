@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.32";
+const GAME_VERSION = "0.1.32.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.32.1", name: "Héros à portée de clic", items: [
+    "Équipe et héros : les têtes de tous vos héros restent visibles à côté de la fiche, même tout en bas de l'équipement. Un clic change de héros sans remonter la page ni quitter l'onglet",
+    "Sur PC, c'est une colonne à droite (les flèches ↑ ↓ du clavier passent aussi d'un héros à l'autre). Sur téléphone, c'est une bande collée en haut de l'écran",
+    "Point vert : un meilleur objet attend dans le sac. Pastille orange : des points à répartir. Tête pâle : héros au repos ou en récolte. Le niveau est écrit sous chaque tête",
+  ] },
   { v: "0.1.32", name: "Encyclopédie rangée", items: [
     "L'Encyclopédie a trois onglets : Bestiaire, Familles et Boss de donjon. En haut, vos compteurs : monstres rencontrés, familles complètes, boss vaincus, butins révélés et âmes d'archimonstres",
     "Bestiaire : les zones sont listées à gauche avec leur progression (menu déroulant sur téléphone). La page s'ouvre sur la zone où vous chassez",
@@ -2864,6 +2869,7 @@ function heroesHtml() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
   const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
   return `
+  <div class="fichewrap"><div class="fichemain">
   <div class="pagehead fichehead"><h2>Fiche du héros</h2><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
   <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
     ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
@@ -2884,7 +2890,24 @@ function heroesHtml() {
     </div>
   </div></section>
   <nav class="subtabs">${[["equip", "Équipement"], ["pet", "Familier & monture"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
-  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
+  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section></div>${heroRail(c)}</div>`;
+}
+/* 0.1.32.1 : têtes des héros toujours visibles à côté de la fiche (colonne à droite sur PC, bande collée en haut au téléphone) */
+function heroRail(c) {
+  const al = teamAlerts(true);
+  return `<aside class="hrail" aria-label="Changer de héros"><span class="hr-t">Héros</span><div class="hr-list">${S.chars.map((x) => {
+    const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0; const rest = !x.inTeam || !!x.job;
+    const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}${x.job ? " · en récolte" : !x.inTeam ? " · au repos" : ""}`;
+    return `<button class="hr-h${x.id === c.id ? " on" : ""}${rest ? " out" : ""}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}" aria-label="${h(tip)}" data-tip="${h(tip)}">${head(x)}<span class="hr-lv num">${x.lvl}</span>${g ? `<i class="hr-g"></i>` : ""}${p ? `<i class="hr-p num">${x.pts}</i>` : ""}</button>`; }).join("")}
+    ${S.chars.length < 8 ? `<button class="hr-h hr-add" data-act="recruitsheet" data-tip="Recruter un héros" aria-label="Recruter un héros"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>
+    <span class="hr-name">${h(c.name)} <small>· ${h(CLASSES[c.cls].name)} niv. ${c.lvl}</small></span><span class="hr-kb"><kbd>↑</kbd><kbd>↓</kbd>changer</span></aside>`;
+}
+/* flèches ↑ ↓ du clavier : héros précédent ou suivant, quand on est descendu dans la fiche (PC) */
+function heroRailKey(dir) {
+  const f = $("#fiche"); if (!S || ui.tab !== "team" || !f || !$(".hrail") || !window.matchMedia("(min-width:860px)").matches) return false;
+  if (f.getBoundingClientRect().top > window.innerHeight / 2) return false;
+  const i = S.chars.findIndex((x) => x.id === ui.cid); if (i < 0 || S.chars.length < 2) return false;
+  ui.cid = S.chars[(i + dir + S.chars.length) % S.chars.length].id; ui.slot = null; render(); return true;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
 function placementHtml() {
@@ -4371,6 +4394,7 @@ document.addEventListener("keydown", (ev) => {
   }
   if (k === "/" && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !$("#sheet").innerHTML) { ev.preventDefault(); searchOpen(); }
   else if (k === "Escape" && $("#wtip")) tipLater();
+  else if ((k === "ArrowUp" || k === "ArrowDown") && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && !$("#sheet").innerHTML && heroRailKey(k === "ArrowDown" ? 1 : -1)) ev.preventDefault();
 });
 /* ---------- actions ---------- */
 /* ===================== 0.1.19 : lot Se montrer (logique dans js/defi.js) =====================
