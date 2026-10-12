@@ -1068,8 +1068,9 @@ function buildArena(F) {
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "compact"
     ? `<div class="cmp"><div class="col c">${list("c")}</div><div class="col m">${list("m")}</div></div><div class="result" id="fresult"></div>`
-    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="result" id="fresult"></div>`;
+    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="fxl"></div><div class="result" id="fresult"></div>`;
   arena.querySelectorAll(".ent").forEach((n) => (ui.arena.nodes[+n.dataset.i] = n));
+  ui.arena.fxl = arena.querySelector(".fxl"); if (view !== "compact") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
   placeEnts(F); stickyCheck();
@@ -1090,8 +1091,9 @@ function chalBarHtml(F) {
   const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
   return `${st}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
-function floatAt(node, txt, color, small) {
-  const s = document.createElement("span"); s.className = "float" + (small ? " small" : ""); s.textContent = txt; s.style.setProperty("--c", color);
+function floatAt(node, txt, color, small, cls) {
+  const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
+  if (cls === "crit") s.innerHTML = `${h(txt)}<small>Critique !</small>`; else s.textContent = txt;
   node.appendChild(s); setTimeout(() => s.remove(), 1150);
 }
 function burst(node, el) {
@@ -1104,13 +1106,221 @@ function burst(node, el) {
   node.appendChild(b); node.appendChild(ring); setTimeout(() => { b.remove(); ring.remove(); }, 800);
 }
 function pulse(node, cls) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+/* ===================== Combat animé : sorts qui voyagent, patte de chaque classe, états visibles ===================== */
+const animLvl = () => (S && S.settings.anim) || (S && S.settings.reduced ? "sober" : "full");
+const axOn = () => animLvl() !== "none";
+const axFull = () => animLvl() === "full";
+const axSpd = () => Math.min(1, Math.max(0.25, 1 / (BETA ? testSpeed : 1)));
+const axRnd = (a, b) => a + Math.random() * (b - a);
+const axBody = (n) => (n && n.querySelector(".lookwrap,.medal,img.sprite")) || n;
+function axPt(A, n, k = 0.5) { const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.top - a.top + r.height * k }; }
+function axFoot(A, n) { const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.bottom - a.top }; }
+function axMk(A, cls, x, y, vars) { const d = document.createElement("div"); d.className = "axp " + cls; d.style.left = x + "px"; d.style.top = y + "px"; if (vars) for (const k in vars) d.style.setProperty(k, vars[k]); A.fxl.appendChild(d); return d; }
+const axLater = (el, ms) => setTimeout(() => el.remove(), ms);
+const AX_EL = { f: "#ff7a3c", e: "#4fa8ff", t: "#c08a3e", a: "#57d06a", n: "#cfcfcf", h: "#8fe36a" };
+const axC = (el) => AX_EL[el] || AX_EL.n;
+/* projectile : forme selon la classe (flèche, carte, bouteille…) ou l'élément */
+function axProj(A, a, b, el, shape, dur, html) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const ARC = { arrow: -22, bottle: -60, bomb: -60, card: -14, word: -26, lance: -24, needle: -10, torpedo: -6, coin: -40, bub: -30 };
+  const arc = shape in ARC ? ARC[shape] : el === "t" ? -60 : el === "a" ? -10 : -20;
+  const along = ["arrow", "needle", "torpedo", "lance"].includes(shape) || (!shape && el === "e"), spin = ["card", "bottle", "bomb", "coin"].includes(shape);
+  const p = axMk(A, "proj " + (shape || "o" + el), a.x, a.y, { "--c": axC(el) }); if (html) p.textContent = html;
+  const kf = [];
+  for (let i = 0; i <= 8; i++) { const t = i / 8, y = dy * t + arc * 4 * t * (1 - t), sl = (Math.atan2(dy + arc * 4 * (1 - 2 * t), dx) * 180) / Math.PI;
+    kf.push({ transform: `translate(-50%,-50%) translate(${dx * t}px,${y}px) rotate(${along ? sl : spin ? t * 720 : !shape && el === "t" ? t * 540 : !shape && el === "a" ? t * 900 : 0}deg)` }); }
+  p.animate(kf, { duration: dur, easing: "cubic-bezier(.45,.05,.75,.95)", fill: "forwards" }); axLater(p, dur + 20);
+  if (axFull()) { let k = 0; const tr = setInterval(() => { if (++k > dur / 30 || !p.isConnected) return clearInterval(tr); const ar = A.el.getBoundingClientRect(), r = p.getBoundingClientRect();
+    const s = axMk(A, "trail", r.left - ar.left + r.width / 2, r.top - ar.top + r.height / 2, { "--c": axC(el) }); axLater(s, 360); }, 30); }
+}
+function axMove(n, kf, dur) { const b = axBody(n); if (!b || !b.animate) return; const z = n.style.zIndex; n.style.zIndex = 60; b.animate(kf, { duration: dur, easing: "ease-in-out" }); setTimeout(() => (n.style.zIndex = z), dur); }
+function axDust(A, x, y, n = 4, dir = 0) { if (!axFull()) return; for (let i = 0; i < n; i++) { const d = axMk(A, "dust", x + (i - n / 2) * 8, y - 4); d.animate([{ opacity: 0.75, transform: "translate(-50%,-50%)" }, { opacity: 0, transform: `translate(calc(-50% + ${(i - n / 2) * 8 - dir * 16}px),-150%) scale(1.7)` }], { duration: 520 }); axLater(d, 560); } }
+function axPuff(A, x, y, c, n = 6) { for (let i = 0; i < n; i++) { const s = axMk(A, "smoke", x + axRnd(-16, 16), y + axRnd(-22, 14)); s.style.background = `radial-gradient(circle,${c},transparent 70%)`;
+  s.animate([{ transform: "translate(-50%,-50%) scale(.4)", opacity: 0.95 }, { transform: `translate(calc(-50% + ${axRnd(-20, 20)}px),calc(-50% - ${axRnd(8, 26)}px)) scale(1.6)`, opacity: 0 }], { duration: 520 }); axLater(s, 560); } }
+function axBeam(A, a, b, bg, dur, h = 8) { const dx = b.x - a.x, dy = b.y - a.y, ang = Math.atan2(dy, dx); const d = document.createElement("div"); d.className = "axbeam";
+  Object.assign(d.style, { left: a.x + "px", top: a.y - h / 2 + "px", width: Math.hypot(dx, dy) + "px", height: h + "px", background: bg }); A.fxl.appendChild(d);
+  d.animate([{ transform: `rotate(${ang}rad) scaleX(0)` }, { transform: `rotate(${ang}rad) scaleX(1)`, offset: 0.35 }, { transform: `rotate(${ang}rad) scaleX(1) scaleY(.2)`, opacity: 0 }], { duration: dur, fill: "forwards" }); axLater(d, dur + 20); }
+function axGround(A, n, svg, w, dur) { const f = axFoot(A, n); const g = axMk(A, "ground", f.x, f.y); g.style.width = w + "px"; g.innerHTML = svg;
+  g.animate([{ transform: "translate(-50%,-100%) scaleY(0)" }, { transform: "translate(-50%,-100%) scaleY(1.12)", offset: 0.3 }, { transform: "translate(-50%,-100%) scaleY(1)", offset: 0.4 }, { transform: "translate(-50%,-100%) scaleY(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-100%) scaleY(0)", opacity: 0 }], { duration: dur, fill: "forwards" }); axLater(g, dur + 20); }
+function axClaws(A, n, c, k = 3) { const b = axPt(A, n); for (let i = 0; i < k; i++) { const cl = axMk(A, "claw", b.x - 14 + i * 14, b.y, { "--c": c });
+  cl.animate([{ transform: "translate(-50%,-50%) rotate(28deg) scaleY(0)", opacity: 1 }, { transform: "translate(-50%,-50%) rotate(28deg) scaleY(1)", opacity: 1, offset: 0.4 }, { transform: "translate(-50%,-50%) rotate(28deg) scaleY(1)", opacity: 0 }], { duration: 420, delay: i * 50, fill: "both" }); axLater(cl, 560); } }
+const AX_SV = {
+  shovel: '<svg viewBox="0 0 40 90"><rect x="17" y="0" width="6" height="52" rx="2" fill="#7a4a1f"/><path d="M8 50h24v18c0 12-12 20-12 20S8 80 8 68z" fill="#c9cdd2" stroke="#7d8287" stroke-width="2"/></svg>',
+  bramble: '<svg viewBox="0 0 70 100"><path d="M20 100C10 70 40 60 25 30S45 5 40 0" stroke="#3f7a22" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M50 100C62 72 30 62 46 35S28 10 34 4" stroke="#57a02f" stroke-width="6" fill="none" stroke-linecap="round"/><g fill="#a8e070"><path d="M26 70l-9-4 8-3z"/><path d="M33 45l9-5-3 8z"/><path d="M48 60l9 3-8 4z"/></g></svg>',
+  fang: '<svg viewBox="0 0 60 60"><path d="M8 14q22 14 44 0l-6 12-5-6-5 10-4-10-4 10-5-10-5 6z" fill="#fff" stroke="#8a6a3a" stroke-width="2"/><path d="M8 46q22-14 44 0l-6-12-5 6-5-10-4 10-4-10-5 10-5-6z" fill="#fff" stroke="#8a6a3a" stroke-width="2"/></svg>',
+};
+const AX_WORDS = ["!#@", "Na !", "Bouh !", "Ha !", "Pff !"];
+/* la patte de chaque classe pour une attaque à cible unique ; renvoie le délai avant l'impact (ms) */
+function axSingle(A, src, sn, tn, el, def, sp) {
+  const a = axPt(A, sn, 0.45), b = axPt(A, tn, 0.5), dir = b.x > a.x ? 1 : -1, dx = b.x - a.x - dir * 40, dy = b.y - a.y;
+  const P = 260 * sp, name = def ? def.name : "";
+  if (src.side === "m") { // monstre : il fonce sur sa cible
+    axMove(sn, [{ transform: "none" }, { transform: `translate(${dx * 0.7}px,${dy * 0.7}px) scale(1.05)`, offset: 0.45 }, { transform: "none" }], 420 * sp); return 190 * sp; }
+  switch (src.summon ? "" : src.cls) {
+    case "iop": axMove(sn, [{ transform: "none" }, { transform: `translate(${dx * 0.5}px,${dy * 0.5 - 70}px) rotate(${-dir * 8}deg)`, offset: 0.3 }, { transform: `translate(${dx}px,${dy}px) scaleY(.92)`, offset: 0.5 }, { transform: `translate(${dx}px,${dy}px)`, offset: 0.62 }, { transform: "none" }], 520 * sp);
+      setTimeout(() => { const f = axFoot(A, tn); axDust(A, f.x - dir * 26, f.y, 6); if (axFull()) pulse(A.el, "shake"); }, 260 * sp); return 260 * sp;
+    case "sacri": case "ougi": case "forge": case "panda":
+      if (src.cls === "panda" && !/Paume|Gueule/.test(name)) { axProj(A, a, b, el, "bottle", P); return P; }
+      if (src.cls === "forge" && !/Estoc|Fente|Talon|Parade|Charge/.test(name)) { axProj(A, a, b, el, "lance", P); setTimeout(() => axProj(A, b, a, el, "lance", P), P + 40); return P; }
+      axDust(A, axFoot(A, sn).x, axFoot(A, sn).y, 3, dir);
+      axMove(sn, [{ transform: "none" }, { transform: `translateX(${-dir * 8}px)`, offset: 0.12 }, { transform: `translate(${dx}px,${dy}px) scale(1.05)`, offset: 0.45 }, { transform: `translate(${dx}px,${dy}px)`, offset: 0.58 }, { transform: "none" }], 460 * sp);
+      if (src.cls === "ougi") setTimeout(() => { const f = axMk(A, "fang", b.x, b.y); f.innerHTML = AX_SV.fang; f.animate([{ transform: "translate(-50%,-50%) scaleY(1.7)", opacity: 0 }, { transform: "translate(-50%,-50%) scaleY(.6)", opacity: 1, offset: 0.5 }, { transform: "translate(-50%,-50%) scaleY(.6)", opacity: 0 }], { duration: 380, fill: "forwards" }); axLater(f, 400); }, 190 * sp);
+      return 210 * sp;
+    case "sram": { const body = axBody(sn), c = "rgba(140,90,214,.85)", ox = b.x - a.x + dir * 44, oy = b.y - a.y;
+      axPuff(A, a.x, a.y, c); body.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "none", offset: 0.15 }, { opacity: 0, transform: `translate(${ox}px,${oy}px) scaleX(-1)`, offset: 0.25 }, { opacity: 1, transform: `translate(${ox}px,${oy}px) scaleX(-1)`, offset: 0.35 }, { opacity: 1, transform: `translate(${ox - dir * 20}px,${oy}px) scaleX(-1)`, offset: 0.5 }, { opacity: 1, transform: `translate(${ox}px,${oy}px) scaleX(-1)`, offset: 0.75 }, { opacity: 0, transform: `translate(${ox}px,${oy}px) scaleX(-1)`, offset: 0.85 }, { opacity: 1, transform: "none" }], { duration: 640 * sp });
+      setTimeout(() => axPuff(A, b.x + dir * 44, b.y, c), 150 * sp); setTimeout(() => axPuff(A, b.x + dir * 44, b.y, c), 540 * sp); return 300 * sp; }
+    case "zobal": axMove(sn, [{ transform: "none" }, { transform: `translate(${dx}px,${dy}px) rotateY(540deg)`, offset: 0.5 }, { transform: `translate(${dx}px,${dy}px) rotateY(720deg)`, offset: 0.62 }, { transform: "rotateY(1080deg)" }], 560 * sp); return 280 * sp;
+    case "cra": axProj(A, a, b, el, "arrow", P * 0.85); return P * 0.85;
+    case "eca": for (let i = 0; i < 3; i++) setTimeout(() => axProj(A, a, { x: b.x, y: b.y + (i - 1) * 12 }, el, "card", P * 0.85), i * 50 * sp); return P * 0.85 + 100 * sp;
+    case "enu": if (/Pelle|Éboulement|Remblai|Tourbière/.test(name)) { axGround(A, tn, AX_SV.shovel, 34, 640 * sp); return 160 * sp; }
+      for (let i = 0; i < 3; i++) setTimeout(() => axProj(A, a, { x: b.x + axRnd(-8, 8), y: b.y + axRnd(-8, 8) }, el, "coin", P), i * 45 * sp); return P + 90 * sp;
+    case "xelor": axProj(A, a, b, el, "needle", P * 0.8); setTimeout(() => { const s = axBody(tn); if (s && axFull()) s.animate([{ filter: "grayscale(0)" }, { filter: "grayscale(1) brightness(1.15) sepia(.3) hue-rotate(160deg)" }, { filter: "grayscale(0)" }], { duration: 600 }); }, P * 0.8); return P * 0.8;
+    case "steam": axPuff(A, a.x + dir * 16, a.y, "rgba(230,240,245,.8)", 3); axProj(A, a, b, el, "torpedo", P); return P;
+    case "eni": for (let i = 0; i < 2; i++) setTimeout(() => axProj(A, a, b, el, "word", P, AX_WORDS[(Math.random() * AX_WORDS.length) | 0]), i * 80 * sp); return P + 80 * sp;
+    case "feca": axProj(A, a, b, el, "bub", P * 1.15); return P * 1.15;
+    case "osa": setTimeout(() => axClaws(A, tn, "#c8a0ff"), 80 * sp); return 180 * sp;
+    case "sadi": axGround(A, tn, AX_SV.bramble, 52, 700 * sp); return 180 * sp;
+    case "elio": { const p1 = { x: a.x + dir * 34, y: a.y }, p2 = { x: b.x - dir * 40, y: b.y };
+      [p1, p2].forEach((p) => { const g = axMk(A, "portal", p.x, p.y); g.animate([{ transform: "translate(-50%,-50%) scaleY(0)" }, { transform: "translate(-50%,-50%) scaleY(1)", offset: 0.2 }, { transform: "translate(-50%,-50%) scaleY(1)", offset: 0.8 }, { transform: "translate(-50%,-50%) scaleY(0)" }], { duration: 700 * sp, fill: "forwards" }); axLater(g, 720 * sp); });
+      setTimeout(() => axBeam(A, a, p1, "linear-gradient(90deg,#fff,#6ff0e6)", 300 * sp), 90 * sp); setTimeout(() => axBeam(A, p2, b, "linear-gradient(90deg,#6ff0e6,#fff)", 300 * sp), 210 * sp); return 290 * sp; }
+    case "hupper": { const top = { x: b.x, y: b.y - 70 }; const r = axMk(A, "rune", top.x, top.y, { "--c": axC(el) }); axLater(r, 520 * sp);
+      setTimeout(() => axProj(A, top, b, el, "spear", 150 * sp), 150 * sp); return 300 * sp; }
+    case "roub": { if (/Tromblon|Espingole|Mitraille|Plombage|Recel|Oblitération/.test(name)) { const f = axMk(A, "flashw sm", a.x + dir * 24, a.y); axLater(f, 200); axProj(A, a, b, "n", null, P * 0.6); return P * 0.6; }
+      axProj(A, a, b, el, "bomb", P); setTimeout(() => { const f = axMk(A, "flashw", b.x, b.y); axLater(f, 260); }, P); return P; }
+    default: axProj(A, a, b, el, null, P); return P;
+  }
+}
+/* sorts de zone : une onde traverse les cibles (volée de flèches pour le Crâ) ; renvoie le délai par cible */
+function axZone(A, src, sn, nodes, el, sp) {
+  const a = axPt(A, sn), W = A.el.clientWidth, dir = nodes.length && axPt(A, nodes[0]).x > a.x ? 1 : -1, end = dir > 0 ? W + 30 : -30, dur = 420 * sp;
+  if (src.side === "m" && src.boss) { // ruée d'un boss sur toute l'équipe
+    const xs = nodes.map((n) => axPt(A, n).x), tx = (dir > 0 ? Math.max(...xs) : Math.min(...xs)) - a.x - dir * 20;
+    axMove(sn, [{ transform: "none" }, { transform: `translate(${tx}px,-12px) scale(1.06)`, offset: 0.5 }, { transform: `translate(${tx}px,-12px)`, offset: 0.6 }, { transform: "none" }], 640 * sp);
+    if (axFull()) setTimeout(() => pulse(A.el, "shake2"), 300 * sp);
+    return (n) => 140 * sp + (Math.abs(axPt(A, n).x - a.x) / Math.max(1, Math.abs(tx))) * 200 * sp; }
+  if (src.side === "c" && src.cls === "cra") {
+    nodes.forEach((n, i) => { const b = axPt(A, n); for (let k = 0; k < 3; k++) setTimeout(() => axProj(A, { x: b.x - 60 + axRnd(-16, 16), y: -10 }, { x: b.x + axRnd(-12, 12), y: b.y }, el, "arrow", 220 * sp), (i * 40 + k * 60) * sp); });
+    return () => 300 * sp; }
+  pulse(sn, "act");
+  const w = axMk(A, "wave", a.x, A.el.clientHeight * 0.6, { "--c": axC(el) }); w.style.height = A.el.clientHeight * 0.7 + "px"; if (dir < 0) w.style.transform = "translate(-50%,-50%) scaleX(-1)";
+  w.animate([{ left: a.x + "px", opacity: 0 }, { opacity: 1, offset: 0.15 }, { left: end + "px", opacity: 0.3 }], { duration: dur, easing: "ease-in", fill: "forwards" }); axLater(w, dur + 20);
+  return (n) => dur * Math.pow(Math.min(1, Math.abs(axPt(A, n).x - a.x) / Math.max(1, Math.abs(end - a.x))), 1.5);
+}
+function axSpellTag(A, n, name, el) {
+  if (!axOn()) return; const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect();
+  if (n._tag) n._tag.remove();
+  const d = axMk(A, "spelltag", r.left - a.left + r.width / 2, r.top - a.top - 4, { "--c": axC(el) }); d.innerHTML = `<i></i>${h(name)}`; n._tag = d;
+  const hw = d.offsetWidth / 2, W = A.el.clientWidth; d.style.left = Math.min(W - hw - 4, Math.max(hw + 4, r.left - a.left + r.width / 2)) + "px"; axLater(d, 1150);
+}
+function axMechBanner(A, txt, who) {
+  if (!axOn()) return; const charge = /Charge/.test(txt) && /⚠/.test(txt);
+  const d = document.createElement("div"); d.className = "axbanner" + (charge ? " warn" : "");
+  d.innerHTML = `<div class="k">${h(who)}${charge ? " · au prochain tour" : ""}</div><div class="n">${h(charge ? "Attaque dévastatrice" : txt.replace(/^⚠\s*/, ""))}</div>`;
+  A.fxl.appendChild(d); axLater(d, 2000);
+}
+/* effet d'un événement (impact, soin, bonus, invocation) */
+function axEvent(F, A, f) {
+  if (ui.arena !== A) return;
+  const n = A.nodes[f.t];
+  if (f.k === "hit") { if (!n) return; const e = F.ents[f.t];
+    pulse(n, "hit");
+    if (f.crit && axOn()) { floatAt(n, "−" + f.v, "#ffd84d", false, "crit"); if (axFull()) { const p = axPt(A, n); const fl = axMk(A, "flashw", p.x, p.y); axLater(fl, 220); const b = axBody(n); if (b && b.animate) b.animate([{ filter: "brightness(3)" }, { filter: "brightness(3)", offset: 0.6 }, { filter: "none" }], { duration: 160 }); pulse(A.el, "shake"); } }
+    else if (f.s < 0 && axOn()) floatAt(n, "−" + f.v, "#b6ff9a", true);
+    else floatAt(n, "-" + f.v, elVar(f.el));
+    if (f.s < 0 && axOn()) { const p = axPt(A, n, 0.45); for (let i = 0; i < (axFull() ? 6 : 3); i++) { const s = axMk(A, "bubl", p.x + axRnd(-22, 22), p.y + axRnd(-14, 14)); s.style.animationDelay = i * 50 + "ms"; axLater(s, 1100); } }
+    else burst(n, f.el || "n");
+    if (e && (!e.alive || f.v > e.hpMax * 0.3) && (!axOn() || axFull())) pulse(A.el, "shake");
+  } else if (f.k === "heal") { if (!n) return; floatAt(n, "+" + f.v, "#7ee06a");
+    if (axOn()) { const p = axPt(A, n, 0.6); for (let i = 0; i < (axFull() ? 8 : 4); i++) { const s = axMk(A, "streak", p.x + axRnd(-24, 24), p.y + axRnd(-12, 12), { "--c": "#b6ff8a" }); s.style.animationDelay = i * 40 + "ms"; axLater(s, 1100); } const r = axMk(A, "ring", p.x, p.y, { "--c": "#8fe36a" }); axLater(r, 520); }
+    else burst(n, "h");
+  } else if (f.k === "buff") { if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true);
+    const e = F.ents[f.t]; if (e && e.side === "m" && e.mech && !/^[+−-]|^Bouclier|^Esquive|^Invulnérable|^Condamné/.test(f.txt)) axMechBanner(A, f.txt, e.name);
+  } else if (f.k === "phase") phaseFlash();
+}
+/* une action = un même numéro d'événement : lancer, voyage, puis impacts */
+function axGroup(F, A, g) {
+  if (ui.arena !== A) return;
+  const cast = g.find((f) => f.k === "cast"), sp = axSpd();
+  if (!cast) return g.forEach((f) => axEvent(F, A, f));
+  const s = cast.s, src = F.ents[s], sn = A.nodes[s];
+  const hits = g.filter((f) => f.k === "hit" && f.s === s && f.t !== s), rest = g.filter((f) => f !== cast && !hits.includes(f));
+  const def = src && src.side === "c" && cast.sp && src.cls && !src.summon ? E.spellDef(src.cls, cast.sp) : null;
+  const el = hits.length ? hits[0].el || "n" : g.some((f) => f.k === "heal") ? "h" : "n";
+  if (def && sn) axSpellTag(A, sn, def.name, el);
+  const tg = [...new Set(hits.map((f) => f.t))].filter((t) => A.nodes[t]);
+  let when = () => 0;
+  if (sn && src && tg.length === 1) { const d = axSingle(A, src, sn, A.nodes[tg[0]], el, def, sp); when = () => d; }
+  else if (sn && src && tg.length > 1) { const fn = axZone(A, src, sn, tg.map((t) => A.nodes[t]), el, sp); when = (f) => fn(A.nodes[f.t]); }
+  else if (sn) pulse(sn, "act");
+  const late = tg.length ? when({ t: tg[0] }) : 0;
+  hits.forEach((f) => setTimeout(() => axEvent(F, A, f), when(f)));
+  rest.forEach((f) => setTimeout(() => axEvent(F, A, f), f.k === "hit" ? late : Math.min(late, 200 * sp)));
+}
+/* chute d'un monstre (fumée, kamas) ; tombe d'un héros */
+function axDeath(A, n, e) {
+  if (!axOn()) return n.classList.add("dead");
+  const sp = axSpd();
+  setTimeout(() => { if (!n.isConnected || n.dataset.ko !== "1") return;
+    const b = axBody(n), p = axPt(A, n, 0.7);
+    if (e.side === "m") {
+      if (b && b.animate) b.animate([{ transform: "none" }, { transform: "scale(1.12,.72) translateY(12%)", offset: 0.3 }, { transform: "scale(.6,.2) translateY(60%)", opacity: 0 }], { duration: 420, easing: "ease-in", fill: "forwards" });
+      axPuff(A, p.x, p.y, "rgba(210,210,200,.75)", axFull() ? 7 : 4);
+      if (axFull()) for (let i = 0; i < 4; i++) { const c = axMk(A, "coin", p.x, p.y), dx = axRnd(-40, 40);
+        c.animate([{ transform: "translate(-50%,-50%)" }, { transform: `translate(calc(-50% + ${dx * 0.6}px),calc(-50% - ${axRnd(30, 55)}px))`, offset: 0.45 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + 16px))`, opacity: 1, offset: 0.85 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + 16px))`, opacity: 0 }], { duration: 800, delay: i * 40, easing: "ease-out" }); axLater(c, 900); }
+      setTimeout(() => { if (n.dataset.ko === "1") { n.classList.add("dead"); if (b && b.getAnimations) b.getAnimations().forEach((x) => x.cancel()); } }, 430);
+    } else { n.classList.add("dead"); if (!n.querySelector(".tomb")) { const t = document.createElement("span"); t.className = "tomb"; (n.querySelector(".lookwrap,.medal") || n).appendChild(t); } const f = axFoot(A, n); axDust(A, f.x, f.y, 5); }
+  }, 300 * sp);
+}
+/* états visibles : pastilles sous la barre de vie, bulle de bouclier, gel, or */
+const AX_ICO = {
+  poison: '<svg viewBox="0 0 10 10"><path d="M5 1C5 1 2 4.6 2 6.4a3 3 0 0 0 6 0C8 4.6 5 1 5 1z" fill="#9bf06a"/></svg>',
+  boost: '<svg viewBox="0 0 10 10"><path d="M5 1l3 4H6v4H4V5H2z" fill="#ffd84d"/></svg>',
+  weak: '<svg viewBox="0 0 10 10"><path d="M5 9L2 5h2V1h2v4h2z" fill="#c77dff"/></svg>',
+  vuln: '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="3.4" fill="none" stroke="#ff6b6b" stroke-width="1.4"/><circle cx="5" cy="5" r="1.2" fill="#ff6b6b"/></svg>',
+  pa: '<svg viewBox="0 0 10 10"><path d="M2 1h6v1L5.6 5 8 8v1H2V8l2.4-3L2 2z" fill="#4fa8ff"/></svg>',
+  stun: '<svg viewBox="0 0 10 10"><path d="M5 0v10M0 5h10M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="#bfe8ff" stroke-width="1.3"/></svg>',
+  mute: '<svg viewBox="0 0 10 10"><path d="M2 4h2l3-2v6L4 6H2z" fill="#ddd"/><path d="M1 1l8 8" stroke="#ff6b6b" stroke-width="1.4"/></svg>',
+  root: '<svg viewBox="0 0 10 10"><path d="M5 0v5M5 5L2 9M5 5l3 4M5 6v4" stroke="#a8e070" stroke-width="1.4" fill="none"/></svg>',
+  warn: '<svg viewBox="0 0 10 10"><path d="M5 1l4 8H1z" fill="#ff6b6b"/></svg>',
+};
+function axStates(F, e, i) {
+  const ch = [], add = (k, txt, c, tip) => ch.push(`<span class="st" style="--c:${c}" title="${h(tip)}">${AX_ICO[k]}${txt}</span>`);
+  if ((e.dots || []).length) add("poison", Math.max(...e.dots.map((d) => d.turns)), "#9bf06a", "Poison");
+  const db = (e.debuffs || []).filter((b) => b.turns >= 0 && b.turns < 99);
+  if (db.some((d) => d.weak)) add("weak", "", "#c77dff", "Affaibli");
+  if (db.some((d) => d.vuln) || e.mark > 0) add("vuln", "", "#ff6b6b", e.mark > 0 ? "Marqué par le Crâ" : "Vulnérable");
+  if (e.paLoss > 0) add("pa", "−" + e.paLoss, "#4fa8ff", "PA retirés");
+  if (e.stun > 0) add("stun", "", "#bfe8ff", "Passe son tour");
+  if (e.silence > 0) add("mute", "", "#ddd", "Muet");
+  if (e.rooted > 0) add("root", "", "#a8e070", "Enraciné : ne peut plus soigner");
+  if (e.charging) add("warn", "", "#ff6b6b", "Prépare une attaque dévastatrice");
+  if (F.ents.some((m) => m.alive && m.doom && m.doom.i === i)) add("warn", "", "#ff6b6b", "Condamné");
+  return ch.slice(0, 4).join("");
+}
+function axDecor(n, e) { if (!n || n.querySelector(".sts")) return; n.insertAdjacentHTML("beforeend", `<div class="sts"></div><span class="sc"></span>${e.side === "c" ? '<span class="dz"></span>' : ""}`); }
+function axUpdateEnt(F, A, e, i, n) {
+  if (A.view !== "scene") return n.classList.toggle("dead", !e.alive);
+  if (!e.alive && n.dataset.ko !== "1") { n.dataset.ko = "1"; axDeath(A, n, e); }
+  else if (e.alive && n.dataset.ko === "1") { n.dataset.ko = ""; n.classList.remove("dead"); const t = n.querySelector(".tomb"); if (t) t.remove(); const b = axBody(n); if (b && b.getAnimations) b.getAnimations().forEach((x) => x.cancel()); }
+  const on = axOn() && e.alive;
+  const st = n.querySelector(".sts"); if (st) { const k = on ? axStates(F, e, i) : ""; if (st.dataset.k !== k) { st.innerHTML = k; st.dataset.k = k; } }
+  n.classList.toggle("shielded", on && e.shield > 0);
+  n.classList.toggle("frozen", on && e.stun > 0);
+  n.classList.toggle("golden", on && e.gold > 0);
+  n.classList.toggle("dzon", on && e.side === "c" && F.ents.some((m) => m.alive && m.charging));
+}
+function axVictory(F, A) {
+  if (A.view !== "scene" || !axOn() || F.result !== "win") return;
+  A.nodes.forEach((n, i) => { const e = F.ents[i]; if (!n || !e || e.side !== "c" || !e.alive) return; const b = axBody(n); if (b && b.animate) b.animate([{ transform: "none" }, { transform: "translateY(-18px)", offset: 0.25 }, { transform: "none", offset: 0.5 }, { transform: "translateY(-10px)", offset: 0.75 }, { transform: "none" }], { duration: 800, delay: 250 + i * 90, easing: "ease-out" }); });
+}
 function updateCombat(force) {
   const F = S.fight; const arena = $("#arena"); if (!arena) return;
   if (!ui.arena || ui.arena.el !== arena || ui.arena.fid !== (F ? F.id : null) || ui.arena.theme !== isDark() || ui.arena.view !== combatView()) buildArena(F);
   const A = ui.arena;
   if (F && A.nEnts !== undefined && F.ents.length > A.nEnts) {
     for (let i = A.nEnts; i < F.ents.length; i++) { const e = F.ents[i]; const box = A.el.querySelector(A.view === "compact" ? (e.side === "c" ? ".col.c" : ".col.m") : ".ents"); if (!box) continue;
-      box.insertAdjacentHTML("beforeend", A.entHtml([e, i])); A.nodes[i] = box.lastElementChild; }
+      box.insertAdjacentHTML("beforeend", A.entHtml([e, i])); A.nodes[i] = box.lastElementChild;
+      if (A.view === "scene") { const nn = A.nodes[i]; axDecor(nn, e); if (axOn()) { nn.classList.add("spawn"); setTimeout(() => nn.classList.remove("spawn"), 650); } } }
     A.nEnts = F.ents.length; placeEnts(F);
   }
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
@@ -1118,11 +1328,12 @@ function updateCombat(force) {
   const cb = $("#chalbar"); if (cb) { const ch = chalBarHtml(F); if (cb.dataset.k !== ch) { cb.innerHTML = ch; cb.dataset.k = ch; } }
   const co = $("#chalov"); if (co) { const ch = chalOverlayHtml(F); if (co.dataset.k !== ch) { co.innerHTML = ch; co.dataset.k = ch; const ar = $("#arena"); if (ar) ar.classList.toggle("haschal", !!ch); } }
   if (F) {
+    A.el.classList.toggle("axon", A.view === "scene" && axOn());
     F.ents.forEach((e, i) => {
       const n = A.nodes[i]; if (!n) return;
       n.querySelector(".hpb i").style.width = pct(e.hp, e.hpMax) + "%";
       n.querySelector(".hpb b").style.transform = `scaleX(${Math.min(1, (e.shield || 0) / e.hpMax)})`;
-      n.classList.toggle("dead", !e.alive);
+      axUpdateEnt(F, A, e, i, n);
       const hn = n.querySelector(".hpn"); if (hn) hn.textContent = `${fmt(Math.max(0, Math.round(e.hp)))} / ${fmt(e.hpMax)}`;
       if (e.side === "c" && !e.summon) { const pn = n.querySelector(".pas"); if (pn) { const P = E.passiveInfo(e, F); const html = P ? `${h(P.n)}${P.m ? ` <span class="pg">${Array.from({ length: Math.min(P.m, 12) }, (_, k) => `<i class="${k < Math.round(P.v * Math.min(P.m, 12) / P.m) ? "on" : ""}"></i>`).join("")}</span>` : ""}` : ""; if (pn.dataset.k !== html) { pn.innerHTML = html; pn.dataset.k = html; } } }
     });
@@ -1146,7 +1357,11 @@ function updateCombat(force) {
     const fresh = F.fx.filter((f) => f.seq > A.lastSeq);
     if (fresh.length) {
       A.lastSeq = Math.max(...fresh.map((f) => f.seq));
-      fresh.forEach((f) => {
+      if (A.view === "scene" && axOn() && A.fxl && fresh.length <= 40 && document.visibilityState === "visible") {
+        const gm = new Map(); fresh.forEach((f) => { if (!gm.has(f.seq)) gm.set(f.seq, []); gm.get(f.seq).push(f); });
+        const gs = [...gm.values()], gap = Math.min(240, 480 / gs.length) * axSpd();
+        gs.forEach((g, k) => (k ? setTimeout(() => axGroup(F, A, g), k * gap) : axGroup(F, A, g)));
+      } else fresh.forEach((f) => {
         if (f.k === "cast") pulse(A.nodes[f.s], "act");
         else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
         else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) { floatAt(n, "+" + f.v, "#7ee06a"); burst(n, "h"); } }
@@ -1160,7 +1375,7 @@ function updateCombat(force) {
       const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? last.txt : F.label;
     }
     if (F.over && !A.over) {
-      A.over = true; $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`;
+      A.over = true; axVictory(F, A); $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`;
       lootHtml(F); const fh = $("#fhist"); if (fh) fh.innerHTML = historyHtml(6);
     } else if (!F.over && force) { $("#floot").innerHTML = `<p class="note">Le butin apparaîtra à la fin du combat.</p>`; $("#fres").textContent = `Tour ${F.round}`; }
   } else if (force) { $("#flog").innerHTML = ""; $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; }
@@ -1925,7 +2140,7 @@ function optionsSheet() {
   openSheet(`<h2>Options</h2>
     <div class="stack small">
       <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
-      <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[[false, "Complètes"], [true, "Réduites"]].map(([v, n]) => `<button data-act="setreduced" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.reduced === v}">${n}</button>`).join("")}</span></div>
+      <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]].map(([v, n]) => `<button data-act="setanim" data-v="${v}" aria-pressed="${animLvl() === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
       <label class="row"><input type="checkbox" data-act="setdecofx" ${S.settings.decofx !== false ? "checked" : ""}> <span><b>Effets de décor</b> <span class="muted">(météo et premier plan dans l'arène ; à couper sur un appareil lent)</span></span></label>
       ${notifOptionsHtml()}
@@ -2091,6 +2306,7 @@ document.addEventListener("click", (ev) => {
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
+    case "setanim": S.settings.anim = d.v; S.settings.reduced = d.v !== "full"; setTheme(); optionsSheet(); render(); return;
     case "setcele": S.settings.cele = d.v === "1"; dirty = true; optionsSheet(); return;
     case "pin": { const p = JSON.parse(d.p); const r = E.togglePin(S, p); if (r) { toast(r); return; } toast(E.pinned(S, p) ? "Objectif suivi dans la bande du haut." : "Objectif retiré de la bande."); renderObjs(); if ($("#sheet").innerHTML) { dirty = true; return; } break; }
     case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "heroes") break; return; }
