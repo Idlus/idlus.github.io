@@ -29,6 +29,7 @@
   E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
   E.idolFx = () => null; E.idolOwned = () => false; E.giveIdol = () => false; // 0.1.10 : idoles (js/idols.js)
   E.mountStats = () => null; E.mountHunt = () => null; E.mountXpShare = () => 0; E.stableXp = () => {}; E.enclosTick = () => {}; // montures (mounts.js)
+  E.guildXpShare = () => 0; E.guildBonus = () => 0; // 0.1.21 : guildes (js/guilds.js, seulement en ligne)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
@@ -478,6 +479,7 @@
   /* Chasse : on choisit une sous-zone et l'équipe y combat en boucle */
   E.startHunt = (S, sid) => {
     if (S.dungeon) return "Vous êtes en donjon.";
+    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Aventure › Expédition).";
     if (!E.setSub(S, sid)) return "Sous-zone verrouillée.";
     pinStars(S, sid); // les étoiles cessent de monter et fondent à partir de maintenant
     S.hunting = true; S.fight = null; S.pause = E.PAUSE_MS;
@@ -485,7 +487,7 @@
     note(S, `Chasse : ${SUBS[sid].name}`, "info");
     return null;
   };
-  E.stopHunt = (S) => { if (S.dungeon) return "Quittez d'abord le donjon."; S.hunting = false; S.fight = null; return null; };
+  E.stopHunt = (S) => { if (S.dungeon) return "Quittez d'abord le donjon."; if (E.expActive && E.expActive(S)) return "Abandonne d'abord l'expédition."; S.hunting = false; S.fight = null; return null; };
 
   /* ---------------- Étoiles de zone (0.1.8.1) ----------------
      Une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chacune donne +10 % d'XP et de butin.
@@ -638,7 +640,7 @@
   /* 0.1.12.3 : sans équipement, une équipe doit perdre (sauf aux premiers niveaux) : PV et dégâts des monstres multipliés
      selon leur niveau, par paliers [niveau, ×PV, ×dégâts] reliés en ligne droite, séparément en chasse et en donjon ;
      « rew » rend l'XP et le butin par monstre en proportion des PV en plus */
-  /* 0.1.20.1 : en chasse, la montée commence au niveau 20 et finit au niveau 40 (avant : de 15 à 30) ; les zones 22-30
+  /* 0.1.23.1 : en chasse, la montée commence au niveau 20 et finit au niveau 40 (avant : de 15 à 30) ; les zones 22-30
      (Bouftous, Tainéla, Égouts…) restent jouables sans équipement, le mur arrive avec les zones 32-40 ; groupes de 4 dès ces zones-là */
   E.MON_POW = {
     hunt: [[20, 1, 1], [30, 2.6, 2.4], [40, 4.5, 4]],
@@ -652,7 +654,7 @@
     return P[P.length - 1][j];
   };
   E.powRew = (mons, where, sm = 1) => { const pw = mons.reduce((a, m) => a + 1 + (E.monPow(m.lvl, "hp", where) - 1) * sm, 0) / Math.max(1, mons.length); return Math.max(1, 1 + (pw - 1) * E.MON_POW.rew); };
-  E.huntMon = (n) => (E.HUNT_SMALL[n] && E.HUNT_SMALL[n].mon) || 1; // 0.1.20.1 : petite équipe en chasse, part du renfort gardée
+  E.huntMon = (n) => (E.HUNT_SMALL[n] && E.HUNT_SMALL[n].mon) || 1; // 0.1.24.3 : petite équipe en chasse, part du renfort gardée
   // 0.1.12.5 : donjons bien plus durs que les autres de leur niveau (simulation) : PV et dégâts de leurs monstres ×
   E.DG_EASE = { cache_kankreblath: 0.9, labo_tynril: 0.8 };
   const powMons = (mons, where, did, sm = 1) => { const k = (did && E.DG_EASE[did]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * (1 + (E.monPow(m.lvl, "hp", where) - 1) * sm) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
@@ -682,8 +684,8 @@
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
   E.SMALL_TEAM = { 1: { hp: 30, dr: 15, name: "Solo" }, 2: { hp: 15, dr: 7.5, name: "Duo" } };
-  /* 0.1.20.1 : en chasse aussi, une petite équipe bien équipée ne doit presque jamais perdre (simulation) : PV en plus et dégâts subis en moins ;
-     mon : part du renfort de chasse (E.MON_POW) gardée par les monstres ; les gains par monstre suivent (E.powRew) */
+  /* 0.1.24.3 : en chasse aussi, une petite équipe bien équipée ne doit presque jamais perdre (simulation) : PV en plus et dégâts subis en moins */
+  /* mon : part du renfort de chasse (E.MON_POW) gardée par les monstres ; les gains par monstre suivent (E.powRew) */
   E.HUNT_SMALL = { 1: { hp: 70, dr: 40, mon: 0.36, name: "Solo" }, 2: { hp: 30, dr: 20, mon: 0.74, name: "Duo" }, 3: { hp: 10, dr: 5, mon: 1, name: "Trio" } };
   E.ARCHI_CHANCE = 1 / 400;
 
@@ -751,6 +753,7 @@
     meneur:   { name: "Meneur",     desc: "Ses alliés font +10 % de dégâts tant qu'il est debout." },
     traqueur: { name: "Traqueur",   desc: "Vise le héros qui a le moins de PV." },
   };
+  E.monsterEntity = monsterEntity; // 0.1.22 : groupes d'attaque des Percepteurs (js/gboss.js)
   E.makeChampion = (m, pw) => {
     m.champ = pw || pick(Object.keys(E.CHAMP_POWERS));
     m.hpMax = m.hp = Math.round(m.hpMax * 2); m.dmg *= 1.2;
@@ -845,17 +848,17 @@
 
   /* ---------------- Challenges ---------------- */
   E.CHALLENGES = {
-    survivant:  { name: "Survivant",          diff: 5,  desc: "Aucun héros ne doit tomber." },
-    versatile:  { name: "Versatile",          diff: 5,  desc: "Chaque sort au plus une fois par tour." },
-    econome:    { name: "Économe",            diff: 8,  desc: "Ne jamais lancer le même sort deux fois de suite." },
-    focus:      { name: "Focus",              diff: 8,  desc: "Une fois un monstre attaqué, le tuer avant d'en attaquer un autre." },
-    elitiste:   { name: "Élitiste",           diff: 8,  desc: "Tuer d'abord le monstre désigné." },
-    ordonne:    { name: "Ordonné",            diff: 8,  desc: "Tuer les monstres du plus haut au plus bas niveau." },
-    incurable:  { name: "Incurable",          diff: 12, desc: "Aucun soin (ni sort de soin, ni vol de vie)." },
-    elementaire:{ name: "Élémentaire",        diff: 12, desc: "N'utiliser qu'un seul élément pendant tout le combat." },
-    barbare:    { name: "Barbare",            diff: 8,  desc: "Aucun sort de protection : ni bouclier, ni bonus de caractéristiques." },
-    rapide:     { name: "Rapide",             diff: 0,  desc: "Terminer le combat en peu de tours." },
-    chacun:     { name: "Chacun son monstre", diff: 12, desc: "Chaque héros n'attaque qu'un seul monstre." },
+    survivant:  { name: "Survivant",          diff: 10, desc: "Aucun héros ne doit tomber." },
+    versatile:  { name: "Versatile",          diff: 15, desc: "Chaque sort au plus une fois par tour." },
+    econome:    { name: "Économe",            diff: 15, desc: "Ne jamais lancer le même sort deux fois de suite." },
+    focus:      { name: "Focus",              diff: 10, desc: "Une fois un monstre attaqué, le tuer avant d'en viser un autre (les sorts de zone qui le touchent sont permis)." },
+    elitiste:   { name: "Élitiste",           diff: 15, desc: "Tuer d'abord le monstre désigné." },
+    ordonne:    { name: "Ordonné",            diff: 30, desc: "Tuer les monstres du plus haut au plus bas niveau." },
+    incurable:  { name: "Incurable",          diff: 25, desc: "Aucun soin (ni sort de soin, ni vol de vie)." },
+    elementaire:{ name: "Élémentaire",        diff: 15, desc: "Chaque héros n'utilise qu'un seul élément pendant tout le combat." },
+    barbare:    { name: "Barbare",            diff: 10, desc: "Aucun sort de protection : ni bouclier, ni bonus de caractéristiques." },
+    rapide:     { name: "Rapide",             diff: 20, desc: "Terminer le combat en peu de tours." },
+    chacun:     { name: "Chacun son monstre", diff: 20, desc: "Les héros se répartissent les monstres : chacun vise le sien jusqu'à sa mort (les sorts de zone qui le touchent sont permis)." },
   };
   const pickChallenges = (S, F, n) => {
     const heroes = F.ents.filter((e) => e.side === "c"); const mons = F.ents.filter((e) => e.side === "m");
@@ -871,7 +874,7 @@
     });
     const out = [];
     while (out.length < n && pool.length) { const id = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; const ch = { id, ok: true };
-      if (id === "rapide") { ch.turns = 2 + Math.ceil(mons.length / Math.max(1, heroes.length)) + (F.dungeon ? 1 : 0); ch.bonus = Math.max(5, 14 - ch.turns * 2); } else ch.bonus = E.CHALLENGES[id].diff;
+      if (id === "rapide") { const ml = mons.reduce((t, m) => t + m.lvl, 0) / Math.max(1, mons.length); ch.turns = 3 + Math.ceil(mons.length / Math.max(1, heroes.length)) + Math.floor(ml / 50) + (F.dungeon ? 1 : 0); ch.bonus = E.CHALLENGES.rapide.diff; } /* les combats de haut niveau durent plus longtemps */ else ch.bonus = E.CHALLENGES[id].diff;
       if (id === "elitiste") { const t = mons.slice().sort((a, b) => (b.boss ? 1e6 : 0) + b.lvl - ((a.boss ? 1e6 : 0) + a.lvl))[0]; ch.target = F.ents.indexOf(t); }
       out.push(ch); }
     return out;
@@ -986,8 +989,11 @@
   E.startFight = (S) => {
     const team = E.team(S); if (!team.length) return null;
     const IX = E.idolFx(S, S.dungeon);
-    let mons, label, bossIdx = -1;
-    if (S.dungeon) {
+    let mons, label, bossIdx = -1, XP = null;
+    if (E.expActive && E.expActive(S)) { // 0.1.24 : étage de l'Expédition sans fin
+      XP = E.expFight(S, team); if (!XP) return null;
+      mons = XP.mons; label = XP.label;
+    } else if (S.dungeon) {
       const dg = DUNGEONS[S.dungeon.id]; const r = S.dungeon.room;
       if (r < dg.rooms.length) {
         const room = dg.rooms[r]; const k = S.dungeon.stasis || 1;
@@ -998,13 +1004,13 @@
         label = `${dg.name}${k > 1 ? ` · Stasis ${k}` : ""} — salle ${r + 1}/${dg.rooms.length + 1}`;
       } else {
         const bm = MONSTERS[dg.boss];
-        const k = S.dungeon.stasis || 1; const blv = k >= 4 ? Math.max(bm.lvl[0], (S.dungeon.syncLvl || 0) + 2) : bm.lvl[0];
+        const k = S.dungeon.stasis || 1; const blv = S.dungeon.gboss ? (S.dungeon.syncLvl || 1) + 2 : k >= 4 ? Math.max(bm.lvl[0], (S.dungeon.syncLvl || 0) + 2) : bm.lvl[0]; // boss de guilde (0.1.22) : toujours au niveau de l'équipe
         const boss = monsterEntity(dg.boss, blv);
         const hk = (1 + team.length * 1.1) / 5; boss.hpMax = boss.hp = Math.round(boss.hpMax * hk);
         boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0; (S.bossSeen = S.bossSeen || {})[S.dungeon.id] = 1;
         mons = [boss];
         const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0), 0, 7);
-        const mlv = k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
+        const mlv = S.dungeon.gboss ? S.dungeon.syncLvl || 1 : k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));
         applyStasis(S, null, mons, -1, true);
         label = `${dg.name}${k > 1 ? ` · Stasis ${k}` : ""} — salle du boss`;
@@ -1018,32 +1024,34 @@
       if (pg) { mons = pg.mons; label = pg.label; }
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
-    const hsm = S.dungeon ? 1 : E.huntMon(team.length);
-    powMons(mons, S.dungeon ? "dg" : "hunt", S.dungeon && S.dungeon.id, hsm);
+    const hsm = S.dungeon || XP ? 1 : E.huntMon(team.length);
+    powMons(mons, S.dungeon || XP ? "dg" : "hunt", S.dungeon && S.dungeon.id, hsm);
     if (IX) applyIdols(IX, mons);
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
+    if (XP) E.expHeroes(S, ents, XP.fx);
     if (IX && IX.heroPa) ents.forEach((e) => { if (e.side === "c") e.st = Object.assign({}, e.st, { pa: Math.max(1, e.st.pa - IX.heroPa) }); });
     if (IX && IX.resMain) { const cnt = {}; ents.forEach((e) => { if (e.side === "c") { const k = bestEl(e.st); cnt[k] = (cnt[k] || 0) + 1; } }); IX.resEl = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || null; }
-    /* 0.1 : bonus « petit groupe » en donjon (solo et duo) */
-    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : E.HUNT_SMALL[team.length];
+    /* 0.1 : bonus « petit groupe » en donjon (solo et duo) ; 0.1.24.3 : en chasse aussi (solo, duo, trio) */
+    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length];
     if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
-    var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
+    var fsub = S.dungeon || XP ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
     if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
+    if (XP) F.exp = XP.exp;
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
-    F.powRew = E.powRew(mons, S.dungeon ? "dg" : "hunt", hsm); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
-    F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: null, hitTurn: {} };
+    F.powRew = E.powRew(mons, S.dungeon || XP ? "dg" : "hunt", hsm); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
+    F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     newRound(F);
     return F;
   };
 
   const newRound = (F) => {
-    const ini = (e) => e.ini + (F.round === 1 && e.cls === "cra" ? 1e7 : 0);
+    const ini = (e) => e.ini + (F.round === 1 && (e.cls === "cra" || e.expFirst) ? 1e7 : 0);
     F.order = F.ents.filter((e) => e.alive).sort((a, b) => (a.slowR === F.round) - (b.slowR === F.round) || ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
     F.oi = 0;
     if (F.round === 1 && F.idol && F.idol.major) F.order = F.order.concat(F.order.filter((i) => F.ents[i].side === "m")); // idole Major
@@ -1099,6 +1107,7 @@
         if (tgt.openEl && el !== tgt.openEl) v *= 0.5;
       }
     }
+    if (src && src.expVs && tgt.side === "m") v *= 1 + ((tgt.boss ? src.expVs.boss : 0) + (tgt.hp > tgt.hpMax * 0.8 ? src.expVs.fresh : 0)) / 100; // 0.1.24 : reliques d'expédition
     v = Math.max(1, Math.round(v));
     if (F && tgt.side === "m" && tgt.mech) { // une partie des dégâts part sur un serviteur
       const share = (m) => { const p = Math.min(m.hp, Math.round(v * 0.5)); if (p <= 0) return; v -= p; m.hp -= p; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(m), s: -1, v: p, el: el || "n" }); if (m.hp <= 0) { m.hp = 0; m.alive = false; killed(F, m); } };
@@ -1111,6 +1120,11 @@
     if (tgt.side === "c" && src && src.side === "m" && F && F.glyph === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
     if (tgt.side === "c" && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
+    if (src && src.side === "c" && tgt.side === "m" && v > 0) { // 0.1.24 : reliques d'expédition (vol de vie, poison)
+      if (src.vamp && src.alive) doHeal(src, v * src.vamp, F);
+      if (src.expPoison && tgt.alive && !tgt.noDot && !tgt.dots.some((d) => d.exp)) tgt.dots.push({ v: Math.max(1, Math.round(tgt.hpMax * src.expPoison / 100)), el: null, turns: 2, exp: 1 });
+    }
+    if (tgt.hp <= 0 && F && tgt.side === "c" && !tgt.summon && F.expRevive > 0) { F.expRevive--; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} se relève (Sang de Bouftou) !`, "buff"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.mech && tgt.mech.includes("immortel") && !tgt.revived) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} refuse de mourir et se relève !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.side === "m" && F.idol && F.idol.revive && !tgt.revived && !tgt.summon) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * F.idol.revive / 100); flog(F, `${tgt.name} revient à la vie (idole Sakai) !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0) { tgt.hp = 0; tgt.alive = false; killed(F, tgt); }
@@ -1178,7 +1192,7 @@
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
-    if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; }
+    if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
     if (F && t.side === "c" && !t.summon && g > 0) F.healed = (F.healed || 0) + g;
     if (F && F.fx && g > 0) F.fx.push({ seq: F.seq, k: "heal", t: F.ents.indexOf(t), v: g });
@@ -1209,6 +1223,11 @@
       const el = chal(F, "elitiste"); if (el && F.ents[el.target].alive) prim = F.ents[el.target];
       const od = chal(F, "ordonne"); if (!prim && od) prim = foes.slice().sort((a, b) => b.lvl - a.lvl)[0];
       const fo = (chal(F, "focus") || chal(F, "chacun")) && F.cs.focus[e.cid] !== undefined ? F.ents[F.cs.focus[e.cid]] : null; if (!prim && fo && fo.alive) prim = fo;
+      if (!prim && chal(F, "chacun")) { // chacun son monstre : prendre de préférence un monstre qu'aucun autre héros n'a déjà pris
+        const taken = new Set(Object.entries(F.cs.focus).filter(([k, v]) => +k !== e.cid && F.ents[v].alive).map(([, v]) => v));
+        const free = foes.filter((m) => !taken.has(F.ents.indexOf(m))).sort((a, b) => a.hp - b.hp);
+        if (free.length) prim = free[0];
+      }
     }
     const rule = (slot && slot.tgt) || "low";
     if (rule === "low" && !prim) { // 0.1 : cible prioritaire de l'équipe
@@ -1277,7 +1296,7 @@
             if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
-          const ce = chal(F, "elementaire"); if (ce && r.el) { if (F.cs.el === null) F.cs.el = r.el; else if (F.cs.el !== r.el) failChal(F, "elementaire", "deux éléments utilisés"); }
+          const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
         });
         parts.push(`${ts.length > 1 ? ts.length + " cibles" : ts[0].name} : ${vals.join(" / ")}`); ok = true;
         if (f.k === "drain") { const ci = chal(F, "incurable"); if (ci) failChal(F, "incurable", "vol de vie"); }
@@ -1323,9 +1342,8 @@
       (cs.hitTurn[key] = cs.hitTurn[key] || new Set()); foeHits.forEach((i) => cs.hitTurn[key].add(i));
       if (chal(F, "focus") || chal(F, "chacun")) {
         const f0 = cs.focus[key];
-        if (f0 !== undefined && (F.ents[f0].alive || chal(F, "chacun")) && foeHits.some((i) => i !== f0)) failChal(F, chal(F, "chacun") ? "chacun" : "focus", "une autre cible a été attaquée");
-        if (f0 === undefined || (!F.ents[f0].alive && !chal(F, "chacun"))) cs.focus[key] = foeHits[0];
-        if (chal(F, "chacun") && Object.entries(cs.focus).some(([k2, v]) => +k2 !== key && v === cs.focus[key])) failChal(F, "chacun", "deux héros sur le même monstre");
+        if (f0 !== undefined && F.ents[f0].alive && !foeHits.includes(f0)) failChal(F, chal(F, "chacun") ? "chacun" : "focus", "une autre cible a été attaquée");
+        if (f0 === undefined || !F.ents[f0].alive) cs.focus[key] = foeHits[0];
       }
     }
     flog(F, `${e.name} · ${sp.name}${parts.length ? " → " + parts.join(", ") : ""}`, "c");
@@ -1340,9 +1358,14 @@
     if (chal(F, "econome") && F.cs.last[key] === sp.id) return true;
     if (chal(F, "incurable") && (k === "heal" || k === "drain" || g.fx.some((f) => f.k === "leech"))) return true;
     const multi = g.fx.some((f) => ["dmg", "drain", "dot"].includes(f.k) && f.n > 1) && alive(F, "m").length > 1;
-    if ((chal(F, "focus") || chal(F, "chacun") || chal(F, "elitiste") || chal(F, "ordonne")) && multi) return true;
+    // Focus, Chacun son monstre : les sorts de zone restent permis tant qu'ils touchent la cible du héros
+    if (multi && (chal(F, "elitiste") || chal(F, "ordonne"))) { // Élitiste, Ordonné : zone permise sauf si elle risque d'achever un autre monstre avant son tour
+      const el = chal(F, "elitiste"), foes = alive(F, "m"), top = Math.max(...foes.map((m) => m.lvl));
+      const ok = (m) => (el ? F.ents.indexOf(m) === el.target || !F.ents[el.target].alive : true) && (!chal(F, "ordonne") || m.lvl >= top);
+      if (foes.some((m) => !ok(m) && m.hp < m.hpMax * 0.6)) return true;
+    }
     if (chal(F, "barbare") && (k === "shield" || k === "buff")) return true;
-    if (chal(F, "elementaire") && sp.el && sp.el !== "best" && sp.el !== (F.cs.el || E.mainEl(c)) && ["dmg", "aoe", "drain", "dot"].includes(k)) return true;
+    if (chal(F, "elementaire") && sp.el && sp.el !== "best" && sp.el !== ((F.cs.el || {})[key] || E.mainEl(c)) && ["dmg", "aoe", "drain", "dot"].includes(k)) return true;
     return false;
   };
 
@@ -1443,7 +1466,7 @@
         if ((e.silence > 0 && g.cd) || (e.rooted > 0 && E.spellKind(g) === "heal")) return;
         if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g) || (F.idol && F.idol.heals === "none" && E.spellKind(g) === "heal")) return;
         const k = E.spellKind(g);
-        // 0.1.20.1 : pas de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans jamais attaquer)
+        // 0.1.24.3 : pas de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans jamais attaquer)
         if (k === "heal" && !slot.cond && !alive(F, "c").some((a) => !a.summon && a.hp < a.hpMax * 0.8)) return;
         const v = ["dmg", "aoe", "drain", "dot"].includes(k) ? spellValue(F, e, g) / Math.max(1, g.pa) : 1e6 - idx;
         if (v > bestV) { bestV = v; best = { slot, idx, sp, g }; }
@@ -1479,7 +1502,8 @@
     if (e.cls === "panda" && (e.ivresse || 0) >= 5 && !e.cuve) e.cuve = true;
   };
   const summonTurn = (S, F, e) => {
-    const t = alive(F, "m").sort((a, b) => a.hp - b.hp)[0]; if (!t) return;
+    const own = F.ents[e.owner], oc = own && S.chars.find((x) => x.id === own.cid);
+    const t = (own && own.alive && oc && E.chalRespect(S, oc) && F.chals && F.chals.some((c) => c.ok) ? pickFoes(S, F, own, null, 1)[0] : null) || alive(F, "m").sort((a, b) => a.hp - b.hp)[0]; if (!t) return; // les invocations suivent les challenges de leur maître
     F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
     const d = dealDamage(F, e, t, e.dmg * rf(0.85, 1.15), e.el);
     flog(F, `${e.name} (invocation) → ${t.name} : −${d}`, "c");
@@ -1678,6 +1702,7 @@
       e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + meneur + (F.roulette === "pile" ? 20 + 5 * ecaEv : F.roulette === "perdu" ? -5 : 0);
       e.resBonus = 0; e.regen = 0;
     });
+    if (F.exp && E.expBonuses) E.expBonuses(S, F); // 0.1.24 : reliques et bénédictions de l'expédition
   };
 
   /* Un pas de combat = le tour d'une entité */
@@ -1844,6 +1869,7 @@
       let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c));
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
+      g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
     E.stableXp(S, team.length ? team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length : 0); // Mangeoire de l'enclos
@@ -1948,12 +1974,13 @@
       const mons = F.ents.filter((e) => e.side === "m" && !e.fake);
       const cb = E.chalResolve(S, F);
       const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1) * (1 + (F.idolBonus || 0) / 100);
-      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1), dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1), kamasMult: E.PACE_REW * (F.powRew || 1), treasure: F.treasure || 0 });
+      const xm = F.exp ? F.exp.mult : { xp: 1, drop: 1, kamas: 1 }; // 0.1.24 : +4 % par étage d'expédition, reliques de butin
+      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
-      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null, stasis: F.stasis || 0, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
-      if (!S.dungeon) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
+      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon || F.exp ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null, stasis: F.stasis || 0, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
+      if (!S.dungeon && !F.exp) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       const xpTot = Object.values(F.rewards.xp).reduce((a, b) => a + b, 0);
       flog(F, `Victoire ! +${xpTot} XP, +${F.rewards.kamas} kamas`, "win");
       const prevUnlocked = new Set(Object.keys(SUBS).filter((s) => E.subUnlocked(S, s)));
@@ -1972,14 +1999,15 @@
         } else S.dungeon.room++;
       }
       Object.keys(SUBS).forEach((s) => { if (!prevUnlocked.has(s) && E.subUnlocked(S, s)) note(S, `Nouvelle sous-zone : ${SUBS[s].name}`, "up"); });
-      E.autoZone(S, true);
-      E.roam(S); // 0.1.10.2 : chasse itinérante
+      if (F.exp) E.expWin(S, F); // 0.1.24 : étage franchi
+      else { E.autoZone(S, true); E.roam(S); } // 0.1.10.2 : chasse itinérante
     } else {
       E.chalResolve(S, F, true);
       flog(F, why || "Défaite… l'équipe se repose.", "lose");
       try { F.loss = E.lossReport(S, F); } catch (e) { F.loss = null; }
       if (F.loss) { S.losses = (S.losses || []).filter((x) => x && x.t); S.losses.unshift(F.loss); if (S.losses.length > 6) S.losses.length = 6; E.events.push({ kind: "loss", txt: F.loss.txt, rep: F.loss }); }
-      E.autoZone(S, false);
+      if (F.exp) E.expLose(S, F); // 0.1.24 : une vie de moins
+      else E.autoZone(S, false);
       if (S.dungeon) {
         if ((S.cons.fiole_resu || 0) > 0 && !S.dungeon.revived) { S.cons.fiole_resu--; if (!S.cons.fiole_resu) delete S.cons.fiole_resu; S.dungeon.revived = true; note(S, `Fiole de Résurrection : l'équipe se relève et recommence la salle (${DUNGEONS[S.dungeon.id].name}).`, "rare"); }
         else { note(S, `Échec dans ${DUNGEONS[S.dungeon.id].name}. La clé est perdue.`, "warn"); S.dungeon = null; }
@@ -2247,8 +2275,8 @@
     return R;
   };
 
-  /* Challenges : bonus des challenges réussis + série (+0,5 % par succès consécutif, max +5 %) */
-  E.CHAL_STREAK_STEP = 0.5; E.CHAL_STREAK_MAX = 5;
+  /* Challenges : bonus des challenges réussis + série (+1 % par succès consécutif, max +10 %) */
+  E.CHAL_STREAK_STEP = 1; E.CHAL_STREAK_MAX = 10;
   E.chalResolve = (S, F, lost) => {
     const L = F.chals || []; if (!L.length) return 0;
     S.chalStats = S.chalStats || {}; let sum = 0, allOk = true;
@@ -2332,6 +2360,7 @@
     if (k > SI.max + 1) return `Stasis ${k} verrouillée : terminez d'abord la stasis ${SI.max + 1}.`;
     if (!E.dungeonUnlocked(S, did)) return "Donjon verrouillé.";
     if (S.dungeon) return "Vous êtes déjà en donjon.";
+    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Aventure › Expédition).";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
@@ -2358,7 +2387,7 @@
     while (S.acc >= E.STEP_MS && guard++ < 200) {
       S.acc -= E.STEP_MS;
       if (!S.fight || S.fight.over) {
-        if (!S.dungeon && !S.hunting) { S.acc = 0; break; }
+        if (!S.dungeon && !S.hunting && !(E.expBusy && E.expBusy(S))) { S.acc = 0; break; }
         S.pause = (S.pause || 0) + E.STEP_MS;
         if (S.pause >= E.PAUSE_MS) { S.pause = 0; E.startFight(S); }
         continue;
@@ -2367,6 +2396,7 @@
       E.step(S);
     }
     E.starsTick(S, dtMs / 1000);
+    if (E.expTick) E.expTick(S); // 0.1.24 : choix automatiques de l'expédition
     // récolte
     gatherTick(S, dtMs / 1000);
     E.protExpire(S);
@@ -2420,6 +2450,7 @@
   E.setJob = (S, cid, job, res) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
     if (S.dungeon && c.inTeam && !c.job) return "Impossible pendant un donjon.";
+    if (E.expActive && E.expActive(S) && c.inTeam && !c.job) return "Impossible pendant une expédition.";
     if (!job) { if (c.job) { c.job = null; S.fight = S.dungeon ? S.fight : null; note(S, `${c.name} revient chasser.`, "info"); } return null; }
     const list = E.jobRes(job); const lvl = S.jobs[job].lvl;
     const pickRes = res && list.find((x) => x[0] === res && x[1] <= lvl) ? res : (list.filter((x) => x[1] <= lvl).pop() || [])[0];
@@ -2578,6 +2609,7 @@
     if (c.inTeam && E.team(S).length <= 1) return "Il faut au moins un personnage dans l'équipe.";
     if (!c.inTeam && E.team(S).length >= 8) return "8 personnages maximum.";
     if (S.dungeon) return "Impossible de changer l'équipe en donjon.";
+    if (E.expActive && E.expActive(S)) return "Impossible de changer l'équipe en expédition.";
     c.inTeam = !c.inTeam; S.fight = null; return null;
   };
 
