@@ -10,7 +10,7 @@
    node tools/discord_bot.js captures <dossier>                       → publie les images du dossier (png, jpg, webp, gif ; 10 par message) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
    node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
    Ajouter --print pour afficher le message sans l'envoyer. */
-const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
+const fs = require("fs"); const { api, norm, guildId, channelId, roleId } = require("./discord_api.js");
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
 const DRY = process.argv.includes("--print"); const [cmd, file] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 
@@ -147,6 +147,29 @@ async function main() {
     const role = roleName === "aucun" ? null : await roleId(gid, roleName);
     await api("POST", `/channels/${ch}/messages`, { content: (role ? `<@&${role}> ` : "") + text, allowed_mentions: { roles: role ? [role] : [] } });
     console.log("Annonce publiée :", text.length, "caractères");
+  } else if (cmd === "sondage") {
+    // Publie une série de sondages Discord (vrais sondages, votes intégrés) décrits dans un fichier JSON : { salon, categorie, sujet, duree_heures, intro, sondages: [{ question, reponses: [{ emoji, text }] }] }.
+    const data = JSON.parse(fs.readFileSync(file || __dirname + "/sondages/expedition.json", "utf8"));
+    const salon = (process.env.DISCORD_SALON || data.salon || "sondages").trim(); const hours = Math.min(768, Math.max(1, +data.duree_heures || 168));
+    const polls = data.sondages.map((p) => ({ question: { text: p.question.slice(0, 300) }, duration: hours, allow_multiselect: false, layout_type: 1,
+      answers: p.reponses.slice(0, 10).map((r) => ({ poll_media: { text: r.text.slice(0, 55), emoji: r.emoji ? { name: r.emoji } : undefined } })) }));
+    if (DRY) { console.log(`[#${salon}, ${hours} h]\n${data.intro || ""}\n`); polls.forEach((p, i) => console.log(`${i + 1}. ${p.question.text}\n` + p.answers.map((a) => `   ${a.poll_media.emoji ? a.poll_media.emoji.name + " " : ""}${a.poll_media.text}`).join("\n"))); return; }
+    const gid = await guildId(); let chans = await api("GET", `/guilds/${gid}/channels`);
+    let ch = chans.find((c) => norm(c.name) === norm(salon) && c.type === 0);
+    if (!ch) { // le salon n'existe pas encore : on le crée dans la catégorie demandée (ou sans catégorie)
+      const cat = chans.find((c) => c.type === 4 && norm(c.name) === norm(data.categorie || ""));
+      ch = await api("POST", `/guilds/${gid}/channels`, { name: salon, type: 0, parent_id: cat ? cat.id : undefined, topic: data.sujet || undefined });
+      console.log("Salon créé :", "#" + ch.name);
+    }
+    const last = await api("GET", `/channels/${ch.id}/messages?limit=100`);
+    const seen = new Set(last.map((m) => m.poll && m.poll.question && m.poll.question.text).filter(Boolean));
+    let n = 0;
+    if (data.intro && !polls.every((p) => seen.has(p.question.text)) && !last.some((m) => (m.content || "").startsWith(data.intro.slice(0, 60)))) await api("POST", `/channels/${ch.id}/messages`, { content: data.intro, allowed_mentions: { parse: [] } });
+    for (const poll of polls) {
+      if (seen.has(poll.question.text)) { console.log("Déjà publié :", poll.question.text); continue; }
+      await api("POST", `/channels/${ch.id}/messages`, { poll, allowed_mentions: { parse: [] } }); n++; await new Promise((r) => setTimeout(r, 1200));
+    }
+    console.log(`Sondages publiés : ${n} (sur ${polls.length}) dans #${ch.name}`);
   } else if (cmd === "captures") {
     const dir = file || "."; const imgs = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f)).sort();
     if (!imgs.length) { console.log("Aucune image dans", dir); process.exit(1); }
@@ -168,7 +191,7 @@ async function main() {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md]"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json]"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
