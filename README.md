@@ -7,6 +7,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.9 « Montures » (bêta)
+- **Montures** : 41 couleurs officielles de dragodindes (niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), bonus DOFUS au niveau 100. Capture au filet dans trois zones sauvages (hors ligne aussi), croissance par une part de l'XP du héros, enclos du Havre-Sac pour l'élevage (naissances en 8 h, croisements connus, bicolores, objets d'élevage), carnet de l'éleveur et arbre généalogique.
 ## 0.1.8.2 « Forgemagie » (bêta)
 - **Forgemagie revue** : puits (les pertes protègent les tentatives suivantes), onglet Runes (fusion, transmutation, nourrir le forgemage), métier de Forgemage niveau 1 à 100, objets Parfaits (+2 %). L'Emblème du Solitaire est retiré, les runes investies sont rendues.
 
