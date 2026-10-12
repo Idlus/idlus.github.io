@@ -81,7 +81,7 @@
   const onlineTxt = () => `<i></i>${C.count || 1} en ligne`;
   function minHtml() {
     const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id));
-    const n = C.unread + C.unreadP;
+    const n = C.unread + C.unreadP + ((window.GUILD && window.GUILD.unread) || 0);
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
@@ -89,7 +89,7 @@
   const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener"><span class="dl">${X().DISCORD_SVG}</span><span class="tx"><b>Serveur Discord d'Idlus</b><small>Questions, bugs, idées</small></span><span class="go">Rejoindre</span></a>`;
   function headHtml() {
     const tab = (k, n, extra) => `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${n}${extra || ""}</button>`;
-    return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}<span class="ch-tab lock" data-tip="Le chat de guilde arrivera avec les guildes.">${X().G("lock")} Guilde</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
+    return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}${window.GUILD && window.GUILD.inGuild() ? tab("u", "Guilde", window.GUILD.unread && C.tab !== "u" ? ` <span class="n">${window.GUILD.unread}</span>` : "") : `<span class="ch-tab lock" data-tip="Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.">${X().G("lock")} Guilde</span>`}<span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && m.data.t === "dofus" ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
@@ -124,6 +124,10 @@
       const th = C.p.filter((m) => m.user_id === C.peer || m.to_id === C.peer);
       return `<div class="sys">Conversation privée avec <b>${h(C.names[C.peer] || "ce joueur")}</b>. Personne d'autre ne la voit.</div>` + th.map(msgHtml).join("");
     }
+    if (C.tab === "u") {
+      if (!window.GUILD || !window.GUILD.inGuild()) { C.tab = "g"; return listHtml(); }
+      return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
+    }
     const rows = C.g.filter((m) => !C.ign.has(m.user_id));
     return `<div class="sys">Bienvenue sur le chat général. Reste courtois : insultes, liens et publicité sont refusés.</div>` + rows.map(msgHtml).join("");
   }
@@ -135,7 +139,7 @@
     const it = C.item && window.DATA.ITEMS[C.item];
     const wait = Math.max(0, Math.ceil((C.next - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      <div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      <div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
       <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>Bouton « Montrer dans le chat » sur la fiche d'un objet</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`;
   }
 
@@ -145,7 +149,7 @@
     if (!body && !C.item) return;
     if (Date.now() < C.next) { C.err = "Doucement : attends quelques secondes."; return paint(true); }
     const to = C.tab === "p" ? C.peer : null;
-    const err = await ON.chatSend(body, to, C.item ? { tpl: C.item } : null);
+    const err = C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000;
     setTimeout(() => { const c = $("#chCnt"); if (c) c.textContent = "0/200"; }, 4100);
@@ -197,7 +201,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="Panel admin">${X().G("shield")}<span class="hide-sm">${C.role === "admin" ? "Admin" : "Modération"}</span></button>` : ""; }
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"], ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]].concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(isAdmin() ? [["ann", "Annonces"], ["equipe", "Équipe"]] : []).filter((x) => isAdmin() || x[0] !== "verif");
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"], ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]].concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(isAdmin() ? [["ann", "Annonces"], ["equipe", "Équipe"]] : []).filter((x) => isAdmin() || x[0] !== "verif");
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -207,6 +211,7 @@
     if (A.tab === "equipe") A.mods = await r("adm_mods");
     if (A.tab === "ann") A.anns = await ON.announces();
     if (A.tab === "hdv") A.hdv = await r("adm_hdv"); // 0.1.20, voir js/market.js
+    if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
   }
   function renderAdmin(main) {
     if (!C.role) { main.innerHTML = `<section class="panel"><div class="pad empty">Le panel admin est réservé à l'équipe d'Idlus.</div></section>`; return; }
@@ -225,6 +230,7 @@
   function admBody() {
     const o = A.ov;
     if (A.tab === "hdv" && window.MARKET) return window.MARKET.adminHtml(A.hdv);
+    if (A.tab === "guildes" && window.GUILD) return window.GUILD.adminHtml(A.guildes);
     if (A.tab === "vue") {
       const st = o.settings || {};
       return `<div class="kpis"><div class="kpi"><b>${o.accounts}</b><span>comptes créés</span></div><div class="kpi"><b>${C.count || 1}</b><span>joueurs en ligne maintenant</span></div><div class="kpi"><b>${o.active}</b><span>parties envoyées ces 24 h</span></div><div class="kpi${o.reports + o.flagged ? " warn" : ""}"><b>${o.reports + (isAdmin() ? o.flagged : 0)}</b><span>choses à regarder</span></div></div>
@@ -313,7 +319,7 @@
     switch (a) {
       case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
-      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
       case "ch-who": menu(t); return;
@@ -366,5 +372,5 @@
   }, true);
   document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= C.next) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
-  window.CHAT = { start, refresh, renderAdmin, adminBtn, canShare: () => canWrite(), openAdmin, get role() { return C.role; }, get state() { return C; } };
+  window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, get role() { return C.role; }, get state() { return C; } };
 })();

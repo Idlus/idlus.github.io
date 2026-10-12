@@ -29,6 +29,7 @@
   E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
   E.idolFx = () => null; E.idolOwned = () => false; E.giveIdol = () => false; // 0.1.10 : idoles (js/idols.js)
   E.mountStats = () => null; E.mountHunt = () => null; E.mountXpShare = () => 0; E.stableXp = () => {}; E.enclosTick = () => {}; // montures (mounts.js)
+  E.guildXpShare = () => 0; E.guildBonus = () => 0; // 0.1.21 : guildes (js/guilds.js, seulement en ligne)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
@@ -1835,6 +1836,7 @@
       let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c));
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
+      g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
     E.stableXp(S, team.length ? team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length : 0); // Mangeoire de l'enclos

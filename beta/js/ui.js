@@ -16,9 +16,19 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.20";
+const GAME_VERSION = "0.1.21";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.21", name: "Guildes", items: [
+    "Nouvelle page Communauté › Guilde : liste des guildes (niveau, membres, Meneur, message du jour), entrée libre ou sur demande, invitations",
+    "Fonder une guilde avec la Guildalogemme : 100 000 kamas et un héros au niveau 30 ; nom et emblème (12 symboles, 8 couleurs) au choix",
+    "Jusqu'à 30 membres et quatre rangs : Meneur (tout), Bras droit (accepte les demandes, gère Membres et Recrues, message du jour), Membre (invite) et Recrue",
+    "XP de guilde comme dans DOFUS : chacun choisit la part de l'XP de ses combats qu'il donne à la guilde, de 0 à 90 %, et voit ce qu'il a donné cette semaine",
+    "Niveaux de guilde (jusqu'au 100) et bonus pour tous les membres : +1 % XP tous les 5 niveaux, +1 % butin et kamas tous les 10 niveaux, sous les plafonds du jeu",
+    "Chat de guilde : l'onglet Guilde du chat s'ouvre dès qu'on a une guilde ; arrivées, départs et niveaux de guilde y sont annoncés, et tout est gardé dans le journal",
+    "Annoncés pour la prochaine mise à jour : le boss de la semaine, les Percepteurs et le coffre de guilde",
+    "Panel admin : onglet Guildes pour renommer une guilde, effacer un message du jour ou dissoudre une guilde",
+  ] },
   { v: "0.1.20", name: "Hôtel de vente", items: [
     "Nouvelle famille « Communauté » dans la barre : l'Hôtel de vente et les Classements (les guildes la rejoindront à la prochaine mise à jour)",
     "Hôtel de vente : achète et vends entre joueurs les équipements (chaque offre montre le jet exact, la forgemagie et le Rayonnant, comparés à ton héros), les ressources et les clefs par lots de 1, 10 ou 100, les runes et les consommables",
@@ -574,7 +584,7 @@ const NAV = [
   { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
-].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
+].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
 const famOf = (tab) => NAV.find((F) => F.pages.some((p) => p[0] === tab)) || NAV[0];
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
@@ -3870,6 +3880,7 @@ function render() {
   else if (ui.tab === "ren") renderRenaissance();
   else if (ui.tab === "ladder") renderLadder();
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
+  else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else { ui.tab = "home"; renderHome(); }
   tipTick();
@@ -5175,6 +5186,7 @@ function bootGame(pushNow) {
   if (onLive()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
+  if (ON && window.GUILD) setTimeout(() => window.GUILD.start(), 700);
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
