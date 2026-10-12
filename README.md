@@ -7,6 +7,14 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.0 « Niveau 200 » (bêta)
+- **Nouvelle numérotation** : 0.x jusqu'au multijoueur (1.0).
+- **Niveau 200** : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200, nouvelles régions.
+- **Carte** : tranches de niveaux, régions repliables, meilleure zone, progression par région.
+- **Mécaniques** : rôles de monstres, 22 mécaniques de boss, 20 signatures avec succès et titre, cible prioritaire.
+- **Clés de donjon** : panneau de recette clair avec un bouton vers chaque source.
+- **Petit groupe** : bonus en donjon pour les équipes de 1 ou 2 héros.
+
 ## 3.4.0 « Havre-Sac »
 - **8 pièces** (Accueil → Havre-Sac) : les améliorations gardent leur niveau ; atelier à construire, enclos à venir.
 - **Meubles placés** : 43 meubles (28 trophées de boss, Comptoir, Almanax, Bricoleur, butins rares, succès), 14 places ; un meuble n'agit qu'une fois placé.

@@ -16,9 +16,18 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.0";
+const GAME_VERSION = "0.1.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.0", name: "Niveau 200 (bêta)", items: [
+    "Nouvelle numérotation : le jeu repart à 0.1 jusqu'au multijoueur, qui sera la 1.0",
+    "Niveau 200 : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200 et de nouvelles régions (Frigost, Saharach, Harebourg, Sakaï, Sufokia, Dimensions divines…)",
+    "Carte plus lisible : filtre par tranche de niveaux, régions repliables, zones en lignes compactes, meilleure zone signalée, zones trop faibles grisées, progression par région",
+    "Monstres à rôle (soigneur, kamikaze, chef, invocateur, poison, coriace…) et 22 mécaniques de boss, plus 20 signatures uniques avec leur succès et un titre",
+    "Mécaniques cachées jusqu'à la première rencontre du boss, conseils avant le donjon et choix de la cible prioritaire de l'équipe",
+    "Recette des clés de donjon : panneau clair avec la progression et un bouton vers la zone ou le métier pour chaque ingrédient",
+    "Bonus « petit groupe » en donjon : +30 % de PV et −15 % de dégâts subis en solo, moitié moins en duo ; Mutisme et Condamnation adoucis en solo",
+    "Monstres des niveaux 100 à 200 plus solides (jusqu'à ×1,4 PV et ×1,35 dégâts au niveau 200)" ] },
   { v: "3.4.0", name: "Havre-Sac", items: [
     "Le Havre-Sac devient 8 pièces (Accueil → Havre-Sac) : vos améliorations gardent leur niveau et sont rangées par pièce, l'atelier se construit pour 50 000 kamas et l'enclos ouvrira plus tard",
     "Meubles : un meuble agit une fois placé dans sa pièce, avec des places limitées (14 au total). 43 meubles : 28 trophées de boss, meubles du Comptoir, de l'Almanax, du Bricoleur (5 recettes), butins rares de 5 zones et 2 succès ; un catalogue montre comment obtenir chacun. Les meubles déjà gagnés sont placés d'office",
@@ -101,7 +110,8 @@ const CHANGELOG = [
     "Challenges, mécaniques de boss, invocations",
     "Contenu jusqu'au niveau 120 et 17 nouveaux donjons" ] },
 ];
-const vNum = (v) => v.split(".").map(Number).reduce((a, x, i) => a + x * Math.pow(1000, 2 - i), 0);
+/* Numérotation : l'ancienne série 3.x, puis la nouvelle série 0.x (avant le multijoueur) et 1.0 (multijoueur), toujours plus récente que 3.x. */
+const vNum = (v) => { const p = String(v).split(".").map((x) => parseInt(x, 10) || 0); const n = p.reduce((a, x, i) => a + x * Math.pow(1000, 2 - i), 0); return p[0] < 3 ? 1e10 + n : n; };
 
 /* ---------- utilitaires ---------- */
 const $ = (s) => document.querySelector(s);

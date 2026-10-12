@@ -1,6 +1,20 @@
 {
-  "version": "3.4.0",
+  "version": "0.1.0",
   "versions": [
+    {
+      "v": "0.1.0",
+      "name": "Niveau 200 (bêta)",
+      "items": [
+        "Nouvelle numérotation : le jeu repart à 0.1 jusqu'au multijoueur, qui sera la 1.0",
+        "Niveau 200 : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200 et de nouvelles régions (Frigost, Saharach, Harebourg, Sakaï, Sufokia, Dimensions divines…)",
+        "Carte plus lisible : filtre par tranche de niveaux, régions repliables, zones en lignes compactes, meilleure zone signalée, zones trop faibles grisées, progression par région",
+        "Monstres à rôle (soigneur, kamikaze, chef, invocateur, poison, coriace…) et 22 mécaniques de boss, plus 20 signatures uniques avec leur succès et un titre",
+        "Mécaniques cachées jusqu'à la première rencontre du boss, conseils avant le donjon et choix de la cible prioritaire de l'équipe",
+        "Recette des clés de donjon : panneau clair avec la progression et un bouton vers la zone ou le métier pour chaque ingrédient",
+        "Bonus « petit groupe » en donjon : +30 % de PV et −15 % de dégâts subis en solo, moitié moins en duo ; Mutisme et Condamnation adoucis en solo",
+        "Monstres des niveaux 100 à 200 plus solides (jusqu'à ×1,4 PV et ×1,35 dégâts au niveau 200)"
+      ]
+    },
     {
       "v": "3.4.0",
       "name": "Havre-Sac",
