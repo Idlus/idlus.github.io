@@ -1,5 +1,5 @@
 # Version de test de la 4.0 : chaque push sur la branche « beta » est recopié dans le dossier beta/ de main,
-# publié par GitHub Pages à l'adresse https://mathiss29.github.io/idlus/beta/ (sauvegarde séparée du jeu public).
+# publié par GitHub Pages à l'adresse https://idlus.github.io/beta/ (sauvegarde séparée du jeu public).
 name: Version de test
 on:
   push:

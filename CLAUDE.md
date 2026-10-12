@@ -1,6 +1,6 @@
 # idlus — notes pour Claude
 
-Idle game de fan inspiré de DOFUS, par Mathis. Jeu : https://mathiss29.github.io/idlus/ · dépôt : Mathiss29/idlus.
+Idle game de fan inspiré de DOFUS, par Mathis. Jeu : https://idlus.github.io/ (ancienne adresse mathiss29.github.io/idlus, redirigée) · dépôt : idlus/idlus.github.io.
 
 ## Fonctionnement
 - SPA en JavaScript sans build : `index.html`, `css/style.css`, `js/gamedata.js`, `js/looks.js`, `js/data.js`, `js/engine.js` (combat, stasis, équilibrage), `js/systems.js`, `js/ui.js` (rendu, CHANGELOG, GAME_VERSION).

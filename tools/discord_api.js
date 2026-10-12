@@ -3,7 +3,7 @@ const API = process.env.DISCORD_API || "https://discord.com/api/v10";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function api(method, path, body) {
   for (let i = 0; i < 6; i++) {
-    const res = await fetch(API + path, { method, headers: { Authorization: "Bot " + process.env.DISCORD_BOT_TOKEN, "Content-Type": "application/json", "User-Agent": "idlus-bot (github.com/Mathiss29/idlus, 1)" }, body: body ? JSON.stringify(body) : undefined });
+    const res = await fetch(API + path, { method, headers: { Authorization: "Bot " + process.env.DISCORD_BOT_TOKEN, "Content-Type": "application/json", "User-Agent": "idlus-bot (github.com/idlus/idlus.github.io, 1)" }, body: body ? JSON.stringify(body) : undefined });
     if (res.status === 429) { const j = await res.json(); await sleep((j.retry_after || 1) * 1000 + 100); continue; }
     const txt = await res.text(); const data = txt ? JSON.parse(txt) : null;
     if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${txt.slice(0, 300)}`);

@@ -2,7 +2,7 @@
    On peut le relancer sans risque : il ne crée que ce qui manque, retrouve les salons par leur nom et n'écrit que dans les salons vides.
    Usage : DISCORD_BOT_TOKEN=... [DISCORD_GUILD_ID=...] node tools/discord_setup.js   (sans jeton : affiche seulement le plan) */
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
-const GAME = "https://mathiss29.github.io/idlus/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
+const GAME = "https://idlus.github.io/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
 const P = { VIEW: 1n << 10n, SEND: 1n << 11n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
