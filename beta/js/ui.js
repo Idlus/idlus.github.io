@@ -18,9 +18,20 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.30.1";
+const GAME_VERSION = "0.1.31";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.31", name: "Menus rangés", items: [
+    "Toutes les pages sont rangées en cinq groupes : Jouer, Héros, Artisanat, Suivi et Communauté",
+    "Sur PC, le menu est une colonne à gauche, avec le combat en cours tout en haut. Le bouton « à côté du logo la réduit aux icônes pour laisser la place au combat",
+    "Sur téléphone, la barre du bas devient Accueil, Monde, Combat, Héros et Menu. Le bouton Menu ouvre toutes les pages en tuiles",
+    "Les Donjons et l'Encyclopédie ont leur propre page. Monde garde la Carte et le Trésor",
+    "Équipe et Héros ne font plus qu'une page : l'équipe en haut, la fiche du héros choisi juste en dessous",
+    "Le Havre-Sac passe dans Artisanat, la Renaissance dans Héros",
+    "Quêtes : une seule rangée d'onglets. Les Succès et les Ornements ont leur page dans Suivi",
+    "Les pastilles (points à répartir, quêtes à rendre, défi du jour) s'affichent dans le menu",
+    "Une bulle montre le nouveau menu la première fois",
+  ] },
   { v: "0.1.30.1", name: "Fabrication en série", items: [
     "Artisanat : en plus de « Fabriquer », deux boutons « ×10 » et « Max » fabriquent plusieurs exemplaires d'un coup (autant que les ressources et la place dans le sac le permettent). Chaque objet a son propre jet, comme en le fabriquant un par un",
   ] },
@@ -461,7 +472,7 @@ const CHANGELOG = [
     "Notifications : six évènements au choix dans les Options, avec une notification du navigateur quand l'onglet est en arrière-plan (sac plein, défaite, objectif atteint, liste de courses prête, palier de niveau, Rayonnant ou archimonstre)" ] },
   { v: "3.2.1", name: "Petit lot", items: [
     "Tenues : enregistrez jusqu'à 3 équipements complets par héros (chasse, donjon, prospection…) et remettez-les en un clic ; leurs objets sont protégés de la vente et du brisage",
-    "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Monde › Donjons)",
+    "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Jouer › Donjons)",
     "Entrée des boss : nom en grand, stasis et mécaniques au début du combat ; un flash marque la seconde phase",
     "Moments de récompense : grand encart pour un objet Rayonnant, chaque palier de 10 niveaux et chaque premier passage de stasis (désactivable dans les Options)",
     "Partager un build : un code à copier sur Discord avec les sorts, les caractéristiques et l'équipement d'un héros ; collez celui d'un autre joueur pour le consulter, l'appliquer à un héros de la même classe ou mettre ses objets fabricables dans la liste de courses" ] },
@@ -735,15 +746,34 @@ const ICONS = {
   inv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
   ateliers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 21l8-8M14 4l6 6-4 4-6-6 4-4z"/><path d="M4 9h5M6.5 6.5v5"/></svg>',
 };
-/* 0.1.9.1 : barre en 4 familles (Accueil, Aventure, Équipe, Artisanat), leurs pages juste en dessous.
-   Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
+/* 0.1.31 : menu rangé en 5 groupes. Sur PC, une colonne à gauche avec toutes les pages ; sur téléphone, une barre
+   (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
+   Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.26.1 : page Défi du jour
-  { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
-  { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
-].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
-const famOf = (tab) => NAV.find((F) => F.pages.some((p) => p[0] === tab)) || NAV[0];
+  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Expédition", "carte"], ["defi", "Défi du jour", "cle"]] },
+  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
+  { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["havre", "Havre-Sac", "havre"]] },
+  { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
+].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []);
+/* la page du menu qui correspond à l'écran affiché */
+function navKey() {
+  const t = ui.tab;
+  if (t === "home") return ui.home === "havre" ? "havre" : "home";
+  if (t === "world") return ui.zoneView ? "world" : ui.world === "dungeons" || ui.world === "enc" ? ui.world : "world";
+  if (t === "heroes") return "team";
+  if (t === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : "quests";
+  return t;
+}
+function navGo(k) {
+  ui.slot = null; ui.confirm = null; ui.newResDone = false;
+  if (k === "home" || k === "havre") { ui.tab = "home"; ui.home = k === "havre" ? "havre" : "apercu"; }
+  else if (k === "world") { ui.tab = "world"; ui.zoneView = null; if (ui.world === "dungeons" || ui.world === "enc") ui.world = "map"; }
+  else if (k === "dungeons" || k === "enc") { ui.tab = "world"; ui.zoneView = null; ui.world = k; }
+  else if (k === "quests") { ui.tab = "quests"; ui.qt = "jour"; }
+  else if (k === "succes") { ui.tab = "quests"; if (ui.qt !== "ach" && ui.qt !== "orn") ui.qt = "ach"; }
+  else ui.tab = k;
+}
+const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return k === "combat" ? "Jouer › Combat" : k; };
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
 
@@ -869,30 +899,46 @@ function subItems(sub) {
 }
 
 /* ---------- navigation & bandeau ---------- */
-function renderNav() {
-  if (!S) { $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; return; }
-  const F = famOf(ui.tab); const fight = ui.tab === "combat";
-  ui.famLast = ui.famLast || {}; if (!fight) ui.famLast[F.id] = [ui.tab, ui.home];
-  const nAl = teamAlerts().length; const qd = questAlert();
-  const dot = (on, n) => (n ? `<span class="navcnt">${n}</span>` : on ? '<span class="navdot"></span>' : "");
-  const fam = (G) => { const l = ui.famLast[G.id] || [G.pages[0][0], G.pages[0][3]];
-    return `<button data-tab="${l[0]}" ${l[0] === "home" ? `data-home="${l[1] || "apercu"}"` : ""} data-fam="${G.id}" ${G === F ? 'aria-current="page"' : ""}>${med(G.ic)}<span>${G.n}</span>${dot(G.id === "adv" && qd, G.id === "team" ? nAl : 0)}</button>`; };
-  $("#nav").className = "main fams" + (fight ? " infight" : "") + (NAV.length > 4 ? " six" : "");
-  $("#nav").innerHTML = fam(NAV[0]) + fam(NAV[1]) + `<button class="navfight" data-tab="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>` + NAV.slice(2).map(fam).join("") + `<span id="navlive">${navLiveHtml()}</span>`;
-  const cur = ui.tab === "home" ? (ui.home === "havre" ? "havre" : "apercu") : null;
-  $("#subnav").innerHTML = F.pages.map(([tab, n, ic, hm]) => { const on = tab === ui.tab && (!hm || hm === cur);
-    return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot((tab === "quests" && qd) || (tab === "defi" && defiTodo()), tab === "team" ? nAl : 0)}</button>`; }).join("");
+function navBadges() {
+  const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
+  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "" };
 }
-/* cadre « Combat en cours » (PC) : donjon et salle, ou zone de chasse ; rafraîchi par la boucle */
-function navLiveHtml() {
-  if (!S || ui.tab === "combat" || !E.team(S).length) return "";
+function renderNav() {
+  const nav = $("#nav"); $("#subnav").innerHTML = "";
+  if (!S) { nav.innerHTML = ""; document.body.classList.remove("hasnav", "navmini"); return; }
+  const k = navKey(); const fight = ui.tab === "combat"; const mini = !!S.settings.navMini; const B = navBadges();
+  document.body.classList.add("hasnav"); document.body.classList.toggle("navmini", mini);
+  const cur = (key) => (k === key ? 'aria-current="page"' : "");
+  const live = navLiveTxt();
+  const item = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}">${ic ? med(ic) : heroMed()}<span class="sn-l">${h(n)}</span>${B[key] || ""}</button>`;
+  const side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="${mini ? "Afficher le nom des pages" : "Réduire le menu aux icônes"}" aria-label="${mini ? "Agrandir le menu" : "Réduire le menu"}">${mini ? "»" : "«"}</button></div>
+    <button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>
+    ${NAV.map((F) => `<div class="sn-g"><span>${F.n}</span></div>${F.pages.map(([key, n, ic]) => item(key, n, ic)).join("")}`).join("")}</div>`;
+  const inBar = ["home", "world", "team", "combat"]; const menuOn = !inBar.includes(k);
+  const mb = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)}>${ic ? med(ic) : heroMed()}<span>${n}</span>${B[key] || ""}</button>`;
+  const mob = `<div class="sn-mob">${mb("home", "Accueil", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi ? '<span class="navdot"></span>' : ""}</button></div>`;
+  nav.className = "main sidenav" + (fight ? " infight" : "");
+  nav.innerHTML = side + mob;
+}
+/* téléphone : toutes les pages en tuiles, par groupe */
+function navMenuSheet() {
+  const k = navKey(); const B = navBadges();
+  openSheet(`<div class="navsheet">${NAV.map((F) => `<h3>${F.n}</h3><div class="ns-tiles">${F.pages.map(([key, n, ic]) => `<button data-act="nav" data-v="${key}" ${k === key ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${h(n)}</span>${B[key] || ""}</button>`).join("")}</div>`).join("")}
+    <div class="row ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><span class="grow"></span><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+}
+/* « Combat en cours » dans le menu (PC) : donjon et salle, expédition, ou zone de chasse ; rafraîchi par la boucle */
+function navLiveTxt() {
+  if (!S || !E.team(S).length) return "";
   const dg = S.dungeon && DUNGEONS[S.dungeon.id]; const XP = E.expActive(S) ? S.exp : null;
   if (!dg && !XP && !(S.hunting && S.sub)) return "";
-  const where = XP ? "Expédition sans fin" : dg ? dg.name : E.SUBS[S.sub].name;
-  const sub = XP ? `étage ${XP.floor} · ${XP.lives} vie${XP.lives > 1 ? "s" : ""}` : dg ? `salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}${S.dungeon.stasis ? ` · stasis ${S.dungeon.stasis}` : ""}` : "chasse en cours";
-  return `<button class="navlive" data-tab="combat" title="Voir le combat"><span class="pulse"></span><span class="tx"><b>Combat en cours</b><small>${h(where)} · ${sub}</small></span></button>`;
+  if (XP) return `Expédition · étage ${XP.floor}`;
+  if (dg) return `${dg.name} · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}`;
+  return `Chasse · ${E.SUBS[S.sub].name}`;
 }
-function updNavLive() { const el = $("#navlive"); if (!el) return; const v = navLiveHtml(); if (el.dataset.v !== v) { el.innerHTML = v; el.dataset.v = v; } }
+function updNavLive() {
+  const el = $("#navlive"); if (!el) return; const v = navLiveTxt(); if (el.dataset.v === v) return; el.dataset.v = v;
+  el.textContent = v || "voir l'arène"; const b = el.closest(".sn-fight"); if (b) { b.classList.toggle("on", !!v); b.querySelector("b").textContent = v ? "Combat en cours" : "Combat"; }
+}
 function statusHtml() {
   if (!S) return "";
   const team = E.team(S);
@@ -1173,7 +1219,8 @@ function historyHtml(n) {
 /* ---------- MONDE ---------- */
 function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
-  const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["tresor", "Trésor"], ["enc", "Encyclopédie"]];
+  const tabs = [["map", "Carte"], ["tresor", "Trésor"]]; // 0.1.31 : Donjons et Encyclopédie sont des pages du menu
+  const solo = ui.world === "dungeons" || ui.world === "enc";
   let body = "";
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
@@ -1184,8 +1231,8 @@ function renderWorld() {
   else if (ui.world === "tresor") body = tresorHtml();
   else body = encyclopediaHtml();
   $("#main").innerHTML = `
-<div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
-    <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>
+<div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
+    ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
     <div class="stack">${body}</div>`;
 }
 function lockReason(sid) {
@@ -2849,11 +2896,16 @@ function compsHtml() {
   const add = K.length < E.COMP_MAX ? `<button class="compcard add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe actuelle<span class="xs muted">héros, rangées et cible prioritaire</span></button>` : "";
   return `<section class="comps"><div class="row between"><h3 class="sec" style="margin:0">Compositions</h3><span class="xs muted">${K.length}/${E.COMP_MAX} · un clic pour changer d'équipe</span></div><div class="compgrid">${cards}${add}</div></section>`;
 }
+/* 0.1.31 : une seule page « Équipe et héros » : le tableau de l'équipe en haut, la fiche du héros choisi en dessous */
 function renderTeam() {
+  if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
+  $("#main").innerHTML = `<div id="teamtop">${teamTopHtml()}</div>${ui.teamBoard ? "" : `<div id="fiche" class="fiche">${heroesHtml()}</div>`}`;
+}
+function teamTopHtml() {
   const al = teamAlerts(true); const team = E.team(S); const board = !!ui.teamBoard;
   const by = (z) => S.chars.filter((c) => teamZone(c) === z).length; const fs = E.frontSet(S);
   const gearN = al.filter((a) => a.k === "gear").length;
-  $("#main").innerHTML = `<div class="pagehead"><h1>Équipe</h1><span class="small muted">${team.length} / 8 dans l'équipe</span><span class="grow"></span>
+  return `<div class="pagehead"><h1>Équipe et héros</h1><span class="small muted">${team.length} / 8 dans l'équipe</span><span class="grow"></span>
     ${board ? "" : gearN ? `<button class="btn sm" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
     ${board ? "" : `<button class="btn sm" data-act="sm-card">${G("share")} Partager mon équipe</button>`}
     <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button></div>
@@ -2865,11 +2917,11 @@ function renderTeam() {
   ${board ? "" : compsHtml()}
   ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
 }
-function renderHeroes() {
+function heroesHtml() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
   const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
-  $("#main").innerHTML = `
-  <div class="pagehead"><h1>Héros</h1><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
+  return `
+  <div class="pagehead fichehead"><h2>Fiche du héros</h2><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
   <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
     ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
   ${placementHtml()}
@@ -2885,7 +2937,7 @@ function renderHeroes() {
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
         ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
-      ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (onglet Quêtes).</p>`}
+      ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (page Succès).</p>`}
     </div>
   </div></section>
   <nav class="subtabs">${[["equip", "Équipement"], ["pet", "Familier & monture"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
@@ -4022,7 +4074,7 @@ function offlineSheet(r) {
 function migrationSheet(list) {
   openSheet(`<h2>Votre partie a été mise à jour</h2><p class="small">Niveaux, kamas, objets, ressources, métiers sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
-    <p class="small muted">À découvrir : la stasis des donjons (Monde › Donjons), l'apparence de vos héros (Héros › Apparence), les nouveaux passifs et les parchemins de caractéristiques.</p>
+    <p class="small muted">À découvrir : la stasis des donjons (Jouer › Donjons), l'apparence de vos héros (Héros › Apparence), les nouveaux passifs et les parchemins de caractéristiques.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
 }
 
@@ -4034,8 +4086,8 @@ function diagText() {
   const lines = [`--- Diagnostic idlus ${GAME_VERSION}${BETA ? " (bêta)" : ""} · ${new Date().toLocaleString("fr-FR")} ---`];
   lines.push(`Appareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"} · écran ${window.innerWidth}×${window.innerHeight} · thème ${document.documentElement.dataset.theme || "?"}`);
   lines.push(`Navigateur : ${navigator.userAgent.slice(0, 120)}`);
-  const pg = NAV.flatMap((F) => F.pages.map((x) => [x[0], `${F.n} › ${x[1]}`])).find(([id]) => id === ui.tab); const tabName = pg ? pg[1] : ui.tab;
-  lines.push(`Onglet : ${tabName}${ui.tab === "home" ? " / " + ui.home : ui.tab === "world" ? " / " + ui.world : ui.tab === "heroes" ? " / " + ui.hero : ui.tab === "inv" ? " / " + ui.inv : ui.tab === "metiers" ? " / " + ui.met : ui.tab === "forge" ? " / " + ui.fg : ""}${$("#sheet") && $("#sheet").innerHTML ? " · fenêtre ouverte" : ""}`);
+  const tabName = navName(navKey());
+  lines.push(`Onglet : ${tabName}${ui.tab === "home" ? " / " + ui.home : ui.tab === "world" ? " / " + ui.world : ui.tab === "team" ? " / " + ui.hero : ui.tab === "inv" ? " / " + ui.inv : ui.tab === "metiers" ? " / " + ui.met : ui.tab === "forge" ? " / " + ui.fg : ""}${$("#sheet") && $("#sheet").innerHTML ? " · fenêtre ouverte" : ""}`);
   if (S) {
     const sub = S.sub && E.SUBS[S.sub]; const dg = S.dungeon && DUNGEONS[S.dungeon.id];
     lines.push(`Partie : créée le ${new Date(S.created).toLocaleDateString("fr-FR")} · ${dur(S.stats.playtime || 0)} de jeu · ${fmt(S.stats.fights || 0)} combats · ${fmt(S.kamas)} kamas · ${E.itemCount(S)} objets · vitesse ×${S.settings.speed || 1}${S.manualLive ? " · combat manuel" : ""}`);
@@ -4083,12 +4135,15 @@ function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
+  if (S.navv !== 1) { S.navv = 1; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 0.1.31 : nouveau menu, bulle pour les parties déjà commencées
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
-  else if (ui.tab === "team") renderTeam();
-  else if (ui.tab === "heroes") renderHeroes();
+  else if (ui.tab === "team" || ui.tab === "heroes") { // 0.1.31 : « heroes » ouvre la fiche, sous l'équipe
+    const toFiche = ui.tab === "heroes"; ui.tab = "team"; if (toFiche) ui.teamBoard = false; renderTeam();
+    if (toFiche) requestAnimationFrame(() => { const f = $("#fiche"); if (!f) return; const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sth")) || 0; window.scrollTo(0, Math.max(0, f.getBoundingClientRect().top + window.scrollY - top - 8)); });
+  }
   else if (ui.tab === "inv") renderInventory();
   else if (ui.tab === "metiers") renderMetiers();
   else if (ui.tab === "forge") renderForge();
@@ -4229,14 +4284,18 @@ let tipShown = null, tipSince = 0;
 function tipTick() {
   if (!S || tipShown || !booted) return;
   if ($("#sheet").innerHTML || $("#wsearch") || $("#cele").innerHTML || document.querySelector(".bossintro") || (ui.tab === "combat" && S.settings.manual) || !S.chars.length) return;
+  if (S.navNews) return showTipBubble(NAV_NEWS);
   const t = E.tipDue(S, tipCtx()); if (t) showTipBubble(t);
 }
+/* 0.1.31 : une bulle, une seule fois, pour les joueurs qui connaissaient l'ancien menu */
+const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav [data-nk="dungeons"], #nav [data-nk="menu"]',
+  txt: "Toutes les pages sont maintenant rangées en 5 groupes : Jouer, Héros, Artisanat, Suivi et Communauté. Sur PC, le menu est à gauche (le bouton « à côté du logo le réduit aux icônes) ; sur téléphone, le bouton Menu ouvre toutes les pages. Les Donjons et les Succès ont leur propre page." };
 function showTipBubble(t) {
   tipHide(); tipShown = t.id;
-  const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1);
+  const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
   const d = document.createElement("div"); d.id = "wtip"; d.className = "wtip"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Découverte");
   d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${h(t.txt)}</div>
-    <div class="row between"><span class="xs" style="opacity:.75">Découverte ${n} sur ${total}</span><span class="row" style="gap:6px"><button class="btn sm ghost" data-act="tiplater">Plus tard</button><button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
+    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${news ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
   document.body.appendChild(d);
   const vis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
   const a = t.anchor ? [...document.querySelectorAll(t.anchor)].find(vis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
@@ -4252,7 +4311,7 @@ function showTipBubble(t) {
   tipSince = E.now();
 }
 function tipHide() { const d = $("#wtip"); if (d) d.remove(); document.querySelectorAll(".wl-target").forEach((n) => n.classList.remove("wl-target")); tipShown = null; }
-function tipOk() { if (tipShown) E.tipSeen(S, tipShown); dirty = true; tipHide(); }
+function tipOk() { if (tipShown === NAV_NEWS.id) S.navNews = 0; else if (tipShown) E.tipSeen(S, tipShown); dirty = true; tipHide(); }
 function tipLater() { if (tipShown) E.tipLater(S, tipShown); dirty = true; tipHide(); }
 function tipsSheet() {
   const T = E.tipState(S, tipCtx()); const L = E.tipList(S); const [seen, total] = E.tipCount(S);
@@ -4306,8 +4365,9 @@ function pageGo(id) {
   const go = (tab, k, v) => { ui.tab = tab; if (k) ui[k] = v; ui.slot = null; ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); };
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
-    case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
-    case "defi": go("defi"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
+    case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
+    case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
+    case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
@@ -4371,7 +4431,7 @@ document.addEventListener("keydown", (ev) => {
 });
 /* ---------- actions ---------- */
 /* ===================== 0.1.19 : lot Se montrer (logique dans js/defi.js) =====================
-   Défi du jour (encart dans Aventure › Donjons, résultat, classement), carte d'équipe à partager, garde-robe. */
+   Défi du jour (page Défi du jour, résultat, classement), carte d'équipe à partager, garde-robe. */
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 const defiTierCur = () => (ui.defiTier && E.defiTierOk(S, ui.defiTier) ? ui.defiTier : E.defiTierDefault(S));
 const modChip = (m) => `<span class="fl-mod" data-tip="${h(E.STASIS_MODS[m].desc)}">${h(E.STASIS_MODS[m].name)}</span>`;
@@ -4401,7 +4461,7 @@ function defiPlay(tid) {
   const r = E.act(S, "defiPlay", tid);
   if (typeof r === "string") { toast(r, "warn"); return; }
   dirty = true; defiLast = r; render(); defiSheet(r);
-  if (r.chest && r.streak === 7) toast(`7 jours de suite : titre « ${E.DEFI_TITLE} » (onglet Héros) !`, "rare");
+  if (r.chest && r.streak === 7) toast(`7 jours de suite : titre « ${E.DEFI_TITLE} » (Équipe et héros) !`, "rare");
   if (r.orn) toast("30 jours de suite : ornement « Sablier du défi » débloqué !", "rare");
   if (r.win && r.improved) defiSubmit(r);
 }
@@ -4964,9 +5024,9 @@ document.addEventListener("click", (ev) => {
     case "setanim": S.settings.anim = d.v; S.settings.reduced = d.v !== "full"; setTheme(); optionsSheet(); render(); return;
     case "setcele": S.settings.cele = d.v === "1"; dirty = true; optionsSheet(); return;
     case "pin": { const p = JSON.parse(d.p); const r = E.togglePin(S, p); if (r) { toast(r); return; } toast(E.pinned(S, p) ? "Objectif suivi dans la bande du haut." : "Objectif retiré de la bande."); renderObjs(); if ($("#sheet").innerHTML) { dirty = true; return; } break; }
-    case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "heroes") break; return; }
+    case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "team") break; return; }
     case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
-    case "xptip": ui.xpTip = ui.xpTip === ui.cid ? null : ui.cid; renderHeroes(); return;
+    case "xptip": ui.xpTip = ui.xpTip === ui.cid ? null : ui.cid; render(); return;
     case "notifask": { if (typeof Notification === "undefined") return; Notification.requestPermission().then((p) => { if (p === "granted") { S.settings.notifBrowser = true; toast("Notifications autorisées."); } dirty = true; optionsSheet(); }); return; }
     case "setnotifb": S.settings.notifBrowser = d.v === "1"; dirty = true; optionsSheet(); return;
     case "losssheet": lossSheet(d.t); return;
@@ -5093,6 +5153,9 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
+    case "nav": navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 0.1.31 : menu en 5 groupes
+    case "navmenu": navMenuSheet(); return;
+    case "navmini": S.settings.navMini = !S.settings.navMini; break;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     case "selchar": ui.cid = +d.id; ui.slot = null; break;
     case "setmain": S.mainHero = +d.id; dirty = true; toast(`${char(+d.id).name} devient le héros principal.`); break;
@@ -5654,7 +5717,7 @@ async function lbTitles() {
   try {
     const { data } = await ON.db().from("lb_week").select("did,r").eq("w", weekNow() - 1).eq("user_id", ON.user.id).lte("r", 3).limit(1);
     S.titlesExtra = S.titlesExtra || []; const has = S.titlesExtra.includes(WEEK_TITLE);
-    if (data && data.length && !has) { S.titlesExtra.push(WEEK_TITLE); dirty = true; toast(`Podium de la semaine passée : titre « ${WEEK_TITLE} » débloqué pour cette semaine (onglet Héros).`, "rare"); }
+    if (data && data.length && !has) { S.titlesExtra.push(WEEK_TITLE); dirty = true; toast(`Podium de la semaine passée : titre « ${WEEK_TITLE} » débloqué pour cette semaine (Équipe et héros).`, "rare"); }
     else if (data && !data.length && has) { S.titlesExtra = S.titlesExtra.filter((t) => t !== WEEK_TITLE); S.chars.forEach((c) => { if (c.title === WEEK_TITLE) c.title = null; }); dirty = true; }
   } catch (e) {}
 }
@@ -5707,7 +5770,7 @@ const isEditing = () => { const a = document.activeElement; return a && (a.tagNa
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
-    if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (onglet Héros).", "rare"); }
+    if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (Équipe et héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.tick(S, real * m, real);
       if (sp0 > 1 && S.sablier.spd === 1) { toast("Sablier de Xélor vide : retour à la vitesse normale.", "info"); renderStatus(); } }
@@ -5728,7 +5791,7 @@ function loop() {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; });
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
-    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderTeam(); renderNav(); }
+    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); renderNav(); } // seul le tableau de l'équipe se rafraîchit, la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); }

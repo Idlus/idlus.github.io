@@ -1,6 +1,6 @@
 /* ============================================================================
    L'EXPÉDITION SANS FIN — interface (0.1.24). La logique est dans js/expedition.js.
-   Page Aventure › Expédition (expédition en cours, portes, reliques, bénédictions, campement),
+   Page Jouer › Expédition (expédition en cours, portes, reliques, bénédictions, campement),
    fiches de choix (relique, bénédiction, pari du palier, Marchand) et bilan de fin.
    Utilise les outils de l'interface exposés par ui.js (window.DX.social).
    ========================================================================== */

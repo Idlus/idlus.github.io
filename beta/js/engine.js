@@ -479,7 +479,7 @@
   /* Chasse : on choisit une sous-zone et l'équipe y combat en boucle */
   E.startHunt = (S, sid) => {
     if (S.dungeon) return "Vous êtes en donjon.";
-    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Aventure › Expédition).";
+    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Jouer › Expédition).";
     if (!E.setSub(S, sid)) return "Sous-zone verrouillée.";
     pinStars(S, sid); // les étoiles cessent de monter et fondent à partir de maintenant
     S.hunting = true; S.fight = null; S.pause = E.PAUSE_MS;
@@ -2365,7 +2365,7 @@
     if (k > SI.max + 1) return `Stasis ${k} verrouillée : terminez d'abord la stasis ${SI.max + 1}.`;
     if (!E.dungeonUnlocked(S, did)) return "Donjon verrouillé.";
     if (S.dungeon) return "Vous êtes déjà en donjon.";
-    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Aventure › Expédition).";
+    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Jouer › Expédition).";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
@@ -2513,7 +2513,7 @@
     const J = S.crafts[R.job];
     if (J.lvl < R.lvl) return `${CRAFT_JOBS[R.job].name} niveau ${R.lvl} requis.`;
     if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)) || (R.idol && E.idolOwned(S, R.idol)))) return "Vous possédez déjà cet objet.";
-    if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Quêtes › Dofus).";
+    if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Suivi › Quêtes › Dofus).";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
     if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.dofus) E.giveDofus(S, R.dofus, "copie du Bricoleur"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);

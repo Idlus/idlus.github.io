@@ -138,7 +138,7 @@ document.addEventListener("click", (ev) => {
     case "unlock": unlockAll(s); done("Toutes les zones sont débloquées."); return;
     case "eclats": E.camp(s).ec += +d.v; done(`+${fmt(+d.v)} Éclats d'expédition.`); return;
     case "camp": { const C = E.camp(s); E.EXP_CAMP.forEach((u) => { C.ups[u.id] = C.ups[u.id] || Date.now(); }); done("Les 24 améliorations du campement sont achetées."); return; }
-    case "floors": { const X = s.exp; if (!E.expActive(s)) { DX.toast("Aucune expédition en cours : pars d'abord (Aventure › Expédition)."); return; } if (X.door !== null || X.pend.length) { DX.toast("Finis d'abord le combat ou le choix en cours."); return; }
+    case "floors": { const X = s.exp; if (!E.expActive(s)) { DX.toast("Aucune expédition en cours : pars d'abord (Jouer › Expédition)."); return; } if (X.door !== null || X.pend.length) { DX.toast("Finis d'abord le combat ou le choix en cours."); return; }
       X.floor += +d.v; X.doors = E.expDoors(s, X); done(`Étage ${X.floor}.`); return; }
     case "expend": { if (!E.expActive(s)) { DX.toast("Aucune expédition en cours."); return; } E.expQuit(s); done("Expédition terminée."); return; }
     case "stasis": Object.keys(DUNGEONS).forEach((did) => { const SI = E.stasisInfo(s, did); SI.max = Math.max(SI.max, E.STASIS_MAX); }); unlockAll(s); done("Stasis 10 débloquée partout."); return;
