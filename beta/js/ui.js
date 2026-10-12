@@ -16,9 +16,18 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.22.1";
+const GAME_VERSION = "0.1.23";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.23", name: "Boss et Percepteurs", items: [
+    "Guilde › Boss : chaque semaine (lundi minuit), un boss de donjon différent pour toutes les guildes. Chaque membre a 3 essais par jour : son équipe l'affronte pendant 15 tours, au niveau de ses héros, et ses dégâts deviennent des points pour la guilde",
+    "Jauge de la guilde (2 500 points par membre, au moins 5 comptés) : un coffre de kamas et de Poussières de stasis s'ouvre à 25, 50, 75 et 100 % pour chaque membre qui a frappé au moins une fois",
+    "Classement des guildes de la semaine ; les membres des 3 meilleures reçoivent le titre « Pourfendeur de boss »",
+    "Guilde › Percepteurs : dès le niveau 5 de guilde (un de plus tous les 5 niveaux, jusqu'à 5), le Meneur ou un Bras droit en pose un dans une zone finie pour 20 000 kamas",
+    "Le Percepteur ramasse 3 % des kamas et ressources qu'on gagnerait dans sa zone : poche pleine en 12 h, n'importe quel membre peut la récolter (et la guilde gagne de l'XP)",
+    "Environ une fois par jour, des monstres l'attaquent : pendant 2 h, chaque membre peut tenter une défense avec son équipe (un monstre de plus après chaque défenseur battu). Victoire : poche +25 %, XP de guilde et un coffre pour le défenseur ; sans victoire, la moitié de la poche est perdue",
+    "Les combats du boss et des défenses sont rejoués par le serveur avec ta partie en ligne",
+  ] },
   { v: "0.1.22.1", name: "Challenges qui rapportent", items: [
     "Les challenges rapportent plus, selon leur difficulté : Survivant, Focus et Barbare +10 %, Versatile, Économe, Élitiste et Élémentaire +15 %, Chacun son monstre et Rapide +20 %, Incurable +25 %, Ordonné +30 % d'XP et de butin",
     "Série de challenges réussis : +1 % par combat, jusqu'à +10 % (au lieu de +0,5 % et +5 %)",
@@ -5381,7 +5390,7 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { fmt, im, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

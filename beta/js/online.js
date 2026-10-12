@@ -198,6 +198,15 @@
       return data || { net: true };
     } catch (e) { return { net: true }; }
   };
+  /* 0.1.22 : boss de guilde ({ gboss: 1 }) et défense de Percepteur ({ perco: id }), rejoués par la même fonction serveur. */
+  ON.submitGuild = async (body) => {
+    if (!sb || !ON.user) return { net: true };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body }), 30000);
+      if (error) { let j = null; try { j = await error.context.json(); } catch (e) {} const st = error.context && error.context.status; return j && j.err ? j : st === 429 ? { ok: false, err: "Doucement : réessaie dans quelques secondes." } : { net: true }; }
+      return data || { net: true };
+    } catch (e) { return { net: true }; }
+  };
   ON.deleteAccount = async () => {
     const { error } = await withTimeout(sb.rpc("delete_my_account"));
     if (error) return error.message;

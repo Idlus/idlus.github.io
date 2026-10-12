@@ -2487,6 +2487,21 @@ html{zoom:1}
 .grk.r1{background:#3e5a8a;color:#fff;border-color:#5a7ab0}
 #main input[type=range]{width:100%;accent-color:var(--gold)}
 @media (max-width:860px){.grid2g{grid-template-columns:minmax(0,1fr)}}
+/* 0.1.22 : boss de la semaine et Percepteurs */
+.li.clk{cursor:pointer}.li.clk:hover{background:rgba(var(--glw),.06)}
+.gboss .gbhead{display:flex;gap:14px;align-items:center;padding:14px 16px 0}
+.gbimg{width:96px;height:96px;object-fit:contain;flex:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+.gbbar{position:relative;height:18px;border-radius:14px;background:var(--hp-bg,rgba(255,255,255,.08));border:2px solid var(--frame);margin:6px 0 4px}
+.gbbar i{position:absolute;inset:0 auto 0 0;border-radius:12px;background:linear-gradient(90deg,#c2412d,#f08a3c)}
+.gbstep{position:absolute;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;display:grid;place-items:center;background:var(--panel3);border:2px solid var(--frame);z-index:1;filter:grayscale(1) brightness(.8)}
+.gbstep[style*="left:100%"]{margin-left:-24px}
+.gbstep.on{filter:none;border-color:var(--gold);box-shadow:0 0 8px rgba(232,192,99,.6)}
+.gbstep img,.gbstep svg{width:16px;height:16px}
+.li.gme{background:rgba(var(--glw),.10)}
+.grid2g.even>section:last-child{grid-column:auto}
+.gperco.hot{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger),0 0 18px rgba(224,103,79,.25)}
+.gatk{padding:10px 12px;border-radius:10px;background:rgba(224,103,79,.12);border:1px solid rgba(224,103,79,.5)}
+.gres{display:inline-flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums}.gres img{width:20px;height:20px;object-fit:contain}
 @media (max-width:600px){.gmrow{grid-template-columns:auto minmax(0,1fr) auto}.gmrow .hm{display:none}.gmrow .gact{grid-column:1/-1;justify-content:flex-start}.gfound{flex-direction:column}.gban{flex-wrap:wrap}}
 /* ===================== lot Suivi : carnet de bord et chasse au trésor ===================== */
 .su-up{color:var(--good,#5fae3a)}.su-down{color:var(--danger)}

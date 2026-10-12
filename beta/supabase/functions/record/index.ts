@@ -4,6 +4,7 @@
 // choisis par le serveur) et n'écrit le record que si l'équipe le termine vraiment.
 // Le temps affiché dans les classements est le meilleur temps du serveur, pas celui annoncé par le jeu.
 // Se montrer : avec { defi: palier }, elle rejoue le défi du jour (même hasard pour tous) et garde le meilleur score du jour.
+// Guildes : avec { gboss: 1 }, un essai contre le boss de guilde de la semaine ; avec { perco: id }, une défense de Percepteur.
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -26,9 +27,11 @@ Deno.serve(async (req) => {
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
-  let body: { did?: string; defi?: string } = {};
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
+  if (body.gboss) return gboss(db, user.id);
+  if (body.perco) return perco(db, user.id, Number(body.perco));
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -120,4 +123,45 @@ async function defi(db: any, uid: string, tier: string) {
   const { count: ahead } = await db.from("lb_defi").select("user_id", { count: "exact", head: true }).eq("day", day).eq("tier", tier).or(`turns.lt.${r.turns},and(turns.eq.${r.turns},hp.gt.${r.hp})`);
   out.rank = (ahead || 0) + 1;
   return json(out);
+}
+
+// ---------- guildes : boss de la semaine et défense des Percepteurs (js/gboss.js) ----------
+// Le combat est rejoué ici avec la partie en ligne ; supabase/gboss.sql compte les essais et les récompenses.
+// deno-lint-ignore no-explicit-any
+async function guildSave(db: any, uid: string, key: string) {
+  const now = Date.now();
+  if (now - (lastTry.get(uid + key) || 0) < 5000) return { err: json({ ok: false, err: "trop tôt", retry: 5 }, 429) };
+  lastTry.set(uid + key, now);
+  const [{ data: save }, { data: lad }] = await Promise.all([
+    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
+  ]);
+  if (!save) return { err: json({ ok: false, err: "aucune partie en ligne" }, 404) };
+  if (lad && lad.flagged) return { err: json({ ok: false, err: "en vérification" }) };
+  try { const S = E.deserialize(save.data); E.events.length = 0; return { S, now }; } catch (_) { return { err: json({ ok: false, err: "partie illisible" }) }; }
+}
+// deno-lint-ignore no-explicit-any
+async function gboss(db: any, uid: string) {
+  const g = await guildSave(db, uid, ":gboss"); if (g.err) return g.err;
+  const w = E.gbossWeek(g.now);
+  const { data: st, error } = await db.rpc("gb_start", { p_user: uid, p_w: w });
+  if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+  const def = E.gboss(w);
+  const r = E.gbossSim(g.S, def, st.n, g.now);
+  if (r.err) return json({ ok: false, err: r.err });
+  const lvl = Math.max(1, ...E.team(g.S).map((c: { lvl: number; ren?: number }) => (c.ren ? 200 : c.lvl)));
+  const { data: done, error: e2 } = await db.rpc("gb_done", { p_user: uid, p_w: w, p_n: st.n, p_points: r.points, p_raw: r.raw, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
+  if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+  return json({ ok: true, gboss: true, boss: def.name, points: r.points, rounds: r.rounds, alive: r.alive, pts: done.pts, goal: done.goal, left: done.left });
+}
+// deno-lint-ignore no-explicit-any
+async function perco(db: any, uid: string, id: number) {
+  const g = await guildSave(db, uid, ":perco"); if (g.err) return g.err;
+  const { data: st, error } = await db.rpc("pc_start", { p_user: uid, p_id: id });
+  if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+  const r = E.percoSim(g.S, st.sid, st.n, E.percoSeed(st.aid, uid), g.now);
+  if (r.err) return json({ ok: false, err: r.err });
+  const { data: done, error: e2 } = await db.rpc("pc_done", { p_user: uid, p_id: id, p_aid: st.aid, p_win: !!r.win });
+  if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+  return json({ ok: true, perco: true, win: !!r.win, rounds: r.rounds, alive: r.alive, foes: r.foes, gxp: done.gxp || 0 });
 }
