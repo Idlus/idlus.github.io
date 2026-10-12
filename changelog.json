@@ -1,6 +1,21 @@
 {
-  "version": "0.1.30.1",
+  "version": "0.1.31",
   "versions": [
+    {
+      "v": "0.1.31",
+      "name": "Menus rangés",
+      "items": [
+        "Toutes les pages sont rangées en cinq groupes : Jouer, Héros, Artisanat, Suivi et Communauté",
+        "Sur PC, le menu est une colonne à gauche, avec le combat en cours tout en haut. Le bouton « à côté du logo la réduit aux icônes pour laisser la place au combat",
+        "Sur téléphone, la barre du bas devient Accueil, Monde, Combat, Héros et Menu. Le bouton Menu ouvre toutes les pages en tuiles",
+        "Les Donjons et l'Encyclopédie ont leur propre page. Monde garde la Carte et le Trésor",
+        "Équipe et Héros ne font plus qu'une page : l'équipe en haut, la fiche du héros choisi juste en dessous",
+        "Le Havre-Sac passe dans Artisanat, la Renaissance dans Héros",
+        "Quêtes : une seule rangée d'onglets. Les Succès et les Ornements ont leur page dans Suivi",
+        "Les pastilles (points à répartir, quêtes à rendre, défi du jour) s'affichent dans le menu",
+        "Une bulle montre le nouveau menu la première fois"
+      ]
+    },
     {
       "v": "0.1.30.1",
       "name": "Fabrication en série",
@@ -802,7 +817,7 @@
       "name": "Petit lot",
       "items": [
         "Tenues : enregistrez jusqu'à 3 équipements complets par héros (chasse, donjon, prospection…) et remettez-les en un clic ; leurs objets sont protégés de la vente et du brisage",
-        "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Monde › Donjons)",
+        "Mutateur de la semaine : chaque lundi, un donjon reçoit un modificateur imposé, en échange de +25 % d'XP et de butin et +50 % de poussière de stasis (Jouer › Donjons)",
         "Entrée des boss : nom en grand, stasis et mécaniques au début du combat ; un flash marque la seconde phase",
         "Moments de récompense : grand encart pour un objet Rayonnant, chaque palier de 10 niveaux et chaque premier passage de stasis (désactivable dans les Options)",
         "Partager un build : un code à copier sur Discord avec les sorts, les caractéristiques et l'équipement d'un héros ; collez celui d'un autre joueur pour le consulter, l'appliquer à un héros de la même classe ou mettre ses objets fabricables dans la liste de courses"

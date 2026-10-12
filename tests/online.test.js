@@ -130,7 +130,7 @@ const MOCK = () => {
     await page.click('[data-act="on-skip"]'); await page.waitForSelector('[data-act="startgame"]');
     await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
-    await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-tab]");
+    await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-nk]");
     await page.evaluate(() => { window.DX.S.kamas = 4321; window.DX.saveNow(); });
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-loginscreen"]');
     await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
@@ -142,13 +142,13 @@ const MOCK = () => {
     if ((await mock()).profiles.length) fail("pseudo qui imite le créateur accepté");
     await page.fill("#onPseudo", "Bouftou"); await page.click('[data-act="on-pseudo"]');
     await page.waitForSelector('[data-act="on-send"]', { timeout: 10000 });
-    await page.click('[data-act="on-send"]'); await page.waitForSelector("#nav [data-tab]");
+    await page.click('[data-act="on-send"]'); await page.waitForSelector("#nav [data-nk]");
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     let m = await mock();
     if (!m.saves.u1 || JSON.parse(m.saves.u1.data).kamas < 4321) fail("la partie n'a pas été envoyée");
     if (m.profiles[0].pseudo !== "Bouftou") fail("pseudo non enregistré");
     // 3. rechargement : on continue sans question
-    await page.reload(); await page.waitForSelector("#nav [data-tab]", { timeout: 10000 });
+    await page.reload(); await page.waitForSelector("#nav [data-nk]", { timeout: 10000 });
     if (await page.$(".sheet .svc")) fail("question inattendue au rechargement");
     if ((await S()).kamas < 4321) fail("partie perdue au rechargement");
     // 4. autre appareil : la partie en ligne change, celle d'ici n'a pas bougé depuis le dernier envoi -> reprise directe
@@ -157,7 +157,7 @@ const MOCK = () => {
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 99999; st.savedAt = Date.now(); d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-01T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); });
     // la page est rechargée sans laisser le jeu sauvegarder entre-temps
     await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("dofousxen-save-beta-online")); const st = JSON.parse(localStorage.getItem("dofousxen-save-beta")); l.savedAt = st.savedAt + 10 ** 9; localStorage.setItem("dofousxen-save-beta-online", JSON.stringify(l)); });
-    await page.reload(); await page.waitForSelector("#nav [data-tab]", { timeout: 10000 }); await page.waitForTimeout(300);
+    await page.reload(); await page.waitForSelector("#nav [data-nk]", { timeout: 10000 }); await page.waitForTimeout(300);
     if ((await S()).kamas < 99999) fail("partie en ligne plus récente non reprise");
     // 5. conflit : les deux ont avancé -> question, on garde celle en ligne
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 55555; d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-02T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); });
@@ -181,7 +181,7 @@ const MOCK = () => {
       d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
         lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }] };
       localStorage.setItem("__mock", JSON.stringify(d)); });
-    await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="ladder"]');
+    await page.click('#nav [data-nk="ladder"]');
     await page.waitForSelector(".podium .pod", { timeout: 10000 });
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
     if (!(await page.$(".pod.is-crea .xtag")) || !(await page.$(".pod .mtag"))) fail("classement : badges créateur et modérateur absents");
@@ -237,7 +237,7 @@ const MOCK = () => {
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
     // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
     await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
-    await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="hdv"]');
+    await page.click('#nav [data-nk="hdv"]');
     await page.waitForSelector('.mkdet [data-act="mk-ask"]', { timeout: 8000 });
     const before = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length }));
     await page.click('.mkdet [data-act="mk-ask"]'); await page.click('.mkdet [data-act="mk-buy"]'); await page.waitForTimeout(800);
@@ -248,9 +248,9 @@ const MOCK = () => {
     if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
     // 7f. guildes : invitation reçue, liste, formulaire de fondation
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
-    await page.click('#subnav [data-tab="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
+    await page.click('#nav [data-nk="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
     if (!(await page.$("#gName")) || !(await page.$('[data-act="g-join"]'))) fail("guildes : page incomplète");
-    await page.click('#nav [data-fam="adv"]');
+    await page.click('#nav [data-nk="world"]');
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);

@@ -387,7 +387,7 @@
     addA({ id: "tresor10", cat: "Exploration", name: "Chasseur de trésors", desc: "Trouver 10 trésors.", test: (S) => (S.tresor && S.tresor.n || 0) >= 10, kamas: 15000, title: E.TRESOR_TITLE });
     addA({ id: "tresor50", cat: "Exploration", name: "Boussole dorée", desc: "Trouver 50 trésors (ornement « Boussole dorée »).", test: (S) => (S.tresor && S.tresor.n || 0) >= 50, kamas: 60000 });
   }
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "carnet")) E.SEARCH_PAGES.push(["carnet", "Carnet de bord", "Équipe › Carnet : courbes, kamas"], ["tresor", "Chasse au trésor", "Monde › Trésor : parchemins"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "carnet")) E.SEARCH_PAGES.push(["carnet", "Carnet de bord", "Suivi › Carnet : courbes, kamas"], ["tresor", "Chasse au trésor", "Monde › Trésor : parchemins"]);
   if (E.ORN && !E.ORN.boussole) E.ORN.boussole = { name: () => "Boussole dorée", req: "Trouver 50 trésors", ok: (S) => !!(S.unlocks && S.unlocks.boussole) };
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;
