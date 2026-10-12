@@ -2611,3 +2611,24 @@ button.xp-door{cursor:pointer}button.xp-door:hover{border-color:var(--gold)}
 .xp-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.xp-sum div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--muted)}.xp-sum b{display:block;font-size:20px;color:var(--ink);font-family:var(--font-title);font-weight:400}
 .xp-sheet{display:flex;flex-direction:column;gap:12px}
 .xp-bl{gap:6px;flex-wrap:nowrap;align-items:center;min-width:0}.xp-bl .cm{flex:none}
+
+/* ===== 0.1.24.1 « Artisans et temples » : commandes, temples, Dopeuls ===== */
+.vi-cmds{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.vi-cmd{position:relative;background:var(--panel);border:2px solid var(--frame2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.vi-cmd.urgent{border-color:var(--gold)}
+.vi-cmd.done{opacity:.75}
+.vi-cmd .ico{width:34px;height:34px}
+.vi-art{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;border-radius:50%;background:var(--panel2);border:1px solid var(--line)}
+.vi-art .uico{width:22px;height:22px}
+.vi-urg{position:absolute;top:-10px;right:10px;background:var(--gold);color:#1a1510;font-size:11px;font-weight:800;border-radius:8px;padding:1px 8px}
+.vi-temples{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.vi-temple{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;background:var(--panel);border:2px solid color-mix(in srgb,var(--cc) 55%,var(--frame2));border-radius:12px;padding:10px 6px}
+.vi-temple .med{width:42px;height:42px}
+.vi-temple .med img{width:28px;height:28px}
+.vi-temple.off{opacity:.45;filter:grayscale(.7)}
+.vi-temple.done{background:color-mix(in srgb,var(--cc) 12%,var(--panel))}
+.vi-pend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--panel2);border:2px solid var(--gold);border-radius:12px;padding:8px 12px}
+/* le Dopeul : reflet sombre du héros */
+img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.dop{filter:brightness(.4) saturate(.35) hue-rotate(220deg) drop-shadow(0 0 6px #9b4dff) drop-shadow(0 0 2px #c79bff)}
+.arena .ent.m img.sprite.dop{object-fit:contain;transform:scaleX(-1)}
+@media (max-width:520px){.vi-cmds{grid-template-columns:1fr}.vi-temples{grid-template-columns:repeat(3,minmax(0,1fr))}}

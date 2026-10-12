@@ -1,6 +1,19 @@
 {
-  "version": "0.1.24",
+  "version": "0.1.24.1",
   "versions": [
+    {
+      "v": "0.1.24.1",
+      "name": "Artisans et temples",
+      "items": [
+        "Commandes d'artisans (Quêtes › Commandes) : chaque jour, 3 artisans demandent des ressources (récolte de tes métiers ou butin des monstres de tes zones). Livraison en plusieurs fois possible ; kamas et XP de métier à la clé, une commande « urgente » paie ×1,5. Chaque artisan monte en rang (3, 10, 25 commandes : +10 % de kamas par rang), tout livrer dans la journée offre un coffre, et la première commande changée chaque jour est gratuite",
+        "Temples et Dopeuls (Quêtes › Temples) : une fois par jour et par classe, pour chaque classe de ton équipe ou de ta réserve, le Dopeul de la classe vient défier l'équipe là où elle chasse. C'est le reflet sombre de ton héros, à son niveau : une équipe bien équipée gagne la plupart du temps, sans équipement elle perd. Une défaite ne coûte rien, le temple reste ouvert",
+        "Les victoires rapportent des Doplons (plus le héros est haut niveau, plus il y en a ; +3 tous les 7 jours d'affilée), à dépenser au Comptoir des temples : coffres, Pierre d'âme, Potion de Savoir, petits parchemins de caractéristiques, parchemin de chasse au trésor, titre « Ombre du temple » et ornement « Reflet du temple ». 10 temples différents conquis donnent le titre « Maître des temples »",
+        "Sons (Options) : quelques sons discrets pour un niveau gagné, un butin rare, un boss vaincu, une âme ou un Dofus, un coffre, une commande livrée et un Dopeul vaincu. Coupés par défaut, avec réglage du volume, option « à chaque victoire » et option « même onglet caché ». Rien ne sonne au retour d'absence",
+        "Consignes d'absence (Options, et lien dans le résumé d'absence) : suivre les étoiles seulement pendant l'absence, revenir à sa zone au retour, limite de banque (le surplus gagné pendant l'absence est vendu, jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes), offrande à l'Almanax et livraison des commandes prêtes au retour. Le résumé d'absence dit ce qui a été fait",
+        "Succès : Premier client, Fournisseur officiel (titre), Tablier d'artisan (ornement), Face à son reflet, Habitué des temples. Les commandes entrent dans le bilan des kamas du Carnet",
+        "Le test de la chasse au trésor ne dépend plus du hasard"
+      ]
+    },
     {
       "v": "0.1.24",
       "name": "L'Expédition sans fin",

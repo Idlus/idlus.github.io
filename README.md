@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.24.1 « Artisans et temples » (bêta)
+- Commandes d'artisans (3 par jour, livraisons partielles, rangs d'artisan, prime du jour), temples et Dopeuls (un par classe et par jour, Doplons, Comptoir des temples, titre à 10 temples ; force réglée par simulation : bien équipé ≈ 80 % de victoires, sans équipement défaite), sons synthétisés (coupés par défaut), consignes d'absence (itinérance hors ligne, retour à la zone, limite de banque, Almanax et commandes au retour). Code : `js/vie.js` ; test : `tests/vie.test.js`.
+
 ## 0.1.24 « L'Expédition sans fin » (bêta)
 - Nouveau mode sans fin (Aventure › Expédition, niveau 10, sans clé) : étages adaptés au niveau de l'équipe à l'entrée, 2-3 portes par étage (Combat, Élite, Trésor, Autel, Repos, Marchand ; boss tous les 5, palier tous les 10), règne des Douze par tranche de 10 étages, 24 reliques en %, 10 bénédictions, 3 vies, coffre de palier à encaisser ou doubler, campement de 24 améliorations permanentes payées en Éclats d'expédition. Logique dans `js/expedition.js` (branchée dans `E.startFight`, `endFight`, `E.tick`, `dealDamage`), interface dans `js/expui.js`. Difficulté sur la courbe des stasis (`E.expStasis`, `E.EXP_CURVE`). Tests : `tests/expedition.test.js` ; simulation : `node tools/simulate.js --expedition`. Lot 2 à venir : classement et coffre de la semaine (rejoués par le serveur).
 

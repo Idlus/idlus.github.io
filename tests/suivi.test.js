@@ -8,6 +8,8 @@ require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archi
 require("../js/welcome.js"); require("../js/defi.js"); require("../js/suivi.js");
 
 let t = Date.UTC(2030, 0, 8, 10, 0); E.setClock(() => t);
+// hasard fixé : les combats (et donc le test) se jouent toujours pareil
+let seed = 12345; E.setRng(() => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; });
 const team = (lvl) => { const S = E.newState("Suivi", "iop"); S.chars[0].lvl = lvl; ["eni", "feca", "cra"].forEach((k, i) => { E.addChar(S, k, "H" + i, lvl).inTeam = true; }); Object.values(E.SUBS).forEach((s) => (S.progress.wins[s.id] = 20)); return S; };
 const run = (S, ms, stop) => { for (let i = 0; i < ms / 250; i++) { t += 250; E.tick(S, 250); if (stop && stop()) return true; } return false; };
 
@@ -39,7 +41,7 @@ console.log("ok - carnet de bord :", JSON.stringify(S.carnet).length, "octets");
 
 // 2. Chasse au trésor : parchemin du jour, indices, gardien, coffre.
 t = Date.UTC(2030, 1, 3, 9, 0);
-const G = team(70);
+const G = team(100); // équipe sans équipement : bien au-dessus du parchemin 40 pour gagner à coup sûr
 assert.strictEqual(E.tresorClaim(G), null); assert.ok(typeof E.tresorClaim(G) === "string", "un parchemin gratuit par jour");
 G.tresor.stock[0] = 40;
 assert.strictEqual(E.tresorStart(G), null);
