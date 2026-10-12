@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 ## 0.1.25 « Options rangées » (bêta)
 - Mathis : menu des réglages plus lisible (maquette validée « 1A 2A 3A 4A »). `optionsSheet` affiche 5 onglets (`OPT_TABS`, `ui.optTab` garde le dernier) ; aides `optSec` / `optLine` / `optChk` (classes `.optsec`, `.optline`, `.optchk` dans style.css ; ne pas réutiliser `.chk`, déjà pris). `pageGo("consignes")` ouvre l'onglet Jeu, `account` l'onglet Sauvegarde.
 
+## 0.1.24.4 « Combat en vue » (bêta)
+- Retour de Mathis : le combat de l'expédition doit se voir par défaut. `expStart` et une porte de combat basculent sur l'onglet Combat ; `EXPUI.combatHtml` affiche les portes de l'étage (ou le bouton du choix en attente) dans `renderCombat` entre deux combats, et le suivi de `expui.js` rafraîchit aussi l'onglet Combat quand l'étage change.
+
 ## 0.1.24.3 « Chasser à son rythme » (bêta)
 - Mathis : en chasse, bien équipé, on ne doit presque jamais perdre, quel que soit le nombre de héros. Simulation avant : solo bien équipé 35-68 % de défaites, duo 8-21 %. Nouveau `E.HUNT_SMALL` (solo/duo/trio : PV en plus, `smallDr`, et `mon` = part du renfort `E.MON_POW` gardée par les monstres, aussi dans `E.powRew` donc les gains par monstre suivent ; jamais en donjon ni en expédition). IA : un sort de soin sans condition n'est plus lancé si aucun héros n'est sous 80 % de PV (`charTurn`). Après : 0-2,6 % de défaites bien équipé (solo, duo, trio, 4), sans équipement 23-87 % dès les zones 32-40 ; kamas/h solo < duo < 4 héros.
 

@@ -95,16 +95,25 @@
       <div class="xs muted">${h(E.STASIS_MODS[X_.regne.mod].desc)} Boss tous les ${E.EXP_BOSS_EVERY} étages, palier tous les ${E.EXP_PALIER}. Une défaite coûte une vie et fait rejouer l'étage ; à zéro, l'expédition s'arrête et tu gardes tout.</div>
       <div class="xp-kv"><div><b>${X_.relics.length}</b>relique${X_.relics.length > 1 ? "s" : ""}</div><div><b>×${mult}</b>XP et butin à cet étage</div><div><b>+${fmt(X_.eclats)}</b>Éclats cette expédition</div>${X_.pot ? `<div><b>Palier ${X_.pot.palier}</b>coffre mis en jeu</div>` : ""}</div></div></div>
       ${floorsStrip(X_)}</div>`;
-    const doors = `<section class="panel"><div class="phead"><h2>Étage ${X_.floor} · ${X_.doors.length > 1 ? `${X_.doors.length === 3 ? "trois" : "deux"} portes` : "le boss"}</h2><span class="xs muted">${d ? "porte choisie" : E.expAutoOn(s) ? `sans choix, le jeu choisit après ${Math.round(E.EXP_DOOR_MS / 1000)} s` : "le jeu attend ton choix"}</span></div>
-      <div class="pad xp-doors">${X_.doors.map((x) => doorCard(s, x, X_, !d && !p)).join("")}</div>
-      <div class="pad row" style="padding-top:0;gap:8px;flex-wrap:wrap">${!d && E.campHas(s, "rechercher") ? `<button class="btn sm" data-act="ex-reroll" ${X_.rerolled ? "disabled" : ""}>Rechercher (relancer les portes)</button>` : ""}<label class="xs"><input type="checkbox" data-act="ex-auto" ${E.expAutoOn(s) ? "checked" : ""}> Choix automatique quand je ne réponds pas (${Math.round(E.EXP_AUTO_MS / 1000)} s)</label>
-      ${E.campHas(s, "carte") && !d ? `<span class="xs muted">Étage suivant : ${nextDoorsTxt(s, X_)}</span>` : ""}</div></section>`;
+    const doors = doorsPanel(s, X_, d, p);
     const commons = X_.relics.map((id, i) => [id, i]).filter(([id]) => E.EXP_RELICS[id].r === "c");
     const relics = `<section class="panel"><div class="phead"><h2>Reliques de l'expédition</h2><span class="xs muted">s'additionnent · perdues à la chute · ${E.EXP_RELIC_MAX} au plus</span></div><div class="pad xp-relg">${X_.relics.map((id, i) => relicCard(id, ui.forge.includes(i) ? "sel" : "", E.campHas(s, "forge") && E.EXP_RELICS[id].r === "c" ? i : undefined)).join("")}${X_.relics.length < E.EXP_RELIC_MAX ? `<div class="xp-r empty"><span style="font-size:24px">?</span><b>Place libre</b><span class="muted">${E.EXP_RELIC_MAX - X_.relics.length} restante${E.EXP_RELIC_MAX - X_.relics.length > 1 ? "s" : ""}</span></div>` : ""}</div>
       <div class="pad xs muted" style="padding-top:0">${fxt.length ? "Total : " + h(fxt.join(", ")) + "." : "Aucune relique pour l'instant : les Élites, les Trésors, le Marchand et les boss en donnent."}${E.campHas(s, "forge") && commons.length >= 2 ? ` <b>Forge du Forgelance :</b> clique deux reliques communes pour les fusionner en une rare${ui.forge.length ? ` (${ui.forge.length}/2)` : ""}.` : ""}</div></section>`;
     const bless = `<section class="panel"><div class="phead"><h2>Bénédictions</h2><span class="xs muted">après chaque boss ou autel</span></div><div class="pad row" style="gap:8px;flex-wrap:wrap">${X_.bless.length ? X_.bless.map((id) => { const b = E.EXP_BLESS[id]; return `<span class="row xp-bl">${X().cmed(b.cls)}<span class="small"><b>${h(b.name)}</b> · ${h(b.desc)}</span></span>`; }).join("") : `<span class="xs muted">Aucune pour l'instant.</span>`}</div></section>`;
     const regnes = `<section class="panel"><div class="phead"><h2>Les règnes</h2><span class="xs muted">un par tranche de 10 étages</span></div><div class="pad stack small" style="gap:4px">${[0, 1, 2, 3].map((k) => { const f = Math.floor((X_.floor - 1) / 10) + k; const r = E.expRegne(X_.w, f * 10 + 1); const M = E.STASIS_MODS[r.mod]; return `<div class="row ${k ? "muted" : ""}" style="gap:8px">${X().cmed(r.cls)}<span class="grow"><b>Étages ${f * 10 + 1}-${f * 10 + 10} · ${h(r.god)}</b> · ${h(M.name)} : ${h(M.desc)}</span></div>`; }).join("")}</div></section>`;
     return band + `<div class="xp-top2"><div class="stack" style="gap:14px">${doors}${relics}</div><div class="stack" style="gap:14px">${bless}${regnes}${campSummary(s)}</div></div>`;
+  }
+  const doorsPanel = (s, X_, d, p) => `<section class="panel"><div class="phead"><h2>Étage ${X_.floor} · ${X_.doors.length > 1 ? `${X_.doors.length === 3 ? "trois" : "deux"} portes` : "le boss"}</h2><span class="xs muted">${d ? "porte choisie" : E.expAutoOn(s) ? `sans choix, le jeu choisit après ${Math.round(E.EXP_DOOR_MS / 1000)} s` : "le jeu attend ton choix"}</span></div>
+      <div class="pad xp-doors">${X_.doors.map((x) => doorCard(s, x, X_, !d && !p)).join("")}</div>
+      <div class="pad row" style="padding-top:0;gap:8px;flex-wrap:wrap">${!d && E.campHas(s, "rechercher") ? `<button class="btn sm" data-act="ex-reroll" ${X_.rerolled ? "disabled" : ""}>Rechercher (relancer les portes)</button>` : ""}<label class="xs"><input type="checkbox" data-act="ex-auto" ${E.expAutoOn(s) ? "checked" : ""}> Choix automatique quand je ne réponds pas (${Math.round(E.EXP_AUTO_MS / 1000)} s)</label>
+      ${E.campHas(s, "carte") && !d ? `<span class="xs muted">Étage suivant : ${nextDoorsTxt(s, X_)}</span>` : ""}</div></section>`;
+  /* 0.1.24.1 : dans l'onglet Combat, les portes de l'étage s'affichent entre deux combats (le combat de l'expédition se suit par défaut) */
+  function combatHtml(s) {
+    const X_ = s.exp; if (!E.expActive(s) || !X_) return "";
+    const d = X_.door !== null ? X_.doors[X_.door] : null; const p = X_.pend[0];
+    if (p) return `<section class="panel"><div class="pad row" style="gap:8px;flex-wrap:wrap"><b>Un choix t'attend</b><button class="btn sm primary" data-act="ex-reopen">${p.t === "relic" ? "Choisir une relique" : p.t === "bless" ? "Choisir une bénédiction" : p.t === "pari" ? "Le coffre du palier" : "Le Marchand"}</button><span class="xs muted">record : étage ${(s.cnt && s.cnt.expBest) || 0} · +${fmt(X_.eclats)} Éclats cette expédition</span></div></section>`;
+    if (d) return "";
+    return doorsPanel(s, X_, null, null);
   }
   const nextDoorsTxt = (s, X_) => { const Y = Object.assign({}, X_, { floor: X_.floor + 1, reroll: 0 }); const ds = E.expDoors(s, Y); X_.regne = E.expRegne(X_.w, X_.floor); return ds.map((d) => E.EXP_DOORS[d.t].name).join(", "); };
 
@@ -165,9 +174,10 @@
     const s = S(); const d = t.dataset; const X_ = s.exp;
     switch (a) {
       case "ex-view": ui.view = d.v; ui.confirm = false; X().closeSheet(); X().render(); return;
-      case "ex-start": { X().closeSheet(); if (after(E.act(s, "expStart", +d.v), false)) { ui.view = "run"; ui.confirm = false; window.DX.ui.tab = "exp"; X().render(); const p = E.expPending(s); if (p) openPend(s, p); } return; }
+      case "ex-start": { X().closeSheet(); if (after(E.act(s, "expStart", +d.v), false)) { ui.view = "run"; ui.confirm = false; window.DX.ui.tab = "combat"; X().render(); window.scrollTo(0, 0); const p = E.expPending(s); if (p) openPend(s, p); } return; }
       case "ex-quit": { if (!ui.confirm) { ui.confirm = true; X().render(); setTimeout(() => { if (ui.confirm) { ui.confirm = false; if (window.DX.ui.tab === "exp") X().render(); } }, 5000); return; } ui.confirm = false; after(E.act(s, "expQuit")); return; }
-      case "ex-door": after(E.act(s, "expDoor", +d.i)); { const p = E.expPending(s); if (p) openPend(s, p); } return;
+      case "ex-door": { const door = X_ && X_.doors[+d.i]; const fight = door && ["fight", "elite", "boss"].includes(door.t);
+        if (after(E.act(s, "expDoor", +d.i), false)) { if (fight) { window.DX.ui.tab = "combat"; window.scrollTo(0, 0); } X().render(); } const p = E.expPending(s); if (p) openPend(s, p); return; }
       case "ex-reroll": after(E.act(s, "expReroll")); return;
       case "ex-auto": after(E.act(s, "expSetAuto", t.checked), false); return;
       case "ex-reopen": { const p = E.expPending(s); if (p) openPend(s, p); return; }
@@ -195,11 +205,11 @@
     else if (p && ours()) { const el = $("#xpTimer"); if (el) el.textContent = `choix auto dans ${Math.max(0, Math.ceil((E.EXP_AUTO_MS - (E.now() - p.at)) / 1000))} s`; if ($("#sheet .xp-sheet").dataset.pend !== String(p.id)) openPend(s, p); }
     else if (!p && ours() && !$("#sheet .xp-sheet.end")) { X().closeSheet(); if (window.DX.ui.tab === "exp") X().render(); }
     if (!on && s.expLast && s.expLast.t !== ui.end) { ui.end = s.expLast.t; if (!busy && E.now() - s.expLast.t < 120000) { X().openSheet(endHtml(s, s.expLast)); if (window.DX.ui.tab === "exp") X().render(); } }
-    if (window.DX.ui.tab === "exp" && !$("#sheet").innerHTML && stateKey(s) !== ui.key) X().render();
+    if ((window.DX.ui.tab === "exp" || (window.DX.ui.tab === "combat" && on)) && !$("#sheet").innerHTML && stateKey(s) !== ui.key) { ui.key = stateKey(s); X().render(); }
   }
   setInterval(() => { try { tick(); } catch (e) { /* jamais bloquer la boucle du jeu */ } }, 700);
 
   /* texte de l'en-tête du combat et de la barre d'état */
   const where = (s) => (E.expActive(s) ? `Expédition · étage ${s.exp.floor}` : null);
-  window.EXPUI = { render, act, where, ui };
+  window.EXPUI = { render, act, where, combatHtml, ui };
 })();

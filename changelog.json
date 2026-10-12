@@ -12,6 +12,14 @@
       ]
     },
     {
+      "v": "0.1.24.4",
+      "name": "Combat en vue",
+      "items": [
+        "Expédition : le combat se suit par défaut. Partir, ou choisir une porte Combat, Élite ou Boss, ouvre l'onglet Combat ; entre deux combats, les portes de l'étage s'affichent au-dessus de la scène, et les fiches (relique, bénédiction, coffre, Marchand) s'y ouvrent aussi",
+        "La page Expédition reste là pour le campement, les reliques, les bénédictions et les règnes (bouton « Voir l'expédition » dans l'onglet Combat)"
+      ]
+    },
+    {
       "v": "0.1.24.3",
       "name": "Chasser à son rythme",
       "items": [
