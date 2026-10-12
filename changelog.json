@@ -12,6 +12,14 @@
       ]
     },
     {
+      "v": "0.1.28.5",
+      "name": "Presque fabricable",
+      "items": [
+        "Ateliers : le filtre « Fabricables maintenant » devient un menu. Choisissez « Il manque au plus 1, 2 ou 3 ressources » pour voir les recettes qui sont à portée de main",
+        "Avec ce filtre, les recettes sont triées de la plus proche à la plus lointaine, et une étiquette indique combien de ressources il manque (en rouge dans la recette, avec la quantité possédée)"
+      ]
+    },
+    {
       "v": "0.1.28.4",
       "name": "Double gain dans le chat",
       "items": [
