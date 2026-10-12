@@ -376,3 +376,29 @@ do $$ declare f text; begin
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;
 end $$;
+
+-- ---------- 0.1.29.1 : badge du créateur et des modérateurs ----------
+-- Liste publique de l'équipe (créateur = administrateur, modérateurs) : le jeu affiche le badge à côté
+-- du pseudo. Elle vient du serveur, personne ne peut donc se donner le badge.
+create or replace function public.staff_list() returns jsonb language sql stable security definer set search_path = public
+as $$ select coalesce(jsonb_agg(jsonb_build_object('u', x.id, 'p', x.pseudo, 'r', x.r)), '[]'::jsonb) from (
+  select p.id, p.pseudo, 'crea' r from admins a join profiles p on p.id = a.user_id
+  union all select p.id, p.pseudo, 'mod' from mods m join profiles p on p.id = m.user_id where not exists (select 1 from admins a where a.user_id = m.user_id)) x $$;
+revoke all on function public.staff_list() from public;
+grant execute on function public.staff_list() to anon, authenticated;
+
+-- Pseudos qui imitent le créateur ou l'équipe : refusés à la création et au changement de pseudo
+-- (sauf pour le compte de Mathis lui-même). Chiffres remplacés par les lettres qu'ils imitent (Xen3r).
+create or replace function public.pseudo_imite(p text) returns boolean language sql immutable
+as $$ select n ~ '(xener|createur|idlus|ankama)' or n ~ '^(admin|modo|moderat|staff)'
+  from (select regexp_replace(translate(lower(p), 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿ01345@$', 'aaaaaaceeeeiiiinooooouuuuyyoieasas'), '[^a-z]', '', 'g') n) t $$;
+create or replace function public.pseudo_guard() returns trigger language plpgsql security definer set search_path = public
+as $$ begin
+  if (tg_op = 'INSERT' or new.pseudo is distinct from old.pseudo) and public.pseudo_imite(new.pseudo)
+     and not exists (select 1 from admins where user_id = new.id) then
+    raise exception 'Ce pseudo n''est pas autorisé.';
+  end if;
+  return new;
+end $$;
+drop trigger if exists profiles_pseudo_guard on public.profiles;
+create trigger profiles_pseudo_guard before insert or update of pseudo on public.profiles for each row execute function public.pseudo_guard();

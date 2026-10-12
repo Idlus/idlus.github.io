@@ -1,6 +1,15 @@
 {
-  "version": "0.1.29",
+  "version": "0.1.29.1",
   "versions": [
+    {
+      "v": "0.1.29.1",
+      "name": "Badge du créateur",
+      "items": [
+        "Xener, le créateur d'Idlus, a maintenant un pseudo doré avec une couronne et l'étiquette « Créateur » : chat, classements, guilde et fiche joueur",
+        "Les modérateurs ont une étiquette verte « Modérateur »",
+        "Le badge vient du serveur : personne d'autre ne peut l'avoir. Les pseudos qui imitent le créateur ou l'équipe (Xen3r, Createur, Modo…) sont refusés"
+      ]
+    },
     {
       "v": "0.1.29",
       "name": "Sablier de Xélor",

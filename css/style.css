@@ -2769,3 +2769,21 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .status .sabpill.on .sb{animation:sabspin 2.4s ease-in-out infinite}
 @keyframes sabspin{0%,70%{transform:rotate(0)}85%,100%{transform:rotate(180deg)}}
 @media (prefers-reduced-motion:reduce){.status .sabpill.on .sb{animation:none}}
+/* 0.1.29.1 : badge du créateur (couronne, reflet or et émeraude, anneau doré qui pulse) et des modérateurs */
+.xen{display:inline-flex;align-items:center;gap:3px;font-weight:900;vertical-align:baseline;max-width:100%}
+.xen .crown{width:1em;height:1em;flex:none}
+.xen .t{background:linear-gradient(90deg,#ffe9a3,#f4c84a,#b3e05c,#f4c84a,#ffe9a3);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:xenshine 5s linear infinite;overflow:hidden;text-overflow:ellipsis}
+.xtag,.mtag{display:inline-flex;align-items:center;gap:3px;margin-left:5px;font-size:10.5px;font-weight:900;letter-spacing:.3px;border-radius:6px;padding:0 6px;line-height:1.5;vertical-align:middle;white-space:nowrap;-webkit-text-fill-color:currentColor}
+.xtag{color:#2a1c05;background:linear-gradient(180deg,#ffe9a3,#f4c84a)}
+.mtag{color:#13200a;background:linear-gradient(180deg,#d6f27e,#8cc63f)}
+.mtag .uico{width:11px;height:11px}
+.is-crea .cm{border-color:#f4c84a!important;box-shadow:0 0 10px rgba(244,200,74,.6);animation:xenpulse 2.4s ease-in-out infinite}
+.chat .msg.is-crea{background:linear-gradient(90deg,rgba(244,200,74,.13),transparent 70%);box-shadow:inset 3px 0 0 #f4c84a;border-radius:8px;padding:3px 5px}
+.lbr.is-crea,.gmrow.is-crea{background:linear-gradient(90deg,rgba(244,200,74,.12),transparent 75%)}
+.chat .msg .ps .xen .t,.chat .msg.me .ps .xen .t{color:transparent}
+@keyframes xenshine{to{background-position:300% 0}}
+@keyframes xenpulse{50%{box-shadow:0 0 3px rgba(244,200,74,.3)}}
+@media (prefers-reduced-motion:reduce){.xen .t,.is-crea .cm{animation:none}}
+.pod .nm .xen,.pod .nm .xtag,.pod .nm .mtag{vertical-align:middle}
+.pod .nm .xtag,.pod .nm .mtag{display:table;margin:2px auto 0}
+.pod.is-crea{border-color:#f4c84a}

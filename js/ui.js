@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.29";
+const GAME_VERSION = "0.1.29.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.29.1", name: "Badge du créateur", items: [
+    "Xener, le créateur d'Idlus, a maintenant un pseudo doré avec une couronne et l'étiquette « Créateur » : chat, classements, guilde et fiche joueur",
+    "Les modérateurs ont une étiquette verte « Modérateur »",
+    "Le badge vient du serveur : personne d'autre ne peut l'avoir. Les pseudos qui imitent le créateur ou l'équipe (Xen3r, Createur, Modo…) sont refusés",
+  ] },
   { v: "0.1.29", name: "Sablier de Xélor", items: [
     "Nouveau : le Sablier de Xélor, dans la barre du haut à côté des kamas. Il fait filer le temps ×2 ou ×3 : combats, donjons, expédition, récolte, ateliers, familiers et enclos",
     "Le sablier se remplit tout seul de 3 h par jour, même jeu fermé, et garde jusqu'à 9 h. ×2 vide 1 minute de réserve par minute, ×3 en vide 2 : ×3 donne le même temps en plus, juste plus vite",
@@ -5429,6 +5434,25 @@ const LB_TABS = [["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"]
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+/* 0.1.29.1 : badge de l'équipe d'Idlus. La liste vient du serveur (staff_list) : couronne dorée et étiquette
+   « Créateur » pour Mathis, étiquette « Modérateur » pour les modos, partout où un pseudo s'affiche. */
+const STAFF = { u: {}, p: {} };
+const staffOf = (u, p) => (u ? STAFF.u[u] : p ? STAFF.p[String(p).toLowerCase()] : null) || null;
+const CROWN_SVG = `<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path fill="#f4c84a" stroke="#7a5310" stroke-width="1.4" stroke-linejoin="round" d="M3 8l4.5 4L12 4l4.5 8L21 8l-2 11H5z"/><circle cx="12" cy="4" r="1.6" fill="#ffe9a3"/><circle cx="3" cy="8" r="1.4" fill="#ffe9a3"/><circle cx="21" cy="8" r="1.4" fill="#ffe9a3"/></svg>`;
+const pname = (p, u) => {
+  const r = staffOf(u, p);
+  if (r === "crea") return `<span class="xen" data-tip="Créateur d'Idlus">${CROWN_SVG}<span class="t">${h(p)}</span></span><span class="xtag">Créateur</span>`;
+  if (r === "mod") return `${h(p)}<span class="mtag" data-tip="Modérateur d'Idlus">${G("shield")}Modérateur</span>`;
+  return h(p);
+};
+const staffCls = (u, p) => ({ crea: " is-crea", mod: " is-mod" }[staffOf(u, p)] || "");
+async function staffLoad() {
+  if (!ON || !ON.enabled || !ON.staff) return;
+  const L = await ON.staff(); if (!Array.isArray(L) || !L.length) return;
+  STAFF.u = {}; STAFF.p = {}; L.forEach((x) => { STAFF.u[x.u] = x.r; STAFF.p[String(x.p).toLowerCase()] = x.r; });
+  if (window.CHAT) window.CHAT.repaint();
+  if (S && ui.tab !== "combat") render();
+}
 const lbLvl = (score) => score - Math.max(0, Math.floor((score - 1) / VF.REB_LVL)) * VF.REB_LVL;
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
 const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
@@ -5480,7 +5504,7 @@ async function lbFetch() {
   LB.cache[key] = out; return out;
 }
 function lbRowHtml(r, i, me) {
-  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+  return `<button class="lbr${me ? " me" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "first") {
@@ -5491,7 +5515,7 @@ function lbListHtml(d) {
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
   if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
-  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(r.p)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
+  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${pname(r.p, r.u)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
   return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
 }
@@ -5527,7 +5551,7 @@ async function lbProfile(u) {
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
-    openSheet(`<div class="row">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
+    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
@@ -5700,6 +5724,7 @@ function bootGame(pushNow) {
     S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
   if (onLive()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
+  if (ON && ON.enabled) setTimeout(staffLoad, 200);
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
   if (ON && window.GUILD) setTimeout(() => window.GUILD.start(), 700);
@@ -5711,7 +5736,7 @@ function bootGame(pushNow) {
 }
 window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
+window.DX.social = { h, G, IC, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
 function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
