@@ -80,15 +80,29 @@ function panelHtml() {
     + row(`<span class="muted">Nouvelle équipe :</span><span class="xs muted">niveau</span>${inp("admGenL", `type="number" min="1" max="${E.MAX_LVL}" value="${st.lvl}" style="width:70px"`)}
       <select id="admGenG"><option value="aucun">sans équipement</option><option value="bon" selected>bon équipement</option><option value="optimise">optimisée</option></select>${btn("gen", "Créer")}`)
     + `<span class="xs muted">Reprend les classes de votre équipe actuelle (${E.team(s).map((c) => h(CLASSES[c.cls].name)).join(", ") || "aucune"}), zones débloquées. Remplace la partie (copie de secours faite).</span>`)}
+  ${window.ONLINE && window.ONLINE.user ? sec("Classements", "Joueurs mis « en vérification » (progrès impossible ou panel de test utilisé) : ils jouent normalement mais n'apparaissent plus dans les classements. Réservé au compte administrateur.",
+    `<div id="admFlag">${btn("flagload", "Voir les joueurs en vérification")}</div>`) : ""}
   </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`;
 }
 const open = () => DX.openSheet(panelHtml());
-const done = (txt) => { DX.markDirty(); DX.saveNow(); DX.render(); open(); if (txt) DX.toast(txt); };
+/* 0.1.16 : une partie retouchée par le panel n'entre pas dans les classements (le serveur la met « en vérification »). */
+const mark = (s) => { if (s && !s.panelUsed) { s.panelUsed = true; if (window.ONLINE && window.ONLINE.user) DX.toast("Partie retouchée par le panel : elle n'apparaîtra plus dans les classements."); } };
+const done = (txt) => { mark(S()); DX.markDirty(); DX.saveNow(); DX.render(); open(); if (txt) DX.toast(txt); };
 const val = (id) => { const n = document.getElementById(id); return n ? n.value.trim() : ""; };
 
 function replaceGame(N, txt) {
   const s = S(); if (s) { DX.pushCopy(E.serialize(s), "avant", s); N.seenVersion = s.seenVersion; N.settings.theme = s.settings.theme; }
-  DX.S = N; DX.ui.cid = N.chars[0].id; DX.ui.tab = "home"; DX.setTheme(); DX.closeSheet(); DX.markDirty(); DX.saveNow(); DX.render(); DX.renderStatus(); DX.toast(txt);
+  N.panelUsed = true; DX.S = N; DX.ui.cid = N.chars[0].id; DX.ui.tab = "home"; DX.setTheme(); DX.closeSheet(); DX.markDirty(); DX.saveNow(); DX.render(); DX.renderStatus(); DX.toast(txt);
+}
+
+/* ---------- classements : joueurs en vérification ---------- */
+async function flagged(unflag) {
+  const box = document.getElementById("admFlag"); const db = window.ONLINE && window.ONLINE.db(); if (!box || !db) return;
+  if (unflag) { const { error } = await db.rpc("admin_unflag", { p_user: unflag }); DX.toast(error ? "Refusé : " + error.message : "Joueur rétabli dans les classements."); }
+  const { data, error } = await db.rpc("admin_flagged");
+  if (error) { box.innerHTML = `<span class="xs minus">${h(error.message)}</span>`; return; }
+  box.innerHTML = data && data.length ? data.map((r) => row(`<span class="grow"><b>${h(r.pseudo)}</b> <span class="xs muted">${h(r.reason || "")} · ${fmt(r.level)} niveaux · ${new Date(r.updated_at).toLocaleString("fr-FR")}</span></span>${btn("unflag", "Rétablir", `data-u="${h(r.user_id)}"`)}`)).join("")
+    : `<span class="xs muted">Personne en vérification (ou ce compte n'est pas administrateur).</span>`;
 }
 
 /* ---------- actions ---------- */
@@ -96,11 +110,12 @@ document.addEventListener("change", (ev) => { const k = ev.target.dataset && ev.
 document.addEventListener("click", (ev) => {
   const t = ev.target.closest("[data-adm]"); if (!t) return;
   const s = S(); const d = t.dataset;
+  if (d.adm === "flagload" || d.adm === "unflag") { flagged(d.adm === "unflag" ? d.u : null); return; }
   if (d.adm === "open") { if (!s) { DX.toast("Commencez une partie pour utiliser le panel de test."); return; } open(); return; }
   if (!s) return;
   switch (d.adm) {
-    case "speed": DX.speed = +d.v; open(); DX.toast(DX.speed > 1 ? `Temps accéléré ×${DX.speed}.` : "Vitesse normale."); return;
-    case "away": { DX.closeSheet(); const r = E.catchUp(s, +d.v * 3600); DX.markDirty(); DX.saveNow(); DX.render();
+    case "speed": if (+d.v > 1) mark(s); DX.speed = +d.v; open(); DX.toast(DX.speed > 1 ? `Temps accéléré ×${DX.speed}.` : "Vitesse normale."); return;
+    case "away": { mark(s); DX.closeSheet(); const r = E.catchUp(s, +d.v * 3600); DX.markDirty(); DX.saveNow(); DX.render();
       if (r && (r.wins || Object.keys(r.res).length)) DX.offlineSheet(r); else DX.toast("Rien à rapporter : personne ne chassait ni ne récoltait."); return; }
     case "fight": {
       st.dg = val("admDg") || st.dg; st.k = +val("admK") || st.k; const dg = DUNGEONS[st.dg];
@@ -108,7 +123,7 @@ document.addEventListener("click", (ev) => {
       if (s.dungeon) E.leaveDungeon(s);
       if (!E.dungeonUnlocked(s, st.dg)) unlockAll(s);
       const SI = E.stasisInfo(s, st.dg); SI.max = Math.max(SI.max, st.k - 1); E.addRes(s, dg.key, 1);
-      const err = E.enterDungeon(s, st.dg, st.k); if (err) { DX.toast(err); return; }
+      const err = E.enterDungeon(s, st.dg, st.k); if (err) { DX.toast(err); return; } mark(s);
       DX.ui.tab = "combat"; DX.closeSheet(); DX.markDirty(); DX.saveNow(); DX.render(); window.scrollTo(0, 0); DX.toast(`${dg.name} · stasis ${st.k}`); return; }
     case "who": st.who = d.v; open(); return;
     case "setlvl": { const L = Math.round(+val("admLvl")); if (!(L >= 1)) return; st.lvl = Math.min(E.MAX_LVL, L); targets(s).forEach((c) => setLevel(s, c, st.lvl)); done(`Niveau ${st.lvl} appliqué.`); return; }

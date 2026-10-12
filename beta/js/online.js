@@ -143,6 +143,18 @@
     })();
     pushing = p; return p;
   };
+  /* ---------- classements (étape 3) ---------- */
+  ON.db = () => sb;
+  /* Demande au serveur de vérifier le record du donjon (il rejoue le combat avec la partie en ligne).
+     Renvoie la réponse du serveur, ou { net: true } s'il faut réessayer plus tard. */
+  ON.submitRecord = async (did) => {
+    if (!sb || !ON.user) return { net: true };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { did } }), 30000);
+      if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : { net: true }; }
+      return data || { net: true };
+    } catch (e) { return { net: true }; }
+  };
   ON.deleteAccount = async () => {
     const { error } = await withTimeout(sb.rpc("delete_my_account"));
     if (error) return error.message;
