@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.10.2 « Chasse itinérante » (bêta)
+- **Chasse itinérante** : option sur l'écran de combat, l'équipe suit les étoiles de zone toute seule (en jeu et hors ligne), en échange de 15 % d'XP et de butin en moins.
+- Correction : les étoiles gagnées par une zone sont bien comptées quand on y revient.
+
 ## 0.1.10.1 « Récoltes et panoplies » (bêta)
 - **Protecteurs de ressources** : en récoltant, un gardien apparaît parfois (environ une récolte sur 60) ; le battre en chasse double cette récolte pendant 20 min (+10 ressources, +3 Éclats). Désactivable.
 - **Codes cadeaux** : champ dans les Options, un code par partie (outil `tools/code_cadeau.js` pour les créer).
