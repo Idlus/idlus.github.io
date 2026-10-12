@@ -746,6 +746,7 @@
     meneur:   { name: "Meneur",     desc: "Ses alliés font +10 % de dégâts tant qu'il est debout." },
     traqueur: { name: "Traqueur",   desc: "Vise le héros qui a le moins de PV." },
   };
+  E.monsterEntity = monsterEntity; // 0.1.22 : groupes d'attaque des Percepteurs (js/gboss.js)
   E.makeChampion = (m, pw) => {
     m.champ = pw || pick(Object.keys(E.CHAMP_POWERS));
     m.hpMax = m.hp = Math.round(m.hpMax * 2); m.dmg *= 1.2;
@@ -993,13 +994,13 @@
         label = `${dg.name}${k > 1 ? ` · Stasis ${k}` : ""} — salle ${r + 1}/${dg.rooms.length + 1}`;
       } else {
         const bm = MONSTERS[dg.boss];
-        const k = S.dungeon.stasis || 1; const blv = k >= 4 ? Math.max(bm.lvl[0], (S.dungeon.syncLvl || 0) + 2) : bm.lvl[0];
+        const k = S.dungeon.stasis || 1; const blv = S.dungeon.gboss ? (S.dungeon.syncLvl || 1) + 2 : k >= 4 ? Math.max(bm.lvl[0], (S.dungeon.syncLvl || 0) + 2) : bm.lvl[0]; // boss de guilde (0.1.22) : toujours au niveau de l'équipe
         const boss = monsterEntity(dg.boss, blv);
         const hk = (1 + team.length * 1.1) / 5; boss.hpMax = boss.hp = Math.round(boss.hpMax * hk);
         boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0; (S.bossSeen = S.bossSeen || {})[S.dungeon.id] = 1;
         mons = [boss];
         const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0), 0, 7);
-        const mlv = k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
+        const mlv = S.dungeon.gboss ? S.dungeon.syncLvl || 1 : k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));
         applyStasis(S, null, mons, -1, true);
         label = `${dg.name}${k > 1 ? ` · Stasis ${k}` : ""} — salle du boss`;

@@ -1,6 +1,19 @@
 {
-  "version": "0.1.22.1",
+  "version": "0.1.23",
   "versions": [
+    {
+      "v": "0.1.23",
+      "name": "Boss et Percepteurs",
+      "items": [
+        "Guilde › Boss : chaque semaine (lundi minuit), un boss de donjon différent pour toutes les guildes. Chaque membre a 3 essais par jour : son équipe l'affronte pendant 15 tours, au niveau de ses héros, et ses dégâts deviennent des points pour la guilde",
+        "Jauge de la guilde (2 500 points par membre, au moins 5 comptés) : un coffre de kamas et de Poussières de stasis s'ouvre à 25, 50, 75 et 100 % pour chaque membre qui a frappé au moins une fois",
+        "Classement des guildes de la semaine ; les membres des 3 meilleures reçoivent le titre « Pourfendeur de boss »",
+        "Guilde › Percepteurs : dès le niveau 5 de guilde (un de plus tous les 5 niveaux, jusqu'à 5), le Meneur ou un Bras droit en pose un dans une zone finie pour 20 000 kamas",
+        "Le Percepteur ramasse 3 % des kamas et ressources qu'on gagnerait dans sa zone : poche pleine en 12 h, n'importe quel membre peut la récolter (et la guilde gagne de l'XP)",
+        "Environ une fois par jour, des monstres l'attaquent : pendant 2 h, chaque membre peut tenter une défense avec son équipe (un monstre de plus après chaque défenseur battu). Victoire : poche +25 %, XP de guilde et un coffre pour le défenseur ; sans victoire, la moitié de la poche est perdue",
+        "Les combats du boss et des défenses sont rejoués par le serveur avec ta partie en ligne"
+      ]
+    },
     {
       "v": "0.1.22.1",
       "name": "Challenges qui rapportent",

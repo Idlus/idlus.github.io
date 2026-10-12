@@ -3,6 +3,7 @@
    Créer une guilde (Guildalogemme), la rejoindre, rangs, XP de guilde donnée par les membres
    (part choisie de 0 à 90 %), niveaux et bonus, chat de guilde (onglet Guilde du chat),
    journal, réglages. Règles vérifiées par le serveur (supabase/guildes.sql).
+   0.1.22 : boss de la semaine et Percepteurs (règles dans js/gboss.js, serveur dans supabase/gboss.sql).
    Le jeu garde dans S.guild : { id, name, lvl, ic, col, share, pend } (pend = XP à envoyer).
    ========================================================================== */
 (function () {
@@ -11,6 +12,7 @@
   if (!ON || !ON.enabled) return;
   const E = window.ENGINE;
   const X = () => window.DX.social;
+  const D = () => window.DATA;
   const S = () => window.DX.S;
   const $ = (s) => document.querySelector(s);
   const h = (s) => X().h(s);
@@ -19,7 +21,7 @@
   const RANKS = ["Meneur", "Bras droit", "Membre", "Recrue"];
   const ICONS = ["dofus", "couronne", "trophee", "cristal", "phenix", "ailes", "coffre", "havre", "monde", "combat", "pioche", "cle"];
   const COLS = ["#8cc63f", "#e8c063", "#ff8a6b", "#e0674f", "#c77dff", "#7fb3ff", "#4fd1c5", "#f0f0e0"];
-  const G = { me: null, list: null, q: "", tab: "home", busy: false, chat: [], after: 0, unread: 0, seenChat: 0, form: { name: "", ic: "dofus", col: "#8cc63f" }, adm: null };
+  const G = { me: null, ex: null, off: 0, res: null, sureRm: null, atkSeen: {}, zone: "", list: null, q: "", tab: "home", busy: false, chat: [], after: 0, unread: 0, seenChat: 0, form: { name: "", ic: "dofus", col: "#8cc63f" }, adm: null };
 
   /* ---------- bonus de guilde (sous les plafonds du jeu) ---------- */
   const perks = (l) => ({ xp: Math.floor(l / 5), drop: Math.floor(l / 10), kamas: Math.floor(l / 10) });
@@ -62,9 +64,24 @@
     const was = q.id;
     if (G.me.g) { Object.assign(q, { id: G.me.g.id, name: G.me.g.name, lvl: G.me.g.lvl, ic: G.me.g.ic, col: G.me.g.col }); if (!was) q.share = G.me.share || q.share || 0; }
     else { q.id = null; q.pend = 0; }
-    if (was !== q.id) { X().markDirty(); G.chat = []; G.after = 0; if (q.id) chatPoll(); }
+    if (was !== q.id) { X().markDirty(); G.chat = []; G.after = 0; G.ex = null; if (q.id) chatPoll(); }
     paint();
+    if (q.id) loadEx();
     if (window.CHAT && window.CHAT.repaint) window.CHAT.repaint();
+  }
+  /* boss de la semaine et Percepteurs ; les coffres gagnés s'ouvrent tout seuls */
+  async function loadEx() {
+    const r = await ON.rpc("guild_extra"); if (r.err || !r.data || r.data.none || r.data.err) return;
+    G.ex = r.data; G.off = Date.parse(r.data.now) - Date.now();
+    (G.ex.percos || []).forEach((p) => { if (p.atk && !G.atkSeen[p.id + p.atk.at]) { G.atkSeen[p.id + p.atk.at] = 1; if (!p.atk.done) X().toast(`⚔ Le Percepteur de ${p.name} est attaqué ! Défends-le dans Guilde › Percepteurs.`, "rare"); } });
+    if (G.ex.boss && G.ex.boss.claim && !G.claiming) {
+      G.claiming = true;
+      const c = await ON.rpc("gboss_claim", { p_after: (S().hdv && S().hdv.op) || 0 }); G.claiming = false;
+      if (c.data && c.data.ops && window.MARKET) window.MARKET.apply(c.data.ops, true);
+      if (c.data && c.data.ok) X().toast(`Boss de guilde : ${c.data.ok > 1 ? `${c.data.ok} coffres ouverts` : "coffre ouvert"} (+${fmt(c.data.k)} kamas, +${c.data.dust} Poussières de stasis).`, "rare");
+      return loadEx();
+    }
+    paint();
   }
   async function loadList() { const r = await ON.rpc("guild_list", { p_q: G.q }); G.list = r.data || []; paint(); }
 
@@ -138,16 +155,16 @@
     const banner = `<section class="panel gban">${emb(g.ic, g.col, 76)}<div class="grow stack" style="gap:6px"><div class="row"><h2 style="font-size:26px">${h(g.name)}</h2><span class="tag good">niveau ${g.lvl}</span><span class="xs muted">${n} / ${MAXM} membres · tu es ${RANKS[G.me.rank]}</span></div>
       <div class="gbar"><i style="width:${pct.toFixed(1)}%"></i><b>${g.next ? `${fmt(g.xp - g.base)} / ${fmt(span)} XP` : "niveau maximum"}</b></div>
       ${g.motd ? `<div class="gmotd">${h(g.motd)}</div>` : ""}</div></section>`;
-    const asks = (G.me.asks || []).length;
-    const tabs = `<nav class="subtabs">${[["home", "Accueil"], ["members", `Membres${asks ? ` · ${asks} demande${asks > 1 ? "s" : ""}` : ""}`], ["log", "Journal"], ["set", "Réglages"]].map(([id, t]) => `<button data-act="g-tab" data-v="${id}" aria-pressed="${G.tab === id}">${t}</button>`).join("")}
+    const asks = (G.me.asks || []).length; const atk = G.ex && (G.ex.percos || []).some((p) => p.atk && !p.atk.done);
+    const tabs = `<nav class="subtabs">${ [["home", "Accueil"], ["boss", "Boss"], ["percos", `Percepteurs${atk ? " ⚔" : ""}`], ["members", `Membres${asks ? ` · ${asks} demande${asks > 1 ? "s" : ""}` : ""}`], ["log", "Journal"], ["set", "Réglages"]].map(([id, t]) => `<button data-act="g-tab" data-v="${id}" aria-pressed="${G.tab === id}">${t}</button>`).join("")}
       <button class="btn sm mktrade" data-act="g-chat">${X().G("chat")} Chat de guilde</button></nav>`;
-    const body = G.tab === "members" ? membersHtml() : G.tab === "log" ? logHtml() : G.tab === "set" ? setHtml() : homeHtml();
+    const body = G.tab === "boss" ? bossHtml() : G.tab === "percos" ? percosHtml() : G.tab === "members" ? membersHtml() : G.tab === "log" ? logHtml() : G.tab === "set" ? setHtml() : homeHtml();
     return `<div class="stack">${banner}${tabs}${body}</div>`;
   }
   function homeHtml() {
     const g = G.me.g; const s = S(); const share = (s.guild && s.guild.share) || 0; const p = perks(g.lvl);
     const me = G.me.members.find((m) => m.u === ON.user.id) || {};
-    const lines = [[1, "Chat de guilde et emblème"], [5, "Percepteurs (1 au niveau 5, +1 tous les 5 niveaux)", true], [10, "+2 % XP, +1 % butin, +1 % kamas"], [25, "+5 % XP, +2 % butin, +2 % kamas"], [50, "+10 % XP, +5 % butin, +5 % kamas"], [100, "+20 % XP, +10 % butin, +10 % kamas"]];
+    const lines = [[1, "Chat de guilde et emblème"], [5, "Percepteurs (1 au niveau 5, +1 tous les 5 niveaux)"], [10, "+2 % XP, +1 % butin, +1 % kamas"], [25, "+5 % XP, +2 % butin, +2 % kamas"], [50, "+10 % XP, +5 % butin, +5 % kamas"], [100, "+20 % XP, +10 % butin, +10 % kamas"]];
     return `<div class="grid2g">
       <section class="panel"><div class="phead"><h2>Ma part d'XP pour la guilde</h2><b class="num">${share} %</b></div><div class="pad stack">
         <input type="range" min="0" max="90" step="5" value="${share}" data-act="g-share" id="gShare" aria-label="Part d'XP donnée à la guilde">
@@ -159,12 +176,87 @@
         <div class="list gperks">${lines.map(([l, t, soon]) => `<div class="li small ${g.lvl >= l ? "" : "lock"}"><b class="lv">niv. ${l}</b><span class="grow">${t}</span>${soon ? `<span class="tag soft2">bientôt</span>` : g.lvl >= l ? "✓" : ""}</div>`).join("")}</div>
         <span class="xs muted">Entre deux paliers : +1 % XP tous les 5 niveaux, +1 % butin et kamas tous les 10 niveaux.</span>
       </div></section>
-      <section class="panel"><div class="phead"><h2>Bientôt dans ta guilde</h2></div><div class="list">
-        <div class="li">${X().IC("trophee")}<span class="grow"><b>Boss de la semaine</b><br><span class="xs muted">Un boss différent chaque semaine, 3 essais par jour, des coffres à 25, 50, 75 et 100 % de ses PV et un titre pour le podium.</span></span><span class="tag soft2">prochaine mise à jour</span></div>
-        <div class="li">${X().IC("bourse")}<span class="grow"><b>Percepteurs</b><br><span class="xs muted">Posés dans une zone finie, ils ramassent 3 % de ce qu'on y gagnerait. Des monstres les attaquent ; les membres les défendent.</span></span><span class="tag soft2">prochaine mise à jour</span></div>
+      <section class="panel"><div class="phead"><h2>Activités de guilde</h2></div><div class="list">
+        ${bossLine()}${percoLine()}
         <div class="li">${X().IC("coffre")}<span class="grow"><b>Coffre de guilde</b><br><span class="xs muted">Un coffre partagé pour s'entraider entre membres.</span></span><span class="tag soft2">prochaine mise à jour</span></div>
       </div></section></div>`;
   }
+  /* --- boss de la semaine --- */
+  const left = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); const d = Math.floor(m / 1440), hh = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d} j ${hh} h` : hh ? `${hh} h ${String(mm).padStart(2, "0")}` : `${mm} min`; };
+  const srvNow = () => Date.now() + (G.off || 0);
+  function bossLine() {
+    const b = G.ex && G.ex.boss; const def = E.gboss();
+    const pct = b ? Math.min(100, Math.floor((b.pts / b.goal) * 100)) : 0;
+    return `<div class="li clk" data-act="g-tab" data-v="boss">${X().IC("trophee")}<span class="grow"><b>Boss de la semaine : ${h(def.name)}</b><br><span class="xs muted">${b ? `${pct} % · ${E.GBOSS_TRIES - b.today} essai${E.GBOSS_TRIES - b.today > 1 ? "s" : ""} aujourd'hui` : "Chargement…"}</span></span><span class="tag good">Voir</span></div>`;
+  }
+  function percoLine() {
+    const P = (G.ex && G.ex.percos) || []; const lvl = G.me.g.lvl; const slots = E.percoSlots(lvl); const atk = P.filter((p) => p.atk).length;
+    return `<div class="li clk" data-act="g-tab" data-v="percos">${X().IC("bourse")}<span class="grow"><b>Percepteurs</b><br><span class="xs muted">${slots ? `${P.length} / ${slots} posé${P.length > 1 ? "s" : ""}${atk ? ` · <b style="color:var(--danger)">${atk} attaqué${atk > 1 ? "s" : ""}</b>` : ""}` : "le premier arrive au niveau 5 de guilde"}</span></span><span class="tag ${atk ? "warn" : "good"}">${atk ? "Défendre" : "Voir"}</span></div>`;
+  }
+  function bossHtml() {
+    const b = G.ex && G.ex.boss; if (!b) return `<div class="empty">Chargement…</div>`;
+    const def = E.gboss(b.w); const M = D().MONSTERS[def.boss] || {};
+    const mechs = E.bossMechs(def.did).map((k) => E.BOSS_MECHS[k] && E.BOSS_MECHS[k].name).filter(Boolean);
+    const tries = Math.max(0, E.GBOSS_TRIES - b.today); const pct = Math.min(100, (b.pts / b.goal) * 100);
+    const s = S(); const lvl = b.lvl || Math.max(...E.team(s).map((c) => (c.ren ? 200 : c.lvl)), 1);
+    const steps = b.steps.map((st) => { const c = E.gbossChest(st.step, lvl); return `<span class="gbstep ${st.reached ? "on" : ""}" style="left:${st.step}%" data-tip="${st.step} % : ${fmt(c.k)} kamas et ${c.dust} Poussières de stasis${st.claimed ? " (ouvert)" : ""}">${X().IC("coffre")}</span>`; }).join("");
+    const r = G.res && G.res.gboss ? G.res : null;
+    const fight = `<div class="row"><button class="btn primary" data-act="g-boss" ${!tries || G.busy || G.fighting ? "disabled" : ""}>${G.fighting ? "Combat en cours…" : tries ? `Affronter le boss (${tries} essai${tries > 1 ? "s" : ""} aujourd'hui)` : "Plus d'essai aujourd'hui"}</button>
+      ${r ? `<span class="small"><b class="num">${fmt(r.points)}</b> points en ${r.rounds} tours · ${r.alive} héros debout</span>` : `<span class="xs muted">Ton équipe actuelle, au niveau de tes héros, pendant ${E.GBOSS_ROUNDS} tours.</span>`}</div>`;
+    const hit = (b.hitters || []).map((x, i) => `<div class="li small"><b class="num lv">${i + 1}</b><span class="grow">${h(x.p)} <span class="xs muted">· ${x.n} essai${x.n > 1 ? "s" : ""} · meilleur ${fmt(x.best)}</span></span><b class="num">${fmt(x.pts)}</b></div>`).join("") || `<div class="empty">Personne n'a encore frappé cette semaine.</div>`;
+    const top = (b.top || []).map((g, i) => `<div class="li small ${g.id === G.me.g.id ? "gme" : ""}"><b class="num lv">${i + 1}</b>${emb(g.ic, g.col, 26)}<span class="grow">${h(g.name)} <span class="xs muted">· niv. ${g.lvl} · ${g.who} membre${g.who > 1 ? "s" : ""}</span></span><b class="num">${fmt(g.pts)}</b></div>`).join("") || `<div class="empty">Aucune guilde n'a encore frappé.</div>`;
+    const last = (b.last || []).length ? `<div class="pad xs muted">Semaine passée : ${b.last.map((g, i) => `${i + 1}. ${h(g.name)}`).join(" · ")}</div>` : "";
+    return `<section class="panel gboss"><div class="gbhead">${M.img ? `<img class="gbimg" src="${X().imgM(def.boss)}" alt="">` : ""}<div class="stack grow" style="gap:4px">
+        <span class="xs muted">Boss de la semaine · change dans ${left(E.gbossLeft(srvNow()))}</span><h2 style="font-size:24px">${h(def.name)}</h2>
+        <span class="small muted">${h(def.dname)}${mechs.length ? ` · ${mechs.map(h).join(", ")}` : ""}</span></div></div>
+      <div class="pad stack">
+        <div class="row between small"><b>Jauge de la guilde</b><span><b class="num">${fmt(b.pts)}</b> / ${fmt(b.goal)} points · ${Math.floor(pct)} %</span></div>
+        <div class="gbbar"><i style="width:${pct.toFixed(1)}%"></i>${steps}</div>
+        <span class="xs muted">Objectif : ${fmt(E.GBOSS_PER_MEMBER)} points par membre (au moins 5 comptés). Un coffre s'ouvre à 25, 50, 75 et 100 % pour chaque membre qui a frappé au moins une fois. Tes points cette semaine : <b>${fmt(b.mine)}</b>.</span>
+        ${fight}
+      </div></section>
+      <div class="grid2g even"><section class="panel"><div class="phead"><h2>Dans ta guilde</h2></div><div class="list">${hit}</div></section>
+      <section class="panel"><div class="phead"><h2>Guildes cette semaine</h2><span class="xs muted">titre « ${h(E.GBOSS_TITLE)} » pour le podium</span></div><div class="list">${top}</div>${last}</section></div>
+      <p class="xs muted">Le combat est rejoué par le serveur avec ta partie en ligne : le boss est au niveau de ton équipe, ses PV ne baissent pas vraiment, on compte les dégâts (100 points = ses PV normaux). Pas d'idoles ni de seconde chance : même boss pour tout le monde.</p>`;
+  }
+
+  /* --- Percepteurs --- */
+  function percosHtml() {
+    if (!G.ex) return `<div class="empty">Chargement…</div>`;
+    const s = S(); const P = G.ex.percos || []; const lvl = G.me.g.lvl; const slots = E.percoSlots(lvl); const off = G.me.rank <= 1;
+    const cards = P.map((p) => {
+      const f = Math.max(0, p.fill || 0); const cap = p.cap || { k: 0, res: {} };
+      const res = Object.keys(cap.res || {}).slice(0, 5).map((k) => `<span class="gres" data-tip="${h(k)}">${X().resImg(k) ? `<img src="${X().resImg(k)}" alt="">` : ""}${fmt(Math.floor(cap.res[k] * Math.min(f, 2.5)))}</span>`).join("");
+      const a = p.atk; const rest = a ? Date.parse(a.ends) - srvNow() : 0;
+      const atk = a ? `<div class="gatk"><b>⚔ Attaqué !</b> <span class="small">encore ${left(rest)} pour le défendre${a.n ? ` · ${a.n} défenseur${a.n > 1 ? "s" : ""} battu${a.n > 1 ? "s" : ""} (+${a.n} monstre${a.n > 1 ? "s" : ""})` : ""}</span>
+          ${(a.by || []).length ? `<br><span class="xs muted">Ont tenté : ${a.by.map(h).join(", ")}</span>` : ""}
+          <div class="row" style="margin-top:6px"><button class="btn sm primary" data-act="g-def" data-g="${p.id}" ${a.done || G.fighting ? "disabled" : ""}>${G.fighting === p.id ? "Combat en cours…" : a.done ? "Tu as déjà tenté" : "Défendre avec mon équipe"}</button><span class="xs muted">Victoire : poche +25 %, XP de guilde et un coffre pour toi. Sans victoire en 2 h : la moitié de la poche est perdue.</span></div></div>` : "";
+      const r = G.res && G.res.perco && G.res.id === p.id ? `<div class="small ${G.res.win ? "" : "muted"}">${G.res.win ? `🛡 Victoire en ${G.res.rounds} tours ! Poche +25 %${G.res.gxp ? `, +${fmt(G.res.gxp)} XP de guilde` : ""}, coffre reçu.` : `Défaite contre ${G.res.foes} monstres : le suivant en affrontera un de plus.`}</div>` : "";
+      return `<section class="panel gperco ${a ? "hot" : ""}"><div class="phead"><h2>${h(p.name || p.sid)}</h2><span class="xs muted">niv. ${p.zlvl || "?"} · posé par ${h(p.by || "?")} · ${p.wins} défense${p.wins > 1 ? "s" : ""} réussie${p.wins > 1 ? "s" : ""}, ${p.losses} pillage${p.losses > 1 ? "s" : ""}</span></div><div class="pad stack">
+        <div class="gbar"><i style="width:${Math.min(100, f * 100).toFixed(1)}%"></i><b>poche ${Math.round(f * 100)} %${f > 1 ? " (bonus de défense)" : f >= 1 ? " (pleine)" : ""}</b></div>
+        <div class="row small"><span class="coin"></span><b class="num">${fmt(Math.floor(cap.k * Math.min(f, 2.5)))}</b> ${res}</div>
+        ${atk}${r}
+        <div class="row"><button class="btn sm ${f >= 1 ? "primary" : ""}" data-act="g-collect" data-g="${p.id}" ${a || f < 0.05 || G.busy ? "disabled" : ""}>Récolter</button>
+          ${off ? (G.sureRm === p.id ? `<button class="btn sm danger" data-act="g-prm" data-g="${p.id}">Oui, retirer</button>` : `<button class="btn sm" data-act="g-prm" data-g="${p.id}" ${a ? "disabled" : ""}>Retirer</button>`) : ""}
+          <span class="xs muted">${a ? "" : `Prochaine attaque vers ${new Date(Date.parse(p.next) - (G.off || 0)).toLocaleTimeString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}`}</span></div>
+      </div></section>`;
+    }).join("");
+    const used = new Set(P.map((p) => p.sid)); const zones = E.percoZones(s).filter((z) => !used.has(z)).sort((a, b) => (E.SUBS[b].lvl[0] - E.SUBS[a].lvl[0]));
+    if (G.zone && !zones.includes(G.zone)) G.zone = "";
+    const z = G.zone || zones[0]; const cap = z ? E.percoCap(z) : null;
+    const place = !slots ? `<div class="pad small muted">Le premier Percepteur arrive au niveau 5 de guilde.</div>`
+      : P.length >= slots ? `<div class="pad small muted">${P.length} / ${slots} Percepteurs posés.${E.percoNextSlot(lvl) ? ` Le suivant au niveau ${E.percoNextSlot(lvl)} de guilde.` : ""}</div>`
+      : !off ? `<div class="pad small muted">Le Meneur et les Bras droits posent les Percepteurs (${P.length} / ${slots}).</div>`
+      : !zones.length ? `<div class="pad small muted">Il faut une zone finie : tous ses monstres au palier Traqueur (le trophée de la zone).</div>`
+      : `<div class="pad stack"><div class="row"><select id="gZone" data-act="g-zone">${zones.map((k) => `<option value="${k}" ${k === z ? "selected" : ""}>${h(E.SUBS[k].name)} (niv. ${E.SUBS[k].lvl[0]}-${E.SUBS[k].lvl[1]})</option>`).join("")}</select>
+          <button class="btn primary sm" data-act="g-place" ${s.kamas < E.PERCO_PRICE || G.busy ? "disabled" : ""}>Poser (${fmt(E.PERCO_PRICE)} kamas)</button></div>
+          ${cap ? `<span class="xs muted">Poche pleine en ${E.PERCO_FILL_H} h : ${fmt(cap.k)} kamas et ${Object.keys(cap.res).slice(0, 4).map((k) => `${fmt(cap.res[k])} ${h(k)}`).join(", ")}…</span>` : ""}
+          ${s.kamas < E.PERCO_PRICE ? `<span class="xs" style="color:var(--danger)">Il te manque ${fmt(E.PERCO_PRICE - s.kamas)} kamas.</span>` : ""}</div>`;
+    return `<section class="panel"><div class="phead"><h2>Percepteurs</h2><span class="xs muted">${P.length} / ${slots}</span></div>
+        <div class="pad small muted">Posé dans une zone finie, un Percepteur ramasse ${E.PERCO_RATE} % des kamas et ressources qu'on y gagnerait : sa poche est pleine en ${E.PERCO_FILL_H} h. N'importe quel membre peut la récolter (+ XP de guilde). Environ une fois par jour, des monstres l'attaquent : chaque membre peut tenter une défense avec son équipe pendant ${E.PERCO_ATK_H} h. Il n'est jamais détruit.</div>
+        ${place}</section>${cards}`;
+  }
+
   function membersHtml() {
     const me = G.me.rank; const asks = G.me.asks || [];
     const canRank = (m) => m.u !== ON.user.id && (me === 0 || (me === 1 && m.rank >= 2));
@@ -212,13 +304,28 @@
   document.addEventListener("change", (ev) => {
     const a = ev.target.dataset && ev.target.dataset.act; if (!a || !/^g-/.test(a)) return;
     if (a === "g-share") { const s = S(); s.guild = s.guild || { pend: 0 }; s.guild.share = Math.max(0, Math.min(90, +ev.target.value)); X().markDirty(); ON.rpc("guild_give", { p_xp: 0, p_share: s.guild.share }); paint(); }
+    if (a === "g-zone") { G.zone = ev.target.value; paint(); }
     if (a === "g-rank") { const u = ev.target.dataset.u; const v = +ev.target.value; call("guild_rank", { p_user: u, p_rank: v }, v === 0 ? "Tu as donné ta place de Meneur." : "Rang changé.").then(load); }
   });
   document.addEventListener("click", async (ev) => {
     const t = ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, d = t.dataset;
     if (!/^g-/.test(a)) return;
     switch (a) {
-      case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; paint(); return;
+      case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; paint(); if (d.v === "boss" || d.v === "percos") loadEx(); return;
+      case "g-boss": case "g-def": {
+        if (G.fighting) return;
+        if (!mine()) { X().toast("Crée ton compte (gratuit) pour les guildes : ta partie te suit."); return; }
+        G.fighting = a === "g-def" ? +d.g : true; G.res = null; paint();
+        try { await X().onPush(); } catch (e) {} // le serveur rejoue avec la partie en ligne
+        const r = await ON.submitGuild(a === "g-def" ? { perco: +d.g } : { gboss: 1 });
+        G.fighting = false;
+        if (r.net) X().toast("Pas de connexion au serveur : réessaie dans un moment.");
+        else if (!r.ok) X().toast(r.err || "Refusé par le serveur.");
+        else { G.res = Object.assign({ id: +d.g || 0 }, r); X().toast(r.gboss ? `Boss de la semaine : ${fmt(r.points)} points pour ta guilde !` : r.win ? "Percepteur défendu !" : "Défense ratée : un autre membre peut encore tenter.", r.win || r.gboss ? "rare" : undefined); }
+        await loadEx(); return; }
+      case "g-collect": { const r = await call("perco_collect", { p_after: (S().hdv && S().hdv.op) || 0, p_id: +d.g }); if (r) { if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true); X().toast(`Percepteur récolté : +${fmt(r.k)} kamas et ses ressources, +${fmt(r.gxp)} XP de guilde.`, "rare"); load(); } else loadEx(); return; }
+      case "g-place": { const z = G.zone || (($("#gZone") || {}).value); if (!z) return; const r = await call("perco_place", { p_after: (S().hdv && S().hdv.op) || 0, p_sid: z }, "Percepteur posé !"); if (r) { if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true); G.zone = ""; loadEx(); } return; }
+      case "g-prm": { if (G.sureRm !== +d.g) { G.sureRm = +d.g; paint(); return; } G.sureRm = null; const r = await call("perco_remove", { p_id: +d.g }, "Percepteur retiré."); if (r) loadEx(); return; }
       case "g-ic": G.form.ic = d.v; paint(); return;
       case "g-col": G.form.col = d.v; paint(); return;
       case "g-create": { const r = await call("guild_create", { p_after: (S().hdv && S().hdv.op) || 0, p_name: G.form.name.trim(), p_ic: G.form.ic, p_col: G.form.col }, "Guilde fondée ! Tu en es le Meneur.");

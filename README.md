@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.23 « Boss et Percepteurs » (bêta)
+- Boss de la semaine (guildes, réponse 9A) : `js/gboss.js` (E.gboss, E.gbossSim : essai de 15 tours, boss au niveau de l'équipe, PV ×1000, points = dégâts / PV normaux × 100 × `E.GBOSS_POW`, table générée par `node tools/gboss_calib.js` pour viser ~300 points par essai bien équipé ; boss à mécanique bloquante écartés). Serveur : `supabase/gboss.sql` (essais 3/jour heure de Paris, jauge 2 500 points par membre, coffres 25/50/75/100 % par `hdv_op`, titre « Pourfendeur de boss » pour les 3 meilleures guildes) et branche `gboss` de la fonction `record`.
+- Percepteurs version 2 « La guilde défend ensemble » : 1 au niveau 5 de guilde puis +1 tous les 5 niveaux (5 au plus), 20 000 kamas payés par le poseur, zone finie (trophée de sous-zone), 3 % de 12 h de chasse (`supabase/percos_data.sql`, généré par `node tools/build_percos.js`), attaque ~1/jour quand un membre regarde la guilde, 2 h pour défendre (E.percoSim rejoué par la branche `perco` de `record`), victoire +25 % de poche, XP de guilde et coffre, sinon la moitié de la poche perdue. Tests : `tests/gboss.test.js`.
+
 ## 0.1.22.1 « Challenges qui rapportent » (bêta)
 - Retour joueur : respecter les challenges faisait perdre 7 à 20 % de gains par heure (IA ralentie, bonus de +5 à +12 %). Nouveaux bonus selon le coût mesuré par simulation (`E.CHALLENGES[id].diff` : 10 à 30 %), série +1 %/combat jusqu'à +10 % (`E.CHAL_STREAK_STEP/MAX`). IA : sorts de zone permis pour Focus et Chacun s'ils touchent la cible du héros, pour Élitiste/Ordonné sauf si un autre monstre passe sous 60 % de PV ; invocations ciblées selon les challenges du maître. Corrections : Chacun son monstre (jamais réussi), Rapide (tours selon le niveau des monstres), Élémentaire (un élément par héros, `F.cs.el` par héros).
 
