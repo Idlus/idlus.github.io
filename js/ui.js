@@ -9,7 +9,7 @@ const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITION
 
 let S = null;
 const ui = {
-  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "main", az: null, azf: "all", fmSel: null, manualSpell: null,
+  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "jour", az: null, azf: "all", fmSel: null, manualSpell: null,
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
@@ -18,16 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin"));
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.27.1";
+const GAME_VERSION = "0.1.28.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "0.1.27.1", name: "Idlus en ligne", items: [
+  { v: "0.1.28.1", name: "Idlus en ligne", items: [
     "Le jeu public passe en ligne : compte facultatif avec Discord (ta partie de cet appareil te suit), sauvegarde en ligne et retrouvée sur tous tes appareils. Tu peux toujours jouer sans compte",
     "Communauté : Classements, chat général et privé, Hôtel de vente et échanges entre joueurs, guildes (niveaux, bonus, chat de guilde), boss de guilde de la semaine et Percepteurs",
     "Défi du jour : page Aventure › Défi, carte sur l'Accueil, classement du jour ; codes cadeaux courts dans Options › Jeu",
     "L'Expédition sans fin (Aventure › Expédition) : étages sans fin, portes, reliques, bénédictions des Douze et Campement",
     "Carnet de bord (Équipe › Carnet), chasse au trésor (Monde › Trésor), commandes d'artisans et temples des Dopeuls (Quêtes), sons discrets et consignes d'absence",
-    "Challenges qui rapportent plus, cadres de héros en métal (Bois à Krosmoz), menu Options rangé en 5 onglets",
+    "Journal de quêtes rangé en 3 familles avec un tableau du jour, challenges qui rapportent plus, cadres de héros en métal (Bois à Krosmoz), menu Options rangé en 5 onglets",
     "Ta partie est gardée. Au lancement de la version 1.0, tout le monde repartira de zéro (les parties sont encore calculées sur ton appareil)" ] },
   { v: "0.1.20.1", name: "Bouftous apprivoisés", items: [
     "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
@@ -521,7 +521,7 @@ function fsGauge() {
   return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
     <span class="flame"><i></i></span><span class="txt"><b>Esprit Libre +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
 }
-function questAlert() { return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); }
+function questAlert() { if (window.QUI) return window.QUI.todo(S) > 0; return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); } // 0.1.28 : tout ce qui est prêt dans Quêtes (js/questui.js)
 const jobImg = (j) => `assets/j/${j}.png`;
 /* ---------- index des ressources : sources et usages ---------- */
 let RIDX = null;
@@ -3529,6 +3529,8 @@ function shopHtml(id) {
       return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
+/* 0.1.28 : les boutiques sont regroupées dans Quêtes › Comptoirs ; chaque page garde un raccourci */
+function shopLink(id) { const Sh = E.SHOPS[id]; return `<div class="row"><button class="btn sm" data-act="qj-shop" data-v="${id}">${emo(Sh.icon)} ${h(Sh.name)} · <b class="num">${fmt(S.tokens[Sh.cur] || 0)}</b> ${h(Sh.curName.toLowerCase())}</button></div>`; }
 function bountiesHtml() {
   return `<p class="note">Trois avis de recherche adaptés à votre niveau. Ils se remplissent automatiquement en chassant (ou en battant le boss demandé) et rapportent kamas, expérience et points d'alignement. Un nouvel avis remplace aussitôt celui qui est rempli.</p>
     <div class="bgrid">${(S.bounties || []).map((b) => { const m = MONSTERS[b.key]; const where = b.dg ? DUNGEONS[b.dg].name : E.SUBS[b.sub] ? E.SUBS[b.sub].name : "";
@@ -3537,7 +3539,7 @@ function bountiesHtml() {
         <span class="small">Prime : <span class="coin"></span> <b>${fmt(b.kamas)}</b> · XP${S.align ? ` · +${b.axp} alignement` : ""}</span>
         <div class="row">${pinBtn({ k: "bounty", id: b.id })}${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) && !S.cons.parchemin_avis ? "disabled" : ""}>Changer · ${S.cons.parchemin_avis ? IC("quetes") + " gratuit" : fmt(E.rerollCost(S)) + " k"}</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
     <p class="small muted">Avis remplis : <b>${fmt(S.cnt.bounty || 0)}</b> · chaque avis rapporte 1 jeton de chasseur (2 pour un boss) et parfois un coffre.${S.cons.parchemin_avis ? ` · ${S.cons.parchemin_avis} Parchemin${S.cons.parchemin_avis > 1 ? "s" : ""} d'Avis : changement gratuit.` : ""}</p>
-    ${shopHtml("prime")}`;
+    ${shopLink("prime")}`;
 }
 function alignHtml() {
   const top = Math.max(...S.chars.map((c) => c.lvl));
@@ -3559,7 +3561,7 @@ function alignHtml() {
       <div class="row small"><span class="muted">Changer d'ordre :</span>${Object.entries(side.orders).filter(([oid]) => oid !== A.order).map(([oid, O2]) => `<button class="btn sm" data-act="align" data-side="${A.side}" data-order="${oid}">${h(O2.name)}</button>`).join("")}
         <span class="xs muted">Insignes : <b>${fmt(S.tokens.insignes || 0)}</b> (3 par mission, 5 pour un boss)</span>
         ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
-    </div></section>${shopHtml("cite")}`;
+    </div></section>${shopLink("cite")}`;
 }
 function almanaxHtml() {
   const A = E.almanax(S); const d = new Date(); const have = S.res[A.res] || 0;
@@ -3579,6 +3581,7 @@ function achHtml() {
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
 function renderQuests() {
+  if (window.QUI) { window.QUI.render($("#main")); return; } // 0.1.28 : journal de quêtes (js/questui.js)
   const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["commandes", "Commandes"], ["temples", "Temples"], ["ach", "Succès"]];
   const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "commandes" ? commandesHtml() : ui.qt === "temples" ? templesHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div>
@@ -4588,7 +4591,7 @@ function templesHtml() {
         <b>${h(CL.name)}</b><span class="xs muted">${c ? `Dopeul niv. ${c.lvl} · ${E.doplons(c.lvl)} 🪙` : "aucun héros"}</span>${n ? `<span class="xs">vaincu ${n}×</span>` : ""}
         ${c ? (done ? `<span class="tag good">Vaincu ✓</span>` : `<button class="btn sm ${pend ? "" : "primary"}" data-act="vi-tfight" data-v="${k}" ${pend ? "disabled" : ""}>Défier</button>`) : ""}</div>`; }).join("")}</div>
     <p class="small muted">Temples conquis : <b>${beat}</b> / ${D.CLASS_ORDER.length} · ${E.TEMPLE_TITLE_N} classes différentes donnent le titre « ${h(E.TEMPLE_TITLE)} » · série : ${T.streak.n || 0} jour${(T.streak.n || 0) > 1 ? "s" : ""}.</p>
-    ${shopHtml("temple")}`;
+    ${shopLink("temple")}`;
 }
 function consignesHtml() {
   const C = E.consigne(S); const ck = (k, b, s) => optChk(`data-act="vi-cons" data-k="${k}"`, C[k], b, s);
@@ -4699,7 +4702,7 @@ document.addEventListener("click", (ev) => {
   hideTip();
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
-  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; if (ui.tab === "quests" && t.closest("#nav,#subnav")) ui.qt = "jour"; closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
@@ -4709,6 +4712,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("sm-")) { if (S) smAct(a, t); return; }
   if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
   if (a && a.startsWith("vi-")) { if (S) viAct(a, t); return; }
+  if (a && a.startsWith("qj-")) { if (S && window.QUI) window.QUI.act(a, t); return; } // 0.1.28 : journal de quêtes (js/questui.js)
   if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 0.1.24 : Expédition sans fin (js/expui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
@@ -5478,7 +5482,7 @@ function loop() {
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderTeam(); renderNav(); }
-    else if (ui.tab === "quests" && ui.qt !== "ach" && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
+    else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); }
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
@@ -5534,6 +5538,7 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
+Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
