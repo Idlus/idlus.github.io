@@ -80,7 +80,7 @@
     else if (!st.last) st.n = 1;
     else { const lower = E.ALM_TIERS.filter((x) => x < st.n).pop() || 0; st.n = lower + 1; }
     st.last = A.day;
-    const R = E.ALM_TIERS_R[st.n] || (st.n > 30 && st.n % 30 === 0 ? { cons: "coffre_or" } : null);
+    const R = E.ALM_TIERS_R[st.n] || (st.n > 30 && st.n % 90 === 0 ? { cons: "coffre_obsidienne" } : st.n > 30 && st.n % 30 === 0 ? { cons: "coffre_or" } : null);
     if (R) {
       let txt = "";
       if (R.lot) txt = resLot(S, 3, 5, 10).join(", ");
@@ -334,13 +334,47 @@
   D.SPECIAL_CRAFTS["Filet de capture"] = { job: "bricoleur", lvl: 40, cons: "filet", ing: [["Oueille", 8], ["Bois de Frêne", 10], ["Fer", 5]] };
 
   /* ---------------- Consommables spéciaux (utilitaires et coffres) ---------------- */
-  const resLot = (S, n, qmin, qmax) => {
+  const resLot = (S, n, qmin, qmax, acc) => {
     const top = topLvl(S); const pool = ALM_POOL.filter(([, l]) => l <= top + 3 && l >= top - 25); const P = pool.length ? pool : ALM_POOL.slice(0, 10);
     const got = [];
-    for (let i = 0; i < n; i++) { const [r] = P[Math.floor(rnd() * P.length)]; const q = qmin + Math.floor(rnd() * (qmax - qmin + 1)); S.res[r] = (S.res[r] || 0) + q; got.push(`${q} × ${r}`); }
+    for (let i = 0; i < n; i++) { const [r] = P[Math.floor(rnd() * P.length)]; const q = qmin + Math.floor(rnd() * (qmax - qmin + 1)); S.res[r] = (S.res[r] || 0) + q; got.push(`${q} × ${r}`); if (acc) acc.push(["res", r, q]); }
     return got;
   };
   E.resLot = resLot;
+  /* 0.1.30 « Coffres » : cinq coffres du sac, du bois aux Douze. Kamas = minutes de chasse au niveau du meilleur héros
+     (environ 50 kamas par minute et par niveau d'après la simulation de chasse, bon équipement). */
+  E.CHEST_TIERS = [
+    { k: 250,  dust: 5,   lots: 2, q: [3, 6],   cons: 0, rare: 0, eclats: 0, items: 0 },
+    { k: 750,  dust: 12,  lots: 3, q: [5, 10],  cons: 1, rare: 0, eclats: 0, items: 0 },
+    { k: 1500, dust: 25,  lots: 4, q: [8, 14],  cons: 0, rare: 1, eclats: 2, items: 0, scroll: ["p", 0.05] },
+    { k: 3000, dust: 50,  lots: 5, q: [12, 20], cons: 0, rare: 2, eclats: 4, items: 1, scroll: ["g", 0.10] },
+    { k: 6000, dust: 100, lots: 6, q: [20, 30], cons: 0, rare: 3, eclats: 8, items: 2, scroll: ["g", 1] },
+  ];
+  E.CHEST_COMMON = ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "parchemin_avis"];
+  E.CHEST_RARE = ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"];
+  /* objets de ton niveau : un équipement de niveau proche (pas de Dofus) */
+  E.chestItemPool = (lvl) => Object.keys(ITEMS).filter((t) => { const T = ITEMS[t]; return T.slot && T.slot !== "dofus" && !T.hidden && T.lvl <= lvl + 5 && T.lvl >= Math.max(1, lvl - 15); });
+  E.openChest = (S, id) => {
+    const C = D.CONSUMABLES[id]; const T = E.CHEST_TIERS[C.tier]; const top = topLvl(S); const got = []; const loot = []; // loot : [type, id, quantité] pour la fenêtre d'ouverture
+    const k = T.k * top; S.kamas += k; got.push(`${k.toLocaleString("fr-FR")} kamas`);
+    addRes(S, E.POUSSIERE, T.dust); got.push(`${T.dust} ${E.POUSSIERE}`); loot.push(["res", E.POUSSIERE, T.dust]);
+    got.push(...resLot(S, T.lots, T.q[0], T.q[1], loot));
+    const give = (pool, n) => { for (let i = 0; i < n; i++) { const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); got.push(D.CONSUMABLES[g].name); loot.push(["cons", g, 1]); } };
+    give(E.CHEST_COMMON, T.cons); give(E.CHEST_RARE, T.rare);
+    if (T.eclats) { addRes(S, E.RARE_COMPONENT, T.eclats); got.push(`${T.eclats} × ${E.RARE_COMPONENT}`); loot.push(["res", E.RARE_COMPONENT, T.eclats]); }
+    if (T.items) { const pool = E.chestItemPool(top); for (let i = 0; i < T.items && pool.length && E.itemCount(S) < E.itemCap(S); i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
+    if (T.scroll && rnd() < T.scroll[1]) { const st = ["fo", "ine", "cha", "age", "vit", "sa"][Math.floor(rnd() * 6)]; const sid = "parch_" + st + "_" + T.scroll[0]; E.addCons(S, sid); got.push(D.CONSUMABLES[sid].name); loot.push(["cons", sid, 1]); }
+    S.cnt.chests = (S.cnt.chests || 0) + 1;
+    // message court : la fenêtre d'ouverture montre le détail ; sans fenêtre, les récompenses rares regroupées (×2, ×3)
+    const nRes = loot.filter((x) => x[0] === "res").length; const cnt = new Map();
+    loot.filter((x) => x[0] !== "res").forEach((x) => { const n = x[0] === "item" ? ITEMS[x[1]].name : D.CONSUMABLES[x[1]].name; cnt.set(n, (cnt.get(n) || 0) + 1); });
+    const best = [...cnt].map(([n, q]) => (q > 1 ? `${n} ×${q}` : n));
+    note(S, S.settings && S.settings.cele === false
+      ? `${C.name} : +${k.toLocaleString("fr-FR")} kamas${best.length ? " · " + best.join(" · ") : ""} · ${nRes} ressources.`
+      : `${C.name} ouvert : +${k.toLocaleString("fr-FR")} kamas${best.length ? ` et ${best.length} récompense${best.length > 1 ? "s" : ""} rare${best.length > 1 ? "s" : ""}` : ""}.`, "rare");
+    E.celebrate({ t: "chest", id, got, kamas: k, loot });
+    return got;
+  };
   E.useSpecial = (S, id, arg) => {
     const C = D.CONSUMABLES[id];
     const take = () => { S.cons[id]--; if (!S.cons[id]) delete S.cons[id]; };
@@ -359,14 +393,7 @@
       note(S, `Potion de Savoir : ${D.GATHER_JOBS[arg].name} niveau ${J.lvl}.`, "up"); return null;
     }
     if (id === "cristal_fm") { if (S.fmShield) return "Un Cristal est déjà actif."; take(); S.fmShield = true; note(S, "Cristal de Forgemagie actif : la prochaine forgemagie ne peut rien faire baisser.", "info"); return null; }
-    if (C.kind === "chest") {
-      take(); const top = topLvl(S); const k = Math.round((40 + top * 12) * (1 + C.tier * 1.5)); S.kamas += k;
-      const lot = resLot(S, 2 + C.tier, 3 + C.tier * 2, 6 + C.tier * 4);
-      let extra = "";
-      if (C.tier >= 1) { const pool = C.tier === 2 ? ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"] : ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "parchemin_avis"]; const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); extra = `, ${D.CONSUMABLES[g].name}`; }
-      if (C.tier === 2 && rnd() < 0.5) { S.res[E.RARE_COMPONENT] = (S.res[E.RARE_COMPONENT] || 0) + 2; extra += `, 2 × ${E.RARE_COMPONENT}`; }
-      note(S, `${C.name} : ${k.toLocaleString("fr-FR")} kamas, ${lot.join(", ")}${extra}.`, "rare"); return null;
-    }
+    if (C.kind === "chest") { take(); E.openChest(S, id); return null; }
     return "Inutilisable.";
   };
 
@@ -565,8 +592,8 @@
   const giveExoRune = (S, stat, out, why) => { const k = E.exoKey(stat); S.runes[k] = (S.runes[k] || 0) + 1; S.cnt.exoRunes = (S.cnt.exoRunes || 0) + 1; if (out) out.push(E.runeName(k)); note(S, `${why} : ${E.runeName(k)} !`, "rare"); };
   E.exoDrop = (S, lvl, k, out) => {
     if (lvl < E.EXO_LVL || k < 7) return;
-    if (k >= 8 && rnd() < E.EXO_DROP.pa) giveExoRune(S, "pa", out, "Coffre du boss");
-    else if (rnd() < E.EXO_DROP.pmpo) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", out, "Coffre du boss");
+    if (k >= 8 && rnd() < E.EXO_DROP.pa) giveExoRune(S, "pa", out, "Butin du boss");
+    else if (rnd() < E.EXO_DROP.pmpo) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", out, "Butin du boss");
   };
   E.exoArchi = (S, m) => { if ((m.lvl || 0) >= E.EXO_LVL && rnd() < E.EXO_DROP.archi) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", null, `Archimonstre ${m.name}`); };
 
