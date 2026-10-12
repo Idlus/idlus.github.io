@@ -6,6 +6,7 @@
    node tools/discord_bot.js resume <révision>                        → envoie en message privé au créateur du serveur un résumé des changements de la branche beta jusqu'à cette révision
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces et invite les testeurs à le partager
+   node tools/discord_bot.js podium                                   → publie dans #annonces le podium des donjons de la semaine passée (classements de la version de test)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
@@ -33,6 +34,25 @@ function almanaxMessage(t = Date.now()) {
   return { title: `📅 Almanax du ${date}`, url: GAME, color: 0xc9a227,
     description: `**Bonus du jour : ${A.bonus.name}** jusqu'à minuit, en échange d'une offrande.\n\nL'offrande demandée dépend du niveau de ton meilleur héros, par exemple :\n${rows.join("\n")}\n\nUne offrande chaque jour fait monter ta série. 🎮 **[Jouer à idlus](${GAME})**`,
     footer: { text: "idlus · Almanax" }, timestamp: new Date().toISOString() };
+}
+
+/* Podium des donjons de la semaine (multijoueur, classements) : lecture publique de la base Supabase.
+   L'adresse et la clé « publishable » sont publiques par nature (les mêmes que dans le jeu). */
+const SB_URL = "https://bolbuxuxydfslwpfbfff.supabase.co", SB_KEY = "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H";
+const weekIdx = (t) => Math.floor((t / 86400000 + 3) / 7); // comme le jeu : semaines commençant le lundi (UTC)
+const recTime = (t) => { const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
+async function podiumMessage(t = Date.now()) {
+  const w = weekIdx(t) - 1;
+  const res = await fetch(`${SB_URL}/rest/v1/lb_week?select=pseudo,dname,did,bracket,k,t,r&w=eq.${w}&r=lte.3&order=bracket.asc,r.asc`, { headers: { apikey: SB_KEY } });
+  if (!res.ok) throw new Error(`classements indisponibles (HTTP ${res.status})`);
+  const rows = await res.json(); if (!rows.length) return null;
+  const TR = ["niv. 1-40", "niv. 41-80", "niv. 81-120", "niv. 121-160", "niv. 161-200"], MED = ["🥇", "🥈", "🥉"];
+  const by = {}; rows.forEach((r) => (by[r.did] = by[r.did] || []).push(r));
+  const blocks = Object.values(by).sort((a, b) => a[0].bracket - b[0].bracket)
+    .map((rs) => `**${rs[0].dname}** (${TR[rs[0].bracket] || ""})\n` + rs.map((r) => `${MED[r.r - 1] || "•"} ${r.pseudo} : stasis ${r.k} en ${recTime(r.t)}`).join("\n"));
+  return { title: "🏆 Podium des donjons de la semaine", url: BETA, color: 0xc9a227,
+    description: blocks.join("\n\n").slice(0, 3600) + `\n\nLes 3 premiers de chaque donjon portent le titre **Maître de la semaine** jusqu'à dimanche. Nouveaux donjons cette semaine : **[à toi de jouer](${BETA})** !`,
+    footer: { text: "idlus · classements (version de test)" }, timestamp: new Date().toISOString() };
 }
 
 async function main() {
@@ -104,11 +124,20 @@ async function main() {
     const role = await roleId(gid, "Testeur");
     await api("POST", `/channels/${ch}/messages`, { content: (role ? `<@&${role}> ` : "") + text, allowed_mentions: { roles: role ? [role] : [] } });
     console.log("Relayé :", url);
+  } else if (cmd === "podium") {
+    const embed = await podiumMessage(); if (!embed) return console.log("Aucun record la semaine passée : rien à publier.");
+    if (DRY) return console.log(JSON.stringify(embed, null, 1));
+    const gid = await guildId(); const ch = await channelId(gid, "annonces");
+    const last = await api("GET", `/channels/${ch}/messages?limit=10`);
+    if (last.some((m) => (m.embeds || []).some((e) => e.title === embed.title && Date.now() - Date.parse(m.timestamp) < 6 * 86400000))) return console.log("Déjà publié cette semaine.");
+    const role = await roleId(gid, "Testeur");
+    await api("POST", `/channels/${ch}/messages`, { content: role ? `<@&${role}>` : "", embeds: [embed], allowed_mentions: { roles: role ? [role] : [] } });
+    console.log("Podium publié.");
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse>"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
