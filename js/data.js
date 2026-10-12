@@ -264,6 +264,16 @@
       [["Flèche Dévorante", 0.7]].forEach(([n, k]) => tweak(n, (sp) => sp.grades.forEach((g) => { g.fx = g.fx.filter((f) => f.k !== "drain"); g.fx.forEach((f) => { if (f.k === "dmg") { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } }); }))); }
     // 0.1.12.4 : les pièges du Sram frappent dès qu'ils sont posés (avant : petit poison de repli, lent et faible)
     if (cls === "sram") list.forEach((sp) => sp.grades.forEach((g) => g.fx.forEach((f) => { if (f.k === "dot" && f.adapt) { f.k = "dmg"; f.min = Math.round(f.min / 0.6 * 0.8); f.max = f.min + 4; delete f.t; } })));
+    // 0.1.14.4 : une attaque bien plus faible que les meilleures de sa classe à son niveau n'était jamais lancée :
+    // ses dégâts remontent jusqu'à 75 % de la 2e meilleure attaque (par PA), au plus ×1,5
+    const powPa = (g) => g.fx.reduce((a, f) => a + (["dmg", "drain", "dot"].includes(f.k) && f.min !== undefined ? ((f.min + f.max) / 2) * (f.n > 1 ? 1 + (Math.min(f.n, 3) - 1) * 0.35 : 1) * (f.k === "dot" ? (f.t || 2) * 0.6 : 1) : 0), 0) / Math.max(1, g.pa);
+    const atkGrades = list.flatMap((sp) => sp.grades.map((g) => ({ sp, g, v: powPa(g) }))).filter((x) => x.v > 0);
+    atkGrades.forEach((x) => {
+      const ref = atkGrades.filter((y) => y.sp !== x.sp && y.g.lvl <= Math.max(x.g.lvl, x.sp.lvl) && !atkGrades.some((z) => z.sp === y.sp && z.g.lvl > y.g.lvl && z.g.lvl <= x.g.lvl)).map((y) => y.v).sort((a, b) => b - a)[1];
+      if (!ref || x.v >= ref * 0.75) return;
+      const k = Math.min(1.5, (ref * 0.75) / x.v);
+      x.g.fx.forEach((f) => { if (["dmg", "drain", "dot"].includes(f.k) && f.min !== undefined) { f.min = Math.round(f.min * k); f.max = Math.round(f.max * k); } });
+    });
     CLASSES[cls].spells = list;
     // élément conseillé : celui dont les meilleurs sorts d'attaque (jusqu'au niveau 60) sont les plus forts
     const EL2ST = { t: "fo", f: "ine", e: "cha", a: "age" }; const sc = { t: [], f: [], e: [], a: [] };

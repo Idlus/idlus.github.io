@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.14.4 « Dernier réglage » (bêta)
+- Métiers au tiers du niveau de l'objet, attaques trop faibles renforcées, Écaflip et Roublard réglés vers le niveau 50.
+
 ## 0.1.14.3 « Monstres et héros » (bêta)
 - Familles de monstres (mode « Complètes ») : 29 familles attaquent chacune à leur façon au lieu de simplement foncer. Le Tofu vole en zigzag et picore trois fois dans une gerbe de plumes, le Bouftou gratte le sol puis donne un coup de boule qui repousse le héros, le Champa lâche un nuage de spores, le Craqueleur arrache un rocher et le lance en cloche, l'Arakne tisse une toile, la Larve glisse en laissant une traînée, le Piou pique du ciel, le Moskito pique en zigzag, le Prespic lance une volée de piquants, le Bwork abat sa massue, le Blop rebondit, le Chafer lance un os boomerang, l'Abraknyde fait pousser des racines, le Mulou mord, le Wabbit donne un coup de patte, la Crocodaille claque des mâchoires, les Dragoeufs soufflent le feu, le Scarafeuille lève un tourbillon de feuilles, le Kanigrou boxe, les Fantômes traversent le héros, le Koalak cogne avec un os, Sangliers et cochons chargent dans la boue, le Rat fait un croc-en-jambe, les pirates donnent des coups de sabre, les Pandas un coup de pied tournant, les Kitsous une ruée de feu, les plantes un nuage de pollen, les robots un coup de piston ; les autres monstres gardent leur attaque habituelle
 - Héros en difficulté : sous 25 % de vie, le héros bat comme un cœur (teinte rouge), une vignette rouge pulse sur l'arène et une pastille « en danger » apparaît sous sa barre de vie

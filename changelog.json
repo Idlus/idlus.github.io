@@ -1,6 +1,15 @@
 {
-  "version": "0.1.14.3",
+  "version": "0.1.14.4",
   "versions": [
+    {
+      "v": "0.1.14.4",
+      "name": "Dernier réglage",
+      "items": [
+        "Métiers : un objet se fabrique avec un métier au tiers de son niveau (avant : la moitié), pour s'équiper à temps face aux monstres plus forts dès le niveau 30",
+        "Les attaques bien plus faibles que les meilleures de leur classe font plus de dégâts (jusqu'à +50 %), pour que le héros s'en serve",
+        "Écaflip moins fort vers le niveau 50 ; bombes du Roublard un peu moins fortes, compensées à haut niveau"
+      ]
+    },
     {
       "v": "0.1.14.3",
       "name": "Monstres et héros",
