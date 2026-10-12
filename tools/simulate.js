@@ -12,6 +12,7 @@
 "use strict";
 const E = require("../js/engine.js");
 require("../js/systems.js");
+require("../js/pets.js");
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -71,6 +72,13 @@ const CAP = { tac: 92, fui: 60, pm: 5, rpa: 50, rpm: 50, epa: 100, epm: 100, inv
 if (CAP[TACT]) TACT_P[TACT] = { f: { [TACT]: CAP[TACT] }, b: { [TACT]: CAP[TACT] } };
 if (TACT && !TACT_P[TACT]) throw new Error("Profil tactique inconnu : " + TACT);
 if (TACT) { E.tactLog = {}; const cs = E.charStats; E.charStats = (S, c, o) => { const st = cs(S, c, o); if (c._row) Object.assign(st, TACT_P[TACT][c._row]); return st; }; }
+/* --familiers : chaque héros porte, adulte, le meilleur familier de son niveau pour son élément (montilier élémentaire dès 60) */
+const FAM = flag("familiers");
+const petFor = (c) => { const main = D.CLASSES[c.cls].main;
+  const ok = Object.keys(E.PETS).filter((id) => { const p = E.PETS[id]; return p.kind !== "boss" && p.fam !== "l" && c.lvl >= E.petReqLvl(id) && p.lvl <= c.lvl && (p.stats[main] || p.stats.pui); });
+  const val = (id) => { const st = E.PETS[id].stats; return (st[main] || 0) + (st.pui || 0) * 1.2 + (st.cri || 0) * 4; };
+  return ok.sort((a, b) => val(b) - val(a))[0]; };
+const givePets = (S) => { if (!FAM) return; S.chars.forEach((c) => { const id = petFor(c); if (!id) return; const uid = S.petUid++; S.pets[uid] = { uid, id, g: 100, t: 0 }; c.pet = uid; E.refreshSpells(c, E.charStats(S, c)); }); };
 const tagRows = (S) => { const fr = E.frontSet(S); S.chars.forEach((c) => (c._row = fr.has(c.id) ? "f" : "b")); };
 
 /* ---------- une tentative de donjon ---------- */
@@ -78,7 +86,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
-  S.chars.forEach((c) => { gearUp(S, c, prof); E.refreshSpells(c, E.charStats(S, c)); }); tagRows(S);
+  S.chars.forEach((c) => { gearUp(S, c, prof); E.refreshSpells(c, E.charStats(S, c)); }); givePets(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
     S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });

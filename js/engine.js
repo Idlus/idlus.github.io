@@ -17,10 +17,12 @@
   E.emit = () => {};          // E.emit(S, type, data)
   E.trainee = () => null;     // héros à la Salle d'entraînement (systems.js)
   E.atelierTick = () => 0;    // atelier du Havre-Sac (systems.js)
+  E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
   E.setRng = (f) => { rnd = f; };
+  E.rnd = () => rnd();
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rf = (a, b) => a + rnd() * (b - a);
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
@@ -78,6 +80,7 @@
       settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "sell", q: 50, keepSets: true, recycle: "sell" } },
       journal: [],
       dungeon: null,
+      pets: {}, petUid: 1, petKeep: {}, petLuck: {},
     };
     Object.keys(GATHER_JOBS).forEach((j) => (S.jobs[j] = { lvl: 1, xp: 0 }));
     Object.keys(CRAFT_JOBS).forEach((j) => (S.crafts[j] = { lvl: 1, xp: 0 }));
@@ -260,6 +263,7 @@
     const st = zeroStats();
     BASE_STATS.forEach((k) => (st[k] += (c.alloc[k] || 0) + ((c.scrolls || {})[k] || 0)));
     Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) addStats(st, it.stats); });
+    const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
     const solo = opts.solo !== undefined ? opts.solo : (E.isSolo(S) && c.inTeam);
@@ -588,7 +592,9 @@
      Les monstres n'en ont pas encore ; seuls les héros les portent (familiers, plus tard équipements). */
   E.TACT = { tac: [1, 60], fui: [0.5, 30], pm: [3, 15], rpa: [0.4, 20], rpaV: 20, rpaBoss: 10, rpm: [0.5, 25], epa: [0.5, 50], epm: [0.5, 50], invMax: 3 };
   E.tact = (st, k) => { const t = E.TACT[k]; return st ? Math.min(t[1], (st[k] || 0) * t[0]) : 0; };
-  E.tactLog = null; // le simulateur compte ici combien de fois chaque effet se déclenche
+  E.tactLog = null;
+  /* Esquive PA/PM des monstres : dès le niveau 100, +0,4 % par niveau (40 % au plus), +10 pour les boss, Coriaces et Chefs */
+  E.monDodge = (m) => (m.lvl > 100 ? Math.min(40, (m.lvl - 100) * 0.4) + (m.boss || m.role === "coriace" || m.role === "chef" ? 10 : 0) : 0); // le simulateur compte ici combien de fois chaque effet se déclenche
   E.frontMax = (n) => Math.max(1, Math.ceil(n / 2));
   E.avgRes = (st) => { const ks = Object.values(ELEMENTS).map((x) => x.res).filter(Boolean); return ks.length ? ks.reduce((a, k) => a + Math.min(50, st[k] || 0), 0) / ks.length : 0; };
   /* classes faites pour encaisser : bonus pour le placement automatique (à PV égaux, elles passent devant) */
@@ -978,8 +984,9 @@
         if (src.role === "maudit" && tgt.alive) tgt.debuffs.push({ healcut: 30, turns: 2 });
       }
       if (src.side === "c" && !src.summon && tgt.side === "m" && tgt.alive && src.st) {
-        if (!(tgt.weakNext > 0) && E.tact(src.st, "rpa") > 0 && rnd() * 100 < E.tact(src.st, "rpa")) { tgt.weakNext = tgt.boss ? E.TACT.rpaBoss : E.TACT.rpaV; tlog("rpa"); }
-        if (tgt.slowR !== F.round + 1 && E.tact(src.st, "rpm") > 0 && rnd() * 100 < E.tact(src.st, "rpm")) { tgt.slowR = F.round + 1; tlog("rpm"); }
+        const me = 1 - E.monDodge(tgt) / 100; // les monstres de haut niveau esquivent une partie des retraits
+        if (!(tgt.weakNext > 0) && E.tact(src.st, "rpa") > 0 && rnd() * 100 < E.tact(src.st, "rpa") * me) { tgt.weakNext = tgt.boss ? E.TACT.rpaBoss : E.TACT.rpaV; tlog("rpa"); }
+        if (tgt.slowR !== F.round + 1 && E.tact(src.st, "rpm") > 0 && rnd() * 100 < E.tact(src.st, "rpm") * me) { tgt.slowR = F.round + 1; tlog("rpm"); }
       }
       if (src.side === "c" && !src.summon && tgt.side === "m" && src.alive) {
         if (tgt.reflect) { const r = Math.max(1, Math.round(v * 0.3)); src.hp -= r; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(src), s: F.ents.indexOf(tgt), v: r, el: "n" }); if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
@@ -1295,8 +1302,9 @@
     for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; } return pool[pool.length - 1];
   };
   const tlog = (k) => { if (E.tactLog) E.tactLog[k] = (E.tactLog[k] || 0) + 1; };
-  const dodged = (F, t) => { if (!t || t.summon || !t.st) return false;
-    const p = rowOf(t) === "b" ? E.tact(t.st, "fui") : Math.min(E.TACT.pm[1], (t.st.pm || 0) * E.TACT.pm[0]);
+  const dodged = (F, t, e) => { if (!t || t.summon || !t.st) return false;
+    // le Tacle des monstres de haut niveau (même valeur que leur Esquive) réduit la Fuite et l'esquive des héros
+    const p = (rowOf(t) === "b" ? E.tact(t.st, "fui") : Math.min(E.TACT.pm[1], (t.st.pm || 0) * E.TACT.pm[0])) * (1 - (e ? E.monDodge(e) : 0) / 100);
     if (p > 0 && rnd() * 100 < p) { tlog(rowOf(t) === "b" ? "fui" : "pm"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: "Esquive" }); return true; } return false; };
   const resists = (h, k) => { const p = E.tact(h.st, k); if (p > 0 && rnd() * 100 < p) { tlog(k); return true; } return false; };
   const monsterTurn = (S, F, e) => {
@@ -1320,14 +1328,14 @@
         if (ok.length) sp = pick(ok);
       }
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
-      if (!sp) { const t = pickHero(F, targets, e); if (dodged(F, t)) { flog(F, `${t.name} esquive l'attaque de ${e.name}.`, "dim"); continue; } const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
+      if (!sp) { const t = pickHero(F, targets, e); if (dodged(F, t, e)) { flog(F, `${t.name} esquive l'attaque de ${e.name}.`, "dim"); continue; } const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
       if (sp.cd) e.cds[sp.n] = sp.cd + 1;
       const parts = []; let didDmg = false;
       for (const f of sp.fx) {
         if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
           if (didDmg) continue; didDmg = true; // une seule ligne de dégâts par sort (les autres sont des variantes)
           const ratio = refAvg ? clamp(avgDmg({ fx: [f] }) / refAvg, 0.5, 1.8) : 1;
-          const ts = (f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)]).filter((t) => !dodged(F, t));
+          const ts = (f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)]).filter((t) => !dodged(F, t, e));
           const base = e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15);
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
@@ -1626,6 +1634,7 @@
       });
       if (lp < 1) out.lootPen = Math.min(out.lootPen || 1, lp); }
     });
+    if (!opts.dungeon && sub && E.petHunt(S, S.sub)) out.pet = true; // familier de la sous-zone
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
     return out;
@@ -2049,6 +2058,7 @@
     }
     if (k >= 6 && rnd() < 0.01 + (k - 6) * 0.005) { E.addCons(S, "parch_" + stat + "_p", 1); out.push(CONSUMABLES["parch_" + stat + "_p"].name); note(S, `Butin rare : ${CONSUMABLES["parch_" + stat + "_p"].name} !`, "rare"); }
     if (k >= (E.TROPHY_STASIS || 5) && E.trophyOf && E.giveFurn) { const tr = E.trophyOf(did); if (tr && E.giveFurn(S, tr, "trophée de boss")) out.push(tr); }
+    E.petBoss(S, did, k, out); // familiers rares et montiliers
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (k === 10) S.unlocks.stasis10 = true;
@@ -2098,6 +2108,7 @@
     // récolte
     gatherTick(S, dtMs / 1000);
     E.atelierTick(S, dtMs / 1000);
+    E.petTick(S, dtMs);
   };
 
   /* ---------------- Récolte (v2.6) ----------------
@@ -2351,7 +2362,7 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW, dropMult: E.PACE_REW, kamasMult: E.PACE_REW });
+      giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW, dropMult: E.PACE_REW * (1 + E.podBonus(S)), kamasMult: E.PACE_REW });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
     }
@@ -2359,6 +2370,7 @@
     if (hunting) checkHunt(S, sub.monsters);
     gatherTick(S, eff, { quiet: true });
     E.atelierTick(S, eff, { quiet: true });
+    E.petTick(S, seconds * 1000); // les familiers mangent en temps réel
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }

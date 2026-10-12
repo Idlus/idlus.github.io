@@ -69,7 +69,7 @@ function panelHtml() {
     + row(`<span class="muted">Niveau</span>${inp("admLvl", `type="number" min="1" max="${E.MAX_LVL}" value="${st.lvl}" style="width:80px"`)}${btn("setlvl", "Appliquer")}`)
     + row(`<span class="muted">Équiper</span>${btn("gear", "Bon équipement", `data-v="bon"`)}${btn("gear", "Équipement optimisé", `data-v="optimise"`)}${btn("gear", "Tout retirer", `data-v="aucun"`)}`)
     + `<span class="xs muted">Bon : meilleurs objets du niveau, jets moyens. Optimisé : jets parfaits, Dofus et parchemins à 100 (comme le simulateur).</span>`)}
-  ${sec("Donner", "", row(`<span class="coin"></span>${btn("kamas", "+100 000", `data-v="100000"`)}${btn("kamas", "+10 000 000", `data-v="10000000"`)}${btn("keys", "5 clés de chaque donjon")}`)
+  ${sec("Donner", "", row(`<span class="coin"></span>${btn("kamas", "+100 000", `data-v="100000"`)}${btn("kamas", "+10 000 000", `data-v="10000000"`)}${btn("keys", "5 clés de chaque donjon")}${btn("pets", "Tous les familiers et montiliers")}${btn("petgrow", "Familiers adultes")}`)
     + row(`${inp("admRes", `list="admResL" placeholder="Ressource" style="width:200px"`)}${inp("admResN", `type="number" min="1" value="100" style="width:80px"`)}${btn("res", "Donner")}`)
     + row(`${inp("admItem", `list="admItemL" placeholder="Objet" style="width:200px"`)}<label class="xs"><input type="checkbox" id="admRad"> Rayonnant</label>${btn("item", "Donner")}`)
     + `<datalist id="admResL">${Object.keys(RES).sort().map((n) => `<option value="${h(n)}">`).join("")}</datalist><datalist id="admItemL">${Object.keys(ITEMS).sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl).map((t) => `<option value="${h(ITEMS[t].name)}">niv. ${ITEMS[t].lvl}</option>`).join("")}</datalist>`)}
@@ -114,6 +114,8 @@ document.addEventListener("click", (ev) => {
     case "setlvl": { const L = Math.round(+val("admLvl")); if (!(L >= 1)) return; st.lvl = Math.min(E.MAX_LVL, L); targets(s).forEach((c) => setLevel(s, c, st.lvl)); done(`Niveau ${st.lvl} appliqué.`); return; }
     case "gear": targets(s).forEach((c) => { if (d.v === "aucun") { Object.keys(c.equip).forEach((sl) => E.unequip(s, c.id, sl)); E.refreshSpells(c, E.charStats(s, c)); } else gearUp(s, c, d.v); }); done(d.v === "aucun" ? "Équipement retiré." : "Équipement donné."); return;
     case "kamas": s.kamas += +d.v; done(`+${fmt(+d.v)} kamas.`); return;
+    case "pets": Object.keys(E.PETS || {}).forEach((id) => { if (!E.petOwned(s, id)) E.givePet(s, id, "panel de test"); }); E.events.length = 0; done("Tous les familiers et montiliers donnés."); return;
+    case "petgrow": Object.values(s.pets || {}).forEach((P) => (P.g = 100)); done("Tous les familiers sont adultes."); return;
     case "keys": Object.values(DUNGEONS).forEach((dg) => E.addRes(s, dg.key, 5)); done("5 clés de chaque donjon ajoutées."); return;
     case "res": { const n = val("admRes"), q = Math.max(1, Math.round(+val("admResN") || 1)); if (!RES[n]) { DX.toast("Ressource inconnue : choisissez-la dans la liste."); return; } E.addRes(s, n, q); done(`+${fmt(q)} ${n}.`); return; }
     case "item": { const n = val("admItem"); const tpl = Object.keys(ITEMS).find((k) => ITEMS[k].name === n); if (!tpl) { DX.toast("Objet inconnu : choisissez-le dans la liste."); return; }

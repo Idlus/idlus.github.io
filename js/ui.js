@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.7";
+const GAME_VERSION = "0.1.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.8", name: "Familiers et montiliers", items: [
+    "140 familiers et montiliers officiels, avec leurs vraies icônes : un emplacement Familier sur la fiche du héros, dès le niveau 10",
+    "Ils grandissent en mangeant les ressources du sac (un repas toutes les 30 min, même hors ligne) ; leur nourriture préférée compte double ; vous protégez les ressources de votre choix",
+    "Chaque sous-zone de chasse cache son familier (rare) ; les boss en stasis 6 et plus gardent des familiers rares et 25 montiliers, dont 4 légendaires à +1 PA",
+    "Nouvelles stats tactiques : Tacle, Fuite, PM, Retrait et Esquive PA/PM, Invocation et Pods. Des Rôdeurs et Bondisseurs arrivent dans les donjons de fin de jeu" ] },
   { v: "0.1.7", name: "Les 19 classes", items: [
     "Sram : des piques sortent du sol sous les monstres qu'il a empoisonnés",
     "Sadida : ses ronces se comptent sur la cible (×1 à ×3) et son Arbre ondule",
@@ -1583,8 +1588,8 @@ function renderHeroes() {
       ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (onglet Quêtes).</p>`}
     </div>
   </div></section>
-  <nav class="subtabs">${[["equip", "Équipement"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
-  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : charSpellsView(c)}</section>`;
+  <nav class="subtabs">${[["equip", "Équipement"], ["pet", "Familier"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
+  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
 function placementHtml() {
@@ -1650,8 +1655,59 @@ function charStatsView(c, st) {
         <p class="note xs">Au-delà de 100 dans une caractéristique d'élément, il faut 2 points pour gagner 1, puis 3 au-delà de 200 et 4 au-delà de 300. La Vitalité reste à 1 pour 1. Les parchemins s'ajoutent hors paliers.</p>
         <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
-      <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}</div>
+      <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}${D.TACT_ORDER.filter((k) => st[k]).map((k) => statCell(k, k === "pm" ? 3 + st[k] : st[k])).join("")}</div>
       <p class="note">${E.isSolo(S) && c.inTeam ? "L'Emblème du Solitaire est actif. " : ""}${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
+}
+/* ---------- 0.1.8 : familiers et montiliers ---------- */
+const petImg = (id) => (E.PETS[id] ? `assets/p/${E.PETS[id].icon}.webp` : "");
+const PCT_K = ["cri", "rt", "rf", "re", "ra", "rn"];
+const petStatTxt = (k, v) => (k === "pm" ? `+${v} PM` : `+${fmt(v)}${PCT_K.includes(k) ? " %" : ""} ${STATS[k].name.replace("% ", "")}`);
+const petBonus = (stats) => Object.entries(stats).filter(([, v]) => v).map(([k, v]) => petStatTxt(k, v)).join(" · ");
+const petKind = (p) => (p.kind === "monti" ? `Montilier ${E.PET_FAMS[p.fam].toLowerCase().replace(/s$/, "")}` : p.kind === "boss" ? "Familier rare de boss" : "Familier de zone");
+function petSlot(c) {
+  const P = E.petOf(S, c); const p = P && E.PETS[P.id];
+  return `<button class="dslot pet ${P ? "filled" : ""} ${p && p.kind === "monti" ? "monti" : ""}" data-act="herotab" data-v="pet" data-tip="${P ? h(`${p.name} · ${petKind(p)} · croissance ${P.g} %`) : c.lvl < E.PET_LVL ? `Familier : dès le niveau ${E.PET_LVL}` : "Familier : vide"}">
+    ${P ? im(petImg(P.id), "", p.name) : `<span class="dlabel">Familier</span>`}${P && P.g < 100 ? `<i class="pgrow" style="width:${P.g}%"></i>` : ""}</button>`;
+}
+function petCard(P, c, opts = {}) {
+  const p = E.PETS[P.id]; const cur = E.petStatsAt(P.id, P.g); const owner = E.petOwner(S, P.uid); const lvlOk = c.lvl >= E.petReqLvl(P.id);
+  const eta = P.g < 100 ? E.petEta(S, P) : 0;
+  return `<div class="petcard ${p.kind} ${p.fam ? "f-" + p.fam : ""} ${opts.big ? "big" : ""}">
+    <span class="peticon">${im(petImg(P.id), "", p.name)}</span>
+    <div class="grow stack" style="gap:3px;min-width:0">
+      <div><b>${h(p.name)}</b> <span class="xs muted">${petKind(p)}${owner && owner.id !== c.id ? ` · porté par ${h(owner.name)}` : ""}</span></div>
+      <div class="pbar"><i style="width:${P.g}%"></i><span>${P.g < 100 ? `Croissance ${P.g} %` : "Adulte : bonus au maximum"}</span></div>
+      <div class="small"><span class="muted">Maintenant :</span> <b class="pbon">${petBonus(cur) || "—"}</b></div>
+      ${P.g < 100 ? `<div class="xs muted">Au maximum : ${petBonus(p.stats)}</div>` : ""}
+      ${opts.big ? `<div class="xs muted">${p.food ? `Nourriture préférée : <b>${h(p.food)}</b> (compte double) · ` : ""}${P.g < 100 ? (P.hungry ? `<span class="warnt">a faim : rien à manger dans le sac</span>` : `adulte dans ${E.etaTxt(Math.round(eta / 1000))} environ`) + (P.last ? ` · dernier repas : ${h(P.last)}` : "") : "ne mange plus"}</div>` : ""}
+    </div>
+    ${opts.act ? (c.pet === P.uid ? `<button class="btn sm" data-act="petoff">Retirer</button>` : `<button class="btn sm primary" data-act="peton" data-uid="${P.uid}" ${lvlOk ? "" : "disabled"}>${lvlOk ? (p.kind === "monti" ? "Monter" : "Équiper") : "Niv. " + E.petReqLvl(P.id)}</button>`) : ""}
+  </div>`;
+}
+function charPetView(c) {
+  const P = E.petOf(S, c); const mine = Object.values(S.pets).sort((a, b) => (E.PETS[b.id].kind === "monti") - (E.PETS[a.id].kind === "monti") || b.g - a.g);
+  const others = mine.filter((x) => x.uid !== (P && P.uid));
+  const coll = ui.petColl || "zone"; const list = Object.entries(E.PETS).filter(([, p]) => (coll === "monti" ? p.kind === "monti" : coll === "boss" ? p.kind === "boss" : p.kind === "zone")).sort((a, b) => a[1].lvl - b[1].lvl);
+  const nOwn = (k) => Object.entries(E.PETS).filter(([id, p]) => p.kind === k && E.petOwned(S, id)).length; const nAll = (k) => Object.values(E.PETS).filter((p) => p.kind === k).length;
+  const keep = Object.keys(S.petKeep).filter((r) => S.petKeep[r]);
+  const topRes = Object.entries(S.res).filter(([r]) => !E.isKey(r) && r !== E.POUSSIERE && D.RES[r]).sort((a, b) => b[1] - a[1]).slice(0, 40);
+  return `<div class="stack">
+    <div class="panel"><div class="phead"><h2>${P && E.isMonti(P.id) ? "Montilier" : "Familier"} de ${h(c.name)}</h2>${P ? `<button class="btn sm" data-act="petoff">Retirer</button>` : ""}</div><div class="pad stack">
+      ${P ? petCard(P, c, { big: true }) + (E.isMonti(P.id) ? `<p class="note xs" style="margin:0">Un montilier prend à la fois la place du familier et celle de la monture.</p>` : "") : `<div class="empty">${c.lvl < E.PET_LVL ? `Un familier se porte dès le niveau ${E.PET_LVL}.` : mine.length ? "Aucun familier porté : choisissez-en un ci-dessous." : "Aucun familier pour l'instant. Chaque sous-zone de chasse cache le sien (rare), et les boss en stasis 6 et plus gardent des familiers rares et des montiliers."}</div>`}
+    </div></div>
+    ${others.length ? `<div class="panel"><div class="phead"><h2>Vos familiers</h2><span class="xs muted">${mine.length} au total</span></div><div class="list">${others.map((x) => `<div class="li">${petCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
+    <div class="panel"><div class="phead"><h2>Repas</h2><span class="xs muted">un repas toutes les 30 min, même hors ligne</span></div><div class="pad stack">
+      <p class="note xs" style="margin:0">Chaque familier porté mange ${E.PET_MEAL_N} ressources par repas : sa nourriture préférée si vous en avez (+2 % de croissance), sinon la ressource la plus abondante du sac (+1 %). Il ne touche jamais aux clés, à la poussière de stasis ni aux ressources protégées. S'il n'a rien à manger, il attend, sans pénalité.</p>
+      <div class="xs muted">Ressources protégées (touchez pour protéger ou libérer) :</div>
+      <div class="row" style="gap:4px;flex-wrap:wrap">${topRes.map(([r, n]) => `<button class="pill keep ${S.petKeep[r] ? "on" : ""}" data-act="petkeep" data-r="${h(r)}" aria-pressed="${!!S.petKeep[r]}">${S.petKeep[r] ? "🔒 " : ""}${h(r)} <span class="muted num">${fmt(n)}</span></button>`).join("") || `<span class="muted xs">Sac vide.</span>`}
+        ${keep.filter((r) => !topRes.some(([x]) => x === r)).map((r) => `<button class="pill keep on" data-act="petkeep" data-r="${h(r)}" aria-pressed="true">🔒 ${h(r)}</button>`).join("")}</div>
+    </div></div>
+    <div class="panel"><div class="phead"><h2>Collection</h2><span class="seg">${[["zone", "Zones"], ["boss", "Boss"], ["monti", "Montiliers"]].map(([v, n]) => `<button data-act="petcoll" data-v="${v}" aria-pressed="${coll === v}">${n} ${nOwn(v)}/${nAll(v)}</button>`).join("")}</span></div>
+      <div class="pad"><div class="petgrid">${(ui.petAll ? list : list.filter(([id]) => E.petOwned(S, id)).concat(list.filter(([id]) => !E.petOwned(S, id))).slice(0, 18)).map(([id, p]) => { const own = E.petOwned(S, id);
+        return `<div class="pettile ${own ? "own" : ""} ${p.fam ? "f-" + p.fam : ""}" data-tip="${h(`${p.name} · ${petKind(p)} · au maximum : ${petBonus(p.stats)} · ${E.petWhere(id)}${p.food ? " · aime : " + p.food : ""}`)}">${im(petImg(id), "", p.name)}<b>${h(p.name)}</b><span>${h(petBonus(p.stats))}</span><span class="where">${h(E.petWhere(id))}</span></div>`; }).join("")}</div>
+      ${!ui.petAll && list.length > 18 ? `<div style="text-align:center;margin-top:8px"><button class="btn sm" data-act="petall">Voir les ${list.length - 18} autres</button></div>` : ""}
+      <p class="note xs">${coll === "zone" ? "Chaque sous-zone de chasse a son familier : 1 chance sur 2 000 par victoire, même hors ligne." : coll === "boss" ? "Les familiers rares tombent sur leur boss à partir de la stasis 7 (1 chance sur 25)." : "Les montiliers tombent sur leur boss à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire. Les légendaires (+1 PA) : stasis 8 et plus, 1 chance sur 250, un peu plus à chaque échec. Dès le niveau 60."} Un double nourrit celui que vous avez déjà (+${E.PET_DUP_G} %).</p></div></div>
+  </div>`;
 }
 function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
@@ -1674,7 +1730,7 @@ function charEquipView(c, st) {
           <b>${h(c.name)}</b><span class="xs muted">${CLASSES[c.cls].name} niv. ${c.lvl}</span>
           <div class="dstats">${["hpMax", "pa", mainK, "pui", "pp", "sa"].map((k) => `<span${tipAttr(k)}>${sIco(k) || "❤"}<b class="num">${k === "hpMax" ? fmt(st.hpMax) : fmtStatVal(k, st[k])}</b></span>`).join("")}</div></div>
         <div class="dcol">${DOLL_R.map((s) => dollSlot(c, s)).join("")}</div>
-        <div class="drow">${dollSlot(c, "arme")}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
+        <div class="drow">${dollSlot(c, "arme")}${petSlot(c)}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
       </div></div></div>
     ${pick}
     ${gearHtml(c)}
@@ -2337,6 +2393,8 @@ function celeHtml(ev) {
     return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
   if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
     return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
+  if (ev.t === "pet") { const p = E.PETS[ev.id]; if (!p) return "";
+    return `<div class="cele-art pet">${im(petImg(ev.id), "celepet", p.name)}</div><div class="cele-k">${G("star")} ${p.kind === "monti" ? (p.fam === "l" ? "Montilier légendaire" : "Nouveau montilier") : "Nouveau familier"}</div><div class="cele-t">${h(p.name)}</div><div class="cele-s">Au maximum : ${h(petBonus(p.stats))}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
     return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
@@ -2520,6 +2578,11 @@ document.addEventListener("click", (ev) => {
     case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
     case "lossplace": ui.tab = "heroes"; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
     case "herotab": ui.hero = d.v; ui.slot = null; break;
+    case "peton": msg(E.equipPet(S, c.id, +d.uid)); dirty = true; break;
+    case "petoff": E.equipPet(S, c.id, null); dirty = true; break;
+    case "petkeep": S.petKeep[d.r] = !S.petKeep[d.r]; if (!S.petKeep[d.r]) delete S.petKeep[d.r]; dirty = true; break;
+    case "petcoll": ui.petColl = d.v; ui.petAll = false; break;
+    case "petall": ui.petAll = true; break;
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
     case "dealloc": E.deallocate(S, c.id, d.k, +d.n); break;
