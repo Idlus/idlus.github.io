@@ -7,6 +7,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.27 « Cadres de métal » (bêta)
+- Mathis : refonte des cadres (maquette https://claude.ai/artifact/1mSs8Gf91tPNWnwNek6sVU, choix « Métal orné » + portraits encadrés). `E.FRAMES` passe à 5 métaux × 2 rangs + Krosmoz (`E.frameIdx` inchangé, un rang tous les 20 niveaux) ; `E.FRAME_KEYS` / `E.frameKey(lvl)` donnent la clé `data-fr` (bois1 … eme2, krosmoz). CSS en fin de style.css (variables `--m1/--m2/--m3/--gem`, rivets en `::before`, coins en `::after`, ruban `.tier` sous la carte). `cmed(cls, lvl, ren)` encadre le médaillon (`data-fr`, « feu » si rené) ; les vues `lb_level`, `lb_records`, `lb_week`, `lb_defi` exposent `main_lvl` (lu seulement si le serveur l'a, `LB.ml`).
 ## 0.1.26 « Codes cadeaux » (bêta)
 - Mathis (maquette validée « 1A 2A 3A 4A 5A ») : codes cadeaux gérés par le serveur. `supabase/codes.sql` : tables `gift_codes`, `gift_uses` (un compte ou une partie sans compte, `S.gid`), `gift_tries` (10 essais ratés / 10 min) ; `gift_redeem` (anon et comptes) renvoie la récompense ; `adm_gifts`, `adm_gift_create`, `adm_gift_set`, `adm_gift_users` réservés à Mathis. `js/codes.js` (`window.GIFTS`, bêta seulement) : `redeem` (les codes `IDLUS-…` passent toujours par `E.redeemGift`), onglet « Codes cadeaux » du panel admin (branché dans `chat.js`), bouton « Code pour le jeu public » (`E.makeGift`), lien `?code=` qui ouvre Options › Jeu avec le code rempli. `E.giveGift` partagé ; nouvelle récompense `i` (objets, 10 max par ligne).
 

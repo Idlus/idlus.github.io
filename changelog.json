@@ -1,6 +1,17 @@
 {
-  "version": "0.1.26",
+  "version": "0.1.27",
   "versions": [
+    {
+      "v": "0.1.27",
+      "name": "Cadres de métal",
+      "items": [
+        "Nouveaux cadres de héros en métal : Bois, Bronze, Argent, Or et Émeraude, chacun en deux rangs (I puis II, un nouveau cadre tous les 20 niveaux), puis Krosmoz au niveau 200",
+        "Le cadre est en relief avec des rivets ; des coins forgés apparaissent dès le Bronze et grandissent à chaque métal, et des joyaux ornent le ruban dès l'Or",
+        "Le nom du rang s'affiche dans un ruban sous la carte au lieu de cacher le haut du héros",
+        "Les héros renés gardent leur cadre de feu",
+        "Ton médaillon prend le cadre de ton héros principal dans les Classements, le chat et la guilde (anneau double au rang II, petit joyau dès l'Or) ; le podium affiche aussi le rang"
+      ]
+    },
     {
       "v": "0.1.26",
       "name": "Codes cadeaux",
