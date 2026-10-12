@@ -1352,6 +1352,53 @@
       return s2 + v;
     }, 0);
   };
+  /* 0.1.13.4 « Héros plus malin » : le héros prépare tout son tour. Pour chaque combinaison d'attaques qui tient dans ses PA,
+     il estime les dégâts vraiment utiles : résistances de chaque cible (et peau du boss), PV restants (pas de dégâts perdus
+     sur un monstre déjà mort), bonus quand un monstre tombe (coup de grâce), zone seulement s'il y a plusieurs ennemis.
+     Il lance ensuite le sort le plus utile de la meilleure combinaison, puis recommence avec la situation nouvelle. */
+  E.PLAN = { kill: 0.3, depth: 5 };
+  const atkFx = (F, e, g) => { const pui = e.st.pui + buffSum(e, "pui"); const pw = E.classPow(e.cls, e.lvl);
+    return g.fx.filter((f) => ["dmg", "drain", "dot"].includes(f.k)).map((f) => {
+      const el = f.el === "best" ? bestEl(e.st) : f.el || "n"; const E2 = ELEMENTS[el] || ELEMENTS.n;
+      const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
+      let v = (((f.min + f.max) / 2) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + (e.st.do || 0) + (e.st[E2.dmg] || 0)) * pw * (f.n > 1 ? 0.85 : 1);
+      if (f.k === "dot") v *= 0.55 * (f.t || 2) * 0.85; // un poison arrive plus tard : un peu moins utile
+      if (f.k === "drain" && e.hp < e.hpMax * 0.7) v *= 1.15;
+      return { v, el, n: f.n || 1, dot: f.k === "dot" };
+    }); };
+  const planGain = (fx, foes, hp) => { // dégâts utiles d'un sort sur l'état estimé (hp modifié en place)
+    let gain = 0;
+    for (const f of fx) {
+      const order = foes.map((m, i) => i).filter((i) => hp[i] > 0).sort((x, y) => hp[x] - hp[y]).slice(0, f.n);
+      for (const i of order) { const t = foes[i]; if (f.dot && t.noDot) continue;
+        let r = Math.min(50, (t.res || {})[f.el] || 0); let d = f.v * (1 - r / 100);
+        if (t.skinEl && t.skinEl === f.el) d *= t.mech && t.mech.includes("humeurs") ? 0.25 : 0.5;
+        if (t.shield) d = Math.max(d * 0.3, d - t.shield);
+        const used = Math.min(d, hp[i]); gain += used; hp[i] -= used;
+        if (hp[i] <= 0) gain += E.PLAN.kill * t.hpMax; }
+    }
+    return gain;
+  };
+  const planTurn = (F, e, cands, pa) => { // cands : [{ idx, g, left }] ; renvoie l'idx à lancer
+    const foes = alive(F, "m"); const hp0 = foes.map((m) => m.hp);
+    const fxOf = cands.map((c) => atkFx(F, e, c.g));
+    let best = { v: -1, first: null };
+    const rec = (from, pa, left, hp, total, first, firstGain, depth) => {
+      if (total > best.v || (total === best.v && first !== null && best.first === null)) best = { v: total, first, firstGain };
+      if (depth >= E.PLAN.depth) return;
+      for (let k = from; k < cands.length; k++) {
+        const c = cands[k]; if (c.g.pa > pa || left[k] <= 0) continue;
+        const h2 = hp.slice(); const gn = planGain(fxOf[k], foes, h2);
+        if (gn <= 0) continue;
+        left[k]--;
+        const f2 = first === null || gn > firstGain ? k : first; // dans la combinaison, on commence par le sort le plus utile
+        rec(k, pa - c.g.pa, left, h2, total + gn, f2, f2 === k ? gn : firstGain, depth + 1);
+        left[k]++;
+      }
+    };
+    rec(0, pa, cands.map((c) => c.left), hp0, 0, null, 0, 0);
+    return best.first === null ? null : cands[best.first].idx;
+  };
   const castLimit = (g) => (g.casts > 0 ? Math.min(g.casts, 3) : 1);
   const charTurn = (S, F, e, paStart) => {
     const c = S.chars.find((x) => x.id === e.cid); if (!c) return;
@@ -1373,7 +1420,7 @@
     }
     if (paStart === undefined && E.manualOn(S)) { F.await = { ei: F.ents.indexOf(e), pa: Math.max(1, e.st.pa - (e.paLoss || 0)), t: F.dur, n: 0, casts: {} }; e.paLoss = 0; return; }
     let pa = paStart !== undefined ? paStart : Math.max(1, e.st.pa - (e.paLoss || 0) + (e.paBonus || 0)); e.paLoss = 0; e.paBonus = 0; let cast = 0;
-    /* IA v3 : sorts utilitaires dans l'ordre de la barre, puis l'attaque qui rapporte le plus de dégâts par PA */
+    /* IA v4 : sorts utilitaires dans l'ordre de la barre, puis la meilleure combinaison d'attaques du tour (planTurn) */
     const nCast = {}; const blocked = new Set();
     for (let guard = 0; guard < 30; guard++) {
       if (!alive(F, "m").length) return endHeroTurn(S, F, e);
@@ -1389,6 +1436,15 @@
         const v = ["dmg", "aoe", "drain", "dot"].includes(k) ? spellValue(F, e, g) / Math.max(1, g.pa) : 1e6 - idx;
         if (v > bestV) { bestV = v; best = { slot, idx, sp, g }; }
       });
+      if (best && ["dmg", "aoe", "drain", "dot"].includes(E.spellKind(best.g))) { // attaque : la meilleure combinaison du tour
+        const cands = [];
+        c.spells.forEach((slot, idx) => { if (blocked.has(idx)) return; const sp = E.spellDef(c.cls, slot.id); if (!sp || sp.lvl > c.lvl) return; const g = E.spellGrade(sp, c.lvl);
+          if (!["dmg", "aoe", "drain", "dot"].includes(E.spellKind(g)) || (nCast[idx] || 0) >= castLimit(g) || (e.cd[sp.id] || 0) > 0 || g.pa > pa || (e.silence > 0 && g.cd)) return;
+          if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g)) return;
+          cands.push({ idx, g, sp, slot, left: Math.min(castLimit(g) - (nCast[idx] || 0), g.cd ? 1 : 9) }); });
+        const pick = cands.length > 1 ? planTurn(F, e, cands, pa) : null;
+        const pc = pick !== null && cands.find((x) => x.idx === pick); if (pc) best = { slot: pc.slot, idx: pc.idx, sp: pc.sp, g: pc.g };
+      }
       if (!best) break;
       F.seq++;
       const r = castSpell(S, F, e, best.sp, null, best.slot);
