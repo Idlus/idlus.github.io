@@ -1,6 +1,13 @@
 {
-  "version": "0.1.32.1",
+  "version": "0.1.32.2",
   "versions": [
+    {
+      "v": "0.1.32.2",
+      "name": "Zones toujours visibles",
+      "items": [
+        "Encyclopédie sur PC : la colonne des zones reste à l'écran quand vous faites défiler les monstres (elle disparaissait vers le haut)"
+      ]
+    },
     {
       "v": "0.1.32.1",
       "name": "Héros à portée de clic",
