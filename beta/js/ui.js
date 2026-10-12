@@ -16,9 +16,15 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.14.4";
+const GAME_VERSION = "0.1.15";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.15", name: "Comptes en ligne", items: [
+    "Compte Idlus : connexion avec Discord ou par un lien reçu par e-mail (sans mot de passe), et un pseudo unique choisi une seule fois",
+    "Ta partie est gardée en ligne : envoi toutes les 30 secondes et quand tu quittes l'onglet, pour la retrouver sur un autre ordinateur ou ton téléphone",
+    "Ta partie actuelle part sur ton compte en un clic à la première connexion ; si deux appareils ont chacun avancé, le jeu te demande laquelle garder (l'autre reste en copie de secours)",
+    "Pastille « Sauvegardé en ligne » dans la barre du haut (jaune pendant l'envoi, grise hors ligne : le jeu continue et envoie au retour d'Internet)",
+    "Options : nouvelle section « Compte » (pseudo, Discord, e-mail, envoi immédiat, déconnexion, suppression du compte). Jouer sans compte reste possible" ] },
   { v: "0.1.14.4", name: "Dernier réglage", items: [
     "Métiers : un objet se fabrique avec un métier au tiers de son niveau (avant : la moitié), pour s'équiper à temps face aux monstres plus forts dès le niveau 30",
     "Les attaques bien plus faibles que les meilleures de leur classe font plus de dégâts (jusqu'à +50 %), pour que le héros s'en serve",
@@ -665,7 +671,7 @@ function statusHtml() {
     ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">${IC("almanax")} Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    <button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
+    ${ON ? pillHtml() : ""}<button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
@@ -3682,6 +3688,7 @@ function showNotif(title, body) {
 function optionsSheet() {
   openSheet(`<h2>Options</h2>
     <div class="stack small">
+      ${accountHtml()}
       <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]].map(([v, n]) => `<button data-act="setanim" data-v="${v}" aria-pressed="${animLvl() === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
@@ -3689,7 +3696,7 @@ function optionsSheet() {
       <label class="row"><input type="checkbox" data-act="setprot" ${!S.settings.protOff ? "checked" : ""}> <span><b>Protecteurs de ressources</b> <span class="muted">(un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min)</span></span></label>
       <div class="stack" style="gap:6px"><div><b>Code cadeau</b> <span class="muted">(donné sur le Discord ; un code par partie)</span></div><div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${Object.keys(S.gifts || {}).length ? `<span class="xs muted">${Object.keys(S.gifts).length} code${Object.keys(S.gifts).length > 1 ? "s" : ""} déjà utilisé${Object.keys(S.gifts).length > 1 ? "s" : ""}</span>` : ""}</div>
       ${notifOptionsHtml()}
-      <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
+      <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${ON && ON.user && ON.profile ? " et sur ton compte en ligne" : ""}${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
       <div class="stack" style="gap:6px"><div><b>Copies de secours</b> <span class="muted">(une toutes les 10 min de jeu, et une avant chaque mise à jour)</span></div>${copiesHtml()}</div>
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
@@ -3883,12 +3890,13 @@ document.addEventListener("click", (ev) => {
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
+  if (ON && a && a.startsWith("on-")) { onAct(a, t); return; }
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
-    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
+    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
     case "setanim": S.settings.anim = d.v; S.settings.reduced = d.v !== "full"; setTheme(); optionsSheet(); render(); return;
@@ -4221,6 +4229,171 @@ function loadSave() {
 }
 /* Avant de lancer une nouvelle version du jeu, on garde la partie telle qu'elle était. */
 function copyBeforeUpdate(st) { SV.beforeUpdate(st, restoredCopy); }
+
+/* ---------- 0.1.15 : compte et sauvegarde en ligne (js/online.js) ----------
+   Au lancement : écran de connexion (une fois, « Jouer sans compte » reste possible), pseudo,
+   puis on choisit quelle partie lancer (celle de l'appareil, celle du compte, ou on demande).
+   Pendant le jeu : envoi toutes les 30 s et quand on quitte l'onglet, pastille dans la barre du haut. */
+const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null;
+let booted = false, sincePush = 0;
+const onMeta = (st) => (st && st.chars ? { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length } : {});
+const onLive = () => !!(ON && ON.user && ON.profile && booted && S);
+function openGate(html) { hideTip(); $("#sheet").innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+const DISCORD_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.6 5.3A17 17 0 0 0 15.4 4l-.5 1a15.6 15.6 0 0 0-5.8 0l-.5-1a17 17 0 0 0-4.2 1.3C1.7 9.3 1 13.2 1.3 17a17 17 0 0 0 5.2 2.6l1.1-1.8c-.6-.2-1.2-.5-1.7-.8l.4-.3a12 12 0 0 0 11.4 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.3-2.9-11.7ZM8.7 14.7c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg>`;
+function onBlank(txt) { $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = ""; $("#main").innerHTML = `<section class="start stack"><div class="logo">idlus</div><p class="muted" style="text-align:center">${h(txt)}</p></section>`; }
+function loginScreen(msgTxt) {
+  closeSheet(); $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
+  const sent = ui.onMailSent;
+  $("#main").innerHTML = `<section class="start stack onlogin"><div class="logo">idlus</div>
+    <p class="muted" style="text-align:center;margin:0">Connecte-toi pour garder ta partie en ligne et la retrouver sur tous tes appareils.</p>
+    <div class="panel"><div class="pad stack">
+      <h2>Connexion</h2>
+      <button class="btn primary dbtn" data-act="on-discord">${DISCORD_SVG} Jouer avec Discord</button>
+      <div class="orsep">ou par e-mail</div>
+      ${sent ? `<div class="mailsent stack" style="gap:4px"><b>Lien envoyé à ${h(sent)}</b><span class="small muted">Ouvre l'e-mail de connexion (regarde aussi dans les indésirables) et clique sur le lien : tu reviendras ici, connecté. Tu peux fermer cet onglet.</span><div><button class="btn sm" data-act="on-mailagain">Utiliser une autre adresse</button></div></div>`
+      : `<label class="stack" style="gap:4px"><span class="small muted">Ton adresse e-mail</span><input type="email" id="onMail" autocomplete="email" placeholder="ton.adresse@e-mail.fr" value="${h(ui.onMail || "")}"></label>
+      <button class="btn primary" data-act="on-mail">Recevoir mon lien de connexion</button>
+      <span class="small muted">Pas de mot de passe : on t'envoie un lien, tu cliques, tu joues.</span>`}
+      <span id="onMsg" class="minus small">${h(msgTxt || "")}</span>
+    </div></div>
+    <div style="text-align:center"><button class="lnk" data-act="on-skip">Jouer sans compte (partie gardée sur cet appareil)</button></div></section>`;
+}
+function pseudoSheet(err) {
+  openGate(`<h2>Choisis ton pseudo</h2><span class="small muted">Il sera affiché dans les classements, le chat et ta guilde. Tu le choisis une seule fois.</span>
+    <label class="stack" style="gap:4px"><span class="small muted">Pseudo (3 à 16 caractères)</span><input type="text" id="onPseudo" maxlength="16" autocomplete="nickname" value="${h(ui.onPseudo || "")}"></label>
+    <span id="onMsg" class="${err ? "minus" : "muted"} small">${h(err || "Lettres, chiffres, - ou _.")}</span>
+    <div class="row"><button class="btn primary" data-act="on-pseudo">C'est parti</button><button class="btn" data-act="on-logout">Se déconnecter</button></div>`);
+  setTimeout(() => { const i = $("#onPseudo"); if (i) i.focus(); }, 50);
+}
+const saveLine = (m, when, ico, title, tag) => `<div class="svc${tag ? " on" : ""}">${IC(ico)}<b>${h(title)}${tag ? ` <span class="tag">${h(tag)}</span>` : ""}</b><span class="small muted">${m && m.n ? `${m.n} héros · niveau max ${m.lvl}` : "partie"}${when ? ` · ${h(when)}` : ""}</span></div>`;
+const agoTxt = (t) => { if (!t) return ""; const s = Math.max(0, (Date.now() - t) / 1000); return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : copyDate(t); };
+function recupSheet(st) {
+  ui.onLocal = st;
+  openGate(`<h2>Tu as déjà une partie ici</h2><span class="small muted">Cet appareil contient une partie qui n'est pas encore sur ton compte.</span>
+    ${saveLine(onMeta(st), "jouée " + agoTxt(st.savedAt || st.lastTick), "coffre", "Partie de cet appareil", " ")}
+    <div class="row"><button class="btn primary" data-act="on-send">L'envoyer sur mon compte</button><button class="btn" data-act="on-fresh">Commencer une nouvelle partie</button></div>
+    <span class="xs muted">Une copie de secours reste sur l'appareil dans les deux cas.</span>`);
+}
+function conflictSheet(st, info) {
+  ui.onConf = { st, info };
+  const rt = Date.parse(info.updated_at), lt = (st && (st.savedAt || st.lastTick)) || 0, remoteNewer = rt >= lt;
+  openGate(`<h2>Deux versions de ta partie</h2><span class="small muted">Ta partie a avancé ailleurs depuis ta dernière visite ici. Laquelle garder ?</span>
+    ${saveLine(info.meta, agoTxt(rt), "monde", `En ligne${info.device && info.device !== ON.device() ? ` (${info.device})` : ""}`, remoteNewer ? "plus récente" : "")}
+    ${saveLine(onMeta(st), agoTxt(lt), "coffre", `Cet ${ON.device() === "téléphone" ? "appareil" : "ordinateur"}`, remoteNewer ? "" : "plus récente")}
+    <div class="row"><button class="btn ${remoteNewer ? "primary" : ""}" data-act="on-keepremote">Garder celle en ligne</button><button class="btn ${remoteNewer ? "" : "primary"}" data-act="on-keeplocal">Garder celle d'ici</button></div>
+    <span class="xs muted">L'autre version n'est pas perdue : elle part dans les copies de secours (Options).</span>`);
+}
+/* Démarrage avec un compte : quelle partie lancer ? */
+async function onAfterLogin() {
+  onBlank("Connexion à ton compte…");
+  try { await ON.fetchProfile(); } catch (e) { ON.setState("offline"); return bootGame(); }
+  if (!ON.profile) return pseudoSheet();
+  let info; try { info = await ON.remoteInfo(); } catch (e) { ON.setState("offline"); return bootGame(); }
+  const l = ON.link(), uid = ON.user.id, raw = SV.read();
+  let local = null; if (raw) { try { local = E.deserialize(raw); } catch (e) {} }
+  if (!info) {
+    if (!local) { ON.setLink({ uid, base: null, savedAt: 0 }); return bootGame(); }
+    if (l.uid === uid) { ON.setLink({ base: null }); return bootGame(true); } // la partie en ligne a disparu : on renvoie celle d'ici
+    return recupSheet(local);
+  }
+  if (!local) return takeRemote(info);
+  if (l.uid === uid && l.base === info.updated_at) { ON.setState("ok"); return bootGame(); } // rien de neuf en ligne : on continue ici
+  if (l.uid === uid && (local.savedAt || 0) <= (l.savedAt || 0)) return takeRemote(info); // rien de neuf ici : on reprend celle en ligne
+  return conflictSheet(local, info);
+}
+/* Remplace la partie de l'appareil par celle du compte (l'ancienne part en copie de secours). */
+async function takeRemote(info) {
+  if (!booted) onBlank("Récupération de ta partie…");
+  let txt = null, st = null;
+  try { txt = await ON.remoteData(); st = E.deserialize(txt); } catch (e) { toast("Impossible de récupérer la partie en ligne pour l'instant."); ON.setState("offline"); return booted ? closeSheet() : bootGame(); }
+  const cur = booted && S ? E.serialize(S) : SV.read();
+  if (cur) pushCopy(cur, "avant", booted ? S : null);
+  SV.write(txt); ON.setLink({ uid: ON.user.id, base: info.updated_at, savedAt: st.savedAt || 0 }); ON.setState("ok");
+  if (!booted) return bootGame();
+  closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark");
+  const gap = (E.now() - (S.lastTick || E.now())) / 1000; const r = gap > 60 ? E.catchUp(S, gap) : null; render();
+  if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r); else toast("Partie en ligne chargée.");
+}
+function onPush(force) {
+  if (!onLive()) return Promise.resolve(null);
+  saveNow(); const sa = S.savedAt;
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); renderPill(); return r; });
+}
+async function onConflictLive() {
+  let info; try { info = await ON.remoteInfo(); } catch (e) { ON.setState("offline"); return; }
+  if (!info) { ON.setLink({ base: null }); return onPush(); }
+  conflictSheet(S, info);
+}
+const PILL = { ok: ["", "Sauvegardé", " en ligne", "Partie à jour sur ton compte. Clique pour envoyer tout de suite."], sync: ["s", "Envoi", "…", "Envoi de la partie en cours."], offline: ["off", "Hors ligne", "", "Pas de connexion au serveur : le jeu continue et ta partie sera envoyée au retour d'Internet. Clique pour réessayer."], conflict: ["warn", "À vérifier", "", "Ta partie a avancé sur un autre appareil : clique pour choisir la version à garder."] };
+function pillHtml() {
+  if (!ON || !ON.user || !ON.profile) return "";
+  const p = PILL[ON.state] || PILL.sync;
+  return `<button class="cloud" id="onPill" data-act="on-pill" data-st="${ON.state}" data-tip="${h(p[3])}"><span class="dot ${p[0]}"></span><span>${p[1]}<span class="hide-sm">${p[2]}</span></span></button>`;
+}
+function renderPill() { const el = $("#onPill"); if (!el) return renderStatus(); if (el.dataset.st !== ON.state) el.outerHTML = pillHtml(); }
+function accountHtml() {
+  if (!ON) return "";
+  if (!ON.user) return `<div class="stack" style="gap:6px"><div><b>Compte</b> <span class="muted">(pas connecté : la partie n'est gardée que sur cet appareil)</span></div><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
+  const id = ON.identities(), conf = ui.confirm === "ondelete";
+  return `<div class="stack" style="gap:8px"><b>Compte</b>
+    <div class="kvg"><span class="muted">Pseudo</span><b>${h((ON.profile && ON.profile.pseudo) || "—")}</b><span></span>
+    <span class="muted">Discord</span>${id.discord ? `<b>${h(id.discord)}</b><span class="tag good">lié</span>` : `<span class="muted">non lié</span><button class="btn sm" data-act="on-linkdiscord">Lier</button>`}
+    <span class="muted">E-mail</span>${id.email ? `<b class="oneline">${h(id.email)}</b><span></span>` : `<span class="muted">aucun</span><span></span>`}
+    <span class="muted">Sauvegarde</span>${pillHtml() || `<span class="muted">—</span>`}<button class="btn sm" data-act="on-pill">Envoyer</button></div>
+    <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte.</span>
+    ${conf ? `<div class="stack" style="gap:6px"><span class="minus small">Ton compte, ton pseudo et ta partie en ligne seront effacés pour toujours. La partie reste sur cet appareil. Tape ton pseudo pour confirmer :</span><div class="row"><input type="text" id="onDelPseudo" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm danger" data-act="on-delete">Supprimer</button><button class="btn sm" data-act="cancelreset">Annuler</button></div></div>`
+    : `<div class="row"><button class="btn sm" data-act="on-logout">Se déconnecter</button><button class="btn sm danger" data-act="on-askdelete">Supprimer le compte</button></div>`}</div>`;
+}
+async function onAct(a, t) {
+  const say = (m) => { const e = $("#onMsg"); if (e) { e.className = "minus small"; e.textContent = m; } else toast(m); };
+  switch (a) {
+    case "on-discord": { t.disabled = true; const e = await ON.signInDiscord(); if (e) { t.disabled = false; say(e); } return; }
+    case "on-mail": {
+      const m = ($("#onMail").value || "").trim(); ui.onMail = m;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)) return say("Cette adresse e-mail ne semble pas valide.");
+      t.disabled = true; t.textContent = "Envoi…"; const e = await ON.signInEmail(m);
+      if (e) { loginScreen(e); return; } ui.onMailSent = m; loginScreen(); return; }
+    case "on-mailagain": ui.onMailSent = null; loginScreen(); return;
+    case "on-skip": ON.setLink({ skip: true }); return bootGame();
+    case "on-loginscreen": ON.setLink({ skip: false }); saveNow(); location.reload(); return;
+    case "on-pseudo": {
+      const p = ($("#onPseudo").value || "").trim(); ui.onPseudo = p;
+      const bad = ON.pseudoProblem(p); if (bad) return pseudoSheet(bad);
+      t.disabled = true;
+      try { if (!(await ON.pseudoFree(p))) return pseudoSheet("Ce pseudo est déjà pris. Essaie-en un autre."); } catch (e) { return pseudoSheet("Pas de connexion au serveur. Réessaie dans un instant."); }
+      const e = await ON.createProfile(p); if (e) return pseudoSheet(e);
+      closeSheet(); return onAfterLogin(); }
+    case "on-send": ON.setLink({ uid: ON.user.id, base: null, savedAt: 0 }); closeSheet(); return bootGame(true);
+    case "on-fresh": { const raw = SV.read(); if (raw) pushCopy(raw, "avant", ui.onLocal); SV.remove(); ON.setLink({ uid: ON.user.id, base: null, savedAt: 0 }); closeSheet(); return bootGame(); }
+    case "on-keepremote": { t.disabled = true; const { info } = ui.onConf || {}; if (info) return takeRemote(info); return; }
+    case "on-keeplocal": {
+      ON.setLink({ uid: ON.user.id }); closeSheet();
+      if (!booted) { bootGame(); } // la partie d'ici démarre ; l'envoi forcé suit
+      setTimeout(() => { if (onLive()) onPush(true).then((r) => { if (r === "ok") toast("Ta partie d'ici est maintenant celle du compte."); }); }, 300);
+      return; }
+    case "on-pill": {
+      if (ON.state === "conflict") return onConflictLive();
+      const r = await onPush(); if (r === "ok") toast("Partie envoyée sur ton compte."); else if (r === "offline") toast("Pas de connexion au serveur : nouvel essai automatique.");
+      if ($(".sheet .kvg")) optionsSheet(); return; }
+    case "on-linkdiscord": { const e = await ON.linkDiscord(); if (e) toast(e); return; }
+    case "on-logout": { if (onLive()) await onPush(); await ON.signOut(); ON.setLink({ skip: false }); saveNow(); location.reload(); return; }
+    case "on-askdelete": ui.confirm = "ondelete"; optionsSheet(); return;
+    case "on-delete": {
+      const v = ($("#onDelPseudo").value || "").trim(); if (!ON.profile || v.toLowerCase() !== ON.profile.pseudo.toLowerCase()) return toast("Tape exactement ton pseudo pour confirmer.");
+      t.disabled = true; const e = await ON.deleteAccount(); if (e) { t.disabled = false; return toast("Suppression impossible : " + e); }
+      ON.setLink({ skip: true }); ui.confirm = null; closeSheet(); renderStatus(); toast("Compte supprimé. Ta partie reste sur cet appareil."); return; }
+  }
+}
+async function onBoot() {
+  ON.init({ key: LS_KEY, version: GAME_VERSION });
+  const err = ON.urlError();
+  onBlank("Chargement…");
+  const user = await ON.ready();
+  ON.onChange(() => { if (booted && S) renderPill(); });
+  if (!user) { if (ON.link().skip && !err) return bootGame(); return loginScreen(err); }
+  ui.onMailSent = null;
+  return onAfterLogin();
+}
 function restoreCopy(i) {
   const c = readCopies()[i]; if (!c) return;
   let N; try { N = E.deserialize(c.txt); } catch (e) { toast("Cette copie est illisible."); return; }
@@ -4277,6 +4450,7 @@ function loop() {
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderTeam(); renderNav(); }
     else if (ui.tab === "quests" && ui.qt !== "ach" && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
+    if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;
     if (sinceRes > 2500) { sinceRes = 0; const now = E.now(); updNavLive();
@@ -4289,12 +4463,14 @@ function loop() {
   setTimeout(loop, 120);
 }
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") saveNow();
+  if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
   else if (S) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r); } last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
-function start() {
+function start() { if (ON) onBoot(); else bootGame(); }
+function bootGame(pushNow) {
+  if (booted) return; booted = true; closeSheet();
   S = loadSave();
   copyBeforeUpdate(S);
   if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
@@ -4309,6 +4485,7 @@ function start() {
     else if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r);
     S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
+  if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
   setTimeout(checkNewVersion, 20000); setInterval(checkNewVersion, 5 * 60 * 1000);
