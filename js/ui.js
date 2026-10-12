@@ -646,7 +646,7 @@ function renderWorld() {
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
     body = `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
-      + (ZONES.map((z) => zonePanel(z, t)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
+      + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = dungeonsHtml();
   else body = encyclopediaHtml();
@@ -665,7 +665,7 @@ function lvlHint(s) {
   const top = topTeamLvl();
   const cls = top < s.lvl[0] - 3 ? "minus" : top > s.lvl[1] + 4 ? "muted" : "plus";
   const pen = Math.round((1 - E.xpPenalty(top - s.lvl[1])) * 100);
-  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${s.lvl[1]}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de 4 : −10 % d'XP par niveau d'écart.">XP −${pen} %</span>` : ""}`;
+  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${Math.min(200, s.lvl[1])}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de 4 : −10 % d'XP par niveau d'écart.">XP −${pen} %</span>` : ""}`;
 }
 function tierBadge(k) {
   const t = E.huntTier(S, k); const n = S.bestiary[k] || 0; const next = HUNT_TIERS[t + 1];
@@ -677,20 +677,39 @@ function tierBadge(k) {
 const MAP_TIERS = [[1, 40], [41, 80], [81, 120], [121, 160], [161, 200]];
 const tierOf = (lvl) => { const i = MAP_TIERS.findIndex((b) => lvl <= b[1]); return i < 0 ? MAP_TIERS.length - 1 : i; };
 function mapTier() { if (ui.mapTier === undefined) ui.mapTier = tierOf(topTeamLvl()); return ui.mapTier; }
-function zonePanel(z, tier = -1) {
+function zonePanel(z, tier = -1, open = false) {
   const subs = tier < 0 ? z.subs : z.subs.filter((s) => tierOf(s.lvl[0]) === tier);
   if (!subs.length) return "";
   const zu = E.zoneUnlocked(S, z.id);
-  return `<section class="panel"><div class="zonehead"><div><h2>${h(z.name)}</h2><div class="small muted">${h(z.desc)} · niveaux ${h(z.lvl)}</div></div>${zu ? "" : `<span class="tag soft">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}</div>
-    <div class="subgrid">${subs.map((s) => {
+  const nUn = subs.filter((s) => E.subUnlocked(S, s.id)).length;
+  const lo = Math.min(...subs.map((s) => s.lvl[0])), hi = Math.min(200, Math.max(...subs.map((s) => s.lvl[1])));
+  const hunting = subs.some((s) => S.hunting && S.sub === s.id && !S.dungeon);
+  const head = `<button class="zonefold" data-act="zonefold" data-id="${z.id}" aria-expanded="${open}"><span class="zf-name">${h(z.name)}</span>
+    <span class="zf-meta">${hunting ? `<span class="tag good">Chasse en cours</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span></span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
+  if (!open) return `<section class="panel zonefoldp">${head}</section>`;
+  return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
+    <div class="subrows">${subs.map((s) => {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
-      if (s.hidden && !un) return `<div class="subcard locked"><div class="scene">${sceneSVG("cave", 96, s.id)}</div><div class="body"><b>Lieu caché</b><span class="lockmsg">On raconte qu'un objet permet de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></div></div>`;
+      if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></span></div>`;
       const wins = S.progress.wins[s.id] || 0;
-      return `<button class="subcard ${un ? "" : "locked"} ${here ? "here" : ""}" data-act="zoneview" data-id="${s.id}">
-        <div class="scene">${sceneSVG(s.deco, 96, s.id)}<div class="troupe">${s.monsters.slice(0, 4).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div>${S.trophies && S.trophies[s.id] ? `<span class="trophymark" data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</div>
-        <div class="body"><div class="row between"><b>${h(s.name)}</b>${lvlHint(s)}</div>
-          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}${s.dungeon ? " · donjon" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</div>
+      return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""}" data-act="zoneview" data-id="${s.id}">
+        <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
+        <span class="sr-txt"><span class="row between"><b>${h(s.name)}${S.trophies && S.trophies[s.id] ? ` <span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</b></span>
+          <span class="sr-sub">${lvlHint(s)}</span>
+          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}${s.dungeon ? " · donjon" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
+}
+function mapOpenZone(t) {
+  if (!ui.mapOpen) ui.mapOpen = {};
+  const key = String(t);
+  if (ui.mapOpen[key] !== undefined) return ui.mapOpen[key];
+  const inTier = (s) => t < 0 || tierOf(s.lvl[0]) === t;
+  const cur = S.hunting && !S.dungeon && E.SUBS[S.sub];
+  let z = cur && inTier(cur) ? cur.zone : null;
+  if (!z) { const top = topTeamLvl(); let best = null;
+    ZONES.forEach((zz) => zz.subs.forEach((s) => { if (inTier(s) && E.subUnlocked(S, s.id) && s.lvl[0] <= top + 3 && (!best || s.lvl[0] > best[0].lvl[0])) best = [s, zz.id]; }));
+    z = best ? best[1] : null; }
+  return (ui.mapOpen[key] = z);
 }
 function renderZoneView(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone); const un = E.subUnlocked(S, sid);
@@ -2064,6 +2083,7 @@ document.addEventListener("click", (ev) => {
     case "zoneback": ui.zoneView = null; break;
     case "worldtab": ui.world = d.v; break;
     case "maptier": ui.mapTier = +d.v; break;
+    case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": ui.encZone = d.v; break;
     case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? ui.dgChain || 1 : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = 1; dungeonSheet(d.id); return; }
