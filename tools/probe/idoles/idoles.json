@@ -1,0 +1,733 @@
+[
+ {
+  "id": 30049,
+  "nom": "Idole de Tolgnas",
+  "type": "Idoles de Quêtes",
+  "niveau": 20,
+  "icone": 156019,
+  "description": "Cette idole vous permet d'obtenir la bénédiction de Tolgnas.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 481,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!481&Ad=163",
+  "recette": [
+   [
+    "Substrat de Buisson",
+    2
+   ],
+   [
+    "Eau calme",
+    10
+   ],
+   [
+    "Mesure de sel",
+    10
+   ],
+   [
+    "Or",
+    3
+   ],
+   [
+    "Œil de Pikdoa",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28446,
+  "nom": "Idole de Foluk Dorée",
+  "type": "Idoles de Quêtes",
+  "niveau": 100,
+  "icone": 178115,
+  "description": "Cette idole de Foluk est constituée d'un or si pur qu'elle semble provenir directement d'Enutrosor. Le Méryde a-t-il un lien avec Enutrof ?",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 245,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!245&Pm=130548736",
+  "recette": [
+   [
+    "Substrat de Fascine",
+    5
+   ],
+   [
+    "Corne de Dragoss Calcaire",
+    3
+   ],
+   [
+    "Échasse de Molette",
+    3
+   ],
+   [
+    "Corne de Rhinoféroce",
+    3
+   ],
+   [
+    "Groin de Dragon Cochon",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28450,
+  "nom": "Idole de Thomahon Arboricole",
+  "type": "Idoles de Quêtes",
+  "niveau": 100,
+  "icone": 178113,
+  "description": "Il semble que Thomahon soit vénéré jusqu'à la cime du plus ancien arbre du Monde des Douze.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 243,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!243&Pm=21497858",
+  "recette": [
+   [
+    "Kriptonite",
+    5
+   ],
+   [
+    "Rotule du Disciple Zoth",
+    3
+   ],
+   [
+    "Aile Atrophiée de Tofu Dodu",
+    3
+   ],
+   [
+    "Pépite",
+    200
+   ],
+   [
+    "Feuille de Blop Multicolore Royal",
+    1
+   ],
+   [
+    "Duvet de Truchon",
+    10
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28449,
+  "nom": "Idole de Thomahon Marine",
+  "type": "Idoles de Quêtes",
+  "niveau": 100,
+  "icone": 178112,
+  "description": "Cette idole de Thomahon semble avoir séjourné de longues années dans les mers gelées de Frigost avant d'être récupérée par les pirates du Grolandais violent.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 242,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!242&Pm=56365056",
+  "recette": [
+   [
+    "Magnésite",
+    5
+   ],
+   [
+    "Aile de dragodinde",
+    10
+   ],
+   [
+    "Poil de Rat d'Égoutant",
+    10
+   ],
+   [
+    "Fleur de Gloutoblop",
+    10
+   ],
+   [
+    "Carniflore",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28448,
+  "nom": "Idole de Viti Glacée",
+  "type": "Idoles de Quêtes",
+  "niveau": 100,
+  "icone": 178110,
+  "description": "Cette idole autrefois détenue par le Mansot Royal semble emprisonnée dans une glace éternelle. Rien d'étonnant à ce que ce peuple apprécie le petit dieu du nord et des températures extrêmes.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 240,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!240&Pm=56102912",
+  "recette": [
+   [
+    "Coquille de Dragoss Ardoise",
+    3
+   ],
+   [
+    "Substrat de Bosquet",
+    5
+   ],
+   [
+    "Plume de Gobvious",
+    10
+   ],
+   [
+    "Chaussette trouée de Dramak",
+    1
+   ],
+   [
+    "Corne de Berserkoffre",
+    10
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28444,
+  "nom": "Idole de Viti Roussie",
+  "type": "Idoles de Quêtes",
+  "niveau": 100,
+  "icone": 178108,
+  "description": "Viti est tout naturellement vénéré à Pandala, étant très lié à cette île. Cette idole semble provenir du peuple Firefoux, comme en témoignent les marques de brûlure et d'encens qui la recouvrent.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 238,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!238&Pm=208408576",
+  "recette": [
+   [
+    "Canine de Mergranlou",
+    10
+   ],
+   [
+    "Kouartz",
+    5
+   ],
+   [
+    "Coquille de Dragoss Charbon",
+    10
+   ],
+   [
+    "Peau de Don Duss Ang",
+    10
+   ],
+   [
+    "Peau de Moon",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28447,
+  "nom": "Idole de Viti Végétale",
+  "type": "Idoles de Quêtes",
+  "niveau": 100,
+  "icone": 178109,
+  "description": "Cette Idole de Viti envahie par la végétation semble avoir un lien avec le Tynril. Quel peut bien être ce lien ?",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 239,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!239&Pm=89392130",
+  "recette": [
+   [
+    "Bakélélite",
+    5
+   ],
+   [
+    "Écorce de Liroye Merline",
+    3
+   ],
+   [
+    "Estomac de Black Wo Wabbit",
+    8
+   ],
+   [
+    "Laine de Dardalaine",
+    3
+   ],
+   [
+    "Carapace du Mantiscore",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28445,
+  "nom": "Idole de Thomahon Nauséabonde",
+  "type": "Idoles de Quêtes",
+  "niveau": 105,
+  "icone": 178111,
+  "description": "Cette idole de Thomahon semble avoir trainé dans les égouts au point de s'imprégner de leur odeur de manière définitive.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 241,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!241&Pm=102760963",
+  "recette": [
+   [
+    "Kouartz",
+    5
+   ],
+   [
+    "Peau de Don Dorgan",
+    10
+   ],
+   [
+    "Moustache du Mufafah",
+    10
+   ],
+   [
+    "Oreille de Rhinoféroce",
+    10
+   ],
+   [
+    "Chaussette trouée de Dramak",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28432,
+  "nom": "Nékinéko",
+  "type": "Idoles de Quêtes",
+  "niveau": 110,
+  "icone": 178087,
+  "description": "Le petit dieu Nékinéko a une importance particulière pour les pandaliens. Il n'est pas étonnant de trouver des idoles et des statues en son honneur un peu partout sur l'île de Pandala.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 237,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!237&(Pm=209455110|Pm=204999171|Pm=206045189)",
+  "recette": [
+   [
+    "Peau de Mandrine",
+    10
+   ],
+   [
+    "Coco du Bitouf des Plaines",
+    3
+   ],
+   [
+    "Substrat de Bosquet",
+    5
+   ],
+   [
+    "Antenne de Trésantène",
+    10
+   ],
+   [
+    "Cœur du Capitaine Ekarlatte",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28451,
+  "nom": "Idole de Thomahon d'Obsidienne",
+  "type": "Idoles de Quêtes",
+  "niveau": 150,
+  "icone": 178114,
+  "description": "Le méryde du nord est particulièrement vénéré à Frigost où combattre le froid est une question de survie. Les mineurs de l'ile gelée ont extrait de l'obsidienne pour confectionner cette magnifique idole.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 244,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!244&Pm=57155841",
+  "recette": [
+   [
+    "Ébonite",
+    5
+   ],
+   [
+    "Tronc de Kokoko",
+    10
+   ],
+   [
+    "Lait de Tortue",
+    5
+   ],
+   [
+    "Casque Cassé du Chafer",
+    10
+   ],
+   [
+    "Plume du Kwakwa",
+    1
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28453,
+  "nom": "Idole de Foluk Féérique",
+  "type": "Idoles de Quêtes",
+  "niveau": 170,
+  "icone": 178117,
+  "description": "L'apparence de cette idole de Foluk semble indiquer qu'il était vénéré par un peuple féérique très ancien, vivant dans ce que l'on appelle aujourd'hui la forêt pétrifiée.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 247,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!247&Pm=62919680",
+  "recette": [
+   [
+    "Arête géante du Shamansot",
+    3
+   ],
+   [
+    "Calumet Zoth",
+    10
+   ],
+   [
+    "Pépite",
+    200
+   ],
+   [
+    "Morpion de Truchideur",
+    3
+   ],
+   [
+    "Pixel de Fraktale",
+    1
+   ],
+   [
+    "Substrat de Fourré",
+    5
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28452,
+  "nom": "Idole de Foluk Griffée",
+  "type": "Idoles de Quêtes",
+  "niveau": 170,
+  "icone": 178116,
+  "description": "Des marques de griffures semblables à celles de Kanigs recouvrent cette idole du Méryde de l'Ouest. Se pourrait-il qu'il ait été vénéré par ce peuple avant leur arrivée à Cania ?",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 246,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!246&Pm=125831683",
+  "recette": [
+   [
+    "Kriptonite",
+    5
+   ],
+   [
+    "Carpelle de Brouture",
+    10
+   ],
+   [
+    "Poils de Smilomouth",
+    10
+   ],
+   [
+    "Pépite",
+    200
+   ],
+   [
+    "Laine du Royalmouth",
+    1
+   ],
+   [
+    "Croupion de Truchmuche",
+    10
+   ]
+  ],
+  "metier": 1
+ },
+ {
+  "id": 28431,
+  "nom": "Idole Mérydique",
+  "type": "Idoles de Quêtes",
+  "niveau": 180,
+  "icone": 178105,
+  "description": "La magie de plusieurs Mérydes et un fragment de celle de Sadida lui-même résident dans cette idole. Tout ce pouvoir a cependant tendance à s'échapper et à renforcer vos ennemis.",
+  "effets": [
+   "Gagne x1",
+   "effet 2892"
+  ],
+  "brut_effets": [
+   {
+    "from": 0,
+    "to": 1,
+    "characteristic": 0,
+    "category": 7,
+    "elementId": -1,
+    "effectId": 209
+   },
+   {
+    "from": 236,
+    "to": 0,
+    "characteristic": 0,
+    "category": 0,
+    "elementId": -1,
+    "effectId": 2892
+   }
+  ],
+  "criterions": "HA!236&(Pm=149427200|Pm=21497858|Pm=182192129)",
+  "recette": null,
+  "metier": null
+ },
+ {
+  "id": 28455,
+  "nom": "Idole d'Hulhu",
+  "type": "Idoles de Quêtes",
+  "niveau": 200,
+  "icone": 178048,
+  "description": "Cette idole ressemblant en tout point au petit dieu de l'Indicible, devrait vous protéger de la fureur du Chapelain d'Ansôh.",
+  "effets": [],
+  "brut_effets": [],
+  "criterions": "",
+  "recette": [
+   [
+    "Kobalite",
+    5
+   ],
+   [
+    "Peau de Rouquette",
+    10
+   ],
+   [
+    "Écorce de Brouture",
+    3
+   ],
+   [
+    "Dent de Fantômat",
+    3
+   ],
+   [
+    "Pépite",
+    200
+   ],
+   [
+    "Défense du Phossile",
+    1
+   ]
+  ],
+  "metier": 1
+ }
+]
