@@ -3,7 +3,7 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
+   Usage : node tools/simulate.js [--taille 4] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    Par défaut : un donjon par tranche de niveau, 6 équipes, 3 essais par case. */
 "use strict";
@@ -22,7 +22,8 @@ E.dungeonUnlocked = () => true; // on teste l'équilibrage, pas la progression
 
 /* ---------- équipes ---------- */
 const PARTNERS = ["eni", "feca", "cra", "sacri", "iop"];
-const teamFor = (cls) => [cls, ...PARTNERS.filter((x) => x !== cls)].slice(0, 4);
+const SIZE = +arg("taille", 4); // --taille 1|2|3|4 : nombre de héros dans l'équipe
+const teamFor = (cls) => [cls, ...PARTNERS.filter((x) => x !== cls)].slice(0, SIZE);
 const CLS = arg("classes", "") === "toutes" ? D.CLASS_ORDER : arg("classes", "") ? arg("classes").split(",") : ["iop", "cra", "eni", "sram", "osa", "zobal"];
 
 /* ---------- donjons : par défaut, le premier de chaque tranche de niveau ---------- */

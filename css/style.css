@@ -1085,3 +1085,23 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 @media (max-width:600px){.sr-name .tag .bt{display:none}}
 .sigmk svg{width:13px;height:13px;fill:var(--gold);stroke:none;vertical-align:-2px}
 .mrole.inl{display:inline-block;margin-right:4px;font-size:10px;font-weight:900;padding:0 6px;border-radius:999px;background:rgba(160,110,255,.22);box-shadow:0 0 0 1px rgba(160,110,255,.6)}
+/* 0.1 : panneau de clé de donjon */
+.keypanel{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:var(--panel2);border:2px solid var(--frame)}
+.kp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kp-ico{width:40px;height:40px;object-fit:contain;flex:none}
+.kp-t{display:flex;flex-direction:column;flex:1;min-width:140px}
+.kp-btns{display:flex;gap:6px}
+.kp-prog{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kp-prog .bar{flex:1;min-width:100px;max-width:220px}
+.kp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.kp-ing{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:var(--panel);border:1px solid var(--frame);min-width:0}
+.kp-ing.ok{opacity:.65}
+.kp-ing.ok .kp-q{color:var(--action)}
+.kp-ing:not(.ok) .kp-q{color:var(--danger)}
+.kp-rico{width:30px;height:30px;object-fit:contain;flex:none}
+.kp-it{display:flex;flex-direction:column;gap:2px;min-width:0;align-items:flex-start}
+.kp-n{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.kp-q{font-size:12px;font-weight:800}
+.btn.xs{font-size:11px;padding:2px 8px;min-height:0;gap:4px}
+.btn.xs .uico{width:14px;height:14px}
+.xs.warn{color:#ff9b4a}

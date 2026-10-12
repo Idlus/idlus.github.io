@@ -837,12 +837,36 @@ function dungeonSheet(did) {
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
         ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
-      <div class="keybox"><span>${im(resImg(dg.key), "ico sm", dg.key)} ${h(dg.key)} : <b>${keys}</b></span>${R ? `<button class="btn sm" data-act="dgcraftkey" data-id="${did}" ${E.canCraft(S, R) ? "" : "disabled"}>${IC("metiers")} Fabriquer une clé</button>` : ""}</div>
-      ${R && !E.canCraft(S, R) ? `<div class="xs muted">Recette${!keys ? ` · clé fabricable ${etaLine(R.ing) || "<span class=\"eta\">bientôt</span>"}` : ""} :</div>${ingHtml(R.ing)}` : ""}
+      ${keyPanel(did)}
     </div>
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<label class="small row" style="gap:6px">Enchaîner <select data-act="dgchain">${chainOpts.map((x) => `<option value="${x}" ${(ui.dgChain || 1) === x ? "selected" : ""}>${x}×</option>`).join("")}</select></label>
       <button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}</button>` : `<span class="small muted">${G("lock")} Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* 0.1 : panneau de la clé du donjon (recette lisible, d'où vient chaque ingrédient) */
+function keySource(r) {
+  const L = resIndex().src[r] || []; const g = L.find((x) => x.job);
+  if (g) return `<button class="btn xs" data-act="gathersheet" data-job="${g.job}">${IC("pioche")} ${h(GATHER_JOBS[g.job].name)} niv. ${g.lvl}</button>`;
+  const m = L.find((x) => x.m && typeof subOfMon(x.m) !== "string" && subOfMon(x.m)) || L.find((x) => x.m); if (!m) return `<span class="xs muted">${r === E.RARE_COMPONENT ? "trouvailles, boss et coffres" : "source inconnue"}</span>`;
+  const sb = subOfMon(m.m); const pct = E.resRate(m.p).toFixed(1).replace(".", ",");
+  if (sb && typeof sb !== "string") return `<button class="btn xs" data-act="zoneview" data-id="${sb.id}" data-gotab="world" data-tip="${h(MONSTERS[m.m].name)} · ${pct} %">${IC("carte")} ${h(sb.name)}</button>`;
+  return `<span class="xs muted">${h(MONSTERS[m.m].name)}${sb ? " · " + h(DUNGEONS[sb].name) : ""} · ${pct} %</span>`;
+}
+function keyPanel(did) {
+  const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
+  const sub = E.SUBS[E.DUNGEON_SUB[did]];
+  const head = `<div class="kp-head">${im(resImg(dg.key), "kp-ico", dg.key)}<div class="kp-t"><b>${h(dg.key)}</b><span class="xs muted">${keys ? `<b class="num">${keys}</b> en stock · une clé par entrée` : "aucune clé en stock"}</span></div>`;
+  if (!R) return `<div class="keypanel">${head}</div></div>`;
+  const ing = R.ing.map(([r, q]) => ({ r, q, have: S.res[r] || 0 })).sort((a, b) => (a.have >= a.q) - (b.have >= b.q));
+  const ok = ing.filter((x) => x.have >= x.q).length; const can = E.canCraft(S, R); const pinned = S.shop.some((e) => e.id === dg.key);
+  const e = can ? null : E.needEta(S, R.ing);
+  const eta = can ? `<span class="tag good">Prête à fabriquer</span>` : e.stuck ? `<span class="xs warn">Ta chasse actuelle ne donne pas tout : suis les boutons ci-dessous.</span>` : e.sec ? `<span class="xs muted">Prête ${h(E.etaTxt(e.sec))} en continuant ta chasse</span>` : "";
+  return `<div class="keypanel">${head}
+      <div class="kp-btns"><button class="btn sm ${can ? "primary" : ""}" data-act="dgcraftkey" data-id="${did}" ${can ? "" : "disabled"}>${IC("metiers")} Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="special" data-id="${h(dg.key)}" data-tip="Suivre les ingrédients dans la liste de courses (Accueil)">${G("cart")}${pinned ? " ✓" : ""}</button></div></div>
+    <div class="kp-prog"><div class="bar"><i style="width:${pct(ok, ing.length)}%"></i></div><span class="xs num">${ok}/${ing.length} ingrédients</span>${eta}</div>
+    <div class="kp-grid">${ing.map((x) => { const done = x.have >= x.q; return `<div class="kp-ing ${done ? "ok" : ""}">${im(resImg(x.r), "kp-rico", x.r)}<div class="kp-it"><span class="kp-n" title="${h(x.r)}">${h(x.r)}</span><span class="kp-q num">${fmt(Math.min(x.have, x.q))}/${x.q}${done ? " ✓" : ""}</span>${done ? "" : keySource(x.r)}</div></div>`; }).join("")}</div>
+    ${sub && dg.keyDrop ? `<div class="xs muted">La clé tombe aussi parfois sur les monstres de <b>${h(sub.name)}</b>.</div>` : ""}
+  </div>`;
 }
 function encyclopediaHtml() {
   const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
