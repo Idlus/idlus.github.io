@@ -1,6 +1,20 @@
 {
-  "version": "0.1.18",
+  "version": "0.1.19",
   "versions": [
+    {
+      "v": "0.1.19",
+      "name": "Se montrer",
+      "items": [
+        "Défi du jour (Aventure › Donjons) : chaque jour à minuit (heure de Paris), un donjon, une stasis, deux modificateurs et le même hasard pour tout le monde, dans trois paliers : Découverte (1-60), Aventure (61-140) et Légende (141-200)",
+        "Le combat du défi se joue d'un coup, en automatique, avec ton équipe du moment (jusqu'à 8 héros, idoles, familiers et montures compris) ; le moins de tours gagne, puis le plus de PV restants ; essais illimités, le meilleur score du jour est gardé",
+        "Première victoire du jour : coffre avec autant de kamas et de poussière de stasis qu'un passage normal ; 7 jours de suite donnent le titre « Habitué du défi », 30 jours l'ornement « Sablier du défi » (un jour manqué remet la série à zéro)",
+        "Classements › Défi du jour : un tableau par palier, chaque score rejoué par le serveur, avec le podium de la veille",
+        "Carte d'équipe (Équipe › Partager mon équipe) : une image de ton équipe (jusqu'à 8 héros) avec stasis, Dofus, âmes et idoles, en large pour X ou en carré pour Discord, en Émeraude ou Nuit violette ; copier, enregistrer ou publier sur X",
+        "Garde-robe (Héros › Apparence) : chaque coiffe et cape obtenue une fois y reste pour toujours ; chaque héros peut montrer une autre apparence que celle qu'il porte, ou aucune, gratuitement et sans effet sur ses caractéristiques",
+        "Toutes les coiffes et capes du jeu peuvent se montrer : celles que le jeu ne sait pas encore dessiner sont dessinées par DofusDB (le héros garde alors la tête et les couleurs d'origine de sa classe)",
+        "Nouveaux succès : Défi relevé, Une semaine de défis, Un mois de défis, Garde-robe garnie (25 apparences) et Collectionneur (50 apparences, titre « le Collectionneur »)"
+      ]
+    },
     {
       "v": "0.1.18",
       "name": "Chat et panel admin",

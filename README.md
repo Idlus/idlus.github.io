@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.19 « Se montrer » (bêta)
+- Lot Se montrer : défi du jour (même donjon, stasis, modificateurs et hasard pour tous, tirés de la date ; trois paliers ; combat joué d'un coup par le moteur, rejoué par le serveur pour le classement ; coffre, série de 7 et 30 jours), carte d'équipe à partager (image dessinée par le navigateur), garde-robe des coiffes et capes (apparence montrée, sans effet). Code : `js/defi.js`, `supabase/defi.sql`, fonction serveur `record` (`{ defi: palier }`).
+
 ## 0.1.18 « Chat et panel admin » (bêta)
 - Multijoueur : chat général et messages privés en temps réel (Supabase Realtime), objets montrés dans les messages, annonces automatiques (Premiers, numéros 1, niveau 200, Renaissance, Dofus), ignorer et signaler. Panel admin côté serveur (joueurs, sanctions, signalements, vérification, annonces en bandeau, modérateurs). Interface dans `js/chat.js`, règles et fonctions dans `supabase/chat.sql` (appliqué par le workflow « Serveur en ligne »).
 
