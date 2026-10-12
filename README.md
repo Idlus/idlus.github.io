@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.14.1 « Héros plus malin » (bêta)
+- En combat, le héros prépare tout son tour : zone face à un groupe, gros coup sur le boss, élément le moins résisté, coup de grâce.
+
 ## 0.1.14 « Boss mis en scène » (bêta)
 - Mise en scène des boss (mode d'animation « Complètes ») : chacune des 22 mécaniques de boss a maintenant sa propre scène dans l'arène au lieu d'un simple bandeau : Rage (vapeur et veines), Carapace (plaques qui se referment en dôme), Attaque dévastatrice (le boss aspire l'air puis lâche une onde de choc), Point faible (cible qui se fissure au coup suivant, ×1,5 affiché), Séisme (pics de pierre sous la première ligne), Riposte (parade puis contre-coup pendant le tour du héros), Reflet (double miroir et éclat au coup reçu), Miasmes (brume qui traverse l'arène), Dévoreur (le serviteur est avalé), Brise-garde (les boucliers volent en éclats), Putréfaction, Change-peau (l'ancienne peau se détache, la nouvelle teinte reste), Condamnation (crâne à compte à rebours relié au boss, puis guillotine), Mutisme (lettres qui tombent, cadenas), Terreur (ombre géante), Frénésie, Totems (dôme doré), Âmes liées (fil d'âme et dégâts qui filent vers le serviteur), Immortel (le boss part en cendres et renaît), Compte à rebours (vignette rouge et chiffre dès le tour 15)
 - Les 20 boss à signature ont leur scène : Distorsion du temps, Fournaise et givre, Tapis roulant, Grand banquet, Inventions (plan bleu et bombe), Marée, Sacrifice, Dédoublement, Regard pétrifiant, Aspiration, Toucher doré, Larcin, Charge du taureau, Quatre humeurs, À l'abordage, Glyphes pair et impair (glyphe permanent sous Kimbo, bleu ou rouge selon le tour, ×1,4 et ×0,7 affichés), Horloge (engrenages, pendule et compteur de tours), Racines, Glace éternelle, Appétit d'Ougah

@@ -1,6 +1,14 @@
 {
-  "version": "0.1.14",
+  "version": "0.1.14.1",
   "versions": [
+    {
+      "v": "0.1.14.1",
+      "name": "Héros plus malin",
+      "items": [
+        "En combat, le héros prépare tout son tour au lieu de lancer toujours la même attaque : sort de zone face à un groupe, gros coup sur le boss, élément auquel la cible résiste le moins, coup de grâce sur un monstre presque mort, et plus de dégâts perdus sur un monstre déjà vaincu",
+        "Il utilise mieux tous ses PA en combinant ses sorts, et lance donc des attaques qui ne servaient jamais ; ses invocations, protections et soins passent toujours en premier, dans l'ordre de la barre et selon leurs conditions"
+      ]
+    },
     {
       "v": "0.1.14",
       "name": "Boss mis en scène",
