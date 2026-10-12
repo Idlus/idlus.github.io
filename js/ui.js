@@ -684,20 +684,35 @@ function zonePanel(z, tier = -1, open = false) {
   const nUn = subs.filter((s) => E.subUnlocked(S, s.id)).length;
   const lo = Math.min(...subs.map((s) => s.lvl[0])), hi = Math.min(200, Math.max(...subs.map((s) => s.lvl[1])));
   const hunting = subs.some((s) => S.hunting && S.sub === s.id && !S.dungeon);
+  const best = bestSub(); const hasBest = subs.some((s) => s.id === best);
+  const mons = [...new Set(subs.flatMap((s) => s.monsters))]; const traq = mons.filter((k) => E.huntTier(S, k) >= 1).length;
+  const tro = subs.filter((s) => S.trophies && S.trophies[s.id]).length;
+  const prog = `<span class="zf-prog" data-tip="${traq}/${mons.length} monstres Traqueur · ${tro}/${subs.length} trophée${subs.length > 1 ? "s" : ""}"><span class="bar"><i style="width:${pct(traq, mons.length)}%"></i></span>${IC("trophee")}<span class="xs num">${tro}/${subs.length}</span></span>`;
   const head = `<button class="zonefold" data-act="zonefold" data-id="${z.id}" aria-expanded="${open}"><span class="zf-name">${h(z.name)}</span>
-    <span class="zf-meta">${hunting ? `<span class="tag good">Chasse en cours</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span></span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
+    <span class="zf-meta">${hunting ? `<span class="tag good">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
   if (!open) return `<section class="panel zonefoldp">${head}</section>`;
   return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
     <div class="subrows">${subs.map((s) => {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
       if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></span></div>`;
-      const wins = S.progress.wins[s.id] || 0;
-      return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""}" data-act="zoneview" data-id="${s.id}">
+      const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.25;
+      return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
-        <span class="sr-txt"><span class="row between"><b>${h(s.name)}${S.trophies && S.trophies[s.id] ? ` <span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</b></span>
+        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${isBest ? `<span class="tag best" data-tip="La zone qui rapporte le plus d'XP à votre équipe sans être trop dure">${G("star")}<span class="bt"> Meilleure zone</span></span>` : ""}</span>
           <span class="sr-sub">${lvlHint(s)}</span>
-          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}${s.dungeon ? " · donjon" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
+          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
+}
+/* zone conseillée : la plus haute zone débloquée sans malus d'XP, à portée du niveau moyen de l'équipe, et pas trop dure si on y a déjà combattu */
+function bestSub() {
+  const t = E.team(S).length ? E.team(S) : S.chars; const avg = t.reduce((a, c) => a + c.lvl, 0) / t.length; const top = topTeamLvl();
+  let best = null;
+  ZONES.forEach((z) => z.subs.forEach((s) => {
+    if (s.hidden || !E.subUnlocked(S, s.id) || s.lvl[0] > avg + 2 || E.xpPenalty(top - s.lvl[1]) < 1) return;
+    const r = E.zoneRate(S, s.id); if (r && r.fights >= 5 && r.winRate < 0.75) return;
+    if (!best || s.lvl[0] + s.lvl[1] > best.lvl[0] + best.lvl[1]) best = s;
+  }));
+  return best && best.id;
 }
 function mapOpenZone(t) {
   if (!ui.mapOpen) ui.mapOpen = {};

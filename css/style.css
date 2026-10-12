@@ -1071,3 +1071,15 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .zonefold .lockmsg{font-size:12px;color:var(--muted)}
 .zonefold{display:grid;grid-template-columns:1fr auto auto;flex-wrap:nowrap}
 @media (max-width:600px){.zonefold{grid-template-columns:1fr auto;row-gap:2px}.zonefold .zf-meta{grid-column:1;grid-row:2}.zonefold .chev{grid-column:2;grid-row:1}}
+.tag.best{background:var(--gold);color:#2a1d05;border-color:var(--gold)}
+.tag.best svg{width:12px;height:12px;fill:currentColor;stroke:none;vertical-align:-1px}
+.subrow.best{border-color:var(--gold)}
+.subrow.weak{opacity:.5}
+.subrow.weak:hover{opacity:.85}
+.sr-name{display:flex;align-items:center;gap:6px;min-width:0}
+.sr-name .uico{width:18px;height:18px;flex:none}
+.sr-name .tag{flex:none;font-size:11px;padding:1px 7px}
+.zf-prog{display:flex;align-items:center;gap:4px}
+.zf-prog .bar{width:70px;margin:0 4px 0 0}
+.zf-prog .uico{width:16px;height:16px}
+@media (max-width:600px){.sr-name .tag .bt{display:none}}
