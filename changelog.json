@@ -1,6 +1,19 @@
 {
-  "version": "0.1.16",
+  "version": "0.1.17",
   "versions": [
+    {
+      "v": "0.1.17",
+      "name": "Bienvenue",
+      "items": [
+        "Bulles de découverte : 18 courtes explications qui apparaissent une seule fois, la première fois qu'un système se présente (combat automatique, premier objet, clés et stasis, Havre-Sac, étoiles de zone, familiers…) ; « Compris » ou « Plus tard », au plus une toutes les 2 minutes, jamais pendant un combat manuel ni une entrée de boss",
+        "Au premier lancement, une question : « Tu connais DOFUS ? » ; avec oui, les bulles sur ce que tout joueur de DOFUS connaît (caractéristiques, Almanax, familiers, alignement, forgemagie, montures, archimonstres) sont sautées",
+        "Carnet des découvertes dans les Options : relire une bulle, couper les bulles, changer sa réponse ; les bulles vues suivent le compte en ligne, et une partie déjà avancée ne reçoit pas de pluie de bulles",
+        "Recherche rapide : Ctrl+K, la touche « / » ou la loupe en haut de l'écran ; elle trouve objets, ressources, monstres, donjons, zones, panoplies, idoles, familiers, montures, Dofus, succès et pages du jeu, sans accents ni majuscules, avec une faute de frappe tolérée ; les 5 dernières recherches sont gardées",
+        "Fiche d'un objet depuis la recherche, possédé ou non : ce qu'il donne, où le trouver (recette, monstres et donjons avec leur taux) et un bouton vers l'atelier, la zone, le donjon ou la liste de courses ; un monstre jamais rencontré reste « ??? »",
+        "Options › Affichage : taille du texte (90 à 130 %), mouvements réduits (automatique selon le réglage de ton appareil, ou au choix), contraste renforcé ; le thème, les animations et les écrans de récompense sont regroupés au même endroit",
+        "La rareté des objets est retirée : elle ne changeait que la couleur du cadre ; elle reviendra avec l'hôtel des ventes"
+      ]
+    },
     {
       "v": "0.1.16",
       "name": "Classements",
