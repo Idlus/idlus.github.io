@@ -3,7 +3,7 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--idoles hebdo,dynamo|max] [--renaissance N] [--json]
+   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--idoles hebdo,dynamo|max] [--renaissance N] [--json] | --expedition [--niveaux 60,120,200]
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    --tactique : donne aux héros des stats tactiques (Tacle, Fuite, PM, Retrait, Esquive, Invocation) :
      moyen = valeurs d'un héros avec un bon familier ; plafond = tout au maximum ; un nom de stat = cette stat seule, au maximum.
@@ -140,6 +140,34 @@ if (arg("chasse", "")) {
     console.log(`chasse niv. ${L} (${subs.length} zones) : ${(win / n).toFixed(1)} victoires/h, ${(100 * lose / Math.max(1, win + lose)).toFixed(1)} % de défaites, ${Math.round(kam / n)} kamas/h`);
   }
   if (E.tactLog) console.log("déclenchements :", JSON.stringify(E.tactLog));
+  process.exit(0);
+}
+
+/* ---------- 0.1.24 : l'Expédition sans fin, jouée d'un coup avec les choix automatiques ---------- */
+/* --expedition [--niveaux 60,120,200] : étage atteint par niveau d'équipe et profil d'équipement.
+   Cibles : sans équipement 6-10 (une équipe sans équipement perd vite, comme en donjon), bon équipement 30-35, optimisé 50+. */
+if (flag("expedition")) {
+  require("../js/welcome.js"); require("../js/defi.js"); require("../js/expedition.js");
+  const lvls = arg("niveaux", "60,120,200").split(",").map(Number);
+  const PROFS = arg("profils", "aucun,bon,optimise").split(",");
+  const XT = { aucun: [6, 10], bon: [30, 35], optimise: [50, 200] };
+  console.log(`Expédition sans fin : étage atteint (moyenne et meilleur sur ${CLS.length} équipes × ${TRIES} essais), vies de base, campement vide.`);
+  for (const L of lvls) {
+    const line = [];
+    for (const p of PROFS) {
+      const got = [];
+      for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
+        const S = E.newState("Sim", "iop"); S.chars = [];
+        teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, L); c.inTeam = true; });
+        S.chars.forEach((c) => gearUp(S, c, p)); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); giveRen(S); tagRows(S);
+        const err = E.expStart(S, 1); if (err) throw new Error(err);
+        got.push(E.expAutoPlay(S, 600));
+      }
+      const avg = got.reduce((a, b) => a + b, 0) / got.length; const [lo, hi] = XT[p] || [0, 999];
+      line.push(`${p.padEnd(8)} ${avg.toFixed(1).padStart(5)} (max ${Math.max(...got)}) ${avg >= lo && avg <= hi ? "ok" : avg < lo ? "trop dur" : "trop facile"}`);
+    }
+    console.log(`niveau ${String(L).padStart(3)}  ` + line.join("   "));
+  }
   process.exit(0);
 }
 

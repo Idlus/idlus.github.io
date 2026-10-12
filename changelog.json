@@ -1,6 +1,23 @@
 {
-  "version": "0.1.23.1",
+  "version": "0.1.24",
   "versions": [
+    {
+      "v": "0.1.24",
+      "name": "L'Expédition sans fin",
+      "items": [
+        "Nouveau mode Aventure › Expédition, dès le niveau 10, sans clé : des étages sans fin adaptés au niveau de ton équipe à l'entrée (monstres et boss des zones à ± 10 niveaux), de plus en plus forts (étage 10 ≈ stasis 4, 20 ≈ 7, 30 ≈ 10, puis sans limite). XP et butin +4 % par étage",
+        "À chaque étage, 2 ou 3 portes, les mêmes pour tout le monde : Combat, Élite (Champions, plus d'Éclats, relique rare), Trésor (kamas, ressources, relique, un piège), Autel (une bénédiction), Repos (soins et héros ranimés), Marchand (reliques contre Éclats). Un boss de donjon tous les 5 étages, un coffre de palier tous les 10. Longue-vue du campement : voir les monstres derrière les portes",
+        "Un règne par tranche de 10 étages : un modificateur de donjon (Iop enragés, Féca blindés, Sram vampiriques…) dans un ordre tiré chaque semaine, le même pour tous",
+        "24 reliques (12 communes, 8 rares, 4 légendaires) aux effets en % qui s'additionnent pendant l'expédition : +8 % de dégâts, +10 % de PV, vol de vie, bouclier au premier tour, +1 PA, Œuf Doré (+1 vie), Miroir d'Ilyzaelle (copie la relique prise avant)… 8 au plus, refuser une relique donne 15 Éclats. Elles sont perdues à la chute",
+        "10 bénédictions des Douze, une au choix après chaque boss ou autel, gardées jusqu'à la chute : Colère de Iop, Souffle d'Eniripsa, Sablier de Xélor, Chance d'Ecaflip…",
+        "3 vies : une défaite coûte une vie et fait rejouer l'étage avec de nouvelles portes ; à zéro, l'expédition s'arrête et tu gardes tout (XP, kamas, butin, Éclats), avec le record et « pourquoi tu es tombé ». Les PV se gardent d'un étage à l'autre ; un héros tombé revient avec 15 % de PV",
+        "Coffre de palier (kamas, XP, poussière de stasis, un objet de ton niveau, 60 Éclats) : à encaisser tout de suite, ou à mettre en jeu : doublé si tu atteins le palier suivant, perdu si tu tombes avant",
+        "Le Campement : 24 améliorations permanentes en 4 branches (Survie, Fortune, Puissance, Exploration), achetées avec les Éclats d'expédition gagnés à chaque étage même en cas de chute : vies en plus, Repos amélioré, Seconde chance, relique de départ, Œil d'Ecaflip (3 reliques proposées), Forge du Forgelance, Longue-vue, Boussole, Rechercher, Raccourci (repartir du palier 10)…",
+        "Sans réponse de ta part, le jeu choisit la porte après 30 s et la relique ou la bénédiction après 20 s (réglage sur la page). Rien ne tourne hors ligne : l'expédition t'attend ; la chasse reprend toute seule à la fin",
+        "Titres : étage 25 « Éclaireur », 50 « Pèlerin des Douze », 75 « Fidèle des Douze », 100 « Élu des Douze » et ornement « Auréole des Douze » ; 9 succès (paliers, 100 reliques, 10 coffres doublés, campement complet). Record de la semaine noté : le classement et le coffre de la semaine arriveront dans une prochaine mise à jour",
+        "Équilibrage par simulation (`npm run sim -- --expedition`) : une équipe sans équipement tombe au premier boss dès le niveau 30 (étage 13 au niveau 15), un bon équipement atteint l'étage 30-35, une équipe optimisée 50-70 avant le campement"
+      ]
+    },
     {
       "v": "0.1.23.1",
       "name": "Bouftous apprivoisés",

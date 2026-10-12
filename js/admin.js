@@ -74,6 +74,7 @@ function panelHtml() {
     + row(`${inp("admItem", `list="admItemL" placeholder="Objet" style="width:200px"`)}<label class="xs"><input type="checkbox" id="admRad"> Rayonnant</label>${btn("item", "Donner")}`)
     + `<datalist id="admResL">${Object.keys(RES).sort().map((n) => `<option value="${h(n)}">`).join("")}</datalist><datalist id="admItemL">${Object.keys(ITEMS).sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl).map((t) => `<option value="${h(ITEMS[t].name)}">niv. ${ITEMS[t].lvl}</option>`).join("")}</datalist>`)}
   ${sec("Progression", "", row(`${btn("unlock", "Débloquer toutes les zones")}${btn("stasis", "Stasis 10 dans tous les donjons")}`))}
+  ${sec("Expédition sans fin", "Éclats pour le campement, étages sautés dans l'expédition en cours.", row(`${btn("eclats", "+500 Éclats", `data-v="500"`)}${btn("eclats", "+5 000 Éclats", `data-v="5000"`)}${btn("camp", "Tout le campement")}${btn("floors", "Étage +5", `data-v="5"`)}${btn("floors", "Étage +20", `data-v="20"`)}${btn("expend", "Finir l'expédition")}`))}
   ${sec("Parties types", "Enregistrez la partie actuelle pour y revenir, ou créez une équipe toute prête.",
     row(`${inp("admSnapN", `placeholder="Nom (ex. équipe niveau 100)" style="width:220px"`)}${btn("snapsave", "Enregistrer la partie")}`)
     + (snaps.length ? snaps.map((x, i) => row(`<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${h(x.meta || "")}</span></span>${btn("snapload", "Charger", `data-i="${i}"`)}${btn("snapdel", "Supprimer", `data-i="${i}"`, "danger")}`)).join("") : `<span class="xs muted">Aucune partie enregistrée.</span>`)
@@ -134,6 +135,11 @@ document.addEventListener("click", (ev) => {
     case "item": { const n = val("admItem"); const tpl = Object.keys(ITEMS).find((k) => ITEMS[k].name === n); if (!tpl) { DX.toast("Objet inconnu : choisissez-le dans la liste."); return; }
       E.rollItem(s, tpl, { radiant: !!(document.getElementById("admRad") || {}).checked || false }); done(`${n} ajouté au sac.`); return; }
     case "unlock": unlockAll(s); done("Toutes les zones sont débloquées."); return;
+    case "eclats": E.camp(s).ec += +d.v; done(`+${fmt(+d.v)} Éclats d'expédition.`); return;
+    case "camp": { const C = E.camp(s); E.EXP_CAMP.forEach((u) => { C.ups[u.id] = C.ups[u.id] || Date.now(); }); done("Les 24 améliorations du campement sont achetées."); return; }
+    case "floors": { const X = s.exp; if (!E.expActive(s)) { DX.toast("Aucune expédition en cours : pars d'abord (Aventure › Expédition)."); return; } if (X.door !== null || X.pend.length) { DX.toast("Finis d'abord le combat ou le choix en cours."); return; }
+      X.floor += +d.v; X.doors = E.expDoors(s, X); done(`Étage ${X.floor}.`); return; }
+    case "expend": { if (!E.expActive(s)) { DX.toast("Aucune expédition en cours."); return; } E.expQuit(s); done("Expédition terminée."); return; }
     case "stasis": Object.keys(DUNGEONS).forEach((did) => { const SI = E.stasisInfo(s, did); SI.max = Math.max(SI.max, E.STASIS_MAX); }); unlockAll(s); done("Stasis 10 débloquée partout."); return;
     case "snapsave": { const name = (val("admSnapN") || `Partie du ${new Date().toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`).slice(0, 40);
       const a = readSnaps().filter((x) => x.name !== name); if (a.length >= SNAP_MAX) { DX.toast(`${SNAP_MAX} parties au maximum : supprimez-en une.`); return; }

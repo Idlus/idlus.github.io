@@ -16,9 +16,21 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.23.1";
+const GAME_VERSION = "0.1.24";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.24", name: "L'Expédition sans fin", items: [
+    "Nouveau mode Aventure › Expédition, dès le niveau 10, sans clé : des étages sans fin adaptés au niveau de ton équipe à l'entrée (monstres et boss des zones à ± 10 niveaux), de plus en plus forts (étage 10 ≈ stasis 4, 20 ≈ 7, 30 ≈ 10, puis sans limite). XP et butin +4 % par étage",
+    "À chaque étage, 2 ou 3 portes, les mêmes pour tout le monde : Combat, Élite (Champions, plus d'Éclats, relique rare), Trésor (kamas, ressources, relique, un piège), Autel (une bénédiction), Repos (soins et héros ranimés), Marchand (reliques contre Éclats). Un boss de donjon tous les 5 étages, un coffre de palier tous les 10. Longue-vue du campement : voir les monstres derrière les portes",
+    "Un règne par tranche de 10 étages : un modificateur de donjon (Iop enragés, Féca blindés, Sram vampiriques…) dans un ordre tiré chaque semaine, le même pour tous",
+    "24 reliques (12 communes, 8 rares, 4 légendaires) aux effets en % qui s'additionnent pendant l'expédition : +8 % de dégâts, +10 % de PV, vol de vie, bouclier au premier tour, +1 PA, Œuf Doré (+1 vie), Miroir d'Ilyzaelle (copie la relique prise avant)… 8 au plus, refuser une relique donne 15 Éclats. Elles sont perdues à la chute",
+    "10 bénédictions des Douze, une au choix après chaque boss ou autel, gardées jusqu'à la chute : Colère de Iop, Souffle d'Eniripsa, Sablier de Xélor, Chance d'Ecaflip…",
+    "3 vies : une défaite coûte une vie et fait rejouer l'étage avec de nouvelles portes ; à zéro, l'expédition s'arrête et tu gardes tout (XP, kamas, butin, Éclats), avec le record et « pourquoi tu es tombé ». Les PV se gardent d'un étage à l'autre ; un héros tombé revient avec 15 % de PV",
+    "Coffre de palier (kamas, XP, poussière de stasis, un objet de ton niveau, 60 Éclats) : à encaisser tout de suite, ou à mettre en jeu : doublé si tu atteins le palier suivant, perdu si tu tombes avant",
+    "Le Campement : 24 améliorations permanentes en 4 branches (Survie, Fortune, Puissance, Exploration), achetées avec les Éclats d'expédition gagnés à chaque étage même en cas de chute : vies en plus, Repos amélioré, Seconde chance, relique de départ, Œil d'Ecaflip (3 reliques proposées), Forge du Forgelance, Longue-vue, Boussole, Rechercher, Raccourci (repartir du palier 10)…",
+    "Sans réponse de ta part, le jeu choisit la porte après 30 s et la relique ou la bénédiction après 20 s (réglage sur la page). Rien ne tourne hors ligne : l'expédition t'attend ; la chasse reprend toute seule à la fin",
+    "Titres : étage 25 « Éclaireur », 50 « Pèlerin des Douze », 75 « Fidèle des Douze », 100 « Élu des Douze » et ornement « Auréole des Douze » ; 9 succès (paliers, 100 reliques, 10 coffres doublés, campement complet). Record de la semaine noté : le classement et le coffre de la semaine arriveront dans une prochaine mise à jour",
+    "Équilibrage par simulation (`npm run sim -- --expedition`) : une équipe sans équipement tombe au premier boss dès le niveau 30 (étage 13 au niveau 15), un bon équipement atteint l'étage 30-35, une équipe optimisée 50-70 avant le campement" ] },
   { v: "0.1.23.1", name: "Bouftous apprivoisés", items: [
     "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
     "Les groupes d'au moins 4 monstres arrivent avec les zones 32-40 (avant : dès les zones 22-30)",
@@ -616,7 +628,7 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
 ].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
@@ -763,22 +775,22 @@ function renderNav() {
 /* cadre « Combat en cours » (PC) : donjon et salle, ou zone de chasse ; rafraîchi par la boucle */
 function navLiveHtml() {
   if (!S || ui.tab === "combat" || !E.team(S).length) return "";
-  const dg = S.dungeon && DUNGEONS[S.dungeon.id];
-  if (!dg && !(S.hunting && S.sub)) return "";
-  const where = dg ? dg.name : E.SUBS[S.sub].name;
-  const sub = dg ? `salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}${S.dungeon.stasis ? ` · stasis ${S.dungeon.stasis}` : ""}` : "chasse en cours";
+  const dg = S.dungeon && DUNGEONS[S.dungeon.id]; const XP = E.expActive(S) ? S.exp : null;
+  if (!dg && !XP && !(S.hunting && S.sub)) return "";
+  const where = XP ? "Expédition sans fin" : dg ? dg.name : E.SUBS[S.sub].name;
+  const sub = XP ? `étage ${XP.floor} · ${XP.lives} vie${XP.lives > 1 ? "s" : ""}` : dg ? `salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}${S.dungeon.stasis ? ` · stasis ${S.dungeon.stasis}` : ""}` : "chasse en cours";
   return `<button class="navlive" data-tab="combat" title="Voir le combat"><span class="pulse"></span><span class="tx"><b>Combat en cours</b><small>${h(where)} · ${sub}</small></span></button>`;
 }
 function updNavLive() { const el = $("#navlive"); if (!el) return; const v = navLiveHtml(); if (el.dataset.v !== v) { el.innerHTML = v; el.dataset.v = v; } }
 function statusHtml() {
   if (!S) return "";
   const team = E.team(S);
-  const where = S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
+  const where = E.expActive(S) ? `Expédition · étage ${S.exp.floor}` : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0);
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
-    <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
+    <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it hide-sm">${IC("monde")} <span>${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
@@ -1312,14 +1324,15 @@ function renderCombat() {
   const team = E.team(S); const fs = E.freeSpirit(S);
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   if (!ui.combatCid || !team.find((c) => c.id === ui.combatCid)) ui.combatCid = team[0] && team[0].id;
-  const title = dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
+  const XP = E.expActive(S) ? S.exp : null; // 0.1.24 : étage de l'Expédition sans fin
+  const title = XP ? `Étage ${XP.floor} · règne de ${XP.regne.god}` : dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
-  <div class="pagehead combathead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
+  <div class="pagehead combathead"><div><div class="small muted">${XP ? `Expédition sans fin · ${XP.lives} vie${XP.lives > 1 ? "s" : ""} sur ${XP.livesMax} · ${XP.relics.length} relique${XP.relics.length > 1 ? "s" : ""}` : dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
-      ${idolBtn(S.dungeon)}${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir l'expédition</button>` : dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
@@ -3917,6 +3930,7 @@ function render() {
   else if (ui.tab === "ren") renderRenaissance();
   else if (ui.tab === "carnet") renderCarnet();
   else if (ui.tab === "ladder") renderLadder();
+  else if (ui.tab === "exp" && window.EXPUI) window.EXPUI.render($("#main"));
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
@@ -3954,6 +3968,7 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
+  if (ev.t === "exp") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Expédition sans fin</div><div class="cele-t">Étage ${ev.floor} atteint</div><div class="cele-s">Titre « ${h(ev.title)} » débloqué (onglet Héros)</div>`;
   if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Chasse au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
     return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
@@ -4112,7 +4127,7 @@ function pageGo(id) {
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
-    case "defi": go("world", "world", "dungeons"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
+    case "defi": go("world", "world", "dungeons"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
@@ -4587,6 +4602,7 @@ document.addEventListener("click", (ev) => {
   if (a && /^(ch|adm)-/.test(a)) return; // chat et panel admin : js/chat.js
   if (a && a.startsWith("sm-")) { if (S) smAct(a, t); return; }
   if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
+  if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 0.1.24 : Expédition sans fin (js/expui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }

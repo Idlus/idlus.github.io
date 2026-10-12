@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.24 « L'Expédition sans fin » (bêta)
+- Nouveau mode sans fin (Aventure › Expédition, niveau 10, sans clé) : étages adaptés au niveau de l'équipe à l'entrée, 2-3 portes par étage (Combat, Élite, Trésor, Autel, Repos, Marchand ; boss tous les 5, palier tous les 10), règne des Douze par tranche de 10 étages, 24 reliques en %, 10 bénédictions, 3 vies, coffre de palier à encaisser ou doubler, campement de 24 améliorations permanentes payées en Éclats d'expédition. Logique dans `js/expedition.js` (branchée dans `E.startFight`, `endFight`, `E.tick`, `dealDamage`), interface dans `js/expui.js`. Difficulté sur la courbe des stasis (`E.expStasis`, `E.EXP_CURVE`). Tests : `tests/expedition.test.js` ; simulation : `node tools/simulate.js --expedition`. Lot 2 à venir : classement et coffre de la semaine (rejoués par le serveur).
+
 ## 0.1.23.1 « Bouftous apprivoisés » (bêta)
 - Retour joueur : Bouftous à 700-1100 PV, équipe balayée en boucle. Cause : `E.MON_POW.hunt` (0.1.12.3) montait de ×1 au niveau 15 à ×4,5 au niveau 30, et `minGroup` imposait 4 monstres dès les zones dont le niveau max atteint 25. Nouveau : `hunt` = [[20,1,1],[30,2.6,2.4],[40,4.5,4]] et `minGroup` dès un niveau max de 33. Simulation (`node tools/simulate.js --chasse N --zones id --profils aucun|debutant|bon`, nouvelles options `--zones` et profil `debutant`, kamas/h affichés) : voir le tableau dans le récapitulatif.
 

@@ -21,7 +21,7 @@
   const live = (S) => !!(S && Array.isArray(S.chars) && S.stats);
 
   /* ======================= CARNET DE BORD ======================= */
-  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Ventes au jeu", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", tresor: "Chasse au trésor", autre: "Autres" };
+  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Ventes au jeu", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", tresor: "Chasse au trésor", expedition: "Expédition", autre: "Autres" };
   E.CARNET_OUT = { fm: "Forgemagie", havre: "Havre-Sac", craft: "Artisanat et clés", monture: "Montures", boutique: "Boutique", hdv: "Hôtel de vente", idole: "Idoles", donjon: "Donjons", autre: "Autres" };
   const ACT_CAT = {
     sellItem: "vente", sellRes: "vente",
@@ -33,6 +33,7 @@
     enterDungeon: "donjon", leaveDungeon: "donjon", toggleIdol: "idole",
     almanaxOffer: "quete", redeemGift: "quete", togglePin: "quete", rerollBounty: "quete",
     defiPlay: "defi", tresorClaim: "tresor", tresorStart: "tresor", tresorFight: "tresor",
+    expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition",
   };
   const catOf = (cat, amount) => (amount > 0 ? (E.CARNET_IN[cat] ? cat : "autre") : (E.CARNET_OUT[cat] ? cat : "autre"));
 
