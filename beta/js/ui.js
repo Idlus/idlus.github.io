@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.9.3";
+const GAME_VERSION = "0.1.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.10", name: "Sorts signature", items: [
+    "Sorts signature : 2 sorts par classe (38 en tout) ont maintenant une animation unique, liée à ce qu'ils font dans DOFUS : la Colère de Iop qui saute hors de l'écran, l'Attaque Mortelle qui fige le temps et coupe la cible en deux, le Sablier de Xélor qui rembobine, la machine à sous de Tout ou Rien, le mot censuré du Mot Interdit, la Mascarade au projecteur, la Mégabombe et son champignon, le portail géant de Cataclysme…",
+    "Pendant un sort signature, les actions suivantes du combat attendent la fin de l'animation (une seconde environ) ; rien ne change aux gains",
+    "Ces animations ne jouent qu'avec les animations « Complètes » (Options) ; en « Sobres », les sorts gardent leur animation habituelle" ] },
   { v: "0.1.9.3", name: "Passif visible", items: [
     "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des 19 classes) ; la fenêtre défile au lieu de rétrécir son contenu",
   ] },
@@ -1184,9 +1188,9 @@ function buildArena(F) {
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "compact"
     ? `<div class="cmp"><div class="col c">${list("c")}</div><div class="col m">${list("m")}</div></div><div class="result" id="fresult"></div>`
-    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="fxl"></div><div class="result" id="fresult"></div>`;
+    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="fxg"></div><div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="fxl"></div><div class="result" id="fresult"></div>`;
   arena.querySelectorAll(".ent").forEach((n) => (ui.arena.nodes[+n.dataset.i] = n));
-  ui.arena.fxl = arena.querySelector(".fxl"); if (view !== "compact") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
+  ui.arena.fxl = arena.querySelector(".fxl"); ui.arena.fxg = arena.querySelector(".fxg"); if (view !== "compact") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
   placeEnts(F); stickyCheck();
@@ -1354,6 +1358,234 @@ function axEvent(F, A, f) {
   } else if (f.k === "phase") phaseFlash();
 }
 /* une action = un même numéro d'événement : lancer, voyage, puis impacts */
+/* ===================== sorts signature : une mécanique unique pour 2 sorts par classe (38 sorts, maquette v4) ===================== */
+const SG_T = 0.62; // rythme de la maquette resserré pour le pas du combat
+/* copie de l'image d'une entité (ombre, moitié, image rémanente) placée au même endroit */
+function sgClone(A, n, cls, vars) { const b = axBody(n), img = b.matches("img") ? b : b.querySelector("img.look,img.sprite,img"); const r = (img || b).getBoundingClientRect(), a = A.el.getBoundingClientRect();
+  const d = axMk(A, "sg sclone " + cls, r.left - a.left + r.width / 2, r.top - a.top + r.height / 2, vars); d.style.width = r.width + "px"; d.style.height = r.height + "px"; if (img) d.innerHTML = `<img src="${img.getAttribute("src")}" alt="">`; return d; }
+/* petite boîte à outils donnée à chaque animation : positions, éléments, attente, et surtout hit() qui déclenche les vrais dégâts du moteur au bon moment */
+function sgCtx(F, A, src, sn, hits, rest, el) {
+  const alive = (side) => F.ents.map((e, i) => (e.alive && e.side === side && !e.summon && A.nodes[i] ? A.nodes[i] : null)).filter(Boolean);
+  const tg = [...new Set(hits.map((f) => f.t))].map((t) => A.nodes[t]).filter(Boolean);
+  const bt = [...new Set(rest.filter((f) => f.k === "buff" || f.k === "heal").map((f) => f.t))].map((t) => A.nodes[t]).filter(Boolean);
+  const done = new Set(); let restDone = false;
+  const c = {
+    A, F, me: sn, src, el, tg, foes: tg.length ? tg : alive("m"), allies: bt.length ? bt : alive("c"), fin: [], T: SG_T,
+    wait: (ms) => new Promise((res, rej) => setTimeout(() => (ui.arena === A ? res() : rej("stop")), ms * SG_T)),
+    later: (e, ms) => axLater(e, ms * SG_T),
+    mk: (cls, x, y, v) => axMk(A, "sg " + cls, x, y, v),
+    mkg: (cls, x, y, v) => { const d = axMk(A, "sg " + cls, x, y, v); if (A.fxg) A.fxg.appendChild(d); return d; },
+    pt: (n, k) => axPt(A, n, k), foot: (n) => { const f = axFoot(A, n); return { x: f.x, y: f.y - 4 }; }, body: axBody,
+    anim: (n, kf, o) => { const b = axBody(n); return b && b.animate ? b.animate(kf, typeof o === "number" ? { duration: o * SG_T } : Object.assign({}, o, { duration: o.duration * SG_T, delay: (o.delay || 0) * SG_T })) : null; },
+    cancel: (n) => { const b = axBody(n); if (b && b.getAnimations) b.getAnimations().forEach((x) => x.cancel()); },
+    clone: (n, cls, v) => sgClone(A, n, cls, v), W: () => A.el.clientWidth, H: () => A.el.clientHeight, rnd: axRnd, C: axC,
+    dir: (n) => (c.pt(n).x >= c.pt(sn).x ? 1 : -1),
+    dim: (on, deep) => { let d = A.fxl.querySelector(".sgdim"); if (!on) { if (d) d.remove(); return; } if (!d) d = axMk(A, "sg sgdim", 0, 0); d.classList.toggle("deep", !!deep); },
+    cls: (k, on) => A.el.classList.toggle("sg-" + k, on),
+    whiteout: (ms = 180) => { const w = axMk(A, "sg whiteout", 0, 0); w.animate([{ opacity: 1 }, { opacity: 1, offset: 0.4 }, { opacity: 0 }], { duration: ms * SG_T, fill: "forwards" }); axLater(w, ms * SG_T + 20); },
+    ico: (x, y, id, cls = "") => { const d = axMk(A, "sg ico " + cls, x, y); d.innerHTML = `<img src="assets/s/${id}.png" alt="">`; return d; },
+    puff: (x, y, col, n) => axPuff(A, x, y, col, n), num: (n, txt, col, small) => floatAt(n, txt, col, small),
+    shake: (k) => { if (axFull()) pulse(A.el, k || "shake"); }, proj: (a, b, el2, shape, dur) => axProj(A, a, b, el2, shape, dur * SG_T),
+    svg: (html, ms) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", "sgsvg"); s.setAttribute("width", A.el.clientWidth); s.setAttribute("height", A.el.clientHeight); s.innerHTML = html; A.fxl.appendChild(s); axLater(s, ms * SG_T); return s; },
+    who: (n) => n.querySelector(".who"),
+    z: (n, on) => { if (on) { n.dataset.z = n.style.zIndex; n.style.zIndex = 60; } else n.style.zIndex = n.dataset.z || ""; },
+    hit: (n) => { const t = A.nodes.indexOf(n); hits.forEach((f) => { if (f.t === t && !done.has(f)) { done.add(f); axEvent(F, A, f); } }); },
+    hitAll: async (gap = 60) => { for (const n of c.foes) { c.hit(n); if (gap) await c.wait(gap); } },
+    rest: () => { if (restDone) return; restDone = true; rest.forEach((f) => axEvent(F, A, f)); },
+    flush: () => { hits.forEach((f) => { if (!done.has(f)) { done.add(f); axEvent(F, A, f); } }); c.rest(); },
+    hold: (ms) => { A.sgHold = Date.now() + ms * SG_T; },
+  };
+  return c;
+}
+const SG = {
+  /* Iop · Épée Céleste : le ciel se fend, une lame tombe en hélice et vibre dans le sol */
+  s13122: async (c) => { c.hold(900); const t = c.foes[0], b = c.pt(t, 0.5); let pts = ""; for (let i = 0; i <= 8; i++) pts += `${b.x - 70 + i * 17.5},${16 + (i % 2 ? 9 : -9) + c.rnd(-3, 3)} `;
+    const s = c.svg(`<polyline points="${pts}" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>`, 900); s.style.transformOrigin = b.x + "px 0"; s.animate([{ opacity: 0, transform: "scaleX(0)" }, { opacity: 1, transform: "scaleX(1)", offset: 0.3 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 900 * c.T });
+    await c.wait(300); const bl = c.mk("blade", b.x, -60); bl.animate([{ top: "-60px", transform: "translate(-50%,-50%) rotate(0)" }, { top: b.y + 8 + "px", transform: "translate(-50%,-50%) rotate(720deg)" }], { duration: 420 * c.T, easing: "cubic-bezier(.5,0,1,.5)", fill: "forwards" });
+    await c.wait(420); bl.animate([{ transform: "translate(-50%,-50%) rotate(720deg)" }, { transform: "translate(-54%,-50%) rotate(715deg)" }, { transform: "translate(-46%,-50%) rotate(725deg)" }, { transform: "translate(-50%,-50%) rotate(720deg)" }], { duration: 160 * c.T, iterations: 5 }); c.later(bl, 1300);
+    c.shake("shake2"); c.hit(t); await c.wait(80); await c.hitAll(40); },
+  /* Iop · Colère de Iop : l'arène s'assombrit, il saute hors de l'écran, une ombre grandit sous la cible, puis il retombe */
+  s13124: async (c) => { c.hold(1500); const t = c.foes[0], me = c.me; c.dim(true); const au = document.createElement("div"); au.className = "sgaura"; c.body(me).appendChild(au); c.fin.push(() => { au.remove(); c.dim(false); c.z(me, false); c.cancel(me); });
+    await c.wait(400); const a = c.pt(me), b = c.pt(t), dx = b.x - a.x, dy = b.y - a.y; c.z(me, true);
+    c.anim(me, [{ transform: "none" }, { transform: "translateY(10px) scaleY(.85)", offset: 0.25 }, { transform: "translateY(-560px)" }], { duration: 400, easing: "cubic-bezier(.4,0,1,.6)", fill: "forwards" }); await c.wait(400);
+    const f = c.foot(t); const sh = c.mkg("shadow", f.x, f.y - 2); sh.animate([{ transform: "translate(-50%,-50%) scale(.1)", opacity: 0.2 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0.85 }], { duration: 700 * c.T, fill: "forwards" }); await c.wait(700); sh.remove();
+    c.anim(me, [{ transform: `translate(${dx}px,${dy - 560}px)` }, { transform: `translate(${dx}px,${dy}px) scaleY(.8)` }], { duration: 170, easing: "cubic-bezier(.6,0,1,.4)", fill: "forwards" }); await c.wait(170);
+    c.dim(false); c.whiteout(260); c.shake(); for (let i = 0; i < 3; i++) { const r = c.mkg("crater", f.x, f.y); r.style.animationDelay = i * 90 + "ms"; c.later(r, 1200); }
+    c.hit(t); await c.wait(500); au.remove(); c.anim(me, [{ transform: `translate(${dx}px,${dy}px)` }, { transform: "none" }], { duration: 360, fill: "forwards" }); await c.wait(380); c.cancel(me); c.z(me, false); },
+  /* Crâ · Flèche Glacée : bloc de glace qui éclate en éclats */
+  s32435: async (c) => { c.hold(800); const t = c.foes[0]; const a = c.pt(c.me, 0.45), b = c.pt(t, 0.5); c.proj(a, b, "e", "arrow", 220); await c.wait(220); const r = c.body(t).getBoundingClientRect(), p = c.pt(t, 0.5);
+    const ice = c.mk("iceblock", p.x, p.y); ice.style.width = r.width * 1.1 + "px"; ice.style.height = r.height * 1.05 + "px"; ice.animate([{ transform: "translate(-50%,-50%) scale(.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 220 * c.T, fill: "forwards" });
+    c.body(t).style.filter = "saturate(.3) brightness(1.25) hue-rotate(160deg)"; c.fin.push(() => { c.body(t).style.filter = ""; ice.remove(); }); await c.wait(800); ice.remove(); c.body(t).style.filter = "";
+    for (let i = 0; i < 10; i++) { const sd = c.mk("shard", p.x, p.y); const ang = c.rnd(0, Math.PI * 2), d = c.rnd(40, 110); sd.animate([{ transform: "translate(-50%,-50%) rotate(0)", opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(ang) * d}px),calc(-50% + ${Math.sin(ang) * d + 40}px)) rotate(${c.rnd(-300, 300)}deg)`, opacity: 0 }], { duration: 650 * c.T, easing: "cubic-bezier(.2,.6,.6,1)" }); c.later(sd, 660); }
+    c.hit(t); },
+  /* Crâ · Flèche Explosive : la flèche reste plantée, la cible clignote de plus en plus vite, puis explose et projette les voisins */
+  s32445: async (c) => { c.hold(1300); const t = c.foes[0], d1 = c.dir(t); const a = c.pt(c.me, 0.45), b = c.pt(t, 0.5); c.proj(a, b, "f", "arrow", 220); await c.wait(220); const p = c.pt(t, 0.5), f = c.foot(t);
+    const st = c.mk("stuck", p.x - 10, p.y - 6); c.later(st, 1400); const bd = c.body(t); c.fin.push(() => (bd.style.filter = ""));
+    for (const d of [300, 200, 140, 90, 60, 45]) { bd.style.filter = "brightness(1.6) sepia(1) saturate(6) hue-rotate(-20deg)"; await c.wait(d / 2); bd.style.filter = ""; await c.wait(d / 2); }
+    const ex = c.mk("blastdisc", p.x, p.y); c.later(ex, 700); const sc = c.mkg("scorch", f.x, f.y - 2); sc.animate([{ opacity: 0 }, { opacity: 0.85, offset: 0.1 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0 }], { duration: 2600 * c.T, fill: "forwards" }); c.later(sc, 2600); c.shake();
+    for (const k of c.foes) if (k !== t) c.anim(k, [{ transform: "none" }, { transform: `translateX(${d1 * 34}px) rotate(${d1 * 8}deg)`, offset: 0.3 }, { transform: "none" }], 700);
+    c.hit(t); await c.hitAll(40); },
+  /* Féca · Typhon : son glyphe s'allume, un cyclone balaie la ligne ennemie et soulève les monstres */
+  s12976: async (c) => { c.hold(1400); const fo = c.foot(c.me); const g = c.ico(fo.x, fo.y - 2, 12138, "glyphico"); c.later(g, 1600); await c.wait(250);
+    const a = c.pt(c.me, 0.6), d1 = c.dir(c.foes[0]), end = d1 > 0 ? c.W() + 60 : -60; const cy = c.mk("cyclone", a.x, a.y); cy.innerHTML = "<i></i><i></i><i></i><i></i>"; cy.animate([{ left: a.x + "px" }, { left: end + "px" }], { duration: 1100 * c.T, easing: "ease-in", fill: "forwards" }); c.later(cy, 1130);
+    await Promise.all(c.foes.map(async (k) => { const t = Math.max(0, (c.pt(k).x - a.x) / (end - a.x)); await c.wait(1100 * Math.pow(t, 1.4)); c.anim(k, [{ transform: "none" }, { transform: "translateY(-70px) rotate(-14deg)", offset: 0.35 }, { transform: "translateY(-60px) rotate(12deg)", offset: 0.6 }, { transform: "translateY(0) scaleY(.85)", offset: 0.9 }, { transform: "none" }], 800); await c.wait(450); c.hit(k); })); },
+  /* Féca · Bouclier Féca : un mur en nid d'abeille se construit autour de chaque allié protégé */
+  s12982: async (c) => { c.hold(700); for (const k of c.allies) { const p = c.pt(k, 0.5), r = c.body(k).getBoundingClientRect(), R = r.width * 0.6;
+      [[0, 0], [1, 0], [0.5, 0.87], [-0.5, 0.87], [-1, 0], [-0.5, -0.87], [0.5, -0.87]].forEach(([u, v], i) => { const hx = c.mk("hex", p.x + u * R, p.y + v * R); hx.style.animationDelay = i * 50 + "ms"; c.later(hx, 1500); }); await c.wait(140); }
+    c.rest(); },
+  /* Osamodas · Cri de l'Ours : des arcs sonores partent de sa bouche, la cible se déforme, l'arène vibre */
+  s31132: async (c) => { c.hold(800); const t = c.foes[0], a = c.pt(c.me, 0.3), b = c.pt(t, 0.5); c.cls("rumble", true); c.fin.push(() => c.cls("rumble", false)); c.anim(c.me, [{ transform: "none" }, { transform: "scale(1.12) translateY(-4px)" }, { transform: "none" }], 500);
+    const d1 = c.dir(t); for (let i = 0; i < 5; i++) { const ar = c.mk("sarc", a.x + d1 * 20, a.y); if (d1 < 0) ar.style.transform = "translate(0,-50%) scaleX(-1)"; ar.animate([{ transform: `translate(0,-50%) scale(${d1 > 0 ? "" : "-"}.2,.2)`, opacity: 1 }, { transform: `translate(${b.x - a.x - d1 * 20}px,-50%) scale(${d1 > 0 ? "" : "-"}1.6,1.6)`, opacity: 0 }], { duration: 520 * c.T, easing: "ease-out" }); c.later(ar, 530); await c.wait(80); }
+    for (const k of c.foes) c.anim(k, [{ transform: "none" }, { transform: "skewX(-18deg) scaleX(1.25)", offset: 0.3 }, { transform: "skewX(12deg) scaleX(.85)", offset: 0.6 }, { transform: "none" }], 600); await c.hitAll(60); c.cls("rumble", false); c.rest(); },
+  /* Osamodas · Souffle Draconique : un cône de feu, le sol en flammes sous les ennemis, les monstres noircis */
+  s31122: async (c) => { c.hold(900); const a = c.pt(c.me, 0.4), d1 = c.dir(c.foes[0]); const cn = c.mk("breath", d1 > 0 ? a.x : 0, a.y); cn.style.width = (d1 > 0 ? c.W() - a.x : a.x) + "px"; if (d1 < 0) cn.style.transform = "translate(0,-50%) scaleX(-1)";
+    cn.animate([{ clipPath: "polygon(0 48%,0 48%,0 52%,0 52%)" }, { clipPath: "polygon(0 44%,100% 0,100% 100%,0 56%)", offset: 0.35 }, { clipPath: "polygon(0 44%,100% 0,100% 100%,0 56%)", opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 900 * c.T }); c.later(cn, 900);
+    await c.wait(330); for (const k of c.foes) { const f = c.foot(k); for (let i = -2; i <= 2; i++) { const fl = c.mk("flame", f.x + i * 16, f.y); fl.style.animationDelay = c.rnd(0, 300) + "ms"; fl.style.height = c.rnd(26, 46) + "px"; c.later(fl, 1600); } c.body(k).style.filter = "brightness(.45) sepia(.6)"; }
+    c.fin.push(() => c.foes.forEach((k) => (c.body(k).style.filter = ""))); await c.hitAll(90); await c.wait(600); c.foes.forEach((k) => (c.body(k).style.filter = "")); },
+  /* Enutrof · Éboulement : le sol se fissure sous la cible, qui s'enfonce jusqu'au cou et ressort couverte de poussière */
+  s13352: async (c) => { c.hold(1000); const t = c.foes[0], f = c.foot(t); for (let i = 0; i < 5; i++) { const cr = c.mkg("crack", f.x, f.y - 2); cr.style.setProperty("--r", (i * 72 + c.rnd(-20, 20)) + "deg"); cr.style.animationDelay = i * 50 + "ms"; c.later(cr, 2200); }
+    await c.wait(400); const img = c.body(t); const clip = Math.max(0, t.getBoundingClientRect().bottom - img.getBoundingClientRect().bottom) + 2; t.style.clipPath = `inset(0 0 ${clip}px 0)`; c.fin.push(() => { t.style.clipPath = ""; c.cancel(t); });
+    c.anim(t, [{ transform: "none" }, { transform: "translateY(62px)" }], { duration: 380, easing: "cubic-bezier(.6,0,1,.6)", fill: "forwards" }); c.puff(f.x, f.y - 6, "rgba(170,140,100,.85)", 9); c.shake("shake2");
+    await c.wait(380); c.hit(t); await c.wait(400); c.anim(t, [{ transform: "translateY(62px)" }, { transform: "translateY(-6px)", offset: 0.8 }, { transform: "none" }], { duration: 500, fill: "forwards" }); c.puff(f.x, f.y - 16, "rgba(170,140,100,.7)", 6); await c.wait(520); c.cancel(t); t.style.clipPath = ""; },
+  /* Enutrof · Coup de Grisou : les lumières s'éteignent, seule sa lanterne vacille, puis un flash blanc projette les monstres */
+  s13368: async (c) => { c.hold(1300); c.dim(true, true); c.fin.push(() => c.dim(false)); const a = c.pt(c.me, 0.55), d1 = c.dir(c.foes[0]); const l = c.mk("lamp", a.x + d1 * 26, a.y + 6); c.later(l, 1700); for (let i = 0; i < 4; i++) { const w = c.mk("wisp", a.x + d1 * (80 + i * 70), a.y + c.rnd(-30, 30)); c.later(w, 1600); }
+    await c.wait(1100); l.remove(); c.dim(false); c.whiteout(320); c.shake(); for (const k of c.foes) c.anim(k, [{ transform: "none" }, { transform: `translate(${d1 * 40}px,-30px) rotate(${d1 * 20}deg)`, offset: 0.35 }, { transform: `translate(${d1 * 30}px,0) rotate(0)`, offset: 0.7 }, { transform: "none" }], 900); await c.wait(100); await c.hitAll(40); },
+  /* Sram · Arsenic : la cible verdit des pieds à la tête, des gouttes vertes coulent */
+  s12907: async (c) => { c.hold(900); const t = c.foes[0]; const a = c.pt(c.me, 0.45), b = c.pt(t, 0.5); c.proj(a, b, "a", "bottle", 260); await c.wait(260); const bd = c.body(t), img = bd.matches("img") ? bd : bd.querySelector("img"); const r = (img || bd).getBoundingClientRect(), ar = c.A.el.getBoundingClientRect();
+    const g = c.mk("greenfill", r.left - ar.left + r.width / 2, r.top - ar.top + r.height / 2); g.style.width = r.width + "px"; g.style.height = r.height + "px"; if (img) g.style.setProperty("--m", `url("${img.getAttribute("src")}")`); g.animate([{ backgroundPosition: "0 100%" }, { backgroundPosition: "0 0%" }], { duration: 800 * c.T, fill: "forwards", easing: "ease-in" }); c.later(g, 1700);
+    for (let i = 0; i < 5; i++) { const d = c.mk("drip", r.left - ar.left + c.rnd(6, r.width - 6), r.top - ar.top + r.height * 0.9); d.style.animationDelay = 250 + i * 140 + "ms"; c.later(d, 1700); }
+    await c.wait(450); c.hit(t); },
+  /* Sram · Attaque Mortelle : le temps s'arrête, le Sram apparaît derrière la cible, un trait fin, puis elle se coupe en deux */
+  s12917: async (c) => { c.hold(1500); const t = c.foes[0], me = c.me, bd = c.body(me), tb = c.body(t); c.cls("stopped", true); c.fin.push(() => { c.cls("stopped", false); tb.style.opacity = ""; c.cancel(me); bd.style.opacity = ""; }); await c.wait(300);
+    const a = c.pt(me, 0.45), b = c.pt(t, 0.5), d1 = c.dir(t), ox = b.x - a.x + d1 * 44, oy = b.y - a.y, col = "rgba(140,90,214,.85)"; c.puff(a.x, a.y, col);
+    bd.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "none", offset: 0.3 }, { opacity: 0, transform: `translate(${ox}px,${oy}px) scaleX(-1)`, offset: 0.5 }, { opacity: 1, transform: `translate(${ox}px,${oy}px) scaleX(-1)` }], { duration: 300 * c.T, fill: "forwards" }); await c.wait(300); c.puff(b.x + d1 * 44, b.y, col);
+    const cut = c.mk("cutline", b.x, b.y); cut.animate([{ transform: "translate(-50%,-50%) rotate(-28deg) scaleX(0)" }, { transform: "translate(-50%,-50%) rotate(-28deg) scaleX(1)" }], { duration: 90 * c.T, fill: "forwards" }); await c.wait(500);
+    const L = c.clone(t, "half l"), R = c.clone(t, "half r"); tb.style.opacity = 0; cut.remove(); L.animate([{ transform: "translate(-50%,-50%)" }, { transform: "translate(calc(-50% - 16px),calc(-50% + 10px)) rotate(-7deg)" }], { duration: 400 * c.T, fill: "forwards" }); R.animate([{ transform: "translate(-50%,-50%)" }, { transform: "translate(calc(-50% + 16px),calc(-50% - 6px)) rotate(6deg)" }], { duration: 400 * c.T, fill: "forwards" });
+    c.cls("stopped", false); c.hit(t); await c.wait(450); L.remove(); R.remove(); tb.style.opacity = "";
+    bd.animate([{ opacity: 1, transform: `translate(${ox}px,${oy}px) scaleX(-1)` }, { opacity: 0, transform: `translate(${ox}px,${oy}px) scaleX(-1)`, offset: 0.4 }, { opacity: 0, transform: "none", offset: 0.6 }, { opacity: 1, transform: "none" }], { duration: 300 * c.T, fill: "forwards" }); c.puff(b.x + d1 * 44, b.y, col); await c.wait(300); c.cancel(me); },
+  /* Xélor · Rayon Obscur : une bande de lumière négative balaie la ligne ennemie et inverse les couleurs */
+  s13253: async (c) => { c.hold(900); const a = c.pt(c.me, 0.45), d1 = c.dir(c.foes[0]), end = d1 > 0 ? c.W() + 20 : -20; const band = c.mk("darkband", a.x, a.y); band.style.width = Math.abs(end - a.x) + "px"; if (d1 < 0) band.style.transformOrigin = "0 50%";
+    band.animate([{ transform: `translate(0,-50%) scaleX(0)` }, { transform: `translate(0,-50%) scaleX(${d1})`, offset: 0.4 }, { transform: `translate(0,-50%) scaleX(${d1})`, opacity: 1, offset: 0.75 }, { opacity: 0 }], { duration: 1000 * c.T, fill: "forwards" }); c.later(band, 1020);
+    c.fin.push(() => c.foes.forEach((k) => { c.body(k).style.filter = ""; const w = c.who(k); if (w) w.style.filter = ""; }));
+    await Promise.all(c.foes.map(async (k) => { const t = Math.abs((c.pt(k).x - a.x) / (end - a.x)); await c.wait(400 * t); c.body(k).style.filter = "invert(1) hue-rotate(180deg)"; const w = c.who(k); if (w) w.style.filter = "invert(1)"; c.hit(k); await c.wait(550); c.body(k).style.filter = ""; if (w) w.style.filter = ""; })); },
+  /* Xélor · Sablier de Xélor : le temps rembobine, image sépia et grain de vieux film, puis tout repart d'un coup */
+  s13261: async (c) => { c.hold(1300); c.cls("rewind", true); c.fin.push(() => c.cls("rewind", false)); const gr = c.mk("grain", 0, 0); c.later(gr, 1300); const rw = c.mk("rwsym", c.W() - 40, 26); rw.textContent = "◀◀"; c.later(rw, 1300);
+    for (const k of c.foes) c.anim(k, [{ transform: "none" }, { transform: "translateX(18px) rotate(-6deg)" }, { transform: "translateX(-10px)" }, { transform: "translateX(26px) rotate(5deg)" }, { transform: "translateX(4px)" }, { transform: "translateX(30px) rotate(-4deg)" }, { transform: "none" }], { duration: 1100, easing: "steps(6, end)" });
+    await c.wait(1150); c.cls("rewind", false); c.whiteout(120); await c.hitAll(50); },
+  /* Ecaflip · Pile ou Face : la pièce monte très haut, rebondit trois fois, puis pluie de kamas */
+  s12841: async (c) => { c.hold(1500); const t = c.foes[0], a = c.pt(c.me, 0.3), f = c.foot(t); const cn = c.ico(a.x, a.y, 13378, "icoin"); const dx = f.x - a.x; c.fin.push(() => cn.remove());
+    cn.animate([{ transform: "translate(-50%,-50%) rotateY(0)", top: a.y + "px", left: a.x + "px" }, { transform: "translate(-50%,-50%) rotateY(1080deg)", top: "-40px", left: a.x + dx * 0.45 + "px", offset: 0.45 }, { transform: "translate(-50%,-50%) rotateY(2160deg)", top: f.y - 14 + "px", left: f.x + "px" }], { duration: 800 * c.T, easing: "linear", fill: "forwards" }); await c.wait(800);
+    for (const hgt of [60, 34, 14]) { const tc = c.mk("tic", f.x + 24, f.y - 30); tc.textContent = "tic"; c.later(tc, 500); cn.animate([{ top: f.y - 14 + "px" }, { top: f.y - 14 - hgt + "px", offset: 0.5 }, { top: f.y - 14 + "px" }], { duration: 240 * c.T, fill: "forwards" }); await c.wait(250); }
+    pulse(cn, "sgpop"); c.num(t, "Pile !", "#ffd84d", true); for (let i = 0; i < 12; i++) { const k = c.mk("kama", f.x + c.rnd(-40, 40), -10); k.style.animationDelay = i * 40 + "ms"; k.style.setProperty("--fy", f.y - c.rnd(0, 18) + "px"); c.later(k, 1200); }
+    await c.wait(260); c.hit(t); await c.wait(400); cn.remove(); },
+  /* Ecaflip · Tout ou Rien : une machine à sous au-dessus de l'arène, trois rouleaux s'arrêtent sur 7-7-7 */
+  s12858: async (c) => { c.hold(1500); const sl = c.mk("slot", c.W() / 2, 44); sl.innerHTML = "<b>7</b><b>7</b><b>7</b>"; const reels = sl.querySelectorAll("b"); const iv = []; reels.forEach((r, i) => { iv[i] = setInterval(() => (r.textContent = "0123456789"[Math.floor(Math.random() * 10)]), 60); });
+    c.fin.push(() => { iv.forEach(clearInterval); sl.remove(); }); for (let i = 0; i < 3; i++) { await c.wait(380 + i * 260); clearInterval(iv[i]); reels[i].textContent = "7"; pulse(reels[i], "sgpop"); }
+    await c.wait(200); sl.classList.add("win"); c.num(c.foes[0], "777 !", "#ffd84d", true); c.whiteout(140); c.shake("shake2"); await c.hitAll(80); await c.wait(300); sl.remove(); },
+  /* Eniripsa · Mot Vampirique : les lettres volent vers la cible, la mordent, puis reviennent en rouge */
+  s25870: async (c) => { c.hold(1200); const t = c.foes[0], a = c.pt(c.me, 0.3), b = c.pt(t, 0.5); const L = []; "VAMPIRE".split("").forEach((ch, i) => { const l = c.mk("letter", a.x - 30 + i * 10, a.y - 10); l.textContent = ch; L.push(l); l.animate([{ left: a.x - 30 + i * 10 + "px", top: a.y - 10 + "px" }, { left: b.x - 24 + i * 8 + "px", top: b.y - 40 + "px", offset: 0.6 }, { left: b.x - 24 + i * 8 + "px", top: b.y + "px", transform: "translate(-50%,-50%) scale(1.5)" }], { duration: 550 * c.T, delay: i * 70 * c.T, fill: "forwards", easing: "ease-in" }); });
+    c.fin.push(() => L.forEach((l) => l.remove())); await c.wait(550 + 7 * 70); c.hit(t); L.forEach((l, i) => { l.classList.add("red"); l.animate([{ left: b.x - 24 + i * 8 + "px", top: b.y + "px", opacity: 1 }, { left: a.x + "px", top: a.y - 40 + "px", opacity: 1, offset: 0.7 }, { left: a.x + "px", top: a.y + "px", opacity: 0 }], { duration: 600 * c.T, delay: i * 50 * c.T, fill: "forwards" }); c.later(l, 1000 + i * 50); });
+    await c.wait(900); c.rest(); },
+  /* Eniripsa · Mot Interdit : un mot censuré tremble puis s'écrase sur la cible, dont le nom reste censuré */
+  s25873: async (c) => { c.hold(1100); const t = c.foes[0], a = c.pt(c.me, 0.1), b = c.pt(t, 0.4); const cs = c.mk("censor", a.x, a.y - 10); cs.textContent = "■■■■"; cs.animate([{ transform: "translate(-50%,-50%) scale(.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 200 * c.T, fill: "forwards" }); await c.wait(200); cs.classList.add("tremble"); await c.wait(500);
+    cs.classList.remove("tremble"); cs.animate([{ left: a.x + "px", top: a.y - 10 + "px", transform: "translate(-50%,-50%) scale(1)" }, { left: b.x + "px", top: b.y + "px", transform: "translate(-50%,-50%) scale(1.6)" }], { duration: 220 * c.T, easing: "ease-in", fill: "forwards" }); await c.wait(220); c.whiteout(100);
+    const who = c.who(t), old = who ? who.textContent : ""; if (who) who.textContent = "■■■■ ■■■■"; c.fin.push(() => { if (who && who.textContent === "■■■■ ■■■■") who.textContent = old; cs.remove(); }); c.later(cs, 300); c.hit(t); c.rest(); await c.wait(1600); if (who) who.textContent = old; },
+  /* Sadida · Herbes Folles : le sol verdit en vague, puis l'herbe attrape les ennemis */
+  s13518: async (c) => { c.hold(1000); const a = c.pt(c.me), d1 = c.dir(c.foes[0]); const fl = c.mkg("floorgreen", 0, 0, { top: "62%" }); fl.animate([{ clipPath: d1 > 0 ? `inset(0 ${c.W() - a.x}px 0 0)` : `inset(0 0 0 ${a.x}px)` }, { clipPath: "inset(0 0 0 0)" }], { duration: 700 * c.T, fill: "forwards", easing: "ease-out" }); c.later(fl, 2000);
+    await Promise.all(c.foes.map(async (k) => { const t = Math.abs((c.pt(k).x - a.x) / (d1 > 0 ? c.W() - a.x : a.x)); await c.wait(700 * t); const f = c.foot(k); for (let i = -1; i <= 1; i++) { const g = c.mk("blade2", f.x + i * 18, f.y + 2); g.style.animationDelay = i * 60 + 60 + "ms"; c.later(g, 1400); } c.anim(k, [{ transform: "none" }, { transform: "rotate(-7deg)" }, { transform: "rotate(7deg)" }, { transform: "rotate(-5deg)" }, { transform: "none" }], 600); c.hit(k); })); c.rest(); },
+  /* Sadida · Forêt Hantée : le ciel s'assombrit, l'ombre de chaque monstre se détache et l'attaque */
+  s13524: async (c) => { c.hold(1300); c.dim(true); c.fin.push(() => c.dim(false)); await c.wait(250);
+    await Promise.all(c.foes.map(async (k, i) => { await c.wait(i * 150); const sh = c.clone(k, "shadowc"); sh.innerHTML += "<i></i><i></i>"; sh.animate([{ transform: "translate(-50%,-50%) scale(1)", opacity: 0 }, { transform: "translate(-50%,calc(-50% - 70px)) scale(1.25)", opacity: 0.95, offset: 0.55 }, { transform: "translate(-50%,calc(-50% - 60px)) scale(1.3)", opacity: 1, offset: 0.75 }, { transform: "translate(-50%,-40%) scale(.9)", opacity: 0 }], { duration: 1000 * c.T, fill: "forwards" }); c.later(sh, 1020); await c.wait(820); c.hit(k); })); c.dim(false); },
+  /* Sacrieur · Hémorragie : ses tatouages s'allument, des gouttes de sang quittent la cible en spirale vers lui */
+  s12748: async (c) => { c.hold(700); const t = c.foes[0], bd = c.body(c.me); bd.style.filter = "drop-shadow(0 0 8px #ff2a2a) contrast(1.15)"; c.fin.push(() => (bd.style.filter = "")); await c.wait(120); c.hit(t); const a = c.pt(t, 0.5), b = c.pt(c.me, 0.45);
+    for (let i = 0; i < 9; i++) { const m = c.mk("blood", a.x, a.y); const s = i % 2 ? 1 : -1; m.animate([{ left: a.x + "px", top: a.y + "px" }, { left: a.x + (b.x - a.x) * 0.3 + "px", top: a.y + s * 50 + "px", offset: 0.33 }, { left: a.x + (b.x - a.x) * 0.66 + "px", top: a.y - s * 40 + "px", offset: 0.66 }, { left: b.x + "px", top: b.y + "px" }], { duration: 750 * c.T, delay: i * 60 * c.T, fill: "forwards" }); c.later(m, 850 + i * 60); }
+    await c.wait(800); c.rest(); await c.wait(300); bd.style.filter = ""; },
+  /* Sacrieur · Déchaînement : traînée rouge qui zigzague entre les ennemis avec des images rémanentes et une entaille à chaque passage */
+  s12755: async (c) => { c.hold(1100); const me = c.me, bd = c.body(me), a = c.pt(me); c.z(me, true); bd.style.filter = "blur(1.5px) sepia(1) saturate(8) hue-rotate(-30deg)"; c.fin.push(() => { bd.style.transform = ""; bd.style.filter = ""; c.cancel(me); c.z(me, false); });
+    for (const k of c.foes) { const b = c.pt(k), d1 = c.dir(k); const gh = c.clone(me, "after"); c.later(gh, 450);
+      c.anim(me, [{ transform: bd.style.transform || "none" }, { transform: `translate(${b.x - a.x - d1 * 30}px,${b.y - a.y}px)` }], { duration: 150, easing: "ease-in", fill: "forwards" }); await c.wait(150); bd.style.transform = `translate(${b.x - a.x - d1 * 30}px,${b.y - a.y}px)`; c.cancel(me);
+      const sl = c.mk("slashr", b.x, b.y); sl.style.setProperty("--r", c.rnd(-50, 50) + "deg"); c.later(sl, 600); c.hit(k); await c.wait(130); }
+    c.anim(me, [{ transform: bd.style.transform }, { transform: "none" }], { duration: 220, fill: "forwards" }); await c.wait(230); bd.style.transform = ""; c.cancel(me); bd.style.filter = ""; c.z(me, false); },
+  /* Pandawa · Paume Explosive : coup au ralenti, l'arène ondule, la cible s'écrase puis glisse */
+  s12781: async (c) => { c.hold(1500); const t = c.foes[0], me = c.me, a = c.pt(me, 0.45), b = c.pt(t, 0.5), d1 = c.dir(t), dx = b.x - a.x - d1 * 40, dy = b.y - a.y; c.z(me, true); c.fin.push(() => { c.z(me, false); c.cancel(me); });
+    c.anim(me, [{ transform: "none" }, { transform: `translateX(${-d1 * 8}px)`, offset: 0.12 }, { transform: `translate(${dx}px,${dy}px) scale(1.05)`, offset: 0.45 }, { transform: `translate(${dx}px,${dy}px)`, offset: 0.58 }, { transform: "none" }], { duration: 1500, easing: "cubic-bezier(.2,.8,.3,1)" }); await c.wait(650);
+    const p = c.pt(t, 0.5); for (let i = 0; i < 3; i++) { const r = c.mk("ripple", p.x, p.y); r.style.animationDelay = i * 160 + "ms"; r.style.animationDuration = "1200ms"; c.later(r, 2000); }
+    c.anim(t, [{ transform: "none" }, { transform: "scale(1.3,.55)", offset: 0.25 }, { transform: `translateX(${d1 * 46}px) scale(.9,1.1)`, offset: 0.6 }, { transform: `translateX(${d1 * 40}px)` }, { transform: "none" }], 1100); await c.wait(300); c.hit(t); await c.hitAll(60); await c.wait(500); c.z(me, false); },
+  /* Pandawa · Flasque Explosive : la flasque arrose tout le monde, les monstres titubent avec des bulles et un « hips ! » */
+  s12796: async (c) => { c.hold(1500); const t = c.foes[0], a = c.pt(c.me, 0.45), b = c.pt(t, 0.5); c.proj(a, b, "f", "bottle", 300); await c.wait(300); const p = c.pt(t, 0.4); for (let i = 0; i < 16; i++) { const d = c.mk("splash", p.x, p.y); const ang = c.rnd(-Math.PI, 0), r = c.rnd(50, 190); d.animate([{ transform: "translate(-50%,-50%)", opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(ang) * r}px),calc(-50% + ${Math.sin(ang) * r * 0.5 + 60}px))`, opacity: 0.2 }], { duration: 600 * c.T, easing: "cubic-bezier(.2,.6,.8,1)" }); c.later(d, 620); }
+    await c.wait(250); for (const k of c.foes) { c.anim(k, [{ transform: "rotate(0)" }, { transform: "rotate(-9deg) translateX(-6px)" }, { transform: "rotate(8deg) translateX(6px)" }, { transform: "rotate(-6deg)" }, { transform: "rotate(0)" }], 1000); const hp = c.pt(k, 0.1); const h2 = c.mk("hips", hp.x + 16, hp.y); h2.textContent = "hips !"; c.later(h2, 900); for (let i = 0; i < 4; i++) { const bb = c.mk("bub2", c.pt(k).x + c.rnd(-14, 14), c.pt(k).y); bb.style.animationDelay = i * 140 + "ms"; c.later(bb, 1100); } }
+    await c.wait(900); await c.hitAll(60); },
+  /* Roublard · Mousquet : zoom sur le Roublard, un viseur sur la cible, bang, balle au ralenti, la cible tourne sur elle-même */
+  s13473: async (c) => { c.hold(1500); const t = c.foes[0], a = c.pt(c.me, 0.45), b = c.pt(t, 0.45), d1 = c.dir(t); c.A.el.style.setProperty("--zx", a.x + "px"); c.A.el.style.setProperty("--zy", a.y + "px"); c.cls("zoomb", true); c.fin.push(() => c.cls("zoomb", false)); await c.wait(420);
+    const rt = c.mk("reticle", b.x, b.y); c.later(rt, 1300); await c.wait(500); c.cls("zoomb", false); const fl = c.mk("muzzle", a.x + d1 * 30, a.y); c.later(fl, 300); c.puff(a.x + d1 * 34, a.y, "rgba(200,200,200,.8)", 5);
+    const bu = c.mk("bullet", a.x + d1 * 30, a.y); if (d1 < 0) bu.style.transform = "translate(-50%,-50%) scaleX(-1)"; bu.animate([{ left: a.x + d1 * 30 + "px" }, { left: b.x + "px" }], { duration: 600 * c.T, easing: "linear", fill: "forwards" }); c.later(bu, 610); await c.wait(600); rt.remove();
+    c.anim(t, [{ transform: "rotateY(0)" }, { transform: "rotateY(360deg)" }], 500); c.hit(t); await c.hitAll(50); },
+  /* Roublard · Mégabombe : la bombe tombe, l'écran pulse à chaque chiffre, écran blanc, champignon de fumée */
+  s13490: async (c) => { c.hold(1500); const cx = c.foes.reduce((s, k) => s + c.pt(k).x, 0) / c.foes.length, cy = c.foes.reduce((s, k) => s + c.pt(k, 0.6).y, 0) / c.foes.length; const bm = c.ico(cx, -60, 12498, "big"); c.fin.push(() => { bm.remove(); c.cls("beat", false); }); bm.animate([{ top: "-60px" }, { top: cy + "px" }], { duration: 450 * c.T, easing: "cubic-bezier(.55,0,1,.45)", fill: "forwards" }); await c.wait(470);
+    for (const n of ["3", "2", "1"]) { c.num(c.foes[0], n, "#ffd84d"); pulse(bm, "sgpop"); c.cls("beat", false); pulse(c.A.el, "sg-beat"); await c.wait(400); } bm.remove(); c.whiteout(260); c.shake();
+    const st = c.mk("mstem", cx, cy + 20); c.later(st, 1800); for (let i = 0; i < 7; i++) { const cp = c.mk("mcap", cx + (i - 3) * 26, cy - 70 + Math.abs(i - 3) * 8); cp.style.animationDelay = 150 + Math.abs(i - 3) * 50 + "ms"; c.later(cp, 1800); }
+    await c.hitAll(40); c.rest(); },
+  /* Zobal · Inferno : il danse autour des ennemis, chaque pas laisse une empreinte de feu, le cercle s'embrase */
+  s13423: async (c) => { c.hold(1500); const me = c.me, bd = c.body(me), a = c.pt(me); const cx = c.foes.reduce((s, k) => s + c.pt(k).x, 0) / c.foes.length, cy = c.foes.reduce((s, k) => s + c.pt(k).y, 0) / c.foes.length + 20, R = Math.min(95, c.W() * 0.14); c.z(me, true); c.fin.push(() => { bd.style.transform = ""; c.cancel(me); c.z(me, false); }); const steps = 8;
+    for (let i = 0; i <= steps; i++) { const ang = Math.PI + (i / steps) * Math.PI * 2; const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R * 0.45; c.anim(me, [{ transform: bd.style.transform || "none" }, { transform: `translate(${x - a.x}px,${y - a.y}px) rotate(${i % 2 ? -12 : 12}deg)` }], { duration: 140, fill: "forwards" }); await c.wait(140); bd.style.transform = `translate(${x - a.x}px,${y - a.y}px)`; c.cancel(me); if (i < steps) { const fp = c.mkg("footfire", x, y + 40); c.later(fp, 2000); } }
+    const ring = c.mkg("firering", cx, cy + 40); c.later(ring, 1200); c.hit(c.foes[0]); await c.hitAll(80); c.anim(me, [{ transform: bd.style.transform }, { transform: "none" }], { duration: 280, fill: "forwards" }); await c.wait(290); bd.style.transform = ""; c.cancel(me); c.z(me, false); c.rest(); },
+  /* Zobal · Mascarade : noir de théâtre, projecteur sur la cible, ses trois masques entrent en scène, puis le rideau tombe */
+  s13404: async (c) => { c.hold(1500); const t = c.foes[0], b = c.pt(t, 0.5); c.dim(true, true); c.fin.push(() => c.dim(false)); const sp = c.mk("spot", b.x, 0); sp.style.height = b.y + 60 + "px"; c.later(sp, 3000); const sf = c.mk("spotfloor", b.x, c.foot(t).y); c.later(sf, 3000); await c.wait(350);
+    const M = [[12404, "#d23b3b", -1], [12401, "#2f6fc0", 1], [12428, "#3fa34d", -1]]; let first = true; for (const [id, col, s] of M) { const m = c.ico(b.x + s * 180, b.y - 20, id, "sm"); m.style.setProperty("--c", col); m.animate([{ left: b.x + s * 180 + "px", opacity: 0 }, { left: b.x + s * 40 + "px", opacity: 1 }], { duration: 300 * c.T, fill: "forwards", easing: "ease-out" }); await c.wait(300); const fl = c.mk("colorflash", b.x, b.y, { "--c": col }); c.later(fl, 400); if (first) { c.hit(t); first = false; } else pulse(t, "hit"); await c.wait(180); m.remove(); }
+    const cl = c.mk("curtain l", 0, 0), cr = c.mk("curtain r", 0, 0); cl.animate([{ transform: "translateX(-100%)" }, { transform: "translateX(0)" }, { transform: "translateX(0)", offset: 0.6 }, { transform: "translateX(-100%)" }], { duration: 1100 * c.T, fill: "forwards" }); cr.animate([{ transform: "translateX(100%)" }, { transform: "translateX(0)" }, { transform: "translateX(0)", offset: 0.6 }, { transform: "translateX(100%)" }], { duration: 1100 * c.T, fill: "forwards" }); c.later(cl, 1120); c.later(cr, 1120); await c.wait(550); c.dim(false); sp.remove(); sf.remove(); },
+  /* Steamer · Marée : l'eau monte jusqu'à mi-hauteur, les monstres flottent, puis la marée se retire en les entraînant */
+  s13820: async (c) => { c.hold(1500); const d1 = c.dir(c.foes[0]); const w = c.mk("water", 0, 0, { top: "auto" }); c.fin.push(() => w.remove()); w.animate([{ height: "0px" }, { height: c.H() * 0.55 + "px" }], { duration: 800 * c.T, fill: "forwards", easing: "ease-out" }); await c.wait(450);
+    for (const k of c.foes) c.anim(k, [{ transform: "none" }, { transform: "translateY(-26px) rotate(-6deg)", offset: 0.25 }, { transform: "translateY(-14px) rotate(6deg)", offset: 0.5 }, { transform: "translateY(-28px) rotate(-5deg)", offset: 0.75 }, { transform: "translateY(-20px)" }], { duration: 1100, fill: "forwards" });
+    await c.wait(1100); w.animate([{ height: c.H() * 0.55 + "px" }, { height: "0px" }], { duration: 600 * c.T, fill: "forwards", easing: "ease-in" }); for (const k of c.foes) { c.cancel(k); c.anim(k, [{ transform: "translateY(-20px)" }, { transform: `translate(${d1 * 48}px,0) rotate(${d1 * 10}deg)`, offset: 0.6 }, { transform: "none" }], 800); }
+    await c.wait(350); await c.hitAll(60); c.later(w, 400); },
+  /* Steamer · Court-circuit : l'éclair saute de monstre en monstre, chacun clignote en négatif comme une radiographie */
+  s13872: async (c) => { c.hold(900); let prev = c.pt(c.me, 0.4); c.fin.push(() => c.foes.forEach((k) => (c.body(k).style.animation = ""))); for (const k of c.foes) { const b = c.pt(k, 0.45); const pts = [prev]; for (let i = 1; i < 6; i++) pts.push({ x: prev.x + (b.x - prev.x) * i / 6 + c.rnd(-10, 10), y: prev.y + (b.y - prev.y) * i / 6 + c.rnd(-14, 14) }); pts.push(b);
+      const pl = pts.map((p) => p.x + "," + p.y).join(" "); const s = c.svg(`<polyline points="${pl}" fill="none" stroke="#9fe8ff" stroke-width="5" stroke-linejoin="round" opacity=".55"/><polyline points="${pl}" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>`, 400); s.animate([{ opacity: 1 }, { opacity: 0.2, offset: 0.3 }, { opacity: 1, offset: 0.5 }, { opacity: 0 }], { duration: 380 * c.T });
+      c.body(k).style.animation = "sgxray .12s steps(2) 4"; c.hit(k); prev = b; await c.wait(130); c.body(k).style.animation = ""; } c.rest(); },
+  /* Eliotrope · Rayon de Wakfu : un trait de wakfu fait trois allers-retours entre deux portails, de plus en plus vite */
+  s14579: async (c) => { c.hold(1400); const t = c.foes[0], a = c.pt(c.me, 0.45), b = c.pt(t, 0.45), d1 = c.dir(t); const p1 = c.mk("portalfx", a.x + d1 * 34, a.y), p2 = c.mk("portalfx", b.x - d1 * 40, b.y); c.later(p1, 1700); c.later(p2, 1700); await c.wait(200);
+    for (const d of [300, 200, 130]) { const dash = c.mk("wdash", a.x + d1 * 34, a.y); dash.animate([{ left: a.x + d1 * 34 + "px", top: a.y + "px" }, { left: b.x - d1 * 40 + "px", top: b.y + "px" }], { duration: d * c.T, easing: "linear", fill: "forwards" }); await c.wait(d); dash.remove(); pulse(p2, "sgpop"); pulse(t, "hit"); const back = c.mk("wdash", b.x - d1 * 40, b.y); back.animate([{ left: b.x - d1 * 40 + "px", top: b.y + "px" }, { left: a.x + d1 * 34 + "px", top: a.y + "px" }], { duration: d * c.T, easing: "linear", fill: "forwards" }); await c.wait(d); back.remove(); pulse(p1, "sgpop"); }
+    c.hit(t); await c.hitAll(50); c.rest(); },
+  /* Eliotrope · Cataclysme : un portail géant s'ouvre dans le ciel et aspire les monstres vers le haut, puis les lâche */
+  s14619: async (c) => { c.hold(1500); const cx = c.foes.reduce((s, k) => s + c.pt(k).x, 0) / c.foes.length; const g = c.mk("bigportal", cx, 26); g.animate([{ transform: "translate(-50%,-50%) scaleX(0)" }, { transform: "translate(-50%,-50%) scaleX(1)" }], { duration: 300 * c.T, fill: "forwards" }); c.later(g, 2100); await c.wait(330); c.fin.push(() => c.foes.forEach((k) => c.z(k, false)));
+    for (const k of c.foes) { const b = c.pt(k); c.anim(k, [{ transform: "none" }, { transform: "scaleY(1.5) translateY(-20px)", offset: 0.3 }, { transform: `translate(${(cx - b.x) * 0.5}px,-150px) scaleY(1.7) scaleX(.7)`, offset: 0.75 }, { transform: `translate(${(cx - b.x) * 0.5}px,-150px) scaleY(1.7) scaleX(.7)`, offset: 0.85 }, { transform: "translateY(0) scaleY(.75) scaleX(1.2)", offset: 0.95 }, { transform: "none" }], { duration: 1400, easing: "ease-in-out" }); c.z(k, true); }
+    await c.wait(1350); c.shake("shake2"); await c.hitAll(40); c.foes.forEach((k) => c.z(k, false)); c.rest(); },
+  /* Huppermage · Météore : une boule de feu entre par le coin du ciel, grossit en diagonale avec sa traînée, et laisse un cratère rougeoyant */
+  s13675: async (c) => { c.hold(1300); const t = c.foes[0], b = c.pt(t, 0.55), d1 = c.dir(t), x0 = d1 > 0 ? 20 : c.W() - 20; c.cls("rumble", true); c.fin.push(() => c.cls("rumble", false)); const m = c.mk("meteor", x0, 10); m.animate([{ left: x0 + "px", top: "10px", transform: "translate(-50%,-50%) scale(.15)" }, { left: b.x + "px", top: b.y + "px", transform: "translate(-50%,-50%) scale(1)" }], { duration: 900 * c.T, easing: "cubic-bezier(.5,0,.9,.4)", fill: "forwards" });
+    let k = 0; const tr = setInterval(() => { if (++k > 30 || !m.isConnected) return clearInterval(tr); const r = m.getBoundingClientRect(), ar = c.A.el.getBoundingClientRect(); const tl = c.mk("tail", r.left - ar.left + r.width / 2, r.top - ar.top + r.height / 2); if (d1 < 0) tl.style.transform = "translate(100%,-50%) rotate(-28deg)"; tl.style.width = 10 + k + "px"; c.later(tl, 500); }, 33);
+    await c.wait(900); m.remove(); clearInterval(tr); c.cls("rumble", false); c.whiteout(120); c.shake(); const f = c.foot(t); const cr = c.mkg("craterglow", f.x, f.y); cr.animate([{ opacity: 1 }, { opacity: 1, offset: 0.5 }, { opacity: 0 }], { duration: 2400 * c.T, fill: "forwards" }); c.later(cr, 2400); c.puff(b.x, b.y, "rgba(255,140,60,.8)", 10); c.hit(t); },
+  /* Huppermage · Ouragan : les quatre éléments tournent autour de lui, fusionnent en blanc, l'arène tangue sous l'ouragan */
+  s13714: async (c) => { c.hold(1500); const a = c.pt(c.me, 0.5); const orbs = ["f", "e", "t", "a"].map((el, i) => c.mk("elorb", a.x, a.y, { "--c": c.C(el), "--a": i * 90 + "deg" })); c.fin.push(() => { orbs.forEach((o) => o.remove()); c.cls("tilt", false); }); await c.wait(800);
+    orbs.forEach((o) => { o.style.animation = "none"; o.animate([{ transform: "translate(-50%,-50%) rotate(var(--a)) translateX(46px)" }, { transform: "translate(-50%,-50%) translateX(0)", background: "#fff" }], { duration: 300 * c.T, fill: "forwards" }); c.later(o, 320); }); await c.wait(320); const wo = c.mk("whiteorb", a.x, a.y); c.later(wo, 500);
+    c.cls("tilt", true); const cx = c.foes.reduce((s, k) => s + c.pt(k).x, 0) / c.foes.length, cy = c.pt(c.foes[0]).y; const tor = c.mk("bigtornado", cx, cy); c.later(tor, 1400); for (const k of c.foes) c.anim(k, [{ transform: "none" }, { transform: `translate(${c.rnd(-30, 30)}px,-40px) rotate(${c.rnd(-40, 40)}deg)`, offset: 0.3 }, { transform: `translate(${c.rnd(-30, 30)}px,-30px) rotate(${c.rnd(-40, 40)}deg)`, offset: 0.6 }, { transform: "none" }], 1200);
+    await c.wait(450); await c.hitAll(90); await c.wait(400); c.cls("tilt", false); c.rest(); },
+  /* Ouginak · Amarok : silhouette de loup aux yeux brillants, bond, mâchoires, la cible est traînée vers lui */
+  s13802: async (c) => { c.hold(1300); const t = c.foes[0], me = c.me, bd = c.body(me); bd.style.filter = "brightness(0) drop-shadow(0 0 6px #c08a3e)"; const eyes = document.createElement("div"); eyes.className = "sgeyes"; eyes.innerHTML = "<i></i><i></i>"; bd.appendChild(eyes); c.fin.push(() => { bd.style.filter = ""; eyes.remove(); c.cancel(me); c.z(me, false); c.cancel(t); }); await c.wait(400);
+    const a = c.pt(me), b = c.pt(t), d1 = c.dir(t); c.z(me, true); c.anim(me, [{ transform: "none" }, { transform: `translate(${(b.x - a.x) * 0.5}px,${b.y - a.y - 80}px)`, offset: 0.5 }, { transform: `translate(${b.x - a.x - d1 * 40}px,${b.y - a.y}px)` }], { duration: 400, easing: "ease-in", fill: "forwards" }); await c.wait(400);
+    const jt = c.mk("jaw t", b.x, b.y - 30), jb = c.mk("jaw b", b.x, b.y + 30); jt.animate([{ top: b.y - 40 + "px" }, { top: b.y - 6 + "px" }], { duration: 120 * c.T, fill: "forwards" }); jb.animate([{ top: b.y + 40 + "px" }, { top: b.y + 6 + "px" }], { duration: 120 * c.T, fill: "forwards" }); c.later(jt, 500); c.later(jb, 500); await c.wait(130);
+    c.anim(t, [{ transform: "none" }, { transform: `translateX(${-d1 * 50}px) rotate(${-d1 * 10}deg)` }, { transform: `translateX(${-d1 * 30}px)` }], { duration: 500, fill: "forwards" }); c.anim(me, [{ transform: `translate(${b.x - a.x - d1 * 40}px,${b.y - a.y}px)` }, { transform: `translate(${b.x - a.x - d1 * 80}px,${b.y - a.y}px)` }], { duration: 500, fill: "forwards" }); c.hit(t); await c.hitAll(40); await c.wait(400);
+    c.cancel(t); c.anim(me, [{ transform: `translate(${b.x - a.x - d1 * 80}px,${b.y - a.y}px)` }, { transform: "none" }], { duration: 280, fill: "forwards" }); await c.wait(290); c.cancel(me); bd.style.filter = ""; eyes.remove(); c.z(me, false); },
+  /* Ouginak · Cerbère : des laisses de lumière vers les monstres, il tire d'un coup sec, tous sont ramenés et mordus */
+  s13758: async (c) => { c.hold(1000); const a = c.pt(c.me, 0.45), d1 = c.dir(c.foes[0]); const Ls = c.foes.map((k) => { const b = c.pt(k, 0.5), dx = b.x - a.x, dy = b.y - a.y; const l = c.mk("leash", a.x, a.y); l.style.width = Math.hypot(dx, dy) + "px"; l.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`; l.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 280 * c.T, fill: "forwards" }); return [k, l]; }); c.fin.push(() => Ls.forEach(([k, l]) => { l.remove(); c.cancel(k); })); await c.wait(400);
+    c.anim(c.me, [{ transform: "none" }, { transform: `translateX(${-d1 * 18}px) rotate(${-d1 * 8}deg)` }, { transform: "none" }], 300); Ls.forEach(([k, l]) => { l.classList.add("taut"); c.anim(k, [{ transform: "none" }, { transform: `translateX(${-d1 * 60}px) rotate(${-d1 * 12}deg)`, offset: 0.5 }, { transform: `translateX(${-d1 * 50}px)` }], { duration: 380, fill: "forwards" }); }); await c.wait(400);
+    Ls.forEach(([k]) => { const b = c.pt(k); const bite = c.mk("bitemark", b.x, b.y); c.later(bite, 500); }); await c.hitAll(0); c.rest(); await c.wait(400); Ls.forEach(([k, l]) => { l.remove(); c.cancel(k); c.anim(k, [{ transform: `translateX(${-d1 * 50}px)` }, { transform: "none" }], 350); }); await c.wait(360); },
+  /* Forgelance · Charge Héroïque : il charge avec une bannière flottante, la cible est lancée en l'air et retombe */
+  s23824: async (c) => { c.hold(1100); const t = c.foes[0], me = c.me, a = c.pt(me, 0.35), b = c.pt(t, 0.5), d1 = c.dir(t); const bn = c.mk("banner", a.x - d1 * 10, a.y); if (d1 < 0) bn.style.transformOrigin = "100% 50%"; bn.animate([{ left: a.x - d1 * 10 + "px", width: "0px" }, { left: (d1 > 0 ? b.x - 50 : b.x - 70) + "px", width: "120px" }], { duration: 380 * c.T, fill: "forwards" }); c.later(bn, 1100);
+    const dx = b.x - a.x - d1 * 40, dy = b.y - a.y; c.z(me, true); c.fin.push(() => { c.z(me, false); c.cancel(me); }); c.anim(me, [{ transform: "none" }, { transform: `translateX(${-d1 * 8}px)`, offset: 0.12 }, { transform: `translate(${dx}px,${dy}px) scale(1.05)`, offset: 0.45 }, { transform: `translate(${dx}px,${dy}px)`, offset: 0.58 }, { transform: "none" }], 700); await c.wait(320);
+    c.anim(t, [{ transform: "none" }, { transform: "translateY(-140px) rotate(180deg)", offset: 0.5 }, { transform: "translateY(-120px) rotate(360deg)", offset: 0.6 }, { transform: "translateY(0) scaleY(.75)", offset: 0.95 }, { transform: "none" }], 900); await c.wait(380); c.hit(t); await c.wait(400); c.z(me, false); },
+  /* Forgelance · Pluie d'Airain : il lance sa lance au ciel, elle retombe en pluie de lances plantées dans le sol */
+  s24219: async (c) => { c.hold(1200); const a = c.pt(c.me, 0.4); const up = c.mk("lanceup", a.x + 10, a.y); up.animate([{ top: a.y + "px", opacity: 1 }, { top: "-40px", opacity: 0.6 }], { duration: 350 * c.T, easing: "ease-out", fill: "forwards" }); c.later(up, 380); c.anim(c.me, [{ transform: "none" }, { transform: "scaleY(1.08) translateY(-6px)" }, { transform: "none" }], 400); await c.wait(420);
+    const xs = []; c.foes.forEach((k) => { const f = c.foot(k); for (let i = 0; i < 4; i++) xs.push([f.x + c.rnd(-34, 34), f.y - 2]); });
+    xs.forEach(([x, y], i) => { const s = c.mk("lancefall", x, -30); s.animate([{ top: "-30px" }, { top: y - 26 + "px" }], { duration: 240 * c.T, delay: i * 40 * c.T, easing: "cubic-bezier(.6,0,1,.5)", fill: "forwards" }); c.later(s, 1500 + i * 40); });
+    await c.wait(600); c.shake("shake2"); await c.hitAll(60); },
+};
+/* lance l'animation signature d'un sort ; renvoie faux si le sort n'en a pas (ou si les animations ne sont pas « complètes ») */
+function sgPlay(F, A, def, src, sn, hits, rest, el) {
+  const fn = def && axFull() && SG[def.id]; if (!fn || !sn) return false;
+  const c = sgCtx(F, A, src, sn, hits, rest, el); if (!c.foes.length) return false;
+  fn(c).catch(() => {}).finally(() => { c.flush(); c.fin.forEach((f) => { try { f(); } catch (e) { /* le nœud a pu disparaître */ } }); });
+  return true;
+}
 function axGroup(F, A, g) {
   if (ui.arena !== A) return;
   const cast = g.find((f) => f.k === "cast"), sp = axSpd();
@@ -1363,6 +1595,7 @@ function axGroup(F, A, g) {
   const def = src && src.side === "c" && cast.sp && src.cls && !src.summon ? E.spellDef(src.cls, cast.sp) : null;
   const el = hits.length ? hits[0].el || "n" : g.some((f) => f.k === "heal") ? "h" : "n";
   if (def && sn) axSpellTag(A, sn, def.name, el);
+  if (src && src.side === "c" && !src.summon && sgPlay(F, A, def, src, sn, hits, rest, el)) return; // sort signature : animation unique
   const tg = [...new Set(hits.map((f) => f.t))].filter((t) => A.nodes[t]);
   let when = () => 0;
   if (sn && src && tg.length === 1) { const d = axSingle(A, src, sn, A.nodes[tg[0]], el, def, sp); when = () => d; }
@@ -1549,7 +1782,8 @@ function updateCombat(force) {
       if (A.view === "scene" && axOn() && A.fxl && fresh.length <= 40 && document.visibilityState === "visible") {
         const gm = new Map(); fresh.forEach((f) => { if (!gm.has(f.seq)) gm.set(f.seq, []); gm.get(f.seq).push(f); });
         const gs = [...gm.values()], gap = Math.min(240, 480 / gs.length) * axSpd();
-        gs.forEach((g, k) => (k ? setTimeout(() => axGroup(F, A, g), k * gap) : axGroup(F, A, g)));
+        const run = (g) => { const b = Math.max(0, (A.sgHold || 0) - Date.now()); if (b) setTimeout(() => run(g), b); else axGroup(F, A, g); }; // un sort signature en cours retient les actions suivantes
+        gs.forEach((g, k) => (k ? setTimeout(() => run(g), k * gap) : run(g)));
       } else fresh.forEach((f) => {
         if (f.k === "cast") pulse(A.nodes[f.s], "act");
         else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
