@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.28.3";
+const GAME_VERSION = "0.1.28.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.28.4", name: "Double gain dans le chat", items: [
+    "Le chat rappelle aussi l'événement « Double gain » (XP et butin x2 pour tout le monde) tant qu'il dure",
+  ] },
   { v: "0.1.28.3", name: "Double gain", items: [
     "Événement « Double gain » (aussi sur le jeu public) : XP et butin x2 pour tout le monde jusqu'au mercredi 14 octobre à 23 h (heure de Paris), en combat, en chasse et pendant l'absence",
     "Un bandeau doré en haut du jeu rappelle l'événement et le temps qui reste",

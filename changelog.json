@@ -1,6 +1,13 @@
 {
-  "version": "0.1.28.3",
+  "version": "0.1.28.4",
   "versions": [
+    {
+      "v": "0.1.28.4",
+      "name": "Double gain dans le chat",
+      "items": [
+        "Le chat rappelle aussi l'événement « Double gain » (XP et butin x2 pour tout le monde) tant qu'il dure"
+      ]
+    },
     {
       "v": "0.1.28.3",
       "name": "Double gain",

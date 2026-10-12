@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.28.4 « Double gain dans le chat »
+Rappel de l'événement en cours en haut du chat (`eventHtml` dans js/chat.js, style `.ch-ev`), affiché tant que `E.eventOn()`.
+
 ## 0.1.28.3 « Double gain »
 Même événement que le jeu public 0.1.28.3 : XP et butin x2 du 12/10 21 h au 14/10 23 h (heure de Paris) via `E.EVENT`, `E.eventOn`, `E.evMult` (engine.js : `giveRewards`, `resRateH`) et le bandeau `.updbar.ev`. Pour un prochain événement, changer `E.EVENT`.
 
