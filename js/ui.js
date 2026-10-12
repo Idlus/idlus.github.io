@@ -17,7 +17,7 @@ const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
 const GAME_VERSION = "3.4.0";
-const DISCORD = "https://discord.gg/9ApPgWjPUM";
+const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
   { v: "3.4.0", name: "Havre-Sac", items: [
     "Le Havre-Sac devient 8 pièces (Accueil → Havre-Sac) : vos améliorations gardent leur niveau et sont rangées par pièce, l'atelier se construit pour 50 000 kamas et l'enclos ouvrira plus tard",
@@ -2029,8 +2029,8 @@ document.addEventListener("click", (ev) => {
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nAppareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"}\nNavigateur : ${navigator.userAgent.slice(0, 120)}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :`;
-      const open = () => window.open(DISCORD, "_blank", "noopener");
-      try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : collez-le dans #bugs."); open(); }, open); } catch (e) { open(); } return; }
+      const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
+      try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
