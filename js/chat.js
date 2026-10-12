@@ -16,7 +16,7 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null };
+  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false };
   const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
@@ -70,11 +70,18 @@
     const el = $("#chat"); if (!el || !S()) { if (el) el.innerHTML = ""; document.body.classList.remove("chat-open"); return; }
     document.body.classList.toggle("chat-open", C.open);
     if (!C.open) { el.className = ""; el.innerHTML = minHtml(); return; }
-    const list = el.querySelector(".ch-list"); const atEnd = !list || list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
+    // 0.1.31.1 : la position de lecture est lue AVANT de redessiner (l'ancienne liste, une fois retirée, répondait 0 et le chat remontait tout en haut)
+    const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
     el.className = "chat"; el.innerHTML = headHtml() + eventHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
-    const nl = el.querySelector(".ch-list"); if (nl && (atEnd || !keepScroll)) nl.scrollTop = nl.scrollHeight; else if (nl && list) nl.scrollTop = list.scrollTop;
+    const nl = el.querySelector(".ch-list");
+    if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; }
+    else if (nl) { nl.scrollTop = top; if (nl.scrollHeight > oldH + 4) C.below = true; } // on lit plus haut : on reste en place, un bouton signale les nouveaux messages
+    if (nl) {
+      if (C.below) nl.insertAdjacentHTML("beforeend", `<button class="ch-new" data-act="ch-bottom">Nouveaux messages ↓</button>`);
+      nl.addEventListener("scroll", () => { if (C.below && nl.scrollTop + nl.clientHeight >= nl.scrollHeight - 30) { C.below = false; const b = nl.querySelector(".ch-new"); if (b) b.remove(); } }, { passive: true });
+    }
     if (focus && $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
   }
   function paintHead() { const e = $("#chat .ch-on"); if (e) e.innerHTML = onlineTxt(); }
@@ -327,6 +334,7 @@
     if (!/^(ch|adm)-/.test(a)) return;
     switch (a) {
       case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
+      case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
       case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
