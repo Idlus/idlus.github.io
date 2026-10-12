@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.7 « Les 19 classes » (bêta)
+- Pièges du Sram, ronces du Sadida, tourelle du Steamer qui tombe du ciel, fil de lumière de l'Osamodas : chaque classe a son passif visible.
+
 ## 0.1.6 « Passifs visibles » (bêta)
 - **Chaque classe montre son passif en combat** : Colère du Iop, horloge du Xélor, roue de l'Ecaflip, glyphes du Féca, masques du Zobal, postures du Forgelance, ivresse du Pandawa, marques du Crâ et de l'Ouginak…
 

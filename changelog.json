@@ -1,6 +1,15 @@
 {
-  "version": "0.1.6",
+  "version": "0.1.7",
   "versions": [
+    {
+      "v": "0.1.7",
+      "name": "Les 19 classes",
+      "items": [
+        "Sram : des piques sortent du sol sous les monstres qu'il a empoisonnés",
+        "Sadida : ses ronces se comptent sur la cible (×1 à ×3) et son Arbre ondule",
+        "Steamer : sa tourelle tombe du ciel dans un nuage de vapeur ; Osamodas : un fil de lumière le relie à ses invocations"
+      ]
+    },
     {
       "v": "0.1.6",
       "name": "Passifs visibles",
