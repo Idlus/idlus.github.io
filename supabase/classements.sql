@@ -82,6 +82,11 @@ create table if not exists public.admins (user_id uuid primary key references au
 alter table public.admins enable row level security;
 -- le tout premier compte créé est celui de Mathis
 insert into public.admins (user_id) select id from public.profiles order by created_at limit 1 on conflict do nothing;
+-- s'il n'y a encore aucun compte, le premier pseudo créé devient administrateur
+create or replace function public.first_admin() returns trigger language plpgsql security definer set search_path = public
+as $$ begin if not exists (select 1 from public.admins) then insert into public.admins (user_id) values (new.id) on conflict do nothing; end if; return new; end $$;
+drop trigger if exists profiles_first_admin on public.profiles;
+create trigger profiles_first_admin after insert on public.profiles for each row execute function public.first_admin();
 
 -- ---------- vues publiques (sans les joueurs « en vérification ») ----------
 create or replace view public.lb_level as
