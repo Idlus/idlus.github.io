@@ -1344,3 +1344,6 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .mtree path{fill:none;stroke:var(--frame);stroke-width:2;opacity:.5}.mtree path.lit{stroke:var(--gold);opacity:.9}.mtree path.hint{stroke:var(--archi);stroke-dasharray:5 4;opacity:.9}
 @media (max-width:520px){.gen{grid-template-columns:1fr}.carnet .nx{flex-wrap:wrap}.carnet .nx .btn{width:100%}}
 .mtshare .seg{flex-wrap:wrap}.mtshare .seg button{white-space:nowrap}
+/* 0.1.8.2 : objets parfaits */
+.tag.perfect{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1a08;border-color:var(--gold);font-weight:800}
+.iname.perfect{color:var(--gold2)}

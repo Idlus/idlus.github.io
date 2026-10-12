@@ -14,6 +14,17 @@
       ]
     },
     {
+      "v": "0.1.8.2",
+      "name": "Forgemagie",
+      "items": [
+        "L'Emblème du Solitaire disparaît (il ne servait qu'en solo) : les runes investies sont rendues en runes simples, le titre « le Solitaire » et l'ornement « Aura du Solitaire » restent à ceux qui les avaient",
+        "Puits de forgemagie : ce qu'un objet perd sur un échec remplit son puits ; tant qu'il couvre la rune tentée, +25 % de réussite et aucune perte",
+        "Onglet Runes : 3 runes identiques se fusionnent en rune supérieure (et l'inverse), 5 runes d'une caractéristique se transmutent en 1 rune d'une autre contre des kamas, et les runes inutiles nourrissent le métier de Forgemage",
+        "Métier de Forgemage (niveau 1 à 100) : chaque forgemagie donne de l'expérience ; +0,1 % de réussite et −0,5 % de kamas par niveau, échecs moins punitifs au niveau 30, un Cristal offert par jour au niveau 60, titre « Grand Forgemage » au niveau 100",
+        "Objets Parfaits : un objet dont toutes les caractéristiques positives sont au jet maximum gagne +2 % sur chacune, un liseré doré et deux succès (titre « le Perfectionniste »)"
+      ]
+    },
+    {
       "v": "0.1.8.1",
       "name": "Étoiles de zone",
       "items": [
