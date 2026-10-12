@@ -30,6 +30,7 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage();
     // le test ne dépend pas d'Internet : polices et images distantes sont remplacées par des réponses vides
     await page.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+    await page.addInitScript(() => { window.__IDLUS_OFFLINE = true; }); // pas de vrai serveur pendant le test
     page.on("console", (m) => { if (m.type() === "error") errors.push(`console : ${m.text()}`); });
     page.on("pageerror", (e) => errors.push(`exception : ${e.message}`));
     page.on("response", (r) => { if (r.url().startsWith(base) && r.status() >= 400) errors.push(`HTTP ${r.status()} : ${r.url()}`); });

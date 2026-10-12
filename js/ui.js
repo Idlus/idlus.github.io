@@ -9,16 +9,26 @@ const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITION
 
 let S = null;
 const ui = {
-  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "main", az: null, azf: "all", fmSel: null, manualSpell: null,
+  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "jour", az: null, azf: "all", fmSel: null, manualSpell: null,
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
+/* 0.1.27.1 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
+const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.20.1";
+const GAME_VERSION = "0.1.28.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.28.1", name: "Idlus en ligne", items: [
+    "Le jeu public passe en ligne : compte facultatif avec Discord (ta partie de cet appareil te suit), sauvegarde en ligne et retrouvée sur tous tes appareils. Tu peux toujours jouer sans compte",
+    "Communauté : Classements, chat général et privé, Hôtel de vente et échanges entre joueurs, guildes (niveaux, bonus, chat de guilde), boss de guilde de la semaine et Percepteurs",
+    "Défi du jour : page Aventure › Défi, carte sur l'Accueil, classement du jour ; codes cadeaux courts dans Options › Jeu",
+    "L'Expédition sans fin (Aventure › Expédition) : étages sans fin, portes, reliques, bénédictions des Douze et Campement",
+    "Carnet de bord (Équipe › Carnet), chasse au trésor (Monde › Trésor), commandes d'artisans et temples des Dopeuls (Quêtes), sons discrets et consignes d'absence",
+    "Journal de quêtes rangé en 3 familles avec un tableau du jour, challenges qui rapportent plus, cadres de héros en métal (Bois à Krosmoz), menu Options rangé en 5 onglets",
+    "Ta partie est gardée. Au lancement de la version 1.0, tout le monde repartira de zéro (les parties sont encore calculées sur ton appareil)" ] },
   { v: "0.1.20.1", name: "Bouftous apprivoisés", items: [
     "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
     "Les groupes d'au moins 4 monstres arrivent avec les zones 32-40 (avant : dès les zones 22-30)",
@@ -481,6 +491,9 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "phenix") ornHtml = `<span class="orn phx l">🔥</span><span class="orn phx r">🔥</span>`;
   else if (orn === "ame") ornHtml = `<span class="orn seal">💜</span>`;
   else if (orn === "sablier") ornHtml = `<span class="orn seal">⏳</span>`;
+  else if (orn === "boussole") ornHtml = `<span class="orn seal">🧭</span>`;
+  else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
+  else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
@@ -508,7 +521,7 @@ function fsGauge() {
   return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
     <span class="flame"><i></i></span><span class="txt"><b>Esprit Libre +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
 }
-function questAlert() { return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); }
+function questAlert() { if (window.QUI) return window.QUI.todo(S) > 0; return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); } // 0.1.28 : tout ce qui est prêt dans Quêtes (js/questui.js)
 const jobImg = (j) => `assets/j/${j}.png`;
 /* ---------- index des ressources : sources et usages ---------- */
 let RIDX = null;
@@ -556,10 +569,10 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
-  { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.26.1 : page Défi du jour
+  { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
-].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
+].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
 const famOf = (tab) => NAV.find((F) => F.pages.some((p) => p[0] === tab)) || NAV[0];
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
@@ -698,36 +711,36 @@ function renderNav() {
   $("#nav").innerHTML = fam(NAV[0]) + fam(NAV[1]) + `<button class="navfight" data-tab="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>` + NAV.slice(2).map(fam).join("") + `<span id="navlive">${navLiveHtml()}</span>`;
   const cur = ui.tab === "home" ? (ui.home === "havre" ? "havre" : "apercu") : null;
   $("#subnav").innerHTML = F.pages.map(([tab, n, ic, hm]) => { const on = tab === ui.tab && (!hm || hm === cur);
-    return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot(tab === "quests" && qd, tab === "team" ? nAl : 0)}</button>`; }).join("");
+    return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot((tab === "quests" && qd) || (tab === "defi" && defiTodo()), tab === "team" ? nAl : 0)}</button>`; }).join("");
 }
 /* cadre « Combat en cours » (PC) : donjon et salle, ou zone de chasse ; rafraîchi par la boucle */
 function navLiveHtml() {
   if (!S || ui.tab === "combat" || !E.team(S).length) return "";
-  const dg = S.dungeon && DUNGEONS[S.dungeon.id];
-  if (!dg && !(S.hunting && S.sub)) return "";
-  const where = dg ? dg.name : E.SUBS[S.sub].name;
-  const sub = dg ? `salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}${S.dungeon.stasis ? ` · stasis ${S.dungeon.stasis}` : ""}` : "chasse en cours";
+  const dg = S.dungeon && DUNGEONS[S.dungeon.id]; const XP = E.expActive(S) ? S.exp : null;
+  if (!dg && !XP && !(S.hunting && S.sub)) return "";
+  const where = XP ? "Expédition sans fin" : dg ? dg.name : E.SUBS[S.sub].name;
+  const sub = XP ? `étage ${XP.floor} · ${XP.lives} vie${XP.lives > 1 ? "s" : ""}` : dg ? `salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}${S.dungeon.stasis ? ` · stasis ${S.dungeon.stasis}` : ""}` : "chasse en cours";
   return `<button class="navlive" data-tab="combat" title="Voir le combat"><span class="pulse"></span><span class="tx"><b>Combat en cours</b><small>${h(where)} · ${sub}</small></span></button>`;
 }
 function updNavLive() { const el = $("#navlive"); if (!el) return; const v = navLiveHtml(); if (el.dataset.v !== v) { el.innerHTML = v; el.dataset.v = v; } }
 function statusHtml() {
   if (!S) return "";
   const team = E.team(S);
-  const where = S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
+  const where = E.expActive(S) ? `Expédition · étage ${S.exp.floor}` : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0);
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
-    <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
+    <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it hide-sm">${IC("monde")} <span>${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
-    ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +0,5 % d'XP et de butin par combat (max +5 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
+    ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">${IC("almanax")} Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); if (BETA) renderUpdBar(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
 const PIN_ICO = { quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
@@ -829,6 +842,7 @@ function renderHomeInner() {
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div>
     </div>
   </section>
+  ${defiHomeCard()}
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>Vos héros</h2>${fsGauge()}</div><div class="cardrow" style="padding-left:14px">${S.chars.map((c) => heroCard(c, "sm")).join("")}</div></section>
   <section class="grid2" style="margin-top:14px">
     <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
@@ -963,14 +977,15 @@ function historyHtml(n) {
 /* ---------- MONDE ---------- */
 function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
-  const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["enc", "Encyclopédie"]];
+  const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["tresor", "Trésor"], ["enc", "Encyclopédie"]];
   let body = "";
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
-    body = `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+    body = tresorBanner() + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = dungeonsHtml();
+  else if (ui.world === "tresor") body = tresorHtml();
   else body = encyclopediaHtml();
   $("#main").innerHTML = `
 <div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
@@ -1145,7 +1160,7 @@ function dungeonsHtml() {
     <div class="pad stack" style="gap:10px">
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
         <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
-      ${defiBanner()}
+      ${defiLine()}
       ${weeklyBanner()}
       ${flashBanner()}
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
@@ -1251,14 +1266,16 @@ function renderCombat() {
   const team = E.team(S); const fs = E.freeSpirit(S);
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   if (!ui.combatCid || !team.find((c) => c.id === ui.combatCid)) ui.combatCid = team[0] && team[0].id;
-  const title = dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
+  const XP = E.expActive(S) ? S.exp : null; // 0.1.24 : étage de l'Expédition sans fin
+  const title = XP ? `Étage ${XP.floor} · règne de ${XP.regne.god}` : dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
-  <div class="pagehead combathead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
+  <div class="pagehead combathead"><div><div class="small muted">${XP ? `Expédition sans fin · ${XP.lives} vie${XP.lives > 1 ? "s" : ""} sur ${XP.livesMax} · ${XP.relics.length} relique${XP.relics.length > 1 ? "s" : ""}` : dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
-      ${idolBtn(S.dungeon)}${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir l'expédition</button>` : dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+  ${XP && window.EXPUI ? window.EXPUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
@@ -1351,13 +1368,13 @@ function buildArena(F) {
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
   arena.className = "arena " + (view === "compact" ? "cmpmode" : "v2"); arena.style.height = "";
   if (!F) {
-    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
+    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${E.expActive(S) && S.exp.door !== null ? "Le combat de l'étage commence…" : E.expActive(S) ? (S.exp.pend.length ? "Un choix t'attend." : "Choisis une porte ci-dessus.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
   }
   const pasDiv = `<div class="pas"></div>`;
   const entHtml = view === "compact" ? ([e, i]) => {
     const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: "m", name: e.name } : null;
-    const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
+    const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.dop ? `<span class="cico dop">${im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
     const rn = c && c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : "";
     return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
   } : ([e, i]) => {
@@ -1365,7 +1382,7 @@ function buildArena(F) {
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
       return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
-    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
+    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "compact"
@@ -3509,9 +3526,11 @@ function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
   return `<section class="panel"><div class="phead"><h2>${emo(Sh.icon)} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
     <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
-      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte"}</div></div></div>
+      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
+/* 0.1.28 : les boutiques sont regroupées dans Quêtes › Comptoirs ; chaque page garde un raccourci */
+function shopLink(id) { const Sh = E.SHOPS[id]; return `<div class="row"><button class="btn sm" data-act="qj-shop" data-v="${id}">${emo(Sh.icon)} ${h(Sh.name)} · <b class="num">${fmt(S.tokens[Sh.cur] || 0)}</b> ${h(Sh.curName.toLowerCase())}</button></div>`; }
 function bountiesHtml() {
   return `<p class="note">Trois avis de recherche adaptés à votre niveau. Ils se remplissent automatiquement en chassant (ou en battant le boss demandé) et rapportent kamas, expérience et points d'alignement. Un nouvel avis remplace aussitôt celui qui est rempli.</p>
     <div class="bgrid">${(S.bounties || []).map((b) => { const m = MONSTERS[b.key]; const where = b.dg ? DUNGEONS[b.dg].name : E.SUBS[b.sub] ? E.SUBS[b.sub].name : "";
@@ -3520,7 +3539,7 @@ function bountiesHtml() {
         <span class="small">Prime : <span class="coin"></span> <b>${fmt(b.kamas)}</b> · XP${S.align ? ` · +${b.axp} alignement` : ""}</span>
         <div class="row">${pinBtn({ k: "bounty", id: b.id })}${b.sub ? `<button class="btn sm" data-act="zoneview" data-id="${b.sub}" data-gotab="world">Y aller</button>` : `<button class="btn sm" data-act="worldtab" data-v="dungeons" data-gotab="world">Donjons</button>`}<button class="btn sm" data-act="reroll" data-id="${b.id}" ${S.kamas < E.rerollCost(S) && !S.cons.parchemin_avis ? "disabled" : ""}>Changer · ${S.cons.parchemin_avis ? IC("quetes") + " gratuit" : fmt(E.rerollCost(S)) + " k"}</button></div></div>`; }).join("") || `<div class="empty">Aucun avis disponible.</div>`}</div>
     <p class="small muted">Avis remplis : <b>${fmt(S.cnt.bounty || 0)}</b> · chaque avis rapporte 1 jeton de chasseur (2 pour un boss) et parfois un coffre.${S.cons.parchemin_avis ? ` · ${S.cons.parchemin_avis} Parchemin${S.cons.parchemin_avis > 1 ? "s" : ""} d'Avis : changement gratuit.` : ""}</p>
-    ${shopHtml("prime")}`;
+    ${shopLink("prime")}`;
 }
 function alignHtml() {
   const top = Math.max(...S.chars.map((c) => c.lvl));
@@ -3542,7 +3561,7 @@ function alignHtml() {
       <div class="row small"><span class="muted">Changer d'ordre :</span>${Object.entries(side.orders).filter(([oid]) => oid !== A.order).map(([oid, O2]) => `<button class="btn sm" data-act="align" data-side="${A.side}" data-order="${oid}">${h(O2.name)}</button>`).join("")}
         <span class="xs muted">Insignes : <b>${fmt(S.tokens.insignes || 0)}</b> (3 par mission, 5 pour un boss)</span>
         ${ui.confirm === "traitre" ? `<button class="btn sm danger" data-act="align" data-side="${A.side === "bonta" ? "brakmar" : "bonta"}" data-order="coeur">Confirmer : rejoindre ${A.side === "bonta" ? "Brâkmar" : "Bonta"} (tout l'alignement est perdu)</button>` : `<button class="btn sm" data-act="asktraitre">Changer de camp…</button>`}</div>
-    </div></section>${shopHtml("cite")}`;
+    </div></section>${shopLink("cite")}`;
 }
 function almanaxHtml() {
   const A = E.almanax(S); const d = new Date(); const have = S.res[A.res] || 0;
@@ -3562,8 +3581,9 @@ function achHtml() {
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
 function renderQuests() {
-  const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["ach", "Succès"]];
-  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
+  if (window.QUI) { window.QUI.render($("#main")); return; } // 0.1.28 : journal de quêtes (js/questui.js)
+  const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["commandes", "Commandes"], ["temples", "Temples"], ["ach", "Succès"]];
+  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "commandes" ? commandesHtml() : ui.qt === "temples" ? templesHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${ui.qt === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${body}</section>`;
@@ -3725,10 +3745,10 @@ const notifOn = (k) => { const n = S.settings.notif || {}; return n[k] === undef
 const notifPerm = () => (typeof Notification === "undefined" ? "none" : Notification.permission);
 function notifOptionsHtml() {
   const perm = notifPerm(); const on = !!S.settings.notifBrowser && perm === "granted";
-  return `<div class="stack" style="gap:6px"><div><b>${G("bell")} Notifications</b><br><span class="muted">Un petit message dans le jeu, et une notification du navigateur quand l'onglet est en arrière-plan.</span></div>
-    <div class="row"><span class="muted">Hors de l'onglet</span>${perm === "none" ? `<span class="tag soft">Non disponible sur ce navigateur</span>` : perm === "denied" ? `<span class="tag warn">Bloquées par le navigateur</span><span class="xs muted">autorisez-les dans les réglages du site</span>` : perm === "granted" ? `<span class="seg">${[[true, "Activées"], [false, "Coupées"]].map(([v, n]) => `<button data-act="setnotifb" data-v="${v ? 1 : 0}" aria-pressed="${on === v}">${n}</button>`).join("")}</span>` : `<button class="btn sm primary" data-act="notifask">Autoriser</button>`}</div>
-    <div class="notifs">${NOTIF_EV.map(([k, n, d]) => `<label class="opt"><span><b>${h(n)}</b><br><span class="xs muted">${h(d)}</span></span><input type="checkbox" data-act="setnotif" data-k="${k}" ${notifOn(k) ? "checked" : ""}></label>`).join("")}</div>
-    <p class="xs muted" style="margin:0">Fiable sur ordinateur. Sur téléphone, seulement tant que l'onglet reste ouvert (sur iPhone, uniquement si le jeu est installé sur l'écran d'accueil). Au plus une notification par minute.</p></div>`;
+  return optSec(`${G("bell")} Notifications`, "un petit message dans le jeu, et une notification du navigateur quand l'onglet est en arrière-plan",
+      optLine("Hors de l'onglet", "", perm === "none" ? `<span class="tag soft">Non disponible sur ce navigateur</span>` : perm === "denied" ? `<span class="tag warn">Bloquées par le navigateur</span><span class="xs muted">autorisez-les dans les réglages du site</span>` : perm === "granted" ? `<span class="seg">${[[true, "Activées"], [false, "Coupées"]].map(([v, n]) => `<button data-act="setnotifb" data-v="${v ? 1 : 0}" aria-pressed="${on === v}">${n}</button>`).join("")}</span>` : `<button class="btn sm primary" data-act="notifask">Autoriser</button>`)
+    + `<div class="notifs">${NOTIF_EV.map(([k, n, d]) => `<label class="opt"><span><b>${h(n)}</b><br><span class="xs muted">${h(d)}</span></span><input type="checkbox" data-act="setnotif" data-k="${k}" ${notifOn(k) ? "checked" : ""}></label>`).join("")}</div>
+    <p class="xs muted" style="margin:0">Fiable sur ordinateur. Sur téléphone, seulement tant que l'onglet reste ouvert (sur iPhone, uniquement si le jeu est installé sur l'écran d'accueil). Au plus une notification par minute.</p>`);
 }
 let notifLast = 0, notifHeld = [];
 function notify(kind, title, body) {
@@ -3743,25 +3763,35 @@ function showNotif(title, body) {
   const opts = { body: body || "", icon: "icons/icon-192.png", badge: "icons/icon-192.png", tag: "idlus", renotify: false, silent: true };
   try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then((r) => r.showNotification(`idlus · ${title}`, opts)).catch(() => { try { new Notification(`idlus · ${title}`, opts); } catch (e) {} }); else new Notification(`idlus · ${title}`, opts); } catch (e) {}
 }
+/* 0.1.25 : les Options rangées en onglets ; une carte par thème, chaque réglage sur une ligne (nom et explication à gauche, choix à droite) */
+const OPT_TABS = [["affichage", "Affichage"], ["sons", "Sons"], ["jeu", "Jeu"], ["sauvegarde", "Sauvegarde"], ["aide", "Aide"]];
+const optSec = (t, hint, body, id) => `<section class="optsec"${id ? ` id="${id}"` : ""}><div class="optsec-h"><b>${t}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</div>${body}</section>`;
+const optName = (n, hint, tip) => `<span class="optname"${tip ? ` data-tip="${h(tip)}"` : ""}><b>${n}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</span>`;
+const optLine = (n, hint, ctl, tip) => `<div class="optline">${optName(n, hint, tip)}<span class="optctl">${ctl}</span></div>`;
+const optChk = (attrs, on, n, hint) => `<label class="optline optchk">${optName(n, hint)}<input type="checkbox" ${attrs} ${on ? "checked" : ""}></label>`;
 function optionsSheet() {
-  openSheet(`<h2>Options</h2>
-    <div class="stack small">
-      ${accountHtml()}
-      ${displayOptionsHtml()}
-      <div class="row"><b>Découvertes</b> <span class="muted">(les bulles d'aide)</span><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche</button></div>
-      <label class="row"><input type="checkbox" data-act="setprot" ${!S.settings.protOff ? "checked" : ""}> <span><b>Protecteurs de ressources</b> <span class="muted">(un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min)</span></span></label>
-      <div class="stack" style="gap:6px"><div><b>Code cadeau</b> <span class="muted">(donné sur le Discord ; un code par partie)</span></div><div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${Object.keys(S.gifts || {}).length ? `<span class="xs muted">${Object.keys(S.gifts).length} code${Object.keys(S.gifts).length > 1 ? "s" : ""} déjà utilisé${Object.keys(S.gifts).length > 1 ? "s" : ""}</span>` : ""}</div>
-      ${notifOptionsHtml()}
-      <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${ON && ON.user && ON.profile ? " et sur ton compte en ligne" : ""}${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
-      <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
-      <div class="stack" style="gap:6px"><div><b>Copies de secours</b> <span class="muted">(une toutes les 10 min de jeu, et une avant chaque mise à jour)</span></div>${copiesHtml()}</div>
-      <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
-      <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
-      <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>
-      <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>
-      <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
-    </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  const tab = OPT_TABS.some(([k]) => k === ui.optTab) ? ui.optTab : "affichage";
+  const nGift = Object.keys(S.gifts || {}).length;
+  let body = "";
+  if (tab === "affichage") body = displayOptionsHtml();
+  else if (tab === "sons") body = soundOptionsHtml() + notifOptionsHtml();
+  else if (tab === "jeu") body = consignesHtml()
+    + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
+    + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
+  else if (tab === "sauvegarde") body = (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
+    + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
+    + optSec("Copies de secours", "une toutes les 10 min de jeu, et une avant chaque mise à jour", `<div class="stack small" style="gap:6px">${copiesHtml()}</div>`)
+    + optSec("Changer d'appareil", "copie la sauvegarde ici, puis colle-la sur l'autre appareil", `<div class="stack" style="gap:6px"><b class="small">Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><div><button class="btn sm" data-act="copyexp">Copier</button></div>
+      <b class="small">Importer</b> <span class="xs muted">remplace la partie actuelle ; les sauvegardes v1 sont converties</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><div><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div></div>`)
+    + `<section class="optsec danger"><div class="optsec-h"><b>Nouvelle partie</b><span class="xs muted">efface toute la progression de cet appareil</span></div><div>${ui.confirm === "reset" ? `<span class="minus small">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div></section>`;
+  else body = optSec("Découvertes", "les bulles d'aide déjà vues, et la recherche dans tout le jeu", `<div class="row"><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche <span class="xs muted">Ctrl+K</span></button></div>`)
+    + optSec("Le jeu", "", `<div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>`)
+    + optSec("Un souci ?", "le diagnostic se colle avec le message, dans le forum Bugs du Discord", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
+    + `<p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>`;
+  openSheet(`<div class="opthead"><h2>${G("gear")} Options</h2><button class="btn sm" data-act="closesheet" aria-label="Fermer">✕</button></div>
+    <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
+    <div class="optbody small">${body}</div>
+    <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function offlineSheet(r) {
   if (S) E.tipMark(S, "offline");
@@ -3771,6 +3801,7 @@ function offlineSheet(r) {
     ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
     ${r.roamed && r.roamed.length ? `<p class="small">${G("star")} Chasse itinérante : ${r.roamed.map(h).join(" → ")}</p>` : ""}
+    ${r.consigne && r.consigne.length ? `<p class="small">${IC("quetes")} <b>Consignes</b> : ${r.consigne.map(h).join(" ")} <button class="btn sm" data-act="vi-optcons">Régler</button></p>` : ""}
     ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
     ${r.souls && r.souls.length ? `<p class="small" style="color:var(--archi)">💜 Âmes capturées : ${r.souls.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")} · ${r.stones} Pierre${r.stones > 1 ? "s" : ""} d'âme restante${r.stones > 1 ? "s" : ""}</p>` : r.archis && r.archis.length && !r.stones ? `<p class="small muted">Aucune Pierre d'âme en sac : les âmes se sont échappées.</p>` : ""}
@@ -3825,7 +3856,7 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
-  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span><button class="btn sm" data-adm="open">${G("bug")} Panel de test</button><a class="btn sm" href="../">Jeu public</a></div>`;
+  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jeu public</a></div>`;
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
@@ -3842,6 +3873,7 @@ function checkNewVersion() {
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
+  if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
@@ -3853,8 +3885,12 @@ function render() {
   else if (ui.tab === "forge") renderForge();
   else if (ui.tab === "quests") renderQuests();
   else if (ui.tab === "ren") renderRenaissance();
+  else if (ui.tab === "carnet") renderCarnet();
   else if (ui.tab === "ladder") renderLadder();
+  else if (ui.tab === "defi") renderDefi();
+  else if (ui.tab === "exp" && window.EXPUI) window.EXPUI.render($("#main"));
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
+  else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else { ui.tab = "home"; renderHome(); }
   tipTick();
@@ -3890,6 +3926,8 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
+  if (ev.t === "exp") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Expédition sans fin</div><div class="cele-t">Étage ${ev.floor} atteint</div><div class="cele-s">Titre « ${h(ev.title)} » débloqué (onglet Héros)</div>`;
+  if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Chasse au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
     return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
@@ -3953,15 +3991,16 @@ function applyDisplay() {
 }
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
-  return `<div class="stack" style="gap:8px"><div><b>Affichage</b> <span class="muted">(se voit tout de suite)</span></div>
-    <div class="row"><span class="muted">Taille du texte</span><span class="seg">${E.TEXT_SIZES.map((v) => `<button data-act="settext" data-v="${v}" aria-pressed="${z === v}">${v} %</button>`).join("")}</span></div>
-    <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
-    <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]].map(([v, n]) => `<button data-act="setanim" data-v="${v}" aria-pressed="${animLvl() === v}">${n}</button>`).join("")}</span></div>
-    <div class="row"><span class="muted" data-tip="Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.">Mouvements réduits</span><span class="seg">${[["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]].map(([v, n]) => `<button data-act="setmotion" data-v="${v}" aria-pressed="${m === v}">${n}</button>`).join("")}</span></div>
-    <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
-    <label class="row"><input type="checkbox" data-act="setcontrast" ${S.settings.contrast ? "checked" : ""}> <span><b>Contraste renforcé</b> <span class="muted">(texte plus foncé, bordures plus nettes)</span></span></label>
-    <label class="row"><input type="checkbox" data-act="setdecofx" ${S.settings.decofx !== false ? "checked" : ""}> <span><b>Effets de décor</b> <span class="muted">(météo et premier plan dans l'arène ; à couper sur un appareil lent)</span></span></label>
-  </div>`;
+  const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
+  return optSec("Écran", "se voit tout de suite",
+      optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v} %`]), z))
+    + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
+    + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes"))
+    + optSec("Combat", "",
+      optLine("Animations", "", seg("setanim", [["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]], animLvl()))
+    + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
+    + optLine("Écrans de récompense", "objet Rayonnant, palier de 10 niveaux, stasis", `<span class="seg">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span>`)
+    + optChk(`data-act="setdecofx"`, S.settings.decofx !== false, "Effets de décor", "météo et premier plan dans l'arène ; à couper sur un appareil lent"));
 }
 /* ---- bulles de découverte ---- */
 const tipCtx = () => ({ online: !!ON, user: !!(ON && ON.user), now: E.now() });
@@ -4047,13 +4086,13 @@ function pageGo(id) {
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
-    case "defi": go("world", "world", "dungeons"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
-    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break;
+    case "defi": go("defi"); break; case "exp": go("exp"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
+    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
     case "inv": go("inv", "inv", "items"); break; case "invres": go("inv", "inv", "res"); break; case "invcons": go("inv", "inv", "cons"); break; case "sets": go("inv", "inv", "sets"); break;
     case "recolte": go("metiers", "met", "recolte"); break; case "craft": go("metiers", "met", "craft"); break;
-    case "options": case "account": optionsSheet(); break; case "archis": archiSheet(); break; case "idols": idolSheet(); break; case "tips": tipsSheet(); break; case "changelog": changelogSheet(); break;
+    case "options": optionsSheet(); break; case "account": ui.optTab = "sauvegarde"; optionsSheet(); break; case "archis": archiSheet(); break; case "idols": idolSheet(); break; case "tips": tipsSheet(); break; case "changelog": changelogSheet(); break;
   }
 }
 function searchGo(r) {
@@ -4161,7 +4200,68 @@ function defiSheet(r) {
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
     ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
     ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (onLive() ? "Envoi au serveur pour le classement…" : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
-    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button><button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${r.win ? "" : `<button class="btn" data-tab="team">Changer d'équipe</button>`}<button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* ---------- 0.1.26.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons ---------- */
+const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
+/* récompense du coffre : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
+function defiReward(tid) {
+  const def = E.defi(tid); const dust = def.k * 2 + (def.k >= 4 ? 4 : 0);
+  const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
+  if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? r.kamas : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
+  return `${ui.dfEst.kamas ? `≈ ${fmt(ui.dfEst.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
+}
+const defiLeftTxt = () => dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "");
+function defiHomeCard() {
+  if (!E.team(S).length) return "";
+  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid]; const streak = E.defiStreakNow(S); const T = E.defiTier(tid);
+  const tries = st.tries.filter((x) => x.tier === tid).length;
+  const state = best ? `<span class="tag good">✓ réussi en ${best.turns} tours</span>` : `<span class="muted">${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`;
+  return `<section class="panel dfhome ${st.chest ? "done" : ""}"><div class="dfh-in">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
+    <div class="grow dfh-txt"><span class="wk">${G("target")} Défi du jour <span class="xs muted">· palier ${h(T.name)} · nouveau dans ${defiLeftTxt()}</span></span>
+      <span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span>${def.mods.map(modChip).join("")}</span>
+      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ coffre du jour ouvert" : `${IC("coffre")} coffre : ${defiReward(tid)}`}</span></span></div>
+    <div class="dfh-btns"><button class="btn" data-tab="defi">Voir le défi</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}">${best ? "Battre mon record" : "Lancer le défi"}</button></div></div></section>`;
+}
+function defiLine() {
+  if (!E.team(S).length) return "";
+  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const st = E.defiState(S); const dg = DUNGEONS[def.did];
+  return `<button class="dfline" data-tab="defi"><span class="wk">${G("target")} Défi du jour</span><span class="grow"><b>${h(dg.name)}</b> · stasis ${def.k}</span>${st.chest ? `<span class="tag good">✓ réussi</span>` : `<span class="tag">à faire</span>`}<span class="chev">›</span></button>`;
+}
+function renderDefi() {
+  if (!E.team(S).length) { $("#main").innerHTML = `<section class="panel"><div class="empty">Il faut au moins un héros dans l'équipe pour relever le défi du jour.</div></section>`; return; }
+  const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S);
+  const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("");
+  const goal = (n, lab, ok) => `<div class="df-goal ${ok ? "ok" : ""}"><div class="row between"><span class="small"><b>${n} jours de suite</b> · ${lab}</span><span class="xs num">${ok ? "✓ obtenu" : `${Math.min(streak, n)}/${n}`}</span></div><div class="bar"><i style="width:${ok ? 100 : pct(Math.min(streak, n), n)}%"></i></div></div>`;
+  const rules = `<div class="panel"><div class="phead"><h2>${IC("quetes")} Comment ça marche</h2></div><div class="pad"><ul class="dglist small">
+      <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
+      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts ou de composition pour faire mieux.</li>
+      <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
+      <li>La première victoire du jour ouvre le coffre et fait avancer ta série.</li></ul></div></div>`;
+  $("#main").innerHTML = `${defiBanner()}
+  <section class="grid2" style="margin-top:14px">
+    <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
+      <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<span class="small"><b class="num">${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>
+        <div class="small">${st.chest ? "✓ Coffre du jour ouvert. Reviens demain pour continuer la série." : `${IC("coffre")} Coffre à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
+        ${goal(7, `titre « ${h(E.DEFI_TITLE)} »`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi »", (ss.best || 0) >= 30)}
+        <b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
+    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : rules}
+  </section>
+  ${ON ? `<section style="margin-top:14px">${rules}</section>` : ""}`;
+  if (ON) defiLbFill(tid);
+}
+async function defiLbFill(tid) {
+  const box = () => $("#dfLb");
+  try {
+    if (!ON.db || !ON.db()) { const b = box(); if (b) b.innerHTML = `<p class="note">Connecte-toi pour voir le classement.</p>`; return; }
+    const keep = LB.dtier; LB.dtier = tid; const out = { rows: [], me: null };
+    await lbDefiFetch(out); LB.dtier = keep;
+    const b = box(); if (!b || ui.tab !== "defi") return;
+    const yest = out.yest && out.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${out.yest.map(h).join(" · ")}</div>` : "";
+    b.innerHTML = yest + (out.rows.length ? `<div class="lbt">${out.rows.slice(0, 5).map((r, i) => lbRowHtml(r, i)).join("")}${out.me && out.me.rank > 5 ? lbRowHtml(out.me, 0, true) : ""}</div>` : `<p class="note">Personne n'a encore réussi ce palier aujourd'hui. À toi de jouer !</p>`);
+  } catch (e) { const b = box(); if (b) b.innerHTML = `<p class="note">Classement indisponible pour l'instant.</p>`; }
 }
 /* le serveur rejoue le défi avec la partie en ligne : on l'envoie d'abord */
 async function defiSubmit(r) {
@@ -4178,10 +4278,11 @@ async function defiSubmit(r) {
 /* ---------- classement du défi (onglet Classements) ---------- */
 async function lbDefiFetch(out) {
   const db = ON.db(), me = ON.user && ON.user.id, day = E.defiDay(), tier = LB.dtier || defiTierCur();
-  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team });
-  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
+  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team, fl: r.main_lvl });
+  const ml = LB.ml ? ",main_lvl" : "";
+  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
   out.rows = (data || []).map(rec);
-  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
   const { data: y } = await db.from("lb_defi").select("pseudo,r").eq("day", day - 1).eq("tier", tier).lte("r", 3).order("r", { ascending: true }).limit(3);
   out.yest = (y || []).map((x) => x.pseudo);
 }
@@ -4330,6 +4431,248 @@ function renderWatch() {
   </section>`;
   ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd();
 }
+/* ===================== lot Suivi : carnet de bord et chasse au trésor (logique dans js/suivi.js) ===================== */
+const SU = { days: 7, met: "xp", role: undefined, tq: false };
+const fmtK = (n) => { n = Math.round(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e4 ? Math.round(n / 1e3) + " k" : fmt(n); };
+const trendTxt = (x) => (x == null ? "" : `<span class="${x >= 0 ? "su-up" : "su-down"}">${x >= 0 ? "+" : "−"}${Math.abs(Math.round(x * 100))} %</span> <span class="muted">sur la période</span>`);
+const DOW = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+const suWhen = (t) => { const d = new Date(t); return `${DOW[d.getDay()]} ${d.getHours()} h`; };
+const SU_MET = {
+  xp: ["XP", (p) => p.xp], k: ["Kamas", (p) => p.k], f: ["Combats", (p) => p.f], lv: ["Niveau", (p) => p.lv],
+};
+const SU_MOM_IC = { level: "couronne", ren: "phenix", dofus: "dofus", soul: "cristal", stasis: "trophee", maj: "logo", record: "couronne", tresor: "carte" };
+function carnetPoints() {
+  const P = E.carnetSeries(S, SU.days, "xp"); let lastLv = 0;
+  return P.map((p) => { if (p.has && p.lv) lastLv = p.lv; return Object.assign({}, p, { lv: p.lv || lastLv }); });
+}
+function carnetChart() {
+  const P = carnetPoints(); const get = SU_MET[SU.met][1];
+  const W = suW(), Hh = W < 500 ? 200 : 230, x0 = 46, x1 = W - 10, y0 = Hh - 34, y1 = 16;
+  const vals = P.map(get); const hi0 = Math.max(...vals); if (!(hi0 > 0)) return `<div class="empty">Pas encore de données sur cette période : le carnet se remplit à mesure que l'équipe combat.</div>`;
+  let lo = SU.met === "lv" ? Math.max(0, Math.min(...vals.filter((v) => v > 0)) - 2) : 0; const hi = hi0 * 1.08 || 1; if (lo >= hi) lo = 0;
+  const X = (i) => x0 + (x1 - x0) * i / Math.max(1, P.length - 1), Y = (v) => y0 - (y0 - y1) * (Math.max(lo, v) - lo) / (hi - lo);
+  const unit = SU.days <= 7 ? 3600000 : 86400000; const step = (x1 - x0) / Math.max(1, P.length - 1);
+  let s = `<defs><linearGradient id="suGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gold)" stop-opacity=".32"/><stop offset="1" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs>`;
+  let st = -1; P.forEach((p, i) => { if (p.off && st < 0) st = i; if ((!p.off || i === P.length - 1) && st >= 0) { const e = p.off ? i : i - 1; s += `<rect class="su-off" x="${(X(st) - step / 2).toFixed(1)}" y="${y1}" width="${(X(e) - X(st) + step).toFixed(1)}" height="${y0 - y1}"/>`; st = -1; } });
+  for (let k = 0; k <= 3; k++) { const v = lo + (hi - lo) * k / 3, y = Y(v); s += `<line class="su-ax" x1="${x0}" x2="${x1}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text x="${x0 - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end">${SU.met === "lv" ? Math.round(v) : fmtK(v)}</text>`; }
+  const d = P.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(get(p)).toFixed(1)}`).join("");
+  s += `<path class="su-ar" d="${d}L${x1},${y0}L${x0},${y0}Z"/><path class="su-ln" d="${d}"/>`;
+  const t0 = P[0].idx * unit, t1 = (P[P.length - 1].idx + 1) * unit;
+  (S.carnet ? S.carnet.mom : []).filter((m) => m.k === "maj" && m.t >= t0 && m.t < t1).slice(0, 4).forEach((m) => { const x = x0 + (x1 - x0) * (m.t - t0) / (t1 - t0); s += `<line class="su-mk" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y1 - 4}" y2="${y0}"/><text class="su-mkt" x="${(x > W - 70 ? x - 4 : x + 4).toFixed(1)}" y="${y1 + 6}"${x > W - 70 ? ' text-anchor="end"' : ""}>${h(m.txt.replace("Mise à jour ", ""))}</text>`; });
+  if (SU.days <= 7) P.forEach((p, i) => { const dt = new Date(p.idx * unit); if (dt.getHours() === 12) s += `<text x="${X(i).toFixed(1)}" y="${Hh - 10}" text-anchor="middle">${DOW[dt.getDay()]}</text>`; });
+  else [0, 7, 14, 21, P.length - 1].forEach((i) => { s += `<text x="${X(i).toFixed(1)}" y="${Hh - 10}" text-anchor="middle">${i === P.length - 1 ? "auj." : `J−${P.length - 1 - i}`}</text>`; });
+  const per = SU.days <= 7 ? "par heure" : "par jour";
+  return `<div class="su-chart" data-n="${P.length}"><svg viewBox="0 0 ${W} ${Hh}" data-w="${W}" data-h="${Hh}" role="img" aria-label="${h(SU_MET[SU.met][0])} ${per} sur ${SU.days} jours">${s}<line class="su-cross" id="suCross" x1="0" x2="0" y1="${y1}" y2="${y0}" visibility="hidden"/><circle class="su-dot" id="suDot" r="4.5" cx="0" cy="0" visibility="hidden"/><rect class="su-hit" x="${x0}" y="${y1}" width="${x1 - x0}" height="${y0 - y1}"/></svg><div class="su-tip" id="suTip" hidden></div></div>
+    <div class="xs muted su-legend"><span>${h(SU_MET[SU.met][0])} ${SU.met === "lv" ? "" : per}</span><span><i class="su-swoff"></i> hors ligne</span><span><i class="su-swmk"></i> mise à jour du jeu</span></div>`;
+}
+function carnetHover(ev) {
+  const box = ev.currentTarget; const svg = box.querySelector("svg"); const r = svg.getBoundingClientRect(); const P = carnetPoints(); if (!P.length) return;
+  const W = +svg.dataset.w, Hh = +svg.dataset.h; const vx = (ev.clientX - r.left) / r.width * W; const i = Math.max(0, Math.min(P.length - 1, Math.round((vx - 46) / ((W - 56) / Math.max(1, P.length - 1)))));
+  const p = P[i]; const get = SU_MET[SU.met][1]; const vals = P.map(get); const hi0 = Math.max(...vals); let lo = SU.met === "lv" ? Math.max(0, Math.min(...vals.filter((v) => v > 0)) - 2) : 0; const hi = hi0 * 1.08 || 1; if (lo >= hi) lo = 0;
+  const x = 46 + (W - 56) * i / Math.max(1, P.length - 1), y = (Hh - 34) - (Hh - 50) * (Math.max(lo, get(p)) - lo) / (hi - lo);
+  const cr = $("#suCross"), dot = $("#suDot"), tip = $("#suTip"); if (!cr || !tip) return;
+  cr.setAttribute("x1", x); cr.setAttribute("x2", x); cr.setAttribute("visibility", "visible"); dot.setAttribute("cx", x); dot.setAttribute("cy", y); dot.setAttribute("visibility", "visible");
+  const dt = new Date(p.idx * (SU.days <= 7 ? 3600000 : 86400000));
+  const when = SU.days <= 7 ? `${DOW[dt.getDay()]} ${dt.getDate()}, ${dt.getHours()} h – ${dt.getHours() + 1} h` : `${DOW[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1}`;
+  tip.innerHTML = `<b>${when}</b>${p.off ? ` <span class="muted">· hors ligne</span>` : ""}<br>${fmtK(p.xp)} XP · ${fmtK(p.k)} kamas<br>${fmt(Math.round(p.f))} combats${p.f ? ` · ${Math.round(p.w / p.f * 100)} % gagnés` : ""}${p.lv ? ` · niv. ${p.lv}` : ""}`;
+  tip.hidden = false; const bw = box.clientWidth; const px = x / W * bw; tip.style.left = Math.max(4, Math.min(bw - tip.offsetWidth - 4, px + 12)) + "px"; tip.style.top = "6px";
+}
+function carnetLeave() { ["#suCross", "#suDot"].forEach((s) => { const e = $(s); if (e) e.setAttribute("visibility", "hidden"); }); const t = $("#suTip"); if (t) t.hidden = true; }
+const suW = () => { const m = $("#main"); return Math.round(Math.max(300, Math.min(1100, (m ? m.clientWidth : 800) - 56))); };
+const suWeek = () => Math.floor(Date.now() / 604800000);
+function renderCarnet() {
+  const T = E.carnetTotals(S, SU.days), L = E.carnetLedger(S, SU.days), Z = E.carnetZones(S, 5);
+  const C = E.carnet(S); const since = E.now() - SU.days * 86400000;
+  const mom = C.mom.filter((m) => m.t >= since).slice(0, 12);
+  const sumIn = L.inn.reduce((s, x) => s + x.v, 0), sumOut = L.out.reduce((s, x) => s + x.v, 0);
+  const bars = (rows, cls) => { const mx = Math.max(1, ...rows.map((x) => x.v)); return rows.length ? rows.map((x) => `<div class="su-lr"><span>${h(x.name)}</span><span class="su-bar"><i class="${cls}" style="width:${Math.max(2, x.v / mx * 100)}%"></i></span><b class="num">${fmtK(x.v)}</b></div>`).join("") : `<div class="xs muted">Rien sur cette période.</div>`; };
+  const sent = C.sent === suWeek();
+  const send = ON ? (ON.user && ON.profile ? `<button class="btn sm primary" data-act="su-send">${sent ? "Renvoyer mon carnet" : "Envoyer mon carnet à Mathis"}</button>` : `<span class="xs muted">Connecte-toi (Options › Compte) pour l'envoyer.</span>`) : "";
+  $("#main").innerHTML = `<div class="pagehead"><h1>Carnet de bord</h1><span class="seg">${[[7, "7 jours"], [30, "30 jours"]].map(([v, n]) => `<button data-act="su-days" data-v="${v}" aria-pressed="${SU.days === v}">${n}</button>`).join("")}</span></div>
+  <div class="stack">
+  <div class="kpis su-kpis">
+    <div class="kpi"><span class="xs muted">XP par heure de combat</span><b class="num">${fmtK(T.xph)}</b><span class="xs">${trendTxt(T.trend)}</span></div>
+    <div class="kpi"><span class="xs muted">Kamas par heure de combat</span><b class="num">${fmtK(T.kh)}</b><span class="xs">${trendTxt(T.ktrend)}</span></div>
+    <div class="kpi"><span class="xs muted">Combats gagnés</span><b class="num">${T.f ? Math.round(T.win * 100) + " %" : "–"}</b><span class="xs muted">${fmt(Math.round(T.f))} combats</span></div>
+    <div class="kpi"><span class="xs muted">Temps de jeu</span><b class="num">${fmt(Math.round(T.on / 3600))} h</b><span class="xs muted">${T.offH ? `et ${fmt(T.offH)} h hors ligne` : "en ligne"}</span></div>
+  </div>
+  <section class="panel"><div class="phead"><h2>Courbes</h2><span class="seg">${Object.keys(SU_MET).map((k) => `<button data-act="su-met" data-v="${k}" aria-pressed="${SU.met === k}">${h(SU_MET[k][0])}</button>`).join("")}</span></div><div class="pad" id="suChartBox">${carnetChart()}</div></section>
+  <section class="panel"><div class="phead"><h2>Bilan des kamas</h2><span class="small num ${sumIn - sumOut >= 0 ? "su-up" : "su-down"}">${sumIn - sumOut >= 0 ? "+" : "−"}${fmtK(Math.abs(sumIn - sumOut))}</span></div><div class="pad su-ledger">
+    <div><h3 class="su-h su-up">Gagnés · ${fmtK(sumIn)}</h3>${bars(L.inn, "in")}</div><div><h3 class="su-h su-down">Dépensés · ${fmtK(sumOut)}</h3>${bars(L.out, "out")}</div></div></section>
+  <div class="grid2">
+    <section class="panel"><div class="phead"><h2>Où l'équipe rapporte le plus</h2></div><div class="pad su-scroll">${Z.length ? `<table class="su-zt"><thead><tr><th>Zone</th><th class="n">XP / h</th><th class="n">Kamas / h</th><th class="n">Victoires</th></tr></thead><tbody>${Z.map((z, i) => `<tr class="${i === 0 ? "best" : ""}"><td>${h(z.name)}</td><td class="n">${fmtK(z.xph)}</td><td class="n">${fmtK(z.kh)}</td><td class="n">${Math.round(z.win * 100)} %</td></tr>`).join("")}</tbody></table><p class="xs muted" style="margin:6px 0 0">Mesuré sur tous les combats déjà faits dans chaque zone (10 au moins).</p>` : `<div class="empty">Il faut au moins 10 combats dans une zone.</div>`}</div></section>
+    <section class="panel"><div class="phead"><h2>Moments</h2></div><div class="pad su-mom">${mom.length ? mom.map((m) => `<div class="su-ev"><span class="xs muted num">${suWhen(m.t)}</span>${IC(SU_MOM_IC[m.k] || "parchemin_or")}<span>${h(m.txt)}</span></div>`).join("") : `<div class="empty">Les grands moments de l'équipe s'afficheront ici.</div>`}</div></section>
+  </div>
+  <section class="panel"><div class="pad row" style="gap:10px">${send}<button class="btn sm" data-act="su-copy">Copier le résumé</button><span class="xs muted grow">Le résumé de la semaine (niveau, XP et kamas par heure, bilan, meilleures zones) aide Mathis à régler l'équilibrage. Pas de pseudo dedans.</span>${SU.role === "admin" ? `<button class="btn sm" data-act="su-adm">Carnets reçus</button>` : ""}</div></section>
+  </div>`;
+  const box = $("#suChartBox .su-chart"); if (box) { box.addEventListener("pointermove", carnetHover); box.addEventListener("pointerleave", carnetLeave); }
+  if (ON && SU.role === undefined && ON.user) { SU.role = null; ON.role().then((r) => { SU.role = r || null; if (r === "admin" && ui.tab === "carnet") renderCarnet(); }).catch(() => {}); }
+}
+function carnetText() {
+  const x = E.carnetSummary(S);
+  return [`Carnet de bord Idlus ${GAME_VERSION} (7 jours)`, `Niveau max ${x.lvl}, ${x.team} héros, ${x.ren} renaissances`,
+    `XP/h ${fmtK(x.xph)} · kamas/h ${fmtK(x.kh)} · ${fmt(x.f)} combats, ${x.win} % gagnés · ${x.h} h de combat, ${x.offH} h hors ligne`,
+    `Gagnés : ${x.inn.map(([k, v]) => `${E.CARNET_IN[k] || k} ${fmtK(v)}`).join(", ") || "rien"}`,
+    `Dépensés : ${x.out.map(([k, v]) => `${E.CARNET_OUT[k] || k} ${fmtK(v)}`).join(", ") || "rien"}`,
+    `Zones : ${x.zones.map(([n, xp, k, w]) => `${n} (${fmtK(xp)} XP/h, ${fmtK(k)} k/h, ${w} %)`).join(" ; ") || "–"}`].join("\n");
+}
+async function carnetSend() {
+  const r = await ON.rpc("carnet_send", { p_week: suWeek(), p_data: Object.assign(E.carnetSummary(S), { v: GAME_VERSION }) });
+  if (r.err) { toast(`Envoi impossible : ${r.err}`, "warn"); return; }
+  E.carnet(S).sent = suWeek(); dirty = true; toast("Carnet envoyé, merci ! Il aide à régler l'équilibrage.", "rare"); if (ui.tab === "carnet") renderCarnet();
+}
+async function carnetAdmin() {
+  openSheet(`<h2>Carnets reçus</h2><div class="empty">Chargement…</div>`);
+  const r = await ON.rpc("carnet_admin", { p_weeks: 4 });
+  if (r.err) { openSheet(`<h2>Carnets reçus</h2><div class="empty">${h(r.err)}</div><button class="btn" data-act="closesheet">Fermer</button>`); return; }
+  const rows = (r.data || []).map((x) => x.data).filter(Boolean);
+  const bands = [[1, 50], [51, 100], [101, 150], [151, 200]].map(([a, b]) => { const g = rows.filter((x) => x.lvl >= a && x.lvl <= b); const avg = (k) => (g.length ? g.reduce((s, x) => s + (+x[k] || 0), 0) / g.length : 0);
+    return `<tr><td>${a}–${b}</td><td class="n">${g.length}</td><td class="n">${g.length ? fmtK(avg("xph")) : "–"}</td><td class="n">${g.length ? fmtK(avg("kh")) : "–"}</td><td class="n">${g.length ? Math.round(avg("win")) + " %" : "–"}</td><td class="n">${g.length ? Math.round(avg("h")) + " h" : "–"}</td></tr>`; }).join("");
+  openSheet(`<h2>Carnets reçus</h2><p class="small muted">${rows.length} carnet${rows.length > 1 ? "s" : ""} sur les 4 dernières semaines, un par joueur et par semaine, regroupés par niveau du héros le plus fort.</p>
+    <div class="su-scroll"><table class="su-zt"><thead><tr><th>Niveau</th><th class="n">Carnets</th><th class="n">XP / h</th><th class="n">Kamas / h</th><th class="n">Victoires</th><th class="n">Combat / sem.</th></tr></thead><tbody>${bands}</tbody></table></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* ---------- chasse au trésor (Monde › Trésor) ---------- */
+function tresorBanner() {
+  const T = E.tresorState(S); const c = T.cur; const free = E.tresorFreeOk(S);
+  if (!c && !T.stock.length && !free) return "";
+  let txt;
+  if (c) { const st = E.tresorStep(S); txt = c.ready ? `<b>Le gardien du trésor t'attend</b> · ${h(E.SUBS[c.steps[c.steps.length - 1].sub].name)}` : `<b>Chasse au trésor</b> · étape ${c.i + 1} / ${c.steps.length} · ${h(E.SUBS[st.sub].name)} <span class="num">${st.got} / ${E.TRESOR_NEED}</span>`; }
+  else txt = T.stock.length ? `<b>${T.stock.length} parchemin${T.stock.length > 1 ? "s" : ""} de chasse</b> à ouvrir` : `<b>Parchemin de chasse du jour</b> disponible`;
+  return `<button class="su-tban" data-act="worldtab" data-v="tresor">${IC("carte")}<span class="grow">${txt}</span><span class="xs">Voir ›</span></button>`;
+}
+function tresorHtml() {
+  const T = E.tresorState(S); const c = T.cur;
+  const free = E.tresorFreeOk(S);
+  const stock = `<section class="panel"><div class="phead"><h2>Parchemins de chasse</h2><span class="small muted">${T.stock.length} / ${E.TRESOR_STOCK}</span></div><div class="pad stack">
+    <div class="row su-stock">${T.stock.length ? T.stock.map((l, i) => `<div class="su-parch">${IC("carte")}<span><b>Niveau ${l}</b><span class="xs muted">${E.tresorSteps(Math.min(l, Math.max(...S.chars.map((x) => x.lvl)) + 10))} indices</span></span>${c ? "" : `<button class="btn sm primary" data-act="su-tstart" data-v="${i}">Ouvrir</button>`}</div>`).join("") : `<span class="small muted">Aucun parchemin. Il en tombe parfois sur les monstres en chasse, au niveau de la zone.</span>`}</div>
+    <div class="row">${free ? `<button class="btn sm" data-act="su-tclaim" ${T.stock.length >= E.TRESOR_STOCK ? "disabled" : ""}>${IC("parchemin_or")} Prendre le parchemin du jour</button>` : `<span class="xs muted">✓ Parchemin du jour pris · le prochain dans ${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</span>`}</div><p class="xs muted" style="margin:0">Un parchemin gratuit chaque jour, plus ceux trouvés en chasse (${E.TRESOR_STOCK} en réserve au plus).</p></div></section>`;
+  let cur = "";
+  if (c) {
+    const steps = c.steps.map((st, i) => { const s = E.SUBS[st.sub];
+      if (i < c.i) return `<div class="su-st done"><span class="dot">✓</span><div><b>${h(s.name)}</b><span class="xs">Repère trouvé : ${h(st.mark)}</span></div></div>`;
+      if (i === c.i && !c.ready) { const here = S.hunting && S.sub === st.sub && !S.dungeon;
+        return `<div class="su-st now"><span class="dot">${i + 1}</span><div class="stack" style="gap:6px"><div class="su-clue">Indice : va à <b>${h(s.name)}</b> <span class="xs">(niv. ${s.lvl[0]}–${s.lvl[1]})</span> et cherche <b>${h(st.mark)}</b>.</div>
+          <span class="xs">${here ? "L'équipe chasse ici" : "L'équipe n'est pas encore sur place"} · ${st.got} victoire${st.got > 1 ? "s" : ""} sur ${E.TRESOR_NEED} avant de trouver le repère</span><div class="su-prog"><i style="width:${pct(st.got, E.TRESOR_NEED)}%"></i></div></div></div>`; }
+      return `<div class="su-st hid"><span class="dot">${i + 1}</span><div><b>???</b><span class="xs">Se dévoile à l'étape précédente</span></div></div>`; }).join("");
+    const last = E.SUBS[c.steps[c.steps.length - 1].sub];
+    const guard = `<div class="su-st ${c.ready ? "now" : "hid"}"><span class="dot">⚔</span><div><b>Le gardien du trésor</b><span class="xs">${c.ready ? `Un monstre de ${h(last.name)} renforcé comme un boss (niveau ${Math.min(200, c.lvl + 5)}). ${c.lost ? `Déjà ${c.lost} défaite${c.lost > 1 ? "s" : ""} : renforce l'équipe avant de réessayer.` : "Il apparaît au prochain combat sur place."}` : "Un combat, puis le coffre"}</span></div></div>`;
+    const target = c.ready ? last.id : c.steps[c.i].sub; const there = S.hunting && S.sub === target && !S.dungeon;
+    const btn = c.ready ? (c.go || (S.fight && S.fight.tresor && !S.fight.over) ? `<span class="xs">Le gardien arrive au prochain combat…</span><button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tfight">Affronter le gardien</button>`) : there ? `<button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tgo">Aller chasser là-bas</button>`;
+    cur = `<div class="su-paper"><div class="row between"><h3>Parchemin de chasse · niveau ${c.lvl}</h3><span class="num">${c.ready ? "gardien" : `étape ${c.i + 1} / ${c.steps.length}`}</span></div>
+      <div class="su-trail">${steps}${guard}</div>
+      <div class="row">${btn}${SU.tq ? `<button class="pbtn alt" data-act="su-tquit2">Confirmer l'abandon</button>` : `<button class="pbtn alt" data-act="su-tquit">Abandonner</button>`}<span class="xs grow">${S.settings.roam ? "La chasse itinérante reprend après le trésor." : ""}</span></div></div>`;
+  } else cur = `<section class="panel"><div class="pad su-how"><b>Comment ça marche ?</b><span class="small">Ouvre un parchemin : chaque indice nomme une zone et un repère. L'équipe y va toute seule et le trouve après ${E.TRESOR_NEED} victoires sur place, puis l'indice suivant se dévoile. Au bout, le gardien du trésor garde un coffre : kamas, poussière de stasis, ressources des zones traversées et une clé de donjon.</span></div></section>`;
+  const lastT = T.last ? `<section class="panel"><div class="phead"><h2>Dernier trésor</h2><span class="small muted">${ago(T.last.t)}</span></div><div class="pad small">${h(T.last.got.join(", "))}.</div></section>` : "";
+  const next = (T.n || 0) < 10 ? `titre « ${E.TRESOR_TITLE} » à 10` : (T.n || 0) < 50 ? "ornement « Boussole dorée » à 50" : "titre et ornement obtenus";
+  return `${cur}${stock}${lastT}<p class="xs muted" style="margin:0">${fmt(T.n || 0)} trésor${(T.n || 0) > 1 ? "s" : ""} trouvé${(T.n || 0) > 1 ? "s" : ""} · ${next}.</p>`;
+}
+/* ======================= 0.1.24.1 « Artisans et temples » : commandes, temples, sons, consignes ======================= */
+function commandesHtml() {
+  const C = E.cmdState(S); const cost = E.cmdSwapCost(S);
+  const done = C.list.filter((o) => o.got >= o.n).length;
+  return `<p class="note">Chaque jour, trois artisans passent commande. Livre ce que tu as en banque (une partie suffit pour commencer) : kamas et XP de métier à la clé. Plus tu livres un artisan, plus il paie (+10 % par rang). Tout livrer dans la journée offre un coffre.</p>
+    <div class="vi-cmds">${C.list.map((o) => { const have = S.res[o.res] || 0; const left = o.n - o.got; const ok = o.got >= o.n; const r = E.cmdRank(S, o.art); const fav = S.resFav && S.resFav[o.res];
+      return `<div class="vi-cmd ${ok ? "done" : ""} ${o.urgent ? "urgent" : ""}">${o.urgent ? `<span class="vi-urg">Urgent · ×1,5</span>` : ""}
+        <div class="row"><span class="vi-art">${IC(o.kind === "g" ? "pioche" : "metiers")}</span><div class="grow"><b>${h(E.CMD_ARTS[o.art])}</b><div class="xs muted">${h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art]).name)} · rang ${r} ${"★".repeat(r)}${"☆".repeat(3 - r)}</div></div></div>
+        <div class="row">${im(resImg(o.res), "ico", o.res)}<span class="grow"><b>${o.n} × ${h(o.res)}</b>${fav ? ` <span class="tag soft" data-tip="Ressource marquée en favori dans l'inventaire">★ favori</span>` : ""}<br><span class="xs muted">en banque : ${fmt(have)}</span></span></div>
+        <div class="row"><div class="bar grow"><i style="width:${pct(o.got, o.n)}%"></i></div><span class="num small">${o.got}/${o.n}</span></div>
+        <div class="small">Paie : <span class="coin"></span> <b>${fmt(E.cmdReward(S, o))}</b> · <b>${fmt(o.jxp)}</b> XP ${h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art]).name)}</div>
+        <div class="row">${ok ? `<span class="tag good">Livrée ✓</span>` : `<button class="btn sm ${have ? "primary" : ""}" data-act="vi-deliver" data-id="${o.id}" ${have ? "" : "disabled"}>Livrer ${Math.min(have, left) || ""}</button>${o.got ? "" : `<button class="btn sm" data-act="vi-swap" data-id="${o.id}" ${S.kamas < cost ? "disabled" : ""}>Changer · ${cost ? fmt(cost) + " k" : "gratuit"}</button>`}`}</div></div>`; }).join("")}</div>
+    <p class="small muted">Commandes livrées : <b>${fmt(C.n || 0)}</b> · aujourd'hui ${done}/${C.list.length}${C.bonus === C.day ? ` · <span class="plus">prime du jour reçue ✓</span>` : ""}. Les ressources de récolte viennent de tes métiers, celles des artisans des monstres de tes zones.</p>`;
+}
+function templesHtml() {
+  const T = E.templeState(S); const own = new Set(E.templeClasses(S)); const beat = Object.keys(T.beat).length;
+  const pend = T.pend || T.fighting;
+  return `<p class="note">Dans chaque temple t'attend le Dopeul de ta classe : un reflet de ton héros, à son niveau. Un combat par classe et par jour, pour chaque classe de ton équipe ou de ta réserve. Le Dopeul vient défier l'équipe là où elle chasse. Une victoire rapporte des Doplons (plus le héros est haut niveau, plus il y en a), et 7 jours d'affilée donnent +3 Doplons.</p>
+    ${pend ? `<div class="vi-pend">${IC("combat")} <span class="grow">Le Dopeul ${h(CLASSES[pend].name)} ${T.fighting ? "affronte l'équipe" : "arrive au prochain combat"}.</span>${T.fighting ? `<button class="btn sm" data-act="vi-view">Voir le combat</button>` : `<button class="btn sm" data-act="vi-tcancel">Annuler</button>`}</div>` : ""}
+    <div class="vi-temples">${D.CLASS_ORDER.map((k) => { const c = E.templeHero(S, k); const CL = CLASSES[k]; const done = T.done[k]; const n = T.beat[k] || 0;
+      return `<div class="vi-temple ${c ? "" : "off"} ${done ? "done" : ""}" style="--cc:${CL.color}"><i class="med halo" style="--cc:${CL.color}"><img src="${symImg(k)}" alt=""></i>
+        <b>${h(CL.name)}</b><span class="xs muted">${c ? `Dopeul niv. ${c.lvl} · ${E.doplons(c.lvl)} 🪙` : "aucun héros"}</span>${n ? `<span class="xs">vaincu ${n}×</span>` : ""}
+        ${c ? (done ? `<span class="tag good">Vaincu ✓</span>` : `<button class="btn sm ${pend ? "" : "primary"}" data-act="vi-tfight" data-v="${k}" ${pend ? "disabled" : ""}>Défier</button>`) : ""}</div>`; }).join("")}</div>
+    <p class="small muted">Temples conquis : <b>${beat}</b> / ${D.CLASS_ORDER.length} · ${E.TEMPLE_TITLE_N} classes différentes donnent le titre « ${h(E.TEMPLE_TITLE)} » · série : ${T.streak.n || 0} jour${(T.streak.n || 0) > 1 ? "s" : ""}.</p>
+    ${shopLink("temple")}`;
+}
+function consignesHtml() {
+  const C = E.consigne(S); const ck = (k, b, s) => optChk(`data-act="vi-cons" data-k="${k}"`, C[k], b, s);
+  return optSec("Consignes d'absence", "ce que fait l'équipe quand le jeu est fermé ; le résumé d'absence te le raconte",
+      ck("roam", "Suivre les étoiles pendant l'absence", `chasse itinérante seulement quand tu n'es pas là, avec ses −${Math.round(E.ROAM_MALUS * 100)} %`)
+    + ck("back", "Revenir à ma zone au retour", "si l'équipe a changé de zone")
+    + `<label class="optline">${optName("Limite de banque", "le surplus gagné pendant l'absence est vendu ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes")}<input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>`
+    + ck("alm", "Faire l'offrande à l'Almanax au retour", "si tu as les ressources")
+    + ck("cmd", "Livrer les commandes prêtes au retour", "seulement quand tout est en banque"), "consignes");
+}
+/* ---------- sons : synthétisés dans le navigateur, coupés par défaut ---------- */
+const SND = { ctx: null, last: 0, kinds: {}, live: true };
+const sndCfg = () => (S && S.settings.snd) || { on: false, vol: 50, all: false, bg: false };
+function sndCtx() { try { if (!SND.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; SND.ctx = new AC(); } if (SND.ctx.state === "suspended") SND.ctx.resume(); return SND.ctx; } catch (e) { return null; } }
+const SND_DEF = {
+  win: [[523, 0, 0.09], [659, 0.08, 0.12]], level: [[523, 0, 0.1], [659, 0.09, 0.1], [784, 0.18, 0.1], [1047, 0.27, 0.22]],
+  rare: [[1319, 0, 0.07, "triangle"], [1760, 0.06, 0.07, "triangle"], [2093, 0.12, 0.16, "triangle"]], boss: [[392, 0, 0.14, "square"], [523, 0.13, 0.14, "square"], [659, 0.26, 0.14, "square"], [784, 0.39, 0.3, "square"]],
+  coin: [[1568, 0, 0.05, "triangle"], [2093, 0.05, 0.12, "triangle"]], gong: [[196, 0, 0.6, "sine"], [294, 0.02, 0.5, "sine"]], magic: [[880, 0, 0.12, "sine"], [1109, 0.1, 0.12, "sine"], [1319, 0.2, 0.12, "sine"], [1760, 0.3, 0.3, "sine"]],
+};
+function sndPlay(kind, force) {
+  const cfg = sndCfg(); if (!force && (!cfg.on || !SND.live)) return; if (!force && !cfg.bg && document.visibilityState !== "visible") return;
+  const now = performance.now(); if (!force && (now - SND.last < 300 || now - (SND.kinds[kind] || 0) < 1500)) return; SND.last = now; SND.kinds[kind] = now;
+  const ctx = sndCtx(); const notes = SND_DEF[kind]; if (!ctx || !notes) return;
+  const vol = Math.max(0, Math.min(1, (cfg.vol == null ? 50 : cfg.vol) / 100)) * 0.18; const t0 = ctx.currentTime + 0.01;
+  notes.forEach(([f, at, len, type]) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type || "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + len);
+    o.connect(g); g.connect(ctx.destination); o.start(t0 + at); o.stop(t0 + at + len + 0.05); });
+}
+(function sndHooks() {
+  const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
+    if (type === "level") sndPlay("level"); else if (type === "dungeon") sndPlay("boss"); else if (type === "soul" || type === "dofus" || type === "ren") sndPlay("magic");
+    else if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win"); } return r; };
+  const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S && (kind === "rare" || kind === "radiant") && /Butin|Rayonnant|Trésor|archimonstre/i.test(txt)) sndPlay(/Trésor/.test(txt) ? "coin" : "rare"); return r; };
+  const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
+})();
+function soundOptionsHtml() {
+  const c = sndCfg();
+  return optSec("Sons", "niveau gagné, butin rare, boss, coffre, Dopeul ; coupés par défaut",
+      optChk(`data-act="vi-snd" data-k="on"`, c.on, "Activer les sons", "")
+    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button>`)
+    + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Aussi à chaque victoire", "discret, mais fréquent")
+    + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Même quand l'onglet est caché", ""));
+}
+function viChange(a, t) {
+  if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
+  else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource sera vendu.` : "Plus de limite de banque."); }
+  else if (a === "vi-snd") { S.settings.snd = Object.assign(sndCfg(), { [t.dataset.k]: t.checked }); if (t.dataset.k === "on" && t.checked) sndPlay("level", true); }
+  else if (a === "vi-vol") { S.settings.snd = Object.assign(sndCfg(), { vol: +t.value }); sndPlay("coin", true); }
+  dirty = true;
+}
+function viAct(a, t) {
+  const d = t.dataset;
+  const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
+  switch (a) {
+    case "vi-deliver": if (run("cmdDeliver", +d.id)) render(); return;
+    case "vi-swap": if (run("cmdSwap", +d.id)) { toast("Nouvelle commande."); render(); } return;
+    case "vi-tfight": if (run("templeFight", d.v)) { toast(`Le Dopeul ${CLASSES[d.v].name} arrive au prochain combat.`, "rare"); render(); } return;
+    case "vi-tcancel": if (run("templeCancel")) render(); return;
+    case "vi-view": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
+    case "vi-test": sndPlay("level", true); return;
+    case "vi-optcons": pageGo("consignes"); return;
+  }
+}
+function suAct(a, t) {
+  const d = t.dataset;
+  const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
+  switch (a) {
+    case "su-days": SU.days = +d.v; renderCarnet(); return;
+    case "su-met": SU.met = d.v; renderCarnet(); return;
+    case "su-send": carnetSend(); return;
+    case "su-copy": { const txt = carnetText(); try { navigator.clipboard.writeText(txt).then(() => toast("Résumé copié : colle-le sur Discord."), () => prompt("Copie ce résumé :", txt)); } catch (e) { prompt("Copie ce résumé :", txt); } return; }
+    case "su-adm": carnetAdmin(); return;
+    case "su-tclaim": if (run("tresorClaim")) { toast("Parchemin du jour ajouté à ta réserve.", "rare"); render(); } return;
+    case "su-tstart": if (run("tresorStart", +d.v)) { SU.tq = false; render(); toast("Chasse au trésor lancée : l'équipe part vers le premier indice.", "rare"); } return;
+    case "su-tgo": if (run("tresorGo")) render(); return;
+    case "su-tfight": if (run("tresorFight")) render(); return;
+    case "su-tview": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
+    case "su-tquit": SU.tq = true; render(); return;
+    case "su-tquit2": SU.tq = false; run("tresorQuit"); render(); return;
+  }
+}
 function smAct(a, t) {
   const d = t.dataset;
   switch (a) {
@@ -4359,7 +4702,7 @@ document.addEventListener("click", (ev) => {
   hideTip();
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
-  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; if (ui.tab === "quests" && t.closest("#nav,#subnav")) ui.qt = "jour"; closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
@@ -4367,6 +4710,10 @@ document.addEventListener("click", (ev) => {
   if (ON && a && a.startsWith("lb-")) { lbAct(a, t); return; }
   if (a && /^(ch|adm)-/.test(a)) return; // chat et panel admin : js/chat.js
   if (a && a.startsWith("sm-")) { if (S) smAct(a, t); return; }
+  if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
+  if (a && a.startsWith("vi-")) { if (S) viAct(a, t); return; }
+  if (a && a.startsWith("qj-")) { if (S && window.QUI) window.QUI.act(a, t); return; } // 0.1.28 : journal de quêtes (js/questui.js)
+  if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 0.1.24 : Expédition sans fin (js/expui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -4475,7 +4822,16 @@ document.addEventListener("click", (ev) => {
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
-    case "gift": { const r = E.redeemGift(S, ($("#giftCode") || {}).value || ""); if (r.err) { toast(r.err); return; } dirty = true; saveNow(); closeSheet(); render(); return; } /* la note « rare » du moteur s'affiche déjà en bulle */
+    case "gift": {
+      const code = ($("#giftCode") || {}).value || ""; ui.giftCode = code;
+      if (ui.giftBusy) return; ui.giftBusy = true; t.disabled = true;
+      /* 0.1.26 : codes du serveur (js/codes.js, bêta) ; les anciens codes IDLUS-… sont vérifiés sur place */
+      Promise.resolve(window.GIFTS ? window.GIFTS.redeem(S, code) : E.redeemGift(S, code)).then((r) => {
+        ui.giftBusy = false; t.disabled = false;
+        if (r.err) { toast(r.err); return; }
+        ui.giftCode = ""; dirty = true; saveNow(); closeSheet(); render();
+      });
+      return; } /* la note « rare » du moteur s'affiche déjà en bulle */
     case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast("L'équipe affrontera le protecteur au prochain combat."); break; }
     case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
@@ -4514,6 +4870,7 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
+    case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     case "selchar": ui.cid = +d.id; ui.slot = null; break;
     case "setmain": S.mainHero = +d.id; dirty = true; toast(`${char(+d.id).name} devient le héros principal.`); break;
     case "teamgo": { if (d.v === "havre") { ui.tab = "home"; ui.home = "havre"; } else { ui.cid = +d.id; ui.tab = "heroes"; ui.hero = d.v; ui.slot = null; } closeSheet(); render(); window.scrollTo(0, 0); return; }
@@ -4640,6 +4997,7 @@ document.addEventListener("click", (ev) => {
 });
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
+  if (a.startsWith("vi-")) { viChange(a, t); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
   if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
@@ -4747,11 +5105,11 @@ function loginScreen(msgTxt) {
     <div class="panel"><div class="pad stack">
       <h2>Connexion</h2>
       <button class="btn primary dbtn" data-act="on-discord">${DISCORD_SVG} Jouer avec Discord</button>
-      <div class="orsep">ou par e-mail</div>
+      ${!ON.mail ? "" : `<div class="orsep">ou par e-mail</div>
       ${sent ? `<div class="mailsent stack" style="gap:4px"><b>Lien envoyé à ${h(sent)}</b><span class="small muted">Ouvre l'e-mail de connexion (regarde aussi dans les indésirables) et clique sur le lien : tu reviendras ici, connecté. Tu peux fermer cet onglet.</span><div><button class="btn sm" data-act="on-mailagain">Utiliser une autre adresse</button></div></div>`
       : `<label class="stack" style="gap:4px"><span class="small muted">Ton adresse e-mail</span><input type="email" id="onMail" autocomplete="email" placeholder="ton.adresse@e-mail.fr" value="${h(ui.onMail || "")}"></label>
       <button class="btn primary" data-act="on-mail">Recevoir mon lien de connexion</button>
-      <span class="small muted">Pas de mot de passe : on t'envoie un lien, tu cliques, tu joues.</span>`}
+      <span class="small muted">Pas de mot de passe : on t'envoie un lien, tu cliques, tu joues.</span>`}`}
       <span id="onMsg" class="minus small">${h(msgTxt || "")}</span>
     </div></div>
     <div style="text-align:center"><button class="lnk" data-act="on-skip">Continuer sans compte (partie gardée sur cet appareil)</button></div></section>`;
@@ -4831,14 +5189,14 @@ function pillHtml() {
 function renderPill() { const el = $("#onPill"); if (!el) return renderStatus(); if (el.dataset.st !== ON.state) el.outerHTML = pillHtml(); }
 function accountHtml() {
   if (!ON) return "";
-  if (!ON.user) return `<div class="stack" style="gap:6px"><div><b>Compte</b> <span class="muted">(pas connecté : la partie n'est gardée que sur cet appareil)</span></div><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
+  if (!ON.user) return `<div class="stack" style="gap:6px"><span class="xs muted">Pas connecté : la partie n'est gardée que sur cet appareil.</span><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
   const id = ON.identities(), conf = ui.confirm === "ondelete";
-  return `<div class="stack" style="gap:8px"><b>Compte</b>
+  return `<div class="stack" style="gap:8px">
     <div class="kvg"><span class="muted">Pseudo</span><b>${h((ON.profile && ON.profile.pseudo) || "—")}</b><span></span>
     <span class="muted">Discord</span>${id.discord ? `<b>${h(id.discord)}</b><span class="tag good">lié</span>` : `<span class="muted">non lié</span><button class="btn sm" data-act="on-linkdiscord">Lier</button>`}
     <span class="muted">E-mail</span>${id.email ? `<b class="oneline">${h(id.email)}</b><span></span>` : `<span class="muted">aucun</span><span></span>`}
     <span class="muted">Sauvegarde</span>${pillHtml() || `<span class="muted">—</span>`}<button class="btn sm" data-act="on-pill">Envoyer</button></div>
-    <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte.</span>
+    <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}${ON.mail ? "Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte." : ""}</span>
     ${conf ? `<div class="stack" style="gap:6px"><span class="minus small">Ton compte, ton pseudo et ta partie en ligne seront effacés pour toujours. La partie reste sur cet appareil. Tape ton pseudo pour confirmer :</span><div class="row"><input type="text" id="onDelPseudo" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm danger" data-act="on-delete">Supprimer</button><button class="btn sm" data-act="cancelreset">Annuler</button></div></div>`
     : `<div class="row"><button class="btn sm" data-act="on-logout">Se déconnecter</button><button class="btn sm danger" data-act="on-askdelete">Supprimer le compte</button></div>`}</div>`;
 }
@@ -4901,7 +5259,10 @@ async function onBoot() {
 const VF = window.VERIFY;
 const LB = { tab: "lvl", cls: "", dmode: "week", did: null, cache: {} };
 const LB_TABS = [["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
-const cmed = (cls) => (CLASSES[cls] ? `<span class="cm" style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+/* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
+const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
+const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+const lbLvl = (score) => score - Math.max(0, Math.floor((score - 1) / VF.REB_LVL)) * VF.REB_LVL;
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
 const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
 const weekNow = () => VF.weekIdx(E.now());
@@ -4913,32 +5274,34 @@ function lbDefaultDid() {
 /* Requête d'un classement, gardée 60 s. */
 async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
+  if (LB.ml === undefined) { const { error } = await db.from("lb_level").select("main_lvl").limit(1); LB.ml = !error; } // 0.1.26 : niveau du héros principal (cadre du médaillon)
   const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
   if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score }));
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
     const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
-    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
+    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
     const col = t === "lvl" ? "level" : t === "album" ? "album" : "succes";
     const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : `${v} succès`);
-    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}`).order(col, { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]) }));
-    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
+    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
-    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true });
+    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true, fl: r.main_lvl });
+    const ml = LB.ml ? ",main_lvl" : "";
     if (LB.dmode === "week") {
-      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
-      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
     } else {
-      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
-      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).eq("user_id", me).limit(1);
+      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).eq("user_id", me).limit(1);
         if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: await count(db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${m[0].k},and(k.eq.${m[0].k},t.lt.${m[0].t})`)) }); }
     }
   } else if (t === "defi") {
@@ -4950,7 +5313,7 @@ async function lbFetch() {
   LB.cache[key] = out; return out;
 }
 function lbRowHtml(r, i, me) {
-  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "first") {
@@ -4961,7 +5324,7 @@ function lbListHtml(d) {
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
   if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
-  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls)}<span class="nm">${h(r.p)}</span><span class="sc">${h(r.sc)}</span></button>`; }).join("");
+  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(r.p)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
   return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
 }
@@ -4993,12 +5356,12 @@ async function lbProfile(u) {
   openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
   const db = ON.db();
   try {
-    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes").eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
+    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
-    openSheet(`<div class="row">${cmed(p.main)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
-      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
+    openSheet(`<div class="row">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
+      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
@@ -5057,7 +5420,7 @@ function lbAct(a, t) {
     case "lb-tab": LB.tab = d.v; break;
     case "lb-dmode": LB.dmode = d.v; break;
     case "lb-dtier": LB.dtier = d.v; break;
-    case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
+    case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "lb-wk": LB.did = d.v; break;
     case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;
     case "lb-hero": { ui.lbHero = +d.v; const p = ui.lbProf; const g = $("#lbGear"); if (p && g) g.innerHTML = lbGearHtml(p.heroes[ui.lbHero]); document.querySelectorAll('[data-act="lb-hero"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); return; }
@@ -5119,7 +5482,7 @@ function loop() {
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderTeam(); renderNav(); }
-    else if (ui.tab === "quests" && ui.qt !== "ach" && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
+    else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); }
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
@@ -5160,6 +5523,7 @@ function bootGame(pushNow) {
   if (onLive()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
+  if (ON && window.GUILD) setTimeout(() => window.GUILD.start(), 700);
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
@@ -5168,15 +5532,16 @@ function bootGame(pushNow) {
 }
 window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG };
+window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
 function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { fmt, im, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
-if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
+if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 start();
 })();

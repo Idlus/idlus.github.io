@@ -4,7 +4,7 @@
   "description": "Outils de test d'idlus (le jeu lui-même n'a besoin d'aucune installation).",
   "scripts": {
     "check": "for f in js/*.js sw.js tools/*.js tests/*.js; do node --check \"$f\" || exit 1; done",
-    "test:fight": "node tests/fight.test.js && node tests/core.test.js && node tests/verify.test.js && node tests/welcome.test.js && node tests/defi.test.js",
+    "test:fight": "node tests/fight.test.js && node tests/core.test.js && node tests/verify.test.js && node tests/welcome.test.js && node tests/defi.test.js && node tests/suivi.test.js && node tests/vie.test.js && node tests/gboss.test.js && node tests/expedition.test.js",
     "test:smoke": "node tests/smoke.test.js",
     "test:online": "node tests/online.test.js",
     "sim": "node tools/simulate.js",

@@ -1,6 +1,19 @@
 {
-  "version": "0.1.20.1",
+  "version": "0.1.28.1",
   "versions": [
+    {
+      "v": "0.1.28.1",
+      "name": "Idlus en ligne",
+      "items": [
+        "Le jeu public passe en ligne : compte facultatif avec Discord (ta partie de cet appareil te suit), sauvegarde en ligne et retrouvée sur tous tes appareils. Tu peux toujours jouer sans compte",
+        "Communauté : Classements, chat général et privé, Hôtel de vente et échanges entre joueurs, guildes (niveaux, bonus, chat de guilde), boss de guilde de la semaine et Percepteurs",
+        "Défi du jour : page Aventure › Défi, carte sur l'Accueil, classement du jour ; codes cadeaux courts dans Options › Jeu",
+        "L'Expédition sans fin (Aventure › Expédition) : étages sans fin, portes, reliques, bénédictions des Douze et Campement",
+        "Carnet de bord (Équipe › Carnet), chasse au trésor (Monde › Trésor), commandes d'artisans et temples des Dopeuls (Quêtes), sons discrets et consignes d'absence",
+        "Journal de quêtes rangé en 3 familles avec un tableau du jour, challenges qui rapportent plus, cadres de héros en métal (Bois à Krosmoz), menu Options rangé en 5 onglets",
+        "Ta partie est gardée. Au lancement de la version 1.0, tout le monde repartira de zéro (les parties sont encore calculées sur ton appareil)"
+      ]
+    },
     {
       "v": "0.1.20.1",
       "name": "Bouftous apprivoisés",

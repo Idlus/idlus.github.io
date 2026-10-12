@@ -66,7 +66,7 @@
       txt: "Une idole rend les combats plus durs contre plus d'XP et de butin. Elle se fabrique une fois chez le Bricoleur, puis reste à toi. Jusqu'à 6 actives, une par famille." },
     { id: "account", name: "Le compte en ligne", hint: "après une heure de jeu sans compte", anchor: '[data-act="options"]',
       cond: (S, ctx) => !!(ctx && ctx.online && !ctx.user) && (S.stats.playtime || 0) >= 3600,
-      txt: "Un compte garde ta partie en ligne : tu la retrouves sur un autre ordinateur ou sur ton téléphone. Il te fait aussi entrer dans les classements et écrire dans le chat. Ta partie actuelle te suit. Options › Compte, connexion avec Discord ou par e-mail." },
+      txt: "Un compte garde ta partie en ligne : tu la retrouves sur un autre ordinateur ou sur ton téléphone. Il te fait aussi entrer dans les classements et écrire dans le chat. Ta partie actuelle te suit. Options › Compte, connexion avec Discord." },
     { id: "ren", name: "La Renaissance", hint: "premier héros niveau 200", anchor: '[data-tab="ren"]',
       cond: (S) => maxLvl(S) >= (E.MAX_LVL || 200),
       txt: "Un héros au niveau 200 peut renaître : il repart du niveau 1 avec +30 % d'XP et un Éveil. Il garde son apparence, ses titres et ses Dofus (Équipe › Renaissance)." },
@@ -118,7 +118,7 @@
   E.SEARCH_PAGES = [
     ["home", "Accueil", "aperçu de la partie, journal"], ["havre", "Havre-Sac", "maison et améliorations"], ["world", "Monde", "carte des zones de chasse"],
     ["combat", "Combat", "le combat en cours"], ["quests", "Quêtes", "quête principale"], ["dofusq", "Quêtes des Dofus", "Quêtes › Dofus"], ["bounty", "Avis de recherche", "Quêtes › Avis"],
-    ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Quêtes › Succès"], ["ladder", "Classements", "Aventure › Classements"], ["defi", "Défi du jour", "Aventure › Donjons"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
+    ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Quêtes › Succès"], ["ladder", "Classements", "Aventure › Classements"], ["defi", "Défi du jour", "Aventure › Donjons"], ["exp", "Expédition sans fin", "Aventure › Expédition"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
     ["team", "Équipe", "composition et placement"], ["heroes", "Héros", "équipement du héros"], ["hstats", "Caractéristiques", "Héros › Caractéristiques"], ["spells", "Sorts", "Héros › Sorts"],
     ["pet", "Familier et monture", "Héros › Familier"], ["inv", "Inventaire", "objets"], ["invres", "Ressources", "Inventaire › Ressources"], ["invcons", "Consommables", "Inventaire › Consommables"],
     ["sets", "Carnet de panoplies", "Inventaire › Panoplies"], ["ren", "Renaissance", "Équipe › Renaissance"], ["recolte", "Récolte", "Métiers › Récolte"], ["craft", "Artisanat", "Métiers › Artisanat"],

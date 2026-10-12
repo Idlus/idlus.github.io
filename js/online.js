@@ -8,12 +8,21 @@
    ========================================================================== */
 (function (root) {
   "use strict";
-  const URL_ = "https://bolbuxuxydfslwpfbfff.supabase.co";
-  const KEY_ = "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H";
+  /* Un seul monde en ligne : le jeu public (décision de Mathis, 12/10). Il reprend le serveur que la
+     version de test utilisait (comptes, guildes, Hôtel de vente, classements gardés). La version de
+     test (/beta/) n'a plus de serveur, sinon ses parties se mélangeraient à celles du public.
+     mail = connexion par e-mail proposée (coupée tant qu'il n'y a pas de vrai service d'envoi d'e-mails). */
+  const SERVERS = {
+    public: { url: "https://bolbuxuxydfslwpfbfff.supabase.co", key: "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H", mail: false },
+    beta: { url: "", key: "", mail: false }
+  };
   const ON = {};
   const lib = root.__IDLUS_SB || (root.supabase && root.supabase.createClient ? root.supabase : null); // __IDLUS_SB : faux serveur des tests
-  /* Pour l'instant, uniquement sur la version de test (/beta/). */
-  ON.enabled = !!lib && (/\/beta\//.test(root.location ? root.location.pathname : "") || !!root.__IDLUS_SB);
+  ON.world = /\/beta\//.test(root.location ? root.location.pathname : "") ? "beta" : "public";
+  const SRV = root.__IDLUS_SB ? { url: "test", key: "test", mail: true } : SERVERS[ON.world];
+  const URL_ = SRV.url, KEY_ = SRV.key;
+  ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur
+  ON.mail = SRV.mail;
   let sb = null, KEY = "dofousxen-save", VER = "";
   ON.user = null; ON.profile = null;
 
@@ -195,6 +204,15 @@
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { defi: tier } }), 30000);
       if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : st === 429 ? { ok: false, err: "trop tôt" } : { net: true }; }
+      return data || { net: true };
+    } catch (e) { return { net: true }; }
+  };
+  /* 0.1.22 : boss de guilde ({ gboss: 1 }) et défense de Percepteur ({ perco: id }), rejoués par la même fonction serveur. */
+  ON.submitGuild = async (body) => {
+    if (!sb || !ON.user) return { net: true };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body }), 30000);
+      if (error) { let j = null; try { j = await error.context.json(); } catch (e) {} const st = error.context && error.context.status; return j && j.err ? j : st === 429 ? { ok: false, err: "Doucement : réessaie dans quelques secondes." } : { net: true }; }
       return data || { net: true };
     } catch (e) { return { net: true }; }
   };
