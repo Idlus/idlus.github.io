@@ -1311,3 +1311,7 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .pettile .where{font-size:10.5px}
 .pettile.f-l{border-color:#ffd36b}
 .cele-art .celepet{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 5px 8px rgba(0,0,0,.45))}
+/* 0.1.8.1 : étoiles de zone */
+.zstars{display:inline-flex;align-items:center;gap:4px;font-weight:900;letter-spacing:1px;color:var(--gold2);font-size:12px;white-space:nowrap}
+.zstars i{font-style:normal;color:rgba(128,128,128,.28)}.zstars.none{color:rgba(128,128,128,.28)}
+.zstars b{font-weight:800;letter-spacing:0;font-size:12px;color:var(--good)}

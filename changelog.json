@@ -1,6 +1,15 @@
 {
-  "version": "0.1.8",
+  "version": "0.1.8.1",
   "versions": [
+    {
+      "v": "0.1.8.1",
+      "name": "Étoiles de zone",
+      "items": [
+        "Étoiles de zone : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chaque étoile donne +10 % d'XP et de butin dans cette zone",
+        "Les étoiles fondent pendant qu'on y chasse (une toutes les 30 min, hors ligne aussi) : changer de zone de temps en temps rapporte plus",
+        "Les étoiles s'affichent sur la carte, dans la fiche de la zone et sur l'Accueil ; les parties existantes commencent avec 5 étoiles partout"
+      ]
+    },
     {
       "v": "0.1.8",
       "name": "Familiers et montiliers",

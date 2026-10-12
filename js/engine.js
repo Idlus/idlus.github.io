@@ -69,7 +69,7 @@
       v: E.VERSION, created: Date.now(), savedAt: 0, lastTick: Date.now(),
       kamas: 0, nextUid: 1, nextCid: 1,
       chars: [], items: {}, res: {}, runes: {},
-      sub: null, hunting: false,
+      sub: null, hunting: false, zstars: {},
       progress: { wins: {}, bossKills: {} },
       history: [], zoneStats: {}, seenDrops: {}, radiants: 0,
       cons: {}, boosts: {}, trophies: {}, families: {}, huntSeen: {},
@@ -452,12 +452,35 @@
   E.startHunt = (S, sid) => {
     if (S.dungeon) return "Vous êtes en donjon.";
     if (!E.setSub(S, sid)) return "Sous-zone verrouillée.";
+    pinStars(S, sid); // les étoiles cessent de monter et fondent à partir de maintenant
     S.hunting = true; S.fight = null; S.pause = E.PAUSE_MS;
     E.applyZonePresets(S, sid);
     note(S, `Chasse : ${SUBS[sid].name}`, "info");
     return null;
   };
   E.stopHunt = (S) => { if (S.dungeon) return "Quittez d'abord le donjon."; S.hunting = false; S.fight = null; return null; };
+
+  /* ---------------- Étoiles de zone (0.1.8.1) ----------------
+     Une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chacune donne +10 % d'XP et de butin.
+     Elles fondent pendant qu'on y chasse (une toutes les 30 min, en ligne comme hors ligne).
+     S.zstars[sid] = { s: étoiles au moment at, at } ; sans fiche, la zone accumule depuis la création de la partie. */
+  E.STAR_MAX = 5; E.STAR_GROW_S = 7200; E.STAR_MELT_S = 1800; E.STAR_PCT = 10;
+  const huntingHere = (S, sid) => S.hunting && S.sub === sid && !S.dungeon;
+  E.zoneStars = (S, sid, now = Date.now()) => {
+    const rec = S.zstars && S.zstars[sid];
+    if (!rec) return clamp((now - (S.created || now)) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
+    if (huntingHere(S, sid)) return rec.s;
+    return clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
+  };
+  /* fige la valeur courante (à l'arrivée dans la zone : la fonte part de là) */
+  const pinStars = (S, sid, now = Date.now()) => { if (!S.zstars) S.zstars = {}; S.zstars[sid] = { s: E.zoneStars(S, sid, now), at: now }; };
+  /* fonte pendant la chasse : dtS secondes de chasse dans la zone courante */
+  E.starsTick = (S, dtS, now = Date.now()) => {
+    if (!S.hunting || !S.sub || S.dungeon) return;
+    if (!S.zstars || !S.zstars[S.sub]) pinStars(S, S.sub, now);
+    const rec = S.zstars[S.sub]; rec.s = Math.max(0, rec.s - dtS / E.STAR_MELT_S); rec.at = now;
+  };
+  E.starBonus = (S) => (S.hunting && S.sub && !S.dungeon ? Math.floor(E.zoneStars(S, S.sub)) * E.STAR_PCT : 0); // étoiles entières seulement
 
   /* ---------------- Stratégies (préréglages de sorts) ---------------- */
   E.MAX_PRESETS = 4;
@@ -2105,6 +2128,7 @@
       S.fight.dur += E.STEP_MS / 1000;
       E.step(S);
     }
+    E.starsTick(S, dtMs / 1000);
     // récolte
     gatherTick(S, dtMs / 1000);
     E.atelierTick(S, dtMs / 1000);
@@ -2365,6 +2389,7 @@
       giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW, dropMult: E.PACE_REW * (1 + E.podBonus(S)), kamasMult: E.PACE_REW });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
+      E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne
     }
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
