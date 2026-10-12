@@ -3,6 +3,9 @@
 name: Mise en place du Discord
 on:
   workflow_dispatch:
+  push:
+    branches: [claude/project-thread-qpzsh8]
+    paths: [tools/discord_setup.js]
 jobs:
   serveur:
     runs-on: ubuntu-latest

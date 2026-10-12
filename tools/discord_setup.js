@@ -166,6 +166,11 @@ async function main() {
     console.log("Filtre automatique (AutoMod) en place.");
   } catch (e) { console.log("AutoMod non configuré :", e.message); }
 
+  try { // invitation permanente qui ouvre directement le forum des bugs (bouton « Signaler un bug » du jeu)
+    const inv = await api("POST", `/channels/${ids.BUGS}/invites`, { max_age: 0, max_uses: 0, unique: false });
+    console.log(`Lien du forum des bugs : https://discord.gg/${inv.code}`);
+  } catch (e) { console.log("Invitation du forum des bugs non créée :", e.message); }
+
   console.log(`\nTerminé. Invitation : ${INVITE}`);
 }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
