@@ -1,6 +1,13 @@
 {
-  "version": "0.1.19",
+  "version": "0.1.19.1",
   "versions": [
+    {
+      "v": "0.1.19.1",
+      "name": "Discord dans le chat",
+      "items": [
+        "En haut du chat, un bandeau invite à rejoindre le serveur Discord pour poser une question, signaler un bug ou proposer une idée"
+      ]
+    },
     {
       "v": "0.1.19",
       "name": "Se montrer",

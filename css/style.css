@@ -2397,3 +2397,7 @@ html{zoom:1}
   .defi .df-best b{font-size:22px}
   .defi .df-tiers small{display:none}
 }
+.chat .ch-dis{display:flex;gap:8px;align-items:center;padding:6px 10px;font-size:12.5px;color:var(--ink);text-decoration:none;background:color-mix(in srgb,#5865f2 20%,var(--panel2));border-bottom:1px solid rgba(88,101,242,.45)}
+.chat .ch-dis b{color:#aab3ff}
+.chat .ch-dis:hover b{text-decoration:underline}
+.chat .ch-dis .uico{width:16px;height:16px;flex:none;color:#aab3ff}

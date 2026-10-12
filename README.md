@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.19.1 « Discord dans le chat » (bêta)
+- Bandeau en haut du chat vers le serveur Discord (questions, bugs, idées).
+
 ## 0.1.19 « Se montrer » (bêta)
 - Lot Se montrer : défi du jour (même donjon, stasis, modificateurs et hasard pour tous, tirés de la date ; trois paliers ; combat joué d'un coup par le moteur, rejoué par le serveur pour le classement ; coffre, série de 7 et 30 jours), carte d'équipe à partager (image dessinée par le navigateur), garde-robe des coiffes et capes (apparence montrée, sans effet). Code : `js/defi.js`, `supabase/defi.sql`, fonction serveur `record` (`{ defi: palier }`).
 
