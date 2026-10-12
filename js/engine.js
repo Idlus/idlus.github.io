@@ -584,6 +584,11 @@
   /* Placement : chaque héros est en première ligne (« f ») ou à l'arrière (« b »). Les attaques sur une seule cible
      visent la première ligne 3 fois sur 4 tant qu'elle tient debout. Placement automatique par défaut (S.placeAuto). */
   E.FRONT_P = 0.75;
+  /* 0.1 (essai) : stats tactiques. [gain en % par point, plafond en %] ; pm : par PM au-delà de 3.
+     Les monstres n'en ont pas encore ; seuls les héros les portent (familiers, plus tard équipements). */
+  E.TACT = { tac: [1, 60], fui: [0.5, 30], pm: [3, 15], rpa: [0.4, 20], rpaV: 20, rpaBoss: 10, rpm: [0.5, 25], epa: [0.5, 50], epm: [0.5, 50], invMax: 3 };
+  E.tact = (st, k) => { const t = E.TACT[k]; return st ? Math.min(t[1], (st[k] || 0) * t[0]) : 0; };
+  E.tactLog = null; // le simulateur compte ici combien de fois chaque effet se déclenche
   E.frontMax = (n) => Math.max(1, Math.ceil(n / 2));
   E.avgRes = (st) => { const ks = Object.values(ELEMENTS).map((x) => x.res).filter(Boolean); return ks.length ? ks.reduce((a, k) => a + Math.min(50, st[k] || 0), 0) / ks.length : 0; };
   /* classes faites pour encaisser : bonus pour le placement automatique (à PV égaux, elles passent devant) */
@@ -902,7 +907,7 @@
 
   const newRound = (F) => {
     const ini = (e) => e.ini + (F.round === 1 && e.cls === "cra" ? 1e7 : 0);
-    F.order = F.ents.filter((e) => e.alive).sort((a, b) => ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
+    F.order = F.ents.filter((e) => e.alive).sort((a, b) => (a.slowR === F.round) - (b.slowR === F.round) || ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
     F.oi = 0;
     const r = chal(F, "rapide"); if (r && F.round > r.turns) failChal(F, "rapide", `plus de ${r.turns} tours`);
   };
@@ -971,6 +976,10 @@
         if (src.role === "sangsue" && src.alive) doHeal(src, v * 0.2, F);
         if (src.role === "poison" && tgt.alive && tgt.dots.filter((d) => d.role).length < 2) tgt.dots.push({ v: Math.max(1, v * 0.25), turns: 3, el, src: src.name, role: true });
         if (src.role === "maudit" && tgt.alive) tgt.debuffs.push({ healcut: 30, turns: 2 });
+      }
+      if (src.side === "c" && !src.summon && tgt.side === "m" && tgt.alive && src.st) {
+        if (!(tgt.weakNext > 0) && E.tact(src.st, "rpa") > 0 && rnd() * 100 < E.tact(src.st, "rpa")) { tgt.weakNext = tgt.boss ? E.TACT.rpaBoss : E.TACT.rpaV; tlog("rpa"); }
+        if (tgt.slowR !== F.round + 1 && E.tact(src.st, "rpm") > 0 && rnd() * 100 < E.tact(src.st, "rpm")) { tgt.slowR = F.round + 1; tlog("rpm"); }
       }
       if (src.side === "c" && !src.summon && tgt.side === "m" && src.alive) {
         if (tgt.reflect) { const r = Math.max(1, Math.round(v * 0.3)); src.hp -= r; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(src), s: F.ents.indexOf(tgt), v: r, el: "n" }); if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
@@ -1064,7 +1073,7 @@
     if (!prim) prim = sorted[0];
     return [prim, ...sorted.filter((x) => x !== prim)].slice(0, Math.max(1, n));
   };
-  const SUM_LIMIT = (e) => (e.cls === "osa" ? 2 : 1);
+  const SUM_LIMIT = (e) => Math.min(E.TACT.invMax, (e.cls === "osa" ? 2 : 1) + ((e.st && e.st.inv) || 0));
   const makeSummon = (S, F, e, f) => {
     const own = F.ents.indexOf(e);
     if (alive(F, "c").filter((a) => a.summon && a.owner === own).length >= SUM_LIMIT(e)) return null;
@@ -1276,20 +1285,27 @@
     const tree = targets.find((t) => t.tree && t.summon); if (tree && rnd() < 0.5) return tree;
     if (e && e.champ === "traqueur") { const hs = targets.filter((t) => !t.summon); if (hs.length) return hs.sort((a, b) => a.hp - b.hp)[0]; }
     let pool = targets;
-    if (!(e && e.role === "bond")) {
-      const fr = targets.filter((t) => rowOf(t) === "f"), bk = targets.filter((t) => rowOf(t) === "b");
-      if (fr.length && bk.length) { const pf = e && e.role === "rodeur" ? 1 - E.FRONT_P : E.FRONT_P; pool = rnd() < pf ? fr : bk; }
-    }
+    const fr = targets.filter((t) => rowOf(t) === "f"), bk = targets.filter((t) => rowOf(t) === "b");
+    const tacle = () => { const p = Math.min(E.TACT.tac[1], fr.reduce((a, t) => a + (t.st ? (t.st.tac || 0) * E.TACT.tac[0] : 0), 0)); if (p > 0 && rnd() * 100 < p) { tlog("tac"); return true; } return false; };
+    const bond = e && e.role === "bond" && !(e.slowR === F.round);
+    if (!bond) {
+      if (fr.length && bk.length) { const pf = e && e.role === "rodeur" ? 1 - E.FRONT_P : E.FRONT_P; pool = rnd() < pf ? fr : bk; if (pool === bk && e && e.role === "rodeur" && tacle()) pool = fr; }
+    } else if (fr.length && bk.length) { const w0 = targets[Math.floor(rnd() * targets.length)]; if (rowOf(w0) === "b" && tacle()) pool = fr; }
     const w = pool.map((t) => (t.turret ? 0.3 : 1)); let r = rnd() * w.reduce((a, b) => a + b, 0);
     for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; } return pool[pool.length - 1];
   };
+  const tlog = (k) => { if (E.tactLog) E.tactLog[k] = (E.tactLog[k] || 0) + 1; };
+  const dodged = (F, t) => { if (!t || t.summon || !t.st) return false;
+    const p = rowOf(t) === "b" ? E.tact(t.st, "fui") : Math.min(E.TACT.pm[1], (t.st.pm || 0) * E.TACT.pm[0]);
+    if (p > 0 && rnd() * 100 < p) { tlog(rowOf(t) === "b" ? "fui" : "pm"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: "Esquive" }); return true; } return false; };
+  const resists = (h, k) => { const p = E.tact(h.st, k); if (p > 0 && rnd() * 100 < p) { tlog(k); return true; } return false; };
   const monsterTurn = (S, F, e) => {
     const skip = e.mech ? bossMech(S, F, e) : false;
     if (e.role) roleTurn(S, F, e);
     if (skip || !e.alive || !alive(F, "c").length) return;
     let attacks = e.attacks + (e.extraAtk || 0); if (e.extraAtk) flog(F, `${e.name} est pris de frénésie et frappe deux fois !`, "m"); e.extraAtk = 0;
     if (e.paLoss >= 2) { attacks = Math.max(0, attacks - 1); flog(F, `${e.name} manque de PA et frappe moins.`, "dim"); }
-    const lowPa = e.paLoss === 1 ? 0.85 : 1; e.paLoss = 0;
+    const lowPa = (e.paLoss === 1 ? 0.85 : 1) * (1 - (e.weakNext || 0) / 100); e.paLoss = 0; e.weakNext = 0;
     if (e.charging === "fire") { e.charging = false; const heroes = alive(F, "c"); flog(F, `${e.name} déclenche son attaque dévastatrice !`, "m");
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * 2.2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); }); return; }
     const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (alive(F, "m").some((m) => (m.champ === "meneur" || m.role === "chef") && m !== e) ? 1.1 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
@@ -1304,14 +1320,14 @@
         if (ok.length) sp = pick(ok);
       }
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
-      if (!sp) { const t = pickHero(F, targets, e); const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
+      if (!sp) { const t = pickHero(F, targets, e); if (dodged(F, t)) { flog(F, `${t.name} esquive l'attaque de ${e.name}.`, "dim"); continue; } const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
       if (sp.cd) e.cds[sp.n] = sp.cd + 1;
       const parts = []; let didDmg = false;
       for (const f of sp.fx) {
         if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
           if (didDmg) continue; didDmg = true; // une seule ligne de dégâts par sort (les autres sont des variantes)
           const ratio = refAvg ? clamp(avgDmg({ fx: [f] }) / refAvg, 0.5, 1.8) : 1;
-          const ts = f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)];
+          const ts = (f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)]).filter((t) => !dodged(F, t));
           const base = e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15);
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
@@ -1321,7 +1337,7 @@
           const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (!t) continue; const h = doHeal(t, f.k === "healpct" ? t.hpMax * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
         } else if (f.k === "shield") { e.shield = Math.max(e.shield, Math.round(e.hpMax * Math.min(20, f.pct) / 100)); parts.push("bouclier");
         } else if (f.k === "buff") { e.buffs.push({ mdmg: 20, turns: 2 }); parts.push("se renforce");
-        } else if (f.k === "apdrain") { const t = pick(targets); t.paLoss = Math.min(2, (t.paLoss || 0) + 1); parts.push(`−1 PA à ${t.name}`);
+        } else if (f.k === "apdrain") { const t = pick(targets); if (resists(t, "epa")) continue; t.paLoss = Math.min(2, (t.paLoss || 0) + 1); parts.push(`−1 PA à ${t.name}`);
         } else if (f.k === "weaken") { const t = pick(targets); t.debuffs.push({ weak: 15, turns: 1 }); parts.push(`affaiblit ${t.name}`);
         } else if (f.k === "vuln") { const t = pick(targets); t.debuffs.push({ vuln: 10, turns: 2 }); parts.push(`rend ${t.name} vulnérable`); }
       }
@@ -1384,13 +1400,13 @@
         if (h && h.alive) { if (h.shield > 0) { h.shield = 0; say(`${e.name} frappe ${h.name}, mais son bouclier encaisse la condamnation !`); } else { const d = dealDamage(F, e, h, e.dmg * (heroesOf(F).length > 1 ? 3 : 1.5) * rf(0.9, 1.1), e.el === "n" ? null : e.el); say(`${e.name} exécute la condamnation sur ${h.name} (−${d}) !`); } } }
       else if (!e.doom && t % 4 === 1) { const h = victim(heroesOf(F)); if (h) { e.doom = { i: F.ents.indexOf(h), t: t + 2 }; say(`${e.name} condamne ${h.name} : un bouclier sur lui avant 2 tours !`, "Condamnation"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(h), txt: "Condamné" }); } }
     }
-    if (has("mutisme") && t % 4 === 2 && heroesOf(F).length > 1) { const h = victim(heroesOf(F)); if (h) { h.silence = 3; say(`${e.name} rend ${h.name} muet : sorts à recharge interdits pendant 2 tours.`, "Mutisme"); } }
-    if (has("racines") && t % 3 === 0) { const back = heroesOf(F).filter((h) => rowOf(h) === "b"); const h = victim(back.length ? back : heroesOf(F)); if (h) { h.rooted = 3; say(`${e.name} enracine ${h.name} : il ne peut plus soigner pendant 2 tours.`, "Racines"); } }
-    if (has("terreur") && t % 4 === 3) { const fr = heroesOf(F).filter((h) => rowOf(h) === "f"); if (fr.length > 1) { const h = pick(fr); h.fearRow = "f"; h.row = "b"; h.fearT = 3; say(`${e.name} terrifie ${h.name}, qui recule à l'arrière !`, "Terreur"); } }
+    if (has("mutisme") && t % 4 === 2 && heroesOf(F).length > 1) { const h = victim(heroesOf(F)); if (h && !resists(h, "epa")) { h.silence = 3; say(`${e.name} rend ${h.name} muet : sorts à recharge interdits pendant 2 tours.`, "Mutisme"); } }
+    if (has("racines") && t % 3 === 0) { const back = heroesOf(F).filter((h) => rowOf(h) === "b"); const h = victim(back.length ? back : heroesOf(F)); if (h && !resists(h, "epm")) { h.rooted = 3; say(`${e.name} enracine ${h.name} : il ne peut plus soigner pendant 2 tours.`, "Racines"); } }
+    if (has("terreur") && t % 4 === 3) { const fr = heroesOf(F).filter((h) => rowOf(h) === "f"); if (fr.length > 1) { const h = pick(fr); if (resists(h, "epm")) say(`${h.name} résiste à la Terreur.`); else { h.fearRow = "f"; h.row = "b"; h.fearT = 3; say(`${e.name} terrifie ${h.name}, qui recule à l'arrière !`, "Terreur"); } } }
     if (has("tapis") && t % 3 === 0) { heroesOf(F).forEach((h) => { h.row = rowOf(h) === "f" ? "b" : "f"; if (h.fearT) h.fearRow = h.fearRow === "f" ? "b" : "f"; }); say(`Le tapis roulant de ${e.name} échange la première ligne et l'arrière !`, "Tapis roulant"); }
-    if ((has("petrif") || has("glace")) && t % 3 === 0 && heroesOf(F).length > 1) { const h = pick(heroesOf(F).filter((x) => !(x.stun > 0))); if (h) { h.stun = 1; say(has("glace") ? `${e.name} gèle ${h.name}, qui passera son tour.` : `Le regard de ${e.name} pétrifie ${h.name}, qui passera son tour.`, has("glace") ? "Glace" : "Pétrification"); } }
+    if ((has("petrif") || has("glace")) && t % 3 === 0 && heroesOf(F).length > 1) { const h = pick(heroesOf(F).filter((x) => !(x.stun > 0))); if (h && !resists(h, "epa")) { h.stun = 1; say(has("glace") ? `${e.name} gèle ${h.name}, qui passera son tour.` : `Le regard de ${e.name} pétrifie ${h.name}, qui passera son tour.`, has("glace") ? "Glace" : "Pétrification"); } }
     if (has("dore") && t % 4 === 2 && heroesOf(F).length > 1) { const h = pick(heroesOf(F)); h.gold = 2; say(`${e.name} change ${h.name} en or pour 2 tours.`, "Toucher doré"); }
-    if (has("distorsion") && t % 4 === 0) { heroesOf(F).forEach((h) => { for (const k in h.cd) if (h.cd[k] > 0) h.cd[k]++; h.paLoss = Math.max(h.paLoss || 0, 1); }); say(`${e.name} distord le temps : recharges rallongées et −1 PA pour l'équipe.`, "Distorsion"); }
+    if (has("distorsion") && t % 4 === 0) { heroesOf(F).forEach((h) => { for (const k in h.cd) if (h.cd[k] > 0) h.cd[k]++; if (!resists(h, "epa")) h.paLoss = Math.max(h.paLoss || 0, 1); }); say(`${e.name} distord le temps : recharges rallongées et −1 PA pour l'équipe.`, "Distorsion"); }
     if (has("frenesie") && t % 4 === 0) e.extraAtk = 1;
     if (has("totems") && (t === 1 || (t % 6 === 0 && !alive(F, "m").some((m) => m.totem)))) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, totem: true, name: "Totem", hp: e.hpMax * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} dresse deux totems : il est invulnérable tant qu'ils tiennent debout !`, "Totems"); }
     if (has("liens") && !e.linkDone) { e.linkDone = true; spawnMon(F, mobKey(F, e), e.lvl, { fake: true, linked: true, name: "Âme liée", hp: e.hpMax * 0.3 }); say(`${e.name} lie son âme à un serviteur : les dégâts sont partagés.`, "Âmes liées"); }
