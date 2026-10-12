@@ -15,7 +15,7 @@ const ui = {
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
 /* 0.1.27.1 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
-const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin"));
+const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
 const GAME_VERSION = "0.1.28.1";
