@@ -1,6 +1,16 @@
 {
-  "version": "0.1.25",
+  "version": "0.1.26",
   "versions": [
+    {
+      "v": "0.1.26",
+      "name": "Codes cadeaux",
+      "items": [
+        "Codes cadeaux courts et faciles à taper (par exemple HALLOWEEN26), gardés par le serveur : on ne peut plus les deviner ni les fabriquer en lisant le jeu",
+        "Un code peut avoir un nombre d'utilisations limité, une date de fin, et être réservé aux joueurs avec un compte. Sans compte, un code sert une fois par partie",
+        "Un lien partagé sur le Discord ouvre le jeu avec le code déjà rempli dans Options › Jeu",
+        "Les codes peuvent maintenant offrir un objet d'équipement. Les anciens codes IDLUS-… marchent toujours jusqu'à leur date de fin"
+      ]
+    },
     {
       "v": "0.1.25",
       "name": "Options rangées",

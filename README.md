@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.26 « Codes cadeaux » (bêta)
+- Mathis (maquette validée « 1A 2A 3A 4A 5A ») : codes cadeaux gérés par le serveur. `supabase/codes.sql` : tables `gift_codes`, `gift_uses` (un compte ou une partie sans compte, `S.gid`), `gift_tries` (10 essais ratés / 10 min) ; `gift_redeem` (anon et comptes) renvoie la récompense ; `adm_gifts`, `adm_gift_create`, `adm_gift_set`, `adm_gift_users` réservés à Mathis. `js/codes.js` (`window.GIFTS`, bêta seulement) : `redeem` (les codes `IDLUS-…` passent toujours par `E.redeemGift`), onglet « Codes cadeaux » du panel admin (branché dans `chat.js`), bouton « Code pour le jeu public » (`E.makeGift`), lien `?code=` qui ouvre Options › Jeu avec le code rempli. `E.giveGift` partagé ; nouvelle récompense `i` (objets, 10 max par ligne).
+
 ## 0.1.25 « Options rangées » (bêta)
 - Mathis : menu des réglages plus lisible (maquette validée « 1A 2A 3A 4A »). `optionsSheet` affiche 5 onglets (`OPT_TABS`, `ui.optTab` garde le dernier) ; aides `optSec` / `optLine` / `optChk` (classes `.optsec`, `.optline`, `.optchk` dans style.css ; ne pas réutiliser `.chk`, déjà pris). `pageGo("consignes")` ouvre l'onglet Jeu, `account` l'onglet Sauvegarde.
 
