@@ -595,6 +595,8 @@ nav.main button{position:relative}
 .hcard.o-heros{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #c9962e,0 0 24px rgba(255,215,100,.7)}
 .hcard.o-avis{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 4px #8a6038,0 0 0 7px #3a2a18}
 .hcard.o-almanax{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 22px rgba(120,200,255,.7)}
+.hcard.o-pionnier{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #9bd84a,0 0 0 6px #1f3a12,0 0 26px rgba(155,216,74,.75)}
+.hcard .orn.sprout{filter:drop-shadow(0 0 8px #9bd84a);animation:sprout 2.4s ease-in-out infinite}@keyframes sprout{50%{transform:translateX(-50%) translateY(-3px) rotate(-6deg)}}
 
 /* ===== v3 « Builds et contenu » ===== */
 .azchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--panel2,rgba(127,127,127,.12));cursor:pointer}

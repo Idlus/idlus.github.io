@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.4";
+const GAME_VERSION = "0.1.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.5", name: "Pionniers", items: [
+    "Merci de tester ! Chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier » (Héros → Titre et Ornement)",
+    "Récompense exclusive : au lancement du multijoueur, tout le monde repart de zéro, mais les testeurs qui ont le rôle Pionnier sur le Discord retrouveront ce titre et cet ornement" ] },
   { v: "0.1.4", name: "Encore plus posés", items: [
     "Les combats ralentissent encore un peu : une action toutes les 0,78 seconde (0,52 avant la 0.1.3)",
     "Les récompenses par combat suivent : gains par heure toujours inchangés" ] },
@@ -250,6 +253,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "heros") ornHtml = `<span class="orn crown">🎖</span>`;
   else if (orn === "avis") ornHtml = `<span class="orn seal">📜</span>`;
   else if (orn === "almanax") ornHtml = `<span class="orn seal">📅</span>`;
+  else if (orn === "pionnier") ornHtml = `<span class="orn crown sprout">🌱</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
   return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}`)}">
@@ -2605,6 +2609,7 @@ const isEditing = () => { const a = document.activeElement; return a && (a.tagNa
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
+    if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (onglet Héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     E.tick(S, dt * (BETA ? testSpeed : 1)); S.lastTick = Date.now();
     sinceSave += dt; sinceView += dt;

@@ -437,6 +437,13 @@
     flammes:   { name: () => "Flammes Rayonnantes", req: "Porter 3 objets Rayonnants en même temps sur un héros", ok: (S) => !!(S.ornSeen && S.ornSeen.flammes) },
     solitaire: { name: () => "Aura du Solitaire", req: "Emblème du Solitaire niveau 100", ok: (S) => S.emblem.lvl >= 100 },
     stasis:    { name: () => "Sceau du Maître de la stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!S.unlocks.stasis10 },
+    pionnier:  { name: () => "Pousse du Pionnier", req: "Tester la version de test avant le multijoueur (récompense exclusive)", ok: (S) => !!S.unlocks.pionnier },
+  };
+  /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */
+  E.PIONEER_TITLE = "Pionnier d'Idlus";
+  E.grantPioneer = (S) => {
+    if (S.unlocks.pionnier && S.titlesExtra.includes(E.PIONEER_TITLE)) return false;
+    S.unlocks.pionnier = 1; if (!S.titlesExtra.includes(E.PIONEER_TITLE)) S.titlesExtra.push(E.PIONEER_TITLE); return true;
   };
   E.ORN = ORN;
   E.ornUnlocked = (S, id) => !!ORN[id] && ORN[id].ok(S);
