@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.1";
+const GAME_VERSION = "3.4.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.4.2", name: "Symboles de classe", items: [
+    "Écran de départ et recrutement : chaque classe est représentée par son symbole officiel, sur une case à sa couleur, et le panneau de la classe montre le héros en pied (Masculin ou Féminin)",
+    "Choisissez la tête de votre héros dès sa création (rangée « Tête » sous Apparence)",
+    "Forgelance : nouvelle apparence tirée de son illustration officielle (cheveux, barbe et armure) au lieu du casque à la tête mal placée",
+    "Ouginak : les têtes défectueuses (Ouginak féminine sans tête, têtes féminines chez l'Ouginak masculin) sont retirées" ] },
   { v: "3.4.1", name: "Discord", items: [
     "« Signaler un bug » (Options) ouvre directement le forum Bugs du Discord, même si vous n'êtes pas encore sur le serveur : le modèle de rapport est copié, il suffit d'ouvrir un fil et de le coller",
     "Le serveur Discord s'agrandit : salons d'entraide, de builds et de captures, forums Bugs et Idées (votez avec 👍), salons de la version de test et mutateur de la semaine annoncé chaque lundi" ] },

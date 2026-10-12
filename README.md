@@ -7,6 +7,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 3.4.2 « Symboles de classe »
+- **Symboles de classe** sur l'écran de départ et au recrutement, avec le héros en pied dans le panneau de la classe.
+- **Choix de la tête** dès la création du héros.
+- **Forgelance** : apparence tirée de l'illustration officielle ; **Ouginak** : têtes défectueuses retirées.
+
 ## 3.4.1 « Discord »
 - **Signaler un bug** ouvre directement le forum Bugs du Discord (modèle de rapport copié).
 - **Serveur Discord** réorganisé : entraide, builds, captures, forums Bugs et Idées, version de test, mutateur de la semaine chaque lundi.
