@@ -165,7 +165,7 @@
     { id: "jardin",   name: "Jardin",               icon: "pioche",       color: "#8fd16a", desc: "Récolte",                   ups: ["gather"], slots: () => 2 },
     { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate"], slots: () => 2 },
     { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier" },
-    { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#8a8a8a", desc: "Familiers et montures",     ups: [], soon: true },
+    { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#d9a066", desc: "Élevage des montures",       ups: [], post: "enclos", slots: () => 3 },
   ];
   E.room = (id) => E.ROOMS.find((r) => r.id === id);
   E.roomSlots = (S, id) => { const R = E.room(id); return R && R.slots ? R.slots(S) : 0; };
@@ -188,6 +188,11 @@
     "Tapis de Koalak":         { room: "chambre", kind: "offrate", v: 3,  src: "Butin rare aux Koalaks", zone: "koalaks" },
     "Lit à baldaquin":         { room: "chambre", kind: "offtime", v: 1,  src: "Bricoleur niveau 80" },
     "Lanterne d'Otomaï":       { room: "chambre", kind: "offrate", v: 3,  src: "Butin rare à Otomaï", zone: "otomai" },
+    /* 0.1.9 : objets d'élevage de l'enclos */
+    "Mangeoire":               { room: "enclos",  kind: "mxp",     v: 1,  src: "Bricoleur niveau 50", txt: "Les montures à l'écurie gagnent 10 % de l'XP de l'équipe" },
+    "Abreuvoir":               { room: "enclos",  kind: "birth",   v: 1,  src: "Bricoleur niveau 70", txt: "Naissance en 6 h au lieu de 8" },
+    "Caresseur":               { room: "enclos",  kind: "kids",    v: 1,  src: "Butin rare à Cania", zone: "cania", txt: "Chaque monture peut avoir 4 petits au lieu de 3" },
+    "Deuxième couple":         { room: "enclos",  kind: "pair2",   v: 1,  src: "Succès : 10 naissances à l'enclos", txt: "Deux couples à l'enclos en même temps" },
   };
   /* Trophées de boss : gagnés à la première victoire en stasis 5. Force selon le niveau du donjon :
      1 % avant 60, 2 % de 60 à 119, 3 % de 120 à 159, 4 % ensuite ; la récolte compte double. */
@@ -216,7 +221,7 @@
   E.FURN = FURN;
   E.trophyOf = (did) => (TROPHY[did] ? TROPHY[did][0] : null);
   const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de vitesse de récolte", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac" };
-  E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
+  E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; if (F.txt) return F.txt; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
   E.giveFurn = (S, name, why) => {
     if (!name || S.furniture.includes(name)) return false;
     S.furniture.push(name); note(S, `Nouveau meuble : ${name}${why ? ` (${why})` : ""} ! À placer dans le Havre-Sac.`, "rare"); return true;
@@ -318,8 +323,12 @@
     "Étagère de grimoires": { lvl: 60,  ing: [["Bois de Chêne", 40], ["Kobalte", 20], ["Houblon", 20]] },
     "Lit à baldaquin":      { lvl: 80,  ing: [["Bois d'Érable", 40], ["Lin", 30], ["Manganèse", 15]] },
     "Coffre en merisier":   { lvl: 120, ing: [["Bois de Merisier", 50], ["Argent", 25], ["Malt", 20]] },
+    "Mangeoire":            { lvl: 50,  ing: [["Bois de Chêne", 30], ["Oueille", 20], ["Fer", 15]] },
+    "Abreuvoir":            { lvl: 70,  ing: [["Bois d'Érable", 30], ["Pierre de Granit", 20], ["Bronze", 15]] },
   };
   for (const n in FURN_CRAFTS) D.SPECIAL_CRAFTS[n] = Object.assign({ job: "bricoleur", furn: true, unique: true }, FURN_CRAFTS[n]);
+  /* 0.1.9 : filet de capture des montures, fabriqué par le Bricoleur (ou acheté 2 000 kamas) */
+  D.SPECIAL_CRAFTS["Filet de capture"] = { job: "bricoleur", lvl: 40, cons: "filet", ing: [["Oueille", 8], ["Bois de Frêne", 10], ["Fer", 5]] };
 
   /* ---------------- Consommables spéciaux (utilitaires et coffres) ---------------- */
   const resLot = (S, n, qmin, qmax) => {

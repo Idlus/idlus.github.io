@@ -362,6 +362,7 @@
     potion_savoir:     { name: "Potion de Savoir",   icon: "📘", kind: "util", desc: "Donne environ un niveau d'expérience au métier de récolte de votre choix (au moins 25 % d'un niveau)." },
     parchemin_avis:    { name: "Parchemin d'Avis",   icon: "📜", kind: "util", auto: true, desc: "Utilisé automatiquement quand vous changez un avis de recherche : le changement est gratuit." },
     cristal_fm:        { name: "Cristal de Forgemagie", icon: "💎", kind: "util", desc: "La prochaine forgemagie ne peut pas faire baisser une autre caractéristique." },
+    filet:             { name: "Filet de capture", icon: "🪢", kind: "util", auto: true, desc: "Automatique : en chassant dans une zone de montures sauvages, chaque victoire peut capturer une monture. Le filet n'est utilisé que si la capture réussit." },
     coffre_bois:       { name: "Coffre en bois",     icon: "📦", kind: "chest", tier: 0, desc: "Quelques ressources et des kamas." },
     coffre_argent:     { name: "Coffre en argent",   icon: "🎁", kind: "chest", tier: 1, desc: "Ressources, kamas et un consommable." },
     coffre_or:         { name: "Coffre en or",       icon: "💰", kind: "chest", tier: 2, desc: "Beaucoup de ressources, de kamas et un consommable rare." },

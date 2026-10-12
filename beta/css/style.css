@@ -1315,6 +1315,35 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .zstars{display:inline-flex;align-items:center;gap:4px;font-weight:900;letter-spacing:1px;color:var(--gold2);font-size:12px;white-space:nowrap}
 .zstars i{font-style:normal;color:rgba(128,128,128,.28)}.zstars.none{color:rgba(128,128,128,.28)}
 .zstars b{font-weight:800;letter-spacing:0;font-size:12px;color:var(--good)}
+/* 0.1.9 : montures */
+.dslot.mount.blocked{opacity:.45}
+.mountcard .peticon{border-color:var(--frame2)}
+.mtshare{display:flex;flex-direction:column;gap:6px;background:var(--panel2);border-radius:12px;padding:8px 10px}
+.neu{color:var(--archi)}
+.carnet .nx{display:flex;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--archi);border-radius:12px;padding:7px 10px;font-size:13.5px}
+.bpair{display:inline-flex;align-items:center;gap:4px;flex:none}.bpair img{width:40px;height:40px;object-fit:contain}.bpair b{color:var(--gold);font-family:var(--font-title);font-size:18px}
+.breed{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:12px;padding:8px 10px}.breed .bar{height:6px;margin-top:4px}
+.gens{display:flex;flex-direction:column;gap:6px}
+.gen{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;background:var(--panel2);border-radius:12px;padding:7px 10px}
+.gen .gl b{display:block;font-size:13px}.gen .gl .bar{height:6px;margin-top:5px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.mtchip{position:relative;width:46px;height:46px;background:var(--panel);border:1px solid var(--frame);border-radius:10px;display:grid;place-items:center}
+.mtchip img{width:40px;height:40px;object-fit:contain;filter:brightness(0) opacity(.4)}
+.mtchip.own{border-color:var(--gold)}.mtchip.own img{filter:none}
+.mtchip em{position:absolute;right:-4px;top:-6px;font-style:normal;font-size:10.5px;font-weight:900;background:var(--gold);color:#1a1510;border-radius:999px;padding:0 5px}
+.treebox{overflow-x:auto;margin:8px 0}
+.mtree{position:relative;display:flex;gap:40px;min-width:max-content;padding:4px 4px 8px}
+.mtree svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.mtree .col{display:flex;flex-direction:column;gap:8px;justify-content:center;position:relative;z-index:1}
+.mtree h5{margin:0;font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);text-align:center}
+.mtree .node{width:124px;background:var(--panel2);border:1px solid var(--frame);border-radius:12px;padding:5px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px}
+.mtree .node img{width:46px;height:46px;object-fit:contain;filter:brightness(0) opacity(.4)}
+.mtree .node.own img{filter:none}.mtree .node.own{border-color:var(--gold)}
+.mtree .node.hint{border-color:var(--archi);border-style:dashed}.mtree .node.hint span{color:var(--archi);font-weight:800}
+.mtree .node b{font-size:12.5px}.mtree .node span{font-size:10.5px;color:var(--muted);line-height:1.2}
+.mtree path{fill:none;stroke:var(--frame);stroke-width:2;opacity:.5}.mtree path.lit{stroke:var(--gold);opacity:.9}.mtree path.hint{stroke:var(--archi);stroke-dasharray:5 4;opacity:.9}
+@media (max-width:520px){.gen{grid-template-columns:1fr}.carnet .nx{flex-wrap:wrap}.carnet .nx .btn{width:100%}}
+.mtshare .seg{flex-wrap:wrap}.mtshare .seg button{white-space:nowrap}
 /* 0.1.8.2 : objets parfaits */
 .tag.perfect{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1a08;border-color:var(--gold);font-weight:800}
 .iname.perfect{color:var(--gold2)}
