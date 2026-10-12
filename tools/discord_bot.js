@@ -7,6 +7,7 @@
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces et invite les testeurs à le partager
    node tools/discord_bot.js podium                                   → publie dans #annonces le podium des donjons de la semaine passée (classements de la version de test)
+   node tools/discord_bot.js captures <dossier>                       → publie les images du dossier (png, jpg, webp, gif ; 10 par message) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
    node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
@@ -146,11 +147,28 @@ async function main() {
     const role = roleName === "aucun" ? null : await roleId(gid, roleName);
     await api("POST", `/channels/${ch}/messages`, { content: (role ? `<@&${role}> ` : "") + text, allowed_mentions: { roles: role ? [role] : [] } });
     console.log("Annonce publiée :", text.length, "caractères");
+  } else if (cmd === "captures") {
+    const dir = file || "."; const imgs = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp|gif)$/i.test(f)).sort();
+    if (!imgs.length) { console.log("Aucune image dans", dir); process.exit(1); }
+    const text = (process.env.DISCORD_TEXTE || "").trim(); if (text.length > 1900) { console.log("Texte trop long :", text.length, "caractères (1 900 au plus)."); process.exit(1); }
+    const salon = (process.env.DISCORD_SALON || "captures").trim();
+    if (DRY) return console.log(`#${salon}\n${text}\n${imgs.join("\n")}`);
+    const gid = await guildId(); const ch = await channelId(gid, salon);
+    const last = await api("GET", `/channels/${ch}/messages?limit=20`);
+    if (text && last.some((m) => (m.content || "").includes(text.slice(0, 80)))) return console.log("Déjà publié.");
+    for (let i = 0; i < imgs.length; i += 10) { // Discord : 10 pièces jointes par message au plus
+      const fd = new FormData(); const part = imgs.slice(i, i + 10);
+      fd.append("payload_json", JSON.stringify({ content: i ? "" : text, allowed_mentions: { parse: [] } }));
+      part.forEach((f, j) => fd.append(`files[${j}]`, new Blob([fs.readFileSync(`${dir}/${f}`)]), f));
+      const res = await fetch(`${process.env.DISCORD_API || "https://discord.com/api/v10"}/channels/${ch}/messages`, { method: "POST", headers: { Authorization: "Bot " + process.env.DISCORD_BOT_TOKEN, "User-Agent": "idlus-bot (github.com/idlus/idlus.github.io, 1)" }, body: fd });
+      if (!res.ok) throw new Error(`envoi des images → ${res.status} ${(await res.text()).slice(0, 300)}`);
+    }
+    console.log("Images publiées dans #" + salon + " :", imgs.length);
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | annonce [texte.md]"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md]"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });

@@ -1,0 +1,39 @@
+# Publie des images sur Discord (lancement manuel), par défaut dans #captures. Nécessite le secret DISCORD_BOT_TOKEN.
+# Les images sont lues sur une branche à part (jamais sur main ni beta), qu'on vide ensuite.
+name: Captures sur Discord
+on:
+  workflow_dispatch:
+    inputs:
+      branche:
+        description: "Branche qui contient les images"
+        required: true
+        type: string
+      dossier:
+        description: "Dossier des images dans cette branche"
+        default: "."
+        type: string
+      texte:
+        description: "Texte au-dessus des images (1 900 caractères au plus)"
+        default: ""
+        type: string
+      salon:
+        description: "Salon Discord"
+        default: captures
+        type: string
+jobs:
+  captures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branche }}
+          path: _images
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js captures "_images/$DOSSIER"
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_TEXTE: ${{ inputs.texte }}
+          DISCORD_SALON: ${{ inputs.salon }}
+          DOSSIER: ${{ inputs.dossier }}
