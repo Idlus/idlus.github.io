@@ -2968,3 +2968,10 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 /* 0.1.32.2 : la colonne des zones reste visible en faisant défiler (overflow:hidden du panneau bloquait sticky) */
 .panel.encpanel{overflow:clip}
 .enczones{top:calc(var(--sth,56px) + 10px);max-height:calc(100vh - var(--sth,56px) - 20px)}
+/* 0.1.33 : offres d'achat */
+.mkobox{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.mkobox .list{margin:0 -4px}
+.mkord .mkpx{font-size:15px}
+.mkobar{display:block;height:7px;border-radius:99px;background:var(--panel3);overflow:hidden;margin-top:5px;max-width:260px}
+.mkobar i{display:block;height:100%;background:linear-gradient(90deg,var(--action2,#6fa83a),var(--gold))}
+.mkonote .btn{margin-left:4px}

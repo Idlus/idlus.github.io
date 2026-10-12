@@ -143,6 +143,7 @@ create or replace function public.hdv_sync(p_after bigint) returns jsonb languag
 as $$ begin
   if auth.uid() is null then return hdv_err('non connecté'); end if;
   perform hdv_expire();
+  perform hdv_order_expire();
   return jsonb_build_object('ops', hdv_ops_after(auth.uid(), p_after));
 end $$;
 
@@ -361,6 +362,134 @@ end $$;
 create or replace function public.trade_cancel(p_id bigint) returns void language sql security definer set search_path = public
 as $$ update trades set status = 'cancel', note = 'annulé par ' || pseudo_of(auth.uid()), updated_at = now() where id = p_id and status = 'open' and (a = auth.uid() or b = auth.uid()) $$;
 
+-- ---------- offres d'achat (0.1.33) ----------
+-- Un joueur annonce « j'achète N × ressource à P kamas l'unité ». Les kamas (avec la taxe de 2 %)
+-- sont mis de côté tout de suite ; n'importe qui peut lui vendre tout ou une partie, il est payé
+-- aussitôt et l'acheteur reçoit la marchandise par une opération, même hors ligne. À la fin
+-- (retrait, durée écoulée ou offre complète), ce qui n'a pas servi lui revient, taxe comprise :
+-- la taxe ne porte que sur ce qu'il a vraiment reçu.
+create table if not exists public.hdv_orders (
+  id bigint generated always as identity primary key,
+  buyer uuid not null references auth.users (id) on delete cascade,
+  cat text not null check (cat in ('res', 'rune', 'cons')),
+  key text not null,
+  name text not null,
+  lvl int not null default 0,
+  slot text,
+  qty int not null,               -- quantité voulue
+  filled int not null default 0,  -- quantité déjà reçue
+  price bigint not null,          -- prix à l'unité
+  held bigint not null,           -- kamas mis de côté à la création (taxe comprise)
+  status text not null default 'open' check (status in ('open', 'done', 'gone')),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  closed_at timestamptz
+);
+create index if not exists hdv_orders_key on public.hdv_orders (key, price desc) where status = 'open';
+create index if not exists hdv_orders_buyer on public.hdv_orders (buyer, status);
+create index if not exists hdv_orders_exp on public.hdv_orders (expires_at) where status = 'open';
+alter table public.hdv_orders enable row level security;
+
+-- Taxe sur un montant réellement payé (rien si rien n'a été reçu).
+create or replace function public.hdv_otax(p numeric) returns bigint language sql immutable as $$ select case when p <= 0 then 0 else ceil(p * 0.02) end::bigint $$;
+
+-- Ferme une offre et rend à l'acheteur ce qui n'a pas servi.
+create or replace function public.hdv_order_close(O hdv_orders, st text, why text) returns void language plpgsql security definer set search_path = public
+as $$
+declare back bigint;
+begin
+  update hdv_orders set status = st, closed_at = now() where id = O.id;
+  back := O.held - O.filled * O.price - hdv_otax(O.filled * O.price);
+  if back > 0 then perform hdv_op(O.buyer, jsonb_build_object('k', back), why || ' : ' || O.name || ' (' || O.filled || ' / ' || O.qty || ' reçus), kamas restants rendus'); end if;
+end $$;
+
+create or replace function public.hdv_order_expire() returns void language plpgsql security definer set search_path = public
+as $$
+declare O hdv_orders;
+begin
+  for O in select * from hdv_orders where status = 'open' and expires_at < now() limit 200 for update skip locked loop
+    perform hdv_order_close(O, 'gone', 'Offre d''achat terminée');
+  end loop;
+end $$;
+
+create or replace function public.hdv_order_new(p_after bigint, p_cat text, p_key text, p_qty int, p_price bigint, p_days int, p_name text, p_lvl int, p_slot text)
+returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); d jsonb; tot numeric; held bigint;
+begin
+  begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
+  perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
+  perform hdv_order_expire();
+  if p_cat not in ('res', 'rune', 'cons') then return hdv_err('Les offres d''achat portent sur les ressources, clefs, runes et consommables.'); end if;
+  if p_key is null or p_key = '' or exists (select 1 from hdv_block where key = p_key) then return hdv_err('Cette ressource ne s''échange pas.'); end if;
+  if p_qty is null or p_qty < 1 or p_qty > 100000 then return hdv_err('Quantité invalide (1 à 100 000).'); end if;
+  if p_price is null or p_price < 1 then return hdv_err('Prix invalide.'); end if;
+  if p_days not in (3, 7, 14) then return hdv_err('Durée de 3, 7 ou 14 jours.'); end if;
+  tot := p_qty::numeric * p_price;
+  if tot > 2000000000 then return hdv_err('Offre trop grosse (2 milliards de kamas au maximum).'); end if;
+  if (select count(*) from hdv_orders where buyer = me and status = 'open') >= 10 then return hdv_err('10 offres d''achat à la fois au maximum.'); end if;
+  if exists (select 1 from hdv_orders where buyer = me and status = 'open' and key = p_key) then return hdv_err('Tu as déjà une offre pour cette ressource : retire-la d''abord.'); end if;
+  held := tot + hdv_otax(tot);
+  if hdv_kamas(me, d) < held then return hdv_err('Pas assez de kamas : il faut mettre de côté ' || held || ' kamas.'); end if;
+  insert into hdv_orders (buyer, cat, key, name, lvl, slot, qty, price, held, expires_at)
+    values (me, p_cat, p_key, left(coalesce(p_name, p_key), 80), coalesce(p_lvl, 0), left(p_slot, 20), p_qty, p_price, held, now() + make_interval(days => p_days));
+  perform hdv_op(me, jsonb_build_object('k', -held), 'Offre d''achat : ' || p_qty || ' × ' || coalesce(p_name, p_key) || ' à ' || p_price || ' l''unité (kamas mis de côté)');
+  return jsonb_build_object('ok', true, 'ops', hdv_ops_after(me, p_after));
+end $$;
+
+create or replace function public.hdv_order_cancel(p_after bigint, p_id bigint) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); O hdv_orders;
+begin
+  if me is null then return hdv_err('non connecté'); end if;
+  perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
+  select * into O from hdv_orders where id = p_id and buyer = me and status = 'open' for update;
+  if O.id is null then return hdv_err('Offre introuvable ou déjà terminée.'); end if;
+  perform hdv_order_close(O, 'gone', 'Offre d''achat retirée');
+  return jsonb_build_object('ok', true, 'ops', hdv_ops_after(me, p_after));
+end $$;
+
+-- Vendre à une offre : tout ou une partie.
+create or replace function public.hdv_order_fill(p_after bigint, p_id bigint, p_qty int) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); d jsonb; O hdv_orders; b text; n int; pay bigint; who text;
+begin
+  begin d := hdv_save(me); exception when raise_exception then return hdv_err(sqlerrm); end;
+  perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
+  select * into O from hdv_orders where id = p_id for update;
+  if O.id is null or O.status <> 'open' or O.expires_at < now() then return hdv_err('Trop tard : cette offre est terminée.'); end if;
+  if O.buyer = me then return hdv_err('C''est ta propre offre.'); end if;
+  n := least(coalesce(p_qty, 0), O.qty - O.filled);
+  if n < 1 then return hdv_err('Quantité invalide.'); end if;
+  b := hdv_bucket(O.cat);
+  if hdv_qty(me, d, b, O.key) < n then return hdv_err('Tu n''en as pas assez (ou la sauvegarde en ligne n''est pas encore à jour).'); end if;
+  pay := n * O.price;
+  who := coalesce(pseudo_of(me), 'un joueur');
+  update hdv_orders set filled = filled + n where id = O.id returning * into O;
+  perform hdv_op(me, jsonb_build_object('k', pay, b, jsonb_build_object(O.key, -n)), 'Vendu à une offre d''achat : ' || n || ' × ' || O.name);
+  perform hdv_op(O.buyer, jsonb_build_object(b, jsonb_build_object(O.key, n), 'got', O.id), 'Offre d''achat : ' || who || ' t''a vendu ' || n || ' × ' || O.name || ' (' || O.filled || ' / ' || O.qty || ')');
+  insert into hdv_sales (key, cat, name, qty, price, seller, buyer) values (O.key, O.cat, O.name, n, pay, me, O.buyer);
+  if O.filled >= O.qty then perform hdv_order_close(O, 'done', 'Offre d''achat complète'); end if;
+  return jsonb_build_object('ok', true, 'n', n, 'k', pay, 'ops', hdv_ops_after(me, p_after));
+end $$;
+
+-- Offres ouvertes : pour une ressource (p_key), ou toutes avec une recherche (p_q). Meilleur prix d'abord.
+-- On ne montre jamais l'acheteur, seulement le prix, ce qui reste à acheter et le temps restant.
+create or replace function public.hdv_orders_list(p_key text, p_q text, p_cat text) returns jsonb language sql stable security definer set search_path = public
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'cat', cat, 'key', key, 'name', name, 'lvl', lvl, 'left', qty - filled, 'qty', qty, 'price', price, 'exp', expires_at, 'mine', buyer = auth.uid()) order by price desc, id), '[]'::jsonb)
+  from (select * from hdv_orders where status = 'open' and expires_at > now()
+    and (p_key is null or p_key = '' or key = p_key) and (p_cat is null or p_cat = '' or cat = p_cat)
+    and (p_q is null or p_q = '' or name ilike '%' || replace(replace(p_q, '%', ''), '_', '') || '%')
+    order by price desc, id limit 120) x
+$$;
+
+create or replace function public.hdv_orders_mine() returns jsonb language sql stable security definer set search_path = public
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'cat', cat, 'key', key, 'name', name, 'qty', qty, 'filled', filled, 'price', price, 'held', held, 'st', status, 'exp', expires_at, 'at', closed_at) order by status <> 'open', coalesce(closed_at, created_at) desc), '[]'::jsonb)
+  from (select * from hdv_orders where buyer = auth.uid() and (status = 'open' or closed_at > now() - interval '7 days') order by id desc limit 40) x
+$$;
+
 -- ---------- panel admin ----------
 create or replace function public.adm_hdv() returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
@@ -371,6 +500,7 @@ as $$ begin
     'sales7', (select count(*) from hdv_sales where at > now() - interval '7 days'),
     'vol7', (select coalesce(sum(price), 0) from hdv_sales where at > now() - interval '7 days'),
     'trades7', (select count(*) from trades where status = 'done' and updated_at > now() - interval '7 days'),
+    'orders', (select count(*) from hdv_orders where status = 'open'),
     'last', coalesce((select jsonb_agg(jsonb_build_object('at', at, 'name', name, 'qty', qty, 'price', price, 's', pseudo_of(seller), 'b', pseudo_of(buyer)) order by at desc) from (select * from hdv_sales order by at desc limit 30) x), '[]'::jsonb),
     'top', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'name', name, 'qty', qty, 'price', price, 's', pseudo_of(seller)) order by price desc) from (select * from hdv_listings where status = 'open' order by price desc limit 15) x), '[]'::jsonb));
 end $$;
@@ -391,15 +521,17 @@ do $$
 declare f text;
 begin
   foreach f in array array['hdv_err(text)', 'hdv_save(uuid)', 'hdv_cursor(jsonb)', 'hdv_kamas(uuid, jsonb)', 'hdv_qty(uuid, jsonb, text, text)', 'hdv_bucket(text)', 'hdv_item(uuid, jsonb, bigint)',
-    'hdv_op(uuid, jsonb, text)', 'hdv_ops_after(uuid, bigint)', 'hdv_back(hdv_listings)', 'hdv_expire()', 'hdv_tax(bigint)', 'trade_check(uuid, jsonb, jsonb)', 'trade_neg(jsonb)', 'trade_sum(jsonb, jsonb)'] loop
+    'hdv_op(uuid, jsonb, text)', 'hdv_ops_after(uuid, bigint)', 'hdv_back(hdv_listings)', 'hdv_expire()', 'hdv_tax(bigint)', 'trade_check(uuid, jsonb, jsonb)', 'trade_neg(jsonb)', 'trade_sum(jsonb, jsonb)',
+    'hdv_otax(numeric)', 'hdv_order_close(hdv_orders, text, text)', 'hdv_order_expire()'] loop
     execute 'revoke all on function public.' || f || ' from public, anon, authenticated';
   end loop;
   foreach f in array array['hdv_sync(bigint)', 'hdv_list(bigint, text, text, bigint, int, int, bigint, text, int, text)', 'hdv_buy(bigint, bigint)', 'hdv_cancel(bigint, bigint)', 'hdv_reprice(bigint, bigint, bigint)',
-    'hdv_mine()', 'trade_start(text)', 'trade_state()', 'trade_offer(bigint, jsonb)', 'trade_ok(bigint, int, bigint)', 'trade_cancel(bigint)', 'adm_hdv()', 'adm_hdv_remove(bigint)'] loop
+    'hdv_mine()', 'trade_start(text)', 'trade_state()', 'trade_offer(bigint, jsonb)', 'trade_ok(bigint, int, bigint)', 'trade_cancel(bigint)', 'adm_hdv()', 'adm_hdv_remove(bigint)',
+    'hdv_order_new(bigint, text, text, int, bigint, int, text, int, text)', 'hdv_order_cancel(bigint, bigint)', 'hdv_order_fill(bigint, bigint, int)', 'hdv_orders_mine()'] loop
     execute 'revoke all on function public.' || f || ' from public, anon';
     execute 'grant execute on function public.' || f || ' to authenticated';
   end loop;
-  foreach f in array array['hdv_search(text, text, text, int, int)', 'hdv_offers(text)', 'hdv_stats(text)'] loop
+  foreach f in array array['hdv_search(text, text, text, int, int)', 'hdv_offers(text)', 'hdv_stats(text)', 'hdv_orders_list(text, text, text)'] loop
     execute 'grant execute on function public.' || f || ' to anon, authenticated';
   end loop;
 end $$;
