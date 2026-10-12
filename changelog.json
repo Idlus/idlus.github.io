@@ -1,6 +1,16 @@
 {
-  "version": "3.4.1",
+  "version": "3.4.2",
   "versions": [
+    {
+      "v": "3.4.2",
+      "name": "Symboles de classe",
+      "items": [
+        "Écran de départ et recrutement : chaque classe est représentée par son symbole officiel, sur une case à sa couleur, et le panneau de la classe montre le héros en pied (Masculin ou Féminin)",
+        "Choisissez la tête de votre héros dès sa création (rangée « Tête » sous Apparence)",
+        "Forgelance : nouvelle apparence tirée de son illustration officielle (cheveux, barbe et armure) au lieu du casque à la tête mal placée",
+        "Ouginak : les têtes défectueuses (Ouginak féminine sans tête, têtes féminines chez l'Ouginak masculin) sont retirées"
+      ]
+    },
     {
       "v": "3.4.1",
       "name": "Discord",

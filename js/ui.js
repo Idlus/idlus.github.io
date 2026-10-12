@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.1";
+const GAME_VERSION = "3.4.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.4.2", name: "Symboles de classe", items: [
+    "Écran de départ et recrutement : chaque classe est représentée par son symbole officiel, sur une case à sa couleur, et le panneau de la classe montre le héros en pied (Masculin ou Féminin)",
+    "Choisissez la tête de votre héros dès sa création (rangée « Tête » sous Apparence)",
+    "Forgelance : nouvelle apparence tirée de son illustration officielle (cheveux, barbe et armure) au lieu du casque à la tête mal placée",
+    "Ouginak : les têtes défectueuses (Ouginak féminine sans tête, têtes féminines chez l'Ouginak masculin) sont retirées" ] },
   { v: "3.4.1", name: "Discord", items: [
     "« Signaler un bug » (Options) ouvre directement le forum Bugs du Discord, même si vous n'êtes pas encore sur le serveur : le modèle de rapport est copié, il suffit d'ouvrir un fil et de le coller",
     "Le serveur Discord s'agrandit : salons d'entraide, de builds et de captures, forums Bugs et Idées (votez avec 👍), salons de la version de test et mutateur de la semaine annoncé chaque lundi" ] },
@@ -128,6 +133,7 @@ const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mim
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
 const logoImg = (cls) => `assets/h/${cls}_logo.png`;
+const symImg = (cls) => `assets/h/${cls}_sym.png`;
 const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : "");
 const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
 /* ---------- icônes 3.1.2 : objets officiels + glyphes ---------- */
@@ -183,8 +189,8 @@ function lookSheet(c) {
   openSheet(`<h2>Apparence de ${h(c.name)}</h2>
     <div class="lookprev">${lookImg(c, "lookbig")}</div>
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
-    <div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>
-    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche pour l'instant avec ses couleurs d'origine, sans coiffe ni cape visibles : le rendu officiel de cette classe est encore incomplet.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
+    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec son illustration officielle : une seule tête, ses couleurs d'origine, sans coiffe ni cape visibles.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
     <p class="xs muted">${Object.keys(LK.ITEM_SKINS).length} coiffes et capes apparaissent déjà sur les héros ; les autres arriveront au fil des mises à jour.</p>
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
@@ -445,14 +451,22 @@ let rszT = null; window.addEventListener("resize", () => { clearTimeout(rszT); r
 /* ---------- écran de départ ---------- */
 function classPick(sel, sexSel) {
   return `<div class="classgrid">${CLASS_ORDER.map((id) => { const c = CLASSES[id];
-    return `<button class="clsbtn" data-act="startcls" data-cls="${id}" aria-pressed="${sel === id}" data-tip="${h(c.desc + " — Passif : " + c.passive.name + " : " + c.passive.desc)}">
-      <span class="emb" style="--cc:${c.color}">${headTag(id, sel === id ? sexSel : c.sex, c.name)}</span><b>${c.name}</b></button>`; }).join("")}</div>`;
+    return `<button class="clsbtn" style="--cc:${c.color}" data-act="startcls" data-cls="${id}" aria-pressed="${sel === id}" data-tip="${h(c.desc + " — Passif : " + c.passive.name + " : " + c.passive.desc)}">
+      <span class="csym">${im(symImg(id), "", c.name)}</span><b>${c.name}</b></button>`; }).join("")}</div>`;
 }
-function classInfo(id) {
+function classInfo(id, sex, hd) {
   const c = CLASSES[id];
-  return `<div class="clsinfo"><span class="emb" style="--cc:${c.color};width:56px;height:56px">${im(logoImg(id), "", c.name)}</span>
-    <div><b style="font-size:17px">${c.name}</b><div class="small muted">${h(c.desc)}</div><div class="small" style="margin-top:4px"><span class="tag soft">Passif</span> <b>${h(c.passive.name)}</b> : ${h(c.passive.desc)}</div></div></div>`;
+  return `<div class="clsinfo" style="--cc:${c.color}"><span class="csym">${im(symImg(id), "", c.name)}</span>
+    <div class="grow"><b style="font-size:17px">${c.name}</b><div class="small muted">${h(c.desc)}</div><div class="small" style="margin-top:4px"><span class="tag soft">Passif</span> <b>${h(c.passive.name)}</b> : ${h(c.passive.desc)}</div></div>
+    ${im(lookLocal(id, sex || c.sex, hd || 0), "clook")}</div>`;
 }
+/* Choix de la tête dès la création du héros */
+function headPick(id, sex) {
+  const L = LK.CLASS_LOOKS[id]; const sx = sex === "f" ? "f" : "m"; if (!L || id === "forge" || L[sx].heads.length < 2) return "";
+  const cur = Math.min(ui.startHead || 0, L[sx].heads.length - 1);
+  return `<div class="stack" style="gap:4px"><span class="small muted">Tête</span><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${cur === i ? "on" : ""}" data-act="starthead" data-v="${i}" aria-pressed="${cur === i}"><img src="${lookLocal(id, sx, i)}" alt="Tête ${i + 1}"></button>`).join("")}</div></div>`;
+}
+const startHeadOf = (id, sex) => { const L = LK.CLASS_LOOKS[id]; const n = L ? L[sex === "f" ? "f" : "m"].heads.length : 1; return id === "forge" ? 0 : Math.min(ui.startHead || 0, n - 1); };
 const hasPublicSave = () => { try { return !!localStorage.getItem("dofousxen-save"); } catch (e) { return false; } };
 function renderStart() {
   renderStatus(); renderNav();
@@ -465,8 +479,9 @@ function renderStart() {
     <div class="panel"><div class="pad stack">
       <h2>Choisissez votre premier héros</h2>
       ${classPick(ui.startCls, sex)}
-      ${classInfo(ui.startCls)}
+      ${classInfo(ui.startCls, sex, startHeadOf(ui.startCls, sex))}
       <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
+      ${headPick(ui.startCls, sex)}
       <label class="stack" style="gap:4px"><span class="small muted">Nom du héros</span><input type="text" id="startName" maxlength="20" value="${h(ui.startName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
       <div><button class="btn primary" data-act="startgame">Commencer l'aventure</button></div>
     </div></div>
@@ -1740,8 +1755,9 @@ function recruitSheet() {
   const cost = E.recruitCost(S.chars.length + 1); const top = Math.max(...S.chars.map((c) => c.lvl)); const sex = ui.startSex || CLASSES[ui.startCls].sex;
   openSheet(`<h2>Recruter un héros</h2>
     <p class="small muted">Coût : <b>${cost ? fmt(cost) + " kamas" : "gratuit"}</b> (vous avez ${fmt(S.kamas)}). La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus le bonus Esprit Libre diminue.</p>
-    ${classPick(ui.startCls, sex)}${classInfo(ui.startCls)}
+    ${classPick(ui.startCls, sex)}${classInfo(ui.startCls, sex, startHeadOf(ui.startCls, sex))}
     <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
+      ${headPick(ui.startCls, sex)}
     <label class="stack" style="gap:4px"><span class="small muted">Nom</span><input type="text" id="recName" maxlength="20" value="${h(ui.recName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
     <div class="row"><button class="btn primary" data-act="recruit" ${S.kamas < cost ? "disabled" : ""}>Recruter</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
@@ -1957,9 +1973,10 @@ document.addEventListener("click", (ev) => {
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
-    case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; if (!S) renderStart(); else recruitSheet(); return; }
-    case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; if (!S) renderStart(); else recruitSheet(); return; }
-    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
+    case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
+    case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
+    case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
+    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "setreduced": S.settings.reduced = d.v === "1"; setTheme(); optionsSheet(); render(); return;
     case "setcele": S.settings.cele = d.v === "1"; dirty = true; optionsSheet(); return;
@@ -2103,7 +2120,7 @@ document.addEventListener("click", (ev) => {
     case "gdel": E.deleteGear(S, c.id, +d.i); break;
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
-    case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
+    case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; nc.head = startHeadOf(ui.startCls, nc.sex); ui.startHead = 0; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
     case "invtab": ui.inv = d.v; ui.newResDone = false; break;
     case "givesheet": giveSheet(+d.uid); return;
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
