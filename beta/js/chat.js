@@ -73,7 +73,7 @@
     const list = el.querySelector(".ch-list"); const atEnd = !list || list.scrollTop + list.clientHeight >= list.scrollHeight - 30;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
-    el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
+    el.className = "chat"; el.innerHTML = headHtml() + eventHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
     const nl = el.querySelector(".ch-list"); if (nl && (atEnd || !keepScroll)) nl.scrollTop = nl.scrollHeight; else if (nl && list) nl.scrollTop = list.scrollTop;
     if (focus && $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
   }
@@ -83,10 +83,13 @@
   function minHtml() {
     const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id));
     const n = C.unread + C.unreadP + ((window.GUILD && window.GUILD.unread) || 0);
-    return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
+    return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
   const DISCORD = "https://discord.gg/9ApPgWjPUM";
+  /* 0.1.28.4 : rappel de l'événement en cours (E.EVENT), au-dessus de la carte Discord */
+  const evOn = () => { const E = window.ENGINE; return !!(E && E.eventOn && E.eventOn()); };
+  const eventHtml = () => { const E = window.ENGINE; return evOn() ? `<div class="ch-ev">${X().IC("parchemin_or")}<span><b>Événement ${h(E.EVENT.name)}</b> : XP et butin x2 pour tout le monde</span></div>` : ""; };
   const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener"><span class="dl">${X().DISCORD_SVG}</span><span class="tx"><b>Serveur Discord d'Idlus</b><small>Questions, bugs, idées</small></span><span class="go">Rejoindre</span></a>`;
   function headHtml() {
     const tab = (k, n, extra) => `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${n}${extra || ""}</button>`;
