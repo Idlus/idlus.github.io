@@ -1,6 +1,16 @@
 {
-  "version": "0.1.5",
+  "version": "0.1.6",
   "versions": [
+    {
+      "v": "0.1.6",
+      "name": "Passifs visibles",
+      "items": [
+        "Chaque classe montre son passif en combat : flammes de Colère du Iop, horloge du Xélor, glyphes du Féca sous toute l'équipe, masques du Zobal, postures du Forgelance",
+        "La roue de l'Ecaflip tourne au début du combat et s'arrête sur Pile, Face, Jackpot ou Perdu",
+        "Le Pandawa titube puis s'endort, le Sacrieur rougit en souffrant, les runes de l'Huppermage s'allument",
+        "Viseur rouge du Crâ et crocs de l'Ouginak sur leur cible ; mots de l'Eniripsa, portails de l'Eliotrope, trésors de l'Enutrof"
+      ]
+    },
     {
       "v": "0.1.5",
       "name": "Pionniers",
