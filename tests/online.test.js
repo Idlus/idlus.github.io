@@ -81,6 +81,7 @@ const MOCK = () => {
       }
       if (name === "chat_report") { d.reports = (d.reports || []).concat([a]); put(d); return { data: null, error: null }; }
       if (name === "chat_me") return { data: { banned: false }, error: null };
+      if (name === "staff_list") return { data: [{ u: "u9", p: "Kralamour", r: "crea" }, { u: "u8", p: "Tofuline", r: "mod" }], error: null };
       if (name === "my_role") return { data: d.role || null, error: null };
       if (name === "adm_overview") return { data: { accounts: d.profiles.length, active: 1, reports: 1, flagged: 0, muted: 0, signups: [{ id: "u9", pseudo: "Kralamour", cls: "iop", at: new Date().toISOString() }], log: [{ at: new Date().toISOString(), txt: "test", who: "Xener" }], settings: { min_level: 0, slow_s: 4 }, role: d.role }, error: null };
       if (name === "adm_players") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, playtime: 7200, heroes: [{ cls: "iop", lvl: 200, ren: 1 }], created_at: new Date().toISOString(), last_save: new Date().toISOString(), reports: 1, flagged: false }], error: null };
@@ -137,13 +138,15 @@ const MOCK = () => {
     await page.waitForSelector("#onPseudo", { timeout: 10000 });
     await page.fill("#onPseudo", "a b"); await page.click('[data-act="on-pseudo"]'); await page.waitForTimeout(200);
     if (!/3 à 16/.test(await page.textContent("#onMsg"))) fail("pseudo invalide accepté");
-    await page.fill("#onPseudo", "Xener"); await page.click('[data-act="on-pseudo"]');
+    await page.fill("#onPseudo", "Xen3r"); await page.click('[data-act="on-pseudo"]'); await page.waitForTimeout(200);
+    if ((await mock()).profiles.length) fail("pseudo qui imite le créateur accepté");
+    await page.fill("#onPseudo", "Bouftou"); await page.click('[data-act="on-pseudo"]');
     await page.waitForSelector('[data-act="on-send"]', { timeout: 10000 });
     await page.click('[data-act="on-send"]'); await page.waitForSelector("#nav [data-tab]");
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     let m = await mock();
     if (!m.saves.u1 || JSON.parse(m.saves.u1.data).kamas < 4321) fail("la partie n'a pas été envoyée");
-    if (m.profiles[0].pseudo !== "Xener") fail("pseudo non enregistré");
+    if (m.profiles[0].pseudo !== "Bouftou") fail("pseudo non enregistré");
     // 3. rechargement : on continue sans question
     await page.reload(); await page.waitForSelector("#nav [data-tab]", { timeout: 10000 });
     if (await page.$(".sheet .svc")) fail("question inattendue au rechargement");
@@ -181,6 +184,8 @@ const MOCK = () => {
     await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="ladder"]');
     await page.waitForSelector(".podium .pod", { timeout: 10000 });
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
+    if (!(await page.$(".pod.is-crea .xtag")) || !(await page.$(".pod .mtag"))) fail("classement : badges créateur et modérateur absents");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb.png" });
     for (const tb of ["dj", "album", "succ", "first", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
     await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
     if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");
@@ -198,6 +203,9 @@ const MOCK = () => {
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000 });
     await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
     if (!/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : annonce automatique absente");
+    // 0.1.29.1 : badge du créateur (liste donnée par le serveur)
+    if (!(await page.$("#chat .msg.is-crea .xen .crown")) || !/Créateur/.test(await page.textContent("#chat .msg.is-crea"))) fail("chat : badge du créateur absent");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat.png" });
     await page.fill("#chIn", "va sur www.test.fr"); await page.press("#chIn", "Enter"); await page.waitForSelector("#chat .ch-hint .bad", { timeout: 5000 });
     await page.fill("#chIn", "Bonjour à tous"); await page.press("#chIn", "Enter"); await page.waitForTimeout(400);
     if (!/Bonjour à tous/.test(await page.textContent("#chat .ch-list"))) fail("chat : message envoyé absent");
@@ -251,7 +259,7 @@ const MOCK = () => {
     await page.click("#chat .ch-x");
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
-    await page.fill("#onDelPseudo", "xener"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
+    await page.fill("#onDelPseudo", "bouftou"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
     m = await mock(); if (m.saves.u1 || m.profiles.length) fail("compte non supprimé");
     if (!(await S())) fail("partie de l'appareil perdue après suppression");
   } finally { await browser.close(); server.close(); }

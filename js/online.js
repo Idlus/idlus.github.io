@@ -98,11 +98,11 @@
   };
 
   /* ---------- pseudo ---------- */
-  const BAD = ["merde", "pute", "putain", "connard", "connasse", "salope", "encule", "enculé", "nazi", "hitler", "batard", "bâtard", "fdp", "ntm", "pd", "nique", "bite", "couille", "fuck", "shit", "bitch", "nigg", "negr", "admin", "moderat", "idlus", "ankama"];
+  const BAD = ["merde", "pute", "putain", "connard", "connasse", "salope", "encule", "enculé", "nazi", "hitler", "batard", "bâtard", "fdp", "ntm", "pd", "nique", "bite", "couille", "fuck", "shit", "bitch", "nigg", "negr", "admin", "moderat", "idlus", "ankama", "xener", "createur"];
   ON.pseudoProblem = (p) => {
     if (!/^[A-Za-zÀ-ÖØ-öø-ÿ0-9_-]{3,16}$/.test(p)) return "3 à 16 caractères : lettres, chiffres, - ou _ (pas d'espace).";
     const n = p.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[0-9_-]/g, (c) => ({ 0: "o", 1: "i", 3: "e", 4: "a", 5: "s" }[c] || ""));
-    if (BAD.some((w) => n.includes(w.normalize("NFD").replace(/[̀-ͯ]/g, "")))) return "Ce pseudo n'est pas autorisé.";
+    if (BAD.some((w) => n.includes(w.normalize("NFD").replace(/[̀-ͯ]/g, ""))) || /^(modo|staff)/.test(n)) return "Ce pseudo n'est pas autorisé.";
     return null;
   };
   ON.fetchProfile = async () => {
@@ -117,7 +117,7 @@
   };
   ON.createProfile = async (p) => {
     const { error } = await withTimeout(sb.from("profiles").insert({ id: ON.user.id, pseudo: p }));
-    if (error) return /duplicate|unique/i.test(error.message) ? "Ce pseudo vient d'être pris. Essaie-en un autre." : error.message;
+    if (error) return /duplicate|unique/i.test(error.message) ? "Ce pseudo vient d'être pris. Essaie-en un autre." : /autoris/.test(error.message) ? "Ce pseudo n'est pas autorisé." : error.message;
     ON.profile = { pseudo: p }; return null;
   };
 
@@ -188,6 +188,8 @@
   ON.chatSend = async (body, to, item) => { const r = await rpc("chat_send", { p_body: body, p_to: to || null, p_item: item || null }); return r.err ? r.err : r.data || null; };
   ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
   ON.chatMe = async () => (await rpc("chat_me")).data || {};
+  // 0.1.29.1 : l'équipe (créateur, modérateurs) pour le badge à côté du pseudo, lisible sans compte
+  ON.staff = async () => (sb ? (await rpc("staff_list")).data || [] : []);
   ON.role = async () => (ON.user ? (await rpc("my_role")).data || null : null);
   ON.ignores = async () => { try { const { data } = await withTimeout(sb.from("ignores").select("other").eq("user_id", ON.user.id)); return (data || []).map((r) => r.other); } catch (e) { return []; } };
   ON.setIgnore = async (other, on) => {
