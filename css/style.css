@@ -2283,6 +2283,7 @@ html{zoom:1}
 .chat .ann b{color:#e7c46a}
 .chat .conv{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;text-align:left;border:0;border-radius:10px;background:var(--panel2);padding:8px 10px;cursor:pointer}
 .chat .conv .last{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .ch-new{position:sticky;bottom:2px;align-self:center;flex:none;border:0;border-radius:999px;padding:4px 12px;font-weight:800;font-size:12.5px;background:var(--gold);color:#2a1d05;box-shadow:var(--shadow);cursor:pointer;z-index:1}
 .chat .ch-foot{border-top:2px solid var(--line);padding:8px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
 .chat .ch-in{display:flex;gap:6px}
 .chat .ch-in input{flex:1;min-width:0;border-radius:10px;border:2px solid var(--frame);background:var(--panel);padding:7px 10px}

@@ -1,6 +1,14 @@
 {
-  "version": "0.1.31",
+  "version": "0.1.31.1",
   "versions": [
+    {
+      "v": "0.1.31.1",
+      "name": "Chat à sa place",
+      "items": [
+        "Le chat ne remonte plus tout en haut quand tu lis d'anciens messages : il reste où tu en es",
+        "Si de nouveaux messages arrivent pendant que tu lis plus haut, un bouton « Nouveaux messages » te ramène en bas"
+      ]
+    },
     {
       "v": "0.1.31",
       "name": "Menus rangés",
