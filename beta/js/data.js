@@ -398,6 +398,10 @@
   /* 0.1 : le niveau maximum est 200 (DofusDB donne des grades 220 aux boss et monstres des donjons de niveau 200) */
   {
     const cap = (v) => Math.min(200, v);
+    // 0.1.12.5 : le Tynril Ahuri résistait à 50 % (plafond) au Feu, à l'Eau et à l'Air en plus de ses « Quatre humeurs » : seules les humeurs restent
+    if (G.MONSTERS.m1087) G.MONSTERS.m1087.res = {};
+    // 0.1.12.5 : Kankreblath frappait toute l'équipe à chaque tour (Blathération sans temps de recharge)
+    if (G.MONSTERS.m3945) (G.MONSTERS.m3945.sp || []).forEach((sp) => { if (sp.n === "Blathération") sp.cd = Math.max(sp.cd || 0, 1); });
     for (const k in G.MONSTERS) { const m = G.MONSTERS[k]; if (m.lvl && m.lvl[1] > 200) m.lvl = [cap(m.lvl[0]), cap(m.lvl[1])]; }
     for (const k in G.DUNGEONS) { const d = G.DUNGEONS[k]; d.lvl = cap(d.lvl); (d.rooms || []).forEach((r) => { r.lvl = cap(r.lvl); }); }
     /* une sous-zone peut donner accès à plusieurs donjons (ex. Labyrinthe du Minotoror et Salle du Minotot) */

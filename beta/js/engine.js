@@ -642,7 +642,9 @@
     return P[P.length - 1][j];
   };
   E.powRew = (mons, where) => { const pw = mons.reduce((a, m) => a + E.monPow(m.lvl, "hp", where), 0) / Math.max(1, mons.length); return Math.max(1, 1 + (pw - 1) * E.MON_POW.rew); };
-  const powMons = (mons, where) => mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * E.monPow(m.lvl, "hp", where)); m.dmg *= E.monPow(m.lvl, "dmg", where); });
+  // 0.1.12.5 : donjons bien plus durs que les autres de leur niveau (simulation) : PV et dégâts de leurs monstres ×
+  E.DG_EASE = { cache_kankreblath: 0.9, labo_tynril: 0.8 };
+  const powMons = (mons, where, did) => { const k = (did && E.DG_EASE[did]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * E.monPow(m.lvl, "hp", where) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
     const archi = !!opts.archi && !!base.archi;
@@ -821,7 +823,8 @@
     const n = dg.lvl < 25 ? 1 : dg.lvl < 160 ? 2 : 3;
     const sig = E.BOSS_SIGS[did]; const clash = { humeurs: "peau", horloge: "rebours", appetit: "devoreur", banquet: "devoreur" }[sig];
     const pool = (dg.lvl < 25 ? ["enrage", "summon", "shield", "charge"] : E.mechPool(dg.lvl)).filter((k) => k !== clash); const out = [];
-    for (let i = 0; out.length < n && i < 40; i++) { const k = pool[x % pool.length]; if (!out.includes(k)) out.push(k); x = (Math.imul(x ^ (x >>> 15), 0x2c1b3c6d) + 0x9e3779b9) >>> 0; }
+    const HEALS = ["festin", "devoreur", "appetit", "banquet"]; // 0.1.12.5 : un seul mécanisme de soin par boss (Kankreblath cumulait Festin et Dévoreur)
+    for (let i = 0; out.length < n && i < 40; i++) { const k = pool[x % pool.length]; if (!out.includes(k) && !(HEALS.includes(k) && out.concat(sig || []).some((o) => HEALS.includes(o)))) out.push(k); x = (Math.imul(x ^ (x >>> 15), 0x2c1b3c6d) + 0x9e3779b9) >>> 0; }
     if (sig) out.push(sig);
     return out;
   };
@@ -1001,7 +1004,7 @@
       if (pg) { mons = pg.mons; label = pg.label; }
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
-    powMons(mons, S.dungeon ? "dg" : "hunt");
+    powMons(mons, S.dungeon ? "dg" : "hunt", S.dungeon && S.dungeon.id);
     if (IX) applyIdols(IX, mons);
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
@@ -1117,8 +1120,8 @@
   };
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
-  E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100];
-  E.CLASS_POW = {"iop":[0.8,0.8,0.8,0.89,1.2,1.2,1.2,0.98],"cra":[1.2,1.2,1.2,1.2,1.16,0.82,0.8,0.8],"eni":[1.2,1.19,1.07,1.02,0.98,1,1.1,1.17],"feca":[1.02,0.98,0.93,0.95,0.99,1,1,1.02],"osa":[0.94,0.92,0.92,0.91,0.91,0.93,0.97,0.97],"enu":[1.02,1.06,1.06,1.07,1.1,1.11,1.13,1.16],"sram":[1.04,1.03,1.02,1.01,1.01,1.04,1.07,1.04],"xelor":[0.98,1.02,1.03,1.03,1.02,0.99,0.96,1],"eca":[1.2,1.2,1.2,1.03,0.8,0.8,0.8,0.86],"sadi":[0.8,0.81,0.81,0.82,0.86,0.91,0.95,0.98],"sacri":[1.01,0.98,0.98,1.03,1.08,1.11,1.1,1.06],"panda":[0.91,0.87,0.84,0.86,0.88,0.85,0.84,0.86],"roub":[1.01,0.98,0.99,0.95,0.89,0.87,0.9,0.93],"zobal":[1.11,1.06,1.07,1.15,1.2,1.2,1.11,0.96],"steam":[0.81,0.81,0.83,0.84,0.88,0.92,0.94,0.98],"elio":[0.95,1.06,1.18,1.2,1.2,1.2,1.2,1.2],"hupper":[0.82,0.85,0.84,0.84,0.93,1.02,1.06,1.14],"ougi":[1.05,1.03,1.01,1.02,1.05,1.08,1.09,1.09],"forge":[0.97,1,0.99,1,1.02,1.03,1.04,1]};
+  E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
+  E.CLASS_POW = {"iop":[0.8,0.8,0.8,0.89,1.2,1.2,1.2,0.98,0.98,0.98,0.98,0.98],"cra":[1.2,1.2,1.2,1.2,1.16,0.82,0.8,0.8,0.8,0.8,0.8,0.8],"eni":[1.2,1.19,1.07,1.02,0.98,1,1.1,1.17,1.25,1.5,1.25,1.17],"feca":[1.02,0.98,0.93,0.95,0.99,1,1,1.02,1.02,1.02,1.02,1.02],"osa":[0.94,0.92,0.92,0.91,0.91,0.93,0.97,0.97,0.97,0.97,0.97,0.97],"enu":[1.02,1.06,1.06,1.07,1.1,1.11,1.13,1.16,1.3,1.16,1.05,1.3],"sram":[1.04,1.03,1.02,1.01,1.01,1.04,1.07,1.04,1.04,1.04,1.04,1.04],"xelor":[0.98,1.02,1.03,1.03,1.02,0.99,0.96,1,1,1.15,1.22,1],"eca":[1.2,1.2,0.85,0.85,0.8,0.8,0.8,0.86,0.86,0.86,0.86,0.86],"sadi":[0.8,0.81,0.81,0.82,0.86,0.91,0.95,0.98,0.98,0.98,0.98,0.98],"sacri":[1.01,0.98,0.98,1.03,1.08,1.11,1.1,1.06,1.06,1.06,1.06,1.06],"panda":[0.91,0.87,0.84,0.86,0.88,0.85,0.84,0.86,0.86,0.86,0.86,0.86],"roub":[1.01,0.98,0.85,0.85,0.89,0.87,0.9,0.93,0.93,0.93,1.05,0.93],"zobal":[1.11,1.06,1.07,1.15,1.2,1.2,1.11,0.96,0.96,0.96,0.96,0.96],"steam":[0.81,0.81,0.83,0.84,0.88,0.92,0.94,0.98,0.98,0.98,0.98,0.98],"elio":[0.95,1.06,1.4,1.35,1.2,1.2,1.2,1.2,1.2,1.2,1.2,0.95],"hupper":[0.82,0.85,0.84,0.84,0.93,1.02,1.06,1.14,1.14,1.22,1.3,1.08],"ougi":[1.05,1.03,1.01,1.02,1.05,1.08,1.09,1.09,1.09,0.95,0.92,0.95],"forge":[0.97,1,0.99,1,1.02,1.03,1.04,1,1,1,1,1]}; // 0.1.12.5 : paliers 120, 140, 170 et 200 ajoutés pour régler les hauts niveaux
   E.classPow = (cls, lvl) => {
     const t = E.CLASS_POW[cls]; if (!t) return (CLASSES[cls] && CLASSES[cls].pow) || 1;
     const L = E.POW_LVLS; if (lvl <= L[0]) return t[0]; if (lvl >= L[L.length - 1]) return t[t.length - 1];
