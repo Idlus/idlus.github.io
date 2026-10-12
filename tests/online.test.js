@@ -108,10 +108,13 @@ const MOCK = () => {
     const mock = () => page.evaluate(() => JSON.parse(localStorage.getItem("__mock") || "{}"));
     const S = () => page.evaluate(() => window.DX.S && { kamas: window.DX.S.kamas, n: window.DX.S.chars.length });
 
-    // 1. premier lancement : écran de connexion, puis « Jouer sans compte »
-    await page.goto(base); await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
+    // 1. premier lancement : pas de compte obligatoire, on arrive directement sur le choix du héros
+    await page.goto(base); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    if (await page.$('[data-act="on-discord"]')) fail("écran de connexion au premier lancement");
+    // « Se connecter » depuis l'écran de départ, puis « Continuer sans compte » : le choix est retenu
+    await page.click('.start [data-act="on-loginscreen"]'); await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
     await page.click('[data-act="on-skip"]'); await page.waitForSelector('[data-act="startgame"]');
-    await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 }); // le choix est retenu
+    await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
     await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-tab]");
     await page.evaluate(() => { window.DX.S.kamas = 4321; window.DX.saveNow(); });

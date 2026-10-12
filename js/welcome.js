@@ -66,7 +66,7 @@
       txt: "Une idole rend les combats plus durs contre plus d'XP et de butin. Elle se fabrique une fois chez le Bricoleur, puis reste à toi. Jusqu'à 6 actives, une par famille." },
     { id: "account", name: "Le compte en ligne", hint: "après une heure de jeu sans compte", anchor: '[data-act="options"]',
       cond: (S, ctx) => !!(ctx && ctx.online && !ctx.user) && (S.stats.playtime || 0) >= 3600,
-      txt: "Un compte garde ta partie en ligne : tu la retrouves sur un autre ordinateur ou sur ton téléphone. Options › Compte, connexion avec Discord ou par e-mail." },
+      txt: "Un compte garde ta partie en ligne : tu la retrouves sur un autre ordinateur ou sur ton téléphone. Il te fait aussi entrer dans les classements et écrire dans le chat. Ta partie actuelle te suit. Options › Compte, connexion avec Discord ou par e-mail." },
     { id: "ren", name: "La Renaissance", hint: "premier héros niveau 200", anchor: '[data-tab="ren"]',
       cond: (S) => maxLvl(S) >= (E.MAX_LVL || 200),
       txt: "Un héros au niveau 200 peut renaître : il repart du niveau 1 avec +30 % d'XP et un Éveil. Il garde son apparence, ses titres et ses Dofus (Équipe › Renaissance)." },

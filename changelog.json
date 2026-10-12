@@ -1,6 +1,15 @@
 {
-  "version": "0.1.19.3",
+  "version": "0.1.19.4",
   "versions": [
+    {
+      "v": "0.1.19.4",
+      "name": "Jouer sans compte",
+      "items": [
+        "Plus besoin de compte pour commencer : au premier lancement, on choisit directement son héros et on joue, la partie est gardée sur l'appareil",
+        "Sur l'écran de départ, « Déjà un compte ? Se connecter » pour retrouver sa partie sur un nouvel appareil",
+        "Créer un compte plus tard (Options › Compte, chat, classements) garde la partie en cours : elle part sur le compte"
+      ]
+    },
     {
       "v": "0.1.19.3",
       "name": "Carte Discord",

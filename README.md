@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.19.4 « Jouer sans compte » (bêta)
+- Plus d'écran de connexion au premier lancement : on joue tout de suite sans compte (`onBoot` dans `js/ui.js` : l'écran de connexion ne vient que sur « Se connecter » ou après une erreur). L'écran de départ propose « Déjà un compte ? Se connecter ». La partie sans compte part sur le compte à l'inscription.
+
 ## 0.1.19.3 « Carte Discord » (bêta)
 - Chat : le bandeau Discord devient une carte aux couleurs de Discord (logo, « Serveur Discord d'Idlus », bouton « Rejoindre »).
 

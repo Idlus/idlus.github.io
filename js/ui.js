@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.19.3";
+const GAME_VERSION = "0.1.19.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.19.4", name: "Jouer sans compte", items: [
+    "Plus besoin de compte pour commencer : au premier lancement, on choisit directement son héros et on joue, la partie est gardée sur l'appareil",
+    "Sur l'écran de départ, « Déjà un compte ? Se connecter » pour retrouver sa partie sur un nouvel appareil",
+    "Créer un compte plus tard (Options › Compte, chat, classements) garde la partie en cours : elle part sur le compte"
+  ] },
   { v: "0.1.19.3", name: "Carte Discord", items: [
     "Le bandeau Discord en haut du chat devient une carte aux couleurs de Discord, avec son logo et un bouton « Rejoindre »."
   ] },
@@ -772,6 +777,7 @@ function renderStart() {
   <section class="start stack">
     <div class="logo">idlus</div>
     ${BETA && hasPublicSave() ? `<div class="panel"><div class="pad stack"><b>Version de test</b><span class="small muted">Votre partie du jeu public n'est pas modifiée ici. Vous pouvez en faire une copie pour tester les nouveautés avec vos héros.</span><div><button class="btn primary" data-act="frompublic">Copier ma partie du jeu public</button></div></div></div>` : ""}
+    ${ON && !ON.user ? `<div class="panel"><div class="pad row between"><span><b>Déjà un compte ?</b><br><span class="small muted">Connecte-toi pour retrouver ta partie. Sinon, joue tout de suite : tu pourras créer un compte plus tard, ta partie te suivra.</span></span><button class="btn sm" data-act="on-loginscreen">Se connecter</button></div></div>` : ""}
     <p class="muted" style="text-align:center;margin:0">Un idle inspiré de DOFUS : vos héros combattent seuls, à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.</p>
     <div class="panel"><div class="pad stack">
       <h2>Choisissez votre premier héros</h2>
@@ -4739,7 +4745,7 @@ function loginScreen(msgTxt) {
   closeSheet(); $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   const sent = ui.onMailSent;
   $("#main").innerHTML = `<section class="start stack onlogin"><div class="logo">idlus</div>
-    <p class="muted" style="text-align:center;margin:0">Connecte-toi pour garder ta partie en ligne et la retrouver sur tous tes appareils.</p>
+    <p class="muted" style="text-align:center;margin:0">Un compte garde ta partie en ligne et la retrouve sur tous tes appareils. Il ouvre aussi les classements et l'écriture dans le chat. Ta partie de cet appareil te suit.</p>
     <div class="panel"><div class="pad stack">
       <h2>Connexion</h2>
       <button class="btn primary dbtn" data-act="on-discord">${DISCORD_SVG} Jouer avec Discord</button>
@@ -4750,7 +4756,7 @@ function loginScreen(msgTxt) {
       <span class="small muted">Pas de mot de passe : on t'envoie un lien, tu cliques, tu joues.</span>`}
       <span id="onMsg" class="minus small">${h(msgTxt || "")}</span>
     </div></div>
-    <div style="text-align:center"><button class="lnk" data-act="on-skip">Jouer sans compte (partie gardée sur cet appareil)</button></div></section>`;
+    <div style="text-align:center"><button class="lnk" data-act="on-skip">Continuer sans compte (partie gardée sur cet appareil)</button></div></section>`;
 }
 function pseudoSheet(err) {
   openGate(`<h2>Choisis ton pseudo</h2><span class="small muted">Il sera affiché dans les classements, le chat et ta guilde. Tu le choisis une seule fois.</span>
@@ -4884,7 +4890,9 @@ async function onBoot() {
   onBlank("Chargement…");
   const user = await ON.ready();
   ON.onChange(() => { if (booted && S) renderPill(); });
-  if (!user) { if (ON.link().skip && !err) return bootGame(); return loginScreen(err); }
+  // 0.1.19.4 : pas de compte obligatoire. Sans compte, on joue tout de suite (partie sur l'appareil) ;
+  // l'écran de connexion ne s'affiche que si on l'a demandé (« Se connecter ») ou après une erreur de connexion.
+  if (!user) { if (ON.link().skip !== false && !err) return bootGame(); return loginScreen(err); }
   ui.onMailSent = null;
   return onAfterLogin();
 }
