@@ -621,7 +621,15 @@ def convert_fx(effects, desc=''):
         else: out.append({'k': 'buff', 'st': 'pui', 'v': 20, 't': 2, 'all': False, 'fb': 1})
     return out
 CLASS_KITS = {}
-cs = json.load(open(os.path.join(RAW3, 'class_spells.json'), encoding='utf-8'))
+CS_PATH = os.path.join(RAW3, 'class_spells.json')
+if os.path.exists(CS_PATH):
+    cs = json.load(open(CS_PATH, encoding='utf-8'))
+else:  # pas d'import brut des sorts de classe (ex. GitHub Actions) : on garde les kits déjà dans le jeu
+    log('class_spells.json absent : kits de classe et invocations repris de js/gamedata.js')
+    _src = open(os.path.join(ROOT, 'js', 'gamedata.js'), encoding='utf-8').read()
+    _old = json.loads(_src[_src.index('const GAMEDATA = ') + 17:_src.index(';\n  root.GAMEDATA')])
+    cs = {'levels': [], 'spells': [], 'variants': []}
+    for _k, _v in _old['SPELL_IMG'].items(): SPELL_IMG.setdefault(_k, _v)
 CL = {l['id']: l for l in cs['levels']}; CS = {x['id']: x for x in cs['spells']}
 def spell_out(sp):
     grades = []
@@ -644,6 +652,7 @@ for cls, bid in BREEDS.items():
         pairs.append(outs)
     pairs.sort(key=lambda p: p[0]['grades'][0]['lvl'] if p[0]['grades'] else 999)
     CLASS_KITS[cls] = pairs
+if not cs['variants']: CLASS_KITS = _old['CLASS_KITS']
 log('Kits de classe :', {c: len(p) for c, p in CLASS_KITS.items()})
 SUMMONS = {}
 for pairs in CLASS_KITS.values():
@@ -654,6 +663,7 @@ for pairs in CLASS_KITS.values():
                     if f['k'] == 'summon' and f.get('mid') in monsters:
                         mm = monsters[f['mid']]; SUMMONS[str(f['mid'])] = {'name': fr(mm), 'img': mm['gfxId']}
                         images['m'][f"{mm['gfxId']}.png"] = mm.get('img') or f"https://api.dofusdb.fr/img/monsters/{mm['gfxId']}.png"
+if not cs['variants']: SUMMONS = _old['SUMMONS']
 log('Invocations :', len(SUMMONS))
 # sorts de monstres
 msp_path = os.path.join(RAW3, 'monster_spells.json')
