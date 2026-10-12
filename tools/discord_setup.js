@@ -1,5 +1,5 @@
 /* Met en place le serveur Discord d'idlus avec un robot : catégories, salons, rôles, permissions, textes d'accueil, communauté et accueil des nouveaux.
-   On peut le relancer sans risque : il ne crée que ce qui manque, retrouve les salons par leur nom et n'écrit que dans les salons vides.
+   On peut le relancer sans risque : il ne crée que ce qui manque, retrouve les salons par leur nom et met à jour ses propres messages épinglés et n'écrit pas dans un salon où quelqu'un d'autre a écrit.
    Usage : DISCORD_BOT_TOKEN=... [DISCORD_GUILD_ID=...] node tools/discord_setup.js   (sans jeton : affiche seulement le plan) */
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
@@ -10,12 +10,13 @@ const WELCOME = `# Bienvenue sur le Discord d'idlus !
 **idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte les donjons jusqu'à la stasis 10. Tes héros se battent tout seuls, même quand tu n'es pas là.
 
 🎮 **Jouer** : ${GAME}
-Le jeu est en ligne : connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel de vente, rejoindre une guilde et entrer dans les classements.
+Le jeu est en ligne : connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel de vente, rejoindre une guilde et entrer dans les classements. Le Sablier de Xélor fait filer le temps ×2 ou ×3 quand tu veux avancer plus vite.
 🧪 **Version de test** : ${BETA}
 Les nouveautés y arrivent en premier, à tester hors ligne avant leur sortie.
 
 📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>.
 🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
+🗳️ Donne ton avis sur la suite dans <#POLLS> et montre tes héros dans <#SHOTS>.
 🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
 
 *idlus est un projet de fan non officiel, sans lien avec Ankama.*`;
@@ -36,11 +37,13 @@ Sans dates : chaque partie sort quand elle est prête.
 • Familiers, dragodindes, muldos et volkornes, avec l'élevage
 • Idoles, archimonstres et Dofus, Renaissance
 • L'Expédition sans fin, journal de quêtes, défi du jour, artisans et temples, chasse au trésor
+• Sablier de Xélor (temps ×2 ou ×3), cinq coffres à ouvrir, fabrication en série, menu rangé en 5 groupes
 • En ligne : compte Discord facultatif, chat, Hôtel de vente et échanges, guildes, boss de guilde, Percepteurs, classements
 
 **🔨 En préparation**
 • Kolizéum : des combats contre l'équipe d'autres joueurs
 • Mode marchand : ta propre boutique, visible par tous les joueurs
+• La suite de l'Expédition sans fin : votez dans <#POLLS>
 
 **🚀 Version 1.0**
 • Les testeurs qui ont le rôle Pionnier reçoivent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
@@ -72,7 +75,8 @@ const PLAN = [
     { key: "CHAT", name: "général", topic: "Discussion libre autour d'idlus" },
     { key: "HELP", name: "entraide", topic: "Questions et conseils entre joueurs" },
     { key: "BUILDS", name: "builds-et-équipes", topic: "Partage tes compositions (bouton « Partager le build » dans le jeu)" },
-    { key: "SHOTS", name: "captures", topic: "Montre tes héros, trophées et ton Havre-Sac" },
+    { key: "SHOTS", name: "captures", topic: "Montre tes héros, trophées et ton Havre-Sac. Les aperçus des prochaines nouveautés arrivent aussi ici" },
+    { key: "POLLS", name: "sondages", topic: "Les sondages du jeu : votez pour orienter les prochaines mises à jour" },
     { key: "VOICE", name: "Général", type: VOICE } ] },
   { cat: "🛠️ Retours", chans: [
     { key: "BUGS", name: "bugs", type: FORUM, topic: "Un fil par bug : ce que tu faisais, ce qui s'est passé, une capture si possible.",
