@@ -653,10 +653,11 @@
     for (let i = 1; i < P.length; i++) if (l < P[i][0]) { const a = P[i - 1], b = P[i]; return a[j] + (b[j] - a[j]) * (l - a[0]) / (b[0] - a[0]); }
     return P[P.length - 1][j];
   };
-  E.powRew = (mons, where) => { const pw = mons.reduce((a, m) => a + E.monPow(m.lvl, "hp", where), 0) / Math.max(1, mons.length); return Math.max(1, 1 + (pw - 1) * E.MON_POW.rew); };
+  E.powRew = (mons, where, sm = 1) => { const pw = mons.reduce((a, m) => a + 1 + (E.monPow(m.lvl, "hp", where) - 1) * sm, 0) / Math.max(1, mons.length); return Math.max(1, 1 + (pw - 1) * E.MON_POW.rew); };
+  E.huntMon = (n) => (E.HUNT_SMALL[n] && E.HUNT_SMALL[n].mon) || 1; // 0.1.24.3 : petite équipe en chasse, part du renfort gardée
   // 0.1.12.5 : donjons bien plus durs que les autres de leur niveau (simulation) : PV et dégâts de leurs monstres ×
   E.DG_EASE = { cache_kankreblath: 0.9, labo_tynril: 0.8 };
-  const powMons = (mons, where, did) => { const k = (did && E.DG_EASE[did]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * E.monPow(m.lvl, "hp", where) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
+  const powMons = (mons, where, did, sm = 1) => { const k = (did && E.DG_EASE[did]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * (1 + (E.monPow(m.lvl, "hp", where) - 1) * sm) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
     const archi = !!opts.archi && !!base.archi;
@@ -683,6 +684,9 @@
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
   E.SMALL_TEAM = { 1: { hp: 30, dr: 15, name: "Solo" }, 2: { hp: 15, dr: 7.5, name: "Duo" } };
+  /* 0.1.24.3 : en chasse aussi, une petite équipe bien équipée ne doit presque jamais perdre (simulation) : PV en plus et dégâts subis en moins */
+  /* mon : part du renfort de chasse (E.MON_POW) gardée par les monstres ; les gains par monstre suivent (E.powRew) */
+  E.HUNT_SMALL = { 1: { hp: 70, dr: 40, mon: 0.36, name: "Solo" }, 2: { hp: 30, dr: 20, mon: 0.74, name: "Duo" }, 3: { hp: 10, dr: 5, mon: 1, name: "Trio" } };
   E.ARCHI_CHANCE = 1 / 400;
 
   /* ---------------- 3.3.0 « Combat vivant » : placement, monstres spéciaux, Champions ---------------- */
@@ -1020,15 +1024,16 @@
       if (pg) { mons = pg.mons; label = pg.label; }
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
-    powMons(mons, S.dungeon || XP ? "dg" : "hunt", S.dungeon && S.dungeon.id);
+    const hsm = S.dungeon || XP ? 1 : E.huntMon(team.length);
+    powMons(mons, S.dungeon || XP ? "dg" : "hunt", S.dungeon && S.dungeon.id, hsm);
     if (IX) applyIdols(IX, mons);
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
     if (XP) E.expHeroes(S, ents, XP.fx);
     if (IX && IX.heroPa) ents.forEach((e) => { if (e.side === "c") e.st = Object.assign({}, e.st, { pa: Math.max(1, e.st.pa - IX.heroPa) }); });
     if (IX && IX.resMain) { const cnt = {}; ents.forEach((e) => { if (e.side === "c") { const k = bestEl(e.st); cnt[k] = (cnt[k] || 0) + 1; } }); IX.resEl = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || null; }
-    /* 0.1 : bonus « petit groupe » en donjon (solo et duo) */
-    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : null;
+    /* 0.1 : bonus « petit groupe » en donjon (solo et duo) ; 0.1.24.3 : en chasse aussi (solo, duo, trio) */
+    const sm = S.dungeon ? E.SMALL_TEAM[team.length] : XP ? null : E.HUNT_SMALL[team.length];
     if (sm) ents.forEach((e) => { if (e.side === "c") { e.hpMax = e.hp = Math.round(e.hpMax * (1 + sm.hp / 100)); e.smallDr = sm.dr; } });
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon || XP ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
@@ -1038,7 +1043,7 @@
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
     if (XP) F.exp = XP.exp;
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
-    F.powRew = E.powRew(mons, S.dungeon || XP ? "dg" : "hunt"); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
+    F.powRew = E.powRew(mons, S.dungeon || XP ? "dg" : "hunt", hsm); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     newRound(F);
@@ -1461,6 +1466,8 @@
         if ((e.silence > 0 && g.cd) || (e.rooted > 0 && E.spellKind(g) === "heal")) return;
         if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g) || (F.idol && F.idol.heals === "none" && E.spellKind(g) === "heal")) return;
         const k = E.spellKind(g);
+        // 0.1.24.3 : pas de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans jamais attaquer)
+        if (k === "heal" && !slot.cond && !alive(F, "c").some((a) => !a.summon && a.hp < a.hpMax * 0.8)) return;
         const v = ["dmg", "aoe", "drain", "dot"].includes(k) ? spellValue(F, e, g) / Math.max(1, g.pa) : 1e6 - idx;
         if (v > bestV) { bestV = v; best = { slot, idx, sp, g }; }
       });
@@ -2632,7 +2639,7 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      const pr = E.powRew(g, "hunt"); giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW * pr, dropMult: E.PACE_REW * (1 + E.podBonus(S)) * pr, kamasMult: E.PACE_REW * pr });
+      const pr = E.powRew(g, "hunt", E.huntMon(teamSize)); giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW * pr, dropMult: E.PACE_REW * (1 + E.podBonus(S)) * pr, kamasMult: E.PACE_REW * pr });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne
