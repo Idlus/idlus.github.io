@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: ['claude/project-thread-4c70nw']
-    paths: ['tools/probe_idoles.py', '.github/workflows/probe_idoles.yml']
+    paths: ['tools/probe_idoles.py', 'tools/probe_idoles_touch.py', '.github/workflows/probe_idoles.yml']
 permissions:
   contents: write
 concurrency: { group: sonde-idoles, cancel-in-progress: true }
@@ -22,6 +22,8 @@ jobs:
           for i in 1 2; do python3 tools/import_dofusdb.py items item-types effects recipes; done
       - name: Sonde
         run: python3 tools/probe_idoles.py
+      - name: Sonde des idoles classiques (Touch, Ankama, archive.org)
+        run: python3 tools/probe_idoles_touch.py
       - name: Dépôt sur la branche
         run: |
           git config user.name "github-actions[bot]"
