@@ -1,6 +1,14 @@
 {
-  "version": "0.1.4",
+  "version": "0.1.5",
   "versions": [
+    {
+      "v": "0.1.5",
+      "name": "Pionniers",
+      "items": [
+        "Merci de tester ! Chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier » (Héros → Titre et Ornement)",
+        "Récompense exclusive : au lancement du multijoueur, tout le monde repart de zéro, mais les testeurs qui ont le rôle Pionnier sur le Discord retrouveront ce titre et cet ornement"
+      ]
+    },
     {
       "v": "0.1.4",
       "name": "Encore plus posés",
