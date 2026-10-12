@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.19.3 « Carte Discord » (bêta)
+- Chat : le bandeau Discord devient une carte aux couleurs de Discord (logo, « Serveur Discord d'Idlus », bouton « Rejoindre »).
+
 ## 0.1.19.2 « Regarder le combat » (bêta)
 - Défi du jour : bouton « Regarder le combat » qui rejoue le défi pas à pas sur l'écran de combat (`E.defiWatch` / `E.defiWatchStep` dans `js/defi.js`, même hasard que le score), vitesse ×1/×2/×4.
 

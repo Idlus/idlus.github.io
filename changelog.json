@@ -1,6 +1,13 @@
 {
-  "version": "0.1.19.2",
+  "version": "0.1.19.3",
   "versions": [
+    {
+      "v": "0.1.19.3",
+      "name": "Carte Discord",
+      "items": [
+        "Le bandeau Discord en haut du chat devient une carte aux couleurs de Discord, avec son logo et un bouton « Rejoindre »."
+      ]
+    },
     {
       "v": "0.1.19.2",
       "name": "Regarder le combat",

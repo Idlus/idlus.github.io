@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.19.2";
+const GAME_VERSION = "0.1.19.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.19.3", name: "Carte Discord", items: [
+    "Le bandeau Discord en haut du chat devient une carte aux couleurs de Discord, avec son logo et un bouton « Rejoindre »."
+  ] },
   { v: "0.1.19.2", name: "Regarder le combat", items: [
     "Défi du jour : nouveau bouton « Regarder le combat » (après un essai, ou « Regarder » dans l'encart du défi) qui rejoue le défi sur l'écran de combat, salle par salle, avec les animations",
     "C'est exactement le combat que compte le score : même équipe, même hasard ; regarder ne compte pas comme un essai",
@@ -5158,7 +5161,7 @@ function bootGame(pushNow) {
 }
 window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus };
+window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG };
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

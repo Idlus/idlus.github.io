@@ -86,7 +86,7 @@
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
   const DISCORD = "https://discord.gg/9ApPgWjPUM";
-  const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener">${X().G("chat")}<span>Une question, un bug, une idée ? <b>Rejoins le serveur Discord</b></span></a>`;
+  const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener"><span class="dl">${X().DISCORD_SVG}</span><span class="tx"><b>Serveur Discord d'Idlus</b><small>Questions, bugs, idées</small></span><span class="go">Rejoindre</span></a>`;
   function headHtml() {
     const tab = (k, n, extra) => `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${n}${extra || ""}</button>`;
     return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}<span class="ch-tab lock" data-tip="Le chat de guilde arrivera avec les guildes.">${X().G("lock")} Guilde</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
