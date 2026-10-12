@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin"));
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.28";
+const GAME_VERSION = "0.1.28.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.28.1", name: "Défi au tableau", items: [
+    "Quêtes › Tableau du jour : une ligne « Défi du jour » sous la quête principale (donjon, stasis, « à faire » ou « ✓ réussi ») qui ouvre la page Défi",
+    "La pastille sur Quêtes compte aussi le défi du jour tant qu'il n'est pas réussi" ] },
   { v: "0.1.28", name: "Journal de quêtes", items: [
     "Le menu Quêtes devient un journal rangé en 3 familles : Aujourd'hui (Almanax, avis de recherche, commandes, temples), Aventures (quête principale, Dofus, alignement) et Collection (succès, ornements). Sur PC le journal est à gauche ; au téléphone, 3 boutons et une rangée qui défile",
     "Quêtes s'ouvre sur le tableau du jour : l'étape en cours de la quête principale, puis une carte par activité du jour avec ce qui reste à faire. On peut faire l'offrande, livrer une commande prête ou défier un Dopeul sans quitter le tableau ; les cartes terminées descendent en bas",
@@ -5655,7 +5658,7 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>" });
+Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
