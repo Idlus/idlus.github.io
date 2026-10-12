@@ -1270,3 +1270,19 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .axp.bag::before{content:"";position:absolute;left:50%;top:-6px;width:10px;height:6px;transform:translateX(-50%);background:#5a3a14;border-radius:3px 3px 0 0}
 @media (prefers-reduced-motion:reduce){.psv .hrn,.psv .zzz,.ent.crm>.vis,.arena.v2 .ent[data-pv] .look{animation:none}}
 .reduced .psv .hrn,.reduced .psv .zzz,.reduced .ent.crm>.vis,.reduced .arena.v2 .ent[data-pv] .look{animation:none}
+/* lot 3 : Sram, Sadida, Steamer, Osamodas */
+.ent>.trap,.ent>.brm{position:absolute;left:50%;pointer-events:none;display:none;z-index:2}
+.ent.trp>.trap{display:block;bottom:calc(var(--plate) - 2px);width:46px;height:16px;z-index:5;transform:translateX(-50%);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 16'%3E%3Cpath d='M1 15h44' stroke='%237a4fb0' stroke-width='3'/%3E%3Cpath d='M3 14l4-12 4 12M13 14l4-13 4 13M23 14l4-12 4 12M33 14l4-13 4 13' fill='%23d8cff0' stroke='%233a2458' stroke-width='1.2'/%3E%3C/svg%3E") center/contain no-repeat;filter:drop-shadow(0 0 4px #b05cff);transform-origin:50% 100%;animation:axtrap .35s ease-out}
+@keyframes axtrap{from{transform:translateX(-50%) scaleY(0)}to{transform:translateX(-50%) scaleY(1)}}
+.ent>.brm{bottom:calc(var(--plate) + 4px);left:78%;font-size:10px;font-weight:900;color:#fff;padding:1px 5px 1px 14px;border-radius:999px;background:rgba(20,40,10,.88) radial-gradient(circle at 7px 50%,#6fd04a 0 3px,transparent 4px);border:1.5px solid #6fd04a;box-shadow:0 0 8px #3fa34d}
+.ent[data-brm]:not([data-brm=""])>.brm{display:block}
+.ent[data-brm="3"]>.brm{background-color:rgba(40,70,10,.95);box-shadow:0 0 12px #9bf06a}
+.ent>.brm.bpop{animation:pop .3s ease-out}
+.arena.v2 .ent[data-pv="tree"] img.sprite,.arena.v2 .ent[data-pv="tree"] .medal{filter:drop-shadow(0 0 6px #6fd04a);transform-origin:50% 100%;animation:axtree 2.4s ease-in-out infinite}
+@keyframes axtree{50%{transform:rotate(2deg) scale(1.03)}}
+.arena.v2 .ent.spawn[data-pv="turret"] img.sprite,.arena.v2 .ent.spawn[data-pv="turret"] .medal{animation:axdrop .5s cubic-bezier(.5,0,.8,.6)}
+@keyframes axdrop{0%{transform:translateY(-160px);opacity:0}20%{opacity:1}85%{transform:translateY(4px) scaleY(.85)}100%{transform:none}}
+.axteth{position:absolute;height:3px;transform-origin:0 50%;pointer-events:none;border-radius:2px;background:linear-gradient(90deg,rgba(255,170,220,.9),rgba(160,255,200,.9));box-shadow:0 0 8px rgba(255,170,220,.8);opacity:.75;animation:axteth 1.6s ease-in-out infinite}
+@keyframes axteth{50%{opacity:.35}}
+.reduced .arena.v2 .ent[data-pv="tree"] img.sprite,.reduced .axteth{animation:none}
+@media (prefers-reduced-motion:reduce){.arena.v2 .ent[data-pv="tree"] img.sprite,.axteth{animation:none}}

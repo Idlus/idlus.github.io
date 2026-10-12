@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.6";
+const GAME_VERSION = "0.1.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.7", name: "Les 19 classes", items: [
+    "Sram : des piques sortent du sol sous les monstres qu'il a empoisonnés",
+    "Sadida : ses ronces se comptent sur la cible (×1 à ×3) et son Arbre ondule",
+    "Steamer : sa tourelle tombe du ciel dans un nuage de vapeur ; Osamodas : un fil de lumière le relie à ses invocations" ] },
   { v: "0.1.6", name: "Passifs visibles", items: [
     "Chaque classe montre son passif en combat : flammes de Colère du Iop, horloge du Xélor, glyphes du Féca sous toute l'équipe, masques du Zobal, postures du Forgelance",
     "La roue de l'Ecaflip tourne au début du combat et s'arrête sur Pile, Face, Jackpot ou Perdu",
@@ -1320,7 +1324,7 @@ function axStates(F, e, i) {
   if (F.ents.some((m) => m.alive && m.doom && m.doom.i === i)) add("warn", "", "#ff6b6b", "Condamné");
   return ch.slice(0, 4).join("");
 }
-function axDecor(n, e) { if (!n || n.querySelector(".sts")) return; n.insertAdjacentHTML("beforeend", `<div class="sts"></div><span class="sc"></span>${e.side === "c" ? '<span class="dz"></span><span class="gly"></span>' : '<span class="vis"></span><span class="prey"></span>'}`);
+function axDecor(n, e) { if (!n || n.querySelector(".sts")) return; n.insertAdjacentHTML("beforeend", `<div class="sts"></div><span class="sc"></span>${e.side === "c" ? '<span class="dz"></span><span class="gly"></span>' : '<span class="vis"></span><span class="prey"></span><span class="trap"></span><span class="brm"></span>'}`);
   const lw = e.side === "c" && !e.summon && n.querySelector(".lookwrap"); if (lw) lw.insertAdjacentHTML("beforeend", `<div class="psv"></div>`); }
 function axUpdateEnt(F, A, e, i, n) {
   if (A.view !== "scene") return n.classList.toggle("dead", !e.alive);
@@ -1347,8 +1351,19 @@ function axPassive(F, A, e, i, n) {
     n.classList.toggle("crm", on && e.mark > 0);
     const og = on ? F.ents.find((h) => h.alive && h.cls === "ougi" && h.lastTgt === e && (h.ougi || 0) > 0) : null;
     n.classList.toggle("prm", !!og); if (og) n.style.setProperty("--prey", 0.7 + og.ougi * 0.12);
+    // pièges du Sram et ronces du Sadida (poisons posés par eux)
+    const by = (d) => (F.ents.find((h) => h.side === "c" && !h.summon && h.name === d.src) || {}).cls, ds = on ? e.dots || [] : [];
+    n.classList.toggle("trp", ds.some((d) => by(d) === "sram"));
+    const nb = ds.filter((d) => by(d) === "sadi").length, bm = n.querySelector(".brm"), bk = nb ? "×" + nb : "";
+    if (bm && bm.textContent !== bk) { bm.textContent = bk; n.dataset.brm = nb || ""; if (nb) pulse(bm, "bpop"); }
     return;
   }
+  if (e.summon) { // Arbre du Sadida, tourelle du Steamer, fil de l'Osamodas
+    const k = on ? (e.tree ? "tree" : e.turret ? "turret" : "") : "";
+    if (n.dataset.pv !== k) { n.dataset.pv = k; if (k === "turret" && axFull() && !n._drop) { n._drop = 1; const p = axFoot(A, n); setTimeout(() => axPuff(A, p.x, p.y - 10, "rgba(220,230,240,.85)", 7), 380); } }
+    return;
+  }
+  if (e.cls === "osa") axTether(F, A, e, i, n, on);
   const box = n.querySelector(".psv"); if (!box) return;
   const pv = n._pv || (n._pv = {}); let k = "", cls = "";
   if (on) switch (e.cls) {
@@ -1379,6 +1394,15 @@ function axPassive(F, A, e, i, n) {
   }
   if (box.dataset.k !== k) { box.innerHTML = k; box.dataset.k = k; }
   if (n.dataset.pv !== cls) n.dataset.pv = cls;
+}
+/* fil de lumière entre l'Osamodas et ses invocations */
+function axTether(F, A, e, i, n, on) {
+  const T = A.teth || (A.teth = {}); const keep = new Set();
+  if (on) F.ents.forEach((s, j) => { if (!s.summon || s.owner !== i || !s.alive || !A.nodes[j]) return; keep.add(j);
+    const a = axPt(A, n, 0.55), b = axPt(A, A.nodes[j], 0.6), dx = b.x - a.x, dy = b.y - a.y;
+    let l = T[j]; if (!l) { l = T[j] = document.createElement("div"); l.className = "axteth"; A.fxl.appendChild(l); }
+    Object.assign(l.style, { left: a.x + "px", top: a.y + "px", width: Math.hypot(dx, dy) + "px", transform: `rotate(${Math.atan2(dy, dx)}rad)` }); });
+  for (const j in T) if (!keep.has(+j)) { T[j].remove(); delete T[j]; }
 }
 /* roue de l'Ecaflip au début du combat */
 function axWheel(A, res) {
