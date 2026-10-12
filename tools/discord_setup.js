@@ -78,7 +78,8 @@ const PLAN = [
     { key: "BETAFB", name: "bêta-retours", topic: "Tes retours sur la version de test" } ] },
   { cat: "🔐 Équipe", only: ["mod", "creator"], chans: [
     { key: "MODS", name: "modération", topic: "Salon privé de l'équipe" },
-    { key: "NOTES", name: "notes", topic: "Notes privées" } ] },
+    { key: "NOTES", name: "notes", topic: "Notes privées" },
+    { key: "BETASUM", name: "résumés-bêta", topic: "Résumé automatique de chaque mise à jour envoyée sur la version de test" } ] },
 ];
 
 const { api, norm } = require("./discord_api.js");

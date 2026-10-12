@@ -3,6 +3,7 @@
    node tools/discord_bot.js semaine                                  → publie dans #annonces le mutateur de la semaine
    node tools/discord_bot.js almanax                                  → publie dans #almanax le bonus et l'offrande du jour
    node tools/discord_bot.js idees                                    → envoie dans #notes le top 5 des idées du forum (votes 👍)
+   node tools/discord_bot.js resume <révision>                        → résume dans #résumés-bêta (privé, mention du créateur) les changements de la branche beta jusqu'à cette révision
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
@@ -73,11 +74,29 @@ async function main() {
     if (DRY) return console.log(JSON.stringify(embed, null, 1));
     await api("POST", `/channels/${await channelId(gid, "notes")}/messages`, { embeds: [embed], allowed_mentions: { parse: [] } });
     console.log("Top des idées envoyé :", top.length);
+  } else if (cmd === "resume") {
+    const git = (a) => require("child_process").execFileSync("git", a, { encoding: "utf8" }).trim();
+    const head = git(["rev-parse", file || "HEAD"]); const short = head.slice(0, 7);
+    const gid = DRY ? null : await guildId(); const ch = DRY ? null : await channelId(gid, "résumés-bêta");
+    const last = DRY ? [] : await api("GET", `/channels/${ch}/messages?limit=20`);
+    const prev = last.map((m) => ((m.embeds || [])[0] || {}).footer).map((f) => f && /révision ([0-9a-f]{7,40})/.exec(f.text)).find(Boolean);
+    if (prev && head.startsWith(prev[1])) return console.log("Déjà résumé :", short);
+    let range = [head, "-1"]; try { if (prev) { git(["cat-file", "-e", prev[1] + "^{commit}"]); range = [`${prev[1]}..${head}`]; } } catch (e) {}
+    const commits = git(["log", "--no-merges", "--format=%s", ...range]).split("\n").filter(Boolean).filter((x) => !/^Version de test :/.test(x));
+    if (!commits.length) return console.log("Rien de nouveau à résumer.");
+    const cut = (x) => (x.length > 350 ? x.slice(0, 347) + "…" : x);
+    const lines = commits.slice(0, 10).map((x) => "• " + cut(x)); if (commits.length > 10) lines.push(`• … et ${commits.length - 10} autre${commits.length > 11 ? "s" : ""} changement${commits.length > 11 ? "s" : ""}`);
+    const embed = { title: `🧪 Bêta mise à jour : ${commits.length} changement${commits.length > 1 ? "s" : ""}`, url: BETA, color: 0x7bd389,
+      description: lines.join("\n").slice(0, 3900) + `\n\n🔬 **[Ouvrir la version de test](${BETA})**`, footer: { text: `révision ${short}` }, timestamp: new Date().toISOString() };
+    if (DRY) return console.log(JSON.stringify(embed, null, 1));
+    const owner = (await api("GET", `/guilds/${gid}`)).owner_id;
+    await api("POST", `/channels/${ch}/messages`, { content: `<@${owner}>`, embeds: [embed], allowed_mentions: { users: [owner] } });
+    console.log("Résumé envoyé :", commits.length, "changement(s)");
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | icone [image.png]"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png]"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
