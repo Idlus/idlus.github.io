@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.27 « Panel de test réservé » (bêta)
+- Mathis : panel de test (`js/admin.js`) réservé à lui seul. `testerOk()` dans ui.js : vrai seulement si `window.CHAT.role === "admin"` (rôle lu par le serveur via `my_role`), ou en local (localhost) pour les essais. Sans ça, le bouton du bandeau bêta n'est pas affiché et `admin.js` ignore les clics `data-adm`. `renderStatus` redessine le bandeau bêta pour que le bouton apparaisse dès que le rôle est chargé.
+
 ## 0.1.26 « Codes cadeaux » (bêta)
 - Mathis (maquette validée « 1A 2A 3A 4A 5A ») : codes cadeaux gérés par le serveur. `supabase/codes.sql` : tables `gift_codes`, `gift_uses` (un compte ou une partie sans compte, `S.gid`), `gift_tries` (10 essais ratés / 10 min) ; `gift_redeem` (anon et comptes) renvoie la récompense ; `adm_gifts`, `adm_gift_create`, `adm_gift_set`, `adm_gift_users` réservés à Mathis. `js/codes.js` (`window.GIFTS`, bêta seulement) : `redeem` (les codes `IDLUS-…` passent toujours par `E.redeemGift`), onglet « Codes cadeaux » du panel admin (branché dans `chat.js`), bouton « Code pour le jeu public » (`E.makeGift`), lien `?code=` qui ouvre Options › Jeu avec le code rempli. `E.giveGift` partagé ; nouvelle récompense `i` (objets, 10 max par ligne).
 

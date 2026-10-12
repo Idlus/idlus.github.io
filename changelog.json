@@ -1,6 +1,13 @@
 {
-  "version": "0.1.26",
+  "version": "0.1.27",
   "versions": [
+    {
+      "v": "0.1.27",
+      "name": "Panel de test réservé",
+      "items": [
+        "Le panel de test de la version de test est maintenant réservé à Mathis : le bouton n'apparaît que sur son compte admin, vérifié par le serveur"
+      ]
+    },
     {
       "v": "0.1.26",
       "name": "Codes cadeaux",

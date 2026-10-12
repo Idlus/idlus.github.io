@@ -1,8 +1,8 @@
 /* ============================================================================
    PANEL DE TEST — Idlus, version de test (/beta/) uniquement.
    Sur le jeu public, ce fichier ne fait rien : le panel n'y existe pas.
-   Rien n'est secret sur un site sans serveur : n'importe qui sur la béta peut l'ouvrir,
-   mais il ne touche que la partie de test de ce navigateur.
+   0.1.27 : réservé au compte admin (rôle vérifié par le serveur), et ouvert en local pour les essais.
+   Il ne touche que la partie de test de ce navigateur.
    ========================================================================== */
 (function () {
 "use strict";
@@ -99,6 +99,7 @@ function replaceGame(N, txt) {
 document.addEventListener("change", (ev) => { const k = ev.target.dataset && ev.target.dataset.admV; if (k) st[k] = k === "k" ? +ev.target.value : ev.target.value; });
 document.addEventListener("click", (ev) => {
   const t = ev.target.closest("[data-adm]"); if (!t) return;
+  if (!DX.testerOk || !DX.testerOk()) { DX.closeSheet(); return; }
   const s = S(); const d = t.dataset;
   if (d.adm === "open") { if (!s) { DX.toast("Commencez une partie pour utiliser le panel de test."); return; } open(); return; }
   if (!s) return;
