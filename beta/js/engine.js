@@ -11,7 +11,7 @@
           MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const E = {};
-  E.VERSION = 8;
+  E.VERSION = 9;
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -66,11 +66,16 @@
 
   /* ---------------- Courbes ---------------- */
   E.MAX_LVL = 200;
-  /* v3 : plus rapide de 40 à 62, rampe jusqu'à 80, puis de plus en plus lent au-delà de 100 */
-  E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : 1 + (l - 100) * 0.04);
+  /* v3 : plus rapide de 40 à 62, rampe jusqu'à 80 ; 0.1.12 : au-delà de 100, l'XP demandée baisse progressivement (moitié vers 160, un tiers à 200) :
+     la pente ajoutée en 0.1.0 est retirée, 100 → 200 prenait 1 100 h de plus que 1 → 100 (simulation, équipe équipée) */
+  E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : Math.pow(100 / l, 1.5));
   E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7) * E.xpCurveMult(l)); // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
+  /* 0.1.12 Renaissance : bonus d'XP propre au héros (hors plafond commun) et rang d'un Éveil */
+  E.REN_MAX = 10; E.REN_XP = 0.3;
+  E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
+  E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
   E.recruitCost = (n) => (n <= 1 ? 0 : Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
 
   /* ---------------- État initial ---------------- */
@@ -280,7 +285,11 @@
     const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
-    st.hpMax = Math.round(50 + 5 * c.lvl + st.vit + E.familyBonusVit(S));
+    st.hpMax = Math.round((50 + 5 * c.lvl + st.vit + E.familyBonusVit(S)) * (1 + 0.05 * E.eveil(c, "robu")));
+    if (c.eveils) { // 0.1.12 : Éveils de la Renaissance
+      const ec = E.eveil(c, "ecorce"); if (ec) ["rt", "rf", "re", "ra", "rn"].forEach((k) => (st[k] = (st[k] || 0) + 3 * ec));
+      st.cri += 3 * E.eveil(c, "lame"); st.pp += 15 * E.eveil(c, "pros");
+    }
     st.pa = Math.min(12, 6 + (c.lvl >= 100 ? 1 : 0) + st.pa);
     st.ini += 100 + c.lvl * 5 + st.fo + st.ine + st.cha + st.age;
     return st;
@@ -639,6 +648,7 @@
     return {
       side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax,
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
+      evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
@@ -1107,16 +1117,19 @@
     v *= 1 + (e.dmgBonus || 0) / 100;
     v *= 1 + (e.st.dsort || 0) / 100;
     v *= mult;
-    // passifs et mécaniques de classe
+    // 0.1.12 : Éveils de la Renaissance (Fureur, Premier sang)
+    if (e.ev) { v *= 1 + 0.04 * (e.ev.fureur || 0); if (F && F.round === 1) v *= 1 + 0.08 * (e.ev.premier || 0); }
+    // passifs et mécaniques de classe (evc : rang de l'Éveil de classe, 0 à 2, qui renforce le passif)
+    const evc = e.evc || 0;
     if (tgt && tgt.boss && e.cls === "iop") v *= 1.1;
-    if (e.cls === "sacri") v *= (1 + 0.3 * (1 - e.hp / e.hpMax)) * (1 + 0.02 * (e.suffer || 0));
-    if (e.cls === "roub" && alive(F, "m").length >= 4) v *= 1.15;
-    if (e.cls === "hupper" && e.lastEl && e.lastEl !== el) v *= 1.1;
-    if (e.cls === "ougi" && tgt) { e.ougi = e.lastTgt === tgt ? Math.min(5, (e.ougi || 0) + 1) : 0; e.lastTgt = tgt; v *= 1 + 0.05 * e.ougi; }
-    if (e.posture === "lance") v *= 1.2;
-    if (e.cls === "cra") v *= 1 + Math.max(0, 0.4 - 0.1 * ((F ? F.round : 1) - 1));
-    if (e.cls === "panda") v *= 1 + 0.06 * (e.ivresse || 0);
-    if (e.mask === "atk") v *= 1.3;
+    if (e.cls === "sacri") v *= (1 + (0.3 + 0.06 * evc) * (1 - e.hp / e.hpMax)) * (1 + (0.02 + 0.004 * evc) * (e.suffer || 0));
+    if (e.cls === "roub" && alive(F, "m").length >= 4) v *= 1.15 + 0.05 * evc;
+    if (e.cls === "hupper" && e.lastEl && e.lastEl !== el) v *= 1.1 + 0.05 * evc;
+    if (e.cls === "ougi" && tgt) { e.ougi = e.lastTgt === tgt ? Math.min(5, (e.ougi || 0) + 1) : 0; e.lastTgt = tgt; v *= 1 + (0.05 + 0.01 * evc) * e.ougi; }
+    if (e.posture === "lance") v *= 1.2 + 0.05 * evc;
+    if (e.cls === "cra") v *= 1 + Math.max(0, 0.4 + 0.1 * evc - 0.1 * ((F ? F.round : 1) - 1));
+    if (e.cls === "panda") v *= 1 + (0.06 + 0.015 * evc) * (e.ivresse || 0);
+    if (e.mask === "atk") v *= 1.3 + 0.1 * evc;
     v *= E.classPow(e.cls, e.lvl);
     if (tgt && tgt.race !== undefined && F.expertRaces && F.expertRaces.has(tgt.race)) v *= 1.1;
     e.lastEl = el;
@@ -1124,7 +1137,7 @@
   };
   const healAmount = (e, f) => {
     const pui = e.st.pui + buffSum(e, "pui");
-    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 : 1) * (e.mask === "soin" ? 1.25 : 1);
+    return (rf(f.min, f.max) * E.DMG_SCALE * (1 + (e.st.ine + buffSum(e, "ine") + pui) / 100) + e.st.so) * (e.cls === "eni" ? 1.1 + 0.05 * (e.evc || 0) : 1) * (e.mask === "soin" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0));
   };
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
@@ -1177,10 +1190,10 @@
   const makeSummon = (S, F, e, f) => {
     const own = F.ents.indexOf(e);
     if (alive(F, "c").filter((a) => a.summon && a.owner === own).length >= SUM_LIMIT(e)) return null;
-    const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 : 1;
+    const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 + 0.15 * (e.evc || 0) : 1;
     const hp = Math.round(e.hpMax * 0.35 * boost);
     const s = { side: "c", summon: true, owner: own, name: info.name || "Invocation", img: info.img || null, cls: e.cls, lvl: e.lvl, hpMax: hp, hp, ini: e.ini - 1,
-      dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e),
+      dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 + 0.1 * (e.evc || 0) : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e),
       turret: e.cls === "steam", tree: e.cls === "sadi", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
     F.ents.push(s); F.order.push(F.ents.indexOf(s));
     F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(s) });
@@ -1204,11 +1217,11 @@
         if (db.every((f) => (f.k === "apdrain" ? t0.paLoss > 0 : (t0.debuffs || []).some((d) => d[f.k === "weaken" ? "weak" : "vuln"] && d.turns > 0)))) return { ok: false }; }
     }
     let classMult = 1;
-    if (e.cls === "iop" && e.stack >= 6 && ["dmg", "aoe", "drain", "dot"].includes(kind)) { classMult *= 1.4; e.stack = 0; parts.push("Colère !"); }
+    if (e.cls === "iop" && e.stack >= 6 - (e.evc || 0) && ["dmg", "aoe", "drain", "dot"].includes(kind)) { classMult *= 1.4; e.stack = 0; parts.push("Colère !"); }
     if (e.cls === "panda" && ["dmg", "aoe", "drain", "dot"].includes(kind) && rnd() < 0.03 * (e.ivresse || 0)) { e.ivresse = Math.min(5, (e.ivresse || 0) + 1); flog(F, `${e.name} · ${sp.name} → raté, l'ivresse fait tituber le Pandawa !`, "dim"); return { ok: true, extraPa: 0 }; }
     if (F.idol && F.idol.fail && ["dmg", "aoe", "drain", "dot", "heal"].includes(kind) && rnd() < F.idol.fail) { flog(F, `${e.name} · ${sp.name} → échec (idole Yushe) !`, "dim"); return { ok: true, extraPa: 0 }; }
-    if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3; e.els = []; }
-    if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15; e.eniDmg = false; }
+    if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3 + 0.1 * (e.evc || 0); e.els = []; }
+    if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15 + 0.05 * (e.evc || 0); e.eniDmg = false; }
     let leech = 0; let dealt = 0; const hitIdx = [];
     for (const f of g.fx) {
       if (f.k === "leech") { leech = f.v; continue; }
@@ -1216,16 +1229,16 @@
         let nT = f.n; // 0.1.9.1 : Portée (exo) : un sort à une cible touche un ennemi de plus, 20 % par point
         if (nT === 1 && f.k !== "dot" && e.st && e.st.po > 0 && rnd() * 100 < Math.min(E.TACT.po[1], e.st.po * E.TACT.po[0])) { nT = 2; tlog("po"); }
         const ts = pickFoes(S, F, e, slot, nT, forced); if (!ts.length) continue;
-        let m = f.n > 1 ? 0.85 * (e.cls === "elio" ? 1.25 : 1) * (e.cls === "roub" ? 1.15 : 1) : 1;
+        let m = f.n > 1 ? 0.85 * (e.cls === "elio" ? 1.25 + 0.1 * (e.evc || 0) : 1) * (e.cls === "roub" ? 1.15 : 1) : 1;
         if (f.n > 1 && F.idol && F.idol.aoeMul !== 1) m *= F.idol.aoeMul; // idole Gilimin
-        if (f.k === "dot") m *= 0.55 * (e.cls === "sram" ? 1.25 : 1) * (e.cls === "roub" ? 1.15 : 1);
+        if (f.k === "dot") m *= 0.55 * (e.cls === "sram" ? 1.25 + 0.1 * (e.evc || 0) : 1) * (e.cls === "roub" ? 1.15 : 1);
         const vals = [];
         ts.forEach((t) => {
           const r = charDamage(S, F, e, f, m * classMult, t);
-          if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
+          if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
             if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
-            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
+            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el) { if (F.cs.el === null) F.cs.el = r.el; else if (F.cs.el !== r.el) failChal(F, "elementaire", "deux éléments utilisés"); }
@@ -1239,7 +1252,7 @@
         ts.forEach((t) => { if (t) tot += doHeal(t, (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1), F); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
       } else if (f.k === "shield") {
-        const ts = f.all ? alive(F, "c") : [e]; const k = e.cls === "feca" ? 1.25 : 1;
+        const ts = f.all ? alive(F, "c") : [e]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0));
         ts.forEach((t) => { t.shield = Math.max(t.shield || 0, Math.round(t.hpMax * f.pct / 100 * k * (F.roulette === "face" ? 1.15 : 1) * (F.idol && F.idol.shieldHalf ? 0.5 : 1))); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: `Bouclier ${t.shield}` }); });
         parts.push("bouclier"); ok = true;
       } else if (f.k === "buff") {
@@ -1263,7 +1276,7 @@
     if (e.cls === "iop") e.stack = Math.min(6, (e.stack || 0) + 1);
     if (e.cls === "panda") e.ivresse = Math.min(5, (e.ivresse || 0) + 1);
     if (e.posture === "rempart" && dealt) e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.05));
-    if (e.cls === "xelor") { e.clock = (e.clock || 0) + 1; if (e.clock >= 12) { e.clock = 0; alive(F, "c").filter((a) => !a.summon).forEach((a) => { a.paBonus = 1; for (const k in a.cd) if (a.cd[k] > 0) a.cd[k]--; }); flog(F, `L'horloge de ${e.name} sonne midi : +1 PA pour l'équipe au prochain tour, sorts rechargés plus vite.`, "buff"); } }
+    if (e.cls === "xelor") { e.clock = (e.clock || 0) + 1; if (e.clock >= 12 - (e.evc || 0)) { e.clock = 0; alive(F, "c").filter((a) => !a.summon).forEach((a) => { a.paBonus = 1; for (const k in a.cd) if (a.cd[k] > 0) a.cd[k]--; }); flog(F, `L'horloge de ${e.name} sonne midi : +1 PA pour l'équipe au prochain tour, sorts rechargés plus vite.`, "buff"); } }
     e.nCast = (e.nCast || 0) + 1;
     // challenges liés aux sorts
     const cs = F.cs; const key = e.cid;
@@ -1323,7 +1336,7 @@
       if (e.cuve) { e.cuve = false; e.ivresse = 0; flog(F, `${e.name} cuve son ivresse et passe son tour.`, "dim"); return endHeroTurn(S, F, e); }
       if (e.cls === "feca") { e.glyphI = ((e.glyphI ?? -1) + 1) % 3; const gk = ["prot", "renvoi", "soin"][e.glyphI]; F.glyph = gk;
         flog(F, `${e.name} pose un Glyphe ${gk === "prot" ? "de Protection (−10 % de dégâts subis)" : gk === "renvoi" ? "de Renvoi (15 % des dégâts renvoyés)" : "de Soin (+3 % des PV)"}.`, "buff");
-        if (gk === "soin") alive(F, "c").forEach((a) => doHeal(a, a.hpMax * 0.03, F)); }
+        if (gk === "soin") alive(F, "c").forEach((a) => doHeal(a, a.hpMax * (0.03 + 0.01 * (e.evc || 0)), F)); }
       if (e.cls === "forge") { const np = e.hp > e.hpMax * 0.5 ? "lance" : "rempart"; if (np !== e.posture) { e.posture = np; flog(F, `${e.name} passe en posture ${np === "lance" ? "Lance (+20 % de dégâts)" : "Rempart (−25 % de dégâts subis)"}.`, "buff"); } }
       if (e.cls === "zobal") { // masque adapté à la situation
         const hurt = alive(F, "c").filter((a) => !a.summon && a !== e && a.hp < a.hpMax * 0.5).length;
@@ -1562,9 +1575,12 @@
       flog(F, `Roulette de l'Ecaflip : ${F.roulette === "pile" ? "Pile ! +20 % de dégâts pour l'équipe" : F.roulette === "face" ? "Face ! +15 % de soins et de boucliers" : F.roulette === "jackpot" ? "JACKPOT ! Butin ×2 sur ce combat" : "Perdu… −5 % de dégâts pour l'équipe"}.`, "buff"); }
     F.expertRaces = new Set();
     for (const r in RACE_MONS) if (RACE_MONS[r].some((k) => E.huntTier(S, k) >= 2)) F.expertRaces.add(+r);
-    F.ents.filter((e) => e.side === "c" && !e.summon).forEach((e) => {
+    const heroes0 = F.ents.filter((e) => e.side === "c" && !e.summon);
+    const meneur = heroes0.reduce((a, e) => a + ((e.ev || {}).meneur || 0), 0); // 0.1.12 : Éveil Meneur, +1 % pour toute l'équipe par rang
+    const ecaEv = Math.max(0, ...heroes0.filter((e) => e.cls === "eca").map((e) => e.evc || 0)); // Éveil de classe Ecaflip : Pile +25/+30 %
+    heroes0.forEach((e) => {
       if (e.cls === "zobal") e.mask = "atk";
-      e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + (F.roulette === "pile" ? 20 : F.roulette === "perdu" ? -5 : 0);
+      e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + meneur + (F.roulette === "pile" ? 20 + 5 * ecaEv : F.roulette === "perdu" ? -5 : 0);
       e.resBonus = 0; e.regen = 0;
     });
   };
@@ -1595,6 +1611,48 @@
     else if (!alive(F, "c").filter((x) => !x.summon).length) endFight(S, false);
   };
 
+  /* 0.1.11.2 : aperçu des 3 premiers tours d'un héros, joué par le vrai moteur de combat sur une copie de la partie
+     mode "hunt" : un groupe de sa zone de chasse (ou d'une zone de son niveau) · mode "boss" : la salle du boss d'un donjon de son niveau
+     spells : barre à tester (sinon celle du héros) · seeds : nombre de combats (dégâts moyens ; les lancers affichés sont ceux du 1er) */
+  E.spellPreview = (S, cid, mode, spells, seeds = 3) => {
+    const c0 = S.chars.find((x) => x.id === cid); if (!c0) return null;
+    const evLen = E.events.length; const rng0 = rnd; const base = JSON.stringify(S); let out = null;
+    try {
+      for (let k = 0; k < seeds; k++) {
+        let seed = 7919 * (k + 1);
+        rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        const S2 = JSON.parse(base); const c = S2.chars.find((x) => x.id === cid);
+        if (spells) c.spells = spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+        S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
+        if (!(c.inTeam && !c.job)) S2.chars.forEach((x) => (x.inTeam = x.id === cid));
+        c.job = null;
+        let label;
+        if (mode === "boss") {
+          const ids = Object.keys(DUNGEONS).filter((id) => DUNGEONS[id].lvl <= c.lvl + 5).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl);
+          const did = ids[0] || Object.keys(DUNGEONS)[0]; const dg = DUNGEONS[did];
+          S2.dungeon = { id: did, room: dg.rooms.length, stasis: 1, chain: 1, t: 0, syncLvl: c.lvl, mods: [], eliteRoom: -1 };
+          label = `${MONSTERS[dg.boss].name} (${dg.name})`;
+        } else {
+          let sid = S.hunting && S.sub && SUBS[S.sub] && SUBS[S.sub].lvl && Math.abs(SUBS[S.sub].lvl[1] - c.lvl) <= 30 ? S.sub : null;
+          if (!sid) sid = Object.keys(SUBS).filter((s) => SUBS[s].lvl && SUBS[s].monsters && SUBS[s].monsters.length).sort((a, b) => Math.abs((SUBS[a].lvl[0] + SUBS[a].lvl[1]) / 2 - c.lvl) - Math.abs((SUBS[b].lvl[0] + SUBS[b].lvl[1]) / 2 - c.lvl))[0];
+          S2.hunting = true; S2.sub = sid; label = SUBS[sid].name;
+        }
+        const F = E.startFight(S2); if (!F) return null;
+        const hi = F.ents.findIndex((e) => e.side === "c" && e.cid === cid && !e.summon); const he = F.ents[hi]; if (hi < 0) return null;
+        const rounds = [1, 2, 3].map((r) => ({ r, casts: [], pa: 0, dmg: 0 }));
+        let lastSeq = -1, dealt = 0;
+        const grab = () => {
+          F.fx.forEach((f) => { if (f.seq <= lastSeq) return; if (f.k === "cast" && f.s === hi && f.sp && F.round <= 3) { const d = E.spellDef(c.cls, f.sp); const g = d && E.spellGrade(d, c.lvl); rounds[F.round - 1].casts.push(f.sp); rounds[F.round - 1].pa += g ? g.pa : 0; } });
+          lastSeq = F.seq; if (F.round <= 3) { rounds[F.round - 1].dmg += (he.dealt || 0) - dealt; } dealt = he.dealt || 0;
+        };
+        for (let g = 0; g < 600 && !F.over && F.round <= 3; g++) { E.step(S2); grab(); }
+        const res = { mode, label, mons: F.ents.filter((e) => e.side === "m").length, paMax: he.st.pa, rounds, end: F.over ? F.result : null, endRound: Math.min(3, F.round), total: rounds.reduce((a, r) => a + r.dmg, 0) };
+        if (!out) out = res; else { out.rounds.forEach((r, i) => (r.dmgSum = (r.dmgSum || r.dmg) + res.rounds[i].dmg)); out.totalSum = (out.totalSum || out.total) + res.total; out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); res.rounds.forEach((r) => r.casts.forEach((id) => out.casted.add(id))); }
+      }
+      if (out) { out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); out.rounds.forEach((r) => (r.dmg = Math.round((r.dmgSum || r.dmg) / seeds))); out.total = Math.round((out.totalSum || out.total) / seeds); }
+    } finally { rnd = rng0; E.events.length = evLen; }
+    return out;
+  };
   /* Simulateur de dégâts (interface) : estimation par lancer et par tour contre une cible à « res » % de résistance */
   E.spellEstimate = (S, c, sp, res = 0) => {
     const st = E.charStats(S, c); const g = E.spellGrade(sp, c.lvl);
@@ -1688,7 +1746,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c));
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
@@ -1698,7 +1756,7 @@
     const tr = E.trainee(S);
     if (tr && team.length) {
       const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.trainShare(S, tr));
-      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, g - E.mountXpShare(S, tr, g))) out.ups.push([tr.name, tr.lvl]); }
+      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, Math.round(g * E.renXpMult(tr)) - E.mountXpShare(S, tr, g))) out.ups.push([tr.name, tr.lvl]); }
     }
     S.kamas += out.kamas;
     // Butin
@@ -1920,7 +1978,7 @@
     const z = S.zoneStats[zkey]; if (!z || z.f < E.ETA_MIN_FIGHTS || z.xp <= 0) return null;
     const rate = E.zoneRate(S, zkey); const team = E.team(S); if (!team.find((x) => x.id === c.id)) return null;
     const ml = S.dungeon ? DUNGEONS[S.dungeon.id].lvl : SUBS[zkey] ? (SUBS[zkey].lvl[0] + SUBS[zkey].lvl[1]) / 2 : c.lvl;
-    const f = (x) => (1 + E.charStats(S, x).sa / 100) * E.xpPenalty(x.lvl - ml);
+    const f = (x) => (1 + E.charStats(S, x).sa / 100) * E.xpPenalty(x.lvl - ml) * E.renXpMult(x);
     const tot = team.reduce((a, x) => a + f(x), 0); if (!tot) return null;
     return rate.xpH * f(c) / tot;
   };
@@ -2529,6 +2587,10 @@
       if (S.ach && S.ach.emb100) { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes("le Solitaire")) S.titlesExtra.push("le Solitaire"); }
       delete S.emblem;
       report.push(`0.1.8.2 : l'Emblème du Solitaire disparaît (il ne servait qu'en solo). ${got.length ? "Runes rendues : " + got.join(", ") + "." : "Aucune rune n'y avait été investie."} Les runes nourrissent maintenant le métier de Forgemage (onglet Forgemagie).`);
+    }
+    if (S.v < 9) { // 0.1.12 : nouvelle courbe d'XP au-delà du niveau 100 ; les héros qui ont déjà l'XP du niveau suivant montent tout de suite
+      const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) E.giveXp(S, c, 0); }); E.events.length = ev;
+      report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Équipe › Renaissance).");
     }
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });

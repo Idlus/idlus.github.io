@@ -1721,3 +1721,94 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .gsp.off img{opacity:.5}
 .gsp.lock{cursor:not-allowed}.gsp.lock img{opacity:.35;filter:grayscale(.8)}
 .gsp .lv{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font-size:9px;font-weight:900;background:var(--panel);border-radius:4px;padding:0 3px;color:var(--muted);white-space:nowrap}
+/* 0.1.11.2 : aperçu des tours et conseils */
+.spgrid{grid-template-areas:"bar det" "prev det" "grim det"}
+.spprevp{grid-area:prev}
+@media (max-width:860px){.spgrid{grid-template-areas:"bar" "det" "prev" "grim"}}
+.spturns{display:flex;flex-direction:column;gap:7px}
+.sptn{display:grid;grid-template-columns:62px minmax(0,1fr) 64px;gap:10px;align-items:center}
+.sptn .tn{font-family:var(--font-title);color:var(--title);font-size:15px}
+.sptn .casts{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.sptn .tot{font-size:12px;font-weight:800;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.spcast{display:inline-flex;align-items:center;gap:5px;background:var(--panel2);border-radius:9px;padding:2px 8px 2px 2px;font-size:12px;font-weight:800}
+.spcast img{width:26px;height:26px;border-radius:6px}
+.pips{display:inline-flex;gap:2px;margin-left:4px}
+.pips i{width:7px;height:11px;border-radius:2px;background:#2f6fb0}
+.pips i.off{background:var(--panel3)}
+@media (max-width:600px){.sptn{grid-template-columns:48px minmax(0,1fr) 52px;gap:6px}.spcast{padding:1px;border-radius:7px}.spcast span{display:none}.spcast img{width:24px;height:24px}}
+.spsum{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.spsum b{font-size:15px}
+.elbar{display:flex;height:9px;width:140px;border-radius:5px;overflow:hidden;background:var(--panel3)}
+.elbar i{display:block;height:100%}
+.sptips{display:flex;flex-direction:column;gap:6px}
+.sptip{display:flex;align-items:center;gap:9px;border-radius:10px;padding:6px 9px;background:color-mix(in srgb,var(--danger) 9%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger) 35%,transparent)}
+.sptip.ok{background:color-mix(in srgb,var(--action) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--action) 40%,transparent)}
+.sptip img{width:26px;height:26px;border-radius:6px;flex:none}
+/* ---------- 0.1.12 : Renaissance ---------- */
+.hcard .renm{position:absolute;top:36px;left:7px;z-index:2;min-width:26px;height:26px;padding:0 6px;border-radius:999px;display:grid;place-items:center;font-family:var(--font-title);font-size:13px;color:#fff7e3;
+  background:radial-gradient(circle at 35% 30%,#ffc35a,#d9541e);box-shadow:0 0 0 2px rgba(14,11,20,.85),0 0 10px rgba(255,170,60,.8)}
+.renm.inline{position:static;display:inline-grid;min-width:22px;height:22px;font-size:12px;vertical-align:middle;margin-left:4px}
+.hcard.ren-braise{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 2px #d9541e,0 0 14px rgba(217,84,30,.7)}
+.hcard.ren-flamme{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 2px #e0832a,0 0 20px rgba(224,131,42,.85)}
+.hcard.ren-brasier{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #c23a5c,0 0 26px rgba(194,58,92,.9)}
+.hcard.ren-phenix{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e9b93a,0 0 32px rgba(233,185,58,.95)}
+.hcard.ren-phenix::after{content:"";position:absolute;inset:-8px;z-index:-1;border-radius:24px;background:conic-gradient(from 0deg,#e9b93a,#ff7a3d,#e9b93a,#fff1a8,#e9b93a);opacity:.55;filter:blur(6px)}
+.hcard .orn.phx{bottom:4px;font-size:26px;filter:drop-shadow(0 0 8px #ff9a3d)}.hcard .orn.phx.l{left:-14px;transform:rotate(-20deg)}.hcard .orn.phx.r{right:-14px;transform:scaleX(-1) rotate(-20deg)}
+.btn.ren{border-color:#d9541e;background:linear-gradient(180deg,#f2a33a,#d9541e);color:#fff7e3;box-shadow:0 3px 0 #8a2f10}
+.btn.ren .uico{width:18px;height:18px}
+.tag.ren{background:#d9541e;color:#fff7e3}
+.evpill{display:inline-block;background:var(--panel3);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;margin:2px 0}
+.renhead{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.renstage{position:relative;flex:none;width:150px;height:190px;border-radius:14px;overflow:hidden;display:grid;place-items:end center;background:radial-gradient(circle at 50% 80%,rgba(242,163,58,.55),transparent 65%),var(--panel2);border:1px solid var(--line)}
+.renstage.small{width:96px;height:96px;place-items:center}
+.renstage .renlook{height:170px;max-width:100%;object-fit:contain;position:relative;z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.renstage .renbig{width:64px;height:64px;position:relative;z-index:2}
+.renfl{position:absolute;left:0;right:0;bottom:0;height:60%;z-index:1;pointer-events:none;background:
+  radial-gradient(14px 40px at 20% 100%,rgba(242,163,58,.9),transparent 70%),radial-gradient(18px 56px at 50% 100%,rgba(217,84,30,.95),transparent 70%),radial-gradient(14px 44px at 80% 100%,rgba(242,163,58,.9),transparent 70%),radial-gradient(10px 30px at 35% 100%,rgba(255,210,80,.9),transparent 70%),radial-gradient(10px 30px at 65% 100%,rgba(255,210,80,.9),transparent 70%);
+  animation:renfl 1.6s ease-in-out infinite alternate}
+@keyframes renfl{to{transform:translateY(-6px) scaleY(1.12);opacity:.8}}
+.renhead .stack{flex:1;min-width:220px}
+.rencols{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rencols ul{margin:0;padding-left:16px}
+.rencols .cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;margin-bottom:3px}.cap.keep{color:var(--action)}.cap.reset{color:var(--danger)}
+.evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.evbtn{display:flex;flex-direction:column;gap:3px;text-align:left;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);cursor:pointer;color:var(--ink)}
+.evbtn .n{font-weight:800;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}.evbtn .rk{font-size:11px;color:var(--muted);font-weight:700}
+.evbtn.on{border-color:#d9541e;background:color-mix(in srgb,#d9541e 14%,var(--panel2))}.evbtn.cls{border-style:dashed}
+.renconfirm{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:10px;border:1px dashed #d9541e;background:color-mix(in srgb,#d9541e 8%,var(--panel))}
+.renintro{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.renintro .stack{flex:1;min-width:220px}
+.renrow{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--panel2);border:2px solid transparent}
+.renrow.can{border-color:#d9541e}
+.renrow .tart{height:72px;width:64px}.renrow .tart .tlook{height:68px}
+.renrow .xpb{height:6px;border-radius:5px;background:#ffffff14;overflow:hidden;margin-top:4px}.renrow .xpb i{display:block;height:100%;background:linear-gradient(90deg,#f2a33a,#d9541e)}
+.renrow .pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.ach.cls{border:1px dashed #d9541e}
+.cele.ren .cele-k{color:#f2a33a}
+@media (max-width:520px){.rencols{grid-template-columns:1fr}.renrow{grid-template-columns:52px minmax(0,1fr)}.renrow>.btn,.renrow>.tag,.renrow>.pill{grid-column:2}}
+/* 0.1.12.1 : identité du héros rené (cadre de feu, nom en flammes, combat) */
+.hcard.ren-braise,.hcard.ren-flamme,.hcard.ren-brasier,.hcard.ren-phenix{--rf1:#d9541e;--rf2:#ffc35a;--rf3:#7a2a0e;border-color:transparent;
+  background:linear-gradient(var(--panel),var(--panel)) padding-box,conic-gradient(from var(--ang),var(--rf1),var(--rf2),var(--rf3),var(--rf2),var(--rf1)) border-box;animation:spin 6s linear infinite;
+  box-shadow:0 8px 20px rgba(0,0,0,.45),0 0 18px color-mix(in srgb,var(--rf1) 70%,transparent)}
+.hcard.ren-flamme{--rf1:#e0832a;--rf2:#ffe08a;--rf3:#9a3a10}
+.hcard.ren-brasier{--rf1:#c23a5c;--rf2:#ff9a3d;--rf3:#5a0f24;box-shadow:0 8px 20px rgba(0,0,0,.45),0 0 26px rgba(194,58,92,.8)}
+.hcard.ren-phenix{--rf1:#e9b93a;--rf2:#fff1a8;--rf3:#ff7a3d;animation:spin 4s linear infinite;box-shadow:0 8px 20px rgba(0,0,0,.45),0 0 34px rgba(233,185,58,.95)}
+.hcard.ren-phenix::after{display:none}
+.hcard.ren-braise .tier,.hcard.ren-flamme .tier,.hcard.ren-brasier .tier,.hcard.ren-phenix .tier{background:linear-gradient(90deg,var(--rf3),var(--rf1));color:#fff7e3}
+.hcard .art .rembers{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.hcard .art .rembers::before{content:"";position:absolute;left:0;right:0;bottom:0;height:70%;background:radial-gradient(16px 46px at 25% 100%,rgba(242,163,58,.9),transparent 70%),radial-gradient(22px 70px at 50% 100%,rgba(217,84,30,.95),transparent 70%),radial-gradient(16px 50px at 75% 100%,rgba(242,163,58,.9),transparent 70%),radial-gradient(10px 32px at 38% 100%,rgba(255,220,100,.85),transparent 70%),radial-gradient(10px 32px at 62% 100%,rgba(255,220,100,.85),transparent 70%);animation:renfl 1.4s ease-in-out infinite alternate}
+.hcard .art .rembers i{position:absolute;bottom:-6px;width:4px;height:4px;border-radius:50%;background:#ffd27a;box-shadow:0 0 6px #ff9a3d;opacity:0;animation:ember 2.4s linear infinite}
+.hcard .art .rembers i:nth-child(1){left:18%}.hcard .art .rembers i:nth-child(2){left:42%;animation-delay:.8s}.hcard .art .rembers i:nth-child(3){left:66%;animation-delay:1.5s}.hcard .art .rembers i:nth-child(4){left:84%;animation-delay:.4s}
+@keyframes ember{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-150px) translateX(8px);opacity:0}}
+.hcard .hlook{z-index:3}
+.hcard.ren-brasier .art .emb::before,.hcard.ren-phenix .art .emb::before{height:85%;filter:saturate(1.2)}
+.rname{background:linear-gradient(90deg,#ffd27a,#ff9a3d,#ffd27a);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.hcard .nm .rstar{font-size:12px;color:#f2a33a;font-weight:800;white-space:nowrap;margin-left:4px}
+.renm.inline.sm{min-width:18px;height:18px;font-size:10px;margin-left:2px}
+.chips button .renm.inline{box-shadow:0 0 0 1px rgba(14,11,20,.6)}
+/* combat */
+.ent.hero .fire{position:absolute;left:12%;right:12%;bottom:18px;height:38px;z-index:0;border-radius:50%;pointer-events:none;background:radial-gradient(ellipse at 50% 100%,rgba(255,122,61,.95),rgba(242,163,58,.5) 45%,transparent 70%);animation:renfl 1.2s ease-in-out infinite alternate}
+.arena.v2 .ent.hero .fire{bottom:30px}
+.ent.hero.ren .lookwrap,.ent.hero.ren .medal{position:relative;z-index:1}
+.ent .who .renk{display:inline-block;margin-left:4px;color:#ffc35a;font-size:10px;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+.ent.card.ren .cico{box-shadow:0 0 0 2px #d9541e,0 0 10px rgba(255,154,61,.8)}
+@media (prefers-reduced-motion:reduce){.hcard .art .rembers i,.hcard .art .rembers::before,.ent.hero .fire,.hcard.ren-braise,.hcard.ren-flamme,.hcard.ren-brasier,.hcard.ren-phenix{animation:none}}
+.reduced .hcard .art .rembers i,.reduced .hcard .art .rembers::before,.reduced .ent.hero .fire,.reduced .hcard.ren-braise,.reduced .hcard.ren-flamme,.reduced .hcard.ren-brasier,.reduced .hcard.ren-phenix{animation:none}
