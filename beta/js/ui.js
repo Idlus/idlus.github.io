@@ -16,9 +16,15 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.11.1";
+const GAME_VERSION = "0.1.11.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.11.2", name: "Aperçu des sorts", items: [
+    "Sorts & stratégies : nouveau bloc « Ce que fera ton héros » qui montre les sorts lancés aux 3 premiers tours, les PA utilisés et les dégâts. Il est joué par le vrai moteur de combat (moyenne de 3 combats), en Chasse (ta zone ou une zone de ton niveau) ou contre un Boss de ton niveau",
+    "Conseils automatiques avec un bouton pour régler : attaques jamais choisies (une autre fait plus de dégâts par PA), sort bloqué par sa condition, PA non utilisés avec le sort qui pourrait les remplir, sorts dont l'élément ne profite pas du profil (avec la variante du bon élément quand elle existe)",
+    "Bilan sous l'aperçu : dégâts sur 3 tours et répartition des éléments des sorts d'attaque",
+    "Bouton « Ranger au mieux » : le héros lance ses sorts de soutien dans l'ordre de la barre, le bouton essaie tous leurs ordres et garde celui qui fait le plus de dégâts, avec « Annuler »",
+  ] },
   { v: "0.1.11.1", name: "Barre de sorts", items: [
     "Sorts & stratégies refait : les sorts équipés forment une barre de sorts comme en combat, avec leur coût en PA et leur condition écrite sous chaque case",
     "On touche un sort pour ouvrir sa fiche : description, dégâts estimés (avec la résistance de la cible), « Quand le lancer ? » et « Sur qui ? » en boutons, échange avec la variante en un clic, déplacement et retrait",
@@ -2450,6 +2456,85 @@ function spDetailHtml(c) {
     <div class="row" style="gap:6px"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Avancer">◀</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === eq.length - 1 ? "disabled" : ""} aria-label="Reculer">▶</button><span class="grow xs muted">case ${i + 1} sur ${E.spellSlots(c)}</span><button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div>
   </div>`;
 }
+/* 0.1.11.2 : aperçu des 3 premiers tours (vrai moteur), conseils et « Ranger au mieux » */
+const ATK_KINDS = ["dmg", "aoe", "drain", "dot"];
+const spPrevCache = { key: null, data: null };
+function spPreviewOf(c) {
+  const mode = ui.spPrevMode || "hunt";
+  const key = JSON.stringify([c.id, c.lvl, c.spells, c.equip, c.pet, c.mount, c.stats, mode, S.sub, S.hunting, S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job])]);
+  if (spPrevCache.key !== key) { let d = null; try { d = E.spellPreview(S, c.id, mode); } catch (e) { console.warn("aperçu des sorts", e); } spPrevCache.key = key; spPrevCache.data = d; }
+  return spPrevCache.data;
+}
+function spTips(c, P) {
+  const tips = []; if (!P) return tips;
+  const eq = c.spells; const N = E.spellSlots(c); const defs = eq.map((x) => E.spellDef(c.cls, x.id));
+  const kinds = defs.map((sp) => (sp ? spKindOf(c, sp) : ""));
+  const used = new Set(defs.filter(Boolean).map((sp) => sp.pair));
+  const cnt = {}; P.rounds.forEach((r) => r.casts.forEach((id) => (cnt[id] = (cnt[id] || 0) + 1)));
+  const top = defs.filter((sp, i) => sp && ATK_KINDS.includes(kinds[i])).sort((a, b) => (cnt[b.id] || 0) - (cnt[a.id] || 0))[0];
+  // 1) attaques jamais choisies
+  const idle = eq.map((x, i) => i).filter((i) => defs[i] && ATK_KINDS.includes(kinds[i]) && !P.casted.has(eq[i].id) && (eq[i].cond || "always") === "always");
+  if (idle.length && top && P.casted.has(top.id)) tips.push({ ico: defs[idle[0]], txt: `${idle.map((i) => `<b>${h(defs[i].name)}</b>`).join(", ")} ${idle.length > 1 ? "ne sont" : "n'est"} jamais choisi${idle.length > 1 ? "s" : ""} : ${h(top.name)} fait plus de dégâts par PA. Échange ${idle.length > 1 ? "l'un d'eux" : "ce sort"} contre un sort plus utile.`, btn: "Voir", act: `data-act="spsel" data-i="${idle[0]}"` });
+  // 2) sorts bloqués par leur condition
+  const SAFE = ["self_low", "ally_low", "ally_shield", "no_summon", "always"];
+  eq.forEach((x, i) => { if (!defs[i] || P.casted.has(x.id) || SAFE.includes(x.cond || "always")) return; if (x.cond === "boss" && P.mode !== "boss") return;
+    tips.push({ ico: defs[i], txt: `<b>${h(defs[i].name)}</b> ne s'est pas lancé : sa condition est « ${h(CONDITIONS[x.cond] || x.cond)} ».`, btn: "Régler", act: `data-act="spsel" data-i="${i}"` }); });
+  // 3) PA perdus
+  const known = E.knownSpells(c);
+  for (const r of P.rounds) {
+    if (r.r > P.endRound || (P.end && r.r === P.endRound)) break;
+    const left = P.paMax - r.pa; if (left < 2) continue;
+    const cand = known.filter((sp) => !used.has(sp.pair) && ATK_KINDS.includes(spKindOf(c, sp)) && E.spellGrade(sp, c.lvl).pa <= left)
+      .map((sp) => ({ sp, v: E.spellEstimate(S, c, sp, 0).avg / Math.max(1, E.spellGrade(sp, c.lvl).pa) })).sort((a, b) => b.v - a.v)[0];
+    if (!cand) continue;
+    const g = E.spellGrade(cand.sp, c.lvl);
+    if (eq.length < N) tips.push({ ico: cand.sp, txt: `Tour ${r.r} : <b>${left} PA non utilisés</b>. ${h(cand.sp.name)} (${g.pa} PA) pourrait les utiliser.`, btn: "Ajouter", act: `data-act="spg" data-id="${cand.sp.id}"` });
+    else if (idle.length) tips.push({ ico: cand.sp, txt: `Tour ${r.r} : <b>${left} PA non utilisés</b>. ${h(cand.sp.name)} (${g.pa} PA) pourrait remplacer ${h(defs[idle[0]].name)}, jamais choisi.`, btn: "Remplacer", act: `data-act="spput" data-id="${cand.sp.id}" data-i="${idle[0]}"` });
+    else tips.push({ ico: cand.sp, txt: `Tour ${r.r} : <b>${left} PA non utilisés</b>. Un sort à ${g.pa} PA comme ${h(cand.sp.name)} pourrait les remplir.` });
+    break;
+  }
+  // 4) éléments qui ne profitent pas du profil
+  const pel = c.autoStat && STATS[c.autoStat] && STATS[c.autoStat].el;
+  if (pel && pel !== "n") {
+    const off = eq.map((x, i) => i).filter((i) => defs[i] && ATK_KINDS.includes(kinds[i]) && defs[i].el && defs[i].el !== "best" && defs[i].el !== pel && defs[i].el !== "n");
+    if (off.length) {
+      const sw = off.map((i) => ({ i, o: CLASSES[c.cls].spells.find((s) => s.pair === defs[i].pair && s.id !== defs[i].id && s.lvl <= c.lvl && (s.el === pel || s.el === "best")) })).find((x) => x.o);
+      tips.push({ ico: sw ? sw.o : defs[off[0]], txt: `${off.length} sort${off.length > 1 ? "s" : ""} ${[...new Set(off.map((i) => ELEMENTS[defs[i].el].name))].join(" / ")} ne profite${off.length > 1 ? "nt" : ""} pas de ton profil ${h(STATS[c.autoStat].name)}.${sw ? ` La variante de ${h(defs[sw.i].name)}, ${h(sw.o.name)}, est ${h(ELEMENTS[sw.o.el === "best" ? pel : sw.o.el].name)}.` : ""}`, btn: sw ? "Échanger" : "Voir", act: sw ? `data-act="spg" data-id="${sw.o.id}"` : `data-act="spsel" data-i="${off[0]}"` });
+    }
+  }
+  return tips.slice(0, 4);
+}
+function spPreviewHtml(c) {
+  const P = spPreviewOf(c); const mode = ui.spPrevMode || "hunt";
+  const head = `<div class="phead"><h2>Ce que fera ton héros</h2><span class="spchips">${[["hunt", "Chasse"], ["boss", "Boss"]].map(([k, n]) => `<button class="spc ${mode === k ? "on" : ""}" data-act="spprev" data-k="${k}">${n}</button>`).join("")}</span></div>`;
+  if (!P) return `${head}<div class="pad"><p class="small muted">Aperçu indisponible pour ce héros.</p></div>`;
+  const team = E.team(S); const withTeam = c.inTeam && !c.job && team.length > 1;
+  const rows = P.rounds.filter((r) => r.r <= P.endRound).map((r) => `<div class="sptn"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map((id) => { const sp = E.spellDef(c.cls, id); return sp ? `<span class="spcast" data-tip="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span>${h(sp.name)}</span></span>` : ""; }).join("") || `<span class="small muted">rien à lancer</span>`}
+    <span class="pips" data-tip="${r.pa}/${P.paMax} PA utilisés">${Array.from({ length: Math.min(P.paMax, 14) }, (_, i) => `<i class="${i < r.pa ? "" : "off"}"></i>`).join("")}</span></div><span class="tot">${r.dmg ? `≈ ${fmt(r.dmg)}` : ""}</span></div>`).join("");
+  const cnt = {}; c.spells.forEach((x) => { const sp = E.spellDef(c.cls, x.id); if (sp && ATK_KINDS.includes(spKindOf(c, sp))) { const el = sp.el && sp.el !== "best" ? sp.el : "n"; cnt[el] = (cnt[el] || 0) + 1; } });
+  const nAtk = Object.values(cnt).reduce((a, b) => a + b, 0) || 1;
+  const tips = spTips(c, P);
+  return `${head}<div class="pad stack" style="gap:8px">
+    <p class="xs muted">Contre ${h(P.label)} (${P.mons} monstre${P.mons > 1 ? "s" : ""})${withTeam ? ", avec ton équipe" : ", seul"} · ${P.paMax} PA par tour · joué par le vrai moteur de combat, dégâts moyens sur 3 combats.</p>
+    <div class="spturns">${rows}</div>
+    ${P.end ? `<p class="xs ${P.end === "win" ? "" : "muted"}">${P.end === "win" ? `Combat gagné au tour ${P.endRound}.` : `Combat perdu au tour ${P.endRound}.`}</p>` : ""}
+    <div class="spsum"><span>≈ <b>${fmt(P.total)}</b> dégâts sur ${P.endRound} tour${P.endRound > 1 ? "s" : ""}</span><span class="elbar" data-tip="Éléments des sorts d'attaque équipés">${Object.entries(cnt).map(([e, n]) => `<i style="width:${(n / nAtk) * 100}%;background:var(--el-${e})"></i>`).join("")}</span><span class="xs muted">${Object.entries(cnt).map(([e, n]) => `${ELEMENTS[e].name} ${n}`).join(" · ")}</span></div>
+    <div class="splab">Conseils</div>
+    <div class="sptips">${tips.length ? tips.map((t) => `<div class="sptip">${t.ico && spellImg(t.ico.name) ? `<img src="${spellImg(t.ico.name)}" alt="">` : ""}<span class="grow small">${t.txt}</span>${t.btn ? `<button class="btn sm" ${t.act}>${t.btn}</button>` : ""}</div>`).join("") : `<div class="sptip ok"><span class="grow small">Rien à signaler : tous les sorts servent et les PA sont bien utilisés.</span></div>`}</div>
+  </div>`;
+}
+/* « Ranger au mieux » : l'IA lance les sorts de soutien dans l'ordre de la barre, puis la meilleure attaque par PA ;
+   on essaie donc tous les ordres des sorts de soutien (5 au plus) et on garde celui qui fait le plus de dégâts dans l'aperçu */
+function spOptimize(c) {
+  const mode = ui.spPrevMode || "hunt"; const eq = c.spells.map((x) => ({ ...x }));
+  const isSup = (x) => { const sp = E.spellDef(c.cls, x.id); return sp && !ATK_KINDS.includes(spKindOf(c, sp)); };
+  const sup = eq.filter(isSup).slice(0, 5); const rest = eq.filter((x) => !sup.includes(x));
+  const perms = (a) => (a.length <= 1 ? [a] : a.flatMap((x, i) => perms(a.slice(0, i).concat(a.slice(i + 1))).map((p) => [x].concat(p))));
+  const score = (order) => { const P = E.spellPreview(S, c.id, mode, order, 2); return P ? P.total : 0; };
+  const cur = score(c.spells); let best = null, bestV = cur;
+  perms(sup).forEach((p) => { const order = p.concat(rest); const v = score(order); if (v > bestV * 1.01) { bestV = v; best = order; } });
+  return { best, gain: cur > 0 ? Math.round(((bestV - cur) / cur) * 100) : 0 };
+}
 function charSpellsView(c) {
   const eq = c.spells; const N = E.spellSlots(c);
   if ((ui.spSel || 0) >= Math.max(eq.length, 1) && (ui.spSel || 0) >= N) ui.spSel = 0;
@@ -2491,10 +2576,11 @@ function charSpellsView(c) {
   return `<div class="stack spells2">
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
   <div class="spgrid">
-    <div class="panel spbarp"><div class="phead"><h2>Barre de sorts</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span></div>
+    <div class="panel spbarp"><div class="phead"><h2>Barre de sorts</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span><span class="grow"></span>${ui.spUndo && ui.spUndo.cid === c.id ? `<button class="btn sm" data-act="spundo">↶ Annuler</button>` : ""}<button class="btn sm" data-act="spopt" data-tip="Essaie tous les ordres des sorts de soutien et garde celui qui fait le plus de dégâts dans l'aperçu">✨ Ranger au mieux</button></div>
       <div class="pad stack" style="gap:8px"><div class="spbar">${slots}</div>
       <p class="xs muted">En combat, le héros lance d'abord ses invocations, protections et soins (de gauche à droite, si leur condition est remplie), puis l'attaque qui fait le plus de dégâts par PA.${canHover ? " Glisse un sort pour changer sa place." : ""}</p></div></div>
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
+    <div class="panel spprevp">${spPreviewHtml(c)}</div>
     <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
       <div class="pad stack" style="gap:8px"><div class="sppairs">${grim}</div>
       <p class="xs muted">${canHover ? "Glisse un sort sur une case de la barre, ou clique dessus pour l'ajouter. Survole un sort pour lire sa fiche." : "Touche un sort pour l'ajouter à la barre ; si elle est pleine, il remplace le sort sélectionné."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
@@ -3415,11 +3501,17 @@ document.addEventListener("click", (ev) => {
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
     case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; if (j < 0 || j >= c.spells.length) return; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; ui.spSel = j; c.activePreset = null; c.spellsManual = true; break; }
-    case "sprem": c.spells.splice(+d.i, 1); ui.spSel = Math.max(0, Math.min(+d.i, c.spells.length - 1)); c.activePreset = null; c.spellsManual = true; break;
+    case "sprem": ui.spUndo = null; c.spells.splice(+d.i, 1); ui.spSel = Math.max(0, Math.min(+d.i, c.spells.length - 1)); c.activePreset = null; c.spellsManual = true; break;
     case "spsel": ui.spSel = +d.i; break;
+    case "spprev": ui.spPrevMode = d.k; break;
+    case "spput": { const r = spPlace(c, d.id, +d.i, true); if (r) { toast(r); return; } ui.spUndo = null; break; }
+    case "spopt": { const old = c.spells.map((x) => ({ ...x })); const r = spOptimize(c);
+      if (!r.best) { toast("La barre est déjà bien rangée pour ce combat."); return; }
+      c.spells = r.best; c.spellsManual = true; c.activePreset = null; ui.spUndo = { cid: c.id, spells: old }; ui.spSel = 0; toast(`Barre rangée : +${r.gain} % de dégâts sur 3 tours.`); break; }
+    case "spundo": if (ui.spUndo && ui.spUndo.cid === c.id) { c.spells = ui.spUndo.spells; c.activePreset = null; c.spellsManual = true; } ui.spUndo = null; break;
     case "spfilt": ui.spFilt = d.k; break;
-    case "spcondc": case "sptgtc": { const x = c.spells[ui.spSel || 0]; if (!x) return; x[a === "spcondc" ? "cond" : "tgt"] = d.k; c.activePreset = null; c.spellsManual = true; break; }
-    case "spg": { const i = c.spells.findIndex((x) => x.id === d.id); if (i >= 0) { ui.spSel = i; break; }
+    case "spcondc": case "sptgtc": { const x = c.spells[ui.spSel || 0]; if (!x) return; ui.spUndo = null; x[a === "spcondc" ? "cond" : "tgt"] = d.k; c.activePreset = null; c.spellsManual = true; break; }
+    case "spg": { const i = c.spells.findIndex((x) => x.id === d.id); if (i >= 0) { ui.spSel = i; break; } ui.spUndo = null;
       const full = c.spells.length >= E.spellSlots(c); const sel = ui.spSel || 0; const old = full && c.spells[sel] ? E.spellDef(c.cls, c.spells[sel].id) : null;
       const r = spPlace(c, d.id, sel); if (r) { toast(r); return; }
       const sp = E.spellDef(c.cls, d.id); const was = c.spells.length && old && !c.spells.some((x) => x.id === old.id) ? old : null;
@@ -3598,7 +3690,7 @@ document.addEventListener("dragover", (ev) => { const z = ev.target.closest && e
 document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("over"); });
 document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (!z || !S) return; const v = ev.dataTransfer.getData("text/plain"); if (!v.startsWith("sp:")) return; ev.preventDefault();
   const c = char(ui.cid); if (!c) return; const to = +z.dataset.spslot; const k = v.slice(3);
-  if (k[0] === "s") spMove(c, +k.slice(1), to); else { const r = spPlace(c, k.slice(1), to, "move"); if (r) toast(r); }
+  ui.spUndo = null; if (k[0] === "s") spMove(c, +k.slice(1), to); else { const r = spPlace(c, k.slice(1), to, "move"); if (r) toast(r); }
   dirty = true; render(); });
 document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-zone]"); if (!z || !S) return; ev.preventDefault(); const id = +ev.dataTransfer.getData("text/plain"); if (!id) return; ui.teamSel = null; msg(teamMove(id, z.dataset.zone)); dirty = true; render(); });
 

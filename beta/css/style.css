@@ -1721,3 +1721,26 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .gsp.off img{opacity:.5}
 .gsp.lock{cursor:not-allowed}.gsp.lock img{opacity:.35;filter:grayscale(.8)}
 .gsp .lv{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font-size:9px;font-weight:900;background:var(--panel);border-radius:4px;padding:0 3px;color:var(--muted);white-space:nowrap}
+/* 0.1.11.2 : aperçu des tours et conseils */
+.spgrid{grid-template-areas:"bar det" "prev det" "grim det"}
+.spprevp{grid-area:prev}
+@media (max-width:860px){.spgrid{grid-template-areas:"bar" "det" "prev" "grim"}}
+.spturns{display:flex;flex-direction:column;gap:7px}
+.sptn{display:grid;grid-template-columns:62px minmax(0,1fr) 64px;gap:10px;align-items:center}
+.sptn .tn{font-family:var(--font-title);color:var(--title);font-size:15px}
+.sptn .casts{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.sptn .tot{font-size:12px;font-weight:800;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.spcast{display:inline-flex;align-items:center;gap:5px;background:var(--panel2);border-radius:9px;padding:2px 8px 2px 2px;font-size:12px;font-weight:800}
+.spcast img{width:26px;height:26px;border-radius:6px}
+.pips{display:inline-flex;gap:2px;margin-left:4px}
+.pips i{width:7px;height:11px;border-radius:2px;background:#2f6fb0}
+.pips i.off{background:var(--panel3)}
+@media (max-width:600px){.sptn{grid-template-columns:48px minmax(0,1fr) 52px;gap:6px}.spcast{padding:1px;border-radius:7px}.spcast span{display:none}.spcast img{width:24px;height:24px}}
+.spsum{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.spsum b{font-size:15px}
+.elbar{display:flex;height:9px;width:140px;border-radius:5px;overflow:hidden;background:var(--panel3)}
+.elbar i{display:block;height:100%}
+.sptips{display:flex;flex-direction:column;gap:6px}
+.sptip{display:flex;align-items:center;gap:9px;border-radius:10px;padding:6px 9px;background:color-mix(in srgb,var(--danger) 9%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger) 35%,transparent)}
+.sptip.ok{background:color-mix(in srgb,var(--action) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--action) 40%,transparent)}
+.sptip img{width:26px;height:26px;border-radius:6px;flex:none}

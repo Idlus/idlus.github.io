@@ -1595,6 +1595,48 @@
     else if (!alive(F, "c").filter((x) => !x.summon).length) endFight(S, false);
   };
 
+  /* 0.1.11.2 : aperçu des 3 premiers tours d'un héros, joué par le vrai moteur de combat sur une copie de la partie
+     mode "hunt" : un groupe de sa zone de chasse (ou d'une zone de son niveau) · mode "boss" : la salle du boss d'un donjon de son niveau
+     spells : barre à tester (sinon celle du héros) · seeds : nombre de combats (dégâts moyens ; les lancers affichés sont ceux du 1er) */
+  E.spellPreview = (S, cid, mode, spells, seeds = 3) => {
+    const c0 = S.chars.find((x) => x.id === cid); if (!c0) return null;
+    const evLen = E.events.length; const rng0 = rnd; const base = JSON.stringify(S); let out = null;
+    try {
+      for (let k = 0; k < seeds; k++) {
+        let seed = 7919 * (k + 1);
+        rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        const S2 = JSON.parse(base); const c = S2.chars.find((x) => x.id === cid);
+        if (spells) c.spells = spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+        S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
+        if (!(c.inTeam && !c.job)) S2.chars.forEach((x) => (x.inTeam = x.id === cid));
+        c.job = null;
+        let label;
+        if (mode === "boss") {
+          const ids = Object.keys(DUNGEONS).filter((id) => DUNGEONS[id].lvl <= c.lvl + 5).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl);
+          const did = ids[0] || Object.keys(DUNGEONS)[0]; const dg = DUNGEONS[did];
+          S2.dungeon = { id: did, room: dg.rooms.length, stasis: 1, chain: 1, t: 0, syncLvl: c.lvl, mods: [], eliteRoom: -1 };
+          label = `${MONSTERS[dg.boss].name} (${dg.name})`;
+        } else {
+          let sid = S.hunting && S.sub && SUBS[S.sub] && SUBS[S.sub].lvl && Math.abs(SUBS[S.sub].lvl[1] - c.lvl) <= 30 ? S.sub : null;
+          if (!sid) sid = Object.keys(SUBS).filter((s) => SUBS[s].lvl && SUBS[s].monsters && SUBS[s].monsters.length).sort((a, b) => Math.abs((SUBS[a].lvl[0] + SUBS[a].lvl[1]) / 2 - c.lvl) - Math.abs((SUBS[b].lvl[0] + SUBS[b].lvl[1]) / 2 - c.lvl))[0];
+          S2.hunting = true; S2.sub = sid; label = SUBS[sid].name;
+        }
+        const F = E.startFight(S2); if (!F) return null;
+        const hi = F.ents.findIndex((e) => e.side === "c" && e.cid === cid && !e.summon); const he = F.ents[hi]; if (hi < 0) return null;
+        const rounds = [1, 2, 3].map((r) => ({ r, casts: [], pa: 0, dmg: 0 }));
+        let lastSeq = -1, dealt = 0;
+        const grab = () => {
+          F.fx.forEach((f) => { if (f.seq <= lastSeq) return; if (f.k === "cast" && f.s === hi && f.sp && F.round <= 3) { const d = E.spellDef(c.cls, f.sp); const g = d && E.spellGrade(d, c.lvl); rounds[F.round - 1].casts.push(f.sp); rounds[F.round - 1].pa += g ? g.pa : 0; } });
+          lastSeq = F.seq; if (F.round <= 3) { rounds[F.round - 1].dmg += (he.dealt || 0) - dealt; } dealt = he.dealt || 0;
+        };
+        for (let g = 0; g < 600 && !F.over && F.round <= 3; g++) { E.step(S2); grab(); }
+        const res = { mode, label, mons: F.ents.filter((e) => e.side === "m").length, paMax: he.st.pa, rounds, end: F.over ? F.result : null, endRound: Math.min(3, F.round), total: rounds.reduce((a, r) => a + r.dmg, 0) };
+        if (!out) out = res; else { out.rounds.forEach((r, i) => (r.dmgSum = (r.dmgSum || r.dmg) + res.rounds[i].dmg)); out.totalSum = (out.totalSum || out.total) + res.total; out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); res.rounds.forEach((r) => r.casts.forEach((id) => out.casted.add(id))); }
+      }
+      if (out) { out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); out.rounds.forEach((r) => (r.dmg = Math.round((r.dmgSum || r.dmg) / seeds))); out.total = Math.round((out.totalSum || out.total) / seeds); }
+    } finally { rnd = rng0; E.events.length = evLen; }
+    return out;
+  };
   /* Simulateur de dégâts (interface) : estimation par lancer et par tour contre une cible à « res » % de résistance */
   E.spellEstimate = (S, c, sp, res = 0) => {
     const st = E.charStats(S, c); const g = E.spellGrade(sp, c.lvl);
