@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.29.3";
+const GAME_VERSION = "0.1.29.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.29.4", name: "Héros disponible", items: [
+    "Métiers : le bouton « Envoyer un héros » propose d'abord un héros qui ne fait rien, puis un héros de l'équipe de chasse, puis seulement un héros qui récolte ailleurs. Celui qui récolte déjà sur ce métier n'est plus choisi par défaut",
+  ] },
   { v: "0.1.29.3", name: "Protecteur à portée", items: [
     "Protecteurs de ressources : le bouton « Combattre » n'est plus grisé quand vos héros récoltent. Il fait revenir les héros de l'équipe et lance la chasse, puis chacun reprend la récolte après le combat",
     "Le bandeau du protecteur explique ce que fera le bouton, et une bulle d'aide présente les protecteurs la première fois",
@@ -3903,6 +3906,12 @@ function giveSheet(uid) {
       return `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="muted xs">niv. ${c.lvl}</span><br>${deltaHtml(c, slot, uid)}</span><button class="btn sm primary" data-act="giveto" data-id="${c.id}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. trop bas" : "Équiper"}</button></div>`; }).join("")}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
+// « Envoyer un héros » depuis un métier : d'abord un héros libre, puis un chasseur, puis un héros qui récolte ailleurs, jamais celui déjà sur ce métier
+function gatherPick(job) {
+  const busy = S.dungeon || (E.expActive && E.expActive(S));
+  const rank = (c) => (c.job ? (c.job.job === job ? 5 : 4) : c.inTeam ? (busy ? 3 : 2) : (E.trainee(S) === c || E.atelierHero(S) === c ? 1 : 0));
+  return S.chars.reduce((b, c) => (rank(c) < rank(b) || (rank(c) === rank(b) && c.id === ui.cid) ? c : b)).id;
+}
 function gatherSheet() {
   const g = ui.gs; const c = char(g.cid) || S.chars[0]; g.cid = c.id;
   if (!g.job) g.job = c.job ? c.job.job : "bucheron";
@@ -4953,7 +4962,7 @@ document.addEventListener("click", (ev) => {
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
     case "qtab": ui.qt = d.v; ui.confirm = null; break;
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
-    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
+    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
     case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;
     case "gsres": ui.gs.res = d.v; gatherSheet(); return;
     case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }

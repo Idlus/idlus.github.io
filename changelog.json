@@ -1,6 +1,13 @@
 {
-  "version": "0.1.29.3",
+  "version": "0.1.29.4",
   "versions": [
+    {
+      "v": "0.1.29.4",
+      "name": "Héros disponible",
+      "items": [
+        "Métiers : le bouton « Envoyer un héros » propose d'abord un héros qui ne fait rien, puis un héros de l'équipe de chasse, puis seulement un héros qui récolte ailleurs. Celui qui récolte déjà sur ce métier n'est plus choisi par défaut"
+      ]
+    },
     {
       "v": "0.1.29.3",
       "name": "Protecteur à portée",
