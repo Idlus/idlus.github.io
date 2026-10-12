@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.31";
+const GAME_VERSION = "0.1.31.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.31.1", name: "Chat à sa place", items: [
+    "Le chat ne remonte plus tout en haut quand tu lis d'anciens messages : il reste où tu en es",
+    "Si de nouveaux messages arrivent pendant que tu lis plus haut, un bouton « Nouveaux messages » te ramène en bas",
+  ] },
   { v: "0.1.31", name: "Menus rangés", items: [
     "Toutes les pages sont rangées en cinq groupes : Jouer, Héros, Artisanat, Suivi et Communauté",
     "Sur PC, le menu est une colonne à gauche, avec le combat en cours tout en haut. Le bouton « à côté du logo la réduit aux icônes pour laisser la place au combat",
