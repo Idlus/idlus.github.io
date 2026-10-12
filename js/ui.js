@@ -641,7 +641,7 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi du jour", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.25 : page Défi du jour
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.25 : page Défi du jour
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
 ].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
@@ -4259,10 +4259,17 @@ function defiSheet(r) {
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
     ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
     ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (onLive() ? "Envoi au serveur pour le classement…" : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
-    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button><button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${r.win ? "" : `<button class="btn" data-tab="team">Changer d'équipe</button>`}<button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* ---------- 0.1.25 : page Défi du jour, carte de l'Accueil, ligne dans Donjons ---------- */
 const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
+/* récompense du coffre : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
+function defiReward(tid) {
+  const def = E.defi(tid); const dust = def.k * 2 + (def.k >= 4 ? 4 : 0);
+  const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
+  if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? r.kamas : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
+  return `${ui.dfEst.kamas ? `≈ ${fmt(ui.dfEst.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
+}
 const defiLeftTxt = () => dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "");
 function defiHomeCard() {
   if (!E.team(S).length) return "";
@@ -4273,7 +4280,7 @@ function defiHomeCard() {
   return `<section class="panel dfhome ${st.chest ? "done" : ""}"><div class="dfh-in">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
     <div class="grow dfh-txt"><span class="wk">${G("target")} Défi du jour <span class="xs muted">· palier ${h(T.name)} · nouveau dans ${defiLeftTxt()}</span></span>
       <span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span>${def.mods.map(modChip).join("")}</span>
-      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ coffre du jour ouvert" : `${IC("coffre")} coffre du jour à gagner`}</span></span></div>
+      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ coffre du jour ouvert" : `${IC("coffre")} coffre : ${defiReward(tid)}`}</span></span></div>
     <div class="dfh-btns"><button class="btn" data-tab="defi">Voir le défi</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}">${best ? "Battre mon record" : "Lancer le défi"}</button></div></div></section>`;
 }
 function defiLine() {
@@ -4287,24 +4294,21 @@ function renderDefi() {
   const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S);
   const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("");
   const goal = (n, lab, ok) => `<div class="df-goal ${ok ? "ok" : ""}"><div class="row between"><span class="small"><b>${n} jours de suite</b> · ${lab}</span><span class="xs num">${ok ? "✓ obtenu" : `${Math.min(streak, n)}/${n}`}</span></div><div class="bar"><i style="width:${ok ? 100 : pct(Math.min(streak, n), n)}%"></i></div></div>`;
-  const tiersCount = E.DEFI_TIERS.filter((T) => st.best[T.id]).length;
+  const rules = `<div class="panel"><div class="phead"><h2>${IC("quetes")} Comment ça marche</h2></div><div class="pad"><ul class="dglist small">
+      <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
+      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts ou de composition pour faire mieux.</li>
+      <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
+      <li>La première victoire du jour ouvre le coffre et fait avancer ta série.</li></ul></div></div>`;
   $("#main").innerHTML = `${defiBanner()}
   <section class="grid2" style="margin-top:14px">
-    <div class="panel"><div class="phead"><h2>${G("target")} Tes essais du jour</h2><span class="xs muted">${tiersCount ? `${tiersCount} palier${tiersCount > 1 ? "s" : ""} réussi${tiersCount > 1 ? "s" : ""}` : ""}</span></div>
-      <div class="pad stack" style="gap:6px">${tries || `<p class="note">Aucun essai aujourd'hui. Les essais sont illimités : seul ton meilleur score compte.</p>`}</div></div>
-    <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><span class="xs muted">meilleure : ${ss.best || 0} jour${(ss.best || 0) > 1 ? "s" : ""}</span></div>
-      <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<b class="num">${streak} jour${streak > 1 ? "s" : ""}</b></div>
-        <div class="small">${st.chest ? "✓ Coffre du jour ouvert. Reviens demain pour continuer la série." : `${IC("coffre")} Coffre du jour à la première victoire : des kamas et de la ${h(E.POUSSIERE)}.`}</div>
-        ${goal(7, `titre « ${h(E.DEFI_TITLE)} »`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi »", (ss.best || 0) >= 30)}</div></div>
+    <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
+      <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<span class="small"><b class="num">${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>
+        <div class="small">${st.chest ? "✓ Coffre du jour ouvert. Reviens demain pour continuer la série." : `${IC("coffre")} Coffre à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
+        ${goal(7, `titre « ${h(E.DEFI_TITLE)} »`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi »", (ss.best || 0) >= 30)}
+        <b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
+    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : rules}
   </section>
-  <section class="grid2" style="margin-top:14px">
-    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : ""}
-    <div class="panel"><div class="phead"><h2>${IC("quetes")} Comment ça marche</h2></div><div class="pad"><ul class="dglist small">
-      <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
-      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat.</li>
-      <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
-      <li>La première victoire du jour ouvre le coffre et fait avancer ta série.</li></ul></div></div>
-  </section>`;
+  ${ON ? `<section style="margin-top:14px">${rules}</section>` : ""}`;
   if (ON) defiLbFill(tid);
 }
 async function defiLbFill(tid) {
