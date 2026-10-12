@@ -2206,3 +2206,46 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .gearrow{display:flex;flex-wrap:wrap;gap:6px}
 @media (max-width:600px){.lbr{grid-template-columns:34px 30px minmax(0,1fr) auto;padding:7px 6px;gap:8px}.lbr .okv{display:none}.lbr.rec{grid-template-columns:minmax(0,1fr) auto}.podium{gap:6px}.pod .sc{font-size:11.5px}.pod .nm{font-size:13.5px}}
 @media (max-width:600px){.lbr>span:empty{display:none}}
+/* ===================== 0.1.17 — lot Bienvenue : affichage, bulles de découverte, recherche rapide ===================== */
+html{zoom:1}
+.nomotion *{animation:none!important;transition:none!important}
+.nomotion .cele-rays,.nomotion .fxb,.nomotion .ent .ring{display:none}
+:root.contrast{--muted:#4a3520;--line:rgba(107,69,36,.45);--frame:#4a2e14}
+:root.contrast[data-theme="dark"]{--muted:#e6dcc4;--line:rgba(245,234,210,.42);--frame:#a88a5a}
+.contrast .btn{box-shadow:inset 0 0 0 2px var(--frame),0 0 0 1px rgba(0,0,0,.25)}
+.contrast .small,.contrast .xs,.contrast .muted{font-weight:600}
+/* bulle de découverte : flotte en bas, ou pointe le bouton concerné (entouré d'or) */
+.wtip{position:fixed;z-index:95;left:50%;bottom:calc(var(--navh) + 18px);transform:translateX(-50%);width:min(360px,calc(100vw - 24px));background:var(--frame);color:#fff7e3;border:2px solid var(--gold);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.45);animation:wtipin .25s ease-out}
+:root[data-theme="dark"] .wtip{background:#f3d998;color:#221b13;border-color:#fff}
+.wtip .wt-h{display:flex;align-items:center;gap:6px;font-size:15px}.wtip .wt-h .uico{width:18px;height:18px}
+.wtip .wt-t{font-size:13.5px}
+.wtip .btn{box-shadow:none}.wtip .btn.go{background:var(--gold2);color:#3a2614;box-shadow:0 0 0 2px rgba(0,0,0,.25)}.wtip .btn.ghost{background:transparent;color:inherit;opacity:.85}
+.wtip::before{content:"";position:absolute;left:var(--ax,50%);border:9px solid transparent;transform:translateX(-50%);display:none}
+.wtip.below::before{display:block;top:-18px;border-bottom-color:var(--gold)}
+.wtip.above::before{display:block;bottom:-18px;border-top-color:var(--gold)}
+.wl-target{box-shadow:0 0 0 3px var(--gold2),0 0 0 8px rgba(228,185,85,.4)!important;border-radius:12px;position:relative;z-index:94}
+@keyframes wtipin{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1}}
+.wtip.below,.wtip.above{transform:none;animation:none;bottom:auto}
+.ck{width:16px;height:16px;border-radius:50%;flex:none;background:var(--panel3);box-shadow:inset 0 0 0 2px var(--line)}.ck.on{background:var(--action);box-shadow:inset 0 0 0 3px var(--panel)}
+/* recherche rapide */
+.wsearch-bg{position:fixed;inset:0;background:rgba(10,6,2,.55);z-index:92;display:flex;align-items:flex-start;justify-content:center;padding:max(8px,env(safe-area-inset-top,0px)) 8px 0}
+.wsearch{width:min(640px,100%);max-height:min(80vh,620px);margin-top:min(8vh,60px);background:var(--panel);border:3px solid var(--frame);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
+.wsin{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid var(--line)}
+.wsin .uico{width:22px;height:22px;flex:none;color:var(--gold)}
+.wsin input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:17px;font-weight:700;outline:none;padding:6px 0}
+.wsin input::-webkit-search-cancel-button{-webkit-appearance:none}
+.wsres{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:2px;min-height:60px}
+.wsg{font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 8px 3px}
+.wsr{display:flex;align-items:center;gap:10px;padding:6px 8px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
+.wsr:hover,.wsr.sel{background:var(--panel3);box-shadow:inset 0 0 0 2px var(--gold)}
+.wsr b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsr small{display:block;font-size:11.5px;color:var(--muted)}
+.wsr .grow{min-width:0}
+.wsr mark{background:transparent;color:inherit;text-decoration:underline;text-decoration-color:var(--gold);text-decoration-thickness:2px;text-underline-offset:2px}
+.wsgo{font-size:11.5px;font-weight:800;color:var(--gold);white-space:nowrap}
+.wsk{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex:none;background:var(--frame2)}
+.wsk.img{background:var(--panel3)}.wsk.img img{width:28px;height:28px;object-fit:contain}.wsk .uico{width:16px;height:16px}
+.wsk.k-dg{background:#8a5d33}.wsk.k-item{background:#2f86c6}.wsk.k-mon{background:#9b2c2c}.wsk.k-res{background:#4f8a2b}.wsk.k-page{background:#7a5bb0}.wsk.k-zone{background:#3f7f6b}.wsk.k-set{background:#1f6f9a}.wsk.k-dofus{background:#c77d1e}.wsk.k-idol{background:#9b4dff}.wsk.k-pet,.wsk.k-mount{background:#b0643c}.wsk.k-cons{background:#d27a9c}.wsk.k-ach{background:#c99a2e}
+.wsfoot{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding:6px 12px}
+.wsfoot kbd{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-right:2px;background:var(--panel2)}
+@media (max-width:640px){.wsearch{margin-top:0;max-height:calc(100vh - 16px)}.wsfoot span:not(:last-child){display:none}.wsfoot .grow{display:none}}
