@@ -16,9 +16,15 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.10";
+const GAME_VERSION = "0.1.10.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.10.1", name: "Récoltes et panoplies", items: [
+    "Protecteurs de ressources : en récoltant, un gardien de la ressource apparaît parfois (environ une récolte sur 60, jamais plus d'un à la fois). Il attend 15 minutes : « Combattre » le place dans le prochain combat de chasse, avec quelques monstres de la zone. Victoire : cette ressource rapporte ×2 pendant 20 minutes, +10 de la ressource et +3 Éclats de trouvaille. Désactivable dans les Options",
+    "Deux succès liés : « Gardien des récoltes » et « Fléau des protecteurs » (avec un titre)",
+    "Codes cadeaux : un champ « Code cadeau » dans les Options pour recevoir des kamas, ressources, objets, titres ou ornements offerts sur le Discord. Chaque code ne sert qu'une fois par partie",
+    "Carnet de panoplies (Inventaire › Panoplies) : toutes les panoplies, les pièces que vous avez ou non, où trouver chaque pièce manquante (recette, zone de chasse, donjon avec le taux), les bonus par palier, et un bouton pour mettre les pièces à fabriquer dans la liste de courses",
+    "Compositions d'équipe (page Équipe) : enregistrez jusqu'à 3 équipes (héros, première ligne et arrière, cible prioritaire) et changez d'équipe en un clic. La fiche d'un donjon propose vos compositions et marque celle qui l'a déjà gagné" ] },
   { v: "0.1.10", name: "Sorts signature", items: [
     "Sorts signature : 2 sorts par classe (38 en tout) ont maintenant une animation unique, liée à ce qu'ils font dans DOFUS : la Colère de Iop qui saute hors de l'écran, l'Attaque Mortelle qui fige le temps et coupe la cible en deux, le Sablier de Xélor qui rembobine, la machine à sous de Tout ou Rien, le mot censuré du Mot Interdit, la Mascarade au projecteur, la Mégabombe et son champignon, le portail géant de Cataclysme…",
     "Pendant un sort signature, les actions suivantes du combat attendent la fin de l'animation (une seconde environ) ; rien ne change aux gains",
@@ -651,7 +657,7 @@ function renderHomeInner() {
   const tabs = ""; // Aperçu / Havre-Sac : dans la barre de navigation depuis la 0.1.9.1
   if (ui.home === "havre") { $("#main").innerHTML = tabs + havreHtml(); return; }
   const q = E.questStep(S); const qp = E.questProgress(S); const A = E.almanax(S);
-  $("#main").innerHTML = tabs + `
+  $("#main").innerHTML = tabs + protBar() + `
   <section class="hero-banner">
     <div class="scene">${sceneSVG(deco, 220, "home" + (S.sub || ""))}<div class="troupe" style="justify-content:flex-end;padding-right:5%">${team.map((c) => `<span class="ent hero" style="width:clamp(54px,10vw,80px)"><span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span></span>`).join("")}</div></div>
     <div class="inner">
@@ -979,6 +985,10 @@ function dungeonsHtml() {
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
       <div class="dggrid">${list.map(dungeonCard).join("") || `<div class="empty">Aucun donjon dans ce filtre.</div>`}</div></div></section>`;
 }
+function compSuggest(did) {
+  const K = S.comps || []; if (!K.length) return ""; const cur = E.compMatch(S); const best = (S.compDg || {})[did];
+  return `<div class="compsug"><b>Composition</b> ${K.map((k, i) => `<button class="btn sm ${i === cur ? "primary" : ""}" data-act="compuse" data-i="${i}" data-dg="${did}" ${i === cur || S.dungeon ? "disabled" : ""}>${i === cur ? "✓ " : ""}${h(k.name)}${i === best ? ` <span class="xs">${G("star")} gagnante ici</span>` : ""}</button>`).join("")}</div>`;
+}
 function dungeonSheet(did) {
   const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
   const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(10, SI.max + 1)); ui.dgStasis = k;
@@ -996,6 +1006,7 @@ function dungeonSheet(did) {
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
       ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${sm.hp >= 30 ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${sm.hp >= 30 ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${sm.hp >= 30 ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
+      ${compSuggest(did)}
       ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de la semaine : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b>, jusqu'à lundi (encore ${weeklyLeft()}).</span></div>` : ""}
       ${fl ? `<div class="wkbox fl">${G("bolt")} <span><b>Mutateur éclair : ${h(fl.name)}</b> (${h(fl.desc.charAt(0).toLowerCase() + fl.desc.slice(1).replace(/\.$/, ""))}). En échange : <b>+${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.FLASH_DUST - 1) * 100)} % de poussière</b>. Change dans ${flashLeft()} ; une course commencée garde le bonus jusqu'au bout.</span></div>` : ""}
       <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}${FL && FL.mod === "ruse" ? "<li><i>+ une mécanique supplémentaire (mutateur éclair)</i></li>" : ""}</ul>
@@ -1071,7 +1082,7 @@ function renderCombat() {
   const team = E.team(S); const fs = E.freeSpirit(S);
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   if (!ui.combatCid || !team.find((c) => c.id === ui.combatCid)) ui.combatCid = team[0] && team[0].id;
-  const title = dg ? dg.name : S.hunting && sub ? sub.name : "Aucun combat";
+  const title = dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
   <div class="pagehead combathead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
@@ -1957,6 +1968,19 @@ function teamMove(cid, z) {
   if (z === "train") return E.setTraining(S, c.id);
   return null;
 }
+/* 0.1.10.1 : compositions d'équipe enregistrées (jusqu'à 3) */
+const FOCUS_N = { auto: "dangereux d'abord", low: "le plus faible", boss: "le boss" };
+function compsHtml() {
+  const K = S.comps || []; const cur = E.compMatch(S);
+  const cards = K.map((k, i) => { const hs = k.ids.map((id) => char(id)).filter(Boolean); const on = i === cur;
+    const f = hs.filter((c) => k.rows[c.id] === "f").length;
+    return `<div class="compcard ${on ? "on" : ""}"><div class="row" style="gap:6px"><input class="compname" data-act="compname" data-i="${i}" value="${h(k.name)}" maxlength="24" aria-label="Nom de la composition">${on ? `<span class="tag good">active</span>` : ""}</div>
+      <div class="row comph">${hs.map((c) => head(c)).join("")}</div>
+      <div class="xs muted">${hs.length} héros · ${k.auto ? "placement automatique" : `${f} devant, ${hs.length - f} derrière`} · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}</div>
+      <div class="row" style="gap:6px"><button class="btn sm ${on ? "" : "primary"}" data-act="compuse" data-i="${i}" ${on || S.dungeon ? "disabled" : ""}>Utiliser</button><button class="btn sm" data-act="compsave" data-i="${i}" data-tip="Remplacer par l'équipe actuelle (héros, rangées et cible)">Mettre à jour</button><button class="btn sm" data-act="compdel" data-i="${i}" title="Supprimer">✕</button></div></div>`; }).join("");
+  const add = K.length < E.COMP_MAX ? `<button class="compcard add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe actuelle<span class="xs muted">héros, rangées et cible prioritaire</span></button>` : "";
+  return `<section class="comps"><div class="row between"><h3 class="sec" style="margin:0">Compositions</h3><span class="xs muted">${K.length}/${E.COMP_MAX} · un clic pour changer d'équipe</span></div><div class="compgrid">${cards}${add}</div></section>`;
+}
 function renderTeam() {
   const al = teamAlerts(true); const team = E.team(S); const board = !!ui.teamBoard;
   const by = (z) => S.chars.filter((c) => teamZone(c) === z).length; const fs = E.frontSet(S);
@@ -1967,6 +1991,7 @@ function renderTeam() {
   <section class="tsum"><div class="k"><b class="num">${team.length} / 8</b><span>en équipe</span></div><div class="k"><b class="num">${team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–"}</b><span>niveau moyen</span></div>
     <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
     ${S.chars.length < 8 ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
+  ${board ? "" : compsHtml()}
   ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
 }
 function renderHeroes() {
@@ -2501,13 +2526,49 @@ function renderInventory() {
     body = resTabHtml();
   } else if (ui.inv === "cons") {
     body = `<section class="panel"><div class="pad">${consHtml()}</div></section>`;
+  } else if (ui.inv === "sets") {
+    body = setsBookHtml();
   } else {
     body = `<section class="panel"><div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); return `<div class="li">${sIco(i.stat)}<span class="grow"><span class="name">${E.runeName(k)}</span> <span class="muted xs">+${i.pts} ${STATS[i.stat].name} · poids ${i.weight}</span></span><span class="num">${fmt(q)}</span></div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets dans les Ateliers pour en obtenir.</div>`}</div></section>`;
   }
   const nc = Object.values(S.cons || {}).reduce((a, b) => a + b, 0);
   $("#main").innerHTML = `<div class="pagehead"><h1>Inventaire</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
-    <nav class="subtabs">${[["items", "Équipements"], ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}">${n}</button>`).join("")}</nav>
+    <nav class="subtabs">${[["items", "Équipements"], ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["sets", "Panoplies"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}">${n}</button>`).join("")}</nav>
     <div class="stack">${body}</div>`;
+}
+/* 0.1.10.1 : carnet de panoplies */
+function srcTxt(x) {
+  if (x.k === "craft") return `${G("metiers")} Recette ${h(CRAFT_JOBS[x.job].name)} niv. ${x.lvl}`;
+  const M = MONSTERS[x.mon]; const where = [...x.subs.map((sid) => E.SUBS[sid].name), ...x.dgs.map((d) => DUNGEONS[d].name)].slice(0, 2);
+  return `${x.k === "boss" ? "Boss" : "Butin"} : ${h(M.name)} (${x.p} %)${where.length ? ` · ${h(where.join(", "))}` : ""}`;
+}
+function setsBookHtml() {
+  const F = ui.setF || (ui.setF = { mode: "known", q: "", cid: null });
+  const c = (F.cid && char(F.cid)) || mainHero(); const owned = E.ownedTpls(S); const main = CLASSES[c.cls].main;
+  const worn = E.setCounts(S, c);
+  let sets = Object.keys(SETS).filter((id) => E.setPieces(id).length);
+  if (F.mode === "known") sets = sets.filter((id) => E.setKnown(S, id, owned));
+  if (F.mode === "hero") sets = sets.filter((id) => { const L = E.setLvl(id); if (L > c.lvl || L < c.lvl - 40) return false;
+    const ks = new Set(E.setPieces(id).flatMap((t) => Object.keys(ITEMS[t].stats))); return ks.has(main) || !["fo", "ine", "cha", "age"].some((k) => ks.has(k)); });
+  if (F.q) { const q = F.q.toLowerCase(); sets = sets.filter((id) => SETS[id].name.toLowerCase().includes(q) || E.setPieces(id).some((t) => ITEMS[t].name.toLowerCase().includes(q))); }
+  const have = (id) => E.setPieces(id).filter((t) => owned[t]).length;
+  sets.sort((a, b) => (worn[b] || 0) - (worn[a] || 0) || have(b) / E.setPieces(b).length - have(a) / E.setPieces(a).length || E.setLvl(b) - E.setLvl(a));
+  const total = sets.length; sets = sets.slice(0, 30);
+  const card = (id) => { const P = E.setPieces(id); const n = have(id); const miss = P.filter((t) => !owned[t]); const craftMiss = miss.filter((t) => ITEMS[t].craft);
+    const tiers = Object.entries(SETS[id].bonus).sort((a, b) => +a[0] - +b[0]);
+    return `<section class="panel"><div class="phead"><div><h2>${h(SETS[id].name)}</h2><span class="xs muted">niv. ${E.setLvl(id)} · ${n} / ${P.length} pièces dans le sac${worn[id] ? ` · ${worn[id]} portée${worn[id] > 1 ? "s" : ""} par ${h(c.name)}` : ""}</span></div>
+      ${craftMiss.length ? `<button class="btn sm" data-act="setshop" data-id="${id}" data-tip="Ajoute les ${craftMiss.length} pièce${craftMiss.length > 1 ? "s" : ""} fabricable${craftMiss.length > 1 ? "s" : ""} qui manquent à la liste de courses">${G("cart")} Pièces manquantes</button>` : ""}</div>
+      <div class="list">${P.map((t) => { const T = ITEMS[t]; const ok = !!owned[t]; const src = ok ? [] : E.itemSources(t).slice(0, 2);
+        return `<div class="li" style="align-items:flex-start;${ok ? "" : "opacity:.92"}"><span class="icobox ${rarCls(t)}" style="${ok ? "" : "filter:grayscale(.7)"}">${im(itemImg(t), "", T.name)}</span><span class="grow"><b class="iname ${rarCls(t)}">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}</span>
+          <div class="xs ${ok ? "plus" : "muted"}">${ok ? `✓ dans le sac${owned[t] > 1 ? ` (×${owned[t]})` : ""}` : src.map(srcTxt).join("<br>") || "Source inconnue"}</div></span>
+          ${!ok && T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${t}" data-tip="Ajouter à la liste de courses">${G("cart")}${S.shop.some((e) => e.id === t) ? " ✓" : ""}</button>` : ""}</div>`; }).join("")}</div>
+      <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statLine(sk, v)).join(", ")}</div>`).join("") || `<span class="muted">Aucun bonus de panoplie.</span>`}</div></section>`; };
+  return `<p class="note">Chaque panoplie avec ses pièces : celles que vous avez, celles qui manquent et où les obtenir. Les pièces fabricables peuvent aller dans la liste de courses de l'Accueil.</p>
+    <div class="row invbar"><input type="text" id="setSearch" data-act="setsearch" placeholder="Rechercher une panoplie ou une pièce…" value="${h(F.q)}">
+      <select data-act="setmode" aria-label="Filtre">${[["known", "Panoplies connues"], ["hero", "Adaptées au héros"], ["all", "Toutes"]].map(([v, n]) => `<option value="${v}" ${F.mode === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+      <select data-act="setcid" aria-label="Héros">${S.chars.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.name)} (${h(CLASSES[x.cls].name)} ${x.lvl})</option>`).join("")}</select>
+      <span class="muted small num">${total} panoplie${total > 1 ? "s" : ""}${total > 30 ? " · 30 premières" : ""}</span></div>
+    <div class="stack">${sets.map(card).join("") || `<div class="empty">Aucune panoplie ici. Essayez le filtre « Toutes ».</div>`}</div>`;
 }
 /* ---------- infobulles ---------- */
 function tipItemHtml(uid) {
@@ -2578,6 +2639,15 @@ function toolHtml(id) {
     ${ingHtml(R.ing)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
     <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? G("cart") + " ✓" : G("cart")}</button></div></div>`;
 }
+/* 0.1.10.1 : protecteur de ressources (bandeau Métiers, Accueil et combat) */
+function protBar() {
+  const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > Date.now() ? S.protBoost : null;
+  let out = "";
+  if (P) { const err = P.fighting ? null : E.protCanFight(S); const M = MONSTERS[P.mon];
+    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - Date.now()) / 1000)}.`}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>Combattre</button>`}</div>`; }
+  if (B) out += `<div class="awaitbar" style="margin:0">${G("sparkle")} Protecteur vaincu : récolte de <b>${h(B.res)}</b> ×2 encore ${dur((B.until - Date.now()) / 1000)}</div>`;
+  return out;
+}
 function recolteHtml() {
   const workers = S.chars.filter((c) => c.job);
   const fil = S.filon && S.filon.until > Date.now() ? S.filon : null;
@@ -2591,7 +2661,8 @@ function recolteHtml() {
         ${toolHtml(id)}
         <div class="xs muted">Ressources : ${J.items.map(([r, l]) => `<span style="${l > s.lvl ? "opacity:.5" : ""}">${h(r)} (${l})</span>`).join(" · ")}${nextRes ? ` — prochaine : ${h(nextRes[0])} au niveau ${nextRes[1]}` : ""}</div>
       </div></div>`; }).join("");
-  return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter la ressource de son choix. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). De temps en temps, un filon rare double le rendement d'une ressource pendant 10 minutes.</p>
+  return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter la ressource de son choix. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). De temps en temps, un filon rare double le rendement d'une ressource pendant 10 minutes, et un protecteur de ressources peut surgir : battez-le avec l'équipe pour doubler la récolte 20 minutes.</p>
+    ${protBar()}
     ${fil ? `<div class="awaitbar" style="margin:0">${G("sparkle")} Filon de <b>${h(fil.res)}</b> : rendement ×2 encore ${dur((fil.until - Date.now()) / 1000)}</div>` : ""}
     <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `${IC("pioche")} ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)}` : c.inTeam ? IC("combat") + " Chasse avec l'équipe" : restLabel(c)}</span></span>
       ${c.job ? `<button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler</button>` : `<button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}</div>`).join("")}</div></section>
@@ -2874,6 +2945,8 @@ function optionsSheet() {
       <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]].map(([v, n]) => `<button data-act="setanim" data-v="${v}" aria-pressed="${animLvl() === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
       <label class="row"><input type="checkbox" data-act="setdecofx" ${S.settings.decofx !== false ? "checked" : ""}> <span><b>Effets de décor</b> <span class="muted">(météo et premier plan dans l'arène ; à couper sur un appareil lent)</span></span></label>
+      <label class="row"><input type="checkbox" data-act="setprot" ${!S.settings.protOff ? "checked" : ""}> <span><b>Protecteurs de ressources</b> <span class="muted">(un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min)</span></span></label>
+      <div class="stack" style="gap:6px"><div><b>Code cadeau</b> <span class="muted">(donné sur le Discord ; un code par partie)</span></div><div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${Object.keys(S.gifts || {}).length ? `<span class="xs muted">${Object.keys(S.gifts).length} code${Object.keys(S.gifts).length > 1 ? "s" : ""} déjà utilisé${Object.keys(S.gifts).length > 1 ? "s" : ""}</span>` : ""}</div>
       ${notifOptionsHtml()}
       <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
@@ -3100,6 +3173,7 @@ document.addEventListener("click", (ev) => {
     case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
     case "tool": msg(E.upgradeTool(S, d.job)); break;
+    case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
     case "shoppin": { const i = S.shop.findIndex((e) => e.k === d.k && e.id === d.id); if (i >= 0) { S.shop.splice(i, 1); toast("Retiré de la liste de courses."); } else { S.shop.push({ k: d.k, id: d.id }); toast("Ajouté à la liste de courses (Accueil)."); } break; }
     case "shopdel": S.shop.splice(+d.i, 1); break;
     case "rescat": ui.resCat = d.v; break;
@@ -3144,6 +3218,8 @@ document.addEventListener("click", (ev) => {
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
+    case "gift": { const r = E.redeemGift(S, ($("#giftCode") || {}).value || ""); if (r.err) { toast(r.err); return; } dirty = true; saveNow(); closeSheet(); render(); return; } /* la note « rare » du moteur s'affiche déjà en bulle */
+    case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast("L'équipe affrontera le protecteur au prochain combat."); break; }
     case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
@@ -3194,6 +3270,9 @@ document.addEventListener("click", (ev) => {
       ui.teamSel = ui.teamSel === +d.id ? null : +d.id; break; }
     case "teamdrop": { if (ui.teamSel == null) return; const id = ui.teamSel; ui.teamSel = null; msg(teamMove(id, d.v)); dirty = true; break; }
     case "teammove": msg(teamMove(+d.id, d.v)); dirty = true; break;
+    case "compsave": { const i = +d.i; const r = E.saveComp(S, i, i >= 0 ? null : null); if (r) { toast(r); return; } toast(i >= 0 ? "Composition mise à jour." : "Équipe enregistrée."); dirty = true; break; }
+    case "compdel": { E.delComp(S, +d.i); dirty = true; break; }
+    case "compuse": { const r = E.applyComp(S, +d.i); if (r.err) { toast(r.err); return; } toast(`Composition « ${S.comps[+d.i].name} » en place.${r.moved.length ? ` ${r.moved.join(", ")} ${r.moved.length > 1 ? "reviennent" : "revient"} dans l'équipe.` : ""}`); dirty = true; if (d.dg) { dungeonSheet(d.dg); renderNav(); return; } break; }
     case "setrow": { const r = E.setRow(S, +d.id, d.v); if (r) { toast(r); return; } dirty = true; break; }
     case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
     case "lossplace": ui.tab = "heroes"; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
@@ -3289,6 +3368,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "simres") ui.simRes = +t.value;
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }
+  else if (a === "compname") { const k = (S.comps || [])[+t.dataset.i]; if (k) k.name = (t.value.trim() || k.name).slice(0, 24); dirty = true; return; }
+  else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }
   else if (a === "setnotif") { S.settings.notif = S.settings.notif || {}; S.settings.notif[t.dataset.k] = t.checked; dirty = true; return; }
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
@@ -3317,6 +3398,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "fmsort") ui.fmF.sort = t.value;
   else if (a === "fmcid") ui.fmF.cid = t.value;
   else if (a === "invsort") ui.invSort = t.value;
+  else if (a === "setmode") ui.setF.mode = t.value;
+  else if (a === "setcid") ui.setF.cid = +t.value;
   else return;
   dirty = true; render();
 });
@@ -3324,6 +3407,7 @@ document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "fmsearch") { ui.fmF.q = t.value; const pos = t.selectionStart; renderForge(); const n = $("#fmSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act !== "craftsearch") return;
   ui.craftSearch = t.value; const pos = t.selectionStart; renderMetiers(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
