@@ -4,7 +4,7 @@
 const VERSION = "3.4.0";
 /* La version de test (/beta/) a ses propres caches : chaque service worker ne nettoie que les siens. */
 const P = /\/beta\/$/.test(self.registration.scope) ? "idlus-beta-" : "idlus-";
-const CORE = P + "core-" + VERSION, MEDIA = P + "media-v2";
+const CORE = P + "core-" + VERSION, MEDIA = P + "media-v3";
 const PRECACHE = ["./", "index.html", "css/style.css", "js/gamedata.js", "js/looks.js", "js/data.js", "js/engine.js", "js/systems.js", "js/ui.js", "js/admin.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CORE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
