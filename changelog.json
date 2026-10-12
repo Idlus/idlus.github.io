@@ -1,6 +1,15 @@
 {
-  "version": "0.1.13.1",
+  "version": "0.1.13.2",
   "versions": [
+    {
+      "v": "0.1.13.2",
+      "name": "Classes et donjons",
+      "items": [
+        "Laboratoire du Tynril : le Tynril Ahuri ne résiste plus à moitié au Feu, à l'Eau et à l'Air en plus de ses Quatre humeurs, et les monstres du donjon sont un peu moins forts",
+        "Cache de Kankreblath : Kankreblath ne frappe plus toute l'équipe à chaque tour, et les monstres du donjon sont un peu moins forts ; un boss n'a plus qu'un seul moyen de se soigner",
+        "Classes plus proches les unes des autres : Xélor, Huppermage, Enutrof et Eniripsa plus forts à haut niveau, Éliotrope plus fort vers le niveau 50 ; Écaflip et Roublard moins forts vers le niveau 50, Ouginak et Éliotrope moins forts à haut niveau"
+      ]
+    },
     {
       "v": "0.1.13.1",
       "name": "Dofus à leur place",

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.13.2 « Classes et donjons » (bêta)
+- Tynril et Kankreblath adoucis ; classes plus proches les unes des autres (Xélor, Huppermage, Enutrof, Eniripsa, Éliotrope, Écaflip, Roublard, Ouginak).
+
 ## 0.1.13.1 « Dofus à leur place » (bêta)
 - Chaque Dofus tombe du boss qui lui correspond dans DOFUS (Cawotte : Tournesol Affamé, Dokoko : Arbre de Moon, Kaliptus : Koulosse, Émeraude : Crocabulia, Turquoise : Dame des Eaux, Domakuro : Maître Corbac, Glaces : Missiz Frizz, Argenté Scintillant : Ilyzaelle) ; les quêtes suivent.
 

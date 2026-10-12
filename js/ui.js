@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.13.1";
+const GAME_VERSION = "0.1.13.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.13.2", name: "Classes et donjons", items: [
+    "Laboratoire du Tynril : le Tynril Ahuri ne résiste plus à moitié au Feu, à l'Eau et à l'Air en plus de ses Quatre humeurs, et les monstres du donjon sont un peu moins forts",
+    "Cache de Kankreblath : Kankreblath ne frappe plus toute l'équipe à chaque tour, et les monstres du donjon sont un peu moins forts ; un boss n'a plus qu'un seul moyen de se soigner",
+    "Classes plus proches les unes des autres : Xélor, Huppermage, Enutrof et Eniripsa plus forts à haut niveau, Éliotrope plus fort vers le niveau 50 ; Écaflip et Roublard moins forts vers le niveau 50, Ouginak et Éliotrope moins forts à haut niveau" ] },
   { v: "0.1.13.1", name: "Dofus à leur place", items: [
     "Chaque Dofus tombe maintenant du boss qui lui correspond dans DOFUS : Cawotte dans la Grange du Tournesol Affamé (les champs), Dokoko à l'Arbre de Moon, Kaliptus chez le Koulosse (Koalaks), Émeraude chez Crocabulia, Turquoise (dragon de l'Eau) chez la Dame des Eaux, Domakuro chez le Maître Corbac, Dofus des Glaces chez Missiz Frizz, Argenté Scintillant chez la déesse Ilyzaelle",
     "Les quêtes de ces Dofus mènent à ces mêmes donjons ; la fiche de chaque donjon montre son Dofus",
