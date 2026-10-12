@@ -1,0 +1,32 @@
+name: Sonde des Dofus
+# Importe les Dofus et trophées depuis DofusDB (inaccessible depuis l'espace de travail de Claude)
+# et dépose le résultat dans tools/probe/dofus/ sur la branche de travail. Ne touche ni à main ni à beta.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/project-thread-4c70nw']
+    paths: ['tools/probe_dofus.py', '.github/workflows/probe_dofus.yml']
+permissions:
+  contents: write
+concurrency: { group: sonde-dofus, cancel-in-progress: true }
+jobs:
+  sonde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Import DofusDB
+        run: |
+          for i in 1 2; do python3 tools/import_dofusdb.py items item-types effects; done
+      - name: Sonde
+        run: python3 tools/probe_dofus.py
+      - name: Dépôt sur la branche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add tools/probe/dofus
+          git commit -m "Sonde des Dofus : import DofusDB" || echo "rien à committer"
+          git pull --rebase origin claude/project-thread-4c70nw
+          git push
