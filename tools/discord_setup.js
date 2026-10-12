@@ -1,7 +1,7 @@
 /* Met en place le serveur Discord d'idlus avec un robot : catégories, salons, rôles, permissions, textes d'accueil, communauté et accueil des nouveaux.
    On peut le relancer sans risque : il ne crée que ce qui manque, retrouve les salons par leur nom et n'écrit que dans les salons vides.
    Usage : DISCORD_BOT_TOKEN=... [DISCORD_GUILD_ID=...] node tools/discord_setup.js   (sans jeton : affiche seulement le plan) */
-const TOKEN = process.env.DISCORD_BOT_TOKEN; const API = process.env.DISCORD_API || "https://discord.com/api/v10";
+const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GAME = "https://mathiss29.github.io/idlus/", BETA = GAME + "beta/", INVITE = "https://discord.gg/9ApPgWjPUM";
 const P = { VIEW: 1n << 10n, SEND: 1n << 11n, PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n };
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
@@ -78,19 +78,8 @@ const PLAN = [
     { key: "NOTES", name: "notes", topic: "Notes privées" } ] },
 ];
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function api(method, path, body) {
-  for (let i = 0; i < 6; i++) {
-    const res = await fetch(API + path, { method, headers: { Authorization: "Bot " + TOKEN, "Content-Type": "application/json", "User-Agent": "idlus-setup (github.com/Mathiss29/idlus, 1)" }, body: body ? JSON.stringify(body) : undefined });
-    if (res.status === 429) { const j = await res.json(); await sleep((j.retry_after || 1) * 1000 + 100); continue; }
-    const txt = await res.text(); const data = txt ? JSON.parse(txt) : null;
-    if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${txt.slice(0, 300)}`);
-    return data;
-  }
-  throw new Error(`${method} ${path} : trop de limitations de débit`);
-}
+const { api, norm } = require("./discord_api.js");
 const fill = (s, ids) => s.replace(/<#([A-Z]+)>/g, (m, k) => (ids[k] ? `<#${ids[k]}>` : "#" + k.toLowerCase()));
-const norm = (s) => s.toLowerCase().normalize("NFC");
 
 function overwrites(g, roles, sect, ch) {
   const ow = []; const lock = ch.lock ?? sect.lock; const deny = (lock ? P.SEND | P.PUB_THREADS | P.PRIV_THREADS : 0n) | (sect.only ? P.VIEW : 0n);
@@ -109,6 +98,7 @@ async function main() {
   let gid = process.env.DISCORD_GUILD_ID;
   if (!gid) { const gs = await api("GET", "/users/@me/guilds"); if (gs.length !== 1) throw new Error(`Le robot est sur ${gs.length} serveurs : précise DISCORD_GUILD_ID.`); gid = gs[0].id; }
   const guild = await api("GET", `/guilds/${gid}`); console.log("Serveur :", guild.name);
+  if (!guild.icon) { await api("PATCH", `/guilds/${gid}`, { icon: "data:image/png;base64," + require("fs").readFileSync(__dirname + "/../icons/icon-512.png").toString("base64") }); console.log("Icône du serveur mise en place."); }
 
   const roles = {}; const have = await api("GET", `/guilds/${gid}/roles`);
   for (const r of ROLES) {
