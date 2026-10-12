@@ -2669,3 +2669,26 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .adm .gc-use{display:flex;flex-direction:column;gap:2px;font-size:13px;min-width:90px;font-variant-numeric:tabular-nums}
 .adm .gc-bar{display:block;height:6px;border-radius:9px;background:var(--panel3);overflow:hidden}.adm .gc-bar i{display:block;height:100%;background:var(--gold)}
 .adm .gc-users{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;font-size:13px}.adm .gc-users span{background:var(--panel2);border-radius:8px;padding:2px 8px}
+/* 0.1.26.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons */
+.dfhome{margin-top:14px;border:1.5px solid rgba(var(--glw),.6);background:linear-gradient(100deg,rgba(var(--glw),.16),rgba(var(--glw),.03) 60%),var(--panel)}
+.dfhome.done{border-color:var(--line)}
+.dfh-in{display:flex;gap:12px;align-items:center;padding:10px 14px}
+.dfh-in .dgboss{width:52px;height:52px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.dfh-txt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dfhome .wk,.dfline .wk{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--gold2);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.dfhome .wk .xs{text-transform:none;letter-spacing:0;font-weight:600}
+.dfhome .df-name{gap:6px;flex-wrap:wrap;align-items:center}
+.dfh-st{gap:10px;flex-wrap:wrap;align-items:center}
+.dfh-btns{display:flex;gap:8px;flex:none}
+.dfline{display:flex;gap:10px;align-items:center;width:100%;padding:9px 12px;border-radius:12px;background:var(--panel2);border:1.5px solid rgba(var(--glw),.5);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.dfline:hover{border-color:rgba(var(--glw),.9)}
+.dfline .chev{font-size:18px;color:var(--muted)}
+.df-goal .bar{margin-top:4px}
+.df-goal.ok b{color:var(--gold2)}
+@media (max-width:640px){
+  .dfh-in{flex-wrap:wrap;align-items:flex-start}
+  .dfh-in .dgboss{width:42px;height:42px}
+  .dfh-txt{flex:1 1 200px}
+  .dfh-btns{width:100%}
+  .dfh-btns .btn{flex:1}
+}
