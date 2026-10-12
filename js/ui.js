@@ -16,9 +16,15 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.2.3";
+const GAME_VERSION = "3.3.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.3.0", name: "Combat vivant", items: [
+    "Placement de l'équipe (onglet Héros) : chaque héros est en première ligne ou à l'arrière. Les monstres visent la première ligne 3 fois sur 4 tant qu'elle tient debout. Placement automatique par défaut (les héros les plus solides devant), modifiable à la main",
+    "Monstres à mécanique spéciale : les Rôdeurs (Bwork Archer, Chafers furtifs, Corbacs…) visent l'arrière, les Bondisseurs (Tofus, Moskitos, Kwaks de Vent) ignorent les rangées",
+    "Monstres Champions en chasse : environ un combat sur 100, un monstre devient Champion (PV ×2, dégâts +20 %, un pouvoir parmi six). Récompense : XP ×3, butin ×2, une ressource garantie et deux fois plus de chances de Rayonnant. Quatre succès, jusqu'à 1 000 Champions",
+    "Un décor pour chacun des 28 donjons, salle du boss plus sombre avec des torches, et météo en chasse (pluie, neige, lucioles, sable) ; option « Effets de décor » pour les appareils lents",
+    "Pourquoi j'ai perdu ? signale un héros fragile tombé en première ligne, avec un bouton vers le placement ; la notification « Évènement rare » couvre aussi les Champions" ] },
   { v: "3.2.3", name: "Répartition au choix", items: [
     "Répartition des points : choisissez Automatique ou Manuelle pour chaque héros (onglet Caractéristiques). En manuel, des boutons −1 et −10 rendent les points sans frais, et une pastille rouge sur l'onglet signale les points qui restent à placer",
     "Passer en manuel garde les points déjà placés ; revenir en automatique retrouve la caractéristique choisie avant" ] },
@@ -133,7 +139,9 @@ const GL = {
   frame: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>',
   pin: '<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',
-  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>' };
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  shield: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>',
+  crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>' };
 const GLF = { flame: '<path fill="#ffb347" stroke="#c2410c" stroke-width="1.2" d="M12 2.5c1 3.5 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.4.3 1.8 1.2 2.9 2.4 3.3-.6-3.3-.3-6.3.5-8.9z"/><path fill="#ffe08a" d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.8 1.6-2.6 2.1-4.2 1.2 1.2 3.1 2.2 3.1 4.2A2.6 2.6 0 0 1 12 21z"/>',
   sparkle: '<path fill="#e2f5ae" stroke="none" d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/><path fill="#dcbb74" stroke="none" d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>' };
 const G = (n, c = "") => GLF[n] ? `<svg class="uico ${c}" viewBox="0 0 24 24" aria-hidden="true">${GLF[n]}</svg>` : `<svg class="uico gl ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GL[n] || ""}</svg>`;
@@ -279,9 +287,47 @@ const DECOS = {
   dungeon:{ day: { sky: ["#6e2420", "#c0592f"], far: "#4a2a24", near: "#33201c", d: "pillars" }, night: { sky: ["#1e0b0d", "#4a1715"], far: "#2a1513", near: "#1a0d0c", d: "pillars" } },
 };
 const isDark = () => true; // thème unique « Krosmoz doré »
+/* 3.3.0 : un décor par donjon (palette + motif), même rendu de jour et de nuit */
+const DGD = (sky, far, near, d) => { const v = { sky, far, near, d }; return { day: v, night: v }; };
+Object.assign(DECOS, {
+  dg_crypte:   DGD(["#1b1428", "#3e2f55"], "#2e2440", "#221a30", "tombs"),
+  dg_grange:   DGD(["#2a2050", "#c98a4a"], "#8a6a30", "#6a4f22", "barn"),
+  dg_sable:    DGD(["#2d5578", "#e8c690"], "#c9a768", "#a8874e", "castle"),
+  dg_bouftou:  DGD(["#1f3a66", "#7fb0d8"], "#4f8a3c", "#3c6e2c", "fence"),
+  dg_kankre:   DGD(["#1a1612", "#4a3a2a"], "#3a2e22", "#2a2018", "rocks"),
+  dg_tofus:    DGD(["#30406e", "#e6c56a"], "#7aa84a", "#5a8a36", "feathers"),
+  dg_squel:    DGD(["#1d1530", "#4a3466"], "#33264a", "#251b38", "tombs"),
+  dg_scara:    DGD(["#1e3a1c", "#5e8a3a"], "#2f5a26", "#22441c", "leaves"),
+  dg_bworks:   DGD(["#3a120c", "#a8442a"], "#5a2a1c", "#3e1c12", "rocks"),
+  dg_kwakwa:   DGD(["#1c2e4a", "#7aa0c8"], "#4a5a6a", "#36424e", "crystals"),
+  dg_blops:    DGD(["#1a2a3a", "#5a8a6a"], "#2f5a3a", "#22442c", "hedges"),
+  dg_labo:     DGD(["#1a1f24", "#4a5a5e"], "#2e383c", "#20282c", "pipes"),
+  dg_pitons:   DGD(["#6a3f2a", "#d99a62"], "#7a5238", "#5a3a26", "spikes"),
+  dg_chouque:  DGD(["#1e3550", "#6a8fb0"], "#2f5f86", "#6b4a2a", "masts"),
+  dg_riktus:   DGD(["#24143a", "#7a3a6a"], "#4a2a3a", "#3a1f2c", "tent"),
+  dg_ancestral:DGD(["#14241a", "#3a5a3a"], "#1f3a26", "#162c1c", "trees"),
+  dg_koulosse: DGD(["#141e2e", "#3a5a7a"], "#2a3a52", "#1e2a3c", "crystals"),
+  dg_meulou:   DGD(["#1a2436", "#6a7a96"], "#3a4a5e", "#2a3646", "trees"),
+  dg_moon:     DGD(["#10281e", "#3f7a4a"], "#24502e", "#1a3c22", "leaves"),
+  dg_dragon:   DGD(["#2a0e0a", "#8a2a1a"], "#4a1c12", "#34130c", "flames"),
+  dg_kharno:   DGD(["#160f1e", "#3a2a4a"], "#2a2036", "#1e1828", "pillars"),
+  dg_corbac:   DGD(["#1a1410", "#4a3a2a"], "#3a2c20", "#2a2016", "books"),
+  dg_rasboul:  DGD(["#0e1e2e", "#2a5a7a"], "#1e3a52", "#162c3e", "waves"),
+  dg_bambou:   DGD(["#14281a", "#5a8a4a"], "#2f5a2a", "#22441e", "bamboo"),
+  dg_mino:     DGD(["#1a1e2a", "#5a6a4a"], "#3a4a2a", "#2a361e", "hedges"),
+  dg_croca:    DGD(["#101a2a", "#5a7aa0"], "#2a3e5a", "#1e2e44", "crystals"),
+  dg_serre:    DGD(["#14262a", "#5a9a8a"], "#2f5a4a", "#22443a", "glass"),
+  dg_skeunk:   DGD(["#1e0e1e", "#8a3a1a"], "#3a1e1e", "#2a1414", "tombs"),
+});
+const DG_DECO = { crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk" };
+const dgDeco = (did) => DG_DECO[did] || "dungeon";
+/* météo des zones de chasse : selon le décor, la neige pour les zones glacées */
+const subWeather = (sid) => { const sb = E.SUBS[sid]; if (!sb) return ""; if (/givre|gel[ée]e|glace|neige|Frigost/i.test(sb.name)) return "snow";
+  return { forest: "rain", meadow: "flies", wheat: "flies", sky: "flies", beach: "sand", grave: "mist", quarry: "dust", lake: "flies", city: "", cave: "", mine: "", sewer: "", spirit: "" }[sb.deco] || ""; };
+const decoFx = () => S && S.settings.decofx !== false && !S.settings.reduced;
 const seeded = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return () => { x += 0x6D2B79F5; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 let svgId = 0;
-function sceneSVG(deco, H, seed) {
+function sceneSVG(deco, H, seed, o = {}) {
   const P = (DECOS[deco] || DECOS.meadow)[isDark() ? "night" : "day"]; const W = 600; const R = seeded(seed + deco);
   const r = (a, b) => a + R() * (b - a); const id = "g" + (svgId++);
   let back = "", front = "";
@@ -297,6 +343,18 @@ function sceneSVG(deco, H, seed) {
   if (k === "houses") for (let i = 0; i < 6; i++) { const x = i * (W / 5.5) + r(-10, 10), w = r(50, 80), hh = r(40, 70), y = H * 0.62 - hh; back += `<rect x="${x}" y="${y}" width="${w}" height="${hh + 20}" fill="${dark ? "#4a3e30" : "#efe0c4"}" stroke="rgba(0,0,0,.15)"/><path d="M${x - 6} ${y} L${x + w / 2} ${y - 26} L${x + w + 6} ${y}Z" fill="${dark ? "#5a2a20" : "#c4583a"}"/><rect x="${x + w / 2 - 7}" y="${y + hh - 8}" width="14" height="28" fill="${dark ? "#2a2117" : "#8a5d33"}"/>${dark ? `<rect x="${x + 8}" y="${y + 10}" width="10" height="10" fill="#ffd27a" opacity=".85"/>` : ""}`; }
   if (k === "flames") for (let i = 0; i < 8; i++) { const x = r(10, W - 10), y = H * r(0.2, 0.55), s = r(0.6, 1.2), c = ["#ffb347", "#ff6b5e", "#8fd0ff", "#ffe08a"][i % 4]; back += `<g transform="translate(${x} ${y}) scale(${s})"><circle r="20" fill="${c}" opacity=".18"/><path d="M0 -16 C8 -6 9 4 0 10 C-9 4 -8 -6 0 -16Z" fill="${c}" opacity=".9"/></g>`; }
   if (k === "pipes") for (let i = 0; i < 5; i++) { const x = r(0, W - 40), y = H * r(0.2, 0.5); back += `<rect x="${x}" y="${y}" width="${r(60, 140)}" height="14" rx="6" fill="${P.near}" stroke="rgba(0,0,0,.2)"/><circle cx="${x}" cy="${y + 7}" r="11" fill="${P.far}" stroke="rgba(0,0,0,.25)"/>`; }
+ if (k === "fence") { for (let x = 10; x < W; x += 44) back += `<rect x="${x}" y="${H * 0.46}" width="7" height="${H * 0.2}" fill="#6b4524"/>`; back += `<rect x="0" y="${H * 0.5}" width="${W}" height="6" fill="#8a5d33"/><rect x="0" y="${H * 0.58}" width="${W}" height="6" fill="#8a5d33"/>`; for (let i = 0; i < 12; i++) front += `<g fill="#f3ecdc" opacity=".85" transform="translate(${r(0, W)} ${H * r(0.84, 0.97)})"><circle r="5"/><circle cx="6" cy="1" r="4"/><circle cx="-5" cy="2" r="4"/></g>`; }
+  if (k === "barn") { const x = W * 0.62; back += `<rect x="${x}" y="${H * 0.28}" width="150" height="${H * 0.4}" fill="#7a2a1e" stroke="rgba(0,0,0,.3)"/><path d="M${x - 12} ${H * 0.3} L${x + 75} ${H * 0.12} L${x + 162} ${H * 0.3}Z" fill="#4a1a12"/><rect x="${x + 55}" y="${H * 0.44}" width="40" height="${H * 0.24}" fill="#3a140e"/>`; for (let i = 0; i < 6; i++) { const cx = r(20, W * 0.55), cy = H * r(0.2, 0.45); back += `<g transform="translate(${cx} ${cy})"><circle r="14" fill="#f2c230"/><circle r="6" fill="#5a3a12"/></g><rect x="${cx - 1.5}" y="${cy + 12}" width="3" height="${H * 0.6 - cy}" fill="#3f6b2a"/>`; } }
+  if (k === "castle") for (let i = 0; i < 3; i++) { const x = 40 + i * 200 + r(-20, 20), w = 90, hh = H * r(0.25, 0.38), y = H * 0.56 - hh; back += `<rect x="${x}" y="${y}" width="${w}" height="${hh + 30}" fill="#d9b878" stroke="rgba(0,0,0,.18)"/>`; for (let j = 0; j < 5; j++) back += `<rect x="${x + j * 20}" y="${y - 12}" width="12" height="12" fill="#d9b878"/>`; back += `<rect x="${x + 38}" y="${y + hh - 20}" width="16" height="30" rx="8" fill="#6a4a22"/>`; }
+  if (k === "feathers") for (let i = 0; i < 18; i++) { const x = r(0, W), y = H * r(0.15, 0.9); front += `<path transform="translate(${x} ${y}) rotate(${r(0, 360)})" d="M0 0 q6 -10 0 -20 q-6 10 0 20z" fill="#f6e08a" opacity=".55"/>`; }
+  if (k === "leaves") for (let i = 0; i < 7; i++) { const x = r(0, W), y = H * r(0.38, 0.62), sc = r(1.2, 2.2); back += `<path transform="translate(${x} ${y}) scale(${sc}) rotate(${r(-35, 35)})" d="M0 0 C 18 -22 46 -18 56 0 C 46 18 18 22 0 0Z" fill="${i % 2 ? "#4c8f2e" : "#3a7524"}" stroke="#1c3a12" stroke-width="1.5"/>`; }
+  if (k === "hedges") for (let i = 0; i < 6; i++) { const x = i * (W / 5) + r(-14, 14); back += `<rect x="${x}" y="${H * 0.34}" width="${r(70, 110)}" height="${H * 0.34}" rx="10" fill="${i % 2 ? P.far : P.near}" stroke="rgba(0,0,0,.25)"/>`; }
+  if (k === "spikes") for (let i = 0; i < 6; i++) { const x = r(0, W), w = r(40, 80); back += `<path d="M${x - w} ${H * 0.7} L${x - w * 0.2} ${H * r(0.1, 0.3)} L${x + w * 0.2} ${H * r(0.1, 0.3)} L${x + w} ${H * 0.7}Z" fill="${i % 2 ? "#6a4228" : "#4e3020"}" stroke="rgba(0,0,0,.3)"/>`; }
+  if (k === "masts") { back += `<path d="M0 ${H * 0.52} Q 150 ${H * 0.47} 300 ${H * 0.52} T 600 ${H * 0.52} V ${H * 0.66} H0Z" fill="#2f5f86"/>`; for (const x of [150, 430]) back += `<rect x="${x}" y="${H * 0.02}" width="9" height="${H * 0.66}" fill="#3a2410"/><rect x="${x - 50}" y="${H * 0.1}" width="110" height="5" fill="#3a2410"/><path d="M${x + 9} ${H * 0.12} q70 ${H * 0.15} 0 ${H * 0.34}z" fill="#e9dcbc"/>`; }
+  if (k === "tent") { back += `<path d="M${W * 0.15} ${H * 0.66} L${W * 0.5} ${H * 0.05} L${W * 0.85} ${H * 0.66}Z" fill="#7a1e3a"/>`; for (let i = 0; i < 6; i++) back += `<path d="M${W * 0.5} ${H * 0.05} L${W * (0.15 + i * 0.14)} ${H * 0.66} L${W * (0.22 + i * 0.14)} ${H * 0.66}Z" fill="#e8d2a8" opacity=".85"/>`; for (let i = 0; i < 10; i++) back += `<circle cx="${r(0, W)}" cy="${H * r(0.05, 0.3)}" r="3" fill="${["#ffd84d", "#ff6b9a", "#6bd0ff"][i % 3]}"/>`; }
+  if (k === "books") for (let i = 0; i < 4; i++) { const x = i * (W / 4) + 6, w = W / 4 - 12; back += `<rect x="${x}" y="${H * 0.08}" width="${w}" height="${H * 0.6}" fill="#3a2414" stroke="rgba(0,0,0,.4)"/>`; for (let sh = 0; sh < 4; sh++) { const y = H * (0.12 + sh * 0.14); let bx = x + 4; while (bx < x + w - 8) { const bw = r(5, 10); back += `<rect x="${bx}" y="${y}" width="${bw}" height="${H * 0.11}" fill="${["#7a2a1e", "#2a4a6a", "#4a6a2a", "#8a6a2a", "#5a2a5a"][Math.floor(r(0, 5))]}"/>`; bx += bw + 1; } } }
+  if (k === "bamboo") for (let i = 0; i < 16; i++) { const x = r(0, W); back += `<rect x="${x}" y="0" width="${r(6, 12)}" height="${H * 0.7}" fill="${i % 2 ? "#6a9a3a" : "#4f7a2a"}"/>`; for (let j = 1; j < 5; j++) back += `<rect x="${x - 1}" y="${H * 0.14 * j}" width="14" height="3" fill="#2f4a1a"/>`; }
+  if (k === "glass") { for (let x = 0; x <= W; x += 60) back += `<rect x="${x}" y="0" width="4" height="${H * 0.7}" fill="#9ad0c0" opacity=".5"/>`; for (let y = 0; y < H * 0.7; y += 40) back += `<rect x="0" y="${y}" width="${W}" height="3" fill="#9ad0c0" opacity=".4"/>`; for (let i = 0; i < 8; i++) back += `<circle cx="${r(0, W)}" cy="${H * r(0.4, 0.65)}" r="${r(14, 30)}" fill="${["#3f8a3a", "#6aa83a", "#2f6a4a"][i % 3]}"/>`; }
   const stars = dark && k !== "pillars" && k !== "mine" && k !== "cave" && k !== "sewer" ? Array.from({ length: 26 }, () => `<circle cx="${r(0, W)}" cy="${r(0, H * 0.45)}" r="${r(0.3, 1.6)}" fill="#fff" opacity="${r(0.2, 0.9)}"/>`).join("") : "";
   return `<svg class="bg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.sky[0]}"/><stop offset="1" stop-color="${P.sky[1]}"/></linearGradient></defs>
@@ -304,8 +362,19 @@ function sceneSVG(deco, H, seed) {
     <path d="M0 ${H * 0.64} Q ${W * 0.25} ${H * 0.5} ${W * 0.5} ${H * 0.62} T ${W} ${H * 0.57} V ${H} H0Z" fill="${P.far}"/>
     ${k === "tombs" ? front : ""}
     <path d="M0 ${H * 0.8} Q ${W * 0.3} ${H * 0.7} ${W * 0.6} ${H * 0.8} T ${W} ${H * 0.76} V ${H} H0Z" fill="${P.near}"/>
-    ${k === "wheat" ? front : ""}
+    ${k === "wheat" ? front : ""}${["fence", "feathers"].includes(k) ? front : ""}${o.fx ? sceneFx(o.fx, W, H, r) : ""}${o.boss ? `<rect width="${W}" height="${H}" fill="#0a0504" opacity=".42"/>${[40, W - 40].map((x) => `<rect x="${x - 3}" y="${H * 0.36}" width="6" height="${H * 0.3}" fill="#3a2414"/><circle cx="${x}" cy="${H * 0.34}" r="7" fill="#ffb347">${o.anim ? `<animate attributeName="r" values="6;8;6" dur=".8s" repeatCount="indefinite"/>` : ""}</circle><circle cx="${x}" cy="${H * 0.34}" r="30" fill="#ffb347" opacity=".2"/>`).join("")}` : ""}
   </svg>`;
+}
+/* météo et premier plan (3.3.0) : animations SVG légères, coupées par l'option « Effets de décor » */
+function sceneFx(fx, W, H, r) {
+  let o = "";
+  if (fx === "rain") for (let i = 0; i < 60; i++) { const x = r(0, W + 40), y = r(-H, H), d = r(0.6, 1.1); o += `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 14}" stroke="#bfe0ff" stroke-opacity=".5" stroke-width="1.3"><animateTransform attributeName="transform" type="translate" from="0 0" to="-20 ${H * 1.3}" dur="${d.toFixed(2)}s" begin="-${r(0, d).toFixed(2)}s" repeatCount="indefinite"/></line>`; }
+  if (fx === "snow") for (let i = 0; i < 45; i++) { const x = r(0, W), d = r(4, 8); o += `<circle cx="${x}" cy="${r(-H, 0)}" r="${r(1, 2.6).toFixed(1)}" fill="#fff" opacity=".85"><animateTransform attributeName="transform" type="translate" values="0 0; 14 ${H * 0.7}; -6 ${H * 1.4}" dur="${d.toFixed(2)}s" begin="-${r(0, d).toFixed(2)}s" repeatCount="indefinite"/></circle>`; }
+  if (fx === "flies") for (let i = 0; i < 16; i++) { const x = r(0, W), y = H * r(0.3, 0.8), d = r(2, 5); o += `<circle cx="${x}" cy="${y}" r="2.3" fill="#f6ff8a"><animate attributeName="opacity" values="0;1;0" dur="${d.toFixed(2)}s" begin="-${r(0, d).toFixed(2)}s" repeatCount="indefinite"/></circle>`; }
+  if (fx === "sand" || fx === "dust") for (let i = 0; i < 24; i++) { const y = H * r(0.62, 0.97), d = r(1.6, 3.6); o += `<line x1="${r(0, W)}" y1="${y}" x2="${r(0, W) + 10}" y2="${y}" stroke="${fx === "sand" ? "#ffe6b0" : "#d9b48a"}" stroke-opacity=".55" stroke-width="1.4"><animateTransform attributeName="transform" type="translate" from="${-W} 0" to="${W} 0" dur="${d.toFixed(2)}s" begin="-${r(0, d).toFixed(2)}s" repeatCount="indefinite"/></line>`; }
+  if (fx === "mist") o += `<rect x="0" y="${H * 0.5}" width="${W}" height="${H * 0.5}" fill="#b28cff" opacity=".12"><animate attributeName="opacity" values=".06;.18;.06" dur="6s" repeatCount="indefinite"/></rect>`;
+  for (let i = 0; i < 22; i++) { const x = r(0, W); o += `<path d="M${x} ${H} q3 -20 -2 -32 M${x + 4} ${H} q4 -16 8 -25" stroke="rgba(8,20,10,.85)" stroke-width="3" fill="none"/>`; }
+  return o;
 }
 const subDeco = (sid) => (E.SUBS[sid] ? E.SUBS[sid].deco : "meadow");
 
@@ -418,7 +487,7 @@ function renderHome() {
 }
 function renderHomeInner() {
   const team = E.team(S); const main = team[0] || S.chars[0];
-  const deco = S.dungeon ? "dungeon" : S.sub ? subDeco(S.sub) : "sky";
+  const deco = S.dungeon ? dgDeco(S.dungeon.id) : S.sub ? subDeco(S.sub) : "sky";
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
     : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b>` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
   const zkey = S.dungeon ? null : S.sub; const rate = zkey ? E.zoneRate(S, zkey) : null;
@@ -719,6 +788,7 @@ function combatView() { const v = S.settings.cview; if (v === "scene" || v === "
 function arenaLayout(F) {
   const mob = window.innerWidth < 640;
   const sides = { c: [], m: [] }, sums = []; F.ents.forEach((e, i) => (e.summon ? sums : sides[e.side === "c" ? "c" : "m"]).push(i));
+  sides.c.sort((a, b) => (F.ents[a].row === "b") - (F.ents[b].row === "b")); // 3.3.0 : la première ligne devant
   const rowsOf = (n) => (n <= 1 ? 1 : n <= 6 ? 2 : 3);
   const rows = Math.max(rowsOf(sides.c.length), rowsOf(sides.m.length));
   const perRow = Math.max(1, ...["c", "m"].map((k) => Math.ceil(sides[k].length / Math.max(1, rowsOf(sides[k].length)))));
@@ -745,32 +815,42 @@ function placeEnts(F) {
   F.ents.forEach((e, i) => { const n = A.nodes[i], p = L.pos[i]; if (!n || !p) return; n.style.left = p.x + "%"; n.style.bottom = p.y + "px"; n.style.zIndex = p.z; });
   stickyCheck();
 }
+/* 3.3.0 : infobulles et classes de rangée, Champion et rôle */
+const rowCls = (e) => (e.side === "c" && !e.summon ? (e.row === "b" ? "back" : "front") : "");
+function entTip(e) {
+  if (e.side === "c") return e.name + (e.row === "f" ? " · première ligne" : e.row === "b" ? " · arrière" : "");
+  let t = `${e.name}${e.lvl ? " niv. " + e.lvl : ""}`;
+  if (e.champ) { const P = E.CHAMP_POWERS[e.champ]; t += ` — Champion · ${P.name} : PV ×2, dégâts +20 %. ${P.desc} Récompense : XP ×3, butin ×2, une ressource garantie.`; }
+  if (e.role) t += ` — ${E.MON_ROLES[e.role].name} : ${E.MON_ROLES[e.role].desc}`;
+  return t;
+}
 function buildArena(F) {
   const arena = $("#arena"); if (!arena) return;
-  const deco = F && F.dungeon ? "dungeon" : subDeco(F ? F.sub : S.sub);
+  const deco = F && F.dungeon ? dgDeco(F.dungeonId) : subDeco(F ? F.sub : S.sub);
   const view = combatView();
+  const so = { fx: decoFx() && !(F && F.dungeon) ? subWeather(F ? F.sub : S.sub) : "", boss: !!(F && F.bossIdx !== undefined), anim: decoFx() };
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
   arena.className = "arena " + (view === "compact" ? "cmpmode" : "v2"); arena.style.height = "";
   if (!F) {
-    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || "")) + `<div class="idle"><div>${S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
+    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
   }
   const pasDiv = `<div class="pas"></div>`;
   const entHtml = view === "compact" ? ([e, i]) => {
     const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: "m", name: e.name } : null;
     const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
-    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)}${e.lvl ? " niv. " + e.lvl : ""}">${pic}<div class="t"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
+    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
   } : ([e, i]) => {
     if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
-      return `<div class="ent hero ${rad ? "radiant" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
-    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} niv. ${e.lvl}"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
+      return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
+    return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
   arena.innerHTML = view === "compact"
     ? `<div class="cmp"><div class="col c">${list("c")}</div><div class="col m">${list("m")}</div></div><div class="result" id="fresult"></div>`
-    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub) + `<div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="result" id="fresult"></div>`;
+    : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="result" id="fresult"></div>`;
   arena.querySelectorAll(".ent").forEach((n) => (ui.arena.nodes[+n.dataset.i] = n));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
@@ -889,7 +969,7 @@ function lossHtml(R) {
     <div class="facts">${R.facts.map((f) => `<span class="pill ${f.k === "killer" ? "bad" : f.k === "streak" ? "gold" : ""}">${h(f.txt)}</span>`).join("")}</div>
     ${gear.length && c ? `<div class="sec">Équipement conseillé pour ${h(c.name)}${stat ? ` (${h(stat.name.replace("% ", ""))})` : ""}</div><div class="sugg">${gear.map((g) => { const T = ITEMS[g.tpl]; const [tag, btn, attrs] = GK[g.k]; const it = g.k === "bag" ? S.items[g.uid] : null; const miss = g.k === "craft" ? g.miss : null; const eta = miss && miss.length ? E.needEtaTxt(S, T.craft.ing) : null;
       return `<div class="sl">${it ? itemIcon(it) : `<span class="icobox ${rarCls(g.tpl)}">${im(itemImg(g.tpl), "", T.name)}</span>`}<div class="t"><b>${h(T.name)}</b> <span class="tag soft">${tag}</span><small>${stat ? `+${fmt(g.v)} ${h(stat.name.replace("% ", ""))}` : ""} · niv. ${T.lvl}${miss ? miss.length ? ` · manque ${miss.map(([r, q]) => `${q} ${h(r)}`).join(", ")}${eta ? ` (${h(eta)})` : ""}` : " · tout est réuni" : ""}${g.k === "loot" ? ` · ${h(MONSTERS[g.m].name)} · ${g.p} %` : ""}</small></div>${g.k === "craft" && S.shop.some((e) => e.id === g.tpl) ? `<span class="tag good">dans la liste</span>` : `<button class="btn sm" ${attrs(g)}>${btn}</button>`}</div>`; }).join("")}</div>` : ""}
-    <div class="row">${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche de ${h(c.name)}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
+ <div class="row">${R.place ? `<button class="btn sm primary" data-act="lossplace">Ouvrir le placement</button>` : ""}${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche de ${h(c.name)}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
 }
 function lossSheet(t) { const R = (S.losses || []).find((x) => x.t === +t); if (!R) return; openSheet(`<h2>${h(R.label)}</h2><div class="small">${lossHtml(R)}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
 function lootHtml(F) {
@@ -901,6 +981,7 @@ function lootHtml(F) {
     <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length ? `<div class="loot">${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
     ${(F.chals || []).length ? `<div class="chalres"><div class="h">${G("target")} Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>${G("flame")} Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
+    ${r.champ ? `<div class="champwin"><div class="ttl">${G("crown")} Champion vaincu : ${h(r.champ.name)} (${h(E.CHAMP_POWERS[r.champ.power].name)})</div><div class="row xs"><span class="pill gold">XP ×3</span><span class="pill gold">Butin ×2</span>${r.champ.res ? `<span class="pill good">Ressource garantie : ${h(r.champ.res[0])} ×${r.champ.res[1]}</span>` : ""}<span class="pill gold">Chance de Rayonnant ×2</span></div><div class="xs muted">Champions vaincus : ${fmt(S.champs || 0)}${(() => { const n = [10, 100, 500, 1000].find((x) => x > (S.champs || 0)); return n ? ` · prochain succès à ${fmt(n)}` : ""; })()}</div></div>` : ""}
     ${r.stasis ? `<p class="small" style="color:var(--gold2);font-weight:700">⏳ Stasis ${r.stasis.k} : ${h(r.stasis.out.join(", "))}</p>` : ""}
     ${r.lootPen ? `<p class="note xs">Monstres bien plus faibles que votre meilleur héros : butin réduit (×${Math.round(r.lootPen * 100) / 100}).</p>` : ""}
     ${r.auto ? `<p class="note">${r.auto} objet${r.auto > 1 ? "s" : ""} traité${r.auto > 1 ? "s" : ""} par les règles automatiques.</p>` : ""}
@@ -955,6 +1036,7 @@ function renderHeroes() {
   <div class="pagehead"><h1>Héros</h1><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
   <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span>${h(x.name)} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
     ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
+  ${placementHtml()}
   <section class="panel" style="margin-bottom:12px"><div class="pad row" style="gap:18px;align-items:flex-start">
     <div style="padding:14px 0 10px">${heroCard(c, "big", { act: "noop" })}</div>
     <div class="grow stack" style="min-width:240px">
@@ -970,6 +1052,21 @@ function renderHeroes() {
   </div></section>
   <nav class="subtabs">${[["equip", "Équipement"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : charSpellsView(c)}</section>`;
+}
+/* 3.3.0 : placement de l'équipe (première ligne / arrière) */
+function placementHtml() {
+  const team = E.team(S); if (team.length < 2) return "";
+  const fs = E.frontSet(S); const max = E.frontMax(team.length); const auto = E.isAutoPlace(S);
+  const card = (c, f) => { const st = E.charStats(S, c);
+    return `<div class="pcard">${head(c)}<div class="tx"><b>${h(c.name)} <span class="muted xs">${h(CLASSES[c.cls].name)} niv. ${c.lvl}</span></b><span class="xs muted num">${fmt(st.hpMax)} PV · Rés. moy. ${Math.round(E.avgRes(st))} %</span></div><button class="btn sm" data-act="setrow" data-id="${c.id}" data-v="${f ? "b" : "f"}">${f ? "↓ Arrière" : "↑ Première ligne"}</button></div>`; };
+  const L = (f) => team.filter((c) => fs.has(c.id) === f).map((c) => card(c, f)).join("");
+  return `<section class="panel placement${ui.placeFlash ? " flash" : ""}" id="placement" style="margin-bottom:12px"><div class="pad stack" style="gap:10px">
+    <div class="row between"><h3 style="margin:0">Placement de l'équipe</h3><span class="xs muted">Première ligne : 1 à ${max} héros sur ${team.length}</span></div>
+    <div class="row between"><label class="row small"><input type="checkbox" data-act="placeauto" ${auto ? "checked" : ""}> <b>Placement automatique</b></label>${auto ? "" : `<button class="btn sm" data-act="placeautob">Revenir au placement automatique</button>`}</div>
+    <div class="plines"><div class="pline front"><div class="lt">${G("shield")} Première ligne <span class="xs muted">reçoit 3 coups sur 4</span></div>${L(true)}</div>
+      <div class="pline"><div class="lt">Arrière <span class="xs muted">exposé si la première ligne tombe</span></div>${L(false)}</div></div>
+    <p class="note xs" style="margin:0">En automatique, le jeu place devant les héros qui encaissent le mieux (PV et résistances). Les Rôdeurs visent l'arrière et les Bondisseurs ignorent les rangées.</p>
+  </div></section>`;
 }
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
@@ -1581,7 +1678,7 @@ function gatherSheet() {
     <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 /* ---------- 3.2.2 : notifications ---------- */
-const NOTIF_EV = [["bag", "Sac plein", "les nouveaux objets sont perdus"], ["loss", "Combat perdu", "avec le conseil « Pourquoi j'ai perdu ? »"], ["pin", "Objectif atteint", "un objectif de la bande du haut"], ["shop", "Liste de courses prête", "tout est réuni pour un objet ou une clé"], ["lvl", "Palier de niveau", "tous les 10 niveaux"], ["rare", "Rayonnant ou archimonstre", "peut être fréquent"]];
+const NOTIF_EV = [["bag", "Sac plein", "les nouveaux objets sont perdus"], ["loss", "Combat perdu", "avec le conseil « Pourquoi j'ai perdu ? »"], ["pin", "Objectif atteint", "un objectif de la bande du haut"], ["shop", "Liste de courses prête", "tout est réuni pour un objet ou une clé"], ["lvl", "Palier de niveau", "tous les 10 niveaux"], ["rare", "Évènement rare", "Champion, objet Rayonnant ou archimonstre"]];
 const NOTIF_DEF = { bag: true, loss: true, pin: true, shop: true, lvl: true, rare: false };
 const notifOn = (k) => { const n = S.settings.notif || {}; return n[k] === undefined ? NOTIF_DEF[k] : !!n[k]; };
 const notifPerm = () => (typeof Notification === "undefined" ? "none" : Notification.permission);
@@ -1611,6 +1708,7 @@ function optionsSheet() {
       <div class="row"><span class="muted">Thème</span><span class="seg">${[["emerald", "Émeraude"], ["violet", "Nuit violette"]].map(([v, n]) => `<button data-act="settheme" data-v="${v}" aria-pressed="${(S.settings.theme || "emerald") === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Animations de combat</span><span class="seg">${[[false, "Complètes"], [true, "Réduites"]].map(([v, n]) => `<button data-act="setreduced" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.reduced === v}">${n}</button>`).join("")}</span></div>
       <div class="row"><span class="muted">Écrans de récompense</span><span class="seg" data-tip="Grand encart pour un objet Rayonnant, un palier de 10 niveaux ou un premier passage de stasis.">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span></div>
+      <label class="row"><input type="checkbox" data-act="setdecofx" ${S.settings.decofx !== false ? "checked" : ""}> <span><b>Effets de décor</b> <span class="muted">(météo et premier plan dans l'arène ; à couper sur un appareil lent)</span></span></label>
       ${notifOptionsHtml()}
       <div><b>Sauvegarde</b><br><span class="muted">Automatique dans ce navigateur${lastSaveOk ? ` · dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}` : ""}. Pour changer d'appareil, exportez puis importez.</span></div>
       <div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button></div>
@@ -1866,6 +1964,9 @@ document.addEventListener("click", (ev) => {
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
     case "selchar": ui.cid = +d.id; ui.slot = null; break;
+    case "setrow": { const r = E.setRow(S, +d.id, d.v); if (r) { toast(r); return; } dirty = true; break; }
+    case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
+    case "lossplace": ui.tab = "heroes"; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
     case "herotab": ui.hero = d.v; ui.slot = null; break;
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
@@ -1941,6 +2042,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "chaloff") c.chalOff = t.checked;
   else if (a === "simres") ui.simRes = +t.value;
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
+  else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }
+  else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }
   else if (a === "setnotif") { S.settings.notif = S.settings.notif || {}; S.settings.notif[t.dataset.k] = t.checked; dirty = true; return; }
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
@@ -2042,7 +2145,7 @@ function loop() {
         if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
         const lv = /^(.+) passe niveau (\d+) !$/.exec(ev.txt || ""); if (lv && +lv[2] % 10 === 0) notify("lvl", `${lv[1]} passe niveau ${lv[2]}`, "");
         else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets sont perdus : faites de la place.");
-        else if (ev.kind === "radiant" || /^Archimonstre vaincu/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
+        else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
