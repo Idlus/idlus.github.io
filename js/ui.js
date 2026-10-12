@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.24.1";
+const GAME_VERSION = "0.1.24.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.24.2", name: "Percepteurs à 5 %", items: [
+    "Les Percepteurs ramassent 5 % de ce qu'on gagnerait dans leur zone au lieu de 3 % : la poche est toujours pleine en 12 h, mais elle contient deux tiers de kamas et de ressources en plus",
+  ] },
   { v: "0.1.24.1", name: "Artisans et temples", items: [
     "Commandes d'artisans (Quêtes › Commandes) : chaque jour, 3 artisans demandent des ressources (récolte de tes métiers ou butin des monstres de tes zones). Livraison en plusieurs fois possible ; kamas et XP de métier à la clé, une commande « urgente » paie ×1,5. Chaque artisan monte en rang (3, 10, 25 commandes : +10 % de kamas par rang), tout livrer dans la journée offre un coffre, et la première commande changée chaque jour est gratuite",
     "Temples et Dopeuls (Quêtes › Temples) : une fois par jour et par classe, pour chaque classe de ton équipe ou de ta réserve, le Dopeul de la classe vient défier l'équipe là où elle chasse. C'est le reflet sombre de ton héros, à son niveau : une équipe bien équipée gagne la plupart du temps, sans équipement elle perd. Une défaite ne coûte rien, le temple reste ouvert",

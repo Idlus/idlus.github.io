@@ -1,6 +1,13 @@
 {
-  "version": "0.1.24.1",
+  "version": "0.1.24.2",
   "versions": [
+    {
+      "v": "0.1.24.2",
+      "name": "Percepteurs à 5 %",
+      "items": [
+        "Les Percepteurs ramassent 5 % de ce qu'on gagnerait dans leur zone au lieu de 3 % : la poche est toujours pleine en 12 h, mais elle contient deux tiers de kamas et de ressources en plus"
+      ]
+    },
     {
       "v": "0.1.24.1",
       "name": "Artisans et temples",
