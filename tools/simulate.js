@@ -3,7 +3,8 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--json]
+   Usage : node tools/simulate.js [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
+   --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    Par défaut : un donjon par tranche de niveau, 6 équipes, 3 essais par case. */
 "use strict";
 const E = require("../js/engine.js");
@@ -12,7 +13,7 @@ const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
 const flag = (k) => process.argv.includes("--" + k);
-const TRIES = +arg("essais", 3), SEED = +arg("graine", 1), JSON_OUT = flag("json");
+const TRIES = +arg("essais", 3), SEED = +arg("graine", 1), JSON_OUT = flag("json"), FURN = flag("meubles");
 
 // aléatoire reproductible (mulberry32)
 let seed = SEED;
@@ -60,6 +61,10 @@ function run(did, k, cls, prof) {
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
   S.chars.forEach((c) => { gearUp(S, c, prof); E.refreshSpells(c, E.charStats(S, c)); });
+  if (FURN) {
+    const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
+    S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });
+  }
   const SI = E.stasisInfo(S, did); SI.max = k - 1; S.res[dg.key] = 1;
   const err = E.enterDungeon(S, did, k); if (err) throw new Error(`${did} stasis ${k} : ${err}`);
   for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1000) E.tick(S, 1000);
