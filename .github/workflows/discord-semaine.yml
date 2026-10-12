@@ -1,4 +1,4 @@
-# Publie chaque lundi matin le mutateur de la semaine dans #annonces sur Discord. Nécessite le secret DISCORD_BOT_TOKEN.
+# Publie chaque lundi matin le mutateur de la semaine et le podium des donjons de la semaine passée dans #annonces sur Discord. Nécessite le secret DISCORD_BOT_TOKEN.
 name: Mutateur de la semaine sur Discord
 on:
   schedule:
@@ -12,5 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: node tools/discord_bot.js semaine
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      - name: Podium des donjons de la semaine passée
+        run: node tools/discord_bot.js podium
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
