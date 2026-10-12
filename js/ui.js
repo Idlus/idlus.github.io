@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.9.3";
+const GAME_VERSION = "0.1.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.10", name: "Sorts signature", items: [
+    "Sorts signature : 2 sorts par classe (38 en tout) ont maintenant une animation unique, liée à ce qu'ils font dans DOFUS : la Colère de Iop qui saute hors de l'écran, l'Attaque Mortelle qui fige le temps et coupe la cible en deux, le Sablier de Xélor qui rembobine, la machine à sous de Tout ou Rien, le mot censuré du Mot Interdit, la Mascarade au projecteur, la Mégabombe et son champignon, le portail géant de Cataclysme…",
+    "Pendant un sort signature, les actions suivantes du combat attendent la fin de l'animation (une seconde environ) ; rien ne change aux gains",
+    "Ces animations ne jouent qu'avec les animations « Complètes » (Options) ; en « Sobres », les sorts gardent leur animation habituelle" ] },
   { v: "0.1.9.3", name: "Passif visible", items: [
     "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des 19 classes) ; la fenêtre défile au lieu de rétrécir son contenu",
   ] },

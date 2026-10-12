@@ -7,6 +7,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.10 « Sorts signature » (bêta)
+- **Sorts signature** : 2 sorts par classe (38) ont une animation unique, liée à ce qu'ils font dans DOFUS (Colère de Iop, Attaque Mortelle, Sablier de Xélor, Tout ou Rien, Mot Interdit, Mascarade, Mégabombe, Cataclysme…). Les actions suivantes attendent la fin du sort ; uniquement avec les animations « Complètes ».
 ## 0.1.9.3 « Passif visible » (bêta)
 - **Recruter un héros** : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes).
 
