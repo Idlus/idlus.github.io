@@ -1,6 +1,13 @@
 {
-  "version": "0.1.30",
+  "version": "0.1.30.1",
   "versions": [
+    {
+      "v": "0.1.30.1",
+      "name": "Fabrication en série",
+      "items": [
+        "Artisanat : en plus de « Fabriquer », deux boutons « ×10 » et « Max » fabriquent plusieurs exemplaires d'un coup (autant que les ressources et la place dans le sac le permettent). Chaque objet a son propre jet, comme en le fabriquant un par un"
+      ]
+    },
     {
       "v": "0.1.30",
       "name": "Coffres",

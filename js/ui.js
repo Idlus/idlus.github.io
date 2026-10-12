@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.30";
+const GAME_VERSION = "0.1.30.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.30.1", name: "Fabrication en série", items: [
+    "Artisanat : en plus de « Fabriquer », deux boutons « ×10 » et « Max » fabriquent plusieurs exemplaires d'un coup (autant que les ressources et la place dans le sac le permettent). Chaque objet a son propre jet, comme en le fabriquant un par un",
+  ] },
   { v: "0.1.30", name: "Coffres", items: [
     "Cinq coffres dans le sac : bois, argent, or, et deux nouveaux, le Coffre en obsidienne et le Coffre des Douze. Chacun a son dessin et son halo de couleur",
     "Les coffres valent enfin le coup : leurs kamas suivent ton niveau, d'environ 5 minutes de chasse (bois) à 2 heures (Douze), avec poussière de stasis, ressources, consommables rares, Éclats de trouvaille, et des objets de ton niveau dès l'obsidienne",
@@ -3481,7 +3484,8 @@ function craftHtml() {
       <section class="panel"><div class="list">${recipes.map((r) => { const ok = E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req;
         const stats = r.T ? Object.entries(r.T.stats).map(([k, [a, b]]) => `${a === b ? a : a + " à " + b} ${STATS[k].short}`).join(", ") : (E.isKey(r.special) ? "Clé de donjon" : "Objet spécial");
         return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span>${ui.craftMiss > 0 && r.miss ? ` <span class="tag warn">il manque ${r.miss} ressource${r.miss > 1 ? "s" : ""}</span>` : ""} <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
-          <span class="row" style="gap:4px"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? G("cart") + " ✓" : G("cart")}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button></span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
+          <span class="row craftbtns"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? G("cart") + " ✓" : G("cart")}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button>${(() => { const n = ok ? E.craftCount(S, r.tpl ? "tpl" : "special", r.tpl || r.special) : 0; if (n < 2) return ""; const at = `data-act="craftmany" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}"`;
+            return (n > 10 ? `<button class="btn sm" ${at} data-n="10" title="Fabriquer 10 exemplaires">×10</button>` : "") + `<button class="btn sm" ${at} data-n="${n}" title="Fabriquer autant que les ressources le permettent">Max ×${fmt(n)}</button>`; })()}</span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
   return body;
 }
 function brisageHtml() {
@@ -5068,6 +5072,9 @@ document.addEventListener("click", (ev) => {
     case "craftjob": ui.craftJob = d.v; break;
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
+    case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n); if (typeof r === "string") { toast(r); break; }
+      const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
+      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); break; }
     case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
