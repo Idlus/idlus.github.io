@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.9.1";
+const GAME_VERSION = "0.1.9.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.9.2", name: "Exotique", items: [
+    "Runes exotiques : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée à un objet de niveau 150 ou plus qui n'a pas la caractéristique (un seul exo par objet, un seul exo PA porté par héros, pas sur les Dofus et trophées). Forgemage niveau 100 requis ; 10 % de réussite pour le PA, 12 % pour le PM et la Portée, sans aide du puits ni du métier ; un échec ne casse que la rune",
+    "Portée, nouvelle caractéristique tactique : chaque point donne 20 % de chances qu'un sort à une cible touche un ennemi de plus",
+    "Où trouver les runes Ga : coffres de boss des donjons de niveau 150+ en stasis 7 (1 sur 40, Ga PM ou Ga Po) et en stasis 8 (Ga PA, 1 sur 100), archimonstres de niveau 150+ (1 sur 25), ou l'onglet Runes (10 runes Ra d'une même caractéristique + 3 Éclats de trouvaille + 50 000 kamas pour une Ga PM ou Ga Po ; 25 runes Ra + 5 Éclats + 150 000 kamas pour une Ga PA)",
+    "Brisage d'un objet exo : l'exo est perdu, mais l'objet rend ses runes ×2",
+    "Forgemagie automatique : depuis l'établi, « Automatiser » lance un plan sur un objet (jets visés, runes autorisées, budget de kamas, plancher) ; une tentative toutes les 10 min (8 min au Forgemage 50, 6 min au 100), en jeu comme hors ligne, 2 plans en parallèle, sans héros à affecter. Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes ou le budget manquent, ou que le plancher est touché ; le journal et le résumé d'absence racontent ce qui s'est passé",
+    "Succès : « Exotique » (titre l'Exotique), « Un PA de plus », « Forgemagie automatique »",
+    "Code de diagnostic pour les bugs : le bouton « Signaler un bug » copie aussi la version, l'appareil, l'onglet ouvert, un résumé de la partie (héros, zone, donjon) et les 5 dernières erreurs du jeu, à coller dans le forum Bugs du Discord ; bouton « Copier le diagnostic » dans les Options" ] },
   { v: "0.1.9.1", name: "Barre et page Équipe", items: [
     "Nouvelle barre de navigation en 4 familles : Accueil, Aventure, Équipe et Artisanat, avec leurs pages juste en dessous ; de la place pour les prochains onglets",
     "Sur PC, un cadre « Combat en cours » donne le donjon et la salle (ou la zone de chasse) depuis n'importe quelle page ; sur téléphone, Combat devient le gros bouton du centre",
@@ -176,6 +184,12 @@ const vNum = (v) => { const p = String(v).split(".").map((x) => parseInt(x, 10) 
 
 /* ---------- utilitaires ---------- */
 const $ = (s) => document.querySelector(s);
+/* 0.1.9.2 : les 5 dernières erreurs du jeu, gardées entre deux lancements, pour le code de diagnostic du bouton « Signaler un bug » */
+const ERR_KEY = LS_KEY + "-errs";
+const readErrs = () => { try { const a = JSON.parse(localStorage.getItem(ERR_KEY) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+const logErr = (txt) => { try { const a = readErrs(); const last = a[a.length - 1]; if (last && last.txt === txt) { last.n = (last.n || 1) + 1; last.t = Date.now(); } else a.push({ t: Date.now(), txt: String(txt).slice(0, 300) }); while (a.length > 5) a.shift(); localStorage.setItem(ERR_KEY, JSON.stringify(a)); } catch (e) { /* stockage indisponible */ } };
+window.addEventListener("error", (e) => logErr(`${e.message || "Erreur"}${e.filename ? ` (${e.filename.replace(/^.*\//, "")}:${e.lineno || "?"})` : ""}`));
+window.addEventListener("unhandledrejection", (e) => logErr(`Promesse rejetée : ${e.reason && e.reason.message ? e.reason.message : e.reason}`));
 const h = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (n) => Math.floor(n).toLocaleString("fr-FR");
 const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
@@ -1600,11 +1614,11 @@ const rarCls = (tpl) => `rr r-${E.rarityOf(tpl)}`;
 const rarTag = (tpl) => { const r = rar(tpl); return `<span class="rtag ${rarCls(tpl)}">${r.name}</span>`; };
 (() => { const st = document.createElement("style"); st.textContent = E.RARITIES.map((r) => `.r-${r.id}{--rc:${r.color}}`).join(""); document.head.appendChild(st); })();
 const itemIcon = (it) => `<span class="icobox ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}</span>`;
-function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
+function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   return Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
-    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("");
+    return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 function tplStatsHtml(T) { return Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
 function deltaHtml(c, slot, uid) {
@@ -2375,10 +2389,13 @@ function fmHtml() {
         const cap = mx > 0 ? mx + Math.max(1, Math.ceil(mx * 0.25)) : mx;
         return `<div class="fmline"><div><span class="statl">${sIco(k)}<b class="${cur > mx ? "bonus" : ""}">${statLine(k, cur)}</b></span> <span class="xs muted">jet ${mn} à ${mx}${mx > 0 ? ` · exo jusqu'à ${cap}` : ""}</span>
           <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite${f.wellOk ? " (puits : +" + Math.round(E.WELL_BONUS * 100) + " %, aucune perte)" : ""} · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}
+      ${exoBlockHtml(it)}
+      ${planBlockHtml(it)}
       ${it.fmLog && it.fmLog.length ? `<h3 class="sec">Historique</h3><div class="list">${it.fmLog.map((l) => `<div class="li xs"><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span><span class="grow">${h(l.txt)}</span><span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}`;
   }
   return `<p class="note">La forgemagie améliore les jets d'un objet avec des runes (obtenues au brisage) et des kamas. En dessous du jet maximum, la réussite est élevée ; au-delà (« exo »), c'est risqué. Un échec détruit la rune et peut faire baisser une autre caractéristique, mais ce qui est perdu remplit le puits de l'objet et protège les tentatives suivantes.</p>
     ${fmJobCard()}
+    ${fmPlansHtml()}
     <div class="row invbar"><input type="text" id="fmSearch" data-act="fmsearch" placeholder="Rechercher un objet…" value="${h(F.q)}">
       <select data-act="fmslot">${[["all", "Tous"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"]].map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>
       <select data-act="fmcid"><option value="">Tous les héros</option>${S.chars.map((c) => `<option value="${c.id}" ${+F.cid === c.id ? "selected" : ""}>Porté par ${h(c.name)}</option>`).join("")}</select>
@@ -2468,7 +2485,7 @@ function renderQuests() {
 function runesView() {
   const runes = Object.entries(S.runes).filter(([, q]) => q > 0).sort((a, b) => STAT_ORDER.indexOf(E.runeInfo(a[0]).stat) - STAT_ORDER.indexOf(E.runeInfo(b[0]).stat) || E.runeInfo(a[0]).weight - E.runeInfo(b[0]).weight);
   const tr = ui.tr || (ui.tr = { from: "", to: "fo" });
-  if (!S.runes[tr.from]) tr.from = runes.length ? runes[0][0] : "";
+  if (!S.runes[tr.from] || E.runeInfo(tr.from).exo) { const r0 = runes.find(([k]) => !E.runeInfo(k).exo); tr.from = r0 ? r0[0] : ""; }
   const fromTier = tr.from ? tr.from.split(":")[0] : "";
   const targets = E.transmuteTargets().filter((k) => !fromTier || !RUNE_SIMPLE_ONLY.includes(k));
   if (!targets.includes(tr.to)) tr.to = targets[0];
@@ -2476,15 +2493,69 @@ function runesView() {
   return `<p class="note">Fusion : ${E.RUNE_FUSE_N} runes identiques donnent la rune supérieure (simple → Pa → Ra) et une rune se casse en ${E.RUNE_FUSE_N} runes inférieures, gratuitement. Transmutation : ${E.TRANSMUTE_N} runes d'une caractéristique donnent 1 rune d'une autre, contre des kamas. Les runes inutiles peuvent aussi nourrir le métier de Forgemage.</p>
     ${fmJobCard()}
     <section class="panel"><div class="phead"><h2>Transmutation</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad row small">
-      <select data-act="trfrom">${runes.map(([k, q]) => `<option value="${k}" ${tr.from === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune</option>`}</select>
+      <select data-act="trfrom">${runes.filter(([k]) => !E.runeInfo(k).exo).map(([k, q]) => `<option value="${k}" ${tr.from === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune</option>`}</select>
       <span>→</span><select data-act="trto">${targets.map((k) => `<option value="${k}" ${tr.to === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select>
       <button class="btn sm ${canTr ? "primary" : ""}" data-act="transmute" ${canTr ? "" : "disabled"}>${E.TRANSMUTE_N} → 1 · ${fmt(cost)} k</button></div></section>
+    ${exoCraftHtml(runes)}
     <section class="panel"><div class="phead"><h2>Vos runes</h2><span class="muted xs">${runes.length} sorte${runes.length > 1 ? "s" : ""}</span></div>
       <div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); const simpleOnly = RUNE_SIMPLE_ONLY.includes(i.stat);
         return `<div class="li"><span class="grow"><span class="name">${E.runeName(k)}</span> <span class="xs muted num">×${fmt(q)} · +${i.pts} ${STATS[i.stat].short}</span></span>
-          ${!simpleOnly && i.tier !== "ra" ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="up" ${q >= E.RUNE_FUSE_N ? "" : "disabled"} data-tip="${E.RUNE_FUSE_N} ${E.runeName(k)} → 1 ${E.runeName(E.runeKey(i.tier === "" ? "pa" : "ra", i.stat))}">Fusionner ×${E.RUNE_FUSE_N}</button>` : ""}
-          ${i.tier ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="down" data-tip="1 ${E.runeName(k)} → ${E.RUNE_FUSE_N} ${E.runeName(E.runeKey(i.tier === "ra" ? "pa" : "", i.stat))}">Casser</button>` : ""}
-          <button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="1" data-tip="Nourrir le Forgemage : +${i.weight * 3} XP par rune">${IC("forge")} ×1</button><button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="${q}">Tout</button></div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets pour en obtenir.</div>`}</div></section>`;
+          ${!simpleOnly && i.tier !== "ra" && !i.exo ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="up" ${q >= E.RUNE_FUSE_N ? "" : "disabled"} data-tip="${E.RUNE_FUSE_N} ${E.runeName(k)} → 1 ${E.runeName(E.runeKey(i.tier === "" ? "pa" : "ra", i.stat))}">Fusionner ×${E.RUNE_FUSE_N}</button>` : ""}
+          ${i.tier && !i.exo ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="down" data-tip="1 ${E.runeName(k)} → ${E.RUNE_FUSE_N} ${E.runeName(E.runeKey(i.tier === "ra" ? "pa" : "", i.stat))}">Casser</button>` : ""}
+          ${i.exo ? `<span class="tag exo" data-tip="Rune exotique : +1 ${STATS[i.stat].name} sur un objet de niveau ${E.EXO_LVL} ou plus (établi du forgemage, Forgemage niveau ${E.EXO_FM_LVL})">Exotique</span>` : `<button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="1" data-tip="Nourrir le Forgemage : +${i.weight * 3} XP par rune">${IC("forge")} ×1</button><button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="${q}">Tout</button>`}</div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets pour en obtenir.</div>`}</div></section>`;
+}
+/* 0.1.9.2 : runes exotiques et forgemagie automatique */
+function exoBlockHtml(it) {
+  const T = ITEMS[it.tpl];
+  if (it.exo) return `<div class="fmline exo"><div><span class="statl">${sIco(it.exo)}<b class="bonus">+1 ${STATS[it.exo].name}</b></span> <span class="tag exo">Exo ${STATS[it.exo].short}</span> <span class="xs muted">un seul exo par objet · au brisage l'exo est perdu mais les runes sont doublées</span></div></div>`;
+  if (T.slot === "dofus" || T.trophy) return "";
+  if (T.lvl < E.EXO_LVL) return `<div class="xs muted">Exotique (+1 PA, +1 PM ou +1 Portée) : objets de niveau ${E.EXO_LVL} ou plus.</div>`;
+  const J = E.fmJob(S);
+  return `<div class="fmline exo"><div><span class="statl"><b>Exotique</b></span> <span class="xs muted">ajoute une caractéristique que l'objet n'a pas (un seul exo par objet). En cas d'échec, seule la rune est perdue : l'objet ne baisse pas et le puits ne joue pas.${J.lvl < E.EXO_FM_LVL ? ` <b>Forgemage niveau ${E.EXO_FM_LVL} requis</b> (vous : ${J.lvl}).` : ""}</span>
+    <div class="runes">${E.EXO_STATS.map((k) => { const f = E.exoInfo(S, it.uid, k); const name = E.runeName(E.exoKey(k)); const pct = Math.round(f.chance * 100);
+      return f.ok ? `<button class="btn sm" data-act="exo" data-k="${k}" data-tip="${h(`${name} : +1 ${STATS[k].name} · ${pct} % de réussite (ni le puits ni le métier n'aident) · ${fmt(f.kamas)} kamas. Échec : la rune est perdue, l'objet reste intact.`)}">${name} ×${f.have} · <b>${pct} %</b> · ${fmt(f.kamas)} k</button>`
+        : `<span class="xs muted" data-tip="${h(f.why)}">${name} ×${f.have} · ${pct} % · ${fmt(f.kamas)} k : ${h(f.why)}</span>`; }).join("")}</div>
+    <div class="xs muted">Exo PA : un héros n'en porte qu'un seul. Runes Ga : coffres de boss des donjons de niveau ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8), archimonstres de niveau ${E.EXO_LVL}+, ou l'onglet Runes.</div></div></div>`;
+}
+const planGoalsTxt = (p) => { const it = S.items[p.uid]; return Object.keys(p.goals).map((k) => `${STATS[k].name} ${it ? it.stats[k] || 0 : "?"} / ${p.goals[k]}`).join(" · "); };
+function planBlockHtml(it) {
+  const p = E.fmPlanOf(S, it.uid);
+  if (p) return `<div class="row small"><span class="tag good">Plan en cours</span><span class="xs muted grow">${h(planGoalsTxt(p))} · prochaine tentative dans ${dur(E.fmPlanEta(S, p))}</span><button class="btn sm danger" data-act="fmplanstop" data-uid="${it.uid}">Arrêter</button></div>`;
+  if (ITEMS[it.tpl].trophy) return "";
+  const can = E.fmPlanActive(S).length < E.FM_PLAN_MAX;
+  return `<div class="row small"><button class="btn sm ${can ? "primary" : ""}" data-act="fmplan" data-uid="${it.uid}" ${can ? "" : "disabled"}>${IC("forge")} Automatiser</button><span class="xs muted">Une tentative toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} min avec vos runes et vos kamas, en jeu comme hors ligne${can ? "" : ` · ${E.FM_PLAN_MAX} plans en parallèle au maximum`}.</span></div>`;
+}
+function fmPlansHtml() {
+  const plans = E.fmPlans(S); if (!plans.length) return "";
+  const act = E.fmPlanActive(S).length;
+  return `<section class="panel"><div class="phead"><h2>Plans de forgemagie</h2><span class="xs muted num">${act} / ${E.FM_PLAN_MAX} en cours</span></div><div class="list">${plans.slice().reverse().map((p) => { const it = S.items[p.uid];
+    return `<div class="li"><span class="grow"><b>${it ? itemName(it) : h(p.name)}</b> ${p.done ? `<span class="tag soft">Terminé</span>` : `<span class="tag good">En cours</span>`}<br><span class="xs muted">${p.done ? h(p.done) + " · " : ""}${h(planGoalsTxt(p))} · ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""} · ${fmt(p.spent)} k${p.budget ? ` / ${fmt(p.budget)}` : ""}${p.done ? "" : ` · prochaine dans ${dur(E.fmPlanEta(S, p))}`}</span>${p.log.length ? `<div class="xs" style="margin-top:4px">${p.log.slice(0, 4).map((l) => `<div><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span> ${h(l.txt)} <span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}</span>
+      ${it ? `<button class="btn sm" data-act="fmsel" data-uid="${p.uid}">Voir</button>` : ""}${p.done ? `<button class="btn sm" data-act="fmplandrop" data-uid="${p.uid}">Retirer</button>` : `<button class="btn sm danger" data-act="fmplanstop" data-uid="${p.uid}">Arrêter</button>`}</div>`; }).join("")}</div></section>`;
+}
+function fmPlanSheet(uid) {
+  const it = S.items[uid]; if (!it) return; const T = ITEMS[it.tpl];
+  const stats = Object.keys(T.stats).filter((k) => T.stats[k][1] > 0);
+  openSheet(`<h2>${IC("forge")} Automatiser la forgemagie</h2><div class="row">${itemIcon(it)}<div><b>${itemName(it)}</b><div class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</div></div></div>
+    <p class="small muted">Une tentative toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} min, en jeu comme hors ligne, avec vos runes et vos kamas. Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes ou le budget manquent, ou que le plancher est touché.</p>
+    <div class="stack" style="gap:8px">
+      <div class="small"><b>Objectifs</b> <span class="xs muted">jet visé ; au-delà du jet maximum c'est de l'exo-jet, risqué</span></div>
+      ${stats.map((k) => { const [, mx] = T.stats[k]; const cap = mx + Math.max(1, Math.ceil(mx * 0.25)); const cur = it.stats[k] || 0;
+        return `<label class="row small"><input type="checkbox" class="fmg" data-k="${k}" ${cur < mx ? "checked" : ""}> <span class="grow">${sIco(k)}${STATS[k].name} <span class="xs muted">${cur} actuellement · jet max ${mx} · exo jusqu'à ${cap}</span></span><input type="number" id="fmgv_${k}" min="${cur + 1}" max="${cap}" value="${Math.max(mx, cur + 1)}" style="width:84px"></label>`; }).join("")}
+      <div class="small"><b>Runes</b></div><div class="row small" style="flex-wrap:wrap">${Object.entries(E.FM_PLAN_RUNES).map(([v, n], i) => `<label><input type="radio" name="fmr" value="${v}" ${i === 0 ? "checked" : ""}> ${n}</label>`).join("")}</div>
+      <div class="row small"><b>Budget kamas</b><input type="number" id="fmbudget" min="0" step="1000" value="${Math.min(S.kamas, 100000)}" style="width:120px"><span class="xs muted">0 = sans limite</span></div>
+      <div class="row small"><b>Plancher</b><select id="fmfloor">${Object.entries(E.FM_PLAN_FLOOR).map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select></div>
+    </div>
+    <div class="row"><button class="btn primary" data-act="fmplango" data-uid="${uid}">Lancer le plan</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
+}
+function exoCraftHtml(runes) {
+  const ras = runes.filter(([k]) => k.split(":")[0] === "ra");
+  if (!ui.ga || !S.runes[ui.ga]) ui.ga = ras.length ? ras[0][0] : "";
+  const ecl = S.res[E.RARE_COMPONENT] || 0;
+  return `<section class="panel"><div class="phead"><h2>Runes exotiques</h2><span class="xs muted">${E.EXO_STATS.map((k) => `${E.runeName(E.exoKey(k))} ×${S.runes[E.exoKey(k)] || 0}`).join(" · ")}</span></div><div class="pad stack small" style="gap:6px">
+    <div class="xs muted">Une rune Ga ajoute +1 PA, +1 PM ou +1 Portée à un objet de niveau ${E.EXO_LVL} ou plus (établi du forgemage, Forgemage niveau ${E.EXO_FM_LVL}). Ici, des runes Ra d'une même caractéristique, des ${E.RARE_COMPONENT} (vous en avez ${fmt(ecl)}) et des kamas en fabriquent une. Les coffres de boss des donjons de niveau ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8) et les archimonstres de niveau ${E.EXO_LVL}+ en lâchent aussi.</div>
+    <div class="row" style="flex-wrap:wrap"><select data-act="gafrom">${ras.map(([k, q]) => `<option value="${k}" ${ui.ga === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune Ra</option>`}</select>
+    ${E.EXO_STATS.map((k) => { const f = E.exoCraftInfo(S, k, ui.ga); const C = E.EXO_CRAFT[k];
+      return `<button class="btn sm ${f.ok ? "primary" : ""}" data-act="exocraft" data-k="${k}" ${f.ok ? "" : "disabled"} data-tip="${h(`${C.ra} runes Ra + ${C.eclat} ${E.RARE_COMPONENT} + ${fmt(C.kamas)} kamas → 1 ${E.runeName(E.exoKey(k))}${f.ok ? "" : " · " + f.why}`)}">${E.runeName(E.exoKey(k))} · ${C.ra} Ra + ${C.eclat} éclats + ${fmt(C.kamas)} k</button>`; }).join("")}</div></div></section>`;
 }
 /* 0.1.8.2 : carte du métier de Forgemage */
 function fmJobCard() {
@@ -2573,7 +2644,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button></div>
+      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>
       <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>
       <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
@@ -2584,6 +2655,7 @@ function offlineSheet(r) {
     <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a continué à ${Math.round(E.OFFLINE_RATE * 100 + E.bonus(S, "offrate"))} % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : "Votre équipe ne chassait pas ; seuls les héros en récolte ont travaillé."}</p>
     ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
+    ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
     ${(r.newItems || []).filter((u) => S.items[u]).length ? `<h3 class="sec">Objets obtenus</h3><div class="list small" style="max-height:220px;overflow:auto">${r.newItems.filter((u) => S.items[u]).map((u) => { const it = S.items[u]; const T = ITEMS[it.tpl];
         const best = E.team(S).filter((c) => T.lvl <= c.lvl).map((c) => { const sl = T.slot === "anneau" ? (c.equip.anneau1 ? "anneau2" : "anneau1") : T.slot === "dofus" ? null : T.slot; const cur = sl ? S.items[c.equip[sl]] : null; return { c, gain: itemScore(c, it) - itemScore(c, cur) }; }).sort((a, b) => b.gain - a.gain)[0];
@@ -2601,6 +2673,24 @@ function migrationSheet(list) {
 /* ---------- rendu ---------- */
 /* ---------- Application installable (PWA) ---------- */
 let installEvt = null;
+/* 0.1.9.2 : code de diagnostic collé avec le rapport de bug (version, appareil, onglet, résumé de la partie, dernières erreurs) */
+function diagText() {
+  const lines = [`--- Diagnostic idlus ${GAME_VERSION}${BETA ? " (bêta)" : ""} · ${new Date().toLocaleString("fr-FR")} ---`];
+  lines.push(`Appareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"} · écran ${window.innerWidth}×${window.innerHeight} · thème ${document.documentElement.dataset.theme || "?"}`);
+  lines.push(`Navigateur : ${navigator.userAgent.slice(0, 120)}`);
+  const pg = NAV.flatMap((F) => F.pages.map((x) => [x[0], `${F.n} › ${x[1]}`])).find(([id]) => id === ui.tab); const tabName = pg ? pg[1] : ui.tab;
+  lines.push(`Onglet : ${tabName}${ui.tab === "home" ? " / " + ui.home : ui.tab === "world" ? " / " + ui.world : ui.tab === "heroes" ? " / " + ui.hero : ui.tab === "inv" ? " / " + ui.inv : ui.tab === "metiers" ? " / " + ui.met : ui.tab === "forge" ? " / " + ui.fg : ""}${$("#sheet") && $("#sheet").innerHTML ? " · fenêtre ouverte" : ""}`);
+  if (S) {
+    const sub = S.sub && E.SUBS[S.sub]; const dg = S.dungeon && DUNGEONS[S.dungeon.id];
+    lines.push(`Partie : créée le ${new Date(S.created).toLocaleDateString("fr-FR")} · ${dur(S.stats.playtime || 0)} de jeu · ${fmt(S.stats.fights || 0)} combats · ${fmt(S.kamas)} kamas · ${E.itemCount(S)} objets · vitesse ×${S.settings.speed || 1}${S.manualLive ? " · combat manuel" : ""}`);
+    lines.push(`Héros : ${S.chars.map((c) => `${c.name} (${CLASSES[c.cls] ? CLASSES[c.cls].name : c.cls} ${c.lvl}${c.inTeam ? ", équipe" : c.job ? ", métier" : ""})`).join(", ")}`);
+    lines.push(`Zone : ${sub ? sub.name : "aucune"}${S.hunting ? " (chasse en cours)" : ""}${dg ? ` · Donjon : ${dg.name} stasis ${S.dungeon.stasis}, salle ${(S.dungeon.room || 0) + 1}` : ""}${S.fight ? ` · combat ${S.fight.over ? "terminé" : "en cours"} (tour ${S.fight.round || "?"})` : ""}`);
+    lines.push(`Forgemage ${E.fmJob(S).lvl} · Havre-Sac ${S.havre && S.havre.built ? "construit" : "non"} · ${Object.keys(S.pets || {}).length} familiers · ${Object.keys(S.mounts || {}).length} montures · ${E.fmPlanActive(S).length} plans de forgemagie`);
+  } else lines.push("Partie : aucune (écran de départ)");
+  const errs = readErrs();
+  lines.push(errs.length ? `Dernières erreurs :\n${errs.map((e) => `  ${new Date(e.t).toLocaleTimeString("fr-FR")} ${e.txt}${e.n > 1 ? ` (×${e.n})` : ""}`).join("\n")}` : "Dernières erreurs : aucune");
+  return lines.join("\n");
+}
 const isStandalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; renderUpdBar(); });
@@ -2659,6 +2749,8 @@ function celebrate(ev) {
 function celeHtml(ev) {
   if (ev.t === "radiant") { const T = ITEMS[ev.tpl];
     return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
+  if (ev.t === "exo") { const T = ITEMS[ev.tpl]; if (!T) return "";
+    return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Forgemagie exotique</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+1 ${h(STATS[ev.stat].name)} · niveau ${T.lvl}</div>`; }
   if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
     return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
   if (ev.t === "pet") { const p = E.PETS[ev.id]; if (!p) return "";
@@ -2787,6 +2879,14 @@ document.addEventListener("click", (ev) => {
     case "fmsel": ui.fmSel = +d.uid; break;
     case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; window.scrollTo(0, 0); break;
     case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
+    case "exo": { const r = E.exoForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
+    case "fmplan": fmPlanSheet(+d.uid); return;
+    case "fmplango": { const goals = {}; document.querySelectorAll(".fmg:checked").forEach((x) => { const i = $("#fmgv_" + x.dataset.k); goals[x.dataset.k] = i ? +i.value : 0; });
+      const rr = document.querySelector('input[name="fmr"]:checked'); const err = E.startFmPlan(S, +d.uid, { goals, runes: rr ? rr.value : "all", budget: +($("#fmbudget") || {}).value || 0, floor: ($("#fmfloor") || {}).value });
+      if (err) { toast(err); return; } closeSheet(); toast("Plan de forgemagie lancé."); break; }
+    case "fmplanstop": E.stopFmPlan(S, +d.uid); break;
+    case "fmplandrop": E.stopFmPlan(S, +d.uid, true); break;
+    case "exocraft": { const r = E.exoCraft(S, d.k, ui.ga); toast(r || `1 ${E.runeName(E.exoKey(d.k))} obtenue !`, r ? "" : "rare"); break; }
     case "reroll": msg(E.rerollBounty(S, +d.id)); break;
     case "buyshop": msg(E.buyShop(S, d.shop, d.id)); break;
     case "align": { const r = E.chooseAlign(S, d.side, d.order); ui.confirm = null; if (r) { toast(r); return; } break; }
@@ -2804,9 +2904,10 @@ document.addEventListener("click", (ev) => {
     case "looksex": { const x = char(ui.lookCid); x.sex = d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
-    case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nAppareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"}\nNavigateur : ${navigator.userAgent.slice(0, 120)}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :`;
+    case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
+    case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
@@ -2974,6 +3075,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu automatiquement.`); }
   else if (a === "fmslot") ui.fmF.slot = t.value;
   else if (a === "trfrom") ui.tr.from = t.value;
+  else if (a === "gafrom") ui.ga = t.value;
   else if (a === "trto") ui.tr.to = t.value;
   else if (a === "fmsort") ui.fmF.sort = t.value;
   else if (a === "fmcid") ui.fmF.cid = t.value;
@@ -3089,7 +3191,7 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") saveNow();
-  else if (S) { const gap = (Date.now() - (S.lastTick || Date.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r); } last = performance.now(); }
+  else if (S) { const gap = (Date.now() - (S.lastTick || Date.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r); } last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
@@ -3104,7 +3206,7 @@ function start() {
     const r = gap > 60 ? E.catchUp(S, gap) : null;
     render();
     if (S.migration) { migrationSheet(S.migration); S.migration = null; }
-    else if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r);
+    else if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r);
     S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
   loop();
@@ -3112,7 +3214,7 @@ function start() {
   setTimeout(checkNewVersion, 20000); setInterval(checkNewVersion, 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }
-window.DX = { get S() { return S; }, ui, render, E };
+window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
