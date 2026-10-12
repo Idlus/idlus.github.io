@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 ## 0.1.27.1 « Panel de test réservé » (bêta)
 - Mathis : panel de test (`js/admin.js`) réservé à lui seul. `testerOk()` dans ui.js : vrai seulement si `window.CHAT.role === "admin"` (rôle lu par le serveur via `my_role`), ou en local (localhost) pour les essais. Sans ça, le bouton du bandeau bêta n'est pas affiché et `admin.js` ignore les clics `data-adm`. `renderStatus` redessine le bandeau bêta pour que le bouton apparaisse dès que le rôle est chargé.
 
+## 0.1.27 « Cadres de métal » (bêta)
+- Mathis : refonte des cadres (maquette https://claude.ai/artifact/1mSs8Gf91tPNWnwNek6sVU, choix « Métal orné » + portraits encadrés). `E.FRAMES` passe à 5 métaux × 2 rangs + Krosmoz (`E.frameIdx` inchangé, un rang tous les 20 niveaux) ; `E.FRAME_KEYS` / `E.frameKey(lvl)` donnent la clé `data-fr` (bois1 … eme2, krosmoz). CSS en fin de style.css (variables `--m1/--m2/--m3/--gem`, rivets en `::before`, coins en `::after`, ruban `.tier` sous la carte). `cmed(cls, lvl, ren)` encadre le médaillon (`data-fr`, « feu » si rené) ; les vues `lb_level`, `lb_records`, `lb_week`, `lb_defi` exposent `main_lvl` (lu seulement si le serveur l'a, `LB.ml`).
+
 ## 0.1.26.1 « Défi à portée de main » (bêta)
 - Mathis : un vrai menu pour le Défi du jour et le lancer depuis l'Accueil (maquette validée, toutes options recommandées). Onglet `defi` dans `NAV` (famille Aventure) → `renderDefi` ; carte `defiHomeCard` sur l'Accueil ; `defiLine` remplace l'encart dans Donjons ; `defiTodo` pour la pastille ; `defiReward` estime les kamas du coffre par `E.defiSim` gardé dans `ui.dfEst` (même jour, même équipe) ; `defiLbFill` charge le top 5 du palier. CSS `.dfhome`, `.dfline`, `.df-goal`.
 

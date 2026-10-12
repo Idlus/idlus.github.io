@@ -93,18 +93,19 @@ drop trigger if exists profiles_first_admin on public.profiles;
 create trigger profiles_first_admin after insert on public.profiles for each row execute function public.first_admin();
 
 -- ---------- vues publiques (sans les joueurs « en vérification ») ----------
+-- 0.1.26 : main_lvl (niveau du héros principal) ajouté en dernière colonne, pour le cadre du médaillon
 create or replace view public.lb_level as
-  select l.user_id, p.pseudo, l.main, l.level, l.album, l.succes, l.heroes
+  select l.user_id, p.pseudo, l.main, l.level, l.album, l.succes, l.heroes, l.main_lvl
   from public.ladder l join public.profiles p on p.id = l.user_id where not l.flagged;
 create or replace view public.lb_class as
   select c.user_id, p.pseudo, c.cls, c.score
   from public.ladder_class c join public.ladder l on l.user_id = c.user_id join public.profiles p on p.id = c.user_id where not l.flagged;
 create or replace view public.lb_records as
-  select r.user_id, p.pseudo, l.main, r.did, r.dname, r.k, r.t, r.at
+  select r.user_id, p.pseudo, l.main, r.did, r.dname, r.k, r.t, r.at, l.main_lvl
   from public.records r join public.ladder l on l.user_id = r.user_id join public.profiles p on p.id = r.user_id where not l.flagged;
 create or replace view public.lb_week as
   select r.user_id, p.pseudo, l.main, r.w, r.did, r.dname, r.bracket, r.k, r.t, r.at,
-    rank() over (partition by r.w, r.did order by r.k desc, r.t asc, r.at asc) as r
+    rank() over (partition by r.w, r.did order by r.k desc, r.t asc, r.at asc) as r, l.main_lvl
   from public.records_week r join public.ladder l on l.user_id = r.user_id join public.profiles p on p.id = r.user_id where not l.flagged;
 grant select on public.lb_level, public.lb_class, public.lb_records, public.lb_week to anon, authenticated;
 
