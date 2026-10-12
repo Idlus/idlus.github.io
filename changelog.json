@@ -1,6 +1,18 @@
 {
-  "version": "0.1.22",
+  "version": "0.1.22.1",
   "versions": [
+    {
+      "v": "0.1.22.1",
+      "name": "Challenges qui rapportent",
+      "items": [
+        "Les challenges rapportent plus, selon leur difficulté : Survivant, Focus et Barbare +10 %, Versatile, Économe, Élitiste et Élémentaire +15 %, Chacun son monstre et Rapide +20 %, Incurable +25 %, Ordonné +30 % d'XP et de butin",
+        "Série de challenges réussis : +1 % par combat, jusqu'à +10 % (au lieu de +0,5 % et +5 %)",
+        "Respecter les challenges ne ralentit presque plus l'équipe : l'IA garde ses sorts de zone pour Focus, Élitiste et Ordonné tant qu'ils ne risquent pas d'achever le mauvais monstre, et les invocations visent la bonne cible",
+        "Chacun son monstre (jamais réussi) : les héros se répartissent les monstres et chacun vise le sien jusqu'à sa mort",
+        "Rapide : le nombre de tours permis tient compte du niveau des monstres (il était impossible à haut niveau)",
+        "Élémentaire : chaque héros garde un seul élément, au lieu d'un seul élément pour toute l'équipe"
+      ]
+    },
     {
       "v": "0.1.22",
       "name": "Carnet et trésor",

@@ -840,17 +840,17 @@
 
   /* ---------------- Challenges ---------------- */
   E.CHALLENGES = {
-    survivant:  { name: "Survivant",          diff: 5,  desc: "Aucun héros ne doit tomber." },
-    versatile:  { name: "Versatile",          diff: 5,  desc: "Chaque sort au plus une fois par tour." },
-    econome:    { name: "Économe",            diff: 8,  desc: "Ne jamais lancer le même sort deux fois de suite." },
-    focus:      { name: "Focus",              diff: 8,  desc: "Une fois un monstre attaqué, le tuer avant d'en attaquer un autre." },
-    elitiste:   { name: "Élitiste",           diff: 8,  desc: "Tuer d'abord le monstre désigné." },
-    ordonne:    { name: "Ordonné",            diff: 8,  desc: "Tuer les monstres du plus haut au plus bas niveau." },
-    incurable:  { name: "Incurable",          diff: 12, desc: "Aucun soin (ni sort de soin, ni vol de vie)." },
-    elementaire:{ name: "Élémentaire",        diff: 12, desc: "N'utiliser qu'un seul élément pendant tout le combat." },
-    barbare:    { name: "Barbare",            diff: 8,  desc: "Aucun sort de protection : ni bouclier, ni bonus de caractéristiques." },
-    rapide:     { name: "Rapide",             diff: 0,  desc: "Terminer le combat en peu de tours." },
-    chacun:     { name: "Chacun son monstre", diff: 12, desc: "Chaque héros n'attaque qu'un seul monstre." },
+    survivant:  { name: "Survivant",          diff: 10, desc: "Aucun héros ne doit tomber." },
+    versatile:  { name: "Versatile",          diff: 15, desc: "Chaque sort au plus une fois par tour." },
+    econome:    { name: "Économe",            diff: 15, desc: "Ne jamais lancer le même sort deux fois de suite." },
+    focus:      { name: "Focus",              diff: 10, desc: "Une fois un monstre attaqué, le tuer avant d'en viser un autre (les sorts de zone qui le touchent sont permis)." },
+    elitiste:   { name: "Élitiste",           diff: 15, desc: "Tuer d'abord le monstre désigné." },
+    ordonne:    { name: "Ordonné",            diff: 30, desc: "Tuer les monstres du plus haut au plus bas niveau." },
+    incurable:  { name: "Incurable",          diff: 25, desc: "Aucun soin (ni sort de soin, ni vol de vie)." },
+    elementaire:{ name: "Élémentaire",        diff: 15, desc: "Chaque héros n'utilise qu'un seul élément pendant tout le combat." },
+    barbare:    { name: "Barbare",            diff: 10, desc: "Aucun sort de protection : ni bouclier, ni bonus de caractéristiques." },
+    rapide:     { name: "Rapide",             diff: 20, desc: "Terminer le combat en peu de tours." },
+    chacun:     { name: "Chacun son monstre", diff: 20, desc: "Les héros se répartissent les monstres : chacun vise le sien jusqu'à sa mort (les sorts de zone qui le touchent sont permis)." },
   };
   const pickChallenges = (S, F, n) => {
     const heroes = F.ents.filter((e) => e.side === "c"); const mons = F.ents.filter((e) => e.side === "m");
@@ -866,7 +866,7 @@
     });
     const out = [];
     while (out.length < n && pool.length) { const id = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; const ch = { id, ok: true };
-      if (id === "rapide") { ch.turns = 2 + Math.ceil(mons.length / Math.max(1, heroes.length)) + (F.dungeon ? 1 : 0); ch.bonus = Math.max(5, 14 - ch.turns * 2); } else ch.bonus = E.CHALLENGES[id].diff;
+      if (id === "rapide") { const ml = mons.reduce((t, m) => t + m.lvl, 0) / Math.max(1, mons.length); ch.turns = 3 + Math.ceil(mons.length / Math.max(1, heroes.length)) + Math.floor(ml / 50) + (F.dungeon ? 1 : 0); ch.bonus = E.CHALLENGES.rapide.diff; } /* les combats de haut niveau durent plus longtemps */ else ch.bonus = E.CHALLENGES[id].diff;
       if (id === "elitiste") { const t = mons.slice().sort((a, b) => (b.boss ? 1e6 : 0) + b.lvl - ((a.boss ? 1e6 : 0) + a.lvl))[0]; ch.target = F.ents.indexOf(t); }
       out.push(ch); }
     return out;
@@ -1030,7 +1030,7 @@
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
     F.powRew = E.powRew(mons, S.dungeon ? "dg" : "hunt"); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
-    F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: null, hitTurn: {} };
+    F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     newRound(F);
     return F;
@@ -1203,6 +1203,11 @@
       const el = chal(F, "elitiste"); if (el && F.ents[el.target].alive) prim = F.ents[el.target];
       const od = chal(F, "ordonne"); if (!prim && od) prim = foes.slice().sort((a, b) => b.lvl - a.lvl)[0];
       const fo = (chal(F, "focus") || chal(F, "chacun")) && F.cs.focus[e.cid] !== undefined ? F.ents[F.cs.focus[e.cid]] : null; if (!prim && fo && fo.alive) prim = fo;
+      if (!prim && chal(F, "chacun")) { // chacun son monstre : prendre de préférence un monstre qu'aucun autre héros n'a déjà pris
+        const taken = new Set(Object.entries(F.cs.focus).filter(([k, v]) => +k !== e.cid && F.ents[v].alive).map(([, v]) => v));
+        const free = foes.filter((m) => !taken.has(F.ents.indexOf(m))).sort((a, b) => a.hp - b.hp);
+        if (free.length) prim = free[0];
+      }
     }
     const rule = (slot && slot.tgt) || "low";
     if (rule === "low" && !prim) { // 0.1 : cible prioritaire de l'équipe
@@ -1271,7 +1276,7 @@
             if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
-          const ce = chal(F, "elementaire"); if (ce && r.el) { if (F.cs.el === null) F.cs.el = r.el; else if (F.cs.el !== r.el) failChal(F, "elementaire", "deux éléments utilisés"); }
+          const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
         });
         parts.push(`${ts.length > 1 ? ts.length + " cibles" : ts[0].name} : ${vals.join(" / ")}`); ok = true;
         if (f.k === "drain") { const ci = chal(F, "incurable"); if (ci) failChal(F, "incurable", "vol de vie"); }
@@ -1317,9 +1322,8 @@
       (cs.hitTurn[key] = cs.hitTurn[key] || new Set()); foeHits.forEach((i) => cs.hitTurn[key].add(i));
       if (chal(F, "focus") || chal(F, "chacun")) {
         const f0 = cs.focus[key];
-        if (f0 !== undefined && (F.ents[f0].alive || chal(F, "chacun")) && foeHits.some((i) => i !== f0)) failChal(F, chal(F, "chacun") ? "chacun" : "focus", "une autre cible a été attaquée");
-        if (f0 === undefined || (!F.ents[f0].alive && !chal(F, "chacun"))) cs.focus[key] = foeHits[0];
-        if (chal(F, "chacun") && Object.entries(cs.focus).some(([k2, v]) => +k2 !== key && v === cs.focus[key])) failChal(F, "chacun", "deux héros sur le même monstre");
+        if (f0 !== undefined && F.ents[f0].alive && !foeHits.includes(f0)) failChal(F, chal(F, "chacun") ? "chacun" : "focus", "une autre cible a été attaquée");
+        if (f0 === undefined || !F.ents[f0].alive) cs.focus[key] = foeHits[0];
       }
     }
     flog(F, `${e.name} · ${sp.name}${parts.length ? " → " + parts.join(", ") : ""}`, "c");
@@ -1334,9 +1338,14 @@
     if (chal(F, "econome") && F.cs.last[key] === sp.id) return true;
     if (chal(F, "incurable") && (k === "heal" || k === "drain" || g.fx.some((f) => f.k === "leech"))) return true;
     const multi = g.fx.some((f) => ["dmg", "drain", "dot"].includes(f.k) && f.n > 1) && alive(F, "m").length > 1;
-    if ((chal(F, "focus") || chal(F, "chacun") || chal(F, "elitiste") || chal(F, "ordonne")) && multi) return true;
+    // Focus, Chacun son monstre : les sorts de zone restent permis tant qu'ils touchent la cible du héros
+    if (multi && (chal(F, "elitiste") || chal(F, "ordonne"))) { // Élitiste, Ordonné : zone permise sauf si elle risque d'achever un autre monstre avant son tour
+      const el = chal(F, "elitiste"), foes = alive(F, "m"), top = Math.max(...foes.map((m) => m.lvl));
+      const ok = (m) => (el ? F.ents.indexOf(m) === el.target || !F.ents[el.target].alive : true) && (!chal(F, "ordonne") || m.lvl >= top);
+      if (foes.some((m) => !ok(m) && m.hp < m.hpMax * 0.6)) return true;
+    }
     if (chal(F, "barbare") && (k === "shield" || k === "buff")) return true;
-    if (chal(F, "elementaire") && sp.el && sp.el !== "best" && sp.el !== (F.cs.el || E.mainEl(c)) && ["dmg", "aoe", "drain", "dot"].includes(k)) return true;
+    if (chal(F, "elementaire") && sp.el && sp.el !== "best" && sp.el !== ((F.cs.el || {})[key] || E.mainEl(c)) && ["dmg", "aoe", "drain", "dot"].includes(k)) return true;
     return false;
   };
 
@@ -1471,7 +1480,8 @@
     if (e.cls === "panda" && (e.ivresse || 0) >= 5 && !e.cuve) e.cuve = true;
   };
   const summonTurn = (S, F, e) => {
-    const t = alive(F, "m").sort((a, b) => a.hp - b.hp)[0]; if (!t) return;
+    const own = F.ents[e.owner], oc = own && S.chars.find((x) => x.id === own.cid);
+    const t = (own && own.alive && oc && E.chalRespect(S, oc) && F.chals && F.chals.some((c) => c.ok) ? pickFoes(S, F, own, null, 1)[0] : null) || alive(F, "m").sort((a, b) => a.hp - b.hp)[0]; if (!t) return; // les invocations suivent les challenges de leur maître
     F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
     const d = dealDamage(F, e, t, e.dmg * rf(0.85, 1.15), e.el);
     flog(F, `${e.name} (invocation) → ${t.name} : −${d}`, "c");
@@ -2240,8 +2250,8 @@
     return R;
   };
 
-  /* Challenges : bonus des challenges réussis + série (+0,5 % par succès consécutif, max +5 %) */
-  E.CHAL_STREAK_STEP = 0.5; E.CHAL_STREAK_MAX = 5;
+  /* Challenges : bonus des challenges réussis + série (+1 % par succès consécutif, max +10 %) */
+  E.CHAL_STREAK_STEP = 1; E.CHAL_STREAK_MAX = 10;
   E.chalResolve = (S, F, lost) => {
     const L = F.chals || []; if (!L.length) return 0;
     S.chalStats = S.chalStats || {}; let sum = 0, allOk = true;

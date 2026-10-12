@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.22.1 « Challenges qui rapportent » (bêta)
+- Retour joueur : respecter les challenges faisait perdre 7 à 20 % de gains par heure (IA ralentie, bonus de +5 à +12 %). Nouveaux bonus selon le coût mesuré par simulation (`E.CHALLENGES[id].diff` : 10 à 30 %), série +1 %/combat jusqu'à +10 % (`E.CHAL_STREAK_STEP/MAX`). IA : sorts de zone permis pour Focus et Chacun s'ils touchent la cible du héros, pour Élitiste/Ordonné sauf si un autre monstre passe sous 60 % de PV ; invocations ciblées selon les challenges du maître. Corrections : Chacun son monstre (jamais réussi), Rapide (tours selon le niveau des monstres), Élémentaire (un élément par héros, `F.cs.el` par héros).
+
 ## 0.1.22 « Carnet et trésor » (bêta)
 - Lot Suivi : carnet de bord (Équipe › Carnet) avec courbes d'XP, kamas, combats et niveau sur 7 jours (par heure) et 30 jours (par jour), heures hors ligne et mises à jour marquées, bilan des kamas par source, meilleures zones, grands moments ; envoi d'un résumé hebdomadaire au serveur (`supabase/carnet.sql`, lisible par l'admin seulement) ou copie. Tout est dans `js/suivi.js` (enveloppe `E.tick`, `E.catchUp` et les actions de `E.ACTIONS` pour ranger les kamas), environ 6 à 10 Ko dans la sauvegarde.
 - Chasse au trésor (Monde › Trésor) : parchemin du jour + parchemins trouvés en chasse (1/300), 3 à 5 indices (sous-zone + repère, 6 victoires sur place), gardien renforcé (même mécanique que les protecteurs), coffre ; l'itinérance attend la fin du trésor. Succès, titre « Chasseur de trésors », ornement « Boussole dorée ». Tests : `tests/suivi.test.js`.
