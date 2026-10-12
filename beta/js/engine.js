@@ -364,7 +364,7 @@
     const T = ITEMS[tpl]; const roll = {};
     for (const k in T.stats) { const [a, b] = T.stats[k]; roll[k] = ri(a, b); }
     const it = { uid: S.nextUid++, tpl, stats: Object.assign({}, roll) };
-    const chance = opts.radiant === true ? 1 : E.RADIANT_CHANCE * (opts.archi ? 5 : 1) * E.radiantMult(S);
+    const chance = opts.radiant === true ? 1 : E.RADIANT_CHANCE * (opts.archi ? 5 : 1) * (opts.champ ? 2 : 1) * E.radiantMult(S);
     if (opts.radiant !== false && rnd() < chance) {
       it.radiant = E.radiantBonus(); it.roll = roll;
       for (const k in it.stats) if (it.stats[k] > 0) it.stats[k] = Math.ceil(it.stats[k] * (1 + it.radiant / 100));
@@ -561,7 +561,7 @@
       hpMax: hp, hp, el: m.el, atk: m.atk || "Attaque", res: m.res, sp: m.sp || base.sp || null, cds: {},
       dmg: (3 + lvl * 0.95) * (base.dmg || 1) * (archi ? 1.4 : 1),
       ini: 50 + lvl * 4 + (m.boss ? 100 : 0), attacks: m.boss ? 2 : 1,
-      buffs: [], dots: [], debuffs: [], shield: 0, alive: true, weaken: 0, paLoss: 0,
+      buffs: [], dots: [], debuffs: [], shield: 0, alive: true, weaken: 0, paLoss: 0, role: E.monRole(id),
     };
   };
   const charEntity = (S, c) => {
@@ -575,6 +575,62 @@
   };
   E.ARCHI_CHANCE = 1 / 400;
 
+  /* ---------------- 3.3.0 « Combat vivant » : placement, monstres spéciaux, Champions ---------------- */
+  /* Placement : chaque héros est en première ligne (« f ») ou à l'arrière (« b »). Les attaques sur une seule cible
+     visent la première ligne 3 fois sur 4 tant qu'elle tient debout. Placement automatique par défaut (S.placeAuto). */
+  E.FRONT_P = 0.75;
+  E.frontMax = (n) => Math.max(1, Math.ceil(n / 2));
+  E.avgRes = (st) => { const ks = Object.values(ELEMENTS).map((x) => x.res).filter(Boolean); return ks.length ? ks.reduce((a, k) => a + Math.min(50, st[k] || 0), 0) / ks.length : 0; };
+  /* classes faites pour encaisser : bonus pour le placement automatique (à PV égaux, elles passent devant) */
+  E.TANK_CLASSES = ["sacri", "feca", "panda", "zobal", "forge"];
+  E.tankScore = (S, c) => { const st = E.charStats(S, c); return st.hpMax * (1 + E.avgRes(st) / 100) * (E.TANK_CLASSES.includes(c.cls) ? 1.25 : 1); };
+  E.isAutoPlace = (S) => S.placeAuto !== false;
+  /* renvoie l'ensemble des ids de héros en première ligne pour l'équipe actuelle */
+  E.frontSet = (S) => {
+    const team = E.team(S); const max = E.frontMax(team.length);
+    const ranked = team.slice().sort((a, b) => E.tankScore(S, b) - E.tankScore(S, a));
+    if (E.isAutoPlace(S)) return new Set(ranked.slice(0, max).map((c) => c.id));
+    let f = team.filter((c) => c.row === "f");
+    if (f.length > max) f = ranked.filter((c) => c.row === "f").slice(0, max);
+    if (!f.length && ranked.length) f = [ranked[0]];
+    return new Set(f.map((c) => c.id));
+  };
+  /* passer un héros d'une rangée à l'autre : le placement devient manuel en gardant la répartition affichée */
+  E.setRow = (S, cid, row) => {
+    const team = E.team(S); const c = team.find((x) => x.id === cid); if (!c) return "Ce héros n'est pas dans l'équipe.";
+    const cur = E.frontSet(S); team.forEach((x) => (x.row = cur.has(x.id) ? "f" : "b"));
+    const max = E.frontMax(team.length); const nf = team.filter((x) => x.row === "f").length;
+    if (row === "f" && c.row !== "f" && nf >= max) { const out = team.filter((x) => x.row === "f").sort((a, b) => E.tankScore(S, a) - E.tankScore(S, b))[0]; out.row = "b"; } /* échange avec le moins solide de la première ligne */
+    if (row === "b" && c.row === "f" && nf <= 1) return "Il faut au moins un héros en première ligne.";
+    c.row = row === "f" ? "f" : "b"; S.placeAuto = false; return null;
+  };
+  E.setPlaceAuto = (S, on) => { S.placeAuto = !!on; if (!on) { const cur = E.frontSet(Object.assign({}, S, { placeAuto: true })); E.team(S).forEach((x) => (x.row = cur.has(x.id) ? "f" : "b")); } };
+  /* monstres à mécanique spéciale : le Rôdeur vise l'arrière, le Bondisseur ignore les rangées */
+  E.MON_ROLES = {
+    rodeur: { name: "Rôdeur", desc: "Vise l'arrière 3 fois sur 4.", re: /Archer|Furtif|Invisible|Corbac|Assassin|Fourbe|Sournois|Ninja/ },
+    bond:   { name: "Bondisseur", desc: "Ignore les rangées : frappe n'importe quel héros.", re: /^Tofu|Moskito|Kwak(ere)? de Vent|Pious|Bondi|Lapino/ },
+  };
+  E.monRole = (key) => { const m = MONSTERS[key]; if (!m || m.boss) return null; for (const k in E.MON_ROLES) if (E.MON_ROLES[k].re.test(m.name)) return k; return null; };
+  /* Champions de chasse : 1 combat sur 100, un monstre du groupe devient Champion (PV ×2, dégâts +20 %, un pouvoir) */
+  E.CHAMP_CHANCE = 1 / 100;
+  E.CHAMP_POWERS = {
+    enrage:   { name: "Enragé",     desc: "+25 % de dégâts sous 50 % de PV." },
+    blinde:   { name: "Blindé",     desc: "Bouclier de 15 % de ses PV au début du combat." },
+    vampire:  { name: "Vampirique", desc: "Vole 15 % des dégâts qu'il inflige." },
+    veloce:   { name: "Véloce",     desc: "Joue avant les héros." },
+    meneur:   { name: "Meneur",     desc: "Ses alliés font +10 % de dégâts tant qu'il est debout." },
+    traqueur: { name: "Traqueur",   desc: "Vise le héros qui a le moins de PV." },
+  };
+  E.makeChampion = (m, pw) => {
+    m.champ = pw || pick(Object.keys(E.CHAMP_POWERS));
+    m.hpMax = m.hp = Math.round(m.hpMax * 2); m.dmg *= 1.2;
+    if (m.champ === "blinde") m.shield = Math.round(m.hpMax * 0.15);
+    if (m.champ === "vampire") m.vamp = 0.15;
+    if (m.champ === "veloce") m.ini += 1e6;
+    if (m.champ === "enrage") m.enrageMod = true;
+    return m;
+  };
+
   E.makeGroup = (S, sub, teamSize) => {
     const size = ri(1, Math.min(8, teamSize + 1));
     const g = [];
@@ -584,6 +640,7 @@
       const fl = E.huntTier(S, id) >= 3 ? 2 : 1;
       g.push(monsterEntity(id, Math.max(1, lvl), { archi: rnd() < E.ARCHI_CHANCE * E.archiMult(S) * fl }));
     }
+    if (rnd() < E.CHAMP_CHANCE) { const cand = g.filter((m) => !m.archi); if (cand.length) E.makeChampion(pick(cand)); }
     return g;
   };
 
@@ -723,7 +780,9 @@
       label = sub.name;
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
-    const ents = team.map((c) => charEntity(S, c)).concat(mons);
+    const front = E.frontSet(S);
+    const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
+    const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null;
@@ -1058,10 +1117,19 @@
 
   /* tour de monstre : vrais sorts DOFUS simplifiés + mécaniques de boss */
   /* cible d'un monstre : l'Arbre du Sadida attire les coups, les tourelles du Steamer sont délaissées */
-  const pickHero = (F, targets) => {
+  /* 3.3.0 : la première ligne reçoit 3 coups sur 4 (le Rôdeur inverse, le Bondisseur ignore les rangées, le Champion Traqueur vise le plus faible) ;
+     les invocations se tiennent en première ligne */
+  const rowOf = (t) => (t.summon ? "f" : t.row || "f");
+  const pickHero = (F, targets, e) => {
     const tree = targets.find((t) => t.tree && t.summon); if (tree && rnd() < 0.5) return tree;
-    const w = targets.map((t) => (t.turret ? 0.3 : 1)); let r = rnd() * w.reduce((a, b) => a + b, 0);
-    for (let i = 0; i < targets.length; i++) { r -= w[i]; if (r <= 0) return targets[i]; } return targets[targets.length - 1];
+    if (e && e.champ === "traqueur") { const hs = targets.filter((t) => !t.summon); if (hs.length) return hs.sort((a, b) => a.hp - b.hp)[0]; }
+    let pool = targets;
+    if (!(e && e.role === "bond")) {
+      const fr = targets.filter((t) => rowOf(t) === "f"), bk = targets.filter((t) => rowOf(t) === "b");
+      if (fr.length && bk.length) { const pf = e && e.role === "rodeur" ? 1 - E.FRONT_P : E.FRONT_P; pool = rnd() < pf ? fr : bk; }
+    }
+    const w = pool.map((t) => (t.turret ? 0.3 : 1)); let r = rnd() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; } return pool[pool.length - 1];
   };
   const monsterTurn = (S, F, e) => {
     let attacks = e.attacks;
@@ -1070,7 +1138,7 @@
     if (e.mech) bossMech(S, F, e);
     if (e.charging === "fire") { e.charging = false; const heroes = alive(F, "c"); flog(F, `${e.name} déclenche son attaque dévastatrice !`, "m");
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * 2.2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); }); return; }
-    const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
+    const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (alive(F, "m").some((m) => m.champ === "meneur" && m !== e) ? 1.1 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
     const dmgSpells = (e.sp || []).filter((s) => s.fx.some((f) => f.k === "dmg" || f.k === "drain" || f.k === "dot"));
     const refAvg = dmgSpells.length ? dmgSpells.reduce((a, s) => a + avgDmg(s), 0) / dmgSpells.length : 1;
     for (let k = 0; k < attacks; k++) {
@@ -1082,14 +1150,14 @@
         if (ok.length) sp = pick(ok);
       }
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
-      if (!sp) { const t = pickHero(F, targets); const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
+      if (!sp) { const t = pickHero(F, targets, e); const d = dealDamage(F, e, t, e.dmg * mdmg * lowPa * rf(0.85, 1.15), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
       if (sp.cd) e.cds[sp.n] = sp.cd + 1;
       const parts = []; let didDmg = false;
       for (const f of sp.fx) {
         if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
           if (didDmg) continue; didDmg = true; // une seule ligne de dégâts par sort (les autres sont des variantes)
           const ratio = refAvg ? clamp(avgDmg({ fx: [f] }) / refAvg, 0.5, 1.8) : 1;
-          const ts = f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets)];
+          const ts = f.n > 1 ? targets.slice().sort(() => rnd() - 0.5).slice(0, Math.min(f.n, targets.length)) : [pickHero(F, targets, e)];
           const base = e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15);
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
@@ -1261,11 +1329,12 @@
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
-      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1);
+      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1);
       xp += x;
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); }
+      if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
     const share = 2 / (team.length + 1);
@@ -1292,13 +1361,14 @@
     const sub = SUBS[S.sub];
     const seen = (k, what) => { (S.seenDrops[k] = S.seenDrops[k] || {})[what] = 1; };
     mons.forEach((m) => {
-      const T = MONSTERS[m.base || m.key]; const q = m.archi ? 3 : 1;
-      const lp = E.lootPenalty(topL - m.lvl); const dm0 = dm; { const dm = dm0 * lp;
+      const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1);
+      const lp = E.lootPenalty(topL - m.lvl); const dm0 = dm; { const dm = dm0 * lp * (m.champ ? 2 : 1);
       const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
       const rolls = 1 + (E.teamHas(S, "sram") && rnd() < 0.1 ? 1 : 0);
       const gotR = new Set();
       for (let rr = 0; rr < rolls; rr++)
       T.drops.forEach(([r, rate]) => { if (gotR.has(r)) return; const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); const base = E.resRate(rate); if (rnd() * 100 < Math.min(100, base * mm)) { gotR.add(r); addRes(S, r, q); out.res[r] = (out.res[r] || 0) + q; seen(m.key, r); } });
+      if (m.champ) { const ok = T.drops.filter(([r, p]) => !E.isKey(r) && p < 100); const best = ok.filter(([, p]) => p >= 5).sort((a, b) => a[1] - b[1])[0] || ok.sort((a, b) => b[1] - a[1])[0] || T.drops[0]; /* la ressource typique la plus rare du monstre */ if (best) { addRes(S, best[0], 3); out.res[best[0]] = (out.res[best[0]] || 0) + 3; out.champ.res = [best[0], 3]; } }
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
@@ -1307,7 +1377,7 @@
           const T2 = ITEMS[tpl];
           if (T2.lvl < topL - E.LOW_ITEM_GAP) { const k = Math.round(T2.lvl * 4 + 10); S.kamas += k; out.kamas += k; out.conv = (out.conv || 0) + 1; return; }
           if (E.itemCount(S) >= E.itemCap(S)) { note(S, `Sac plein : ${T2.name} perdu.`, "warn"); return; }
-          const it = E.rollItem(S, tpl, { archi: m.archi });
+          const it = E.rollItem(S, tpl, { archi: m.archi, champ: m.champ });
           const auto = E.applyAuto(S, it);
           if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
         }
@@ -1378,7 +1448,7 @@
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr, dropMult: (1 + cb / 100) * sr * (F.roulette === "jackpot" ? 2 : 1), treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
-      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null });
+      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null });
       if (!S.dungeon) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       const xpTot = Object.values(F.rewards.xp).reduce((a, b) => a + b, 0);
       flog(F, `Victoire ! +${xpTot} XP, +${F.rewards.kamas} kamas`, "win");
@@ -1532,6 +1602,7 @@
     if ((m = /^lvl(\d+)$/.exec(id))) return [top, +m[1]];
     if ((m = /^win(\d+)$/.exec(id))) return [S.stats.wins, +m[1]];
     if ((m = /^archi(\d+)$/.exec(id))) return [Object.values(S.archis).reduce((a, b) => a + b, 0), +m[1]];
+    if ((m = /^champ(\d+)$/.exec(id))) return [S.champs || 0, +m[1]];
     if ((m = /^fam(\d+)$/.exec(id))) return [Object.keys(S.families).length, +m[1]];
     if ((m = /^tro(\d+)$/.exec(id))) return [Object.keys(S.trophies).length, +m[1]];
     if ((m = /^rad(\d+)$/.exec(id))) return [S.radiants || 0, +m[1]];
@@ -1620,8 +1691,17 @@
       return what;
     };
     const elDe = (el) => (/^[AEIOUÉ]/.test(ELEMENTS[el].name) ? `d'${ELEMENTS[el].name}` : `de ${ELEMENTS[el].name}`);
+    // 0. (3.3.0) un héros fragile tombe tôt en première ligne alors qu'un héros plus solide est à l'arrière
+    if (first && first.r <= 3 && F.ents[first.i].row === "f") {
+      const c = charOf(F.ents[first.i]); const backs = heroes.filter((h) => h.row === "b").map(charOf).filter(Boolean);
+      const tank = c && backs.sort((a, b) => E.tankScore(S, b) - E.tankScore(S, a))[0];
+      if (c && tank && E.tankScore(S, tank) > E.tankScore(S, c) * 1.2) {
+        R.cause = "row"; R.cid = c.id; R.place = true;
+        R.txt = `${c.name} (${CLASSES[c.cls].name}) tombe tour ${first.r} en première ligne : passe ${c.name} à l'arrière et mets ${tank.name} devant.`;
+      }
+    }
     // 1. un héros tombe tôt
-    if (first && first.r <= 3) {
+    if (!R.txt && first && first.r <= 3) {
       const e = F.ents[first.i]; const c = charOf(e); const ht = e.taken || {}; const hs = Object.values(ht).reduce((a, b) => a + b, 0);
       const te = Object.entries(ht).sort((a, b) => b[1] - a[1])[0];
       if (c && te && te[0] !== "n" && hs && te[1] / hs > 0.6) {
@@ -1654,6 +1734,7 @@
     if (first) { const by = first.by >= 0 ? F.ents[first.by] : null; R.facts.push({ k: "killer", txt: `${F.ents[first.i].name} tombe tour ${first.r}${by ? ` (${by.name})` : ""}` }); }
     if (topEl && totTaken) R.facts.push({ k: "el", txt: `Élément subi : ${ELEMENTS[topEl[0]].name} ${Math.round(topEl[1] / totTaken * 100)} %` });
     R.facts.push({ k: "hp", txt: `PV perdus : ${totTaken.toLocaleString("fr-FR")}` });
+    if (R.cause === "row") R.facts.push({ k: "row", txt: `Première ligne : ${heroes.filter((h) => h.row === "f").map((h) => h.name).join(", ")}` });
     if (totTaken) R.facts.push({ k: "heal", txt: `Soins : ${healed.toLocaleString("fr-FR")}` });
     const zkey = F.dungeonId ? "dg:" + F.dungeonId : F.sub; let streak = 1; for (const hrow of S.history) { if (hrow.z !== zkey) break; if (hrow.w) break; streak++; }
     if (streak >= 2) R.facts.push({ k: "streak", txt: `Défaite ${streak} fois de suite ici` });
@@ -2031,8 +2112,8 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      giveRewards(S, g, { xpBoost });
-      E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, lvl: m.lvl })), sub: S.sub, offline: true });
+      giveRewards(S, g, { xpBoost, offline: true });
+      E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
     }
     S.dungeon = wasDungeon;
