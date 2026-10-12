@@ -550,8 +550,8 @@
   /* 3.1 : compensation des paliers de caractéristiques (les héros ont moins de stat d'élément à haut niveau) */
   E.MON_HP_CURVE = [[36, 1], [48, 0.8], [64, 0.78], [76, 0.74], [88, 0.66], [100, 0.64], [120, 0.6], [200, 0.5]];
   E.monHpLvl = (l) => { const T = E.MON_HP_CURVE; if (l <= T[0][0]) return 1; for (let i = 1; i < T.length; i++) if (l <= T[i][0]) { const [a, va] = T[i - 1], [b, vb] = T[i]; return va + (vb - va) * (l - a) / (b - a); } return T[T.length - 1][1]; };
-  /* 0.1 : au-delà du niveau 100, les objets DofusDB grimpent bien plus vite que les monstres ; PV et dégâts montent jusqu'à ×1,8 et ×1,7 au niveau 200 (simulation) */
-  E.MON_HI = { hp: 1.8, dmg: 1.7 };
+  /* 0.1 : au-delà du niveau 100, les objets DofusDB grimpent bien plus vite que les monstres ; PV et dégâts montent jusqu'à ×1,4 et ×1,35 au niveau 200 (simulation) */
+  E.MON_HI = { hp: 1.4, dmg: 1.35 };
   const HI = (l, x) => 1 + (x - 1) * Math.max(0, Math.min(1, (l - 100) / 100));
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
