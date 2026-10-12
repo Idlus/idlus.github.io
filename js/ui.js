@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.23";
+const GAME_VERSION = "0.1.23.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.23.1", name: "Bouftous apprivoisés", items: [
+    "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
+    "Les groupes d'au moins 4 monstres arrivent avec les zones 32-40 (avant : dès les zones 22-30)",
+    "Sans équipement, on gagne de nouveau dans les zones 22-30 ; c'est à partir des zones 32-40 qu'il faut s'équiper. Avec un équipement correct, les gains par heure ne changent pas"
+  ] },
   { v: "0.1.23", name: "Boss et Percepteurs", items: [
     "Guilde › Boss : chaque semaine (lundi minuit), un boss de donjon différent pour toutes les guildes. Chaque membre a 3 essais par jour : son équipe l'affronte pendant 15 tours, au niveau de ses héros, et ses dégâts deviennent des points pour la guilde",
     "Jauge de la guilde (2 500 points par membre, au moins 5 comptés) : un coffre de kamas et de Poussières de stasis s'ouvre à 25, 50, 75 et 100 % pour chaque membre qui a frappé au moins une fois",

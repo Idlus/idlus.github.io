@@ -1,6 +1,15 @@
 {
-  "version": "0.1.23",
+  "version": "0.1.23.1",
   "versions": [
+    {
+      "v": "0.1.23.1",
+      "name": "Bouftous apprivoisés",
+      "items": [
+        "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
+        "Les groupes d'au moins 4 monstres arrivent avec les zones 32-40 (avant : dès les zones 22-30)",
+        "Sans équipement, on gagne de nouveau dans les zones 22-30 ; c'est à partir des zones 32-40 qu'il faut s'équiper. Avec un équipement correct, les gains par heure ne changent pas"
+      ]
+    },
     {
       "v": "0.1.23",
       "name": "Boss et Percepteurs",
