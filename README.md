@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.28 « Journal de quêtes » (bêta)
+- Mathis : refonte du menu Quêtes (maquette validée « 1A 2A 3A 4A 5A 6A 7A 8A »). Rendu dans `js/questui.js` (`window.QUI` : `render`, `act` pour les actions `qj-*`, `todo` pour la pastille) et `css/quetes.css` (classes `.qj-*`). `ui.qt` vaut `jour` par défaut et en entrant dans Quêtes par la barre ; pages `jour`, `almanax`, `bounty`, `commandes`, `temples`, `main`, `dofus`, `align`, `ach`, `orn`, `shops`. Les pages Almanax, Avis, Commandes, Temples et Alignement restent rendues par ui.js (leur `<p class="note">` de tête passe derrière le « ? »). Les boutiques ne sont plus en bas des pages : `shopLink(id)` met un raccourci vers Quêtes › Comptoirs.
+
 ## 0.1.27.1 « Panel de test réservé » (bêta)
 - Mathis : panel de test (`js/admin.js`) réservé à lui seul. `testerOk()` dans ui.js : vrai seulement si `window.CHAT.role === "admin"` (rôle lu par le serveur via `my_role`), ou en local (localhost) pour les essais. Sans ça, le bouton du bandeau bêta n'est pas affiché et `admin.js` ignore les clics `data-adm`. `renderStatus` redessine le bandeau bêta pour que le bouton apparaisse dès que le rôle est chargé.
 

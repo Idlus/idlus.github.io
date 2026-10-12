@@ -1,6 +1,19 @@
 {
-  "version": "0.1.27.1",
+  "version": "0.1.28",
   "versions": [
+    {
+      "v": "0.1.28",
+      "name": "Journal de quêtes",
+      "items": [
+        "Le menu Quêtes devient un journal rangé en 3 familles : Aujourd'hui (Almanax, avis de recherche, commandes, temples), Aventures (quête principale, Dofus, alignement) et Collection (succès, ornements). Sur PC le journal est à gauche ; au téléphone, 3 boutons et une rangée qui défile",
+        "Quêtes s'ouvre sur le tableau du jour : l'étape en cours de la quête principale, puis une carte par activité du jour avec ce qui reste à faire. On peut faire l'offrande, livrer une commande prête ou défier un Dopeul sans quitter le tableau ; les cartes terminées descendent en bas",
+        "Quête principale : l'étape en cours en haut, les 2 suivantes en dessous, les étapes terminées repliées dans une liste",
+        "Dofus : les 18 œufs en grille, avec des filtres (en cours, à commencer, obtenus) et la fiche du Dofus choisi à côté",
+        "Succès : « Presque terminés » en haut, puis une tuile par famille avec sa barre ; un clic ouvre la liste, les succès les plus proches en premier. Les ornements ont leur page",
+        "Les 3 boutiques (Bureau des primes, Comptoir de la cité, Comptoir des temples) sont réunies dans « Comptoirs » ; chaque page garde un raccourci vers la sienne",
+        "La pastille sur Quêtes reste allumée tant que quelque chose est prêt : offrande possible, commande à livrer, Dopeul à défier. Les textes d'aide sont repliés derrière un bouton « ? »"
+      ]
+    },
     {
       "v": "0.1.27.1",
       "name": "Panel de test réservé",
