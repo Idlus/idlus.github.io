@@ -1083,3 +1083,5 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .zf-prog .bar{width:70px;margin:0 4px 0 0}
 .zf-prog .uico{width:16px;height:16px}
 @media (max-width:600px){.sr-name .tag .bt{display:none}}
+.sigmk svg{width:13px;height:13px;fill:var(--gold);stroke:none;vertical-align:-2px}
+.mrole.inl{display:inline-block;margin-right:4px;font-size:10px;font-weight:900;padding:0 6px;border-radius:999px;background:rgba(160,110,255,.22);box-shadow:0 0 0 1px rgba(160,110,255,.6)}

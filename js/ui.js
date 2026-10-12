@@ -747,7 +747,7 @@ function renderZoneView(sid) {
       <h3 class="sec">Ressources</h3>
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${r.p} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
       ${its.length ? `<h3 class="sec">Équipements à looter</h3><div class="loot">${its.map((e) => `<div class="lcard"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${(e.p * E.ITEM_DROP_SCALE).toFixed(2).replace(".", ",")} %</span></div></div></div>`).join("")}</div>` : ""}
-      ${dg ? `<h3 class="sec">Donjon</h3>${dungeonCard(s.dungeon)}` : ""}
+      ${dg ? `<h3 class="sec">Donjon${(s.dungeons || []).length > 1 ? "s" : ""}</h3>${(s.dungeons || [s.dungeon]).map(dungeonCard).join("")}` : ""}
     </div>
   </section>`;
 }
@@ -758,6 +758,7 @@ function monCard(k, opts = {}) {
     <div style="min-width:0"><div class="n">${opts.unknown ? "???" : h(m.name)} ${m.boss ? `<span class="tag boss">Boss</span>` : ""}</div>
     <div class="l">niv. <span class="num">${m.lvl[0]}${m.lvl[1] !== m.lvl[0] ? "–" + m.lvl[1] : ""}</span> ${eld(m.el)} ${kills ? `· <span class="num">${fmt(kills)}</span> tués` : ""}</div>
     <div class="res" style="margin-top:3px">${resChips(m.res)}</div>
+    ${(() => { const r = !opts.unknown && E.monRole(k, m.lvl[1]); return r ? `<div class="xs" style="margin-top:3px" data-tip="${h(E.MON_ROLES[r].desc)}"><span class="mrole inl">${h(E.MON_ROLES[r].name)}</span> ${h(E.MON_ROLES[r].desc)}</div>` : ""; })()}
     ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}</div>` : ""}</div></div>`;
 }
 /* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
@@ -810,7 +811,9 @@ function dungeonSheet(did) {
   const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
   const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(10, SI.max + 1)); ui.dgStasis = k;
   const M = E.stasisMult(k); const stat = E.dungeonScrollStat(did); const d = dgDifficulty(did, k);
-  const mechs = E.bossMechs(did).map((m) => `<li><b>${h(E.BOSS_MECHS[m].name)}</b> : ${h(E.BOSS_MECHS[m].desc)}</li>`).join("");
+  const seen = E.bossSeen(S, did); const tips = E.bossTips(did);
+  const mechs = E.bossMechs(did).map((m) => { const M = E.BOSS_MECHS[m]; return seen ? `<li>${M.sig ? `<span class="sigmk" data-tip="Mécanique unique de ce boss">${G("star")}</span> ` : ""}<b>${h(M.name)}</b> : ${h(M.desc)}</li>` : `<li><b>???</b> <span class="muted">${M.sig ? "mécanique unique, " : ""}à découvrir en affrontant le boss</span></li>`; }).join("");
+  const sigA = E.BOSS_SIGS[did] ? E.ACH.find((a) => a.id === "sig_" + did) : null;
   const steps = E.STASIS_STEPS.filter(([n]) => n <= k && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
   const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
   const loot = (B.items || []).filter(([t]) => ITEMS[t]).slice(0, 12).map(([t, r]) => { const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(ITEMS[t].name)} · niv. ${ITEMS[t].lvl}${own ? " · déjà obtenu" : ""}">${im(itemImg(t), "", ITEMS[t].name)}</span>`; }).join("");
@@ -820,7 +823,9 @@ function dungeonSheet(did) {
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
       ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de la semaine : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b>, jusqu'à lundi (encore ${weeklyLeft()}).</span></div>` : ""}
-      <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}</ul></div>
+      <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}</ul>
+        <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
+        ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
@@ -870,6 +875,7 @@ function renderCombat() {
   $("#main").innerHTML = `
   <div class="pagehead combathead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
+      <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
@@ -2196,6 +2202,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
   else if (a === "dgsort") ui.dgSort = t.value;
+  else if (a === "focusset") { S.settings.focus = t.value; toast(t.value === "auto" ? "L'équipe vise d'abord les soigneurs, chefs, invocateurs et protecteurs." : t.value === "boss" ? "L'équipe vise d'abord le boss." : "L'équipe vise d'abord le monstre le plus faible."); }
   else if (a === "dgchain") { ui.dgChain = +t.value; return; }
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
