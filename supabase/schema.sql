@@ -12,6 +12,8 @@ create table if not exists public.profiles (
   pseudo text not null check (pseudo ~ '^[A-Za-zÀ-ÖØ-öø-ÿ0-9_-]{3,16}$'),
   created_at timestamptz not null default now()
 );
+-- 0.1.17 : compte suspendu par Mathis (panel admin) : la partie n'est plus envoyée en ligne
+alter table public.profiles add column if not exists suspended_at timestamptz;
 create unique index if not exists profiles_pseudo_unique on public.profiles (lower(pseudo));
 alter table public.profiles enable row level security;
 
@@ -56,6 +58,7 @@ as $$
 declare r timestamptz;
 begin
   if auth.uid() is null then raise exception 'non connecté'; end if;
+  if exists (select 1 from profiles where id = auth.uid() and suspended_at is not null) then raise exception 'compte suspendu'; end if;
   if p_force then
     insert into saves (user_id, data, meta, game_version, device, updated_at)
       values (auth.uid(), p_data, coalesce(p_meta, '{}'::jsonb), p_version, p_device, clock_timestamp())
