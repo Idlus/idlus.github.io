@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.3 « Combats plus posés » (bêta)
+- Combats environ 25 % moins rapides (650 ms par action au lieu de 520) pour mieux voir les animations.
+- Récompenses par combat relevées d'autant : XP, butin et kamas par heure inchangés, aussi hors ligne.
+
 ## 0.1.2 « Combat animé » (bêta)
 - **Sorts qui voyagent** avec la patte de chaque classe (bond du Iop, flèches du Crâ, cartes de l'Ecaflip, portails de l'Eliotrope…).
 - **Critiques, états visibles, chutes des monstres, boss qui préviennent** ; réglage Complètes / Sobres / Aucune.

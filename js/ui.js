@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.2";
+const GAME_VERSION = "0.1.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.3", name: "Combats plus posés", items: [
+    "Les combats sont un peu moins rapides (environ 25 %) pour mieux profiter des animations",
+    "Chaque combat rapporte un peu plus d'XP, de butin et de kamas : les gains par heure restent les mêmes, en jeu comme hors ligne" ] },
   { v: "0.1.2", name: "Combat animé", items: [
     "Les sorts partent du lanceur et volent jusqu'à leur cible, avec la patte de chaque classe : le Iop bondit, le Sram passe dans le dos, le Crâ tire des flèches, l'Ecaflip des cartes, l'Eliotrope ouvre des portails…",
     "Le nom du sort s'affiche au-dessus du lanceur ; les coups critiques ont leur gros chiffre doré",
