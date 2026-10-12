@@ -249,6 +249,12 @@
 
   /* Salle d'entraînement : un héros hors de l'équipe gagne 25 % de l'XP moyenne de l'équipe, sans combattre. */
   E.TRAIN_SHARE = 0.25;
+  /* Malus d'écart : jusqu'à 10 niveaux sous la moyenne de l'équipe, rien ne change ; au-delà, -5 % de gain par niveau,
+     sans descendre sous 20 % du gain normal (soit 5 % de l'XP de l'équipe). */
+  E.TRAIN_FREE_GAP = 10;
+  E.trainGap = (S, c) => { const T = E.team(S); return T.length ? Math.round(T.reduce((s, x) => s + x.lvl, 0) / T.length) - c.lvl : 0; };
+  E.trainMult = (S, c) => { const g = E.trainGap(S, c) - E.TRAIN_FREE_GAP; return g > 0 ? Math.max(0.2, 1 - g * 0.05) : 1; };
+  E.trainShare = (S, c) => E.TRAIN_SHARE * E.trainMult(S, c);
   E.trainee = (S) => {
     const c = S.training != null ? S.chars.find((x) => x.id === S.training) : null;
     if (!c || c.inTeam || c.job || E.atelierHero(S) === c) { S.training = null; return null; }
