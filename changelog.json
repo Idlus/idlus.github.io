@@ -1,6 +1,35 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.4",
   "versions": [
+    {
+      "v": "0.1.4",
+      "name": "Encore plus posés",
+      "items": [
+        "Les combats ralentissent encore un peu : une action toutes les 0,78 seconde (0,52 avant la 0.1.3)",
+        "Les récompenses par combat suivent : gains par heure toujours inchangés"
+      ]
+    },
+    {
+      "v": "0.1.3",
+      "name": "Combats plus posés",
+      "items": [
+        "Les combats sont un peu moins rapides (environ 25 %) pour mieux profiter des animations",
+        "Chaque combat rapporte un peu plus d'XP, de butin et de kamas : les gains par heure restent les mêmes, en jeu comme hors ligne"
+      ]
+    },
+    {
+      "v": "0.1.2",
+      "name": "Combat animé",
+      "items": [
+        "Les sorts partent du lanceur et volent jusqu'à leur cible, avec la patte de chaque classe : le Iop bondit, le Sram passe dans le dos, le Crâ tire des flèches, l'Ecaflip des cartes, l'Eliotrope ouvre des portails…",
+        "Le nom du sort s'affiche au-dessus du lanceur ; les coups critiques ont leur gros chiffre doré",
+        "Sorts de zone en onde, pluie de flèches du Crâ ; un cercle tourne sous celui qui joue",
+        "États visibles : poison, malus, PA retirés, gel, lueur des boucliers",
+        "Les monstres s'écrasent en lâchant des kamas, un héros à terre laisse une petite tombe",
+        "Les boss préviennent avant leur attaque dévastatrice : bandeau et cercles rouges sous les héros visés",
+        "Options : animations Complètes, Sobres ou Aucune"
+      ]
+    },
     {
       "v": "0.1.1",
       "name": "Mutateur éclair",

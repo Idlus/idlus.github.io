@@ -7,6 +7,17 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.4 « Encore plus posés » (bêta)
+- Combats encore un peu ralentis : 780 ms par action. Récompenses par combat relevées d'autant, gains par heure inchangés.
+
+## 0.1.3 « Combats plus posés » (bêta)
+- Combats environ 25 % moins rapides (650 ms par action au lieu de 520) pour mieux voir les animations.
+- Récompenses par combat relevées d'autant : XP, butin et kamas par heure inchangés, aussi hors ligne.
+
+## 0.1.2 « Combat animé » (bêta)
+- **Sorts qui voyagent** avec la patte de chaque classe (bond du Iop, flèches du Crâ, cartes de l'Ecaflip, portails de l'Eliotrope…).
+- **Critiques, états visibles, chutes des monstres, boss qui préviennent** ; réglage Complètes / Sobres / Aucune.
+
 ## 0.1.1 « Mutateur éclair » (bêta)
 - **Mutateur éclair** : toutes les 20 minutes, 3 donjons (10-79, 80-149, 150-200) avec un modificateur et +12 % d'XP et de butin.
 - **Nouveaux modificateurs** : Champions, Boss rusé, Renforts.
