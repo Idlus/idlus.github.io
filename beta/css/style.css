@@ -2405,3 +2405,58 @@ html{zoom:1}
 .chat .ch-dis b{font-size:13.5px}
 .chat .ch-dis small{font-size:11.5px;opacity:.85}
 .chat .ch-dis .go{margin-left:auto;flex:none;background:#fff;color:#404eed;font-weight:900;font-size:12px;border-radius:999px;padding:5px 11px}
+
+/* ---------- 0.1.20 : Hôtel de vente et échanges (js/market.js) ---------- */
+.subtabs .mktrade{margin-left:auto}
+.mkgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:start}
+.mkgrid:not(.hassel){grid-template-columns:minmax(0,1fr)}
+.mklist .li{cursor:pointer;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit}
+.mkli.on{background:rgba(var(--glw),.12);box-shadow:inset 3px 0 0 var(--gold)}
+.mkpx{font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mkpx.plus{color:#8fe36a}
+.mkdet{position:sticky;top:12px}
+.mkback{display:none}
+.mkoffer{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.mkoffer:first-child{border-top:0}
+.mkst{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:12px}
+.mkjet{font-weight:900;font-size:12px;padding:1px 7px;border-radius:999px;background:var(--panel3);border:1px solid var(--frame);white-space:nowrap}
+.mkjet.hi{background:linear-gradient(180deg,#d6f27e,#8cc63f);color:#13200a;border-color:#8cc63f}
+.mklots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mklot{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
+.mklot.best{border-color:var(--gold)}
+.mklot b.big{font-size:18px}
+.mkspark{width:100%;height:64px;display:block;margin:4px 0}
+.mkspark path.l{fill:none;stroke:var(--gold);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.mkspark path.a{fill:rgba(var(--glw),.14)}
+.mkfield{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;align-items:center}
+.mkbigin{font-size:20px;font-weight:900;width:100%;background:var(--panel2);border:2px solid var(--gold);border-radius:12px;padding:8px 12px;color:var(--ink)}
+.mksum{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px}
+.mksum .tot{font-weight:900;border-top:1px solid var(--line);padding-top:6px}
+.mkslots{display:flex;gap:3px;margin-top:4px}.mkslots i{flex:1;height:8px;border-radius:4px;background:var(--panel3)}
+.mkslots i.on{background:var(--gold)}.mkslots i.new{background:#8fe36a}
+.mkrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mkrow .grow{min-width:160px}
+.mkrep{width:110px}
+.mkwarn{color:var(--danger);font-weight:800}
+.mkrune,.mkcons,.mkbig{display:inline-grid;place-items:center;font-size:22px}
+.mkrune .sico{width:26px;height:26px}.mkbig .sico{width:30px;height:30px}
+.mktrade2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mkside{background:var(--panel2);border:2px solid var(--frame);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-width:0}
+.mkside.ok{border-color:#8fe36a}
+.mktiles{display:flex;flex-wrap:wrap;gap:6px;min-height:58px}
+.mkadd summary{cursor:pointer;font-weight:800}
+@media (max-width:860px){
+  .mkgrid.hassel{grid-template-columns:minmax(0,1fr)}
+  .mkgrid.hassel .mklist{display:none}
+  .mkdet{position:static}
+  .mkback{display:inline-flex}
+  .subtabs .mktrade{margin-left:0}
+}
+@media (max-width:600px){
+  .mkoffer{grid-template-columns:auto minmax(0,1fr) auto}.mkoffer .btn,.mkoffer .tag{grid-column:1/-1;justify-self:stretch;text-align:center}
+  .mkfield{grid-template-columns:1fr}.mkfield>span:empty{display:none}
+  .mklots{grid-template-columns:1fr;gap:6px}.mklot{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:8px 10px}.mklot b.big{font-size:16px}.mklot .btn{margin-left:auto}
+  .mktrade2{grid-template-columns:1fr}
+}
+/* barre du bas à 6 boutons quand la famille Communauté est là */
+@media (max-width:859px){nav.main.fams.six>button{font-size:9.5px;letter-spacing:-.2px}nav.main.fams.six .med{width:27px;height:27px}nav.main.fams.six .med img{width:20px;height:20px}}
