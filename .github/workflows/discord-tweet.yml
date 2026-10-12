@@ -1,0 +1,18 @@
+# Relaie un tweet d'annonce dans #annonces sur Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
+name: Relayer un tweet sur Discord
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Adresse du tweet (https://x.com/<compte>/status/<numéro>)"
+        required: true
+jobs:
+  tweet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js tweet "${{ inputs.url }}"
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}

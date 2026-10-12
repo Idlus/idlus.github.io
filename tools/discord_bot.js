@@ -5,6 +5,7 @@
    node tools/discord_bot.js idees                                    → envoie dans #notes le top 5 des idées du forum (votes 👍)
    node tools/discord_bot.js resume <révision>                        → envoie en message privé au créateur du serveur un résumé des changements de la branche beta jusqu'à cette révision
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
+   node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces et invite les testeurs à le partager
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
@@ -92,11 +93,22 @@ async function main() {
     if (DRY) return console.log(JSON.stringify(embed, null, 1));
     await api("POST", `/channels/${ch}/messages`, { embeds: [embed] });
     console.log("Résumé envoyé :", commits.length, "changement(s)");
+  } else if (cmd === "tweet") {
+    if (!/^https:\/\/(x|twitter)\.com\/\S+\/status\/\d+/.test(file || "")) { console.log("Adresse de tweet attendue : https://x.com/<compte>/status/<numéro>"); process.exit(1); }
+    const url = file.split("?")[0];
+    const text = `📣 **Idlus est annoncé sur X !**\nUn like, une réponse ou un partage, c'est ce qui aide le plus le jeu à se faire voir. Merci à vous !\n${url}`;
+    if (DRY) return console.log(text);
+    const gid = await guildId(); const ch = await channelId(gid, "annonces");
+    const last = await api("GET", `/channels/${ch}/messages?limit=20`);
+    if (last.some((m) => (m.content || "").includes(url))) return console.log("Déjà relayé :", url);
+    const role = await roleId(gid, "Testeur");
+    await api("POST", `/channels/${ch}/messages`, { content: (role ? `<@&${role}> ` : "") + text, allowed_mentions: { roles: role ? [role] : [] } });
+    console.log("Relayé :", url);
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png]"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse>"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });
