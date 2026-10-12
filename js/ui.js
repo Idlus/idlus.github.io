@@ -16,9 +16,16 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.3.0";
+const GAME_VERSION = "3.4.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM";
 const CHANGELOG = [
+  { v: "3.4.0", name: "Havre-Sac", items: [
+    "Le Havre-Sac devient 8 pièces (Accueil → Havre-Sac) : vos améliorations gardent leur niveau et sont rangées par pièce, l'atelier se construit pour 50 000 kamas et l'enclos ouvrira plus tard",
+    "Meubles : un meuble agit une fois placé dans sa pièce, avec des places limitées (14 au total). 43 meubles : 28 trophées de boss, meubles du Comptoir, de l'Almanax, du Bricoleur (5 recettes), butins rares de 5 zones et 2 succès ; un catalogue montre comment obtenir chacun. Les meubles déjà gagnés sont placés d'office",
+    "Trophées de boss : chaque boss donne son trophée à la première victoire en stasis 5 (les stasis 5 déjà passées le donnent tout de suite). Effet de +1 % à +4 % selon le niveau du donjon",
+    "Salle d'entraînement : un héros hors de l'équipe gagne 25 % de l'XP moyenne de l'équipe, sans combattre, moins s'il a plus de 10 niveaux de retard",
+    "Atelier : un héros affecté fabrique la recette choisie toutes les 20 minutes, même hors ligne, tant que les ressources suffisent",
+    "Plafond des bonus relevé à +175 % d'XP, +175 % de butin et +200 % de kamas" ] },
   { v: "3.3.0", name: "Combat vivant", items: [
     "Placement de l'équipe (onglet Héros) : chaque héros est en première ligne ou à l'arrière. Les monstres visent la première ligne 3 fois sur 4 tant qu'elle tient debout. Placement automatique par défaut (les héros les plus solides devant), modifiable à la main",
     "Monstres à mécanique spéciale : les Rôdeurs (Bwork Archer, Chafers furtifs, Corbacs…) visent l'arrière, les Bondisseurs (Tofus, Moskitos, Kwaks de Vent) ignorent les rangées",

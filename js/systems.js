@@ -721,6 +721,8 @@
       if (S.settings.auto && S.settings.auto.recycle === undefined) S.settings.auto.recycle = false;
       (S.migration = S.migration || []).push("v2.7 : progression plus rapide jusqu'au niveau 60, objets et ressources plus rares, Synergie d'équipe, outils fabriqués, filons, nouveaux consommables et coffres, récompenses de quêtes, Bureau des primes, sac et forgemagie réorganisés.");
     }
+    // Havre-Sac 3.4 : les meubles déjà gagnés sont placés d'office, tant qu'il reste de la place
+    if (raw.placed === undefined) S.furniture.forEach((n) => { if (FURN[n]) E.placeFurn(S, n); });
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
     return S;
   };
