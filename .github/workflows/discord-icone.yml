@@ -1,0 +1,17 @@
+# Remplace l'icône du serveur Discord par icons/discord.png (dès qu'elle change sur main, ou à la demande). Nécessite le secret DISCORD_BOT_TOKEN.
+name: Icône du Discord
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [icons/discord.png]
+jobs:
+  icone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js icone
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}

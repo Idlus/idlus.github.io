@@ -1,0 +1,17 @@
+# Publie chaque matin (7 h, heure de Paris) le bonus et l'offrande de l'Almanax dans #almanax sur Discord. Nécessite le secret DISCORD_BOT_TOKEN.
+name: Almanax du jour sur Discord
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+jobs:
+  almanax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js almanax
+        env:
+          TZ: Europe/Paris
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}

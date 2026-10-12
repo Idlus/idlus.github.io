@@ -60,7 +60,8 @@ const PLAN = [
   { cat: "📢 Infos", lock: true, chans: [
     { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'idlus" },
     { key: "UPDATES", name: "note-de-mise-a-jour", topic: "Notes de chaque mise à jour, publiées automatiquement" },
-    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui arrive bientôt", text: ROADMAP } ] },
+    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui arrive bientôt", text: ROADMAP },
+    { key: "ALMANAX", name: "almanax", topic: "Le bonus et l'offrande du jour, publiés chaque matin" } ] },
   { cat: "💬 Communauté", chans: [
     { key: "CHAT", name: "général", topic: "Discussion libre autour d'idlus" },
     { key: "HELP", name: "entraide", topic: "Questions et conseils entre joueurs" },
@@ -100,7 +101,7 @@ async function main() {
   let gid = process.env.DISCORD_GUILD_ID;
   if (!gid) { const gs = await api("GET", "/users/@me/guilds"); if (gs.length !== 1) throw new Error(`Le robot est sur ${gs.length} serveurs : précise DISCORD_GUILD_ID.`); gid = gs[0].id; }
   const guild = await api("GET", `/guilds/${gid}`); console.log("Serveur :", guild.name);
-  if (!guild.icon) { await api("PATCH", `/guilds/${gid}`, { icon: "data:image/png;base64," + require("fs").readFileSync(__dirname + "/../icons/icon-512.png").toString("base64") }); console.log("Icône du serveur mise en place."); }
+  if (!guild.icon) { await api("PATCH", `/guilds/${gid}`, { icon: "data:image/png;base64," + require("fs").readFileSync(__dirname + "/../icons/discord.png").toString("base64") }); console.log("Icône du serveur mise en place."); }
 
   const roles = {}; const have = await api("GET", `/guilds/${gid}/roles`);
   for (const r of ROLES) {
@@ -167,6 +168,13 @@ async function main() {
     if (!rules.some((r) => r.name === "Invitations Discord")) await api("POST", `/guilds/${gid}/auto-moderation/rules`, { name: "Invitations Discord", event_type: 1, trigger_type: 1, trigger_metadata: { regex_patterns: ["discord(?:\\.gg|(?:app)?\\.com/invite)/\\S+"], allow_list: ["discord.gg/9ApPgWjPUM"] }, actions: block, enabled: true, exempt_roles: [roles.creator, roles.mod] });
     console.log("Filtre automatique (AutoMod) en place.");
   } catch (e) { console.log("AutoMod non configuré :", e.message); }
+
+  try { // règles à accepter avant de pouvoir écrire (filtrage des nouveaux membres)
+    await api("PATCH", `/guilds/${gid}/member-verification`, { enabled: true, description: "Bienvenue sur le Discord d'idlus ! Lis et accepte les règles pour pouvoir écrire.",
+      form_fields: [{ field_type: "TERMS", label: "J'ai lu et j'accepte les règles du serveur", required: true,
+        values: RULES.split("\n").filter((l) => /^\*\*\d/.test(l)).map((l) => fill(l.replace(/^\*\*\d+\.\*\* /, ""), ids).replace(/<#\d+>/g, (m) => "#" + (chans.find((c) => `<#${c.id}>` === m) || {}).name)) }] });
+    console.log("Règles à accepter avant d'écrire : activé.");
+  } catch (e) { console.log("Règles à accepter non activées, à faire à la main (Paramètres du serveur → Accès) :", e.message); }
 
   try { // invitation permanente qui ouvre directement le forum des bugs (bouton « Signaler un bug » du jeu)
     const inv = await api("POST", `/channels/${ids.BUGS}/invites`, { max_age: 0, max_uses: 0, unique: false });
