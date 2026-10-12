@@ -788,7 +788,10 @@
   E.setOrn = (S, cid, id) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; if (id && !E.ornUnlocked(S, id)) return "Ornement verrouillé."; c.orn = id || null; return null; };
 
   /* ---------------- Carte de héros : cadres et élément dominant ---------------- */
-  E.FRAMES = ["Bois", "Pierre", "Bronze", "Argent", "Or", "Émeraude", "Turquoise", "Pourpre", "Ocre", "Ébène et Ivoire", "Krosmoz"];
+  // 0.1.26 : cadres « Métal orné » : 5 métaux en deux rangs (un rang tous les 20 niveaux), puis Krosmoz au niveau 200
+  E.FRAMES = ["Bois I", "Bois II", "Bronze I", "Bronze II", "Argent I", "Argent II", "Or I", "Or II", "Émeraude I", "Émeraude II", "Krosmoz"];
+  E.FRAME_KEYS = ["bois1", "bois2", "bronze1", "bronze2", "argent1", "argent2", "or1", "or2", "eme1", "eme2", "krosmoz"];
+  E.frameKey = (lvl) => E.FRAME_KEYS[E.frameIdx(lvl || 1)];
   E.frameIdx = (lvl) => (lvl >= 200 ? 10 : Math.min(9, Math.floor(lvl / 20)));
   E.domEl = (st) => { const m = [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1]); return m[0][1] > 0 ? m[0][0] : "n"; };
   E.radiantWorn = (S, c) => Object.values(c.equip).filter((u) => S.items[u] && S.items[u].radiant).length;

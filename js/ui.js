@@ -14,149 +14,52 @@ const ui = {
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
+/* 0.1.27.1 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
+const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin"));
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.26.1";
+const GAME_VERSION = "0.1.27.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "0.1.26.1", name: "Défi à portée de main", items: [
-    "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
-    "Accueil : une carte « Défi du jour » sous la bannière (donjon, stasis, modificateurs, ton record, ta série, le contenu du coffre). « Lancer le défi » le joue tout de suite et montre le résultat",
-    "Le coffre du jour est chiffré : environ combien de kamas, et combien de Poussières de stasis",
-    "Nouveau bouton « Changer d'équipe » sur la page du défi et après une défaite : comme le hasard est fixe, il faut changer quelque chose pour faire mieux",
-    "Une pastille sur l'onglet Défi tant que le défi du jour n'est pas réussi ; dans Monde › Donjons, le grand encart devient une ligne qui mène à la page" ] },
-  { v: "0.1.26", name: "Codes cadeaux", items: [
-    "Codes cadeaux courts et faciles à taper (par exemple HALLOWEEN26), gardés par le serveur : on ne peut plus les deviner ni les fabriquer en lisant le jeu",
-    "Un code peut avoir un nombre d'utilisations limité, une date de fin, et être réservé aux joueurs avec un compte. Sans compte, un code sert une fois par partie",
-    "Un lien partagé sur le Discord ouvre le jeu avec le code déjà rempli dans Options › Jeu",
-    "Les codes peuvent maintenant offrir un objet d'équipement. Les anciens codes IDLUS-… marchent toujours jusqu'à leur date de fin" ] },
-  { v: "0.1.25", name: "Options rangées", items: [
-    "Le menu Options est rangé en 5 onglets : Affichage, Sons, Jeu, Sauvegarde (« Compte » quand tu es en ligne) et Aide. Il rouvre le dernier onglet utilisé",
-    "Une carte par thème, le nom du réglage à gauche et le choix à droite ; les cases à cocher restent à côté de leur texte",
-    "Jeu regroupe les consignes d'absence, les protecteurs de ressources et le code cadeau ; Sauvegarde regroupe les copies de secours, l'export / import et « Nouvelle partie » dans une carte rouge à part",
-    "Rien n'est supprimé et tes réglages gardent leur valeur ; le bouton « Régler » du résumé d'absence ouvre directement l'onglet Jeu" ] },
-  { v: "0.1.24.4", name: "Combat en vue", items: [
-    "Expédition : le combat se suit par défaut. Partir, ou choisir une porte Combat, Élite ou Boss, ouvre l'onglet Combat ; entre deux combats, les portes de l'étage s'affichent au-dessus de la scène, et les fiches (relique, bénédiction, coffre, Marchand) s'y ouvrent aussi",
-    "La page Expédition reste là pour le campement, les reliques, les bénédictions et les règnes (bouton « Voir l'expédition » dans l'onglet Combat)",
-  ] },
-  { v: "0.1.24.3", name: "Chasser à son rythme", items: [
-    "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
-    "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",
-    "Les héros ne lancent plus de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans attaquer, jusqu'à la retraite au tour 60)",
-    "Sans équipement, on perd toujours souvent à partir des zones 32-40"
-  ] },
-  { v: "0.1.24.2", name: "Percepteurs à 5 %", items: [
-    "Les Percepteurs ramassent 5 % de ce qu'on gagnerait dans leur zone au lieu de 3 % : la poche est toujours pleine en 12 h, mais elle contient deux tiers de kamas et de ressources en plus",
-  ] },
-  { v: "0.1.24.1", name: "Artisans et temples", items: [
-    "Commandes d'artisans (Quêtes › Commandes) : chaque jour, 3 artisans demandent des ressources (récolte de tes métiers ou butin des monstres de tes zones). Livraison en plusieurs fois possible ; kamas et XP de métier à la clé, une commande « urgente » paie ×1,5. Chaque artisan monte en rang (3, 10, 25 commandes : +10 % de kamas par rang), tout livrer dans la journée offre un coffre, et la première commande changée chaque jour est gratuite",
-    "Temples et Dopeuls (Quêtes › Temples) : une fois par jour et par classe, pour chaque classe de ton équipe ou de ta réserve, le Dopeul de la classe vient défier l'équipe là où elle chasse. C'est le reflet sombre de ton héros, à son niveau : une équipe bien équipée gagne la plupart du temps, sans équipement elle perd. Une défaite ne coûte rien, le temple reste ouvert",
-    "Les victoires rapportent des Doplons (plus le héros est haut niveau, plus il y en a ; +3 tous les 7 jours d'affilée), à dépenser au Comptoir des temples : coffres, Pierre d'âme, Potion de Savoir, petits parchemins de caractéristiques, parchemin de chasse au trésor, titre « Ombre du temple » et ornement « Reflet du temple ». 10 temples différents conquis donnent le titre « Maître des temples »",
-    "Sons (Options) : quelques sons discrets pour un niveau gagné, un butin rare, un boss vaincu, une âme ou un Dofus, un coffre, une commande livrée et un Dopeul vaincu. Coupés par défaut, avec réglage du volume, option « à chaque victoire » et option « même onglet caché ». Rien ne sonne au retour d'absence",
-    "Consignes d'absence (Options, et lien dans le résumé d'absence) : suivre les étoiles seulement pendant l'absence, revenir à sa zone au retour, limite de banque (le surplus gagné pendant l'absence est vendu, jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes), offrande à l'Almanax et livraison des commandes prêtes au retour. Le résumé d'absence dit ce qui a été fait",
-    "Succès : Premier client, Fournisseur officiel (titre), Tablier d'artisan (ornement), Face à son reflet, Habitué des temples. Les commandes entrent dans le bilan des kamas du Carnet",
-    "Le test de la chasse au trésor ne dépend plus du hasard" ] },
-  { v: "0.1.24", name: "L'Expédition sans fin", items: [
-    "Nouveau mode Aventure › Expédition, dès le niveau 10, sans clé : des étages sans fin adaptés au niveau de ton équipe à l'entrée (monstres et boss des zones à ± 10 niveaux), de plus en plus forts (étage 10 ≈ stasis 4, 20 ≈ 7, 30 ≈ 10, puis sans limite). XP et butin +4 % par étage",
-    "À chaque étage, 2 ou 3 portes, les mêmes pour tout le monde : Combat, Élite (Champions, plus d'Éclats, relique rare), Trésor (kamas, ressources, relique, un piège), Autel (une bénédiction), Repos (soins et héros ranimés), Marchand (reliques contre Éclats). Un boss de donjon tous les 5 étages, un coffre de palier tous les 10. Longue-vue du campement : voir les monstres derrière les portes",
-    "Un règne par tranche de 10 étages : un modificateur de donjon (Iop enragés, Féca blindés, Sram vampiriques…) dans un ordre tiré chaque semaine, le même pour tous",
-    "24 reliques (12 communes, 8 rares, 4 légendaires) aux effets en % qui s'additionnent pendant l'expédition : +8 % de dégâts, +10 % de PV, vol de vie, bouclier au premier tour, +1 PA, Œuf Doré (+1 vie), Miroir d'Ilyzaelle (copie la relique prise avant)… 8 au plus, refuser une relique donne 15 Éclats. Elles sont perdues à la chute",
-    "10 bénédictions des Douze, une au choix après chaque boss ou autel, gardées jusqu'à la chute : Colère de Iop, Souffle d'Eniripsa, Sablier de Xélor, Chance d'Ecaflip…",
-    "3 vies : une défaite coûte une vie et fait rejouer l'étage avec de nouvelles portes ; à zéro, l'expédition s'arrête et tu gardes tout (XP, kamas, butin, Éclats), avec le record et « pourquoi tu es tombé ». Les PV se gardent d'un étage à l'autre ; un héros tombé revient avec 15 % de PV",
-    "Coffre de palier (kamas, XP, poussière de stasis, un objet de ton niveau, 60 Éclats) : à encaisser tout de suite, ou à mettre en jeu : doublé si tu atteins le palier suivant, perdu si tu tombes avant",
-    "Le Campement : 24 améliorations permanentes en 4 branches (Survie, Fortune, Puissance, Exploration), achetées avec les Éclats d'expédition gagnés à chaque étage même en cas de chute : vies en plus, Repos amélioré, Seconde chance, relique de départ, Œil d'Ecaflip (3 reliques proposées), Forge du Forgelance, Longue-vue, Boussole, Rechercher, Raccourci (repartir du palier 10)…",
-    "Sans réponse de ta part, le jeu choisit la porte après 30 s et la relique ou la bénédiction après 20 s (réglage sur la page). Rien ne tourne hors ligne : l'expédition t'attend ; la chasse reprend toute seule à la fin",
-    "Titres : étage 25 « Éclaireur », 50 « Pèlerin des Douze », 75 « Fidèle des Douze », 100 « Élu des Douze » et ornement « Auréole des Douze » ; 9 succès (paliers, 100 reliques, 10 coffres doublés, campement complet). Record de la semaine noté : le classement et le coffre de la semaine arriveront dans une prochaine mise à jour",
-    "Équilibrage par simulation (`npm run sim -- --expedition`) : une équipe sans équipement tombe au premier boss dès le niveau 30 (étage 13 au niveau 15), un bon équipement atteint l'étage 30-35, une équipe optimisée 50-70 avant le campement" ] },
-  { v: "0.1.23.1", name: "Bouftous apprivoisés", items: [
+  { v: "0.1.27.1", name: "Idlus en ligne", items: [
+    "Le jeu public passe en ligne : compte facultatif avec Discord (ta partie de cet appareil te suit), sauvegarde en ligne et retrouvée sur tous tes appareils. Tu peux toujours jouer sans compte",
+    "Communauté : Classements, chat général et privé, Hôtel de vente et échanges entre joueurs, guildes (niveaux, bonus, chat de guilde), boss de guilde de la semaine et Percepteurs",
+    "Défi du jour : page Aventure › Défi, carte sur l'Accueil, classement du jour ; codes cadeaux courts dans Options › Jeu",
+    "L'Expédition sans fin (Aventure › Expédition) : étages sans fin, portes, reliques, bénédictions des Douze et Campement",
+    "Carnet de bord (Équipe › Carnet), chasse au trésor (Monde › Trésor), commandes d'artisans et temples des Dopeuls (Quêtes), sons discrets et consignes d'absence",
+    "Challenges qui rapportent plus, cadres de héros en métal (Bois à Krosmoz), menu Options rangé en 5 onglets",
+    "Ta partie est gardée. Au lancement de la version 1.0, tout le monde repartira de zéro (les parties sont encore calculées sur ton appareil)" ] },
+  { v: "0.1.20.1", name: "Bouftous apprivoisés", items: [
     "Chasse : les monstres des zones 22-30 (Bouftous, Tainéla, Égouts, Boos…) avaient jusqu'à 4,5 fois leurs PV et arrivaient par 4 au moins : un vrai mur dès les premiers niveaux. Leur renfort démarre maintenant au niveau 20 et monte doucement jusqu'au niveau 40 (Bouftous : environ 300 à 800 PV au lieu de 600 à 1 400)",
     "Les groupes d'au moins 4 monstres arrivent avec les zones 32-40 (avant : dès les zones 22-30)",
-    "Sans équipement, on gagne de nouveau dans les zones 22-30 ; c'est à partir des zones 32-40 qu'il faut s'équiper. Avec un équipement correct, les gains par heure ne changent pas"
+    "Sans équipement, on gagne de nouveau dans les zones 22-30 ; c'est à partir des zones 32-40 qu'il faut s'équiper. Avec un équipement correct, les gains par heure ne changent pas",
+    "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
+    "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",
+    "Les héros ne lancent plus de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans attaquer)"
   ] },
-  { v: "0.1.23", name: "Boss et Percepteurs", items: [
-    "Guilde › Boss : chaque semaine (lundi minuit), un boss de donjon différent pour toutes les guildes. Chaque membre a 3 essais par jour : son équipe l'affronte pendant 15 tours, au niveau de ses héros, et ses dégâts deviennent des points pour la guilde",
-    "Jauge de la guilde (2 500 points par membre, au moins 5 comptés) : un coffre de kamas et de Poussières de stasis s'ouvre à 25, 50, 75 et 100 % pour chaque membre qui a frappé au moins une fois",
-    "Classement des guildes de la semaine ; les membres des 3 meilleures reçoivent le titre « Pourfendeur de boss »",
-    "Guilde › Percepteurs : dès le niveau 5 de guilde (un de plus tous les 5 niveaux, jusqu'à 5), le Meneur ou un Bras droit en pose un dans une zone finie pour 20 000 kamas",
-    "Le Percepteur ramasse 3 % des kamas et ressources qu'on gagnerait dans sa zone : poche pleine en 12 h, n'importe quel membre peut la récolter (et la guilde gagne de l'XP)",
-    "Environ une fois par jour, des monstres l'attaquent : pendant 2 h, chaque membre peut tenter une défense avec son équipe (un monstre de plus après chaque défenseur battu). Victoire : poche +25 %, XP de guilde et un coffre pour le défenseur ; sans victoire, la moitié de la poche est perdue",
-    "Les combats du boss et des défenses sont rejoués par le serveur avec ta partie en ligne",
-  ] },
-  { v: "0.1.22.1", name: "Challenges qui rapportent", items: [
-    "Les challenges rapportent plus, selon leur difficulté : Survivant, Focus et Barbare +10 %, Versatile, Économe, Élitiste et Élémentaire +15 %, Chacun son monstre et Rapide +20 %, Incurable +25 %, Ordonné +30 % d'XP et de butin",
-    "Série de challenges réussis : +1 % par combat, jusqu'à +10 % (au lieu de +0,5 % et +5 %)",
-    "Respecter les challenges ne ralentit presque plus l'équipe : l'IA garde ses sorts de zone pour Focus, Élitiste et Ordonné tant qu'ils ne risquent pas d'achever le mauvais monstre, et les invocations visent la bonne cible",
-    "Chacun son monstre (jamais réussi) : les héros se répartissent les monstres et chacun vise le sien jusqu'à sa mort",
-    "Rapide : le nombre de tours permis tient compte du niveau des monstres (il était impossible à haut niveau)",
-    "Élémentaire : chaque héros garde un seul élément, au lieu d'un seul élément pour toute l'équipe"
-  ] },
-  { v: "0.1.22", name: "Carnet et trésor", items: [
-    "Carnet de bord (Équipe › Carnet) : ton XP, tes kamas, tes combats et le niveau de l'équipe heure par heure sur 7 jours, ou jour par jour sur 30 jours ; les heures hors ligne sont grisées et chaque mise à jour du jeu est marquée sur la courbe. Survole la courbe pour le détail d'une heure",
-    "Bilan des kamas : d'où ils viennent (chasse, donjons, ventes au jeu, Hôtel de vente, défi, quêtes, trésors) et où ils partent (forgemagie, Havre-Sac, artisanat et clés, montures, boutique, idoles)",
-    "Les zones qui rapportent le plus (XP et kamas par heure, victoires) et les grands moments de la semaine : niveaux, renaissances, Dofus, âmes, stasis réussies, record d'XP en une heure, trésors",
-    "« Envoyer mon carnet à Mathis » (avec un compte) envoie un petit résumé de la semaine, sans pseudo, pour aider à régler l'équilibrage ; « Copier le résumé » pour le coller sur Discord",
-    "Chasse au trésor (Monde › Trésor) : un parchemin de chasse gratuit chaque jour, et d'autres trouvés sur les monstres en chasse (au niveau de la zone, 3 en réserve au plus)",
-    "Chaque parchemin a 3 à 5 indices selon son niveau : une zone et un repère à trouver ; l'équipe y va toute seule et trouve le repère après 6 victoires sur place, puis l'indice suivant se dévoile. La chasse itinérante attend la fin du trésor",
-    "Au bout, le gardien du trésor : un monstre de la dernière zone renforcé comme un boss. Vaincu, il laisse un coffre (kamas, poussière de stasis, ressources des zones traversées, une clé de donjon, parfois un nouveau parchemin) ; perdu, tu peux réessayer",
-    "Succès : « Premier trésor », titre « Chasseur de trésors » à 10 trésors, ornement « Boussole dorée » à 50" ] },
-  { v: "0.1.21.1", name: "Annonces de records", items: [
-    "Chat : l'annonce « prend la 1re place » d'un donjon s'affichait en barre vide ; elle dit de nouveau qui a pris la 1re place, où et en quelle stasis"
-  ] },
-  { v: "0.1.21", name: "Guildes", items: [
-    "Nouvelle page Communauté › Guilde : liste des guildes (niveau, membres, Meneur, message du jour), entrée libre ou sur demande, invitations",
-    "Fonder une guilde avec la Guildalogemme : 100 000 kamas et un héros au niveau 30 ; nom et emblème (12 symboles, 8 couleurs) au choix",
-    "Jusqu'à 30 membres et quatre rangs : Meneur (tout), Bras droit (accepte les demandes, gère Membres et Recrues, message du jour), Membre (invite) et Recrue",
-    "XP de guilde comme dans DOFUS : chacun choisit la part de l'XP de ses combats qu'il donne à la guilde, de 0 à 90 %, et voit ce qu'il a donné cette semaine",
-    "Niveaux de guilde (jusqu'au 100) et bonus pour tous les membres : +1 % XP tous les 5 niveaux, +1 % butin et kamas tous les 10 niveaux, sous les plafonds du jeu",
-    "Chat de guilde : l'onglet Guilde du chat s'ouvre dès qu'on a une guilde ; arrivées, départs et niveaux de guilde y sont annoncés, et tout est gardé dans le journal",
-    "Annoncés pour la prochaine mise à jour : le boss de la semaine, les Percepteurs et le coffre de guilde",
-    "Panel admin : onglet Guildes pour renommer une guilde, effacer un message du jour ou dissoudre une guilde",
-  ] },
-  { v: "0.1.20", name: "Hôtel de vente", items: [
-    "Nouvelle famille « Communauté » dans la barre : l'Hôtel de vente et les Classements (les guildes la rejoindront à la prochaine mise à jour)",
-    "Hôtel de vente : achète et vends entre joueurs les équipements (chaque offre montre le jet exact, la forgemagie et le Rayonnant, comparés à ton héros), les ressources et les clefs par lots de 1, 10 ou 100, les runes et les consommables",
-    "Mise en vente : taxe de 2 % payée tout de suite, 20 annonces à la fois, 14 jours par annonce ; le prix ne peut pas descendre sous la revente au jeu ; changer le prix coûte de nouveau 2 %",
-    "L'objet quitte ton sac dès sa mise en vente ; s'il n'est pas vendu en 14 jours, ou si tu le retires, il revient tout seul (la taxe est perdue). Les kamas d'une vente arrivent dans ta bourse même si tu n'es pas connecté",
-    "Prix conseillé (moyenne des ventes sur 14 jours, petite courbe), prix le plus bas en vente, et bouton « Acheter au meilleur prix » pour ce qui manque à ta liste de courses",
-    "Onglets Mes ventes (annonces en cours, ventes des 7 derniers jours) et Historique (tes 40 derniers mouvements)",
-    "Échange direct entre deux joueurs, sans taxe : chacun pose objets, ressources et kamas, l'échange se fait quand les deux ont validé ; si quelqu'un change son offre, les validations s'annulent. Depuis l'Hôtel de vente ou en cliquant sur un pseudo dans le chat",
-    "Ne se vendent ni ne s'échangent : les Dofus, les trophées, les meubles, les idoles, les familiers et les montures, ainsi que les objets équipés, verrouillés ou rangés dans un équipement enregistré",
-    "Tout est vérifié par le serveur à partir de ta partie en ligne : il faut être connecté, et une partie retouchée par le panel de test peut regarder les prix mais pas vendre, acheter ni échanger",
-    "Panel admin : nouvel onglet Hôtel de vente (chiffres de la semaine, dernières ventes, annonces les plus chères avec un bouton pour en retirer une)",
-  ] },
-  { v: "0.1.19.4", name: "Jouer sans compte", items: [
-    "Plus besoin de compte pour commencer : au premier lancement, on choisit directement son héros et on joue, la partie est gardée sur l'appareil",
-    "Sur l'écran de départ, « Déjà un compte ? Se connecter » pour retrouver sa partie sur un nouvel appareil",
-    "Créer un compte plus tard (Options › Compte, chat, classements) garde la partie en cours : elle part sur le compte"
-  ] },
-  { v: "0.1.19.3", name: "Carte Discord", items: [
-    "Le bandeau Discord en haut du chat devient une carte aux couleurs de Discord, avec son logo et un bouton « Rejoindre »."
-  ] },
+  { v: "0.1.20", name: "La grande mise à jour", items: [
+    "Le jeu public reçoit tout le contenu de la version de test : niveau 200, 839 monstres, 51 nouveaux donjons, carte compacte, rôles des monstres et mécaniques de boss",
+    "Mutateur éclair : toutes les 20 minutes, 3 donjons donnent plus d'XP, de butin et de poussière",
+    "Combats animés et mis en scène (sorts signature, entrée des boss), barre de sorts et aperçu des sorts",
+    "Les 19 classes, familiers et montiliers, montures (capture, enclos), forgemagie et jets exotiques",
+    "Idoles, Renaissance (jusqu'à 10 renaissances par héros), archimonstres et album des âmes, 18 Dofus à obtenir, île des Wabbits",
+    "Défi du jour, carte d'équipe à partager, garde-robe, bulles de découverte, recherche rapide (Ctrl+K) et options d'affichage",
+    "Équilibrage revu : l'équipement compte davantage à partir du niveau 30",
+    "Ta partie est gardée telle quelle. Les comptes en ligne, les classements, le chat et l'hôtel de vente restent sur la version de test pour l'instant : ils arriveront ici avec le multijoueur" ] },
   { v: "0.1.19.2", name: "Regarder le combat", items: [
     "Défi du jour : nouveau bouton « Regarder le combat » (après un essai, ou « Regarder » dans l'encart du défi) qui rejoue le défi sur l'écran de combat, salle par salle, avec les animations",
     "C'est exactement le combat que compte le score : même équipe, même hasard ; regarder ne compte pas comme un essai",
     "Vitesse ×1, ×2 ou ×4, et un résumé à la fin avec « Revoir » et « Retour au défi »",
   ] },
-  { v: "0.1.19.1", name: "Discord dans le chat", items: [
-    "En haut du chat, un bandeau invite à rejoindre le serveur Discord pour poser une question, signaler un bug ou proposer une idée" ] },
   { v: "0.1.19", name: "Se montrer", items: [
     "Défi du jour (Aventure › Donjons) : chaque jour à minuit (heure de Paris), un donjon, une stasis, deux modificateurs et le même hasard pour tout le monde, dans trois paliers : Découverte (1-60), Aventure (61-140) et Légende (141-200)",
     "Le combat du défi se joue d'un coup, en automatique, avec ton équipe du moment (jusqu'à 8 héros, idoles, familiers et montures compris) ; le moins de tours gagne, puis le plus de PV restants ; essais illimités, le meilleur score du jour est gardé",
     "Première victoire du jour : coffre avec autant de kamas et de poussière de stasis qu'un passage normal ; 7 jours de suite donnent le titre « Habitué du défi », 30 jours l'ornement « Sablier du défi » (un jour manqué remet la série à zéro)",
-    "Classements › Défi du jour : un tableau par palier, chaque score rejoué par le serveur, avec le podium de la veille",
     "Carte d'équipe (Équipe › Partager mon équipe) : une image de ton équipe (jusqu'à 8 héros) avec stasis, Dofus, âmes et idoles, en large pour X ou en carré pour Discord, en Émeraude ou Nuit violette ; copier, enregistrer ou publier sur X",
     "Garde-robe (Héros › Apparence) : chaque coiffe et cape obtenue une fois y reste pour toujours ; chaque héros peut montrer une autre apparence que celle qu'il porte, ou aucune, gratuitement et sans effet sur ses caractéristiques",
     "Toutes les coiffes et capes du jeu peuvent se montrer : celles que le jeu ne sait pas encore dessiner sont dessinées par DofusDB (le héros garde alors la tête et les couleurs d'origine de sa classe)",
     "Nouveaux succès : Défi relevé, Une semaine de défis, Un mois de défis, Garde-robe garnie (25 apparences) et Collectionneur (50 apparences, titre « le Collectionneur »)",
   ] },
-  { v: "0.1.18", name: "Chat et panel admin", items: [
-    "Chat général pour les joueurs connectés : une fenêtre en bas à droite sur ordinateur (le jeu se décale pour lui laisser la place), une bulle au-dessus de la barre du bas sur téléphone ; on peut lire sans compte, et écrire avec un compte et un pseudo",
-    "Chaque message montre la classe, le niveau du héros principal et son titre ; un clic sur un pseudo permet de voir son profil, de lui écrire en privé, d'ignorer ses messages ou de le signaler",
-    "Messages privés : onglet « Privé » avec la liste des conversations ; personne d'autre ne les voit",
-    "Montrer un objet : bouton « Montrer dans le chat » sur la fiche d'un objet ; dans le message, un clic sur l'objet ouvre sa fiche",
-    "Annonces automatiques dans le chat : les « Premiers », un nouveau numéro 1 d'un donjon, un héros au niveau 200, une Renaissance, un Dofus obtenu",
-    "Protections vérifiées par le serveur : liens et gros mots refusés, un message toutes les 4 secondes, 200 caractères, pas deux fois le même message ; le chat garde 48 heures de messages",
-    "Panel admin (réservé à Mathis, et aux modérateurs avec moins de pouvoirs) : vue d'ensemble et journal, fiche de chaque joueur (muet 1 h ou 24 h, bannir du chat, mettre en vérification, changer un pseudo, suspendre le compte), signalements, joueurs en vérification, annonces en bandeau, réglages du chat (niveau minimum pour écrire) et nomination des modérateurs ; le panel de test reste à part" ] },
   { v: "0.1.17", name: "Bienvenue", items: [
     "Bulles de découverte : 18 courtes explications qui apparaissent une seule fois, la première fois qu'un système se présente (combat automatique, premier objet, clés et stasis, Havre-Sac, étoiles de zone, familiers…) ; « Compris » ou « Plus tard », au plus une toutes les 2 minutes, jamais pendant un combat manuel ni une entrée de boss",
     "Au premier lancement, une question : « Tu connais DOFUS ? » ; avec oui, les bulles sur ce que tout joueur de DOFUS connaît (caractéristiques, Almanax, familiers, alignement, forgemagie, montures, archimonstres) sont sautées",
@@ -165,20 +68,6 @@ const CHANGELOG = [
     "Fiche d'un objet depuis la recherche, possédé ou non : ce qu'il donne, où le trouver (recette, monstres et donjons avec leur taux) et un bouton vers l'atelier, la zone, le donjon ou la liste de courses ; un monstre jamais rencontré reste « ??? »",
     "Options › Affichage : taille du texte (90 à 130 %), mouvements réduits (automatique selon le réglage de ton appareil, ou au choix), contraste renforcé ; le thème, les animations et les écrans de récompense sont regroupés au même endroit",
     "La rareté des objets est retirée : elle ne changeait que la couleur du cadre ; elle reviendra avec l'hôtel des ventes" ] },
-  { v: "0.1.16", name: "Classements", items: [
-    "Nouvel onglet Classements (famille Aventure) : Niveau de l'équipe (chaque renaissance compte 200 niveaux), Donjons, Album, Succès et Premiers ; ta place est toujours affichée",
-    "Filtre par classe : le meilleur Iop, le meilleur Crâ… (le plus haut héros de cette classe, renaissances comprises)",
-    "Records de donjon vérifiés : quand tu termines une stasis plus haute, le serveur rejoue la stasis avec ton équipe et donne le temps officiel ; la plus haute stasis gagne, puis le combat le plus rapide",
-    "Donjons de la semaine : un par tranche de niveau, les mêmes pour tout le monde ; les 3 premiers de chacun portent le titre « Maître de la semaine » la semaine suivante",
-    "Premiers : le premier héros au niveau 200 et le premier joueur à finir chaque donjon en stasis 10 sont gravés pour toujours",
-    "Profil des joueurs : un clic sur un pseudo montre son équipe, l'équipement de chaque héros et ses records",
-    "Anti-triche : un progrès impossible (ou une partie retouchée par le panel de test) met la partie « en vérification » : elle joue normalement mais n'apparaît plus dans les classements" ] },
-  { v: "0.1.15", name: "Comptes en ligne", items: [
-    "Compte Idlus : connexion avec Discord ou par un lien reçu par e-mail (sans mot de passe), et un pseudo unique choisi une seule fois",
-    "Ta partie est gardée en ligne : envoi toutes les 30 secondes et quand tu quittes l'onglet, pour la retrouver sur un autre ordinateur ou ton téléphone",
-    "Ta partie actuelle part sur ton compte en un clic à la première connexion ; si deux appareils ont chacun avancé, le jeu te demande laquelle garder (l'autre reste en copie de secours)",
-    "Pastille « Sauvegardé en ligne » dans la barre du haut (jaune pendant l'envoi, grise hors ligne : le jeu continue et envoie au retour d'Internet)",
-    "Options : nouvelle section « Compte » (pseudo, Discord, e-mail, envoi immédiat, déconnexion, suppression du compte). Jouer sans compte reste possible" ] },
   { v: "0.1.14.4", name: "Dernier réglage", items: [
     "Métiers : un objet se fabrique avec un métier au tiers de son niveau (avant : la moitié), pour s'équiper à temps face aux monstres plus forts dès le niveau 30",
     "Les attaques bien plus faibles que les meilleures de leur classe font plus de dégâts (jusqu'à +50 %), pour que le héros s'en serve",
@@ -369,6 +258,19 @@ const CHANGELOG = [
     "Recette des clés de donjon : panneau clair avec la progression et un bouton vers la zone ou le métier pour chaque ingrédient",
     "Bonus « petit groupe » en donjon : +30 % de PV et −15 % de dégâts subis en solo, moitié moins en duo ; Mutisme et Condamnation adoucis en solo",
     "Monstres des niveaux 100 à 200 plus solides (jusqu'à ×1,4 PV et ×1,35 dégâts au niveau 200)" ] },
+  { v: "3.4.4", name: "Nouvelle adresse", items: [
+    "Le jeu a une nouvelle adresse plus simple : idlus.github.io",
+    "L'ancienne adresse renvoie automatiquement vers la nouvelle et ta partie te suit : elle est reprise si ce navigateur n'a encore aucune partie à la nouvelle adresse" ] },
+  { v: "3.4.3", name: "Passif visible", items: [
+    "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes) ; la fenêtre défile au lieu de rétrécir son contenu" ] },
+  { v: "3.4.2", name: "Symboles de classe", items: [
+    "Écran de départ et recrutement : chaque classe est représentée par son symbole officiel, sur une case à sa couleur, et le panneau de la classe montre le héros en pied (Masculin ou Féminin)",
+    "Choisissez la tête de votre héros dès sa création (rangée « Tête » sous Apparence)",
+    "Forgelance : nouvelle apparence tirée de son illustration officielle (cheveux, barbe et armure) au lieu du casque à la tête mal placée",
+    "Ouginak : les têtes défectueuses (Ouginak féminine sans tête, têtes féminines chez l'Ouginak masculin) sont retirées" ] },
+  { v: "3.4.1", name: "Discord", items: [
+    "« Signaler un bug » (Options) ouvre directement le forum Bugs du Discord, même si vous n'êtes pas encore sur le serveur : le modèle de rapport est copié, il suffit d'ouvrir un fil et de le coller",
+    "Le serveur Discord s'agrandit : salons d'entraide, de builds et de captures, forums Bugs et Idées (votez avec 👍), salons de la version de test et mutateur de la semaine annoncé chaque lundi" ] },
   { v: "3.4.0", name: "Havre-Sac", items: [
     "Le Havre-Sac devient 8 pièces (Accueil → Havre-Sac) : vos améliorations gardent leur niveau et sont rangées par pièce, l'atelier se construit pour 50 000 kamas et l'enclos ouvrira plus tard",
     "Meubles : un meuble agit une fois placé dans sa pièce, avec des places limitées (14 au total). 43 meubles : 28 trophées de boss, meubles du Comptoir, de l'Almanax, du Bricoleur (5 recettes), butins rares de 5 zones et 2 succès ; un catalogue montre comment obtenir chacun. Les meubles déjà gagnés sont placés d'office",
@@ -838,7 +740,7 @@ function statusHtml() {
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); if (BETA) renderUpdBar(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
 const PIN_ICO = { quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
@@ -3951,7 +3853,7 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
-  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span><button class="btn sm" data-adm="open">${G("bug")} Panel de test</button><a class="btn sm" href="../">Jeu public</a></div>`;
+  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jeu public</a></div>`;
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
@@ -4373,10 +4275,11 @@ async function defiSubmit(r) {
 /* ---------- classement du défi (onglet Classements) ---------- */
 async function lbDefiFetch(out) {
   const db = ON.db(), me = ON.user && ON.user.id, day = E.defiDay(), tier = LB.dtier || defiTierCur();
-  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team });
-  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
+  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team, fl: r.main_lvl });
+  const ml = LB.ml ? ",main_lvl" : "";
+  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
   out.rows = (data || []).map(rec);
-  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r" + ml).eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
   const { data: y } = await db.from("lb_defi").select("pseudo,r").eq("day", day - 1).eq("tier", tier).lte("r", 3).order("r", { ascending: true }).limit(3);
   out.yest = (y || []).map((x) => x.pseudo);
 }
@@ -5352,7 +5255,10 @@ async function onBoot() {
 const VF = window.VERIFY;
 const LB = { tab: "lvl", cls: "", dmode: "week", did: null, cache: {} };
 const LB_TABS = [["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
-const cmed = (cls) => (CLASSES[cls] ? `<span class="cm" style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+/* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
+const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
+const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
+const lbLvl = (score) => score - Math.max(0, Math.floor((score - 1) / VF.REB_LVL)) * VF.REB_LVL;
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
 const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
 const weekNow = () => VF.weekIdx(E.now());
@@ -5364,32 +5270,34 @@ function lbDefaultDid() {
 /* Requête d'un classement, gardée 60 s. */
 async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
+  if (LB.ml === undefined) { const { error } = await db.from("lb_level").select("main_lvl").limit(1); LB.ml = !error; } // 0.1.26 : niveau du héros principal (cadre du médaillon)
   const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
   if (t === "lvl" && LB.cls) {
     const { data } = await db.from("lb_class").select("user_id,pseudo,cls,score").eq("cls", LB.cls).order("score", { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score }));
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.cls, sc: lvlTxt(r.score), v: r.score, fl: lbLvl(r.score) }));
     const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
-    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
+    if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
     const col = t === "lvl" ? "level" : t === "album" ? "album" : "succes";
     const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : `${v} succès`);
-    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}`).order(col, { ascending: false }).limit(50);
-    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]) }));
-    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+    const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
+    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
-    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true });
+    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true, fl: r.main_lvl });
+    const ml = LB.ml ? ",main_lvl" : "";
     if (LB.dmode === "week") {
-      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
-      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r").eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+      if (me) { const { data: m } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
     } else {
-      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
+      const { data } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
-      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).eq("user_id", me).limit(1);
+      if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t" + ml).eq("did", did).eq("user_id", me).limit(1);
         if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: await count(db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${m[0].k},and(k.eq.${m[0].k},t.lt.${m[0].t})`)) }); }
     }
   } else if (t === "defi") {
@@ -5401,7 +5309,7 @@ async function lbFetch() {
   LB.cache[key] = out; return out;
 }
 function lbRowHtml(r, i, me) {
-  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+  return `<button class="lbr${me ? " me" : ""}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(me ? (ON.profile && ON.profile.pseudo) || "Toi" : r.p)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "first") {
@@ -5412,7 +5320,7 @@ function lbListHtml(d) {
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
   if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
-  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls)}<span class="nm">${h(r.p)}</span><span class="sc">${h(r.sc)}</span></button>`; }).join("");
+  const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${h(r.p)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
   return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
 }
@@ -5444,12 +5352,12 @@ async function lbProfile(u) {
   openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
   const db = ON.db();
   try {
-    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes").eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
+    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
-    openSheet(`<div class="row">${cmed(p.main)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
-      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
+    openSheet(`<div class="row">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${h(p.pseudo)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
+      <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
@@ -5629,6 +5537,6 @@ function cmpItem(c, it) {
 Object.assign(window.DX.social, { fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
-if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
+if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 start();
 })();
