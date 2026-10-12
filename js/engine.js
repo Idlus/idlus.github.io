@@ -18,6 +18,7 @@
   E.trainee = () => null;     // héros à la Salle d'entraînement (systems.js)
   E.atelierTick = () => 0;    // atelier du Havre-Sac (systems.js)
   E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
+  E.mountStats = () => null; E.mountHunt = () => null; E.mountXpShare = () => 0; E.stableXp = () => {}; E.enclosTick = () => {}; // montures (mounts.js)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
   let rnd = Math.random;
@@ -81,6 +82,7 @@
       journal: [],
       dungeon: null,
       pets: {}, petUid: 1, petKeep: {}, petLuck: {},
+      mounts: {}, mountUid: 1, mountSeen: {}, enclos: { built: false, pairs: [], births: 0 },
     };
     Object.keys(GATHER_JOBS).forEach((j) => (S.jobs[j] = { lvl: 1, xp: 0 }));
     Object.keys(CRAFT_JOBS).forEach((j) => (S.crafts[j] = { lvl: 1, xp: 0 }));
@@ -264,6 +266,7 @@
     BASE_STATS.forEach((k) => (st[k] += (c.alloc[k] || 0) + ((c.scrolls || {})[k] || 0)));
     Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) addStats(st, it.stats); });
     const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
+    const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
     const solo = opts.solo !== undefined ? opts.solo : (E.isSolo(S) && c.inTeam);
@@ -1611,15 +1614,17 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
       out.xp[c.id] = g;
+      g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
+    E.stableXp(S, team.length ? team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length : 0); // Mangeoire de l'enclos
     // Salle d'entraînement du Havre-Sac : une part de l'XP moyenne de l'équipe
     const tr = E.trainee(S);
     if (tr && team.length) {
       const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.trainShare(S, tr));
-      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, g)) out.ups.push([tr.name, tr.lvl]); }
+      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, g - E.mountXpShare(S, tr, g))) out.ups.push([tr.name, tr.lvl]); }
     }
     S.kamas += out.kamas;
     // Butin
@@ -1658,6 +1663,7 @@
       if (lp < 1) out.lootPen = Math.min(out.lootPen || 1, lp); }
     });
     if (!opts.dungeon && sub && E.petHunt(S, S.sub)) out.pet = true; // familier de la sous-zone
+    if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
     return out;
@@ -2133,6 +2139,7 @@
     gatherTick(S, dtMs / 1000);
     E.atelierTick(S, dtMs / 1000);
     E.petTick(S, dtMs);
+    E.enclosTick(S, dtMs);
   };
 
   /* ---------------- Récolte (v2.6) ----------------
@@ -2236,7 +2243,7 @@
     if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)))) return "Vous possédez déjà cet objet.";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
-    if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else addRes(S, name, 1);
+    if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);
     craftXp(S, R.job, 20 + R.lvl * 3);
     E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
@@ -2396,6 +2403,7 @@
     gatherTick(S, eff, { quiet: true });
     E.atelierTick(S, eff, { quiet: true });
     E.petTick(S, seconds * 1000); // les familiers mangent en temps réel
+    E.enclosTick(S, seconds * 1000); // les naissances continuent
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }

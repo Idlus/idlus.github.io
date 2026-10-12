@@ -5,6 +5,7 @@ const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js");
 require("../js/pets.js");
+require("../js/mounts.js");
 const D = require("../js/data.js");
 
 // aléatoire reproductible (mulberry32)
@@ -117,4 +118,37 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   const old = JSON.parse(JSON.stringify(S6)); delete old.pets; delete old.petKeep; delete old.petLuck; delete old.petUid; delete old.chars[0].pet; const S8 = E.deserialize(JSON.stringify(old)); assert.ok(S8.pets && S8.petKeep && S8.petUid === 1, "ancienne sauvegarde sans familiers");
   let n = 0; for (let i = 0; i < 60; i++) { const o = []; E.petBoss(S6, "plateau_ush", 6, o); n += o.length; } assert.ok(n >= 1, "garantie du montilier à la 60e victoire");
   console.log(`ok - familiers : ${ids.length} familiers et montiliers, repas, croissance, garantie`);
+}
+// 0.1.9 : montures (données, capture, part d'XP, enclos, sauvegarde)
+{
+  const S9 = E.newState("Test", "iop"); const c = S9.chars[0]; c.lvl = 70; c.inTeam = true;
+  let n = 0; for (const sp in E.MOUNTS) for (const col in E.MOUNTS[sp].cols) { n++; const st = E.mountStatsMax(sp, col); for (const k in st) assert.ok(D.STATS[k], `${sp} ${col} : stat inconnue ${k}`); assert.ok(E.MOUNTS[sp].cols[col].icon, `${sp} ${col} sans icône`); }
+  assert.strictEqual(n, 41, "41 couleurs"); assert.strictEqual(Object.keys(E.MOUNTS.dd.bico).length, 55, "55 bicolores de dragodinde");
+  for (const sp in E.MOUNTS) assert.ok(E.SUBS[E.MOUNT_SP[sp].sub], sp + " : zone sauvage inconnue");
+  // capture : jamais sans filet, le filet ne part qu'à la capture
+  const realRnd = E.rnd; E.rnd = () => 0;
+  assert.strictEqual(E.mountHunt(S9, "can_plaines"), null, "pas de capture sans filet");
+  E.addCons(S9, "filet", 2); const M = E.mountHunt(S9, "can_plaines"); assert.ok(M && M.sp === "dd" && M.lvl === 1, "capture d'une dragodinde"); assert.strictEqual(S9.cons.filet, 1, "un filet utilisé");
+  assert.strictEqual(E.mountHunt(S9, "ama_campagne"), null, "pas de capture hors zone sauvage");
+  E.rnd = realRnd;
+  // monter, bonus, part d'XP
+  assert.strictEqual(E.equipMount(S9, c.id, M.uid), null, "monter la dragodinde"); const v0 = E.charStats(S9, c).vit;
+  M.lvl = 50; assert.strictEqual(E.charStats(S9, c).vit - v0 + E.mountStatsAt(Object.assign({}, M, { lvl: 1 })).vit, 150, "+150 Vitalité au niveau 50");
+  M.lvl = 1; M.xp = 0; const kept = 10000 - E.mountXpShare(S9, c, 10000); assert.strictEqual(kept, 6000, "part de 40 % par défaut"); assert.ok(M.xp === 4000 || M.lvl > 1, "la monture reçoit l'XP");
+  c.lvl = E.MAX_LVL; assert.strictEqual(E.mountShare(S9, c), 100, "héros 200 : toute l'XP"); c.lvl = 70;
+  E.giveMountXp(S9, M, 1e9); assert.strictEqual(M.lvl, 100, "niveau 100"); assert.strictEqual(c.mountShare, 0, "part remise à 0 au niveau 100"); assert.strictEqual(E.charStats(S9, c).vit - v0 + E.mountStatsAt(Object.assign({}, M, { lvl: 1 })).vit, 300, "+300 Vitalité au niveau 100");
+  // montilier : la place de la monture est prise
+  E.givePet(S9, "siroko"); assert.strictEqual(E.mountStats(S9, c), null, "le montilier bloque la monture"); E.equipPet(S9, c.id, null);
+  // enclos : recette Rousse + Dorée = Indigo ; naissance après 8 h, même hors ligne
+  S9.kamas = 100000; assert.strictEqual(E.buildEnclos(S9), null, "enclos construit"); assert.strictEqual(E.stableCap(S9), 20, "20 places avec l'enclos");
+  const A = E.giveMount(S9, "dd", "Rousse", ""), B = E.giveMount(S9, "dd", "Dorée", ""); A.lvl = B.lvl = 60;
+  assert.strictEqual(E.childOf("dd", "Rousse", "Dorée"), "Indigo", "recette Indigo"); assert.ok(E.nextCrosses(S9, "dd").some((x) => x.c === "Indigo" && x.ok), "le carnet propose Indigo");
+  assert.strictEqual(E.startBreed(S9, A.uid, B.uid), null, "couple à l'enclos"); assert.ok(E.startBreed(S9, A.uid, B.uid), "déjà à l'enclos");
+  const before = E.stableN(S9); E.enclosTick(S9, 7 * 3600e3); assert.strictEqual(E.stableN(S9), before, "pas encore né"); E.catchUp(S9, 2 * 3600); assert.strictEqual(E.stableN(S9), before + 1, "naissance hors ligne"); assert.strictEqual(A.kids, 1, "un petit compté");
+  const odds = E.breedOdds(S9, A, B); assert.strictEqual(odds.reduce((s, x) => s + x[1], 0), 100, "les chances font 100 %");
+  assert.deepStrictEqual(Object.keys(E.mountStatsMax("dd", E.bicoKey("dd", "Rousse", "Amande"))).sort(), ["ini", "so", "vit"], "bicolore : les deux stats");
+  const S10 = E.deserialize(E.serialize ? E.serialize(S9) : JSON.stringify(S9)); assert.ok(S10.mounts[M.uid] && S10.chars[0].mount === M.uid && S10.enclos.built, "montures perdues à la sauvegarde");
+  const old = JSON.parse(JSON.stringify(S9)); delete old.mounts; delete old.mountUid; delete old.mountSeen; delete old.enclos; delete old.chars[0].mount; const S11 = E.deserialize(JSON.stringify(old)); assert.ok(S11.mounts && S11.enclos && !S11.enclos.built, "ancienne sauvegarde sans montures");
+  assert.ok(D.SPECIAL_CRAFTS["Filet de capture"] && D.SPECIAL_CRAFTS["Filet de capture"].cons === "filet", "recette du filet");
+  console.log(`ok - montures : ${n} couleurs, capture, part d'XP, enclos, sauvegarde`);
 }

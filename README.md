@@ -7,6 +7,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.9 « Montures » (bêta)
+- **Montures** : 41 couleurs officielles de dragodindes (niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), bonus DOFUS au niveau 100. Capture au filet dans trois zones sauvages (hors ligne aussi), croissance par une part de l'XP du héros, enclos du Havre-Sac pour l'élevage (naissances en 8 h, croisements connus, bicolores, objets d'élevage), carnet de l'éleveur et arbre généalogique.
 ## 0.1.8.1 « Étoiles de zone » (bêta)
 - **Étoiles de zone** : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus), +10 % d'XP et de butin chacune ; elles fondent en chassant (une toutes les 30 min). Changer de zone rapporte plus.
 ## 0.1.8 « Familiers et montiliers » (bêta)

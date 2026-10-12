@@ -12,7 +12,7 @@
 "use strict";
 const E = require("../js/engine.js");
 require("../js/systems.js");
-require("../js/pets.js");
+require("../js/pets.js"); require("../js/mounts.js");
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -79,6 +79,11 @@ const petFor = (c) => { const main = D.CLASSES[c.cls].main;
   const val = (id) => { const st = E.PETS[id].stats; return (st[main] || 0) + (st.pui || 0) * 1.2 + (st.cri || 0) * 4; };
   return ok.sort((a, b) => val(b) - val(a))[0]; };
 const givePets = (S) => { if (!FAM) return; S.chars.forEach((c) => { const id = petFor(c); if (!id) return; const uid = S.petUid++; S.pets[uid] = { uid, id, g: 100, t: 0 }; c.pet = uid; E.refreshSpells(c, E.charStats(S, c)); }); };
+/* --montures dd|mu|vk : chaque héros monte, au niveau 100, la monture de son élément (ou la première couleur) de cette espèce */
+const MNT = arg("montures", "");
+const giveMounts = (S) => { if (!MNT || !E.MOUNTS[MNT]) return; S.enclos.built = true; S.chars.forEach((c) => { const main = D.CLASSES[c.cls].main; const cols = E.MOUNTS[MNT].cols;
+  const col = Object.keys(cols).find((k) => cols[k].s[main]) || Object.keys(cols).find((k) => cols[k].s.pui) || Object.keys(cols)[0];
+  const M = E.giveMount(S, MNT, col, "", { quiet: true }); if (!M) return; M.lvl = 100; c.mount = M.uid; E.refreshSpells(c, E.charStats(S, c)); }); E.events.length = 0; };
 const tagRows = (S) => { const fr = E.frontSet(S); S.chars.forEach((c) => (c._row = fr.has(c.id) ? "f" : "b")); };
 
 /* ---------- une tentative de donjon ---------- */
@@ -86,7 +91,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
-  S.chars.forEach((c) => { gearUp(S, c, prof); E.refreshSpells(c, E.charStats(S, c)); }); givePets(S); tagRows(S);
+  S.chars.forEach((c) => { gearUp(S, c, prof); E.refreshSpells(c, E.charStats(S, c)); }); givePets(S); giveMounts(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
     S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });

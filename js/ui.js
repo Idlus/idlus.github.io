@@ -16,9 +16,16 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.8.1";
+const GAME_VERSION = "0.1.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.9", name: "Montures", items: [
+    "Montures : 41 couleurs officielles de dragodindes (dès le niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), avec leurs bonus DOFUS au niveau 100",
+    "Capture au filet : avec un filet dans le sac (2 000 kamas, ou Bricoleur niveau 40), chaque victoire aux Plaines Rocheuses, aux Plaines herbeuses d'Otomaï ou à la Plaine de Sakaï peut capturer une monture sauvage, hors ligne aussi",
+    "La monture grandit avec une part de l'XP de son héros (réglable, 40 % par défaut ; toute l'XP d'un héros niveau 200) ; le PA et le PM n'arrivent qu'au niveau 100 de la monture",
+    "Enclos du Havre-Sac (50 000 kamas, +10 places d'écurie) : deux montures de niveau 50 donnent un petit après 8 h, même hors ligne ; croisements connus (25 % de nouvelle couleur), bicolores (5 %) et 4 objets d'élevage",
+    "Carnet de l'éleveur dans l'enclos (prochains croisements en un clic, collection par génération) et arbre généalogique ; un montilier prend toujours la place de la monture",
+    "Case Monture sur la fiche du héros, onglet « Familier & monture », écurie de 10 places" ] },
   { v: "0.1.8.1", name: "Étoiles de zone", items: [
     "Étoiles de zone : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chaque étoile donne +10 % d'XP et de butin dans cette zone",
     "Les étoiles fondent pendant qu'on y chasse (une toutes les 30 min, hors ligne aussi) : changer de zone de temps en temps rapporte plus",
@@ -629,11 +636,14 @@ const roomSum = (R) => {
   if (R.slots) p.push(`meubles ${E.placed(S, R.id).length}/${E.roomSlots(S, R.id)}`);
   if (R.post === "train") { const t = E.trainee(S); p.push(t ? `${t.name} s'entraîne` : "personne à l'entraînement"); }
   if (R.post === "atelier") { const c = E.atelierHero(S); p.push(!S.atelier.built ? `à construire · ${fmt(E.ATELIER_COST)} k` : c ? `${c.name} fabrique` : "personne à l'atelier"); }
+  if (R.post === "enclos") { const n = E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(S.mountSeen[sp] || {}).filter((c) => !E.isBico(c)).length, 0); const all = E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(E.MOUNTS[sp].cols).length, 0);
+    p.unshift(!S.enclos.built ? `à construire · ${fmt(E.ENCLOS_COST)} k` : `${S.enclos.pairs.length ? `${S.enclos.pairs.length} couple${S.enclos.pairs.length > 1 ? "s" : ""} à l'enclos` : "enclos libre"} · ${n}/${all} couleurs`); }
   return p.join(" · ");
 };
 function roomBody(R) {
-  if (R.soon) return `<p class="note">Les familiers et les montures s'installeront ici à la prochaine étape de la 4.0.</p>`;
+  if (R.soon) return `<p class="note">Bientôt.</p>`;
   let b = "";
+  if (R.post === "enclos") b = enclosBody();
   if (R.post === "train") { const t = E.trainee(S);
     b = t ? `<div class="trainee">${head(t)}<div class="grow"><b>${h(t.name)}</b> <span class="xs muted">${CLASSES[t.cls].name} niv. ${t.lvl}</span><div class="xs">Gagne <b class="plus">${fmt(Math.round(E.trainShare(S, t) * 1000) / 10)} %</b> de l'XP moyenne de l'équipe, sans combattre${E.trainMult(S, t) < 1 ? ` <span class="muted">(malus : ${E.trainGap(S, t)} niveaux sous l'équipe)</span>` : ""}</div><div class="bar xp"><i style="width:${t.lvl >= E.MAX_LVL ? 100 : pct(t.xp, E.xpNeed(t.lvl))}%"></i></div></div><button class="btn sm" data-act="trainpick">Changer</button></div>`
       : `<div class="trainee"><div class="grow small">Un héros hors de l'équipe peut s'entraîner ici : il gagne <b class="plus">${Math.round(E.TRAIN_SHARE * 100)} %</b> de l'XP moyenne de l'équipe, sans combattre, moins s'il a plus de ${E.TRAIN_FREE_GAP} niveaux de retard.</div><button class="btn sm primary" data-act="trainpick">Choisir</button></div>`; }
@@ -1601,7 +1611,7 @@ function renderHeroes() {
       ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (onglet Quêtes).</p>`}
     </div>
   </div></section>
-  <nav class="subtabs">${[["equip", "Équipement"], ["pet", "Familier"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
+  <nav class="subtabs">${[["equip", "Équipement"], ["pet", "Familier & monture"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
@@ -1708,6 +1718,7 @@ function charPetView(c) {
     <div class="panel"><div class="phead"><h2>${P && E.isMonti(P.id) ? "Montilier" : "Familier"} de ${h(c.name)}</h2>${P ? `<button class="btn sm" data-act="petoff">Retirer</button>` : ""}</div><div class="pad stack">
       ${P ? petCard(P, c, { big: true }) + (E.isMonti(P.id) ? `<p class="note xs" style="margin:0">Un montilier prend à la fois la place du familier et celle de la monture.</p>` : "") : `<div class="empty">${c.lvl < E.PET_LVL ? `Un familier se porte dès le niveau ${E.PET_LVL}.` : mine.length ? "Aucun familier porté : choisissez-en un ci-dessous." : "Aucun familier pour l'instant. Chaque sous-zone de chasse cache le sien (rare), et les boss en stasis 6 et plus gardent des familiers rares et des montiliers."}</div>`}
     </div></div>
+    ${mountPanel(c)}
     ${others.length ? `<div class="panel"><div class="phead"><h2>Vos familiers</h2><span class="xs muted">${mine.length} au total</span></div><div class="list">${others.map((x) => `<div class="li">${petCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
     <div class="panel"><div class="phead"><h2>Repas</h2><span class="xs muted">un repas toutes les 30 min, même hors ligne</span></div><div class="pad stack">
       <p class="note xs" style="margin:0">Chaque familier porté mange ${E.PET_MEAL_N} ressources par repas : sa nourriture préférée si vous en avez (+2 % de croissance), sinon la ressource la plus abondante du sac (+1 %). Il ne touche jamais aux clés, à la poussière de stasis ni aux ressources protégées. S'il n'a rien à manger, il attend, sans pénalité.</p>
@@ -1721,6 +1732,106 @@ function charPetView(c) {
       ${!ui.petAll && list.length > 18 ? `<div style="text-align:center;margin-top:8px"><button class="btn sm" data-act="petall">Voir les ${list.length - 18} autres</button></div>` : ""}
       <p class="note xs">${coll === "zone" ? "Chaque sous-zone de chasse a son familier : 1 chance sur 2 000 par victoire, même hors ligne." : coll === "boss" ? "Les familiers rares tombent sur leur boss à partir de la stasis 7 (1 chance sur 25)." : "Les montiliers tombent sur leur boss à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire. Les légendaires (+1 PA) : stasis 8 et plus, 1 chance sur 250, un peu plus à chaque échec. Dès le niveau 60."} Un double nourrit celui que vous avez déjà (+${E.PET_DUP_G} %).</p></div></div>
   </div>`;
+}
+/* ---------- 0.1.9 : montures (dragodindes, muldos, volkornes) ---------- */
+const mountImg = (sp, c) => `assets/mt/${E.mountIcon(sp, c)}.webp`;
+const mountSpName = (sp) => E.MOUNTS[sp].name + (sp === "dd" ? "s" : "s");
+const mountStatTxt = (stats) => petBonus(stats);
+const mountBar = (M) => `<div class="pbar"><i style="width:${M.lvl >= E.MOUNT_MAX ? 100 : pct(M.xp, E.mountXpNeed(M.sp, M.lvl))}%"></i><span>${M.lvl >= E.MOUNT_MAX ? `Niveau ${E.MOUNT_MAX} : bonus au maximum` : `Niveau ${M.lvl} · ${pct(M.xp, E.mountXpNeed(M.sp, M.lvl))} %`}</span></div>`;
+function mountSlot(c) {
+  const M = E.mountOf(S, c); const blocked = E.mountBlocked(S, c);
+  const tip = blocked ? "Monture : la place est prise par le montilier" : M ? `${E.mountName(M)} · niveau ${M.lvl}` : c.lvl < E.MOUNT_LVL ? `Monture : dès le niveau ${E.MOUNT_LVL}` : "Monture : vide";
+  return `<button class="dslot pet mount ${M ? "filled" : ""} ${blocked ? "blocked" : ""}" data-act="herotab" data-v="pet" data-tip="${h(tip)}">
+    ${M ? im(mountImg(M.sp, M.c), "", E.mountName(M)) : `<span class="dlabel">Monture</span>`}${M && M.lvl < E.MOUNT_MAX ? `<i class="pgrow" style="width:${M.lvl}%"></i>` : ""}</button>`;
+}
+function mountCard(M, c, opts = {}) {
+  const cur = E.mountStatsAt(M); const mx = E.mountStatsMax(M.sp, M.c); const owner = E.mountOwner(S, M.uid); const ok = c.lvl >= E.mountReq(M);
+  const why = E.breedWhy(S, M);
+  return `<div class="petcard mountcard ${opts.big ? "big" : ""}">
+    <span class="peticon">${im(mountImg(M.sp, M.c), "", E.mountName(M))}</span>
+    <div class="grow stack" style="gap:3px;min-width:0">
+      <div><b>${h(E.mountName(M))}</b> <span class="xs muted">génération ${E.gen(M.sp, M.c)}${E.isBico(M.c) ? " · bicolore" : ""}${owner && owner.id !== c.id ? ` · montée par ${h(owner.name)}` : ""}</span></div>
+      ${mountBar(M)}
+      <div class="small"><span class="muted">Maintenant :</span> <b class="pbon">${mountStatTxt(cur) || "—"}</b></div>
+      ${M.lvl < E.MOUNT_MAX ? `<div class="xs muted">Au niveau ${E.MOUNT_MAX} : ${mountStatTxt(mx)}</div>` : ""}
+      ${opts.big ? `<div class="xs muted">Petits : ${M.kids}/${E.kidsCap(S)}${why ? ` · élevage : ${why}` : " · peut aller à l'enclos"}</div>` : ""}
+    </div>
+    ${opts.act ? (c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm primary" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? "Monter" : "Niv. " + E.mountReq(M)}</button>`) : ""}
+  </div>`;
+}
+function mountPanel(c) {
+  const M = E.mountOf(S, c); const blocked = E.mountBlocked(S, c); const share = E.mountShare(S, c);
+  const mine = Object.values(S.mounts).sort((a, b) => E.MOUNT_ORDER.indexOf(a.sp) - E.MOUNT_ORDER.indexOf(b.sp) || b.lvl - a.lvl);
+  const others = mine.filter((x) => x.uid !== (M && M.uid));
+  const nets = S.cons.filet || 0; const hunting = S.hunting && S.sub;
+  const zones = E.MOUNT_ORDER.map((sp) => { const Z = E.MOUNT_SP[sp]; const s = E.SUBS[Z.sub]; const here = hunting === Z.sub;
+    return `<div class="li ${here ? "" : ""}"><span class="icobox">${im(mountImg(sp, Z.wild[0]), "", E.MOUNTS[sp].name)}</span><span class="grow"><b>${mountSpName(sp)} sauvages</b> <span class="xs muted">héros niveau ${Z.req}</span><br><span class="xs muted">${h(s.name)} (niv. ${s.lvl[0]}-${s.lvl[1]}) · couleurs : ${Z.wild.join(", ")}</span></span>${here ? `<span class="tag good">en chasse ici</span>` : ""}</div>`; }).join("");
+  return `<div class="panel"><div class="phead"><h2>Monture de ${h(c.name)}</h2>${M && !blocked ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : ""}</div><div class="pad stack">
+    ${blocked ? `<div class="empty">Le montilier prend la place de la monture. Retirez-le pour monter une dragodinde, un muldo ou un volkorne.</div>`
+      : M ? mountCard(M, c, { big: true }) + (M.lvl < E.MOUNT_MAX ? `<div class="mtshare"><span class="small"><b>Part d'XP donnée à la monture</b></span>${c.lvl >= E.MAX_LVL ? `<span class="tag good">toute l'XP (héros au niveau maximum)</span>` : `<span class="seg">${E.MOUNT_SHARES.map((v) => `<button data-act="mountshare" data-v="${v}" aria-pressed="${share === v}">${v} %</button>`).join("")}</span>`}
+          <p class="note xs" style="margin:0">${share ? `${h(c.name)} garde ${100 - share} % de son XP et sa monture reçoit le reste` : "La monture ne gagne pas d'XP pour l'instant"} · niveau ${M.lvl + 1} dans ${fmt(E.mountXpNeed(M.sp, M.lvl) - M.xp)} XP. Quand elle atteint le niveau ${E.MOUNT_MAX}, la part repasse toute seule à 0 %.</p></div>` : "")
+      : `<div class="empty">${c.lvl < E.MOUNT_LVL ? `Une monture se monte dès le niveau ${E.MOUNT_LVL}.` : mine.length ? "Aucune monture montée : choisissez-en une ci-dessous." : "Aucune monture pour l'instant : chassez dans une zone sauvage avec un filet de capture dans le sac."}</div>`}
+  </div></div>
+  ${others.length ? `<div class="panel"><div class="phead"><h2>Écurie</h2><span class="xs muted">${E.stableN(S)} / ${E.stableCap(S)} places${S.enclos.built ? "" : " · +10 avec l'enclos"}</span></div><div class="list">${others.map((x) => `<div class="li">${mountCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
+  <div class="panel"><div class="phead"><h2>Capture</h2><span class="row small">${emo("🪢")} <b class="num">${nets}</b> filet${nets > 1 ? "s" : ""}<button class="btn sm ${S.kamas >= E.NET_COST ? "primary" : ""}" data-act="buynet" ${S.kamas >= E.NET_COST ? "" : "disabled"}>Acheter 1 · ${fmt(E.NET_COST)} k</button></span></div>
+    <div class="list">${zones}</div>
+    <div class="pad"><p class="note xs" style="margin:0">Avec un filet dans le sac, chaque victoire dans une zone sauvage peut capturer une monture de niveau 1 (dragodindes : environ une toutes les 30 min de chasse, muldos : une par heure, volkornes : une toutes les 3 h), en ligne comme hors ligne. Le filet n'est utilisé que si la capture réussit. Le Bricoleur en fabrique dès le niveau 40. Les autres couleurs naissent à l'enclos du Havre-Sac.</p></div></div>`;
+}
+/* ---------- enclos : carnet de l'éleveur (C) et arbre (A) ---------- */
+const mtSp = () => (E.MOUNTS[ui.mtSp] ? ui.mtSp : "dd");
+const mtTabs = (act) => `<span class="seg">${E.MOUNT_ORDER.map((sp) => { const n = Object.keys(S.mountSeen[sp] || {}).filter((c) => !E.isBico(c)).length; return `<button data-act="${act}" data-v="${sp}" aria-pressed="${mtSp() === sp}">${mountSpName(sp)} <span class="num xs">${n}/${Object.keys(E.MOUNTS[sp].cols).length}</span></button>`; }).join("")}</span>`;
+const seenCol = (sp, c) => !!(S.mountSeen[sp] && S.mountSeen[sp][c]);
+const mtChip = (sp, c) => { const own = seenCol(sp, c); const n = Object.values(S.mounts).filter((M) => M.sp === sp && M.c === c).length;
+  return `<span class="mtchip ${own ? "own" : ""}" data-tip="${h(own ? `${E.MOUNTS[sp].name} ${E.colourName(sp, c)} · au niveau 100 : ${mountStatTxt(E.mountStatsMax(sp, c))}${E.MOUNTS[sp].cols[c] && E.MOUNTS[sp].cols[c].p ? ` · ${E.MOUNTS[sp].cols[c].p.join(" + ")}` : " · capture"}` : "Couleur jamais obtenue")}">${im(mountImg(sp, c), "", own ? c : "?")}${n > 1 ? `<em>×${n}</em>` : ""}</span>`; };
+function enclosBody() {
+  if (!S.enclos.built) return `<p class="note">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute aussi ${E.STABLE_ENCLOS} places à l'écurie.</p><button class="btn sm ${S.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${S.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button>`;
+  const sp = mtSp(); const Sp = E.MOUNTS[sp]; const next = E.nextCrosses(S, sp);
+  const pairs = S.enclos.pairs.map((p, i) => { const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return "";
+    return `<div class="breed"><div class="bpair">${im(mountImg(A.sp, A.c), "", "")}<b>+</b>${im(mountImg(B.sp, B.c), "", "")}</div><div class="grow"><b>${h(E.colourName(A.sp, A.c))} + ${h(E.colourName(B.sp, B.c))}</b> <span class="xs muted">${h(E.MOUNTS[A.sp].name)}s</span>
+      <div class="xs">${E.breedOdds(S, A, B).map(([c, pc, neu]) => `${neu ? `<b class="neu">${seenCol(A.sp, c) ? h(E.colourName(A.sp, c)) : "nouvelle couleur"}</b>` : h(E.colourName(A.sp, c))} ${pc} %`).join(" · ")}</div>
+      <div class="xs ${p.wait ? "ko" : "muted"}">${p.wait ? "Le petit attend : l'écurie est pleine" : `Naissance dans ${E.etaTxt(Math.ceil(p.t / 1000))} · continue hors ligne`}</div><div class="bar"><i style="width:${100 - pct(p.t, E.birthMs(S))}%"></i></div></div><button class="btn sm" data-act="breedstop" data-i="${i}">Annuler</button></div>`; }).join("");
+  const gens = {}; for (const c in Sp.cols) (gens[Sp.cols[c].g] = gens[Sp.cols[c].g] || []).push(c);
+  const bicos = Object.keys(S.mountSeen[sp] || {}).filter(E.isBico);
+  return `<div class="stack carnet">
+    <div class="row between"><h3 class="sec" style="margin:0">Carnet de l'éleveur</h3>${mtTabs("mtsp")}</div>
+    ${pairs ? `<div class="stack" style="gap:6px">${pairs}</div>` : `<p class="note xs" style="margin:0">Enclos libre (${E.pairCap(S)} couple${E.pairCap(S) > 1 ? "s" : ""} à la fois).</p>`}
+    <div class="xs plus" style="font-weight:800;text-transform:uppercase;letter-spacing:.5px">Prochains croisements</div>
+    ${next.length ? next.map((x) => `<div class="nx"><span class="bpair">${im(mountImg(sp, x.p[0]), "", x.p[0])}<b>+</b>${im(mountImg(sp, x.p[1]), "", x.p[1])}</span><span class="grow"><b>${h(x.p[0])} + ${h(x.p[1])}</b><br><span class="xs neu">${E.ODDS.known[0]} % : nouvelle couleur de génération ${Sp.cols[x.c].g}</span>${x.ok ? "" : `<br><span class="xs muted">${!x.a ? `${x.p[0]} : ${E.mountsBySp(S, sp).filter((M) => E.mainColour(M.c) === x.p[0]).map((M) => E.breedWhy(S, M)).filter(Boolean)[0] || "indisponible"}` : !x.b ? `${x.p[1]} : ${E.mountsBySp(S, sp).filter((M) => E.mainColour(M.c) === x.p[1]).map((M) => E.breedWhy(S, M)).filter(Boolean)[0] || "indisponible"}` : "enclos occupé"}</span>`}</span><button class="btn sm ${x.ok ? "primary" : ""}" data-act="breed" data-a="${x.a ? x.a.uid : ""}" data-b="${x.b ? x.b.uid : ""}" ${x.ok ? "" : "disabled"}>Lancer à l'enclos</button></div>`).join("")
+      : `<p class="note xs" style="margin:0">${Object.keys(S.mountSeen[sp] || {}).length ? "Aucune nouvelle couleur à portée : capture d'autres couleurs, fais grandir tes montures (niveau 50) ou croise deux montures au choix." : `Capture d'abord un${sp === "dd" ? "e" : ""} ${Sp.name.toLowerCase()} sauvage (filet de capture, zone sauvage).`}</p>`}
+    <div class="row"><button class="btn sm" data-act="breedpick">Croiser deux montures au choix</button><button class="btn sm" data-act="mtree">Voir l'arbre</button></div>
+    <div class="gens">${Object.keys(gens).sort().map((g) => { const L = gens[g]; const n = L.filter((c) => seenCol(sp, c)).length;
+      return `<div class="gen"><div class="gl"><b>Génération ${g}</b><span class="xs muted">${n} / ${L.length} couleurs${g == 1 ? " · capture" : ""}</span><div class="bar"><i style="width:${pct(n, L.length)}%"></i></div></div><div class="chips">${L.map((c) => mtChip(sp, c)).join("")}</div></div>`; }).join("")}
+      ${bicos.length ? `<div class="gen"><div class="gl"><b>Bicolores</b><span class="xs muted">${bicos.length} obtenu${bicos.length > 1 ? "s" : ""}</span></div><div class="chips">${bicos.map((c) => mtChip(sp, c)).join("")}</div></div>` : ""}</div>
+    <p class="note xs" style="margin:0">Croisement connu : ${E.ODDS.known[0]} % la nouvelle couleur, ${E.ODDS.known[1]} % chaque parent, ${E.ODDS.known[3]} % un bicolore. Autre couple : ${E.ODDS.free[1]} % chaque parent, ${E.ODDS.free[3]} % un bicolore. Un bicolore transmet sa première couleur. Chaque monture a ${E.kidsCap(S)} petits au plus, puis se repose (elle reste montable).</p>
+  </div>`;
+}
+function breedPickSheet() {
+  const sp = ui.breedA ? S.mounts[ui.breedA].sp : null;
+  const list = Object.values(S.mounts).filter((M) => (!sp || M.sp === sp) && M.uid !== ui.breedA).sort((a, b) => E.MOUNT_ORDER.indexOf(a.sp) - E.MOUNT_ORDER.indexOf(b.sp) || b.lvl - a.lvl);
+  const A = ui.breedA ? S.mounts[ui.breedA] : null;
+  openSheet(`<h2>${IC("ailes")} Croiser deux montures</h2><p class="small muted">${A ? `Première monture : <b>${h(E.mountName(A))}</b>. Choisissez la seconde (même espèce).` : "Choisissez la première monture. Il faut le niveau " + E.BREED_LVL + " et des petits restants."}</p>
+    <div class="list">${list.map((M) => { const why = E.breedWhy(S, M); const odds = A ? E.breedOdds(S, A, M) : null;
+      return `<div class="li"><span class="icobox">${im(mountImg(M.sp, M.c), "", "")}</span><span class="grow"><b>${h(E.mountName(M))}</b> <span class="xs muted">niv. ${M.lvl} · petits ${M.kids}/${E.kidsCap(S)}</span>${odds ? `<br><span class="xs">${odds.map(([c, pc, neu]) => `${neu && !seenCol(M.sp, c) ? `<b class="neu">nouvelle couleur</b>` : h(E.colourName(M.sp, c))} ${pc} %`).join(" · ")}</span>` : ""}${why ? `<br><span class="xs ko">${why}</span>` : ""}</span>
+        <button class="btn sm primary" data-act="${A ? "breed" : "breedsel"}" ${A ? `data-a="${A.uid}" data-b="${M.uid}"` : `data-uid="${M.uid}"`} ${why ? "disabled" : ""}>${A ? "Lancer" : "Choisir"}</button></div>`; }).join("") || `<div class="empty">Aucune monture${sp ? " de cette espèce" : ""}.</div>`}</div>
+    <div class="row">${A ? `<button class="btn" data-act="breedpick" data-reset="1">Changer la première</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+function mountTreeSheet() {
+  const sp = mtSp(); const Sp = E.MOUNTS[sp]; const gens = {}; for (const c in Sp.cols) (gens[Sp.cols[c].g] = gens[Sp.cols[c].g] || []).push(c);
+  const any = (col) => Object.values(S.mounts).some((M) => M.sp === sp && E.mainColour(M.c) === col);
+  const hint = (c) => { const p = Sp.cols[c].p; return !seenCol(sp, c) && p && any(p[0]) && any(p[1]); };
+  openSheet(`<h2>${IC("ailes")} Arbre des ${mountSpName(sp).toLowerCase()}</h2><div class="row between">${mtTabs("mtreesp")}<span class="xs muted">en violet : à portée avec ce que vous avez</span></div>
+    <div class="treebox"><div class="mtree" data-sp="${sp}"><svg></svg>${Object.keys(gens).sort().map((g) => `<div class="col"><h5>Gén. ${g}</h5>${gens[g].map((c) => { const k = seenCol(sp, c), ht = hint(c); const p = Sp.cols[c].p;
+      return `<div class="node ${k ? "own" : ""} ${ht ? "hint" : ""}" data-c="${h(c)}">${im(mountImg(sp, c), "", "")}<b>${k ? h(c) : "???"}</b><span>${k ? h(mountStatTxt(Sp.cols[c].s)) : p ? (ht ? h(p.join(" + ")) : "? + ?") : "capture"}</span></div>`; }).join("")}</div>`).join("")}</div></div>
+    <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  requestAnimationFrame(drawTree);
+}
+function drawTree() {
+  const tree = $(".mtree"); if (!tree) return; const sp = tree.dataset.sp; const Sp = E.MOUNTS[sp]; const svg = tree.querySelector("svg"); const tb = tree.getBoundingClientRect();
+  const pos = (c) => { const el = tree.querySelector(`.node[data-c="${CSS.escape(c)}"]`); if (!el) return null; const e = el.getBoundingClientRect(); return { l: e.left - tb.left + tree.scrollLeft, r: e.right - tb.left + tree.scrollLeft, y: e.top - tb.top + e.height / 2 }; };
+  let p = "";
+  for (const c in Sp.cols) { const par = Sp.cols[c].p; if (!par) continue; const to = pos(c); if (!to) continue; const k = seenCol(sp, c); const el = tree.querySelector(`.node[data-c="${CSS.escape(c)}"]`); const ht = el && el.classList.contains("hint");
+    for (const x of par) { const f = pos(x); if (!f) continue; const mx = (f.r + to.l) / 2; p += `<path class="${k ? "lit" : ht ? "hint" : ""}" d="M${f.r},${f.y} C${mx},${f.y} ${mx},${to.y} ${to.l},${to.y}"/>`; } }
+  svg.setAttribute("width", tree.scrollWidth); svg.setAttribute("height", tree.scrollHeight); svg.innerHTML = p;
 }
 function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
@@ -1743,7 +1854,7 @@ function charEquipView(c, st) {
           <b>${h(c.name)}</b><span class="xs muted">${CLASSES[c.cls].name} niv. ${c.lvl}</span>
           <div class="dstats">${["hpMax", "pa", mainK, "pui", "pp", "sa"].map((k) => `<span${tipAttr(k)}>${sIco(k) || "❤"}<b class="num">${k === "hpMax" ? fmt(st.hpMax) : fmtStatVal(k, st[k])}</b></span>`).join("")}</div></div>
         <div class="dcol">${DOLL_R.map((s) => dollSlot(c, s)).join("")}</div>
-        <div class="drow">${dollSlot(c, "arme")}${petSlot(c)}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
+        <div class="drow">${dollSlot(c, "arme")}${petSlot(c)}${mountSlot(c)}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
       </div></div></div>
     ${pick}
     ${gearHtml(c)}
@@ -2408,6 +2519,8 @@ function celeHtml(ev) {
     return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
   if (ev.t === "pet") { const p = E.PETS[ev.id]; if (!p) return "";
     return `<div class="cele-art pet">${im(petImg(ev.id), "celepet", p.name)}</div><div class="cele-k">${G("star")} ${p.kind === "monti" ? (p.fam === "l" ? "Montilier légendaire" : "Nouveau montilier") : "Nouveau familier"}</div><div class="cele-t">${h(p.name)}</div><div class="cele-s">Au maximum : ${h(petBonus(p.stats))}</div>`; }
+  if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
+    return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
     return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
@@ -2596,6 +2709,18 @@ document.addEventListener("click", (ev) => {
     case "petkeep": S.petKeep[d.r] = !S.petKeep[d.r]; if (!S.petKeep[d.r]) delete S.petKeep[d.r]; dirty = true; break;
     case "petcoll": ui.petColl = d.v; ui.petAll = false; break;
     case "petall": ui.petAll = true; break;
+    case "mounton": msg(E.equipMount(S, c.id, +d.uid)); dirty = true; break;
+    case "mountoff": E.equipMount(S, c.id, null); dirty = true; break;
+    case "mountshare": E.setMountShare(S, c.id, +d.v); dirty = true; break;
+    case "buynet": { const r = E.buyNets(S, 1); if (r) { toast(r); return; } toast("Filet de capture acheté."); dirty = true; break; }
+    case "enclosbuild": { const r = E.buildEnclos(S); if (r) { toast(r); return; } dirty = true; break; }
+    case "mtsp": ui.mtSp = d.v; break;
+    case "mtreesp": ui.mtSp = d.v; mountTreeSheet(); return;
+    case "mtree": mountTreeSheet(); return;
+    case "breedpick": ui.breedA = d.reset ? null : ui.breedA; breedPickSheet(); return;
+    case "breedsel": ui.breedA = +d.uid; breedPickSheet(); return;
+    case "breed": { const r = E.startBreed(S, +d.a, +d.b); if (r) { toast(r); return; } ui.breedA = null; closeSheet(); toast("Le couple est à l'enclos."); dirty = true; break; }
+    case "breedstop": { const r = E.stopBreed(S, +d.i); if (r) { toast(r); return; } dirty = true; break; }
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
     case "dealloc": E.deallocate(S, c.id, d.k, +d.n); break;

@@ -1,6 +1,18 @@
 {
-  "version": "0.1.8.1",
+  "version": "0.1.9",
   "versions": [
+    {
+      "v": "0.1.9",
+      "name": "Montures",
+      "items": [
+        "Montures : 41 couleurs officielles de dragodindes (dès le niveau 60), muldos (+1 PM, niveau 100) et volkornes (+1 PA, niveau 180), avec leurs bonus DOFUS au niveau 100",
+        "Capture au filet : avec un filet dans le sac (2 000 kamas, ou Bricoleur niveau 40), chaque victoire aux Plaines Rocheuses, aux Plaines herbeuses d'Otomaï ou à la Plaine de Sakaï peut capturer une monture sauvage, hors ligne aussi",
+        "La monture grandit avec une part de l'XP de son héros (réglable, 40 % par défaut ; toute l'XP d'un héros niveau 200) ; le PA et le PM n'arrivent qu'au niveau 100 de la monture",
+        "Enclos du Havre-Sac (50 000 kamas, +10 places d'écurie) : deux montures de niveau 50 donnent un petit après 8 h, même hors ligne ; croisements connus (25 % de nouvelle couleur), bicolores (5 %) et 4 objets d'élevage",
+        "Carnet de l'éleveur dans l'enclos (prochains croisements en un clic, collection par génération) et arbre généalogique ; un montilier prend toujours la place de la monture",
+        "Case Monture sur la fiche du héros, onglet « Familier & monture », écurie de 10 places"
+      ]
+    },
     {
       "v": "0.1.8.1",
       "name": "Étoiles de zone",
