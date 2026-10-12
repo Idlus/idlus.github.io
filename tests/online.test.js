@@ -1,0 +1,253 @@
+/* Test du compte et de la sauvegarde en ligne (0.1.15) dans un vrai navigateur, avec un faux serveur
+   Supabase en mémoire (window.__IDLUS_SB) : connexion, pseudo, envoi, reprise, deux appareils.
+   Lancer : node tests/online.test.js */
+"use strict";
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const { chromium } = require("playwright");
+
+const ROOT = path.join(__dirname, "..");
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".webmanifest": "application/manifest+json", ".png": "image/png", ".svg": "image/svg+xml", ".webp": "image/webp", ".jpg": "image/jpeg" };
+// le jeu est servi sous /beta/, comme la version de test
+const server = http.createServer((req, res) => {
+  const u = decodeURIComponent(req.url.split("?")[0]).replace(/^\/beta/, "");
+  let file = path.join(ROOT, path.normalize(u).replace(/^(\.\.[/\\])+/, ""));
+  if (file.endsWith(path.sep)) file = path.join(file, "index.html");
+  fs.readFile(file, (err, buf) => {
+    if (err) { res.writeHead(404); return res.end("not found"); }
+    res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" });
+    res.end(buf);
+  });
+});
+
+/* Faux serveur : l'état vit dans le localStorage sous « __mock » (session, profils, partie). */
+const MOCK = () => {
+  const db = () => JSON.parse(localStorage.getItem("__mock") || '{"session":null,"profiles":[],"saves":{}}');
+  const put = (d) => localStorage.setItem("__mock", JSON.stringify(d));
+  const ts = () => new Date(Date.now()).toISOString().replace("Z", "000Z").replace(/\.(\d{3})000Z$/, ".$1" + String(Math.floor(Math.random() * 1000)).padStart(3, "0") + "Z");
+  const q = (table) => {
+    const f = []; let ins = null, del = false, ord = [], lim = 1e9, head = false;
+    const rowsOf = () => { const d = db(); if (table === "profiles") return d.profiles; if (table === "saves") return Object.entries(d.saves).map(([user_id, s]) => Object.assign({ user_id }, s)); return (d.views || {})[table] || []; };
+    const run = () => { let rows = rowsOf().slice(); f.forEach((fn) => { rows = rows.filter(fn); });
+      ord.slice().reverse().forEach(([k, asc]) => rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * (asc ? 1 : -1))); return rows.slice(0, lim); };
+    const b = {
+      select: (c, o) => { head = !!(o && o.head); return b; }, limit: (n) => { lim = n; return b; }, order: (k, o) => { ord.push([k, !o || o.ascending !== false]); return b; },
+      eq: (k, v) => { f.push((r) => r[k] === v); return b; }, in: (k, v) => { f.push((r) => v.includes(r[k])); return b; }, delete: () => { del = true; return b; }, gt: (k, v) => { f.push((r) => r[k] > v); return b; }, lte: (k, v) => { f.push((r) => r[k] <= v); return b; },
+      or: () => { f.push(() => false); return b; },
+      ilike: (k, v) => { v = v.replace(/\\/g, ""); f.push((r) => String(r[k]).toLowerCase() === v.toLowerCase()); return b; },
+      insert: (o) => { ins = o; return b; },
+      maybeSingle: () => Promise.resolve({ data: run()[0] || null, error: null }),
+      then: (ok, ko) => {
+        if (ins && table !== "profiles") { const d = db(); d.views = d.views || {}; (d.views[table] = d.views[table] || []).push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
+        if (del) { const d = db(); const gone = run(); d.views[table] = (d.views[table] || []).filter((r) => !gone.some((g) => JSON.stringify(g) === JSON.stringify(r))); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
+        if (ins) { const d = db(); if (d.profiles.some((p) => p.pseudo.toLowerCase() === ins.pseudo.toLowerCase())) return Promise.resolve({ error: { message: "duplicate key" } }).then(ok, ko); d.profiles.push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
+        const rows = run(); return Promise.resolve(head ? { count: rows.length, error: null } : { data: rows, error: null }).then(ok, ko);
+      },
+    };
+    return b;
+  };
+  const user = () => db().session;
+  window.__IDLUS_SB = { createClient: () => ({
+    auth: {
+      getSession: async () => ({ data: { session: user() ? { user: user() } : null } }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      signInWithOAuth: async () => { const d = db(); d.session = { id: "u1", email: "test@idlus.fr", identities: [{ provider: "discord", identity_data: { global_name: "Testeur" } }] }; put(d); location.reload(); return { error: null }; },
+      signInWithOtp: async () => ({ error: null }),
+      signOut: async () => { const d = db(); d.session = null; put(d); return { error: null }; },
+      linkIdentity: async () => ({ error: null }),
+    },
+    from: q,
+    channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
+      window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
+    removeChannel: () => {},
+    functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
+    rpc: async (name, a) => {
+      const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
+      if (window.__offline) throw new Error("Failed to fetch");
+      const s = d.saves[u.id];
+      if (name === "save_info") return { data: s ? [{ updated_at: s.updated_at, meta: s.meta, device: s.device, game_version: s.game_version }] : [], error: null };
+      if (name === "push_save") {
+        if (!a.p_force && ((a.p_expected == null && s) || (a.p_expected != null && (!s || s.updated_at !== a.p_expected)))) return { data: null, error: null };
+        d.saves[u.id] = { data: a.p_data, meta: a.p_meta, device: a.p_device, game_version: a.p_version, updated_at: ts() }; d.pushes = (d.pushes || 0) + 1; put(d);
+        return { data: d.saves[u.id].updated_at, error: null };
+      }
+      const me = d.profiles.find((p) => p.id === u.id); const log = () => { d.admCalls = (d.admCalls || []).concat([[name, a]]); put(d); };
+      if (name === "chat_send") {
+        if (/www\.|https?:/.test(a.p_body)) return { data: "Les liens ne sont pas autorisés dans le chat.", error: null };
+        d.views = d.views || {}; const L = (d.views.chat_msgs = d.views.chat_msgs || []);
+        const m = { id: 1000 + L.length, ch: a.p_to ? "p" : "g", user_id: u.id, to_id: a.p_to, pseudo: me && me.pseudo, cls: "iop", lvl: 50, body: a.p_body, item: a.p_item, kind: "msg", created_at: new Date().toISOString() };
+        L.push(m); put(d); setTimeout(() => window.__chatEmit && window.__chatEmit(m), 50); return { data: null, error: null };
+      }
+      if (name === "chat_report") { d.reports = (d.reports || []).concat([a]); put(d); return { data: null, error: null }; }
+      if (name === "chat_me") return { data: { banned: false }, error: null };
+      if (name === "my_role") return { data: d.role || null, error: null };
+      if (name === "adm_overview") return { data: { accounts: d.profiles.length, active: 1, reports: 1, flagged: 0, muted: 0, signups: [{ id: "u9", pseudo: "Kralamour", cls: "iop", at: new Date().toISOString() }], log: [{ at: new Date().toISOString(), txt: "test", who: "Xener" }], settings: { min_level: 0, slow_s: 4 }, role: d.role }, error: null };
+      if (name === "adm_players") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, playtime: 7200, heroes: [{ cls: "iop", lvl: 200, ren: 1 }], created_at: new Date().toISOString(), last_save: new Date().toISOString(), reports: 1, flagged: false }], error: null };
+      if (name === "adm_msgs" || name === "adm_mods" || name === "adm_flagged") return { data: [], error: null };
+      if (name === "adm_reports") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", n: 1, reasons: "Spam", bodies: ["coucou"] }], error: null };
+      if (name === "adm_announce") { log(); d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 7, body: a.p_body, banner: true, until: null }); put(d); return { data: null, error: null }; }
+      // 0.1.20 : hôtel de vente (une seule annonce, achetée une fois)
+      const tpl = Object.keys(window.DATA.ITEMS).find((k) => window.DATA.ITEMS[k].lvl === 60 && window.DATA.ITEMS[k].slot === "coiffe"); const T = window.DATA.ITEMS[tpl];
+      const item = { tpl, stats: Object.fromEntries(Object.entries(T.stats).map(([k, [lo]]) => [k, lo])) };
+      if (name === "hdv_search") return { data: d.hdvSold ? [] : [{ cat: "eq", key: tpl, name: T.name, lvl: T.lvl, slot: T.slot, n: 1, qty: 1, unit: 5000 }], error: null };
+      if (name === "hdv_offers") return { data: d.hdvSold ? [] : [{ id: 1, qty: 1, price: 5000, item, mine: false, exp: new Date(Date.now() + 864e5 * 14).toISOString() }], error: null };
+      if (name === "hdv_stats") return { data: { avg: 4800, week: 3, days: [{ d: "2026-10-10", u: 4600 }, { d: "2026-10-11", u: 5000 }] }, error: null };
+      if (name === "hdv_mine") return { data: { open: [], sold: [] }, error: null };
+      if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: [] } : null, error: null };
+      if (name === "hdv_buy") { if (d.hdvSold) return { data: { err: "Déjà vendu." }, error: null }; d.hdvSold = true; put(d); return { data: { ok: true, ops: [{ id: 1, p: { k: -5000, add: [item] }, t: "Acheté : " + T.name }] }, error: null }; }
+      if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
+      if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
+      if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
+    },
+  }) };
+};
+
+(async () => {
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}/beta/`;
+  const errors = []; const fail = (m) => errors.push(m);
+  const browser = await chromium.launch();
+  try {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx.addInitScript(MOCK);
+    await ctx.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+    const page = await ctx.newPage();
+    page.on("console", (m) => { if (m.type() === "error") fail(`console : ${m.text()}`); });
+    page.on("pageerror", (e) => fail(`exception : ${e.message}`));
+    const mock = () => page.evaluate(() => JSON.parse(localStorage.getItem("__mock") || "{}"));
+    const S = () => page.evaluate(() => window.DX.S && { kamas: window.DX.S.kamas, n: window.DX.S.chars.length });
+
+    // 1. premier lancement : pas de compte obligatoire, on arrive directement sur le choix du héros
+    await page.goto(base); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    if (await page.$('[data-act="on-discord"]')) fail("écran de connexion au premier lancement");
+    // « Se connecter » depuis l'écran de départ, puis « Continuer sans compte » : le choix est retenu
+    await page.click('.start [data-act="on-loginscreen"]'); await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
+    await page.click('[data-act="on-skip"]'); await page.waitForSelector('[data-act="startgame"]');
+    await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
+    await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-tab]");
+    await page.evaluate(() => { window.DX.S.kamas = 4321; window.DX.saveNow(); });
+    await page.click('[data-act="options"]'); await page.click('[data-act="on-loginscreen"]');
+    await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
+    await page.click('[data-act="on-discord"]');
+    await page.waitForSelector("#onPseudo", { timeout: 10000 });
+    await page.fill("#onPseudo", "a b"); await page.click('[data-act="on-pseudo"]'); await page.waitForTimeout(200);
+    if (!/3 à 16/.test(await page.textContent("#onMsg"))) fail("pseudo invalide accepté");
+    await page.fill("#onPseudo", "Xener"); await page.click('[data-act="on-pseudo"]');
+    await page.waitForSelector('[data-act="on-send"]', { timeout: 10000 });
+    await page.click('[data-act="on-send"]'); await page.waitForSelector("#nav [data-tab]");
+    await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
+    let m = await mock();
+    if (!m.saves.u1 || JSON.parse(m.saves.u1.data).kamas < 4321) fail("la partie n'a pas été envoyée");
+    if (m.profiles[0].pseudo !== "Xener") fail("pseudo non enregistré");
+    // 3. rechargement : on continue sans question
+    await page.reload(); await page.waitForSelector("#nav [data-tab]", { timeout: 10000 });
+    if (await page.$(".sheet .svc")) fail("question inattendue au rechargement");
+    if ((await S()).kamas < 4321) fail("partie perdue au rechargement");
+    // 4. autre appareil : la partie en ligne change, celle d'ici n'a pas bougé depuis le dernier envoi -> reprise directe
+    await page.evaluate(() => { window.DX.saveNow(); });
+    await page.click("#onPill"); await page.waitForTimeout(300);
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 99999; st.savedAt = Date.now(); d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-01T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    // la page est rechargée sans laisser le jeu sauvegarder entre-temps
+    await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("dofousxen-save-beta-online")); const st = JSON.parse(localStorage.getItem("dofousxen-save-beta")); l.savedAt = st.savedAt + 10 ** 9; localStorage.setItem("dofousxen-save-beta-online", JSON.stringify(l)); });
+    await page.reload(); await page.waitForSelector("#nav [data-tab]", { timeout: 10000 }); await page.waitForTimeout(300);
+    if ((await S()).kamas < 99999) fail("partie en ligne plus récente non reprise");
+    // 5. conflit : les deux ont avancé -> question, on garde celle en ligne
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 55555; d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-02T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { window.DX.S.kamas = 11111; });
+    await page.click("#onPill");
+    await page.waitForSelector('[data-act="on-keepremote"]', { timeout: 10000 });
+    await page.click('[data-act="on-keepremote"]'); await page.waitForTimeout(500);
+    if ((await S()).kamas < 55555) fail("conflit : version en ligne non chargée");
+    // 6. conflit au lancement, on garde celle d'ici (envoi forcé)
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.saves.u1.updated_at = "2099-01-03T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 77777; window.DX.saveNow(); });
+    await page.reload(); await page.waitForSelector('[data-act="on-keeplocal"]', { timeout: 10000 });
+    await page.click('[data-act="on-keeplocal"]'); await page.waitForTimeout(1200);
+    m = await mock();
+    if (JSON.parse(m.saves.u1.data).kamas < 77777) fail("conflit : version d'ici non envoyée");
+    // 7. hors ligne : pastille grise, le jeu continue
+    await page.evaluate(() => { window.__offline = true; }); await page.click("#onPill"); await page.waitForTimeout(400);
+    if ((await page.getAttribute("#onPill", "data-st")) !== "offline") fail("pastille hors ligne absente");
+    await page.evaluate(() => { window.__offline = false; });
+    // 7b. classements : liste, onglets, profil, record vérifié
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const H = [{ cls: "iop", lvl: 120, ren: 1, name: "Grokk", gear: [] }];
+      d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
+        lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }] };
+      localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="ladder"]');
+    await page.waitForSelector(".podium .pod", { timeout: 10000 });
+    if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
+    for (const tb of ["dj", "album", "succ", "first", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
+    await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
+    if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");
+    await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 }); await page.click('[data-act="closesheet"].btn');
+    await page.evaluate(() => { const S = window.DX.S; const did = Object.keys(window.DATA.DUNGEONS)[0]; S.stasis = S.stasis || {}; S.stasis[did] = { max: 3, sel: 3, firsts: {}, best: { 3: 80 } }; window.DX.saveNow(); });
+    await page.click("#onPill"); await page.waitForSelector(".bigrec", { timeout: 8000 });
+    if (!/Stasis 3/.test(await page.textContent(".bigrec"))) fail("fiche de record incorrecte");
+    await page.click('[data-act="lb-goto"]'); await page.waitForTimeout(300);
+    m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
+    // 7c. chat : lecture, envoi, refus d'un lien, objet montré, menu d'un joueur, signalement, ignorer, privé
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const t = new Date().toISOString();
+      d.views.chat_msgs = [{ id: 1, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, title: "Maître de la semaine", body: "Salut !", kind: "msg", created_at: t },
+        { id: 2, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, kind: "ann", data: { t: "first", label: "Premier héros au niveau 200" }, created_at: t }];
+      localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000 });
+    await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
+    if (!/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : annonce automatique absente");
+    await page.fill("#chIn", "va sur www.test.fr"); await page.press("#chIn", "Enter"); await page.waitForSelector("#chat .ch-hint .bad", { timeout: 5000 });
+    await page.fill("#chIn", "Bonjour à tous"); await page.press("#chIn", "Enter"); await page.waitForTimeout(400);
+    if (!/Bonjour à tous/.test(await page.textContent("#chat .ch-list"))) fail("chat : message envoyé absent");
+    await page.evaluate(() => { const m = { id: 50, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Coucou en direct", kind: "msg", created_at: new Date().toISOString() };
+      const d = JSON.parse(localStorage.getItem("__mock")); d.views.chat_msgs.push(m); localStorage.setItem("__mock", JSON.stringify(d)); window.__chatEmit(m); }); await page.waitForTimeout(200);
+    if (!/Coucou en direct/.test(await page.textContent("#chat .ch-list"))) fail("chat : message en temps réel absent");
+    await page.evaluate(() => { const tpl = Object.keys(window.DATA.ITEMS)[0]; window.DX.social.itemSheet(tpl); }); await page.click('[data-act="ch-share"]');
+    await page.waitForSelector("#chat .ch-att", { timeout: 3000 }); await page.waitForTimeout(4000); await page.click('[data-act="ch-send"]'); await page.waitForTimeout(400);
+    if (!(await page.$("#chat .ch-list .itm"))) fail("chat : objet montré absent");
+    await page.click('#chat .ps[data-u="u9"]'); await page.waitForSelector("#chMenu", { timeout: 3000 }); await page.click('#chMenu [data-act="ch-rep"]');
+    await page.waitForSelector('[data-act="ch-repgo"]', { timeout: 3000 }); await page.click('[data-act="ch-repgo"]'); await page.waitForTimeout(500);
+    m = await mock(); if (!(m.reports || []).length) fail("chat : signalement non envoyé");
+    if (/Salut !/.test(await page.textContent("#chat .ch-list"))) fail("chat : joueur ignoré encore visible");
+    await page.click('#chat .ps[data-u="u8"]'); await page.click('#chMenu [data-act="ch-pm"]'); await page.waitForTimeout(4200);
+    await page.fill("#chIn", "Message privé"); await page.press("#chIn", "Enter"); await page.waitForTimeout(400);
+    m = await mock(); if (!m.views.chat_msgs.some((x) => x.ch === "p" && x.to_id === "u8")) fail("chat : message privé non envoyé");
+    // 7d. panel admin
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "admin"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector('#status [data-act="adm-open"]', { timeout: 5000 });
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
+    await page.click('.adm [data-act="adm-tab"][data-v="joueurs"]'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 });
+    await page.click('.adm [data-act="adm-sel"]'); await page.waitForSelector(".adm .fiche", { timeout: 5000 });
+    await page.click('.adm [data-act="adm-mute"][data-v="60"]'); await page.waitForTimeout(400);
+    await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admAnn", { timeout: 5000 });
+    await page.fill("#admAnn", "Maintenance ce soir"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(600);
+    m = await mock(); const calls = (m.admCalls || []).map((x) => x[0]);
+    if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
+    if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");
+    await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
+    // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
+    await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="hdv"]');
+    await page.waitForSelector('.mkdet [data-act="mk-ask"]', { timeout: 8000 });
+    const before = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length }));
+    await page.click('.mkdet [data-act="mk-ask"]'); await page.click('.mkdet [data-act="mk-buy"]'); await page.waitForTimeout(800);
+    const after = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length, op: window.DX.S.hdv && window.DX.S.hdv.op }));
+    if (after.n !== before.n + 1 || after.k !== Math.max(0, before.k - 5000) || after.op !== 1) fail("hôtel de vente : achat mal appliqué " + JSON.stringify([before, after]));
+    await page.click('.subtabs [data-act="mk-tab"][data-v="sell"]'); await page.waitForTimeout(300);
+    await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
+    if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
+    await page.click('#nav [data-fam="adv"]');
+    // 8. mobile : la pastille tient dans la barre
+    await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
+    const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);
+    await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
+    const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);
+    await page.click("#chat .ch-x");
+    // 9. suppression du compte
+    await page.click('[data-act="options"]'); await page.click('[data-act="on-askdelete"]');
+    await page.fill("#onDelPseudo", "xener"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
+    m = await mock(); if (m.saves.u1 || m.profiles.length) fail("compte non supprimé");
+    if (!(await S())) fail("partie de l'appareil perdue après suppression");
+  } finally { await browser.close(); server.close(); }
+  if (errors.length) { console.error("ÉCHEC :\n" + errors.join("\n")); process.exit(1); }
+  console.log("Compte et sauvegarde en ligne : OK");
+})();

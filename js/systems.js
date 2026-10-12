@@ -8,12 +8,13 @@
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
   const E = root.ENGINE || (typeof require !== "undefined" ? require("./engine.js") : null);
-  const { STATS, MONSTERS, DUNGEONS, ITEMS, RES, CLASSES } = D;
+  const { STATS, STAT_ORDER, RUNE_SIMPLE_ONLY, MONSTERS, DUNGEONS, ITEMS, RES, CLASSES } = D;
   const SUBS = E.SUBS;
-  const rnd = () => Math.random();
+  const rnd = () => E.rnd(); // même hasard que le moteur (réglable, rejouable par le serveur)
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const topLvl = (S) => Math.max(...S.chars.map((c) => c.lvl));
   const note = (S, t, k) => E.note(S, t, k);
+  const addRes = (S, n, q) => E.addRes(S, n, q);
   const giveTeamXp = (S, pctOfLevel) => {
     const list = E.team(S).length ? E.team(S) : S.chars;
     list.forEach((c) => E.giveXp(S, c, Math.round(E.xpNeed(c.lvl) * pctOfLevel)));
@@ -48,7 +49,7 @@
     { kind: "kamas", pct: 20, name: "+20 % de kamas" },
     { kind: "gather", pct: 25, name: "+25 % de vitesse de récolte" },
   ];
-  const dayKey = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const dayKey = (t = E.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   E.dayKey = dayKey;
   const hashStr = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return (x >>> 0) / 4294967296; };
   const ALM_POOL = (() => {
@@ -56,7 +57,7 @@
     Object.values(MONSTERS).forEach((mo) => { if (mo.boss || mo.archiOf) return; mo.drops.forEach(([r, p]) => { if (p >= 5 && !E.isKey(r)) m.set(r, Math.min(m.get(r) || 999, mo.lvl[0])); }); });
     return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]));
   })();
-  E.almanax = (S, t = Date.now()) => {
+  E.almanax = (S, t = E.now()) => {
     const day = dayKey(t); const top = topLvl(S);
     const pool = ALM_POOL.filter(([, l]) => l <= Math.max(8, top + 2));
     const h1 = hashStr("alm" + day), h2 = hashStr("bonus" + day);
@@ -74,7 +75,7 @@
     S.kamas += A.kamas; S.cnt.almanax = (S.cnt.almanax || 0) + 1;
     note(S, `Offrande à l'Almanax acceptée : ${A.bonus.name} jusqu'à minuit.`, "rare");
     // série de jours consécutifs (un jour manqué fait redescendre d'un palier)
-    const st = S.almStreak; const yest = dayKey(Date.now() - 864e5);
+    const st = S.almStreak; const yest = dayKey(E.now() - 864e5);
     if (st.last === yest) st.n++;
     else if (!st.last) st.n = 1;
     else { const lower = E.ALM_TIERS.filter((x) => x < st.n).pop() || 0; st.n = lower + 1; }
@@ -148,6 +149,7 @@
     b += almBonus(S, kind) * (1 + E.furnBonus(S, "almanax") / 100) + alignBonus(S, kind) + E.furnBonus(S, kind);
     if (kind === "drop" || kind === "kamas" || kind === "gather") b += E.boostPct(S, kind);
     if (kind === "xp" || kind === "drop" || kind === "kamas") b += E.boostPct(S, "royal");
+    if (kind === "xp" || kind === "drop") b += E.starBonus(S); // étoiles de la zone chassée (0.1.8.1)
     return b;
   };
 
@@ -164,7 +166,7 @@
     { id: "jardin",   name: "Jardin",               icon: "pioche",       color: "#8fd16a", desc: "Récolte",                   ups: ["gather"], slots: () => 2 },
     { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate"], slots: () => 2 },
     { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier" },
-    { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#8a8a8a", desc: "Familiers et montures",     ups: [], soon: true },
+    { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#d9a066", desc: "Élevage des montures",       ups: [], post: "enclos", slots: () => 3 },
   ];
   E.room = (id) => E.ROOMS.find((r) => r.id === id);
   E.roomSlots = (S, id) => { const R = E.room(id); return R && R.slots ? R.slots(S) : 0; };
@@ -187,6 +189,11 @@
     "Tapis de Koalak":         { room: "chambre", kind: "offrate", v: 3,  src: "Butin rare aux Koalaks", zone: "koalaks" },
     "Lit à baldaquin":         { room: "chambre", kind: "offtime", v: 1,  src: "Bricoleur niveau 80" },
     "Lanterne d'Otomaï":       { room: "chambre", kind: "offrate", v: 3,  src: "Butin rare à Otomaï", zone: "otomai" },
+    /* 0.1.9 : objets d'élevage de l'enclos */
+    "Mangeoire":               { room: "enclos",  kind: "mxp",     v: 1,  src: "Bricoleur niveau 50", txt: "Les montures à l'écurie gagnent 10 % de l'XP de l'équipe" },
+    "Abreuvoir":               { room: "enclos",  kind: "birth",   v: 1,  src: "Bricoleur niveau 70", txt: "Naissance en 6 h au lieu de 8" },
+    "Caresseur":               { room: "enclos",  kind: "kids",    v: 1,  src: "Butin rare à Cania", zone: "cania", txt: "Chaque monture peut avoir 4 petits au lieu de 3" },
+    "Deuxième couple":         { room: "enclos",  kind: "pair2",   v: 1,  src: "Succès : 10 naissances à l'enclos", txt: "Deux couples à l'enclos en même temps" },
   };
   /* Trophées de boss : gagnés à la première victoire en stasis 5. Force selon le niveau du donjon :
      1 % avant 60, 2 % de 60 à 119, 3 % de 120 à 159, 4 % ensuite ; la récolte compte double. */
@@ -205,6 +212,7 @@
     goulet_rasboul: ["Trophée de Silf le Rasboul Majeur", "kamas"], bambusaie_damadrya: ["Trophée de Damadrya", "gather"],
     labyrinthe_minotoror: ["Trophée du Minotoror", "hp"], antre_crocabulia: ["Trophée de Crocabulia", "drop"],
     serre_royalmouth: ["Trophée du Royalmouth", "kamas"], repaire_skeunk: ["Trophée de Skeunk", "xp"],
+    chateau_wa_wabbit: ["Trophée du Wa Wabbit", "drop"], terrier_wa_wabbit: ["Trophée du Wa Wobot", "kamas"],
   };
   E.TROPHY_STASIS = 5;
   E.trophyPct = (lvl) => (lvl < 60 ? 1 : lvl < 120 ? 2 : lvl < 160 ? 3 : 4);
@@ -215,7 +223,7 @@
   E.FURN = FURN;
   E.trophyOf = (did) => (TROPHY[did] ? TROPHY[did][0] : null);
   const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de vitesse de récolte", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac" };
-  E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
+  E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; if (F.txt) return F.txt; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
   E.giveFurn = (S, name, why) => {
     if (!name || S.furniture.includes(name)) return false;
     S.furniture.push(name); note(S, `Nouveau meuble : ${name}${why ? ` (${why})` : ""} ! À placer dans le Havre-Sac.`, "rare"); return true;
@@ -317,8 +325,12 @@
     "Étagère de grimoires": { lvl: 60,  ing: [["Bois de Chêne", 40], ["Kobalte", 20], ["Houblon", 20]] },
     "Lit à baldaquin":      { lvl: 80,  ing: [["Bois d'Érable", 40], ["Lin", 30], ["Manganèse", 15]] },
     "Coffre en merisier":   { lvl: 120, ing: [["Bois de Merisier", 50], ["Argent", 25], ["Malt", 20]] },
+    "Mangeoire":            { lvl: 50,  ing: [["Bois de Chêne", 30], ["Oueille", 20], ["Fer", 15]] },
+    "Abreuvoir":            { lvl: 70,  ing: [["Bois d'Érable", 30], ["Pierre de Granit", 20], ["Bronze", 15]] },
   };
   for (const n in FURN_CRAFTS) D.SPECIAL_CRAFTS[n] = Object.assign({ job: "bricoleur", furn: true, unique: true }, FURN_CRAFTS[n]);
+  /* 0.1.9 : filet de capture des montures, fabriqué par le Bricoleur (ou acheté 2 000 kamas) */
+  D.SPECIAL_CRAFTS["Filet de capture"] = { job: "bricoleur", lvl: 40, cons: "filet", ing: [["Oueille", 8], ["Bois de Frêne", 10], ["Fer", 5]] };
 
   /* ---------------- Consommables spéciaux (utilitaires et coffres) ---------------- */
   const resLot = (S, n, qmin, qmax) => {
@@ -387,7 +399,60 @@
   };
   E.setWing = (S, cid, w) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; c.wing = w && S.unlocks["wing_" + w] ? w : null; };
 
-  /* ---------------- Forgemagie : améliorer les jets avec des runes et des kamas ---------------- */
+  /* ---------------- Métier de Forgemage (0.1.8.2) ----------------
+     Niveau 1 à 100, commun au compte : chaque tentative donne de l'expérience, les runes inutiles aussi (à la place de l'ancien Emblème).
+     Paliers : +0,1 % de réussite et −0,5 % de kamas par niveau ; 30 : les échecs font moins souvent baisser une caractéristique ;
+     60 : un Cristal offert par jour ; 100 : titre « Grand Forgemage » (et plus tard les runes exotiques). */
+  E.FM_MAX = 100;
+  E.fmJob = (S) => S.fmJob || (S.fmJob = { lvl: 1, xp: 0 });
+  E.fmNeed = (l) => 20 + 30 * l;
+  E.FM_PERKS = [[30, "Les échecs ne font baisser une caractéristique qu'une fois sur quatre (une sur trois avant)"], [60, "Un Cristal de Forgemagie offert par jour : le premier échec de la journée ne fait rien baisser"], [100, "Titre « Grand Forgemage » et accès aux runes exotiques (+1 PA, +1 PM ou +1 Portée sur un objet de niveau 150 ou plus)"]];
+  E.fmGainXp = (S, x) => {
+    const J = E.fmJob(S); if (J.lvl >= E.FM_MAX) return; J.xp += x;
+    while (J.lvl < E.FM_MAX && J.xp >= E.fmNeed(J.lvl)) { J.xp -= E.fmNeed(J.lvl); J.lvl++; if (J.lvl % 10 === 0 || E.FM_PERKS.some(([l]) => l === J.lvl)) note(S, `Forgemage niveau ${J.lvl}`, "up"); }
+    if (J.lvl >= E.FM_MAX) J.xp = 0;
+  };
+  /* nourrir le forgemage avec des runes : 3 XP par point de poids */
+  E.feedForgemage = (S, key, qty) => {
+    const have = S.runes[key] || 0; const n = Math.min(have, qty); if (n <= 0) return null;
+    const xp = E.runeInfo(key).weight * 3 * n; E.fmGainXp(S, xp);
+    S.runes[key] -= n; if (!S.runes[key]) delete S.runes[key];
+    return { xp, n };
+  };
+  /* ---------------- Fusion et transmutation des runes (0.1.8.2) ---------------- */
+  E.RUNE_FUSE_N = 3; E.TRANSMUTE_N = 5;
+  E.transmuteCost = (tier) => (tier === "ra" ? 2000 : tier === "pa" ? 600 : 200);
+  E.transmuteTargets = () => STAT_ORDER.filter((k) => k !== "pa" && STATS[k] && STATS[k].pts > 0);
+  E.fuseRunes = (S, key, dir) => {
+    const [tier, stat] = key.split(":"); if (!STATS[stat]) return "Rune inconnue.";
+    if (tier === "ga") return "Une rune exotique ne se fusionne pas.";
+    if (RUNE_SIMPLE_ONLY.includes(stat)) return "Cette caractéristique n'existe qu'en rune simple.";
+    const take = (k, n) => { S.runes[k] -= n; if (!S.runes[k]) delete S.runes[k]; };
+    const give = (k, n) => { S.runes[k] = (S.runes[k] || 0) + n; };
+    if (dir === "up") {
+      const next = tier === "" ? "pa" : tier === "pa" ? "ra" : null; if (!next) return "Une rune Ra ne se fusionne pas.";
+      if ((S.runes[key] || 0) < E.RUNE_FUSE_N) return `Il faut ${E.RUNE_FUSE_N} runes.`;
+      take(key, E.RUNE_FUSE_N); give(E.runeKey(next, stat), 1); return null;
+    }
+    const prev = tier === "ra" ? "pa" : tier === "pa" ? "" : null; if (prev === null) return "Une rune simple ne se casse pas.";
+    if (!(S.runes[key] > 0)) return "Aucune rune.";
+    take(key, 1); give(E.runeKey(prev, stat), E.RUNE_FUSE_N); return null;
+  };
+  E.transmute = (S, key, toStat) => {
+    const [tier, stat] = key.split(":"); if (!STATS[stat] || !E.transmuteTargets().includes(toStat)) return "Caractéristique impossible.";
+    if (tier === "ga") return "Une rune exotique ne se transmute pas.";
+    if (toStat === stat) return "Choisissez une autre caractéristique.";
+    if (tier && RUNE_SIMPLE_ONLY.includes(toStat)) return "Cette caractéristique n'existe qu'en rune simple : transmutez des runes simples.";
+    if ((S.runes[key] || 0) < E.TRANSMUTE_N) return `Il faut ${E.TRANSMUTE_N} runes.`;
+    const cost = E.transmuteCost(tier); if (S.kamas < cost) return `Il faut ${cost} kamas.`;
+    S.kamas -= cost; S.runes[key] -= E.TRANSMUTE_N; if (!S.runes[key]) delete S.runes[key];
+    const nk = E.runeKey(tier, toStat); S.runes[nk] = (S.runes[nk] || 0) + 1; return null;
+  };
+
+  /* ---------------- Forgemagie : améliorer les jets avec des runes et des kamas ----------------
+     Puits (0.1.8.2) : ce qu'un objet perd sur un échec remplit son puits (en poids de caractéristiques) ; tant que le puits couvre
+     la rune tentée, la réussite gagne +25 % et un échec ne fait rien baisser ; une réussite vide le puits d'autant. */
+  E.WELL_BONUS = 0.25;
   E.fmInfo = (S, uid, runeKey) => {
     const it = S.items[uid]; if (!it) return null; const T = ITEMS[it.tpl]; const ri = E.runeInfo(runeKey); const k = ri.stat;
     if (!T.stats[k]) return { ok: false, why: "Cette caractéristique n'existe pas sur l'objet." };
@@ -396,11 +461,12 @@
     const cap = mx + Math.max(1, Math.ceil(mx * 0.25));
     if (nv > cap) return { ok: false, why: `Maximum atteint (${cap}).`, cur, cap, mx };
     const tierPen = ri.tier === "ra" ? 0.75 : ri.tier === "pa" ? 0.88 : 1;
-    const chance = clamp((nv <= mx ? 0.85 : 0.5 - 0.35 * (nv - mx) / Math.max(1, cap - mx)) * tierPen, 0.08, 0.95);
-    const kamas = Math.round(15 + T.lvl * 2.5 * (add / STATS[k].pts));
-    return { ok: true, stat: k, cur, add, nv, mx, cap, chance, kamas, over: nv > mx };
+    const J = E.fmJob(S); const wellCost = add * STATS[k].w; const wellOk = (it.well || 0) >= wellCost;
+    const chance = clamp((nv <= mx ? 0.85 : 0.5 - 0.35 * (nv - mx) / Math.max(1, cap - mx)) * tierPen + J.lvl * 0.001 + (wellOk ? E.WELL_BONUS : 0), 0.08, 0.95);
+    const kamas = Math.round((15 + T.lvl * 2.5 * (add / STATS[k].pts)) * (1 - J.lvl * 0.005));
+    return { ok: true, stat: k, cur, add, nv, mx, cap, chance, kamas, over: nv > mx, well: it.well || 0, wellOk, wellCost };
   };
-  const fmLog = (it, txt, ok) => { (it.fmLog = it.fmLog || []).unshift({ t: Date.now(), txt, ok }); if (it.fmLog.length > 6) it.fmLog.length = 6; };
+  const fmLog = (it, txt, ok) => { (it.fmLog = it.fmLog || []).unshift({ t: E.now(), txt, ok }); if (it.fmLog.length > 6) it.fmLog.length = 6; };
   E.forgemage = (S, uid, runeKey) => {
     const it = S.items[uid]; if (!it) return { err: "Objet introuvable." };
     if (!(S.runes[runeKey] > 0)) return { err: "Vous n'avez pas cette rune." };
@@ -409,20 +475,282 @@
     S.kamas -= f.kamas; S.runes[runeKey]--; if (!S.runes[runeKey]) delete S.runes[runeKey];
     S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1;
     E.emit(S, "fm", {});
+    const T = ITEMS[it.tpl]; const J = E.fmJob(S); const wasPerfect = E.isPerfect(it);
     if (rnd() < f.chance) {
       it.stats[f.stat] = f.nv; if (it.roll && it.roll[f.stat] !== undefined) it.roll[f.stat] = Math.min(f.mx, (it.roll[f.stat] || 0) + f.add);
       if (S.fmShield) S.fmShield = false;
-      const txt = `Succès : +${f.add} ${STATS[f.stat].name}${f.over ? " (exo-jet !)" : ""}`; fmLog(it, txt, true);
-      return { ok: true, txt };
+      if (f.wellOk) it.well = Math.max(0, (it.well || 0) - f.wellCost);
+      E.fmGainXp(S, (10 + T.lvl / 2) * 2);
+      const perfect = !wasPerfect && E.isPerfect(it);
+      if (perfect) note(S, `${T.name} est désormais Parfait !`, "rare");
+      const txt = `Succès : +${f.add} ${STATS[f.stat].name}${f.over ? " (exo-jet !)" : ""}${perfect ? " · objet Parfait" : ""}`; fmLog(it, txt, true);
+      return { ok: true, txt, perfect };
     }
+    E.fmGainXp(S, 10 + T.lvl / 2);
     let loss = "";
     if (S.fmShield) { S.fmShield = false; loss = " (le Cristal protège l'objet)"; }
-    else if (rnd() < 0.35) {
-      const T = ITEMS[it.tpl]; const others = Object.keys(it.stats).filter((k) => k !== f.stat && it.stats[k] > T.stats[k][0] && it.stats[k] > 0);
-      if (others.length) { const k = others[Math.floor(rnd() * others.length)]; const d = Math.max(1, Math.round(STATS[k].pts * (k === "vit" ? 1 : 1))); it.stats[k] = Math.max(T.stats[k][0], it.stats[k] - d); loss = ` et perd ${d} ${STATS[k].name}`; }
+    else if (f.wellOk) loss = " (le puits protège l'objet)";
+    else if (rnd() < (J.lvl >= 30 ? 0.25 : 0.35)) {
+      const others = Object.keys(it.stats).filter((k) => k !== f.stat && it.stats[k] > T.stats[k][0] && it.stats[k] > 0);
+      if (others.length) {
+        if (J.lvl >= 60 && J.day !== dayKey()) { J.day = dayKey(); loss = " (Cristal du forgemage offert aujourd'hui)"; }
+        else { const k = others[Math.floor(rnd() * others.length)]; const d = Math.max(1, STATS[k].pts); it.stats[k] = Math.max(T.stats[k][0], it.stats[k] - d); it.well = (it.well || 0) + d * STATS[k].w; loss = ` et perd ${d} ${STATS[k].name} (le puits se remplit)`; }
+      }
     }
     const txt = `Échec : ${E.runeName(runeKey)} se brise${loss}.`; fmLog(it, txt, false);
     return { ok: false, txt };
+  };
+
+
+  /* ---------------- Runes exotiques (0.1.9.1) : +1 PA, +1 PM ou +1 Portée sur un objet qui n'a pas la caractéristique ----------------
+     Rune Ga (PA, PM, Po). Objet niveau 150+, un seul exo par objet, un seul exo PA porté par héros, pas sur les Dofus et trophées.
+     Forgemage niveau 100 requis. Échec : seule la rune est perdue (ni baisse, ni puits). Brisage d'un objet exo : l'exo est perdu, runes ×2.
+     Sources : coffres de boss niveau 150+ (stasis 7+ : Ga PM ou Ga Po 1/40 ; stasis 8+ : Ga PA 1/100), atelier de runes (runes Ra + Éclats + kamas),
+     archimonstres de niveau 150+ (1/25, Ga PM ou Ga Po). */
+  E.EXO_STATS = ["pa", "pm", "po"];
+  E.EXO = { pa: { chance: 0.10, kamas: 150000 }, pm: { chance: 0.12, kamas: 90000 }, po: { chance: 0.12, kamas: 90000 } };
+  E.EXO_LVL = 150; E.EXO_FM_LVL = 100;
+  E.EXO_CRAFT = { pa: { ra: 25, eclat: 5, kamas: 150000 }, pm: { ra: 10, eclat: 3, kamas: 50000 }, po: { ra: 10, eclat: 3, kamas: 50000 } };
+  E.EXO_DROP = { pmpo: 1 / 40, pa: 1 / 100, archi: 1 / 25 };
+  E.exoKey = (stat) => E.runeKey("ga", stat);
+  E.exoOk = (it) => { const T = ITEMS[it.tpl]; return !!T && T.lvl >= E.EXO_LVL && T.slot !== "dofus" && !T.trophy; };
+  E.exoInfo = (S, uid, stat) => {
+    const it = S.items[uid]; if (!it || !E.EXO[stat]) return { ok: false, why: "Objet introuvable." };
+    const T = ITEMS[it.tpl]; const X = E.EXO[stat]; const key = E.exoKey(stat);
+    const base = { stat, key, chance: X.chance, kamas: X.kamas, have: S.runes[key] || 0 };
+    if (T.slot === "dofus" || T.trophy) return Object.assign(base, { ok: false, why: "Pas d'exo sur les Dofus et les trophées." });
+    if (T.lvl < E.EXO_LVL) return Object.assign(base, { ok: false, why: `Objet de niveau ${E.EXO_LVL} ou plus requis.` });
+    if (it.exo) return Object.assign(base, { ok: false, why: `Cet objet a déjà un exo (${STATS[it.exo].name}).` });
+    if (T.stats[stat]) return Object.assign(base, { ok: false, why: "L'objet a déjà cette caractéristique." });
+    if (E.fmJob(S).lvl < E.EXO_FM_LVL) return Object.assign(base, { ok: false, why: `Forgemage niveau ${E.EXO_FM_LVL} requis.` });
+    if (!(S.runes[key] > 0)) return Object.assign(base, { ok: false, why: `Il faut une ${E.runeName(key)}.` });
+    if (S.kamas < X.kamas) return Object.assign(base, { ok: false, why: `Il faut ${X.kamas} kamas.` });
+    return Object.assign(base, { ok: true });
+  };
+  E.exoForge = (S, uid, stat) => {
+    const f = E.exoInfo(S, uid, stat); if (!f.ok) return { err: f.why };
+    const it = S.items[uid]; const T = ITEMS[it.tpl];
+    S.kamas -= f.kamas; S.runes[f.key]--; if (!S.runes[f.key]) delete S.runes[f.key];
+    S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1; S.cnt.exoTry = (S.cnt.exoTry || 0) + 1;
+    E.emit(S, "fm", {});
+    if (rnd() < f.chance) {
+      it.exo = stat; S.cnt.exo = (S.cnt.exo || 0) + 1; E.fmGainXp(S, 400);
+      const txt = `Exo réussi : +1 ${STATS[stat].name} !`; fmLog(it, txt, true);
+      note(S, `${T.name} : forgemagie exotique réussie, +1 ${STATS[stat].name} !`, "rare");
+      E.celebrate({ t: "exo", tpl: it.tpl, stat }); E.emit(S, "exo", { stat });
+      return { ok: true, txt };
+    }
+    E.fmGainXp(S, 200);
+    const txt = `Échec : la ${E.runeName(f.key)} se brise (l'objet est intact).`; fmLog(it, txt, false);
+    return { ok: false, txt };
+  };
+  /* atelier de runes : des runes Ra d'une même caractéristique + Éclats de trouvaille + kamas → 1 rune Ga */
+  E.exoCraftInfo = (S, stat, fromKey) => {
+    const C = E.EXO_CRAFT[stat]; if (!C) return { ok: false, why: "Rune inconnue." };
+    const [tier] = (fromKey || "").split(":"); const have = S.runes[fromKey] || 0; const ecl = S.res[E.RARE_COMPONENT] || 0;
+    const base = { stat, fromKey, need: C.ra, have, eclat: C.eclat, haveEclat: ecl, kamas: C.kamas };
+    if (tier !== "ra") return Object.assign(base, { ok: false, why: "Choisissez une rune Ra." });
+    if (have < C.ra) return Object.assign(base, { ok: false, why: `Il faut ${C.ra} ${E.runeName(fromKey)}.` });
+    if (ecl < C.eclat) return Object.assign(base, { ok: false, why: `Il faut ${C.eclat} ${E.RARE_COMPONENT}.` });
+    if (S.kamas < C.kamas) return Object.assign(base, { ok: false, why: `Il faut ${C.kamas} kamas.` });
+    return Object.assign(base, { ok: true });
+  };
+  E.exoCraft = (S, stat, fromKey) => {
+    const f = E.exoCraftInfo(S, stat, fromKey); if (!f.ok) return f.why;
+    S.runes[fromKey] -= f.need; if (!S.runes[fromKey]) delete S.runes[fromKey];
+    S.res[E.RARE_COMPONENT] -= f.eclat; S.kamas -= f.kamas;
+    const k = E.exoKey(stat); S.runes[k] = (S.runes[k] || 0) + 1; return null;
+  };
+  const giveExoRune = (S, stat, out, why) => { const k = E.exoKey(stat); S.runes[k] = (S.runes[k] || 0) + 1; S.cnt.exoRunes = (S.cnt.exoRunes || 0) + 1; if (out) out.push(E.runeName(k)); note(S, `${why} : ${E.runeName(k)} !`, "rare"); };
+  E.exoDrop = (S, lvl, k, out) => {
+    if (lvl < E.EXO_LVL || k < 7) return;
+    if (k >= 8 && rnd() < E.EXO_DROP.pa) giveExoRune(S, "pa", out, "Coffre du boss");
+    else if (rnd() < E.EXO_DROP.pmpo) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", out, "Coffre du boss");
+  };
+  E.exoArchi = (S, m) => { if ((m.lvl || 0) >= E.EXO_LVL && rnd() < E.EXO_DROP.archi) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", null, `Archimonstre ${m.name}`); };
+
+  /* ---------------- Forgemagie automatique (0.1.9.1) : un plan par objet, tourne en jeu comme hors ligne ----------------
+     Plan : objectifs (caractéristique → jet visé), runes autorisées, budget de kamas, plancher. Une tentative toutes les 10 min
+     (8 min au Forgemage 50, 6 min au 100), 2 plans en parallèle, pas de héros à affecter. Le plan s'arrête quand les objectifs sont
+     atteints, que les runes ou le budget manquent, ou que le plancher est touché. */
+  E.FM_PLAN_MAX = 2;
+  E.fmPlanPeriod = (S) => { const l = E.fmJob(S).lvl; return l >= 100 ? 360 : l >= 50 ? 480 : 600; };
+  E.fmPlans = (S) => S.fmPlans || (S.fmPlans = []);
+  E.fmPlanOf = (S, uid) => E.fmPlans(S).find((p) => p.uid === uid && !p.done);
+  E.fmPlanActive = (S) => E.fmPlans(S).filter((p) => !p.done);
+  E.FM_PLAN_RUNES = { all: "Celles du sac (Ra, Pa puis simples)", simple: "Simples seulement", hi: "Pa et Ra seulement" };
+  E.FM_PLAN_FLOOR = { pct: "Arrêter si une autre caractéristique baisse de plus de 5 %", first: "Arrêter à la première baisse", never: "Ne jamais s'arrêter (le puits encaisse)" };
+  E.startFmPlan = (S, uid, cfg) => {
+    const it = S.items[uid]; if (!it) return "Objet introuvable."; const T = ITEMS[it.tpl];
+    if (T.trophy) return "Pas de forgemagie sur un trophée.";
+    if (E.fmPlanOf(S, uid)) return "Cet objet a déjà un plan en cours.";
+    if (E.fmPlanActive(S).length >= E.FM_PLAN_MAX) return `${E.FM_PLAN_MAX} plans en parallèle au maximum.`;
+    const goals = {};
+    for (const k in cfg.goals || {}) { const [, mx] = T.stats[k] || [0, 0]; if (mx <= 0) continue; const cap = mx + Math.max(1, Math.ceil(mx * 0.25)); const v = clamp(Math.round(+cfg.goals[k] || mx), 1, cap); if (v > (it.stats[k] || 0)) goals[k] = v; }
+    if (!Object.keys(goals).length) return "Choisissez au moins un objectif au-dessus du jet actuel.";
+    const plan = { uid, name: T.name, goals, runes: E.FM_PLAN_RUNES[cfg.runes] ? cfg.runes : "all", budget: Math.max(0, Math.round(+cfg.budget || 0)), floor: E.FM_PLAN_FLOOR[cfg.floor] ? cfg.floor : "pct",
+      base: Object.assign({}, it.stats), spent: 0, prog: 0, tries: 0, ok: 0, log: [], done: null, t0: E.now() };
+    const plans = E.fmPlans(S); plans.push(plan); while (plans.length > 6) { const i = plans.findIndex((p) => p.done); if (i < 0) break; plans.splice(i, 1); }
+    note(S, `Plan de forgemagie lancé : ${T.name}.`, "info"); return null;
+  };
+  E.stopFmPlan = (S, uid, drop) => { const plans = E.fmPlans(S); const i = plans.findIndex((p) => p.uid === uid && (drop ? !!p.done : !p.done)); if (i < 0) return; if (drop) plans.splice(i, 1); else { plans[i].done = "Arrêté"; plans[i].at = E.now(); } };
+  E.fmPlanGoalsLeft = (S, plan) => { const it = S.items[plan.uid]; if (!it) return []; return Object.keys(plan.goals).filter((k) => (it.stats[k] || 0) < plan.goals[k]); };
+  const PLAN_TIERS = { all: ["ra", "pa", ""], simple: [""], hi: ["ra", "pa"] };
+  const planLog = (plan, txt, ok) => { plan.log.unshift({ t: E.now(), txt, ok }); if (plan.log.length > 8) plan.log.length = 8; };
+  const endPlan = (S, plan, why, quiet) => { plan.done = why; plan.at = E.now(); if (why === "Objectifs atteints") S.cnt.fmPlanOk = (S.cnt.fmPlanOk || 0) + 1; if (!quiet) note(S, `Plan ${plan.name} : ${why}.`, why === "Objectifs atteints" ? "up" : "info"); };
+  /* une tentative : retourne false quand le plan s'arrête */
+  const fmPlanStep = (S, plan, quiet) => {
+    const it = S.items[plan.uid]; if (!it) { endPlan(S, plan, "Objet disparu", quiet); return false; }
+    const left = E.fmPlanGoalsLeft(S, plan); if (!left.length) { endPlan(S, plan, "Objectifs atteints", quiet); return false; }
+    /* la plus grosse rune qui reste sous l'objectif ; sinon la plus petite qui le dépasse (jusqu'au plafond), comme à la main */
+    let best = null, over = null;
+    for (const k of left) for (const tier of PLAN_TIERS[plan.runes]) {
+      if (tier && RUNE_SIMPLE_ONLY.includes(k)) continue;
+      const key = E.runeKey(tier, k); if (!(S.runes[key] > 0)) continue;
+      const f = E.fmInfo(S, plan.uid, key); if (!f || !f.ok) continue;
+      if (f.nv <= plan.goals[k]) { if (!best || f.add > best.f.add) best = { key, f }; }
+      else if (!over || f.add < over.f.add) over = { key, f };
+    }
+    if (!best) best = over;
+    if (!best) { endPlan(S, plan, "Plus de runes adaptées", quiet); return false; }
+    if (plan.budget && plan.spent + best.f.kamas > plan.budget) { endPlan(S, plan, "Budget atteint", quiet); return false; }
+    if (S.kamas < best.f.kamas) { endPlan(S, plan, "Kamas insuffisants", quiet); return false; }
+    const r = E.forgemage(S, plan.uid, best.key); if (r.err) { endPlan(S, plan, r.err, quiet); return false; }
+    plan.tries++; plan.spent += best.f.kamas; if (r.ok) plan.ok++;
+    planLog(plan, `${E.runeName(best.key)} : ${r.txt}`, r.ok);
+    if (!r.ok && plan.floor !== "never") {
+      for (const k in plan.base) { const v = it.stats[k] || 0, b = plan.base[k]; if (b <= 0) continue;
+        if ((plan.floor === "first" && v < b) || (plan.floor === "pct" && v < b * 0.95)) { endPlan(S, plan, `Plancher touché (${STATS[k].name} ${b} → ${v})`, quiet); return false; } }
+    }
+    if (!E.fmPlanGoalsLeft(S, plan).length) { endPlan(S, plan, "Objectifs atteints", quiet); return false; }
+    return true;
+  };
+  E.fmPlanTick = (S, sec, opts = {}) => {
+    const plans = E.fmPlanActive(S); if (!plans.length) return []; const period = E.fmPlanPeriod(S); const out = [];
+    for (const plan of plans) {
+      const t0 = plan.tries, ok0 = plan.ok, k0 = plan.spent; plan.prog = (plan.prog || 0) + sec; let n = 0;
+      while (!plan.done && plan.prog >= period && n < 300) { plan.prog -= period; n++; if (!fmPlanStep(S, plan, opts.quiet)) break; }
+      if (plan.tries > t0 || plan.done) { const it = S.items[plan.uid];
+        out.push({ name: plan.name, tries: plan.tries - t0, ok: plan.ok - ok0, kamas: plan.spent - k0, done: plan.done,
+          txt: Object.keys(plan.goals).map((k) => `${STATS[k].name} ${it ? it.stats[k] || 0 : "?"}/${plan.goals[k]}`).join(", ") }); }
+    }
+    return out;
+  };
+  E.fmPlanEta = (S, plan) => Math.max(0, E.fmPlanPeriod(S) - (plan.prog || 0));
+
+
+  /* ---------------- Protecteurs de ressources (0.1.10.1) ----------------
+     Environ une fois sur 60 récoltes (au plus un à la fois, 30 min de calme après), un gardien de la ressource apparaît et attend 15 min.
+     Si l'équipe chasse, « Combattre » le place dans le prochain combat avec quelques monstres de la zone. Victoire : récolte de cette
+     ressource ×2 pendant 20 min, 10 de la ressource et 3 Éclats de trouvaille. Défaite ou délai passé : il repart. Désactivable dans les Options. */
+  E.PROT_CHANCE = 1 / 60; E.PROT_WAIT_S = 900; E.PROT_CALM_S = 1800; E.PROT_BOOST_S = 1200;
+  E.PROT_RE = { paysan: /Épouvantail|Tournesol|Bouftou|Champ|Blé|Pissenlit/, bucheron: /Abrak|Arbre|Chêne|Tronk|Bambou|Kokoko/, mineur: /Roche|Golem|Mineur|Crocabulia|Kobalte|Craqueleur|Cristal/, alchimiste: /Ortie|Fleur|Rose|Champa|Mandragore|Trèfle|Menthe/, pecheur: /Crabe|Poisson|Kraken|Crustorail|Moule|Mérulor|Gobus|Crevette|Pichon/ };
+  E.PROT_TITLE = { paysan: "Protecteur des céréales", bucheron: "Protecteur des bois", mineur: "Protecteur des minerais", alchimiste: "Protecteur des plantes", pecheur: "Protecteur des poissons" };
+  const protPool = {}; const protMons = (job) => protPool[job] || (protPool[job] = Object.keys(MONSTERS).filter((k) => E.PROT_RE[job] && E.PROT_RE[job].test(MONSTERS[k].name) && !MONSTERS[k].boss && !MONSTERS[k].archiOf));
+  E.protActive = (S, now = E.now()) => (S.protector && S.protector.until > now ? S.protector : null);
+  E.protSpawn = (S, c, W) => {
+    if (S.settings && S.settings.protOff) return; const now = E.now();
+    if (E.protActive(S, now) || (S.protCalm || 0) > now || rnd() >= E.PROT_CHANCE) return;
+    const pool = protMons(W.job); if (!pool.length) return;
+    const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
+    const mon = pool.slice().sort((a, b) => Math.abs(MONSTERS[a].lvl[0] - lvl) - Math.abs(MONSTERS[b].lvl[0] - lvl))[0];
+    S.protector = { job: W.job, res: W.res, mon, cid: c.id, until: now + E.PROT_WAIT_S * 1000, at: now };
+    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min pour l'affronter (Métiers).`, "rare");
+  };
+  E.protCanFight = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon."; if (!E.team(S).length) return "Votre équipe est vide."; if (!S.hunting || !S.sub) return "Partez chasser avec l'équipe pour l'affronter."; return null; };
+  E.protFight = (S) => { const err = E.protCanFight(S); if (err) return err; S.protector.go = true; return null; };
+  E.protGroup = (S, sub, team, monsterEntity) => {
+    const P = E.protActive(S); if (!P || !P.go) return null;
+    const avg = team.reduce((a, c) => a + c.lvl, 0) / team.length; const lvl = Math.round(Math.min(200, avg + 3));
+    const g = monsterEntity(P.mon, lvl); g.name = `${MONSTERS[P.mon].name} protecteur`; g.prot = true;
+    g.hpMax = g.hp = Math.round(g.hpMax * (1.5 + team.length * 0.6)); g.dmg *= team.length > 1 ? 1.3 : 1.1; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80; /* seul : une attaque par tour */
+    const mons = [g].concat(E.makeGroup(S, sub, team.length).slice(0, Math.max(0, team.length - 1)));
+    P.go = false; P.fighting = true;
+    return { mons, label: `${E.PROT_TITLE[P.job]} · ${sub.name}` };
+  };
+  E.protEnd = (S, win) => {
+    const P = S.protector; if (!P) return; const now = E.now();
+    S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000;
+    if (win) {
+      S.protBoost = { res: P.res, until: now + E.PROT_BOOST_S * 1000 };
+      addRes(S, P.res, 10); addRes(S, E.RARE_COMPONENT, 3);
+      S.cnt = S.cnt || {}; S.cnt.prot = (S.cnt.prot || 0) + 1;
+      note(S, `${E.PROT_TITLE[P.job]} vaincu ! ${P.res} ×2 pendant 20 min, +10 ${P.res} et +3 ${E.RARE_COMPONENT}.`, "rare");
+    } else note(S, `${E.PROT_TITLE[P.job]} l'emporte et repart avec son ${P.res}.`, "warn");
+  };
+  E.protMult = (S, res) => (S.protBoost && S.protBoost.res === res && S.protBoost.until > E.now() ? 2 : 1);
+  E.protExpire = (S) => { const P = S.protector; if (P && P.fighting && !(S.fight && S.fight.prot && !S.fight.over)) P.fighting = false;
+    if (P && !P.fighting && P.until <= E.now()) { S.protector = null; S.protCalm = E.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); } };
+
+
+
+  /* ---------------- Carnet de panoplies (0.1.10.1) : pièces, où les obtenir ---------------- */
+  let SET_IDX = null;
+  const setIdx = () => {
+    if (SET_IDX) return SET_IDX;
+    const pieces = {}, drops = {}, zonesOf = {}, dgOf = {};
+    for (const t in ITEMS) { const T = ITEMS[t]; if (T.set) (pieces[T.set] = pieces[T.set] || []).push(t); }
+    for (const k in MONSTERS) (MONSTERS[k].items || []).forEach(([t, p]) => (drops[t] = drops[t] || []).push([k, p]));
+    for (const sid in SUBS) { const sb = SUBS[sid]; if (sb.hidden) continue; (sb.monsters || []).forEach((m) => { const k = Array.isArray(m) ? m[0] : m; (zonesOf[k] = zonesOf[k] || []).push(sid); }); }
+    for (const did in DUNGEONS) { const dg = DUNGEONS[did]; [dg.boss, ...(dg.bossMobs || []), ...dg.rooms.flatMap((r) => r.mobs)].forEach((k) => { (dgOf[k] = dgOf[k] || new Set()).add(did); }); }
+    for (const st in pieces) pieces[st].sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl || ITEMS[a].name.localeCompare(ITEMS[b].name, "fr"));
+    return (SET_IDX = { pieces, drops, zonesOf, dgOf });
+  };
+  E.setPieces = (setId) => setIdx().pieces[setId] || [];
+  E.setLvl = (setId) => Math.max(0, ...E.setPieces(setId).map((t) => ITEMS[t].lvl));
+  /* sources d'une pièce : recette, puis monstres (zones de chasse, donjons), le plus probable d'abord */
+  E.itemSources = (tpl) => {
+    const I = setIdx(); const T = ITEMS[tpl]; const out = [];
+    if (T && T.craft) out.push({ k: "craft", job: T.craft.job, lvl: E.craftReq(tpl) });
+    (I.drops[tpl] || []).slice().sort((a, b) => b[1] - a[1]).slice(0, 3).forEach(([m, p]) => {
+      const M = MONSTERS[m]; const subs = (I.zonesOf[m] || []).slice(0, 2); const dgs = [...(I.dgOf[m] || [])].slice(0, 2);
+      out.push({ k: M.boss ? "boss" : "mon", mon: m, p, subs, dgs });
+    });
+    return out;
+  };
+  E.ownedTpls = (S) => { const o = {}; for (const u in S.items) o[S.items[u].tpl] = (o[S.items[u].tpl] || 0) + 1; return o; };
+  /* panoplie « connue » : une pièce possédée, une recette à portée de métier, ou un monstre qui la lâche déjà vu */
+  E.setKnown = (S, setId, owned) => E.setPieces(setId).some((t) => owned[t] || (ITEMS[t].craft && S.crafts[ITEMS[t].craft.job] && S.crafts[ITEMS[t].craft.job].lvl >= E.craftReq(t)) || (setIdx().drops[t] || []).some(([m]) => S.bestiary[m]));
+
+  /* ---------------- Codes cadeaux (0.1.10.1) ----------------
+     Code = « IDLUS- » + contenu (JSON en base64url) + « - » + signature. Fabriqué par tools/code_cadeau.js, vérifié sans serveur :
+     ce n'est pas inviolable, mais un code inventé ou modifié est refusé. Contenu : id (unique), k kamas, r ressources [[nom, n]],
+     c consommables [[id, n]], t titre, o ornement (clé d'un ornement à débloquer), e date de fin (AAAA-MM-JJ), m message. Un code par partie. */
+  E.GIFT_SALT = "idlus·cadeau·v1·pousse-du-pionnier";
+  const fnv = (str, seed) => { let x = seed >>> 0; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619) >>> 0; return x >>> 0; };
+  E.giftSig = (body) => (fnv(E.GIFT_SALT + body, 2166136261).toString(36).padStart(7, "0") + fnv(body + E.GIFT_SALT, 33554467).toString(36).padStart(7, "0")).toUpperCase();
+  const b64u = { enc: (txt) => { const b = typeof Buffer !== "undefined" ? Buffer.from(txt, "utf8").toString("base64") : btoa(unescape(encodeURIComponent(txt))); return b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+    dec: (s) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return typeof Buffer !== "undefined" ? Buffer.from(s, "base64").toString("utf8") : decodeURIComponent(escape(atob(s))); } };
+  E.makeGift = (data) => { const body = b64u.enc(JSON.stringify(data)); return `IDLUS-${body}-${E.giftSig(body)}`; };
+  E.readGift = (code) => {
+    const m = /^IDLUS-([A-Za-z0-9_-]+)-([0-9A-Z]{14})$/.exec(String(code || "").trim().replace(/\s+/g, ""));
+    if (!m) return { err: "Ce code n'a pas le bon format (il commence par IDLUS-)." };
+    if (E.giftSig(m[1]) !== m[2].toUpperCase()) return { err: "Ce code n'est pas valide." };
+    let d; try { d = JSON.parse(b64u.dec(m[1])); } catch (e) { return { err: "Ce code n'est pas valide." }; }
+    if (!d || !d.id) return { err: "Ce code n'est pas valide." };
+    return { data: d };
+  };
+  E.giftText = (d) => { const p = [];
+    if (d.k) p.push(`${d.k.toLocaleString("fr-FR")} kamas`);
+    (d.r || []).forEach(([n, q]) => p.push(`${q} × ${n}`));
+    (d.c || []).forEach(([id, q]) => p.push(`${q} × ${(D.CONSUMABLES[id] || { name: id }).name}`));
+    if (d.t) p.push(`titre « ${d.t} »`);
+    if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name(null)} »`);
+    return p.join(", "); };
+  E.redeemGift = (S, code, now = E.now()) => {
+    const r = E.readGift(code); if (r.err) return r;
+    const d = r.data; S.gifts = S.gifts || {};
+    if (S.gifts[d.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
+    if (d.e && now > new Date(d.e + "T23:59:59").getTime()) return { err: `Ce code a expiré le ${new Date(d.e).toLocaleDateString("fr-FR")}.` };
+    if (d.k) S.kamas += Math.max(0, Math.round(+d.k) || 0);
+    (d.r || []).forEach(([n, q]) => { if (RES[n]) addRes(S, n, Math.max(1, Math.round(+q) || 1)); });
+    (d.c || []).forEach(([id, q]) => { if (D.CONSUMABLES[id]) E.addCons(S, id, Math.max(1, Math.round(+q) || 1)); });
+    S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
+    if (d.t && !S.titlesExtra.includes(d.t)) S.titlesExtra.push(String(d.t).slice(0, 40));
+    if (d.o && ORN[d.o]) S.unlocks[d.o] = 1;
+    S.gifts[d.id] = now;
+    const txt = E.giftText(d); note(S, `Code cadeau : ${txt}${d.m ? ` · ${d.m}` : ""}`, "rare");
+    return { ok: true, txt, msg: d.m || "" };
   };
 
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
@@ -430,13 +758,22 @@
     heros:     { name: () => "Écharpe du Héros d'Amakna", req: "Terminer la quête principale", ok: (S) => S.quest && S.quest.step >= Q.length },
     avis:      { name: () => "Cadre « Avis de recherche »", req: "Bureau des primes (30 jetons)", ok: (S) => !!S.unlocks.avis },
     almanax:   { name: () => "Sceau de l'Almanax", req: "Série d'Almanax de 30 jours", ok: (S) => !!S.unlocks.almanax },
+    ame:       { name: () => "Âme violette", req: "Éternelle moisson, palier 4 (âmes des archimonstres jusqu'à Moon)", ok: (S) => !!S.unlocks.ame },
     ailes:     { name: (S) => (S.align ? `Ailes de ${ALIGN[S.align.side].name}` : "Ailes d'alignement"), req: "Choisir un alignement (Bonta ou Brâkmar) — elles grandissent avec le rang", ok: (S) => !!S.align },
     couronne:  { name: () => "Couronne du Maître des donjons", req: "Vaincre chaque boss de donjon au moins une fois", ok: (S) => Object.keys(DUNGEONS).every((d) => S.progress.bossKills[d]) },
     epines:    { name: () => "Épines d'Archimonstre", req: "Vaincre 25 archimonstres", ok: (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= 25 },
     lauriers:  { name: () => "Lauriers", req: "Obtenir 20 succès", ok: (S) => Object.keys(S.ach || {}).length >= 20 },
     flammes:   { name: () => "Flammes Rayonnantes", req: "Porter 3 objets Rayonnants en même temps sur un héros", ok: (S) => !!(S.ornSeen && S.ornSeen.flammes) },
-    solitaire: { name: () => "Aura du Solitaire", req: "Emblème du Solitaire niveau 100", ok: (S) => S.emblem.lvl >= 100 },
+    solitaire: { name: () => "Aura du Solitaire", req: "Ancien Emblème du Solitaire niveau 100 (retiré en 0.1.8.2 : seuls ceux qui l'avaient le gardent)", ok: (S) => !!(S.unlocks && S.unlocks.solitaire) },
     stasis:    { name: () => "Sceau du Maître de la stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!S.unlocks.stasis10 },
+    pionnier:  { name: () => "Pousse du Pionnier", req: "Tester la version de test avant le multijoueur (récompense exclusive)", ok: (S) => !!S.unlocks.pionnier },
+    phenix:    { name: () => "Ailes du Phénix", req: "Dix renaissances sur un même héros", ok: (S) => !!(S.unlocks && S.unlocks.phenix) },
+  };
+  /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */
+  E.PIONEER_TITLE = "Pionnier d'Idlus";
+  E.grantPioneer = (S) => {
+    if (S.unlocks.pionnier && S.titlesExtra.includes(E.PIONEER_TITLE)) return false;
+    S.unlocks.pionnier = 1; if (!S.titlesExtra.includes(E.PIONEER_TITLE)) S.titlesExtra.push(E.PIONEER_TITLE); return true;
   };
   E.ORN = ORN;
   E.ornUnlocked = (S, id) => !!ORN[id] && ORN[id].ok(S);
@@ -458,13 +795,13 @@
     const taken = new Set((S.bounties || []).map((b) => b.key));
     if (dgs.length && rnd() < 0.25) {
       const d = dgs[Math.floor(rnd() * dgs.length)]; const dg = DUNGEONS[d];
-      if (!taken.has(dg.boss)) return { id: Date.now() + Math.floor(rnd() * 1e6), key: dg.boss, dg: d, n: 1, prog: 0, kamas: Math.round(dg.lvl * 60), xp: 0.25, axp: 120 };
+      if (!taken.has(dg.boss)) return { id: E.now() + Math.floor(rnd() * 1e6), key: dg.boss, dg: d, n: 1, prog: 0, kamas: Math.round(dg.lvl * 60), xp: 0.25, axp: 120 };
     }
     for (let tries = 0; tries < 20; tries++) {
       const s = pool[Math.floor(rnd() * pool.length)]; const k = s.monsters[Math.floor(rnd() * s.monsters.length)];
       if (taken.has(k)) continue;
       const m = MONSTERS[k]; const n = 12 + Math.floor(rnd() * 4) * 6;
-      return { id: Date.now() + Math.floor(rnd() * 1e6), key: k, sub: s.id, n, prog: 0, kamas: Math.round(n * (m.lvl[0] + 5) * 2.2), xp: 0.08 + n / 600, axp: 30 + n };
+      return { id: E.now() + Math.floor(rnd() * 1e6), key: k, sub: s.id, n, prog: 0, kamas: Math.round(n * (m.lvl[0] + 5) * 2.2), xp: 0.08 + n / 600, axp: 30 + n };
     }
     return null;
   };
@@ -605,11 +942,17 @@
   /* ---------------- Succès ---------------- */
   const ACH = [];
   const add = (id, cat, name, desc, test, kamas, extra = {}) => ACH.push(Object.assign({ id, cat, name, desc, test, kamas }, extra));
+  // 0.1.12 : Renaissance (les titres sont donnés par la renaissance elle-même)
+  [[1, "Première renaissance", "Un héros renaît une première fois.", 5000], [5, "Cinq renaissances", "Un héros atteint sa cinquième renaissance.", 25000], [10, "Phénix", "Un héros atteint sa dixième renaissance.", 100000]]
+    .forEach(([n, nm, d, k]) => add("ren" + n, "Progression", nm, d, (S) => S.chars.some((c) => (c.ren || 0) >= n), k));
   [10, 20, 30, 40, 50, 60, 70].forEach((l) => add("lvl" + l, "Progression", `Niveau ${l}`, `Un héros atteint le niveau ${l}.`, (S) => topLvl(S) >= l, l * 40, l === 50 ? { title: "le Vétéran" } : {}));
   [[100, ""], [1000, ""], [10000, "Fléau des monstres"]].forEach(([n, t]) => add("win" + n, "Combat", `${n.toLocaleString("fr-FR")} victoires`, `Gagner ${n.toLocaleString("fr-FR")} combats.`, (S) => S.stats.wins >= n, Math.round(Math.sqrt(n) * 60), t ? { title: t } : {}));
   [[1, ""], [10, ""], [25, "Chasseur d'Archis"]].forEach(([n, t]) => add("archi" + n, "Combat", n === 1 ? "Premier archimonstre" : `${n} archimonstres`, `Vaincre ${n} archimonstre${n > 1 ? "s" : ""}.`, (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= n, 300 * n, t ? { title: t } : {}));
   [[10, ""], [100, ""], [500, ""], [1000, "Tueur de Champions"]].forEach(([n, t]) => add("champ" + n, "Chasse", `${n.toLocaleString("fr-FR")} Champions`, `Vaincre ${n.toLocaleString("fr-FR")} monstres Champions en chasse.`, (S) => (S.champs || 0) >= n, Math.round(Math.sqrt(n) * 120), t ? { title: t } : {}));
   Object.entries(DUNGEONS).sort((a, b) => a[1].lvl - b[1].lvl).forEach(([id, d]) => add("dg_" + id, "Donjons", d.name, `Vaincre ${MONSTERS[d.boss].name}.`, (S) => !!S.progress.bossKills[id], d.lvl * 30));
+  /* 0.1 : un succès par mécanique unique de boss (stasis 5+, aucun héros à terre pendant le combat du boss) */
+  Object.entries(E.BOSS_SIGS).forEach(([did, mk]) => { const d = DUNGEONS[did], M = E.BOSS_MECHS[mk]; if (!d || !M) return;
+    add("sig_" + did, "Donjons", M.name, `Vaincre ${MONSTERS[d.boss].name} en stasis 5 ou plus sans qu'aucun héros ne tombe pendant le combat du boss.`, (S) => !!(S.sigWins || {})[did], d.lvl * 60, { title: M.title }); });
   add("dg_all", "Donjons", "Maître des donjons", "Vaincre tous les boss de donjon.", (S) => Object.keys(DUNGEONS).every((d) => S.progress.bossKills[d]), 5000, { title: "Maître des donjons" });
   [1, 5, 10].forEach((n) => add("fam" + n, "Chasse", `${n} famille${n > 1 ? "s" : ""}`, `Compléter ${n} famille${n > 1 ? "s" : ""} de monstres (palier Traqueur).`, (S) => Object.keys(S.families).length >= n, 400 * n));
   [1, 10, 25].forEach((n) => add("tro" + n, "Chasse", `${n} trophée${n > 1 ? "s" : ""}`, `Obtenir ${n} trophée${n > 1 ? "s" : ""} de sous-zone.`, (S) => Object.keys(S.trophies).length >= n, 300 * n));
@@ -617,7 +960,13 @@
   [[10, ""], [100, ""]].forEach(([n]) => add("craft" + n, "Métiers", `${n} fabrications`, `Fabriquer ${n} objets.`, (S) => (S.cnt.craft || 0) >= n, 20 * n));
   [[1000, ""], [10000, "Main verte"]].forEach(([n, t]) => add("harv" + n, "Métiers", `${n.toLocaleString("fr-FR")} récoltes`, `Récolter ${n.toLocaleString("fr-FR")} ressources.`, (S) => (S.cnt.harvest || 0) >= n, Math.round(n / 2), t ? { title: t } : {}));
   [[1, ""], [50, "Forgemage"]].forEach(([n, t]) => add("fm" + n, "Forgemagie", n === 1 ? "Première forgemagie" : `${n} forgemagies`, `Tenter ${n} forgemagie${n > 1 ? "s" : ""}.`, (S) => (S.cnt.fm || 0) >= n, 50 * n, t ? { title: t } : {}));
-  add("emb100", "Forgemagie", "Solitaire aguerri", "Emblème du Solitaire niveau 100.", (S) => S.emblem.lvl >= 100, 3000, { title: "le Solitaire" });
+  [[1, ""], [10, "le Perfectionniste"]].forEach(([n, t]) => add("parf" + n, "Forgemagie", n === 1 ? "Premier objet Parfait" : `${n} objets Parfaits`, `Posséder ${n} objet${n > 1 ? "s" : ""} Parfait${n > 1 ? "s" : ""} (toutes les caractéristiques au jet maximum).`, (S) => E.perfectCount(S) >= n, 800 * n, t ? { title: t } : {}));
+  add("fmjob100", "Forgemagie", "Grand Forgemage", "Métier de Forgemage niveau 100.", (S) => E.fmJob(S).lvl >= 100, 5000, { title: "Grand Forgemage" });
+  add("exo1", "Forgemagie", "Exotique", "Réussir une forgemagie exotique (+1 PA, PM ou Portée).", (S) => (S.cnt.exo || 0) >= 1, 10000, { title: "l'Exotique" });
+  add("exopa", "Forgemagie", "Un PA de plus", "Porter un objet exo PA.", (S) => S.chars.some((c) => Object.values(c.equip).some((u) => S.items[u] && S.items[u].exo === "pa")), 20000);
+  add("prot1", "Métiers", "Gardien des récoltes", "Vaincre un protecteur de ressources.", (S) => (S.cnt.prot || 0) >= 1, 2000);
+  add("prot25", "Métiers", "Fléau des protecteurs", "Vaincre 25 protecteurs de ressources.", (S) => (S.cnt.prot || 0) >= 25, 10000, { title: "Fléau des protecteurs" });
+  add("fmplan10", "Forgemagie", "Forgemagie automatique", "10 plans de forgemagie terminés avec leurs objectifs atteints.", (S) => (S.cnt.fmPlanOk || 0) >= 10, 3000);
   [[1, ""], [7, ""], [30, "Dévot d'Almanax"]].forEach(([n, t]) => add("alm" + n, "Quêtes", `${n} offrande${n > 1 ? "s" : ""}`, `Faire ${n} offrande${n > 1 ? "s" : ""} à l'Almanax.`, (S) => (S.cnt.almanax || 0) >= n, 150 * n, t ? { title: t } : {}));
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
   add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= Q.length, 8000, { title: "Héros d'Amakna" });
@@ -625,12 +974,25 @@
   [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r}`, `Atteindre le niveau d'alignement ${r * 20}.`, (S) => E.alignRankIdx(S) >= r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
   [[10, ""], [50, ""]].forEach(([n]) => add("havre" + n, "Havre-Sac", `Havre-Sac ×${n}`, `Acheter ${n} améliorations du Havre-Sac.`, (S) => E.havreTotal(S) >= n, 100 * n));
   [2, 4, 8].forEach((n) => add("team" + n, "Progression", `${n} héros`, `Avoir ${n} héros.`, (S) => S.chars.length >= n, 250 * n));
+  /* 0.1.10 : idoles */
+  add("idol1", "Idoles", "Première idole", "Fabriquer une idole chez le Bricoleur.", (S) => (S.cnt.idols || 0) >= 1, 500);
+  add("idol12", "Idoles", "Douze idoles", "Posséder 12 idoles.", (S) => (S.cnt.idols || 0) >= 12, 2000);
+  add("idol36", "Idoles", "Collection complète", "Posséder les 36 idoles.", (S) => (S.cnt.idols || 0) >= 36, 10000, { title: "l'Idolâtre" });
+  add("idolsix", "Idoles", "Six statuettes", "Gagner un combat avec 6 idoles actives.", (S) => (S.cnt.idolSix || 0) >= 1, 1500);
+  add("idol100", "Idoles", "Score 100", "Gagner un combat avec un score d'idoles de 100 ou plus.", (S) => (S.cnt.idolBest || 0) >= 100, 5000, { title: "le Téméraire" });
+  add("idol200", "Idoles", "Score 200", "Gagner un combat avec un score d'idoles de 200 ou plus.", (S) => (S.cnt.idolBest || 0) >= 200, 20000, { title: "Maître des idoles" });
+  /* 0.1.13 : archimonstres et Dofus */
+  [[1, "Première âme", "Capturer l'âme d'un archimonstre avec une Pierre d'âme.", 500, ""], [25, "25 âmes", "Capturer 25 âmes d'archimonstres.", 2500, ""], [100, "100 âmes", "Capturer 100 âmes d'archimonstres.", 10000, "Chasseur d'âmes"], [205, "L'album complet", "Capturer l'âme de tous les archimonstres.", 50000, ""]]
+    .forEach(([n, nm, d, k, t]) => add("soul" + n, "Archimonstres", nm, d, (S) => (S.cnt.souls || 0) >= (n === 205 ? E.ARCHI_TOTAL || n : n), k, t ? { title: t } : {}));
+  add("dofus1", "Archimonstres", "Premier Dofus", "Obtenir un Dofus.", (S) => (S.cnt.dofus || 0) >= 1, 2000);
+  add("dofus6", "Archimonstres", "Six Dofus portés", "Un héros porte 6 Dofus en même temps.", (S) => S.chars.some((c) => Object.values(c.equip).filter((u) => S.items[u] && ITEMS[S.items[u].tpl] && ITEMS[S.items[u].tpl].dofus).length >= 6), 10000, { title: "Porteur de Dofus" });
+  add("dofus18", "Archimonstres", "Gardien des Dofus", "Obtenir les 18 Dofus.", (S) => (S.cnt.dofus || 0) >= 18, 100000, { title: "Gardien des Dofus" });
   E.ACH = ACH;
   const checkAch = (S) => {
     ACH.forEach((a) => {
       if (S.ach[a.id]) return;
       if (!a.test(S)) return;
-      S.ach[a.id] = Date.now(); S.kamas += a.kamas;
+      S.ach[a.id] = E.now(); S.kamas += a.kamas;
       note(S, `Succès : ${a.name}${a.title ? ` — titre « ${a.title} »` : ""} (+${a.kamas.toLocaleString("fr-FR")} kamas)`, "rare");
     });
   };
@@ -677,9 +1039,9 @@
     // limites de stock : le surplus est vendu automatiquement
     if (type === "win" || type === "harvest") for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0) E.sellRes(S, n, ex); }
     checkQuest(S);
-    if (type !== "harvest" || (S._achT || 0) + 1500 < Date.now()) { S._achT = Date.now(); checkAch(S); }
+    if (type !== "harvest" || (S._achT || 0) + 1500 < E.now()) { S._achT = E.now(); checkAch(S); }
   };
-  E.refreshSystems = (S) => { initState(S); fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S); checkQuest(S); checkAch(S); };
+  E.refreshSystems = (S) => { initState(S); fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S); checkQuest(S); if (E.refreshArchis) E.refreshArchis(S); checkAch(S); };
 
   /* ---------------- État ---------------- */
   const initState = (S) => {
@@ -726,6 +1088,42 @@
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
     return S;
   };
+
+  /* 0.1.10.1 : compositions d'équipe (jusqu'à 3, qui joue, rangées, cible prioritaire) */
+  E.COMP_MAX = 3;
+  E.compOf = (S) => { const T = E.team(S); const fs = E.frontSet(S); const rows = {}; T.forEach((c) => (rows[c.id] = fs.has(c.id) ? "f" : "b"));
+    return { ids: T.map((c) => c.id), rows, auto: E.isAutoPlace(S), focus: (S.settings && S.settings.focus) || "auto" }; };
+  E.compMatch = (S) => { const ids = E.team(S).map((c) => c.id).sort().join(","); return (S.comps || []).findIndex((k) => k && k.ids.slice().sort().join(",") === ids); };
+  E.saveComp = (S, i, name) => {
+    S.comps = S.comps || []; if (i == null || i < 0) i = S.comps.length;
+    if (i >= E.COMP_MAX) return "Trois compositions au maximum : remplacez-en une.";
+    if (!E.team(S).length) return "L'équipe est vide.";
+    const old = S.comps[i]; S.comps[i] = Object.assign(E.compOf(S), { name: (name || (old && old.name) || `Composition ${i + 1}`).slice(0, 24) });
+    return null;
+  };
+  E.delComp = (S, i) => { if (!S.comps || !S.comps[i]) return; S.comps.splice(i, 1); Object.keys(S.compDg || {}).forEach((d) => { if (S.compDg[d] === i) delete S.compDg[d]; else if (S.compDg[d] > i) S.compDg[d]--; }); };
+  /* applique une composition : les héros prévus quittent la récolte, l'entraînement ou l'atelier ; renvoie une erreur ou { moved } */
+  E.applyComp = (S, i) => {
+    const K = (S.comps || [])[i]; if (!K) return { err: "Composition introuvable." };
+    if (S.dungeon) return { err: "Impossible de changer l'équipe en donjon." };
+    const ids = K.ids.filter((id) => S.chars.some((c) => c.id === id)).slice(0, 8);
+    if (!ids.length) return { err: "Plus aucun héros de cette composition." };
+    const moved = [];
+    S.chars.forEach((c) => {
+      const want = ids.includes(c.id);
+      if (want) {
+        if (c.job) { c.job = null; moved.push(c.name); }
+        if (S.training === c.id) { S.training = null; moved.push(c.name); }
+        if (E.atelierHero(S) === c) { E.setAtelier(S, null); moved.push(c.name); }
+      }
+      c.inTeam = want;
+    });
+    if (K.auto) S.placeAuto = true; else { S.placeAuto = false; E.team(S).forEach((c) => (c.row = K.rows[c.id] === "f" ? "f" : "b")); }
+    S.settings.focus = K.focus || "auto"; S.fight = null;
+    return { moved: [...new Set(moved)] };
+  };
+  /* retenir la composition gagnante d'un donjon, pour la suggérer dans sa fiche */
+  E.compWin = (S, did) => { const i = E.compMatch(S); if (i >= 0) (S.compDg = S.compDg || {})[did] = i; };
 
   root.SYSTEMS = true;
   if (typeof module !== "undefined" && module.exports) module.exports = E;
