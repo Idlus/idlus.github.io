@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.3";
+const GAME_VERSION = "3.4.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.4.4", name: "Nouvelle adresse", items: [
+    "Le jeu a une nouvelle adresse plus simple : idlus.github.io",
+    "L'ancienne adresse renvoie automatiquement vers la nouvelle et ta partie te suit : elle est reprise si ce navigateur n'a encore aucune partie à la nouvelle adresse" ] },
   { v: "3.4.3", name: "Passif visible", items: [
     "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des classes) ; la fenêtre défile au lieu de rétrécir son contenu" ] },
   { v: "3.4.2", name: "Symboles de classe", items: [
