@@ -1,6 +1,18 @@
 {
-  "version": "0.1.29.5",
+  "version": "0.1.30",
   "versions": [
+    {
+      "v": "0.1.30",
+      "name": "Coffres",
+      "items": [
+        "Cinq coffres dans le sac : bois, argent, or, et deux nouveaux, le Coffre en obsidienne et le Coffre des Douze. Chacun a son dessin et son halo de couleur",
+        "Les coffres valent enfin le coup : leurs kamas suivent ton niveau, d'environ 5 minutes de chasse (bois) à 2 heures (Douze), avec poussière de stasis, ressources, consommables rares, Éclats de trouvaille, et des objets de ton niveau dès l'obsidienne",
+        "Nouvelle fenêtre d'ouverture : kamas en grand, récompenses rares en vignettes dorées, ressources avec leur quantité",
+        "Nouvelles sources : stasis 10 (obsidienne), série de 7 et 30 défis du jour (or, puis Douze), nouveau record à l'Expédition (argent), chasse au trésor (bois ou argent), Almanax tous les 90 jours (obsidienne), Coffre en or au Comptoir des temples",
+        "Premier passage de stasis : bois 1-3, argent 4-6, or 7-9, obsidienne 10",
+        "Les coffres qui s'ouvrent seuls ont un nom : Butin du boss, Bourse du défi (au moins 500 kamas par niveau), Coffres de l'assaut, de la brèche, du siège et de la victoire (boss de guilde), Bourse du Percepteur, Coffre au trésor"
+      ]
+    },
     {
       "v": "0.1.29.5",
       "name": "Dévotion débloquée",

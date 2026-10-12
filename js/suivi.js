@@ -330,10 +330,11 @@
     for (let i = 0; i < ch.res && drops.length; i++) { const r = pick(drops), q = 3 + Math.floor(E.rnd() * 4); E.addRes(S, r, q); got.push(`${q} ${r}`); }
     const dg = Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].key && DUNGEONS[d].lvl <= lvl + 5 && E.dungeonUnlocked(S, d)).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl)[0];
     if (dg) { E.addRes(S, DUNGEONS[dg].key, 1); got.push(DUNGEONS[dg].key); }
+    { const cid = n >= 5 ? "coffre_argent" : "coffre_bois"; E.addCons(S, cid); got.push(D.CONSUMABLES[cid].name); } // 0.1.30
     if (E.rnd() < 0.1 && T.stock.length < E.TRESOR_STOCK) { T.stock.push(lvl); got.push("un nouveau parchemin de chasse"); }
     T.n = (T.n || 0) + 1; T.last = { t: E.now(), lvl, n, got };
     if (T.n >= 50 && S.unlocks && !S.unlocks.boussole) S.unlocks.boussole = 1;
-    E.note(S, `Trésor trouvé ! ${got.join(", ")}.`, "rare");
+    E.note(S, `Trésor trouvé ! Coffre au trésor : ${got.join(", ")}.`, "rare");
     E.celebrate({ t: "tresor", got, n: T.n });
     E.carnetMoment(S, "tresor", `Trésor trouvé (parchemin niveau ${lvl})`);
     T.back = c.from && c.from !== S.sub ? c.from : null; // l'équipe retourne là où elle chassait
