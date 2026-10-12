@@ -5,7 +5,7 @@
 (function () {
 "use strict";
 const D = window.DATA, E = window.ENGINE;
-const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, SPELL_IMG, EMBLEM, HUNT_TIERS, CONSUMABLES, STAT_HELP } = D;
+const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITIONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, SPELL_IMG, RUNE_SIMPLE_ONLY, HUNT_TIERS, CONSUMABLES, STAT_HELP } = D;
 
 let S = null;
 const ui = {
@@ -16,9 +16,15 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.8.1";
+const GAME_VERSION = "0.1.8.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.8.2", name: "Forgemagie", items: [
+    "L'Emblème du Solitaire disparaît (il ne servait qu'en solo) : les runes investies sont rendues en runes simples, le titre « le Solitaire » et l'ornement « Aura du Solitaire » restent à ceux qui les avaient",
+    "Puits de forgemagie : ce qu'un objet perd sur un échec remplit son puits ; tant qu'il couvre la rune tentée, +25 % de réussite et aucune perte",
+    "Onglet Runes : 3 runes identiques se fusionnent en rune supérieure (et l'inverse), 5 runes d'une caractéristique se transmutent en 1 rune d'une autre contre des kamas, et les runes inutiles nourrissent le métier de Forgemage",
+    "Métier de Forgemage (niveau 1 à 100) : chaque forgemagie donne de l'expérience ; +0,1 % de réussite et −0,5 % de kamas par niveau, échecs moins punitifs au niveau 30, un Cristal offert par jour au niveau 60, titre « Grand Forgemage » au niveau 100",
+    "Objets Parfaits : un objet dont toutes les caractéristiques positives sont au jet maximum gagne +2 % sur chacune, un liseré doré et deux succès (titre « le Perfectionniste »)" ] },
   { v: "0.1.8.1", name: "Étoiles de zone", items: [
     "Étoiles de zone : une zone où personne ne chasse gagne une étoile toutes les 2 h (5 au plus) ; chaque étoile donne +10 % d'XP et de butin dans cette zone",
     "Les étoiles fondent pendant qu'on y chasse (une toutes les 30 min, hors ligne aussi) : changer de zone de temps en temps rapporte plus",
@@ -294,9 +300,9 @@ function wingSVG(side) {
 function fsGauge() {
   const team = E.team(S); const fs = E.freeSpirit(S); const solo = team.length === 1;
   const syn = E.synergy(S);
-  const sub = solo ? `Emblème du Solitaire actif (niv. ${S.emblem.lvl})` : team.length ? `${team.length} héros${syn ? ` · Synergie +${syn} %` : ""}` : "aucun héros ne chasse";
+  const sub = team.length ? `${team.length} héros${syn ? ` · Synergie +${syn} %` : ""}` : "aucun héros ne chasse";
   return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
-    <span class="flame"><i></i></span><span class="txt"><b>${solo ? "Solitaire" : "Esprit Libre"} +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
+    <span class="flame"><i></i></span><span class="txt"><b>Esprit Libre +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
 }
 function questAlert() { return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); }
 const jobImg = (j) => `assets/j/${j}.png`;
@@ -1546,7 +1552,7 @@ const rarCls = (tpl) => `rr r-${E.rarityOf(tpl)}`;
 const rarTag = (tpl) => { const r = rar(tpl); return `<span class="rtag ${rarCls(tpl)}">${r.name}</span>`; };
 (() => { const st = document.createElement("style"); st.textContent = E.RARITIES.map((r) => `.r-${r.id}{--rc:${r.color}}`).join(""); document.head.appendChild(st); })();
 const itemIcon = (it) => `<span class="icobox ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}</span>`;
-function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
+function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   return Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
@@ -1669,7 +1675,7 @@ function charStatsView(c, st) {
         <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
       <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}${D.TACT_ORDER.filter((k) => st[k]).map((k) => statCell(k, k === "pm" ? 3 + st[k] : st[k])).join("")}</div>
-      <p class="note">${E.isSolo(S) && c.inTeam ? "L'Emblème du Solitaire est actif. " : ""}${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
+      <p class="note">${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
 }
 /* ---------- 0.1.8 : familiers et montiliers ---------- */
 const petImg = (id) => (E.PETS[id] ? `assets/p/${E.PETS[id].icon}.webp` : "");
@@ -2127,13 +2133,15 @@ function fmHtml() {
   if (it) {
     const T = ITEMS[it.tpl];
     detail = `<div class="row">${itemIcon(it)}<div><b>${itemName(it)}</b><div class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · ${it.fm} forgemagie${it.fm > 1 ? "s" : ""}` : ""}</div></div></div>
+      <div class="row small"><span data-tip="Puits : ce que l'objet perd sur un échec s'y accumule (en poids de caractéristiques). Tant que le puits couvre la rune tentée, +${Math.round(E.WELL_BONUS * 100)} % de réussite et aucune perte en cas d'échec ; une réussite le vide d'autant.">${IC("forge")} Puits : <b class="num ${it.well ? "plus" : ""}">${Math.round(it.well || 0)}</b></span>${E.isPerfect(it) ? `<span class="tag perfect" data-tip="Toutes les caractéristiques positives sont au jet maximum : +${E.PERFECT_PCT} % sur chacune (au moins +1).">★ Parfait</span>` : `<span class="xs muted">Parfait quand chaque caractéristique positive atteint son jet maximum.</span>`}</div>
       ${Object.keys(T.stats).map((k) => { const [mn, mx] = T.stats[k]; const cur = it.stats[k] || 0; const runes = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.split(":")[1] === k);
         const cap = mx > 0 ? mx + Math.max(1, Math.ceil(mx * 0.25)) : mx;
         return `<div class="fmline"><div><span class="statl">${sIco(k)}<b class="${cur > mx ? "bonus" : ""}">${statLine(k, cur)}</b></span> <span class="xs muted">jet ${mn} à ${mx}${mx > 0 ? ` · exo jusqu'à ${cap}` : ""}</span>
-          <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}
+          <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite${f.wellOk ? " (puits : +" + Math.round(E.WELL_BONUS * 100) + " %, aucune perte)" : ""} · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}
       ${it.fmLog && it.fmLog.length ? `<h3 class="sec">Historique</h3><div class="list">${it.fmLog.map((l) => `<div class="li xs"><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span><span class="grow">${h(l.txt)}</span><span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}`;
   }
-  return `<p class="note">La forgemagie améliore les jets d'un objet avec des runes (obtenues au brisage) et des kamas. En dessous du jet maximum, la réussite est élevée ; au-delà (« exo »), c'est risqué. Un échec détruit la rune et peut faire baisser une autre caractéristique.</p>
+  return `<p class="note">La forgemagie améliore les jets d'un objet avec des runes (obtenues au brisage) et des kamas. En dessous du jet maximum, la réussite est élevée ; au-delà (« exo »), c'est risqué. Un échec détruit la rune et peut faire baisser une autre caractéristique, mais ce qui est perdu remplit le puits de l'objet et protège les tentatives suivantes.</p>
+    ${fmJobCard()}
     <div class="row invbar"><input type="text" id="fmSearch" data-act="fmsearch" placeholder="Rechercher un objet…" value="${h(F.q)}">
       <select data-act="fmslot">${[["all", "Tous"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"]].map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>
       <select data-act="fmcid"><option value="">Tous les héros</option>${S.chars.map((c) => `<option value="${c.id}" ${+F.cid === c.id ? "selected" : ""}>Porté par ${h(c.name)}</option>`).join("")}</select>
@@ -2143,10 +2151,10 @@ function fmHtml() {
     <section class="panel"><div class="phead"><h2>Établi du forgemage</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad stack" style="gap:8px">${detail}</div></section></div>`;
 }
 function renderForge() {
-  const tabs = [["fm", "Forgemagie"], ["brisage", "Brisage"], ["embleme", "Emblème"]];
+  const tabs = [["fm", "Forgemagie"], ["brisage", "Brisage"], ["runes", "Runes"]];
   $("#main").innerHTML = `<div class="pagehead"><h1>Forgemagie</h1></div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="fgtab" data-v="${id}" aria-pressed="${ui.fg === id}">${n}</button>`).join("")}</nav>
-    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "embleme" ? emblemView() : fmHtml()}</section>`;
+    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : fmHtml()}</section>`;
 }
 /* ---------- QUÊTES ---------- */
 function mainQuestHtml() {
@@ -2219,29 +2227,38 @@ function renderQuests() {
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${ui.qt === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${body}</section>`;
 }
-function emblemView() {
-  const em = S.emblem; const need = E.emblemXpNeed(em.lvl); const lines = E.emblemLines(em.lvl); const active = E.isSolo(S);
-  const nextRank = EMBLEM.ranks.find(([l]) => l > em.lvl);
-  const runes = Object.entries(S.runes).sort((a, b) => E.runeInfo(b[0]).weight - E.runeInfo(a[0]).weight); const used = Object.keys(em.stats);
-  const perkBlock = Object.entries(EMBLEM.perks).map(([tier, opts]) => { const chosen = em.perks[tier];
-    return `<div class="li"><span class="grow"><span class="name">Palier ${tier}</span><br>${chosen ? `<span class="small">${h(opts.find((o) => o.id === chosen).name)} : ${h(opts.find((o) => o.id === chosen).desc)}</span>` :
-      em.lvl >= +tier ? `<span class="row" style="margin-top:4px">${opts.map((o) => `<button class="btn sm" data-act="perk" data-t="${tier}" data-id="${o.id}" title="${h(o.desc)}">${h(o.name)}</button>`).join("")}</span>` :
-      `<span class="xs muted">Au choix : ${opts.map((o) => `${h(o.name)} (${h(o.desc)})`).join(" · ")}</span>`}</span></div>`; }).join("");
-  return `<div class="panel"><div class="pad row" style="gap:16px;align-items:center">
-      <div style="width:84px;height:84px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--gold2),var(--gold) 60%,#8a5d14);display:grid;place-items:center;border:3px solid var(--frame);flex:none;color:#2a1a08;text-align:center"><b class="num" style="font-size:24px;line-height:1">${em.lvl}</b></div>
-      <div class="grow stack" style="gap:6px"><div class="row between"><h2>Emblème du Solitaire</h2><span class="tag ${active ? "good" : "soft"}">${active ? "Actif (solo)" : "Inactif : jouez seul"}</span></div>
-        <div class="small muted">Rang ${E.emblemRank(em.lvl)}${nextRank ? ` · « ${nextRank[1]} » au niveau ${nextRank[0]}` : ""}</div>
-        <div class="bar xp"><i style="width:${pct(em.xp, need)}%"></i></div><div class="xs muted num">${em.lvl >= EMBLEM.maxLvl ? "Niveau maximum" : `${fmt(em.xp)} / ${fmt(need)} poids de runes`} · ${lines} ligne${lines > 1 ? "s" : ""}</div></div></div></div>
-  <div class="grid2">
-    <div class="panel"><div class="phead"><h2>Lignes</h2><span class="muted xs">${used.length}/${lines}</span></div>
-      <div class="list">${used.map((k) => { const cap = E.emblemCap(k, em.lvl); return `<div class="li"><span class="grow"><span class="name">${STATS[k].name}</span><div class="bar" style="margin-top:4px"><i style="width:${pct(em.stats[k], cap)}%"></i></div></span><span class="num">${fmt(em.stats[k])} / ${fmt(cap)}</span>
-        ${ui.confirm === "line:" + k ? `<button class="btn sm danger" data-act="remline" data-k="${k}">Effacer</button>` : `<button class="btn sm" data-act="askline" data-k="${k}" title="Libère la ligne (la valeur est perdue)">×</button>`}</div>`; }).join("") || `<div class="empty">Nourrissez l'Emblème avec une rune pour ouvrir une ligne.</div>`}</div></div>
-    <div class="panel"><div class="phead"><h2>Nourrir avec des runes</h2></div>
-      <div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); const blocked = !used.includes(i.stat) && used.length >= lines;
-        return `<div class="li"><span class="grow"><span class="name">${E.runeName(k)}</span> <span class="xs muted num">×${fmt(q)} · +${i.pts} ${STATS[i.stat].short} · ${i.weight} XP</span>${blocked ? `<br><span class="xs muted">Plus de ligne libre : seule l'expérience sera gagnée.</span>` : ""}</span>
-          <button class="btn sm" data-act="feed" data-k="${k}" data-q="1">×1</button><button class="btn sm" data-act="feed" data-k="${k}" data-q="${q}">Tout</button></div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets pour en obtenir.</div>`}</div></div></div>
-  <div class="panel"><div class="phead"><h2>Paliers</h2></div><div class="list">${perkBlock}
-    <div class="li"><span class="grow xs muted">Niveau 100 : 3e ligne · 400 : 4e ligne · 700 : 5e ligne · 850 : plafonds ×1,5 · 1000 : +1 PA</span></div></div></div>`;
+/* 0.1.8.2 : atelier de runes (fusion, transmutation, nourrir le forgemage) */
+function runesView() {
+  const runes = Object.entries(S.runes).filter(([, q]) => q > 0).sort((a, b) => STAT_ORDER.indexOf(E.runeInfo(a[0]).stat) - STAT_ORDER.indexOf(E.runeInfo(b[0]).stat) || E.runeInfo(a[0]).weight - E.runeInfo(b[0]).weight);
+  const tr = ui.tr || (ui.tr = { from: "", to: "fo" });
+  if (!S.runes[tr.from]) tr.from = runes.length ? runes[0][0] : "";
+  const fromTier = tr.from ? tr.from.split(":")[0] : "";
+  const targets = E.transmuteTargets().filter((k) => !fromTier || !RUNE_SIMPLE_ONLY.includes(k));
+  if (!targets.includes(tr.to)) tr.to = targets[0];
+  const cost = E.transmuteCost(fromTier); const canTr = tr.from && (S.runes[tr.from] || 0) >= E.TRANSMUTE_N && S.kamas >= cost && tr.to !== tr.from.split(":")[1];
+  return `<p class="note">Fusion : ${E.RUNE_FUSE_N} runes identiques donnent la rune supérieure (simple → Pa → Ra) et une rune se casse en ${E.RUNE_FUSE_N} runes inférieures, gratuitement. Transmutation : ${E.TRANSMUTE_N} runes d'une caractéristique donnent 1 rune d'une autre, contre des kamas. Les runes inutiles peuvent aussi nourrir le métier de Forgemage.</p>
+    ${fmJobCard()}
+    <section class="panel"><div class="phead"><h2>Transmutation</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad row small">
+      <select data-act="trfrom">${runes.map(([k, q]) => `<option value="${k}" ${tr.from === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune</option>`}</select>
+      <span>→</span><select data-act="trto">${targets.map((k) => `<option value="${k}" ${tr.to === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select>
+      <button class="btn sm ${canTr ? "primary" : ""}" data-act="transmute" ${canTr ? "" : "disabled"}>${E.TRANSMUTE_N} → 1 · ${fmt(cost)} k</button></div></section>
+    <section class="panel"><div class="phead"><h2>Vos runes</h2><span class="muted xs">${runes.length} sorte${runes.length > 1 ? "s" : ""}</span></div>
+      <div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); const simpleOnly = RUNE_SIMPLE_ONLY.includes(i.stat);
+        return `<div class="li"><span class="grow"><span class="name">${E.runeName(k)}</span> <span class="xs muted num">×${fmt(q)} · +${i.pts} ${STATS[i.stat].short}</span></span>
+          ${!simpleOnly && i.tier !== "ra" ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="up" ${q >= E.RUNE_FUSE_N ? "" : "disabled"} data-tip="${E.RUNE_FUSE_N} ${E.runeName(k)} → 1 ${E.runeName(E.runeKey(i.tier === "" ? "pa" : "ra", i.stat))}">Fusionner ×${E.RUNE_FUSE_N}</button>` : ""}
+          ${i.tier ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="down" data-tip="1 ${E.runeName(k)} → ${E.RUNE_FUSE_N} ${E.runeName(E.runeKey(i.tier === "ra" ? "pa" : "", i.stat))}">Casser</button>` : ""}
+          <button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="1" data-tip="Nourrir le Forgemage : +${i.weight * 3} XP par rune">${IC("forge")} ×1</button><button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="${q}">Tout</button></div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets pour en obtenir.</div>`}</div></section>`;
+}
+/* 0.1.8.2 : carte du métier de Forgemage */
+function fmJobCard() {
+  const J = E.fmJob(S); const need = E.fmNeed(J.lvl); const max = J.lvl >= E.FM_MAX;
+  const next = E.FM_PERKS.find(([l]) => l > J.lvl);
+  return `<section class="panel"><div class="pad row" style="gap:14px;align-items:center">
+    <div style="width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--gold2),var(--gold) 60%,#8a5d14);display:grid;place-items:center;border:3px solid var(--frame);flex:none;color:#2a1a08"><b class="num" style="font-size:22px;line-height:1">${J.lvl}</b></div>
+    <div class="grow stack" style="gap:4px"><div class="row between"><h2>Forgemage niveau ${J.lvl}</h2><span class="xs muted">+${(J.lvl * 0.1).toFixed(1)} % de réussite · −${(J.lvl * 0.5).toFixed(1)} % de kamas</span></div>
+      <div class="bar xp"><i style="width:${max ? 100 : pct(J.xp, need)}%"></i></div>
+      <div class="xs muted num">${max ? "Niveau maximum" : `${fmt(J.xp)} / ${fmt(need)} XP · chaque forgemagie donne de l'expérience (le double en cas de réussite), les runes aussi (onglet Runes)`}</div>
+      <div class="xs">${E.FM_PERKS.map(([l, t]) => `<span class="${J.lvl >= l ? "plus" : "muted"}" data-tip="${h(t)}">${J.lvl >= l ? "✓" : "·"} niv. ${l}</span>`).join(" · ")}${next ? ` <span class="muted">— prochain palier (${next[0]}) : ${h(next[1])}</span>` : ""}</div></div></div></section>`;
 }
 
 /* ---------- feuilles ---------- */
@@ -2338,7 +2355,7 @@ function offlineSheet(r) {
     <div><button class="btn primary" data-act="closesheet">Continuer</button></div>`);
 }
 function migrationSheet(list) {
-  openSheet(`<h2>Votre partie a été mise à jour</h2><p class="small">Niveaux, kamas, objets, ressources, métiers et Emblème sont conservés.</p>
+  openSheet(`<h2>Votre partie a été mise à jour</h2><p class="small">Niveaux, kamas, objets, ressources, métiers sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
     <p class="small muted">À découvrir : la stasis des donjons (Monde › Donjons), l'apparence de vos héros (Héros › Apparence), les nouveaux passifs et les parchemins de caractéristiques.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
@@ -2640,10 +2657,9 @@ document.addEventListener("click", (ev) => {
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
     case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
-    case "feed": { const r = E.feedRune(S, d.k, +d.q); if (r) toast(`+${fmt(r.xp)} XP d'Emblème${r.gained ? `, +${r.gained} ${STATS[E.runeInfo(d.k).stat].short}` : ""}`); break; }
-    case "askline": ui.confirm = "line:" + d.k; break;
-    case "remline": E.removeEmblemLine(S, d.k); ui.confirm = null; break;
-    case "perk": E.choosePerk(S, +d.t, d.id); break;
+    case "fmfeed": { const r = E.feedForgemage(S, d.k, +d.q); if (r) toast(`+${fmt(r.xp)} XP de Forgemage`); break; }
+    case "fuse": { const r = E.fuseRunes(S, d.k, d.dir); if (r) toast(r); break; }
+    case "transmute": { const r = E.transmute(S, ui.tr.from, ui.tr.to); toast(r || `1 ${E.runeName(E.runeKey(ui.tr.from.split(":")[0], ui.tr.to))} obtenue`); break; }
     case "savenow": saveNow(true); return;
     case "copyexp": { const ta = $("#exp"); try { navigator.clipboard.writeText(ta.value).then(() => toast("Sauvegarde copiée."), () => { ta.select(); toast("Sélectionnez puis copiez le texte."); }); } catch (e) { ta.select(); } return; }
     case "import": { try { const txt = decodeURIComponent(escape(atob($("#imp").value.trim()))); const N = E.deserialize(txt); if (S) pushCopy(E.serialize(S), "avant", S); S = N; ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); closeSheet(); ui.tab = "home"; render(); toast("Sauvegarde importée."); if (S.migration) { migrationSheet(S.migration); S.migration = null; } } catch (e) { const m = $("#impmsg"); if (m) m.textContent = "Ce texte n'est pas une sauvegarde valide."; } return; }
@@ -2693,6 +2709,8 @@ document.addEventListener("change", (ev) => {
   else if (a === "ressort") ui.resSort = t.value;
   else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu automatiquement.`); }
   else if (a === "fmslot") ui.fmF.slot = t.value;
+  else if (a === "trfrom") ui.tr.from = t.value;
+  else if (a === "trto") ui.tr.to = t.value;
   else if (a === "fmsort") ui.fmF.sort = t.value;
   else if (a === "fmcid") ui.fmF.cid = t.value;
   else if (a === "invsort") ui.invSort = t.value;

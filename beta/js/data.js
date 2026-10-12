@@ -419,25 +419,6 @@
   };
 
   /* ---------- Emblème du Solitaire ---------- */
-  const EMBLEM = {
-    maxLvl: 1000,
-    lines: [[1, 2], [100, 3], [400, 4], [700, 5]],
-    cap: { vit: 2, sa: 0.3, fo: 0.5, ine: 0.5, cha: 0.5, age: 0.5, pui: 0.3, do: 0.04, cri: 0.02, so: 0.05, pp: 0.25, ini: 3, rt: 0.02, rf: 0.02, re: 0.02, ra: 0.02 },
-    ranks: [[1, "Novice"], [100, "Aguerri"], [250, "Vétéran"], [400, "Expert"], [500, "Maître"], [700, "Grand Maître"], [850, "Légendaire"], [1000, "Transcendé"]],
-    perks: {
-      250: [
-        { id: "brisage", name: "Briseur d'âmes", desc: "+15 % de runes obtenues au brisage" },
-        { id: "drop",    name: "Chasseur solitaire", desc: "+15 % de chances de butin en solo" },
-        { id: "xp",      name: "Sage errant", desc: "+15 % d'expérience en solo" },
-      ],
-      500: [
-        { id: "dmg",     name: "Dernier debout", desc: "+15 % de dégâts en solo" },
-        { id: "res",     name: "Peau de Craqueleur", desc: "+8 % de résistance à tous les éléments en solo" },
-        { id: "heal",    name: "Second souffle", desc: "Régénère 5 % des PV max à chaque tour en solo" },
-      ],
-    },
-  };
-
   const FREE_SPIRIT = { 1: 100, 2: 80, 3: 60, 4: 40, 5: 25, 6: 15, 7: 5, 8: 0 };
   const NAMES = ["Goultard", "Tristepin", "Évangelyne", "Amalia", "Ruel", "Kerubim", "Grougaloragran", "Lou", "Joris", "Atcham", "Yugo", "Bakara", "Otomaï", "Dally", "Simone", "Toross"];
 
@@ -479,7 +460,7 @@
 
   const SUMMONS = G.SUMMONS || {};
   const DATA = { STATS, STAT_ORDER, TACT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
-                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
+                 MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;
 })(typeof window !== "undefined" ? window : globalThis);

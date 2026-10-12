@@ -8,10 +8,10 @@
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
   const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, GATHER_JOBS, CRAFT_JOBS, DOFUS_SLOTS,
-          MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
+          MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const E = {};
-  E.VERSION = 7;
+  E.VERSION = 8;
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -59,7 +59,6 @@
   E.xpCurveMult = (l) => (l <= 38 ? 0.13 : l <= 62 ? 0.11 : l < 80 ? 0.11 + (0.89 * (l - 62)) / 18 : l <= 100 ? 1 : 1 + (l - 100) * 0.04);
   E.xpNeed = (l) => Math.floor(36 * Math.pow(l, 2.7) * E.xpCurveMult(l)); // XP pour passer du niveau l à l+1
   E.jobXpNeed = (l) => Math.floor(30 * Math.pow(l, 1.55));
-  E.emblemXpNeed = (l) => Math.floor(5 + 0.5 * Math.pow(l, 1.25));     // poids de runes pour passer au niveau suivant
   E.monsterXp = (lvl) => Math.round((10 + Math.pow(lvl, 1.5) * 4.2) * 0.55);
   E.recruitCost = (n) => (n <= 1 ? 0 : Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
 
@@ -74,7 +73,7 @@
       history: [], zoneStats: {}, seenDrops: {}, radiants: 0,
       cons: {}, boosts: {}, trophies: {}, families: {}, huntSeen: {},
       jobs: {}, crafts: {}, coef: {}, tools: {}, finds: 0,
-      emblem: { lvl: 1, xp: 0, stats: {}, perks: {} },
+      fmJob: { lvl: 1, xp: 0 }, // 0.1.8.2 : métier de Forgemage
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
       settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "sell", q: 50, keepSets: true, recycle: "sell" } },
@@ -262,15 +261,10 @@
   E.charStats = (S, c, opts = {}) => {
     const st = zeroStats();
     BASE_STATS.forEach((k) => (st[k] += (c.alloc[k] || 0) + ((c.scrolls || {})[k] || 0)));
-    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) addStats(st, it.stats); });
+    Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) addStats(st, E.isPerfect(it) ? E.perfectStats(it) : it.stats); }); // 0.1.8.2 : objets parfaits
     const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
-    const solo = opts.solo !== undefined ? opts.solo : (E.isSolo(S) && c.inTeam);
-    if (solo) {
-      addStats(st, S.emblem.stats);
-      if (S.emblem.lvl >= 1000) st.pa += 1;
-    }
     st.hpMax = Math.round(50 + 5 * c.lvl + st.vit + E.familyBonusVit(S));
     st.pa = Math.min(12, 6 + (c.lvl >= 100 ? 1 : 0) + st.pa);
     st.ini += 100 + c.lvl * 5 + st.fo + st.ine + st.cha + st.age;
@@ -1475,9 +1469,9 @@
     return true;
   };
 
-  /* Bonus de combat liés à l'Esprit Libre et à l'Emblème */
+  /* Bonus de combat liés à l'Esprit Libre */
   const applyFightBonuses = (S, F) => {
-    const fs = E.freeSpirit(S); const solo = E.isSolo(S); const pk = S.emblem.perks;
+    const fs = E.freeSpirit(S);
     F.feca = E.teamHas(S, "feca");
     if (E.teamHas(S, "eca")) { const r = rnd(); F.roulette = r < 0.4 ? "pile" : r < 0.8 ? "face" : r < 0.9 ? "jackpot" : "perdu";
       flog(F, `Roulette de l'Ecaflip : ${F.roulette === "pile" ? "Pile ! +20 % de dégâts pour l'équipe" : F.roulette === "face" ? "Face ! +15 % de soins et de boucliers" : F.roulette === "jackpot" ? "JACKPOT ! Butin ×2 sur ce combat" : "Perdu… −5 % de dégâts pour l'équipe"}.`, "buff"); }
@@ -1485,9 +1479,8 @@
     for (const r in RACE_MONS) if (RACE_MONS[r].some((k) => E.huntTier(S, k) >= 2)) F.expertRaces.add(+r);
     F.ents.filter((e) => e.side === "c" && !e.summon).forEach((e) => {
       if (e.cls === "zobal") e.mask = "atk";
-      e.dmgBonus = fs / 2 + (solo && pk[500] === "dmg" ? 15 : 0) + E.bonus(S, "dmg") + E.synergy(S) + (F.roulette === "pile" ? 20 : F.roulette === "perdu" ? -5 : 0);
-      e.resBonus = solo && pk[500] === "res" ? 8 : 0;
-      e.regen = solo && pk[500] === "heal" ? 5 : 0;
+      e.dmgBonus = fs / 2 + E.bonus(S, "dmg") + E.synergy(S) + (F.roulette === "pile" ? 20 : F.roulette === "perdu" ? -5 : 0);
+      e.resBonus = 0; e.regen = 0;
     });
   };
 
@@ -1588,12 +1581,11 @@
   E.effProspection = (pp) => (pp <= 100 ? pp : pp <= 300 ? 100 + (pp - 100) / 2 : 200 + (pp - 300) / 4);
   E.teamProspection = (S) => E.effProspection(E.teamProspectionRaw(S));
   E.dropMult = (S) => {
-    const solo = E.isSolo(S);
-    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (solo && S.emblem.perks[250] === "drop" ? 1.15 : 1) * (1 + E.bonus(S, "drop") / 100);
+    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
   };
 
   const giveRewards = (S, mons, opts = {}) => {
-    const team = E.team(S); const solo = E.isSolo(S); const fs = E.freeSpirit(S);
+    const team = E.team(S); const fs = E.freeSpirit(S);
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
@@ -1611,7 +1603,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * (solo && S.emblem.perks[250] === "xp" ? 1.15 : 1) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
+      const g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
       out.xp[c.id] = g;
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
@@ -1883,7 +1875,6 @@
     if ((m = /^bty(\d+)$/.exec(id))) return [cnt.bounty || 0, +m[1]];
     if ((m = /^havre(\d+)$/.exec(id))) return [E.havreTotal ? E.havreTotal(S) : 0, +m[1]];
     if ((m = /^team(\d+)$/.exec(id))) return [S.chars.length, +m[1]];
-    if (id === "emb100") return [S.emblem.lvl, 100];
     if ((m = /^dg_(.+)$/.exec(id)) && DUNGEONS[m[1]]) return [S.progress.bossKills[m[1]] ? 1 : 0, 1];
     return null;
   };
@@ -2267,10 +2258,9 @@
     const it = S.items[uid]; if (!it) return null;
     const T = ITEMS[it.tpl]; const coef = E.getCoef(S, it.tpl);
     const lvlMult = 1 + T.lvl * 3 / 200;
-    const perk = S.emblem.perks[250] === "brisage" ? 1.15 : 1;
     const w = {};
     const rad = it.radiant ? 1.5 : 1;
-    for (const k in it.stats) { const v = it.stats[k]; if (v > 0) w[k] = v * STATS[k].w * lvlMult * coef / 100 * perk * rad; }
+    for (const k in it.stats) { const v = it.stats[k]; if (v > 0) w[k] = v * STATS[k].w * lvlMult * coef / 100 * rad; }
     if (focus && w[focus] !== undefined) {
       let tot = 0; for (const k in w) tot += k === focus ? w[k] : w[k] * 0.5;
       for (const k in w) delete w[k]; w[focus] = tot;
@@ -2306,39 +2296,16 @@
     return got;
   };
 
-  /* ---------------- Emblème du Solitaire ---------------- */
-  E.emblemLines = (lvl) => EMBLEM.lines.filter(([l]) => lvl >= l).pop()[1];
-  E.emblemRank = (lvl) => EMBLEM.ranks.filter(([l]) => lvl >= l).pop()[1];
-  E.emblemCap = (stat, lvl) => {
-    if (stat === "pa") return 0;
-    const f = EMBLEM.cap[stat] || 0; return Math.floor(f * (lvl + 10) * (lvl >= 850 ? 1.5 : 1));
+  /* ---------------- Objets parfaits (0.1.8.2) : toutes les caractéristiques positives au jet maximum ---------------- */
+  E.PERFECT_PCT = 2;
+  E.isPerfect = (it) => {
+    const T = ITEMS[it.tpl]; if (!T || T.trophy) return false; let n = 0;
+    for (const k in T.stats) { const [, mx] = T.stats[k]; if (mx <= 0) continue; n++; if ((it.stats[k] || 0) < mx) return false; }
+    return n > 0;
   };
-  E.feedRune = (S, key, qty) => {
-    const have = S.runes[key] || 0; const n = Math.min(have, qty); if (n <= 0) return null;
-    const em = S.emblem; const info = E.runeInfo(key);
-    let gained = 0, xp = 0;
-    for (let i = 0; i < n; i++) {
-      const lines = Object.keys(em.stats);
-      const canAdd = lines.includes(info.stat) || lines.length < E.emblemLines(em.lvl);
-      if (canAdd) {
-        const cap = E.emblemCap(info.stat, em.lvl); const cur = em.stats[info.stat] || 0;
-        const add = Math.max(0, Math.min(info.pts, cap - cur));
-        if (add > 0 || cur > 0) { em.stats[info.stat] = cur + add; gained += add; }
-      }
-      xp += info.weight; em.xp += info.weight;
-      while (em.lvl < EMBLEM.maxLvl && em.xp >= E.emblemXpNeed(em.lvl)) {
-        em.xp -= E.emblemXpNeed(em.lvl); em.lvl++;
-        if (em.lvl % 50 === 0 || EMBLEM.ranks.some(([l]) => l === em.lvl)) note(S, `Emblème du Solitaire niveau ${em.lvl} (${E.emblemRank(em.lvl)})`, "up");
-      }
-    }
-    S.runes[key] -= n; if (!S.runes[key]) delete S.runes[key];
-    return { gained, xp, n };
-  };
-  E.removeEmblemLine = (S, stat) => { delete S.emblem.stats[stat]; };
-  E.choosePerk = (S, tier, id) => {
-    if (S.emblem.lvl < tier || S.emblem.perks[tier]) return false;
-    S.emblem.perks[tier] = id; return true;
-  };
+  /* +2 % sur chaque caractéristique positive (au moins +1) */
+  E.perfectStats = (it) => { const o = {}; for (const k in it.stats) { const v = it.stats[k]; o[k] = v > 0 ? v + Math.max(1, Math.round(v * E.PERFECT_PCT / 100)) : v; } return o; };
+  E.perfectCount = (S) => Object.values(S.items).filter(E.isPerfect).length;
 
   /* ---------------- Recrutement & équipe ---------------- */
   E.recruit = (S, cls, name) => {
@@ -2450,6 +2417,17 @@
     if (S.v < 7) {
       S.chars.forEach((c) => { c.scrolls = c.scrolls || {}; c.autoCap = c.autoCap || 200; if (c.head === undefined) c.head = c.id % 8; c.palette = c.palette || "classique"; c.pts = (c.lvl - 1) * 5; BASE_STATS.forEach((k) => (c.alloc[k] = 0)); if (!c.autoStat) c.autoStat = CLASSES[c.cls].main; E.autoAllocate(S, c); });
       report.push("Nouveautés 3.1 : les points de caractéristiques suivent maintenant les paliers de DOFUS (au-delà de 100, il faut plus de points pour gagner 1). Vos points ont été redistribués automatiquement : élément principal jusqu'à 200, puis Vitalité. La réinitialisation est gratuite et illimitée.");
+    }
+    if (S.v < 8 && S.emblem) {
+      // 0.1.8.2 : l'Emblème du Solitaire disparaît ; les runes investies sont rendues en runes simples, le titre et l'ornement restent acquis
+      const em = S.emblem; let W = em.xp || 0; for (let l = 1; l < (em.lvl || 1); l++) W += Math.floor(5 + 0.5 * Math.pow(l, 1.25));
+      const lines = Object.keys(em.stats || {}).filter((k) => STATS[k] && em.stats[k] > 0); const tot = lines.reduce((a, k) => a + em.stats[k] * STATS[k].w, 0) || 1;
+      const got = [];
+      (lines.length ? lines : ["vit"]).forEach((k) => { const share = lines.length ? em.stats[k] * STATS[k].w / tot : 1; const n = Math.floor(W * share / (STATS[k].w * STATS[k].pts)); if (n > 0) { const key = E.runeKey("", k); S.runes[key] = (S.runes[key] || 0) + n; got.push(`${n} ${E.runeName(key)}`); } });
+      if ((em.lvl || 0) >= 100) { S.unlocks = S.unlocks || {}; S.unlocks.solitaire = true; }
+      if (S.ach && S.ach.emb100) { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes("le Solitaire")) S.titlesExtra.push("le Solitaire"); }
+      delete S.emblem;
+      report.push(`0.1.8.2 : l'Emblème du Solitaire disparaît (il ne servait qu'en solo). ${got.length ? "Runes rendues : " + got.join(", ") + "." : "Aucune rune n'y avait été investie."} Les runes nourrissent maintenant le métier de Forgemage (onglet Forgemagie).`);
     }
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });

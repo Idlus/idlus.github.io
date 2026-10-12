@@ -1315,3 +1315,6 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .zstars{display:inline-flex;align-items:center;gap:4px;font-weight:900;letter-spacing:1px;color:var(--gold2);font-size:12px;white-space:nowrap}
 .zstars i{font-style:normal;color:rgba(128,128,128,.28)}.zstars.none{color:rgba(128,128,128,.28)}
 .zstars b{font-weight:800;letter-spacing:0;font-size:12px;color:var(--good)}
+/* 0.1.8.2 : objets parfaits */
+.tag.perfect{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1a08;border-color:var(--gold);font-weight:800}
+.iname.perfect{color:var(--gold2)}
