@@ -680,6 +680,7 @@ if need and FETCH_IMAGES:
     for i in range(0, len(lids), 40):
         q = '&'.join(f'id[$in][]={x}' for x in lids[i:i + 40]); new_lv += get_json(f'https://api.dofusdb.fr/spell-levels?{q}&$limit=50&lang=fr')['data']
     cache['spells'] += new_sp; cache['levels'] += new_lv; cache['mids'] = sorted(set(cache.get('mids', [])) | set(need))
+    os.makedirs(RAW3, exist_ok=True)
     json.dump(cache, open(msp_path, 'w', encoding='utf-8'), ensure_ascii=False)
 MS = {x['id']: x for x in cache['spells']}; ML = {l['id']: l for l in cache['levels']}
 nsp = 0
