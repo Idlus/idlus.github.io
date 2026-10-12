@@ -6,7 +6,7 @@ const hook = process.env.DISCORD_WEBHOOK; if (!hook && !DRY) { console.log("DISC
 const data = JSON.parse(fs.readFileSync(__dirname + "/../changelog.json", "utf8"));
 const v = process.argv.slice(2).find((a) => !a.startsWith("--")) || data.version; const c = data.versions.find((x) => x.v === v);
 if (!c) { console.log("Version introuvable :", v); process.exit(1); }
-const URL_GAME = "https://mathiss29.github.io/idlus/";
+const URL_GAME = "https://idlus.github.io/";
 const body = JSON.stringify({
   username: "idlus", avatar_url: URL_GAME + "icons/icon-192.png",
   embeds: [{
