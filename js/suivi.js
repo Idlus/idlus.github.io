@@ -27,7 +27,7 @@
     sellItem: "vente", sellRes: "vente",
     forgemage: "fm", feedForgemage: "fm", fuseRunes: "fm", transmute: "fm", exoForge: "fm", exoCraft: "fm", startFmPlan: "fm",
     buyHavre: "havre", placeFurn: "havre", buildAtelier: "havre", setAtelier: "havre",
-    craftItem: "craft", craftSpecial: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",
+    craftItem: "craft", craftSpecial: "craft", craftMany: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",
     buildEnclos: "monture", startBreed: "monture", equipMount: "monture", setMountShare: "monture",
     buyShop: "boutique", buyNets: "boutique", useConsumable: "boutique",
     enterDungeon: "donjon", leaveDungeon: "donjon", toggleIdol: "idole",

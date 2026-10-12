@@ -2522,6 +2522,22 @@
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
     return null;
   };
+  /* 0.1.30.1 : fabrication en série (×10, max). Chaque exemplaire passe par craftItem / craftSpecial : jets, XP de métier et quêtes identiques à une fabrication une par une */
+  E.craftMax = (S, ing, n = Infinity) => ing.reduce((m, [r, q]) => Math.min(m, Math.floor((S.res[r] || 0) / q)), n);
+  E.craftCount = (S, k, id) => {
+    if (k === "tpl") { const T = ITEMS[id]; if (!T || !T.craft || S.crafts[T.craft.job].lvl < E.craftReq(id)) return 0; return Math.max(0, E.craftMax(S, T.craft.ing, E.itemCap(S) - E.itemCount(S))); }
+    const R = SPECIAL_CRAFTS[id]; if (!R || S.crafts[R.job].lvl < R.lvl) return 0;
+    return E.craftMax(S, R.ing, R.unique ? 1 : Infinity);
+  };
+  E.craftMany = (S, k, id, n) => {
+    n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null };
+    for (let i = 0; i < n; i++) {
+      const r = k === "tpl" ? E.craftItem(S, id) : E.craftSpecial(S, id);
+      if (typeof r === "string") { out.err = r; break; }
+      out.n++; if (r && r.uid) out.items.push(r);
+    }
+    return out.n ? out : (out.err || "Fabrication impossible.");
+  };
   const craftXp = (S, job, x) => {
     const J = S.crafts[job]; J.xp += x;
     while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; note(S, `${CRAFT_JOBS[job].name} niveau ${J.lvl}`, "up"); }
@@ -2811,7 +2827,7 @@
     toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
     // métiers, forge, ressources
     setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", sellRes: "vendre des ressources",
-    craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftScroll: "fabriquer un parchemin",
+    craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftMany: "fabriquer en série", craftScroll: "fabriquer un parchemin",
     forgemage: "forgemager", feedForgemage: "forgemagie en série", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
     fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
     useConsumable: "utiliser un consommable", buyShop: "acheter en boutique", buyNets: "acheter des filets",
