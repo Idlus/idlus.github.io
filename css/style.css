@@ -1744,3 +1744,43 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .sptip{display:flex;align-items:center;gap:9px;border-radius:10px;padding:6px 9px;background:color-mix(in srgb,var(--danger) 9%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--danger) 35%,transparent)}
 .sptip.ok{background:color-mix(in srgb,var(--action) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--action) 40%,transparent)}
 .sptip img{width:26px;height:26px;border-radius:6px;flex:none}
+/* ---------- 0.1.12 : Renaissance ---------- */
+.hcard .renm{position:absolute;top:36px;left:7px;z-index:2;min-width:26px;height:26px;padding:0 6px;border-radius:999px;display:grid;place-items:center;font-family:var(--font-title);font-size:13px;color:#fff7e3;
+  background:radial-gradient(circle at 35% 30%,#ffc35a,#d9541e);box-shadow:0 0 0 2px rgba(14,11,20,.85),0 0 10px rgba(255,170,60,.8)}
+.renm.inline{position:static;display:inline-grid;min-width:22px;height:22px;font-size:12px;vertical-align:middle;margin-left:4px}
+.hcard.ren-braise{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 2px #d9541e,0 0 14px rgba(217,84,30,.7)}
+.hcard.ren-flamme{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 2px #e0832a,0 0 20px rgba(224,131,42,.85)}
+.hcard.ren-brasier{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #c23a5c,0 0 26px rgba(194,58,92,.9)}
+.hcard.ren-phenix{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e9b93a,0 0 32px rgba(233,185,58,.95)}
+.hcard.ren-phenix::after{content:"";position:absolute;inset:-8px;z-index:-1;border-radius:24px;background:conic-gradient(from 0deg,#e9b93a,#ff7a3d,#e9b93a,#fff1a8,#e9b93a);opacity:.55;filter:blur(6px)}
+.hcard .orn.phx{bottom:4px;font-size:26px;filter:drop-shadow(0 0 8px #ff9a3d)}.hcard .orn.phx.l{left:-14px;transform:rotate(-20deg)}.hcard .orn.phx.r{right:-14px;transform:scaleX(-1) rotate(-20deg)}
+.btn.ren{border-color:#d9541e;background:linear-gradient(180deg,#f2a33a,#d9541e);color:#fff7e3;box-shadow:0 3px 0 #8a2f10}
+.btn.ren .uico{width:18px;height:18px}
+.tag.ren{background:#d9541e;color:#fff7e3}
+.evpill{display:inline-block;background:var(--panel3);border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;margin:2px 0}
+.renhead{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.renstage{position:relative;flex:none;width:150px;height:190px;border-radius:14px;overflow:hidden;display:grid;place-items:end center;background:radial-gradient(circle at 50% 80%,rgba(242,163,58,.55),transparent 65%),var(--panel2);border:1px solid var(--line)}
+.renstage.small{width:96px;height:96px;place-items:center}
+.renstage .renlook{height:170px;max-width:100%;object-fit:contain;position:relative;z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.renstage .renbig{width:64px;height:64px;position:relative;z-index:2}
+.renfl{position:absolute;left:0;right:0;bottom:0;height:60%;z-index:1;pointer-events:none;background:
+  radial-gradient(14px 40px at 20% 100%,rgba(242,163,58,.9),transparent 70%),radial-gradient(18px 56px at 50% 100%,rgba(217,84,30,.95),transparent 70%),radial-gradient(14px 44px at 80% 100%,rgba(242,163,58,.9),transparent 70%),radial-gradient(10px 30px at 35% 100%,rgba(255,210,80,.9),transparent 70%),radial-gradient(10px 30px at 65% 100%,rgba(255,210,80,.9),transparent 70%);
+  animation:renfl 1.6s ease-in-out infinite alternate}
+@keyframes renfl{to{transform:translateY(-6px) scaleY(1.12);opacity:.8}}
+.renhead .stack{flex:1;min-width:220px}
+.rencols{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rencols ul{margin:0;padding-left:16px}
+.rencols .cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;margin-bottom:3px}.cap.keep{color:var(--action)}.cap.reset{color:var(--danger)}
+.evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.evbtn{display:flex;flex-direction:column;gap:3px;text-align:left;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);cursor:pointer;color:var(--ink)}
+.evbtn .n{font-weight:800;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}.evbtn .rk{font-size:11px;color:var(--muted);font-weight:700}
+.evbtn.on{border-color:#d9541e;background:color-mix(in srgb,#d9541e 14%,var(--panel2))}.evbtn.cls{border-style:dashed}
+.renconfirm{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:10px;border:1px dashed #d9541e;background:color-mix(in srgb,#d9541e 8%,var(--panel))}
+.renintro{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.renintro .stack{flex:1;min-width:220px}
+.renrow{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--panel2);border:2px solid transparent}
+.renrow.can{border-color:#d9541e}
+.renrow .tart{height:72px;width:64px}.renrow .tart .tlook{height:68px}
+.renrow .xpb{height:6px;border-radius:5px;background:#ffffff14;overflow:hidden;margin-top:4px}.renrow .xpb i{display:block;height:100%;background:linear-gradient(90deg,#f2a33a,#d9541e)}
+.renrow .pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.ach.cls{border:1px dashed #d9541e}
+.cele.ren .cele-k{color:#f2a33a}
+@media (max-width:520px){.rencols{grid-template-columns:1fr}.renrow{grid-template-columns:52px minmax(0,1fr)}.renrow>.btn,.renrow>.tag,.renrow>.pill{grid-column:2}}

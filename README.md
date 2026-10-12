@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.12 « Renaissance » (bêta)
+- Au niveau 200, un héros peut renaître (Équipe › Renaissance) : il repart au niveau 1 en gardant apparence, titres, ornements, Dofus, familier, monture et parchemins ; l'équipement va dans le sac. Chaque renaissance donne +30 % d'XP au héros et un Éveil au choix (8 Éveils communs en 3 rangs, Éveil de classe aux renaissances V et X) ; 10 renaissances au plus. Médaillon, auras, titres, ornement « Ailes du Phénix » et 3 succès.
+- Courbe d'XP : au-delà du niveau 100, l'XP demandée baisse progressivement (première montée 1 → 200 ≈ 250 h équipé au lieu de 1 400 h). Simulateur : `--renaissance N`.
+
 ## 0.1.11.2 « Aperçu des sorts » (bêta)
 - **Ce que fera ton héros** (Sorts & stratégies) : sorts lancés aux 3 premiers tours, PA utilisés et dégâts, joués par le vrai moteur de combat (Chasse ou Boss).
 - **Conseils** avec bouton (attaques jamais choisies, condition bloquante, PA perdus, élément hors profil) et **Ranger au mieux** (meilleur ordre des sorts de soutien, avec Annuler).
