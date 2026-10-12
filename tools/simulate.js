@@ -7,7 +7,7 @@
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    --tactique : donne aux héros des stats tactiques (Tacle, Fuite, PM, Retrait, Esquive, Invocation) :
      moyen = valeurs d'un héros avec un bon familier ; plafond = tout au maximum ; un nom de stat = cette stat seule, au maximum.
-   --chasse niv1,niv2 : au lieu des donjons, une heure de chasse sans équipement dans une sous-zone de ce niveau (victoires/heure).
+   --chasse niv1,niv2 : au lieu des donjons, une heure de chasse dans une sous-zone de ce niveau (victoires/heure, kamas/heure) ; --profils aucun|debutant|bon|optimise (défaut : aucun) ; --zones id1,id2 pour choisir les sous-zones.
    Par défaut : un donjon par tranche de niveau, 6 équipes, 3 essais par case. */
 "use strict";
 const E = require("../js/engine.js");
@@ -53,6 +53,10 @@ const give = (S, c, tpl, slot, perfect) => {
 };
 const gearUp = (S, c, prof) => {
   if (prof === "aucun") return;
+  if (prof === "debutant") { // joueur qui arrive : objets de 8 niveaux en dessous, jets moyens, ni anneaux ni bouclier
+    const main = D.CLASSES[c.cls].main; for (const slot of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes"]) { const t = bestFor(slot, Math.max(1, c.lvl - 8), main)[0]; if (t) give(S, c, t, slot, false); }
+    return;
+  }
   const main = D.CLASSES[c.cls].main, perfect = prof === "optimise";
   for (const slot of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes", "bouclier"]) { const t = bestFor(slot, c.lvl, main)[0]; if (t) give(S, c, t, slot, perfect); }
   const rings = bestFor("anneau", c.lvl, main); if (rings[0]) give(S, c, rings[0], "anneau1", perfect); if (rings[1]) give(S, c, rings[1], "anneau2", perfect);
@@ -120,18 +124,20 @@ function run(did, k, cls, prof) {
 if (arg("chasse", "")) {
   E.subUnlocked = () => true;
   const lvls = arg("chasse").split(",").map(Number);
+  const HPROF = arg("profils", "aucun"); // --profils bon|optimise : la même heure de chasse avec cet équipement
   for (const L of lvls) {
-    const subs = Object.keys(E.SUBS).filter((k) => E.SUBS[k].lvl && Math.abs((E.SUBS[k].lvl[0] + E.SUBS[k].lvl[1]) / 2 - L) <= 6).slice(0, 4);
-    let win = 0, lose = 0;
+    const subs = arg("zones", "") ? arg("zones").split(",") : Object.keys(E.SUBS).filter((k) => E.SUBS[k].lvl && Math.abs((E.SUBS[k].lvl[0] + E.SUBS[k].lvl[1]) / 2 - L) <= 6).slice(0, 4); // --zones id1,id2 : ces sous-zones-là
+    let win = 0, lose = 0, kam = 0;
     for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
       const S = E.newState("Sim", "iop"); S.chars = [];
       teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
-      S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); tagRows(S);
-      E.startHunt(S, sid); let last = null;
+      S.chars.forEach((c) => gearUp(S, c, HPROF)); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); giveRen(S); tagRows(S);
+      E.startHunt(S, sid); let last = null; const k0 = S.kamas;
       for (let t = 0; t < 3600 * 1000; t += 1000) { E.tick(S, 1000); const F = S.fight; if (F && F.over && F !== last) { last = F; F.result === "win" || F.result === true ? win++ : lose++; } }
+      kam += S.kamas - k0;
     }
     const n = subs.length * CLS.length * TRIES;
-    console.log(`chasse niv. ${L} (${subs.length} zones) : ${(win / n).toFixed(1)} victoires/h, ${(100 * lose / Math.max(1, win + lose)).toFixed(1)} % de défaites`);
+    console.log(`chasse niv. ${L} (${subs.length} zones) : ${(win / n).toFixed(1)} victoires/h, ${(100 * lose / Math.max(1, win + lose)).toFixed(1)} % de défaites, ${Math.round(kam / n)} kamas/h`);
   }
   if (E.tactLog) console.log("déclenchements :", JSON.stringify(E.tactLog));
   process.exit(0);
