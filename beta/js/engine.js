@@ -34,11 +34,13 @@
   let rnd = Math.random;
   E.setRng = (f) => { rnd = f; };
   E.rnd = () => rnd();
+  E.getRng = () => rnd; // 0.1.19 : le défi du jour rend le hasard tel qu'il l'a trouvé
   /* Horloge du jeu : toute la logique lit l'heure ici (jamais Date.now() directement).
      Aujourd'hui c'est l'heure de l'appareil ; demain le serveur pourra imposer la sienne (anti-triche). */
   let clock = () => Date.now();
   E.setClock = (f) => { clock = f || (() => Date.now()); };
   E.now = () => clock();
+  E.getClock = () => clock;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rf = (a, b) => a + rnd() * (b - a);
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
@@ -399,7 +401,8 @@
       note(S, `✦ Objet Rayonnant : ${T.name} (+${it.radiant} %) !`, "radiant");
       E.celebrate({ t: "radiant", tpl, pct: it.radiant });
     }
-    S.items[it.uid] = it; return it;
+    S.items[it.uid] = it; if (E.wardrobeAdd) E.wardrobeAdd(S, tpl); // 0.1.19 : garde-robe
+    return it;
   };
   E.itemQuality = (it) => {
     const T = ITEMS[it.tpl]; const base = it.roll || it.stats; let s = 0, n = 0;

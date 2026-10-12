@@ -16,9 +16,19 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.18";
+const GAME_VERSION = "0.1.19";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.19", name: "Se montrer", items: [
+    "Défi du jour (Aventure › Donjons) : chaque jour à minuit (heure de Paris), un donjon, une stasis, deux modificateurs et le même hasard pour tout le monde, dans trois paliers : Découverte (1-60), Aventure (61-140) et Légende (141-200)",
+    "Le combat du défi se joue d'un coup, en automatique, avec ton équipe du moment (jusqu'à 8 héros, idoles, familiers et montures compris) ; le moins de tours gagne, puis le plus de PV restants ; essais illimités, le meilleur score du jour est gardé",
+    "Première victoire du jour : coffre avec autant de kamas et de poussière de stasis qu'un passage normal ; 7 jours de suite donnent le titre « Habitué du défi », 30 jours l'ornement « Sablier du défi » (un jour manqué remet la série à zéro)",
+    "Classements › Défi du jour : un tableau par palier, chaque score rejoué par le serveur, avec le podium de la veille",
+    "Carte d'équipe (Équipe › Partager mon équipe) : une image de ton équipe (jusqu'à 8 héros) avec stasis, Dofus, âmes et idoles, en large pour X ou en carré pour Discord, en Émeraude ou Nuit violette ; copier, enregistrer ou publier sur X",
+    "Garde-robe (Héros › Apparence) : chaque coiffe et cape obtenue une fois y reste pour toujours ; chaque héros peut montrer une autre apparence que celle qu'il porte, ou aucune, gratuitement et sans effet sur ses caractéristiques",
+    "Toutes les coiffes et capes du jeu peuvent se montrer : celles que le jeu ne sait pas encore dessiner sont dessinées par DofusDB (le héros garde alors la tête et les couleurs d'origine de sa classe)",
+    "Nouveaux succès : Défi relevé, Une semaine de défis, Un mois de défis, Garde-robe garnie (25 apparences) et Collectionneur (50 apparences, titre « le Collectionneur »)",
+  ] },
   { v: "0.1.18", name: "Chat et panel admin", items: [
     "Chat général pour les joueurs connectés : une fenêtre en bas à droite sur ordinateur (le jeu se décale pour lui laisser la place), une bulle au-dessus de la barre du bas sur téléphone ; on peut lire sans compte, et écrire avec un compte et un pseudo",
     "Chaque message montre la classe, le niveau du héros principal et son titre ; un clic sur un pseudo permet de voir son profil, de lui écrire en privé, d'ignorer ses messages ou de le signaler",
@@ -395,8 +405,13 @@ const lookLocal = (cls, sex, hi) => `assets/look/${cls}_${sex === "f" ? "f" : "m
 function lookUrl(c, opts = {}) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return null; const sx = c.sex === "f" ? "f" : "m"; const D2 = L[sx]; const hi = Math.max(0, Math.min(D2.heads.length - 1, c.head || 0));
   const skins = [D2.body, D2.heads[hi]];
-  const worn = []; if (!opts.bare && c.equip) ["coiffe", "cape"].forEach((sl) => { const it = S && S.items[c.equip[sl]]; const sk = it && LK.ITEM_SKINS[it.tpl]; if (sk) { skins.push(sk); worn.push(+it.tpl.slice(1)); } });
+  /* 0.1.19 : garde-robe — le héros montre l'apparence choisie ; une apparence que seul DofusDB sait dessiner (choisie exprès)
+     fait dessiner le héros par DofusDB, avec la tête et les couleurs d'origine de sa classe */
+  const worn = []; let dbOnly = false;
+  if (!opts.bare && S) ["coiffe", "cape"].forEach((sl) => { const tpl = E.shownTpl(S, c, sl); if (!tpl) return; const sk = LK.ITEM_SKINS[tpl];
+    if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (c.show && c.show[sl] === tpl) { dbOnly = true; worn.push(+tpl.slice(1)); } });
   if (c.cls === "forge") return worn.length ? forgeLook(sx, worn) : lookLocal("forge", sx, 0); // Forgelance : rendu DofusDB (voir forgeLook)
+  if (dbOnly) return dbLook(c.cls, sx, worn);
   const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
   const cols = D2.colors.slice(); if (pal && pal.c) pal.c.forEach((v, i) => (cols[i + 1] = v));
   if (skins.length === 2 && (!pal || !pal.c)) return lookLocal(c.cls, sx, hi);
@@ -408,13 +423,14 @@ function lookUrl(c, opts = {}) {
    DofusDB sait le dessiner correctement (tête par défaut, couleurs d'origine) à partir d'un jeton qu'il fabrique pour la classe
    et les objets portés : on demande le jeton, puis l'image. Les coiffes et capes s'affichent ; ni choix de tête ni couleurs. */
 const FORGE = { tok: {}, wait: {} };
-function forgeLook(sx, items) {
-  const key = sx + (items.length ? "-" + items.join("-") : ""), url = (t) => { let x = ""; for (const ch of t) x += ch.charCodeAt(0).toString(16).padStart(2, "0"); return `https://renderer.dofusdb.fr/kool/${x}/full/1/300_300.png`; };
+function forgeLook(sx, items) { return dbLook("forge", sx, items); }
+function dbLook(cls, sx, items) {
+  const key = cls + "-" + sx + (items.length ? "-" + items.join("-") : ""), url = (t) => { let x = ""; for (const ch of t) x += ch.charCodeAt(0).toString(16).padStart(2, "0"); return `https://renderer.dofusdb.fr/kool/${x}/full/1/300_300.png`; };
   if (FORGE.tok[key]) return url(FORGE.tok[key]);
-  if (!FORGE.wait[key]) FORGE.wait[key] = fetch(`https://api.dofusdb.fr/look?breedId=20&sexe=${sx}${items.map((i) => "&itemIds[]=" + i).join("")}`).then((r) => r.json()).then((t) => {
+  if (!FORGE.wait[key]) FORGE.wait[key] = fetch(`https://api.dofusdb.fr/look?breedId=${BREED[cls] || 20}&sexe=${sx}${items.map((i) => "&itemIds[]=" + i).join("")}`).then((r) => r.json()).then((t) => {
     if (typeof t !== "string") return; FORGE.tok[key] = t; document.querySelectorAll(`img[data-fk="${key}"]`).forEach((im) => (im.src = url(t)));
   }).catch(() => {}); // hors ligne : l'image locale reste
-  return { src: lookLocal("forge", sx, 0), key };
+  return { src: lookLocal(cls, sx, 0), key };
 }
 const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0);
   if (typeof u === "object") return `<img class="${cls}" src="${u.src}" data-fk="${u.key}" alt="" loading="lazy">`; // Forgelance recomposé (image locale en attendant)
@@ -427,7 +443,7 @@ function lookSheet(c) {
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
     ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
-    <p class="xs muted">${Object.keys(LK.ITEM_SKINS).length} coiffes et capes apparaissent déjà sur les héros ; les autres arriveront au fil des mises à jour.</p>
+    ${wardrobeHtml(c)}
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
 const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`;
@@ -452,6 +468,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "pionnier") ornHtml = `<span class="orn crown sprout">🌱</span>`;
   else if (orn === "phenix") ornHtml = `<span class="orn phx l">🔥</span><span class="orn phx r">🔥</span>`;
   else if (orn === "ame") ornHtml = `<span class="orn seal">💜</span>`;
+  else if (orn === "sablier") ornHtml = `<span class="orn seal">⏳</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
@@ -1115,6 +1132,7 @@ function dungeonsHtml() {
     <div class="pad stack" style="gap:10px">
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
         <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
+      ${defiBanner()}
       ${weeklyBanner()}
       ${flashBanner()}
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
@@ -2609,6 +2627,7 @@ function renderTeam() {
   const gearN = al.filter((a) => a.k === "gear").length;
   $("#main").innerHTML = `<div class="pagehead"><h1>Équipe</h1><span class="small muted">${team.length} / 8 dans l'équipe</span><span class="grow"></span>
     ${board ? "" : gearN ? `<button class="btn sm" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
+    ${board ? "" : `<button class="btn sm" data-act="sm-card">${G("share")} Partager mon équipe</button>`}
     <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button></div>
   <section class="tsum"><div class="k"><b class="num">${team.length} / 8</b><span>en équipe</span></div><div class="k"><b class="num">${team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–"}</b><span>niveau moyen</span></div>
     <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
@@ -4012,6 +4031,7 @@ function pageGo(id) {
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
+    case "defi": go("world", "world", "dungeons"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
@@ -4074,6 +4094,201 @@ document.addEventListener("keydown", (ev) => {
   else if (k === "Escape" && $("#wtip")) tipLater();
 });
 /* ---------- actions ---------- */
+/* ===================== 0.1.19 : lot Se montrer (logique dans js/defi.js) =====================
+   Défi du jour (encart dans Aventure › Donjons, résultat, classement), carte d'équipe à partager, garde-robe. */
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+const defiTierCur = () => (ui.defiTier && E.defiTierOk(S, ui.defiTier) ? ui.defiTier : E.defiTierDefault(S));
+const modChip = (m) => `<span class="fl-mod" data-tip="${h(E.STASIS_MODS[m].desc)}">${h(E.STASIS_MODS[m].name)}</span>`;
+function defiDots() {
+  const day = E.defiDay(); const won = new Set((S.defiStreak && S.defiStreak.days) || []);
+  return `<span class="df-dots">${[6, 5, 4, 3, 2, 1, 0].map((i) => { const d = day - i; const w = won.has(d); const lab = new Date(d * 86400000 + 43200000).toLocaleDateString("fr-FR", { weekday: "short", timeZone: "UTC" }).replace(".", "");
+    return `<i class="${w ? "on" : ""}${i === 0 ? " today" : ""}" data-tip="${h(lab)} : ${w ? "défi réussi" : i === 0 ? "pas encore réussi" : "pas de défi réussi"}">${w ? "✓" : i === 0 ? "?" : "·"}</i>`; }).join("")}</span>`;
+}
+function defiBanner() {
+  if (!E.team(S).length) return "";
+  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
+  const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid]; const streak = E.defiStreakNow(S);
+  const tiers = E.DEFI_TIERS.map((T) => { const ok = E.defiTierOk(S, T.id); return `<button data-act="sm-dtier" data-v="${T.id}" aria-pressed="${tid === T.id}" ${ok ? "" : `disabled data-tip="Ton héros le plus fort dépasse le niveau ${T.hi}"`}>${h(T.name)} <small>${T.lo}-${T.hi}</small></button>`; }).join("");
+  const tries = st.tries.filter((x) => x.tier === tid).length;
+  return `<div class="defi"><div class="df-head"><span class="wk">${G("target")} Défi du jour</span><span class="xs muted">${h(E.defiDate(def.day))} · nouveau défi dans <b>${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</b></span></div>
+    <span class="seg df-tiers">${tiers}</span>
+    <div class="df-main">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<div class="grow"><span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span><span class="xs muted">niv. ${dg.lvl}</span></span>
+      <div class="row df-mods">${def.mods.map(modChip).join("")}<span class="xs muted">${G("lock")} même hasard pour tous</span></div>
+      <div class="xs muted">Équipe : ${E.team(S).map((c) => h(c.name)).join(", ")} · combat automatique · essais illimités</div></div>
+      <div class="df-best">${best ? `<b class="num">${best.turns}</b><span>tours, ton record du jour</span>` : `<b class="num">–</b><span>${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`}</div></div>
+    <div class="df-foot">${defiDots()}<span class="xs"><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b>${streak < 7 ? ` · titre à 7` : streak < 30 ? ` · ornement à 30` : ""}</span>
+      <span class="xs">${st.chest ? `✓ coffre du jour ouvert` : `${IC("coffre")} coffre du jour à ouvrir`}</span><span class="grow"></span>
+      ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}${ON ? `<button class="btn sm" data-act="sm-dboard" data-v="${tid}">Classement</button>` : ""}<button class="btn primary" data-act="sm-dplay" data-v="${tid}">Lancer le défi</button></div></div>`;
+}
+let defiLast = null;
+function defiPlay(tid) {
+  const r = E.act(S, "defiPlay", tid);
+  if (typeof r === "string") { toast(r, "warn"); return; }
+  dirty = true; defiLast = r; render(); defiSheet(r);
+  if (r.chest && r.streak === 7) toast(`7 jours de suite : titre « ${E.DEFI_TITLE} » (onglet Héros) !`, "rare");
+  if (r.orn) toast("30 jours de suite : ornement « Sablier du défi » débloqué !", "rare");
+  if (r.win && r.improved) defiSubmit(r);
+}
+function defiSheet(r) {
+  if (!r) return;
+  const dg = DUNGEONS[r.did]; const T = E.defiTier(r.tier); const st = E.defiState(S);
+  const gain = r.prev && r.prev.win ? r.prev.turns - r.turns : 0;
+  const rooms = r.rooms.map((x, i) => `<li>${x.boss ? "Salle du boss" : `Salle ${i + 1}`} : ${x.turns} tour${x.turns > 1 ? "s" : ""} ${x.win ? "✓" : "✗"}</li>`).join("");
+  const tries = st.tries.filter((x) => x.tier === r.tier).slice(0, 5);
+  openSheet(`<h2>${r.win ? "Défi réussi !" : "Défi perdu"}</h2>
+    <div class="bigrec">${r.win ? `${r.turns} tours` : "Défaite"}</div>
+    <span class="small muted" style="text-align:center">${h(dg.name)} · stasis ${r.k} · palier ${h(T.name)} · ${r.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ")}</span>
+    ${r.win ? `<div class="chk"><div><span class="okc">✓</span><span>${r.improved ? (gain > 0 ? `<b>Nouveau record du jour</b>, ${gain} tour${gain > 1 ? "s" : ""} de mieux` : "<b>Premier record du jour</b> dans ce palier") : `Ton record du jour reste <b>${r.prev.turns} tours</b>`}</span></div>
+      <div><span class="okc">♥</span><span>PV restants de l'équipe : ${r.hp} %</span></div>
+      ${r.chest ? `<div><span class="okc">${IC("coffre")}</span><span>Coffre du jour : <b>${fmt(r.chest.kamas)} kamas</b> et <b>${r.chest.dust} ${h(E.POUSSIERE)}</b> · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}</span></div>` : st.chest ? `<div><span class="okc">✓</span><span>Coffre du jour déjà ouvert : les autres essais servent au classement.</span></div>` : ""}</div>`
+      : `<p class="small">Le hasard du défi est le même à chaque essai : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts, d'idoles ou de composition, puis relance.</p>`}
+    <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
+    ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
+    ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (onLive() ? "Envoi au serveur pour le classement…" : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
+    <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* le serveur rejoue le défi avec la partie en ligne : on l'envoie d'abord */
+async function defiSubmit(r) {
+  if (!ON || !onLive()) return;
+  const el = () => $("#dfSrv");
+  await onPush();
+  let res = await ON.submitDefi(r.tier);
+  if (res && res.err === "trop tôt") { await new Promise((ok) => setTimeout(ok, 11000)); res = await ON.submitDefi(r.tier); }
+  Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
+  const e = el(); if (!e) { if (res && res.ok) toast(`Défi vérifié par le serveur : ${res.turns} tours, ${res.rank}${res.rank === 1 ? "er" : "e"} du palier.`, "rare"); return; }
+  e.innerHTML = !res || res.net ? "Serveur injoignable : ton score sera envoyé au prochain essai." : res.ok ? `✓ <b>Vérifié par le serveur</b> : ${res.turns} tours, <b>${res.rank}${res.rank === 1 ? "er" : "e"}</b> du palier aujourd'hui.` : `Le serveur n'a pas validé ce score (${h(res.err || "refusé")}).`;
+}
+
+/* ---------- classement du défi (onglet Classements) ---------- */
+async function lbDefiFetch(out) {
+  const db = ON.db(), me = ON.user && ON.user.id, day = E.defiDay(), tier = LB.dtier || defiTierCur();
+  const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `${r.turns} tours · ${r.hp} % PV`, ok: true, team: r.team });
+  const { data } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).order("turns", { ascending: true }).order("hp", { ascending: false }).limit(50);
+  out.rows = (data || []).map(rec);
+  if (me) { const { data: m } = await db.from("lb_defi").select("user_id,pseudo,main,turns,hp,team,r").eq("day", day).eq("tier", tier).eq("user_id", me).limit(1); if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: m[0].r }); }
+  const { data: y } = await db.from("lb_defi").select("pseudo,r").eq("day", day - 1).eq("tier", tier).lte("r", 3).order("r", { ascending: true }).limit(3);
+  out.yest = (y || []).map((x) => x.pseudo);
+}
+function lbDefiHead() {
+  const tier = LB.dtier || defiTierCur(); const def = E.defi(tier); const dg = DUNGEONS[def.did];
+  return `<div class="row"><span class="seg">${E.DEFI_TIERS.map((T) => `<button data-act="lb-dtier" data-v="${T.id}" aria-pressed="${tier === T.id}">${h(T.name)}</button>`).join("")}</span></div>
+    <span class="small muted">Aujourd'hui : <b>${h(dg.name)}</b>, stasis ${def.k}, ${def.mods.map((m) => h(E.STASIS_MODS[m].name)).join(" et ")}. Le moins de tours gagne, puis le plus de PV restants ; chaque score est rejoué par le serveur. <button class="linkbtn" data-act="lb-dgo">Jouer le défi</button></span>`;
+}
+
+/* ---------- garde-robe (fiche Apparence) ---------- */
+const BREED = { feca: 1, osa: 2, enu: 3, sram: 4, xelor: 5, eca: 6, eni: 7, iop: 8, cra: 9, sadi: 10, sacri: 11, panda: 12, roub: 13, zobal: 14, steam: 15, elio: 16, hupper: 17, ougi: 18, forge: 20 };
+const SLOT_N = { coiffe: "Coiffe", cape: "Cape" };
+function wardrobeHtml(c) {
+  const W = E.wardrobe(S); const sl = ui.wSlot;
+  const rows = E.WARDROBE_SLOTS.map((s) => { const worn = c.equip && c.equip[s] && S.items[c.equip[s]] ? S.items[c.equip[s]].tpl : null; const v = c.show && c.show[s]; const shown = E.shownTpl(S, c, s);
+    return `<div class="wrow ${sl === s ? "on" : ""}"><span class="wlab">${SLOT_N[s]}</span><span class="grow xs">porte : <b>${worn ? h(ITEMS[worn].name) : "rien"}</b><br>montre : <b>${v === "none" ? "aucune" : shown ? h(ITEMS[shown].name) : "rien"}</b>${v ? "" : ` <span class="muted">(ce qu'il porte)</span>`}</span><button class="btn sm" data-act="sm-wslot" data-v="${s}">${sl === s ? "Fermer" : "Changer"}</button></div>`; }).join("");
+  let pick = "";
+  if (sl) {
+    const all = E.WARDROBE_ALL[sl]; const own = all.filter((t) => W[t]); const cur = c.show && c.show[sl];
+    const list = ui.wMissing ? all : own;
+    pick = `<div class="wpick"><div class="row between"><span class="seg"><button data-act="sm-wmiss" data-v="0" aria-pressed="${!ui.wMissing}">Obtenues (${own.length})</button><button data-act="sm-wmiss" data-v="1" aria-pressed="${!!ui.wMissing}">Toutes (${all.length})</button></span></div>
+      <div class="wgrid"><button class="wit ${!cur ? "on" : ""}" data-act="sm-wset" data-v="">${G("swap")}<span>Ce qu'il porte</span></button><button class="wit ${cur === "none" ? "on" : ""}" data-act="sm-wset" data-v="none">✕<span>Aucune</span></button>
+      ${list.map((t) => { const ok = !!W[t]; const db = !LK.ITEM_SKINS[t]; return `<button class="wit ${ok ? "" : "miss"} ${cur === t ? "on" : ""}" data-act="${ok ? "sm-wset" : "sm-wwhere"}" data-v="${t}" data-tip="${h(ITEMS[t].name)} (niv. ${ITEMS[t].lvl})${ok ? (db ? " · dessinée par DofusDB : le héros garde la tête et les couleurs d'origine de sa classe" : "") : " · pas encore obtenue : où la trouver ?"}">${im(itemImg(t), "", ITEMS[t].name)}<span>${h(ITEMS[t].name)}</span>${db && ok ? `<small>DofusDB</small>` : ""}</button>`; }).join("")}</div>
+      ${own.length ? "" : `<span class="xs muted">Chaque ${sl === "coiffe" ? "coiffe" : "cape"} obtenue une fois (butin, fabrication, achat) rejoint la garde-robe pour toujours.</span>`}</div>`;
+  }
+  return `<div class="small"><b>Garde-robe</b> <span class="xs muted">${E.wardrobeCount(S)} / ${E.WARDROBE_ALL.coiffe.length + E.WARDROBE_ALL.cape.length} apparences · gratuit · sans effet sur les caractéristiques</span></div>${rows}${pick}`;
+}
+
+/* ---------- carte d'équipe à partager ---------- */
+const CARD = { fmt: "large", theme: "emeraude", pseudo: true, stasis: true, dofus: true, idols: true };
+const gameUrl = () => (/\/beta\//.test(location.pathname) ? "https://idlus.github.io/beta/" : "https://idlus.github.io/");
+function cardSheet() {
+  if (!E.team(S).length) { toast("Il faut au moins un héros dans l'équipe.", "warn"); return; }
+  const ck = (k, n) => `<label class="row xs"><input type="checkbox" data-act="sm-cck" data-v="${k}" ${CARD[k] ? "checked" : ""}> ${n}</label>`;
+  openSheet(`<h2>Partager mon équipe</h2>
+    <div class="tcprev ${CARD.fmt}"><canvas id="tcCanvas" aria-label="Carte de l'équipe"></canvas></div>
+    <div class="row" style="gap:10px;flex-wrap:wrap"><span class="seg">${[["large", "Large · X"], ["carre", "Carré · Discord"]].map(([v, n]) => `<button data-act="sm-cfmt" data-v="${v}" aria-pressed="${CARD.fmt === v}">${n}</button>`).join("")}</span>
+      <span class="seg">${[["emeraude", "Émeraude"], ["nuit", "Nuit violette"]].map(([v, n]) => `<button data-act="sm-cthm" data-v="${v}" aria-pressed="${CARD.theme === v}">${n}</button>`).join("")}</span></div>
+    <div class="row" style="gap:12px;flex-wrap:wrap">${ck("pseudo", "Pseudo du compte")}${ck("stasis", "Stasis et donjon")}${ck("dofus", "Dofus et âmes")}${ck("idols", "Score d'idoles")}</div>
+    <p class="xs muted">Les héros ont leur tête d'origine, sans coiffe ni cape : le site d'Ankama qui dessine les héros équipés ne laisse pas recopier ses images. L'image est faite par ton navigateur, rien n'est envoyé.</p>
+    <div class="row"><button class="btn primary" data-act="sm-ccopy">Copier l'image</button><button class="btn" data-act="sm-csave">Enregistrer l'image</button><button class="btn" data-act="sm-cx">Publier sur X</button><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  drawCard();
+}
+const imgCache = {};
+const loadImg = (src) => imgCache[src] || (imgCache[src] = new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; }));
+let cardSeq = 0;
+async function drawCard() {
+  const cv = $("#tcCanvas"); if (!cv) return; const seq = ++cardSeq;
+  const wide = CARD.fmt === "large"; const W = wide ? 1200 : 1080, H = wide ? 675 : 1080;
+  const P = CARD.theme === "nuit" ? { a: "#1b1230", b: "#3a2462", line: "rgba(241,207,110,.55)", ink: "#f5ecff", muted: "#c9b8e6", band: "rgba(0,0,0,.28)" } : { a: "#0d3526", b: "#21704c", line: "rgba(241,207,110,.6)", ink: "#fbf4e2", muted: "#cfe6d4", band: "rgba(0,0,0,.25)" };
+  const team = E.team(S); const data = E.teamCardData(S); const mh = mainHero();
+  const owner = CARD.pseudo ? (ON && ON.profile && ON.profile.pseudo) || (mh && mh.name) : null;
+  const imgs = await Promise.all(team.map((c) => loadImg(lookLocal(c.cls, c.sex, c.head || 0))).concat([loadImg("assets/ui/logo.webp")]));
+  try { await document.fonts.load("40px Kavoon"); await document.fonts.load("800 20px Nunito"); } catch (e) {}
+  if (seq !== cardSeq || !$("#tcCanvas")) return;
+  cv.width = W; cv.height = H; const g = cv.getContext("2d");
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, P.a); bg.addColorStop(1, P.b); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.fillStyle = "rgba(255,255,255,.05)"; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(W * ((i * 0.37) % 1), H * ((i * 0.61) % 1), 80 + i * 22, 0, 7); g.fill(); }
+  g.strokeStyle = P.line; g.lineWidth = 4; g.strokeRect(18, 18, W - 36, H - 36);
+  const logo = imgs[imgs.length - 1]; if (logo) g.drawImage(logo, 44, 40, 64, 64);
+  g.fillStyle = "#f1cf6e"; g.font = "44px Kavoon, Georgia, serif"; g.textBaseline = "middle"; g.fillText(owner ? `L'équipe de ${owner}` : "Mon équipe", 124, 74, W - 420);
+  g.font = "800 22px Nunito, sans-serif"; g.fillStyle = P.muted; g.textAlign = "right"; g.fillText(gameUrl().replace("https://", "").replace(/\/$/, ""), W - 44, 74); g.textAlign = "left";
+  // héros : une rangée jusqu'à 4, deux au-delà
+  const n = team.length; const cols = wide ? (n <= 4 ? n : Math.ceil(n / 2)) : n <= 2 ? n : n <= 4 ? 2 : 4; const rowsN = Math.ceil(n / cols);
+  const top = 120, bottom = H - (wide ? 140 : 220); const cellW = (W - 88) / Math.max(cols, 1); const cellH = (bottom - top) / rowsN;
+  const sz = Math.min(cellW * 0.9, cellH - 64); const y0 = top + (bottom - top - rowsN * (sz + 56)) / 2;
+  team.forEach((c, i) => {
+    const col = i % cols, row = Math.floor(i / cols); const inRow = Math.min(cols, n - row * cols); const cx = 44 + (W - 88 - inRow * cellW) / 2 + cellW * col + cellW / 2, y = y0 + (sz + 56) * row;
+    g.fillStyle = "rgba(0,0,0,.22)"; g.beginPath(); g.ellipse(cx, y + sz * 0.96, sz * 0.32, sz * 0.07, 0, 0, 7); g.fill();
+    const im0 = imgs[i]; if (im0) g.drawImage(im0, cx - sz / 2, y, sz, sz);
+    g.textAlign = "center"; g.fillStyle = P.ink; g.font = `800 ${n > 4 ? 20 : 24}px Nunito, sans-serif`;
+    g.fillText(`${c.ren ? ROMAN[Math.min(10, c.ren)] + " · " : ""}${c.name}`, cx, y + sz + 18, cellW - 12);
+    g.fillStyle = P.muted; g.font = `700 ${n > 4 ? 16 : 18}px Nunito, sans-serif`; g.fillText(`${CLASSES[c.cls].name} · niv. ${c.lvl}`, cx, y + sz + 44, cellW - 12); g.textAlign = "left";
+  });
+  // bandeau des chiffres
+  const stats = [];
+  if (CARD.stasis && data.best) stats.push([`Stasis ${data.best.k}`, data.best.name]);
+  if (CARD.dofus) { stats.push([String(data.dofus), data.dofus > 1 ? "Dofus" : "Dofus"]); stats.push([`${data.souls} / ${data.soulsAll}`, "âmes d'archimonstres"]); }
+  if (CARD.idols && data.idols) stats.push([String(data.idols), "score d'idoles"]);
+  const by = H - (wide ? 128 : 208); const bh = wide ? 86 : 110;
+  g.fillStyle = P.band; g.fillRect(36, by, W - 72, bh);
+  const sw = (W - 72) / Math.max(1, stats.length);
+  stats.forEach(([v, l], i) => { const x = 36 + sw * i + sw / 2; g.textAlign = "center"; g.fillStyle = "#f1cf6e"; g.font = `${wide ? 30 : 36}px Kavoon, Georgia, serif`; g.fillText(v, x, by + bh * 0.38, sw - 16); g.fillStyle = P.ink; g.font = "700 17px Nunito, sans-serif"; g.fillText(l, x, by + bh * 0.76, sw - 16); });
+  g.textAlign = "left"; g.font = "800 18px Nunito, sans-serif"; g.fillStyle = P.muted;
+  const foot = H - (wide ? 30 : 56) - (wide ? 0 : 20);
+  if (mh && mh.title) { g.fillStyle = "#f1cf6e"; g.fillText(`« ${mh.title} »`, 44, foot); }
+  g.textAlign = "right"; g.fillStyle = P.muted; g.fillText(`Idlus · bêta ${GAME_VERSION}`, W - 44, foot); g.textAlign = "left";
+}
+const cardBlob = () => new Promise((ok) => { const cv = $("#tcCanvas"); if (!cv) return ok(null); cv.toBlob((b) => ok(b), "image/png"); });
+async function cardCopy() {
+  try { const b = await cardBlob(); await navigator.clipboard.write([new ClipboardItem({ "image/png": b })]); toast("Image copiée : colle-la avec Ctrl+V dans Discord ou X.", "rare"); }
+  catch (e) { toast("Copie impossible ici : utilise « Enregistrer l'image ».", "warn"); }
+}
+async function cardSave() {
+  const b = await cardBlob(); if (!b) return; const u = URL.createObjectURL(b); const a = document.createElement("a");
+  a.href = u; a.download = `idlus-equipe-${CARD.fmt}.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+function cardX() {
+  const txt = `Mon équipe sur Idlus, l'idle game inspiré de DOFUS ! ${gameUrl()}`;
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(txt)}`, "_blank", "noopener");
+  toast("Colle ensuite l'image dans le message (Copier l'image, puis Ctrl+V).");
+}
+
+function smAct(a, t) {
+  const d = t.dataset;
+  switch (a) {
+    case "sm-dtier": ui.defiTier = d.v; render(); return;
+    case "sm-dplay": defiPlay(d.v); return;
+    case "sm-dlast": if (defiLast) defiSheet(defiLast); else { const st = E.defiState(S); const x = st.tries[0]; if (x) toast(`Dernier essai : ${x.win ? `${x.turns} tours` : "défaite"}.`); } return;
+    case "sm-dboard": closeSheet(); LB.tab = "defi"; LB.dtier = d.v; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return;
+    case "sm-wslot": ui.wSlot = ui.wSlot === d.v ? null : d.v; lookSheet(char(ui.lookCid)); return;
+    case "sm-wmiss": ui.wMissing = d.v === "1"; lookSheet(char(ui.lookCid)); return;
+    case "sm-wset": { const r = E.act(S, "setShow", ui.lookCid, ui.wSlot, d.v || null); if (r) { toast(r, "warn"); return; } dirty = true; lookSheet(char(ui.lookCid)); render(); return; }
+    case "sm-wwhere": itemSheet(d.v); return;
+    case "sm-card": cardSheet(); return;
+    case "sm-cfmt": CARD.fmt = d.v; cardSheet(); return;
+    case "sm-cthm": CARD.theme = d.v; cardSheet(); return;
+    case "sm-cck": CARD[d.v] = t.checked; drawCard(); return;
+    case "sm-ccopy": cardCopy(); return;
+    case "sm-csave": cardSave(); return;
+    case "sm-cx": cardX(); return;
+  }
+}
 document.addEventListener("click", (ev) => {
   const tipT = ev.target.closest("[data-tip],[data-tipitem]");
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
@@ -4087,6 +4302,7 @@ document.addEventListener("click", (ev) => {
   if (ON && a && a.startsWith("on-")) { onAct(a, t); return; }
   if (ON && a && a.startsWith("lb-")) { lbAct(a, t); return; }
   if (a && /^(ch|adm)-/.test(a)) return; // chat et panel admin : js/chat.js
+  if (a && a.startsWith("sm-")) { if (S) smAct(a, t); return; }
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -4188,7 +4404,7 @@ document.addEventListener("click", (ev) => {
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
     case "installgame": installGame(); return;
-    case "looksheet": ui.lookCid = +d.id; lookSheet(char(+d.id)); return;
+    case "looksheet": ui.lookCid = +d.id; ui.wSlot = null; lookSheet(char(+d.id)); return;
     case "looksex": { const x = char(ui.lookCid); x.sex = d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
@@ -4618,7 +4834,7 @@ async function onBoot() {
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
 const LB = { tab: "lvl", cls: "", dmode: "week", did: null, cache: {} };
-const LB_TABS = [["lvl", "Niveau"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
+const LB_TABS = [["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
 const cmed = (cls) => (CLASSES[cls] ? `<span class="cm" style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
 const recTime = (t) => { t = Math.max(0, Math.round(t || 0)); const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
 const lvlTxt = (score) => { const ren = Math.max(0, Math.floor((score - 1) / VF.REB_LVL)); const l = score - ren * VF.REB_LVL; return `niv. ${l}${ren ? ` · ${ren} renaissance${ren > 1 ? "s" : ""}` : ""}`; };
@@ -4631,7 +4847,7 @@ function lbDefaultDid() {
 /* Requête d'un classement, gardée 60 s. */
 async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
-  const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did].join("|");
+  const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
@@ -4659,6 +4875,8 @@ async function lbFetch() {
       if (me) { const { data: m } = await db.from("lb_records").select("user_id,pseudo,main,k,t").eq("did", did).eq("user_id", me).limit(1);
         if (m && m[0]) out.me = Object.assign(rec(m[0]), { rank: await count(db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${m[0].k},and(k.eq.${m[0].k},t.lt.${m[0].t})`)) }); }
     }
+  } else if (t === "defi") {
+    await lbDefiFetch(out);
   } else if (t === "first") {
     const { data } = await db.from("firsts").select("kind,key,label,pseudo,user_id,at").order("at", { ascending: true }).limit(300);
     out.rows = data || [];
@@ -4674,11 +4892,12 @@ function lbListHtml(d) {
     return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${IC(r.kind === "lvl200" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
-  if (!d.rows.length) return `<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
+  const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
+  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
   const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls)}<span class="nm">${h(r.p)}</span><span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
-  return `<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
+  return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
 }
 function renderLadder() {
   if (!ON) { ui.tab = "home"; return renderHome(); }
@@ -4692,14 +4911,15 @@ function renderLadder() {
       ${LB.dmode === "week" ? `<div class="panel"><div class="pad stack"><div class="row between"><b>${IC("cle")} Donjons de la semaine</b><span class="tag good">fin dans ${wEnd >= 86400000 ? `${Math.floor(wEnd / 86400000)} j ${Math.floor((wEnd % 86400000) / 3600000)} h` : dur(wEnd / 1000)}</span></div>
         <span class="small muted">Un donjon par tranche de niveau, le même pour tout le monde. La stasis la plus haute gagne, puis le combat le plus rapide (temps mesuré par le serveur). Les 3 premiers de chaque donjon portent le titre « Maître de la semaine » la semaine suivante.</span>
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
+    : LB.tab === "defi" ? lbDefiHead()
     : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (213 au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? "" : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
     <nav class="subtabs">${LB_TABS.map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
-  const key = [LB.tab, LB.cls, LB.dmode, LB.did].join("|");
-  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did].join("|")) el.innerHTML = lbListHtml(d); })
+  const key = [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
+  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier].join("|")) el.innerHTML = lbListHtml(d); })
     .catch(() => { const el = $("#lbList"); if (el) el.innerHTML = `<div class="empty">Classement indisponible : pas de connexion au serveur.</div>`; });
 }
 async function lbProfile(u) {
@@ -4770,6 +4990,8 @@ function lbAct(a, t) {
   switch (a) {
     case "lb-tab": LB.tab = d.v; break;
     case "lb-dmode": LB.dmode = d.v; break;
+    case "lb-dtier": LB.dtier = d.v; break;
+    case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "lb-wk": LB.did = d.v; break;
     case "lb-prof": ui.lbHero = 0; lbProfile(d.u); return;
     case "lb-hero": { ui.lbHero = +d.v; const p = ui.lbProf; const g = $("#lbGear"); if (p && g) g.innerHTML = lbGearHtml(p.heroes[ui.lbHero]); document.querySelectorAll('[data-act="lb-hero"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); return; }

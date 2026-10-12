@@ -189,6 +189,15 @@
   ON.pseudos = async (ids) => { if (!ids.length) return {}; try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").in("id", ids)); const o = {}; (data || []).forEach((r) => { o[r.id] = r.pseudo; }); return o; } catch (e) { return {}; } };
   ON.findPseudo = async (p) => { try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1)); return (data && data[0]) || null; } catch (e) { return null; } };
 
+  /* 0.1.19 : défi du jour, rejoué par la même fonction serveur avec la partie en ligne. */
+  ON.submitDefi = async (tier) => {
+    if (!sb || !ON.user) return { net: true };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { defi: tier } }), 30000);
+      if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : st === 429 ? { ok: false, err: "trop tôt" } : { net: true }; }
+      return data || { net: true };
+    } catch (e) { return { net: true }; }
+  };
   ON.deleteAccount = async () => {
     const { error } = await withTimeout(sb.rpc("delete_my_account"));
     if (error) return error.message;

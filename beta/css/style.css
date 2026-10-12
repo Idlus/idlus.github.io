@@ -2347,3 +2347,53 @@ html{zoom:1}
 @media (max-width:760px){.adm .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .two{grid-template-columns:1fr}.adm .fiche{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* chat ouvert sur un grand écran : le jeu se décale pour laisser la place au chat */
 @media (min-width:1100px){body.chat-open .app{margin-left:max(0px,calc((100vw - 1180px - 400px) / 2));margin-right:400px}}
+/* ===================== 0.1.19 — lot Se montrer : défi du jour, garde-robe, carte d'équipe ===================== */
+.defi{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:linear-gradient(100deg,rgba(var(--glw),.16),rgba(var(--glw),.03) 60%),var(--panel2);border:1.5px solid rgba(var(--glw),.6)}
+.defi .df-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.defi .wk{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--gold2);display:flex;align-items:center;gap:4px}
+.defi .df-tiers button small{opacity:.7;font-size:10px}
+.defi .df-main{display:flex;gap:12px;align-items:center}
+.defi .df-main .dgboss{width:56px;height:56px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.defi .df-main .grow{display:flex;flex-direction:column;gap:3px;min-width:0}
+.defi .df-mods{gap:6px;flex-wrap:wrap;align-items:center}
+.defi .df-best{display:flex;flex-direction:column;align-items:flex-end;text-align:right;flex:none;font-size:12px;max-width:110px}
+.defi .df-best b{font-family:var(--font-title);font-size:26px;color:var(--gold2);font-weight:400}
+.defi .df-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.df-dots{display:inline-flex;gap:3px}
+.df-dots i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:900;background:rgba(0,0,0,.12);color:var(--muted);border:1px solid var(--line)}
+.df-dots i.on{background:var(--action);color:var(--action-ink);border-color:transparent}
+.df-dots i.today{outline:2px solid var(--gold2);outline-offset:1px}
+.df-try{display:flex;gap:8px;align-items:center;padding:5px 8px;border-radius:8px;background:var(--panel2);font-size:13px}
+.df-try.lose b{color:var(--danger)}
+.df-try .grow{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.df-yest{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.linkbtn{background:none;border:0;padding:0;color:var(--action);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer}
+/* garde-robe */
+.wrow{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.wrow.on{border-color:var(--gold)}
+.wrow .wlab{font-weight:900;width:52px;flex:none}
+.wpick{display:flex;flex-direction:column;gap:8px}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;max-height:300px;overflow:auto;padding:2px}
+.wit{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:10px;background:var(--panel2);border:1.5px solid var(--line);font:inherit;font-size:11px;line-height:1.15;color:var(--ink);cursor:pointer;text-align:center;position:relative}
+.wit img,.wit .uico{width:40px;height:40px;object-fit:contain}
+.wit span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.wit small{position:absolute;top:2px;right:3px;font-size:8px;font-weight:900;color:var(--muted)}
+.wit.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(var(--glw),.35)}
+.wit.miss{opacity:.45;filter:grayscale(1)}
+/* carte d'équipe */
+.tcprev{width:100%;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);background:#0d3526}
+.tcprev canvas{display:block;width:100%;height:auto}
+.tcprev.carre{max-width:420px;margin:0 auto}
+@media (max-width:640px){
+  .defi .df-main{align-items:flex-start}
+  .defi .df-main .dgboss{width:44px;height:44px}
+  .defi .df-foot .btn.primary{width:100%}
+}
+.defi .df-name{gap:6px;flex-wrap:wrap;align-items:center}
+@media (max-width:640px){
+  .defi .df-main{flex-wrap:wrap}
+  .defi .df-main .grow{flex:1 1 200px}
+  .defi .df-best{flex-direction:row;align-items:baseline;gap:6px;max-width:none;width:100%;text-align:left}
+  .defi .df-best b{font-size:22px}
+  .defi .df-tiers small{display:none}
+}

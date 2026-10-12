@@ -3,6 +3,7 @@
 // Elle relit la partie EN LIGNE du joueur, rejoue le donjon avec son équipe (3 tirages du hasard
 // choisis par le serveur) et n'écrit le record que si l'équipe le termine vraiment.
 // Le temps affiché dans les classements est le meilleur temps du serveur, pas celui annoncé par le jeu.
+// Se montrer : avec { defi: palier }, elle rejoue le défi du jour (même hasard pour tous) et garde le meilleur score du jour.
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -25,8 +26,9 @@ Deno.serve(async (req) => {
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
-  let body: { did?: string } = {};
+  let body: { did?: string; defi?: string } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
+  if (body.defi) return defi(db, user.id, String(body.defi));
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -85,3 +87,37 @@ Deno.serve(async (req) => {
   }
   return json(out);
 });
+
+// ---------- défi du jour (lot « Se montrer ») ----------
+// Le défi est tiré de la date (heure de Paris) : le serveur le rejoue avec la partie en ligne du joueur.
+// Le score officiel est celui du serveur : moins de tours, puis plus de PV.
+// deno-lint-ignore no-explicit-any
+async function defi(db: any, uid: string, tier: string) {
+  const now = Date.now();
+  if (!E.defiTier(tier)) return json({ ok: false, err: "palier inconnu" }, 400);
+  if (now - (lastTry.get(uid + ":defi") || 0) < WAIT_S * 1000) return json({ ok: false, err: "trop tôt", retry: WAIT_S }, 429);
+  lastTry.set(uid + ":defi", now);
+  const [{ data: save }, { data: lad }] = await Promise.all([
+    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
+  ]);
+  if (!save) return json({ ok: false, err: "aucune partie en ligne" }, 404);
+  if (lad && lad.flagged) return json({ ok: false, err: "en vérification" });
+  let S;
+  try { S = E.deserialize(save.data); } catch (_) { return json({ ok: false, err: "partie illisible" }); }
+  E.events.length = 0;
+  if (!E.defiTierOk(S, tier)) return json({ ok: false, err: "palier interdit pour cette équipe" });
+  const day = E.defiDay(now), def = E.defi(tier, day);
+  const r = E.defiSim(S, def, now);
+  if (!r.win) return json({ ok: false, tier, day, err: "l'équipe ne termine pas le défi" });
+  const team = E.team(S).map((c: { cls: string }) => c.cls);
+  const { data: old } = await db.from("defi").select("turns,hp").eq("user_id", uid).eq("day", day).eq("tier", tier).maybeSingle();
+  const out: Record<string, unknown> = { ok: true, defi: true, tier, day, did: def.did, dname: D.DUNGEONS[def.did].name, turns: r.turns, hp: r.hp };
+  if (!old || r.turns < old.turns || (r.turns === old.turns && r.hp > old.hp)) {
+    await db.from("defi").upsert({ user_id: uid, day, tier, did: def.did, turns: r.turns, hp: r.hp, team, at: new Date(now).toISOString() });
+    out.improved = true;
+  }
+  const { count: ahead } = await db.from("lb_defi").select("user_id", { count: "exact", head: true }).eq("day", day).eq("tier", tier).or(`turns.lt.${r.turns},and(turns.eq.${r.turns},hp.gt.${r.hp})`);
+  out.rank = (ahead || 0) + 1;
+  return json(out);
+}
