@@ -1,6 +1,22 @@
 {
-  "version": "0.1.19.4",
+  "version": "0.1.20",
   "versions": [
+    {
+      "v": "0.1.20",
+      "name": "Hôtel de vente",
+      "items": [
+        "Nouvelle famille « Communauté » dans la barre : l'Hôtel de vente et les Classements (les guildes la rejoindront à la prochaine mise à jour)",
+        "Hôtel de vente : achète et vends entre joueurs les équipements (chaque offre montre le jet exact, la forgemagie et le Rayonnant, comparés à ton héros), les ressources et les clefs par lots de 1, 10 ou 100, les runes et les consommables",
+        "Mise en vente : taxe de 2 % payée tout de suite, 20 annonces à la fois, 14 jours par annonce ; le prix ne peut pas descendre sous la revente au jeu ; changer le prix coûte de nouveau 2 %",
+        "L'objet quitte ton sac dès sa mise en vente ; s'il n'est pas vendu en 14 jours, ou si tu le retires, il revient tout seul (la taxe est perdue). Les kamas d'une vente arrivent dans ta bourse même si tu n'es pas connecté",
+        "Prix conseillé (moyenne des ventes sur 14 jours, petite courbe), prix le plus bas en vente, et bouton « Acheter au meilleur prix » pour ce qui manque à ta liste de courses",
+        "Onglets Mes ventes (annonces en cours, ventes des 7 derniers jours) et Historique (tes 40 derniers mouvements)",
+        "Échange direct entre deux joueurs, sans taxe : chacun pose objets, ressources et kamas, l'échange se fait quand les deux ont validé ; si quelqu'un change son offre, les validations s'annulent. Depuis l'Hôtel de vente ou en cliquant sur un pseudo dans le chat",
+        "Ne se vendent ni ne s'échangent : les Dofus, les trophées, les meubles, les idoles, les familiers et les montures, ainsi que les objets équipés, verrouillés ou rangés dans un équipement enregistré",
+        "Tout est vérifié par le serveur à partir de ta partie en ligne : il faut être connecté, et une partie retouchée par le panel de test peut regarder les prix mais pas vendre, acheter ni échanger",
+        "Panel admin : nouvel onglet Hôtel de vente (chiffres de la semaine, dernières ventes, annonces les plus chères avec un bouton pour en retirer une)"
+      ]
+    },
     {
       "v": "0.1.19.4",
       "name": "Jouer sans compte",

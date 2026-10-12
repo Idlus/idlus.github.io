@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.20 « Hôtel de vente » (bêta)
+- Multijoueur, étape 4 : hôtel de vente entre joueurs (équipements avec leur jet exact, ressources et clefs par lots de 1/10/100, runes, consommables ; taxe de 2 % à la mise en vente, 20 annonces, 14 jours, prix minimum = revente au jeu) et échange direct entre deux joueurs. Nouvelle famille « Communauté » (Hôtel de vente, Classements). Le serveur garde les annonces et renvoie des « opérations » (kamas, objets, ressources) que le jeu applique dans l'ordre (`S.hdv.op`). Code : `js/market.js`, `supabase/hdv.sql`, `supabase/hdv_data.sql` (généré par `node tools/build_hdv.js` : Dofus, trophées, meubles et idoles interdits).
+
 ## 0.1.19.4 « Jouer sans compte » (bêta)
 - Plus d'écran de connexion au premier lancement : on joue tout de suite sans compte (`onBoot` dans `js/ui.js` : l'écran de connexion ne vient que sur « Se connecter » ou après une erreur). L'écran de départ propose « Déjà un compte ? Se connecter ». La partie sans compte part sur le compte à l'inscription.
 

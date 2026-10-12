@@ -16,9 +16,21 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.19.4";
+const GAME_VERSION = "0.1.20";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.20", name: "Hôtel de vente", items: [
+    "Nouvelle famille « Communauté » dans la barre : l'Hôtel de vente et les Classements (les guildes la rejoindront à la prochaine mise à jour)",
+    "Hôtel de vente : achète et vends entre joueurs les équipements (chaque offre montre le jet exact, la forgemagie et le Rayonnant, comparés à ton héros), les ressources et les clefs par lots de 1, 10 ou 100, les runes et les consommables",
+    "Mise en vente : taxe de 2 % payée tout de suite, 20 annonces à la fois, 14 jours par annonce ; le prix ne peut pas descendre sous la revente au jeu ; changer le prix coûte de nouveau 2 %",
+    "L'objet quitte ton sac dès sa mise en vente ; s'il n'est pas vendu en 14 jours, ou si tu le retires, il revient tout seul (la taxe est perdue). Les kamas d'une vente arrivent dans ta bourse même si tu n'es pas connecté",
+    "Prix conseillé (moyenne des ventes sur 14 jours, petite courbe), prix le plus bas en vente, et bouton « Acheter au meilleur prix » pour ce qui manque à ta liste de courses",
+    "Onglets Mes ventes (annonces en cours, ventes des 7 derniers jours) et Historique (tes 40 derniers mouvements)",
+    "Échange direct entre deux joueurs, sans taxe : chacun pose objets, ressources et kamas, l'échange se fait quand les deux ont validé ; si quelqu'un change son offre, les validations s'annulent. Depuis l'Hôtel de vente ou en cliquant sur un pseudo dans le chat",
+    "Ne se vendent ni ne s'échangent : les Dofus, les trophées, les meubles, les idoles, les familiers et les montures, ainsi que les objets équipés, verrouillés ou rangés dans un équipement enregistré",
+    "Tout est vérifié par le serveur à partir de ta partie en ligne : il faut être connecté, et une partie retouchée par le panel de test peut regarder les prix mais pas vendre, acheter ni échanger",
+    "Panel admin : nouvel onglet Hôtel de vente (chiffres de la semaine, dernières ventes, annonces les plus chères avec un bouton pour en retirer une)",
+  ] },
   { v: "0.1.19.4", name: "Jouer sans compte", items: [
     "Plus besoin de compte pour commencer : au premier lancement, on choisit directement son héros et on joue, la partie est gardée sur l'appareil",
     "Sur l'écran de départ, « Déjà un compte ? Se connecter » pour retrouver sa partie sur un nouvel appareil",
@@ -559,10 +571,10 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]].concat(window.ONLINE && window.ONLINE.enabled ? [["ladder", "Classements", "trophee"]] : []) },
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
-];
+].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
 const famOf = (tab) => NAV.find((F) => F.pages.some((p) => p[0] === tab)) || NAV[0];
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
@@ -697,8 +709,8 @@ function renderNav() {
   const dot = (on, n) => (n ? `<span class="navcnt">${n}</span>` : on ? '<span class="navdot"></span>' : "");
   const fam = (G) => { const l = ui.famLast[G.id] || [G.pages[0][0], G.pages[0][3]];
     return `<button data-tab="${l[0]}" ${l[0] === "home" ? `data-home="${l[1] || "apercu"}"` : ""} data-fam="${G.id}" ${G === F ? 'aria-current="page"' : ""}>${med(G.ic)}<span>${G.n}</span>${dot(G.id === "adv" && qd, G.id === "team" ? nAl : 0)}</button>`; };
-  $("#nav").className = "main fams" + (fight ? " infight" : "");
-  $("#nav").innerHTML = fam(NAV[0]) + fam(NAV[1]) + `<button class="navfight" data-tab="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>` + fam(NAV[2]) + fam(NAV[3]) + `<span id="navlive">${navLiveHtml()}</span>`;
+  $("#nav").className = "main fams" + (fight ? " infight" : "") + (NAV.length > 4 ? " six" : "");
+  $("#nav").innerHTML = fam(NAV[0]) + fam(NAV[1]) + `<button class="navfight" data-tab="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>` + NAV.slice(2).map(fam).join("") + `<span id="navlive">${navLiveHtml()}</span>`;
   const cur = ui.tab === "home" ? (ui.home === "havre" ? "havre" : "apercu") : null;
   $("#subnav").innerHTML = F.pages.map(([tab, n, ic, hm]) => { const on = tab === ui.tab && (!hm || hm === cur);
     return `<button data-tab="${tab}" ${hm ? `data-home="${hm}"` : ""} ${on ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${n}</span>${dot(tab === "quests" && qd, tab === "team" ? nAl : 0)}</button>`; }).join("");
@@ -3857,6 +3869,7 @@ function render() {
   else if (ui.tab === "quests") renderQuests();
   else if (ui.tab === "ren") renderRenaissance();
   else if (ui.tab === "ladder") renderLadder();
+  else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else { ui.tab = "home"; renderHome(); }
   tipTick();
@@ -5161,6 +5174,7 @@ function bootGame(pushNow) {
   } else render();
   if (onLive()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
+  if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
@@ -5170,6 +5184,12 @@ function bootGame(pushNow) {
 window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG };
+/* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
+function cmpItem(c, it) {
+  const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
+  try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
+}
+Object.assign(window.DX.social, { fmt, im, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

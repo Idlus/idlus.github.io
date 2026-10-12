@@ -161,6 +161,7 @@
     el.innerHTML = `<div class="hd"><b>${h(p)}</b></div>
       <button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>
       ${!mine && canWrite() ? `<button data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${X().G("chat")} Lui écrire en privé</button>
+      ${window.MARKET ? `<button data-act="mk-trade-ask" data-p="${h(p)}">${X().G("chat")} Proposer un échange</button>` : ""}
       <button data-act="ch-ign" data-u="${h(u)}" data-v="${ign ? 0 : 1}">${X().G(ign ? "unlock" : "lock")} ${ign ? "Ne plus ignorer" : "Ignorer ses messages"}</button>
       <button class="red" data-act="ch-rep" data-u="${h(u)}" data-p="${h(p)}" data-id="${id}">${X().G("warn")} Signaler</button>` : ""}
       ${C.role && !mine ? `<button data-act="adm-find" data-q="${h(p)}">${X().G("shield")} Fiche admin</button>` : ""}`;
@@ -196,7 +197,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="Panel admin">${X().G("shield")}<span class="hide-sm">${C.role === "admin" ? "Admin" : "Modération"}</span></button>` : ""; }
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"], ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]].concat(isAdmin() ? [["ann", "Annonces"], ["equipe", "Équipe"]] : []).filter((x) => isAdmin() || x[0] !== "verif");
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"], ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]].concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(isAdmin() ? [["ann", "Annonces"], ["equipe", "Équipe"]] : []).filter((x) => isAdmin() || x[0] !== "verif");
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -205,6 +206,7 @@
     if (A.tab === "verif") A.flag = await r("adm_flagged");
     if (A.tab === "equipe") A.mods = await r("adm_mods");
     if (A.tab === "ann") A.anns = await ON.announces();
+    if (A.tab === "hdv") A.hdv = await r("adm_hdv"); // 0.1.20, voir js/market.js
   }
   function renderAdmin(main) {
     if (!C.role) { main.innerHTML = `<section class="panel"><div class="pad empty">Le panel admin est réservé à l'équipe d'Idlus.</div></section>`; return; }
@@ -222,6 +224,7 @@
   const dur = (sec) => { sec = Math.max(0, Math.round(sec || 0)); return sec >= 3600 ? `${Math.round(sec / 3600)} h` : `${Math.round(sec / 60)} min`; };
   function admBody() {
     const o = A.ov;
+    if (A.tab === "hdv" && window.MARKET) return window.MARKET.adminHtml(A.hdv);
     if (A.tab === "vue") {
       const st = o.settings || {};
       return `<div class="kpis"><div class="kpi"><b>${o.accounts}</b><span>comptes créés</span></div><div class="kpi"><b>${C.count || 1}</b><span>joueurs en ligne maintenant</span></div><div class="kpi"><b>${o.active}</b><span>parties envoyées ces 24 h</span></div><div class="kpi${o.reports + o.flagged ? " warn" : ""}"><b>${o.reports + (isAdmin() ? o.flagged : 0)}</b><span>choses à regarder</span></div></div>

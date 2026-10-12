@@ -87,6 +87,16 @@ const MOCK = () => {
       if (name === "adm_msgs" || name === "adm_mods" || name === "adm_flagged") return { data: [], error: null };
       if (name === "adm_reports") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", n: 1, reasons: "Spam", bodies: ["coucou"] }], error: null };
       if (name === "adm_announce") { log(); d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 7, body: a.p_body, banner: true, until: null }); put(d); return { data: null, error: null }; }
+      // 0.1.20 : hôtel de vente (une seule annonce, achetée une fois)
+      const tpl = Object.keys(window.DATA.ITEMS).find((k) => window.DATA.ITEMS[k].lvl === 60 && window.DATA.ITEMS[k].slot === "coiffe"); const T = window.DATA.ITEMS[tpl];
+      const item = { tpl, stats: Object.fromEntries(Object.entries(T.stats).map(([k, [lo]]) => [k, lo])) };
+      if (name === "hdv_search") return { data: d.hdvSold ? [] : [{ cat: "eq", key: tpl, name: T.name, lvl: T.lvl, slot: T.slot, n: 1, qty: 1, unit: 5000 }], error: null };
+      if (name === "hdv_offers") return { data: d.hdvSold ? [] : [{ id: 1, qty: 1, price: 5000, item, mine: false, exp: new Date(Date.now() + 864e5 * 14).toISOString() }], error: null };
+      if (name === "hdv_stats") return { data: { avg: 4800, week: 3, days: [{ d: "2026-10-10", u: 4600 }, { d: "2026-10-11", u: 5000 }] }, error: null };
+      if (name === "hdv_mine") return { data: { open: [], sold: [] }, error: null };
+      if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: [] } : null, error: null };
+      if (name === "hdv_buy") { if (d.hdvSold) return { data: { err: "Déjà vendu." }, error: null }; d.hdvSold = true; put(d); return { data: { ok: true, ops: [{ id: 1, p: { k: -5000, add: [item] }, t: "Acheté : " + T.name }] }, error: null }; }
+      if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
     },
@@ -165,7 +175,7 @@ const MOCK = () => {
       d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
         lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }] };
       localStorage.setItem("__mock", JSON.stringify(d)); });
-    await page.click('#nav [data-fam="adv"]'); await page.click('#subnav [data-tab="ladder"]');
+    await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="ladder"]');
     await page.waitForSelector(".podium .pod", { timeout: 10000 });
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
     for (const tb of ["dj", "album", "succ", "first", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
@@ -213,7 +223,19 @@ const MOCK = () => {
     m = await mock(); const calls = (m.admCalls || []).map((x) => x[0]);
     if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
     if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");
-    await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0)); await page.click('#nav [data-fam="adv"]');
+    await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
+    // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
+    await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click('#nav [data-fam="comm"]'); await page.click('#subnav [data-tab="hdv"]');
+    await page.waitForSelector('.mkdet [data-act="mk-ask"]', { timeout: 8000 });
+    const before = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length }));
+    await page.click('.mkdet [data-act="mk-ask"]'); await page.click('.mkdet [data-act="mk-buy"]'); await page.waitForTimeout(800);
+    const after = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length, op: window.DX.S.hdv && window.DX.S.hdv.op }));
+    if (after.n !== before.n + 1 || after.k !== Math.max(0, before.k - 5000) || after.op !== 1) fail("hôtel de vente : achat mal appliqué " + JSON.stringify([before, after]));
+    await page.click('.subtabs [data-act="mk-tab"][data-v="sell"]'); await page.waitForTimeout(300);
+    await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
+    if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
+    await page.click('#nav [data-fam="adv"]');
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);
