@@ -370,7 +370,7 @@ const CHANGELOG = [
     "Viseur rouge du Crâ et crocs de l'Ouginak sur leur cible ; mots de l'Eniripsa, portails de l'Eliotrope, trésors de l'Enutrof" ] },
   { v: "0.1.5", name: "Pionniers", items: [
     "Merci de tester ! Chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier » (Héros → Titre et Ornement)",
-    "Récompense exclusive : au lancement du multijoueur, tout le monde repart de zéro, mais les testeurs qui ont le rôle Pionnier sur le Discord retrouveront ce titre et cet ornement" ] },
+    "Récompense exclusive des testeurs de la première heure" ] },
   { v: "0.1.4", name: "Encore plus posés", items: [
     "Les combats ralentissent encore un peu : une action toutes les 0,78 seconde (0,52 avant la 0.1.3)",
     "Les récompenses par combat suivent : gains par heure toujours inchangés" ] },
