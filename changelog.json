@@ -1,6 +1,14 @@
 {
-  "version": "0.1.28.2",
+  "version": "0.1.28.3",
   "versions": [
+    {
+      "v": "0.1.28.3",
+      "name": "Double gain",
+      "items": [
+        "Événement « Double gain » (aussi sur le jeu public) : XP et butin x2 pour tout le monde jusqu'au mercredi 14 octobre à 23 h (heure de Paris), en combat, en chasse et pendant l'absence",
+        "Un bandeau doré en haut du jeu rappelle l'événement et le temps qui reste"
+      ]
+    },
     {
       "v": "0.1.28.2",
       "name": "Bêta hors ligne",

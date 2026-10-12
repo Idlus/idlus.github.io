@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.28.3 « Double gain »
+Même événement que le jeu public 0.1.28.3 : XP et butin x2 du 12/10 21 h au 14/10 23 h (heure de Paris) via `E.EVENT`, `E.eventOn`, `E.evMult` (engine.js : `giveRewards`, `resRateH`) et le bandeau `.updbar.ev`. Pour un prochain événement, changer `E.EVENT`.
+
 ## 0.1.28.2 « Bêta hors ligne »
 - Le multijoueur passe sur le jeu public (main, serveur Supabase actuel). `js/online.js` : un seul monde en ligne, le public ; /beta/ n'a plus de serveur. Le workflow « Serveur en ligne » quitte `beta` : le SQL et la fonction « record » ne se déploient plus qu'à une publication sur `main`.
 - Menu d'entrée de la bêta (`betaGate` dans ui.js) : « Tester hors ligne » ou « Jouer en ligne » (lien vers le public), choix gardé pour la session.

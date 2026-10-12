@@ -645,6 +645,8 @@ nav.main button{position:relative}
 .updbar .col{display:flex;flex-direction:column;gap:6px;flex:none}
 .updbar.new{align-items:center;border-color:rgba(126,224,106,.55);background:rgba(126,224,106,.1)}
 .updbar.new span{flex:1}
+.updbar.ev{align-items:center;border-color:rgba(242,196,75,.65);background:linear-gradient(135deg,rgba(242,196,75,.18),rgba(var(--glw),.10))}
+.updbar.ev span{flex:1}
 @media (max-width:640px){.updbar{flex-direction:column}.updbar .col{flex-direction:row}.updbar.new{flex-direction:row;flex-wrap:wrap}.updbar.new span{flex:1 1 100%}}
 /* application installée (3.0.3) : respect des encoches */
 @media (display-mode: standalone){

@@ -1843,6 +1843,10 @@
   /* Prospection d'équipe dégressive : 100 % jusqu'à 100, 50 % de 100 à 300, 25 % au-delà */
   E.effProspection = (pp) => (pp <= 100 ? pp : pp <= 300 ? 100 + (pp - 100) / 2 : 200 + (pp - 300) / 4);
   E.teamProspection = (S) => E.effProspection(E.teamProspectionRaw(S));
+  /* 0.1.28.3 : événement « Double gain », XP et butin x2 pour tout le monde (dates fixes ; 21 h → mercredi 23 h, heure de Paris) */
+  E.EVENT = { name: "Double gain", from: Date.parse("2026-10-12T19:00:00Z"), to: Date.parse("2026-10-14T21:00:00Z"), xp: 2, drop: 2 };
+  E.eventOn = (t = E.now()) => !!E.EVENT && t >= E.EVENT.from && t < E.EVENT.to;
+  E.evMult = (kind, t) => (E.eventOn(t) ? E.EVENT[kind] || 1 : 1);
   E.dropMult = (S) => {
     return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
   };
@@ -1866,7 +1870,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp"));
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde
@@ -1881,7 +1885,7 @@
     }
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -2064,7 +2068,7 @@
       const cyc = E.fightCycle(S);
       if (cyc) {
         const team = E.team(S).length; const grp = (1 + Math.min(8, team + 1)) / 2;
-        const dm = E.dropMult(S) * E.PACE_REW * (E.teamHas(S, "enu") ? 1.15 : 1);
+        const dm = E.dropMult(S) * E.evMult("drop") * E.PACE_REW * (E.teamHas(S, "enu") ? 1.15 : 1);
         let per = 0;
         sub.monsters.forEach((k) => { const m = MONSTERS[k]; if (!m) return; const d = m.drops.find(([r]) => r === name); const tq = E.huntTier(S, k) >= 1 ? 1.05 : 1;
           if (d) per += Math.min(1, E.resRate(d[1]) * dm * tq / 100) / sub.monsters.length;
