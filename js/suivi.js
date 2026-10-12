@@ -101,12 +101,12 @@
   E.carnetCat = (o) => Object.assign(ACT_CAT, o);
 
   const tick0 = E.tick;
-  E.tick = (S, dtMs) => {
-    if (!live(S)) return tick0(S, dtMs);
+  E.tick = (S, dtMs, realMs) => {
+    if (!live(S)) return tick0(S, dtMs, realMs);
     const C = pre(S); tresorPending(S);
     const h0 = S.history[0], k0 = S.kamas, inDg = !!S.dungeon;
-    let r; depth++; try { r = tick0(S, dtMs); } finally { depth--; }
-    const now = E.now(); let fk = 0, dg = inDg; const v = { on: dtMs / 1000, xp: 0, k: 0, f: 0, w: 0 };
+    let r; depth++; try { r = tick0(S, dtMs, realMs); } finally { depth--; }
+    const now = E.now(); let fk = 0, dg = inDg; const v = { on: (realMs == null ? dtMs : realMs) / 1000, xp: 0, k: 0, f: 0, w: 0 };
     for (let i = 0; i < S.history.length && S.history[i] !== h0 && i < 30; i++) {
       const h = S.history[i]; v.xp += h.xp || 0; v.f++; v.w += h.w ? 1 : 0; v.k += h.k || 0; fk += h.k || 0;
       const isDg = typeof h.z === "string" && h.z.startsWith("dg:"); if (isDg) dg = true;
