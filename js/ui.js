@@ -16,15 +16,20 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.25.1";
+const GAME_VERSION = "0.1.26.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "0.1.25.1", name: "Défi à portée de main", items: [
+  { v: "0.1.26.1", name: "Défi à portée de main", items: [
     "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
     "Accueil : une carte « Défi du jour » sous la bannière (donjon, stasis, modificateurs, ton record, ta série, le contenu du coffre). « Lancer le défi » le joue tout de suite et montre le résultat",
     "Le coffre du jour est chiffré : environ combien de kamas, et combien de Poussières de stasis",
     "Nouveau bouton « Changer d'équipe » sur la page du défi et après une défaite : comme le hasard est fixe, il faut changer quelque chose pour faire mieux",
     "Une pastille sur l'onglet Défi tant que le défi du jour n'est pas réussi ; dans Monde › Donjons, le grand encart devient une ligne qui mène à la page" ] },
+  { v: "0.1.26", name: "Codes cadeaux", items: [
+    "Codes cadeaux courts et faciles à taper (par exemple HALLOWEEN26), gardés par le serveur : on ne peut plus les deviner ni les fabriquer en lisant le jeu",
+    "Un code peut avoir un nombre d'utilisations limité, une date de fin, et être réservé aux joueurs avec un compte. Sans compte, un code sert une fois par partie",
+    "Un lien partagé sur le Discord ouvre le jeu avec le code déjà rempli dans Options › Jeu",
+    "Les codes peuvent maintenant offrir un objet d'équipement. Les anciens codes IDLUS-… marchent toujours jusqu'à leur date de fin" ] },
   { v: "0.1.25", name: "Options rangées", items: [
     "Le menu Options est rangé en 5 onglets : Affichage, Sons, Jeu, Sauvegarde (« Compte » quand tu es en ligne) et Aide. Il rouvre le dernier onglet utilisé",
     "Une carte par thème, le nom du réglage à gauche et le choix à droite ; les cases à cocher restent à côté de leur texte",
@@ -662,7 +667,7 @@ const ICONS = {
    Une page : [onglet, nom, icône, sous-page d'Accueil]. L'icône Héros est le symbole de classe du héros principal. */
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
-  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.25.1 : page Défi du jour
+  { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["exp", "Expédition", "carte"], ["defi", "Défi", "cle"], ["quests", "Quêtes", "quetes"]] }, // 0.1.24 : l'Expédition sans fin ; 0.1.26.1 : page Défi du jour
   { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
 ].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
@@ -3867,7 +3872,7 @@ function optionsSheet() {
   else if (tab === "sons") body = soundOptionsHtml() + notifOptionsHtml();
   else if (tab === "jeu") body = consignesHtml()
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
-    + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="IDLUS-…" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
+    + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
   else if (tab === "sauvegarde") body = (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
     + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
     + optSec("Copies de secours", "une toutes les 10 min de jeu, et une avant chaque mise à jour", `<div class="stack small" style="gap:6px">${copiesHtml()}</div>`)
@@ -4292,7 +4297,7 @@ function defiSheet(r) {
     ${ON ? `<div class="small muted" id="dfSrv">${r.win && r.improved ? (onLive() ? "Envoi au serveur pour le classement…" : "Connecte-toi pour entrer au classement du défi.") : ""}</div>` : ""}
     <div class="row"><button class="btn primary" data-act="sm-dplay" data-v="${r.tier}">Réessayer</button>${r.win ? "" : `<button class="btn" data-tab="team">Changer d'équipe</button>`}<button class="btn" data-act="sm-watch" data-v="${r.tier}">${G("target")} Regarder le combat</button>${ON ? `<button class="btn" data-act="sm-dboard" data-v="${r.tier}">Classement</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-/* ---------- 0.1.25.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons ---------- */
+/* ---------- 0.1.26.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons ---------- */
 const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
 /* récompense du coffre : la poussière est fixe, les kamas viennent d'une simulation gardée en mémoire (même équipe, même jour) */
 function defiReward(tid) {
@@ -4910,7 +4915,16 @@ document.addEventListener("click", (ev) => {
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
-    case "gift": { const r = E.redeemGift(S, ($("#giftCode") || {}).value || ""); if (r.err) { toast(r.err); return; } dirty = true; saveNow(); closeSheet(); render(); return; } /* la note « rare » du moteur s'affiche déjà en bulle */
+    case "gift": {
+      const code = ($("#giftCode") || {}).value || ""; ui.giftCode = code;
+      if (ui.giftBusy) return; ui.giftBusy = true; t.disabled = true;
+      /* 0.1.26 : codes du serveur (js/codes.js, bêta) ; les anciens codes IDLUS-… sont vérifiés sur place */
+      Promise.resolve(window.GIFTS ? window.GIFTS.redeem(S, code) : E.redeemGift(S, code)).then((r) => {
+        ui.giftBusy = false; t.disabled = false;
+        if (r.err) { toast(r.err); return; }
+        ui.giftCode = ""; dirty = true; saveNow(); closeSheet(); render();
+      });
+      return; } /* la note « rare » du moteur s'affiche déjà en bulle */
     case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast("L'équipe affrontera le protecteur au prochain combat."); break; }
     case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
@@ -5606,7 +5620,7 @@ function bootGame(pushNow) {
 }
 window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG };
+window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
 function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });

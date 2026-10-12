@@ -2653,7 +2653,23 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .optsec textarea{width:100%;box-sizing:border-box}
 @media (max-width:560px){.opttabs{gap:4px}.opttabs button{padding:5px 9px;font-size:12.5px}.optline:not(.optchk) .optctl{width:100%}}
 @media (min-width:700px){.sheet:has(.opttabs){height:min(88vh,820px)}.sheet:has(.opttabs)>div:last-child{margin-top:auto}}
-/* 0.1.25.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons */
+/* ===================== 0.1.26 — codes cadeaux (panel admin) ===================== */
+.adm .gc-f{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.adm .gc-f small{color:var(--muted);font-size:12px}
+.adm .gc-form input[type=text],.adm .gc-form input[type=number],.adm .gc-form input[type=date],.adm .gc-form select{border-radius:10px;border:2px solid var(--frame);background:var(--panel2);padding:6px 8px;min-width:0;color:var(--ink)}
+.adm .gc-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.adm .gc-rw{display:grid;grid-template-columns:150px minmax(0,1fr) 90px 34px;gap:6px;align-items:center}
+@media (max-width:480px){.adm .gc-rw{grid-template-columns:minmax(0,1fr) 80px 34px}.adm .gc-rw select:first-child{grid-column:1/-1}.adm .gc-two{grid-template-columns:1fr}}
+.adm .gc-card{background:var(--panel2);border:2px solid var(--gold);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.adm .gc-code{font-family:var(--font-title);font-size:22px;letter-spacing:1px;color:var(--title);word-break:break-all}
+.adm .gc-pub{display:flex;flex-direction:column;gap:6px;background:var(--panel2);border-radius:12px;padding:10px}
+.adm .gc-pub textarea{min-height:60px;font-size:12px;word-break:break-all}
+.adm .gc-ln{align-items:flex-start}
+.adm .gc-main{flex:1;min-width:160px}
+.adm .gc-use{display:flex;flex-direction:column;gap:2px;font-size:13px;min-width:90px;font-variant-numeric:tabular-nums}
+.adm .gc-bar{display:block;height:6px;border-radius:9px;background:var(--panel3);overflow:hidden}.adm .gc-bar i{display:block;height:100%;background:var(--gold)}
+.adm .gc-users{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;font-size:13px}.adm .gc-users span{background:var(--panel2);border-radius:8px;padding:2px 8px}
+/* 0.1.26.1 : page Défi du jour, carte de l'Accueil, ligne dans Donjons */
 .dfhome{margin-top:14px;border:1.5px solid rgba(var(--glw),.6);background:linear-gradient(100deg,rgba(var(--glw),.16),rgba(var(--glw),.03) 60%),var(--panel)}
 .dfhome.done{border-color:var(--line)}
 .dfh-in{display:flex;gap:12px;align-items:center;padding:10px 14px}

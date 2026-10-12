@@ -716,7 +716,7 @@
   /* ---------------- Codes cadeaux (0.1.10.1) ----------------
      Code = « IDLUS- » + contenu (JSON en base64url) + « - » + signature. Fabriqué par tools/code_cadeau.js, vérifié sans serveur :
      ce n'est pas inviolable, mais un code inventé ou modifié est refusé. Contenu : id (unique), k kamas, r ressources [[nom, n]],
-     c consommables [[id, n]], t titre, o ornement (clé d'un ornement à débloquer), e date de fin (AAAA-MM-JJ), m message. Un code par partie. */
+     c consommables [[id, n]], i objets [[modèle, n]] (0.1.26), t titre, o ornement (clé d'un ornement à débloquer), e date de fin (AAAA-MM-JJ), m message. Un code par partie. */
   E.GIFT_SALT = "idlus·cadeau·v1·pousse-du-pionnier";
   const fnv = (str, seed) => { let x = seed >>> 0; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619) >>> 0; return x >>> 0; };
   E.giftSig = (body) => (fnv(E.GIFT_SALT + body, 2166136261).toString(36).padStart(7, "0") + fnv(body + E.GIFT_SALT, 33554467).toString(36).padStart(7, "0")).toUpperCase();
@@ -735,23 +735,30 @@
     if (d.k) p.push(`${d.k.toLocaleString("fr-FR")} kamas`);
     (d.r || []).forEach(([n, q]) => p.push(`${q} × ${n}`));
     (d.c || []).forEach(([id, q]) => p.push(`${q} × ${(D.CONSUMABLES[id] || { name: id }).name}`));
+    (d.i || []).forEach(([id, q]) => p.push(`${q} × ${(ITEMS[id] || { name: id }).name}`)); // 0.1.26 : objets d'équipement
     if (d.t) p.push(`titre « ${d.t} »`);
     if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name(null)} »`);
     return p.join(", "); };
-  E.redeemGift = (S, code, now = E.now()) => {
-    const r = E.readGift(code); if (r.err) return r;
-    const d = r.data; S.gifts = S.gifts || {};
-    if (S.gifts[d.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
-    if (d.e && now > new Date(d.e + "T23:59:59").getTime()) return { err: `Ce code a expiré le ${new Date(d.e).toLocaleDateString("fr-FR")}.` };
+  /* Donne le contenu d'un code déjà vérifié (ancien code IDLUS-… ou code du serveur, 0.1.26). */
+  E.giveGift = (S, d, now = E.now()) => {
+    S.gifts = S.gifts || {};
     if (d.k) S.kamas += Math.max(0, Math.round(+d.k) || 0);
     (d.r || []).forEach(([n, q]) => { if (RES[n]) addRes(S, n, Math.max(1, Math.round(+q) || 1)); });
     (d.c || []).forEach(([id, q]) => { if (D.CONSUMABLES[id]) E.addCons(S, id, Math.max(1, Math.round(+q) || 1)); });
+    (d.i || []).forEach(([id, q]) => { if (ITEMS[id]) for (let n = Math.min(10, Math.max(1, Math.round(+q) || 1)); n > 0; n--) E.rollItem(S, id, { radiant: false }); });
     S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
     if (d.t && !S.titlesExtra.includes(d.t)) S.titlesExtra.push(String(d.t).slice(0, 40));
     if (d.o && ORN[d.o]) S.unlocks[d.o] = 1;
     S.gifts[d.id] = now;
     const txt = E.giftText(d); note(S, `Code cadeau : ${txt}${d.m ? ` · ${d.m}` : ""}`, "rare");
     return { ok: true, txt, msg: d.m || "" };
+  };
+  E.redeemGift = (S, code, now = E.now()) => {
+    const r = E.readGift(code); if (r.err) return r;
+    const d = r.data; S.gifts = S.gifts || {};
+    if (S.gifts[d.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
+    if (d.e && now > new Date(d.e + "T23:59:59").getTime()) return { err: `Ce code a expiré le ${new Date(d.e).toLocaleDateString("fr-FR")}.` };
+    return E.giveGift(S, d, now);
   };
 
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
