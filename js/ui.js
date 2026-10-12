@@ -3700,7 +3700,20 @@ function pushCopy(txt, why, st, v) {
   writeCopies([Object.assign({ t: Date.now(), why, v: v || GAME_VERSION, txt }, meta), ...same, ...a.filter((c) => c.why !== why)]);
 }
 const lastCopy = () => Math.max(0, ...readCopies().filter((c) => c.why === "auto").map((c) => c.t));
+/* Déménagement de l'adresse du jeu : l'ancienne adresse renvoie ici avec la sauvegarde dans l'adresse (#transfert=…).
+   On ne la reprend que si ce navigateur n'a encore aucune partie ici, puis on retire le texte de l'adresse. */
+function takeTransfer() {
+  const m = /^#transfert=(.+)$/.exec(location.hash || ""); if (!m) return;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  try {
+    if (localStorage.getItem(LS_KEY)) return;
+    const txt = decodeURIComponent(escape(atob(decodeURIComponent(m[1])))); E.deserialize(txt);
+    localStorage.setItem(LS_KEY, txt); transferred = true;
+  } catch (e) {}
+}
+let transferred = false;
 function loadSave() {
+  takeTransfer();
   let raw = null;
   try { raw = localStorage.getItem(LS_KEY); if (raw) return E.deserialize(raw); } catch (e) {}
   if (!raw) return null;
@@ -3791,6 +3804,7 @@ function start() {
   S = loadSave();
   copyBeforeUpdate(S);
   if (restoredCopy) { saveNow(); setTimeout(() => toast(`Sauvegarde illisible : copie du ${copyDate(restoredCopy.t)} restaurée.`, "rare"), 600); }
+  if (transferred) setTimeout(() => toast("Partie récupérée depuis l'ancienne adresse du jeu. Bienvenue sur la nouvelle !", "rare"), 600);
   if (S) {
     setTheme(S.settings.theme || "dark");
     ui.cid = S.chars[0].id;
