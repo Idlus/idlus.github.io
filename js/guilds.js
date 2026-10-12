@@ -199,7 +199,7 @@
     const mechs = E.bossMechs(def.did).map((k) => E.BOSS_MECHS[k] && E.BOSS_MECHS[k].name).filter(Boolean);
     const tries = Math.max(0, E.GBOSS_TRIES - b.today); const pct = Math.min(100, (b.pts / b.goal) * 100);
     const s = S(); const lvl = b.lvl || Math.max(...E.team(s).map((c) => (c.ren ? 200 : c.lvl)), 1);
-    const steps = b.steps.map((st) => { const c = E.gbossChest(st.step, lvl); return `<span class="gbstep ${st.reached ? "on" : ""}" style="left:${st.step}%" data-tip="${st.step} % : ${fmt(c.k)} kamas et ${c.dust} Poussières de stasis${st.claimed ? " (ouvert)" : ""}">${X().IC("coffre")}</span>`; }).join("");
+    const steps = b.steps.map((st) => { const c = E.gbossChest(st.step, lvl); return `<span class="gbstep ${st.reached ? "on" : ""}" style="left:${st.step}%" data-tip="${st.step} % · ${E.GBOSS_CHEST_NAMES[st.step]} : ${fmt(c.k)} kamas et ${c.dust} Poussières de stasis${st.claimed ? " (ouvert)" : ""}">${X().IC("coffre")}</span>`; }).join("");
     const r = G.res && G.res.gboss ? G.res : null;
     const fight = `<div class="row"><button class="btn primary" data-act="g-boss" ${!tries || G.busy || G.fighting ? "disabled" : ""}>${G.fighting ? "Combat en cours…" : tries ? `Affronter le boss (${tries} essai${tries > 1 ? "s" : ""} aujourd'hui)` : "Plus d'essai aujourd'hui"}</button>
       ${r ? `<span class="small"><b class="num">${fmt(r.points)}</b> points en ${r.rounds} tours · ${r.alive} héros debout</span>` : `<span class="xs muted">Ton équipe actuelle, au niveau de tes héros, pendant ${E.GBOSS_ROUNDS} tours.</span>`}</div>`;
@@ -212,7 +212,7 @@
       <div class="pad stack">
         <div class="row between small"><b>Jauge de la guilde</b><span><b class="num">${fmt(b.pts)}</b> / ${fmt(b.goal)} points · ${Math.floor(pct)} %</span></div>
         <div class="gbbar"><i style="width:${pct.toFixed(1)}%"></i>${steps}</div>
-        <span class="xs muted">Objectif : ${fmt(E.GBOSS_PER_MEMBER)} points par membre (au moins 5 comptés). Un coffre s'ouvre à 25, 50, 75 et 100 % pour chaque membre qui a frappé au moins une fois. Tes points cette semaine : <b>${fmt(b.mine)}</b>.</span>
+        <span class="xs muted">Objectif : ${fmt(E.GBOSS_PER_MEMBER)} points par membre (au moins 5 comptés). Un coffre s'ouvre à 25 % (Coffre de l'assaut), 50 % (de la brèche), 75 % (du siège) et 100 % (de la victoire) pour chaque membre qui a frappé au moins une fois. Tes points cette semaine : <b>${fmt(b.mine)}</b>.</span>
         ${fight}
       </div></section>
       <div class="grid2g even"><section class="panel"><div class="phead"><h2>Dans ta guilde</h2></div><div class="list">${hit}</div></section>
@@ -230,8 +230,8 @@
       const a = p.atk; const rest = a ? Date.parse(a.ends) - srvNow() : 0;
       const atk = a ? `<div class="gatk"><b>⚔ Attaqué !</b> <span class="small">encore ${left(rest)} pour le défendre${a.n ? ` · ${a.n} défenseur${a.n > 1 ? "s" : ""} battu${a.n > 1 ? "s" : ""} (+${a.n} monstre${a.n > 1 ? "s" : ""})` : ""}</span>
           ${(a.by || []).length ? `<br><span class="xs muted">Ont tenté : ${a.by.map(h).join(", ")}</span>` : ""}
-          <div class="row" style="margin-top:6px"><button class="btn sm primary" data-act="g-def" data-g="${p.id}" ${a.done || G.fighting ? "disabled" : ""}>${G.fighting === p.id ? "Combat en cours…" : a.done ? "Tu as déjà tenté" : "Défendre avec mon équipe"}</button><span class="xs muted">Victoire : poche +25 %, XP de guilde et un coffre pour toi. Sans victoire en 2 h : la moitié de la poche est perdue.</span></div></div>` : "";
-      const r = G.res && G.res.perco && G.res.id === p.id ? `<div class="small ${G.res.win ? "" : "muted"}">${G.res.win ? `🛡 Victoire en ${G.res.rounds} tours ! Poche +25 %${G.res.gxp ? `, +${fmt(G.res.gxp)} XP de guilde` : ""}, coffre reçu.` : `Défaite contre ${G.res.foes} monstres : le suivant en affrontera un de plus.`}</div>` : "";
+          <div class="row" style="margin-top:6px"><button class="btn sm primary" data-act="g-def" data-g="${p.id}" ${a.done || G.fighting ? "disabled" : ""}>${G.fighting === p.id ? "Combat en cours…" : a.done ? "Tu as déjà tenté" : "Défendre avec mon équipe"}</button><span class="xs muted">Victoire : poche +25 %, XP de guilde et la Bourse du Percepteur pour toi. Sans victoire en 2 h : la moitié de la poche est perdue.</span></div></div>` : "";
+      const r = G.res && G.res.perco && G.res.id === p.id ? `<div class="small ${G.res.win ? "" : "muted"}">${G.res.win ? `🛡 Victoire en ${G.res.rounds} tours ! Poche +25 %${G.res.gxp ? `, +${fmt(G.res.gxp)} XP de guilde` : ""}, Bourse du Percepteur reçue.` : `Défaite contre ${G.res.foes} monstres : le suivant en affrontera un de plus.`}</div>` : "";
       return `<section class="panel gperco ${a ? "hot" : ""}"><div class="phead"><h2>${h(p.name || p.sid)}</h2><span class="xs muted">niv. ${p.zlvl || "?"} · posé par ${h(p.by || "?")} · ${p.wins} défense${p.wins > 1 ? "s" : ""} réussie${p.wins > 1 ? "s" : ""}, ${p.losses} pillage${p.losses > 1 ? "s" : ""}</span></div><div class="pad stack">
         <div class="gbar"><i style="width:${Math.min(100, f * 100).toFixed(1)}%"></i><b>poche ${Math.round(f * 100)} %${f > 1 ? " (bonus de défense)" : f >= 1 ? " (pleine)" : ""}</b></div>
         <div class="row small"><span class="coin"></span><b class="num">${fmt(Math.floor(cap.k * Math.min(f, 2.5)))}</b> ${res}</div>

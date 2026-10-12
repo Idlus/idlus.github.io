@@ -471,6 +471,8 @@
       if (X.floor % E.EXP_PALIER === 0) {
         if (X.pot) { applyChest(S, X, X.pot, 2); X.rew.dbl++; S.cnt = S.cnt || {}; S.cnt.expDoubles = (S.cnt.expDoubles || 0) + 1; X.pot = null; }
         const ch = makeChest(S, X); giveEclats(S, ch.eclats); queue(X, { t: "pari", chest: ch });
+        S.cnt = S.cnt || {}; const rec = S.cnt.expChestRec !== undefined ? S.cnt.expChestRec : Math.floor((S.cnt.expBestAll || 0) / E.EXP_PALIER) * E.EXP_PALIER;
+        if (X.floor > rec) { S.cnt.expChestRec = X.floor; E.addCons(S, "coffre_argent"); note(S, `Nouveau record d'Expédition : palier ${X.floor} ! Coffre en argent offert.`, "rare"); } // 0.1.30
       }
       const pool = Object.keys(E.EXP_BLESS).filter((b) => !X.bless.includes(b));
       const nb = E.campHas(S, "bless2") ? 2 : 1;

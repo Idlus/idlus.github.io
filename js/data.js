@@ -379,9 +379,11 @@
     parchemin_avis:    { name: "Parchemin d'Avis",   icon: "📜", kind: "util", auto: true, desc: "Utilisé automatiquement quand vous changez un avis de recherche : le changement est gratuit." },
     cristal_fm:        { name: "Cristal de Forgemagie", icon: "💎", kind: "util", desc: "La prochaine forgemagie ne peut pas faire baisser une autre caractéristique." },
     filet:             { name: "Filet de capture", icon: "🪢", kind: "util", auto: true, desc: "Automatique : en chassant dans une zone de montures sauvages, chaque victoire peut capturer une monture. Le filet n'est utilisé que si la capture réussit." },
-    coffre_bois:       { name: "Coffre en bois",     icon: "📦", kind: "chest", tier: 0, desc: "Quelques ressources et des kamas." },
-    coffre_argent:     { name: "Coffre en argent",   icon: "🎁", kind: "chest", tier: 1, desc: "Ressources, kamas et un consommable." },
-    coffre_or:         { name: "Coffre en or",       icon: "💰", kind: "chest", tier: 2, desc: "Beaucoup de ressources, de kamas et un consommable rare." },
+    coffre_bois:       { name: "Coffre en bois",       icon: "📦", img: "bois",       kind: "chest", tier: 0, desc: "Environ 5 minutes de chasse : kamas selon ton niveau, poussière de stasis et ressources." },
+    coffre_argent:     { name: "Coffre en argent",     icon: "🎁", img: "argent",     kind: "chest", tier: 1, desc: "Environ 15 minutes de chasse : kamas, poussière de stasis, ressources et un bonbon." },
+    coffre_or:         { name: "Coffre en or",         icon: "💰", img: "or",         kind: "chest", tier: 2, desc: "Environ 30 minutes de chasse : kamas, poussière, ressources, un consommable rare et des Éclats de trouvaille." },
+    coffre_obsidienne: { name: "Coffre en obsidienne", icon: "🔮", img: "obsidienne", kind: "chest", tier: 3, desc: "Environ 1 heure de chasse : kamas, poussière, ressources, 2 consommables rares, des Éclats et un objet de ton niveau." },
+    coffre_douze:      { name: "Coffre des Douze",     icon: "🌟", img: "douze",      kind: "chest", tier: 4, desc: "Environ 2 heures de chasse : kamas, poussière, ressources, 3 consommables rares, des Éclats, 2 objets de ton niveau et un Grand parchemin." },
   };
   /* 3.1 : parchemins de caractéristiques (Petit +1, Grand +3), jusqu'à +100 par caractéristique et par héros */
   [["fo", "Force"], ["ine", "Intelligence"], ["cha", "Chance"], ["age", "Agilité"], ["vit", "Vitalité"], ["sa", "Sagesse"]].forEach(([k, n]) => {

@@ -2325,12 +2325,13 @@
   };
 
   /* Coffre de boss : un objet garanti des monstres du donjon (niveau proche du boss) */
+  E.stasisChest = (k) => (k >= 10 ? "coffre_obsidienne" : k >= 7 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"); // 0.1.30
   E.bossChest = (S, did, rew) => {
     const dg = DUNGEONS[did]; const pool = new Set();
     [dg.boss, ...dg.rooms.flatMap((r) => r.mobs)].forEach((k) => (MONSTERS[k].items || []).forEach(([t]) => { if (ITEMS[t] && ITEMS[t].lvl <= dg.lvl + 5 && ITEMS[t].lvl >= dg.lvl - 25) pool.add(t); }));
     const arr = [...pool]; if (!arr.length || E.itemCount(S) >= E.itemCap(S)) return;
     const tpl = pick(arr); const it = E.rollItem(S, tpl, {});
-    note(S, `Coffre du boss : ${ITEMS[tpl].name} !`, "rare");
+    note(S, `Butin du boss : ${ITEMS[tpl].name} !`, "rare");
     if (rew) rew.items.push(it.uid);
   };
 
@@ -2341,7 +2342,7 @@
     const out = [];
     const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
     if (!SI.firsts[k]) { SI.firsts[k] = E.now();
-      const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
+      const chest = E.stasisChest(k); E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
       if (E.firstPassStones) E.firstPassStones(S, k, out); // 0.1.13 : Pierres d'âme
       E.celebrate({ t: "stasis", did, k, chest });
       if (k === 10) { let n = 0; E.team(S).forEach((c) => { c.stasisScrolls = c.stasisScrolls || {}; if (!c.stasisScrolls[did]) { c.stasisScrolls[did] = 1; n++; } });
