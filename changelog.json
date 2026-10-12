@@ -1,6 +1,15 @@
 {
-  "version": "0.1.32",
+  "version": "0.1.32.1",
   "versions": [
+    {
+      "v": "0.1.32.1",
+      "name": "Héros à portée de clic",
+      "items": [
+        "Équipe et héros : les têtes de tous vos héros restent visibles à côté de la fiche, même tout en bas de l'équipement. Un clic change de héros sans remonter la page ni quitter l'onglet",
+        "Sur PC, c'est une colonne à droite (les flèches ↑ ↓ du clavier passent aussi d'un héros à l'autre). Sur téléphone, c'est une bande collée en haut de l'écran",
+        "Point vert : un meilleur objet attend dans le sac. Pastille orange : des points à répartir. Tête pâle : héros au repos ou en récolte. Le niveau est écrit sous chaque tête"
+      ]
+    },
     {
       "v": "0.1.32",
       "name": "Encyclopédie rangée",
