@@ -7,13 +7,15 @@ const P = { VIEW: 1n << 10n, SEND: 1n << 11n, PUB_THREADS: 1n << 35n, PRIV_THREA
 const TEXT = 0, VOICE = 2, CAT = 4, FORUM = 15;
 
 const WELCOME = `# Bienvenue sur le Discord d'idlus !
-**idlus** est un idle game de fan inspiré de DOFUS : monte ton équipe de héros, farme, équipe-les et affronte les donjons jusqu'à la stasis 10.
+**idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte les donjons jusqu'à la stasis 10. Tes héros se battent tout seuls, même quand tu n'es pas là.
 
 🎮 **Jouer** : ${GAME}
-🧪 **Version de test** (les nouveautés en avant-première) : ${BETA}
+🧪 **Version de test** : ${BETA}
+Tout le contenu de la future 1.0 y arrive en premier : niveau 200, familiers et montures, idoles, archimonstres et Dofus, Renaissance, comptes en ligne, classements, chat et défi du jour.
 
 📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>.
-🐞 Un bug ? Ouvre un fil dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
+🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
+🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
 
 *idlus est un projet de fan non officiel, sans lien avec Ankama.*`;
 const RULES = `# Règles du serveur
@@ -26,23 +28,28 @@ const RULES = `# Règles du serveur
 
 En cas de souci, mentionne un @Modérateur. Bon jeu ! ⚔️`;
 const ROADMAP = `# Feuille de route
-Ce qui arrive dans idlus, dans l'ordre (sans dates, ça sort quand c'est prêt) :
+Sans dates : chaque partie sort quand elle est prête.
 
-**Version 0.1** (testée pièce par pièce sur la version de test)
-• Niveau 200 : nouvelles régions, nouveaux donjons et beaucoup de mécaniques de boss
-• Familiers et montures (dragodindes, muldos, volkornes, élevage)
-• Idoles
-• Archimonstres et Dofus
-• Renaissance (repartir au niveau 1 avec un héros plus fort)
+**✅ Déjà jouable sur la version de test**
+• Niveau 200 : 839 monstres, 51 nouveaux donjons, Frigost, Saharach, Sakaï, l'Île des Wabbits…
+• Familiers, dragodindes, muldos et volkornes, avec l'élevage
+• Idoles, archimonstres et Dofus, Renaissance
+• Compte en ligne (connexion avec Discord ou par e-mail), classements, chat, défi du jour, garde-robe
 
-**Version 1.0 : le multijoueur**
-• Guildes, boss de guilde et classements
+**🔨 En préparation**
 • Hôtel des ventes et échanges
-• Kolizéum`;
+• Guildes et boss de guilde
+• Kolizéum : des combats contre l'équipe d'autres joueurs
+
+**🚀 Version 1.0 : le multijoueur**
+• Tout ce contenu arrive dans le jeu public
+• Tout le monde repart de zéro ; les testeurs qui ont le rôle Pionnier retrouvent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
 const BETA_TXT = `# Version de test
 ${BETA}
-Les nouveautés arrivent ici avant le jeu public. Ta sauvegarde de test est séparée de celle du jeu.
-Raconte ce que tu as testé (bugs, équilibrage, ressenti) dans <#BETAFB>.`;
+Tout le contenu de la future 1.0 arrive ici avant le jeu public. Ta partie de test est séparée de celle du jeu public.
+• Connecte-toi avec Discord (Options › Compte) pour garder ta partie en ligne et entrer dans les classements.
+• Chaque partie de test reçoit le titre « Pionnier d'Idlus » ; les testeurs actifs reçoivent le rôle Pionnier, qui le leur rendra à la 1.0.
+Les nouveautés de chaque mise à jour sont annoncées ici. Raconte ce que tu as testé dans <#BETAFB>.`;
 
 const ROLES = [
   { key: "creator", name: "Créateur", color: 0xf0c35a, hoist: true },
@@ -60,7 +67,7 @@ const PLAN = [
   { cat: "📢 Infos", lock: true, chans: [
     { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'idlus" },
     { key: "UPDATES", name: "note-de-mise-a-jour", topic: "Notes de chaque mise à jour, publiées automatiquement" },
-    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui arrive bientôt", text: ROADMAP },
+    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui est déjà en test et ce qui arrive", text: ROADMAP },
     { key: "ALMANAX", name: "almanax", topic: "Le bonus et l'offrande du jour, publiés chaque matin" } ] },
   { cat: "💬 Communauté", chans: [
     { key: "CHAT", name: "général", topic: "Discussion libre autour d'idlus" },
@@ -144,10 +151,18 @@ async function main() {
   chans = await api("GET", `/guilds/${gid}/channels`);
   await pass(true);
 
+  const me = (await api("GET", "/users/@me")).id;
   for (const s of PLAN) for (const c of s.chans) if (c.text) {
+    const want = fill(c.text, ids);
+    const mine = (await api("GET", `/channels/${ids[c.key]}/pins`)).find((m) => m.author && m.author.id === me); // texte épinglé par le robot : on le met à jour
+    if (mine) {
+      if (mine.content === want) console.log("  texte à jour :", c.name);
+      else { await api("PATCH", `/channels/${ids[c.key]}/messages/${mine.id}`, { content: want, allowed_mentions: { parse: [] } }); console.log("  texte mis à jour :", c.name); }
+      continue;
+    }
     const last = await api("GET", `/channels/${ids[c.key]}/messages?limit=1`);
-    if (last.length) { console.log("  texte déjà présent :", c.name); continue; }
-    const m = await api("POST", `/channels/${ids[c.key]}/messages`, { content: fill(c.text, ids), allowed_mentions: { parse: [] } });
+    if (last.length) { console.log("  texte déjà présent (pas du robot) :", c.name); continue; }
+    const m = await api("POST", `/channels/${ids[c.key]}/messages`, { content: want, allowed_mentions: { parse: [] } });
     try { await api("PUT", `/channels/${ids[c.key]}/pins/${m.id}`); } catch (e) {}
     console.log("  texte publié :", c.name);
   }
