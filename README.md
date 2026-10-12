@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.11 « Idoles » (bêta)
+- **36 idoles** en 9 familles, 4 par famille : chacune rend les combats plus durs et apporte un score ; **+0,5 % d'XP et de butin par point**, en plus de la stasis (jusqu'à +102,5 % en chasse, +30 % en donjon où le score compte jusqu'à 60).
+- Jusqu'à 6 actives, une par famille ; doublon avec un modificateur de stasis ignoré ; 3 jeux d'idoles enregistrables.
+- Fabriquées une fois chez le **Bricoleur** ; statuette teintée et animée selon le rang et la famille. Bouton « Idoles » en combat, en chasse, sur la fiche de donjon et la page Équipe. Six succès.
 ## 0.1.10.2 « Chasse itinérante » (bêta)
 - **Chasse itinérante** : option sur l'écran de combat, l'équipe suit les étoiles de zone toute seule (en jeu et hors ligne), en échange de 15 % d'XP et de butin en moins.
 - Correction : les étoiles gagnées par une zone sont bien comptées quand on y revient.
