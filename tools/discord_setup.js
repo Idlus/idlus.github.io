@@ -43,8 +43,7 @@ Sans dates : chaque partie sort quand elle est prête.
 • Mode marchand : ta propre boutique, visible par tous les joueurs
 
 **🚀 Version 1.0**
-• Tout le monde repart de zéro (les parties sont encore calculées sur ton appareil)
-• Les testeurs qui ont le rôle Pionnier retrouvent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
+• Les testeurs qui ont le rôle Pionnier reçoivent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
 const BETA_TXT = `# Version de test
 ${BETA}
 Les nouveautés arrivent ici avant le jeu public. La version de test n'a pas de serveur : en l'ouvrant, choisis « Tester hors ligne » (ta partie de test reste sur ton appareil) ou « Jouer en ligne » pour revenir au jeu public.
