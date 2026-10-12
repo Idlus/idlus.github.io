@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.5";
+const GAME_VERSION = "0.1.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.6", name: "Passifs visibles", items: [
+    "Chaque classe montre son passif en combat : flammes de Colère du Iop, horloge du Xélor, glyphes du Féca sous toute l'équipe, masques du Zobal, postures du Forgelance",
+    "La roue de l'Ecaflip tourne au début du combat et s'arrête sur Pile, Face, Jackpot ou Perdu",
+    "Le Pandawa titube puis s'endort, le Sacrieur rougit en souffrant, les runes de l'Huppermage s'allument",
+    "Viseur rouge du Crâ et crocs de l'Ouginak sur leur cible ; mots de l'Eniripsa, portails de l'Eliotrope, trésors de l'Enutrof" ] },
   { v: "0.1.5", name: "Pionniers", items: [
     "Merci de tester ! Chaque partie de la version de test reçoit le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier » (Héros → Titre et Ornement)",
     "Récompense exclusive : au lancement du multijoueur, tout le monde repart de zéro, mais les testeurs qui ont le rôle Pionnier sur le Discord retrouveront ce titre et cet ornement" ] },
@@ -1315,7 +1320,8 @@ function axStates(F, e, i) {
   if (F.ents.some((m) => m.alive && m.doom && m.doom.i === i)) add("warn", "", "#ff6b6b", "Condamné");
   return ch.slice(0, 4).join("");
 }
-function axDecor(n, e) { if (!n || n.querySelector(".sts")) return; n.insertAdjacentHTML("beforeend", `<div class="sts"></div><span class="sc"></span>${e.side === "c" ? '<span class="dz"></span>' : ""}`); }
+function axDecor(n, e) { if (!n || n.querySelector(".sts")) return; n.insertAdjacentHTML("beforeend", `<div class="sts"></div><span class="sc"></span>${e.side === "c" ? '<span class="dz"></span><span class="gly"></span>' : '<span class="vis"></span><span class="prey"></span>'}`);
+  const lw = e.side === "c" && !e.summon && n.querySelector(".lookwrap"); if (lw) lw.insertAdjacentHTML("beforeend", `<div class="psv"></div>`); }
 function axUpdateEnt(F, A, e, i, n) {
   if (A.view !== "scene") return n.classList.toggle("dead", !e.alive);
   if (!e.alive && n.dataset.ko !== "1") { n.dataset.ko = "1"; axDeath(A, n, e); }
@@ -1326,10 +1332,62 @@ function axUpdateEnt(F, A, e, i, n) {
   n.classList.toggle("frozen", on && e.stun > 0);
   n.classList.toggle("golden", on && e.gold > 0);
   n.classList.toggle("dzon", on && e.side === "c" && F.ents.some((m) => m.alive && m.charging));
+  axPassive(F, A, e, i, n);
 }
 function axVictory(F, A) {
   if (A.view !== "scene" || !axOn() || F.result !== "win") return;
   A.nodes.forEach((n, i) => { const e = F.ents[i]; if (!n || !e || e.side !== "c" || !e.alive) return; const b = axBody(n); if (b && b.animate) b.animate([{ transform: "none" }, { transform: "translateY(-18px)", offset: 0.25 }, { transform: "none", offset: 0.5 }, { transform: "translateY(-10px)", offset: 0.75 }, { transform: "none" }], { duration: 800, delay: 250 + i * 90, easing: "ease-out" }); });
+}
+/* passifs de classe visibles (lot 2) : jauges, horloge, masques, runes, postures, glyphes, roulette… */
+const AX_RUNE = { f: "#ff7a3c", e: "#4fa8ff", t: "#c08a3e", a: "#57d06a" };
+const axPips = (n, v, c, round) => `<span class="pvg${round ? " round" : ""}" style="--c:${c}">${Array.from({ length: n }, (_, k) => `<i class="${k < v ? "on" : ""}"></i>`).join("")}</span>`;
+function axPassive(F, A, e, i, n) {
+  const on = axOn() && e.alive;
+  if (e.side !== "c") { // marques posées sur les monstres (viseur du Crâ, crocs de l'Ouginak)
+    n.classList.toggle("crm", on && e.mark > 0);
+    const og = on ? F.ents.find((h) => h.alive && h.cls === "ougi" && h.lastTgt === e && (h.ougi || 0) > 0) : null;
+    n.classList.toggle("prm", !!og); if (og) n.style.setProperty("--prey", 0.7 + og.ougi * 0.12);
+    return;
+  }
+  const box = n.querySelector(".psv"); if (!box) return;
+  const pv = n._pv || (n._pv = {}); let k = "", cls = "";
+  if (on) switch (e.cls) {
+    case "iop": { const s = e.stack || 0; k = axPips(6, s, "#ff6a2a"); if (s >= 6) cls = "burn";
+      if (pv.v >= 6 && s < 6 && axFull()) { const p = axPt(A, n, 0.45); axPuff(A, p.x, p.y, "rgba(255,120,40,.85)", 8); axMk(A, "ring", p.x, p.y, { "--c": "#ff6a2a" }); }
+      pv.v = s; break; }
+    case "xelor": { const c = e.clock || 0;
+      k = `<svg class="clk" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#1a2440" stroke="#f1cf6e" stroke-width="3"/>${Array.from({ length: 12 }, (_, j) => `<circle cx="${20 + 13 * Math.sin(j * Math.PI / 6)}" cy="${20 - 13 * Math.cos(j * Math.PI / 6)}" r="${j < c ? 1.9 : 1.2}" fill="${j < c ? "#9fd6ff" : "#5d6b8a"}"/>`).join("")}<line x1="20" y1="20" x2="20" y2="8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" transform="rotate(${c * 30} 20 20)"/><circle cx="20" cy="20" r="2.4" fill="#f1cf6e"/></svg>`;
+      if (pv.v >= 10 && c < pv.v) { A.nodes.forEach((m, j) => { const h2 = F.ents[j]; if (!m || !h2 || h2.side !== "c" || !h2.alive || h2.summon) return; const p = axPt(A, m, 0.5); if (axFull()) axMk(A, "ring", p.x, p.y, { "--c": "#4fa8ff" }); floatAt(m, "+1 PA", "#9fd6ff", true); }); }
+      pv.v = c; break; }
+    case "panda": k = e.cuve ? `<span class="zzz">Zzz</span>` : axPips(5, e.ivresse || 0, "#f1cf6e", true); cls = e.cuve ? "sleep" : e.ivresse > 0 ? "sway" : ""; n.style.setProperty("--sw", (e.ivresse || 0) * 1.6 + "deg"); break;
+    case "ougi": k = axPips(5, e.ougi || 0, "#e0382b"); break;
+    case "hupper": { const els = e.els || [];
+      k = `<span class="hrn">${["f", "e", "t", "a"].map((x, j) => `<i class="${els.includes(x) ? "on" : ""}" style="--c:${AX_RUNE[x]};--a:${j * 90}deg"></i>`).join("")}</span>`;
+      if (pv.v >= 4 && els.length < pv.v && axFull()) { const p = axPt(A, n, 0.5); ["#ff7a3c", "#4fa8ff", "#c08a3e", "#57d06a"].forEach((c, j) => setTimeout(() => axMk(A, "ring", p.x, p.y, { "--c": c }), j * 90)); }
+      pv.v = els.length; break; }
+    case "sacri": cls = "suf"; n.style.setProperty("--suf", Math.min(1, (e.suffer || 0) / 15).toFixed(2)); break;
+    case "feca": if (F.glyph) A.el.dataset.glyph = F.glyph; if (F.glyph !== pv.g) { pv.g = F.glyph; A.el.querySelectorAll(".gly").forEach((g) => pulse(g, "gpop")); } break;
+    case "forge": cls = e.posture || ""; if (e.posture === "rempart") k = `<span class="rmp"></span>`; break;
+    case "zobal": if (e.mask) k = `<span class="msk ${e.mask}">${e.mask === "atk" ? "Psycho" : e.mask === "def" ? "Pleutre" : "Hyst."}</span>`; break;
+    case "eni": if (e.eniDmg) k = `<span class="pvc" style="--c:#ff7ad0">♥ +15 % attaque</span>`; else if (e.eniHeal) k = `<span class="pvc" style="--c:#8fe36a">♥ +15 % soin</span>`; break;
+    case "elio": if (e.portal) { cls = "portal"; k = `<span class="ptl l"></span><span class="ptl r"></span>`; } break;
+    case "roub": if (F.ents.filter((m) => m.side === "m" && m.alive).length >= 4) k = `<span class="pvc" style="--c:#ffb347">Artificier +15 %</span>`; break;
+    case "eca": if (F.roulette) k = `<span class="pvc" style="--c:${F.roulette === "jackpot" ? "#ffd84d" : F.roulette === "perdu" ? "#9a9a9a" : F.roulette === "pile" ? "#3fa34d" : "#2f86d6"}">${F.roulette === "pile" ? "Pile" : F.roulette === "face" ? "Face" : F.roulette === "jackpot" ? "Jackpot !" : "Perdu"}</span>`;
+      if (F.roulette && !A.rlt) { A.rlt = true; if (axFull() && (F.round || 1) <= 1) axWheel(A, F.roulette); } break;
+    case "enu": { const t = F.treasure || 0; if (t > (A.tre || 0) && axFull()) { const p = axPt(A, n, 0.2); const b = axMk(A, "bag", p.x, p.y - 30); b.animate([{ transform: "translate(-50%,-50%) translateY(20px) scale(.4)", opacity: 0 }, { transform: "translate(-50%,-50%) translateY(-14px) scale(1.1)", opacity: 1, offset: 0.4 }, { transform: "translate(-50%,-50%)", opacity: 1, offset: 0.7 }, { transform: "translate(-50%,-50%) translateY(-10px)", opacity: 0 }], { duration: 1100 }); axLater(b, 1150); floatAt(n, "Trésor !", "#ffd84d", true); }
+      A.tre = t; break; }
+  }
+  if (box.dataset.k !== k) { box.innerHTML = k; box.dataset.k = k; }
+  if (n.dataset.pv !== cls) n.dataset.pv = cls;
+}
+/* roue de l'Ecaflip au début du combat */
+function axWheel(A, res) {
+  const MID = { pile: 72, face: 216, jackpot: 306, perdu: 342 }, LBL = { pile: "Pile ! +20 % de dégâts", face: "Face ! +15 % de soins", jackpot: "Jackpot ! Butin ×2", perdu: "Perdu… −5 % de dégâts" };
+  const w = document.createElement("div"); w.className = "axwheel"; w.innerHTML = `<i class="ptr"></i><div class="disc"><b style="--a:72deg">Pile</b><b style="--a:216deg">Face</b><b style="--a:306deg">★</b><b style="--a:342deg">✕</b></div>`;
+  A.fxl.appendChild(w); const d = w.querySelector(".disc");
+  d.animate([{ transform: "rotate(0)" }, { transform: `rotate(${1440 - MID[res]}deg)` }], { duration: 1600, easing: "cubic-bezier(.15,.6,.25,1)", fill: "forwards" });
+  setTimeout(() => { const t = document.createElement("div"); t.className = "axwres" + (res === "jackpot" ? " jp" : res === "perdu" ? " ko" : ""); t.textContent = LBL[res]; w.appendChild(t); }, 1650);
+  w.animate([{ opacity: 0, transform: "translateX(-50%) scale(.6)" }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.08 }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.9 }, { opacity: 0, transform: "translateX(-50%) scale(1)" }], { duration: 3000, fill: "forwards" }); axLater(w, 3050);
 }
 function updateCombat(force) {
   const F = S.fight; const arena = $("#arena"); if (!arena) return;
