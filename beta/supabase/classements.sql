@@ -19,6 +19,10 @@ create table if not exists public.ladder (
   flag_reason text,
   updated_at timestamptz not null default now()
 );
+-- 0.1.17 : héros principal (niveau, titre) pour le chat, Dofus obtenus pour les annonces
+alter table public.ladder add column if not exists main_lvl int not null default 1;
+alter table public.ladder add column if not exists title text;
+alter table public.ladder add column if not exists dofus jsonb not null default '[]'::jsonb;
 alter table public.ladder enable row level security;
 drop policy if exists "classement lisible" on public.ladder;
 create policy "classement lisible" on public.ladder for select using (not flagged or user_id = auth.uid());
@@ -130,10 +134,11 @@ begin
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at)
-    values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now())
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus)
+    values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
+      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb))
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
-      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(),
+      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus,
       flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
   select flagged into bad from public.ladder where user_id = new.user_id;
   delete from public.ladder_class where user_id = new.user_id;

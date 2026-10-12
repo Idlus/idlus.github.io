@@ -62,6 +62,11 @@ Deno.serve(async (req) => {
   if (better(old)) { await db.from("records").upsert({ user_id: user.id, did, dname: dg.name, k, t: best, at: new Date(now).toISOString() }); out.improved = true; }
   const { count: ahead } = await db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${k},and(k.eq.${k},t.lt.${best})`);
   out.rank = (ahead || 0) + 1;
+  // nouveau numéro 1 du donjon : annoncé dans le chat
+  if (out.improved && out.rank === 1) {
+    const { data: l } = await db.from("ladder").select("main,main_lvl,flagged").eq("user_id", user.id).maybeSingle();
+    if (l && !l.flagged) await db.from("chat_msgs").insert({ ch: "g", user_id: user.id, pseudo: prof.pseudo, cls: l.main, lvl: l.main_lvl, kind: "ann", data: { t: "top1", did, dname: dg.name, k, t: best } });
+  }
 
   // donjon de la semaine
   const w = V.weekIdx(now);

@@ -138,7 +138,7 @@
         if (!data) { setState("conflict"); return "conflict"; }
         ON.setLink({ uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok"); return "ok";
-      } catch (e) { setState(offlineErr(e) ? "offline" : "offline"); return "offline"; }
+      } catch (e) { setState(/suspendu/i.test(String(e && e.message)) ? "suspended" : "offline"); return "offline"; }
       finally { pushing = null; }
     })();
     pushing = p; return p;
@@ -155,6 +155,40 @@
       return data || { net: true };
     } catch (e) { return { net: true }; }
   };
+  /* ---------- chat et panel admin (0.1.19, supabase/chat.sql) ---------- */
+  const rpc = async (name, args) => {
+    try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }
+    catch (e) { return { err: "Pas de connexion au serveur." }; }
+  };
+  ON.rpc = rpc;
+  ON.chatLoad = async (ch) => {
+    let q = sb.from("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
+    q = ch === "p" ? q.eq("ch", "p") : q.eq("ch", "g");
+    try { const { data, error } = await withTimeout(q, 12000); return error ? [] : (data || []).reverse(); } catch (e) { return null; }
+  };
+  /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */
+  let chan = null;
+  ON.chatLive = (onMsg, onCount) => {
+    if (!sb || chan) return;
+    chan = sb.channel("chat-general", { config: { presence: { key: (ON.user && ON.user.id) || "anon-" + Math.random().toString(36).slice(2) } } });
+    chan.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_msgs" }, (p) => { if (p && p.new) onMsg(p.new); })
+      .on("presence", { event: "sync" }, () => { try { onCount(Object.keys(chan.presenceState()).filter((k) => !/^anon-/.test(k)).length); } catch (e) {} })
+      .subscribe((st) => { if (st === "SUBSCRIBED" && ON.user && ON.profile) chan.track({ p: ON.profile.pseudo }); });
+  };
+  ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };
+  ON.chatSend = async (body, to, item) => { const r = await rpc("chat_send", { p_body: body, p_to: to || null, p_item: item || null }); return r.err ? r.err : r.data || null; };
+  ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
+  ON.chatMe = async () => (await rpc("chat_me")).data || {};
+  ON.role = async () => (ON.user ? (await rpc("my_role")).data || null : null);
+  ON.ignores = async () => { try { const { data } = await withTimeout(sb.from("ignores").select("other").eq("user_id", ON.user.id)); return (data || []).map((r) => r.other); } catch (e) { return []; } };
+  ON.setIgnore = async (other, on) => {
+    try { const q = on ? sb.from("ignores").insert({ user_id: ON.user.id, other }) : sb.from("ignores").delete().eq("user_id", ON.user.id).eq("other", other); const { error } = await withTimeout(q); return error ? error.message : null; }
+    catch (e) { return "Pas de connexion au serveur."; }
+  };
+  ON.announces = async () => { try { const { data } = await withTimeout(sb.from("announces").select("id,body,until,at").eq("banner", true).order("id", { ascending: false }).limit(3)); return data || []; } catch (e) { return []; } };
+  ON.pseudos = async (ids) => { if (!ids.length) return {}; try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").in("id", ids)); const o = {}; (data || []).forEach((r) => { o[r.id] = r.pseudo; }); return o; } catch (e) { return {}; } };
+  ON.findPseudo = async (p) => { try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1)); return (data && data[0]) || null; } catch (e) { return null; } };
+
   ON.deleteAccount = async () => {
     const { error } = await withTimeout(sb.rpc("delete_my_account"));
     if (error) return error.message;
