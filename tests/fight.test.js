@@ -6,6 +6,7 @@ const E = require("../js/engine.js");
 require("../js/systems.js");
 require("../js/pets.js");
 require("../js/mounts.js");
+require("../js/idols.js");
 const D = require("../js/data.js");
 
 // aléatoire reproductible (mulberry32)
@@ -151,4 +152,43 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   const old = JSON.parse(JSON.stringify(S9)); delete old.mounts; delete old.mountUid; delete old.mountSeen; delete old.enclos; delete old.chars[0].mount; const S11 = E.deserialize(JSON.stringify(old)); assert.ok(S11.mounts && S11.enclos && !S11.enclos.built, "ancienne sauvegarde sans montures");
   assert.ok(D.SPECIAL_CRAFTS["Filet de capture"] && D.SPECIAL_CRAFTS["Filet de capture"].cons === "filet", "recette du filet");
   console.log(`ok - montures : ${n} couleurs, capture, part d'XP, enclos, sauvegarde`);
+}
+
+/* 0.1.10 : idoles */
+{
+  const S = E.newState("Idoles", "iop"); const c = S.chars[0]; c.lvl = 50; E.refreshSpells(c, E.charStats(S, c));
+  assert.strictEqual(E.IDOL_ORDER.length, 36, "36 idoles"); assert.strictEqual(Object.keys(E.IDOL_FAMS).length, 9, "9 familles");
+  for (const f in E.IDOL_FAMS) assert.strictEqual(E.idolsOf(f).length, 4, f + " : 4 idoles");
+  for (const id of E.IDOL_ORDER) { const I = E.IDOLS[id]; const R = D.SPECIAL_CRAFTS[E.idolCraftName(id)]; assert.ok(R && R.idol === id && R.job === "bricoleur" && R.lvl === I.lvl && R.unique, id + " : recette du Bricoleur"); for (const [r] of R.ing) assert.ok(D.RES[r], `${id} : ressource inconnue ${r}`); assert.ok(I.score > 0 && I.desc, id + " : score et description"); }
+  assert.strictEqual(E.IDOL_MAXSCORE, 205, "score maximal 205");
+  // activation : à fabriquer d'abord, une par famille, 6 au plus
+  assert.ok(E.toggleIdol(S, "hebdo"), "pas d'activation sans l'idole");
+  E.giveIdol(S, "hebdo", ""); E.giveIdol(S, "walet", ""); E.giveIdol(S, "dynamo", ""); E.giveIdol(S, "farle", ""); E.giveIdol(S, "nocturne", ""); E.giveIdol(S, "dokoko", ""); E.giveIdol(S, "croum", ""); E.giveIdol(S, "hadibel", "");
+  assert.ok(!E.giveIdol(S, "hebdo", ""), "jamais deux fois la même idole"); assert.strictEqual(S.cnt.idols, 8, "8 idoles possédées");
+  assert.strictEqual(E.toggleIdol(S, "hebdo"), null, "Hebdo active"); assert.strictEqual(E.toggleIdol(S, "walet"), null, "Walet remplace Hebdo"); assert.deepStrictEqual(S.idols.active, ["walet"], "une seule idole de Vie");
+  ["dynamo", "farle", "nocturne", "dokoko", "croum"].forEach((id) => assert.strictEqual(E.toggleIdol(S, id), null, id));
+  assert.ok(E.toggleIdol(S, "hadibel"), "7e idole refusée"); assert.strictEqual(S.idols.active.length, 6, "6 actives");
+  assert.strictEqual(E.idolScore(S, null), 40 + 10 + 15 + 15 + 15 + 15, "score 110"); assert.strictEqual(E.idolBonus(S, null), 55, "+55 % en chasse"); assert.strictEqual(E.idolBonus(S, { mods: [] }), 30, "+30 % au plafond du donjon");
+  assert.strictEqual(E.idolScore(S, { mods: ["nombreux"] }), 95, "Farle ne compte pas avec le modificateur Nombreux");
+  E.savePreset(S, 0, "Test"); E.clearIdols(S); assert.strictEqual(S.idols.active.length, 0, "tout retiré"); assert.strictEqual(E.loadPreset(S, 0), null, "jeu rechargé"); assert.strictEqual(S.idols.active.length, 6, "6 idoles rechargées"); assert.ok(E.loadPreset(S, 2), "jeu vide");
+  // en combat : Walet double les PV des monstres, Farle ajoute un monstre, Ougah annule les soins
+  const seed0 = seed; E.clearIdols(S); E.startHunt(S, firstSub); E.startFight(S); const F0 = S.fight; const hp0 = F0.ents.filter((e) => e.side === "m").map((e) => e.hpMax); S.fight = null; S.hunting = false;
+  seed = seed0; E.toggleIdol(S, "walet"); E.toggleIdol(S, "farle"); E.startHunt(S, firstSub); E.startFight(S); const F1 = S.fight; const hp1 = F1.ents.filter((e) => e.side === "m").map((e) => e.hpMax);
+  assert.ok(F1.idol && F1.idolScore === 55 && F1.idolBonus === 27.5, "idoles lues par le combat"); assert.ok(hp1.length >= hp0.length + 1 || hp1.length === 8, "un monstre de plus avec Farle");
+  assert.ok(hp1[0] >= hp0[0] * 1.9, `Walet double les PV (${hp0[0]} → ${hp1[0]})`);
+  let steps = 0; while (!F1.over && steps++ < 5000) E.step(S); assert.ok(F1.over, "le combat avec idoles se termine");
+  if (F1.result === "win") { assert.ok(F1.rewards.idol && F1.rewards.idol.pct === 27.5, "bonus d'idoles dans les récompenses"); assert.strictEqual(S.cnt.idolBest, 55, "meilleur score enregistré"); }
+  S.fight = null; S.hunting = false; E.clearIdols(S); E.giveIdol(S, "ougah", ""); E.toggleIdol(S, "ougah"); E.startHunt(S, firstSub); E.startFight(S); const F2 = S.fight; const hero = F2.ents.find((e) => e.side === "c"); hero.hp = 1;
+  assert.strictEqual(E.doHeal(hero, 100, F2), 0, "Ougah : aucun soin"); assert.strictEqual(hero.hp, 1, "PV inchangés");
+  S.fight = null; S.hunting = false; E.clearIdols(S);
+  // risque et fabrication
+  assert.ok(["easy", "mid", "risk"].includes(E.idolRisk(S, null, null).k), "risque calculé");
+  S.crafts.bricoleur.lvl = 20; const R = D.SPECIAL_CRAFTS["Idole Dynamo"]; assert.ok(E.craftSpecial(S, "Idole Dynamo"), "Bricoleur 25 requis"); S.crafts.bricoleur.lvl = 25; R.ing.forEach(([r, q]) => E.addRes(S, r, q));
+  assert.ok(E.craftSpecial(S, "Idole Dynamo"), "déjà possédée"); E.giveIdol(S, "tynril", ""); const T = D.SPECIAL_CRAFTS["Idole Tynril"]; T.ing.forEach(([r, q]) => E.addRes(S, r, q)); S.crafts.bricoleur.lvl = 30; assert.ok(E.craftSpecial(S, "Idole Tynril"), "fabrication refusée si déjà possédée");
+  const K = D.SPECIAL_CRAFTS["Idole Kori"]; S.crafts.bricoleur.lvl = 85; K.ing.forEach(([r, q]) => E.addRes(S, r, q)); assert.strictEqual(E.craftSpecial(S, "Idole Kori"), null, "Kori fabriquée"); assert.ok(E.idolOwned(S, "kori"), "Kori dans la collection"); assert.ok(E.craftSpecial(S, "Idole Kori"), "Kori une seule fois");
+  // sauvegarde et ancienne partie
+  const S2 = E.deserialize(JSON.stringify(S)); assert.ok(S2.idols && S2.idols.own.kori && S2.idols.presets[0], "idoles perdues à la sauvegarde");
+  const old = JSON.parse(JSON.stringify(S)); delete old.idols; const S3 = E.deserialize(JSON.stringify(old)); assert.ok(S3.idols && Array.isArray(S3.idols.active), "ancienne partie sans idoles");
+  assert.ok(E.ACH.some((a) => a.id === "idol36" && a.title), "succès des idoles");
+  console.log("ok - idoles : 36 idoles en 9 familles, activation, score et bonus, effets en combat, Bricoleur, sauvegarde");
 }

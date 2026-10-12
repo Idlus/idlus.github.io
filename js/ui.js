@@ -16,9 +16,19 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.10.1";
+const GAME_VERSION = "0.1.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.11", name: "Idoles", items: [
+    "Idoles : 36 statuettes en 9 familles (Vie, Dégâts, Protection, Nombre, Tempo, Rythme, Soins, Résistances, Critiques), 4 par famille. Chacune rend les combats plus durs (monstres plus résistants, plus nombreux, plus rapides, soins annulés…) et apporte un score",
+    "Bonus : +0,5 % d'XP et de butin par point de score, en plus de la stasis et hors du plafond des bonus permanents (jusqu'à +102,5 % en chasse ; en donjon le score compte jusqu'à 60, soit +30 %)",
+    "Jusqu'à 6 idoles actives, une seule par famille ; une idole en doublon avec un modificateur de stasis ne compte pas. Trois jeux d'idoles à enregistrer et recharger",
+    "Fabrication une seule fois chez le Bricoleur (ressources de récolte du niveau de l'idole, Poussière de stasis dès le niveau 80, une ressource de boss dès 160) ; chaque idole révèle sa statuette avec un halo, des étincelles ou une lueur selon son rang, et un petit effet propre à sa famille",
+    "Où les trouver : bouton « Idoles » sur l'écran de Combat, dans la zone de chasse, sur la fiche d'un donjon et sur la page Équipe ; le score et le bonus s'affichent dans la barre du combat et dans le butin",
+    "L'IA respecte les idoles : avec Ougah, les héros ne lancent plus de soins inutiles",
+    "Six succès (première idole, 12, les 36 avec le titre « l'Idolâtre », 6 actives en victoire, score 100 « le Téméraire », score 200 « Maître des idoles »)",
+    "Simulateur : option --idoles hebdo,dynamo ou --idoles max",
+  ] },
   { v: "0.1.10.1", name: "Récoltes et panoplies", items: [
     "Protecteurs de ressources : en récoltant, un gardien de la ressource apparaît parfois (environ une récolte sur 60, jamais plus d'un à la fois). Il attend 15 minutes : « Combattre » le place dans le prochain combat de chasse, avec quelques monstres de la zone. Victoire : cette ressource rapporte ×2 pendant 20 minutes, +10 de la ressource et +3 Éclats de trouvaille. Désactivable dans les Options",
     "Deux succès liés : « Gardien des récoltes » et « Fléau des protecteurs » (avec un titre)",
@@ -769,7 +779,7 @@ function atelierSheet() {
   const a = ui.at; const A = S.atelier;
   const job = a.job; const J = S.crafts[job] || { lvl: 1 };
   let recs = job === "bricoleur"
-    ? Object.entries(SPECIAL_CRAFTS).filter(([n, R]) => R.lvl <= J.lvl && !(R.furn && S.furniture.includes(n))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing }))
+    ? Object.entries(SPECIAL_CRAFTS).filter(([n, R]) => R.lvl <= J.lvl && !(R.furn && S.furniture.includes(n)) && !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing }))
     : Object.entries(ITEMS).filter(([id, T]) => T.craft && T.craft.job === job && E.craftReq(id) <= J.lvl).map(([id, T]) => ({ k: "tpl", id, name: T.name, lvl: T.lvl, ing: T.craft.ing }));
   recs.sort((x, y) => (E.canCraft(S, y) - E.canCraft(S, x)) || y.lvl - x.lvl); const total = recs.length; recs = recs.slice(0, 40);
   const heroes = S.chars.filter((c) => !c.job);
@@ -904,7 +914,7 @@ function renderZoneView(sid) {
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
     <div class="pad stack">
-      <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}
+      <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) : ""}
         <span class="small muted">${E.team(S).length} héros · Esprit Libre +${E.freeSpirit(S)} % · ${lvlHint(s)}</span></div>
       ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
@@ -1015,6 +1025,7 @@ function dungeonSheet(did) {
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
+        ${(() => { const fake = { mods: [], stasis: k }; const ids = E.idolsFor(S, fake); const sc = E.idolScore(S, fake, ids); return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 6px">${idolBtn(fake)}<span class="xs muted">${ids.length ? `En plus de la stasis : +${pctTxt(E.idolBonus(S, fake, ids))} % d'XP et de butin${sc > E.IDOL_DG_CAP ? ` (score compté jusqu'à ${E.IDOL_DG_CAP} en donjon)` : ""}${k >= 6 ? " · une idole en doublon avec un modificateur tiré ne compte pas" : ""}.` : "Aucune idole active : les idoles rendent le donjon plus dur contre plus d'XP et de butin."}</span></div>`; })()}
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de la semaine" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
@@ -1088,7 +1099,7 @@ function renderCombat() {
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
-      ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      ${idolBtn(S.dungeon)}${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
@@ -1215,12 +1226,50 @@ function chalOverlayHtml(F) {
     const sub = c.id === "rapide" ? `<div class="prog"><i style="width:${Math.min(100, (F.round / c.turns) * 100)}%"></i></div>` : `<div class="d">${h(c.id === "elitiste" && F.ents[c.target] ? "Cible : " + F.ents[c.target].name : C.desc)}</div>`;
     return `<div class="chx ${state}" data-tip="${h(C.desc + (c.why ? " — échoué : " + c.why : ""))}"><div class="ic">${state === "ok" ? "✓" : state === "ko" ? "✕" : CHAL_ICON(c.id)}</div><div class="tx"><div class="t">${h(C.name)}${c.id === "rapide" ? ` · tour ${Math.min(F.round, c.turns)}/${c.turns}` : ""}</div>${state === "ko" && c.why ? `<div class="d">${h(c.why)}</div>` : sub}</div><div class="bon">+${c.bonus} %</div></div>`; }).join("");
 }
+/* ===================== 0.1.10 : idoles ===================== */
+const idolImg = (id) => `assets/id/${E.IDOLS[id].fam}.webp`;
+const idolPic = (id, cls = "") => { const I = E.IDOLS[id]; const F = E.IDOL_FAMS[I.fam]; return `<span class="ipic r${I.rank} f-${I.fam} ${cls}" style="--c:${F.color}"><i class="fx"></i>${im(idolImg(id), "", I.name)}</span>`; };
+const idolFamTag = (fam) => `<span class="ifam" style="--c:${E.IDOL_FAMS[fam].color}">${h(E.IDOL_FAMS[fam].name)}</span>`;
+const idolIco = () => `<img class="uico" src="assets/id/pro.webp" alt="">`;
+const pctTxt = (x) => String(x).replace(".", ",");
+/* bouton « Idoles » (combat, chasse, donjon, Équipe) : score et bonus des idoles actives */
+function idolBtn(dg, cls = "btn sm") {
+  const ids = E.idolsFor(S, dg); const n = ids.length; const sc = E.idolScore(S, dg, ids); const b = n ? E.idolBonus(S, dg, ids) : 0;
+  return `<button class="${cls} idolbtn ${n ? "on" : ""}" data-act="idols" data-tip="Idoles : des statuettes qui rendent les combats plus durs contre plus d'XP et de butin (+${pctTxt(E.IDOL_PCT)} % par point de score). ${n ? `${n} active${n > 1 ? "s" : ""}, score ${sc}.` : "Aucune idole active."}">${n ? ids.slice(0, 3).map((id) => im(idolImg(id), "iico", E.IDOLS[id].name)).join("") : idolIco()} Idoles${n ? ` · <b class="num">${sc}</b> · +${pctTxt(b)} %` : ""}</button>`;
+}
+function idolSheet() {
+  const A = S.idols.active; const dg = S.dungeon; const ids = E.idolsFor(S, dg); const score = E.idolScore(S, dg, ids); const bonus = E.idolBonus(S, dg, ids);
+  const risk = E.idolRisk(S, null, dg); const own = E.idolCount(S); const J = S.crafts.bricoleur || { lvl: 1 };
+  const slots = A.map((id) => { const I = E.IDOLS[id]; const off = !ids.includes(id);
+    return `<div class="islot ${off ? "off" : ""}" data-tip="${h(I.desc)}${off ? " · Ne compte pas dans ce donjon : elle fait doublon avec un modificateur de stasis." : ""}">${idolPic(id)}<span class="n">${h(I.name)}</span><b class="num">${off ? "—" : I.score}</b><button class="btn sm ghost" data-act="idoltog" data-id="${id}">Retirer</button></div>`; }).join("")
+    + Array.from({ length: E.IDOL_MAX - A.length }, () => `<div class="islot empty"><span>Libre</span></div>`).join("");
+  const presets = [0, 1, 2].map((i) => { const P = S.idols.presets[i]; const full = P && P.ids.length;
+    return `<span class="ipreset"><button class="btn sm" data-act="idolpload" data-i="${i}" ${full ? "" : "disabled"} data-tip="${full ? h(P.ids.map((x) => E.IDOLS[x] ? E.IDOLS[x].name : x).join(", ")) : "Jeu vide : activez des idoles puis enregistrez-les ici"}">${full ? h(P.name) : `Jeu ${i + 1}`}</button><button class="btn sm ghost" data-act="idolpsave" data-i="${i}" ${A.length ? "" : "disabled"} data-tip="Enregistrer les idoles actives dans ce jeu">Enregistrer</button></span>`; }).join("");
+  const fams = Object.keys(E.IDOL_FAMS).map((f) => {
+    const cur = A.find((x) => E.IDOLS[x].fam === f);
+    const cards = E.idolsOf(f).map((id) => { const I = E.IDOLS[id]; const on = A.includes(id); const got = E.idolOwned(S, id); const name = E.idolCraftName(id); const R = SPECIAL_CRAFTS[name]; const can = !got && J.lvl >= I.lvl; const ok = can && E.canCraft(S, R);
+      const state = on ? "Active" : got ? "Dans la collection" : can ? `Fabricable · Bricoleur niveau ${I.lvl}` : `Bricoleur niveau ${I.lvl} requis (vous : ${J.lvl})`;
+      const btn = on ? `<button class="btn sm ghost" data-act="idoltog" data-id="${id}">Retirer</button>` : got ? `<button class="btn sm primary" data-act="idoltog" data-id="${id}">Activer</button>` : can ? `<button class="btn sm ${ok ? "primary" : ""}" data-act="idolcraft" data-id="${id}" ${ok ? "" : "disabled"}>${IC("metiers")} Fabriquer</button>` : `<span class="tag soft">${G("lock")} Bricoleur ${I.lvl}</span>`;
+      const ing = can ? `<div class="ing xs">${R.ing.map(([r, q]) => `<span class="${(S.res[r] || 0) >= q ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(S.res[r] || 0)}/${q}</b></span>`).join("")}</div>` : "";
+      return `<div class="idol ${on ? "on" : got ? "own" : can ? "craft" : "lock"}">${idolPic(id)}<div class="t"><div class="nm">${h(I.name)} <b class="sc num">${I.score}</b></div><p>${h(I.desc)}</p><span class="xs muted">${state}${!on && (got || can) && cur ? ` · <span class="warn">remplace ${h(E.IDOLS[cur].name)}</span>` : ""}</span>${ing}</div>${btn}</div>`; }).join("");
+    return `<div class="ifamrow"><div class="ifh">${idolFamTag(f)}<span class="xs muted">une seule active à la fois</span></div><div class="ifgrid">${cards}</div></div>`;
+  }).join("");
+  openSheet(`<h2>${idolIco()} Idoles</h2>
+    <p class="small muted">Jusqu'à ${E.IDOL_MAX} idoles actives, une par famille. Chaque idole rend les combats plus durs et ajoute son score : <b>+${pctTxt(E.IDOL_PCT)} % d'XP et de butin par point</b>, en plus de la stasis (jusqu'à +${pctTxt(E.IDOL_MAXSCORE * E.IDOL_PCT)} % en chasse ; en donjon le score compte jusqu'à ${E.IDOL_DG_CAP}, soit +${E.IDOL_DG_CAP * E.IDOL_PCT} %). Une idole qui fait doublon avec un modificateur de stasis ne compte pas. Elles se fabriquent une seule fois chez le Bricoleur et s'appliquent au prochain combat.</p>
+    <div class="islots">${slots}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Score <b class="num">${score}</b>${dg && score > E.IDOL_DG_CAP ? ` <span class="muted">(${E.IDOL_DG_CAP} comptés en donjon)</span>` : ""}</span><span class="pill good">XP et butin +${pctTxt(bonus)} %</span>${A.length ? `<span class="pill diff ${risk.k}">${risk.txt}</span><button class="btn sm ghost" data-act="idolclear">Tout retirer</button>` : ""}</div>
+    <div class="row small" style="gap:6px;flex-wrap:wrap"><span class="muted">Jeux d'idoles :</span>${presets}</div>
+    <div class="xs muted">${own} / ${E.IDOL_ORDER.length} idoles dans la collection${S.cnt && S.cnt.idolBest ? ` · meilleur score en victoire : ${S.cnt.idolBest}` : ""}</div>
+    <div class="stack" style="gap:10px">${fams}</div>
+    <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
 function chalBarHtml(F) {
   const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> ${G("target")} Respecter les challenges</label>`;
   if (!F) return "";
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
   const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
-  return `${st}${mech}<span style="margin-left:auto"></span>${tog}`;
+  const idol = F.idol ? `<span class="pill good idolpill" data-tip="${h(F.idol.ids.map((id) => E.IDOLS[id].name + " : " + E.IDOLS[id].desc).join(" · "))}">${F.idol.ids.map((id) => im(idolImg(id), "iico", E.IDOLS[id].name)).join("")} Idoles ${F.idolScore} · +${pctTxt(F.idolBonus)} %</span>` : "";
+  return `${st}${idol}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small, cls) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
@@ -1848,6 +1897,7 @@ function lootHtml(F) {
     <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length ? `<div class="loot">${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
     ${(F.chals || []).length ? `<div class="chalres"><div class="h">${G("target")} Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>${G("flame")} Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
+    ${r.idol ? `<div class="chalres idolres"><div class="h">${idolIco()} Idoles · score ${r.idol.score}</div><div class="row xs" style="gap:4px;flex-wrap:wrap">${r.idol.ids.map((id) => E.IDOLS[id] ? `<span class="pill">${im(idolImg(id), "iico", E.IDOLS[id].name)} ${h(E.IDOLS[id].name)} <b class="num">${E.IDOLS[id].score}</b></span>` : "").join("")}</div><div class="r tot"><span>Bonus XP et butin</span><span>+${pctTxt(r.idol.pct)} %</span></div></div>` : ""}
     ${r.champ ? `<div class="champwin"><div class="ttl">${G("crown")} Champion vaincu : ${h(r.champ.name)} (${h(E.CHAMP_POWERS[r.champ.power].name)})</div><div class="row xs"><span class="pill gold">XP ×3</span><span class="pill gold">Butin ×2</span>${r.champ.res ? `<span class="pill good">Ressource garantie : ${h(r.champ.res[0])} ×${r.champ.res[1]}</span>` : ""}<span class="pill gold">Chance de Rayonnant ×2</span></div><div class="xs muted">Champions vaincus : ${fmt(S.champs || 0)}${(() => { const n = [10, 100, 500, 1000].find((x) => x > (S.champs || 0)); return n ? ` · prochain succès à ${fmt(n)}` : ""; })()}</div></div>` : ""}
     ${r.stasis ? `<p class="small" style="color:var(--gold2);font-weight:700">⏳ Stasis ${r.stasis.k} : ${h(r.stasis.out.join(", "))}</p>` : ""}
     ${r.lootPen ? `<p class="note xs">Monstres bien plus faibles que votre meilleur héros : butin réduit (×${Math.round(r.lootPen * 100) / 100}).</p>` : ""}
@@ -1990,6 +2040,7 @@ function renderTeam() {
     <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button></div>
   <section class="tsum"><div class="k"><b class="num">${team.length} / 8</b><span>en équipe</span></div><div class="k"><b class="num">${team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–"}</b><span>niveau moyen</span></div>
     <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
+    <div class="k"><b class="num">${S.idols.active.length} / ${E.IDOL_MAX}</b><span>idoles actives</span></div>${idolBtn(null)}
     ${S.chars.length < 8 ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
   ${board ? "" : compsHtml()}
   ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
@@ -2603,7 +2654,7 @@ function craftHtml() {
   let body = "";
     const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const q = ui.craftSearch.trim().toLowerCase();
     let recipes = job === "bricoleur"
-      ? Object.entries(SPECIAL_CRAFTS).map(([n, R]) => ({ special: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }))
+      ? Object.entries(SPECIAL_CRAFTS).filter(([, R]) => !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ special: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }))
       : Object.entries(ITEMS).filter(([, T]) => T.craft && T.craft.job === job).map(([id, T]) => ({ tpl: id, name: T.name, lvl: T.lvl, ing: T.craft.ing, req: E.craftReq(id), T })).sort((a, b) => a.lvl - b.lvl);
     if (q) recipes = recipes.filter((r) => r.name.toLowerCase().includes(q));
     if (ui.craftOnly) recipes = recipes.filter((r) => E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req);
@@ -2778,7 +2829,7 @@ function almanaxHtml() {
 }
 function achHtml() {
   const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = Object.keys(S.ach).length;
-  const ICO = { Progression: G("star"), Combat: IC("combat"), Donjons: IC("cle"), Chasse: IC("carte"), Objets: IC("dofus"), Métiers: IC("pioche"), Forgemagie: IC("forge"), Quêtes: IC("quetes"), Alignement: IC("ailes"), "Havre-Sac": IC("havre") };
+  const ICO = { Progression: G("star"), Combat: IC("combat"), Donjons: IC("cle"), Chasse: IC("carte"), Objets: IC("dofus"), Métiers: IC("pioche"), Forgemagie: IC("forge"), Quêtes: IC("quetes"), Alignement: IC("ailes"), "Havre-Sac": IC("havre"), Idoles: `<img class="uico" src="assets/id/pro.webp" alt="">` };
   return `<section class="panel"><div class="phead"><h2>Ornements</h2><span class="xs muted">à équiper dans Héros (contour de la carte)</span></div><div class="pad achgrid">${Object.entries(E.ORN).map(([id, O]) => `<div class="ach ${E.ornUnlocked(S, id) ? "ok" : ""}"><span class="ic">${E.ornUnlocked(S, id) ? G("sparkle") : G("lock")}</span><span><b>${h(O.name(S))}</b><br><span class="xs muted">${h(O.req)}</span></span></div>`).join("")}</div></section>
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
@@ -3065,6 +3116,8 @@ function celeHtml(ev) {
     return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
   if (ev.t === "pet") { const p = E.PETS[ev.id]; if (!p) return "";
     return `<div class="cele-art pet">${im(petImg(ev.id), "celepet", p.name)}</div><div class="cele-k">${G("star")} ${p.kind === "monti" ? (p.fam === "l" ? "Montilier légendaire" : "Nouveau montilier") : "Nouveau familier"}</div><div class="cele-t">${h(p.name)}</div><div class="cele-s">Au maximum : ${h(petBonus(p.stats))}</div>`; }
+  if (ev.t === "idol") { const I = E.IDOLS[ev.id]; if (!I) return "";
+    return `<div class="cele-art pet">${idolPic(ev.id, "big")}</div><div class="cele-k">${G("star")} Nouvelle idole · ${h(E.IDOL_FAMS[I.fam].name)}</div><div class="cele-t">${h(I.name)}</div><div class="cele-s">${h(I.desc)} Score ${I.score}.</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
@@ -3324,6 +3377,12 @@ document.addEventListener("click", (ev) => {
     case "gdel": E.deleteGear(S, c.id, +d.i); break;
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
+    case "idols": idolSheet(); return;
+    case "idoltog": { const r = E.toggleIdol(S, d.id); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
+    case "idolclear": E.clearIdols(S); dirty = true; idolSheet(); break;
+    case "idolpsave": E.savePreset(S, +d.i); dirty = true; toast(`Jeu ${+d.i + 1} enregistré : ${S.idols.active.map((x) => E.IDOLS[x].name).join(", ")}.`); idolSheet(); return;
+    case "idolpload": { const r = E.loadPreset(S, +d.i); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
+    case "idolcraft": { const r = E.craftSpecial(S, E.idolCraftName(d.id)); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
     case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; nc.head = startHeadOf(ui.startCls, nc.sex); ui.startHead = 0; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
     case "invtab": ui.inv = d.v; ui.newResDone = false; break;
     case "givesheet": giveSheet(+d.uid); return;

@@ -3,7 +3,7 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
+   Usage : node tools/simulate.js [--taille 4] [--tactique moyen|plafond|tac|fui|pm|rpa|rpm|epa|epm|inv] [--profils bon] [--mutateur champions] [--exo pa|pm|po] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--idoles hebdo,dynamo|max] [--json]
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    --tactique : donne aux héros des stats tactiques (Tacle, Fuite, PM, Retrait, Esquive, Invocation) :
      moyen = valeurs d'un héros avec un bon familier ; plafond = tout au maximum ; un nom de stat = cette stat seule, au maximum.
@@ -12,7 +12,7 @@
 "use strict";
 const E = require("../js/engine.js");
 require("../js/systems.js");
-require("../js/pets.js"); require("../js/mounts.js");
+require("../js/pets.js"); require("../js/mounts.js"); require("../js/idols.js");
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -87,6 +87,11 @@ const MNT = arg("montures", "");
 const giveMounts = (S) => { if (!MNT || !E.MOUNTS[MNT]) return; S.enclos.built = true; S.chars.forEach((c) => { const main = D.CLASSES[c.cls].main; const cols = E.MOUNTS[MNT].cols;
   const col = Object.keys(cols).find((k) => cols[k].s[main]) || Object.keys(cols).find((k) => cols[k].s.pui) || Object.keys(cols)[0];
   const M = E.giveMount(S, MNT, col, "", { quiet: true }); if (!M) return; M.lvl = 100; c.mount = M.uid; E.refreshSpells(c, E.charStats(S, c)); }); E.events.length = 0; };
+/* --idoles hebdo,dynamo,farle : active ces idoles (0.1.10) pour toutes les équipes ; « max » = les 6 idoles de plus haut score */
+const IDOLS = arg("idoles", "");
+const giveIdols = (S) => { if (!IDOLS) return; let ids = IDOLS.split(",").map((x) => x.trim()).filter((x) => E.IDOLS[x]);
+  if (IDOLS === "max") { const best = {}; E.IDOL_ORDER.forEach((id) => { const I = E.IDOLS[id]; if (!best[I.fam] || E.IDOLS[best[I.fam]].score < I.score) best[I.fam] = id; }); ids = Object.values(best).sort((a, b) => E.IDOLS[b].score - E.IDOLS[a].score).slice(0, E.IDOL_MAX); }
+  ids.forEach((id) => { E.giveIdol(S, id, ""); E.toggleIdol(S, id); }); E.events.length = 0; };
 const tagRows = (S) => { const fr = E.frontSet(S); S.chars.forEach((c) => (c._row = fr.has(c.id) ? "f" : "b")); };
 
 /* ---------- une tentative de donjon ---------- */
@@ -94,7 +99,7 @@ function run(did, k, cls, prof) {
   const dg = DG[did], lvl = Math.max(1, dg.lvl);
   const S = E.newState("Sim", "iop"); S.chars = [];
   teamFor(cls).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
-  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); tagRows(S);
+  S.chars.forEach((c) => { gearUp(S, c, prof); }); giveExo(S); S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); givePets(S); giveMounts(S); giveIdols(S); tagRows(S);
   if (FURN) {
     const hp = Object.keys(E.FURN).filter((n) => E.FURN[n].kind === "hp" && E.FURN[n].trophy && DG[E.FURN[n].trophy].lvl <= dg.lvl).sort((a, b) => E.FURN[b].v - E.FURN[a].v).slice(0, 5);
     S.havre.drop = 40; hp.forEach((n) => { S.furniture.push(n); E.placeFurn(S, n); });
@@ -116,7 +121,7 @@ if (arg("chasse", "")) {
     for (const sid of subs) for (const cls of CLS) for (let i = 0; i < TRIES; i++) {
       const S = E.newState("Sim", "iop"); S.chars = [];
       teamFor(cls).forEach((x, j) => { const c = E.addChar(S, x, "H" + j, Math.max(1, L - +arg("ecart", 0))); c.inTeam = true; });
-      S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); tagRows(S);
+      S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c))); giveIdols(S); tagRows(S);
       E.startHunt(S, sid); let last = null;
       for (let t = 0; t < 3600 * 1000; t += 1000) { E.tick(S, 1000); const F = S.fight; if (F && F.over && F !== last) { last = F; F.result === "win" || F.result === true ? win++ : lose++; } }
     }
