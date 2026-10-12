@@ -774,6 +774,10 @@
     veloces:   { name: "Véloces",     desc: "Les monstres jouent avant vos héros." },
     vampires:  { name: "Vampiriques", desc: "Les monstres volent 15 % des dégâts qu'ils infligent." },
     nombreux:  { name: "En nombre",   desc: "Un monstre de plus dans chaque salle." },
+    /* 0.1 : modificateurs propres au mutateur éclair (jamais tirés au hasard en stasis 6-7) */
+    champions: { name: "Champions",   desc: "Un monstre de chaque salle est un Champion (PV ×2, un pouvoir, butin doublé).", flash: true },
+    ruse:      { name: "Boss rusé",   desc: "Le boss a une mécanique de plus.", flash: true },
+    renforts:  { name: "Renforts",    desc: "Deux serviteurs de plus aux côtés du boss.", flash: true },
   };
   E.STASIS_STEPS = [
     [1, "Le donjon normal."], [2, "Monstres renforcés."], [3, "Le boss gagne une mécanique supplémentaire."],
@@ -785,7 +789,7 @@
   E.stasisMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: Math.pow(1.2, k - 1), rew: 1 + 0.15 * (k - 1) });
   /* caractéristique des parchemins de chaque donjon (élément du boss) */
   E.dungeonScrollStat = (did) => { const dg = DUNGEONS[did]; const el = (MONSTERS[dg.boss] || {}).el; const ids = Object.keys(DUNGEONS).sort(); if (ids.indexOf(did) % 5 === 4) return "sa"; return { t: "fo", f: "ine", e: "cha", a: "age" }[el] || "vit"; };
-  const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
+  const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS).filter((x) => !E.STASIS_MODS[x].flash); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
   /* Mutateur de la semaine (3.1.3) : chaque semaine, un donjon reçoit un modificateur imposé (à toutes les stasis)
      et donne +25 % d'XP et de butin, +50 % de poussière. Dès la stasis 6, il remplace un des modificateurs tirés au sort. */
   E.WEEKLY_REW = 1.25; E.WEEKLY_DUST = 1.5;
@@ -804,6 +808,29 @@
     S.weekly = { w, did: pool[x % pool.length], mod: mods[(x >>> 8) % mods.length] };
     return S.weekly;
   };
+  /* Mutateur éclair (0.1) : toutes les 20 minutes, 3 donjons (niveaux 1-79, 80-149, 150-200) reçoivent un modificateur
+     et donnent un petit bonus. Une course commencée garde son bonus jusqu'au bout. Les donjons ne tournent pas hors ligne. */
+  E.FLASH_MS = 20 * 60000; E.FLASH_REW = 1.12; E.FLASH_DUST = 1.25;
+  E.FLASH_MODS = ["enrages", "blindes", "vampires", "nombreux", "champions", "ruse", "renforts"];
+  E.flashIdx = (t = Date.now()) => Math.floor(t / E.FLASH_MS);
+  E.flashEnd = (t = Date.now()) => (E.flashIdx(t) + 1) * E.FLASH_MS;
+  /* Tranches fixes, identiques pour tous les joueurs (Mathis, 0.1) */
+  E.FLASH_TIERS = [["bas", 1, 79], ["milieu", 80, 149], ["haut", 150, 200]];
+  const flashCache = {};
+  E.flash = (S, t = Date.now()) => {
+    const f = E.flashIdx(t); if (flashCache.k === f) return flashCache.v;
+    const ids = Object.keys(DUNGEONS).sort();
+    let x = Math.imul(f ^ 0x7f4a7c15, 0x85ebca6b) >>> 0;
+    const mods = E.FLASH_MODS.slice(); const out = [];
+    for (const [tier, lo, hi] of E.FLASH_TIERS) {
+      const pool = ids.filter((d) => DUNGEONS[d].lvl >= lo && DUNGEONS[d].lvl <= hi); if (!pool.length) continue;
+      x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; x = Math.imul(x ^ (x >>> 16), 0x27d4eb2f) >>> 0;
+      out.push({ did: pool[x % pool.length], mod: mods.splice((x >>> 8) % mods.length, 1)[0], tier });
+    }
+    flashCache.k = f; flashCache.v = out;
+    return out;
+  };
+  E.flashOf = (S, did, t) => E.flash(S, t).find((x) => x.did === did) || null;
   const applyStasis = (S, F, mons, room, isBoss) => {
     const D2 = S.dungeon; const k = D2.stasis || 1; if (k <= 1 && !(D2.mods || []).length) return mons;
     const M = E.stasisMult(k); const mods = D2.mods || [];
@@ -814,6 +841,8 @@
       if (mods.includes("vampires")) m.vamp = 0.15;
       if (mods.includes("enrages")) m.enrageMod = true;
     });
+    if (mods.includes("champions") && !isBoss && mons.length) E.makeChampion(mons[mons.length - 1]);
+    if (mods.includes("ruse") && isBoss && mons[0] && mons[0].mech) { const keys = E.mechPool(DUNGEONS[D2.id] ? DUNGEONS[D2.id].lvl : 1).filter((x) => !mons[0].mech.includes(x)); if (keys.length) mons[0].mech = mons[0].mech.concat([pick(keys)]); }
     if (k >= 5 && !isBoss && room === D2.eliteRoom && mons.length) { const el = mons[0]; el.elite = true; el.hpMax = el.hp = el.hpMax * 2; el.name = el.name + " (Élite)"; }
     if (isBoss) { const b = mons[0];
       const pool = E.mechPool(DUNGEONS[D2.id] ? DUNGEONS[D2.id].lvl : 1);
@@ -842,7 +871,7 @@
         const hk = (1 + team.length * 1.1) / 5; boss.hpMax = boss.hp = Math.round(boss.hpMax * hk);
         boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0; (S.bossSeen = S.bossSeen || {})[S.dungeon.id] = 1;
         mons = [boss];
-        const extra = clamp(team.length - 1, 0, 7);
+        const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0), 0, 7);
         const mlv = k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));
         applyStasis(S, null, mons, -1, true);
@@ -863,7 +892,7 @@
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
-    F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null;
+    F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: null, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
@@ -1635,7 +1664,7 @@
       S.stats.wins++;
       const mons = F.ents.filter((e) => e.side === "m" && !e.fake);
       const cb = E.chalResolve(S, F);
-      const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1);
+      const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1);
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr, dropMult: (1 + cb / 100) * sr * (F.roulette === "jackpot" ? 2 : 1), treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
@@ -1994,7 +2023,7 @@
   E.stasisClear = (S, D2, rew) => {
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
-    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
+    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
     if (!SI.firsts[k]) { SI.firsts[k] = Date.now();
       const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
       E.celebrate({ t: "stasis", did, k, chest });
@@ -2017,9 +2046,9 @@
     if (S.dungeon) return "Vous êtes déjà en donjon.";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
-    const W = E.weekly(S); const wk = W && W.did === did ? W.mod : null;
+    const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
-      mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: wk || undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
+      mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
     SI.sel = k;
     S.fight = null; S.pause = 0;
     E.applyZonePresets(S, "dg:" + did);
