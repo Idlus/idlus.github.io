@@ -1,6 +1,19 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "versions": [
+    {
+      "v": "0.1.2",
+      "name": "Combat animé",
+      "items": [
+        "Les sorts partent du lanceur et volent jusqu'à leur cible, avec la patte de chaque classe : le Iop bondit, le Sram passe dans le dos, le Crâ tire des flèches, l'Ecaflip des cartes, l'Eliotrope ouvre des portails…",
+        "Le nom du sort s'affiche au-dessus du lanceur ; les coups critiques ont leur gros chiffre doré",
+        "Sorts de zone en onde, pluie de flèches du Crâ ; un cercle tourne sous celui qui joue",
+        "États visibles : poison, malus, PA retirés, gel, lueur des boucliers",
+        "Les monstres s'écrasent en lâchant des kamas, un héros à terre laisse une petite tombe",
+        "Les boss préviennent avant leur attaque dévastatrice : bandeau et cercles rouges sous les héros visés",
+        "Options : animations Complètes, Sobres ou Aucune"
+      ]
+    },
     {
       "v": "0.1.1",
       "name": "Mutateur éclair",

@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.1";
+const GAME_VERSION = "0.1.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.2", name: "Combat animé", items: [
+    "Les sorts partent du lanceur et volent jusqu'à leur cible, avec la patte de chaque classe : le Iop bondit, le Sram passe dans le dos, le Crâ tire des flèches, l'Ecaflip des cartes, l'Eliotrope ouvre des portails…",
+    "Le nom du sort s'affiche au-dessus du lanceur ; les coups critiques ont leur gros chiffre doré",
+    "Sorts de zone en onde, pluie de flèches du Crâ ; un cercle tourne sous celui qui joue",
+    "États visibles : poison, malus, PA retirés, gel, lueur des boucliers",
+    "Les monstres s'écrasent en lâchant des kamas, un héros à terre laisse une petite tombe",
+    "Les boss préviennent avant leur attaque dévastatrice : bandeau et cercles rouges sous les héros visés",
+    "Options : animations Complètes, Sobres ou Aucune" ] },
   { v: "0.1.1", name: "Mutateur éclair", items: [
     "Mutateur éclair : toutes les 20 minutes, 3 donjons (niveaux 10-79, 80-149 et 150-200, les mêmes pour tous) reçoivent un modificateur et donnent +12 % d'XP et de butin, +25 % de poussière",
     "Une course commencée garde le bonus jusqu'au bout ; l'onglet Donjons montre le temps restant et les 3 donjons suivants",
