@@ -1350,7 +1350,7 @@
     // Salle d'entraînement du Havre-Sac : une part de l'XP moyenne de l'équipe
     const tr = E.trainee(S);
     if (tr && team.length) {
-      const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.TRAIN_SHARE);
+      const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.trainShare(S, tr));
       if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, g)) out.ups.push([tr.name, tr.lvl]); }
     }
     S.kamas += out.kamas;
