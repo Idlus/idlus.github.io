@@ -889,7 +889,9 @@
   E.questProgress = (S) => {
     const q = E.questStep(S); if (!q) return null; const P = S.quest;
     switch (q.t) {
-      case "kill": case "harvest": case "craft": case "fm": case "bounty": case "almanax": return [Math.min(P.prog, q.n), q.n];
+      case "kill": case "harvest": case "craft": case "fm": case "bounty": return [Math.min(P.prog, q.n), q.n];
+      // 0.1.29.5 : une offrande déjà faite aujourd'hui (avant d'arriver à l'étape) compte aussi
+      case "almanax": return [Math.min(Math.max(P.prog, E.almanax(S).done ? 1 : 0), q.n), q.n];
       case "lvl": return [Math.min(topLvl(S), q.n), q.n];
       case "equip": return [Math.min(Math.max(...S.chars.map((c) => Object.keys(c.equip).length)), q.n), q.n];
       case "havre": return [Math.min(E.havreTotal(S), q.n), q.n];
@@ -1122,6 +1124,8 @@
     // Havre-Sac 3.4 : les meubles déjà gagnés sont placés d'office, tant qu'il reste de la place
     if (raw.placed === undefined) S.furniture.forEach((n) => { if (FURN[n]) E.placeFurn(S, n); });
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
+    // 0.1.29.5 : étape « Dévotion » coincée alors que l'offrande du jour est faite : validée au chargement
+    { const q = E.questStep(S); if (q && q.t === "almanax") checkQuest(S); }
     return S;
   };
 

@@ -1,6 +1,13 @@
 {
-  "version": "0.1.29.4",
+  "version": "0.1.29.5",
   "versions": [
+    {
+      "v": "0.1.29.5",
+      "name": "Dévotion débloquée",
+      "items": [
+        "Quête principale : l'étape « Dévotion » est validée si l'offrande à l'Almanax du jour a déjà été faite avant d'arriver à cette étape. Les joueurs bloqués avancent dès le chargement du jeu"
+      ]
+    },
     {
       "v": "0.1.29.4",
       "name": "Héros disponible",
