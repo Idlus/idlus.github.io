@@ -1,6 +1,19 @@
 {
-  "version": "0.1.31.1",
+  "version": "0.1.32",
   "versions": [
+    {
+      "v": "0.1.32",
+      "name": "Encyclopédie rangée",
+      "items": [
+        "L'Encyclopédie a trois onglets : Bestiaire, Familles et Boss de donjon. En haut, vos compteurs : monstres rencontrés, familles complètes, boss vaincus, butins révélés et âmes d'archimonstres",
+        "Bestiaire : les zones sont listées à gauche avec leur progression (menu déroulant sur téléphone). La page s'ouvre sur la zone où vous chassez",
+        "Recherche par monstre ou par butin : tapez « laine » pour voir qui la lâche, le butin est entouré. Filtres « À découvrir » et « Butins cachés »",
+        "Cartes plus compactes, deux par ligne sur téléphone. L'explication des paliers de chasse est derrière le bouton « ? Paliers »",
+        "Familles rangées par zone avec une barre de progression, ou triées « Presque finies ». Le bonus de Vitalité gagné est affiché",
+        "Boss de donjon : les 81 boss par niveau, filtre Vaincus ou À vaincre ; le nom du donjon ouvre sa fiche. Les longues listes de butins s'ouvrent avec « +12 »",
+        "L'album des âmes d'archimonstres a sa grande case violette, et un lien mène au carnet de panoplies"
+      ]
+    },
     {
       "v": "0.1.31.1",
       "name": "Chat à sa place",

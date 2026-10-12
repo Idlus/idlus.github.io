@@ -18,9 +18,18 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.31.1";
+const GAME_VERSION = "0.1.32";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.32", name: "Encyclopédie rangée", items: [
+    "L'Encyclopédie a trois onglets : Bestiaire, Familles et Boss de donjon. En haut, vos compteurs : monstres rencontrés, familles complètes, boss vaincus, butins révélés et âmes d'archimonstres",
+    "Bestiaire : les zones sont listées à gauche avec leur progression (menu déroulant sur téléphone). La page s'ouvre sur la zone où vous chassez",
+    "Recherche par monstre ou par butin : tapez « laine » pour voir qui la lâche, le butin est entouré. Filtres « À découvrir » et « Butins cachés »",
+    "Cartes plus compactes, deux par ligne sur téléphone. L'explication des paliers de chasse est derrière le bouton « ? Paliers »",
+    "Familles rangées par zone avec une barre de progression, ou triées « Presque finies ». Le bonus de Vitalité gagné est affiché",
+    "Boss de donjon : les 81 boss par niveau, filtre Vaincus ou À vaincre ; le nom du donjon ouvre sa fiche. Les longues listes de butins s'ouvrent avec « +12 »",
+    "L'album des âmes d'archimonstres a sa grande case violette, et un lien mène au carnet de panoplies",
+  ] },
   { v: "0.1.31.1", name: "Chat à sa place", items: [
     "Le chat ne remonte plus tout en haut quand tu lis d'anciens messages : il reste où tu en es",
     "Si de nouveaux messages arrivent pendant que tu lis plus haut, un bouton « Nouveaux messages » te ramène en bas",
@@ -1485,26 +1494,80 @@ function keyPanel(did) {
     ${sub && dg.keyDrop ? `<div class="xs muted">La clé tombe aussi parfois sur les monstres de <b>${h(sub.name)}</b>.</div>` : ""}
   </div>`;
 }
-function encyclopediaHtml() {
-  const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
-  const total = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].archiOf).length; const met = Object.keys(S.bestiary).filter((k) => MONSTERS[k] && !MONSTERS[k].archiOf).length;
-  const subs = z.subs.map((s) => `<h3 class="sec">${h(s.name)} ${S.trophies && S.trophies[s.id] ? IC("trophee") : ""}</h3><div class="mons">${s.monsters.map((k) => encCard(k)).join("")}</div>`).join("");
-  const dgs = Object.entries(DUNGEONS).filter(([id]) => E.SUBS[E.DUNGEON_SUB[id]]?.zone === z.id).map(([id, d]) => `<h3 class="sec">${h(d.name)}</h3><div class="mons">${encCard(d.boss)}</div>`).join("");
-  const fams = Object.entries(E.RACE_MONS).map(([r, ks]) => { const done = S.families && S.families[r]; const n = ks.filter((k) => E.huntTier(S, k) >= 1).length;
-    return `<div class="famrow ${done ? "done" : ""}"><b>${h(D.RACES[r] || r)}</b><span class="xs muted num">${n}/${ks.length} Traqueur</span>${done ? `<span class="tag good">+5 Vi</span>` : ""}</div>`; }).join("");
-  return `<section class="panel"><div class="phead"><h2>Bestiaire</h2><span class="small muted num">${met}/${total} monstres rencontrés</span></div>
-    <div class="pad"><div class="seg">${ZONES.map((x) => `<button data-act="enczone" data-v="${x.id}" aria-pressed="${x.id === z.id}">${h(x.name)}</button>`).join("")}</div>
-    <p class="note" style="margin-top:8px">Paliers de chasse par monstre : ${HUNT_TIERS.map((t) => `<b>${t.name}</b> (${t.n}) ${t.desc.toLowerCase()}`).join(" · ")}.</p>${subs}${dgs}</div></section>
-  <section class="panel"><div class="phead"><h2>Familles</h2><span class="xs muted">tous les monstres d'une famille au palier Traqueur : +5 Vitalité pour tous vos héros</span></div><div class="pad famgrid">${fams}</div></section>`;
+/* 0.1.31.x : Encyclopédie rangée en onglets (Bestiaire, Familles, Boss de donjon), zones avec progression,
+   recherche (monstre ou butin) et filtres, cartes plus compactes (2 par ligne sur téléphone) */
+const encMet = (k) => (S.bestiary[k] || 0) > 0;
+function encZoneMons(z) { const ks = new Set(); z.subs.forEach((s) => s.monsters.forEach((k) => MONSTERS[k] && !MONSTERS[k].archiOf && ks.add(k))); return [...ks]; }
+function encFamZone() { // famille → première zone où on la croise
+  if (ui.encFamZ) return ui.encFamZ; const o = {};
+  ZONES.forEach((z) => z.subs.forEach((s) => s.monsters.forEach((k) => { const r = MONSTERS[k] && MONSTERS[k].race; if (r !== undefined && o[r] === undefined) o[r] = z.id; })));
+  return (ui.encFamZ = o);
 }
-function encCard(k) {
+function encyclopediaHtml() {
+  const enc = ui.enc || (ui.enc = { tab: "best", f: "all", q: "", fam: "zone", boss: "all" });
+  const all = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].archiOf); const met = all.filter(encMet).length;
+  const fams = Object.keys(E.RACE_MONS); const famDone = fams.filter((r) => S.families && S.families[r]).length;
+  const bosses = Object.values(DUNGEONS).map((d) => d.boss); const bossMet = new Set(bosses.filter(encMet)).size; const bossN = new Set(bosses).size;
+  const conn = all.filter((k) => E.huntTier(S, k) >= 0).length;
+  const kpis = [["best", "Monstres rencontrés", met, all.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length]];
+  const souls = E.soulCount(S), st = E.stones(S);
+  const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>`;
+  const head = `<div class="enckpis">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
+    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`;
+  return head + (enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
+}
+function encBestHtml(enc) {
+  if (!ui.encZone) { const s = S.sub && E.SUBS[S.sub]; ui.encZone = s ? s.zone : ZONES[0].id; }
+  const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
+  const zprog = (x) => { const ks = encZoneMons(x); return [ks.filter(encMet).length, ks.length]; };
+  const side = ZONES.map((x) => { const [a, b] = zprog(x); const lock = !E.zoneUnlocked(S, x.id);
+    return `<button class="enczone ${a === b ? "done" : ""}" data-act="enczone" data-v="${x.id}" aria-pressed="${x.id === z.id}"><span class="grow">${lock ? G("lock") + " " : ""}${h(x.name)}</span><span class="xs num">${a}/${b}</span><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`; }).join("");
+  const sel = `<select class="encsel" data-act="enczonesel">${ZONES.map((x) => { const [a, b] = zprog(x); return `<option value="${x.id}" ${x.id === z.id ? "selected" : ""}>${h(x.name)} · ${a}/${b}</option>`; }).join("")}</select>`;
+  const keep = (k) => enc.f === "new" ? !encMet(k) : enc.f === "hidden" ? encMet(k) && E.huntTier(S, k) < 0 : true;
+  const q = (enc.q || "").trim().toLowerCase(); let body;
+  if (q) { // recherche dans tout le bestiaire : nom du monstre ou d'un butin
+    const hits = Object.keys(MONSTERS).filter((k) => { const m = MONSTERS[k]; if (m.archiOf || !keep(k)) return false;
+      return (encMet(k) && m.name.toLowerCase().includes(q)) || m.drops.some(([n]) => n.toLowerCase().includes(q) && ((S.seenDrops[k] || {})[n] || E.huntTier(S, k) >= 0)); }).slice(0, 60);
+    body = `<h3 class="sec">Résultats pour « ${h(enc.q)} » <span class="xs muted">${hits.length}${hits.length === 60 ? "+" : ""}</span></h3>${hits.length ? `<div class="mons enc">${hits.map((k) => encCard(k, true)).join("")}</div>` : `<div class="empty">Aucun monstre connu ne correspond. Les butins se révèlent en les obtenant ou au palier Connaisseur.</div>`}`;
+  } else {
+    const subs = z.subs.map((s) => { const ks = s.monsters.filter((k) => MONSTERS[k] && keep(k)); if (!ks.length) return "";
+      const a = s.monsters.filter(encMet).length;
+      return `<h3 class="sec">${h(s.name)} <span class="xs muted num">niv. ${s.lvl[0]}–${s.lvl[1]} · ${a}/${s.monsters.length}</span> ${S.trophies && S.trophies[s.id] ? IC("trophee") : ""}</h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`; }).join("");
+    body = subs || `<div class="empty">Rien à montrer avec ce filtre dans ${h(z.name)}.</div>`;
+  }
+  const [za, zb] = zprog(z);
+  return `<section class="panel"><div class="encbest"><aside class="enczones">${side}</aside><div class="encmain">
+    <div class="enctools">${sel}<input class="encq" id="encQ" data-act="encsearch" placeholder="Chercher un monstre ou un butin…" value="${h(enc.q || "")}">
+      <span class="seg">${[["all", "Tous"], ["new", "À découvrir"], ["hidden", "Butins cachés"]].map(([v, n]) => `<button data-act="encf" data-v="${v}" aria-pressed="${enc.f === v}">${n}</button>`).join("")}</span>
+      <span class="encinfo" data-tip="${h(HUNT_TIERS.map((t) => `${t.name} (${fmt(t.n)} victoires) : ${t.desc}`).join(" | "))}">? Paliers</span></div>
+    ${q ? "" : `<div class="enczhead"><h2>${h(z.name)}</h2><span class="small muted num">${za}/${zb} monstres rencontrés</span></div>`}${body}</div></div></section>`;
+}
+function encFamHtml(enc) {
+  const FZ = encFamZone(); const rows = Object.entries(E.RACE_MONS).map(([r, ks]) => ({ r, ks, n: ks.filter((k) => E.huntTier(S, k) >= 1).length, done: !!(S.families && S.families[r]) }));
+  const row = (x) => `<div class="famrow ${x.done ? "done" : ""}"><div class="grow"><b>${h(D.RACES[x.r] || x.r)}</b><span class="bar"><i style="width:${pct(x.n, x.ks.length)}%"></i></span></div><span class="xs muted num">${x.n}/${x.ks.length}</span>${x.done ? `<span class="tag good">+5 Vi</span>` : ""}</div>`;
+  const done = rows.filter((x) => x.done).length;
+  let body;
+  if (enc.fam === "near") body = `<div class="famgrid">${rows.filter((x) => !x.done).sort((a, b) => (b.n / b.ks.length) - (a.n / a.ks.length) || a.ks.length - b.ks.length).map(row).join("")}</div>`;
+  else body = ZONES.map((z) => { const L = rows.filter((x) => FZ[x.r] === z.id); if (!L.length) return ""; return `<h3 class="sec">${h(z.name)} <span class="xs muted num">${L.filter((x) => x.done).length}/${L.length}</span></h3><div class="famgrid">${L.map(row).join("")}</div>`; }).join("");
+  return `<section class="panel"><div class="phead"><h2>Familles</h2><span class="seg">${[["zone", "Par zone"], ["near", "Presque finies"]].map(([v, n]) => `<button data-act="encfam" data-v="${v}" aria-pressed="${enc.fam === v}">${n}</button>`).join("")}</span></div>
+    <div class="pad"><p class="note">Montez tous les monstres d'une famille au palier <b>Traqueur</b> (${fmt(HUNT_TIERS[1].n)} victoires chacun) : <b>+5 Vitalité</b> pour tous vos héros. Bonus actuel : <b>+${done * 5} Vitalité</b> (${done} famille${done > 1 ? "s" : ""}).</p>${body}</div></section>`;
+}
+function encBossHtml(enc) {
+  const L = Object.entries(DUNGEONS).sort((a, b) => a[1].lvl - b[1].lvl).filter(([, d]) => enc.boss === "todo" ? !encMet(d.boss) : enc.boss === "done" ? encMet(d.boss) : true);
+  return `<section class="panel"><div class="phead"><h2>Boss de donjon</h2><span class="seg">${[["all", "Tous"], ["done", "Vaincus"], ["todo", "À vaincre"]].map(([v, n]) => `<button data-act="encboss" data-v="${v}" aria-pressed="${enc.boss === v}">${n}</button>`).join("")}</span></div>
+    <div class="pad"><div class="mons enc">${L.map(([id, d]) => encCard(d.boss, false, `<button class="encdg" data-act="dgopen" data-id="${id}">${h(d.name)} · niv. ${d.lvl}</button>`)).join("") || `<div class="empty">Aucun boss ici.</div>`}</div></div></section>`;
+}
+function encCard(k, where, extra) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const a = m.archi; const t = E.huntTier(S, k);
   const reveal = t >= 0;
-  const drops = m.drops.map(([n, p]) => seen[n] || reveal ? `<span class="dropico" data-tip="${h(n)} · ${p} %">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</span>` : `<span class="icobox" style="width:26px;height:26px;font-size:12px;color:var(--muted)" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("");
-  return `<div class="mcard ${kills ? "" : "unknown"}" style="align-items:flex-start">${im(imgM(k), "mimg", m.name)}
-    <div style="min-width:0;flex:1" class="stack"><div><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0]}–${m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}</div></div>
-    ${m.boss ? `<div class="xs muted num">${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>` : tierBadge(k)}
-    <div class="row" style="gap:4px">${drops}</div>
+  const q = where && ui.enc && ui.enc.q ? ui.enc.q.trim().toLowerCase() : "";
+  const MAXD = 8, open = ui.encOpen && ui.encOpen[k], more = m.drops.length > MAXD + 1 && !open ? m.drops.length - MAXD : 0;
+  const drops = (more ? m.drops.slice(0, MAXD) : m.drops).map(([n, p]) => seen[n] || reveal ? `<span class="dropico ${q && n.toLowerCase().includes(q) ? "hit" : ""}" data-tip="${h(n)} · ${p} %">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</span>` : `<span class="icobox dq" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("") + (more ? `<button class="encmore" data-act="encmore" data-k="${k}" data-tip="Voir les ${more} autres butins">+${more}</button>` : "");
+  const zn = where ? (() => { const z = ZONES.find((x) => x.subs.some((s) => s.monsters.includes(k))); return z ? ` · ${h(z.name)}` : ""; })() : "";
+  return `<div class="mcard enccard ${kills ? "" : "unknown"} ${m.boss ? "boss" : ""}">${im(imgM(k), "mimg", m.name)}
+    <div class="ehd"><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : `${m.lvl[0]}–${m.lvl[1]}`}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}${zn}</div></div>
+    <div class="ebody">${extra || ""}${m.boss ? `<div class="xs muted num">${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>` : tierBadge(k)}
+    <div class="drops">${drops}</div>
     ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}${E.hasSoul(S, a) ? " · 💜 âme capturée" : ""}</div>` : ""}</div></div>`;
 }
 /* ---------- COMBAT ---------- */
@@ -5145,7 +5208,13 @@ document.addEventListener("click", (ev) => {
     case "worldtab": ui.world = d.v; break;
     case "maptier": ui.mapTier = +d.v; break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
-    case "enczone": ui.encZone = d.v; break;
+    case "enczone": ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; break;
+    case "enctab": ui.enc.tab = d.v; break;
+    case "encf": ui.enc.f = d.v; break;
+    case "encfam": ui.enc.fam = d.v; break;
+    case "encboss": ui.enc.boss = d.v; break;
+    case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
+    case "encsets": ui.tab = "inv"; ui.inv = "sets"; break;
     case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? ui.dgChain || 1 : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = 1; dungeonSheet(d.id); return; }
     case "dgfav": { ev.stopPropagation(); S.dgFav = S.dgFav || []; const i = S.dgFav.indexOf(d.id); if (i >= 0) S.dgFav.splice(i, 1); else S.dgFav.push(d.id); break; }
@@ -5290,6 +5359,7 @@ document.addEventListener("click", (ev) => {
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
   if (a.startsWith("vi-")) { viChange(a, t); return; }
+  if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
   if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
@@ -5346,6 +5416,7 @@ document.addEventListener("input", (ev) => {
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "fmsearch") { ui.fmF.q = t.value; const pos = t.selectionStart; renderForge(); const n = $("#fmSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "encsearch") { ui.enc.q = t.value; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act !== "craftsearch") return;
   ui.craftSearch = t.value; const pos = t.selectionStart; renderMetiers(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
