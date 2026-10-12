@@ -25,7 +25,8 @@ const CHANGELOG = [
     "Où trouver les runes Ga : coffres de boss des donjons de niveau 150+ en stasis 7 (1 sur 40, Ga PM ou Ga Po) et en stasis 8 (Ga PA, 1 sur 100), archimonstres de niveau 150+ (1 sur 25), ou l'onglet Runes (10 runes Ra d'une même caractéristique + 3 Éclats de trouvaille + 50 000 kamas pour une Ga PM ou Ga Po ; 25 runes Ra + 5 Éclats + 150 000 kamas pour une Ga PA)",
     "Brisage d'un objet exo : l'exo est perdu, mais l'objet rend ses runes ×2",
     "Forgemagie automatique : depuis l'établi, « Automatiser » lance un plan sur un objet (jets visés, runes autorisées, budget de kamas, plancher) ; une tentative toutes les 10 min (8 min au Forgemage 50, 6 min au 100), en jeu comme hors ligne, 2 plans en parallèle, sans héros à affecter. Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes ou le budget manquent, ou que le plancher est touché ; le journal et le résumé d'absence racontent ce qui s'est passé",
-    "Succès : « Exotique » (titre l'Exotique), « Un PA de plus », « Forgemagie automatique »" ] },
+    "Succès : « Exotique » (titre l'Exotique), « Un PA de plus », « Forgemagie automatique »",
+    "Code de diagnostic pour les bugs : le bouton « Signaler un bug » copie aussi la version, l'appareil, l'onglet ouvert, un résumé de la partie (héros, zone, donjon) et les 5 dernières erreurs du jeu, à coller dans le forum Bugs du Discord ; bouton « Copier le diagnostic » dans les Options" ] },
   { v: "0.1.9.1", name: "Barre et page Équipe", items: [
     "Nouvelle barre de navigation en 4 familles : Accueil, Aventure, Équipe et Artisanat, avec leurs pages juste en dessous ; de la place pour les prochains onglets",
     "Sur PC, un cadre « Combat en cours » donne le donjon et la salle (ou la zone de chasse) depuis n'importe quelle page ; sur téléphone, Combat devient le gros bouton du centre",
@@ -183,6 +184,12 @@ const vNum = (v) => { const p = String(v).split(".").map((x) => parseInt(x, 10) 
 
 /* ---------- utilitaires ---------- */
 const $ = (s) => document.querySelector(s);
+/* 0.1.9.2 : les 5 dernières erreurs du jeu, gardées entre deux lancements, pour le code de diagnostic du bouton « Signaler un bug » */
+const ERR_KEY = LS_KEY + "-errs";
+const readErrs = () => { try { const a = JSON.parse(localStorage.getItem(ERR_KEY) || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+const logErr = (txt) => { try { const a = readErrs(); const last = a[a.length - 1]; if (last && last.txt === txt) { last.n = (last.n || 1) + 1; last.t = Date.now(); } else a.push({ t: Date.now(), txt: String(txt).slice(0, 300) }); while (a.length > 5) a.shift(); localStorage.setItem(ERR_KEY, JSON.stringify(a)); } catch (e) { /* stockage indisponible */ } };
+window.addEventListener("error", (e) => logErr(`${e.message || "Erreur"}${e.filename ? ` (${e.filename.replace(/^.*\//, "")}:${e.lineno || "?"})` : ""}`));
+window.addEventListener("unhandledrejection", (e) => logErr(`Promesse rejetée : ${e.reason && e.reason.message ? e.reason.message : e.reason}`));
 const h = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (n) => Math.floor(n).toLocaleString("fr-FR");
 const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
@@ -2637,7 +2644,7 @@ function optionsSheet() {
       <div><b>Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><button class="btn sm" data-act="copyexp">Copier</button></div>
       <div><b>Importer</b> <span class="muted">(remplace la partie actuelle ; les sauvegardes v1 sont converties)</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div>
       <div><b>Nouvelle partie</b><br>${ui.confirm === "reset" ? `<span class="minus">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div>
-      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button></div>
+      <div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>
       <div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>
       <p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>
     </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
@@ -2666,6 +2673,24 @@ function migrationSheet(list) {
 /* ---------- rendu ---------- */
 /* ---------- Application installable (PWA) ---------- */
 let installEvt = null;
+/* 0.1.9.2 : code de diagnostic collé avec le rapport de bug (version, appareil, onglet, résumé de la partie, dernières erreurs) */
+function diagText() {
+  const lines = [`--- Diagnostic idlus ${GAME_VERSION}${BETA ? " (bêta)" : ""} · ${new Date().toLocaleString("fr-FR")} ---`];
+  lines.push(`Appareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"} · écran ${window.innerWidth}×${window.innerHeight} · thème ${document.documentElement.dataset.theme || "?"}`);
+  lines.push(`Navigateur : ${navigator.userAgent.slice(0, 120)}`);
+  const pg = NAV.flatMap((F) => F.pages.map((x) => [x[0], `${F.n} › ${x[1]}`])).find(([id]) => id === ui.tab); const tabName = pg ? pg[1] : ui.tab;
+  lines.push(`Onglet : ${tabName}${ui.tab === "home" ? " / " + ui.home : ui.tab === "world" ? " / " + ui.world : ui.tab === "heroes" ? " / " + ui.hero : ui.tab === "inv" ? " / " + ui.inv : ui.tab === "metiers" ? " / " + ui.met : ui.tab === "forge" ? " / " + ui.fg : ""}${$("#sheet") && $("#sheet").innerHTML ? " · fenêtre ouverte" : ""}`);
+  if (S) {
+    const sub = S.sub && E.SUBS[S.sub]; const dg = S.dungeon && DUNGEONS[S.dungeon.id];
+    lines.push(`Partie : créée le ${new Date(S.created).toLocaleDateString("fr-FR")} · ${dur(S.stats.playtime || 0)} de jeu · ${fmt(S.stats.fights || 0)} combats · ${fmt(S.kamas)} kamas · ${E.itemCount(S)} objets · vitesse ×${S.settings.speed || 1}${S.manualLive ? " · combat manuel" : ""}`);
+    lines.push(`Héros : ${S.chars.map((c) => `${c.name} (${CLASSES[c.cls] ? CLASSES[c.cls].name : c.cls} ${c.lvl}${c.inTeam ? ", équipe" : c.job ? ", métier" : ""})`).join(", ")}`);
+    lines.push(`Zone : ${sub ? sub.name : "aucune"}${S.hunting ? " (chasse en cours)" : ""}${dg ? ` · Donjon : ${dg.name} stasis ${S.dungeon.stasis}, salle ${(S.dungeon.room || 0) + 1}` : ""}${S.fight ? ` · combat ${S.fight.over ? "terminé" : "en cours"} (tour ${S.fight.round || "?"})` : ""}`);
+    lines.push(`Forgemage ${E.fmJob(S).lvl} · Havre-Sac ${S.havre && S.havre.built ? "construit" : "non"} · ${Object.keys(S.pets || {}).length} familiers · ${Object.keys(S.mounts || {}).length} montures · ${E.fmPlanActive(S).length} plans de forgemagie`);
+  } else lines.push("Partie : aucune (écran de départ)");
+  const errs = readErrs();
+  lines.push(errs.length ? `Dernières erreurs :\n${errs.map((e) => `  ${new Date(e.t).toLocaleTimeString("fr-FR")} ${e.txt}${e.n > 1 ? ` (×${e.n})` : ""}`).join("\n")}` : "Dernières erreurs : aucune");
+  return lines.join("\n");
+}
 const isStandalone = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
 const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; renderUpdBar(); });
@@ -2879,9 +2904,10 @@ document.addEventListener("click", (ev) => {
     case "looksex": { const x = char(ui.lookCid); x.sex = d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
-    case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nAppareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"}\nNavigateur : ${navigator.userAgent.slice(0, 120)}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :`;
+    case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
+    case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
@@ -3188,7 +3214,7 @@ function start() {
   setTimeout(checkNewVersion, 20000); setInterval(checkNewVersion, 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }
-window.DX = { get S() { return S; }, ui, render, E };
+window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

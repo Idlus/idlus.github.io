@@ -10,6 +10,7 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 ## 0.1.9.2 « Exotique » (bêta)
 - **Runes exotiques** : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée (nouvelle caractéristique : 20 % de chances par point qu'un sort à une cible touche un ennemi de plus) à un objet de niveau 150+ (Forgemage 100, 10-12 % de réussite, un échec ne casse que la rune, un seul exo par objet et un seul exo PA par héros). Sources : coffres de boss 150+ en stasis 7-8, archimonstres 150+, ou l'onglet Runes (runes Ra + Éclats + kamas). Un objet exo brisé rend ses runes ×2.
 - **Forgemagie automatique** : un plan par objet (jets visés, runes, budget, plancher), une tentative toutes les 10 min (6 min au Forgemage 100) en jeu comme hors ligne, 2 plans en parallèle.
+- **Code de diagnostic** : le bouton « Signaler un bug » copie la version, l'appareil, l'onglet, un résumé de la partie et les 5 dernières erreurs (bouton « Copier le diagnostic » dans les Options).
 
 ## 0.1.9.1 « Barre et page Équipe » (bêta)
 - **Barre de navigation en 4 familles** (Accueil, Aventure, Équipe, Artisanat) avec leurs pages en dessous, cadre « Combat en cours » sur PC et gros bouton Combat au centre sur téléphone.
