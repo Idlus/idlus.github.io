@@ -38,33 +38,43 @@ const server = http.createServer((req, res) => {
     await page.goto(base, { waitUntil: "load" });
     await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     await page.click('[data-act="startgame"]');
-    await page.waitForSelector("#nav [data-tab]", { timeout: 10000 });
+    await page.waitForSelector("#nav [data-nk]", { timeout: 10000 });
     const ok = await page.evaluate(() => !!(window.DX && window.DX.S && window.DX.S.chars.length));
     if (!ok) errors.push("la partie n'a pas démarré");
 
-    // 0.1.9.1 : chaque famille de la barre, puis chacune de ses pages (rangée du dessous)
-    const fams = await page.$$eval("#nav [data-fam]", (bs) => bs.map((b) => b.dataset.fam));
+    // 0.1.31 : chaque page du menu de gauche (PC)
+    const keys = await page.$$eval("#nav .sn-side [data-nk]", (bs) => bs.map((b) => b.dataset.nk));
     const tabs = [];
-    for (const f of fams) {
-      await page.click(`#nav [data-fam="${f}"]`);
-      await page.waitForTimeout(200);
-      const n = await page.$$eval("#subnav [data-tab]", (bs) => bs.length);
-      for (let i = 0; i < n; i++) {
-        const b = page.locator("#subnav [data-tab]").nth(i);
-        const t = (await b.getAttribute("data-tab")) + ((await b.getAttribute("data-home")) ? "/" + (await b.getAttribute("data-home")) : "");
-        await b.click();
-        await page.waitForTimeout(300);
-        const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
-        if (!filled) errors.push(`onglet ${t} vide`);
-        tabs.push(t);
-      }
+    for (const k of keys) {
+      await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); });
+      await page.click(`#nav .sn-side [data-nk="${k}"]`);
+      await page.waitForTimeout(300);
+      const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
+      if (!filled) errors.push(`page ${k} vide`);
+      const cur = await page.$eval("#nav .sn-side [aria-current]", (b) => b.dataset.nk).catch(() => null);
+      if (cur !== k) errors.push(`page ${k} : le menu montre ${cur}`);
+      tabs.push(k);
     }
-    // une chasse dans la première sous-zone, affichée dans l'onglet Combat
+    // « Fiche » d'un héros : la page Équipe et héros garde la fiche sous l'équipe
+    const noTip = () => page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // une bulle de découverte peut recouvrir le menu
+    await noTip(); await page.click('#nav .sn-side [data-nk="team"]'); await page.waitForTimeout(200);
+    if (!(await page.$("#teamtop")) || !(await page.$("#fiche"))) errors.push("Équipe et héros : tableau ou fiche absent");
+    // menu réduit aux icônes, puis rétabli
+    await noTip(); await page.click('#nav [data-act="navmini"]'); await page.waitForTimeout(150);
+    if (!(await page.evaluate(() => document.body.classList.contains("navmini")))) errors.push("menu : réduction sans effet");
+    await noTip(); await page.click('#nav [data-act="navmini"]'); await page.waitForTimeout(150);
+    // une chasse dans la première sous-zone, affichée dans la page Combat
     await page.evaluate(() => { const { E, S } = window.DX; E.startHunt(S, Object.keys(E.SUBS)[0]); });
-    await page.click('#nav [data-fam="adv"]');
-    await page.click('#subnav [data-tab="combat"]');
+    await noTip(); await page.click('#nav .sn-side [data-nk="combat"]');
     await page.waitForFunction(() => window.DX.S.fight, null, { timeout: 15000 });
     await page.waitForTimeout(2000);
+    // téléphone : barre du bas, bouton Menu et ses tuiles
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noTip(); await page.click('#nav .sn-mob [data-nk="menu"]');
+    await page.waitForSelector(".navsheet .ns-tiles button", { timeout: 5000 });
+    await page.click('.navsheet [data-v="forge"]'); await page.waitForTimeout(300);
+    if ((await page.evaluate(() => window.DX.ui.tab)) !== "forge") errors.push("menu du téléphone : la tuile Forgemagie n'ouvre pas la page");
+    if (await page.$(".navsheet")) errors.push("menu du téléphone : reste ouvert après le choix");
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
     errors.push(`étape échouée : ${e.message.split("\n")[0]}`);

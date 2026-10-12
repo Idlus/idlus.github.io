@@ -1,6 +1,6 @@
 /* ============================================================================
    JOURNAL DE QUÊTES — interface (0.1.28). Refonte du menu Quêtes.
-   Journal en 3 familles (Aujourd'hui, Aventures, Collection), tableau du jour,
+   Journal en 2 familles (Aujourd'hui, Aventures ; Succès et ornements ont leur page depuis 0.1.31), tableau du jour,
    quête principale (étape en cours en haut), Dofus en grille, Succès par famille,
    boutiques regroupées dans les Comptoirs, textes d'aide derrière un « ? ».
    Les pages Almanax, Avis, Commandes, Temples et Alignement gardent leur rendu (ui.js).
@@ -21,10 +21,9 @@
   const FAMS = [
     { id: "day", n: "Aujourd'hui", ic: "almanax", pages: [["jour", "Tableau du jour", "almanax"], ["almanax", "Almanax", "almanax"], ["bounty", "Avis de recherche", "carte"], ["commandes", "Commandes", "metiers"], ["temples", "Temples", "combat"]] },
     { id: "adv", n: "Aventures", ic: "quetes", pages: [["main", "Quête principale", "quetes"], ["dofus", "Dofus", "dofus"], ["align", "Alignement", "ailes"]] },
-    { id: "col", n: "Collection", ic: "trophee", pages: [["ach", "Succès", "trophee"], ["orn", "Ornements", "couronne"]] },
   ];
-  const famOf = (qt) => (qt === "shops" ? null : FAMS.find((F) => F.pages.some((p) => p[0] === qt)) || FAMS[0]);
-  const pageName = (qt) => (qt === "shops" ? "Comptoirs" : (FAMS.flatMap((F) => F.pages).find((p) => p[0] === qt) || [0, "Quêtes"])[1]);
+  const COL = [["ach", "Succès", "trophee"], ["orn", "Ornements", "couronne"]]; // 0.1.31 : page Succès à part (menu Suivi)
+  const pageName = (qt) => (qt === "shops" ? "Comptoirs" : (FAMS.flatMap((F) => F.pages).concat(COL).find((p) => p[0] === qt) || [0, "Quêtes"])[1]);
 
   /* ---------- état du jour ---------- */
   const almState = (s) => { const A = E.almanax(s); const have = s.res[A.res] || 0; return { A, have, ready: !A.done && have >= A.qty }; };
@@ -66,10 +65,10 @@
         ${F.pages.map(([id, n, ic]) => `<button class="qj-ji" data-act="qtab" data-v="${id}" ${qt === id ? 'aria-current="page"' : ""}>${IC(ic)}<b>${n}</b>${id === "jour" && left ? `<span class="qj-pip" title="${left} chose${left > 1 ? "s" : ""} à faire"></span>` : cnt(s, id)}</button>`).join("")}</div>`).join("")}
       <button class="qj-shopbtn" data-act="qtab" data-v="shops" ${qt === "shops" ? 'aria-current="page"' : ""}>${IC("bourse")}<b>Comptoirs</b><span>3 boutiques</span></button></aside>`;
   }
+  /* téléphone : une seule rangée d'onglets (0.1.31) */
   function mtabs(s, qt) {
-    const F = famOf(qt); const left = todo(s);
-    return `<div class="qj-m"><div class="qj-fam3">${FAMS.map((G) => `<button data-act="qtab" data-v="${G.pages[0][0]}" aria-pressed="${G === F}">${IC(G.ic)}<span>${G.n}</span>${G.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
-      <div class="qj-chips">${(F ? F.pages : []).map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${n}${id === "jour" ? "" : cnt(s, id)}</button>`).join("")}<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button></div></div>`;
+    const left = todo(s);
+    return `<div class="qj-m"><div class="qj-chips">${FAMS.flatMap((F) => F.pages).map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button></div></div>`;
   }
 
   /* en-tête de page : titre, compteur, bouton « ? » (aide repliée) */
@@ -215,9 +214,13 @@
 
   function render(main) {
     const s = S(); const ui = UI();
-    const valid = ["jour", "shops"].concat(FAMS.flatMap((F) => F.pages.map((p) => p[0])));
+    const valid = ["jour", "shops"].concat(FAMS.flatMap((F) => F.pages.map((p) => p[0])), COL.map((p) => p[0]));
     if (!valid.includes(ui.qt)) ui.qt = "jour";
     const qt = ui.qt;
+    if (qt === "ach" || qt === "orn") { // page Succès : succès et ornements, sans le journal
+      main.innerHTML = `<div class="pagehead"><h1>Succès</h1></div><nav class="subtabs">${COL.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${n} ${cnt(s, id)}</button>`).join("")}</nav><section class="stack">${qt === "ach" ? achHtml(s) : ornHtml(s)}</section>`;
+      return;
+    }
     const body = qt === "jour" ? jourHtml(s) : qt === "main" ? mainHtml(s) : qt === "dofus" ? dofusHtml(s) : qt === "ach" ? achHtml(s) : qt === "orn" ? ornHtml(s) : qt === "shops" ? shopsHtml(s) : keptHtml(s, qt);
     main.innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div><div class="qj-lay">${journal(s, qt)}<div class="qj-main">${mtabs(s, qt)}<section class="stack">${body}</section></div></div>`;
   }
