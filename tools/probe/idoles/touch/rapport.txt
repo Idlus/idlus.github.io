@@ -1,0 +1,5 @@
+https://api.touch.dofusdb.fr : pas de réponse
+https://api.dofusdb.fr/touch : pas de réponse
+https://touch.dofusdb.fr/api : pas de réponse
+0 idoles écrites, 0 avec icône
+archive.org : aucun instantané
