@@ -643,7 +643,11 @@ function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
   const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["enc", "Encyclopédie"]];
   let body = "";
-  if (ui.world === "map") body = ZONES.map(zonePanel).join("");
+  if (ui.world === "map") {
+    const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
+    body = `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+      + (ZONES.map((z) => zonePanel(z, t)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
+  }
   else if (ui.world === "dungeons") body = dungeonsHtml();
   else body = encyclopediaHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}</div>
@@ -669,10 +673,16 @@ function tierBadge(k) {
     ${t >= 0 ? `<span class="tier t${t}">${HUNT_TIERS[t].name}</span>` : `<span class="tier">Aucun palier</span>`}
     ${next ? `<span class="bar"><i style="width:${pct(n, next.n)}%"></i></span><span class="xs muted num">${fmt(n)}/${fmt(next.n)}</span>` : `<span class="xs muted">max</span>`}</div>`;
 }
-function zonePanel(z) {
+/* 0.1 : la carte se lit par tranche de niveaux (sous-zones classées par leur niveau minimum) */
+const MAP_TIERS = [[1, 40], [41, 80], [81, 120], [121, 160], [161, 200]];
+const tierOf = (lvl) => { const i = MAP_TIERS.findIndex((b) => lvl <= b[1]); return i < 0 ? MAP_TIERS.length - 1 : i; };
+function mapTier() { if (ui.mapTier === undefined) ui.mapTier = tierOf(topTeamLvl()); return ui.mapTier; }
+function zonePanel(z, tier = -1) {
+  const subs = tier < 0 ? z.subs : z.subs.filter((s) => tierOf(s.lvl[0]) === tier);
+  if (!subs.length) return "";
   const zu = E.zoneUnlocked(S, z.id);
   return `<section class="panel"><div class="zonehead"><div><h2>${h(z.name)}</h2><div class="small muted">${h(z.desc)} · niveaux ${h(z.lvl)}</div></div>${zu ? "" : `<span class="tag soft">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}</div>
-    <div class="subgrid">${z.subs.map((s) => {
+    <div class="subgrid">${subs.map((s) => {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
       if (s.hidden && !un) return `<div class="subcard locked"><div class="scene">${sceneSVG("cave", 96, s.id)}</div><div class="body"><b>Lieu caché</b><span class="lockmsg">On raconte qu'un objet permet de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></div></div>`;
       const wins = S.progress.wins[s.id] || 0;
@@ -2053,6 +2063,7 @@ document.addEventListener("click", (ev) => {
     case "zoneview": ui.zoneView = d.id; window.scrollTo(0, 0); break;
     case "zoneback": ui.zoneView = null; break;
     case "worldtab": ui.world = d.v; break;
+    case "maptier": ui.mapTier = +d.v; break;
     case "enczone": ui.encZone = d.v; break;
     case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? ui.dgChain || 1 : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = 1; dungeonSheet(d.id); return; }

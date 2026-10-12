@@ -1046,3 +1046,5 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .placement.flash{animation:placeflash 1.6s ease-out}
 @keyframes placeflash{0%,40%{box-shadow:0 0 0 3px var(--gold),var(--shadow)}100%{box-shadow:var(--shadow)}}
 @media (max-width:640px){.plines{grid-template-columns:1fr}.pcard .btn{padding:4px 8px}}
+.maptiers{margin:0 0 4px;flex-wrap:wrap;gap:8px}
+.maptiers .seg{flex-wrap:wrap}
