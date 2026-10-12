@@ -638,10 +638,12 @@
   /* 0.1.12.3 : sans équipement, une équipe doit perdre (sauf aux premiers niveaux) : PV et dégâts des monstres multipliés
      selon leur niveau, par paliers [niveau, ×PV, ×dégâts] reliés en ligne droite, séparément en chasse et en donjon ;
      « rew » rend l'XP et le butin par monstre en proportion des PV en plus */
+  /* 0.1.20.1 : en chasse, la montée commence au niveau 20 et finit au niveau 40 (avant : de 15 à 30) ; les zones 22-30
+     (Bouftous, Tainéla, Égouts…) restent jouables sans équipement, le mur arrive avec les zones 32-40 ; groupes de 4 dès ces zones-là */
   E.MON_POW = {
-    hunt: [[15, 1, 1], [30, 4.5, 4]],
+    hunt: [[20, 1, 1], [30, 2.6, 2.4], [40, 4.5, 4]],
     dg: [[20, 1, 1], [90, 1.3, 2.2], [130, 1.3, 2.2], [180, 1.1, 1.6]],
-    minGroup: (sub) => (sub && sub.lvl && sub.lvl[1] >= 25 ? 4 : 1), rew: 0.57,
+    minGroup: (sub) => (sub && sub.lvl && sub.lvl[1] >= 33 ? 4 : 1), rew: 0.57,
   };
   E.monPow = (l, k, where) => {
     const P = E.MON_POW[where], j = k === "hp" ? 1 : 2;
