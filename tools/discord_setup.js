@@ -161,10 +161,11 @@ async function main() {
 
   try {
     const visible = PLAN.filter((s) => !s.only).flatMap((s) => s.chans).filter((c) => c.type !== VOICE).map((c) => ids[c.key]);
+    let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++); // Discord exige un identifiant pour chaque question et réponse
     await api("PUT", `/guilds/${gid}/onboarding`, { enabled: true, mode: 0, default_channel_ids: visible, prompts: [{
-      type: 0, title: "Qu'est-ce qui t'intéresse ?", single_select: false, required: false, in_onboarding: true, options: [
-        { title: "Tester les nouveautés en avant-première", description: "Accès aux salons de la version de test", emoji: { name: "🧪" }, role_ids: [roles.tester], channel_ids: [] },
-        { title: "Être prévenu à chaque mise à jour", description: "Une mention à chaque nouvelle version", emoji: { name: "🔔" }, role_ids: [roles.notif], channel_ids: [] } ] }] });
+      id: sid(), type: 0, title: "Qu'est-ce qui t'intéresse ?", single_select: false, required: false, in_onboarding: true, options: [
+        { id: sid(), title: "Tester les nouveautés en avant-première", description: "Accès aux salons de la version de test", emoji: { name: "🧪" }, role_ids: [roles.tester], channel_ids: [] },
+        { id: sid(), title: "Être prévenu à chaque mise à jour", description: "Une mention à chaque nouvelle version", emoji: { name: "🔔" }, role_ids: [roles.notif], channel_ids: [] } ] }] });
     console.log("Accueil des nouveaux configuré (choix des rôles à l'arrivée).");
   } catch (e) { console.log("Accueil des nouveaux non configuré, à faire à la main :", e.message); }
 
