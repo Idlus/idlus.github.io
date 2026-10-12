@@ -71,26 +71,26 @@
   /* ============================================================================
      PERCEPTEURS (version 2 « La guilde défend ensemble »)
      Posé dans une zone finie (tous ses monstres au palier Traqueur) par le Meneur ou un Bras droit,
-     qui paie 20 000 kamas. Il ramasse 3 % des kamas et ressources qu'une équipe y gagnerait : sa poche
+     qui paie 20 000 kamas. Il ramasse 5 % des kamas et ressources qu'une équipe y gagnerait : sa poche
      est pleine en 12 h. Environ une fois par jour, des monstres l'attaquent : pendant 2 h, chaque membre
      peut tenter une défense avec son équipe (une par attaque), rejouée par le serveur.
      Victoire : poche +25 %, XP de guilde, petit coffre pour le défenseur. Sans victoire : la moitié de la poche est perdue.
      ========================================================================== */
   E.PERCO_PRICE = 20000;
   E.PERCO_FILL_H = 12;
-  E.PERCO_RATE = 3;
+  E.PERCO_RATE = 5; // 0.1.24.2 : 5 % (3 % au départ)
   E.PERCO_ATK_H = 2;
   E.percoSlots = (glvl) => Math.min(5, Math.floor((glvl || 1) / 5));
   E.percoNextSlot = (glvl) => (E.percoSlots(glvl) >= 5 ? null : (E.percoSlots(glvl) + 1) * 5);
   const SUBS = () => E.SUBS || D.SUBS;
   const subLvl = (sub) => Math.round((sub.lvl[0] + sub.lvl[1]) / 2);
-  /* contenu d'une poche pleine : 3 % de 12 h de chasse (≈ 2 900 kamas par niveau de zone et par heure ; ≈ 90 monstres pour les ressources) */
+  /* contenu d'une poche pleine : E.PERCO_RATE % de 12 h de chasse (≈ 2 900 kamas par niveau de zone et par heure, ≈ 250 monstres par heure pour les ressources) */
   E.percoCap = (sid) => {
     const sub = SUBS()[sid]; if (!sub) return null;
     const L = subLvl(sub), res = {};
-    sub.monsters.forEach((id) => { const m = MONSTERS[id]; (m && m.drops || []).forEach(([name, ch]) => { res[name] = (res[name] || 0) + (90 / sub.monsters.length) * Math.min(100, ch) / 100 * 2; }); });
+    sub.monsters.forEach((id) => { const m = MONSTERS[id]; (m && m.drops || []).forEach(([name, ch]) => { res[name] = (res[name] || 0) + (30 * E.PERCO_RATE / sub.monsters.length) * Math.min(100, ch) / 100 * 2; }); });
     const top = Object.keys(res).map((k) => [k, Math.round(res[k])]).filter((x) => x[1] >= 1).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    return { k: 1000 * L, res: Object.fromEntries(top) };
+    return { k: Math.round(1000 * L * E.PERCO_RATE / 3), res: Object.fromEntries(top) };
   };
   /* zones où un Percepteur peut se poser pour cette partie (trophée de sous-zone = zone finie) */
   E.percoZones = (S) => Object.keys(SUBS()).filter((sid) => S.trophies && S.trophies[sid] && SUBS()[sid].monsters && SUBS()[sid].monsters.length);
