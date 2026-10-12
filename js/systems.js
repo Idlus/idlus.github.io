@@ -690,7 +690,7 @@
      elle part chasser dans sa dernière zone. Après le combat (ou si le protecteur repart), chacun reprend ce qu'il faisait (E.protRestore). */
   E.protWhy = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon : finissez-le d'abord.";
     if (E.expActive && E.expActive(S)) return "Impossible pendant une expédition : finissez-la d'abord.";
-    if (!E.team(S).length && !S.chars.some((c) => c.inTeam && c.job)) return "Votre équipe est vide : ajoutez un héros dans Équipe."; return null; };
+    if (!E.team(S).length && !S.chars.some((c) => c.inTeam && c.job)) return "Votre équipe est vide : ajoutez un héros dans Équipe et héros."; return null; };
   E.protFight = (S) => {
     const err = E.protWhy(S); if (err) return err; const P = S.protector; const jobs = {};
     if (!E.team(S).length) { S.chars.filter((c) => c.inTeam && c.job).slice(0, 8).forEach((c) => { jobs[c.id] = c.job; c.job = null; }); S.fight = null; }

@@ -567,9 +567,9 @@
     add({ id: "expcamp", cat: "Expédition", name: "Campement complet", desc: "Acheter les 24 améliorations du campement.", test: (S) => E.campCount(S) >= E.EXP_CAMP.length, kamas: 50000, title: "Maître du campement" });
   }
   if (E.ORN && !E.ORN.elu) E.ORN.elu = { name: () => "Auréole des Douze", req: "Atteindre l'étage 100 de l'Expédition sans fin", ok: (S) => !!(S.unlocks && S.unlocks.elu) };
-  if (E.TIPS && !E.TIPS.some((t) => t.id === "expedition")) E.TIPS.push({ id: "expedition", name: "L'Expédition sans fin", hint: "niveau 10", anchor: '[data-fam="adv"]',
+  if (E.TIPS && !E.TIPS.some((t) => t.id === "expedition")) E.TIPS.push({ id: "expedition", name: "L'Expédition sans fin", hint: "niveau 10", anchor: '#nav [data-nk="exp"], #nav [data-nk="menu"]',
     cond: (S) => S.chars.some((c) => c.lvl >= E.EXP_MIN_LVL),
-    txt: "Aventure › Expédition : des étages sans fin à ton niveau, une porte à choisir à chaque étage, des reliques qui s'additionnent et 3 vies. Quand tu tombes, tu gardes tout et tes Éclats améliorent le campement pour la prochaine fois." });
+    txt: "Jouer › Expédition : des étages sans fin à ton niveau, une porte à choisir à chaque étage, des reliques qui s'additionnent et 3 vies. Quand tu tombes, tu gardes tout et tes Éclats améliorent le campement pour la prochaine fois." });
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);
