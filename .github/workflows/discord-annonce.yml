@@ -1,0 +1,26 @@
+# Publie un message libre dans #annonces sur Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
+name: Annonce libre sur Discord
+on:
+  workflow_dispatch:
+    inputs:
+      texte:
+        description: "Texte de l'annonce (mise en forme Discord, 1 900 caractères au plus)"
+        required: true
+        type: string
+      role:
+        description: "Rôle à mentionner"
+        type: choice
+        default: Testeur
+        options: [Testeur, "Notif mises à jour", aucun]
+jobs:
+  annonce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js annonce
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_TEXTE: ${{ inputs.texte }}
+          DISCORD_ROLE: ${{ inputs.role }}
