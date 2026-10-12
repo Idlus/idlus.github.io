@@ -43,15 +43,19 @@ ZONES = [
     {'id': 'amakna', 'name': 'Amakna', 'desc': 'Le royaume du Roi Allister : campagnes, forêts, cimetière et montagne des Craqueleurs.', 'theme': 'meadow',
      'subs': [(485, 'ama_campagne', 'meadow', 14, 22), (4, 'ama_foret', 'forest', 14, 40), (5, 'ama_bouftous', 'meadow', 20, 32),
               (179, 'ama_boos', 'grave', 20, 32), (3, 'ama_ingalsse', 'wheat', 30, 42), (6, 'ama_cimetiere', 'grave', 24, 44),
-              (276, 'ama_gobelins', 'quarry', 30, 42), (170, 'ama_scarafeuilles', 'meadow', 32, 44), (22, 'ama_foret_malefique', 'forest', 33, 45),
+              (276, 'ama_gobelins', 'quarry', 30, 42), (170, 'ama_scarafeuilles', 'meadow', 32, 44), (22, 'ama_foret_malefique', 'forest', 33, 45), (9, 'ama_dark_vlad', 'forest', 140, 152),
               (8, 'ama_bworks', 'quarry', 30, 52), (2, 'ama_craqueleurs', 'quarry', 40, 52), (181, 'ama_cloaque', 'sewer', 50, 62),
               (12, 'ama_gelees', 'beach', 52, 64), (243, 'ama_pitons', 'quarry', 57, 72)]},
     {'id': 'cania', 'name': 'Plaines de Cania', 'desc': 'Vastes plaines, lacs de Blops et robots du Massif.', 'theme': 'wheat',
      'subs': [(334, 'can_baie', 'beach', 33, 48), (178, 'can_porkass', 'meadow', 38, 52), (56, 'can_lac', 'lake', 50, 62),
               (68, 'can_champs', 'wheat', 49, 66), (54, 'can_massif', 'quarry', 50, 66), (70, 'can_plaines', 'quarry', 57, 72),
-              (521, 'can_pics', 'quarry', 78, 86), (55, 'can_penates', 'grave', 98, 106), (1038, 'can_bibliotheque', 'city', 98, 112), (523, 'can_cirque', 'quarry', 106, 116)]},
+              (521, 'can_pics', 'quarry', 78, 86), (55, 'can_penates', 'grave', 98, 106), (1038, 'can_bibliotheque', 'city', 98, 112), (523, 'can_cirque', 'quarry', 106, 116),
+              (518, 'can_landes', 'quarry', 135, 152), (519, 'can_dents', 'quarry', 148, 162), (809, 'can_kanigs', 'city', 148, 162)]},
+    {'id': 'wabbit', 'name': 'Île des Wabbits', 'desc': "L'île du Wa Wabbit, de ses Wabbits et de ses champs de Cawottes.", 'theme': 'meadow', 'requires': {'boss': 'cour_bouftou_royal'},
+     'subs': [(161, 'wab_cawotte', 'meadow'), (164, 'wab_couronne', 'meadow'), (163, 'wab_tombeaux', 'grave'), (162, 'wab_waldo', 'meadow'), (798, 'wab_labos', 'cave')]},
     {'id': 'sidimote', 'name': 'Landes de Sidimote', 'desc': 'Terres désolées, roulottes des Magik Riktus et repaire du Meulou.', 'theme': 'grave',
-     'subs': [(57, 'sid_desolation', 'grave', 58, 66), (526, 'sid_roulottes', 'meadow', 78, 86), (522, 'sid_hurlements', 'grave', 88, 96)]},
+     'subs': [(57, 'sid_desolation', 'grave', 58, 66), (526, 'sid_roulottes', 'meadow', 78, 86), (522, 'sid_hurlements', 'grave', 88, 96),
+              (71, 'sid_gisgoul', 'quarry', 170, 182), (495, 'sid_fungus', 'cave', 170, 182), (889, 'sid_domaine_fungus', 'forest', 170, 182)]},
     {'id': 'koalaks', 'name': 'Montagne des Koalaks', 'desc': 'Forêts de Kaliptus, lacs enchantés et canyon sauvage.', 'theme': 'forest',
      'subs': [(234, 'koa_kaliptus', 'forest', 56, 82), (231, 'koa_lacs', 'lake', 56, 82), (253, 'koa_canyon', 'quarry', 66, 92), (275, 'koa_morhkitu', 'forest', 98, 112), (230, 'koa_cimetiere', 'grave', 98, 112)]},
     {'id': 'abrak', 'name': 'Forêt des Abraknydes', 'desc': 'La sombre forêt des arbres vivants.', 'theme': 'forest',
@@ -61,13 +65,41 @@ ZONES = [
     {'id': 'dragoeufs', 'name': 'Terres des Dragoeufs', 'desc': 'Le village, les souterrains et le sanctuaire des Dragoeufs.', 'theme': 'quarry',
      'subs': [(315, 'dra_village', 'city', 88, 96), (316, 'dra_souterrains', 'cave', 88, 96), (314, 'dra_sanctuaire', 'mine', 108, 116)]},
     {'id': 'otomai', 'name': "Île d'Otomaï", 'desc': 'Plaines, tourbières et villages de l\'île du savant Otomaï.', 'theme': 'forest',
-     'subs': [(454, 'oto_plaines', 'meadow', 90, 101), (457, 'oto_tourbiere', 'sewer', 89, 104), (471, 'oto_tourbiere2', 'sewer', 89, 104), (468, 'oto_zoths', 'city', 110, 128), (469, 'oto_canopee', 'forest', 110, 128)]},
+     'subs': [(454, 'oto_plaines', 'meadow', 90, 101), (457, 'oto_tourbiere', 'sewer', 89, 104), (471, 'oto_tourbiere2', 'sewer', 89, 104), (468, 'oto_zoths', 'city', 110, 128), (469, 'oto_canopee', 'forest', 110, 128),
+              (455, 'oto_jungle', 'forest', 123, 145), (464, 'oto_hakam', 'forest', 140, 162), (472, 'oto_feuillage', 'forest', 140, 162)]},
     {'id': 'minotoror', 'name': 'Île du Minotoror', 'desc': 'L\'île et le labyrinthe du Minotoror.', 'theme': 'quarry',
      'subs': [(209, 'mino_ile', 'beach', 100, 122), (319, 'mino_labyrinthe', 'cave', 104, 122)]},
     {'id': 'pandala', 'name': 'Île de Pandala', 'desc': 'L\'île des Pandawas, divisée entre les éléments.', 'theme': 'meadow',
-     'subs': [(942, 'pan_plantala', 'meadow', 98, 106), (941, 'pan_akwadala', 'lake', 118, 126), (944, 'pan_terrdala', 'quarry', 118, 126)]},
+     'subs': [(942, 'pan_plantala', 'meadow', 98, 106), (941, 'pan_akwadala', 'lake', 118, 126), (944, 'pan_terrdala', 'quarry', 118, 126),
+              (943, 'pan_feudala', 'quarry', 130, 142), (945, 'pan_aerdala', 'sky', 130, 142)]},
     {'id': 'frigost', 'name': 'Île de Frigost', 'desc': 'L\'île gelée : le port, la bourgade et les champs de glace.', 'theme': 'sky',
-     'subs': [(600, 'fri_port', 'beach', 78, 86), (601, 'fri_bourgade', 'city', 78, 86), (602, 'fri_champs', 'sky', 108, 116)]},
+     'subs': [(600, 'fri_port', 'beach', 78, 86), (601, 'fri_bourgade', 'city', 78, 86), (602, 'fri_champs', 'sky', 108, 116),
+              (604, 'fri_pins', 'forest', 130, 142), (615, 'fri_lac', 'lake', 130, 142), (609, 'fri_berceau', 'beach', 140, 152), (610, 'fri_larmes', 'mine', 150, 162),
+              (603, 'fri_village', 'sky', 160, 172), (606, 'fri_crevasse', 'cave', 160, 172), (605, 'fri_petrifiee', 'forest', 170, 182),
+              (608, 'fri_crocs', 'quarry', 180, 192), (611, 'fri_torrideau', 'sky', 180, 192), (753, 'fri_ruche', 'cave', 180, 192)]},
+    {'id': 'saharach', 'name': 'Saharach', 'desc': 'Le désert brûlant des Cacterres, des Vers des sables et de la Pyramide Maudite.', 'theme': 'beach', 'requires': {'boss': 'labyrinthe_minotoror'},
+     'subs': [(873, 'sah_cacterre', 'beach', 120, 132), (878, 'sah_gorge', 'quarry', 160, 172), (879, 'sah_cite', 'city', 160, 172), (881, 'sah_pyramide', 'grave', 198, 212)]},
+    {'id': 'pwak', 'name': 'Île de Pwâk', 'desc': "L'île gourmande des Croquants et des Chocomanciens.", 'theme': 'meadow', 'requires': {'boss': 'labyrinthe_minotoror'},
+     'subs': [(911, 'pwak_jardins', 'meadow', 120, 132)]},
+    {'id': 'divines', 'name': 'Dimensions divines', 'desc': 'Srambad, Enutrosor, Écaflipus, Xélorium et Osavora : les mondes des dieux.', 'theme': 'spirit', 'requires': {'boss': 'labyrinthe_minotoror'},
+     'subs': [(827, 'sram_ruelles', 'city', 120, 132), (821, 'enu_carriere', 'mine', 140, 152), (856, 'eca_lande', 'meadow', 150, 162), (837, 'xel_present', 'city', 160, 172),
+              (1041, 'osa_toorbz', 'forest', 160, 172), (828, 'sram_catacombres', 'grave', 170, 182),
+              (822, 'enu_retraite', 'mine', 198, 212), (829, 'sram_hauts', 'city', 198, 212), (838, 'xel_lendemains', 'spirit', 198, 212), (857, 'eca_temple', 'city', 198, 212)]},
+    {'id': 'grobe', 'name': 'Île de Grobe', 'desc': "L'île des tombeaux, de l'Armée de brume et des Yokai.", 'theme': 'grave', 'requires': {'boss': 'labo_tynril'},
+     'subs': [(952, 'grobe_cimetiere', 'grave', 150, 162), (955, 'grobe_mont', 'quarry', 160, 172)]},
+    {'id': 'sakai', 'name': 'Île de Sakaï', 'desc': 'Plaine glacée et mine abandonnée des Gobelins de Sakaï.', 'theme': 'sky', 'requires': {'boss': 'antre_korriandre'},
+     'subs': [(651, 'sak_plaine', 'sky', 180, 192), (652, 'sak_foret', 'forest', 180, 192)]},
+    {'id': 'valonia', 'name': 'Archipel de Valonia', 'desc': "Les galeries d'Ereboria et le bastion des Marteaux-Aigris.", 'theme': 'quarry', 'requires': {'boss': 'antre_korriandre'},
+     'subs': [(1027, 'val_ereboria', 'mine', 180, 192)]},
+    {'id': 'nimotopia', 'name': 'Nimotopia', 'desc': 'Le territoire des Chassouilleurs du Comte Razof.', 'theme': 'meadow', 'requires': {'boss': 'antre_korriandre'},
+     'subs': [(883, 'nimotopia', 'meadow', 180, 192)]},
+    {'id': 'obscure', 'name': 'Dimension Obscure', 'desc': "Le royaume des Obscuranti et la Pyramide d'Ombre.", 'theme': 'spirit', 'requires': {'boss': 'antre_korriandre'},
+     'subs': [(813, 'obs_dimension', 'spirit', 180, 192)]},
+    {'id': 'harebourg', 'name': 'Frigost : Harebourg', 'desc': "Le domaine du Comte Harebourg et le Belvédère d'Ilyzaelle.", 'theme': 'sky', 'requires': {'boss': 'cavernes_kolosso'},
+     'subs': [(785, 'har_jardins', 'meadow', 198, 212), (786, 'har_remparts', 'quarry', 198, 212), (787, 'har_tannerie', 'city', 198, 212),
+              (788, 'har_bastion', 'quarry', 198, 212), (789, 'har_clepsydre', 'city', 198, 212), (892, 'har_caserne', 'sky', 198, 212)]},
+    {'id': 'sufokia', 'name': 'Baie de Sufokia', 'desc': "La baie engloutie et l'Aquadôme de Merkator.", 'theme': 'beach', 'requires': {'boss': 'cavernes_kolosso'},
+     'subs': [(804, 'suf_embruns', 'lake', 198, 212)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
@@ -75,6 +107,8 @@ DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (306, 'grange_tournesol', 'ast_champs'),
     (336, 'chateau_ensable', 'ast_calanques'),
     (82, 'cour_bouftou_royal', 'ast_tainela'),
+    (537, 'chateau_wa_wabbit', 'wab_couronne'),
+    (538, 'terrier_wa_wabbit', 'wab_waldo'),
     (842, 'cache_kankreblath', 'ast_planque'),
     (201, 'donjon_tofus', 'ama_ingalsse'),
     (516, 'donjon_squelettes', 'ama_cimetiere'),
@@ -99,6 +133,58 @@ DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (325, 'antre_crocabulia', 'dra_sanctuaire'),
     (617, 'serre_royalmouth', 'fri_champs'),
     (254, 'repaire_skeunk', 'koa_cimetiere'),
+    # 4.0 — niveau 200 (parcours complet)
+    (780, 'tofulailler_royal', 'ama_ingalsse'),
+    (796, 'antre_blop_multicolore', 'can_lac'),
+    (839, 'megalithe_fraktale', 'xel_present'),
+    (818, 'voliere_haute_truche', 'can_cirque'),
+    (830, 'ring_ekarlatte', 'sram_ruelles'),
+    (876, 'caverne_el_piko', 'sah_cacterre'),
+    (914, 'croquanterie', 'pwak_jardins'),
+    (947, 'vallee_dame_eaux', 'pan_akwadala'),
+    (948, 'atelier_tanukoui', 'pan_terrdala'),
+    (463, 'labo_tynril', 'oto_jungle'),
+    (618, 'excavation_mansot', 'fri_lac'),
+    (781, 'clairiere_chene_mou', 'abr_sombre'),
+    (949, 'fabrique_foux', 'pan_feudala'),
+    (950, 'dojo_vent', 'pan_aerdala'),
+    (1016, 'tertre_long_sommeil', 'ama_dark_vlad'),
+    (339, 'repaire_sphincter', 'ama_cloaque'),
+    (619, 'epave_grolandais', 'fri_berceau'),
+    (824, 'galerie_phossile', 'enu_carriere'),
+    (210, 'salle_minotot', 'mino_labyrinthe', 'Minotot'),
+    (459, 'canopee_kimbo', 'oto_hakam'),
+    (620, 'hypogee_obsidiantre', 'fri_larmes'),
+    (811, 'grotte_kanigroula', 'can_dents'),
+    (853, 'plateau_ush', 'eca_lande'),
+    (953, 'tombe_tofugawa', 'grobe_cimetiere'),
+    (1044, 'poste_supervizoeuf', 'osa_toorbz'),
+    (621, 'taniere_givrefoux', 'fri_village'),
+    (840, 'horologium_xlii', 'xel_present'),
+    (880, 'boyau_pere_ver', 'sah_gorge'),
+    (954, 'demeure_esprits', 'grobe_mont'),
+    (494, 'temple_ougah', 'sid_fungus'),
+    (623, 'antre_korriandre', 'fri_petrifiee'),
+    (831, 'cave_toxoliath', 'sram_catacombres'),
+    (94, 'grotte_bworker', 'sid_gisgoul'),
+    (1028, 'bastion_marteaux', 'val_ereboria'),
+    (624, 'cavernes_kolosso', 'fri_crocs'),
+    (653, 'mine_sakai', 'sak_plaine'),
+    (752, 'antichambre_gloursons', 'fri_torrideau'),
+    (814, 'pyramide_ombre', 'obs_dimension'),
+    (884, 'camp_razof', 'nimotopia'),
+    (790, 'labo_nileza', 'har_jardins'),
+    (791, 'transporteur_sylargh', 'har_remparts'),
+    (792, 'salons_klime', 'har_tannerie'),
+    (793, 'forgefroide_frizz', 'har_bastion'),
+    (794, 'donjon_harebourg', 'har_clepsydre'),
+    (893, 'belvedere_ilyzaelle', 'har_caserne'),
+    (807, 'aquadome_merkator', 'suf_embruns'),
+    (825, 'palais_nidas', 'enu_retraite'),
+    (832, 'trone_cour_sombre', 'sram_hauts'),
+    (841, 'oeil_vortex', 'xel_lendemains'),
+    (854, 'defi_chaloeil', 'eca_temple'),
+    (882, 'chambre_tal_kasha', 'sah_pyramide'),
 ]
 EXCLUDE_NAMES = ("d'Halouine", 'Ballotin')
 EXCLUDE_RACES = {32, 147, 250}  # avis de recherche, poutchs
@@ -125,7 +211,7 @@ GATHER = {  # métier -> [(nom, niveau requis)]
     'pecheur': [('Greuvette', 1), ('Truite', 10), ('Crabe Sourimi', 20), ('Poisson-Chaton', 40)],
 }
 BREEDS = {'feca': 1, 'osa': 2, 'enu': 3, 'sram': 4, 'xelor': 5, 'eca': 6, 'eni': 7, 'iop': 8, 'cra': 9, 'sadi': 10, 'sacri': 11, 'panda': 12, 'roub': 13, 'zobal': 14, 'steam': 15, 'elio': 16, 'hupper': 17, 'ougi': 18, 'forge': 20}
-MAX_CRAFT_LVL = 125
+MAX_CRAFT_LVL = 200
 
 # ------------------------------------------------------------------ load
 log('Chargement…')
@@ -239,8 +325,9 @@ for z in ZONES:
 
 # ------------------------------------------------------------------ dungeons
 dg_out = {}
-for dsub, gid, access in DUNGEONS:
-    d = next((x for x in dungeons_raw if x.get('subarea') == dsub and x.get('bosses')), None)
+for tup in DUNGEONS:
+    dsub, gid, access = tup[:3]; want = tup[3] if len(tup) > 3 else None
+    d = next((x for x in dungeons_raw if x.get('subarea') == dsub and x.get('bosses') and (not want or want in fr(x))), None)
     if not d: log('!! donjon introuvable pour la sous-zone', dsub); continue
     boss = monsters[d['bosses'][0]]
     GAME_M[mkey(boss)] = monster_entry(boss, boss=True)
@@ -281,7 +368,7 @@ for z in zones_out:
 seen_res = set()
 for sk in sorted(skills, key=lambda x: x.get('levelMin', 0)):
     j = GJOB.get(sk.get('parentJobId')); rid = sk.get('gatheredRessourceItem') or -1
-    if not j or rid <= 0 or sk.get('levelMin', 1) > 120: continue
+    if not j or rid <= 0 or sk.get('levelMin', 1) > 200: continue
     it = items.get(rid)
     if not it: continue
     n = reg_res(it)
@@ -538,7 +625,15 @@ def convert_fx(effects, desc=''):
         else: out.append({'k': 'buff', 'st': 'pui', 'v': 20, 't': 2, 'all': False, 'fb': 1})
     return out
 CLASS_KITS = {}
-cs = json.load(open(os.path.join(RAW3, 'class_spells.json'), encoding='utf-8'))
+CS_PATH = os.path.join(RAW3, 'class_spells.json')
+if os.path.exists(CS_PATH):
+    cs = json.load(open(CS_PATH, encoding='utf-8'))
+else:  # pas d'import brut des sorts de classe (ex. GitHub Actions) : on garde les kits déjà dans le jeu
+    log('class_spells.json absent : kits de classe et invocations repris de js/gamedata.js')
+    _src = open(os.path.join(ROOT, 'js', 'gamedata.js'), encoding='utf-8').read()
+    _old = json.loads(_src[_src.index('const GAMEDATA = ') + 17:_src.index(';\n  root.GAMEDATA')])
+    cs = {'levels': [], 'spells': [], 'variants': []}
+    for _k, _v in _old['SPELL_IMG'].items(): SPELL_IMG.setdefault(_k, _v)
 CL = {l['id']: l for l in cs['levels']}; CS = {x['id']: x for x in cs['spells']}
 def spell_out(sp):
     grades = []
@@ -561,6 +656,7 @@ for cls, bid in BREEDS.items():
         pairs.append(outs)
     pairs.sort(key=lambda p: p[0]['grades'][0]['lvl'] if p[0]['grades'] else 999)
     CLASS_KITS[cls] = pairs
+if not cs['variants']: CLASS_KITS = _old['CLASS_KITS']
 log('Kits de classe :', {c: len(p) for c, p in CLASS_KITS.items()})
 SUMMONS = {}
 for pairs in CLASS_KITS.values():
@@ -571,6 +667,7 @@ for pairs in CLASS_KITS.values():
                     if f['k'] == 'summon' and f.get('mid') in monsters:
                         mm = monsters[f['mid']]; SUMMONS[str(f['mid'])] = {'name': fr(mm), 'img': mm['gfxId']}
                         images['m'][f"{mm['gfxId']}.png"] = mm.get('img') or f"https://api.dofusdb.fr/img/monsters/{mm['gfxId']}.png"
+if not cs['variants']: SUMMONS = _old['SUMMONS']
 log('Invocations :', len(SUMMONS))
 # sorts de monstres
 msp_path = os.path.join(RAW3, 'monster_spells.json')
@@ -587,6 +684,7 @@ if need and FETCH_IMAGES:
     for i in range(0, len(lids), 40):
         q = '&'.join(f'id[$in][]={x}' for x in lids[i:i + 40]); new_lv += get_json(f'https://api.dofusdb.fr/spell-levels?{q}&$limit=50&lang=fr')['data']
     cache['spells'] += new_sp; cache['levels'] += new_lv; cache['mids'] = sorted(set(cache.get('mids', [])) | set(need))
+    os.makedirs(RAW3, exist_ok=True)
     json.dump(cache, open(msp_path, 'w', encoding='utf-8'), ensure_ascii=False)
 MS = {x['id']: x for x in cache['spells']}; ML = {l['id']: l for l in cache['levels']}
 nsp = 0
