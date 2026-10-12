@@ -16,9 +16,17 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.22";
+const GAME_VERSION = "0.1.22.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.22.1", name: "Challenges qui rapportent", items: [
+    "Les challenges rapportent plus, selon leur difficulté : Survivant, Focus et Barbare +10 %, Versatile, Économe, Élitiste et Élémentaire +15 %, Chacun son monstre et Rapide +20 %, Incurable +25 %, Ordonné +30 % d'XP et de butin",
+    "Série de challenges réussis : +1 % par combat, jusqu'à +10 % (au lieu de +0,5 % et +5 %)",
+    "Respecter les challenges ne ralentit presque plus l'équipe : l'IA garde ses sorts de zone pour Focus, Élitiste et Ordonné tant qu'ils ne risquent pas d'achever le mauvais monstre, et les invocations visent la bonne cible",
+    "Chacun son monstre (jamais réussi) : les héros se répartissent les monstres et chacun vise le sien jusqu'à sa mort",
+    "Rapide : le nombre de tours permis tient compte du niveau des monstres (il était impossible à haut niveau)",
+    "Élémentaire : chaque héros garde un seul élément, au lieu d'un seul élément pour toute l'équipe"
+  ] },
   { v: "0.1.22", name: "Carnet et trésor", items: [
     "Carnet de bord (Équipe › Carnet) : ton XP, tes kamas, tes combats et le niveau de l'équipe heure par heure sur 7 jours, ou jour par jour sur 30 jours ; les heures hors ligne sont grisées et chaque mise à jour du jeu est marquée sur la courbe. Survole la courbe pour le détail d'une heure",
     "Bilan des kamas : d'où ils viennent (chasse, donjons, ventes au jeu, Hôtel de vente, défi, quêtes, trésors) et où ils partent (forgemagie, Havre-Sac, artisanat et clés, montures, boutique, idoles)",
@@ -758,7 +766,7 @@ function statusHtml() {
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
     <span class="it hide-sm">${IC("monde")} <span>${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
-    ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +0,5 % d'XP et de butin par combat (max +5 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
+    ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">${IC("almanax")} Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
