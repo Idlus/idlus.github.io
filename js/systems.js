@@ -150,6 +150,7 @@
     if (kind === "drop" || kind === "kamas" || kind === "gather") b += E.boostPct(S, kind);
     if (kind === "xp" || kind === "drop" || kind === "kamas") b += E.boostPct(S, "royal");
     if (kind === "xp" || kind === "drop") b += E.starBonus(S); // étoiles de la zone chassée (0.1.8.1)
+    b += E.guildBonus(S, kind); // 0.1.21 : bonus de la guilde, sous les mêmes plafonds
     return b;
   };
 

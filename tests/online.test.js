@@ -96,6 +96,9 @@ const MOCK = () => {
       if (name === "hdv_mine") return { data: { open: [], sold: [] }, error: null };
       if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: [] } : null, error: null };
       if (name === "hdv_buy") { if (d.hdvSold) return { data: { err: "Déjà vendu." }, error: null }; d.hdvSold = true; put(d); return { data: { ok: true, ops: [{ id: 1, p: { k: -5000, add: [item] }, t: "Acheté : " + T.name }] }, error: null }; }
+      if (name === "guild_me") return { data: { g: null, invites: [{ gid: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, n: 7, by: "Kralamour" }], asks: [] }, error: null };
+      if (name === "guild_list") return { data: [{ id: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, open: true, motd: "", n: 7, chef: "Kralamour" }], error: null };
+      if (name === "guild_give" || name === "guild_chat") return { data: name === "guild_chat" ? [] : { ok: false, none: true }, error: null };
       if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
@@ -235,6 +238,10 @@ const MOCK = () => {
     await page.click('.subtabs [data-act="mk-tab"][data-v="sell"]'); await page.waitForTimeout(300);
     await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
     if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
+    // 7f. guildes : invitation reçue, liste, formulaire de fondation
+    await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
+    await page.click('#subnav [data-tab="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
+    if (!(await page.$("#gName")) || !(await page.$('[data-act="g-join"]'))) fail("guildes : page incomplète");
     await page.click('#nav [data-fam="adv"]');
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);

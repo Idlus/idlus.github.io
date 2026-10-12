@@ -1,6 +1,20 @@
 {
-  "version": "0.1.20",
+  "version": "0.1.21",
   "versions": [
+    {
+      "v": "0.1.21",
+      "name": "Guildes",
+      "items": [
+        "Nouvelle page Communauté › Guilde : liste des guildes (niveau, membres, Meneur, message du jour), entrée libre ou sur demande, invitations",
+        "Fonder une guilde avec la Guildalogemme : 100 000 kamas et un héros au niveau 30 ; nom et emblème (12 symboles, 8 couleurs) au choix",
+        "Jusqu'à 30 membres et quatre rangs : Meneur (tout), Bras droit (accepte les demandes, gère Membres et Recrues, message du jour), Membre (invite) et Recrue",
+        "XP de guilde comme dans DOFUS : chacun choisit la part de l'XP de ses combats qu'il donne à la guilde, de 0 à 90 %, et voit ce qu'il a donné cette semaine",
+        "Niveaux de guilde (jusqu'au 100) et bonus pour tous les membres : +1 % XP tous les 5 niveaux, +1 % butin et kamas tous les 10 niveaux, sous les plafonds du jeu",
+        "Chat de guilde : l'onglet Guilde du chat s'ouvre dès qu'on a une guilde ; arrivées, départs et niveaux de guilde y sont annoncés, et tout est gardé dans le journal",
+        "Annoncés pour la prochaine mise à jour : le boss de la semaine, les Percepteurs et le coffre de guilde",
+        "Panel admin : onglet Guildes pour renommer une guilde, effacer un message du jour ou dissoudre une guilde"
+      ]
+    },
     {
       "v": "0.1.20",
       "name": "Hôtel de vente",

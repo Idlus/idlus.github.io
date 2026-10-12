@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.21 « Guildes » (bêta)
+- Multijoueur, étape 5 (première partie) : guildes (Guildalogemme 100 000 kamas + héros niveau 30, 30 membres, rangs Meneur / Bras droit / Membre / Recrue, entrée libre ou sur demande, invitations), XP de guilde donnée par les membres (0 à 90 % de l'XP des combats, `E.guildXpShare`), niveaux 1 à 100 et bonus (`E.guildBonus`, sous les plafonds), chat de guilde (onglet Guilde du chat, relevé toutes les 4 s), journal, onglet Guildes du panel admin. Code : `js/guilds.js`, `supabase/guildes.sql`. Boss de la semaine, Percepteurs (version « la guilde défend ensemble ») et coffre de guilde : partie suivante.
+
 ## 0.1.20 « Hôtel de vente » (bêta)
 - Multijoueur, étape 4 : hôtel de vente entre joueurs (équipements avec leur jet exact, ressources et clefs par lots de 1/10/100, runes, consommables ; taxe de 2 % à la mise en vente, 20 annonces, 14 jours, prix minimum = revente au jeu) et échange direct entre deux joueurs. Nouvelle famille « Communauté » (Hôtel de vente, Classements). Le serveur garde les annonces et renvoie des « opérations » (kamas, objets, ressources) que le jeu applique dans l'ordre (`S.hdv.op`). Code : `js/market.js`, `supabase/hdv.sql`, `supabase/hdv_data.sql` (généré par `node tools/build_hdv.js` : Dofus, trophées, meubles et idoles interdits).
 
