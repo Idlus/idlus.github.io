@@ -1,6 +1,15 @@
 {
-  "version": "0.1.28.1",
+  "version": "0.1.28.2",
   "versions": [
+    {
+      "v": "0.1.28.2",
+      "name": "Bêta hors ligne",
+      "items": [
+        "Le multijoueur passe sur le jeu public (idlus.github.io) : comptes, chat, Hôtel de vente, guildes et classements s'y trouvent maintenant",
+        "La version de test n'a plus de serveur, pour que les parties de test ne se mélangent pas aux vraies. En l'ouvrant, un menu propose « Tester hors ligne » ou « Jouer en ligne » (le jeu public)",
+        "Le panel de test s'ouvre dans le navigateur où le compte admin est connecté sur le jeu public"
+      ]
+    },
     {
       "v": "0.1.28.1",
       "name": "Défi au tableau",

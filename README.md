@@ -7,6 +7,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.28.2 « Bêta hors ligne »
+- Le multijoueur passe sur le jeu public (main, serveur Supabase actuel). `js/online.js` : un seul monde en ligne, le public ; /beta/ n'a plus de serveur. Le workflow « Serveur en ligne » quitte `beta` : le SQL et la fonction « record » ne se déploient plus qu'à une publication sur `main`.
+- Menu d'entrée de la bêta (`betaGate` dans ui.js) : « Tester hors ligne » ou « Jouer en ligne » (lien vers le public), choix gardé pour la session.
+- Panel de test : `testerOk` accepte aussi `localStorage["idlus-testeur"]`, posé par chat.js quand le compte admin est connecté sur le public du même navigateur.
+
 ## 0.1.28.1 « Défi au tableau » (bêta)
 - Mathis (question 6 du fil Défi du jour) : `defiLine()` affichée dans le tableau du jour de Quêtes (js/questui.js) ; `defiTodo()` compte dans `QUI.todo` (pastille de Quêtes). Les deux sont exposées dans `window.DX.social`.
 

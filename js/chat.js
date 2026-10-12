@@ -38,6 +38,7 @@
   async function refresh() {
     const [g, p, ign, role, me] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}]);
     C.g = g || []; C.p = p || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     if (C.role) X().renderStatus();
     paint();
