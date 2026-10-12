@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.15 « Comptes en ligne » (bêta)
+- Multijoueur, étape 2 : compte (Discord ou lien par e-mail, pseudo unique) et sauvegarde en ligne sur Supabase (`js/online.js`, base dans `supabase/schema.sql`), pastille de sauvegarde, choix entre deux versions de la partie, partie « Compte » dans les Options.
+
 ## 0.1.14.4 « Dernier réglage » (bêta)
 - Métiers au tiers du niveau de l'objet, attaques trop faibles renforcées, Écaflip et Roublard réglés vers le niveau 50.
 

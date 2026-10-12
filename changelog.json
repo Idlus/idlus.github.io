@@ -1,6 +1,17 @@
 {
-  "version": "0.1.14.4",
+  "version": "0.1.15",
   "versions": [
+    {
+      "v": "0.1.15",
+      "name": "Comptes en ligne",
+      "items": [
+        "Compte Idlus : connexion avec Discord ou par un lien reçu par e-mail (sans mot de passe), et un pseudo unique choisi une seule fois",
+        "Ta partie est gardée en ligne : envoi toutes les 30 secondes et quand tu quittes l'onglet, pour la retrouver sur un autre ordinateur ou ton téléphone",
+        "Ta partie actuelle part sur ton compte en un clic à la première connexion ; si deux appareils ont chacun avancé, le jeu te demande laquelle garder (l'autre reste en copie de secours)",
+        "Pastille « Sauvegardé en ligne » dans la barre du haut (jaune pendant l'envoi, grise hors ligne : le jeu continue et envoie au retour d'Internet)",
+        "Options : nouvelle section « Compte » (pseudo, Discord, e-mail, envoi immédiat, déconnexion, suppression du compte). Jouer sans compte reste possible"
+      ]
+    },
     {
       "v": "0.1.14.4",
       "name": "Dernier réglage",
