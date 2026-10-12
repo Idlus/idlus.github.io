@@ -52,3 +52,15 @@ const r = SV.load(); assert.ok(r.state && r.restored, "partie illisible : la cop
 SV.remove(); assert.strictEqual(SV.read(), null);
 const tr = SV.load(E.serialize(S1)); assert.ok(tr.transferred && tr.state, "reprise depuis l'ancienne adresse");
 console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
+
+// Quête « Dévotion » : une offrande à l'Almanax faite AVANT d'arriver à l'étape compte (0.1.29.5).
+{
+  E.setClock(() => T0);
+  const S = E.newState("Devotion", "iop"); E.refreshSystems(S);
+  const stepAlm = E.MAIN_QUEST.findIndex((q) => q.t === "almanax");
+  S.almanax = { day: E.dayKey(), kind: "xp", pct: 15 }; // offrande déjà faite aujourd'hui
+  S.quest = { step: stepAlm, prog: 0 };                  // le joueur arrive ensuite à l'étape
+  const L = E.deserialize(E.serialize(S));               // chargement du jeu
+  assert.ok(L.quest.step > stepAlm, "l'étape Dévotion doit être validée par l'offrande du jour");
+  console.log("ok - offrande du jour déjà faite : étape Dévotion validée");
+}
