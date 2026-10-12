@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.21";
+const GAME_VERSION = "0.1.21.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.21.1", name: "Annonces de records", items: [
+    "Chat : l'annonce « prend la 1re place » d'un donjon s'affichait en barre vide ; elle dit de nouveau qui a pris la 1re place, où et en quelle stasis"
+  ] },
   { v: "0.1.21", name: "Guildes", items: [
     "Nouvelle page Communauté › Guilde : liste des guildes (niveau, membres, Meneur, message du jour), entrée libre ou sur demande, invitations",
     "Fonder une guilde avec la Guildalogemme : 100 000 kamas et un héros au niveau 30 ; nom et emblème (12 symboles, 8 couleurs) au choix",
