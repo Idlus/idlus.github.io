@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.28.2";
+const GAME_VERSION = "0.1.28.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.28.3", name: "Double gain", items: [
+    "Événement « Double gain » (aussi sur le jeu public) : XP et butin x2 pour tout le monde jusqu'au mercredi 14 octobre à 23 h (heure de Paris), en combat, en chasse et pendant l'absence",
+    "Un bandeau doré en haut du jeu rappelle l'événement et le temps qui reste",
+  ] },
   { v: "0.1.28.2", name: "Bêta hors ligne", items: [
     "Le multijoueur passe sur le jeu public (idlus.github.io) : comptes, chat, Hôtel de vente, guildes et classements s'y trouvent maintenant",
     "La version de test n'a plus de serveur, pour que les parties de test ne se mélangent pas aux vraies. En l'ouvrant, un menu propose « Tester hors ligne » ou « Jouer en ligne » (le jeu public)",
@@ -3981,6 +3985,7 @@ function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
   if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jouer en ligne</a></div>`;
+  if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); html += `<div class="updbar ev"><span>${G("sparkle")} <b>Événement ${h(E.EVENT.name)}</b> : XP et butin x2 pour tout le monde, encore ${hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`}.</span></div>`; }
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
