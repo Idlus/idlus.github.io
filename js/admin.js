@@ -80,8 +80,7 @@ function panelHtml() {
     + row(`<span class="muted">Nouvelle équipe :</span><span class="xs muted">niveau</span>${inp("admGenL", `type="number" min="1" max="${E.MAX_LVL}" value="${st.lvl}" style="width:70px"`)}
       <select id="admGenG"><option value="aucun">sans équipement</option><option value="bon" selected>bon équipement</option><option value="optimise">optimisée</option></select>${btn("gen", "Créer")}`)
     + `<span class="xs muted">Reprend les classes de votre équipe actuelle (${E.team(s).map((c) => h(CLASSES[c.cls].name)).join(", ") || "aucune"}), zones débloquées. Remplace la partie (copie de secours faite).</span>`)}
-  ${window.ONLINE && window.ONLINE.user ? sec("Classements", "Joueurs mis « en vérification » (progrès impossible ou panel de test utilisé) : ils jouent normalement mais n'apparaissent plus dans les classements. Réservé au compte administrateur.",
-    `<div id="admFlag">${btn("flagload", "Voir les joueurs en vérification")}</div>`) : ""}
+  ${window.CHAT && window.CHAT.role ? sec("Panel admin", "Joueurs en vérification, signalements du chat, sanctions et annonces sont maintenant dans le panel admin (bouton bleu en haut).", `<button class="btn sm" data-act="adm-open">Ouvrir le panel admin</button>`) : ""}
   </div><div><button class="btn" data-act="closesheet">Fermer</button></div>`;
 }
 const open = () => DX.openSheet(panelHtml());
@@ -95,22 +94,11 @@ function replaceGame(N, txt) {
   N.panelUsed = true; DX.S = N; DX.ui.cid = N.chars[0].id; DX.ui.tab = "home"; DX.setTheme(); DX.closeSheet(); DX.markDirty(); DX.saveNow(); DX.render(); DX.renderStatus(); DX.toast(txt);
 }
 
-/* ---------- classements : joueurs en vérification ---------- */
-async function flagged(unflag) {
-  const box = document.getElementById("admFlag"); const db = window.ONLINE && window.ONLINE.db(); if (!box || !db) return;
-  if (unflag) { const { error } = await db.rpc("admin_unflag", { p_user: unflag }); DX.toast(error ? "Refusé : " + error.message : "Joueur rétabli dans les classements."); }
-  const { data, error } = await db.rpc("admin_flagged");
-  if (error) { box.innerHTML = `<span class="xs minus">${h(error.message)}</span>`; return; }
-  box.innerHTML = data && data.length ? data.map((r) => row(`<span class="grow"><b>${h(r.pseudo)}</b> <span class="xs muted">${h(r.reason || "")} · ${fmt(r.level)} niveaux · ${new Date(r.updated_at).toLocaleString("fr-FR")}</span></span>${btn("unflag", "Rétablir", `data-u="${h(r.user_id)}"`)}`)).join("")
-    : `<span class="xs muted">Personne en vérification (ou ce compte n'est pas administrateur).</span>`;
-}
-
 /* ---------- actions ---------- */
 document.addEventListener("change", (ev) => { const k = ev.target.dataset && ev.target.dataset.admV; if (k) st[k] = k === "k" ? +ev.target.value : ev.target.value; });
 document.addEventListener("click", (ev) => {
   const t = ev.target.closest("[data-adm]"); if (!t) return;
   const s = S(); const d = t.dataset;
-  if (d.adm === "flagload" || d.adm === "unflag") { flagged(d.adm === "unflag" ? d.u : null); return; }
   if (d.adm === "open") { if (!s) { DX.toast("Commencez une partie pour utiliser le panel de test."); return; } open(); return; }
   if (!s) return;
   switch (d.adm) {

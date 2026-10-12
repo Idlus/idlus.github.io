@@ -688,7 +688,7 @@ function statusHtml() {
     ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">${IC("almanax")} Almanax +${S.almanax.pct} %</span>` : ""}
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    ${ON ? pillHtml() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
+    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
@@ -3812,6 +3812,7 @@ function render() {
   else if (ui.tab === "quests") renderQuests();
   else if (ui.tab === "ren") renderRenaissance();
   else if (ui.tab === "ladder") renderLadder();
+  else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else { ui.tab = "home"; renderHome(); }
   tipTick();
 }
@@ -4044,7 +4045,8 @@ function itemSheet(tpl) {
     <div class="list">${lines.join("") || `<div class="li muted">Source inconnue pour l'instant.</div>`}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
       ${T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${tpl}">${G("cart")} ${inShop ? "Retirer de la liste de courses" : "Liste de courses"}</button>` : ""}
-      ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}</div>`);
+      ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}
+      ${window.CHAT && window.CHAT.canShare() ? `<button class="btn sm" data-act="ch-share" data-tpl="${tpl}">${G("chat")} Montrer dans le chat</button>` : ""}</div>`);
 }
 function resSheet(n) {
   const R = RES[n]; if (!R) return; const q = S.res[n] || 0;
@@ -4076,6 +4078,7 @@ document.addEventListener("click", (ev) => {
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
   if (ON && a && a.startsWith("on-")) { onAct(a, t); return; }
   if (ON && a && a.startsWith("lb-")) { lbAct(a, t); return; }
+  if (a && /^(ch|adm)-/.test(a)) return; // chat et panel admin : js/chat.js
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -4531,7 +4534,7 @@ async function onConflictLive() {
   if (!info) { ON.setLink({ base: null }); return onPush(); }
   conflictSheet(S, info);
 }
-const PILL = { ok: ["", "Sauvegardé", " en ligne", "Partie à jour sur ton compte. Clique pour envoyer tout de suite."], sync: ["s", "Envoi", "…", "Envoi de la partie en cours."], offline: ["off", "Hors ligne", "", "Pas de connexion au serveur : le jeu continue et ta partie sera envoyée au retour d'Internet. Clique pour réessayer."], conflict: ["warn", "À vérifier", "", "Ta partie a avancé sur un autre appareil : clique pour choisir la version à garder."] };
+const PILL = { ok: ["", "Sauvegardé", " en ligne", "Partie à jour sur ton compte. Clique pour envoyer tout de suite."], sync: ["s", "Envoi", "…", "Envoi de la partie en cours."], offline: ["off", "Hors ligne", "", "Pas de connexion au serveur : le jeu continue et ta partie sera envoyée au retour d'Internet. Clique pour réessayer."], conflict: ["warn", "À vérifier", "", "Ta partie a avancé sur un autre appareil : clique pour choisir la version à garder."], suspended: ["off", "Compte suspendu", "", "Ton compte a été suspendu : ta partie n'est plus envoyée en ligne. Elle reste sur cet appareil."] };
 function pillHtml() {
   if (!ON || !ON.user || !ON.profile) return "";
   const p = PILL[ON.state] || PILL.sync;
@@ -4859,6 +4862,7 @@ function bootGame(pushNow) {
     S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
   if (onLive()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
+  if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
@@ -4866,6 +4870,8 @@ function bootGame(pushNow) {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }
 window.DX = { get S() { return S; }, ui, render, E, diagText };
+/* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
+window.DX.social = { h, G, IC, cmed, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus };
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

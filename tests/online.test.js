@@ -27,18 +27,20 @@ const MOCK = () => {
   const put = (d) => localStorage.setItem("__mock", JSON.stringify(d));
   const ts = () => new Date(Date.now()).toISOString().replace("Z", "000Z").replace(/\.(\d{3})000Z$/, ".$1" + String(Math.floor(Math.random() * 1000)).padStart(3, "0") + "Z");
   const q = (table) => {
-    const f = []; let ins = null, ord = [], lim = 1e9, head = false;
+    const f = []; let ins = null, del = false, ord = [], lim = 1e9, head = false;
     const rowsOf = () => { const d = db(); if (table === "profiles") return d.profiles; if (table === "saves") return Object.entries(d.saves).map(([user_id, s]) => Object.assign({ user_id }, s)); return (d.views || {})[table] || []; };
     const run = () => { let rows = rowsOf().slice(); f.forEach((fn) => { rows = rows.filter(fn); });
       ord.slice().reverse().forEach(([k, asc]) => rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * (asc ? 1 : -1))); return rows.slice(0, lim); };
     const b = {
       select: (c, o) => { head = !!(o && o.head); return b; }, limit: (n) => { lim = n; return b; }, order: (k, o) => { ord.push([k, !o || o.ascending !== false]); return b; },
-      eq: (k, v) => { f.push((r) => r[k] === v); return b; }, gt: (k, v) => { f.push((r) => r[k] > v); return b; }, lte: (k, v) => { f.push((r) => r[k] <= v); return b; },
+      eq: (k, v) => { f.push((r) => r[k] === v); return b; }, in: (k, v) => { f.push((r) => v.includes(r[k])); return b; }, delete: () => { del = true; return b; }, gt: (k, v) => { f.push((r) => r[k] > v); return b; }, lte: (k, v) => { f.push((r) => r[k] <= v); return b; },
       or: () => { f.push(() => false); return b; },
       ilike: (k, v) => { v = v.replace(/\\/g, ""); f.push((r) => String(r[k]).toLowerCase() === v.toLowerCase()); return b; },
       insert: (o) => { ins = o; return b; },
       maybeSingle: () => Promise.resolve({ data: run()[0] || null, error: null }),
       then: (ok, ko) => {
+        if (ins && table !== "profiles") { const d = db(); d.views = d.views || {}; (d.views[table] = d.views[table] || []).push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
+        if (del) { const d = db(); const gone = run(); d.views[table] = (d.views[table] || []).filter((r) => !gone.some((g) => JSON.stringify(g) === JSON.stringify(r))); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
         if (ins) { const d = db(); if (d.profiles.some((p) => p.pseudo.toLowerCase() === ins.pseudo.toLowerCase())) return Promise.resolve({ error: { message: "duplicate key" } }).then(ok, ko); d.profiles.push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
         const rows = run(); return Promise.resolve(head ? { count: rows.length, error: null } : { data: rows, error: null }).then(ok, ko);
       },
@@ -56,6 +58,9 @@ const MOCK = () => {
       linkIdentity: async () => ({ error: null }),
     },
     from: q,
+    channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
+      window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
+    removeChannel: () => {},
     functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
       const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
@@ -67,6 +72,22 @@ const MOCK = () => {
         d.saves[u.id] = { data: a.p_data, meta: a.p_meta, device: a.p_device, game_version: a.p_version, updated_at: ts() }; d.pushes = (d.pushes || 0) + 1; put(d);
         return { data: d.saves[u.id].updated_at, error: null };
       }
+      const me = d.profiles.find((p) => p.id === u.id); const log = () => { d.admCalls = (d.admCalls || []).concat([[name, a]]); put(d); };
+      if (name === "chat_send") {
+        if (/www\.|https?:/.test(a.p_body)) return { data: "Les liens ne sont pas autorisés dans le chat.", error: null };
+        d.views = d.views || {}; const L = (d.views.chat_msgs = d.views.chat_msgs || []);
+        const m = { id: 1000 + L.length, ch: a.p_to ? "p" : "g", user_id: u.id, to_id: a.p_to, pseudo: me && me.pseudo, cls: "iop", lvl: 50, body: a.p_body, item: a.p_item, kind: "msg", created_at: new Date().toISOString() };
+        L.push(m); put(d); setTimeout(() => window.__chatEmit && window.__chatEmit(m), 50); return { data: null, error: null };
+      }
+      if (name === "chat_report") { d.reports = (d.reports || []).concat([a]); put(d); return { data: null, error: null }; }
+      if (name === "chat_me") return { data: { banned: false }, error: null };
+      if (name === "my_role") return { data: d.role || null, error: null };
+      if (name === "adm_overview") return { data: { accounts: d.profiles.length, active: 1, reports: 1, flagged: 0, muted: 0, signups: [{ id: "u9", pseudo: "Kralamour", cls: "iop", at: new Date().toISOString() }], log: [{ at: new Date().toISOString(), txt: "test", who: "Xener" }], settings: { min_level: 0, slow_s: 4 }, role: d.role }, error: null };
+      if (name === "adm_players") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, playtime: 7200, heroes: [{ cls: "iop", lvl: 200, ren: 1 }], created_at: new Date().toISOString(), last_save: new Date().toISOString(), reports: 1, flagged: false }], error: null };
+      if (name === "adm_msgs" || name === "adm_mods" || name === "adm_flagged") return { data: [], error: null };
+      if (name === "adm_reports") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", n: 1, reasons: "Spam", bodies: ["coucou"] }], error: null };
+      if (name === "adm_announce") { log(); d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 7, body: a.p_body, banner: true, until: null }); put(d); return { data: null, error: null }; }
+      if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
     },
   }) };
@@ -153,9 +174,49 @@ const MOCK = () => {
     if (!/Stasis 3/.test(await page.textContent(".bigrec"))) fail("fiche de record incorrecte");
     await page.click('[data-act="lb-goto"]'); await page.waitForTimeout(300);
     m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
+    // 7c. chat : lecture, envoi, refus d'un lien, objet montré, menu d'un joueur, signalement, ignorer, privé
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const t = new Date().toISOString();
+      d.views.chat_msgs = [{ id: 1, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, title: "Maître de la semaine", body: "Salut !", kind: "msg", created_at: t },
+        { id: 2, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, kind: "ann", data: { t: "first", label: "Premier héros au niveau 200" }, created_at: t }];
+      localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000 });
+    await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
+    if (!/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : annonce automatique absente");
+    await page.fill("#chIn", "va sur www.test.fr"); await page.press("#chIn", "Enter"); await page.waitForSelector("#chat .ch-hint .bad", { timeout: 5000 });
+    await page.fill("#chIn", "Bonjour à tous"); await page.press("#chIn", "Enter"); await page.waitForTimeout(400);
+    if (!/Bonjour à tous/.test(await page.textContent("#chat .ch-list"))) fail("chat : message envoyé absent");
+    await page.evaluate(() => { const m = { id: 50, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Coucou en direct", kind: "msg", created_at: new Date().toISOString() };
+      const d = JSON.parse(localStorage.getItem("__mock")); d.views.chat_msgs.push(m); localStorage.setItem("__mock", JSON.stringify(d)); window.__chatEmit(m); }); await page.waitForTimeout(200);
+    if (!/Coucou en direct/.test(await page.textContent("#chat .ch-list"))) fail("chat : message en temps réel absent");
+    await page.evaluate(() => { const tpl = Object.keys(window.DATA.ITEMS)[0]; window.DX.social.itemSheet(tpl); }); await page.click('[data-act="ch-share"]');
+    await page.waitForSelector("#chat .ch-att", { timeout: 3000 }); await page.waitForTimeout(4000); await page.click('[data-act="ch-send"]'); await page.waitForTimeout(400);
+    if (!(await page.$("#chat .ch-list .itm"))) fail("chat : objet montré absent");
+    await page.click('#chat .ps[data-u="u9"]'); await page.waitForSelector("#chMenu", { timeout: 3000 }); await page.click('#chMenu [data-act="ch-rep"]');
+    await page.waitForSelector('[data-act="ch-repgo"]', { timeout: 3000 }); await page.click('[data-act="ch-repgo"]'); await page.waitForTimeout(500);
+    m = await mock(); if (!(m.reports || []).length) fail("chat : signalement non envoyé");
+    if (/Salut !/.test(await page.textContent("#chat .ch-list"))) fail("chat : joueur ignoré encore visible");
+    await page.click('#chat .ps[data-u="u8"]'); await page.click('#chMenu [data-act="ch-pm"]'); await page.waitForTimeout(4200);
+    await page.fill("#chIn", "Message privé"); await page.press("#chIn", "Enter"); await page.waitForTimeout(400);
+    m = await mock(); if (!m.views.chat_msgs.some((x) => x.ch === "p" && x.to_id === "u8")) fail("chat : message privé non envoyé");
+    // 7d. panel admin
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "admin"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector('#status [data-act="adm-open"]', { timeout: 5000 });
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
+    await page.click('.adm [data-act="adm-tab"][data-v="joueurs"]'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 });
+    await page.click('.adm [data-act="adm-sel"]'); await page.waitForSelector(".adm .fiche", { timeout: 5000 });
+    await page.click('.adm [data-act="adm-mute"][data-v="60"]'); await page.waitForTimeout(400);
+    await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admAnn", { timeout: 5000 });
+    await page.fill("#admAnn", "Maintenance ce soir"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(600);
+    m = await mock(); const calls = (m.admCalls || []).map((x) => x[0]);
+    if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
+    if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");
+    await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0)); await page.click('#nav [data-fam="adv"]');
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);
+    await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
+    const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);
+    await page.click("#chat .ch-x");
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('[data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "xener"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
