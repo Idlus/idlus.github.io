@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.9.2";
+const GAME_VERSION = "0.1.9.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.9.3", name: "Passif visible", items: [
+    "Recruter un héros : la description et le passif de la classe choisie s'affichent en entier (ils étaient écrasés sous la grille des 19 classes) ; la fenêtre défile au lieu de rétrécir son contenu",
+  ] },
   { v: "0.1.9.2", name: "Exotique", items: [
     "Runes exotiques : une Rune Ga ajoute +1 PA, +1 PM ou +1 Portée à un objet de niveau 150 ou plus qui n'a pas la caractéristique (un seul exo par objet, un seul exo PA porté par héros, pas sur les Dofus et trophées). Forgemage niveau 100 requis ; 10 % de réussite pour le PA, 12 % pour le PM et la Portée, sans aide du puits ni du métier ; un échec ne casse que la rune",
     "Portée, nouvelle caractéristique tactique : chaque point donne 20 % de chances qu'un sort à une cible touche un ennemi de plus",
