@@ -5,7 +5,7 @@ name: Serveur en ligne
 on:
   push:
     branches: [beta]
-    paths: ["supabase/**", "js/engine.js", "js/systems.js", "js/data.js", "js/gamedata.js", "js/pets.js", "js/mounts.js", "js/idols.js", "js/renaissance.js", "js/archis.js", "js/defi.js", "js/verify.js", "tools/build_server.js", ".github/workflows/supabase.yml"]
+    paths: ["supabase/**", "js/engine.js", "js/systems.js", "js/data.js", "js/gamedata.js", "js/pets.js", "js/mounts.js", "js/idols.js", "js/renaissance.js", "js/archis.js", "js/defi.js", "js/gboss.js", "js/verify.js", "tools/build_server.js", ".github/workflows/supabase.yml"]
 concurrency:
   group: serveur-en-ligne
   cancel-in-progress: false
