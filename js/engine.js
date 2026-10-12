@@ -1552,7 +1552,7 @@
     mons.forEach((m) => {
       let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1);
       xp += x;
-      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100));
+      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); }
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
@@ -1666,7 +1666,7 @@
       const mons = F.ents.filter((e) => e.side === "m" && !e.fake);
       const cb = E.chalResolve(S, F);
       const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1);
-      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr, dropMult: (1 + cb / 100) * sr * (F.roulette === "jackpot" ? 2 : 1), treasure: F.treasure || 0 });
+      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.roulette === "jackpot" ? 2 : 1), kamasMult: E.PACE_REW, treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
       E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null });
@@ -1752,7 +1752,7 @@
       const cyc = E.fightCycle(S);
       if (cyc) {
         const team = E.team(S).length; const grp = (1 + Math.min(8, team + 1)) / 2;
-        const dm = E.dropMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
+        const dm = E.dropMult(S) * E.PACE_REW * (E.teamHas(S, "enu") ? 1.15 : 1);
         let per = 0;
         sub.monsters.forEach((k) => { const m = MONSTERS[k]; if (!m) return; const d = m.drops.find(([r]) => r === name); const tq = E.huntTier(S, k) >= 1 ? 1.05 : 1;
           if (d) per += Math.min(1, E.resRate(d[1]) * dm * tq / 100) / sub.monsters.length;
@@ -2059,7 +2059,8 @@
   E.leaveDungeon = (S) => { if (S.dungeon) { note(S, "Vous quittez le donjon (clé perdue).", "warn"); S.dungeon = null; S.fight = null; if (S.hunting && S.sub) E.applyZonePresets(S, S.sub); } };
 
   /* ---------------- Boucle principale ---------------- */
-  E.STEP_MS = 520;
+  E.STEP_MS = 650; // 0.1.3 : combats un peu plus posés (520 ms avant)
+  E.PACE_REW = 650 / 520; // compense : les gains par heure restent les mêmes qu'avec 520 ms
   E.PAUSE_MS = 1400;
   E.tick = (S, dtMs) => {
     S.stats.playtime += dtMs / 1000;
@@ -2334,7 +2335,7 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
-      giveRewards(S, g, { xpBoost, offline: true });
+      giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW, dropMult: E.PACE_REW, kamasMult: E.PACE_REW });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
     }
