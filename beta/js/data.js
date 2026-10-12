@@ -44,7 +44,18 @@
     xa:  { name: "Rés. Air fixe",   short: "Rf Air",   w: 2, pts: 1 },
     xn:  { name: "Rés. Neutre fixe",short: "Rf Neu",   w: 2, pts: 1 },
     dsort:{ name: "% Dommages aux sorts", short: "% Do Sorts", w: 15, pts: 1 },
+    /* 0.1.8 : stats tactiques (familiers et montiliers) ; hors STAT_ORDER, affichées seulement quand on en a */
+    tac: { name: "Tacle",      short: "Tacle", w: 2, pts: 1 },
+    fui: { name: "Fuite",      short: "Fuite", w: 2, pts: 1 },
+    pm:  { name: "PM",         short: "PM",    w: 60, pts: 1 },
+    rpa: { name: "Retrait PA", short: "Ret PA", w: 2, pts: 1 },
+    rpm: { name: "Retrait PM", short: "Ret PM", w: 2, pts: 1 },
+    epa: { name: "Esquive PA", short: "Esq PA", w: 2, pts: 1 },
+    epm: { name: "Esquive PM", short: "Esq PM", w: 2, pts: 1 },
+    inv: { name: "Invocation", short: "Invoc", w: 60, pts: 1 },
+    pod: { name: "Pods",       short: "Pods",  w: 0.1, pts: 1 },
   };
+  const TACT_ORDER = ["pm","tac","fui","rpa","rpm","epa","epm","inv","pod"];
   const STAT_ORDER = ["vit","sa","fo","ine","cha","age","pui","do","cri","dcri","dt","df","de","da","dn","dsort","so","pp","ini","pa","rt","rf","re","ra","rn","xt","xf","xe","xa","xn"];
   const BASE_STATS = ["vit","sa","fo","ine","cha","age"];
 
@@ -432,6 +443,15 @@
 
   /* Explications des caractéristiques (infobulles) */
   const STAT_HELP = {
+    tac: "Première ligne : +1 % par point de bloquer un Rôdeur ou un Bondisseur qui vise l'arrière (le Tacle de toute la ligne s'additionne, 60 % au plus).",
+    fui: "Arrière : +0,5 % par point d'éviter une attaque qui vise l'arrière (30 % au plus).",
+    pm: "Tout héros a 3 PM. Chaque PM en plus : +3 % d'esquiver une attaque en première ligne (15 % au plus).",
+    rpa: "+0,4 % par point d'affaiblir le monstre touché : −20 % de dégâts à sa prochaine attaque (−10 % pour un boss), 20 % au plus.",
+    rpm: "+0,5 % par point de faire jouer le monstre touché en dernier au tour suivant ; un Bondisseur ne peut plus sauter (25 % au plus).",
+    epa: "+0,5 % par point de résister à la Glace, au Mutisme, à la Pétrification et aux retraits de PA (50 % au plus).",
+    epm: "+0,5 % par point de résister à la Terreur et à l'Enracinement (50 % au plus).",
+    inv: "Une invocation de plus en même temps (3 au plus).",
+    pod: "+5 % de butin pendant l'absence par 100 Pods dans l'équipe (50 % au plus).",
     vit: "+1 point de vie par point.",
     sa: "+1 % d'expérience gagnée par point.",
     fo: "+1 % de dégâts Terre et Neutre par point, +1 Initiative.",
@@ -458,7 +478,7 @@
   };
 
   const SUMMONS = G.SUMMONS || {};
-  const DATA = { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
+  const DATA = { STATS, STAT_ORDER, TACT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
                  MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, EMBLEM, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;
