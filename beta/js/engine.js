@@ -2059,8 +2059,8 @@
   E.leaveDungeon = (S) => { if (S.dungeon) { note(S, "Vous quittez le donjon (clé perdue).", "warn"); S.dungeon = null; S.fight = null; if (S.hunting && S.sub) E.applyZonePresets(S, S.sub); } };
 
   /* ---------------- Boucle principale ---------------- */
-  E.STEP_MS = 650; // 0.1.3 : combats un peu plus posés (520 ms avant)
-  E.PACE_REW = 650 / 520; // compense : les gains par heure restent les mêmes qu'avec 520 ms
+  E.STEP_MS = 780; // 0.1.3-0.1.4 : combats plus posés (520 ms avant)
+  E.PACE_REW = 780 / 520; // compense : les gains par heure restent les mêmes qu'avec 520 ms
   E.PAUSE_MS = 1400;
   E.tick = (S, dtMs) => {
     S.stats.playtime += dtMs / 1000;

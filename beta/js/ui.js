@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.3";
+const GAME_VERSION = "0.1.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.4", name: "Encore plus posés", items: [
+    "Les combats ralentissent encore un peu : une action toutes les 0,78 seconde (0,52 avant la 0.1.3)",
+    "Les récompenses par combat suivent : gains par heure toujours inchangés" ] },
   { v: "0.1.3", name: "Combats plus posés", items: [
     "Les combats sont un peu moins rapides (environ 25 %) pour mieux profiter des animations",
     "Chaque combat rapporte un peu plus d'XP, de butin et de kamas : les gains par heure restent les mêmes, en jeu comme hors ligne" ] },
