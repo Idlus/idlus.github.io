@@ -1,5 +1,5 @@
 # Après chaque publication réussie de /beta/ : annonce les nouveautés dans #bêta-nouveautés (mention @Testeur)
-# et envoie à Mathis un résumé des changements dans #résumés-bêta (salon privé).
+# et envoie à Mathis (créateur du serveur) un résumé des changements en message privé.
 # N'annonce que si la dernière entrée des nouveautés de la branche beta n'a pas déjà été annoncée. Nécessite le secret DISCORD_BOT_TOKEN.
 name: Annonce Discord de la version de test
 on:

@@ -3,7 +3,7 @@
    node tools/discord_bot.js semaine                                  → publie dans #annonces le mutateur de la semaine
    node tools/discord_bot.js almanax                                  → publie dans #almanax le bonus et l'offrande du jour
    node tools/discord_bot.js idees                                    → envoie dans #notes le top 5 des idées du forum (votes 👍)
-   node tools/discord_bot.js resume <révision>                        → résume dans #résumés-bêta (privé, mention du créateur) les changements de la branche beta jusqu'à cette révision
+   node tools/discord_bot.js resume <révision>                        → envoie en message privé au créateur du serveur un résumé des changements de la branche beta jusqu'à cette révision
    node tools/discord_bot.js icone [image.png]                        → remplace l'icône du serveur (par défaut icons/discord.png)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, guildId, channelId, roleId } = require("./discord_api.js");
@@ -77,7 +77,8 @@ async function main() {
   } else if (cmd === "resume") {
     const git = (a) => require("child_process").execFileSync("git", a, { encoding: "utf8" }).trim();
     const head = git(["rev-parse", file || "HEAD"]); const short = head.slice(0, 7);
-    const gid = DRY ? null : await guildId(); const ch = DRY ? null : await channelId(gid, "résumés-bêta");
+    const gid = DRY ? null : await guildId(); const owner = DRY ? null : (await api("GET", `/guilds/${gid}`)).owner_id;
+    const ch = DRY ? null : (await api("POST", "/users/@me/channels", { recipient_id: owner })).id; // conversation privée avec Mathis
     const last = DRY ? [] : await api("GET", `/channels/${ch}/messages?limit=20`);
     const prev = last.map((m) => ((m.embeds || [])[0] || {}).footer).map((f) => f && /révision ([0-9a-f]{7,40})/.exec(f.text)).find(Boolean);
     if (prev && head.startsWith(prev[1])) return console.log("Déjà résumé :", short);
@@ -89,8 +90,7 @@ async function main() {
     const embed = { title: `🧪 Bêta mise à jour : ${commits.length} changement${commits.length > 1 ? "s" : ""}`, url: BETA, color: 0x7bd389,
       description: lines.join("\n").slice(0, 3900) + `\n\n🔬 **[Ouvrir la version de test](${BETA})**`, footer: { text: `révision ${short}` }, timestamp: new Date().toISOString() };
     if (DRY) return console.log(JSON.stringify(embed, null, 1));
-    const owner = (await api("GET", `/guilds/${gid}`)).owner_id;
-    await api("POST", `/channels/${ch}/messages`, { content: `<@${owner}>`, embeds: [embed], allowed_mentions: { users: [owner] } });
+    await api("POST", `/channels/${ch}/messages`, { embeds: [embed] });
     console.log("Résumé envoyé :", commits.length, "changement(s)");
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
