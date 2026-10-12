@@ -10,8 +10,9 @@ const WELCOME = `# Bienvenue sur le Discord d'idlus !
 **idlus** est un idle game de fan inspiré de DOFUS : monte une équipe de héros parmi les 19 classes, équipe-les et affronte les donjons jusqu'à la stasis 10. Tes héros se battent tout seuls, même quand tu n'es pas là.
 
 🎮 **Jouer** : ${GAME}
+Le jeu est en ligne : connecte-toi avec Discord (facultatif) pour garder ta partie sur tous tes appareils, discuter dans le chat, vendre à l'Hôtel de vente, rejoindre une guilde et entrer dans les classements.
 🧪 **Version de test** : ${BETA}
-Tout le contenu de la future 1.0 y arrive en premier : niveau 200, familiers et montures, idoles, archimonstres et Dofus, Renaissance, comptes en ligne, classements, chat et défi du jour.
+Les nouveautés y arrivent en premier, à tester hors ligne avant leur sortie.
 
 📜 Lis les règles dans <#RULES>, puis viens discuter dans <#CHAT>.
 🐞 Un bug ? Le bouton « Signaler un bug » du jeu (Options) t'amène dans <#BUGS>. 💡 Une idée ? Propose-la dans <#IDEAS>, les autres votent avec 👍.
@@ -30,24 +31,23 @@ En cas de souci, mentionne un @Modérateur. Bon jeu ! ⚔️`;
 const ROADMAP = `# Feuille de route
 Sans dates : chaque partie sort quand elle est prête.
 
-**✅ Déjà jouable sur la version de test**
+**✅ Déjà dans le jeu**
 • Niveau 200 : 839 monstres, 51 nouveaux donjons, Frigost, Saharach, Sakaï, l'Île des Wabbits…
 • Familiers, dragodindes, muldos et volkornes, avec l'élevage
 • Idoles, archimonstres et Dofus, Renaissance
-• Compte en ligne (connexion avec Discord ou par e-mail), classements, chat, défi du jour, garde-robe
+• L'Expédition sans fin, journal de quêtes, défi du jour, artisans et temples, chasse au trésor
+• En ligne : compte Discord facultatif, chat, Hôtel de vente et échanges, guildes, boss de guilde, Percepteurs, classements
 
 **🔨 En préparation**
-• Hôtel des ventes et échanges
-• Guildes et boss de guilde
 • Kolizéum : des combats contre l'équipe d'autres joueurs
+• Mode marchand : ta propre boutique, visible par tous les joueurs
 
-**🚀 Version 1.0 : le multijoueur**
-• Tout ce contenu arrive dans le jeu public
-• Tout le monde repart de zéro ; les testeurs qui ont le rôle Pionnier retrouvent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
+**🚀 Version 1.0**
+• Tout le monde repart de zéro (les parties sont encore calculées sur ton appareil)
+• Les testeurs qui ont le rôle Pionnier retrouvent le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »`;
 const BETA_TXT = `# Version de test
 ${BETA}
-Tout le contenu de la future 1.0 arrive ici avant le jeu public. Ta partie de test est séparée de celle du jeu public.
-• Connecte-toi avec Discord (Options › Compte) pour garder ta partie en ligne et entrer dans les classements.
+Les nouveautés arrivent ici avant le jeu public. La version de test n'a pas de serveur : en l'ouvrant, choisis « Tester hors ligne » (ta partie de test reste sur ton appareil) ou « Jouer en ligne » pour revenir au jeu public.
 • Chaque partie de test reçoit le titre « Pionnier d'Idlus » ; les testeurs actifs reçoivent le rôle Pionnier, qui le leur rendra à la 1.0.
 Les nouveautés de chaque mise à jour sont annoncées ici. Raconte ce que tu as testé dans <#BETAFB>.`;
 
@@ -67,7 +67,7 @@ const PLAN = [
   { cat: "📢 Infos", lock: true, chans: [
     { key: "NEWS", name: "annonces", topic: "Les grosses nouvelles d'idlus" },
     { key: "UPDATES", name: "note-de-mise-a-jour", topic: "Notes de chaque mise à jour, publiées automatiquement" },
-    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui est déjà en test et ce qui arrive", text: ROADMAP },
+    { key: "ROADMAP", name: "feuille-de-route", topic: "Ce qui est déjà dans le jeu et ce qui arrive", text: ROADMAP },
     { key: "ALMANAX", name: "almanax", topic: "Le bonus et l'offrande du jour, publiés chaque matin" } ] },
   { cat: "💬 Communauté", chans: [
     { key: "CHAT", name: "général", topic: "Discussion libre autour d'idlus" },
