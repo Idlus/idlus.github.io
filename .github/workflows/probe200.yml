@@ -1,31 +1,41 @@
-name: Sonde niveau 200
-# Importe DofusDB (inaccessible depuis l'espace de travail de Claude) et dépose un rapport sur la branche de travail.
+name: Données niveau 200
+# Importe DofusDB (inaccessible depuis l'espace de travail de Claude), construit les données du jeu
+# et dépose le résultat sur la branche de travail. Ne touche ni à main ni à beta.
 on:
   workflow_dispatch:
   push:
     branches: ['claude/project-thread-4c70nw']
-    paths: ['tools/probe_200.py', '.github/workflows/probe200.yml']
+    paths: ['tools/probe_200.py', 'tools/build_data.py', '.github/workflows/probe200.yml']
 permissions:
   contents: write
+concurrency: { group: donnees-200, cancel-in-progress: true }
 jobs:
-  probe:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - name: Import DofusDB
         run: |
-          EPS="super-areas areas subareas dungeons monster-races item-types item-sets monsters items"
-          python3 tools/import_dofusdb.py $EPS
-          python3 tools/import_dofusdb.py $EPS
-      - name: Rapport
-        run: python3 tools/probe_200.py
-      - name: Dépôt du rapport sur la branche
+          python3 tools/import_dofusdb.py
+          python3 tools/import_dofusdb.py
+      - name: Rapport de contenu
+        run: python3 tools/probe_200.py > /dev/null
+      - name: Construction des données
+        run: |
+          mkdir -p build/assets
+          for d in c h i j m s; do cp -r assets/$d build/assets/; done
+          python3 tools/build_data.py
+          cp build/js/gamedata.js js/gamedata.js
+          for d in c h i j m s; do cp -rn build/assets/$d/. assets/$d/; done
+          cp build/report.txt tools/probe/build_report.txt
+      - name: Dépôt sur la branche
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          git add tools/probe/rapport_200.md
-          git commit -m "Sonde niveau 200 : rapport DofusDB" || echo "rien à committer"
+          git add tools/probe js/gamedata.js assets
+          git commit -m "Données niveau 200 : import DofusDB et construction" || echo "rien à committer"
+          git pull --rebase origin claude/project-thread-4c70nw
           git push
