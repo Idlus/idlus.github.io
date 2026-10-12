@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.12.2 « Nouvelle adresse » (bêta)
+- Le jeu s'ouvre maintenant sur idlus.github.io ; l'ancienne adresse y renvoie et la partie du navigateur suit le joueur.
+
 ## 0.1.12.1 « Identité du Phénix » (bêta)
 - Un héros rené se reconnaît partout : cadre de feu animé sur sa carte, flammes derrière lui, nom en lettres de feu, foyer sous ses pieds en combat, médaillon dans les listes.
 
