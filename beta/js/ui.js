@@ -15,12 +15,16 @@ const ui = {
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
 /* 0.1.27.1 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
-const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin"));
+const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.28.1";
+const GAME_VERSION = "0.1.28.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.28.2", name: "Bêta hors ligne", items: [
+    "Le multijoueur passe sur le jeu public (idlus.github.io) : comptes, chat, Hôtel de vente, guildes et classements s'y trouvent maintenant",
+    "La version de test n'a plus de serveur, pour que les parties de test ne se mélangent pas aux vraies. En l'ouvrant, un menu propose « Tester hors ligne » ou « Jouer en ligne » (le jeu public)",
+    "Le panel de test s'ouvre dans le navigateur où le compte admin est connecté sur le jeu public" ] },
   { v: "0.1.28.1", name: "Défi au tableau", items: [
     "Quêtes › Tableau du jour : une ligne « Défi du jour » sous la quête principale (donjon, stasis, « à faire » ou « ✓ réussi ») qui ouvre la page Défi",
     "La pastille sur Quêtes compte aussi le défi du jour tant qu'il n'est pas réussi" ] },
@@ -3976,7 +3980,7 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
-  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jeu public</a></div>`;
+  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jouer en ligne</a></div>`;
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
@@ -5623,7 +5627,16 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("pagehide", () => saveNow());
 
-function start() { if (ON) onBoot(); else bootGame(); }
+/* Bêta sans serveur : au premier chargement de la session, choisir entre tester hors ligne ou jouer en ligne (jeu public). */
+function betaGate() {
+  try { if (sessionStorage.getItem("idlus-beta-choix")) return bootGame(); } catch (e) {}
+  $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
+  $("#main").innerHTML = `<section class="start stack betachoix"><div class="logo">idlus</div><p class="muted" style="text-align:center;margin:0">Version de test</p>
+    <div class="panel"><div class="pad stack"><b>Tester hors ligne</b><span class="small muted">Ta partie de test, les nouveautés pas encore publiées et le panel de test. Rien n'est envoyé en ligne.</span><div><button class="btn primary" id="betaOff">Tester hors ligne</button></div></div></div>
+    <div class="panel"><div class="pad stack"><b>Jouer en ligne</b><span class="small muted">Le jeu public, avec ton compte, le chat, l'Hôtel de vente, les guildes et les classements.</span><div><a class="btn" href="../">Jouer en ligne</a></div></div></div></section>`;
+  $("#betaOff").addEventListener("click", () => { try { sessionStorage.setItem("idlus-beta-choix", "1"); } catch (e) {} bootGame(); });
+}
+function start() { if (ON) onBoot(); else if (BETA) betaGate(); else bootGame(); }
 function bootGame(pushNow) {
   if (booted) return; booted = true; closeSheet();
   S = loadSave();
