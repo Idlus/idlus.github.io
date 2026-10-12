@@ -656,10 +656,34 @@
     const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
     const mon = pool.slice().sort((a, b) => Math.abs(MONSTERS[a].lvl[0] - lvl) - Math.abs(MONSTERS[b].lvl[0] - lvl))[0];
     S.protector = { job: W.job, res: W.res, mon, cid: c.id, until: now + E.PROT_WAIT_S * 1000, at: now };
-    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min pour l'affronter (Métiers).`, "rare");
+    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min : bouton « Combattre » sur l'Accueil ou dans Métiers.`, "rare");
   };
   E.protCanFight = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon."; if (!E.team(S).length) return "Votre équipe est vide."; if (!S.hunting || !S.sub) return "Partez chasser avec l'équipe pour l'affronter."; return null; };
-  E.protFight = (S) => { const err = E.protCanFight(S); if (err) return err; S.protector.go = true; return null; };
+  /* 0.1.29.3 : « Combattre » prépare tout seul le combat. Si les héros de l'équipe récoltent, ils reviennent ; si l'équipe ne chasse pas,
+     elle part chasser dans sa dernière zone. Après le combat (ou si le protecteur repart), chacun reprend ce qu'il faisait (E.protRestore). */
+  E.protWhy = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon : finissez-le d'abord.";
+    if (E.expActive && E.expActive(S)) return "Impossible pendant une expédition : finissez-la d'abord.";
+    if (!E.team(S).length && !S.chars.some((c) => c.inTeam && c.job)) return "Votre équipe est vide : ajoutez un héros dans Équipe."; return null; };
+  E.protFight = (S) => {
+    const err = E.protWhy(S); if (err) return err; const P = S.protector; const jobs = {};
+    if (!E.team(S).length) { S.chars.filter((c) => c.inTeam && c.job).slice(0, 8).forEach((c) => { jobs[c.id] = c.job; c.job = null; }); S.fight = null; }
+    let hunt = false;
+    if (!S.hunting || !S.sub) {
+      const sid = S.sub && E.subUnlocked(S, S.sub) ? S.sub : Object.keys(SUBS).find((k) => E.subUnlocked(S, k));
+      const e2 = sid ? E.startHunt(S, sid) : "Aucune zone ouverte.";
+      if (e2) { S.chars.forEach((c) => { if (jobs[c.id] && !c.job) c.job = jobs[c.id]; }); return e2; }
+      hunt = true;
+    }
+    if (Object.keys(jobs).length || hunt) P.back = { jobs, hunt };
+    P.go = true; return null;
+  };
+  E.protRestore = (S, B) => {
+    if (!B) return; const names = [];
+    S.chars.forEach((c) => { const W = B.jobs && B.jobs[c.id]; if (W && !c.job) { c.job = Object.assign({}, W, { prog: 0 }); names.push(c.name); } });
+    if (B.hunt && !S.dungeon && !(E.expActive && E.expActive(S))) { S.hunting = false; S.fight = null; }
+    else if (names.length && !S.dungeon) S.fight = null;
+    if (names.length) note(S, `${names.join(", ")} ${names.length > 1 ? "reprennent" : "reprend"} la récolte.`, "info");
+  };
   E.protGroup = (S, sub, team, monsterEntity) => {
     const P = E.protActive(S); if (!P || !P.go) return null;
     const avg = team.reduce((a, c) => a + c.lvl, 0) / team.length; const lvl = Math.round(Math.min(200, avg + 3));
@@ -671,7 +695,7 @@
   };
   E.protEnd = (S, win) => {
     const P = S.protector; if (!P) return; const now = E.now();
-    S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000;
+    S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000; if (P.back) S.protBack = P.back;
     if (win) {
       S.protBoost = { res: P.res, until: now + E.PROT_BOOST_S * 1000 };
       addRes(S, P.res, 10); addRes(S, E.RARE_COMPONENT, 3);
@@ -681,7 +705,8 @@
   };
   E.protMult = (S, res) => (S.protBoost && S.protBoost.res === res && S.protBoost.until > E.now() ? 2 : 1);
   E.protExpire = (S) => { const P = S.protector; if (P && P.fighting && !(S.fight && S.fight.prot && !S.fight.over)) P.fighting = false;
-    if (P && !P.fighting && P.until <= E.now()) { S.protector = null; S.protCalm = E.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); } };
+    if (P && !P.fighting && P.until <= E.now()) { S.protector = null; S.protCalm = E.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); if (P.back) S.protBack = P.back; }
+    if (S.protBack && !(S.fight && S.fight.prot && !S.fight.over)) { const B = S.protBack; S.protBack = null; E.protRestore(S, B); } };
 
 
 
@@ -864,7 +889,9 @@
   E.questProgress = (S) => {
     const q = E.questStep(S); if (!q) return null; const P = S.quest;
     switch (q.t) {
-      case "kill": case "harvest": case "craft": case "fm": case "bounty": case "almanax": return [Math.min(P.prog, q.n), q.n];
+      case "kill": case "harvest": case "craft": case "fm": case "bounty": return [Math.min(P.prog, q.n), q.n];
+      // 0.1.29.5 : une offrande déjà faite aujourd'hui (avant d'arriver à l'étape) compte aussi
+      case "almanax": return [Math.min(Math.max(P.prog, E.almanax(S).done ? 1 : 0), q.n), q.n];
       case "lvl": return [Math.min(topLvl(S), q.n), q.n];
       case "equip": return [Math.min(Math.max(...S.chars.map((c) => Object.keys(c.equip).length)), q.n), q.n];
       case "havre": return [Math.min(E.havreTotal(S), q.n), q.n];
@@ -1097,6 +1124,8 @@
     // Havre-Sac 3.4 : les meubles déjà gagnés sont placés d'office, tant qu'il reste de la place
     if (raw.placed === undefined) S.furniture.forEach((n) => { if (FURN[n]) E.placeFurn(S, n); });
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
+    // 0.1.29.5 : étape « Dévotion » coincée alors que l'offrande du jour est faite : validée au chargement
+    { const q = E.questStep(S); if (q && q.t === "almanax") checkQuest(S); }
     return S;
   };
 

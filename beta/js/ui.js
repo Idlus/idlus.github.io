@@ -18,9 +18,30 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.29.2";
+const GAME_VERSION = "0.1.30.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.30.1", name: "Fabrication en série", items: [
+    "Artisanat : en plus de « Fabriquer », deux boutons « ×10 » et « Max » fabriquent plusieurs exemplaires d'un coup (autant que les ressources et la place dans le sac le permettent). Chaque objet a son propre jet, comme en le fabriquant un par un",
+  ] },
+  { v: "0.1.30", name: "Coffres", items: [
+    "Cinq coffres dans le sac : bois, argent, or, et deux nouveaux, le Coffre en obsidienne et le Coffre des Douze. Chacun a son dessin et son halo de couleur",
+    "Les coffres valent enfin le coup : leurs kamas suivent ton niveau, d'environ 5 minutes de chasse (bois) à 2 heures (Douze), avec poussière de stasis, ressources, consommables rares, Éclats de trouvaille, et des objets de ton niveau dès l'obsidienne",
+    "Nouvelle fenêtre d'ouverture : kamas en grand, récompenses rares en vignettes dorées, ressources avec leur quantité",
+    "Nouvelles sources : stasis 10 (obsidienne), série de 7 et 30 défis du jour (or, puis Douze), nouveau record à l'Expédition (argent), chasse au trésor (bois ou argent), Almanax tous les 90 jours (obsidienne), Coffre en or au Comptoir des temples",
+    "Premier passage de stasis : bois 1-3, argent 4-6, or 7-9, obsidienne 10",
+    "Les coffres qui s'ouvrent seuls ont un nom : Butin du boss, Bourse du défi (au moins 500 kamas par niveau), Coffres de l'assaut, de la brèche, du siège et de la victoire (boss de guilde), Bourse du Percepteur, Coffre au trésor",
+  ] },
+  { v: "0.1.29.5", name: "Dévotion débloquée", items: [
+    "Quête principale : l'étape « Dévotion » est validée si l'offrande à l'Almanax du jour a déjà été faite avant d'arriver à cette étape. Les joueurs bloqués avancent dès le chargement du jeu",
+  ] },
+  { v: "0.1.29.4", name: "Héros disponible", items: [
+    "Métiers : le bouton « Envoyer un héros » propose d'abord un héros qui ne fait rien, puis un héros de l'équipe de chasse, puis seulement un héros qui récolte ailleurs. Celui qui récolte déjà sur ce métier n'est plus choisi par défaut",
+  ] },
+  { v: "0.1.29.3", name: "Protecteur à portée", items: [
+    "Protecteurs de ressources : le bouton « Combattre » n'est plus grisé quand vos héros récoltent. Il fait revenir les héros de l'équipe et lance la chasse, puis chacun reprend la récolte après le combat",
+    "Le bandeau du protecteur explique ce que fera le bouton, et une bulle d'aide présente les protecteurs la première fois",
+  ] },
   { v: "0.1.29.2", name: "Presque fabricable", items: [
     "Ateliers : le filtre « Fabricables maintenant » devient un menu. Choisissez « Il manque au plus 1, 2 ou 3 ressources » pour voir les recettes qui sont à portée de main",
     "Avec ce filtre, les recettes sont triées de la plus proche à la plus lointaine, et une étiquette indique combien de ressources il manque (en rouge dans la recette, avec la quantité possédée)",
@@ -564,6 +585,9 @@ const G = (n, c = "") => GLF[n] ? `<svg class="uico ${c}" viewBox="0 0 24 24" ar
 /* émojis des données (consommables, Havre-Sac, boutiques…) → icônes officielles */
 const EMO = { "📜": "quetes", "🧪": "teinture", "📦": "coffre", "🍬": "bonbon", "🍭": "bonbon", "🪙": "kamas", "🎯": "bonbon", "👑": "couronne", "📘": "parchemin_or", "💎": "cristal", "🎁": "coffre", "💰": "bourse", "🗝": "cle", "✨": "poussiere", "⛏": "pioche", "📚": "parchemin_or", "🏺": "trophee", "🥊": "combat", "🌿": "pioche", "🎒": "sac", "🛏": "havre", "🎩": "couronne", "🎟": "carte", "🎖": "trophee", "🌾": "bonbon", "🪽": "ailes", "🪑": "havre" };
 const emo = (e) => { const k = String(e || "").replace(/\ufe0f/g, ""); return EMO[k] ? IC(EMO[k]) : `<span class="uemo">${h(e || "")}</span>`; };
+/* 0.1.30 : visuels des coffres (assets/ui/coffres) ; raw = garder l'émoji brut des autres consommables */
+const chestImg = (k, c = "") => `<img class="uico chestico ${c}" src="assets/ui/coffres/${k}.svg" alt="" loading="lazy">`;
+const consIco = (C, raw) => (C && C.img ? chestImg(C.img) : raw ? h((C && C.icon) || "•") : emo(C && C.icon));
 const med = (n, sz = "") => `<i class="med ${sz}"><img src="assets/ui/${n}.webp" alt=""></i>`;
 const CATICO = {};
 const catIco = (c) => { if (!(c.id in CATICO)) { const best = Object.entries(RES).filter(([, r]) => c.types.includes(r.type)).sort((a, b) => a[1].lvl - b[1].lvl)[0]; CATICO[c.id] = best ? `<img class="uico" src="${resImg(best[0])}" alt="" loading="lazy">` : ""; } return CATICO[c.id] || emo(c.icon); };
@@ -985,12 +1009,12 @@ function consBar(full) {
   const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id] && (full || CONSUMABLES[id].kind !== "scroll"));
   const act = activeBoosts();
   const items = owned.map(([id, n]) => { const C = CONSUMABLES[id];
-    return `<button class="cbtn ${C.auto ? "auto" : ""}" ${C.auto ? "" : `data-act="usecons" data-id="${id}"`} data-tip="${h(`${C.name} ×${n} — ${C.desc}${C.auto ? "" : " (cliquez pour utiliser)"}`)}"><span class="ci">${C.icon}</span><b class="num">${n}</b>${C.auto ? `<i>auto</i>` : ""}</button>`; }).join("");
+    return `<button class="cbtn ${C.auto ? "auto" : ""}" ${C.auto ? "" : `data-act="usecons" data-id="${id}"`} data-tip="${h(`${C.name} ×${n} — ${C.desc}${C.auto ? "" : " (cliquez pour utiliser)"}`)}"><span class="ci">${consIco(C, true)}</span><b class="num">${n}</b>${C.auto ? `<i>auto</i>` : ""}</button>`; }).join("");
   return `<div class="consbar">${act.map((b) => `<span class="cact" data-tip="${h(`${b.name} : ${b.txt}`)}">${emo(b.icon)} ${h(b.txt)} <b class="num" data-boostleft="${b.k}">${dur(b.left)}</b></span>`).join("")}${S.fmShield ? `<span class="cact" data-tip="La prochaine forgemagie ne peut rien faire baisser">${IC("cristal")} Cristal actif</span>` : ""}
     ${items || (full ? `<span class="xs muted">Aucun consommable. Quêtes, avis de recherche, coffres et boss en donnent.</span>` : "")}</div>`;
 }
 function consHtml() {
-  return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy">${C.icon}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
+  return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy ${C.img ? "chestbox t" + C.tier : ""}">${consIco(C, true)}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
 }
 function renderHome() {
   renderHomeInner();
@@ -1373,7 +1397,7 @@ function dungeonSheet(did) {
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de la semaine" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
-        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${IC("coffre")} Premier passage : ${k >= 8 ? "Coffre en or" : k >= 4 ? "Coffre en argent" : "Coffre en bois"} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme`}</li>
+        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme`}</li>
         <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
         ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
@@ -3584,7 +3608,8 @@ function craftHtml() {
       <section class="panel"><div class="list">${recipes.map((r) => { const ok = E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req;
         const stats = r.T ? Object.entries(r.T.stats).map(([k, [a, b]]) => `${a === b ? a : a + " à " + b} ${STATS[k].short}`).join(", ") : (E.isKey(r.special) ? "Clé de donjon" : "Objet spécial");
         return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span>${ui.craftMiss > 0 && r.miss ? ` <span class="tag warn">il manque ${r.miss} ressource${r.miss > 1 ? "s" : ""}</span>` : ""} <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
-          <span class="row" style="gap:4px"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? G("cart") + " ✓" : G("cart")}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button></span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
+          <span class="row craftbtns"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? G("cart") + " ✓" : G("cart")}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button>${(() => { const n = ok ? E.craftCount(S, r.tpl ? "tpl" : "special", r.tpl || r.special) : 0; if (n < 2) return ""; const at = `data-act="craftmany" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}"`;
+            return (n > 10 ? `<button class="btn sm" ${at} data-n="10" title="Fabriquer 10 exemplaires">×10</button>` : "") + `<button class="btn sm" ${at} data-n="${n}" title="Fabriquer autant que les ressources le permettent">Max ×${fmt(n)}</button>`; })()}</span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
   return body;
 }
 function brisageHtml() {
@@ -3613,8 +3638,11 @@ function toolHtml(id) {
 function protBar() {
   const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null;
   let out = "";
-  if (P) { const err = P.fighting ? null : E.protCanFight(S); const M = MONSTERS[P.mon];
-    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - E.now()) / 1000)}.`}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>Combattre</button>`}</div>`; }
+  if (P) { const err = P.fighting || P.go ? null : E.protWhy(S); const M = MONSTERS[P.mon];
+    /* 0.1.29.3 : dire ce que fera le bouton (l'équipe doit chasser ; les héros qui récoltent reviennent le temps du combat) */
+    const how = P.fighting || P.go || err ? "" : !E.team(S).length ? " Vos héros d'équipe récoltent : « Combattre » les fait revenir le temps du combat, puis ils reprennent la récolte."
+      : !S.hunting || !S.sub ? " « Combattre » lance la chasse pour l'affronter." : "";
+    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - E.now()) / 1000)}.`}${how ? `<span class="xs muted" style="display:block;font-weight:600">${how.trim()}</span>` : ""}${err ? ` <span class="xs minus">${h(err)}</span>` : ""}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? "disabled" : ""}>Combattre</button>`}</div>`; }
   if (B) out += `<div class="awaitbar" style="margin:0">${G("sparkle")} Protecteur vaincu : récolte de <b>${h(B.res)}</b> ×2 encore ${dur((B.until - E.now()) / 1000)}</div>`;
   return out;
 }
@@ -3700,7 +3728,7 @@ function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
   return `<section class="panel"><div class="phead"><h2>${emo(Sh.icon)} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
     <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
-      return `<div class="hv"><div class="top"><span class="em">${C ? emo(C.icon) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
+      return `<div class="hv"><div class="top"><span class="em">${C ? consIco(C) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
 /* 0.1.28 : les boutiques sont regroupées dans Quêtes › Comptoirs ; chaque page garde un raccourci */
@@ -3895,6 +3923,12 @@ function giveSheet(uid) {
     <div class="list">${S.chars.map((c) => { const slot = E.slotFor(c, it);
       return `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="muted xs">niv. ${c.lvl}</span><br>${deltaHtml(c, slot, uid)}</span><button class="btn sm primary" data-act="giveto" data-id="${c.id}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. trop bas" : "Équiper"}</button></div>`; }).join("")}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+// « Envoyer un héros » depuis un métier : d'abord un héros libre, puis un chasseur, puis un héros qui récolte ailleurs, jamais celui déjà sur ce métier
+function gatherPick(job) {
+  const busy = S.dungeon || (E.expActive && E.expActive(S));
+  const rank = (c) => (c.job ? (c.job.job === job ? 5 : 4) : c.inTeam ? (busy ? 3 : 2) : (E.trainee(S) === c || E.atelierHero(S) === c ? 1 : 0));
+  return S.chars.reduce((b, c) => (rank(c) < rank(b) || (rank(c) === rank(b) && c.id === ui.cid) ? c : b)).id;
 }
 function gatherSheet() {
   const g = ui.gs; const c = char(g.cid) || S.chars[0]; g.cid = c.id;
@@ -4102,9 +4136,21 @@ function celeHtml(ev) {
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
   if (ev.t === "exp") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Expédition sans fin</div><div class="cele-t">Étage ${ev.floor} atteint</div><div class="cele-s">Titre « ${h(ev.title)} » débloqué (onglet Héros)</div>`;
-  if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Chasse au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
+  if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Coffre au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
+  if (ev.t === "chest") { const C = CONSUMABLES[ev.id]; // 0.1.30 : butin rangé en vignettes (rares d'abord, puis le reste)
+    const m = new Map(); (ev.loot || []).forEach(([t, id, q, uid]) => { const key = t === "item" ? "item" + (uid || id + m.size) : t + id; const o = m.get(key) || { t, id, q: 0, uid }; o.q += q; m.set(key, o); });
+    const L = [...m.values()]; const rare = (o) => o.t === "item" || (o.t === "cons" && (CONSUMABLES[o.id].kind === "scroll" || E.CHEST_RARE.includes(o.id)));
+    const tile = (o) => { const nm = o.t === "item" ? ITEMS[o.id].name : o.t === "cons" ? CONSUMABLES[o.id].name : o.id;
+      const pic = o.t === "item" ? im(itemImg(o.id), "", "") : o.t === "cons" ? `<span class="ctl-emo">${consIco(CONSUMABLES[o.id])}</span>` : o.id === E.POUSSIERE ? IC("poussiere") : im(resImg(o.id), "", "");
+      return `<span class="itile ${rare(o) ? "ctl-rare" : ""}" ${o.uid ? `data-tipitem="${o.uid}"` : `data-tip="${h(nm)}"`}>${pic}${o.t === "item" ? `<span class="ilvl ctl-lvl">niv. ${ITEMS[o.id].lvl}</span>` : ""}${o.q > 1 ? `<span class="icount">×${fmt(o.q)}</span>` : ""}</span>`; };
+    const top = L.filter(rare), rest = L.filter((o) => !rare(o));
+    const names = top.map((o) => (o.t === "item" ? ITEMS[o.id].name : CONSUMABLES[o.id].name) + (o.q > 1 ? ` ×${o.q}` : ""));
+    return `<div class="cele-art chestopen t${C.tier}">${chestImg(C.img, "celechest")}</div><div class="cele-k">${G("star")} Coffre ouvert</div><div class="cele-t">${h(C.name)}</div>
+      <div class="ctl-k">${IC("kamas")} <b class="num">+${fmt(ev.kamas || 0)}</b> kamas</div>
+      ${top.length ? `<div class="ctl-h">À ne pas manquer</div><div class="ctl-grid">${top.map(tile).join("")}</div><div class="ctl-names">${h(names.join(" · "))}</div>` : ""}
+      <div class="ctl-h">Ressources</div><div class="ctl-grid">${rest.map(tile).join("")}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
-    return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
+    return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${consIco(C)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
 }
 function nextCele() {
@@ -4347,7 +4393,7 @@ function defiBanner() {
       <div class="xs muted">Équipe : ${E.team(S).map((c) => h(c.name)).join(", ")} · combat automatique · essais illimités</div></div>
       <div class="df-best">${best ? `<b class="num">${best.turns}</b><span>tours, ton record du jour</span>` : `<b class="num">–</b><span>${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`}</div></div>
     <div class="df-foot">${defiDots()}<span class="xs"><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b>${streak < 7 ? ` · titre à 7` : streak < 30 ? ` · ornement à 30` : ""}</span>
-      <span class="xs">${st.chest ? `✓ coffre du jour ouvert` : `${IC("coffre")} coffre du jour à ouvrir`}</span><span class="grow"></span>
+      <span class="xs">${st.chest ? `✓ Bourse du défi reçue` : `${chestImg("bourse_defi")} Bourse du défi à gagner`}</span><span class="grow"></span>
       ${st.tries.length ? `<button class="btn sm" data-act="sm-dlast">Mes essais</button>` : ""}<button class="btn sm" data-act="sm-watch" data-v="${tid}" data-tip="Le combat joué sous tes yeux, avec ton équipe actuelle (ne compte pas comme un essai)">Regarder</button>${ON ? `<button class="btn sm" data-act="sm-dboard" data-v="${tid}">Classement</button>` : ""}<button class="btn primary" data-act="sm-dplay" data-v="${tid}">Lancer le défi</button></div></div>`;
 }
 let defiLast = null;
@@ -4370,7 +4416,7 @@ function defiSheet(r) {
     <span class="small muted" style="text-align:center">${h(dg.name)} · stasis ${r.k} · palier ${h(T.name)} · ${r.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ")}</span>
     ${r.win ? `<div class="chk"><div><span class="okc">✓</span><span>${r.improved ? (gain > 0 ? `<b>Nouveau record du jour</b>, ${gain} tour${gain > 1 ? "s" : ""} de mieux` : "<b>Premier record du jour</b> dans ce palier") : `Ton record du jour reste <b>${r.prev.turns} tours</b>`}</span></div>
       <div><span class="okc">♥</span><span>PV restants de l'équipe : ${r.hp} %</span></div>
-      ${r.chest ? `<div><span class="okc">${IC("coffre")}</span><span>Coffre du jour : <b>${fmt(r.chest.kamas)} kamas</b> et <b>${r.chest.dust} ${h(E.POUSSIERE)}</b> · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}</span></div>` : st.chest ? `<div><span class="okc">✓</span><span>Coffre du jour déjà ouvert : les autres essais servent au classement.</span></div>` : ""}</div>`
+      ${r.chest ? `<div><span class="okc">${chestImg("bourse_defi")}</span><span>Bourse du défi : <b>${fmt(r.chest.kamas)} kamas</b> et <b>${r.chest.dust} ${h(E.POUSSIERE)}</b> · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}${r.bonus ? ` · <b>${h(CONSUMABLES[r.bonus].name)}</b> offert !` : ""}</span></div>` : st.chest ? `<div><span class="okc">✓</span><span>Bourse du défi déjà reçue : les autres essais servent au classement.</span></div>` : ""}</div>`
       : `<p class="small">Le hasard du défi est le même à chaque essai : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts, d'idoles ou de composition, puis relance.</p>`}
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
     ${tries.length > 1 ? `<div class="stack" style="gap:4px"><b class="small">Tes essais du jour (${h(T.name)})</b>${tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("")}</div>` : ""}
@@ -4383,7 +4429,7 @@ const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
 function defiReward(tid) {
   const def = E.defi(tid); const dust = def.k * 2 + (def.k >= 4 ? 4 : 0);
   const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
-  if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? r.kamas : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
+  if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...E.team(S).map((c) => c.lvl))) : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
   return `${ui.dfEst.kamas ? `≈ ${fmt(ui.dfEst.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
 }
 const defiLeftTxt = () => dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "");
@@ -4396,7 +4442,7 @@ function defiHomeCard() {
   return `<section class="panel dfhome ${st.chest ? "done" : ""}"><div class="dfh-in">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
     <div class="grow dfh-txt"><span class="wk">${G("target")} Défi du jour <span class="xs muted">· palier ${h(T.name)} · nouveau dans ${defiLeftTxt()}</span></span>
       <span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span>${def.mods.map(modChip).join("")}</span>
-      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ coffre du jour ouvert" : `${IC("coffre")} coffre : ${defiReward(tid)}`}</span></span></div>
+      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ Bourse du défi reçue" : `${chestImg("bourse_defi")} bourse : ${defiReward(tid)}`}</span></span></div>
     <div class="dfh-btns"><button class="btn" data-tab="defi">Voir le défi</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}">${best ? "Battre mon record" : "Lancer le défi"}</button></div></div></section>`;
 }
 function defiLine() {
@@ -4414,13 +4460,13 @@ function renderDefi() {
       <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
       <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts ou de composition pour faire mieux.</li>
       <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
-      <li>La première victoire du jour ouvre le coffre et fait avancer ta série.</li></ul></div></div>`;
+      <li>La première victoire du jour donne la Bourse du défi et fait avancer ta série.</li></ul></div></div>`;
   $("#main").innerHTML = `${defiBanner()}
   <section class="grid2" style="margin-top:14px">
     <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
       <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<span class="small"><b class="num">${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>
-        <div class="small">${st.chest ? "✓ Coffre du jour ouvert. Reviens demain pour continuer la série." : `${IC("coffre")} Coffre à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
-        ${goal(7, `titre « ${h(E.DEFI_TITLE)} »`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi »", (ss.best || 0) >= 30)}
+        <div class="small">${st.chest ? "✓ Bourse du défi reçue. Reviens demain pour continuer la série." : `${chestImg("bourse_defi")} Bourse du défi à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
+        ${goal(7, `titre « ${h(E.DEFI_TITLE)} » et Coffre en or`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi » et Coffre des Douze", (ss.best || 0) >= 30)}
         <b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
     ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : rules}
   </section>
@@ -4946,7 +4992,7 @@ document.addEventListener("click", (ev) => {
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
     case "qtab": ui.qt = d.v; ui.confirm = null; break;
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
-    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
+    case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
     case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;
     case "gsres": ui.gs.res = d.v; gatherSheet(); return;
     case "gsgo": { const g = ui.gs; const r = E.setJob(S, g.cid, g.job, g.res); if (r) { toast(r); return; } closeSheet(); toast(`${char(g.cid).name} part récolter.`); break; }
@@ -5007,7 +5053,7 @@ document.addEventListener("click", (ev) => {
         ui.giftCode = ""; dirty = true; saveNow(); closeSheet(); render();
       });
       return; } /* la note « rare » du moteur s'affiche déjà en bulle */
-    case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast("L'équipe affrontera le protecteur au prochain combat."); break; }
+    case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast(S.protector && S.protector.back ? "L'équipe part affronter le protecteur. Ensuite, chacun reprend ce qu'il faisait." : "L'équipe affrontera le protecteur au prochain combat."); break; }
     case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
@@ -5150,6 +5196,9 @@ document.addEventListener("click", (ev) => {
     case "craftjob": ui.craftJob = d.v; break;
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
+    case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n); if (typeof r === "string") { toast(r); break; }
+      const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
+      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); break; }
     case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
@@ -5747,7 +5796,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
-Object.assign(window.DX.social, { fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

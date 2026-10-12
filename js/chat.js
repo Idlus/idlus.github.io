@@ -101,7 +101,7 @@
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";
-    return `<div class="msg${me ? " me" : ""}">${X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${h(m.pseudo || "?")}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${h(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
+    return `<div class="msg${me ? " me" : ""}${X().staffCls(m.user_id)}">${X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id)}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${h(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   function annTxt(m, plain) {
     const d = Object.assign({}, m.data); if (typeof d.t !== "string") d.t = d.did ? "top1" : ""; // 0.1.18-0.1.20 : le temps du record écrasait le type (t)
@@ -125,7 +125,7 @@
         const conv = {}; C.p.forEach((m) => { const o = m.user_id === myId() ? m.to_id : m.user_id; if (o && !C.ign.has(o)) conv[o] = m; });
         const ids = Object.keys(conv).sort((a, b) => conv[b].id - conv[a].id);
         if (!ids.length) return `<div class="sys">Aucun message privé. Clique sur le pseudo d'un joueur dans le chat général pour lui écrire.</div>`;
-        return ids.map((o) => { const m = conv[o]; return `<button class="conv" data-act="ch-peer" data-u="${h(o)}"><b>${h(C.names[o] || "Joueur")}</b><span class="last">${m.user_id === myId() ? "Toi : " : ""}${h(m.body || "[objet]")}</span><span class="hr">${hhmm(m.created_at)}</span></button>`; }).join("");
+        return ids.map((o) => { const m = conv[o]; return `<button class="conv" data-act="ch-peer" data-u="${h(o)}"><b>${C.names[o] ? X().pname(C.names[o], o) : "Joueur"}</b><span class="last">${m.user_id === myId() ? "Toi : " : ""}${h(m.body || "[objet]")}</span><span class="hr">${hhmm(m.created_at)}</span></button>`; }).join("");
       }
       const th = C.p.filter((m) => m.user_id === C.peer || m.to_id === C.peer);
       return `<div class="sys">Conversation privée avec <b>${h(C.names[C.peer] || "ce joueur")}</b>. Personne d'autre ne la voit.</div>` + th.map(msgHtml).join("");

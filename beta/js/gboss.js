@@ -66,6 +66,7 @@
   };
 
   /* Coffre d'un palier : kamas et poussière de stasis, selon le niveau du meilleur héros (même calcul dans supabase/gboss.sql). */
+  E.GBOSS_CHEST_NAMES = { 25: "Coffre de l'assaut", 50: "Coffre de la brèche", 75: "Coffre du siège", 100: "Coffre de la victoire" }; // 0.1.30
   E.gbossChest = (step, lvl) => { const i = E.GBOSS_STEPS.indexOf(step) + 1; return { k: Math.round((1000 + lvl * 250) * i), dust: 15 * i }; };
 
   /* ============================================================================

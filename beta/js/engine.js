@@ -2325,12 +2325,13 @@
   };
 
   /* Coffre de boss : un objet garanti des monstres du donjon (niveau proche du boss) */
+  E.stasisChest = (k) => (k >= 10 ? "coffre_obsidienne" : k >= 7 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"); // 0.1.30
   E.bossChest = (S, did, rew) => {
     const dg = DUNGEONS[did]; const pool = new Set();
     [dg.boss, ...dg.rooms.flatMap((r) => r.mobs)].forEach((k) => (MONSTERS[k].items || []).forEach(([t]) => { if (ITEMS[t] && ITEMS[t].lvl <= dg.lvl + 5 && ITEMS[t].lvl >= dg.lvl - 25) pool.add(t); }));
     const arr = [...pool]; if (!arr.length || E.itemCount(S) >= E.itemCap(S)) return;
     const tpl = pick(arr); const it = E.rollItem(S, tpl, {});
-    note(S, `Coffre du boss : ${ITEMS[tpl].name} !`, "rare");
+    note(S, `Butin du boss : ${ITEMS[tpl].name} !`, "rare");
     if (rew) rew.items.push(it.uid);
   };
 
@@ -2341,7 +2342,7 @@
     const out = [];
     const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
     if (!SI.firsts[k]) { SI.firsts[k] = E.now();
-      const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
+      const chest = E.stasisChest(k); E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
       if (E.firstPassStones) E.firstPassStones(S, k, out); // 0.1.13 : Pierres d'âme
       E.celebrate({ t: "stasis", did, k, chest });
       if (k === 10) { let n = 0; E.team(S).forEach((c) => { c.stasisScrolls = c.stasisScrolls || {}; if (!c.stasisScrolls[did]) { c.stasisScrolls[did] = 1; n++; } });
@@ -2520,6 +2521,22 @@
     E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
     return null;
+  };
+  /* 0.1.30.1 : fabrication en série (×10, max). Chaque exemplaire passe par craftItem / craftSpecial : jets, XP de métier et quêtes identiques à une fabrication une par une */
+  E.craftMax = (S, ing, n = Infinity) => ing.reduce((m, [r, q]) => Math.min(m, Math.floor((S.res[r] || 0) / q)), n);
+  E.craftCount = (S, k, id) => {
+    if (k === "tpl") { const T = ITEMS[id]; if (!T || !T.craft || S.crafts[T.craft.job].lvl < E.craftReq(id)) return 0; return Math.max(0, E.craftMax(S, T.craft.ing, E.itemCap(S) - E.itemCount(S))); }
+    const R = SPECIAL_CRAFTS[id]; if (!R || S.crafts[R.job].lvl < R.lvl) return 0;
+    return E.craftMax(S, R.ing, R.unique ? 1 : Infinity);
+  };
+  E.craftMany = (S, k, id, n) => {
+    n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null };
+    for (let i = 0; i < n; i++) {
+      const r = k === "tpl" ? E.craftItem(S, id) : E.craftSpecial(S, id);
+      if (typeof r === "string") { out.err = r; break; }
+      out.n++; if (r && r.uid) out.items.push(r);
+    }
+    return out.n ? out : (out.err || "Fabrication impossible.");
   };
   const craftXp = (S, job, x) => {
     const J = S.crafts[job]; J.xp += x;
@@ -2810,7 +2827,7 @@
     toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
     // métiers, forge, ressources
     setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", sellRes: "vendre des ressources",
-    craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftScroll: "fabriquer un parchemin",
+    craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftMany: "fabriquer en série", craftScroll: "fabriquer un parchemin",
     forgemage: "forgemager", feedForgemage: "forgemagie en série", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
     fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
     useConsumable: "utiliser un consommable", buyShop: "acheter en boutique", buyNets: "acheter des filets",

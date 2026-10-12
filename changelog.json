@@ -1,6 +1,55 @@
 {
-  "version": "0.1.28.4",
+  "version": "0.1.29.5",
   "versions": [
+    {
+      "v": "0.1.29.5",
+      "name": "Dévotion débloquée",
+      "items": [
+        "Quête principale : l'étape « Dévotion » est validée si l'offrande à l'Almanax du jour a déjà été faite avant d'arriver à cette étape. Les joueurs bloqués avancent dès le chargement du jeu"
+      ]
+    },
+    {
+      "v": "0.1.29.4",
+      "name": "Héros disponible",
+      "items": [
+        "Métiers : le bouton « Envoyer un héros » propose d'abord un héros qui ne fait rien, puis un héros de l'équipe de chasse, puis seulement un héros qui récolte ailleurs. Celui qui récolte déjà sur ce métier n'est plus choisi par défaut"
+      ]
+    },
+    {
+      "v": "0.1.29.3",
+      "name": "Protecteur à portée",
+      "items": [
+        "Protecteurs de ressources : le bouton « Combattre » n'est plus grisé quand vos héros récoltent. Il fait revenir les héros de l'équipe et lance la chasse, puis chacun reprend la récolte après le combat",
+        "Le bandeau du protecteur explique ce que fera le bouton, et une bulle d'aide présente les protecteurs la première fois"
+      ]
+    },
+    {
+      "v": "0.1.29.1",
+      "name": "Badge du créateur",
+      "items": [
+        "Xener, le créateur d'Idlus, a maintenant un pseudo doré avec une couronne et l'étiquette « Créateur » : chat, classements, guilde et fiche joueur",
+        "Les modérateurs ont une étiquette verte « Modérateur »",
+        "Le badge vient du serveur : personne d'autre ne peut l'avoir. Les pseudos qui imitent le créateur ou l'équipe (Xen3r, Createur, Modo…) sont refusés"
+      ]
+    },
+    {
+      "v": "0.1.29",
+      "name": "Sablier de Xélor",
+      "items": [
+        "Nouveau : le Sablier de Xélor, dans la barre du haut à côté des kamas. Il fait filer le temps ×2 ou ×3 : combats, donjons, expédition, récolte, ateliers, familiers et enclos",
+        "Le sablier se remplit tout seul de 3 h par jour, même jeu fermé, et garde jusqu'à 9 h. ×2 vide 1 minute de réserve par minute, ×3 en vide 2 : ×3 donne le même temps en plus, juste plus vite",
+        "Sablier vide : retour à ×1 tout seul, rien n'est perdu. Les gains hors ligne et les bonus à durée (potions, événements, Almanax) ne changent pas",
+        "Il se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim ») et arrive plein : 9 h de temps rapide. Avant, un clic sur le sablier explique comment l'ouvrir"
+      ]
+    },
+    {
+      "v": "0.1.28.5",
+      "name": "Presque fabricable",
+      "items": [
+        "Ateliers : le filtre « Fabricables maintenant » devient un menu. Choisissez « Il manque au plus 1, 2 ou 3 ressources » pour voir les recettes qui sont à portée de main",
+        "Avec ce filtre, les recettes sont triées de la plus proche à la plus lointaine, et une étiquette indique combien de ressources il manque (en rouge dans la recette, avec la quantité possédée)"
+      ]
+    },
     {
       "v": "0.1.28.4",
       "name": "Double gain dans le chat",

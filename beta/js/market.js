@@ -31,7 +31,7 @@
     if (cat === "eq") return `<span class="icobox">${X().im(X().itemImg(key), "", nameOf(cat, key))}</span>`;
     if (cat === "res") return `<span class="icobox">${X().im(X().resImg(key), "", key)}</span>`;
     if (cat === "rune") return `<span class="icobox mkrune">${X().sIco(E.runeInfo(key).stat) || "ᚱ"}</span>`;
-    return `<span class="icobox mkcons">${h((CONSUMABLES[key] || {}).icon || "•")}</span>`;
+    return `<span class="icobox mkcons">${X().consIco(CONSUMABLES[key], true)}</span>`;
   };
   const kk = (n) => `<span class="mkpx"><span class="coin"></span> ${fmt(Math.round(n))}</span>`;
   const blocked = (cat, key) => (cat === "eq" && ITEMS[key] && ITEMS[key].slot === "dofus") || (cat === "res" && SPECIAL_CRAFTS[key] && (SPECIAL_CRAFTS[key].unique || SPECIAL_CRAFTS[key].furn || SPECIAL_CRAFTS[key].idol));
@@ -272,7 +272,7 @@
     const o = t["o" + side] || {}; const its = t["i" + side] || []; const res = [];
     ["res", "runes", "cons"].forEach((b) => { for (const k in o[b] || {}) res.push([b === "runes" ? "rune" : b, k, o[b][k]]); });
     const tiles = its.map((x) => x.it && ITEMS[x.it.tpl] ? `<span class="itile" data-tip="${h(ITEMS[x.it.tpl].name)} · jet ${Math.round(E.itemQuality(x.it) * 100)} %">${X().im(X().itemImg(x.it.tpl), "", "")}<span class="ilvl">${ITEMS[x.it.tpl].lvl}</span></span>` : "").join("")
-      + res.map(([c, k, q]) => `<span class="itile" data-tip="${h(nameOf(c, k))}">${c === "res" ? X().im(X().resImg(k), "", "") : `<span class="mkbig">${c === "rune" ? X().sIco(E.runeInfo(k).stat) : h((CONSUMABLES[k] || {}).icon || "•")}</span>`}<span class="icount">×${fmt(q)}</span></span>`).join("");
+      + res.map(([c, k, q]) => `<span class="itile" data-tip="${h(nameOf(c, k))}">${c === "res" ? X().im(X().resImg(k), "", "") : `<span class="mkbig">${c === "rune" ? X().sIco(E.runeInfo(k).stat) : X().consIco(CONSUMABLES[k], true)}</span>`}<span class="icount">×${fmt(q)}</span></span>`).join("");
     return `<div class="mktiles">${tiles || `<span class="xs muted">rien pour l'instant</span>`}</div><span class="small">${kk(o.k || 0)}</span>`;
   }
   function tradeSheet() {

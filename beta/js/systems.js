@@ -80,7 +80,7 @@
     else if (!st.last) st.n = 1;
     else { const lower = E.ALM_TIERS.filter((x) => x < st.n).pop() || 0; st.n = lower + 1; }
     st.last = A.day;
-    const R = E.ALM_TIERS_R[st.n] || (st.n > 30 && st.n % 30 === 0 ? { cons: "coffre_or" } : null);
+    const R = E.ALM_TIERS_R[st.n] || (st.n > 30 && st.n % 90 === 0 ? { cons: "coffre_obsidienne" } : st.n > 30 && st.n % 30 === 0 ? { cons: "coffre_or" } : null);
     if (R) {
       let txt = "";
       if (R.lot) txt = resLot(S, 3, 5, 10).join(", ");
@@ -334,13 +334,47 @@
   D.SPECIAL_CRAFTS["Filet de capture"] = { job: "bricoleur", lvl: 40, cons: "filet", ing: [["Oueille", 8], ["Bois de Frêne", 10], ["Fer", 5]] };
 
   /* ---------------- Consommables spéciaux (utilitaires et coffres) ---------------- */
-  const resLot = (S, n, qmin, qmax) => {
+  const resLot = (S, n, qmin, qmax, acc) => {
     const top = topLvl(S); const pool = ALM_POOL.filter(([, l]) => l <= top + 3 && l >= top - 25); const P = pool.length ? pool : ALM_POOL.slice(0, 10);
     const got = [];
-    for (let i = 0; i < n; i++) { const [r] = P[Math.floor(rnd() * P.length)]; const q = qmin + Math.floor(rnd() * (qmax - qmin + 1)); S.res[r] = (S.res[r] || 0) + q; got.push(`${q} × ${r}`); }
+    for (let i = 0; i < n; i++) { const [r] = P[Math.floor(rnd() * P.length)]; const q = qmin + Math.floor(rnd() * (qmax - qmin + 1)); S.res[r] = (S.res[r] || 0) + q; got.push(`${q} × ${r}`); if (acc) acc.push(["res", r, q]); }
     return got;
   };
   E.resLot = resLot;
+  /* 0.1.30 « Coffres » : cinq coffres du sac, du bois aux Douze. Kamas = minutes de chasse au niveau du meilleur héros
+     (environ 50 kamas par minute et par niveau d'après la simulation de chasse, bon équipement). */
+  E.CHEST_TIERS = [
+    { k: 250,  dust: 5,   lots: 2, q: [3, 6],   cons: 0, rare: 0, eclats: 0, items: 0 },
+    { k: 750,  dust: 12,  lots: 3, q: [5, 10],  cons: 1, rare: 0, eclats: 0, items: 0 },
+    { k: 1500, dust: 25,  lots: 4, q: [8, 14],  cons: 0, rare: 1, eclats: 2, items: 0, scroll: ["p", 0.05] },
+    { k: 3000, dust: 50,  lots: 5, q: [12, 20], cons: 0, rare: 2, eclats: 4, items: 1, scroll: ["g", 0.10] },
+    { k: 6000, dust: 100, lots: 6, q: [20, 30], cons: 0, rare: 3, eclats: 8, items: 2, scroll: ["g", 1] },
+  ];
+  E.CHEST_COMMON = ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "parchemin_avis"];
+  E.CHEST_RARE = ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"];
+  /* objets de ton niveau : un équipement de niveau proche (pas de Dofus) */
+  E.chestItemPool = (lvl) => Object.keys(ITEMS).filter((t) => { const T = ITEMS[t]; return T.slot && T.slot !== "dofus" && !T.hidden && T.lvl <= lvl + 5 && T.lvl >= Math.max(1, lvl - 15); });
+  E.openChest = (S, id) => {
+    const C = D.CONSUMABLES[id]; const T = E.CHEST_TIERS[C.tier]; const top = topLvl(S); const got = []; const loot = []; // loot : [type, id, quantité] pour la fenêtre d'ouverture
+    const k = T.k * top; S.kamas += k; got.push(`${k.toLocaleString("fr-FR")} kamas`);
+    addRes(S, E.POUSSIERE, T.dust); got.push(`${T.dust} ${E.POUSSIERE}`); loot.push(["res", E.POUSSIERE, T.dust]);
+    got.push(...resLot(S, T.lots, T.q[0], T.q[1], loot));
+    const give = (pool, n) => { for (let i = 0; i < n; i++) { const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); got.push(D.CONSUMABLES[g].name); loot.push(["cons", g, 1]); } };
+    give(E.CHEST_COMMON, T.cons); give(E.CHEST_RARE, T.rare);
+    if (T.eclats) { addRes(S, E.RARE_COMPONENT, T.eclats); got.push(`${T.eclats} × ${E.RARE_COMPONENT}`); loot.push(["res", E.RARE_COMPONENT, T.eclats]); }
+    if (T.items) { const pool = E.chestItemPool(top); for (let i = 0; i < T.items && pool.length && E.itemCount(S) < E.itemCap(S); i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
+    if (T.scroll && rnd() < T.scroll[1]) { const st = ["fo", "ine", "cha", "age", "vit", "sa"][Math.floor(rnd() * 6)]; const sid = "parch_" + st + "_" + T.scroll[0]; E.addCons(S, sid); got.push(D.CONSUMABLES[sid].name); loot.push(["cons", sid, 1]); }
+    S.cnt.chests = (S.cnt.chests || 0) + 1;
+    // message court : la fenêtre d'ouverture montre le détail ; sans fenêtre, les récompenses rares regroupées (×2, ×3)
+    const nRes = loot.filter((x) => x[0] === "res").length; const cnt = new Map();
+    loot.filter((x) => x[0] !== "res").forEach((x) => { const n = x[0] === "item" ? ITEMS[x[1]].name : D.CONSUMABLES[x[1]].name; cnt.set(n, (cnt.get(n) || 0) + 1); });
+    const best = [...cnt].map(([n, q]) => (q > 1 ? `${n} ×${q}` : n));
+    note(S, S.settings && S.settings.cele === false
+      ? `${C.name} : +${k.toLocaleString("fr-FR")} kamas${best.length ? " · " + best.join(" · ") : ""} · ${nRes} ressources.`
+      : `${C.name} ouvert : +${k.toLocaleString("fr-FR")} kamas${best.length ? ` et ${best.length} récompense${best.length > 1 ? "s" : ""} rare${best.length > 1 ? "s" : ""}` : ""}.`, "rare");
+    E.celebrate({ t: "chest", id, got, kamas: k, loot });
+    return got;
+  };
   E.useSpecial = (S, id, arg) => {
     const C = D.CONSUMABLES[id];
     const take = () => { S.cons[id]--; if (!S.cons[id]) delete S.cons[id]; };
@@ -359,14 +393,7 @@
       note(S, `Potion de Savoir : ${D.GATHER_JOBS[arg].name} niveau ${J.lvl}.`, "up"); return null;
     }
     if (id === "cristal_fm") { if (S.fmShield) return "Un Cristal est déjà actif."; take(); S.fmShield = true; note(S, "Cristal de Forgemagie actif : la prochaine forgemagie ne peut rien faire baisser.", "info"); return null; }
-    if (C.kind === "chest") {
-      take(); const top = topLvl(S); const k = Math.round((40 + top * 12) * (1 + C.tier * 1.5)); S.kamas += k;
-      const lot = resLot(S, 2 + C.tier, 3 + C.tier * 2, 6 + C.tier * 4);
-      let extra = "";
-      if (C.tier >= 1) { const pool = C.tier === 2 ? ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"] : ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "parchemin_avis"]; const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); extra = `, ${D.CONSUMABLES[g].name}`; }
-      if (C.tier === 2 && rnd() < 0.5) { S.res[E.RARE_COMPONENT] = (S.res[E.RARE_COMPONENT] || 0) + 2; extra += `, 2 × ${E.RARE_COMPONENT}`; }
-      note(S, `${C.name} : ${k.toLocaleString("fr-FR")} kamas, ${lot.join(", ")}${extra}.`, "rare"); return null;
-    }
+    if (C.kind === "chest") { take(); E.openChest(S, id); return null; }
     return "Inutilisable.";
   };
 
@@ -565,8 +592,8 @@
   const giveExoRune = (S, stat, out, why) => { const k = E.exoKey(stat); S.runes[k] = (S.runes[k] || 0) + 1; S.cnt.exoRunes = (S.cnt.exoRunes || 0) + 1; if (out) out.push(E.runeName(k)); note(S, `${why} : ${E.runeName(k)} !`, "rare"); };
   E.exoDrop = (S, lvl, k, out) => {
     if (lvl < E.EXO_LVL || k < 7) return;
-    if (k >= 8 && rnd() < E.EXO_DROP.pa) giveExoRune(S, "pa", out, "Coffre du boss");
-    else if (rnd() < E.EXO_DROP.pmpo) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", out, "Coffre du boss");
+    if (k >= 8 && rnd() < E.EXO_DROP.pa) giveExoRune(S, "pa", out, "Butin du boss");
+    else if (rnd() < E.EXO_DROP.pmpo) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", out, "Butin du boss");
   };
   E.exoArchi = (S, m) => { if ((m.lvl || 0) >= E.EXO_LVL && rnd() < E.EXO_DROP.archi) giveExoRune(S, rnd() < 0.5 ? "pm" : "po", null, `Archimonstre ${m.name}`); };
 
@@ -656,10 +683,34 @@
     const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
     const mon = pool.slice().sort((a, b) => Math.abs(MONSTERS[a].lvl[0] - lvl) - Math.abs(MONSTERS[b].lvl[0] - lvl))[0];
     S.protector = { job: W.job, res: W.res, mon, cid: c.id, until: now + E.PROT_WAIT_S * 1000, at: now };
-    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min pour l'affronter (Métiers).`, "rare");
+    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min : bouton « Combattre » sur l'Accueil ou dans Métiers.`, "rare");
   };
   E.protCanFight = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon."; if (!E.team(S).length) return "Votre équipe est vide."; if (!S.hunting || !S.sub) return "Partez chasser avec l'équipe pour l'affronter."; return null; };
-  E.protFight = (S) => { const err = E.protCanFight(S); if (err) return err; S.protector.go = true; return null; };
+  /* 0.1.29.3 : « Combattre » prépare tout seul le combat. Si les héros de l'équipe récoltent, ils reviennent ; si l'équipe ne chasse pas,
+     elle part chasser dans sa dernière zone. Après le combat (ou si le protecteur repart), chacun reprend ce qu'il faisait (E.protRestore). */
+  E.protWhy = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon : finissez-le d'abord.";
+    if (E.expActive && E.expActive(S)) return "Impossible pendant une expédition : finissez-la d'abord.";
+    if (!E.team(S).length && !S.chars.some((c) => c.inTeam && c.job)) return "Votre équipe est vide : ajoutez un héros dans Équipe."; return null; };
+  E.protFight = (S) => {
+    const err = E.protWhy(S); if (err) return err; const P = S.protector; const jobs = {};
+    if (!E.team(S).length) { S.chars.filter((c) => c.inTeam && c.job).slice(0, 8).forEach((c) => { jobs[c.id] = c.job; c.job = null; }); S.fight = null; }
+    let hunt = false;
+    if (!S.hunting || !S.sub) {
+      const sid = S.sub && E.subUnlocked(S, S.sub) ? S.sub : Object.keys(SUBS).find((k) => E.subUnlocked(S, k));
+      const e2 = sid ? E.startHunt(S, sid) : "Aucune zone ouverte.";
+      if (e2) { S.chars.forEach((c) => { if (jobs[c.id] && !c.job) c.job = jobs[c.id]; }); return e2; }
+      hunt = true;
+    }
+    if (Object.keys(jobs).length || hunt) P.back = { jobs, hunt };
+    P.go = true; return null;
+  };
+  E.protRestore = (S, B) => {
+    if (!B) return; const names = [];
+    S.chars.forEach((c) => { const W = B.jobs && B.jobs[c.id]; if (W && !c.job) { c.job = Object.assign({}, W, { prog: 0 }); names.push(c.name); } });
+    if (B.hunt && !S.dungeon && !(E.expActive && E.expActive(S))) { S.hunting = false; S.fight = null; }
+    else if (names.length && !S.dungeon) S.fight = null;
+    if (names.length) note(S, `${names.join(", ")} ${names.length > 1 ? "reprennent" : "reprend"} la récolte.`, "info");
+  };
   E.protGroup = (S, sub, team, monsterEntity) => {
     const P = E.protActive(S); if (!P || !P.go) return null;
     const avg = team.reduce((a, c) => a + c.lvl, 0) / team.length; const lvl = Math.round(Math.min(200, avg + 3));
@@ -671,7 +722,7 @@
   };
   E.protEnd = (S, win) => {
     const P = S.protector; if (!P) return; const now = E.now();
-    S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000;
+    S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000; if (P.back) S.protBack = P.back;
     if (win) {
       S.protBoost = { res: P.res, until: now + E.PROT_BOOST_S * 1000 };
       addRes(S, P.res, 10); addRes(S, E.RARE_COMPONENT, 3);
@@ -681,7 +732,8 @@
   };
   E.protMult = (S, res) => (S.protBoost && S.protBoost.res === res && S.protBoost.until > E.now() ? 2 : 1);
   E.protExpire = (S) => { const P = S.protector; if (P && P.fighting && !(S.fight && S.fight.prot && !S.fight.over)) P.fighting = false;
-    if (P && !P.fighting && P.until <= E.now()) { S.protector = null; S.protCalm = E.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); } };
+    if (P && !P.fighting && P.until <= E.now()) { S.protector = null; S.protCalm = E.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); if (P.back) S.protBack = P.back; }
+    if (S.protBack && !(S.fight && S.fight.prot && !S.fight.over)) { const B = S.protBack; S.protBack = null; E.protRestore(S, B); } };
 
 
 
@@ -864,7 +916,9 @@
   E.questProgress = (S) => {
     const q = E.questStep(S); if (!q) return null; const P = S.quest;
     switch (q.t) {
-      case "kill": case "harvest": case "craft": case "fm": case "bounty": case "almanax": return [Math.min(P.prog, q.n), q.n];
+      case "kill": case "harvest": case "craft": case "fm": case "bounty": return [Math.min(P.prog, q.n), q.n];
+      // 0.1.29.5 : une offrande déjà faite aujourd'hui (avant d'arriver à l'étape) compte aussi
+      case "almanax": return [Math.min(Math.max(P.prog, E.almanax(S).done ? 1 : 0), q.n), q.n];
       case "lvl": return [Math.min(topLvl(S), q.n), q.n];
       case "equip": return [Math.min(Math.max(...S.chars.map((c) => Object.keys(c.equip).length)), q.n), q.n];
       case "havre": return [Math.min(E.havreTotal(S), q.n), q.n];
@@ -1097,6 +1151,8 @@
     // Havre-Sac 3.4 : les meubles déjà gagnés sont placés d'office, tant qu'il reste de la place
     if (raw.placed === undefined) S.furniture.forEach((n) => { if (FURN[n]) E.placeFurn(S, n); });
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
+    // 0.1.29.5 : étape « Dévotion » coincée alors que l'offrande du jour est faite : validée au chargement
+    { const q = E.questStep(S); if (q && q.t === "almanax") checkQuest(S); }
     return S;
   };
 
