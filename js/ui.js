@@ -16,9 +16,14 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.24.3";
+const GAME_VERSION = "0.1.25";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.25", name: "Options rangées", items: [
+    "Le menu Options est rangé en 5 onglets : Affichage, Sons, Jeu, Sauvegarde (« Compte » quand tu es en ligne) et Aide. Il rouvre le dernier onglet utilisé",
+    "Une carte par thème, le nom du réglage à gauche et le choix à droite ; les cases à cocher restent à côté de leur texte",
+    "Jeu regroupe les consignes d'absence, les protecteurs de ressources et le code cadeau ; Sauvegarde regroupe les copies de secours, l'export / import et « Nouvelle partie » dans une carte rouge à part",
+    "Rien n'est supprimé et tes réglages gardent leur valeur ; le bouton « Régler » du résumé d'absence ouvre directement l'onglet Jeu" ] },
   { v: "0.1.24.3", name: "Chasser à son rythme", items: [
     "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
     "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",

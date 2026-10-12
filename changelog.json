@@ -1,6 +1,16 @@
 {
-  "version": "0.1.24.3",
+  "version": "0.1.25",
   "versions": [
+    {
+      "v": "0.1.25",
+      "name": "Options rangées",
+      "items": [
+        "Le menu Options est rangé en 5 onglets : Affichage, Sons, Jeu, Sauvegarde (« Compte » quand tu es en ligne) et Aide. Il rouvre le dernier onglet utilisé",
+        "Une carte par thème, le nom du réglage à gauche et le choix à droite ; les cases à cocher restent à côté de leur texte",
+        "Jeu regroupe les consignes d'absence, les protecteurs de ressources et le code cadeau ; Sauvegarde regroupe les copies de secours, l'export / import et « Nouvelle partie » dans une carte rouge à part",
+        "Rien n'est supprimé et tes réglages gardent leur valeur ; le bouton « Régler » du résumé d'absence ouvre directement l'onglet Jeu"
+      ]
+    },
     {
       "v": "0.1.24.3",
       "name": "Chasser à son rythme",
