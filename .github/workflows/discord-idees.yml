@@ -1,0 +1,16 @@
+# Envoie chaque dimanche soir dans #notes (salon privé) le top 5 des idées du forum, classées par votes 👍. Nécessite le secret DISCORD_BOT_TOKEN.
+name: Top des idées sur Discord
+on:
+  schedule:
+    - cron: "0 17 * * 0"
+  workflow_dispatch:
+jobs:
+  idees:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js idees
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
