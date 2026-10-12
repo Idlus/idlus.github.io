@@ -1,0 +1,136 @@
+Chargement…
+Zone Incarnam: Route des âmes[1-5] 4m, Champs[1-7] 4m, Lac[2-8] 3m, Pâturages[3-9] 4m, Forêt[4-10] 3m, Mine[5-9] 1m, Cimetière[5-11] 4m
+Zone Astrub: Cité d'Astrub[11-15] 6m, Souterrains d'Astrub[11-15] 4m, Prairies d'Astrub[16-20] 4m, Champs d'Astrub[16-20] 4m, Calanques d'Astrub[16-20] 4m, Tainéla[22-30] 4m, Forêt d'Astrub[22-30] 4m, Carrière d'Astrub[22-30] 4m, Égouts d'Astrub[22-30] 4m, Cimetière d'Astrub[32-40] 4m, Planque des Vilinsekts[32-40] 4m
+Zone Amakna: Campagne d'Amakna[16-20] 4m, Forêt d'Amakna[16-39] 4m, Coin des Bouftous[22-30] 4m, Coin des Boos[22-30] 4m, Cimetière[25-42] 6m, Champ des Ingalsse[32-40] 5m, Campement des Gobelins[32-40] 4m, Campement des Bworks[32-50] 5m, Plaine des Scarafeuilles[34-42] 4m, Bord de la forêt maléfique[35-43] 4m, Montagne des Craqueleurs[42-50] 9m, Cloaque d'Amakna[52-60] 4m, Péninsule des gelées[54-62] 3m, Pitons Rocheux des Craqueleurs[59-71] 6m, Dédale du Dark Vlad[142-150] 4m
+Zone Plaines de Cania: Baie de Cania[35-47] 6m, Plaine des Porkass[40-50] 4m, Champs de Cania[51-64] 4m, Lac de Cania[52-60] 4m, Massif de Cania[52-65] 4m, Plaines Rocheuses[59-70] 4m, Pics de Cania[82-90] 4m, Pénates du Corbac[102-110] 4m, Bibliothèque du Maître Corbac[102-110] 7m, Cirque de Cania[110-121] 4m, Landes de Cania[137-150] 4m, Dents de Pierre[150-160] 5m, Village des Kanigs[150-160] 5m
+Zone Landes de Sidimote: Désolation de Sidimote[62-70] 4m, Route des Roulottes[82-90] 4m, Hauts des Hurlements[92-100] 4m, Gisgoul[172-180] 5m, Caverne des Fungus[172-180] 4m, Domaine des Fungus[172-180] 4m
+Zone Montagne des Koalaks: Forêt de Kaliptus[60-88] 4m, Lacs enchantés[60-88] 4m, Canyon sauvage[70-98] 8m, Vallée de la Morh'Kitu[101-120] 5m, Cimetière primitif[101-120] 4m
+Zone Forêt des Abraknydes: Forêt Sombre[74-90] 3m
+Zone Île de Moon: Chemin du Crâne[82-90] 4m, Jungle Interdite[92-100] 4m
+Zone Terres des Dragoeufs: Village des Dragoeufs[92-100] 4m, Souterrains des Dragoeufs[92-100] 4m, Sanctuaire des Dragoeufs[112-120] 4m
+Zone Île d'Otomaï: Tourbière sans fond[92-112] 3m, Tourbière nauséabonde[92-112] 3m, Plaines herbeuses[93-110] 6m, Village des Zoths[114-138] 5m, Village de la Canopée[114-138] 5m, Jungle obscure[125-143] 7m, Tronc de l'arbre Hakam[142-160] 5m, Feuillage de l'arbre Hakam[142-160] 3m
+Zone Île du Minotoror: Île du Minotoror[102-128] 4m, Labyrinthe du Minotoror[108-128] 5m
+Zone Île de Pandala: Plantala[102-110] 4m, Akwadala[122-130] 4m, Terrdala[122-130] 4m, Feudala[132-140] 4m, Aerdala[132-140] 4m
+Zone Île de Frigost: Port de givre[82-90] 4m, La Bourgade[82-90] 4m, Champs de glace[112-120] 4m, Forêt des pins perdus[132-140] 5m, Lac gelé[132-140] 5m, Berceau d'Alma[142-150] 6m, Larmes d'Ouronigride[152-160] 3m, Village enseveli[162-170] 4m, Crevasse Perge[162-170] 4m, Forêt pétrifiée[172-180] 4m, Crocs de verre[182-190] 5m, Mont Torrideau[182-190] 3m, Ruche des Gloursons[182-190] 5m
+Zone Saharach: Territoire Cacterre[122-130] 4m, Gorge des Vents Hurlants[162-170] 4m, Cité Oubliée[162-170] 4m, Pyramide Maudite[200-212] 4m
+Zone Île de Pwâk: Jardins à la Crème[122-130] 4m
+Zone Dimensions divines: Ruelles des Eaux-Suaires[122-130] 4m, Carrière Aurifère[142-150] 4m, Lande Poilue[152-160] 4m, Jour présent[162-170] 4m, Toorbz Boorzzbz[162-170] 4m, Catacombres[172-180] 4m, Retraite des Éternels[200-212] 4m, Hauts Ténébreux[200-212] 4m, Lendemains incertains[200-212] 4m, Temple de Kerubim[200-212] 4m
+Zone Île de Grobe: Cimetière de Grobe[152-160] 4m, Mont des Tombeaux[162-170] 4m
+Zone Île de Sakaï: Plaine de Sakaï[182-190] 5m, Forêt enneigée[182-190] 5m
+Zone Archipel de Valonia: Galeries d'Ereboria[182-190] 4m
+Zone Nimotopia: Nimotopia[182-190] 4m
+Zone Dimension Obscure: Dimension Obscure[182-190] 4m
+Zone Frigost : Harebourg: Jardins d'Hiver[200-212] 4m, Remparts à vent[200-212] 4m, Tannerie Écarlate[200-212] 4m, Bastion des froides légions[200-212] 4m, Tour de la Clepsydre[200-212] 4m, Caserne du Jour sans fin[200-212] 4m
+Zone Baie de Sufokia: Salles des Embruns[200-212] 3m
+Donjon Crypte de Kardorim: boss Kardorim niv 10, clé Clef de la Crypte de Kardorim, salles 3
+Donjon Grange du Tournesol Affamé: boss Tournesol Affamé niv 20, clé Clef des Champs, salles 3
+Donjon Château Ensablé: boss Mob l'Éponge niv 20, clé Clef du Château Ensablé, salles 3
+Donjon Cour du Bouftou Royal: boss Bouftou Royal niv 30, clé Clef de la Cour du Bouftou Royal, salles 4
+Donjon Cache de Kankreblath: boss Kankreblath niv 40, clé Clef de la Cache de Kankreblath, salles 4
+Donjon Donjon des Tofus: boss Batofu niv 40, clé Clef du Donjon des Tofus, salles 4
+Donjon Donjon des Squelettes: boss Chafer Rōnin niv 40, clé Clef du Donjon des Squelettes, salles 4
+Donjon Donjon des Scarafeuilles: boss Scarabosse Doré niv 40, clé Clef du Donjon des Scarafeuilles, salles 4
+Donjon Donjon des Bworks: boss Bworkette niv 50, clé Clef du Donjon des Bworks, salles 5
+Donjon Nid du Kwakwa: boss Kwakwa niv 50, clé Clef du Nid du Kwakwa, salles 5
+Donjon Clos des Blops: boss Blop Coco Royal niv 60, clé Clef du Clos des Blops, salles 5
+Donjon Laboratoire de Brumen Tinctorias: boss Nelween niv 70, clé Clef du Laboratoire de Brumen Tinctorias, salles 5
+Donjon Pitons Rocheux des Craqueleurs: boss Craqueleur Légendaire niv 70, clé Clef des Pitons Rocheux des Craqueleurs, salles 5
+Donjon Bateau du Chouque: boss Le Chouque niv 90, clé Clef du Bateau du Chouque, salles 5
+Donjon Chapiteau des Magik Riktus: boss Choudini niv 90, clé Clef du Chapiteau des Magik Riktus, salles 5
+Donjon Domaine Ancestral: boss Abraknyde Ancestral niv 90, clé Clef du Domaine Ancestral, salles 5
+Donjon Caverne du Koulosse: boss Koulosse niv 100, clé Clef de la Caverne du Koulosse, salles 6
+Donjon Tanière du Meulou: boss Meulou niv 100, clé Clef de la Tanière du Meulou, salles 6
+Donjon Arbre de Moon: boss Moon niv 100, clé Clef de l'Arbre de Moon, salles 6
+Donjon Antre du Dragon Cochon: boss Dragon Cochon niv 100, clé Clef du labyrinthe du Dragon Cochon, salles 6
+Donjon Repaire du Kharnozor: boss Kharnozor niv 100, clé Clef du Repaire du Kharnozor, salles 6
+Donjon Bibliothèque du Maître Corbac: boss Maître Corbac niv 110, clé Clef de la Bibliothèque du Maître Corbac, salles 6
+Donjon Goulet du Rasboul: boss Silf le Rasboul Majeur niv 110, clé Clef du Goulet du Rasboul, salles 6
+Donjon Bambusaie de Damadrya: boss Damadrya niv 110, clé Clef de la Bambusaie de Damadrya, salles 6
+Donjon Centre du Labyrinthe du Minotoror: boss Minotoror niv 120, clé Clef du Labyrinthe du Minotoror, salles 6
+Donjon Antre de Crocabulia: boss Crocabulia niv 120, clé Clef de l'Antre de Crocabulia, salles 6
+Donjon Serre du Royalmouth: boss Royalmouth niv 120, clé Clef de la serre du Royalmouth, salles 6
+Donjon Repaire de Skeunk: boss Skeunk niv 120, clé Clef du Repaire de Skeunk, salles 6
+Donjon Tofulailler Royal: boss Tofu Royal niv 120, clé Clef Secrète du Tofulailler Royal, salles 6
+Donjon Antre du Blop Multicolore Royal: boss Blop Multicolore Royal niv 120, clé Clef de l'antre du Blop Multicolore, salles 6
+Donjon Mégalithe de Fraktale: boss Fraktale niv 120, clé Clef du Mégalithe de Fraktale, salles 6
+Donjon Volière de la Haute Truche: boss Haute Truche niv 130, clé Clef de la Volière de la Haute Truche, salles 6
+Donjon Ring du Capitaine Ekarlatte: boss Capitaine Ekarlatte niv 130, clé Clef du Ring du Capitaine Ekarlatte, salles 6
+Donjon Caverne d'El Piko: boss El Piko niv 130, clé Clef de la Caverne d'El Piko, salles 6
+Donjon Croquanterie: boss Croqueleur niv 130, clé Clef de la Croquanterie, salles 6
+Donjon Vallée de la Dame des eaux: boss Nagate niv 130, clé Clef de la Vallée de la Dame des eaux, salles 6
+Donjon Atelier du Tanukouï San: boss Tanukouï San niv 130, clé Clef de l'Atelier du Tanukouï San, salles 6
+Donjon Laboratoire du Tynril: boss Tynril Ahuri niv 140, clé Clef du Laboratoire du Tynril, salles 6
+Donjon Excavation du Mansot Royal: boss Mansot Royal niv 140, clé Clef Mansot, salles 6
+Donjon Clairière du Chêne Mou: boss Chêne Mou niv 140, clé Clef de la Clairière du Chêne Mou, salles 6
+Donjon Fabrique de foux d'artifice: boss Founoroshi niv 140, clé Clef de la Fabrique de foux d'artifice, salles 6
+Donjon Dojo du Vent: boss Shihan niv 140, clé Clef du Dojo du vent, salles 6
+Donjon Tertre du long sommeil: boss Hell Mina niv 150, clé Clef du Tertre du long sommeil, salles 6
+Donjon Repaire de Sphincter Cell: boss Sphincter Cell niv 150, clé Clef du Repaire de Sphincter Cell, salles 6
+Donjon Épave du Grolandais violent: boss Ben le Ripate niv 150, clé Clef du Grolandais violent, salles 6
+Donjon Galerie du Phossile: boss Phossile niv 150, clé Clef de la Galerie du Phossile, salles 6
+Donjon Salle du Minotot: boss Minotot niv 160, clé Clef de la salle du Minotot, salles 6
+Donjon Canopée du Kimbo: boss Kimbo niv 160, clé Clef de la Canopée du Kimbo, salles 6
+Donjon Hypogée de l'Obsidiantre: boss Obsidiantre niv 160, clé Clef de l'hypogée de l'Obsidiantre, salles 6
+Donjon Grotte de Kanigroula: boss Kanigroula niv 160, clé Clef de la Grotte de Kanigroula, salles 6
+Donjon Plateau de Ush: boss Ush Galesh niv 160, clé Clef du Plateau de Ush, salles 6
+Donjon Tombe du Shogun Tofugawa: boss Shogun Tofugawa niv 160, clé Clef de la Tombe du Shogun Tofugawa, salles 6
+Donjon Poste de contrôle du Supervizœuf: boss Supervizœuf niv 170, clé Clef du Poste de contrôle du Supervizœuf, salles 6
+Donjon Tanière Givrefoux: boss Tengu Givrefoux niv 170, clé Clef de la Tanière Givrefoux, salles 6
+Donjon Horologium de XLII: boss XLII niv 170, clé Clef de l'Horologium de XLII, salles 6
+Donjon Boyau du Père Ver: boss Père Ver niv 170, clé Clef du Boyau du Père Ver, salles 6
+Donjon Demeure des Esprits: boss Koumiho niv 170, clé Clef de la Demeure des Esprits, salles 6
+Donjon Temple du Grand Ougah: boss Ougah niv 180, clé Clef du Temple du Grand Ougah, salles 6
+Donjon Antre du Korriandre: boss Korriandre niv 180, clé Clef de l'Antre du Korriandre, salles 6
+Donjon Cave du Toxoliath: boss Toxoliath niv 180, clé Clef de la Cave du Toxoliath, salles 6
+Donjon Grotte du Bworker: boss Bworker niv 180, clé Clef de la Grotte du Bworker, salles 6
+Donjon Bastion des Marteaux-Aigris: boss Barbéryl Clochecuivre niv 190, clé Clef du Bastion des Marteaux-Aigris, salles 6
+Donjon Cavernes du Kolosso: boss Kolosso niv 190, clé Clef des cavernes du Kolosso, salles 6
+Donjon Donjon de la mine de Sakaï: boss Grolloum niv 190, clé Clef de la mine de Sakaï, salles 6
+Donjon Antichambre des Gloursons: boss Glourséleste niv 190, clé Clef de l'Antichambre des Gloursons, salles 6
+Donjon Pyramide d'Ombre: boss Ombre niv 190, clé Clef de la Pyramide d'Ombre, salles 6
+Donjon Camp du Comte Razof: boss Comte Razof niv 190, clé Clef du Camp du Comte Razof, salles 6
+Donjon Laboratoire de Nileza: boss Nileza niv 220, clé Clef du Laboratoire de Nileza, salles 6
+Donjon Transporteur de Sylargh: boss Sylargh niv 220, clé Clef du Transporteur de Sylargh, salles 6
+Donjon Salons privés de Klime: boss Klime niv 220, clé Clef des Salons privés de Klime, salles 6
+Donjon Forgefroide de Missiz Frizz: boss Missiz Frizz niv 220, clé Clef de la Forgefroide de Missiz Frizz, salles 6
+Donjon Donjon du Comte Harebourg: boss Comte Harebourg niv 220, clé Clef du Donjon du Comte Harebourg, salles 6
+Donjon Belvédère d'Ilyzaelle: boss Ilyzaelle niv 220, clé Clef du Belvédère d'Ilyzaelle, salles 6
+Donjon Aquadôme de Merkator: boss Merkator niv 220, clé Clef de l'Aquadôme de Merkator, salles 6
+Donjon Palais du roi Nidas: boss Roi Nidas niv 220, clé Clef du Palais du roi Nidas, salles 6
+Donjon Trône de la Cour Sombre: boss Reine des Voleurs niv 220, clé Clef du Trône de la Cour Sombre, salles 6
+Donjon Œil de Vortex: boss Vortex niv 220, clé Clef de l'Œil de Vortex, salles 6
+Donjon Défi du Chalœil: boss Chalœil niv 220, clé Clef du Défi du Chalœil, salles 6
+Donjon Chambre de Tal Kasha: boss Tal Kasha niv 220, clé Clef de la Chambre de Tal Kasha, salles 6
+Récolte : {'paysan': 13, 'bucheron': 20, 'mineur': 16, 'alchimiste': 13, 'pecheur': 23} | sous-zones avec ressources : 95
+Ressources intermédiaires fabricables : 53
+Équipements : 186 lâchés par les monstres, 1771 craftables avec les ressources du jeu (1018 recettes simplifiées)
+Ingrédients qui débloqueraient le plus de crafts : [('Étoffe Mystérieuse', 57), ('Tourmaline', 47), ("Fragment d'anomalie", 35), ('Pépite', 34), ('Neurone de dragodinde', 25), ('Galet Solaire', 25), ('Galet rutilant', 23), ('Corne de volkorne', 22), ('Galet rayonnant', 20), ('Trame Dimensionnelle', 20), ('Ambre du Tynril', 18), ('Galet Lunaire', 16), ('Boostoplasme', 15), ('Galet cramoisi', 15), ('Pétale de Rose Obscure', 12)]
+Objets retenus : 1707 ; panoplies : 340
+!! Clé Clef du Donjon des Squelettes : ingrédients sans source dans le jeu : ['Mâchoire du Chafer Draugr']
+!! Clé Clef des Pitons Rocheux des Craqueleurs : ingrédients sans source dans le jeu : ['Fragment de Pierre Polie']
+!! Clé Clef du labyrinthe du Dragon Cochon : ingrédients sans source dans le jeu : ['Deuxième partie de la clef du labyrinthe du Dragon Cochon', 'Première partie de la clef du labyrinthe du Dragon Cochon']
+!! Clé Clef du Goulet du Rasboul : ingrédients sans source dans le jeu : ['Fragment de cerveau poli']
+!! Clé Clef de l'antre du Blop Multicolore : ingrédients sans source dans le jeu : ['Morceau de clef Coco', 'Morceau de clef Griotte', 'Morceau de clef Indigo', 'Morceau de clef Reinette']
+!! Clé Clef du Mégalithe de Fraktale : ingrédients sans source dans le jeu : ['Symbole de Xélomorphe']
+!! Clé Clef du Ring du Capitaine Ekarlatte : ingrédients sans source dans le jeu : ['Insigne de Malveilleur']
+!! Clé Clef du Repaire de Sphincter Cell : ingrédients sans source dans le jeu : ['Première clef du Donjon de Sphincter', 'Deuxième clef du Donjon de Sphincter']
+!! Clé Clef de la Galerie du Phossile : ingrédients sans source dans le jeu : ['Dent de Phorreur']
+!! Clé Clef du Plateau de Ush : ingrédients sans source dans le jeu : ['Griffe de Matougarou']
+!! Clé Clef du Poste de contrôle du Supervizœuf : ingrédients sans source dans le jeu : ['Patte de Kabombz']
+!! Clé Clef de l'Horologium de XLII : ingrédients sans source dans le jeu : ["Poils d'Hordémon"]
+!! Clé Clef de la Cave du Toxoliath : ingrédients sans source dans le jeu : ['Chitine de Nécrotique']
+!! Clé Clef du Belvédère d'Ilyzaelle : ingrédients sans source dans le jeu : ["Fragment d'Ectorche"]
+!! Clé Clef du Palais du roi Nidas : ingrédients sans source dans le jeu : ["Poils de Barbe d'Enutrofor"]
+!! Clé Clef du Trône de la Cour Sombre : ingrédients sans source dans le jeu : ['Étoffe de la Cour Sombre']
+!! Clé Clef de l'Œil de Vortex : ingrédients sans source dans le jeu : ['Boucle des Égarés']
+!! Clé Clef du Défi du Chalœil : ingrédients sans source dans le jeu : ['Carte du Grand Jeu']
+!! Clé Clef de la Chambre de Tal Kasha : ingrédients sans source dans le jeu : ['Fragment de Chakanoubis']
+Intermédiaires utilisés par les recettes : 41
+Baguette Rikiki : [['Étoffe du Sanglier', 1], ['Pétale Magique du Tournesol Affamé', 1], ['Poils de Darit', 1]] | manquants : []
+Sorts de classe : 418 icônes, 418 niveaux
+class_spells.json absent : kits de classe et invocations repris de js/gamedata.js
+Kits de classe : {'feca': 22, 'osa': 22, 'enu': 22, 'sram': 22, 'xelor': 22, 'eca': 22, 'eni': 22, 'iop': 22, 'cra': 22, 'sadi': 22, 'sacri': 22, 'panda': 22, 'roub': 22, 'zobal': 22, 'steam': 22, 'elio': 22, 'hupper': 22, 'ougi': 22, 'forge': 22}
+Invocations : 75
+Monstres avec sorts : 835/839
+gamedata.js : 1743 Ko, 839 monstres, 1683 ressources, 1707 objets
+Images : 1723 nouvelles / 4360 au total

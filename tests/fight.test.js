@@ -52,3 +52,53 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.ok(c.pts < E.pointCost(main, c.alloc[main]) && total(c) === 195, "le retour en automatique ne dépense pas les points");
   console.log("ok - répartition manuelle et retour en automatique");
 }
+
+// 0.1 : chaque mécanique de boss tourne jusqu'au bout sans erreur
+{
+  const realMechs = E.bossMechs, realUnl = E.dungeonUnlocked;
+  E.dungeonUnlocked = () => true;
+  const did = "labo_nileza"; const dg = D.DUNGEONS[did];
+  for (const k of Object.keys(E.BOSS_MECHS)) {
+    E.bossMechs = () => [k];
+    const S2 = E.newState("Test", "iop"); S2.chars = [];
+    ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S2, c, "H" + i, 190); x.inTeam = true; E.refreshSpells(x, E.charStats(S2, x)); });
+    S2.res[dg.key] = 1; assert.strictEqual(E.enterDungeon(S2, did, 1), null, `${k} : entrée impossible`);
+    S2.dungeon.room = dg.rooms.length; E.startFight(S2); const F = S2.fight;
+    assert.ok(F.ents.some((e) => e.mech && e.mech.includes(k)), `${k} : mécanique absente`);
+    let n = 0; while (!F.over && n++ < 20000) E.step(S2);
+    assert.ok(F.over, `${k} : le combat ne se termine pas`);
+    for (const e of F.ents) assert.ok(Number.isFinite(e.hp), `${k} : PV invalides pour ${e.name}`);
+  }
+  E.bossMechs = realMechs; E.dungeonUnlocked = realUnl;
+  console.log(`ok - ${Object.keys(E.BOSS_MECHS).length} mécaniques de boss jouées jusqu'au bout`);
+}
+// 0.1 : rôles des monstres en chasse de haut niveau
+{
+  const sub = Object.values(E.SUBS).find((s) => s.lvl[0] >= 150 && s.monsters.some((m) => E.monRole(m, 200)));
+  const S3 = E.newState("Test", "iop"); S3.chars = [];
+  ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S3, c, "H" + i, 190); x.inTeam = true; E.refreshSpells(x, E.charStats(S3, x)); });
+  E.subUnlocked = () => true; E.startHunt(S3, sub.id);
+  for (let t = 0; t < 5 * 60 * 1000; t += 250) E.tick(S3, 250);
+  assert.ok(S3.stats.fights > 0, "aucun combat de haut niveau");
+  console.log(`ok - chasse de haut niveau (${sub.name}) : ${S3.stats.wins}/${S3.stats.fights} victoires`);
+}
+// 0.1 : mutateur éclair, 3 donjons par créneau, et chaque modificateur joue une course complète
+{
+  const realUnl = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
+  const S4 = E.newState("Test", "iop"); S4.chars = [];
+  const L = E.flash(S4); assert.strictEqual(L.length, 3, "le mutateur éclair doit proposer 3 donjons");
+  E.FLASH_TIERS.forEach(([, lo, hi], i) => assert.ok(D.DUNGEONS[L[i].did].lvl >= lo && D.DUNGEONS[L[i].did].lvl <= hi, "donjon hors de sa tranche"));
+  assert.ok(new Set(L.map((x) => x.mod)).size === 3, "3 modificateurs différents");
+  const realFlash = E.flash;
+  for (const mod of E.FLASH_MODS) {
+    E.flash = () => [{ did: "labo_nileza", mod }];
+    const S5 = E.newState("Test", "iop"); S5.chars = [];
+    ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S5, c, "H" + i, 200); x.inTeam = true; E.refreshSpells(x, E.charStats(S5, x)); });
+    S5.res[D.DUNGEONS.labo_nileza.key] = 1; assert.strictEqual(E.enterDungeon(S5, "labo_nileza", 1), null);
+    assert.ok(S5.dungeon.flash === mod && S5.dungeon.mods.includes(mod), `${mod} : modificateur absent`);
+    for (let t = 0; S5.dungeon && t < 3 * 3600 * 1000; t += 1000) E.tick(S5, 1000);
+    assert.ok(!S5.dungeon, `${mod} : la course ne se termine pas`);
+  }
+  E.flash = realFlash; E.dungeonUnlocked = realUnl;
+  console.log(`ok - mutateur éclair : ${L.map((x) => x.mod).join(", ")} ; ${E.FLASH_MODS.length} modificateurs joués jusqu'au bout`);
+}

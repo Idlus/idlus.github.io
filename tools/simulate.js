@@ -3,7 +3,7 @@
      - sans équipement : jusqu'à la stasis 4
      - bon équipement : stasis 6-7
      - équipe optimisée : stasis 10
-   Usage : node tools/simulate.js [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
+   Usage : node tools/simulate.js [--taille 4] [--mutateur champions] [--donjons id1,id2|tous] [--classes iop,cra|toutes] [--essais 3] [--graine 1] [--meubles] [--json]
    --meubles : place dans la Salle des trophées les 5 meilleurs trophées de PV des donjons de niveau inférieur ou égal.
    Par défaut : un donjon par tranche de niveau, 6 équipes, 3 essais par case. */
 "use strict";
@@ -19,10 +19,13 @@ const TRIES = +arg("essais", 3), SEED = +arg("graine", 1), JSON_OUT = flag("json
 let seed = SEED;
 E.setRng(() => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; });
 E.dungeonUnlocked = () => true; // on teste l'équilibrage, pas la progression
+E.weekly = () => null; E.flash = () => []; // pas de mutateur imposé par la date (voir --mutateur)
 
 /* ---------- équipes ---------- */
 const PARTNERS = ["eni", "feca", "cra", "sacri", "iop"];
-const teamFor = (cls) => [cls, ...PARTNERS.filter((x) => x !== cls)].slice(0, 4);
+const MUT = arg("mutateur", ""); if (MUT && !E.STASIS_MODS[MUT]) throw new Error("Mutateur inconnu : " + MUT);
+const SIZE = +arg("taille", 4); // --taille 1|2|3|4 : nombre de héros dans l'équipe
+const teamFor = (cls) => [cls, ...PARTNERS.filter((x) => x !== cls)].slice(0, SIZE);
 const CLS = arg("classes", "") === "toutes" ? D.CLASS_ORDER : arg("classes", "") ? arg("classes").split(",") : ["iop", "cra", "eni", "sram", "osa", "zobal"];
 
 /* ---------- donjons : par défaut, le premier de chaque tranche de niveau ---------- */
@@ -67,6 +70,7 @@ function run(did, k, cls, prof) {
   }
   const SI = E.stasisInfo(S, did); SI.max = k - 1; S.res[dg.key] = 1;
   const err = E.enterDungeon(S, did, k); if (err) throw new Error(`${did} stasis ${k} : ${err}`);
+  if (MUT && !S.dungeon.mods.includes(MUT)) S.dungeon.mods = [MUT].concat(S.dungeon.mods).slice(0, Math.max(1, S.dungeon.mods.length)); // --mutateur : impose un modificateur à toutes les stasis
   for (let t = 0; S.dungeon && t < 3 * 3600 * 1000; t += 1000) E.tick(S, 1000);
   return SI.max >= k;
 }

@@ -16,9 +16,21 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.2";
+const GAME_VERSION = "0.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.1", name: "Niveau 200", items: [
+    "Nouvelle numérotation : le jeu repart à 0.1 jusqu'au multijoueur, qui sera la 1.0",
+    "Niveau 200 : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200 et de nouvelles régions (Frigost, Saharach, Harebourg, Sakaï, Sufokia, Dimensions divines…)",
+    "Carte plus lisible : filtre par tranche de niveaux, régions repliables, zones en lignes compactes, meilleure zone signalée, zones trop faibles grisées, progression par région",
+    "Monstres à rôle (soigneur, kamikaze, chef, invocateur, poison, coriace…) et 22 mécaniques de boss, plus 20 signatures uniques avec leur succès et un titre",
+    "Mécaniques cachées jusqu'à la première rencontre du boss, conseils avant le donjon et choix de la cible prioritaire de l'équipe",
+    "Recette des clés de donjon : panneau clair avec la progression et un bouton vers la zone ou le métier pour chaque ingrédient",
+    "Mutateur éclair : toutes les 20 minutes, 3 donjons (niveaux 10-79, 80-149 et 150-200, les mêmes pour tous) reçoivent un modificateur et donnent +12 % d'XP et de butin, +25 % de poussière",
+    "Une course commencée garde le bonus jusqu'au bout ; l'onglet Donjons montre le temps restant et les 3 donjons suivants",
+    "3 nouveaux modificateurs : Champions (un Champion par salle), Boss rusé (une mécanique de plus) et Renforts (deux serviteurs de plus avec le boss)",
+    "Bonus « petit groupe » en donjon : +30 % de PV et −15 % de dégâts subis en solo, moitié moins en duo ; Mutisme et Condamnation adoucis en solo",
+    "Monstres des niveaux 100 à 200 plus solides (jusqu'à ×1,4 PV et ×1,35 dégâts au niveau 200)" ] },
   { v: "3.4.2", name: "Symboles de classe", items: [
     "Écran de départ et recrutement : chaque classe est représentée par son symbole officiel, sur une case à sa couleur, et le panneau de la classe montre le héros en pied (Masculin ou Féminin)",
     "Choisissez la tête de votre héros dès sa création (rangée « Tête » sous Apparence)",
@@ -109,7 +121,8 @@ const CHANGELOG = [
     "Challenges, mécaniques de boss, invocations",
     "Contenu jusqu'au niveau 120 et 17 nouveaux donjons" ] },
 ];
-const vNum = (v) => v.split(".").map(Number).reduce((a, x, i) => a + x * Math.pow(1000, 2 - i), 0);
+/* Numérotation : l'ancienne série 3.x, puis la nouvelle série 0.x (avant le multijoueur) et 1.0 (multijoueur), toujours plus récente que 3.x. */
+const vNum = (v) => { const p = String(v).split(".").map((x) => parseInt(x, 10) || 0); const n = p.reduce((a, x, i) => a + x * Math.pow(1000, 2 - i), 0); return p[0] < 3 ? 1e10 + n : n; };
 
 /* ---------- utilitaires ---------- */
 const $ = (s) => document.querySelector(s);
@@ -139,6 +152,7 @@ const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLAS
 /* ---------- icônes 3.1.2 : objets officiels + glyphes ---------- */
 const IC = (n, c = "") => `<img class="uico ${c}" src="assets/ui/${n}.webp" alt="" loading="lazy">`;
 const GL = {
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
   gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
@@ -661,7 +675,11 @@ function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
   const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["enc", "Encyclopédie"]];
   let body = "";
-  if (ui.world === "map") body = ZONES.map(zonePanel).join("");
+  if (ui.world === "map") {
+    const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
+    body = `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+      + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
+  }
   else if (ui.world === "dungeons") body = dungeonsHtml();
   else body = encyclopediaHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}</div>
@@ -679,7 +697,7 @@ function lvlHint(s) {
   const top = topTeamLvl();
   const cls = top < s.lvl[0] - 3 ? "minus" : top > s.lvl[1] + 4 ? "muted" : "plus";
   const pen = Math.round((1 - E.xpPenalty(top - s.lvl[1])) * 100);
-  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${s.lvl[1]}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de 4 : −10 % d'XP par niveau d'écart.">XP −${pen} %</span>` : ""}`;
+  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${Math.min(200, s.lvl[1])}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de 4 : −10 % d'XP par niveau d'écart.">XP −${pen} %</span>` : ""}`;
 }
 function tierBadge(k) {
   const t = E.huntTier(S, k); const n = S.bestiary[k] || 0; const next = HUNT_TIERS[t + 1];
@@ -687,18 +705,58 @@ function tierBadge(k) {
     ${t >= 0 ? `<span class="tier t${t}">${HUNT_TIERS[t].name}</span>` : `<span class="tier">Aucun palier</span>`}
     ${next ? `<span class="bar"><i style="width:${pct(n, next.n)}%"></i></span><span class="xs muted num">${fmt(n)}/${fmt(next.n)}</span>` : `<span class="xs muted">max</span>`}</div>`;
 }
-function zonePanel(z) {
+/* 0.1 : la carte se lit par tranche de niveaux (sous-zones classées par leur niveau minimum) */
+const MAP_TIERS = [[1, 40], [41, 80], [81, 120], [121, 160], [161, 200]];
+const tierOf = (lvl) => { const i = MAP_TIERS.findIndex((b) => lvl <= b[1]); return i < 0 ? MAP_TIERS.length - 1 : i; };
+function mapTier() { if (ui.mapTier === undefined) ui.mapTier = tierOf(topTeamLvl()); return ui.mapTier; }
+function zonePanel(z, tier = -1, open = false) {
+  const subs = tier < 0 ? z.subs : z.subs.filter((s) => tierOf(s.lvl[0]) === tier);
+  if (!subs.length) return "";
   const zu = E.zoneUnlocked(S, z.id);
-  return `<section class="panel"><div class="zonehead"><div><h2>${h(z.name)}</h2><div class="small muted">${h(z.desc)} · niveaux ${h(z.lvl)}</div></div>${zu ? "" : `<span class="tag soft">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}</div>
-    <div class="subgrid">${z.subs.map((s) => {
+  const nUn = subs.filter((s) => E.subUnlocked(S, s.id)).length;
+  const lo = Math.min(...subs.map((s) => s.lvl[0])), hi = Math.min(200, Math.max(...subs.map((s) => s.lvl[1])));
+  const hunting = subs.some((s) => S.hunting && S.sub === s.id && !S.dungeon);
+  const best = bestSub(); const hasBest = subs.some((s) => s.id === best);
+  const mons = [...new Set(subs.flatMap((s) => s.monsters))]; const traq = mons.filter((k) => E.huntTier(S, k) >= 1).length;
+  const tro = subs.filter((s) => S.trophies && S.trophies[s.id]).length;
+  const prog = `<span class="zf-prog" data-tip="${traq}/${mons.length} monstres Traqueur · ${tro}/${subs.length} trophée${subs.length > 1 ? "s" : ""}"><span class="bar"><i style="width:${pct(traq, mons.length)}%"></i></span>${IC("trophee")}<span class="xs num">${tro}/${subs.length}</span></span>`;
+  const head = `<button class="zonefold" data-act="zonefold" data-id="${z.id}" aria-expanded="${open}"><span class="zf-name">${h(z.name)}</span>
+    <span class="zf-meta">${hunting ? `<span class="tag good">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
+  if (!open) return `<section class="panel zonefoldp">${head}</section>`;
+  return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
+    <div class="subrows">${subs.map((s) => {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
-      if (s.hidden && !un) return `<div class="subcard locked"><div class="scene">${sceneSVG("cave", 96, s.id)}</div><div class="body"><b>Lieu caché</b><span class="lockmsg">On raconte qu'un objet permet de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></div></div>`;
-      const wins = S.progress.wins[s.id] || 0;
-      return `<button class="subcard ${un ? "" : "locked"} ${here ? "here" : ""}" data-act="zoneview" data-id="${s.id}">
-        <div class="scene">${sceneSVG(s.deco, 96, s.id)}<div class="troupe">${s.monsters.slice(0, 4).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div>${S.trophies && S.trophies[s.id] ? `<span class="trophymark" data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</div>
-        <div class="body"><div class="row between"><b>${h(s.name)}</b>${lvlHint(s)}</div>
-          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}${s.dungeon ? " · donjon" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</div>
+      if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></span></div>`;
+      const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.25;
+      return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
+        <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
+        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${isBest ? `<span class="tag best" data-tip="La zone qui rapporte le plus d'XP à votre équipe sans être trop dure">${G("star")}<span class="bt"> Meilleure zone</span></span>` : ""}</span>
+          <span class="sr-sub">${lvlHint(s)}</span>
+          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
+}
+/* zone conseillée : la plus haute zone débloquée sans malus d'XP, à portée du niveau moyen de l'équipe, et pas trop dure si on y a déjà combattu */
+function bestSub() {
+  const t = E.team(S).length ? E.team(S) : S.chars; const avg = t.reduce((a, c) => a + c.lvl, 0) / t.length; const top = topTeamLvl();
+  let best = null;
+  ZONES.forEach((z) => z.subs.forEach((s) => {
+    if (s.hidden || !E.subUnlocked(S, s.id) || s.lvl[0] > avg + 2 || E.xpPenalty(top - s.lvl[1]) < 1) return;
+    const r = E.zoneRate(S, s.id); if (r && r.fights >= 5 && r.winRate < 0.75) return;
+    if (!best || s.lvl[0] + s.lvl[1] > best.lvl[0] + best.lvl[1]) best = s;
+  }));
+  return best && best.id;
+}
+function mapOpenZone(t) {
+  if (!ui.mapOpen) ui.mapOpen = {};
+  const key = String(t);
+  if (ui.mapOpen[key] !== undefined) return ui.mapOpen[key];
+  const inTier = (s) => t < 0 || tierOf(s.lvl[0]) === t;
+  const cur = S.hunting && !S.dungeon && E.SUBS[S.sub];
+  let z = cur && inTier(cur) ? cur.zone : null;
+  if (!z) { const top = topTeamLvl(); let best = null;
+    ZONES.forEach((zz) => zz.subs.forEach((s) => { if (inTier(s) && E.subUnlocked(S, s.id) && s.lvl[0] <= top + 3 && (!best || s.lvl[0] > best[0].lvl[0])) best = [s, zz.id]; }));
+    z = best ? best[1] : null; }
+  return (ui.mapOpen[key] = z);
 }
 function renderZoneView(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone); const un = E.subUnlocked(S, sid);
@@ -721,7 +779,7 @@ function renderZoneView(sid) {
       <h3 class="sec">Ressources</h3>
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${r.p} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
       ${its.length ? `<h3 class="sec">Équipements à looter</h3><div class="loot">${its.map((e) => `<div class="lcard"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${(e.p * E.ITEM_DROP_SCALE).toFixed(2).replace(".", ",")} %</span></div></div></div>`).join("")}</div>` : ""}
-      ${dg ? `<h3 class="sec">Donjon</h3>${dungeonCard(s.dungeon)}` : ""}
+      ${dg ? `<h3 class="sec">Donjon${(s.dungeons || []).length > 1 ? "s" : ""}</h3>${(s.dungeons || [s.dungeon]).map(dungeonCard).join("")}` : ""}
     </div>
   </section>`;
 }
@@ -732,6 +790,7 @@ function monCard(k, opts = {}) {
     <div style="min-width:0"><div class="n">${opts.unknown ? "???" : h(m.name)} ${m.boss ? `<span class="tag boss">Boss</span>` : ""}</div>
     <div class="l">niv. <span class="num">${m.lvl[0]}${m.lvl[1] !== m.lvl[0] ? "–" + m.lvl[1] : ""}</span> ${eld(m.el)} ${kills ? `· <span class="num">${fmt(kills)}</span> tués` : ""}</div>
     <div class="res" style="margin-top:3px">${resChips(m.res)}</div>
+    ${(() => { const r = !opts.unknown && E.monRole(k, m.lvl[1]); return r ? `<div class="xs" style="margin-top:3px" data-tip="${h(E.MON_ROLES[r].desc)}"><span class="mrole inl">${h(E.MON_ROLES[r].name)}</span> ${h(E.MON_ROLES[r].desc)}</div>` : ""; })()}
     ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}</div>` : ""}</div></div>`;
 }
 /* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
@@ -756,12 +815,22 @@ function weeklyBanner() {
   const M = E.STASIS_MODS[W.mod]; const dg = DUNGEONS[W.did];
   return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de la semaine</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>`;
 }
+/* Mutateur éclair (0.1) : 3 donjons toutes les 20 minutes */
+function flashLeft() { const m = Math.max(1, Math.ceil((E.flashEnd() - Date.now()) / 60000)); return `${m} min`; }
+function flashBanner() {
+  const L = E.flash(S); if (!L.length) return "";
+  const N = E.flash(S, E.flashEnd()); const rew = Math.round((E.FLASH_REW - 1) * 100);
+  const row = (x) => { const dg = DUNGEONS[x.did]; const M = E.STASIS_MODS[x.mod]; const un = E.dungeonUnlocked(S, x.did); return `<button class="fl-row ${un ? "" : "locked"}" data-act="dgopen" data-id="${x.did}">${im(imgM(dg.boss), "fl-ico", MONSTERS[dg.boss].name)}<span class="fl-t"><b>${h(dg.name)}</b><span class="xs muted">${un ? "" : `${G("lock")} `}niv. ${dg.lvl} · ${x.tier}</span></span><span class="fl-mod" data-tip="${h(M.desc)}">${h(M.name)}</span></button>`; };
+  return `<div class="flash"><div class="fl-head"><span class="wk">${G("bolt")} Mutateur éclair</span><span class="xs"><b class="fl-rew">+${rew} %</b> XP et butin · change dans <b>${flashLeft()}</b></span></div>
+    <div class="fl-list">${L.map(row).join("")}</div>
+    ${N.length ? `<div class="xs muted fl-next">Ensuite : ${N.map((x) => `${h(DUNGEONS[x.did].name)} (${h(E.STASIS_MODS[x.mod].name)})`).join(" · ")}</div>` : ""}</div>`;
+}
 function dungeonCard(did) {
   const dg = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did); const ks = dgKeyState(did); const SI = (S.stasis || {})[did] || { max: 0, sel: 1 };
   const fav = (S.dgFav || []).includes(did); const d = dgDifficulty(did, SI.sel || 1);
   return `<div class="dgcard ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">
     <span class="fav ${fav ? "on" : ""}" data-act="dgfav" data-id="${did}" title="Favori">${fav ? "★" : "☆"}</span>
-    ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de la semaine">${G("star")} Semaine</span>` : ""}
+    ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de la semaine">${G("star")} Semaine</span>` : E.flashOf(S, did) ? `<span class="wkbadge fl" title="Mutateur éclair">${G("bolt")} Éclair</span>` : ""}
     ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
     <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
       <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
@@ -777,6 +846,7 @@ function dungeonsHtml() {
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
         <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
       ${weeklyBanner()}
+      ${flashBanner()}
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
       <div class="dggrid">${list.map(dungeonCard).join("") || `<div class="empty">Aucun donjon dans ce filtre.</div>`}</div></div></section>`;
 }
@@ -784,34 +854,66 @@ function dungeonSheet(did) {
   const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
   const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(10, SI.max + 1)); ui.dgStasis = k;
   const M = E.stasisMult(k); const stat = E.dungeonScrollStat(did); const d = dgDifficulty(did, k);
-  const mechs = E.bossMechs(did).map((m) => `<li><b>${h(E.BOSS_MECHS[m].name)}</b> : ${h(E.BOSS_MECHS[m].desc)}</li>`).join("");
+  const seen = E.bossSeen(S, did); const tips = E.bossTips(did);
+  const mechs = E.bossMechs(did).map((m) => { const M = E.BOSS_MECHS[m]; return seen ? `<li>${M.sig ? `<span class="sigmk" data-tip="Mécanique unique de ce boss">${G("star")}</span> ` : ""}<b>${h(M.name)}</b> : ${h(M.desc)}</li>` : `<li><b>???</b> <span class="muted">${M.sig ? "mécanique unique, " : ""}à découvrir en affrontant le boss</span></li>`; }).join("");
+  const sigA = E.BOSS_SIGS[did] ? E.ACH.find((a) => a.id === "sig_" + did) : null;
   const steps = E.STASIS_STEPS.filter(([n]) => n <= k && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
   const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
   const loot = (B.items || []).filter(([t]) => ITEMS[t]).slice(0, 12).map(([t, r]) => { const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(ITEMS[t].name)} · niv. ${ITEMS[t].lvl}${own ? " · déjà obtenu" : ""}">${im(itemImg(t), "", ITEMS[t].name)}</span>`; }).join("");
   const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
   const W = E.weekly(S); const wk = W && W.did === did ? E.STASIS_MODS[W.mod] : null;
+  const FL = wk ? null : E.flashOf(S, did); const fl = FL ? E.STASIS_MODS[FL.mod] : null;
   const chainMax = Math.max(1, keys); const chainOpts = [1, 3, 5, 10].filter((x) => x === 1 || x <= chainMax);
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
+      ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${sm.hp >= 30 ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${sm.hp >= 30 ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${sm.hp >= 30 ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
       ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de la semaine : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b>, jusqu'à lundi (encore ${weeklyLeft()}).</span></div>` : ""}
-      <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}</ul></div>
+      ${fl ? `<div class="wkbox fl">${G("bolt")} <span><b>Mutateur éclair : ${h(fl.name)}</b> (${h(fl.desc.charAt(0).toLowerCase() + fl.desc.slice(1).replace(/\.$/, ""))}). En échange : <b>+${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.FLASH_DUST - 1) * 100)} % de poussière</b>. Change dans ${flashLeft()} ; une course commencée garde le bonus jusqu'au bout.</span></div>` : ""}
+      <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}${FL && FL.mod === "ruse" ? "<li><i>+ une mécanique supplémentaire (mutateur éclair)</i></li>" : ""}</ul>
+        <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
+        ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
-        <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de la semaine" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${IC("coffre")} Premier passage : ${k >= 8 ? "Coffre en or" : k >= 4 ? "Coffre en argent" : "Coffre en bois"}`}</li>
-        <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1))} Poussières de stasis à chaque victoire</li>
+        <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
         ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
-      <div class="keybox"><span>${im(resImg(dg.key), "ico sm", dg.key)} ${h(dg.key)} : <b>${keys}</b></span>${R ? `<button class="btn sm" data-act="dgcraftkey" data-id="${did}" ${E.canCraft(S, R) ? "" : "disabled"}>${IC("metiers")} Fabriquer une clé</button>` : ""}</div>
-      ${R && !E.canCraft(S, R) ? `<div class="xs muted">Recette${!keys ? ` · clé fabricable ${etaLine(R.ing) || "<span class=\"eta\">bientôt</span>"}` : ""} :</div>${ingHtml(R.ing)}` : ""}
+      ${keyPanel(did)}
     </div>
     <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<label class="small row" style="gap:6px">Enchaîner <select data-act="dgchain">${chainOpts.map((x) => `<option value="${x}" ${(ui.dgChain || 1) === x ? "selected" : ""}>${x}×</option>`).join("")}</select></label>
       <button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}</button>` : `<span class="small muted">${G("lock")} Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* 0.1 : panneau de la clé du donjon (recette lisible, d'où vient chaque ingrédient) */
+function keySource(r) {
+  const L = resIndex().src[r] || []; const g = L.find((x) => x.job);
+  if (g) return `<button class="btn xs" data-act="gathersheet" data-job="${g.job}">${IC("pioche")} ${h(GATHER_JOBS[g.job].name)} niv. ${g.lvl}</button>`;
+  const m = L.find((x) => x.m && typeof subOfMon(x.m) !== "string" && subOfMon(x.m)) || L.find((x) => x.m); if (!m) return `<span class="xs muted">${r === E.RARE_COMPONENT ? "trouvailles, boss et coffres" : "source inconnue"}</span>`;
+  const sb = subOfMon(m.m); const pct = E.resRate(m.p).toFixed(1).replace(".", ",");
+  if (sb && typeof sb !== "string") return `<button class="btn xs" data-act="zoneview" data-id="${sb.id}" data-gotab="world" data-tip="${h(MONSTERS[m.m].name)} · ${pct} %">${IC("carte")} ${h(sb.name)}</button>`;
+  return `<span class="xs muted">${h(MONSTERS[m.m].name)}${sb ? " · " + h(DUNGEONS[sb].name) : ""} · ${pct} %</span>`;
+}
+function keyPanel(did) {
+  const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
+  const sub = E.SUBS[E.DUNGEON_SUB[did]];
+  const head = `<div class="kp-head">${im(resImg(dg.key), "kp-ico", dg.key)}<div class="kp-t"><b>${h(dg.key)}</b><span class="xs muted">${keys ? `<b class="num">${keys}</b> en stock · une clé par entrée` : "aucune clé en stock"}</span></div>`;
+  if (!R) return `<div class="keypanel">${head}</div></div>`;
+  const ing = R.ing.map(([r, q]) => ({ r, q, have: S.res[r] || 0 })).sort((a, b) => (a.have >= a.q) - (b.have >= b.q));
+  const ok = ing.filter((x) => x.have >= x.q).length; const can = E.canCraft(S, R); const pinned = S.shop.some((e) => e.id === dg.key);
+  const e = can ? null : E.needEta(S, R.ing);
+  const eta = can ? `<span class="tag good">Prête à fabriquer</span>` : e.stuck ? `<span class="xs warn">Ta chasse actuelle ne donne pas tout : suis les boutons ci-dessous.</span>` : e.sec ? `<span class="xs muted">Prête ${h(E.etaTxt(e.sec))} en continuant ta chasse</span>` : "";
+  return `<div class="keypanel">${head}
+      <div class="kp-btns"><button class="btn sm ${can ? "primary" : ""}" data-act="dgcraftkey" data-id="${did}" ${can ? "" : "disabled"}>${IC("metiers")} Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="special" data-id="${h(dg.key)}" data-tip="Suivre les ingrédients dans la liste de courses (Accueil)">${G("cart")}${pinned ? " ✓" : ""}</button></div></div>
+    <div class="kp-prog"><div class="bar"><i style="width:${pct(ok, ing.length)}%"></i></div><span class="xs num">${ok}/${ing.length} ingrédients</span>${eta}</div>
+    <div class="kp-list">${ing.filter((x) => x.have < x.q).map((x) => `<div class="kp-ing">${im(resImg(x.r), "kp-rico", x.r)}<span class="kp-n">${h(x.r)}</span><span class="kp-q num">${fmt(x.have)}/${x.q}</span><span class="kp-src">${keySource(x.r)}</span></div>`).join("")}</div>
+    ${ok ? `<div class="kp-done"><span class="xs muted">Déjà réunis :</span>${ing.filter((x) => x.have >= x.q).map((x) => `<span class="kp-chip">${im(resImg(x.r), "", x.r)}${h(x.r)} ✓</span>`).join("")}</div>` : ""}
+    ${sub && dg.keyDrop ? `<div class="xs muted">La clé tombe aussi parfois sur les monstres de <b>${h(sub.name)}</b>.</div>` : ""}
+  </div>`;
 }
 function encyclopediaHtml() {
   const z = ZONES.find((x) => x.id === ui.encZone) || ZONES[0];
@@ -844,6 +946,7 @@ function renderCombat() {
   $("#main").innerHTML = `
   <div class="pagehead combathead"><div><div class="small muted">${dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
+      <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
@@ -975,7 +1078,7 @@ function chalBarHtml(F) {
   const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> ${G("target")} Respecter les challenges</label>`;
   if (!F) return "";
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
-  const st = F.stasis > 1 || F.weekly ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}` : "";
+  const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
   return `${st}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small) {
@@ -1868,7 +1971,7 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
-  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span><a class="btn sm" href="../">Jeu public</a></div>`;
+  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span><button class="btn sm" data-adm="open">${G("bug")} Panel de test</button><a class="btn sm" href="../">Jeu public</a></div>`;
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
@@ -2073,6 +2176,8 @@ document.addEventListener("click", (ev) => {
     case "zoneview": ui.zoneView = d.id; window.scrollTo(0, 0); break;
     case "zoneback": ui.zoneView = null; break;
     case "worldtab": ui.world = d.v; break;
+    case "maptier": ui.mapTier = +d.v; break;
+    case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": ui.encZone = d.v; break;
     case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? ui.dgChain || 1 : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = 1; dungeonSheet(d.id); return; }
@@ -2170,6 +2275,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
   else if (a === "dgsort") ui.dgSort = t.value;
+  else if (a === "focusset") { S.settings.focus = t.value; toast(t.value === "auto" ? "L'équipe vise d'abord les soigneurs, chefs, invocateurs et protecteurs." : t.value === "boss" ? "L'équipe vise d'abord le boss." : "L'équipe vise d'abord le monstre le plus faible."); }
   else if (a === "dgchain") { ui.dgChain = +t.value; return; }
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
@@ -2254,13 +2360,14 @@ function copiesHtml() {
 }
 
 /* ---------- boucle ---------- */
+let testSpeed = 1; // panel de test (béta uniquement) : accélération du temps
 let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRes = {};
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
-    E.tick(S, dt); S.lastTick = Date.now();
+    E.tick(S, dt * (BETA ? testSpeed : 1)); S.lastTick = Date.now();
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
@@ -2315,5 +2422,8 @@ function start() {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }
 window.DX = { get S() { return S; }, ui, render, E };
+/* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
+if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
+if (BETA) Object.assign(window.DX, { LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 start();
 })();

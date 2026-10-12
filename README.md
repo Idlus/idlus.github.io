@@ -7,6 +7,15 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.1 « Niveau 200 »
+- **Nouvelle numérotation** : 0.x jusqu'au multijoueur (1.0).
+- **Niveau 200** : 839 monstres, 1 707 objets, 51 nouveaux donjons de 120 à 200, nouvelles régions.
+- **Carte** : tranches de niveaux, régions repliables, meilleure zone, progression par région.
+- **Mécaniques** : rôles de monstres, 22 mécaniques de boss, 20 signatures avec succès et titre, cible prioritaire.
+- **Clés de donjon** : panneau de recette clair avec un bouton vers chaque source.
+- **Mutateur éclair** : toutes les 20 minutes, 3 donjons (10-79, 80-149, 150-200) avec un modificateur et +12 % d'XP et de butin ; nouveaux modificateurs Champions, Boss rusé, Renforts.
+- **Petit groupe** : bonus en donjon pour les équipes de 1 ou 2 héros.
+
 ## 3.4.2 « Symboles de classe »
 - **Symboles de classe** sur l'écran de départ et au recrutement, avec le héros en pied dans le panneau de la classe.
 - **Choix de la tête** dès la création du héros.
