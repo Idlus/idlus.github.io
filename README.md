@@ -7,6 +7,12 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.10.1 « Récoltes et panoplies » (bêta)
+- **Protecteurs de ressources** : en récoltant, un gardien apparaît parfois (environ une récolte sur 60) ; le battre en chasse double cette récolte pendant 20 min (+10 ressources, +3 Éclats). Désactivable.
+- **Codes cadeaux** : champ dans les Options, un code par partie (outil `tools/code_cadeau.js` pour les créer).
+- **Carnet de panoplies** (Inventaire › Panoplies) : pièces possédées ou manquantes, où les obtenir, bonus par palier.
+- **Compositions d'équipe** (page Équipe) : 3 équipes enregistrées, changement en un clic, suggestion dans la fiche de donjon.
+
 ## 0.1.10 « Sorts signature » (bêta)
 - **Sorts signature** : 2 sorts par classe (38) ont une animation unique, liée à ce qu'ils font dans DOFUS (Colère de Iop, Attaque Mortelle, Sablier de Xélor, Tout ou Rien, Mot Interdit, Mascarade, Mégabombe, Cataclysme…). Les actions suivantes attendent la fin du sort ; uniquement avec les animations « Complètes ».
 ## 0.1.9.3 « Passif visible » (bêta)
