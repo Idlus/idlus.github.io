@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.17 « Bienvenue » (bêta)
+- Lot Bienvenue : bulles de découverte (18, une seule fois chacune, question « Tu connais DOFUS ? » au départ, carnet dans les Options), recherche rapide (Ctrl+K, « / » ou la loupe : objets, monstres, donjons, zones, pages… avec fiche « où le trouver »), Options › Affichage (taille du texte, mouvements réduits, contraste renforcé). La rareté des objets est retirée de l'affichage. Logique dans `js/welcome.js`, test `tests/welcome.test.js`.
+
 ## 0.1.16 « Classements » (bêta)
 - Multijoueur, étape 3 : onglet Classements (Niveau avec filtre par classe, Donjons de la semaine et depuis toujours, Album, Succès, Premiers), profils des joueurs. Les records de donjon sont rejoués par la fonction serveur `supabase/functions/record` (même moteur que le jeu, assemblé par `tools/build_server.js`) ; base dans `supabase/classements.sql`, appliquée avec la fonction par le workflow « Serveur en ligne ».
 
