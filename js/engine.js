@@ -18,6 +18,12 @@
   E.trainee = () => null;     // héros à la Salle d'entraînement (systems.js)
   E.atelierTick = () => 0;    // atelier du Havre-Sac (systems.js)
   E.fmPlanTick = () => [];    // forgemagie automatique (systems.js, 0.1.9.1)
+  E.protSpawn = () => {};     // protecteurs de ressources (systems.js, 0.1.10.1)
+  E.protMult = () => 1;
+  E.protGroup = () => null;
+  E.protEnd = () => {};
+  E.protExpire = () => {};
+  E.compWin = () => {};       // compositions d'équipe (systems.js, 0.1.10.1)
   E.exoDrop = () => {};       // runes exotiques des coffres de boss (systems.js)
   E.exoArchi = () => {};      // runes exotiques des archimonstres (systems.js)
   E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
@@ -937,6 +943,8 @@
       if (!sub || !S.hunting) return null;
       mons = E.makeGroup(S, sub, team.length);
       label = sub.name;
+      const pg = E.protGroup(S, sub, team, monsterEntity); // 0.1.10.1 : protecteur de ressources
+      if (pg) { mons = pg.mons; label = pg.label; }
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
     if (IX) applyIdols(IX, mons);
@@ -950,6 +958,7 @@
     const ch = mons.find((m) => m.champ); if (ch) note(S, `Un Champion apparaît : ${ch.name} (${E.CHAMP_POWERS[ch.champ].name}) !`, "rare");
     var fsub = S.dungeon ? null : S.sub, fdg = S.dungeon ? S.dungeon.id : null;
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
+    if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
     F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
@@ -1752,6 +1761,7 @@
   const endFight = (S, win, why) => {
     const F = S.fight; F.over = true; F.result = win ? "win" : "lose";
     S.stats.fights++;
+    if (F.prot) E.protEnd(S, win);
     if (win) {
       S.stats.wins++;
       const mons = F.ents.filter((e) => e.side === "m" && !e.fake);
@@ -1769,7 +1779,7 @@
       if (S.dungeon) {
         const dg = DUNGEONS[S.dungeon.id];
         if (S.dungeon.room >= dg.rooms.length) {
-          S.progress.bossKills[S.dungeon.id] = (S.progress.bossKills[S.dungeon.id] || 0) + 1;
+          S.progress.bossKills[S.dungeon.id] = (S.progress.bossKills[S.dungeon.id] || 0) + 1; E.compWin(S, S.dungeon.id); // 0.1.10.1
           if (E.BOSS_SIGS[S.dungeon.id] && (S.dungeon.stasis || 1) >= 5 && !(F.deathInfo || []).length) (S.sigWins = S.sigWins || {})[S.dungeon.id] = 1;
           E.bossChest(S, S.dungeon.id, F.rewards);
           E.stasisClear(S, S.dungeon, F.rewards);
@@ -2175,6 +2185,7 @@
     E.starsTick(S, dtMs / 1000);
     // récolte
     gatherTick(S, dtMs / 1000);
+    E.protExpire(S);
     E.atelierTick(S, dtMs / 1000);
     E.fmPlanTick(S, dtMs / 1000);
     E.petTick(S, dtMs);
@@ -2249,6 +2260,8 @@
         let q = 1; if (rnd() < J.lvl / 200) q++;
         if (!opts.quiet && !(S.filon && S.filon.until > Date.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: Date.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
         if (E.filonOn(S, W.res)) q *= 2;
+        q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
+        if (!opts.quiet) E.protSpawn(S, c, W);
         if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "rare"); }
         addRes(S, W.res, q); total += q;
         J.xp += 10 + def[1] * 1.0;

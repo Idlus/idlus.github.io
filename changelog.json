@@ -1,6 +1,26 @@
 {
-  "version": "0.1.9.3",
+  "version": "0.1.10.1",
   "versions": [
+    {
+      "v": "0.1.10.1",
+      "name": "Récoltes et panoplies",
+      "items": [
+        "Protecteurs de ressources : en récoltant, un gardien de la ressource apparaît parfois (environ une récolte sur 60, jamais plus d'un à la fois). Il attend 15 minutes : « Combattre » le place dans le prochain combat de chasse, avec quelques monstres de la zone. Victoire : cette ressource rapporte ×2 pendant 20 minutes, +10 de la ressource et +3 Éclats de trouvaille. Désactivable dans les Options",
+        "Deux succès liés : « Gardien des récoltes » et « Fléau des protecteurs » (avec un titre)",
+        "Codes cadeaux : un champ « Code cadeau » dans les Options pour recevoir des kamas, ressources, objets, titres ou ornements offerts sur le Discord. Chaque code ne sert qu'une fois par partie",
+        "Carnet de panoplies (Inventaire › Panoplies) : toutes les panoplies, les pièces que vous avez ou non, où trouver chaque pièce manquante (recette, zone de chasse, donjon avec le taux), les bonus par palier, et un bouton pour mettre les pièces à fabriquer dans la liste de courses",
+        "Compositions d'équipe (page Équipe) : enregistrez jusqu'à 3 équipes (héros, première ligne et arrière, cible prioritaire) et changez d'équipe en un clic. La fiche d'un donjon propose vos compositions et marque celle qui l'a déjà gagné"
+      ]
+    },
+    {
+      "v": "0.1.10",
+      "name": "Sorts signature",
+      "items": [
+        "Sorts signature : 2 sorts par classe (38 en tout) ont maintenant une animation unique, liée à ce qu'ils font dans DOFUS : la Colère de Iop qui saute hors de l'écran, l'Attaque Mortelle qui fige le temps et coupe la cible en deux, le Sablier de Xélor qui rembobine, la machine à sous de Tout ou Rien, le mot censuré du Mot Interdit, la Mascarade au projecteur, la Mégabombe et son champignon, le portail géant de Cataclysme…",
+        "Pendant un sort signature, les actions suivantes du combat attendent la fin de l'animation (une seconde environ) ; rien ne change aux gains",
+        "Ces animations ne jouent qu'avec les animations « Complètes » (Options) ; en « Sobres », les sorts gardent leur animation habituelle"
+      ]
+    },
     {
       "v": "0.1.9.3",
       "name": "Passif visible",

@@ -14,6 +14,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const topLvl = (S) => Math.max(...S.chars.map((c) => c.lvl));
   const note = (S, t, k) => E.note(S, t, k);
+  const addRes = (S, n, q) => E.addRes(S, n, q);
   const giveTeamXp = (S, pctOfLevel) => {
     const list = E.team(S).length ? E.team(S) : S.chars;
     list.forEach((c) => E.giveXp(S, c, Math.round(E.xpNeed(c.lvl) * pctOfLevel)));
@@ -636,6 +637,121 @@
   };
   E.fmPlanEta = (S, plan) => Math.max(0, E.fmPlanPeriod(S) - (plan.prog || 0));
 
+
+  /* ---------------- Protecteurs de ressources (0.1.10.1) ----------------
+     Environ une fois sur 60 récoltes (au plus un à la fois, 30 min de calme après), un gardien de la ressource apparaît et attend 15 min.
+     Si l'équipe chasse, « Combattre » le place dans le prochain combat avec quelques monstres de la zone. Victoire : récolte de cette
+     ressource ×2 pendant 20 min, 10 de la ressource et 3 Éclats de trouvaille. Défaite ou délai passé : il repart. Désactivable dans les Options. */
+  E.PROT_CHANCE = 1 / 60; E.PROT_WAIT_S = 900; E.PROT_CALM_S = 1800; E.PROT_BOOST_S = 1200;
+  E.PROT_RE = { paysan: /Épouvantail|Tournesol|Bouftou|Champ|Blé|Pissenlit/, bucheron: /Abrak|Arbre|Chêne|Tronk|Bambou|Kokoko/, mineur: /Roche|Golem|Mineur|Crocabulia|Kobalte|Craqueleur|Cristal/, alchimiste: /Ortie|Fleur|Rose|Champa|Mandragore|Trèfle|Menthe/, pecheur: /Crabe|Poisson|Kraken|Crustorail|Moule|Mérulor|Gobus|Crevette|Pichon/ };
+  E.PROT_TITLE = { paysan: "Protecteur des céréales", bucheron: "Protecteur des bois", mineur: "Protecteur des minerais", alchimiste: "Protecteur des plantes", pecheur: "Protecteur des poissons" };
+  const protPool = {}; const protMons = (job) => protPool[job] || (protPool[job] = Object.keys(MONSTERS).filter((k) => E.PROT_RE[job] && E.PROT_RE[job].test(MONSTERS[k].name) && !MONSTERS[k].boss && !MONSTERS[k].archiOf));
+  E.protActive = (S, now = Date.now()) => (S.protector && S.protector.until > now ? S.protector : null);
+  E.protSpawn = (S, c, W) => {
+    if (S.settings && S.settings.protOff) return; const now = Date.now();
+    if (E.protActive(S, now) || (S.protCalm || 0) > now || rnd() >= E.PROT_CHANCE) return;
+    const pool = protMons(W.job); if (!pool.length) return;
+    const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
+    const mon = pool.slice().sort((a, b) => Math.abs(MONSTERS[a].lvl[0] - lvl) - Math.abs(MONSTERS[b].lvl[0] - lvl))[0];
+    S.protector = { job: W.job, res: W.res, mon, cid: c.id, until: now + E.PROT_WAIT_S * 1000, at: now };
+    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min pour l'affronter (Métiers).`, "rare");
+  };
+  E.protCanFight = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon."; if (!E.team(S).length) return "Votre équipe est vide."; if (!S.hunting || !S.sub) return "Partez chasser avec l'équipe pour l'affronter."; return null; };
+  E.protFight = (S) => { const err = E.protCanFight(S); if (err) return err; S.protector.go = true; return null; };
+  E.protGroup = (S, sub, team, monsterEntity) => {
+    const P = E.protActive(S); if (!P || !P.go) return null;
+    const avg = team.reduce((a, c) => a + c.lvl, 0) / team.length; const lvl = Math.round(Math.min(200, avg + 3));
+    const g = monsterEntity(P.mon, lvl); g.name = `${MONSTERS[P.mon].name} protecteur`; g.prot = true;
+    g.hpMax = g.hp = Math.round(g.hpMax * (1.5 + team.length * 0.6)); g.dmg *= team.length > 1 ? 1.3 : 1.1; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80; /* seul : une attaque par tour */
+    const mons = [g].concat(E.makeGroup(S, sub, team.length).slice(0, Math.max(0, team.length - 1)));
+    P.go = false; P.fighting = true;
+    return { mons, label: `${E.PROT_TITLE[P.job]} · ${sub.name}` };
+  };
+  E.protEnd = (S, win) => {
+    const P = S.protector; if (!P) return; const now = Date.now();
+    S.protector = null; S.protCalm = now + E.PROT_CALM_S * 1000;
+    if (win) {
+      S.protBoost = { res: P.res, until: now + E.PROT_BOOST_S * 1000 };
+      addRes(S, P.res, 10); addRes(S, E.RARE_COMPONENT, 3);
+      S.cnt = S.cnt || {}; S.cnt.prot = (S.cnt.prot || 0) + 1;
+      note(S, `${E.PROT_TITLE[P.job]} vaincu ! ${P.res} ×2 pendant 20 min, +10 ${P.res} et +3 ${E.RARE_COMPONENT}.`, "rare");
+    } else note(S, `${E.PROT_TITLE[P.job]} l'emporte et repart avec son ${P.res}.`, "warn");
+  };
+  E.protMult = (S, res) => (S.protBoost && S.protBoost.res === res && S.protBoost.until > Date.now() ? 2 : 1);
+  E.protExpire = (S) => { const P = S.protector; if (P && P.fighting && !(S.fight && S.fight.prot && !S.fight.over)) P.fighting = false;
+    if (P && !P.fighting && P.until <= Date.now()) { S.protector = null; S.protCalm = Date.now() + E.PROT_CALM_S * 1000; note(S, `${E.PROT_TITLE[P.job]} est reparti sans combattre.`, "info"); } };
+
+
+
+  /* ---------------- Carnet de panoplies (0.1.10.1) : pièces, où les obtenir ---------------- */
+  let SET_IDX = null;
+  const setIdx = () => {
+    if (SET_IDX) return SET_IDX;
+    const pieces = {}, drops = {}, zonesOf = {}, dgOf = {};
+    for (const t in ITEMS) { const T = ITEMS[t]; if (T.set) (pieces[T.set] = pieces[T.set] || []).push(t); }
+    for (const k in MONSTERS) (MONSTERS[k].items || []).forEach(([t, p]) => (drops[t] = drops[t] || []).push([k, p]));
+    for (const sid in SUBS) { const sb = SUBS[sid]; if (sb.hidden) continue; (sb.monsters || []).forEach((m) => { const k = Array.isArray(m) ? m[0] : m; (zonesOf[k] = zonesOf[k] || []).push(sid); }); }
+    for (const did in DUNGEONS) { const dg = DUNGEONS[did]; [dg.boss, ...(dg.bossMobs || []), ...dg.rooms.flatMap((r) => r.mobs)].forEach((k) => { (dgOf[k] = dgOf[k] || new Set()).add(did); }); }
+    for (const st in pieces) pieces[st].sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl || ITEMS[a].name.localeCompare(ITEMS[b].name, "fr"));
+    return (SET_IDX = { pieces, drops, zonesOf, dgOf });
+  };
+  E.setPieces = (setId) => setIdx().pieces[setId] || [];
+  E.setLvl = (setId) => Math.max(0, ...E.setPieces(setId).map((t) => ITEMS[t].lvl));
+  /* sources d'une pièce : recette, puis monstres (zones de chasse, donjons), le plus probable d'abord */
+  E.itemSources = (tpl) => {
+    const I = setIdx(); const T = ITEMS[tpl]; const out = [];
+    if (T && T.craft) out.push({ k: "craft", job: T.craft.job, lvl: E.craftReq(tpl) });
+    (I.drops[tpl] || []).slice().sort((a, b) => b[1] - a[1]).slice(0, 3).forEach(([m, p]) => {
+      const M = MONSTERS[m]; const subs = (I.zonesOf[m] || []).slice(0, 2); const dgs = [...(I.dgOf[m] || [])].slice(0, 2);
+      out.push({ k: M.boss ? "boss" : "mon", mon: m, p, subs, dgs });
+    });
+    return out;
+  };
+  E.ownedTpls = (S) => { const o = {}; for (const u in S.items) o[S.items[u].tpl] = (o[S.items[u].tpl] || 0) + 1; return o; };
+  /* panoplie « connue » : une pièce possédée, une recette à portée de métier, ou un monstre qui la lâche déjà vu */
+  E.setKnown = (S, setId, owned) => E.setPieces(setId).some((t) => owned[t] || (ITEMS[t].craft && S.crafts[ITEMS[t].craft.job] && S.crafts[ITEMS[t].craft.job].lvl >= E.craftReq(t)) || (setIdx().drops[t] || []).some(([m]) => S.bestiary[m]));
+
+  /* ---------------- Codes cadeaux (0.1.10.1) ----------------
+     Code = « IDLUS- » + contenu (JSON en base64url) + « - » + signature. Fabriqué par tools/code_cadeau.js, vérifié sans serveur :
+     ce n'est pas inviolable, mais un code inventé ou modifié est refusé. Contenu : id (unique), k kamas, r ressources [[nom, n]],
+     c consommables [[id, n]], t titre, o ornement (clé d'un ornement à débloquer), e date de fin (AAAA-MM-JJ), m message. Un code par partie. */
+  E.GIFT_SALT = "idlus·cadeau·v1·pousse-du-pionnier";
+  const fnv = (str, seed) => { let x = seed >>> 0; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619) >>> 0; return x >>> 0; };
+  E.giftSig = (body) => (fnv(E.GIFT_SALT + body, 2166136261).toString(36).padStart(7, "0") + fnv(body + E.GIFT_SALT, 33554467).toString(36).padStart(7, "0")).toUpperCase();
+  const b64u = { enc: (txt) => { const b = typeof Buffer !== "undefined" ? Buffer.from(txt, "utf8").toString("base64") : btoa(unescape(encodeURIComponent(txt))); return b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+    dec: (s) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return typeof Buffer !== "undefined" ? Buffer.from(s, "base64").toString("utf8") : decodeURIComponent(escape(atob(s))); } };
+  E.makeGift = (data) => { const body = b64u.enc(JSON.stringify(data)); return `IDLUS-${body}-${E.giftSig(body)}`; };
+  E.readGift = (code) => {
+    const m = /^IDLUS-([A-Za-z0-9_-]+)-([0-9A-Z]{14})$/.exec(String(code || "").trim().replace(/\s+/g, ""));
+    if (!m) return { err: "Ce code n'a pas le bon format (il commence par IDLUS-)." };
+    if (E.giftSig(m[1]) !== m[2].toUpperCase()) return { err: "Ce code n'est pas valide." };
+    let d; try { d = JSON.parse(b64u.dec(m[1])); } catch (e) { return { err: "Ce code n'est pas valide." }; }
+    if (!d || !d.id) return { err: "Ce code n'est pas valide." };
+    return { data: d };
+  };
+  E.giftText = (d) => { const p = [];
+    if (d.k) p.push(`${d.k.toLocaleString("fr-FR")} kamas`);
+    (d.r || []).forEach(([n, q]) => p.push(`${q} × ${n}`));
+    (d.c || []).forEach(([id, q]) => p.push(`${q} × ${(D.CONSUMABLES[id] || { name: id }).name}`));
+    if (d.t) p.push(`titre « ${d.t} »`);
+    if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name(null)} »`);
+    return p.join(", "); };
+  E.redeemGift = (S, code, now = Date.now()) => {
+    const r = E.readGift(code); if (r.err) return r;
+    const d = r.data; S.gifts = S.gifts || {};
+    if (S.gifts[d.id]) return { err: "Ce code a déjà été utilisé sur cette partie." };
+    if (d.e && now > new Date(d.e + "T23:59:59").getTime()) return { err: `Ce code a expiré le ${new Date(d.e).toLocaleDateString("fr-FR")}.` };
+    if (d.k) S.kamas += Math.max(0, Math.round(+d.k) || 0);
+    (d.r || []).forEach(([n, q]) => { if (RES[n]) addRes(S, n, Math.max(1, Math.round(+q) || 1)); });
+    (d.c || []).forEach(([id, q]) => { if (D.CONSUMABLES[id]) E.addCons(S, id, Math.max(1, Math.round(+q) || 1)); });
+    S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
+    if (d.t && !S.titlesExtra.includes(d.t)) S.titlesExtra.push(String(d.t).slice(0, 40));
+    if (d.o && ORN[d.o]) S.unlocks[d.o] = 1;
+    S.gifts[d.id] = now;
+    const txt = E.giftText(d); note(S, `Code cadeau : ${txt}${d.m ? ` · ${d.m}` : ""}`, "rare");
+    return { ok: true, txt, msg: d.m || "" };
+  };
+
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
   const ORN = {
     heros:     { name: () => "Écharpe du Héros d'Amakna", req: "Terminer la quête principale", ok: (S) => S.quest && S.quest.step >= Q.length },
@@ -842,6 +958,8 @@
   add("fmjob100", "Forgemagie", "Grand Forgemage", "Métier de Forgemage niveau 100.", (S) => E.fmJob(S).lvl >= 100, 5000, { title: "Grand Forgemage" });
   add("exo1", "Forgemagie", "Exotique", "Réussir une forgemagie exotique (+1 PA, PM ou Portée).", (S) => (S.cnt.exo || 0) >= 1, 10000, { title: "l'Exotique" });
   add("exopa", "Forgemagie", "Un PA de plus", "Porter un objet exo PA.", (S) => S.chars.some((c) => Object.values(c.equip).some((u) => S.items[u] && S.items[u].exo === "pa")), 20000);
+  add("prot1", "Métiers", "Gardien des récoltes", "Vaincre un protecteur de ressources.", (S) => (S.cnt.prot || 0) >= 1, 2000);
+  add("prot25", "Métiers", "Fléau des protecteurs", "Vaincre 25 protecteurs de ressources.", (S) => (S.cnt.prot || 0) >= 25, 10000, { title: "Fléau des protecteurs" });
   add("fmplan10", "Forgemagie", "Forgemagie automatique", "10 plans de forgemagie terminés avec leurs objectifs atteints.", (S) => (S.cnt.fmPlanOk || 0) >= 10, 3000);
   [[1, ""], [7, ""], [30, "Dévot d'Almanax"]].forEach(([n, t]) => add("alm" + n, "Quêtes", `${n} offrande${n > 1 ? "s" : ""}`, `Faire ${n} offrande${n > 1 ? "s" : ""} à l'Almanax.`, (S) => (S.cnt.almanax || 0) >= n, 150 * n, t ? { title: t } : {}));
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
@@ -958,6 +1076,42 @@
     fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S);
     return S;
   };
+
+  /* 0.1.10.1 : compositions d'équipe (jusqu'à 3, qui joue, rangées, cible prioritaire) */
+  E.COMP_MAX = 3;
+  E.compOf = (S) => { const T = E.team(S); const fs = E.frontSet(S); const rows = {}; T.forEach((c) => (rows[c.id] = fs.has(c.id) ? "f" : "b"));
+    return { ids: T.map((c) => c.id), rows, auto: E.isAutoPlace(S), focus: (S.settings && S.settings.focus) || "auto" }; };
+  E.compMatch = (S) => { const ids = E.team(S).map((c) => c.id).sort().join(","); return (S.comps || []).findIndex((k) => k && k.ids.slice().sort().join(",") === ids); };
+  E.saveComp = (S, i, name) => {
+    S.comps = S.comps || []; if (i == null || i < 0) i = S.comps.length;
+    if (i >= E.COMP_MAX) return "Trois compositions au maximum : remplacez-en une.";
+    if (!E.team(S).length) return "L'équipe est vide.";
+    const old = S.comps[i]; S.comps[i] = Object.assign(E.compOf(S), { name: (name || (old && old.name) || `Composition ${i + 1}`).slice(0, 24) });
+    return null;
+  };
+  E.delComp = (S, i) => { if (!S.comps || !S.comps[i]) return; S.comps.splice(i, 1); Object.keys(S.compDg || {}).forEach((d) => { if (S.compDg[d] === i) delete S.compDg[d]; else if (S.compDg[d] > i) S.compDg[d]--; }); };
+  /* applique une composition : les héros prévus quittent la récolte, l'entraînement ou l'atelier ; renvoie une erreur ou { moved } */
+  E.applyComp = (S, i) => {
+    const K = (S.comps || [])[i]; if (!K) return { err: "Composition introuvable." };
+    if (S.dungeon) return { err: "Impossible de changer l'équipe en donjon." };
+    const ids = K.ids.filter((id) => S.chars.some((c) => c.id === id)).slice(0, 8);
+    if (!ids.length) return { err: "Plus aucun héros de cette composition." };
+    const moved = [];
+    S.chars.forEach((c) => {
+      const want = ids.includes(c.id);
+      if (want) {
+        if (c.job) { c.job = null; moved.push(c.name); }
+        if (S.training === c.id) { S.training = null; moved.push(c.name); }
+        if (E.atelierHero(S) === c) { E.setAtelier(S, null); moved.push(c.name); }
+      }
+      c.inTeam = want;
+    });
+    if (K.auto) S.placeAuto = true; else { S.placeAuto = false; E.team(S).forEach((c) => (c.row = K.rows[c.id] === "f" ? "f" : "b")); }
+    S.settings.focus = K.focus || "auto"; S.fight = null;
+    return { moved: [...new Set(moved)] };
+  };
+  /* retenir la composition gagnante d'un donjon, pour la suggérer dans sa fiche */
+  E.compWin = (S, did) => { const i = E.compMatch(S); if (i >= 0) (S.compDg = S.compDg || {})[did] = i; };
 
   root.SYSTEMS = true;
   if (typeof module !== "undefined" && module.exports) module.exports = E;
