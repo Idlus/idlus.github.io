@@ -757,6 +757,7 @@
     heros:     { name: () => "Écharpe du Héros d'Amakna", req: "Terminer la quête principale", ok: (S) => S.quest && S.quest.step >= Q.length },
     avis:      { name: () => "Cadre « Avis de recherche »", req: "Bureau des primes (30 jetons)", ok: (S) => !!S.unlocks.avis },
     almanax:   { name: () => "Sceau de l'Almanax", req: "Série d'Almanax de 30 jours", ok: (S) => !!S.unlocks.almanax },
+    ame:       { name: () => "Âme violette", req: "Éternelle moisson, palier 4 (âmes des archimonstres jusqu'à Moon)", ok: (S) => !!S.unlocks.ame },
     ailes:     { name: (S) => (S.align ? `Ailes de ${ALIGN[S.align.side].name}` : "Ailes d'alignement"), req: "Choisir un alignement (Bonta ou Brâkmar) — elles grandissent avec le rang", ok: (S) => !!S.align },
     couronne:  { name: () => "Couronne du Maître des donjons", req: "Vaincre chaque boss de donjon au moins une fois", ok: (S) => Object.keys(DUNGEONS).every((d) => S.progress.bossKills[d]) },
     epines:    { name: () => "Épines d'Archimonstre", req: "Vaincre 25 archimonstres", ok: (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= 25 },
@@ -979,6 +980,12 @@
   add("idolsix", "Idoles", "Six statuettes", "Gagner un combat avec 6 idoles actives.", (S) => (S.cnt.idolSix || 0) >= 1, 1500);
   add("idol100", "Idoles", "Score 100", "Gagner un combat avec un score d'idoles de 100 ou plus.", (S) => (S.cnt.idolBest || 0) >= 100, 5000, { title: "le Téméraire" });
   add("idol200", "Idoles", "Score 200", "Gagner un combat avec un score d'idoles de 200 ou plus.", (S) => (S.cnt.idolBest || 0) >= 200, 20000, { title: "Maître des idoles" });
+  /* 0.1.13 : archimonstres et Dofus */
+  [[1, "Première âme", "Capturer l'âme d'un archimonstre avec une Pierre d'âme.", 500, ""], [25, "25 âmes", "Capturer 25 âmes d'archimonstres.", 2500, ""], [100, "100 âmes", "Capturer 100 âmes d'archimonstres.", 10000, "Chasseur d'âmes"], [205, "L'album complet", "Capturer l'âme des 205 archimonstres.", 50000, ""]]
+    .forEach(([n, nm, d, k, t]) => add("soul" + n, "Archimonstres", nm, d, (S) => (S.cnt.souls || 0) >= n, k, t ? { title: t } : {}));
+  add("dofus1", "Archimonstres", "Premier Dofus", "Obtenir un Dofus.", (S) => (S.cnt.dofus || 0) >= 1, 2000);
+  add("dofus6", "Archimonstres", "Six Dofus portés", "Un héros porte 6 Dofus en même temps.", (S) => S.chars.some((c) => Object.values(c.equip).filter((u) => S.items[u] && ITEMS[S.items[u].tpl] && ITEMS[S.items[u].tpl].dofus).length >= 6), 10000, { title: "Porteur de Dofus" });
+  add("dofus18", "Archimonstres", "Gardien des Dofus", "Obtenir les 18 Dofus.", (S) => (S.cnt.dofus || 0) >= 18, 100000, { title: "Gardien des Dofus" });
   E.ACH = ACH;
   const checkAch = (S) => {
     ACH.forEach((a) => {
@@ -1033,7 +1040,7 @@
     checkQuest(S);
     if (type !== "harvest" || (S._achT || 0) + 1500 < Date.now()) { S._achT = Date.now(); checkAch(S); }
   };
-  E.refreshSystems = (S) => { initState(S); fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S); checkQuest(S); checkAch(S); };
+  E.refreshSystems = (S) => { initState(S); fillBounties(S); if (S.align && !S.alignQuest) newAlignQuest(S); checkQuest(S); if (E.refreshArchis) E.refreshArchis(S); checkAch(S); };
 
   /* ---------------- État ---------------- */
   const initState = (S) => {

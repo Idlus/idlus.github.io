@@ -6,7 +6,7 @@ const E = require("../js/engine.js");
 require("../js/systems.js");
 require("../js/pets.js");
 require("../js/mounts.js");
-require("../js/idols.js"); require("../js/renaissance.js");
+require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
 const D = require("../js/data.js");
 
 // aléatoire reproductible (mulberry32)
@@ -191,4 +191,50 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   const old = JSON.parse(JSON.stringify(S)); delete old.idols; const S3 = E.deserialize(JSON.stringify(old)); assert.ok(S3.idols && Array.isArray(S3.idols.active), "ancienne partie sans idoles");
   assert.ok(E.ACH.some((a) => a.id === "idol36" && a.title), "succès des idoles");
   console.log("ok - idoles : 36 idoles en 9 familles, activation, score et bonus, effets en combat, Bricoleur, sauvegarde");
+}
+/* 0.1.13 : archimonstres et Dofus */
+{
+  const S = E.newState("Archis", "iop"); const c = S.chars[0]; c.lvl = 100; E.refreshSpells(c, E.charStats(S, c)); E.refreshSystems(S);
+  assert.strictEqual(E.ARCHI_TOTAL, 205, "205 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 12, "12 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 18, "18 Dofus");
+  assert.strictEqual(E.OCRE_TIERS.reduce((a, T, i) => a + E.ocreProgress(S, i)[1], 0), 205, "les six paliers couvrent tous les archimonstres");
+  assert.ok(D.SPECIAL_CRAFTS["Pierre d'âme"].cons === "pierre_ame" && D.CONSUMABLES.pierre_ame.auto && D.CONSUMABLES.parfum_piste.boost === "piste", "recettes et consommables");
+  for (const [n, R] of Object.entries(D.SPECIAL_CRAFTS)) if (/^Copie : /.test(n) || n === "Pierre d'âme" || n === "Parfum de pistage") for (const [r] of R.ing) assert.ok(D.RES[r], `${n} : ressource inconnue ${r}`);
+  for (const id of E.DOFUS_ORDER) { const Df = E.DOFUS[id]; assert.ok(D.ITEMS[Df.tpl] && D.ITEMS[Df.tpl].slot === "dofus" && D.ITEMS[Df.tpl].icon, id + " : objet Dofus"); assert.ok(!Df.dg || D.DUNGEONS[Df.dg], id + " : donjon");
+    for (const k in Df.stats) assert.ok(D.STATS[k], id + " : stat " + k); assert.ok(E.dofusBonusTxt(id), id + " : bonus");
+    for (const st of Df.steps) { if (st.t === "dg") assert.ok(D.DUNGEONS[st.dg], id + " : donjon " + st.dg); if (st.t === "dgs") st.dgs.forEach((d) => assert.ok(D.DUNGEONS[d], id + " : donjon " + d));
+      if (st.zone) assert.ok(E.ARCHI_ZONES.includes(st.zone), id + " : zone " + st.zone); if (st.chal) assert.ok(E.CHALLENGES[st.chal], id + " : challenge"); if (st.res) assert.ok(D.RES[st.res], id + " : ressource"); assert.ok(E.dofusStepTxt(st), id + " : texte d'étape"); } }
+  // capture : sans pierre l'âme s'échappe, avec une pierre elle entre dans l'album, jamais deux fois
+  const k0 = Object.keys(E.ARCHIS)[0]; const m = { key: k0, name: E.ARCHIS[k0].name };
+  assert.strictEqual(E.captureSoul(S, m), "nostone", "pas de pierre"); E.addCons(S, "pierre_ame", 2);
+  assert.strictEqual(E.captureSoul(S, m), "new", "âme capturée"); assert.strictEqual(E.stones(S), 1, "pierre consommée"); assert.strictEqual(E.captureSoul(S, m), "dup", "déjà capturée"); assert.strictEqual(S.cnt.souls, 1, "compteur d'âmes");
+  // parfum ×2 et meuble ×1,4 sur les chances d'archimonstre
+  const base = E.archiMult(S); S.boosts.piste = { pct: 100, until: Date.now() + 1e6 }; assert.ok(Math.abs(E.archiMult(S) / base - 2) < 1e-9, "parfum ×2"); delete S.boosts.piste;
+  S.placed = S.placed || {}; S.placed.trophees = [E.ARCHI_FURN]; assert.ok(Math.abs(E.archiMult(S) / base - 1.4) < 1e-9, "autel ×1,4"); S.placed.trophees = [];
+  // Éternelle moisson : tout Astrub capturé donne le palier 1
+  E.addCons(S, "pierre_ame", 60); const kam = S.kamas; E.archisOf("astrub").forEach((a) => E.captureSoul(S, { key: a.k, name: a.name }));
+  assert.strictEqual(E.ocreTier(S), 1, "palier 1 accompli"); assert.ok(S.kamas >= kam + 20000, "20 000 kamas du palier 1"); assert.strictEqual(E.stones(S), 1 + 60 - E.archisOf("astrub").filter((a) => a.k !== k0).length + 10, "10 pierres du palier 1");
+  // Dofus : obtention, un exemplaire par héros, copie du Bricoleur seulement après l'original
+  const it = E.giveDofus(S, "cacao", "test"); assert.ok(it && it.stats.tac === 10 && E.dofusOwned(S, "cacao") && S.cnt.dofus === 1, "Dofus Cacao donné");
+  assert.strictEqual(E.equip(S, c.id, it.uid), null, "Dofus équipé"); const it2 = E.giveDofus(S, "cacao", "copie"); assert.ok(/déjà ce Dofus/.test(E.equip(S, c.id, it2.uid)), "pas deux fois le même Dofus");
+  S.crafts.bricoleur = { lvl: 200, xp: 0 }; S.res[E.POUSSIERE] = 1000; assert.ok(/d'abord/.test(E.craftSpecial(S, "Copie : Dofus Vulbis")), "copie sans l'original refusée"); assert.strictEqual(E.craftSpecial(S, "Copie : Dofus Cacao"), null, "copie fabriquée"); assert.strictEqual(S.res[E.POUSSIERE], 925, "75 poussières");
+  // quête : étape donjon validée par la meilleure stasis, étape chasse par les victoires dans la zone, Dofus donné à la fin
+  E.stasisInfo(S, "cour_bouftou_royal").max = 3; E.emit(S, "dungeon", { id: "cour_bouftou_royal", stasis: 3, chals: [], down: 0 });
+  assert.strictEqual(E.dofusQuest(S, "cacao").step, 1, "étape 1 du Cacao validée");
+  const sub = Object.values(E.SUBS).find((s) => s.zone === "amakna"); for (let i = 0; i < 50; i++) E.emit(S, "win", { mons: [{ key: "m52" }, { key: "m52" }, { key: "m52" }], sub: sub.id, chals: [], down: 0 });
+  assert.strictEqual(E.dofusQuest(S, "cacao").step, 2, "150 monstres d'Amakna"); const nb = Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length;
+  E.stasisInfo(S, "donjon_bworks").max = 4; E.refreshArchis(S); assert.ok(E.dofusQuest(S, "cacao").done, "quête du Cacao terminée");
+  assert.strictEqual(Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length, nb + 1, "Dofus donné par la quête");
+  // étape avec challenge : seulement si le challenge est réussi
+  E.emit(S, "dungeon", { id: "nid_kwakwa", stasis: 4, chals: [], down: 0 }); E.stasisInfo(S, "nid_kwakwa").max = 4; E.refreshArchis(S); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 1, "Dokoko étape 1");
+  for (let i = 0; i < 50; i++) E.emit(S, "win", { mons: [{ key: "m52" }], sub: sub.id, chals: ["survivant"], down: 0 }); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 2, "50 Survivant");
+  E.emit(S, "dungeon", { id: "nid_kwakwa", stasis: 6, chals: [], down: 1 }); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 2, "héros à terre : pas validé");
+  E.emit(S, "dungeon", { id: "nid_kwakwa", stasis: 6, chals: [], down: 0 }); assert.ok(E.dofusQuest(S, "dokoko").done && E.dofusOwned(S, "dokoko"), "Dokoko obtenu");
+  // Dokoko en combat : le porteur récupère 3 % de ses PV au début de son tour
+  const dk = Object.values(S.items).find((x) => x.tpl === "dofus_dokoko"); assert.strictEqual(E.equip(S, c.id, dk.uid), null, "Dokoko équipé");
+  E.startHunt(S, firstSub); E.startFight(S); const F = S.fight; const e = F.ents.find((x) => x.side === "c" && x.cid === c.id); e.hp = Math.round(e.hpMax / 2); const hp = e.hp; E.dofusTurn(S, F, e);
+  assert.strictEqual(e.hp, hp + Math.round(e.hpMax * 3 / 100), "Dokoko soigne 3 %"); S.fight = null; S.hunting = false;
+  // sauvegarde
+  const S2 = E.deserialize(JSON.stringify(S)); assert.ok(S2.souls && S2.souls[k0] && S2.dofusQ.cacao.done && S2.ocre.tier === 1, "album et quêtes sauvegardés");
+  assert.ok(E.ACH.some((a) => a.id === "dofus18" && a.title) && E.ORN.ame, "succès et ornement");
+  console.log("ok - archimonstres : 205 âmes en 12 zones, pierres et parfum, Éternelle moisson, 18 Dofus et leurs quêtes, Dokoko, sauvegarde");
 }

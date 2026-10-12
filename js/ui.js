@@ -9,16 +9,25 @@ const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITION
 
 let S = null;
 const ui = {
-  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "main", fmSel: null, manualSpell: null,
+  tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "main", az: null, azf: "all", fmSel: null, manualSpell: null,
   craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.12.4";
+const GAME_VERSION = "0.1.13";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.13", name: "Archimonstres et Dofus", items: [
+    "Album des archimonstres (bouton « Âmes » sur la carte du monde, dans les zones et sur la page Équipe) : les 205 archimonstres rangés par zone, jamais croisés, vaincus ou à l'âme capturée, avec leur sous-zone pour savoir où chasser",
+    "Pierre d'âme : quand un archimonstre est vaincu, une pierre en sac capture son âme automatiquement (une par archimonstre). Recette chez le Bricoleur (niveau 25, 5 pierres), 1 à 3 pierres au premier passage de chaque stasis, 3 jetons au Bureau des primes",
+    "Parfum de pistage (Bricoleur 40) : chances d'archimonstre ×2 pendant 2 h, cumulable avec le Bonbon Traqueur ; meuble « Autel des âmes » (Salle des trophées) : ×1,4 en permanence. La bande de combat affiche les pierres et le parfum",
+    "Éternelle moisson, la quête du Dofus Ocre : six paliers par groupes de zones (Astrub, Amakna, Cania et Sidimote, Koalaks-Abraknydes-Moon, Dragoeufs-Otomaï-Minotoror, Pandala et Grobe) avec pierres, kamas, titre « Moissonneur », parfums, l'Autel des âmes et l'ornement « Âme violette », puis le Dofus Ocre (+1 PA) et le titre « Éternel Moissonneur »",
+    "Les 18 Dofus de DOFUS avec leurs vrais bonus (Cacao +10 Tacle, Cawotte +60 Sagesse, Dokoko qui rend 3 % des PV à chaque tour, Kaliptus, Émeraude, Dolmanax, Pourpre, Dotruche, Domakuro, Turquoise, Ocre, Vulbis +1 PM, Ivoire, Ébène, des Glaces, Sylvestre +1 Portée, Argenté Scintillant, du Cauchemar) : chacun a sa quête dans Quêtes › Dofus (donjons à une stasis donnée, challenges, chasses, récoltes, âmes), validée toute seule en jouant",
+    "Un Dofus peut aussi tomber en butin du boss de son donjon : 1 chance sur 1 000 dès la stasis 5 (Ocre : 1 sur 5 000 sur tout boss de niveau 160 et plus dès la stasis 8). Une fois obtenu, une copie pour un autre héros se fabrique chez le Bricoleur avec de la Poussière de stasis",
+    "Rapport d'absence : âmes capturées et pierres restantes ; 7 succès Archimonstres (titres « Chasseur d'âmes », « Porteur de Dofus », « Gardien des Dofus ») ; panneau de test : pierres, toutes les âmes, les 18 Dofus",
+  ] },
   { v: "0.1.12.4", name: "Sram et Crâ", items: [
     "Sram : ses pièges frappent dès qu'ils sont posés, avec des dégâts à la hauteur de son niveau (avant : un petit poison lent, qui le rendait bien plus faible que les autres classes à partir du niveau 140)",
     "Crâ : la Balise Tactique et la Balise de Survie restent des outils (vulnérabilité, puissance, soins) et ne frappent presque plus ; la Flèche Dévorante perd son énorme vol de vie et fait 30 % de dégâts en moins. Le Crâ était de loin la classe la plus forte à haut niveau" ] },
@@ -371,6 +380,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "almanax") ornHtml = `<span class="orn seal">📅</span>`;
   else if (orn === "pionnier") ornHtml = `<span class="orn crown sprout">🌱</span>`;
   else if (orn === "phenix") ornHtml = `<span class="orn phx l">🔥</span><span class="orn phx r">🔥</span>`;
+  else if (orn === "ame") ornHtml = `<span class="orn seal">💜</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
@@ -821,7 +831,7 @@ function atelierSheet() {
   const a = ui.at; const A = S.atelier;
   const job = a.job; const J = S.crafts[job] || { lvl: 1 };
   let recs = job === "bricoleur"
-    ? Object.entries(SPECIAL_CRAFTS).filter(([n, R]) => R.lvl <= J.lvl && !(R.furn && S.furniture.includes(n)) && !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing }))
+    ? Object.entries(SPECIAL_CRAFTS).filter(([n, R]) => R.lvl <= J.lvl && !(R.furn && S.furniture.includes(n)) && !(R.idol && E.idolOwned(S, R.idol)) && !(R.dofus && !E.dofusOwned(S, R.dofus))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing }))
     : Object.entries(ITEMS).filter(([id, T]) => T.craft && T.craft.job === job && E.craftReq(id) <= J.lvl).map(([id, T]) => ({ k: "tpl", id, name: T.name, lvl: T.lvl, ing: T.craft.ing }));
   recs.sort((x, y) => (E.canCraft(S, y) - E.canCraft(S, x)) || y.lvl - x.lvl); const total = recs.length; recs = recs.slice(0, 40);
   const heroes = S.chars.filter((c) => !c.job);
@@ -860,7 +870,8 @@ function renderWorld() {
   }
   else if (ui.world === "dungeons") body = dungeonsHtml();
   else body = encyclopediaHtml();
-  $("#main").innerHTML = `<div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}</div>
+  $("#main").innerHTML = `
+<div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>
     <div class="stack">${body}</div>`;
 }
@@ -956,7 +967,7 @@ function renderZoneView(sid) {
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
     <div class="pad stack">
-      <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) : ""}
+      <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) + archiBtn() : ""}
         <span class="small muted">${E.team(S).length} héros · Esprit Libre +${E.freeSpirit(S)} % · ${lvlHint(s)}</span></div>
       ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
@@ -978,7 +989,7 @@ function monCard(k, opts = {}) {
     <div class="l">niv. <span class="num">${m.lvl[0]}${m.lvl[1] !== m.lvl[0] ? "–" + m.lvl[1] : ""}</span> ${eld(m.el)} ${kills ? `· <span class="num">${fmt(kills)}</span> tués` : ""}</div>
     <div class="res" style="margin-top:3px">${resChips(m.res)}</div>
     ${(() => { const r = !opts.unknown && E.monRole(k, m.lvl[1]); return r ? `<div class="xs" style="margin-top:3px" data-tip="${h(E.MON_ROLES[r].desc)}"><span class="mrole inl">${h(E.MON_ROLES[r].name)}</span> ${h(E.MON_ROLES[r].desc)}</div>` : ""; })()}
-    ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}</div>` : ""}</div></div>`;
+    ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}${E.hasSoul(S, archiKey) ? " · 💜 âme" : ""}</div>` : ""}</div></div>`;
 }
 /* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
 function dgStars(did) { const SI = (S.stasis || {})[did] || { max: 0 }; const k = S.progress.bossKills[did] ? 1 : 0; return `<span class="stars" title="Terminé · stasis 5 · stasis 10">${k ? "✓" : "·"}<b class="${SI.max >= 5 ? "on" : ""}">★</b><b class="${SI.max >= 10 ? "on" : ""}">★</b></span>`; }
@@ -1064,6 +1075,7 @@ function dungeonSheet(did) {
       <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}${FL && FL.mod === "ruse" ? "<li><i>+ une mécanique supplémentaire (mutateur éclair)</i></li>" : ""}</ul>
         <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
         ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
+      ${(() => { const dfid = E.dofusOfDungeon(did); if (!dfid) return ""; const Df = E.DOFUS[dfid]; return `<div class="xs" style="margin:4px 0;color:var(--archi);display:flex;align-items:center;gap:6px">${im(dofusImg(dfid), "dfico", Df.name)}<span>${h(Df.name)} (${h(E.dofusBonusTxt(dfid))}) : quête dans Quêtes › Dofus, ou 1 chance sur ${Math.round(1 / E.DOFUS_DROP)} en butin dès la stasis ${E.DOFUS_DROP_STASIS}${E.dofusOwned(S, dfid) ? " · obtenu" : ""}</span></div>`; })()}
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
@@ -1071,7 +1083,7 @@ function dungeonSheet(did) {
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de la semaine" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
-        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${IC("coffre")} Premier passage : ${k >= 8 ? "Coffre en or" : k >= 4 ? "Coffre en argent" : "Coffre en bois"}`}</li>
+        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${IC("coffre")} Premier passage : ${k >= 8 ? "Coffre en or" : k >= 4 ? "Coffre en argent" : "Coffre en bois"} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme`}</li>
         <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
         ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
@@ -1128,7 +1140,7 @@ function encCard(k) {
     <div style="min-width:0;flex:1" class="stack"><div><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0]}–${m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}</div></div>
     ${m.boss ? `<div class="xs muted num">${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>` : tierBadge(k)}
     <div class="row" style="gap:4px">${drops}</div>
-    ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}</div>` : ""}</div></div>`;
+    ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}${E.hasSoul(S, a) ? " · 💜 âme capturée" : ""}</div>` : ""}</div></div>`;
 }
 /* ---------- COMBAT ---------- */
 function renderCombat() {
@@ -1307,13 +1319,61 @@ function idolSheet() {
     <div class="stack" style="gap:10px">${fams}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
+/* ---------- 0.1.13 : album des archimonstres et Dofus ---------- */
+const dofusImg = (id) => imgI(E.DOFUS[id].icon);
+const archiZoneName = (z) => E.zoneName(z);
+function archiBtn(cls = "btn sm") {
+  const n = E.soulCount(S); const st = E.stones(S);
+  return `<button class="${cls} archibtn ${n ? "on" : ""}" data-act="archis" data-tip="Album des archimonstres : ${n} âme${n > 1 ? "s" : ""} capturée${n > 1 ? "s" : ""} sur ${E.ARCHI_TOTAL}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}">${IC("dofus")} Âmes <b class="num">${n}</b> / ${E.ARCHI_TOTAL}</button>`;
+}
+function archiPill(F) {
+  const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > Date.now() ? Math.round((b.until - Date.now()) / 1000) : 0;
+  const here = F && F.ents.some((e) => e.side === "m" && e.archi && e.alive);
+  const odds = Math.round(1 / E.archiOdds(S));
+  return `<span class="pill archipill ${here ? "good" : ""}" data-act="archis" data-tip="Chance d'archimonstre : 1 sur ${odds} par monstre${left ? ` (Parfum de pistage encore ${dur(left)})` : ""}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme pour capturer les âmes.` : "Sans Pierre d'âme, l'âme d'un archimonstre vaincu s'échappe."}">${here ? "Archimonstre ! " : ""}🔮 ${st} pierre${st > 1 ? "s" : ""}${left ? ` · 🧴 ${dur(left)}` : ""}</span>`;
+}
+function archiSheet() {
+  const zones = E.ARCHI_ZONES; if (!ui.az || !zones.includes(ui.az)) ui.az = zones.find((z) => E.soulCount(S, z) < E.archisOf(z).length) || zones[0];
+  const f = ui.azf || "all"; const st = E.stones(S); const b = S.boosts && S.boosts.piste; const left = b && b.until > Date.now() ? Math.round((b.until - Date.now()) / 1000) : 0;
+  const tot = E.soulCount(S); const tier = E.ocreTier(S); const odds = Math.round(1 / E.archiOdds(S));
+  const tabs = zones.map((z) => { const L = E.archisOf(z); const d = E.soulCount(S, z);
+    return `<button class="ztab ${z === ui.az ? "on" : ""} ${d === L.length ? "done" : ""}" data-act="aztab" data-v="${z}"><b>${h(archiZoneName(z))}</b><span class="num">${d} / ${L.length}</span><span class="bar"><i style="width:${pct(d, L.length)}%"></i></span></button>`; }).join("");
+  const L = E.archisOf(ui.az).filter((a) => f === "all" || (f === "todo" && !E.hasSoul(S, a.k)) || (f === "soul" && E.hasSoul(S, a.k)));
+  const cards = L.map((a) => { const soul = E.hasSoul(S, a.k); const n = S.archis[a.k] || 0; const stt = soul ? "soul" : n ? "seen" : "unk";
+    return `<div class="acard ${stt}">${im(imgM(a.k), "apic", a.name)}<div class="t"><b>${h(a.name)}</b><span class="w">niv. ${a.lvl[0]}–${a.lvl[1]} · ${h(E.SUBS[a.sub].name)}</span><span class="w">archimonstre de ${h(a.base)}</span><div class="st">${soul ? `<span class="s">💜 Âme capturée</span>` : n ? `<span class="k">vaincu ×${n}</span><span>pas de pierre</span>` : "<span>Jamais croisé</span>"}${soul && n > 1 ? `<span class="k">vaincu ×${n}</span>` : ""}</div></div></div>`; }).join("") || `<div class="empty">Rien à afficher avec ce filtre.</div>`;
+  const ocre = E.OCRE_TIERS.map((T, i) => { const [d, all] = E.ocreProgress(S, i); const cls = i < tier ? "ok" : d ? "cur" : "";
+    return `<div class="otier ${cls}"><b>Palier ${i + 1} · ${h(T.name)}</b><span class="bar"><i style="width:${pct(d, all)}%"></i></span><span class="num xs">${d} / ${all}</span><span class="r xs">${i < tier ? "✓ " : ""}${h(T.txt)}</span></div>`; }).join("");
+  openSheet(`<div class="row between"><h2>${IC("dofus")} Album des archimonstres</h2><button class="btn sm ghost" data-act="closesheet">Fermer</button></div>
+    <p class="small">Un archimonstre vaincu laisse son âme dans l'album si vous avez une <b>Pierre d'âme</b> en sac (automatique, une pierre par archimonstre). Les pierres se fabriquent chez le Bricoleur (niveau 25, 5 par recette), tombent au premier passage de chaque stasis, se vendent au Bureau des primes et récompensent les paliers d'<b>Éternelle moisson</b>.</p>
+    <div class="row small" style="gap:8px;flex-wrap:wrap"><span class="pill">🔮 ${st} Pierre${st > 1 ? "s" : ""} d'âme</span><span class="pill">💜 ${tot} / ${E.ARCHI_TOTAL} âmes</span><span class="pill" data-tip="Chances de base 1 sur ${Math.round(1 / E.ARCHI_CHANCE)} par monstre. Ecaflip ×1,5, Bonbon Traqueur ×1,5, Parfum de pistage ×2 (Bricoleur 40, 2 h), meuble « Autel des âmes » ×1,4, palier Fléau ×2 sur le monstre.">🎯 1 chance sur ${odds}${left ? ` · 🧴 parfum ${dur(left)}` : ""}</span></div>
+    <div class="ztabs">${tabs}</div>
+    <div class="row between small" style="margin:8px 0 4px"><b>${h(archiZoneName(ui.az))} · ${E.soulCount(S, ui.az)} / ${E.archisOf(ui.az).length} âmes</b><span class="seg">${[["all", "Tous"], ["todo", "À capturer"], ["soul", "Capturées"]].map(([v, n]) => `<button data-act="azf" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span></div>
+    <div class="agrid">${cards}</div>
+    <h3 class="sec" style="margin-top:12px">Éternelle moisson · quête du Dofus Ocre</h3>
+    <p class="xs muted">Capturez l'âme de tous les archimonstres, palier par palier. Chaque palier accompli donne sa récompense aussitôt ; le dernier offre le Dofus Ocre (+1 PA).</p>
+    <div class="stack" style="gap:6px">${ocre}</div>`);
+}
+function dofusHtml() {
+  const own = E.dofusCount(S); const tier = E.ocreTier(S);
+  const cards = E.DOFUS_ORDER.slice().sort((a, b) => E.DOFUS[a].lvl - E.DOFUS[b].lvl || (E.DOFUS[a].name < E.DOFUS[b].name ? -1 : 1)).map((id) => {
+    const Df = E.DOFUS[id]; const Q = E.dofusQuest(S, id); const owned = E.dofusOwned(S, id); const by = E.dofusWornBy(S, id);
+    const stt = Q.done || owned ? "got" : Q.step > 0 || E.dofusStepProgress(S, id, 0)[0] > 0 || (id === "ocre" && E.soulCount(S) > 0) ? "run" : "lock";
+    const state = Q.done ? `Quête terminée${by ? ` · porté par ${h(by.name)}` : owned ? " · dans le sac" : ""}` : owned ? `Obtenu en butin${by ? ` · porté par ${h(by.name)}` : ""} · quête en cours` : stt === "run" ? "Quête en cours" : "Quête à commencer";
+    const steps = id === "ocre" ? E.OCRE_TIERS.map((T, i) => { const [d, all] = E.ocreProgress(S, i); return `<li class="${i < tier ? "ok" : d ? "cur" : "todo"}">Palier ${i + 1} · ${h(T.name)} <span class="num muted">${d} / ${all}</span></li>`; }).join("")
+      : Df.steps.map((st, i) => { const [a, bb] = E.dofusStepProgress(S, id, i); const cls = Q.done || i < Q.step ? "ok" : i === Q.step ? "cur" : "todo";
+        return `<li class="${cls}">${h(E.dofusStepTxt(st))}${cls === "cur" && bb > 1 ? ` <span class="num muted">${fmt(a)} / ${fmt(bb)}</span>` : ""}${cls === "cur" && st.dg && DUNGEONS[st.dg] ? ` <button class="btn xs" data-act="dgopen" data-id="${st.dg}">Voir le donjon</button>` : ""}</li>`; }).join("");
+    const drop = Df.dg ? `Butin du boss ${h(MONSTERS[DUNGEONS[Df.dg].boss].name)} : 1 chance sur ${Math.round(1 / E.DOFUS_DROP)} dès la stasis ${E.DOFUS_DROP_STASIS}` : `Butin de tout boss de niveau 160 ou plus : 1 chance sur ${Math.round(1 / E.OCRE_DROP)} dès la stasis 8`;
+    return `<div class="dcard ${stt}"><div class="pic">${im(dofusImg(id), "dpic", Df.name)}</div><div class="t"><div class="nm"><b>${h(Df.name)}</b><small>niv. ${Df.lvl}</small>${owned ? `<span class="tag good">✓</span>` : ""}</div><div class="bon">${h(E.dofusBonusTxt(id))}</div><span class="src">${state}</span><ol>${steps}</ol><span class="xs muted">${drop}${owned ? ` · copie pour un autre héros chez le Bricoleur (${Math.round(Df.lvl * 1.5)} Poussière de stasis)` : ""}</span></div></div>`; }).join("");
+  return `<p class="note">Chaque Dofus a sa quête : les étapes se valident toutes seules en jouant (les donjons déjà vaincus à la stasis demandée comptent). Un Dofus peut aussi tomber, très rarement, en butin du boss de son donjon. Une fois obtenu, une copie pour un autre héros se fabrique chez le Bricoleur avec de la Poussière de stasis. Un héros ne porte qu'un exemplaire de chaque Dofus, dans ses 6 emplacements Dofus/Trophée.</p>
+    <section class="panel"><div class="phead"><h2>${IC("dofus")} Les 18 Dofus</h2><span class="small muted num">${own}/18</span>${archiBtn()}</div><div class="pad dgrid">${cards}</div></section>`;
+}
 function chalBarHtml(F) {
   const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> ${G("target")} Respecter les challenges</label>`;
   if (!F) return "";
   const boss = F.ents.find((e) => e.boss && e.mech); const mech = boss ? `<span class="mech" data-tip="${h(boss.mech.map((m) => E.BOSS_MECHS[m].name + " : " + E.BOSS_MECHS[m].desc).join(" · "))}">${G("warn")} ${boss.mech.map((m) => h(E.BOSS_MECHS[m].name)).join(", ")}</span>` : "";
   const st = F.stasis > 1 || F.weekly || F.flash ? `<span class="pill">${F.stasis > 1 ? `Stasis ${F.stasis}` : "Stasis 1"}${S.dungeon && (S.dungeon.mods || []).length ? " · " + S.dungeon.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ") : ""}</span>${F.weekly ? `<span class="pill good" data-tip="Mutateur de la semaine : +${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin">${G("star")} Semaine +${Math.round((E.WEEKLY_REW - 1) * 100)} %</span>` : ""}${F.flash ? `<span class="pill good" data-tip="Mutateur éclair : +${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin jusqu'à la fin de la course">${G("bolt")} Éclair +${Math.round((E.FLASH_REW - 1) * 100)} %</span>` : ""}` : "";
   const idol = F.idol ? `<span class="pill good idolpill" data-tip="${h(F.idol.ids.map((id) => E.IDOLS[id].name + " : " + E.IDOLS[id].desc).join(" · "))}">${F.idol.ids.map((id) => im(idolImg(id), "iico", E.IDOLS[id].name)).join("")} Idoles ${F.idolScore} · +${pctTxt(F.idolBonus)} %</span>` : "";
-  return `${st}${idol}${mech}<span style="margin-left:auto"></span>${tog}`;
+  return `${st}${idol}${archiPill(F)}${mech}<span style="margin-left:auto"></span>${tog}`;
 }
 function floatAt(node, txt, color, small, cls) {
   const s = document.createElement("span"); s.className = "float" + (small ? " small" : "") + (cls ? " " + cls : ""); s.style.setProperty("--c", color);
@@ -1959,10 +2019,10 @@ const itemIcon = (it) => `<span class="icobox ${rarCls(it.tpl)} ${it.radiant ? "
 function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
-  return Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
+  return (T.desc ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
     return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
-function tplStatsHtml(T) { return Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
+function tplStatsHtml(T) { return (T.desc ? `<span class="statl">${G("sparkle")}${h(T.desc)}</span>` : "") + Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
 function deltaHtml(c, slot, uid) {
   const cur = E.charStats(S, c); const saved = Object.assign({}, c.equip); let nw;
   if (uid) {
@@ -2085,6 +2145,7 @@ function renderTeam() {
   <section class="tsum"><div class="k"><b class="num">${team.length} / 8</b><span>en équipe</span></div><div class="k"><b class="num">${team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–"}</b><span>niveau moyen</span></div>
     <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
     <div class="k"><b class="num">${S.idols.active.length} / ${E.IDOL_MAX}</b><span>idoles actives</span></div>${idolBtn(null)}
+<div class="k"><b class="num">${E.soulCount(S)} / ${E.ARCHI_TOTAL}</b><span>âmes capturées</span></div>${archiBtn()}
     ${S.chars.length < 8 ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
   ${board ? "" : compsHtml()}
   ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
@@ -2995,13 +3056,13 @@ function almanaxHtml() {
 }
 function achHtml() {
   const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = Object.keys(S.ach).length;
-  const ICO = { Progression: G("star"), Combat: IC("combat"), Donjons: IC("cle"), Chasse: IC("carte"), Objets: IC("dofus"), Métiers: IC("pioche"), Forgemagie: IC("forge"), Quêtes: IC("quetes"), Alignement: IC("ailes"), "Havre-Sac": IC("havre"), Idoles: `<img class="uico" src="assets/id/pro.webp" alt="">` };
+  const ICO = { Progression: G("star"), Combat: IC("combat"), Donjons: IC("cle"), Chasse: IC("carte"), Objets: IC("dofus"), Métiers: IC("pioche"), Forgemagie: IC("forge"), Quêtes: IC("quetes"), Alignement: IC("ailes"), "Havre-Sac": IC("havre"), Idoles: `<img class="uico" src="assets/id/pro.webp" alt="">`, Archimonstres: IC("dofus") };
   return `<section class="panel"><div class="phead"><h2>Ornements</h2><span class="xs muted">à équiper dans Héros (contour de la carte)</span></div><div class="pad achgrid">${Object.entries(E.ORN).map(([id, O]) => `<div class="ach ${E.ornUnlocked(S, id) ? "ok" : ""}"><span class="ic">${E.ornUnlocked(S, id) ? G("sparkle") : G("lock")}</span><span><b>${h(O.name(S))}</b><br><span class="xs muted">${h(O.req)}</span></span></div>`).join("")}</div></section>
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
 function renderQuests() {
-  const tabs = [["main", "Quête principale"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["ach", "Succès"]];
-  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
+  const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["ach", "Succès"]];
+  const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${ui.qt === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${body}</section>`;
@@ -3211,6 +3272,7 @@ function offlineSheet(r) {
     ${r.roamed && r.roamed.length ? `<p class="small">${G("star")} Chasse itinérante : ${r.roamed.map(h).join(" → ")}</p>` : ""}
     ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
+    ${r.souls && r.souls.length ? `<p class="small" style="color:var(--archi)">💜 Âmes capturées : ${r.souls.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")} · ${r.stones} Pierre${r.stones > 1 ? "s" : ""} d'âme restante${r.stones > 1 ? "s" : ""}</p>` : r.archis && r.archis.length && !r.stones ? `<p class="small muted">Aucune Pierre d'âme en sac : les âmes se sont échappées.</p>` : ""}
     ${(r.newItems || []).filter((u) => S.items[u]).length ? `<h3 class="sec">Objets obtenus</h3><div class="list small" style="max-height:220px;overflow:auto">${r.newItems.filter((u) => S.items[u]).map((u) => { const it = S.items[u]; const T = ITEMS[it.tpl];
         const best = E.team(S).filter((c) => T.lvl <= c.lvl).map((c) => { const sl = T.slot === "anneau" ? (c.equip.anneau1 ? "anneau2" : "anneau1") : T.slot === "dofus" ? null : T.slot; const cur = sl ? S.items[c.equip[sl]] : null; return { c, gain: itemScore(c, it) - itemScore(c, cur) }; }).sort((a, b) => b.gain - a.gain)[0];
         return `<div class="li">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span>${best && best.gain > 1 ? `<br><span class="xs" style="color:var(--good)">▲ mieux pour ${h(best.c.name)}</span>` : ""}</span>${best && best.gain > 1 ? `<button class="btn sm" data-act="offequip" data-uid="${u}" data-id="${best.c.id}">Équiper</button>` : ""}</div>`; }).join("")}</div>` : ""}
@@ -3314,6 +3376,12 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(petImg(ev.id), "celepet", p.name)}</div><div class="cele-k">${G("star")} ${p.kind === "monti" ? (p.fam === "l" ? "Montilier légendaire" : "Nouveau montilier") : "Nouveau familier"}</div><div class="cele-t">${h(p.name)}</div><div class="cele-s">Au maximum : ${h(petBonus(p.stats))}</div>`; }
   if (ev.t === "idol") { const I = E.IDOLS[ev.id]; if (!I) return "";
     return `<div class="cele-art pet">${idolPic(ev.id, "big")}</div><div class="cele-k">${G("star")} Nouvelle idole · ${h(E.IDOL_FAMS[I.fam].name)}</div><div class="cele-t">${h(I.name)}</div><div class="cele-s">${h(I.desc)} Score ${I.score}.</div>`; }
+  if (ev.t === "soul") { const A = E.ARCHIS[ev.key]; if (!A) return "";
+    return `<div class="cele-art pet">${im(imgM(ev.key), "celepet soulpic", A.name)}</div><div class="cele-k">${IC("dofus")} Âme capturée · ${E.soulCount(S)} / ${E.ARCHI_TOTAL}</div><div class="cele-t">${h(A.name)}</div><div class="cele-s">Archimonstre de ${h(A.base)} · ${h(archiZoneName(A.zone))}</div>`; }
+  if (ev.t === "dofus") { const Df = E.DOFUS[ev.id]; if (!Df) return "";
+    return `<div class="cele-art pet">${im(dofusImg(ev.id), "celepet", Df.name)}</div><div class="cele-k">${IC("dofus")} ${ev.first ? "Nouveau Dofus" : "Copie de Dofus"}</div><div class="cele-t">${h(Df.name)}</div><div class="cele-s">${h(E.dofusBonusTxt(ev.id))} · à équiper dans un emplacement Dofus</div>`; }
+  if (ev.t === "ocre") { const T = E.OCRE_TIERS[ev.tier - 1]; if (!T) return "";
+    return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
@@ -3595,6 +3663,9 @@ document.addEventListener("click", (ev) => {
     case "idolclear": E.clearIdols(S); dirty = true; idolSheet(); break;
     case "idolpsave": E.savePreset(S, +d.i); dirty = true; toast(`Jeu ${+d.i + 1} enregistré : ${S.idols.active.map((x) => E.IDOLS[x].name).join(", ")}.`); idolSheet(); return;
     case "idolpload": { const r = E.loadPreset(S, +d.i); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
+    case "archis": archiSheet(); return;
+    case "aztab": ui.az = d.v; archiSheet(); return;
+    case "azf": ui.azf = d.v; archiSheet(); return;
     case "idolcraft": { const r = E.craftSpecial(S, E.idolCraftName(d.id)); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
     case "recruit": { const r = E.recruit(S, ui.startCls, ($("#recName").value || "").trim().slice(0, 20)); if (r) { toast(r); return; } const nc = S.chars[S.chars.length - 1]; nc.sex = ui.startSex || CLASSES[ui.startCls].sex; nc.head = startHeadOf(ui.startCls, nc.sex); ui.startHead = 0; ui.recName = ""; closeSheet(); ui.cid = nc.id; break; }
     case "invtab": ui.inv = d.v; ui.newResDone = false; break;

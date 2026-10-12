@@ -1,6 +1,19 @@
 {
-  "version": "0.1.12.4",
+  "version": "0.1.13",
   "versions": [
+    {
+      "v": "0.1.13",
+      "name": "Archimonstres et Dofus",
+      "items": [
+        "Album des archimonstres (bouton « Âmes » sur la carte du monde, dans les zones et sur la page Équipe) : les 205 archimonstres rangés par zone, jamais croisés, vaincus ou à l'âme capturée, avec leur sous-zone pour savoir où chasser",
+        "Pierre d'âme : quand un archimonstre est vaincu, une pierre en sac capture son âme automatiquement (une par archimonstre). Recette chez le Bricoleur (niveau 25, 5 pierres), 1 à 3 pierres au premier passage de chaque stasis, 3 jetons au Bureau des primes",
+        "Parfum de pistage (Bricoleur 40) : chances d'archimonstre ×2 pendant 2 h, cumulable avec le Bonbon Traqueur ; meuble « Autel des âmes » (Salle des trophées) : ×1,4 en permanence. La bande de combat affiche les pierres et le parfum",
+        "Éternelle moisson, la quête du Dofus Ocre : six paliers par groupes de zones (Astrub, Amakna, Cania et Sidimote, Koalaks-Abraknydes-Moon, Dragoeufs-Otomaï-Minotoror, Pandala et Grobe) avec pierres, kamas, titre « Moissonneur », parfums, l'Autel des âmes et l'ornement « Âme violette », puis le Dofus Ocre (+1 PA) et le titre « Éternel Moissonneur »",
+        "Les 18 Dofus de DOFUS avec leurs vrais bonus (Cacao +10 Tacle, Cawotte +60 Sagesse, Dokoko qui rend 3 % des PV à chaque tour, Kaliptus, Émeraude, Dolmanax, Pourpre, Dotruche, Domakuro, Turquoise, Ocre, Vulbis +1 PM, Ivoire, Ébène, des Glaces, Sylvestre +1 Portée, Argenté Scintillant, du Cauchemar) : chacun a sa quête dans Quêtes › Dofus (donjons à une stasis donnée, challenges, chasses, récoltes, âmes), validée toute seule en jouant",
+        "Un Dofus peut aussi tomber en butin du boss de son donjon : 1 chance sur 1 000 dès la stasis 5 (Ocre : 1 sur 5 000 sur tout boss de niveau 160 et plus dès la stasis 8). Une fois obtenu, une copie pour un autre héros se fabrique chez le Bricoleur avec de la Poussière de stasis",
+        "Rapport d'absence : âmes capturées et pierres restantes ; 7 succès Archimonstres (titres « Chasseur d'âmes », « Porteur de Dofus », « Gardien des Dofus ») ; panneau de test : pierres, toutes les âmes, les 18 Dofus"
+      ]
+    },
     {
       "v": "0.1.12.4",
       "name": "Sram et Crâ",

@@ -431,7 +431,7 @@
     }
     if (T.slot === "dofus") {
       const o = slotOverride && slotOverride.startsWith("dofus") ? slotOverride : E.slotFor(c, it);
-      if (DOFUS_SLOTS.some((s) => s !== o && c.equip[s] && S.items[c.equip[s]] && S.items[c.equip[s]].tpl === it.tpl)) return "Vous portez déjà ce trophée.";
+      if (DOFUS_SLOTS.some((s) => s !== o && c.equip[s] && S.items[c.equip[s]] && S.items[c.equip[s]].tpl === it.tpl)) return ITEMS[it.tpl].dofus ? "Ce héros porte déjà ce Dofus." : "Vous portez déjà ce trophée.";
       c.equip[o] = uid; return null;
     }
     c.equip[slotOverride || T.slot] = uid; E.emit(S, "equip", {}); return null;
@@ -1571,6 +1571,7 @@
       d.turns--; return d.turns > 0 && e.alive;
     });
     if (!e.alive) { flog(F, `${e.name} est vaincu.`, "ko"); return false; }
+    if (E.dofusTurn) E.dofusTurn(S, F, e); // 0.1.13 : Dokoko
     if (F.idol) { // 0.1.10 : idoles Dokoko, Jiva, Abdinde, Kori
       if (e.side === "c" && !e.summon && F.idol.hpLoss) { const v = dealDamage(F, null, e, e.hpMax * F.idol.hpLoss / 100, null); flog(F, `${e.name} perd ${v} PV (idole).`, "dim"); if (!e.alive) { flog(F, `${e.name} est vaincu.`, "ko"); return false; } }
       if (e.side === "m") { if (F.idol.monRegen && e.hp < e.hpMax) { const g = doHeal(e, e.hpMax * F.idol.monRegen / 100, F); if (g) flog(F, `${e.name} récupère ${g} PV (idole).`, "dim"); } if (F.idol.shieldRegen) e.shield = (e.shield || 0) + Math.round(e.hpMax * F.idol.shieldRegen / 100); }
@@ -1754,7 +1755,7 @@
       xp += x;
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
-      if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); }
+      if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); if (E.captureSoul && E.captureSoul(S, m, opts) === "new") (out.souls = out.souls || []).push(m.key); } // 0.1.13 : âme pour l'album
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
@@ -1875,7 +1876,7 @@
       if (cb) F.rewards.chal = cb;
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
-      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null });
+      E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null, stasis: F.stasis || 0, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
       if (!S.dungeon) S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       const xpTot = Object.values(F.rewards.xp).reduce((a, b) => a + b, 0);
       flog(F, `Victoire ! +${xpTot} XP, +${F.rewards.kamas} kamas`, "win");
@@ -1887,7 +1888,7 @@
           if (E.BOSS_SIGS[S.dungeon.id] && (S.dungeon.stasis || 1) >= 5 && !(F.deathInfo || []).length) (S.sigWins = S.sigWins || {})[S.dungeon.id] = 1;
           E.bossChest(S, S.dungeon.id, F.rewards);
           E.stasisClear(S, S.dungeon, F.rewards);
-          E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1 });
+          E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
           const chainD = S.dungeon; S.dungeon = null;
           if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); }
@@ -2233,6 +2234,7 @@
     const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
     if (!SI.firsts[k]) { SI.firsts[k] = Date.now();
       const chest = k >= 8 ? "coffre_or" : k >= 4 ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
+      if (E.firstPassStones) E.firstPassStones(S, k, out); // 0.1.13 : Pierres d'âme
       E.celebrate({ t: "stasis", did, k, chest });
       if (k === 10) { let n = 0; E.team(S).forEach((c) => { c.stasisScrolls = c.stasisScrolls || {}; if (!c.stasisScrolls[did]) { c.stasisScrolls[did] = 1; n++; } });
         if (n) { E.addCons(S, "parch_" + stat + "_g", n); out.push(`${n} × ${CONSUMABLES["parch_" + stat + "_g"].name}`); } }
@@ -2241,6 +2243,7 @@
     if (k >= (E.TROPHY_STASIS || 5) && E.trophyOf && E.giveFurn) { const tr = E.trophyOf(did); if (tr && E.giveFurn(S, tr, "trophée de boss")) out.push(tr); }
     E.petBoss(S, did, k, out); // familiers rares et montiliers
     E.exoDrop(S, DUNGEONS[did].lvl, k, out); // 0.1.9.1 : runes exotiques
+    if (E.dofusDrop) E.dofusDrop(S, did, k, out); // 0.1.13 : Dofus en butin très rare du boss
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (k === 10) S.unlocks.stasis10 = true;
@@ -2398,9 +2401,10 @@
     const J = S.crafts[R.job];
     if (J.lvl < R.lvl) return `${CRAFT_JOBS[R.job].name} niveau ${R.lvl} requis.`;
     if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)) || (R.idol && E.idolOwned(S, R.idol)))) return "Vous possédez déjà cet objet.";
+    if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Quêtes › Dofus).";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
-    if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);
+    if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.dofus) E.giveDofus(S, R.dofus, "copie du Bricoleur"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);
     craftXp(S, R.job, 20 + R.lvl * 3);
     E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
@@ -2513,7 +2517,7 @@
     const winRate = rec.length ? rec.reduce((s, r) => s + r.w, 0) / rec.length : 0.5;
     const cycle = avg + E.PAUSE_MS / 1000;
     const fights = Math.min(5000, Math.floor(eff / cycle));
-    const before = { kamas: S.kamas, res: Object.assign({}, S.res), lvls: S.chars.map((c) => c.lvl), items: E.itemCount(S), uids: new Set(Object.keys(S.items)), archis: Object.assign({}, S.archis), xp: S.chars.map((c) => c.xp) };
+    const before = { kamas: S.kamas, res: Object.assign({}, S.res), lvls: S.chars.map((c) => c.lvl), items: E.itemCount(S), uids: new Set(Object.keys(S.items)), archis: Object.assign({}, S.archis), souls: Object.assign({}, S.souls || {}), xp: S.chars.map((c) => c.xp) };
     const hunting = S.hunting && S.sub && SUBS[S.sub] && E.team(S).length;
     const evLen = E.events.length;
     let wins = 0;
@@ -2548,6 +2552,7 @@
       items: E.itemCount(S) - before.items,
       newItems: Object.keys(S.items).filter((u) => !before.uids.has(u)).sort((a, b) => ITEMS[S.items[b].tpl].lvl - ITEMS[S.items[a].tpl].lvl).slice(0, 30),
       archis: Object.keys(S.archis).filter((k) => (S.archis[k] || 0) > (before.archis[k] || 0)),
+      souls: Object.keys(S.souls || {}).filter((k) => !before.souls[k]), stones: (S.cons && S.cons.pierre_ame) || 0,
       winRate: winRate, fightLen: Math.round(cycle), fmPlans, roamed,
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
