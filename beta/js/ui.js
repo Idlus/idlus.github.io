@@ -16,9 +16,13 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.24.3";
+const GAME_VERSION = "0.1.24.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.24.4", name: "Combat en vue", items: [
+    "Expédition : le combat se suit par défaut. Partir, ou choisir une porte Combat, Élite ou Boss, ouvre l'onglet Combat ; entre deux combats, les portes de l'étage s'affichent au-dessus de la scène, et les fiches (relique, bénédiction, coffre, Marchand) s'y ouvrent aussi",
+    "La page Expédition reste là pour le campement, les reliques, les bénédictions et les règnes (bouton « Voir l'expédition » dans l'onglet Combat)",
+  ] },
   { v: "0.1.24.3", name: "Chasser à son rythme", items: [
     "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
     "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",
@@ -1352,6 +1356,7 @@ function renderCombat() {
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
       ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir l'expédition</button>` : dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+  ${XP && window.EXPUI ? window.EXPUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
@@ -1444,7 +1449,7 @@ function buildArena(F) {
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
   arena.className = "arena " + (view === "compact" ? "cmpmode" : "v2"); arena.style.height = "";
   if (!F) {
-    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
+    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${E.expActive(S) && S.exp.door !== null ? "Le combat de l'étage commence…" : E.expActive(S) ? (S.exp.pend.length ? "Un choix t'attend." : "Choisis une porte ci-dessus.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
   }
   const pasDiv = `<div class="pas"></div>`;
