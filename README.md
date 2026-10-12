@@ -7,6 +7,14 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 3.4.0 « Havre-Sac »
+- **8 pièces** (Accueil → Havre-Sac) : les améliorations gardent leur niveau ; atelier à construire, enclos à venir.
+- **Meubles placés** : 43 meubles (28 trophées de boss, Comptoir, Almanax, Bricoleur, butins rares, succès), 14 places ; un meuble n'agit qu'une fois placé.
+- **Trophées de boss** : première victoire en stasis 5, +1 % à +4 % selon le niveau du donjon.
+- **Salle d'entraînement** : un héros hors de l'équipe gagne 25 % de l'XP moyenne de l'équipe (moins au-delà de 10 niveaux d'écart).
+- **Atelier** : fabrication automatique toutes les 20 minutes, même hors ligne.
+- Plafond des bonus : +175 % d'XP, +175 % de butin, +200 % de kamas.
+
 ## 3.3.0 « Combat vivant »
 - **Placement de l'équipe** (onglet Héros) : première ligne ou arrière. Les monstres visent la première ligne 3 fois sur 4 ; placement automatique par défaut, modifiable à la main.
 - **Monstres à mécanique spéciale** : les Rôdeurs visent l'arrière, les Bondisseurs ignorent les rangées.
