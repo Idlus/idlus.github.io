@@ -481,7 +481,8 @@
     return clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX);
   };
   /* fige la valeur courante (à l'arrivée dans la zone : la fonte part de là) */
-  const pinStars = (S, sid, now = Date.now()) => { if (!S.zstars) S.zstars = {}; S.zstars[sid] = { s: E.zoneStars(S, sid, now), at: now }; };
+  const pinStars = (S, sid, now = Date.now()) => { if (!S.zstars) S.zstars = {}; const rec = S.zstars[sid]; /* 0.1.10.2 : la pousse est comptée même si S.sub vient de passer sur cette zone */
+    S.zstars[sid] = { s: rec ? clamp(rec.s + Math.max(0, now - rec.at) / 1000 / E.STAR_GROW_S, 0, E.STAR_MAX) : E.zoneStars(S, sid, now), at: now }; };
   /* fonte pendant la chasse : dtS secondes de chasse dans la zone courante */
   E.starsTick = (S, dtS, now = Date.now()) => {
     if (!S.hunting || !S.sub || S.dungeon) return;
@@ -489,6 +490,33 @@
     const rec = S.zstars[S.sub]; rec.s = Math.max(0, rec.s - dtS / E.STAR_MELT_S); rec.at = now;
   };
   E.starBonus = (S) => (S.hunting && S.sub && !S.dungeon ? Math.floor(E.zoneStars(S, S.sub)) * E.STAR_PCT : 0); // étoiles entières seulement
+
+  /* ---------------- Chasse itinérante (0.1.10.2) ----------------
+     Option : après une victoire, l'équipe part vers la zone de son niveau (sans perte d'XP) qui a le plus d'étoiles,
+     si elle en a au moins 2 de plus que la zone actuelle, au plus une fois toutes les 10 min, en ligne comme hors ligne.
+     En échange (demande de Mathis) : XP et butin réduits de E.ROAM_MALUS tant que l'option est active. */
+  E.ROAM_MALUS = 0.15; E.ROAM_GAP_S = 600; E.ROAM_MIN = 2;
+  E.roamOn = (S) => !!(S.settings && S.settings.roam && S.hunting && S.sub && !S.dungeon);
+  E.roamMult = (S) => (E.roamOn(S) ? 1 - E.ROAM_MALUS : 1);
+  E.roamCands = (S) => {
+    const team = E.team(S); if (!team.length) return [];
+    const avg = team.reduce((s, c) => s + c.lvl, 0) / team.length;
+    return Object.values(SUBS).filter((s) => !s.hidden && E.subUnlocked(S, s.id) && s.lvl[0] <= avg + 1 && s.lvl[1] >= avg - 4);
+  };
+  E.roam = (S, t = Date.now(), offline = false) => {
+    if (!E.roamOn(S) || t - (S.roamAt || 0) < E.ROAM_GAP_S * 1000) return null;
+    const cur = Math.floor(E.zoneStars(S, S.sub, t)); if (cur >= E.STAR_MAX - 1) return null;
+    const best = E.roamCands(S).filter((s) => s.id !== S.sub).map((s) => ({ s, n: Math.floor(E.zoneStars(S, s.id, t)) })).filter((x) => x.n >= Math.max(E.ROAM_MIN, cur + 2))
+      .sort((a, b) => b.n - a.n || (b.s.lvl[0] + b.s.lvl[1]) - (a.s.lvl[0] + a.s.lvl[1]))[0];
+    if (!best) return null;
+    if (!S.zstars) S.zstars = {};
+    if (S.zstars[S.sub]) S.zstars[S.sub].at = t; // la zone quittée recommence à gagner des étoiles à partir de maintenant
+    S.roamAt = t;
+    if (offline) { if (!E.setSub(S, best.s.id)) return null; pinStars(S, best.s.id, t); }
+    else { if (E.startHunt(S, best.s.id)) return null; note(S, `Chasse itinérante : l'équipe part pour ${best.s.name} (${"★".repeat(best.n)}).`, "up"); }
+    S.roamLog = [best.s.id].concat(S.roamLog || []).slice(0, 10); S._az = 0; S.stats.recent.length = 0;
+    return best.s;
+  };
 
   /* ---------------- Stratégies (préréglages de sorts) ---------------- */
   E.MAX_PRESETS = 4;
@@ -1622,7 +1650,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100));
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
@@ -1636,7 +1664,7 @@
     }
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * (E.teamHas(S, "enu") ? 1.15 : 1);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -1753,6 +1781,7 @@
       }
       Object.keys(SUBS).forEach((s) => { if (!prevUnlocked.has(s) && E.subUnlocked(S, s)) note(S, `Nouvelle sous-zone : ${SUBS[s].name}`, "up"); });
       E.autoZone(S, true);
+      E.roam(S); // 0.1.10.2 : chasse itinérante
     } else {
       E.chalResolve(S, F, true);
       flog(F, why || "Défaite… l'équipe se repose.", "lose");
@@ -2054,14 +2083,14 @@
     return cand;
   };
   E.autoZone = (S, win) => {
-    if (!S.settings || !S.settings.autoZone || S.dungeon || !S.hunting || !S.sub) return;
+    if (!S.settings || !(S.settings.autoZone || S.settings.roam) || S.dungeon || !S.hunting || !S.sub) return; // l'itinérante redescend aussi après 3 défaites sur 6
     S._az = (S._az || 0) + 1;
     const rec = S.stats.recent.slice(-6); const losses = rec.filter((r) => !r.w).length;
     const cand = E.autoZoneTarget(S); if (!cand) return;
     const cur = SUBS[S.sub]; let target = null;
     if (!win && losses >= 3) { // trop dur : on redescend
       target = cand.find((s) => (s.lvl[0] + s.lvl[1]) < (cur.lvl[0] + cur.lvl[1]));
-    } else if (win && S._az >= 12 && losses === 0) { // tout va bien : on monte si possible
+    } else if (S.settings.autoZone && win && S._az >= 12 && losses === 0) { // tout va bien : on monte si possible
       const best = cand[0];
       if (best && (best.lvl[0] + best.lvl[1]) > (cur.lvl[0] + cur.lvl[1])) target = best;
     }
@@ -2374,7 +2403,7 @@
     const evLen = E.events.length;
     let wins = 0;
     const wasDungeon = S.dungeon; S.dungeon = null;
-    const sub = SUBS[S.sub]; const teamSize = E.team(S).length;
+    let sub = SUBS[S.sub]; const teamSize = E.team(S).length; const roamed = [];
     // part de l'absence couverte par le bonus d'XP
     const b = S.boosts && S.boosts.xp; const now = Date.now(); const startT = now - seconds * 1000;
     const covered = b ? clamp((b.until - startT) / (seconds * 1000), 0, 1) : 0;
@@ -2387,6 +2416,7 @@
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne
+      if (S.settings.roam) { const tz = startT + (i + 1) * seconds * 1000 / fights; if (E.roam(S, tz, true)) { roamed.push(SUBS[S.sub].name); sub = SUBS[S.sub]; } }
     }
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
@@ -2403,7 +2433,7 @@
       items: E.itemCount(S) - before.items,
       newItems: Object.keys(S.items).filter((u) => !before.uids.has(u)).sort((a, b) => ITEMS[S.items[b].tpl].lvl - ITEMS[S.items[a].tpl].lvl).slice(0, 30),
       archis: Object.keys(S.archis).filter((k) => (S.archis[k] || 0) > (before.archis[k] || 0)),
-      winRate: winRate, fightLen: Math.round(cycle), fmPlans,
+      winRate: winRate, fightLen: Math.round(cycle), fmPlans, roamed,
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
   };
