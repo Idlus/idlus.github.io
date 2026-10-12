@@ -131,7 +131,7 @@ const MOCK = () => {
     // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
     await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-tab]");
     await page.evaluate(() => { window.DX.S.kamas = 4321; window.DX.saveNow(); });
-    await page.click('[data-act="options"]'); await page.click('[data-act="on-loginscreen"]');
+    await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-loginscreen"]');
     await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
     await page.click('[data-act="on-discord"]');
     await page.waitForSelector("#onPseudo", { timeout: 10000 });
@@ -250,7 +250,7 @@ const MOCK = () => {
     const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);
     await page.click("#chat .ch-x");
     // 9. suppression du compte
-    await page.click('[data-act="options"]'); await page.click('[data-act="on-askdelete"]');
+    await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "xener"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
     m = await mock(); if (m.saves.u1 || m.profiles.length) fail("compte non supprimé");
     if (!(await S())) fail("partie de l'appareil perdue après suppression");
