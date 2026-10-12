@@ -1,0 +1,24 @@
+# Publie une série de sondages Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
+name: Sondages sur Discord
+on:
+  workflow_dispatch:
+    inputs:
+      fichier:
+        description: "Fichier des sondages (dans tools/sondages/)"
+        type: string
+        default: expedition.json
+      salon:
+        description: "Salon où poster (créé s'il n'existe pas)"
+        type: string
+        default: sondages
+jobs:
+  sondage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js sondage "tools/sondages/${{ inputs.fichier }}"
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_SALON: ${{ inputs.salon }}

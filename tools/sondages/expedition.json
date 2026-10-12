@@ -1,0 +1,235 @@
+{
+ "salon": "sondages",
+ "categorie": "Communauté",
+ "sujet": "Les sondages du jeu : votez pour orienter les prochaines mises à jour",
+ "duree_heures": 168,
+ "intro": "🧭 **L'Expédition sans fin : à vous de choisir la suite !**\nLe mode est en ligne depuis ce week-end. On a dix pistes pour le faire grandir, et c'est vous qui jouez : votez dans les sondages ci-dessous (un vote par sondage, 7 jours). Les pistes les plus demandées arriveront en premier dans les prochaines mises à jour. Merci !",
+ "sondages": [
+  {
+   "titre": "Classement de la semaine",
+   "question": "Un classement hebdomadaire de l'Expédition, ça te tente ?",
+   "reponses": [
+    {
+     "emoji": "🏆",
+     "text": "Oui, par tranche de niveau, coffre et titres le lundi"
+    },
+    {
+     "emoji": "📊",
+     "text": "Oui, mais un seul classement pour tous, sans titre"
+    },
+    {
+     "emoji": "🎁",
+     "text": "Juste le coffre du lundi, sans classement"
+    }
+   ]
+  },
+  {
+   "titre": "Nouvelles portes",
+   "question": "Quelles nouvelles portes veux-tu voir entre les étages ?",
+   "reponses": [
+    {
+     "emoji": "🚪",
+     "text": "Les trois : Énigme, Forge et Mercenaire"
+    },
+    {
+     "emoji": "🧩",
+     "text": "Énigme et Forge seulement"
+    },
+    {
+     "emoji": "✋",
+     "text": "Aucune, les portes actuelles me suffisent"
+    }
+   ]
+  },
+  {
+   "titre": "Contrats",
+   "question": "Des contrats pour corser une expédition et gagner plus ?",
+   "reponses": [
+    {
+     "emoji": "📜",
+     "text": "Oui, jusqu'à 3 contrats, chacun augmente les gains"
+    },
+    {
+     "emoji": "📄",
+     "text": "Oui, mais un seul contrat à la fois"
+    },
+    {
+     "emoji": "❌",
+     "text": "Non, pas de contrats"
+    }
+   ]
+  },
+  {
+   "titre": "Reliques maudites",
+   "question": "Des reliques maudites : un pouvoir énorme, mais un prix à payer ?",
+   "reponses": [
+    {
+     "emoji": "🕯️",
+     "text": "Oui, via un Autel maudit rare"
+    },
+    {
+     "emoji": "🛒",
+     "text": "Oui, mais vendues par le Marchand"
+    },
+    {
+     "emoji": "🙅",
+     "text": "Non, pas de reliques maudites"
+    }
+   ]
+  },
+  {
+   "titre": "Collections de reliques",
+   "question": "Comment rendre les reliques plus intéressantes à collectionner ?",
+   "reponses": [
+    {
+     "emoji": "🧬",
+     "text": "Des familles de reliques, bonus à trois réunies"
+    },
+    {
+     "emoji": "⚗️",
+     "text": "Deux reliques identiques fusionnent en une plus forte"
+    },
+    {
+     "emoji": "👌",
+     "text": "Rien de plus, elles sont bien comme ça"
+    }
+   ]
+  },
+  {
+   "titre": "Boss de palier",
+   "question": "Les boss des étages 10, 20, 30… doivent devenir quoi ?",
+   "reponses": [
+    {
+     "emoji": "👑",
+     "text": "Des Gardiens uniques, pouvoir spécial et trophée"
+    },
+    {
+     "emoji": "💪",
+     "text": "Les mêmes boss, plus forts, relique rare garantie"
+    },
+    {
+     "emoji": "🤷",
+     "text": "Comme aujourd'hui"
+    }
+   ]
+  },
+  {
+   "titre": "Progression permanente",
+   "question": "Une progression Prestige pour les joueurs qui dépassent l'étage 50 ?",
+   "reponses": [
+    {
+     "emoji": "✨",
+     "text": "Oui, Éclats dorés et six améliorations exclusives"
+    },
+    {
+     "emoji": "🌟",
+     "text": "Oui, mais plus simple : trois améliorations"
+    },
+    {
+     "emoji": "🏕️",
+     "text": "Non, plutôt agrandir le campement actuel"
+    }
+   ]
+  },
+  {
+   "titre": "Codex des reliques",
+   "question": "Un Codex qui liste toutes les reliques découvertes ?",
+   "reponses": [
+    {
+     "emoji": "📖",
+     "text": "Oui, avec un petit bonus d'Éclats par relique trouvée"
+    },
+    {
+     "emoji": "📚",
+     "text": "Oui, juste pour voir sa collection"
+    },
+    {
+     "emoji": "🚫",
+     "text": "Non, pas besoin"
+    }
+   ]
+  },
+  {
+   "titre": "Après une chute",
+   "question": "Que veux-tu voir quand ton expédition se termine ?",
+   "reponses": [
+    {
+     "emoji": "🔁",
+     "text": "Un bouton Revanche, ton parcours et des conseils"
+    },
+    {
+     "emoji": "↩️",
+     "text": "Juste un bouton Revanche pour repartir aussitôt"
+    },
+    {
+     "emoji": "😌",
+     "text": "Rien de plus"
+    }
+   ]
+  },
+  {
+   "titre": "Expédition de guilde",
+   "question": "Et avec ta guilde ?",
+   "reponses": [
+    {
+     "emoji": "🛡️",
+     "text": "Jauge de guilde, coffre commun et classement"
+    },
+    {
+     "emoji": "🏅",
+     "text": "Un classement des guildes seulement"
+    },
+    {
+     "emoji": "⏳",
+     "text": "Plus tard, d'autres choses d'abord"
+    }
+   ]
+  },
+  {
+   "titre": "La priorité",
+   "question": "Quelle nouveauté veux-tu en premier ?",
+   "reponses": [
+    {
+     "emoji": "🏆",
+     "text": "Le classement de la semaine"
+    },
+    {
+     "emoji": "🚪",
+     "text": "Les nouvelles portes"
+    },
+    {
+     "emoji": "📜",
+     "text": "Les contrats"
+    },
+    {
+     "emoji": "🕯️",
+     "text": "Les reliques maudites"
+    },
+    {
+     "emoji": "🧬",
+     "text": "Les familles de reliques"
+    },
+    {
+     "emoji": "👑",
+     "text": "Les Gardiens de palier"
+    },
+    {
+     "emoji": "✨",
+     "text": "Le Prestige"
+    },
+    {
+     "emoji": "📖",
+     "text": "Le Codex des reliques"
+    },
+    {
+     "emoji": "🔁",
+     "text": "Revanche et bilan de chute"
+    },
+    {
+     "emoji": "🛡️",
+     "text": "L'Expédition de guilde"
+    }
+   ]
+  }
+ ]
+}
