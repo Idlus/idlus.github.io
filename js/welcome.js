@@ -1,5 +1,5 @@
 /* 0.1.17 : lot Bienvenue — logique pure (pas de DOM), l'affichage est dans ui.js.
-   1. Bulles de découverte : 18 explications montrées une fois, la première fois qu'un système apparaît (E.TIPS, E.tipDue).
+   1. Bulles de découverte : 19 explications montrées une fois, la première fois qu'un système apparaît (E.TIPS, E.tipDue).
       Les bulles vues sont gardées dans la partie (S.tips), donc elles suivent le compte en ligne.
    2. Recherche rapide : un index de tout le jeu (pages, zones, donjons, objets, ressources, monstres, panoplies, idoles,
       familiers, montures, Dofus, consommables, succès), sans accents ni majuscules, avec une tolérance d'une faute (E.search).
@@ -28,6 +28,9 @@
     { id: "harvest", name: "La récolte", hint: "quête « Mettre la main à la pâte »", anchor: '[data-fam="craft"]',
       cond: (S) => qstep(S) >= 4,
       txt: "Un héros envoyé récolter ne combat plus, mais remplit tes ressources, même hors ligne. Métiers › Récolte : choisis un métier, puis ce qu'il ramasse." },
+    { id: "protector", name: "Les protecteurs", hint: "premier protecteur", anchor: '[data-act="protgo"]',
+      cond: (S) => !!(S.protector && S.protector.until > E.now()),
+      txt: "Un gardien de ressource est apparu pendant la récolte. Seule l'équipe qui chasse peut l'affronter : clique sur « Combattre », les héros qui récoltent reviennent le temps du combat puis reprennent leur travail. Victoire : cette ressource ×2 pendant 20 min." },
     { id: "keys", name: "Clés et stasis", hint: "première clé fabricable", anchor: '[data-fam="adv"]',
       cond: (S) => qstep(S) >= 5,
       txt: "Une clé = une entrée dans le donjon ; elle se fabrique avec les ressources de la zone. La stasis règle la difficulté et le butin, de 1 à 10 : commence à 1, monte quand ça passe sans mal." },

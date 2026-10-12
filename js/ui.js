@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.29.1";
+const GAME_VERSION = "0.1.29.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.29.3", name: "Protecteur à portée", items: [
+    "Protecteurs de ressources : le bouton « Combattre » n'est plus grisé quand vos héros récoltent. Il fait revenir les héros de l'équipe et lance la chasse, puis chacun reprend la récolte après le combat",
+    "Le bandeau du protecteur explique ce que fera le bouton, et une bulle d'aide présente les protecteurs la première fois",
+  ] },
   { v: "0.1.29.1", name: "Badge du créateur", items: [
     "Xener, le créateur d'Idlus, a maintenant un pseudo doré avec une couronne et l'étiquette « Créateur » : chat, classements, guilde et fiche joueur",
     "Les modérateurs ont une étiquette verte « Modérateur »",
@@ -3489,8 +3493,11 @@ function toolHtml(id) {
 function protBar() {
   const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null;
   let out = "";
-  if (P) { const err = P.fighting ? null : E.protCanFight(S); const M = MONSTERS[P.mon];
-    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - E.now()) / 1000)}.`}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? `disabled data-tip="${h(err)}"` : ""}>Combattre</button>`}</div>`; }
+  if (P) { const err = P.fighting || P.go ? null : E.protWhy(S); const M = MONSTERS[P.mon];
+    /* 0.1.29.3 : dire ce que fera le bouton (l'équipe doit chasser ; les héros qui récoltent reviennent le temps du combat) */
+    const how = P.fighting || P.go || err ? "" : !E.team(S).length ? " Vos héros d'équipe récoltent : « Combattre » les fait revenir le temps du combat, puis ils reprennent la récolte."
+      : !S.hunting || !S.sub ? " « Combattre » lance la chasse pour l'affronter." : "";
+    out += `<div class="awaitbar" style="margin:0">${im(imgM(P.mon), "ico sm", M.name)} <span class="grow"><b>${h(E.PROT_TITLE[P.job])}</b> : ${h(M.name)} garde le ${h(P.res)}. ${P.fighting ? "Combat en cours." : P.go ? "L'équipe l'affrontera au prochain combat." : `Encore ${dur((P.until - E.now()) / 1000)}.`}${how ? `<span class="xs muted" style="display:block;font-weight:600">${how.trim()}</span>` : ""}${err ? ` <span class="xs minus">${h(err)}</span>` : ""}</span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? "disabled" : ""}>Combattre</button>`}</div>`; }
   if (B) out += `<div class="awaitbar" style="margin:0">${G("sparkle")} Protecteur vaincu : récolte de <b>${h(B.res)}</b> ×2 encore ${dur((B.until - E.now()) / 1000)}</div>`;
   return out;
 }
@@ -4883,7 +4890,7 @@ document.addEventListener("click", (ev) => {
         ui.giftCode = ""; dirty = true; saveNow(); closeSheet(); render();
       });
       return; } /* la note « rare » du moteur s'affiche déjà en bulle */
-    case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast("L'équipe affrontera le protecteur au prochain combat."); break; }
+    case "protgo": { const r = E.protFight(S); if (r) { toast(r); return; } toast(S.protector && S.protector.back ? "L'équipe part affronter le protecteur. Ensuite, chacun reprend ce qu'il faisait." : "L'équipe affrontera le protecteur au prochain combat."); break; }
     case "copydiag": { const txt = diagText(); try { navigator.clipboard.writeText(txt).then(() => toast("Diagnostic copié : collez-le dans votre rapport de bug."), () => { prompt("Copiez ce diagnostic :", txt); }); } catch (e) { prompt("Copiez ce diagnostic :", txt); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
