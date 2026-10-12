@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.32.2";
+const GAME_VERSION = "0.1.33";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.33", name: "Offres d'achat", items: [
+    "Hôtel de vente : nouvel onglet « Offres d'achat ». Annoncez par exemple « j'achète 500 Laines de Bouftou à 25 kamas l'unité » : les kamas sont mis de côté tout de suite et la marchandise arrive dans votre sac, même hors ligne",
+    "Onglet « On achète » : la liste de ce que les joueurs demandent. Vendez tout ou une partie d'un clic, vous êtes payé immédiatement. Les acheteurs restent anonymes",
+    "Ressources, clefs, runes et consommables. 10 offres à la fois, pour 3, 7 ou 14 jours, au moins au prix de revente au jeu",
+    "Taxe de 2 % payée par l'acheteur, seulement sur ce qu'il reçoit : en retirant l'offre ou à la fin, les kamas qui n'ont pas servi reviennent, taxe comprise",
+    "Fiche d'une ressource : un encadré « On achète » montre les meilleures offres. En mettant en vente moins cher qu'une offre, le jeu propose de vendre directement. Liste de courses : bouton « Faire une offre » pour ce qui manque",
+  ] },
   { v: "0.1.32.2", name: "Zones toujours visibles", items: [
     "Encyclopédie sur PC : la colonne des zones reste à l'écran quand vous faites défiler les monstres (elle disparaissait vers le haut)",
   ] },

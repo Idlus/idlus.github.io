@@ -1,6 +1,17 @@
 {
-  "version": "0.1.32.2",
+  "version": "0.1.33",
   "versions": [
+    {
+      "v": "0.1.33",
+      "name": "Offres d'achat",
+      "items": [
+        "Hôtel de vente : nouvel onglet « Offres d'achat ». Annoncez par exemple « j'achète 500 Laines de Bouftou à 25 kamas l'unité » : les kamas sont mis de côté tout de suite et la marchandise arrive dans votre sac, même hors ligne",
+        "Onglet « On achète » : la liste de ce que les joueurs demandent. Vendez tout ou une partie d'un clic, vous êtes payé immédiatement. Les acheteurs restent anonymes",
+        "Ressources, clefs, runes et consommables. 10 offres à la fois, pour 3, 7 ou 14 jours, au moins au prix de revente au jeu",
+        "Taxe de 2 % payée par l'acheteur, seulement sur ce qu'il reçoit : en retirant l'offre ou à la fin, les kamas qui n'ont pas servi reviennent, taxe comprise",
+        "Fiche d'une ressource : un encadré « On achète » montre les meilleures offres. En mettant en vente moins cher qu'une offre, le jeu propose de vendre directement. Liste de courses : bouton « Faire une offre » pour ce qui manque"
+      ]
+    },
     {
       "v": "0.1.32.2",
       "name": "Zones toujours visibles",
