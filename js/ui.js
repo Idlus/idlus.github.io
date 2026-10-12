@@ -16,9 +16,12 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "3.4.0";
-const DISCORD = "https://discord.gg/9ApPgWjPUM";
+const GAME_VERSION = "3.4.1";
+const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "3.4.1", name: "Discord", items: [
+    "« Signaler un bug » (Options) ouvre directement le forum Bugs du Discord, même si vous n'êtes pas encore sur le serveur : le modèle de rapport est copié, il suffit d'ouvrir un fil et de le coller",
+    "Le serveur Discord s'agrandit : salons d'entraide, de builds et de captures, forums Bugs et Idées (votez avec 👍), salons de la version de test et mutateur de la semaine annoncé chaque lundi" ] },
   { v: "3.4.0", name: "Havre-Sac", items: [
     "Le Havre-Sac devient 8 pièces (Accueil → Havre-Sac) : vos améliorations gardent leur niveau et sont rangées par pièce, l'atelier se construit pour 50 000 kamas et l'enclos ouvrira plus tard",
     "Meubles : un meuble agit une fois placé dans sa pièce, avec des places limitées (14 au total). 43 meubles : 28 trophées de boss, meubles du Comptoir, de l'Almanax, du Bricoleur (5 recettes), butins rares de 5 zones et 2 succès ; un catalogue montre comment obtenir chacun. Les meubles déjà gagnés sont placés d'office",
@@ -2029,8 +2032,8 @@ document.addEventListener("click", (ev) => {
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nAppareil : ${/android/i.test(navigator.userAgent) ? "Android" : isIOS() ? "iPhone/iPad" : "PC"}${isStandalone() ? " (application)" : " (navigateur)"}\nNavigateur : ${navigator.userAgent.slice(0, 120)}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :`;
-      const open = () => window.open(DISCORD, "_blank", "noopener");
-      try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : collez-le dans #bugs."); open(); }, open); } catch (e) { open(); } return; }
+      const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
+      try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
     case "installhide": S.installHide = true; dirty = true; renderUpdBar(); return;
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
