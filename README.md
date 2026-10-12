@@ -7,7 +7,7 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
-## 0.1.27 « Panel de test réservé » (bêta)
+## 0.1.27.1 « Panel de test réservé » (bêta)
 - Mathis : panel de test (`js/admin.js`) réservé à lui seul. `testerOk()` dans ui.js : vrai seulement si `window.CHAT.role === "admin"` (rôle lu par le serveur via `my_role`), ou en local (localhost) pour les essais. Sans ça, le bouton du bandeau bêta n'est pas affiché et `admin.js` ignore les clics `data-adm`. `renderStatus` redessine le bandeau bêta pour que le bouton apparaisse dès que le rôle est chargé.
 
 ## 0.1.26.1 « Défi à portée de main » (bêta)

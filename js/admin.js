@@ -1,7 +1,7 @@
 /* ============================================================================
    PANEL DE TEST — Idlus, version de test (/beta/) uniquement.
    Sur le jeu public, ce fichier ne fait rien : le panel n'y existe pas.
-   0.1.27 : réservé au compte admin (rôle vérifié par le serveur), et ouvert en local pour les essais.
+   0.1.27.1 : réservé au compte admin (rôle vérifié par le serveur), et ouvert en local pour les essais.
    Il ne touche que la partie de test de ce navigateur.
    ========================================================================== */
 (function () {

@@ -14,14 +14,14 @@ const ui = {
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
-/* 0.1.27 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
+/* 0.1.27.1 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin"));
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.27";
+const GAME_VERSION = "0.1.27.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "0.1.27", name: "Panel de test réservé", items: [
+  { v: "0.1.27.1", name: "Panel de test réservé", items: [
     "Le panel de test de la version de test est maintenant réservé à Mathis : le bouton n'apparaît que sur son compte admin, vérifié par le serveur" ] },
   { v: "0.1.26.1", name: "Défi à portée de main", items: [
     "Le Défi du jour a sa page : Aventure › Défi. On y trouve les 3 paliers, le bouton pour lancer, ta série et ses récompenses (titre à 7 jours, ornement à 30), tes essais du jour, le classement du palier avec le podium d'hier, et les règles",
