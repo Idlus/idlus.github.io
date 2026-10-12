@@ -2136,3 +2136,18 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .ent.dead .bxph{display:none}
 .ent.bxskin img.sprite{filter:hue-rotate(var(--hue)) saturate(1.5) drop-shadow(0 6px 4px rgba(0,0,0,.35))}
 @media (max-width:600px){.axp.bx.b-intro{gap:10px;padding:10px 12px}.axp.bx.b-intro span{display:none}.axbanner.bxwin .n{font-size:22px}}
+/* familles de monstres (lot 2) */
+.axp.bx.b-web{border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 6px,rgba(255,255,255,.75) 6px 7px),repeating-conic-gradient(rgba(255,255,255,.7) 0 1.5deg,transparent 1.5deg 30deg);-webkit-mask:radial-gradient(circle,#000 55%,transparent 72%);mask:radial-gradient(circle,#000 55%,transparent 72%);animation:bpopin .25s ease-out,axfade .4s ease-in .6s forwards;z-index:222}
+.axp.bx.b-quill{width:22px;height:3px;border-radius:2px;background:linear-gradient(90deg,#4a3320,#d8c6a2 70%,#fff);box-shadow:0 0 4px rgba(0,0,0,.5);z-index:221}
+.axp.bx.b-club{width:14px;height:64px;border-radius:7px 7px 4px 4px;background:linear-gradient(90deg,#4e3418,#8a6032 50%,#3b2610);transform-origin:50% 90%;z-index:224}
+.axp.bx.b-club::before{content:"";position:absolute;left:-6px;top:-4px;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#8f8f8f,#3c3c3c 70%)}
+.axp.bx.b-bone{width:34px;height:7px;border-radius:4px;background:#efe6cf;box-shadow:0 1px 2px rgba(0,0,0,.5);transform-origin:50% 50%;z-index:223}
+.axp.bx.b-bone::before,.axp.bx.b-bone::after{content:"";position:absolute;top:-4px;width:8px;height:15px;border-radius:50%;background:#efe6cf}
+.axp.bx.b-bone::before{left:-4px}.axp.bx.b-bone::after{right:-4px}
+.axp.bx.b-mud{width:9px;height:7px;border-radius:50%;background:#5a3d1e;box-shadow:0 0 3px rgba(0,0,0,.4);z-index:220}
+.axp.bx.b-pollen{width:5px;height:5px;border-radius:50%;background:#ffe27a;box-shadow:0 0 5px #ffd14d;z-index:219}
+/* héros en difficulté : cœur qui bat, vignette rouge sur l'arène */
+.arena.axon .ent.hero.bxlow .look,.arena.axon .ent.hero.bxlow .medal{animation:bxheart .9s ease-in-out infinite}
+@keyframes bxheart{0%,100%{filter:none;transform:none}45%{filter:sepia(.5) saturate(3) hue-rotate(-30deg) brightness(1.05);transform:scale(1.04,.97)}}
+.arena.bx-danger .fxl{box-shadow:inset 0 0 70px rgba(255,20,20,.0);animation:bxdanger .9s ease-in-out infinite alternate}
+@keyframes bxdanger{to{box-shadow:inset 0 0 90px rgba(255,20,20,.42)}}
