@@ -16,9 +16,18 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.21.1";
+const GAME_VERSION = "0.1.22";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.22", name: "Carnet et trésor", items: [
+    "Carnet de bord (Équipe › Carnet) : ton XP, tes kamas, tes combats et le niveau de l'équipe heure par heure sur 7 jours, ou jour par jour sur 30 jours ; les heures hors ligne sont grisées et chaque mise à jour du jeu est marquée sur la courbe. Survole la courbe pour le détail d'une heure",
+    "Bilan des kamas : d'où ils viennent (chasse, donjons, ventes au jeu, Hôtel de vente, défi, quêtes, trésors) et où ils partent (forgemagie, Havre-Sac, artisanat et clés, montures, boutique, idoles)",
+    "Les zones qui rapportent le plus (XP et kamas par heure, victoires) et les grands moments de la semaine : niveaux, renaissances, Dofus, âmes, stasis réussies, record d'XP en une heure, trésors",
+    "« Envoyer mon carnet à Mathis » (avec un compte) envoie un petit résumé de la semaine, sans pseudo, pour aider à régler l'équilibrage ; « Copier le résumé » pour le coller sur Discord",
+    "Chasse au trésor (Monde › Trésor) : un parchemin de chasse gratuit chaque jour, et d'autres trouvés sur les monstres en chasse (au niveau de la zone, 3 en réserve au plus)",
+    "Chaque parchemin a 3 à 5 indices selon son niveau : une zone et un repère à trouver ; l'équipe y va toute seule et trouve le repère après 6 victoires sur place, puis l'indice suivant se dévoile. La chasse itinérante attend la fin du trésor",
+    "Au bout, le gardien du trésor : un monstre de la dernière zone renforcé comme un boss. Vaincu, il laisse un coffre (kamas, poussière de stasis, ressources des zones traversées, une clé de donjon, parfois un nouveau parchemin) ; perdu, tu peux réessayer",
+    "Succès : « Premier trésor », titre « Chasseur de trésors » à 10 trésors, ornement « Boussole dorée » à 50" ] },
   { v: "0.1.21.1", name: "Annonces de records", items: [
     "Chat : l'annonce « prend la 1re place » d'un donjon s'affichait en barre vide ; elle dit de nouveau qui a pris la 1re place, où et en quelle stasis"
   ] },
@@ -509,6 +518,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "phenix") ornHtml = `<span class="orn phx l">🔥</span><span class="orn phx r">🔥</span>`;
   else if (orn === "ame") ornHtml = `<span class="orn seal">💜</span>`;
   else if (orn === "sablier") ornHtml = `<span class="orn seal">⏳</span>`;
+  else if (orn === "boussole") ornHtml = `<span class="orn seal">🧭</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
@@ -585,7 +595,7 @@ const ICONS = {
 const NAV = [
   { id: "base", n: "Accueil", ic: "logo", pages: [["home", "Accueil", "logo", "apercu"], ["home", "Havre-Sac", "havre", "havre"]] },
   { id: "adv", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["combat", "Combat", "combat"], ["quests", "Quêtes", "quetes"]] },
-  { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
+  { id: "team", n: "Équipe", ic: "dofus", pages: [["team", "Équipe", "dofus"], ["heroes", "Héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"], ["carnet", "Carnet", "parchemin_or"]] },
   { id: "craft", n: "Artisanat", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
 ].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", ic: "bourse", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []); // 0.1.20 : famille Communauté (les guildes la rejoindront)
 const famOf = (tab) => NAV.find((F) => F.pages.some((p) => p[0] === tab)) || NAV[0];
@@ -991,14 +1001,15 @@ function historyHtml(n) {
 /* ---------- MONDE ---------- */
 function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
-  const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["enc", "Encyclopédie"]];
+  const tabs = [["map", "Carte"], ["dungeons", "Donjons"], ["tresor", "Trésor"], ["enc", "Encyclopédie"]];
   let body = "";
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
-    body = `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+    body = tresorBanner() + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = dungeonsHtml();
+  else if (ui.world === "tresor") body = tresorHtml();
   else body = encyclopediaHtml();
   $("#main").innerHTML = `
 <div class="pagehead"><h1>Le Monde des Douze</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
@@ -3870,6 +3881,7 @@ function checkNewVersion() {
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
+  if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
@@ -3881,6 +3893,7 @@ function render() {
   else if (ui.tab === "forge") renderForge();
   else if (ui.tab === "quests") renderQuests();
   else if (ui.tab === "ren") renderRenaissance();
+  else if (ui.tab === "carnet") renderCarnet();
   else if (ui.tab === "ladder") renderLadder();
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
@@ -3919,6 +3932,7 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
+  if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Chasse au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
     return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${emo(C.icon)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
@@ -4076,7 +4090,7 @@ function pageGo(id) {
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
-    case "defi": go("world", "world", "dungeons"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
+    case "defi": go("world", "world", "dungeons"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
@@ -4359,6 +4373,160 @@ function renderWatch() {
   </section>`;
   ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd();
 }
+/* ===================== lot Suivi : carnet de bord et chasse au trésor (logique dans js/suivi.js) ===================== */
+const SU = { days: 7, met: "xp", role: undefined, tq: false };
+const fmtK = (n) => { n = Math.round(n || 0); return n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(".", ",") + " M" : n >= 1e4 ? Math.round(n / 1e3) + " k" : fmt(n); };
+const trendTxt = (x) => (x == null ? "" : `<span class="${x >= 0 ? "su-up" : "su-down"}">${x >= 0 ? "+" : "−"}${Math.abs(Math.round(x * 100))} %</span> <span class="muted">sur la période</span>`);
+const DOW = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+const suWhen = (t) => { const d = new Date(t); return `${DOW[d.getDay()]} ${d.getHours()} h`; };
+const SU_MET = {
+  xp: ["XP", (p) => p.xp], k: ["Kamas", (p) => p.k], f: ["Combats", (p) => p.f], lv: ["Niveau", (p) => p.lv],
+};
+const SU_MOM_IC = { level: "couronne", ren: "phenix", dofus: "dofus", soul: "cristal", stasis: "trophee", maj: "logo", record: "couronne", tresor: "carte" };
+function carnetPoints() {
+  const P = E.carnetSeries(S, SU.days, "xp"); let lastLv = 0;
+  return P.map((p) => { if (p.has && p.lv) lastLv = p.lv; return Object.assign({}, p, { lv: p.lv || lastLv }); });
+}
+function carnetChart() {
+  const P = carnetPoints(); const get = SU_MET[SU.met][1];
+  const W = suW(), Hh = W < 500 ? 200 : 230, x0 = 46, x1 = W - 10, y0 = Hh - 34, y1 = 16;
+  const vals = P.map(get); const hi0 = Math.max(...vals); if (!(hi0 > 0)) return `<div class="empty">Pas encore de données sur cette période : le carnet se remplit à mesure que l'équipe combat.</div>`;
+  let lo = SU.met === "lv" ? Math.max(0, Math.min(...vals.filter((v) => v > 0)) - 2) : 0; const hi = hi0 * 1.08 || 1; if (lo >= hi) lo = 0;
+  const X = (i) => x0 + (x1 - x0) * i / Math.max(1, P.length - 1), Y = (v) => y0 - (y0 - y1) * (Math.max(lo, v) - lo) / (hi - lo);
+  const unit = SU.days <= 7 ? 3600000 : 86400000; const step = (x1 - x0) / Math.max(1, P.length - 1);
+  let s = `<defs><linearGradient id="suGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gold)" stop-opacity=".32"/><stop offset="1" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs>`;
+  let st = -1; P.forEach((p, i) => { if (p.off && st < 0) st = i; if ((!p.off || i === P.length - 1) && st >= 0) { const e = p.off ? i : i - 1; s += `<rect class="su-off" x="${(X(st) - step / 2).toFixed(1)}" y="${y1}" width="${(X(e) - X(st) + step).toFixed(1)}" height="${y0 - y1}"/>`; st = -1; } });
+  for (let k = 0; k <= 3; k++) { const v = lo + (hi - lo) * k / 3, y = Y(v); s += `<line class="su-ax" x1="${x0}" x2="${x1}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}"/><text x="${x0 - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end">${SU.met === "lv" ? Math.round(v) : fmtK(v)}</text>`; }
+  const d = P.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(get(p)).toFixed(1)}`).join("");
+  s += `<path class="su-ar" d="${d}L${x1},${y0}L${x0},${y0}Z"/><path class="su-ln" d="${d}"/>`;
+  const t0 = P[0].idx * unit, t1 = (P[P.length - 1].idx + 1) * unit;
+  (S.carnet ? S.carnet.mom : []).filter((m) => m.k === "maj" && m.t >= t0 && m.t < t1).slice(0, 4).forEach((m) => { const x = x0 + (x1 - x0) * (m.t - t0) / (t1 - t0); s += `<line class="su-mk" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y1 - 4}" y2="${y0}"/><text class="su-mkt" x="${(x > W - 70 ? x - 4 : x + 4).toFixed(1)}" y="${y1 + 6}"${x > W - 70 ? ' text-anchor="end"' : ""}>${h(m.txt.replace("Mise à jour ", ""))}</text>`; });
+  if (SU.days <= 7) P.forEach((p, i) => { const dt = new Date(p.idx * unit); if (dt.getHours() === 12) s += `<text x="${X(i).toFixed(1)}" y="${Hh - 10}" text-anchor="middle">${DOW[dt.getDay()]}</text>`; });
+  else [0, 7, 14, 21, P.length - 1].forEach((i) => { s += `<text x="${X(i).toFixed(1)}" y="${Hh - 10}" text-anchor="middle">${i === P.length - 1 ? "auj." : `J−${P.length - 1 - i}`}</text>`; });
+  const per = SU.days <= 7 ? "par heure" : "par jour";
+  return `<div class="su-chart" data-n="${P.length}"><svg viewBox="0 0 ${W} ${Hh}" data-w="${W}" data-h="${Hh}" role="img" aria-label="${h(SU_MET[SU.met][0])} ${per} sur ${SU.days} jours">${s}<line class="su-cross" id="suCross" x1="0" x2="0" y1="${y1}" y2="${y0}" visibility="hidden"/><circle class="su-dot" id="suDot" r="4.5" cx="0" cy="0" visibility="hidden"/><rect class="su-hit" x="${x0}" y="${y1}" width="${x1 - x0}" height="${y0 - y1}"/></svg><div class="su-tip" id="suTip" hidden></div></div>
+    <div class="xs muted su-legend"><span>${h(SU_MET[SU.met][0])} ${SU.met === "lv" ? "" : per}</span><span><i class="su-swoff"></i> hors ligne</span><span><i class="su-swmk"></i> mise à jour du jeu</span></div>`;
+}
+function carnetHover(ev) {
+  const box = ev.currentTarget; const svg = box.querySelector("svg"); const r = svg.getBoundingClientRect(); const P = carnetPoints(); if (!P.length) return;
+  const W = +svg.dataset.w, Hh = +svg.dataset.h; const vx = (ev.clientX - r.left) / r.width * W; const i = Math.max(0, Math.min(P.length - 1, Math.round((vx - 46) / ((W - 56) / Math.max(1, P.length - 1)))));
+  const p = P[i]; const get = SU_MET[SU.met][1]; const vals = P.map(get); const hi0 = Math.max(...vals); let lo = SU.met === "lv" ? Math.max(0, Math.min(...vals.filter((v) => v > 0)) - 2) : 0; const hi = hi0 * 1.08 || 1; if (lo >= hi) lo = 0;
+  const x = 46 + (W - 56) * i / Math.max(1, P.length - 1), y = (Hh - 34) - (Hh - 50) * (Math.max(lo, get(p)) - lo) / (hi - lo);
+  const cr = $("#suCross"), dot = $("#suDot"), tip = $("#suTip"); if (!cr || !tip) return;
+  cr.setAttribute("x1", x); cr.setAttribute("x2", x); cr.setAttribute("visibility", "visible"); dot.setAttribute("cx", x); dot.setAttribute("cy", y); dot.setAttribute("visibility", "visible");
+  const dt = new Date(p.idx * (SU.days <= 7 ? 3600000 : 86400000));
+  const when = SU.days <= 7 ? `${DOW[dt.getDay()]} ${dt.getDate()}, ${dt.getHours()} h – ${dt.getHours() + 1} h` : `${DOW[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1}`;
+  tip.innerHTML = `<b>${when}</b>${p.off ? ` <span class="muted">· hors ligne</span>` : ""}<br>${fmtK(p.xp)} XP · ${fmtK(p.k)} kamas<br>${fmt(Math.round(p.f))} combats${p.f ? ` · ${Math.round(p.w / p.f * 100)} % gagnés` : ""}${p.lv ? ` · niv. ${p.lv}` : ""}`;
+  tip.hidden = false; const bw = box.clientWidth; const px = x / W * bw; tip.style.left = Math.max(4, Math.min(bw - tip.offsetWidth - 4, px + 12)) + "px"; tip.style.top = "6px";
+}
+function carnetLeave() { ["#suCross", "#suDot"].forEach((s) => { const e = $(s); if (e) e.setAttribute("visibility", "hidden"); }); const t = $("#suTip"); if (t) t.hidden = true; }
+const suW = () => { const m = $("#main"); return Math.round(Math.max(300, Math.min(1100, (m ? m.clientWidth : 800) - 56))); };
+const suWeek = () => Math.floor(Date.now() / 604800000);
+function renderCarnet() {
+  const T = E.carnetTotals(S, SU.days), L = E.carnetLedger(S, SU.days), Z = E.carnetZones(S, 5);
+  const C = E.carnet(S); const since = E.now() - SU.days * 86400000;
+  const mom = C.mom.filter((m) => m.t >= since).slice(0, 12);
+  const sumIn = L.inn.reduce((s, x) => s + x.v, 0), sumOut = L.out.reduce((s, x) => s + x.v, 0);
+  const bars = (rows, cls) => { const mx = Math.max(1, ...rows.map((x) => x.v)); return rows.length ? rows.map((x) => `<div class="su-lr"><span>${h(x.name)}</span><span class="su-bar"><i class="${cls}" style="width:${Math.max(2, x.v / mx * 100)}%"></i></span><b class="num">${fmtK(x.v)}</b></div>`).join("") : `<div class="xs muted">Rien sur cette période.</div>`; };
+  const sent = C.sent === suWeek();
+  const send = ON ? (ON.user && ON.profile ? `<button class="btn sm primary" data-act="su-send">${sent ? "Renvoyer mon carnet" : "Envoyer mon carnet à Mathis"}</button>` : `<span class="xs muted">Connecte-toi (Options › Compte) pour l'envoyer.</span>`) : "";
+  $("#main").innerHTML = `<div class="pagehead"><h1>Carnet de bord</h1><span class="seg">${[[7, "7 jours"], [30, "30 jours"]].map(([v, n]) => `<button data-act="su-days" data-v="${v}" aria-pressed="${SU.days === v}">${n}</button>`).join("")}</span></div>
+  <div class="stack">
+  <div class="kpis su-kpis">
+    <div class="kpi"><span class="xs muted">XP par heure de combat</span><b class="num">${fmtK(T.xph)}</b><span class="xs">${trendTxt(T.trend)}</span></div>
+    <div class="kpi"><span class="xs muted">Kamas par heure de combat</span><b class="num">${fmtK(T.kh)}</b><span class="xs">${trendTxt(T.ktrend)}</span></div>
+    <div class="kpi"><span class="xs muted">Combats gagnés</span><b class="num">${T.f ? Math.round(T.win * 100) + " %" : "–"}</b><span class="xs muted">${fmt(Math.round(T.f))} combats</span></div>
+    <div class="kpi"><span class="xs muted">Temps de jeu</span><b class="num">${fmt(Math.round(T.on / 3600))} h</b><span class="xs muted">${T.offH ? `et ${fmt(T.offH)} h hors ligne` : "en ligne"}</span></div>
+  </div>
+  <section class="panel"><div class="phead"><h2>Courbes</h2><span class="seg">${Object.keys(SU_MET).map((k) => `<button data-act="su-met" data-v="${k}" aria-pressed="${SU.met === k}">${h(SU_MET[k][0])}</button>`).join("")}</span></div><div class="pad" id="suChartBox">${carnetChart()}</div></section>
+  <section class="panel"><div class="phead"><h2>Bilan des kamas</h2><span class="small num ${sumIn - sumOut >= 0 ? "su-up" : "su-down"}">${sumIn - sumOut >= 0 ? "+" : "−"}${fmtK(Math.abs(sumIn - sumOut))}</span></div><div class="pad su-ledger">
+    <div><h3 class="su-h su-up">Gagnés · ${fmtK(sumIn)}</h3>${bars(L.inn, "in")}</div><div><h3 class="su-h su-down">Dépensés · ${fmtK(sumOut)}</h3>${bars(L.out, "out")}</div></div></section>
+  <div class="grid2">
+    <section class="panel"><div class="phead"><h2>Où l'équipe rapporte le plus</h2></div><div class="pad su-scroll">${Z.length ? `<table class="su-zt"><thead><tr><th>Zone</th><th class="n">XP / h</th><th class="n">Kamas / h</th><th class="n">Victoires</th></tr></thead><tbody>${Z.map((z, i) => `<tr class="${i === 0 ? "best" : ""}"><td>${h(z.name)}</td><td class="n">${fmtK(z.xph)}</td><td class="n">${fmtK(z.kh)}</td><td class="n">${Math.round(z.win * 100)} %</td></tr>`).join("")}</tbody></table><p class="xs muted" style="margin:6px 0 0">Mesuré sur tous les combats déjà faits dans chaque zone (10 au moins).</p>` : `<div class="empty">Il faut au moins 10 combats dans une zone.</div>`}</div></section>
+    <section class="panel"><div class="phead"><h2>Moments</h2></div><div class="pad su-mom">${mom.length ? mom.map((m) => `<div class="su-ev"><span class="xs muted num">${suWhen(m.t)}</span>${IC(SU_MOM_IC[m.k] || "parchemin_or")}<span>${h(m.txt)}</span></div>`).join("") : `<div class="empty">Les grands moments de l'équipe s'afficheront ici.</div>`}</div></section>
+  </div>
+  <section class="panel"><div class="pad row" style="gap:10px">${send}<button class="btn sm" data-act="su-copy">Copier le résumé</button><span class="xs muted grow">Le résumé de la semaine (niveau, XP et kamas par heure, bilan, meilleures zones) aide Mathis à régler l'équilibrage. Pas de pseudo dedans.</span>${SU.role === "admin" ? `<button class="btn sm" data-act="su-adm">Carnets reçus</button>` : ""}</div></section>
+  </div>`;
+  const box = $("#suChartBox .su-chart"); if (box) { box.addEventListener("pointermove", carnetHover); box.addEventListener("pointerleave", carnetLeave); }
+  if (ON && SU.role === undefined && ON.user) { SU.role = null; ON.role().then((r) => { SU.role = r || null; if (r === "admin" && ui.tab === "carnet") renderCarnet(); }).catch(() => {}); }
+}
+function carnetText() {
+  const x = E.carnetSummary(S);
+  return [`Carnet de bord Idlus ${GAME_VERSION} (7 jours)`, `Niveau max ${x.lvl}, ${x.team} héros, ${x.ren} renaissances`,
+    `XP/h ${fmtK(x.xph)} · kamas/h ${fmtK(x.kh)} · ${fmt(x.f)} combats, ${x.win} % gagnés · ${x.h} h de combat, ${x.offH} h hors ligne`,
+    `Gagnés : ${x.inn.map(([k, v]) => `${E.CARNET_IN[k] || k} ${fmtK(v)}`).join(", ") || "rien"}`,
+    `Dépensés : ${x.out.map(([k, v]) => `${E.CARNET_OUT[k] || k} ${fmtK(v)}`).join(", ") || "rien"}`,
+    `Zones : ${x.zones.map(([n, xp, k, w]) => `${n} (${fmtK(xp)} XP/h, ${fmtK(k)} k/h, ${w} %)`).join(" ; ") || "–"}`].join("\n");
+}
+async function carnetSend() {
+  const r = await ON.rpc("carnet_send", { p_week: suWeek(), p_data: Object.assign(E.carnetSummary(S), { v: GAME_VERSION }) });
+  if (r.err) { toast(`Envoi impossible : ${r.err}`, "warn"); return; }
+  E.carnet(S).sent = suWeek(); dirty = true; toast("Carnet envoyé, merci ! Il aide à régler l'équilibrage.", "rare"); if (ui.tab === "carnet") renderCarnet();
+}
+async function carnetAdmin() {
+  openSheet(`<h2>Carnets reçus</h2><div class="empty">Chargement…</div>`);
+  const r = await ON.rpc("carnet_admin", { p_weeks: 4 });
+  if (r.err) { openSheet(`<h2>Carnets reçus</h2><div class="empty">${h(r.err)}</div><button class="btn" data-act="closesheet">Fermer</button>`); return; }
+  const rows = (r.data || []).map((x) => x.data).filter(Boolean);
+  const bands = [[1, 50], [51, 100], [101, 150], [151, 200]].map(([a, b]) => { const g = rows.filter((x) => x.lvl >= a && x.lvl <= b); const avg = (k) => (g.length ? g.reduce((s, x) => s + (+x[k] || 0), 0) / g.length : 0);
+    return `<tr><td>${a}–${b}</td><td class="n">${g.length}</td><td class="n">${g.length ? fmtK(avg("xph")) : "–"}</td><td class="n">${g.length ? fmtK(avg("kh")) : "–"}</td><td class="n">${g.length ? Math.round(avg("win")) + " %" : "–"}</td><td class="n">${g.length ? Math.round(avg("h")) + " h" : "–"}</td></tr>`; }).join("");
+  openSheet(`<h2>Carnets reçus</h2><p class="small muted">${rows.length} carnet${rows.length > 1 ? "s" : ""} sur les 4 dernières semaines, un par joueur et par semaine, regroupés par niveau du héros le plus fort.</p>
+    <div class="su-scroll"><table class="su-zt"><thead><tr><th>Niveau</th><th class="n">Carnets</th><th class="n">XP / h</th><th class="n">Kamas / h</th><th class="n">Victoires</th><th class="n">Combat / sem.</th></tr></thead><tbody>${bands}</tbody></table></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* ---------- chasse au trésor (Monde › Trésor) ---------- */
+function tresorBanner() {
+  const T = E.tresorState(S); const c = T.cur; const free = E.tresorFreeOk(S);
+  if (!c && !T.stock.length && !free) return "";
+  let txt;
+  if (c) { const st = E.tresorStep(S); txt = c.ready ? `<b>Le gardien du trésor t'attend</b> · ${h(E.SUBS[c.steps[c.steps.length - 1].sub].name)}` : `<b>Chasse au trésor</b> · étape ${c.i + 1} / ${c.steps.length} · ${h(E.SUBS[st.sub].name)} <span class="num">${st.got} / ${E.TRESOR_NEED}</span>`; }
+  else txt = T.stock.length ? `<b>${T.stock.length} parchemin${T.stock.length > 1 ? "s" : ""} de chasse</b> à ouvrir` : `<b>Parchemin de chasse du jour</b> disponible`;
+  return `<button class="su-tban" data-act="worldtab" data-v="tresor">${IC("carte")}<span class="grow">${txt}</span><span class="xs">Voir ›</span></button>`;
+}
+function tresorHtml() {
+  const T = E.tresorState(S); const c = T.cur;
+  const free = E.tresorFreeOk(S);
+  const stock = `<section class="panel"><div class="phead"><h2>Parchemins de chasse</h2><span class="small muted">${T.stock.length} / ${E.TRESOR_STOCK}</span></div><div class="pad stack">
+    <div class="row su-stock">${T.stock.length ? T.stock.map((l, i) => `<div class="su-parch">${IC("carte")}<span><b>Niveau ${l}</b><span class="xs muted">${E.tresorSteps(Math.min(l, Math.max(...S.chars.map((x) => x.lvl)) + 10))} indices</span></span>${c ? "" : `<button class="btn sm primary" data-act="su-tstart" data-v="${i}">Ouvrir</button>`}</div>`).join("") : `<span class="small muted">Aucun parchemin. Il en tombe parfois sur les monstres en chasse, au niveau de la zone.</span>`}</div>
+    <div class="row">${free ? `<button class="btn sm" data-act="su-tclaim" ${T.stock.length >= E.TRESOR_STOCK ? "disabled" : ""}>${IC("parchemin_or")} Prendre le parchemin du jour</button>` : `<span class="xs muted">✓ Parchemin du jour pris · le prochain dans ${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</span>`}</div><p class="xs muted" style="margin:0">Un parchemin gratuit chaque jour, plus ceux trouvés en chasse (${E.TRESOR_STOCK} en réserve au plus).</p></div></section>`;
+  let cur = "";
+  if (c) {
+    const steps = c.steps.map((st, i) => { const s = E.SUBS[st.sub];
+      if (i < c.i) return `<div class="su-st done"><span class="dot">✓</span><div><b>${h(s.name)}</b><span class="xs">Repère trouvé : ${h(st.mark)}</span></div></div>`;
+      if (i === c.i && !c.ready) { const here = S.hunting && S.sub === st.sub && !S.dungeon;
+        return `<div class="su-st now"><span class="dot">${i + 1}</span><div class="stack" style="gap:6px"><div class="su-clue">Indice : va à <b>${h(s.name)}</b> <span class="xs">(niv. ${s.lvl[0]}–${s.lvl[1]})</span> et cherche <b>${h(st.mark)}</b>.</div>
+          <span class="xs">${here ? "L'équipe chasse ici" : "L'équipe n'est pas encore sur place"} · ${st.got} victoire${st.got > 1 ? "s" : ""} sur ${E.TRESOR_NEED} avant de trouver le repère</span><div class="su-prog"><i style="width:${pct(st.got, E.TRESOR_NEED)}%"></i></div></div></div>`; }
+      return `<div class="su-st hid"><span class="dot">${i + 1}</span><div><b>???</b><span class="xs">Se dévoile à l'étape précédente</span></div></div>`; }).join("");
+    const last = E.SUBS[c.steps[c.steps.length - 1].sub];
+    const guard = `<div class="su-st ${c.ready ? "now" : "hid"}"><span class="dot">⚔</span><div><b>Le gardien du trésor</b><span class="xs">${c.ready ? `Un monstre de ${h(last.name)} renforcé comme un boss (niveau ${Math.min(200, c.lvl + 5)}). ${c.lost ? `Déjà ${c.lost} défaite${c.lost > 1 ? "s" : ""} : renforce l'équipe avant de réessayer.` : "Il apparaît au prochain combat sur place."}` : "Un combat, puis le coffre"}</span></div></div>`;
+    const target = c.ready ? last.id : c.steps[c.i].sub; const there = S.hunting && S.sub === target && !S.dungeon;
+    const btn = c.ready ? (c.go || (S.fight && S.fight.tresor && !S.fight.over) ? `<span class="xs">Le gardien arrive au prochain combat…</span><button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tfight">Affronter le gardien</button>`) : there ? `<button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tgo">Aller chasser là-bas</button>`;
+    cur = `<div class="su-paper"><div class="row between"><h3>Parchemin de chasse · niveau ${c.lvl}</h3><span class="num">${c.ready ? "gardien" : `étape ${c.i + 1} / ${c.steps.length}`}</span></div>
+      <div class="su-trail">${steps}${guard}</div>
+      <div class="row">${btn}${SU.tq ? `<button class="pbtn alt" data-act="su-tquit2">Confirmer l'abandon</button>` : `<button class="pbtn alt" data-act="su-tquit">Abandonner</button>`}<span class="xs grow">${S.settings.roam ? "La chasse itinérante reprend après le trésor." : ""}</span></div></div>`;
+  } else cur = `<section class="panel"><div class="pad su-how"><b>Comment ça marche ?</b><span class="small">Ouvre un parchemin : chaque indice nomme une zone et un repère. L'équipe y va toute seule et le trouve après ${E.TRESOR_NEED} victoires sur place, puis l'indice suivant se dévoile. Au bout, le gardien du trésor garde un coffre : kamas, poussière de stasis, ressources des zones traversées et une clé de donjon.</span></div></section>`;
+  const lastT = T.last ? `<section class="panel"><div class="phead"><h2>Dernier trésor</h2><span class="small muted">${ago(T.last.t)}</span></div><div class="pad small">${h(T.last.got.join(", "))}.</div></section>` : "";
+  const next = (T.n || 0) < 10 ? `titre « ${E.TRESOR_TITLE} » à 10` : (T.n || 0) < 50 ? "ornement « Boussole dorée » à 50" : "titre et ornement obtenus";
+  return `${cur}${stock}${lastT}<p class="xs muted" style="margin:0">${fmt(T.n || 0)} trésor${(T.n || 0) > 1 ? "s" : ""} trouvé${(T.n || 0) > 1 ? "s" : ""} · ${next}.</p>`;
+}
+function suAct(a, t) {
+  const d = t.dataset;
+  const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
+  switch (a) {
+    case "su-days": SU.days = +d.v; renderCarnet(); return;
+    case "su-met": SU.met = d.v; renderCarnet(); return;
+    case "su-send": carnetSend(); return;
+    case "su-copy": { const txt = carnetText(); try { navigator.clipboard.writeText(txt).then(() => toast("Résumé copié : colle-le sur Discord."), () => prompt("Copie ce résumé :", txt)); } catch (e) { prompt("Copie ce résumé :", txt); } return; }
+    case "su-adm": carnetAdmin(); return;
+    case "su-tclaim": if (run("tresorClaim")) { toast("Parchemin du jour ajouté à ta réserve.", "rare"); render(); } return;
+    case "su-tstart": if (run("tresorStart", +d.v)) { SU.tq = false; render(); toast("Chasse au trésor lancée : l'équipe part vers le premier indice.", "rare"); } return;
+    case "su-tgo": if (run("tresorGo")) render(); return;
+    case "su-tfight": if (run("tresorFight")) render(); return;
+    case "su-tview": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
+    case "su-tquit": SU.tq = true; render(); return;
+    case "su-tquit2": SU.tq = false; run("tresorQuit"); render(); return;
+  }
+}
 function smAct(a, t) {
   const d = t.dataset;
   switch (a) {
@@ -4396,6 +4564,7 @@ document.addEventListener("click", (ev) => {
   if (ON && a && a.startsWith("lb-")) { lbAct(a, t); return; }
   if (a && /^(ch|adm)-/.test(a)) return; // chat et panel admin : js/chat.js
   if (a && a.startsWith("sm-")) { if (S) smAct(a, t); return; }
+  if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }

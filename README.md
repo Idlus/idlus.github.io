@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.22 « Carnet et trésor » (bêta)
+- Lot Suivi : carnet de bord (Équipe › Carnet) avec courbes d'XP, kamas, combats et niveau sur 7 jours (par heure) et 30 jours (par jour), heures hors ligne et mises à jour marquées, bilan des kamas par source, meilleures zones, grands moments ; envoi d'un résumé hebdomadaire au serveur (`supabase/carnet.sql`, lisible par l'admin seulement) ou copie. Tout est dans `js/suivi.js` (enveloppe `E.tick`, `E.catchUp` et les actions de `E.ACTIONS` pour ranger les kamas), environ 6 à 10 Ko dans la sauvegarde.
+- Chasse au trésor (Monde › Trésor) : parchemin du jour + parchemins trouvés en chasse (1/300), 3 à 5 indices (sous-zone + repère, 6 victoires sur place), gardien renforcé (même mécanique que les protecteurs), coffre ; l'itinérance attend la fin du trésor. Succès, titre « Chasseur de trésors », ornement « Boussole dorée ». Tests : `tests/suivi.test.js`.
 ## 0.1.21.1 « Annonces de records » (bêta)
 - Chat : l'annonce d'un nouveau n°1 de donjon s'affichait vide (le temps du record, `t`, écrasait le type `t` dans `supabase/functions/record`). Le temps passe dans `sec` ; `js/chat.js` relit les anciennes annonces et ne montre jamais de barre vide.
 

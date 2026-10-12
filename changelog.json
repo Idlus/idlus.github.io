@@ -1,6 +1,20 @@
 {
-  "version": "0.1.21.1",
+  "version": "0.1.22",
   "versions": [
+    {
+      "v": "0.1.22",
+      "name": "Carnet et trésor",
+      "items": [
+        "Carnet de bord (Équipe › Carnet) : ton XP, tes kamas, tes combats et le niveau de l'équipe heure par heure sur 7 jours, ou jour par jour sur 30 jours ; les heures hors ligne sont grisées et chaque mise à jour du jeu est marquée sur la courbe. Survole la courbe pour le détail d'une heure",
+        "Bilan des kamas : d'où ils viennent (chasse, donjons, ventes au jeu, Hôtel de vente, défi, quêtes, trésors) et où ils partent (forgemagie, Havre-Sac, artisanat et clés, montures, boutique, idoles)",
+        "Les zones qui rapportent le plus (XP et kamas par heure, victoires) et les grands moments de la semaine : niveaux, renaissances, Dofus, âmes, stasis réussies, record d'XP en une heure, trésors",
+        "« Envoyer mon carnet à Mathis » (avec un compte) envoie un petit résumé de la semaine, sans pseudo, pour aider à régler l'équilibrage ; « Copier le résumé » pour le coller sur Discord",
+        "Chasse au trésor (Monde › Trésor) : un parchemin de chasse gratuit chaque jour, et d'autres trouvés sur les monstres en chasse (au niveau de la zone, 3 en réserve au plus)",
+        "Chaque parchemin a 3 à 5 indices selon son niveau : une zone et un repère à trouver ; l'équipe y va toute seule et trouve le repère après 6 victoires sur place, puis l'indice suivant se dévoile. La chasse itinérante attend la fin du trésor",
+        "Au bout, le gardien du trésor : un monstre de la dernière zone renforcé comme un boss. Vaincu, il laisse un coffre (kamas, poussière de stasis, ressources des zones traversées, une clé de donjon, parfois un nouveau parchemin) ; perdu, tu peux réessayer",
+        "Succès : « Premier trésor », titre « Chasseur de trésors » à 10 trésors, ornement « Boussole dorée » à 50"
+      ]
+    },
     {
       "v": "0.1.21.1",
       "name": "Annonces de records",
