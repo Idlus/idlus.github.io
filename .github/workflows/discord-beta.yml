@@ -1,0 +1,21 @@
+# Annonce sur Discord (#bêta-nouveautés, mention @Testeur) les nouveautés de la version de test, après chaque publication réussie de /beta/.
+# N'annonce que si la dernière entrée des nouveautés de la branche beta n'a pas déjà été annoncée. Nécessite le secret DISCORD_BOT_TOKEN.
+name: Annonce Discord de la version de test
+on:
+  workflow_run:
+    workflows: ["Version de test"]
+    types: [completed]
+jobs:
+  annonce:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: |
+          git fetch --depth 1 origin beta
+          git show FETCH_HEAD:changelog.json > /tmp/changelog-beta.json
+          node tools/discord_bot.js beta /tmp/changelog-beta.json
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
