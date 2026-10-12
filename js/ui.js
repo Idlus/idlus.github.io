@@ -16,9 +16,19 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.10.1";
+const GAME_VERSION = "0.1.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.11", name: "Idoles", items: [
+    "Idoles : 36 statuettes en 9 familles (Vie, Dégâts, Protection, Nombre, Tempo, Rythme, Soins, Résistances, Critiques), 4 par famille. Chacune rend les combats plus durs (monstres plus résistants, plus nombreux, plus rapides, soins annulés…) et apporte un score",
+    "Bonus : +0,5 % d'XP et de butin par point de score, en plus de la stasis et hors du plafond des bonus permanents (jusqu'à +102,5 % en chasse ; en donjon le score compte jusqu'à 60, soit +30 %)",
+    "Jusqu'à 6 idoles actives, une seule par famille ; une idole en doublon avec un modificateur de stasis ne compte pas. Trois jeux d'idoles à enregistrer et recharger",
+    "Fabrication une seule fois chez le Bricoleur (ressources de récolte du niveau de l'idole, Poussière de stasis dès le niveau 80, une ressource de boss dès 160) ; chaque idole révèle sa statuette avec un halo, des étincelles ou une lueur selon son rang, et un petit effet propre à sa famille",
+    "Où les trouver : bouton « Idoles » sur l'écran de Combat, dans la zone de chasse, sur la fiche d'un donjon et sur la page Équipe ; le score et le bonus s'affichent dans la barre du combat et dans le butin",
+    "L'IA respecte les idoles : avec Ougah, les héros ne lancent plus de soins inutiles",
+    "Six succès (première idole, 12, les 36 avec le titre « l'Idolâtre », 6 actives en victoire, score 100 « le Téméraire », score 200 « Maître des idoles »)",
+    "Simulateur : option --idoles hebdo,dynamo ou --idoles max",
+  ] },
   { v: "0.1.10.1", name: "Récoltes et panoplies", items: [
     "Protecteurs de ressources : en récoltant, un gardien de la ressource apparaît parfois (environ une récolte sur 60, jamais plus d'un à la fois). Il attend 15 minutes : « Combattre » le place dans le prochain combat de chasse, avec quelques monstres de la zone. Victoire : cette ressource rapporte ×2 pendant 20 minutes, +10 de la ressource et +3 Éclats de trouvaille. Désactivable dans les Options",
     "Deux succès liés : « Gardien des récoltes » et « Fléau des protecteurs » (avec un titre)",

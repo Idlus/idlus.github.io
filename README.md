@@ -7,6 +7,11 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.11 « Idoles » (bêta)
+- **36 idoles** en 9 familles, 4 par famille : chacune rend les combats plus durs et apporte un score ; **+0,5 % d'XP et de butin par point**, en plus de la stasis (jusqu'à +102,5 % en chasse, +30 % en donjon où le score compte jusqu'à 60).
+- Jusqu'à 6 actives, une par famille ; doublon avec un modificateur de stasis ignoré ; 3 jeux d'idoles enregistrables.
+- Fabriquées une fois chez le **Bricoleur** ; statuette teintée et animée selon le rang et la famille. Bouton « Idoles » en combat, en chasse, sur la fiche de donjon et la page Équipe. Six succès.
+
 ## 0.1.10.1 « Récoltes et panoplies » (bêta)
 - **Protecteurs de ressources** : en récoltant, un gardien apparaît parfois (environ une récolte sur 60) ; le battre en chasse double cette récolte pendant 20 min (+10 ressources, +3 Éclats). Désactivable.
 - **Codes cadeaux** : champ dans les Options, un code par partie (outil `tools/code_cadeau.js` pour les créer).
