@@ -97,6 +97,12 @@ const MOCK = () => {
       if (name === "hdv_mine") return { data: { open: [], sold: [] }, error: null };
       if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: [] } : null, error: null };
       if (name === "hdv_buy") { if (d.hdvSold) return { data: { err: "Déjà vendu." }, error: null }; d.hdvSold = true; put(d); return { data: { ok: true, ops: [{ id: 1, p: { k: -5000, add: [item] }, t: "Acheté : " + T.name }] }, error: null }; }
+      // 0.1.33 : offres d'achat
+      if (name === "hdv_orders_list") return { data: d.ordSold ? [] : [{ id: 5, cat: "res", key: "Laine de Bouftou", name: "Laine de Bouftou", lvl: 1, left: 50, qty: 50, price: 30, exp: new Date(Date.now() + 864e5 * 3).toISOString(), mine: false }], error: null };
+      if (name === "hdv_orders_mine") return { data: d.ordMine || [], error: null };
+      if (name === "hdv_order_new") { const held = a.p_qty * a.p_price + Math.ceil(a.p_qty * a.p_price * 0.02); d.ordMine = [{ id: 9, cat: a.p_cat, key: a.p_key, name: a.p_name, qty: a.p_qty, filled: 0, price: a.p_price, held, st: "open", exp: new Date(Date.now() + 864e5 * a.p_days).toISOString() }]; put(d);
+        return { data: { ok: true, ops: [{ id: 3, p: { k: -held }, t: "Offre d'achat" }] }, error: null }; }
+      if (name === "hdv_order_fill") { d.ordSold = true; put(d); return { data: { ok: true, n: a.p_qty, k: a.p_qty * 30, ops: [{ id: 2, p: { k: a.p_qty * 30, res: { "Laine de Bouftou": -a.p_qty } }, t: "Vendu à une offre d'achat" }] }, error: null }; }
       if (name === "guild_me") return { data: { g: null, invites: [{ gid: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, n: 7, by: "Kralamour" }], asks: [] }, error: null };
       if (name === "guild_list") return { data: [{ id: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, open: true, motd: "", n: 7, chef: "Kralamour" }], error: null };
       if (name === "guild_give" || name === "guild_chat") return { data: name === "guild_chat" ? [] : { ok: false, none: true }, error: null };
@@ -251,6 +257,19 @@ const MOCK = () => {
     await page.click('.subtabs [data-act="mk-tab"][data-v="sell"]'); await page.waitForTimeout(300);
     await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
     if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
+    // 7e bis. offres d'achat (0.1.33) : vendre à une offre, puis publier la sienne
+    await page.evaluate(() => { const S = window.DX.S; S.res = S.res || {}; S.res["Laine de Bouftou"] = 20; S.kamas = Math.max(S.kamas, 10000); });
+    await page.click('.subtabs [data-act="mk-tab"][data-v="ord"]'); await page.waitForSelector('[data-act="mk-ofill"]', { timeout: 5000 });
+    const ob = await page.evaluate(() => window.DX.S.kamas);
+    await page.click('[data-act="mk-ofill"]'); await page.waitForTimeout(600);
+    const oa = await page.evaluate(() => ({ k: window.DX.S.kamas, r: (window.DX.S.res || {})["Laine de Bouftou"] || 0 }));
+    if (oa.k !== ob + 600 || oa.r !== 0) fail("offres d'achat : vente mal appliquée " + JSON.stringify([ob, oa]));
+    await page.click('[data-act="mk-oview"][data-v="mine"]'); await page.fill("#mkOF", "blé"); await page.waitForTimeout(500);
+    await page.click('[data-act="mk-opick"][data-k="Blé"]'); await page.waitForSelector("#mkOQty"); await page.fill("#mkOQty", "10"); await page.waitForTimeout(650); await page.fill("#mkOPrice", "50"); await page.waitForTimeout(800);
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/offre.png" });
+    await page.click('[data-act="mk-onewgo"]'); await page.waitForTimeout(800);
+    if ((await page.evaluate(() => window.DX.S.kamas)) !== oa.k - 510) fail("offres d'achat : kamas non mis de côté");
+    if (!/0 \/ 10 reçus/.test(await page.textContent("#main"))) fail("offres d'achat : offre absente de Mes offres");
     // 7f. guildes : invitation reçue, liste, formulaire de fondation
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
     await page.click('#nav [data-nk="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
