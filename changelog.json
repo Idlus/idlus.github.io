@@ -1,6 +1,13 @@
 {
-  "version": "0.1.21",
+  "version": "0.1.21.1",
   "versions": [
+    {
+      "v": "0.1.21.1",
+      "name": "Annonces de records",
+      "items": [
+        "Chat : l'annonce « prend la 1re place » d'un donjon s'affichait en barre vide ; elle dit de nouveau qui a pris la 1re place, où et en quelle stasis"
+      ]
+    },
     {
       "v": "0.1.21",
       "name": "Guildes",

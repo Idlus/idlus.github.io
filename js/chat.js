@@ -92,6 +92,7 @@
     return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}${window.GUILD && window.GUILD.inGuild() ? tab("u", "Guilde", window.GUILD.unread && C.tab !== "u" ? ` <span class="n">${window.GUILD.unread}</span>` : "") : `<span class="ch-tab lock" data-tip="Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.">${X().G("lock")} Guilde</span>`}<span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
   }
   function msgHtml(m) {
+    if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
     if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && m.data.t === "dofus" ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
@@ -99,7 +100,8 @@
     return `<div class="msg${me ? " me" : ""}">${X().cmed(m.cls)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${h(m.pseudo || "?")}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${h(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   function annTxt(m, plain) {
-    const d = m.data || {}; const b = (s) => (plain ? s : `<b>${h(s)}</b>`); const p = b(m.pseudo || "?");
+    const d = Object.assign({}, m.data); if (typeof d.t !== "string") d.t = d.did ? "top1" : ""; // 0.1.18-0.1.20 : le temps du record écrasait le type (t)
+    const b = (s) => (plain ? s : `<b>${h(s)}</b>`); const p = b(m.pseudo || "?");
     const DOF = (window.ENGINE && window.ENGINE.DOFUS) || (window.DX.E && window.DX.E.DOFUS) || {};
     const t = (s) => (plain ? s.replace(/<[^>]+>/g, "") : s);
     switch (d.t) {

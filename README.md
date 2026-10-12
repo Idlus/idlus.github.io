@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.21.1 « Annonces de records » (bêta)
+- Chat : l'annonce d'un nouveau n°1 de donjon s'affichait vide (le temps du record, `t`, écrasait le type `t` dans `supabase/functions/record`). Le temps passe dans `sec` ; `js/chat.js` relit les anciennes annonces et ne montre jamais de barre vide.
+
 ## 0.1.21 « Guildes » (bêta)
 - Multijoueur, étape 5 (première partie) : guildes (Guildalogemme 100 000 kamas + héros niveau 30, 30 membres, rangs Meneur / Bras droit / Membre / Recrue, entrée libre ou sur demande, invitations), XP de guilde donnée par les membres (0 à 90 % de l'XP des combats, `E.guildXpShare`), niveaux 1 à 100 et bonus (`E.guildBonus`, sous les plafonds), chat de guilde (onglet Guilde du chat, relevé toutes les 4 s), journal, onglet Guildes du panel admin. Code : `js/guilds.js`, `supabase/guildes.sql`. Boss de la semaine, Percepteurs (version « la guilde défend ensemble ») et coffre de guilde : partie suivante.
 
