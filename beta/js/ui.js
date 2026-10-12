@@ -182,15 +182,30 @@ const lookLocal = (cls, sex, hi) => `assets/look/${cls}_${sex === "f" ? "f" : "m
 function lookUrl(c, opts = {}) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return null; const sx = c.sex === "f" ? "f" : "m"; const D2 = L[sx]; const hi = Math.max(0, Math.min(D2.heads.length - 1, c.head || 0));
   const skins = [D2.body, D2.heads[hi]];
-  if (!opts.bare && c.equip) ["coiffe", "cape"].forEach((sl) => { const it = S && S.items[c.equip[sl]]; const sk = it && LK.ITEM_SKINS[it.tpl]; if (sk) skins.push(sk); });
+  const worn = []; if (!opts.bare && c.equip) ["coiffe", "cape"].forEach((sl) => { const it = S && S.items[c.equip[sl]]; const sk = it && LK.ITEM_SKINS[it.tpl]; if (sk) { skins.push(sk); worn.push(+it.tpl.slice(1)); } });
+  if (c.cls === "forge") return worn.length ? forgeLook(sx, worn) : lookLocal("forge", sx, 0); // Forgelance : rendu DofusDB (voir forgeLook)
   const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
   const cols = D2.colors.slice(); if (pal && pal.c) pal.c.forEach((v, i) => (cols[i + 1] = v));
-  if (c.cls === "forge" || (skins.length === 2 && (!pal || !pal.c))) return lookLocal(c.cls, sx, hi); // Forgelance : rendu Ankama défaillant (tête détachée), on garde nos images recomposées
+  if (skins.length === 2 && (!pal || !pal.c)) return lookLocal(c.cls, sx, hi);
   const look = `{1|${skins.join(",")}|${cols.map((v, i) => `${i + 1}=${v}`).join(",")}|140}`;
   let hex = ""; for (const ch of unescape(encodeURIComponent(look))) hex += ch.charCodeAt(0).toString(16).padStart(2, "0");
   return `https://static.ankama.com/dofus/renderer/look/${hex}/full/1/200_200-10.png`;
 }
-const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0); return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
+/* Forgelance : avec ses numéros d'apparence, le moteur de rendu dessine un casque et pose la tête à côté du corps.
+   DofusDB sait le dessiner correctement (tête par défaut, couleurs d'origine) à partir d'un jeton qu'il fabrique pour la classe
+   et les objets portés : on demande le jeton, puis l'image. Les coiffes et capes s'affichent ; ni choix de tête ni couleurs. */
+const FORGE = { tok: {}, wait: {} };
+function forgeLook(sx, items) {
+  const key = sx + (items.length ? "-" + items.join("-") : ""), url = (t) => { let x = ""; for (const ch of t) x += ch.charCodeAt(0).toString(16).padStart(2, "0"); return `https://renderer.dofusdb.fr/kool/${x}/full/1/300_300.png`; };
+  if (FORGE.tok[key]) return url(FORGE.tok[key]);
+  if (!FORGE.wait[key]) FORGE.wait[key] = fetch(`https://api.dofusdb.fr/look?breedId=20&sexe=${sx}${items.map((i) => "&itemIds[]=" + i).join("")}`).then((r) => r.json()).then((t) => {
+    if (typeof t !== "string") return; FORGE.tok[key] = t; document.querySelectorAll(`img[data-fk="${key}"]`).forEach((im) => (im.src = url(t)));
+  }).catch(() => {}); // hors ligne : l'image locale reste
+  return { src: lookLocal("forge", sx, 0), key };
+}
+const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u) return ""; const fb = lookLocal(c.cls, c.sex, c.head || 0);
+  if (typeof u === "object") return `<img class="${cls}" src="${u.src}" data-fk="${u.key}" alt="" loading="lazy">`; // Forgelance recomposé (image locale en attendant)
+  return `<img class="${cls}" src="${u}" alt="" loading="lazy" onerror="if(this.src.indexOf('assets/look')<0){this.src='${fb}'}else{this.style.visibility='hidden'}">`; };
 function lookSheet(c) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return;
   const sx = c.sex === "f" ? "f" : "m";
@@ -198,7 +213,7 @@ function lookSheet(c) {
     <div class="lookprev">${lookImg(c, "lookbig")}</div>
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
-    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec son illustration officielle : une seule tête, ses couleurs d'origine, sans coiffe ni cape visibles.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
     <p class="xs muted">${Object.keys(LK.ITEM_SKINS).length} coiffes et capes apparaissent déjà sur les héros ; les autres arriveront au fil des mises à jour.</p>
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
