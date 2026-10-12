@@ -212,6 +212,7 @@
     goulet_rasboul: ["Trophée de Silf le Rasboul Majeur", "kamas"], bambusaie_damadrya: ["Trophée de Damadrya", "gather"],
     labyrinthe_minotoror: ["Trophée du Minotoror", "hp"], antre_crocabulia: ["Trophée de Crocabulia", "drop"],
     serre_royalmouth: ["Trophée du Royalmouth", "kamas"], repaire_skeunk: ["Trophée de Skeunk", "xp"],
+    chateau_wa_wabbit: ["Trophée du Wa Wabbit", "drop"], terrier_wa_wabbit: ["Trophée du Wa Wobot", "kamas"],
   };
   E.TROPHY_STASIS = 5;
   E.trophyPct = (lvl) => (lvl < 60 ? 1 : lvl < 120 ? 2 : lvl < 160 ? 3 : 4);
@@ -981,8 +982,8 @@
   add("idol100", "Idoles", "Score 100", "Gagner un combat avec un score d'idoles de 100 ou plus.", (S) => (S.cnt.idolBest || 0) >= 100, 5000, { title: "le Téméraire" });
   add("idol200", "Idoles", "Score 200", "Gagner un combat avec un score d'idoles de 200 ou plus.", (S) => (S.cnt.idolBest || 0) >= 200, 20000, { title: "Maître des idoles" });
   /* 0.1.13 : archimonstres et Dofus */
-  [[1, "Première âme", "Capturer l'âme d'un archimonstre avec une Pierre d'âme.", 500, ""], [25, "25 âmes", "Capturer 25 âmes d'archimonstres.", 2500, ""], [100, "100 âmes", "Capturer 100 âmes d'archimonstres.", 10000, "Chasseur d'âmes"], [205, "L'album complet", "Capturer l'âme des 205 archimonstres.", 50000, ""]]
-    .forEach(([n, nm, d, k, t]) => add("soul" + n, "Archimonstres", nm, d, (S) => (S.cnt.souls || 0) >= n, k, t ? { title: t } : {}));
+  [[1, "Première âme", "Capturer l'âme d'un archimonstre avec une Pierre d'âme.", 500, ""], [25, "25 âmes", "Capturer 25 âmes d'archimonstres.", 2500, ""], [100, "100 âmes", "Capturer 100 âmes d'archimonstres.", 10000, "Chasseur d'âmes"], [205, "L'album complet", "Capturer l'âme de tous les archimonstres.", 50000, ""]]
+    .forEach(([n, nm, d, k, t]) => add("soul" + n, "Archimonstres", nm, d, (S) => (S.cnt.souls || 0) >= (n === 205 ? E.ARCHI_TOTAL || n : n), k, t ? { title: t } : {}));
   add("dofus1", "Archimonstres", "Premier Dofus", "Obtenir un Dofus.", (S) => (S.cnt.dofus || 0) >= 1, 2000);
   add("dofus6", "Archimonstres", "Six Dofus portés", "Un héros porte 6 Dofus en même temps.", (S) => S.chars.some((c) => Object.values(c.equip).filter((u) => S.items[u] && ITEMS[S.items[u].tpl] && ITEMS[S.items[u].tpl].dofus).length >= 6), 10000, { title: "Porteur de Dofus" });
   add("dofus18", "Archimonstres", "Gardien des Dofus", "Obtenir les 18 Dofus.", (S) => (S.cnt.dofus || 0) >= 18, 100000, { title: "Gardien des Dofus" });

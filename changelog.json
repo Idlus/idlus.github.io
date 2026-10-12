@@ -1,6 +1,16 @@
 {
-  "version": "0.1.14.1",
+  "version": "0.1.14.2",
   "versions": [
+    {
+      "v": "0.1.14.2",
+      "name": "Île des Wabbits",
+      "items": [
+        "Nouvelle zone : l'Île des Wabbits (niveau 40 à 120, après le Bouftou Royal) avec l'Île de la Cawotte, l'Îlot de la Couronne, l'Îlot des Tombeaux, l'Îlot de Waldo et les Laboratoires abandonnés, 14 monstres, 8 archimonstres et leurs récoltes",
+        "Deux donjons : le Château du Wa Wabbit (niveau 60) et le Terrier du Wa Wabbit (Wa Wobot, niveau 80), avec leurs clés, leurs trophées et 73 nouveaux objets dont 11 panoplies (Wa, Wabbit, Cawotte, Wa Wobot, Wabbit Garou…)",
+        "Le Dofus Cawotte tombe désormais du Wa Wabbit, dans son château, comme dans DOFUS ; sa quête se fait sur l'île",
+        "Les 8 archimonstres de l'île comptent dans l'album (213 âmes) et dans le palier « Cania, Sidimote et Wabbits » d'Éternelle moisson"
+      ]
+    },
     {
       "v": "0.1.14.1",
       "name": "Héros plus malin",

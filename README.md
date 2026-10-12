@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.14.2 « Île des Wabbits » (bêta)
+- Nouvelle zone : l'Île des Wabbits (niveau 40 à 120) et ses deux donjons, le Château du Wa Wabbit et le Terrier du Wa Wabbit ; le Dofus Cawotte tombe du Wa Wabbit et sa quête se fait sur l'île.
+
 ## 0.1.14.1 « Héros plus malin » (bêta)
 - En combat, le héros prépare tout son tour : zone face à un groupe, gros coup sur le boss, élément le moins résisté, coup de grâce.
 
