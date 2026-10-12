@@ -10,7 +10,7 @@ const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITION
 let S = null;
 const ui = {
   tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "jour", az: null, azf: "all", fmSel: null, manualSpell: null,
-  craftJob: "tailleur", craftOnly: false, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
+  craftJob: "tailleur", craftMiss: -1, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.29.1";
+const GAME_VERSION = "0.1.29.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.29.2", name: "Presque fabricable", items: [
+    "Ateliers : le filtre « Fabricables maintenant » devient un menu. Choisissez « Il manque au plus 1, 2 ou 3 ressources » pour voir les recettes qui sont à portée de main",
+    "Avec ce filtre, les recettes sont triées de la plus proche à la plus lointaine, et une étiquette indique combien de ressources il manque (en rouge dans la recette, avec la quantité possédée)",
+  ] },
   { v: "0.1.29.1", name: "Badge du créateur", items: [
     "Xener, le créateur d'Idlus, a maintenant un pseudo doré avec une couronne et l'étiquette « Créateur » : chat, classements, guilde et fiche joueur",
     "Les modérateurs ont une étiquette verte « Modérateur »",
@@ -3571,14 +3575,15 @@ function craftHtml() {
       ? Object.entries(SPECIAL_CRAFTS).filter(([, R]) => !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ special: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }))
       : Object.entries(ITEMS).filter(([, T]) => T.craft && T.craft.job === job).map(([id, T]) => ({ tpl: id, name: T.name, lvl: T.lvl, ing: T.craft.ing, req: E.craftReq(id), T })).sort((a, b) => a.lvl - b.lvl);
     if (q) recipes = recipes.filter((r) => r.name.toLowerCase().includes(q));
-    if (ui.craftOnly) recipes = recipes.filter((r) => E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req);
+    recipes.forEach((r) => { r.miss = r.ing.filter(([n, qq]) => (S.res[n] || 0) < qq).length; });
+    if (ui.craftMiss >= 0) recipes = recipes.filter((r) => r.miss <= ui.craftMiss && J.lvl >= r.req).sort((a, b) => a.miss - b.miss || b.lvl - a.lvl);
     const total = recipes.length; recipes = recipes.slice(0, 80);
     body = `<nav class="subtabs" style="margin:0">${Object.entries(CRAFT_JOBS).map(([id, c]) => `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}">${c.name} <span class="num xs">${(S.crafts[id] || {}).lvl || 1}</span></button>`).join("")}</nav>
       <div class="row"><div class="bar xp" style="width:200px"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><input type="text" id="craftSearch" data-act="craftsearch" placeholder="Rechercher…" value="${h(ui.craftSearch)}" style="max-width:200px">
-        <label class="row small"><input type="checkbox" data-act="craftonly" ${ui.craftOnly ? "checked" : ""}> Fabricables maintenant</label><span class="xs muted">${total} recette${total > 1 ? "s" : ""}</span></div>
+        <select data-act="craftmiss" style="max-width:290px" data-tip="Affiche les recettes auxquelles il manque au plus ce nombre de ressources différentes (niveau de métier atteint)">${[[-1, "Toutes les recettes"], [0, "Fabricables maintenant"], [1, "Il manque au plus 1 ressource"], [2, "Il manque au plus 2 ressources"], [3, "Il manque au plus 3 ressources"]].map(([v, l]) => `<option value="${v}" ${ui.craftMiss === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="xs muted">${total} recette${total > 1 ? "s" : ""}</span></div>
       <section class="panel"><div class="list">${recipes.map((r) => { const ok = E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req;
         const stats = r.T ? Object.entries(r.T.stats).map(([k, [a, b]]) => `${a === b ? a : a + " à " + b} ${STATS[k].short}`).join(", ") : (E.isKey(r.special) ? "Clé de donjon" : "Objet spécial");
-        return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span> <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
+        return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span>${ui.craftMiss > 0 && r.miss ? ` <span class="tag warn">il manque ${r.miss} ressource${r.miss > 1 ? "s" : ""}</span>` : ""} <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
           <span class="row" style="gap:4px"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? G("cart") + " ✓" : G("cart")}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button></span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
   return body;
 }
@@ -4903,7 +4908,7 @@ document.addEventListener("click", (ev) => {
     case "searchclose": if (t.id === "wsearch" && ev.target !== t) return; searchClose(); return;
     case "searchgo": { const r = wsRes[+d.i]; if (r) searchGo(r); return; }
     case "searchfill": case "searchfill2": closeSheet(); searchOpen(d.q); searchRender(); return;
-    case "searchcraft": ui.craftJob = d.job; ui.craftSearch = d.q || ""; ui.craftOnly = false; pageGo("craft"); return;
+    case "searchcraft": ui.craftJob = d.job; ui.craftSearch = d.q || ""; ui.craftMiss = -1; pageGo("craft"); return;
     case "searchdg": dungeonSheet(d.id); return;
     case "searchzone": closeSheet(); ui.zoneView = d.id; ui.tab = "world"; render(); window.scrollTo(0, 0); return;
     case "searchinv": closeSheet(); ui.tab = "inv"; ui.inv = "items"; ui.invSel = d.tpl; ui.slotFilter = "all"; render(); window.scrollTo(0, 0); return;
@@ -5143,7 +5148,6 @@ document.addEventListener("click", (ev) => {
     case "sellitem": { const p = E.sellItem(S, +d.uid); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
     case "sellres": { const p = E.sellRes(S, d.n, +d.q); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
     case "craftjob": ui.craftJob = d.v; break;
-    case "craftonly": ui.craftOnly = t.checked; break;
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
     case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
@@ -5200,7 +5204,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setwing") { E.setWing(S, +t.dataset.id, t.value); }
   else if (a === "focus") ui.focus = t.value;
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
-  else if (a === "craftonly") ui.craftOnly = t.checked;
+  else if (a === "craftmiss") ui.craftMiss = +t.value;
   else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
