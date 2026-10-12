@@ -617,8 +617,8 @@
   E.setPlaceAuto = (S, on) => { S.placeAuto = !!on; if (!on) { const cur = E.frontSet(Object.assign({}, S, { placeAuto: true })); E.team(S).forEach((x) => (x.row = cur.has(x.id) ? "f" : "b")); } };
   /* monstres à mécanique spéciale : le Rôdeur vise l'arrière, le Bondisseur ignore les rangées */
   E.MON_ROLES = {
-    rodeur: { name: "Rôdeur", desc: "Vise l'arrière 3 fois sur 4.", re: /Archer|Furtif|Invisible|Corbac|Assassin|Fourbe|Sournois|Ninja/ },
-    bond:   { name: "Bondisseur", desc: "Ignore les rangées : frappe n'importe quel héros.", re: /^Tofu|Moskito|Kwak(ere)? de Vent|Pious|Bondi|Lapino/ },
+    rodeur: { name: "Rôdeur", desc: "Vise l'arrière 3 fois sur 4.", re: /Archer|Furtif|Invisible|Corbac|Assassin|Fourbe|Sournois|Ninja|Vigie pirate|Harpirate|Marôdeur|Éperfide|Chevrotine|Sapeur|Tsume-bozu|Harpille|Nocturlabe|Paspartou|Doublure/ }, /* 0.1 : Rôdeurs et Bondisseurs de fin de jeu (niv. 150-200) */
+    bond:   { name: "Bondisseur", desc: "Ignore les rangées : frappe n'importe quel héros.", re: /^Tofu|Moskito|Kwak(ere)? de Vent|Pious|Bondi|Lapino|Bitouf Aérien|Glouragan|Vindeux|Kanihilan|Panterreur|Morfrelon|Rykaon|Wolvero|Lévitrof|Fancrôme/ },
     /* 0.1 : dix rôles de plus ; les plus simples dès le niveau 25, les autres dès le niveau 100 */
     kamikaze: { name: "Kamikaze", min: 100, desc: "En mourant, explose sur la première ligne.", re: /Explosif|Boumbardier|Pétartifoux|Kamikabz|Craqueboule|Tofukaz|Boombata|Cramikaz|Mécanofoux|Crachefoux|Déminoboule|Canondorf|Bomb/ },
     soigneur: { name: "Soigneur", min: 100, desc: "Tous les 2 tours, soigne l'allié le plus blessé (10 % de ses PV).", re: /Soignante|Shamansot|Meupette|Prêtre|Toubibz|Médibwork|Kokom|Guérisseur|Docteur|Madura|Soryo|Gélikan|Chaman|Fleuro|Floribonde|Mère Veilleuse|Meliglours/ },
