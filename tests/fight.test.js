@@ -52,3 +52,33 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.ok(c.pts < E.pointCost(main, c.alloc[main]) && total(c) === 195, "le retour en automatique ne dépense pas les points");
   console.log("ok - répartition manuelle et retour en automatique");
 }
+
+// 0.1 : chaque mécanique de boss tourne jusqu'au bout sans erreur
+{
+  const realMechs = E.bossMechs, realUnl = E.dungeonUnlocked;
+  E.dungeonUnlocked = () => true;
+  const did = "labo_nileza"; const dg = D.DUNGEONS[did];
+  for (const k of Object.keys(E.BOSS_MECHS)) {
+    E.bossMechs = () => [k];
+    const S2 = E.newState("Test", "iop"); S2.chars = [];
+    ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S2, c, "H" + i, 190); x.inTeam = true; E.refreshSpells(x, E.charStats(S2, x)); });
+    S2.res[dg.key] = 1; assert.strictEqual(E.enterDungeon(S2, did, 1), null, `${k} : entrée impossible`);
+    S2.dungeon.room = dg.rooms.length; E.startFight(S2); const F = S2.fight;
+    assert.ok(F.ents.some((e) => e.mech && e.mech.includes(k)), `${k} : mécanique absente`);
+    let n = 0; while (!F.over && n++ < 20000) E.step(S2);
+    assert.ok(F.over, `${k} : le combat ne se termine pas`);
+    for (const e of F.ents) assert.ok(Number.isFinite(e.hp), `${k} : PV invalides pour ${e.name}`);
+  }
+  E.bossMechs = realMechs; E.dungeonUnlocked = realUnl;
+  console.log(`ok - ${Object.keys(E.BOSS_MECHS).length} mécaniques de boss jouées jusqu'au bout`);
+}
+// 0.1 : rôles des monstres en chasse de haut niveau
+{
+  const sub = Object.values(E.SUBS).find((s) => s.lvl[0] >= 150 && s.monsters.some((m) => E.monRole(m, 200)));
+  const S3 = E.newState("Test", "iop"); S3.chars = [];
+  ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S3, c, "H" + i, 190); x.inTeam = true; E.refreshSpells(x, E.charStats(S3, x)); });
+  E.subUnlocked = () => true; E.startHunt(S3, sub.id);
+  for (let t = 0; t < 5 * 60 * 1000; t += 250) E.tick(S3, 250);
+  assert.ok(S3.stats.fights > 0, "aucun combat de haut niveau");
+  console.log(`ok - chasse de haut niveau (${sub.name}) : ${S3.stats.wins}/${S3.stats.fights} victoires`);
+}
