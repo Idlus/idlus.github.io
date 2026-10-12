@@ -16,9 +16,15 @@ const ui = {
 const BETA = /\/beta\//.test(location.pathname);
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.24.2";
+const GAME_VERSION = "0.1.24.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.24.3", name: "Chasser à son rythme", items: [
+    "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
+    "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",
+    "Les héros ne lancent plus de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans attaquer, jusqu'à la retraite au tour 60)",
+    "Sans équipement, on perd toujours souvent à partir des zones 32-40"
+  ] },
   { v: "0.1.24.2", name: "Percepteurs à 5 %", items: [
     "Les Percepteurs ramassent 5 % de ce qu'on gagnerait dans leur zone au lieu de 3 % : la poche est toujours pleine en 12 h, mais elle contient deux tiers de kamas et de ressources en plus",
   ] },
