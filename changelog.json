@@ -1,6 +1,16 @@
 {
-  "version": "0.1.24.2",
+  "version": "0.1.24.3",
   "versions": [
+    {
+      "v": "0.1.24.3",
+      "name": "Chasser à son rythme",
+      "items": [
+        "Chasse : une équipe bien équipée ne perd presque plus jamais, quel que soit le nombre de héros (simulation : 0 à 3 % de défaites en solo, en duo et à 4, du niveau 26 au niveau 200 ; avant, jusqu'à 68 % en solo et 21 % en duo)",
+        "Bonus « petit groupe » en chasse : solo +70 % de PV et −40 % de dégâts subis, duo +30 % et −20 %, trio +10 % et −5 % ; face à un ou deux héros, les monstres gardent aussi moins de leur renfort de niveau. Les gains par monstre suivent : à 4 héros, on gagne toujours le plus",
+        "Les héros ne lancent plus de sort de soin quand personne n'est blessé (un Crâ seul relançait Flèches Amoureuses en boucle sans attaquer, jusqu'à la retraite au tour 60)",
+        "Sans équipement, on perd toujours souvent à partir des zones 32-40"
+      ]
+    },
     {
       "v": "0.1.24.2",
       "name": "Percepteurs à 5 %",

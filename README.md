@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.24.3 « Chasser à son rythme » (bêta)
+- Mathis : en chasse, bien équipé, on ne doit presque jamais perdre, quel que soit le nombre de héros. Simulation avant : solo bien équipé 35-68 % de défaites, duo 8-21 %. Nouveau `E.HUNT_SMALL` (solo/duo/trio : PV en plus, `smallDr`, et `mon` = part du renfort `E.MON_POW` gardée par les monstres, aussi dans `E.powRew` donc les gains par monstre suivent ; jamais en donjon ni en expédition). IA : un sort de soin sans condition n'est plus lancé si aucun héros n'est sous 80 % de PV (`charTurn`). Après : 0-2,6 % de défaites bien équipé (solo, duo, trio, 4), sans équipement 23-87 % dès les zones 32-40 ; kamas/h solo < duo < 4 héros.
+
 ## 0.1.24.2 « Percepteurs à 5 % » (bêta)
 - Demande de Mathis : `E.PERCO_RATE` passe de 3 à 5 % ; `E.percoCap` en dépend (kamas et ressources ×5/3), `supabase/percos_data.sql` régénéré par `node tools/build_percos.js`. Poche toujours pleine en 12 h.
 
