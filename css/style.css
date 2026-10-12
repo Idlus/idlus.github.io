@@ -1215,3 +1215,56 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .reduced .arena.shake2{animation:none}
 @media (prefers-reduced-motion:reduce){.arena.v2 .ent>.sc{animation:none;transform:translateX(-50%) scaleY(.3)}}
 .arena.v2 .ent.hero .lookwrap{position:relative}
+/* passifs de classe visibles (lot 2) */
+.ent .psv{position:absolute;inset:0;pointer-events:none;z-index:3}
+.psv>*{position:absolute;left:50%;transform:translateX(-50%)}
+.psv .pvg{top:-4px;display:flex;gap:2px;animation:pop .25s ease-out}
+.psv .pvg i{width:7px;height:10px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);border-radius:50% 50% 45% 45%/60% 60% 40% 40%;transition:background .2s,box-shadow .2s}
+.psv .pvg i.on{background:var(--c);border-color:#fff;box-shadow:0 0 6px var(--c)}
+.psv .pvg.round i{width:8px;height:8px;border-radius:50%}
+.psv .clk{top:-14px;width:30px;height:30px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.psv .clk line{transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.psv .zzz{top:-6px;font-family:var(--font-title);font-size:15px;color:#cfe3ff;text-shadow:0 0 6px #000;animation:axzzz 1.6s ease-in-out infinite}
+@keyframes axzzz{50%{transform:translate(-30%,-6px);opacity:.6}}
+.psv .pvc{top:-6px;white-space:nowrap;font-size:9.5px;font-weight:900;padding:1px 6px;border-radius:999px;background:rgba(10,10,10,.8);border:1.5px solid var(--c);color:#fff;box-shadow:0 0 8px var(--c);animation:pop .25s ease-out}
+.psv .msk{top:14%;width:34px;height:22px;border-radius:40% 40% 55% 55%/45% 45% 60% 60%;border:2px solid #fff;display:grid;place-items:end center;font-size:7.5px;font-weight:900;color:#fff;text-shadow:0 1px 1px #000;padding-bottom:1px;animation:axmask .45s ease-out}
+.psv .msk::before,.psv .msk::after{content:"";position:absolute;top:5px;width:8px;height:5px;background:#111;border-radius:50%}
+.psv .msk::before{left:5px}.psv .msk::after{right:5px}
+.psv .msk.atk{background:#d23b3b;box-shadow:0 0 10px #ff5050}.psv .msk.def{background:#2f6fc0;box-shadow:0 0 10px #4fa8ff}.psv .msk.soin{background:#3fa34d;box-shadow:0 0 10px #7be08a}
+@keyframes axmask{0%{transform:translateX(-50%) rotateY(90deg)}100%{transform:translateX(-50%) rotateY(0)}}
+.psv .hrn{top:50%;width:84px;height:84px;margin-top:-42px;margin-left:-42px;transform:none;animation:orbit 4s linear infinite}
+.psv .hrn i{position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5.5px;transform:rotate(var(--a)) translateY(-40px) rotate(45deg);border-radius:3px;background:rgba(0,0,0,.5);border:2px solid var(--c);transition:background .2s,box-shadow .2s}
+.psv .hrn i.on{background:var(--c);box-shadow:0 0 10px var(--c)}
+@keyframes orbit{to{transform:rotate(360deg)}}
+.psv .rmp{bottom:4%;left:68%;width:24px;height:30px;border-radius:5px 5px 50% 50%;border:2px solid #fff;background:linear-gradient(180deg,#7fb0e6,#2f5f9a);box-shadow:0 0 12px #4fa8ff;animation:pop .35s ease-out}
+.psv .ptl{bottom:6%;width:12px;height:40px;border-radius:50%;border:2px solid #6ff0e6;background:radial-gradient(closest-side,rgba(10,30,40,.7),rgba(111,240,230,.3));box-shadow:0 0 10px #6ff0e6;animation:pop .3s ease-out}
+.psv .ptl.l{left:12%}.psv .ptl.r{left:88%}
+.arena.v2 .ent[data-pv="burn"] .look{filter:drop-shadow(0 0 4px #ffb347) drop-shadow(0 0 12px rgba(255,90,30,.9));animation:axburn .35s ease-in-out infinite alternate}
+@keyframes axburn{to{filter:drop-shadow(0 0 6px #ffd27a) drop-shadow(0 0 18px rgba(255,90,30,1))}}
+.arena.v2 .ent[data-pv="lance"] .look{filter:drop-shadow(0 0 3px #ff8a6a) drop-shadow(0 0 9px rgba(224,56,43,.75))}
+.arena.v2 .ent[data-pv="suf"] .look{filter:drop-shadow(0 0 calc(var(--suf) * 12px) rgba(230,30,30,calc(.2 + var(--suf) * .8)))}
+.arena.v2 .ent[data-pv="sway"] .look{transform-origin:50% 100%;animation:axsway 1.4s ease-in-out infinite}
+@keyframes axsway{0%,100%{transform:rotate(calc(var(--sw) * -1))}50%{transform:rotate(var(--sw))}}
+.arena.v2 .ent[data-pv="sleep"] .look{transform-origin:50% 100%;transform:rotate(-8deg);filter:brightness(.85)}
+/* glyphe du Féca sous toute l'équipe */
+.arena.v2 .ent>.gly{position:absolute;left:50%;bottom:calc(var(--plate) - var(--w) * .45);width:calc(var(--w) * .9);aspect-ratio:1;border-radius:50%;z-index:-1;pointer-events:none;display:none;transform:translateX(-50%) scaleY(.3);border:3px solid var(--gc);background:radial-gradient(closest-side,transparent 55%,color-mix(in srgb,var(--gc) 40%,transparent));box-shadow:0 0 12px var(--gc)}
+.arena.v2.axon[data-glyph] .ent.hero:not(.dead)>.gly{display:block}
+.arena.v2[data-glyph="prot"]{--gc:#4fa8ff}.arena.v2[data-glyph="renvoi"]{--gc:#ff9a3c}.arena.v2[data-glyph="soin"]{--gc:#6fe07a}
+.ent>.gly.gpop{animation:axgpop .5s ease-out}
+@keyframes axgpop{0%{opacity:0;transform:translateX(-50%) scaleY(.3) scale(.3)}100%{opacity:1;transform:translateX(-50%) scaleY(.3) scale(1)}}
+/* marques sur les monstres */
+.ent>.vis,.ent>.prey{position:absolute;left:50%;top:32%;pointer-events:none;display:none;z-index:4}
+.ent.crm>.vis{display:block;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid #ff4d4d;box-shadow:0 0 8px #ff4d4d;background:linear-gradient(#ff4d4d,#ff4d4d) center/2px 100% no-repeat,linear-gradient(#ff4d4d,#ff4d4d) center/100% 2px no-repeat;opacity:.85;animation:axvis 1.2s ease-in-out infinite}
+@keyframes axvis{50%{transform:scale(.85) rotate(45deg)}}
+.ent.prm>.prey{display:block;top:18%;left:78%;width:22px;height:20px;transform:translate(-50%,-50%) scale(var(--prey,1));transition:transform .25s;background:radial-gradient(circle at 50% 30%,#fff 0 18%,transparent 20%),conic-gradient(from 150deg at 50% 0,#fff 0 60deg,transparent 60deg);border-radius:4px 4px 50% 50%;filter:drop-shadow(0 0 4px #e0382b) drop-shadow(0 0 2px #e0382b)}
+/* roue de l'Ecaflip, sac de trésor de l'Enutrof */
+.axwheel{position:absolute;left:50%;top:6%;width:96px;height:96px;transform:translateX(-50%);z-index:7;pointer-events:none}
+.axwheel .disc{width:100%;height:100%;border-radius:50%;border:4px solid #f1cf6e;box-shadow:0 0 18px rgba(241,207,110,.7);background:conic-gradient(#3fa34d 0 144deg,#2f86d6 144deg 288deg,#ffd84d 288deg 324deg,#666 324deg 360deg);position:relative}
+.axwheel .disc b{position:absolute;left:50%;top:50%;font-size:10px;font-weight:900;color:#fff;text-shadow:0 1px 2px #000;transform:translate(-50%,-50%) rotate(var(--a)) translateY(-28px)}
+.axwheel .ptr{position:absolute;left:50%;top:-10px;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-top:15px solid #fff;filter:drop-shadow(0 2px 2px #000);z-index:2}
+.axwres{position:absolute;left:50%;top:104%;transform:translateX(-50%);white-space:nowrap;font-weight:900;font-size:12px;padding:2px 9px;border-radius:999px;background:rgba(10,14,8,.9);border:1.5px solid #3fa34d;color:#fff;animation:pop .25s ease-out}
+.axwres.jp{border-color:#ffd84d;box-shadow:0 0 12px #ffd84d}.axwres.ko{border-color:#999}
+.axp.bag{width:22px;height:22px;border-radius:40% 40% 50% 50%;background:radial-gradient(circle at 40% 35%,#d9a35a,#8a5a22 70%);border:2px solid #5a3a14;box-shadow:0 0 10px #ffd84d;z-index:3}
+.axp.bag::before{content:"";position:absolute;left:50%;top:-6px;width:10px;height:6px;transform:translateX(-50%);background:#5a3a14;border-radius:3px 3px 0 0}
+@media (prefers-reduced-motion:reduce){.psv .hrn,.psv .zzz,.ent.crm>.vis,.arena.v2 .ent[data-pv] .look{animation:none}}
+.reduced .psv .hrn,.reduced .psv .zzz,.reduced .ent.crm>.vis,.reduced .arena.v2 .ent[data-pv] .look{animation:none}
