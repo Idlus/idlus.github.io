@@ -48,6 +48,8 @@ const ROLES = [
   { key: "creator", name: "Créateur", color: 0xf0c35a, hoist: true },
   { key: "mod", name: "Modérateur", color: 0x5ab4f0, hoist: true, mentionable: true },
   { key: "tester", name: "Testeur", color: 0x7bd389 },
+  // donné à la main aux testeurs actifs : au lancement du multijoueur, il débloque le titre « Pionnier d'Idlus » et l'ornement « Pousse du Pionnier »
+  { key: "pioneer", name: "Pionnier", color: 0x9bd84a, hoist: true },
   { key: "notif", name: "Notif mises à jour", color: 0, mentionable: true },
 ];
 // lock : lecture seule pour @everyone ; only : visible seulement par ces rôles
