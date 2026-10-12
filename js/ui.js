@@ -864,7 +864,8 @@ function keyPanel(did) {
   return `<div class="keypanel">${head}
       <div class="kp-btns"><button class="btn sm ${can ? "primary" : ""}" data-act="dgcraftkey" data-id="${did}" ${can ? "" : "disabled"}>${IC("metiers")} Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="special" data-id="${h(dg.key)}" data-tip="Suivre les ingrédients dans la liste de courses (Accueil)">${G("cart")}${pinned ? " ✓" : ""}</button></div></div>
     <div class="kp-prog"><div class="bar"><i style="width:${pct(ok, ing.length)}%"></i></div><span class="xs num">${ok}/${ing.length} ingrédients</span>${eta}</div>
-    <div class="kp-grid">${ing.map((x) => { const done = x.have >= x.q; return `<div class="kp-ing ${done ? "ok" : ""}">${im(resImg(x.r), "kp-rico", x.r)}<div class="kp-it"><span class="kp-n" title="${h(x.r)}">${h(x.r)}</span><span class="kp-q num">${fmt(Math.min(x.have, x.q))}/${x.q}${done ? " ✓" : ""}</span>${done ? "" : keySource(x.r)}</div></div>`; }).join("")}</div>
+    <div class="kp-list">${ing.filter((x) => x.have < x.q).map((x) => `<div class="kp-ing">${im(resImg(x.r), "kp-rico", x.r)}<span class="kp-n">${h(x.r)}</span><span class="kp-q num">${fmt(x.have)}/${x.q}</span><span class="kp-src">${keySource(x.r)}</span></div>`).join("")}</div>
+    ${ok ? `<div class="kp-done"><span class="xs muted">Déjà réunis :</span>${ing.filter((x) => x.have >= x.q).map((x) => `<span class="kp-chip">${im(resImg(x.r), "", x.r)}${h(x.r)} ✓</span>`).join("")}</div>` : ""}
     ${sub && dg.keyDrop ? `<div class="xs muted">La clé tombe aussi parfois sur les monstres de <b>${h(sub.name)}</b>.</div>` : ""}
   </div>`;
 }
