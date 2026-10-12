@@ -809,7 +809,7 @@ function flashLeft() { const m = Math.max(1, Math.ceil((E.flashEnd() - Date.now(
 function flashBanner() {
   const L = E.flash(S); if (!L.length) return "";
   const N = E.flash(S, E.flashEnd()); const rew = Math.round((E.FLASH_REW - 1) * 100);
-  const row = (x) => { const dg = DUNGEONS[x.did]; const M = E.STASIS_MODS[x.mod]; return `<button class="fl-row" data-act="dgopen" data-id="${x.did}">${im(imgM(dg.boss), "fl-ico", MONSTERS[dg.boss].name)}<span class="fl-t"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl}${x.tier ? ` · ${x.tier}` : ""}</span></span><span class="fl-mod" data-tip="${h(M.desc)}">${h(M.name)}</span></button>`; };
+  const row = (x) => { const dg = DUNGEONS[x.did]; const M = E.STASIS_MODS[x.mod]; const un = E.dungeonUnlocked(S, x.did); return `<button class="fl-row ${un ? "" : "locked"}" data-act="dgopen" data-id="${x.did}">${im(imgM(dg.boss), "fl-ico", MONSTERS[dg.boss].name)}<span class="fl-t"><b>${h(dg.name)}</b><span class="xs muted">${un ? "" : `${G("lock")} `}niv. ${dg.lvl} · ${x.tier}</span></span><span class="fl-mod" data-tip="${h(M.desc)}">${h(M.name)}</span></button>`; };
   return `<div class="flash"><div class="fl-head"><span class="wk">${G("bolt")} Mutateur éclair</span><span class="xs"><b class="fl-rew">+${rew} %</b> XP et butin · change dans <b>${flashLeft()}</b></span></div>
     <div class="fl-list">${L.map(row).join("")}</div>
     ${N.length ? `<div class="xs muted fl-next">Ensuite : ${N.map((x) => `${h(DUNGEONS[x.did].name)} (${h(E.STASIS_MODS[x.mod].name)})`).join(" · ")}</div>` : ""}</div>`;
@@ -851,7 +851,7 @@ function dungeonSheet(did) {
   const loot = (B.items || []).filter(([t]) => ITEMS[t]).slice(0, 12).map(([t, r]) => { const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(ITEMS[t].name)} · niv. ${ITEMS[t].lvl}${own ? " · déjà obtenu" : ""}">${im(itemImg(t), "", ITEMS[t].name)}</span>`; }).join("");
   const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
   const W = E.weekly(S); const wk = W && W.did === did ? E.STASIS_MODS[W.mod] : null;
-  const FL = E.flashOf(S, did); const fl = FL ? E.STASIS_MODS[FL.mod] : null;
+  const FL = wk ? null : E.flashOf(S, did); const fl = FL ? E.STASIS_MODS[FL.mod] : null;
   const chainMax = Math.max(1, keys); const chainOpts = [1, 3, 5, 10].filter((x) => x === 1 || x <= chainMax);
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">

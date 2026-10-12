@@ -808,32 +808,26 @@
     S.weekly = { w, did: pool[x % pool.length], mod: mods[(x >>> 8) % mods.length] };
     return S.weekly;
   };
-  /* Mutateur éclair (0.1) : toutes les 20 minutes, 3 donjons (bas, milieu et haut de vos niveaux) reçoivent un modificateur
+  /* Mutateur éclair (0.1) : toutes les 20 minutes, 3 donjons (niveaux 1-79, 80-149, 150-200) reçoivent un modificateur
      et donnent un petit bonus. Une course commencée garde son bonus jusqu'au bout. Les donjons ne tournent pas hors ligne. */
   E.FLASH_MS = 20 * 60000; E.FLASH_REW = 1.12; E.FLASH_DUST = 1.25;
   E.FLASH_MODS = ["enrages", "blindes", "vampires", "nombreux", "champions", "ruse", "renforts"];
   E.flashIdx = (t = Date.now()) => Math.floor(t / E.FLASH_MS);
   E.flashEnd = (t = Date.now()) => (E.flashIdx(t) + 1) * E.FLASH_MS;
+  /* Tranches fixes, identiques pour tous les joueurs (Mathis, 0.1) */
+  E.FLASH_TIERS = [["bas", 1, 79], ["milieu", 80, 149], ["haut", 150, 200]];
   const flashCache = {};
   E.flash = (S, t = Date.now()) => {
-    const f = E.flashIdx(t); const ids = Object.keys(DUNGEONS).sort().filter((d) => E.dungeonUnlocked(S, d)); if (!ids.length) return [];
-    const top = Math.max(...S.chars.map((c) => c.lvl)); const W = E.weekly(S, t);
-    const ck = f + "|" + top + "|" + Math.min(...S.chars.map((c) => c.lvl)) + "|" + ids.length + "|" + (W ? W.did : ""); if (flashCache.k === ck) return flashCache.v;
-    /* de votre héros le plus faible (−25 niveaux) au plus fort (+5) ; au moins les 6 plus hauts donjons accessibles */
-    const lo = Math.min(...S.chars.map((c) => c.lvl)) - 25;
-    let pool = ids.filter((d) => DUNGEONS[d].lvl <= top + 5 && !(W && W.did === d)); if (!pool.length) pool = ids.filter((d) => !(W && W.did === d));
-    pool.sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || (a < b ? -1 : 1));
-    pool = pool.filter((d, i) => DUNGEONS[d].lvl >= lo || i >= pool.length - 6);
-    const n = Math.min(3, pool.length); const out = [];
+    const f = E.flashIdx(t); if (flashCache.k === f) return flashCache.v;
+    const ids = Object.keys(DUNGEONS).sort();
     let x = Math.imul(f ^ 0x7f4a7c15, 0x85ebca6b) >>> 0;
-    const mods = E.FLASH_MODS.slice();
-    for (let i = 0; i < n; i++) {
+    const mods = E.FLASH_MODS.slice(); const out = [];
+    for (const [tier, lo, hi] of E.FLASH_TIERS) {
+      const pool = ids.filter((d) => DUNGEONS[d].lvl >= lo && DUNGEONS[d].lvl <= hi); if (!pool.length) continue;
       x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; x = Math.imul(x ^ (x >>> 16), 0x27d4eb2f) >>> 0;
-      const a = Math.floor(pool.length * i / n), b = Math.floor(pool.length * (i + 1) / n);
-      const did = pool[a + x % (b - a)]; const mod = mods.splice((x >>> 8) % mods.length, 1)[0];
-      out.push({ did, mod, tier: n === 3 ? ["bas", "milieu", "haut"][i] : null });
+      out.push({ did: pool[x % pool.length], mod: mods.splice((x >>> 8) % mods.length, 1)[0], tier });
     }
-    flashCache.k = ck; flashCache.v = out;
+    flashCache.k = f; flashCache.v = out;
     return out;
   };
   E.flashOf = (S, did, t) => E.flash(S, t).find((x) => x.did === did) || null;
@@ -2052,7 +2046,7 @@
     if (S.dungeon) return "Vous êtes déjà en donjon.";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
-    const W = E.weekly(S); const FL = E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
+    const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
       mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
     SI.sel = k;

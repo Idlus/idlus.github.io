@@ -86,8 +86,8 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
 {
   const realUnl = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
   const S4 = E.newState("Test", "iop"); S4.chars = [];
-  ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S4, c, "H" + i, 120 + i * 20); x.inTeam = true; E.refreshSpells(x, E.charStats(S4, x)); });
   const L = E.flash(S4); assert.strictEqual(L.length, 3, "le mutateur éclair doit proposer 3 donjons");
+  E.FLASH_TIERS.forEach(([, lo, hi], i) => assert.ok(D.DUNGEONS[L[i].did].lvl >= lo && D.DUNGEONS[L[i].did].lvl <= hi, "donjon hors de sa tranche"));
   assert.ok(new Set(L.map((x) => x.mod)).size === 3, "3 modificateurs différents");
   const realFlash = E.flash;
   for (const mod of E.FLASH_MODS) {
