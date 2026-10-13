@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.40.2 « Équipe rangée » (bêta 0.1.40)
+Page Équipe et héros refaite (maquette validée par Mathis, réponses 1A à 10A) : `renderTeam` affiche `teamTopHtml` (titre, compositions en puces, Idoles, Âmes, Partager), la liste `teamListHtml`/`teamRow` (groupes Première ligne, Arrière, Réserve, ligne dorée « Recruter un héros ») et la fiche `heroesHtml` (bannière `.hban` à la couleur de classe avec le symbole en filigrane, menu `ui.heroMore`, onglets `.htabs` collés). Au téléphone, `ui.tview` = "list" ou "hero". Les grandes cartes `teamCard` et la colonne de têtes `heroRail` (0.1.32.1) disparaissent ; ↑ ↓ suivent l'ordre de la liste. Le placement passe dans « Réorganiser » avec les compositions. Correctif : `.tag.soft` illisible en Émeraude.
+
 ## 0.1.40.1 « Annonces pour tous »
 Bandeau d'annonce (js/chat.js) : `banner()` n'était appelé qu'au lancement et à l'arrivée d'une annonce dans le chat (temps réel). Il est maintenant relu toutes les 2 minutes : une annonce « bandeau seul » atteint les joueurs déjà connectés, et un bandeau expiré disparaît sans recharger.
 
