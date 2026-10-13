@@ -1,6 +1,14 @@
 {
-  "version": "0.1.46.5",
+  "version": "0.1.46.6",
   "versions": [
+    {
+      "v": "0.1.46.6",
+      "name": "Bon élément",
+      "items": [
+        "« Meilleur objet » (pastille verte, ordre de la liste, « Équiper au mieux ») suit mieux l'élément du héros : les caractéristiques et dommages d'un autre élément ne comptent presque plus (un Enutrof Eau ne réclame plus la panoplie du Bouftou Royal pour sa Force)",
+        "Pour un héros réparti à la main, l'élément retenu est celui où il a mis le plus de points"
+      ]
+    },
     {
       "v": "0.1.46.5",
       "name": "Sablier économe",
