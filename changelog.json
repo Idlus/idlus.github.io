@@ -1,6 +1,14 @@
 {
-  "version": "0.1.33.1",
+  "version": "0.1.33.2",
   "versions": [
+    {
+      "v": "0.1.33.2",
+      "name": "Hauts faits à part",
+      "items": [
+        "Chat : nouvel onglet « Hauts faits ». Les records de stasis, exploits, niveaux 200, Renaissances et Dofus obtenus y sont rangés et ne remplissent plus le chat Général",
+        "Les annonces officielles restent dans le Général"
+      ]
+    },
     {
       "v": "0.1.33.1",
       "name": "Chat libre",
