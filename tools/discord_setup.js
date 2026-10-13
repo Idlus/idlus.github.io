@@ -19,6 +19,8 @@ Les nouveautés y arrivent en premier, à tester hors ligne avant leur sortie.
 🗳️ Donne ton avis sur la suite dans <#POLLS> et montre tes héros dans <#SHOTS>.
 🗺️ Ce qui est prêt et ce qui arrive : <#ROADMAP>.
 
+🧪 **Rôle Testeur, c'est toi qui choisis** : clique sur **Salons et rôles** tout en haut de la liste des salons, puis coche ou décoche « Tester les nouveautés en avant-première ». Ce rôle ouvre les salons de la version de test et te prévient de ses nouveautés. Tu peux changer d'avis quand tu veux, pareil pour 🔔 « Être prévenu à chaque mise à jour ».
+
 *idlus est un projet de fan non officiel, sans lien avec Ankama.*`;
 const RULES = `# Règles du serveur
 **1.** Respecte tout le monde : pas d'insultes, de harcèlement ni de propos discriminatoires.
@@ -174,7 +176,7 @@ async function main() {
     const visible = PLAN.filter((s) => !s.only).flatMap((s) => s.chans).filter((c) => c.type !== VOICE).map((c) => ids[c.key]);
     let seq = 0n; const sid = () => String(((BigInt(Date.now()) - 1420070400000n) << 22n) + seq++); // Discord exige un identifiant pour chaque question et réponse
     await api("PUT", `/guilds/${gid}/onboarding`, { enabled: true, mode: 0, default_channel_ids: visible, prompts: [{
-      id: sid(), type: 0, title: "Qu'est-ce qui t'intéresse ?", single_select: false, required: false, in_onboarding: true, options: [
+      id: sid(), type: 0, title: "Tes rôles (modifiables à tout moment dans Salons et rôles)", single_select: false, required: false, in_onboarding: true, options: [
         { id: sid(), title: "Tester les nouveautés en avant-première", description: "Accès aux salons de la version de test", emoji: { name: "🧪" }, role_ids: [roles.tester], channel_ids: [] },
         { id: sid(), title: "Être prévenu à chaque mise à jour", description: "Une mention à chaque nouvelle version", emoji: { name: "🔔" }, role_ids: [roles.notif], channel_ids: [] } ] }] });
     console.log("Accueil des nouveaux configuré (choix des rôles à l'arrivée).");
