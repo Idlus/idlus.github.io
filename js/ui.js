@@ -31,6 +31,7 @@ const CHANGELOG = [
     "Les Dofus ne s'obtiennent plus que par leur quête et en butin du boss : la copie chez le Bricoleur disparaît (les copies déjà fabriquées sont gardées)",
     "Nouveau succès « Tous les Dofus » (les 31) avec le titre « Seigneur des Dofus »",
     "Arrivés juste avant la 1.0 : les Commandes du jour (ressources payées selon le niveau de ton meilleur héros), la boutique de la maison au Havre-Sac, l'agrandissement des pièces et l'Autel des Douze qui relève les plafonds de bonus (XP et butin jusqu'à +250 %, kamas jusqu'à +275 %)",
+    "Quête principale : l'étape du Mantiscore (zone de Saharach fermée à ce moment-là) devient la Reine Nyée, faisable dans l'ordre",
   ] },
   { v: "0.1.57.2", name: "Accueil réparé sur téléphone", items: [
     "Correction : sur téléphone, l'annonce du jeu se glissait dans la ligne de pastilles du haut et cachait toute la page. Elle s'affiche de nouveau sous les pastilles",
