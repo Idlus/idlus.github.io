@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.10.5 « Bouton du chat plus clair »
+Demande de Mathis : pendant la panne du serveur, « Réessayer maintenant » semblait ne rien faire (chaque essai attend jusqu'à 12 s, les clics pendant l'attente étaient ignorés). `refresh` (js/chat.js) redessine le chat au début de l'essai et la ligne affiche « Nouvel essai en cours… » tant que `busy`.
+
 ## 1.0.10.4 « Songe pour tous »
 Le dernier résultat d'une ancienne Expédition (`S.expLast` sans `ii`) faisait planter la page du Songe (`intName(undefined)` dans `puitsHtml`) : il est oublié au chargement (`E.sgConvert`, appelé à chaque chargement) et la page ignore un résultat sans intensité. Test 10 de `tests/songe.test.js`.
 

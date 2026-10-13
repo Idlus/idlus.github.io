@@ -45,7 +45,7 @@
   async function refresh() {
     if (busy) return; clearTimeout(retryT);
     if (document.hidden && tries) { retryT = setTimeout(refresh, 10000); return; } // 1.0.10.2 : pas de nouvel essai quand l'onglet est caché
-    busy = true;
+    busy = true; if (!C.loaded && (tries || slow)) paint(true); // 1.0.10.5 : « Nouvel essai en cours… » pendant l'attente
     try { await load(); } catch (e) {}
     busy = false;
     if (C.loaded) tries = 0;
@@ -265,7 +265,7 @@
     return C.loaded && C.tab !== "u" && ON.chatLost && ON.chatLost() ? `<div class="sys">Chat en direct perturbé côté serveur : messages mis à jour chaque minute tant que le chat est ouvert. Tu peux toujours écrire.</div>${l}` : l;
   }
   function listHtml0() {
-    if (!C.loaded) return tries || slow ? `<div class="sys">Chat momentanément indisponible, reconnexion automatique…<br><button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button></div>` : `<div class="sys">Connexion au chat…</div>`;
+    if (!C.loaded) return tries || slow ? `<div class="sys">Chat momentanément indisponible, reconnexion automatique…<br>${busy ? `<span class="small" style="display:inline-block;margin-top:6px">Nouvel essai en cours…</span>` : `<button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button>`}</div>` : `<div class="sys">Connexion au chat…</div>`;
     if (C.tab === "p") {
       if (!C.peer) {
         const conv = {}; C.p.forEach((m) => { const o = m.user_id === myId() ? m.to_id : m.user_id; if (o && !C.ign.has(o)) conv[o] = m; });

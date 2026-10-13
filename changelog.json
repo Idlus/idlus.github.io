@@ -1,6 +1,13 @@
 {
-  "version": "1.0.10.4",
+  "version": "1.0.10.5",
   "versions": [
+    {
+      "v": "1.0.10.5",
+      "name": "Bouton du chat plus clair",
+      "items": [
+        "Quand le chat est indisponible, « Réessayer maintenant » laisse place à « Nouvel essai en cours… » pendant que le jeu recontacte le serveur : on voit que le clic est pris en compte"
+      ]
+    },
     {
       "v": "1.0.10.4",
       "name": "Songe pour tous",
