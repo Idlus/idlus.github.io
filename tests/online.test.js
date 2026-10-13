@@ -66,6 +66,13 @@ const MOCK = () => {
       const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
       if (window.__offline) throw new Error("Failed to fetch");
       const s = d.saves[u.id];
+      // 0.1.50.1 : changer son pseudo (une fois tous les 30 jours)
+      if (name === "pseudo_info") { const me = d.profiles.find((p) => p.id === u.id); return { data: me ? { at: me.pseudo_at || null, next: me.pseudo_at ? new Date(Date.parse(me.pseudo_at) + 30 * 864e5).toISOString() : null } : null, error: null }; }
+      if (name === "pseudo_change") { const me = d.profiles.find((p) => p.id === u.id); const p = a.p_pseudo;
+        if (!/^[A-Za-zÀ-ÖØ-öø-ÿ0-9_-]{3,16}$/.test(p)) return { data: "3 à 16 caractères", error: null };
+        if (me.pseudo_at && Date.now() - Date.parse(me.pseudo_at) < 30 * 864e5) return { data: "Tu pourras rechanger de pseudo le 12/11.", error: null };
+        if (d.profiles.some((x) => x.id !== u.id && x.pseudo.toLowerCase() === p.toLowerCase())) return { data: "Ce pseudo est déjà pris.", error: null };
+        me.pseudo = p; me.pseudo_at = new Date().toISOString(); put(d); return { data: null, error: null }; }
       if (name === "save_info") return { data: s ? [{ updated_at: s.updated_at, meta: s.meta, device: s.device, game_version: s.game_version }] : [], error: null };
       if (name === "push_save") {
         if (!a.p_force && ((a.p_expected == null && s) || (a.p_expected != null && (!s || s.updated_at !== a.p_expected)))) return { data: null, error: null };
@@ -355,9 +362,18 @@ const MOCK = () => {
     await page.waitForTimeout(400);
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/notif-tel.png" });
     await page.click("#chat .ch-x");
+    // 8 bis. 0.1.50.1 : changer son pseudo depuis Options › Sauvegarde, puis refus avant 30 jours
+    await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-renpseudo"]');
+    await page.waitForSelector("#onRenPseudo"); await page.fill("#onRenPseudo", "Bouftoune"); await page.press("#onRenPseudo", "Enter"); await page.waitForTimeout(400);
+    m = await mock(); if (m.profiles[0].pseudo !== "Bouftoune") fail("pseudo : changement non enregistré");
+    if (!/Bouftoune/.test(await page.textContent(".sheet"))) fail("pseudo : nouveau pseudo absent des Options");
+    await page.click('.sheet [data-act="on-renpseudo"]'); await page.waitForTimeout(300);
+    if (!(await page.$('.sheet [data-act="on-renpseudogo"][disabled]'))) fail("pseudo : second changement possible avant 30 jours");
+    if (!/Prochain changement possible/.test(await page.textContent(".sheet"))) fail("pseudo : date du prochain changement absente");
+    await page.click('.sheet [data-act="on-renpseudono"]'); await page.click('.sheet [data-act="closesheet"]').catch(() => {}); await page.keyboard.press("Escape");
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
-    await page.fill("#onDelPseudo", "bouftou"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
+    await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
     m = await mock(); if (m.saves.u1 || m.profiles.length) fail("compte non supprimé");
     if (!(await S())) fail("partie de l'appareil perdue après suppression");
   } finally { await browser.close(); server.close(); }
