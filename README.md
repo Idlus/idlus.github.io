@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.52 « Songe plus clair »
+Écrans du Songe infini repensés (js/songeui.js, classes `.sgx-*` en fin de css/style.css) : en-tête et onglets avec compteurs, Puits en rangée de logos et fiche d'intensité, « Ta prochaine salle » avant la carte (carte horizontale défilante sur téléphone, `.sgx-mapscroll`), barre compacte dans l'onglet Combat (`runHead`), collection de légendaires par niveau, Marché trié avec « il te manque N Bribes ». Emblèmes des 8 intensités en SVG, métal ciselé façon DOFUS 3 (lunes ciselées, `sgIcon(i)` en tête de songeui.js).
+
 ## 0.1.50.4 « Kamas de DOFUS 3 »
 Mathis : icône des kamas comme celle de DOFUS 3. `assets/ui/kamas.webp` (128 px) redessinée : pièce d'or à 24 facettes et symbole des kamas (K à deux barres) en relief, même méthode que le Kolizeton (script de génération SVG puis rendu Chromium). `MEDIA` passe à `media-v9` dans sw.js pour que l'ancienne image ne reste pas en cache.
 
