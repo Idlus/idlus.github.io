@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.53.4";
+const GAME_VERSION = "0.1.53.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.53.5", name: "Droit au monstre", items: [
+    "Recherche rapide : à côté d'une ressource ou d'un objet lâché par un monstre, un bouton mène directement à la zone ou au donjon du monstre qui le lâche le plus, avec son taux",
+    "Fiche d'une ressource : nouvelle liste « Monstres qui la lâchent » (jusqu'à 4, avec leur taux) et un bouton « Y aller » ou « Donjon » pour chacun",
+  ] },
   { v: "0.1.53.4", name: "XP de monture arrondie", items: [
     "Montures : la progression vers le niveau suivant s'affiche en pourcentage entier (par exemple 37 %) au lieu d'un nombre avec plein de chiffres après la virgule",
   ] },
@@ -941,6 +945,22 @@ function bestSource(r) {
   const m = L.find((x) => x.m); if (!m) return r === E.RARE_COMPONENT ? "trouvailles de récolte, boss et coffres" : "source inconnue";
   const s = subOfMon(m.m); return `${MONSTERS[m.m].name}${s ? " (" + (typeof s === "string" ? DUNGEONS[s].name : s.name) + ")" : ""} · ${E.resRate(m.p).toFixed(1).replace(".", ",")} %`;
 }
+/* 0.1.53.5 : où aller chercher un monstre (zone de chasse visible d'abord, sinon son donjon) et monstres qui lâchent une ressource ou un objet */
+function monWhere(k) {
+  const base = Object.keys(MONSTERS).find((b) => MONSTERS[b].archi === k); if (base) { const w = monWhere(base); return w && Object.assign(w, { archi: true }); } // archimonstre : là où vit le monstre normal
+  const subs = Object.values(E.SUBS).filter((s) => !s.hidden && (s.monsters || []).some((m) => (Array.isArray(m) ? m[0] : m) === k))
+    .sort((a, b) => E.subUnlocked(S, b.id) - E.subUnlocked(S, a.id) || a.lvl[0] - b.lvl[0]); // zone ouverte d'abord, puis la plus basse
+  if (subs.length) return { sub: subs[0].id, name: subs[0].name };
+  const dg = Object.keys(DUNGEONS).find((id) => { const d = DUNGEONS[id]; return d.boss === k || (d.bossMobs || []).includes(k) || d.rooms.some((r) => r.mobs.includes(k)); });
+  return dg ? { dg, name: DUNGEONS[dg].name } : null;
+}
+function dropMons(k, id, max) {
+  const L = k === "res" ? (resIndex().src[id] || []).filter((x) => x.m).map((x) => ({ mon: x.m, p: E.resRate(x.p) }))
+    : E.itemSources(id).filter((x) => x.mon).map((x) => ({ mon: x.mon, p: x.p }));
+  return L.map((x) => Object.assign(x, { w: monWhere(x.mon) })).filter((x) => x.w).sort((a, b) => !!a.w.archi - !!b.w.archi).slice(0, max || 4); // archimonstres (rares) en dernier
+}
+const monGoAttr = (w) => (w.dg ? `data-act="searchdg" data-id="${w.dg}"` : `data-act="searchzone" data-id="${w.sub}"`);
+const dropPct = (p) => (p >= 10 ? Math.round(p) : (+p).toFixed(1).replace(".", ",").replace(",0", ""));
 function shopIng(e) { return E.shopIng(S, e); }
 function shopName(e) { return E.shopName(S, e); }
 /* 3.2.2 : bouton « suivre » (bande d'objectifs) */
@@ -5114,7 +5134,11 @@ function searchRender() {
   let last = null; const nq = E.searchNorm(q).split(" ").filter(Boolean);
   const mark = (name) => { let out = h(name); nq.forEach((t) => { const i = E.searchNorm(name).indexOf(t); if (i >= 0 && E.searchNorm(name).length === name.length) out = h(name.slice(0, i)) + "<mark>" + h(name.slice(i, i + t.length)) + "</mark>" + h(name.slice(i + t.length)); }); return out; };
   box.innerHTML = wsRes.map((r, i) => { const g = r.k !== last ? `<div class="wsg">${E.SEARCH_KINDS[r.k]}</div>` : ""; last = r.k;
-    return `${g}<button class="wsr ${i === wsSel ? "sel" : ""}" data-act="searchgo" data-i="${i}">${wsIcon(r)}<span class="grow"><b>${r.unknown ? "???" : mark(r.name)}</b><small>${h(r.sub)}</small></span><span class="wsgo">${WS_GO[r.k]} ↵</span></button>`; }).join("");
+    const row = `<button class="wsr ${i === wsSel ? "sel" : ""}" data-act="searchgo" data-i="${i}">${wsIcon(r)}<span class="grow"><b>${r.unknown ? "???" : mark(r.name)}</b><small>${h(r.sub)}</small></span><span class="wsgo">${WS_GO[r.k]} ↵</span></button>`;
+    const mon = r.k === "res" || r.k === "item" ? dropMons(r.k, r.id, 1)[0] : null; // 0.1.53.5 : bouton direct vers le monstre qui la lâche le plus
+    if (!mon) return g + row;
+    const known = r.k === "res" || S.bestiary[mon.mon]; const M = MONSTERS[mon.mon];
+    return `${g}<div class="wsrow">${row}<button class="wsmon" data-act="searchmon" data-dg="${mon.w.dg || ""}" data-sub="${mon.w.sub || ""}" title="${h(`${known ? M.name : "Monstre inconnu"} · ${dropPct(mon.p)} % · ${mon.w.name}`)}">${known ? im(imgM(mon.mon), "", M.name) : `<b>?</b>`}<span><b>${known ? h(M.name) : "???"}</b><small>${mon.w.dg ? "Donjon" : "Y aller"} · ${dropPct(mon.p)} %</small></span></button></div>`; }).join("");
   $("#wsn").textContent = `${wsRes.length} résultat${wsRes.length > 1 ? "s" : ""}`;
 }
 function searchMove(dir) { if (!wsRes.length) return; wsSel = (wsSel + dir + wsRes.length) % wsRes.length; document.querySelectorAll("#wsres .wsr").forEach((b, i) => b.classList.toggle("sel", i === wsSel)); const s = document.querySelector("#wsres .wsr.sel"); if (s) s.scrollIntoView({ block: "nearest" }); }
@@ -5171,10 +5195,17 @@ function itemSheet(tpl) {
       ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}
       ${window.CHAT && window.CHAT.canShare() ? `<button class="btn sm" data-act="ch-share" data-tpl="${tpl}">${G("chat")} Montrer dans le chat</button>` : ""}</div>`);
 }
+/* 0.1.53.5 : monstres qui lâchent la ressource, avec un bouton vers leur zone ou leur donjon */
+function resMonsHtml(n) {
+  const L = dropMons("res", n, 4); if (!L.length) return "";
+  return `<h3 class="sec">Monstres qui la lâchent</h3><div class="list">${L.map((x) => { const M = MONSTERS[x.mon];
+    return `<div class="li"><span class="icobox">${im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${h(M.name)}</b> · ${dropPct(x.p)} %<br><span class="xs muted">${x.w.archi ? "Archimonstre, rare · " : ""}${x.w.dg ? "Donjon · " : ""}${h(x.w.name)}</span></span><button class="btn sm" ${monGoAttr(x.w)}>${x.w.dg ? "Donjon" : "Y aller"}</button></div>`; }).join("")}</div>`;
+}
 function resSheet(n) {
   const R = RES[n]; if (!R) return; const q = S.res[n] || 0;
   openSheet(`<div class="row">${im(resImg(n), "ico lg", n)}<div><h2 style="margin:0">${h(n)}</h2><div class="xs muted">ressource · niv. ${R.lvl} · ${fmt(q)} en stock</div></div></div>
     <div class="small"><b>Source :</b> ${h(bestSource(n))}</div>
+    ${resMonsHtml(n)}
     <div class="row">${q ? `<button class="btn sm" data-act="searchres" data-n="${h(n)}">Voir dans le sac</button>` : ""}<button class="btn sm" data-act="searchfill2" data-q="${h(n)}">Objets qui l'utilisent</button></div>`);
 }
 
@@ -5803,6 +5834,7 @@ document.addEventListener("click", (ev) => {
     case "searchfill": case "searchfill2": closeSheet(); searchOpen(d.q); searchRender(); return;
     case "searchcraft": { ui.craftJob = d.job; const F = fltOf("met"); F.q = d.q || ""; F.mode = "all"; const tp = Object.keys(ITEMS).find((k) => ITEMS[k].name === d.q && ITEMS[k].craft); if (tp) ui.recSel = tp; pageGo("craft"); if (narrow() && tp) recSheet(); return; }
     case "searchdg": dungeonSheet(d.id); return;
+    case "searchmon": { const q = ($("#wsq") || {}).value; if (q) wsRemember(q.trim()); searchClose(); if (d.dg) dungeonSheet(d.dg); else { closeSheet(); ui.zoneView = d.sub; ui.tab = "world"; render(); window.scrollTo(0, 0); } return; }
     case "searchzone": closeSheet(); ui.zoneView = d.id; ui.tab = "world"; render(); window.scrollTo(0, 0); return;
     case "searchinv": closeSheet(); ui.tab = "inv"; ui.inv = "items"; ui.invSel = d.tpl; ui.slotFilter = "all"; render(); window.scrollTo(0, 0); return;
     case "searchres": closeSheet(); ui.tab = "inv"; ui.inv = "res"; ui.resSel = d.n; render(); window.scrollTo(0, 0); return;

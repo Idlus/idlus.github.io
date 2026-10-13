@@ -1,6 +1,14 @@
 {
-  "version": "0.1.53.4",
+  "version": "0.1.53.5",
   "versions": [
+    {
+      "v": "0.1.53.5",
+      "name": "Droit au monstre",
+      "items": [
+        "Recherche rapide : à côté d'une ressource ou d'un objet lâché par un monstre, un bouton mène directement à la zone ou au donjon du monstre qui le lâche le plus, avec son taux",
+        "Fiche d'une ressource : nouvelle liste « Monstres qui la lâchent » (jusqu'à 4, avec leur taux) et un bouton « Y aller » ou « Donjon » pour chacun"
+      ]
+    },
     {
       "v": "0.1.53.4",
       "name": "XP de monture arrondie",
