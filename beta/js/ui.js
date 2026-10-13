@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.33";
+const GAME_VERSION = "0.1.33.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.33.1", name: "Chat libre", items: [
+    "Chat : plus de liste de mots interdits, les messages ne sont plus refusés à cause d'un mot. Les liens et la publicité restent bloqués, le mode lent, les signalements et les sanctions des modérateurs restent en place",
+  ] },
   { v: "0.1.33", name: "Offres d'achat", items: [
     "Hôtel de vente : nouvel onglet « Offres d'achat ». Annoncez par exemple « j'achète 500 Laines de Bouftou à 25 kamas l'unité » : les kamas sont mis de côté tout de suite et la marchandise arrive dans votre sac, même hors ligne",
     "Onglet « On achète » : la liste de ce que les joueurs demandent. Vendez tout ou une partie d'un clic, vous êtes payé immédiatement. Les acheteurs restent anonymes",
