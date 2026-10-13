@@ -1,6 +1,16 @@
 {
-  "version": "1.0.8.7",
+  "version": "1.0.8.8",
   "versions": [
+    {
+      "v": "1.0.8.8",
+      "name": "Objets regroupés",
+      "items": [
+        "Pour équiper un héros, les objets identiques tiennent sur une seule ligne avec leur nombre (×50). « Équiper » met le meilleur exemplaire",
+        "Si les exemplaires n'ont pas les mêmes jets, « choisir un exemplaire » déplie la ligne pour en prendre un précis. Elle reste ouverte pendant que le jeu tourne",
+        "Les objets protégés par le cadenas, rangés dans une tenue, exo, légendaires ou Rayonnants restent sur leur propre ligne",
+        "Même regroupement dans la fiche d'un objet du sac, en Forgemagie, au Brisage (la case coche tous les exemplaires identiques) et dans « Ton sac » de l'Hôtel de vente"
+      ]
+    },
     {
       "v": "1.0.8.7",
       "name": "Donjons par zone",

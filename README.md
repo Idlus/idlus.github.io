@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.8.8 « Objets regroupés »
+Demande de Mathis : les objets identiques sont regroupés sur une ligne (×N). `grpItems(L, byTpl, solo)` dans js/ui.js : même modèle et mêmes jets = même `itemKey` ; cadenas, tenue, exo, légendaire et Rayonnant restent à part (`itemSolo`). Choix d'équipement : une ligne par modèle, le meilleur exemplaire en tête, « N jets différents » déplie les variantes (`ui.pgrp`, gardé au redessin). Fiche d'objet du sac, Forgemagie, Brisage (la case coche tout le groupe, `data-uids`) et « Ton sac » de l'HdV regroupent les exemplaires identiques.
+
 ## 1.0.8.7 « Donjons par zone »
 La liste des donjons est rangée par zone (groupes repliables), avec une barre de recherche (donjon, boss ou zone) et des filtres : niveau, accessibles ou fermés, stasis atteinte, clé en stock, Dofus à gagner, favoris. Filtres et groupes ouverts sont gardés.
 

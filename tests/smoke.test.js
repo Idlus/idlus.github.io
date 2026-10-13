@@ -113,6 +113,16 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector("#wsearch", { timeout: 3000 }); await page.click('#wsres [data-act="searchfill"][data-q="bouftou"]'); await page.waitForTimeout(150);
     if ((await page.inputValue("#wsq")) !== "bouftou" || !(await page.$('#wsres [data-act="searchgo"]'))) errors.push("recherche : un clic sur une dernière recherche ne la relance pas");
     await page.keyboard.press("Escape"); if (await page.$("#wsearch")) errors.push("recherche : Échap ne ferme pas la fenêtre");
+    // 1.0.8.8 : objets identiques regroupés dans le choix d'équipement (une ligne ×N, dépliage gardé au redessin)
+    const grp = await page.evaluate(() => { const { E, S, ui } = window.DX; const IT = window.GAMEDATA.ITEMS; const c = S.chars[0];
+      const tpl = Object.keys(IT).find((t) => IT[t].slot === "coiffe" && IT[t].lvl <= c.lvl && Object.values(IT[t].stats).some(([a, b]) => b > a));
+      for (let i = 0; i < 12; i++) E.rollItem(S, tpl, { radiant: false });
+      const ref = Object.values(S.items).find((x) => x.tpl === tpl); for (let i = 0; i < 8; i++) { const u = S.nextUid++; S.items[u] = { uid: u, tpl, stats: Object.assign({}, ref.stats) }; }
+      document.querySelector("#sheet").innerHTML = ""; ui.tab = "team"; ui.cid = c.id; ui.tview = "hero"; ui.hero = "equip"; ui.slot = "coiffe"; window.DX.render();
+      const rows = [...document.querySelectorAll('#fiche [data-act="equip"]')].filter((b) => S.items[b.dataset.uid].tpl === tpl && !b.closest(".psubs")).length;
+      const tog = document.querySelector('[data-act="pgrp"]'); if (tog) tog.click(); window.DX.render();
+      const subs = document.querySelectorAll(".psubs .li").length; ui.slot = null; ui.pgrp = {}; ui.tab = "home"; window.DX.render(); return { rows, tog: !!tog, subs }; });
+    if (grp.rows !== 1 || !grp.tog || !grp.subs) errors.push(`choix d'équipement : objets identiques mal regroupés (${JSON.stringify(grp)})`);
     // 1.0.8.4 : chaque monstre trouvé par la recherche mène quelque part (archimonstres, co-boss de donjon et boss des mondes compris), historique sans doublons
     const lost = await page.evaluate(() => { const { E, ui } = window.DX; const out = [];
       for (const e of E.searchIndex()) { if (e.k !== "mon") continue; document.querySelector("#sheet").innerHTML = ""; ui.tab = "home"; ui.zoneView = null; window.DX.searchGo(Object.assign({}, e));

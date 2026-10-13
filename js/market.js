@@ -210,10 +210,12 @@
   }
   function sellHtml() {
     if (!mine()) return "";
-    const items = sellable(M.sCat).slice(0, 120);
+    let items = sellable(M.sCat);
+    if (M.sCat === "eq" && typeof grpItems === "function") items = grpItems(items.map((x) => x.it)).map((gr) => { const it = gr.items.find((y) => String(y.uid) === M.sSel) || gr.rep; return { cat: "eq", key: it.tpl, uid: it.uid, it, n: 1, cnt: gr.items.length }; }); // 1.0.8.8 : exemplaires identiques sur une case
+    items = items.slice(0, 120);
     const sel = items.find((x) => (x.uid ? String(x.uid) : x.key) === M.sSel);
     const grid = items.length ? `<div class="invgrid">${items.map((x) => { const id = x.uid ? String(x.uid) : x.key;
-      return `<button class="itile ${id === M.sSel ? "on" : ""}" data-act="mk-ssel" data-v="${h(id)}" ${x.uid ? `data-tipitem="${x.uid}"` : `data-tip="${h(nameOf(x.cat, x.key))}"`}>${x.cat === "eq" ? X().im(X().itemImg(x.key), "", "") : x.cat === "res" ? X().im(X().resImg(x.key), "", "") : `<span class="mkbig">${x.cat === "rune" ? X().sIco(E.runeInfo(x.key).stat) : h((CONSUMABLES[x.key] || {}).icon || "•")}</span>`}${x.cat === "eq" ? `<span class="ilvl">${ITEMS[x.key].lvl}</span>` : `<span class="icount">×${fmt(x.n)}</span>`}</button>`; }).join("")}</div>`
+      return `<button class="itile ${id === M.sSel ? "on" : ""}" data-act="mk-ssel" data-v="${h(id)}" ${x.uid ? `data-tipitem="${x.uid}"` : `data-tip="${h(nameOf(x.cat, x.key))}"`}>${x.cat === "eq" ? X().im(X().itemImg(x.key), "", "") : x.cat === "res" ? X().im(X().resImg(x.key), "", "") : `<span class="mkbig">${x.cat === "rune" ? X().sIco(E.runeInfo(x.key).stat) : h((CONSUMABLES[x.key] || {}).icon || "•")}</span>`}${x.cat === "eq" ? `<span class="ilvl">${ITEMS[x.key].lvl}</span>${x.cnt > 1 ? `<span class="icount">×${x.cnt}</span>` : ""}` : `<span class="icount">×${fmt(x.n)}</span>`}</button>`; }).join("")}</div>`
       : `<div class="empty">Rien à vendre dans cette catégorie.</div>`;
     return `${cats("mk-scat", M.sCat)}<span class="small muted">Les objets équipés, verrouillés ou rangés dans un équipement enregistré, les Dofus, les trophées et les objets uniques n'apparaissent pas.</span>
       <div class="mkgrid ${sel ? "hassel" : ""}"><section class="panel mklist"><div class="phead"><h2>Ton sac</h2><span class="xs muted">choisis ce que tu vends</span></div><div class="pad">${grid}</div></section>${sel ? sellForm(sel) : ""}</div>`;

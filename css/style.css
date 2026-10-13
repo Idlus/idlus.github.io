@@ -3529,6 +3529,12 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .pmore{border-top:1px solid var(--line)}
 .pmore .pmh{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;padding:10px 14px;font:inherit;font-weight:800;font-size:13px;color:var(--muted,inherit)}
 .pmore .pmh:hover{color:var(--ink)}
+/* 1.0.8.8 : objets identiques regroupés */
+.tag.gcount{font-variant-numeric:tabular-nums}
+.pgt{display:inline-block;margin-top:4px;background:none;border:0;padding:2px 0;font:inherit;font-size:12px;font-weight:700;color:var(--action);cursor:pointer;text-align:left}
+.pgt:hover{text-decoration:underline}
+.psubs{border-left:3px solid color-mix(in srgb,var(--action) 45%,transparent);margin-left:14px;background:color-mix(in srgb,var(--panel3) 50%,transparent)}
+.li.psub{padding-left:10px}
 .li.pcur{background:var(--panel2,transparent);border-bottom:1px dashed var(--line)}
 .dtop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 /* Sablier économe : sablier en pause quand rien n'avance */
