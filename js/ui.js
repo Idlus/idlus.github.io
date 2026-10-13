@@ -1269,7 +1269,7 @@ function sabSheet() {
     </ul>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); if (BETA) renderUpdBar(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
 const PIN_ICO = { quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
@@ -1416,7 +1416,7 @@ function renderHomeInner() {
   const jt = ui.hj === "c" ? "c" : "j"; const n = ui.hjAll ? 20 : 5;
   const jour = jt === "c" ? `<div class="pad">${historyHtml(n)}</div>` : `<div class="list journal">${S.journal.slice(0, n).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div>`;
   const more = (jt === "c" ? S.history.length : S.journal.length) > 5;
-  $("#main").innerHTML = protBar() + `
+  $("#main").innerHTML = `
   <section class="hero-banner ac-ban">
     <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}</div>
     <div class="inner"><div class="ac-l">
@@ -1966,6 +1966,16 @@ function encCard(k, where, extra) {
     <div class="drops">${drops}</div>
     ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}${E.hasSoul(S, a) ? " · 💜 âme capturée" : ""}</div>` : ""}</div></div>`;
 }
+/* 0.1.56 : réglages du combat (cible, suivre mon niveau, itinérante) ; sur téléphone ils passent dans le bouton « Réglages » */
+function combatSetHtml(dg) {
+  return `<label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+      ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
+      ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}`;
+}
+function combatSetSheet() {
+  const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null;
+  openSheet(`<h2>${G("gear")} Réglages du combat</h2><div class="csetsheet">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</div><button class="btn" data-act="closesheet">Fermer</button>`);
+}
 /* ---------- COMBAT ---------- */
 function renderCombat() {
   if (ui.watch) return renderWatch();
@@ -1977,10 +1987,8 @@ function renderCombat() {
   $("#main").innerHTML = `
   <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
-      <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
-      ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
-      ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
-      ${idolBtn(S.dungeon)}${XP ? "" : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      <span class="cset">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</span><button class="btn sm csetbtn" data-act="csetsheet">${G("gear")} Réglages</button>
+      ${XP ? "" : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   ${XP && window.SGUI ? window.SGUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
@@ -4359,7 +4367,15 @@ function toolHtml(id) {
     ${ingHtml(R.ing)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
     <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? G("cart") + " ✓" : G("cart")}</button></div></div>`;
 }
-/* 0.1.10.1 : protecteur de ressources (bandeau Métiers, Accueil et combat) */
+/* 0.1.56 : le protecteur en pastille dans la ligne du haut, sur toutes les pages */
+function protChip() {
+  const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null; let out = "";
+  if (P) { const M = MONSTERS[P.mon]; const err = P.fighting || P.go ? null : E.protWhy(S);
+    out += `<div class="updbar pchip" data-tip="${h(`${E.PROT_TITLE[P.job]} : ${M.name} garde le ${P.res}.${err ? " " + err : ""}`)}">${im(imgM(P.mon), "ico sm", M.name)}<span><b>${h(M.name)}</b> <span class="muted">garde le ${h(P.res)} · ${P.fighting ? "combat en cours" : P.go ? "au prochain combat" : dur((P.until - E.now()) / 1000)}</span></span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? "disabled" : ""}>Combattre</button>`}</div>`; }
+  if (B) out += `<div class="updbar pchip">${G("sparkle")}<span>Récolte de <b>${h(B.res)}</b> ×2 <span class="muted">· ${dur((B.until - E.now()) / 1000)}</span></span></div>`;
+  return out;
+}
+/* 0.1.10.1 : protecteur de ressources (bandeau Métiers) */
 function protBar() {
   const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null;
   let out = "";
@@ -5004,10 +5020,11 @@ function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
   if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jeu public</a></div>`;
-  if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); html += `<div class="updbar ev"><span>${G("sparkle")} <b>Événement ${h(E.EVENT.name)}</b> : XP et butin x2 pour tout le monde, encore ${hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`}.</span></div>`; }
+  if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; html += `<div class="updbar ev" data-tip="Événement ${h(E.EVENT.name)} : XP et butin x2 pour tout le monde, encore ${left}."><span>${G("sparkle")} <b>${h(E.EVENT.name)}</b> <span class="muted">XP et butin x2 · ${left}</span></span></div>`; }
+  if (S) html += protChip();
   if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
-  if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
+  if (el.dataset.k !== html) { if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }; el.dataset.k = html; }
 }
 function changelogSheet() {
   openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul></div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
@@ -6067,7 +6084,9 @@ document.addEventListener("click", (ev) => {
     case "sabinfo": sabSheet(); return;
     case "bontoggle": ui.bonOpen = ui.bonOpen === false; break;
     case "altar": { const r = E.buyAltar(S); if (r) { toast(r); return; } toast(`Autel des Douze niveau ${E.altarLvl(S)} : plafonds relevés de +${E.ALTAR.per} !`, "rare"); break; }
-    case "sabspd": { const r = E.sabSet(S, d.v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
+    case "csetsheet": combatSetSheet(); return;
+    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.56 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
+      const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": saveNow(); location.reload(); return;
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;
     case "offequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } t.replaceWith(Object.assign(document.createElement("span"), { className: "tag good", textContent: "équipé" })); dirty = true; return; }

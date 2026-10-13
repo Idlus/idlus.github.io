@@ -300,7 +300,7 @@
     const def = E.wbDef(s.n); let html = "";
     if (s.bonus > Date.now() && pref.xpbar !== s.bonus && s.last) html += `<div class="updbar wbbar xp">${X().IC("bonbon")}<span><b>${h(s.last.name)} est tombé !</b> +${E.WB_KILL.xp} % d'XP pour tout le monde, encore ${dur(s.bonus - Date.now())}.</span><button class="btn sm" data-act="wb-barclose" data-v="xp">Fermer</button></div>`;
     const key = `${s.n}:${s.phase}`;
-    if (tab !== "wb" && pref.bar !== key) html += `<div class="updbar wbbar"><img class="b${an(s.phase)}" src="${img(def)}" alt=""><span><b>Boss des mondes : ${h(def.name)}</b> · phase ${s.phase}${s.phase > 1 ? ` (${h(phName(def, s.phase))})` : ""} <span class="mini"><i style="width:${pctLeft(s)}%"></i></span> ${pctTxt(pctLeft(s))}</span><button class="btn sm primary" data-act="wb-go">${mode() === "guest" ? "Voir" : "Attaquer"}</button><button class="btn sm" data-act="wb-barclose" data-v="${key}" aria-label="Fermer">✕</button></div>`;
+    if (tab !== "wb" && pref.bar !== key) html += `<div class="updbar wbbar"><img class="b${an(s.phase)}" src="${img(def)}" alt=""><span data-tip="Boss des mondes : ${h(def.name)} · phase ${s.phase}${s.phase > 1 ? ` (${h(phName(def, s.phase))})` : ""}"><b>${h(def.name)}</b> <span class="muted">phase ${s.phase}</span> <span class="mini"><i style="width:${pctLeft(s)}%"></i></span> ${pctTxt(pctLeft(s))}</span><button class="btn sm primary" data-act="wb-go">${mode() === "guest" ? "Voir" : "Attaquer"}</button><button class="btn sm" data-act="wb-barclose" data-v="${key}" aria-label="Fermer">✕</button></div>`;
     if (b.innerHTML !== html) b.innerHTML = html;
   }
 

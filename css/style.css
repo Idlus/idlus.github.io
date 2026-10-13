@@ -3491,7 +3491,7 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 @media (min-width:860px){body.chat-open:not(.toast-top):not(.toast-bot) .toasts{right:410px}}
 @media (max-width:859px){
   body.chat-open:not(.toast-top):not(.toast-bot) .toasts{top:calc(env(safe-area-inset-top,0px) + 6px);bottom:auto}
-  body.chat-open:not(.toast-top):not(.toast-bot) .toasts .toast:not(:first-child){display:none}
+  body.chat-open:not(.toast-top):not(.toast-bot) .toasts .toast:not(:last-child){display:none}
   body.chat-open:not(.toast-top):not(.toast-bot) .toasts .toast{font-size:12.5px;padding:6px 12px}
 }
 body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;left:50%;right:auto;transform:translateX(-50%);align-items:center}
@@ -4096,3 +4096,60 @@ button.cmdico{padding:0;cursor:pointer}
 @media (max-width:900px){.bgrid{grid-template-columns:1fr}.bcard{gap:6px}}
 @media (max-width:640px){.altar .btn{width:100%}.bonbox{padding:10px}}
 @media (max-width:640px){.bchip{font-size:11.5px;padding:1px 7px}}
+
+/* 0.1.56 « Affichage plus clair » */
+/* barre du haut : plus de logo (il est dans le menu), tout tient sur une ligne */
+.status .brand{display:none}
+.status .ic-btn[data-act="search"]{margin-left:auto}
+/* une seule ligne de pastilles : objectifs suivis, événement, boss des mondes, protecteur */
+.topchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 12px}
+.topchips:not(:has(.obj,.updbar)){display:none}
+.topchips>#objs,.topchips>#updbar,.topchips #wbbar{display:contents!important}
+.topchips .objs .cnt{display:none}
+.topchips .obj{height:32px;flex:none}
+.topchips .updbar{flex:none;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px;margin:0;height:32px;padding:0 4px 0 10px;border-radius:999px;box-shadow:none;font-size:12.5px;white-space:nowrap;border-width:1.5px}
+.topchips .updbar>span{flex:none!important}
+.topchips .updbar .muted{font-weight:600}
+.topchips .updbar .btn.sm{padding:3px 10px;font-size:12px;min-height:0;border-radius:999px}
+.topchips .updbar img.b,.topchips .updbar .ico,.topchips .updbar.wbbar .uico{width:24px!important;height:24px!important}
+.topchips .updbar.wbbar .mini{width:46px;height:7px;margin:0 2px}
+.topchips .updbar.pchip{border-color:rgba(126,224,106,.6);background:rgba(126,224,106,.1)}
+.topchips .updbar.new,.topchips .updbar:not(.ev):not(.wbbar):not(.pchip){padding-right:4px}
+@media (max-width:640px){
+  .topchips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:-2px 0 10px}
+  .topchips::-webkit-scrollbar{display:none}
+  .topchips .updbar.ev .muted{font-size:12px}
+}
+/* notifications : une seule à la fois, fine, en haut sous la barre (Options › Affichage › Notifications « En bas » garde l'ancienne place) */
+body:not(.toast-bot):not(.toast-top) .toasts{top:calc(var(--sth,60px) + 8px);bottom:auto}
+body:not(.toast-bot) .toasts .toast:not(:last-child){display:none}
+body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
+@media (max-width:640px){
+  .chmin{width:44px;height:44px;bottom:calc(var(--navh) + 10px);right:10px}
+  .chmin .uico{width:21px;height:21px}
+  body:has(.chmin) .app{padding-bottom:calc(var(--navh) + 72px)}
+  /* téléphone : barre du haut compacte, le sablier n'affiche que la vitesse choisie (un appui la fait tourner) */
+  .status{gap:4px;padding:6px 8px;justify-content:space-between;margin-left:-6px;margin-right:-6px}
+  .status .it{gap:3px;font-size:13px}
+  .status .sabpill{gap:3px;padding-left:6px}
+  .status .ic-btn[data-act="search"]{margin-left:0}
+  .status .sabpill .seg button[aria-pressed="false"]{display:none}
+  .status .sabpill .seg button{padding:2px 7px}
+  .status .flame{padding:1px 6px}
+  .status .ic-btn{padding:4px 5px}
+  .status #onPill>span:not(.dot){display:none}
+  /* combat : cible, suivre mon niveau, itinérante et idoles rangés dans « Réglages » */
+  .combathead .cset{display:none}
+  .combathead #csub{display:none}
+  .combathead h1{font-size:21px}
+  .combathead{margin-bottom:8px}
+  .combathead .row{gap:6px}
+  /* titres et marges plus compacts */
+  .app{padding-left:10px;padding-right:10px}
+  #main h1{font-size:22px}
+  .pagehead{margin:0 0 8px}
+  .hero-banner h1{font-size:24px}
+}
+.csetbtn{display:none}
+@media (max-width:640px){.csetbtn{display:inline-flex}}
+.csetsheet{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin:10px 0 14px}
