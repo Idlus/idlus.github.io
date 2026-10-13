@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.52.1 « Fiches joueurs »
+Mathis : un menu du panel admin avec une fiche détaillée de chaque joueur. Serveur : supabase/fiches.sql (lecture seule, réservé à l'admin par `adm_need(true)`) : `adm_roster(recherche, tri)` liste tous les comptes (500 au plus), `adm_player(id)` renvoie le compte (connexion Discord ou e-mail, sans adresse), la partie en ligne complète, le classement, la guilde, le Kolizéum, l'Hôtel de vente, les échanges, les boss, les codes cadeaux, les idées, le chat (nombres seulement, pas de messages privés) et la modération. Jeu : js/fiches.js (onglet « Fiches joueurs » enregistré dans `ATABS` de js/chat.js, bouton « Fiche détaillée » dans l'onglet Joueurs) lit la partie avec `readSave` pour détailler héros, équipement, progression, inventaire, métiers et journal ; bouton « Télécharger sa partie » (fichier JSON). Mise en page par requêtes de conteneur (`.adm .fj`), pour rester lisible avec le chat ouvert.
+
 ## 0.1.52 « Songe plus clair »
 Écrans du Songe infini repensés (js/songeui.js, classes `.sgx-*` en fin de css/style.css) : en-tête et onglets avec compteurs, Puits en rangée de logos et fiche d'intensité, « Ta prochaine salle » avant la carte (carte horizontale défilante sur téléphone, `.sgx-mapscroll`), barre compacte dans l'onglet Combat (`runHead`), collection de légendaires par niveau, Marché trié avec « il te manque N Bribes ». Emblèmes des 8 intensités en SVG, métal ciselé façon DOFUS 3 (lunes ciselées, `sgIcon(i)` en tête de songeui.js).
 

@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.52";
+const GAME_VERSION = "0.1.52.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.52.1", name: "Fiches joueurs", items: [
+    "Panel admin : nouvel onglet « Fiches joueurs », réservé au créateur, avec la liste de tous les comptes (recherche et tri) et une fiche détaillée pour chacun",
+    "La fiche montre le compte, les héros et leur équipement, la progression, l'inventaire, les métiers, la guilde, le Kolizéum, l'Hôtel de vente, les boss, le chat et la modération",
+  ] },
   { v: "0.1.52", name: "Songe plus clair", items: [
     "Le Songe infini est réorganisé : un en-tête avec tes Bribes et 3 onglets avec compteurs (Le Puits ou Mon songe, Marché onirique, Légendaires)",
     "Nouveaux emblèmes pour les 8 difficultés : des lunes en métal ciselé, turquoise pour le Rêve, violettes pour le Paradoxe, rouges et cornues pour le Cauchemar, plus riches à chaque rang",
