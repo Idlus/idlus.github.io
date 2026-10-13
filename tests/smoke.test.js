@@ -41,6 +41,10 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector("#nav [data-nk]", { timeout: 10000 });
     const ok = await page.evaluate(() => !!(window.DX && window.DX.S && window.DX.S.chars.length));
     if (!ok) errors.push("la partie n'a pas démarré");
+    // 1.0 : l'écran de lancement (cadeau de la semaine de lancement) s'ouvre au démarrage : on vérifie puis on le ferme
+    await page.waitForTimeout(800);
+    if (!(await page.$(".launch10"))) errors.push("écran de lancement 1.0 absent");
+    await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; const c = document.querySelector("#cele"); if (c) c.innerHTML = ""; });
 
     // 0.1.31 : chaque page du menu de gauche (PC)
     const keys = await page.$$eval("#nav .sn-side [data-nk]", (bs) => bs.map((b) => b.dataset.nk));
@@ -94,7 +98,7 @@ const server = http.createServer((req, res) => {
     if ((await page.evaluate(() => window.DX.ui.tab)) !== "forge") errors.push("menu du téléphone : la tuile Forgemagie n'ouvre pas la page");
     if (await page.$(".navsheet")) errors.push("menu du téléphone : reste ouvert après le choix");
     // 0.1.42 : accueil du jour (tuiles, journal à onglets, têtes des héros)
-    await page.evaluate(() => { const { E, S } = window.DX; E.addCons(S, "coffre_bois"); window.DX.ui.tab = "home"; window.DX.ui.home = "apercu"; window.DX.render(); });
+    await page.evaluate(() => { const { E, S } = window.DX; delete S.cons.coffre_douze; E.addCons(S, "coffre_bois"); window.DX.ui.tab = "home"; window.DX.ui.home = "apercu"; window.DX.render(); });
     await noTip();
     if ((await page.$$(".ac-tds .ac-td")).length < 4) errors.push("accueil : il manque des tuiles « Aujourd'hui »");
     await page.click('[data-act="hjtab"][data-v="c"]'); await page.waitForTimeout(150);

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0 « Idlus 1.0 »
+Sortie officielle (Mathis, 13/10/2026 : « 1B 2A 4A 5A et un cosmétique unique 6A 7A 8A »). Dofus : 13 nouveaux dans la liste `L` de js/archis.js (31 en tout), icônes DofusDB dans assets/i ; le Jyfus a l'étape `gift` (pas de butin, pas de quête : donné par `E.grantFounder`). Succès `dofus31`. Cadeau de lancement : `E.grantFounder` (systems.js) jusqu'à `E.LAUNCH_END` (20/10 23 h 59 Paris) : titre « Fondateur d'Idlus », ornement `fondateur`, Jyfus, Coffre des Douze ; écran `launchSheet()` (ui.js, classes `.launch10`). Course de lancement : `meta.mainq` (verify.js) ; `ladder_from_save` (supabase/classements.sql) grave les 10 premiers dans `firsts` (kind `race10`, key = rang) à partir du 13/10 16 h ; `raceCheck()` (ui.js) donne le titre « Légende de la 1.0 » et l'ornement unique `legende` (`E.grantLegend`). Ornements SVG : assets/ui/orn/orn_fondateur.svg, orn_legende.svg. Sous-zones : 15 sous-zones ajoutées dans `ZONES` de tools/build_data.py, fusion additive dans js/gamedata.js, `E.HUNT_EASE` réglé par simulation de chasse (`--chasse`) ; les 3 zones de montures sauvages sont écartées (doublon avec le filet de js/mounts.js). Quête principale (js/quetes.js) : l'étape `B("cimetiere_mastodontes", "Le Mantiscore")` du chapitre 1 (Saharach fermée jusqu'au Minotoror) devient `B("antre_reine_nyee", "La Reine Nyée")` ; tests/quetes.test.js vérifie que chaque étape est dans une zone déjà ouverte.
+
 ## 0.1.57.2 « Accueil réparé sur téléphone »
 chat.js : `#annbar` (annonce admin) est inséré après `#topchips` et non plus dans la ligne de pastilles, où, rétréci par le flex sans retour à la ligne, il devenait très haut et poussait la page hors de l'écran. CSS : tout autre enfant direct de `.topchips` que `#objs` et `#updbar` est caché.
 

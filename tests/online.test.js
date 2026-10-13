@@ -141,6 +141,7 @@ const MOCK = () => {
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     await ctx.addInitScript(MOCK);
+    await ctx.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; }); // 1.0 : pas d'écran de lancement pendant ce test
     await ctx.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
     const page = await ctx.newPage();
     page.on("console", (m) => { if (m.type() === "error") fail(`console : ${m.text()}`); });

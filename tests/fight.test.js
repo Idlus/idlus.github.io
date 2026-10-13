@@ -196,8 +196,8 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
 /* 0.1.13 : archimonstres et Dofus */
 {
   const S = E.newState("Archis", "iop"); const c = S.chars[0]; c.lvl = 100; E.refreshSpells(c, E.charStats(S, c)); E.refreshSystems(S);
-  assert.strictEqual(E.ARCHI_TOTAL, 241, "241 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 13, "13 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 18, "18 Dofus");
-  assert.strictEqual(E.OCRE_TIERS.reduce((a, T, i) => a + E.ocreProgress(S, i)[1], 0), 241, "les six paliers couvrent tous les archimonstres");
+  assert.strictEqual(E.ARCHI_TOTAL, 277, "277 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 14, "14 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 31, "31 Dofus");
+  assert.strictEqual(E.OCRE_TIERS.reduce((a, T, i) => a + E.ocreProgress(S, i)[1], 0), 277, "les six paliers couvrent tous les archimonstres");
   assert.ok(D.SPECIAL_CRAFTS["Pierre d'âme"].cons === "pierre_ame" && D.CONSUMABLES.pierre_ame.auto && D.CONSUMABLES.parfum_piste.boost === "piste", "recettes et consommables");
   for (const [n, R] of Object.entries(D.SPECIAL_CRAFTS)) if (/^Copie : /.test(n) || n === "Pierre d'âme" || n === "Parfum de pistage") for (const [r] of R.ing) assert.ok(D.RES[r], `${n} : ressource inconnue ${r}`);
   for (const id of E.DOFUS_ORDER) { const Df = E.DOFUS[id]; assert.ok(D.ITEMS[Df.tpl] && D.ITEMS[Df.tpl].slot === "dofus" && D.ITEMS[Df.tpl].icon, id + " : objet Dofus"); assert.ok(!Df.dg || D.DUNGEONS[Df.dg], id + " : donjon");
@@ -214,10 +214,10 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // Éternelle moisson : tout Astrub capturé donne le palier 1
   E.addCons(S, "pierre_ame", 60); const kam = S.kamas; E.archisOf("astrub").forEach((a) => E.captureSoul(S, { key: a.k, name: a.name }));
   assert.strictEqual(E.ocreTier(S), 1, "palier 1 accompli"); assert.ok(S.kamas >= kam + 20000, "20 000 kamas du palier 1"); assert.strictEqual(E.stones(S), 1 + 60 - E.archisOf("astrub").filter((a) => a.k !== k0).length + 10, "10 pierres du palier 1");
-  // Dofus : obtention, un exemplaire par héros, copie du Bricoleur seulement après l'original
+  // Dofus : obtention, un exemplaire par héros, pas de copie au Bricoleur (1.0)
   const it = E.giveDofus(S, "cacao", "test"); assert.ok(it && it.stats.tac === 10 && E.dofusOwned(S, "cacao") && S.cnt.dofus === 1, "Dofus Cacao donné");
   assert.strictEqual(E.equip(S, c.id, it.uid), null, "Dofus équipé"); const it2 = E.giveDofus(S, "cacao", "copie"); assert.ok(/déjà ce Dofus/.test(E.equip(S, c.id, it2.uid)), "pas deux fois le même Dofus");
-  S.crafts.bricoleur = { lvl: 200, xp: 0 }; S.res[E.POUSSIERE] = 1000; assert.ok(/d'abord/.test(E.craftSpecial(S, "Copie : Dofus Vulbis")), "copie sans l'original refusée"); assert.strictEqual(E.craftSpecial(S, "Copie : Dofus Cacao"), null, "copie fabriquée"); assert.strictEqual(S.res[E.POUSSIERE], 925, "75 poussières");
+  assert.ok(!Object.keys(D.SPECIAL_CRAFTS).some((n) => /^Copie : /.test(n)), "1.0 : plus de copie de Dofus au Bricoleur (quête et butin seulement)");
   // quête : étape donjon validée par la meilleure stasis, étape chasse par les victoires dans la zone, Dofus donné à la fin
   E.stasisInfo(S, "cour_bouftou_royal").max = 3; E.emit(S, "dungeon", { id: "cour_bouftou_royal", stasis: 3, chals: [], down: 0 });
   assert.strictEqual(E.dofusQuest(S, "cacao").step, 1, "étape 1 du Cacao validée");
@@ -238,5 +238,5 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // sauvegarde
   const S2 = E.deserialize(JSON.stringify(S)); assert.ok(S2.souls && S2.souls[k0] && S2.dofusQ.cacao.done && S2.ocre.tier === 1, "album et quêtes sauvegardés");
   assert.ok(E.ACH.some((a) => a.id === "dofus18" && a.title) && E.ORN.ame, "succès et ornement");
-  console.log("ok - archimonstres : 241 âmes en 13 zones, pierres et parfum, Éternelle moisson, 18 Dofus et leurs quêtes, Dokoko, sauvegarde");
+  console.log("ok - archimonstres : 277 âmes en 14 zones, pierres et parfum, Éternelle moisson, 18 Dofus et leurs quêtes, Dokoko, sauvegarde");
 }

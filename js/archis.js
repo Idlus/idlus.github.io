@@ -1,10 +1,10 @@
-/* 0.1.13 : archimonstres et Dofus — l'album des âmes et les 18 Dofus.
+/* 0.1.13 : archimonstres et Dofus — l'album des âmes et les Dofus (18, puis 31 à la 1.0).
    Chaque archimonstre vaincu peut être capturé dans l'album avec une Pierre d'âme (automatique, une fois par archimonstre).
    Les pierres se fabriquent chez le Bricoleur (niveau 25) et s'obtiennent au premier passage d'une stasis, au Bureau des primes
    et aux paliers de la quête « Éternelle moisson » (Dofus Ocre). Le Parfum de pistage (Bricoleur 40) double les chances
    d'archimonstre pendant 2 h, le meuble « Autel des âmes » les augmente de 40 %.
    Les 18 Dofus de DOFUS (bonus réels d'après DofusDB) se gagnent par une quête chacun (Quêtes › Dofus), avec une chance
-   infime en butin du boss de leur donjon ; une copie pour un autre héros se fabrique chez le Bricoleur avec de la Poussière de stasis. */
+   infime en butin du boss de leur donjon ; depuis la 1.0, plus de copie au Bricoleur : les autres exemplaires viennent du butin. */
 (function (root) {
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
@@ -60,7 +60,7 @@
   /* ---------- quête de l'Ocre : « Éternelle moisson », six paliers ---------- */
   E.OCRE_TIERS = [
     { name: "Astrub", zones: ["astrub"], rew: { cons: ["pierre_ame", 10], kamas: 20000 }, txt: "10 Pierres d'âme et 20 000 kamas" },
-    { name: "Amakna", zones: ["amakna"], rew: { title: "Moissonneur", kamas: 50000 }, txt: "Titre « Moissonneur » et 50 000 kamas" },
+    { name: "Amakna, Bonta et Brâkmar", zones: ["amakna", "bontabrak"], rew: { title: "Moissonneur", kamas: 50000 }, txt: "Titre « Moissonneur » et 50 000 kamas" },
     { name: "Cania, Sidimote et Wabbits", zones: ["cania", "sidimote", "wabbit"], rew: { cons: ["parfum_piste", 5], kamas: 100000 }, txt: "5 Parfums de pistage et 100 000 kamas" },
     { name: "Koalaks, Abraknydes et Moon", zones: ["koalaks", "abrak", "moon"], rew: { furn: E.ARCHI_FURN, orn: "ame", kamas: 200000 }, txt: "Meuble « Autel des âmes », ornement « Âme violette » et 200 000 kamas" },
     { name: "Dragoeufs, Otomaï et Minotoror", zones: ["dragoeufs", "otomai", "minotoror"], rew: { cons: ["bonbon_royal", 3], kamas: 400000 }, txt: "3 Bonbons Royaux et 400 000 kamas" },
@@ -115,6 +115,20 @@
     ["sylvestre", "Dofus Sylvestre", 180, 23036, { po: 1 }, "antre_korriandre", [dg("antre_korriandre", 5), { t: "soul", zone: "abrak", n: 3 }, dg("antre_korriandre", 8)]],
     ["argente", "Dofus Argenté Scintillant", 180, 23027, { vit: 300 }, "belvedere_ilyzaelle", [dg("oeil_vortex", 5), dg("defi_chaloeil", 6), dg("belvedere_ilyzaelle", 8)]],
     ["cauchemar", "Dofus du Cauchemar", 180, 23034, { ini: 1000 }, "chambre_tal_kasha", [dg("chambre_tal_kasha", 5), { t: "chal", chal: "rapide", n: 50 }, dg("chambre_tal_kasha", 8)]],
+    /* 1.0 : les 13 derniers Dofus de DOFUS (bonus inspirés de DofusDB, adaptés au combat automatique). Le Jyfus (« J'y étais ! ») est le cadeau de lancement. */
+    ["dofawa", "Dofawa", 6, 23009, { vit: 10 }, "crypte_kardorim", [dg("crypte_kardorim", 1), { t: "kill", zone: "astrub", n: 50 }, dg("crypte_kardorim", 3)]],
+    ["jyfus", "Jyfus", 20, 23038, { vit: 20, sa: 10 }, null, [{ t: "gift" }]],
+    ["argent", "Dofus Argenté", 20, 23025, { sa: 20 }, "chateau_ensable", [dg("chateau_ensable", 2), { t: "kill", zone: "astrub", n: 100 }, dg("chateau_ensable", 4)]],
+    ["dokille", "Dokille", 80, 23017, { pp: 15 }, "cimetiere_mastodontes", [dg("cimetiere_mastodontes", 3), { t: "chal", chal: "survivant", n: 30 }, dg("cimetiere_mastodontes", 6)]],
+    ["veilleurs", "Dofus des Veilleurs", 100, 23020, { epa: 20, epm: 10 }, "theatre_dramak", [dg("theatre_dramak", 4), { t: "almanax", n: 5 }, dg("theatre_dramak", 7)]],
+    ["dorigami", "Dorigami", 150, 23033, { epm: 20, epa: 10 }, "tertre_long_sommeil", [dg("tertre_long_sommeil", 4), { t: "kill", zone: "pandala", n: 300 }, dg("tertre_long_sommeil", 8)]],
+    ["dofoozbz", "Dofoozbz", 170, 23039, { inv: 1, pui: 30 }, "grotte_bworker", [dg("grotte_bworker", 5), { t: "chal", chal: "barbare", n: 50 }, dg("grotte_bworker", 8)]],
+    ["verdoyant", "Dofus Verdoyant", 180, 23037, { so: 40, vit: 150 }, "breuil_venerable", [dg("breuil_venerable", 5), dg("arbre_mort", 6), dg("breuil_venerable", 8)]],
+    ["tachete", "Dofus Tacheté", 180, 23008, { xt: 30, xf: 30, xe: 30, xa: 30, xn: 30 }, "temple_kao", [dg("temple_kao", 5), { t: "perfect", n: 2 }, dg("temple_kao", 8)]],
+    ["nebuleux", "Dofus Nébuleux", 180, 23016, { fui: 30, epm: 30, ini: 500 }, "memoire_orukam", [dg("memoire_orukam", 5), dg("souvenir_imagiro", 6), dg("memoire_orukam", 8)]],
+    ["forgelave", "Dofus Forgelave", 180, 23024, { do: 15 }, "fers_tyrannie", [dg("fers_tyrannie", 5), { t: "chal", chal: "rapide", n: 50 }, dg("fers_tyrannie", 8)]],
+    ["abyssal", "Dofus Abyssal", 180, 23023, { dsort: 6 }, "palais_dantinea", [dg("palais_dantinea", 5), dg("temple_koutoulou", 6), dg("palais_dantinea", 8)]],
+    ["dompin", "Dom de Pin", 180, 23035, { po: 1 }, "arbre_mort", [dg("arbre_mort", 5), { t: "harvest", res: "Bois de Chêne", n: 500 }, dg("arbre_mort", 8)]],
   ];
   E.DOFUS = {}; E.DOFUS_ORDER = [];
   E.DOKOKO_PCT = 3; // Dokoko : % des PV max rendus à chaque début de tour
@@ -127,11 +141,11 @@
     E.DOFUS_ORDER.push(id);
     const st = {}; for (const k in stats) st[k] = [stats[k], stats[k]];
     ITEMS[tpl] = { name, slot: "dofus", lvl, stats: st, icon, dofus: id, rarity: "legendaire", desc: id === "dokoko" ? `Chaque début de tour, le porteur récupère ${E.DOKOKO_PCT} % de ses PV.` : null };
-    SPECIAL_CRAFTS[`Copie : ${name}`] = { job: "bricoleur", lvl: Math.max(25, lvl - 10), dofus: id, ing: [[E.POUSSIERE, Math.round(lvl * 1.5)]] };
+    // 1.0 (Mathis) : un Dofus ne s'obtient que par sa quête et le butin du boss ; plus de copie chez le Bricoleur (les copies déjà faites restent)
   });
   E.dofusBonusTxt = (id) => { const Df = E.DOFUS[id]; if (id === "dokoko") return ITEMS[Df.tpl].desc; const ks = Object.keys(Df.stats); const v = Df.stats[ks[0]];
-    if (ks.length > 1 && ks.every((k) => Df.stats[k] === v)) return `+${v}${/^r/.test(ks[0]) ? " %" : ""} ${ks.length === 5 && /^r/.test(ks[0]) ? "de résistance dans chaque élément" : ks.length === 5 ? "de dommages dans chaque élément" : ks.map((k) => D.STATS[k].name).join(", ")}`;
-    return ks.map((k) => `+${Df.stats[k]}${k === "cri" ? " %" : ""} ${D.STATS[k].name.replace("% ", "")}`).join(", "); };
+    if (ks.length > 1 && ks.every((k) => Df.stats[k] === v)) return `+${v}${/^r/.test(ks[0]) ? " %" : ""} ${ks.length === 5 && /^r/.test(ks[0]) ? "de résistance dans chaque élément" : ks.length === 5 && /^x/.test(ks[0]) ? "de résistance fixe dans chaque élément" : ks.length === 5 ? "de dommages dans chaque élément" : ks.map((k) => D.STATS[k].name).join(", ")}`;
+    return ks.map((k) => `+${Df.stats[k]}${k === "cri" || k === "dsort" ? " %" : ""} ${D.STATS[k].name.replace("% ", "")}`).join(", "); };
   E.dofusOwned = (S, id) => Object.values(S.items || {}).some((it) => it.tpl === "dofus_" + id);
   E.dofusCount = (S) => E.DOFUS_ORDER.filter((id) => E.dofusOwned(S, id)).length;
   E.dofusWornBy = (S, id) => S.chars.find((c) => Object.values(c.equip).some((u) => S.items[u] && S.items[u].tpl === "dofus_" + id)) || null;
@@ -148,7 +162,7 @@
   /* butin du boss (fin de donjon) : le Dofus de ce donjon, ou l'Ocre sur les grands boss */
   E.dofusDrop = (S, did, k, out) => {
     E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id];
-      const ok = Df.dg ? Df.dg === did && k >= E.DOFUS_DROP_STASIS && rnd() < E.DOFUS_DROP : DUNGEONS[did].lvl >= 160 && k >= 8 && rnd() < E.OCRE_DROP;
+      const ok = Df.steps[0] && Df.steps[0].t === "gift" ? false : Df.dg ? Df.dg === did && k >= E.DOFUS_DROP_STASIS && rnd() < E.DOFUS_DROP : DUNGEONS[did].lvl >= 160 && k >= 8 && rnd() < E.OCRE_DROP;
       if (ok) { E.giveDofus(S, id, "butin du boss"); if (out) out.push(Df.name); } });
   };
   E.dofusOfDungeon = (did) => E.DOFUS_ORDER.find((id) => E.DOFUS[id].dg === did) || null;
@@ -177,6 +191,7 @@
       case "soul": return [Math.min(E.soulCount(S, st.zone), st.n), st.n];
       case "perfect": return [Math.min(perfects(S), st.n), st.n];
       case "ocre": return [E.ocreTier(S), E.OCRE_TIERS.length];
+      case "gift": return [E.dofusOwned(S, id) ? 1 : 0, 1];
       default: return [cur ? Math.min(Q.prog, st.n) : 0, st.n]; // kill, harvest, chal, almanax : comptés pendant l'étape
     }
   };
@@ -192,6 +207,7 @@
       case "almanax": return `Faire ${st.n} offrandes à l'Almanax`;
       case "perfect": return `Posséder ${st.n > 1 ? st.n + " objets Parfaits" : "un objet Parfait"} (toutes les caractéristiques au jet maximum)`;
       case "ocre": return "Éternelle moisson : capturer l'âme de tous les archimonstres, palier par palier";
+      case "gift": return "Cadeau de lancement de la 1.0 : se connecter pendant la première semaine (jusqu'au 20 octobre)";
     }
     return "";
   };
@@ -201,7 +217,7 @@
       const Df = E.DOFUS[id]; const Q = dq(S, id); let guard = 0;
       while (!Q.done && guard++ < 8) {
         const st = Df.steps[Q.step]; if (!st) { Q.done = E.now(); E.giveDofus(S, id, "quête terminée"); break; }
-        if (st.t === "ocre") break; // l'Ocre est donné par le dernier palier
+        if (st.t === "ocre" || st.t === "gift") break; // l'Ocre est donné par le dernier palier
         const [a, b] = E.dofusStepProgress(S, id, Q.step); if (a < b) break;
         Q.step++; Q.prog = 0;
         if (Q.step < Df.steps.length) E.note(S, `${Df.name} : étape ${Q.step} sur ${Df.steps.length} accomplie.`, "up");

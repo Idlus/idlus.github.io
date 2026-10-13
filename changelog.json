@@ -1,6 +1,22 @@
 {
-  "version": "0.1.57.2",
+  "version": "1.0",
   "versions": [
+    {
+      "v": "1.0",
+      "name": "Idlus 1.0",
+      "items": [
+        "Idlus sort officiellement en version 1.0 ! Les parties sont gardées telles quelles, rien n'est remis à zéro",
+        "Cadeau de lancement pour tous ceux qui jouent avant le mardi 20 octobre au soir : titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le Jyfus (« J'y étais ! », +20 Vitalité, +10 Sagesse) et un Coffre des Douze",
+        "Course de lancement : les 10 premiers comptes à finir la quête principale gagnent le titre « Légende de la 1.0 » et l'ornement unique « Couronne de la Légende », gravés dans Classements › Premiers",
+        "Les 13 derniers Dofus arrivent : 31 Dofus en tout. Dofus Abyssal, Nébuleux, Forgelave, Tacheté, Verdoyant et Dom de Pin chez les boss de niveau 200, Dofoozbz, Dorigami, Dofus des Veilleurs, Dokille, Dofus Argenté et Dofawa plus tôt, chacun avec sa quête dans Quêtes › Dofus",
+        "15 sous-zones classiques de DOFUS jamais ajoutées, du niveau 16 au niveau 120 : Rives iridescentes, Île des naufragés, Champ de citwouilles, Orée de la forêt des Abraknydes, Village des Dopeuls, Routes Rocailleuses, Rivage sufokien, Passage vers Brâkmar, Cimetière des Héros, Bordure de Brâkmar, Plage de la Tortue, Marécages d'Amakna, Territoire des Porcos, Antre du Koulosse et Bois de Litneg",
+        "86 nouveaux monstres dont 36 archimonstres (l'album passe à 277 âmes, Bonta et Brâkmar rejoint le palier Amakna de l'Éternelle moisson), 80 équipements à fabriquer, 5 panoplies (Crocoburio, Chef Crocodaille, Chispanoplie, Hectaupe, Demoël) et 75 ressources",
+        "Les Dofus ne s'obtiennent plus que par leur quête et en butin du boss : la copie chez le Bricoleur disparaît (les copies déjà fabriquées sont gardées)",
+        "Nouveau succès « Tous les Dofus » (les 31) avec le titre « Seigneur des Dofus »",
+        "Arrivés juste avant la 1.0 : les Commandes du jour (ressources payées selon le niveau de ton meilleur héros), la boutique de la maison au Havre-Sac, l'agrandissement des pièces et l'Autel des Douze qui relève les plafonds de bonus (XP et butin jusqu'à +250 %, kamas jusqu'à +275 %)",
+        "Quête principale : l'étape du Mantiscore (zone de Saharach fermée à ce moment-là) devient la Reine Nyée, faisable dans l'ordre"
+      ]
+    },
     {
       "v": "0.1.57.2",
       "name": "Accueil réparé sur téléphone",
