@@ -1,6 +1,14 @@
 {
-  "version": "0.1.49",
+  "version": "0.1.49.2",
   "versions": [
+    {
+      "v": "0.1.49.2",
+      "name": "Roue des Options",
+      "items": [
+        "Le bouton des Options, en haut à droite, devient une vraie roue dentée dorée (l'ancienne icône ressemblait à un soleil). Sur ordinateur, le mot « Options » est écrit à côté",
+        "La roue dorée apparaît aussi devant « Options » dans les bulles d'aide, le Carnet des découvertes et ces notes de mise à jour, pour savoir quel bouton chercher"
+      ]
+    },
     {
       "v": "0.1.49",
       "name": "Boss des mondes",
