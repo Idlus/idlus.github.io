@@ -2,7 +2,7 @@
 -- Idlus — chat et panel admin (multijoueur). Appliqué automatiquement par le
 -- workflow « Serveur en ligne » après schema.sql et classements.sql ; relançable sans danger.
 -- Le jeu n'écrit jamais directement dans le chat : tout passe par chat_send, qui vérifie
--- le pseudo, les sanctions, les liens, les gros mots et le mode lent.
+-- le pseudo, les sanctions, les liens et le mode lent (plus de liste de mots interdits depuis 0.1.33.1).
 -- ============================================================================
 
 -- ---------- réglages (une seule ligne, modifiable dans le panel admin) ----------
@@ -117,7 +117,7 @@ set search_path = public
 as $$
 declare
   me uuid := auth.uid(); pr record; sa record; lad record; st record; last record;
-  b text := btrim(coalesce(p_body, '')); n text; best int;
+  b text := btrim(coalesce(p_body, '')); best int;
 begin
   if me is null then return 'Connecte-toi pour écrire.'; end if;
   select pseudo, suspended_at into pr from profiles where id = me;
@@ -130,10 +130,6 @@ begin
   if length(b) > 200 then return '200 caractères au maximum.'; end if;
   if p_item is not null and (length(p_item::text) > 1500 or jsonb_typeof(p_item->'tpl') <> 'string') then return 'Objet illisible.'; end if;
   if b ~* '(https?://|www\.|discord\.(gg|com)|[a-z0-9-]+\.(com|fr|net|org|gg|io|be|ch|xyz|ru|ly|me|tv)(/|\s|$))' then return 'Les liens ne sont pas autorisés dans le chat.'; end if;
-  n := translate(lower(b), 'àâäéèêëîïôöùûüç013456@$', 'aaaeeeeiioouuucoieasgas');
-  if n ~ '(merde|pute|putain|connard|connasse|salope|encul|batard|nique|fuck|bitch|nigg|negre|nazi|hitler|bougnoul|youpin|pedale|tapette)' or n ~ '\m(pd|fdp|ntm|tg|ntr)\M' then
-    return 'Ce message contient un mot interdit.';
-  end if;
   select * into st from chat_settings where id = 1;
   select * into lad from ladder where user_id = me;
   if coalesce(st.min_level, 0) > 0 then

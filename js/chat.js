@@ -142,7 +142,7 @@
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
     }
     const rows = C.g.filter((m) => !C.ign.has(m.user_id));
-    return `<div class="sys">Bienvenue sur le chat général. Reste courtois : insultes, liens et publicité sont refusés.</div>` + rows.map(msgHtml).join("");
+    return `<div class="sys">Bienvenue sur le chat général. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
   }
   function footHtml(typed) {
     if (!ON.user) return `<div class="ch-lock">Connecte-toi pour écrire dans le chat. <button class="btn sm" data-act="on-loginscreen">Se connecter</button></div>`;
