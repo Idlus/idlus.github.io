@@ -1,6 +1,15 @@
 {
-  "version": "1.0.3.1",
+  "version": "1.0.3.2",
   "versions": [
+    {
+      "v": "1.0.3.2",
+      "name": "Petits bugs corrigés",
+      "items": [
+        "Téléphone, Quêtes : les pages de chaque famille (Du jour, Semaine, Almanax, Commandes…) tiennent sur 2 lignes au lieu d'une rangée coupée sur les bords",
+        "Quêtes : la rangée des chapitres de la quête principale ne revient plus au début toute seule quelques secondes après l'avoir fait défiler",
+        "Téléphone, Monde : le choix « Tout » des niveaux ne tombe plus seul sur une deuxième ligne"
+      ]
+    },
     {
       "v": "1.0.3.1",
       "name": "Baguette Rikiki",

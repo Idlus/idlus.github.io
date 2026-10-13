@@ -78,8 +78,9 @@
   /* téléphone : les 3 familles en gros boutons, puis les pages de la famille (0.1.49) */
   function mtabs(s, qt) {
     const left = todo(s); const F = FAMS.find((f) => f.id === famOf(qt));
+    const n = F.pages.length + (F.id === "day" || qt === "shops" ? 1 : 0); // 1.0.3.2 : 3 colonnes si le compte tombe juste, sinon 2
     return `<div class="qj-m"><div class="qj-fam3">${FAMS.map((f) => `<button data-act="qtab" data-v="${f.pages[0][0]}" aria-pressed="${f.id === F.id && qt !== "shops"}">${IC(f.ic)}${f.n}${f.id === "day" && left ? '<span class="qj-pip"></span>' : ""}</button>`).join("")}</div>
-      <div class="qj-chips">${F.pages.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
+      <div class="qj-chips" style="--qc:${n % 3 === 0 ? 3 : 2}">${F.pages.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${qt === id}">${id === "jour" ? "Du jour" : n}${id === "jour" ? (left ? ' <span class="qj-pip"></span>' : "") : cnt(s, id)}</button>`).join("")}${F.id === "day" || qt === "shops" ? `<button data-act="qtab" data-v="shops" aria-pressed="${qt === "shops"}">${IC("bourse")} Comptoirs</button>` : ""}</div></div>`;
   }
 
   /* en-tête de page : titre, compteur, bouton « ? » (aide repliée) */
@@ -362,7 +363,11 @@
       return;
     }
     const body = qt === "jour" ? jourHtml(s) : qt === "main" ? mainHtml(s) : qt === "region" ? regionHtml(s) : qt === "hebdo" ? hebdoHtml(s) : qt === "bounty" ? bountyHtml(s) : qt === "tresor" ? tresorPage(s) : qt === "dofus" ? dofusHtml(s) : qt === "shops" ? shopsHtml(s) : keptHtml(s, qt);
+    // 1.0.3.2 : la page se redessine toutes les 3 s ; on garde le défilement des rangées horizontales (chapitres…)
+    const keep = st.lastQt === qt ? [...main.querySelectorAll(".qj-main *")].filter((e) => e.scrollLeft > 0 && typeof e.className === "string" && e.className.trim()).map((e) => [e.className, e.scrollLeft]) : [];
+    st.lastQt = qt;
     main.innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div><div class="qj-lay">${journal(s, qt)}<div class="qj-main">${mtabs(s, qt)}<section class="stack">${body}</section></div></div>`;
+    keep.forEach(([c, x]) => { const e = main.querySelector(".qj-main ." + c.trim().split(/\s+/).join(".")); if (e) e.scrollLeft = x; });
   }
 
   function act(a, t) {

@@ -36,9 +36,9 @@
 .qj-fam3 .uico{width:22px;height:22px}
 .qj-fam3 button[aria-pressed="true"]{background:var(--gold);color:#13200a;border-color:var(--gold)}
 .qj-fam3 .qj-pip{position:absolute;top:6px;right:8px}
-.qj-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
-.qj-chips::-webkit-scrollbar{display:none}
-.qj-chips button{flex:none;display:flex;gap:6px;align-items:center;border:2px solid var(--frame);background:var(--panel);border-radius:999px;padding:5px 10px;font-weight:800;font-size:13px;cursor:pointer;color:var(--ink)}
+/* 1.0.3.2 : les pages de la famille en grille (2 ou 3 colonnes) au lieu d'une rangée qui défilait et paraissait coupée au téléphone */
+.qj-chips{display:grid;grid-template-columns:repeat(var(--qc,2),minmax(0,1fr));gap:6px}
+.qj-chips button{min-width:0;justify-content:center;text-align:center;line-height:1.15;display:flex;gap:6px;align-items:center;border:2px solid var(--frame);background:var(--panel);border-radius:12px;padding:6px 6px;font-weight:800;font-size:12.5px;cursor:pointer;color:var(--ink)}
 .qj-chips .uico{width:18px;height:18px}
 .qj-chips button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold2)}
 /* en-tête de page et aide repliée */

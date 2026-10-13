@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.3.1";
+const GAME_VERSION = "1.0.3.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.3.2", name: "Petits bugs corrigés", items: [
+    "Téléphone, Quêtes : les pages de chaque famille (Du jour, Semaine, Almanax, Commandes…) tiennent sur 2 lignes au lieu d'une rangée coupée sur les bords",
+    "Quêtes : la rangée des chapitres de la quête principale ne revient plus au début toute seule quelques secondes après l'avoir fait défiler",
+    "Téléphone, Monde : le choix « Tout » des niveaux ne tombe plus seul sur une deuxième ligne",
+  ] },
   { v: "1.0.3.1", name: "Baguette Rikiki", items: [
     "La Baguette Rikiki en arme (fabriquée par le Sculpteur ou trouvée en combat) ouvre maintenant la Planque des Vilinsekts, comme celle du Bricoleur",
     "Une fois ouverte, la Planque reste accessible même si vous vendez ou brisez la baguette",

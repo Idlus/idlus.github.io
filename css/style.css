@@ -1083,6 +1083,7 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 @media (max-width:640px){.plines{grid-template-columns:1fr}.pcard .btn{padding:4px 8px}}
 .maptiers{margin:0 0 4px;flex-wrap:wrap;gap:8px}
 .maptiers .seg{flex-wrap:wrap}
+@media (max-width:520px){.maptiers .seg{border-radius:14px}.maptiers .seg button{padding:4px 7px}} /* 1.0.3.2 : « Tout » ne tombe plus seul sur une 2e ligne au téléphone */
 .zonefoldp{margin-bottom:8px}
 .zonefold{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:12px 14px;background:none;border:0;color:inherit;cursor:pointer;text-align:left;flex-wrap:wrap}
 .zonefold .zf-name{font-family:var(--font-title);font-size:20px;color:var(--title);text-shadow:var(--tshadow)}

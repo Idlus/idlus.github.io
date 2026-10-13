@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.3.2 « Petits bugs corrigés »
+Rangée des pages de Quêtes au téléphone en grille (2 ou 3 colonnes, `.qj-chips` dans css/quetes.css) au lieu d'un défilement horizontal coupé ; la page Quêtes se redessinant toutes les 3 s, elle garde maintenant le défilement des rangées horizontales (chapitres) ; tranches de niveaux du Monde compactes au téléphone.
+
 ## 1.0.3.1 « Baguette Rikiki »
 La Planque des Vilinsekts (`ast_planque`) demandait la Baguette Rikiki du Bricoleur (ressource `S.res`), mais l'arme Baguette Rikiki (`i15990`, Sculpteur, ajoutée avec les armes) ne l'ouvrait pas : `E.subUnlocked` accepte maintenant l'arme dans le sac ou équipée et garde l'accès dans `S.progress.hiddenOpen`.
 
