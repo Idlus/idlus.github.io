@@ -5,7 +5,7 @@ const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
-require("../js/welcome.js"); require("../js/defi.js"); require("../js/gboss.js"); require("../js/expedition.js");
+require("../js/welcome.js"); require("../js/defi.js"); require("../js/gboss.js"); require("../js/legendaires.js"); require("../js/songe.js");
 require("../js/suivi.js"); require("../js/vie.js");
 
 let t = Date.UTC(2030, 0, 8, 10, 0); E.setClock(() => t);
