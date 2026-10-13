@@ -300,9 +300,10 @@
     const s = st(); const tab = window.DX && window.DX.ui ? window.DX.ui.tab : "";
     if (!s || !S() || (window.DX.ui && window.DX.ui.watch)) { b.innerHTML = ""; return; }
     const def = E.wbDef(s.n); let html = "";
-    if (s.bonus > Date.now() && pref.xpbar !== s.bonus && s.last) html += `<div class="updbar wbbar xp">${X().IC("bonbon")}<span><b>${h(s.last.name)} est tombé !</b> +${E.WB_KILL.xp} % d'XP pour tout le monde, encore ${dur(s.bonus - Date.now())}.</span><button class="btn sm" data-act="wb-barclose" data-v="xp">Fermer</button></div>`;
+    const C = X().tchip; // 1.0.4.7 : même pastille que le reste de la ligne du haut
+    if (s.bonus > Date.now() && pref.xpbar !== s.bonus && s.last) html += C({ k: "bonus", ico: X().IC("bonbon"), t: `${h(s.last.name)} vaincu`, d: `+${E.WB_KILL.xp} % XP · ${dur(s.bonus - Date.now())}`, s: `+${E.WB_KILL.xp} % · ${dur(s.bonus - Date.now())}`, tip: `${s.last.name} est tombé ! +${E.WB_KILL.xp} % d'XP pour tout le monde, encore ${dur(s.bonus - Date.now())}.`, x: `data-act="wb-barclose" data-v="xp"` });
     const key = `${s.n}:${s.phase}`;
-    if (tab !== "wb" && pref.bar !== key) html += `<div class="updbar wbbar"><img class="b${an(s.phase)}" src="${img(def)}" alt=""><span data-tip="Boss des mondes : ${h(def.name)} · phase ${s.phase}${s.phase > 1 ? ` (${h(phName(def, s.phase))})` : ""}"><b>${h(def.name)}</b> <span class="muted">phase ${s.phase}</span> <span class="mini"><i style="width:${pctLeft(s)}%"></i></span> ${pctTxt(pctLeft(s))}</span><button class="btn sm primary" data-act="wb-go">${mode() === "guest" ? "Voir" : "Attaquer"}</button><button class="btn sm" data-act="wb-barclose" data-v="${key}" aria-label="Fermer">✕</button></div>`;
+    if (tab !== "wb" && pref.bar !== key) html += C({ k: "boss", ico: `<img class="b${an(s.phase)}" src="${img(def)}" alt="">`, t: h(def.name), d: `phase ${s.phase}`, bar: pctLeft(s), v: pctTxt(pctLeft(s)), go: `data-act="wb-go"`, tip: `Boss des mondes : ${def.name} · phase ${s.phase}${s.phase > 1 ? ` (${phName(def, s.phase)})` : ""}`, act: `<button class="tc-act" data-act="wb-go">${mode() === "guest" ? "Voir" : "Attaquer"}</button>`, x: `data-act="wb-barclose" data-v="${key}"` });
     if (b.innerHTML !== html) b.innerHTML = html;
   }
 

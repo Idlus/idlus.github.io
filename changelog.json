@@ -1,6 +1,16 @@
 {
-  "version": "1.0.4.6",
+  "version": "1.0.4.7",
   "versions": [
+    {
+      "v": "1.0.4.7",
+      "name": "Pastilles du haut",
+      "items": [
+        "Les pastilles en haut de l'écran (quête suivie, événement, bonus, boss des mondes, protecteur) ont toutes la même forme : une pastille ronde colorée, le titre en gras, le détail en gris",
+        "Textes raccourcis : « XP et butin ×2 · 5 j 6 h », « Gargandyas vaincu · +10 % XP · 8 min ». Le détail complet s'affiche au survol (ou en touchant sur téléphone)",
+        "Sur PC, tout tient sur une seule ligne. Sur téléphone, les pastilles sont réduites à l'image et au chiffre clé, et le boss des mondes n'est plus caché hors de l'écran",
+        "Une seule petite croix ✕ pour fermer, partout (annonce de l'admin comprise). Toucher la pastille du boss ouvre sa page, et « Attaquer » reste là sur PC"
+      ]
+    },
     {
       "v": "1.0.4.6",
       "name": "Boss des mondes : les 3 combats comptent",

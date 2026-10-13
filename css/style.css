@@ -4122,24 +4122,42 @@ button.cmdico{padding:0;cursor:pointer}
 .status .brand{display:none}
 .status .ic-btn[data-act="search"]{margin-left:auto}
 /* une seule ligne de pastilles : objectifs suivis, événement, boss des mondes, protecteur */
-.topchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 12px}
-.topchips:not(:has(.obj,.updbar)){display:none}
+.topchips{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:-7px 0 9px;padding:3px 2px}
+.topchips::-webkit-scrollbar{display:none}
+.topchips:not(:has(.tchip)){display:none}
 .topchips>#objs,.topchips>#updbar,.topchips #wbbar{display:contents!important}
 .topchips>:not(#objs):not(#updbar){display:none}
-.topchips .objs .cnt{display:none}
-.topchips .obj{height:32px;flex:none}
-.topchips .updbar{flex:none;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px;margin:0;height:32px;padding:0 4px 0 10px;border-radius:999px;box-shadow:none;font-size:12.5px;white-space:nowrap;border-width:1.5px}
-.topchips .updbar>span{flex:none!important}
-.topchips .updbar .muted{font-weight:600}
-.topchips .updbar .btn.sm{padding:3px 10px;font-size:12px;min-height:0;border-radius:999px}
-.topchips .updbar img.b,.topchips .updbar .ico,.topchips .updbar.wbbar .uico{width:24px!important;height:24px!important}
-.topchips .updbar.wbbar .mini{width:46px;height:7px;margin:0 2px}
-.topchips .updbar.pchip{border-color:rgba(126,224,106,.6);background:rgba(126,224,106,.1)}
-.topchips .updbar.new,.topchips .updbar:not(.ev):not(.wbbar):not(.pchip){padding-right:4px}
+/* 1.0.4.7 « Pastilles du haut » : toutes les pastilles ont la même forme (pastille ronde colorée + titre + détail + jauge, action, ✕) */
+.tchip{--tc:var(--gold);display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 4px;border-radius:999px;background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 13%,var(--panel2)),var(--panel2));border:1.5px solid color-mix(in srgb,var(--tc) 55%,transparent);font-size:12px;line-height:1;white-space:nowrap;flex:0 1 auto;min-width:0;box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.tchip>*{flex:none}.tchip>.tc-t{flex:0 1 auto;display:flex;gap:4px;align-items:baseline}.tc-t>b{flex:none}.tc-t>.tc-d{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tchip:has(>.tc-act:last-child,>.tc-x:last-child){padding-right:5px}
+.tchip[data-act]{cursor:pointer;transition:border-color .15s,transform .15s}.tchip[data-act]:hover{border-color:var(--tc);transform:translateY(-1px)}
+.tc-ico{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--tc) 40%,transparent),color-mix(in srgb,var(--tc) 12%,transparent));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--tc) 70%,transparent)}
+.tc-ico .uico,.tc-ico svg{width:18px;height:18px}.tc-ico img{width:24px;height:24px;object-fit:contain}
+.tc-t{min-width:0;overflow:hidden}.tc-t b{font-weight:800;color:var(--ink)}
+.tc-d{color:var(--muted);font-weight:600}
+.tc-s{display:none;font-weight:800;color:var(--ink)}
+.tc-bar{width:42px;height:6px;border-radius:4px;background:rgba(0,0,0,.45);overflow:hidden;flex:none}.tc-bar i{display:block;height:100%;border-radius:4px;background:var(--tc)}
+.tc-v{font-size:11.5px;font-weight:800;color:var(--muted)}
+.tc-act{display:inline-flex;align-items:center;height:26px;padding:0 11px;border-radius:999px;border:0;font:inherit;font-weight:800;font-size:12px;cursor:pointer;background:linear-gradient(180deg,#d6f27e,#8cc63f);color:#13200a;text-decoration:none}
+.tc-act.ghost{background:rgba(255,255,255,.1);color:var(--ink)}.tc-act[disabled]{opacity:.5;cursor:default}
+.tc-x{width:24px;height:24px;flex:none;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;font-weight:900;cursor:pointer;margin-left:-2px}
+.tc-x:hover{background:rgba(226,83,59,.3);color:#fff}
+.tchip .tc-act+.tc-x{margin-left:-3px}
+.k-quest{--tc:#ffb95c}.k-pin{--tc:#e7c46a}.k-done{--tc:#3fb35d}.k-ev{--tc:#f1cf6e}.k-bonus{--tc:#9fe36a}.k-boss{--tc:#c45cff}.k-prot{--tc:#7ee06a}.k-sys{--tc:#6ab7ff}
+.k-boss .tc-bar i{background:linear-gradient(90deg,#e2533b,#ff8a5c)}
+.annbar .tc-x{margin-left:auto}
 @media (max-width:640px){
-  .topchips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:-2px 0 10px}
-  .topchips::-webkit-scrollbar{display:none}
-  .topchips .updbar.ev .muted{font-size:12px}
+  /* téléphone : pastilles réduites (pastille + chiffre clé), elles tiennent sur une ligne ; toucher ouvre la page ou le détail */
+  .topchips{-webkit-overflow-scrolling:touch;margin:-5px 0 7px;gap:5px}
+  .tchip{height:32px;gap:4px;padding:0 9px 0 3px;min-width:0;flex:none;font-size:11.5px}
+  .tc-ico{width:25px;height:25px}.tc-ico .uico,.tc-ico svg{width:16px;height:16px}.tc-ico img{width:22px;height:22px}
+  .tchip.has-s .tc-t,.tchip .tc-d,.tchip .tc-x,.tchip.k-boss .tc-act{display:none}
+  .tchip.has-s .tc-s{display:inline}
+  .tchip .tc-t,.tchip .tc-bar{display:none}
+  .tchip .tc-v{font-size:11.5px;color:var(--ink)}
+  .tchip:has(>.tc-act:last-child,>.tc-x:last-child){padding-right:9px}
+  .tchip:not(.k-boss):has(>.tc-act){padding-right:4px}
 }
 /* notifications : une seule à la fois, fine, en haut sous la barre (Options › Affichage › Notifications « En bas » garde l'ancienne place) */
 body:not(.toast-bot):not(.toast-top) .toasts{top:calc(var(--sth,60px) + 8px);bottom:auto}

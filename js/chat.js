@@ -319,7 +319,7 @@
     const el = $("#annbar"); if (!el) return;
     const list = await ON.announces(); const seen = pref.annSeen || 0;
     const a = list.find((x) => x.id > seen);
-    el.innerHTML = a ? `<div class="annbar">${X().IC("parchemin_or")}<span class="grow">${h(a.body)}</span><button class="lnk" data-act="ch-annok" data-id="${a.id}">Fermer</button></div>` : "";
+    el.innerHTML = a ? `<div class="annbar">${X().IC("parchemin_or")}<span class="grow">${h(a.body)}</span><button class="tc-x" data-act="ch-annok" data-id="${a.id}" aria-label="Fermer" title="Fermer">✕</button></div>` : "";
   }
 
   /* ---------- panel admin ---------- */

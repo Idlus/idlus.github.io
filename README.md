@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.7 « Pastilles du haut »
+js/ui.js `tchip(o)` (exposé dans `DX.social.tchip`) : une seule forme de pastille pour la ligne `#topchips` (objectifs `objsHtml`, `renderUpdBar`, `protChip`, boss des mondes `paintBar` de js/wbossui.js). Classes `k-quest/pin/done/ev/bonus/boss/prot/sys` (couleur `--tc`), `.tc-s` = texte court montré à la place du titre sur téléphone, `.tc-x` = croix (aussi sur l'annonce admin de js/chat.js). PC : une ligne sans retour (défile si trop long) ; téléphone ≤ 640 px : pastille + chiffre clé.
+
 ## 1.0.4.6 « Boss des mondes : les 3 combats comptent »
 js/wboss.js : `E.wbSim` renvoie le TOTAL des `E.WB_FIGHTS` combats (avant : la moyenne ; `raw` reste la moyenne pour tools/wboss_calib.js), `fights[].seed` ; grille `E.WB_GRADES` ×3 (150/300/600/1050/1500), même chose dans `wb_grade` (supabase/wboss.sql). Remise à l'échelle unique `wb_resets` '1.0.4.6' : points des essais du boss en cours (wb_hits et wb_hits_old), PV et dégâts ×3. PV minimum du boss suivant 1 800 points. js/wbossui.js : pendant « Revoir le combat », le compteur = autres combats + combat regardé, × `E.wbMult` (il l'oubliait) ; `LOCAL_HP` 900.
 

@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4.6";
+const GAME_VERSION = "1.0.4.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4.7", name: "Pastilles du haut", items: [
+    "Les pastilles en haut de l'écran (quête suivie, événement, bonus, boss des mondes, protecteur) ont toutes la même forme : une pastille ronde colorée, le titre en gras, le détail en gris",
+    "Textes raccourcis : « XP et butin ×2 · 5 j 6 h », « Gargandyas vaincu · +10 % XP · 8 min ». Le détail complet s'affiche au survol (ou en touchant sur téléphone)",
+    "Sur PC, tout tient sur une seule ligne. Sur téléphone, les pastilles sont réduites à l'image et au chiffre clé, et le boss des mondes n'est plus caché hors de l'écran",
+    "Une seule petite croix ✕ pour fermer, partout (annonce de l'admin comprise). Toucher la pastille du boss ouvre sa page, et « Attaquer » reste là sur PC",
+  ] },
   { v: "1.0.4.6", name: "Boss des mondes : les 3 combats comptent", items: [
     "Boss des mondes : chaque essai joue toujours 3 combats, mais leurs dégâts s'additionnent maintenant. Avant, seule leur moyenne comptait et on avait l'impression qu'un seul combat était pris en compte",
     "Les grades et les coffres ne changent pas : la grille des grades est simplement passée à l'échelle des 3 combats",
@@ -1370,7 +1376,13 @@ function objsHtml() {
   if (!S) return ""; const pins = E.pins(S); if (!pins.length) return "";
   return pins.map((p) => { const i = E.pinInfo(S, p); if (!i) return ""; const key = E.pinKey(p); const done = p.done || i.done;
     const ico = PIN_ICO[i.k] ? IC(PIN_ICO[i.k]) : i.k === "shop" ? G("cart") : G("up");
-    return `<span class="obj ${p.auto ? "auto" : ""} ${done ? "done" : ""}" data-act="pingo" data-key="${h(key)}" data-tip="${h(`${i.label} · ${done ? "objectif atteint" : i.txt}${p.auto ? " · la quête principale est toujours suivie" : ""}`)}">${ico}<span class="lbl">${h(i.label)}</span><span class="mini"><i style="width:${done ? 100 : pct(i.a, i.b)}%"></i></span><span class="pt num">${done ? "✓" : h(i.txt)}</span>${p.auto ? "" : `<span class="x" data-act="unpin" data-key="${h(key)}" title="Ne plus suivre">×</span>`}</span>`; }).join("") + `<span class="cnt">${pins.length}/${E.MAX_PINS}</span>`;
+    return tchip({ k: done ? "done" : p.auto ? "quest" : "pin", ico, t: h(i.label), bar: done ? 100 : pct(i.a, i.b), v: done ? "✓" : h(i.txt), go: `data-act="pingo" data-key="${h(key)}"`, tip: `${i.label} · ${done ? "objectif atteint" : i.txt}${p.auto ? " · la quête principale est toujours suivie" : ""}`, x: p.auto ? "" : `data-act="unpin" data-key="${h(key)}"`, xt: "Ne plus suivre" }); }).join("");
+}
+/* 1.0.4.7 « Pastilles du haut » : une seule forme de pastille pour toute la ligne du haut (objectifs, événement, bonus, boss des mondes, protecteur)
+   k : couleur (quest, pin, done, ev, bonus, boss, prot, sys) · t / d : titre et détail (HTML déjà échappé) · bar / v : petite jauge et sa valeur
+   s : texte court montré à la place du titre sur téléphone · act : bouton d'action · go : clic sur toute la pastille · x : bouton ✕ */
+function tchip(o) {
+  return `<div class="tchip k-${o.k}${o.s ? " has-s" : ""}"${o.go ? " " + o.go : ""}${o.tip ? ` data-tip="${h(o.tip)}"` : ""}><span class="tc-ico">${o.ico}</span><span class="tc-t"><b>${o.t}</b>${o.d ? ` <span class="tc-d">${o.d}</span>` : ""}</span>${o.s ? `<span class="tc-s">${o.s}</span>` : ""}${o.bar != null ? `<span class="tc-bar"><i style="width:${Math.max(0, Math.min(100, o.bar))}%"></i></span>` : ""}${o.v ? `<span class="tc-v num">${o.v}</span>` : ""}${o.act || ""}${o.x ? `<button class="tc-x" ${o.x} aria-label="${o.xt || "Fermer"}" title="${o.xt || "Fermer"}">✕</button>` : ""}</div>`;
 }
 function renderObjs() { const el = $("#objs"); if (!el) return; const html = objsHtml(); if (el.dataset.k === html) return; el.dataset.k = html; el.innerHTML = html; el.style.display = html ? "" : "none"; }
 const findPin = (key) => E.pins(S).find((p) => E.pinKey(p) === key);
@@ -4534,9 +4546,9 @@ function toolHtml(id) {
 /* 0.1.57 : le protecteur en pastille dans la ligne du haut, sur toutes les pages */
 function protChip() {
   const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null; let out = "";
-  if (P) { const M = MONSTERS[P.mon]; const err = P.fighting || P.go ? null : E.protWhy(S);
-    out += `<div class="updbar pchip" data-tip="${h(`${E.PROT_TITLE[P.job]} : ${M.name} garde le ${P.res}.${err ? " " + err : ""}`)}">${im(imgM(P.mon), "ico sm", M.name)}<span><b>${h(M.name)}</b> <span class="muted">garde le ${h(P.res)} · ${P.fighting ? "combat en cours" : P.go ? "au prochain combat" : dur((P.until - E.now()) / 1000)}</span></span>${P.fighting || P.go ? "" : `<button class="btn sm primary" data-act="protgo" ${err ? "disabled" : ""}>Combattre</button>`}</div>`; }
-  if (B) out += `<div class="updbar pchip">${G("sparkle")}<span>Récolte de <b>${h(B.res)}</b> ×2 <span class="muted">· ${dur((B.until - E.now()) / 1000)}</span></span></div>`;
+  if (P) { const M = MONSTERS[P.mon]; const err = P.fighting || P.go ? null : E.protWhy(S); const when = P.fighting ? "combat en cours" : P.go ? "au prochain combat" : dur((P.until - E.now()) / 1000);
+    out += tchip({ k: "prot", ico: im(imgM(P.mon), "", M.name), t: h(M.name), d: `garde le ${h(P.res)} · ${when}`, s: when, tip: `${E.PROT_TITLE[P.job]} : ${M.name} garde le ${P.res}.${err ? " " + err : ""}`, act: P.fighting || P.go ? "" : `<button class="tc-act" data-act="protgo" ${err ? "disabled" : ""}>Combattre</button>` }); }
+  if (B) out += tchip({ k: "bonus", ico: G("sparkle"), t: "Récolte ×2", d: `${h(B.res)} · ${dur((B.until - E.now()) / 1000)}`, s: `×2 · ${dur((B.until - E.now()) / 1000)}`, tip: `Récolte de ${B.res} ×2, encore ${dur((B.until - E.now()) / 1000)}.` });
   return out;
 }
 /* 0.1.10.1 : protecteur de ressources (bandeau Métiers) */
@@ -5184,12 +5196,13 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
-  if (BETA) html += `<div class="updbar"><span>${G("sparkle")} <b>Version de test</b> : partie séparée du jeu public, des bugs sont possibles.</span>${testerOk() ? `<button class="btn sm" data-adm="open">${G("bug")} Panel de test</button>` : ""}<a class="btn sm" href="../">Jeu public</a></div>`;
-  if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; html += `<div class="updbar ev" data-tip="Événement ${h(E.EVENT.name)} : XP et butin x2 pour tout le monde, encore ${left}."><span>${G("sparkle")} <b>${h(E.EVENT.name)}</b> <span class="muted">XP et butin x2 · ${left}</span></span></div>`; }
+  if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
+  if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
+    html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
   if (S) html += protChip();
-  if (ui.newVersion) html += `<div class="updbar new"><span>${G("sparkle")} La version <b>${h(ui.newVersion)}</b> est en ligne.</span><button class="btn sm primary" data-act="reloadgame">Recharger</button><button class="btn sm" data-act="hidenewv" aria-label="Plus tard">Plus tard</button></div>`;
-  if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
-  if (el.dataset.k !== html) { if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }; el.dataset.k = html; }
+  if (ui.newVersion) html += tchip({ k: "sys", ico: G("sparkle"), t: `Version ${h(ui.newVersion)}`, d: "en ligne", s: h(ui.newVersion), act: `<button class="tc-act" data-act="reloadgame">Recharger</button>`, x: `data-act="hidenewv"`, xt: "Plus tard" });
+  if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += tchip({ k: "sys", ico: G("phone"), t: "Installer idlus", d: `sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}`, tip: "Jouez plus facilement : installez idlus comme une application. Votre partie est conservée.", act: `<button class="tc-act" data-act="installgame">Installer</button>`, x: `data-act="installhide"`, xt: "Non merci" });
+  if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }
 }
 /* 1.0 : grand écran de lancement, montré une fois (avec le cadeau de la semaine de lancement) */
 function launchSheet() {
@@ -7150,7 +7163,7 @@ function repaintKeep(m, htmlStr) {
 }
 window.DX = { get S() { return S; }, ui, render, repaint: repaintKeep, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
-window.DX.social = { h, G, IC, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
+window.DX.social = { h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
 function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
