@@ -1,6 +1,18 @@
 {
-  "version": "0.1.41",
+  "version": "0.1.42",
   "versions": [
+    {
+      "v": "0.1.42",
+      "name": "Accueil du jour",
+      "items": [
+        "Accueil : un bloc « Aujourd'hui » rassemble ce qu'il y a à faire : Défi du jour, Almanax avec le Méryde du jour, Avis de recherche, Coffres à ouvrir, Achats du jeu, Sablier de Xélor et Prochain héros. Une tuile s'allume quand il y a quelque chose à faire et se grise avec ✓ une fois faite",
+        "Les tuiles agissent tout de suite quand c'est possible : « Lancer » joue le défi, « Offrir » fait l'offrande de l'Almanax, « Ouvrir » ouvre un coffre ; les autres ouvrent la bonne page",
+        "Bandeau : la zone de chasse avec son repère Facile / Équilibrée / Difficile, le rendement en une ligne (XP, kamas et ressources par heure, victoires) et les têtes des héros avec leur niveau, une pastille orange pour les points à répartir et une verte pour un meilleur objet dans le sac. Un clic ouvre la fiche du héros",
+        "Zone conseillée : quand l'équipe chasse ailleurs, une ligne sous le bandeau propose la zone de ton niveau avec « Y aller »",
+        "Nouveau bloc « En ce moment » : le mutateur de la semaine et les 3 donjons éclair, avec leur bonus et le temps restant",
+        "Plus court : les grandes cartes de héros, les 6 cases de chiffres et les Consommables quittent l'accueil (les chiffres tiennent en une ligne sous la quête) ; Journal et Derniers combats partagent un panneau à onglets de 5 lignes, avec « Tout voir »"
+      ]
+    },
     {
       "v": "0.1.41",
       "name": "Donjons oubliés",
