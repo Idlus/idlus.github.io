@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.44.1";
+const GAME_VERSION = "0.1.44.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.44.2", name: "Offrande fixe", items: [
+    "Almanax : l'offrande et la cible du jour (famille, zone, donjon) ne changent plus quand un héros gagne des niveaux. Elles sont choisies au premier passage de la journée et restent les mêmes jusqu'à minuit"
+  ] },
   { v: "0.1.44.1", name: "Boss secondaires", items: [
     "Les boss secondaires de DOFUS rejoignent leur donjon et se battent avec le boss principal : les 4 Tynrils au Laboratoire du Tynril, les 4 Blops Royaux au Clos des Blops, Shihan et Hanshi au Dojo du Vent, la Fuji Givrefoux Nourricière à la Tanière Givrefoux, le Professeur Xa avec le Kolosso. Le Gorgouille apparaît dans les salles de l'Antre du Dragon Cochon",
     "Leurs ressources (Ambre et Pistil du Tynril, Fleurs de Blop Royal, Écharpe de Hanshi, Cuir et Condyle de Fuji Givrefoux, Poignée et Fragment du Gorgouille…) débloquent 55 nouveaux équipements à fabriquer, dont les Bloptes et le Blopanneau Multicolores Royaux, la Coiffe du Tynril et les objets du Docteur Eggob",

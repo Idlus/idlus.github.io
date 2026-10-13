@@ -36,3 +36,9 @@ const find = (k) => { for (let i = 0; i < 366; i++) { const t = at("2027-01-01")
 { const [s] = day(find("eco")); let n = 0; for (let i = 0; i < 4000; i++) n += E.almChance(s, "eco") ? 1 : 0; assert.ok(n > 300 && n < 500, "Économie ≈ 10 % : " + n); }
 { const [s] = day(find("archi")); assert.strictEqual(E.almMult(s, "archi"), 2); }
 console.log("ok - donjon du jour, butin de zone, récolte d'un métier, challenge en plus, économie 10 %, traque ×2");
+
+// 4. 0.1.44.2 : l'offrande et la cible restent les mêmes toute la journée, même si un héros gagne des niveaux
+{ now = at("2026-10-13"); const s = E.newState("F", "iop"); s.chars[0].lvl = 20; const a = E.almanax(s);
+  s.chars[0].lvl = 45; const b = E.almanax(s); assert.strictEqual(b.res, a.res); assert.strictEqual(b.qty, a.qty); assert.deepStrictEqual(b.target, a.target);
+  now += 864e5; const c = E.almanax(s); assert.notStrictEqual(c.day, a.day); assert.strictEqual(s.almLvl.lvl, 45, "le lendemain, le niveau du jour est repris"); }
+console.log("ok - offrande et cible figées pour la journée malgré les niveaux gagnés");
