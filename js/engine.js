@@ -29,6 +29,7 @@
   E.petTick = () => 0; E.petStats = () => null; E.petHunt = () => null; E.petBoss = () => {}; E.podBonus = () => 0; // familiers (pets.js)
   E.idolFx = () => null; E.idolOwned = () => false; E.giveIdol = () => false; // 0.1.10 : idoles (js/idols.js)
   E.mountStats = () => null; E.mountHunt = () => null; E.mountXpShare = () => 0; E.stableXp = () => {}; E.enclosTick = () => {}; // montures (mounts.js)
+  E.almMult = (S, w) => (w === "chal1" || w === "eco" || w === "craft2" || w === "fm" || w === "brise" ? 0 : 1); E.almChance = () => false; E.almQty = (q) => q; E.almCandy = () => null; // Almanax (systems.js)
   E.guildXpShare = () => 0; E.guildBonus = () => 0; // 0.1.21 : guildes (js/guilds.js, seulement en ligne)
 
   /* ---------------- Aléatoire & utilitaires ---------------- */
@@ -819,7 +820,7 @@
       const id = pick(sub.monsters); const m = MONSTERS[id];
       const lvl = ri(Math.max(m.lvl[0], sub.lvl[0]), Math.min(m.lvl[1], sub.lvl[1]) || m.lvl[1]);
       const fl = E.huntTier(S, id) >= 3 ? 2 : 1;
-      g.push(monsterEntity(id, Math.max(1, lvl), { archi: rnd() < E.ARCHI_CHANCE * E.archiMult(S) * fl }));
+      g.push(monsterEntity(id, Math.max(1, lvl), { archi: rnd() < E.ARCHI_CHANCE * E.archiMult(S) * E.almMult(S, "archi") * fl }));
     }
     if (rnd() < E.CHAMP_CHANCE) { const cand = g.filter((m) => !m.archi); if (cand.length) E.makeChampion(pick(cand)); }
     return g;
@@ -1088,7 +1089,7 @@
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
     if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
-    F.chals = pickChallenges(S, F, S.dungeon ? 2 : 1);
+    F.chals = pickChallenges(S, F, (S.dungeon ? 2 : 1) + E.almMult(S, "chal1"));
     if (XP) F.exp = XP.exp;
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
     F.powRew = E.powRew(mons, S.dungeon || XP ? "dg" : "hunt", hsm); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
@@ -1904,9 +1905,9 @@
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
-      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1);
+      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * E.almMult(S, "xp", m); // 0.1.39 : Almanax (famille, donjon ou fête)
       xp += x;
-      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1));
+      out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.almMult(S, "kamas", m));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); if (E.captureSoul && E.captureSoul(S, m, opts) === "new") (out.souls = out.souls || []).push(m.key); } // 0.1.13 : âme pour l'album
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
@@ -1924,7 +1925,7 @@
       g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
     });
-    E.stableXp(S, team.length ? team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length : 0); // Mangeoire de l'enclos
+    E.stableXp(S, (team.length ? team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length : 0) * E.almMult(S, "enclos")); // Mangeoire de l'enclos
     // Salle d'entraînement du Havre-Sac : une part de l'XP moyenne de l'équipe
     const tr = E.trainee(S);
     if (tr && team.length) {
@@ -1933,7 +1934,7 @@
     }
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1);
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop");
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -1965,6 +1966,7 @@
       });
       if (lp < 1) out.lootPen = Math.min(out.lootPen || 1, lp); }
     });
+    { const cd = E.almCandy(S); if (cd) { out.cons = (out.cons || 0) + 1; note(S, `Nuit d'Halouine : ${CONSUMABLES[cd].name} dans le butin !`, "rare"); } }
     if (!opts.dungeon && sub && E.petHunt(S, S.sub)) out.pet = true; // familier de la sous-zone
     if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
@@ -2353,7 +2355,7 @@
     if (allOk) S.chalStreak = (S.chalStreak || 0) + 1; else S.chalStreak = 0;
     if (!sum) return 0;
     const streak = Math.min(E.CHAL_STREAK_MAX, Math.max(0, (S.chalStreak - 1)) * E.CHAL_STREAK_STEP);
-    const tot = sum + streak;
+    const tot = Math.round((sum + streak) * E.almMult(S, "chal")); // 0.1.39 : Almanax « Challenges augmentés »
     flog(F, `Challenge${L.filter((c) => c.ok).length > 1 ? "s" : ""} réussi${L.filter((c) => c.ok).length > 1 ? "s" : ""} : +${tot} % XP et butin${streak ? ` (série ${S.chalStreak})` : ""}`, "win");
     return tot;
   };
@@ -2479,7 +2481,7 @@
     E.atelierTick(S, dtMs / 1000);
     E.fmPlanTick(S, dtMs / 1000);
     E.petTick(S, dtMs);
-    E.enclosTick(S, dtMs);
+    E.enclosTick(S, dtMs * E.almMult(S, "enclos")); // 0.1.39 : Almanax « Efficacité des enclos »
   };
 
   /* ---------------- Récolte (v2.6) ----------------
@@ -2556,7 +2558,8 @@
       while (W.prog >= t && n < 200000) {
         W.prog -= t; n++;
         let q = 1; if (rnd() < J.lvl / 200) q++;
-        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
+        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
+        q = E.almQty(q, E.almMult(S, "gather", W.job)); // 0.1.39 : Almanax « Récolte abondante »
         if (E.filonOn(S, W.res)) q *= 2;
         q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
         if (!opts.quiet) E.protSpawn(S, c, W);
@@ -2574,14 +2577,17 @@
   /* ---------------- Artisanat ---------------- */
   E.craftReq = (tpl) => Math.max(1, Math.floor(ITEMS[tpl].lvl / 3)); // 0.1.14.4 : métier au tiers du niveau de l’objet (avant : moitié), pour s’équiper à temps face aux monstres renforcés
   E.canCraft = (S, recipe, n = 1) => recipe.ing.every(([r, q]) => (S.res[r] || 0) >= q * n);
+  /* 0.1.39 : Almanax « Économie d'ingrédients », une part des ingrédients rendue */
+  const almSave = (S, q) => { const p = E.almMult(S, "eco"); return p > 0 && p < 1 ? Math.min(q, E.almQty(q, p)) : 0; };
   E.craftItem = (S, tpl) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";
     const J = S.crafts[T.craft.job];
     if (J.lvl < E.craftReq(tpl)) return `${CRAFT_JOBS[T.craft.job].name} niveau ${E.craftReq(tpl)} requis.`;
     if (!E.canCraft(S, T.craft)) return "Ressources insuffisantes.";
     if (E.itemCount(S) >= E.itemCap(S)) return "Sac plein.";
-    T.craft.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
+    T.craft.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
     const it = E.rollItem(S, tpl);
+    if (E.almChance(S, "craft2") && E.itemCount(S) < E.itemCap(S)) { E.rollItem(S, tpl); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
     craftXp(S, T.craft.job, 12 + T.lvl * 3);
     E.emit(S, "craft", { tpl });
     return it;
@@ -2593,7 +2599,7 @@
     if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)) || (R.idol && E.idolOwned(S, R.idol)))) return "Vous possédez déjà cet objet.";
     if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Suivi › Quêtes › Dofus).";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
-    R.ing.forEach(([r, q]) => { S.res[r] -= q; if (!S.res[r]) delete S.res[r]; });
+    R.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
     if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.dofus) E.giveDofus(S, R.dofus, "copie du Bricoleur"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);
     craftXp(S, R.job, 20 + R.lvl * 3);
     E.emit(S, "craft", { special: name });
@@ -2673,7 +2679,7 @@
     const got = {}; const exoMult = it.exo ? E.EXO_BREAK_MULT : 1; // 0.1.9.1 : un objet exo rend ses runes ×2 (l'exo est perdu)
     for (const k in p.weights) {
       const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05) * exoMult);
-      for (const rk in r) { S.runes[rk] = (S.runes[rk] || 0) + r[rk]; got[rk] = (got[rk] || 0) + r[rk]; }
+      for (const rk in r) { const n = r[rk] + (r[rk] > 0 && E.almMult(S, "brise") > 0 ? E.almQty(r[rk], E.almMult(S, "brise")) : 0); S.runes[rk] = (S.runes[rk] || 0) + n; got[rk] = (got[rk] || 0) + n; } // 0.1.39 : Almanax « Concassage »
     }
     S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: E.now() };
     delete S.items[uid];
@@ -2808,7 +2814,7 @@
     E.atelierTick(S, eff, { quiet: true });
     const fmPlans = E.fmPlanTick(S, eff, { quiet: true }); // 0.1.9.1 : la forgemagie automatique continue
     E.petTick(S, seconds * 1000); // les familiers mangent en temps réel
-    E.enclosTick(S, seconds * 1000); // les naissances continuent
+    E.enclosTick(S, seconds * 1000 * E.almMult(S, "enclos")); // les naissances continuent
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }

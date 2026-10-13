@@ -1,6 +1,19 @@
 {
-  "version": "0.1.38",
+  "version": "0.1.39",
   "versions": [
+    {
+      "v": "0.1.39",
+      "name": "Les Mérydes de l'Almanax",
+      "items": [
+        "L'Almanax suit maintenant le vrai calendrier de DOFUS : chaque jour a son Méryde (aujourd'hui Astirout, Méryde de la pandrista) et le même type de bonus que dans DOFUS, adapté à Idlus",
+        "15 bonus au lieu de 4 : Expérience, Butin et Fortune (+30 % sur une famille de monstres ou une zone), Traque (archimonstres ×2), Donjon du jour (+45 % d'XP et de butin), Challenges augmentés (+50 %), Challenge supplémentaire, Récolte abondante (+50 % pour un métier), Filons (×1,5), Économie d'ingrédients (10 %), Fabrication intensive (6 %), Forgemagie améliorée (10 % de garder la rune), Concassage (6 %), Enclos (×1,5) et Jours de fête",
+        "La famille, la zone ou le donjon du jour sont choisis pour le niveau de ton meilleur héros. Un bouton « Y aller » y envoie l'équipe",
+        "Le bonus de l'Almanax compte à part : il s'ajoute même quand tes bonus d'XP, de butin ou de kamas sont déjà au plafond",
+        "L'offrande donne en plus de l'XP à chaque héros de l'équipe, environ 15 minutes de chasse à ton niveau",
+        "Les 7 prochains jours sont visibles dans Quêtes › Almanax, avec la liste de tous les bonus",
+        "Jours de fête : Nouvel An, Saint-Ballotin, Nuit d'Halouine (31/10, avec des bonbons surprises dans le butin) et Nowel donnent +30 % d'XP et de butin partout"
+      ]
+    },
     {
       "v": "0.1.38",
       "name": "Tout passe par l'HdV",

@@ -220,7 +220,7 @@
       });
       const dk = S.kamas - k0; if (n) { out.push(`Limite de banque : ${fmtK(n)} ressources en trop vendues au marchand de secours (+${fmtK(dk)} kamas).`); }
     }
-    if (C.alm && E.almanaxOffer) { const A = E.almanax(S); if (!A.done && (S.res[A.res] || 0) >= A.qty) { if (!E.almanaxOffer(S)) out.push(`Offrande à l'Almanax faite : ${A.bonus.name}.`); } }
+    if (C.alm && E.almanaxOffer) { const A = E.almanax(S); if (!A.done && (S.res[A.res] || 0) >= A.qty) { if (!E.almanaxOffer(S)) out.push(`Offrande à l'Almanax faite : ${A.bonus.txt}.`); } }
     if (C.cmd) { const Cm = E.cmdState(S); let nd = 0;
       Cm.list.forEach((o) => { if (o.got < o.n && (S.res[o.res] || 0) >= o.n - o.got && !E.cmdDeliver(S, o.id)) nd++; });
       if (nd) out.push(`${nd} commande${nd > 1 ? "s" : ""} d'artisan livrée${nd > 1 ? "s" : ""}.`); }
