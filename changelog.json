@@ -1,6 +1,13 @@
 {
-  "version": "0.1.39",
+  "version": "0.1.39.1",
   "versions": [
+    {
+      "v": "0.1.39.1",
+      "name": "Almanax bien ouvert",
+      "items": [
+        "Quêtes › Almanax : le volet « Tous les bonus de l'Almanax » reste ouvert quand on clique dessus (il se refermait tout de suite)"
+      ]
+    },
     {
       "v": "0.1.39",
       "name": "Les Mérydes de l'Almanax",
