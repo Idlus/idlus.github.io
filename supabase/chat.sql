@@ -26,7 +26,7 @@ create or replace function public.my_role() returns text language sql stable sec
 grant execute on function public.is_staff(), public.my_role() to authenticated;
 
 -- ---------- messages ----------
--- ch : 'g' = général, 'p' = privé. kind : 'msg' (joueur), 'ann' (annonce automatique ou de Mathis).
+-- ch : 'g' = général, 'c' = commerce, 'v' = PvP (0.1.48.2), 'p' = privé. kind : 'msg' (joueur), 'ann' (annonce automatique ou de Mathis).
 create table if not exists public.chat_msgs (
   id bigint generated always as identity primary key,
   ch text not null default 'g',
@@ -43,7 +43,7 @@ create index if not exists chat_msgs_ch_id on public.chat_msgs (ch, id desc);
 create index if not exists chat_msgs_user on public.chat_msgs (user_id, id desc);
 alter table public.chat_msgs enable row level security;
 drop policy if exists "chat lisible" on public.chat_msgs;
-create policy "chat lisible" on public.chat_msgs for select using (ch = 'g' or user_id = auth.uid() or to_id = auth.uid());
+create policy "chat lisible" on public.chat_msgs for select using (ch in ('g', 'c', 'v') or user_id = auth.uid() or to_id = auth.uid());
 grant select on public.chat_msgs to anon, authenticated;
 -- temps réel : les nouveaux messages arrivent tout seuls chez les joueurs
 do $$ begin
@@ -109,7 +109,9 @@ revoke all on function public.alog(text) from public, anon, authenticated;
 
 -- ---------- envoyer un message ----------
 -- Renvoie null si le message est parti, sinon la raison du refus (affichée sous la zone de texte).
-create or replace function public.chat_send(p_body text, p_to uuid default null, p_item jsonb default null)
+-- 0.1.48.2 : p_ch choisit le salon public ('g' général, 'c' commerce, 'v' PvP) ; le commerce est limité à un message toutes les 30 s.
+drop function if exists public.chat_send(text, uuid, jsonb);
+create or replace function public.chat_send(p_body text, p_to uuid default null, p_item jsonb default null, p_ch text default 'g')
 returns text
 language plpgsql
 security definer
@@ -117,7 +119,7 @@ set search_path = public
 as $$
 declare
   me uuid := auth.uid(); pr record; sa record; lad record; st record; last record;
-  b text := btrim(coalesce(p_body, '')); best int;
+  b text := btrim(coalesce(p_body, '')); best int; c text := case when p_to is not null then 'p' when p_ch in ('c', 'v') then p_ch else 'g' end;
 begin
   if me is null then return 'Connecte-toi pour écrire.'; end if;
   select pseudo, suspended_at into pr from profiles where id = me;
@@ -140,19 +142,22 @@ begin
   select body, created_at into last from chat_msgs where user_id = me and kind = 'msg' order by id desc limit 1;
   if found and last.created_at > now() - make_interval(secs => coalesce(st.slow_s, 4)) then return format('Doucement : un message toutes les %s secondes.', coalesce(st.slow_s, 4)); end if;
   if found and b <> '' and lower(last.body) = lower(b) and last.created_at > now() - interval '2 minutes' then return 'Tu viens déjà d''envoyer ce message.'; end if;
+  if c = 'c' and exists (select 1 from chat_msgs where user_id = me and ch = 'c' and kind = 'msg' and created_at > now() - interval '30 seconds') then
+    return 'Commerce : un message toutes les 30 secondes.';
+  end if;
   if p_to is not null then
     if p_to = me then return 'Tu ne peux pas t''écrire à toi-même.'; end if;
     if not exists (select 1 from profiles where id = p_to) then return 'Ce joueur n''existe plus.'; end if;
     if exists (select 1 from ignores where user_id = p_to and other = me) then return 'Ce joueur ne reçoit pas tes messages.'; end if;
   end if;
   insert into chat_msgs (ch, user_id, to_id, pseudo, cls, lvl, title, body, item)
-    values (case when p_to is null then 'g' else 'p' end, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item);
+    values (c, me, p_to, pr.pseudo, lad.main, coalesce(lad.main_lvl, 1), lad.title, b, p_item);
   -- le chat ne garde que 48 heures de messages
   delete from chat_msgs where created_at < now() - interval '48 hours';
   return null;
 end $$;
-revoke all on function public.chat_send(text, uuid, jsonb) from public, anon;
-grant execute on function public.chat_send(text, uuid, jsonb) to authenticated;
+revoke all on function public.chat_send(text, uuid, jsonb, text) from public, anon;
+grant execute on function public.chat_send(text, uuid, jsonb, text) to authenticated;
 
 create or replace function public.chat_report(p_msg bigint, p_reason text)
 returns text language plpgsql security definer set search_path = public
@@ -160,7 +165,7 @@ as $$
 declare m record;
 begin
   if auth.uid() is null then return 'Connecte-toi pour signaler.'; end if;
-  select * into m from chat_msgs where id = p_msg and kind = 'msg' and (ch = 'g' or to_id = auth.uid());
+  select * into m from chat_msgs where id = p_msg and kind = 'msg' and (ch in ('g', 'c', 'v') or to_id = auth.uid());
   if not found then return 'Message introuvable.'; end if;
   if m.user_id = auth.uid() then return 'C''est ton propre message.'; end if;
   insert into reports (msg_id, reporter, target, reason, body) values (p_msg, auth.uid(), m.user_id, left(p_reason, 40), m.body) on conflict do nothing;
@@ -261,7 +266,7 @@ end $$;
 create or replace function public.adm_msgs(p_user uuid) returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need(false);
-  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch = 'g' and kind = 'msg' order by id desc limit 15) x);
+  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch in ('g', 'c', 'v') and kind = 'msg' order by id desc limit 15) x);
 end $$;
 
 create or replace function public.adm_mute(p_user uuid, p_min int) returns void language plpgsql security definer set search_path = public

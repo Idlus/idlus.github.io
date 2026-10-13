@@ -1,6 +1,15 @@
 {
-  "version": "0.1.48.1",
+  "version": "0.1.48.2",
   "versions": [
+    {
+      "v": "0.1.48.2",
+      "name": "Salons Commerce et PvP",
+      "items": [
+        "Chat : deux nouveaux salons. Commerce pour acheter, vendre et échanger (un message toutes les 30 secondes), PvP pour le Kolizéum, avec l'annonce des grades Or, Cristal et Diamant",
+        "Nouvelle barre du chat : le titre en haut, puis les six salons avec leur icône et leur pastille de messages non lus. Le bouton pour réduire le chat reste toujours visible",
+        "L'événement en cours et le lien Discord tiennent sur une seule ligne fine : plus de place pour les messages"
+      ]
+    },
     {
       "v": "0.1.48.1",
       "name": "Multi-élément",
