@@ -1,6 +1,16 @@
 {
-  "version": "1.0.7.8",
+  "version": "1.0.7.9",
   "versions": [
+    {
+      "v": "1.0.7.9",
+      "name": "Récolte rééquilibrée",
+      "items": [
+        "Les métiers de récolte donnent beaucoup moins de ressources : environ un tiers de l'ancienne quantité au niveau 1, et un dixième au niveau 200. Avant, un récolteur niveau 200 rapportait autant qu'une équipe entière de chasseurs",
+        "La montée en niveau des métiers de récolte ralentit dans la même proportion",
+        "Les filons, trouvailles, protecteurs vaincus et l'Almanax « Récolte abondante » gardent leur bonus, appliqué à la nouvelle quantité",
+        "Les ressources et niveaux déjà obtenus sont gardés"
+      ]
+    },
     {
       "v": "1.0.7.8",
       "name": "Récolte silencieuse",

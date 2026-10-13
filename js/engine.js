@@ -2388,7 +2388,7 @@
   /* rythme d'obtention d'une ressource, par heure : récolte en cours et/ou chasse dans la zone en cours */
   E.resRateH = (S, name) => {
     let h = 0; const src = [];
-    S.chars.forEach((c) => { if (c.job && c.job.res === name) { const per = E.gatherPeriod(S, c); if (per > 0) { h += (3600 / per) * (1 + S.jobs[c.job.job].lvl / 200); src.push("récolte"); } } });
+    S.chars.forEach((c) => { if (c.job && c.job.res === name) { const per = E.gatherPeriod(S, c); if (per > 0) { h += (3600 / per) * (1 + S.jobs[c.job.job].lvl / 200) * E.gatherYield(S.jobs[c.job.job].lvl); src.push("récolte"); } } });
     const sub = S.hunting && !S.dungeon && S.sub ? SUBS[S.sub] : null;
     if (sub) {
       const cyc = E.fightCycle(S);
@@ -2788,6 +2788,10 @@
   E.gatherSpeed = (S, job, c) => (1 + E.toolLvl(S, job) * 0.08) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job, c);
   E.gatherPeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job, c) : 0; };
   E.FIND_CHANCE = 0.01;
+  /* 1.0.7.9 : rendement de la récolte, part des ressources gardées à chaque coup selon le niveau du métier
+     (35 % au niveau 1, 10 % au niveau 200). L'XP de métier par coup baisse dans la même proportion. */
+  E.YIELD = { lo: 0.35, hi: 0.1 };
+  E.gatherYield = (lvl) => E.YIELD.lo + (E.YIELD.hi - E.YIELD.lo) * Math.min(200, Math.max(1, lvl)) / 200;
   E.jobRes = (job) => GATHER_JOBS[job].items; // [[ressource, niveau]]
   E.setJob = (S, cid, job, res) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
@@ -2828,9 +2832,12 @@
         if (E.filonOn(S, W.res)) q *= 2;
         q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
         if (!opts.quiet) E.protSpawn(S, c, W);
-        if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
-        addRes(S, W.res, q); total += q;
-        J.xp += 10 + def[1] * 1.0;
+        const find = rnd() < E.FIND_CHANCE, y = E.gatherYield(J.lvl);
+        if (find) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); }
+        { const v = q * y; q = Math.floor(v); if (rnd() < v - q) q++; } // 1.0.7.9 « Récolte rééquilibrée » : moins de ressources par coup
+        if (find) { q = Math.max(1, q); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
+        if (q) addRes(S, W.res, q); total += q;
+        J.xp += (10 + def[1] * 1.0) * y;
         while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
       }
       if (n) E.emit(S, "harvest", { res: W.res, n });

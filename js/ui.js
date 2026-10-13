@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.8";
+const GAME_VERSION = "1.0.7.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.9", name: "Récolte rééquilibrée", items: [
+    "Les métiers de récolte donnent beaucoup moins de ressources : environ un tiers de l'ancienne quantité au niveau 1, et un dixième au niveau 200. Avant, un récolteur niveau 200 rapportait autant qu'une équipe entière de chasseurs",
+    "La montée en niveau des métiers de récolte ralentit dans la même proportion",
+    "Les filons, trouvailles, protecteurs vaincus et l'Almanax « Récolte abondante » gardent leur bonus, appliqué à la nouvelle quantité",
+    "Les ressources et niveaux déjà obtenus sont gardés",
+  ] },
   { v: "1.0.7.8", name: "Récolte silencieuse", items: [
     "Les métiers de récolte n'affichent plus de bulles : ni pour un filon, ni pour une trouvaille, ni pour un niveau de métier. Tout reste écrit dans le journal, et le filon reste visible en haut de la page Récolte",
     "Le protecteur de ressources prévient toujours, car il faut le combattre à temps (désactivable dans Options › Jeu)",

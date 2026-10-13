@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.9 « Récolte rééquilibrée »
+Demande de Mathis (choix 1C 2B 3A 4A) : `E.gatherYield(lvl)` (js/engine.js) garde 35 % des ressources au niveau 1 et 10 % au niveau 200 (`E.YIELD`), arrondi aléatoire ; l'XP de métier par coup est multipliée par le même rendement. Filons, trouvailles, protecteur et Almanax inchangés. Simulation : un récolteur niveau 200 tout équipé passe d'environ 27 000 à 2 700 ressources par heure. Tests dans tests/recolte.test.js.
+
 ## 1.0.7.8 « Récolte silencieuse »
 Demande de Mathis : plus de toasts pour la récolte. Dans `gatherTick` (js/engine.js), filon, trouvaille et niveau de métier de récolte passent en `note(..., "info")` (journal seulement) ; le protecteur garde son avertissement.
 
