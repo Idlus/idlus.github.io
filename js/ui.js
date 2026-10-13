@@ -18,9 +18,22 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.41";
+const GAME_VERSION = "0.1.42";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.42", name: "Forgemagie de DOFUS", items: [
+    "La forgemagie suit enfin les règles de DOFUS : chaque rune a trois issues, affichées avec leurs chances. Succès critique : la rune passe et rien ne baisse. Succès neutre : la rune passe mais une autre caractéristique baisse. Échec critique : la rune ne passe pas",
+    "Le reliquat remplace le puits : ce que l'objet perd en trop paie les pertes suivantes et permet d'ajouter une caractéristique qu'il n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente",
+    "Over jusqu'à 101 de poids par caractéristique (505 Vitalité, 101 Force), de plus en plus dur quand l'objet est chargé. Plus aucun kamas à payer : seules les runes comptent",
+    "Six métiers de forgemagie : Costumage, Joaillomage, Cordomage, Forgemage, Sculptemage et Façomage, appris au niveau 65 du métier d'artisanat lié (ceux qui forgemageaient déjà les ont tous, au niveau de leur ancien Forgemage). Niveau 200 : tu peux signer tes objets",
+    "Exotique sur tous les objets : +1 PA, PM, Portée ou Invocation, en succès critique seulement. Nouvelles runes de transcendance dans les coffres de palier 20+ de l'Expédition sans fin",
+    "En ligne, le coefficient de brisage est commun à tous les joueurs, comme sur un serveur de DOFUS",
+    "Forgemagie refaite : établi avec la liste des objets à gauche et l'objet à droite (plein écran au téléphone), jauge de chaque caractéristique, historique en couleurs, onglet Plans, aide « Comment ça marche »",
+    "Brisage : filtres, cases à cocher et « Briser la sélection ». Runes : une carte par caractéristique avec « Fusionner tout »",
+    "Métiers refaits : bandeau du jour (Almanax, filon, protecteur, achats du jour, commandes prêtes), récolte en cartes de métier avec l'icône de chaque ressource et les héros libres",
+    "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » pour une ressource qui manque",
+    "Filtres de recettes : emplacement, niveau (dont « autour de mon équipe »), caractéristique, panoplie, pour un héros, favoris et recherche par ressource. Ils sont retenus pour chaque métier",
+  ] },
   { v: "0.1.41", name: "Donjons oubliés", items: [
     "18 donjons classiques de DOFUS arrivent, du niveau 40 au 110 : Gelaxième Dimension, Maison Fantôme, Akadémie des Gobs, Refuge sylvestre, Donjon des Forgerons, Grotte Hesque, Donjon des Larves, Fonderie des Waddicts, Village Kanniboul, Épreuve de Draegnerys, Cale de l'Arche d'Otomaï, Cimetière des Mastodontes, Antre de la Reine Nyée, Théâtre de Dramak, Fabrique de Malléfisk, Miausolée du Pounicheur, Garde-manger du Rat Blanc et Sousouricière du Rat Noir",
     "Gelaxième Dimension : les 4 Gelées Royales (Bleuet, Citron, Fraise, Menthe) se battent ensemble dans la salle du boss. Le Gelano, le Gelamu et la Couronne du Roi Gelax sont enfin dans le jeu",
