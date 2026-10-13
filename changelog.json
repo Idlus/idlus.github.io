@@ -1,6 +1,13 @@
 {
-  "version": "0.1.33",
+  "version": "0.1.33.1",
   "versions": [
+    {
+      "v": "0.1.33.1",
+      "name": "Chat libre",
+      "items": [
+        "Chat : plus de liste de mots interdits, les messages ne sont plus refusés à cause d'un mot. Les liens et la publicité restent bloqués, le mode lent, les signalements et les sanctions des modérateurs restent en place"
+      ]
+    },
     {
       "v": "0.1.33",
       "name": "Offres d'achat",
