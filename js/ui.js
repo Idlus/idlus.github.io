@@ -13,14 +13,22 @@ const ui = {
   craftJob: "tailleur", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
-const BETA = /\/beta\//.test(location.pathname);
+/* 1.0.8.2 : la « partie de test » du jeu public (bouton du panel admin) fonctionne comme la bêta : même sauvegarde de test,
+   panel de test, aucun serveur. « Revenir à ma partie » rend la vraie partie, qui n'a pas bougé. */
+const TESTMODE = !/\/beta\//.test(location.pathname) && (() => { try { return localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
+const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 /* 0.1.27.1 : le panel de test est réservé au compte admin (rôle vérifié par le serveur) ; en local, il reste ouvert pour les essais. */
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.1";
+const GAME_VERSION = "1.0.8.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.2", name: "Panel de test sur le jeu public", items: [
+    "Panel admin › « Panel de test » (compte admin seulement) : le jeu public passe sur une partie de test, avec le panel de test ouvert, sans quitter idlus.github.io",
+    "La partie de test est séparée : hors ligne, rien n'est envoyé au serveur (classements, Hôtel de vente, chat coupés). La vraie partie est envoyée en ligne avant, puis reste intacte",
+    "« Revenir à ma partie » (pastille du haut) rend la vraie partie et reconnecte le jeu",
+  ] },
   { v: "1.0.8.1", name: "Quantité au choix", items: [
     "Artisanat : en plus de 1, 10 et Max, tu peux choisir la quantité exacte à fabriquer, avec un champ et des boutons − et +, sur PC comme sur téléphone",
     "La quantité ne peut pas dépasser ce que tu peux fabriquer (Galet compris) et reste choisie quand la page se met à jour ; un seul clic sur « Fabriquer » fabrique tout",
@@ -5454,7 +5462,8 @@ function installGame() {
 function renderUpdBar() {
   const el = $("#updbar"); if (!el) return;
   let html = "";
-  if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
+  if (TESTMODE) html += tchip({ k: "sys", ico: G("bug"), t: "Partie de test", d: "hors ligne, ta vraie partie n'est pas touchée", tip: "Partie de test : sauvegarde séparée, rien n'est envoyé en ligne (chat, Hôtel de vente et classements coupés).", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<button class="tc-act ghost" data-quit-test="1">Revenir à ma partie</button>` });
+  else if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
   if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
     html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
   if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
@@ -7509,7 +7518,8 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("pagehide", () => saveNow());
 
-function start() { if (ON) onBoot(); else bootGame(); }
+function start() { if (ON) onBoot(); else bootGame(); if (TESTMODE) setTimeout(() => { if (testerOk() && S) { const b = document.querySelector('[data-adm="open"]'); if (b) b.click(); } }, 500); }
+document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.closest("[data-quit-test]")) return; saveNow(); try { localStorage.removeItem("idlus-partie-test"); } catch (er) {} location.reload(); });
 function bootGame(pushNow) {
   if (booted) return; booted = true; closeSheet();
   S = loadSave();

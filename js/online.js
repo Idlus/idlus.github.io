@@ -18,8 +18,11 @@
   };
   const ON = {};
   const lib = root.__IDLUS_SB || (root.supabase && root.supabase.createClient ? root.supabase : null); // __IDLUS_SB : faux serveur des tests
-  ON.world = /\/beta\//.test(root.location ? root.location.pathname : "") ? "beta" : "public";
-  const SRV = root.__IDLUS_SB ? { url: "test", key: "test", mail: true } : SERVERS[ON.world];
+  /* 1.0.8.2 : « partie de test » du jeu public (compte admin) : le jeu tourne sans serveur, comme la bêta, sur une
+     sauvegarde séparée. Rien n'est envoyé en ligne et la vraie partie n'est pas touchée. */
+  const TM = (() => { try { return root.localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
+  ON.world = /\/beta\//.test(root.location ? root.location.pathname : "") || TM ? "beta" : "public";
+  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true } : SERVERS[ON.world];
   const URL_ = SRV.url, KEY_ = SRV.key;
   ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur
   ON.mail = SRV.mail;

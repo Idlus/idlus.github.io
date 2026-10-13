@@ -366,8 +366,8 @@
   function admHtml(loading) {
     const tabs = `<div class="atabs">${ATABS().map(([k, n, c]) => `<button class="${k === A.tab ? "on" : ""}" data-act="adm-tab" data-v="${k}">${n}${c ? ` <span class="n">${c}</span>` : ""}</button>`).join("")}</div>`;
     const body = loading || !A.ov ? `<div class="box"><div class="empty">Chargement…</div></div>` : admBody();
-    return `<section class="adm"><div class="ahd"><h1>${isAdmin() ? "Administration" : "Modération"}</h1><span class="badge">${isAdmin() ? "Réservé à ton compte" : "Modérateur"}</span><button class="btn sm" data-act="adm-reload">Actualiser</button>${isAdmin() ? `<a class="btn sm" href="beta/?panel=1" target="_blank" rel="noopener">${X().G("bug")} Panel de test</a>` : ""}</div>
-      <p class="small muted">Ce panel agit sur le serveur, pour tous les joueurs. Il ne touche pas à ta partie. Le panel de test s'ouvre dans un nouvel onglet, sur ta partie de test (la bêta) : il ne touche jamais au jeu public.</p>${tabs}${body}</section>`;
+    return `<section class="adm"><div class="ahd"><h1>${isAdmin() ? "Administration" : "Modération"}</h1><span class="badge">${isAdmin() ? "Réservé à ton compte" : "Modérateur"}</span><button class="btn sm" data-act="adm-reload">Actualiser</button>${isAdmin() ? `<button class="btn sm" data-act="adm-test">${X().G("bug")} Panel de test</button>` : ""}</div>
+      <p class="small muted">Ce panel agit sur le serveur, pour tous les joueurs. Il ne touche pas à ta partie. « Panel de test » passe sur ta partie de test (hors ligne, sauvegarde séparée) : ta vraie partie est envoyée en ligne puis mise de côté, intacte.</p>${tabs}${body}</section>`;
   }
   const when = (t) => { if (!t) return "—"; const s = (Date.now() - new Date(t)) / 1000; return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
   const dur = (sec) => { sec = Math.max(0, Math.round(sec || 0)); return sec >= 3600 ? `${Math.round(sec / 3600)} h` : `${Math.round(sec / 60)} min`; };
@@ -495,6 +495,11 @@
       case "adm-open": openAdmin(); return;
       case "adm-tab": A.tab = d.v; repaintAdm(); await admLoad(); repaintAdm(); return;
       case "adm-reload": A.ov = null; repaintAdm(); await admLoad(); repaintAdm(); return;
+      case "adm-test": { // 1.0.8.2 : partie de test sur le jeu public (compte admin vérifié par le serveur)
+        if (!isAdmin()) return; X().toast("Passage sur ta partie de test…");
+        try { await X().onPush(); } catch (er) {}
+        try { localStorage.setItem("idlus-testeur", "1"); localStorage.setItem("idlus-partie-test", "1"); } catch (er) {}
+        location.reload(); return; }
       case "adm-find": openAdmin("joueurs", d.q || ""); return;
       case "adm-fiche": if (window.FICHES) window.FICHES.select(d.u); openAdmin("fiches"); return;
       case "adm-search": A.q = ($("#admQ").value || "").trim(); A.sel = null; A.msgs = null; await admLoad(); repaintAdm(); return;

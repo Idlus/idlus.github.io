@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.8.2 « Panel de test sur le jeu public »
+Demande de Mathis (13/10/2026 : « je veux avoir un panel de test utilisable sur le public. Uniquement pour moi »). Panel admin (js/chat.js) : « Panel de test » (rôle admin vérifié par le serveur) envoie la vraie partie en ligne puis pose `idlus-partie-test` ; js/online.js passe alors en monde « beta » (aucun serveur) et js/ui.js en mode test (`TESTMODE` : même sauvegarde que la bêta, pastille « Partie de test » avec « Revenir à ma partie »). js/admin.js (copie du panel de la bêta) est chargé sur le jeu public mais ne s'active que si `DX.testerOk` existe.
+
 ## 1.0.8.1 « Quantité au choix »
 Artisanat : champ `#recqtyn` avec − / + (`recqtyd`) à côté de 1/10/Max, borné à 1…Max fabricable (Galet compris, 1 000 au plus comme `E.craftMany`). Valeur gardée dans `ui.recQty`, mise à jour en place à la frappe (`recQtyLive`), lue directement par « Fabriquer » (`recQtyOf`).
 

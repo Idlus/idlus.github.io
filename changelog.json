@@ -1,6 +1,15 @@
 {
-  "version": "1.0.8.1",
+  "version": "1.0.8.2",
   "versions": [
+    {
+      "v": "1.0.8.2",
+      "name": "Panel de test sur le jeu public",
+      "items": [
+        "Panel admin › « Panel de test » (compte admin seulement) : le jeu public passe sur une partie de test, avec le panel de test ouvert, sans quitter idlus.github.io",
+        "La partie de test est séparée : hors ligne, rien n'est envoyé au serveur (classements, Hôtel de vente, chat coupés). La vraie partie est envoyée en ligne avant, puis reste intacte",
+        "« Revenir à ma partie » (pastille du haut) rend la vraie partie et reconnecte le jeu"
+      ]
+    },
     {
       "v": "1.0.8.1",
       "name": "Quantité au choix",
