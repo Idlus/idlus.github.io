@@ -40,7 +40,7 @@
       K("moon_masques", 40, "Les masques de Moon"), B("village_kanniboul", "Les Kanniboul"), L(60),
       K("koa_kaliptus", 50, "Les forêts de Kaliptus"), K("sid_desolation", 50, "Les landes désolées"), B("labo_brumen", "Le laboratoire de Brumen"),
       K("oto_arche", 50, "L'arche d'Otomaï"), B("cale_arche_otomai", "Gourlo le Terrible"), L(75),
-      K("abr_sombre", 60, "La sombre forêt"), B("cimetiere_mastodontes", "Le Mantiscore"), K("fri_port", 60, "Le port de Frigost"),
+      K("abr_sombre", 60, "La sombre forêt"), B("antre_reine_nyee", "La Reine Nyée"), K("fri_port", 60, "Le port de Frigost"),
       B("chapiteau_riktus", "Le chapiteau des Riktus"), B("domaine_ancestral", "L'Abraknyde Ancestral"), B("arbre_moon", "L'arbre de Moon"), L(100, "Niveau 100") ] },
     { name: "Les îles lointaines", where: "Pandala, Minotoror, Frigost", lvl: [100, 150], title: "Voyageur des îles", steps: [
       K("pan_plantala", 60, "L'île de Pandala"), B("bambusaie_damadrya", "Damadrya"), K("mino_ile", 60, "L'île du Minotoror"), B("labyrinthe_minotoror", "Le labyrinthe"),
@@ -56,7 +56,7 @@
       K("obs_dimension", 90, "La Dimension Obscure"), B("pyramide_ombre", "La Pyramide d'Ombre"), L(200, "Niveau 200"), K("har_jardins", 100, "Le domaine d'Harebourg"),
       B("labo_nileza", "Nileza"), B("donjon_harebourg", "Le Comte Harebourg"), K("suf_embruns", 100, "La baie de Sufokia"), B("aquadome_merkator", "Merkator"),
       K("enu_retraite", 100, "Enutrosor"), B("palais_nidas", "Le roi Nidas"), K("eca_temple", 100, "Écaflipus"), B("defi_chaloeil", "Le Chalœil"),
-      K("cav_corrompu", 100, "Les Cavaliers"), B("arbre_mort", "Corruption"), B("trone_sang", "Guerre"), B("tempete_eliocalypse", "La Tempête de l'Eliocalypse") ] },
+      K("cav_corrompu", 100, "Les Cavaliers"), B("arbre_mort", "Corruption"), B("trone_sang", "Guerre"), B("tempete_eliocalypse", "La Tempête de l'Eliocalypse", "Vainquez aussi Servitude (Fers de la Tyrannie) et Misère (Sentence de la Balance), puis la Tempête de l'Eliocalypse.") ] },
   ];
   const Q = E.MAIN_QUEST; const QX = E.QUEST_EXTRA || {};
   E.QUEST_CHAPTERS = [{ name: "L'éveil", where: "Incarnam, Astrub, Amakna, Cania", lvl: [1, 50], start: 0, end: E.MAIN_CH1, title: "Héros d'Amakna" }];
