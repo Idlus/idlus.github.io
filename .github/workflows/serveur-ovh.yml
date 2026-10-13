@@ -32,6 +32,7 @@ jobs:
           S_PASS: ${{ secrets.VPS_PASSWORD }}
           S_HOTE: ${{ secrets.VPS_HOST }}
           S_UTIL: ${{ secrets.VPS_USER }}
+          S_NOUV: ${{ secrets.VPS_NEW_PASSWORD }}
         run: |
           for s in S_HOTE S_UTIL S_PASS; do if [ -z "${!s}" ]; then echo "Secret manquant (VPS_HOST, VPS_USER ou VPS_PASSWORD)." >&2; exit 1; fi; done
           # Espaces ou retours à la ligne copiés par erreur autour des valeurs : on les enlève
@@ -39,9 +40,32 @@ jobs:
           for v in "$h" "$u" "$p"; do echo "::add-mask::$v"; done
           if ! echo "$h" | grep -qE '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then echo "VPS_HOST ne ressemble pas à une adresse IPv4 (4 nombres séparés par des points)." >&2; exit 1; fi
           if ! echo "$u" | grep -qE '^[a-z_][a-z0-9_-]{0,31}$'; then echo "VPS_USER doit être un nom d'utilisateur du serveur (ex. ubuntu), pas une adresse e-mail (${#u} caractères)." >&2; exit 1; fi
-          { echo "HOTE=$h"; echo "UTIL=$u"; echo "SSHPASS=$p"; } >> "$GITHUB_ENV"
-          sudo apt-get -qq install -y sshpass >/dev/null
+          n=$(printf '%s' "$S_NOUV" | tr -d '\r\n'); [ -n "$n" ] && echo "::add-mask::$n"
+          { echo "HOTE=$h"; echo "UTIL=$u"; echo "SSHPASS=$p"; echo "NOUV=$n"; } >> "$GITHUB_ENV"
+          sudo apt-get -qq install -y sshpass expect >/dev/null
           echo "SSHO=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=20" >> "$GITHUB_ENV"
+      - name: Mot de passe (premier changement imposé par OVH)
+        run: |
+          # OVH impose de changer le mot de passe à la première connexion. Si le secret VPS_NEW_PASSWORD existe :
+          # on essaie d'abord le nouveau mot de passe ; sinon on se connecte avec l'ancien et on le remplace par le nouveau.
+          [ -n "$NOUV" ] || exit 0
+          if SSHPASS="$NOUV" sshpass -e ssh $SSHO "$UTIL@$HOTE" true 2>/dev/null; then echo "Nouveau mot de passe déjà en place."; echo "SSHPASS=$NOUV" >> "$GITHUB_ENV"; exit 0; fi
+          cat > /tmp/mdp.exp <<'EXP'
+          set timeout 40
+          spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o PubkeyAuthentication=no $env(UTIL)@$env(HOTE)
+          expect {
+            -re "(?i)current.*password:" { send "$env(SSHPASS)\r"; exp_continue }
+            -re "(?i)retype new password:" { send "$env(NOUV)\r"; exp_continue }
+            -re "(?i)new password:" { send "$env(NOUV)\r"; exp_continue }
+            -re "(?i)password:" { send "$env(SSHPASS)\r"; exp_continue }
+            -re "(?i)successfully|updated successfully" { exp_continue }
+            -re "(?i)bad password|do not match|failure|unchanged" { puts "\nCHANGEMENT_REFUSE"; exit 2 }
+            eof
+          }
+          EXP
+          expect /tmp/mdp.exp > /tmp/mdp.log 2>&1 || true
+          grep -v -F -e "$SSHPASS" -e "$NOUV" /tmp/mdp.log | tail -5 || true
+          if SSHPASS="$NOUV" sshpass -e ssh $SSHO "$UTIL@$HOTE" true 2>/dev/null; then echo "Mot de passe changé."; echo "SSHPASS=$NOUV" >> "$GITHUB_ENV"; else echo "Le changement de mot de passe n'a pas marché (nouveau mot de passe trop simple ?)." >&2; exit 1; fi
       - name: Connexion et machine
         run: |
           out=$(sshpass -e ssh $SSHO "$UTIL@$HOTE" 'echo CONNEXION_OK; . /etc/os-release; echo "Système : $PRETTY_NAME"; echo "Processeurs : $(nproc)"; free -h | sed -n 2p | awk "{print \"Mémoire : \" \$2 \" (utilisée \" \$3 \")\"}"; df -h / | tail -1 | awk "{print \"Disque : \" \$2 \" (libre \" \$4 \")\"}"; uptime' 2>&1) || true
