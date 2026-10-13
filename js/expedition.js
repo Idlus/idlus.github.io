@@ -382,7 +382,9 @@
     const items = []; const ids = dgsNear(L); const pool = new Set();
     ids.forEach((did) => { const dg = DUNGEONS[did]; [dg.boss, ...dg.rooms.flatMap((r) => r.mobs)].forEach((m) => (MONSTERS[m].items || []).forEach(([t]) => { if (ITEMS[t] && ITEMS[t].lvl <= L + 5 && ITEMS[t].lvl >= L - 25) pool.add(t); })); });
     const arr = [...pool]; const nI = 1 + (E.campHas(S, "pelle") ? 1 : 0); for (let j = 0; j < nI && arr.length; j++) items.push(pick(arr));
-    return { kamas, xp, dust, items, eclats: 60, palier: f };
+    /* 0.1.41 : rune de transcendance (comme les runes astrales des Songes Infinis), à partir du palier 20 */
+    const tk = Object.keys(E.TRANS || {}); const trans = f >= 20 && tk.length && rnd() < Math.min(0.6, 0.25 + (f - 20) / 100) ? E.transKey(pick(tk)) : null;
+    return { kamas, xp, dust, items, eclats: 60, palier: f, trans };
   };
   const applyChest = (S, X, ch, mult) => {
     const team = E.team(S); S.kamas += ch.kamas * mult; X.rew.kamas += ch.kamas * mult; X.rew.chests++;
@@ -390,6 +392,7 @@
     E.addRes(S, E.POUSSIERE, ch.dust * mult); X.rew.dust += ch.dust * mult;
     const got = [];
     for (let m = 0; m < mult; m++) ch.items.forEach((t) => { E.rollItem(S, t, {}); X.rew.items++; got.push(ITEMS[t].name); });
+    if (ch.trans) { S.runes[ch.trans] = (S.runes[ch.trans] || 0) + mult; got.push(`${mult > 1 ? mult + " × " : ""}${E.runeName(ch.trans)}`); }
     note(S, `Coffre du palier ${ch.palier}${mult > 1 ? " doublé" : ""} : ${(ch.kamas * mult).toLocaleString("fr-FR")} kamas, ${(ch.xp * mult).toLocaleString("fr-FR")} XP par héros, ${ch.dust * mult} ${E.POUSSIERE}${got.length ? ", " + got.join(", ") : ""}.`, "rare");
   };
 
