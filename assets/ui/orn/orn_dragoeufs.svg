@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 96" width="200" height="96"><title>Ornement · Terres des Dragoeufs</title>
+<defs><linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd9a8"/><stop offset=".45" stop-color="#d08a4a"/><stop offset="1" stop-color="#8a4b1e"/></linearGradient>
+<radialGradient id="g" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#e68f77"/><stop offset=".6" stop-color="#d9532e"/><stop offset="1" stop-color="#622515"/></radialGradient>
+<radialGradient id="t" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#e17558"/><stop offset="1" stop-color="#6d2a17"/></radialGradient>
+<filter id="s" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000" flood-opacity=".55"/></filter></defs>
+<g filter="url(#s)">
+<g><path d="M70 52C56 52 44 46 40 34c-2 8 0 12 4 16-10-2-18-10-20-22-4 12 0 22 8 28-10 0-18-4-24-12 4 18 22 26 40 24 8-1 16-6 22-16Z" fill="url(#m)" stroke="#3e1f0a" stroke-width="2"/></g><g transform="translate(200 0) scale(-1 1)"><path d="M70 52C56 52 44 46 40 34c-2 8 0 12 4 16-10-2-18-10-20-22-4 12 0 22 8 28-10 0-18-4-24-12 4 18 22 26 40 24 8-1 16-6 22-16Z" fill="url(#m)" stroke="#3e1f0a" stroke-width="2"/></g>
+<path d="M100 6 108 14H92Z" fill="url(#m)" stroke="#3e1f0a" stroke-width="1.6"/>
+<circle cx="100" cy="50" r="37" fill="url(#m)" stroke="#3e1f0a" stroke-width="2.4"/>
+<circle cx="100" cy="50" r="33" fill="none" stroke="#ffd9a8" stroke-opacity=".7" stroke-width="1.2"/>
+<circle cx="135.0" cy="50.0" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="132.3" cy="63.4" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="124.7" cy="74.7" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="113.4" cy="82.3" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="100.0" cy="85.0" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="86.6" cy="82.3" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="75.3" cy="74.7" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="67.7" cy="63.4" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="65.0" cy="50.0" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="67.7" cy="36.6" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="75.3" cy="25.3" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="86.6" cy="17.7" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="100.0" cy="15.0" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="113.4" cy="17.7" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="124.7" cy="25.3" r="1.3" fill="#3e1f0a" opacity=".55"/><circle cx="132.3" cy="36.6" r="1.3" fill="#3e1f0a" opacity=".55"/>
+<circle cx="100" cy="50" r="28" fill="url(#g)" stroke="#3e1f0a" stroke-width="2"/>
+<path d="M78 40a28 28 0 0 1 44 0" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="5" stroke-linecap="round"/>
+<g transform="translate(100 51) scale(1.18)" fill="#f6d4cb" color="#f6d4cb" stroke-linejoin="round"><path d="M0-17C8-17 13-3 13 5c0 7-6 12-13 12S-13 12-13 5C-13-3-8-17 0-17Z"/><path d="M-13 2l5 3 4-4 4 4 4-4 4 4 5-3" stroke="#000" stroke-opacity=".4" stroke-width="1.8" fill="none"/><circle cx="-4" cy="-8" r="2.2" fill="#000" opacity=".25"/><circle cx="5" cy="10" r="2.6" fill="#000" opacity=".25"/></g>
+<circle cx="100" cy="11" r="5.5" fill="url(#t)" stroke="#3e1f0a" stroke-width="1.4"/>
+<path d="M88 86h24l-4 6h-16Z" fill="url(#m)" stroke="#3e1f0a" stroke-width="1.4"/>
+</g></svg>

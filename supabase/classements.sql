@@ -25,6 +25,8 @@ alter table public.ladder add column if not exists title text;
 alter table public.ladder add column if not exists dofus jsonb not null default '[]'::jsonb;
 -- 0.1.35 : niveaux donnés par les recrutements (un héros recruté arrive à la moitié du meilleur niveau : ce n'est pas de la triche)
 alter table public.ladder add column if not exists rec int not null default 0;
+-- 0.1.49 : points de succès (classement des points)
+alter table public.ladder add column if not exists pts int not null default 0;
 alter table public.ladder enable row level security;
 drop policy if exists "classement lisible" on public.ladder;
 create policy "classement lisible" on public.ladder for select using (not flagged or user_id = auth.uid());
@@ -95,9 +97,9 @@ drop trigger if exists profiles_first_admin on public.profiles;
 create trigger profiles_first_admin after insert on public.profiles for each row execute function public.first_admin();
 
 -- ---------- vues publiques (sans les joueurs « en vérification ») ----------
--- 0.1.26 : main_lvl (niveau du héros principal) ajouté en dernière colonne, pour le cadre du médaillon
+-- 0.1.26 : main_lvl (niveau du héros principal) ajouté en dernière colonne, pour le cadre du médaillon ; 0.1.49 : pts (points de succès) après
 create or replace view public.lb_level as
-  select l.user_id, p.pseudo, l.main, l.level, l.album, l.succes, l.heroes, l.main_lvl
+  select l.user_id, p.pseudo, l.main, l.level, l.album, l.succes, l.heroes, l.main_lvl, l.pts
   from public.ladder l join public.profiles p on p.id = l.user_id where not l.flagged;
 create or replace view public.lb_class as
   select c.user_id, p.pseudo, c.cls, c.score
@@ -122,12 +124,12 @@ security definer
 set search_path = public
 as $$
 declare
-  m jsonb := new.meta; o public.ladder%rowtype; lv int; al int; su int; pt int; rc int; secs numeric; reason text; bad boolean;
+  m jsonb := new.meta; o public.ladder%rowtype; lv int; al int; su int; pt int; rc int; ps int; secs numeric; reason text; bad boolean;
 begin
   if m is null or m->>'level' is null then return new; end if;
   lv := coalesce((m->>'level')::int, 0); al := coalesce((m->>'album')::int, 0);
   su := coalesce((m->>'succes')::int, 0); pt := coalesce((m->>'playtime')::int, 0);
-  rc := coalesce((m->>'rec')::int, 0);
+  rc := coalesce((m->>'rec')::int, 0); ps := least(greatest(coalesce((m->>'pts')::int, 0), 0), 50000);
   select * into o from public.ladder where user_id = new.user_id;
   if found then
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
@@ -138,11 +140,11 @@ begin
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec)
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
-      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc)
+      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps)
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
-      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec,
+      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec, pts = excluded.pts,
       flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
   select flagged into bad from public.ladder where user_id = new.user_id;
   delete from public.ladder_class where user_id = new.user_id;

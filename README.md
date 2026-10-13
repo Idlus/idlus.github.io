@@ -7,6 +7,8 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.50 « Quêtes, succès et chasses »
+js/quetes.js (sans DOM) : chapitres 2 à 5 de la quête principale (`E.QUEST_CHAPTERS`, `E.MAIN_CH1` = 22 garde « Héros d'Amakna »), quêtes de région (`E.REGIONS`, `E.rqGive/rqClaim`, état `S.rq`, ornements `reg_<zone>`), quêtes de la semaine (`E.wkState`, `S.wk`), rang de chasseur et avis d'élite (`E.hunterRank`, `E.eliteState`, `S.belite`), ~315 succès (`prog`, `grp`, `secret`, `hint`), points et paliers (`E.achPoints`, `E.ACH_PALIERS`, `S.achPal`, ornements `pal1/pal2`). Avis : 3 monstres + 1 boss (`E.BOSS_SLOTS`) dans systems.js. Trésor en 3 tailles (`E.TRESOR_SIZES`, parchemin `{ l, k }`, `E.tresorLegClaim`) et nouveaux indices dans suivi.js. Interface : js/questui.js, css/quetes.css ; ornements générés par `node tools/gen_ornements.js` (assets/ui/orn). Classement des points : colonne `pts` de `ladder` (supabase/classements.sql).
 ## 0.1.49.2 « Roue des Options »
 Mathis : rendre l'icône des Options plus reconnaissable (maquette à 3 versions, réponses « 1A 2A 3A »). Glyphe `gear` passé de `GL` (trait, qui ressemblait à un soleil) à `GLF` : roue dentée dorée pleine. Bouton de la barre du haut avec le libellé `.optlbl` (caché sous 600 px). `hOpt(s)` = `h(s)` avec la roue devant chaque « Options » : notes de mise à jour, bulles de découverte, Carnet des découvertes.
 
