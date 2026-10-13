@@ -74,7 +74,7 @@
   E.WB_PH_NAMES = ["Colère", "Fureur"];
   /* Force de chaque boss : multiplicateur de points pour qu'une équipe bien équipée fasse environ 300 points (grade S) par essai.
      Table générée par `node tools/wboss_calib.js`. */
-  E.WB_POW = /*WB_POW*/{"garga":1.02,"cavernes_kolosso":0.59,"antre_korriandre":0.42,"donjon_harebourg":0.48,"temple_ougah":0.57,"palais_nidas":0.8,"belvedere_ilyzaelle":0.66,"labo_nileza":0.43,"oeil_vortex":0.76}/*/WB_POW*/;
+  E.WB_POW = /*WB_POW*/{"garga":0.83,"cavernes_kolosso":0.58,"antre_korriandre":0.42,"donjon_harebourg":0.47,"temple_ougah":0.58,"palais_nidas":0.77,"belvedere_ilyzaelle":0.66,"labo_nileza":0.44,"oeil_vortex":0.78}/*/WB_POW*/;
   const ELN = { n: "Neutre", t: "Terre", f: "Feu", e: "Eau", a: "Air" };
   E.wbElName = (k) => ELN[k] || k;
   /* boss n (1, 2, 3…) de la rotation */
@@ -96,7 +96,7 @@
 
   /* Un essai pas à pas (pour « Revoir le combat ») : W.S2 est une copie de la partie, le hasard est fixé par seed. */
   E.wbWatch = (S, def, phase, seed, now = E.now()) => {
-    const S2 = JSON.parse(E.serialize(S));
+    const S2 = E.deserialize(E.serialize(S)); // comme le serveur (fonction « record ») : même partie, même combat
     S2.fight = null; S2.pause = 0; S2.acc = 0; S2.hunting = false; S2.protector = null; S2.manualLive = false;
     S2.settings = Object.assign({}, S2.settings, { manual: false });
     S2.cons = Object.assign({}, S2.cons); delete S2.cons.fiole_resu;
