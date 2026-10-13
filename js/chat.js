@@ -16,7 +16,7 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false };
+  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false };
   const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
@@ -37,8 +37,8 @@
   }
   /* Rechargé à la connexion ou au changement de compte. */
   async function refresh() {
-    const [g, p, ign, role, me] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}]);
-    C.g = g || []; C.p = p || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    const [g, p, ign, role, me, c, v] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v")]);
+    C.g = g || []; C.p = p || []; C.c = c || []; C.v = v || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     if (C.role) X().renderStatus();
@@ -53,11 +53,12 @@
   const isFeat = (m) => m.kind === "ann" && !(m.data && m.data.t === "admin");
   function onMsg(m) {
     if (!m || !m.id) return;
-    const list = m.ch === "p" ? C.p : C.g;
+    const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : C.g;
     if (list.some((x) => x.id === m.id)) return;
     list.push(m); if (list.length > 200) list.shift();
     const mine = m.user_id === myId() && m.kind === "msg";
     if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) C.unreadP++; }
+    else if (m.ch === "c" || m.ch === "v") { const k = m.ch === "c" ? "unreadC" : "unreadV"; if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === m.ch)) C[k]++; }
     else if (isFeat(m)) { if (!(C.open && C.tab === "h")) C.unreadH++; }
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
@@ -78,7 +79,7 @@
     const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
-    el.className = "chat"; el.innerHTML = headHtml() + eventHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
+    el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
     const nl = el.querySelector(".ch-list");
     if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; }
     else if (nl) { nl.scrollTop = top; if (nl.scrollHeight > oldH + 4) C.below = true; } // on lit plus haut : on reste en place, un bouton signale les nouveaux messages
@@ -93,18 +94,25 @@
   const onlineTxt = () => `<i></i>${C.count || 1}<span class="ol"> en ligne</span>`;
   function minHtml() {
     const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
-    const n = C.unread + C.unreadP + ((window.GUILD && window.GUILD.unread) || 0);
+    const n = C.unread + C.unreadP + C.unreadC + C.unreadV + ((window.GUILD && window.GUILD.unread) || 0);
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
   const DISCORD = "https://discord.gg/9ApPgWjPUM";
   /* 0.1.28.4 : rappel de l'événement en cours (E.EVENT), au-dessus de la carte Discord */
   const evOn = () => { const E = window.ENGINE; return !!(E && E.eventOn && E.eventOn()); };
-  const eventHtml = () => { const E = window.ENGINE; return evOn() ? `<div class="ch-ev">${X().IC("parchemin_or")}<span><b>Événement ${h(E.EVENT.name)}</b> : XP et butin x2 pour tout le monde</span></div>` : ""; };
-  const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener"><span class="dl">${X().DISCORD_SVG}</span><span class="tx"><b>Serveur Discord d'Idlus</b><small>Questions, bugs, idées</small></span><span class="go">Rejoindre</span></a>`;
+  /* 0.1.48.2 : l'événement et le lien Discord tiennent sur une seule ligne fine sous les onglets */
+  const eventHtml = () => { const E = window.ENGINE; return evOn() ? `<span class="ev">${X().IC("parchemin_or")}<span><b>${h(E.EVENT.name)}</b> : XP et butin x2</span></span>` : ""; };
+  const discordHtml = () => `<div class="ch-strip">${eventHtml() || `<span class="ev muted">Questions, bugs, idées ?</span>`}<a class="dl" href="${DISCORD}" target="_blank" rel="noopener">${X().DISCORD_SVG} Discord</a></div>`;
+  /* 0.1.48.2 : six salons sur une ligne à part, sous le titre ; chacun a son icône et sa pastille de messages non lus */
+  const nb = (n) => (n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : "");
   function headHtml() {
-    const tab = (k, n, extra) => `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${n}${extra || ""}</button>`;
-    return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}${window.GUILD && window.GUILD.inGuild() ? tab("u", "Guilde", window.GUILD.unread && C.tab !== "u" ? ` <span class="n">${window.GUILD.unread}</span>` : "") : `<span class="ch-tab lock" data-tip="Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.">${X().G("lock")} Guilde</span>`}${tab("h", "Hauts faits", C.unreadH && C.tab !== "h" ? ` <span class="n">${C.unreadH > 99 ? "99+" : C.unreadH}</span>` : "")}<span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
+    const G = X().G;
+    const tab = (k, ic, n, unread, lock) => lock ? `<span class="ch-tab lock" data-tip="${h(lock)}">${G("lock")}<span>${n}</span></span>`
+      : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : nb(unread)}</button>`;
+    const guild = window.GUILD && window.GUILD.inGuild();
+    return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
+      <div class="ch-tabs" role="tablist">${tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
@@ -146,6 +154,11 @@
       if (!window.GUILD || !window.GUILD.inGuild()) { C.tab = "g"; return listHtml(); }
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
     }
+    if (C.tab === "c" || C.tab === "v") {
+      const rows = C[C.tab].filter((m) => !C.ign.has(m.user_id));
+      const intro = C.tab === "c" ? "Commerce : achat, vente et échange. Un message toutes les 30 secondes ; montrez vos objets avec « Montrer dans le chat »." : "PvP : Kolizéum, défis et adversaires. Les grades Or, Cristal et Diamant y sont annoncés.";
+      return `<div class="sys">${intro}</div>` + rows.map(msgHtml).join("");
+    }
     if (C.tab === "h") {
       const fe = C.g.filter(isFeat);
       return `<div class="sys">Les hauts faits des joueurs : records de stasis, exploits, niveau 200, Renaissances et Dofus.</div>` + (fe.length ? fe.map(msgHtml).join("") : `<div class="sys">Aucun haut fait pour l'instant.</div>`);
@@ -160,24 +173,25 @@
     if (C.me.banned) return `<div class="ch-lock">Tu ne peux plus écrire dans le chat.</div>`;
     if (C.tab === "p" && !C.peer) return `<div class="ch-lock">Choisis une conversation.</div>`;
     const it = C.item && window.DATA.ITEMS[C.item];
-    const wait = Math.max(0, Math.ceil((C.next - Date.now()) / 1000));
+    const wait = Math.max(0, Math.ceil((nextAt() - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      <div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      <div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Parler Kolizéum, chercher un adversaire…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
       <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>Bouton « Montrer dans le chat » sur la fiche d'un objet</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`;
   }
 
   /* ---------- actions du chat ---------- */
+  const nextAt = () => (C.tab === "c" ? Math.max(C.next, C.nextC || 0) : C.next); // 0.1.48.2 : le Commerce a son propre rythme (30 s)
   async function send() {
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
-    if (Date.now() < C.next) { C.err = "Doucement : attends quelques secondes."; return paint(true); }
-    const to = C.tab === "p" ? C.peer : null;
-    const err = C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null);
+    if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; return paint(true); }
+    const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" ? C.tab : null;
+    const err = C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
-    C.err = ""; C.item = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000;
-    setTimeout(() => { const c = $("#chCnt"); if (c) c.textContent = "0/200"; }, 4100);
+    C.err = ""; C.item = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
+    setTimeout(() => { const c = $("#chCnt"); if (c) c.textContent = "0/200"; }, (ch === "c" ? 30000 : 4000) + 100);
     // le message revient par le temps réel ; on recharge au cas où la connexion temps réel serait coupée
-    setTimeout(async () => { const l = await ON.chatLoad(to ? "p" : "g"); if (l && l.length) { if (to) C.p = l; else C.g = l; paint(true); } }, 1500);
+    setTimeout(async () => { const k = to ? "p" : ch || "g"; const l = await ON.chatLoad(k); if (l && l.length) { C[k] = l; paint(true); } }, 1500);
     paint();
   }
   function menu(t) {
@@ -199,7 +213,7 @@
   }
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };
   function reportSheet(u, p, id) {
-    const m = C.g.concat(C.p).find((x) => x.id === id);
+    const m = C.g.concat(C.p, C.c, C.v).find((x) => x.id === id);
     X().openSheet(`<h2>Signaler ${h(p)}</h2><p class="muted small">Mathis et les modérateurs verront ce message et décideront. ${h(p)} ne saura pas qui l'a signalé.</p>
       ${m ? `<div class="rep-q"><b>${h(p)}</b> · ${hhmm(m.created_at)}<br>${h(m.body || "")}</div>` : ""}
       <div class="rep-opts">${["Insultes ou harcèlement", "Arnaque ou publicité", "Spam", "Autre"].map((r, i) => `<label><input type="radio" name="chRep" value="${h(r)}" ${i ? "" : "checked"}> ${h(r)}</label>`).join("")}</div>
@@ -345,10 +359,10 @@
     if (!t) return; const a = t.dataset.act, d = t.dataset;
     if (!/^(ch|adm)-/.test(a)) return;
     switch (a) {
-      case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
+      case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
       case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
-      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
       case "ch-who": menu(t); return;
@@ -399,7 +413,7 @@
       ev.stopPropagation();
     } else if (ev.target && ev.target.id === "admQ" && ev.key === "Enter") { ev.preventDefault(); const b = document.querySelector('[data-act="adm-search"]'); if (b) b.click(); }
   }, true);
-  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= C.next) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
+  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
   window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, get role() { return C.role; }, get state() { return C; } };
 })();

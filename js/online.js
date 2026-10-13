@@ -172,7 +172,7 @@
   ON.rpc = rpc;
   ON.chatLoad = async (ch) => {
     let q = sb.from("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
-    q = ch === "p" ? q.eq("ch", "p") : q.eq("ch", "g");
+    q = q.eq("ch", ["p", "c", "v"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v)
     try { const { data, error } = await withTimeout(q, 12000); return error ? [] : (data || []).reverse(); } catch (e) { return null; }
   };
   /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */
@@ -185,7 +185,7 @@
       .subscribe((st) => { if (st === "SUBSCRIBED" && ON.user && ON.profile) chan.track({ p: ON.profile.pseudo }); });
   };
   ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };
-  ON.chatSend = async (body, to, item) => { const r = await rpc("chat_send", { p_body: body, p_to: to || null, p_item: item || null }); return r.err ? r.err : r.data || null; };
+  ON.chatSend = async (body, to, item, ch) => { const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" ? { p_ch: ch } : {})); return r.err ? r.err : r.data || null; };
   ON.chatReport = async (id, reason) => { const r = await rpc("chat_report", { p_msg: id, p_reason: reason }); return r.err || r.data || null; };
   ON.chatMe = async () => (await rpc("chat_me")).data || {};
   // 0.1.29.1 : l'équipe (créateur, modérateurs) pour le badge à côté du pseudo, lisible sans compte

@@ -3612,3 +3612,23 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .statl.lgline{color:#a58bff}:root[data-theme="dark"] .statl.lgline{color:#c9b8ff}
 @media (max-width:560px){.sg-lgrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}}
 .cele-t .lxn.cf{background-image:linear-gradient(90deg,#c9b8ff,#ffffff,#7fe8e0,#ffb35c,#c9b8ff)!important}
+
+/* 0.1.48.2 : chat à six salons. Ligne de titre (Chat, en ligne, réduire), puis les onglets en colonnes égales (icône + nom) ;
+   l'événement et Discord tiennent sur une ligne fine. */
+.chat .ch-head{flex-direction:column;align-items:stretch;gap:4px;padding:6px 8px}
+.chat .ch-top{display:flex;align-items:center;gap:8px;min-width:0}
+.chat .ch-ttl{display:flex;align-items:center;gap:6px;font-weight:900;font-size:14px}
+.chat .ch-ttl .uico{width:16px;height:16px}
+.chat .ch-top .ch-on{margin-left:auto}
+.chat .ch-tabs{display:flex;gap:2px}
+.chat .ch-tabs .ch-tab{flex:1 1 auto;min-width:0;flex-direction:column;align-items:center;gap:1px;padding:5px 3px;font-size:11.5px;position:relative;overflow:visible}
+.chat .ch-tabs .ch-tab > span:not(.n){max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chat .ch-tabs .ch-tab .uico{width:16px;height:16px}
+.chat .ch-tabs .ch-tab .n{position:absolute;top:-2px;right:2px;font-size:10px;line-height:15px;padding:0 5px;margin:0}
+.chat .ch-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 10px;font-size:12px;border-bottom:1px solid var(--frame);background:rgba(231,196,106,.07)}
+.chat .ch-strip .ev{display:flex;align-items:center;gap:6px;min-width:0}
+.chat .ch-strip .ev .uico,.chat .ch-strip .ev img{width:16px;height:16px;flex:none}
+.chat .ch-strip .ev b{color:var(--gold2)}
+.chat .ch-strip .dl{display:inline-flex;align-items:center;gap:5px;font-weight:800;color:#aab2ff;text-decoration:none;white-space:nowrap;flex:none}
+.chat .ch-strip .dl svg{width:16px;height:16px}
+.chat .ch-strip .dl:hover{text-decoration:underline}

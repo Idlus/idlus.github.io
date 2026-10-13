@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.48.1";
+const GAME_VERSION = "0.1.48.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.48.2", name: "Salons Commerce et PvP", items: [
+    "Chat : deux nouveaux salons. Commerce pour acheter, vendre et échanger (un message toutes les 30 secondes), PvP pour le Kolizéum, avec l'annonce des grades Or, Cristal et Diamant",
+    "Nouvelle barre du chat : le titre en haut, puis les six salons avec leur icône et leur pastille de messages non lus. Le bouton pour réduire le chat reste toujours visible",
+    "L'événement en cours et le lien Discord tiennent sur une seule ligne fine : plus de place pour les messages",
+  ] },
   { v: "0.1.48.1", name: "Multi-élément", items: [
     "« Équiper au mieux », la pastille verte et l'ordre de la liste gèrent les héros multi-élément : chaque élément qui a au moins 20 % des points répartis compte, au prorata de sa part (un héros Force 60 % / Chance 40 % valorise les deux)"
   ] },

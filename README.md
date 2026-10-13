@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48.2 « Salons Commerce et PvP »
+Chat : salons `c` (Commerce) et `v` (PvP) dans `chat_msgs.ch`. Serveur (supabase/chat.sql) : `chat_send` prend `p_ch` (l'ancienne version à 3 paramètres est supprimée), Commerce limité à un message toutes les 30 s, salons lisibles par tous ; supabase/koli.sql annonce les grades dans `v`. Jeu (js/chat.js) : `C.c` / `C.v`, pastilles comptées dans le chat réduit, barre `.ch-top` + `.ch-tabs`, ligne `.ch-strip` (événement + Discord).
+
 ## 0.1.48.1 « Multi-élément »
 `buildEls(c)` (js/ui.js) : éléments joués (répartition auto élémentaire, sinon parts ≥ 20 % de `c.alloc`, sinon élément de la classe) ; `itemScore` pondère stat 0,1 + 1,3 × part et dommages 0,1 + 0,9 × part.
 
