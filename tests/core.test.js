@@ -79,3 +79,34 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   assert.strictEqual(E.craftCount(S, "tpl", tpl), 0); assert.strictEqual(typeof E.craftMany(S, "tpl", tpl, 10), "string", "plus rien à fabriquer");
   console.log("ok - fabrication en série");
 }
+
+// 0.1.35 : jusqu'à 12 héros (8 en équipe au plus) et congédier un héros
+{
+  const S = E.newState("Réserve", "iop"); S.kamas = 1e9; S.chars[0].lvl = 120;
+  const cls = ["cra", "eni", "sram", "feca", "osa", "xelor", "panda", "sadi", "enu", "eca", "roub"];
+  cls.forEach((k) => assert.strictEqual(E.recruit(S, k, k), null, `recrutement ${k}`));
+  assert.strictEqual(S.chars.length, 12); assert.ok(/12 héros au plus/.test(E.recruit(S, "iop", "Trop")), "13e héros refusé");
+  assert.strictEqual(E.team(S).length, 8); assert.strictEqual(E.activeCount(S), 8, "4 héros au repos, pas 12 en équipe");
+  assert.strictEqual(S.recLv, 11 * 60, "niveaux donnés par les recrutements");
+  const rest = S.chars.find((c) => !c.inTeam); assert.ok(/8 héros au plus/.test(E.toggleTeam(S, rest.id)), "équipe pleine");
+  // un récolteur rappelé quand l'équipe est pleine va au repos
+  const fighter = E.team(S)[1]; assert.strictEqual(E.setJob(S, fighter.id, "paysan"), null);
+  assert.strictEqual(E.toggleTeam(S, rest.id), null, "une place s'est libérée");
+  assert.strictEqual(E.setJob(S, fighter.id, null), null); assert.strictEqual(fighter.inTeam, false, "rappelé au repos");
+  assert.strictEqual(E.activeCount(S), 8);
+  // congédier : objets au sac, moitié du prix rendue, prochain recrutement moins cher
+  const it = Object.keys(S.items)[0]; const out = S.chars.find((c) => !c.inTeam && !c.job);
+  if (it) out.equip.coiffe = +it; S.mainHero = out.id; S.training = out.id;
+  const k0 = S.kamas, refund = Math.floor(E.recruitCost(12) / 2);
+  assert.strictEqual(E.dismiss(S, out.id), null);
+  assert.strictEqual(S.chars.length, 11); assert.strictEqual(S.kamas - k0, refund, "moitié du prix rendue");
+  if (it) assert.ok(S.items[it] && !S.chars.some((c) => Object.values(c.equip).includes(+it)), "l'objet revient au sac");
+  assert.strictEqual(S.training, null); assert.ok(S.chars.some((c) => c.id === S.mainHero), "nouveau héros principal");
+  assert.strictEqual(E.recruitCost(S.chars.length + 1), E.recruitCost(12), "le prochain recrutement redevient moins cher");
+  const solo = E.newState("Seul", "iop"); assert.ok(/au moins un héros/.test(E.dismiss(solo, solo.chars[0].id)), "dernier héros gardé");
+  // classement : les 8 meilleurs héros
+  const V = require("../js/verify.js"); const sum = V.summary(E, S);
+  const best8 = S.chars.map((c) => c.lvl + (c.ren || 0) * 200).sort((a, b) => b - a).slice(0, 8).reduce((a, n) => a + n, 0);
+  assert.strictEqual(sum.level, best8); assert.strictEqual(sum.heroes.length, 11); assert.strictEqual(sum.rec, S.recLv);
+  console.log("ok - 12 héros, 8 en équipe, congédier un héros");
+}
