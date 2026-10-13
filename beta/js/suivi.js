@@ -32,7 +32,7 @@
     buyShop: "boutique", buyNets: "boutique", useConsumable: "boutique",
     enterDungeon: "donjon", leaveDungeon: "donjon", stopChain: "donjon", toggleIdol: "idole",
     almanaxOffer: "quete", redeemGift: "quete", togglePin: "quete", rerollBounty: "quete",
-    defiPlay: "defi", tresorClaim: "tresor", tresorStart: "tresor", tresorFight: "tresor",
+    defiPlay: "defi", tresorClaim: "tresor", tresorLegClaim: "tresor", tresorStart: "tresor", tresorFight: "tresor",
     expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition", expBuy: "expedition", sgBuy: "expedition", legFuse: "expedition",
   };
   const catOf = (cat, amount) => (amount > 0 ? (E.CARNET_IN[cat] ? cat : "autre") : (E.CARNET_OUT[cat] ? cat : "autre"));
@@ -224,6 +224,11 @@
     sewer: ["une grille rouillée", "un rat sculpté dans la pierre"],
   };
   E.tresorState = (S) => { if (!S.tresor) S.tresor = { stock: [], day: null, n: 0, cur: null }; if (!Array.isArray(S.tresor.stock)) S.tresor.stock = []; return S.tresor; };
+  /* 0.1.49 : trois tailles de chasse. Un parchemin est un niveau (normale) ou { l, k: "court" | "leg" } */
+  E.TRESOR_SIZES = { court: { name: "Courte", steps: 3, mult: 0.6 }, norm: { name: "Normale", mult: 1 }, leg: { name: "Légendaire", steps: 8, mult: 3.2 } };
+  E.tresorP = (x) => (x && typeof x === "object" ? { l: clamp(+x.l || 1, 1, 200), k: E.TRESOR_SIZES[x.k] ? x.k : "norm" } : { l: clamp(+x || 1, 1, 200), k: "norm" });
+  E.tresorStepsOf = (p) => { p = E.tresorP(p); return E.TRESOR_SIZES[p.k].steps || E.tresorSteps(p.l); };
+  E.tresorLegOk = (S) => E.tresorState(S).legW !== (E.weekOf ? E.weekOf() : 0);
   const subMid = (s) => Math.round((s.lvl[0] + s.lvl[1]) / 2);
   const pick = (arr) => arr[Math.floor(E.rnd() * arr.length)];
   const topLvl = (S) => { const t = E.team(S); return Math.max(...(t.length ? t : S.chars).map((c) => c.lvl)); };
@@ -232,10 +237,19 @@
   E.tresorClaim = (S) => {
     const T = E.tresorState(S);
     if (!E.tresorFreeOk(S)) return "Le parchemin du jour est déjà pris. Reviens demain.";
-    if (T.stock.length >= E.TRESOR_STOCK) return `Tu as déjà ${E.TRESOR_STOCK} parchemins en réserve.`;
-    T.day = dayOf(E.now()); T.stock.push(clamp(topLvl(S), 1, 200));
+    if (normCount(T) >= E.TRESOR_STOCK) return `Tu as déjà ${E.TRESOR_STOCK} parchemins en réserve.`;
+    T.day = dayOf(E.now()); T.stock.push({ l: clamp(topLvl(S), 1, 200), k: "court" });
     return null;
   };
+  /* parchemin légendaire : un par semaine, à partir du niveau 50 (il ne prend pas de place dans la réserve) */
+  E.tresorLegClaim = (S) => {
+    const T = E.tresorState(S);
+    if (topLvl(S) < 50) return "Le parchemin légendaire s'ouvre au niveau 50.";
+    if (!E.tresorLegOk(S)) return "Le parchemin légendaire de la semaine est déjà pris. Il revient lundi.";
+    T.legW = E.weekOf ? E.weekOf() : 0; T.stock.push({ l: clamp(topLvl(S), 1, 200), k: "leg" });
+    return null;
+  };
+  const normCount = (T) => T.stock.filter((x) => E.tresorP(x).k !== "leg").length;
   const candSubs = (S, lvl, lo, hi) => Object.values(SUBS).filter((s) => !s.hidden && E.subUnlocked(S, s.id) && s.lvl[1] >= lvl - lo && s.lvl[0] <= lvl + hi && (s.monsters || []).some((m) => MONSTERS[m] && !MONSTERS[m].boss));
   E.tresorStart = (S, which = 0) => {
     const T = E.tresorState(S);
@@ -243,8 +257,9 @@
     if (!T.stock.length) return "Aucun parchemin de chasse.";
     if (!E.team(S).length) return "Votre équipe est vide.";
     const i = clamp(Math.floor(+which) || 0, 0, T.stock.length - 1);
-    const lvl = Math.min(T.stock[i], topLvl(S) + 10); // jamais une chasse hors de portée de l'équipe
-    const n = E.tresorSteps(lvl);
+    const P = E.tresorP(T.stock[i]);
+    const lvl = Math.min(P.l, topLvl(S) + 10); // jamais une chasse hors de portée de l'équipe
+    const n = E.TRESOR_SIZES[P.k].steps || E.tresorSteps(lvl);
     let pool = candSubs(S, lvl, 12, 5); if (pool.length < n) pool = candSubs(S, lvl, 30, 8); if (!pool.length) pool = candSubs(S, topLvl(S), 200, 0);
     if (!pool.length) return "Aucune zone disponible pour cette chasse.";
     const steps = []; let prev = S.sub;
@@ -252,11 +267,22 @@
       const fresh = pool.filter((s) => s.id !== prev && !steps.some((x) => x.sub === s.id));
       const s = pick(fresh.length ? fresh : pool.filter((x) => x.id !== prev).length ? pool.filter((x) => x.id !== prev) : pool);
       const all = MARKS[s.deco] || MARKS.meadow; const left = all.filter((m) => !steps.some((x) => x.mark === m));
-      steps.push({ sub: s.id, mark: pick(left.length ? left : all), got: 0 }); prev = s.id;
+      const st = { sub: s.id, mark: pick(left.length ? left : all), got: 0 };
+      // 0.1.49 : nouveaux indices (le premier reste toujours un repère à trouver)
+      const r = E.rnd(); const mons = (s.monsters || []).filter((m) => MONSTERS[m] && !MONSTERS[m].boss && !MONSTERS[m].archiOf);
+      const drops = mons.flatMap((m) => (MONSTERS[m].drops || []).map((d) => d[0])).filter((x) => !E.isKey(x));
+      if (k > 0 && r < 0.22 && mons.length) { st.t = "mon"; st.mon = pick(mons); st.n = 3; }
+      else if (k > 0 && r < 0.38 && drops.length) { st.t = "res"; st.res = pick(drops); st.n = 5; st.have = 0; }
+      else if (k > 0 && r < 0.52) { st.t = "enig"; }
+      steps.push(st); prev = s.id;
+    }
+    if (P.k === "leg") { // un indice de donjon au milieu de la chasse légendaire
+      const dgs = Object.keys(DUNGEONS).filter((d) => E.dungeonUnlocked(S, d) && DUNGEONS[d].lvl <= lvl + 5 && DUNGEONS[d].lvl >= lvl - 30);
+      if (dgs.length) steps.splice(4, 0, { t: "dg", dg: pick(dgs), sub: steps[3].sub, got: 0, mark: "une salle secrète au fond du donjon" });
     }
     T.stock.splice(i, 1);
-    T.cur = { lvl, steps, i: 0, from: S.hunting && !S.dungeon ? S.sub : null, follow: true, ready: false, go: false, fighting: false, t: E.now(), move: !S.dungeon };
-    E.note(S, `Chasse au trésor : premier indice vers ${SUBS[steps[0].sub].name}.`, "up");
+    T.cur = { lvl, k: P.k, steps, i: 0, from: S.hunting && !S.dungeon ? S.sub : null, follow: true, ready: false, go: false, fighting: false, t: E.now(), move: !S.dungeon };
+    E.note(S, `Chasse au trésor${P.k === "leg" ? " légendaire" : ""} : premier indice vers ${SUBS[steps[0].sub].name}.`, "up");
     tresorPending(S);
     return null;
   };
@@ -274,7 +300,7 @@
     c.go = true; c.follow = true; c.move = true; tresorPending(S); return null;
   };
   E.tresorQuit = (S) => { const T = E.tresorState(S); if (!T.cur) return "Aucune chasse au trésor."; T.cur = null; E.note(S, "Chasse au trésor abandonnée.", "warn"); return null; };
-  const targetSub = (c) => (c.ready ? c.steps[c.steps.length - 1].sub : c.steps[c.i].sub);
+  const targetSub = (c) => { const st = c.ready ? c.steps[c.steps.length - 1] : c.steps[c.i]; if (!c.ready && st.t === "dg") { const p = c.steps[c.i - 1] || c.steps[c.i + 1] || st; return p.sub; } return st.sub; };
   /* déplacement demandé (au prochain instant de jeu, jamais au milieu d'un combat) */
   function tresorPending(S) {
     const T = S.tresor; if (!T) return;
@@ -298,6 +324,7 @@
     const lvl = Math.round(clamp(c.lvl + 5, 1, 200)); // un boss du niveau du parchemin
     const g = monsterEntity(pick(pool), lvl); g.name = `${g.name} gardien du trésor`;
     g.hpMax = g.hp = Math.round(g.hpMax * (1.8 + team.length * 0.7)); g.dmg *= team.length > 1 ? 1.35 : 1.15; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80;
+    if (c.k === "leg") { g.hpMax = g.hp = Math.round(g.hpMax * 1.6); g.dmg *= 1.25; g.name = g.name.replace("gardien du trésor", "gardien légendaire"); } // 0.1.49 : gardien d'élite
     const mons = [g].concat(E.makeGroup(S, last, team.length).slice(0, Math.max(0, team.length - 1)));
     c.go = false; c.fighting = true; c.need = true;
     return { mons, label: `Gardien du trésor · ${last.name}` };
@@ -319,20 +346,21 @@
   };
   const roam0 = E.roam;
   E.roam = (S, ...a) => (E.tresorHold(S) ? null : roam0(S, ...a));
-  E.tresorChest = (lvl, n) => ({ kamas: Math.round(lvl * 170 * (n / 4) + 300), dust: 2 + n, res: 2, key: true });
+  E.tresorChest = (lvl, n, k) => { const m = (E.TRESOR_SIZES[k] || E.TRESOR_SIZES.norm).mult; const nn = k === "court" ? 4 : k === "leg" ? 4 : n; return { kamas: Math.round((lvl * 170 * (nn / 4) + 300) * m), dust: Math.round((2 + nn) * m), res: k === "leg" ? 4 : 2, key: true }; };
   function guardEnd(S, win) {
     const T = E.tresorState(S), c = T.cur;
     if (!win) { c.lost = (c.lost || 0) + 1; c.follow = false; E.note(S, "Le gardien du trésor l'emporte. Renforce l'équipe et réessaie depuis la page Trésor.", "warn"); return; }
-    const lvl = c.lvl, n = c.steps.length, ch = E.tresorChest(lvl, n); const got = [];
+    const lvl = c.lvl, n = c.steps.length, ch = E.tresorChest(lvl, n, c.k); const got = [];
     S.kamas += ch.kamas; tag(S, ch.kamas, "tresor"); got.push(`${ch.kamas} kamas`);
     E.addRes(S, "Poussière de stasis", ch.dust); got.push(`${ch.dust} poussière de stasis`);
     const drops = []; c.steps.forEach((st) => (SUBS[st.sub].monsters || []).forEach((m) => (MONSTERS[m] && MONSTERS[m].drops || []).forEach(([r]) => { if (!E.isKey(r)) drops.push(r); })));
     for (let i = 0; i < ch.res && drops.length; i++) { const r = pick(drops), q = 3 + Math.floor(E.rnd() * 4); E.addRes(S, r, q); got.push(`${q} ${r}`); }
     const dg = Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].key && DUNGEONS[d].lvl <= lvl + 5 && E.dungeonUnlocked(S, d)).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl)[0];
     if (dg) { E.addRes(S, DUNGEONS[dg].key, 1); got.push(DUNGEONS[dg].key); }
-    { const cid = n >= 5 ? "coffre_argent" : "coffre_bois"; E.addCons(S, cid); got.push(D.CONSUMABLES[cid].name); } // 0.1.30
-    if (E.rnd() < 0.1 && T.stock.length < E.TRESOR_STOCK) { T.stock.push(lvl); got.push("un nouveau parchemin de chasse"); }
-    T.n = (T.n || 0) + 1; T.last = { t: E.now(), lvl, n, got };
+    { const cid = c.k === "leg" ? "coffre_or" : c.k === "court" ? "coffre_bois" : n >= 5 ? "coffre_argent" : "coffre_bois"; E.addCons(S, cid); got.push(D.CONSUMABLES[cid].name); } // 0.1.30
+    if (E.rnd() < 0.1 && normCount(T) < E.TRESOR_STOCK) { T.stock.push(lvl); got.push("un nouveau parchemin de chasse"); }
+    T.n = (T.n || 0) + 1; if (c.k === "leg") T.leg = (T.leg || 0) + 1; T.last = { t: E.now(), lvl, n, got, k: c.k || "norm" };
+    if (E.wkTresor) E.wkTresor(S);
     if (T.n >= 50 && S.unlocks && !S.unlocks.boussole) S.unlocks.boussole = 1;
     E.note(S, `Trésor trouvé ! Coffre au trésor : ${got.join(", ")}.`, "rare");
     E.celebrate({ t: "tresor", got, n: T.n });
@@ -351,19 +379,44 @@
     if (!live(S) || !data) return;
     try { onEvent(S, type, data); } catch (e) { /* le carnet ne doit jamais casser une partie */ }
   };
+  /* indices : repère (6 victoires), monstre précis (3), ressource à rapporter (5), énigme (la zone n'est pas nommée), salle de donjon */
+  function clueHit(S, st, data) {
+    if (st.t === "mon") { st.got += (data.mons || []).filter((m) => m.key === st.mon).length; return st.got >= st.n; }
+    if (st.t === "res") { st.got++; if ((S.res[st.res] || 0) >= st.n) { S.res[st.res] -= st.n; if (!S.res[st.res]) delete S.res[st.res]; return true; } return st.got >= E.TRESOR_NEED * 3; }
+    if (st.t === "dg") return false;
+    return ++st.got >= E.TRESOR_NEED;
+  }
+  function clueDone(st) {
+    if (st.t === "mon") return `Indice résolu : ${MONSTERS[st.mon].name} vaincu ${st.n} fois`;
+    if (st.t === "res") return `Indice résolu : ${st.res} rapporté`;
+    if (st.t === "dg") return "Indice résolu : la salle secrète du donjon est trouvée";
+    if (st.t === "enig") return `Énigme résolue : ${st.mark}`;
+    return `Repère trouvé : ${st.mark}`;
+  }
+  E.tresorClueTxt = (st) => {
+    if (!st) return "";
+    if (st.t === "mon") return `Vaincre ${st.n} × ${MONSTERS[st.mon].name} dans ${SUBS[st.sub].name}`;
+    if (st.t === "res") return `Rapporter ${st.n} × ${st.res} (on en trouve dans ${SUBS[st.sub].name})`;
+    if (st.t === "dg") return `Trouver la salle secrète de ${DUNGEONS[st.dg].name}`;
+    if (st.t === "enig") { const z = (D.ZONES || []).find((x) => x.subs.some((y) => y.id === st.sub)); return `Énigme : « Cherche ${st.mark} quelque part en ${z ? z.name : "Monde des Douze"}… » (l'équipe suit la piste : ${SUBS[st.sub].name})`; }
+    return `Trouver ${st.mark} dans ${SUBS[st.sub].name}`;
+  };
+  function nextClue(S, c) {
+    c.i++;
+    if (c.i >= c.steps.length) { c.ready = true; E.note(S, "Le gardien du trésor t'attend !", "rare"); if (c.follow) { c.go = true; c.move = true; } }
+    else { const n = c.steps[c.i]; E.note(S, n.t === "dg" ? `Indice suivant : ${DUNGEONS[n.dg].name} (termine ce donjon).` : `Indice suivant : ${SUBS[n.sub].name}.`, "up"); if (c.follow) c.move = true; }
+  }
   function onEvent(S, type, data) {
     if (type === "win" && data.sub && !data.dungeon) {
       const T = E.tresorState(S), c = T.cur;
       if (c && !c.ready) {
         const st = c.steps[c.i];
-        if (st && st.sub === data.sub && ++st.got >= E.TRESOR_NEED) {
-          E.note(S, `Repère trouvé : ${st.mark} (${SUBS[st.sub].name}).`, "up");
-          c.i++;
-          if (c.i >= c.steps.length) { c.ready = true; E.note(S, "Le gardien du trésor t'attend !", "rare"); if (c.follow) { c.go = true; c.move = true; } }
-          else { E.note(S, `Indice suivant : ${SUBS[c.steps[c.i].sub].name}.`, "up"); if (c.follow) c.move = true; }
+        if (st && st.sub === data.sub && clueHit(S, st, data)) {
+          E.note(S, `${clueDone(st)} (${SUBS[st.sub].name}).`, "up");
+          nextClue(S, c);
         }
       }
-      if (T.stock.length < E.TRESOR_STOCK && SUBS[data.sub] && E.rnd() < E.TRESOR_DROP) { T.stock.push(subMid(SUBS[data.sub])); E.note(S, `Parchemin de chasse trouvé (niveau ${subMid(SUBS[data.sub])}) !`, "rare"); }
+      if (normCount(T) < E.TRESOR_STOCK && SUBS[data.sub] && E.rnd() < E.TRESOR_DROP) { T.stock.push(subMid(SUBS[data.sub])); E.note(S, `Parchemin de chasse trouvé (niveau ${subMid(SUBS[data.sub])}) !`, "rare"); }
       return;
     }
     if (type === "level" && (data.lvl % 10 === 0 || data.lvl === 200)) E.carnetMoment(S, "level", `${NAME(S, data.cid)} atteint le niveau ${data.lvl}`);
@@ -371,13 +424,15 @@
     else if (type === "dofus" && data.first) E.carnetMoment(S, "dofus", `${(E.DOFUS && E.DOFUS[data.id] || {}).name || "Dofus"} obtenu`);
     else if (type === "soul") E.carnetMoment(S, "soul", `Âme capturée : ${((E.ARCHIS && E.ARCHIS[data.key]) || MONSTERS[data.key] || {}).name || "archimonstre"}`);
     else if (type === "dungeon" && data.id && DUNGEONS[data.id]) {
+      const tc = S.tresor && S.tresor.cur; const ts = tc && !tc.ready && tc.steps[tc.i];
+      if (ts && ts.t === "dg" && ts.dg === data.id) { E.note(S, `${clueDone(ts)} (${DUNGEONS[data.id].name}).`, "up"); nextClue(S, tc); }
       const C = E.carnet(S); const k = data.stasis || 1;
       if (k > (C.sk[data.id] || 0)) { C.sk[data.id] = k; E.carnetMoment(S, "stasis", `${DUNGEONS[data.id].name} : stasis ${k} réussie`); }
     }
   }
 
   /* ======================= actions, succès, ornement ======================= */
-  Object.assign(E.ACTIONS, { tresorClaim: "prendre le parchemin de chasse du jour", tresorStart: "ouvrir un parchemin de chasse", tresorGo: "suivre l'indice", tresorFight: "affronter le gardien du trésor", tresorQuit: "abandonner la chasse au trésor" });
+  Object.assign(E.ACTIONS, { tresorClaim: "prendre le parchemin de chasse du jour", tresorStart: "ouvrir un parchemin de chasse", tresorGo: "suivre l'indice", tresorFight: "affronter le gardien du trésor", tresorQuit: "abandonner la chasse au trésor", tresorLegClaim: "prendre le parchemin légendaire de la semaine" });
   wrapActions();
   E.carnetWrap = wrapActions;
   if (E.ACH) {
@@ -387,7 +442,7 @@
     addA({ id: "tresor10", cat: "Exploration", name: "Chasseur de trésors", desc: "Trouver 10 trésors.", test: (S) => (S.tresor && S.tresor.n || 0) >= 10, kamas: 15000, title: E.TRESOR_TITLE });
     addA({ id: "tresor50", cat: "Exploration", name: "Boussole dorée", desc: "Trouver 50 trésors (ornement « Boussole dorée »).", test: (S) => (S.tresor && S.tresor.n || 0) >= 50, kamas: 60000 });
   }
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "carnet")) E.SEARCH_PAGES.push(["carnet", "Carnet de bord", "Suivi › Carnet : courbes, kamas"], ["tresor", "Chasse au trésor", "Monde › Trésor : parchemins"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "carnet")) E.SEARCH_PAGES.push(["carnet", "Carnet de bord", "Suivi › Carnet : courbes, kamas"], ["tresor", "Chasse au trésor", "Quêtes › Chasses › Trésor : parchemins courts, normaux, légendaires"]);
   if (E.ORN && !E.ORN.boussole) E.ORN.boussole = { name: () => "Boussole dorée", req: "Trouver 50 trésors", ok: (S) => !!(S.unlocks && S.unlocks.boussole) };
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;

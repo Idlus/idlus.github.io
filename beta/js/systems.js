@@ -1041,7 +1041,7 @@
 
   /* ---------------- Ornements (contour de la carte de héros) ---------------- */
   const ORN = {
-    heros:     { name: () => "Écharpe du Héros d'Amakna", req: "Terminer la quête principale", ok: (S) => S.quest && S.quest.step >= Q.length },
+    heros:     { name: () => "Écharpe du Héros d'Amakna", req: "Terminer la quête principale", ok: (S) => S.quest && S.quest.step >= (E.MAIN_CH1 || Q.length) },
     avis:      { name: () => "Cadre « Avis de recherche »", req: "Bureau des primes (30 jetons)", ok: (S) => !!S.unlocks.avis },
     almanax:   { name: () => "Sceau de l'Almanax", req: "Série d'Almanax de 30 jours", ok: (S) => !!S.unlocks.almanax },
     ame:       { name: () => "Âme violette", req: "Éternelle moisson, palier 4 (âmes des archimonstres jusqu'à Moon)", ok: (S) => !!S.unlocks.ame },
@@ -1076,15 +1076,20 @@
 
   /* ---------------- Avis de recherche ---------------- */
   E.BOUNTY_SLOTS = 3;
-  const makeBounty = (S) => {
+  E.BOSS_SLOTS = 1; // 0.1.49 : un avis de boss en plus des 3 avis de monstres
+  const makeBounty = (S, boss) => {
     const top = topLvl(S);
     const subs = Object.values(SUBS).filter((s) => E.subUnlocked(S, s.id) && s.lvl[0] <= top + 3 && s.lvl[1] >= top - 12);
     const pool = subs.length ? subs : Object.values(SUBS).filter((s) => E.subUnlocked(S, s.id)).sort((a, b) => b.lvl[0] - a.lvl[0]).slice(0, 3);
     const dgs = Object.keys(DUNGEONS).filter((d) => E.dungeonUnlocked(S, d) && DUNGEONS[d].lvl <= top + 6);
     const taken = new Set((S.bounties || []).map((b) => b.key));
-    if (dgs.length && rnd() < 0.25) {
-      const d = dgs[Math.floor(rnd() * dgs.length)]; const dg = DUNGEONS[d];
-      if (!taken.has(dg.boss)) return { id: E.now() + Math.floor(rnd() * 1e6), key: dg.boss, dg: d, n: 1, prog: 0, kamas: Math.round(dg.lvl * 60), xp: 0.25, axp: 120 };
+    if (boss) {
+      // un boss à ton niveau (les donjons trop faibles ne sortent plus)
+      let near = dgs.filter((d) => DUNGEONS[d].lvl >= top - 25 && !taken.has(DUNGEONS[d].boss));
+      if (!near.length) near = dgs.filter((d) => !taken.has(DUNGEONS[d].boss)).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl).slice(0, 3);
+      if (!near.length) return null;
+      const d = near[Math.floor(rnd() * near.length)]; const dg = DUNGEONS[d];
+      return { id: E.now() + Math.floor(rnd() * 1e6), key: dg.boss, dg: d, n: 1, prog: 0, kamas: Math.round(dg.lvl * dg.lvl * 0.9 + dg.lvl * 60), xp: 0.25, axp: 120, boss: 1 };
     }
     for (let tries = 0; tries < 20; tries++) {
       const s = pool[Math.floor(rnd() * pool.length)]; const k = s.monsters[Math.floor(rnd() * s.monsters.length)];
@@ -1094,7 +1099,16 @@
     }
     return null;
   };
-  const fillBounties = (S) => { S.bounties = (S.bounties || []).filter(Boolean); while (S.bounties.length < E.BOUNTY_SLOTS) { const b = makeBounty(S); if (!b) break; S.bounties.push(b); } };
+  const fillBounties = (S) => {
+    S.bounties = (S.bounties || []).filter(Boolean); const top = topLvl(S);
+    // 0.1.49 : un avis pas commencé devenu bien trop facile (l'équipe a pris des niveaux) est remplacé
+    S.bounties = S.bounties.filter((b) => b.prog > 0 || !MONSTERS[b.key] || (b.dg ? DUNGEONS[b.dg] && DUNGEONS[b.dg].lvl >= top - 40 : MONSTERS[b.key].lvl[1] >= top - 25));
+    S.bounties.forEach((b) => { if (b.dg) b.boss = 1; });
+    let g = 0;
+    while (S.bounties.filter((b) => !b.boss).length < E.BOUNTY_SLOTS && g++ < 10) { const b = makeBounty(S); if (!b) break; S.bounties.push(b); }
+    g = 0;
+    while (S.bounties.filter((b) => b.boss).length < E.BOSS_SLOTS && g++ < 3) { const b = makeBounty(S, true); if (!b) break; S.bounties.push(b); }
+  };
   E.fillBounties = fillBounties;
   E.rerollCost = (S) => 30 * topLvl(S);
   E.rerollBounty = (S, id) => {
@@ -1104,11 +1118,12 @@
     S.bounties.splice(i, 1); fillBounties(S); return null;
   };
   const completeBounty = (S, b) => {
-    S.kamas += b.kamas; giveTeamXp(S, b.xp); if (S.align) E.giveAlignXp(S, b.axp);
-    S.cnt.bounty = (S.cnt.bounty || 0) + 1;
+    const kam = Math.round(b.kamas * (E.huntBonus ? E.huntBonus(S) : 1)); // 0.1.49 : +10 % par rang de chasseur
+    S.kamas += kam; giveTeamXp(S, b.xp); if (S.align) E.giveAlignXp(S, b.axp);
+    S.cnt.bounty = (S.cnt.bounty || 0) + 1; if (b.dg) S.cnt.bboss = (S.cnt.bboss || 0) + 1;
     const tk = b.dg ? 2 : 1; S.tokens.jetons = (S.tokens.jetons || 0) + tk;
     let extra = ""; const r = rnd(); if (r < 0.05) { E.addCons(S, "coffre_argent"); extra = ", Coffre en argent"; } else if (r < 0.25) { E.addCons(S, "coffre_bois"); extra = ", Coffre en bois"; }
-    note(S, `Avis de recherche rempli : ${MONSTERS[b.key].name} (+${b.kamas.toLocaleString("fr-FR")} kamas, +${tk} jeton${tk > 1 ? "s" : ""}${extra}).`, "rare");
+    note(S, `Avis de recherche rempli : ${MONSTERS[b.key].name} (+${kam.toLocaleString("fr-FR")} kamas, +${tk} jeton${tk > 1 ? "s" : ""}${extra}).`, "rare");
     E.emit(S, "bounty", {});
   };
 
@@ -1189,7 +1204,9 @@
     if (x.scrolls) ["fo", "ine", "cha", "age", "vit", "sa"].forEach((k) => E.addCons(S, "parch_" + k + "_p", 1));
     return E.questExtraText(i);
   };
-  const questReward = (i) => ({ kamas: 80 + i * 60, xp: 0.35 });
+  let questReward = (i) => ({ kamas: 80 + i * 60, xp: 0.35 });
+  E.setQuestReward = (f) => { questReward = f; }; // 0.1.49 : quetes.js donne les récompenses des chapitres 2 à 5
+  E.questReward = (i) => questReward(i);
   const checkQuest = (S) => {
     let guard = 0;
     while (guard++ < 5) {
@@ -1198,7 +1215,8 @@
       S.quest = { step: S.quest.step + 1, prog: 0 };
       const ex = giveQuestExtra(S, S.quest.step - 1);
       note(S, `Quête terminée : ${q.title} (+${r.kamas} kamas${ex ? ", " + ex : ""})`, "rare");
-      if (S.quest.step >= Q.length) note(S, "Quête principale achevée : vous êtes un Héros d'Amakna !", "rare");
+      if (S.quest.step === (E.MAIN_CH1 || Q.length)) note(S, "Chapitre 1 achevé : vous êtes un Héros d'Amakna !", "rare");
+      if (S.quest.step >= Q.length && Q.length > (E.MAIN_CH1 || 0)) note(S, "Quête principale achevée : vous êtes un Héros du Krosmoz !", "rare");
       S.kamas += r.kamas; giveTeamXp(S, r.xp);
     }
   };
@@ -1262,7 +1280,7 @@
   add("fmplan10", "Forgemagie", "Forgemagie automatique", "10 plans de forgemagie terminés avec leurs objectifs atteints.", (S) => (S.cnt.fmPlanOk || 0) >= 10, 3000);
   [[1, ""], [7, ""], [30, "Dévot d'Almanax"]].forEach(([n, t]) => add("alm" + n, "Quêtes", `${n} offrande${n > 1 ? "s" : ""}`, `Faire ${n} offrande${n > 1 ? "s" : ""} à l'Almanax.`, (S) => (S.cnt.almanax || 0) >= n, 150 * n, t ? { title: t } : {}));
   [[10, ""], [50, "Chasseur de primes"]].forEach(([n, t]) => add("bty" + n, "Quêtes", `${n} avis de recherche`, `Remplir ${n} avis de recherche.`, (S) => (S.cnt.bounty || 0) >= n, 80 * n, t ? { title: t } : {}));
-  add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= Q.length, 8000, { title: "Héros d'Amakna" });
+  add("mainq", "Quêtes", "Héros d'Amakna", "Terminer la quête principale.", (S) => S.quest && S.quest.step >= (E.MAIN_CH1 || Q.length), 8000, { title: "Héros d'Amakna" });
   add("align", "Alignement", "Le choix d'un camp", "Choisir Bonta ou Brâkmar.", (S) => !!S.align, 500);
   [1, 2, 3, 4, 5].forEach((r) => add("arank" + r, "Alignement", `Rang d'alignement ${r}`, `Atteindre le niveau d'alignement ${r * 20}.`, (S) => E.alignRankIdx(S) >= r, 600 * r, r === 5 ? { title: "Légende de la cité" } : {}));
   [[10, ""], [50, ""]].forEach(([n]) => add("havre" + n, "Havre-Sac", `Havre-Sac ×${n}`, `Acheter ${n} améliorations du Havre-Sac.`, (S) => E.havreTotal(S) >= n, 100 * n));
