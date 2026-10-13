@@ -234,6 +234,7 @@ textarea{width:100%;min-height:80px;font-size:12px}
 .chips button.out{opacity:.6}
 .statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .statgrid .s{display:flex;justify-content:space-between;gap:6px;background:var(--panel2);border-radius:8px;padding:5px 8px;font-size:13px}
+.cbstats{border-top:1px solid var(--line,rgba(255,255,255,.08));padding-top:8px}.cbstats .list .li{padding:5px 8px;font-size:13px;gap:8px}.cbstats .li b{text-align:right}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 .slot{display:flex;gap:8px;align-items:center;text-align:left;background:var(--panel2);border:2px solid var(--frame);border-radius:12px;padding:6px 8px;cursor:pointer;min-height:58px;color:var(--ink)}
 .slot[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
