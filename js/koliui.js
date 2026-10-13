@@ -200,7 +200,7 @@
   function watchEnd(w) {
     const I = w.koli; const R = E.koliResult(w.W); const won = I.me === 1 ? !R.win : R.win;
     const s = S(); const tk = E.koliTickets(s);
-    const reason = R.rounds >= K.maxRound && R.hpA > 0 && R.hpB > 0 ? `au tour ${K.maxRound}, ${won ? "ton équipe" : "l'autre équipe"} avait le plus de PV` : `en ${R.rounds} tours`;
+    const reason = R.rounds >= K.maxRound && R.hpA > 0 && R.hpB > 0 ? `au tour ${K.maxRound}, ${won ? "ton équipe" : "l'autre équipe"} avait le plus de PV` : `en ${R.rounds} tour${R.rounds > 1 ? "s" : ""}`;
     if (I.train) return `<div class="kz-res"><b>${won ? "Victoire à l'entraînement" : "Défaite à l'entraînement"}</b> <span class="small muted">${reason}. Rien n'est compté.</span>
       <div class="row"><button class="btn sm" data-act="kz-rewatch">Revoir</button><button class="btn sm primary" data-act="sm-wquit">Retour au Kolizéum</button></div></div>`;
     const r = I.res; const d = r ? r.delta : I.d;
@@ -233,7 +233,7 @@
     if (d.id) { const f = (ui.fights || []).find((x) => String(x.id) === d.id); if (!f) return; const me = f.att === ON().user.id ? 0 : 1;
       watch(f.att_team, f.def_team, f.seed >>> 0, { me, opp: { name: me === 0 ? f.def_name : f.att_name }, d: me === 0 ? f.d_att : f.d_def, own: me === 0 }); return; }
     const l = (E.koliState(s).log || [])[+d.i]; if (!l || !l.A) return;
-    watch(l.A, E.koliGhost(l.gs, l.gl), l.seed, { opp: { name: l.name }, d: l.d });
+    watch(l.A, E.koliGhost(l.gs, l.gl, l.gz || K.size), l.seed, { opp: { name: l.name }, d: l.d });
   }
   function act(a, t) {
     const s = S(); const d = t.dataset;
@@ -247,7 +247,7 @@
       case "kz-rules": rulesSheet(); return;
       case "kz-shop": shopSheet(); return;
       case "kz-train": { const Q = E.koliState(s); const A = E.koliSnap(s, Q.team); if (!A.length) return;
-        const seed = (Date.now() >>> 0) || 1; const o = E.koliGhostOpp(seed, 0, Q.cote, E.koliLvl(s));
+        const seed = (Date.now() >>> 0) || 1; const o = E.koliGhostOpp(seed, 0, Q.cote, E.koliLvl(s), A.length);
         watch(A, o.team, seed ^ 0x5bd1e995, { train: true, opp: o, own: true }); return; }
       case "kz-replay": replay(t); return;
       case "kz-rewatch": { const w = window.DX.ui.watch; if (!w || !w.koli) return; const I = w.koli; watch(I.A, I.B, I.seed, I); return; }

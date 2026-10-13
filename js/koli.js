@@ -148,12 +148,13 @@
   /* ---------- adversaires hors ligne (Fantômes seulement) ---------- */
   /* un Fantôme : d = écart voulu (+60 un peu plus fort, 0 à ta hauteur, -60 un peu plus faible) ; même graine, même Fantôme (le serveur le refait) */
   E.KOLI_GHOST_D = [60, 0, -60];
-  E.koliGhostOpp = (seed, d, cote, lvl) => { seed = seed >>> 0; const glv = Math.max(1, Math.min(200, Math.round(lvl) + Math.round(d / 40)));
-    return { ghost: true, seed, d, lvl: glv, cote: Math.max(0, Math.round(cote) + d + ((seed % 21) - 10)), name: E.koliGhostName(seed), team: E.koliGhost(seed, glv) }; };
+  E.koliGhostOpp = (seed, d, cote, lvl, size = K.size) => { seed = seed >>> 0; const glv = Math.max(1, Math.min(200, Math.round(lvl) + Math.round(d / 40)));
+    return { ghost: true, seed, d, lvl: glv, cote: Math.max(0, Math.round(cote) + d + ((seed % 21) - 10)), name: E.koliGhostName(seed), size, team: E.koliGhost(seed, glv, Math.max(1, Math.min(K.size, size || K.size))) }; };
   /* hors ligne : 3 Fantômes autour de ta cote, renouvelés après chaque combat et avec « Autres adversaires » */
   E.koliGhostOpps = (S) => {
     const Q = E.koliState(S); const lvl = E.koliLvl(S); const base = (E.defiDay() * 31 + Q.rf * 7) >>> 0;
-    return E.KOLI_GHOST_D.map((d, i) => E.koliGhostOpp((base * 97 + i * 1013 + Q.n * 17 + Q.win * 5) >>> 0, d, Q.cote, lvl));
+    const size = E.koliArena(S).length || K.size; // autant de héros que ton équipe d'arène
+    return E.KOLI_GHOST_D.map((d, i) => E.koliGhostOpp((base * 97 + i * 1013 + Q.n * 17 + Q.win * 5) >>> 0, d, Q.cote, lvl, size));
   };
 
   /* ---------- un combat classé, résolu sur cet appareil (hors ligne) ou d'après le serveur ---------- */
@@ -165,7 +166,7 @@
     if (r.win) Q.win++; else Q.loss++;
     const lvl = E.koliLvl(S); const kam = r.win ? K.purseK * lvl : 0; const kz = r.win ? K.kzWin : K.kzLoss;
     S.kamas += kam; if (r.win) E.addRes(S, E.POUSSIERE, K.dust); S.tokens[E.KOLI_CUR] = (S.tokens[E.KOLI_CUR] || 0) + kz;
-    if (!srv) { Q.log.unshift({ t: E.now(), name: o.name, ghost: !!o.ghost, win: r.win, d: delta, seed, cote: o.cote, gs: o.seed, gl: o.lvl, rounds: r.rounds });
+    if (!srv) { Q.log.unshift({ t: E.now(), name: o.name, ghost: !!o.ghost, win: r.win, d: delta, seed, cote: o.cote, gs: o.seed, gl: o.lvl, gz: o.size, rounds: r.rounds });
       if (Q.log.length > K.logMax) Q.log.length = K.logMax; }
     S.cnt = S.cnt || {}; S.cnt.koliFights = (S.cnt.koliFights || 0) + 1; if (r.win) S.cnt.koliWins = (S.cnt.koliWins || 0) + 1;
     return { delta, cote: Q.cote, kamas: kam, dust: r.win ? K.dust : 0, kz, grade: E.koliGrade(Q.cote, Q.top) };

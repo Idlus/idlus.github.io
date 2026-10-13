@@ -33,7 +33,7 @@ assert.deepStrictEqual(r1, r2, "même graine, même combat");
 const W = E.koliWatch(g1, g3, 42, { ids: [7, 8, 9], me: 1 }); for (let i = 0; i < 20000 && !W.done; i++) E.koliWatchStep(W);
 assert.deepStrictEqual(E.koliResult(W), r1, "regarder le combat donne le même résultat");
 assert.ok(r1.rounds >= 1 && r1.rounds <= K.maxRound);
-const o = E.koliGhostOpp(555, 60, 1200, 50); assert.deepStrictEqual(o, E.koliGhostOpp(555, 60, 1200, 50)); assert.strictEqual(o.lvl, 52);
+const o = E.koliGhostOpp(555, 60, 1200, 50); assert.deepStrictEqual(o, E.koliGhostOpp(555, 60, 1200, 50)); assert.strictEqual(o.lvl, 52); assert.strictEqual(E.koliGhostOpp(555, 0, 1000, 50, 1).team.length, 1, "Fantôme à la taille de ton équipe");
 console.log("ok - Fantômes et combat rejouable");
 
 // 4. Une partie : tickets du jour, équipe d'arène, combat hors ligne, récompense de la semaine.
