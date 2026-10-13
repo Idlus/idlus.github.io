@@ -70,6 +70,7 @@
     const l = RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
     return Math.max(1, Math.round(2 + l * 0.7));
   };
+  E.resLvl = (name) => RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
   E.isKey = (name) => /^Clef /.test(name);
 
   /* ---------------- Courbes ---------------- */
@@ -104,7 +105,7 @@
       fmPlans: [], // 0.1.9.1 : forgemagie automatique
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
-      settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "sell", q: 50, keepSets: true, recycle: "sell" } },
+      settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "break", q: 50, keepSets: true, recycle: "break" } },
       journal: [],
       dungeon: null,
       pets: {}, petUid: 1, petKeep: {}, petLuck: {},
@@ -492,14 +493,13 @@
   };
   E.unequip = (S, cid, slot) => { const c = S.chars.find((x) => x.id === cid); if (c) delete c.equip[slot]; };
 
-  E.sellItem = (S, uid) => {
-    const it = S.items[uid]; if (!it || E.equippedBy(S, uid) || it.locked || E.inGear(S, uid)) return 0;
-    const T = ITEMS[it.tpl]; const p = Math.round(T.lvl * 6 * (0.6 + E.itemQuality(it) * 0.6) * (it.radiant ? 5 : 1));
-    delete S.items[uid]; S.kamas += p; return p;
-  };
-  E.sellRes = (S, name, qty) => {
+  /* 0.1.38 : plus de vente au jeu depuis l'inventaire (tout passe par l'hôtel de vente).
+     Seul le marchand de secours rachète le surplus automatique (limites de stock et de banque), à 30 % de l'ancien prix. */
+  E.MERCHANT = 0.3;
+  E.merchantPrice = (name, n = 1) => Math.floor(E.resPrice(name) * n * E.MERCHANT);
+  E.merchantRes = (S, name, qty) => {
     const have = S.res[name] || 0; const n = Math.min(have, qty); if (n <= 0) return 0;
-    const p = E.resPrice(name) * n; S.res[name] -= n; if (!S.res[name]) delete S.res[name]; S.kamas += p; return p;
+    const p = E.merchantPrice(name, n); S.res[name] -= n; if (!S.res[name]) delete S.res[name]; S.kamas += p; return p;
   };
   const addRes = (S, name, n = 1) => { S.res[name] = (S.res[name] || 0) + n; };
   E.addRes = addRes;
@@ -1990,13 +1990,12 @@
     if (A.recycle) {
       const q = E.itemQuality(it);
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
-      if (better) { if (A.recycle === "break") E.breakItem(S, it.uid, null); else E.sellItem(S, it.uid); return "recycle"; }
+      if (better) { E.breakItem(S, it.uid, null); return "recycle"; }
     }
     if (A.action === "none") return null;
     const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
     if (E.itemQuality(it) * 100 >= A.q) return null;
-    if (A.action === "sell") { E.sellItem(S, it.uid); return "sell"; }
-    if (A.action === "break") { E.breakItem(S, it.uid, null); return "break"; }
+    if (A.action === "break" || A.action === "sell") { E.breakItem(S, it.uid, null); return "break"; }
     return null;
   };
   E.ITEM_DROP_SCALE = 0.04; // v2.7 : les objets sont bien plus rares (×1/3)
@@ -2895,6 +2894,7 @@
     });
     for (const k of ["cons", "boosts", "trophies", "families", "huntSeen"]) if (!S[k]) S[k] = {};
     if (!S.settings.auto) S.settings.auto = { action: "none", q: 40, keepSets: true };
+    { const A = S.settings.auto; if (A.action === "sell") A.action = "break"; if (A.recycle === "sell") A.recycle = "break"; } // 0.1.38 : on brise au lieu de vendre
     S.migration = report.length ? report : null;
     if (S.v < 3) { const ev = E.events.length; checkHunt(S, Object.keys(S.bestiary).filter((k) => MONSTERS[k])); E.events.length = ev; S.journal = S.journal.filter((j) => !/^Palier /.test(j.txt)); }
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
@@ -2920,7 +2920,7 @@
     setTitle: "choisir un titre", setOrn: "choisir un ornement", setWing: "choisir des ailes",
     renaissance: "Renaissance d'un héros", chooseAlign: "choisir un alignement", setTraining: "envoyer en salle d'entraînement",
     // équipement
-    equip: "équiper un objet", unequip: "retirer un objet", sellItem: "vendre un objet", breakItem: "briser un objet",
+    equip: "équiper un objet", unequip: "retirer un objet", breakItem: "briser un objet",
     overTake: "reprendre un objet du trop-plein", overBreak: "briser un objet du trop-plein", overBreakAll: "vider le trop-plein", breakDupes: "briser les doublons",
     saveGear: "enregistrer un équipement", applyGear: "porter un équipement enregistré", deleteGear: "supprimer un équipement enregistré",
     applyBuild: "appliquer un build partagé", applyAuto: "réglages du tri automatique",
@@ -2931,7 +2931,7 @@
     manualCast: "lancer un sort (mode manuel)", manualEnd: "finir son tour (mode manuel)", protFight: "affronter le protecteur",
     toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
     // métiers, forge, ressources
-    setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", sellRes: "vendre des ressources",
+    setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", gameBuySell: "vendre au jeu (achats du jour)",
     craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftMany: "fabriquer en série", craftScroll: "fabriquer un parchemin",
     forgemage: "forgemager", feedForgemage: "forgemagie en série", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
     fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
