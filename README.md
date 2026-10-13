@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.44.2 « Offrande fixe »
+Almanax : `E.almanax` tire l'offrande et la cible avec `S.almLvl = { day, lvl }`, le niveau du meilleur héros au premier passage du jour (seulement pour le jour en cours) ; récompenses (kamas, XP) au niveau actuel. Avant, chaque niveau gagné pouvait changer l'offrande demandée.
+
 ## 0.1.44.1 « Boss secondaires »
 Suite de l'inventaire du contenu (contenu/inventaire-contenu-dofus.md). tools/build_data.py : `CO_BOSS` gagne le Laboratoire du Tynril, le Clos des Blops, le Dojo du Vent, la Tanière Givrefoux et les Cavernes du Kolosso (tous les boss DofusDB du donjon se battent ensemble) ; `POOL_FORCE` garde le Gorgouille (grades niveau 400) dans les salles de l'Antre du Dragon Cochon au niveau du boss ; `drop_ok` n'écarte plus que les « Fragment de carte » et « Fragment de mémoire » (et les types 173, 248). Données fusionnées dans js/gamedata.js sans toucher l'existant (10 monstres, 13 ressources, 55 équipements, 6 panoplies). js/engine.js : `dg.coBossHp` remplace `E.COBOSS_HP` par donjon ; js/data.js le règle (Tynril 0,2, Kolosso 0,15) d'après tools/simulate.js (bon équipement : stasis 5,2 et 5,0). `KEY_FIX` couvre 15 clés de plus et vise toutes les sous-zones d'accès (`sub.dungeons`) ; 5 récoltes niveau 200 ajoutées à `HARVEST.suf_embruns`.
 
