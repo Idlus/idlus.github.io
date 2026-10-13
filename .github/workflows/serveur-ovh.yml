@@ -51,13 +51,14 @@ jobs:
           [ -n "$NOUV" ] || exit 0
           if SSHPASS="$NOUV" sshpass -e ssh $SSHO "$UTIL@$HOTE" true 2>/dev/null; then echo "Nouveau mot de passe déjà en place."; echo "SSHPASS=$NOUV" >> "$GITHUB_ENV"; exit 0; fi
           cat > /tmp/mdp.exp <<'EXP'
+          # sleep avant chaque envoi : sinon le terminal du serveur efface ce qui arrive avant que l'invite soit prête
           set timeout 40
           spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o PubkeyAuthentication=no $env(UTIL)@$env(HOTE)
           expect {
-            -re "(?i)current.*password:" { send "$env(SSHPASS)\r"; exp_continue }
-            -re "(?i)retype new password:" { send "$env(NOUV)\r"; exp_continue }
-            -re "(?i)new password:" { send "$env(NOUV)\r"; exp_continue }
-            -re "(?i)password:" { send "$env(SSHPASS)\r"; exp_continue }
+            -re "(?i)current.*password:" { sleep 1; send "$env(SSHPASS)\r"; exp_continue }
+            -re "(?i)retype new password:" { sleep 1; send "$env(NOUV)\r"; exp_continue }
+            -re "(?i)new password:" { sleep 1; send "$env(NOUV)\r"; exp_continue }
+            -re "(?i)password:" { sleep 1; send "$env(SSHPASS)\r"; exp_continue }
             -re "(?i)successfully|updated successfully" { exp_continue }
             -re "(?i)bad password|do not match|failure|unchanged" { puts "\nCHANGEMENT_REFUSE"; exit 2 }
             eof
