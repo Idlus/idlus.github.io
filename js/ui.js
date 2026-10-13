@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.9.1";
+const GAME_VERSION = "1.0.9.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.9.2", name: "Recettes trop faciles", items: [
+    "Une recette rapporte moins d'XP de métier quand elle est très en dessous de ce que ton métier sait faire, comme dans DOFUS",
+    "XP pleine pour les objets à moins de 30 niveaux du plus haut que tu sais fabriquer. Au-delà, l'XP baisse jusqu'à 1 XP à 90 niveaux d'écart",
+    "Même règle pour le Bricoleur : clés, alliages et objets spéciaux à moins de 10 niveaux de ton métier donnent l'XP pleine",
+    "Métiers › Artisanat : « XP −45 % » en rouge sous chaque recette concernée, et une phrase dans la fiche qui explique pourquoi",
+    "Les niveaux déjà gagnés sont gardés. Pour monter vite, fabrique des objets proches de ton niveau de métier",
+  ] },
   { v: "1.0.9.1", name: "Chat qui se reconnecte", items: [
     "Le chat ne reste plus bloqué sur « Connexion au chat… » quand le serveur met du temps à répondre : il réessaie tout seul (après 5 s, 10 s, 20 s puis toutes les 30 s)",
     "Pendant l'attente, un message l'explique avec un bouton « Réessayer maintenant »",
@@ -5083,7 +5090,7 @@ function recDetail(r, job) {
   const J = S.crafts[job] || { lvl: 1 }; const pic = r.T ? itemImg(r.id) : resImg(r.id); const pinned = S.shop.some((e) => e.id === r.id);
   const gSel = galetSel(r); const nMax = Math.min(1000, gSel ? Math.min(r.n, S.res[gSel] || 0) : r.n); // 1.0.6 : avec un Galet, une fabrication par Galet (1 000 au plus d'un coup)
   const qty = ui.recQty === "max" ? Math.max(1, nMax) : Math.max(1, Math.min(+ui.recQty || 1, Math.max(1, nMax)));
-  const xp = (r.T ? 12 : 20) + r.lvl * 3;
+  const xb = (r.T ? 12 : 20) + r.lvl * 3; const xp = E.craftXpOf(S, job, r.req, xb); // 1.0.9.2 : XP réduite si la recette est trop facile
   const stats = r.T ? `<div class="pstats">${Object.entries(r.T.stats).map(([k, [a, b]]) => `<span>${sIco(k)} <b>${a === b ? a : a + " à " + b}</b> ${h(STATS[k].name)}</span>`).join("")}</div>` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
   return `<div class="pdet"><div class="row" style="gap:12px"><span class="icobox lg">${im(pic, "", r.name)}</span><div class="grow"><h2 style="margin:0">${h(r.name)}</h2>
       <div class="small muted">${r.T ? `${h(slotName(r.T.slot))} · ` : ""}niveau ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? ` · <a href="#" data-act="searchset" data-id="${r.T.set}">${h(SETS[r.T.set].name)}</a>` : ""}</div>
@@ -5098,6 +5105,7 @@ function recDetail(r, job) {
     <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${nMax > 1 ? " ×" + fmt(nMax) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div>
       <span class="pqn"><button class="btn sm" data-act="recqtyd" data-v="-1" ${nMax > 1 && qty > 1 ? "" : "disabled"} aria-label="Un de moins">−</button><input type="number" id="recqtyn" inputmode="numeric" min="1" max="${Math.max(1, nMax)}" value="${qty}" data-xp="${xp}" data-max="${Math.max(1, nMax)}" ${nMax > 1 ? "" : "disabled"} aria-label="Quantité à fabriquer"><button class="btn sm" data-act="recqtyd" data-v="1" ${qty < nMax ? "" : "disabled"} aria-label="Un de plus">+</button></span>
       <span class="xs muted grow" id="recqtyxp">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
+    ${xp < xb && r.okLvl ? `<div class="small minus" style="margin:-4px 0 8px">${xp <= 1 ? "Plus qu'1 XP" : `XP réduite de ${Math.round((1 - xp / xb) * 100)} %`} : recette trop facile pour ton niveau de ${h(CRAFT_JOBS[job].name)}. ${r.T ? `Les objets à moins de 30 niveaux du plus haut que tu sais faire (niv. ${Math.min(200, Math.min(J.lvl, E.craftTop(job)) * 3)})` : `Les recettes à moins de ${E.CRAFT_FALL.full} niveaux de ton métier`} donnent l'XP pleine.</div>` : ""}
     <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${gSel ? `data-g="${h(gSel)}"` : ""} ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
 }
 /* 1.0.8.1 : quantité libre (champ − / +) ; la valeur est gardée dans ui.recQty, donc retrouvée quand la page se redessine */
@@ -5119,7 +5127,7 @@ function craftHtml() {
   const all = job === "bricoleur" ? [] : Object.values(ITEMS).filter((T) => T.craft && T.craft.job === job);
   const stats = STAT_ORDER.filter((k) => all.some((T) => T.stats[k] && T.stats[k][1] > 0));
   const sets = [...new Set(all.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
-  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
+  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${(() => { if (!r.okLvl) return ""; const b = (r.T ? 12 : 20) + r.lvl * 3, x = E.craftXpOf(S, job, r.req, b); return x >= b ? "" : ` · <b class="minus">${x <= 1 ? "1 XP" : `XP −${Math.round((1 - x / b) * 100)} %`}</b>`; })()}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
     <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recBase(id).filter((r) => r.n > 0).length; return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>

@@ -2881,6 +2881,21 @@
     if (!Array.isArray(S.over)) S.over = [];
     delete S.items[it.uid]; S.over.push(Object.assign({}, it, { at: E.now() })); S.overNew = (S.overNew || 0) + 1;
   };
+  /* 1.0.9.2 « Recettes trop faciles » : XP pleine jusqu'à E.CRAFT_FALL.full niveaux de métier sous la recette la plus haute que le métier sait faire
+     (30 niveaux d'objet), puis elle baisse jusqu'à 1 XP à E.CRAFT_FALL.end niveaux d'écart (90 niveaux d'objet), comme dans DOFUS. Clés et alliages compris. */
+  E.CRAFT_FALL = { full: 10, end: 30 };
+  const CRAFT_TOP = {};
+  E.craftTop = (job) => { // niveau de métier de la recette la plus haute du métier (66 pour les objets niveau 200, 100 pour le Bricoleur)
+    if (CRAFT_TOP[job]) return CRAFT_TOP[job]; let m = 1;
+    for (const id in ITEMS) if (ITEMS[id].craft && ITEMS[id].craft.job === job) m = Math.max(m, E.craftReq(id));
+    for (const n in SPECIAL_CRAFTS) if (SPECIAL_CRAFTS[n].job === job) m = Math.max(m, SPECIAL_CRAFTS[n].lvl);
+    return (CRAFT_TOP[job] = m);
+  };
+  E.craftXpMult = (S, job, req) => {
+    const F = E.CRAFT_FALL, J = S.crafts[job]; const gap = Math.min(J ? J.lvl : 1, E.craftTop(job)) - req;
+    return gap <= F.full ? 1 : gap >= F.end ? 0 : 1 - (gap - F.full) / (F.end - F.full);
+  };
+  E.craftXpOf = (S, job, req, base) => Math.max(1, Math.round(base * E.craftXpMult(S, job, req)));
   E.galetFx = () => "Galet inconnu."; // 1.0.6 : bonus d'un Galet ajouté à la fabrication (js/koli.js)
   E.craftItem = (S, tpl, galet) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";
@@ -2894,7 +2909,7 @@
     const it = E.rollItem(S, tpl, gx ? gx.roll : {}); craftStow(S, it);
     if (gx && gx.double && rnd() < gx.double && E.craftRoom(S) > 0) { const it2 = E.rollItem(S, tpl); craftStow(S, it2); E.craftTwin = it2; note(S, `${galet} : un 2e ${T.name} !`, "rare"); }
     if (E.almChance(S, "craft2") && E.craftRoom(S) > 0) { craftStow(S, E.rollItem(S, tpl)); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
-    craftXp(S, T.craft.job, 12 + T.lvl * 3);
+    craftXp(S, T.craft.job, E.craftXpOf(S, T.craft.job, E.craftReq(tpl), 12 + T.lvl * 3));
     E.emit(S, "craft", { tpl });
     return it;
   };
@@ -2907,7 +2922,7 @@
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
     if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.dofus) E.giveDofus(S, R.dofus, "copie du Bricoleur"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);
-    craftXp(S, R.job, 20 + R.lvl * 3);
+    craftXp(S, R.job, E.craftXpOf(S, R.job, R.lvl, 20 + R.lvl * 3));
     E.emit(S, "craft", { special: name });
     if (name === "Baguette Rikiki") note(S, "La Planque des Vilinsekts est accessible !", "rare");
     return null;

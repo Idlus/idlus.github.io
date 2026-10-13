@@ -17,4 +17,16 @@ assert.strictEqual(E.itemCount(S), E.itemCap(S), "le sac ne déborde pas");
 S.over = Array.from({ length: E.overCap(S) }, (_, i) => ({ uid: 900000 + i, tpl, stats: {} })); give(5);
 assert.strictEqual(E.craftCount(S, "tpl", tpl), 0, "sac et trop-plein pleins : rien");
 assert.ok(typeof E.craftItem(S, tpl) === "string", "message d'erreur clair");
+/* 1.0.9.2 « Recettes trop faciles » : XP pleine jusqu'à 10 niveaux de métier d'écart, puis baisse jusqu'à 1 XP à 30 niveaux */
+{ const { SPECIAL_CRAFTS } = require("../js/data.js");
+  const casque = Object.keys(ITEMS).find((k) => ITEMS[k].name === "Casque" && ITEMS[k].craft); const C = ITEMS[casque]; const base = 12 + C.lvl * 3;
+  const xpAt = (lvl, id = casque) => { const S2 = E.newState("Xp", "iop"); S2.crafts.tailleur.lvl = lvl; S2.crafts.tailleur.xp = 0; ITEMS[id].craft.ing.forEach(([r, q]) => (S2.res[r] = q)); E.craftItem(S2, id); return S2.crafts.tailleur.lvl === lvl ? S2.crafts.tailleur.xp : -1; };
+  assert.strictEqual(E.craftTop("tailleur"), 66, "Tailleur : recette la plus haute au métier 66");
+  assert.strictEqual(xpAt(E.craftReq(casque) + 10), base, "10 niveaux d'écart : XP pleine");
+  assert.strictEqual(xpAt(E.craftReq(casque) + 20), Math.round(base / 2), "20 niveaux d'écart : moitié");
+  assert.strictEqual(xpAt(60), 1, "30 niveaux d'écart ou plus : 1 XP");
+  assert.strictEqual(E.craftXpOf({ crafts: { tailleur: { lvl: 200 } } }, "tailleur", 66, 612), 612, "niveau 200 : la recette la plus haute garde l'XP pleine");
+  const S3 = E.newState("Clé", "iop"); S3.crafts.bricoleur.lvl = 70; S3.crafts.bricoleur.xp = 0; const key = Object.keys(SPECIAL_CRAFTS).find((n) => E.isKey(n) && SPECIAL_CRAFTS[n].lvl === 10);
+  SPECIAL_CRAFTS[key].ing.forEach(([r, q]) => (S3.res[r] = q)); E.craftSpecial(S3, key); assert.strictEqual(S3.crafts.bricoleur.xp, 1, "clé niveau 10 au Bricoleur 70 : 1 XP");
+}
 console.log("artisanat : OK");

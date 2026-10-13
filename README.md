@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.9.2 « Recettes trop faciles »
+Demande de Mathis : nerfer les recettes bas niveau des métiers d'artisanat (choix 1B jusqu'à 1 XP, 2A, 3A). Simulation : l'XP d'une recette (12 + 3 × niveau) ne dépendait pas du niveau du métier, donc fabriquer en boucle une recette facile à 2-3 ressources (Casque niv. 20, Bottes de Chance niv. 7) montait un métier de 1 à 200 avec 4 à 27 fois moins de ressources qu'à son niveau. `E.craftXpMult` / `E.craftXpOf` (js/engine.js) : écart = min(niveau du métier, `E.craftTop(job)`) − niveau requis de la recette ; XP pleine jusqu'à 10 niveaux de métier d'écart (`E.CRAFT_FALL`), baisse linéaire jusqu'à 1 XP à 30. Clés et alliages compris. Affichage dans la liste et la fiche des recettes. Test : tests/artisanat.test.js.
+
 ## 1.0.9.1 « Chat qui se reconnecte »
 Capture de Mathis : chat bloqué sur « Connexion au chat… » alors que « 15 en ligne » s'affichait. Le premier chargement des messages (`ON.chatLoad`, délai de 12 s) avait échoué pendant un pic de lenteur du serveur et `C.loaded` restait faux pour toujours (aucun nouvel essai). `refresh()` dans js/chat.js réessaie maintenant seul (5, 10, 20 puis 30 s), avec un bouton « Réessayer maintenant » ; une erreur du serveur compte comme « pas chargé » ; `ON.chatLive` reçoit un 3e rappel appelé quand le canal temps réel revient après une coupure (messages manqués rechargés, étalé sur 5 s).
 

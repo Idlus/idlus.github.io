@@ -1,6 +1,17 @@
 {
-  "version": "1.0.9.1",
+  "version": "1.0.9.2",
   "versions": [
+    {
+      "v": "1.0.9.2",
+      "name": "Recettes trop faciles",
+      "items": [
+        "Une recette rapporte moins d'XP de métier quand elle est très en dessous de ce que ton métier sait faire, comme dans DOFUS",
+        "XP pleine pour les objets à moins de 30 niveaux du plus haut que tu sais fabriquer. Au-delà, l'XP baisse jusqu'à 1 XP à 90 niveaux d'écart",
+        "Même règle pour le Bricoleur : clés, alliages et objets spéciaux à moins de 10 niveaux de ton métier donnent l'XP pleine",
+        "Métiers › Artisanat : « XP −45 % » en rouge sous chaque recette concernée, et une phrase dans la fiche qui explique pourquoi",
+        "Les niveaux déjà gagnés sont gardés. Pour monter vite, fabrique des objets proches de ton niveau de métier"
+      ]
+    },
     {
       "v": "1.0.9.1",
       "name": "Chat qui se reconnecte",
