@@ -3409,6 +3409,13 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .kz-vsbar .side{display:flex;align-items:center;gap:8px;min-width:0}
 .kz-vsbar .vs{font-family:var(--font-title);font-size:22px;color:var(--gold2)}
 .kz-shop .hv .btn img.kz-coin{vertical-align:-4px}
+.kz-shop .phead h2{display:flex;align-items:center;gap:8px}
+.kz-sec{padding:4px 14px 12px;display:flex;flex-direction:column;gap:6px}.kz-sec+.kz-sec{border-top:1px solid var(--line)}
+.kz-sec h3{margin:8px 0 0;font-family:var(--font-title);font-size:17px;color:var(--gold2)}.kz-sec>p{margin:0}
+.kz-si{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:12px;padding:8px 10px;flex-wrap:wrap}
+.kz-si .em{width:36px;display:flex;justify-content:center;font-size:26px}.kz-si .em img.ico{width:34px;height:34px}.kz-si .em .uico{width:30px;height:30px}
+.kz-buy{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}.kz-buy .btn{white-space:nowrap}
+.kz-lnk{all:unset;cursor:pointer;font-weight:700;border-bottom:1px dashed currentColor}.kz-lnk:hover{color:var(--gold2)}
 .kzw .arena .ent.m img.sprite.dop,.kzw .arena.v2 .ent.m img.sprite.dop{filter:drop-shadow(0 0 5px rgba(255,90,90,.75))}
 .kzw .cico.dop img{filter:drop-shadow(0 0 3px rgba(255,90,90,.75))}
 .hcard .orn.kzlaur{top:-18px;left:50%;transform:translateX(-50%);width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 0 8px #5fe3d3)}
