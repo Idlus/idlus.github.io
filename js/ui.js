@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.48";
+const GAME_VERSION = "0.1.48.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.48.1", name: "Multi-élément", items: [
+    "« Équiper au mieux », la pastille verte et l'ordre de la liste gèrent les héros multi-élément : chaque élément qui a au moins 20 % des points répartis compte, au prorata de sa part (un héros Force 60 % / Chance 40 % valorise les deux)"
+  ] },
   { v: "0.1.48", name: "Le Songe infini", items: [
     "L'Expédition sans fin devient le Songe infini, comme dans DOFUS (menu Jouer › Songe infini, dès le niveau 10) : une carte de 26 salles en 5 paliers, la même pour tous chaque semaine",
     "Tu choisis ton couloir salle après salle : combats, combats redoutables, archimonstres, Faveurs oniriques (un bonus sans combat), Fontaines oniriques (salles 4, 10, 16 et 25) et le rare Gobledore",
@@ -3359,8 +3362,17 @@ const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "
 const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3, rn: 3, dcri: 2.5, dsort: 7, dt: 4, df: 4, de: 4, da: 4, dn: 1, xt: 2, xf: 2, xe: 2, xa: 2, xn: 2 };
 /* élément du héros : stat de la répartition auto, sinon la stat élémentaire la plus investie à la main, sinon celle de la classe */
 const buildMain = (c) => { if (["fo", "ine", "cha", "age"].includes(c.autoStat)) return c.autoStat; const a = c.alloc || {}; const k = ["fo", "ine", "cha", "age"].sort((x, y) => (a[y] || 0) - (a[x] || 0))[0]; return (a[k] || 0) > 0 ? k : CLASSES[c.cls].main; };
-function itemScore(c, it) { if (!it) return 0; const main = buildMain(c); const mdmg = ELEMENTS[STATS[main].el].dmg; let sc = 0;
-  for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (k === mdmg ? 1 : 0.1) : 1);
+/* Héros multi-élément. Chaque élément qui a au moins 20 % des points élémentaires répartis compte, au prorata de sa part
+   (un seul élément : poids 1,4 pour la stat, 1 pour ses dommages ; élément non joué : 0,1) */
+const EL_STATS = ["fo", "ine", "cha", "age"];
+function buildEls(c) {
+  if (EL_STATS.includes(c.autoStat)) return { [c.autoStat]: 1 };
+  const a = c.alloc || {}; const tot = EL_STATS.reduce((n, k) => n + Math.max(0, a[k] || 0), 0);
+  const keep = tot > 0 ? EL_STATS.filter((k) => (a[k] || 0) / tot >= 0.2) : []; if (!keep.length) return { [CLASSES[c.cls].main]: 1 };
+  const sub = keep.reduce((n, k) => n + a[k], 0); const o = {}; keep.forEach((k) => (o[k] = a[k] / sub)); return o;
+}
+function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dmgShare = {}; for (const k in els) dmgShare[ELEMENTS[STATS[k].el].dmg] = els[k]; let sc = 0;
+  for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (EL_STATS.includes(k) ? (els[k] ? 0.1 + 1.3 * els[k] : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (dmgShare[k] ? 0.1 + 0.9 * dmgShare[k] : 0.1) : 1);
   if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5; return sc; }
 /* 0.1.46.1 : score de l'équipement entier, bonus de panoplie compris (tri du choix d'objet, pastille verte, Tout équiper au mieux) */
 function gearScore(c, eq) { let sc = 0; const n = {};
