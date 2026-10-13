@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.57.2 « Accueil réparé sur téléphone »
+chat.js : `#annbar` (annonce admin) est inséré après `#topchips` et non plus dans la ligne de pastilles, où, rétréci par le flex sans retour à la ligne, il devenait très haut et poussait la page hors de l'écran. CSS : tout autre enfant direct de `.topchips` que `#objs` et `#updbar` est caché.
+
 ## 0.1.57.1 « Sorts plus clairs »
 Aperçu des sorts (`E.spellPreview`, js/engine.js) : le coup d'arme (`"arme"`) compte ses PA via `he.wsp`, chaque tour garde `why` (cuve, ko, stun, gold, over, none, lu dans le journal du combat) et `dmg1` (dégâts du combat affiché). Interface (js/ui.js) : `spPreviewHtml` affiche l'arme et la raison des tours sautés, `spTips` ignore ces tours, barre en deux groupes `spBarGroups` (soutien numéroté / attaques sans ordre), aide `spHowHtml` ; styles `.spgrp`, `.spgl`, `.spwhy`, `.sphow`.
 

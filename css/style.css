@@ -4105,6 +4105,7 @@ button.cmdico{padding:0;cursor:pointer}
 .topchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 12px}
 .topchips:not(:has(.obj,.updbar)){display:none}
 .topchips>#objs,.topchips>#updbar,.topchips #wbbar{display:contents!important}
+.topchips>:not(#objs):not(#updbar){display:none}
 .topchips .objs .cnt{display:none}
 .topchips .obj{height:32px;flex:none}
 .topchips .updbar{flex:none;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px;margin:0;height:32px;padding:0 4px 0 10px;border-radius:999px;box-shadow:none;font-size:12.5px;white-space:nowrap;border-width:1.5px}

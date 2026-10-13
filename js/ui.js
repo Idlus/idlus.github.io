@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.57.1";
+const GAME_VERSION = "0.1.57.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.57.2", name: "Accueil réparé sur téléphone", items: [
+    "Correction : sur téléphone, l'annonce du jeu se glissait dans la ligne de pastilles du haut et cachait toute la page. Elle s'affiche de nouveau sous les pastilles",
+  ] },
   { v: "0.1.57.1", name: "Sorts plus clairs", items: [
     "Sorts & stratégies : la barre est coupée en deux. En haut le Soutien, numéroté et lancé dans cet ordre si sa condition est remplie ; en bas les Attaques, sans ordre : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts, arme comprise",
     "Nouvel encadré « Comment ton héros choisit ses sorts » en 3 étapes, sous la barre (on peut le replier)",

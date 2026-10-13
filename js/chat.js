@@ -116,7 +116,7 @@
   function mount() {
     if ($("#chat")) return;
     const el = document.createElement("div"); el.id = "chat"; document.body.appendChild(el);
-    const b = document.createElement("div"); b.id = "annbar"; const up = $("#updbar"); if (up) up.after(b); else document.body.prepend(b);
+    const b = document.createElement("div"); b.id = "annbar"; const up = $("#topchips") || $("#updbar"); if (up) up.after(b); else document.body.prepend(b); // 0.1.57.2 : hors de la ligne de pastilles (sinon le bandeau, très haut, y écrasait la page sur téléphone)
   }
   function paint(keepScroll) {
     const el = $("#chat"); if (!el || !S()) { if (el) el.innerHTML = ""; document.body.classList.remove("chat-open"); return; }

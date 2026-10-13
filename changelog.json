@@ -1,6 +1,13 @@
 {
-  "version": "0.1.57.1",
+  "version": "0.1.57.2",
   "versions": [
+    {
+      "v": "0.1.57.2",
+      "name": "Accueil réparé sur téléphone",
+      "items": [
+        "Correction : sur téléphone, l'annonce du jeu se glissait dans la ligne de pastilles du haut et cachait toute la page. Elle s'affiche de nouveau sous les pastilles"
+      ]
+    },
     {
       "v": "0.1.57.1",
       "name": "Sorts plus clairs",
