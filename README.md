@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.3.3 « Copier-coller dans le chat »
+Chat (js/chat.js `paint`) : la zone d'écriture `.ch-foot` n'est plus recréée quand son contenu ne change pas (signature `footHtml("")` sans le compteur), seul le reste du chat est redessiné : le clavier du téléphone et la bulle « Coller » restent ouverts quand un message arrive. Un texte surligné dans le chat retient le redessin (`C.held`, relancé par `selectionchange`). Menu du pseudo : « Copier le message » (`ch-copy`, presse-papiers avec repli `execCommand`), icône `copy` dans `GL`. `.msg .tx` sélectionnable explicitement. Test dans tests/online.test.js.
+
 ## 1.0.3.2 « Petits bugs corrigés »
 Rangée des pages de Quêtes au téléphone en grille (2 ou 3 colonnes, `.qj-chips` dans css/quetes.css) au lieu d'un défilement horizontal coupé ; la page Quêtes se redessinant toutes les 3 s, elle garde maintenant le défilement des rangées horizontales (chapitres) ; tranches de niveaux du Monde compactes au téléphone.
 

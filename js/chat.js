@@ -124,10 +124,20 @@
     if (!C.open) { el.className = ""; el.innerHTML = minHtml(); return; }
     // 0.1.31.1 : la position de lecture est lue AVANT de redessiner (l'ancienne liste, une fois retirée, répondait 0 et le chat remontait tout en haut)
     const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;
+    // 1.0.3.3 : un texte surligné dans le chat (pour le copier) n'est pas effacé par un nouveau message : on redessine quand la sélection est finie
+    if (keepScroll && list && selIn(el)) { C.held = true; return; }
+    C.held = false;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
     markSeen(C.tab); // 0.1.53.7 : les mentions du salon ouvert sont lues
-    el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + pinHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
+    // 1.0.3.3 : la zone d'écriture n'est recréée que si elle change vraiment ; sinon un message reçu fermait le clavier
+    // et la bulle « Coller » du téléphone au milieu d'un copier-coller
+    const sig = footHtml("").replace(/<span id="chCnt">[^<]*<\/span>/, ""), foot = el.querySelector(".ch-foot");
+    const body = headHtml() + discordHtml() + pinHtml() + `<div class="ch-list" id="chList">${listHtml()}</div>`;
+    if (foot && list && el.className === "chat" && C.footSig === sig && el.querySelector("#chIn")) {
+      el.querySelectorAll(":scope > :not(.ch-foot)").forEach((x) => x.remove()); foot.insertAdjacentHTML("beforebegin", body);
+    } else { el.className = "chat"; el.innerHTML = body + `<div class="ch-foot">${footHtml(typed)}</div>`; }
+    C.footSig = sig;
     const nl = el.querySelector(".ch-list");
     if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; }
     else if (nl) { nl.scrollTop = top; if (nl.scrollHeight > oldH + 4) C.below = true; } // on lit plus haut : on reste en place, un bouton signale les nouveaux messages
@@ -135,7 +145,15 @@
       if (C.below) nl.insertAdjacentHTML("beforeend", `<button class="ch-new" data-act="ch-bottom">Nouveaux messages ↓</button>`);
       nl.addEventListener("scroll", () => { if (C.below && nl.scrollTop + nl.clientHeight >= nl.scrollHeight - 30) { C.below = false; const b = nl.querySelector(".ch-new"); if (b) b.remove(); } }, { passive: true });
     }
-    if (focus && $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+    if (focus && $("#chIn") && document.activeElement !== $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+  }
+  const selIn = (el) => { const s = window.getSelection && window.getSelection(); return !!(s && !s.isCollapsed && s.rangeCount && el.contains(s.anchorNode) && !(s.anchorNode.closest ? s.anchorNode : s.anchorNode.parentElement).closest(".ch-foot")); };
+  document.addEventListener("selectionchange", () => { if (C.held && C.open) { const el = $("#chat"); if (el && !selIn(el)) paint(true); } });
+  /* 1.0.3.3 : « Copier le message » dans le menu du pseudo (le plus simple au téléphone) */
+  async function copyTxt(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {}
+    const a = document.createElement("textarea"); a.value = t; a.setAttribute("readonly", ""); a.style.cssText = "position:fixed;top:0;left:0;opacity:0"; document.body.appendChild(a); a.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e) {} a.remove(); return ok;
   }
   function paintHead() { const e = $("#chat .ch-on"); if (e) e.innerHTML = onlineTxt(); }
   function paintMin() { if (!C.open) paint(); }
@@ -266,6 +284,7 @@
     const r = t.getBoundingClientRect(); const el = document.createElement("div"); el.className = "chmenu"; el.id = "chMenu";
     const mine = u === myId(); const ign = C.ign.has(u);
     el.innerHTML = `<div class="hd"><b>${h(p)}</b></div>
+      ${msgById(id) && msgById(id).body ? `<button data-act="ch-copy" data-id="${id}">${X().G("copy")} Copier le message</button>` : ""}
       <button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>
       ${!mine && canWrite() && !C.me.banned && C.tab !== "p" && C.tab !== "h" ? `<button data-act="ch-ment" data-p="${h(p)}"><b class="at">@</b> Le mentionner</button>` : ""}
       ${!mine && canWrite() ? `<button data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${X().G("chat")} Lui écrire en privé</button>
@@ -278,6 +297,7 @@
     el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + "px";
     el.style.top = Math.max(8, Math.min(innerHeight - hgt - 8, r.bottom + 4)) + "px";
   }
+  const msgById = (id) => C.g.concat(C.p, C.c, C.v, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };
   function reportSheet(u, p, id) {
     const m = C.g.concat(C.p, C.c, C.v).find((x) => x.id === id);
@@ -441,6 +461,7 @@
       case "ch-acpick": acPick(d.p); return;
       case "ch-ment": { closeMenu(); const i = $("#chIn"); if (!i) return; const v = i.value.replace(/\s+$/, ""); insertAt(i, 0, i.value.length, `${v ? v + " " : ""}@${d.p} `); return; }
       case "ch-who": menu(t); return;
+      case "ch-copy": { closeMenu(); const m = msgById(+d.id); if (m && m.body) X().toast((await copyTxt(m.body)) ? "Message copié." : "Copie impossible : reste appuyé sur le texte pour le sélectionner."); return; }
       case "ch-prof": closeMenu(); X().lbProfile(d.u); return;
       case "ch-pm": closeMenu(); C.names[d.u] = d.p; C.tab = "p"; C.peer = d.u; C.open = true; pref.open = true; savePref(); paint(); return;
       case "ch-ign": closeMenu(); ignore(d.u, d.v === "1"); return;

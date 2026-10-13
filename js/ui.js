@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.3.2";
+const GAME_VERSION = "1.0.3.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.3.3", name: "Copier-coller dans le chat", items: [
+    "Téléphone : un message qui arrive dans le chat ne ferme plus le clavier et ne fait plus disparaître la bulle « Coller » pendant qu'on écrit",
+    "Un texte surligné dans le chat pour le copier n'est plus effacé par les nouveaux messages : ils s'affichent dès qu'on a fini",
+    "Nouveau : « Copier le message » dans le menu qui s'ouvre en touchant le pseudo d'un joueur",
+  ] },
   { v: "1.0.3.2", name: "Petits bugs corrigés", items: [
     "Téléphone, Quêtes : les pages de chaque famille (Du jour, Semaine, Almanax, Commandes…) tiennent sur 2 lignes au lieu d'une rangée coupée sur les bords",
     "Quêtes : la rangée des chapitres de la quête principale ne revient plus au début toute seule quelques secondes après l'avoir fait défiler",
@@ -879,6 +884,7 @@ const GL = {
   tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.4"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.9l7.6-3.8M8.2 13.1l7.6 3.8"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>', // 1.0.3.3 : copier un message du chat
   frame: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/>',
   star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8 6.5 19.7l1.2-6.1L3.2 9.4l6.1-.8z"/>',
   pin: '<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',

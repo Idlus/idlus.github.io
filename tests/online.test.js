@@ -277,6 +277,21 @@ const MOCK = () => {
     await page.evaluate(() => { const m = { id: 50, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Coucou en direct", kind: "msg", created_at: new Date().toISOString() };
       const d = JSON.parse(localStorage.getItem("__mock")); d.views.chat_msgs.push(m); localStorage.setItem("__mock", JSON.stringify(d)); window.__chatEmit(m); }); await page.waitForTimeout(200);
     if (!/Coucou en direct/.test(await page.textContent("#chat .ch-list"))) fail("chat : message en temps réel absent");
+    // 1.0.3.3 : copier-coller au téléphone — un message reçu ne recrée pas la zone d'écriture (clavier et bulle « Coller » gardés),
+    // ne coupe pas un texte surligné, et le menu du pseudo propose « Copier le message »
+    await page.fill("#chIn", "texte collé"); await page.focus("#chIn"); await page.evaluate(() => { window.__in = document.querySelector("#chIn"); });
+    await page.evaluate(() => window.__chatEmit({ id: 51, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Pendant que tu colles", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);
+    if (!(await page.evaluate(() => window.__in === document.querySelector("#chIn") && document.activeElement === window.__in && window.__in.value === "texte collé"))) fail("chat : la zone d'écriture est recréée à chaque message reçu");
+    if (!/Pendant que tu colles/.test(await page.textContent("#chat .ch-list"))) fail("chat : message reçu absent pendant l'écriture");
+    await page.fill("#chIn", "");
+    await page.evaluate(() => { const tx = [...document.querySelectorAll("#chat .msg .tx")].find((e) => /Coucou en direct/.test(e.textContent)); const r = document.createRange(); r.selectNodeContents(tx); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+    await page.evaluate(() => window.__chatEmit({ id: 52, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Pendant que tu copies", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);
+    if ((await page.evaluate(() => String(getSelection()))) !== "Coucou en direct") fail("chat : un message reçu efface le texte surligné");
+    await page.evaluate(() => getSelection().removeAllRanges()); await page.waitForTimeout(150);
+    if (!/Pendant que tu copies/.test(await page.textContent("#chat .ch-list"))) fail("chat : message reçu pendant la copie jamais affiché");
+    await page.evaluate(() => [...document.querySelectorAll('#chat [data-act="ch-who"]')].find((b) => b.dataset.id === "50").click());
+    if (!(await page.$('#chMenu [data-act="ch-copy"]'))) fail("chat : « Copier le message » absent du menu");
+    else { await page.click('#chMenu [data-act="ch-copy"]'); await page.waitForTimeout(150); if (!/copi/i.test(await page.textContent("#toasts"))) fail("chat : copie du message sans retour"); }
     // 0.1.53.7 : mentions @pseudo — surlignées, pastille « @ » sur le salon où l'on est mentionné, suggestions de pseudos en tapant « @ »
     await page.evaluate(() => { const me = window.ONLINE.profile.pseudo; const t = new Date().toISOString();
       window.__chatEmit({ id: 5000, ch: "c", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: `@${me} je t'achète ta coiffe`, kind: "msg", created_at: t });
@@ -398,6 +413,11 @@ const MOCK = () => {
     await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
     const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-mob.png" });
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.evaluate(() => window.__chatEmit({ id: 900, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Copie-moi", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);
+    await page.click('#chat [data-act="ch-who"][data-id="900"]'); // 1.0.3.3 : « Copier le message » au téléphone
+    if (await page.evaluate(() => { const m = document.querySelector("#chMenu"), b = m && m.querySelector('[data-act="ch-copy"]'); if (!b) return true; const r = m.getBoundingClientRect(); return r.right > innerWidth || r.left < 0 || r.bottom > innerHeight; })) fail("chat : menu « Copier le message » absent ou hors de l'écran (téléphone)");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-copier-mob.png" });
+    await page.evaluate(() => { const m = document.querySelector("#chMenu"); if (m) m.remove(); });
     const hw = await page.evaluate(() => document.querySelector("#chat .ch-head").scrollWidth); if (hw > 392) fail(`onglets du chat trop larges sur téléphone : ${hw}px`);
     // 0.1.35.3 : le bouton pour réduire le chat reste dans le cadre, même avec tous les onglets et des pastilles
     if (await page.evaluate(() => { const C = window.CHAT.state; C.unread = 120; C.unreadP = 15; C.unreadH = 99; window.CHAT.repaint(); const c = document.querySelector("#chat").getBoundingClientRect(), x = document.querySelector("#chat .ch-x").getBoundingClientRect(); C.unread = C.unreadP = C.unreadH = 0; window.CHAT.repaint(); return x.right > c.right || x.left < c.left; })) fail("chat : bouton de fermeture hors du cadre (téléphone)");

@@ -2310,7 +2310,7 @@ html{zoom:1}
 .chat .msg .lv{font-size:11.5px;color:var(--muted);font-weight:700}
 .chat .msg .tt{font-size:11px;font-weight:800;color:#e7c46a;border:1px solid rgba(231,196,106,.45);border-radius:6px;padding:0 5px}
 .chat .msg .hr,.chat .conv .hr{font-size:11px;color:var(--muted);margin-left:auto}
-.chat .msg .tx{overflow-wrap:anywhere;line-height:1.35}
+.chat .msg .tx{overflow-wrap:anywhere;line-height:1.35;-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 .chat .msg.me .ps{color:var(--action)}
 .chat .itm{display:inline-flex;align-items:center;gap:4px;border-radius:7px;padding:0 6px 0 2px;background:var(--panel3);border:1px solid var(--frame);font-weight:800;font-size:13px;color:#b07bff;cursor:pointer;vertical-align:middle}
 .chat .itm img{width:20px;height:20px}

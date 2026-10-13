@@ -1,6 +1,15 @@
 {
-  "version": "1.0.3.2",
+  "version": "1.0.3.3",
   "versions": [
+    {
+      "v": "1.0.3.3",
+      "name": "Copier-coller dans le chat",
+      "items": [
+        "Téléphone : un message qui arrive dans le chat ne ferme plus le clavier et ne fait plus disparaître la bulle « Coller » pendant qu'on écrit",
+        "Un texte surligné dans le chat pour le copier n'est plus effacé par les nouveaux messages : ils s'affichent dès qu'on a fini",
+        "Nouveau : « Copier le message » dans le menu qui s'ouvre en touchant le pseudo d'un joueur"
+      ]
+    },
     {
       "v": "1.0.3.2",
       "name": "Petits bugs corrigés",
