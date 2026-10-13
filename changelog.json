@@ -1,6 +1,13 @@
 {
-  "version": "0.1.40",
+  "version": "0.1.40.1",
   "versions": [
+    {
+      "v": "0.1.40.1",
+      "name": "Annonces pour tous",
+      "items": [
+        "Annonces : le bandeau d'annonce arrive aussi aux joueurs déjà en jeu en moins de 2 minutes, même s'il n'est pas publié dans le chat, et disparaît tout seul à l'heure prévue"
+      ]
+    },
     {
       "v": "0.1.40",
       "name": "Équipe rangée",
