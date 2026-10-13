@@ -107,10 +107,17 @@ assert.strictEqual(E.SHOPS.koli.items.filter((x) => x.res && /^Galet /.test(x.re
   const rf = E.galetFx(G, "i11720", "Galet brasillant"); assert.ok(typeof rf === "string"); // pas en stock
 }
 { // 2A : Galets des sacs repris une fois au prix payé
-  const R = E.newState("Repris", "iop"); assert.ok(!R.galRef, "le drapeau ne vient pas des nouvelles parties (deserialize les complète)");
+  const R = E.newState("Repris", "iop"); delete R.galRef; R.created = Date.UTC(2026, 9, 12); // une partie d'avant la 1.0.6, jamais relue depuis
   R.res["Galet cramoisi"] = 4; R.res["Galet rutilant"] = 3; R.tokens[E.KOLI_CUR] = 5;
   const back = E.deserialize(E.serialize(R)); assert.strictEqual(E.koliKz(back), 5 + 4 * 2 + 3 * 3); assert.ok(!back.res["Galet cramoisi"] && back.galRefNote);
   back.res["Galet cramoisi"] = 2; const again = E.deserialize(E.serialize(back)); assert.strictEqual(again.res["Galet cramoisi"], 2, "une seule fois");
+}
+{ // 1.0.10.3 : une partie neuve garde ses Galets achetés après un rechargement
+  const N = E.newState("Neuve", "iop"); N.res["Galet cramoisi"] = 5; N.tokens[E.KOLI_CUR] = 90;
+  const back = E.deserialize(E.serialize(N)); assert.strictEqual(back.res["Galet cramoisi"], 5, "Galets gardés"); assert.strictEqual(E.koliKz(back), 90); assert.ok(!back.galRefNote);
+  // une partie créée après la 1.0.6 mais sans le drapeau (avant ce correctif) n'est pas reprise non plus
+  const M = E.newState("Sans drapeau", "iop"); delete M.galRef; M.created = Date.UTC(2026, 9, 13, 18); M.res["Galet rutilant"] = 2;
+  const m2 = E.deserialize(E.serialize(M)); assert.strictEqual(m2.res["Galet rutilant"], 2); assert.strictEqual(m2.galRef, 1);
 }
 const B = E.newState("Boutique", "iop"); B.tokens[E.KOLI_CUR] = 30;
 const ch = E.SHOPS.koli.items.find((x) => x.cons === "coffre_bois");

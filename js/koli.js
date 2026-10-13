@@ -54,7 +54,8 @@
     if (Q.w !== w) E.koliSettle(S, w);
     delete Q.opp;
     Q.team = (Q.team || []).filter((id) => S.chars.some((c) => c.id === id));
-    if (!Q.team.length) Q.team = E.team(S).slice().sort((a, b) => b.lvl - a.lvl).slice(0, K.size).map((c) => c.id);
+    // 1.0.10.3 : tant que le joueur n'a pas choisi lui-même, l'équipe d'arène se complète avec les meilleurs héros (avant, elle restait au seul héros du départ)
+    if (!Q.team.length || (!Q.picked && Q.team.length < K.size)) Q.team = Q.team.concat(E.team(S).filter((c) => !Q.team.includes(c.id)).sort((a, b) => b.lvl - a.lvl).map((c) => c.id)).slice(0, K.size);
     return Q;
   };
   E.koliTickets = (S) => (S.cons && S.cons[E.KOLI_TICKET]) || 0;
@@ -63,7 +64,7 @@
   E.koliSetTeam = (S, ids) => {
     const ok = (ids || []).filter((id, i, a) => a.indexOf(id) === i && S.chars.some((c) => c.id === id)).slice(0, K.size);
     if (!ok.length) return "Choisis au moins un héros.";
-    E.koliState(S).team = ok; return null;
+    const Q = E.koliState(S); Q.team = ok; Q.picked = 1; return null;
   };
   E.koliToggle = (S, id) => { const Q = E.koliState(S); const t = Q.team.slice(); const i = t.indexOf(id);
     if (i >= 0) { if (t.length <= 1) return "Il faut au moins un héros dans l'équipe d'arène."; t.splice(i, 1); }
@@ -257,8 +258,19 @@
     const txt = `Galets repris : ${n} Galet${n > 1 ? "s" : ""} → ${kz} Kolizetons. Les Galets reviennent en boutique, comme bonus de fabrication.`;
     if (E.note) E.note(S, txt, "rare"); S.galRefNote = txt; return { n, kz };
   };
+  /* 1.0.10.3 : une partie neuve n'a rien à reprendre (sans ça, ses Galets achetés étaient repris à la première relecture) */
+  if (E.newState && !E.newState.galets) {
+    const n0 = E.newState; E.newState = (name, cls) => { const S = n0(name, cls); S.galRef = 1; return S; }; E.newState.galets = 1;
+  }
   if (E.deserialize && !E.deserialize.galets) {
-    const d0 = E.deserialize; E.deserialize = (txt) => { const S = d0(txt); E.koliGaletRefund(S); return S; }; E.deserialize.galets = 1;
+    /* 1.0.10.3 : la reprise ne vise que les parties d'avant la 1.0.6 qui n'ont jamais été relues depuis (sans « galRef » dans la sauvegarde).
+       La partie neuve qui comble les champs manquants pose galRef : on regarde donc le texte d'origine, et la date de création. */
+    const GAL_T = Date.UTC(2026, 9, 13, 16, 45); // sortie de la 1.0.6
+    const d0 = E.deserialize; E.deserialize = (txt) => {
+      const had = typeof txt === "string" && txt.indexOf('"galRef"') >= 0; const S = d0(txt);
+      if (!had && !(S.created >= GAL_T)) { delete S.galRef; E.koliGaletRefund(S); } else S.galRef = 1;
+      return S;
+    }; E.deserialize.galets = 1;
   }
   const GALET_RECIPES = {
     /* GALETS:début (généré par tools/koli_galets.js : [id DofusDB de l'objet, quantité]) */

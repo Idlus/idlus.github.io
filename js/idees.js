@@ -48,7 +48,7 @@
       <p class="xs muted" style="margin:8px 0 0">Les idées retenues sont marquées « Retenue » sur le Discord, et les plus votées sont regardées chaque semaine.</p></div>`;
     return `<div class="pagehead"><h1>Suggestions</h1></div><div class="two id-page">${form}<div class="stack" style="gap:12px">${list}</div></div>`;
   }
-  function render(main) { if (main) main.innerHTML = html(); }
+  function render(main) { if (main) { readForm(); main.innerHTML = html(); } } // 1.0.10.3 : le texte en cours n'est plus effacé par un redessin de la page
   const repaint = () => { if (window.DX.ui.tab === "sugg") { readForm(); render($("#main")); } };
 
   function check() {
@@ -80,6 +80,7 @@
     if (r.data) { F.err = r.data; return repaint(); }
     s.ideaAt = Date.now(); remember(t, F.tag);
     Object.assign(F, { tag: "", title: "", body: "", err: "" });
+    ["#idTitle", "#idBody"].forEach((q) => { const el = $(q); if (el) el.value = ""; }); // 1.0.10.3 : sinon repaint() relisait l'ancien texte et le formulaire restait rempli
     repaint();
     X().openSheet(`<h2>✅ Merci, ton idée est partie !</h2>
       <p class="small" style="margin:0">« <b>${h(t)}</b> » sera publiée dans le forum Idées du Discord dans la demi-heure. Les autres joueurs pourront voter pour elle avec 👍.</p>

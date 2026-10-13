@@ -285,7 +285,7 @@ textarea{width:100%;min-height:80px;font-size:12px}
 /* ---------- feuilles & notifications ---------- */
 .sheet-bg{position:fixed;inset:0;background:rgba(10,6,2,.55);z-index:80;display:flex;align-items:flex-end;justify-content:center;padding:0}
 @media (min-width:700px){.sheet-bg{align-items:center;padding:20px}}
-.sheet{background:var(--panel);border:3px solid var(--frame);border-radius:20px 20px 0 0;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.sheet{background:var(--panel);border:3px solid var(--frame);border-radius:20px 20px 0 0;max-width:640px;width:100%;max-height:calc(88vh / var(--vz,1));overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
 @media (min-width:700px){.sheet{border-radius:20px}}
 .sheet>*{flex-shrink:0}
 .toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--navh) + 16px);z-index:90;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(92vw,420px)}
@@ -866,6 +866,14 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
 .cstrip .chx{min-width:0}
 .cstrip .chx .tx{min-width:0;overflow:hidden}
 @media (max-width:640px){.cstreak{display:none}.cstrip .chx .bon{padding-left:4px}}
+/* 1.0.10.3 : les challenges ont leur propre ligne et restent lisibles (ils se réduisaient à une lettre, bonus coupé au téléphone) */
+.cstrip{flex-wrap:wrap;overflow:visible}
+.cstrip .chalov{flex:1 1 100%;flex-wrap:wrap;overflow:visible}
+.cstrip .chalov:empty{display:none}
+.cstrip .chalov:empty~.cstreak{margin-right:auto}
+.cstrip .chx{flex:0 1 auto;min-width:min(140px,100%);max-width:min(340px,100%)}
+.cstrip .chx .bon{white-space:nowrap}
+.cstrip .viewtog{margin-left:auto}
 .arenasticky{background:var(--panel)}
 /* ===================== 3.2 — raretés, fiche en pied, cadres allégés ===================== */
 .rr{--rc:var(--frame)}
@@ -2249,7 +2257,7 @@ html{zoom:1}
 .ck{width:16px;height:16px;border-radius:50%;flex:none;background:var(--panel3);box-shadow:inset 0 0 0 2px var(--line)}.ck.on{background:var(--action);box-shadow:inset 0 0 0 3px var(--panel)}
 /* recherche rapide */
 .wsearch-bg{position:fixed;inset:0;background:rgba(10,6,2,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:max(8px,env(safe-area-inset-top,0px)) 8px 0}
-.wsearch{width:min(640px,100%);max-height:min(80vh,620px,calc(var(--wsvh,100vh) - 16px));margin-top:min(8vh,60px);background:var(--panel);border:3px solid var(--frame);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
+.wsearch{width:min(640px,100%);max-height:min(calc(80vh / var(--vz,1)),620px,calc(var(--wsvh,100vh) / var(--vz,1) - 16px));margin-top:min(8vh,60px);background:var(--panel);border:3px solid var(--frame);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
 .wsin{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid var(--line)}
 .wsin .uico{width:22px;height:22px;flex:none;color:var(--gold)}
 .wsin input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:17px;font-weight:700;outline:none;padding:6px 0}
@@ -2313,10 +2321,10 @@ html{zoom:1}
 .wsk.k-dg{background:#8a5d33}.wsk.k-item{background:#2f86c6}.wsk.k-mon{background:#9b2c2c}.wsk.k-res{background:#4f8a2b}.wsk.k-page{background:#7a5bb0}.wsk.k-zone{background:#3f7f6b}.wsk.k-set{background:#1f6f9a}.wsk.k-dofus{background:#c77d1e}.wsk.k-idol{background:#9b4dff}.wsk.k-pet,.wsk.k-mount{background:#b0643c}.wsk.k-cons{background:#d27a9c}.wsk.k-ach{background:#c99a2e}
 .wsfoot{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding:6px 12px}
 .wsfoot kbd{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-right:2px;background:var(--panel2)}
-@media (max-width:640px){.wsearch{margin-top:0;max-height:calc(var(--wsvh,100vh) - 16px)}.wsfoot span:not(:last-child){display:none}.wsfoot .grow{display:none}}
+@media (max-width:640px){.wsearch{margin-top:0;max-height:calc(var(--wsvh,100vh) / var(--vz,1) - 16px)}.wsfoot span:not(:last-child){display:none}.wsfoot .grow{display:none}}
 
 /* ---------- chat (multijoueur) ---------- */
-#chat.chat{position:fixed;right:16px;bottom:16px;z-index:60;width:380px;height:min(520px,calc(100vh - 120px));display:flex;flex-direction:column;background:var(--panel);border:3px solid var(--frame);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+#chat.chat{position:fixed;right:16px;bottom:16px;z-index:60;width:380px;height:min(520px,calc(100vh / var(--vz,1) - 120px));display:flex;flex-direction:column;background:var(--panel);border:3px solid var(--frame);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
 .chat .ch-head{display:flex;align-items:center;gap:6px;padding:6px 8px;background:linear-gradient(180deg,var(--frame2),var(--frame));border-bottom:2px solid var(--gold)}
 .chat .ch-tab{border:0;border-radius:10px;padding:5px 10px;font-weight:800;font-size:13px;background:transparent;color:var(--ink);opacity:.75;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
 .chat .ch-tab.on{background:var(--panel3);opacity:1;box-shadow:inset 0 0 0 2px var(--gold)}
@@ -2385,7 +2393,7 @@ html{zoom:1}
 .admbtn .uico{width:16px;height:16px}
 /* 1.0.4.1 : dès que la barre de menu du bas est là (jusqu'à 859 px, ex. téléphone pliable déplié), le chat reste au-dessus d'elle */
 @media (min-width:641px) and (max-width:859px){
-  #chat.chat{bottom:calc(var(--navh) + 12px);height:min(520px,calc(100dvh - var(--navh) - 90px))}
+  #chat.chat{bottom:calc(var(--navh) + 12px);height:min(520px,calc(100dvh / var(--vz,1) - var(--navh) - 90px))}
 }
 @media (max-width:859px){
   .chmin{right:12px;bottom:calc(var(--navh) + 12px);width:52px;height:52px;padding:0;border-radius:50%;justify-content:center;border-color:var(--gold)}
@@ -2394,7 +2402,7 @@ html{zoom:1}
   .chmin .n{position:absolute;top:-4px;right:-4px;border:2px solid var(--panel)}
 }
 @media (max-width:640px){
-  #chat.chat{left:0;right:0;bottom:var(--navh);width:auto;height:calc(100dvh - var(--navh) - 70px);border-radius:16px 16px 0 0;border-bottom:0;z-index:45}
+  #chat.chat{left:0;right:0;bottom:var(--navh);width:auto;height:calc(100dvh / var(--vz,1) - var(--navh) - 70px);border-radius:16px 16px 0 0;border-bottom:0;z-index:45}
 }
 /* ---------- panel admin ---------- */
 .adm{display:flex;flex-direction:column;gap:14px}
@@ -2737,7 +2745,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .optsec .notifs{margin-top:6px}
 .optsec textarea{width:100%;box-sizing:border-box}
 @media (max-width:560px){.opttabs{gap:4px}.opttabs button{padding:5px 9px;font-size:12.5px}.optline:not(.optchk) .optctl{width:100%}}
-@media (min-width:700px){.sheet:has(.opttabs){height:min(88vh,820px)}.sheet:has(.opttabs)>div:last-child{margin-top:auto}}
+@media (min-width:700px){.sheet:has(.opttabs){height:min(calc(88vh / var(--vz,1)),820px)}.sheet:has(.opttabs)>div:last-child{margin-top:auto}}
 /* ===================== 0.1.26 — codes cadeaux (panel admin) ===================== */
 .adm .gc-f{display:flex;flex-direction:column;gap:4px;font-size:14px}
 .adm .gc-f small{color:var(--muted);font-size:12px}
@@ -3509,7 +3517,7 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .kzs-t.own{opacity:.55}
 .kzs-i{height:42px;display:flex;align-items:center;justify-content:center;font-size:30px}.kzs-i img.ico{width:42px;height:42px}.kzs-i .uico{width:34px;height:34px}
 .kzs-k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted, #9a8f78);font-weight:800;margin-bottom:-2px}
-@media (min-width:700px){.sheet:has(#kzShop){height:min(88vh,720px)}.sheet:has(#kzShop) .kzs{flex:1}.sheet:has(#kzShop) .kzs-buy{margin-top:auto}}
+@media (min-width:700px){.sheet:has(#kzShop){height:min(calc(88vh / var(--vz,1)),720px)}.sheet:has(#kzShop) .kzs{flex:1}.sheet:has(#kzShop) .kzs-buy{margin-top:auto}}
 .kzs-nm{font-weight:700;font-size:12.5px;line-height:1.2;min-height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .kzs-p{margin-top:auto;display:flex;align-items:center;gap:4px;font-weight:800;font-size:13.5px}
 .kzs-n{position:absolute;top:5px;right:6px;font-size:11px;font-weight:800;background:rgba(0,0,0,.35);color:#fff7e3;border-radius:8px;padding:0 6px}

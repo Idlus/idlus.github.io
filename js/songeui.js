@@ -104,9 +104,10 @@
     const sub = on ? `${intName(X_.ii)} · salle ${curD(X_)} sur ${E.SG_ROOMS}` : `dès le niveau ${E.EXP_MIN_LVL} · nouvelle carte dans ${weekLeft()}`;
     const head = `<div class="sgx-top"><div class="sgx-title"><span class="sgx-moon" aria-hidden="true"></span><span class="sgx-tt"><h1>Le Songe infini</h1><span class="small muted">${h(sub)}</span></span>${bribes(s)}</div>
       <nav class="sgx-tabs">${tab("songe", "carte", on ? "Mon songe" : "Le Puits", on ? `${curD(X_)}/${E.SG_ROOMS}` : "")}${tab("marche", "cristal", "Marché onirique", afford || "")}${tab("legs", "dofus", "Légendaires", `${legN}/${E.LEG_LIST.length}`)}</nav></div>`;
+    const old = main.querySelector(".sgx-mapscroll"); const keep = old && ui.mapT && Date.now() - ui.mapT < 20000 ? old.scrollLeft : null; // 1.0.10.3 : la carte reste où le joueur l'a mise
     main.innerHTML = head + (ui.view === "marche" ? shopHtml(s) : ui.view === "legs" ? legsHtml(s) : on ? runHtml(s, s.exp) : puitsHtml(s));
     ui.key = stateKey(s);
-    const sc = main.querySelector(".sgx-mapscroll[data-x]"); if (sc) sc.scrollLeft = Math.max(0, +sc.dataset.x - sc.clientWidth / 2);
+    const sc = main.querySelector(".sgx-mapscroll[data-x]"); if (sc) { ui.mapAuto = Math.max(0, +sc.dataset.x - sc.clientWidth / 2); sc.scrollLeft = keep !== null ? keep : ui.mapAuto; ui.mapKeep = sc.scrollLeft; }
   }
   const curD = (X_) => (X_.pick !== null ? X_.nodes[X_.pick].d : X_.at !== null ? X_.nodes[X_.at].d : 1);
   const gem = (i) => (window.sgIcon ? window.sgIcon(i) : i === 0 ? "R" : i <= 4 ? "P" + i : "C" + (i - 4));
@@ -359,9 +360,11 @@
     else if (p && ours()) { const el = $("#sgTimer"); if (el) el.textContent = `choix auto dans ${Math.max(0, Math.ceil((E.EXP_AUTO_MS - (E.now() - p.at)) / 1000))} s`; const sh = $("#sheet .sg-sheet"); if (sh && !sh.classList.contains("end") && sh.dataset.pend !== String(p.id)) openPend(s, p); }
     else if (!p && ours() && !$("#sheet .sg-sheet.end")) { X().closeSheet(); if (window.DX.ui.tab === "exp") X().render(); }
     if (!on && s.expLast && s.expLast.t !== ui.end) { ui.end = s.expLast.t; if (!busy && E.now() - s.expLast.t < 120000) { X().openSheet(endHtml(s, s.expLast)); if (window.DX.ui.tab === "exp") X().render(); } }
-    if ((window.DX.ui.tab === "exp" || (window.DX.ui.tab === "combat" && on)) && !$("#sheet").innerHTML && stateKey(s) !== ui.key) { ui.key = stateKey(s); X().render(); }
+    if ((window.DX.ui.tab === "exp" || (window.DX.ui.tab === "combat" && on)) && !$("#sheet").innerHTML && stateKey(s) !== ui.key) { ui.key = stateKey(s); const y = window.scrollY; X().render(); if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); } // 1.0.10.3 : la page ne remonte plus à chaque salle
   }
   setInterval(() => { try { tick(); } catch (e) { /* jamais bloquer la boucle du jeu */ } }, 700);
+  // 1.0.10.3 : le joueur a fait défiler la carte lui-même (pas le recentrage automatique) : on la garde à cet endroit 20 s
+  document.addEventListener("scroll", (e) => { const t = e.target; if (t && t.classList && t.classList.contains("sgx-mapscroll") && Math.abs(t.scrollLeft - ui.mapKeep) > 4) ui.mapT = Date.now(); }, true);
 
   /* texte de l'en-tête du combat et de la barre d'état */
   const where = (s) => { if (!E.expActive(s)) return null; const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `Songe · ${intName(X_.ii)} · ${n && n.t === "end" ? `vague ${X_.wave}` : `salle ${n ? n.d : 1}`}`; };

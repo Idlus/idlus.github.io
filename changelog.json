@@ -1,6 +1,26 @@
 {
-  "version": "1.0.10.2",
+  "version": "1.0.10.3",
   "versions": [
+    {
+      "v": "1.0.10.3",
+      "name": "Bugs corrigés",
+      "items": [
+        "Renaissance : le bouton « Renaître » de la Statue du Phénix fonctionne de nouveau (il ne faisait plus rien depuis la 0.1.53)",
+        "Galets : ceux achetés sur une partie récente ne disparaissent plus au rechargement de la page (ils étaient repris en Kolizetons par erreur)",
+        "« Équiper au mieux » ne propose plus un 2e légendaire ni un 2e exo PA, PM ou PO : la pastille verte et le compteur se vident enfin, et « Meilleur choix » ne vise plus un objet refusé",
+        "Kolizéum : l'équipe d'arène se complète avec tes meilleurs héros tant que tu ne l'as pas choisie toi-même (elle restait au seul héros du départ), et la page prévient si elle n'est pas complète",
+        "Texte à 115 % ou 130 % : les fenêtres (Options et les autres) restent dans l'écran, titre, croix et onglets compris",
+        "Écran de bienvenue 1.0 : il montre les nouveautés de la 1.0, ne dit plus « rien n'est remis à zéro » à un nouveau joueur, et le Jyfus n'est plus célébré par-dessus",
+        "Combat : les challenges ont leur propre ligne, avec leur nom et leur bonus en entier, au PC comme au téléphone",
+        "Combat au téléphone, vue Compacte : l'arène ne reste plus collée en haut quand elle devient trop haute (elle cachait Sorts, Journal et Butin)",
+        "Fiche de zone : les chances de ressources affichées sont les vraies, comme dans l'Encyclopédie",
+        "Entrer en donjon ouvre le combat en haut de la page",
+        "Butin : plus de « Aucun combat en cours » pendant le premier combat d'une chasse",
+        "Songe infini : la carte reste où tu l'as fait défiler et la page ne remonte plus à chaque salle",
+        "Accueil : la tuile Défi du jour n'est plus allumée pour une équipe trop loin du niveau du donjon (elle dit dès quel niveau)",
+        "Suggestions : le texte en cours n'est plus effacé quand la page se redessine, et le formulaire se vide bien après l'envoi"
+      ]
+    },
     {
       "v": "1.0.10.2",
       "name": "Sauvegarde sans fausse alerte",

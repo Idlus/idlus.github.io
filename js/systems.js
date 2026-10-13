@@ -1164,7 +1164,8 @@
   E.grantFounder = (S, t) => {
     if (S.unlocks.fondateur || (t || Date.now()) > E.LAUNCH_END) return false;
     S.unlocks.fondateur = 1; if (!S.titlesExtra.includes(E.FOUNDER_TITLE)) S.titlesExtra.push(E.FOUNDER_TITLE);
-    if (E.giveDofus && E.DOFUS && E.DOFUS.jyfus && !E.dofusOwned(S, "jyfus")) E.giveDofus(S, "jyfus", "cadeau de lancement de la 1.0");
+    if (E.giveDofus && E.DOFUS && E.DOFUS.jyfus && !E.dofusOwned(S, "jyfus")) { // 1.0.10.3 : sans célébration, l'écran de lancement le présente déjà (elle le recouvrait)
+      const cel = E.celebrate; E.celebrate = null; try { E.giveDofus(S, "jyfus", "cadeau de lancement de la 1.0"); } finally { E.celebrate = cel; } }
     E.addCons(S, "coffre_douze", 1);
     return true;
   };

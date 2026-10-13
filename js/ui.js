@@ -21,9 +21,25 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.10.2";
+const GAME_VERSION = "1.0.10.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.10.3", name: "Bugs corrigés", items: [
+    "Renaissance : le bouton « Renaître » de la Statue du Phénix fonctionne de nouveau (il ne faisait plus rien depuis la 0.1.53)",
+    "Galets : ceux achetés sur une partie récente ne disparaissent plus au rechargement de la page (ils étaient repris en Kolizetons par erreur)",
+    "« Équiper au mieux » ne propose plus un 2e légendaire ni un 2e exo PA, PM ou PO : la pastille verte et le compteur se vident enfin, et « Meilleur choix » ne vise plus un objet refusé",
+    "Kolizéum : l'équipe d'arène se complète avec tes meilleurs héros tant que tu ne l'as pas choisie toi-même (elle restait au seul héros du départ), et la page prévient si elle n'est pas complète",
+    "Texte à 115 % ou 130 % : les fenêtres (Options et les autres) restent dans l'écran, titre, croix et onglets compris",
+    "Écran de bienvenue 1.0 : il montre les nouveautés de la 1.0, ne dit plus « rien n'est remis à zéro » à un nouveau joueur, et le Jyfus n'est plus célébré par-dessus",
+    "Combat : les challenges ont leur propre ligne, avec leur nom et leur bonus en entier, au PC comme au téléphone",
+    "Combat au téléphone, vue Compacte : l'arène ne reste plus collée en haut quand elle devient trop haute (elle cachait Sorts, Journal et Butin)",
+    "Fiche de zone : les chances de ressources affichées sont les vraies, comme dans l'Encyclopédie",
+    "Entrer en donjon ouvre le combat en haut de la page",
+    "Butin : plus de « Aucun combat en cours » pendant le premier combat d'une chasse",
+    "Songe infini : la carte reste où tu l'as fait défiler et la page ne remonte plus à chaque salle",
+    "Accueil : la tuile Défi du jour n'est plus allumée pour une équipe trop loin du niveau du donjon (elle dit dès quel niveau)",
+    "Suggestions : le texte en cours n'est plus effacé quand la page se redessine, et le formulaire se vide bien après l'envoi",
+  ] },
   { v: "1.0.10.2", name: "Sauvegarde sans fausse alerte", items: [
     "Le jeu ne demande plus sans raison « Deux versions de ta partie » : quand le serveur était lent, une sauvegarde bien arrivée en ligne pouvait être prise pour une partie jouée ailleurs",
     "Quand il y a vraiment deux parties différentes, l'écran montre les niveaux cumulés et les succès de chacune, et recommande la plus avancée",
@@ -1701,7 +1717,8 @@ function homeTiles() {
   /* défi du jour : « Lancer » joue tout de suite, comme l'ancienne carte */
   const tid = E.team(S).length ? defiTierCur() : null; const def = tid && E.defi(tid);
   if (def) { const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
-    out.push(tile({ ic: im(imgM(dg.boss), "ac-tm", MONSTERS[dg.boss].name), t: "Défi du jour", s: `${h(dg.name)} · stasis ${def.k}${best ? ` · record ${best.turns} tours` : ""}`, done: !!st.chest, hot: true,
+    const near = Math.max(...E.team(S).map((c) => c.lvl)) >= dg.lvl - 10; // 1.0.10.3 : pas allumée pour une équipe loin du niveau du donjon (perdu d'avance)
+    out.push(tile({ ic: im(imgM(dg.boss), "ac-tm", MONSTERS[dg.boss].name), t: "Défi du jour", s: `${h(dg.name)} · stasis ${def.k}${best ? ` · record ${best.turns} tours` : near ? "" : ` · conseillé dès le niveau ${Math.max(1, dg.lvl - 10)}`}`, done: !!st.chest, hot: near,
       act: st.chest ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">Lancer</span>` })); }
   /* 0.1.49 : Boss des mondes, tant qu'il te reste des essais aujourd'hui (js/wbossui.js) */
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
@@ -2103,7 +2120,7 @@ function renderZoneView(sid) {
       <h3 class="sec">Monstres</h3>
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
-      <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${r.p} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
+      <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${E.resRate(r.p).toFixed(1).replace(".", ",")} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
       ${its.length ? `<h3 class="sec">Équipements à looter</h3><div class="loot">${its.map((e) => `<div class="lcard"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${(e.p * E.ITEM_DROP_SCALE).toFixed(2).replace(".", ",")} %</span></div></div></div>`).join("")}</div>` : ""}
       ${dg ? `<h3 class="sec">Donjon${(s.dungeons || []).length > 1 ? "s" : ""}</h3>${(s.dungeons || [s.dungeon]).map(dungeonCard).join("")}` : ""}
     </div>
@@ -3699,6 +3716,7 @@ function updateCombat(force) {
       if (A.view === "scene") { const nn = A.nodes[i]; axDecor(nn, e); if (axOn()) { nn.classList.add("spawn"); setTimeout(() => nn.classList.remove("spawn"), 650); } } }
     A.nEnts = F.ents.length; placeEnts(F);
   }
+  stickyCheck(); // 1.0.10.3 : en vue Compacte, l'arène grandit en cours de combat (invocations) : elle ne reste collée que si elle laisse de la place
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
   const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
@@ -3757,8 +3775,8 @@ function updateCombat(force) {
     if (F.over && !A.over) {
       A.over = true; axVictory(F, A); $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`;
       lootHtml(F); const fh = $("#fhist"); if (fh) fh.innerHTML = historyHtml(6);
-    } else if (!F.over && force) { $("#floot").innerHTML = `<p class="note">Le butin apparaîtra à la fin du combat.</p>`; $("#fres").textContent = `Tour ${F.round}`; }
-  } else if (force) { $("#flog").innerHTML = ""; $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; }
+    } else if (!F.over && (force || ($("#floot") && $("#floot").dataset.none))) { $("#floot").innerHTML = `<p class="note">Le butin apparaîtra à la fin du combat.</p>`; delete $("#floot").dataset.none; $("#fres").textContent = `Tour ${F.round}`; } // 1.0.10.3 : plus de « Aucun combat en cours » pendant le premier combat
+  } else if (force) { $("#flog").innerHTML = ""; $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; $("#floot").dataset.none = "1"; }
   // barre de sorts du héros sélectionné
   const c = ui.combatCid ? char(ui.combatCid) : null;
   if (c) {
@@ -4112,12 +4130,19 @@ function gainFor(c, s, uid) { const eq = Object.assign({}, c.equip); for (const 
 const EQ_SLOTS = ["arme", "coiffe", "cape", "amulette", "anneau1", "anneau2", "ceinture", "bottes", "bouclier", ...D.DOFUS_SLOTS];
 const slotKind = (s) => (s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s);
 const planMemo = new Map();
+/* 1.0.10.3 : un objet que E.equip refuserait ici (2e légendaire, 2e exo PA/PM/PO) n'est ni dans le plan ni « Meilleur choix » */
+function equipBlocked(c, eq, s, it) {
+  const T = ITEMS[it.tpl]; const one = E.EXO_ONE || ["pa"];
+  const clash = (m, test) => Object.entries(m).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && ITEMS[S.items[u].tpl] && test(S.items[u]));
+  if (T.leg && (clash(eq, (x) => ITEMS[x.tpl].leg) || clash(c.equip, (x) => ITEMS[x.tpl].leg))) return true;
+  return !!(it.exo && one.includes(it.exo) && (clash(eq, (x) => x.exo === it.exo) || clash(c.equip, (x) => x.exo === it.exo)));
+}
 function gearPlan(c) {
   const key = c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {});
   const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
   const taken = new Set(); S.chars.forEach((x) => { if (x !== c) Object.values(x.equip).forEach((u) => taken.add(u)); });
   const pool = {}; for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (!T.slot || T.lvl > c.lvl || taken.has(it.uid)) continue; (pool[T.slot] = pool[T.slot] || []).push(it); }
-  const okIn = (eq, s, it) => { const k = slotKind(s); if (k !== "anneau" && k !== "dofus") return true; return !Object.entries(eq).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && S.items[u].tpl === it.tpl); };
+  const okIn = (eq, s, it) => { if (equipBlocked(c, eq, s, it)) return false; const k = slotKind(s); if (k !== "anneau" && k !== "dofus") return true; return !Object.entries(eq).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && S.items[u].tpl === it.tpl); };
   const put = (eq, s, uid) => { for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; };
   const fill = (eq, lock) => { for (let pass = 0; pass < 3; pass++) { let moved = false;
     for (const s of EQ_SLOTS) { if (lock && lock.has(s)) continue; const base = gearScore(c, eq); let best = 0, uid = null;
@@ -4371,13 +4396,13 @@ function charEquipView(c, st) {
     const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid);
     const g = {}; all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid)));
     const byGain = (a, b) => g[b.uid] - g[a.uid] || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl;
-    const pu = bestFor(c, ui.slot); const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort((a, b) => (b.uid === pu) - (a.uid === pu) || byGain(a, b)); // le choix du plan (panoplie entière comprise) en tête
+    const pu = bestFor(c, ui.slot); const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort((a, b) => (b.uid === pu) - (a.uid === pu) || equipBlocked(c, c.equip, ui.slot, a) - equipBlocked(c, c.equip, ui.slot, b) || byGain(a, b)); // le choix du plan (panoplie entière comprise) en tête
     const worn = all.filter((it) => E.equippedBy(S, it.uid)).sort(byGain);
     const high = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl > c.lvl).sort((a, b) => ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
     const curSet = c.equip[ui.slot] && S.items[c.equip[ui.slot]] && ITEMS[S.items[c.equip[ui.slot]].tpl].set; const counts = E.setCounts(S, c);
     const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
       return `<span class="pset ${on ? "on" : ""}">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""}</span>`; };
-    const row = (it, mode, i, n, tog, sub) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0);
+    const row = (it, mode, i, n, tog, sub) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0) && !equipBlocked(c, c.equip, ui.slot, it);
       return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""} ${sub ? "psub" : ""}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)}${grpN(n)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}${T.slot === "arme" ? " " + wpPickTag(c, it) : ""}<br>${deltaHtml(c, ui.slot, it.uid)}${tog || ""}</span>
         <button class="btn sm ${mode === "worn" ? "" : "primary"}" data-act="equip" data-uid="${it.uid}" ${mode === "high" ? "disabled" : ""}>${mode === "high" ? "Niv. " + T.lvl : mode === "worn" ? "Prendre" : "Équiper"}</button></div>`; };
     /* 0.1.46.1 : objets déjà portés et trop hauts rangés en bas, repliés (ui.pmore garde l'état ouvert) */
@@ -5471,7 +5496,7 @@ function renSheet(cid) {
     <div class="rencols"><div><div class="cap keep">Il garde</div><ul class="xs">${keep.map((t) => `<li>${t}</li>`).join("")}</ul></div><div><div class="cap reset">Il repart à zéro</div><ul class="xs">${reset.map((t) => `<li>${t}</li>`).join("")}</ul></div></div></div></div>
     ${err ? `<p class="note">${h(err)}</p>` : `<h3>Choisir l'Éveil de cette renaissance</h3>${E.isClassRen(n) ? `<p class="xs muted" style="margin:0">Renaissance ${E.roman(n)} : l'Éveil de classe renforce le passif ${h(CLASSES[c.cls].passive.name)}.</p>` : ""}<div class="evgrid">${choices.map(([id, r]) => ch(id, r)).join("")}</div>
     <div class="renconfirm"><span class="small">${pick ? `<b>${h(pick === "classe" ? "Éveil de classe" : E.EVEILS[pick].name)} ${E.roman(E.eveil(c, pick) + 1)}</b> · ${h(c.name)} repartira du niveau 1 avec +${Math.round(E.REN_XP * 100 * n)} % d'XP ; ses objets iront dans le sac.` : "Choisissez un Éveil pour continuer."}</span>
-    <div class="row"><button class="btn primary ren" data-act="rengo" data-id="${c.id}" ${pick ? "" : "disabled"}>${IC("phenix")} Renaître</button><button class="btn" data-act="closesheet">Plus tard</button></div></div>`}`);
+    <div class="row"><button class="btn primary ren" data-act="renaitre" data-id="${c.id}" ${pick ? "" : "disabled"}>${IC("phenix")} Renaître</button><button class="btn" data-act="closesheet">Plus tard</button></div></div>`}`);
 }
 function renderRenaissance() {
   const rows = S.chars.map((c) => { const err = E.canRenaissance(S, c); const can = !err; const need = E.xpNeed(c.lvl); const full = (c.ren || 0) >= E.REN_MAX;
@@ -5674,12 +5699,12 @@ function renderUpdBar() {
 }
 /* 1.0 : grand écran de lancement, montré une fois (avec le cadeau de la semaine de lancement) */
 function launchSheet() {
-  const C = CHANGELOG[0];
+  const C = CHANGELOG.find((x) => x.v === "1.0") || CHANGELOG[0]; // 1.0.10.3 : les nouveautés de la 1.0 (pas celles de la dernière version)
   openSheet(`<div class="launch10">
     <img class="l10-logo" src="assets/ui/logo.webp" alt="Idlus">
     <div class="l10-v">Version 1.0</div>
     <h2>Bienvenue dans Idlus 1.0 !</h2>
-    <p class="small">Merci d'être là pour la sortie officielle. Ta partie est gardée telle quelle : rien n'est remis à zéro.</p>
+    <p class="small">Merci d'être là pour la sortie officielle.${S.stats && S.stats.fights ? " Ta partie est gardée telle quelle : rien n'est remis à zéro." : ""}</p>
     <div class="l10-gift"><img src="assets/ui/orn/orn_fondateur.svg" alt="">
       <div><b>Ton cadeau de lancement</b><span class="xs">Titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le <strong>Jyfus</strong> (+20 Vitalité, +10 Sagesse) et un Coffre des Douze. Offert à tous ceux qui jouent avant le 20 octobre au soir.</span></div></div>
     <div class="l10-gift race"><img src="assets/ui/orn/orn_legende.svg" alt="">
@@ -5843,7 +5868,7 @@ const motionOff = () => { const m = S && S.settings.motion; if (m === "off") ret
 const calm = () => !!(S && (S.settings.reduced || motionOff()));
 function applyDisplay() {
   const r = document.documentElement; const z = (S && S.settings.textSize) || 100;
-  r.style.zoom = z === 100 ? "" : String(z / 100);
+  r.style.zoom = z === 100 ? "" : String(z / 100); r.style.setProperty("--vz", String(z / 100)); // 1.0.10.3 : les hauteurs en vh des fenêtres sont divisées par le zoom (sinon elles sortaient de l'écran à 115-130 %)
   r.classList.toggle("contrast", !!(S && S.settings.contrast));
   document.body.classList.toggle("nomotion", !!(S && motionOff()));
   const tp = (S && S.settings.toastPos) || "auto"; document.body.classList.toggle("toast-top", tp === "top"); document.body.classList.toggle("toast-bot", tp === "bottom");
@@ -6806,7 +6831,7 @@ document.addEventListener("click", (ev) => {
     case "encboss": ui.enc.boss = d.v; break;
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": ui.tab = "inv"; ui.inv = "sets"; break;
-    case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? chainCount(d.id) : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
+    case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? chainCount(d.id) : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[d.id]) || 1; dungeonSheet(d.id); return; }
     case "dgchainset": { ui.dgChain = +d.v; (S.dgChains = S.dgChains || {})[ui.dgSel] = ui.dgChain; dirty = true; dungeonSheet(ui.dgSel); return; }
     case "stopchain": msg(E.stopChain(S)); break;
@@ -6935,7 +6960,7 @@ document.addEventListener("click", (ev) => {
       const r = E.dismiss(S, c.id); if (r) { toast(r); return; } closeSheet(); if (ui.cid === c.id) ui.cid = (mainHero() || S.chars[0]).id; toast(`${c.name} a quitté l'aventure.`); break; }
     case "rensheet": ui.renPick = null; renSheet(+d.id); return;
     case "renpick": ui.renPick = d.v; renSheet(+d.id); return;
-    case "rengo": { const err = E.renaissance(S, +d.id, ui.renPick); if (err) { msg(err); return; } ui.renPick = null; closeSheet(); dirty = true; break; }
+    case "renaitre": { const err = E.renaissance(S, +d.id, ui.renPick); if (err) { msg(err); return; } ui.renPick = null; closeSheet(); dirty = true; break; } // 1.0.10.3 : action à part (le « rengo » du renommage passait avant et bloquait la Renaissance)
     case "idols": idolSheet(); return;
     case "idoltog": { const r = E.toggleIdol(S, d.id); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
     case "idolclear": E.clearIdols(S); dirty = true; idolSheet(); break;
