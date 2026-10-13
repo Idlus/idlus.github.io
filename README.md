@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48 « Le Songe infini »
+L'Expédition sans fin (js/expedition.js, js/expui.js) est remplacée par le Songe infini : js/songe.js (moteur, garde les noms `E.exp*` appelés par engine.js ; carte seedée `E.sgMap(w)`, 26 salles, `E.SG_INT` 8 intensités, `E.sgStasis`, Bribes `S.songe`, Marché `E.SG_SHOP`, conversion `E.sgConvert` dans `migrate`), js/songeui.js (`window.SGUI`, actions `sg-*`) et js/legendaires.js (38 objets `E.LEG_LIST`, stats 80-90 % du meilleur objet calculées au chargement `E.legBuild`, Éveil `lgc`, un par héros via `E.equip`, passifs branchés dans dealDamage/startOfTurn/soins/cooldowns et au Kolizéum). Visuel `.lx.cf` / `.lxn.cf` (style.css). Tests : tests/songe.test.js, tests/legendaires.test.js. Simulation : `npm run sim -- --songe`.
+
 ## 0.1.47.7 « Sablier économe »
 `E.sabBusy` (engine.js) : `E.sabSpend` ne vide la réserve que si un combat, un donjon, l'expédition, une récolte, l'atelier ou un plan de forgemagie avance ; sinon vitesse ×1 et pastille `.sabpill.idle`.
 

@@ -445,7 +445,7 @@
     const by = {}; Object.values(S.items).forEach((it) => { (by[it.tpl] = by[it.tpl] || []).push(it); });
     const out = [];
     for (const tpl in by) {
-      const T = ITEMS[tpl]; if (!T || T.slot === "dofus" || T.trophy || by[tpl].length < 2) continue;
+      const T = ITEMS[tpl]; if (!T || T.slot === "dofus" || T.trophy || T.leg || by[tpl].length < 2) continue;
       const L = by[tpl].slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
       L.slice(1).forEach((it) => { if (!it.radiant && !it.exo && !it.locked && !E.equippedBy(S, it.uid) && !E.inGear(S, it.uid) && !(E.isPerfect && E.isPerfect(it))) out.push(it.uid); });
     }
@@ -526,7 +526,7 @@
   /* Chasse : on choisit une sous-zone et l'équipe y combat en boucle */
   E.startHunt = (S, sid) => {
     if (S.dungeon) return "Vous êtes en donjon.";
-    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Jouer › Expédition).";
+    if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Jouer › Songe infini).";
     if (!E.setSub(S, sid)) return "Sous-zone verrouillée.";
     pinStars(S, sid); // les étoiles cessent de monter et fondent à partir de maintenant
     S.hunting = true; S.fight = null; S.pause = E.PAUSE_MS;
@@ -732,6 +732,7 @@
       side: "c", cid: c.id, name: c.name, cls: c.cls, lvl: c.lvl, st, hpMax, hp: hpMax,
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
       evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
+      lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
@@ -1114,6 +1115,7 @@
     F.powRew = E.powRew(mons, S.dungeon || XP ? "dg" : "hunt", hsm); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
+    if (E.legFight) E.legFight(S, F); // 0.1.48 : passifs des objets légendaires
     newRound(F);
     return F;
   };
@@ -1169,7 +1171,7 @@
     /* 0.1 : rôles de monstres et mécaniques de boss qui changent les dégâts reçus */
     if (F && isHero(F, tgt) && tgt.gold > 0) return 0;
     if (F && tgt.side === "m") {
-      if (tgt.role === "esquive" && src && src.side === "c" && rnd() < 0.2) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Esquive" }); return 0; }
+      if (tgt.role === "esquive" && src && src.side === "c" && !src.lgNoDodge && rnd() < 0.2) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Esquive" }); return 0; }
       if (tgt.mech && tgt.mech.includes("totems") && alive(F, "m").some((m) => m.totem)) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Invulnérable" }); return 0; }
       if (tgt.role === "coriace" && tgt.hp > tgt.hpMax * 0.5) v *= 0.7;
       if (tgt.weakOpen) v *= 1.5;
@@ -1180,6 +1182,7 @@
       }
     }
     if (src && src.expVs && tgt.side === "m") v *= 1 + ((tgt.boss ? src.expVs.boss : 0) + (tgt.hp > tgt.hpMax * 0.8 ? src.expVs.fresh : 0)) / 100; // 0.1.24 : reliques d'expédition
+    if (F && src && E.legPre) { v = E.legPre(F, src, tgt, v); if (v <= 0) return 0; } // 0.1.48 : légendaires (esquive, garde, miroir)
     v = Math.max(1, Math.round(v));
     if (F && tgt.side === "m" && tgt.mech) { // une partie des dégâts part sur un serviteur
       const share = (m) => { const p = Math.min(m.hp, Math.round(v * 0.5)); if (p <= 0) return; v -= p; m.hp -= p; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(m), s: -1, v: p, el: el || "n" }); if (m.hp <= 0) { m.hp = 0; m.alive = false; killed(F, m); } };
@@ -1196,6 +1199,7 @@
       if (src.vamp && src.alive) doHeal(src, v * src.vamp, F);
       if (src.expPoison && tgt.alive && !tgt.noDot && !tgt.dots.some((d) => d.exp)) tgt.dots.push({ v: Math.max(1, Math.round(tgt.hpMax * src.expPoison / 100)), el: null, turns: 2, exp: 1 });
     }
+    if (tgt.hp <= 0 && F && tgt.lgS && E.legSave) E.legSave(F, src, tgt, v); // 0.1.48 : Trompe-la-Mort, Boucle du Réveil
     if (tgt.hp <= 0 && F && tgt.side === "c" && !tgt.summon && F.expRevive > 0) { F.expRevive--; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} se relève (Sang de Bouftou) !`, "buff"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.mech && tgt.mech.includes("immortel") && !tgt.revived) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} refuse de mourir et se relève !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.side === "m" && F.idol && F.idol.revive && !tgt.revived && !tgt.summon) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * F.idol.revive / 100); flog(F, `${tgt.name} revient à la vie (idole Sakai) !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
@@ -1217,8 +1221,10 @@
       }
     }
     if (F && F.fx) F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(tgt), s: src ? F.ents.indexOf(src) : -1, v, el: el || "n" });
+    if (F && src && v > 0) { if (src.lg && E.legHit) E.legHit(F, src, tgt, v, el); if (tgt.lg && E.legHurt) E.legHurt(F, src, tgt, v); } // 0.1.48 : légendaires
     return v;
   };
+  E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a) };
   const bestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
   /* équilibrage v3 par classe et par tranche de niveau (calibré par simulation des 19 classes) */
   E.POW_LVLS = [20, 36, 48, 56, 64, 76, 88, 100, 120, 140, 170, 200];
@@ -1234,8 +1240,9 @@
     const E2 = ELEMENTS[el]; const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
     const pui = e.st.pui + buffSum(e, "pui");
     let v = rf(f.min, f.max) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + e.st.do + buffSum(e, "do") + (e.st[E2.dmg] || 0);
-    const crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri"));
+    let crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri"));
     if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri");
+    if (e.lg && E.legDmg) { const o = E.legDmg(F, e, tgt, el, crit, v); v = o.v; crit = o.crit; } // 0.1.48 : passifs des légendaires
     v *= 1 + (e.dmgBonus || 0) / 100;
     v *= 1 + (e.st.dsort || 0) / 100;
     v *= mult;
@@ -1379,7 +1386,7 @@
       } else if (f.k === "heal" || f.k === "healpct") {
         const ts = f.self ? [e] : f.n > 1 ? alive(F, "c") : [ (forced && forced.alive && forced.side === "c") ? forced : alive(F, "c").slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0] ];
         let tot = 0; const bonus = e.cls === "eni" && e.eniHeal ? 1.15 : 1; if (e.cls === "eni") { e.eniHeal = false; e.eniDmg = true; }
-        ts.forEach((t) => { if (t) tot += doHeal(t, (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1), F); });
+        ts.forEach((t) => { if (!t) return; const want = (f.k === "healpct" ? t.hpMax * f.v / 100 * (1 + e.st.so / 200) : healAmount(e, f) * bonus) * (F.roulette === "face" ? 1.15 : 1) * (e.lg && E.legHealMult ? E.legHealMult(e) : 1); const got = doHeal(t, want, F); tot += got; if (e.lg && E.legHealed) E.legHealed(F, e, t, want, got); });
         if (tot) { parts.push(`+${tot} PV`); ok = true; failChal(F, "incurable", "soin lancé"); }
       } else if (f.k === "shield") {
         const ts = f.all ? alive(F, "c") : [e]; const k = (e.cls === "feca" ? 1.25 : 1) * (1 + 0.06 * ((e.ev || {}).main || 0));
@@ -1560,7 +1567,7 @@
       const r = castSpell(S, F, e, best.sp, null, best.slot);
       if (!r.ok) { blocked.add(best.idx); continue; }
       nCast[best.idx] = (nCast[best.idx] || 0) + 1;
-      pa -= best.g.pa; pa += r.extraPa || 0; cast++; if (best.g.cd) e.cd[best.sp.id] = best.g.cd + 1;
+      pa -= best.g.pa; pa += r.extraPa || 0; cast++; if (best.g.cd) e.cd[best.sp.id] = (e.lg && E.legCd ? E.legCd(e, best.g.cd) : best.g.cd) + 1;
       F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), sp: best.sp.id });
     }
     if (!cast && paStart === undefined) flog(F, `${e.name} passe son tour.`, "dim");
@@ -1608,7 +1615,7 @@
   const dodged = (F, t, e) => { if (!t || t.summon || !t.st || (F.idol && F.idol.noDodge)) return false;
     // le Tacle des monstres de haut niveau (même valeur que leur Esquive) réduit la Fuite et l'esquive des héros
     const p = (rowOf(t) === "b" ? E.tact(t.st, "fui") : Math.min(E.TACT.pm[1], (t.st.pm || 0) * E.TACT.pm[0])) * (1 - (e ? E.monDodge(e) : 0) / 100);
-    if (p > 0 && rnd() * 100 < p) { tlog(rowOf(t) === "b" ? "fui" : "pm"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: "Esquive" }); return true; } return false; };
+    if (p > 0 && rnd() * 100 < p) { tlog(rowOf(t) === "b" ? "fui" : "pm"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(t), txt: "Esquive" }); if (E.legDodged) E.legDodged(F, t); return true; } return false; };
   const resists = (h, k) => { const p = E.tact(h.st, k); if (p > 0 && rnd() * 100 < p) { tlog(k); return true; } return false; };
   const monCrit = (e, v) => (e.crit && rnd() * 100 < e.crit ? v * 1.25 + (e.dcri || 0) : v); // idoles Hadibel et Tigel
   const monsterTurn = (S, F, e) => {
@@ -1747,6 +1754,7 @@
     });
     if (!e.alive) { flog(F, `${e.name} est vaincu.`, "ko"); return false; }
     if (E.dofusTurn) E.dofusTurn(S, F, e); // 0.1.13 : Dokoko
+    if (E.legTurn && !E.legTurn(S, F, e)) return false; // 0.1.48 : passifs des légendaires (et ennemis étourdis)
     if (F.idol) { // 0.1.10 : idoles Dokoko, Jiva, Abdinde, Kori
       if (e.side === "c" && !e.summon && F.idol.hpLoss) { const v = dealDamage(F, null, e, e.hpMax * F.idol.hpLoss / 100, null); flog(F, `${e.name} perd ${v} PV (idole).`, "dim"); if (!e.alive) { flog(F, `${e.name} est vaincu.`, "ko"); return false; } }
       if (e.side === "m") { if (F.idol.monRegen && e.hp < e.hpMax) { const g = doHeal(e, e.hpMax * F.idol.monRegen / 100, F); if (g) flog(F, `${e.name} récupère ${g} PV (idole).`, "dim"); } if (F.idol.shieldRegen) e.shield = (e.shield || 0) + Math.round(e.hpMax * F.idol.shieldRegen / 100); }
@@ -1847,7 +1855,7 @@
      st : caractéristiques du héros (équipement, familier, monture, panoplies, parchemins). */
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
-    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") }));
+    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe"), lg: E.legOf ? E.legOf(S, c) : null }));
   /* Prépare le combat : A (équipe 0, l'attaquant) contre B (équipe 1). Renvoie une petite partie de travail S2 dont S2.fight est le combat. */
   E.koliSetup = (A, B, opts = {}) => {
     const chars = [], ents = [];
@@ -1857,7 +1865,7 @@
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
         buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {},
-        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl) });
+        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null });
     }));
     [0, 1].forEach((tm) => { // première ligne : le plus robuste ; Osamodas : +5 % de PV pour son équipe (comme en chasse)
       const T = ents.filter((x) => x.tm === tm); const osa = T.some((x) => x.cls === "osa") ? 1.05 : 1;
@@ -1868,6 +1876,7 @@
     const S2 = { chars, items: {}, settings: { manual: false, focus: "auto" }, stats: { fights: 0, wins: 0 }, fightSeq: 0 };
     const F = S2.fight = { id: 1, label: opts.label || "Kolizéum", ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: false, seq: 0, fx: [], sub: null, dungeonId: null, deaths: [],
       pvp: true, me: opts.me || 0, deco: "dg_sable", glyphs: [null, null], ero: 0, chals: [], cs: { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} }, dmgInit: true };
+    if (E.legFight) E.legFight(S2, F); // 0.1.48 : passifs des légendaires au Kolizéum
     newRound(F);
     return S2;
   };
@@ -1970,7 +1979,7 @@
     const r = castSpell(S, F, e, sp, tgt, c.spells.find((x) => x.id === spellId));
     if (!r.ok) return "Aucune cible valable.";
     A.pa -= g.pa; A.pa += r.extraPa || 0; A.n++; A.casts[sp.id] = (A.casts[sp.id] || 0) + 1; A.t = F.dur;
-    if (g.cd) e.cd[sp.id] = g.cd + 1;
+    if (g.cd) e.cd[sp.id] = (e.lg && E.legCd ? E.legCd(e, g.cd) : g.cd) + 1;
     F.fx.push({ seq: F.seq, k: "cast", s: A.ei, sp: sp.id });
     checkEnd(S);
     if (F.over) { F.await = null; return null; }
@@ -2529,7 +2538,7 @@
     if (k > SI.max + 1) return `Stasis ${k} verrouillée : terminez d'abord la stasis ${SI.max + 1}.`;
     if (!E.dungeonUnlocked(S, did)) return "Donjon verrouillé.";
     if (S.dungeon) return "Vous êtes déjà en donjon.";
-    if (E.expActive && E.expActive(S)) return "L'équipe est en expédition : termine-la ou abandonne-la d'abord (Jouer › Expédition).";
+    if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Jouer › Songe infini).";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
@@ -3008,6 +3017,7 @@
     for (const k of ["cons", "boosts", "trophies", "families", "huntSeen"]) if (!S[k]) S[k] = {};
     if (!S.settings.auto) S.settings.auto = { action: "none", q: 40, keepSets: true };
     { const A = S.settings.auto; if (A.action === "sell") A.action = "break"; if (A.recycle === "sell") A.recycle = "break"; } // 0.1.38 : on brise au lieu de vendre
+    if (E.sgConvert) E.sgConvert(S); // 0.1.48 : l'Expédition devient le Songe infini (Éclats et campement convertis en Bribes de rêve)
     S.migration = report.length ? report : null;
     if (S.v < 3) { const ev = E.events.length; checkHunt(S, Object.keys(S.bestiary).filter((k) => MONSTERS[k])); E.events.length = ev; S.journal = S.journal.filter((j) => !/^Palier /.test(j.txt)); }
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
