@@ -1,6 +1,14 @@
 {
-  "version": "0.1.47.6",
+  "version": "0.1.47.7",
   "versions": [
+    {
+      "v": "0.1.47.7",
+      "name": "Sablier économe",
+      "items": [
+        "Correction : le Sablier de Xélor ne s'use plus quand rien n'avance. Il ne se vide que pendant un combat, un donjon, l'expédition, une récolte, l'atelier ou la forgemagie automatique",
+        "Équipe au repos avec ×2 ou ×3 choisi : le sablier se met en pause (il s'éteint un peu) et la réserve ne bouge pas"
+      ]
+    },
     {
       "v": "0.1.47.6",
       "name": "Notifications polies",
