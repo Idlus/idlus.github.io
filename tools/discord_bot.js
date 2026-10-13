@@ -8,6 +8,7 @@
    node tools/discord_bot.js tweet <adresse du tweet>                 → relaie un tweet d'annonce dans #annonces et invite les testeurs à le partager
    node tools/discord_bot.js podium                                   → publie dans #annonces le podium des donjons de la semaine passée (classements de la version de test)
    node tools/discord_bot.js captures <dossier>                       → publie les images du dossier (png, jpg, webp, gif ; 10 par message) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
+   node tools/discord_bot.js suggestions <idees.json>                 → publie dans le forum #idées les idées envoyées depuis le jeu (un fil par idée, avec son tag) ; écrit dans DISCORD_SORTIE la liste [{ id, url }] des idées publiées
    node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, norm, guildId, channelId, roleId } = require("./discord_api.js");
@@ -187,11 +188,28 @@ async function main() {
       if (!res.ok) throw new Error(`envoi des images → ${res.status} ${(await res.text()).slice(0, 300)}`);
     }
     console.log("Images publiées dans #" + salon + " :", imgs.length);
+  } else if (cmd === "suggestions") {
+    // 0.1.36 : idées envoyées depuis le jeu (table ideas, lue par le workflow « Suggestions vers Discord »)
+    const list = JSON.parse(fs.readFileSync(file, "utf8")); const out = process.env.DISCORD_SORTIE; const done = [];
+    const post = (x) => ({ name: x.title.slice(0, 100), applied: x.tag,
+      content: `${x.body}\n\n— proposé dans le jeu par **${String(x.pseudo || "Joueur").replace(/[*_`~|>]/g, "")}**${x.guest ? " (sans compte)" : ""}${x.info ? ` · ${x.info}` : ""}\nVotez avec 👍 si vous voulez la voir dans le jeu !` });
+    if (DRY) { list.forEach((x) => { const p = post(x); console.log(`[${p.applied}] ${p.name}\n${p.content}\n`); }); return; }
+    if (!list.length) return console.log("Aucune idée en attente.");
+    const gid = await guildId(); const forum = await channelId(gid, "idées");
+    const tags = (await api("GET", `/channels/${forum}`)).available_tags || [];
+    try {
+      for (const x of list) {
+        const p = post(x); const tag = tags.find((t) => norm(t.name) === norm(p.applied));
+        const th = await api("POST", `/channels/${forum}/threads`, { name: p.name, applied_tags: tag ? [tag.id] : [], message: { content: p.content.slice(0, 2000), allowed_mentions: { parse: [] } } });
+        done.push({ id: x.id, url: `https://discord.com/channels/${gid}/${th.id}` }); await new Promise((r) => setTimeout(r, 1200));
+      }
+    } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
+    console.log("Idées publiées dans #idées :", done.length);
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json]"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json] | suggestions <idees.json>"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });

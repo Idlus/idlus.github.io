@@ -1,6 +1,15 @@
 {
-  "version": "0.1.35.3",
+  "version": "0.1.36",
   "versions": [
+    {
+      "v": "0.1.36",
+      "name": "Boîte à idées",
+      "items": [
+        "Nouvelle page Communauté › Suggestions : choisissez ce que votre idée concerne (Combat, Équipement, Contenu, Interface), donnez-lui un titre et décrivez-la. Pas besoin de compte ni de Discord",
+        "Chaque idée est publiée automatiquement dans le forum Idées du Discord, où tout le monde peut voter avec 👍 ; les plus votées sont regardées chaque semaine",
+        "Aussi depuis Options › Aide, à côté de « Signaler un bug ». Une idée toutes les 10 minutes"
+      ]
+    },
     {
       "v": "0.1.35.3",
       "name": "Chat refermable",
