@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.47.3 « Bon élément »
+`itemScore` (js/ui.js) : stats élémentaires et dommages d'un autre élément que celui du héros pondérés 0,1 (au lieu de 0,5 et 0,2) ; `buildMain` prend, sans répartition auto élémentaire, la stat élémentaire la plus investie (`c.alloc`), sinon celle de la classe.
+
 ## 0.1.47.2 « Équiper au mieux »
 Bouton « Équiper au mieux (n) » pour un héros seul en haut de `charEquipView` (action `teamfix`/`gear` → `equipBest`), n = emplacements où `slotUpgrade` est vrai.
 
