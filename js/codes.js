@@ -60,10 +60,24 @@
   const F = { code: "", rows: [{ t: "k", n: "", q: "" }], max: "", end: "", msg: "", acc: false, ann: false, pub: null, users: null };
   const consByName = () => { const o = {}; for (const id in D.CONSUMABLES) o[D.CONSUMABLES[id].name.toLowerCase()] = id; return o; };
   const itemByName = () => { const o = {}; for (const id in D.ITEMS) { const k = D.ITEMS[id].name.toLowerCase(); if (!o[k]) o[k] = id; } return o; };
-  let lists = null;
-  const datalists = () => lists || (lists = `<datalist id="gcL-r">${Object.keys(D.RES).sort().map((n) => `<option value="${h(n)}">`).join("")}</datalist>`
-    + `<datalist id="gcL-c">${Object.values(D.CONSUMABLES).map((c) => `<option value="${h(c.name)}">`).join("")}</datalist>`
-    + `<datalist id="gcL-i">${[...new Set(Object.keys(D.ITEMS).filter((id) => !/^trophee_/.test(id)).map((id) => D.ITEMS[id].name))].sort().map((n) => `<option value="${h(n)}">`).join("")}</datalist>`);
+  /* 1.0.4.8 : liste de choix maison (la liste du navigateur se refermait dès que la page bougeait un peu) */
+  const NAMES = {}; const fold = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const names = (k) => NAMES[k] || (NAMES[k] = k === "r" ? Object.keys(D.RES).sort() : k === "c" ? Object.values(D.CONSUMABLES).map((c) => c.name) : [...new Set(Object.keys(D.ITEMS).filter((id) => !/^trophee_/.test(id)).map((id) => D.ITEMS[id].name))].sort());
+  const SUG = { inp: null, list: [], on: -1 };
+  function sugShow(inp) {
+    const box = inp.parentNode.querySelector(".gc-sug"); if (!box) return;
+    const q = fold(inp.value.trim()); const all = names(inp.dataset.k);
+    const L = q ? all.filter((n) => fold(n).startsWith(q)).concat(all.filter((n) => !fold(n).startsWith(q) && fold(n).includes(q))) : all;
+    SUG.inp = inp; SUG.list = L.slice(0, 40); SUG.on = Math.min(SUG.on, SUG.list.length - 1);
+    if (!SUG.list.length || (SUG.list.length === 1 && fold(SUG.list[0]) === q)) { box.hidden = true; return; }
+    box.innerHTML = SUG.list.map((n, j) => `<button type="button" class="gc-opt${j === SUG.on ? " on" : ""}" data-act="gc-pick" data-i="${inp.dataset.i}" data-v="${h(n)}" tabindex="-1">${h(n)}</button>`).join("") + (L.length > 40 ? `<span class="xs muted">Tape la suite du nom pour voir les ${L.length - 40} autres.</span>` : "");
+    box.hidden = false; const o = box.querySelector(".gc-opt.on"); if (o) o.scrollIntoView({ block: "nearest" });
+  }
+  function sugHide() { document.querySelectorAll(".gc-sug").forEach((b) => (b.hidden = true)); SUG.inp = null; SUG.on = -1; }
+  function pick(i, v) {
+    const inp = $(`#gcN${i}`); if (!inp) return; inp.value = v; sugHide(); readForm(); preview();
+    const q = $(`#gcQ${i}`); if (q) { q.focus(); q.select(); }
+  }
 
   /* Relit le formulaire avant chaque nouvel affichage, pour ne rien perdre de ce qui est tapé. */
   function readForm() {
@@ -100,7 +114,7 @@
     else if (r.t === "s") q = `<input type="number" id="gcQ${i}" min="1" max="24" value="${h(r.q)}" placeholder="3" aria-label="Heures de sablier" style="grid-column:span 2">`;
     else if (r.t === "t") mid = `<input type="text" id="gcN${i}" maxlength="40" value="${h(r.n)}" placeholder="Citrouille d'Amakna" aria-label="Titre" style="grid-column:span 2">`;
     else if (r.t === "o") mid = `<select id="gcN${i}" aria-label="Ornement" style="grid-column:span 2"><option value="">Choisir…</option>${Object.keys(E.ORN).map((k) => `<option value="${k}" ${k === r.n ? "selected" : ""}>${h(E.ORN[k].name(null))}</option>`).join("")}</select>`;
-    else { mid = `<input type="text" id="gcN${i}" list="gcL-${r.t}" value="${h(r.n)}" placeholder="${r.t === "r" ? "Blé" : r.t === "c" ? "Coffre" : "Nom de l'objet"}" aria-label="Nom">`; q = qty(r.t === "i" ? "1 (max 10)" : "1"); }
+    else { mid = `<span class="gc-ac"><input type="text" id="gcN${i}" data-gc="name" data-k="${r.t}" data-i="${i}" autocomplete="off" value="${h(r.n)}" placeholder="${r.t === "r" ? "Blé" : r.t === "c" ? "Coffre" : "Nom de l'objet"}" aria-label="Nom"><span class="gc-sug" hidden></span></span>`; q = qty(r.t === "i" ? "1 (max 10)" : "1"); }
     return `<div class="gc-rw">${sel}${mid}${q}<button class="btn sm" data-act="gc-del" data-i="${i}" aria-label="Retirer" ${F.rows.length < 2 ? "disabled" : ""}>×</button></div>`;
   }
 
@@ -117,7 +131,7 @@
       <label class="row small"><input type="checkbox" id="gcAnn" ${F.ann ? "checked" : ""}> Annoncer le code dans le chat du jeu</label>
       <div class="row"><button class="btn primary" data-act="gc-create">Créer le code</button><button class="btn" data-act="gc-pub" data-tip="Le jeu public n'a pas encore de serveur : il garde les anciens codes IDLUS-…">Code pour le jeu public</button></div>
       ${F.pub ? `<div class="gc-pub"><b class="small">Code pour le jeu public</b><span class="xs muted">Même contenu, vérifié par le jeu lui-même. Il marche aussi sur la bêta. Pas de limite d'utilisations.</span><textarea id="gcPubTxt" readonly>${h(F.pub)}</textarea><div><button class="btn sm" data-act="gc-copy" data-v="pub">Copier</button></div></div>` : ""}
-      ${datalists()}</div>`;
+      </div>`;
     const preview = `<div class="box"><h2>Ce que verra le joueur</h2><div class="gc-card"><span class="gc-code">${h(c || "TONCODE")}</span>
       <span>${pre.reward ? h(E.giftText(pre.reward)) : `<span class="muted">${h(pre.err)}</span>`}</span>${F.msg ? `<span class="muted small">${h(F.msg)}</span>` : ""}</div>
       ${OK.test(c) ? `<span class="xs muted">Lien à partager : <b>${h(link(c))}</b></span>` : ""}</div>`;
@@ -132,7 +146,7 @@
     return `<div class="two">${left}<div class="stack" style="gap:12px">${preview}<div class="box"><h2>Codes créés</h2>${rows}</div></div></div>`;
   }
   const link = (c) => `${location.origin}${location.pathname}?code=${c}`;
-  const repaint = () => { const b = $('[data-act="adm-tab"][data-v="codes"]'); if (b) b.click(); };
+  const repaint = () => { if (window.CHAT && window.CHAT.repaintAdmin) window.CHAT.repaintAdmin(); }; // 1.0.4.8 : redessine sans recharger depuis le serveur
   const reload = () => { const b = $('[data-act="adm-reload"]'); if (b) b.click(); };
   const copy = (txt, ok) => { const done = () => X().toast(ok); try { navigator.clipboard.writeText(txt).then(done, () => X().toast(txt)); } catch (e) { X().toast(txt); } };
 
@@ -140,6 +154,7 @@
     const t = ev.target.closest("[data-act]"); if (!t || !/^gc-/.test(t.dataset.act)) return;
     const a = t.dataset.act, d = t.dataset; readForm();
     switch (a) {
+      case "gc-pick": pick(+d.i, d.v); return;
       case "gc-add": F.rows.push({ t: "c", n: "", q: "1" }); repaint(); return;
       case "gc-del": F.rows.splice(+d.i, 1); if (!F.rows.length) F.rows.push({ t: "k", n: "", q: "" }); repaint(); return;
       case "gc-rand": { const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; for (let i = 0; i < 10; i++) s += A[Math.floor(Math.random() * A.length)]; F.code = s; repaint(); return; }
@@ -170,11 +185,24 @@
   });
   /* Changer le type d'une récompense redessine la ligne ; taper ailleurs met à jour l'aperçu. */
   document.addEventListener("change", (ev) => { if (ev.target && ev.target.dataset && ev.target.dataset.gc === "type") { readForm(); const r = F.rows[+ev.target.dataset.i]; r.n = ""; r.q = r.t === "k" ? "" : "1"; repaint(); } });
-  let tm = null;
-  document.addEventListener("input", (ev) => { if (!ev.target || !ev.target.closest || !ev.target.closest(".gc-form")) return; clearTimeout(tm); tm = setTimeout(() => {
-    readForm(); const p = buildReward(); const c = norm(F.code); const card = $(".gc-card");
+  const preview = () => {
+    const p = buildReward(); const c = norm(F.code); const card = $(".gc-card");
     if (card) card.innerHTML = `<span class="gc-code">${h(c || "TONCODE")}</span><span>${p.reward ? h(E.giftText(p.reward)) : `<span class="muted">${h(p.err)}</span>`}</span>${F.msg ? `<span class="muted small">${h(F.msg)}</span>` : ""}`;
-  }, 250); });
+  };
+  let tm = null;
+  document.addEventListener("input", (ev) => { if (!ev.target || !ev.target.closest || !ev.target.closest(".gc-form")) return;
+    if (ev.target.dataset.gc === "name") { SUG.on = -1; sugShow(ev.target); }
+    clearTimeout(tm); tm = setTimeout(() => { readForm(); preview(); }, 250); });
+  document.addEventListener("focusin", (ev) => { if (ev.target && ev.target.dataset && ev.target.dataset.gc === "name") sugShow(ev.target); });
+  document.addEventListener("focusout", (ev) => { if (ev.target && ev.target.dataset && ev.target.dataset.gc === "name") setTimeout(() => { if (document.activeElement !== SUG.inp) sugHide(); }, 150); });
+  document.addEventListener("mousedown", (ev) => { if (ev.target.closest && ev.target.closest(".gc-sug")) ev.preventDefault(); }); // le champ garde la main pendant le choix
+  document.addEventListener("keydown", (ev) => {
+    const t = ev.target; if (!t || !t.dataset || t.dataset.gc !== "name") return;
+    const box = t.parentNode.querySelector(".gc-sug"); const open = box && !box.hidden;
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); if (!open) { sugShow(t); return; } const n = SUG.list.length; SUG.on = ev.key === "ArrowDown" ? (SUG.on + 1) % n : (SUG.on - 1 + n) % n; sugShow(t); }
+    else if (ev.key === "Enter" && open && SUG.on >= 0) { ev.preventDefault(); pick(+t.dataset.i, SUG.list[SUG.on]); }
+    else if (ev.key === "Escape" && open) { ev.preventDefault(); sugHide(); }
+  });
 
   window.GIFTS = { redeem, adminHtml, readForm };
 })();

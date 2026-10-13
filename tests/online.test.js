@@ -343,6 +343,13 @@ const MOCK = () => {
     m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_pin" && x[1].p_chs === "g,c")) fail("panel admin : message épinglé non envoyé");
     await page.evaluate(() => { window.CHAT.state.tab = "c"; window.CHAT.repaint(); });
     if (!(await page.$("#chat .ch-pin")) || !/Nouveau texte épinglé/.test(await page.textContent("#chat .ch-pin"))) fail("chat : nouveau message épinglé absent après le changement");
+    // 1.0.5.2 : codes cadeaux, la liste de choix reste ouverte quand le panel se redessine
+    await page.click('.adm [data-act="adm-tab"][data-v="codes"]'); await page.waitForSelector("#gcCode", { timeout: 5000 });
+    await page.click('[data-act="gc-add"]'); await page.waitForSelector("#gcN1"); await page.click("#gcN1"); await page.keyboard.type("coffr"); await page.waitForTimeout(300);
+    await page.evaluate(() => window.CHAT.repaintAdmin()); await page.waitForTimeout(200);
+    if (!(await page.evaluate(() => document.activeElement.id === "gcN1" && document.activeElement.value === "coffr" && document.querySelectorAll(".gc-sug:not([hidden]) .gc-opt").length > 0))) fail("codes cadeaux : la liste de choix se referme au redessin");
+    await page.click(".gc-sug .gc-opt"); await page.waitForTimeout(300);
+    if (!/^Coffre/.test(await page.inputValue("#gcN1")) || !/Coffre/.test(await page.textContent(".gc-card"))) fail("codes cadeaux : choix dans la liste non pris");
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
     // 0.1.52.1 : fiches joueurs (réservées à l'admin), avec la partie lue par le jeu
     await page.click('.adm [data-act="adm-tab"][data-v="fiches"]'); await page.waitForSelector('.adm [data-act="fj-sel"]', { timeout: 5000 });

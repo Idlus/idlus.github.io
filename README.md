@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.5.2 « Codes cadeaux : choix qui restent ouverts »
+Retour de Mathis (13/10/2026 : « les choix se referment souvent »). js/codes.js : la `<datalist>` du navigateur (refermée dès que la mise en page bougeait) est remplacée par une liste maison `.gc-sug` (recherche sans accents, débuts de nom d'abord, 40 résultats, flèches/Entrée/Échap, `mousedown` bloqué pour garder le focus, puis focus sur la quantité). Les actions du formulaire redessinent via `CHAT.repaintAdmin()` sans recharger le serveur. js/chat.js : `keepFocus()` remet le focus et le curseur sur le champ actif après chaque redessin du panel. css/style.css : `.gc-form` en conteneur, lignes repliées sous 440 px.
+
 ## 1.0.5.1 « Monstres oubliés et Vulkania »
 Suite du répertoire du contenu (Mathis, 13/10/2026 : « 1A 2A 6A »). tools/build_data.py : zone `vulkania` (8 sous-zones DofusDB 763-770, `requires` Bouftou Royal), sous-zones `ama_cryptes_entree` (7), `can_rives_lac` (56), `oto_tourbiere_fond` (457) ; `EXTRA_SUB` force dans une sous-zone un monstre hors fenêtre de niveau (Trooll Apprivoisé, Vampire Dupyr, Coffre Sombre, Wabbit GM, Dopeul Dark Vlad, Méga Craqueleur des plaines, Gardienne des Égouts, Sousouris Grise) ; `DROP_FIX` donne 1 % aux objets du Chef Bwork dont DofusDB met le taux à 0 (sur les 4 Bworks des Pics de Cania). Fusion additive dans js/gamedata.js (clés nouvelles seulement). js/archis.js : Vulkania dans le palier 3 de l'Ocre (304 archimonstres, 15 zones ; tests/fight.test.js). `E.HUNT_EASE` réglé par simulation (`vul_nehr` 0,9, le reste au niveau des zones voisines). js/armes.js et js/koli.js regénérés (+5 armes).
 

@@ -350,10 +350,18 @@
   function renderAdmin(main) {
     if (!C.role) { main.innerHTML = `<section class="panel"><div class="pad empty">Le panel admin est réservé à l'équipe d'Idlus.</div></section>`; return; }
     if (window.GIFTS) window.GIFTS.readForm(); // garde ce qui est tapé dans « Codes cadeaux »
-    main.innerHTML = admHtml(true);
-    admLoad().then(() => { if (window.DX.ui.tab === "admin") { const m = $("#main"); if (m) m.innerHTML = admHtml(false); } });
+    keepFocus(() => (main.innerHTML = admHtml(true)));
+    admLoad().then(() => { if (window.DX.ui.tab === "admin") { const m = $("#main"); if (window.GIFTS) window.GIFTS.readForm(); if (m) keepFocus(() => (m.innerHTML = admHtml(false))); } });
   }
-  const repaintAdm = () => { const m = $("#main"); if (m && window.DX.ui.tab === "admin") { if (window.GIFTS) window.GIFTS.readForm(); m.innerHTML = admHtml(false); } };
+  /* 1.0.4.8 : le champ en cours (et le curseur) reste actif quand le panel se redessine */
+  function keepFocus(fn) {
+    const a = document.activeElement; const id = a && a.id && a.closest && a.closest("#main") ? a.id : "";
+    let s0 = null, s1 = null; try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch (e) {}
+    fn();
+    const b = id && document.getElementById(id); if (!b || b === document.activeElement) return;
+    b.focus({ preventScroll: true }); try { if (s0 !== null && s0 !== undefined) b.setSelectionRange(s0, s1); } catch (e) {}
+  }
+  const repaintAdm = () => { const m = $("#main"); if (m && window.DX.ui.tab === "admin") { if (window.GIFTS) window.GIFTS.readForm(); keepFocus(() => (m.innerHTML = admHtml(false))); } };
   function admHtml(loading) {
     const tabs = `<div class="atabs">${ATABS().map(([k, n, c]) => `<button class="${k === A.tab ? "on" : ""}" data-act="adm-tab" data-v="${k}">${n}${c ? ` <span class="n">${c}</span>` : ""}</button>`).join("")}</div>`;
     const body = loading || !A.ov ? `<div class="box"><div class="empty">Chargement…</div></div>` : admBody();

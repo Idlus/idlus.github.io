@@ -1,6 +1,16 @@
 {
-  "version": "1.0.5.1",
+  "version": "1.0.5.2",
   "versions": [
+    {
+      "v": "1.0.5.2",
+      "name": "Codes cadeaux : choix qui restent ouverts",
+      "items": [
+        "Panel admin › Codes cadeaux : la liste des ressources, consommables et objets proposés pendant la frappe ne se referme plus toute seule. Flèches et Entrée pour choisir au clavier, Échap pour fermer",
+        "Après un choix, le curseur passe directement à la quantité",
+        "Ajouter, retirer ou changer le type d'une récompense ne recharge plus tout l'onglet, et le champ en cours garde la main quand le panel se redessine",
+        "Formulaire plus lisible quand le chat est ouvert à côté"
+      ]
+    },
     {
       "v": "1.0.5.1",
       "name": "Monstres oubliés et Vulkania",

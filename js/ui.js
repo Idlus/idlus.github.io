@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.5.1";
+const GAME_VERSION = "1.0.5.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.5.2", name: "Codes cadeaux : choix qui restent ouverts", items: [
+    "Panel admin › Codes cadeaux : la liste des ressources, consommables et objets proposés pendant la frappe ne se referme plus toute seule. Flèches et Entrée pour choisir au clavier, Échap pour fermer",
+    "Après un choix, le curseur passe directement à la quantité",
+    "Ajouter, retirer ou changer le type d'une récompense ne recharge plus tout l'onglet, et le champ en cours garde la main quand le panel se redessine",
+    "Formulaire plus lisible quand le chat est ouvert à côté",
+  ] },
   { v: "1.0.5.1", name: "Monstres oubliés et Vulkania", items: [
     "Archipel de Vulkania : nouvelle région permanente, ouverte après le Bouftou Royal comme l'île des Wabbits. 4 forêts et 4 cratères du niveau 20 au 175, avec les Krokilles juvéniles, novices, matures et vénérables, Draguisla Bonita et 20 archimonstres",
     "6 panoplies de Vulkania à trouver sur les Krokilles : Vulkain, Grozilla, Padgref, Magmatique, Quartzésienne et Ali Grothor",
