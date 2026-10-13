@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.49";
+const GAME_VERSION = "0.1.49.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.49.1", name: "Défi réagencé", items: [
+    "Page Défi du jour réagencée : une grande carte en haut avec le donjon sur son décor, la stasis, et un seul gros bouton « Lancer le défi » (ou « Battre mon record »), plus « Regarder le combat » et le temps avant le prochain défi",
+    "Les deux modificateurs du jour sont expliqués en clair dans la carte, plus besoin de survoler leur nom",
+    "Les paliers (Découverte, Aventure, Légende) passent dans un petit sélecteur au-dessus de la carte, affiché seulement si tu peux en jouer plusieurs",
+    "Trois tuiles sous la carte : ta série (avec le prochain palier de récompense), la Bourse du jour et ton équipe (portraits et bouton « Changer »)",
+    "Dessous, tes essais du palier et le classement ; « Comment ça marche » est replié et s'ouvre d'un clic. La série et les boutons en double ont disparu" ] },
   { v: "0.1.49", name: "Boss des mondes", items: [
     "Nouveau : le Boss des mondes (Jouer › Boss des mondes). Tout le serveur frappe le même boss, avec une barre de PV commune. Quand elle tombe à zéro, le boss suivant arrive aussitôt",
     "Gargandyas ouvre la rotation : le Titan enchaîné par les Osamodas a brisé son collier. Faible à l'Air (+50 %), il résiste à la Terre (−50 %). Phase 2 sous 66 % (Cri Primitif, il frappe 30 % plus fort), phase 3 sous 33 % (Gargameha, enragé, il subit 25 % de plus)",
@@ -5254,24 +5260,44 @@ function defiLine() {
 }
 function renderDefi() {
   if (!E.team(S).length) { $("#main").innerHTML = `<section class="panel"><div class="empty">Il faut au moins un héros dans l'équipe pour relever le défi du jour.</div></section>`; return; }
-  const tid = defiTierCur(); const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S);
-  const tries = st.tries.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span class="pill">${h(E.defiTier(x.tier).name)}</span><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("");
-  const goal = (n, lab, ok) => `<div class="df-goal ${ok ? "ok" : ""}"><div class="row between"><span class="small"><b>${n} jours de suite</b> · ${lab}</span><span class="xs num">${ok ? "✓ obtenu" : `${Math.min(streak, n)}/${n}`}</span></div><div class="bar"><i style="width:${ok ? 100 : pct(Math.min(streak, n), n)}%"></i></div></div>`;
-  const rules = `<div class="panel"><div class="phead"><h2>${IC("quetes")} Comment ça marche</h2></div><div class="pad"><ul class="dglist small">
-      <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
-      <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts ou de composition pour faire mieux.</li>
-      <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
-      <li>La première victoire du jour donne la Bourse du défi et fait avancer ta série.</li></ul></div></div>`;
-  $("#main").innerHTML = `${defiBanner()}
-  <section class="grid2" style="margin-top:14px">
-    <div class="panel"><div class="phead"><h2>${IC("coffre")} Ta série</h2><button class="btn sm" data-tab="team">${IC("dofus")} Changer d'équipe</button></div>
-      <div class="pad stack" style="gap:10px"><div class="row between">${defiDots()}<span class="small"><b class="num">${streak} jour${streak > 1 ? "s" : ""}</b> <span class="muted">· meilleure : ${ss.best || 0}</span></span></div>
-        <div class="small">${st.chest ? "✓ Bourse du défi reçue. Reviens demain pour continuer la série." : `${chestImg("bourse_defi")} Bourse du défi à la première victoire : <b>${defiReward(tid)}</b>.`}</div>
-        ${goal(7, `titre « ${h(E.DEFI_TITLE)} » et Coffre en or`, (ss.best || 0) >= 7)}${goal(30, "ornement « Sablier du défi » et Coffre des Douze", (ss.best || 0) >= 30)}
-        <b class="small">Tes essais du jour</b>${tries || `<p class="note">Aucun essai aujourd'hui. Seul ton meilleur score compte.</p>`}</div></div>
-    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(E.defiTier(tid).name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : rules}
+  const tid = defiTierCur(); const def = E.defi(tid); const dg = DUNGEONS[def.did]; const T = E.defiTier(tid);
+  const st = E.defiState(S); const ss = S.defiStreak || {}; const streak = E.defiStreakNow(S); const best = st.best[tid];
+  const mine = st.tries.filter((x) => x.tier === tid);
+  const okTiers = E.DEFI_TIERS.filter((x) => E.defiTierOk(S, x.id));
+  const tiers = okTiers.length > 1 ? `<span class="seg df-tiers">${okTiers.map((x) => `<button data-act="sm-dtier" data-v="${x.id}" aria-pressed="${tid === x.id}">${h(x.name)} <small>${x.lo}-${x.hi}</small></button>`).join("")}</span>` : "";
+  const next = streak < 7 ? [7, `titre « ${h(E.DEFI_TITLE)} » et Coffre en or`] : streak < 30 ? [30, "ornement « Sablier du défi » et Coffre des Douze"] : null;
+  const team = E.team(S);
+  const tries = mine.map((x) => `<div class="df-try ${x.win ? "" : "lose"}"><span>Essai ${x.n}</span><span class="xs muted grow">${x.team.map(h).join(", ")}</span><b>${x.win ? `${x.turns} tours` : "défaite"}</b></div>`).join("");
+  $("#main").innerHTML = `<section class="dfx">${tiers ? `<div class="row between dfx-top"><span class="xs muted">Palier</span>${tiers}</div>` : ""}
+    <div class="dfx-hero"><div class="scene">${sceneSVG(dgDeco(def.did), 260, "defi" + def.day)}</div>
+      <div class="dfx-in">
+        <div class="dfx-boss">${im(imgM(dg.boss), "", MONSTERS[dg.boss].name)}</div>
+        <div class="dfx-info"><span class="wk">${G("target")} Défi du jour · ${h(E.defiDate(def.day))}</span>
+          <h1>${h(dg.name)}</h1>
+          <span class="row dfx-tags"><span class="pill">Stasis ${def.k}</span><span class="xs">niv. ${dg.lvl} · palier ${h(T.name)} (${T.lo}-${T.hi})</span></span>
+          <div class="dfx-mods">${def.mods.map((m) => `<div><b>${h(E.STASIS_MODS[m].name)}</b><span>${h(E.STASIS_MODS[m].desc)}</span></div>`).join("")}</div></div>
+        <div class="dfx-act"><div class="dfx-rec">${best ? `<b class="num">${best.turns}</b><span>tours · ton record du jour</span>` : `<span>${mine.length ? `${mine.length} essai${mine.length > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`}</div>
+          <button class="btn primary big" data-act="sm-dplay" data-v="${tid}">${best ? "Battre mon record" : "Lancer le défi"}</button>
+          <button class="btn sm" data-act="sm-watch" data-v="${tid}">${G("target")} Regarder le combat</button>
+          <span class="xs muted">nouveau défi dans <b>${defiLeftTxt()}</b></span></div>
+      </div></div>
   </section>
-  ${ON ? `<section style="margin-top:14px">${rules}</section>` : ""}`;
+  <section class="dfx-tiles">
+    <div class="dfx-tile"><span class="lab">Ta série</span><div class="row between"><b class="big num">${streak} jour${streak > 1 ? "s" : ""}</b><span class="xs muted">meilleure : ${ss.best || 0}</span></div>${defiDots()}
+      ${next ? `<div class="xs">Prochain palier : <b>${next[0]} jours</b>, ${next[1]}</div><div class="bar"><i style="width:${pct(streak, next[0])}%"></i></div>` : `<div class="xs">Toutes les récompenses de série obtenues !</div>`}</div>
+    <div class="dfx-tile"><span class="lab">Bourse du jour</span><div class="row">${chestImg("bourse_defi", "lg")}<span class="small">${st.chest ? "<b>✓ Reçue.</b> Reviens demain pour continuer la série." : `<b>${defiReward(tid)}</b><br><span class="xs muted">à la première victoire du jour</span>`}</span></div></div>
+    <div class="dfx-tile"><span class="lab">Ton équipe</span><div class="dfx-team">${team.map((c) => `<span data-tip="${h(c.name)} · niv. ${c.lvl}">${head(c, true)}</span>`).join("")}</div>
+      <div class="row between"><span class="xs muted">Même hasard à chaque essai : change l'équipe pour faire mieux.</span><button class="btn sm" data-tab="team">Changer</button></div></div>
+  </section>
+  <section class="grid2 dfx-low" style="margin-top:14px">
+    <div class="panel"><div class="phead"><h2>Tes essais · ${h(T.name)}</h2></div><div class="pad stack" style="gap:6px">${tries || `<p class="note">Aucun essai aujourd'hui. Essais illimités : seul ton meilleur score compte.</p>`}</div></div>
+    ${ON ? `<div class="panel"><div class="phead"><h2>${IC("trophee")} Classement · ${h(T.name)}</h2><button class="btn sm" data-act="sm-dboard" data-v="${tid}">Tout voir</button></div><div class="pad" id="dfLb"><p class="note">Chargement…</p></div></div>` : ""}
+  </section>
+  <details class="panel dfx-rules"><summary>${IC("quetes")} Comment ça marche</summary><ul class="dglist small">
+    <li>Chaque jour à minuit (heure de Paris), un nouveau donjon, une stasis et deux modificateurs par palier.</li>
+    <li>Le hasard est le même pour tout le monde : réessayer sans rien changer donne le même combat.</li>
+    <li>Le moins de tours gagne, puis le plus de PV restants. Essais illimités.</li>
+    <li>La première victoire du jour donne la Bourse du défi et fait avancer ta série.</li></ul></details>`;
   if (ON) defiLbFill(tid);
 }
 async function defiLbFill(tid) {
