@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.5.3 « Accès au panel de test »
+Version de test : le panel de test se rouvre pour le compte admin (rôle vérifié auprès du serveur avec la connexion du jeu public), et un lien « Accès testeur » passe par le jeu public pour reconnaître le compte puis revient sur la bêta.
+
 ## 1.0.5.2 « Codes cadeaux : choix qui restent ouverts »
 Retour de Mathis (13/10/2026 : « les choix se referment souvent »). js/codes.js : la `<datalist>` du navigateur (refermée dès que la mise en page bougeait) est remplacée par une liste maison `.gc-sug` (recherche sans accents, débuts de nom d'abord, 40 résultats, flèches/Entrée/Échap, `mousedown` bloqué pour garder le focus, puis focus sur la quantité). Les actions du formulaire redessinent via `CHAT.repaintAdmin()` sans recharger le serveur. js/chat.js : `keepFocus()` remet le focus et le curseur sur le champ actif après chaque redessin du panel. css/style.css : `.gc-form` en conteneur, lignes repliées sous 440 px.
 

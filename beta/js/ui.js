@@ -6812,12 +6812,29 @@ window.addEventListener("pagehide", () => saveNow());
 
 /* Bêta sans serveur : au premier chargement de la session, choisir entre tester hors ligne ou jouer en ligne (jeu public). */
 function betaGate() {
-  try { if (sessionStorage.getItem("idlus-beta-choix")) return bootGame(); } catch (e) {}
+  try { if (sessionStorage.getItem("idlus-beta-choix")) { bootGame(); checkAdmin(); return; } } catch (e) {}
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   $("#main").innerHTML = `<section class="start stack betachoix"><div class="logo">idlus</div><p class="muted" style="text-align:center;margin:0">Version de test</p>
     <div class="panel"><div class="pad stack"><b>Tester hors ligne</b><span class="small muted">Ta partie de test, les nouveautés pas encore publiées et le panel de test. Rien n'est envoyé en ligne.</span><div><button class="btn primary" id="betaOff">Tester hors ligne</button></div></div></div>
-    <div class="panel"><div class="pad stack"><b>Jouer en ligne</b><span class="small muted">Le jeu public, avec ton compte, le chat, l'Hôtel de vente, les guildes et les classements.</span><div><a class="btn" href="../">Jouer en ligne</a></div></div></div></section>`;
+    <div class="panel"><div class="pad stack"><b>Jouer en ligne</b><span class="small muted">Le jeu public, avec ton compte, le chat, l'Hôtel de vente, les guildes et les classements.</span><div><a class="btn" href="../">Jouer en ligne</a></div></div></div>
+    <p class="small muted" id="betaTest" style="text-align:center;margin:0">${testerOk() ? "Panel de test débloqué sur ce navigateur." : `<a href="../?testeur=1" style="color:inherit">Accès testeur</a>`}</p></section>`;
   $("#betaOff").addEventListener("click", () => { try { sessionStorage.setItem("idlus-beta-choix", "1"); } catch (e) {} bootGame(); });
+  checkAdmin().then((ok) => { const el = $("#betaTest"); if (ok && el) el.textContent = "Panel de test débloqué sur ce navigateur."; });
+}
+/* 1.0.5.3 : la bêta n'a pas de serveur de jeu, mais si le compte admin est connecté au jeu public dans ce navigateur,
+   on demande son rôle au serveur avec cette connexion (lecture seule) pour débloquer le panel de test. Sinon le lien
+   « Accès testeur » passe par le jeu public (connexion admin) puis revient ici. */
+async function checkAdmin() {
+  try {
+    if (localStorage.getItem("idlus-testeur") === "1") return true;
+    const tok = JSON.parse(localStorage.getItem("sb-bolbuxuxydfslwpfbfff-auth-token") || "null");
+    if (!tok || !tok.access_token) return false;
+    const key = "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H";
+    const r = await fetch("https://bolbuxuxydfslwpfbfff.supabase.co/rest/v1/rpc/my_role", { method: "POST", headers: { apikey: key, Authorization: "Bearer " + tok.access_token, "Content-Type": "application/json" }, body: "{}" });
+    if (!r.ok || (await r.json()) !== "admin") return false;
+    localStorage.setItem("idlus-testeur", "1"); if (booted) render();
+    return true;
+  } catch (e) { return false; }
 }
 function start() { if (ON) onBoot(); else if (BETA) betaGate(); else bootGame(); }
 function bootGame(pushNow) {

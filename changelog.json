@@ -1,6 +1,14 @@
 {
-  "version": "1.0.5.2",
+  "version": "1.0.5.3",
   "versions": [
+    {
+      "v": "1.0.5.3",
+      "name": "Accès au panel de test",
+      "items": [
+        "Version de test : le panel de test s'ouvre de nouveau pour le compte admin. La bêta vérifie le rôle auprès du serveur si le compte admin est connecté au jeu public sur le même navigateur",
+        "Nouveau lien discret « Accès testeur » sur l'écran d'accueil de la version de test : il passe par le jeu public pour reconnaître le compte admin, puis ramène sur la bêta"
+      ]
+    },
     {
       "v": "1.0.5.2",
       "name": "Codes cadeaux : choix qui restent ouverts",

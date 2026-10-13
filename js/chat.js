@@ -41,6 +41,7 @@
     const [g, p, ign, role, me, c, v, pin] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin()]);
     C.pin = pin; C.g = g || []; C.p = p || []; C.c = c || []; C.v = v || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
+    if (role === "admin" && /[?&]testeur=1/.test(location.search)) { location.replace("beta/"); return; } // 1.0.5.3 : lien « Accès testeur » de la bêta, retour direct vers la bêta une fois le compte admin reconnu
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     if (C.role) X().renderStatus();
     paint();
