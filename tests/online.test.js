@@ -119,6 +119,7 @@ const MOCK = () => {
       if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
         L.push({ id: L.length + 1, user_id: u.id, t: Date.now(), pseudo: me && me.pseudo, info: a.p_info, tag: a.p_tag, title: a.p_title, body: a.p_body, hidden: false, url: null, created_at: new Date().toISOString(), guest: false }); put(d); return { data: null, error: null }; }
       if (name === "adm_ideas") return { data: (d.ideas || []).slice().reverse(), error: null };
+      if (name === "adm_pin") { log(); d.views = d.views || {}; d.views.chat_settings = [{ id: 1, pin_body: a.p_body, pin_chs: a.p_chs, pin_at: ts() }]; put(d); return { data: null, error: null }; } // 0.1.50.2
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
     },
@@ -217,9 +218,19 @@ const MOCK = () => {
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const t = new Date().toISOString();
       d.views.chat_msgs = [{ id: 1, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, title: "Maître de la semaine", body: "Salut !", kind: "msg", created_at: t },
         { id: 2, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, kind: "ann", data: { t: "first", label: "Premier héros au niveau 200" }, created_at: t }];
+      d.views.chat_settings = [{ id: 1, pin_body: "💡 Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées !", pin_chs: "g", pin_at: "2026-10-13T10:00:00Z" }];
       localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000 });
     await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
+    // 0.1.50.2 : message épinglé en haut du Général (ampoule du jeu à la place de l'emoji), absent du Commerce, la croix le cache jusqu'au lendemain
+    if (!(await page.$("#chat .ch-pin .pi"))) fail("chat : message épinglé absent du Général");
+    else if (/💡/.test(await page.textContent("#chat .ch-pin")) || !/Une idée pour améliorer Idlus \?/.test(await page.textContent("#chat .ch-pin b"))) fail("chat : message épinglé mal affiché");
+    if (!(await page.$('#chat .ch-pin [data-act="nav"][data-v="sugg"]'))) fail("chat : bouton Boîte à idées absent du message épinglé");
+    await page.click('#chat [data-act="ch-tab"][data-v="c"]'); await page.waitForTimeout(100);
+    if (await page.$("#chat .ch-pin")) fail("chat : message épinglé dans le Commerce");
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(100);
+    await page.click('#chat [data-act="ch-pinx"]'); await page.waitForTimeout(100);
+    if (await page.$("#chat .ch-pin")) fail("chat : message épinglé toujours là après la croix");
     // 0.1.33.2 : les hauts faits ont leur onglet, le Général ne garde que les joueurs et les annonces officielles
     if (/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : haut fait encore dans le Général");
     await page.click('#chat [data-act="ch-tab"][data-v="h"]'); await page.waitForTimeout(100);
@@ -285,6 +296,11 @@ const MOCK = () => {
     m = await mock(); const calls = (m.admCalls || []).map((x) => x[0]);
     if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
     if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");
+    // 0.1.50.2 : le message épinglé se change dans l'onglet Annonces, et revient chez le joueur qui l'avait fermé
+    await page.fill("#admPin", "Nouveau texte épinglé ! Venez sur le Discord."); await page.check("#admPinc"); await page.click('[data-act="adm-pin"]'); await page.waitForTimeout(600);
+    m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_pin" && x[1].p_chs === "g,c")) fail("panel admin : message épinglé non envoyé");
+    await page.evaluate(() => { window.CHAT.state.tab = "c"; window.CHAT.repaint(); });
+    if (!(await page.$("#chat .ch-pin")) || !/Nouveau texte épinglé/.test(await page.textContent("#chat .ch-pin"))) fail("chat : nouveau message épinglé absent après le changement");
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
     // 7d bis (0.1.36). boîte à idées : envoi depuis Communauté › Suggestions, puis lecture dans le panel admin
     await page.evaluate(() => window.scrollTo(0, 0));

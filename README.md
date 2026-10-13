@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.50.2 « Boîte à idées épinglée »
+Mathis : message semi-permanent dans le chat pour les idées (maquette avec une capture par option, réponses « 1A 2A 3A 4A 5A 6A »). Serveur : colonnes `pin_body`, `pin_chs`, `pin_at` dans `chat_settings` (supabase/chat.sql), fonction `adm_pin(texte, salons)`. Jeu : `ON.chatPin()`, `pinHtml()` dans js/chat.js (carte `.ch-pin` au-dessus des messages, ampoule `idee.webp` à la place de l'emoji, bouton vers la page Suggestions, croix = caché jusqu'au lendemain ou jusqu'au prochain changement, `pref.pinHide`), rechargé toutes les 2 min. Panel admin, onglet Annonces : encadré « Message épinglé du chat » (texte 200 caractères, salons Général / Commerce / PvP, Retirer).
+
 ## 0.1.50.1 « Nouveaux noms »
 Mathis : pouvoir changer le nom des héros et son pseudo (maquette, réponses « 1A crayon plus visible, 2B, 3A, 4A »). Héros : `E.renameChar(S, cid, nom)` (premier changement gratuit par héros, `c.renamed`, ensuite `E.RENAME_COST` = 50 000 kamas), filtre `E.nameBad` / `E.nameProblem` (liste `E.BAD_WORDS`, mots de 3 lettres seulement en mot entier) aussi au départ et dans `E.recruit`. Fiche : `renameHtml(c)` (bouton `.hb-ren`, champ `#renName`, Entrée / Échap). Pseudo : `pseudo_change(p_pseudo)` et `pseudo_info()` dans supabase/chat.sql (30 jours entre deux changements via `profiles.pseudo_at`, ancien pseudo gardé dans `pseudo_holds` 30 jours, vérifié aussi par `pseudo_guard`), `ON.changePseudo/pseudoInfo`, `pseudoChangeHtml()` dans Options › Sauvegarde.
 
