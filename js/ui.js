@@ -18,9 +18,19 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.43";
+const GAME_VERSION = "0.1.44";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.44", name: "Kolizéum", items: [
+    "Nouveau : le Kolizéum, dans Jouer. Ton équipe d'arène de 3 héros affronte celle d'un autre joueur, jouée par l'IA, avec les vrais niveaux. Chaque adversaire montre ses classes, ses niveaux et ta chance de gagner",
+    "Un combat classé coûte un ticket de Koli : 10 tickets offerts chaque jour à minuit, jusqu'à 30 en réserve. Le combat se regarde à l'écran, et chaque combat peut être revu",
+    "La cote monte et baisse selon tes victoires. Grades Bronze, Argent, Or, Cristal, Diamant et Légende pour les 3 premiers, avec leurs emblèmes. Or et plus sont annoncés dans les Hauts faits",
+    "Ton équipe d'arène défend quand on t'attaque, même si tu n'es pas là. Une défense perdue coûte la moitié de ce que l'autre gagne ; une défense réussie rapporte un peu de cote et un Kolizeton",
+    "Dès le tour 10, l'érosion réduit les PV et les soins ; au tour 20, l'équipe qui a le plus de PV gagne. La force des 19 classes a été réglée par simulation pour que chacune gagne environ la moitié de ses combats",
+    "Saisons d'une semaine (lundi minuit) : avec 5 combats classés, ton grade donne des Kolizetons, un coffre, des titres et l'ornement « Lauriers du Kolizéum ». Chaque victoire rapporte aussi une bourse de kamas et de la Poussière de stasis",
+    "Boutique du Kolizéum : tickets, coffres, Bonbon Royal, un titre et l'ornement « Bannière du Kolizéum ». Rien qui rende les héros plus forts",
+    "Sans compte (et sur la version de test), tu t'entraînes contre des Fantômes : des équipes créées par le jeu, contre lesquelles la cote bouge deux fois moins",
+  ] },
   { v: "0.1.43", name: "Forgemagie de DOFUS", items: [
     "La forgemagie suit enfin les règles de DOFUS : chaque rune a trois issues, affichées avec leurs chances. Succès critique : la rune passe et rien ne baisse. Succès neutre : la rune passe mais une autre caractéristique baisse. Échec critique : la rune ne passe pas",
     "Le reliquat remplace le puits : ce que l'objet perd en trop paie les pertes suivantes et permet d'ajouter une caractéristique qu'il n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente",
@@ -698,6 +708,8 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "boussole") ornHtml = `<span class="orn seal">🧭</span>`;
   else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
   else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
+  else if (orn === "koli") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/koli_cristal.svg" alt="">`; // 0.1.44 : Kolizéum
+  else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
@@ -773,7 +785,7 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Expédition", "carte"], ["defi", "Défi du jour", "cle"]] },
+  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Expédition", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"]] },
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["havre", "Havre-Sac", "havre"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
@@ -1754,7 +1766,7 @@ function entTip(e) {
 }
 function buildArena(F) {
   const arena = $("#arena"); if (!arena) return;
-  const deco = F && F.dungeon ? dgDeco(F.dungeonId) : subDeco(F ? F.sub : S.sub);
+  const deco = F && F.deco ? F.deco : F && F.dungeon ? dgDeco(F.dungeonId) : subDeco(F ? F.sub : S.sub); // F.deco : décor imposé (Kolizéum)
   const view = combatView();
   const so = { fx: decoFx() && !(F && F.dungeon) ? subWeather(F ? F.sub : S.sub) : "", boss: !!(F && F.bossIdx !== undefined), anim: decoFx() };
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
@@ -1765,13 +1777,13 @@ function buildArena(F) {
   }
   const pasDiv = `<div class="pas"></div>`;
   const entHtml = view === "compact" ? ([e, i]) => {
-    const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: "m", name: e.name } : null;
+    const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: e.sex || "m", head: e.head, name: e.name } : null;
     const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.dop ? `<span class="cico dop">${im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
     const rn = c && c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : "";
     return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
   } : ([e, i]) => {
     if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
-    if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: "m", name: e.name };
+    if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: e.sex || "m", head: e.head, name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
       return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
     return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
@@ -4559,6 +4571,7 @@ function render() {
   else if (ui.tab === "ladder") renderLadder();
   else if (ui.tab === "defi") renderDefi();
   else if (ui.tab === "exp" && window.EXPUI) window.EXPUI.render($("#main"));
+  else if (ui.tab === "koli" && window.KOLIUI) window.KOLIUI.render($("#main")); // 0.1.44 : Kolizéum (js/koliui.js)
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
@@ -5084,26 +5097,31 @@ function watchStart(tid) {
   E.defiWatchStep(W); ui.watch = { W, tid, spd: (ui.watch && ui.watch.spd) || 1, timer: null };
   closeSheet(); ui.tab = "combat"; ui.arena = null; render(); window.scrollTo(0, 0); watchTick();
 }
-function watchStop() { if (ui.watch && ui.watch.timer) clearTimeout(ui.watch.timer); ui.watch = null; ui.arena = null; }
+/* 0.1.44 : un combat du Kolizéum se regarde sur le même écran (W = E.koliWatch, info = ce que montre js/koliui.js) */
+function koliWatchStart(W, info) {
+  watchStop(); ui.watch = { W, koli: info, spd: (ui.wspd || 1), timer: null };
+  closeSheet(); ui.tab = "combat"; ui.arena = null; render(); window.scrollTo(0, 0); watchTick();
+}
+function watchStop() { if (ui.watch && ui.watch.timer) clearTimeout(ui.watch.timer); if (ui.watch) ui.wspd = ui.watch.spd; ui.watch = null; ui.arena = null; }
 function watchTick() {
   const w = ui.watch; if (!w) return;
-  const r = E.defiWatchStep(w.W);
+  const r = w.koli ? E.koliWatchStep(w.W) : E.defiWatchStep(w.W);
   if (r === "start") ui.arena = null;
   updateCombat(r === "start"); watchHead();
   if (r === "end" || w.W.done) { watchEnd(); return; }
   w.timer = setTimeout(watchTick, (r === "over" ? E.PAUSE_MS * 1.3 : E.STEP_MS) / w.spd);
 }
 function watchHead() {
-  const w = ui.watch; if (!w) return; const W = w.W; const n = Math.min(W.rooms.length + (W.S2.fight && !W.S2.fight.over ? 1 : 0), W.nRooms) || 1;
+  const w = ui.watch; if (!w) return; const W = w.W; if (w.koli) { if (window.KOLIUI) window.KOLIUI.watchHead(w); return; } const n = Math.min(W.rooms.length + (W.S2.fight && !W.S2.fight.over ? 1 : 0), W.nRooms) || 1;
   const el = $("#wroom"); if (el) el.textContent = n >= W.nRooms ? "salle du boss" : `salle ${n} sur ${W.nRooms}`;
 }
 function watchEnd() {
-  const w = ui.watch; const el = $("#watchEnd"); if (!w || !el) return; const R = E.defiResult(w.W);
+  const w = ui.watch; const el = $("#watchEnd"); if (!w || !el) return; if (w.koli) { if (window.KOLIUI) el.innerHTML = window.KOLIUI.watchEnd(w); return; } const R = E.defiResult(w.W);
   el.innerHTML = `<div class="row between" style="gap:10px;flex-wrap:wrap"><span><b>${R.win ? `Défi réussi en ${R.turns} tours` : `Défaite en salle ${R.rooms.length}`}</b><br><span class="small muted">${R.win ? `PV restants : ${R.hp} %. ` : ""}C'est exactement le combat que compte le score.</span></span>
     <span class="row" style="gap:6px"><button class="btn sm" data-act="sm-watch" data-v="${w.tid}">Revoir</button><button class="btn sm primary" data-act="sm-wquit">Retour au défi</button></span></div>`;
 }
 function renderWatch() {
-  const w = ui.watch; const W = w.W; const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
+  const w = ui.watch; const W = w.W; if (w.koli && window.KOLIUI) { $("#main").innerHTML = window.KOLIUI.watchHtml(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
   $("#main").innerHTML = `<div class="pagehead combathead"><div><div class="small muted">${G("target")} Défi du jour · ${h(T.name)} · <span id="wroom"></span></div><h1>${h(dg.name)}</h1></div>
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Stasis ${W.def.k}</span>${W.def.mods.map(modChip).join("")}
       <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
@@ -5367,7 +5385,8 @@ function smAct(a, t) {
   switch (a) {
     case "sm-watch": watchStart(d.v); return;
     case "sm-wspd": if (ui.watch) { ui.watch.spd = +d.v; document.querySelectorAll('[data-act="sm-wspd"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } return;
-    case "sm-wquit": { const tid = ui.watch ? ui.watch.tid : null; watchStop(); if (tid) ui.defiTier = tid; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return; }
+    case "sm-wskip": { const w = ui.watch; if (!w || !w.koli) return; if (w.timer) clearTimeout(w.timer); for (let g = 0; g < 20000 && !w.W.done; g++) E.koliWatchStep(w.W); ui.arena = null; updateCombat(true); watchHead(); watchEnd(); return; }
+    case "sm-wquit": { if (ui.watch && ui.watch.koli) { watchStop(); ui.tab = "koli"; render(); window.scrollTo(0, 0); return; } const tid = ui.watch ? ui.watch.tid : null; watchStop(); if (tid) ui.defiTier = tid; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return; }
     case "sm-dtier": ui.defiTier = d.v; render(); return;
     case "sm-dplay": defiPlay(d.v); return;
     case "sm-dlast": if (defiLast) defiSheet(defiLast); else { const st = E.defiState(S); const x = st.tries[0]; if (x) toast(`Dernier essai : ${x.win ? `${x.turns} tours` : "défaite"}.`); } return;
@@ -5403,7 +5422,8 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
   if (a && a.startsWith("vi-")) { if (S) viAct(a, t); return; }
   if (a && a.startsWith("qj-")) { if (S && window.QUI) window.QUI.act(a, t); return; } // 0.1.28 : journal de quêtes (js/questui.js)
-  if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 0.1.24 : Expédition sans fin (js/expui.js)
+  if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; }
+  if (a && a.startsWith("kz-")) { if (S && window.KOLIUI) window.KOLIUI.act(a, t); return; } // 0.1.44 : Kolizéum // 0.1.24 : Expédition sans fin (js/expui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -6319,7 +6339,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
-Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, koliWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

@@ -125,6 +125,7 @@
       case "lvl200": return t(`${b(d.name || "Un héros")}, ${h(clsName(d.cls))} de ${p}, atteint le niveau 200${d.ren ? " (encore)" : ""} !`);
       case "ren": return t(`${b(d.name || "Un héros")}, ${h(clsName(d.cls))} de ${p}, renaît : Renaissance ${d.n} !`);
       case "dofus": return t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`);
+      case "koli": return t(`${p} atteint le grade ${b(["Bronze", "Argent", "Or", "Cristal", "Diamant"][d.g] || "Or")} au Kolizéum (cote ${(+d.cote || 0).toLocaleString("fr-FR")}) !`); // 0.1.44
       case "admin": return t(`${plain ? "Annonce" : "<b>Annonce</b>"} : ${h(m.body || "")}`);
       default: return h(m.body || "");
     }

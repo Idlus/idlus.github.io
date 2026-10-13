@@ -1111,6 +1111,10 @@
   };
   const flog = (F, txt, cls = "") => { F.log.push({ txt, cls }); if (F.log.length > 40) F.log.shift(); };
   const alive = (F, side) => F.ents.filter((e) => e.alive && e.side === side);
+  /* 0.1.44 : Kolizéum. Un héros est « joueur » côté c, ou n'importe où dans un combat d'équipes (F.pvp) ;
+     le glyphe du Féca et l'érosion y sont propres à chaque équipe (tm 0 ou 1). */
+  const isHero = (F, t) => t.side === "c" || !!(F && F.pvp && t.st);
+  const glyphOf = (F, t) => (F ? (F.pvp ? (F.glyphs || [])[t.tm] : F.glyph) : null);
 
   /* ---------------- Résolution des actions ---------------- */
   const buffSum = (e, k) => e.buffs.reduce((s, b) => s + (b[k] || 0), 0);
@@ -1139,15 +1143,15 @@
   const dealDamage = (F, src, tgt, raw, el) => {
     let v = raw;
     let res = 0;
-    if (tgt.side === "m") { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; if (F && F.idol) { res += F.idol.resAll; if (F.idol.resMain && el && el === F.idol.resEl) res += F.idol.resMain; } }
+    if (tgt.side === "m" && !isHero(F, tgt)) { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; if (F && F.idol) { res += F.idol.resAll; if (F.idol.resMain && el && el === F.idol.resEl) res += F.idol.resMain; } }
     else if (tgt.st) { const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0; res += tgt.resBonus || 0; }
     res = Math.min(50, res);
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
     if (src) v *= 1 - Math.min(60, debSum(src, "weak")) / 100;
-    if (tgt.side === "c") { v *= (F && F.glyph === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1) * (1 - (tgt.smallDr || 0) / 100); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
+    if (isHero(F, tgt)) { v *= (glyphOf(F, tgt) === "prot" ? 0.9 : 1) * (tgt.mask === "def" ? 0.8 : 1) * (tgt.posture === "rempart" ? 0.75 : 1) * (1 - (tgt.smallDr || 0) / 100); if (tgt.st && el) v -= tgt.st[(ELEMENTS[el] || {}).fix] || 0; }
     /* 0.1 : rôles de monstres et mécaniques de boss qui changent les dégâts reçus */
-    if (F && tgt.side === "c" && tgt.gold > 0) return 0;
+    if (F && isHero(F, tgt) && tgt.gold > 0) return 0;
     if (F && tgt.side === "m") {
       if (tgt.role === "esquive" && src && src.side === "c" && rnd() < 0.2) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Esquive" }); return 0; }
       if (tgt.mech && tgt.mech.includes("totems") && alive(F, "m").some((m) => m.totem)) { F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(tgt), txt: "Invulnérable" }); return 0; }
@@ -1169,9 +1173,9 @@
     if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
     tgt.hp -= v;
     if (F) trackHit(F, src, tgt, v, el);
-    if (tgt.side === "c" && src && src.side === "m" && F && F.glyph === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
+    if (isHero(F, tgt) && src && (F && F.pvp ? src.tm !== tgt.tm : src.side === "m") && glyphOf(F, tgt) === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
-    if (tgt.side === "c" && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
+    if (isHero(F, tgt) && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
     if (src && src.side === "c" && tgt.side === "m" && v > 0) { // 0.1.24 : reliques d'expédition (vol de vie, poison)
       if (src.vamp && src.alive) doHeal(src, v * src.vamp, F);
       if (src.expPoison && tgt.alive && !tgt.noDot && !tgt.dots.some((d) => d.exp)) tgt.dots.push({ v: Math.max(1, Math.round(tgt.hpMax * src.expPoison / 100)), el: null, turns: 2, exp: 1 });
@@ -1233,6 +1237,7 @@
     if (e.cls === "panda") v *= 1 + (0.06 + 0.015 * evc) * (e.ivresse || 0);
     if (e.mask === "atk") v *= 1.3 + 0.1 * evc;
     v *= E.classPow(e.cls, e.lvl);
+    if (F && F.pvp) v *= e.kp || 1; // 0.1.44 : équilibrage propre au Kolizéum
     if (tgt && tgt.race !== undefined && F.expertRaces && F.expertRaces.has(tgt.race)) v *= 1.1;
     e.lastEl = el;
     return { v, crit, el };
@@ -1244,6 +1249,7 @@
   E.doHeal = (t, v, F) => doHeal(t, v, F); // 0.1.10 : exposé pour les tests (idole Ougah)
   const doHeal = (t, v, F) => {
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
+    if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
     if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
     if (F && t.side === "c" && !t.summon && g > 0) F.healed = (F.healed || 0) + g;
@@ -1299,9 +1305,10 @@
     if (alive(F, "c").filter((a) => a.summon && a.owner === own).length >= SUM_LIMIT(e)) return null;
     const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 + 0.15 * (e.evc || 0) : 1;
     const hp = Math.round(e.hpMax * 0.35 * boost);
-    const s = { side: "c", summon: true, owner: own, name: info.name || "Invocation", img: info.img || null, cls: e.cls, lvl: e.lvl, hpMax: hp, hp, ini: e.ini - 1,
+    const s = { side: "c", tm: e.tm, summon: true, owner: own, name: info.name || "Invocation", img: info.img || null, cls: e.cls, lvl: e.lvl, hpMax: hp, hp, ini: e.ini - 1,
       dmg: (4 + e.lvl * 1.1) * (1 + (e.st[ELEMENTS[mainElE(e)].stat] || 0) / 250) * (e.cls === "steam" ? 1.4 + 0.1 * (e.evc || 0) : 1) * (e.cls === "osa" ? 1 + (e.st.pui || 0) / 200 : 1) * (e.cls === "cra" ? 0.35 : e.cls === "roub" ? 0.6 : 1) + (e.cls === "osa" ? (e.st.do || 0) / 2 : 0), el: mainElE(e), // 0.1.12.4 : les balises du Crâ sont des outils, pas des combattants ; 0.1.14.4 : bombes du Roublard un peu moins fortes
       turret: e.cls === "steam", tree: e.cls === "sadi", buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, paLoss: 0 };
+    if (F.pvp) s.dmg *= e.kp || 1;
     F.ents.push(s); F.order.push(F.ents.indexOf(s));
     F.fx.push({ seq: F.seq, k: "summon", t: F.ents.indexOf(s) });
     return s;
@@ -1761,6 +1768,7 @@
   E.step = (S) => {
     let F = S.fight;
     if (!F || F.over) return;
+    if (F.pvp) return koliStep(S, F);
     if (F.dmgInit !== true) { applyFightBonuses(S, F); F.dmgInit = true; }
     if (F.await) {
       if (E.manualOn(S) && F.dur - F.await.t <= E.MANUAL_TIMEOUT) return;
@@ -1776,6 +1784,76 @@
     if (!startOfTurn(S, F, e)) return checkEnd(S);
     if (e.side === "c") { if (e.summon) summonTurn(S, F, e); else charTurn(S, F, e); } else monsterTurn(S, F, e);
     checkEnd(S);
+  };
+  /* ---------------- 0.1.44 : Kolizéum, combat d'équipes ----------------
+     Les deux équipes sont des héros. Le moteur joue toujours « du côté c » : avant le tour d'un héros de l'équipe 1,
+     on retourne les camps (c ↔ m), puis on les remet. Pas de bonus de compte (Esprit Libre, synergie, consommables) :
+     seuls comptent les héros eux-mêmes. Érosion à partir du tour E.KOLI.ero (soins et PV maximum −E.KOLI.eroStep % par tour) ;
+     au tour E.KOLI.maxRound, l'équipe qui a gardé la plus grande part de ses PV gagne. */
+  E.KOLI = { size: 3, ero: 10, eroStep: 10, eroMax: 90, maxRound: 20 };
+  /* puissance par classe au Kolizéum (dégâts et invocations), réglée par simulation (tools/koli_sim.js) aux niveaux E.KOLI_LVLS */
+  E.KOLI_LVLS = [20, 50, 100, 150, 200];
+  E.KOLI_POW = {"iop":[1.29,1.49,1.25,0.94,1.82],"cra":[1.28,1.87,1.36,1.23,1.62],"eni":[1.71,1.29,1.36,1.23,0.95],"feca":[0.69,1.18,1.81,1.67,2.3],"osa":[0.26,0.37,0.63,0.93,0.99],"enu":[0.89,1.45,1.4,1.26,1.28],"sram":[1.72,1.39,1.53,1.64,1.84],"xelor":[1.07,0.79,0.4,0.72,0.34],"eca":[2.5,1.68,1.54,1.44,1.17],"sadi":[1.17,1.15,0.8,0.88,0.85],"sacri":[1.47,1.65,1.73,1.48,1.67],"panda":[2.02,1.13,1.05,1,1.6],"roub":[0.46,0.52,0.49,0.42,0.25],"zobal":[1.15,1.04,1.65,1.97,1.81],"steam":[0.71,0.73,0.41,0.89,1.1],"elio":[1.35,1.56,1.5,1.2,1.16],"hupper":[1.93,1.35,0.97,1.14,0.48],"ougi":[1.84,1.57,2.05,1.05,1.62],"forge":[0.79,0.41,0.75,0.84,1.14]};
+  E.koliPow = (cls, lvl) => { const t = E.KOLI_POW[cls]; if (!t) return 1; const L = E.KOLI_LVLS; if (lvl <= L[0]) return t[0]; if (lvl >= L[L.length - 1]) return t[t.length - 1];
+    let i = 0; while (lvl > L[i + 1]) i++; return t[i] + (t[i + 1] - t[i]) * (lvl - L[i]) / (L[i + 1] - L[i]); };
+  const koliFlip = (F) => F.ents.forEach((x) => { x.side = x.side === "c" ? "m" : "c"; });
+  const koliHp = (F, tm) => { const hs = F.ents.filter((x) => x.tm === tm && !x.summon); return hs.reduce((a, x) => a + (x.alive ? x.hp : 0), 0) / Math.max(1, hs.reduce((a, x) => a + x.hpBase, 0)); };
+  const koliEnd = (S, F, tm, why) => { F.over = true; F.winner = tm; F.result = tm === (F.me || 0) ? "win" : "lose"; /* F.me : l'équipe du joueur qui regarde (1 pour une défense) */ if (why) flog(F, why, "dim"); };
+  const koliCheck = (S, F) => {
+    const up = (tm) => F.ents.some((x) => x.alive && x.tm === tm && !x.summon);
+    if (!up(1)) koliEnd(S, F, 0); else if (!up(0)) koliEnd(S, F, 1);
+  };
+  const koliErode = (F) => {
+    const K = E.KOLI; F.ero = Math.min(K.eroMax, Math.max(0, F.round - K.ero + 1) * K.eroStep); if (!F.ero) return;
+    F.ents.forEach((x) => { if (!x.alive || x.summon) return; x.hpMax = Math.max(1, Math.round(x.hpBase * (1 - F.ero / 100))); if (x.hp > x.hpMax) x.hp = x.hpMax; });
+    flog(F, `Érosion : soins et PV maximum −${F.ero} %.`, "dim");
+  };
+  const koliStep = (S, F) => {
+    F.seq++; if (F.fx.length > 80) F.fx.splice(0, F.fx.length - 80);
+    for (let guard = 0; guard < 200; guard++) {
+      if (F.oi >= F.order.length) {
+        F.round++;
+        if (F.round > E.KOLI.maxRound) { const a = koliHp(F, 0), b = koliHp(F, 1); return koliEnd(S, F, a >= b ? 0 : 1, `Fin du temps : ${Math.round(a * 100)} % de PV contre ${Math.round(b * 100)} %.`); }
+        newRound(F); koliErode(F);
+      }
+      const e = F.ents[F.order[F.oi++]];
+      if (!e || !e.alive) continue;
+      const flip = e.tm === 1; if (flip) koliFlip(F);
+      try {
+        F.glyph = (F.glyphs || [])[e.tm] || null;
+        if (startOfTurn(S, F, e)) { if (e.summon) summonTurn(S, F, e); else charTurn(S, F, e); }
+        if (e.cls === "feca" && !e.summon) F.glyphs[e.tm] = F.glyph;
+      } finally { if (flip) koliFlip(F); }
+      return koliCheck(S, F);
+    }
+  };
+  /* Une équipe d'arène (photo envoyée au serveur) : ce qu'il faut pour rejouer le combat, sans les objets.
+     st : caractéristiques du héros (équipement, familier, monture, panoplies, parchemins). */
+  E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
+    n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
+    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe") }));
+  /* Prépare le combat : A (équipe 0, l'attaquant) contre B (équipe 1). Renvoie une petite partie de travail S2 dont S2.fight est le combat. */
+  E.koliSetup = (A, B, opts = {}) => {
+    const chars = [], ents = [];
+    [A, B].forEach((T, tm) => T.forEach((h, i) => {
+      const id = tm ? 1000000 + i : (opts.ids && opts.ids[i]) || 900000 + i; const st = Object.assign({}, h.st);
+      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), alloc: {}, equip: {}, eveils: h.ev || {} });
+      const hp = Math.max(1, Math.round(st.hpMax));
+      ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
+        buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {},
+        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl) });
+    }));
+    [0, 1].forEach((tm) => { // première ligne : le plus robuste ; Osamodas : +5 % de PV pour son équipe (comme en chasse)
+      const T = ents.filter((x) => x.tm === tm); const osa = T.some((x) => x.cls === "osa") ? 1.05 : 1;
+      T.forEach((x) => { x.hpMax = x.hp = x.hpBase = Math.round(x.hpBase * osa); x.row = "b"; });
+      const f = T.slice().sort((a, b) => b.hpBase * (E.TANK_CLASSES.includes(b.cls) ? 1.25 : 1) - a.hpBase * (E.TANK_CLASSES.includes(a.cls) ? 1.25 : 1))[0]; if (f) f.row = "f";
+      T.filter((x) => x.cls === "zobal").forEach((x) => (x.mask = "atk"));
+    });
+    const S2 = { chars, items: {}, settings: { manual: false, focus: "auto" }, stats: { fights: 0, wins: 0 }, fightSeq: 0 };
+    const F = S2.fight = { id: 1, label: opts.label || "Kolizéum", ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: false, seq: 0, fx: [], sub: null, dungeonId: null, deaths: [],
+      pvp: true, me: opts.me || 0, deco: "dg_sable", glyphs: [null, null], ero: 0, chals: [], cs: { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} }, dmgInit: true };
+    newRound(F);
+    return S2;
   };
   const checkEnd = (S) => {
     const F = S.fight;
