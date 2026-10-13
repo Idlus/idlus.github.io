@@ -1,6 +1,19 @@
 {
-  "version": "0.1.39.2",
+  "version": "0.1.40",
   "versions": [
+    {
+      "v": "0.1.40",
+      "name": "Équipe rangée",
+      "items": [
+        "Équipe et héros : une seule liste de héros à gauche, rangée comme en combat (Première ligne, Arrière, Réserve), et la fiche du héros choisi à droite. L'équipement est visible tout de suite, sans descendre",
+        "Dans la liste : niveau, activité, barre d'XP, ▲ vert quand un meilleur objet attend dans le sac, pastille orange quand il reste des points à répartir. Les flèches ↑ ↓ du clavier passent d'un héros à l'autre",
+        "Nouveau haut de fiche : une bannière aux couleurs de la classe, avec son symbole en filigrane. Partager le build, Suivre le niveau, Titre, Ornement et Congédier sont rangés dans le menu « ⋯ Plus »",
+        "Les onglets de la fiche restent collés en haut quand on descend, avec la tête du héros à côté",
+        "« Réorganiser » regroupe le placement Première ligne / Arrière, les compositions et le plateau. Les compositions se changent aussi d'un clic sous le titre",
+        "Téléphone : la liste d'abord, puis la fiche du héros en plein écran avec « ← Équipe » et les têtes des autres héros en haut",
+        "Thème Émeraude : les étiquettes « Passif » et l'activité du héros sont de nouveau lisibles"
+      ]
+    },
     {
       "v": "0.1.39.2",
       "name": "Idées à l'heure",
