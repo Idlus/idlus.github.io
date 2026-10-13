@@ -119,8 +119,27 @@
     </div></div>`;
   }
   const hcard = (c) => `<div class="kz-h" style="--cc:${CLASSES[c.cls].color}">${X().lookImg(c, "l")}<span class="lv">${c.lvl}</span><span class="rw">${h(c.name)}</span></div>`;
-  function shop() { return X().shopHtml("koli").replace('class="panel"', 'class="panel kz-shop"').replace(/🏟/g, coin("kz-coin sm")); }
-  const shopSheet = () => X().openSheet(`${shop()}<p class="note" style="margin-top:8px">Les Kolizetons se gagnent au Kolizéum : ${K.kzWin} par victoire, ${K.kzLoss} par défaite, ${K.kzDef} par défense réussie, plus la récompense de la semaine. Rien ici ne rend tes héros plus forts.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
+  /* boutique en rayons (0.1.45) : Galets, combats, coffres, apparence ; ×1 / ×5 / ×10 pour ce qui se cumule */
+  const SECS = [["galets", "Galets", "Demandés par les recettes d'équipement, comme dans DOFUS. Tu peux aussi les vendre ou les acheter à l'Hôtel de vente."],
+    ["combat", "Combats et douceurs", ""], ["coffres", "Coffres", ""], ["look", "Apparence", "Pour la carte de tes héros. Rien ici ne rend tes héros plus forts."]];
+  function shopRow(s, it, have) {
+    const Sh = E.SHOPS.koli; const owned = E.shopOwned(s, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
+    const R = it.res ? D.RES[it.res] : null; const U = it.res && E.KOLI_GALET_USE ? E.KOLI_GALET_USE[it.res] : null;
+    const ico = it.res ? X().im(X().resImg(it.res), "ico", it.res) : C ? X().consIco(C) : it.orn ? X().G("frame") : X().G("tag");
+    const sub = U ? `niv. ${R.lvl} · ${U.n} objets à fabriquer (niv. ${U.lo} à ${U.hi})` : it.res ? `Ressource niv. ${R ? R.lvl : "?"}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
+    const stock = it.res ? (s.res[it.res] || 0) : C ? (s.cons[it.cons] || 0) : 0;
+    const btn = (n) => `<button class="btn sm ${have >= it.cost * n ? "primary" : ""}" data-act="buyshop" data-shop="koli" data-id="${it.id}" data-n="${n}" ${have < it.cost * n ? "disabled" : ""}>${n > 1 ? `×${n} · ` : ""}${coin("kz-coin sm")} ${it.cost * n}</button>`;
+    const name = it.res ? `<button class="kz-lnk" data-act="kz-res" data-n="${h(it.res)}" title="Fiche de la ressource">${h(E.shopItemName(s, it))}</button>` : h(E.shopItemName(s, it));
+    return `<div class="kz-si"><span class="em">${ico}</span><div class="grow" style="min-width:0"><b>${name}</b><div class="xs muted">${sub}${stock ? ` · <b>${nf(stock)}</b> en stock` : ""}</div></div>
+      <div class="kz-buy">${owned ? `<button class="btn sm" disabled>Obtenu</button>` : it.many ? [1, 5, 10].map(btn).join("") : btn(1)}</div></div>`;
+  }
+  function shop() {
+    const s = S(); const Sh = E.SHOPS.koli; const have = s.tokens[Sh.cur] || 0;
+    return `<section class="panel kz-shop"><div class="phead"><h2 style="margin:0">${coin()} ${h(Sh.name)}</h2><span class="small"><b class="num">${nf(have)}</b> Kolizetons</span></div>
+      ${SECS.map(([k, t, n]) => { const L = Sh.items.filter((it) => (it.sec || "combat") === k); if (!L.length) return "";
+        return `<div class="kz-sec"><h3>${t}</h3>${n ? `<p class="xs muted">${n}</p>` : ""}${L.map((it) => shopRow(s, it, have)).join("")}</div>`; }).join("")}</section>`;
+  }
+  const shopSheet = () => X().openSheet(`${shop()}<p class="note" style="margin-top:8px">Les Kolizetons se gagnent au Kolizéum : ${K.kzWin} par victoire, ${K.kzLoss} par défaite, ${K.kzDef} par défense réussie, plus la récompense de la semaine.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
   function journal(s, Q, on) {
     let rows = [];
     if (on && ui.fights) {
@@ -165,7 +184,8 @@
       <li>Dès le tour ${K.ero}, l'<b>érosion</b> réduit les PV maximum et les soins de ${K.eroStep} % par tour. Au tour ${K.maxRound}, l'équipe qui a le plus de PV (en %) gagne.</li>
       <li>Chaque victoire rapporte une bourse de kamas (selon le niveau de l'équipe), ${K.dust} Poussière de stasis et ${K.kzWin} Kolizetons ; une défaite, ${K.kzLoss} Kolizeton.</li>
       <li>La semaine finit le lundi à minuit. Avec ${K.minWeek} combats classés au moins, ton grade donne sa récompense, puis la cote revient à mi-chemin de 1 000.</li>
-      <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li></ol>
+      <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li>
+      <li>Les Kolizetons s'échangent dans la boutique contre des <b>Galets</b> (demandés par ${E.KOLI_GALET_ITEMS || "des"} recettes d'équipement, comme dans DOFUS), des tickets, des coffres et de l'apparence.</li></ol>
       <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closesheet">Compris</button></div>`);
   }
 
@@ -246,6 +266,7 @@
       case "kz-tg": { const r = E.act(s, "koliToggle", +d.id); if (r) { X().toast(r); return; } X().markDirty(); teamSheet(); ui.key = ""; return; }
       case "kz-rules": rulesSheet(); return;
       case "kz-shop": shopSheet(); return;
+      case "kz-res": X().resSheet(d.n); return;
       case "kz-train": { const Q = E.koliState(s); const A = E.koliSnap(s, Q.team); if (!A.length) return;
         const seed = (Date.now() >>> 0) || 1; const o = E.koliGhostOpp(seed, 0, Q.cote, E.koliLvl(s), A.length);
         watch(A, o.team, seed ^ 0x5bd1e995, { train: true, opp: o, own: true }); return; }

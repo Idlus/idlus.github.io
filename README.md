@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.45 « Galets du Kolizéum »
+Les 6 Galets de DOFUS (cramoisi, rutilant, Lunaire, rayonnant, Solaire, brasillant) deviennent des ressources (`E.KOLI_GALETS` dans js/koli.js, icônes assets/i) vendues dans la boutique du Kolizéum et échangeables à l'HdV. Les recettes DOFUS des 300 objets du jeu qui en demandent les retrouvent au chargement (table `GALET_RECIPES` régénérée par `node tools/koli_galets.js` depuis DofusDB ; drapeau `E.KOLI_GALET_RECIPES`). Boutique en rayons (`sec`) avec achat ×1/×5/×10 (`E.buyShop(S, shop, id, qty)` pour les articles `many`, articles `res`), source des ressources hors monstres via `E.RES_SOURCE`.
+
 ## 0.1.44 « Kolizéum »
 Kolizéum 3 contre 3 (réponses de Mathis : 1A à 12A, tickets de Koli, saisons d'une semaine, Kolizetons). Moteur (js/engine.js) : combat d'équipes de héros `E.koliSetup` (F.pvp ; les côtés sont échangés avant le tour d'un héros de l'équipe 1, `isHero`, glyphe Féca par équipe), érosion dès le tour 10, victoire aux PV au tour 20 (`E.KOLI`), puissance par classe et niveau `E.KOLI_POW` réglée par tools/koli_tune.js (tools/koli_sim.js pour vérifier). js/koli.js : état `S.koli` (équipe d'arène, cote Elo, tickets `ticket_koli` 10 par jour jusqu'à 30, journal), grades `E.KOLI_GRADES`, semaines `E.koliWeek` (comme gb_week), Fantômes `E.koliGhost`/`E.koliGhostOpp`, chance `E.koliChance` (20 combats d'essai), récompenses `E.koliReward`, boutique `E.SHOPS.koli`, ornements `koli` et `koli_ban`, en ligne `E.koliOnline`/`E.koliSync`. js/koliui.js : page Jouer › Kolizéum et écran de combat (`koliWatchStart` dans ui.js). Serveur : supabase/koli.sql (koli, koli_weeks, koli_fights, koli_row, koli_opps, koli_done, koli_me, lb_koli) et `{ koli }` dans la fonction « record » (adversaires, combat joué par le serveur). Emblèmes des grades : assets/ui/koli/. Test : tests/koli.test.js.
 

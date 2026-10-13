@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.44.1";
+const GAME_VERSION = "0.1.45";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.45", name: "Galets du Kolizéum", items: [
+    "Les Galets de DOFUS arrivent : Galet cramoisi (niv. 50), rutilant et Lunaire (niv. 100), rayonnant et Solaire (niv. 150), brasillant (niv. 195). Ils s'achètent avec des Kolizetons et se vendent ou s'achètent à l'Hôtel de vente",
+    "Comme dans DOFUS, 300 équipements à fabriquer (niveau 50 à 200) redemandent leurs Galets dans leur recette : 1 à 4 Galets selon l'objet. Les objets déjà fabriqués ne changent pas",
+    "La boutique du Kolizéum est rangée en rayons : Galets, Combats et douceurs, Coffres, Apparence. Ce qui se cumule s'achète par 1, 5 ou 10 d'un coup",
+    "Nouveau dans la boutique : 10 Poussières de stasis pour 10 Kolizetons. La fiche de chaque Galet dit combien d'objets le demandent et à quels niveaux",
+  ] },
   { v: "0.1.44.1", name: "Boss secondaires", items: [
     "Les boss secondaires de DOFUS rejoignent leur donjon et se battent avec le boss principal : les 4 Tynrils au Laboratoire du Tynril, les 4 Blops Royaux au Clos des Blops, Shihan et Hanshi au Dojo du Vent, la Fuji Givrefoux Nourricière à la Tanière Givrefoux, le Professeur Xa avec le Kolosso. Le Gorgouille apparaît dans les salles de l'Antre du Dragon Cochon",
     "Leurs ressources (Ambre et Pistil du Tynril, Fleurs de Blop Royal, Écharpe de Hanshi, Cuir et Condyle de Fuji Givrefoux, Poignée et Fragment du Gorgouille…) débloquent 55 nouveaux équipements à fabriquer, dont les Bloptes et le Blopanneau Multicolores Royaux, la Coiffe du Tynril et les objets du Docteur Eggob",
@@ -886,6 +892,7 @@ function resIndex() {
 }
 const subOfMon = (k) => Object.values(E.SUBS).find((s) => s.monsters.includes(k)) || (Object.entries(DUNGEONS).find(([, d]) => d.boss === k || d.rooms.some((r) => r.mobs.includes(k))) || [])[0];
 function bestSource(r) {
+  if (E.RES_SOURCE && E.RES_SOURCE[r]) return E.RES_SOURCE[r];
   const L = resIndex().src[r] || []; const g = L.find((x) => x.job); if (g) return `${GATHER_JOBS[g.job].name} niv. ${g.lvl}`;
   const m = L.find((x) => x.m); if (!m) return r === E.RARE_COMPONENT ? "trouvailles de récolte, boss et coffres" : "source inconnue";
   const s = subOfMon(m.m); return `${MONSTERS[m.m].name}${s ? " (" + (typeof s === "string" ? DUNGEONS[s].name : s.name) + ")" : ""} · ${E.resRate(m.p).toFixed(1).replace(".", ",")} %`;
@@ -4388,7 +4395,7 @@ function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
   return `<section class="panel"><div class="phead"><h2>${emo(Sh.icon)} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
     <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
-      return `<div class="hv"><div class="top"><span class="em">${C ? consIco(C) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
+      return `<div class="hv"><div class="top"><span class="em">${it.res ? im(resImg(it.res), "ico", it.res) : C ? consIco(C) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${it.res ? `Ressource niv. ${(RES[it.res] || {}).lvl || "?"}` : C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
 /* 0.1.28 : les boutiques sont regroupées dans Quêtes › Comptoirs ; chaque page garde un raccourci */
@@ -5640,7 +5647,7 @@ document.addEventListener("click", (ev) => {
     case "fmplandrop": E.stopFmPlan(S, +d.uid, true); break;
     case "exocraft": { const r = E.exoCraft(S, d.k, ui.ga); toast(r || `1 ${E.runeName(E.exoKey(d.k))} obtenue !`, r ? "" : "rare"); break; }
     case "reroll": msg(E.rerollBounty(S, +d.id)); break;
-    case "buyshop": msg(E.buyShop(S, d.shop, d.id)); break;
+    case "buyshop": msg(E.buyShop(S, d.shop, d.id, +d.n || 1)); break;
     case "align": { const r = E.chooseAlign(S, d.side, d.order); ui.confirm = null; if (r) { toast(r); return; } break; }
     case "asktraitre": ui.confirm = "traitre"; break;
     case "almanax": { const r = E.almanaxOffer(S); if (r) { toast(r); return; } break; }
@@ -6480,7 +6487,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
-Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, koliWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

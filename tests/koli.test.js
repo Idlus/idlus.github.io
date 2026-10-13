@@ -82,3 +82,20 @@ console.log("ok - en ligne");
 for (const c in D.CLASSES) { assert.ok(E.KOLI_POW[c] && E.KOLI_POW[c].length === E.KOLI_LVLS.length, "puissance manquante : " + c); }
 assert.ok(E.SHOPS.koli && E.ORN.koli && E.ORN.koli_ban && D.CONSUMABLES[E.KOLI_TICKET]);
 console.log("ok - équilibre et boutique");
+
+// 7. Galets (0.1.45) : ressources, recettes de DOFUS, achat à l'unité ou par 5/10.
+E.KOLI_GALETS.forEach((g) => { assert.ok(D.RES[g.name] && D.RES[g.name].lvl === g.lvl, "Galet dans les ressources : " + g.name); assert.ok(E.RES_SOURCE[g.name]); });
+assert.ok(E.KOLI_GALET_ITEMS >= 290, "les recettes de DOFUS redemandent leurs Galets : " + E.KOLI_GALET_ITEMS);
+const withG = Object.values(D.ITEMS).filter((it) => it.craft && it.craft.ing.some(([r]) => /^Galet /.test(r)));
+assert.strictEqual(withG.length, E.KOLI_GALET_ITEMS); assert.ok(withG.every((it) => it.lvl >= 50 && it.craft.ing.filter(([r]) => /^Galet /.test(r)).length === 1));
+const U = E.KOLI_GALET_USE["Galet cramoisi"]; assert.ok(U.n > 0 && U.lo >= 50 && U.hi < 100);
+const B = E.newState("Boutique", "iop"); B.tokens[E.KOLI_CUR] = 30;
+const g1i = E.SHOPS.koli.items.find((x) => x.res === "Galet cramoisi");
+assert.strictEqual(E.buyShop(B, "koli", g1i.id, 5), null); assert.strictEqual(B.res["Galet cramoisi"], 5); assert.strictEqual(E.koliKz(B), 30 - 5 * g1i.cost);
+assert.ok(/Il faut/.test(E.buyShop(B, "koli", g1i.id, 100)), "pas assez de Kolizetons"); assert.strictEqual(B.res["Galet cramoisi"], 5);
+const dust = E.SHOPS.koli.items.find((x) => x.res === E.POUSSIERE); const d0 = B.res[E.POUSSIERE] || 0;
+assert.strictEqual(E.buyShop(B, "koli", dust.id), null); assert.strictEqual(B.res[E.POUSSIERE], d0 + dust.n);
+const tit = E.SHOPS.koli.items.find((x) => x.title); B.tokens[E.KOLI_CUR] = 1000; E.buyShop(B, "koli", tit.id, 10);
+assert.strictEqual(E.koliKz(B), 1000 - tit.cost, "un titre ne s'achète qu'une fois, même avec ×10");
+assert.ok(E.SHOPS.koli.items.every((x) => ["galets", "combat", "coffres", "look"].includes(x.sec)));
+console.log("ok - Galets et boutique en rayons");

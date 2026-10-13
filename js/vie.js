@@ -181,9 +181,9 @@
     { id: "d7", cons: "bonbon_royal", cost: 14 }, { id: "d8", title: "Ombre du temple", cost: 30 }, { id: "d9", orn: "dopeul", name: "Ornement « Reflet du temple »", cost: 50 },
   ] };
   const buy0 = E.buyShop;
-  E.buyShop = (S, shop, id) => {
+  E.buyShop = (S, shop, id, qty) => {
     const Sh = E.SHOPS[shop]; const it = Sh && Sh.items.find((x) => x.id === id);
-    if (!it || !it.tresor) return buy0(S, shop, id);
+    if (!it || !it.tresor) return buy0(S, shop, id, qty);
     const TR = E.tresorState ? E.tresorState(S) : null; if (!TR) return "Indisponible.";
     if (TR.stock.length >= E.TRESOR_STOCK) return `Tu as déjà ${E.TRESOR_STOCK} parchemins de chasse.`;
     if ((S.tokens[Sh.cur] || 0) < it.cost) return `Il faut ${it.cost} ${Sh.curName.toLowerCase()}.`;
