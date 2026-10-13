@@ -495,5 +495,7 @@
   }
   const markSeen = () => { const s = S(); if (s) { s.hdv = s.hdv || { op: 0, log: [] }; s.hdv.seen = Date.now(); } };
 
-  window.MARKET = { start, render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
+  /* 0.1.37 : « Vendre à l'HdV » depuis le trop-plein ouvre la mise en vente de cet objet */
+  const sellItem = (uid) => { M.tab = "sell"; M.sCat = "eq"; M.sSel = String(uid); M.price = ""; M.n = 1; M.lot = 1; const it = S() && S().items[uid]; if (it) priceHint("eq", it.tpl); if (M.mine === null && mine()) loadMine(); };
+  window.MARKET = { start, sellItem, render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
 })();
