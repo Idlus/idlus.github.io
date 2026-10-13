@@ -393,13 +393,64 @@ grant execute on function public.staff_list() to anon, authenticated;
 create or replace function public.pseudo_imite(p text) returns boolean language sql immutable
 as $$ select n ~ '(xener|createur|idlus|ankama)' or n ~ '^(admin|modo|moderat|staff)'
   from (select regexp_replace(translate(lower(p), 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿ01345@$', 'aaaaaaceeeeiiiinooooouuuuyyoieasas'), '[^a-z]', '', 'g') n) t $$;
+-- 0.1.50.1 : anciens pseudos réservés 30 jours après un changement (personne d'autre ne peut les prendre entre-temps).
+alter table public.profiles add column if not exists pseudo_at timestamptz;
+create table if not exists public.pseudo_holds (
+  pseudo text primary key,            -- en minuscules
+  user_id uuid not null references auth.users (id) on delete cascade,
+  until timestamptz not null
+);
+alter table public.pseudo_holds enable row level security; -- aucune règle : seules les fonctions ci-dessous y touchent
+create or replace function public.pseudo_held(p text, u uuid) returns boolean language sql stable security definer set search_path = public
+as $$ select exists (select 1 from pseudo_holds h where h.pseudo = lower(p) and h.until > now() and h.user_id is distinct from u) $$;
+revoke all on function public.pseudo_held(text, uuid) from public, anon, authenticated;
 create or replace function public.pseudo_guard() returns trigger language plpgsql security definer set search_path = public
 as $$ begin
   if (tg_op = 'INSERT' or new.pseudo is distinct from old.pseudo) and public.pseudo_imite(new.pseudo)
      and not exists (select 1 from admins where user_id = new.id) then
     raise exception 'Ce pseudo n''est pas autorisé.';
   end if;
+  -- 0.1.50.1 : un ancien pseudo reste réservé 30 jours à son propriétaire (sauf décision de Mathis depuis le panel)
+  if (tg_op = 'INSERT' or lower(new.pseudo) is distinct from lower(old.pseudo)) and public.pseudo_held(new.pseudo, new.id)
+     and not exists (select 1 from admins where user_id = auth.uid()) then
+    raise exception 'Ce pseudo est réservé pour l''instant. Essaie-en un autre.';
+  end if;
   return new;
 end $$;
 drop trigger if exists profiles_pseudo_guard on public.profiles;
 create trigger profiles_pseudo_guard before insert or update of pseudo on public.profiles for each row execute function public.pseudo_guard();
+
+-- ---------- 0.1.50.1 : changer son pseudo soi-même, une fois tous les 30 jours ----------
+-- Renvoie null si c'est fait, sinon la raison du refus. Les classements suivent (ils lisent le pseudo du profil) ;
+-- les anciens messages du chat gardent l'ancien pseudo. L'ancien pseudo reste réservé 30 jours au joueur.
+create or replace function public.pseudo_info() returns jsonb language sql stable security definer set search_path = public
+as $$ select jsonb_build_object('at', pseudo_at, 'next', pseudo_at + interval '30 days') from profiles where id = auth.uid() $$;
+revoke all on function public.pseudo_info() from public, anon;
+grant execute on function public.pseudo_info() to authenticated;
+create or replace function public.pseudo_change(p_pseudo text) returns text language plpgsql security definer set search_path = public
+as $$ declare me uuid := auth.uid(); cur text; last timestamptz; susp timestamptz; begin
+  if me is null then return 'Connecte-toi d''abord.'; end if;
+  select pseudo, pseudo_at, suspended_at into cur, last, susp from profiles where id = me;
+  if cur is null then return 'Choisis d''abord un pseudo.'; end if;
+  if susp is not null then return 'Compte suspendu : pas de changement de pseudo.'; end if;
+  p_pseudo := btrim(coalesce(p_pseudo, ''));
+  if p_pseudo !~ '^[A-Za-zÀ-ÖØ-öø-ÿ0-9_-]{3,16}$' then return '3 à 16 caractères : lettres, chiffres, - ou _ (pas d''espace).'; end if;
+  if p_pseudo = cur then return null; end if;
+  if last is not null and last > now() - interval '30 days' then
+    return format('Tu pourras rechanger de pseudo le %s.', to_char((last + interval '30 days') at time zone 'Europe/Paris', 'DD/MM à HH24"h"MI'));
+  end if;
+  if public.pseudo_imite(p_pseudo) and not exists (select 1 from admins where user_id = me) then return 'Ce pseudo n''est pas autorisé.'; end if;
+  if exists (select 1 from profiles where lower(pseudo) = lower(p_pseudo) and id <> me) then return 'Ce pseudo est déjà pris.'; end if;
+  if public.pseudo_held(p_pseudo, me) then return 'Ce pseudo est réservé pour l''instant. Essaie-en un autre.'; end if;
+  if lower(cur) <> lower(p_pseudo) then
+    insert into pseudo_holds (pseudo, user_id, until) values (lower(cur), me, now() + interval '30 days')
+      on conflict (pseudo) do update set user_id = excluded.user_id, until = excluded.until;
+  end if;
+  delete from pseudo_holds where pseudo = lower(p_pseudo) and user_id = me;
+  delete from pseudo_holds where until < now();
+  update profiles set pseudo = p_pseudo, pseudo_at = now() where id = me;
+  perform public.alog(format('%s a changé de pseudo : %s', cur, p_pseudo));
+  return null;
+end $$;
+revoke all on function public.pseudo_change(text) from public, anon;
+grant execute on function public.pseudo_change(text) to authenticated;

@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50";
+const GAME_VERSION = "0.1.50.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.50.1", name: "Nouveaux noms", items: [
+    "Renommer un héros : bouton doré « Renommer » à côté de son nom, dans sa fiche (Équipe et héros). Entrée pour valider, Échap pour annuler",
+    "Le premier changement de nom de chaque héros est gratuit, les suivants coûtent 50 000 kamas",
+    "Les noms de héros passent maintenant par le même filtre que les pseudos (mots interdits, imitation du créateur), à la création, au recrutement et au renommage",
+    "Changer de pseudo : bouton « Changer » dans Options › Sauvegarde › Compte en ligne, une fois tous les 30 jours. Ton ancien pseudo reste réservé à ton compte pendant 30 jours, les classements suivent tout seuls",
+  ] },
   { v: "0.1.50", name: "Quêtes, succès et chasses", items: [
     "Quête principale : 4 chapitres de plus jusqu'au niveau 200 (Les terres sauvages, Les îles lointaines, Le grand froid, Les Dimensions divines). Chaque chapitre fini donne un titre et 2 Coffres en or",
     "Nouveau : une quête de région dans chacune des 31 régions, donnée par un personnage de DOFUS. Au bout : kamas, Coffre en argent, le titre « l'Ami de … » et l'emblème de la région, un ornement de carte de héros",
@@ -3358,6 +3364,13 @@ function teamListHtml() {
     <div class="tleg xs muted"><span><i class="tr-g">▲</i> mieux dans le sac</span><span><i class="tr-p">5</i> points à répartir</span></div>`;
 }
 /* portrait du haut de la fiche : bannière teintée de la couleur de classe, symbole officiel en filigrane */
+/* 0.1.50.1 : renommer le héros depuis sa fiche (crayon doré à côté du nom). Premier changement gratuit, ensuite E.RENAME_COST kamas. */
+function renameHtml(c) {
+  if (ui.renaming !== c.id) return `<h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><button class="hb-ren" data-act="renhero" data-id="${c.id}" data-tip="Changer le nom de ${h(c.name)}" aria-label="Renommer ${h(c.name)}">${G("edit")}<span>Renommer</span></button>`;
+  const cost = E.renameCost(c);
+  const hint = cost ? `Changer de nom coûte ${fmt(cost)} kamas${S.kamas < cost ? ` (tu en as ${fmt(S.kamas)})` : ""}.` : "Premier changement gratuit pour ce héros, ensuite " + fmt(E.RENAME_COST) + " kamas.";
+  return `<div class="hb-renf"><input type="text" id="renName" maxlength="${E.NAME_MAX}" value="${h(ui.renVal != null ? ui.renVal : c.name)}" aria-label="Nouveau nom" autocomplete="off" spellcheck="false"><button type="button" class="btn sm primary" data-act="rengo" data-id="${c.id}">✓ Valider${cost ? ` · ${fmt(cost)} kamas` : ""}</button><button type="button" class="btn sm" data-act="rencancel">Annuler</button>${ui.renErr ? `<span class="hb-renerr">${h(ui.renErr)}</span>` : ""}<span class="xs muted hb-renhint">${hint}</span></div>`;
+}
 function heroesHtml() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
   const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const C = CLASSES[c.cls];
@@ -3374,7 +3387,7 @@ function heroesHtml() {
       ${S.chars.length > 1 ? `<hr><button class="bad" data-act="dismisssheet" data-id="${c.id}">Congédier ${h(c.name)}</button>` : ""}</div>` : "";
   return `${strip}<div class="hban" style="--cc:${C.color};--sym:url('${new URL(symImg(c.cls), location.href).href}')"><span class="hb-bg"></span>
     <span class="hb-por">${head(c, true)}<b class="hb-lv num">${c.lvl}</b></span>
-    <div class="hb-main"><div class="hb-l1"><h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><span class="muted small">${C.name} · niveau ${c.lvl}</span><span class="hb-fr" data-tip="${c.lvl < 200 ? `Prochain cadre au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)}` : "Cadre maximum"}">cadre ${E.FRAMES[E.frameIdx(c.lvl)]}</span>${actPill(c)}</div>
+    <div class="hb-main"><div class="hb-l1">${renameHtml(c)}<span class="muted small">${C.name} · niveau ${c.lvl}</span><span class="hb-fr" data-tip="${c.lvl < 200 ? `Prochain cadre au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)}` : "Cadre maximum"}">cadre ${E.FRAMES[E.frameIdx(c.lvl)]}</span>${actPill(c)}</div>
       <div class="hb-xp xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div><span class="xs muted num">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)} XP`}</span></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}
       <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
       ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP</span></div>` : ""}
@@ -5190,6 +5203,8 @@ document.addEventListener("keydown", (ev) => {
     if (k === "Escape") { ev.preventDefault(); searchClose(); } else if (k === "ArrowDown" || k === "ArrowUp") { ev.preventDefault(); searchMove(k === "ArrowDown" ? 1 : -1); } else if (k === "Enter") { ev.preventDefault(); searchEnter(); }
     return;
   }
+  if (document.activeElement && document.activeElement.id === "onRenPseudo" && k === "Enter") { ev.preventDefault(); const b = $('[data-act="on-renpseudogo"]'); if (b && !b.disabled) b.click(); return; }
+  if (document.activeElement && document.activeElement.id === "renName" && (k === "Enter" || k === "Escape")) { ev.preventDefault(); const b = $(`.hb-renf [data-act="${k === "Enter" ? "rengo" : "rencancel"}"]`); if (b) b.click(); return; } // 0.1.50.1 : Entrée valide le nouveau nom, Échap annule
   if (k === "/" && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !$("#sheet").innerHTML) { ev.preventDefault(); searchOpen(); }
   else if (k === "Escape" && $("#wtip")) tipLater();
   else if ((k === "ArrowUp" || k === "ArrowDown") && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && !$("#sheet").innerHTML && heroRailKey(k === "ArrowDown" ? 1 : -1)) ev.preventDefault();
@@ -5809,7 +5824,7 @@ document.addEventListener("click", (ev) => {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
-    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
+    case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; } S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "settext": S.settings.textSize = +d.v; dirty = true; applyDisplay(); optionsSheet(); return;
     case "settoast": S.settings.toastPos = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); toast("Les notifications apparaissent ici."); return;
@@ -5979,6 +5994,11 @@ document.addEventListener("click", (ev) => {
     case "selchar": ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; if (ui.tab === "team" && !window.matchMedia("(min-width:860px)").matches) window.scrollTo(0, 0); break;
     case "teamlist": ui.tview = "list"; ui.heroMore = false; break;
     case "heromore": ui.heroMore = !ui.heroMore; break;
+    case "renhero": ui.renaming = +d.id; ui.renVal = null; ui.renErr = null; ui.heroMore = false; render(); setTimeout(() => { const i = $("#renName"); if (i) { i.focus(); i.select(); } }, 30); return;
+    case "rencancel": ui.renaming = null; ui.renVal = null; ui.renErr = null; break;
+    case "rengo": { const i = $("#renName"); const v = i ? i.value : ""; const old = (S.chars.find((x) => x.id === +d.id) || {}).name; const err = E.renameChar(S, +d.id, v);
+      if (err) { ui.renVal = v; ui.renErr = err; render(); setTimeout(() => { const n = $("#renName"); if (n) n.focus(); }, 30); return; }
+      ui.renaming = null; ui.renVal = null; ui.renErr = null; dirty = true; const c = S.chars.find((x) => x.id === +d.id); if (c && c.name !== old) toast(`${old} s'appelle maintenant ${c.name}.`); break; }
     case "setmain": S.mainHero = +d.id; dirty = true; toast(`${char(+d.id).name} devient le héros principal.`); break;
     case "teamgo": { if (d.v === "havre") { ui.tab = "home"; ui.home = "havre"; } else { ui.cid = +d.id; ui.tab = "heroes"; ui.hero = d.v; ui.slot = null; } closeSheet(); render(); window.scrollTo(0, 0); return; }
     case "teamfix": { const cc = char(+d.id); if (d.v === "gear") { const n = equipBest(cc); toast(n ? `${cc.name} : ${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.` : "Rien de mieux à équiper."); dirty = true; break; }
@@ -6341,13 +6361,23 @@ function accountHtml() {
   if (!ON.user) return `<div class="stack" style="gap:6px"><span class="xs muted">Pas connecté : la partie n'est gardée que sur cet appareil.</span><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
   const id = ON.identities(), conf = ui.confirm === "ondelete";
   return `<div class="stack" style="gap:8px">
-    <div class="kvg"><span class="muted">Pseudo</span><b>${h((ON.profile && ON.profile.pseudo) || "—")}</b><span></span>
+    <div class="kvg"><span class="muted">Pseudo</span><b>${h((ON.profile && ON.profile.pseudo) || "—")}</b>${ON.profile && !ui.pren ? `<button class="btn sm" data-act="on-renpseudo">${G("edit")} Changer</button>` : "<span></span>"}
     <span class="muted">Discord</span>${id.discord ? `<b>${h(id.discord)}</b><span class="tag good">lié</span>` : `<span class="muted">non lié</span><button class="btn sm" data-act="on-linkdiscord">Lier</button>`}
     <span class="muted">E-mail</span>${id.email ? `<b class="oneline">${h(id.email)}</b><span></span>` : `<span class="muted">aucun</span><span></span>`}
     <span class="muted">Sauvegarde</span>${pillHtml() || `<span class="muted">—</span>`}<button class="btn sm" data-act="on-pill">Envoyer</button></div>
+    ${ON.profile ? pseudoChangeHtml() : ""}
     <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte.</span>
     ${conf ? `<div class="stack" style="gap:6px"><span class="minus small">Ton compte, ton pseudo et ta partie en ligne seront effacés pour toujours. La partie reste sur cet appareil. Tape ton pseudo pour confirmer :</span><div class="row"><input type="text" id="onDelPseudo" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm danger" data-act="on-delete">Supprimer</button><button class="btn sm" data-act="cancelreset">Annuler</button></div></div>`
     : `<div class="row"><button class="btn sm" data-act="on-logout">Se déconnecter</button><button class="btn sm danger" data-act="on-askdelete">Supprimer le compte</button></div>`}</div>`;
+}
+/* 0.1.50.1 : changer son pseudo (Options › Sauvegarde) : une fois tous les 30 jours, l'ancien reste réservé 30 jours. */
+function pseudoChangeHtml() {
+  const nx = ui.pinfo && ui.pinfo.next ? new Date(ui.pinfo.next) : null; const wait = nx && nx > new Date();
+  const when = wait ? `Prochain changement possible le ${nx.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${nx.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.` : "";
+  const note = `Tu peux changer de pseudo une fois tous les 30 jours. L'ancien reste réservé à ton compte pendant 30 jours.${when ? " " + when : ""}`;
+  if (!ui.pren) return `<span class="xs muted">${note}</span>`;
+  return `<div class="stack" style="gap:6px"><b class="small">Nouveau pseudo</b><div class="row"><input type="text" id="onRenPseudo" maxlength="16" autocomplete="off" spellcheck="false" value="${h(ui.prenVal != null ? ui.prenVal : ON.profile.pseudo)}" style="flex:1;min-width:0"><button class="btn sm primary" data-act="on-renpseudogo" ${wait ? "disabled" : ""}>Valider</button><button class="btn sm" data-act="on-renpseudono">Annuler</button></div>
+    <span id="onRenMsg" class="${ui.prenErr ? "minus small" : "xs muted"}">${h(ui.prenErr || "3 à 16 caractères : lettres, chiffres, - ou _. " + note)}</span></div>`;
 }
 async function onAct(a, t) {
   const say = (m) => { const e = $("#onMsg"); if (e) { e.className = "minus small"; e.textContent = m; } else toast(m); };
@@ -6383,6 +6413,16 @@ async function onAct(a, t) {
     case "on-linkdiscord": { const e = await ON.linkDiscord(); if (e) toast(e); return; }
     case "on-logout": { if (onLive()) await onPush(); await ON.signOut(); ON.setLink({ skip: false }); saveNow(); location.reload(); return; }
     case "on-askdelete": ui.confirm = "ondelete"; optionsSheet(); return;
+    case "on-renpseudo": ui.pren = true; ui.prenVal = null; ui.prenErr = null; optionsSheet(); setTimeout(() => { const i = $("#onRenPseudo"); if (i) { i.focus(); i.select(); } }, 30);
+      ON.pseudoInfo().then((x) => { ui.pinfo = x; if (ui.pren && $("#onRenPseudo")) { const v = $("#onRenPseudo").value; ui.prenVal = v; optionsSheet(); } }); return;
+    case "on-renpseudono": ui.pren = false; ui.prenErr = null; optionsSheet(); return;
+    case "on-renpseudogo": {
+      const v = ($("#onRenPseudo").value || "").trim(); ui.prenVal = v; const old = ON.profile.pseudo;
+      const bad = v === old ? null : ON.pseudoProblem(v); if (bad) { ui.prenErr = bad; optionsSheet(); return; }
+      t.disabled = true; const e = v === old ? null : await ON.changePseudo(v);
+      if (e) { ui.prenErr = e; ON.pseudoInfo().then((x) => { ui.pinfo = x; }); optionsSheet(); return; }
+      ui.pren = false; ui.prenErr = null; ui.pinfo = await ON.pseudoInfo(); optionsSheet(); renderStatus(); if (v !== old) toast(`Ton pseudo est maintenant ${v}.`); return;
+    }
     case "on-delete": {
       const v = ($("#onDelPseudo").value || "").trim(); if (!ON.profile || v.toLowerCase() !== ON.profile.pseudo.toLowerCase()) return toast("Tape exactement ton pseudo pour confirmer.");
       t.disabled = true; const e = await ON.deleteAccount(); if (e) { t.disabled = false; return toast("Suppression impossible : " + e); }
