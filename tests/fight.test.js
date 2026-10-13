@@ -196,8 +196,13 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
 /* 0.1.13 : archimonstres et Dofus */
 {
   const S = E.newState("Archis", "iop"); const c = S.chars[0]; c.lvl = 100; E.refreshSpells(c, E.charStats(S, c)); E.refreshSystems(S);
+<<<<<<< HEAD
   assert.strictEqual(E.ARCHI_TOTAL, 241, "241 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 13, "13 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 31, "31 Dofus");
   assert.strictEqual(E.OCRE_TIERS.reduce((a, T, i) => a + E.ocreProgress(S, i)[1], 0), 241, "les six paliers couvrent tous les archimonstres");
+=======
+  assert.strictEqual(E.ARCHI_TOTAL, 277, "277 archimonstres"); assert.strictEqual(E.ARCHI_ZONES.length, 14, "14 zones"); assert.strictEqual(E.DOFUS_ORDER.length, 18, "18 Dofus");
+  assert.strictEqual(E.OCRE_TIERS.reduce((a, T, i) => a + E.ocreProgress(S, i)[1], 0), 277, "les six paliers couvrent tous les archimonstres");
+>>>>>>> d1d0926 (Sous-zones oubliées : 15 sous-zones classiques de DOFUS (niveau 16 à 120))
   assert.ok(D.SPECIAL_CRAFTS["Pierre d'âme"].cons === "pierre_ame" && D.CONSUMABLES.pierre_ame.auto && D.CONSUMABLES.parfum_piste.boost === "piste", "recettes et consommables");
   for (const [n, R] of Object.entries(D.SPECIAL_CRAFTS)) if (/^Copie : /.test(n) || n === "Pierre d'âme" || n === "Parfum de pistage") for (const [r] of R.ing) assert.ok(D.RES[r], `${n} : ressource inconnue ${r}`);
   for (const id of E.DOFUS_ORDER) { const Df = E.DOFUS[id]; assert.ok(D.ITEMS[Df.tpl] && D.ITEMS[Df.tpl].slot === "dofus" && D.ITEMS[Df.tpl].icon, id + " : objet Dofus"); assert.ok(!Df.dg || D.DUNGEONS[Df.dg], id + " : donjon");
@@ -238,5 +243,5 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // sauvegarde
   const S2 = E.deserialize(JSON.stringify(S)); assert.ok(S2.souls && S2.souls[k0] && S2.dofusQ.cacao.done && S2.ocre.tier === 1, "album et quêtes sauvegardés");
   assert.ok(E.ACH.some((a) => a.id === "dofus18" && a.title) && E.ORN.ame, "succès et ornement");
-  console.log("ok - archimonstres : 241 âmes en 13 zones, pierres et parfum, Éternelle moisson, 18 Dofus et leurs quêtes, Dokoko, sauvegarde");
+  console.log("ok - archimonstres : 277 âmes en 14 zones, pierres et parfum, Éternelle moisson, 18 Dofus et leurs quêtes, Dokoko, sauvegarde");
 }
