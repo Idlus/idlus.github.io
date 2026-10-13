@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.49.1";
+const GAME_VERSION = "0.1.49.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.49.2", name: "Roue des Options", items: [
+    "Le bouton des Options, en haut à droite, devient une vraie roue dentée dorée (l'ancienne icône ressemblait à un soleil). Sur ordinateur, le mot « Options » est écrit à côté",
+    "La roue dorée apparaît aussi devant « Options » dans les bulles d'aide, le Carnet des découvertes et ces notes de mise à jour, pour savoir quel bouton chercher" ] },
   { v: "0.1.49.1", name: "Défi réagencé", items: [
     "Page Défi du jour réagencée : une grande carte en haut avec le donjon sur son décor, la stasis, et un seul gros bouton « Lancer le défi » (ou « Battre mon record »), plus « Regarder le combat » et le temps avant le prochain défi",
     "Les deux modificateurs du jour sont expliqués en clair dans la carte, plus besoin de survoler leur nom",
@@ -844,7 +847,6 @@ const GL = {
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
-  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
   cart: '<path d="M3 4h2.5l2.2 11h10.6l2-8H6.6"/><circle cx="9" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/>',
   bug: '<rect x="7" y="8" width="10" height="12" rx="5"/><path d="M12 8v12M9 5l1.5 3M15 5l-1.5 3M3 12h4M17 12h4M4 18l3-1.5M20 18l-3-1.5M4 6l3 2M20 6l-3 2"/>',
   chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/>',
@@ -861,9 +863,13 @@ const GL = {
   bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
   shield: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>',
   crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>' };
-const GLF = { flame: '<path fill="#ffb347" stroke="#c2410c" stroke-width="1.2" d="M12 2.5c1 3.5 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.4.3 1.8 1.2 2.9 2.4 3.3-.6-3.3-.3-6.3.5-8.9z"/><path fill="#ffe08a" d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.8 1.6-2.6 2.1-4.2 1.2 1.2 3.1 2.2 3.1 4.2A2.6 2.6 0 0 1 12 21z"/>',
+/* 0.1.49.2 : roue dentée dorée des Options (l'ancienne ressemblait à un soleil) */
+const GLF = { gear: '<path fill="#d9a646" stroke="#4a3210" stroke-width="1.1" stroke-linejoin="round" d="M10.09 4.03L10.11 1.16L13.89 1.16L13.91 4.03L16.28 5.01L18.33 3.00L21.00 5.67L18.99 7.72L19.97 10.09L22.84 10.11L22.84 13.89L19.97 13.91L18.99 16.28L21.00 18.33L18.33 21.00L16.28 18.99L13.91 19.97L13.89 22.84L10.11 22.84L10.09 19.97L7.72 18.99L5.67 21.00L3.00 18.33L5.01 16.28L4.03 13.91L1.16 13.89L1.16 10.11L4.03 10.09L5.01 7.72L3.00 5.67L5.67 3.00L7.72 5.01Z"/><circle cx="12" cy="12" r="5.6" fill="#f5d98e" stroke="#8a5f22" stroke-width="1"/><circle cx="12" cy="12" r="3.2" fill="#2b2213" stroke="#4a3210" stroke-width="1"/>',
+  flame: '<path fill="#ffb347" stroke="#c2410c" stroke-width="1.2" d="M12 2.5c1 3.5 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.4.3 1.8 1.2 2.9 2.4 3.3-.6-3.3-.3-6.3.5-8.9z"/><path fill="#ffe08a" d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.8 1.6-2.6 2.1-4.2 1.2 1.2 3.1 2.2 3.1 4.2A2.6 2.6 0 0 1 12 21z"/>',
   sparkle: '<path fill="#e2f5ae" stroke="none" d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/><path fill="#dcbb74" stroke="none" d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>' };
 const G = (n, c = "") => GLF[n] ? `<svg class="uico ${c}" viewBox="0 0 24 24" aria-hidden="true">${GLF[n]}</svg>` : `<svg class="uico gl ${c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GL[n] || ""}</svg>`;
+/* « Options » dans un texte déjà échappé : précédé de la roue dorée, pour savoir quel bouton chercher */
+const hOpt = (s) => h(s).replace(/\bOptions\b/g, `${G("gear", "opt-in")}Options`);
 /* émojis des données (consommables, Havre-Sac, boutiques…) → icônes officielles */
 const EMO = { "📜": "quetes", "🧪": "teinture", "📦": "coffre", "🍬": "bonbon", "🍭": "bonbon", "🪙": "kamas", "🎯": "bonbon", "👑": "couronne", "📘": "parchemin_or", "💎": "cristal", "🎁": "coffre", "💰": "bourse", "🗝": "cle", "✨": "poussiere", "⛏": "pioche", "📚": "parchemin_or", "🏺": "trophee", "🥊": "combat", "🌿": "pioche", "🎒": "sac", "🛏": "havre", "🎩": "couronne", "🎟": "carte", "🎖": "trophee", "🌾": "bonbon", "🪽": "ailes", "🪑": "havre" };
 const emo = (e) => { const k = String(e || "").replace(/\ufe0f/g, ""); return EMO[k] ? IC(EMO[k]) : `<span class="uemo">${h(e || "")}</span>`; };
@@ -1239,7 +1245,7 @@ function statusHtml() {
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
+    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}<span class="optlbl hide-sm">Options</span></button>`;
 }
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
 const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
@@ -4854,7 +4860,7 @@ function renderUpdBar() {
   if (el.dataset.k !== html) { el.innerHTML = html; el.dataset.k = html; }
 }
 function changelogSheet() {
-  openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${h(x)}</li>`).join("")}</ul></div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
+  openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul></div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
 }
 /* nouvelle version en ligne pendant que le jeu est ouvert */
 function checkNewVersion() {
@@ -5040,7 +5046,7 @@ function showTipBubble(t) {
   tipHide(); tipShown = t.id;
   const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
   const d = document.createElement("div"); d.id = "wtip"; d.className = "wtip"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Découverte");
-  d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${h(t.txt)}</div>
+  d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${hOpt(t.txt)}</div>
     <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${news ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
   document.body.appendChild(d);
   const vis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
@@ -5067,8 +5073,8 @@ function tipsSheet() {
     <div class="bar"><i style="width:${total ? Math.round((seen / total) * 100) : 0}%"></i></div>
     <div class="row small"><span class="muted">Je connais DOFUS</span><span class="seg">${[[true, "Oui"], [false, "Non"]].map(([v, n]) => `<button data-act="tipsknow" data-v="${v ? 1 : 0}" aria-pressed="${!!T.know === v}">${n}</button>`).join("")}</span><span class="xs muted">(oui : ${E.TIPS.filter((t) => t.dofus).length} bulles de moins, sur ce que tout joueur de DOFUS connaît)</span></div>
     <div class="list">${L.map((t) => { const ok = !!T.seen[t.id];
-      return `<div class="li ${ok ? "" : "muted"}" style="align-items:center"><span class="ck ${ok ? "on" : ""}"></span><span class="grow"><b>${h(t.name)}</b><br><span class="xs muted">${ok ? h(t.txt) : "à découvrir · " + h(t.hint)}</span></span>${ok ? `<button class="btn sm" data-act="tipread" data-id="${t.id}">Relire</button>` : ""}</div>`; }).join("")}</div>
-    <div><button class="btn" data-act="options">← Options</button></div>`);
+      return `<div class="li ${ok ? "" : "muted"}" style="align-items:center"><span class="ck ${ok ? "on" : ""}"></span><span class="grow"><b>${h(t.name)}</b><br><span class="xs muted">${ok ? hOpt(t.txt) : "à découvrir · " + hOpt(t.hint)}</span></span>${ok ? `<button class="btn sm" data-act="tipread" data-id="${t.id}">Relire</button>` : ""}</div>`; }).join("")}</div>
+    <div><button class="btn" data-act="options">← ${G("gear")} Options</button></div>`);
 }
 /* ---- recherche rapide ---- */
 let wsRes = [], wsSel = 0;
@@ -5545,7 +5551,7 @@ function renderCarnet() {
   const sumIn = L.inn.reduce((s, x) => s + x.v, 0), sumOut = L.out.reduce((s, x) => s + x.v, 0);
   const bars = (rows, cls) => { const mx = Math.max(1, ...rows.map((x) => x.v)); return rows.length ? rows.map((x) => `<div class="su-lr"><span>${h(x.name)}</span><span class="su-bar"><i class="${cls}" style="width:${Math.max(2, x.v / mx * 100)}%"></i></span><b class="num">${fmtK(x.v)}</b></div>`).join("") : `<div class="xs muted">Rien sur cette période.</div>`; };
   const sent = C.sent === suWeek();
-  const send = ON ? (ON.user && ON.profile ? `<button class="btn sm primary" data-act="su-send">${sent ? "Renvoyer mon carnet" : "Envoyer mon carnet à Mathis"}</button>` : `<span class="xs muted">Connecte-toi (Options › Compte) pour l'envoyer.</span>`) : "";
+  const send = ON ? (ON.user && ON.profile ? `<button class="btn sm primary" data-act="su-send">${sent ? "Renvoyer mon carnet" : "Envoyer mon carnet à Mathis"}</button>` : `<span class="xs muted">Connecte-toi (${G("gear", "opt-in")}Options › Compte) pour l'envoyer.</span>`) : "";
   $("#main").innerHTML = `<div class="pagehead"><h1>Carnet de bord</h1><span class="seg">${[[7, "7 jours"], [30, "30 jours"]].map(([v, n]) => `<button data-act="su-days" data-v="${v}" aria-pressed="${SU.days === v}">${n}</button>`).join("")}</span></div>
   <div class="stack">
   <div class="kpis su-kpis">
@@ -6258,7 +6264,7 @@ function conflictSheet(st, info) {
     ${saveLine(info.meta, agoTxt(rt), "monde", `En ligne${info.device && info.device !== ON.device() ? ` (${info.device})` : ""}`, remoteNewer ? "plus récente" : "")}
     ${saveLine(onMeta(st), agoTxt(lt), "coffre", `Cet ${ON.device() === "téléphone" ? "appareil" : "ordinateur"}`, remoteNewer ? "" : "plus récente")}
     <div class="row"><button class="btn ${remoteNewer ? "primary" : ""}" data-act="on-keepremote">Garder celle en ligne</button><button class="btn ${remoteNewer ? "" : "primary"}" data-act="on-keeplocal">Garder celle d'ici</button></div>
-    <span class="xs muted">L'autre version n'est pas perdue : elle part dans les copies de secours (Options).</span>`);
+    <span class="xs muted">L'autre version n'est pas perdue : elle part dans les copies de secours (${G("gear", "opt-in")}Options).</span>`);
 }
 /* Démarrage avec un compte : quelle partie lancer ? */
 async function onAfterLogin() {
