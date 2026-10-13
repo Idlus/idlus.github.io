@@ -3748,3 +3748,42 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .updbar.wbbar .uico{width:30px;height:30px;flex:none}
 @media (max-width:640px){.updbar.wbbar{flex-direction:row;flex-wrap:wrap}.updbar.wbbar>span{flex:1 1 60%}.wbo-t{font-size:30px}.wbo-boss{width:140px;height:140px}.wbw-g{font-size:30px;min-width:44px}}
 @media (prefers-reduced-motion:reduce){.chat .ann-wb,.wbw-g.up{animation:none}}
+/* 0.1.49.1 : page Défi réagencée (carte du jour, tuiles, essais et classement) */
+.dfx{display:flex;flex-direction:column;gap:10px}
+.dfx-hero{position:relative;border-radius:18px;overflow:hidden;border:2px solid rgba(var(--glw),.6);min-height:250px}
+.dfx-hero .scene{position:absolute;inset:0;border:0}
+.dfx-hero .scene svg{width:100%;height:100%}
+.dfx-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,10,6,.88) 0,rgba(8,10,6,.6) 55%,rgba(8,10,6,.25));pointer-events:none}
+.dfx-in{position:relative;z-index:1;display:grid;grid-template-columns:auto minmax(0,1fr) 230px;gap:18px;align-items:center;padding:18px 20px}
+.dfx-boss img{width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.dfx-info{display:flex;flex-direction:column;gap:6px;min-width:0;color:#f2ede4}
+.dfx-info .wk{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--gold2);display:flex;gap:4px;align-items:center}
+.dfx-info h1{font-family:var(--font-title);font-weight:400;font-size:30px;margin:0;line-height:1.1}
+.dfx-tags{gap:8px;align-items:center}
+.dfx-mods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.dfx-mods div{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 9px;display:flex;flex-direction:column;font-size:12px;line-height:1.3}
+.dfx-mods b{color:#9fd3ff;font-size:12.5px}
+.dfx-act{display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:center;color:#f2ede4}
+.dfx-rec{display:flex;flex-direction:column;align-items:center;font-size:12px}
+.dfx-rec b{font-family:var(--font-title);font-weight:400;font-size:38px;color:var(--gold2);line-height:1}
+.dfx-act .btn.big{font-size:18px;padding:12px 16px}
+.dfx-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+.dfx-tile{background:var(--panel);border:2px solid var(--frame);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.dfx-tile .lab{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.dfx-tile .big{font-size:22px}
+.dfx-tile .chestico.lg{width:44px;height:44px}
+.dfx-team{display:flex;gap:6px;flex-wrap:wrap}
+.dfx-rules{margin-top:14px;padding:10px 14px}
+.dfx-rules summary{cursor:pointer;font-weight:800;display:flex;gap:8px;align-items:center}
+@media (max-width:860px){.dfx-tiles{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .dfx-in{grid-template-columns:auto minmax(0,1fr);gap:12px;padding:14px}
+  .dfx-boss img{width:72px;height:72px}
+  .dfx-info h1{font-size:23px}
+  .dfx-mods{grid-template-columns:1fr}
+  .dfx-act{grid-column:1/-1;flex-direction:column}
+  .dfx-hero::after{background:linear-gradient(180deg,rgba(8,10,6,.7),rgba(8,10,6,.88))}
+}
+.dfx-top{gap:10px;justify-content:flex-start}
+.dfx-low{align-items:start}
+@media (max-width:640px){.dfx-top small{display:none}.dfx-top .seg{flex:1}}

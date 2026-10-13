@@ -1,6 +1,17 @@
 {
-  "version": "0.1.49",
+  "version": "0.1.49.1",
   "versions": [
+    {
+      "v": "0.1.49.1",
+      "name": "Défi réagencé",
+      "items": [
+        "Page Défi du jour réagencée : une grande carte en haut avec le donjon sur son décor, la stasis, et un seul gros bouton « Lancer le défi » (ou « Battre mon record »), plus « Regarder le combat » et le temps avant le prochain défi",
+        "Les deux modificateurs du jour sont expliqués en clair dans la carte, plus besoin de survoler leur nom",
+        "Les paliers (Découverte, Aventure, Légende) passent dans un petit sélecteur au-dessus de la carte, affiché seulement si tu peux en jouer plusieurs",
+        "Trois tuiles sous la carte : ta série (avec le prochain palier de récompense), la Bourse du jour et ton équipe (portraits et bouton « Changer »)",
+        "Dessous, tes essais du palier et le classement ; « Comment ça marche » est replié et s'ouvre d'un clic. La série et les boutons en double ont disparu"
+      ]
+    },
     {
       "v": "0.1.49",
       "name": "Boss des mondes",

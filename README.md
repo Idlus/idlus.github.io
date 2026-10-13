@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.49.1 « Défi réagencé »
+Mathis : réagencer la page Défi du jour (maquette avec une capture par option, réponses « 1A 2A 3A 4A 5A 6A »). `renderDefi` : sélecteur de palier `.dfx-top` (seulement si plusieurs paliers jouables), carte `.dfx-hero` (décor `sceneSVG(dgDeco)`, modificateurs expliqués `.dfx-mods`, un seul bouton principal), tuiles `.dfx-tiles` (série, Bourse, équipe), essais du palier + classement (`defiLbFill`), règles dans un `<details>` replié. La tuile Défi de l'Accueil ne change pas.
+
 ## 0.1.49 « Boss des mondes »
 Boss commun à tout le serveur (comme le World Boss de Summoners War). js/wboss.js : règles et combat (Gargandyas `m8062`, Fragment d'anomalie, 4 objets, `E.WB_*`, `E.wbDef(n)` rotation de 9 boss, `E.wbWatch/wbWatchStep/wbResult/wbSim` avec hasard `E.wbSeed(n, uid, k)`, boutique `E.wbBuy`, bonus d'XP `E.wbXpUntil`). Force calibrée par `node tools/wboss_calib.js` (équipe équipée ≈ 300 points, grade S). js/wbossui.js : page, carte du chat (`WBUI.card`), effet d'arrivée, bandeau `#wbbar`, tuile d'accueil, option. Serveur : supabase/wboss.sql (`wb_state`, `wb_hits`, `wb_kills`, `wb_info()` public, `wb_start`/`wb_done` pour la fonction « record » `{ wboss: 1 }` qui rejoue l'essai) ; récompenses par `hdv_op` (nouveau champ `untitle` dans market.js) ; annonces `chat_msgs` kind `ann`, data `{ t: "wb", ev: "arr" | "ph" | "dead" }`. Version de test sans serveur : boss local de 1 200 points.
 
