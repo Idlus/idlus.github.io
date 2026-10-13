@@ -5085,10 +5085,10 @@ function launchSheet() {
     <h2>Bienvenue dans Idlus 1.0 !</h2>
     <p class="small">Merci d'être là pour la sortie officielle. Ta partie est gardée telle quelle : rien n'est remis à zéro.</p>
     <div class="l10-gift"><img src="assets/ui/orn/orn_fondateur.svg" alt="">
-      <div><b>Ton cadeau de lancement</b><span class="xs">Titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le <b>Jyfus</b> (+20 Vitalité, +10 Sagesse) et un Coffre des Douze. Offert à tous ceux qui jouent avant le 20 octobre au soir.</span></div></div>
+      <div><b>Ton cadeau de lancement</b><span class="xs">Titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le <strong>Jyfus</strong> (+20 Vitalité, +10 Sagesse) et un Coffre des Douze. Offert à tous ceux qui jouent avant le 20 octobre au soir.</span></div></div>
     <div class="l10-gift race"><img src="assets/ui/orn/orn_legende.svg" alt="">
       <div><b>Course de lancement</b><span class="xs">Les 10 premiers comptes à finir la quête principale gagnent le titre « Légende de la 1.0 » et l'ornement unique « Couronne de la Légende ». Il faut être connecté à un compte.</span></div></div>
-    <ul class="small l10-list">${C.items.slice(0, 6).map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul>
+    <ul class="small l10-list">${C.items.slice(3, 6).map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul>
     <div class="row l10-btns"><button class="btn" data-act="changelog">Toutes les nouveautés</button><button class="btn primary" data-act="closesheet">C'est parti !</button></div>
   </div>`);
 }

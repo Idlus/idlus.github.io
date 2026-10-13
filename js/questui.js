@@ -58,7 +58,7 @@
       case "commandes": { const C = E.cmdState(s); const done = C.list.filter((o) => o.got >= o.n).length; return [`${done}/${C.list.length}`, done === C.list.length ? "ok" : C.list.some((o) => cmdReady(s, o)) ? "todo" : ""]; }
       case "temples": { const all = E.templeClasses(s).length; const left = templeLeft(s).length; return all ? [`${all - left}/${all}`, left ? "todo" : "ok"] : ["", ""]; }
       case "main": return [`${Math.min(s.quest.step, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}`, s.quest.step >= E.MAIN_QUEST.length ? "ok" : ""];
-      case "dofus": return [`${E.dofusCount(s)}/18`, ""];
+      case "dofus": return [`${E.dofusCount(s)}/${E.DOFUS_ORDER.length}`, ""];
       case "align": return [s.align ? `rang ${E.alignRankIdx(s)}` : "", ""];
       case "ach": return [`${Object.keys(s.ach).length}/${E.ACH.length}`, ""];
       case "orn": { const ids = Object.keys(E.ORN); return [`${ids.filter((id) => E.ornUnlocked(s, id)).length}/${ids.length}`, ""]; }
