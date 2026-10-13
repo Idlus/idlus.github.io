@@ -1,0 +1,38 @@
+# Boss des mondes (0.1.49) : quand un boss tombe sur le jeu public, annonce dans #annonces sur Discord
+# (dernier coup, podium, boss suivant). Regarde toutes les 10 minutes la table wb_kills (supabase/wboss.sql)
+# et marque chaque mort annoncée (colonne posted) pour ne jamais la poster deux fois.
+# Secrets : SUPABASE_ACCESS_TOKEN (lecture de la base) et DISCORD_BOT_TOKEN.
+name: Boss des mondes sur Discord
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: discord-wboss
+  cancel-in-progress: false
+env:
+  PROJECT_REF: bolbuxuxydfslwpfbfff
+jobs:
+  annonce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Morts de boss pas encore annoncées
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN manquant." >&2; exit 1; fi
+          q="update public.wb_kills k set posted = now() where posted is null and ended > now() - interval '1 day' returning n, public.wb_name(n) as name, public.wb_name(n + 1) as next, extract(epoch from ended - started)::int as dur, public.pseudo_of(last_user) as by, players, top"
+          jq -n --arg q "$q" '{query: $q}' > /tmp/q.json
+          code=$(curl -sS -o kills.json -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json)
+          echo "HTTP $code"; head -c 600 kills.json; echo
+          if [ "$code" -ge 300 ]; then exit 1; fi
+      - name: Annonce sur Discord
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: node tools/wboss_discord.js kills.json

@@ -50,7 +50,7 @@
     C.p.forEach((m) => { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; });
   }
   /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
-  const isFeat = (m) => m.kind === "ann" && !(m.data && m.data.t === "admin");
+  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb")); // 0.1.49 : le Boss des mondes s'annonce dans le Général
   function onMsg(m) {
     if (!m || !m.id) return;
     const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : C.g;
@@ -62,6 +62,7 @@
     else if (isFeat(m)) { if (!(C.open && C.tab === "h")) C.unreadH++; }
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
+    if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
     paint(true);
   }
 
@@ -116,6 +117,7 @@
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
+    if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
     if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && m.data.t === "dofus" ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
@@ -135,6 +137,7 @@
       case "dofus": return t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`);
       case "koli": return t(`${p} atteint le grade ${b(["Bronze", "Argent", "Or", "Cristal", "Diamant"][d.g] || "Or")} au Kolizéum (cote ${(+d.cote || 0).toLocaleString("fr-FR")}) !`); // 0.1.44
       case "admin": return t(`${plain ? "Annonce" : "<b>Annonce</b>"} : ${h(m.body || "")}`);
+      case "wb": return t(d.ev === "dead" ? `${b(d.name || "Le boss")} est tombé ! Dernier coup : ${p}.` : d.ev === "ph" ? `${b(d.name || "Le boss")} passe en phase ${d.ph} !` : `Boss des mondes : ${b(d.name || "un boss")} arrive !`); // 0.1.49
       default: return h(m.body || "");
     }
   }
