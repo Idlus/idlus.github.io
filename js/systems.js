@@ -1009,7 +1009,7 @@
     else if (names.length && !S.dungeon) S.fight = null;
     if (names.length) note(S, `${names.join(", ")} ${names.length > 1 ? "reprennent" : "reprend"} la récolte.`, "info");
   };
-  /* 0.1.56.1 : Protecteurs, Dopeuls et gardiens du trésor à la même difficulté quelle que soit la taille de l'équipe. Le bonus « petit groupe » de chasse
+  /* 1.0.1 : Protecteurs, Dopeuls et gardiens du trésor à la même difficulté quelle que soit la taille de l'équipe. Le bonus « petit groupe » de chasse
      (E.HUNT_SMALL : PV, dégâts subis réduits, monstres moins renforcés) rendait ces adversaires bien plus faciles seul qu'en équipe,
      et le duo, qui affronte déjà deux attaques par tour, était le plus dur. Réglé par simulation (une équipe bien équipée gagne
      presque toujours, une équipe sans équipement perd, à toutes les tailles). */

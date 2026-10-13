@@ -1,6 +1,14 @@
 {
-  "version": "1.0",
+  "version": "1.0.1",
   "versions": [
+    {
+      "v": "1.0.1",
+      "name": "Défis à toutes les tailles",
+      "items": [
+        "Dopeuls des temples, Protecteurs des ressources et gardiens de la chasse au trésor : même difficulté seul ou en équipe. Avant, un héros seul les battait bien plus facilement, et un duo ou un trio bien équipé perdait souvent",
+        "Ces combats sont un peu plus doux vers le niveau 40 et le niveau 200, où même une équipe bien équipée perdait trop souvent. Sans équipement, on perd toujours, même seul"
+      ]
+    },
     {
       "v": "1.0",
       "name": "Idlus 1.0",

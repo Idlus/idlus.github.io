@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0";
+const GAME_VERSION = "1.0.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.1", name: "Défis à toutes les tailles", items: [
+    "Dopeuls des temples, Protecteurs des ressources et gardiens de la chasse au trésor : même difficulté seul ou en équipe. Avant, un héros seul les battait bien plus facilement, et un duo ou un trio bien équipé perdait souvent",
+    "Ces combats sont un peu plus doux vers le niveau 40 et le niveau 200, où même une équipe bien équipée perdait trop souvent. Sans équipement, on perd toujours, même seul",
+  ] },
   { v: "1.0", name: "Idlus 1.0", items: [
     "Idlus sort officiellement en version 1.0 ! Les parties sont gardées telles quelles, rien n'est remis à zéro",
     "Cadeau de lancement pour tous ceux qui jouent avant le mardi 20 octobre au soir : titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le Jyfus (« J'y étais ! », +20 Vitalité, +10 Sagesse) et un Coffre des Douze",
