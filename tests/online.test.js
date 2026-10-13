@@ -331,6 +331,8 @@ const MOCK = () => {
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "admin"; localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector('#status [data-act="adm-open"]', { timeout: 5000 });
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
+    if ((await page.getAttribute('.adm a[href="beta/?panel=1"]', "target")) !== "_blank") fail("panel admin : bouton Panel de test absent"); // 1.0.7.3
+    if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
     await page.click('.adm [data-act="adm-tab"][data-v="joueurs"]'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 });
     await page.click('.adm [data-act="adm-sel"]'); await page.waitForSelector(".adm .fiche", { timeout: 5000 });
     await page.click('.adm [data-act="adm-mute"][data-v="60"]'); await page.waitForTimeout(400);

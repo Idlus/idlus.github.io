@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.3 « Panel de test depuis le jeu »
+Panel admin du jeu public (js/chat.js) : bouton « Panel de test » pour le compte admin, qui ouvre beta/?panel=1 dans un nouvel onglet ; la bêta (beta/js/ui.js) lance alors directement la partie de test et ouvre le panel si le rôle admin est confirmé.
+
 ## 1.0.7.2 « Vœux de la Fontaine »
 Fontaine onirique du Songe : un vœu acheté (`o.sold`, déjà sauvegardé) s'affiche en vert avec « ✓ Obtenu » (`.sg-of.sold`, `.sg-got`), compteur « N vœux pris » en haut de la fiche, petit éclat sur la carte achetée et message de confirmation ; cartes rangées en grille sur téléphone. Test 9 de `tests/songe.test.js`.
 

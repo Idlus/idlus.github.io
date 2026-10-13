@@ -1,6 +1,13 @@
 {
-  "version": "1.0.7.2",
+  "version": "1.0.7.3",
   "versions": [
+    {
+      "v": "1.0.7.3",
+      "name": "Panel de test depuis le jeu",
+      "items": [
+        "Panel admin : nouveau bouton « Panel de test », réservé au compte admin. Il ouvre la partie de test dans un nouvel onglet avec le panel de test déjà ouvert, sans jamais toucher au jeu public"
+      ]
+    },
     {
       "v": "1.0.7.2",
       "name": "Vœux de la Fontaine",

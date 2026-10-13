@@ -366,8 +366,8 @@
   function admHtml(loading) {
     const tabs = `<div class="atabs">${ATABS().map(([k, n, c]) => `<button class="${k === A.tab ? "on" : ""}" data-act="adm-tab" data-v="${k}">${n}${c ? ` <span class="n">${c}</span>` : ""}</button>`).join("")}</div>`;
     const body = loading || !A.ov ? `<div class="box"><div class="empty">Chargement…</div></div>` : admBody();
-    return `<section class="adm"><div class="ahd"><h1>${isAdmin() ? "Administration" : "Modération"}</h1><span class="badge">${isAdmin() ? "Réservé à ton compte" : "Modérateur"}</span><button class="btn sm" data-act="adm-reload">Actualiser</button></div>
-      <p class="small muted">Ce panel agit sur le serveur, pour tous les joueurs. Il ne touche pas à ta partie. Le panel de test reste à part, sur la bêta.</p>${tabs}${body}</section>`;
+    return `<section class="adm"><div class="ahd"><h1>${isAdmin() ? "Administration" : "Modération"}</h1><span class="badge">${isAdmin() ? "Réservé à ton compte" : "Modérateur"}</span><button class="btn sm" data-act="adm-reload">Actualiser</button>${isAdmin() ? `<a class="btn sm" href="beta/?panel=1" target="_blank" rel="noopener">${X().G("bug")} Panel de test</a>` : ""}</div>
+      <p class="small muted">Ce panel agit sur le serveur, pour tous les joueurs. Il ne touche pas à ta partie. Le panel de test s'ouvre dans un nouvel onglet, sur ta partie de test (la bêta) : il ne touche jamais au jeu public.</p>${tabs}${body}</section>`;
   }
   const when = (t) => { if (!t) return "—"; const s = (Date.now() - new Date(t)) / 1000; return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
   const dur = (sec) => { sec = Math.max(0, Math.round(sec || 0)); return sec >= 3600 ? `${Math.round(sec / 3600)} h` : `${Math.round(sec / 60)} min`; };

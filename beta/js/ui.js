@@ -6812,6 +6812,11 @@ window.addEventListener("pagehide", () => saveNow());
 
 /* Bêta sans serveur : au premier chargement de la session, choisir entre tester hors ligne ou jouer en ligne (jeu public). */
 function betaGate() {
+  if (/[?&]panel=1/.test(location.search)) { // bouton « Panel de test » du panel admin du jeu public : partie de test et panel ouverts directement
+    try { sessionStorage.setItem("idlus-beta-choix", "1"); history.replaceState(null, "", location.pathname); } catch (e) {}
+    bootGame(); checkAdmin().then((ok) => { if (ok) setTimeout(() => { const b = document.querySelector('[data-adm="open"]'); if (b) b.click(); }, 400); });
+    return;
+  }
   try { if (sessionStorage.getItem("idlus-beta-choix")) { bootGame(); checkAdmin(); return; } } catch (e) {}
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   $("#main").innerHTML = `<section class="start stack betachoix"><div class="logo">idlus</div><p class="muted" style="text-align:center;margin:0">Version de test</p>
