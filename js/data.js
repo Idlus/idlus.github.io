@@ -388,6 +388,12 @@
     coffre_obsidienne: { name: "Coffre en obsidienne", icon: "🔮", img: "obsidienne", kind: "chest", tier: 3, desc: "Environ 1 heure de chasse : kamas, poussière, ressources, 2 consommables rares, des Éclats et un objet de ton niveau." },
     coffre_douze:      { name: "Coffre des Douze",     icon: "🌟", img: "douze",      kind: "chest", tier: 4, desc: "Environ 2 heures de chasse : kamas, poussière, ressources, 3 consommables rares, des Éclats, 2 objets de ton niveau et un Grand parchemin." },
   };
+  /* 0.1.53 « Armes » : potions de forgemagie élémentaire (DOFUS) : changent les dégâts Neutre d'une arme */
+  [["seisme", "Potion de Séisme", "t", 26004, 0], ["incendie", "Potion d'Incendie", "f", 26001, 0], ["tsunami", "Potion de Tsunami", "e", 26002, 0], ["ouragan", "Potion d'Ouragan", "a", 26003, 0],
+   ["secousse", "Potion de Secousse", "t", 26004, 1], ["etincelle", "Potion d'Étincelle", "f", 26001, 1], ["crachin", "Potion de Crachin", "e", 26002, 1], ["courant", "Potion de Courant d'Air", "a", 26003, 1]].forEach(([k, n, el, ic, half]) => {
+    const en = { t: "Terre", f: "Feu", e: "Eau", a: "Air" }[el];
+    CONSUMABLES["potion_" + k] = { name: n, icon: "🧪", pimg: ic, kind: "wpot", el, half: !!half, desc: half ? `À l'Établi de forgemagie : la moitié des dégâts Neutre d'une arme passe en ${en}.` : `À l'Établi de forgemagie : les dégâts Neutre d'une arme passent en ${en}.` };
+  });
   /* 3.1 : parchemins de caractéristiques (Petit +1, Grand +3), jusqu'à +100 par caractéristique et par héros */
   [["fo", "Force"], ["ine", "Intelligence"], ["cha", "Chance"], ["age", "Agilité"], ["vit", "Vitalité"], ["sa", "Sagesse"]].forEach(([k, n]) => {
     CONSUMABLES["parch_" + k + "_p"] = { name: "Petit parchemin de " + n, icon: "📜", kind: "scroll", stat: k, v: 1, desc: `+1 ${n} définitif pour un héros (jusqu'à +100 par parchemins). Ne compte pas dans les paliers de points.` };

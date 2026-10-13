@@ -10,6 +10,8 @@
   const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, GATHER_JOBS, CRAFT_JOBS, DOFUS_SLOTS,
           MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
+  const ARMES = root.ARMES || (typeof require !== "undefined" ? require("./armes.js") : {}); // 0.1.53 : dégâts propres des armes (tools/build_armes.js)
+
   const E = {};
   E.VERSION = 9;
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
@@ -724,6 +726,77 @@
       buffs: [], dots: [], debuffs: [], shield: 0, alive: true, weaken: 0, paLoss: 0, role: E.monRole(id, lvl),
     };
   };
+  /* ---------------- 0.1.53 « Armes » : le coup d'arme ----------------
+     Chaque arme frappe avec ses dégâts DOFUS (js/armes.js) ×1,5, dans une case en plus de la barre de sorts.
+     Maîtrise : deux types d'arme favoris par classe (+20 % de dégâts). Chaque type a son effet.
+     Potions de forgemagie élémentaire : it.wel = élément qui remplace le Neutre (it.welh : potion simple, la moitié seulement). */
+  E.WEAPON = { mult: 1.5, fav: 0.2 };
+  E.WTYPES = {
+    2: { name: "Arc", fx: "precis", fxName: "Tir précis", desc: "+10 % de chances de coup critique" },
+    3: { name: "Baguette", fx: "bened", fxName: "Bénédiction", desc: "soigne l'allié le plus blessé de 20 % des dégâts" },
+    4: { name: "Bâton", fx: "garde", fxName: "Garde", desc: "+10 % de résistances au porteur jusqu'à son prochain tour" },
+    5: { name: "Dague", fx: "double", fxName: "Double frappe", desc: "peut frapper 2 fois par tour" },
+    6: { name: "Épée", fx: "grace", fxName: "Coup de grâce", desc: "+25 % de dégâts sur un ennemi sous 30 % de PV" },
+    7: { name: "Marteau", fx: "onde", fxName: "Onde de choc", desc: "touche aussi 2 autres ennemis à 40 %" },
+    8: { name: "Pelle", fx: "deterre", fxName: "Déterrage", desc: "25 % de chances de déterrer une ressource sur l'ennemi achevé" },
+    19: { name: "Hache", fx: "entaille", fxName: "Entaille", desc: "l'ennemi saigne 2 tours (15 % des dégâts par tour)" },
+    22: { name: "Faux", fx: "entaille", fxName: "Entaille", desc: "l'ennemi saigne 2 tours (15 % des dégâts par tour)" },
+    271: { name: "Lance", fx: "perce", fxName: "Perce-armure", desc: "ignore 15 % des résistances de la cible" },
+  };
+  E.CLASS_WEAPONS = { iop: [6, 7], cra: [2, 5], eni: [3, 4], feca: [4, 3], osa: [7, 4], enu: [8, 7], sram: [5, 2], xelor: [7, 3], eca: [6, 5], sadi: [4, 3],
+    sacri: [6, 19], panda: [19, 4], roub: [5, 7], zobal: [8, 19], steam: [7, 8], elio: [6, 5], hupper: [4, 3], ougi: [19, 5], forge: [271, 6] };
+  E.WEAPON_POTIONS = { t: "potion_seisme", f: "potion_incendie", e: "potion_tsunami", a: "potion_ouragan" };
+  E.WEAPON_POTIONS_S = { t: "potion_secousse", f: "potion_etincelle", e: "potion_crachin", a: "potion_courant" };
+  E.weaponData = (tpl) => {
+    const a = ARMES[tpl]; if (a) return { type: a[0], pa: a[1], cc: a[2], ccb: a[3], r: [a[4], a[5]], casts: a[6], lines: a[7].map(([el, min, max, k]) => ({ el, min, max, k: k || 0 })), paRm: a[8] || 0 };
+    const T = ITEMS[tpl]; if (!T || T.slot !== "arme") return null; // arme sans dégâts connus : une ligne Neutre de son niveau
+    return { type: 6, pa: 4, cc: 25, ccb: 5, r: [1, 1], casts: 1, lines: [{ el: "n", min: Math.round(5 + T.lvl * 0.18), max: Math.round(7 + T.lvl * 0.24), k: 0 }], paRm: 0, guess: true };
+  };
+  E.weaponLines = (W, wel, welh) => {
+    if (!wel) return W.lines;
+    const out = [];
+    W.lines.forEach((l) => {
+      if (l.el !== "n" || l.k === 2) return out.push(l);
+      if (!welh) return out.push(Object.assign({}, l, { el: wel }));
+      out.push(Object.assign({}, l, { min: Math.ceil(l.min / 2), max: Math.ceil(l.max / 2) }), Object.assign({}, l, { el: wel, min: Math.floor(l.min / 2), max: Math.floor(l.max / 2) }));
+    });
+    return out.filter((l) => l.max > 0);
+  };
+  E.weaponFav = (cls, type) => (E.CLASS_WEAPONS[cls] || []).includes(type);
+  E.weaponSpellOf = (cls, tpl, wel, welh) => {
+    const W = E.weaponData(tpl); const T = ITEMS[tpl]; if (!W || !T) return null;
+    const fav = E.weaponFav(cls, W.type); const m = E.WEAPON.mult * (fav ? 1 + E.WEAPON.fav : 1); const ty = E.WTYPES[W.type] || {};
+    const fx = E.weaponLines(W, wel, welh).map((l) => l.k === 2 ? { k: "heal", min: Math.round(l.min * m), max: Math.round(l.max * m), n: 1 }
+      : { k: l.k ? "drain" : "dmg", el: l.el, min: Math.round(l.min * m), max: Math.round(l.max * m), n: 1 });
+    if (W.paRm) fx.push({ k: "apdrain", v: W.paRm, n: 1 });
+    const el = (fx.find((f) => f.el) || {}).el || "n";
+    return { id: "arme", wp: true, name: T.name, tpl, lvl: 1, pair: "arme", el, wtype: W.type, wfx: ty.fx || null, fav, ccb: W.ccb,
+      grades: [{ lvl: 1, pa: W.pa, cd: 0, casts: ty.fx === "double" ? Math.max(2, W.casts) : W.casts, fx }] };
+  };
+  E.weaponSpell = (S, c) => { const uid = c && c.equip && c.equip.arme; const it = uid && S.items[uid]; return it && ITEMS[it.tpl] ? E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh) : null; };
+  E.WSLOT = { id: "arme", cond: "", tgt: "low", w: true };
+  /* potion de forgemagie élémentaire : change le Neutre de l'arme (réussite garantie, une potion par changement) */
+  E.weaponPotion = (S, uid, cons) => {
+    const it = S.items[uid]; const T = it && ITEMS[it.tpl]; if (!T || T.slot !== "arme") return { err: "Seules les armes prennent ces potions." };
+    const C = CONSUMABLES[cons]; if (!C || C.kind !== "wpot") return { err: "Potion inconnue." };
+    if (!(S.cons[cons] > 0)) return { err: `Il te faut une ${C.name}.` };
+    const W = E.weaponData(it.tpl); if (!W.lines.some((l) => l.el === "n" && l.k !== 2)) return { err: "Cette arme n'a pas de dégâts Neutre." };
+    if (it.wel === C.el && !!it.welh === !!C.half) return { err: "L'arme a déjà cet élément." };
+    S.cons[cons]--; if (!S.cons[cons]) delete S.cons[cons];
+    it.wel = C.el; if (C.half) it.welh = true; else delete it.welh;
+    E.emit(S, "equip", {});
+    return { ok: true, txt: `${C.name} : ${T.name} frappe maintenant en ${ELEMENTS[C.el].name}${C.half ? " (pour moitié)" : ""}.` };
+  };
+  /* préparer une potion : herbes de l'Alchimiste et kamas (simple : Alchimiste 20, grande : Alchimiste 80) */
+  E.WPOT_COST = { s: { lvl: 20, herb: [["Sauge", 10]], kamas: 2000 }, g: { lvl: 80, herb: [["Orchidée Freyesque", 10], ["Trèfle à 5 feuilles", 10]], kamas: 20000 } };
+  E.brewPotion = (S, cons) => {
+    const C = CONSUMABLES[cons]; if (!C || C.kind !== "wpot") return "Potion inconnue."; const R = E.WPOT_COST[C.half ? "s" : "g"];
+    if ((S.jobs.alchimiste || {}).lvl < R.lvl) return `Alchimiste niveau ${R.lvl} requis.`;
+    for (const [r, n] of R.herb) if ((S.res[r] || 0) < n) return `Il faut ${n} × ${r}.`;
+    if (S.kamas < R.kamas) return `Il faut ${R.kamas.toLocaleString("fr-FR")} kamas.`;
+    R.herb.forEach(([r, n]) => { S.res[r] -= n; if (!S.res[r]) delete S.res[r]; }); S.kamas -= R.kamas; E.addCons(S, cons, 1);
+    return null;
+  };
   const charEntity = (S, c) => {
     const st = E.charStats(S, c);
     const fs = E.freeSpirit(S);
@@ -733,6 +806,7 @@
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
       evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
       lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
+      wsp: E.weaponSpell(S, c), // 0.1.53 : coup d'arme
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
@@ -1163,6 +1237,8 @@
     let res = 0;
     if (tgt.side === "m" && !isHero(F, tgt)) { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; if (F && F.idol) { res += F.idol.resAll; if (F.idol.resMain && el && el === F.idol.resEl) res += F.idol.resMain; } }
     else if (tgt.st) { const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0; res += tgt.resBonus || 0; }
+    if (tgt.wguard > 0) res += 10; // 0.1.53 : Bâton (Garde)
+    if (src && src.wcast && src.wcast.wfx === "perce" && res > 0) res *= 0.85; // 0.1.53 : Lance (Perce-armure)
     res = Math.min(50, res);
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
@@ -1240,8 +1316,10 @@
     const E2 = ELEMENTS[el]; const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
     const pui = e.st.pui + buffSum(e, "pui");
     let v = rf(f.min, f.max) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + e.st.do + buffSum(e, "do") + (e.st[E2.dmg] || 0);
-    let crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri"));
-    if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri");
+    const wc = e.wcast; // 0.1.53 : coup d'arme en cours
+    let crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri") + (wc && wc.wfx === "precis" ? 10 : 0));
+    if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri") + (wc ? (wc.ccb || 0) * E.DMG_SCALE * E.WEAPON.mult : 0);
+    if (wc && wc.wfx === "grace" && tgt && tgt.hp < tgt.hpMax * 0.3) v *= 1.25;
     if (e.lg && E.legDmg) { const o = E.legDmg(F, e, tgt, el, crit, v); v = o.v; crit = o.crit; } // 0.1.48 : passifs des légendaires
     v *= 1 + (e.dmgBonus || 0) / 100;
     v *= 1 + (e.st.dsort || 0) / 100;
@@ -1341,7 +1419,7 @@
   /* lance un sort de héros : applique tous ses effets */
   const castSpell = (S, F, e, sp, forced, slot) => {
     const g = E.spellGrade(sp, e.lvl); const allies = alive(F, "c").filter((a) => !a.summon); const parts = []; let ok = false; let extraPa = 0;
-    const kind = E.spellKind(g);
+    const kind = E.spellKind(g); e.wcast = sp.wp ? sp : null;
     // sorts inutiles : ne pas les gaspiller
     if (kind === "heal" && !alive(F, "c").some((a) => a.hp < a.hpMax)) return { ok: false };
     if (kind === "summon" && alive(F, "c").filter((a) => a.summon && a.owner === F.ents.indexOf(e)).length >= SUM_LIMIT(e)) return { ok: false };
@@ -1408,6 +1486,8 @@
     if (e.cls === "iop" && dealt) doHeal(e, dealt * 0.08, F); // Vigueur
     if (e.cls === "elio" && dealt) { if (!e.portal && g.fx.some((f) => f.n > 1 && ["dmg", "drain", "dot"].includes(f.k))) { e.portal = true; e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.08)); parts.push("bouclier de portail"); } doHeal(e, dealt * 0.1, F); }
     if (leech && dealt) { const h = doHeal(e, dealt * leech / 100, F); if (h) parts.push(`+${h} PV`); failChal(F, "incurable", "vol de vie"); }
+    if (sp.wp && ok) weaponFx(S, F, e, sp, dealt, hitIdx, parts);
+    e.wcast = null;
     if (!ok) return { ok: false };
     if (kind === "shield" || kind === "buff") failChal(F, "barbare", `${sp.name} lancé`);
     if (e.cls === "iop") e.stack = Math.min(6, (e.stack || 0) + 1);
@@ -1431,6 +1511,19 @@
     flog(F, `${e.name} · ${sp.name}${parts.length ? " → " + parts.join(", ") : ""}`, "c");
     foeHits.forEach((i) => { if (!F.ents[i].alive) flog(F, `${F.ents[i].name} est vaincu.`, "ko"); });
     return { ok: true, extraPa };
+  };
+  /* 0.1.53 : effet du type d'arme, après le coup */
+  const weaponFx = (S, F, e, sp, dealt, hitIdx, parts) => {
+    const fx = sp.wfx; const foes = hitIdx.map((i) => F.ents[i]).filter((t) => t.side !== e.side || (F.pvp && t.tm !== e.tm));
+    const per = foes.length ? dealt / foes.length : 0; const el = sp.el === "best" ? bestEl(e.st) : sp.el;
+    if (fx === "garde") { e.wguard = 1; parts.push("garde"); }
+    if (!per) return;
+    if (fx === "onde") { const others = F.pvp ? F.ents.filter((t) => t.alive && t.tm !== e.tm && !foes.includes(t)) : alive(F, "m").filter((t) => !foes.includes(t));
+      const hit = others.slice(0, 2).map((t) => { const d = dealDamage(F, e, t, per * 0.4, el); return `${t.name} −${d}`; }); if (hit.length) parts.push(`onde de choc : ${hit.join(", ")}`); }
+    if (fx === "bened") { const al = (F.pvp ? F.ents.filter((a) => a.alive && a.tm === e.tm) : alive(F, "c")).filter((a) => a.hp < a.hpMax).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0];
+      if (al) { const h = doHeal(al, dealt * 0.2, F); if (h) parts.push(`bénédiction +${h} PV`); } }
+    if (fx === "entaille") { const t = foes.find((x) => x.alive && !x.noDot); if (t) { t.dots.push({ v: Math.max(1, per * 0.15), turns: 2, el, src: e.name }); parts.push("entaille"); } }
+    if (fx === "deterre" && !F.pvp) foes.forEach((t) => { if (!t.alive && rnd() < 0.25) { F.treasure = (F.treasure || 0) + 1; parts.push("déterre une ressource"); } });
   };
   /* l'IA saute les sorts qui feraient échouer un challenge (si l'option est activée) */
   const chalSkip = (S, F, e, c, sp, g) => {
@@ -1535,14 +1628,16 @@
     }
     if (paStart === undefined && E.manualOn(S)) { F.await = { ei: F.ents.indexOf(e), pa: Math.max(1, e.st.pa - (e.paLoss || 0)), t: F.dur, n: 0, casts: {} }; e.paLoss = 0; return; }
     let pa = paStart !== undefined ? paStart : Math.max(1, e.st.pa - (e.paLoss || 0) + (e.paBonus || 0)); e.paLoss = 0; e.paBonus = 0; let cast = 0;
+    if (paStart === undefined) e.wguard = 0; // la Garde du bâton dure jusqu'au tour suivant du porteur
+    const bar = e.wsp ? [...c.spells, E.WSLOT] : c.spells; const defOf = (slot) => (slot.w ? e.wsp : E.spellDef(c.cls, slot.id)); // 0.1.53 : coup d'arme
     /* IA v4 : sorts utilitaires dans l'ordre de la barre, puis la meilleure combinaison d'attaques du tour (planTurn) */
     const nCast = {}; const blocked = new Set();
     for (let guard = 0; guard < 30; guard++) {
       if (!alive(F, "m").length) return endHeroTurn(S, F, e);
       let best = null, bestV = -1;
-      c.spells.forEach((slot, idx) => {
+      bar.forEach((slot, idx) => {
         if (blocked.has(idx)) return;
-        const sp = E.spellDef(c.cls, slot.id); if (!sp || sp.lvl > c.lvl) return;
+        const sp = defOf(slot); if (!sp || sp.lvl > c.lvl) return;
         const g = E.spellGrade(sp, c.lvl);
         if ((nCast[idx] || 0) >= castLimit(g) || (e.cd[sp.id] || 0) > 0 || g.pa > pa) return;
         if ((e.silence > 0 && g.cd) || (e.rooted > 0 && E.spellKind(g) === "heal")) return;
@@ -1555,7 +1650,7 @@
       });
       if (best && ["dmg", "aoe", "drain", "dot"].includes(E.spellKind(best.g))) { // attaque : la meilleure combinaison du tour
         const cands = [];
-        c.spells.forEach((slot, idx) => { if (blocked.has(idx)) return; const sp = E.spellDef(c.cls, slot.id); if (!sp || sp.lvl > c.lvl) return; const g = E.spellGrade(sp, c.lvl);
+        bar.forEach((slot, idx) => { if (blocked.has(idx)) return; const sp = defOf(slot); if (!sp || sp.lvl > c.lvl) return; const g = E.spellGrade(sp, c.lvl);
           if (!["dmg", "aoe", "drain", "dot"].includes(E.spellKind(g)) || (nCast[idx] || 0) >= castLimit(g) || (e.cd[sp.id] || 0) > 0 || g.pa > pa || (e.silence > 0 && g.cd)) return;
           if (!condOk(F, e, slot.cond) || chalSkip(S, F, e, c, sp, g)) return;
           cands.push({ idx, g, sp, slot, left: Math.min(castLimit(g) - (nCast[idx] || 0), g.cd ? 1 : 9) }); });
@@ -1855,7 +1950,8 @@
      st : caractéristiques du héros (équipement, familier, monture, panoplies, parchemins). */
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
-    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe"), lg: E.legOf ? E.legOf(S, c) : null }));
+    sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe"), lg: E.legOf ? E.legOf(S, c) : null,
+    wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.53 : l'arme (coup d'arme)
   /* Prépare le combat : A (équipe 0, l'attaquant) contre B (équipe 1). Renvoie une petite partie de travail S2 dont S2.fight est le combat. */
   E.koliSetup = (A, B, opts = {}) => {
     const chars = [], ents = [];
@@ -1865,7 +1961,8 @@
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
         buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {},
-        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null });
+        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null,
+        wsp: h.wp && ITEMS[h.wp.t] ? E.weaponSpellOf(h.cls, h.wp.t, h.wp.e, h.wp.h) : null });
     }));
     [0, 1].forEach((tm) => { // première ligne : le plus robuste ; Osamodas : +5 % de PV pour son équipe (comme en chasse)
       const T = ents.filter((x) => x.tm === tm); const osa = T.some((x) => x.cls === "osa") ? 1.05 : 1;
@@ -1970,20 +2067,21 @@
   E.manualCast = (S, spellId, targetIdx) => {
     const F = S.fight; const A = F && F.await; if (!A || F.over) return "Ce n'est pas votre tour.";
     const e = F.ents[A.ei]; const c = S.chars.find((x) => x.id === e.cid);
-    if (!c || !c.spells.find((x) => x.id === spellId)) return "Sort non équipé.";
-    const sp = E.spellDef(c.cls, spellId); if (!sp) return "Sort inconnu.";
+    const isW = spellId === "arme" && e.wsp; // 0.1.53 : coup d'arme
+    if (!c || (!isW && !c.spells.find((x) => x.id === spellId))) return "Sort non équipé.";
+    const sp = isW ? e.wsp : E.spellDef(c.cls, spellId); if (!sp) return "Sort inconnu.";
     if (!E.manualCanCast(S, sp)) return E.spellGrade(sp, e.lvl).pa > A.pa ? "Pas assez de PA." : "Sort en recharge.";
     const tgt = targetIdx !== undefined && targetIdx !== null ? F.ents[targetIdx] : null;
     F.seq++;
     const g = E.spellGrade(sp, e.lvl);
-    const r = castSpell(S, F, e, sp, tgt, c.spells.find((x) => x.id === spellId));
+    const r = castSpell(S, F, e, sp, tgt, isW ? E.WSLOT : c.spells.find((x) => x.id === spellId));
     if (!r.ok) return "Aucune cible valable.";
     A.pa -= g.pa; A.pa += r.extraPa || 0; A.n++; A.casts[sp.id] = (A.casts[sp.id] || 0) + 1; A.t = F.dur;
     if (g.cd) e.cd[sp.id] = (e.lg && E.legCd ? E.legCd(e, g.cd) : g.cd) + 1;
     F.fx.push({ seq: F.seq, k: "cast", s: A.ei, sp: sp.id });
     checkEnd(S);
     if (F.over) { F.await = null; return null; }
-    const any = c.spells.some((x) => { const d = E.spellDef(c.cls, x.id); return d && d.lvl <= c.lvl && E.manualCanCast(S, d); });
+    const any = c.spells.some((x) => { const d = E.spellDef(c.cls, x.id); return d && d.lvl <= c.lvl && E.manualCanCast(S, d); }) || (e.wsp && E.manualCanCast(S, e.wsp));
     if (!any) E.manualEnd(S);
     return null;
   };
