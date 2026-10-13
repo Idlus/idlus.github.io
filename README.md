@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.47.5 « Panoplies d'abord »
+`gearPlan(c)` (js/ui.js) : remplissage emplacement par emplacement puis essai de chaque panoplie du sac posée en entier avant de compléter ; mémorisé (`planMemo`). `bestFor`, `slotUpgrade`, `equipBest` et « Meilleur choix » suivent le plan.
+
 ## 0.1.47.4 « Curseur à sa place »
 `repaintKeep(m, html)` dans ui.js (exposé en `DX.repaint`) : redessine une zone en gardant le focus et la sélection du champ actif, et la valeur des champs libres (sans `data-act`). Utilisé par `paint` et `render` de guilds.js et market.js ; avant, `paint` de la guilde refaisait `focus()` sans position (curseur au début, le nom s'écrivait à l'envers) et celui de l'HdV perdait le focus. Test dans tests/online.test.js.
 
