@@ -2865,7 +2865,7 @@
     if (!S.sablier) S.sablier = { r: E.SAB_MAX, at: E.now(), spd: 1, open: false }; // plein au départ
     const B = S.sablier, now = E.now();
     if (!(B.at <= now)) B.at = now; // horloge revenue en arrière : on ne rend rien
-    B.r = Math.min(E.SAB_MAX, Math.max(0, (+B.r || 0) + ((now - B.at) / 1000) * E.SAB_RATE)); B.at = now;
+    const r0 = Math.max(0, +B.r || 0); B.r = r0 > E.SAB_MAX ? r0 : Math.min(E.SAB_MAX, r0 + ((now - B.at) / 1000) * E.SAB_RATE); B.at = now; // un code cadeau peut dépasser le maximum
     if (!B.open && E.sabUnlocked(S)) { B.open = true; note(S, "Sablier de Xélor débloqué : le temps peut filer ×2 ou ×3 (barre du haut).", "rare"); }
     if (![1, 2, 3].includes(B.spd)) B.spd = 1;
     return B;
@@ -2884,6 +2884,8 @@
     note(S, "Sablier de Xélor vide : retour à la vitesse normale. Il se remplit tout seul (3 h par jour).", "info");
     return m;
   };
+  E.SAB_GIFT_MAX = 24 * 3600;    // réserve maximale avec des heures offertes par code cadeau
+  E.sabGift = (S, hours) => { const B = E.sab(S); B.r = Math.min(E.SAB_GIFT_MAX, B.r + Math.max(0, +hours || 0) * 3600); return B.r; };
   E.sabSet = (S, v) => {
     const B = E.sab(S); v = +v;
     if (!B.open) return "Le Sablier de Xélor se débloque à la fin d'Incarnam : terminez la quête « La Crypte de Kardorim ».";

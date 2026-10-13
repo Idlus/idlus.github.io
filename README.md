@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48.5 « Sablier en cadeau »
+Récompense de code cadeau `s` (heures de sablier, 24 au plus) : `E.sabGift` (engine.js, plafond `E.SAB_GIFT_MAX`), `E.giveGift`/`E.giftText` (systems.js), type « Heures de sablier » dans l'onglet Codes cadeaux (js/codes.js). `E.sab` ne recharge plus au-dessus de `E.SAB_MAX` mais ne coupe pas les heures offertes.
+
 ## 0.1.48.4 « Titre du songe »
 Combat (renderCombat, ui.js) : le titre d'un combat du Songe infini lit `E.SG_INT[XP.ii].name` (et le règne dès Paradoxe 1) au lieu de l'ancien `XP.floor` de l'Expédition.
 

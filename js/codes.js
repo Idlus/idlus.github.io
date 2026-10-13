@@ -56,7 +56,7 @@
   }, 600);
 
   /* ---------- panel admin (onglet « Codes cadeaux », Mathis seulement) ---------- */
-  const TYPES = [["k", "Kamas"], ["r", "Ressource"], ["c", "Consommable"], ["i", "Objet"], ["t", "Titre"], ["o", "Ornement"]];
+  const TYPES = [["k", "Kamas"], ["r", "Ressource"], ["c", "Consommable"], ["i", "Objet"], ["t", "Titre"], ["o", "Ornement"], ["s", "Heures de sablier"]];
   const F = { code: "", rows: [{ t: "k", n: "", q: "" }], max: "", end: "", msg: "", acc: false, ann: false, pub: null, users: null };
   const consByName = () => { const o = {}; for (const id in D.CONSUMABLES) o[D.CONSUMABLES[id].name.toLowerCase()] = id; return o; };
   const itemByName = () => { const o = {}; for (const id in D.ITEMS) { const k = D.ITEMS[id].name.toLowerCase(); if (!o[k]) o[k] = id; } return o; };
@@ -78,6 +78,7 @@
     for (const r of F.rows) {
       const q = Math.round(+r.q) || 0, n = String(r.n || "").trim();
       if (r.t === "k") { if (q > 0) w.k = (w.k || 0) + q; continue; }
+      if (r.t === "s") { if (q > 0) w.s = Math.min(24, (w.s || 0) + q); continue; }
       if (r.t === "t") { if (n) w.t = n.slice(0, 40); continue; }
       if (r.t === "o") { if (n && E.ORN[n]) w.o = n; continue; }
       if (!n) continue;
@@ -96,6 +97,7 @@
     const qty = (ph) => `<input type="number" id="gcQ${i}" min="1" value="${h(r.q)}" placeholder="${ph}" aria-label="Quantité">`;
     let mid = "", q = "";
     if (r.t === "k") q = `<input type="number" id="gcQ${i}" min="1" step="1000" value="${h(r.q)}" placeholder="50000" aria-label="Kamas" style="grid-column:span 2">`;
+    else if (r.t === "s") q = `<input type="number" id="gcQ${i}" min="1" max="24" value="${h(r.q)}" placeholder="3" aria-label="Heures de sablier" style="grid-column:span 2">`;
     else if (r.t === "t") mid = `<input type="text" id="gcN${i}" maxlength="40" value="${h(r.n)}" placeholder="Citrouille d'Amakna" aria-label="Titre" style="grid-column:span 2">`;
     else if (r.t === "o") mid = `<select id="gcN${i}" aria-label="Ornement" style="grid-column:span 2"><option value="">Choisir…</option>${Object.keys(E.ORN).map((k) => `<option value="${k}" ${k === r.n ? "selected" : ""}>${h(E.ORN[k].name(null))}</option>`).join("")}</select>`;
     else { mid = `<input type="text" id="gcN${i}" list="gcL-${r.t}" value="${h(r.n)}" placeholder="${r.t === "r" ? "Blé" : r.t === "c" ? "Coffre" : "Nom de l'objet"}" aria-label="Nom">`; q = qty(r.t === "i" ? "1 (max 10)" : "1"); }
