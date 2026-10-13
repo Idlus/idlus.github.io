@@ -42,6 +42,7 @@ create table if not exists public.wb_kills (
   last_user uuid, players int not null default 0, top jsonb not null default '[]'::jsonb
 );
 alter table public.wb_kills enable row level security;
+alter table public.wb_kills add column if not exists posted timestamptz; -- annoncé sur Discord (workflow « Boss des mondes sur Discord »)
 
 -- ---------- outils internes ----------
 create or replace function public.wb_grade(p int) returns text language sql immutable
