@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.47.1 « Mutateur de l'heure »
+Le mutateur de la semaine devient horaire (js/engine.js) : `E.hourIdx`/`E.hourEnd`, tirage pur `E.hourlyAt(S, n)` (mêmes règles : donjons proches du meilleur héros, `E.WEEKLY_MODS` sans « Véloces » ; par journées de 24 h, jamais le même donjon ni le même modificateur que l'heure d'avant), `E.weekly` garde son nom et met en cache `S.weekly = { h, did, mod }`, `E.nextHourly` pour « Ensuite ». `E.weekIdx`/`E.weekEnd` restent pour l'Expédition et les donjons de la semaine. Le post Discord du lundi (`discord_bot.js semaine`) est retiré du workflow.
+
 ## 0.1.47 « Galets du Kolizéum »
 Les 6 Galets de DOFUS deviennent des ressources (`E.KOLI_GALETS` dans js/koli.js, icônes assets/i) vendues dans la boutique du Kolizéum et échangeables à l'HdV. Les recettes DOFUS des 358 objets du jeu qui en demandent les retrouvent au chargement (table `GALET_RECIPES` régénérée par `node tools/koli_galets.js` depuis DofusDB, à relancer après l'ajout d'objets ; drapeau `E.KOLI_GALET_RECIPES`). Boutique refaite (js/koliui.js `shop()`) : onglets par rayon (`sec`), grille, panneau d'achat collé en bas (quantité −/+/×5/×10/Max, `E.buyShop(S, shop, id, qty)` pour les articles `many`, articles `res`), badge « Pour ton équipe ». Source des ressources hors monstres via `E.RES_SOURCE`. Nouvelle pièce de Kolizeton (cache des images media-v8).
 

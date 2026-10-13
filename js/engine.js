@@ -960,24 +960,38 @@
   /* caractéristique des parchemins de chaque donjon (élément du boss) */
   E.dungeonScrollStat = (did) => { const dg = DUNGEONS[did]; const el = (MONSTERS[dg.boss] || {}).el; const ids = Object.keys(DUNGEONS).sort(); if (ids.indexOf(did) % 5 === 4) return "sa"; return { t: "fo", f: "ine", e: "cha", a: "age" }[el] || "vit"; };
   const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS).filter((x) => !E.STASIS_MODS[x].flash); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
-  /* Mutateur de la semaine (3.1.3) : chaque semaine, un donjon reçoit un modificateur imposé (à toutes les stasis)
-     et donne +25 % d'XP et de butin, +50 % de poussière. Dès la stasis 6, il remplace un des modificateurs tirés au sort. */
+  /* Mutateur de l'heure (3.1.3, à l'heure depuis 0.1.47 ; avant : de la semaine) : à chaque heure pile, un donjon reçoit
+     un modificateur imposé (à toutes les stasis) et donne +25 % d'XP et de butin, +50 % de poussière. Dès la stasis 6,
+     il remplace un des modificateurs tirés au sort. Le tirage dépend de l'heure (le même pour tous) et du niveau du meilleur héros.
+     Le nom « weekly » est gardé dans le code et la sauvegarde. */
   E.WEEKLY_REW = 1.25; E.WEEKLY_DUST = 1.5;
   E.WEEKLY_MODS = ["enrages", "blindes", "vampires", "nombreux"]; // « Véloces » exclu : trop punitif sans équipement (simulation)
-  E.weekIdx = (t = E.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC)
+  E.weekIdx = (t = E.now()) => Math.floor((t / 86400000 + 3) / 7); // semaines commençant le lundi (UTC) : Expédition, donjons de la semaine
   E.weekEnd = (t = E.now()) => ((E.weekIdx(t) + 1) * 7 - 3) * 86400000;
-  E.weekly = (S, t = E.now()) => {
-    const w = E.weekIdx(t);
-    if (S.weekly && S.weekly.w === w && DUNGEONS[S.weekly.did]) return S.weekly;
+  E.HOUR_MS = 3600000;
+  E.hourIdx = (t = E.now()) => Math.floor(t / E.HOUR_MS);
+  E.hourEnd = (t = E.now()) => (E.hourIdx(t) + 1) * E.HOUR_MS;
+  const hourHash = (n) => { let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b) >>> 0; x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0; return Math.imul(x ^ (x >>> 16), 0x27d4eb2f) >>> 0; };
+  /* tirage d'une heure, sans toucher à la sauvegarde ; jamais le même donjon ni le même modificateur que l'heure d'avant */
+  E.hourlyAt = (S, n) => {
     const ids = Object.keys(DUNGEONS).sort().filter((d) => E.dungeonUnlocked(S, d)); if (!ids.length) return null;
     const top = Math.max(...S.chars.map((c) => c.lvl));
     const near = ids.filter((d) => DUNGEONS[d].lvl <= top + 5 && DUNGEONS[d].lvl >= top - 40);
     const pool = near.length ? near : ids.filter((d) => DUNGEONS[d].lvl <= Math.max(top + 5, Math.min(...ids.map((x) => DUNGEONS[x].lvl))));
-    let x = Math.imul(w ^ 0x9e3779b9, 0x85ebca6b) >>> 0; x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0;
-    const mods = E.WEEKLY_MODS;
-    S.weekly = { w, did: pool[x % pool.length], mod: mods[(x >>> 8) % mods.length] };
-    return S.weekly;
+    const mods = E.WEEKLY_MODS; const raw = (k) => { const x = hourHash(k); return [x % pool.length, (x >>> 8) % mods.length]; };
+    /* par journées de 24 h : chaque heure évite le donjon et le modificateur de l'heure d'avant (la veille est refaite une fois pour sa dernière heure) */
+    const day = (d, prev) => { const out = []; for (let k = d * 24; k < d * 24 + 24; k++) { let [di, mi] = raw(k);
+      if (di === prev[0] && pool.length > 1) di = (di + 1) % pool.length; if (mi === prev[1]) mi = (mi + 1) % mods.length; out.push(prev = [di, mi]); } return out; };
+    const d = Math.floor(n / 24); const [di, mi] = day(d, day(d - 1, raw(d * 24 - 25))[23])[n - d * 24];
+    return { h: n, did: pool[di], mod: mods[mi] };
   };
+  E.weekly = (S, t = E.now()) => {
+    const n = E.hourIdx(t);
+    if (S.weekly && S.weekly.h === n && DUNGEONS[S.weekly.did]) return S.weekly;
+    const W = E.hourlyAt(S, n); if (W) S.weekly = W;
+    return W;
+  };
+  E.nextHourly = (S, t = E.now()) => E.hourlyAt(S, E.hourIdx(t) + 1);
   /* Mutateur éclair (0.1) : toutes les 20 minutes, 3 donjons (niveaux 1-79, 80-149, 150-200) reçoivent un modificateur
      et donnent un petit bonus. Une course commencée garde son bonus jusqu'au bout. Les donjons ne tournent pas hors ligne. */
   E.FLASH_MS = 20 * 60000; E.FLASH_REW = 1.12; E.FLASH_DUST = 1.25;
