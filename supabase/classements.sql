@@ -124,7 +124,7 @@ security definer
 set search_path = public
 as $$
 declare
-  m jsonb := new.meta; o public.ladder%rowtype; lv int; al int; su int; pt int; rc int; ps int; secs numeric; reason text; bad boolean;
+  m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; secs numeric; reason text; bad boolean;
 begin
   if m is null or m->>'level' is null then return new; end if;
   lv := coalesce((m->>'level')::int, 0); al := coalesce((m->>'album')::int, 0);
@@ -155,6 +155,16 @@ begin
     insert into public.firsts (kind, key, label, user_id, pseudo)
       select 'lvl200', '', 'Premier héros au niveau 200', new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
       on conflict do nothing;
+  end if;
+  -- 1.0 : course de lancement : les 10 premiers comptes à finir la quête principale après la sortie (13/10/2026, 16 h Paris)
+  if not bad and coalesce((m->>'mainq')::boolean, false) and now() >= timestamptz '2026-10-13 14:00:00+00'
+     and not exists (select 1 from public.firsts where kind = 'race10' and user_id = new.user_id) then
+    select count(*) into rk from public.firsts where kind = 'race10';
+    if rk < 10 then
+      insert into public.firsts (kind, key, label, user_id, pseudo)
+        select 'race10', (rk + 1)::text, format('Course de lancement de la 1.0 : n° %s sur 10', rk + 1), new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
+        on conflict do nothing;
+    end if;
   end if;
   return new;
 end $$;

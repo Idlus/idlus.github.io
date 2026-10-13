@@ -943,6 +943,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
   else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
   else if (orn === "koli") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/koli_cristal.svg" alt="">`; // 0.1.44 : Kolizéum
+  else if (orn === "fondateur" || orn === "legende") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
@@ -2220,7 +2221,7 @@ function dofusHtml() {
     const drop = Df.dg ? `Butin du boss ${h(MONSTERS[DUNGEONS[Df.dg].boss].name)} : 1 chance sur ${Math.round(1 / E.DOFUS_DROP)} dès la stasis ${E.DOFUS_DROP_STASIS}` : `Butin de tout boss de niveau 160 ou plus : 1 chance sur ${Math.round(1 / E.OCRE_DROP)} dès la stasis 8`;
     return `<div class="dcard ${stt}"><div class="pic">${im(dofusImg(id), "dpic", Df.name)}</div><div class="t"><div class="nm"><b>${h(Df.name)}</b><small>niv. ${Df.lvl}</small>${owned ? `<span class="tag good">✓</span>` : ""}</div><div class="bon">${h(E.dofusBonusTxt(id))}</div><span class="src">${state}</span><ol>${steps}</ol><span class="xs muted">${drop}${owned ? ` · copie pour un autre héros chez le Bricoleur (${Math.round(Df.lvl * 1.5)} Poussière de stasis)` : ""}</span></div></div>`; }).join("");
   return `<p class="note">Chaque Dofus a sa quête : les étapes se valident toutes seules en jouant (les donjons déjà vaincus à la stasis demandée comptent). Un Dofus peut aussi tomber, très rarement, en butin du boss de son donjon. Une fois obtenu, une copie pour un autre héros se fabrique chez le Bricoleur avec de la Poussière de stasis. Un héros ne porte qu'un exemplaire de chaque Dofus, dans ses 6 emplacements Dofus/Trophée.</p>
-    <section class="panel"><div class="phead"><h2>${IC("dofus")} Les 18 Dofus</h2><span class="small muted num">${own}/18</span>${archiBtn()}</div><div class="pad dgrid">${cards}</div></section>`;
+    <section class="panel"><div class="phead"><h2>${IC("dofus")} Les ${E.DOFUS_ORDER.length} Dofus</h2><span class="small muted num">${own}/${E.DOFUS_ORDER.length}</span>${archiBtn()}</div><div class="pad dgrid">${cards}</div></section>`;
 }
 function chalBarHtml(F) {
   const tog = `<label class="chaltog" data-tip="Si coché, l'IA évite les actions qui feraient échouer les challenges (un héros peut être exclu dans ses sorts)."><input type="checkbox" data-act="chalai" ${S.settings.chalAI ? "checked" : ""}> ${G("target")} Respecter les challenges</label>`;
@@ -5065,6 +5066,22 @@ function renderUpdBar() {
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += `<div class="updbar new"><span>${G("phone")} Jouez plus facilement : installez <b>idlus</b> sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}.</span><button class="btn sm primary" data-act="installgame">Installer</button><button class="btn sm" data-act="installhide">Non merci</button></div>`;
   if (el.dataset.k !== html) { if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }; el.dataset.k = html; }
 }
+/* 1.0 : grand écran de lancement, montré une fois (avec le cadeau de la semaine de lancement) */
+function launchSheet() {
+  const C = CHANGELOG[0];
+  openSheet(`<div class="launch10">
+    <img class="l10-logo" src="assets/ui/logo.webp" alt="Idlus">
+    <div class="l10-v">Version 1.0</div>
+    <h2>Bienvenue dans Idlus 1.0 !</h2>
+    <p class="small">Merci d'être là pour la sortie officielle. Ta partie est gardée telle quelle : rien n'est remis à zéro.</p>
+    <div class="l10-gift"><img src="assets/ui/orn/orn_fondateur.svg" alt="">
+      <div><b>Ton cadeau de lancement</b><span class="xs">Titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le <b>Jyfus</b> (+20 Vitalité, +10 Sagesse) et un Coffre des Douze. Offert à tous ceux qui jouent avant le 20 octobre au soir.</span></div></div>
+    <div class="l10-gift race"><img src="assets/ui/orn/orn_legende.svg" alt="">
+      <div><b>Course de lancement</b><span class="xs">Les 10 premiers comptes à finir la quête principale gagnent le titre « Légende de la 1.0 » et l'ornement unique « Couronne de la Légende ». Il faut être connecté à un compte.</span></div></div>
+    <ul class="small l10-list">${C.items.slice(0, 6).map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul>
+    <div class="row l10-btns"><button class="btn" data-act="changelog">Toutes les nouveautés</button><button class="btn primary" data-act="closesheet">C'est parti !</button></div>
+  </div>`);
+}
 function changelogSheet() {
   openSheet(`<h2>Notes de mise à jour</h2><div class="stack small">${CHANGELOG.map((c) => `<div><b>${h(c.v)} « ${h(c.name)} »</b><ul>${c.items.map((x) => `<li>${hOpt(x)}</li>`).join("")}</ul></div>`).join("")}</div><div><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
 }
@@ -5131,6 +5148,7 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(imgM(ev.key), "celepet soulpic", A.name)}</div><div class="cele-k">${IC("dofus")} Âme capturée · ${E.soulCount(S)} / ${E.ARCHI_TOTAL}</div><div class="cele-t">${h(A.name)}</div><div class="cele-s">Archimonstre de ${h(A.base)} · ${h(archiZoneName(A.zone))}</div>`; }
   if (ev.t === "dofus") { const Df = E.DOFUS[ev.id]; if (!Df) return "";
     return `<div class="cele-art pet">${im(dofusImg(ev.id), "celepet", Df.name)}</div><div class="cele-k">${IC("dofus")} ${ev.first ? "Nouveau Dofus" : "Copie de Dofus"}</div><div class="cele-t">${h(Df.name)}</div><div class="cele-s">${h(E.dofusBonusTxt(ev.id))} · à équiper dans un emplacement Dofus</div>`; }
+  if (ev.t === "legend") return `<div class="cele-art pet"><img class="celepet" src="assets/ui/orn/orn_legende.svg" alt="Couronne de la Légende"></div><div class="cele-k">${IC("couronne")} Course de lancement · n° ${ev.rank} sur 10</div><div class="cele-t">Légende de la 1.0</div><div class="cele-s">Titre « Légende de la 1.0 » et ornement unique « Couronne de la Légende », réservés aux 10 premiers.</div>`;
   if (ev.t === "ocre") { const T = E.OCRE_TIERS[ev.tier - 1]; if (!T) return "";
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
@@ -6535,7 +6553,19 @@ async function takeRemote(info) {
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") recSubmit(); renderPill(); return r; });
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); } renderPill(); return r; });
+}
+/* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
+let raceAt = 0;
+function raceCheck() {
+  if (!S || S.unlocks.legende || !E.mainQuestDone(S) || !(ON.user && ON.db && ON.db()) || Date.now() - raceAt < 60000) return;
+  raceAt = Date.now();
+  try { ON.db().from("firsts").select("key").eq("kind", "race10").eq("user_id", ON.user.id).limit(1).then(({ data }) => {
+    if (!data || !data[0] || !E.grantLegend(S, +data[0].key || 1)) return;
+    dirty = true; saveNow();
+    celebrate({ kind: "cele", t: "legend", rank: +data[0].key || 1 });
+    toast(`Course de lancement : tu es n° ${+data[0].key || 1} sur 10 ! Titre « Légende de la 1.0 » et ornement unique « Couronne de la Légende » débloqués (Équipe et héros).`, "rare");
+  }).catch(() => {}); } catch (e) { /* hors ligne */ }
 }
 async function onConflictLive() {
   let info; try { info = await ON.remoteInfo(); } catch (e) { ON.setState("offline"); return; }
@@ -6883,6 +6913,8 @@ const isEditing = () => { const a = document.activeElement; return a && (a.tagNa
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
+    if (E.grantFounder(S)) { dirty = true; ui.launchPending = true; }
+    if (ui.launchPending && !$("#sheet").innerHTML) { ui.launchPending = false; launchSheet(); }
     if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (Équipe et héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.tick(S, real * m, real);

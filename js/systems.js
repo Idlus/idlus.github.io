@@ -1127,6 +1127,8 @@
     solitaire: { name: () => "Aura du Solitaire", req: "Ancien Emblème du Solitaire niveau 100 (retiré en 0.1.8.2 : seuls ceux qui l'avaient le gardent)", ok: (S) => !!(S.unlocks && S.unlocks.solitaire) },
     stasis:    { name: () => "Sceau du Maître de la stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!S.unlocks.stasis10 },
     pionnier:  { name: () => "Pousse du Pionnier", req: "Tester la version de test avant le multijoueur (récompense exclusive)", ok: (S) => !!S.unlocks.pionnier },
+    fondateur: { name: () => "Sceau du Fondateur", req: "Jouer pendant la semaine de lancement de la 1.0 (récompense exclusive)", ok: (S) => !!S.unlocks.fondateur },
+    legende:   { name: () => "Couronne de la Légende", req: "Être l'un des 10 premiers comptes à finir la quête principale après la sortie de la 1.0 (récompense unique)", ok: (S) => !!S.unlocks.legende },
     phenix:    { name: () => "Ailes du Phénix", req: "Dix renaissances sur un même héros", ok: (S) => !!(S.unlocks && S.unlocks.phenix) },
   };
   /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */
@@ -1134,6 +1136,24 @@
   E.grantPioneer = (S) => {
     if (S.unlocks.pionnier && S.titlesExtra.includes(E.PIONEER_TITLE)) return false;
     S.unlocks.pionnier = 1; if (!S.titlesExtra.includes(E.PIONEER_TITLE)) S.titlesExtra.push(E.PIONEER_TITLE); return true;
+  };
+  /* 1.0 : cadeau de lancement (toute partie jouée pendant la première semaine) : titre, ornement, Jyfus (« J'y étais ! ») et un Coffre des Douze */
+  E.FOUNDER_TITLE = "Fondateur d'Idlus";
+  E.LAUNCH_END = Date.UTC(2026, 9, 20, 21, 59, 59); // mardi 20 octobre 2026, 23 h 59 (Paris)
+  E.grantFounder = (S, t) => {
+    if (S.unlocks.fondateur || (t || Date.now()) > E.LAUNCH_END) return false;
+    S.unlocks.fondateur = 1; if (!S.titlesExtra.includes(E.FOUNDER_TITLE)) S.titlesExtra.push(E.FOUNDER_TITLE);
+    if (E.giveDofus && E.DOFUS && E.DOFUS.jyfus && !E.dofusOwned(S, "jyfus")) E.giveDofus(S, "jyfus", "cadeau de lancement de la 1.0");
+    E.addCons(S, "coffre_douze", 1);
+    return true;
+  };
+  /* 1.0 : course de lancement : les 10 premiers comptes à finir la quête principale (le serveur les grave dans « Premiers ») */
+  E.LEGEND_TITLE = "Légende de la 1.0";
+  E.mainQuestDone = (S) => !!(S.quest && S.quest.step >= Q.length);
+  E.grantLegend = (S, rank) => {
+    if (S.unlocks.legende) return false;
+    S.unlocks.legende = rank || 1; if (!S.titlesExtra.includes(E.LEGEND_TITLE)) S.titlesExtra.push(E.LEGEND_TITLE);
+    return true;
   };
   E.ORN = ORN;
   E.ornUnlocked = (S, id) => !!ORN[id] && ORN[id].ok(S);
@@ -1371,7 +1391,8 @@
     .forEach(([n, nm, d, k, t]) => add("soul" + n, "Archimonstres", nm, d, (S) => (S.cnt.souls || 0) >= (n === 205 ? E.ARCHI_TOTAL || n : n), k, t ? { title: t } : {}));
   add("dofus1", "Archimonstres", "Premier Dofus", "Obtenir un Dofus.", (S) => (S.cnt.dofus || 0) >= 1, 2000);
   add("dofus6", "Archimonstres", "Six Dofus portés", "Un héros porte 6 Dofus en même temps.", (S) => S.chars.some((c) => Object.values(c.equip).filter((u) => S.items[u] && ITEMS[S.items[u].tpl] && ITEMS[S.items[u].tpl].dofus).length >= 6), 10000, { title: "Porteur de Dofus" });
-  add("dofus18", "Archimonstres", "Gardien des Dofus", "Obtenir les 18 Dofus.", (S) => (S.cnt.dofus || 0) >= 18, 100000, { title: "Gardien des Dofus" });
+  add("dofus18", "Archimonstres", "Gardien des Dofus", "Obtenir 18 Dofus.", (S) => (S.cnt.dofus || 0) >= 18, 100000, { title: "Gardien des Dofus" });
+  add("dofus31", "Archimonstres", "Tous les Dofus", "Obtenir les 31 Dofus.", (S) => (S.cnt.dofus || 0) >= 31, 500000, { title: "Seigneur des Dofus" }); // 1.0 : les 31 Dofus
   E.ACH = ACH;
   const checkAch = (S) => {
     ACH.forEach((a) => {

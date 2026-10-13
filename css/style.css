@@ -4165,3 +4165,16 @@ body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
 .sph{display:flex;gap:8px;align-items:flex-start}.sph .k{flex:none;width:22px;height:22px;border-radius:50%;background:var(--frame);color:#fff7e3;font-weight:900;font-size:12px;display:grid;place-items:center}
 .spgrp .spbar{display:flex;flex-wrap:wrap;gap:10px 8px}.spgrp .spslotw{width:58px}
 .sphs{grid-template-columns:1fr !important;gap:8px}
+/* 1.0 : écran de lancement */
+.launch10{text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.launch10 .l10-logo{width:96px;height:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
+.launch10 .l10-v{font-family:Georgia,serif;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold,#f2c75a);font-size:15px}
+.launch10 h2{margin:0}
+.launch10 .l10-gift{display:flex;gap:12px;align-items:center;text-align:left;width:100%;padding:10px 12px;border-radius:12px;background:rgba(242,199,90,.08);border:1px solid rgba(242,199,90,.35)}
+.launch10 .l10-gift.race{background:rgba(196,32,47,.08);border-color:rgba(224,56,74,.4)}
+.launch10 .l10-gift>img{width:96px;height:auto;flex:none}
+.launch10 .l10-gift b{display:block;margin-bottom:2px}
+.launch10 .l10-ic{width:20px;height:20px;vertical-align:middle}
+.launch10 .l10-list{text-align:left;width:100%;margin:0;padding-left:20px}
+.launch10 .l10-btns{justify-content:center;gap:8px;flex-wrap:wrap}
+@media (max-width:480px){.launch10 .l10-gift>img{width:72px}}
