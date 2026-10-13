@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.50.3 « Boss des mondes corrigé »
+`E.chestItemPool` (systems.js) exclut les objets `leg` (Songe) et `wboss`. Gargandyas : `E.WB_HP0` 10 000 points et `wb_state.hp` ramené à 10 000 s'il valait 20 000 (supabase/wboss.sql) ; `wb_done` renvoie `before` (dégâts avant l'essai). js/wbossui.js : bandeau et effet cachés seulement pendant `ui.watch`, tuile d'Accueil redessinée au chargement. tests/wboss.test.js vérifie que index.html charge wboss.js et wbossui.js.
+
 ## 0.1.50.2 « Boîte à idées épinglée »
 Mathis : message semi-permanent dans le chat pour les idées (maquette avec une capture par option, réponses « 1A 2A 3A 4A 5A 6A »). Serveur : colonnes `pin_body`, `pin_chs`, `pin_at` dans `chat_settings` (supabase/chat.sql), fonction `adm_pin(texte, salons)`. Jeu : `ON.chatPin()`, `pinHtml()` dans js/chat.js (carte `.ch-pin` au-dessus des messages, ampoule `idee.webp` à la place de l'emoji, bouton vers la page Suggestions, croix = caché jusqu'au lendemain ou jusqu'au prochain changement, `pref.pinHide`), rechargé toutes les 2 min. Panel admin, onglet Annonces : encadré « Message épinglé du chat » (texte 200 caractères, salons Général / Commerce / PvP, Retirer).
 

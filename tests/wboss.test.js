@@ -43,3 +43,9 @@ assert.strictEqual(G.res[E.WB_FRAG], 10);
 E.WB_SHOP.forEach(([tpl]) => assert.ok(D.ITEMS[tpl] && D.ITEMS[tpl].lvl === 200));
 const x0 = E.evMult("xp", t); E.wbXpUntil = t + 3600e3; assert.ok(Math.abs(E.evMult("xp", t) - x0 * 1.1) < 1e-9, "+10 % d'XP"); E.wbXpUntil = 0;
 console.log("ok - boutique, bonus d'XP");
+
+// 4. La page charge bien les deux fichiers (une fusion les avait déjà fait disparaître de index.html).
+const html = require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8");
+["js/wboss.js", "js/wbossui.js"].forEach((f) => assert.ok(html.includes(`<script src="${f}?v=`), `${f} absent de index.html`));
+assert.ok(html.indexOf("js/legendaires.js") < html.indexOf("js/wboss.js"), "wboss.js après legendaires.js");
+console.log("ok - index.html charge le Boss des mondes");
