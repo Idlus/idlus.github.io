@@ -1,8 +1,8 @@
 {
-  "version": "0.1.42",
+  "version": "0.1.43",
   "versions": [
     {
-      "v": "0.1.42",
+      "v": "0.1.43",
       "name": "Forgemagie de DOFUS",
       "items": [
         "La forgemagie suit enfin les règles de DOFUS : chaque rune a trois issues, affichées avec leurs chances. Succès critique : la rune passe et rien ne baisse. Succès neutre : la rune passe mais une autre caractéristique baisse. Échec critique : la rune ne passe pas",
@@ -16,6 +16,18 @@
         "Métiers refaits : bandeau du jour (Almanax, filon, protecteur, achats du jour, commandes prêtes), récolte en cartes de métier avec l'icône de chaque ressource et les héros libres",
         "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » pour une ressource qui manque",
         "Filtres de recettes : emplacement, niveau (dont « autour de mon équipe »), caractéristique, panoplie, pour un héros, favoris et recherche par ressource. Ils sont retenus pour chaque métier"
+      ]
+    },
+    {
+      "v": "0.1.42",
+      "name": "Accueil du jour",
+      "items": [
+        "Accueil : un bloc « Aujourd'hui » rassemble ce qu'il y a à faire : Défi du jour, Almanax avec le Méryde du jour, Avis de recherche, Coffres à ouvrir, Achats du jeu, Sablier de Xélor et Prochain héros. Une tuile s'allume quand il y a quelque chose à faire et se grise avec ✓ une fois faite",
+        "Les tuiles agissent tout de suite quand c'est possible : « Lancer » joue le défi, « Offrir » fait l'offrande de l'Almanax, « Ouvrir » ouvre un coffre ; les autres ouvrent la bonne page",
+        "Bandeau : la zone de chasse avec son repère Facile / Équilibrée / Difficile, le rendement en une ligne (XP, kamas et ressources par heure, victoires) et les têtes des héros avec leur niveau, une pastille orange pour les points à répartir et une verte pour un meilleur objet dans le sac. Un clic ouvre la fiche du héros",
+        "Zone conseillée : quand l'équipe chasse ailleurs, une ligne sous le bandeau propose la zone de ton niveau avec « Y aller »",
+        "Nouveau bloc « En ce moment » : le mutateur de la semaine et les 3 donjons éclair, avec leur bonus et le temps restant",
+        "Plus court : les grandes cartes de héros, les 6 cases de chiffres et les Consommables quittent l'accueil (les chiffres tiennent en une ligne sous la quête) ; Journal et Derniers combats partagent un panneau à onglets de 5 lignes, avec « Tout voir »"
       ]
     },
     {

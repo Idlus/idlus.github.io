@@ -93,6 +93,17 @@ const server = http.createServer((req, res) => {
     await page.click('.navsheet [data-v="forge"]'); await page.waitForTimeout(300);
     if ((await page.evaluate(() => window.DX.ui.tab)) !== "forge") errors.push("menu du téléphone : la tuile Forgemagie n'ouvre pas la page");
     if (await page.$(".navsheet")) errors.push("menu du téléphone : reste ouvert après le choix");
+    // 0.1.42 : accueil du jour (tuiles, journal à onglets, têtes des héros)
+    await page.evaluate(() => { const { E, S } = window.DX; E.addCons(S, "coffre_bois"); window.DX.ui.tab = "home"; window.DX.ui.home = "apercu"; window.DX.render(); });
+    await noTip();
+    if ((await page.$$(".ac-tds .ac-td")).length < 4) errors.push("accueil : il manque des tuiles « Aujourd'hui »");
+    await page.click('[data-act="hjtab"][data-v="c"]'); await page.waitForTimeout(150);
+    if ((await page.evaluate(() => window.DX.ui.hj)) !== "c") errors.push("accueil : l'onglet Derniers combats ne s'ouvre pas");
+    await noTip(); await page.click('.ac-td[data-act="usecons"]'); await page.waitForTimeout(300);
+    if (await page.evaluate(() => (window.DX.S.cons.coffre_bois || 0) > 0)) errors.push("accueil : la tuile Coffres n'ouvre pas le coffre");
+    await page.evaluate(() => { const s = document.querySelector("#sheet"); if (s) s.innerHTML = ""; window.DX.render(); }); await noTip();
+    await page.click(".ac-heads .ac-h:not(.ac-add)"); await page.waitForTimeout(200);
+    if ((await page.evaluate(() => window.DX.ui.tab)) !== "team") errors.push("accueil : la tête d'un héros n'ouvre pas sa fiche");
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
     errors.push(`étape échouée : ${e.message.split("\n")[0]}`);

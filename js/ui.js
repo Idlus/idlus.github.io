@@ -18,10 +18,10 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.42";
+const GAME_VERSION = "0.1.43";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "0.1.42", name: "Forgemagie de DOFUS", items: [
+  { v: "0.1.43", name: "Forgemagie de DOFUS", items: [
     "La forgemagie suit enfin les règles de DOFUS : chaque rune a trois issues, affichées avec leurs chances. Succès critique : la rune passe et rien ne baisse. Succès neutre : la rune passe mais une autre caractéristique baisse. Échec critique : la rune ne passe pas",
     "Le reliquat remplace le puits : ce que l'objet perd en trop paie les pertes suivantes et permet d'ajouter une caractéristique qu'il n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente",
     "Over jusqu'à 101 de poids par caractéristique (505 Vitalité, 101 Force), de plus en plus dur quand l'objet est chargé. Plus aucun kamas à payer : seules les runes comptent",
@@ -33,6 +33,14 @@ const CHANGELOG = [
     "Métiers refaits : bandeau du jour (Almanax, filon, protecteur, achats du jour, commandes prêtes), récolte en cartes de métier avec l'icône de chaque ressource et les héros libres",
     "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » pour une ressource qui manque",
     "Filtres de recettes : emplacement, niveau (dont « autour de mon équipe »), caractéristique, panoplie, pour un héros, favoris et recherche par ressource. Ils sont retenus pour chaque métier",
+  ] },
+  { v: "0.1.42", name: "Accueil du jour", items: [
+    "Accueil : un bloc « Aujourd'hui » rassemble ce qu'il y a à faire : Défi du jour, Almanax avec le Méryde du jour, Avis de recherche, Coffres à ouvrir, Achats du jeu, Sablier de Xélor et Prochain héros. Une tuile s'allume quand il y a quelque chose à faire et se grise avec ✓ une fois faite",
+    "Les tuiles agissent tout de suite quand c'est possible : « Lancer » joue le défi, « Offrir » fait l'offrande de l'Almanax, « Ouvrir » ouvre un coffre ; les autres ouvrent la bonne page",
+    "Bandeau : la zone de chasse avec son repère Facile / Équilibrée / Difficile, le rendement en une ligne (XP, kamas et ressources par heure, victoires) et les têtes des héros avec leur niveau, une pastille orange pour les points à répartir et une verte pour un meilleur objet dans le sac. Un clic ouvre la fiche du héros",
+    "Zone conseillée : quand l'équipe chasse ailleurs, une ligne sous le bandeau propose la zone de ton niveau avec « Y aller »",
+    "Nouveau bloc « En ce moment » : le mutateur de la semaine et les 3 donjons éclair, avec leur bonus et le temps restant",
+    "Plus court : les grandes cartes de héros, les 6 cases de chiffres et les Consommables quittent l'accueil (les chiffres tiennent en une ligne sous la quête) ; Journal et Derniers combats partagent un panneau à onglets de 5 lignes, avec « Tout voir »",
   ] },
   { v: "0.1.41", name: "Donjons oubliés", items: [
     "18 donjons classiques de DOFUS arrivent, du niveau 40 au 110 : Gelaxième Dimension, Maison Fantôme, Akadémie des Gobs, Refuge sylvestre, Donjon des Forgerons, Grotte Hesque, Donjon des Larves, Fonderie des Waddicts, Village Kanniboul, Épreuve de Draegnerys, Cale de l'Arche d'Otomaï, Cimetière des Mastodontes, Antre de la Reine Nyée, Théâtre de Dramak, Fabrique de Malléfisk, Miausolée du Pounicheur, Garde-manger du Rat Blanc et Sousouricière du Rat Noir",
@@ -1212,49 +1220,91 @@ function consHtml() {
 }
 function renderHome() {
   renderHomeInner();
-  if (ui.home !== "havre") $("#main").insertAdjacentHTML("beforeend", `<section class="panel discordcard"><div class="pad row"><span class="dico">${G("chat")}</span><span class="grow"><b>Rejoignez la communauté idlus sur Discord</b><br><span class="small muted">Annonces des mises à jour, aide, builds, et vos idées pour la suite du jeu.</span></span><a class="btn primary" href="${DISCORD}" target="_blank" rel="noopener">Rejoindre</a></div></section>`);
+  if (ui.home !== "havre") $("#main").insertAdjacentHTML("beforeend", `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>`);
+}
+/* 0.1.42 « Accueil du jour » : bandeau (zone, rendement, têtes des héros), zone conseillée, tuiles « Aujourd'hui »,
+   « En ce moment » (mutateurs), quête et chiffres, journal à onglets. Choix de Mathis : toutes les options recommandées. */
+function homeTiles() {
+  let todo = 0; // tuiles allumées : quelque chose à faire maintenant
+  const tile = (o) => { if (o.hot && !o.done) todo++; return `<button class="ac-td ${o.done ? "done" : ""} ${o.hot && !o.done ? "hot" : ""}" ${o.act}><span class="ac-ti">${o.ic}</span><span class="ac-tt"><b>${o.t}</b><span class="xs">${o.s}</span></span><span class="ac-ts">${o.done ? `<span class="tag good">✓</span>` : o.badge || `<span class="chev">›</span>`}</span></button>`; };
+  const out = [];
+  /* défi du jour : « Lancer » joue tout de suite, comme l'ancienne carte */
+  const tid = E.team(S).length ? defiTierCur() : null; const def = tid && E.defi(tid);
+  if (def) { const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
+    out.push(tile({ ic: im(imgM(dg.boss), "ac-tm", MONSTERS[dg.boss].name), t: "Défi du jour", s: `${h(dg.name)} · stasis ${def.k}${best ? ` · record ${best.turns} tours` : ""}`, done: !!st.chest, hot: true,
+      act: st.chest ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">Lancer</span>` })); }
+  /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
+  const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
+  out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${A.qty} × ${h(A.res)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
+    act: ok && !A.done ? `data-act="almanax"` : `data-act="goquest" data-v="almanax"`, badge: ok ? `<span class="tag">Offrir</span>` : "" }));
+  const bn = S.bounties || []; const bd = bn.filter((b) => b.prog >= b.n).length;
+  if (bn.length) out.push(tile({ ic: IC("quetes"), t: "Avis de recherche", s: bn.map((b) => `${h(MONSTERS[b.key].name)} ${fmt(Math.min(b.prog, b.n))}/${b.n}`).join(" · "), done: bd === bn.length, act: `data-act="goquest" data-v="bounty"`, badge: `<span class="pill num">${bd}/${bn.length}</span>` }));
+  /* coffres : un clic ouvre le premier coffre (le plus précieux d'abord) */
+  const ch = Object.keys(S.cons || {}).filter((k) => S.cons[k] > 0 && CONSUMABLES[k] && CONSUMABLES[k].kind === "chest").sort((a, b) => CONSUMABLES[b].tier - CONSUMABLES[a].tier); const nCh = ch.reduce((a, k) => a + S.cons[k], 0);
+  out.push(tile({ ic: chestImg(ch.length ? CONSUMABLES[ch[0]].img : "bois"), t: nCh ? "Coffres à ouvrir" : "Coffres", s: nCh ? ch.map((k) => `${S.cons[k]} ${h(CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, ""))}`).join(" · ") : "aucun pour l'instant : boss, quêtes et avis en donnent", done: !nCh, hot: true,
+    act: nCh ? `data-act="usecons" data-id="${ch[0]}"` : `data-act="hgo" data-v="cons"`, badge: nCh ? `<span class="tag">Ouvrir · ${nCh}</span>` : "" }));
+  const GB = E.gameBuys(S).list; const gl = GB.filter((x) => x.got < x.max); const go = gl.filter((x) => (S.res[x.res] || 0) > 0);
+  out.push(tile({ ic: IC("bourse"), t: "Achats du jeu", s: go.length ? `tu as ${go.map((x) => h(x.res)).join(", ")}` : gl.length ? `le jeu achète : ${gl.map((x) => h(x.res)).join(", ")}` : "les 3 achats du jour sont faits", done: !gl.length, hot: go.length > 0,
+    act: `data-act="hgo" data-v="gbuy"`, badge: go.length ? `<span class="tag">Vendre</span>` : `<span class="pill num">${GB.length - gl.length}/${GB.length}</span>` }));
+  const sb = E.sab(S);
+  if (sb.open) { const p = Math.round(sb.r / E.SAB_MAX * 100);
+    out.push(tile({ ic: `<span class="ac-te">⏳</span>`, t: "Sablier de Xélor", s: `${dur(sb.r)} en réserve${sb.spd > 1 ? ` · vitesse ×${sb.spd}` : p >= 95 ? " · plein, il ne se remplit plus" : ""}`, hot: p >= 95 && sb.spd === 1, act: `data-act="sabinfo"`, badge: `<span class="ac-sab"><i style="width:${p}%"></i></span>` })); }
+  if (S.chars.length < E.HERO_MAX) { const pr = recruitPrice(); const can = canRecruit();
+    out.push(tile({ ic: `<span class="head ac-tadd">+</span>`, t: "Prochain héros", s: `${pr ? `${fmt(pr)} kamas` : "gratuit"} · ${can ? "tu peux recruter" : `il manque ${fmt(pr - S.kamas)}`}`, hot: can, act: `data-act="recruitsheet"`, badge: `<span class="coin"></span>` })); }
+  return { html: out.join(""), todo };
+}
+function homeEvents() {
+  const W = E.weekly(S); const WD = W && DUNGEONS[W.did];
+  const row = (did, k, mod, plus, wk) => { const d = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did);
+    return `<button class="ac-er ${wk ? "wk" : ""} ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">${im(imgM(d.boss), "ac-em", MONSTERS[d.boss].name)}<span class="grow"><span class="ac-ek">${k}</span><b>${h(d.name)}</b><span class="xs muted">${un ? "" : `${G("lock")} `}niv. ${d.lvl}</span></span>${modChip(mod)}<b class="plus">+${plus} %</b></button>`; };
+  return `<section class="panel"><div class="phead"><h2>${G("sparkle")} En ce moment</h2><span class="xs muted ac-hide">éclairs : nouveaux dans <span data-flashleft>${dur((E.flashEnd() - E.now()) / 1000)}</span></span></div><div class="ac-ev">
+    ${WD ? row(W.did, `${G("star")} Mutateur de la semaine · encore ${weeklyLeft()}`, W.mod, Math.round((E.WEEKLY_REW - 1) * 100), true) : ""}
+    ${E.flash(S).map((x) => row(x.did, `Donjon éclair · ${x.tier}`, x.mod, Math.round((E.FLASH_REW - 1) * 100))).join("")}
+  </div></section>`;
 }
 function renderHomeInner() {
+  if (ui.home === "havre") { $("#main").innerHTML = havreHtml(); return; }
   const team = E.team(S); const main = mainHero();
   const deco = S.dungeon ? dgDeco(S.dungeon.id) : S.sub ? subDeco(S.sub) : "sky";
+  const sub = S.sub && E.SUBS[S.sub];
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
-    : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && S.sub ? `Chasse en cours : <b>${h(E.SUBS[S.sub].name)}</b> ${starsHtml(S.sub, true)}` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
-  const zkey = S.dungeon ? null : S.sub; const rate = zkey ? E.zoneRate(S, zkey) : null;
+    : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && sub ? `Chasse : <b>${h(sub.name)}</b> <span class="xs muted">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
+  const rate = !S.dungeon && S.sub ? E.zoneRate(S, S.sub) : null;
+  const rl = rate ? `<div class="ac-rate xs"><span><b class="num">${fmt(rate.xpH)}</b> XP/h</span><span><b class="num">${fmt(rate.kH)}</b> kamas/h</span><span><b class="num">${fmt(rate.rH)}</b> ressources/h</span><span><b class="num">${Math.round(rate.winRate * 100)} %</b> victoires</span></div>` : S.hunting ? `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>` : "";
+  const best = !S.dungeon && team.length ? bestSub() : null; const B = best && E.SUBS[best];
+  const reco = B && best !== S.sub ? `<div class="ac-reco">${G("star")}<span class="grow">Zone conseillée pour ton niveau : <b>${h(B.name)}</b> <span class="xs">niv. ${B.lvl[0]}-${B.lvl[1]}</span></span><button class="btn sm primary" data-act="hunt" data-id="${best}">Y aller</button></div>` : "";
+  const al = teamAlerts();
+  const heads = S.chars.map((c) => { const out = !(c.inTeam && !c.job); const g = al.some((a) => a.c === c && a.k === "gear"); const p = !c.autoStat && c.pts > 0;
+    return `<button class="ac-h ${out ? "out" : ""}" data-act="homehero" data-id="${c.id}" data-tip="${h(`${c.name} · ${CLASSES[c.cls].name} niv. ${c.lvl}${out ? " · hors combat" : ""}${p ? ` · ${c.pts} points à répartir` : ""}${g ? " · meilleur équipement dans le sac" : ""}`)}" aria-label="${h(c.name)}">${head(c)}<span class="ac-lv num">${c.lvl}</span>${g ? `<i class="ac-g"></i>` : ""}${p ? `<i class="ac-p num">${c.pts}</i>` : ""}</button>`; }).join("")
+    + (S.chars.length < E.HERO_MAX ? `<button class="ac-h ac-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" data-tip="${h(`Recruter un héros : ${recruitPrice() ? `${fmt(recruitPrice())} kamas` : "gratuit"}`)}" aria-label="Recruter un héros"><span class="head">+</span></button>` : "");
+  const { html: tiles, todo } = homeTiles();
+  const q = E.questStep(S); const qp = E.questProgress(S);
   const archis = Object.values(S.archis).reduce((a, b) => a + b, 0);
-  const tabs = ""; // Aperçu / Havre-Sac : dans la barre de navigation depuis la 0.1.9.1
-  if (ui.home === "havre") { $("#main").innerHTML = tabs + havreHtml(); return; }
-  const q = E.questStep(S); const qp = E.questProgress(S); const A = E.almanax(S);
-  $("#main").innerHTML = tabs + protBar() + `
-  <section class="hero-banner">
-    <div class="scene">${sceneSVG(deco, 220, "home" + (S.sub || ""))}<div class="troupe" style="justify-content:flex-end;padding-right:5%">${team.map((c) => `<span class="ent hero" style="width:clamp(54px,10vw,80px)"><span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span></span>`).join("")}</div></div>
-    <div class="inner">
-      <div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div></div>
-      <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div>
+  const jt = ui.hj === "c" ? "c" : "j"; const n = ui.hjAll ? 20 : 5;
+  const jour = jt === "c" ? `<div class="pad">${historyHtml(n)}</div>` : `<div class="list journal">${S.journal.slice(0, n).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div>`;
+  const more = (jt === "c" ? S.history.length : S.journal.length) > 5;
+  $("#main").innerHTML = protBar() + `
+  <section class="hero-banner ac-ban">
+    <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}</div>
+    <div class="inner"><div class="ac-l">
+      <div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}</div>
+      <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-tab="world">${IC("monde")} Zones</button><button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
+      <div class="ac-r"><div class="ac-heads">${heads}</div>${team.length ? fsGauge() : ""}</div>
+    </div>
+    ${reco}
+  </section>
+  <section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("target")} Aujourd'hui</h2><span class="xs muted ac-hide">${todo ? `${todo} chose${todo > 1 ? "s" : ""} à faire` : "rien d'urgent"} · renouvelé à minuit</span></div><div class="ac-tds">${tiles}</div></section>
+  <section class="grid2 ac-grid" style="margin-top:14px">
+    ${homeEvents()}
+    <div class="stack" style="gap:14px">
+      <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
+        ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
+        <div class="ac-stats xs"><span><b class="num">${fmt(S.stats.wins)}</b> victoires</span><span><b class="num">${Object.keys(S.ach || {}).length}/${E.ACH.length}</b> succès</span><span><b class="num" style="color:var(--archi)">${archis}</b> archimonstres</span><span><b class="num" style="color:var(--gold)">${S.radiants || 0}</b> rayonnants</span><span><b class="num">${E.havreTotal(S)}</b> Havre-Sac</span></div>
+      </div></div>
+      <section class="panel"><div class="phead"><nav class="subtabs" style="margin:0"><button data-act="hjtab" data-v="j" aria-pressed="${jt === "j"}">Journal</button><button data-act="hjtab" data-v="c" aria-pressed="${jt === "c"}">Derniers combats</button></nav>${more ? `<button class="btn sm" data-act="hjall">${ui.hjAll ? "Moins" : "Tout voir"}</button>` : ""}</div>${jour}</section>
     </div>
   </section>
-  ${defiHomeCard()}
-  <section class="panel" style="margin-top:14px"><div class="phead"><h2>Vos héros</h2>${fsGauge()}</div><div class="cardrow" style="padding-left:14px">${S.chars.map((c) => heroCard(c, "sm")).join("")}</div></section>
-  <section class="grid2" style="margin-top:14px">
-    <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
-      ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
-      <div class="small">${IC("quetes")} Avis de recherche : ${(S.bounties || []).map((b) => `<span class="tag soft">${h(MONSTERS[b.key].name)} ${b.prog}/${b.n}</span>`).join(" ") || "aucun"}</div>
-      <div class="small">${IC("almanax")} Almanax : ${A.done ? `<span class="tag good">offrande faite · ${h(A.bonus.txt)}</span>` : `${A.qty} × ${h(A.res)} → ${h(A.bonus.txt)} <button class="btn sm" data-act="goquest" data-v="almanax">Offrir</button>`}</div></div></div>
-    <div class="panel"><div class="phead"><h2>Rendement${zkey ? " · " + h(E.SUBS[zkey].name) : ""}</h2></div><div class="pad">${rateHtml(rate)}</div></div>
-  </section>
-  <section class="kpis" style="margin:14px 0">
-    <div class="kpi"><b class="num">${Math.max(...S.chars.map((c) => c.lvl))}</b><span>niveau max</span></div>
-    <div class="kpi"><b class="num">${fmt(S.stats.wins)}</b><span>victoires</span></div>
-    <div class="kpi"><b class="num" style="color:var(--archi)">${archis}</b><span>archimonstres vaincus</span></div>
-    <div class="kpi"><b class="num" style="color:var(--gold)">${S.radiants || 0}</b><span>objets rayonnants</span></div>
-    <div class="kpi"><b class="num">${Object.keys(S.ach || {}).length}/${E.ACH.length}</b><span>succès</span></div>
-    <div class="kpi"><b class="num">${E.havreTotal(S)}</b><span>améliorations du Havre-Sac</span></div>
-  </section>
-  <section class="grid2">
-    <div class="panel"><div class="phead"><h2>Consommables</h2></div><div class="pad">${consBar(true)}</div></div>
-    <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad">${historyHtml(6)}</div></div>
-  </section>
-  ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}
-  <section class="panel" style="margin-top:14px"><div class="phead"><h2>Journal</h2></div><div class="list journal">${S.journal.slice(0, 10).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></section>`;
+  ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}`;
 }
 /* ---------- 4.0 : Havre-Sac en pièces ---------- */
 const hvPips = (l, m) => `<div class="pipsbar">${Array.from({ length: Math.min(m, 50) }, (_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</div>`;
@@ -5644,6 +5694,11 @@ document.addEventListener("click", (ev) => {
     case "navmenu": navMenuSheet(); return;
     case "navmini": S.settings.navMini = !S.settings.navMini; break;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
+    /* 0.1.42 : accueil du jour */
+    case "homehero": ui.tab = "team"; ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; window.scrollTo(0, 0); break;
+    case "hjtab": ui.hj = d.v; ui.hjAll = false; break;
+    case "hjall": ui.hjAll = !ui.hjAll; break;
+    case "hgo": ui.tab = "inv"; if (d.v === "cons") ui.inv = "cons"; if (d.v === "gbuy") ui.inv = "res"; window.scrollTo(0, 0); break;
     case "selchar": ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; if (ui.tab === "team" && !window.matchMedia("(min-width:860px)").matches) window.scrollTo(0, 0); break;
     case "teamlist": ui.tview = "list"; ui.heroMore = false; break;
     case "heromore": ui.heroMore = !ui.heroMore; break;
