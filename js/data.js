@@ -374,7 +374,7 @@
     bonbon_sagesse:    { name: "Bonbon Sagesse",     icon: "🍬", kind: "boost", boost: "xp",     pct: 10, dur: 3600, desc: "+10 % d'expérience pendant 1 h." },
     bonbon_prospecteur:{ name: "Bonbon Prospecteur", icon: "🍭", kind: "boost", boost: "drop",   pct: 10, dur: 3600, desc: "+10 % de butin pendant 1 h." },
     bonbon_dore:       { name: "Bonbon Doré",        icon: "🪙", kind: "boost", boost: "kamas",  pct: 15, dur: 3600, desc: "+15 % de kamas pendant 1 h." },
-    bonbon_recolteur:  { name: "Bonbon Récolteur",   icon: "🌾", kind: "boost", boost: "gather", pct: 15, dur: 3600, desc: "+15 % de vitesse de récolte pendant 1 h." },
+    bonbon_recolteur:  { name: "Bonbon Récolteur",   icon: "🌾", kind: "boost", boost: "gather", pct: 15, dur: 3600, desc: "+15 % de ressources récoltées pendant 1 h." },
     bonbon_traqueur:   { name: "Bonbon Traqueur",    icon: "🎯", kind: "boost", boost: "archi",  pct: 50, dur: 1800, desc: "Chances d'archimonstre ×1,5 pendant 30 min." },
     bonbon_royal:      { name: "Bonbon Royal",       icon: "👑", kind: "boost", boost: "royal",  pct: 10, dur: 1800, desc: "+10 % d'expérience, de butin et de kamas pendant 30 min." },
     fiole_resu:        { name: "Fiole de Résurrection", icon: "🧪", kind: "util", auto: true, desc: "Automatique : en donjon, une défaite ne fait pas perdre la clé, l'équipe recommence la salle (une fois par donjon)." },

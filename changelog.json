@@ -1,6 +1,17 @@
 {
-  "version": "1.0.8.5",
+  "version": "1.0.8.6",
   "versions": [
+    {
+      "v": "1.0.8.6",
+      "name": "Coups de récolte longs",
+      "items": [
+        "Un héros qui récolte fait maintenant des coups de 30 secondes : la barre se remplit, puis toute la récolte du coup tombe d'un bloc",
+        "Les ressources par heure et la montée des métiers ne changent pas. Le niveau, l'outil, le Jardin et le Bonbon Récolteur donnent plus de ressources par coup",
+        "La ligne du héros montre le temps restant et ce qu'il recevra à la fin du coup",
+        "Filons, trouvailles et protecteurs arrivent aussi souvent qu'avant. Un héros rappelé en plein coup rapporte la part déjà faite",
+        "Les quêtes et succès de récolte comptent les ressources récoltées"
+      ]
+    },
     {
       "v": "1.0.8.5",
       "name": "Équipements sur téléphone",

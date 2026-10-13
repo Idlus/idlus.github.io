@@ -1,4 +1,5 @@
-/* 1.0.7.9 « Récolte rééquilibrée » : rendement 35 % au niveau 1 → 10 % au niveau 200, XP de métier dans la même proportion.
+/* Récolte : 1.0.7.9 « Récolte rééquilibrée » (rendement 35 % → 10 %) et 1.0.8.6 « Coups de récolte longs »
+   (un coup dure E.HIT_S secondes, même production par heure, part du coup gardée si on rappelle le héros).
    Lancer : node tests/recolte.test.js */
 "use strict";
 const assert = require("assert");
@@ -7,19 +8,26 @@ require("../js/systems.js");
 let seed = 3; E.setRng(() => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; });
 let now = 1.8e12; E.now = () => now; E.protSpawn = () => {}; E.almMult = () => 1;
 assert.ok(Math.abs(E.gatherYield(1) - 0.35) < 0.002 && Math.abs(E.gatherYield(200) - 0.1) < 1e-9, "rendement 35 % → 10 %");
-const run = (lvl, sec) => {
-  const S = E.newState("Rec", "iop"); S.jobs.paysan.lvl = lvl; const c = S.chars[0];
-  const res = E.jobRes("paysan").filter((x) => x[1] <= lvl).pop()[0]; c.job = { job: "paysan", res, prog: 0 };
-  let n = 0; for (let t = 0; t < sec; t += 60) { n += E.gatherTick(S, 60, { quiet: true }); S.jobs.paysan.lvl = lvl; now += 60000; }
-  return { S, res, n, per: 3600 / E.gatherPeriod(S, c) * sec / 3600 };
-};
-const a = run(200, 3600 * 4); // coups en 4 h : per ; ressources attendues ≈ per × 2 × 1,04 × 0,1
-const want = a.per * 2 * 1.04 * 0.1;
-assert.ok(a.n > want * 0.85 && a.n < want * 1.15, `niveau 200 : ${a.n} ressources pour ~${Math.round(want)} attendues`);
-assert.strictEqual(a.S.res[a.res], a.n, "les ressources arrivent bien dans l'inventaire");
-const b = run(1, 3600); assert.ok(b.n > 0 && b.n < b.per * 0.5, "niveau 1 : environ un tiers des coups");
-// XP : un coup au niveau 1 donne (10 + niveau de la ressource) × rendement
-const S = E.newState("Xp", "iop"); S.chars[0].job = { job: "paysan", res: "Blé", prog: 0 };
-E.gatherTick(S, E.gatherPeriod(S, S.chars[0]) + 0.001, { quiet: true });
-assert.ok(Math.abs(S.jobs.paysan.xp - 11 * E.gatherYield(1)) < 1e-9, "XP d'un coup réduite dans la même proportion");
+const make = (lvl, res) => { const S = E.newState("Rec", "iop"); S.jobs.paysan.lvl = lvl; const c = S.chars[0]; c.job = { job: "paysan", res, prog: 0 }; return { S, c }; };
+// la durée d'un coup suit E.HIT_S, quel que soit l'outil
+{ const { S, c } = make(200, "Quisnoa"); const t0 = E.gatherPeriod(S, c); S.tools.paysan = 10; assert.strictEqual(E.gatherPeriod(S, c), t0, "l'outil ne raccourcit pas le coup");
+  assert.ok(t0 >= Math.min(E.HIT_S.lo, E.HIT_S.hi) && t0 <= Math.max(E.HIT_S.lo, E.HIT_S.hi), "durée du coup dans E.HIT_S"); }
+// production par heure : la même qu'avant les coups longs (ancien rythme × quantité × rendement)
+for (const lvl of [1, 100, 200]) {
+  const res = E.jobRes("paysan").filter((x) => x[1] <= lvl).pop()[0]; const { S, c } = make(lvl, res); S.tools.paysan = 5;
+  const H = 6; let n = 0; for (let t = 0; t < H * 3600; t += 60) { n += E.gatherTick(S, 60, { quiet: true }); S.jobs.paysan.lvl = lvl; now += 60000; }
+  const want = H * 3600 / E.basePeriod(S, c) * (1 + lvl / 200) * 1.04 * E.gatherYield(lvl);
+  assert.ok(n > want * 0.85 && n < want * 1.15, `niveau ${lvl} : ${n} ressources en ${H} h pour ~${Math.round(want)} attendues`);
+  assert.strictEqual(S.res[res], n, "les ressources arrivent bien dans l'inventaire");
+}
+// rien avant la fin du coup, tout d'un bloc à la fin
+{ const { S, c } = make(200, "Quisnoa"); const t = E.gatherPeriod(S, c);
+  E.gatherTick(S, t * 0.9, { quiet: true }); assert.ok(!S.res.Quisnoa, "rien avant la fin du coup");
+  E.gatherTick(S, t * 0.11, { quiet: true }); assert.ok(S.res.Quisnoa > 3, `un bloc à la fin du coup (${S.res.Quisnoa})`); }
+// 6A : héros rappelé à mi-coup : il rapporte environ la moitié d'un coup
+{ let tot = 0, exp = 0; for (let i = 0; i < 200; i++) { const { S, c } = make(200, "Quisnoa"); E.gatherTick(S, E.gatherPeriod(S, c) / 2, { quiet: true }); exp += E.hitQty(S, c) / 2; assert.strictEqual(E.setJob(S, c.id, null), null); assert.strictEqual(c.job, null); tot += S.res.Quisnoa || 0; }
+  assert.ok(tot > exp * 0.85 && tot < exp * 1.15, `part du coup gardée au rappel (${tot} pour ~${Math.round(exp)})`); }
+// XP par heure : la même qu'en 1.0.7.9
+{ const { S, c } = make(1, "Blé"); const H = 1; const t = E.gatherPeriod(S, c); E.gatherTick(S, t, { quiet: true });
+  const want = (10 + 1) * E.gatherYield(1) * t / E.basePeriod(S, c); assert.ok(Math.abs(S.jobs.paysan.xp - want) < 1e-6, "XP d'un coup = XP des récoltes de l'ancien rythme"); }
 console.log("recolte : OK");

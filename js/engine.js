@@ -2397,7 +2397,7 @@
   /* rythme d'obtention d'une ressource, par heure : récolte en cours et/ou chasse dans la zone en cours */
   E.resRateH = (S, name) => {
     let h = 0; const src = [];
-    S.chars.forEach((c) => { if (c.job && c.job.res === name) { const per = E.gatherPeriod(S, c); if (per > 0) { h += (3600 / per) * (1 + S.jobs[c.job.job].lvl / 200) * E.gatherYield(S.jobs[c.job.job].lvl); src.push("récolte"); } } });
+    S.chars.forEach((c) => { if (c.job && c.job.res === name) { const per = E.gatherPeriod(S, c); if (per > 0) { h += (3600 / per) * E.hitQty(S, c); src.push("récolte"); } } });
     const sub = S.hunting && !S.dungeon && S.sub ? SUBS[S.sub] : null;
     if (sub) {
       const cyc = E.fightCycle(S);
@@ -2795,7 +2795,15 @@
     S.tools[job] = l + 1; note(S, `Outil fabriqué : ${R.name} (${GATHER_JOBS[job].name}).`, "up"); E.emit(S, "tool", { job }); return null;
   };
   E.gatherSpeed = (S, job, c) => (1 + E.toolLvl(S, job) * 0.08) * (1 + E.bonus(S, "gather") / 100) / E.gatherMult(S, job, c);
-  E.gatherPeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job, c) : 0; };
+  /* 1.0.8.6 « Coups de récolte longs » (Mathis) : un coup dure E.HIT_S secondes (de lo au niveau 1 à hi au niveau 200).
+     La production par heure ne change pas : le niveau, l'outil et les bonus donnent plus de ressources par coup.
+     E.basePeriod = l'ancien rythme d'une récolte, qui sert de mesure (un coup vaut hitScale récoltes de l'ancien rythme). */
+  E.HIT_S = { lo: 30, hi: 30 };
+  E.basePeriod = (S, c) => { const j = c.job; return j ? E.gatherTime(S.jobs[j.job].lvl) / E.gatherSpeed(S, j.job, c) : 0; };
+  E.gatherPeriod = (S, c) => { const j = c.job; if (!j) return 0; const L = Math.min(200, Math.max(1, S.jobs[j.job].lvl)); return E.HIT_S.lo + (E.HIT_S.hi - E.HIT_S.lo) * (L - 1) / 199; };
+  E.hitScale = (S, c) => { const b = E.basePeriod(S, c); return b > 0 ? E.gatherPeriod(S, c) / b : 0; };
+  /* ressources attendues à la fin du coup (affichage) */
+  E.hitQty = (S, c) => { if (!c.job) return 0; const L = S.jobs[c.job.job].lvl; return E.hitScale(S, c) * (1 + L / 200) * (1 + 4 * E.FIND_CHANCE) * E.gatherYield(L) * E.almMult(S, "gather", c.job.job) * (E.filonOn(S, c.job.res) ? 2 : 1) * E.protMult(S, c.job.res); };
   E.FIND_CHANCE = 0.01;
   /* 1.0.7.9 : rendement de la récolte, part des ressources gardées à chaque coup selon le niveau du métier
      (35 % au niveau 1, 10 % au niveau 200). L'XP de métier par coup baisse dans la même proportion. */
@@ -2808,7 +2816,7 @@
     if (E.expActive && E.expActive(S) && c.inTeam && !c.job) return "Impossible pendant une expédition.";
     if (!job) {
       if (c.job) {
-        c.job = null; S.fight = S.dungeon ? S.fight : null;
+        E.gatherPartial(S, c); c.job = null; S.fight = S.dungeon ? S.fight : null;
         if (c.inTeam && E.activeCount(S, c) >= E.TEAM_MAX) { c.inTeam = false; note(S, `${c.name} revient au repos : l'équipe est complète (8 héros).`, "info"); }
         else note(S, `${c.name} revient chasser.`, "info");
       }
@@ -2817,7 +2825,7 @@
     const list = E.jobRes(job); const lvl = S.jobs[job].lvl;
     const pickRes = res && list.find((x) => x[0] === res && x[1] <= lvl) ? res : (list.filter((x) => x[1] <= lvl).pop() || [])[0];
     if (!pickRes) return "Ressource verrouillée.";
-    const was = !!c.job; c.job = { job, res: pickRes, prog: 0 };
+    const was = !!c.job; if (was) E.gatherPartial(S, c); c.job = { job, res: pickRes, prog: 0 };
     if (!was) S.fight = S.dungeon ? S.fight : null;
     note(S, `${c.name} récolte : ${pickRes}.`, "info");
     return null;
@@ -2826,30 +2834,35 @@
   E.FILON_EVERY_S = 7200; E.FILON_DUR_S = 600;
   E.filonOn = (S, res, at = E.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
   /* 1.0.7.8 (Mathis) : plus de bulles pour la récolte (filon, trouvaille, niveau de métier) : tout reste écrit dans le journal */
+  /* un coup (ou la part frac d'un coup quand le héros est rappelé) : k récoltes de l'ancien rythme d'un seul bloc */
+  const gatherHit = (S, c, frac, opts = {}) => {
+    const W = c.job; const J = S.jobs[W.job]; const def = E.jobRes(W.job).find((x) => x[0] === W.res); if (!J || !def || def[1] > J.lvl) return 0;
+    const t = E.gatherPeriod(S, c), k = E.hitScale(S, c) * frac, y = E.gatherYield(J.lvl);
+    if (k <= 0) return 0;
+    if (frac >= 1 && !opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
+    const fe = k * E.FIND_CHANCE; const finds = Math.floor(fe) + (rnd() < fe - Math.floor(fe) ? 1 : 0); // trouvailles : même fréquence par heure qu'avant
+    let v = (k + 4 * finds) * (1 + J.lvl / 200) * y * E.almMult(S, "gather", W.job); // Almanax « Récolte abondante »
+    if (E.filonOn(S, W.res)) v *= 2;
+    v *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
+    if (frac >= 1 && !opts.quiet) E.protSpawn(S, c, W, k);
+    let q = Math.floor(v); if (rnd() < v - q) q++;
+    if (finds) { q = Math.max(1, q); S.finds = (S.finds || 0) + finds; for (let i = 0; i < finds; i++) if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
+    if (q) addRes(S, W.res, q);
+    J.xp += (10 + def[1] * 1.0) * y * k;
+    while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
+    if (q) E.emit(S, "harvest", { res: W.res, n: q }); // compte les ressources récoltées (quêtes, succès)
+    return q;
+  };
+  /* 6A : héros rappelé ou changé de ressource en plein coup : il rapporte la part du coup déjà faite */
+  E.gatherPartial = (S, c) => { const W = c && c.job; if (!W) return 0; const t = E.gatherPeriod(S, c); const f = t > 0 ? Math.min(1, W.prog / t) : 0; W.prog = 0; return f > 0 ? gatherHit(S, c, f, { quiet: true }) : 0; };
   const gatherTick = (S, dt, opts = {}) => {
     let total = 0;
     S.chars.forEach((c) => {
       const W = c.job; if (!W) return; const J = S.jobs[W.job]; if (!J) { c.job = null; return; }
       const def = E.jobRes(W.job).find((x) => x[0] === W.res); if (!def || def[1] > J.lvl) return;
-      W.prog += dt; const t = E.gatherPeriod(S, c);
+      W.prog += dt;
       let n = 0;
-      while (W.prog >= t && n < 200000) {
-        W.prog -= t; n++;
-        let q = 1; if (rnd() < J.lvl / 200) q++;
-        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
-        q = E.almQty(q, E.almMult(S, "gather", W.job)); // 0.1.39 : Almanax « Récolte abondante »
-        if (E.filonOn(S, W.res)) q *= 2;
-        q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
-        if (!opts.quiet) E.protSpawn(S, c, W);
-        const find = rnd() < E.FIND_CHANCE, y = E.gatherYield(J.lvl);
-        if (find) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); }
-        { const v = q * y; q = Math.floor(v); if (rnd() < v - q) q++; } // 1.0.7.9 « Récolte rééquilibrée » : moins de ressources par coup
-        if (find) { q = Math.max(1, q); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
-        if (q) addRes(S, W.res, q); total += q;
-        J.xp += (10 + def[1] * 1.0) * y;
-        while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
-      }
-      if (n) E.emit(S, "harvest", { res: W.res, n });
+      while (W.prog >= E.gatherPeriod(S, c) && n < 200000) { W.prog -= E.gatherPeriod(S, c); n++; total += gatherHit(S, c, 1, opts); }
     });
     return total;
   };

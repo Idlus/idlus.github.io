@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.5";
+const GAME_VERSION = "1.0.8.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.6", name: "Coups de récolte longs", items: [
+    "Un héros qui récolte fait maintenant des coups de 30 secondes : la barre se remplit, puis toute la récolte du coup tombe d'un bloc",
+    "Les ressources par heure et la montée des métiers ne changent pas. Le niveau, l'outil, le Jardin et le Bonbon Récolteur donnent plus de ressources par coup",
+    "La ligne du héros montre le temps restant et ce qu'il recevra à la fin du coup",
+    "Filons, trouvailles et protecteurs arrivent aussi souvent qu'avant. Un héros rappelé en plein coup rapporte la part déjà faite",
+    "Les quêtes et succès de récolte comptent les ressources récoltées",
+  ] },
   { v: "1.0.8.5", name: "Équipements sur téléphone", items: [
     "Encyclopédie sur téléphone : les filtres de niveau des Équipements passent à la ligne au lieu de sortir de l'écran",
     "Les compteurs du haut sont bien rangés deux par deux",
@@ -4824,10 +4831,10 @@ function ingHtml(ing, mult = 1) {
   return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; return `<span class="${have >= q * mult ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b></span>`; }).join("")}</div>`;
 }
 function toolHtml(id) {
-  const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">${IC("metiers")} <b>${h(E.TOOL_NAMES[id])} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${tl * 8} % de vitesse)</span></div>`;
+  const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">${IC("metiers")} <b>${h(E.TOOL_NAMES[id])} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${tl * 8} % de ressources)</span></div>`;
   const R = E.toolCost(S, id); const lvOk = S.jobs[id].lvl >= R.lvl; const ok = lvOk && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q);
   const pinned = S.shop.some((e) => e.k === "tool" && e.id === id);
-  return `<div class="toolbox"><div class="row between small"><span>${IC("metiers")} Outil actuel : <b>${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "aucun"}</b> <span class="xs muted">(+${tl * 8} % de vitesse)</span></span><span class="xs muted">prochain : <b>${h(R.name)}</b></span></div>
+  return `<div class="toolbox"><div class="row between small"><span>${IC("metiers")} Outil actuel : <b>${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "aucun"}</b> <span class="xs muted">(+${tl * 8} % de ressources)</span></span><span class="xs muted">prochain : <b>${h(R.name)}</b></span></div>
     ${ingHtml(R.ing)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
     <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? G("cart") + " ✓" : G("cart")}</button></div></div>`;
 }
@@ -4881,9 +4888,9 @@ function recolteHtml() {
     return `<div class="panel pjob"><div class="pjh">${im(jobImg(id), "joblogo", J.name)}<div class="grow"><div class="row between"><b class="pjn">${J.name}</b><span class="lvlpill">niv. ${s.lvl}</span></div>
         <div class="bar xp thin"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div><div class="xs muted num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))} XP</div></div></div>
       <div class="pad stack" style="gap:8px">
-        ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · ${E.gatherPeriod(S, c).toFixed(1)} s</span></div><div class="bar green thin" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
+        ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · coup de ${hitDur(E.gatherPeriod(S, c))}</span></div><div class="row between xs pwhit"><span>Reste <b data-wleft="${c.id}">${hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.hitQty(S, c))))} ${h(c.job.res)} à la fin du coup</span></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
         <button class="pslot" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>
-        <details class="ptool" data-job="${id}" ${ui.toolOpen && ui.toolOpen[id] ? "open" : ""}><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de vitesse</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
+        <details class="ptool" data-job="${id}" ${ui.toolOpen && ui.toolOpen[id] ? "open" : ""}><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de ressources par coup</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
         ${resGrid(id)}
       </div></div>`; }).join("");
   return `${dayBar("met")}
@@ -5345,6 +5352,8 @@ function renderRenaissance() {
   <section class="panel" style="margin-top:12px"><div class="phead"><h2>Les Éveils</h2><span class="xs muted">3 rangs chacun</span></div><div class="pad achgrid">${E.EVEIL_ORDER.map((id) => `<div class="ach ok"><span class="ic">${G("sparkle")}</span><span><b>${h(E.EVEILS[id].name)}</b><br><span class="xs muted">${h([1, 2, 3].map((r) => E.EVEILS[id].desc(r).replace(/^\+/, "+")).join(" · "))}</span></span></div>`).join("")}<div class="ach ok cls"><span class="ic">${IC("phenix")}</span><span><b>Éveil de classe</b><br><span class="xs muted">Renaissances V et X : renforce le passif de la classe, différent pour chacune des 19 classes</span></span></div></div></section>`;
 }
 /* 0.1.35 : congédier un héros, confirmé en écrivant son nom */
+/* 1.0.8.6 : durée d'un coup de récolte (« 30 s », « 1 min 10 s ») */
+const hitDur = (t) => t >= 60 ? `${Math.floor(t / 60)} min${Math.round(t % 60) ? " " + Math.round(t % 60) + " s" : ""}` : `${Math.ceil(t)} s`;
 function dismissSheet(c) {
   const refund = E.dismissRefund(S); const next = E.recruitCost(S.chars.length);
   openSheet(`<h2>Congédier ${h(c.name)} ?</h2>
@@ -5387,14 +5396,14 @@ function gatherSheet() {
   if (!g.job) g.job = c.job ? c.job.job : "bucheron";
   const list = E.jobRes(g.job); const lv = S.jobs[g.job].lvl;
   if (!g.res || !list.find((x) => x[0] === g.res && x[1] <= lv)) g.res = (c.job && c.job.job === g.job ? c.job.res : null) || (list.filter((x) => x[1] <= lv).pop() || [])[0];
-  const per = E.gatherTime(lv) / E.gatherSpeed(S, g.job, c);
+  const per = E.gatherPeriod(S, Object.assign({}, c, { job: { job: g.job, res: g.res, prog: 0 } }));
   openSheet(`<h2>${IC("pioche")} Envoyer récolter</h2>
     <p class="small muted">Le héros quitte l'équipe de chasse pendant qu'il récolte. Les niveaux de métier sont communs à tous vos héros.</p>
     <div class="stack" style="gap:8px">
       <label class="row small"><span style="min-width:90px">Héros</span><select data-act="gs" data-k="cid">${S.chars.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.name)} (niv. ${x.lvl})${x.job ? " — récolte déjà" : ""}</option>`).join("")}</select></label>
       <div class="row small"><span style="min-width:90px">Métier</span>${Object.keys(GATHER_JOBS).map((j) => `<button class="jobpick ${j === g.job ? "on" : ""}" data-act="gsjob" data-v="${j}" data-tip="${h(GATHER_JOBS[j].name)} niv. ${S.jobs[j].lvl}">${im(jobImg(j), "joblogo sm", GATHER_JOBS[j].name)}</button>`).join("")}</div>
       <div class="respick">${list.map(([r, l]) => `<button class="${r === g.res ? "on" : ""}" data-act="gsres" data-v="${h(r)}" ${l > lv ? "disabled" : ""} data-tip="${h(r)} · niveau ${l}${l > lv ? " (verrouillé)" : ""} · en stock : ${fmt(S.res[r] || 0)}">${im(resImg(r), "ico", r)}<span class="xs">${h(r)}</span>${l > lv ? `<i class="xs">niv. ${l}</i>` : ""}</button>`).join("")}</div>
-      ${g.res ? `<div class="small muted">≈ ${per.toFixed(1)} s par récolte${E.filonOn(S, g.res) ? " · <b class='plus'>filon actif ×2 !</b>" : ""}${c.cls === "sadi" && (g.job === "bucheron" || g.job === "alchimiste") ? " · passif Sadida" : ""}${c.cls === "steam" && g.job === "pecheur" ? " · passif Steamer" : ""}</div>` : ""}
+      ${g.res ? `<div class="small muted">coup de ${hitDur(per)} · ≈ ${fmt(Math.max(1, Math.round(E.hitQty(S, Object.assign({}, c, { job: { job: g.job, res: g.res, prog: 0 } })))))} ${h(g.res)} par coup${E.filonOn(S, g.res) ? " · <b class='plus'>filon actif ×2 !</b>" : ""}${c.cls === "sadi" && (g.job === "bucheron" || g.job === "alchimiste") ? " · passif Sadida" : ""}${c.cls === "steam" && g.job === "pecheur" ? " · passif Steamer" : ""}</div>` : ""}
     </div>
     <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
@@ -7564,7 +7573,7 @@ function loop() {
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
-      document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; });
+      document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); const tl = $("#tlist"); if (tl) tl.innerHTML = teamListHtml(); renderNav(); } // seuls le haut et la liste se rafraîchissent, la fiche reste telle quelle

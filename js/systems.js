@@ -26,7 +26,7 @@
     { id: "drop",    name: "Salle des trophées",    icon: "🏺", per: 2,  max: 50, base: 400,  g: 1.5, unit: "% de butin" },
     { id: "kamas",   name: "Coffre-fort",           icon: "💰", per: 3,  max: 40, base: 250,  g: 1.5, unit: "% de kamas" },
     { id: "hp",      name: "Salle d'entraînement",  icon: "🥊", per: 1,  max: 30, base: 600,  g: 1.45, unit: "% de PV en combat" },
-    { id: "gather",  name: "Jardin",                icon: "🌿", per: 4,  max: 30, base: 300,  g: 1.5, unit: "% de vitesse de récolte" },
+    { id: "gather",  name: "Jardin",                icon: "🌿", per: 4,  max: 30, base: 300,  g: 1.5, unit: "% de ressources récoltées" },
     { id: "bag",     name: "Grenier",               icon: "🎒", per: 50, max: 20, base: 500,  g: 1.5,  unit: " places dans le sac (et 10 de trop-plein)" },
     { id: "offtime", name: "Lit douillet",          icon: "🛏", per: 1,  max: 8,  base: 2000, g: 1.9,  unit: " h de progression hors ligne (8 h de base)" },
     { id: "offrate", name: "Majordome",             icon: "🎩", per: 5,  max: 7,  base: 2500, g: 1.9,  unit: " % d'efficacité hors ligne (25 % de base)" },
@@ -337,7 +337,7 @@
     S.kamas -= k; S.hvGrow = S.hvGrow || {}; S.hvGrow[id] = E.roomGrow(S, id) + 1; E.emit(S, "havre", { id }); return null;
   };
 
-  /* Catalogue des meubles. kind : xp, drop, kamas (%), gather (% de vitesse), hp (% de PV), offrate (% d'efficacité
+  /* Catalogue des meubles. kind : xp, drop, kamas (%), gather (% de ressources récoltées), hp (% de PV), offrate (% d'efficacité
      hors ligne), offtime (heures hors ligne), bag (places), almanax (bonus du jour de l'Almanax, en % de plus). */
   const FURN = {
     "Statue de l'Ordre":       { room: "biblio",  kind: "xp",      v: 3,  src: "Comptoir de la cité" },
@@ -417,7 +417,7 @@
   }
   E.FURN = FURN;
   E.trophyOf = (did) => (TROPHY[did] ? TROPHY[did][0] : null);
-  const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de vitesse de récolte", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac", atelier: "% de vitesse à l'atelier", mxpup: "% d'XP pour les montures" };
+  const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de ressources récoltées", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac", atelier: "% de vitesse à l'atelier", mxpup: "% d'XP pour les montures" };
   E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; if (F.txt) return F.txt; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
   E.giveFurn = (S, name, why) => {
     if (!name || S.furniture.includes(name)) return false;
@@ -503,7 +503,7 @@
       if (S.dungeon && c.inTeam && !c.job) return "Impossible pendant un donjon.";
       if (c.inTeam && !c.job && E.team(S).length <= 1) return "Il faut au moins un personnage dans l'équipe.";
       if (c.inTeam) { c.inTeam = false; S.fight = S.dungeon ? S.fight : null; }
-      c.job = null; if (S.training === cid) S.training = null;
+      if (c.job) E.gatherPartial(S, c); c.job = null; if (S.training === cid) S.training = null;
       A.prog = 0;
     }
     A.cid = cid; A.rec = { k: rec.k, id: rec.id }; A.stall = null;
@@ -974,9 +974,9 @@
   E.PROT_TITLE = { paysan: "Protecteur des céréales", bucheron: "Protecteur des bois", mineur: "Protecteur des minerais", alchimiste: "Protecteur des plantes", pecheur: "Protecteur des poissons" };
   const protPool = {}; const protMons = (job) => protPool[job] || (protPool[job] = Object.keys(MONSTERS).filter((k) => E.PROT_RE[job] && E.PROT_RE[job].test(MONSTERS[k].name) && !MONSTERS[k].boss && !MONSTERS[k].archiOf));
   E.protActive = (S, now = E.now()) => (S.protector && S.protector.until > now ? S.protector : null);
-  E.protSpawn = (S, c, W) => {
+  E.protSpawn = (S, c, W, k = 1) => { // k : nombre de récoltes de l'ancien rythme dans ce coup (même fréquence par heure)
     if (S.settings && S.settings.protOff) return; const now = E.now();
-    if (E.protActive(S, now) || (S.protCalm || 0) > now || rnd() >= E.PROT_CHANCE) return;
+    if (E.protActive(S, now) || (S.protCalm || 0) > now || rnd() >= 1 - Math.pow(1 - E.PROT_CHANCE, k)) return;
     const pool = protMons(W.job); if (!pool.length) return;
     const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
     const mon = pool.slice().sort((a, b) => Math.abs(MONSTERS[a].lvl[0] - lvl) - Math.abs(MONSTERS[b].lvl[0] - lvl))[0];
@@ -1545,7 +1545,7 @@
     S.chars.forEach((c) => {
       const want = ids.includes(c.id);
       if (want) {
-        if (c.job) { c.job = null; moved.push(c.name); }
+        if (c.job) { E.gatherPartial(S, c); c.job = null; moved.push(c.name); }
         if (S.training === c.id) { S.training = null; moved.push(c.name); }
         if (E.atelierHero(S) === c) { E.setAtelier(S, null); moved.push(c.name); }
       }
