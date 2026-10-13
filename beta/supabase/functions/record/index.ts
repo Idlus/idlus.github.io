@@ -208,7 +208,7 @@ async function koli(db: any, uid: string, k: any) {
     // deno-lint-ignore no-explicit-any
     const out: any[] = (list || []).map((o: any) => ({ id: o.id, name: o.name, cote: o.cote, lvl: o.lvl, heads: o.heads, team: o.team }));
     for (let slot = out.length; slot < 3; slot++) {
-      const g = E.koliGhostOpp(ghostSeed(uid, w, me.n, r, slot), E.KOLI_GHOST_D[slot], me.cote, lvl);
+      const g = E.koliGhostOpp(ghostSeed(uid, w, me.n, r, slot), E.KOLI_GHOST_D[slot], me.cote, lvl, A.length);
       out.push({ ghost: true, slot, name: g.name, cote: g.cote, lvl: g.lvl, heads: g.team.map((x: { cls: string; sex: string; head: number; lvl: number }) => ({ cls: x.cls, sex: x.sex, head: x.head, lvl: x.lvl })), team: g.team });
     }
     out.sort((a, b) => b.cote - a.cote);
@@ -229,7 +229,7 @@ async function koli(db: any, uid: string, k: any) {
   } else {
     const slot = Number(f.slot);
     if (!(slot >= 0 && slot < 3)) return json({ ok: false, err: "adversaire inconnu" }, 400);
-    const g = E.koliGhostOpp(ghostSeed(uid, w, me.n, r, slot), E.KOLI_GHOST_D[slot], me.cote, lvl);
+    const g = E.koliGhostOpp(ghostSeed(uid, w, me.n, r, slot), E.KOLI_GHOST_D[slot], me.cote, lvl, A.length);
     B = g.team; defName = g.name; defCote = g.cote; ghost = g.seed;
   }
   const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
