@@ -1,6 +1,13 @@
 {
-  "version": "0.1.35",
+  "version": "0.1.35.1",
   "versions": [
+    {
+      "v": "0.1.35.1",
+      "name": "Butin entier",
+      "items": [
+        "Zones basses : le butin n'est plus réduit, même quand vos héros sont bien plus forts que les monstres (avant : −6 % par niveau au-delà de 10 niveaux d'écart, jusqu'à −90 %). Les objets très bas sont toujours changés en kamas"
+      ]
+    },
     {
       "v": "0.1.35",
       "name": "Héros en réserve",
