@@ -1,6 +1,13 @@
 {
-  "version": "0.1.39.1",
+  "version": "0.1.39.2",
   "versions": [
+    {
+      "v": "0.1.39.2",
+      "name": "Idées à l'heure",
+      "items": [
+        "Suggestions : le message après l'envoi annonce maintenant la bonne attente. L'idée arrive sur le forum Idées du Discord dans la demi-heure, et non en quelques minutes"
+      ]
+    },
     {
       "v": "0.1.39.1",
       "name": "Almanax bien ouvert",
