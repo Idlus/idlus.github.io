@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.42 « Accueil du jour »
+Accueil refait (maquette validée par Mathis, réponses 1A à 12A) : `renderHomeInner` affiche un bandeau `.ac-ban` (zone + `diffTag`, rendement `E.zoneRate` en une ligne, têtes des héros `.ac-h` avec pastilles de `teamAlerts`, `fsGauge`), la ligne « Zone conseillée » (`bestSub`) quand l'équipe chasse ailleurs, les tuiles `homeTiles()` (défi, Almanax, avis, coffres, achats du jeu, sablier, prochain héros), `homeEvents()` (mutateur de la semaine + donjons éclair), la quête avec une ligne de chiffres et le panneau Journal / Derniers combats (`ui.hj`, `ui.hjAll`). Nouvelles actions : `homehero`, `hgo`, `hjtab`, `hjall`. La carte Discord devient une ligne `.dcline`. Les grandes cartes `heroCard`, les KPI et les Consommables quittent l'accueil. Test : `tests/smoke.test.js` vérifie les tuiles, les onglets, l'ouverture d'un coffre et la tête d'un héros.
+
 ## 0.1.41 « Donjons oubliés »
 18 donjons classiques (niv. 40-110) absents de la liste `DUNGEONS` de tools/build_data.py, dont la Gelaxième Dimension (Gelano). Nouvelles sous-zones et régions (Albuera, Îlots de la mer d'Asse, Bonta et Brâkmar) dans `ZONES`. Les données ont été ajoutées à js/gamedata.js sans modifier l'existant (les recettes et PV des objets et monstres déjà présents ne bougent pas). `CO_BOSS` : les 4 Gelées Royales se battent ensemble (`dg.coBoss`, PV × `E.COBOSS_HP` = 0,4). `POOL_MIN` écarte les Larves Solitaires. Boss au grade aberrant (Maître des Pantins, niveau 400) ramené au niveau du donjon. `KEY_FIX` (js/data.js) : Blugely, Rougely, Vertgely, Pièce de Koffrefor, Larve pétrifiée d'Ecaflipuce ; recette de la Petite Larve Dorée. `HUNT_EASE` : Plage de Corail 0,9. Simulation : les 18 donjons dans les cibles (bon équipement stasis 5-7, optimisé 8-10).
 
