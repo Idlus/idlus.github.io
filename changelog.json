@@ -1,6 +1,13 @@
 {
-  "version": "0.1.35.1",
+  "version": "0.1.35.2",
   "versions": [
+    {
+      "v": "0.1.35.2",
+      "name": "Tout dans le sac",
+      "items": [
+        "Les objets bien plus bas que vos héros ne sont plus changés en kamas : ils arrivent dans le sac comme les autres. Le tri automatique du sac (Inventaire) s'applique toujours"
+      ]
+    },
     {
       "v": "0.1.35.1",
       "name": "Butin entier",
