@@ -67,7 +67,7 @@
       ["res", "runes", "cons"].forEach((b) => { if (!p[b]) return; s[b] = s[b] || {}; for (const k in p[b]) { const v = (s[b][k] || 0) + Number(p[b][k]); if (v > 0) s[b][k] = v; else delete s[b][k]; } });
       (p.rm || []).forEach((uid) => { uid = +uid; delete s.items[uid]; s.chars.forEach((c) => { for (const sl in c.equip) if (c.equip[sl] === uid) delete c.equip[sl]; }); });
       if (p.title) { s.titlesExtra = s.titlesExtra || []; if (!s.titlesExtra.includes(p.title)) s.titlesExtra.push(String(p.title).slice(0, 40)); } // 0.1.22 : titre du boss de guilde
-      (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; });
+      (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
       if (o.t) { s.hdv.log.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); if (!quiet && (p.sold || p.got)) X().toast(o.t, "rare"); }
     });
@@ -519,5 +519,7 @@
   const sellItem = (uid) => { M.tab = "sell"; M.sCat = "eq"; M.sSel = String(uid); M.price = ""; M.n = 1; M.lot = 1; const it = S() && S().items[uid]; if (it) priceHint("eq", it.tpl); if (M.mine === null && mine()) loadMine(); };
   /* 0.1.38 : « Vendre à l'HdV » depuis une ressource de l'inventaire */
   const sellRes = (key) => { const c = E.isKey(key) ? "clef" : "res"; const n = (S() && S().res[key]) || 0; M.tab = "sell"; M.sCat = c; M.sSel = key; M.price = ""; M.n = 1; M.lot = n >= 100 ? 100 : n >= 10 ? 10 : 1; priceHint("res", key); if (M.mine === null && mine()) loadMine(); };
-  window.MARKET = { start, sellItem, sellRes, canSell: (key) => !blocked("res", key), render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
+  /* 0.1.41 : « Offre d'achat HdV » depuis les métiers et la forgemagie (ressource ou rune qui manque) */
+  const orderFor = (cat, key, qty) => { M.tab = "ord"; M.oView = "mine"; oPick(cat, key, qty || 0); if (M.oMine === null && mine()) loadOMine(); };
+  window.MARKET = { start, sellItem, sellRes, orderFor, canSell: (key) => !blocked("res", key), render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
 })();
