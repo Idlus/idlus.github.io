@@ -218,6 +218,19 @@
       return data || { net: true };
     } catch (e) { return { net: true }; }
   };
+  /* 0.1.44 : Kolizéum. { opps: 1, r } : 3 adversaires ; { fight: { id | slot }, r } : un combat classé (joué par le serveur). */
+  ON.koli = (body) => ON.submitGuild({ koli: body });
+  ON.koliMe = async (w) => { const r = await rpc("koli_me", { p_w: w }); return r.err ? null : r.data; };
+  ON.koliFights = async () => {
+    if (!sb || !ON.user) return [];
+    try { const { data } = await withTimeout(sb.from("koli_fights").select("id,at,att,def,ghost,att_name,def_name,att_team,def_team,seed,win,rounds,d_att,d_def").or(`att.eq.${ON.user.id},def.eq.${ON.user.id}`).order("id", { ascending: false }).limit(30)); return data || []; }
+    catch (e) { return null; }
+  };
+  ON.koliLb = async (w) => {
+    if (!sb) return null;
+    try { const { data } = await withTimeout(sb.from("lb_koli").select("user_id,pseudo,cote,n,heads,r").eq("w", w).order("r").limit(10)); return data || []; }
+    catch (e) { return null; }
+  };
   ON.deleteAccount = async () => {
     const { error } = await withTimeout(sb.rpc("delete_my_account"));
     if (error) return error.message;
