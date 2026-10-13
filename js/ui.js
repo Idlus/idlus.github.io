@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.10.5";
+const GAME_VERSION = "1.0.10.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.10.6", name: "Jouer pendant une panne", items: [
+    "Si le serveur ne répond plus quand tu recharges la page avec un compte, tu n'es plus renvoyé à l'écran de connexion : tu continues sur la partie de cet appareil",
+    "Un message le signale. Recharge la page quand le serveur est revenu pour retrouver ton compte : ta progression d'ici part alors en ligne",
+  ] },
   { v: "1.0.10.5", name: "Bouton du chat plus clair", items: [
     "Quand le chat est indisponible, « Réessayer maintenant » laisse place à « Nouvel essai en cours… » pendant que le jeu recontacte le serveur : on voit que le clic est pris en compte",
   ] },
@@ -7350,6 +7354,8 @@ async function onBoot() {
   ON.onChange(() => { if (booted && S) renderPill(); });
   // 0.1.19.4 : pas de compte obligatoire. Sans compte, on joue tout de suite (partie sur l'appareil) ;
   // l'écran de connexion ne s'affiche que si on l'a demandé (« Se connecter ») ou après une erreur de connexion.
+  // 1.0.10.6 : compte connecté mais serveur injoignable au lancement : on joue sur la partie de l'appareil au lieu de l'écran de connexion
+  if (!user && ON.stuck && !err) { ON.setState("offline"); setTimeout(() => toast("Serveur injoignable : tu joues sur la partie de cet appareil. Recharge la page quand il reviendra pour retrouver ton compte."), 800); return bootGame(); }
   if (!user) { if (ON.link().skip !== false && !err) return bootGame(); return loginScreen(err); }
   ui.onMailSent = null;
   return onAfterLogin();

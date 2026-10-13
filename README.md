@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.10.6 « Jouer pendant une panne »
+Pendant la panne Supabase du 13/10, un compte dont le jeton devait être renouvelé (plus d'une heure) tombait sur l'écran de connexion après F5 : `getSession` échouait, `ON.user` restait vide et le lien avait `skip: false`. `ON.ready` (js/online.js) pose `ON.stuck` quand la session est encore dans le localStorage ; `onBoot` (js/ui.js) lance alors la partie de l'appareil, état « hors ligne », avec un message. Une vraie déconnexion efface la session : l'écran de connexion reste affiché dans ce cas.
+
 ## 1.0.10.5 « Bouton du chat plus clair »
 Demande de Mathis : pendant la panne du serveur, « Réessayer maintenant » semblait ne rien faire (chaque essai attend jusqu'à 12 s, les clics pendant l'attente étaient ignorés). `refresh` (js/chat.js) redessine le chat au début de l'essai et la ligne affiche « Nouvel essai en cours… » tant que `busy`.
 

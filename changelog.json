@@ -1,6 +1,14 @@
 {
-  "version": "1.0.10.5",
+  "version": "1.0.10.6",
   "versions": [
+    {
+      "v": "1.0.10.6",
+      "name": "Jouer pendant une panne",
+      "items": [
+        "Si le serveur ne répond plus quand tu recharges la page avec un compte, tu n'es plus renvoyé à l'écran de connexion : tu continues sur la partie de cet appareil",
+        "Un message le signale. Recharge la page quand le serveur est revenu pour retrouver ton compte : ta progression d'ici part alors en ligne"
+      ]
+    },
     {
       "v": "1.0.10.5",
       "name": "Bouton du chat plus clair",

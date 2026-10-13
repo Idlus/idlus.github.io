@@ -68,6 +68,9 @@
   ON.ready = async () => {
     if (!sb) return null;
     try { const { data } = await withTimeout(sb.auth.getSession(), 6000); ON.user = data && data.session ? data.session.user : null; } catch (e) { ON.user = null; }
+    /* 1.0.10.6 : session gardée sur l'appareil mais serveur muet (jeton à renouveler pendant une panne) : ce n'est pas une déconnexion */
+    ON.stuck = false;
+    if (!ON.user) { try { const ref = (/^https:\/\/([^.]+)\./.exec(URL_) || [])[1]; ON.stuck = !!(ref && root.localStorage.getItem("sb-" + ref + "-auth-token")); } catch (e) {} }
     return ON.user;
   };
   const back = () => root.location.origin + root.location.pathname;
