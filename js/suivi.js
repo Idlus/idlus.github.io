@@ -123,7 +123,12 @@
   E.catchUp = (S, seconds) => {
     if (!live(S)) return catch0(S, seconds);
     const C = pre(S); const x0 = totXp(S), k0 = S.kamas, ren0 = S.chars.map((c) => c.ren || 0).join();
-    let r; depth++; try { r = catch0(S, seconds); } finally { depth--; }
+    /* 1.0.7.7 : hors ligne, l'équipe suit aussi les indices du trésor (avant, elle restait dans la zone du premier indice) */
+    const tc = S.tresor && S.tresor.cur; const follow = !!(tc && tc.follow && S.hunting && !S.dungeon);
+    const roamOn = S.settings.roam, roamF = E.roam, moved = [];
+    if (follow) { S.settings.roam = true; E.roam = (S2, ...a) => { const c = S2.tresor && S2.tresor.cur; if (c && c.move) { const was = S2.sub; tresorPending(S2); if (S2.sub !== was) { moved.push(SUBS[S2.sub].name); return true; } } return roamOn ? roamF(S2, ...a) : null; }; }
+    let r; depth++; try { r = catch0(S, seconds); } finally { depth--; if (follow) { S.settings.roam = roamOn; E.roam = roamF; } }
+    if (r && moved.length) { r.roamed = []; r.tresor = moved; }
     if (r) {
       const now = E.now(), span = Math.min(r.seconds, NH * 3600) * 1000;
       const xp = ren0 === S.chars.map((c) => c.ren || 0).join() ? Math.max(0, totXp(S) - x0) : 0;
@@ -281,7 +286,7 @@
       if (dgs.length) steps.splice(4, 0, { t: "dg", dg: pick(dgs), sub: steps[3].sub, got: 0, mark: "une salle secrète au fond du donjon" });
     }
     T.stock.splice(i, 1);
-    T.cur = { lvl, k: P.k, steps, i: 0, from: S.hunting && !S.dungeon ? S.sub : null, follow: true, ready: false, go: false, fighting: false, t: E.now(), move: !S.dungeon };
+    T.cur = { lvl, k: P.k, steps, i: 0, from: S.hunting && !S.dungeon ? S.sub : null, follow: true, ready: false, go: false, fighting: false, t: E.now(), move: true }; // 1.0.7.7 : lancée en donjon, l'équipe part vers l'indice à la sortie
     E.note(S, `Chasse au trésor${P.k === "leg" ? " légendaire" : ""} : premier indice vers ${SUBS[steps[0].sub].name}.`, "up");
     tresorPending(S);
     return null;
@@ -306,6 +311,7 @@
     const T = S.tresor; if (!T) return;
     if (T.back) { const b = T.back; T.back = null; if (!S.dungeon && SUBS[b] && E.subUnlocked(S, b) && S.sub !== b) E.startHunt(S, b); }
     const c = T.cur; if (!c) return;
+    if (!c.ready && c.steps[c.i] && c.steps[c.i].t === "dg" && !S.dungeon) dgKey(S, c.steps[c.i]); // aussi pour les parties déjà bloquées, ou après un donjon perdu
     if (c.fighting && !(S.fight && S.fight.tresor && !S.fight.over)) { c.fighting = false; if (c.follow) c.go = true; } // combat interrompu : le gardien attend
     if (!c.move || S.dungeon) return;
     c.move = false;
@@ -401,10 +407,15 @@
     if (st.t === "enig") { const z = (D.ZONES || []).find((x) => x.subs.some((y) => y.id === st.sub)); return `Énigme : « Cherche ${st.mark} quelque part en ${z ? z.name : "Monde des Douze"}… » (l'équipe suit la piste : ${SUBS[st.sub].name})`; }
     return `Trouver ${st.mark} dans ${SUBS[st.sub].name}`;
   };
+  /* 1.0.7.7 : l'indice de donjon fournit sa clé tant qu'il n'est pas résolu (avant, sans clé, la chasse légendaire restait bloquée) */
+  function dgKey(S, st) {
+    const k = DUNGEONS[st.dg] && DUNGEONS[st.dg].key; if (!k || (S.res[k] || 0) >= 1) return;
+    E.addRes(S, k, 1); E.note(S, `Le parchemin cachait une clé : ${k}.`, "rare");
+  }
   function nextClue(S, c) {
     c.i++;
     if (c.i >= c.steps.length) { c.ready = true; E.note(S, "Le gardien du trésor t'attend !", "rare"); if (c.follow) { c.go = true; c.move = true; } }
-    else { const n = c.steps[c.i]; E.note(S, n.t === "dg" ? `Indice suivant : ${DUNGEONS[n.dg].name} (termine ce donjon).` : `Indice suivant : ${SUBS[n.sub].name}.`, "up"); if (c.follow) c.move = true; }
+    else { const n = c.steps[c.i]; E.note(S, n.t === "dg" ? `Indice suivant : ${DUNGEONS[n.dg].name} (termine ce donjon).` : `Indice suivant : ${SUBS[n.sub].name}.`, "up"); if (c.follow) c.move = true; if (n.t === "dg" && !S.dungeon) dgKey(S, n); }
   }
   function onEvent(S, type, data) {
     if (type === "win" && data.sub && !data.dungeon) {

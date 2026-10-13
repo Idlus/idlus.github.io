@@ -185,7 +185,7 @@
     const Sh = E.SHOPS[shop]; const it = Sh && Sh.items.find((x) => x.id === id);
     if (!it || !it.tresor) return buy0(S, shop, id, qty);
     const TR = E.tresorState ? E.tresorState(S) : null; if (!TR) return "Indisponible.";
-    if (TR.stock.length >= E.TRESOR_STOCK) return `Tu as déjà ${E.TRESOR_STOCK} parchemins de chasse.`;
+    if (TR.stock.filter((x) => E.tresorP(x).k !== "leg").length >= E.TRESOR_STOCK) return `Tu as déjà ${E.TRESOR_STOCK} parchemins de chasse.`;
     if ((S.tokens[Sh.cur] || 0) < it.cost) return `Il faut ${it.cost} ${Sh.curName.toLowerCase()}.`;
     S.tokens[Sh.cur] -= it.cost; const lvl = clamp(Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)), 1, 200);
     TR.stock.push(lvl); E.note(S, `Comptoir des temples : parchemin de chasse au trésor niveau ${lvl} obtenu.`, "up"); return null;
@@ -210,7 +210,7 @@
     if (!r) return r;
     const out = [];
     if (tmpRoam && r.roamed && r.roamed.length) out.push(`Itinérance pendant l'absence : ${r.roamed.length} changement${r.roamed.length > 1 ? "s" : ""} de zone.`);
-    if (C.back && from && S.sub !== from && SUBS[from] && !S.dungeon && E.subUnlocked(S, from)) { E.startHunt(S, from); out.push(`Retour à ta zone : ${SUBS[from].name}.`); }
+    if (C.back && from && S.sub !== from && !(S.tresor && S.tresor.cur && S.tresor.cur.follow) && SUBS[from] && !S.dungeon && E.subUnlocked(S, from)) { E.startHunt(S, from); out.push(`Retour à ta zone : ${SUBS[from].name}.`); }
     if (C.cap > 0) { // limite de banque : le surplus gagné pendant l'absence part au marchand de secours (sauf favoris, clés et ressources réservées)
       const keep = new Set([...E.cmdNeeds(S), ...(E.almanax ? [E.almanax(S).res] : [])]);
       let n = 0, k0 = S.kamas;

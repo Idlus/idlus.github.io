@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.6";
+const GAME_VERSION = "1.0.7.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.7", name: "Chasses au trésor réparées", items: [
+    "Chasse légendaire : l'indice de donjon donne maintenant la clé du donjon (une nouvelle si le donjon est perdu). Avant, sans clé, la chasse restait bloquée",
+    "Pendant ton absence, l'équipe suit les indices d'une zone à l'autre et t'attend devant le gardien. Avant, elle restait dans la zone du premier indice",
+    "Une chasse lancée depuis un donjon part bien vers le premier indice à la sortie, et le « Retour à ta zone » des consignes ne la coupe plus",
+    "Bandeau du Monde : bon compteur pour les indices de monstre, de ressource et de donjon",
+    "Comptoir des temples : le parchemin légendaire ne compte plus dans la limite de 3 parchemins",
+  ] },
   { v: "1.0.7.6", name: "Métiers revérifiés", items: [
     "Artisanat et Établi (PC) : cliquer une recette ou un objet en bas de la liste ne fait plus remonter la liste tout en haut",
     "Artisanat : la recette que tu viens de fabriquer reste affichée, même si elle sort de la liste « Fabricables » ; le bouton « Max » compte bien les Galets quand un Galet est ajouté",
@@ -5321,6 +5328,7 @@ function offlineSheet(r) {
     ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
     ${r.roamed && r.roamed.length ? `<p class="small">${G("star")} Chasse itinérante : ${r.roamed.map(h).join(" → ")}</p>` : ""}
+    ${r.tresor && r.tresor.length ? `<p class="small">${IC("carte")} Chasse au trésor : l'équipe a suivi les indices · ${r.tresor.map(h).join(" → ")}</p>` : ""}
     ${r.consigne && r.consigne.length ? `<p class="small">${IC("quetes")} <b>Consignes</b> : ${r.consigne.map(h).join(" ")} <button class="btn sm" data-act="vi-optcons">Régler</button></p>` : ""}
     ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
@@ -6147,7 +6155,7 @@ function tresorBanner() {
   const T = E.tresorState(S); const c = T.cur; const free = E.tresorFreeOk(S);
   if (!c && !T.stock.length && !free) return "";
   let txt;
-  if (c) { const st = E.tresorStep(S); txt = c.ready ? `<b>Le gardien du trésor t'attend</b> · ${h(E.SUBS[c.steps[c.steps.length - 1].sub].name)}` : `<b>Chasse au trésor</b> · étape ${c.i + 1} / ${c.steps.length} · ${h(E.SUBS[st.sub].name)} <span class="num">${st.got} / ${E.TRESOR_NEED}</span>`; }
+  if (c) { const st = E.tresorStep(S); txt = c.ready ? `<b>Le gardien du trésor t'attend</b> · ${h(E.SUBS[c.steps[c.steps.length - 1].sub].name)}` : st.t === "dg" ? `<b>Chasse au trésor</b> · étape ${c.i + 1} / ${c.steps.length} · ${h(DUNGEONS[st.dg].name)}` : `<b>Chasse au trésor</b> · étape ${c.i + 1} / ${c.steps.length} · ${h(E.SUBS[st.sub].name)} <span class="num">${st.t === "mon" ? `${st.got} / ${st.n}` : st.t === "res" ? `${Math.min(S.res[st.res] || 0, st.n)} / ${st.n}` : `${st.got} / ${E.TRESOR_NEED}`}</span>`; } // 1.0.7.7 : bon compteur pour chaque type d'indice
   else txt = T.stock.length ? `<b>${T.stock.length} parchemin${T.stock.length > 1 ? "s" : ""} de chasse</b> à ouvrir` : `<b>Parchemin de chasse du jour</b> disponible`;
   return `<button class="su-tban" data-act="worldtab" data-v="tresor">${IC("carte")}<span class="grow">${txt}</span><span class="xs">Voir ›</span></button>`;
 }
@@ -6170,7 +6178,7 @@ function tresorHtml() {
       const where = st.t === "dg" ? DUNGEONS[st.dg].name : s.name;
       if (i < c.i) return `<div class="su-st done"><span class="dot">✓</span><div><b>${h(where)}</b><span class="xs">${st.t === "mon" ? `${h(MONSTERS[st.mon].name)} vaincu` : st.t === "res" ? `${h(st.res)} rapporté` : st.t === "dg" ? "Salle secrète trouvée" : `Repère trouvé : ${h(st.mark)}`}</span></div></div>`;
       if (i === c.i && !c.ready) { const here = st.t === "dg" ? false : S.hunting && S.sub === st.sub && !S.dungeon;
-        const [a, b, unit] = st.t === "mon" ? [st.got, st.n, `${MONSTERS[st.mon].name} vaincu${st.got > 1 ? "s" : ""}`] : st.t === "res" ? [Math.min(S.res[st.res] || 0, st.n), st.n, `${st.res} en banque`] : st.t === "dg" ? [0, 1, "donjon terminé"] : [st.got, E.TRESOR_NEED, `victoire${st.got > 1 ? "s" : ""} avant de trouver le repère`];
+        const [a, b, unit] = st.t === "mon" ? [st.got, st.n, `${MONSTERS[st.mon].name} vaincu${st.got > 1 ? "s" : ""}`] : st.t === "res" ? [Math.min(S.res[st.res] || 0, st.n), st.n, `${st.res} en banque`] : st.t === "dg" ? [0, 1, `donjon terminé (n'importe quelle stasis) · ${DUNGEONS[st.dg].key} : ${fmt(S.res[DUNGEONS[st.dg].key] || 0)} en banque`] : [st.got, E.TRESOR_NEED, `victoire${st.got > 1 ? "s" : ""} avant de trouver le repère`];
         return `<div class="su-st now"><span class="dot">${i + 1}</span><div class="stack" style="gap:6px"><div class="su-clue">${h(E.tresorClueTxt(st))}${st.t === "dg" ? "" : ` <span class="xs">(niv. ${s.lvl[0]}–${s.lvl[1]})</span>`}.</div>
           <span class="xs">${st.t === "dg" ? `<button class="btn xs" data-act="dgopen" data-id="${st.dg}">Voir le donjon</button>` : here ? "L'équipe chasse ici" : "L'équipe n'est pas encore sur place"} · ${a} / ${b} ${h(unit)}</span><div class="su-prog"><i style="width:${pct(a, b)}%"></i></div></div></div>`; }
       return `<div class="su-st hid"><span class="dot">${i + 1}</span><div><b>???</b><span class="xs">Se dévoile à l'étape précédente</span></div></div>`; }).join("");

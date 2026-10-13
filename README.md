@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.7 « Chasses au trésor réparées »
+Indice de donjon de la chasse légendaire : la clé est fournie tant que l'indice n'est pas résolu (`dgKey`, js/suivi.js). Hors ligne, `E.catchUp` suit les indices (trajet dans `r.tresor`). Chasse lancée en donjon : `move` reste vrai. Consigne « Retour à ta zone » ignorée pendant un trésor. Bandeau du Monde et limite du Comptoir des temples corrigés. Tests dans tests/suivi.test.js.
+
 ## 1.0.7.6 « Métiers revérifiés »
 Revue des panneaux Métiers et Forgemagie (PC 1280 px et téléphone 390 px, partie avec métiers montés) : `keepList()` garde le défilement des listes `.plist` au redessin, `ui.recStick` garde la recette fabriquée affichée, `ui.toolOpen` garde le menu d'outil ouvert (événement `toggle`), barre de brisage collée en haut au téléphone (`--sth`), `brLock()` (cadenas/tenue) et confirmation pour un Rayonnant au brisage, coefficient de brisage dans la ligne de l'objet, retour à la liste de l'Établi à la même position, malus de forgemagie au-dessus de ses runes.
 

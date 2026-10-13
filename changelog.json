@@ -1,6 +1,17 @@
 {
-  "version": "1.0.7.6",
+  "version": "1.0.7.7",
   "versions": [
+    {
+      "v": "1.0.7.7",
+      "name": "Chasses au trésor réparées",
+      "items": [
+        "Chasse légendaire : l'indice de donjon donne maintenant la clé du donjon (une nouvelle si le donjon est perdu). Avant, sans clé, la chasse restait bloquée",
+        "Pendant ton absence, l'équipe suit les indices d'une zone à l'autre et t'attend devant le gardien. Avant, elle restait dans la zone du premier indice",
+        "Une chasse lancée depuis un donjon part bien vers le premier indice à la sortie, et le « Retour à ta zone » des consignes ne la coupe plus",
+        "Bandeau du Monde : bon compteur pour les indices de monstre, de ressource et de donjon",
+        "Comptoir des temples : le parchemin légendaire ne compte plus dans la limite de 3 parchemins"
+      ]
+    },
     {
       "v": "1.0.7.6",
       "name": "Métiers revérifiés",

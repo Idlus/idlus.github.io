@@ -66,6 +66,25 @@ G.settings.roam = true; E.tresorStart(G); assert.ok(E.tresorHold(G), "l'itinéra
 assert.strictEqual(E.roam(G, E.now() + 9e9), null);
 console.log("ok - chasse au trésor");
 
+// 1.0.7.7 : l'indice de donjon donne sa clé (sinon la chasse légendaire restait bloquée), même après un donjon perdu
+{ const L = team(120); Object.keys(E.DUNGEONS || require("../js/data.js").DUNGEONS).forEach((d) => (L.progress.bossKills[d] = 1));
+  const DG = require("../js/data.js").DUNGEONS;
+  L.tresor = { stock: [{ l: 120, k: "leg" }], cur: null, n: 0 }; assert.strictEqual(E.tresorStart(L, 0), null);
+  const c = L.tresor.cur; const j = c.steps.findIndex((x) => x.t === "dg"); assert.ok(j > 0, "un indice de donjon");
+  const key = DG[c.steps[j].dg].key; delete L.res[key];
+  c.i = j - 1; c.steps[j - 1].t = undefined; c.steps[j - 1].got = E.TRESOR_NEED - 1;
+  E.emit(L, "win", { mons: [], sub: c.steps[j - 1].sub }); assert.strictEqual(c.i, j);
+  assert.strictEqual(L.res[key], 1, "la clé du donjon est donnée");
+  L.res[key] = 0; t += 250; E.tick(L, 250); assert.strictEqual(L.res[key], 1, "clé rendue après un donjon perdu");
+  E.emit(L, "dungeon", { id: c.steps[j].dg, stasis: 1 }); assert.strictEqual(c.i, j + 1, "donjon fait : indice suivant"); }
+// 1.0.7.7 : hors ligne, l'équipe suit les indices (avant, elle restait dans la zone du premier)
+{ const O = team(100); O.stats.recent = Array.from({ length: 10 }, () => ({ d: 20, w: 1 }));
+  O.tresor = { stock: [100], cur: null, n: 0 }; assert.strictEqual(E.tresorStart(O, 0), null); const c = O.tresor.cur;
+  t += 8 * 3600000; const r = E.catchUp(O, 8 * 3600);
+  assert.ok(c.ready, "tous les indices résolus hors ligne"); assert.strictEqual(O.sub, c.steps[c.steps.length - 1].sub, "l'équipe attend le gardien sur place");
+  assert.ok(r.tresor && r.tresor.length >= 2, "le résumé d'absence montre le trajet"); assert.ok(!O.settings.roam, "l'itinérance n'est pas allumée en douce"); }
+console.log("ok - trésor : clé de donjon et indices hors ligne");
+
 // 3. Le défi du jour reste identique avec le carnet branché (même hasard).
 const D1 = team(60); const def = E.defi("dec");
 const a = E.defiSim(D1, def, t), b = E.defiSim(JSON.parse(E.serialize(D1)), def, t);
