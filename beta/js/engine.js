@@ -2047,7 +2047,7 @@
           E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
           const chainD = S.dungeon; S.dungeon = null;
-          if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); }
+          if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); else { S.dungeon.tot = chainD.tot || chainD.chain; S.dungeon.run = (chainD.run || 1) + 1; } }
           if (!S.dungeon && S.hunting && S.sub) E.applyZonePresets(S, S.sub);
         } else S.dungeon.room++;
       }
@@ -2435,13 +2435,18 @@
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
-    S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
+    S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, tot: chain || 1, run: 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
       mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
     SI.sel = k;
     S.fight = null; S.pause = 0;
     E.applyZonePresets(S, "dg:" + did);
     note(S, `Entrée dans ${dg.name}.`, "info");
     return null;
+  };
+  /* 0.1.37.1 : « Arrêter après celui-ci » : le donjon en cours va jusqu'au bout, puis l'enchaînement s'arrête */
+  E.stopChain = (S) => {
+    if (!S.dungeon || (S.dungeon.chain || 1) <= 1) return "Aucun enchaînement en cours.";
+    S.dungeon.chain = 1; note(S, "Enchaînement : ce donjon sera le dernier.", "info");
   };
   E.leaveDungeon = (S) => { if (S.dungeon) { note(S, "Vous quittez le donjon (clé perdue).", "warn"); S.dungeon = null; S.fight = null; if (S.hunting && S.sub) E.applyZonePresets(S, S.sub); } };
 
@@ -2922,7 +2927,7 @@
     savePreset: "enregistrer un préréglage", loadPreset: "charger un préréglage", applyPreset: "appliquer un préréglage", deletePreset: "supprimer un préréglage",
     saveComp: "enregistrer une composition", applyComp: "appliquer une composition", delComp: "supprimer une composition", setZonePreset: "préréglage par zone",
     // chasse, donjons, combat
-    startHunt: "partir chasser", stopHunt: "arrêter de chasser", enterDungeon: "entrer en donjon", leaveDungeon: "quitter le donjon",
+    startHunt: "partir chasser", stopHunt: "arrêter de chasser", enterDungeon: "entrer en donjon", leaveDungeon: "quitter le donjon", stopChain: "arrêter l'enchaînement de donjons",
     manualCast: "lancer un sort (mode manuel)", manualEnd: "finir son tour (mode manuel)", protFight: "affronter le protecteur",
     toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
     // métiers, forge, ressources
