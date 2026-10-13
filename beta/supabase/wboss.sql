@@ -19,7 +19,9 @@ create table if not exists public.wb_state (
   bonus_until timestamptz                   -- +10 % d'XP pour tout le monde après une victoire
 );
 alter table public.wb_state enable row level security;
-insert into public.wb_state (id, n, hp) values (1, 1, 20000) on conflict (id) do nothing;
+insert into public.wb_state (id, n, hp) values (1, 1, 10000) on conflict (id) do nothing;
+-- 0.1.50.3 : les vrais essais font environ 90 points ; 20 000 auraient tenu près d'une semaine, 10 000 tiennent environ 2 jours (choix G4)
+update public.wb_state set hp = 10000 where id = 1 and n = 1 and hp = 20000;
 
 create table if not exists public.wb_hits (
   id bigint generated always as identity primary key,
@@ -163,7 +165,7 @@ begin
   elsif ph1 > ph0 then
     perform wb_ann(jsonb_build_object('ev', 'ph', 'n', p_n, 'name', nm, 'ph', ph1));
   end if;
-  return jsonb_build_object('ok', true, 'grade', g, 'frag', wb_frag(g), 'cons', wb_cons(g), 'dmg', after, 'hp', s.hp, 'killed', killed,
+  return jsonb_build_object('ok', true, 'grade', g, 'frag', wb_frag(g), 'cons', wb_cons(g), 'dmg', after, 'before', before, 'hp', s.hp, 'killed', killed,
     'left', 3 - (select count(*) from wb_hits where user_id = p_user and day = gb_day()),
     'rank', (select 1 + count(*) from (select sum(points) t from wb_hits where n = p_n group by user_id) x where x.t > (select sum(points) from wb_hits where user_id = p_user and n = p_n)));
 end $$;

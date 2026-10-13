@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50.2";
+const GAME_VERSION = "0.1.50.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.50.3", name: "Boss des mondes corrigé", items: [
+    "Boss des mondes : Gargandyas a maintenant 1 000 000 PV au lieu de 2 000 000, pour tomber en 2 jours environ comme prévu (les dégâts déjà faits sont gardés)",
+    "Les 4 objets de Gargandyas et les objets légendaires du Songe ne sortent plus des coffres : on ne les obtient que par leur boutique ou dans le Songe",
+    "Le bandeau du boss et l'effet d'arrivée s'affichent aussi sur l'onglet Combat (ils ne se cachent plus que pendant un combat qu'on regarde)",
+    "La tuile du boss apparaît sur l'Accueil dès qu'il est chargé, la fiche de ses objets dit où les obtenir, et l'écran de fin d'essai compte bien les essais restants",
+  ] },
   { v: "0.1.50.2", name: "Boîte à idées épinglée", items: [
     "Chat : un message épinglé en haut du salon Général invite à partager vos idées, avec un bouton qui ouvre la Boîte à idées",
     "La petite croix le cache jusqu'au lendemain ; il revient tout de suite si son texte change",
@@ -5187,7 +5193,7 @@ function itemSheet(tpl) {
   openSheet(`<div class="row"><span class="icobox lg">${im(itemImg(tpl), "", T.name)}</span><div><h2 style="margin:0">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div>
     <div class="xs">${tplStatsHtml(T)}</div>
     <h3 class="sec">Où le trouver</h3>
-    <div class="list">${lines.join("") || `<div class="li muted">Source inconnue pour l'instant.</div>`}</div>
+    <div class="list">${lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Jouer › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
       ${T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${tpl}">${G("cart")} ${inShop ? "Retirer de la liste de courses" : "Liste de courses"}</button>` : ""}
       ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}

@@ -482,7 +482,7 @@
   E.CHEST_COMMON = ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "parchemin_avis"];
   E.CHEST_RARE = ["bonbon_royal", "fiole_resu", "cristal_fm", "bonbon_traqueur"];
   /* objets de ton niveau : un équipement de niveau proche (pas de Dofus) */
-  E.chestItemPool = (lvl) => Object.keys(ITEMS).filter((t) => { const T = ITEMS[t]; return T.slot && T.slot !== "dofus" && !T.hidden && T.lvl <= lvl + 5 && T.lvl >= Math.max(1, lvl - 15); });
+  E.chestItemPool = (lvl) => Object.keys(ITEMS).filter((t) => { const T = ITEMS[t]; return T.slot && T.slot !== "dofus" && !T.hidden && !T.leg && !T.wboss && T.lvl <= lvl + 5 && T.lvl >= Math.max(1, lvl - 15); });
   E.openChest = (S, id) => {
     const C = D.CONSUMABLES[id]; const T = E.CHEST_TIERS[C.tier]; const top = topLvl(S); const got = []; const loot = []; // loot : [type, id, quantité] pour la fenêtre d'ouverture
     const k = T.k * top; S.kamas += k; got.push(`${k.toLocaleString("fr-FR")} kamas`);

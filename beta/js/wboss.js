@@ -42,7 +42,7 @@
   E.WB_ROUNDS = 15;   // tours par essai
   E.WB_HP_MULT = 1000;
   E.WB_PV = 100;      // affichage : 1 point = 100 PV
-  E.WB_HP0 = 20000;   // PV (en points) du premier passage de Gargandyas : environ 2 jours (choix G4)
+  E.WB_HP0 = 10000;   // PV (en points) du premier passage de Gargandyas : environ 2 jours (choix G4 ; 20 000 jusqu'en 0.1.50.3)
   E.WB_DAY_S = 86400; // un boss doit tenir environ un jour : les PV du suivant s'ajustent (supabase/wboss.sql)
   /* grades d'un essai (points) : coffre ouvert tout de suite et Fragments d'anomalie */
   E.WB_GRADES = [

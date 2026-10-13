@@ -67,6 +67,9 @@
     const s = st(); if (!s) return;
     E.wbXpUntil = s.bonus > Date.now() ? E.now() + (s.bonus - Date.now()) : 0;
     paint(); paintBar(); maybeOverlay();
+    /* la tuile de l'Accueil apparaît ou change une fois le boss chargé */
+    const t = tile(); const key = t ? t.s : "";
+    if (key !== ui.tileKey) { const first = ui.tileKey === undefined; ui.tileKey = key; const D2 = window.DX; if (!first || key) { if (D2 && D2.ui && D2.ui.tab === "home" && !D2.ui.watch && !($("#sheet") && $("#sheet").innerHTML)) D2.render(); } }
   }
 
   /* ---------- petits rendus ---------- */
@@ -170,7 +173,7 @@
     if (!R.ok) { X().toast(R.err || "Refusé par le serveur."); load(true); return; }
     if (window.MARKET) { try { await window.MARKET.sync(); } catch (e) { /* les coffres arriveront à la prochaine synchro */ } }
     load(true);
-    watch(Object.assign({ dmg0: R.dmg - R.points, before: s.phase }, R));
+    watch(Object.assign({ dmg0: R.before != null ? R.before : Math.max(0, R.dmg - R.points) }, R));
   }
   function train(s) {
     const seed = (Date.now() >>> 0) || 1; const def = E.wbDef(s.n);
@@ -230,7 +233,7 @@
   }
   function watchEnd(w) {
     const R = w.ext.res, def = w.ext.def; const G = E.wbGrade(R.points); const i = E.WB_GRADES.indexOf(G); const up = i > 0 ? E.WB_GRADES[i - 1] : null;
-    const s = st(); const tl = s ? triesLeft(s) : 0;
+    const s = st(); const tl = R.left != null ? Math.max(0, R.left) : s ? triesLeft(s) : 0; // le serveur sait combien il en reste, même avant le rechargement
     const why = R.alive ? `${R.rounds} tours joués` : `ton équipe est tombée au tour ${R.rounds}`;
     const tip = up ? `Au grade ${up.g}, il te manquait ${nf((up.min - R.points) * E.WB_PV)} PV. ` : "";
     const el2 = `${E.wbElName(def.weak)} fait +50 % sur lui, ${E.wbElName(def.res)} seulement la moitié.`;
@@ -269,7 +272,7 @@
     if ((pref.seen || 0) >= s.n || (S().sessions || 0) < 2) return; // pas pendant la toute première partie : il le verra à la suivante
     if (!fxOn()) { pref.seen = s.n; savePref(); return; }
     const a = document.activeElement;
-    if ($("#chat.chat") || ($("#cele") && $("#cele").innerHTML.trim()) || (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) || ($("#sheet") && $("#sheet").innerHTML) || (window.DX.ui && window.DX.ui.tab === "combat")) { setTimeout(maybeOverlay, 15000); return; }
+    if ($("#chat.chat") || ($("#cele") && $("#cele").innerHTML.trim()) || (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) || ($("#sheet") && $("#sheet").innerHTML) || (window.DX.ui && window.DX.ui.watch)) { setTimeout(maybeOverlay, 15000); return; } // pas pendant un combat qu'on regarde
     pref.seen = s.n; savePref();
     const def = E.wbDef(s.n);
     const ch = [[18, 22, 30], [74, 18, -20], [12, 70, 60], [82, 66, -45], [30, 86, 15], [64, 84, -70], [44, 12, 80]].map(([x, y, r]) => `<span class="wbo-ch" style="left:${x}%;top:${y}%;--r:${r}deg"></span>`).join("");
@@ -285,7 +288,7 @@
     let b = $("#wbbar");
     if (!b) { const up = $("#updbar"); if (!up) return; b = document.createElement("div"); b.id = "wbbar"; up.after(b); }
     const s = st(); const tab = window.DX && window.DX.ui ? window.DX.ui.tab : "";
-    if (!s || !S() || tab === "combat") { b.innerHTML = ""; return; }
+    if (!s || !S() || (window.DX.ui && window.DX.ui.watch)) { b.innerHTML = ""; return; }
     const def = E.wbDef(s.n); let html = "";
     if (s.bonus > Date.now() && pref.xpbar !== s.bonus && s.last) html += `<div class="updbar wbbar xp">${X().IC("bonbon")}<span><b>${h(s.last.name)} est tombé !</b> +${E.WB_KILL.xp} % d'XP pour tout le monde, encore ${dur(s.bonus - Date.now())}.</span><button class="btn sm" data-act="wb-barclose" data-v="xp">Fermer</button></div>`;
     const key = `${s.n}:${s.phase}`;
