@@ -4457,4 +4457,4 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .eqcard .eq-hd .grow{display:flex;flex-direction:column;min-width:0}.eqcard .eq-hd:hover b{color:var(--gold2)}
 .eqcard .icobox.lg{width:48px;height:48px;flex:none}.eqcard .icobox.lg img{width:40px;height:40px}
 .eqsts{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px 8px;font-size:12px;font-weight:700}.eqst{display:inline-flex;align-items:center;gap:2px}.eqst .sico{width:15px;height:15px}
-@media (max-width:760px){.enckpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}.mons.enc.eqgrid{grid-template-columns:1fr}.eqhead{display:flex}}
+@media (max-width:760px){.enckpis.k6 .enckpi.archi{grid-column:auto}.eqtools .seg{flex-wrap:wrap;border-radius:16px}.enckpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}.mons.enc.eqgrid{grid-template-columns:1fr}.eqhead{display:flex}}

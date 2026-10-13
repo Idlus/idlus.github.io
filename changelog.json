@@ -1,6 +1,14 @@
 {
-  "version": "1.0.8.4",
+  "version": "1.0.8.5",
   "versions": [
+    {
+      "v": "1.0.8.5",
+      "name": "Équipements sur téléphone",
+      "items": [
+        "Encyclopédie sur téléphone : les filtres de niveau des Équipements passent à la ligne au lieu de sortir de l'écran",
+        "Les compteurs du haut sont bien rangés deux par deux"
+      ]
+    },
     {
       "v": "1.0.8.4",
       "name": "Recherche revérifiée",

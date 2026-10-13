@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.4";
+const GAME_VERSION = "1.0.8.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.5", name: "Équipements sur téléphone", items: [
+    "Encyclopédie sur téléphone : les filtres de niveau des Équipements passent à la ligne au lieu de sortir de l'écran",
+    "Les compteurs du haut sont bien rangés deux par deux",
+  ] },
   { v: "1.0.8.4", name: "Recherche revérifiée", items: [
     "Recherche : les archimonstres, les boss qui se battent à plusieurs (les 4 Gelées Royales, les 4 Blops Royaux, les Tynril…) et Gargandyas mènent enfin quelque part. Avant, la recherche disait « nulle part » pour 318 monstres",
     "Un monstre déjà vaincu ouvre sa fiche de l'Encyclopédie (lieux avec « Y aller », résistances, butins) ; un monstre jamais vu emmène toujours à son lieu",
