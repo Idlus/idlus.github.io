@@ -3112,6 +3112,14 @@ details>summary.alx-h{cursor:pointer}
 .hb-lv{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);font-size:12px;padding:1px 8px;border-radius:999px;background:var(--panel2);color:var(--gold2);border:1.5px solid var(--gold)}
 .hb-main{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:4px}
 .hb-l1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hb-l1 h2{font-size:24px;margin:0}
+/* 0.1.50.1 : renommer le héros (crayon bien visible à côté du nom) */
+.hb-ren{font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 7px;border-radius:999px;border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold);font-weight:800;font-size:12.5px;line-height:1.2}
+.hb-ren .uico{width:16px;height:16px}
+.hb-ren:hover{background:var(--gold);color:#13200a}
+.hb-renf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex-basis:100%}
+.hb-renf input{font:inherit;font-weight:800;font-size:18px;width:230px;max-width:100%;padding:4px 8px}
+.hb-renerr{flex-basis:100%;font-size:12.5px;font-weight:700;color:var(--danger)}
+.hb-renhint{flex-basis:100%}
 .hb-fr{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:linear-gradient(180deg,#f3d27a,#b98a2c);color:#2a1a08}
 .hb-xp{display:flex;align-items:center;gap:10px}.hb-xp .bar{flex:1;max-width:420px}
 .hb-pass{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

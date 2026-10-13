@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.50.1 « Nouveaux noms »
+Mathis : pouvoir changer le nom des héros et son pseudo (maquette, réponses « 1A crayon plus visible, 2B, 3A, 4A »). Héros : `E.renameChar(S, cid, nom)` (premier changement gratuit par héros, `c.renamed`, ensuite `E.RENAME_COST` = 50 000 kamas), filtre `E.nameBad` / `E.nameProblem` (liste `E.BAD_WORDS`, mots de 3 lettres seulement en mot entier) aussi au départ et dans `E.recruit`. Fiche : `renameHtml(c)` (bouton `.hb-ren`, champ `#renName`, Entrée / Échap). Pseudo : `pseudo_change(p_pseudo)` et `pseudo_info()` dans supabase/chat.sql (30 jours entre deux changements via `profiles.pseudo_at`, ancien pseudo gardé dans `pseudo_holds` 30 jours, vérifié aussi par `pseudo_guard`), `ON.changePseudo/pseudoInfo`, `pseudoChangeHtml()` dans Options › Sauvegarde.
+
 ## 0.1.50 « Quêtes, succès et chasses »
 js/quetes.js (sans DOM) : chapitres 2 à 5 de la quête principale (`E.QUEST_CHAPTERS`, `E.MAIN_CH1` = 22 garde « Héros d'Amakna »), quêtes de région (`E.REGIONS`, `E.rqGive/rqClaim`, état `S.rq`, ornements `reg_<zone>`), quêtes de la semaine (`E.wkState`, `S.wk`), rang de chasseur et avis d'élite (`E.hunterRank`, `E.eliteState`, `S.belite`), ~315 succès (`prog`, `grp`, `secret`, `hint`), points et paliers (`E.achPoints`, `E.ACH_PALIERS`, `S.achPal`, ornements `pal1/pal2`). Avis : 3 monstres + 1 boss (`E.BOSS_SLOTS`) dans systems.js. Trésor en 3 tailles (`E.TRESOR_SIZES`, parchemin `{ l, k }`, `E.tresorLegClaim`) et nouveaux indices dans suivi.js. Interface : js/questui.js, css/quetes.css ; ornements générés par `node tools/gen_ornements.js` (assets/ui/orn). Classement des points : colonne `pts` de `ladder` (supabase/classements.sql).
 
