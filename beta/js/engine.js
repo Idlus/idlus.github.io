@@ -475,7 +475,7 @@
     if (!c || !it) return "Objet introuvable.";
     const T = ITEMS[it.tpl];
     if (T.lvl > c.lvl) return `Niveau ${T.lvl} requis.`;
-    if (it.exo === "pa" && Object.values(c.equip).some((u) => u !== uid && S.items[u] && S.items[u].exo === "pa")) return "Ce héros porte déjà un objet exo PA (un seul par héros).";
+    if (it.exo && (E.EXO_ONE || ["pa"]).includes(it.exo) && Object.entries(c.equip).some(([sl, u]) => u !== uid && sl !== slotOverride && S.items[u] && S.items[u].exo === it.exo)) return `Ce héros porte déjà un objet exo ${STATS[it.exo].short} (un seul par héros).`; // 0.1.41 : PA, PM et Po
     const other = E.equippedBy(S, uid);
     if (other) for (const k in other.equip) if (other.equip[k] === uid) delete other.equip[k];
     // un anneau identique ne peut être porté deux fois (comme dans Dofus)
@@ -2634,15 +2634,19 @@
   E.runeKey = (tier, stat) => `${tier}:${stat}`;
   E.runeName = (key) => {
     const [tier, stat] = key.split(":"); const s = STATS[stat];
-    return tier === "pa" ? `Rune Pa ${s.short}` : tier === "ra" ? `Rune Ra ${s.short}` : tier === "ga" ? `Rune Ga ${s.short}` : `Rune ${s.short}`;
+    return tier === "pa" ? `Rune Pa ${s.short}` : tier === "ra" ? `Rune Ra ${s.short}` : tier === "ga" ? `Rune Ga ${s.short}` : tier === "ta" ? `Rune de transcendance ${s.short}` : `Rune ${s.short}`;
   };
   E.runeInfo = (key) => {
     const [tier, stat] = key.split(":"); const mult = tier === "pa" ? 3 : tier === "ra" ? 10 : 1;
-    const s = STATS[stat]; return { stat, tier, pts: tier === "ga" ? 1 : s.pts * mult, weight: tier === "ga" ? s.w : s.w * s.pts * mult, exo: tier === "ga" };
+    const s = STATS[stat]; if (tier === "ta") { const v = (E.TRANS && E.TRANS[stat]) || s.pts; return { stat, tier, pts: v, weight: v * s.w, exo: false, trans: true }; } // 0.1.41 : rune de transcendance
+    return { stat, tier, pts: tier === "ga" ? 1 : s.pts * mult, weight: tier === "ga" ? s.w : s.w * s.pts * mult, exo: tier === "ga" };
   };
   E.COEF_REGEN_MIN = 6; // +1 % toutes les 6 minutes
+  /* 0.1.41 : en ligne, le coefficient est commun à tous les joueurs (comme sur un serveur DOFUS) : online.js remplit E.netCoef
+     ({ modèle: { v, t } }, seulement ceux sous 100 %) et envoie au serveur les brisages notés dans E.netCoefHits. */
+  E.netCoef = null; E.netCoefHits = [];
   E.getCoef = (S, tpl, now = E.now()) => {
-    const c = S.coef[tpl]; if (!c) return 100;
+    const c = E.netCoef ? E.netCoef[tpl] : S.coef[tpl]; if (!c) return 100;
     const gained = Math.floor((now - c.t) / (E.COEF_REGEN_MIN * 60000));
     return Math.min(100, c.v + gained);
   };
@@ -2684,8 +2688,10 @@
       const r = weightToRunes(k, p.weights[k] * rf(0.85, 1.05) * exoMult);
       for (const rk in r) { const n = r[rk] + (r[rk] > 0 && E.almMult(S, "brise") > 0 ? E.almQty(r[rk], E.almMult(S, "brise")) : 0); S.runes[rk] = (S.runes[rk] || 0) + n; got[rk] = (got[rk] || 0) + n; } // 0.1.39 : Almanax « Concassage »
     }
-    S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: E.now() };
+    if (E.netCoef) { E.netCoef[it.tpl] = { v: Math.max(10, p.coef - 3), t: E.now() }; E.netCoefHits.push(it.tpl); }
+    else S.coef[it.tpl] = { v: Math.max(10, p.coef - 3), t: E.now() };
     delete S.items[uid];
+    E.emit(S, "brk", {});
     return got;
   };
 
@@ -2942,7 +2948,7 @@
     // métiers, forge, ressources
     setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", gameBuySell: "vendre au jeu (achats du jour)",
     craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftMany: "fabriquer en série", craftScroll: "fabriquer un parchemin",
-    forgemage: "forgemager", feedForgemage: "forgemagie en série", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
+    forgemage: "forgemager", transForge: "rune de transcendance", signItem: "signer un objet", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
     fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
     useConsumable: "utiliser un consommable", buyShop: "acheter en boutique", buyNets: "acheter des filets",
     // Havre-Sac, familiers, montures
