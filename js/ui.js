@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.37.1";
+const GAME_VERSION = "0.1.37.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.37.2", name: "Prix des héros", items: [
+    "Le prix du prochain héros est affiché sur le bouton « Recruter », qui devient doré quand vous pouvez payer. Sinon, il indique combien de kamas il manque",
+    "Une pièce dorée apparaît sur « Équipe et héros » dans le menu quand vous avez de quoi recruter un héros",
+    "Fenêtre de recrutement : le prix en grand, ce que vous avez, ce qu'il manque ou ce qu'il vous restera, et le prix du héros suivant",
+  ] },
   { v: "0.1.37.1", name: "Donjons à la chaîne", items: [
     "Enchaîner des donjons : choisissez 1, 3, 5, 10 ou 20 courses, « Toutes » vos clés, ou un nombre exact avec − et +. Le jeu retient votre choix pour chaque donjon",
     "La fiche du donjon donne la durée totale estimée d'après votre record, et le bouton indique le nombre de courses (×10)",
@@ -980,9 +985,16 @@ function subItems(sub) {
 }
 
 /* ---------- navigation & bandeau ---------- */
+/* 0.1.37.2 : le prix d'un héros bien visible (bouton doré quand on peut payer, pièce dans le menu) */
+const recruitPrice = () => E.recruitCost(S.chars.length + 1);
+const canRecruit = () => S.chars.length < E.HERO_MAX && S.kamas >= recruitPrice();
+function recruitBtn() {
+  const cost = recruitPrice(); const ok = S.kamas >= cost;
+  return `<button class="btn sm ${ok ? "kgold" : ""}" data-act="recruitsheet">+ Recruter · <span class="coin"></span> <b class="num">${cost ? fmt(cost) : "gratuit"}</b></button>${ok ? "" : `<span class="xs bad-t">il manque ${fmt(cost - S.kamas)} k</span>`}`;
+}
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
-  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "" };
+  return { team: (nAl ? `<span class="navcnt">${nAl}</span>` : "") + (canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : ""), quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "" };
 }
 function renderNav() {
   const nav = $("#nav"); $("#subnav").innerHTML = "";
@@ -3071,7 +3083,7 @@ function teamTopHtml() {
     <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
     <div class="k"><b class="num">${S.idols.active.length} / ${E.IDOL_MAX}</b><span>idoles actives</span></div>${idolBtn(null)}
 <div class="k"><b class="num">${E.soulCount(S)} / ${E.ARCHI_TOTAL}</b><span>âmes capturées</span></div>${archiBtn()}
-    ${S.chars.length < E.HERO_MAX ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
+    ${S.chars.length < E.HERO_MAX ? `<span class="grow"></span>${recruitBtn()}` : ""}</section>
   ${board ? "" : compsHtml()}
   ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
 }
@@ -3109,7 +3121,7 @@ function heroRail(c) {
     const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0; const rest = !x.inTeam || !!x.job;
     const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}${x.job ? " · en récolte" : !x.inTeam ? " · au repos" : ""}`;
     return `<button class="hr-h${x.id === c.id ? " on" : ""}${rest ? " out" : ""}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}" aria-label="${h(tip)}" data-tip="${h(tip)}">${head(x)}<span class="hr-lv num">${x.lvl}</span>${g ? `<i class="hr-g"></i>` : ""}${p ? `<i class="hr-p num">${x.pts}</i>` : ""}</button>`; }).join("")}
-    ${S.chars.length < E.HERO_MAX ? `<button class="hr-h hr-add" data-act="recruitsheet" data-tip="Recruter un héros" aria-label="Recruter un héros"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>
+    ${S.chars.length < E.HERO_MAX ? `<button class="hr-h hr-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" data-tip="Recruter un héros : ${fmt(recruitPrice())} kamas" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span><span class="hr-lv num hr-price">${recruitPrice() >= 1e4 ? Math.round(recruitPrice() / 1e3) + "k" : fmt(recruitPrice())}</span></button>` : ""}</div>
     <span class="hr-name">${h(c.name)} <small>· ${h(CLASSES[c.cls].name)} niv. ${c.lvl}</small></span><span class="hr-kb"><kbd>↑</kbd><kbd>↓</kbd>changer</span></aside>`;
 }
 /* flèches ↑ ↓ du clavier : héros précédent ou suivant, quand on est descendu dans la fiche (PC) */
@@ -4198,12 +4210,16 @@ function dismissSheet(c) {
 function recruitSheet() {
   const cost = E.recruitCost(S.chars.length + 1); const top = Math.max(...S.chars.map((c) => c.lvl)); const sex = ui.startSex || CLASSES[ui.startCls].sex;
   openSheet(`<h2>Recruter un héros</h2>
-    <p class="small muted">Coût : <b>${cost ? fmt(cost) + " kamas" : "gratuit"}</b> (vous avez ${fmt(S.kamas)}). La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus le bonus Esprit Libre diminue.</p>
+    <div class="rprice ${S.kamas >= cost ? "ok" : "no"}"><span class="xs muted">Prix de ce héros (${S.chars.length + 1}e)</span><b class="num big"><span class="coin"></span> ${cost ? `${fmt(cost)} kamas` : "gratuit"}</b>
+      <div class="rbar"><i style="width:${cost ? Math.min(100, Math.round(100 * S.kamas / cost)) : 100}%"></i></div>
+      <div class="row between xs"><span>Vous avez <b class="num">${fmt(S.kamas)}</b></span><span>${S.kamas >= cost ? `Il vous restera <b class="num">${fmt(S.kamas - cost)}</b>` : `Il manque <b class="num">${fmt(cost - S.kamas)}</b>`}</span></div>
+      ${S.chars.length + 1 < E.HERO_MAX ? `<span class="xs muted">Héros suivant : ${fmt(E.recruitCost(S.chars.length + 2))} k</span>` : ""}</div>
+    <p class="small muted">La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus le bonus Esprit Libre diminue.</p>
     ${classPick(ui.startCls, sex)}${classInfo(ui.startCls, sex, startHeadOf(ui.startCls, sex))}
     <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
       ${headPick(ui.startCls, sex)}
     <label class="stack" style="gap:4px"><span class="small muted">Nom</span><input type="text" id="recName" maxlength="20" value="${h(ui.recName || D.NAMES[Math.floor(Math.random() * D.NAMES.length)])}"></label>
-    <div class="row"><button class="btn primary" data-act="recruit" ${S.kamas < cost ? "disabled" : ""}>Recruter</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
+    <div class="row"><button class="btn ${S.kamas < cost ? "" : "kgold"}" data-act="recruit" ${S.kamas < cost ? "disabled" : ""}>${S.kamas < cost ? `Il manque ${fmt(cost - S.kamas)} kamas` : `Recruter pour ${cost ? `${fmt(cost)} kamas` : "rien"}`}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function giveSheet(uid) {
   const it = S.items[uid]; const T = ITEMS[it.tpl]; ui.giveTo = uid;

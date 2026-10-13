@@ -1,6 +1,15 @@
 {
-  "version": "0.1.37.1",
+  "version": "0.1.37.2",
   "versions": [
+    {
+      "v": "0.1.37.2",
+      "name": "Prix des héros",
+      "items": [
+        "Le prix du prochain héros est affiché sur le bouton « Recruter », qui devient doré quand vous pouvez payer. Sinon, il indique combien de kamas il manque",
+        "Une pièce dorée apparaît sur « Équipe et héros » dans le menu quand vous avez de quoi recruter un héros",
+        "Fenêtre de recrutement : le prix en grand, ce que vous avez, ce qu'il manque ou ce qu'il vous restera, et le prix du héros suivant"
+      ]
+    },
     {
       "v": "0.1.37.1",
       "name": "Donjons à la chaîne",
