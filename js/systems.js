@@ -537,21 +537,24 @@
       { id: "t3", titleSide: true, cost: 25 } ] },
   };
   E.SHOPS = SHOPS;
-  E.shopItemName = (S, it) => it.cons ? D.CONSUMABLES[it.cons].name : it.title ? `Titre « ${it.title} »` : it.titleSide ? `Titre « Champion de ${S.align ? ALIGN[S.align.side].name : "la cité"} »` : it.furn ? `Meuble : ${it.furn}` : it.name;
+  E.shopItemName = (S, it) => it.res ? `${(it.n || 1) > 1 ? it.n + " × " : ""}${it.res}` : it.cons ? D.CONSUMABLES[it.cons].name : it.title ? `Titre « ${it.title} »` : it.titleSide ? `Titre « Champion de ${S.align ? ALIGN[S.align.side].name : "la cité"} »` : it.furn ? `Meuble : ${it.furn}` : it.name;
   E.shopOwned = (S, it) => (it.title && S.titlesExtra.includes(it.title)) || (it.titleSide && S.align && S.titlesExtra.includes(`Champion de ${ALIGN[S.align.side].name}`)) || (it.orn && S.unlocks[it.orn]) || (it.wing && S.unlocks["wing_" + it.wing]) || (it.furn && S.furniture.includes(it.furn));
-  E.buyShop = (S, shop, id) => {
+  // qty (0.1.45) : plusieurs d'un coup, pour les articles « many » (Galets, coffres…)
+  E.buyShop = (S, shop, id, qty) => {
     const Sh = SHOPS[shop]; const it = Sh && Sh.items.find((x) => x.id === id); if (!it) return "Article inconnu.";
     if (shop === "cite" && !S.align) return "Choisissez d'abord un alignement.";
     if (E.shopOwned(S, it)) return "Déjà obtenu.";
-    if ((S.tokens[Sh.cur] || 0) < it.cost) return `Il faut ${it.cost} ${Sh.curName.toLowerCase()}.`;
-    S.tokens[Sh.cur] -= it.cost;
-    if (it.cons) E.addCons(S, it.cons);
+    const n = it.many ? clamp(Math.floor(+qty || 1), 1, 100) : 1; const cost = it.cost * n;
+    if ((S.tokens[Sh.cur] || 0) < cost) return `Il faut ${cost} ${Sh.curName.toLowerCase()}.`;
+    S.tokens[Sh.cur] -= cost;
+    if (it.res) E.addRes(S, it.res, (it.n || 1) * n);
+    if (it.cons) E.addCons(S, it.cons, n);
     if (it.title) S.titlesExtra.push(it.title);
     if (it.titleSide) S.titlesExtra.push(`Champion de ${ALIGN[S.align.side].name}`);
     if (it.orn) S.unlocks[it.orn] = 1;
     if (it.wing) S.unlocks["wing_" + it.wing] = 1;
     if (it.furn) S.furniture.push(it.furn);
-    note(S, `${Sh.name} : ${E.shopItemName(S, it)} obtenu.`, "up"); return null;
+    note(S, `${Sh.name} : ${n > 1 ? n + " × " : ""}${E.shopItemName(S, it)} obtenu${n > 1 ? "s" : ""}.`, "up"); return null;
   };
   E.setWing = (S, cid, w) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; c.wing = w && S.unlocks["wing_" + w] ? w : null; };
 
