@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.46";
+const GAME_VERSION = "0.1.46.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.46.1", name: "Bon objet en tête", items: [
+    "Choix d'un objet (clic sur un emplacement d'un héros) : la liste est rangée du plus utile au moins utile pour ce héros, et le premier porte l'étiquette « Meilleur choix »",
+    "Les bonus de panoplie comptent : une pièce qui débloque un palier remonte (étiquette « Pano. … 4/6 · bonus débloqué »), et perdre un palier compte aussi. La pastille verte « mieux dans le sac » et « Tout équiper au mieux » suivent le même calcul",
+    "L'objet porté est rappelé en haut de la liste pour comparer",
+    "Les objets déjà portés par d'autres héros (bouton « Prendre ») et ceux de niveau trop haut sont rangés à part en bas, repliés"
+  ] },
   { v: "0.1.46", name: "Donjons de légende", items: [
     "22 nouveaux donjons de niveau 200, ouverts après le Kolosso : Ventre de la Baleine, Tour de Bethel, Brasserie du roi Dazak, Vaisseau du Capitaine Meno, Temple de Koutoulou, Palais de Dantinéa, Manoir des Katrepat, Tour de Solar, Temple du dieu Kao, Sanctuaire de Torkélonia, Mémoire d'Orukam, Souvenir d'Imagiro, Rituel de Kabahal, Bataille de l'Aurore Pourpre, Chambre des maléfices, Breuil du Vénérable, Autel de la Déchireuse et les donjons des quatre Cavaliers",
     "La Tempête de l'Eliocalypse : Guerre, Servitude, Misère et Corruption se battent ensemble. Elle s'ouvre quand tu as battu les quatre Cavaliers dans leur donjon, qui laissent les Fragments d'armure de sa clé",
@@ -3167,11 +3173,15 @@ const buildMain = (c) => (["fo", "ine", "cha", "age"].includes(c.autoStat) ? c.a
 function itemScore(c, it) { if (!it) return 0; const main = buildMain(c); const mdmg = ELEMENTS[STATS[main].el].dmg; let sc = 0;
   for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.5) : ["dt", "df", "de", "da"].includes(k) ? (k === mdmg ? 1 : 0.2) : 1);
   if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5; return sc; }
-/* meilleur objet libre (porté par personne) pour un emplacement, s'il fait nettement mieux que l'actuel */
+/* 0.1.46.1 : score de l'équipement entier, bonus de panoplie compris (tri du choix d'objet, pastille verte, Tout équiper au mieux) */
+function gearScore(c, eq) { let sc = 0; const n = {};
+  for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += itemScore(c, it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
+  for (const z in n) { const b = E.setBonus(z, n[z]); if (b) sc += itemScore(c, { stats: b }); } return sc; }
+function gainFor(c, s, uid) { const eq = Object.assign({}, c.equip); for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; return gearScore(c, eq) - gearScore(c, c.equip); }
 function bestFor(c, s) {
   const want = s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s;
   const cur = S.items[c.equip[s]]; const curSc = itemScore(c, cur); let best = 0, uid = null;
-  for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (T.slot !== want || T.lvl > c.lvl || E.equippedBy(S, it.uid)) continue; if ((want === "anneau" || want === "dofus") && Object.entries(c.equip).some(([sl, u]) => sl !== s && S.items[u] && S.items[u].tpl === it.tpl)) continue; const sc = itemScore(c, it); if (sc > curSc * 1.05 + 1 && sc > best) { best = sc; uid = it.uid; } }
+  for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (T.slot !== want || T.lvl > c.lvl || E.equippedBy(S, it.uid)) continue; if ((want === "anneau" || want === "dofus") && Object.entries(c.equip).some(([sl, u]) => sl !== s && S.items[u] && S.items[u].tpl === it.tpl)) continue; const g = gainFor(c, s, it.uid); if (g > curSc * 0.05 + 1 && g > best) { best = g; uid = it.uid; } }
   return uid;
 }
 const slotUpgrade = (c, s) => !!bestFor(c, s);
@@ -3403,11 +3413,26 @@ function charEquipView(c, st) {
   let pick = "";
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
-    const cands = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || E.itemQuality(b) - E.itemQuality(a));
+    const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid);
+    const g = {}; all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid)));
+    const byGain = (a, b) => g[b.uid] - g[a.uid] || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl;
+    const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort(byGain);
+    const worn = all.filter((it) => E.equippedBy(S, it.uid)).sort(byGain);
+    const high = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl > c.lvl).sort((a, b) => ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
+    const curSet = c.equip[ui.slot] && S.items[c.equip[ui.slot]] && ITEMS[S.items[c.equip[ui.slot]].tpl].set; const counts = E.setCounts(S, c);
+    const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
+      return `<span class="pset ${on ? "on" : ""}">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""}</span>`; };
+    const row = (it, mode, i) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && g[it.uid] > 0;
+      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span>
+        <button class="btn sm ${mode === "worn" ? "" : "primary"}" data-act="equip" data-uid="${it.uid}" ${mode === "high" ? "disabled" : ""}>${mode === "high" ? "Niv. " + T.lvl : mode === "worn" ? "Prendre" : "Équiper"}</button></div>`; };
+    /* 0.1.46.1 : objets déjà portés et trop hauts rangés en bas, repliés (ui.pmore garde l'état ouvert) */
+    const pmore = (k, t, L, mode) => !L.length ? "" : `<div class="pmore"><button class="pmh" data-act="pmore" data-v="${k}" aria-expanded="${!!(ui.pmore || {})[k]}">${(ui.pmore || {})[k] ? "▾" : "▸"} ${t} (${L.length})</button>${(ui.pmore || {})[k] ? `<div class="list">${L.slice(0, 20).map((it) => row(it, mode)).join("")}</div>` : ""}</div>`;
     pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
-      <div class="list">${cands.slice(0, 40).map((it) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid);
-        return `<div class="li ${it.radiant ? "radiant" : ""}">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by.name)}` : ""}</span><br>${deltaHtml(c, ui.slot, it.uid)}</span>
-          <button class="btn sm primary" data-act="equip" data-uid="${it.uid}" ${T.lvl > c.lvl ? "disabled" : ""}>${T.lvl > c.lvl ? "Niv. " + T.lvl : "Équiper"}</button></div>`; }).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div></div>`;
+      ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}</span></div>`; })() : ""}
+      <div class="xs muted" style="padding:6px 14px 0">Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.</div>
+      <div class="list">${free.slice(0, 40).map((it, i) => row(it, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
+      ${pmore("w", worn.some((it) => E.equippedBy(S, it.uid) !== c) ? "Déjà portés par d'autres héros" : "Déjà portés", worn, "worn")}
+      ${pmore("h", "Niveau trop haut pour l'instant", high, "high")}</div>`;
   }
   const mainK = buildMain(c);
   return `<div class="stack">
@@ -5669,6 +5694,7 @@ document.addEventListener("click", (ev) => {
       for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }
     case "slot": ui.slot = d.slot || null; break;
+    case "pmore": ui.pmore = ui.pmore || {}; ui.pmore[d.v] = !ui.pmore[d.v]; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
     case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; if (j < 0 || j >= c.spells.length) return; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; ui.spSel = j; c.activePreset = null; c.spellsManual = true; break; }
