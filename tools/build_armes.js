@@ -1,4 +1,4 @@
-/* 0.1.51 « Armes » : récupère sur DofusDB les dégâts propres de chaque arme du jeu (type, coût en PA, critique, portée,
+/* 0.1.53 « Armes » : récupère sur DofusDB les dégâts propres de chaque arme du jeu (type, coût en PA, critique, portée,
    lignes de dégâts) et écrit js/armes.js. tools/build_data.py ne garde que les caractéristiques des objets ;
    ce fichier complète les armes sans toucher aux données générées.
    Lancer : node tools/build_armes.js   (à relancer quand des armes sont ajoutées au jeu) */

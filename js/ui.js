@@ -18,9 +18,21 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.52";
+const GAME_VERSION = "0.1.53";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.53", name: "Armes", items: [
+    "Chaque arme a maintenant son coup d'arme, avec ses vrais dégâts de DOFUS (coût en PA, critique, lignes de dégâts, vol de vie, PA retirés) : le héros la frappe quand c'est son meilleur coup du tour",
+    "Le coup d'arme a sa propre case à côté des 8 sorts, dans la barre de sorts et en combat (aussi en mode Manuel)",
+    "Maîtrise : chaque classe a 2 types d'armes favoris qui font +20 % de dégâts (Iop : Épée et Marteau, Crâ : Arc et Dague…)",
+    "Chaque type d'arme a son effet : Dague frappe 2 fois, Arc vise mieux les critiques, Baguette soigne un allié, Bâton protège, Épée achève, Marteau touche autour, Pelle déterre des trésors, Hache et Faux font saigner, Lance perce les résistances",
+    "Forgemagie : les potions de Séisme, Incendie, Tsunami et Ouragan changent les dégâts Neutre de l'arme en Terre, Feu, Eau ou Air (les petites potions, la moitié) ; on les prépare avec l'Alchimiste",
+    "La fiche des armes montre le coup d'arme et les dégâts estimés pour le héros ; « Équiper au mieux » en tient compte",
+    "Choix de l'arme : chaque arme montre son type, son coût en PA, ses dégâts estimés pour le héros et un badge « ★ Maîtrise » si c'est une arme favorite de sa classe",
+    "Établi : seules les potions d'élément qu'on a sont affichées, les autres se préparent depuis « Préparer une potion »",
+    "Chaque caractéristique a son icône DOFUS : dommages par élément, dommages critiques, dommages aux sorts, résistances fixes, PM, Portée, Tacle, Fuite, Retrait et Esquive PA/PM, Invocation, Pods",
+    "Icônes des ressources partout où il en manquait : recettes de la fiche d'objet, Almanax et Achats du jeu à l'Accueil, nourriture et ressources protégées des familiers ; bonus de panoplie avec leurs icônes",
+  ] },
   { v: "0.1.52", name: "Songe plus clair", items: [
     "Le Songe infini est réorganisé : un en-tête avec tes Bribes et 3 onglets avec compteurs (Le Puits ou Mon songe, Marché onirique, Légendaires)",
     "Nouveaux emblèmes pour les 8 difficultés : des lunes en métal ciselé, turquoise pour le Rêve, violettes pour le Paradoxe, rouges et cornues pour le Cauchemar, plus riches à chaque rang",
@@ -727,13 +739,13 @@ const elVar = (el) => (el === "buff" ? "var(--buff)" : `var(--el-${el || "n"})`)
 const eld = (el) => `<span class="eld" style="--c:${elVar(el)}" title="${ELEMENTS[el || "n"].name}">${ELEMENTS[el || "n"].name[0]}</span>`;
 const fmtStatVal = (k, v) => (["cri", "rt", "rf", "re", "ra", "rn", "dsort"].includes(k) ? `${fmt(v)} %` : fmt(v));
 const statLine = (k, v) => `${v > 0 ? "+" : ""}${fmt(v)} ${STATS[k].name.replace("% ", "")}`;
-const statIc = (k, v) => `<span class="stli">${sIco(k)}${statLine(k, v)}</span>`; // 0.1.51 : ligne de caractéristique avec son icône
+const statIc = (k, v) => `<span class="stli">${sIco(k)}${statLine(k, v)}</span>`; // 0.1.53 : ligne de caractéristique avec son icône
 
 /* images */
 const imgM = (key) => (MONSTERS[key] ? `assets/m/${MONSTERS[key].img}.png` : "");
 const imgI = (icon) => `assets/i/${icon}.png`;
 const resImg = (name) => (RES[name] ? imgI(RES[name].icon) : "");
-const resTag = (n, q) => `<span class="restag">${n === E.POUSSIERE ? IC("poussiere") : im(resImg(n), "rico", n)}${q ? `${fmt(q)} × ` : ""}${h(n)}</span>`; // 0.1.51 : ressource avec son icône
+const resTag = (n, q) => `<span class="restag">${n === E.POUSSIERE ? IC("poussiere") : im(resImg(n), "rico", n)}${q ? `${fmt(q)} × ` : ""}${h(n)}</span>`; // 0.1.53 : ressource avec son icône
 const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mimg ? `assets/m/${T.mimg}.png` : imgI(T.icon); };
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
@@ -829,7 +841,7 @@ function lookSheet(c) {
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
 const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`;
-/* 0.1.51 : une icône DOFUS pour chaque caractéristique (dommages élémentaires = icône de l'élément, résistances fixes = icône de la résistance, comme dans DOFUS) */
+/* 0.1.53 : une icône DOFUS pour chaque caractéristique (dommages élémentaires = icône de l'élément, résistances fixes = icône de la résistance, comme dans DOFUS) */
 const SICO_OF = { dt: "fo", df: "ine", de: "cha", da: "age", xt: "rt", xf: "rf", xe: "re", xa: "ra", xn: "rn" };
 const SICO_HAS = new Set(["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "dcri", "dn", "dsort", "so", "pp", "ini", "pa", "pm", "po", "rt", "rf", "re", "ra", "rn", "tac", "fui", "rpa", "rpm", "epa", "epm", "inv", "pod"]);
 const sIco = (k) => { const f = SICO_OF[k] || k; return SICO_HAS.has(f) ? `<img class="sico" src="assets/c/${f}.png" alt="" loading="lazy">` : ""; };
@@ -1883,7 +1895,7 @@ function spellBarFor(c, ent, F) {
     return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-tip="${h(spellTip(sp, c.lvl))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${g.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
   }).join("");
   const wsp = ent && ent.wsp; let whtml = "";
-  if (wsp) { const g = E.spellGrade(wsp, c.lvl); const cast = F && lastCast.arme !== undefined && F.seq - lastCast.arme <= 1; const can = A ? E.manualCanCast(S, wsp) : false; // 0.1.51 : coup d'arme
+  if (wsp) { const g = E.spellGrade(wsp, c.lvl); const cast = F && lastCast.arme !== undefined && F.seq - lastCast.arme <= 1; const can = A ? E.manualCanCast(S, wsp) : false; // 0.1.53 : coup d'arme
     whtml = `<div class="sp wpn ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === "arme" ? "sel" : ""}" style="--c:${elVar(wsp.el === "best" ? "n" : wsp.el)}" data-tip="${h(`Coup d'arme · ${wsp.name} · ${g.pa} PA — ${g.fx.filter((f) => f.k !== "apdrain").map(wpLineTxt).join(", ")}`)}" ${A && can ? `data-act="mspell" data-id="arme"` : ""}><img src="${itemImg(wsp.tpl)}" alt=""><span class="pa">${g.pa}</span></div>`; }
   return { w: !!wsp, html: html + whtml, names: Array.from({ length: N }, (_, i) => `<div>${slots[i] && E.spellDef(c.cls, slots[i].id) ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") + (wsp ? `<div>Arme</div>` : "") };
 }
@@ -3115,7 +3127,7 @@ function itemStatsHtml(it) {
   return (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
     return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
-/* ---------- 0.1.51 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
+/* ---------- 0.1.53 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
 const wpElName = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el] ? ELEMENTS[el].name : "");
 const wpLineTxt = (f) => `${f.min === f.max ? f.min : f.min + " à " + f.max} ${f.k === "heal" ? "soins" : f.k === "drain" ? "vol de vie" : "dégâts"} ${wpElName(f.el)}`.trim();
 const wpBestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
@@ -3125,7 +3137,7 @@ function wpEst(c, sp) { // dégâts moyens d'un coup pour ce héros, hors critiq
     t += (f.min + f.max) / 2 * E.DMG_SCALE * (1 + Math.max(-50, (st[E2.stat] || 0) + (st.pui || 0)) / 100) + (st.do || 0) + (st[E2.dmg] || 0); });
   return Math.round(t * E.classPow(c.cls, c.lvl));
 }
-function wpPickTag(c, it) { // 0.1.52 : type, maîtrise et dégâts estimés dans le choix de l'arme
+function wpPickTag(c, it) { // 0.1.53 : type, maîtrise et dégâts estimés dans le choix de l'arme
   const W = E.weaponData(it.tpl); const sp = W && E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); if (!sp) return "";
   const ty = E.WTYPES[W.type] || { name: "Arme" };
   return `<span class="pset wpt">${h(ty.name)} · ${sp.grades[0].pa} PA · ≈ ${fmt(wpEst(c, sp))} par coup</span>${sp.fav ? ` <span class="pset on" data-tip="${h(`Arme favorite des ${CLASSES[c.cls].name} : +20 % de dégâts`)}">★ Maîtrise</span>` : ""}`;
@@ -3162,7 +3174,7 @@ function wpFmHtml(it) { // potions de forgemagie élémentaire à l'Établi
     return n > 0 && !cur ? `<button class="prune" data-act="wpot" data-id="${cons}" style="--c:${elVar(C.el)}"><span class="rn"><img class="wpico" src="assets/ui/potions/${C.pimg}.png" alt=""> ${h(C.name)} <span class="xs muted">×${n}</span></span><span class="rv">Neutre → ${h(ELEMENTS[C.el].name)}${C.half ? " (moitié)" : ""}</span></button>`
       : `<span class="prune off" ${cur ? "" : `data-act="wbrew" data-id="${cons}" role="button" tabindex="0"`} data-tip="${h(cur ? "L'arme a déjà cet élément." : `Préparer : ${E.WPOT_COST[C.half ? "s" : "g"].herb.map(([r, q]) => q + " × " + r).join(", ")} et ${fmt(E.WPOT_COST[C.half ? "s" : "g"].kamas)} kamas (Alchimiste niveau ${E.WPOT_COST[C.half ? "s" : "g"].lvl}).`)}"><span class="rn"><img class="wpico" src="assets/ui/potions/${C.pimg}.png" alt=""> ${h(C.name)} <span class="xs muted">×${n}</span></span><span class="rv xs">${cur ? "élément actuel" : "Préparer"}</span></span>`; };
   return `<div class="pfl wpfm"><div class="pfn"><b>Élément de l'arme</b><span class="xs muted">change les dégâts Neutre du coup d'arme · réussite garantie, une potion par changement${it.wel ? ` · actuellement ${it.welh ? "moitié " : ""}${h(ELEMENTS[it.wel].name)}` : ""}</span></div>
-    ${(() => { const all = [...Object.values(E.WEAPON_POTIONS), ...Object.values(E.WEAPON_POTIONS_S)]; const own = all.filter((k) => (S.cons[k] || 0) > 0); const rest = all.filter((k) => !own.includes(k)); // 0.1.52 : seulement les potions qu'on a, le reste replié
+    ${(() => { const all = [...Object.values(E.WEAPON_POTIONS), ...Object.values(E.WEAPON_POTIONS_S)]; const own = all.filter((k) => (S.cons[k] || 0) > 0); const rest = all.filter((k) => !own.includes(k)); // 0.1.53 : seulement les potions qu'on a, le reste replié
       return `${own.length ? `<div class="pruns">${own.map(btn).join("")}</div>` : `<div class="xs muted">Tu n'as aucune potion d'élément pour l'instant.</div>`}
     ${rest.length ? `<div class="pmore"><button class="pmh" data-act="wpprep" aria-expanded="${!!ui.wpPrep}">${ui.wpPrep ? "▾" : "▸"} Préparer une potion (${rest.length})</button>${ui.wpPrep ? `<div class="pruns">${rest.map(btn).join("")}</div>
     <div class="xs muted">Clique sur une potion pour la préparer : herbes de l'Alchimiste et kamas (petites potions : Alchimiste 20, ne changent que la moitié des dégâts ; grandes : Alchimiste 80).</div>` : ""}</div>` : ""}`; })()}</div>`;
@@ -3380,7 +3392,7 @@ function buildEls(c) {
 function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dmgShare = {}; for (const k in els) dmgShare[ELEMENTS[STATS[k].el].dmg] = els[k]; let sc = 0;
   for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (EL_STATS.includes(k) ? (els[k] ? 0.1 + 1.3 * els[k] : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (dmgShare[k] ? 0.1 + 0.9 * dmgShare[k] : 0.1) : 1);
   if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5;
-  if (it.tpl && ITEMS[it.tpl] && ITEMS[it.tpl].slot === "arme") { const sp = E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); // 0.1.51 : le coup d'arme compte
+  if (it.tpl && ITEMS[it.tpl] && ITEMS[it.tpl].slot === "arme") { const sp = E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); // 0.1.53 : le coup d'arme compte
     if (sp) { const g = sp.grades[0]; const elStat = { t: "fo", n: "fo", f: "ine", e: "cha", a: "age" };
       sc += 2 * g.fx.reduce((v, f) => v + (f.k === "dmg" || f.k === "drain" ? (f.min + f.max) / 2 * (f.el === "best" ? 1 : 0.1 + 0.9 * (els[elStat[f.el]] || 0)) : 0), 0) / Math.max(1, g.pa); } }
   return sc; }
@@ -5825,7 +5837,7 @@ document.addEventListener("click", (ev) => {
     case "fmsel": ui.fmSel = +d.uid; ui.fmBench = true; ui.confirm = null; if (narrow()) window.scrollTo(0, 0); break;
     case "fmback": ui.fmBench = false; break;
     case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
-    case "wpot": { const r = E.weaponPotion(S, ui.fmSel, d.id); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; } // 0.1.51
+    case "wpot": { const r = E.weaponPotion(S, ui.fmSel, d.id); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; } // 0.1.53
     case "wpprep": ui.wpPrep = !ui.wpPrep; break;
     case "wbrew": { const err = E.brewPotion(S, d.id); if (err) { toast(err); return; } toast(`${CONSUMABLES[d.id].name} préparée.`, "rare"); break; }
     case "wpotgo": ui.tab = "forge"; ui.fg = "fm"; closeSheet(); window.scrollTo(0, 0); break;

@@ -1,4 +1,4 @@
-/* 0.1.51 « Armes » : coup d'arme, maîtrise, effets par type, potions de forgemagie élémentaire, Kolizéum.
+/* 0.1.53 « Armes » : coup d'arme, maîtrise, effets par type, potions de forgemagie élémentaire, Kolizéum.
    Lancer : node tests/armes.test.js */
 "use strict";
 const assert = require("assert");

@@ -10,7 +10,7 @@
   const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, GATHER_JOBS, CRAFT_JOBS, DOFUS_SLOTS,
           MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
-  const ARMES = root.ARMES || (typeof require !== "undefined" ? require("./armes.js") : {}); // 0.1.51 : dégâts propres des armes (tools/build_armes.js)
+  const ARMES = root.ARMES || (typeof require !== "undefined" ? require("./armes.js") : {}); // 0.1.53 : dégâts propres des armes (tools/build_armes.js)
 
   const E = {};
   E.VERSION = 9;
@@ -726,7 +726,7 @@
       buffs: [], dots: [], debuffs: [], shield: 0, alive: true, weaken: 0, paLoss: 0, role: E.monRole(id, lvl),
     };
   };
-  /* ---------------- 0.1.51 « Armes » : le coup d'arme ----------------
+  /* ---------------- 0.1.53 « Armes » : le coup d'arme ----------------
      Chaque arme frappe avec ses dégâts DOFUS (js/armes.js) ×1,5, dans une case en plus de la barre de sorts.
      Maîtrise : deux types d'arme favoris par classe (+20 % de dégâts). Chaque type a son effet.
      Potions de forgemagie élémentaire : it.wel = élément qui remplace le Neutre (it.welh : potion simple, la moitié seulement). */
@@ -806,7 +806,7 @@
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
       evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
       lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
-      wsp: E.weaponSpell(S, c), // 0.1.51 : coup d'arme
+      wsp: E.weaponSpell(S, c), // 0.1.53 : coup d'arme
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
@@ -1237,8 +1237,8 @@
     let res = 0;
     if (tgt.side === "m" && !isHero(F, tgt)) { res = (tgt.res || {})[el] || 0; if (tgt.boss && src && src.cls === "forge" && src.posture !== "rempart" && res > 0) res *= 0.5; if (F && F.idol) { res += F.idol.resAll; if (F.idol.resMain && el && el === F.idol.resEl) res += F.idol.resMain; } }
     else if (tgt.st) { const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0; res += tgt.resBonus || 0; }
-    if (tgt.wguard > 0) res += 10; // 0.1.51 : Bâton (Garde)
-    if (src && src.wcast && src.wcast.wfx === "perce" && res > 0) res *= 0.85; // 0.1.51 : Lance (Perce-armure)
+    if (tgt.wguard > 0) res += 10; // 0.1.53 : Bâton (Garde)
+    if (src && src.wcast && src.wcast.wfx === "perce" && res > 0) res *= 0.85; // 0.1.53 : Lance (Perce-armure)
     res = Math.min(50, res);
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
@@ -1316,7 +1316,7 @@
     const E2 = ELEMENTS[el]; const stat = (e.st[E2.stat] || 0) + buffSum(e, E2.stat);
     const pui = e.st.pui + buffSum(e, "pui");
     let v = rf(f.min, f.max) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + e.st.do + buffSum(e, "do") + (e.st[E2.dmg] || 0);
-    const wc = e.wcast; // 0.1.51 : coup d'arme en cours
+    const wc = e.wcast; // 0.1.53 : coup d'arme en cours
     let crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri") + (wc && wc.wfx === "precis" ? 10 : 0));
     if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri") + (wc ? (wc.ccb || 0) * E.DMG_SCALE * E.WEAPON.mult : 0);
     if (wc && wc.wfx === "grace" && tgt && tgt.hp < tgt.hpMax * 0.3) v *= 1.25;
@@ -1512,7 +1512,7 @@
     foeHits.forEach((i) => { if (!F.ents[i].alive) flog(F, `${F.ents[i].name} est vaincu.`, "ko"); });
     return { ok: true, extraPa };
   };
-  /* 0.1.51 : effet du type d'arme, après le coup */
+  /* 0.1.53 : effet du type d'arme, après le coup */
   const weaponFx = (S, F, e, sp, dealt, hitIdx, parts) => {
     const fx = sp.wfx; const foes = hitIdx.map((i) => F.ents[i]).filter((t) => t.side !== e.side || (F.pvp && t.tm !== e.tm));
     const per = foes.length ? dealt / foes.length : 0; const el = sp.el === "best" ? bestEl(e.st) : sp.el;
@@ -1629,7 +1629,7 @@
     if (paStart === undefined && E.manualOn(S)) { F.await = { ei: F.ents.indexOf(e), pa: Math.max(1, e.st.pa - (e.paLoss || 0)), t: F.dur, n: 0, casts: {} }; e.paLoss = 0; return; }
     let pa = paStart !== undefined ? paStart : Math.max(1, e.st.pa - (e.paLoss || 0) + (e.paBonus || 0)); e.paLoss = 0; e.paBonus = 0; let cast = 0;
     if (paStart === undefined) e.wguard = 0; // la Garde du bâton dure jusqu'au tour suivant du porteur
-    const bar = e.wsp ? [...c.spells, E.WSLOT] : c.spells; const defOf = (slot) => (slot.w ? e.wsp : E.spellDef(c.cls, slot.id)); // 0.1.51 : coup d'arme
+    const bar = e.wsp ? [...c.spells, E.WSLOT] : c.spells; const defOf = (slot) => (slot.w ? e.wsp : E.spellDef(c.cls, slot.id)); // 0.1.53 : coup d'arme
     /* IA v4 : sorts utilitaires dans l'ordre de la barre, puis la meilleure combinaison d'attaques du tour (planTurn) */
     const nCast = {}; const blocked = new Set();
     for (let guard = 0; guard < 30; guard++) {
@@ -1951,7 +1951,7 @@
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
     sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe"), lg: E.legOf ? E.legOf(S, c) : null,
-    wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.51 : l'arme (coup d'arme)
+    wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.53 : l'arme (coup d'arme)
   /* Prépare le combat : A (équipe 0, l'attaquant) contre B (équipe 1). Renvoie une petite partie de travail S2 dont S2.fight est le combat. */
   E.koliSetup = (A, B, opts = {}) => {
     const chars = [], ents = [];
@@ -2067,7 +2067,7 @@
   E.manualCast = (S, spellId, targetIdx) => {
     const F = S.fight; const A = F && F.await; if (!A || F.over) return "Ce n'est pas votre tour.";
     const e = F.ents[A.ei]; const c = S.chars.find((x) => x.id === e.cid);
-    const isW = spellId === "arme" && e.wsp; // 0.1.51 : coup d'arme
+    const isW = spellId === "arme" && e.wsp; // 0.1.53 : coup d'arme
     if (!c || (!isW && !c.spells.find((x) => x.id === spellId))) return "Sort non équipé.";
     const sp = isW ? e.wsp : E.spellDef(c.cls, spellId); if (!sp) return "Sort inconnu.";
     if (!E.manualCanCast(S, sp)) return E.spellGrade(sp, e.lvl).pa > A.pa ? "Pas assez de PA." : "Sort en recharge.";
