@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.48.4";
+const GAME_VERSION = "0.1.48.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.48.6", name: "Double gain prolongé", items: [
+    "L'événement « Double gain » est prolongé : XP et butin x2 pour tout le monde jusqu'au dimanche 18 octobre à 23 h (heure de Paris), en combat, en chasse et pendant l'absence",
+  ] },
   { v: "0.1.48.4", name: "Titre du songe", items: [
     "Correction : pendant le Songe infini, l'onglet Combat affichait « Étage undefined ». Il indique maintenant l'intensité (et le règne du dieu dès Paradoxe 1)",
   ] },
