@@ -18,9 +18,19 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.48.6";
+const GAME_VERSION = "0.1.49";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.49", name: "Boss des mondes", items: [
+    "Nouveau : le Boss des mondes (Jouer › Boss des mondes). Tout le serveur frappe le même boss, avec une barre de PV commune. Quand elle tombe à zéro, le boss suivant arrive aussitôt",
+    "Gargandyas ouvre la rotation : le Titan enchaîné par les Osamodas a brisé son collier. Faible à l'Air (+50 %), il résiste à la Terre (−50 %). Phase 2 sous 66 % (Cri Primitif, il frappe 30 % plus fort), phase 3 sous 33 % (Gargameha, enragé, il subit 25 % de plus)",
+    "3 essais par jour (minuit, heure de Paris) de 15 tours avec ton équipe active, joués et vérifiés par le serveur. Chaque essai donne un grade de C à SSS, un coffre (du bois à l'obsidienne) et des Fragments d'anomalie",
+    "Fragments d'anomalie : échange-les contre les 4 objets de Gargandyas de DOFUS (Collier, Griffe, Fureur, Bélier)",
+    "Quand le boss tombe : Coffre en or et 10 Fragments pour tous ceux qui l'ont frappé, Coffre des Douze, 30 Fragments et le titre « Fléau des mondes » pour les 3 premiers, titre « Briseur de Titan » pour le premier passage de Gargandyas, et +10 % d'XP pour tout le monde pendant 1 h",
+    "Annonces dans le chat Général : arrivée, phases et mort du boss sur une carte animée. Effet plein écran à l'arrivée d'un nouveau boss (une fois, à couper dans Options › Affichage) et bandeau en haut tant qu'il est en vie",
+    "Rotation : Kolosso, Korriandre, Comte Harebourg, Ougah, Roi Nidas, Ilyzaelle, Nileza et Vortex, puis Gargandyas revient. Les PV s'ajustent pour qu'un boss tienne environ une journée",
+    "Sans compte : tu vois le boss et le classement, et tu peux faire un essai d'entraînement (rien n'est compté)",
+  ] },
   { v: "0.1.48.6", name: "Double gain prolongé", items: [
     "L'événement « Double gain » est prolongé : XP et butin x2 pour tout le monde jusqu'au dimanche 18 octobre à 23 h (heure de Paris), en combat, en chasse et pendant l'absence",
   ] },
@@ -1009,7 +1019,7 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"]] },
+  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["wb", "Boss des mondes", "couronne"]] },
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["havre", "Havre-Sac", "havre"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
@@ -1346,6 +1356,8 @@ function homeTiles() {
   if (def) { const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid];
     out.push(tile({ ic: im(imgM(dg.boss), "ac-tm", MONSTERS[dg.boss].name), t: "Défi du jour", s: `${h(dg.name)} · stasis ${def.k}${best ? ` · record ${best.turns} tours` : ""}`, done: !!st.chest, hot: true,
       act: st.chest ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">Lancer</span>` })); }
+  /* 0.1.49 : Boss des mondes, tant qu'il te reste des essais aujourd'hui (js/wbossui.js) */
+  { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
   /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
   const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
   out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${A.qty} × ${h(A.res)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
@@ -4745,7 +4757,7 @@ function optionsSheet() {
   const tab = OPT_TABS.some(([k]) => k === ui.optTab) ? ui.optTab : "affichage";
   const nGift = Object.keys(S.gifts || {}).length;
   let body = "";
-  if (tab === "affichage") body = displayOptionsHtml();
+  if (tab === "affichage") body = displayOptionsHtml() + (window.WBUI ? window.WBUI.optHtml() : "");
   else if (tab === "sons") body = soundOptionsHtml() + notifOptionsHtml();
   else if (tab === "jeu") body = consignesHtml()
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
@@ -4866,6 +4878,7 @@ function render() {
   else if (ui.tab === "defi") renderDefi();
   else if (ui.tab === "exp" && window.SGUI) window.SGUI.render($("#main"));
   else if (ui.tab === "koli" && window.KOLIUI) window.KOLIUI.render($("#main")); // 0.1.44 : Kolizéum (js/koliui.js)
+  else if (ui.tab === "wb" && window.WBUI) window.WBUI.render($("#main")); // 0.1.49 : Boss des mondes (js/wbossui.js)
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
@@ -5409,26 +5422,31 @@ function koliWatchStart(W, info) {
   watchStop(); ui.watch = { W, koli: info, spd: (ui.wspd || 1), timer: null };
   closeSheet(); ui.tab = "combat"; ui.arena = null; render(); window.scrollTo(0, 0); watchTick();
 }
+/* 0.1.49 : un autre écran peut se brancher sur la lecture (ext = { step, html, head, end, back }) : Boss des mondes (js/wbossui.js) */
+function extWatchStart(W, ext) {
+  watchStop(); ui.watch = { W, ext, spd: (ui.wspd || 1), timer: null };
+  closeSheet(); ui.tab = "combat"; ui.arena = null; render(); window.scrollTo(0, 0); watchTick();
+}
 function watchStop() { if (ui.watch && ui.watch.timer) clearTimeout(ui.watch.timer); if (ui.watch) ui.wspd = ui.watch.spd; ui.watch = null; ui.arena = null; }
 function watchTick() {
   const w = ui.watch; if (!w) return;
-  const r = w.koli ? E.koliWatchStep(w.W) : E.defiWatchStep(w.W);
+  const r = w.ext ? w.ext.step(w.W) : w.koli ? E.koliWatchStep(w.W) : E.defiWatchStep(w.W);
   if (r === "start") ui.arena = null;
   updateCombat(r === "start"); watchHead();
   if (r === "end" || w.W.done) { watchEnd(); return; }
   w.timer = setTimeout(watchTick, (r === "over" ? E.PAUSE_MS * 1.3 : E.STEP_MS) / w.spd);
 }
 function watchHead() {
-  const w = ui.watch; if (!w) return; const W = w.W; if (w.koli) { if (window.KOLIUI) window.KOLIUI.watchHead(w); return; } const n = Math.min(W.rooms.length + (W.S2.fight && !W.S2.fight.over ? 1 : 0), W.nRooms) || 1;
+  const w = ui.watch; if (!w) return; const W = w.W; if (w.ext) { w.ext.head(w); return; } if (w.koli) { if (window.KOLIUI) window.KOLIUI.watchHead(w); return; } const n = Math.min(W.rooms.length + (W.S2.fight && !W.S2.fight.over ? 1 : 0), W.nRooms) || 1;
   const el = $("#wroom"); if (el) el.textContent = n >= W.nRooms ? "salle du boss" : `salle ${n} sur ${W.nRooms}`;
 }
 function watchEnd() {
-  const w = ui.watch; const el = $("#watchEnd"); if (!w || !el) return; if (w.koli) { if (window.KOLIUI) el.innerHTML = window.KOLIUI.watchEnd(w); return; } const R = E.defiResult(w.W);
+  const w = ui.watch; const el = $("#watchEnd"); if (!w || !el) return; if (w.ext) { el.innerHTML = w.ext.end(w); return; } if (w.koli) { if (window.KOLIUI) el.innerHTML = window.KOLIUI.watchEnd(w); return; } const R = E.defiResult(w.W);
   el.innerHTML = `<div class="row between" style="gap:10px;flex-wrap:wrap"><span><b>${R.win ? `Défi réussi en ${R.turns} tours` : `Défaite en salle ${R.rooms.length}`}</b><br><span class="small muted">${R.win ? `PV restants : ${R.hp} %. ` : ""}C'est exactement le combat que compte le score.</span></span>
     <span class="row" style="gap:6px"><button class="btn sm" data-act="sm-watch" data-v="${w.tid}">Revoir</button><button class="btn sm primary" data-act="sm-wquit">Retour au défi</button></span></div>`;
 }
 function renderWatch() {
-  const w = ui.watch; const W = w.W; if (w.koli && window.KOLIUI) { $("#main").innerHTML = window.KOLIUI.watchHtml(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
+  const w = ui.watch; const W = w.W; if (w.ext) { $("#main").innerHTML = w.ext.html(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } if (w.koli && window.KOLIUI) { $("#main").innerHTML = window.KOLIUI.watchHtml(w); ui.arena = null; updateCombat(true); watchHead(); if (W.done) watchEnd(); return; } const dg = DUNGEONS[W.def.did]; const T = E.defiTier(W.def.tier);
   $("#main").innerHTML = `<div class="pagehead combathead"><div><div class="small muted">${G("target")} Défi du jour · ${h(T.name)} · <span id="wroom"></span></div><h1>${h(dg.name)}</h1></div>
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">Stasis ${W.def.k}</span>${W.def.mods.map(modChip).join("")}
       <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
@@ -5692,8 +5710,8 @@ function smAct(a, t) {
   switch (a) {
     case "sm-watch": watchStart(d.v); return;
     case "sm-wspd": if (ui.watch) { ui.watch.spd = +d.v; document.querySelectorAll('[data-act="sm-wspd"]').forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } return;
-    case "sm-wskip": { const w = ui.watch; if (!w || !w.koli) return; if (w.timer) clearTimeout(w.timer); for (let g = 0; g < 20000 && !w.W.done; g++) E.koliWatchStep(w.W); ui.arena = null; updateCombat(true); watchHead(); watchEnd(); return; }
-    case "sm-wquit": { if (ui.watch && ui.watch.koli) { watchStop(); ui.tab = "koli"; render(); window.scrollTo(0, 0); return; } const tid = ui.watch ? ui.watch.tid : null; watchStop(); if (tid) ui.defiTier = tid; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return; }
+    case "sm-wskip": { const w = ui.watch; if (!w || !(w.koli || w.ext)) return; if (w.timer) clearTimeout(w.timer); for (let g = 0; g < 200000 && !w.W.done; g++) (w.ext ? w.ext.step(w.W) : E.koliWatchStep(w.W)); ui.arena = null; updateCombat(true); watchHead(); watchEnd(); return; }
+    case "sm-wquit": { if (ui.watch && ui.watch.ext) { const back = ui.watch.ext.back; watchStop(); ui.tab = back; render(); window.scrollTo(0, 0); return; } if (ui.watch && ui.watch.koli) { watchStop(); ui.tab = "koli"; render(); window.scrollTo(0, 0); return; } const tid = ui.watch ? ui.watch.tid : null; watchStop(); if (tid) ui.defiTier = tid; ui.tab = "world"; ui.world = "dungeons"; ui.zoneView = null; render(); window.scrollTo(0, 0); return; }
     case "sm-dtier": ui.defiTier = d.v; render(); return;
     case "sm-dplay": defiPlay(d.v); return;
     case "sm-dlast": if (defiLast) defiSheet(defiLast); else { const st = E.defiState(S); const x = st.tries[0]; if (x) toast(`Dernier essai : ${x.win ? `${x.turns} tours` : "défaite"}.`); } return;
@@ -5731,6 +5749,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("qj-")) { if (S && window.QUI) window.QUI.act(a, t); return; } // 0.1.28 : journal de quêtes (js/questui.js)
   if (a && a.startsWith("sg-")) { if (S && window.SGUI) window.SGUI.act(a, t); return; } // 0.1.48 : Songe infini (js/songeui.js)
   if (a && a.startsWith("kz-")) { if (S && window.KOLIUI) window.KOLIUI.act(a, t); return; } // 0.1.44 : Kolizéum
+  if (a && a.startsWith("wb-")) { if (window.WBUI) window.WBUI.act(a, t); return; } // 0.1.49 : Boss des mondes (js/wbossui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -6669,7 +6688,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
-Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

@@ -6,7 +6,7 @@
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
-const FILES = ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli"];
+const FILES = ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli", "wboss"];
 const out = ["/* Généré par tools/build_server.js — ne pas modifier. */", "globalThis.window = globalThis;"];
 for (const f of FILES) out.push(`/* ---- js/${f}.js ---- */`, fs.readFileSync(path.join(ROOT, "js", f + ".js"), "utf8"));
 out.push("export const E = globalThis.ENGINE, V = globalThis.VERIFY, D = globalThis.DATA;");
