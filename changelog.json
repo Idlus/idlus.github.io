@@ -1,6 +1,13 @@
 {
-  "version": "0.1.35",
+  "version": "0.1.35.3",
   "versions": [
+    {
+      "v": "0.1.35.3",
+      "name": "Chat refermable",
+      "items": [
+        "Chat : le bouton pour réduire le chat était sorti du cadre depuis l'arrivée de l'onglet « Hauts faits ». Il est de retour, sur PC comme sur téléphone"
+      ]
+    },
     {
       "v": "0.1.35",
       "name": "Héros en réserve",
