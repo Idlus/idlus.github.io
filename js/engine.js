@@ -2812,6 +2812,7 @@
   /* Filons rares : en moyenne un toutes les 2 h de récolte, 10 min, rendement ×2 sur une ressource */
   E.FILON_EVERY_S = 7200; E.FILON_DUR_S = 600;
   E.filonOn = (S, res, at = E.now()) => !!(S.filon && S.filon.res === res && S.filon.until > at);
+  /* 1.0.7.8 (Mathis) : plus de bulles pour la récolte (filon, trouvaille, niveau de métier) : tout reste écrit dans le journal */
   const gatherTick = (S, dt, opts = {}) => {
     let total = 0;
     S.chars.forEach((c) => {
@@ -2822,15 +2823,15 @@
       while (W.prog >= t && n < 200000) {
         W.prog -= t; n++;
         let q = 1; if (rnd() < J.lvl / 200) q++;
-        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "rare"); }
+        if (!opts.quiet && !(S.filon && S.filon.until > E.now()) && rnd() < t / E.FILON_EVERY_S * E.almMult(S, "filon")) { S.filon = { res: W.res, until: E.now() + E.FILON_DUR_S * 1000 }; note(S, `Un filon de ${W.res} est apparu ! Rendement ×2 pendant 10 minutes.`, "info"); }
         q = E.almQty(q, E.almMult(S, "gather", W.job)); // 0.1.39 : Almanax « Récolte abondante »
         if (E.filonOn(S, W.res)) q *= 2;
         q *= E.protMult(S, W.res); // 0.1.10.1 : protecteur vaincu, récolte ×2
         if (!opts.quiet) E.protSpawn(S, c, W);
-        if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "rare"); }
+        if (rnd() < E.FIND_CHANCE) { q *= 5; S.finds = (S.finds || 0) + 1; if (rnd() < 0.6) addRes(S, E.RARE_COMPONENT, 1); if (!opts.quiet) note(S, `Trouvaille ! ${c.name} déniche ${q} × ${W.res}.`, "info"); }
         addRes(S, W.res, q); total += q;
         J.xp += 10 + def[1] * 1.0;
-        while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "up"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
+        while (J.lvl < 200 && J.xp >= E.jobXpNeed(J.lvl)) { J.xp -= E.jobXpNeed(J.lvl); J.lvl++; if (J.lvl % 5 === 0 || GATHER_JOBS[W.job].items.some((x) => x[1] === J.lvl)) note(S, `${GATHER_JOBS[W.job].name} niveau ${J.lvl}`, "info"); E.emit(S, "joblvl", { job: W.job, lvl: J.lvl }); }
       }
       if (n) E.emit(S, "harvest", { res: W.res, n });
     });

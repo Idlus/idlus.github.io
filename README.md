@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.8 « Récolte silencieuse »
+Demande de Mathis : plus de toasts pour la récolte. Dans `gatherTick` (js/engine.js), filon, trouvaille et niveau de métier de récolte passent en `note(..., "info")` (journal seulement) ; le protecteur garde son avertissement.
+
 ## 1.0.7.7 « Chasses au trésor réparées »
 Indice de donjon de la chasse légendaire : la clé est fournie tant que l'indice n'est pas résolu (`dgKey`, js/suivi.js). Hors ligne, `E.catchUp` suit les indices (trajet dans `r.tresor`). Chasse lancée en donjon : `move` reste vrai. Consigne « Retour à ta zone » ignorée pendant un trésor. Bandeau du Monde et limite du Comptoir des temples corrigés. Tests dans tests/suivi.test.js.
 

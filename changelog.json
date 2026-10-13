@@ -1,6 +1,14 @@
 {
-  "version": "1.0.7.7",
+  "version": "1.0.7.8",
   "versions": [
+    {
+      "v": "1.0.7.8",
+      "name": "Récolte silencieuse",
+      "items": [
+        "Les métiers de récolte n'affichent plus de bulles : ni pour un filon, ni pour une trouvaille, ni pour un niveau de métier. Tout reste écrit dans le journal, et le filon reste visible en haut de la page Récolte",
+        "Le protecteur de ressources prévient toujours, car il faut le combattre à temps (désactivable dans Options › Jeu)"
+      ]
+    },
     {
       "v": "1.0.7.7",
       "name": "Chasses au trésor réparées",
