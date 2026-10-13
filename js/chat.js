@@ -89,7 +89,7 @@
   }
   function paintHead() { const e = $("#chat .ch-on"); if (e) e.innerHTML = onlineTxt(); }
   function paintMin() { if (!C.open) paint(); }
-  const onlineTxt = () => `<i></i>${C.count || 1} en ligne`;
+  const onlineTxt = () => `<i></i>${C.count || 1}<span class="ol"> en ligne</span>`;
   function minHtml() {
     const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
     const n = C.unread + C.unreadP + ((window.GUILD && window.GUILD.unread) || 0);
