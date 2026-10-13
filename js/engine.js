@@ -2862,8 +2862,12 @@
     return B;
   };
   /* vitesse réellement appliquée pour realMs millisecondes de vrai temps ; vide la réserve en conséquence */
+  /* 0.1.46.3 : le sablier ne s'use que si quelque chose avance (combat, donjon, expédition, récolte, atelier, forgemagie automatique) */
+  E.sabBusy = (S) => !!(S.dungeon || (S.fight && !S.fight.over) || (S.hunting && S.sub && E.team(S).length) || (E.expBusy && E.expBusy(S))
+    || S.chars.some((c) => c.job) || (S.atelier && S.atelier.built && S.atelier.cid != null && !S.atelier.stall)
+    || (E.fmPlanActive && E.fmPlanActive(S).length));
   E.sabSpend = (S, realMs) => {
-    const B = E.sab(S); if (!B.open || B.spd === 1) return 1;
+    const B = E.sab(S); if (!B.open || B.spd === 1 || !E.sabBusy(S)) return 1;
     const need = (realMs / 1000) * (B.spd - 1);
     if (need <= B.r) { B.r -= need; return B.spd; }
     // la réserve se termine pendant ce pas : on finit ce qui reste puis retour à ×1
