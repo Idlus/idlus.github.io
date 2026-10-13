@@ -1,6 +1,16 @@
 {
-  "version": "0.1.46.2",
+  "version": "0.1.46.3",
   "versions": [
+    {
+      "v": "0.1.46.3",
+      "name": "Mutateur de l'heure",
+      "items": [
+        "Le mutateur de la semaine devient le mutateur de l'heure : à chaque heure pile, un nouveau donjon proche de ton niveau reçoit un modificateur imposé, le même tirage pour tous",
+        "Toujours +25 % d'XP et de butin et +50 % de poussière de stasis ; jamais le même donjon ni le même modificateur deux heures de suite",
+        "Le temps restant est affiché en minutes, avec le mutateur de l'heure suivante (Accueil › En ce moment, Jouer › Donjons)",
+        "Une course commencée garde son bonus jusqu'au bout, même si l'heure change"
+      ]
+    },
     {
       "v": "0.1.46.2",
       "name": "Boutique du Kolizéum",

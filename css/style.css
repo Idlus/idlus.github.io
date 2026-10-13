@@ -898,6 +898,8 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
 .weekly{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 12px;border-radius:14px;cursor:pointer;
   background:linear-gradient(100deg,rgba(var(--glw),.20),rgba(var(--glw),.05) 60%),var(--panel2);border:1.5px solid rgba(var(--glw),.6);box-shadow:0 0 0 1px rgba(0,0,0,.15) inset}
 .weekly:hover{border-color:var(--gold2)}
+.wknext{padding:4px 12px 2px}
+.ac-ev + .wknext{padding:0 14px 12px;text-align:left}
 .weekly .dgboss{width:56px;height:56px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
 .weekly .grow{display:flex;flex-direction:column;gap:2px;min-width:0}
 .weekly .wk{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--gold2);display:flex;align-items:center;gap:4px}

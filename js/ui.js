@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.46.2";
+const GAME_VERSION = "0.1.46.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.46.3", name: "Mutateur de l'heure", items: [
+    "Le mutateur de la semaine devient le mutateur de l'heure : à chaque heure pile, un nouveau donjon proche de ton niveau reçoit un modificateur imposé, le même tirage pour tous",
+    "Toujours +25 % d'XP et de butin et +50 % de poussière de stasis ; jamais le même donjon ni le même modificateur deux heures de suite",
+    "Le temps restant est affiché en minutes, avec le mutateur de l'heure suivante (Accueil › En ce moment, Jouer › Donjons)",
+    "Une course commencée garde son bonus jusqu'au bout, même si l'heure change"
+  ] },
   { v: "0.1.46.2", name: "Boutique du Kolizéum", items: [
     "La boutique du Kolizéum est plus pratique : des onglets (Galets, Combats, Coffres, Apparence), une grille d'articles et un seul panneau d'achat en bas, toujours visible",
     "Choisis la quantité librement (−, +, ×5, ×10 ou Max) : le total s'affiche, et s'il te manque des Kolizetons, le jeu te dit combien",
@@ -1310,9 +1316,9 @@ function homeEvents() {
   const row = (did, k, mod, plus, wk) => { const d = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did);
     return `<button class="ac-er ${wk ? "wk" : ""} ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">${im(imgM(d.boss), "ac-em", MONSTERS[d.boss].name)}<span class="grow"><span class="ac-ek">${k}</span><b>${h(d.name)}</b><span class="xs muted">${un ? "" : `${G("lock")} `}niv. ${d.lvl}</span></span>${modChip(mod)}<b class="plus">+${plus} %</b></button>`; };
   return `<section class="panel"><div class="phead"><h2>${G("sparkle")} En ce moment</h2><span class="xs muted ac-hide">éclairs : nouveaux dans <span data-flashleft>${dur((E.flashEnd() - E.now()) / 1000)}</span></span></div><div class="ac-ev">
-    ${WD ? row(W.did, `${G("star")} Mutateur de la semaine · encore ${weeklyLeft()}`, W.mod, Math.round((E.WEEKLY_REW - 1) * 100), true) : ""}
+    ${WD ? row(W.did, `${G("star")} Mutateur de l'heure · encore ${weeklyLeft()}`, W.mod, Math.round((E.WEEKLY_REW - 1) * 100), true) : ""}
     ${E.flash(S).map((x) => row(x.did, `Donjon éclair · ${x.tier}`, x.mod, Math.round((E.FLASH_REW - 1) * 100))).join("")}
-  </div></section>`;
+  </div>${WD && nextHourlyTxt() ? `<div class="xs muted wknext">Mutateur de l'heure suivante : ${nextHourlyTxt().replace(/^Ensuite : /, "")}</div>` : ""}</section>`;
 }
 function renderHomeInner() {
   if (ui.home === "havre") { $("#main").innerHTML = havreHtml(); return; }
@@ -1626,12 +1632,13 @@ function dgDifficulty(did, k) {
   let sc = k - cap + (SI.max >= k ? -0.4 : 0) + (k < 4 ? Math.max(0, dg.lvl - L) / 8 : 0);
   return sc < -1 ? { k: "easy", txt: "Facile" } : sc < 0.3 ? { k: "mid", txt: "Équilibré" } : { k: "risk", txt: k >= 5 && g < 40 ? "Risqué · équipement requis" : "Risqué" };
 }
-/* Mutateur de la semaine (3.1.3) */
-function weeklyLeft() { return dur((E.weekEnd() - E.now()) / 1000).replace(/ \d+ min$/, ""); }
+/* Mutateur de l'heure (3.1.3, à l'heure depuis 0.1.47) */
+function weeklyLeft() { const m = Math.max(1, Math.ceil((E.hourEnd() - E.now()) / 60000)); return `${m} min`; }
+function nextHourlyTxt() { const N = E.nextHourly(S); return N && DUNGEONS[N.did] ? `Ensuite : ${h(DUNGEONS[N.did].name)} · ${h(E.STASIS_MODS[N.mod].name)}` : ""; }
 function weeklyBanner() {
   const W = E.weekly(S); if (!W) return "";
   const M = E.STASIS_MODS[W.mod]; const dg = DUNGEONS[W.did];
-  return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de la semaine</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>`;
+  return `<button class="weekly" data-act="dgopen" data-id="${W.did}">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="grow"><span class="wk">${G("star")} Mutateur de l'heure</span><b>${h(dg.name)}</b> <span class="xs muted">niv. ${dg.lvl}</span><span class="xs">Modificateur <b>${h(M.name)}</b> : ${h(M.desc.charAt(0).toLowerCase() + M.desc.slice(1))}</span></span><span class="wrew"><b>+${Math.round((E.WEEKLY_REW - 1) * 100)} %</b><span>XP et butin</span><span class="xs muted">encore ${weeklyLeft()}</span></span></button>${nextHourlyTxt() ? `<div class="xs muted wknext">${nextHourlyTxt()}</div>` : ""}`;
 }
 /* Mutateur éclair (0.1) : 3 donjons toutes les 20 minutes */
 function flashLeft() { const m = Math.max(1, Math.ceil((E.flashEnd() - E.now()) / 60000)); return `${m} min`; }
@@ -1654,7 +1661,7 @@ function dungeonCard(did) {
   const fav = (S.dgFav || []).includes(did); const d = dgDifficulty(did, SI.sel || 1);
   return `<div class="dgcard ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">
     <span class="fav ${fav ? "on" : ""}" data-act="dgfav" data-id="${did}" title="Favori">${fav ? "★" : "☆"}</span>
-    ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de la semaine">${G("star")} Semaine</span>` : E.flashOf(S, did) ? `<span class="wkbadge fl" title="Mutateur éclair">${G("bolt")} Éclair</span>` : ""}
+    ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de l'heure">${G("star")} Heure</span>` : E.flashOf(S, did) ? `<span class="wkbadge fl" title="Mutateur éclair">${G("bolt")} Éclair</span>` : ""}
     ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
     <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
       <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
@@ -1703,7 +1710,7 @@ function dungeonSheet(did) {
     <div class="stack small" style="gap:10px">
       ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${sm.hp >= 30 ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${sm.hp >= 30 ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${sm.hp >= 30 ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
       ${compSuggest(did)}
-      ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de la semaine : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b>, jusqu'à lundi (encore ${weeklyLeft()}).</span></div>` : ""}
+      ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de l'heure : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b> pendant cette heure (encore ${weeklyLeft()}). Une course commencée garde son bonus.</span></div>` : ""}
       ${fl ? `<div class="wkbox fl">${G("bolt")} <span><b>Mutateur éclair : ${h(fl.name)}</b> (${h(fl.desc.charAt(0).toLowerCase() + fl.desc.slice(1).replace(/\.$/, ""))}). En échange : <b>+${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.FLASH_DUST - 1) * 100)} % de poussière</b>. Change dans ${flashLeft()} ; une course commencée garde le bonus jusqu'au bout.</span></div>` : ""}
       <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}${FL && FL.mod === "ruse" ? "<li><i>+ une mécanique supplémentaire (mutateur éclair)</i></li>" : ""}</ul>
         <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
@@ -1713,7 +1720,7 @@ function dungeonSheet(did) {
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
         ${(() => { const fake = { mods: [], stasis: k }; const ids = E.idolsFor(S, fake); const sc = E.idolScore(S, fake, ids); return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 6px">${idolBtn(fake)}<span class="xs muted">${ids.length ? `En plus de la stasis : +${pctTxt(E.idolBonus(S, fake, ids))} % d'XP et de butin${sc > E.IDOL_DG_CAP ? ` (score compté jusqu'à ${E.IDOL_DG_CAP} en donjon)` : ""}${k >= 6 ? " · une idole en doublon avec un modificateur tiré ne compte pas" : ""}.` : "Aucune idole active : les idoles rendent le donjon plus dur contre plus d'XP et de butin."}</span></div>`; })()}
-        ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de la semaine" : ""}.</p>`}
+        ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de l'heure" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme`}</li>

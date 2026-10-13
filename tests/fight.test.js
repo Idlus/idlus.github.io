@@ -96,7 +96,7 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   for (const mod of E.FLASH_MODS) {
     E.flash = () => [{ did: "labo_nileza", mod }];
     const S5 = E.newState("Test", "iop"); S5.chars = [];
-    S5.weekly = { w: E.weekIdx(E.now()), did: "crypte_kardorim", mod: "vampires" }; // le mutateur de la semaine ne doit pas tomber sur ce donjon
+    S5.weekly = { h: E.hourIdx(E.now()), did: "crypte_kardorim", mod: "vampires" }; // le mutateur de l'heure ne doit pas tomber sur ce donjon
     ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S5, c, "H" + i, 200); x.inTeam = true; E.refreshSpells(x, E.charStats(S5, x)); });
     S5.res[D.DUNGEONS.labo_nileza.key] = 1; assert.strictEqual(E.enterDungeon(S5, "labo_nileza", 1), null);
     assert.ok(S5.dungeon.flash === mod && S5.dungeon.mods.includes(mod), `${mod} : modificateur absent`);
