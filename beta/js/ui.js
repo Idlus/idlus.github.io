@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.45";
+const GAME_VERSION = "0.1.45.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.45.1", name: "Offrande fixe", items: [
+    "Almanax : l'offrande et la cible du jour (famille, zone, donjon) ne changent plus quand un héros gagne des niveaux. Elles sont choisies au premier passage de la journée et restent les mêmes jusqu'à minuit"
+  ] },
   { v: "0.1.45", name: "Galets du Kolizéum", items: [
     "Les Galets de DOFUS arrivent : Galet cramoisi (niv. 50), rutilant et Lunaire (niv. 100), rayonnant et Solaire (niv. 150), brasillant (niv. 195). Ils s'achètent avec des Kolizetons et se vendent ou s'achètent à l'Hôtel de vente",
     "Comme dans DOFUS, 300 équipements à fabriquer (niveau 50 à 200) redemandent leurs Galets dans leur recette : 1 à 4 Galets selon l'objet. Les objets déjà fabriqués ne changent pas",
