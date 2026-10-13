@@ -330,6 +330,18 @@
     labyrinthe_minotoror: ["Trophée du Minotoror", "hp"], antre_crocabulia: ["Trophée de Crocabulia", "drop"],
     serre_royalmouth: ["Trophée du Royalmouth", "kamas"], repaire_skeunk: ["Trophée de Skeunk", "xp"],
     chateau_wa_wabbit: ["Trophée du Wa Wabbit", "drop"], terrier_wa_wabbit: ["Trophée du Wa Wobot", "kamas"],
+    /* 0.1.45 « Donjons de légende » */
+    ventre_baleine: ["Trophée du Protozorreur", "hp"], tour_bethel: ["Trophée de Bethel Akarna", "xp"],
+    brasserie_dazak: ["Trophée de Dazak Martegel", "kamas"], vaisseau_meno: ["Trophée du Capitaine Meno", "drop"],
+    temple_koutoulou: ["Trophée de la Larve de Koutoulou", "offrate"], palais_dantinea: ["Trophée de Dantinéa", "gather"],
+    manoir_katrepat: ["Trophée d'Anerice la Shushess", "xp"], tour_solar: ["Trophée de Solar", "hp"],
+    temple_kao: ["Trophée de la Prêtresse de Kao", "kamas"], sanctuaire_torkelonia: ["Trophée de Torkélonia", "drop"],
+    arbre_mort: ["Trophée de Corruption", "xp"], fers_tyrannie: ["Trophée de Servitude", "kamas"],
+    sentence_balance: ["Trophée de Misère", "drop"], trone_sang: ["Trophée de Guerre", "hp"],
+    tempete_eliocalypse: ["Trophée des Cavaliers de l'Eliocalypse", "drop"], memoire_orukam: ["Trophée du Roi Imagami", "gather"],
+    souvenir_imagiro: ["Trophée de la Reine Amirukam", "offrate"], rituel_kabahal: ["Trophée de Kabahal", "xp"],
+    aurore_pourpre: ["Trophée de l'Éternel Conflit", "hp"], chambre_malefices: ["Trophée de Belladone", "kamas"],
+    breuil_venerable: ["Trophée du Vénérable Endormi", "gather"], autel_dechireuse: ["Trophée de la Déchireuse", "drop"],
   };
   E.TROPHY_STASIS = 5;
   E.trophyPct = (lvl) => (lvl < 60 ? 1 : lvl < 120 ? 2 : lvl < 160 ? 3 : 4);

@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.44.2";
+const GAME_VERSION = "0.1.46";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.46", name: "Donjons de légende", items: [
+    "22 nouveaux donjons de niveau 200, ouverts après le Kolosso : Ventre de la Baleine, Tour de Bethel, Brasserie du roi Dazak, Vaisseau du Capitaine Meno, Temple de Koutoulou, Palais de Dantinéa, Manoir des Katrepat, Tour de Solar, Temple du dieu Kao, Sanctuaire de Torkélonia, Mémoire d'Orukam, Souvenir d'Imagiro, Rituel de Kabahal, Bataille de l'Aurore Pourpre, Chambre des maléfices, Breuil du Vénérable, Autel de la Déchireuse et les donjons des quatre Cavaliers",
+    "La Tempête de l'Eliocalypse : Guerre, Servitude, Misère et Corruption se battent ensemble. Elle s'ouvre quand tu as battu les quatre Cavaliers dans leur donjon, qui laissent les Fragments d'armure de sa clé",
+    "21 nouvelles zones de chasse de niveau 200 et 4 nouvelles régions : Dimensions des Cavaliers, Wukin et Wukang, Atoll des Possédés, Archipel des Écailles. Frigost, Sufokia, Sidimote, Pwâk, Valonia et Osavora s'agrandissent",
+    "245 équipements et 61 panoplies de DOFUS avec leurs vraies caractéristiques, 124 nouveaux monstres",
+    "Chaque nouveau boss a ses mécaniques et son trophée pour le Havre-Sac (première victoire en stasis 5)",
+    "Difficulté réglée par simulation, un peu au-dessus des autres donjons de niveau 200 : stasis 6 environ avec un bon équipement, 9 à 10 pour les équipes optimisées",
+  ] },
   { v: "0.1.44.2", name: "Offrande fixe", items: [
     "Almanax : l'offrande et la cible du jour (famille, zone, donjon) ne changent plus quand un héros gagne des niveaux. Elles sont choisies au premier passage de la journée et restent les mêmes jusqu'à minuit"
   ] },
@@ -875,7 +883,7 @@ Object.assign(DECOS, {
   dg_serre:    DGD(["#14262a", "#5a9a8a"], "#2f5a4a", "#22443a", "glass"),
   dg_skeunk:   DGD(["#1e0e1e", "#8a3a1a"], "#3a1e1e", "#2a1414", "tombs"),
 });
-const DG_DECO = { chateau_wa_wabbit: "dg_sable", terrier_wa_wabbit: "dg_labo", crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk", /* 0.1.40 */ gelaxieme_dimension: "dg_blops", maison_fantome: "dg_crypte", akademie_gobs: "dg_bworks", refuge_sylvestre: "dg_ancestral", donjon_forgerons: "dg_pitons", grotte_hesque: "dg_rasboul", donjon_larves: "dg_scara", fonderie_waddicts: "dg_labo", village_kanniboul: "dg_moon", epreuve_draegnerys: "dg_dragon", cale_arche_otomai: "dg_chouque", cimetiere_mastodontes: "dg_sable", antre_reine_nyee: "dg_ancestral", theatre_dramak: "dg_riktus", fabrique_mallefisk: "dg_kharno", miausolee_pounicheur: "dg_crypte", garde_manger_rat_blanc: "dg_squel", sousouriciere_rat_noir: "dg_skeunk" };
+const DG_DECO = { chateau_wa_wabbit: "dg_sable", terrier_wa_wabbit: "dg_labo", crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk", /* 0.1.40 */ gelaxieme_dimension: "dg_blops", maison_fantome: "dg_crypte", akademie_gobs: "dg_bworks", refuge_sylvestre: "dg_ancestral", donjon_forgerons: "dg_pitons", grotte_hesque: "dg_rasboul", donjon_larves: "dg_scara", fonderie_waddicts: "dg_labo", village_kanniboul: "dg_moon", epreuve_draegnerys: "dg_dragon", cale_arche_otomai: "dg_chouque", cimetiere_mastodontes: "dg_sable", antre_reine_nyee: "dg_ancestral", theatre_dramak: "dg_riktus", fabrique_mallefisk: "dg_kharno", miausolee_pounicheur: "dg_crypte", garde_manger_rat_blanc: "dg_squel", sousouriciere_rat_noir: "dg_skeunk", /* 0.1.45 */ ventre_baleine: "dg_chouque", tour_bethel: "dg_chouque", brasserie_dazak: "dg_pitons", vaisseau_meno: "dg_chouque", temple_koutoulou: "dg_rasboul", palais_dantinea: "dg_serre", manoir_katrepat: "dg_crypte", tour_solar: "dg_dragon", temple_kao: "dg_bambou", sanctuaire_torkelonia: "dg_croca", arbre_mort: "dg_moon", fers_tyrannie: "dg_chouque", sentence_balance: "dg_sable", trone_sang: "dg_kharno", tempete_eliocalypse: "dg_mino", memoire_orukam: "dg_labo", souvenir_imagiro: "dg_ancestral", rituel_kabahal: "dg_skeunk", aurore_pourpre: "dg_kharno", chambre_malefices: "dg_serre", breuil_venerable: "dg_ancestral", autel_dechireuse: "dg_bambou" };
 const dgDeco = (did) => DG_DECO[did] || "dungeon";
 /* météo des zones de chasse : selon le décor, la neige pour les zones glacées */
 const subWeather = (sid) => { const sb = E.SUBS[sid]; if (!sb) return ""; if (/givre|gel[ée]e|glace|neige|Frigost/i.test(sb.name)) return "snow";
@@ -1490,6 +1498,12 @@ function flashBanner() {
     <div class="fl-list">${L.map(row).join("")}</div>
     ${N.length ? `<div class="xs muted fl-next">Ensuite : ${N.map((x) => `${h(DUNGEONS[x.did].name)} (${h(E.STASIS_MODS[x.mod].name)})`).join(" · ")}</div>` : ""}</div>`;
 }
+/* 0.1.45 : donjon ouvert seulement après d'autres boss (Tempête de l'Eliocalypse → les quatre Cavaliers) */
+function dgNeedTxt(did) {
+  const dg = DUNGEONS[did]; if (!dg.needs || !E.subUnlocked(S, E.DUNGEON_SUB[did])) return "";
+  const left = dg.needs.filter((d) => !(S.progress.bossKills[d] > 0)); if (!left.length) return "";
+  return `Battez ${left.map((d) => MONSTERS[DUNGEONS[d].boss].name).join(", ").replace(/, ([^,]*)$/, " et $1")}`;
+}
 function dungeonCard(did) {
   const dg = DUNGEONS[did]; const un = E.dungeonUnlocked(S, did); const ks = dgKeyState(did); const SI = (S.stasis || {})[did] || { max: 0, sel: 1 };
   const fav = (S.dgFav || []).includes(did); const d = dgDifficulty(did, SI.sel || 1);
@@ -1499,7 +1513,7 @@ function dungeonCard(did) {
     ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
     <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
       <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
-        ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
+        ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(dgNeedTxt(did) || E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
 }
 function dungeonsHtml() {
   const all = Object.keys(DUNGEONS); const f = ui.dgFilter || "all";
@@ -1564,7 +1578,7 @@ function dungeonSheet(did) {
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
-    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
+    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
