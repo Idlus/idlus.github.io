@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.57.1 « Sorts plus clairs »
+Aperçu des sorts (`E.spellPreview`, js/engine.js) : le coup d'arme (`"arme"`) compte ses PA via `he.wsp`, chaque tour garde `why` (cuve, ko, stun, gold, over, none, lu dans le journal du combat) et `dmg1` (dégâts du combat affiché). Interface (js/ui.js) : `spPreviewHtml` affiche l'arme et la raison des tours sautés, `spTips` ignore ces tours, barre en deux groupes `spBarGroups` (soutien numéroté / attaques sans ordre), aide `spHowHtml` ; styles `.spgrp`, `.spgl`, `.spwhy`, `.sphow`.
+
 ## 0.1.57 « Affichage plus clair »
 Ligne de pastilles `#topchips` (index.html) qui contient `#objs` et `#updbar` (et `#wbbar`, créé par wbossui.js) ; `protChip()` (ui.js) y met le protecteur, l'Accueil n'a plus `protBar()` (Métiers le garde). `renderUpdBar()` est appelée à chaque `renderStatus()` et n'écrit que si le HTML change. Barre du haut sans logo ; téléphone : le sablier n'affiche que la vitesse choisie (`sabspd` fait tourner ×1→×2→×3). Notifications : une seule (la dernière), en haut sous la barre, sauf « En bas ». Combat : `combatSetHtml()` / `combatSetSheet()`, bouton « Réglages » sur téléphone. CSS en fin de style.css (bloc 0.1.57).
 

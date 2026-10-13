@@ -2012,13 +2012,18 @@
         const F = E.startFight(S2); if (!F) return null;
         const hi = F.ents.findIndex((e) => e.side === "c" && e.cid === cid && !e.summon); const he = F.ents[hi]; if (hi < 0) return null;
         const rounds = [1, 2, 3].map((r) => ({ r, casts: [], pa: 0, dmg: 0 }));
-        let lastSeq = -1, dealt = 0;
+        let lastSeq = -1, dealt = 0; const seen = new WeakSet(); F.log.forEach((l) => seen.add(l));
         const grab = () => {
-          F.fx.forEach((f) => { if (f.seq <= lastSeq) return; if (f.k === "cast" && f.s === hi && f.sp && F.round <= 3) { const d = E.spellDef(c.cls, f.sp); const g = d && E.spellGrade(d, c.lvl); rounds[F.round - 1].casts.push(f.sp); rounds[F.round - 1].pa += g ? g.pa : 0; } });
+          F.fx.forEach((f) => { if (f.seq <= lastSeq) return; if (f.k === "cast" && f.s === hi && f.sp && F.round <= 3) { const d = f.sp === "arme" ? he.wsp : E.spellDef(c.cls, f.sp); const g = d && E.spellGrade(d, c.lvl); rounds[F.round - 1].casts.push(f.sp); rounds[F.round - 1].pa += g ? g.pa : 0; } });
+          if (F.round <= 3) { const R = rounds[F.round - 1];
+            F.log.forEach((l) => { if (seen.has(l)) return; seen.add(l); if (!l.txt.startsWith(he.name + " ")) return;
+              if (/cuve son ivresse/.test(l.txt)) R.why = R.why || "cuve"; else if (/ne peut pas bouger/.test(l.txt)) R.why = R.why || "stun"; else if (/statue d'or/.test(l.txt)) R.why = R.why || "gold"; else if (/passe son tour/.test(l.txt)) R.why = R.why || "none"; });
+            if (!he.alive && !R.casts.length) R.why = R.why || "ko"; }
           lastSeq = F.seq; if (F.round <= 3) { rounds[F.round - 1].dmg += (he.dealt || 0) - dealt; } dealt = he.dealt || 0;
         };
         for (let g = 0; g < 600 && !F.over && F.round <= 3; g++) { E.step(S2); grab(); }
         const res = { mode, label, mons: F.ents.filter((e) => e.side === "m").length, paMax: he.st.pa, rounds, end: F.over ? F.result : null, endRound: Math.min(3, F.round), total: rounds.reduce((a, r) => a + r.dmg, 0) };
+        res.rounds.forEach((r) => (r.dmg1 = r.dmg)); if (F.over) res.rounds.forEach((r) => { if (r.r === res.endRound && !r.casts.length && !r.why) r.why = "over"; });
         if (!out) out = res; else { out.rounds.forEach((r, i) => (r.dmgSum = (r.dmgSum || r.dmg) + res.rounds[i].dmg)); out.totalSum = (out.totalSum || out.total) + res.total; out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); res.rounds.forEach((r) => r.casts.forEach((id) => out.casted.add(id))); }
       }
       if (out) { out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); out.rounds.forEach((r) => (r.dmg = Math.round((r.dmgSum || r.dmg) / seeds))); out.total = Math.round((out.totalSum || out.total) / seeds); }

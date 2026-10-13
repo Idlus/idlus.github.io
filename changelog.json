@@ -1,6 +1,17 @@
 {
-  "version": "0.1.57",
+  "version": "0.1.57.1",
   "versions": [
+    {
+      "v": "0.1.57.1",
+      "name": "Sorts plus clairs",
+      "items": [
+        "Sorts & stratégies : la barre est coupée en deux. En haut le Soutien, numéroté et lancé dans cet ordre si sa condition est remplie ; en bas les Attaques, sans ordre : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts, arme comprise",
+        "Nouvel encadré « Comment ton héros choisit ses sorts » en 3 étapes, sous la barre (on peut le replier)",
+        "« Ce que fera ton héros » : le coup d'arme apparaît enfin, avec son icône et ses PA (avant, un tour où le héros ne frappait qu'à l'arme s'affichait « rien à lancer »)",
+        "Les tours vraiment sautés disent pourquoi : Pandawa qui cuve son ivresse, héros à terre, étourdi ou en statue d'or, combat fini. Plus de faux conseil « PA non utilisés » sur ces tours",
+        "Les sorts et les dégâts de chaque tour viennent du même combat (le total reste la moyenne de 3 combats)"
+      ]
+    },
     {
       "v": "0.1.57",
       "name": "Affichage plus clair",

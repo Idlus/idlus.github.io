@@ -4153,3 +4153,14 @@ body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
 .csetbtn{display:none}
 @media (max-width:640px){.csetbtn{display:inline-flex}}
 .csetsheet{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin:10px 0 14px}
+/* 0.1.55.2 « Sorts plus clairs » : barre en deux groupes, raisons des tours sautés, aide */
+.spgrp{display:flex;flex-direction:column;gap:6px}.spgl{font-size:12px;color:var(--muted)}.spgl b{color:var(--ink)}
+.spgrp.atk .spbar{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--action) 45%,var(--line))}
+.spwhy{font-size:12.5px;padding:5px 10px;border-radius:10px;display:block;background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--ink)}
+.sptn.why .tn{color:var(--muted)}
+.wcast img{border-radius:6px}
+.sphow{border-radius:12px;background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line);padding:8px 12px}.sphow summary{cursor:pointer;font-weight:800;font-size:13.5px}
+.sphs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}@media (max-width:600px){.sphs{grid-template-columns:1fr}}
+.sph{display:flex;gap:8px;align-items:flex-start}.sph .k{flex:none;width:22px;height:22px;border-radius:50%;background:var(--frame);color:#fff7e3;font-weight:900;font-size:12px;display:grid;place-items:center}
+.spgrp .spbar{display:flex;flex-wrap:wrap;gap:10px 8px}.spgrp .spslotw{width:58px}
+.sphs{grid-template-columns:1fr !important;gap:8px}

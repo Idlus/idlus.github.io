@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.57";
+const GAME_VERSION = "0.1.57.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.57.1", name: "Sorts plus clairs", items: [
+    "Sorts & stratégies : la barre est coupée en deux. En haut le Soutien, numéroté et lancé dans cet ordre si sa condition est remplie ; en bas les Attaques, sans ordre : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts, arme comprise",
+    "Nouvel encadré « Comment ton héros choisit ses sorts » en 3 étapes, sous la barre (on peut le replier)",
+    "« Ce que fera ton héros » : le coup d'arme apparaît enfin, avec son icône et ses PA (avant, un tour où le héros ne frappait qu'à l'arme s'affichait « rien à lancer »)",
+    "Les tours vraiment sautés disent pourquoi : Pandawa qui cuve son ivresse, héros à terre, étourdi ou en statue d'or, combat fini. Plus de faux conseil « PA non utilisés » sur ces tours",
+    "Les sorts et les dégâts de chaque tour viennent du même combat (le total reste la moyenne de 3 combats)",
+  ] },
   { v: "0.1.57", name: "Affichage plus clair", items: [
     "Les bandeaux du haut (événement, boss des mondes, protecteur, objectifs suivis) deviennent une seule ligne de petites pastilles, avec leur bouton dedans, sur toutes les pages",
     "La barre du haut tient sur une ligne : le logo est déjà dans le menu. Sur téléphone, le sablier affiche la vitesse choisie, un appui passe de ×1 à ×2 puis ×3",
@@ -3987,6 +3994,7 @@ function spTips(c, P) {
   // 3) PA perdus
   const known = E.knownSpells(c);
   for (const r of P.rounds) {
+    if (r.why) continue; // tour sauté (passif, KO…) : des PA « perdus » qu'aucun sort ne rattraperait
     if (r.r > P.endRound || (P.end && r.r === P.endRound)) break;
     const left = P.paMax - r.pa; if (left < 2) continue;
     const cand = known.filter((sp) => !used.has(sp.pair) && ATK_KINDS.includes(spKindOf(c, sp)) && E.spellGrade(sp, c.lvl).pa <= left)
@@ -4014,13 +4022,19 @@ function spPreviewHtml(c) {
   const head = `<div class="phead"><h2>Ce que fera ton héros</h2><span class="spchips">${[["hunt", "Chasse"], ["boss", "Boss"]].map(([k, n]) => `<button class="spc ${mode === k ? "on" : ""}" data-act="spprev" data-k="${k}">${n}</button>`).join("")}</span></div>`;
   if (!P) return `${head}<div class="pad"><p class="small muted">Aperçu indisponible pour ce héros.</p></div>`;
   const team = E.team(S); const withTeam = c.inTeam && !c.job && team.length > 1;
-  const rows = P.rounds.filter((r) => r.r <= P.endRound).map((r) => `<div class="sptn"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map((id) => { const sp = E.spellDef(c.cls, id); return sp ? `<span class="spcast" data-tip="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span>${h(sp.name)}</span></span>` : ""; }).join("") || `<span class="small muted">rien à lancer</span>`}
-    <span class="pips" data-tip="${r.pa}/${P.paMax} PA utilisés">${Array.from({ length: Math.min(P.paMax, 14) }, (_, i) => `<i class="${i < r.pa ? "" : "off"}"></i>`).join("")}</span></div><span class="tot">${r.dmg ? `≈ ${fmt(r.dmg)}` : ""}</span></div>`).join("");
+  const wIt = c.equip.arme && S.items[c.equip.arme]; // 0.1.55.2 : le coup d'arme apparaît dans l'aperçu
+  const WHY = { cuve: ["🍺", "Il cuve son ivresse : passif du Pandawa, un tour sur trois (5 Ivresse)."], ko: ["💀", "Héros à terre : il ne joue plus."], stun: ["💫", "Étourdi par un monstre : il passe son tour."], gold: ["🪙", "Changé en statue d'or : il passe son tour."], over: ["🏁", "Combat fini avant son tour."], none: ["⚠️", "Aucun sort possible : PA, recharges ou conditions."] };
+  const castHtml = (id) => { if (id === "arme" && wIt) return `<span class="spcast wcast" data-tip="Coup d'arme"><img src="${itemImg(wIt.tpl)}" alt=""><span>${h(ITEMS[wIt.tpl].name)}</span></span>`;
+    const sp = E.spellDef(c.cls, id); return sp ? `<span class="spcast" data-tip="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span>${h(sp.name)}</span></span>` : ""; };
+  const emptyHtml = (r) => r.why ? `<span class="spwhy"><b>${WHY[r.why][0]}</b> ${h(WHY[r.why][1])}</span>` : `<span class="small muted">rien à lancer</span>`;
+  const dmgOf = (r) => r.dmg1; // dégâts du combat affiché (le total reste la moyenne de 3 combats)
+  const rows = P.rounds.filter((r) => r.r <= P.endRound).map((r) => `<div class="sptn ${!r.casts.length && r.why ? "why" : ""}"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map(castHtml).join("") || emptyHtml(r)}
+    ${!r.casts.length && r.why ? "" : `<span class="pips" data-tip="${r.pa}/${P.paMax} PA utilisés">${Array.from({ length: Math.min(P.paMax, 14) }, (_, i) => `<i class="${i < r.pa ? "" : "off"}"></i>`).join("")}</span>`}</div><span class="tot">${dmgOf(r) ? `≈ ${fmt(dmgOf(r))}` : ""}</span></div>`).join("");
   const cnt = {}; c.spells.forEach((x) => { const sp = E.spellDef(c.cls, x.id); if (sp && ATK_KINDS.includes(spKindOf(c, sp))) { const el = sp.el && sp.el !== "best" ? sp.el : "n"; cnt[el] = (cnt[el] || 0) + 1; } });
   const nAtk = Object.values(cnt).reduce((a, b) => a + b, 0) || 1;
   const tips = spTips(c, P);
   return `${head}<div class="pad stack" style="gap:8px">
-    <p class="xs muted">Contre ${h(P.label)} (${P.mons} monstre${P.mons > 1 ? "s" : ""})${withTeam ? ", avec ton équipe" : ", seul"} · ${P.paMax} PA par tour · joué par le vrai moteur de combat, dégâts moyens sur 3 combats.</p>
+    <p class="xs muted">Contre ${h(P.label)} (${P.mons} monstre${P.mons > 1 ? "s" : ""})${withTeam ? ", avec ton équipe" : ", seul"} · ${P.paMax} PA par tour · joué par le vrai moteur de combat, tours et dégâts d'un même combat (total : moyenne de 3 combats).</p>
     <div class="spturns">${rows}</div>
     ${P.end ? `<p class="xs ${P.end === "win" ? "" : "muted"}">${P.end === "win" ? `Combat gagné au tour ${P.endRound}.` : `Combat perdu au tour ${P.endRound}.`}</p>` : ""}
     <div class="spsum"><span>≈ <b>${fmt(P.total)}</b> dégâts sur ${P.endRound} tour${P.endRound > 1 ? "s" : ""}</span><span class="elbar" data-tip="Éléments des sorts d'attaque équipés">${Object.entries(cnt).map(([e, n]) => `<i style="width:${(n / nAtk) * 100}%;background:var(--el-${e})"></i>`).join("")}</span><span class="xs muted">${Object.entries(cnt).map(([e, n]) => `${ELEMENTS[e].name} ${n}`).join(" · ")}</span></div>
@@ -4039,6 +4053,18 @@ function spOptimize(c) {
   const cur = score(c.spells); let best = null, bestV = cur;
   perms(sup).forEach((p) => { const order = p.concat(rest); const v = score(order); if (v > bestV * 1.01) { bestV = v; best = order; } });
   return { best, gain: cur > 0 ? Math.round(((bestV - cur) / cur) * 100) : 0 };
+}
+/* 0.1.55.2 « Sorts plus clairs » : la barre en deux groupes. Les sorts de soutien partent dans l'ordre ;
+   les attaques n'ont pas d'ordre, le héros prend la meilleure combinaison du tour (planTurn, arme comprise). */
+function spBarGroups(c, slots) {
+  const tmp = document.createElement("div"); tmp.innerHTML = slots; const sup = [], atk = [];
+  [...tmp.children].forEach((x) => (x.dataset.grp === "sup" ? sup : atk).push(x.outerHTML));
+  return `<div class="spgrp sup"><div class="spgl"><b>① Soutien</b> · lancés d'abord, <b>dans cet ordre</b>, si leur condition est remplie</div><div class="spbar">${sup.join("") || `<span class="xs muted">Aucun sort de soutien</span>`}</div></div>
+    <div class="spgrp atk"><div class="spgl"><b>② Attaques</b> · <b>pas d'ordre</b> : avec les PA qui restent, le héros prend la combinaison qui fait le plus de dégâts (arme comprise)</div><div class="spbar">${atk.join("")}</div></div>`;
+}
+function spHowHtml() {
+  const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques, au mieux", "Avec les PA restants, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles. L'ordre des attaques ne compte pas."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
+  return `<details class="sphow" open><summary>Comment ton héros choisit ses sorts</summary><div class="sphs">${steps.map(([n, t, d]) => `<div class="sph"><span class="k">${n}</span><div><b>${t}</b><br><span class="xs muted">${d}</span></div></div>`).join("")}</div>${canHover ? `<p class="xs muted">Glisse un sort pour changer sa place.</p>` : ""}</details>`;
 }
 function charSpellsView(c) {
   const eq = c.spells; const N = E.spellSlots(c);
@@ -4059,14 +4085,17 @@ function charSpellsView(c) {
   const setup = `<div class="row" style="gap:6px 16px">
     <label class="row small" style="gap:6px" data-tip="Les points de caractéristiques vont dans cet élément ; la sélection automatique des sorts et les flèches d'équipement le privilégient."><span class="muted">Profil :</span><select data-act="autostat" data-id="${c.id}">${["fo", "ine", "cha", "age"].map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name} (${ELEMENTS[STATS[k].el].name})${k === rec ? " ★ conseillé" : ""}</option>`).join("")}<option value="vit" ${c.autoStat === "vit" ? "selected" : ""}>Vitalité (tank)</option><option value="" ${!c.autoStat ? "selected" : ""}>Manuel</option></select></label>
     <label class="row small" style="gap:6px"><input type="checkbox" data-act="spauto" ${c.spellsManual ? "" : "checked"}> Sorts automatiques à chaque niveau</label>
-    <label class="row small" style="gap:6px"><input type="checkbox" data-act="chaloff" ${c.chalOff ? "checked" : ""}> Ignorer les challenges</label></div>`;
+    <label class="row small" style="gap:6px"><input type="checkbox" data-act="chaloff" ${c.chalOff ? "checked" : ""}> Ignorer les challenges</label>
+</div>`;
   // barre
   const slots = Array.from({ length: 8 }, (_, i) => {
     if (i >= N) return `<div class="spslotw"><div class="spslot lock" data-tip="Case débloquée au niveau ${i === 6 ? 50 : 100}">🔒</div><span class="spcl">niv. ${i === 6 ? 50 : 100}</span></div>`;
     const x = eq[i]; const sp = x && E.spellDef(c.cls, x.id);
     if (!sp) return `<div class="spslotw"><button class="spslot empty ${sel === i ? "sel" : ""}" data-act="spsel" data-i="${i}" data-spslot="${i}" aria-label="Case ${i + 1} vide">+</button><span class="spcl"></span></div>`;
     const g = E.spellGrade(sp, c.lvl);
-    return `<div class="spslotw"><button class="spslot ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-spdrag="s${i}" draggable="true" data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}"><span class="n">${i + 1}</span>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span class="pa">${g.pa}</span></button><span class="spcl ${COND_SHORT[x.cond] ? "on" : ""}">${COND_SHORT[x.cond] !== undefined ? COND_SHORT[x.cond] : h(CONDITIONS[x.cond] || "")}</span></div>`;
+    const atk = ATK_KINDS.includes(spKindOf(c, sp)); const sn = eq.slice(0, i + 1).filter((y) => { const d = E.spellDef(c.cls, y.id); return d && !ATK_KINDS.includes(spKindOf(c, d)); }).length;
+    const nb = atk ? "" : `<span class="n">${sn}</span>`; // seuls les sorts de soutien ont un ordre
+    return `<div class="spslotw" data-grp="${atk ? "atk" : "sup"}"><button class="spslot ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-spdrag="s${i}" draggable="true" data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${nb}${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span class="pa">${g.pa}</span></button><span class="spcl ${COND_SHORT[x.cond] ? "on" : ""}">${COND_SHORT[x.cond] !== undefined ? COND_SHORT[x.cond] : h(CONDITIONS[x.cond] || "")}</span></div>`;
   }).join("");
   // grimoire par paires
   const F = ui.spFilt || "all"; const eqIds = new Set(eq.map((x) => x.id));
@@ -4082,8 +4111,8 @@ function charSpellsView(c) {
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
   <div class="spgrid">
     <div class="panel spbarp"><div class="phead"><h2>Barre de sorts</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span><span class="grow"></span>${ui.spUndo && ui.spUndo.cid === c.id ? `<button class="btn sm" data-act="spundo">↶ Annuler</button>` : ""}<button class="btn sm" data-act="spopt" data-tip="Essaie tous les ordres des sorts de soutien et garde celui qui fait le plus de dégâts dans l'aperçu">✨ Ranger au mieux</button></div>
-      <div class="pad stack" style="gap:8px"><div class="spbar">${slots}</div>${wpBarHtml(c)}
-      <p class="xs muted">En combat, le héros lance d'abord ses invocations, protections et soins (de gauche à droite, si leur condition est remplie), puis il prépare ses attaques pour tout le tour : zone face à un groupe, gros coup sur le boss, élément que la cible résiste le moins, coup de grâce sur un monstre presque mort.${canHover ? " Glisse un sort pour changer sa place." : ""}</p></div></div>
+      <div class="pad stack" style="gap:8px">${spBarGroups(c, slots)}${wpBarHtml(c)}
+      ${spHowHtml()}</div></div>
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
     <div class="panel spprevp">${spPreviewHtml(c)}</div>
     <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
