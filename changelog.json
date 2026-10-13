@@ -1,6 +1,15 @@
 {
-  "version": "1.0.9",
+  "version": "1.0.9.1",
   "versions": [
+    {
+      "v": "1.0.9.1",
+      "name": "Chat qui se reconnecte",
+      "items": [
+        "Le chat ne reste plus bloqué sur « Connexion au chat… » quand le serveur met du temps à répondre : il réessaie tout seul (après 5 s, 10 s, 20 s puis toutes les 30 s)",
+        "Pendant l'attente, un message l'explique avec un bouton « Réessayer maintenant »",
+        "Après une coupure du chat en direct, les messages manqués sont rechargés au retour"
+      ]
+    },
     {
       "v": "1.0.9",
       "name": "Métiers de la semaine",

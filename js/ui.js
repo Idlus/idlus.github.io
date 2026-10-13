@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.9";
+const GAME_VERSION = "1.0.9.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.9.1", name: "Chat qui se reconnecte", items: [
+    "Le chat ne reste plus bloqué sur « Connexion au chat… » quand le serveur met du temps à répondre : il réessaie tout seul (après 5 s, 10 s, 20 s puis toutes les 30 s)",
+    "Pendant l'attente, un message l'explique avec un bouton « Réessayer maintenant »",
+    "Après une coupure du chat en direct, les messages manqués sont rechargés au retour",
+  ] },
   { v: "1.0.9", name: "Métiers de la semaine", items: [
     "Classements › Métiers : bouton « Cette semaine / Depuis toujours ». Cette semaine = l'XP de métier gagnée depuis lundi, tout le monde repart de zéro, même un nouveau joueur peut gagner",
     "Les 3 premiers de chaque métier de la semaine portent le titre « Artisan de la semaine » pendant la semaine suivante (Équipe et héros)",

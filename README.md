@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.9.1 « Chat qui se reconnecte »
+Capture de Mathis : chat bloqué sur « Connexion au chat… » alors que « 15 en ligne » s'affichait. Le premier chargement des messages (`ON.chatLoad`, délai de 12 s) avait échoué pendant un pic de lenteur du serveur et `C.loaded` restait faux pour toujours (aucun nouvel essai). `refresh()` dans js/chat.js réessaie maintenant seul (5, 10, 20 puis 30 s), avec un bouton « Réessayer maintenant » ; une erreur du serveur compte comme « pas chargé » ; `ON.chatLive` reçoit un 3e rappel appelé quand le canal temps réel revient après une coupure (messages manqués rechargés, étalé sur 5 s).
+
 ## 1.0.9 « Métiers de la semaine »
 Demande de Mathis (réponses 1A à 6A sur la maquette des améliorations du classement des métiers). La sauvegarde envoyée en ligne (meta, `VF.summary` dans js/verify.js) porte maintenant les métiers d'artisanat, de récolte et de forgemagie appris, avec l'XP totale depuis le niveau 1 : aucun envoi en plus. Le déclencheur `ladder_from_save` (supabase/classements.sql) garde l'XP totale de chaque métier au début de la semaine (`jobs_base`, semaine `jobs_w`, celle des donjons de la semaine) et la semaine passée (`jobs_prev`, `jobs_pw`) ; vues `lb_jobs` (+ `total`), `lb_jobs_week` (XP gagnée, place `r`), et `lb_jobs_guild` / `lb_jobs_guild_week` (supabase/guildes.sql). Sommes par groupe : `tous`, `tous_recolte`, `tous_fm`. Titre « Artisan de la semaine » (podium d'un métier la semaine passée, vérifié au lancement comme « Maître de la semaine »), « Grand Maître artisan » (Premiers, kind `job200all`). Un Premier au niveau 200 n'est gravé que si le serveur a vu le métier sous le niveau 200 (artisanat seulement). La vérification de vitesse (+60 niveaux en moins de 10 min) ne regarde que l'artisanat.
 

@@ -29,7 +29,7 @@
     if (C.started) return; C.started = true;
     mount();
     ON.onChange((st) => { if (st === "anon" && (C.role || C.p.length)) { C.role = null; C.p = []; C.peer = null; C.tab = "g"; X().renderStatus(); paint(true); } else paintMin(); });
-    ON.chatLive(onMsg, (n) => { C.count = n; paintHead(); });
+    ON.chatLive(onMsg, (n) => { C.count = n; paintHead(); }, () => setTimeout(refresh, Math.random() * 5000)); // 1.0.9.1 : messages manqués rechargés quand le temps réel revient
     await refresh();
     banner();
     setInterval(banner, 120000);
@@ -37,9 +37,20 @@
     setInterval(() => { const el = $("#chat"); if (el && !el.innerHTML && S()) paint(); }, 2000); // partie commencée après le lancement
   }
   /* Rechargé à la connexion ou au changement de compte. */
+  /* 1.0.9.1 : si le serveur est lent au moment du chargement (délai dépassé), le chat ne restait plus jamais sur
+     « Connexion au chat… » qu'avec un rechargement de la page : il réessaie seul (5 s, 10 s, 20 s puis toutes les 30 s). */
+  let busy = false, tries = 0, retryT = 0;
   async function refresh() {
+    if (busy) return; busy = true; clearTimeout(retryT);
+    try { await load(); } catch (e) {}
+    busy = false;
+    if (C.loaded) tries = 0;
+    else { tries++; retryT = setTimeout(refresh, Math.min(30000, 5000 * 2 ** (tries - 1))); paint(true); }
+  }
+  async function load() {
     const [g, p, ign, role, me, c, v, pin] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin()]);
-    C.pin = pin; C.g = g || []; C.p = p || []; C.c = c || []; C.v = v || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    if (g === null && C.loaded) return; // 1.0.9.1 : rechargement raté après une coupure → on garde les messages déjà affichés
+    C.pin = pin; C.g = g || []; C.p = p || []; C.c = c || C.c; C.v = v || C.v; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     if (role === "admin" && /[?&]testeur=1/.test(location.search)) { location.replace("beta/"); return; } // 1.0.5.3 : lien « Accès testeur » de la bêta, retour direct vers la bêta une fois le compte admin reconnu
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
@@ -231,7 +242,7 @@
     }
   }
   function listHtml() {
-    if (!C.loaded) return `<div class="sys">Connexion au chat…</div>`;
+    if (!C.loaded) return tries ? `<div class="sys">Le chat met du temps à répondre, nouvel essai automatique…<br><button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button></div>` : `<div class="sys">Connexion au chat…</div>`;
     if (C.tab === "p") {
       if (!C.peer) {
         const conv = {}; C.p.forEach((m) => { const o = m.user_id === myId() ? m.to_id : m.user_id; if (o && !C.ign.has(o)) conv[o] = m; });
@@ -470,6 +481,7 @@
     switch (a) {
       case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
       case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
+      case "ch-retry": refresh(); return;
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
       case "ch-tab": C.tab = d.v; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;

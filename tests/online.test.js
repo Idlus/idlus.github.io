@@ -39,6 +39,7 @@ const MOCK = () => {
       insert: (o) => { ins = o; return b; },
       maybeSingle: () => Promise.resolve({ data: run()[0] || null, error: null }),
       then: (ok, ko) => {
+        if (table === "chat_msgs" && window.__chatFail && !ins) return Promise.resolve({ data: null, error: { message: "canceling statement due to statement timeout" } }).then(ok, ko); // 1.0.9.1 : serveur lent
         if (ins && table !== "profiles") { const d = db(); d.views = d.views || {}; (d.views[table] = d.views[table] || []).push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
         if (del) { const d = db(); const gone = run(); d.views[table] = (d.views[table] || []).filter((r) => !gone.some((g) => JSON.stringify(g) === JSON.stringify(r))); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
         if (ins) { const d = db(); if (d.profiles.some((p) => p.pseudo.toLowerCase() === ins.pseudo.toLowerCase())) return Promise.resolve({ error: { message: "duplicate key" } }).then(ok, ko); d.profiles.push(ins); put(d); return Promise.resolve({ error: null }).then(ok, ko); }
@@ -277,6 +278,15 @@ const MOCK = () => {
     await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(100);
     await page.click('#chat [data-act="ch-pinx"]'); await page.waitForTimeout(100);
     if (await page.$("#chat .ch-pin")) fail("chat : message épinglé toujours là après la croix");
+    // 1.0.9.1 : chargement raté (serveur lent) → le chat réessaie au lieu de rester sur « Connexion au chat… »
+    await page.evaluate(() => { window.__chatFail = true; window.CHAT.state.loaded = false; return window.CHAT.refresh(); });
+    if (!/nouvel essai automatique/.test(await page.textContent("#chat .ch-list"))) fail("chat : pas de message de nouvel essai quand le serveur est lent");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/chat-essai.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/chat-essai-mob.png" }); await page.setViewportSize(vp); }
+    await page.evaluate(() => { window.__chatFail = false; }); await page.click('#chat [data-act="ch-retry"]');
+    await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 }).catch(() => fail("chat : « Réessayer maintenant » ne recharge pas les messages"));
+    await page.evaluate(() => { window.__chatFail = true; return window.CHAT.refresh(); });
+    if (!(await page.$("#chat .ch-list .msg"))) fail("chat : un rechargement raté efface les messages déjà affichés");
+    await page.evaluate(() => { window.__chatFail = false; });
     // 0.1.33.2 : les hauts faits ont leur onglet, le Général ne garde que les joueurs et les annonces officielles
     if (/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : haut fait encore dans le Général");
     await page.click('#chat [data-act="ch-tab"][data-v="h"]'); await page.waitForTimeout(100);

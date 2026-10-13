@@ -187,18 +187,22 @@
   };
   ON.rpc = rpc;
   ON.chatLoad = async (ch) => {
+    if (!sb) return null;
     let q = sb.from("chat_msgs").select("*").order("id", { ascending: false }).limit(ch === "p" ? 200 : 100);
     q = q.eq("ch", ["p", "c", "v"].includes(ch) ? ch : "g"); // 0.1.48.2 : salons Commerce (c) et PvP (v)
-    try { const { data, error } = await withTimeout(q, 12000); return error ? [] : (data || []).reverse(); } catch (e) { return null; }
+    try { const { data, error } = await withTimeout(q, 12000); return error ? null : (data || []).reverse(); } catch (e) { return null; } // 1.0.9.1 : une erreur du serveur (délai dépassé côté base) compte comme « pas chargé », le chat réessaie
   };
   /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */
-  let chan = null;
-  ON.chatLive = (onMsg, onCount) => {
+  let chan = null, lost = false;
+  ON.chatLive = (onMsg, onCount, onBack) => {
     if (!sb || chan) return;
     chan = sb.channel("chat-general", { config: { presence: { key: (ON.user && ON.user.id) || "anon-" + Math.random().toString(36).slice(2) } } });
     chan.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_msgs" }, (p) => { if (p && p.new) onMsg(p.new); })
       .on("presence", { event: "sync" }, () => { try { onCount(Object.keys(chan.presenceState()).filter((k) => !/^anon-/.test(k)).length); } catch (e) {} })
-      .subscribe((st) => { if (st === "SUBSCRIBED" && ON.user && ON.profile) chan.track({ p: ON.profile.pseudo }); });
+      .subscribe((st) => {
+        if (st === "SUBSCRIBED") { if (ON.user && ON.profile) chan.track({ p: ON.profile.pseudo }); if (lost && onBack) onBack(); lost = false; } // 1.0.9.1 : retour après une coupure → messages manqués rechargés
+        else lost = true; // CHANNEL_ERROR, TIMED_OUT, CLOSED : la bibliothèque se reconnecte seule
+      });
   };
   ON.onlinePseudos = () => { try { return chan ? Object.values(chan.presenceState()).flat().map((x) => x && x.p).filter(Boolean) : []; } catch (e) { return []; } }; // 0.1.53.7 : proposés quand on tape « @ »
   ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };
