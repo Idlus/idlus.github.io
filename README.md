@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.50.4 « Kamas de DOFUS 3 »
+Mathis : icône des kamas comme celle de DOFUS 3. `assets/ui/kamas.webp` (128 px) redessinée : pièce d'or à 24 facettes et symbole des kamas (K à deux barres) en relief, même méthode que le Kolizeton (script de génération SVG puis rendu Chromium). `MEDIA` passe à `media-v9` dans sw.js pour que l'ancienne image ne reste pas en cache.
+
 ## 0.1.50.3 « Boss des mondes corrigé »
 `E.chestItemPool` (systems.js) exclut les objets `leg` (Songe) et `wboss`. Gargandyas : `E.WB_HP0` 10 000 points et `wb_state.hp` ramené à 10 000 s'il valait 20 000 (supabase/wboss.sql) ; `wb_done` renvoie `before` (dégâts avant l'essai). js/wbossui.js : bandeau et effet cachés seulement pendant `ui.watch`, tuile d'Accueil redessinée au chargement. tests/wboss.test.js vérifie que index.html charge wboss.js et wbossui.js.
 

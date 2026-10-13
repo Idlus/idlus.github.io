@@ -1,6 +1,13 @@
 {
-  "version": "0.1.50.3",
+  "version": "0.1.50.4",
   "versions": [
+    {
+      "v": "0.1.50.4",
+      "name": "Kamas de DOFUS 3",
+      "items": [
+        "Nouvelle icône des kamas : une pièce d'or taillée frappée du symbole des kamas, dans le style de DOFUS 3, partout dans le jeu"
+      ]
+    },
     {
       "v": "0.1.50.3",
       "name": "Boss des mondes corrigé",

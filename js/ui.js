@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50.3";
+const GAME_VERSION = "0.1.50.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.50.4", name: "Kamas de DOFUS 3", items: [
+    "Nouvelle icône des kamas : une pièce d'or taillée frappée du symbole des kamas, dans le style de DOFUS 3, partout dans le jeu",
+  ] },
   { v: "0.1.50.3", name: "Boss des mondes corrigé", items: [
     "Boss des mondes : Gargandyas a maintenant 1 000 000 PV au lieu de 2 000 000, pour tomber en 2 jours environ comme prévu (les dégâts déjà faits sont gardés)",
     "Les 4 objets de Gargandyas et les objets légendaires du Songe ne sortent plus des coffres : on ne les obtient que par leur boutique ou dans le Songe",
