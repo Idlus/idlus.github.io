@@ -1,6 +1,19 @@
 {
-  "version": "0.1.50.4",
+  "version": "0.1.52",
   "versions": [
+    {
+      "v": "0.1.52",
+      "name": "Songe plus clair",
+      "items": [
+        "Le Songe infini est réorganisé : un en-tête avec tes Bribes et 3 onglets avec compteurs (Le Puits ou Mon songe, Marché onirique, Légendaires)",
+        "Nouveaux emblèmes pour les 8 difficultés : des lunes en métal ciselé, turquoise pour le Rêve, violettes pour le Paradoxe, rouges et cornues pour le Cauchemar, plus riches à chaque rang",
+        "Le Puits : les 8 intensités sur une seule rangée et une fiche claire pour celle choisie (butin, vagues, difficulté, Bribes gagnées, chance de légendaire)",
+        "Pendant le songe, « Ta prochaine salle » passe en premier (les 3 portes côte à côte sur PC). Auto, mode et Se réveiller sont dans l'en-tête, avec les PV et les points de rêve",
+        "Sur téléphone, la carte du songe défile de côté et se centre sur ta salle : la page est deux fois moins longue",
+        "Onglet Combat : une barre d'une ligne pour le songe, avec un bouton Carte",
+        "Légendaires : ta collection en grandes cartes, le reste rangé par niveau, avec des filtres. Marché onirique : ce que tu peux acheter d'abord, et combien de Bribes il te manque pour le reste"
+      ]
+    },
     {
       "v": "0.1.50.4",
       "name": "Kamas de DOFUS 3",

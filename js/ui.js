@@ -18,9 +18,18 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50.4";
+const GAME_VERSION = "0.1.52";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.52", name: "Songe plus clair", items: [
+    "Le Songe infini est réorganisé : un en-tête avec tes Bribes et 3 onglets avec compteurs (Le Puits ou Mon songe, Marché onirique, Légendaires)",
+    "Nouveaux emblèmes pour les 8 difficultés : des lunes en métal ciselé, turquoise pour le Rêve, violettes pour le Paradoxe, rouges et cornues pour le Cauchemar, plus riches à chaque rang",
+    "Le Puits : les 8 intensités sur une seule rangée et une fiche claire pour celle choisie (butin, vagues, difficulté, Bribes gagnées, chance de légendaire)",
+    "Pendant le songe, « Ta prochaine salle » passe en premier (les 3 portes côte à côte sur PC). Auto, mode et Se réveiller sont dans l'en-tête, avec les PV et les points de rêve",
+    "Sur téléphone, la carte du songe défile de côté et se centre sur ta salle : la page est deux fois moins longue",
+    "Onglet Combat : une barre d'une ligne pour le songe, avec un bouton Carte",
+    "Légendaires : ta collection en grandes cartes, le reste rangé par niveau, avec des filtres. Marché onirique : ce que tu peux acheter d'abord, et combien de Bribes il te manque pour le reste",
+  ] },
   { v: "0.1.50.4", name: "Kamas de DOFUS 3", items: [
     "Nouvelle icône des kamas : une pièce d'or taillée frappée du symbole des kamas, dans le style de DOFUS 3, partout dans le jeu",
   ] },
@@ -1826,7 +1835,7 @@ function renderCombat() {
       <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
-      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir la carte du songe</button>` : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      ${idolBtn(S.dungeon)}${XP ? "" : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   ${XP && window.SGUI ? window.SGUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">

@@ -5,6 +5,69 @@
    Gobledore, vague suivante, Sable de Draconiros, réveil. Dans l'onglet Combat : la barre du songe et les salles.
    Utilise les outils de l'interface exposés par ui.js (window.DX.social).
    ========================================================================== */
+/* 0.1.52 : emblèmes des 8 intensités, style DOFUS 3 (lunes en métal ciselé comme les grades du Kolizéum). sgIcon(i) -> SVG. */
+(function (G) {
+  let uid = 0;
+  const f = (n) => +n.toFixed(1);
+  const P = (pts) => "M" + pts.map((p) => f(p[0]) + " " + f(p[1])).join(" L") + " Z";
+  const mir = (pts) => pts.map(([x, y]) => [200 - x, y]).reverse();
+  const rh = (cx, cy, rx, ry) => [[cx, cy - ry], [cx + rx, cy], [cx, cy + ry], [cx - rx, cy]];
+  const ring = (cx, cy, rx, ry, t) => P(rh(cx, cy, rx, ry)) + " " + P(rh(cx, cy, rx - t * 1.25, ry - t * 1.25).reverse());
+  const star4 = (cx, cy, r, w = 0.28) => P([[cx, cy - r], [cx + r * w, cy - r * w], [cx + r, cy], [cx + r * w, cy + r * w], [cx, cy + r], [cx - r * w, cy + r * w], [cx - r, cy], [cx - r * w, cy - r * w]]);
+  const rot = (pts, a, cx = 100, cy = 100) => pts.map(([x, y]) => { const c = Math.cos(a), s = Math.sin(a); return [cx + (x - cx) * c - (y - cy) * s, cy + (x - cx) * s + (y - cy) * c]; });
+  // croissant : grand cercle (cx,cy,r0) moins le cercle décalé (dx,dy,r1), en arcs
+  function crescentD(cx, cy, r0, dx, dy, r1, sw = [1, 0, 0, 1]) {
+    const x1 = cx + dx, y1 = cy + dy, d = Math.hypot(dx, dy), a = (r0 * r0 - r1 * r1 + d * d) / (2 * d), h = Math.sqrt(r0 * r0 - a * a);
+    const mx = cx + (a * dx) / d, my = cy + (a * dy) / d, A = [mx + (h * dy) / d, my - (h * dx) / d], B = [mx - (h * dy) / d, my + (h * dx) / d];
+    return `M${f(A[0])} ${f(A[1])} A${r0} ${r0} 0 ${sw[0]} ${sw[1]} ${f(B[0])} ${f(B[1])} A${r1} ${r1} 0 ${sw[2]} ${sw[3]} ${f(A[0])} ${f(A[1])} Z`;
+  }
+  const MET = {
+    reve: ["#eafffc", "#6fe3d8", "#1d7c84", "#062a30", "#5fe8e0"],
+    para: ["#f3eeff", "#b49cff", "#5b3fc4", "#170c42", "#a58bff"],
+    cauc: ["#ffe6ea", "#ff6178", "#a3142f", "#33040e", "#ff3e5e"],
+    gold: ["#fff2a6", "#f0b92a", "#a86b06", "#4a2b02", "#ffc83a"],
+  };
+  function emblem(parts, met, id, extra = "") {
+    const [l, m, d, e, glow] = MET[met];
+    const body = parts.map((p) => `<path d="${p.d || p}" fill-rule="evenodd" fill="url(#${id}${p.m ? p.m : "a"})" stroke="${p.m ? MET[p.m === "g" ? "gold" : met][3] : e}" stroke-width="3" stroke-linejoin="miter"/>`).join("");
+    const all = parts.map((p) => `<path d="${p.d || p}" fill-rule="evenodd"/>`).join("");
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="sgi" aria-hidden="true"><defs>
+  <linearGradient id="${id}a" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="180"><stop offset="0" stop-color="${l}"/><stop offset=".44" stop-color="${m}"/><stop offset=".56" stop-color="${d}"/><stop offset="1" stop-color="${m}"/></linearGradient>
+  <linearGradient id="${id}g" gradientUnits="userSpaceOnUse" x1="0" y1="40" x2="0" y2="160"><stop offset="0" stop-color="${MET.gold[0]}"/><stop offset=".44" stop-color="${MET.gold[1]}"/><stop offset=".56" stop-color="${MET.gold[2]}"/><stop offset="1" stop-color="${MET.gold[1]}"/></linearGradient>
+  <linearGradient id="${id}s" gradientUnits="userSpaceOnUse" x1="20" y1="20" x2="180" y2="180"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></linearGradient>
+  <radialGradient id="${id}r" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${glow}" stop-opacity=".5"/><stop offset=".7" stop-color="${glow}" stop-opacity=".08"/><stop offset="1" stop-color="${glow}" stop-opacity="0"/></radialGradient>
+  <clipPath id="${id}c">${all}</clipPath></defs>
+  <circle cx="100" cy="102" r="94" fill="url(#${id}r)"/>
+  <g transform="translate(0 5)" fill="${e}">${parts.map((p) => `<path d="${p.d || p}" fill-rule="evenodd"/>`).join("")}</g>
+  ${body}
+  <g clip-path="url(#${id}c)"><rect width="200" height="200" fill="url(#${id}s)"/><path d="M0 100 L200 100" stroke="${l}" stroke-opacity=".35" stroke-width="2"/></g>
+  ${parts.map((p) => `<path d="${p.d || p}" fill-rule="evenodd" fill="none" stroke="${p.m === "g" ? MET.gold[0] : l}" stroke-opacity=".7" stroke-width="1.3" transform="translate(100 100) scale(.975) translate(-100 -100)"/>`).join("")}${extra}</svg>`;
+  }
+  const FAM = (i) => (i === 0 ? "reve" : i <= 4 ? "para" : "cauc");
+  // ---------- A : lunes ciselées ----------
+  const SW = [1, 0, 0, 1];
+  function lune(i) {
+    const met = FAM(i), parts = [];
+    parts.push(crescentD(92, 104, 64, 30, -18, 54, SW));
+    const gx = 128, gy = 84;
+    if (i === 0) { parts.push(star4(gx, gy, 22)); parts.push(star4(158, 128, 11)); parts.push(star4(150, 40, 8)); }
+    if (i >= 1 && i <= 4) {
+      parts.push({ d: P(rh(gx, gy, 14, 18)), m: "g" });
+      if (i >= 2) parts.push(ring(gx, gy, 30, 36, 8));
+      if (i >= 3) { parts.push(P([[gx, gy - 40], [gx - 7, gy - 52], [gx, gy - 74], [gx + 7, gy - 52]])); parts.push(P([[gx + 34, gy], [gx + 46, gy - 7], [gx + 68, gy], [gx + 46, gy + 7]])); }
+      if (i >= 4) { const r = rot([[gx + 26, gy - 26], [gx + 40, gy - 46], [gx + 32, gy - 22]], 0, gx, gy); parts.push(P([[gx + 24, gy - 28], [gx + 46, gy - 50], [gx + 30, gy - 22]])); parts.push(P([[gx - 24, gy + 28], [gx - 30, gy + 22], [gx - 40, gy + 40]])); parts.push(P([[gx + 24, gy + 28], [gx + 46, gy + 50], [gx + 30, gy + 22]])); }
+    }
+    if (i >= 5) {
+      parts.push(P([[40, 74], [8, 40], [50, 58]])); parts.push(P([[46, 150], [20, 186], [60, 160]]));
+      parts.push({ d: P(rh(gx, gy, 13, 17)), m: "g" });
+      if (i >= 6) { parts.push(ring(gx, gy, 28, 34, 8)); parts.push(P([[88, 42], [80, 8], [102, 40]])); parts.push(P([[150, 150], [176, 176], [140, 160]])); }
+      if (i >= 7) { parts.push(P([[gx, gy - 38], [gx - 8, gy - 50], [gx, gy - 80], [gx + 8, gy - 50]])); parts.push(P([[gx + 32, gy], [gx + 46, gy - 8], [gx + 74, gy], [gx + 46, gy + 8]])); parts.push(P([[gx + 22, gy - 26], [gx + 50, gy - 56], [gx + 28, gy - 18]])); }
+    }
+    return emblem(parts, met, "l" + i + "_" + (uid++));
+  }
+  G.sgIcon = (i) => lune(i);
+})(typeof window !== "undefined" ? window : globalThis);
+
 (function () {
   "use strict";
   const E = window.ENGINE, D = window.DATA;
@@ -34,14 +97,19 @@
 
   /* ---------- l'en-tête de la page ---------- */
   function render(main) {
-    const s = S(); const on = E.expActive(s);
-    const tabs = `<span class="seg">${[["songe", "Le Songe"], ["marche", "Marché onirique"], ["legs", "Légendaires"]].map(([v, n]) => `<button data-act="sg-view" data-v="${v}" aria-pressed="${ui.view === v}">${n}</button>`).join("")}</span>`;
-    const sub = on ? `${intName(s.exp.ii)} · ${palName(s.exp)}` : `Aventure · dès le niveau ${E.EXP_MIN_LVL} · une carte par semaine, la même pour tous`;
-    const head = `<div class="pagehead"><div><div class="small muted">${h(sub)}</div><h1>Le Songe infini</h1></div>
-      <div class="row" style="flex-wrap:wrap">${bribes(s)}${tabs}${on && ui.view === "songe" ? `<button class="btn sm ${ui.confirm ? "danger" : ""}" data-act="sg-quit">${ui.confirm ? "Confirmer le réveil" : "Se réveiller"}</button>` : ""}</div></div>`;
+    const s = S(); const on = E.expActive(s); const X_ = s.exp;
+    const legN = E.LEG_LIST.filter((x) => legOwned(s, x.k)).length;
+    const afford = E.SG_SHOP.filter((o) => !(o.once && E.sgOwned(s, o.id)) && E.songe(s).br >= o.price).length;
+    const tab = (v, ic, n, badge) => `<button data-act="sg-view" data-v="${v}" aria-pressed="${ui.view === v}">${uimg(ic, "sgx-ti")}<span>${n}</span>${badge !== "" ? `<em>${badge}</em>` : ""}</button>`;
+    const sub = on ? `${intName(X_.ii)} · salle ${curD(X_)} sur ${E.SG_ROOMS}` : `dès le niveau ${E.EXP_MIN_LVL} · nouvelle carte dans ${weekLeft()}`;
+    const head = `<div class="sgx-top"><div class="sgx-title"><span class="sgx-moon" aria-hidden="true"></span><span class="sgx-tt"><h1>Le Songe infini</h1><span class="small muted">${h(sub)}</span></span>${bribes(s)}</div>
+      <nav class="sgx-tabs">${tab("songe", "carte", on ? "Mon songe" : "Le Puits", on ? `${curD(X_)}/${E.SG_ROOMS}` : "")}${tab("marche", "cristal", "Marché onirique", afford || "")}${tab("legs", "dofus", "Légendaires", `${legN}/${E.LEG_LIST.length}`)}</nav></div>`;
     main.innerHTML = head + (ui.view === "marche" ? shopHtml(s) : ui.view === "legs" ? legsHtml(s) : on ? runHtml(s, s.exp) : puitsHtml(s));
     ui.key = stateKey(s);
+    const sc = main.querySelector(".sgx-mapscroll[data-x]"); if (sc) sc.scrollLeft = Math.max(0, +sc.dataset.x - sc.clientWidth / 2);
   }
+  const curD = (X_) => (X_.pick !== null ? X_.nodes[X_.pick].d : X_.at !== null ? X_.nodes[X_.at].d : 1);
+  const gem = (i) => (window.sgIcon ? window.sgIcon(i) : i === 0 ? "R" : i <= 4 ? "P" + i : "C" + (i - 4));
   const palName = (X_) => { const d = X_.at === null ? 1 : X_.nodes[X_.at].d; const p = E.SG_PALIERS[Math.max(0, E.sgPalier(d))]; return `palier ${ROM[E.sgPalier(d)] || "V"}, ${p[2]}`; };
   const stateKey = (s) => { const X_ = s.exp; return E.expActive(s) ? `${X_.at}|${X_.pick}|${X_.pend.length}|${X_.pts}|${X_.relics.length}|${X_.wave}|${X_.waves}|${X_.sable}` : `off|${s.expLast ? s.expLast.t : 0}|${E.songe(s).br}|${E.songe(s).unl}`; };
 
@@ -52,27 +120,24 @@
     const ii = ui.ii; const err = E.expCanStart(s, ii); const INT = E.SG_INT[ii];
     const tm = team(s); const lvl = tm.length ? Math.round(tm.reduce((a, c) => a + c.lvl, 0) / tm.length) : 0;
     const reg = E.sgRegne(E.weekIdx()); const M = E.STASIS_MODS[reg.mod];
-    const steps = E.SG_INT.map((x, i) => { const st = i < unl ? "done" : i === unl ? "" : "lock"; return `<button class="sg-step ${st} ${i === ii ? "on" : ""}" data-act="sg-int" data-v="${i}" ${i > unl ? "disabled" : ""} style="--gc:${x.col}"><span class="gem">${i === 0 ? "R" : i <= 4 ? "P" + i : "C" + (i - 4)}</span><b>${h(x.name)}</b><span class="lt">${x.loot ? `+${x.loot} % de butin` : "butin normal"}</span><span class="lt">${plural(x.waves, "vague")}</span><span class="st">${i < unl ? "✓ validé" : i === unl ? "à tenter" : "🔒"}</span></button>`; }).join("");
+    const track = E.SG_INT.map((x, i) => { const st = i < unl ? "done" : i === unl ? "next" : "lock"; return `<button class="sgx-gem ${st} ${i === ii ? "on" : ""}" style="--gc:${x.col}" data-act="sg-int" data-v="${i}" ${i > unl ? "disabled" : ""} data-tip="${h(x.name)}"><i>${gem(i)}</i><span>${i < unl ? "✓" : i === unl ? "à tenter" : "🔒"}</span></button>`; }).join(`<span class="sgx-link"></span>`);
+    const rate = E.LEG_RATE[ii]; const br = Math.round((60 + 20 * INT.waves) * (1 + 0.5 * ii));
+    const diff = Math.round(E.SG_INT[ii].base);
+    const detail = `<div class="sgx-int" style="--gc:${INT.col}"><div class="sgx-int-h"><span class="sgx-big">${gem(ii)}</span><span class="stack" style="gap:1px;min-width:0"><b>${h(INT.name)}</b><span class="xs muted">${ii < unl ? "déjà validé, tu peux le rejouer" : ii === unl ? "ta prochaine intensité à valider" : "verrouillé"}</span></span></div>
+      <div class="sgx-facts"><span><b>${INT.loot ? `+${INT.loot} %` : "normal"}</b>butin</span><span><b>${INT.waves}</b>vague${INT.waves > 1 ? "s" : ""} à tenir</span><span><b class="sgx-pips">${Array.from({ length: 11 }, (_, k) => `<i class="${k < diff ? "on" : ""}"></i>`).join("")}</b>difficulté</span><span><b>≈ ${fmt(br)}</b>Bribes si validé</span><span><b>${rate ? `1 sur ${fmt(1 / rate)}` : "—"}</b>légendaire</span></div>
+      <div class="sgx-go">${err ? `<span class="tag warn">${h(err)}</span>` : `<button class="sg-btn sgx-enter" data-act="sg-start" data-v="${ii}">${uimg("cristal", "sg-ui")} Entrer en ${h(INT.name)}</button>`}<span class="xs muted">monstres niveau ${lvl} · ${tm.length} héros${!err && (s.hunting || s.dungeon) ? " · la chasse reprend au réveil" : ""}</span></div></div>`;
     const L = s.expLast;
-    const conv = G_.from && !G_.fromSeen ? `<section class="sgd" style="margin-bottom:14px"><div class="sg-head" style="padding:14px 16px"><span class="stack" style="gap:3px"><span class="sg-k">${G("star")} L'Expédition devient le Songe infini</span><span class="small">Tes ${fmt(G_.from.ec)} Éclats sont devenus <b>${fmt(G_.from.ec * 5)} Bribes de rêve</b>${G_.from.ups ? `, et tes ${G_.from.ups} améliorations du campement <b>${fmt(G_.from.ups * 150)} Bribes</b>` : ""}. Ton record (étage ${fmt(G_.from.floor)}) et tes titres sont gardés.</span></span><button class="btn sm" data-act="sg-convok">Compris</button></div></section>` : "";
-    return conv + `<section class="sgd"><div class="sg-hero"><div class="txt"><span class="sg-k">${G("star")} Le Puits des Songes</span><div class="sg-ttl">Rêve plus loin, chaque semaine</div>
-      <span class="small muted">26 salles, la même carte pour tous jusqu'à lundi. Choisis ton couloir, ramasse des bonus et des points de rêve, puis tiens les vagues de la Fin du rêve. Les monstres sont au niveau de ton équipe (niveau ${lvl}).</span>
-      <div class="row" style="gap:8px;flex-wrap:wrap">${err ? `<span class="tag warn">${h(err)}</span>` : `<button class="sg-btn" data-act="sg-start" data-v="${ii}">${uimg("cristal", "sg-ui")} Entrer · ${h(INT.name)}</button>`}${!err && (s.hunting || s.dungeon) ? `<span class="xs muted">la chasse reprend toute seule au réveil</span>` : ""}</div></div>
-      <div class="sg-portal">${tm.slice(0, 4).map(look).join("")}</div></div>
-      <div style="padding:6px 16px 16px"><div class="sg-ladder">${steps}</div></div></section>
-    <div class="sg-grid">
-      <section class="sgd sg-card"><h3>${G("calendar")} Cette semaine</h3>
-        <div class="sg-rowi">${uimg("carte")}<span>Nouvelle carte dans <b>${weekLeft()}</b></span></div>
-        <div class="sg-rowi">${uimg("couronne")}<span>Ton meilleur : <b>${wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "aucun songe validé"}</b></span></div>
-        <div class="sg-rowi">${uimg("trophee")}<span>Record : <b>${G_.best ? `${h(intName(G_.best.ii))}, ${plural(G_.best.waves, "vague")}` : "—"}</b></span></div>
-        ${M ? `<div class="sg-rowi">${X().cmed(reg.cls)}<span><b>Songe de ${h(reg.god)}</b> (dès Paradoxe 1) : ${h(M.name)}, ${h(M.desc)}</span></div>` : ""}</section>
-      <section class="sgd sg-card"><h3>${G("sparkle")} Ce que tu gardes</h3>
-        <div class="sg-rowi">${uimg("sac")}<span>Le butin de chaque combat, même si tu tombes</span></div>
-        <div class="sg-rowi">${uimg("cristal")}<span><b>Bribes de rêve</b> si le songe est validé, à échanger au Marché onirique</span></div>
-        <div class="sg-rowi">${uimg("dofus")}<span>Un <b>objet légendaire</b>, très rarement, dès Paradoxe 2</span></div>
-        <div class="sg-rowi">${uimg("parchemin_or")}<span>Les bonus et les points de rêve, eux, s'effacent au réveil</span></div></section>
-      ${L ? lastHtml(s, L) : `<section class="sgd sg-card"><h3>${G("target")} Comment ça marche</h3><div class="small">Combat : points de rêve et un petit bonus. Faveur : un bonus gratuit. Fontaine (salles 4, 10, 16 et 25) : des vœux contre tes points. Gobledore : revenir en arrière ou parier. Une défaite te réveille, sauf avec un Sable de Draconiros.</div></section>`}
-    </div>`;
+    const conv = G_.from && !G_.fromSeen ? `<section class="sgd sgx-note"><span class="small">${G("star")} <b>L'Expédition devient le Songe infini.</b> Tes ${fmt(G_.from.ec)} Éclats sont devenus <b>${fmt(G_.from.ec * 5)} Bribes de rêve</b>${G_.from.ups ? `, et tes ${G_.from.ups} améliorations du campement <b>${fmt(G_.from.ups * 150)} Bribes</b>` : ""}. Ton record et tes titres sont gardés.</span><button class="btn sm" data-act="sg-convok">Compris</button></section>` : "";
+    const week = `<div class="sgx-week"><span class="sg-chip">${uimg("carte")} nouvelle carte dans <b>&nbsp;${weekLeft()}</b></span><span class="sg-chip">${uimg("couronne")} cette semaine : <b>&nbsp;${wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "rien de validé"}</b></span><span class="sg-chip">${uimg("trophee")} record : <b>&nbsp;${G_.best ? `${h(intName(G_.best.ii))}, ${plural(G_.best.waves, "vague")}` : "—"}</b></span>${M ? `<span class="sg-chip v" data-tip="${h(M.desc)}">${X().cmed(reg.cls)} Songe de ${h(reg.god)} : <b>&nbsp;${h(M.name)}</b>&nbsp;(dès P1)</span>` : ""}</div>`;
+    const how = `<section class="sgd sgx-how"><span class="sg-k">${G("target")} En 4 étapes</span><ol>
+      <li>${uimg("carte")}<span><b>Choisis ta salle</b>combats, Faveurs, Fontaines… 26 salles en 5 paliers</span></li>
+      <li>${uimg("dofus")}<span><b>Ramasse des bonus</b>et des points de rêve, dépensés aux Fontaines</span></li>
+      <li>${uimg("combat")}<span><b>Tiens les vagues</b>de la Fin du rêve, sans regagner tes PV</span></li>
+      <li>${uimg("cristal")}<span><b>Échange tes Bribes</b>au Marché onirique. Le butin des combats reste toujours</span></li></ol></section>`;
+    return conv + `<section class="sgd sgx-well"><div class="sgx-well-l"><span class="sg-k">${G("star")} Le Puits des Songes</span><div class="sg-ttl">Choisis ton intensité</div>
+        <div class="sgx-track">${track}</div>${detail}</div>
+      <div class="sgx-well-r"><div class="sg-portal">${tm.slice(0, 4).map(look).join("")}</div></div>${week}</section>
+      <div class="sgx-row2">${how}${L ? lastHtml(s, L) : ""}</div>`;
   }
   const sumHtml = (L) => `<div class="sg-sum"><div><b>${L.valid ? plural(L.waves, "vague") : "non validé"}</b>Fin du rêve</div><div><b>+${fmt(L.bribes)}</b>Bribes de rêve</div><div><b>${fmt(L.rew.kamas)}</b>kamas</div><div><b>${fmt(L.rew.xp)}</b>XP par héros</div><div><b>${fmt(L.rew.items)}</b>objets</div><div><b>${fmt(L.fights)}</b>combats</div></div>`;
   const lastHtml = (s, L) => `<section class="sgd sg-card"><h3>${G("star")} Dernier songe</h3><span class="small muted">${h(intName(L.ii))} · ${L.valid ? `validé, réveil à la vague ${L.waves + (L.how === "fall" ? 1 : 0)}` : `réveil salle ${L.d}`}</span>${sumHtml(L)}${L.leg ? `<div class="small">Légendaire : ${legName(L.leg)}</div>` : ""}${L.loss && !L.valid ? `<div class="xs"><b>Pourquoi :</b> ${h(L.loss.txt)}</div>` : ""}</section>`;
@@ -133,28 +198,28 @@
     return `<${click ? "button" : "div"} class="sg-door" style="--dc:${c}55;--dc2:${c}" ${click ? `data-act="sg-door" data-i="${n.i}"` : ""}><span class="art">${art}<span class="typ sg-chip" style="border-color:${c}">${TNAME[n.t]}</span>${n.pips ? `<span class="pips">${[1, 2, 3].map((i) => `<i class="${i <= n.pips ? "on" : ""}"></i>`).join("")}</span>` : ""}</span><span class="bd"><span class="key">Salle ${n.d}</span><b>${h(title)}</b><span class="rw">${rw.join("")}</span></span></${click ? "button" : "div"}>`;
   };
   const doorsHtml = (s, X_) => { const nx = E.sgNext(X_).map((i) => X_.nodes[i]);
-    return `<section class="sgd"><div class="sg-head" style="padding:12px 16px 4px"><span class="sg-k">${G("star")} Où aller ?</span><span class="xs muted">${E.expAutoOn(s) ? `sans choix, le jeu choisit après ${Math.round(E.EXP_DOOR_MS / 1000)} s (${h(E.SG_MODES[E.sgMode(s)].toLowerCase())})` : "le jeu attend ton choix"}</span></div><div style="padding:8px 16px 16px"><div class="sg-doors" style="grid-template-columns:repeat(${Math.min(3, nx.length)},minmax(0,1fr))">${nx.map((n) => doorCard(s, X_, n, true)).join("")}</div></div></section>`; };
-  const pendBtn = (p) => `<button class="sg-btn" data-act="sg-reopen">${p.t === "favor" ? "La Faveur onirique" : p.t === "fount" ? "La Fontaine onirique" : p.t === "gob" ? "Le Gobledore" : p.t === "wave" ? "Vague suivante ?" : "Sable de Draconiros ?"}</button>`;
+    return `<div class="sgx-next"><div class="sgx-next-h"><span class="sg-k">${G("star")} Ta prochaine salle</span>${E.expAutoOn(s) ? `<span class="sgx-cd"><i></i></span><span class="xs muted">choix auto (${h(E.SG_MODES[E.sgMode(s)].toLowerCase())})</span>` : `<span class="xs muted">le jeu attend ton choix</span>`}</div><div class="sg-doors sgx-doors n${Math.min(3, nx.length)}">${nx.map((n) => doorCard(s, X_, n, true)).join("")}</div></div>`; };
+  const pendBtn = (p) => `<button class="sg-btn" data-act="sg-reopen">${p.t === "favor" ? "Ouvrir la Faveur onirique" : p.t === "fount" ? "Ouvrir la Fontaine onirique" : p.t === "gob" ? "Voir le Gobledore" : p.t === "wave" ? "Vague suivante ?" : "Sable de Draconiros ?"}</button>`;
+  const runHead = (s, X_, compact) => { const d = curD(X_); const hp = E.sgAvgHp(s); const pal = E.SG_PALIERS[Math.max(0, E.sgPalier(d))];
+    return `<div class="sgx-rh"><span class="sgx-big" style="--gc:${E.SG_INT[X_.ii].col}">${gem(X_.ii)}</span><span class="sgx-rt"><b>${h(intName(X_.ii))} · salle ${d} sur ${E.SG_ROOMS}</b><span class="xs muted">${ROM[Math.max(0, E.sgPalier(d))]} · ${h(pal[2])}</span></span>
+      ${prog(d)}
+      <span class="sgx-stats"><span class="sg-chip g" data-tip="Points de rêve : gagnés en combat, dépensés aux Fontaines.">${G("star")} <b>${fmt(X_.pts)}</b></span><span class="sgx-hp" data-tip="PV moyens de l'équipe : ils ne remontent pas entre les salles"><i style="width:${hp}%;background:${hp > 60 ? "#8ff0a0" : hp > 30 ? "#f0c35a" : "#ff6f86"}"></i><b>${hp} %</b></span>${X_.sable ? `<span class="sg-chip v">${uimg("poussiere")} ×${X_.sable}</span>` : ""}${X_.waves ? `<span class="sg-chip r">vague ${X_.waves}${X_.valid ? " ✓" : `/${E.SG_INT[X_.ii].waves}`}</span>` : ""}</span>
+      ${compact ? `<button class="btn sm" data-tab="exp">Carte</button>` : `<span class="sgx-acts"><label class="sgx-auto" data-tip="Choisir à ma place si je ne réponds pas"><input type="checkbox" data-act="sg-auto" ${E.expAutoOn(s) ? "checked" : ""}> Auto</label><select data-act="sg-mode" aria-label="Style du choix automatique">${Object.entries(E.SG_MODES).map(([k, v]) => `<option value="${k}" ${E.sgMode(s) === k ? "selected" : ""}>${v}</option>`).join("")}</select><button class="btn sm ${ui.confirm ? "danger" : ""}" data-act="sg-quit">${ui.confirm ? "Confirmer le réveil" : "Se réveiller"}</button></span>`}</div>`; };
+  const relicRow = (s, X_) => { if (!X_.relics.length) return `<div class="sgx-bon"><span class="xs muted">${G("sparkle")} Pas encore de bonus : les Faveurs, les Fontaines et les combats redoutables en donnent.</span></div>`;
+    const t = E.expFxTxt(E.expFx(s)); return `<div class="sgx-bon"><span class="xs muted">${G("sparkle")} ${X_.relics.length} bonus</span>${X_.relics.map((id) => { const r = E.EXP_RELICS[id]; return `<span class="sg-chip ${r.r === "l" ? "g" : r.r === "r" ? "v" : ""}" data-tip="${h(`${r.name} : ${r.desc}`)}">${relImg(id, "sg-ui")}<span class="nm">${h(r.name)}</span></span>`; }).join("")}${t.length ? `<span class="xs muted sgx-tot" data-tip="${h(t.join(", "))}">Total : ${h(t.slice(0, 3).join(", "))}${t.length > 3 ? "…" : ""}</span>` : ""}</div>`; };
   function runHtml(s, X_) {
     const p = X_.pend[0]; const n = X_.pick !== null ? X_.nodes[X_.pick] : null;
-    const state = p ? `<div class="sg-wave"><b>Un choix t'attend</b>${pendBtn(p)}</div>` : n ? `<div class="sg-wave"><b>${n.t === "end" ? `Fin du rêve · vague ${X_.wave}` : `Salle ${n.d} · ${TNAME[n.t]}`}</b><button class="btn sm" data-tab="combat">Voir le combat</button></div>` : "";
-    const vert = window.innerWidth < 760;
-    return `<section class="sgd">${runbar(s, X_)}${state}<div class="sg-mapwrap" style="padding:8px">${mapSvg(s, X_, vert)}</div><div style="padding:0 16px 14px">${legend}</div></section>
-      ${!p && !n ? `<div style="margin-top:14px">${doorsHtml(s, X_)}</div>` : ""}
-      <div class="sg-grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
-        <section class="sgd sg-card"><h3>${G("sparkle")} Tes bonus du songe</h3><span class="xs muted">ils s'effacent au réveil</span>${bonusChips(s, X_)}</section>
-        <section class="sgd sg-card"><h3>${G("settings")} Choix automatique</h3>
-          <label class="small"><input type="checkbox" data-act="sg-auto" ${E.expAutoOn(s) ? "checked" : ""}> Choisir à ma place quand je ne réponds pas</label>
-          <label class="small">Style <select data-act="sg-mode">${Object.entries(E.SG_MODES).map(([k, v]) => `<option value="${k}" ${E.sgMode(s) === k ? "selected" : ""}>${v}</option>`).join("")}</select></label>
-          <span class="xs muted">Prudent : Faveurs et soins d'abord, réveil dès la validation. Équilibré : combats simples, continue tant que l'équipe a la moitié de ses PV. Gourmand : combats redoutables et archimonstres, paris, vagues jusqu'au bout.</span></section></div>`;
+    const state = p ? `<div class="sgx-state"><b>Un choix t'attend</b>${pendBtn(p)}</div>` : n ? `<div class="sgx-state"><b>${n.t === "end" ? `Fin du rêve · vague ${X_.wave}` : `Combat en cours · salle ${n.d}, ${TNAME[n.t].toLowerCase()}`}</b><button class="btn sm" data-tab="combat">Voir le combat</button></div>` : doorsHtml(s, X_);
+    const cx = X_.at !== null ? 36 + (X_.nodes[X_.at].d - 1) * 44 : 0;
+    return `<section class="sgd sgx-run">${runHead(s, X_)}${relicRow(s, X_)}${state}</section>
+      <section class="sgd sgx-mapbox"><div class="sgx-maph"><span class="sg-k">${G("carte")} Carte du songe</span><span class="xs muted">la même pour tous jusqu'à lundi · touche une salle reliée pour y aller</span></div>
+        <div class="sgx-mapscroll" data-x="${cx}">${mapSvg(s, X_, false)}</div><div class="sgx-legend">${legend}</div></section>`;
   }
-  /* 0.1.48 : dans l'onglet Combat, la barre du songe et les salles suivantes entre deux combats */
+  /* dans l'onglet Combat : une barre fine, et les salles suivantes entre deux combats */
   function combatHtml(s) {
     const X_ = s.exp; if (!E.expActive(s) || !X_) return "";
     const p = X_.pend[0];
-    if (p) return `<section class="sgd" style="margin-bottom:12px">${runbar(s, X_)}<div class="sg-wave"><b>Un choix t'attend</b>${pendBtn(p)}</div></section>`;
-    if (X_.pick !== null) return `<section class="sgd" style="margin-bottom:12px">${runbar(s, X_)}</section>`;
-    return `<section class="sgd" style="margin-bottom:12px">${runbar(s, X_)}</section>${doorsHtml(s, X_)}`;
+    return `<section class="sgd sgx-cbar">${runHead(s, X_, true)}${p ? `<div class="sgx-state"><b>Un choix t'attend</b>${pendBtn(p)}</div>` : X_.pick === null ? doorsHtml(s, X_) : ""}</section>`;
   }
 
   /* ---------- les fiches ---------- */
@@ -202,11 +267,11 @@
   function shopHtml(s) {
     const G_ = E.songe(s); const f = ui.shop;
     const it = (o) => { const own = o.once && E.sgOwned(s, o.id); const ok = !own && G_.br >= o.price; const icon = o.cons ? X().chestImg((D.CONSUMABLES[o.cons] && D.CONSUMABLES[o.cons].img) || "or") : o.id === "poussiere" ? uimg("poussiere", "") : o.id === "draco" ? `<img src="assets/i/18048.png" alt="">` : o.id === "brume" ? uimg("ailes", "") : o.id === "titre" ? uimg("couronne", "") : o.id === "cadre" ? uimg("teinture", "") : o.id === "sablepoche" ? uimg("phenix", "") : o.id === "faveurs" ? uimg("idee", "") : uimg("dofus", "");
-      return `<div class="sg-it ${o.kind === "look" ? "leg" : o.kind === "up" ? "act" : ""} ${own ? "sold" : ""}"><span class="top"><span class="ico">${icon}</span><span><span class="rk">${h(E.SG_SHOP_KIND[o.kind])}</span><br><b>${h(o.name)}</b></span></span><span class="xs muted">${h(o.desc)}</span>
+      return `<div class="sg-it ${o.kind === "look" ? "leg" : o.kind === "up" ? "act" : ""} ${own ? "sold" : ""}"><span class="top"><span class="ico">${icon}</span><span><span class="rk">${h(E.SG_SHOP_KIND[o.kind])}</span><br><b>${h(o.name)}</b></span></span><span class="xs muted">${h(o.desc)}</span>${!own && !ok ? `<span class="sgx-need"><i style="width:${Math.min(100, Math.round(100 * G_.br / o.price))}%"></i></span><span class="xs muted">il te manque ${fmt(o.price - G_.br)} Bribes</span>` : ""}
         <span class="pr"><span class="sg-chip g">${uimg("cristal")} ${fmt(o.price)}</span>${own ? (o.id === "cadre" ? `<label class="xs"><input type="checkbox" data-act="sg-cadre" ${s.settings.cadreSonge ? "checked" : ""}> porté</label>` : `<span class="xs">✓ échangé</span>`) : `<button class="btn sm ${ok ? "primary" : ""}" data-act="sg-shop" data-id="${o.id}" ${ok ? "" : "disabled"}>Échanger</button>`}</span></div>`; };
-    return `<section class="sgd"><div class="sg-head" style="padding:14px 16px"><span class="stack" style="gap:2px"><span class="sg-k">${G("star")} Marché onirique</span><span class="small muted">Neru Stalar échange tes Bribes de rêve. Elles tombent quand un songe est validé : plus l'intensité est haute, plus il en tombe.</span></span>
+    return `<section class="sgd"><div class="sg-head" style="padding:14px 16px"><span class="stack" style="gap:2px"><span class="sg-k">${G("star")} Marché onirique</span><span class="small muted">Neru Stalar échange tes Bribes de rêve. Ce que tu peux prendre maintenant est en premier.</span></span>
       <span class="seg">${[["all", "Tout"], ["coffre", "Coffres"], ["look", "Apparence"], ["up", "Améliorations"]].map(([v, n]) => `<button data-act="sg-shopf" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span></div>
-      <div style="padding:0 16px 16px"><div class="sg-shop">${E.SG_SHOP.filter((o) => f === "all" || o.kind === f).map(it).join("")}</div></div></section>`;
+      <div style="padding:0 16px 16px"><div class="sg-shop">${E.SG_SHOP.filter((o) => f === "all" || o.kind === f).map((o) => [o, o.once && E.sgOwned(s, o.id) ? 2 : G_.br >= o.price ? 0 : 1]).sort((a, b) => a[1] - b[1] || a[0].price - b[0].price).map(([o]) => it(o)).join("")}</div></div></section>`;
   }
 
   /* ---------- les objets légendaires ---------- */
@@ -214,12 +279,20 @@
   const evPips = (n) => `<span class="lgev">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span>`;
   const legOwned = (s, k) => { let best = 0; Object.values(s.items).forEach((it) => { if (it.tpl === "leg_" + k) best = Math.max(best, E.legEv(it)); }); return best; };
   function legsHtml(s) {
-    const lv = ui.lv; const L = E.LEG_LIST.filter((x) => !lv || x.lvl === lv); const owned = E.LEG_LIST.filter((x) => legOwned(s, x.k)).length;
-    const card = (x) => { const ev = legOwned(s, x.k); return `<button class="sg-lg ${ev ? `lx cf ${ev <= 2 ? "e1" : ev >= 5 ? "e5" : ""}` : "no"}" data-act="sg-leg" data-k="${x.k}">${ev >= 5 ? `<i class="lxsp"></i>` : ""}<span class="lv">${x.lvl}</span><span class="or ${x.db ? "d" : ""}">${x.db ? "DOFUS" : "IDLUS"}</span><span class="ic"><img src="assets/i/${x.icon}.png" alt=""></span><b>${h(x.name)}</b>${ev ? evPips(ev) : `<span class="xs muted">${h(E.legTxt(x, 1))}</span>`}</button>`; };
-    return `<section class="sgd"><div class="sg-head" style="padding:14px 16px"><span class="stack" style="gap:3px;min-width:0"><span class="sg-k" style="color:#ff9d3c">${G("star")} Objets légendaires · ${owned} sur ${E.LEG_LIST.length}</span><span class="small muted">Chacun a un passif unique. Les 26 de DOFUS sont niveau 200 ; les 12 inédits d'Idlus existent aux niveaux 50, 100 et 150. Ils ne tombent qu'à la validation d'un songe, très rarement, et seulement ceux de ton niveau ou en dessous.</span></span>
-      <span class="seg">${[[0, "Tous"], [50, "50"], [100, "100"], [150, "150"], [200, "200"]].map(([v, n]) => `<button data-act="sg-legf" data-v="${v}" aria-pressed="${lv === v}">${n}</button>`).join("")}</span></div>
-      <div style="padding:0 16px 12px" class="row"><span class="sg-chip">Chance par songe validé :</span>${E.LEG_RATE.map((p, i) => (p ? `<span class="sg-chip ${i >= 5 ? "r" : "v"}">${h(intName(i))} · 1 sur ${fmt(1 / p)}</span>` : "")).join("")}<span class="xs muted">pas de garantie · un seul légendaire par héros · les copies font monter l'Éveil</span></div>
-      <div style="padding:0 16px 16px"><div class="sg-lgrid">${L.map(card).join("")}</div></div></section>`;
+    const lv = ui.lv; const owned = E.LEG_LIST.filter((x) => legOwned(s, x.k)); const top = Math.max(0, ...team(s).map((c) => c.lvl));
+    const pool = E.LEG_LIST.filter((x) => (lv === -1 ? legOwned(s, x.k) : !lv || x.lvl === lv));
+    const holder = (x) => { const it = Object.values(s.items).find((i) => i.tpl === x.tpl && E.equippedBy(s, i.uid)); const c = it && E.equippedBy(s, it.uid); return c ? `porté par ${h(c.name)}` : "dans le sac"; };
+    const big = (x) => { const ev = legOwned(s, x.k); return `<button class="sgx-lgo lx cf ${ev <= 2 ? "e1" : ev >= 5 ? "e5" : ""}" data-act="sg-leg" data-k="${x.k}">${ev >= 5 ? `<i class="lxsp"></i>` : ""}<span class="ic"><img src="assets/i/${x.icon}.png" alt=""></span><span class="bd"><b class="lxn cf">${h(x.name)}</b><span class="xs">${evPips(ev)} Éveil ${ROM[ev - 1]} · niv. ${x.lvl} · ${holder(x)}</span><span class="xs muted">${h(E.legTxt(x, ev))}</span></span></button>`; };
+    const row = (x) => { const ev = legOwned(s, x.k); const ok = x.lvl <= top; return `<button class="sgx-lgr ${ev ? "own" : ""} ${ok ? "" : "far"}" data-act="sg-leg" data-k="${x.k}"><span class="ic"><img src="assets/i/${x.icon}.png" alt=""></span><span class="bd"><b>${h(x.name)}</b><span class="xs muted">${h(E.legTxt(x, ev || 1))}</span></span><span class="tg ${x.db ? "d" : ""}">${x.db ? "DOFUS" : "IDLUS"}</span></button>`; };
+    const groups = [50, 100, 150, 200].map((L) => { const xs = pool.filter((x) => x.lvl === L && !legOwned(s, x.k)); if (!xs.length) return ""; const n = E.LEG_LIST.filter((x) => x.lvl === L && legOwned(s, x.k)).length;
+      return `<details class="sgx-lgg" ${L <= top || lv ? "open" : ""}><summary><b>Niveau ${L}</b><span class="xs muted">${n} sur ${E.LEG_LIST.filter((x) => x.lvl === L).length} obtenus${L > top ? ` · tombent quand ton équipe est niveau ${L}` : ""}</span></summary><div class="sgx-lgl">${xs.map(row).join("")}</div></details>`; }).join("");
+    const mine = pool.filter((x) => legOwned(s, x.k));
+    return `<section class="sgd sgx-legs"><div class="sgx-lgh"><span class="stack" style="gap:6px;min-width:0;flex:1 1 260px"><span class="sg-k" style="color:#ff9d3c">${G("star")} ${owned.length} sur ${E.LEG_LIST.length} objets légendaires</span><span class="sgx-bar"><i style="width:${(100 * owned.length) / E.LEG_LIST.length}%"></i></span>
+        <span class="xs muted">Un passif unique chacun · un par héros · les copies montent l'Éveil</span></span>
+      <span class="seg">${[[0, "Tous"], [-1, "Obtenus"], [50, "50"], [100, "100"], [150, "150"], [200, "200"]].map(([v, n]) => `<button data-act="sg-legf" data-v="${v}" aria-pressed="${lv === v}">${n}</button>`).join("")}</span></div>
+      <details class="sgx-rates"><summary class="xs">Chances par songe validé (Paradoxe 2 et plus, sans garantie)</summary><div class="row" style="gap:5px;flex-wrap:wrap;margin-top:6px">${E.LEG_RATE.map((p, i) => (p ? `<span class="sg-chip ${i >= 5 ? "r" : "v"}">${h(intName(i))} · 1 sur ${fmt(1 / p)}</span>` : "")).join("")}</div></details>
+      ${mine.length ? `<div class="sgx-sub">Ta collection</div><div class="sgx-lgos">${mine.map(big).join("")}</div>` : ""}
+      ${lv === -1 ? "" : `<div class="sgx-sub">À découvrir</div>${groups || `<span class="xs muted">Tu les as tous !</span>`}`}</section>`;
   }
   /* fiche d'un légendaire (aussi ouverte depuis le sac) */
   function legSheet(s, k, uid) {
