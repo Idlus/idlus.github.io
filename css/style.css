@@ -2983,14 +2983,6 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .enccard .dq{width:24px;height:24px;font-size:12px;color:var(--muted)}
 .enccard .encdg{border:0;background:none;padding:0;text-align:left;color:var(--gold2);font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
 .enccard .encdg:hover{text-decoration:underline}
-.enccard .encwhere{display:flex;flex-wrap:wrap;gap:4px}
-.enccard .encgo{display:inline-flex;align-items:center;gap:4px;max-width:100%;border:1px solid var(--line);background:var(--panel2,rgba(255,255,255,.04));border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;font-weight:800;color:var(--gold2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.enccard .encgo:hover{border-color:var(--gold2)}
-.enccard .encgo.locked{color:var(--muted);cursor:help;font-weight:700;border-style:dashed}
-.enccard .encwhy .uico,.enccard .encwhy svg{width:12px;height:12px;vertical-align:-2px}
-.enccard button.encgo.locked{cursor:pointer}
-.enccard .encgo .uico,.enccard .encgo svg,.enccard .encgo img{width:13px;height:13px;flex:none}
-@media (max-width:760px){.enccard .encgo{font-size:11px;padding:2px 7px}.enccard .encgo .xs{display:none}}
 .famrow .grow{display:flex;flex-direction:column;gap:4px;min-width:0}
 .famrow .bar{height:4px}
 @media (max-width:760px){
@@ -4409,3 +4401,28 @@ img.kza-ic{width:22px;height:22px;vertical-align:-5px}
 @media (max-width:640px){.topchips .updbar.kzachip{height:32px;gap:4px;padding:0 9px 0 4px;font-size:11.5px}.topchips .updbar.kzachip .kzac-p{display:none}}
 .kzac-p{display:inline-flex;gap:2px}.kzac-p i{width:6px;height:14px;border-radius:2px;background:#5fbf55}.kzac-p i.l{background:#d55}
 @media (max-width:640px){.kza-body{grid-template-columns:minmax(0,1fr)}.kza-go{align-items:stretch}.kza-start{min-width:0;width:100%}.kza-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.kza-pips i{width:24px;height:24px}.kza-ttl .xs{display:none}.kzac-p{display:none}}
+
+/* 1.0.7.12 : Encyclopédie (lieux, chasse, fiche du monstre, familles) */
+.encwhere{display:flex;flex-wrap:wrap;gap:4px}
+.encgo{display:inline-flex;align-items:center;gap:4px;max-width:100%;border:1px solid var(--line);background:var(--panel2,rgba(255,255,255,.04));border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;font-weight:800;color:var(--gold2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.encgo:hover{border-color:var(--gold2)}
+.encgo .uico,.encgo svg,.encgo img{width:13px;height:13px;flex:none}
+.encgo.locked{color:var(--muted);cursor:help;font-weight:700;border-style:dashed}
+button.encgo.locked{cursor:pointer}
+.encgo.hunt{flex:none;background:var(--gold);color:#13200a;border-color:var(--gold)}
+.encpl{display:inline-flex;gap:3px;max-width:100%;min-width:0}.encpl .encgo:first-child{min-width:0;flex:0 1 auto}
+.encwhy .uico,.encwhy svg{width:12px;height:12px;vertical-align:-2px}
+.enccard .encimg,.enccard .encname{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.enccard .encimg{display:contents}.enccard .encname:hover{color:var(--gold2)}
+.dropbtn{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer}
+.encsheet .es-h{display:flex;gap:14px;align-items:center}.encsheet .es-img{width:84px;height:84px}
+.encsheet .es-where{display:block;padding:0;background:none;border:0}
+.encsheet .dropli{display:flex;gap:8px;align-items:center;width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left;padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.encsheet .row.wrap{flex-wrap:wrap;gap:5px}
+button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.famwrap.open{grid-column:1/-1}
+.famopen{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px;padding:8px 2px}
+.famm{display:flex;gap:8px;align-items:flex-start;background:var(--panel2);border-radius:10px;padding:6px 8px}.famm .fm-img{width:40px;height:40px;flex:none}
+.famm .grow{display:flex;flex-direction:column;gap:4px;min-width:0}
+@media (max-width:760px){.encgo{font-size:11px;padding:2px 7px}.encgo .xs{display:none}.famopen{grid-template-columns:1fr}.encsheet .es-img{width:64px;height:64px}}
+.enccard{align-content:start}

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.12 « Encyclopédie pratique »
+Fiche du monstre (`encMonSheet`), butins cliquables (`reswhere`), bouton ⚔ de chasse à côté des lieux ouverts (caché en donjon), retour « ← Encyclopédie » après « Y aller » (`ui.zoneFromEnc`, position gardée), familles dépliables (`ui.encFamOpen`), filtre « À ma portée ».
+
 ## 1.0.7.11 « Dernières recherches »
 Bug signalé par Mathis : dans la recherche rapide, cliquer une ligne des « Dernières recherches » ne faisait rien. `searchOpen` (js/ui.js) se contentait de remettre le focus quand la fenêtre était déjà ouverte ; il remplit maintenant le champ et relance la recherche. Flèches, Entrée, → (aller chez le monstre), Échap et clic sur un résultat revérifiés sur PC et téléphone ; contrôle ajouté dans tests/smoke.test.js.
 

@@ -1,6 +1,18 @@
 {
-  "version": "1.0.7.11",
+  "version": "1.0.7.12",
   "versions": [
+    {
+      "v": "1.0.7.12",
+      "name": "Encyclopédie pratique",
+      "items": [
+        "Clique sur le nom ou le portrait d'un monstre : sa fiche s'ouvre avec son palier, tous ses lieux, ses résistances, ses sorts et tous ses butins avec leur taux",
+        "Clique sur un butin : sa fiche dit qui le lâche, où, et dans quelles recettes il sert",
+        "Nouveau bouton ⚔ à côté de chaque lieu ouvert : l'équipe part chasser tout de suite (caché pendant un donjon)",
+        "Après « Y aller », un bouton « ← Encyclopédie » te ramène là où tu étais",
+        "Onglet Familles : clique sur une famille pour voir ses monstres, leur palier et où les trouver",
+        "Nouveau filtre « À ma portée » : les monstres des zones ouvertes autour du niveau de ton équipe, toutes zones confondues"
+      ]
+    },
     {
       "v": "1.0.7.11",
       "name": "Dernières recherches",

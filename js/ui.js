@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.11";
+const GAME_VERSION = "1.0.7.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.12", name: "Encyclopédie pratique", items: [
+    "Clique sur le nom ou le portrait d'un monstre : sa fiche s'ouvre avec son palier, tous ses lieux, ses résistances, ses sorts et tous ses butins avec leur taux",
+    "Clique sur un butin : sa fiche dit qui le lâche, où, et dans quelles recettes il sert",
+    "Nouveau bouton ⚔ à côté de chaque lieu ouvert : l'équipe part chasser tout de suite (caché pendant un donjon)",
+    "Après « Y aller », un bouton « ← Encyclopédie » te ramène là où tu étais",
+    "Onglet Familles : clique sur une famille pour voir ses monstres, leur palier et où les trouver",
+    "Nouveau filtre « À ma portée » : les monstres des zones ouvertes autour du niveau de ton équipe, toutes zones confondues",
+  ] },
   { v: "1.0.7.11", name: "Dernières recherches", items: [
     "Recherche rapide : un clic sur une ligne des « Dernières recherches » (ou des exemples) relance bien cette recherche. Avant, il ne se passait rien",
   ] },
@@ -1977,7 +1985,7 @@ function renderZoneView(sid) {
   const dg = s.dungeon ? DUNGEONS[s.dungeon] : null;
   const trophyDone = S.trophies && S.trophies[sid]; const traq = s.monsters.filter((k) => E.huntTier(S, k) >= 1).length;
   $("#main").innerHTML = `
-  <div class="row" style="margin-bottom:10px"><button class="btn sm" data-act="zoneback">← Carte</button></div>
+  <div class="row" style="margin-bottom:10px">${ui.zoneFromEnc === sid ? `<button class="btn sm primary" data-act="zonebackenc">← Encyclopédie</button>` : ""}<button class="btn sm" data-act="zoneback">← Carte</button></div>
   <section class="panel">
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
@@ -2192,12 +2200,16 @@ function encBestHtml(enc) {
   const side = ZONES.map((x) => { const [a, b] = zprog(x); const lock = !E.zoneUnlocked(S, x.id);
     return `<button class="enczone ${a === b ? "done" : ""}" data-act="enczone" data-v="${x.id}" aria-pressed="${x.id === z.id}"><span class="grow">${lock ? G("lock") + " " : ""}${h(x.name)}</span><span class="xs num">${a}/${b}</span><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`; }).join("");
   const sel = `<select class="encsel" data-act="enczonesel">${ZONES.map((x) => { const [a, b] = zprog(x); return `<option value="${x.id}" ${x.id === z.id ? "selected" : ""}>${h(x.name)} · ${a}/${b}</option>`; }).join("")}</select>`;
-  const keep = (k) => enc.f === "new" ? !encMet(k) : enc.f === "hidden" ? encMet(k) && E.huntTier(S, k) < 0 : true;
+  const top = topTeamLvl(); const near = (k) => { const L = MONSTERS[k].lvl; return L[1] >= top - 8 && L[0] <= top + 5; };
+  const keep = (k) => enc.f === "near" ? near(k) : enc.f === "new" ? !encMet(k) : enc.f === "hidden" ? encMet(k) && E.huntTier(S, k) < 0 : true;
   const q = (enc.q || "").trim().toLowerCase(); let body;
   if (q) { // recherche dans tout le bestiaire : nom du monstre ou d'un butin
     const hits = Object.keys(MONSTERS).filter((k) => { const m = MONSTERS[k]; if (m.archiOf || !keep(k)) return false;
       return (encMet(k) && m.name.toLowerCase().includes(q)) || m.drops.some(([n]) => n.toLowerCase().includes(q) && ((S.seenDrops[k] || {})[n] || E.huntTier(S, k) >= 0)); }).slice(0, 60);
     body = `<h3 class="sec">Résultats pour « ${h(enc.q)} » <span class="xs muted">${hits.length}${hits.length === 60 ? "+" : ""}</span></h3>${hits.length ? `<div class="mons enc">${hits.map((k) => encCard(k, true)).join("")}</div>` : `<div class="empty">Aucun monstre connu ne correspond. Les butins se révèlent en les obtenant ou au palier Connaisseur.</div>`}`;
+  } else if (enc.f === "near") {
+    const out = []; ZONES.forEach((zz) => zz.subs.forEach((s) => { if (!E.subUnlocked(S, s.id)) return; const ks = s.monsters.filter((k) => MONSTERS[k] && !MONSTERS[k].archiOf && near(k)); if (ks.length) out.push(`<h3 class="sec">${h(s.name)} <span class="xs muted num">${h(zz.name)} · niv. ${s.lvl[0]}–${s.lvl[1]}</span></h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`); }));
+    body = `<p class="note">Les monstres des zones ouvertes autour du niveau de ton équipe (niveau ${top}), toutes zones confondues.</p>` + (out.join("") || `<div class="empty">Aucun monstre à ta portée.</div>`);
   } else {
     const subs = z.subs.map((s) => { const ks = s.monsters.filter((k) => MONSTERS[k] && keep(k)); if (!ks.length) return "";
       const a = s.monsters.filter(encMet).length;
@@ -2207,13 +2219,14 @@ function encBestHtml(enc) {
   const [za, zb] = zprog(z);
   return `<section class="panel encpanel"><div class="encbest"><aside class="enczones">${side}</aside><div class="encmain">
     <div class="enctools">${sel}<input class="encq" id="encQ" data-act="encsearch" placeholder="Chercher un monstre ou un butin…" value="${h(enc.q || "")}">
-      <span class="seg">${[["all", "Tous"], ["new", "À découvrir"], ["hidden", "Butins cachés"]].map(([v, n]) => `<button data-act="encf" data-v="${v}" aria-pressed="${enc.f === v}">${n}</button>`).join("")}</span>
+      <span class="seg">${[["all", "Tous"]].concat([["near", "À ma portée"]], [["new", "À découvrir"], ["hidden", "Butins cachés"]]).map(([v, n]) => `<button data-act="encf" data-v="${v}" aria-pressed="${enc.f === v}">${n}</button>`).join("")}</span>
       <span class="encinfo" data-tip="${h(HUNT_TIERS.map((t) => `${t.name} (${fmt(t.n)} victoires) : ${t.desc}`).join(" | "))}">? Paliers</span></div>
-    ${q ? "" : `<div class="enczhead"><h2>${h(z.name)}</h2><span class="small muted num">${za}/${zb} monstres rencontrés</span></div>`}${body}</div></div></section>`;
+    ${q || enc.f === "near" ? "" : `<div class="enczhead"><h2>${h(z.name)}</h2><span class="small muted num">${za}/${zb} monstres rencontrés</span></div>`}${body}</div></div></section>`;
 }
 function encFamHtml(enc) {
   const FZ = encFamZone(); const rows = Object.entries(E.RACE_MONS).map(([r, ks]) => ({ r, ks, n: ks.filter((k) => E.huntTier(S, k) >= 1).length, done: !!(S.families && S.families[r]) }));
-  const row = (x) => `<div class="famrow ${x.done ? "done" : ""}"><div class="grow"><b>${h(D.RACES[x.r] || x.r)}</b><span class="bar"><i style="width:${pct(x.n, x.ks.length)}%"></i></span></div><span class="xs muted num">${x.n}/${x.ks.length}</span>${x.done ? `<span class="tag good">+5 Vi</span>` : ""}</div>`;
+  const fo = ui.encFamOpen || {};
+  const row = (x) => `<div class="famwrap ${fo[x.r] ? "open" : ""}"><button class="famrow ${x.done ? "done" : ""}" data-act="encfamopen" data-v="${x.r}"><div class="grow"><b>${h(D.RACES[x.r] || x.r)}</b><span class="bar"><i style="width:${pct(x.n, x.ks.length)}%"></i></span></div><span class="xs muted num">${x.n}/${x.ks.length}</span>${x.done ? `<span class="tag good">+5 Vi</span>` : ""}<span class="xs muted">${fo[x.r] ? "▴" : "▾"}</span></button>${fo[x.r] ? `<div class="famopen">${x.ks.map((k) => `<div class="famm">${im(imgM(k), "fm-img", MONSTERS[k].name)}<div class="grow"><b class="small">${encMet(k) ? h(MONSTERS[k].name) : "???"}</b>${tierBadge(k)}${encWhereHtml(k)}</div></div>`).join("")}</div>` : ""}</div>`;
   const done = rows.filter((x) => x.done).length;
   let body;
   if (enc.fam === "near") body = `<div class="famgrid">${rows.filter((x) => !x.done).sort((a, b) => (b.n / b.ks.length) - (a.n / a.ks.length) || a.ks.length - b.ks.length).map(row).join("")}</div>`;
@@ -2226,7 +2239,7 @@ function encBossHtml(enc) {
   return `<section class="panel"><div class="phead"><h2>Boss de donjon</h2><span class="seg">${[["all", "Tous"], ["done", "Vaincus"], ["todo", "À vaincre"]].map(([v, n]) => `<button data-act="encboss" data-v="${v}" aria-pressed="${enc.boss === v}">${n}</button>`).join("")}</span></div>
     <div class="pad"><div class="mons enc">${L.map(([id, d]) => encCard(d.boss, false, `<button class="encdg" data-act="dgopen" data-id="${id}">${h(d.name)} · niv. ${d.lvl}</button>`)).join("") || `<div class="empty">Aucun boss ici.</div>`}</div></div></section>`;
 }
-/* 1.0.7.5 : où trouver le monstre, avec un bouton par sous-zone ou donjon (verrou affiché, pas de voyage vers un lieu fermé) */
+/* 1.0.7.5 : où trouver le monstre (1.0.7.12 : bouton ⚔ pour chasser tout de suite, caché en donjon), avec un bouton par sous-zone ou donjon (verrou affiché, pas de voyage vers un lieu fermé) */
 function encWhereHtml(k) {
   const L = []; const dgWhy = (id) => dgNeedTxt(id) || (E.DUNGEON_SUB[id] ? lockReason(E.DUNGEON_SUB[id]) : "");
   ZONES.forEach((z) => z.subs.forEach((s) => { if (!s.monsters.includes(k)) return; const un = E.subUnlocked(S, s.id);
@@ -2236,20 +2249,33 @@ function encWhereHtml(k) {
   L.sort((a, b) => b.un - a.un || a.lvl - b.lvl);
   const MAX = 3, open = ui.encOpen && ui.encOpen["w" + k], more = L.length > MAX + 1 && !open ? L.length - MAX : 0;
   const btn = (x) => x.dg ? `<button class="encgo ${x.un ? "" : "locked"}" data-act="searchdg" data-id="${x.dg}" data-tip="${x.un ? "Voir le donjon" : h("Donjon verrouillé" + (dgWhy(x.dg) ? " : " + dgWhy(x.dg) : ""))}">${x.un ? IC("cle") : G("lock")} Donjon · ${h(x.name)}</button>`
-    : x.un ? `<button class="encgo" data-act="searchzone" data-id="${x.sub}" data-tip="Y aller : ouvrir ${h(x.name)}">${IC("carte")} ${h(x.name)} <span class="xs muted num">niv. ${x.lvl}</span> ›</button>`
+    : x.un ? `<span class="encpl"><button class="encgo" data-act="searchzone" data-from="enc" data-id="${x.sub}" data-tip="Y aller : ouvrir ${h(x.name)}">${IC("carte")} ${h(x.name)} <span class="xs muted num">niv. ${x.lvl}</span> ›</button>${S.dungeon ? "" : `<button class="encgo hunt" data-act="hunt" data-id="${x.sub}" data-tip="Chasser ici tout de suite">⚔</button>`}</span>`
     : `<span class="encgo locked" data-tip="${h("Zone verrouillée : " + lockReason(x.sub))}">${G("lock")} ${h(x.name)}</span>`;
   const why = L[0].un ? "" : L[0].dg ? dgWhy(L[0].dg) : lockReason(L[0].sub); // aucun lieu ouvert : on dit comment l'ouvrir
   return `<div class="encwhere">${(more ? L.slice(0, MAX) : L).map(btn).join("")}${more ? `<button class="encmore" data-act="encmore" data-k="w${k}" data-tip="Voir les ${more} autres lieux">+${more}</button>` : ""}</div>${why ? `<div class="xs muted encwhy">${G("lock")} Fermé pour l'instant : ${h(why.charAt(0).toLowerCase() + why.slice(1))}</div>` : ""}`;
+}
+/* 1.0.7.12 : fiche complète d'un monstre (clic sur son nom ou son portrait dans l'Encyclopédie) */
+function encMonSheet(k) {
+  const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const reveal = E.huntTier(S, k) >= 0;
+  const els = Object.entries(m.res || {}).filter(([, v]) => v).map(([e, v]) => `<span class="tag soft" style="color:${elVar(e)}">${h(D.ELEMENTS[e] ? D.ELEMENTS[e].name : e)} ${v > 0 ? "+" : ""}${v} %</span>`).join(" ") || `<span class="muted xs">aucune</span>`;
+  const drops = m.drops.map(([n, p]) => seen[n] || reveal ? `<button class="li dropli" data-act="reswhere" data-n="${h(n)}">${im(resImg(n), "ico sm", n)}<span class="grow">${h(n)}</span><b class="num">${reveal ? p + " %" : "?"}</b></button>` : `<div class="li dropli muted"><span class="icobox dq">?</span><span class="grow">Butin inconnu</span></div>`).join("");
+  return `<div class="encsheet"><div class="es-h">${im(imgM(k), "es-img", m.name)}<div class="grow"><h2>${kills ? h(m.name) : "???"}</h2><div class="small muted">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : m.lvl[0] + "–" + m.lvl[1]}${m.race !== undefined && D.RACES[m.race] ? " · " + h(D.RACES[m.race]) : ""}${m.boss ? " · boss" : ""} · ${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>${tierBadge(k)}</div></div>
+    <h3 class="sec">Où le trouver</h3><div class="enccard es-where">${encWhereHtml(k) || `<span class="muted xs">Nulle part pour l'instant</span>`}</div>
+    ${kills ? `<h3 class="sec">Résistances</h3><div class="row wrap">${els}</div>
+    <h3 class="sec">Sorts</h3><div class="row wrap">${(m.sp || []).map((x) => `<span class="tag soft">${h(x.n)}</span>`).join(" ") || `<span class="muted xs">frappe simple</span>`}</div>` : `<p class="note">Rencontre-le une fois pour voir ses résistances et ses sorts.</p>`}
+    <h3 class="sec">Butins <span class="xs muted">${reveal ? "taux par monstre" : "taux visibles au palier Connaisseur"}</span></h3><div class="list">${drops}</div>
+    <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div></div>`;
 }
 function encCard(k, where, extra) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const a = m.archi; const t = E.huntTier(S, k);
   const reveal = t >= 0;
   const q = where && ui.enc && ui.enc.q ? ui.enc.q.trim().toLowerCase() : "";
   const MAXD = 8, open = ui.encOpen && ui.encOpen[k], more = m.drops.length > MAXD + 1 && !open ? m.drops.length - MAXD : 0;
-  const drops = (more ? m.drops.slice(0, MAXD) : m.drops).map(([n, p]) => seen[n] || reveal ? `<span class="dropico ${q && n.toLowerCase().includes(q) ? "hit" : ""}" data-tip="${h(n)} · ${p} %">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</span>` : `<span class="icobox dq" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("") + (more ? `<button class="encmore" data-act="encmore" data-k="${k}" data-tip="Voir les ${more} autres butins">+${more}</button>` : "");
+  const drops = (more ? m.drops.slice(0, MAXD) : m.drops).map(([n, p]) => seen[n] || reveal ? `<button class="dropico dropbtn ${q && n.toLowerCase().includes(q) ? "hit" : ""}" data-act="reswhere" data-n="${h(n)}" data-tip="${h(n)} · ${p} % · voir où le trouver et à quoi il sert">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</button>` : `<span class="icobox dq" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("") + (more ? `<button class="encmore" data-act="encmore" data-k="${k}" data-tip="Voir les ${more} autres butins">+${more}</button>` : "");
   const zn = where ? (() => { const z = ZONES.find((x) => x.subs.some((s) => s.monsters.includes(k))); return z ? ` · ${h(z.name)}` : ""; })() : "";
-  return `<div class="mcard enccard ${kills ? "" : "unknown"} ${m.boss ? "boss" : ""}">${im(imgM(k), "mimg", m.name)}
-    <div class="ehd"><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : `${m.lvl[0]}–${m.lvl[1]}`}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}${zn}</div></div>
+  const op = ` data-act="encmon" data-k="${k}" data-tip="Ouvrir la fiche du monstre"`;
+  return `<div class="mcard enccard ${kills ? "" : "unknown"} ${m.boss ? "boss" : ""}"><button class="encimg"${op}>${im(imgM(k), "mimg", m.name)}</button>
+    <div class="ehd"><div class="n">${kills ? `<button class="encname"${op}>${h(m.name)} ›</button>` : "???"}</div><div class="l">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : `${m.lvl[0]}–${m.lvl[1]}`}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}${zn}</div></div>
     <div class="ebody">${extra || ""}${m.boss ? `<div class="xs muted num">${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>` : tierBadge(k)}
     <div class="drops">${drops}</div>${extra ? "" : encWhereHtml(k)}
     ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}${E.hasSoul(S, a) ? " · 💜 âme capturée" : ""}</div>` : ""}</div></div>`;
@@ -6389,7 +6415,7 @@ document.addEventListener("click", (ev) => {
     case "searchcraft": { ui.craftJob = d.job; const F = fltOf("met"); F.q = d.q || ""; F.mode = "all"; const tp = Object.keys(ITEMS).find((k) => ITEMS[k].name === d.q && ITEMS[k].craft); if (tp) ui.recSel = tp; pageGo("craft"); if (narrow() && tp) recSheet(); return; }
     case "searchdg": dungeonSheet(d.id); return;
     case "searchmon": { const q = ($("#wsq") || {}).value; if (q) wsRemember(q.trim()); searchClose(); if (d.dg) dungeonSheet(d.dg); else { closeSheet(); ui.zoneView = d.sub; ui.tab = "world"; render(); window.scrollTo(0, 0); } return; }
-    case "searchzone": closeSheet(); ui.zoneView = d.id; ui.tab = "world"; render(); window.scrollTo(0, 0); return;
+    case "searchzone": closeSheet(); ui.zoneFromEnc = d.from === "enc" ? d.id : null; if (ui.zoneFromEnc) ui.encScroll = window.scrollY; ui.zoneView = d.id; ui.tab = "world"; render(); window.scrollTo(0, 0); return;
     case "searchinv": closeSheet(); ui.tab = "inv"; ui.inv = "items"; ui.invSel = d.tpl; ui.slotFilter = "all"; render(); window.scrollTo(0, 0); return;
     case "searchres": closeSheet(); ui.tab = "inv"; ui.inv = "res"; ui.resSel = d.n; render(); window.scrollTo(0, 0); return;
     case "searchset": ui.setF = { mode: "all", q: SETS[d.id] ? SETS[d.id].name : "", cid: null }; closeSheet(); ui.tab = "inv"; ui.inv = "sets"; render(); window.scrollTo(0, 0); return;
@@ -6516,9 +6542,12 @@ document.addEventListener("click", (ev) => {
     case "autonow": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && E.applyAuto(S, it)) n++; }); toast(n ? `${n} objet${n > 1 ? "s" : ""} traité${n > 1 ? "s" : ""}.` : "Aucun objet concerné."); break; }
     case "leavedg": E.leaveDungeon(S); break;
     case "stophunt": msg(E.stopHunt(S)); break;
-    case "hunt": { const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
-    case "zoneview": ui.zoneView = d.id; window.scrollTo(0, 0); break;
-    case "zoneback": ui.zoneView = null; break;
+    case "hunt": { closeSheet(); const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
+    case "zoneview": ui.zoneFromEnc = null; ui.zoneView = d.id; window.scrollTo(0, 0); break;
+    case "zoneback": ui.zoneView = null; ui.zoneFromEnc = null; break;
+    case "zonebackenc": { ui.zoneView = null; ui.zoneFromEnc = null; ui.tab = "world"; ui.world = "enc"; const y = ui.encScroll || 0; render(); window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); return; }
+    case "encmon": openSheet(encMonSheet(d.k)); return;
+    case "encfamopen": (ui.encFamOpen = ui.encFamOpen || {})[d.v] = !(ui.encFamOpen || {})[d.v]; break;
     case "worldtab": if (d.v === "tresor") { ui.tab = "quests"; ui.qt = "tresor"; ui.zoneView = null; break; } ui.world = d.v; break; // 0.1.49 : le trésor est dans Quêtes › Chasses
     case "maptier": ui.mapTier = +d.v; break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
