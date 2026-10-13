@@ -17,6 +17,11 @@ assert.strictEqual(E.QUEST_CHAPTERS.length, 5);
 assert.ok(E.MAIN_QUEST.length >= 85, "≈ 90 étapes : " + E.MAIN_QUEST.length);
 assert.strictEqual(E.QUEST_CHAPTERS[4].end, E.MAIN_QUEST.length);
 E.MAIN_QUEST.forEach((q) => { if (q.t === "kill") assert.ok(E.SUBS[q.sub], q.sub); if (q.t === "boss") assert.ok(D.DUNGEONS[q.dg], q.dg); });
+// 0.1.57.2 : chaque étape doit être faisable dans l'ordre (zone ouverte par un boss déjà demandé avant)
+{ const done = new Set(); const req = {}; D.ZONES.forEach((z) => (req[z.id] = z.requires && z.requires.boss));
+  E.MAIN_QUEST.forEach((q, i) => { const sub = q.t === "kill" ? q.sub : q.t === "boss" ? D.DUNGEONS[q.dg].access : null;
+    if (sub) { const r = req[E.SUBS[sub].zone]; assert.ok(!r || done.has(r), `étape ${i} « ${q.title} » : zone fermée tant que ${r} n'est pas battu`); }
+    if (q.t === "boss") done.add(q.dg); }); }
 assert.strictEqual(E.questReward(3).kamas, 80 + 3 * 60, "récompense du chapitre 1 inchangée");
 { const S = team(60); S.quest = { step: 22, prog: 0 }; E.checkAch(S);
   assert.ok(S.ach.mainq, "« Héros d'Amakna » reste à la fin du chapitre 1"); assert.ok(E.ornUnlocked(S, "heros"));
