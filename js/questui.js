@@ -210,7 +210,7 @@
       <div class="list qj-drop">${X().dofusDropHtml(id)}</div></div></div>`;
     const n = (f) => ids.filter((x) => f === "all" || stt[x] === f).length;
     const fil = [["all", "Tous"], ["run", "En cours"], ["lock", "À commencer"], ["got", "Obtenus"]];
-    return `${head(s, "dofus", "Un Dofus s'obtient de deux façons : ① sa quête, qui en donne un exemplaire par compte (les étapes se valident toutes seules en jouant, les donjons déjà vaincus à la stasis demandée comptent) ; ② le butin du boss de son donjon, très rare (1 chance sur " + fmt(Math.round(1 / E.DOFUS_DROP)).replace(/,/g, " ") + " par victoire dès la stasis " + E.DOFUS_DROP_STASIS + "), seul moyen d'en avoir d'autres pour tes autres héros. Choisis un Dofus : sa fiche dit où aller. Un héros porte un seul exemplaire de chaque Dofus.", X().archiBtn())}
+    return `${head(s, "dofus", "Un Dofus s'obtient de deux façons : ① sa quête, qui en donne un exemplaire par compte (les étapes se valident toutes seules en jouant, les donjons déjà vaincus à la stasis demandée comptent) ; ② le butin du boss de son donjon, très rare : à chaque victoire, chaque héros de l'équipe a sa chance, dès la stasis 1 (1 sur " + fmt(E.dofusOdds(1)).replace(/,/g, " ") + ") et de mieux en mieux jusqu'à la stasis 10 (1 sur " + fmt(E.dofusOdds(10)).replace(/,/g, " ") + "). C'est le seul moyen d'en avoir d'autres pour tes autres héros. Choisis un Dofus : sa fiche dit où aller. Un héros porte un seul exemplaire de chaque Dofus.", X().archiBtn())}
       <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-dfil" data-v="${k}" aria-pressed="${st.dfil === k}">${l} <b class="num">${n(k)}</b></button>`).join("")}</div>
       <div class="qj-dofl"><div class="qj-eggs">${eggs}</div>${fiche}</div>`;
   }

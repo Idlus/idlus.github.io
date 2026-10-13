@@ -112,4 +112,16 @@ ok("sauvegarde et classement des points");
       if (st.zone) assert.ok(zOk(st.zone), `${id} : zone ${st.zone} fermée`); if (st.chal) assert.ok(E.CHALLENGES[st.chal], st.chal); if (st.res) assert.ok(D.RES[st.res], st.res); assert.ok(E.dofusStepTxt(st), id); }); });
   assert.ok(E.ocreDungeons().length > 0); }
 ok("chaque Dofus a sa quête et son boss, tous atteignables");
+// 9. 1.0.10 : Dofus dès la stasis 1, une chance par héros, sans aucun bonus
+{ assert.deepStrictEqual(E.DOFUS_ODDS, [160000, 80000, 40000, 20000, 8000, 7200, 6400, 5600, 4800, 4000]);
+  assert.strictEqual(E.ocreOdds(1), 800000); assert.strictEqual(E.ocreOdds(10), 20000); assert.strictEqual(E.ocreOdds(1, 100), 1600000);
+  const I = E.dofusDropInfo("turquoise"); assert.strictEqual(I.k, 1); assert.strictEqual(I.lad[0], 160000);
+  const S = team(130); const did = E.DOFUS.turquoise.dg; let rolls = []; let got = [];
+  E.setRng(() => { const v = rolls.length < 4 ? 1 / 200000 : 0.99; rolls.push(v); return v; }); // les 4 tirages du Dofus du donjon réussissent, ceux de l'Ocre ratent
+  const give0 = E.giveDofus; E.giveDofus = (S2, id) => got.push(id);
+  E.dofusDrop(S, did, 1, null);
+  assert.strictEqual(rolls.length, 8, "4 héros : 4 tirages pour le Dofus du donjon + 4 pour l'Ocre"); assert.deepStrictEqual(got, ["turquoise", "turquoise", "turquoise", "turquoise"]);
+  rolls = []; got = []; E.dofusDrop(S, did, 1, null); assert.strictEqual(got.length, 4);
+  E.giveDofus = give0; E.setRng(() => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }); }
+ok("Dofus dès la stasis 1 : une chance par héros");
 console.log("quetes.test.js : tout est bon");

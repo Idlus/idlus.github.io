@@ -2300,6 +2300,12 @@ html{zoom:1}
 .dofbox{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--archi) 10%,transparent);border:1px solid color-mix(in srgb,var(--archi) 35%,transparent)}
 .dofbox .dfpic{width:34px;height:34px;object-fit:contain;flex:none}
 .dofbox .grow b{color:var(--archi)}
+.doflad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;margin:3px 0 4px;max-width:420px}
+.doflad span{display:inline-flex;flex-direction:column;align-items:center;min-width:0;padding:2px 2px;white-space:nowrap;border-radius:6px;background:color-mix(in srgb,var(--archi) 8%,transparent);font-size:11px;font-variant-numeric:tabular-nums}
+.doflad span i{font-style:normal;font-size:10px;color:var(--muted)}
+.doflad span.on{background:color-mix(in srgb,var(--archi) 28%,transparent);font-weight:700;outline:1px solid var(--archi)}
+.doflad span.off{opacity:.45}
+.doflad span.far:not(.on){opacity:.6}
 .dgcard .dofbadge{position:absolute;left:6px;bottom:6px;width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
 .monli.locked .icobox img{filter:grayscale(.6);opacity:.75}
 .wsk{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex:none;background:var(--frame2)}

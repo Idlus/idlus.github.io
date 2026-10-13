@@ -132,9 +132,16 @@
   ];
   E.DOFUS = {}; E.DOFUS_ORDER = [];
   E.DOKOKO_PCT = 3; // Dokoko : % des PV max rendus à chaque début de tour
-  E.DOFUS_DROP = 1 / 1000;      // butin du boss de son donjon, dès la stasis 5 (Mathis : « extrêmement faible »)
-  E.OCRE_DROP = 1 / 5000;       // Dofus Ocre : tout boss de niveau 160 ou plus, dès la stasis 8
-  E.DOFUS_DROP_STASIS = 5;
+  /* 1.0.10 « Dofus dès la stasis 1 » (Mathis : 1B 2 3B 4A 5 6A) : à chaque victoire, CHAQUE HÉROS de l'équipe a sa chance,
+     dès la stasis 1 et de mieux en mieux jusqu'à la stasis 10. Repère : une équipe de 8 garde le rythme d'avant (1 sur 1 000 par victoire en stasis 5).
+     Aucun bonus (évènement, mutateur, idole, prospection…) ne change ces chances. */
+  E.DOFUS_ODDS = [160000, 80000, 40000, 20000, 8000, 7200, 6400, 5600, 4800, 4000]; // 1 chance sur … par héros, stasis 1 à 10
+  E.OCRE_ODDS = E.DOFUS_ODDS.map((n) => n * 5); // l'Ocre : 5 fois plus rare, sur un boss de niveau 200
+  E.dofusOdds = (k) => E.DOFUS_ODDS[k - 1] || 0;
+  /* l'Ocre tombe de tout boss de donjon, d'autant mieux que le boss est haut niveau (niveau 100 : 2 fois moins qu'au niveau 200) */
+  E.ocreMult = (lvl) => Math.min(1, Math.max(0, lvl) / 200);
+  const nice = (n) => { const p = Math.pow(10, Math.max(0, Math.floor(Math.log10(n)) - 1)); return Math.round(n / p) * p; }; // 2 chiffres utiles
+  E.ocreOdds = (k, lvl = 200) => { const m = E.ocreMult(lvl); return m && E.OCRE_ODDS[k - 1] ? nice(E.OCRE_ODDS[k - 1] / m) : 0; };
   L.forEach(([id, name, lvl, icon, stats, dgid, steps]) => {
     const tpl = "dofus_" + id;
     E.DOFUS[id] = { id, name, lvl, icon, stats, dg: dgid, steps, tpl };
@@ -161,16 +168,19 @@
   };
   /* butin du boss (fin de donjon) : le Dofus de ce donjon, ou l'Ocre sur les grands boss */
   E.dofusDrop = (S, did, k, out) => {
+    const n = Math.max(1, E.team(S).length); // une chance par héros de l'équipe
     E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id];
-      const ok = Df.steps[0] && Df.steps[0].t === "gift" ? false : Df.dg ? Df.dg === did && k >= E.DOFUS_DROP_STASIS && rnd() < E.DOFUS_DROP : DUNGEONS[did].lvl >= 160 && k >= 8 && rnd() < E.OCRE_DROP;
-      if (ok) { E.giveDofus(S, id, "butin du boss"); if (out) out.push(Df.name); } });
+      const odds = Df.steps[0] && Df.steps[0].t === "gift" ? 0 : Df.dg ? (Df.dg === did ? E.dofusOdds(k) : 0) : E.ocreOdds(k, DUNGEONS[did].lvl);
+      if (!odds) return;
+      for (let i = 0; i < n; i++) if (rnd() < 1 / odds) { E.giveDofus(S, id, "butin du boss"); if (out) out.push(Df.name); } });
   };
   E.dofusOfDungeon = (did) => E.DOFUS_ORDER.find((id) => E.DOFUS[id].dg === did) || null;
   /* 1.0.6.2 : d'où tombe un Dofus, pour l'afficher partout pareil (fiche du Dofus, fiche d'objet, donjon) */
   E.dofusDropInfo = (id) => { const Df = E.DOFUS[id]; if (!Df || (Df.steps[0] && Df.steps[0].t === "gift")) return null;
-    if (Df.dg) return { dg: Df.dg, boss: DUNGEONS[Df.dg].boss, odds: Math.round(1 / E.DOFUS_DROP), k: E.DOFUS_DROP_STASIS };
-    return { minLvl: 160, odds: Math.round(1 / E.OCRE_DROP), k: 8 }; };
-  E.ocreDungeons = () => Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].lvl >= 160);
+    const lad = []; for (let k = 1; k <= 10; k++) lad.push(Df.dg ? E.dofusOdds(k) : E.ocreOdds(k));
+    if (Df.dg) return { dg: Df.dg, boss: DUNGEONS[Df.dg].boss, odds: lad[0], k: 1, lad };
+    return { minLvl: 1, odds: lad[0], k: 1, lad }; }; // Ocre : chances d'un boss de niveau 200
+  E.ocreDungeons = () => Object.keys(DUNGEONS);
   /* Dokoko en combat : soin au début du tour du porteur */
   E.dofusTurn = (S, F, e) => {
     if (e.side !== "c" || e.summon || !e.alive) return;

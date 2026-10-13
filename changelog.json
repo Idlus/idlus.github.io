@@ -1,6 +1,17 @@
 {
-  "version": "1.0.9.2",
+  "version": "1.0.10",
   "versions": [
+    {
+      "v": "1.0.10",
+      "name": "Dofus dès la stasis 1",
+      "items": [
+        "Un Dofus peut maintenant tomber du boss de son donjon dès la stasis 1, avec une chance extrêmement faible qui double à chaque stasis jusqu'à la 4, puis continue de monter jusqu'à la stasis 10",
+        "À chaque victoire, chaque héros de l'équipe a sa propre chance : 1 sur 160 000 en stasis 1, 1 sur 8 000 en stasis 5, 1 sur 4 000 en stasis 10. Une équipe de 8 garde le rythme d'avant en stasis 5, et monter en stasis rapporte enfin plus",
+        "Le Dofus Ocre tombe de tous les boss de donjon dès la stasis 1, 5 fois plus rarement, avec une meilleure chance sur les boss de haut niveau (2 fois moins au niveau 100 qu'au niveau 200)",
+        "Aucun bonus ne change la chance d'un Dofus : ni le Double gain, ni les mutateurs, ni les idoles, ni la prospection",
+        "La fenêtre du donjon et la fiche du Dofus montrent la chance de chaque héros aux 10 stasis, celle choisie en surbrillance, et la chance de ton équipe par victoire"
+      ]
+    },
     {
       "v": "1.0.9.2",
       "name": "Recettes trop faciles",
