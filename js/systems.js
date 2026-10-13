@@ -183,33 +183,43 @@
   /* Nuit d'Halouine : un bonbon surprise de temps en temps dans le butin */
   E.almCandy = (S) => { const A = almOn(S); if (!A || A.kind !== "fete" || !/-10-31$/.test(A.day) || rnd() >= 0.03) return null; const ids = ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "bonbon_traqueur"]; const id = ids[Math.floor(rnd() * ids.length)]; E.addCons(S, id); return id; };
 
-  /* ---------------- 0.1.38 : achats du jour ----------------
-     Plus de vente au jeu : chaque jour, le jeu rachète 3 ressources de ton niveau, à bon prix (1,5 × l'ancien prix),
-     dans la limite de 100 chacune. Les mêmes pour tout le monde au même niveau, renouvelées à minuit. */
-  E.GBUY = { n: 3, max: 100, mult: 1.5 };
+  /* ---------------- 0.1.54 : commandes du jour ----------------
+     (0.1.38 : 3 achats du jour.) Chaque jour, le jeu commande 2 000 ressources dans chaque tranche de 20 niveaux
+     (1-20 … 181-200), les mêmes pour tout le monde, renouvelées à minuit. Il paie selon le niveau du meilleur héros :
+     une commande complète vaut environ 15 minutes de chasse à ce niveau (simulation : ~50 kamas par minute et par niveau),
+     ce qui redonne de l'intérêt aux zones de bas niveau. Les tranches au-dessus du meilleur héros n'apparaissent pas. */
+  E.GBUY = { band: 20, bands: 10, max: 2000, perLvl: 0.375 }; // Mathis (13/10) : 2 000 par commande, même paiement total
+  E.gbuyUnit = (S) => Math.max(1, Math.round(E.GBUY.perLvl * topLvl(S)));
   E.gameBuys = (S, t = E.now()) => {
-    const day = dayKey(t); const top = topLvl(S);
-    const ok = ALM_POOL.filter(([r]) => E.resPrice(r) > 0);
-    let pool = ok.filter(([, l]) => l <= Math.max(8, top + 2) && l >= top - 30);
-    if (pool.length < E.GBUY.n) pool = ok.filter(([, l]) => l <= Math.max(8, top + 2));
+    const day = dayKey(t); const top = topLvl(S); const unit = E.gbuyUnit(S);
     const got = S.gbuy && S.gbuy.d === day ? S.gbuy.got || {} : {};
+    const ok = ALM_POOL.filter(([r]) => E.resPrice(r) > 0);
     const list = [];
-    for (let i = 0; list.length < E.GBUY.n && i < 40; i++) {
-      const [res] = pool[Math.floor(hashStr(`gbuy${day}:${Math.floor(top / 10)}:${i}`) * pool.length)] || [];
-      if (!res || list.some((x) => x.res === res)) continue;
-      list.push({ res, price: Math.ceil(E.resPrice(res) * E.GBUY.mult), max: E.GBUY.max, got: got[res] || 0 });
+    for (let b = 0; b < E.GBUY.bands; b++) {
+      const lo = b * E.GBUY.band + 1, hi = lo + E.GBUY.band - 1;
+      if (b > 0 && lo > top) break;
+      const pool = ok.filter(([, l]) => l >= lo && l <= hi); if (!pool.length) continue;
+      const [res] = pool[Math.floor(hashStr(`cmd${day}:${b}`) * pool.length)];
+      if (list.some((x) => x.res === res)) continue;
+      list.push({ res, lo, hi, price: unit, max: E.GBUY.max, got: Math.min(E.GBUY.max, got[res] || 0) });
     }
     return { day, list };
   };
   E.gameBuySell = (S, res, qty) => {
     const G = E.gameBuys(S); const o = G.list.find((x) => x.res === res);
-    if (!o) return "Le jeu n'achète pas cette ressource aujourd'hui.";
+    if (!o) return "Le jeu ne commande pas cette ressource aujourd'hui.";
     const n = Math.min(Math.floor(+qty) || 0, o.max - o.got, S.res[res] || 0);
-    if (n <= 0) return o.got >= o.max ? "Quantité du jour déjà atteinte." : `Tu n'as pas de ${res}.`;
+    if (n <= 0) return o.got >= o.max ? "Commande déjà livrée." : `Tu n'as pas de ${res}.`;
     if (!S.gbuy || S.gbuy.d !== G.day) S.gbuy = { d: G.day, got: {} };
     S.gbuy.got[res] = (S.gbuy.got[res] || 0) + n;
     S.res[res] -= n; if (!S.res[res]) delete S.res[res];
     S.kamas += n * o.price; return null;
+  };
+  /* « Tout livrer » : livre tout ce qui peut l'être, commande par commande */
+  E.gameBuyAll = (S) => {
+    let k = 0; const k0 = S.kamas;
+    for (const o of E.gameBuys(S).list) { const q = Math.min(o.max - o.got, S.res[o.res] || 0); if (q > 0 && !E.gameBuySell(S, o.res, q)) k++; }
+    return k ? null : (S.kamas === k0 ? "Rien à livrer pour l'instant." : null);
   };
   /* ---------------- Alignement : Bonta ou Brâkmar ---------------- */
   const ALIGN = {
@@ -283,11 +293,22 @@
     { id: "reserve",  name: "Réserve",              icon: "coffre",       color: "#c99a2e", desc: "Kamas et place dans le sac", ups: ["kamas", "bag"], slots: () => 2 },
     { id: "jardin",   name: "Jardin",               icon: "pioche",       color: "#8fd16a", desc: "Récolte",                   ups: ["gather"], slots: () => 2 },
     { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate"], slots: () => 2 },
-    { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier" },
+    { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier", slots: () => 2 },
     { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#d9a066", desc: "Élevage des montures",       ups: [], post: "enclos", slots: () => 3 },
   ];
   E.room = (id) => E.ROOMS.find((r) => r.id === id);
-  E.roomSlots = (S, id) => { const R = E.room(id); return R && R.slots ? R.slots(S) : 0; };
+  E.roomSlots = (S, id) => { const R = E.room(id); return R && R.slots ? R.slots(S) + E.roomGrow(S, id) : 0; };
+  /* 0.1.54 : agrandir une pièce en kamas (+1 place de meuble, prix doublé à chaque fois, 5 fois au plus) */
+  E.GROW = { base: 500000, max: 5 };
+  E.roomGrow = (S, id) => (S.hvGrow && S.hvGrow[id]) || 0;
+  E.canGrow = (id) => { const R = E.room(id); return !!(R && R.slots && !R.post); };
+  E.growCost = (S, id) => E.GROW.base * Math.pow(2, E.roomGrow(S, id));
+  E.growRoom = (S, id) => {
+    if (!E.canGrow(id)) return "Cette pièce ne s'agrandit pas.";
+    if (E.roomGrow(S, id) >= E.GROW.max) return "Pièce déjà agrandie au maximum.";
+    const k = E.growCost(S, id); if (S.kamas < k) return `Il faut ${k.toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= k; S.hvGrow = S.hvGrow || {}; S.hvGrow[id] = E.roomGrow(S, id) + 1; E.emit(S, "havre", { id }); return null;
+  };
 
   /* Catalogue des meubles. kind : xp, drop, kamas (%), gather (% de vitesse), hp (% de PV), offrate (% d'efficacité
      hors ligne), offtime (heures hors ligne), bag (places), almanax (bonus du jour de l'Almanax, en % de plus). */
@@ -311,8 +332,25 @@
     "Mangeoire":               { room: "enclos",  kind: "mxp",     v: 1,  src: "Bricoleur niveau 50", txt: "Les montures à l'écurie gagnent 10 % de l'XP de l'équipe" },
     "Abreuvoir":               { room: "enclos",  kind: "birth",   v: 1,  src: "Bricoleur niveau 70", txt: "Naissance en 6 h au lieu de 8" },
     "Caresseur":               { room: "enclos",  kind: "kids",    v: 1,  src: "Butin rare à Cania", zone: "cania", txt: "Chaque monture peut avoir 4 petits au lieu de 3" },
-    "Deuxième couple":         { room: "enclos",  kind: "pair2",   v: 1,  src: "Succès : 10 naissances à l'enclos", txt: "Deux couples à l'enclos en même temps" },
+    "Deuxième couple":         { room: "enclos",  kind: "pair2",   v: 1,  src: "Succès : 10 naissances à l'enclos", txt: "Deux couples à l'enclos en même temps" },    /* 0.1.54 : boutique de la maison (achetés en kamas) */
+    "Pupitre de lecture":      { room: "biblio",   kind: "xp",      v: 1,  shop: 500000 },
+    "Encyclopédie d'Amakna":   { room: "biblio",   kind: "xp",      v: 2,  shop: 3000000 },
+    "Planétarium d'Osamodas":  { room: "biblio",   kind: "xp",      v: 3,  shop: 18000000 },
+    "Vitrine en verre":        { room: "trophees", kind: "drop",    v: 1,  shop: 600000 },
+    "Socle doré":              { room: "trophees", kind: "drop",    v: 2,  shop: 3600000 },
+    "Piédestal du Dragon":     { room: "trophees", kind: "drop",    v: 3,  shop: 22000000 },
+    "Coffre à double fond":    { room: "reserve",  kind: "kamas",   v: 1,  shop: 400000 },
+    "Balance de marchand":     { room: "reserve",  kind: "kamas",   v: 2,  shop: 2400000 },
+    "Malle de voyage":         { room: "reserve",  kind: "bag",     v: 25, shop: 1600000 },
+    "Banc de jardin":          { room: "jardin",   kind: "gather",  v: 3,  shop: 300000 },
+    "Fontaine de Bonta":       { room: "jardin",   kind: "gather",  v: 6,  shop: 4000000 },
+    "Tapis volant":            { room: "chambre",  kind: "offrate", v: 2,  shop: 3000000 },
+    "Établi d'artisan":        { room: "atelier",  kind: "atelier", v: 15, shop: 2000000 },
+    "Enclume de Brâkmar":      { room: "atelier",  kind: "atelier", v: 25, shop: 8000000 },
+    "Botte de foin doré":      { room: "enclos",   kind: "mxpup",   v: 20, shop: 3000000 },
+    "Abreuvoir de cristal":    { room: "enclos",   kind: "mxpup",   v: 40, shop: 12000000 },
   };
+  for (const n in FURN) if (FURN[n].shop) FURN[n].src = "Boutique de la maison";
   /* Trophées de boss : gagnés à la première victoire en stasis 5. Force selon le niveau du donjon :
      1 % avant 60, 2 % de 60 à 119, 3 % de 120 à 159, 4 % ensuite ; la récolte compte double. */
   const TROPHY = {
@@ -352,7 +390,7 @@
   }
   E.FURN = FURN;
   E.trophyOf = (did) => (TROPHY[did] ? TROPHY[did][0] : null);
-  const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de vitesse de récolte", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac" };
+  const FURN_TXT = { xp: "% d'XP", drop: "% de butin", kamas: "% de kamas", gather: "% de vitesse de récolte", hp: "% de PV en combat", offrate: "% d'efficacité hors ligne", offtime: " h hors ligne", bag: " places dans le sac", atelier: "% de vitesse à l'atelier", mxpup: "% d'XP pour les montures" };
   E.furnEffect = (name) => { const F = FURN[name]; if (!F) return "Décoratif"; if (F.txt) return F.txt; return F.kind === "almanax" ? "Bonus du jour de l'Almanax ×1,5" : `+${F.v}${FURN_TXT[F.kind]}`; };
   E.giveFurn = (S, name, why) => {
     if (!name || S.furniture.includes(name)) return false;
@@ -366,6 +404,14 @@
     const list = (S.placed[F.room] = S.placed[F.room] || []);
     if (list.length >= E.roomSlots(S, F.room)) return `${E.room(F.room).name} : plus de place. Retirez d'abord un meuble.`;
     list.push(name); return null;
+  };
+  E.SHOP_FURN = () => Object.keys(FURN).filter((n) => FURN[n].shop);
+  /* 0.1.54 : acheter un meuble de la boutique de la maison ; il est placé tout de suite s'il reste de la place */
+  E.buyFurn = (S, name) => {
+    const F = FURN[name]; if (!F || !F.shop) return "Ce meuble ne se vend pas.";
+    if (S.furniture.includes(name)) return "Tu as déjà ce meuble.";
+    if (S.kamas < F.shop) return `Il faut ${F.shop.toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= F.shop; S.furniture.push(name); E.placeFurn(S, name); E.emit(S, "havre", { furn: name }); return null;
   };
   E.unplaceFurn = (S, name) => { for (const r in S.placed) S.placed[r] = S.placed[r].filter((x) => x !== name); return null; };
   E.furnBonus = (S, kind) => {
@@ -440,6 +486,7 @@
     const A = S.atelier; if (!A || !A.built || A.cid == null) return 0;
     const c = E.atelierHero(S); if (!c || c.inTeam || c.job) { A.cid = null; A.prog = 0; return 0; }
     A.prog = (A.prog || 0) + sec; let n = 0;
+    A.prog += sec * E.furnBonus(S, "atelier") / 100; // 0.1.54 : meubles de l'atelier
     while (A.prog >= E.ATELIER_PERIOD_S && n < 500) {
       const r = A.rec && A.rec.k === "tpl" ? E.craftItem(S, A.rec.id) : A.rec ? E.craftSpecial(S, A.rec.id) : "Aucune recette.";
       if (typeof r === "string") { if (A.stall !== r && !opts.quiet) note(S, `Atelier en pause : ${r}`, "info"); A.stall = r; A.prog = E.ATELIER_PERIOD_S; break; }
@@ -1357,7 +1404,7 @@
 
   /* ---------------- État ---------------- */
   const initState = (S) => {
-    for (const k of ["havre", "ach", "cnt", "ornSeen", "almanax"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
+    for (const k of ["havre", "ach", "cnt", "ornSeen", "almanax", "hvGrow"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
     if (!S.quest) S.quest = { step: 0, prog: 0 };
     if (!Array.isArray(S.bounties)) S.bounties = [];
     if (S.align === undefined) S.align = null;

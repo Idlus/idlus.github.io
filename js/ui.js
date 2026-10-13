@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.53.7";
+const GAME_VERSION = "0.1.54";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.54", name: "Commandes du jour", items: [
+    "Les Achats du jour deviennent les Commandes du jour : chaque jour, le jeu commande 2 000 ressources dans chaque tranche de 20 niveaux (1-20, 21-40… jusqu'à ton meilleur héros). Les zones de bas niveau redeviennent utiles, même après la Renaissance",
+    "Une commande est payée selon le niveau de ton meilleur héros : une commande complète vaut environ 15 minutes de chasse à ton niveau. On peut livrer en plusieurs fois",
+    "Nouvel affichage (Inventaire › Ressources) : une carte par commande, « Tout livrer » en un clic, filtre « À livrer », lien vers la zone de la ressource, commandes livrées rangées en bas, panneau qui se réduit en une ligne. Les ressources commandées ont une pièce d'or dans l'inventaire et un filtre « Commandées aujourd'hui ». La tuile de l'Accueil et la fiche d'une ressource permettent aussi de livrer",
+    "Havre-Sac : nouvelle Boutique de la maison, 16 meubles à acheter en kamas, de 300 000 à 22 millions (+1 à +3 % d'XP, de butin ou de kamas, récolte, sac, hors ligne, vitesse de l'Atelier, XP des montures à l'Enclos). Un meuble acheté se place tout de suite s'il reste de la place. L'Atelier a maintenant 2 places de meubles",
+    "Havre-Sac : chaque pièce à meubles peut être agrandie en kamas, +1 place à chaque fois (500 000 kamas, puis le prix double), 5 fois au plus",
+  ] },
   { v: "0.1.53.7", name: "Mentions dans le chat", items: [
     "Chat : écris @ suivi d'un pseudo pour mentionner un joueur ; en tapant @, les pseudos des joueurs récents du salon sont proposés (flèches et Tab ou clic pour choisir)",
     "Le joueur mentionné voit le message surligné et une pastille @ sur le chat et sur le salon, même s'il lit un autre salon, avec une petite notification",
@@ -1353,9 +1360,9 @@ function homeTiles() {
   const ch = Object.keys(S.cons || {}).filter((k) => S.cons[k] > 0 && CONSUMABLES[k] && CONSUMABLES[k].kind === "chest").sort((a, b) => CONSUMABLES[b].tier - CONSUMABLES[a].tier); const nCh = ch.reduce((a, k) => a + S.cons[k], 0);
   out.push(tile({ ic: chestImg(ch.length ? CONSUMABLES[ch[0]].img : "bois"), t: nCh ? "Coffres à ouvrir" : "Coffres", s: nCh ? ch.map((k) => `${S.cons[k]} ${h(CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, ""))}`).join(" · ") : "aucun pour l'instant : boss, quêtes et avis en donnent", done: !nCh, hot: true,
     act: nCh ? `data-act="usecons" data-id="${ch[0]}"` : `data-act="hgo" data-v="cons"`, badge: nCh ? `<span class="tag">Ouvrir · ${nCh}</span>` : "" }));
-  const GB = E.gameBuys(S).list; const gl = GB.filter((x) => x.got < x.max); const go = gl.filter((x) => (S.res[x.res] || 0) > 0);
-  out.push(tile({ ic: IC("bourse"), t: "Achats du jeu", s: go.length ? `tu as ${go.map((x) => resTag(x.res)).join(" ")}` : gl.length ? `le jeu achète : ${gl.map((x) => resTag(x.res)).join(" ")}` : "les 3 achats du jour sont faits", done: !gl.length, hot: go.length > 0,
-    act: `data-act="hgo" data-v="gbuy"`, badge: go.length ? `<span class="tag">Vendre</span>` : `<span class="pill num">${GB.length - gl.length}/${GB.length}</span>` }));
+  { const GB = E.gameBuys(S).list.map(gbState); const r = GB.filter((g) => g.st === "ready"); const dn = GB.filter((g) => g.st === "done").length;
+    out.push(tile({ ic: IC("bourse"), t: "Commandes du jour", s: r.length ? `${r.length} prête${r.length > 1 ? "s" : ""} à livrer · ${fmt(r.reduce((a, g) => a + g.q * g.price, 0))} k` : dn === GB.length ? "toutes livrées, nouvelles à minuit" : `${GB.length - dn} en attente de ressources`, done: dn === GB.length, hot: r.length > 0,
+      act: `data-act="hgo" data-v="gbuy"`, badge: `<span class="pill num">${dn}/${GB.length}</span>` })); }
   const sb = E.sab(S);
   if (sb.open) { const p = Math.round(sb.r / E.SAB_MAX * 100);
     out.push(tile({ ic: `<span class="ac-te">⏳</span>`, t: "Sablier de Xélor", s: `${dur(sb.r)} en réserve${sb.spd > 1 ? ` · vitesse ×${sb.spd}` : p >= 95 ? " · plein, il ne se remplit plus" : ""}`, hot: p >= 95 && sb.spd === 1, act: `data-act="sabinfo"`, badge: `<span class="ac-sab"><i style="width:${p}%"></i></span>` })); }
@@ -1428,8 +1435,26 @@ const hvSlots = (R) => {
   return `<div class="fslots"><div class="xs muted">Meubles ${P.length}/${n}</div>${Array.from({ length: n }, (_, i) => P[i]
     ? `<div class="fslot full">${furnIco(P[i])}<span class="grow"><b>${h(P[i])}</b><i>${h(E.furnEffect(P[i]))}</i></span><button class="btn sm" data-act="funplace" data-v="${h(P[i])}">Retirer</button></div>`
     : `<button class="fslot empty" data-act="fpick" data-v="${R.id}" ${owned ? "" : "disabled"}>${owned ? `+ Placer un meuble (${owned} disponible${owned > 1 ? "s" : ""})` : "Aucun meuble à placer ici"}</button>`).join("")}
-    ${next ? `<span class="fslot lock">${IC("cle")} Une place de plus au niveau ${next} de la pièce</span>` : ""}</div>`;
+    ${next ? `<span class="fslot lock">${IC("cle")} Une place de plus au niveau ${next} de la pièce</span>` : ""}${hvGrow(R)}</div>`;
 };
+/* 0.1.54 : agrandir une pièce en kamas */
+const hvGrow = (R) => { if (!E.canGrow(R.id)) return ""; const g = E.roomGrow(S, R.id); const n = E.roomSlots(S, R.id);
+  if (g >= E.GROW.max) return `<span class="fslot lock">${IC("havre")} Pièce agrandie au maximum (+${g} places)</span>`;
+  const k = E.growCost(S, R.id); const can = S.kamas >= k;
+  return `<button class="fslot hvgrow" data-act="hvgrow" data-v="${R.id}" ${can ? "" : "disabled"}><span class="hvplus">+</span><span class="grow"><b>Agrandir la pièce</b><i>${n} → ${n + 1} places · le prix double à chaque fois${can ? "" : ` · il manque ${fmt(k - S.kamas)} k`}</i></span><span class="hvk"><span class="coin"></span> ${fmt(k)}</span></button>`; };
+/* 0.1.54 : boutique de la maison */
+function houseShopHtml() {
+  const all = E.SHOP_FURN(); const f = ui.fShop || "all"; const rooms = E.ROOMS.filter((R) => all.some((n) => E.FURN[n].room === R.id));
+  const own = all.filter((n) => S.furniture.includes(n)).length;
+  const card = (n) => { const F = E.FURN[n]; const R = E.room(F.room); const has = S.furniture.includes(n); const pl = E.isPlaced(S, n); const can = S.kamas >= F.shop;
+    return `<article class="shopc ${pl ? "placed" : has ? "owned" : can ? "can" : "far"}" style="--rc:${R.color}"><span class="shopico">${IC(R.icon)}</span><div class="shopt"><b>${h(n)}</b><span class="shopfx">${h(E.furnEffect(n))}</span><span class="xs muted">${h(R.name)}</span></div>
+      ${pl ? `<span class="tag good">✓ Placé</span>` : has ? `<button class="btn sm primary" data-act="fplace" data-v="${h(n)}">Placer</button>`
+        : `<button class="btn sm ${can ? "primary" : ""}" data-act="fbuy" data-v="${h(n)}" ${can ? "" : "disabled"}><span class="coin"></span> ${fmt(F.shop)}</button>${can ? "" : `<span class="xs muted shopmiss">il manque ${fmt(F.shop - S.kamas)} k</span>`}`}</article>`; };
+  return `<section class="panel shop" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Boutique de la maison</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> · ${own}/${all.length} meubles achetés</span></div>
+    <div class="pad stack"><p class="xs muted" style="margin:0">Des meubles à acheter en kamas. Un meuble acheté se place tout de suite dans sa pièce s'il reste de la place. Leurs bonus comptent dans les plafonds habituels.</p>
+    <div class="catchips"><button data-act="fshopf" data-v="all" aria-pressed="${f === "all"}">Toutes <b>${all.length}</b></button>${rooms.map((R) => `<button data-act="fshopf" data-v="${R.id}" aria-pressed="${f === R.id}">${IC(R.icon)} ${h(R.name)} <b>${all.filter((n) => E.FURN[n].room === R.id).length}</b></button>`).join("")}</div>
+    <div class="shopgrid">${all.filter((n) => f === "all" || E.FURN[n].room === f).map(card).join("")}</div></div></section>`;
+}
 const roomSum = (R) => {
   const p = R.ups.map((id) => { const H = E.HAVRE.find((x) => x.id === id); return `+${fmt(E.havreLvl(S, id) * H.per)}${H.unit.split(" (")[0]}`; });
   if (R.slots) p.push(`meubles ${E.placed(S, R.id).length}/${E.roomSlots(S, R.id)}`);
@@ -1471,10 +1496,11 @@ function havreHtml() {
       <div><b class="num">${placedN} / ${slotsN}</b><span>meubles placés</span></div><div><b class="num">${t ? h(t.name) : "—"}</b><span>à l'entraînement</span></div></div>
     <p class="xs muted">Bonus totaux, plafonnés à +${E.BONUS_CAP.xp} % d'XP, +${E.BONUS_CAP.drop} % de butin et +${E.BONUS_CAP.kamas} % de kamas.</p>
     <div class="rooms">${E.ROOMS.map(room).join("")}</div></div></section>
+    ${houseShopHtml()}
     <section class="panel" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Meubles à placer</h2><span class="xs muted">un meuble agit seulement une fois placé</span></div><div class="pad stack"><div class="mlist">
       ${free.map((f) => { const F = E.FURN[f]; const full = E.placed(S, F.room).length >= E.roomSlots(S, F.room);
         return `<div class="mitem"><span class="rico">${furnIco(f)}</span><div class="grow"><b>${h(f)}</b><div class="xs muted">${h(E.furnEffect(f))} · ${h(E.room(F.room).name)}${full ? " (pleine)" : ""}</div></div><button class="btn sm ${full ? "" : "primary"}" data-act="fplace" data-v="${h(f)}" ${full ? "disabled" : ""}>Placer</button></div>`; }).join("")}
-      ${free.length ? "" : `<p class="note">${S.furniture.some((f) => E.FURN[f]) ? "Tous vos meubles sont placés." : "Aucun meuble pour l'instant : les trophées de boss, le Comptoir de la cité, le Bricoleur, l'Almanax et les butins rares de certaines zones en donnent."}</p>`}
+      ${free.length ? "" : `<p class="note">${S.furniture.some((f) => E.FURN[f]) ? "Tous vos meubles sont placés." : "Aucun meuble pour l'instant : la Boutique de la maison, les trophées de boss, le Comptoir de la cité, le Bricoleur, l'Almanax et les butins rares de certaines zones en donnent."}</p>`}
       <div class="mitem dim"><span class="rico">${IC("cle")}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog">Catalogue</button></div>
     </div></div></section>`;
 }
@@ -4062,18 +4088,20 @@ function resTabHtml() {
   if (f === "unused") list = list.filter(([n]) => !IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT);
   if (f === "new") list = list.filter(([n]) => ui.newRes.has(n));
   if (f === "fav") list = list.filter(([n]) => S.resFav[n]);
+  const GBN = new Set(E.gameBuys(S).list.filter((o) => o.got < o.max).map((o) => o.res)); // 0.1.54 : ressources commandées aujourd'hui
+  if (f === "cmd") list = list.filter(([n]) => GBN.has(n));
   const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
   list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
   const picked = new Set();
   const detail = ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
-      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
-      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="ressel" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}</button>`; };
+      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
+      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="ressel" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}</button>`; };
   return `<div class="row resbar">
       <div class="catchips"><button data-act="rescat" data-v="all" aria-pressed="${cat === "all"}">Tout <b>${all.length}</b></button>${cats.filter((c) => cnt[c.id]).map((c) => `<button data-act="rescat" data-v="${c.id}" aria-pressed="${cat === c.id}">${catIco(c)} ${h(c.name)} <b>${cnt[c.id]}</b></button>`).join("")}</div></div>
     <div class="row invbar"><input type="text" id="resSearch" data-act="ressearch" placeholder="Rechercher une ressource…" value="${h(ui.resQ || "")}">
-      <select data-act="resf">${[["all", "Toutes"], ["recipe", "Utiles pour une recette"], ["now", "Utiles maintenant"], ["unused", "Inutilisées"], ["new", "Nouvelles"], ["fav", "Favorites"]].map(([v, n]) => `<option value="${v}" ${f === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+      <select data-act="resf">${[["all", "Toutes"], ["recipe", "Utiles pour une recette"], ["now", "Utiles maintenant"], ["unused", "Inutilisées"], ["new", "Nouvelles"], ["fav", "Favorites"], ["cmd", "Commandées aujourd'hui"]].map(([v, n]) => `<option value="${v}" ${f === v ? "selected" : ""}>${n}</option>`).join("")}</select>
       <select data-act="ressort">${[["name", "Nom"], ["qty", "Quantité"], ["lvl", "Niveau"], ["value", "Valeur totale"], ["recent", "Récentes"]].map(([v, n]) => `<option value="${v}" ${so === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
       <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span></div>
     ${gameBuysHtml()}
@@ -4082,18 +4110,46 @@ function resTabHtml() {
       ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
 }
 const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled);
-/* 0.1.38 : achats du jour (le jeu rachète 3 ressources par jour, à bon prix, en quantité limitée) */
+/* 0.1.54 : commandes du jour (1 000 ressources par tranche de 20 niveaux, payées selon le niveau du meilleur héros) */
 const gbOf = (n) => E.gameBuys(S).list.find((o) => o.res === n);
-function gbLine(o, solo) {
-  const have = S.res[o.res] || 0; const left = o.max - o.got; const q = Math.min(have, left);
-  return `<div class="li">${solo ? "" : im(resImg(o.res), "ico", o.res)}<span class="grow">${solo ? `${IC("kamas")} <b>Le jeu l'achète aujourd'hui</b>` : `<b>${h(o.res)}</b>`}<br><span class="xs muted">${fmt(o.price)} k l'unité · encore ${fmt(left)} sur ${fmt(o.max)} aujourd'hui · tu en as ${fmt(have)}</span></span>
-    ${left <= 0 ? `<span class="tag good">fait</span>` : `<button class="btn sm ${q ? "primary" : ""}" data-act="gbsell" data-n="${h(o.res)}" data-q="${q}" ${q ? "" : "disabled"}>${q ? `Vendre ${fmt(q)} · ${fmt(q * o.price)} k` : "Tu n'en as pas"}</button>`}</div>`;
+const GB_RANK = { ready: 0, prog: 1, none: 2, done: 3 };
+const gbHue = (lo) => Math.round(110 - lo * 0.55); // vert pour le bas niveau, rouge pour le haut niveau
+const gbSub = (n) => { for (const x of resIndex().src[n] || []) { if (!x.m) continue; const sb = subOfMon(x.m); if (sb && typeof sb !== "string") return sb; } return null; };
+function gbState(o) { const have = S.res[o.res] || 0; const left = o.max - o.got; const q = Math.min(have, left);
+  return Object.assign({}, o, { have, left, q, st: left <= 0 ? "done" : q > 0 ? "ready" : o.got > 0 ? "prog" : "none" }); }
+function gbLine(o) {
+  const g = gbState(o);
+  return `<div class="cmdline" style="--bh:${gbHue(g.lo)}"><span class="cmdband">Niv. ${g.lo}-${g.hi}</span><span class="grow"><b>Commande du jour</b><br><span class="xs muted">${fmt(g.got)} / ${fmt(g.max)} livrées · ${fmt(g.price)} k l'unité</span></span>
+    ${g.st === "done" ? `<span class="tag good">✓ livrée</span>` : g.q ? `<button class="btn sm primary" data-act="gbsell" data-n="${h(g.res)}" data-q="${g.q}">Livrer ${fmt(g.q)} · ${fmt(g.q * g.price)} k</button>` : `<span class="xs muted">Tu n'en as pas</span>`}</div>`;
 }
+function gbCard(g) {
+  const sb = gbSub(g.res); const go = sb ? `data-act="zoneview" data-id="${sb.id}" data-gotab="world"` : "";
+  return `<article class="cmdc ${g.st}" style="--bh:${gbHue(g.lo)}">
+    <div class="cmdtop"><span class="cmdband">Niv. ${g.lo}-${g.hi}</span>${g.st === "ready" ? `<span class="cmdst go">Prête à livrer</span>` : `<span class="cmdst">Il t'en manque ${fmt(g.left - g.have)}</span>`}</div>
+    <div class="cmdmid"><button class="cmdico" data-act="ressel" data-n="${h(g.res)}" title="Fiche de la ressource">${im(resImg(g.res), "", g.res)}</button><div class="cmdname"><b>${h(g.res)}</b>${sb ? `<button class="cmdzone" ${go}>${IC("carte")} ${h(sb.name)}</button>` : `<span class="xs muted">butin de monstres</span>`}</div><span class="cmdrew"><b class="num">${fmt(g.max * g.price)}</b><span class="xs muted">kamas</span></span></div>
+    <div class="cmdbar"><i class="got" style="width:${pct(g.got, g.max)}%"></i><i class="can" style="left:${pct(g.got, g.max)}%;width:${pct(g.q, g.max)}%"></i></div>
+    <div class="cmdnums xs"><span><b class="num">${fmt(g.got)}</b> / ${fmt(g.max)} livrées</span><span class="muted">tu en as ${fmt(g.have)} · ${fmt(g.price)} k l'unité</span></div>
+    ${g.st === "ready" ? `<button class="btn primary cmdbtn" data-act="gbsell" data-n="${h(g.res)}" data-q="${g.q}">${IC("bourse")} Livrer ${fmt(g.q)} · ${fmt(g.q * g.price)} k</button>` : ""}
+  </article>`;
+}
+const gbReset = () => { const d = new Date(E.now()); const m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return dur((m - d) / 1000); };
 function gameBuysHtml() {
-  const G = E.gameBuys(S);
-  return `<section class="panel gbuy"><div class="phead"><h2>${IC("kamas")} Achats du jour</h2><span class="xs muted">renouvelés à minuit</span></div>
-    <div class="list">${G.list.map((o) => gbLine(o)).join("")}</div>
-    <div class="pad xs muted" style="padding-top:0">Le jeu ne rachète plus tes ressources : chaque jour, il en achète 3 à bon prix (${String(E.GBUY.mult).replace(".", ",")} × leur valeur), ${E.GBUY.max} au plus chacune. Pour le reste, vends aux autres joueurs à l'hôtel de vente.</div></section>`;
+  const L = E.gameBuys(S).list.map(gbState); const f = ui.gbF || "all"; const top = Math.max(...S.chars.map((c) => c.lvl)); const shut = !!S.settings.gbShut;
+  const done = L.filter((g) => g.st === "done"); const ready = L.filter((g) => g.st === "ready");
+  const sum = L.reduce((a, g) => a + g.max * g.price, 0); const earned = L.reduce((a, g) => a + g.got * g.price, 0); const readyK = ready.reduce((a, g) => a + g.q * g.price, 0);
+  const shown = L.filter((g) => g.st !== "done" && (f === "all" || g.st === "ready")).sort((a, b) => GB_RANK[a.st] - GB_RANK[b.st] || a.lo - b.lo);
+  const all = `<button class="btn primary" data-act="gball">${IC("bourse")} Tout livrer (${ready.length}) · ${fmt(readyK)} k</button>`;
+  const head = `<div class="cmdhead"><span class="cmdlogo">${IC("bourse")}</span><div class="grow"><h2>Commandes du jour <span class="pill num">${done.length}/${L.length}</span></h2><div class="xs muted">${shut ? (ready.length ? `${ready.length} prête${ready.length > 1 ? "s" : ""} à livrer` : "rien à livrer pour l'instant") + ` · nouvelles dans ${gbReset()}` : `Le jeu achète ${fmt(E.GBUY.max)} ressources dans chaque tranche de niveau, payées selon le niveau de ton meilleur héros (${top}). Tu peux livrer en plusieurs fois.`}</div></div>
+      ${shut ? (ready.length ? all : "") : `<div class="cmdstats"><div><b class="num">${fmt(earned)}</b><span>sur ${fmt(sum)} k</span></div><div><b class="num">${gbReset()}</b><span>avant les nouvelles</span></div></div>`}
+      <button class="btn sm cmdfold" data-act="gbfold" aria-expanded="${!shut}" title="${shut ? "Afficher les commandes" : "Réduire"}">${shut ? "▾" : "▴"}</button></div>`;
+  if (shut) return `<section class="panel gbuy cmd shut">${head}</section>`;
+  return `<section class="panel gbuy cmd">${head}
+    <div class="cmdprog"><i style="width:${pct(earned, sum)}%"></i></div>
+    <div class="cmdbar2">${ready.length ? all : `<span class="xs muted">${done.length === L.length ? "Toutes les commandes du jour sont livrées. Nouvelles à minuit." : "Rien à livrer pour l'instant : farme les ressources demandées."}</span>`}
+      <span class="seg">${[["all", `En cours ${L.length - done.length}`], ["ready", `À livrer ${ready.length}`]].map(([v, n]) => `<button data-act="gbfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span></div>
+    ${shown.length ? `<div class="cmdgrid">${shown.map(gbCard).join("")}</div>` : ""}
+    ${done.length ? `<div class="cmddone"><span class="xs muted">Livrées :</span>${done.map((g) => `<span class="cmdchip" style="--bh:${gbHue(g.lo)}" title="${h(g.res)} · niv. ${g.lo}-${g.hi}">${im(resImg(g.res), "", g.res)}<b>${g.lo}-${g.hi}</b> ✓</span>`).join("")}<span class="xs plus">+${fmt(done.reduce((a, g) => a + g.max * g.price, 0))} k</span></div>` : ""}
+  </section>`;
 }
 function resDetail(n) {
   const IX = resIndex(); const qq = S.res[n] || 0; const r = resRarity(n); const src = IX.src[n] || []; const use = IX.use[n] || [];
@@ -4104,7 +4160,7 @@ function resDetail(n) {
     : u.special ? `<div class="li"><span class="grow">${IC("cle")} ${h(u.special)} <span class="xs muted">${u.q} requis</span></span></div>` : `<div class="li"><span class="grow">${IC("metiers")} ${h(E.TOOL_NAMES[u.tool])} ${u.L} <span class="xs muted">(${GATHER_JOBS[u.tool].name}) · ${u.q} requis</span></span></div>`).join("");
   return `<div class="panel invdetail"><div class="phead"><div class="row">${im(resImg(n), "ico lg", n)}<div><h2>${h(n)}</h2><div class="xs muted">${h(D.RES_CATS.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(qq)} en stock · ${fmt(E.resPrice(n))} k l'unité ${r ? `· <b style="color:${RAR[r][1]}">${RAR[r][0]}</b>` : ""}</div></div></div><button class="btn sm" data-act="ressel" data-n="">✕</button></div>
     <div class="pad stack" style="gap:8px">
-      ${gbOf(n) ? gbLine(gbOf(n), true) : ""}
+      ${gbOf(n) ? gbLine(gbOf(n)) : ""}
       <div class="row">${hdvOn() && window.MARKET.canSell(n) ? `<button class="btn sm primary" data-act="hdvres" data-n="${h(n)}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="resfav" data-n="${h(n)}">${S.resFav[n] ? "★ Favori" : "☆ Épingler"}</button></div>
       ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">le surplus part au marchand de secours (${Math.round(E.MERCHANT * 100)} % de la valeur, ${fmt(E.merchantPrice(n, 100) / 100)} k l'unité)</span></label>` : ""}
       ${A.res === n && !A.done ? `<div class="tag good">${IC("almanax")} Offrande de l'Almanax du jour (${A.qty})</div>` : ""}
@@ -4272,8 +4328,8 @@ function dayBar(where) {
   if (where === "met") {
     const fil = S.filon && S.filon.until > E.now() ? S.filon : null;
     if (fil) chips.push(`<span class="pchip">${G("sparkle")} Filon de <b>${h(fil.res)}</b> ×2 · ${dur((fil.until - E.now()) / 1000)}</span>`);
-    const GB = E.gameBuys(S).list.filter((o) => o.got < o.max);
-    if (GB.length) chips.push(`<span class="pchip">${IC("kamas")} Le jeu achète ${GB.map((o) => im(resImg(o.res), "ico sm", o.res)).join("")}${narrow() ? "" : " " + GB.map((o) => h(o.res)).join(", ")} <button class="btn sm" data-act="gbsheet">Vendre</button></span>`);
+    const GB = E.gameBuys(S).list.map(gbState).filter((g) => g.st === "ready");
+    if (GB.length) chips.push(`<button class="pchip" data-act="gbsheet">${IC("bourse")} Commandes du jour : <b class="plus">${GB.length} prête${GB.length > 1 ? "s" : ""} à livrer</b></button>`);
     const C = E.cmdState(S); const open = C.list.filter((o) => o.got < o.n); const ready = open.filter((o) => (S.res[o.res] || 0) >= o.n - o.got).length;
     if (open.length) chips.push(`<button class="pchip" data-act="pagego" data-v="commandes">${IC("quetes")} Commandes d'artisans : ${ready ? `<b class="plus">${ready} prête${ready > 1 ? "s" : ""} à livrer</b>` : `${open.length} en cours`}</button>`);
   } else chips.push(`<span class="pchip">${IC("forge")} Vendre un objet à l'HdV efface son reliquat</span>`);
@@ -6118,11 +6174,17 @@ document.addEventListener("click", (ev) => {
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
     case "hdvitem": { if (!window.MARKET) break; window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
     case "hdvres": { if (!window.MARKET) break; window.MARKET.sellRes(d.n); navGo("hdv"); window.scrollTo(0, 0); break; }
-    case "gbsell": { const k0 = S.kamas; const r = E.act(S, "gameBuySell", d.n, +d.q); if (r) toast(r, "warn"); else toast(`Vendu au jeu : ${fmt(S.kamas - k0)} kamas.`); break; }
+    case "gbsell": { const k0 = S.kamas; const r = E.act(S, "gameBuySell", d.n, +d.q); if (r) toast(r, "warn"); else toast(`Commande livrée : +${fmt(S.kamas - k0)} kamas.`); break; }
+    case "gball": { const k0 = S.kamas; const r = E.act(S, "gameBuyAll"); if (r) toast(r, "warn"); else toast(`Commandes livrées : +${fmt(S.kamas - k0)} kamas.`); break; }
+    case "gbfilter": ui.gbF = d.v; break;
+    case "gbfold": S.settings.gbShut = !S.settings.gbShut; break;
+    case "hvgrow": { const r = E.act(S, "growRoom", d.v); if (r) { toast(r, "warn"); return; } toast(`${E.room(d.v).name} agrandie : une place de meuble en plus.`); break; }
+    case "fbuy": { const r = E.act(S, "buyFurn", d.v); if (r) { toast(r, "warn"); return; } toast(E.isPlaced(S, d.v) ? `${d.v} acheté et placé !` : `${d.v} acheté. Pièce pleine : place-le en retirant un meuble.`); break; }
+    case "fshopf": ui.fShop = d.v; break;
     case "craftjob": ui.craftJob = d.v; ui.recSel = null; break;
     /* 0.1.41 : métiers et forgemagie */
     case "pagego": pageGo(d.v); return;
-    case "gbsheet": openSheet(`${gameBuysHtml()}<div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`); return;
+    case "gbsheet": ui.tab = "inv"; ui.inv = "res"; window.scrollTo(0, 0); break;
     case "recsel": ui.recSel = d.id; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
     case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
     case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }

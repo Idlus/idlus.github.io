@@ -4017,3 +4017,52 @@ img.wb-an.wb-p3{animation:wbp3 1.5s ease-in-out infinite}
 .chat .ch-ac button.on,.chat .ch-ac button:hover{border-color:var(--gold);background:var(--panel3);color:var(--gold2)}
 .chmenu .at{display:inline-block;width:18px;text-align:center;color:var(--gold2)}
 @media (max-width:640px){.chmin .n.at{right:auto;left:-4px}}
+/* 0.1.54 : commandes du jour et boutique de la maison */
+.cmd{gap:0}
+.cmdhead{display:flex;gap:12px;align-items:center;padding:14px 16px 10px;flex-wrap:wrap}
+.cmdlogo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--gold) 22%,var(--panel2));border:2px solid color-mix(in srgb,var(--gold) 55%,transparent)}.cmdlogo .uico{width:30px;height:30px}
+.cmdhead h2{margin:0 0 2px}.cmdhead .grow{min-width:220px;flex:1}
+.cmdstats{display:flex;gap:8px}.cmdstats div{display:flex;flex-direction:column;align-items:center;background:var(--panel2);border-radius:12px;padding:6px 12px;min-width:84px}.cmdstats b{font-size:17px;color:var(--gold)}.cmdstats span{font-size:11px;color:var(--muted)}
+.cmdprog{height:6px;margin:0 16px;border-radius:6px;background:var(--panel2);overflow:hidden}.cmdprog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffe08a)}
+.cmdbar2{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 16px}
+.cmdbar2 .btn .uico,.cmdbtn .uico{width:18px;height:18px;vertical-align:-4px}
+.cmdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;padding:0 16px 16px}
+.cmdc{--bc:hsl(var(--bh) 55% 52%);background:var(--panel2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;border:2px solid transparent;box-shadow:inset 0 3px 0 color-mix(in srgb,var(--bc) 70%,transparent)}
+.cmdc.ready{border-color:color-mix(in srgb,var(--action) 70%,transparent);background:color-mix(in srgb,var(--action) 8%,var(--panel2))}
+.cmdc.done{opacity:.6}
+.cmdtop{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.cmdband{--bc:hsl(var(--bh) 55% 52%);font-size:11.5px;font-weight:800;letter-spacing:.4px;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--bc) 25%,transparent);color:hsl(var(--bh) 70% 72%);border:1px solid color-mix(in srgb,var(--bc) 60%,transparent);white-space:nowrap}
+.cmdst{font-size:11.5px;color:var(--muted)}.cmdst.go{color:var(--action);font-weight:800}.cmdst.ok{color:var(--good,#5fd08a);font-weight:800}
+.cmdmid{display:flex;gap:10px;align-items:center}
+.cmdico{width:48px;height:48px;flex:none;border-radius:12px;background:var(--panel);display:grid;place-items:center;border:1px solid var(--line)}.cmdico img{width:40px;height:40px;object-fit:contain}
+.cmdname{display:flex;flex-direction:column;min-width:0;flex:1}.cmdname b{line-height:1.2}
+.cmdrew{display:flex;flex-direction:column;align-items:flex-end}.cmdrew b{color:var(--gold);font-size:16px}
+.cmdbar{position:relative;height:10px;border-radius:6px;background:var(--panel);overflow:hidden}.cmdbar i{position:absolute;top:0;bottom:0;left:0}
+.cmdbar .got{background:linear-gradient(90deg,var(--gold),#ffe08a)}.cmdbar .can{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--action) 70%,transparent) 0 6px,color-mix(in srgb,var(--action) 40%,transparent) 6px 12px)}
+.cmdnums{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.cmdbtn{width:100%;justify-content:center}
+.cmdline{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:12px;padding:8px 10px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);flex-wrap:wrap}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.shopc{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:14px;padding:10px;border:2px solid color-mix(in srgb,var(--rc) 35%,transparent);flex-wrap:wrap;position:relative}
+.shopc.placed{opacity:.7}
+.shopico{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--rc) 22%,var(--panel))}.shopico .uico{width:32px;height:32px}
+.shopt{display:flex;flex-direction:column;flex:1;min-width:120px}.shopfx{color:var(--action);font-weight:800;font-size:13px}
+.shopmiss{width:100%;text-align:right}
+.fslot.hvgrow{border:2px dashed color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 7%,transparent);cursor:pointer;text-align:left}.fslot.hvgrow:disabled{opacity:.6;cursor:default}
+.hvplus{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#1a1405;font-weight:900}.hvk{font-weight:800;color:var(--gold);white-space:nowrap}
+@media (max-width:640px){.cmdstats{width:100%}.cmdstats div{flex:1;min-width:0}.cmdgrid{grid-template-columns:1fr;padding:0 10px 12px}.cmdhead{padding:12px 12px 8px}.cmdprog{margin:0 12px}.cmdbar2{padding:10px 12px}.cmdbar2 .btn{width:100%;justify-content:center}.shopgrid{grid-template-columns:1fr}}
+.cmdline .grow{min-width:150px;flex:1}@media (max-width:640px){.cmdline .btn{width:100%;justify-content:center}}
+button.cmdico{padding:0;cursor:pointer}
+.icmd{position:absolute;left:3px;bottom:2px;line-height:0}.icmd .uico{width:16px;height:16px;filter:drop-shadow(0 0 3px rgba(0,0,0,.8))}
+.tag.gold{background:var(--gold);color:#1a1405}
+.cmdhead h2 .pill{font-size:12px;vertical-align:3px}
+.cmdfold{min-width:34px;justify-content:center}
+.cmd.shut .cmdhead{padding-bottom:14px}
+.cmdzone{background:none;border:0;padding:0;font:inherit;font-size:12px;color:var(--muted);cursor:pointer;text-align:left;display:inline-flex;gap:4px;align-items:center}.cmdzone .uico{width:14px;height:14px}.cmdzone:hover{color:var(--action);text-decoration:underline}
+.cmdc.none .cmdico img{opacity:.75}
+.cmddone{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:0 16px 14px}
+.cmdchip{display:inline-flex;gap:4px;align-items:center;font-size:11.5px;padding:2px 8px 2px 3px;border-radius:999px;background:var(--panel2);border:1px solid hsl(var(--bh) 50% 45% / .6);color:var(--good,#5fd08a)}.cmdchip img{width:20px;height:20px;object-fit:contain}.cmdchip b{color:hsl(var(--bh) 70% 72%);font-size:11px}
+.shopc.can{box-shadow:0 0 0 1px color-mix(in srgb,var(--action) 35%,transparent)}.shopc.far .shopico{filter:grayscale(.6);opacity:.8}.shopc.owned{border-color:var(--action)}
+@media (max-width:640px){.cmddone{padding:0 12px 12px}.cmd.shut .cmdhead .btn.primary{width:100%;justify-content:center;order:5}}
+.cmdhead{position:relative}
+@media (max-width:640px){.cmdfold{position:absolute;top:12px;right:12px}.cmdhead .grow{padding-right:40px}}

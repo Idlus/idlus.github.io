@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.54 « Commandes du jour »
+Commandes du jour (js/systems.js `E.gameBuys`, `E.gameBuyAll`) : 2 000 ressources par tranche de 20 niveaux jusqu'au meilleur héros, payées `E.GBUY.perLvl` × niveau du meilleur héros par unité. Interface : `gameBuysHtml` (js/ui.js). Havre-Sac : boutique de la maison (`FURN[n].shop`, `E.buyFurn`) et agrandissement des pièces (`S.hvGrow`, `E.growRoom`, `E.GROW`).
+
 ## 0.1.53.7 « Mentions dans le chat »
 Chat (js/chat.js) : mentions `@pseudo` détectées côté client (`mentions()`, `pingsMe()` : 3 premières mentions, joueurs ignorés exclus), surlignées (`.mt`, `.msg.ment`) ; pastille `@` par salon (dernier message lu par salon dans la préférence `ms`) et sur le bouton du chat, toast hors du salon ; suggestions de pseudos en tapant « @ » (`#chAc`, auteurs récents puis joueurs connectés via `ONLINE.onlinePseudos()`), bouton « Le mentionner » dans le menu d'un joueur. Aucun changement serveur.
 
