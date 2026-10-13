@@ -10,6 +10,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 ## 0.1.56 « Boss des mondes rééquilibré »
 Boss des mondes (js/wboss.js) : un essai = moyenne de `E.WB_FIGHTS` (3) combats (`E.wbFight` = un combat, `E.wbSim` = l'essai, renvoie `fights` et `watchSeed` du combat revu). Points × `E.wbMult(niveau, nb de héros)` (courbe `E.WB_LVLPOW`, équipe de référence 8). Charge du boss ×`E.WB_CHARGE` (1,5). Grades 50/100/200/350/500 points. supabase/wboss.sql : remise à zéro unique (`wb_resets` '0.1.56') qui archive les essais du boss en cours dans `wb_hits_old` (essais du jour rendus) et divise PV et dégâts par 5 ; ceux de `wb_hits_old` comptent pour la récompense de mort.
 
+## 0.1.55.1 « Sac sans l'équipé »
+Inventaire › Équipements : les objets portés sont cachés (`invGroups`, `invDetail` dans js/ui.js, via `wornMap`) sauf si la case « Afficher l'équipé » est cochée (`S.settings.invShowEq`, sauvegardée) ; une pastille avec la tête du héros (`.ieq`) marque alors l'objet porté.
+
 ## 0.1.55 « Plafonds relevés »
 Plafonds des bonus (js/systems.js) : Autel des Douze `E.ALTAR` (`S.havre.autel`, `E.buyAltar`, `E.altarCost`), plafond effectif `E.capOf(S, kind)` = `E.BONUS_CAP` + 5 par niveau d'Autel pour xp/drop/kamas (`E.capMax`). Détail par source `E.bonusParts`, total brut `E.bonusRaw`. Interface : cadre « Mes bonus » `bonusBox`/`bonusCard`/`altarHtml` (js/ui.js), styles `.bonbox`, `.bcard`, `.bbar`, `.altar`.
 
