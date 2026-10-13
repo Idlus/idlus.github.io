@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.6.3";
+const GAME_VERSION = "1.0.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7", name: "Kolizéum automatique", items: [
+    "Mode automatique au Kolizéum : il joue tes combats classés contre l'adversaire Conseillé, sans animation, un toutes les 3 secondes. Choisis 5, 10 ou tous tes tickets, puis « Lancer l'auto »",
+    "Il continue sur toutes les pages : une pastille « Koli auto » en haut de l'écran montre l'avancée et la cote gagnée. Il s'arrête tout seul après 3 défaites d'affilée ou quand les tickets sont finis",
+    "Pendant l'auto : une case par combat (✓ ou ✕), la cote, le bilan, les Kolizetons et les bourses gagnés, et le détail de chaque combat à revoir. En auto, les Kolizetons sont réduits de 25 %",
+    "Tickets de Koli en combat : chaque monstre vaincu peut en donner un (0,25 % par héros de l'équipe, 10 % sur un boss de donjon, toujours un sur un archimonstre), jusqu'à 40 par jour. Les bonus de butin comptent à moitié, le Double gain en entier",
+    "Interrupteur « Tickets de chasse » : un combat classé se lance dès qu'un ticket arrive en chasse, en gardant 5 tickets en réserve",
+  ] },
   { v: "1.0.6.3", name: "Codes cadeaux récupérés", items: [
     "Si un code cadeau a été accepté mais que ses récompenses ne sont pas arrivées (réponse du serveur perdue, autre onglet ou autre appareil qui a remplacé la partie), le jeu les redonne tout seul au chargement",
     "Le serveur garde la liste des codes utilisés par chaque compte : chaque code ne se reçoit toujours qu'une fois par partie",
@@ -3479,7 +3486,7 @@ function lootHtml(F) {
   $("#fres").textContent = "Victoire";
   el.innerHTML = `<div class="stack" style="gap:8px">
     <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
-    ${res.length ? `<div class="loot">${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
+    ${res.length || r.tk ? `<div class="loot">${r.tk ? `<div class="lcard tkcard" data-tip="Un combat classé au Kolizéum">${im("assets/ui/coffres/ticket_koli.svg", "ico sm", "Ticket de Koli")}<div class="n"><b>Ticket de Koli</b> <span class="muted num">×${r.tk}</span></div></div>` : ""}${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
     ${(F.chals || []).length ? `<div class="chalres"><div class="h">${G("target")} Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>${G("flame")} Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
     ${r.idol ? `<div class="chalres idolres"><div class="h">${idolIco()} Idoles · score ${r.idol.score}</div><div class="row xs" style="gap:4px;flex-wrap:wrap">${r.idol.ids.map((id) => E.IDOLS[id] ? `<span class="pill">${im(idolImg(id), "iico", E.IDOLS[id].name)} ${h(E.IDOLS[id].name)} <b class="num">${E.IDOLS[id].score}</b></span>` : "").join("")}</div><div class="r tot"><span>Bonus XP et butin</span><span>+${pctTxt(r.idol.pct)} %</span></div></div>` : ""}
     ${r.champ ? `<div class="champwin"><div class="ttl">${G("crown")} Champion vaincu : ${h(r.champ.name)} (${h(E.CHAMP_POWERS[r.champ.power].name)})</div><div class="row xs"><span class="pill gold">XP ×3</span><span class="pill gold">Butin ×2</span>${r.champ.res ? `<span class="pill good">Ressource garantie : ${h(r.champ.res[0])} ×${r.champ.res[1]}</span>` : ""}<span class="pill gold">Chance de Rayonnant ×2</span></div><div class="xs muted">Champions vaincus : ${fmt(S.champs || 0)}${(() => { const n = [10, 100, 500, 1000].find((x) => x > (S.champs || 0)); return n ? ` · prochain succès à ${fmt(n)}` : ""; })()}</div></div>` : ""}
@@ -4643,6 +4650,7 @@ function toolHtml(id) {
 /* 0.1.57 : le protecteur en pastille dans la ligne du haut, sur toutes les pages */
 function protChip() {
   const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null; let out = "";
+  if (window.KZAUTO) out += window.KZAUTO.chip(); // 1.0.7 : mode automatique du Kolizéum
   if (P) { const M = MONSTERS[P.mon]; const err = P.fighting || P.go ? null : E.protWhy(S); const when = P.fighting ? "combat en cours" : P.go ? "au prochain combat" : dur((P.until - E.now()) / 1000);
     out += tchip({ k: "prot", ico: im(imgM(P.mon), "", M.name), t: h(M.name), d: `garde le ${h(P.res)} · ${when}`, s: when, tip: `${E.PROT_TITLE[P.job]} : ${M.name} garde le ${P.res}.${err ? " " + err : ""}`, act: P.fighting || P.go ? "" : `<button class="tc-act" data-act="protgo" ${err ? "disabled" : ""}>Combattre</button>` }); }
   if (B) out += tchip({ k: "bonus", ico: G("sparkle"), t: "Récolte ×2", d: `${h(B.res)} · ${dur((B.until - E.now()) / 1000)}`, s: `×2 · ${dur((B.until - E.now()) / 1000)}`, tip: `Récolte de ${B.res} ×2, encore ${dur((B.until - E.now()) / 1000)}.` });

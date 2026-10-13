@@ -59,7 +59,7 @@
   function oppHtml(s, Q, o, i, bi) {
     const g = E.koliGrade(o.cote); const st = stakes(Q, o); const ch = ui.ch[i];
     return `<div class="kz-opp ${i === bi ? "reco" : ""}"><div class="nm">${emb(g, "sm")}<span>${h(o.name)}</span></div>
-      <span class="row xs muted" style="gap:6px;flex-wrap:wrap">Cote ${nf(o.cote)} · ${g.name}${o.ghost ? `<i class="kz-ghost" data-tip="Un Fantôme : une équipe créée par le jeu. Contre lui, la cote bouge deux fois moins.">Fantôme</i>` : ""}${i === bi ? `<span class="tag best">Conseillé</span>` : ""}</span>
+      <span class="row xs muted" style="gap:6px;flex-wrap:wrap">Cote ${nf(o.cote)} · ${g.name}${o.ghost ? `<i class="kz-ghost" data-tip="Un Fantôme : une équipe créée par le jeu. Contre lui, la cote bouge deux fois moins.">Fantôme</i>` : ""}${i === bi ? `<span class="tag best" ${AU.st === "run" ? `data-tip="Le mode auto choisit toujours le Conseillé"` : ""}>Conseillé${AU.st === "run" ? " · auto" : ""}</span>` : ""}</span>
       ${heads(o.heads)}
       <div class="kz-ch ${ch === undefined ? "" : ch >= 60 ? "hi" : ch >= 40 ? "mid" : "lo"}"><span>Chance</span><span class="pbar"><i style="width:${ch || 0}%"></i></span><span class="num">${ch === undefined ? "…" : ch + " %"}</span></div>
       <div class="kz-gain"><span class="p">Victoire +${st.win}</span><span class="m">Défaite −${st.lose}</span></div>
@@ -89,6 +89,115 @@
     }).catch(() => { ui.loadingMe = false; });
   }
 
+  /* ---------- 1.0.7 : mode automatique ----------
+     Il joue les combats classés contre le Conseillé, sans animation, un toutes les 3 secondes, sur toutes les pages (jeu ouvert).
+     S'arrête au nombre choisi, sans ticket, ou après 3 défaites d'affilée. « Tickets de chasse » : un combat dès qu'un ticket arrive (5 gardés).
+     Kolizetons ×0,75 en auto (E.koliApply). L'état de la série n'est pas sauvegardé, les réglages oui (S.koli.auto). */
+  const AU = { st: "idle", mode: "count", tot: 10, L: [], why: "", busy: false, next: 0, errs: 0, det: false };
+  const aset = (s) => { const Q = E.koliState(s); return (Q.auto = Object.assign({ cnt: 10, hunt: false }, Q.auto || {})); };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const aSum = () => { const w = AU.L.filter((x) => x.win).length; return { w, l: AU.L.length - w, d: AU.L.reduce((a, x) => a + x.d, 0), kz: AU.L.reduce((a, x) => a + x.kz, 0), kam: AU.L.reduce((a, x) => a + x.kam, 0) }; };
+  function aStart(mode) {
+    const s = S(); const Q = E.koliState(s); const c = aset(s);
+    if (!E.koliArena(s).length) { X().toast("Choisis d'abord ton équipe d'arène."); return; }
+    if (mode === "count" && E.koliTickets(s) < 1) { X().toast(`Plus de ticket de Koli : il en arrive ${K.daily} chaque jour à minuit.`); return; }
+    Object.assign(AU, { st: "run", mode, tot: mode === "count" ? (c.cnt || E.koliTickets(s)) : 0, L: [], why: "", next: 0, errs: 0, c0: Q.cote });
+    aPaint();
+  }
+  function aStop(why) {
+    const s = S(); if (AU.mode === "hunt" || why === "loss") aset(s).hunt = false;
+    AU.st = AU.L.length ? "done" : "idle"; AU.why = why; AU.end = Date.now(); X().markDirty();
+    if (AU.L.length) { const t = aSum(); X().toast(`Kolizéum auto ${why === "loss" ? "arrêté après 3 défaites d'affilée" : "terminé"} : ${t.w} victoire${t.w > 1 ? "s" : ""}, ${t.l} défaite${t.l > 1 ? "s" : ""}, cote ${t.d >= 0 ? "+" : "−"}${Math.abs(t.d)}.`, why === "loss" ? "" : "rare"); }
+    aPaint();
+  }
+  /* le meilleur gain attendu, comme le badge « Conseillé » */
+  async function aPick(s, Q, opps) {
+    const A = E.koliSnap(s, Q.team); let b = null, bv = -1e9;
+    for (const o of opps) { await sleep(20); const c = E.koliChance(A, o.team) / 100; const st = stakes(Q, o); const v = c * st.win - (1 - c) * st.lose; if (v > bv) { bv = v; b = o; } }
+    return b;
+  }
+  async function aStep() {
+    const s = S(); if (!s || AU.st !== "run" || AU.busy) return;
+    const Q = E.koliState(s); const tk = E.koliTickets(s);
+    if (!E.koliArena(s).length) return aStop("team");
+    if (AU.mode === "hunt" ? tk <= K.autoReserve : tk < 1) { if (AU.mode === "count") return aStop("tickets"); return; } // chasse : on attend le prochain ticket
+    AU.busy = true;
+    try {
+      let o, r;
+      if (!online()) {
+        const opps = E.koliGhostOpps(s).map((x, i) => Object.assign({}, x, { slot: i })); o = await aPick(s, Q, opps);
+        if (AU.st !== "run") return;
+        r = E.act(s, "koliFight", o.slot, true); if (typeof r === "string") { X().toast(r); return aStop("err"); }
+        r.B = o.team;
+      } else {
+        const L = await ON().koli({ opps: 1, r: Q.rf });
+        if (!L || !L.ok) { if (++AU.errs >= 3) { X().toast((L && L.err) || "Pas de connexion au serveur."); return aStop("err"); } AU.next = Date.now() + 10000; return; }
+        o = await aPick(s, Q, L.opps); if (!o || AU.st !== "run") return;
+        try { await X().onPush(); } catch (e) { /* le serveur rejoue avec la partie en ligne */ }
+        const R = await ON().koli({ fight: o.id ? { id: o.id } : { slot: o.slot }, r: Q.rf });
+        if (R.net) { if (++AU.errs >= 3) { X().toast("Pas de connexion au serveur : mode auto arrêté."); return aStop("err"); } AU.next = Date.now() + 10000; return; }
+        if (!R.ok) { X().toast(R.err || "Refusé par le serveur."); return aStop("err"); }
+        r = E.koliOnline(s, R, true); r.A = R.A; r.B = R.B; r.seed = R.seed;
+        if (ui.me) { ui.me.rank = R.rank; ui.me.cote = R.cote; ui.me.n = (ui.me.n || 0) + 1; }
+        ui.loaded = 0;
+      }
+      AU.errs = 0; X().markDirty(); ui.key = "";
+      AU.L.push({ name: (r.opp || o).name, cote: o.cote, win: !!r.win, d: r.delta, kz: r.kz, kam: r.kamas || 0, A: r.A, B: r.B, seed: r.seed });
+      if (AU.L.length > 60) AU.L.shift();
+      if (AU.st !== "run") return;
+      const last = AU.L.slice(-K.autoStreak);
+      if (last.length === K.autoStreak && last.every((x) => !x.win)) return aStop("loss");
+      if (AU.mode === "count" && AU.L.length >= AU.tot) return aStop("count");
+      if (AU.mode === "count" && E.koliTickets(s) < 1) return aStop("tickets");
+    } finally { AU.busy = false; AU.next = Math.max(AU.next, Date.now() + 3000); aPaint(); }
+  }
+  function aLoop() {
+    try {
+      const s = S(); if (!s || !window.DX.ui) return;
+      if (AU.st !== "run" && aset(s).hunt && E.koliTickets(s) > K.autoReserve && E.koliArena(s).length) aStart("hunt");
+      if (AU.st === "run" && !AU.busy && Date.now() >= AU.next) aStep();
+    } catch (e) { /* jamais bloquer le jeu */ }
+  }
+  setInterval(aLoop, 1000);
+  function aPaint() {
+    try { X().renderStatus(); } catch (e) { /* écran de départ */ }
+    if (window.DX.ui.tab !== "koli" || $("#sheet").innerHTML) return;
+    const el = $("#kzAuto"); if (el) el.outerHTML = autoPanel(S()); if (AU.L.length && ui.key === "") paint();
+  }
+  function aPips() { const n = AU.mode === "count" ? Math.max(AU.tot, AU.L.length) : Math.min(60, Math.max(10, AU.L.length + (AU.st === "run" ? 1 : 0)));
+    const off = AU.mode === "count" ? 0 : Math.max(0, AU.L.length + 1 - n); let o = "";
+    for (let i = 0; i < n; i++) { const x = AU.L[i + off]; o += `<i class="${x ? (x.win ? "w" : "l") : i + off === AU.L.length && AU.st === "run" ? "cur" : ""}" ${x ? `data-tip="${h(x.name)} · ${x.d > 0 ? "+" : ""}${x.d}"` : ""}>${x ? (x.win ? "✓" : "✕") : ""}</i>`; }
+    return `<div class="kza-pips">${o}</div>`; }
+  function autoPanel(s) {
+    const Q = E.koliState(s); const c = aset(s); const tk = E.koliTickets(s); const st = AU.st; const run = st === "run";
+    const ic = `<img class="kza-ic" src="assets/ui/coffres/ticket_koli.svg" alt="">`;
+    const head = `<div class="kza-head"><div class="kza-ttl">${X().IC("combat")}<div><h2>Mode automatique</h2><span class="xs muted">Il joue tes combats classés contre le Conseillé, un toutes les 3 secondes, même si tu changes de page.</span></div></div>
+      ${run ? `<span class="kza-live"><i></i>${AU.mode === "hunt" ? "Tickets de chasse" : "En cours"}</span>` : st === "done" ? `<span class="tag">Terminé</span>` : `<span class="kza-cut" data-tip="En auto, chaque combat rapporte 25 % de Kolizetons en moins qu'en manuel. La cote, la bourse et la poussière ne changent pas.">Kolizetons −25 %</span>`}</div>`;
+    const sw = `<button class="kza-row kza-sw" data-act="kz-ahunt" aria-pressed="${!!c.hunt}"><span class="sw ${c.hunt ? "on" : ""}"><i></i></span><span><b>Tickets de chasse</b><span class="xs muted"> · un combat se lance dès qu'un ticket arrive en chasse, ${K.autoReserve} tickets restent en réserve</span></span></button>`;
+    if (st === "idle") {
+      const n = c.cnt;
+      return `<section class="panel kz-auto" id="kzAuto">${head}<div class="kza-body">
+        <div class="kza-set"><div class="kza-row"><span class="kza-lbl">Combats</span><span class="seg">${[[5, "5"], [10, "10"], [0, `Tous <small>(${tk})</small>`]].map(([v, t]) => `<button data-act="kz-acnt" data-v="${v}" aria-pressed="${v === n}">${t}</button>`).join("")}</span></div>
+          ${sw}
+          <div class="kza-row kza-warn xs muted">${X().G("warn")}<span>S'arrête tout seul après ${K.autoStreak} défaites d'affilée, ou quand les tickets sont finis.</span></div></div>
+        <div class="kza-go"><button class="btn primary kza-start" data-act="kz-ago" ${tk < 1 || !E.koliArena(s).length ? "disabled" : ""}>${ic} Lancer l'auto</button><span class="xs muted">${tk < 1 ? "Plus de ticket : il en arrive 10 à minuit" : `${Math.min(n || tk, tk)} combat${Math.min(n || tk, tk) > 1 ? "s" : ""} · ${tk} ticket${tk > 1 ? "s" : ""} en réserve`}</span></div></div></section>`;
+    }
+    const t = aSum(); const cote = Q.cote;
+    const why = st === "done" && AU.why === "loss" ? `<div class="kza-why">${X().G("warn")}<span><b>Arrêté après ${K.autoStreak} défaites d'affilée.</b> Les adversaires du moment sont trop forts pour ton équipe d'arène : renforce-la, change-la, ou reviens plus tard.</span><button class="btn sm" data-act="kz-team">Modifier l'équipe</button></div>`
+      : st === "done" && AU.why === "tickets" ? `<div class="kza-why ok"><span>Plus de ticket de Koli : il en arrive ${K.daily} à minuit, et on en trouve en chasse.</span></div>` : "";
+    const det = AU.det ? `<div class="kza-det">${AU.L.map((x, i) => [x, i]).reverse().map(([x, i]) => `<div class="kza-li ${x.win ? "w" : "l"}"><b>${x.win ? "Victoire" : "Défaite"}</b><span class="grow">contre ${h(x.name)}${x.cote ? ` <span class="muted">· cote ${nf(x.cote)}</span>` : ""}</span><b class="num">${x.d > 0 ? "+" : ""}${x.d}</b>${x.A && x.B ? `<button class="btn sm" data-act="kz-areplay" data-i="${i}">Revoir</button>` : ""}</div>`).join("")}</div>` : "";
+    const prog = run ? (AU.mode === "hunt" ? (tk > K.autoReserve ? `Combat ${AU.L.length + 1}` : `En attente d'un ticket de chasse (${tk} / ${K.autoReserve} gardés)`) : `Combat ${Math.min(AU.L.length + 1, AU.tot)} / ${AU.tot}`) : `${AU.L.length} combat${AU.L.length > 1 ? "s" : ""} joué${AU.L.length > 1 ? "s" : ""}`;
+    return `<section class="panel kz-auto ${st}" id="kzAuto">${head}<div class="kza-body col">
+      <div class="kza-prog"><span class="small"><b>${prog}</b>${run && (AU.mode === "count" || tk > K.autoReserve) ? ` <span class="muted">· ${AU.busy ? "combat en cours…" : "prochain dans quelques secondes"}</span>` : ""}</span>${aPips()}</div>
+      <div class="kza-tiles"><div><span>Cote</span><b class="num">${nf(cote)} <small class="${t.d >= 0 ? "up" : "down"}">${t.d >= 0 ? "+" : "−"}${Math.abs(t.d)}</small></b></div>
+        <div><span>Bilan</span><b class="num">${t.w} <small class="up">V</small> · ${t.l} <small class="down">D</small></b></div>
+        <div><span>Kolizetons</span><b class="num">+${t.kz}</b></div><div><span>Bourses</span><b class="num">+${fmt(t.kam)}</b></div></div>${why}
+      <div class="row kza-btns">${run ? `<button class="btn kza-stop" data-act="kz-astop">Arrêter</button>` : `<button class="btn primary" data-act="kz-ago" ${tk < 1 ? "disabled" : ""}>${ic} Relancer ${c.cnt ? `${c.cnt} combats` : "tous les tickets"}</button><button class="btn sm" data-act="kz-areset">Réglages</button>`}${AU.L.length ? `<button class="btn sm" data-act="kz-adet" aria-pressed="${AU.det}">${AU.det ? "Masquer le détail" : "Voir le détail"}</button>` : ""}${run ? `<span class="xs muted">Tu peux quitter la page, l'auto continue.</span>` : ""}</div>
+      ${det}</div></section>`;
+  }
+  window.KZAUTO = { chip() { if (AU.st === "idle" || !S() || (AU.st === "done" && Date.now() - AU.end > 600000)) return ""; const t = aSum(); const run = AU.st === "run";
+    return `<div class="updbar kzachip ${AU.st}" data-act="nav" data-v="koli" data-tip="Mode automatique du Kolizéum : ${t.w} victoire${t.w > 1 ? "s" : ""}, ${t.l} défaite${t.l > 1 ? "s" : ""}. Cliquer pour l'ouvrir."><img class="ico sm" src="assets/ui/coffres/ticket_koli.svg" alt=""><span><b>Koli auto</b> <span class="muted">${run ? (AU.mode === "count" ? `${AU.L.length}/${AU.tot}` : `${AU.L.length}`) : "terminé"}</span></span><span class="kzac-p">${AU.L.slice(-10).map((x) => `<i class="${x.win ? "w" : "l"}"></i>`).join("")}</span><b class="num ${t.d >= 0 ? "up" : "down"}">${t.d >= 0 ? "+" : "−"}${Math.abs(t.d)}</b></div>`; } };
+
   /* ---------- la page ---------- */
   function render(main) {
     const s = S(); const Q = E.koliState(s); const on = online();
@@ -103,9 +212,10 @@
       <div class="kz-cote"><span class="big">${nf(Q.cote)}<small>de cote</small></span><span class="small"><b>${g.name}</b> · ${rank}${nx ? ` · <b>${nx.name} à ${nf(nx.min)}</b>` : ""}</span><div class="kz-prog g-${g.id}"><i style="width:${prog}%"></i></div>
         <span class="xs muted">Cette semaine : ${Q.n} combat${Q.n > 1 ? "s" : ""} classé${Q.n > 1 ? "s" : ""}${Q.n < K.minWeek ? ` (${K.minWeek} pour la récompense)` : ""} · meilleure cote ${nf(Q.best || Q.cote)}</span></div>
       <div class="kz-left"><span class="kz-tkn" data-tip="${h(CONSUMABLES[E.KOLI_TICKET].desc)}">${tick()}<b class="num">${tk}</b><span class="xs">ticket${tk > 1 ? "s" : ""} de Koli</span></span>
-        <span class="xs muted">${K.daily} offerts chaque jour à minuit (${K.tkMax} en réserve au plus)</span>
+        <span class="xs muted">${K.daily} offerts chaque jour à minuit (${K.tkMax} en réserve au plus)</span>${(() => { const f = E.tkFound(s); const T = E.TK_LOOT; return `<span class="xs kz-found" data-tip="Chaque monstre vaincu peut donner un ticket : ${String(T.hero).replace(".", ",")} % par héros de l'équipe (${T.boss} % sur un boss de donjon), les bonus de butin comptent à moitié. Un archimonstre en donne toujours un.">+ <b class="num">${f.n} / ${T.day}</b> trouvés en combat aujourd'hui</span>`; })()}
         <span class="kz-tkn sm" data-tip="Kolizetons : la monnaie du Kolizéum (3 par victoire, 1 par défaite, 1 par défense réussie, plus la récompense de la semaine).">${coin()}<b class="num">${fmt(E.koliKz(s))}</b><span class="xs">Kolizetons</span></span>
         <span class="xs">${X().IC("kamas")} bourse de victoire : <b>${fmt(purse(s))} kamas</b> + ${K.dust} Poussière de stasis</span></div></div></section>
+    ${autoPanel(s)}
     <div class="kz-grid"><div class="stack" style="gap:14px">
       <section class="panel"><div class="phead"><h2 style="margin:0">${X().IC("combat")} Choisis ton adversaire</h2><button class="btn sm" data-act="kz-refresh" ${ui.busy ? "disabled" : ""}>Autres adversaires · ${Q.rf < K.freeRefresh ? "gratuit" : `1 ticket`}</button></div>
         <div id="kzOpps">${oppsInner(s, Q)}</div>
@@ -212,7 +322,8 @@
   function rulesSheet() {
     X().openSheet(`<h2>Règles du Kolizéum</h2><ol class="kz-rules">
       <li>Ton équipe d'arène (${K.size} héros) affronte celle d'un autre joueur, jouée par l'IA. Les vrais niveaux comptent.</li>
-      <li>Un combat classé coûte un <b>ticket de Koli</b>. ${K.daily} tickets sont offerts chaque jour à minuit, jusqu'à ${K.tkMax} en réserve. On en trouve aussi dans la boutique.</li>
+      <li>Un combat classé coûte un <b>ticket de Koli</b>. ${K.daily} tickets sont offerts chaque jour à minuit, jusqu'à ${K.tkMax} en réserve. On en trouve aussi dans la boutique, et en combat : chaque monstre vaincu peut en donner un (${String(E.TK_LOOT.hero).replace(".", ",")} % par héros, ${E.TK_LOOT.boss} % sur un boss de donjon, toujours un sur un archimonstre), jusqu'à ${E.TK_LOOT.day} par jour.</li>
+      <li><b>Mode automatique</b> : il joue tes combats classés contre le Conseillé, un toutes les 3 secondes, même sur une autre page. Il s'arrête après ${K.autoStreak} défaites d'affilée. En auto, les Kolizetons sont réduits de 25 %.</li>
       <li>La <b>cote</b> monte quand tu gagnes et baisse quand tu perds, plus ou moins selon la cote de l'adversaire. Contre un Fantôme, elle bouge deux fois moins.</li>
       <li>Quand on t'attaque et que tu perds, tu perds la moitié de ce que l'autre gagne. Une défense réussie rapporte un peu de cote et 1 Kolizeton.</li>
       <li>Dès le tour ${K.ero}, l'<b>érosion</b> réduit les PV maximum et les soins de ${K.eroStep} % par tour. Au tour ${K.maxRound}, l'équipe qui a le plus de PV (en %) gagne.</li>
@@ -293,6 +404,14 @@
     const s = S(); const d = t.dataset;
     switch (a) {
       case "kz-fight": fight(+d.i); return;
+      case "kz-acnt": aset(s).cnt = +d.v; X().markDirty(); aPaint(); return;
+      case "kz-ahunt": { const c = aset(s); c.hunt = !c.hunt; X().markDirty(); if (!c.hunt && AU.st === "run" && AU.mode === "hunt") aStop("off"); else aPaint();
+        if (c.hunt) X().toast(`Tickets de chasse : un combat se lancera dès que tu auras plus de ${K.autoReserve} tickets.`); return; }
+      case "kz-ago": aStart("count"); return;
+      case "kz-astop": aStop("stop"); return;
+      case "kz-areset": AU.st = "idle"; AU.L = []; aPaint(); return;
+      case "kz-adet": AU.det = !AU.det; aPaint(); return;
+      case "kz-areplay": { const x = AU.L[+d.i]; if (x && x.A && x.B) watch(x.A, x.B, x.seed, { opp: { name: x.name }, d: x.d, own: true }); return; }
       case "kz-next": { X().watchStop(); window.DX.ui.tab = "koli"; X().render(); window.scrollTo(0, 0); return; }
       case "kz-refresh": { const r = E.act(s, "koliRefresh"); if (r) { X().toast(r); return; } X().markDirty(); ui.key = ""; X().render(); return; }
       case "kz-retry": ui.key = ""; X().render(); return;

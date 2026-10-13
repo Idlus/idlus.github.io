@@ -2188,6 +2188,7 @@
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
         if (n) { addRes(S, r, q * n); out.res[r] = (out.res[r] || 0) + q * n; seen(m.key, r); } });
       if (m.champ) { const ok = T.drops.filter(([r, p]) => !E.isKey(r) && p < 100); const best = ok.filter(([, p]) => p >= 5).sort((a, b) => a[1] - b[1])[0] || ok.sort((a, b) => b[1] - a[1])[0] || T.drops[0]; /* la ressource typique la plus rare du monstre */ if (best) { addRes(S, best[0], 3); out.res[best[0]] = (out.res[best[0]] || 0) + 3; out.champ.res = [best[0], 3]; } }
+      E.tkLoot(S, m, nRoll, out); // 1.0.7 : Tickets de Koli en combat
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
@@ -2222,6 +2223,18 @@
   E.RES_RATE_SCALE = 0.4;
   E.resRate = (rate) => (rate >= 100 ? 35 : rate * E.RES_RATE_SCALE);
   E.BONBON_RATE = 0.02;
+  /* 1.0.5 (Mathis) : chaque monstre peut donner un Ticket de Koli. Une chance par héros (0,25 % chacun, 10 % sur un boss de donjon),
+     les bonus de butin comptent à moitié, le Double gain en entier ; un archimonstre en donne toujours un ; 40 trouvés par jour au plus. */
+  E.TK_LOOT = { hero: 0.25, boss: 10, day: 40 };
+  E.tkFound = (S, now = E.now()) => { const d = E.defiDay ? E.defiDay(now) : Math.floor(now / 86400000); if (!S.tkFound || S.tkFound.d !== d) S.tkFound = { d, n: 0 }; return S.tkFound; };
+  E.tkMult = (S) => (1 + (E.dropMult(S) - 1) / 2) * E.evMult("drop");
+  E.tkLoot = (S, m, nRoll, out) => {
+    if (!E.KOLI_TICKET) return; const T = E.TK_LOOT; const f = E.tkFound(S); if (f.n >= T.day) return;
+    let n = m.archi ? 1 : 0; const p = (m.boss ? T.boss : T.hero) * E.tkMult(S) / 100;
+    for (let i = 0; i < nRoll; i++) if (rnd() < p) n++;
+    n = Math.min(n, T.day - f.n); if (!n) return;
+    f.n += n; S.cons[E.KOLI_TICKET] = (S.cons[E.KOLI_TICKET] || 0) + n; out.tk = (out.tk || 0) + n;
+  };
   /* Pénalité d'XP quand les monstres sont trop faibles pour le héros */
   /* 0.1.34 : malus adouci (avant : dès 5 niveaux d'écart, −10 % par niveau jusqu'à −95 %) ; une zone plus basse reste un repli correct */
   E.XP_PEN = { free: 6, step: 0.05, min: 0.3 };

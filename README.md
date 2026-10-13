@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7 « Kolizéum automatique »
+Mode auto dans `js/koliui.js` (objet `AU`, boucle `aLoop` toutes les secondes, un combat toutes les 3 s via `aStep`) : adversaire au meilleur gain attendu (`aPick`, 20 combats d'essai), hors ligne `E.koliFight(S, i, true)`, en ligne `ON().koli` puis `E.koliOnline(S, R, true)` ; Kolizetons ×`K.autoKz` (0,75, fractions dans `Q.kzf`) ; arrêt après `K.autoStreak` défaites, au nombre choisi ou sans ticket ; réglages sauvés dans `S.koli.auto` ({ cnt, hunt }), interrupteur « Tickets de chasse » qui garde `K.autoReserve` tickets ; pastille `window.KZAUTO.chip()` dans `protChip`. Tickets de Koli en combat : `E.tkLoot` dans `giveRewards` (`E.TK_LOOT` : 0,25 % par héros, 10 % boss, archimonstre sûr, 40 par jour via `S.tkFound`), bonus de butin à moitié (`E.tkMult`).
+
 ## 1.0.6.3 « Codes cadeaux récupérés »
 Les récompenses d'un code cadeau accepté mais perdu en route (code MERCI) sont redonnées toutes seules au chargement (`gift_mine` dans supabase/codes.sql).
 

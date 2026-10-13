@@ -1,6 +1,17 @@
 {
-  "version": "1.0.6.3",
+  "version": "1.0.7",
   "versions": [
+    {
+      "v": "1.0.7",
+      "name": "Kolizéum automatique",
+      "items": [
+        "Mode automatique au Kolizéum : il joue tes combats classés contre l'adversaire Conseillé, sans animation, un toutes les 3 secondes. Choisis 5, 10 ou tous tes tickets, puis « Lancer l'auto »",
+        "Il continue sur toutes les pages : une pastille « Koli auto » en haut de l'écran montre l'avancée et la cote gagnée. Il s'arrête tout seul après 3 défaites d'affilée ou quand les tickets sont finis",
+        "Pendant l'auto : une case par combat (✓ ou ✕), la cote, le bilan, les Kolizetons et les bourses gagnés, et le détail de chaque combat à revoir. En auto, les Kolizetons sont réduits de 25 %",
+        "Tickets de Koli en combat : chaque monstre vaincu peut en donner un (0,25 % par héros de l'équipe, 10 % sur un boss de donjon, toujours un sur un archimonstre), jusqu'à 40 par jour. Les bonus de butin comptent à moitié, le Double gain en entier",
+        "Interrupteur « Tickets de chasse » : un combat classé se lance dès qu'un ticket arrive en chasse, en gardant 5 tickets en réserve"
+      ]
+    },
     {
       "v": "1.0.6.3",
       "name": "Codes cadeaux récupérés",

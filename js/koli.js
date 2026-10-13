@@ -13,12 +13,12 @@
 
   const K = Object.assign(E.KOLI, {
     daily: 10, tkMax: 30, start: 1000, elo: 32, ghostMul: 0.5, defLoss: 0.5, defWin: 0.25, minWeek: 5,
-    purseK: 60, dust: 2, kzWin: 3, kzLoss: 1, kzDef: 1, chance: 20, logMax: 30, freeRefresh: 1,
+    purseK: 60, dust: 2, kzWin: 3, kzLoss: 1, kzDef: 1, autoKz: 0.75, autoReserve: 5, autoStreak: 3, chance: 20, logMax: 30, freeRefresh: 1,
   });
   E.KOLI_TICKET = "ticket_koli";
   E.KOLI_CUR = "kolizetons";
   D.CONSUMABLES[E.KOLI_TICKET] = { name: "Ticket de Koli", icon: "🎟", img: "ticket_koli", kind: "util", auto: true,
-    desc: `Un combat classé au Kolizéum. ${K.daily} tickets offerts chaque jour (jusqu'à ${K.tkMax} en réserve). On en trouve aussi dans les coffres.` };
+    desc: `Un combat classé au Kolizéum. ${K.daily} tickets offerts chaque jour (jusqu'à ${K.tkMax} en réserve). On en trouve aussi en combat (jusqu'à 40 par jour) et dans la boutique.` };
 
   /* ---------- grades ---------- */
   E.KOLI_GRADES = [
@@ -159,12 +159,13 @@
 
   /* ---------- un combat classé, résolu sur cet appareil (hors ligne) ou d'après le serveur ---------- */
   /* r : { win, rounds, hpA, hpB } ; o : adversaire ; seed : graine du combat ; srv : { delta, cote } donnés par le serveur */
-  E.koliApply = (S, o, r, seed, srv) => {
+  E.koliApply = (S, o, r, seed, srv, auto) => {
     const Q = E.koliState(S); const st = E.koliStakes(Q.cote, o.cote, o.ghost);
     const delta = srv ? srv.delta : r.win ? st.win : -st.lose;
     Q.cote = srv && srv.cote !== undefined ? srv.cote : Math.max(0, Q.cote + delta); Q.best = Math.max(Q.best || 0, Q.cote); Q.n++;
     if (r.win) Q.win++; else Q.loss++;
-    const lvl = E.koliLvl(S); const kam = r.win ? K.purseK * lvl : 0; const kz = r.win ? K.kzWin : K.kzLoss;
+    const lvl = E.koliLvl(S); const kam = r.win ? K.purseK * lvl : 0; let kz = r.win ? K.kzWin : K.kzLoss;
+    if (auto) { Q.kzf = (Q.kzf || 0) + kz * K.autoKz; kz = Math.floor(Q.kzf + 1e-9); Q.kzf -= kz; } // 1.0.7 : mode auto, 25 % de Kolizetons en moins (les fractions s'accumulent)
     S.kamas += kam; if (r.win) E.addRes(S, E.POUSSIERE, K.dust); S.tokens[E.KOLI_CUR] = (S.tokens[E.KOLI_CUR] || 0) + kz;
     if (!srv) { Q.log.unshift({ t: E.now(), name: o.name, ghost: !!o.ghost, win: r.win, d: delta, seed, cote: o.cote, gs: o.seed, gl: o.lvl, gz: o.size, rounds: r.rounds });
       if (Q.log.length > K.logMax) Q.log.length = K.logMax; }
@@ -172,23 +173,23 @@
     return { delta, cote: Q.cote, kamas: kam, dust: r.win ? K.dust : 0, kz, grade: E.koliGrade(Q.cote, Q.top) };
   };
   /* hors ligne : un ticket, un combat contre un Fantôme de la liste */
-  E.koliFight = (S, i) => {
+  E.koliFight = (S, i, auto) => {
     const Q = E.koliState(S); if (!E.koliArena(S).length) return "Choisis ton équipe d'arène.";
     if (E.koliTickets(S) < 1) return "Plus de ticket de Koli : il en arrive 10 chaque jour à minuit.";
     const o = E.koliGhostOpps(S)[i]; if (!o) return "Adversaire introuvable.";
     S.cons[E.KOLI_TICKET]--;
     const seed = ((o.seed ^ (Q.n * 2654435761)) >>> 0) || 1;
     const A = E.koliSnap(S, Q.team); const r = E.koliSim(A, o.team, seed);
-    const out = Object.assign({ opp: o, seed, A }, r, E.koliApply(S, o, r, seed));
+    const out = Object.assign({ opp: o, seed, A }, r, E.koliApply(S, o, r, seed, null, auto));
     Q.log[0].A = A; Q.log.forEach((l, k) => { if (k >= 5) delete l.A; }); // de quoi revoir les 5 derniers combats
     return out;
   };
   E.koliRefresh = (S) => { const Q = E.koliState(S); if (Q.rf >= K.freeRefresh) { if (E.koliTickets(S) < 1) return "Il faut un ticket pour changer encore d'adversaires aujourd'hui."; S.cons[E.KOLI_TICKET]--; } Q.rf++; return null; };
   /* en ligne : le serveur a joué le combat ({ win, seed, A, B, rounds, delta, cote, opp }) ; un ticket part, la bourse arrive */
-  E.koliOnline = (S, R) => {
+  E.koliOnline = (S, R, auto) => {
     const Q = E.koliState(S); Q.online = true;
     if (E.koliTickets(S) > 0) S.cons[E.KOLI_TICKET]--;
-    return Object.assign({}, R, E.koliApply(S, R.opp, R, R.seed, { delta: R.delta, cote: R.cote }));
+    return Object.assign({}, R, E.koliApply(S, R.opp, R, R.seed, { delta: R.delta, cote: R.cote }, auto));
   };
   /* en ligne : la fiche du serveur ({ cote, n, best, w }) et les semaines finies ; défenses réussies : 1 Kolizeton chacune */
   E.koliSync = (S, me, weeks, fights, myId) => {
