@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.5.1 « Monstres oubliés et Vulkania »
+Suite du répertoire du contenu (Mathis, 13/10/2026 : « 1A 2A 6A »). tools/build_data.py : zone `vulkania` (8 sous-zones DofusDB 763-770, `requires` Bouftou Royal), sous-zones `ama_cryptes_entree` (7), `can_rives_lac` (56), `oto_tourbiere_fond` (457) ; `EXTRA_SUB` force dans une sous-zone un monstre hors fenêtre de niveau (Trooll Apprivoisé, Vampire Dupyr, Coffre Sombre, Wabbit GM, Dopeul Dark Vlad, Méga Craqueleur des plaines, Gardienne des Égouts, Sousouris Grise) ; `DROP_FIX` donne 1 % aux objets du Chef Bwork dont DofusDB met le taux à 0 (sur les 4 Bworks des Pics de Cania). Fusion additive dans js/gamedata.js (clés nouvelles seulement). js/archis.js : Vulkania dans le palier 3 de l'Ocre (304 archimonstres, 15 zones ; tests/fight.test.js). `E.HUNT_EASE` réglé par simulation (`vul_nehr` 0,9, le reste au niveau des zones voisines). js/armes.js et js/koli.js regénérés (+5 armes).
+
 ## 1.0.5 « Course en direct »
 Course de lancement en direct. js/verify.js : le résumé envoyé avec la partie contient `qstep` (étape de la quête principale). supabase/classements.sql : colonnes `ladder.qstep` / `qstep_at` (heure où l'étape a augmenté), vue `lb_race` (comptes non signalés, qstep > 0). js/ui.js : onglet `race` de Classements (`raceFetch`, `raceHtml` : 10 places venant de `firsts` kind race10, joueurs en course triés par qstep puis qstep_at), pastille `raceChip` (tchip `k-race`, rafraîchie toutes les 5 min par `raceInfoFetch`, `DX.raceRefresh`), action `race-open`. js/chat.js : annonce race10 = carte dorée dans le Général (plus dans Hauts faits) + notification pour tous.
 

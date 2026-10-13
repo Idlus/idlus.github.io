@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.5";
+const GAME_VERSION = "1.0.5.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.5.1", name: "Monstres oubliés et Vulkania", items: [
+    "Archipel de Vulkania : nouvelle région permanente, ouverte après le Bouftou Royal comme l'île des Wabbits. 4 forêts et 4 cratères du niveau 20 au 175, avec les Krokilles juvéniles, novices, matures et vénérables, Draguisla Bonita et 20 archimonstres",
+    "6 panoplies de Vulkania à trouver sur les Krokilles : Vulkain, Grozilla, Padgref, Magmatique, Quartzésienne et Ali Grothor",
+    "Monstres oubliés : l'Entrée des Cryptes (Noeul, Sousouris Grise) à Amakna, les Rives du Lac de Cania (les 4 Biblops) et le Fond de la Tourbière (Roissingue et sa Panoplie Souveraine) à Otomaï sont de nouvelles sous-zones",
+    "Le Trooll Apprivoisé, le Vampire Dupyr, le Dopeul Dark Vlad, le Méga Craqueleur des plaines, le Wabbit GM, le Coffre Sombre et la Gardienne des Égouts rejoignent leurs sous-zones",
+    "Panoplie du Chef Bwork : ses 7 objets ne tombaient nulle part. Ils se trouvent maintenant sur les Bworks des Pics de Cania (1 %)",
+    "Ocre : 304 archimonstres en 15 zones, Vulkania compte dans le palier Cania, Sidimote et Wabbits. En tout : 66 monstres, 39 objets, 8 panoplies et 81 ressources de plus",
+  ] },
   { v: "1.0.5", name: "Course en direct", items: [
     "Classements › Course (nouvel onglet, ouvert en premier) : la course de lancement en direct. Les 10 places à gagner, avec le pseudo et la date de chaque Légende, la prochaine place qui clignote, puis tous les joueurs en course classés par étape de la quête principale (chapitre et barre de progression), ta ligne surlignée",
     "Égalité : à étape égale, le premier à l'avoir atteinte passe devant",

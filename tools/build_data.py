@@ -49,13 +49,16 @@ ZONES = [
               (7, 'ama_cryptes', 'grave', 32, 50), (103, 'ama_bandits', 'meadow', 35, 45),
               # 1.0 « Sous-zones oubliées »
               (1017, 'ama_citwouilles', 'wheat', 25, 45), (490, 'ama_rivage_sufokien', 'beach', 42, 50), (492, 'ama_passage_brakmar', 'meadow', 42, 50),
-              (31, 'ama_marecages', 'lake', 42, 77), (11, 'ama_porcos', 'meadow', 80, 98)]},
+              (31, 'ama_marecages', 'lake', 42, 77), (11, 'ama_porcos', 'meadow', 80, 98),
+              # 1.0.5 « Monstres oubliés » : l'entrée des Cryptes (Noeul, Sousouris Grise), même sous-zone DofusDB que les Cryptes
+              (7, 'ama_cryptes_entree', 'grave', 18, 24, 'Entrée des Cryptes')]},
     {'id': 'cania', 'name': 'Plaines de Cania', 'desc': 'Vastes plaines, lacs de Blops et robots du Massif.', 'theme': 'wheat',
      'subs': [(334, 'can_baie', 'beach', 33, 48), (178, 'can_porkass', 'meadow', 38, 52), (56, 'can_lac', 'lake', 50, 62),
               (68, 'can_champs', 'wheat', 49, 66), (54, 'can_massif', 'quarry', 50, 66), (70, 'can_plaines', 'quarry', 57, 72),
               (521, 'can_pics', 'quarry', 78, 86), (55, 'can_penates', 'grave', 98, 106), (1038, 'can_bibliotheque', 'city', 98, 112), (523, 'can_cirque', 'quarry', 106, 116),
               (518, 'can_landes', 'quarry', 135, 152), (519, 'can_dents', 'quarry', 148, 162), (809, 'can_kanigs', 'city', 148, 162),
-              (62, 'can_dopeuls', 'city', 35, 47), (525, 'can_routes', 'quarry', 39, 74), (69, 'can_litneg', 'forest', 112, 120)]},
+              (62, 'can_dopeuls', 'city', 35, 47), (525, 'can_routes', 'quarry', 39, 74), (69, 'can_litneg', 'forest', 112, 120),
+              (56, 'can_rives_lac', 'lake', 22, 30, 'Rives du Lac de Cania')]},  # 1.0.5 : les Biblops
     {'id': 'wabbit', 'name': 'Île des Wabbits', 'desc': "L'île du Wa Wabbit, de ses Wabbits et de ses champs de Cawottes.", 'theme': 'meadow', 'requires': {'boss': 'cour_bouftou_royal'},
      'subs': [(161, 'wab_cawotte', 'meadow'), (164, 'wab_couronne', 'meadow'), (163, 'wab_tombeaux', 'grave'), (162, 'wab_waldo', 'meadow'), (798, 'wab_labos', 'cave')]},
     {'id': 'sidimote', 'name': 'Landes de Sidimote', 'desc': 'Terres désolées, roulottes des Magik Riktus et repaire du Meulou.', 'theme': 'grave',
@@ -75,7 +78,8 @@ ZONES = [
     {'id': 'otomai', 'name': "Île d'Otomaï", 'desc': 'Plaines, tourbières et villages de l\'île du savant Otomaï.', 'theme': 'forest',
      'subs': [(454, 'oto_plaines', 'meadow', 90, 101), (457, 'oto_tourbiere', 'sewer', 89, 104), (471, 'oto_tourbiere2', 'sewer', 89, 104), (468, 'oto_zoths', 'city', 110, 128), (469, 'oto_canopee', 'forest', 110, 128),
               (455, 'oto_jungle', 'forest', 123, 145), (464, 'oto_hakam', 'forest', 140, 162), (472, 'oto_feuillage', 'forest', 140, 162),
-              (453, 'oto_corail', 'beach', 36, 44), (461, 'oto_arche', 'beach', 56, 70), (451, 'oto_naufrages', 'beach', 20, 40)]},
+              (453, 'oto_corail', 'beach', 36, 44), (461, 'oto_arche', 'beach', 56, 70), (451, 'oto_naufrages', 'beach', 20, 40),
+              (457, 'oto_tourbiere_fond', 'sewer', 176, 186, 'Fond de la Tourbière')]},  # 1.0.5 : le Roissingue
     {'id': 'minotoror', 'name': 'Île du Minotoror', 'desc': 'L\'île et le labyrinthe du Minotoror.', 'theme': 'quarry',
      'subs': [(209, 'mino_ile', 'beach', 100, 122), (319, 'mino_labyrinthe', 'cave', 104, 122)]},
     {'id': 'pandala', 'name': 'Île de Pandala', 'desc': 'L\'île des Pandawas, divisée entre les éléments.', 'theme': 'meadow',
@@ -125,7 +129,24 @@ ZONES = [
      'subs': [(967, 'pos_port', 'beach', 198, 212), (971, 'pos_cauchemar', 'spirit', 198, 212)]},
     {'id': 'ecailles', 'name': 'Archipel des Écailles', 'desc': 'Crocuzko, le repaire des Crocodailles de Torkélonia.', 'theme': 'beach', 'requires': {'boss': 'cavernes_kolosso'},
      'subs': [(917, 'eca_crocuzko', 'beach', 198, 212)]},
+    # 1.0.5 « Archipel de Vulkania » : les Krokilles, du niveau 20 au 175 (le Cratère Minus, arène de Grozilla et Grasmera, est réservé aux boss)
+    {'id': 'vulkania', 'name': 'Archipel de Vulkania', 'desc': "L'archipel volcanique des Krokilles : forêts et cratères, du Pillar au Monseleya.", 'theme': 'mine', 'requires': {'boss': 'cour_bouftou_royal'},
+     'subs': [(763, 'vul_etraktopel', 'forest', 18, 30), (767, 'vul_pillar', 'mine', 18, 30), (764, 'vul_espartiate', 'forest', 48, 60), (768, 'vul_mopyle', 'mine', 48, 78),
+              (765, 'vul_strates', 'forest', 98, 110), (769, 'vul_nehr', 'mine', 98, 128), (766, 'vul_ponefarr', 'forest', 148, 160), (770, 'vul_monseleya', 'mine', 148, 178)]},
 ]
+# 1.0.5 « Monstres oubliés » : monstres ajoutés à une sous-zone hors de sa fenêtre de niveaux (ou boss de zone joués comme monstres), au niveau indiqué
+EXTRA_SUB = {
+    'ama_cryptes_entree': [(126, 18, 20)],   # Sousouris Grise (niveau 1 dans DOFUS)
+    'ama_cryptes': [(2786, 48, 52)],         # Vampire Dupyr (boss de quête des Cryptes, niveau 150)
+    'abr_sombre': [(649, 70, 74)],           # Coffre Sombre (niveau 50)
+    'ama_bworks': [(791, 48, 52)],           # Trooll Apprivoisé (niveau 80)
+    'wab_couronne': [(182, 56, 60)],         # Wabbit GM (niveau 80)
+    'ama_dark_vlad': [(422, 140, 144)],      # Dopeul Dark Vlad (niveau 120)
+    'can_landes': [(2882, 135, 140)],        # Méga Craqueleur des plaines (niveau 132)
+    'bon_canaux': [(450, 108, 112)], 'bra_entrailles': [(450, 108, 112)],  # Gardienne des Égouts (niveau 145)
+}
+# 1.0.5 : objets à 0 % dans DofusDB (butin conditionnel) donnés au taux habituel des boss
+DROP_FIX = {n: 1.0 for n in ('Lame du Chef Bwork', 'Amulette du Chef Bwork', 'Bracelet du Chef Bwork', 'Bottes du Chef Bwork', 'Cape du Chef Bwork', 'Slip du Chef Bwork', 'Casque du Chef Bwork')}
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
 CO_BOSS = {'gelaxieme_dimension', 'labo_tynril', 'clos_blops', 'dojo_vent', 'taniere_givrefoux', 'cavernes_kolosso', 'tempete_eliocalypse'}  # donjons où tous les boss se battent ensemble (0.1.44.1 : boss secondaires)
 POOL_FORCE = {'antre_dragon_cochon': {'Gorgouille'}}  # monstres de salle aux grades aberrants (Gorgouille : niveau 400) gardés au niveau du donjon
@@ -333,6 +354,7 @@ def monster_entry(m, boss=False, archi_of=None):
         it = items.get(d['objectId'])
         if not it or not drop_ok(it): continue
         pct = d.get('percentDropForGrade1', 0) or 0
+        if pct <= 0: pct = DROP_FIX.get(fr(it), 0)
         if pct <= 0: continue
         if it['typeId'] in SLOT_BY_TYPE:
             eq.append([it['id'], round(pct, 2)]); equip_ids.add(it['id'])
@@ -353,8 +375,9 @@ for z in ZONES:
     subs = []
     for tup in z['subs']:
         sid, gid, deco = tup[:3]
-        win = tup[3:] if len(tup) > 3 else None
+        win = tup[3:5] if len(tup) > 3 else None
         s = subareas[sid]
+        sname = tup[5] if len(tup) > 5 else fr(s)
         mons, archis = [], []
         for mid in s['monsters']:
             m = monsters.get(mid)
@@ -369,8 +392,16 @@ for z in ZONES:
             if a and a['race'] == ARCHI_RACE:
                 GAME_M[mkey(a)] = monster_entry(a, archi_of=mkey(m)); archis.append(mkey(a))
                 GAME_M[mkey(m)]['archi'] = mkey(a)
+        for mid, lo_, hi_ in EXTRA_SUB.get(gid, []):
+            m = monsters[mid]; k = mkey(m)
+            if k not in GAME_M: GAME_M[k] = monster_entry(m)
+            GAME_M[k]['lvl'] = [lo_, hi_]
+            if k not in mons: mons.append(k)
+            a = monsters.get(m.get('correspondingMiniBossId') or 0)
+            if a and a['race'] == ARCHI_RACE and mkey(a) not in GAME_M:
+                GAME_M[mkey(a)] = monster_entry(a, archi_of=k); GAME_M[mkey(a)]['lvl'] = [lo_, hi_]; archis.append(mkey(a)); GAME_M[k]['archi'] = mkey(a)
         lv = [min(GAME_M[k]['lvl'][0] for k in mons), max(GAME_M[k]['lvl'][1] for k in mons)]
-        sub = {'id': gid, 'dbid': sid, 'name': fr(s), 'lvl': lv, 'deco': deco, 'monsters': mons}
+        sub = {'id': gid, 'dbid': sid, 'name': sname, 'lvl': lv, 'deco': deco, 'monsters': mons}
         if gid in HIDDEN: sub['hidden'] = True; sub['requiresItem'] = HIDDEN[gid]
         subs.append(sub)
     # ordre par niveau min (stable)

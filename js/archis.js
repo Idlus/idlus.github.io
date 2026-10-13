@@ -61,7 +61,7 @@
   E.OCRE_TIERS = [
     { name: "Astrub", zones: ["astrub"], rew: { cons: ["pierre_ame", 10], kamas: 20000 }, txt: "10 Pierres d'âme et 20 000 kamas" },
     { name: "Amakna, Bonta et Brâkmar", zones: ["amakna", "bontabrak"], rew: { title: "Moissonneur", kamas: 50000 }, txt: "Titre « Moissonneur » et 50 000 kamas" },
-    { name: "Cania, Sidimote et Wabbits", zones: ["cania", "sidimote", "wabbit"], rew: { cons: ["parfum_piste", 5], kamas: 100000 }, txt: "5 Parfums de pistage et 100 000 kamas" },
+    { name: "Cania, Sidimote, Wabbits et Vulkania", zones: ["cania", "sidimote", "wabbit", "vulkania"], rew: { cons: ["parfum_piste", 5], kamas: 100000 }, txt: "5 Parfums de pistage et 100 000 kamas" },
     { name: "Koalaks, Abraknydes et Moon", zones: ["koalaks", "abrak", "moon"], rew: { furn: E.ARCHI_FURN, orn: "ame", kamas: 200000 }, txt: "Meuble « Autel des âmes », ornement « Âme violette » et 200 000 kamas" },
     { name: "Dragoeufs, Otomaï et Minotoror", zones: ["dragoeufs", "otomai", "minotoror"], rew: { cons: ["bonbon_royal", 3], kamas: 400000 }, txt: "3 Bonbons Royaux et 400 000 kamas" },
     { name: "Pandala et Grobe", zones: ["pandala", "grobe"], rew: { dofus: "ocre", title: "Éternel Moissonneur" }, txt: "Dofus Ocre (+1 PA) et titre « Éternel Moissonneur »" },
