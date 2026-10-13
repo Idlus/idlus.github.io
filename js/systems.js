@@ -1015,8 +1015,9 @@
      presque toujours, une équipe sans équipement perd, à toutes les tailles). */
   E.FOE_SIZE = { 1: { hp: 1.3, dmg: 1.5 }, 2: { hp: 0.75, dmg: 0.7 }, 3: { hp: 0.85, dmg: 0.85 } };
   /* et par niveau : un peu adoucis vers 40 (renfort de chasse tout neuf) et vers 200, où même bien équipé on perdait un combat sur deux */
-  E.FOE_LVL = [[40, 0.8], [60, 1], [160, 1], [200, 0.7]];
-  E.foeSize = (n, lvl) => { const z = E.FOE_SIZE[n] || { hp: 1, dmg: 1 }; const L = E.FOE_LVL; let f = L[0][1];
+  E.FOE_LVL = [[40, 0.8], [60, 1], [160, 1], [200, 0.6]];
+  E.FOE_LVL_SOLO = [[40, 0.8], [60, 1], [160, 1], [200, 0.9]]; // seul, un héros sans équipement gagnait déjà trop souvent à haut niveau
+  E.foeSize = (n, lvl) => { const z = E.FOE_SIZE[n] || { hp: 1, dmg: 1 }; const L = n > 1 ? E.FOE_LVL : E.FOE_LVL_SOLO; let f = L[0][1];
     for (let i = 0; i < L.length; i++) { if (lvl >= L[i][0]) f = L[i][1]; if (i + 1 < L.length && lvl > L[i][0] && lvl < L[i + 1][0]) { f = L[i][1] + (L[i + 1][1] - L[i][1]) * (lvl - L[i][0]) / (L[i + 1][0] - L[i][0]); break; } }
     return { hp: z.hp * f, dmg: z.dmg * f }; };
   E.protGroup = (S, sub, team, monsterEntity) => {
