@@ -4,6 +4,8 @@
 # Étapes :
 #   verifier  : se connecte et affiche la machine (système, processeurs, mémoire, disque)
 #   installer : installe ou met à jour Supabase + HTTPS + pare-feu + sauvegarde de nuit (tools/serveur/installer.sh)
+#   copier    : copie l'ancienne base Supabase (accès en lecture seule) et la charge dans le nouveau serveur, à la place
+#               de ce qu'il contient (tools/serveur/copier.sh puis restaurer.sh). Secret : SUPABASE_ACCESS_TOKEN.
 # domaine : adresse du serveur (ex. api.idlus.fr). Vide = adresse gratuite <ip>.sslip.io.
 name: Serveur OVH
 on:
@@ -12,7 +14,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer]
+        options: [verifier, installer, copier]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -90,4 +92,24 @@ jobs:
           else
             # sudo lit le mot de passe sur la première ligne (jamais affiché)
             printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash /tmp/idlus-serveur/installer.sh '$dom'"
+          fi
+      - name: Copie de l'ancienne base vers le nouveau serveur
+        if: inputs.etape == 'copier'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: bolbuxuxydfslwpfbfff
+        run: |
+          sudo apt-get -qq install -y postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null 2>&1
+          sudo apt-get -qq install -y postgresql-client-17 >/dev/null
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          trap 'rm -rf /tmp/copie' EXIT
+          bash tools/serveur/copier.sh /tmp/copie
+          sshpass -e ssh $SSHO "$UTIL@$HOTE" 'rm -rf /tmp/idlus-serveur /tmp/idlus-copie && mkdir -p /tmp/idlus-serveur /tmp/idlus-copie && chmod 700 /tmp/idlus-copie'
+          sshpass -e scp $SSHO tools/serveur/* "$UTIL@$HOTE:/tmp/idlus-serveur/"
+          sshpass -e scp $SSHO /tmp/copie/* "$UTIL@$HOTE:/tmp/idlus-copie/"
+          if [ "$UTIL" = "root" ]; then
+            sshpass -e ssh $SSHO "root@$HOTE" "bash /tmp/idlus-serveur/restaurer.sh /tmp/idlus-copie"
+          else
+            printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash /tmp/idlus-serveur/restaurer.sh /tmp/idlus-copie"
           fi
