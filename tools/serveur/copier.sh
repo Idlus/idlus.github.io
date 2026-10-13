@@ -25,13 +25,15 @@ export PGHOST="$HOST" PGPORT=5432 PGUSER="$R.$PROJECT_REF" PGPASSWORD="$P" PGDAT
 # Le rôle met quelques secondes à être connu du pooler
 for i in $(seq 1 12); do psql -Atqc "select 1" >/dev/null 2>&1 && break; sleep 5; done
 psql -Atqc "select 'Postgres ' || current_setting('server_version')"
-echo "Comptes : $(psql -Atqc 'select count(*) from auth.users') ; parties : $(psql -Atqc 'select count(*) from public.saves')"
+# Comme l'outil officiel (« SET SESSION ROLE postgres ») : le rôle temporaire agit en tant que postgres
+q() { psql -Atq -c "set session role postgres" -c "$1"; }
+echo "Comptes : $(q 'select count(*) from auth.users') ; parties : $(q 'select count(*) from public.saves')"
 
 echo "== Copie (structure du jeu, puis données du jeu, puis comptes)"
-pg_dump --schema-only --schema=public --no-owner -f "$OUT/1_structure.sql"
-pg_dump --data-only --schema=public --no-owner -f "$OUT/2_donnees.sql"
-pg_dump --data-only --no-owner -t auth.users -t auth.identities -f "$OUT/0_comptes.sql"
+pg_dump --role=postgres --schema-only --schema=public --no-owner -f "$OUT/1_structure.sql"
+pg_dump --role=postgres --data-only --schema=public --no-owner -f "$OUT/2_donnees.sql"
+pg_dump --role=postgres --data-only --no-owner -t auth.users -t auth.identities -f "$OUT/0_comptes.sql"
 # Tables suivies en direct (chat…) : la liste est refaite à la main sur le nouveau serveur
-psql -Atqc "select tablename from pg_publication_tables where pubname='supabase_realtime' and schemaname='public'" > "$OUT/direct.txt"
+q "select tablename from pg_publication_tables where pubname='supabase_realtime' and schemaname='public'" > "$OUT/direct.txt"
 echo "Tables en direct : $(tr '\n' ' ' < "$OUT/direct.txt")"
 ls -la "$OUT" | awk 'NR>1 {print $5, $9}'
