@@ -1,0 +1,62 @@
+# Serveur OVH : installe et entretient le futur serveur en ligne d'Idlus (Supabase auto-hébergé sur le VPS OVH de Mathis).
+# Lancé uniquement à la main : Actions > Serveur OVH > Run workflow. Ne touche pas au serveur Supabase actuel ni au jeu.
+# Secrets (ajoutés par Mathis, jamais écrits ailleurs) : VPS_HOST (adresse IP), VPS_USER (utilisateur), VPS_PASSWORD (mot de passe).
+# Étapes :
+#   verifier  : se connecte et affiche la machine (système, processeurs, mémoire, disque)
+#   installer : installe ou met à jour Supabase + HTTPS + pare-feu + sauvegarde de nuit (tools/serveur/installer.sh)
+# domaine : adresse du serveur (ex. api.idlus.fr). Vide = adresse gratuite <ip>.sslip.io.
+name: Serveur OVH
+on:
+  workflow_dispatch:
+    inputs:
+      etape:
+        description: "Étape"
+        type: choice
+        options: [verifier, installer]
+        default: verifier
+      domaine:
+        description: "Domaine du serveur (vide = <ip>.sslip.io)"
+        type: string
+        default: ""
+concurrency:
+  group: serveur-ovh
+  cancel-in-progress: false
+jobs:
+  serveur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SSHPASS: ${{ secrets.VPS_PASSWORD }}
+      HOTE: ${{ secrets.VPS_HOST }}
+      UTIL: ${{ secrets.VPS_USER }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparation
+        run: |
+          for s in HOTE UTIL SSHPASS; do if [ -z "${!s}" ]; then echo "Secret manquant (VPS_HOST, VPS_USER ou VPS_PASSWORD)." >&2; exit 1; fi; done
+          sudo apt-get -qq install -y sshpass >/dev/null
+          echo "SSHO=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=20" >> "$GITHUB_ENV"
+      - name: Connexion et machine
+        run: |
+          out=$(sshpass -e ssh $SSHO "$UTIL@$HOTE" 'echo CONNEXION_OK; . /etc/os-release; echo "Système : $PRETTY_NAME"; echo "Processeurs : $(nproc)"; free -h | sed -n 2p | awk "{print \"Mémoire : \" \$2 \" (utilisée \" \$3 \")\"}"; df -h / | tail -1 | awk "{print \"Disque : \" \$2 \" (libre \" \$4 \")\"}"; uptime' 2>&1) || true
+          echo "$out"
+          if ! echo "$out" | grep -q CONNEXION_OK; then
+            if echo "$out" | grep -qi "expired\|change your password"; then echo "OVH demande de changer le mot de passe à la première connexion : à faire une fois (voir le fil)." >&2; fi
+            echo "Connexion impossible (adresse, utilisateur ou mot de passe ?)." >&2; exit 1
+          fi
+      - name: Installation
+        if: inputs.etape == 'installer'
+        env:
+          DOMAINE_DEMANDE: ${{ inputs.domaine }}
+        run: |
+          dom="$DOMAINE_DEMANDE"; [ -n "$dom" ] || dom="$(echo "$HOTE" | tr . -).sslip.io"
+          if ! echo "$dom" | grep -qE '^[a-z0-9.-]+$'; then echo "Domaine invalide : $dom" >&2; exit 1; fi
+          echo "Domaine : $dom"
+          sshpass -e ssh $SSHO "$UTIL@$HOTE" 'rm -rf /tmp/idlus-serveur && mkdir -p /tmp/idlus-serveur'
+          sshpass -e scp $SSHO tools/serveur/* "$UTIL@$HOTE:/tmp/idlus-serveur/"
+          if [ "$UTIL" = "root" ]; then
+            sshpass -e ssh $SSHO "root@$HOTE" "bash /tmp/idlus-serveur/installer.sh '$dom'"
+          else
+            # sudo lit le mot de passe sur la première ligne (jamais affiché)
+            printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash /tmp/idlus-serveur/installer.sh '$dom'"
+          fi

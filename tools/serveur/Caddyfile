@@ -1,0 +1,15 @@
+# HTTPS automatique (Let's Encrypt). Seules les adresses utilisées par le jeu sont ouvertes :
+# le tableau de bord (Studio) n'est pas exposé sur internet.
+{$PROXY_DOMAIN} {
+    @supabase_api path /auth/v1/* /rest/v1/* /realtime/v1/* /functions/v1/* /storage/v1/*
+
+    handle @supabase_api {
+        reverse_proxy api-gw:8000
+    }
+
+    handle {
+        respond "Serveur d'Idlus" 404
+    }
+
+    header -server
+}
