@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.40.1";
+const GAME_VERSION = "0.1.41";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.41", name: "Donjons oubliés", items: [
+    "18 donjons classiques de DOFUS arrivent, du niveau 40 au 110 : Gelaxième Dimension, Maison Fantôme, Akadémie des Gobs, Refuge sylvestre, Donjon des Forgerons, Grotte Hesque, Donjon des Larves, Fonderie des Waddicts, Village Kanniboul, Épreuve de Draegnerys, Cale de l'Arche d'Otomaï, Cimetière des Mastodontes, Antre de la Reine Nyée, Théâtre de Dramak, Fabrique de Malléfisk, Miausolée du Pounicheur, Garde-manger du Rat Blanc et Sousouricière du Rat Noir",
+    "Gelaxième Dimension : les 4 Gelées Royales (Bleuet, Citron, Fraise, Menthe) se battent ensemble dans la salle du boss. Le Gelano, le Gelamu et la Couronne du Roi Gelax sont enfin dans le jeu",
+    "15 nouvelles sous-zones de chasse, dont 3 nouvelles régions : Albuera, Îlots de la mer d'Asse, Bonta et Brâkmar. Les autres rejoignent Amakna, Otomaï, Moon, les Dragoeufs, les Abraknydes, Saharach, Pwâk et les Dimensions divines",
+    "312 nouveaux équipements et 39 panoplies (Boostache, Rats Blanc et Noir, Kanniboul Ebil, Pounicheur, Reine Nyée…), 133 nouveaux monstres et 28 archimonstres de plus dans l'album",
+    "Chaque clé se fabrique chez le Bricoleur et tombe aussi parfois sur les monstres de la sous-zone d'accès",
+  ] },
   { v: "0.1.40.1", name: "Annonces pour tous", items: [
     "Annonces : le bandeau d'annonce arrive aussi aux joueurs déjà en jeu en moins de 2 minutes, même s'il n'est pas publié dans le chat, et disparaît tout seul à l'heure prévue",
   ] },
@@ -948,7 +955,7 @@ Object.assign(DECOS, {
   dg_serre:    DGD(["#14262a", "#5a9a8a"], "#2f5a4a", "#22443a", "glass"),
   dg_skeunk:   DGD(["#1e0e1e", "#8a3a1a"], "#3a1e1e", "#2a1414", "tombs"),
 });
-const DG_DECO = { chateau_wa_wabbit: "dg_sable", terrier_wa_wabbit: "dg_labo", crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk" };
+const DG_DECO = { chateau_wa_wabbit: "dg_sable", terrier_wa_wabbit: "dg_labo", crypte_kardorim: "dg_crypte", grange_tournesol: "dg_grange", chateau_ensable: "dg_sable", cour_bouftou_royal: "dg_bouftou", cache_kankreblath: "dg_kankre", donjon_tofus: "dg_tofus", donjon_squelettes: "dg_squel", donjon_scarafeuilles: "dg_scara", donjon_bworks: "dg_bworks", nid_kwakwa: "dg_kwakwa", clos_blops: "dg_blops", labo_brumen: "dg_labo", pitons_craqueleur: "dg_pitons", bateau_chouque: "dg_chouque", chapiteau_riktus: "dg_riktus", domaine_ancestral: "dg_ancestral", caverne_koulosse: "dg_koulosse", taniere_meulou: "dg_meulou", arbre_moon: "dg_moon", antre_dragon_cochon: "dg_dragon", repaire_kharnozor: "dg_kharno", biblio_corbac: "dg_corbac", goulet_rasboul: "dg_rasboul", bambusaie_damadrya: "dg_bambou", labyrinthe_minotoror: "dg_mino", antre_crocabulia: "dg_croca", serre_royalmouth: "dg_serre", repaire_skeunk: "dg_skeunk", /* 0.1.40 */ gelaxieme_dimension: "dg_blops", maison_fantome: "dg_crypte", akademie_gobs: "dg_bworks", refuge_sylvestre: "dg_ancestral", donjon_forgerons: "dg_pitons", grotte_hesque: "dg_rasboul", donjon_larves: "dg_scara", fonderie_waddicts: "dg_labo", village_kanniboul: "dg_moon", epreuve_draegnerys: "dg_dragon", cale_arche_otomai: "dg_chouque", cimetiere_mastodontes: "dg_sable", antre_reine_nyee: "dg_ancestral", theatre_dramak: "dg_riktus", fabrique_mallefisk: "dg_kharno", miausolee_pounicheur: "dg_crypte", garde_manger_rat_blanc: "dg_squel", sousouriciere_rat_noir: "dg_skeunk" };
 const dgDeco = (did) => DG_DECO[did] || "dungeon";
 /* météo des zones de chasse : selon le décor, la neige pour les zones glacées */
 const subWeather = (sid) => { const sb = E.SUBS[sid]; if (!sb) return ""; if (/givre|gel[ée]e|glace|neige|Frigost/i.test(sb.name)) return "snow";
@@ -5984,7 +5991,7 @@ function renderLadder() {
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
     : LB.tab === "defi" ? lbDefiHead()
     : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
-    : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (213 au total)." : "Succès débloqués."}</span>`;
+    : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? "" : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
     <nav class="subtabs">${LB_TABS.map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
@@ -6002,7 +6009,7 @@ async function lbProfile(u) {
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
-    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/213 · ${p.succes} succès</span></div></div>
+    openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
