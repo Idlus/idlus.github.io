@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48.6 « Double gain prolongé »
+Fin de l'événement repoussée au dimanche 18 octobre 23 h (Paris) : `E.EVENT.to` = 2026-10-18T21:00:00Z (engine.js).
+
 ## 0.1.48.5 « Sablier en cadeau »
 Récompense de code cadeau `s` (heures de sablier, 24 au plus) : `E.sabGift` (engine.js, plafond `E.SAB_GIFT_MAX`), `E.giveGift`/`E.giftText` (systems.js), type « Heures de sablier » dans l'onglet Codes cadeaux (js/codes.js). `E.sab` ne recharge plus au-dessus de `E.SAB_MAX` mais ne coupe pas les heures offertes.
 

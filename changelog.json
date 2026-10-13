@@ -1,6 +1,13 @@
 {
-  "version": "0.1.48.5",
+  "version": "0.1.48.6",
   "versions": [
+    {
+      "v": "0.1.48.6",
+      "name": "Double gain prolongé",
+      "items": [
+        "L'événement « Double gain » est prolongé : XP et butin x2 pour tout le monde jusqu'au dimanche 18 octobre à 23 h (heure de Paris), en combat, en chasse et pendant l'absence"
+      ]
+    },
     {
       "v": "0.1.48.5",
       "name": "Sablier en cadeau",
