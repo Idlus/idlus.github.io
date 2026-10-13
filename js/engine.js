@@ -1908,7 +1908,6 @@
         if (rnd() * 100 < Math.min(100, rate * E.ITEM_DROP_SCALE * dm)) {
           seen(m.key, tpl);
           const T2 = ITEMS[tpl];
-          if (T2.lvl < topL - E.LOW_ITEM_GAP) { const k = Math.round(T2.lvl * 4 + 10); S.kamas += k; out.kamas += k; out.conv = (out.conv || 0) + 1; return; }
           if (E.itemCount(S) >= E.itemCap(S)) { note(S, `Sac plein : ${T2.name} perdu.`, "warn"); return; }
           const it = E.rollItem(S, tpl, { archi: m.archi, champ: m.champ });
           const auto = E.applyAuto(S, it);
@@ -1930,7 +1929,8 @@
   };
   E.giveRewards = giveRewards;
   /* 0.1.34.1 (Mathis) : plus de butin réduit sur les monstres plus faibles que le meilleur héros
-     (avant : dès 10 niveaux d'écart, −6 % par niveau, plancher 10 %) ; les objets très bas restent changés en kamas (E.LOW_ITEM_GAP) */
+     (avant : dès 10 niveaux d'écart, −6 % par niveau, plancher 10 %) ;
+     0.1.34.2 : les objets très bas ne sont plus changés en kamas, ils arrivent dans le sac (tri automatique du sac inchangé) */
   E.lootPenalty = () => 1;
   /* Taux de ressources v2.7 : divisés par 2 (×0,4 ; les ressources « garanties » à 100 % tombent à 35 %) */
   E.RES_RATE_SCALE = 0.4;
@@ -1956,7 +1956,6 @@
     return null;
   };
   E.ITEM_DROP_SCALE = 0.04; // v2.7 : les objets sont bien plus rares (×1/3)
-  E.LOW_ITEM_GAP = 20;       // objet 20 niveaux sous le meilleur héros : converti en kamas
 
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) return false;

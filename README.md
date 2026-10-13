@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.34.2 « Tout dans le sac »
+Plus de conversion en kamas des objets 20 niveaux sous le meilleur héros (`E.LOW_ITEM_GAP` retiré de giveRewards) : ils passent par `E.applyAuto` puis le sac comme les autres.
+
 ## 0.1.34.1 « Butin entier »
 `E.lootPenalty` renvoie toujours 1 : plus de baisse des ressources et objets sur les monstres faibles. `E.LOW_ITEM_GAP` (objets 20 niveaux sous le meilleur héros changés en kamas) inchangé.
 
