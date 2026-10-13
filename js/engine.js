@@ -3205,7 +3205,7 @@
     }
     if (S.v < 9) { // 0.1.12 : nouvelle courbe d'XP au-delà du niveau 100 ; les héros qui ont déjà l'XP du niveau suivant montent tout de suite
       const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) E.giveXp(S, c, 0); }); E.events.length = ev;
-      report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Équipe › Renaissance).");
+      report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Héros › Renaissance).");
     }
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });

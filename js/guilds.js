@@ -73,7 +73,7 @@
   async function loadEx() {
     const r = await ON.rpc("guild_extra"); if (r.err || !r.data || r.data.none || r.data.err) return;
     G.ex = r.data; G.off = Date.parse(r.data.now) - Date.now();
-    (G.ex.percos || []).forEach((p) => { if (p.atk && !G.atkSeen[p.id + p.atk.at]) { G.atkSeen[p.id + p.atk.at] = 1; if (!p.atk.done) X().toast(`⚔ Le Percepteur de ${p.name} est attaqué ! Défends-le dans Guilde › Percepteurs.`, "rare"); } });
+    (G.ex.percos || []).forEach((p) => { if (p.atk && !G.atkSeen[p.id + p.atk.at]) { G.atkSeen[p.id + p.atk.at] = 1; if (!p.atk.done) X().toast(`⚔ Le Percepteur de ${p.name} est attaqué ! Défends-le dans Communauté › Guilde › Percepteurs.`, "rare"); } });
     if (G.ex.boss && G.ex.boss.claim && !G.claiming) {
       G.claiming = true;
       const c = await ON.rpc("gboss_claim", { p_after: (S().hdv && S().hdv.op) || 0 }); G.claiming = false;

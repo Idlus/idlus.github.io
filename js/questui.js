@@ -98,7 +98,7 @@
         <div class="qj-hb"><span class="qj-eb">Quête principale · chapitre ${chapOf(cur) + 1} · étape ${cur + 1 - E.QUEST_CHAPTERS[chapOf(cur)].start} sur ${E.QUEST_CHAPTERS[chapOf(cur)].end - E.QUEST_CHAPTERS[chapOf(cur)].start}</span><h2>${h(q.title)}</h2><span class="small muted">${h(q.txt)}</span>
           ${qp ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}
           ${E.questExtraText(cur) ? `<span class="qj-rew">${IC("coffre")} Récompense : <b>${h(E.questExtraText(cur))}</b></span>` : ""}</div>
-        <div class="qj-acts">${q.sub ? `<button class="btn primary sm" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : ""}<button class="btn sm" data-act="qtab" data-v="main">Toute la quête</button></div></div>`
+        <div class="qj-acts">${X().questGoBtn(q, "primary")}<button class="btn sm" data-act="qtab" data-v="main">Toute la quête</button></div></div>`
       : `<div class="qj-hero"><div class="qj-chap">${IC("trophee")}</div><div class="qj-hb"><span class="qj-eb">Quête principale</span><h2>Terminée</h2><span class="small muted">Les quêtes de région, les Dofus et l'alignement attendent dans Aventures.</span></div><div class="qj-acts"><button class="btn sm" data-act="qtab" data-v="dofus">Les Dofus</button></div></div>`;
     // Almanax
     const a = almState(s); const A = a.A; const d = new Date(E.now()); const sn = (s.almStreak && s.almStreak.n) || 0;
@@ -164,7 +164,7 @@
       return `<div class="qj-step ${cls}"><span class="n">${lock ? "?" : i + 1 - C.start}</span><div class="grow stack" style="gap:4px"><b>${lock ? "???" : h(q.title)}</b><span class="small muted">${lock ? "Termine les étapes précédentes." : h(q.txt)}</span>
         ${cls === "cur" && qp ? `<div class="row"><div class="bar grow"><i style="width:${X().pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div>` : ""}
         ${!lock ? `<span class="qj-rew">${IC("coffre")} ${cls === "cur" ? "Récompense" : "Puis"} : <b>${fmt(kam)} kamas${rw ? ", " + h(rw) : ""}</b></span>` : ""}</div>
-        ${cls === "cur" ? `<div class="qj-side"><span class="pinbtn auto" data-tip="La quête principale est toujours suivie dans la bande d'objectifs">${X().G("pin")} suivie</span>${q.sub ? `<button class="btn sm primary" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>` : q.dg && DUNGEONS[q.dg] ? `<button class="btn sm primary" data-act="dgopen" data-id="${q.dg}">Voir le donjon</button>` : ""}</div>` : ""}</div>`; };
+        ${cls === "cur" ? `<div class="qj-side"><span class="pinbtn auto" data-tip="La quête principale est toujours suivie dans la bande d'objectifs">${X().G("pin")} suivie</span>${X().questGoBtn(q, "primary")}</div>` : ""}</div>`; };
     const n = C.end - C.start;
     const bar = `<div class="qj-chapbar" aria-label="Chapitre ${k + 1} : ${Math.max(0, Math.min(n, cur - C.start))} étapes sur ${n}">${Q.slice(C.start, C.end).map((q, j) => { const i = C.start + j; return `<i class="${i < cur ? "ok" : i === cur ? "cur" : ""}" title="${i <= cur + 2 ? h(q.title) : "???"}"></i>`; }).join("")}</div>`;
     const done = Q.slice(C.start, Math.min(cur, C.end));
@@ -302,7 +302,7 @@
     const nGot = E.ACH.filter((a) => s.ach[a.id]).length;
     const lb = X().achLb ? X().achLb() : null;
     const lbHtml = lb && lb.rows && lb.rows.length ? `${lb.rows.map((r, i) => `<div class="row between ${r.me ? "me" : ""}"><span><b class="num">${i + 1}.</b> ${h(r.p)}</span><span class="num">${fmt(r.v)}</span></div>`).join("")}${lb.me && lb.me.rank > 3 ? `<div class="row between me"><span><b class="num">${fmt(lb.me.rank)}.</b> toi</span><span class="num">${fmt(lb.me.v)}</span></div>` : ""}<button class="btn xs" data-act="nav" data-v="ladder">Tout le classement</button>`
-      : `<span class="xs muted">${window.ONLINE && window.ONLINE.enabled ? "Connecte-toi pour entrer au classement des points (Classements › Succès)." : "Le classement des points est sur le jeu en ligne."}</span>`;
+      : `<span class="xs muted">${window.ONLINE && window.ONLINE.enabled ? "Connecte-toi pour entrer au classement des points (Communauté › Classements › Succès)." : "Le classement des points est sur le jeu en ligne."}</span>`;
     const track = `<div class="qx-pts"><div class="qx-pbig">${IC("trophee")}<span><b class="num">${fmt(P)}</b><small>points de succès</small></span></div><div class="grow stack" style="gap:6px"><div class="row between"><span class="small">${nx ? `Prochain palier : <b>${fmt(nx.n)} pts</b> · ${h(nx.txt)}` : "<b>Tous les paliers sont atteints !</b>"}</span><span class="xs muted">${fmt(nGot)} / ${fmt(E.ACH.length)} succès</span></div>
       <div class="qx-pal">${PL.map((x) => `<span class="${x.n <= P ? "ok" : nx && x.n === nx.n ? "cur" : ""}" style="left:${Math.sqrt(x.n / maxP) * 100}%" data-tip="${h(x.txt)}"><i></i><small>${fmt(x.n)}</small></span>`).join("")}<b style="width:${Math.min(100, Math.sqrt(P / maxP) * 100)}%"></b></div>
       <span class="xs muted">${prv ? `Dernier palier : ${h(prv.txt)} ✓ · ` : ""}les paliers donnent coffres, ornements et titres</span></div>

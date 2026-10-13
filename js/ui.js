@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7";
+const GAME_VERSION = "1.0.7.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.1", name: "Chemins des menus", items: [
+    "Quête principale : l'étape « Le Havre-Sac » disait « Accueil → Havre-Sac » ; le Havre-Sac est dans Artisanat › Havre-Sac. Toutes les étapes donnent maintenant le bon chemin du menu",
+    "Les étapes qui se font sur une page (Havre-Sac, Récolte, Artisanat, Brisage, Équipement, Almanax, Avis de recherche, Alignement) ont un bouton « Y aller » qui ouvre directement la bonne page, dans Quêtes et sur l'Accueil",
+    "Bulles d'aide, recherche et messages : les chemins de menu suivent les 5 groupes (Jouer, Héros, Artisanat, Suivi, Communauté), par exemple Suivi › Quêtes › Almanax ou Communauté › Guilde › Percepteurs",
+  ] },
   { v: "1.0.7", name: "Kolizéum automatique", items: [
     "Mode automatique au Kolizéum : il joue tes combats classés contre l'adversaire Conseillé, sans animation, un toutes les 3 secondes. Choisis 5, 10 ou tous tes tickets, puis « Lancer l'auto »",
     "Il continue sur toutes les pages : une pastille « Koli auto » en haut de l'écran montre l'avancée et la cote gagnée. Il s'arrête tout seul après 3 défaites d'affilée ou quand les tickets sont finis",
@@ -1158,6 +1163,14 @@ const dropPct = (p) => (p >= 10 ? Math.round(p) : (+p).toFixed(1).replace(".", "
 function shopIng(e) { return E.shopIng(S, e); }
 function shopName(e) { return E.shopName(S, e); }
 /* 3.2.2 : bouton « suivre » (bande d'objectifs) */
+/* 1.0.6.4 : bouton « Y aller » d'une étape de la quête principale (zone, donjon, ou la page où se fait l'étape) */
+const QUEST_GO = { havre: "Artisanat › Havre-Sac", harvest: "Artisanat › Métiers › Récolte", craft: "Artisanat › Métiers › Artisanat", brk: "Artisanat › Forgemagie › Brisage", equip: "Héros › Équipe et héros › Équipement", almanax: "Suivi › Quêtes › Almanax", bounty: "Suivi › Quêtes › Avis de recherche", align: "Suivi › Quêtes › Alignement" };
+function questGoBtn(q, cls) {
+  if (!q) return "";
+  if (q.sub) return `<button class="btn sm ${cls}" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>`;
+  if (q.dg && DUNGEONS[q.dg]) return `<button class="btn sm ${cls}" data-act="dgopen" data-id="${q.dg}">Voir le donjon</button>`;
+  return QUEST_GO[q.t] ? `<button class="btn sm ${cls}" data-act="questgo" data-v="${q.t}" data-tip="${h(QUEST_GO[q.t])}">Y aller</button>` : "";
+}
 function pinBtn(p, label) { const on = E.pinned(S, p); return `<button class="btn sm pinbtn ${on ? "on" : ""}" data-act="pin" data-p="${h(JSON.stringify(p))}" data-tip="${on ? "Ne plus suivre dans la bande d'objectifs" : "Suivre dans la bande d'objectifs, en haut de l'écran"}">${G("pin")}${label ? " " + h(label) : ""}</button>`; }
 /* temps estimé avant d'avoir tous les ingrédients (3.2.2) */
 function etaLine(ing) { const e = E.needEta(S, ing); if (e.stuck) return `<span class="eta no">${h(e.stuck.res)} : pas dans l'activité en cours${e.stuck.where ? ` · zone : ${h(e.stuck.where)}` : ""}</span>`; if (!e.sec) return ""; return `<span class="eta">${h(E.etaTxt(e.sec))}</span>`; }
@@ -1598,7 +1611,7 @@ function renderHomeInner() {
     ${homeEvents()}
     <div class="stack" style="gap:14px">
       <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
-        ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
+        ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span>${questGoBtn(q, "")}</div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
         <div class="ac-stats xs"><span><b class="num">${fmt(S.stats.wins)}</b> victoires</span><span><b class="num">${Object.keys(S.ach || {}).length}/${E.ACH.length}</b> succès</span><span><b class="num" style="color:var(--archi)">${archis}</b> archimonstres</span><span><b class="num" style="color:var(--gold)">${S.radiants || 0}</b> rayonnants</span><span><b class="num">${E.havreTotal(S)}</b> Havre-Sac</span></div>
       </div></div>
       <section class="panel"><div class="phead"><nav class="subtabs" style="margin:0"><button data-act="hjtab" data-v="j" aria-pressed="${jt === "j"}">Journal</button><button data-act="hjtab" data-v="c" aria-pressed="${jt === "c"}">Derniers combats</button></nav>${more ? `<button class="btn sm" data-act="hjall">${ui.hjAll ? "Moins" : "Tout voir"}</button>` : ""}</div>${jour}</section>
@@ -2406,7 +2419,7 @@ function dofusDropHtml(id) {
 function dofusQuestLineHtml(id) {
   const Df = E.DOFUS[id]; const Q = E.dofusQuest(S, id); const st = E.dofusStep(S, id);
   const txt = Q.done ? ["✓ Quête terminée", "ok"] : id === "ocre" ? [`Éternelle moisson · palier ${E.ocreTier(S) + 1} sur ${E.OCRE_TIERS.length} : capturer les âmes des archimonstres`] : st && st.t === "gift" ? [h(E.dofusStepTxt(st))] : st ? [`Étape ${Q.step + 1} sur ${Df.steps.length} : ${h(E.dofusStepTxt(st))}`] : [""];
-  return `<div class="dofdrop"><div class="dd-h"><span class="icobox">${IC("quetes")}</span><span class="grow"><b>Sa quête</b> <span class="tag soft">1 par compte</span><small>Un exemplaire garanti · Quêtes › Dofus</small></span><button class="btn sm primary" data-act="dofgo" data-v="${id}">Voir la quête</button></div><div class="dd-l ${txt[1] || ""}">${txt[0]}</div></div>`;
+  return `<div class="dofdrop"><div class="dd-h"><span class="icobox">${IC("quetes")}</span><span class="grow"><b>Sa quête</b> <span class="tag soft">1 par compte</span><small>Un exemplaire garanti · Suivi › Quêtes › Dofus</small></span><button class="btn sm primary" data-act="dofgo" data-v="${id}">Voir la quête</button></div><div class="dd-l ${txt[1] || ""}">${txt[0]}</div></div>`;
 }
 function archiBtn(cls = "btn sm") {
   const n = E.soulCount(S); const st = E.stones(S);
@@ -5033,7 +5046,7 @@ function shopHtml(id) {
   const Sh = E.SHOPS[id]; const have = S.tokens[Sh.cur] || 0;
   return `<section class="panel"><div class="phead"><h2>${emo(Sh.icon)} ${h(Sh.name)}</h2><span class="small"><b class="num">${fmt(have)}</b> ${h(Sh.curName.toLowerCase())}</span></div>
     <div class="pad hvgrid">${Sh.items.map((it) => { const owned = E.shopOwned(S, it); const C = it.cons ? CONSUMABLES[it.cons] : null;
-      return `<div class="hv"><div class="top"><span class="em">${it.res ? im(resImg(it.res), "ico", it.res) : C ? consIco(C) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${it.res ? `Ressource niv. ${(RES[it.res] || {}).lvl || "?"}` : C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros → Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
+      return `<div class="hv"><div class="top"><span class="em">${it.res ? im(resImg(it.res), "ico", it.res) : C ? consIco(C) : it.tresor ? IC("carte") : it.wing ? IC("ailes") : it.furn ? IC("havre") : it.orn ? G("frame") : G("tag")}</span><div class="grow"><b>${h(E.shopItemName(S, it))}</b><div class="xs muted">${it.res ? `Ressource niv. ${(RES[it.res] || {}).lvl || "?"}` : C ? h(C.desc) : it.wing ? "Couleur des ailes d'alignement (Héros › Ornement)" : it.furn ? `Meuble du Havre-Sac : ${E.furnEffect(it.furn)}` : it.orn ? "Ornement de carte de héros" : it.tresor ? `Un parchemin de plus pour la chasse au trésor (${E.TRESOR_STOCK} en réserve au plus)` : "Titre affiché sur la carte"}</div></div></div>
         <button class="btn sm ${!owned && have >= it.cost ? "primary" : ""}" data-act="buyshop" data-shop="${id}" data-id="${it.id}" ${owned || have < it.cost || (id === "cite" && !S.align) ? "disabled" : ""}>${owned ? "Obtenu" : `${Sh.icon} ${it.cost}`}</button></div>`; }).join("")}</div></section>`;
 }
 /* 0.1.28 : les boutiques sont regroupées dans Quêtes › Comptoirs ; chaque page garde un raccourci */
@@ -6451,6 +6464,13 @@ document.addEventListener("click", (ev) => {
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
     case "nav": navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 0.1.31 : menu en 5 groupes
+    case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
+      if (t === "havre") navGo("havre");
+      else if (t === "harvest" || t === "craft") { navGo("metiers"); ui.met = t === "craft" ? "craft" : "recolte"; }
+      else if (t === "brk") { navGo("forge"); ui.fg = "brisage"; }
+      else if (t === "equip") { navGo("heroes"); const c = mainHero(); if (c) ui.cid = c.id; ui.hero = "equip"; }
+      else { navGo("quests"); ui.qt = t; }
+      closeSheet(); window.scrollTo(0, 0); break; }
     case "navmenu": navMenuSheet(); return;
     case "navmini": S.settings.navMini = !S.settings.navMini; break;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
@@ -7356,7 +7376,7 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { questGoBtn, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });

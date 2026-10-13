@@ -1,6 +1,15 @@
 {
-  "version": "1.0.7",
+  "version": "1.0.7.1",
   "versions": [
+    {
+      "v": "1.0.7.1",
+      "name": "Chemins des menus",
+      "items": [
+        "Quête principale : l'étape « Le Havre-Sac » disait « Accueil → Havre-Sac » ; le Havre-Sac est dans Artisanat › Havre-Sac. Toutes les étapes donnent maintenant le bon chemin du menu",
+        "Les étapes qui se font sur une page (Havre-Sac, Récolte, Artisanat, Brisage, Équipement, Almanax, Avis de recherche, Alignement) ont un bouton « Y aller » qui ouvre directement la bonne page, dans Quêtes et sur l'Accueil",
+        "Bulles d'aide, recherche et messages : les chemins de menu suivent les 5 groupes (Jouer, Héros, Artisanat, Suivi, Communauté), par exemple Suivi › Quêtes › Almanax ou Communauté › Guilde › Percepteurs"
+      ]
+    },
     {
       "v": "1.0.7",
       "name": "Kolizéum automatique",
