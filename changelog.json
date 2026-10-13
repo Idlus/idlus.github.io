@@ -1,6 +1,16 @@
 {
-  "version": "0.1.50",
+  "version": "0.1.50.1",
   "versions": [
+    {
+      "v": "0.1.50.1",
+      "name": "Nouveaux noms",
+      "items": [
+        "Renommer un héros : bouton doré « Renommer » à côté de son nom, dans sa fiche (Équipe et héros). Entrée pour valider, Échap pour annuler",
+        "Le premier changement de nom de chaque héros est gratuit, les suivants coûtent 50 000 kamas",
+        "Les noms de héros passent maintenant par le même filtre que les pseudos (mots interdits, imitation du créateur), à la création, au recrutement et au renommage",
+        "Changer de pseudo : bouton « Changer » dans Options › Sauvegarde › Compte en ligne, une fois tous les 30 jours. Ton ancien pseudo reste réservé à ton compte pendant 30 jours, les classements suivent tout seuls"
+      ]
+    },
     {
       "v": "0.1.50",
       "name": "Quêtes, succès et chasses",

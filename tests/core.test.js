@@ -179,3 +179,19 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   E.dungeonUnlocked = keep;
   console.log("ok - enchaînement de donjons et arrêt après le donjon en cours");
 }
+
+// 0.1.50.1 : renommer un héros (premier changement gratuit, ensuite 50 000 kamas) et filtre des noms
+{
+  const S = E.newState("Tristepin", "iop"); const c = S.chars[0]; S.kamas = 60000;
+  assert.ok(D.NAMES.every((n) => !E.nameBad(n)), "aucun nom au hasard n'est refusé");
+  assert.ok(E.nameBad("Merde2Bouftou") && E.nameBad("X3n3r") && !E.nameBad("Kap Dofus") && !E.nameBad("Stupde"));
+  assert.strictEqual(E.renameChar(S, c.id, "Merde"), "Ce nom n'est pas autorisé.");
+  assert.strictEqual(E.renameChar(S, c.id, "  Tristepin   le Brave "), null);
+  assert.strictEqual(c.name, "Tristepin le Brave"); assert.strictEqual(S.kamas, 60000, "premier changement gratuit");
+  assert.strictEqual(E.renameChar(S, c.id, "Tristepin le Brave"), null); assert.strictEqual(S.kamas, 60000, "même nom : rien ne se passe");
+  assert.strictEqual(E.renameChar(S, c.id, "Goultard"), null); assert.strictEqual(S.kamas, 10000);
+  assert.ok(/Il te manque/.test(E.renameChar(S, c.id, "Tristepin"))); assert.strictEqual(c.name, "Goultard");
+  assert.ok(E.renameChar(S, c.id, "x".repeat(21)));
+  S.kamas = 1e6; assert.strictEqual(E.recruit(S, "cra", "Pute du 92"), "Ce nom n'est pas autorisé."); assert.strictEqual(S.chars.length, 1);
+  console.log("ok - renommer un héros et filtre des noms");
+}

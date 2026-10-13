@@ -121,6 +121,19 @@
     ON.profile = { pseudo: p }; return null;
   };
 
+  /* 0.1.50.1 : changer son pseudo soi-même (une fois tous les 30 jours ; l'ancien reste réservé 30 jours). */
+  ON.pseudoInfo = async () => {
+    try { const { data, error } = await withTimeout(sb.rpc("pseudo_info")); return error ? null : data || null; } catch (e) { return null; }
+  };
+  ON.changePseudo = async (p) => {
+    try {
+      const { data, error } = await withTimeout(sb.rpc("pseudo_change", { p_pseudo: p }));
+      if (error) return /autoris/.test(error.message) ? "Ce pseudo n'est pas autorisé." : /duplicate|unique/i.test(error.message) ? "Ce pseudo est déjà pris." : /réserv/.test(error.message) ? error.message : "Le serveur n'a pas pu changer le pseudo. Réessaie plus tard.";
+      if (data) return data;
+      ON.profile = Object.assign({}, ON.profile, { pseudo: p }); return null;
+    } catch (e) { return "Pas de connexion au serveur. Réessaie dans un instant."; }
+  };
+
   /* ---------- la partie en ligne ---------- */
   /* Renvoie null s'il n'y a pas encore de partie en ligne ; lève une erreur hors ligne. */
   ON.remoteInfo = async () => {

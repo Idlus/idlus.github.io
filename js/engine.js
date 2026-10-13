@@ -2810,8 +2810,37 @@
   E.perfectCount = (S) => Object.values(S.items).filter(E.isPerfect).length;
 
   /* ---------------- Recrutement & équipe ---------------- */
+  /* 0.1.50.1 : noms de héros. Même filtre que les pseudos du compte (mots interdits, imitation du créateur ou de l'équipe),
+     appliqué à la création, au recrutement et au renommage ; les noms déjà donnés ne changent pas.
+     Renommer : le premier changement de chaque héros est gratuit, ensuite E.RENAME_COST kamas. */
+  E.BAD_WORDS = ["merde", "pute", "putain", "connard", "connasse", "salope", "encule", "nazi", "hitler", "batard", "fdp", "ntm", "pd", "nique", "bite", "couille", "fuck", "shit", "bitch", "nigg", "negr", "admin", "moderat", "idlus", "ankama", "xener", "createur"];
+  E.nameBad = (p) => {
+    const n = String(p || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[0-9_@$-]/g, (c) => ({ 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", "@": "a", $: "s" }[c] || ""));
+    return n.split(/[^a-z]+/).some((w) => w && (E.BAD_WORDS.some((b) => (b.length <= 3 ? w === b : w.includes(b))) || /^(modo|staff)/.test(w)));
+  };
+  E.NAME_MAX = 20; E.RENAME_COST = 50000;
+  E.nameProblem = (name) => {
+    const t = String(name || "").trim();
+    if (!t) return "Choisis un nom.";
+    if (t.length > E.NAME_MAX) return `${E.NAME_MAX} caractères au plus.`;
+    if (E.nameBad(t)) return "Ce nom n'est pas autorisé.";
+    return null;
+  };
+  E.renameCost = (c) => (c && c.renamed ? E.RENAME_COST : 0);
+  E.renameChar = (S, cid, name) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
+    const t = String(name || "").trim().replace(/\s+/g, " ");
+    if (t === c.name) return null;
+    const bad = E.nameProblem(t); if (bad) return bad;
+    const cost = E.renameCost(c);
+    if (S.kamas < cost) return `Il te manque ${Math.ceil(cost - S.kamas).toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= cost; const old = c.name; c.name = t; c.renamed = (c.renamed || 0) + 1;
+    note(S, `${old} s'appelle maintenant ${t}.`, "info");
+    return null;
+  };
   E.recruit = (S, cls, name) => {
     const n = S.chars.length + 1; const cost = E.recruitCost(n);
+    if (name && E.nameBad(name)) return "Ce nom n'est pas autorisé.";
     if (S.chars.length >= E.HERO_MAX) return `${E.HERO_MAX} héros au plus : congédiez-en un pour faire de la place.`;
     if (S.kamas < cost) return `Il faut ${cost} kamas.`;
     S.kamas -= cost;
