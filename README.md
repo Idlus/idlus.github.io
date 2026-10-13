@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.49.2 « Roue des Options »
+Mathis : rendre l'icône des Options plus reconnaissable (maquette à 3 versions, réponses « 1A 2A 3A »). Glyphe `gear` passé de `GL` (trait, qui ressemblait à un soleil) à `GLF` : roue dentée dorée pleine. Bouton de la barre du haut avec le libellé `.optlbl` (caché sous 600 px). `hOpt(s)` = `h(s)` avec la roue devant chaque « Options » : notes de mise à jour, bulles de découverte, Carnet des découvertes.
+
 ## 0.1.49.1 « Défi réagencé »
 Mathis : réagencer la page Défi du jour (maquette avec une capture par option, réponses « 1A 2A 3A 4A 5A 6A »). `renderDefi` : sélecteur de palier `.dfx-top` (seulement si plusieurs paliers jouables), carte `.dfx-hero` (décor `sceneSVG(dgDeco)`, modificateurs expliqués `.dfx-mods`, un seul bouton principal), tuiles `.dfx-tiles` (série, Bourse, équipe), essais du palier + classement (`defiLbFill`), règles dans un `<details>` replié. La tuile Défi de l'Accueil ne change pas.
 

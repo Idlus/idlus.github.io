@@ -3787,3 +3787,6 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .dfx-top{gap:10px;justify-content:flex-start}
 .dfx-low{align-items:start}
 @media (max-width:640px){.dfx-top small{display:none}.dfx-top .seg{flex:1}}
+/* 0.1.49.2 : bouton Options avec la roue dorée et son nom (PC), roue devant « Options » dans les textes */
+.status .ic-btn .optlbl{font-weight:800;font-size:13px}
+.uico.opt-in{width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:.2em}
