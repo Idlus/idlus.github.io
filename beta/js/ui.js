@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.35.1";
+const GAME_VERSION = "0.1.35.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.35.2", name: "Tout dans le sac", items: [
+    "Les objets bien plus bas que vos héros ne sont plus changés en kamas : ils arrivent dans le sac comme les autres. Le tri automatique du sac (Inventaire) s'applique toujours",
+  ] },
   { v: "0.1.35.1", name: "Butin entier", items: [
     "Zones basses : le butin n'est plus réduit, même quand vos héros sont bien plus forts que les monstres (avant : −6 % par niveau au-delà de 10 niveaux d'écart, jusqu'à −90 %). Les objets très bas sont toujours changés en kamas",
   ] },
