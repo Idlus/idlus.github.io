@@ -141,6 +141,27 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   const S2 = E.deserialize(E.serialize(S)); assert.strictEqual(S2.over.length, S.over.length);
   console.log("ok - sac de 1 000 places, trop-plein, doublons");
 }
+// 0.1.38 : fin de la vente au jeu (marchand de secours, achats du jour, règles qui brisent)
+{
+  E.setRng(mulberry(38)); const S = E.newState("Vente", "iop");
+  assert.ok(!E.ACTIONS.sellItem && !E.ACTIONS.sellRes && E.ACTIONS.gameBuySell, "plus de vente au jeu dans les actions");
+  assert.strictEqual(S.settings.auto.action, "break"); assert.strictEqual(S.settings.auto.recycle, "break");
+  const old = E.deserialize(E.serialize(Object.assign(S, { settings: Object.assign({}, S.settings, { auto: { action: "sell", q: 50, recycle: "sell" } }) })));
+  assert.strictEqual(old.settings.auto.action, "break", "règle « vendre » devenue « briser »"); assert.strictEqual(old.settings.auto.recycle, "break");
+  // marchand de secours : 30 % de la valeur
+  const r = "Laine de Bouftou"; S.res[r] = 1000; const k0 = S.kamas; E.merchantRes(S, r, 100);
+  assert.strictEqual(S.kamas - k0, Math.floor(E.resPrice(r) * 100 * 0.3)); assert.strictEqual(S.res[r], 900);
+  // achats du jour : 3 ressources, même liste dans la journée, 100 au plus chacune, prix 1,5 ×
+  const G = E.gameBuys(S); assert.strictEqual(G.list.length, 3); assert.strictEqual(new Set(G.list.map((o) => o.res)).size, 3);
+  assert.deepStrictEqual(E.gameBuys(S).list.map((o) => o.res), G.list.map((o) => o.res));
+  const o = G.list[0]; assert.strictEqual(o.price, Math.ceil(E.resPrice(o.res) * 1.5));
+  S.res[o.res] = 250; const k1 = S.kamas;
+  assert.strictEqual(E.act(S, "gameBuySell", o.res, 250), null);
+  assert.strictEqual(S.kamas - k1, 100 * o.price); assert.strictEqual(S.res[o.res], 150);
+  assert.ok(E.act(S, "gameBuySell", o.res, 10), "quantité du jour atteinte");
+  assert.ok(E.act(S, "gameBuySell", "Ressource inconnue", 1), "ressource non achetée refusée");
+  console.log("ok - fin de la vente au jeu :", G.list.map((x) => `${x.res} ${x.price} k`).join(", "));
+}
 
 // 0.1.37.1 : enchaîner des donjons, « course n sur N », « Arrêter après celui-ci »
 {

@@ -211,14 +211,14 @@
     const out = [];
     if (tmpRoam && r.roamed && r.roamed.length) out.push(`Itinérance pendant l'absence : ${r.roamed.length} changement${r.roamed.length > 1 ? "s" : ""} de zone.`);
     if (C.back && from && S.sub !== from && SUBS[from] && !S.dungeon && E.subUnlocked(S, from)) { E.startHunt(S, from); out.push(`Retour à ta zone : ${SUBS[from].name}.`); }
-    if (C.cap > 0) { // limite de banque : le surplus gagné pendant l'absence est vendu (sauf favoris, clés et ressources réservées)
+    if (C.cap > 0) { // limite de banque : le surplus gagné pendant l'absence part au marchand de secours (sauf favoris, clés et ressources réservées)
       const keep = new Set([...E.cmdNeeds(S), ...(E.almanax ? [E.almanax(S).res] : [])]);
       let n = 0, k0 = S.kamas;
       Object.keys(r.res || {}).forEach((name) => {
         if (keep.has(name) || (S.resFav && S.resFav[name]) || E.isKey(name) || (S.resCap && S.resCap[name] !== undefined) || !E.resPrice(name)) return;
-        const ex = (S.res[name] || 0) - C.cap; if (ex > 0) { E.sellRes(S, name, ex); n += ex; }
+        const ex = (S.res[name] || 0) - C.cap; if (ex > 0) { E.merchantRes(S, name, ex); n += ex; }
       });
-      const dk = S.kamas - k0; if (n) { out.push(`Limite de banque : ${fmtK(n)} ressources en trop vendues (+${fmtK(dk)} kamas).`); }
+      const dk = S.kamas - k0; if (n) { out.push(`Limite de banque : ${fmtK(n)} ressources en trop vendues au marchand de secours (+${fmtK(dk)} kamas).`); }
     }
     if (C.alm && E.almanaxOffer) { const A = E.almanax(S); if (!A.done && (S.res[A.res] || 0) >= A.qty) { if (!E.almanaxOffer(S)) out.push(`Offrande à l'Almanax faite : ${A.bonus.name}.`); } }
     if (C.cmd) { const Cm = E.cmdState(S); let nd = 0;

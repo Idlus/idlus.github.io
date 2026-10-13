@@ -281,7 +281,16 @@ const MOCK = () => {
     await page.click('.mkdet [data-act="mk-ask"]'); await page.click('.mkdet [data-act="mk-buy"]'); await page.waitForTimeout(800);
     const after = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length, op: window.DX.S.hdv && window.DX.S.hdv.op }));
     if (after.n !== before.n + 1 || after.k !== Math.max(0, before.k - 5000) || after.op !== 1) fail("hôtel de vente : achat mal appliqué " + JSON.stringify([before, after]));
-    await page.click('.subtabs [data-act="mk-tab"][data-v="sell"]'); await page.waitForTimeout(300);
+    // 0.1.38 : « Vendre à l'HdV » depuis une ressource ouvre la mise en vente ; prix bas = confirmation, 1 kama l'unité au plus bas
+    await page.evaluate(() => { const S = window.DX.S; S.res = S.res || {}; S.res["Laine de Bouftou"] = 150; });
+    await page.evaluate(() => { window.MARKET.sellRes("Laine de Bouftou"); window.MARKET.render(document.querySelector("#main")); }); await page.waitForSelector("#mkPrice", { timeout: 5000 });
+    if (!/Valeur de base/.test(await page.textContent(".mkdet"))) fail("hôtel de vente : valeur de base absente");
+    await page.fill("#mkPrice", "99"); await page.waitForTimeout(800);
+    if (!/Au moins 1 kama par unité/.test(await page.textContent(".mkdet"))) fail("hôtel de vente : 1 kama par unité non vérifié");
+    await page.fill("#mkPrice", "100"); await page.waitForTimeout(800);
+    if (!(await page.$(".mkdet .mklow")) || (await page.$('.mkdet [data-act="mk-sell"]'))) fail("hôtel de vente : pas de confirmation pour un prix très bas");
+    await page.click('.mkdet [data-act="mk-lowok"]'); await page.waitForTimeout(200);
+    if (!(await page.$('.mkdet [data-act="mk-sell"]:not([disabled])'))) fail("hôtel de vente : vente impossible après confirmation");
     await page.click('.subtabs [data-act="mk-tab"][data-v="log"]'); await page.waitForTimeout(300);
     if (!/Acheté/.test(await page.textContent("#main"))) fail("hôtel de vente : historique vide");
     // 7e bis. offres d'achat (0.1.33) : vendre à une offre, puis publier la sienne
@@ -294,6 +303,9 @@ const MOCK = () => {
     await page.click('[data-act="mk-oview"][data-v="mine"]'); await page.fill("#mkOF", "blé"); await page.waitForTimeout(500);
     await page.click('[data-act="mk-opick"][data-k="Blé"]'); await page.waitForSelector("#mkOQty"); await page.fill("#mkOQty", "10"); await page.waitForTimeout(650); await page.fill("#mkOPrice", "50"); await page.waitForTimeout(800);
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/offre.png" });
+    // 0.1.38 : plus de prix minimum, mais une confirmation sous la moitié du prix moyen
+    if (!(await page.$(".mklow")) || (await page.$('[data-act="mk-onewgo"]'))) fail("offres d'achat : pas de confirmation pour un prix très bas");
+    await page.click('[data-act="mk-lowok"]'); await page.waitForTimeout(200);
     await page.click('[data-act="mk-onewgo"]'); await page.waitForTimeout(800);
     if ((await page.evaluate(() => window.DX.S.kamas)) !== oa.k - 510) fail("offres d'achat : kamas non mis de côté");
     if (!/0 \/ 10 reçus/.test(await page.textContent("#main"))) fail("offres d'achat : offre absente de Mes offres");
