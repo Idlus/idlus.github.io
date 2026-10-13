@@ -136,7 +136,7 @@
   };
 
   E.team = (S) => S.chars.filter((c) => c.inTeam && !c.job).slice(0, 8);
-  E.freeSpirit = (S) => FREE_SPIRIT[Math.max(1, E.team(S).length)] || 0;
+  E.freeSpirit = () => 0; // 1.0.5.1 (Mathis) : l'Esprit Libre est supprimé (plus de bonus d'XP, de butin, de PV ni de dégâts pour les petites équipes)
   E.isSolo = (S) => E.team(S).length === 1;
   /* Synergie : +2 % de dégâts et d'XP par classe différente (équipe de 2 héros ou plus) */
   E.synergy = (S) => { const t = E.team(S); if (t.length < 2) return 0; return new Set(t.map((c) => c.cls)).size * 2; };
@@ -827,10 +827,11 @@
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
-  E.SMALL_TEAM = { 1: { hp: 30, dr: 15, name: "Solo" }, 2: { hp: 15, dr: 7.5, name: "Duo" } };
+  /* 1.0.5.1 : l'Esprit Libre (PV et dégâts en plus pour les petites équipes) est supprimé ; ses PV passent ici, jusqu'à 4 héros */
+  E.SMALL_TEAM = { 1: { hp: 95, dr: 25, name: "Solo" }, 2: { hp: 55, dr: 15, name: "Duo" }, 3: { hp: 30, dr: 8, name: "Trio" }, 4: { hp: 20, dr: 5, name: "Quatuor" } };
   /* 0.1.24.3 : en chasse aussi, une petite équipe bien équipée ne doit presque jamais perdre (simulation) : PV en plus et dégâts subis en moins */
   /* mon : part du renfort de chasse (E.MON_POW) gardée par les monstres ; les gains par monstre suivent (E.powRew) */
-  E.HUNT_SMALL = { 1: { hp: 70, dr: 40, mon: 0.36, name: "Solo" }, 2: { hp: 30, dr: 20, mon: 0.74, name: "Duo" }, 3: { hp: 10, dr: 5, mon: 1, name: "Trio" } };
+  E.HUNT_SMALL = { 1: { hp: 120, dr: 50, mon: 0.36, name: "Solo" }, 2: { hp: 60, dr: 30, mon: 0.74, name: "Duo" }, 3: { hp: 35, dr: 18, mon: 1, name: "Trio" }, 4: { hp: 20, dr: 10, mon: 1, name: "Quatuor" } }; // 1.0.5.1 : relevé (fin de l'Esprit Libre)
   E.ARCHI_CHANCE = 1 / 400;
 
   /* ---------------- 3.3.0 « Combat vivant » : placement, monstres spéciaux, Champions ---------------- */
@@ -2132,9 +2133,13 @@
     return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
   };
 
+  /* 1.0.5.1 (Mathis) : part de l'XP du combat reçue par chaque héros. Avant : 2/(n+1) plus l'Esprit Libre (+100 % en solo),
+     un héros solo montait 3,5 fois plus vite qu'une équipe de 8. Maintenant la part baisse peu avec la taille de l'équipe :
+     plus l'équipe est grande, plus chaque héros monte vite (simulation 1 → 200, bon équipement : solo ~180 h, 4 héros ~90 h, 8 héros ~62 h ; avant 52 / 98 / 180 h). */
+  E.xpShare = (n) => 0.8 * Math.pow(Math.max(1, n), -0.1);
   E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
   const giveRewards = (S, mons, opts = {}) => {
-    const team = E.team(S); const fs = E.freeSpirit(S);
+    const team = E.team(S);
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
@@ -2146,13 +2151,13 @@
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
-    const share = 2 / (team.length + 1);
+    const share = E.xpShare(team.length);
     team.forEach((c) => {
       const st = E.charStats(S, c);
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * (1 + fs / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp"));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp"));
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde

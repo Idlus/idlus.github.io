@@ -1,6 +1,16 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.6.1",
   "versions": [
+    {
+      "v": "1.0.6.1",
+      "name": "Force du nombre",
+      "items": [
+        "Plus l'équipe est grande, plus chaque héros monte vite. Avant, un héros seul montait 3,5 fois plus vite qu'une équipe de 8 ; maintenant c'est l'inverse",
+        "Montée du niveau 1 à 200 (simulation, bon équipement) : 8 héros environ 60 h (avant 180 h), 4 héros environ 90 h (avant 100 h), un héros seul environ 180 h (avant 50 h)",
+        "L'Esprit Libre est supprimé : plus de bonus d'XP, de butin, de PV ni de dégâts pour les petites équipes. La jauge montre maintenant la taille de l'équipe et la Synergie",
+        "Les équipes de 1 à 4 héros gardent une protection en combat (plus de PV, moins de dégâts reçus, en chasse comme en donjon) : une équipe bien équipée ne perd presque jamais"
+      ]
+    },
     {
       "v": "1.0.6",
       "name": "Galets en bonus",

@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.6";
+const GAME_VERSION = "1.0.6.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.6.1", name: "Force du nombre", items: [
+    "Plus l'équipe est grande, plus chaque héros monte vite. Avant, un héros seul montait 3,5 fois plus vite qu'une équipe de 8 ; maintenant c'est l'inverse",
+    "Montée du niveau 1 à 200 (simulation, bon équipement) : 8 héros environ 60 h (avant 180 h), 4 héros environ 90 h (avant 100 h), un héros seul environ 180 h (avant 50 h)",
+    "L'Esprit Libre est supprimé : plus de bonus d'XP, de butin, de PV ni de dégâts pour les petites équipes. La jauge montre maintenant la taille de l'équipe et la Synergie",
+    "Les équipes de 1 à 4 héros gardent une protection en combat (plus de PV, moins de dégâts reçus, en chasse comme en donjon) : une équipe bien équipée ne perd presque jamais",
+  ] },
   { v: "1.0.6", name: "Galets en bonus", items: [
     "Les Galets du Kolizéum reviennent, comme bonus facultatif de fabrication : dans une recette de son niveau, ajoute un Galet pour améliorer l'objet. Sans Galet, la recette marche comme avant",
     "Galet cramoisi (objets niv. 50 à 99) : une caractéristique tirée dans sa moitié haute. Galet rutilant (100 à 149) : l'objet est tiré 2 fois, tu gardes le meilleur. Galet Lunaire (100 à 149) : 1 chance sur 10 de fabriquer un 2e objet",
@@ -1082,11 +1088,10 @@ function wingSVG(side) {
     <path d="M60 20 L10 10 M60 20 L14 42 M60 20 L26 58 M60 20 L40 66" stroke="#1a0505" stroke-width="1.3" opacity=".7"/><circle cx="58" cy="20" r="6" fill="#ff9a4a" stroke="#5a1010"/></svg>`;
 }
 function fsGauge() {
-  const team = E.team(S); const fs = E.freeSpirit(S); const solo = team.length === 1;
-  const syn = E.synergy(S);
-  const sub = team.length ? `${team.length} héros${syn ? ` · Synergie +${syn} %` : ""}` : "aucun héros ne chasse";
-  return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand : XP et butin du bonus entier, PV et dégâts de la moitié. 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
-    <span class="flame"><i></i></span><span class="txt"><b>Esprit Libre +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
+  /* 1.0.5.1 : l'Esprit Libre est supprimé ; la jauge montre la taille de l'équipe (plus elle est grande, plus chaque héros monte vite) */
+  const team = E.team(S); const n = team.length; const syn = E.synergy(S);
+  return `<div class="fsg ${n >= 8 ? "solo" : n ? "" : "zero"}" style="--p:${Math.round(n * 12.5)}" data-tip="Équipe : plus elle compte de héros, plus elle bat de monstres et plus chaque héros monte vite (8 héros montent bien plus vite qu'un héros seul). Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
+    <span class="flame"><i></i></span><span class="txt"><b>Équipe ${n}/8</b><br><span class="xs muted">${n ? (syn ? `Synergie +${syn} %` : "pas de synergie") : "aucun héros ne chasse"}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((k) => `<i class="${k <= n ? "" : "off"}"></i>`).join("")}</span></span></div>`;
 }
 function questAlert() { if (window.QUI) return window.QUI.todo(S) > 0; return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); } // 0.1.28 : tout ce qui est prêt dans Quêtes (js/questui.js)
 const jobImg = (j) => `assets/j/${j}.png`;
@@ -1895,7 +1900,7 @@ function renderZoneView(sid) {
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
     <div class="pad stack">
       <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) + archiBtn() : ""}
-        <span class="small muted">${E.team(S).length} héros · Esprit Libre +${E.freeSpirit(S)} % · ${lvlHint(s)}</span></div>
+        <span class="small muted">${E.team(S).length} héros${E.synergy(S) ? ` · Synergie +${E.synergy(S)} %` : ""} · ${lvlHint(s)}</span></div>
       ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
       <div><div class="row between small"><span data-tip="Quand tous les monstres de la zone atteignent le palier Traqueur (250 tués), vous recevez le trophée de la zone, à équiper dans un emplacement Dofus/Trophée.">${IC("trophee")} Trophée ${h(s.name)}${trophyDone ? " : obtenu" : ""}</span><span class="num">${traq}/${s.monsters.length} monstres Traqueur</span></div><div class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></div></div>
@@ -2009,7 +2014,7 @@ function dungeonSheet(did) {
         <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div></div>` : "";
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
-      ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${sm.hp >= 30 ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${sm.hp >= 30 ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${sm.hp >= 30 ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
+      ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; const one = E.team(S).length === 1; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${one ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${one ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${one ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
       ${compSuggest(did)}
       ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de l'heure : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b> pendant cette heure (encore ${weeklyLeft()}). Une course commencée garde son bonus.</span></div>` : ""}
       ${fl ? `<div class="wkbox fl">${G("bolt")} <span><b>Mutateur éclair : ${h(fl.name)}</b> (${h(fl.desc.charAt(0).toLowerCase() + fl.desc.slice(1).replace(/\.$/, ""))}). En échange : <b>+${Math.round((E.FLASH_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.FLASH_DUST - 1) * 100)} % de poussière</b>. Change dans ${flashLeft()} ; une course commencée garde le bonus jusqu'au bout.</span></div>` : ""}
@@ -2155,7 +2160,7 @@ function combatSetSheet() {
 /* ---------- COMBAT ---------- */
 function renderCombat() {
   if (ui.watch) return renderWatch();
-  const team = E.team(S); const fs = E.freeSpirit(S);
+  const team = E.team(S);
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   if (!ui.combatCid || !team.find((c) => c.id === ui.combatCid)) ui.combatCid = team[0] && team[0].id;
   const XP = E.expActive(S) ? S.exp : null; // 0.1.24 : étage de l'Expédition sans fin
@@ -3791,16 +3796,16 @@ function charStatsView(c, st) {
       ${combatStats(c, st)}
       <p class="note">${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
 }
-/* 0.1.35.4 : ce qui s'ajoute pendant le combat (équipe, Esprit Libre, Havre-Sac, alignement, Éveils), absent des stats totales */
+/* 0.1.35.4 : ce qui s'ajoute pendant le combat (équipe, Havre-Sac, alignement, Éveils), absent des stats totales */
 function combatStats(c, st) {
   const team = E.team(S); const inT = team.includes(c); const mates = inT ? team : team.concat([c]); const n = Math.min(8, mates.length);
-  const fs = D.FREE_SPIRIT[Math.max(1, n)] || 0; const ev = c.eveils || {};
+  const ev = c.eveils || {};
   const syn = n < 2 ? 0 : new Set(mates.map((x) => x.cls)).size * 2;
   const meneur = mates.reduce((a, x) => a + ((x.eveils || {}).meneur || 0), 0);
   const bHp = E.bonus(S, "hp"); const bDmg = E.bonus(S, "dmg"); const osa = mates.some((x) => x.cls === "osa");
-  const hp = Math.round(st.hpMax * (1 + fs / 200) * (osa ? 1.05 : 1) * (1 + bHp / 100));
+  const hp = Math.round(st.hpMax * (osa ? 1.05 : 1) * (1 + bHp / 100));
   const hs = E.HUNT_SMALL[n]; const ds = E.SMALL_TEAM[n];
-  const dmg = fs / 2 + bDmg + syn + meneur; const fur = 4 * (ev.fureur || 0);
+  const dmg = bDmg + syn + meneur; const fur = 4 * (ev.fureur || 0);
   const crit = Math.min(60, 5 + st.cri); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
   const xp = Math.round(((1 + st.sa / 100) * E.renXpMult(c) - 1) * 100); const ppRaw = E.teamProspectionRaw(S) + (inT ? 0 : st.pp);
   const parts = (a) => a.filter((x) => x[1]).map(([t, v]) => `${t} ${v > 0 ? "+" : ""}${fmt(Math.round(v * 10) / 10)} %`).join(" · ");
@@ -3808,14 +3813,14 @@ function combatStats(c, st) {
   return `<div class="cbstats"><div class="row between"><b class="small">En combat</b><span class="xs muted">${inT ? `avec l'équipe actuelle (${n} héros)` : `s'il rejoint l'équipe (${n} héros)`}</span></div>
     <div class="list">
     ${row("Points de vie", fmt(hp) + (hs ? ` <span class="xs muted">· chasse ${fmt(Math.round(hp * (1 + hs.hp / 100)))}</span>` : "") + (ds ? ` <span class="xs muted">· donjon ${fmt(Math.round(hp * (1 + ds.hp / 100)))}</span>` : ""),
-      `Points de vie de la fiche, plus : ${parts([["Esprit Libre", fs / 2], ["Osamodas dans l'équipe", osa ? 5 : 0], ["Havre-Sac et alignement", bHp]]) || "rien pour l'instant"}.${hs || ds ? ` Petite équipe : ${hs ? `+${hs.hp} % en chasse` : ""}${hs && ds ? ", " : ""}${ds ? `+${ds.hp} % en donjon` : ""}.` : ""}`)}
+      `Points de vie de la fiche, plus : ${parts([["Osamodas dans l'équipe", osa ? 5 : 0], ["Havre-Sac et alignement", bHp]]) || "rien pour l'instant"}.${hs || ds ? ` Petite équipe : ${hs ? `+${hs.hp} % en chasse` : ""}${hs && ds ? ", " : ""}${ds ? `+${ds.hp} % en donjon` : ""}.` : ""}`)}
     ${row("Dégâts", dmg || fur ? `+${fmt(Math.round(dmg * 10) / 10)} %${fur ? ` <span class="xs muted">· Fureur +${fur} %</span>` : ""}` : "—",
-      `Bonus de dégâts de toute l'équipe : ${parts([["Esprit Libre", fs / 2], ["Synergie", syn], ["Alignement", bDmg], ["Éveil Meneur", meneur]]) || "aucun pour l'instant"}.${fur ? ` L'Éveil Fureur de ce héros multiplie encore ses dégâts de +${fur} %.` : ""}${ev.premier ? ` Premier sang : +${8 * ev.premier} % au premier tour.` : ""}`)}
-    ${hs || ds ? row("Dégâts reçus", `${hs ? `chasse −${hs.dr} %` : ""}${hs && ds ? " · " : ""}${ds ? `donjon −${ds.dr} %` : ""}`, "Une équipe de 1 à 3 héros encaisse moins en chasse, et une équipe de 1 ou 2 héros encaisse moins en donjon.") : ""}
+      `Bonus de dégâts de toute l'équipe : ${parts([["Synergie", syn], ["Alignement", bDmg], ["Éveil Meneur", meneur]]) || "aucun pour l'instant"}.${fur ? ` L'Éveil Fureur de ce héros multiplie encore ses dégâts de +${fur} %.` : ""}${ev.premier ? ` Premier sang : +${8 * ev.premier} % au premier tour.` : ""}`)}
+    ${hs || ds ? row("Dégâts reçus", `${hs ? `chasse −${hs.dr} %` : ""}${hs && ds ? " · " : ""}${ds ? `donjon −${ds.dr} %` : ""}`, "Une équipe de 1 à 4 héros encaisse moins, en chasse comme en donjon.") : ""}
     ${row("Chances de coup critique", `${crit} %`, `5 % de base + ${fmt(st.cri)} % de Critique, 60 % au plus. Un coup critique fait ×1,25 puis +3 dégâts (+ Dommages critiques).`)}
     ${ev.main ? row("Soins et boucliers", `+${6 * ev.main} %`, "Éveil Main bienveillante.") : ""}
     ${over.length ? row("Résistances plafonnées", over.map((k) => STATS[k].name.replace("% Rés. ", "")).join(", "), "Une résistance en % compte au plus 50 % : les points au-delà ne servent à rien.") : ""}
-    ${row("Expérience gagnée", `+${fmt(xp)} %`, `Sagesse (+${fmt(st.sa)} %)${c.ren ? ` et Renaissance (×${E.renXpMult(c).toFixed(2).replace(".", ",")})` : ""}. S'ajoutent les bonus de l'équipe (Esprit Libre, Synergie, Havre-Sac, guilde…).`)}
+    ${row("Expérience gagnée", `+${fmt(xp)} %`, `Sagesse (+${fmt(st.sa)} %)${c.ren ? ` et Renaissance (×${E.renXpMult(c).toFixed(2).replace(".", ",")})` : ""}. S'ajoutent les bonus de l'équipe (Synergie, Havre-Sac, guilde…). Plus l'équipe est grande, plus chaque héros reçoit d'XP.`)}
     ${row("Prospection de l'équipe", fmt(Math.round(E.effProspection(ppRaw))), `Somme de la Prospection des héros de l'équipe (${fmt(ppRaw)}), comptée entièrement jusqu'à 100, puis à moitié jusqu'à 300 et au quart au-delà. Chaque point donne +1 % de butin.`)}
     </div></div>`;
 }
@@ -5084,7 +5089,7 @@ function recruitSheet() {
       <div class="rbar"><i style="width:${cost ? Math.min(100, Math.round(100 * S.kamas / cost)) : 100}%"></i></div>
       <div class="row between xs"><span>Vous avez <b class="num">${fmt(S.kamas)}</b></span><span>${S.kamas >= cost ? `Il vous restera <b class="num">${fmt(S.kamas - cost)}</b>` : `Il manque <b class="num">${fmt(cost - S.kamas)}</b>`}</span></div>
       ${S.chars.length + 1 < E.HERO_MAX ? `<span class="xs muted">Héros suivant : ${fmt(E.recruitCost(S.chars.length + 2))} k</span>` : ""}</div>
-    <p class="small muted">La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus le bonus Esprit Libre diminue.</p>
+    <p class="small muted">La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus chaque héros monte vite.</p>
     ${classPick(ui.startCls, sex)}${classInfo(ui.startCls, sex, startHeadOf(ui.startCls, sex))}
     <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
       ${headPick(ui.startCls, sex)}

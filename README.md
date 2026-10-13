@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.6.1 « Force du nombre »
+Part d'XP par héros : `E.xpShare(n)` = 0,8 × n^-0,1 dans `giveRewards` (avant 2/(n+1) × Esprit Libre). `E.freeSpirit` renvoie 0 (Esprit Libre supprimé : XP, butin, PV, dégâts) ; `E.HUNT_SMALL` (chasse) et `E.SMALL_TEAM` (donjon) relevés et étendus à 4 héros pour garder les petites équipes équipées hors de danger. Jauge `fsGauge` = taille de l'équipe + Synergie. Simulation 1 → 200 (bon équipement, sans bonus) : solo 179 h, 2 héros 140 h, 4 héros 89 h, 8 héros 61 h ; stasis des donjons inchangées (`npm run sim`).
+
 ## 1.0.6 « Galets en bonus »
 Galets du Kolizéum en bonus facultatif de fabrication (Mathis, 13/10/2026 : 1A 2A 3A puis 4A à 11A, bonus rééquilibrés sur sa demande). js/koli.js : `E.KOLI_GALETS` (lo/hi = niveaux des objets, `roll` = options de `E.rollItem` : `one`, `best2`, `floor`, `rad` ; `double` = chance d'un 2e objet), `E.galetsFor(tpl)`, `E.galetFx`, `E.koliGaletRefund` (Galets des sacs repris une fois au prix en Kolizetons, branché sur `E.deserialize`, drapeau `S.galRef`). js/engine.js : `E.craftItem(S, tpl, galet)` / `E.craftMany(..., galet)`. js/ui.js : encadré « Bonus facultatif » dans la fiche de recette (`galetBox`, `ui.recGalet`). Gains moyens simulés : +2 à +5 % de caractéristiques. Recettes toujours sans Galet obligatoire (`E.KOLI_GALET_RECIPES = false`).
 
