@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.53.3";
+const GAME_VERSION = "0.1.53.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.53.4", name: "XP de monture arrondie", items: [
+    "Montures : la progression vers le niveau suivant s'affiche en pourcentage entier (par exemple 37 %) au lieu d'un nombre avec plein de chiffres après la virgule",
+  ] },
   { v: "0.1.53.3", name: "Boss qui respirent", items: [
     "Boss des mondes : Gargandyas et les autres boss de la rotation respirent doucement sur leur page, dans le chat, en haut du combat et dans le bandeau",
     "Plus le boss faiblit, plus il s'agite : il respire plus vite en phase 2 et s'entoure d'une aura rouge en phase 3",
@@ -3577,7 +3580,7 @@ function charPetView(c) {
 const mountImg = (sp, c) => `assets/mt/${E.mountIcon(sp, c)}.webp`;
 const mountSpName = (sp) => E.MOUNTS[sp].name + (sp === "dd" ? "s" : "s");
 const mountStatTxt = (stats) => petBonus(stats);
-const mountBar = (M) => `<div class="pbar"><i style="width:${M.lvl >= E.MOUNT_MAX ? 100 : pct(M.xp, E.mountXpNeed(M.sp, M.lvl))}%"></i><span>${M.lvl >= E.MOUNT_MAX ? `Niveau ${E.MOUNT_MAX} : bonus au maximum` : `Niveau ${M.lvl} · ${pct(M.xp, E.mountXpNeed(M.sp, M.lvl))} %`}</span></div>`;
+const mountBar = (M) => `<div class="pbar"><i style="width:${M.lvl >= E.MOUNT_MAX ? 100 : pct(M.xp, E.mountXpNeed(M.sp, M.lvl))}%"></i><span>${M.lvl >= E.MOUNT_MAX ? `Niveau ${E.MOUNT_MAX} : bonus au maximum` : `Niveau ${M.lvl} · ${Math.floor(pct(M.xp, E.mountXpNeed(M.sp, M.lvl)))} %`}</span></div>`;
 function mountSlot(c) {
   const M = E.mountOf(S, c); const blocked = E.mountBlocked(S, c);
   const tip = blocked ? "Monture : la place est prise par le montilier" : M ? `${E.mountName(M)} · niveau ${M.lvl}` : c.lvl < E.MOUNT_LVL ? `Monture : dès le niveau ${E.MOUNT_LVL}` : "Monture : vide";
@@ -3609,7 +3612,7 @@ function mountPanel(c) {
   return `<div class="panel"><div class="phead"><h2>Monture de ${h(c.name)}</h2>${M && !blocked ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : ""}</div><div class="pad stack">
     ${blocked ? `<div class="empty">Le montilier prend la place de la monture. Retirez-le pour monter une dragodinde, un muldo ou un volkorne.</div>`
       : M ? mountCard(M, c, { big: true }) + (M.lvl < E.MOUNT_MAX ? `<div class="mtshare"><span class="small"><b>Part d'XP donnée à la monture</b></span>${c.lvl >= E.MAX_LVL ? `<span class="tag good">toute l'XP (héros au niveau maximum)</span>` : `<span class="seg">${E.MOUNT_SHARES.map((v) => `<button data-act="mountshare" data-v="${v}" aria-pressed="${share === v}">${v} %</button>`).join("")}</span>`}
-          <p class="note xs" style="margin:0">${share ? `${h(c.name)} garde ${100 - share} % de son XP et sa monture reçoit le reste` : "La monture ne gagne pas d'XP pour l'instant"} · niveau ${M.lvl + 1} dans ${fmt(E.mountXpNeed(M.sp, M.lvl) - M.xp)} XP. Quand elle atteint le niveau ${E.MOUNT_MAX}, la part repasse toute seule à 0 %.</p></div>` : "")
+          <p class="note xs" style="margin:0">${share ? `${h(c.name)} garde ${100 - share} % de son XP et sa monture reçoit le reste` : "La monture ne gagne pas d'XP pour l'instant"} · niveau ${M.lvl + 1} dans ${fmt(Math.ceil(E.mountXpNeed(M.sp, M.lvl) - M.xp))} XP. Quand elle atteint le niveau ${E.MOUNT_MAX}, la part repasse toute seule à 0 %.</p></div>` : "")
       : `<div class="empty">${c.lvl < E.MOUNT_LVL ? `Une monture se monte dès le niveau ${E.MOUNT_LVL}.` : mine.length ? "Aucune monture montée : choisissez-en une ci-dessous." : "Aucune monture pour l'instant : chassez dans une zone sauvage avec un filet de capture dans le sac."}</div>`}
   </div></div>
   ${others.length ? `<div class="panel"><div class="phead"><h2>Écurie</h2><span class="xs muted">${E.stableN(S)} / ${E.stableCap(S)} places${S.enclos.built ? "" : " · +10 avec l'enclos"}</span></div><div class="list">${others.map((x) => `<div class="li">${mountCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.53.4 « XP de monture arrondie »
+Montures (js/ui.js `mountBar`) : pourcentage d'XP arrondi à l'entier inférieur ; XP restante arrondie au-dessus. Calcul inchangé.
+
 ## 0.1.53.3 « Boss qui respirent »
 Boss des mondes (js/wbossui.js, css) : portraits animés en CSS (`img.wb-an` + `wb-p1..3` selon la phase) sur la page, la rotation, les cartes du chat en cours, le haut du combat et le bandeau ; coupé par `pref.fx` et `prefers-reduced-motion`.
 

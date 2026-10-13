@@ -1,6 +1,13 @@
 {
-  "version": "0.1.53.3",
+  "version": "0.1.53.4",
   "versions": [
+    {
+      "v": "0.1.53.4",
+      "name": "XP de monture arrondie",
+      "items": [
+        "Montures : la progression vers le niveau suivant s'affiche en pourcentage entier (par exemple 37 %) au lieu d'un nombre avec plein de chiffres après la virgule"
+      ]
+    },
     {
       "v": "0.1.53.3",
       "name": "Boss qui respirent",
