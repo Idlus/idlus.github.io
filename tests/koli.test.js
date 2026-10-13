@@ -83,12 +83,35 @@ for (const c in D.CLASSES) { assert.ok(E.KOLI_POW[c] && E.KOLI_POW[c].length ===
 assert.ok(E.SHOPS.koli && E.ORN.koli && E.ORN.koli_ban && D.CONSUMABLES[E.KOLI_TICKET]);
 console.log("ok - équilibre et boutique");
 
-// 7. Galets (0.1.45, retirés en 1.0.4.3) : restent des ressources (sacs des joueurs), mais aucune recette ni la boutique.
+// 7. Galets (0.1.45 ; 1.0.6 bonus facultatif de fabrication) : aucune recette ne les demande, la boutique les vend.
 E.KOLI_GALETS.forEach((g) => { assert.ok(D.RES[g.name] && D.RES[g.name].lvl === g.lvl, "Galet dans les ressources : " + g.name); assert.ok(E.RES_SOURCE[g.name]); });
-assert.strictEqual(E.KOLI_GALETS_ON, false);
 const withG = Object.values(D.ITEMS).filter((it) => it.craft && it.craft.ing.some(([r]) => /^Galet /.test(r)));
 assert.strictEqual(withG.length, 0, "aucune recette ne demande de Galet");
-assert.ok(!E.SHOPS.koli.items.some((x) => x.res && /^Galet /.test(x.res)), "la boutique ne vend plus de Galets");
+assert.strictEqual(E.SHOPS.koli.items.filter((x) => x.res && /^Galet /.test(x.res)).length, 6, "les 6 Galets en boutique");
+{ // bonus de fabrication
+  const G = E.newState("Galets", "iop"); const tpl = "i8271"; const T = D.ITEMS[tpl]; // Anneau du Dragon Cochon, niv. 108
+  assert.deepStrictEqual(E.galetsFor(tpl).map((g) => g.name), ["Galet rutilant", "Galet Lunaire"]);
+  G.crafts[T.craft.job].lvl = 200; const fill = () => T.craft.ing.forEach(([n, q]) => { G.res[n] = q * 400; }); fill();
+  assert.ok(/Plus de Galet rutilant/.test(E.craftItem(G, tpl, "Galet rutilant")), "sans Galet en stock");
+  G.res["Galet cramoisi"] = 1; assert.ok(/niveau 50 à 99/.test(E.craftItem(G, tpl, "Galet cramoisi")), "mauvais niveau");
+  G.res["Galet rutilant"] = 2; const it = E.craftItem(G, tpl, "Galet rutilant"); assert.ok(it && it.uid && G.res["Galet rutilant"] === 1, "1 Galet consommé");
+  const plain = E.craftItem(G, tpl); assert.ok(plain && plain.uid && G.res["Galet rutilant"] === 1, "sans Galet : recette normale");
+  // Lunaire : 1 chance sur 10 d'un 2e objet
+  G.res["Galet Lunaire"] = 300; E.itemCap = () => 1e9; let twins = 0;
+  for (let i = 0; i < 300; i++) { fill(); const r = E.craftMany(G, "tpl", tpl, 1, "Galet Lunaire"); twins += r.twins || 0; }
+  assert.ok(twins > 10 && twins < 60, "Lunaire ≈ 30 doubles sur 300 : " + twins); assert.ok(!G.res["Galet Lunaire"]);
+  // gains moyens (simulation) : chaque Galet améliore un peu, sans excès
+  const q = (o) => { let s = 0; for (let i = 0; i < 3000; i++) { const x = E.rollItem(G, tpl, o); s += E.itemQuality(x); delete G.items[x.uid]; } return s / 3000; };
+  const q0 = q({ radiant: false }), q2 = q({ radiant: false, best2: true }), qf = q({ radiant: false, floor: 0.25 });
+  assert.ok(q2 > q0 + 0.05 && q2 < q0 + 0.25 && qf > q0 + 0.05 && qf < q0 + 0.3, `qualité ${q0.toFixed(2)} → ${q2.toFixed(2)} / ${qf.toFixed(2)}`);
+  const rf = E.galetFx(G, "i11720", "Galet brasillant"); assert.ok(typeof rf === "string"); // pas en stock
+}
+{ // 2A : Galets des sacs repris une fois au prix payé
+  const R = E.newState("Repris", "iop"); assert.ok(!R.galRef, "le drapeau ne vient pas des nouvelles parties (deserialize les complète)");
+  R.res["Galet cramoisi"] = 4; R.res["Galet rutilant"] = 3; R.tokens[E.KOLI_CUR] = 5;
+  const back = E.deserialize(E.serialize(R)); assert.strictEqual(E.koliKz(back), 5 + 4 * 2 + 3 * 3); assert.ok(!back.res["Galet cramoisi"] && back.galRefNote);
+  back.res["Galet cramoisi"] = 2; const again = E.deserialize(E.serialize(back)); assert.strictEqual(again.res["Galet cramoisi"], 2, "une seule fois");
+}
 const B = E.newState("Boutique", "iop"); B.tokens[E.KOLI_CUR] = 30;
 const ch = E.SHOPS.koli.items.find((x) => x.cons === "coffre_bois");
 assert.strictEqual(E.buyShop(B, "koli", ch.id, 1), null); assert.strictEqual(B.cons.coffre_bois, 1); assert.strictEqual(E.koliKz(B), 30 - ch.cost);
@@ -98,4 +121,4 @@ assert.strictEqual(E.buyShop(B, "koli", dust.id), null); assert.strictEqual(B.re
 const tit = E.SHOPS.koli.items.find((x) => x.title); B.tokens[E.KOLI_CUR] = 1000; E.buyShop(B, "koli", tit.id, 10);
 assert.strictEqual(E.koliKz(B), 1000 - tit.cost, "un titre ne s'achète qu'une fois, même avec ×10");
 assert.ok(E.SHOPS.koli.items.every((x) => ["galets", "combat", "coffres", "look"].includes(x.sec)));
-console.log("ok - Galets retirés et boutique en rayons");
+console.log("ok - Galets en bonus de fabrication et boutique en rayons");

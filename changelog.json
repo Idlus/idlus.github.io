@@ -1,6 +1,17 @@
 {
-  "version": "1.0.5.3",
+  "version": "1.0.6",
   "versions": [
+    {
+      "v": "1.0.6",
+      "name": "Galets en bonus",
+      "items": [
+        "Les Galets du Kolizéum reviennent, comme bonus facultatif de fabrication : dans une recette de son niveau, ajoute un Galet pour améliorer l'objet. Sans Galet, la recette marche comme avant",
+        "Galet cramoisi (objets niv. 50 à 99) : une caractéristique tirée dans sa moitié haute. Galet rutilant (100 à 149) : l'objet est tiré 2 fois, tu gardes le meilleur. Galet Lunaire (100 à 149) : 1 chance sur 10 de fabriquer un 2e objet",
+        "Galet Solaire (150 à 194) : chaque caractéristique au moins au quart de sa fourchette. Galet rayonnant (150 à 194) : pareil, plus 1 chance sur 100 d'objet Rayonnant. Galet brasillant (195 à 200) : au moins au tiers, et 1 chance sur 40 de Rayonnant",
+        "Un Galet par fabrication. En moyenne, un Galet apporte +2 à +5 % de caractéristiques : un petit plus, pas une obligation",
+        "Les Galets sont de nouveau dans la boutique du Kolizéum (2 à 6 Kolizetons). Ceux que tu avais déjà sont repris une fois, au prix payé en Kolizetons"
+      ]
+    },
     {
       "v": "1.0.5.3",
       "name": "Accès au panel de test",

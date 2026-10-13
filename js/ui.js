@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.5.3";
+const GAME_VERSION = "1.0.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.6", name: "Galets en bonus", items: [
+    "Les Galets du Kolizéum reviennent, comme bonus facultatif de fabrication : dans une recette de son niveau, ajoute un Galet pour améliorer l'objet. Sans Galet, la recette marche comme avant",
+    "Galet cramoisi (objets niv. 50 à 99) : une caractéristique tirée dans sa moitié haute. Galet rutilant (100 à 149) : l'objet est tiré 2 fois, tu gardes le meilleur. Galet Lunaire (100 à 149) : 1 chance sur 10 de fabriquer un 2e objet",
+    "Galet Solaire (150 à 194) : chaque caractéristique au moins au quart de sa fourchette. Galet rayonnant (150 à 194) : pareil, plus 1 chance sur 100 d'objet Rayonnant. Galet brasillant (195 à 200) : au moins au tiers, et 1 chance sur 40 de Rayonnant",
+    "Un Galet par fabrication. En moyenne, un Galet apporte +2 à +5 % de caractéristiques : un petit plus, pas une obligation",
+    "Les Galets sont de nouveau dans la boutique du Kolizéum (2 à 6 Kolizetons). Ceux que tu avais déjà sont repris une fois, au prix payé en Kolizetons",
+  ] },
   { v: "1.0.5.3", name: "Accès au panel de test", items: [
     "Version de test : le panel de test s'ouvre de nouveau pour le compte admin. La bêta vérifie le rôle auprès du serveur si le compte admin est connecté au jeu public sur le même navigateur",
     "Nouveau lien discret « Accès testeur » sur l'écran d'accueil de la version de test : il passe par le jeu public pour reconnaître le compte admin, puis ramène sur la bêta",
@@ -4695,10 +4702,20 @@ function craftList(job) {
     : (a, b) => (b.for ? 1 : 0) - (a.for ? 1 : 0) || (a.okLvl ? 0 : 1) - (b.okLvl ? 0 : 1) || a.miss - b.miss || b.lvl - a.lvl;
   return rs.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || srt(a, b));
 }
+/* 1.0.6 « Galets en bonus » : un Galet du Kolizéum au choix, facultatif, sur les objets de son niveau (bonus dans js/koli.js) */
+function galetSel(r) { if (!r || !r.T || !E.galetsFor || !ui.recGalet) return null; const g = E.galetsFor(r.id).find((x) => x.name === ui.recGalet); return g && (S.res[g.name] || 0) > 0 ? g.name : null; }
+function galetBox(r) {
+  if (!r.T || !E.galetsFor) return ""; const L = E.galetsFor(r.id); if (!L.length) return ""; const sel = galetSel(r);
+  return `<h3 class="sec">Bonus facultatif</h3><div class="pgal">${L.map((g) => { const q = S.res[g.name] || 0; const on = sel === g.name;
+    return `<div class="pingr pgalr ${on ? "on" : ""}">${im(resImg(g.name), "ico", g.name)}<span class="grow" style="min-width:0"><b>${h(g.name)}</b> <span class="xs muted">· ${fmt(q)} en stock</span><br><span class="xs muted">${h(g.fx)}</span></span>
+      ${q ? `<button class="btn sm ${on ? "primary" : ""}" data-act="recgalet" data-g="${h(g.name)}" aria-pressed="${on}">${on ? "✓ Ajouté" : "Ajouter"}</button>` : `<button class="btn sm" data-act="kz-shop" data-g="${h(g.name)}">Boutique</button>`}</div>`; }).join("")}
+    <div class="xs muted">Un Galet par fabrication. Sans Galet, la recette marche comme avant. Les Galets s'achètent dans la boutique du Kolizéum.</div></div>`;
+}
 function recDetail(r, job) {
   if (!r) return `<div class="empty">Choisis une recette dans la liste.</div>`;
   const J = S.crafts[job] || { lvl: 1 }; const pic = r.T ? itemImg(r.id) : resImg(r.id); const pinned = S.shop.some((e) => e.id === r.id);
-  const qty = ui.recQty === "max" ? Math.max(1, r.n) : Math.max(1, Math.min(+ui.recQty || 1, Math.max(1, r.n)));
+  const gSel = galetSel(r); const nMax = gSel ? Math.min(r.n, S.res[gSel] || 0) : r.n; // 1.0.6 : avec un Galet, une fabrication par Galet
+  const qty = ui.recQty === "max" ? Math.max(1, nMax) : Math.max(1, Math.min(+ui.recQty || 1, Math.max(1, nMax)));
   const xp = (r.T ? 12 : 20) + r.lvl * 3;
   const stats = r.T ? `<div class="pstats">${Object.entries(r.T.stats).map(([k, [a, b]]) => `<span>${sIco(k)} <b>${a === b ? a : a + " à " + b}</b> ${h(STATS[k].name)}</span>`).join("")}</div>` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
   return `<div class="pdet"><div class="row" style="gap:12px"><span class="icobox lg">${im(pic, "", r.name)}</span><div class="grow"><h2 style="margin:0">${h(r.name)}</h2>
@@ -4709,9 +4726,10 @@ function recDetail(r, job) {
     <h3 class="sec">Ressources</h3>
     <div class="ping">${r.ing.map(([n, q]) => { const have = S.res[n] || 0; const ok = have >= q; return `<div class="pingr ${ok ? "" : "ko"}">${im(resImg(n), "ico", n)}<span class="grow">${h(n)}</span><b class="num">${fmt(have)} / ${fmt(q)}</b>${ok ? "" : `<button class="btn sm" data-act="reswhere" data-n="${h(n)}">Où ?</button>${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="res" data-k="${h(n)}" data-n="${q - have}">Offre HdV</button>` : ""}`}</div>`; }).join("")}</div>
     ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
+    ${galetBox(r)}
     ${r.T && r.okLvl && !r.miss ? !r.n ? `<div class="small minus" style="margin-top:8px">Ton sac et ton trop-plein sont pleins : brise ou vends des objets pour fabriquer. <a href="#" data-act="nav" data-v="inv">Ouvrir l'inventaire</a></div>` : E.itemCount(S) >= E.itemCap(S) ? `<div class="small muted" style="margin-top:8px">Sac plein (${fmt(E.itemCount(S))}/${fmt(E.itemCap(S))}) : les objets fabriqués vont dans le trop-plein de l'inventaire.</div>` : "" : ""}
     <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${r.n > 1 ? " ×" + fmt(r.n) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div><span class="xs muted grow">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
-    <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
+    <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${gSel ? `data-g="${h(gSel)}"` : ""} ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
 }
 function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
 function craftHtml() {
@@ -6518,9 +6536,10 @@ document.addEventListener("click", (ev) => {
 
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
-    case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n); if (typeof r === "string") { toast(r); break; }
+    case "recgalet": ui.recGalet = ui.recGalet === d.g ? null : d.g; ui.recQty = "1"; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
+    case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n, d.g || null); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
-      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
+      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.twins ? ` · ${d.g} : +${fmt(r.twins)} en bonus !` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
     case "dupesask": ui.confirm = "dupes"; break;
     case "dupesgo": { const r = E.breakDupes(S); ui.confirm = null; toast(`${r.n} doublon${r.n > 1 ? "s" : ""} brisé${r.n > 1 ? "s" : ""}. Runes : ${runesTxt(r.got)}`); break; }
     case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;
@@ -7217,6 +7236,7 @@ function bootGame(pushNow) {
     const gap = (E.now() - (S.lastTick || E.now())) / 1000;
     const r = gap > 60 ? E.catchUp(S, gap) : null;
     render();
+    if (S.galRefNote) { const t = S.galRefNote; delete S.galRefNote; setTimeout(() => toast(t, "rare"), 900); } // 1.0.6 : Galets repris (js/koli.js)
     if (S.migration) { migrationSheet(S.migration); S.migration = null; }
     else if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r);
     S.sessions = (S.sessions || 0) + 1; dirty = true;

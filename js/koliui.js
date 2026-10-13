@@ -121,7 +121,7 @@
   const hcard = (c) => `<div class="kz-h" style="--cc:${CLASSES[c.cls].color}">${X().lookImg(c, "l")}<span class="lv">${c.lvl}</span><span class="rw">${h(c.name)}</span></div>`;
   /* boutique (0.1.45) : onglets, grille d'articles, un seul panneau d'achat (quantité libre, total, ce qu'il manque).
      La fiche se redessine sur place après un achat : on garde l'onglet, l'article choisi et la quantité. */
-  const SECS0 = [["galets", "Galets", "Demandés par les recettes d'équipement, comme dans DOFUS. Ils se revendent aussi à l'Hôtel de vente."],
+  const SECS0 = [["galets", "Galets", "Bonus facultatifs de fabrication : un Galet ajouté à une recette de son niveau améliore l'objet. Ils se revendent aussi à l'Hôtel de vente."],
     ["combat", "Combats", "Tickets, poussière et douceurs."], ["coffres", "Coffres", "Les mêmes coffres que dans le reste du jeu."], ["look", "Apparence", "Pour la carte de tes héros. Rien ici ne rend tes héros plus forts."]];
   const SECS = SECS0.filter(([k]) => E.SHOPS.koli.items.some((it) => (it.sec || "combat") === k)); // onglets vides cachés (Galets retirés en 1.0.4.3)
   const sh = ui.shop = ui.shop || { tab: SECS[0][0], sel: null, q: 1 };
@@ -154,11 +154,12 @@
     const U = it.res && E.KOLI_GALET_USE ? E.KOLI_GALET_USE[it.res] : null; const st = stockOf(s, it);
     const q = it.many ? Math.max(1, Math.min(100, sh.q || 1)) : 1; const tot = it.cost * q; const miss = Math.max(0, tot - have);
     const name = it.res ? `<button class="kz-lnk" data-act="kz-res" data-n="${h(it.res)}" title="Fiche de la ressource">${h(E.shopItemName(s, it))}</button>` : h(E.shopItemName(s, it));
-    const desc = U ? `Ressource niv. ${R.lvl} · demandée par <b>${U.n} objets</b> à fabriquer, niveau ${U.lo} à ${U.hi}` : R ? `Ressource niv. ${R.lvl}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
+    const GF = it.res && E.GALET ? E.GALET[it.res] : null;
+    const desc = U ? `Bonus de fabrication pour <b>${U.n} objets</b> de niveau ${U.lo} à ${U.hi}${GF ? ` : ${h(GF.fx)}` : ""}` : R ? `Ressource niv. ${R.lvl}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
     const qty = it.many && !owned ? `<div class="kzs-q"><div class="kzs-step"><button class="btn sm" data-act="kz-q" data-v="-1" ${q <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${q}</b><button class="btn sm" data-act="kz-q" data-v="1" ${q >= 100 ? "disabled" : ""} aria-label="Un de plus">+</button></div>
       <div class="seg">${[1, 5, 10].map((n) => `<button data-act="kz-q" data-set="${n}" aria-pressed="${q === n}">×${n}</button>`).join("")}<button data-act="kz-q" data-set="max" aria-pressed="${q === maxQ(s, it) && ![1, 5, 10].includes(q)}">Max</button></div></div>` : "";
     return `<div class="kzs-buy"><div class="kzs-sel"><span class="kzs-bi">${icoOf(it, true)}</span><div class="grow" style="min-width:0"><b>${name}</b><div class="xs muted">${desc}</div>
-      <div class="xs">${st ? `<b>${nf(st)}</b> en stock` : it.res || C ? "Aucun en stock" : ""}${U ? ` · <button class="kz-lnk" data-act="searchfill2" data-q="${h(it.res)}">voir les objets</button>` : ""}</div></div></div>
+      <div class="xs">${st ? `<b>${nf(st)}</b> en stock` : it.res || C ? "Aucun en stock" : ""}</div></div></div>
       ${owned ? `<div class="kzs-go"><span class="muted small">Déjà obtenu.</span></div>` : `${qty}<div class="kzs-go"><span class="small">${miss ? `<span class="kzs-miss">Il te manque ${nf(miss)} Kolizeton${miss > 1 ? "s" : ""}</span>` : `Total`}</span>
         <button class="btn primary" data-act="kz-buy" data-id="${it.id}" ${miss ? "disabled" : ""}>Acheter${q > 1 ? ` ×${q}` : ""} · ${coin("kz-coin sm")} ${nf(tot)}</button></div>`}</div>`;
   }
@@ -218,7 +219,7 @@
       <li>Chaque victoire rapporte une bourse de kamas (selon le niveau de l'équipe), ${K.dust} Poussière de stasis et ${K.kzWin} Kolizetons ; une défaite, ${K.kzLoss} Kolizeton.</li>
       <li>La semaine finit le lundi à minuit. Avec ${K.minWeek} combats classés au moins, ton grade donne sa récompense, puis la cote revient à mi-chemin de 1 000.</li>
       <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li>
-      <li>Les Kolizetons s'échangent dans la boutique contre ${E.KOLI_GALETS_ON ? `des <b>Galets</b> (demandés par ${E.KOLI_GALET_ITEMS || "des"} recettes d'équipement, comme dans DOFUS), ` : ""}des tickets, des coffres et de l'apparence.</li></ol>
+      <li>Les Kolizetons s'échangent dans la boutique contre ${E.KOLI_GALETS_ON ? `des <b>Galets</b> (bonus facultatifs de fabrication), ` : ""}des tickets, des coffres et de l'apparence.</li></ol>
       <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closesheet">Compris</button></div>`);
   }
 
@@ -298,7 +299,7 @@
       case "kz-team": teamSheet(); return;
       case "kz-tg": { const r = E.act(s, "koliToggle", +d.id); if (r) { X().toast(r); return; } X().markDirty(); teamSheet(); ui.key = ""; return; }
       case "kz-rules": rulesSheet(); return;
-      case "kz-shop": shopSheet(); return;
+      case "kz-shop": if (d.g) { const it = E.SHOPS.koli.items.find((x) => x.res === d.g); if (it) { sh.tab = "galets"; sh.sel = it.id; sh.q = 1; } } shopSheet(); return; // 1.0.6 : depuis une recette
       case "kz-res": X().resSheet(d.n); return;
       case "kz-tab": sh.tab = d.v; sh.sel = null; paintShop(); return;
       case "kz-sel": if (sh.sel !== d.id) { sh.sel = d.id; sh.q = 1; } paintShop(); return;

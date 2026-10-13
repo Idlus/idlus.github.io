@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.6 « Galets en bonus »
+Galets du Kolizéum en bonus facultatif de fabrication (Mathis, 13/10/2026 : 1A 2A 3A puis 4A à 11A, bonus rééquilibrés sur sa demande). js/koli.js : `E.KOLI_GALETS` (lo/hi = niveaux des objets, `roll` = options de `E.rollItem` : `one`, `best2`, `floor`, `rad` ; `double` = chance d'un 2e objet), `E.galetsFor(tpl)`, `E.galetFx`, `E.koliGaletRefund` (Galets des sacs repris une fois au prix en Kolizetons, branché sur `E.deserialize`, drapeau `S.galRef`). js/engine.js : `E.craftItem(S, tpl, galet)` / `E.craftMany(..., galet)`. js/ui.js : encadré « Bonus facultatif » dans la fiche de recette (`galetBox`, `ui.recGalet`). Gains moyens simulés : +2 à +5 % de caractéristiques. Recettes toujours sans Galet obligatoire (`E.KOLI_GALET_RECIPES = false`).
+
 ## 1.0.5.3 « Accès au panel de test »
 Version de test : le panel de test se rouvre pour le compte admin (rôle vérifié auprès du serveur avec la connexion du jeu public), et un lien « Accès testeur » passe par le jeu public pour reconnaître le compte puis revient sur la bêta.
 

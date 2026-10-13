@@ -398,10 +398,16 @@
     return rarityCache[tpl] || "commun";
   };
   E.rollItem = (S, tpl, opts = {}) => {
-    const T = ITEMS[tpl]; const roll = {};
-    for (const k in T.stats) { const [a, b] = T.stats[k]; roll[k] = ri(a, b); }
+    const T = ITEMS[tpl];
+    /* 1.0.6 : bonus des Galets (fabrication) : floor = part basse de la fourchette sautée, one = une caractéristique dans sa moitié haute,
+       best2 = deux tirages, le meilleur gardé, rad = chance de Rayonnant relevée */
+    const draw = () => { const r = {}; for (const k in T.stats) { const [a, b] = T.stats[k]; let lo = a;
+      if (b > a && opts.floor) lo = Math.ceil(a + (b - a) * opts.floor); if (b > a && opts.one === k) lo = Math.max(lo, Math.ceil((a + b) / 2)); r[k] = ri(lo, b); } return r; };
+    const score = (r) => { let s = 0; for (const k in T.stats) { const [a, b] = T.stats[k]; s += b === a ? 1 : (r[k] - a) / (b - a); } return s; };
+    let roll = draw(); if (opts.best2) { const r2 = draw(); if (score(r2) > score(roll)) roll = r2; }
     const it = { uid: S.nextUid++, tpl, stats: Object.assign({}, roll) };
-    const chance = opts.radiant === true ? 1 : E.RADIANT_CHANCE * (opts.archi ? 5 : 1) * (opts.champ ? 2 : 1) * E.radiantMult(S);
+    let chance = opts.radiant === true ? 1 : E.RADIANT_CHANCE * (opts.archi ? 5 : 1) * (opts.champ ? 2 : 1) * E.radiantMult(S);
+    if (opts.rad && opts.radiant !== true) chance = Math.max(chance, opts.rad * E.radiantMult(S));
     if (opts.radiant !== false && rnd() < chance) {
       it.radiant = E.radiantBonus(); it.roll = roll;
       for (const k in it.stats) if (it.stats[k] > 0) it.stats[k] = Math.ceil(it.stats[k] * (1 + it.radiant / 100));
@@ -2827,14 +2833,18 @@
     if (!Array.isArray(S.over)) S.over = [];
     delete S.items[it.uid]; S.over.push(Object.assign({}, it, { at: E.now() })); S.overNew = (S.overNew || 0) + 1;
   };
-  E.craftItem = (S, tpl) => {
+  E.galetFx = () => "Galet inconnu."; // 1.0.6 : bonus d'un Galet ajouté à la fabrication (js/koli.js)
+  E.craftItem = (S, tpl, galet) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";
     const J = S.crafts[T.craft.job];
     if (J.lvl < E.craftReq(tpl)) return `${CRAFT_JOBS[T.craft.job].name} niveau ${E.craftReq(tpl)} requis.`;
     if (!E.canCraft(S, T.craft)) return "Ressources insuffisantes.";
     if (E.craftRoom(S) <= 0) return "Sac et trop-plein pleins : fais de la place dans l'inventaire.";
+    const gx = galet ? E.galetFx(S, tpl, galet) : null; if (typeof gx === "string") return gx;
     T.craft.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
-    const it = E.rollItem(S, tpl); craftStow(S, it);
+    if (gx) { S.res[galet]--; if (!S.res[galet]) delete S.res[galet]; }
+    const it = E.rollItem(S, tpl, gx ? gx.roll : {}); craftStow(S, it);
+    if (gx && gx.double && rnd() < gx.double && E.craftRoom(S) > 0) { const it2 = E.rollItem(S, tpl); craftStow(S, it2); E.craftTwin = it2; note(S, `${galet} : un 2e ${T.name} !`, "rare"); }
     if (E.almChance(S, "craft2") && E.craftRoom(S) > 0) { craftStow(S, E.rollItem(S, tpl)); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
     craftXp(S, T.craft.job, 12 + T.lvl * 3);
     E.emit(S, "craft", { tpl });
@@ -2861,12 +2871,13 @@
     const R = SPECIAL_CRAFTS[id]; if (!R || S.crafts[R.job].lvl < R.lvl) return 0;
     return E.craftMax(S, R.ing, R.unique ? 1 : Infinity);
   };
-  E.craftMany = (S, k, id, n) => {
+  E.craftMany = (S, k, id, n, galet) => {
     n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null, over: 0 }; const o0 = overLen(S);
     for (let i = 0; i < n; i++) {
-      const r = k === "tpl" ? E.craftItem(S, id) : E.craftSpecial(S, id);
+      E.craftTwin = null; const r = k === "tpl" ? E.craftItem(S, id, galet) : E.craftSpecial(S, id);
       if (typeof r === "string") { out.err = r; break; }
       out.n++; if (r && r.uid) out.items.push(r);
+      if (E.craftTwin) { out.items.push(E.craftTwin); out.twins = (out.twins || 0) + 1; E.craftTwin = null; }
     }
     out.over = Math.max(0, overLen(S) - o0);
     return out.n ? out : (out.err || "Fabrication impossible.");
