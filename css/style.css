@@ -2990,3 +2990,23 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .zdiff.easy{background:var(--action);color:var(--action-ink)}
 .zdiff.mid{background:var(--panel3);color:var(--ink)}
 .zdiff.hard{background:var(--danger);color:#fff}
+
+/* ---------- 0.1.36 : boîte à idées (js/idees.js) ---------- */
+.id-form{display:flex;flex-direction:column;gap:12px}
+.id-form h2{display:flex;align-items:center;gap:8px;margin:0}
+.id-form p{margin:0}
+.id-tags{margin:6px 0 0}
+.id-tags button{padding:4px 12px}
+.id-f{display:flex;flex-direction:column;gap:4px}
+.id-f input[type=text]{width:100%}
+.id-f textarea{min-height:120px;font-size:13.5px;resize:vertical}
+.id-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.id-send{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.id-send .grow{flex:1}
+.id-send a{color:inherit}
+.adm .id-ln{align-items:flex-start;gap:10px}
+.adm .id-ln .acts{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.id-page{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:start}
+.id-page .box{background:var(--panel);border:3px solid var(--frame);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.id-page .box h2{margin:0 0 8px}
+@media (max-width:860px){.id-page{grid-template-columns:1fr}}

@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.35.3";
+const GAME_VERSION = "0.1.36";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.36", name: "Boîte à idées", items: [
+    "Nouvelle page Communauté › Suggestions : choisissez ce que votre idée concerne (Combat, Équipement, Contenu, Interface), donnez-lui un titre et décrivez-la. Pas besoin de compte ni de Discord",
+    "Chaque idée est publiée automatiquement dans le forum Idées du Discord, où tout le monde peut voter avec 👍 ; les plus votées sont regardées chaque semaine",
+    "Aussi depuis Options › Aide, à côté de « Signaler un bug ». Une idée toutes les 10 minutes",
+  ] },
   { v: "0.1.35.3", name: "Chat refermable", items: [
     "Chat : le bouton pour réduire le chat était sorti du cadre depuis l'arrivée de l'onglet « Hauts faits ». Il est de retour, sur PC comme sur téléphone",
   ] },
@@ -686,7 +691,9 @@ const NAV = [
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["havre", "Havre-Sac", "havre"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
-].concat(window.ONLINE && window.ONLINE.enabled ? [{ id: "comm", n: "Communauté", pages: [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] }] : []);
+  // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
+  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] : []).concat([["sugg", "Suggestions", "idee"]]) },
+];
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
@@ -4071,7 +4078,7 @@ function optionsSheet() {
     + `<section class="optsec danger"><div class="optsec-h"><b>Nouvelle partie</b><span class="xs muted">efface toute la progression de cet appareil</span></div><div>${ui.confirm === "reset" ? `<span class="minus small">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div></section>`;
   else body = optSec("Découvertes", "les bulles d'aide déjà vues, et la recherche dans tout le jeu", `<div class="row"><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche <span class="xs muted">Ctrl+K</span></button></div>`)
     + optSec("Le jeu", "", `<div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>`)
-    + optSec("Un souci ?", "le diagnostic se colle avec le message, dans le forum Bugs du Discord", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
+    + optSec("Un souci ou une idée ?", "les bugs vont dans le forum Bugs du Discord, les idées dans le forum Idées", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="nav" data-v="sugg">${IC("idee")} Proposer une idée</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
     + `<p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>`;
   openSheet(`<div class="opthead"><h2>${G("gear")} Options</h2><button class="btn sm" data-act="closesheet" aria-label="Fermer">✕</button></div>
     <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
@@ -4181,6 +4188,7 @@ function render() {
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
+  else if (ui.tab === "sugg" && window.IDEES) window.IDEES.render($("#main")); // 0.1.36, voir js/idees.js
   else { ui.tab = "home"; renderHome(); }
   tipTick();
 }
