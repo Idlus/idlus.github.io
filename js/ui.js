@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.34";
+const GAME_VERSION = "0.1.35";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.35", name: "Héros en réserve", items: [
+    "Jusqu'à 12 héros au lieu de 8. L'équipe qui combat reste à 8 : les autres récoltent, s'entraînent au Havre-Sac, travaillent à l'atelier ou se reposent. Un héros recruté quand l'équipe est pleine attend au repos",
+    "Congédier un héros : bouton dans sa fiche, à confirmer en écrivant son nom. Son équipement, ses Dofus, son familier et sa monture reviennent au sac, et vous récupérez la moitié du prix du dernier recrutement. Le prochain recrutement redevient moins cher",
+    "Classement « Niveau » : il compte les 8 meilleurs héros du compte",
+  ] },
   { v: "0.1.34", name: "Zones à ta mesure", items: [
     "Zone conseillée : elle vise maintenant des monstres de ton niveau (avant, elle pouvait envoyer une équipe niveau 60 contre des monstres jusqu'au niveau 88). Une zone où l'équipe perd souvent ces derniers temps n'est plus conseillée",
     "« Suivre mon niveau » suit la même règle : l'équipe monte vers les zones de son niveau, plus au-dessus",
@@ -2974,7 +2979,7 @@ function teamMove(cid, z) {
   if (z === "job") { ui.gs = { cid: c.id, job: c.job ? c.job.job : null }; gatherSheet(); return null; }
   if (["f", "b"].includes(z)) {
     if (!["f", "b"].includes(from)) {
-      if (E.team(S).length >= 8) return "8 héros au plus dans l'équipe.";
+      if (E.activeCount(S) >= E.TEAM_MAX) return "8 héros au plus dans l'équipe.";
       if (from === "train") E.setTraining(S, null);
       if (from === "job") { const r = E.setJob(S, c.id, null); if (r) return r; }
       if (!c.inTeam) { const r = E.toggleTeam(S, c.id); if (r) return r; }
@@ -3011,7 +3016,7 @@ function teamTopHtml() {
   const al = teamAlerts(true); const team = E.team(S); const board = !!ui.teamBoard;
   const by = (z) => S.chars.filter((c) => teamZone(c) === z).length; const fs = E.frontSet(S);
   const gearN = al.filter((a) => a.k === "gear").length;
-  return `<div class="pagehead"><h1>Équipe et héros</h1><span class="small muted">${team.length} / 8 dans l'équipe</span><span class="grow"></span>
+  return `<div class="pagehead"><h1>Équipe et héros</h1><span class="small muted">${team.length} / 8 dans l'équipe · ${S.chars.length} / ${E.HERO_MAX} héros</span><span class="grow"></span>
     ${board ? "" : gearN ? `<button class="btn sm" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
     ${board ? "" : `<button class="btn sm" data-act="sm-card">${G("share")} Partager mon équipe</button>`}
     <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button></div>
@@ -3019,7 +3024,7 @@ function teamTopHtml() {
     <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
     <div class="k"><b class="num">${S.idols.active.length} / ${E.IDOL_MAX}</b><span>idoles actives</span></div>${idolBtn(null)}
 <div class="k"><b class="num">${E.soulCount(S)} / ${E.ARCHI_TOTAL}</b><span>âmes capturées</span></div>${archiBtn()}
-    ${S.chars.length < 8 ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
+    ${S.chars.length < E.HERO_MAX ? `<span class="grow"></span><button class="btn sm" data-act="recruitsheet">+ Recruter</button>` : ""}</section>
   ${board ? "" : compsHtml()}
   ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
 }
@@ -3030,7 +3035,7 @@ function heroesHtml() {
   <div class="fichewrap"><div class="fichemain">
   <div class="pagehead fichehead"><h2>Fiche du héros</h2><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
   <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
-    ${S.chars.length < 8 ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
+    ${S.chars.length < E.HERO_MAX ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
   ${placementHtml()}
   <section class="panel" style="margin-bottom:12px"><div class="pad row" style="gap:18px;align-items:flex-start">
     <div style="padding:14px 0 10px">${heroCard(c, "big", { act: "noop" })}</div>
@@ -3040,7 +3045,7 @@ function heroesHtml() {
       ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP</span></div>` : ""}
       <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}</div>
       <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : restLabel(c)}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>${c.lvl < E.MAX_LVL ? pinBtn({ k: "lvl", cid: c.id, n: lvlGoal(c) }, `Suivre le niveau ${lvlGoal(c)}`) : ""}</div>
+      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : restLabel(c)}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>${S.chars.length > 1 ? `<button class="btn sm" data-act="dismisssheet" data-id="${c.id}">Congédier</button>` : ""}${c.lvl < E.MAX_LVL ? pinBtn({ k: "lvl", cid: c.id, n: lvlGoal(c) }, `Suivre le niveau ${lvlGoal(c)}`) : ""}</div>
       <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
         ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
         <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
@@ -3057,7 +3062,7 @@ function heroRail(c) {
     const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0; const rest = !x.inTeam || !!x.job;
     const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}${x.job ? " · en récolte" : !x.inTeam ? " · au repos" : ""}`;
     return `<button class="hr-h${x.id === c.id ? " on" : ""}${rest ? " out" : ""}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}" aria-label="${h(tip)}" data-tip="${h(tip)}">${head(x)}<span class="hr-lv num">${x.lvl}</span>${g ? `<i class="hr-g"></i>` : ""}${p ? `<i class="hr-p num">${x.pts}</i>` : ""}</button>`; }).join("")}
-    ${S.chars.length < 8 ? `<button class="hr-h hr-add" data-act="recruitsheet" data-tip="Recruter un héros" aria-label="Recruter un héros"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>
+    ${S.chars.length < E.HERO_MAX ? `<button class="hr-h hr-add" data-act="recruitsheet" data-tip="Recruter un héros" aria-label="Recruter un héros"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>
     <span class="hr-name">${h(c.name)} <small>· ${h(CLASSES[c.cls].name)} niv. ${c.lvl}</small></span><span class="hr-kb"><kbd>↑</kbd><kbd>↓</kbd>changer</span></aside>`;
 }
 /* flèches ↑ ↓ du clavier : héros précédent ou suivant, quand on est descendu dans la fiche (PC) */
@@ -4082,6 +4087,17 @@ function renderRenaissance() {
     <p class="xs muted" style="margin:0">Récompenses : médaillon et aura (Braise dès la 1ʳᵉ, Flamme à la 4ᵉ, Brasier à la 7ᵉ, Phénix à la 10ᵉ), titres « Né des cendres » (I), « Flamme éternelle » (V) et « Phénix d'Idlus » (X), ornement « Ailes du Phénix » (X).</p></div></div></section>
   <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="pad stack">${rows}</div></section>
   <section class="panel" style="margin-top:12px"><div class="phead"><h2>Les Éveils</h2><span class="xs muted">3 rangs chacun</span></div><div class="pad achgrid">${E.EVEIL_ORDER.map((id) => `<div class="ach ok"><span class="ic">${G("sparkle")}</span><span><b>${h(E.EVEILS[id].name)}</b><br><span class="xs muted">${h([1, 2, 3].map((r) => E.EVEILS[id].desc(r).replace(/^\+/, "+")).join(" · "))}</span></span></div>`).join("")}<div class="ach ok cls"><span class="ic">${IC("phenix")}</span><span><b>Éveil de classe</b><br><span class="xs muted">Renaissances V et X : renforce le passif de la classe, différent pour chacune des 19 classes</span></span></div></div></section>`;
+}
+/* 0.1.35 : congédier un héros, confirmé en écrivant son nom */
+function dismissSheet(c) {
+  const refund = E.dismissRefund(S); const next = E.recruitCost(S.chars.length);
+  openSheet(`<h2>Congédier ${h(c.name)} ?</h2>
+    <p class="small">${h(c.name)} (${h(CLASSES[c.cls].name)} niveau ${c.lvl}${c.ren ? `, Renaissance ${E.roman(c.ren)}` : ""}) quitte définitivement l'aventure. <b>Impossible de revenir en arrière.</b></p>
+    <div class="panel pad small stack" style="gap:6px;margin-bottom:10px"><div><b>Revient au sac</b> : tout l'équipement porté, les Dofus, le familier et la monture.</div>
+      <div><b>Perdu</b> : ses niveaux, ses points et parchemins de caractéristiques, ses tenues enregistrées${c.ren ? ", ses Renaissances et Éveils" : ""}.</div>
+      <div><b>Rendu</b> : ${refund ? `${fmt(refund)} kamas (la moitié du prix du dernier recrutement)` : "rien (le premier héros est gratuit)"}. Le prochain recrutement coûtera ${next ? `${fmt(next)} k` : "rien"}.</div></div>
+    <label class="small stack" style="gap:4px"><span>Écrivez <b>${h(c.name)}</b> pour confirmer</span><input id="dismissName" autocomplete="off" maxlength="20"></label>
+    <div class="row" style="margin-top:12px"><button class="btn danger" data-act="dismiss" data-id="${c.id}">Congédier ${h(c.name)}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function recruitSheet() {
   const cost = E.recruitCost(S.chars.length + 1); const top = Math.max(...S.chars.map((c) => c.lvl)); const sex = ui.startSex || CLASSES[ui.startCls].sex;
@@ -5369,6 +5385,10 @@ document.addEventListener("click", (ev) => {
     case "gdel": E.deleteGear(S, c.id, +d.i); break;
     case "pzonedel": E.setZonePreset(S, c.id, d.z, null); break;
     case "recruitsheet": recruitSheet(); return;
+    case "dismisssheet": { const c = char(+d.id); if (c) dismissSheet(c); return; }
+    case "dismiss": { const c = char(+d.id); if (!c) return; const v = (($("#dismissName") || {}).value || "").trim();
+      if (v.toLowerCase() !== c.name.trim().toLowerCase()) { toast(`Écrivez « ${c.name} » pour confirmer.`); return; }
+      const r = E.dismiss(S, c.id); if (r) { toast(r); return; } closeSheet(); if (ui.cid === c.id) ui.cid = (mainHero() || S.chars[0]).id; toast(`${c.name} a quitté l'aventure.`); break; }
     case "rensheet": ui.renPick = null; renSheet(+d.id); return;
     case "renpick": ui.renPick = d.v; renSheet(+d.id); return;
     case "rengo": { const err = E.renaissance(S, +d.id, ui.renPick); if (err) { msg(err); return; } ui.renPick = null; closeSheet(); dirty = true; break; }

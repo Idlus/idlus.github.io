@@ -18,12 +18,13 @@
     const gear = (c) => Object.values(c.equip || {}).map((uid) => S.items[uid] && S.items[uid].tpl).filter(Boolean);
     const heroes = S.chars.map((c) => ({ cls: c.cls, lvl: c.lvl || 1, ren: c.ren || 0, name: String(c.name || "").slice(0, 20), gear: gear(c) }));
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
-    const level = heroes.reduce((a, h) => a + h.lvl + h.ren * V.REB_LVL, 0);
+    // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
+    const level = heroes.map((h) => h.lvl + h.ren * V.REB_LVL).sort((x, y) => y - x).slice(0, 8).reduce((a, n) => a + n, 0);
     const album = E.soulCount ? E.soulCount(S) : Object.keys(S.souls || {}).length;
     const succes = Object.keys(S.ach || {}).filter((k) => S.ach[k]).length;
     const lvl200 = heroes.some((h) => h.lvl >= 200 || h.ren > 0);
     const dofus = E.DOFUS_ORDER && E.dofusOwned ? E.DOFUS_ORDER.filter((id) => E.dofusOwned(S, id)) : [];
-    return { main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, lvl200, dofus, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0 };
+    return { rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, lvl200, dofus, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0 };
   };
 
   /* Donjons de la semaine : un par tranche de niveau, les mêmes pour tous les joueurs
