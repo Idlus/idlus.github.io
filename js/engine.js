@@ -728,6 +728,8 @@
     can_dopeuls: 0.85, moon_tortue: 0.85, abr_oree_abrak: 0.9, ama_marecages: 0.85, ama_citwouilles: 0.85, bon_cimetiere_heros: 0.95,
     /* 1.0.5 « Monstres oubliés et Vulkania » : le Cratère Nehr (6 Krokilles matures) était le seul plus dur que les zones de son niveau */
     vul_nehr: 0.9 };
+  /* 1.0.7.10 (Mathis, vérification zone par zone) : équipe de 4 bien équipée au milieu de la zone, moins de 6 % de défaites */
+  Object.assign(E.HUNT_EASE, { can_baie: 0.75, oto_corail: 0.7, can_routes: 0.8, can_massif: 0.7, can_champs: 0.9, ama_gelees: 0.95, pwak_carriere: 0.9, koa_bordure: 0.75, koa_kaliptus: 0.8, koa_lacs: 0.85, koa_cimetiere: 0.9, ama_foret_malefique: 0.9, wab_waldo: 0.85, ama_bandits: 0.95 });
   const powMons = (mons, where, did, sm = 1, sid = null) => { const k = (did && E.DG_EASE[did]) || (sid && E.HUNT_EASE[sid]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * (1 + (E.monPow(m.lvl, "hp", where) - 1) * sm) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
@@ -2136,7 +2138,13 @@
   /* 1.0.5.1 (Mathis) : part de l'XP du combat reçue par chaque héros. Avant : 2/(n+1) plus l'Esprit Libre (+100 % en solo),
      un héros solo montait 3,5 fois plus vite qu'une équipe de 8. Maintenant la part baisse peu avec la taille de l'équipe :
      plus l'équipe est grande, plus chaque héros monte vite (simulation 1 → 200, bon équipement : solo ~180 h, 4 héros ~90 h, 8 héros ~62 h ; avant 52 / 98 / 180 h). */
-  E.xpShare = (n) => 0.8 * Math.pow(Math.max(1, n), -0.1);
+  /* 1.0.7.10 (Mathis) : montée 1 → 200 visée (simulation, bon équipement, sans bonus) : 240 h solo, 150 h à 4 héros, 120 h à 8 */
+  E.XP_SHARE = [0.569, 0.569, 0.477, 0.43, 0.396, 0.37, 0.347, 0.33, 0.315];
+  E.xpShare = (n) => E.XP_SHARE[Math.min(8, Math.max(1, n))];
+  /* 1.0.7.10 (Mathis, vérification zone par zone) : multiplicateur d'XP et de kamas de certaines sous-zones de chasse,
+     pour que chaque zone rapporte à peu près autant que ses voisines de même niveau (le butin ne change pas) */
+  E.ZONE_REW = { inc_lac: 1.17, inc_paturages: 1.13, bon_rives: 1.52, vul_pillar: 1.48, vul_etraktopel: 1.46, can_rives_lac: 1.18, oto_naufrages: 0.64, ama_cimetiere: 1.18, ast_cimetiere: 1.24, ama_foret_malefique: 1.15, can_dopeuls: 1.13, ama_bworks: 1.3, ama_cryptes: 1.39, ama_bandits: 1.13, wab_couronne: 1.53, wab_tombeaux: 1.37, vul_espartiate: 1.92, wab_waldo: 1.32, ama_marecages: 1.25, vul_mopyle: 1.43, ama_pitons: 1.5, can_plaines: 1.43, abr_oree: 1.34, abr_sombre: 1.14, fri_bourgade: 1.17, fri_port: 1.2, oto_tourbiere2: 1.14, oto_tourbiere: 1.12, can_bibliotheque: 1.21, bon_canaux: 1.21, bra_entrailles: 1.26, mino_labyrinthe: 1.13, oto_feuillage: 1.13, vul_ponefarr: 1.24, eca_lande: 1.17, fri_larmes: 1.18, vul_monseleya: 1.31, sah_cite: 1.11, oto_tourbiere_fond: 1.17, fri_crocs: 1.07, obs_dimension: 1.13, sak_foret: 1.13, fri_torrideau: 1.09, sak_plaine: 1.14 };
+  E.zoneRew = (S, opts = {}) => (opts.dungeon || S.dungeon || !S.sub || (E.expActive && E.expActive(S)) ? 1 : E.ZONE_REW[S.sub] || 1);
   E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
   const giveRewards = (S, mons, opts = {}) => {
     const team = E.team(S);
@@ -2151,6 +2159,7 @@
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
+    const zr = E.zoneRew(S, opts); xp *= zr; out.kamas = Math.round(out.kamas * zr); // 1.0.7.4 : rendement de la sous-zone (XP et kamas), réglé par simulation
     const share = E.xpShare(team.length);
     team.forEach((c) => {
       const st = E.charStats(S, c);

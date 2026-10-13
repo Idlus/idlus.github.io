@@ -1,6 +1,17 @@
 {
-  "version": "1.0.7.9",
+  "version": "1.0.7.10",
   "versions": [
+    {
+      "v": "1.0.7.10",
+      "name": "Montée réglée",
+      "items": [
+        "Nouveau réglage de l'XP choisi par Mathis : du niveau 1 au niveau 200 (bon équipement, sans bonus), environ 120 h pour une équipe de 8, 150 h pour une équipe de 4 et 240 h pour un héros seul",
+        "Plus l'équipe est grande, plus chaque héros monte vite : l'ordre reste le même qu'en 1.0.6.1, la montée est seulement plus longue (elle allait trop vite)",
+        "Chaque zone de chasse vérifiée une par une : 44 sous-zones qui rapportaient nettement moins d'XP que leurs voisines donnent plus d'XP et de kamas (dont les Rives iridescentes, le Cratère Pillar, la Forêt d'Etraktopel, l'Îlot de la Couronne, les Pitons Rocheux et les zones 182 à 190), le butin ne change pas",
+        "L'Île des naufragés, qui rapportait bien plus que ses voisines, revient à leur niveau",
+        "Monstres adoucis pour les équipes de 4 dans les zones où elles perdaient souvent (Baie de Cania, Plage de Corail, Routes Rocailleuses, Massif de Cania, Koalak, Carrière Chocolatée, Territoire des Bandits…) : moins de 6 % de défaites avec un bon équipement, mêmes récompenses"
+      ]
+    },
     {
       "v": "1.0.7.9",
       "name": "Récolte rééquilibrée",

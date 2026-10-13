@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.9";
+const GAME_VERSION = "1.0.7.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.10", name: "Montée réglée", items: [
+    "Nouveau réglage de l'XP choisi par Mathis : du niveau 1 au niveau 200 (bon équipement, sans bonus), environ 120 h pour une équipe de 8, 150 h pour une équipe de 4 et 240 h pour un héros seul",
+    "Plus l'équipe est grande, plus chaque héros monte vite : l'ordre reste le même qu'en 1.0.6.1, la montée est seulement plus longue (elle allait trop vite)",
+    "Chaque zone de chasse vérifiée une par une : 44 sous-zones qui rapportaient nettement moins d'XP que leurs voisines donnent plus d'XP et de kamas (dont les Rives iridescentes, le Cratère Pillar, la Forêt d'Etraktopel, l'Îlot de la Couronne, les Pitons Rocheux et les zones 182 à 190), le butin ne change pas",
+    "L'Île des naufragés, qui rapportait bien plus que ses voisines, revient à leur niveau",
+    "Monstres adoucis pour les équipes de 4 dans les zones où elles perdaient souvent (Baie de Cania, Plage de Corail, Routes Rocailleuses, Massif de Cania, Koalak, Carrière Chocolatée, Territoire des Bandits…) : moins de 6 % de défaites avec un bon équipement, mêmes récompenses" ] },
   { v: "1.0.7.9", name: "Récolte rééquilibrée", items: [
     "Les métiers de récolte donnent beaucoup moins de ressources : environ un tiers de l'ancienne quantité au niveau 1, et un dixième au niveau 200. Avant, un récolteur niveau 200 rapportait autant qu'une équipe entière de chasseurs",
     "La montée en niveau des métiers de récolte ralentit dans la même proportion",

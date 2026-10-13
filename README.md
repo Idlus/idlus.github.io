@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.10 « Montée réglée »
+`E.XP_SHARE` (js/engine.js) : part d'XP par héros selon la taille de l'équipe [—, 0,569, 0,477, 0,43, 0,396, 0,37, 0,347, 0,33, 0,315], réglée par simulation pour une montée 1 → 200 en 240 h solo, 150 h à 4, 120 h à 8 (bon équipement, sans bonus). Avant (1.0.6.1) : 0,8 × n^-0,1 (183 / 91 / 61 h). Vérification zone par zone : `E.ZONE_REW` multiplie l'XP et les kamas de 44 sous-zones de chasse (hors donjons et expéditions ; butin inchangé), et des `E.HUNT_EASE` en plus adoucissent les zones où une équipe de 4 perdait plus de 8 % des combats. Tableau : /mnt/project-files/equilibrage/zones-apres-reglage.md.
+
 ## 1.0.7.9 « Récolte rééquilibrée »
 Demande de Mathis (choix 1C 2B 3A 4A) : `E.gatherYield(lvl)` (js/engine.js) garde 35 % des ressources au niveau 1 et 10 % au niveau 200 (`E.YIELD`), arrondi aléatoire ; l'XP de métier par coup est multipliée par le même rendement. Filons, trouvailles, protecteur et Almanax inchangés. Simulation : un récolteur niveau 200 tout équipé passe d'environ 27 000 à 2 700 ressources par heure. Tests dans tests/recolte.test.js.
 
