@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.10";
+const GAME_VERSION = "1.0.10.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.10.1", name: "Chat malgré la panne", items: [
+    "Incident en cours chez Supabase (notre serveur) sur le chat en direct : le chat affiche « Chat momentanément indisponible, reconnexion automatique… » au bout de 6 s au lieu de tourner sans fin",
+    "Tant que le direct est coupé, les messages se mettent à jour toutes les 30 s et un message le signale. Écrire marche toujours",
+    "Le chat se reconnecte tout seul quand le serveur revient, sans recharger la page",
+  ] },
   { v: "1.0.10", name: "Dofus dès la stasis 1", items: [
     "Un Dofus peut maintenant tomber du boss de son donjon dès la stasis 1, avec une chance extrêmement faible qui double à chaque stasis jusqu'à la 4, puis continue de monter jusqu'à la stasis 10",
     "À chaque victoire, chaque héros de l'équipe a sa propre chance : 1 sur 160 000 en stasis 1, 1 sur 8 000 en stasis 5, 1 sur 4 000 en stasis 10. Une équipe de 8 garde le rythme d'avant en stasis 5, et monter en stasis rapporte enfin plus",

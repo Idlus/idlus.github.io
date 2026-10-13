@@ -30,6 +30,8 @@
     mount();
     ON.onChange((st) => { if (st === "anon" && (C.role || C.p.length)) { C.role = null; C.p = []; C.peer = null; C.tab = "g"; X().renderStatus(); paint(true); } else paintMin(); });
     ON.chatLive(onMsg, (n) => { C.count = n; paintHead(); }, () => setTimeout(refresh, Math.random() * 5000)); // 1.0.9.1 : messages manqués rechargés quand le temps réel revient
+    setTimeout(() => { slow = true; if (!C.loaded) paint(true); }, 6000); // 1.0.10.1 : pas de « Connexion au chat… » sans fin
+    setInterval(() => { if (C.loaded && ON.chatLost && ON.chatLost() && !document.hidden) refresh(); }, 30000); // 1.0.10.1 : chat en direct coupé → messages rechargés toutes les 30 s
     await refresh();
     banner();
     setInterval(banner, 120000);
@@ -39,7 +41,7 @@
   /* Rechargé à la connexion ou au changement de compte. */
   /* 1.0.9.1 : si le serveur est lent au moment du chargement (délai dépassé), le chat ne restait plus jamais sur
      « Connexion au chat… » qu'avec un rechargement de la page : il réessaie seul (5 s, 10 s, 20 s puis toutes les 30 s). */
-  let busy = false, tries = 0, retryT = 0;
+  let busy = false, tries = 0, retryT = 0, slow = false;
   async function refresh() {
     if (busy) return; busy = true; clearTimeout(retryT);
     try { await load(); } catch (e) {}
@@ -241,8 +243,12 @@
       default: return h(m.body || "");
     }
   }
-  function listHtml() {
-    if (!C.loaded) return tries ? `<div class="sys">Le chat met du temps à répondre, nouvel essai automatique…<br><button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button></div>` : `<div class="sys">Connexion au chat…</div>`;
+  function listHtml() { // 1.0.10.1 : le joueur sait que le direct est coupé (incident du serveur)
+    const l = listHtml0();
+    return C.loaded && C.tab !== "u" && ON.chatLost && ON.chatLost() ? `<div class="sys">Chat en direct perturbé côté serveur : messages mis à jour toutes les 30 s. Tu peux toujours écrire.</div>${l}` : l;
+  }
+  function listHtml0() {
+    if (!C.loaded) return tries || slow ? `<div class="sys">Chat momentanément indisponible, reconnexion automatique…<br><button class="btn sm" data-act="ch-retry" style="font-style:normal;margin-top:6px">Réessayer maintenant</button></div>` : `<div class="sys">Connexion au chat…</div>`;
     if (C.tab === "p") {
       if (!C.peer) {
         const conv = {}; C.p.forEach((m) => { const o = m.user_id === myId() ? m.to_id : m.user_id; if (o && !C.ign.has(o)) conv[o] = m; });

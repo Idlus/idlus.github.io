@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.10.1 « Chat malgré la panne »
+Incident Supabase Realtime (présence instable, connexions qui n'aboutissent pas). Message « Chat momentanément indisponible, reconnexion automatique… » au bout de 6 s ; `ON.chatLost()` (js/online.js) vrai tant que le canal n'est pas revenu à SUBSCRIBED : messages rechargés toutes les 30 s (onglet visible) avec une ligne d'explication. L'envoi passe par `chat_send` (RPC), indépendant du temps réel.
+
 ## 1.0.10 « Dofus dès la stasis 1 »
 Demande de Mathis (réponses 1B 2 3B 4A 5 6A sur la maquette, équilibrage simulé). js/archis.js : `E.DOFUS_ODDS` (1 chance sur … par héros, stasis 1 à 10 : 160 000, 80 000, 40 000, 20 000, 8 000, 7 200, 6 400, 5 600, 4 800, 4 000), `E.OCRE_ODDS` (×5, boss de niveau 200), `E.ocreMult(lvl)` = niveau/200, `E.ocreOdds(k, lvl)`. `E.dofusDrop` tire une fois par héros de l'équipe (`E.team`), sans aucun multiplicateur (choix de Mathis : aucun bonus ne touche les Dofus). `E.dofusDropInfo(id).lad` = les 10 chances, affichées par `dofLadder` (fenêtre du donjon `dgDofusBox`, fiche `dofusDropHtml`). Simulation (clefs chassées + donjon, 13 à 25 victoires de boss par heure) : en stasis 5, ≈ 74 h pour un Dofus à 8 héros, 150 h à 4, 590 h en solo ; en stasis 1, ≈ 1 000 h à 8 héros. L'ancien `E.DOFUS_DROP` (1/1 000 par victoire dès la stasis 5) et `E.OCRE_DROP` (1/5 000 dès la stasis 8 sur les boss 160+) sont retirés.
 

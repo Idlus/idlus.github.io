@@ -204,6 +204,7 @@
         else lost = true; // CHANNEL_ERROR, TIMED_OUT, CLOSED : la bibliothèque se reconnecte seule
       });
   };
+  ON.chatLost = () => !!chan && lost; // 1.0.10.1 : temps réel coupé (incident Supabase Realtime) : le chat se met à jour sans lui
   ON.onlinePseudos = () => { try { return chan ? Object.values(chan.presenceState()).flat().map((x) => x && x.p).filter(Boolean) : []; } catch (e) { return []; } }; // 0.1.53.7 : proposés quand on tape « @ »
   ON.chatStop = () => { if (chan) { try { sb.removeChannel(chan); } catch (e) {} chan = null; } };
   ON.chatSend = async (body, to, item, ch) => { const r = await rpc("chat_send", Object.assign({ p_body: body, p_to: to || null, p_item: item || null }, ch === "c" || ch === "v" ? { p_ch: ch } : {})); return r.err ? r.err : r.data || null; };

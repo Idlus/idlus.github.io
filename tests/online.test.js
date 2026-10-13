@@ -280,7 +280,7 @@ const MOCK = () => {
     if (await page.$("#chat .ch-pin")) fail("chat : message épinglé toujours là après la croix");
     // 1.0.9.1 : chargement raté (serveur lent) → le chat réessaie au lieu de rester sur « Connexion au chat… »
     await page.evaluate(() => { window.__chatFail = true; window.CHAT.state.loaded = false; return window.CHAT.refresh(); });
-    if (!/nouvel essai automatique/.test(await page.textContent("#chat .ch-list"))) fail("chat : pas de message de nouvel essai quand le serveur est lent");
+    if (!/reconnexion automatique/.test(await page.textContent("#chat .ch-list"))) fail("chat : pas de message de nouvel essai quand le serveur est lent");
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/chat-essai.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/chat-essai-mob.png" }); await page.setViewportSize(vp); }
     await page.evaluate(() => { window.__chatFail = false; }); await page.click('#chat [data-act="ch-retry"]');
     await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 }).catch(() => fail("chat : « Réessayer maintenant » ne recharge pas les messages"));

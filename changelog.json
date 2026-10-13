@@ -1,6 +1,15 @@
 {
-  "version": "1.0.10",
+  "version": "1.0.10.1",
   "versions": [
+    {
+      "v": "1.0.10.1",
+      "name": "Chat malgré la panne",
+      "items": [
+        "Incident en cours chez Supabase (notre serveur) sur le chat en direct : le chat affiche « Chat momentanément indisponible, reconnexion automatique… » au bout de 6 s au lieu de tourner sans fin",
+        "Tant que le direct est coupé, les messages se mettent à jour toutes les 30 s et un message le signale. Écrire marche toujours",
+        "Le chat se reconnecte tout seul quand le serveur revient, sans recharger la page"
+      ]
+    },
     {
       "v": "1.0.10",
       "name": "Dofus dès la stasis 1",
