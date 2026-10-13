@@ -1,6 +1,14 @@
 {
-  "version": "1.0.6.2",
+  "version": "1.0.6.3",
   "versions": [
+    {
+      "v": "1.0.6.3",
+      "name": "Codes cadeaux récupérés",
+      "items": [
+        "Si un code cadeau a été accepté mais que ses récompenses ne sont pas arrivées (réponse du serveur perdue, autre onglet ou autre appareil qui a remplacé la partie), le jeu les redonne tout seul au chargement",
+        "Le serveur garde la liste des codes utilisés par chaque compte : chaque code ne se reçoit toujours qu'une fois par partie"
+      ]
+    },
     {
       "v": "1.0.6.2",
       "name": "Où trouver les Dofus",

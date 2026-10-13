@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.6.2";
+const GAME_VERSION = "1.0.6.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.6.3", name: "Codes cadeaux récupérés", items: [
+    "Si un code cadeau a été accepté mais que ses récompenses ne sont pas arrivées (réponse du serveur perdue, autre onglet ou autre appareil qui a remplacé la partie), le jeu les redonne tout seul au chargement",
+    "Le serveur garde la liste des codes utilisés par chaque compte : chaque code ne se reçoit toujours qu'une fois par partie",
+  ] },
   { v: "1.0.6.2", name: "Où trouver les Dofus", items: [
     "Quêtes › Dofus : la fiche de chaque Dofus montre ses deux façons de l'obtenir. ① Sa quête, un exemplaire garanti par compte, avec un bouton « Y aller » sur l'étape à faire (donjon, zone de chasse, récolte, âmes, Almanax)",
     "② Le butin du boss : le boss, son donjon, sa zone, la chance (1 sur 1 000 par victoire dès la stasis 5, 1 sur 5 000 sur les boss de niveau 160+ en stasis 8+ pour l'Ocre) et ta meilleure stasis là-bas, avec « Y aller »",

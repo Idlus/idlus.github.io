@@ -29,8 +29,30 @@
     if (r.err) return { err: /fetch|connexion|network/i.test(r.err) ? "Pas de connexion au serveur. Réessaie dans un moment." : "Impossible de vérifier ce code pour le moment." };
     const d = r.data || {};
     if (d.err) return { err: d.err };
-    return E.giveGift(S, Object.assign({}, d.reward || {}, { id: "srv:" + c, m: d.msg || "" }));
+    // 1.0.6.3 : la partie a pu être remplacée pendant l'attente (partie en ligne rechargée) : on donne à celle affichée
+    const cur = (window.DX && window.DX.S) || S;
+    return E.giveGift(cur, Object.assign({}, d.reward || {}, { id: "srv:" + c, m: d.msg || "" }));
   }
+
+  /* 1.0.6.3 : au chargement, on demande au serveur les codes déjà utilisés par ce compte (ou cette partie sans
+     compte) et on redonne ceux dont la partie n'a pas gardé la trace : réponse perdue en route, autre onglet ou
+     autre appareil qui a écrasé la sauvegarde… Une fois par compte et par chargement de la page. */
+  const recovered = {};
+  async function recover() {
+    const S = window.DX && window.DX.S;
+    if (!S || !ON || !ON.enabled || !ON.db()) return;
+    if (!($("#nav") && $("#nav").innerHTML) || ($("#sheet") && $("#sheet").innerHTML)) return; // partie pas encore affichée, ou choix de partie en cours
+    if (ON.user ? ON.state !== "ok" : !S.gid) return;
+    const who = ON.user ? ON.user.id : "g:" + S.gid;
+    if (recovered[who]) return; recovered[who] = 1;
+    const r = await ON.rpc("gift_mine", { p_guest: ON.user ? null : S.gid });
+    if (r.err || !Array.isArray(r.data)) { recovered[who] = 0; return; } // on réessaiera plus tard
+    const cur = window.DX.S; if (!cur || cur !== S) { recovered[who] = 0; return; }
+    cur.gifts = cur.gifts || {}; const got = [];
+    r.data.forEach((x) => { if (!x || !x.code || cur.gifts["srv:" + x.code]) return; E.giveGift(cur, Object.assign({}, x.reward || {}, { id: "srv:" + x.code, m: x.msg || "" })); got.push(x.code); });
+    if (got.length) { X().markDirty(); X().render(); X().toast(`Récompenses du code ${got.join(", ")} récupérées.`); }
+  }
+  setInterval(() => { recover().catch(() => {}); }, 5000);
 
   /* Lien partageable ?code=… : on retire le code de l'adresse, on le garde le temps d'une connexion,
      puis on ouvre les options (onglet Jeu) avec le code rempli dès que la partie est affichée. */

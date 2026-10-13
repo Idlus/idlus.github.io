@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.6.3 « Codes cadeaux récupérés »
+Les récompenses d'un code cadeau accepté mais perdu en route (code MERCI) sont redonnées toutes seules au chargement (`gift_mine` dans supabase/codes.sql).
+
 ## 1.0.6.2 « Où trouver les Dofus »
 Chaque Dofus dit clairement comment et où l'obtenir (Mathis, 13/10/2026 : « Mieux savoir comment et où drop les Dofus »). Taux inchangés. js/archis.js : `E.dofusDropInfo(id)` (donjon, boss, chance, stasis minimale ; Ocre = boss niv. 160+, stasis 8), `E.ocreDungeons()`. js/ui.js : `dofusDropHtml`, `dofusQuestLineHtml`, `dofusStepGo` (bouton « Y aller » de l'étape en cours), `dgDofusBox` (fiche du donjon), icône du Dofus sur les cartes de donjon, actions `dofgo` / `dofalm`. js/questui.js : fiche en « ① Sa quête » / « ② Le butin du boss », `QUI.pick(id)` (recherche). Test : tests/quetes.test.js vérifie que chaque Dofus a des sources atteignables.
 

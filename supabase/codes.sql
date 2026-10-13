@@ -79,6 +79,23 @@ end $$;
 revoke all on function public.gift_redeem(text, text) from public;
 grant execute on function public.gift_redeem(text, text) to anon, authenticated;
 
+-- ---------- codes déjà utilisés par ce joueur (1.0.6.3) ----------
+-- Le jeu redonne au chargement les récompenses d'un code utilisé dont la partie n'a pas gardé la trace
+-- (réponse perdue en route, autre onglet ou autre appareil qui a écrasé la sauvegarde…).
+create or replace function public.gift_mine(p_guest text default null) returns jsonb
+language plpgsql security definer set search_path = public
+as $$ declare
+  u uuid := auth.uid();
+  g text := case when auth.uid() is null then left(btrim(coalesce(p_guest, '')), 64) end;
+begin
+  if u is null and (g is null or length(g) < 8) then return '[]'::jsonb; end if;
+  return (select coalesce(jsonb_agg(jsonb_build_object('code', c.code, 'reward', c.reward, 'msg', c.msg) order by gu.at), '[]'::jsonb)
+    from gift_uses gu join gift_codes c on c.code = gu.code
+    where (u is not null and gu.user_id = u) or (g is not null and gu.guest = g));
+end $$;
+revoke all on function public.gift_mine(text) from public;
+grant execute on function public.gift_mine(text) to anon, authenticated;
+
 -- ---------- panel admin (Mathis seulement) ----------
 create or replace function public.adm_gifts() returns jsonb language plpgsql security definer set search_path = public
 as $$ begin

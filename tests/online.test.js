@@ -128,6 +128,7 @@ const MOCK = () => {
       if (name === "adm_ideas") return { data: (d.ideas || []).slice().reverse(), error: null };
       if (name === "adm_pin") { log(); d.views = d.views || {}; d.views.chat_settings = [{ id: 1, pin_body: a.p_body, pin_chs: a.p_chs, pin_at: ts() }]; put(d); return { data: null, error: null }; } // 0.1.50.2
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
+      if (name === "gift_mine") return d.giftMine ? { data: d.giftMine, error: null } : { data: null, error: { message: "pas encore" } }; // 1.0.6.2
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
     },
   }) };
@@ -446,6 +447,13 @@ const MOCK = () => {
     if (!(await page.$('.sheet [data-act="on-renpseudogo"][disabled]'))) fail("pseudo : second changement possible avant 30 jours");
     if (!/Prochain changement possible/.test(await page.textContent(".sheet"))) fail("pseudo : date du prochain changement absente");
     await page.click('.sheet [data-act="on-renpseudono"]'); await page.click('.sheet [data-act="closesheet"]').catch(() => {}); await page.keyboard.press("Escape");
+    // 8 ter. 1.0.6.3 : un code utilisé dont la partie a perdu la trace (code MERCI) est redonné tout seul, une seule fois
+    const gb = await page.evaluate(() => { const S = window.DX.S; delete (S.gifts || {})["srv:MERCI"]; return { or: (S.cons || {}).coffre_or || 0, t: (S.titlesExtra || []).length }; });
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.giftMine = [{ code: "MERCI", reward: { c: [["coffre_or", 1], ["coffre_argent", 1], ["coffre_bois", 1]], s: 1, t: "Xener va jamais pouvoir jouer" }, msg: "Merci !" }]; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.waitForFunction(() => (window.DX.S.gifts || {})["srv:MERCI"], null, { timeout: 15000 }).catch(() => fail("code MERCI : récompenses non récupérées"));
+    await page.waitForTimeout(5500);
+    const ga = await page.evaluate(() => { const S = window.DX.S; return { or: (S.cons || {}).coffre_or || 0, t: (S.titlesExtra || []).filter((x) => x === "Xener va jamais pouvoir jouer").length }; });
+    if (ga.or !== gb.or + 1 || ga.t !== 1) fail("code MERCI : récompenses mal redonnées " + JSON.stringify([gb, ga]));
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
