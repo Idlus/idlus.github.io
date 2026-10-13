@@ -207,7 +207,9 @@ const MOCK = () => {
     // 7b. classements : liste, onglets, profil, record vérifié
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const H = [{ cls: "iop", lvl: 120, ren: 1, name: "Grokk", gear: [] }];
       d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
-        lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }] };
+        lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }, { kind: "job200", key: "tailleur", label: "Premier Tailleur au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T11:00:00Z" }],
+        lb_jobs: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tous", lvl: 812, xp: 900, alljobs: { tailleur: [200, 0], bijoutier: [190, 500], forgeron: [180, 400], tous: [812, 900] } }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tous", lvl: 640, xp: 10, alljobs: { tailleur: [150, 10] } },
+          { user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tailleur", lvl: 200, xp: 0 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tailleur", lvl: 150, xp: 10 }] };
       localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.click('#nav [data-nk="ladder"]');
     // 1.0.5 : l'onglet Course s'ouvre en premier : 10 places, puis les joueurs en course
@@ -218,7 +220,17 @@ const MOCK = () => {
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
     if (!(await page.$(".pod.is-crea .xtag")) || !(await page.$(".pod .mtag"))) fail("classement : badges créateur et modérateur absents");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb.png" });
-    for (const tb of ["dj", "album", "succ", "first", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
+    // 1.0.8 : classement des métiers (tuiles, « Tous les métiers », un métier, ma ligne, Premiers)
+    await page.click('[data-act="lb-tab"][data-v="job"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
+    if ((await page.$$(".jlb-tiles button")).length !== 8) fail("métiers : il faut 8 tuiles (tous + 7 métiers)");
+    if (!(await page.$("#lbList .jlb-mini"))) fail("métiers : meilleurs métiers absents sous le nom");
+    if (!(await page.$("#lbList .lbr.me"))) fail("métiers : ma ligne absente");
+    await page.click('.jlb-tiles [data-v="tailleur"]'); await page.waitForTimeout(400);
+    if (!/niv\. 200/.test(await page.textContent("#lbList")) || !(await page.$("#lbList .jlb-bar"))) fail("métiers : classement du Tailleur incorrect");
+    await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 });
+    if (!(await page.$(".sheet .jlb-prof"))) fail("métiers : la fiche du joueur ne montre pas ses métiers");
+    await page.click('[data-act="closesheet"].btn');
+    for (const tb of ["dj", "album", "succ", "first", "job", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
     await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
     if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");
     await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 }); await page.click('[data-act="closesheet"].btn');

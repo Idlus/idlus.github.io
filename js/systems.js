@@ -1161,6 +1161,8 @@
   /* 1.0 : course de lancement : les 10 premiers comptes à finir la quête principale (le serveur les grave dans « Premiers ») */
   E.LEGEND_TITLE = "Légende de la 1.0";
   E.mainQuestDone = (S) => !!(S.quest && S.quest.step >= Q.length);
+  /* 1.0.8 : premier compte au niveau 200 d'un métier d'artisanat (gravé par le serveur) : titre « Grand Tailleur », etc. */
+  E.jobFirstTitle = (job) => `Grand ${(D.CRAFT_JOBS[job] || { name: job }).name}`;
   E.grantLegend = (S, rank) => {
     if (S.unlocks.legende) return false;
     S.unlocks.legende = rank || 1; if (!S.titlesExtra.includes(E.LEGEND_TITLE)) S.titlesExtra.push(E.LEGEND_TITLE);

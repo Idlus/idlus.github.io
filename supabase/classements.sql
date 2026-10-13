@@ -30,6 +30,8 @@ alter table public.ladder add column if not exists pts int not null default 0;
 -- 1.0.5 : course de lancement en direct : étape de la quête principale et heure où elle a été atteinte
 alter table public.ladder add column if not exists qstep int not null default 0;
 alter table public.ladder add column if not exists qstep_at timestamptz;
+-- 1.0.8 : classement des métiers : {"tailleur": [niveau, xp], …, "tous": [somme des niveaux, somme des xp]}
+alter table public.ladder add column if not exists jobs jsonb not null default '{}'::jsonb;
 alter table public.ladder enable row level security;
 drop policy if exists "classement lisible" on public.ladder;
 create policy "classement lisible" on public.ladder for select using (not flagged or user_id = auth.uid());
@@ -120,6 +122,12 @@ create or replace view public.lb_race as
   select l.user_id, p.pseudo, l.main, l.main_lvl, l.qstep, l.qstep_at
   from public.ladder l join public.profiles p on p.id = l.user_id where not l.flagged and l.qstep > 0;
 grant select on public.lb_race to anon, authenticated;
+-- 1.0.8 : classement des métiers : une ligne par compte et par métier (et « tous »), sans les joueurs en vérification
+create or replace view public.lb_jobs as
+  select l.user_id, p.pseudo, l.main, l.main_lvl, j.key as job, (j.value->>0)::int as lvl, (j.value->>1)::bigint as xp, l.jobs as alljobs
+  from public.ladder l join public.profiles p on p.id = l.user_id cross join lateral jsonb_each(l.jobs) j
+  where not l.flagged and jsonb_typeof(j.value) = 'array';
+grant select on public.lb_jobs to anon, authenticated;
 
 -- ---------- mise à jour du classement à chaque envoi de partie ----------
 -- La partie envoie un résumé (meta) : niveau de l'équipe, album, succès, héros.
@@ -133,12 +141,25 @@ set search_path = public
 as $$
 declare
   m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; qs int; secs numeric; reason text; bad boolean;
+  jb jsonb := '{}'::jsonb; jn text; jl int; jx bigint; jt int := 0; jtx bigint := 0;
+  jnames constant jsonb := '{"tailleur":"Tailleur","bijoutier":"Bijoutier","cordonnier":"Cordonnier","forgeron":"Forgeron","sculpteur":"Sculpteur","faconneur":"Façonneur","bricoleur":"Bricoleur"}';
 begin
   if m is null or m->>'level' is null then return new; end if;
   lv := coalesce((m->>'level')::int, 0); al := coalesce((m->>'album')::int, 0);
   su := coalesce((m->>'succes')::int, 0); pt := coalesce((m->>'playtime')::int, 0);
   rc := coalesce((m->>'rec')::int, 0); ps := least(greatest(coalesce((m->>'pts')::int, 0), 0), 50000);
   qs := least(greatest(coalesce((m->>'qstep')::int, 0), 0), 500);
+  -- 1.0.8 : métiers d'artisanat (seulement les 7 connus, niveau 1 à 200)
+  if jsonb_typeof(m->'jobs') = 'object' then
+    for jn in select jsonb_object_keys(jnames) loop
+      if jsonb_typeof(m->'jobs'->jn) = 'array' then
+        jl := least(greatest(coalesce((m->'jobs'->jn->>0)::int, 1), 1), 200);
+        jx := least(greatest(coalesce((m->'jobs'->jn->>1)::bigint, 0), 0), 2000000000);
+        jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx)); jt := jt + jl; jtx := jtx + jx;
+      end if;
+    end loop;
+    if jb <> '{}'::jsonb then jb := jb || jsonb_build_object('tous', jsonb_build_array(jt, jtx)); end if;
+  end if;
   select * into o from public.ladder where user_id = new.user_id;
   if found then
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
@@ -146,14 +167,21 @@ begin
     elsif al - o.album > 10 + secs / 300 then reason := format('+%s âmes en %s min', al - o.album, round(secs / 60));
     elsif pt + 120 < o.playtime then reason := 'temps de jeu en baisse';
     end if;
+    -- 1.0.8 : un métier qui gagne plus de 60 niveaux en moins de 10 minutes (seulement si le serveur connaissait déjà les métiers)
+    if reason is null and secs < 600 and o.jobs <> '{}'::jsonb then
+      select format('%s : +%s niveaux en %s min', jnames->>k, (jb->k->>0)::int - (o.jobs->k->>0)::int, round(secs / 60)) into reason
+      from jsonb_object_keys(jnames) k
+      where jsonb_typeof(jb->k) = 'array' and jsonb_typeof(o.jobs->k) = 'array' and (jb->k->>0)::int - (o.jobs->k->>0)::int > 60 limit 1;
+    end if;
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at)
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
-      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now())
+      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now(), jb)
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
       playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec, pts = excluded.pts,
+      jobs = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs else excluded.jobs end,
       qstep = excluded.qstep, qstep_at = case when excluded.qstep > public.ladder.qstep or public.ladder.qstep_at is null then now() else public.ladder.qstep_at end,
       flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
   select flagged into bad from public.ladder where user_id = new.user_id;
@@ -164,6 +192,14 @@ begin
   if not bad and coalesce((m->>'lvl200')::boolean, false) then
     insert into public.firsts (kind, key, label, user_id, pseudo)
       select 'lvl200', '', 'Premier héros au niveau 200', new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
+      on conflict do nothing;
+  end if;
+  -- 1.0.8 : le premier compte au niveau 200 de chaque métier d'artisanat (titre « Grand … » dans le jeu)
+  if not bad then
+    insert into public.firsts (kind, key, label, user_id, pseudo)
+      select 'job200', k, format('Premier %s au niveau 200', jnames->>k), new.user_id, p.pseudo
+      from jsonb_object_keys(jnames) k cross join public.profiles p
+      where p.id = new.user_id and jsonb_typeof(jb->k) = 'array' and (jb->k->>0)::int >= 200
       on conflict do nothing;
   end if;
   -- 1.0 : course de lancement : les 10 premiers comptes à finir la quête principale après la sortie (13/10/2026, 16 h Paris)

@@ -24,7 +24,9 @@
     const succes = Object.keys(S.ach || {}).filter((k) => S.ach[k]).length;
     const lvl200 = heroes.some((h) => h.lvl >= 200 || h.ren > 0);
     const dofus = E.DOFUS_ORDER && E.dofusOwned ? E.DOFUS_ORDER.filter((id) => E.dofusOwned(S, id)) : [];
-    return { rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0 };
+    // 1.0.8 : niveau et XP des métiers d'artisanat (classement des métiers ; le serveur ne garde que les 7 métiers connus)
+    const jobs = {}; for (const k in S.crafts || {}) { const J = S.crafts[k] || {}; jobs[k] = [Math.max(1, Math.min(200, J.lvl || 1)), Math.max(0, Math.floor(J.xp || 0))]; }
+    return { rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, jobs, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0 };
   };
 
   /* Donjons de la semaine : un par tranche de niveau, les mêmes pour tous les joueurs

@@ -1,6 +1,20 @@
 {
-  "version": "1.0.7.12",
+  "version": "1.0.8",
   "versions": [
+    {
+      "v": "1.0.8",
+      "name": "Classement des métiers",
+      "items": [
+        "Nouvel onglet « Métiers » dans les Classements : un classement pour chacun des 7 métiers d'artisanat (Tailleur, Bijoutier, Cordonnier, Forgeron, Sculpteur, Façonneur, Bricoleur)",
+        "Classement « Tous les métiers » : la somme des niveaux de tes 7 métiers, avec les 3 meilleurs métiers de chaque joueur sous son nom",
+        "À niveau égal, l'XP déjà gagnée dans le niveau départage (petite barre « 61 % vers le 149 »)",
+        "Le premier joueur au niveau 200 d'un métier est gravé dans les Premiers, annoncé dans Hauts faits et gagne le titre « Grand Tailleur » (ou Grand Bijoutier, etc.)",
+        "Métiers › Artisanat : bouton « Classement » à côté de la barre d'XP du métier",
+        "La fiche d'un joueur montre aussi ses 7 métiers",
+        "Ta propre ligne est surlignée dans les classements",
+        "Aucun envoi en plus au serveur : le niveau des métiers part avec la sauvegarde en ligne. Un métier qui gagne plus de 60 niveaux en moins de 10 minutes met le compte en vérification"
+      ]
+    },
     {
       "v": "1.0.7.12",
       "name": "Encyclopédie pratique",

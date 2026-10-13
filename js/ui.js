@@ -18,9 +18,19 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.12";
+const GAME_VERSION = "1.0.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8", name: "Classement des métiers", items: [
+    "Nouvel onglet « Métiers » dans les Classements : un classement pour chacun des 7 métiers d'artisanat (Tailleur, Bijoutier, Cordonnier, Forgeron, Sculpteur, Façonneur, Bricoleur)",
+    "Classement « Tous les métiers » : la somme des niveaux de tes 7 métiers, avec les 3 meilleurs métiers de chaque joueur sous son nom",
+    "À niveau égal, l'XP déjà gagnée dans le niveau départage (petite barre « 61 % vers le 149 »)",
+    "Le premier joueur au niveau 200 d'un métier est gravé dans les Premiers, annoncé dans Hauts faits et gagne le titre « Grand Tailleur » (ou Grand Bijoutier, etc.)",
+    "Métiers › Artisanat : bouton « Classement » à côté de la barre d'XP du métier",
+    "La fiche d'un joueur montre aussi ses 7 métiers",
+    "Ta propre ligne est surlignée dans les classements",
+    "Aucun envoi en plus au serveur : le niveau des métiers part avec la sauvegarde en ligne. Un métier qui gagne plus de 60 niveaux en moins de 10 minutes met le compte en vérification",
+  ] },
   { v: "1.0.7.12", name: "Encyclopédie pratique", items: [
     "Clique sur le nom ou le portrait d'un monstre : sa fiche s'ouvre avec son palier, tous ses lieux, ses résistances, ses sorts et tous ses butins avec leur taux",
     "Clique sur un butin : sa fiche dit qui le lâche, où, et dans quelles recettes il sert",
@@ -4925,7 +4935,7 @@ function craftHtml() {
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
     <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recBase(id).filter((r) => r.n > 0).length; return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
-    <div class="pjobxp small"><b>${CRAFT_JOBS[job].name} niv. ${J.lvl}</b><div class="bar xp thin grow"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><span class="num xs muted">${fmt(J.xp)} / ${fmt(E.jobXpNeed(J.lvl))} XP</span></div>
+    <div class="pjobxp small"><b>${CRAFT_JOBS[job].name} niv. ${J.lvl}</b><div class="bar xp thin grow"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><span class="num xs muted">${fmt(J.xp)} / ${fmt(E.jobXpNeed(J.lvl))} XP</span>${ON && ON.enabled ? `<button class="pchip jlb-go" data-act="lb-jobgo" data-v="${job}" data-tip="Classement des joueurs en ${h(CRAFT_JOBS[job].name)}">${IC("couronne")} Classement</button>` : ""}</div>
     ${filterBar("met", F, { ph: "Nom de l'objet ou d'une ressource…", slots: job === "bricoleur" ? null : CRAFT_JOBS[job].slots, stats: stats.length ? stats : null, sets, cid: "Pour un héros", sort: [["useful", "Tri : utiles puis niveau ↓"], ["lvl", "Tri : niveau ↓"], ["lvlup", "Tri : niveau ↑"], ["name", "Tri : nom"]] })}
     <div class="row small" style="gap:6px"><div class="seg">${[["near", "Fabricables et presque"], ["can", "Fabricables"], ["all", "Toutes"]].map(([v, n]) => `<button data-act="fltset" data-ctx="met" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div>
       ${job === "bricoleur" ? "" : `<button class="btn sm ${F.util ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="util"><span class="pdot"></span> Utile pour mes héros</button>`}<button class="btn sm ${F.fav ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="fav">★ Favoris</button></div>
@@ -6950,7 +6960,7 @@ async function takeRemote(info) {
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); raceInfoFetch(); } renderPill(); return r; });
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); jobFirstCheck(); raceInfoFetch(); } renderPill(); return r; });
 }
 /* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
 let raceAt = 0;
@@ -7066,8 +7076,8 @@ async function onBoot() {
    Niveau (avec filtre par classe), Donjons (de la semaine ou depuis toujours), Album, Succès, Premiers.
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
-const LB = { tab: "race", cls: "", dmode: "week", did: null, cache: {} };
-const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
+const LB = { tab: "race", job: "tous", cls: "", dmode: "week", did: null, cache: {} };
+const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["job", "Métiers"], ["first", "Premiers"]];
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
@@ -7122,7 +7132,7 @@ async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
   if (LB.ml === undefined) { const { error } = await db.from("lb_level").select("main_lvl").limit(1); LB.ml = !error; } // 0.1.26 : niveau du héros principal (cadre du médaillon)
   if (LB.pts === undefined) { const { error } = await db.from("lb_level").select("pts").limit(1); LB.pts = !error; } // 0.1.49 : points de succès
-  const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
+  const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job].join("|");
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
@@ -7155,20 +7165,69 @@ async function lbFetch() {
     await lbDefiFetch(out);
   } else if (t === "race") {
     await raceFetch(out);
+  } else if (t === "job") {
+    await jobLbFetch(out);
   } else if (t === "first") {
     const { data } = await db.from("firsts").select("kind,key,label,pseudo,user_id,at").order("at", { ascending: true }).limit(300);
     out.rows = data || [];
   }
   LB.cache[key] = out; return out;
 }
+/* 1.0.8 : classement des métiers d'artisanat. Le niveau et l'XP des 7 métiers partent avec la sauvegarde en ligne
+   (aucun envoi en plus) ; le serveur les range dans la vue lb_jobs (une ligne par compte et par métier, plus « tous »
+   = la somme des 7 niveaux). À niveau égal, l'XP déjà gagnée dans le niveau départage. */
+const JOB_ALL = "tous";
+const jobLv = (j) => (S.crafts[j] || { lvl: 1, xp: 0 });
+const jobMine = (j) => (j === JOB_ALL ? Object.keys(CRAFT_JOBS).reduce((a, k) => [a[0] + (jobLv(k).lvl || 1), a[1] + Math.floor(jobLv(k).xp || 0)], [0, 0]) : [jobLv(j).lvl || 1, Math.floor(jobLv(j).xp || 0)]);
+function jobLbHead() {
+  if (LB.job !== JOB_ALL && !CRAFT_JOBS[LB.job]) LB.job = JOB_ALL;
+  const tiles = [[JOB_ALL, "Tous les métiers", IC("metiers"), `niv. ${fmt(jobMine(JOB_ALL)[0])}`]].concat(Object.keys(CRAFT_JOBS).map((j) => [j, CRAFT_JOBS[j].name, im(jobImg(j), "", CRAFT_JOBS[j].name), `niv. ${jobLv(j).lvl || 1}`]));
+  return `<div class="jlb-tiles">${tiles.map(([v, n, ic, sm]) => `<button data-act="lb-job" data-v="${v}" aria-pressed="${LB.job === v}"${v === JOB_ALL ? ' class="all"' : ""}>${ic}<b>${v === JOB_ALL ? `Tous<span class="hide-sm"> les métiers</span>` : h(n)}</b><small>${sm}</small></button>`).join("")}</div>
+    <span class="small muted">${LB.job === JOB_ALL ? `La somme des niveaux de tes 7 métiers d'artisanat (${fmt(200 * Object.keys(CRAFT_JOBS).length)} au maximum).` : `Le niveau de ${h(CRAFT_JOBS[LB.job].name)}, puis l'XP déjà gagnée dans ce niveau. Le premier au niveau 200 est gravé dans les Premiers et devient « Grand ${h(CRAFT_JOBS[LB.job].name)} ».`}</span>`;
+}
+async function jobLbFetch(out) {
+  const db = ON.db(), me = ON.user && ON.user.id, j = LB.job, all = j === JOB_ALL;
+  const { data, error } = await db.from("lb_jobs").select("user_id,pseudo,main,main_lvl,lvl,xp" + (all ? ",alljobs" : "")).eq("job", j).order("lvl", { ascending: false }).order("xp", { ascending: false }).limit(50);
+  if (error) throw error;
+  const top3 = (a) => Object.keys(CRAFT_JOBS).filter((k) => Array.isArray(a && a[k])).sort((x, y) => a[y][0] - a[x][0] || a[y][1] - a[x][1]).slice(0, 3)
+    .map((k) => `<span class="jlb-mini" data-tip="${h(CRAFT_JOBS[k].name)}">${im(jobImg(k), "", CRAFT_JOBS[k].name)}${a[k][0]}</span>`).join("");
+  const sub = (lvl, xp, a) => (all ? top3(a) : lvl >= 200 ? "niveau maximum" : `<span class="jlb-bar"><i style="width:${pct(xp, E.jobXpNeed(lvl))}%"></i></span>${Math.floor(pct(xp, E.jobXpNeed(lvl)))} % vers le ${lvl + 1}`);
+  const sc = (lvl) => (all ? `${fmt(lvl)} niveaux` : `niv. ${lvl}`);
+  out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, sc: sc(r.lvl), sub: sub(r.lvl, +r.xp || 0, r.alljobs) }));
+  if (me && S) {
+    const [l, x] = jobMine(j), mine = {}; if (all) for (const k in CRAFT_JOBS) mine[k] = jobMine(k);
+    const { count } = await db.from("lb_jobs").select("user_id", { count: "exact", head: true }).eq("job", j).or(`lvl.gt.${l},and(lvl.eq.${l},xp.gt.${x})`);
+    const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
+    out.me = { u: me, cls: main.cls, fl: main.lvl, sc: sc(l), sub: sub(l, x, mine), rank: (count || 0) + 1 };
+  }
+}
+/* 1.0.8 : titre « Grand Tailleur » (etc.) pour le premier compte au niveau 200 d'un métier. Le serveur grave le premier
+   dans firsts (kind job200) ; le jeu ne demande qu'une fois par métier arrivé au niveau 200. */
+let jobFirstAt = 0;
+function jobFirstCheck() {
+  if (!S || !(ON && ON.user && ON.db && ON.db()) || Date.now() - jobFirstAt < 60000) return;
+  const seen = (S.unlocks.jobFirst = S.unlocks.jobFirst || {});
+  const todo = Object.keys(CRAFT_JOBS).filter((j) => (S.crafts[j] || {}).lvl >= 200 && seen[j] === undefined); if (!todo.length) return;
+  jobFirstAt = Date.now();
+  try { ON.db().from("firsts").select("key,user_id").eq("kind", "job200").in("key", todo).then(({ data }) => {
+    (data || []).forEach((r) => {
+      if (!CRAFT_JOBS[r.key] || seen[r.key] !== undefined) return;
+      seen[r.key] = r.user_id === ON.user.id ? 1 : 0; dirty = true;
+      if (!seen[r.key]) return;
+      const t = E.jobFirstTitle(r.key); if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t);
+      toast(`Tu es le premier joueur au niveau 200 de ${CRAFT_JOBS[r.key].name} ! Ton nom est gravé dans les Premiers et tu gagnes le titre « ${t} » (Équipe et héros).`, "rare");
+    });
+    if (dirty) saveNow();
+  }).catch(() => {}); } catch (e) { /* hors ligne */ }
+}
 function lbRowHtml(r, i, me) {
-  return `<button class="lbr${me ? " me" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+  return `<button class="lbr${me ? " me" : !me && ON.user && r.u === ON.user.id ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}${r.sub ? `<small class="lbsub">${r.sub}</small>` : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
   if (LB.tab === "first") {
-    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200 et le premier à finir chaque donjon en stasis 10 seront gravés ici pour toujours.</div>`;
-    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${IC(r.kind === "lvl200" || r.kind === "race10" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
+    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10 et le premier au niveau 200 de chaque métier seront gravés ici pour toujours.</div>`;
+    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "lvl200" || r.kind === "race10" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
@@ -7254,14 +7313,15 @@ function renderLadder() {
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
     : LB.tab === "defi" ? lbDefiHead()
     : LB.tab === "race" ? ""
+    : LB.tab === "job" ? jobLbHead()
     : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? "" : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
     <nav class="subtabs">${LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n]).map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
-  const key = [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
-  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier].join("|")) el.innerHTML = lbListHtml(d); })
+  const key = [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job].join("|");
+  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job].join("|")) el.innerHTML = lbListHtml(d); })
     .catch(() => { const el = $("#lbList"); if (el) el.innerHTML = `<div class="empty">Classement indisponible : pas de connexion au serveur.</div>`; });
 }
 async function lbProfile(u) {
@@ -7269,13 +7329,16 @@ async function lbProfile(u) {
   openSheet(`<h2>Profil</h2><div class="empty">Chargement…</div>`);
   const db = ON.db();
   try {
-    const [{ data: p }, { data: recs }] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6)]);
+    const [{ data: p }, { data: recs }, jb] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6),
+      db.from("lb_jobs").select("job,lvl").eq("user_id", u).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
+    const jl = {}; ((jb && jb.data) || []).forEach((r) => (jl[r.job] = r.lvl));
+    const jobsH = jl[JOB_ALL] ? `<b>Ses métiers <span class="xs muted">· ${fmt(jl[JOB_ALL])} niveaux</span></b><div class="jlb-prof">${Object.keys(CRAFT_JOBS).map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(CRAFT_JOBS[j].name)} niveau ${jl[j] || 1}">${im(jobImg(j), "", CRAFT_JOBS[j].name)}<small>${h(CRAFT_JOBS[j].name)}</small><b>${jl[j] || 1}</b></span>`).join("")}</div>` : "";
     openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
-      <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>
+      <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}
       <b>Ses records</b>${(recs || []).length ? `<div class="lbt">${recs.map((r) => `<div class="lbr rec"><span class="nm">${h(r.dname || (DUNGEONS[r.did] || {}).name || r.did)}</span><span class="okv">✓ vérifié</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`).join("")}</div>` : `<span class="small muted">Aucun record de donjon pour l'instant.</span>`}
       <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
   } catch (e) { openSheet(`<h2>Profil</h2><div class="empty">Pas de connexion au serveur.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
@@ -7331,6 +7394,8 @@ function lbAct(a, t) {
   const d = t.dataset;
   switch (a) {
     case "lb-tab": LB.tab = d.v; break;
+    case "lb-job": LB.job = d.v; break;
+    case "lb-jobgo": LB.tab = "job"; LB.job = d.v; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return; // 1.0.8 : depuis Métiers › Artisanat
     case "lb-dmode": LB.dmode = d.v; break;
     case "lb-dtier": LB.dtier = d.v; break;
     case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
