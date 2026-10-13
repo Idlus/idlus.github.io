@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.5 « Course en direct »
+Course de lancement en direct. js/verify.js : le résumé envoyé avec la partie contient `qstep` (étape de la quête principale). supabase/classements.sql : colonnes `ladder.qstep` / `qstep_at` (heure où l'étape a augmenté), vue `lb_race` (comptes non signalés, qstep > 0). js/ui.js : onglet `race` de Classements (`raceFetch`, `raceHtml` : 10 places venant de `firsts` kind race10, joueurs en course triés par qstep puis qstep_at), pastille `raceChip` (tchip `k-race`, rafraîchie toutes les 5 min par `raceInfoFetch`, `DX.raceRefresh`), action `race-open`. js/chat.js : annonce race10 = carte dorée dans le Général (plus dans Hauts faits) + notification pour tous.
+
 ## 1.0.4.7 « Pastilles du haut »
 js/ui.js `tchip(o)` (exposé dans `DX.social.tchip`) : une seule forme de pastille pour la ligne `#topchips` (objectifs `objsHtml`, `renderUpdBar`, `protChip`, boss des mondes `paintBar` de js/wbossui.js). Classes `k-quest/pin/done/ev/bonus/boss/prot/sys` (couleur `--tc`), `.tc-s` = texte court montré à la place du titre sur téléphone, `.tc-x` = croix (aussi sur l'annonce admin de js/chat.js). PC : une ligne sans retour (défile si trop long) ; téléphone ≤ 640 px : pastille + chiffre clé.
 

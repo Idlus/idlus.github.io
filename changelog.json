@@ -1,6 +1,17 @@
 {
-  "version": "1.0.4.7",
+  "version": "1.0.5",
   "versions": [
+    {
+      "v": "1.0.5",
+      "name": "Course en direct",
+      "items": [
+        "Classements › Course (nouvel onglet, ouvert en premier) : la course de lancement en direct. Les 10 places à gagner, avec le pseudo et la date de chaque Légende, la prochaine place qui clignote, puis tous les joueurs en course classés par étape de la quête principale (chapitre et barre de progression), ta ligne surlignée",
+        "Égalité : à étape égale, le premier à l'avoir atteinte passe devant",
+        "Nouvelle pastille en haut de l'écran : « Course de lancement · tu es 12e · 7 places ». Un clic ouvre la course",
+        "Quand un joueur prend une place, une carte dorée s'affiche dans le chat Général (« Plus que 7 places ») et tous les joueurs connectés sont prévenus",
+        "Quand les 10 places sont prises, l'onglet devient « Légendes » : les 10 Légendes de la 1.0, pour toujours"
+      ]
+    },
     {
       "v": "1.0.4.7",
       "name": "Pastilles du haut",

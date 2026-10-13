@@ -209,6 +209,10 @@ const MOCK = () => {
         lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }] };
       localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.click('#nav [data-nk="ladder"]');
+    // 1.0.5 : l'onglet Course s'ouvre en premier : 10 places, puis les joueurs en course
+    await page.waitForSelector("#lbList .rc-slots", { timeout: 10000 });
+    if ((await page.$$("#lbList .rc-slot")).length !== 10) fail("course : il faut 10 places");
+    await page.click('[data-act="lb-tab"][data-v="lvl"]');
     await page.waitForSelector(".podium .pod", { timeout: 10000 });
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");
     if (!(await page.$(".pod.is-crea .xtag")) || !(await page.$(".pod .mtag"))) fail("classement : badges créateur et modérateur absents");

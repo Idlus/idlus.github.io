@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4.7";
+const GAME_VERSION = "1.0.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.5", name: "Course en direct", items: [
+    "Classements › Course (nouvel onglet, ouvert en premier) : la course de lancement en direct. Les 10 places à gagner, avec le pseudo et la date de chaque Légende, la prochaine place qui clignote, puis tous les joueurs en course classés par étape de la quête principale (chapitre et barre de progression), ta ligne surlignée",
+    "Égalité : à étape égale, le premier à l'avoir atteinte passe devant",
+    "Nouvelle pastille en haut de l'écran : « Course de lancement · tu es 12e · 7 places ». Un clic ouvre la course",
+    "Quand un joueur prend une place, une carte dorée s'affiche dans le chat Général (« Plus que 7 places ») et tous les joueurs connectés sont prévenus",
+    "Quand les 10 places sont prises, l'onglet devient « Légendes » : les 10 Légendes de la 1.0, pour toujours",
+  ] },
   { v: "1.0.4.7", name: "Pastilles du haut", items: [
     "Les pastilles en haut de l'écran (quête suivie, événement, bonus, boss des mondes, protecteur) ont toutes la même forme : une pastille ronde colorée, le titre en gras, le détail en gris",
     "Textes raccourcis : « XP et butin ×2 · 5 j 6 h », « Gargandyas vaincu · +10 % XP · 8 min ». Le détail complet s'affiche au survol (ou en touchant sur téléphone)",
@@ -5199,7 +5206,7 @@ function renderUpdBar() {
   if (BETA) html += tchip({ k: "sys", ico: G("sparkle"), t: "Version de test", d: "partie séparée du jeu public", tip: "Version de test : partie séparée du jeu public, des bugs sont possibles.", act: `${testerOk() ? `<button class="tc-act" data-adm="open">Panel de test</button>` : ""}<a class="tc-act ghost" href="../">Jeu public</a>` });
   if (S && E.eventOn()) { const hh = Math.max(1, Math.ceil((E.EVENT.to - E.now()) / 3600e3)); const left = hh >= 24 ? `${Math.floor(hh / 24)} j ${hh % 24} h` : `${hh} h`; const what = E.EVENT.xp === E.EVENT.drop ? `XP et butin ×${E.EVENT.xp}` : `XP ×${E.EVENT.xp} · butin ×${E.EVENT.drop}`;
     html += tchip({ k: "ev", ico: G("sparkle"), t: what, d: left, s: `×${E.EVENT.xp} · ${hh >= 24 ? Math.floor(hh / 24) + " j" : left}`, tip: `Événement ${E.EVENT.name} : ${what} pour tout le monde, encore ${left}.` }); }
-  if (S) html += protChip();
+  if (S) { raceInfoFetch(); html = raceChip() + html + protChip(); }
   if (ui.newVersion) html += tchip({ k: "sys", ico: G("sparkle"), t: `Version ${h(ui.newVersion)}`, d: "en ligne", s: h(ui.newVersion), act: `<button class="tc-act" data-act="reloadgame">Recharger</button>`, x: `data-act="hidenewv"`, xt: "Plus tard" });
   if (S && canInstall() && (S.sessions || 0) >= 3 && !S.installHide && S.seenVersion === GAME_VERSION) html += tchip({ k: "sys", ico: G("phone"), t: "Installer idlus", d: `sur votre ${isIOS() || /android/i.test(navigator.userAgent) ? "téléphone" : "ordinateur"}`, tip: "Jouez plus facilement : installez idlus comme une application. Votre partie est conservée.", act: `<button class="tc-act" data-act="installgame">Installer</button>`, x: `data-act="installhide"`, xt: "Non merci" });
   if (el.dataset.k !== html) { el.dataset.k = html; el.innerHTML = html; }
@@ -6190,6 +6197,7 @@ document.addEventListener("click", (ev) => {
     case "setcele": S.settings.cele = d.v === "1"; dirty = true; optionsSheet(); return;
     case "pin": { const p = JSON.parse(d.p); const r = E.togglePin(S, p); if (r) { toast(r); return; } toast(E.pinned(S, p) ? "Objectif suivi dans la bande du haut." : "Objectif retiré de la bande."); renderObjs(); if ($("#sheet").innerHTML) { dirty = true; return; } break; }
     case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "team") break; return; }
+    case "race-open": closeSheet(); LB.tab = "race"; ui.tab = "ladder"; window.scrollTo(0, 0); break; // 1.0.5 : pastille de la course
     case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
     case "xptip": ui.xpTip = ui.xpTip === ui.cid ? null : ui.cid; render(); return;
     case "notifask": { if (typeof Notification === "undefined") return; Notification.requestPermission().then((p) => { if (p === "granted") { S.settings.notifBrowser = true; toast("Notifications autorisées."); } dirty = true; optionsSheet(); }); return; }
@@ -6700,7 +6708,7 @@ async function takeRemote(info) {
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); } renderPill(); return r; });
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); raceInfoFetch(); } renderPill(); return r; });
 }
 /* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
 let raceAt = 0;
@@ -6816,8 +6824,8 @@ async function onBoot() {
    Niveau (avec filtre par classe), Donjons (de la semaine ou depuis toujours), Album, Succès, Premiers.
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
-const LB = { tab: "lvl", cls: "", dmode: "week", did: null, cache: {} };
-const LB_TABS = [["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
+const LB = { tab: "race", cls: "", dmode: "week", did: null, cache: {} };
+const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["first", "Premiers"]];
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
@@ -6903,6 +6911,8 @@ async function lbFetch() {
     }
   } else if (t === "defi") {
     await lbDefiFetch(out);
+  } else if (t === "race") {
+    await raceFetch(out);
   } else if (t === "first") {
     const { data } = await db.from("firsts").select("kind,key,label,pseudo,user_id,at").order("at", { ascending: true }).limit(300);
     out.rows = data || [];
@@ -6913,9 +6923,10 @@ function lbRowHtml(r, i, me) {
   return `<button class="lbr${me ? " me" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
 }
 function lbListHtml(d) {
+  if (LB.tab === "race") return raceHtml(d);
   if (LB.tab === "first") {
     if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200 et le premier à finir chaque donjon en stasis 10 seront gravés ici pour toujours.</div>`;
-    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${IC(r.kind === "lvl200" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
+    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${IC(r.kind === "lvl200" || r.kind === "race10" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
@@ -6924,6 +6935,68 @@ function lbListHtml(d) {
   const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${pname(r.p, r.u)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
   return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
+}
+/* 1.0.5 : course de lancement en direct. Le serveur garde l'étape de la quête principale de chaque compte (ladder.qstep)
+   et l'heure où il l'a atteinte : les joueurs en course sont classés par étape, puis par qui l'a atteinte en premier.
+   Les 10 places gagnées viennent des « Premiers » (kind race10). Une fois les 10 places prises, l'onglet devient « Légendes ». */
+const RACE_N = 10;
+const raceTot = () => (E.MAIN_QUEST || []).length;
+function raceChap(step) { const i = E.questChapter(Math.min(step, raceTot() - 1)); const c = E.QUEST_CHAPTERS[i]; return c ? `Chapitre ${i + 1} · ${c.name}` : ""; }
+const raceDate = (at) => new Date(at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+const raceOrd = (n) => (n === 1 ? "1re" : `${n}e`);
+async function raceFetch(out) {
+  const db = ON.db(), me = ON.user && ON.user.id;
+  const [{ data: w }, { data: run }] = await Promise.all([
+    db.from("firsts").select("key,pseudo,user_id,at").eq("kind", "race10").order("at", { ascending: true }).limit(RACE_N),
+    db.from("lb_race").select("user_id,pseudo,main,main_lvl,qstep,qstep_at").order("qstep", { ascending: false }).order("qstep_at", { ascending: true }).limit(60)]);
+  out.win = (w || []).slice().sort((a, b) => (+a.key || 99) - (+b.key || 99));
+  const ids = out.win.map((r) => r.user_id).filter(Boolean), done = new Set(ids), info = {};
+  (run || []).forEach((r) => (info[r.user_id] = r));
+  const miss = ids.filter((u) => !info[u]);
+  if (miss.length) { const { data: x } = await db.from("lb_race").select("user_id,main,main_lvl").in("user_id", miss); (x || []).forEach((r) => (info[r.user_id] = r)); }
+  out.win.forEach((r) => { const i = info[r.user_id]; if (i) { r.main = i.main; r.main_lvl = i.main_lvl; } });
+  out.run = (run || []).filter((r) => !done.has(r.user_id) && r.qstep < raceTot()).slice(0, 50);
+  out.meRun = null;
+  if (me && !done.has(me) && S) {
+    const step = Math.max(S.quest.step, (info[me] || {}).qstep || 0), mi = out.run.findIndex((r) => r.user_id === me);
+    let rank = mi + 1;
+    if (mi < 0) { const { count } = await db.from("lb_race").select("user_id", { count: "exact", head: true }).gt("qstep", step); rank = Math.max(1, (count || 0) - out.win.length + 1); }
+    out.meRun = { rank, step };
+  }
+  ui.raceInfo = { left: RACE_N - out.win.length, rank: out.meRun ? out.meRun.rank : 0, step: out.meRun ? out.meRun.step : 0, at: Date.now() };
+  renderUpdBar();
+}
+function raceHtml(d) {
+  const tot = raceTot(), left = RACE_N - d.win.length, me = ON.user && ON.user.id, end = left <= 0;
+  const head = `<div class="rc-head${end ? " end" : ""}"><img src="assets/ui/orn/orn_legende.svg" alt=""><div class="grow"><b>${end ? "Les 10 Légendes de la 1.0" : "Course de lancement de la 1.0"}</b>
+    <span class="small muted">${end ? `Course terminée le ${raceDate(d.win[RACE_N - 1].at)}. Ces 10 comptes ont fini la quête principale les premiers : le titre « Légende de la 1.0 » et la Couronne de la Légende ne seront plus jamais donnés.` : `Les 10 premiers comptes à finir la quête principale (${tot} étapes) gagnent le titre « Légende de la 1.0 » et l'ornement unique « Couronne de la Légende ».`}</span></div>
+    ${end ? "" : `<div class="rc-left"><b>${left}</b><small>place${left > 1 ? "s" : ""} libre${left > 1 ? "s" : ""}</small></div>`}</div>`;
+  const slots = `<div class="rc-slots${end ? " end" : ""}">${Array.from({ length: RACE_N }, (_, i) => { const r = d.win[i];
+    return r ? `<button class="rc-slot got${r.user_id === me ? " mine" : ""}${i < 3 ? " p" + (i + 1) : ""}${staffCls(r.user_id)}" data-act="lb-prof" data-u="${h(r.user_id || "")}"><span class="rk">${i + 1}</span>${cmed(r.main, r.main_lvl)}<span class="nm">${pname(r.pseudo || "compte supprimé", r.user_id)}<small>${raceDate(r.at)}</small></span>${IC("couronne")}</button>`
+      : `<div class="rc-slot${i === d.win.length ? " next" : ""}"><span class="rk">${i + 1}</span><span class="nm">${i === d.win.length ? "Prochaine place" : "Place libre"}</span></div>`; }).join("")}</div>`;
+  if (end) return head + slots;
+  const row = (r, i, mine) => { const pc = Math.max(2, Math.round((100 * r.qstep) / tot));
+    return `<button class="lbr rc-run${mine ? " me" : ""}${staffCls(r.user_id)}" data-act="lb-prof" data-u="${h(r.user_id)}"><span class="rk">${i}</span>${cmed(r.main, r.main_lvl)}<span class="nm">${pname(r.pseudo, r.user_id)}${mine ? ` <small class="inl">toi</small>` : ""}<small>${raceChap(r.qstep)}</small></span><span class="rc-bar"><i style="width:${pc}%"></i></span><span class="sc">${r.qstep}<small>/${tot}</small></span></button>`; };
+  const meIn = d.meRun && d.run.some((r) => r.user_id === me);
+  const meRow = d.meRun && !meIn ? row({ user_id: me, pseudo: (ON.profile && ON.profile.pseudo) || "Toi", main: S.chars[0].cls, main_lvl: S.chars[0].lvl, qstep: d.meRun.step }, d.meRun.rank, true) : "";
+  const list = d.run.length ? d.run.map((r, i) => row(r, i + 1, r.user_id === me)).join("") : `<div class="empty">Personne n'est encore en course. Avance dans la quête principale pour ouvrir le classement !</div>`;
+  return `${head}${slots}<div class="rc-h">${IC("quetes")}<b>En course</b><span class="xs muted">classés par étape de la quête principale, puis par qui l'a atteinte en premier</span></div>
+    <div class="lbt">${list}${meRow}</div>`;
+}
+/* pastille en haut de l'écran tant que la course est ouverte (rafraîchie toutes les 5 min) */
+let raceInfoAt = 0;
+function raceInfoFetch() {
+  if (!S || !ON || !ON.db || !ON.db() || (S.unlocks && S.unlocks.legende) || Date.now() - raceInfoAt < 300000) return;
+  if (ui.raceInfo && ui.raceInfo.left <= 0) return;
+  raceInfoAt = Date.now();
+  raceFetch({}).then(() => renderUpdBar()).catch(() => {});
+}
+function raceChip() {
+  const R = ui.raceInfo; if (!R || R.left <= 0 || !ON || (S.unlocks && S.unlocks.legende)) return "";
+  const pl = `${R.left} place${R.left > 1 ? "s" : ""}`, me = ON.user && R.rank;
+  return tchip({ k: "race", ico: IC("couronne"), t: "Course de lancement", d: me ? `tu es ${raceOrd(R.rank)} · ${pl}` : ON.user ? pl : `${pl} · connecte-toi pour courir`,
+    s: me ? `${raceOrd(R.rank)} · ${pl}` : pl, go: `data-act="race-open"`,
+    tip: `Course de lancement : les 10 premiers comptes à finir la quête principale gagnent le titre « Légende de la 1.0 ». Encore ${pl}.${me ? ` Tu es ${raceOrd(R.rank)} en course (étape ${R.step}/${raceTot()}).` : ""} Toucher pour voir la course.` });
 }
 function renderLadder() {
   if (!ON) { ui.tab = "home"; return renderHome(); }
@@ -6938,11 +7011,12 @@ function renderLadder() {
         <span class="small muted">Un donjon par tranche de niveau, le même pour tout le monde. La stasis la plus haute gagne, puis le combat le plus rapide (temps mesuré par le serveur). Les 3 premiers de chaque donjon portent le titre « Maître de la semaine » la semaine suivante.</span>
         <div class="wkgrid">${wl.map((x) => `<button class="wkd" data-act="lb-wk" data-v="${x.did}" aria-pressed="${LB.did === x.did}"><small>niv. ${x.from}-${x.to}</small><b>${h(DUNGEONS[x.did].name)}</b></button>`).join("")}</div></div></div>` : ""}`
     : LB.tab === "defi" ? lbDefiHead()
+    : LB.tab === "race" ? ""
     : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? "" : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
-    <nav class="subtabs">${LB_TABS.map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
+    <nav class="subtabs">${LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n]).map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
   const key = [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
   lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier].join("|")) el.innerHTML = lbListHtml(d); })
@@ -7161,7 +7235,7 @@ function repaintKeep(m, htmlStr) {
   for (const id in vals) { const n = document.getElementById(id); if (n && m.contains(n)) n.value = vals[id]; }
   if (fid) { const n = document.getElementById(fid); if (n && m.contains(n)) { n.focus({ preventScroll: true }); if (sel) try { n.setSelectionRange(Math.min(sel[0], n.value.length), Math.min(sel[1], n.value.length), sel[2] || "none"); } catch (e) {} } }
 }
-window.DX = { get S() { return S; }, ui, render, repaint: repaintKeep, E, diagText };
+window.DX = { get S() { return S; }, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */

@@ -27,6 +27,9 @@ alter table public.ladder add column if not exists dofus jsonb not null default 
 alter table public.ladder add column if not exists rec int not null default 0;
 -- 0.1.49 : points de succès (classement des points)
 alter table public.ladder add column if not exists pts int not null default 0;
+-- 1.0.5 : course de lancement en direct : étape de la quête principale et heure où elle a été atteinte
+alter table public.ladder add column if not exists qstep int not null default 0;
+alter table public.ladder add column if not exists qstep_at timestamptz;
 alter table public.ladder enable row level security;
 drop policy if exists "classement lisible" on public.ladder;
 create policy "classement lisible" on public.ladder for select using (not flagged or user_id = auth.uid());
@@ -112,6 +115,11 @@ create or replace view public.lb_week as
     rank() over (partition by r.w, r.did order by r.k desc, r.t asc, r.at asc) as r, l.main_lvl
   from public.records_week r join public.ladder l on l.user_id = r.user_id join public.profiles p on p.id = r.user_id where not l.flagged;
 grant select on public.lb_level, public.lb_class, public.lb_records, public.lb_week to anon, authenticated;
+-- 1.0.5 : course de lancement : les comptes classés par étape de la quête principale, puis par qui l'a atteinte en premier
+create or replace view public.lb_race as
+  select l.user_id, p.pseudo, l.main, l.main_lvl, l.qstep, l.qstep_at
+  from public.ladder l join public.profiles p on p.id = l.user_id where not l.flagged and l.qstep > 0;
+grant select on public.lb_race to anon, authenticated;
 
 -- ---------- mise à jour du classement à chaque envoi de partie ----------
 -- La partie envoie un résumé (meta) : niveau de l'équipe, album, succès, héros.
@@ -124,12 +132,13 @@ security definer
 set search_path = public
 as $$
 declare
-  m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; secs numeric; reason text; bad boolean;
+  m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; qs int; secs numeric; reason text; bad boolean;
 begin
   if m is null or m->>'level' is null then return new; end if;
   lv := coalesce((m->>'level')::int, 0); al := coalesce((m->>'album')::int, 0);
   su := coalesce((m->>'succes')::int, 0); pt := coalesce((m->>'playtime')::int, 0);
   rc := coalesce((m->>'rec')::int, 0); ps := least(greatest(coalesce((m->>'pts')::int, 0), 0), 50000);
+  qs := least(greatest(coalesce((m->>'qstep')::int, 0), 0), 500);
   select * into o from public.ladder where user_id = new.user_id;
   if found then
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
@@ -140,11 +149,12 @@ begin
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts)
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
-      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps)
+      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now())
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
       playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec, pts = excluded.pts,
+      qstep = excluded.qstep, qstep_at = case when excluded.qstep > public.ladder.qstep or public.ladder.qstep_at is null then now() else public.ladder.qstep_at end,
       flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
   select flagged into bad from public.ladder where user_id = new.user_id;
   delete from public.ladder_class where user_id = new.user_id;
