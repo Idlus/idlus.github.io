@@ -1929,8 +1929,9 @@
     return out;
   };
   E.giveRewards = giveRewards;
-  /* v3 : butin réduit sur les monstres bien plus faibles que le meilleur héros (dès 10 niveaux d'écart, plancher 10 %) */
-  E.lootPenalty = (gap) => (gap > 10 ? Math.max(0.1, 1 - (gap - 10) * 0.06) : 1);
+  /* 0.1.34.1 (Mathis) : plus de butin réduit sur les monstres plus faibles que le meilleur héros
+     (avant : dès 10 niveaux d'écart, −6 % par niveau, plancher 10 %) ; les objets très bas restent changés en kamas (E.LOW_ITEM_GAP) */
+  E.lootPenalty = () => 1;
   /* Taux de ressources v2.7 : divisés par 2 (×0,4 ; les ressources « garanties » à 100 % tombent à 35 %) */
   E.RES_RATE_SCALE = 0.4;
   E.resRate = (rate) => (rate >= 100 ? 35 : rate * E.RES_RATE_SCALE);
