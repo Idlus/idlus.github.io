@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.4";
+const GAME_VERSION = "1.0.7.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.5", name: "Y aller depuis l'Encyclopédie", items: [
+    "Encyclopédie : chaque fiche de monstre montre où le trouver, avec un bouton par sous-zone ou donjon. Un clic t'y emmène directement",
+    "Si le monstre vit à plusieurs endroits, ils sont tous proposés, les lieux ouverts en premier",
+    "Une zone encore fermée affiche un cadenas et ce qu'il faut faire pour l'ouvrir, au lieu de t'y envoyer",
+  ] },
   { v: "1.0.7.4", name: "Kolizéum sans freeze", items: [
     "Kolizéum : le jeu ne se fige plus pendant le mode auto ni à l'ouverture de la page. Le calcul du « Conseillé » se fait par petits morceaux en arrière-plan, avec le même résultat qu'avant",
     "Mode auto en ligne : un combat toutes les 8 secondes, et ta partie est envoyée une fois au début de la série au lieu d'à chaque combat. Le serveur respire et tout le monde joue plus fluide",
@@ -2187,6 +2192,21 @@ function encBossHtml(enc) {
   return `<section class="panel"><div class="phead"><h2>Boss de donjon</h2><span class="seg">${[["all", "Tous"], ["done", "Vaincus"], ["todo", "À vaincre"]].map(([v, n]) => `<button data-act="encboss" data-v="${v}" aria-pressed="${enc.boss === v}">${n}</button>`).join("")}</span></div>
     <div class="pad"><div class="mons enc">${L.map(([id, d]) => encCard(d.boss, false, `<button class="encdg" data-act="dgopen" data-id="${id}">${h(d.name)} · niv. ${d.lvl}</button>`)).join("") || `<div class="empty">Aucun boss ici.</div>`}</div></div></section>`;
 }
+/* 1.0.7.5 : où trouver le monstre, avec un bouton par sous-zone ou donjon (verrou affiché, pas de voyage vers un lieu fermé) */
+function encWhereHtml(k) {
+  const L = []; const dgWhy = (id) => dgNeedTxt(id) || (E.DUNGEON_SUB[id] ? lockReason(E.DUNGEON_SUB[id]) : "");
+  ZONES.forEach((z) => z.subs.forEach((s) => { if (!s.monsters.includes(k)) return; const un = E.subUnlocked(S, s.id);
+    if (s.hidden && !un) return; L.push({ sub: s.id, name: s.name, lvl: s.lvl[0], un }); }));
+  Object.keys(DUNGEONS).forEach((id) => { const d = DUNGEONS[id]; if (d.boss === k || (d.bossMobs || []).includes(k) || d.rooms.some((r) => r.mobs.includes(k))) L.push({ dg: id, name: d.name, lvl: d.lvl, un: E.dungeonUnlocked(S, id) }); });
+  if (!L.length) return "";
+  L.sort((a, b) => b.un - a.un || a.lvl - b.lvl);
+  const MAX = 3, open = ui.encOpen && ui.encOpen["w" + k], more = L.length > MAX + 1 && !open ? L.length - MAX : 0;
+  const btn = (x) => x.dg ? `<button class="encgo ${x.un ? "" : "locked"}" data-act="searchdg" data-id="${x.dg}" data-tip="${x.un ? "Voir le donjon" : h("Donjon verrouillé" + (dgWhy(x.dg) ? " : " + dgWhy(x.dg) : ""))}">${x.un ? IC("cle") : G("lock")} Donjon · ${h(x.name)}</button>`
+    : x.un ? `<button class="encgo" data-act="searchzone" data-id="${x.sub}" data-tip="Y aller : ouvrir ${h(x.name)}">${IC("carte")} ${h(x.name)} <span class="xs muted num">niv. ${x.lvl}</span> ›</button>`
+    : `<span class="encgo locked" data-tip="${h("Zone verrouillée : " + lockReason(x.sub))}">${G("lock")} ${h(x.name)}</span>`;
+  const why = L[0].un ? "" : L[0].dg ? dgWhy(L[0].dg) : lockReason(L[0].sub); // aucun lieu ouvert : on dit comment l'ouvrir
+  return `<div class="encwhere">${(more ? L.slice(0, MAX) : L).map(btn).join("")}${more ? `<button class="encmore" data-act="encmore" data-k="w${k}" data-tip="Voir les ${more} autres lieux">+${more}</button>` : ""}</div>${why ? `<div class="xs muted encwhy">${G("lock")} Fermé pour l'instant : ${h(why.charAt(0).toLowerCase() + why.slice(1))}</div>` : ""}`;
+}
 function encCard(k, where, extra) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const a = m.archi; const t = E.huntTier(S, k);
   const reveal = t >= 0;
@@ -2197,7 +2217,7 @@ function encCard(k, where, extra) {
   return `<div class="mcard enccard ${kills ? "" : "unknown"} ${m.boss ? "boss" : ""}">${im(imgM(k), "mimg", m.name)}
     <div class="ehd"><div class="n">${kills ? h(m.name) : "???"}</div><div class="l">niv. ${m.lvl[0] === m.lvl[1] ? m.lvl[0] : `${m.lvl[0]}–${m.lvl[1]}`}${m.race !== undefined && D.RACES[m.race] ? ` · ${h(D.RACES[m.race])}` : ""}${zn}</div></div>
     <div class="ebody">${extra || ""}${m.boss ? `<div class="xs muted num">${fmt(kills)} vaincu${kills > 1 ? "s" : ""}</div>` : tierBadge(k)}
-    <div class="drops">${drops}</div>
+    <div class="drops">${drops}</div>${extra ? "" : encWhereHtml(k)}
     ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}${E.hasSoul(S, a) ? " · 💜 âme capturée" : ""}</div>` : ""}</div></div>`;
 }
 /* 0.1.57 : réglages du combat (cible, suivre mon niveau, itinérante) ; sur téléphone ils passent dans le bouton « Réglages » */

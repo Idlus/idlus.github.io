@@ -2983,6 +2983,14 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .enccard .dq{width:24px;height:24px;font-size:12px;color:var(--muted)}
 .enccard .encdg{border:0;background:none;padding:0;text-align:left;color:var(--gold2);font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
 .enccard .encdg:hover{text-decoration:underline}
+.enccard .encwhere{display:flex;flex-wrap:wrap;gap:4px}
+.enccard .encgo{display:inline-flex;align-items:center;gap:4px;max-width:100%;border:1px solid var(--line);background:var(--panel2,rgba(255,255,255,.04));border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;font-weight:800;color:var(--gold2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.enccard .encgo:hover{border-color:var(--gold2)}
+.enccard .encgo.locked{color:var(--muted);cursor:help;font-weight:700;border-style:dashed}
+.enccard .encwhy .uico,.enccard .encwhy svg{width:12px;height:12px;vertical-align:-2px}
+.enccard button.encgo.locked{cursor:pointer}
+.enccard .encgo .uico,.enccard .encgo svg,.enccard .encgo img{width:13px;height:13px;flex:none}
+@media (max-width:760px){.enccard .encgo{font-size:11px;padding:2px 7px}.enccard .encgo .xs{display:none}}
 .famrow .grow{display:flex;flex-direction:column;gap:4px;min-width:0}
 .famrow .bar{height:4px}
 @media (max-width:760px){

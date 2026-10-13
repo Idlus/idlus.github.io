@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.5 « Y aller depuis l'Encyclopédie »
+Fiche de monstre de l'Encyclopédie : un bouton par sous-zone ou donjon où il vit, verrou affiché pour les lieux fermés.
+
 ## 1.0.7.4 « Kolizéum sans freeze »
 Plaintes de freeze après la 1.0.7 : le calcul du « Conseillé » (20 combats d'essai par adversaire, 130 à 380 ms d'un bloc) passe par `E.koliChanceAsync`, qui rend la main au navigateur toutes les ~10 ms (même résultat). Mode auto en ligne : un combat toutes les `KOLI.autoGapOn` = 8 s et un seul envoi de la partie par série (avant : à chaque combat, toutes les 3 s), pour soulager le serveur (charge 2,6 sur 2 processeurs à 20 h 48). Pastille « Koli auto » sur une ligne comme les autres pastilles du haut.
 

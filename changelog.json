@@ -1,6 +1,15 @@
 {
-  "version": "1.0.7.4",
+  "version": "1.0.7.5",
   "versions": [
+    {
+      "v": "1.0.7.5",
+      "name": "Y aller depuis l'Encyclopédie",
+      "items": [
+        "Encyclopédie : chaque fiche de monstre montre où le trouver, avec un bouton par sous-zone ou donjon. Un clic t'y emmène directement",
+        "Si le monstre vit à plusieurs endroits, ils sont tous proposés, les lieux ouverts en premier",
+        "Une zone encore fermée affiche un cadenas et ce qu'il faut faire pour l'ouvrir, au lieu de t'y envoyer"
+      ]
+    },
     {
       "v": "1.0.7.4",
       "name": "Kolizéum sans freeze",
