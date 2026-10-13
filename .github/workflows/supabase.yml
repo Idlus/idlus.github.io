@@ -1,8 +1,12 @@
 # Serveur en ligne (multijoueur) : à chaque push sur la branche « main » (le jeu public) qui touche la base ou le moteur,
 # applique les fichiers SQL de supabase/ et redéploie la fonction « record » (qui rejoue les donjons
 # avec le même moteur que le jeu). Secret nécessaire : SUPABASE_ACCESS_TOKEN (clé d'accès du compte Supabase de Mathis).
+# 13/10/2026 (accord de Mathis) : seuls les fichiers SQL modifiés par le push sont réappliqués (aucun si la base ne change pas),
+# avec un délai de verrou de 3 s : un verrou qui attend plus longtemps abandonne (et réessaie) au lieu de bloquer les joueurs.
+# Lancement à la main (Actions > Serveur en ligne > Run workflow) : réapplique tous les fichiers.
 name: Serveur en ligne
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths: ["supabase/**", "js/engine.js", "js/systems.js", "js/data.js", "js/gamedata.js", "js/pets.js", "js/mounts.js", "js/idols.js", "js/renaissance.js", "js/archis.js", "js/defi.js", "js/gboss.js", "js/koli.js", "js/legendaires.js", "js/wboss.js", "js/verify.js", "tools/build_server.js", ".github/workflows/supabase.yml"]
@@ -16,18 +20,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Base de données (fichiers SQL)
+      - name: Base de données (fichiers SQL modifiés)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          AVANT: ${{ github.event.before }}
         run: |
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN manquant." >&2; exit 1; fi
-          for f in supabase/schema.sql supabase/classements.sql supabase/chat.sql supabase/defi.sql supabase/hdv_data.sql supabase/hdv.sql supabase/guildes.sql supabase/carnet.sql supabase/percos_data.sql supabase/gboss.sql supabase/codes.sql supabase/idees.sql supabase/brisage.sql supabase/koli.sql supabase/wboss.sql supabase/fiches.sql; do
+          tous="supabase/schema.sql supabase/classements.sql supabase/chat.sql supabase/defi.sql supabase/hdv_data.sql supabase/hdv.sql supabase/guildes.sql supabase/carnet.sql supabase/percos_data.sql supabase/gboss.sql supabase/codes.sql supabase/idees.sql supabase/brisage.sql supabase/koli.sql supabase/wboss.sql supabase/fiches.sql"
+          # Fichiers modifiés par ce push (tous si lancé à la main, ou si le commit d'avant est introuvable)
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$AVANT" ] && ! echo "$AVANT" | grep -qE '^0+$' && git fetch -q --depth=1 origin "$AVANT" 2>/dev/null; then
+            changes=$(git diff --name-only "$AVANT" "$GITHUB_SHA" -- supabase/) || changes=$(echo $tous | tr ' ' '\n')
+          else
+            changes=$(echo $tous | tr ' ' '\n')
+          fi
+          a_faire=""
+          for f in $tous; do if echo "$changes" | grep -qx "$f"; then a_faire="$a_faire $f"; fi; done
+          if [ -z "$a_faire" ]; then echo "La base ne change pas dans ce push : aucun fichier SQL réappliqué."; exit 0; fi
+          for f in $a_faire; do
             echo "== $f"
-            jq -Rs '{query: .}' "$f" > /tmp/q.json
-            code=$(curl -sS -o /tmp/r.json -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json)
-            echo "HTTP $code"; head -c 600 /tmp/r.json; echo
-            if [ "$code" -ge 300 ]; then exit 1; fi
+            # Délai de verrou de 3 s : si une table est occupée par les joueurs, on abandonne vite et on réessaie
+            { echo "set lock_timeout = '3s';"; cat "$f"; } | jq -Rs '{query: .}' > /tmp/q.json
+            for essai in 1 2 3 4 5 6; do
+              code=$(curl -sS -o /tmp/r.json -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json)
+              echo "HTTP $code (essai $essai)"; head -c 600 /tmp/r.json; echo
+              if [ "$code" -lt 300 ]; then break; fi
+              # Verrou trop long (55P03) ou interblocage (40P01) : on attend un peu et on réessaie
+              if grep -qE '55P03|40P01|lock timeout|deadlock' /tmp/r.json && [ "$essai" -lt 6 ]; then sleep $((essai * 10)); continue; fi
+              exit 1
+            done
           done
       - name: Contrôle (comptes, administrateur)
         env:
