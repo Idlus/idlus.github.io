@@ -1,6 +1,15 @@
 {
-  "version": "0.1.54",
+  "version": "0.1.55",
   "versions": [
+    {
+      "v": "0.1.55",
+      "name": "Plafonds relevés",
+      "items": [
+        "Havre-Sac : nouvel Autel des Douze, 15 niveaux à acheter en kamas (500 000 kamas le premier, puis ×1,3). Chaque niveau relève de +5 les plafonds d'XP, de butin et de kamas : jusqu'à +250 % d'XP et de butin et +275 % de kamas (avant : +175 % et +200 %)",
+        "Havre-Sac : nouveau cadre « Mes bonus » en haut de la page. Pour l'XP, le butin et les kamas : une barre qui montre chaque source (Havre-Sac, meubles, alignement, étoiles, guilde, bonbons, légendaires), le plafond, la partie à débloquer avec l'Autel et ce qui est perdu au-dessus. Les sources manquantes sont indiquées, avec comment les obtenir",
+        "Rappel : la Renaissance, la synergie de classes, les événements (Double gain), l'Almanax et les mutateurs restent hors plafond"
+      ]
+    },
     {
       "v": "0.1.54",
       "name": "Commandes du jour",

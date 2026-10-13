@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.55 « Plafonds relevés »
+Plafonds des bonus (js/systems.js) : Autel des Douze `E.ALTAR` (`S.havre.autel`, `E.buyAltar`, `E.altarCost`), plafond effectif `E.capOf(S, kind)` = `E.BONUS_CAP` + 5 par niveau d'Autel pour xp/drop/kamas (`E.capMax`). Détail par source `E.bonusParts`, total brut `E.bonusRaw`. Interface : cadre « Mes bonus » `bonusBox`/`bonusCard`/`altarHtml` (js/ui.js), styles `.bonbox`, `.bcard`, `.bbar`, `.altar`.
+
 ## 0.1.54 « Commandes du jour »
 Commandes du jour (js/systems.js `E.gameBuys`, `E.gameBuyAll`) : 2 000 ressources par tranche de 20 niveaux jusqu'au meilleur héros, payées `E.GBUY.perLvl` × niveau du meilleur héros par unité. Interface : `gameBuysHtml` (js/ui.js). Havre-Sac : boutique de la maison (`FURN[n].shop`, `E.buyFurn`) et agrandissement des pièces (`S.hvGrow`, `E.growRoom`, `E.GROW`).
 
