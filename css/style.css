@@ -3970,3 +3970,4 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
   .adm .fj.has-sel .fj-back{display:inline-flex}
 }
 @container (max-width:420px){.adm .fj .fiche{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .fj .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .fj .two{grid-template-columns:minmax(0,1fr)}}
+.wb-row.me .g-C{color:var(--ink)}
