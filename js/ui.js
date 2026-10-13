@@ -18,9 +18,18 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.38";
+const GAME_VERSION = "0.1.39";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.39", name: "Les Mérydes de l'Almanax", items: [
+    "L'Almanax suit maintenant le vrai calendrier de DOFUS : chaque jour a son Méryde (aujourd'hui Astirout, Méryde de la pandrista) et le même type de bonus que dans DOFUS, adapté à Idlus",
+    "15 bonus au lieu de 4 : Expérience, Butin et Fortune (+30 % sur une famille de monstres ou une zone), Traque (archimonstres ×2), Donjon du jour (+45 % d'XP et de butin), Challenges augmentés (+50 %), Challenge supplémentaire, Récolte abondante (+50 % pour un métier), Filons (×1,5), Économie d'ingrédients (10 %), Fabrication intensive (6 %), Forgemagie améliorée (10 % de garder la rune), Concassage (6 %), Enclos (×1,5) et Jours de fête",
+    "La famille, la zone ou le donjon du jour sont choisis pour le niveau de ton meilleur héros. Un bouton « Y aller » y envoie l'équipe",
+    "Le bonus de l'Almanax compte à part : il s'ajoute même quand tes bonus d'XP, de butin ou de kamas sont déjà au plafond",
+    "L'offrande donne en plus de l'XP à chaque héros de l'équipe, environ 15 minutes de chasse à ton niveau",
+    "Les 7 prochains jours sont visibles dans Quêtes › Almanax, avec la liste de tous les bonus",
+    "Jours de fête : Nouvel An, Saint-Ballotin, Nuit d'Halouine (31/10, avec des bonbons surprises dans le butin) et Nowel donnent +30 % d'XP et de butin partout"
+  ] },
   { v: "0.1.38", name: "Tout passe par l'HdV", items: [
     "Le jeu ne rachète plus tes objets ni tes ressources depuis l'Inventaire : on vend maintenant aux autres joueurs, à l'hôtel de vente. Le bouton « Vendre » devient « Vendre à l'HdV » et ouvre directement la mise en vente, déjà remplie. « Briser » reste là",
     "Achats du jour (Inventaire › Ressources) : chaque jour, le jeu achète 3 ressources de ton niveau à bon prix (1,5 × leur valeur), 100 au plus chacune. La liste change à minuit",
@@ -1053,7 +1062,7 @@ function statusHtml() {
     <span class="it hide-sm">${IC("monde")} <span>${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
-    ${S.almanax && S.almanax.day === E.dayKey() ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit">${IC("almanax")} Almanax +${S.almanax.pct} %</span>` : ""}
+    ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
     <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
     ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
@@ -1191,7 +1200,7 @@ function renderHomeInner() {
     <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
       ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span></div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
       <div class="small">${IC("quetes")} Avis de recherche : ${(S.bounties || []).map((b) => `<span class="tag soft">${h(MONSTERS[b.key].name)} ${b.prog}/${b.n}</span>`).join(" ") || "aucun"}</div>
-      <div class="small">${IC("almanax")} Almanax : ${A.done ? `<span class="tag good">offrande faite · ${h(A.bonus.name)}</span>` : `${A.qty} × ${h(A.res)} → ${h(A.bonus.name)} <button class="btn sm" data-act="goquest" data-v="almanax">Offrir</button>`}</div></div></div>
+      <div class="small">${IC("almanax")} Almanax : ${A.done ? `<span class="tag good">offrande faite · ${h(A.bonus.txt)}</span>` : `${A.qty} × ${h(A.res)} → ${h(A.bonus.txt)} <button class="btn sm" data-act="goquest" data-v="almanax">Offrir</button>`}</div></div></div>
     <div class="panel"><div class="phead"><h2>Rendement${zkey ? " · " + h(E.SUBS[zkey].name) : ""}</h2></div><div class="pad">${rateHtml(rate)}</div></div>
   </section>
   <section class="kpis" style="margin:14px 0">
@@ -4075,15 +4084,30 @@ function alignHtml() {
     </div></section>${shopLink("cite")}`;
 }
 function almanaxHtml() {
-  const A = E.almanax(S); const d = new Date(); const have = S.res[A.res] || 0;
-  return `<section class="panel"><div class="phead"><h2>${IC("almanax")} Almanax</h2><span class="small muted">offrandes : ${S.cnt.almanax || 0}</span></div><div class="pad stack">
-    <div class="almanax"><div class="cal"><b>${d.getDate()}</b><span>${d.toLocaleDateString("fr-FR", { month: "short" })}</span></div>
-      <div class="grow stack" style="gap:6px"><div>Offrande du jour : ${im(resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="small muted">(vous en avez ${fmt(have)})</span></div>
-        <div>Bonus du jour : <b class="plus">${h(A.bonus.name)}</b> jusqu'à minuit, et <span class="coin"></span> ${fmt(A.kamas)} kamas</div>
+  /* 0.1.39 : le calendrier de DOFUS, un Méryde et un bonus ciblé par jour, les 7 jours suivants */
+  const A = E.almanax(S); const d = new Date(E.now()); const have = S.res[A.res] || 0; const sn = S.almStreak.n || 0;
+  const W = E.almWhere(S, A); const K = E.ALM_KINDS;
+  const fams = (A.kind === "xp" || A.kind === "kamas") && A.target ? E.RACE_MONS[A.target.id] || [] : []; const fam = fams.find((k) => W && W.sub && E.SUBS[W.sub].monsters.includes(k)) || fams[0];
+  const pic = fam ? im(imgM(fam), "mo", A.target.name) : `<span class="mo">${IC(A.bonus.ic)}</span>`;
+  const go = W && W.dg ? `<button class="btn sm primary" data-act="dgopen" data-id="${W.dg}">Y aller</button>` : W && W.sub ? (S.sub === W.sub && S.hunting ? `<span class="tag good">Tu y es</span>` : `<button class="btn sm primary" data-act="hunt" data-id="${W.sub}" ${S.dungeon ? "disabled" : ""}>Y aller</button>`) : "";
+  const where = W && W.sub && A.kind !== "drop" ? `<div class="small muted">Où les trouver : ${h(W.name)} (niv. ${W.lvl[0]}-${W.lvl[1]}).</div>` : A.target && A.kind !== "dg" && A.kind !== "drop" ? "" : A.target ? `<div class="small muted">Choisi pour ton niveau.</div>` : "";
+  const week = Array.from({ length: 7 }, (_, i) => E.almanax(S, E.now() + (i + 1) * 864e5)).map((x, i) => `<div class="alx-d ${i === 0 ? "tm" : ""}"><span class="dt">${i === 0 ? "demain" : new Date(E.now() + (i + 1) * 864e5).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })}</span><span class="nm">${h(x.mer)}</span><span class="ty">${IC(x.bonus.ic)} ${h(x.fete || x.bonus.name)}</span><span class="tx">${h(x.bonus.txt)}</span></div>`).join("");
+  const groups = [["Combat", ["xp", "drop", "kamas", "archi"]], ["Donjons", ["dg", "chal", "chal1"]], ["Métiers", ["gather", "filon", "eco", "craft2", "fm", "brise"]], ["Élevage et fêtes", ["enclos", "fete"]]];
+  return `<section class="panel"><div class="phead"><h2>${IC("almanax")} Almanax</h2><span class="small muted">offrandes : ${S.cnt.almanax || 0} · série : ${sn} jour${sn > 1 ? "s" : ""}</span></div><div class="pad stack" style="gap:14px">
+    <div class="alx-top"><div class="cal"><b>${d.getDate()}</b><span>${d.toLocaleDateString("fr-FR", { month: "short" })}</span></div>
+      <div class="grow stack" style="gap:8px">
+        <div class="alx-mer"><span class="alx-date">${d.getDate()} ${d.toLocaleDateString("fr-FR", { month: "short" })} · </span><b>${h(A.mer)}</b>, ${h(A.of)}, veille sur cette journée${A.fete ? ` : <b class="plus">${h(A.fete)}</b> !` : "."}</div>
+        <div class="alx-bon ${A.done ? "on" : ""}">${pic}<div class="grow"><div class="k">Bonus du jour · ${h(A.bonus.name)}${A.done ? " · actif jusqu'à minuit" : ""}</div>
+          <div class="v">${h(A.bonus.txt)}${["xp", "drop", "kamas", "dg", "fete"].includes(A.kind) ? `<span class="alx-pill" data-tip="S'ajoute par-dessus tes autres bonus, même au plafond">à part du plafond</span>` : ""}</div>${where}</div>${go}</div>
+        <div class="alx-off"><span class="row" style="gap:6px">Offrande : ${im(resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="small muted">(vous en avez ${fmt(have)})</span></span>
+          <span class="small">→ le bonus jusqu'à minuit, <span class="coin"></span> ${fmt(A.kamas)} kamas et <b class="plus">${fmtK(A.xp)} XP</b> par héros de l'équipe (environ ${E.ALM_XP_MIN} min de chasse)</span></div>
         <div>${A.done ? `<span class="tag good">Offrande faite aujourd'hui ✓</span>` : `<button class="btn primary" data-act="almanax" ${have >= A.qty ? "" : "disabled"}>Faire l'offrande</button>`}</div></div></div>
-    <div><b>Série : ${S.almStreak.n || 0} jour${(S.almStreak.n || 0) > 1 ? "s" : ""}</b> <span class="xs muted">(un jour manqué fait redescendre d'un palier)</span>
-      <div class="row" style="margin-top:6px">${E.ALM_TIERS.map((t) => { const R = E.ALM_TIERS_R[t]; const txt = R.lot ? "lot de ressources" : R.cons ? CONSUMABLES[R.cons].name : R.furn ? `meuble « ${R.furn} »` : `titre « ${R.title} » + ornement`; return `<span class="tag ${(S.almStreak.n || 0) >= t ? "good" : "soft"}">${t} j : ${h(txt)}</span>`; }).join("")}<span class="tag soft">puis tous les 30 j : Coffre en or</span></div></div>
-    <p class="note">L'offrande change chaque jour et dépend de votre niveau. Les ressources viennent des monstres ; consultez l'encyclopédie pour savoir qui les lâche.</p></div></section>`;
+    <div><div class="alx-h">Les 7 prochains jours</div><div class="alx-week">${week}</div></div>
+    <div><b>Série : ${sn} jour${sn > 1 ? "s" : ""}</b> <span class="xs muted">(un jour manqué fait redescendre d'un palier)</span>
+      <div class="row" style="margin-top:6px">${E.ALM_TIERS.map((t) => { const R = E.ALM_TIERS_R[t]; const txt = R.lot ? "lot de ressources" : R.cons ? CONSUMABLES[R.cons].name : R.furn ? `meuble « ${R.furn} »` : `titre « ${R.title} » + ornement`; return `<span class="tag ${sn >= t ? "good" : "soft"}">${t} j : ${h(txt)}</span>`; }).join("")}<span class="tag soft">puis tous les 30 j : Coffre en or</span></div></div>
+    <details><summary class="alx-h">Tous les bonus de l'Almanax (${Object.keys(K).length})</summary>
+      <div class="stack" style="gap:8px;margin-top:6px">${groups.map(([g, l]) => `<div><div class="small alx-g">${g}</div><div class="alx-all">${l.map((k) => `<div><b>${h(K[k].name)}</b> : ${h(K[k].txt(K[k].v, null, null, ""))}</div>`).join("")}</div></div>`).join("")}</div></details>
+    <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, l'encyclopédie dit qui les lâche.</p></div></section>`;
 }
 function achHtml() {
   const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = Object.keys(S.ach).length;

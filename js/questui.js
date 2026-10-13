@@ -94,7 +94,7 @@
     const alm = `<article class="qj-card ${a.ready ? "hot" : ""} ${A.done ? "done" : ""}"><div class="qj-ch">${IC("almanax")}<h3>Almanax</h3>${A.done ? `<span class="qj-tag ok">Offrande faite ✓</span>` : a.ready ? `<span class="qj-tag ready">Prêt à offrir</span>` : `<span class="qj-tag">À faire</span>`}</div>
       <div class="qj-alm"><div class="qj-cal"><b>${d.getDate()}</b><span>${d.toLocaleDateString("fr-FR", { month: "short" })}</span></div><div class="grow stack" style="gap:3px">
         <span class="small row" style="gap:6px">${X().im(X().resImg(A.res), "ico sm", A.res)} <b>${A.qty} × ${h(A.res)}</b> <span class="muted">· ${fmt(a.have)} en banque</span></span>
-        <span class="small">Bonus : <b class="plus">${h(A.bonus.name)}</b> jusqu'à minuit</span>
+        <span class="small">${h(A.mer)} : <b class="plus">${h(A.bonus.txt)}</b> jusqu'à minuit</span>
         <span class="xs muted row" style="gap:6px"><span class="qj-streak">${Array.from({ length: 7 }, (_, i) => `<i class="${i < sn % 7 || (sn && sn % 7 === 0) ? "on" : ""}"></i>`).join("")}</span>série ${sn} j${nextT ? ` · palier à ${nextT} j` : ""}</span></div></div>
       <div class="row">${A.done ? "" : `<button class="btn sm ${a.ready ? "primary" : ""}" data-act="almanax" ${a.ready ? "" : "disabled"}>Faire l'offrande</button>`}<button class="btn sm" data-act="qtab" data-v="almanax">Ouvrir</button></div></article>`;
     // Avis de recherche
