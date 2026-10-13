@@ -3807,3 +3807,18 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .chat .ch-pin .pf{display:flex;justify-content:flex-end;margin-top:5px}
 .chat .ch-pin .px{position:absolute;top:2px;right:4px;border:0;background:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:2px 4px}
 .chat .ch-pin .px:hover{color:var(--ink)}
+/* 0.1.51 « Armes » : coup d'arme */
+.wpbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:4px 0 10px;background:color-mix(in srgb,var(--el-n) 6%,transparent);display:flex;flex-direction:column;gap:4px}
+.wph{display:flex;gap:8px;align-items:center;font-size:15px}.wppa{font-weight:700;background:var(--el-e);color:#fff;border-radius:10px;padding:1px 8px;font-size:12px}
+.wpl{display:flex;gap:8px;align-items:center;font-size:13.5px}.wpl i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.wpx{font-size:13px;padding:4px 8px;border-radius:8px;background:color-mix(in srgb,var(--buff) 10%,transparent)}.wpx.on{background:color-mix(in srgb,var(--buff) 22%,transparent)}
+.wpest{font-size:13px;border-top:1px dashed var(--line);padding-top:5px;margin-top:2px}
+.wptip{margin-top:4px;font-size:12.5px}
+.wpbar{display:flex;gap:10px;align-items:center;border:1px dashed var(--line);border-radius:12px;padding:8px 10px;font-size:13px}.wpbar.on{border-style:solid;border-color:var(--buff);background:color-mix(in srgb,var(--buff) 8%,transparent)}
+.wpslot{position:relative;width:46px;height:46px;border-radius:10px;border:2px solid var(--c,var(--line));display:grid;place-items:center;background:color-mix(in srgb,var(--c,#888) 15%,transparent);flex:none}.wpslot img{width:38px;height:38px}.wpslot.empty{opacity:.6;font-size:20px}.wpslot .pa{position:absolute;right:-6px;bottom:-6px;background:var(--el-e);color:#fff;border-radius:9px;font-size:11px;padding:0 5px;font-weight:700}
+.wpico{width:22px;height:22px;vertical-align:middle}
+.sp.wpn{border-style:dashed}.sp.wpn img{width:80%;height:80%;object-fit:contain}
+.wpfm .pruns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.wpfm .pruns>*{margin:0;min-width:0}
+@media (max-width:600px){.wpfm .pruns{grid-template-columns:repeat(2,minmax(0,1fr))}.wpfm .pfn{flex-wrap:wrap}}
+.wpfm .prune{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;text-align:left}.wpfm .prune .rv{font-size:11.5px;order:2}
+.spnames>div{min-width:0;overflow:hidden;hyphens:auto;-webkit-hyphens:auto}
