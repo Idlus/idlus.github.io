@@ -1,6 +1,13 @@
 {
-  "version": "0.1.53.1",
+  "version": "0.1.53.2",
   "versions": [
+    {
+      "v": "0.1.53.2",
+      "name": "Treizième héros",
+      "items": [
+        "Jusqu'à 13 héros au lieu de 12. L'équipe qui combat reste à 8, les autres récoltent, s'entraînent ou se reposent. Le 13e héros coûte 1 752 955 kamas"
+      ]
+    },
     {
       "v": "0.1.53.1",
       "name": "Classement du boss clarifié",

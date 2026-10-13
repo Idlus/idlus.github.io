@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.53.2 « Treizième héros »
+`E.HERO_MAX` passe de 12 à 13 (équipe toujours limitée à `E.TEAM_MAX` = 8). Prix du 13e héros : `recruitCost(13)` = 1 752 955 kamas (courbe inchangée).
+
 ## 0.1.53.1 « Classement du boss clarifié »
 Boss des mondes (js/wbossui.js) : classement avec le total (somme des essais) et le meilleur essai (`best`) sous le nom ; la lettre = grade du meilleur essai, expliqué au-dessus.
 
