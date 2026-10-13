@@ -172,7 +172,7 @@ async function wboss(db: any, uid: string) {
   const { data: done, error: e2 } = await db.rpc("wb_done", { p_user: uid, p_n: st.n, p_k: st.k, p_points: r.points, p_phase: st.phase, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, wboss: true, n: st.n, k: st.k, seed, phase: st.phase, name: def.name, points: r.points, pv: r.pv, rounds: r.rounds, alive: r.alive,
-    grade: done.grade, frag: done.frag, cons: done.cons, dmg: done.dmg, hp: done.hp, killed: done.killed, left: done.left, rank: done.rank });
+    grade: done.grade, frag: done.frag, cons: done.cons, dmg: done.dmg, before: done.before, hp: done.hp, killed: done.killed, left: done.left, rank: done.rank });
 }
 // deno-lint-ignore no-explicit-any
 async function perco(db: any, uid: string, id: number) {
