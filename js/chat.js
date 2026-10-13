@@ -16,7 +16,7 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false };
+  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false };
   const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
@@ -48,6 +48,8 @@
     if (miss.length) Object.assign(C.names, await ON.pseudos(miss));
     C.p.forEach((m) => { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; });
   }
+  /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
+  const isFeat = (m) => m.kind === "ann" && !(m.data && m.data.t === "admin");
   function onMsg(m) {
     if (!m || !m.id) return;
     const list = m.ch === "p" ? C.p : C.g;
@@ -55,6 +57,7 @@
     list.push(m); if (list.length > 200) list.shift();
     const mine = m.user_id === myId() && m.kind === "msg";
     if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) C.unreadP++; }
+    else if (isFeat(m)) { if (!(C.open && C.tab === "h")) C.unreadH++; }
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     paint(true);
@@ -88,7 +91,7 @@
   function paintMin() { if (!C.open) paint(); }
   const onlineTxt = () => `<i></i>${C.count || 1} en ligne`;
   function minHtml() {
-    const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id));
+    const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
     const n = C.unread + C.unreadP + ((window.GUILD && window.GUILD.unread) || 0);
     return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
@@ -100,7 +103,7 @@
   const discordHtml = () => `<a class="ch-dis" href="${DISCORD}" target="_blank" rel="noopener"><span class="dl">${X().DISCORD_SVG}</span><span class="tx"><b>Serveur Discord d'Idlus</b><small>Questions, bugs, idées</small></span><span class="go">Rejoindre</span></a>`;
   function headHtml() {
     const tab = (k, n, extra) => `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${n}${extra || ""}</button>`;
-    return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}${window.GUILD && window.GUILD.inGuild() ? tab("u", "Guilde", window.GUILD.unread && C.tab !== "u" ? ` <span class="n">${window.GUILD.unread}</span>` : "") : `<span class="ch-tab lock" data-tip="Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.">${X().G("lock")} Guilde</span>`}<span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
+    return `<div class="ch-head">${tab("g", "Général", C.unread && C.tab !== "g" ? ` <span class="n">${C.unread}</span>` : "")}${canWrite() ? tab("p", "Privé", C.unreadP ? ` <span class="n">${C.unreadP}</span>` : "") : ""}${window.GUILD && window.GUILD.inGuild() ? tab("u", "Guilde", window.GUILD.unread && C.tab !== "u" ? ` <span class="n">${window.GUILD.unread}</span>` : "") : `<span class="ch-tab lock" data-tip="Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.">${X().G("lock")} Guilde</span>`}${tab("h", "Hauts faits", C.unreadH && C.tab !== "h" ? ` <span class="n">${C.unreadH > 99 ? "99+" : C.unreadH}</span>` : "")}<span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
@@ -141,10 +144,15 @@
       if (!window.GUILD || !window.GUILD.inGuild()) { C.tab = "g"; return listHtml(); }
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
     }
-    const rows = C.g.filter((m) => !C.ign.has(m.user_id));
+    if (C.tab === "h") {
+      const fe = C.g.filter(isFeat);
+      return `<div class="sys">Les hauts faits des joueurs : records de stasis, exploits, niveau 200, Renaissances et Dofus.</div>` + (fe.length ? fe.map(msgHtml).join("") : `<div class="sys">Aucun haut fait pour l'instant.</div>`);
+    }
+    const rows = C.g.filter((m) => !C.ign.has(m.user_id) && !isFeat(m));
     return `<div class="sys">Bienvenue sur le chat général. Reste courtois : liens et publicité sont refusés, un message déplacé peut être signalé.</div>` + rows.map(msgHtml).join("");
   }
   function footHtml(typed) {
+    if (C.tab === "h") return `<div class="ch-lock">Les hauts faits s'affichent ici tout seuls.</div>`;
     if (!ON.user) return `<div class="ch-lock">Connecte-toi pour écrire dans le chat. <button class="btn sm" data-act="on-loginscreen">Se connecter</button></div>`;
     if (!ON.profile) return `<div class="ch-lock">Choisis un pseudo pour écrire dans le chat.</div>`;
     if (C.me.banned) return `<div class="ch-lock">Tu ne peux plus écrire dans le chat.</div>`;
@@ -336,7 +344,7 @@
       case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
       case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
-      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
       case "ch-who": menu(t); return;

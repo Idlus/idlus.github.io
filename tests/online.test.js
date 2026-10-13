@@ -208,7 +208,12 @@ const MOCK = () => {
       localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => window.CHAT.refresh()); await page.waitForSelector("#chat .chmin", { timeout: 5000 });
     await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list .msg", { timeout: 5000 });
-    if (!/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : annonce automatique absente");
+    // 0.1.33.2 : les hauts faits ont leur onglet, le Général ne garde que les joueurs et les annonces officielles
+    if (/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : haut fait encore dans le Général");
+    await page.click('#chat [data-act="ch-tab"][data-v="h"]'); await page.waitForTimeout(100);
+    if (!/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : haut fait absent de l'onglet Hauts faits");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-hf.png" });
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(100);
     // 0.1.29.1 : badge du créateur (liste donnée par le serveur)
     if (!(await page.$("#chat .msg.is-crea .xen .crown")) || !/Créateur/.test(await page.textContent("#chat .msg.is-crea"))) fail("chat : badge du créateur absent");
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat.png" });
@@ -280,6 +285,8 @@ const MOCK = () => {
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);
     await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
     const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-mob.png" });
+    const hw = await page.evaluate(() => document.querySelector("#chat .ch-head").scrollWidth); if (hw > 392) fail(`onglets du chat trop larges sur téléphone : ${hw}px`);
     await page.click("#chat .ch-x");
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
