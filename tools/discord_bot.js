@@ -179,7 +179,19 @@ async function main() {
     const text = (process.env.DISCORD_TEXTE || "").trim(); if (text.length > 1900) { console.log("Texte trop long :", text.length, "caractères (1 900 au plus)."); process.exit(1); }
     const salon = (process.env.DISCORD_SALON || "captures").trim();
     if (DRY) return console.log(`#${salon}\n${text}\n${imgs.join("\n")}`);
-    const gid = await guildId(); const ch = await channelId(gid, salon);
+    const gid = await guildId(); let ch = await channelId(gid, salon);
+    const info = await api("GET", `/channels/${ch}`);
+    if (info.type === 15) { // forum (#idées) : un nouveau fil titré DISCORD_TITRE, avec le tag DISCORD_TAG s'il existe
+      const titre = (process.env.DISCORD_TITRE || "").trim(); if (!titre) { console.log("Forum : DISCORD_TITRE est obligatoire."); process.exit(1); }
+      const tag = (info.available_tags || []).find((t) => norm(t.name) === norm(process.env.DISCORD_TAG || ""));
+      const fd = new FormData(); const part = imgs.slice(0, 10);
+      fd.append("payload_json", JSON.stringify({ name: titre.slice(0, 100), applied_tags: tag ? [tag.id] : [], message: { content: text, allowed_mentions: { parse: [] } } }));
+      part.forEach((f, j) => fd.append(`files[${j}]`, new Blob([fs.readFileSync(`${dir}/${f}`)]), f));
+      const res = await fetch(`${process.env.DISCORD_API || "https://discord.com/api/v10"}/channels/${ch}/threads`, { method: "POST", headers: { Authorization: "Bot " + process.env.DISCORD_BOT_TOKEN, "User-Agent": "idlus-bot (github.com/idlus/idlus.github.io, 1)" }, body: fd });
+      if (!res.ok) throw new Error(`création du fil → ${res.status} ${(await res.text()).slice(0, 300)}`);
+      const th = await res.json(); console.log("Fil publié :", `https://discord.com/channels/${gid}/${th.id}`);
+      imgs.splice(0, 10); if (!imgs.length) return; ch = th.id;
+    }
     const last = await api("GET", `/channels/${ch}/messages?limit=20`);
     if (text && last.some((m) => (m.content || "").includes(text.slice(0, 80)))) return console.log("Déjà publié.");
     for (let i = 0; i < imgs.length; i += 10) { // Discord : 10 pièces jointes par message au plus
