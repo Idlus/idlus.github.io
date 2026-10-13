@@ -18,9 +18,19 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.57.2";
+const GAME_VERSION = "1.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0", name: "Idlus 1.0", items: [
+    "Idlus sort officiellement en version 1.0 ! Les parties sont gardées telles quelles, rien n'est remis à zéro",
+    "Cadeau de lancement pour tous ceux qui jouent avant le mardi 20 octobre au soir : titre « Fondateur d'Idlus », ornement « Sceau du Fondateur », le Jyfus (« J'y étais ! », +20 Vitalité, +10 Sagesse) et un Coffre des Douze",
+    "Course de lancement : les 10 premiers comptes à finir la quête principale gagnent le titre « Légende de la 1.0 » et l'ornement unique « Couronne de la Légende », gravés dans Classements › Premiers",
+    "Les 13 derniers Dofus arrivent : 31 Dofus en tout. Dofus Abyssal, Nébuleux, Forgelave, Tacheté, Verdoyant et Dom de Pin chez les boss de niveau 200, Dofoozbz, Dorigami, Dofus des Veilleurs, Dokille, Dofus Argenté et Dofawa plus tôt, chacun avec sa quête dans Quêtes › Dofus",
+    "15 sous-zones classiques de DOFUS jamais ajoutées, du niveau 16 au niveau 120 : Rives iridescentes, Île des naufragés, Champ de citwouilles, Orée de la forêt des Abraknydes, Village des Dopeuls, Routes Rocailleuses, Rivage sufokien, Passage vers Brâkmar, Cimetière des Héros, Bordure de Brâkmar, Plage de la Tortue, Marécages d'Amakna, Territoire des Porcos, Antre du Koulosse et Bois de Litneg",
+    "86 nouveaux monstres dont 36 archimonstres (l'album passe à 277 âmes, Bonta et Brâkmar rejoint le palier Amakna de l'Éternelle moisson), 80 équipements à fabriquer, 5 panoplies (Crocoburio, Chef Crocodaille, Chispanoplie, Hectaupe, Demoël) et 75 ressources",
+    "Nouveau succès « Tous les Dofus » (les 31) avec le titre « Seigneur des Dofus »",
+    "Arrivés juste avant la 1.0 : les Commandes du jour (ressources payées selon le niveau de ton meilleur héros), la boutique de la maison au Havre-Sac et l'agrandissement des pièces",
+  ] },
   { v: "0.1.57.2", name: "Accueil réparé sur téléphone", items: [
     "Correction : sur téléphone, l'annonce du jeu se glissait dans la ligne de pastilles du haut et cachait toute la page. Elle s'affiche de nouveau sous les pastilles",
   ] },
@@ -6914,7 +6924,7 @@ function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
     if (E.grantFounder(S)) { dirty = true; ui.launchPending = true; }
-    if (ui.launchPending && !$("#sheet").innerHTML) { ui.launchPending = false; launchSheet(); }
+    if (ui.launchPending && !window.__IDLUS_NOLAUNCH && !$("#sheet").innerHTML) { ui.launchPending = false; launchSheet(); }
     if (BETA && E.grantPioneer(S)) { dirty = true; toast("Merci de tester Idlus ! Titre « Pionnier d'Idlus » et ornement « Pousse du Pionnier » débloqués (Équipe et héros).", "rare"); }
     S.manualLive = document.visibilityState === "visible" && ui.tab === "combat";
     { const real = dt * (BETA ? testSpeed : 1), sp0 = S.sablier && S.sablier.spd, m = E.sabSpend(S, dt); E.tick(S, real * m, real);
