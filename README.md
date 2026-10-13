@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.3 « Butin par héros »
+Un tirage de ressource par héros sur chaque monstre, chance partagée (Mathis, 13/10/2026, carte « Chance partagée ») : `E.lootRolls` dans js/engine.js, chance par tirage = min(100 %, chance × bonus / nombre de héros). Simulation (bonus ×2 + Double gain) : 3,5 → 6,7 ressources par monstre à 4 héros, 3,2 → 4,8 à 8, inchangé en solo et sans bonus.
+
 ## 1.0.2 « Encadré de chasse »
 Accueil (js/ui.js `renderHomeInner`) : en chasse, carte `.ac-hunt` avec la zone en titre, tuiles `.ac-kt` (XP/h, kamas/h, ressources/h, victoires via `E.zoneRate`), ligne `.ac-lf` du dernier combat (`S.history[0]`), barre d'XP `.ac-x` sous chaque tête, boutons-icônes `.ac-ib` au téléphone (CSS en fin de style.css).
 

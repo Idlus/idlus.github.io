@@ -1,6 +1,14 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "versions": [
+    {
+      "v": "1.0.3",
+      "name": "Butin par héros",
+      "items": [
+        "Chaque héros de l'équipe fait maintenant son propre tirage de ressources sur chaque monstre : une équipe de 8 peut ramasser jusqu'à 8 fois la même ressource sur un seul monstre",
+        "La chance est partagée entre les héros : sans bonus, la moyenne reste la même, mais les bonus de butin (prospection, Double gain, Almanax) ne sont plus perdus au-delà de 100 %"
+      ]
+    },
     {
       "v": "1.0.2",
       "name": "Encadré de chasse",

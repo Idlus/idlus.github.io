@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.2";
+const GAME_VERSION = "1.0.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.3", name: "Butin par héros", items: [
+    "Chaque héros de l'équipe fait maintenant son propre tirage de ressources sur chaque monstre : une équipe de 8 peut ramasser jusqu'à 8 fois la même ressource sur un seul monstre",
+    "La chance est partagée entre les héros : sans bonus, la moyenne reste la même, mais les bonus de butin (prospection, Double gain, Almanax) ne sont plus perdus au-delà de 100 %",
+  ] },
   { v: "1.0.2", name: "Encadré de chasse", items: [
     "Accueil : pendant une chasse, l'encadré met la zone en titre (niveau et difficulté) avec 4 tuiles claires : XP/h, kamas/h, ressources/h et victoires",
     "Une ligne « dernier combat » sous les tuiles : victoire ou défaite, durée, XP, kamas et ressources gagnés",

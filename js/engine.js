@@ -2111,7 +2111,7 @@
     return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
   };
 
-  E.lootRolls = (S) => Math.max(1, E.team(S).length); // 0.1.58 : un tirage de ressource par héros
+  E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
   const giveRewards = (S, mons, opts = {}) => {
     const team = E.team(S); const fs = E.freeSpirit(S);
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
@@ -2156,7 +2156,7 @@
       const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1);
       const lp = E.lootPenalty(topL - m.lvl); const dm0 = dm; { const dm = dm0 * lp * (m.champ ? 2 : 1);
       const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
-      // 0.1.58 : un tirage par héros, la chance est partagée entre eux (même moyenne, le bonus au-delà de 100 % n'est plus perdu)
+      // 1.0.3 : un tirage par héros, la chance est partagée entre eux (même moyenne, le bonus au-delà de 100 % n'est plus perdu)
       const rolls = nRoll + (E.teamHas(S, "sram") && rnd() < 0.1 ? 1 : 0);
       T.drops.forEach(([r, rate]) => { const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); const p = Math.min(100, E.resRate(rate) * mm / nRoll); let n = 0;
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
