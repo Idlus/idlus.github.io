@@ -1,6 +1,13 @@
 {
-  "version": "0.1.46.3",
+  "version": "0.1.46.4",
   "versions": [
+    {
+      "v": "0.1.46.4",
+      "name": "Équiper au mieux",
+      "items": [
+        "Le bouton « Équiper au mieux » revient pour un seul héros : en haut de son onglet Équipement, avec le nombre d'emplacements où le sac a mieux (même calcul que la pastille verte, panoplies comprises)"
+      ]
+    },
     {
       "v": "0.1.46.3",
       "name": "Mutateur de l'heure",

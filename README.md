@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.46.4 « Équiper au mieux »
+Bouton « Équiper au mieux (n) » pour un héros seul en haut de `charEquipView` (action `teamfix`/`gear` → `equipBest`), n = emplacements où `slotUpgrade` est vrai.
+
 ## 0.1.46.3 « Mutateur de l'heure »
 Le mutateur de la semaine devient horaire (js/engine.js) : `E.hourIdx`/`E.hourEnd`, tirage pur `E.hourlyAt(S, n)` (mêmes règles : donjons proches du meilleur héros, `E.WEEKLY_MODS` sans « Véloces » ; par journées de 24 h, jamais le même donjon ni le même modificateur que l'heure d'avant), `E.weekly` garde son nom et met en cache `S.weekly = { h, did, mod }`, `E.nextHourly` pour « Ensuite ». `E.weekIdx`/`E.weekEnd` restent pour l'Expédition et les donjons de la semaine. Le post Discord du lundi (`discord_bot.js semaine`) est retiré du workflow.
 

@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.46.3";
+const GAME_VERSION = "0.1.46.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.46.4", name: "Équiper au mieux", items: [
+    "Le bouton « Équiper au mieux » revient pour un seul héros : en haut de son onglet Équipement, avec le nombre d'emplacements où le sac a mieux (même calcul que la pastille verte, panoplies comprises)"
+  ] },
   { v: "0.1.46.3", name: "Mutateur de l'heure", items: [
     "Le mutateur de la semaine devient le mutateur de l'heure : à chaque heure pile, un nouveau donjon proche de ton niveau reçoit un modificateur imposé, le même tirage pour tous",
     "Toujours +25 % d'XP et de butin et +50 % de poussière de stasis ; jamais le même donjon ni le même modificateur deux heures de suite",
@@ -3581,8 +3584,10 @@ function charEquipView(c, st) {
       ${pmore("h", "Niveau trop haut pour l'instant", high, "high")}</div>`;
   }
   const mainK = buildMain(c);
+  const upN = EQ_SLOTS.filter((s) => slotUpgrade(c, s)).length; // 0.1.46.4 : « Équiper au mieux » pour ce héros seul
   return `<div class="stack">
     <div class="panel"><div class="pad">
+      <div class="dtop"><span class="xs muted">${upN ? `${upN} emplacement${upN > 1 ? "s" : ""} avec mieux dans le sac` : "Rien de mieux dans le sac"}</span><button class="btn sm ${upN ? "primary" : ""}" data-act="teamfix" data-v="gear" data-id="${c.id}" ${upN ? "" : "disabled"}>Équiper au mieux${upN ? ` (${upN})` : ""}</button></div>
       <div class="doll">
         <div class="dcol">${DOLL_L.map((s) => dollSlot(c, s)).join("")}</div>
         <div class="dcenter" style="--cc:${CLASSES[c.cls].color}"><div class="dfig">${lookImg(c, "dlook")}<span class="dlv">Niveau ${c.lvl}</span></div>
