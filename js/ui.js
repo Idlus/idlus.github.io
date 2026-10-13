@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.47.2";
+const GAME_VERSION = "0.1.47.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.47.3", name: "Bon élément", items: [
+    "« Meilleur objet » (pastille verte, ordre de la liste, « Équiper au mieux ») suit mieux l'élément du héros : les caractéristiques et dommages d'un autre élément ne comptent presque plus (un Enutrof Eau ne réclame plus la panoplie du Bouftou Royal pour sa Force)",
+    "Pour un héros réparti à la main, l'élément retenu est celui où il a mis le plus de points"
+  ] },
   { v: "0.1.47.2", name: "Équiper au mieux", items: [
     "Le bouton « Équiper au mieux » revient pour un seul héros : en haut de son onglet Équipement, avec le nombre d'emplacements où le sac a mieux (même calcul que la pastille verte, panoplies comprises)"
   ] },
@@ -3187,9 +3191,10 @@ function placementHtml() {
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
 const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3, rn: 3, dcri: 2.5, dsort: 7, dt: 4, df: 4, de: 4, da: 4, dn: 1, xt: 2, xf: 2, xe: 2, xa: 2, xn: 2 };
-const buildMain = (c) => (["fo", "ine", "cha", "age"].includes(c.autoStat) ? c.autoStat : CLASSES[c.cls].main);
+/* élément du héros : stat de la répartition auto, sinon la stat élémentaire la plus investie à la main, sinon celle de la classe */
+const buildMain = (c) => { if (["fo", "ine", "cha", "age"].includes(c.autoStat)) return c.autoStat; const a = c.alloc || {}; const k = ["fo", "ine", "cha", "age"].sort((x, y) => (a[y] || 0) - (a[x] || 0))[0]; return (a[k] || 0) > 0 ? k : CLASSES[c.cls].main; };
 function itemScore(c, it) { if (!it) return 0; const main = buildMain(c); const mdmg = ELEMENTS[STATS[main].el].dmg; let sc = 0;
-  for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.5) : ["dt", "df", "de", "da"].includes(k) ? (k === mdmg ? 1 : 0.2) : 1);
+  for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (["fo", "ine", "cha", "age"].includes(k) ? (k === main ? 1.4 : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (k === mdmg ? 1 : 0.1) : 1);
   if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5; return sc; }
 /* 0.1.46.1 : score de l'équipement entier, bonus de panoplie compris (tri du choix d'objet, pastille verte, Tout équiper au mieux) */
 function gearScore(c, eq) { let sc = 0; const n = {};
