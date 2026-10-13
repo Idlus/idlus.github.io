@@ -26,6 +26,8 @@
   let pref = {}; try { pref = JSON.parse(localStorage.getItem(LS) || "{}") || {}; } catch (e) { pref = {}; }
   const savePref = () => { try { localStorage.setItem(LS, JSON.stringify(pref)); } catch (e) { /* stockage indisponible */ } };
   const fxOn = () => pref.fx !== false;
+  // portrait animé : il respire, plus vite en phase 2, enragé (aura rouge) en phase 3 ; coupé par l'option des effets
+  const an = (ph) => (fxOn() ? ` wb-an wb-p${ph || 1}` : "");
 
   const mode = () => { const o = ON(); if (!o || !o.enabled) return "local"; return o.user && o.profile ? "acc" : "guest"; };
   const day = () => E.defiDay(Date.now());
@@ -112,7 +114,7 @@
         <span class="xs muted">${tl ? "15 tours avec ton équipe active" : `Nouveaux essais dans ${dur(nextMidnight() - Date.now())} (minuit, heure de Paris)`}</span>
         <div class="wb-me">Tes dégâts : <b>${nf((s.me && s.me.pts) * E.WB_PV)} PV</b>${s.me && s.me.pts ? ` (${pctTxt((s.me.pts / s.hp) * 100)})<br>${s.me.rank}<sup>${s.me.rank === 1 ? "er" : "e"}</sup> sur ${s.players} · meilleur essai : ${nf(s.me.best * E.WB_PV)} PV, grade <b class="g g-${gradeOf(s.me.best)}">${gradeOf(s.me.best)}</b>` : "<br>Pas encore d'essai sur ce boss"}<br><span class="wb-frag">${fragImg()} ${nf(E.wbFrags(S()))} Fragments d'anomalie</span></div>`;
     return `<section class="panel wb-hero">
-      <div class="wb-img"><img src="${img(def)}" alt=""></div>
+      <div class="wb-img"><img class="${an(s.phase).trim()}" src="${img(def)}" alt=""></div>
       <div class="wb-mid">
         <span class="xs muted">Boss des mondes n° ${s.n} · apparu il y a ${dur(Date.now() - s.started)} · niveau calé sur ton équipe</span>
         <span class="wb-name">${h(def.name)}</span>
@@ -154,7 +156,7 @@
     const L = [];
     for (let i = 0; i < 6; i++) { const d = E.wbDef(s.n + i); L.push({ d, cls: i === 0 ? "now" : i === 1 ? "next" : "mys" }); }
     return `<section class="panel wb-p"><h3>La rotation</h3><p class="small muted" style="margin:0 0 8px">Dès que les PV d'un boss sont épuisés, le suivant apparaît. Ses PV s'ajustent pour qu'il tienne environ une journée. Après les ${E.WB_ROT.length} boss, Gargandyas revient.</p>
-      <div class="wb-rot">${L.map((x, i) => `<div class="wb-rc ${x.cls}"><img src="${img(x.d)}" alt=""><b>${x.cls === "mys" ? "???" : h(x.d.name)}</b><span class="${i ? "muted" : ""}">${i === 0 ? "En cours" : i === 1 ? "Prochain" : "Bientôt"}</span><span class="xs muted">${i === 0 ? `${pctTxt(pctLeft(s))} de PV` : i === 1 ? `faible : ${E.wbElName(x.d.weak)}` : ""}</span></div>`).join("")}</div></section>`;
+      <div class="wb-rot">${L.map((x, i) => `<div class="wb-rc ${x.cls}"><img class="${an(i ? 1 : s.phase).trim()}" src="${img(x.d)}" alt=""><b>${x.cls === "mys" ? "???" : h(x.d.name)}</b><span class="${i ? "muted" : ""}">${i === 0 ? "En cours" : i === 1 ? "Prochain" : "Bientôt"}</span><span class="xs muted">${i === 0 ? `${pctTxt(pctLeft(s))} de PV` : i === 1 ? `faible : ${E.wbElName(x.d.weak)}` : ""}</span></div>`).join("")}</div></section>`;
   }
 
   /* ---------- un essai ---------- */
@@ -209,7 +211,7 @@
     return `<div class="pagehead combathead"><div><div class="small muted">${X().IC("couronne")} Boss des mondes${R.train ? " · entraînement, rien n'est compté" : ""} <span id="wroom"></span></div><h1>${h(def.name)}${R.phase > 1 ? ` · ${h(phName(def, R.phase))}` : ""}</h1></div>
       <div class="row" style="gap:6px;flex-wrap:wrap"><span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${sp === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wskip">Passer</button><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
     <section class="panel combatpanel watchpanel wbw">
-      <div class="wbw-top"><img src="${img(def)}" alt=""><div class="grow"><div class="wb-hp"><i id="wbwHp" style="width:${(Math.max(0, R.hp - R.dmg0) / R.hp) * 100}%"></i><b id="wbwTxt"></b></div><span class="small" id="wbwDmg"></span></div><span class="wbw-g" id="wbwG">C</span></div>
+      <div class="wbw-top"><img class="${an(R.phase).trim()}" src="${img(def)}" alt=""><div class="grow"><div class="wb-hp"><i id="wbwHp" style="width:${(Math.max(0, R.hp - R.dmg0) / R.hp) * 100}%"></i><b id="wbwTxt"></b></div><span class="small" id="wbwDmg"></span></div><span class="wbw-g" id="wbwG">C</span></div>
       <div class="arenasticky">
         <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="ctour" id="ctour"></span></div>
         <div class="arenawrap"><div class="arena" id="arena"></div></div>
@@ -254,7 +256,7 @@
   /* ---------- carte du chat Général (E1, E4) ---------- */
   function card(m) {
     const d = m.data || {}; const def = E.wbDef(d.n || 1); const s = st(); const live = s && s.n === d.n;
-    if (d.ev === "ph") return `<div class="ann-wb ph"><img class="b" src="${img(def)}" alt=""><div><div class="k">Phase ${d.ph} · ${d.ph === 2 ? 66 : 33} %</div><div class="t">${h(def.name)} : ${h(phName(def, d.ph))} ! Il ${d.ph === 2 ? "frappe 30 % plus fort" : "est enragé et subit 25 % de dégâts en plus"}.</div></div>${live ? `<button class="btn sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
+    if (d.ev === "ph") return `<div class="ann-wb ph"><img class="b${live ? an(d.ph) : ""}" src="${img(def)}" alt=""><div><div class="k">Phase ${d.ph} · ${d.ph === 2 ? 66 : 33} %</div><div class="t">${h(def.name)} : ${h(phName(def, d.ph))} ! Il ${d.ph === 2 ? "frappe 30 % plus fort" : "est enragé et subit 25 % de dégâts en plus"}.</div></div>${live ? `<button class="btn sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
     if (d.ev === "dead") {
       const top = (d.top || []).slice(0, 3).map((p, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${h(p)}</span>`).join("");
       const next = E.wbDef((d.n || 1) + 1);
@@ -262,7 +264,7 @@
         <div class="s">Dernier coup : <b>${h(m.pseudo || "?")}</b>. ${d.players || ""} joueur${d.players > 1 ? "s reçoivent" : " reçoit"} un Coffre en or${d.n === 1 ? " et le titre « Briseur de Titan »" : ""}. <b>+${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h.</b></div>${top ? `<div class="top">${top}</div>` : ""}<div class="s muted">${h(next.name)} arrive…</div></div>`;
     }
     const p = live ? pctLeft(s) : s && s.n > d.n ? 0 : 100;
-    return `<div class="ann-wb${live ? "" : " old"}"><img class="b" src="${img(def)}" alt=""><div><div class="k">Boss des mondes</div><div class="t">${h(def.name)} ${h(def.line)}</div></div><div class="s">${h(def.story)} Tout le serveur peut l'attaquer : ${E.WB_TRIES} essais par jour.</div><div class="hp"><i style="width:${p}%"></i></div>${live ? `<button class="btn primary sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
+    return `<div class="ann-wb${live ? "" : " old"}"><img class="b${live ? an(s.phase) : ""}" src="${img(def)}" alt=""><div><div class="k">Boss des mondes</div><div class="t">${h(def.name)} ${h(def.line)}</div></div><div class="s">${h(def.story)} Tout le serveur peut l'attaquer : ${E.WB_TRIES} essais par jour.</div><div class="hp"><i style="width:${p}%"></i></div>${live ? `<button class="btn primary sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
   }
   function onAnn(m) { const d = m.data || {}; load(true).then(() => { if (d.ev === "dead" && fxOn()) X().toast(`${E.wbDef(d.n || 1).name} est tombé : +${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h !`, "rare"); }); }
 
@@ -292,7 +294,7 @@
     const def = E.wbDef(s.n); let html = "";
     if (s.bonus > Date.now() && pref.xpbar !== s.bonus && s.last) html += `<div class="updbar wbbar xp">${X().IC("bonbon")}<span><b>${h(s.last.name)} est tombé !</b> +${E.WB_KILL.xp} % d'XP pour tout le monde, encore ${dur(s.bonus - Date.now())}.</span><button class="btn sm" data-act="wb-barclose" data-v="xp">Fermer</button></div>`;
     const key = `${s.n}:${s.phase}`;
-    if (tab !== "wb" && pref.bar !== key) html += `<div class="updbar wbbar"><img class="b" src="${img(def)}" alt=""><span><b>Boss des mondes : ${h(def.name)}</b> · phase ${s.phase}${s.phase > 1 ? ` (${h(phName(def, s.phase))})` : ""} <span class="mini"><i style="width:${pctLeft(s)}%"></i></span> ${pctTxt(pctLeft(s))}</span><button class="btn sm primary" data-act="wb-go">${mode() === "guest" ? "Voir" : "Attaquer"}</button><button class="btn sm" data-act="wb-barclose" data-v="${key}" aria-label="Fermer">✕</button></div>`;
+    if (tab !== "wb" && pref.bar !== key) html += `<div class="updbar wbbar"><img class="b${an(s.phase)}" src="${img(def)}" alt=""><span><b>Boss des mondes : ${h(def.name)}</b> · phase ${s.phase}${s.phase > 1 ? ` (${h(phName(def, s.phase))})` : ""} <span class="mini"><i style="width:${pctLeft(s)}%"></i></span> ${pctTxt(pctLeft(s))}</span><button class="btn sm primary" data-act="wb-go">${mode() === "guest" ? "Voir" : "Attaquer"}</button><button class="btn sm" data-act="wb-barclose" data-v="${key}" aria-label="Fermer">✕</button></div>`;
     if (b.innerHTML !== html) b.innerHTML = html;
   }
 
@@ -303,7 +305,7 @@
     const def = E.wbDef(s.n);
     return { ic: X().im(img(def), "ac-tm", def.name), t: "Boss des mondes", s: `${h(def.name)} · ${pctTxt(pctLeft(s))} de PV · ${tl} essai${tl > 1 ? "s" : ""}`, hot: true, act: `data-act="wb-go"`, badge: `<span class="tag">Attaquer</span>` };
   }
-  const optHtml = () => `<section class="optsec"><div class="optsec-h"><b>Boss des mondes</b><span class="xs muted">annonces des boss qui touchent tout le serveur</span></div><label class="optline optchk"><span class="optname"><b>Effets du Boss des mondes</b><span class="xs muted">effet plein écran à l'arrivée d'un nouveau boss (une fois par boss)</span></span><input type="checkbox" data-act="wb-fx" ${fxOn() ? "checked" : ""}></label></section>`;
+  const optHtml = () => `<section class="optsec"><div class="optsec-h"><b>Boss des mondes</b><span class="xs muted">annonces des boss qui touchent tout le serveur</span></div><label class="optline optchk"><span class="optname"><b>Effets du Boss des mondes</b><span class="xs muted">effet plein écran à l'arrivée d'un nouveau boss (une fois par boss) et portraits animés</span></span><input type="checkbox" data-act="wb-fx" ${fxOn() ? "checked" : ""}></label></section>`;
 
   /* ---------- actions ---------- */
   function act(a, t) {
@@ -316,7 +318,7 @@
       case "wb-reload": load(true); return;
       case "wb-item": X().itemSheet(d.tpl); return;
       case "wb-buy": { const s = S(); if (!s) return; const r = E.wbBuy(s, d.tpl); if (r.err) { X().toast(r.err); return; } X().markDirty(); X().toast(`${window.DATA.ITEMS[d.tpl].name} : dans ton sac !`, "rare"); paint(); return; }
-      case "wb-fx": pref.fx = !!t.checked; savePref(); return;
+      case "wb-fx": pref.fx = !!t.checked; savePref(); paint(); return;
       case "wb-ovclose": closeOverlay(); return;
       case "wb-barclose": if (d.v === "xp") { const s = st(); pref.xpbar = s ? s.bonus : 0; } else pref.bar = d.v; savePref(); paintBar(); return;
     }

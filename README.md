@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.53.3 « Boss qui respirent »
+Boss des mondes (js/wbossui.js, css) : portraits animés en CSS (`img.wb-an` + `wb-p1..3` selon la phase) sur la page, la rotation, les cartes du chat en cours, le haut du combat et le bandeau ; coupé par `pref.fx` et `prefers-reduced-motion`.
+
 ## 0.1.53.2 « Treizième héros »
 `E.HERO_MAX` passe de 12 à 13 (équipe toujours limitée à `E.TEAM_MAX` = 8). Prix du 13e héros : `recruitCost(13)` = 1 752 955 kamas (courbe inchangée).
 
