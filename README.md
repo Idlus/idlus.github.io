@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.46 « Donjons de légende »
+Lot 2 des donjons manquants : 22 donjons de niveau 200 (réponses de Mathis 1A à 8A, difficulté un peu relevée). tools/build_data.py : 21 sous-zones et 4 régions (cavaliers, wukin, possedes, ecailles) derrière le Kolosso, 22 entrées `DUNGEONS`, `CO_BOSS` += tempete_eliocalypse. Données ajoutées à js/gamedata.js sans modifier l'existant (245 objets, 61 panoplies, 124 monstres). js/data.js : `dg.needs` (la Tempête demande les boss des 4 Cavaliers, vérifié par `E.dungeonUnlocked`, texte `dgNeedTxt` dans ui.js), Fragment d'armure sur les 4 Cavaliers (35 %), `KEY_FIX` Dent de zarbivore et Shampoing Rhoarim. `E.DG_EASE` (1,1 à 1,55) réglé par simulation : bon équipement 6,1-7,3, optimisé 8,2-10. Trophées `TROPHY` (systems.js) et décors `DG_DECO` pour les 22. Zones de chasse : sans équipement 88-99 % de défaites, bon équipement 0-0,2 %.
+
 ## 0.1.44.2 « Offrande fixe »
 Almanax : `E.almanax` tire l'offrande et la cible avec `S.almLvl = { day, lvl }`, le niveau du meilleur héros au premier passage du jour (seulement pour le jour en cours) ; récompenses (kamas, XP) au niveau actuel. Avant, chaque niveau gagné pouvait changer l'offrande demandée.
 
