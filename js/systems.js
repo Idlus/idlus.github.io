@@ -27,7 +27,7 @@
     { id: "kamas",   name: "Coffre-fort",           icon: "💰", per: 3,  max: 40, base: 250,  g: 1.5, unit: "% de kamas" },
     { id: "hp",      name: "Salle d'entraînement",  icon: "🥊", per: 1,  max: 30, base: 600,  g: 1.45, unit: "% de PV en combat" },
     { id: "gather",  name: "Jardin",                icon: "🌿", per: 4,  max: 30, base: 300,  g: 1.5, unit: "% de vitesse de récolte" },
-    { id: "bag",     name: "Grenier",               icon: "🎒", per: 25, max: 20, base: 500,  g: 1.5,  unit: " places dans le sac" },
+    { id: "bag",     name: "Grenier",               icon: "🎒", per: 50, max: 20, base: 500,  g: 1.5,  unit: " places dans le sac (et 10 de trop-plein)" },
     { id: "offtime", name: "Lit douillet",          icon: "🛏", per: 1,  max: 8,  base: 2000, g: 1.9,  unit: " h de progression hors ligne (8 h de base)" },
     { id: "offrate", name: "Majordome",             icon: "🎩", per: 5,  max: 7,  base: 2500, g: 1.9,  unit: " % d'efficacité hors ligne (25 % de base)" },
   ];
@@ -362,7 +362,7 @@
     const give = (pool, n) => { for (let i = 0; i < n; i++) { const g = pool[Math.floor(rnd() * pool.length)]; E.addCons(S, g); got.push(D.CONSUMABLES[g].name); loot.push(["cons", g, 1]); } };
     give(E.CHEST_COMMON, T.cons); give(E.CHEST_RARE, T.rare);
     if (T.eclats) { addRes(S, E.RARE_COMPONENT, T.eclats); got.push(`${T.eclats} × ${E.RARE_COMPONENT}`); loot.push(["res", E.RARE_COMPONENT, T.eclats]); }
-    if (T.items) { const pool = E.chestItemPool(top); for (let i = 0; i < T.items && pool.length && E.itemCount(S) < E.itemCap(S); i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
+    if (T.items) { const pool = E.chestItemPool(top); for (let i = 0; i < T.items && pool.length; i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
     if (T.scroll && rnd() < T.scroll[1]) { const st = ["fo", "ine", "cha", "age", "vit", "sa"][Math.floor(rnd() * 6)]; const sid = "parch_" + st + "_" + T.scroll[0]; E.addCons(S, sid); got.push(D.CONSUMABLES[sid].name); loot.push(["cons", sid, 1]); }
     S.cnt.chests = (S.cnt.chests || 0) + 1;
     // message court : la fenêtre d'ouverture montre le détail ; sans fenêtre, les récompenses rares regroupées (×2, ×3)
@@ -938,7 +938,7 @@
   };
   E.QUEST_EXTRA = QX;
   const rewardItem = (S, sid) => {
-    const sub = SUBS[sid]; if (!sub || E.itemCount(S) >= E.itemCap(S)) return null; const top = topLvl(S);
+    const sub = SUBS[sid]; if (!sub) return null; const top = topLvl(S);
     const pool = [...new Set(sub.monsters.flatMap((k) => (MONSTERS[k].items || []).map(([t]) => t)))].filter((t) => ITEMS[t] && ITEMS[t].lvl <= Math.max(top, 3));
     if (!pool.length) return null; const tpl = pool.sort((a, b) => ITEMS[b].lvl - ITEMS[a].lvl)[Math.floor(rnd() * Math.min(3, pool.length))];
     const it = E.rollItem(S, tpl, { radiant: false }); const T = ITEMS[tpl];
@@ -1117,6 +1117,7 @@
     if (S.alignQuest === undefined) S.alignQuest = null;
     if (!S.tools) S.tools = {};
     for (const k of ["tokens", "unlocks", "almStreak", "resCap", "resSeen", "resFav", "resT"]) if (!S[k] || typeof S[k] !== "object") S[k] = {};
+    if (!Array.isArray(S.over)) S.over = []; // 0.1.37 : Coffre de trop-plein
     if (!S.almStreak.n) S.almStreak.n = 0;
     for (const k of ["titlesExtra", "furniture", "shop"]) if (!Array.isArray(S[k])) S[k] = [];
     // Havre-Sac 4.0
