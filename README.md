@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.4 « Fabriquer sac plein »
+Artisanat (js/engine.js) : `E.craftRoom` = place du sac + place du trop-plein ; `craftItem` range l'objet fabriqué dans `S.over` si le sac est plein (avant : `craftCount` tombait à 0 et le bouton restait grisé sans raison). `craftMany` renvoie `over`. Recette : étiquette « sac plein » et message si sac et trop-plein sont pleins. Test : tests/artisanat.test.js.
+
 ## 1.0.4.3 « Galets retirés »
 Galets du Kolizéum retirés pour l'instant (Mathis, 13/10/2026) : `E.KOLI_GALETS_ON = false` dans js/koli.js coupe l'ajout des Galets aux recettes (`E.KOLI_GALET_RECIPES`) et leur rayon dans la boutique (onglet caché par js/koliui.js). Les Galets restent des ressources (`D.RES`) : ceux déjà possédés restent dans le sac, revendables à l'HdV. Remettre le drapeau à `true` les fait revenir.
 

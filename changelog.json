@@ -1,6 +1,14 @@
 {
-  "version": "1.0.4.3",
+  "version": "1.0.4.4",
   "versions": [
+    {
+      "v": "1.0.4.4",
+      "name": "Fabriquer sac plein",
+      "items": [
+        "Métiers : quand le sac est plein, on peut quand même fabriquer. L'objet part dans le trop-plein de l'inventaire. Avant, le bouton « Fabriquer » restait grisé sans explication (le Bricoleur n'était pas touché car il ne fabrique pas d'équipement)",
+        "Si le sac et le trop-plein sont pleins tous les deux, la recette l'indique clairement (« sac plein ») avec un lien vers l'inventaire"
+      ]
+    },
     {
       "v": "1.0.4.3",
       "name": "Galets retirés",

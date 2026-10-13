@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4.3";
+const GAME_VERSION = "1.0.4.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4.4", name: "Fabriquer sac plein", items: [
+    "Métiers : quand le sac est plein, on peut quand même fabriquer. L'objet part dans le trop-plein de l'inventaire. Avant, le bouton « Fabriquer » restait grisé sans explication (le Bricoleur n'était pas touché car il ne fabrique pas d'équipement)",
+    "Si le sac et le trop-plein sont pleins tous les deux, la recette l'indique clairement (« sac plein ») avec un lien vers l'inventaire",
+  ] },
   { v: "1.0.4.3", name: "Galets retirés", items: [
     "Les Galets du Kolizéum sont retirés du jeu pour l'instant : plus aucun équipement ne les demande dans sa recette (358 objets redeviennent fabricables sans Galet)",
     "La boutique du Kolizéum ne vend plus de Galets. Ceux que tu as déjà restent dans ton sac et se revendent toujours à l'Hôtel de vente",
@@ -4648,6 +4652,7 @@ function recDetail(r, job) {
     <h3 class="sec">Ressources</h3>
     <div class="ping">${r.ing.map(([n, q]) => { const have = S.res[n] || 0; const ok = have >= q; return `<div class="pingr ${ok ? "" : "ko"}">${im(resImg(n), "ico", n)}<span class="grow">${h(n)}</span><b class="num">${fmt(have)} / ${fmt(q)}</b>${ok ? "" : `<button class="btn sm" data-act="reswhere" data-n="${h(n)}">Où ?</button>${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="res" data-k="${h(n)}" data-n="${q - have}">Offre HdV</button>` : ""}`}</div>`; }).join("")}</div>
     ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
+    ${r.T && r.okLvl && !r.miss ? !r.n ? `<div class="small minus" style="margin-top:8px">Ton sac et ton trop-plein sont pleins : brise ou vends des objets pour fabriquer. <a href="#" data-act="nav" data-v="inv">Ouvrir l'inventaire</a></div>` : E.itemCount(S) >= E.itemCap(S) ? `<div class="small muted" style="margin-top:8px">Sac plein (${fmt(E.itemCount(S))}/${fmt(E.itemCap(S))}) : les objets fabriqués vont dans le trop-plein de l'inventaire.</div>` : "" : ""}
     <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${r.n > 1 ? " ×" + fmt(r.n) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div><span class="xs muted grow">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
     <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
 }
@@ -4659,7 +4664,7 @@ function craftHtml() {
   const all = job === "bricoleur" ? [] : Object.values(ITEMS).filter((T) => T.craft && T.craft.job === job);
   const stats = STAT_ORDER.filter((k) => all.some((T) => T.stats[k] && T.stats[k][1] > 0));
   const sets = [...new Set(all.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
-  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : `<span class="tag good">×${fmt(r.n)}</span>`}</button>`).join("");
+  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">sac plein</span>`}</button>`).join("");
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
     <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recBase(id).filter((r) => r.n > 0).length; return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
@@ -6456,7 +6461,7 @@ document.addEventListener("click", (ev) => {
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
     case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
-      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
+      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
     case "dupesask": ui.confirm = "dupes"; break;
     case "dupesgo": { const r = E.breakDupes(S); ui.confirm = null; toast(`${r.n} doublon${r.n > 1 ? "s" : ""} brisé${r.n > 1 ? "s" : ""}. Runes : ${runesTxt(r.got)}`); break; }
     case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;

@@ -2817,15 +2817,23 @@
   E.canCraft = (S, recipe, n = 1) => recipe.ing.every(([r, q]) => (S.res[r] || 0) >= q * n);
   /* 0.1.39 : Almanax « Économie d'ingrédients », une part des ingrédients rendue */
   const almSave = (S, q) => { const p = E.almMult(S, "eco"); return p > 0 && p < 1 ? Math.min(q, E.almQty(q, p)) : 0; };
+  /* 1.0.4.3 : sac plein → l'objet fabriqué part dans le trop-plein (avant : bouton « Fabriquer » grisé sans explication) */
+  const overLen = (S) => (Array.isArray(S.over) ? S.over.length : 0);
+  E.craftRoom = (S) => Math.max(0, E.itemCap(S) - E.itemCount(S)) + Math.max(0, E.overCap(S) - overLen(S));
+  const craftStow = (S, it) => {
+    if (E.itemCount(S) <= E.itemCap(S)) return;
+    if (!Array.isArray(S.over)) S.over = [];
+    delete S.items[it.uid]; S.over.push(Object.assign({}, it, { at: E.now() })); S.overNew = (S.overNew || 0) + 1;
+  };
   E.craftItem = (S, tpl) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";
     const J = S.crafts[T.craft.job];
     if (J.lvl < E.craftReq(tpl)) return `${CRAFT_JOBS[T.craft.job].name} niveau ${E.craftReq(tpl)} requis.`;
     if (!E.canCraft(S, T.craft)) return "Ressources insuffisantes.";
-    if (E.itemCount(S) >= E.itemCap(S)) return "Sac plein.";
+    if (E.craftRoom(S) <= 0) return "Sac et trop-plein pleins : fais de la place dans l'inventaire.";
     T.craft.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
-    const it = E.rollItem(S, tpl);
-    if (E.almChance(S, "craft2") && E.itemCount(S) < E.itemCap(S)) { E.rollItem(S, tpl); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
+    const it = E.rollItem(S, tpl); craftStow(S, it);
+    if (E.almChance(S, "craft2") && E.craftRoom(S) > 0) { craftStow(S, E.rollItem(S, tpl)); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
     craftXp(S, T.craft.job, 12 + T.lvl * 3);
     E.emit(S, "craft", { tpl });
     return it;
@@ -2847,17 +2855,18 @@
   /* 0.1.30.1 : fabrication en série (×10, max). Chaque exemplaire passe par craftItem / craftSpecial : jets, XP de métier et quêtes identiques à une fabrication une par une */
   E.craftMax = (S, ing, n = Infinity) => ing.reduce((m, [r, q]) => Math.min(m, Math.floor((S.res[r] || 0) / q)), n);
   E.craftCount = (S, k, id) => {
-    if (k === "tpl") { const T = ITEMS[id]; if (!T || !T.craft || S.crafts[T.craft.job].lvl < E.craftReq(id)) return 0; return Math.max(0, E.craftMax(S, T.craft.ing, E.itemCap(S) - E.itemCount(S))); }
+    if (k === "tpl") { const T = ITEMS[id]; if (!T || !T.craft || S.crafts[T.craft.job].lvl < E.craftReq(id)) return 0; return E.craftMax(S, T.craft.ing, E.craftRoom(S)); }
     const R = SPECIAL_CRAFTS[id]; if (!R || S.crafts[R.job].lvl < R.lvl) return 0;
     return E.craftMax(S, R.ing, R.unique ? 1 : Infinity);
   };
   E.craftMany = (S, k, id, n) => {
-    n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null };
+    n = Math.max(1, Math.min(+n || 1, 1000)); const out = { n: 0, items: [], err: null, over: 0 }; const o0 = overLen(S);
     for (let i = 0; i < n; i++) {
       const r = k === "tpl" ? E.craftItem(S, id) : E.craftSpecial(S, id);
       if (typeof r === "string") { out.err = r; break; }
       out.n++; if (r && r.uid) out.items.push(r);
     }
+    out.over = Math.max(0, overLen(S) - o0);
     return out.n ? out : (out.err || "Fabrication impossible.");
   };
   const craftXp = (S, job, x) => {
