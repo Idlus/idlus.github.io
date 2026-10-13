@@ -16,7 +16,7 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null };
+  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null, ac: null };
   const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, pin: null, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
@@ -52,6 +52,50 @@
   }
   /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
   const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb")); // 0.1.49 : le Boss des mondes s'annonce dans le Général
+  /* 0.1.53.7 : mentions « @pseudo ». Surlignées dans le message ; le joueur mentionné voit le message mis en évidence
+     et une pastille « @ » sur le chat et le salon, même s'il lit un autre salon. Seules les 3 premières mentions d'un
+     message comptent (pas de mention de masse), un joueur ignoré ne prévient pas, et le mode lent du serveur s'applique. */
+  const PS = "A-Za-zÀ-ÖØ-öø-ÿ0-9_-";
+  const MRE = new RegExp(`(^|[^@${PS}])@([${PS}]{3,16})`, "g");
+  const myPs = () => ((ON.profile && ON.profile.pseudo) || "").toLowerCase();
+  const mentions = (b) => { const o = []; String(b || "").replace(MRE, (x, a, p) => { o.push(p.toLowerCase()); return x; }); return o; };
+  const pingsMe = (m) => { const me = myPs(); return !!me && m.kind === "msg" && !!m.user_id && m.user_id !== myId() && !C.ign.has(m.user_id) && mentions(m.body).slice(0, 3).includes(me); };
+  const fmtBody = (b) => { const me = myPs(); return h(b).replace(MRE, (x, a, p) => `${a}<span class="mt${p.toLowerCase() === me ? " me" : ""}">@${p}</span>`); };
+  const PING = ["g", "c", "v"];
+  const seenMax = (k) => (pref.ms && pref.ms[k]) || 0;
+  const pings = (k) => C[k].filter((m) => m.id > seenMax(k) && pingsMe(m)).length;
+  const pingsAll = () => PING.reduce((n, k) => n + pings(k), 0);
+  function markSeen(k) {
+    if (!PING.includes(k) || !C[k].length) return;
+    const top = C[k][C[k].length - 1].id; if (top > seenMax(k)) { pref.ms = Object.assign({}, pref.ms, { [k]: top }); savePref(); }
+  }
+  const atNb = (n) => (n ? `<span class="n at" title="On t'a mentionné">@${n > 1 ? n : ""}</span>` : "");
+  const CH_NAME = { g: "Général", c: "Commerce", v: "PvP" };
+  /* Pseudos proposés quand on tape « @ » : auteurs récents du salon, puis des autres salons, puis les joueurs connectés. */
+  function cands(q) {
+    const me = myPs(), seen = new Set(), out = [];
+    const add = (p, u) => { if (!p) return; const l = p.toLowerCase(); if (l === me || seen.has(l) || (u && C.ign.has(u))) return; seen.add(l); out.push(p); };
+    const cur = C.tab === "u" && window.GUILD ? window.GUILD.msgs : C[C.tab] || [];
+    [cur, C.g, C.c, C.v].forEach((L) => [...L].reverse().forEach((m) => { if (m.kind === "msg") add(m.pseudo, m.user_id); }));
+    (ON.onlinePseudos ? ON.onlinePseudos() : []).forEach((p) => add(p));
+    q = q.toLowerCase();
+    return out.filter((p) => p.toLowerCase().startsWith(q)).concat(out.filter((p) => !p.toLowerCase().startsWith(q) && p.toLowerCase().includes(q))).slice(0, 6);
+  }
+  const acHtml = () => `<div class="ch-ac" id="chAc"${C.ac ? "" : " hidden"}>${C.ac ? `<span class="hd">Mentionner</span>${C.ac.list.map((p, k) => `<button class="${k === C.ac.sel ? "on" : ""}" data-act="ch-acpick" data-p="${h(p)}">@${h(p)}</button>`).join("")}` : ""}</div>`;
+  const acPaint = () => { const b = $("#chAc"); if (b) b.outerHTML = acHtml(); };
+  function acUpdate(i) {
+    const v = i.value.slice(0, i.selectionStart == null ? i.value.length : i.selectionStart);
+    const mm = C.tab !== "p" && v.match(new RegExp(`(^|\\s)@([${PS}]{0,16})$`));
+    const L = mm ? cands(mm[2]) : [];
+    C.ac = L.length ? { list: L, sel: 0, at: v.length - mm[2].length - 1, end: v.length } : null;
+    acPaint();
+  }
+  function insertAt(i, from, to, txt) {
+    const v = i.value; const nv = (v.slice(0, from) + txt + v.slice(to).replace(/^\s+/, "")).slice(0, 200);
+    const pos = Math.min(nv.length, from + txt.length); i.value = nv; i.focus(); i.setSelectionRange(pos, pos);
+    const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${nv.length}/200`;
+  }
+  function acPick(p) { const i = $("#chIn"); if (!i || !C.ac) return; const a = C.ac; C.ac = null; acPaint(); insertAt(i, a.at, a.end, `@${p} `); }
   function onMsg(m) {
     if (!m || !m.id) return;
     const list = m.ch === "p" ? C.p : m.ch === "c" ? C.c : m.ch === "v" ? C.v : C.g;
@@ -64,6 +108,7 @@
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
+    if (PING.includes(m.ch || "g") && pingsMe(m) && !(C.open && C.tab === (m.ch || "g"))) X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[m.ch || "g"]}.`); // 0.1.53.7
     paint(true);
   }
 
@@ -81,6 +126,7 @@
     const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
+    markSeen(C.tab); // 0.1.53.7 : les mentions du salon ouvert sont lues
     el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + pinHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
     const nl = el.querySelector(".ch-list");
     if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; }
@@ -97,7 +143,7 @@
   function minHtml() {
     const last = [...C.g].reverse().find((m) => !C.ign.has(m.user_id) && !isFeat(m));
     const n = C.unread + C.unreadP + C.unreadC + C.unreadV + ((window.GUILD && window.GUILD.unread) || 0);
-    return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
+    return `<button class="chmin" data-act="ch-open" aria-label="Ouvrir le chat">${X().G("chat")}<span class="t">Chat</span>${evOn() ? `<span class="ev">XP et butin x2</span>` : ""}${atNb(pingsAll())}${n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : ""}${last ? `<span class="last">${h(last.kind === "ann" ? annTxt(last, true) : `${last.pseudo} : ${last.body || (last.item ? "[objet]" : "")}`)}</span>` : ""}</button>`;
   }
   /* Bandeau fixe sous les onglets : le serveur Discord pour les questions et les bugs. */
   const DISCORD = "https://discord.gg/9ApPgWjPUM";
@@ -127,7 +173,7 @@
   function headHtml() {
     const G = X().G;
     const tab = (k, ic, n, unread, lock) => lock ? `<span class="ch-tab lock" data-tip="${h(lock)}">${G("lock")}<span>${n}</span></span>`
-      : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : nb(unread)}</button>`;
+      : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</button>`;
     const guild = window.GUILD && window.GUILD.inGuild();
     return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
       <div class="ch-tabs" role="tablist">${tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
@@ -139,7 +185,7 @@
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";
-    return `<div class="msg${me ? " me" : ""}${X().staffCls(m.user_id)}">${X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id)}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${h(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
+    return `<div class="msg${me ? " me" : ""}${pingsMe(m) ? " ment" : ""}${X().staffCls(m.user_id)}">${X().cmed(m.cls, m.lvl)}<div><div class="who"><button class="ps" data-act="ch-who" data-u="${h(m.user_id || "")}" data-p="${h(m.pseudo || "")}" data-id="${m.id}">${X().pname(m.pseudo || "?", m.user_id)}</button>${m.lvl ? `<span class="lv">niv. ${m.lvl}</span>` : ""}${m.title ? `<span class="tt">${h(m.title)}</span>` : ""}<span class="hr">${hhmm(m.created_at)}</span></div><div class="tx">${fmtBody(m.body || "")}${m.body && chip ? " " : ""}${chip}</div></div></div>`;
   }
   function annTxt(m, plain) {
     const d = Object.assign({}, m.data); if (typeof d.t !== "string") d.t = d.did ? "top1" : ""; // 0.1.18-0.1.20 : le temps du record écrasait le type (t)
@@ -195,8 +241,8 @@
     const it = C.item && window.DATA.ITEMS[C.item];
     const wait = Math.max(0, Math.ceil((nextAt() - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      <div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Parler Kolizéum, chercher un adversaire…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
-      <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>Bouton « Montrer dans le chat » sur la fiche d'un objet</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`;
+      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Parler Kolizéum, chercher un adversaire…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>${C.tab === "p" ? "Bouton « Montrer dans le chat » sur la fiche d'un objet" : "@pseudo pour mentionner un joueur"}</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`;
   }
 
   /* ---------- actions du chat ---------- */
@@ -208,7 +254,7 @@
     const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" ? C.tab : null;
     const err = C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
-    C.err = ""; C.item = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
+    C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
     setTimeout(() => { const c = $("#chCnt"); if (c) c.textContent = "0/200"; }, (ch === "c" ? 30000 : 4000) + 100);
     // le message revient par le temps réel ; on recharge au cas où la connexion temps réel serait coupée
     setTimeout(async () => { const k = to ? "p" : ch || "g"; const l = await ON.chatLoad(k); if (l && l.length) { C[k] = l; paint(true); } }, 1500);
@@ -221,6 +267,7 @@
     const mine = u === myId(); const ign = C.ign.has(u);
     el.innerHTML = `<div class="hd"><b>${h(p)}</b></div>
       <button data-act="ch-prof" data-u="${h(u)}">${X().IC("trophee")} Voir son profil</button>
+      ${!mine && canWrite() && !C.me.banned && C.tab !== "p" && C.tab !== "h" ? `<button data-act="ch-ment" data-p="${h(p)}"><b class="at">@</b> Le mentionner</button>` : ""}
       ${!mine && canWrite() ? `<button data-act="ch-pm" data-u="${h(u)}" data-p="${h(p)}">${X().G("chat")} Lui écrire en privé</button>
       ${window.MARKET ? `<button data-act="mk-trade-ask" data-p="${h(p)}">${X().G("chat")} Proposer un échange</button>` : ""}
       <button data-act="ch-ign" data-u="${h(u)}" data-v="${ign ? 0 : 1}">${X().G(ign ? "unlock" : "lock")} ${ign ? "Ne plus ignorer" : "Ignorer ses messages"}</button>
@@ -388,9 +435,11 @@
       case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
       case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
-      case "ch-tab": C.tab = d.v; C.err = ""; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-tab": C.tab = d.v; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
+      case "ch-acpick": acPick(d.p); return;
+      case "ch-ment": { closeMenu(); const i = $("#chIn"); if (!i) return; const v = i.value.replace(/\s+$/, ""); insertAt(i, 0, i.value.length, `${v ? v + " " : ""}@${d.p} `); return; }
       case "ch-who": menu(t); return;
       case "ch-prof": closeMenu(); X().lbProfile(d.u); return;
       case "ch-pm": closeMenu(); C.names[d.u] = d.p; C.tab = "p"; C.peer = d.u; C.open = true; pref.open = true; savePref(); paint(); return;
@@ -444,12 +493,15 @@
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.target && ev.target.id === "chIn") {
-      if (ev.key === "Enter") { ev.preventDefault(); send(); }
+      if (C.ac && (ev.key === "ArrowDown" || ev.key === "ArrowUp")) { ev.preventDefault(); const n = C.ac.list.length; C.ac.sel = (C.ac.sel + (ev.key === "ArrowDown" ? 1 : n - 1)) % n; acPaint(); }
+      else if (C.ac && (ev.key === "Tab" || ev.key === "Enter")) { ev.preventDefault(); acPick(C.ac.list[C.ac.sel]); }
+      else if (C.ac && ev.key === "Escape") { C.ac = null; acPaint(); }
+      else if (ev.key === "Enter") { ev.preventDefault(); send(); }
       else if (ev.key === "Escape") { ev.target.blur(); }
       ev.stopPropagation();
     } else if (ev.target && ev.target.id === "admQ" && ev.key === "Enter") { ev.preventDefault(); const b = document.querySelector('[data-act="adm-search"]'); if (b) b.click(); }
   }, true);
-  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
+  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
   window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; } };
 })();

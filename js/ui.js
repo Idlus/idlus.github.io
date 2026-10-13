@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.53.6";
+const GAME_VERSION = "0.1.53.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.53.7", name: "Mentions dans le chat", items: [
+    "Chat : écris @ suivi d'un pseudo pour mentionner un joueur ; en tapant @, les pseudos des joueurs récents du salon sont proposés (flèches et Tab ou clic pour choisir)",
+    "Le joueur mentionné voit le message surligné et une pastille @ sur le chat et sur le salon, même s'il lit un autre salon, avec une petite notification",
+    "Menu d'un joueur dans le chat : nouveau bouton « Le mentionner ». Seules les 3 premières mentions d'un message comptent, et un joueur ignoré ne peut pas te mentionner",
+  ] },
   { v: "0.1.53.6", name: "Droit au monstre, en mieux", items: [
     "Recherche rapide : le bouton du monstre est mieux rangé (colonne alignée sur PC, sous le résultat sur téléphone) et montre la zone ou le donjon où il t'emmène, avec un cadenas si ce n'est pas encore débloqué",
     "Clavier : flèche droite ou Maj+Entrée sur un résultat t'emmène directement chez le monstre",

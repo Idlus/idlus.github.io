@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.53.7 « Mentions dans le chat »
+Chat (js/chat.js) : mentions `@pseudo` détectées côté client (`mentions()`, `pingsMe()` : 3 premières mentions, joueurs ignorés exclus), surlignées (`.mt`, `.msg.ment`) ; pastille `@` par salon (dernier message lu par salon dans la préférence `ms`) et sur le bouton du chat, toast hors du salon ; suggestions de pseudos en tapant « @ » (`#chAc`, auteurs récents puis joueurs connectés via `ONLINE.onlinePseudos()`), bouton « Le mentionner » dans le menu d'un joueur. Aucun changement serveur.
+
 ## 0.1.53.6 « Droit au monstre, en mieux »
 Recherche rapide : `.wsrow` surlignée en entier, `.wsmon` en colonne fixe (PC) ou sous le résultat (téléphone), zone + verrou (`monWhere` renvoie `lvl` et `open`) ; flèche droite / Maj+Entrée (`searchMonKey`). Fiches : `monLineHtml()` commun à `resSheet` (avec lignes de récolte) et `itemSheet`.
 

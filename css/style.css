@@ -4004,3 +4004,16 @@ img.wb-an.wb-p3{animation:wbp3 1.5s ease-in-out infinite}
 @keyframes wbp3{0%,100%{transform:scale(1,1);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45)) drop-shadow(0 0 6px rgba(255,60,40,.55))}50%{transform:scale(1.04,1.07);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45)) drop-shadow(0 0 14px rgba(255,60,40,.95))}}
 @keyframes wbbrt{0%,100%{transform:scale(1,1)}50%{transform:scale(1.025,1.055)}}
 @media (prefers-reduced-motion:reduce){img.wb-an{animation:none}}
+/* 0.1.53.7 : mentions @pseudo dans le chat */
+.chat .mt{font-weight:800;color:var(--gold2)}
+.chat .mt.me{color:#2a1d05;background:linear-gradient(180deg,var(--gold2),var(--gold));border-radius:6px;padding:0 4px}
+.chat .msg.ment{margin:0 -6px;padding:5px 6px;border-radius:10px;background:linear-gradient(90deg,rgba(242,196,75,.22),rgba(242,196,75,.06));box-shadow:inset 3px 0 0 var(--gold)}
+.chat .n.at,.chmin .n.at{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1d05}
+.chat .ch-foot{position:relative}
+.chat .ch-ac{position:absolute;left:8px;right:8px;bottom:calc(100% + 4px);display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:6px;border-radius:12px;background:var(--panel2);border:2px solid var(--gold);box-shadow:var(--shadow);z-index:2}
+.chat .ch-ac[hidden]{display:none}
+.chat .ch-ac .hd{font-size:11.5px;font-weight:800;color:var(--muted);margin-right:2px}
+.chat .ch-ac button{border:1.5px solid var(--line);border-radius:999px;background:var(--panel);padding:2px 9px;font-weight:800;font-size:13px;cursor:pointer}
+.chat .ch-ac button.on,.chat .ch-ac button:hover{border-color:var(--gold);background:var(--panel3);color:var(--gold2)}
+.chmenu .at{display:inline-block;width:18px;text-align:center;color:var(--gold2)}
+@media (max-width:640px){.chmin .n.at{right:auto;left:-4px}}

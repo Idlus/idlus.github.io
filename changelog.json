@@ -1,6 +1,15 @@
 {
-  "version": "0.1.53.6",
+  "version": "0.1.53.7",
   "versions": [
+    {
+      "v": "0.1.53.7",
+      "name": "Mentions dans le chat",
+      "items": [
+        "Chat : écris @ suivi d'un pseudo pour mentionner un joueur ; en tapant @, les pseudos des joueurs récents du salon sont proposés (flèches et Tab ou clic pour choisir)",
+        "Le joueur mentionné voit le message surligné et une pastille @ sur le chat et sur le salon, même s'il lit un autre salon, avec une petite notification",
+        "Menu d'un joueur dans le chat : nouveau bouton « Le mentionner ». Seules les 3 premières mentions d'un message comptent, et un joueur ignoré ne peut pas te mentionner"
+      ]
+    },
     {
       "v": "0.1.53.6",
       "name": "Droit au monstre, en mieux",

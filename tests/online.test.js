@@ -276,6 +276,21 @@ const MOCK = () => {
     await page.evaluate(() => { const m = { id: 50, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Coucou en direct", kind: "msg", created_at: new Date().toISOString() };
       const d = JSON.parse(localStorage.getItem("__mock")); d.views.chat_msgs.push(m); localStorage.setItem("__mock", JSON.stringify(d)); window.__chatEmit(m); }); await page.waitForTimeout(200);
     if (!/Coucou en direct/.test(await page.textContent("#chat .ch-list"))) fail("chat : message en temps réel absent");
+    // 0.1.53.7 : mentions @pseudo — surlignées, pastille « @ » sur le salon où l'on est mentionné, suggestions de pseudos en tapant « @ »
+    await page.evaluate(() => { const me = window.ONLINE.profile.pseudo; const t = new Date().toISOString();
+      window.__chatEmit({ id: 5000, ch: "c", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: `@${me} je t'achète ta coiffe`, kind: "msg", created_at: t });
+      window.__chatEmit({ id: 5001, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: `Salut @${me.toLowerCase()} et @Kralamour !`, kind: "msg", created_at: t }); }); await page.waitForTimeout(150);
+    if (!(await page.$('#chat [data-act="ch-tab"][data-v="c"] .n.at'))) fail("chat : pas de pastille @ sur le Commerce après une mention");
+    if (!(await page.$("#chat .msg.ment .mt.me")) || !(await page.$("#chat .msg.ment .mt:not(.me)"))) fail("chat : mention mal surlignée");
+    await page.click('#chat [data-act="ch-tab"][data-v="c"]'); await page.waitForTimeout(100);
+    if (!(await page.$("#chat .msg.ment"))) fail("chat : message qui me mentionne pas mis en évidence (Commerce)");
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(100);
+    if (await page.$('#chat [data-act="ch-tab"][data-v="c"] .n.at')) fail("chat : pastille @ encore là après lecture");
+    await page.fill("#chIn", ""); await page.type("#chIn", "Coucou @tof"); await page.waitForTimeout(100);
+    if (!/Tofuline/.test((await page.textContent("#chAc")) || "")) fail("chat : pseudo non proposé en tapant @");
+    await page.press("#chIn", "Tab"); if ((await page.inputValue("#chIn")) !== "Coucou @Tofuline ") fail("chat : la suggestion ne complète pas le pseudo");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-mention.png" });
+    await page.fill("#chIn", "");
     // 0.1.31.1 : le chat garde la position de lecture quand il se redessine, et signale les nouveaux messages
     await page.evaluate(() => { const C = window.CHAT.state; for (let i = 0; i < 40; i++) C.g.push({ id: 500 + i, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Ligne " + i, kind: "msg", created_at: new Date().toISOString() }); window.CHAT.repaint(); document.querySelector("#chat .ch-list").scrollTop = 120; window.CHAT.repaint(); });
     if ((await page.evaluate(() => document.querySelector("#chat .ch-list").scrollTop)) !== 120) fail("chat : la lecture remonte quand le chat se redessine");
