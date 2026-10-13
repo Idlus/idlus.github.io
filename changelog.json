@@ -1,6 +1,13 @@
 {
-  "version": "0.1.48",
+  "version": "0.1.48.1",
   "versions": [
+    {
+      "v": "0.1.48.1",
+      "name": "Multi-élément",
+      "items": [
+        "« Équiper au mieux », la pastille verte et l'ordre de la liste gèrent les héros multi-élément : chaque élément qui a au moins 20 % des points répartis compte, au prorata de sa part (un héros Force 60 % / Chance 40 % valorise les deux)"
+      ]
+    },
     {
       "v": "0.1.48",
       "name": "Le Songe infini",
