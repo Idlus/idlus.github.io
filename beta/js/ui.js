@@ -18,9 +18,21 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.47.6";
+const GAME_VERSION = "0.1.48";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.48", name: "Le Songe infini", items: [
+    "L'Expédition sans fin devient le Songe infini, comme dans DOFUS (menu Jouer › Songe infini, dès le niveau 10) : une carte de 26 salles en 5 paliers, la même pour tous chaque semaine",
+    "Tu choisis ton couloir salle après salle : combats, combats redoutables, archimonstres, Faveurs oniriques (un bonus sans combat), Fontaines oniriques (salles 4, 10, 16 et 25) et le rare Gobledore",
+    "Les 24 reliques deviennent les bonus du songe ; les points de rêve se dépensent aux Fontaines. Tout s'efface au réveil, sauf le butin des combats",
+    "8 intensités : Rêve, Paradoxe 1 à 4, Cauchemar 1 à 3 (jusqu'à +400 % de butin). Valider demande de tenir 1, 3 ou 5 vagues à la Fin du rêve, sans regagner ses PV",
+    "Une défaite réveille l'équipe ; le Sable de Draconiros permet de rejouer le combat perdu",
+    "Bribes de rêve, gagnées seulement quand un songe est validé, à échanger au Marché onirique : coffres, poussière, le familier Draconiros miniature, la Brume onirique, le Cadre des Songes, un titre et des améliorations",
+    "38 objets légendaires : les 26 de DOFUS (niveau 200) et 12 inédits d'Idlus (niveaux 50, 100 et 150), chacun avec un passif unique. Ils tombent très rarement à la validation d'un songe, dès Paradoxe 2",
+    "Un légendaire par héros ; ses copies font monter l'Éveil (I à V) qui renforce le passif ; pas de forgemagie ; ils se vendent à l'HdV. Nouveau visuel « Brume onirique » qui grandit avec l'Éveil",
+    "Choix automatique après 30 s (prudent, équilibré ou gourmand) pour jouer sans y penser",
+    "Tes Éclats d'expédition sont convertis : 5 Bribes par Éclat et 150 par amélioration du campement. Ton record et tes titres sont gardés",
+  ] },
   { v: "0.1.47.6", name: "Panoplies d'abord", items: [
     "« Équiper au mieux » et « Tout équiper au mieux » comparent maintenant des panoplies entières : si porter toute une panoplie (ou presque) fait mieux grâce à ses bonus que des pièces isolées, elle est équipée d'un coup (par exemple le Bouftou Royal à 7 pièces pour le PA de plus)",
     "La pastille verte et « Meilleur choix » dans la liste suivent ce même plan"
@@ -905,6 +917,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
+  if (S.settings.cadreSonge) ornCls += " fsg"; // 0.1.48 : Cadre des Songes (Marché onirique)
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
   return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}`)}">
     ${ornHtml}<div class="in"><div class="art">${lookImg(c, "hlook")}<span class="lv">${c.lvl}</span>${c.ren ? `<span class="renm" title="Renaissance ${E.roman(c.ren)}">${E.roman(c.ren)}</span><span class="rembers"><i></i><i></i><i></i><i></i></span>` : ""}<span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
@@ -979,7 +992,7 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Expédition", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"]] },
+  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"]] },
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["havre", "Havre-Sac", "havre"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
@@ -1169,7 +1182,7 @@ function navLiveTxt() {
   if (!S || !E.team(S).length) return "";
   const dg = S.dungeon && DUNGEONS[S.dungeon.id]; const XP = E.expActive(S) ? S.exp : null;
   if (!dg && !XP && !(S.hunting && S.sub)) return "";
-  if (XP) return `Expédition · étage ${XP.floor}`;
+  if (XP) return window.SGUI ? window.SGUI.where(S) : "Songe infini";
   if (dg) return (S.dungeon.tot || 1) > 1 ? `Course ${S.dungeon.run || 1}/${S.dungeon.tot} · ${dg.name}` : `${dg.name} · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}`;
   return `Chasse · ${E.SUBS[S.sub].name}`;
 }
@@ -1180,7 +1193,7 @@ function updNavLive() {
 function statusHtml() {
   if (!S) return "";
   const team = E.team(S);
-  const where = E.expActive(S) ? `Expédition · étage ${S.exp.floor}` : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
+  const where = E.expActive(S) ? (window.SGUI ? window.SGUI.where(S) : "Songe infini") : S.dungeon ? DUNGEONS[S.dungeon.id].name : S.hunting && S.sub ? E.SUBS[S.sub].name : "Au repos";
   const kills = Object.values(S.bestiary).reduce((a, b) => a + b, 0);
   const xpb = E.boostPct(S, "xp");
   return `<button class="brand" data-tab="home"><img class="blogo" src="assets/ui/logo.webp" alt="">idlus</button>
@@ -1760,7 +1773,7 @@ function dungeonSheet(did) {
 }
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
 function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
-  return XP ? `Expédition sans fin · ${XP.lives} vie${XP.lives > 1 ? "s" : ""} sur ${XP.livesMax} · ${XP.relics.length} relique${XP.relics.length > 1 ? "s" : ""}` : dg ? `Donjon · ${chainTxt()}salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"; }
+  return XP ? `${window.SGUI ? window.SGUI.where(S) : "Songe infini"} · ${XP.relics.length} bonus${XP.sable ? ` · ${XP.sable} Sable${XP.sable > 1 ? "s" : ""}` : ""}` : dg ? `Donjon · ${chainTxt()}salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"; }
 function chainBtn() { return S.dungeon && (S.dungeon.chain || 1) > 1 ? `<button class="btn sm" data-act="stopchain" data-tip="Le donjon en cours va jusqu'au bout, puis l'équipe s'arrête">Arrêter après celui-ci</button>` : ""; }
 function chainCount(did) { const keys = S.res[DUNGEONS[did].key] || 0; return ui.dgChain === -1 ? Math.max(1, keys) : clamp(ui.dgChain || 1, 1, Math.max(1, keys)); }
 function chainTxt() { const D = S.dungeon; return D && (D.tot || 1) > 1 ? `course ${D.run || 1} sur ${D.tot}${(D.chain || 1) <= 1 ? " (dernière)" : ""} · ` : ""; }
@@ -1880,8 +1893,8 @@ function renderCombat() {
       <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
-      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir l'expédition</button>` : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
-  ${XP && window.EXPUI ? window.EXPUI.combatHtml(S) : ""}
+      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir la carte du songe</button>` : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+  ${XP && window.SGUI ? window.SGUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
@@ -1974,7 +1987,7 @@ function buildArena(F) {
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
   arena.className = "arena " + (view === "compact" ? "cmpmode" : "v2"); arena.style.height = "";
   if (!F) {
-    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${E.expActive(S) && S.exp.door !== null ? "Le combat de l'étage commence…" : E.expActive(S) ? (S.exp.pend.length ? "Un choix t'attend." : "Choisis une porte ci-dessus.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
+    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${E.expActive(S) && S.exp.pick !== null ? "Le combat de la salle commence…" : E.expActive(S) ? (E.expPending(S) ? "Un choix t'attend." : "Choisis la salle suivante sur la carte.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
   }
   const pasDiv = `<div class="pas"></div>`;
@@ -3139,13 +3152,17 @@ function lootHtml(F) {
 
 /* ---------- objets ---------- */
 /* 0.1.17 : la rareté des objets est retirée de l'affichage (elle ne changeait que la couleur du cadre) ; E.RARITIES reste dans le moteur pour l'hôtel des ventes */
-const rarCls = () => "";
+const rarCls = (tpl, it) => { const T = ITEMS[tpl]; if (!T || !T.leg) return ""; const ev = it ? E.legEv(it) : 1; return `lx cf ${ev <= 2 ? "e1" : ev >= 5 ? "e5" : ""}`; }; // 0.1.48 : objets légendaires (Brume onirique, l'effet grandit avec l'Éveil)
+const lxSp = (it) => (it && ITEMS[it.tpl] && ITEMS[it.tpl].leg && E.legEv(it) >= 5 ? '<span class="lxsp"></span>' : "");
+const rarName = (tpl) => (ITEMS[tpl] && ITEMS[tpl].leg ? "lxn cf" : "");
 const rarTag = () => "";
-const itemIcon = (it) => `<span class="icobox ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}</span>`;
-function itemName(it) { return `<span class="iname ${rarCls(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
+const itemIcon = (it) => `<span class="icobox ${rarCls(it.tpl, it)} ${it.radiant ? "radiant" : ""}">${im(itemImg(it.tpl), "", ITEMS[it.tpl].name)}${lxSp(it)}</span>`;
+function itemName(it) { return `<span class="iname ${rarName(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${ITEMS[it.tpl].leg ? " " + legEvHtml(it) : ""}${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
+const legEvHtml = (it) => { const ev = E.legEv(it); return `<span class="lgev" title="Éveil ${["I", "II", "III", "IV", "V"][ev - 1]}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= ev ? "on" : ""}"></i>`).join("")}</span>`; };
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
-  return (T.desc ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
+  const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
+  return (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
     return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 function tplStatsHtml(T) { return (T.desc ? `<span class="statl">${G("sparkle")}${h(T.desc)}</span>` : "") + Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
@@ -3389,8 +3406,8 @@ function equipBest(c) { const plan = gearPlan(c); let n = 0;
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
-  return `<button class="dslot ${it ? "filled " + rarCls(it.tpl) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
-    ${it ? im(itemImg(it.tpl), "", T.name) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
+  return `<button class="dslot ${it ? "filled " + rarCls(it.tpl, it) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
+    ${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
 function setBlock(setId, worn) {
@@ -3919,12 +3936,12 @@ function invDetail(tpl) {
   const T = ITEMS[tpl]; if (!T) return "";
   const copies = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
   if (!copies.length) return "";
-  return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2 class="iname">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
+  return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
     <div class="pad xs">${tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
       ${ui.cid && char(ui.cid) && T.lvl <= char(ui.cid).lvl ? `<div class="row" style="margin-top:6px">${miniDoll(char(ui.cid), T.slot)}</div>` : ""}</div>
     <div class="list">${copies.map((it) => { const by = E.equippedBy(S, it.uid);
       return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow"><b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
-        <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button><button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">${IC("forge")}</button>
+        <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button>${T.leg ? `<button class="btn sm" data-act="sg-leg" data-k="${T.leg}" data-u="${it.uid}" title="Fiche légendaire et Éveil">${G("sparkle")} Éveil</button>` : `<button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">${IC("forge")}</button>`}
           <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${it.locked ? "Retirer le cadenas" : "Protéger de la mise en vente et du brisage"}">${it.locked ? G("lock") : G("unlock")}</button>
           ${by || it.locked ? "" : `${hdvOn() ? `<button class="btn sm" data-act="hdvitem" data-uid="${it.uid}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
 }
@@ -4034,8 +4051,8 @@ function renderInventory() {
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
         <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
-          return `<button class="itile ${rarCls(g.tpl)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
-            ${im(itemImg(g.tpl), "", T.name)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
+          return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
+            ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
       </div>`;
   } else if (ui.inv === "over") {
     body = overHtml();
@@ -4093,7 +4110,7 @@ function setsBookHtml() {
     return `<section class="panel"><div class="phead"><div><h2>${h(SETS[id].name)}</h2><span class="xs muted">niv. ${E.setLvl(id)} · ${n} / ${P.length} pièces dans le sac${worn[id] ? ` · ${worn[id]} portée${worn[id] > 1 ? "s" : ""} par ${h(c.name)}` : ""}</span></div>
       ${craftMiss.length ? `<button class="btn sm" data-act="setshop" data-id="${id}" data-tip="Ajoute les ${craftMiss.length} pièce${craftMiss.length > 1 ? "s" : ""} fabricable${craftMiss.length > 1 ? "s" : ""} qui manquent à la liste de courses">${G("cart")} Pièces manquantes</button>` : ""}</div>
       <div class="list">${P.map((t) => { const T = ITEMS[t]; const ok = !!owned[t]; const src = ok ? [] : E.itemSources(t).slice(0, 2);
-        return `<div class="li" style="align-items:flex-start;${ok ? "" : "opacity:.92"}"><span class="icobox ${rarCls(t)}" style="${ok ? "" : "filter:grayscale(.7)"}">${im(itemImg(t), "", T.name)}</span><span class="grow"><b class="iname ${rarCls(t)}">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}</span>
+        return `<div class="li" style="align-items:flex-start;${ok ? "" : "opacity:.92"}"><span class="icobox ${rarCls(t)}" style="${ok ? "" : "filter:grayscale(.7)"}">${im(itemImg(t), "", T.name)}</span><span class="grow"><b class="iname ${rarName(t)}">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}</span>
           <div class="xs ${ok ? "plus" : "muted"}">${ok ? `✓ dans le sac${owned[t] > 1 ? ` (×${owned[t]})` : ""}` : src.map(srcTxt).join("<br>") || "Source inconnue"}</div></span>
           ${!ok && T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${t}" data-tip="Ajouter à la liste de courses">${G("cart")}${S.shop.some((e) => e.id === t) ? " ✓" : ""}</button>` : ""}</div>`; }).join("")}</div>
       <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statLine(sk, v)).join(", ")}</div>`).join("") || `<span class="muted">Aucun bonus de panoplie.</span>`}</div></section>`; };
@@ -4111,7 +4128,7 @@ function tipItemHtml(uid) {
   let cmp = "";
   if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">Pour ${h(c.name)} : ${deltaHtml(c, slot, uid)}</div>`; }
   const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
-  return `<b class="iname ${rarCls(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
+  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
 }
 let tipEl = null;
 function showTip(target) {
@@ -4349,7 +4366,7 @@ function fmBench(it) {
         return f.ok ? `<button class="prune risk" data-act="exo" data-k="${k}" data-tip="${h(`${nm} : +1 ${STATS[k].name} · ${ppc(f.chance)} % de succès critique. Échec : la rune est perdue, l'objet reste intact.`)}"><span class="rn">${h(nm)} <span class="xs muted">×${f.have}</span></span><span class="rv">+1 ${h(STATS[k].short)}</span><span class="rodd"><span class="poddt"><b class="g">${ppc(f.chance)}</b> % · sinon la rune seule est perdue</span></span></button>`
           : `<span class="prune off" data-tip="${h(f.why)}"><span class="rn">${h(nm)} <span class="xs muted">×${f.have}</span></span><span class="rv xs muted">${ppc(f.chance)} %</span></span>`; }).join("")}
         <span class="xs muted">Un seul exo PA, un seul PM et un seul Po porté par héros. Runes Ga : coffres de boss des donjons ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8), archimonstres ${E.EXO_LVL}+, ou l'onglet Runes.</span></div></div>` : ""}
-    <div class="pfl ptrans"><div class="pfn"><b>Rune de transcendance</b><span class="xs muted">coffres de palier 20+ de l'Expédition sans fin</span></div>
+    <div class="pfl ptrans"><div class="pfn"><b>Rune de transcendance</b><span class="xs muted">coffre des songes validés en Paradoxe 2 et plus</span></div>
       ${trans.length ? `<div class="pruns">${trans.map(([rk, q]) => { const st = rk.split(":")[1]; const f = E.transInfo(S, it.uid, st);
         return f.ok ? (ui.confirm === "trans:" + st ? `<span class="small">+${f.v} ${h(STATS[st].name)}, puis l'objet ne se forgemage plus.</span><button class="btn sm primary" data-act="trans" data-k="${st}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>`
           : `<button class="prune" data-act="asktrans" data-k="${st}"><span class="rn">${h(E.runeName(rk).replace(/^Rune (de transcendance )?/, (m, t) => t ? "Transcendance " : ""))} <span class="xs muted">×${q}</span></span><span class="rv">+${f.v} ${h(STATS[st].short)}</span><span class="rodd"><span class="poddt"><b class="g">100</b> % · l'objet est figé ensuite</span></span></button>`)
@@ -4484,7 +4501,7 @@ function fmHelpSheet() {
     <p><b>Poids</b> : chaque rune a un poids (Rune Vi 1, Rune Fo 1, Rune Sa 3, Rune Do 20…). Plus l'objet est chargé par rapport à son poids au jet maximum, plus le succès critique est rare. Au-delà du jet maximum (over), une caractéristique peut monter jusqu'à ${E.OVER_W} de poids (${Math.floor(E.OVER_W / STATS.vit.w)} Vitalité, ${E.OVER_W} Force).</p>
     <p><b>Reliquat</b> : ce que l'objet perd en trop s'y accumule. Il paie les pertes des succès neutres suivants et permet d'ajouter une caractéristique que l'objet n'a pas (jusqu'à ${E.EXO_STAT_W} de poids). Il disparaît quand l'objet passe par l'hôtel de vente.</p>
     <p><b>Exotique</b> : une rune Ga ajoute +1 PA, PM, Portée ou Invocation, en succès critique seulement (${E.EXO_STATS.map((k) => `${STATS[k].short} ${ppc(E.EXO[k].chance)} %`).join(", ")}). Un échec ne coûte que la rune. Un seul exo PA, PM et Po porté par héros.</p>
-    <p><b>Transcendance</b> : les coffres de palier 20+ de l'Expédition sans fin donnent des runes de transcendance. Réussite garantie, puis l'objet ne peut plus être forgemagé. Interdite sur un objet over ou exo.</p>
+    <p><b>Transcendance</b> : le coffre d'un songe validé en Paradoxe 2 et plus peut donner une rune de transcendance. Réussite garantie, puis l'objet ne peut plus être forgemagé. Interdite sur un objet over ou exo.</p>
     <p>La forgemagie ne coûte plus de kamas : seules les runes sont consommées.</p></div>
     <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
@@ -4821,7 +4838,7 @@ function render() {
   else if (ui.tab === "carnet") renderCarnet();
   else if (ui.tab === "ladder") renderLadder();
   else if (ui.tab === "defi") renderDefi();
-  else if (ui.tab === "exp" && window.EXPUI) window.EXPUI.render($("#main"));
+  else if (ui.tab === "exp" && window.SGUI) window.SGUI.render($("#main"));
   else if (ui.tab === "koli" && window.KOLIUI) window.KOLIUI.render($("#main")); // 0.1.44 : Kolizéum (js/koliui.js)
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
@@ -4861,7 +4878,10 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
-  if (ev.t === "exp") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Expédition sans fin</div><div class="cele-t">Étage ${ev.floor} atteint</div><div class="cele-s">Titre « ${h(ev.title)} » débloqué (onglet Héros)</div>`;
+  if (ev.t === "exp") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Le Songe infini</div><div class="cele-t">${h(ev.int || "")} validé</div><div class="cele-s">Titre « ${h(ev.title)} » débloqué (onglet Héros)</div>`;
+  if (ev.t === "songe") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Nouveau mode de jeu</div><div class="cele-t">Le Songe infini</div><div class="cele-s">Une carte de rêve par semaine, la même pour tous. Menu Jouer › Songe infini.</div>`;
+  if (ev.t === "leg") { const T = ITEMS[ev.tpl]; const x = E.legByTpl(ev.tpl); if (!T || !x) return ""; // 0.1.48 : objet légendaire
+    return `<div class="cele-art radiant"><span class="icobox lx cf ${ev.ev >= 5 ? "e5" : ev.ev <= 2 ? "e1" : ""}">${im(itemImg(ev.tpl), "", T.name)}${ev.ev >= 5 ? '<span class="lxsp"></span>' : ""}</span></div><div class="cele-k">${G("sparkle")} ${ev.up ? `Éveil ${["I", "II", "III", "IV", "V"][ev.ev - 1]}` : "Objet légendaire"}</div><div class="cele-t"><span class="lxn cf">${h(T.name)}</span></div><div class="cele-s">${h(E.legTxt(x, ev.ev))}</div>`; }
   if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Coffre au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
   if (ev.t === "chest") { const C = CONSUMABLES[ev.id]; // 0.1.30 : butin rangé en vignettes (rares d'abord, puis le reste)
     const m = new Map(); (ev.loot || []).forEach(([t, id, q, uid]) => { const key = t === "item" ? "item" + (uid || id + m.size) : t + id; const o = m.get(key) || { t, id, q: 0, uid }; o.q += q; m.set(key, o); });
@@ -5078,7 +5098,7 @@ function searchGo(r) {
 }
 /* fiche d'un objet, possédé ou non : ce qu'il donne et où le trouver */
 function itemSheet(tpl) {
-  const T = ITEMS[tpl]; if (!T) return; const owned = E.ownedTpls(S)[tpl] || 0; const src = E.itemSources(tpl); const inShop = S.shop.some((e) => e.k === "tpl" && e.id === tpl);
+  const T = ITEMS[tpl]; if (!T) return; if (T.leg && window.SGUI) { window.SGUI.legSheet(S, T.leg); return; } /* 0.1.48 : fiche légendaire */ const owned = E.ownedTpls(S)[tpl] || 0; const src = E.itemSources(tpl); const inShop = S.shop.some((e) => e.k === "tpl" && e.id === tpl);
   const lines = src.map((x) => {
     if (x.k === "craft") return `<div class="li"><span class="icobox">${IC("metiers")}</span><span class="grow"><b>Recette</b> · ${h(CRAFT_JOBS[x.job].name)} niveau ${x.lvl}<br><span class="xs muted">${T.craft.ing.map(([r, n]) => `${n} × ${h(r)}`).join(" · ")}</span></span><button class="btn sm" data-act="searchcraft" data-job="${x.job}" data-q="${h(T.name)}">Atelier</button></div>`;
     const M = MONSTERS[x.mon]; const dg = x.dgs[0]; const sub = x.subs[0];
@@ -5683,8 +5703,8 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("su-")) { if (S) suAct(a, t); return; }
   if (a && a.startsWith("vi-")) { if (S) viAct(a, t); return; }
   if (a && a.startsWith("qj-")) { if (S && window.QUI) window.QUI.act(a, t); return; } // 0.1.28 : journal de quêtes (js/questui.js)
-  if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; }
-  if (a && a.startsWith("kz-")) { if (S && window.KOLIUI) window.KOLIUI.act(a, t); return; } // 0.1.44 : Kolizéum // 0.1.24 : Expédition sans fin (js/expui.js)
+  if (a && a.startsWith("sg-")) { if (S && window.SGUI) window.SGUI.act(a, t); return; } // 0.1.48 : Songe infini (js/songeui.js)
+  if (a && a.startsWith("kz-")) { if (S && window.KOLIUI) window.KOLIUI.act(a, t); return; } // 0.1.44 : Kolizéum
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -6030,6 +6050,7 @@ document.addEventListener("click", (ev) => {
 document.addEventListener("change", (ev) => {
   const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
   if (a.startsWith("vi-")) { viChange(a, t); return; }
+  if (a.startsWith("sg-")) { if (window.SGUI) window.SGUI.change(a, t); return; }
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;

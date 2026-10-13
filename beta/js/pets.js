@@ -252,6 +252,7 @@
   E.podBonus = (S) => Math.min(0.5, E.team(S).reduce((a, c) => a + ((E.petStats(S, c) || {}).pod || 0), 0) / 100 * 0.05);
   E.petWhere = (id) => {
     const p = PETS[id]; if (!p) return "";
+    if (p.songe) return "Marché onirique du Songe infini (10 000 Bribes de rêve)";
     if (p.kind === "zone") { const s = E.SUBS[p.sub]; return s ? `Chasse : ${s.name} (niv. ${s.lvl[0]}-${s.lvl[1]})` : ""; }
     return `Boss : ${DUNGEONS[p.dg].name}, stasis ${p.stasis} et plus`;
   };

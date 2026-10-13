@@ -3454,6 +3454,7 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 /* Sablier économe : sablier en pause quand rien n'avance */
 .status .sabpill.idle{box-shadow:none;opacity:.75}
 .status .sabpill.idle .sb{animation:none}
+<<<<<<< HEAD
 
 /* 0.1.47.5 : notifications et chat. Auto : chat ouvert, elles s'écartent (PC : à gauche du chat ; téléphone : une seule, en haut).
    Options › Affichage › Notifications : En haut (toujours en haut au centre) ou En bas (position d'origine). */
@@ -3464,3 +3465,150 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
   body.chat-open:not(.toast-top):not(.toast-bot) .toasts .toast{font-size:12.5px;padding:6px 12px}
 }
 body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;left:50%;right:auto;transform:translateX(-50%);align-items:center}
+=======
+/* ===================== 0.1.48 — objets légendaires : « Brume onirique » (bord animé selon l'Éveil) ===================== */
+@property --lxa{syntax:"<angle>";inherits:false;initial-value:0deg}
+.lx{position:relative;isolation:isolate;border-color:transparent!important;overflow:hidden}
+.lx>*{position:relative;z-index:2}.lx>.ilvl,.lx>.icount,.lx>.lv,.lx>.or,.lx>.ilock,.lx>.ieq{position:absolute;z-index:3}
+.lx::before{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;padding:2px;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:lxspin 3.2s linear infinite}
+.lx::after{content:"";position:absolute;inset:2px;z-index:1;border-radius:inherit;pointer-events:none}
+@keyframes lxspin{to{--lxa:360deg}}
+@keyframes lxpulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes lxfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes lxshine{0%{background-position:-160% 0}60%,100%{background-position:260% 0}}
+@keyframes lxhue{to{filter:hue-rotate(360deg)}}
+@keyframes lxrise{0%{transform:translateY(10px) scale(.6);opacity:0}25%{opacity:1}100%{transform:translateY(-46px) scale(1);opacity:0}}
+.lx img{animation:lxfloat 2.6s ease-in-out infinite}
+.lxn{font-weight:800;background:linear-gradient(90deg,#ff9d3c,#ffe9a8,#ff9d3c,#ffd27a,#ff9d3c);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lxshine 3.5s linear infinite}
+@media (prefers-reduced-motion:reduce){.lx::before,.lx::after,.lx img,.lxn{animation:none!important}}
+.nomotion .lx::before,.nomotion .lx::after,.nomotion .lx img,.nomotion .lxn{animation:none!important}
+/* RENDU FINAL · Brume onirique avec touche orange (choix de Mathis 1C 2A 3A 4B 5A 6A) */
+.lx.cf::before{background:conic-gradient(from var(--lxa),#a58bff,#5fd8d0 22%,#a58bff 38%,#ff9d3c 46%,#ffe0a0 50%,#ff9d3c 54%,#a58bff 64%,#5fd8d0 82%,#a58bff);animation-duration:4s}
+.lx.cf::after{background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.3) 48%,transparent 66%),radial-gradient(ellipse at 30% 85%,rgba(165,139,255,.55),transparent 60%),radial-gradient(ellipse at 85% 15%,rgba(95,216,208,.38),transparent 55%);background-size:260% 100%,100% 100%,100% 100%;animation:lxshine 3.6s ease-in-out infinite}
+.lx.cf{box-shadow:0 0 12px rgba(165,139,255,.5),0 0 3px rgba(255,157,60,.6)}
+.lx.cf.e1::before{animation:none;background:linear-gradient(135deg,#a58bff,#5fd8d0 45%,#ff9d3c 55%,#a58bff)}
+.lx.cf.e1::after{animation:lxpulse 3s ease-in-out infinite;background:radial-gradient(ellipse at 30% 85%,rgba(165,139,255,.55),transparent 60%),radial-gradient(ellipse at 85% 15%,rgba(95,216,208,.38),transparent 55%)}
+.lx.cf.e5{box-shadow:0 0 18px rgba(165,139,255,.7),0 0 8px rgba(255,157,60,.8)}
+.lx .lxsp{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;overflow:hidden}
+.lx .lxsp::before,.lx .lxsp::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,#ffe0a0 0 1.6px,transparent 2.6px) 22% 100%/30% 40%,radial-gradient(circle,#c9b8ff 0 1.6px,transparent 2.6px) 72% 100%/34% 46%,radial-gradient(circle,#fff 0 1px,transparent 2px) 48% 100%/28% 38%;background-repeat:no-repeat;animation:lxrise 1.9s ease-out infinite}
+.lx .lxsp::after{animation-delay:.95s;background-position:38% 100%,86% 100%,10% 100%}
+.lxn.cf{background-image:linear-gradient(90deg,#c9b8ff,#ffffff,#7fe8e0,#ffb35c,#c9b8ff)}
+.nomotion .lx .lxsp,.nomotion .lx::after{display:none}
+@media (prefers-reduced-motion:reduce){.lx .lxsp{display:none}}
+
+:root[data-theme="emerald"] .lxn.cf,:root:not([data-theme]) .lxn.cf{background-image:linear-gradient(90deg,#6b4fd8,#2aa39a,#c46a12,#6b4fd8)}
+.iname.lxn{display:inline}
+.lgev{display:inline-flex;gap:3px;vertical-align:middle}.lgev i{width:8px;height:8px;border-radius:2px;transform:rotate(45deg);background:rgba(127,127,127,.3);display:inline-block}.lgev i.on{background:#ff9d3c;box-shadow:0 0 6px #ff9d3c}
+.lgpas{border:2px solid rgba(165,139,255,.55);border-radius:12px;padding:10px 12px;background:linear-gradient(180deg,rgba(165,139,255,.14),transparent 75%);display:flex;flex-direction:column;gap:6px}
+.lgranks{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.lgranks span{border-radius:9px;padding:4px 2px;text-align:center;font-size:11px;background:rgba(127,127,127,.1);border:1px solid rgba(127,127,127,.25);display:flex;flex-direction:column}.lgranks span.on{border-color:#ff9d3c;background:rgba(255,157,60,.14)}.lgranks b{font-size:12px}
+/* cadre de héros « Cadre des Songes » */
+.hcard.fsg{border-color:transparent!important;background:linear-gradient(var(--panel),var(--panel)) padding-box,conic-gradient(from var(--ang),#a58bff,#5fd8d0,#a58bff,#ff9d3c,#a58bff) border-box!important;animation:spin 4s linear infinite}
+.hcard.o-brume .art::before{content:"";position:absolute;inset:-8% -10% 0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 30% 85%,rgba(165,139,255,.55),transparent 60%),radial-gradient(ellipse at 75% 70%,rgba(95,216,208,.4),transparent 55%);animation:lxpulse 3.2s ease-in-out infinite}
+/* ===================== 0.1.48 — Le Songe infini ===================== */
+
+.sgd{--dk:#15112a;--dk2:#1e1838;--dl:rgba(184,164,255,.42);--di:#efe9ff;--dm:#b9afd9;--dg:#f0c35a;--dv:#a58bff;--dt:#5fd8d0;--dr:#ff6f86;
+  position:relative;color:var(--di);border:2px solid var(--dl);border-radius:16px;overflow:hidden;
+  background:radial-gradient(1.5px 1.5px at 12% 22%,#fff8,transparent),radial-gradient(1px 1px at 33% 68%,#fff7,transparent),radial-gradient(1.5px 1.5px at 58% 14%,#fff9,transparent),radial-gradient(1px 1px at 76% 52%,#fff6,transparent),radial-gradient(1.5px 1.5px at 91% 30%,#fff8,transparent),radial-gradient(1px 1px at 47% 88%,#fff6,transparent),radial-gradient(1px 1px at 6% 80%,#fff7,transparent),
+    radial-gradient(ellipse at 15% -10%,rgba(150,110,255,.45),transparent 60%),radial-gradient(ellipse at 100% 110%,rgba(70,200,210,.28),transparent 55%),linear-gradient(180deg,var(--dk2),var(--dk))}
+.sgd .muted,.sgd .xs.muted,.sgd .small.muted{color:var(--dm)!important}
+.sgd h2,.sgd h3{color:var(--di)}
+.sg-k{font-size:11px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--dg,#f0c35a);display:inline-flex;gap:5px;align-items:center}
+.sg-ttl{font-family:var(--font-title);font-size:30px;line-height:1.1;color:#fff;text-shadow:0 0 18px rgba(165,139,255,.8),0 2px 0 rgba(0,0,0,.4)}
+.sg-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);font-size:12px;font-weight:700;color:var(--di,#efe9ff);white-space:nowrap}
+.sg-chip.g{border-color:rgba(240,195,90,.6);color:#ffe2a0}.sg-chip.v{border-color:rgba(165,139,255,.7);color:#d7ccff}.sg-chip.t{border-color:rgba(95,216,208,.6);color:#b5fff8}.sg-chip.r{border-color:rgba(255,111,134,.6);color:#ffc0ca}
+.sg-chip .sg-ui{width:16px;height:16px}
+.sg-btn{display:inline-flex;align-items:center;gap:7px;border-radius:12px;padding:10px 16px;font:inherit;font-weight:800;font-size:14px;border:0;cursor:pointer;color:#1b1430;background:linear-gradient(180deg,#ffe39a,#f0b847);box-shadow:0 0 18px rgba(240,195,90,.45),inset 0 -2px 0 rgba(0,0,0,.2)}
+.sg-btn.ghost{background:rgba(255,255,255,.08);color:var(--di,#efe9ff);box-shadow:none;border:1.5px solid rgba(255,255,255,.22)}
+.sg-ui{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+/* Puits */
+.sg-hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:10px;padding:18px 20px 0;align-items:end}
+.sg-hero .txt{display:flex;flex-direction:column;gap:9px;padding-bottom:18px;min-width:0}
+.sg-portal{position:relative;height:210px;display:flex;align-items:flex-end;justify-content:center}
+.sg-portal::before{content:"";position:absolute;left:50%;bottom:14px;width:260px;height:190px;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(ellipse at 50% 55%,rgba(255,255,255,.9),rgba(190,165,255,.75) 18%,rgba(120,90,230,.45) 42%,rgba(60,200,210,.18) 62%,transparent 72%);filter:blur(1px)}
+.sg-portal::after{content:"";position:absolute;left:50%;bottom:4px;width:300px;height:34px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(165,139,255,.55),transparent 70%)}
+.sg-portal .sg-look{position:relative;z-index:1;height:150px;width:96px;object-fit:contain;object-position:bottom;margin:0 -12px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.55))}
+.sg-ladder{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;position:relative;padding:4px 0}
+.sg-step{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:8px 4px 9px;border-radius:12px;border:1.5px solid rgba(255,255,255,.12);background:rgba(10,8,25,.35);min-width:0}
+.sg-step .gem{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#140f26;box-shadow:0 0 12px var(--gc),inset 0 -3px 0 rgba(0,0,0,.25);background:radial-gradient(circle at 35% 30%,#fff,var(--gc) 55%)}
+.sg-step b{font-size:12.5px;line-height:1.15}.sg-step .lt{font-size:11px;color:var(--dm)}.sg-step .st{font-size:10.5px;font-weight:800}
+.sg-step.done .st{color:#8ff0a0}.sg-step.lock{opacity:.5}.sg-step.lock .gem{filter:grayscale(.7);box-shadow:none}
+.sg-step.on{border-color:var(--dg);background:linear-gradient(180deg,rgba(240,195,90,.2),rgba(10,8,25,.35));box-shadow:0 0 16px rgba(240,195,90,.35)}
+.sg-step.on .st{color:var(--dg)}
+.sg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+.sg-card{padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.sg-card h3{margin:0;font-size:15px;display:flex;align-items:center;gap:7px}
+.sg-rowi{display:flex;align-items:center;gap:9px;font-size:13px;min-width:0}.sg-rowi>span{min-width:0}
+.sg-ep{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.sg-epi{display:flex;gap:8px;align-items:center;padding:7px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px;min-width:0}
+.sg-epi img{width:30px;height:30px;flex:none}.sg-epi b{display:block;font-size:12.5px}.sg-epi.ok{border-color:rgba(143,240,160,.45)}
+/* carte */
+.sg-mapwrap{overflow-x:auto;padding:4px 0 2px}.sg-mapwrap svg{display:block;max-width:none}
+.sg-runbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sg-tip{position:absolute;z-index:3;width:250px;padding:10px 12px;border-radius:12px;background:rgba(18,14,36,.96);border:1.5px solid #a6d65a;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:12.5px;display:flex;flex-direction:column;gap:6px}
+.sg-tip .mons{display:flex;align-items:flex-end;gap:2px}
+.sg-doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sg-door{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;border:2px solid rgba(255,255,255,.16);background:rgba(10,8,25,.45);text-align:left;min-width:0;color:var(--di)}
+.sg-door .art{height:104px;display:flex;align-items:flex-end;justify-content:center;gap:0;padding-bottom:6px;position:relative;background:radial-gradient(ellipse at 50% 90%,var(--dc),transparent 70%)}
+.sg-door .art img{filter:drop-shadow(0 4px 5px rgba(0,0,0,.55))}
+.sg-door .typ{position:absolute;left:8px;top:8px}
+.sg-door .pips{position:absolute;right:9px;top:10px;display:flex;gap:3px}.sg-door .pips i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2)}.sg-door .pips i.on{background:var(--dc2)}
+.sg-door .bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px}
+.sg-door .bd b{font-size:14.5px}.sg-door .rw{display:flex;flex-wrap:wrap;gap:5px}
+.sg-door.sel{border-color:#a6d65a;box-shadow:0 0 0 1px #a6d65a,0 0 18px rgba(166,214,90,.35)}
+.sg-door .key{font-size:11px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:var(--dm)}
+.sg-bonus{display:flex;flex-wrap:wrap;gap:6px}
+.sg-prog{display:flex;gap:2px;flex:1;min-width:180px}.sg-prog i{flex:1;height:8px;border-radius:3px;background:rgba(255,255,255,.12)}.sg-prog i.d{background:#d8c8ff}.sg-prog i.c{background:var(--dg);box-shadow:0 0 8px var(--dg)}.sg-prog i.p{margin-left:4px}
+/* fiches */
+.sg-sheet{margin:-4px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.sg-offer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sg-of{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:14px 10px;border-radius:14px;background:rgba(10,8,25,.45);border:2px solid rgba(255,255,255,.14);min-width:0;color:var(--di);font:inherit}
+.sg-of .orb{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.35),var(--oc) 60%,transparent 72%);box-shadow:0 0 20px var(--oc)}
+.sg-of .orb img{width:40px;height:40px;object-fit:contain}
+.sg-of .rk{font-size:10.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--oc)}
+.sg-of b{font-size:14.5px}.sg-of.sel{border-color:var(--dg);box-shadow:0 0 16px rgba(240,195,90,.35)}
+.sg-shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.sg-it{display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:14px;background:rgba(10,8,25,.45);border:2px solid rgba(255,255,255,.14);font-size:13px;min-width:0;color:var(--di)}
+.sg-it .top{display:flex;gap:9px;align-items:center}.sg-it .ico{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.07)}
+.sg-it .ico img{width:32px;height:32px;object-fit:contain}
+.sg-it .rk{font-size:10.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:var(--dm)}
+.sg-it.leg{border-color:rgba(240,195,90,.7);background:linear-gradient(180deg,rgba(240,195,90,.16),transparent 60%),rgba(10,8,25,.45)}.sg-it.leg .rk{color:#f0c35a}
+.sg-it.act{border-color:rgba(95,216,208,.65)}.sg-it.act .rk{color:#5fd8d0}.sg-it.sold{opacity:.45}
+.sg-it .pr{margin-top:auto;display:flex;justify-content:space-between;align-items:center}
+.sg-wave{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px}
+.sg-wv{display:flex;gap:4px}.sg-wv span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:900;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2)}
+.sg-wv span.ok{background:rgba(143,240,160,.22);border-color:#8ff0a0}.sg-wv span.cur{border-color:var(--dg);box-shadow:0 0 10px rgba(240,195,90,.7);color:#ffe2a0}.sg-wv span.v{border-color:#a58bff}
+.sg-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sg-sum div{padding:10px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dm)}
+.sg-sum b{font-size:19px;color:#fff;font-variant-numeric:tabular-nums}
+.sg-path{display:flex;flex-wrap:wrap;gap:3px;align-items:center}.sg-path i{width:12px;height:12px;border-radius:50%;border:2px solid var(--c);background:rgba(10,8,25,.6)}
+.sg-rank{width:100%;border-collapse:collapse;font-size:13px}.sg-rank td,.sg-rank th{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;white-space:nowrap}
+.sg-rank th{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--dm)}.sg-rank .me td{background:rgba(240,195,90,.12)}.sg-rank .n{font-variant-numeric:tabular-nums;text-align:right}
+.sg-rank .hd{display:inline-flex}.sg-rank .hd img{width:26px;height:26px;object-fit:contain;margin-right:-6px}
+.sg-tabs{display:inline-flex;padding:3px;border-radius:12px;background:rgba(0,0,0,.25);gap:2px}.sg-tabs button{border:0;background:none;color:var(--dm);font:inherit;font-weight:800;font-size:13px;padding:7px 12px;border-radius:9px}.sg-tabs button.on{background:rgba(255,255,255,.12);color:#fff}
+.sg-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 16px}
+@media (max-width:700px){
+  .sg-hero{grid-template-columns:1fr;padding:14px 14px 0}.sg-hero .txt{padding-bottom:0}.sg-portal{height:170px}.sg-portal .sg-look{height:118px;width:76px}.sg-portal::before{width:220px;height:160px}
+  .sg-ttl{font-size:25px}.sg-ladder{grid-template-columns:repeat(4,minmax(0,1fr))}.sg-grid{grid-template-columns:1fr}
+  .sg-doors{grid-template-columns:1fr}.sg-door{flex-direction:row}.sg-door .art{width:118px;height:auto;min-height:112px;flex:none}.sg-door .typ{display:none}.sg-door .art{width:104px;padding:0 2px 8px}.sg-door .art img{width:auto!important;height:auto!important;max-width:40px;max-height:48px}.sg-door .art img:nth-child(2):not(:last-child){max-width:56px;max-height:64px}
+  .sg-offer{grid-template-columns:1fr}.sg-of{flex-direction:row;text-align:left}.sg-of .orb{width:52px;height:52px;flex:none}
+  .sg-sum{grid-template-columns:repeat(2,minmax(0,1fr))}.sg-shop{grid-template-columns:repeat(2,minmax(0,1fr))}.sg-it .top{flex-direction:column;align-items:flex-start}.sg-tip{position:static;width:auto}
+}
+/* collection des légendaires (Songe › Légendaires) */
+.sg-lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.sg-lg{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:12px 6px 9px;border-radius:13px;border:2px solid rgba(255,157,60,.22);background:rgba(10,8,25,.45);min-width:0;color:#efe9ff;font:inherit;cursor:pointer}
+.sg-lg .ic{width:54px;height:54px;border-radius:14px;display:grid;place-items:center;background:radial-gradient(circle,rgba(255,157,60,.4),rgba(255,157,60,.05) 65%)}
+.sg-lg .ic img{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+.sg-lg b{font-size:12px;line-height:1.2;color:#ffc98a;overflow-wrap:anywhere}
+.sg-lg .xs{line-height:1.25}
+.sg-lg .lv{position:absolute;left:6px;top:6px;font-size:10px;font-weight:900;padding:1px 5px;border-radius:6px;background:rgba(0,0,0,.45);color:#efe9ff}
+.sg-lg .or{position:absolute;right:6px;top:6px;font-size:9px;font-weight:900;padding:1px 5px;border-radius:6px;background:rgba(95,216,208,.2);color:#b5fff8}
+.sg-lg .or.d{background:rgba(255,157,60,.2);color:#ffc98a}
+.sg-lg.no .ic{background:rgba(255,255,255,.05);box-shadow:0 0 0 2px rgba(255,255,255,.12)}
+.sg-lg.no .ic img{filter:brightness(0) opacity(.4)}
+.sg-lg.no b{color:#b9afd9}
+.sg-lg .lgev i{background:rgba(255,255,255,.18)}.sg-lg .lgev i.on{background:#ff9d3c}
+.statl.lgline{color:#a58bff}:root[data-theme="dark"] .statl.lgline{color:#c9b8ff}
+@media (max-width:560px){.sg-lgrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}}
+.cele-t .lxn.cf{background-image:linear-gradient(90deg,#c9b8ff,#ffffff,#7fe8e0,#ffb35c,#c9b8ff)!important}
+>>>>>>> 53a7a6f (Bêta 0.1.48 « Le Songe infini » : l'Expédition devient le Songe infini (carte de 26 salles par semaine, 8 intensités, Bribes de rêve et Marché onirique) et 38 objets légendaires à passif unique)
