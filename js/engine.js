@@ -2111,6 +2111,7 @@
     return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
   };
 
+  E.lootRolls = (S) => Math.max(1, E.team(S).length); // 0.1.58 : un tirage de ressource par héros
   const giveRewards = (S, mons, opts = {}) => {
     const team = E.team(S); const fs = E.freeSpirit(S);
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
@@ -2150,14 +2151,16 @@
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
     const seen = (k, what) => { (S.seenDrops[k] = S.seenDrops[k] || {})[what] = 1; };
+    const nRoll = E.lootRolls(S);
     mons.forEach((m) => {
       const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1);
       const lp = E.lootPenalty(topL - m.lvl); const dm0 = dm; { const dm = dm0 * lp * (m.champ ? 2 : 1);
       const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
-      const rolls = 1 + (E.teamHas(S, "sram") && rnd() < 0.1 ? 1 : 0);
-      const gotR = new Set();
-      for (let rr = 0; rr < rolls; rr++)
-      T.drops.forEach(([r, rate]) => { if (gotR.has(r)) return; const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); const base = E.resRate(rate); if (rnd() * 100 < Math.min(100, base * mm)) { gotR.add(r); addRes(S, r, q); out.res[r] = (out.res[r] || 0) + q; seen(m.key, r); } });
+      // 0.1.58 : un tirage par héros, la chance est partagée entre eux (même moyenne, le bonus au-delà de 100 % n'est plus perdu)
+      const rolls = nRoll + (E.teamHas(S, "sram") && rnd() < 0.1 ? 1 : 0);
+      T.drops.forEach(([r, rate]) => { const mm = dm * tq * (ougi && /^Viande/.test(r) ? 1.2 : 1); const p = Math.min(100, E.resRate(rate) * mm / nRoll); let n = 0;
+        for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
+        if (n) { addRes(S, r, q * n); out.res[r] = (out.res[r] || 0) + q * n; seen(m.key, r); } });
       if (m.champ) { const ok = T.drops.filter(([r, p]) => !E.isKey(r) && p < 100); const best = ok.filter(([, p]) => p >= 5).sort((a, b) => a[1] - b[1])[0] || ok.sort((a, b) => b[1] - a[1])[0] || T.drops[0]; /* la ressource typique la plus rare du monstre */ if (best) { addRes(S, best[0], 3); out.res[best[0]] = (out.res[best[0]] || 0) + 3; out.champ.res = [best[0], 3]; } }
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
       T.items.forEach(([tpl, rate]) => {
@@ -2342,9 +2345,9 @@
       if (cyc) {
         const team = E.team(S).length; const grp = (1 + Math.min(8, team + 1)) / 2;
         const dm = E.dropMult(S) * E.evMult("drop") * E.PACE_REW * (E.teamHas(S, "enu") ? 1.15 : 1);
-        let per = 0;
+        let per = 0; const nR = E.lootRolls(S);
         sub.monsters.forEach((k) => { const m = MONSTERS[k]; if (!m) return; const d = m.drops.find(([r]) => r === name); const tq = E.huntTier(S, k) >= 1 ? 1.05 : 1;
-          if (d) per += Math.min(1, E.resRate(d[1]) * dm * tq / 100) / sub.monsters.length;
+          if (d) per += nR * Math.min(1, E.resRate(d[1]) * dm * tq / 100 / nR) / sub.monsters.length;
           (sub.dungeons || (sub.dungeon ? [sub.dungeon] : [])).forEach((did) => { if (DUNGEONS[did] && DUNGEONS[did].key === name) per += Math.min(1, DUNGEONS[did].keyDrop * dm / 100) / sub.monsters.length; }); });
         if (per > 0) { h += (3600 / cyc.s) * cyc.win * grp * per; src.push(sub.name); }
       }
