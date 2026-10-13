@@ -46,9 +46,33 @@ create table if not exists public.wb_kills (
 alter table public.wb_kills enable row level security;
 alter table public.wb_kills add column if not exists posted timestamptz; -- annoncé sur Discord (workflow « Boss des mondes sur Discord »)
 
+-- 0.1.56 « Boss des mondes rééquilibré » : chaque essai = moyenne de 3 combats, points selon niveau, équipement et nombre de héros
+-- (environ 5 fois moins de points). Une seule fois : les essais du boss en cours partent dans wb_hits_old (classement remis à zéro
+-- et essais du jour rendus), ses PV et dégâts sont divisés par 5 (il garde la même part de PV). Coffres et Fragments déjà gagnés
+-- restent dans les sacs (donnés par hdv_op), et ceux qui avaient frappé comptent toujours pour la récompense de mort (choix 6A).
+create table if not exists public.wb_hits_old (
+  id bigint primary key, n int not null, user_id uuid not null references auth.users (id) on delete cascade,
+  k int not null, day date not null, points int not null, grade text not null, phase int not null, lvl int not null, rounds int, alive int,
+  at timestamptz not null, archived_at timestamptz not null default now()
+);
+create index if not exists wb_hits_old_n on public.wb_hits_old (n, user_id);
+alter table public.wb_hits_old enable row level security;
+create table if not exists public.wb_resets (id text primary key, at timestamptz not null default now(), info jsonb);
+alter table public.wb_resets enable row level security;
+do $$ declare s record; moved int; begin
+  if exists (select 1 from public.wb_resets where id = '0.1.56') then return; end if;
+  select * into s from public.wb_state where id = 1;
+  insert into public.wb_hits_old (id, n, user_id, k, day, points, grade, phase, lvl, rounds, alive, at)
+    select id, n, user_id, k, day, points, grade, phase, lvl, rounds, alive, at from public.wb_hits where n = s.n;
+  get diagnostics moved = row_count;
+  delete from public.wb_hits where n = s.n;
+  update public.wb_state set hp = greatest(1, round(hp / 5.0)), dmg = round(dmg / 5.0) where id = 1;
+  insert into public.wb_resets (id, info) values ('0.1.56', jsonb_build_object('n', s.n, 'hp', s.hp, 'dmg', s.dmg, 'hits', moved));
+end $$;
+
 -- ---------- outils internes ----------
 create or replace function public.wb_grade(p int) returns text language sql immutable
-as $$ select case when p >= 600 then 'SSS' when p >= 450 then 'SS' when p >= 300 then 'S' when p >= 200 then 'A' when p >= 100 then 'B' else 'C' end $$;
+as $$ select case when p >= 500 then 'SSS' when p >= 350 then 'SS' when p >= 200 then 'S' when p >= 100 then 'A' when p >= 50 then 'B' else 'C' end $$;
 create or replace function public.wb_frag(g text) returns int language sql immutable
 as $$ select case g when 'SSS' then 6 when 'SS' then 5 when 'S' then 4 when 'A' then 3 when 'B' then 2 else 1 end $$;
 create or replace function public.wb_cons(g text) returns jsonb language sql immutable
@@ -94,7 +118,7 @@ begin
   end if;
   select * into k from wb_kills order by n desc limit 1;
   return jsonb_build_object('n', s.n, 'hp', s.hp, 'dmg', s.dmg, 'started', s.started, 'phase', wb_phase(s.dmg, s.hp), 'bonus', s.bonus_until, 'now', now(),
-    'players', (select count(distinct user_id) from wb_hits where n = s.n), 'top', wb_top(s.n, 10), 'me', mine,
+    'players', (select count(*) from (select user_id from wb_hits where n = s.n union select user_id from wb_hits_old where n = s.n) x), 'top', wb_top(s.n, 10), 'me', mine,
     'last', case when k.n is null then null else jsonb_build_object('n', k.n, 'name', wb_name(k.n), 'ended', k.ended, 'dur', extract(epoch from (k.ended - k.started))::int,
       'by', pseudo_of(k.last_user), 'top', k.top, 'players', k.players) end);
 end $$;
@@ -135,10 +159,10 @@ begin
   if after >= s.hp then
     killed := true;
     t3 := wb_top(p_n, 3);
-    select count(distinct user_id) into pl from wb_hits where n = p_n;
+    select count(*) into pl from (select user_id from wb_hits where n = p_n union select user_id from wb_hits_old where n = p_n) x;
     insert into wb_kills (n, hp, started, last_user, players, top) values (p_n, s.hp, s.started, p_user, pl, t3) on conflict (n) do nothing;
     -- tous ceux qui l'ont frappé : Coffre en or et 10 Fragments ; au premier passage de Gargandyas, le titre « Briseur de Titan »
-    for r in select distinct user_id from wb_hits where n = p_n loop
+    for r in select user_id from wb_hits where n = p_n union select user_id from wb_hits_old where n = p_n loop
       perform hdv_op(r.user_id, jsonb_build_object('cons', jsonb_build_object('coffre_or', 1), 'res', jsonb_build_object('Fragment d''anomalie', 10))
         || case when p_n = 1 then jsonb_build_object('title', 'Briseur de Titan') else '{}'::jsonb end,
         format('%s est tombé : Coffre en or et 10 Fragments d''anomalie%s', nm, case when p_n = 1 then ', titre « Briseur de Titan »' else '' end));
@@ -157,8 +181,8 @@ begin
     end loop;
     -- le suivant : PV ajustés pour tenir environ un jour (entre la moitié et le double)
     dur := greatest(600, extract(epoch from (now() - s.started)));
-    nhp := greatest(3000, least(s.hp * 2, greatest(s.hp / 2, round(s.hp * 86400 / dur))));
-    if p_n = 1 then nhp := greatest(3000, least(s.hp, round(s.hp * 86400 / dur))); end if; -- Gargandyas avait des PV pour 2 jours
+    nhp := greatest(600, least(s.hp * 2, greatest(s.hp / 2, round(s.hp * 86400 / dur))));
+    if p_n = 1 then nhp := greatest(600, least(s.hp, round(s.hp * 86400 / dur))); end if; -- Gargandyas avait des PV pour 2 jours
     update wb_state set n = p_n + 1, hp = nhp, dmg = 0, started = now(), bonus_until = now() + interval '1 hour' where id = 1;
     perform wb_ann(jsonb_build_object('ev', 'dead', 'n', p_n, 'name', nm, 'dur', round(dur)::int, 'top', (select coalesce(jsonb_agg(e->>'p'), '[]'::jsonb) from jsonb_array_elements(t3) e), 'players', pl), p_user);
     perform wb_ann(jsonb_build_object('ev', 'arr', 'n', p_n + 1, 'name', wb_name(p_n + 1)));

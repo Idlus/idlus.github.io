@@ -1,6 +1,17 @@
 {
-  "version": "0.1.55.1",
+  "version": "0.1.56",
   "versions": [
+    {
+      "v": "0.1.56",
+      "name": "Boss des mondes rééquilibré",
+      "items": [
+        "Boss des mondes : chaque essai joue maintenant 3 combats et garde la moyenne. Fini les essais où toute l'équipe tombe d'un coup par malchance. L'écran de fin montre les 3 combats",
+        "Le niveau, l'équipement et le nombre de héros comptent : avec 8 héros bien équipés, on vise B au niveau 60, A vers 80-100, S vers 120-160 et SSS au niveau 200",
+        "La Charge du boss frappe moins fort (×1,5 au lieu de ×2,2)",
+        "Nouvelle grille : B dès 5 000 PV, A 10 000, S 20 000, SS 35 000, SSS 50 000",
+        "Gargandyas garde la même part de vie (environ 64 %), mais ses PV passent de 1 000 000 à 200 000. Le classement repart de zéro et les essais du jour sont rendus. Les coffres et Fragments déjà gagnés restent, et ceux qui l'ont déjà frappé auront quand même la récompense quand il tombe"
+      ]
+    },
     {
       "v": "0.1.55.1",
       "name": "Sac sans l'équipé",

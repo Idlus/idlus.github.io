@@ -45,12 +45,13 @@
   E.WB_HP0 = 10000;   // PV (en points) du premier passage de Gargandyas : environ 2 jours (choix G4 ; 20 000 jusqu'en 0.1.50.3)
   E.WB_DAY_S = 86400; // un boss doit tenir environ un jour : les PV du suivant s'ajustent (supabase/wboss.sql)
   /* grades d'un essai (points) : coffre ouvert tout de suite et Fragments d'anomalie */
+  /* 0.1.56 : grille recalculée avec le nouveau calcul (8 héros bien équipés : B au niveau 60, S vers 120-160, SSS au niveau 200) */
   E.WB_GRADES = [
-    { g: "SSS", min: 600, cons: { coffre_obsidienne: 1 }, frag: 6 },
-    { g: "SS", min: 450, cons: { coffre_or: 1 }, frag: 5 },
-    { g: "S", min: 300, cons: { coffre_argent: 2 }, frag: 4 },
-    { g: "A", min: 200, cons: { coffre_argent: 1 }, frag: 3 },
-    { g: "B", min: 100, cons: { coffre_bois: 2 }, frag: 2 },
+    { g: "SSS", min: 500, cons: { coffre_obsidienne: 1 }, frag: 6 },
+    { g: "SS", min: 350, cons: { coffre_or: 1 }, frag: 5 },
+    { g: "S", min: 200, cons: { coffre_argent: 2 }, frag: 4 },
+    { g: "A", min: 100, cons: { coffre_argent: 1 }, frag: 3 },
+    { g: "B", min: 50, cons: { coffre_bois: 2 }, frag: 2 },
     { g: "C", min: 0, cons: { coffre_bois: 1 }, frag: 1 },
   ];
   E.wbGrade = (pts) => E.WB_GRADES.find((x) => pts >= x.min) || E.WB_GRADES[E.WB_GRADES.length - 1];
@@ -109,7 +110,7 @@
     W.tmp = "wb_" + def.key; W.dg = { name: def.name, lvl: 200, boss: def.mon, rooms: [{}], bossMobs: mobs, coBoss: [] }; const tmp = W.tmp; DUNGEONS[tmp] = W.dg;
     try {
       E.setRng(W.rng); E.setClock(() => now);
-      S2.dungeon = { id: tmp, room: 1, stasis: 4, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: [], eliteRoom: -1, gboss: true };
+      S2.dungeon = { id: tmp, room: 1, stasis: 4, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: [], eliteRoom: -1, gboss: true }; W.lvl = S2.dungeon.syncLvl; W.n = team.length;
       const F = E.startFight(S2); if (!F) return { err: "Combat impossible." };
       const B = F.ents[F.bossIdx]; if (!B) return { err: "Boss introuvable." };
       F.ents.forEach((e) => { if (e.side === "m" && e !== B) { e.alive = false; e.hp = 0; e.gone = true; } }); // seul contre le boss
@@ -133,17 +134,38 @@
       return "step";
     } finally { delete DUNGEONS[W.tmp]; E.setRng(rng0); E.setClock(clock0); E.events.length = evLen; }
   };
+  /* 0.1.56 « Boss des mondes rééquilibré » (choix de Mathis) :
+     - le niveau compte : ×2,2 au niveau 200, courbe en puissance 1,7 (8 héros bien équipés : B au niveau 60, SSS au niveau 200) ;
+       WB_LVLPOW corrige d'abord l'écart naturel entre niveaux (sans lui, les niveaux 60-80 faisaient le plus de points) ;
+     - le nombre de héros compte : les PV du boss sont ramenés à une équipe de 8 (4 héros font environ moitié moins) ;
+     - l'équipement compte toujours, puisque les dégâts viennent du vrai combat. */
+  E.WB_LVLPOW = [[20, 0.95], [40, 0.93], [60, 0.55], [80, 0.53], [100, 0.67], [120, 0.78], [140, 0.82], [160, 0.71], [180, 0.72], [200, 1.03]];
+  E.wbLvlPow = (lvl) => { const T = E.WB_LVLPOW; if (lvl <= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (lvl <= T[i][0]) { const [a, x] = T[i - 1], [b, y] = T[i]; return x + ((y - x) * (lvl - a)) / (b - a); } return T[T.length - 1][1]; };
+  E.WB_LVL200 = 2.2; E.WB_LVLEXP = 1.7; E.WB_TEAM_REF = 8;
+  E.wbTeamK = (n) => (1 + Math.max(1, n) * 1.1) / (1 + E.WB_TEAM_REF * 1.1); // même formule que les PV des boss de donjon (engine.js)
+  E.wbMult = (lvl, n) => E.wbLvlPow(lvl) * E.WB_LVL200 * Math.pow(Math.max(1, lvl) / 200, E.WB_LVLEXP) * E.wbTeamK(n);
+  E.WB_CHARGE = 1.5; // la Charge du boss des mondes frappe ×1,5 (×2,2 en donjon) : elle balayait toute l'équipe un essai sur deux
   E.wbResult = (W) => {
     const F = W.S2.fight; const B = W.B;
     const dmg = Math.max(0, B.hpMax - Math.max(0, B.hp)); const raw = (dmg / W.base) * 100;
-    const points = Math.round(raw * (W.def.pow || 1));
+    const points = Math.round(raw * (W.def.pow || 1) * E.wbMult(W.lvl || 1, W.n || 1));
     return { points, raw: Math.round(raw), pv: points * E.WB_PV, grade: E.wbGrade(points).g, rounds: Math.min(F.round, E.WB_ROUNDS), alive: F.ents.filter((e) => e.side === "c" && !e.summon && e.alive).length };
   };
-  /* Un essai joué d'un coup. Renvoie { points, raw, pv, grade, rounds, alive } ou { err }. */
-  E.wbSim = (S, def, phase, seed, now = E.now()) => {
+  /* Un combat joué d'un coup. Renvoie { points, raw, pv, grade, rounds, alive } ou { err }. */
+  E.wbFight = (S, def, phase, seed, now = E.now()) => {
     const W = E.wbWatch(S, def, phase, seed, now); if (W.err) return W;
     for (let g = 0; g < 200000 && !W.done; g++) E.wbWatchStep(W);
     return E.wbResult(W);
+  };
+  /* 0.1.56 : un essai = 3 combats (hasard tiré de seed), on garde la moyenne ; watchSeed = le combat le plus proche de la moyenne (« Revoir le combat »). */
+  E.WB_FIGHTS = 3;
+  E.wbSim = (S, def, phase, seed, now = E.now()) => {
+    const L = [];
+    for (let i = 0; i < E.WB_FIGHTS; i++) { const sd = i ? hash(`${seed >>> 0}|${i}`) : seed >>> 0; const r = E.wbFight(S, def, phase, sd, now); if (r.err) return r; L.push(Object.assign({ seed: sd }, r)); }
+    const points = Math.round(L.reduce((a, r) => a + r.points, 0) / L.length);
+    const near = L.slice().sort((a, b) => Math.abs(a.points - points) - Math.abs(b.points - points))[0];
+    return { points, raw: Math.round(L.reduce((a, r) => a + r.raw, 0) / L.length), pv: points * E.WB_PV, grade: E.wbGrade(points).g, rounds: near.rounds, alive: near.alive, watchSeed: near.seed,
+      fights: L.map((r) => ({ points: r.points, rounds: r.rounds, alive: r.alive })) };
   };
 
   /* ---------- boutique de Fragments ---------- */

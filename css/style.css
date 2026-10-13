@@ -3707,6 +3707,9 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .wb-res{text-align:center;padding:6px 4px}
 .wb-res .big{font-family:var(--font-title);font-size:70px;line-height:1}
 .wb-res .dmg{font-family:var(--font-title);font-size:26px}
+.wb-fights{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:6px 0 4px}
+.wb-fights .xs{width:100%}
+.wb-note{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--accent,#9fd84a) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent,#9fd84a) 35%,transparent)}
 .wb-res .chest{display:inline-flex;align-items:center;gap:10px;background:var(--panel2);border-radius:14px;padding:10px 14px;margin:8px 0}
 .wb-res .chest img{width:46px;height:46px}
 .wb-guest{display:flex;gap:10px;align-items:center;padding:10px 14px;margin-top:10px;background:var(--panel2);border:2px dashed var(--frame2);border-radius:14px;font-size:13px}

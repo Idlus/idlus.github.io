@@ -1721,7 +1721,7 @@
     if (e.paLoss >= 2) { attacks = Math.max(0, attacks - 1); flog(F, `${e.name} manque de PA et frappe moins.`, "dim"); }
     const lowPa = (e.paLoss === 1 ? 0.85 : 1) * (1 - (e.weakNext || 0) / 100); e.paLoss = 0; e.weakNext = 0;
     if (e.charging === "fire") { e.charging = false; const heroes = alive(F, "c"); flog(F, `${e.name} déclenche son attaque dévastatrice !`, "m");
-      F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * 2.2 * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); }); return; }
+      F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) }); heroes.forEach((t) => { const d = dealDamage(F, e, t, e.dmg * (F.wboss && E.WB_CHARGE ? E.WB_CHARGE : 2.2) * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!t.alive) flog(F, `${t.name} est à terre (−${d}).`, "ko"); }); return; }
     const mdmg = (1 + buffSum(e, "mdmg") / 100) * (alive(F, "m").some((m) => m.elite && m !== e) ? 1.15 : 1) * (alive(F, "m").some((m) => (m.champ === "meneur" || m.role === "chef") && m !== e) ? 1.1 : 1) * (e.enrageMod && e.hp < e.hpMax * 0.5 ? 1.25 : 1);
     const dmgSpells = (e.sp || []).filter((s) => s.fx.some((f) => f.k === "dmg" || f.k === "drain" || f.k === "dot"));
     const refAvg = dmgSpells.length ? dmgSpells.reduce((a, s) => a + avgDmg(s), 0) / dmgSpells.length : 1;
