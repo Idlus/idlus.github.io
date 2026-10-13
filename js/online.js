@@ -12,9 +12,11 @@
      version de test utilisait (comptes, guildes, Hôtel de vente, classements gardés). La version de
      test (/beta/) n'a plus de serveur, sinon ses parties se mélangeraient à celles du public.
      mail = connexion par e-mail proposée (coupée tant qu'il n'y a pas de vrai service d'envoi d'e-mails). */
+  /* slots = parties 2 et 3 gardées en ligne (tools/emplacements.sql, à passer dans supabase/). Tant qu'il n'est pas appliqué sur
+     le serveur (accord écrit de Mathis), les parties 2 et 3 restent sur l'appareil. */
   const SERVERS = {
-    public: { url: "https://bolbuxuxydfslwpfbfff.supabase.co", key: "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H", mail: false },
-    beta: { url: "", key: "", mail: false }
+    public: { url: "https://bolbuxuxydfslwpfbfff.supabase.co", key: "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H", mail: false, slots: false },
+    beta: { url: "", key: "", mail: false, slots: false }
   };
   const ON = {};
   const lib = root.__IDLUS_SB || (root.supabase && root.supabase.createClient ? root.supabase : null); // __IDLUS_SB : faux serveur des tests
@@ -22,12 +24,23 @@
      sauvegarde séparée. Rien n'est envoyé en ligne et la vraie partie n'est pas touchée. */
   const TM = (() => { try { return root.localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
   ON.world = /\/beta\//.test(root.location ? root.location.pathname : "") || TM ? "beta" : "public";
-  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true } : SERVERS[ON.world];
+  const SRV = root.__IDLUS_SB && !TM ? { url: "test", key: "test", mail: true, slots: !root.__IDLUS_NOSLOTS } : SERVERS[ON.world];
   const URL_ = SRV.url, KEY_ = SRV.key;
   ON.enabled = !!lib && !!URL_ && !root.__IDLUS_OFFLINE; // __IDLUS_OFFLINE : test de démarrage sans serveur
   ON.mail = SRV.mail;
   let sb = null, KEY = "dofousxen-save", VER = "";
   ON.user = null; ON.profile = null;
+  /* 1.0.11 : trois parties par appareil et par compte (écran « Choisis ta partie »). La partie 1 est celle du
+     compte (table saves) : elle porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et
+     le boss des mondes, que le serveur vérifie avec elle. Les parties 2 et 3 se jouent en solo. */
+  let SLOT = 1;
+  ON.slot = () => SLOT;
+  ON.solo = () => SLOT !== 1;
+  ON.slotsOk = !!SRV.slots;
+  ON.slotOnline = (n) => (n || SLOT) === 1 || ON.slotsOk;
+  ON.setSlot = (n, key) => { SLOT = n; KEY = key; };
+  const SOLO_ERR = "Partie solo : les classements, le Kolizéum classé, l'Hôtel de vente, la guilde et les boss se jouent avec ta partie 1.";
+  ON.SOLO_ERR = SOLO_ERR;
 
   /* ---------- état affiché dans la pastille ----------
      anon : pas connecté · ok : partie à jour en ligne · sync : envoi en cours
@@ -44,6 +57,7 @@
   const lkKey = () => KEY + "-online";
   ON.link = () => { try { return JSON.parse(root.localStorage.getItem(lkKey()) || "{}") || {}; } catch (e) { return {}; } };
   ON.setLink = (p) => { const l = Object.assign(ON.link(), p); try { root.localStorage.setItem(lkKey(), JSON.stringify(l)); } catch (e) {} return l; };
+  ON.linkOf = (key) => { try { return JSON.parse(root.localStorage.getItem(key + "-online") || "{}") || {}; } catch (e) { return {}; } };
   ON.clearLink = () => { const skip = ON.link().skip; try { root.localStorage.setItem(lkKey(), JSON.stringify(skip ? { skip } : {})); } catch (e) {} };
 
   ON.device = () => /Mobi|Android|iPhone|iPad/i.test((root.navigator && root.navigator.userAgent) || "") ? "téléphone" : "ordinateur";
@@ -142,15 +156,23 @@
 
   /* ---------- la partie en ligne ---------- */
   /* Renvoie null s'il n'y a pas encore de partie en ligne ; lève une erreur hors ligne. */
-  ON.remoteInfo = async () => {
-    const { data, error } = await withTimeout(sb.rpc("save_info"));
+  ON.remoteInfo = async (n) => {
+    n = n || SLOT;
+    const { data, error } = await withTimeout(n === 1 ? sb.rpc("save_info") : sb.rpc("slot_info", { p_slot: n }));
     if (error) throw error;
     return (data && data[0]) || null;
   };
-  ON.remoteData = async () => {
-    const { data, error } = await withTimeout(sb.from("saves").select("data").eq("user_id", ON.user.id).maybeSingle(), 20000);
+  ON.remoteData = async (n) => {
+    n = n || SLOT;
+    const q = n === 1 ? sb.from("saves").select("data").eq("user_id", ON.user.id) : sb.from("save_slots").select("data").eq("user_id", ON.user.id).eq("slot", n);
+    const { data, error } = await withTimeout(q.maybeSingle(), 20000);
     if (error) throw error;
     return data ? data.data : null;
+  };
+  /* 1.0.11 : effacer la partie 2 ou 3 du compte (la 1 ne s'efface qu'avec le compte). */
+  ON.deleteSlot = async (n) => {
+    if (!sb || !ON.user || n === 1 || !ON.slotsOk) return null;
+    try { const { error } = await withTimeout(sb.rpc("delete_slot", { p_slot: n })); return error ? error.message || "erreur" : null; } catch (e) { return "Pas de connexion au serveur."; }
   };
   /* Envoie la partie. Résultat : "ok", "conflict" (une autre version est en ligne) ou "offline". */
   let pushing = null;
@@ -158,9 +180,9 @@
      revienne (délai dépassé) : l'appareil gardait l'ancienne date et l'envoi suivant croyait qu'un autre appareil avait
      joué (« Deux versions de ta partie »). Chaque envoi porte maintenant un numéro (meta.pid) gardé sur l'appareil :
      si la version en ligne est l'un de nos propres envois, ce n'est pas un conflit. */
-  ON.ownPush = (info) => { const l = ON.link(); return !!(info && info.meta && info.meta.pid && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
+  ON.ownPush = (info, l) => { l = l || ON.link(); return !!(info && info.meta && info.meta.pid && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
   ON.push = (txt, meta, savedAt, force) => {
-    if (!sb || !ON.user) return Promise.resolve("offline");
+    if (!sb || !ON.user || !ON.slotOnline()) return Promise.resolve("offline");
     if (pushing && !force) return pushing;
     setState("sync");
     const pid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -171,7 +193,8 @@
         let data = null;
         for (let i = 0; i < 2; i++) {
           const l = ON.link();
-          const r = await withTimeout(sb.rpc("push_save", { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force }), 20000);
+          const args = { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force };
+          const r = await withTimeout(SLOT === 1 ? sb.rpc("push_save", args) : sb.rpc("push_slot", Object.assign({ p_slot: SLOT }, args)), 20000);
           if (r.error) throw r.error;
           data = r.data; if (data || i) break;
           const info = await ON.remoteInfo(); // envoi refusé : la version en ligne est-elle un de nos envois ?
@@ -192,6 +215,7 @@
      Renvoie la réponse du serveur, ou { net: true } s'il faut réessayer plus tard. */
   ON.submitRecord = async (did) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.solo()) return { ok: false, err: SOLO_ERR }; // le serveur rejoue avec la partie 1 : jamais pour une partie solo
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { did } }), 30000);
       if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : { net: true }; }
@@ -199,7 +223,11 @@
     } catch (e) { return { net: true }; }
   };
   /* ---------- chat et panel admin (0.1.19, supabase/chat.sql) ---------- */
+  /* 1.0.11 : une partie solo ne touche jamais à ce que le serveur tient pour la partie 1 (ventes, échanges, guilde,
+     Kolizéum, coefficient de brisage commun) : sinon des kamas ou des objets passeraient d'une partie à l'autre. */
+  const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_)/;
   const rpc = async (name, args) => {
+    if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
     try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }
     catch (e) { return { err: "Pas de connexion au serveur." }; }
   };
@@ -244,6 +272,7 @@
   /* 0.1.19 : défi du jour, rejoué par la même fonction serveur avec la partie en ligne. */
   ON.submitDefi = async (tier) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { defi: tier } }), 30000);
       if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : st === 429 ? { ok: false, err: "trop tôt" } : { net: true }; }
@@ -253,6 +282,7 @@
   /* 0.1.22 : boss de guilde ({ gboss: 1 }) et défense de Percepteur ({ perco: id }), rejoués par la même fonction serveur. */
   ON.submitGuild = async (body) => {
     if (!sb || !ON.user) return { net: true };
+    if (ON.solo()) return { ok: false, err: SOLO_ERR };
     try {
       const { data, error } = await withTimeout(sb.functions.invoke("record", { body }), 30000);
       if (error) { let j = null; try { j = await error.context.json(); } catch (e) {} const st = error.context && error.context.status; return j && j.err ? j : st === 429 ? { ok: false, err: "Doucement : réessaie dans quelques secondes." } : { net: true }; }

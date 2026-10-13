@@ -25,6 +25,16 @@
   let KEY = "dofousxen-save", VER = "", E = null, now = () => Date.now();
   SV.init = (o) => { KEY = o.key; VER = o.version; E = o.engine; if (E && E.now) now = () => E.now(); };
   SV.key = () => KEY;
+  /* 1.0.11 : écran « Choisis ta partie » : lit une partie sans la lancer (clé de la partie 1, 2 ou 3).
+     Si elle est illisible, la copie de secours la plus récente la remplace, comme au chargement. */
+  SV.peek = (k) => {
+    const raw = store.get(k);
+    if (!raw) return { state: null, restored: false };
+    try { return { state: E.deserialize(raw), restored: false }; } catch (e) {}
+    let a = []; try { a = JSON.parse(store.get(k + "-copies") || "[]"); } catch (e) {}
+    for (const c of Array.isArray(a) ? a : []) { try { if (c && typeof c.txt === "string") return { state: E.deserialize(c.txt), restored: true }; } catch (e) {} }
+    return { state: null, restored: false };
+  };
 
   /* ---------- la partie ---------- */
   SV.read = () => store.get(KEY);
@@ -39,7 +49,7 @@
   /* ---------- copies de secours ----------
      3 copies tournantes (une toutes les 10 min de jeu), une avant chaque mise à jour du jeu
      et une avant chaque restauration. Si la sauvegarde est illisible, la plus récente prend le relais. */
-  const COPY_EVERY = 10 * 60 * 1000, COPY_MAX = { auto: 3, maj: 1, avant: 1 };
+  const COPY_EVERY = 10 * 60 * 1000, COPY_MAX = { auto: 3, maj: 1, avant: 1, enligne: 1 }; // 1.0.11 : enligne = version en ligne remplacée par celle de l'appareil
   const copyKey = () => KEY + "-copies", verKey = () => KEY + "-version";
   SV.copies = () => { try { const a = JSON.parse(store.get(copyKey()) || "[]"); return Array.isArray(a) ? a.filter((c) => c && typeof c.txt === "string") : []; } catch (e) { return []; } };
   const writeCopies = (a) => {

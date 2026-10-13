@@ -1,6 +1,18 @@
 {
-  "version": "1.0.10.6",
+  "version": "1.0.11",
   "versions": [
+    {
+      "v": "1.0.11",
+      "name": "Choisis ta partie",
+      "items": [
+        "Nouvel écran au lancement, comme dans Melvor Idle : tu choisis ta partie parmi 3 emplacements, chacun avec le portrait de ton héros, tes niveaux cumulés, tes succès, tes héros, tes kamas et ta dernière partie",
+        "La partie 1 est celle des classements : course, Hôtel de vente, guilde, Kolizéum classé et boss des mondes. Les parties 2 et 3 se jouent en solo, pour une autre aventure sur le même compte (Kolizéum contre des Fantômes, essais d'entraînement au boss des mondes)",
+        "Les parties 2 et 3 sont gardées sur cet appareil pour l'instant ; la partie 1 reste en ligne comme avant",
+        "Case « Ouvrir directement ma dernière partie » pour passer l'écran. On y revient en jeu par Options › Compte › Changer de partie",
+        "Si une partie a avancé à la fois ici et sur un autre appareil, les deux versions sont dans sa carte, la plus avancée en premier, et tu choisis laquelle jouer (l'autre part dans les copies de secours)",
+        "Sans compte, le même écran propose « Se connecter avec Discord » en haut. Si le serveur ne répond pas, les parties de l'appareil restent jouables"
+      ]
+    },
     {
       "v": "1.0.10.6",
       "name": "Jouer pendant une panne",

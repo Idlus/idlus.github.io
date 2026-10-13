@@ -55,7 +55,7 @@
 
   /* ---------- opérations du serveur appliquées à la partie ---------- */
   const cursor = () => { const s = S(); return (s && s.hdv && s.hdv.op) || 0; };
-  const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id);
+  const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id && !(ON.solo && ON.solo())); // 1.0.11 : pas de vente ni d'achat depuis une partie solo
   function apply(ops, quiet) {
     const s = S(); if (!s || !ops || !ops.length || !mine()) return 0;
     s.hdv = s.hdv || { op: 0, log: [] }; s.hdv.log = s.hdv.log || [];
@@ -84,7 +84,7 @@
   }
   async function act(name, args, okTxt) {
     if (M.busy) return null;
-    if (!mine()) { X().toast("Crée ton compte (gratuit) pour acheter et vendre : ta partie te suit."); return null; }
+    if (!mine()) { X().toast(ON.user && ON.solo && ON.solo() ? ON.SOLO_ERR : "Crée ton compte (gratuit) pour acheter et vendre : ta partie te suit."); return null; }
     M.busy = true; paint();
     /* la partie en ligne doit être à jour : le serveur vérifie les kamas et le sac dedans */
     if (name === "hdv_list" || name === "hdv_buy" || name === "hdv_order_new" || name === "hdv_order_fill") { try { await X().onPush(); } catch (e) {} }
@@ -129,7 +129,7 @@
   const paint = () => { if (window.DX.ui.tab === "hdv") { const m = $("#main"); if (m) { const y = window.scrollY; window.DX.repaint(m, html()); window.scrollTo(0, y); } } }; // garde le curseur là où on écrit
   function html() {
     const s = S(); const open = M.mine ? M.mine.open.length : null;
-    const login = mine() ? "" : guest("acheter, vendre et échanger avec les autres joueurs");
+    const login = mine() ? "" : ON.user && ON.solo && ON.solo() ? X().soloPanel("l'Hôtel de vente") : guest("acheter, vendre et échanger avec les autres joueurs");
     const panel = s && s.panelUsed ? `<p class="note">Partie retouchée par le panel de test : tu peux regarder, mais pas vendre ni acheter.</p>` : "";
     const body = M.tab === "sell" ? sellHtml() : M.tab === "mine" ? mineHtml() : M.tab === "log" ? logHtml() : M.tab === "ord" ? ordHtml() : buyHtml();
     const oOpen = M.oMine ? M.oMine.filter((x) => x.st === "open").length : null;

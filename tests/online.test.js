@@ -28,7 +28,9 @@ const MOCK = () => {
   const ts = () => new Date(Date.now()).toISOString().replace("Z", "000Z").replace(/\.(\d{3})000Z$/, ".$1" + String(Math.floor(Math.random() * 1000)).padStart(3, "0") + "Z");
   const q = (table) => {
     const f = []; let ins = null, del = false, ord = [], lim = 1e9, head = false;
-    const rowsOf = () => { const d = db(); if (table === "profiles") return d.profiles; if (table === "saves") return Object.entries(d.saves).map(([user_id, s]) => Object.assign({ user_id }, s)); return (d.views || {})[table] || []; };
+    const rowsOf = () => { const d = db(); if (table === "profiles") return d.profiles; if (table === "saves") return Object.entries(d.saves).map(([user_id, s]) => Object.assign({ user_id }, s));
+      if (table === "save_slots") return Object.entries(d.slots || {}).map(([k, s]) => Object.assign({ user_id: k.split(":")[0], slot: +k.split(":")[1] }, s)); // 1.0.11 : parties 2 et 3
+      return (d.views || {})[table] || []; };
     const run = () => { let rows = rowsOf().slice(); f.forEach((fn) => { rows = rows.filter(fn); });
       ord.slice().reverse().forEach(([k, asc]) => rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * (asc ? 1 : -1))); return rows.slice(0, lim); };
     const b = {
@@ -74,6 +76,12 @@ const MOCK = () => {
         if (me.pseudo_at && Date.now() - Date.parse(me.pseudo_at) < 30 * 864e5) return { data: "Tu pourras rechanger de pseudo le 12/11.", error: null };
         if (d.profiles.some((x) => x.id !== u.id && x.pseudo.toLowerCase() === p.toLowerCase())) return { data: "Ce pseudo est déjà pris.", error: null };
         me.pseudo = p; me.pseudo_at = new Date().toISOString(); put(d); return { data: null, error: null }; }
+      // 1.0.11 : parties 2 et 3 (tools/emplacements.sql)
+      if (name === "slot_info") { const x = (d.slots || {})[u.id + ":" + a.p_slot]; return { data: x ? [{ updated_at: x.updated_at, meta: x.meta, device: x.device, game_version: x.game_version }] : [], error: null }; }
+      if (name === "push_slot") { d.slots = d.slots || {}; const k = u.id + ":" + a.p_slot, x = d.slots[k];
+        if (!a.p_force && ((a.p_expected == null && x) || (a.p_expected != null && (!x || x.updated_at !== a.p_expected)))) return { data: null, error: null };
+        d.slots[k] = { data: a.p_data, meta: a.p_meta, device: a.p_device, game_version: a.p_version, updated_at: ts() }; d.slotPushes = (d.slotPushes || 0) + 1; put(d); return { data: d.slots[k].updated_at, error: null }; }
+      if (name === "delete_slot") { d.slots = d.slots || {}; delete d.slots[u.id + ":" + a.p_slot]; put(d); return { data: null, error: null }; }
       if (name === "save_info") return { data: s ? [{ updated_at: s.updated_at, meta: s.meta, device: s.device, game_version: s.game_version }] : [], error: null };
       if (name === "push_save") {
         if (!a.p_force && ((a.p_expected == null && s) || (a.p_expected != null && (!s || s.updated_at !== a.p_expected)))) return { data: null, error: null };
@@ -155,10 +163,12 @@ const MOCK = () => {
     // 1. premier lancement : pas de compte obligatoire, on arrive directement sur le choix du héros
     await page.goto(base); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
     if (await page.$('[data-act="on-discord"]')) fail("écran de connexion au premier lancement");
-    // « Se connecter » depuis l'écran de départ, puis « Continuer sans compte » : le choix est retenu
-    await page.click('.start [data-act="on-loginscreen"]'); await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
-    await page.click('[data-act="on-skip"]'); await page.waitForSelector('[data-act="startgame"]');
+    // « Se connecter » depuis l'écran de départ : écran « Choisis ta partie » (1.0.11) avec Discord en haut, puis partie 1 sans compte
+    await page.click('.start [data-act="on-loginscreen"]'); await page.waitForSelector('.svm [data-act="on-discord"]', { timeout: 10000 });
+    if ((await page.$$(".svm .svc2")).length !== 3) fail("choix des parties : il faut 3 emplacements");
+    await page.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector('[data-act="startgame"]');
     await page.reload(); await page.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    if (await page.$(".svm")) fail("choix des parties : affiché alors qu'il n'y a aucune partie ni compte");
     // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
     await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-nk]");
     await page.evaluate(() => { window.DX.S.kamas = 4321; window.DX.saveNow(); });
@@ -171,15 +181,26 @@ const MOCK = () => {
     await page.fill("#onPseudo", "Xen3r"); await page.click('[data-act="on-pseudo"]'); await page.waitForTimeout(200);
     if ((await mock()).profiles.length) fail("pseudo qui imite le créateur accepté");
     await page.fill("#onPseudo", "Bouftou"); await page.click('[data-act="on-pseudo"]');
-    await page.waitForSelector('[data-act="on-send"]', { timeout: 10000 });
-    await page.click('[data-act="on-send"]'); await page.waitForSelector("#nav [data-nk]");
+    // la partie de l'appareil n'est pas encore sur le compte : la carte de la partie 1 le dit, « Jouer » l'envoie
+    await page.waitForSelector('.svc2[data-slot="1"] .svnote', { timeout: 10000 });
+    if (!/pas encore sur ton compte/.test(await page.textContent('.svc2[data-slot="1"]'))) fail("choix des parties : partie pas encore sur le compte non signalée");
+    if (!(await page.$('.svc2[data-slot="1"] [data-act="sv-fresh"]'))) fail("choix des parties : « Nouvelle partie à la place » absent");
+    if (!/4 321|4,3 k/.test((await page.textContent('.svc2[data-slot="1"]')).replace(/\s/g, " "))) fail("choix des parties : kamas de la partie absents de la carte");
+    await page.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await page.waitForSelector("#nav [data-nk]");
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     let m = await mock();
     if (!m.saves.u1 || JSON.parse(m.saves.u1.data).kamas < 4321) fail("la partie n'a pas été envoyée");
     if (m.profiles[0].pseudo !== "Bouftou") fail("pseudo non enregistré");
-    // 3. rechargement : on continue sans question
+    // 3. rechargement : écran « Choisis ta partie » (1A), la partie 1 est à jour : un seul « Jouer », pas de question
+    await page.reload(); await page.waitForSelector(".svm", { timeout: 10000 });
+    if (await page.$(".svm .svver") || await page.$(".sheet .svc")) fail("question inattendue au rechargement");
+    if (!/Bouftou/.test(await page.textContent(".svacc")) || !(await page.$('.svm [data-act="sv-logout"]'))) fail("choix des parties : compte connecté absent");
+    if (!/Classements/.test(await page.textContent('.svc2[data-slot="1"]')) || !/Solo/.test(await page.textContent('.svc2[data-slot="2"]'))) fail("choix des parties : rôle des parties absent");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/menu.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/menu-mob.png", fullPage: true }); await page.setViewportSize(vp); }
+    // « Ouvrir directement ma dernière partie » : les rechargements suivants vont droit dans la partie
+    await page.click('.svm [data-act="sv-auto"]');
     await page.reload(); await page.waitForSelector("#nav [data-nk]", { timeout: 10000 });
-    if (await page.$(".sheet .svc")) fail("question inattendue au rechargement");
+    if (await page.$(".svm")) fail("choix des parties : la case « Ouvrir directement » est ignorée");
     if ((await S()).kamas < 4321) fail("partie perdue au rechargement");
     // 4. autre appareil : la partie en ligne change, celle d'ici n'a pas bougé depuis le dernier envoi -> reprise directe
     await page.evaluate(() => { window.DX.saveNow(); });
@@ -199,10 +220,14 @@ const MOCK = () => {
     if ((await S()).kamas < 55555) fail("conflit : version en ligne non chargée");
     // 6. conflit au lancement, on garde celle d'ici (envoi forcé)
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.saves.u1.updated_at = "2099-01-03T00:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "autre-appareil-3" }); localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 77777; window.DX.saveNow(); });
-    await page.reload(); await page.waitForSelector('[data-act="on-keeplocal"]', { timeout: 10000 });
-    await page.click('[data-act="on-keeplocal"]'); await page.waitForTimeout(1200);
+    // 4A : même avec « Ouvrir directement », les deux versions sont montrées dans la carte, la plus avancée marquée
+    await page.reload(); await page.waitForSelector('.svc2[data-slot="1"] .svver', { timeout: 10000 });
+    if ((await page.$$('.svc2[data-slot="1"] .svver .vl')).length !== 2 || !(await page.$('.svc2[data-slot="1"] .svver .vl.best'))) fail("choix des parties : les deux versions ne sont pas montrées");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/menu-conflit.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/menu-conflit-mob.png", fullPage: true }); await page.setViewportSize(vp); }
+    await page.click('.svc2[data-slot="1"] [data-act="sv-play"][data-w="local"]'); await page.waitForTimeout(1200);
     m = await mock();
     if (JSON.parse(m.saves.u1.data).kamas < 77777) fail("conflit : version d'ici non envoyée");
+    if (!(await page.evaluate(() => JSON.parse(localStorage.getItem("dofousxen-save-beta-copies") || "[]").some((c) => c.why === "enligne")))) fail("conflit : la version en ligne n'est pas gardée en copie de secours");
     // 6 bis (1.0.10.2) : envoi enregistré en ligne mais réponse perdue (serveur lent) -> pas de faux conflit, ni en jeu ni au rechargement
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     await page.evaluate(() => { window.__lostReply = true; window.DX.S.kamas = 88888; window.DX.saveNow(); }); await page.click("#onPill"); await page.waitForTimeout(500);
@@ -346,7 +371,9 @@ const MOCK = () => {
     // 1.0.3.3 : copier-coller au téléphone — un message reçu ne recrée pas la zone d'écriture (clavier et bulle « Coller » gardés),
     // ne coupe pas un texte surligné, et le menu du pseudo propose « Copier le message »
     await page.fill("#chIn", "texte collé"); await page.focus("#chIn"); await page.evaluate(() => { window.__in = document.querySelector("#chIn"); });
-    await page.evaluate(() => window.__chatEmit({ id: 51, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Pendant que tu colles", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);
+    // (le message est aussi sur le faux serveur, comme en vrai : un rechargement du chat qui tombe au même moment le garde)
+    await page.evaluate(() => { const m = { id: 51, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Pendant que tu colles", kind: "msg", created_at: new Date().toISOString() };
+      const d = JSON.parse(localStorage.getItem("__mock")); d.views.chat_msgs.push(m); localStorage.setItem("__mock", JSON.stringify(d)); window.__chatEmit(m); }); await page.waitForTimeout(100);
     if (!(await page.evaluate(() => window.__in === document.querySelector("#chIn") && document.activeElement === window.__in && window.__in.value === "texte collé"))) fail("chat : la zone d'écriture est recréée à chaque message reçu");
     if (!/Pendant que tu colles/.test(await page.textContent("#chat .ch-list"))) fail("chat : message reçu absent pendant l'écriture");
     await page.fill("#chIn", "");
@@ -522,6 +549,104 @@ const MOCK = () => {
     await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
     m = await mock(); if (m.saves.u1 || m.profiles.length) fail("compte non supprimé");
     if (!(await S())) fail("partie de l'appareil perdue après suppression");
+
+    // 10. 1.0.11 : « Choisis ta partie » : trois parties, la 1 pour les classements, la 2 et la 3 en solo
+    const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx2.addInitScript(MOCK);
+    await ctx2.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; if (localStorage.getItem("__wipe")) { ["dofousxen-save-beta", "dofousxen-save-beta-copies", "dofousxen-save-beta-online", "dofousxen-save-beta-version"].forEach((k) => localStorage.removeItem(k)); localStorage.removeItem("__wipe"); } }); // __wipe : appareil vidé avant le chargement (la page sauvegarde en partant)
+    await ctx2.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+    const p2 = await ctx2.newPage();
+    p2.on("console", (x) => { if (x.type() === "error") fail(`parties, console : ${x.text()}`); });
+    p2.on("pageerror", (e) => fail(`parties, exception : ${e.message}`));
+    const mock2 = () => p2.evaluate(() => JSON.parse(localStorage.getItem("__mock") || "{}"));
+    const S2 = () => p2.evaluate(() => window.DX.S && { kamas: window.DX.S.kamas, n: window.DX.S.chars.length, name: window.DX.S.chars[0].name });
+    const card = (n) => `.svc2[data-slot="${n}"]`;
+    // compte déjà connecté avec une partie 1 en ligne, aucune partie sur cet appareil (nouvel appareil)
+    await p2.goto(base); await p2.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    await p2.fill("#startName", "Premier"); await p2.click('[data-act="startgame"]'); await p2.waitForSelector("#nav [data-nk]");
+    await p2.evaluate(() => { window.DX.S.kamas = 50000; window.DX.saveNow(); const txt = localStorage.getItem("dofousxen-save-beta");
+      const d = JSON.parse(localStorage.getItem("__mock") || '{"session":null,"profiles":[],"saves":{}}'); d.session = { id: "u2", email: "deux@idlus.fr", identities: [{ provider: "discord", identity_data: { global_name: "Deux" } }] };
+      d.profiles.push({ id: "u2", pseudo: "Sadidette" }); d.saves.u2 = { data: txt, meta: { level: 1, succes: 0, n: 1, lvl: 1, pid: "pc" }, device: "ordinateur", game_version: "1.0.10", updated_at: "2026-10-13T10:00:00.000001Z" };
+      localStorage.setItem("__mock", JSON.stringify(d)); localStorage.setItem("__wipe", "1"); });
+    await p2.reload(); await p2.waitForSelector(".svm", { timeout: 10000 });
+    if (!/Sur ton compte/.test(await p2.textContent(card(1)))) fail("parties : la partie en ligne d'un nouvel appareil n'est pas proposée");
+    await p2.click(`${card(1)} [data-act="sv-play"]`); await p2.waitForSelector("#nav [data-nk]", { timeout: 10000 });
+    if ((await S2()).kamas !== 50000) fail("parties : la partie 1 en ligne n'est pas chargée");
+    // partie 2 : nouvelle aventure, sauvegarde à part (sur l'appareil et en ligne), jamais dans saves
+    await p2.click('[data-act="options"]'); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]');
+    if (!/Partie 1/.test(await p2.textContent(".sheet"))) fail("parties : la partie en cours n'est pas indiquée dans les Options");
+    await p2.click('.sheet [data-act="sv-menu"]'); await p2.waitForSelector(".svm", { timeout: 10000 });
+    if (!(await p2.$(`${card(1)}.last`))) fail("parties : « Dernière jouée » absent");
+    await p2.click(`${card(2)} [data-act="sv-play"]`); await p2.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    if (!/Partie 2/.test(await p2.textContent(".svback"))) fail("parties : le choix du héros n'indique pas la partie 2");
+    await p2.fill("#startName", "Second"); await p2.click('[data-act="startgame"]'); await p2.waitForSelector("#nav [data-nk]");
+    await p2.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 }).catch(() => fail("parties : la partie 2 n'est pas envoyée en ligne"));
+    let m2 = await mock2();
+    if (!m2.slots || !m2.slots["u2:2"] || JSON.parse(m2.slots["u2:2"].data).chars[0].name !== "Second") fail("parties : partie 2 absente du serveur");
+    if (JSON.parse(m2.saves.u2.data).chars[0].name !== "Premier") fail("parties : la partie 2 a écrasé la partie 1 en ligne");
+    if (JSON.parse(await p2.evaluate(() => localStorage.getItem("dofousxen-save-beta"))).chars[0].name !== "Premier") fail("parties : la partie 2 a écrasé la partie 1 de l'appareil");
+    // une partie solo n'entre pas aux classements et ne touche ni à l'Hôtel de vente, ni à la guilde, ni au Kolizéum classé
+    const inv0 = (m2.invoked || []).length;
+    const solo = await p2.evaluate(async () => { const O = window.ONLINE; return { solo: O.solo(), rec: await O.submitRecord("x"), hdv: await O.rpc("hdv_buy", { p_id: 1 }), sync: await O.rpc("hdv_sync", { p_after: 0 }), list: (await O.rpc("guild_list")).err || null }; });
+    if (!solo.solo || solo.rec.ok !== false || !solo.hdv.err || !solo.sync.err || solo.list) fail("parties : une partie solo peut agir sur le serveur " + JSON.stringify(solo));
+    if (((await mock2()).invoked || []).length !== inv0) fail("parties : record envoyé depuis une partie solo");
+    await p2.evaluate(() => { window.DX.ui.tab = "hdv"; window.DX.render(); }); await p2.waitForTimeout(300);
+    if (!/Partie 2 : solo/.test(await p2.textContent("#main"))) fail("parties : l'Hôtel de vente ne signale pas la partie solo");
+    await p2.evaluate(() => { window.DX.ui.tab = "guild"; window.DX.render(); }); await p2.waitForTimeout(300);
+    if (!/Partie 2 : solo/.test(await p2.textContent("#main"))) fail("parties : la guilde ne signale pas la partie solo");
+    await p2.evaluate(() => { window.DX.ui.tab = "koli"; window.DX.render(); }); await p2.waitForTimeout(300);
+    if (!/Partie solo/.test(await p2.textContent("#main"))) fail("parties : le Kolizéum ne signale pas la partie solo");
+    await p2.evaluate(() => { window.DX.ui.tab = "ladder"; window.DX.render(); }); await p2.waitForTimeout(300);
+    if (!/Partie 2 : solo/.test(await p2.textContent("#main"))) fail("parties : les classements ne signalent pas la partie solo");
+    if (process.env.SHOTS) await p2.screenshot({ path: process.env.SHOTS + "/solo-classements.png" });
+    await p2.evaluate(() => { window.DX.ui.tab = "home"; window.DX.render(); });
+    // 4A sur la partie 2 : un autre appareil a avancé en ligne, celui-ci aussi -> les deux versions, on prend celle en ligne
+    await p2.evaluate(() => { window.DX.S.kamas = 7000; window.DX.saveNow(); }); await p2.click("#onPill"); await p2.waitForTimeout(400);
+    await p2.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const x = d.slots["u2:2"]; const st = JSON.parse(x.data); st.kamas = 9999; x.data = JSON.stringify(st); x.updated_at = "2099-02-01T00:00:00.000001Z"; x.device = "téléphone"; x.meta = Object.assign({}, x.meta, { pid: "tel", km: 9999 }); localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 8000; window.DX.saveNow(); });
+    await p2.reload(); await p2.waitForSelector(".svm", { timeout: 10000 });
+    if (!(await p2.$(`${card(2)} .svver`)) || !/téléphone/.test(await p2.textContent(`${card(2)} .svver`))) fail("parties : conflit de la partie 2 non montré");
+    await p2.click(`${card(2)} [data-act="sv-play"][data-w="remote"]`); await p2.waitForSelector("#nav [data-nk]", { timeout: 10000 });
+    if ((await S2()).kamas !== 9999) fail("parties : version en ligne de la partie 2 non chargée");
+    if (!(await p2.evaluate(() => JSON.parse(localStorage.getItem("dofousxen-save-beta-2-copies") || "[]").some((c) => c.why === "avant")))) fail("parties : l'autre version de la partie 2 n'est pas gardée en copie");
+    // supprimer la partie 2 : effacée de l'appareil et du compte, une copie reste
+    await p2.click('[data-act="options"]'); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await p2.click('.sheet [data-act="sv-menu"]'); await p2.waitForSelector(".svm", { timeout: 10000 });
+    await p2.click(`${card(2)} [data-act="sv-del"]`); await p2.click(`${card(2)} [data-act="sv-delgo"]`); await p2.waitForSelector(`${card(2)}.empty`, { timeout: 5000 });
+    m2 = await mock2();
+    if (m2.slots["u2:2"] || (await p2.evaluate(() => localStorage.getItem("dofousxen-save-beta-2")))) fail("parties : partie 2 pas supprimée");
+    if (!m2.saves.u2) fail("parties : la suppression de la partie 2 a touché la partie 1");
+    // serveur injoignable au lancement : l'écran montre les parties de l'appareil et laisse jouer
+    await p2.evaluate(() => { window.__offline = true; });
+    await p2.addInitScript(() => { window.__offline = true; });
+    await p2.reload(); await p2.waitForSelector(".svm", { timeout: 10000 });
+    if (!/Serveur injoignable/.test(await p2.textContent(".svacc"))) fail("parties : serveur coupé non signalé");
+    if (process.env.SHOTS) await p2.screenshot({ path: process.env.SHOTS + "/menu-hors-ligne.png", fullPage: true });
+    await p2.click(`${card(1)} [data-act="sv-play"]`); await p2.waitForSelector("#nav [data-nk]", { timeout: 10000 });
+    if ((await S2()).name !== "Premier") fail("parties : partie 1 non jouable serveur coupé");
+    await ctx2.close();
+    // parties 2 et 3 tant que le serveur n'a pas leur table (tools/emplacements.sql pas encore appliqué) : sur l'appareil seulement
+    const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await ctx3.addInitScript(MOCK); await ctx3.addInitScript(() => { window.__IDLUS_NOLAUNCH = true; window.__IDLUS_NOSLOTS = true; });
+    await ctx3.route((url) => !url.href.startsWith(base), (route) => route.fulfill({ status: 200, body: "" }));
+    const p3 = await ctx3.newPage();
+    p3.on("console", (x) => { if (x.type() === "error") fail(`parties (téléphone), console : ${x.text()}`); });
+    p3.on("pageerror", (e) => fail(`parties (téléphone), exception : ${e.message}`));
+    await p3.goto(base); await p3.waitForSelector('[data-act="startgame"]', { timeout: 10000 });
+    await p3.click('[data-act="startgame"]'); await p3.waitForSelector("#nav [data-nk]", { state: "attached" });
+    await p3.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock") || '{"session":null,"profiles":[],"saves":{}}'); d.session = { id: "u3", identities: [] }; d.profiles.push({ id: "u3", pseudo: "Troisieme" }); localStorage.setItem("__mock", JSON.stringify(d)); });
+    await p3.reload(); await p3.waitForSelector(".svm", { timeout: 10000 });
+    await p3.click(`${card(3)} [data-act="sv-play"]`); await p3.waitForSelector('[data-act="startgame"]'); await p3.click('[data-act="startgame"]'); await p3.waitForSelector("#nav [data-nk]", { state: "attached" });
+    await p3.waitForTimeout(600);
+    if (await p3.$("#onPill")) fail("parties : pastille d'envoi sur une partie qui reste sur l'appareil");
+    if (((await p3.evaluate(() => JSON.parse(localStorage.getItem("__mock")))).slotPushes || 0) > 0) fail("parties : envoi en ligne alors que le serveur n'a pas les parties 2 et 3");
+    await p3.reload(); await p3.waitForSelector(".svm", { timeout: 10000 });
+    if (!/Gardée sur cet appareil/.test(await p3.textContent(card(3)))) fail("parties : la partie 3 ne dit pas qu'elle reste sur l'appareil");
+    const w3 = await p3.evaluate(() => document.documentElement.scrollWidth); if (w3 > 392) fail(`parties : écran trop large sur téléphone : ${w3}px`);
+    if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/menu-tel-3.png", fullPage: true });
+    // sans compte (5A) : même écran, « Se connecter avec Discord » en haut
+    await p3.click('.svm [data-act="sv-logout"]'); await p3.waitForSelector('.svm [data-act="on-discord"]', { timeout: 10000 });
+    if ((await p3.$$(".svm .svc2:not(.empty)")).length !== 2) fail("parties : sans compte, les parties de l'appareil ne sont pas toutes montrées");
+    if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/menu-invite-mob.png", fullPage: true });
+    await ctx3.close();
   } finally { await browser.close(); server.close(); }
   if (errors.length) { console.error("ÉCHEC :\n" + errors.join("\n")); process.exit(1); }
   console.log("Compte et sauvegarde en ligne : OK");

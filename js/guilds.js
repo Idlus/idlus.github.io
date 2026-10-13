@@ -33,10 +33,10 @@
   };
 
   /* ---------- serveur ---------- */
-  const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id);
+  const mine = () => !!(S() && ON.user && ON.profile && ON.link().uid === ON.user.id && !(ON.solo && ON.solo())); // 1.0.11 : la guilde se joue avec la partie 1
   async function call(name, args, okTxt) {
     if (G.busy) return null;
-    if (!mine()) { X().toast("Crée ton compte (gratuit) pour les guildes : ta partie te suit."); return null; }
+    if (!mine()) { X().toast(ON.user && ON.solo && ON.solo() ? ON.SOLO_ERR : "Crée ton compte (gratuit) pour les guildes : ta partie te suit."); return null; }
     G.busy = true; paint();
     const r = await ON.rpc(name, args || {});
     G.busy = false;
@@ -118,6 +118,7 @@
   function html() {
     const s = S();
     const head = `<div class="pagehead"><h1>Guilde</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s ? s.kamas : 0)}</b> kamas</span></div>`;
+    if (!mine() && ON.user && ON.solo && ON.solo()) return head + `<div class="stack">${X().soloPanel("la guilde")}${listHtml(false)}</div>`;
     if (!mine()) return head + `<div class="stack"><div class="panel"><div class="pad row between"><span><b>Crée ton compte pour rejoindre une guilde</b><br><span class="small muted">C'est gratuit, et ta partie de cet appareil te suit sur ton compte. En attendant, tu peux regarder les guildes.</span></span><button class="btn primary sm" data-act="on-loginscreen">Créer mon compte</button></div></div>${listHtml(false)}</div>`;
     if (!G.me) return head + `<div class="empty">Chargement…</div>`;
     return head + (G.me.g ? guildHtml() : noneHtml());
@@ -314,7 +315,7 @@
       case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; paint(); if (d.v === "boss" || d.v === "percos") loadEx(); return;
       case "g-boss": case "g-def": {
         if (G.fighting) return;
-        if (!mine()) { X().toast("Crée ton compte (gratuit) pour les guildes : ta partie te suit."); return; }
+        if (!mine()) { X().toast(ON.user && ON.solo && ON.solo() ? ON.SOLO_ERR : "Crée ton compte (gratuit) pour les guildes : ta partie te suit."); return; }
         G.fighting = a === "g-def" ? +d.g : true; G.res = null; paint();
         try { await X().onPush(); } catch (e) {} // le serveur rejoue avec la partie en ligne
         const r = await ON.submitGuild(a === "g-def" ? { perco: +d.g } : { gboss: 1 });

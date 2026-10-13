@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.11 « Choisis ta partie »
+Demande de Mathis (« un menu de connexion comme à la Melvor Idle pour le choix des parties »), réponses 1A 2A 3A 4A 5A sur la maquette. Au lancement, `menuStart` (js/ui.js) montre trois parties : la 1 garde la clé `dofousxen-save` et la table `saves` (classements, course, Hôtel de vente, guilde, Kolizéum classé, boss des mondes : le serveur les vérifie avec elle), la 2 et la 3 (clés `dofousxen-save-2` et `-3`) se jouent en solo : `ON.solo()` (js/online.js) bloque les envois qui touchent à l'économie ou aux classements. Chaque carte montre la partie de l'appareil et, avec un compte, sa version en ligne ; quand les deux ont avancé, les deux sont proposées (même logique que l'ancien `onAfterLogin`). Case « Ouvrir directement ma dernière partie » (`idlus-parties` dans le localStorage). Sans serveur, les parties de l'appareil restent jouables. Les parties 2 et 3 en ligne attendent l'accord écrit de Mathis : `tools/emplacements.sql` (nouvelle table `save_slots`) à passer dans supabase/ et `slots: true` dans js/online.js.
+
 ## 1.0.10.6 « Jouer pendant une panne »
 Pendant la panne Supabase du 13/10, un compte dont le jeton devait être renouvelé (plus d'une heure) tombait sur l'écran de connexion après F5 : `getSession` échouait, `ON.user` restait vide et le lien avait `skip: false`. `ON.ready` (js/online.js) pose `ON.stuck` quand la session est encore dans le localStorage ; `onBoot` (js/ui.js) lance alors la partie de l'appareil, état « hors ligne », avec un message. Une vraie déconnexion efface la session : l'écran de connexion reste affiché dans ce cas.
 

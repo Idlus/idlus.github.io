@@ -29,7 +29,8 @@
   // portrait animé : il respire, plus vite en phase 2, enragé (aura rouge) en phase 3 ; coupé par l'option des effets
   const an = (ph) => (fxOn() ? ` wb-an wb-p${ph || 1}` : "");
 
-  const mode = () => { const o = ON(); if (!o || !o.enabled) return "local"; return o.user && o.profile ? "acc" : "guest"; };
+  const mode = () => { const o = ON(); if (!o || !o.enabled) return "local"; return o.user && o.profile && !(o.solo && o.solo()) ? "acc" : "guest"; }; // 1.0.11 : partie solo = comme sans compte (on regarde, essai d'entraînement)
+  const solo = () => { const o = ON(); return !!(o && o.user && o.solo && o.solo()); };
   const day = () => E.defiDay(Date.now());
   const nextMidnight = () => { const t = Date.now(), d = E.defiDay(t); let lo = t, hi = t + 90000000; while (hi - lo > 30000) { const m = (lo + hi) / 2; if (E.defiDay(m) > d) hi = m; else lo = m; } return hi; };
   const dur = (ms) => { const s = Math.max(0, ms / 1000); const d = Math.floor(s / 86400), hh = Math.floor((s % 86400) / 3600), mm = Math.floor((s % 3600) / 60); return d ? `${d} j ${hh} h` : hh ? `${hh} h ${String(mm).padStart(2, "0")}` : `${Math.max(1, mm)} min`; };
@@ -108,7 +109,8 @@
     const eta = rate > 0 ? ` · au rythme actuel, il tombe dans environ ${dur(left(s) / rate)}` : "";
     const next = E.wbDef(s.n + 1);
     const side = m === "guest"
-      ? `<span class="small"><b>Sans compte</b>, tu peux regarder le boss et le classement.</span><button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button><button class="btn sm" data-act="wb-attack" ${team ? "" : "disabled"}>Essai d'entraînement (non compté)</button>`
+      ? solo() ? `<span class="small"><b>Partie solo</b> : le boss des mondes se joue avec ta partie 1. Ici, tu peux regarder le boss et le classement.</span><button class="btn primary" data-act="sv-menu">Changer de partie</button><button class="btn sm" data-act="wb-attack" ${team ? "" : "disabled"}>Essai d'entraînement (non compté)</button>`
+      : `<span class="small"><b>Sans compte</b>, tu peux regarder le boss et le classement.</span><button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button><button class="btn sm" data-act="wb-attack" ${team ? "" : "disabled"}>Essai d'entraînement (non compté)</button>`
       : `<span class="small"><b>${tl} essai${tl > 1 ? "s" : ""} sur ${E.WB_TRIES}</b> aujourd'hui</span><div class="wb-pips">${Array.from({ length: E.WB_TRIES }, (_, i) => `<i class="${i < tl ? "on" : ""}"></i>`).join("")}</div>
         <button class="btn primary" data-act="wb-attack" ${tl && team && !ui.busy ? "" : "disabled"}>${X().IC("combat")} ${ui.busy ? "Le serveur joue ton essai…" : "Attaquer le boss"}</button>
         <span class="xs muted">${tl ? "15 tours avec ton équipe active" : `Nouveaux essais dans ${dur(nextMidnight() - Date.now())} (minuit, heure de Paris)`}</span>
@@ -248,8 +250,8 @@
     const tip = up ? `Au grade ${up.g}, il te manquait ${nf((up.min - R.points) * E.WB_PV)} PV. ` : "";
     const el2 = `${E.wbElName(def.weak)} fait +50 % sur lui, ${E.wbElName(def.res)} seulement la moitié.`;
     if (R.train) return `<div class="wb-res"><span class="xs muted">Essai d'entraînement · ${why}</span><div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div>
-      <p class="small muted">Rien n'est compté sans compte. ${tip}L'${el2}</p>
-      <div class="row" style="gap:8px;justify-content:center"><button class="btn" data-act="wb-rewatch">Revoir le combat</button><button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button><button class="btn" data-act="sm-wquit">Retour</button></div></div>`;
+      <p class="small muted">${solo() ? "Rien n'est compté dans une partie solo." : "Rien n'est compté sans compte."} ${tip}L'${el2}</p>
+      <div class="row" style="gap:8px;justify-content:center"><button class="btn" data-act="wb-rewatch">Revoir le combat</button>${solo() ? `<button class="btn primary" data-act="sv-menu">Changer de partie</button>` : `<button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button>`}<button class="btn" data-act="sm-wquit">Retour</button></div></div>`;
     const ch = Object.entries(R.cons || {})[0] || ["coffre_bois", 1];
     const kill = R.killed ? `<div class="wb-killed">${confetti()}<b>Tu as porté le dernier coup : ${h(def.name)} est tombé !</b><br><span class="small">Coffre en or, Fragments et bonus d'XP pour tout le monde. Le boss suivant arrive.</span></div>` : "";
     return `<div class="wb-res">${kill}<span class="xs muted">${R.local ? "Version de test · " : ""}Essai ${E.WB_TRIES - (R.left || 0)} sur ${E.WB_TRIES} · ${h(def.name)} · phase ${R.phase} · ${why}</span>
