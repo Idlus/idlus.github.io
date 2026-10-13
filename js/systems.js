@@ -1173,6 +1173,7 @@
   E.mainQuestDone = (S) => !!(S.quest && S.quest.step >= Q.length);
   /* 1.0.8 : premier compte au niveau 200 d'un métier d'artisanat (gravé par le serveur) : titre « Grand Tailleur », etc. */
   E.jobFirstTitle = (job) => `Grand ${(D.CRAFT_JOBS[job] || { name: job }).name}`;
+  E.JOB_MASTER_TITLE = "Grand Maître artisan"; // 1.0.9 : premier compte avec les 7 métiers d'artisanat au niveau 200
   E.grantLegend = (S, rank) => {
     if (S.unlocks.legende) return false;
     S.unlocks.legende = rank || 1; if (!S.titlesExtra.includes(E.LEGEND_TITLE)) S.titlesExtra.push(E.LEGEND_TITLE);

@@ -32,6 +32,12 @@ alter table public.ladder add column if not exists qstep int not null default 0;
 alter table public.ladder add column if not exists qstep_at timestamptz;
 -- 1.0.8 : classement des métiers : {"tailleur": [niveau, xp], …, "tous": [somme des niveaux, somme des xp]}
 alter table public.ladder add column if not exists jobs jsonb not null default '{}'::jsonb;
+-- 1.0.9 : métiers de récolte et de forgemagie, classement de la semaine. jobs : [niveau, xp du niveau, xp totale, xp gagnée
+-- pendant la semaine jobs_w] ; jobs_base : xp totale de chaque métier au début de la semaine ; jobs_prev : xp gagnée la semaine jobs_pw
+alter table public.ladder add column if not exists jobs_w int not null default 0;
+alter table public.ladder add column if not exists jobs_base jsonb not null default '{}'::jsonb;
+alter table public.ladder add column if not exists jobs_prev jsonb not null default '{}'::jsonb;
+alter table public.ladder add column if not exists jobs_pw int not null default 0;
 alter table public.ladder enable row level security;
 drop policy if exists "classement lisible" on public.ladder;
 create policy "classement lisible" on public.ladder for select using (not flagged or user_id = auth.uid());
@@ -123,11 +129,25 @@ create or replace view public.lb_race as
   from public.ladder l join public.profiles p on p.id = l.user_id where not l.flagged and l.qstep > 0;
 grant select on public.lb_race to anon, authenticated;
 -- 1.0.8 : classement des métiers : une ligne par compte et par métier (et « tous »), sans les joueurs en vérification
+-- 1.0.9 : + total (xp totale depuis le niveau 1, pour « Encore … XP pour dépasser … »)
 create or replace view public.lb_jobs as
-  select l.user_id, p.pseudo, l.main, l.main_lvl, j.key as job, (j.value->>0)::int as lvl, (j.value->>1)::bigint as xp, l.jobs as alljobs
+  select l.user_id, p.pseudo, l.main, l.main_lvl, j.key as job, (j.value->>0)::int as lvl, (j.value->>1)::bigint as xp, l.jobs as alljobs, coalesce((j.value->>2)::bigint, 0) as total
   from public.ladder l join public.profiles p on p.id = l.user_id cross join lateral jsonb_each(l.jobs) j
   where not l.flagged and jsonb_typeof(j.value) = 'array';
 grant select on public.lb_jobs to anon, authenticated;
+-- 1.0.9 : classement de la semaine (semaine w = celle des donjons de la semaine, du lundi au dimanche, en UTC) : xp gagnée
+-- par compte et par métier, cette semaine (jobs) et la précédente (jobs_prev) ; r = place dans la semaine
+create or replace view public.lb_jobs_week as
+  select x.*, rank() over (partition by x.w, x.job order by x.gain desc) as r from (
+    select l.user_id, p.pseudo, l.main, l.main_lvl, l.jobs_w as w, j.key as job, coalesce((j.value->>3)::bigint, 0) as gain, (j.value->>0)::int as lvl
+    from public.ladder l join public.profiles p on p.id = l.user_id cross join lateral jsonb_each(l.jobs) j
+    where not l.flagged and l.jobs_w > 0 and jsonb_typeof(j.value) = 'array'
+    union all
+    select l.user_id, p.pseudo, l.main, l.main_lvl, l.jobs_pw as w, j.key as job, coalesce((j.value #>> '{}')::bigint, 0) as gain, null::int as lvl
+    from public.ladder l join public.profiles p on p.id = l.user_id cross join lateral jsonb_each(l.jobs_prev) j
+    where not l.flagged and l.jobs_pw > 0 and jsonb_typeof(j.value) = 'number'
+  ) x where x.gain > 0;
+grant select on public.lb_jobs_week to anon, authenticated;
 
 -- ---------- mise à jour du classement à chaque envoi de partie ----------
 -- La partie envoie un résumé (meta) : niveau de l'équipe, album, succès, héros.
@@ -141,33 +161,64 @@ set search_path = public
 as $$
 declare
   m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; qs int; secs numeric; reason text; bad boolean;
-  jb jsonb := '{}'::jsonb; jn text; jl int; jx bigint; jt int := 0; jtx bigint := 0;
+  jb jsonb := '{}'::jsonb; jn text; jl int; jx bigint; jtt bigint; jg text; jsum jsonb := '{}'::jsonb; wnow int; jbase jsonb; jprev jsonb := '{}'::jsonb; jpw int := 0; bt bigint; jgain bigint; jv jsonb; hadrow boolean;
   jnames constant jsonb := '{"tailleur":"Tailleur","bijoutier":"Bijoutier","cordonnier":"Cordonnier","forgeron":"Forgeron","sculpteur":"Sculpteur","faconneur":"Façonneur","bricoleur":"Bricoleur"}';
+  -- 1.0.9 : tous les métiers classés et leur groupe (le total du groupe : tous, tous_recolte, tous_fm)
+  jgroup constant jsonb := '{"tailleur":"tous","bijoutier":"tous","cordonnier":"tous","forgeron":"tous","sculpteur":"tous","faconneur":"tous","bricoleur":"tous",
+    "paysan":"tous_recolte","bucheron":"tous_recolte","mineur":"tous_recolte","alchimiste":"tous_recolte","pecheur":"tous_recolte",
+    "costumage":"tous_fm","joaillomage":"tous_fm","cordomage":"tous_fm","forgemage":"tous_fm","sculptemage":"tous_fm","facomage":"tous_fm"}';
 begin
   if m is null or m->>'level' is null then return new; end if;
   lv := coalesce((m->>'level')::int, 0); al := coalesce((m->>'album')::int, 0);
   su := coalesce((m->>'succes')::int, 0); pt := coalesce((m->>'playtime')::int, 0);
   rc := coalesce((m->>'rec')::int, 0); ps := least(greatest(coalesce((m->>'pts')::int, 0), 0), 50000);
   qs := least(greatest(coalesce((m->>'qstep')::int, 0), 0), 500);
-  -- 1.0.8 : métiers d'artisanat (seulement les 7 connus, niveau 1 à 200)
+  select * into o from public.ladder where user_id = new.user_id;
+  hadrow := found; -- (found change à chaque requête : on garde ici si le compte était déjà classé)
+  -- 1.0.8 : métiers (seulement ceux qui sont connus, niveau 1 à 200) ; 1.0.9 : xp totale et xp gagnée dans la semaine
+  wnow := floor((extract(epoch from now()) / 86400 + 3) / 7)::int; -- même semaine que les donjons de la semaine
+  if hadrow and o.jobs_w = wnow then jbase := o.jobs_base; jprev := o.jobs_prev; jpw := o.jobs_pw;
+  else -- nouvelle semaine : on part des derniers totaux connus, et la semaine passée est gardée pour le titre
+    jbase := '{}'::jsonb;
+    if hadrow then
+      select coalesce(jsonb_object_agg(key, (value->>2)::bigint), '{}'::jsonb) into jbase from jsonb_each(o.jobs) where jsonb_typeof(value) = 'array' and value->>2 is not null and jgroup ? key;
+      if o.jobs_w > 0 then
+        select coalesce(jsonb_object_agg(key, (value->>3)::bigint), '{}'::jsonb) into jprev from jsonb_each(o.jobs) where jsonb_typeof(value) = 'array' and coalesce((value->>3)::bigint, 0) > 0;
+        jpw := o.jobs_w;
+      end if;
+    end if;
+  end if;
   if jsonb_typeof(m->'jobs') = 'object' then
-    for jn in select jsonb_object_keys(jnames) loop
-      if jsonb_typeof(m->'jobs'->jn) = 'array' then
-        jl := least(greatest(coalesce((m->'jobs'->jn->>0)::int, 1), 1), 200);
-        jx := least(greatest(coalesce((m->'jobs'->jn->>1)::bigint, 0), 0), 2000000000);
-        jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx)); jt := jt + jl; jtx := jtx + jx;
+    for jn in select jsonb_object_keys(jgroup) loop
+      jv := m->'jobs'->jn;
+      if jsonb_typeof(jv) = 'array' then
+        jl := least(greatest(coalesce((jv->>0)::int, 1), 1), 200);
+        jx := least(greatest(coalesce((jv->>1)::bigint, 0), 0), 2000000000);
+        if jsonb_array_length(jv) >= 3 then
+          jtt := least(greatest(coalesce((jv->>2)::bigint, 0), 0), 1000000000000);
+          bt := coalesce((jbase->>jn)::bigint, jtt); -- métier vu pour la première fois cette semaine : il part de là
+          jbase := jbase || jsonb_build_object(jn, bt);
+          jgain := greatest(0, jtt - bt); -- une partie revenue en arrière ne gagne rien (et la base ne baisse pas)
+          jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx, jtt, jgain));
+        else -- partie encore en 1.0.8 (sans xp totale) : niveau seulement, la semaine reprendra au prochain envoi
+          jtt := 0; jgain := 0;
+          jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx));
+        end if;
+        jg := jgroup->>jn;
+        jsum := jsum || jsonb_build_object(jg, jsonb_build_array(
+          coalesce((jsum->jg->>0)::bigint, 0) + jl, coalesce((jsum->jg->>1)::bigint, 0) + jx, coalesce((jsum->jg->>2)::bigint, 0) + jtt, coalesce((jsum->jg->>3)::bigint, 0) + jgain));
       end if;
     end loop;
-    if jb <> '{}'::jsonb then jb := jb || jsonb_build_object('tous', jsonb_build_array(jt, jtx)); end if;
+    jb := jb || jsum;
   end if;
-  select * into o from public.ladder where user_id = new.user_id;
-  if found then
+  if hadrow then
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
     if lv - o.level - greatest(0, rc - o.rec) > 60 + secs / 60 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
     elsif al - o.album > 10 + secs / 300 then reason := format('+%s âmes en %s min', al - o.album, round(secs / 60));
     elsif pt + 120 < o.playtime then reason := 'temps de jeu en baisse';
     end if;
     -- 1.0.8 : un métier qui gagne plus de 60 niveaux en moins de 10 minutes (seulement si le serveur connaissait déjà les métiers)
+    -- (1.0.9 : seulement l'artisanat ; la récolte et la forgemagie montent bien moins vite et ne gagnent pas de « Premier »)
     if reason is null and secs < 600 and o.jobs <> '{}'::jsonb then
       select format('%s : +%s niveaux en %s min', jnames->>k, (jb->k->>0)::int - (o.jobs->k->>0)::int, round(secs / 60)) into reason
       from jsonb_object_keys(jnames) k
@@ -176,12 +227,17 @@ begin
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs)
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs, jobs_w, jobs_base, jobs_prev, jobs_pw)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
-      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now(), jb)
+      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now(), jb,
+      case when jb = '{}'::jsonb then 0 else wnow end, case when jb = '{}'::jsonb then '{}'::jsonb else jbase end, jprev, jpw)
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
       playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec, pts = excluded.pts,
       jobs = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs else excluded.jobs end,
+      jobs_w = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_w else excluded.jobs_w end,
+      jobs_base = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_base else excluded.jobs_base end,
+      jobs_prev = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_prev else excluded.jobs_prev end,
+      jobs_pw = case when excluded.jobs = '{}'::jsonb then public.ladder.jobs_pw else excluded.jobs_pw end,
       qstep = excluded.qstep, qstep_at = case when excluded.qstep > public.ladder.qstep or public.ladder.qstep_at is null then now() else public.ladder.qstep_at end,
       flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
   select flagged into bad from public.ladder where user_id = new.user_id;
@@ -194,13 +250,24 @@ begin
       select 'lvl200', '', 'Premier héros au niveau 200', new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
       on conflict do nothing;
   end if;
-  -- 1.0.8 : le premier compte au niveau 200 de chaque métier d'artisanat (titre « Grand … » dans le jeu)
-  if not bad then
+  -- 1.0.8 : le premier compte au niveau 200 de chaque métier d'artisanat (titre « Grand … » dans le jeu).
+  -- 1.0.9 : seulement en y arrivant : le serveur doit avoir vu ce métier sous le niveau 200 (pas de « Premier » pour un compte
+  -- déjà au niveau 200 avant la 1.0.8, ni pour la récolte et la forgemagie)
+  if not bad and hadrow then
     insert into public.firsts (kind, key, label, user_id, pseudo)
       select 'job200', k, format('Premier %s au niveau 200', jnames->>k), new.user_id, p.pseudo
       from jsonb_object_keys(jnames) k cross join public.profiles p
       where p.id = new.user_id and jsonb_typeof(jb->k) = 'array' and (jb->k->>0)::int >= 200
+        and jsonb_typeof(o.jobs->k) = 'array' and (o.jobs->k->>0)::int < 200
       on conflict do nothing;
+    -- 1.0.9 : Grand Maître artisan : le premier compte avec les 7 métiers d'artisanat au niveau 200 (en y arrivant)
+    if (select count(*) from jsonb_object_keys(jnames) k where jsonb_typeof(jb->k) = 'array' and (jb->k->>0)::int >= 200) = 7
+       and (select count(*) from jsonb_object_keys(jnames) k where jsonb_typeof(o.jobs->k) = 'array' and (o.jobs->k->>0)::int >= 200) < 7
+       and (select count(*) from jsonb_object_keys(jnames) k where jsonb_typeof(o.jobs->k) = 'array') = 7 then
+      insert into public.firsts (kind, key, label, user_id, pseudo)
+        select 'job200all', '', 'Premier Grand Maître artisan : les 7 métiers d''artisanat au niveau 200', new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
+        on conflict do nothing;
+    end if;
   end if;
   -- 1.0 : course de lancement : les 10 premiers comptes à finir la quête principale après la sortie (13/10/2026, 16 h Paris)
   if not bad and coalesce((m->>'mainq')::boolean, false) and now() >= timestamptz '2026-10-13 14:00:00+00'

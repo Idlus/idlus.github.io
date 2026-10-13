@@ -4453,6 +4453,16 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 @media (max-width:900px){.jlb-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:640px){.jlb-tiles{gap:6px}.jlb-tiles button{padding:6px 3px}.jlb-tiles button img,.jlb-tiles button .uico{width:26px;height:26px}.jlb-tiles button b{font-size:11px}.jlb-tiles button small{font-size:10px}
   .jlb-tiles .hide-sm{display:none}.jlb-prof{grid-template-columns:repeat(4,minmax(0,1fr))}.jlb-go{margin-left:0}}
+/* 1.0.9 : classement des métiers : Joueurs / Guildes, Artisanat / Récolte / Forgemagie, semaine, objectif sur sa ligne */
+.jlb-segs{display:flex;flex-wrap:wrap;gap:8px}
+.jlb-tiles.n6{grid-template-columns:repeat(6,minmax(0,1fr))}.jlb-tiles.n7{grid-template-columns:repeat(7,minmax(0,1fr))}.jlb-tiles .sm-only,.jlb-segs .sm-only{display:none}
+.jlb-goal{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:1px 8px;border-radius:999px;background:rgba(242,196,75,.16);color:#f2c44b;font-weight:800}.jlb-goal .uico{width:14px;height:14px}
+.lbr.jlb-g{cursor:default}
+.pjh .jlb-go{padding:2px 9px;font-size:12px;min-height:0}.pjh .jlb-go .uico{width:15px;height:15px}
+.jlb-podgoal{display:flex;justify-content:center;margin:-2px 0 10px}.jlb-podgoal .jlb-goal{margin:0}
+.lbr .jlb-goalrow{grid-column:3/-1;margin-top:-6px;font-size:12px}.lbr .jlb-goalrow .jlb-goal{margin:0}
+@media (max-width:640px){.jlb-segs{gap:6px}.jlb-segs .seg button{font-size:12.5px;padding:4px 10px}.jlb-tiles.n6{grid-template-columns:repeat(3,minmax(0,1fr))}.jlb-tiles.n7{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .jlb-tiles .sm-only,.jlb-segs .sm-only{display:inline}.jlb-segs .hide-sm{display:none}.lbr .jlb-goalrow{grid-column:2/-1;font-size:11.5px}.jlb-goal{padding:1px 7px}}
 
 /* 1.0.8.3 : onglet Équipements de l'Encyclopédie */
 .enckpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}

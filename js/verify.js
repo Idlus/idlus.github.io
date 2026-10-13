@@ -24,8 +24,14 @@
     const succes = Object.keys(S.ach || {}).filter((k) => S.ach[k]).length;
     const lvl200 = heroes.some((h) => h.lvl >= 200 || h.ren > 0);
     const dofus = E.DOFUS_ORDER && E.dofusOwned ? E.DOFUS_ORDER.filter((id) => E.dofusOwned(S, id)) : [];
-    // 1.0.8 : niveau et XP des métiers d'artisanat (classement des métiers ; le serveur ne garde que les 7 métiers connus)
-    const jobs = {}; for (const k in S.crafts || {}) { const J = S.crafts[k] || {}; jobs[k] = [Math.max(1, Math.min(200, J.lvl || 1)), Math.max(0, Math.floor(J.xp || 0))]; }
+    // 1.0.8 : niveau et XP des métiers d'artisanat (classement des métiers ; le serveur ne garde que les métiers connus)
+    // 1.0.9 : + métiers de récolte et de forgemagie (appris), et l'XP totale depuis le niveau 1 (classement de la semaine)
+    const jobs = {}, cum = {};
+    const total = (need, l, xp) => { const k = need === E.fmNeed ? "fm" : "job"; let c = cum[k]; if (!c) { c = cum[k] = [0, 0]; for (let i = 1; i < 200; i++) c.push(c[i] + need(i)); } return c[l] + xp; };
+    const put = (k, J, need) => { const l = Math.max(1, Math.min(200, (J && J.lvl) || 1)), xp = Math.max(0, Math.floor((J && J.xp) || 0)); jobs[k] = [l, xp, need ? total(need, l, xp) : 0]; };
+    for (const k in S.crafts || {}) put(k, S.crafts[k], E.jobXpNeed);
+    for (const k in S.jobs || {}) put(k, S.jobs[k], E.jobXpNeed);
+    if (S.fmJobs && E.FM_JOBS && E.fmNeed) for (const k in E.FM_JOBS) if (S.fmJobs[k] && (!E.fmLearned || E.fmLearned(S, k))) put(k, S.fmJobs[k], E.fmNeed);
     return { rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, jobs, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0 };
   };
 

@@ -209,7 +209,14 @@ const MOCK = () => {
       d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
         lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }, { kind: "job200", key: "tailleur", label: "Premier Tailleur au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T11:00:00Z" }],
         lb_jobs: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tous", lvl: 812, xp: 900, alljobs: { tailleur: [200, 0], bijoutier: [190, 500], forgeron: [180, 400], tous: [812, 900] } }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tous", lvl: 640, xp: 10, alljobs: { tailleur: [150, 10] } },
-          { user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tailleur", lvl: 200, xp: 0 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tailleur", lvl: 150, xp: 10 }] };
+          { user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tailleur", lvl: 200, xp: 0 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tailleur", lvl: 150, xp: 10 },
+          { user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tous_recolte", lvl: 600, xp: 0, alljobs: { paysan: [150, 0], mineur: [140, 0] } }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tous_recolte", lvl: 400, xp: 0, alljobs: { paysan: [90, 0] } }] };
+      // 1.0.9 : semaine (u1 = moi, 3e), guildes
+      const W = Math.floor((Date.now() / 86400000 + 3) / 7);
+      d.views.lb_jobs_week = [{ user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, w: W, job: "tous", gain: 90000, lvl: 812, r: 1 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, w: W, job: "tous", gain: 50000, lvl: 640, r: 2 },
+        { user_id: "u1", pseudo: "Testeur", main: "iop", main_lvl: 10, w: W, job: "tous", gain: 12000, lvl: 9, r: 3 }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", main_lvl: 150, w: W, job: "tous", gain: 800, lvl: 300, r: 4 }];
+      d.views.lb_jobs_guild = [{ guild_id: 1, name: "Les Artisans", ic: "combat", col: "#e0a030", job: "tous", members: 4, lvl: 2100, total: 9000000, best: "Kralamour" }, { guild_id: 2, name: "Bwork Team", ic: "dofus", col: "#30a0e0", job: "tous", members: 2, lvl: 900, total: 2000000, best: "Bworkman" }];
+      d.views.lb_jobs_guild_week = [];
       localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.click('#nav [data-nk="ladder"]');
     // 1.0.5 : l'onglet Course s'ouvre en premier : 10 places, puis les joueurs en course
@@ -230,6 +237,20 @@ const MOCK = () => {
     await page.click('.pod.p1'); await page.waitForSelector(".sheet .tm", { timeout: 5000 });
     if (!(await page.$(".sheet .jlb-prof"))) fail("métiers : la fiche du joueur ne montre pas ses métiers");
     await page.click('[data-act="closesheet"].btn');
+    // 1.0.9 : Récolte (6 tuiles), Forgemagie (7 tuiles), semaine avec l'objectif sur ma ligne, guildes
+    await page.click('[data-act="lb-jgrp"][data-v="gather"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
+    if ((await page.$$(".jlb-tiles button")).length !== 6 || !/Kralamour/.test(await page.textContent("#lbList"))) fail("métiers : classement de la récolte incorrect");
+    await page.click('[data-act="lb-jgrp"][data-v="fm"]'); await page.waitForTimeout(400);
+    if ((await page.$$(".jlb-tiles button")).length !== 7) fail("métiers : il faut 7 tuiles en forgemagie");
+    await page.click('[data-act="lb-jgrp"][data-v="craft"]'); await page.click('[data-act="lb-jmode"][data-v="week"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 });
+    if (!/\+90 000 XP/.test((await page.textContent("#lbList")).replace(/\s/g, " ")) || !/Métiers de la semaine/.test(await page.textContent("#main"))) fail("métiers : classement de la semaine incorrect");
+    if (!/Encore 38 001 XP pour dépasser Tofuline/.test((await page.textContent("#lbList .jlb-podgoal .jlb-goal")).replace(/\s/g, " "))) fail("métiers : objectif « Encore … XP pour dépasser … » absent de ma ligne");
+    await page.click('[data-act="lb-jwho"][data-v="g"]'); await page.waitForTimeout(400);
+    if (!/Aucune guilde/.test(await page.textContent("#lbList"))) fail("métiers : guildes de la semaine (vide) incorrect");
+    await page.click('[data-act="lb-jmode"][data-v="all"]'); await page.waitForSelector("#lbList .lbr.jlb-g", { timeout: 10000 });
+    if ((await page.$$("#lbList .lbr.jlb-g .gemb")).length !== 2 || !/2 100 niveaux/.test((await page.textContent("#lbList")).replace(/\s/g, " "))) fail("métiers : classement des guildes incorrect");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/lb-jobs-guild.png" });
+    await page.click('[data-act="lb-jwho"][data-v="p"]'); await page.waitForTimeout(300);
     for (const tb of ["dj", "album", "succ", "first", "job", "lvl"]) { await page.click(`[data-act="lb-tab"][data-v="${tb}"]`); await page.waitForTimeout(250); if (/Chargement/.test(await page.textContent("#lbList"))) fail(`classement ${tb} : chargement sans fin`); }
     await page.selectOption('[data-act="lb-cls"]', "iop"); await page.waitForTimeout(250);
     if (!/Kralamour/.test(await page.textContent("#lbList"))) fail("filtre par classe vide");

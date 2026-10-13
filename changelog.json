@@ -1,6 +1,20 @@
 {
-  "version": "1.0.8.8",
+  "version": "1.0.9",
   "versions": [
+    {
+      "v": "1.0.9",
+      "name": "Métiers de la semaine",
+      "items": [
+        "Classements › Métiers : bouton « Cette semaine / Depuis toujours ». Cette semaine = l'XP de métier gagnée depuis lundi, tout le monde repart de zéro, même un nouveau joueur peut gagner",
+        "Les 3 premiers de chaque métier de la semaine portent le titre « Artisan de la semaine » pendant la semaine suivante (Équipe et héros)",
+        "Sélecteur Artisanat / Récolte / Forgemagie : les 5 métiers de récolte et les 6 de forgemagie ont aussi leur classement, avec leur somme « Tous ». Bouton « Classement » sur chaque métier de récolte",
+        "Ta ligne montre ton objectif : « Encore 4 920 XP pour dépasser … », le joueur juste devant toi",
+        "Bouton « Joueurs / Guildes » : chaque guilde additionne les niveaux de métiers de ses membres (ou l'XP de la semaine), ta guilde est surlignée",
+        "Le premier compte avec les 7 métiers d'artisanat au niveau 200 est gravé dans les Premiers, annoncé dans Hauts faits et devient « Grand Maître artisan »",
+        "Premiers au niveau 200 d'un métier : seuls les joueurs qui y arrivent après la mise à jour comptent, et seulement pour l'artisanat (pas de Premier en récolte ni en forgemagie)",
+        "La fiche d'un joueur montre aussi ses métiers de récolte et de forgemagie"
+      ]
+    },
     {
       "v": "1.0.8.8",
       "name": "Objets regroupés",

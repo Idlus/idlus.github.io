@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.9 « Métiers de la semaine »
+Demande de Mathis (réponses 1A à 6A sur la maquette des améliorations du classement des métiers). La sauvegarde envoyée en ligne (meta, `VF.summary` dans js/verify.js) porte maintenant les métiers d'artisanat, de récolte et de forgemagie appris, avec l'XP totale depuis le niveau 1 : aucun envoi en plus. Le déclencheur `ladder_from_save` (supabase/classements.sql) garde l'XP totale de chaque métier au début de la semaine (`jobs_base`, semaine `jobs_w`, celle des donjons de la semaine) et la semaine passée (`jobs_prev`, `jobs_pw`) ; vues `lb_jobs` (+ `total`), `lb_jobs_week` (XP gagnée, place `r`), et `lb_jobs_guild` / `lb_jobs_guild_week` (supabase/guildes.sql). Sommes par groupe : `tous`, `tous_recolte`, `tous_fm`. Titre « Artisan de la semaine » (podium d'un métier la semaine passée, vérifié au lancement comme « Maître de la semaine »), « Grand Maître artisan » (Premiers, kind `job200all`). Un Premier au niveau 200 n'est gravé que si le serveur a vu le métier sous le niveau 200 (artisanat seulement). La vérification de vitesse (+60 niveaux en moins de 10 min) ne regarde que l'artisanat.
+
 ## 1.0.8.8 « Objets regroupés »
 Demande de Mathis : les objets identiques sont regroupés sur une ligne (×N). `grpItems(L, byTpl, solo)` dans js/ui.js : même modèle et mêmes jets = même `itemKey` ; cadenas, tenue, exo, légendaire et Rayonnant restent à part (`itemSolo`). Choix d'équipement : une ligne par modèle, le meilleur exemplaire en tête, « N jets différents » déplie les variantes (`ui.pgrp`, gardé au redessin). Fiche d'objet du sac, Forgemagie, Brisage (la case coche tout le groupe, `data-uids`) et « Ton sac » de l'HdV regroupent les exemplaires identiques.
 

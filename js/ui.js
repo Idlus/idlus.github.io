@@ -21,9 +21,19 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.8";
+const GAME_VERSION = "1.0.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.9", name: "Métiers de la semaine", items: [
+    "Classements › Métiers : bouton « Cette semaine / Depuis toujours ». Cette semaine = l'XP de métier gagnée depuis lundi, tout le monde repart de zéro, même un nouveau joueur peut gagner",
+    "Les 3 premiers de chaque métier de la semaine portent le titre « Artisan de la semaine » pendant la semaine suivante (Équipe et héros)",
+    "Sélecteur Artisanat / Récolte / Forgemagie : les 5 métiers de récolte et les 6 de forgemagie ont aussi leur classement, avec leur somme « Tous ». Bouton « Classement » sur chaque métier de récolte",
+    "Ta ligne montre ton objectif : « Encore 4 920 XP pour dépasser … », le joueur juste devant toi",
+    "Bouton « Joueurs / Guildes » : chaque guilde additionne les niveaux de métiers de ses membres (ou l'XP de la semaine), ta guilde est surlignée",
+    "Le premier compte avec les 7 métiers d'artisanat au niveau 200 est gravé dans les Premiers, annoncé dans Hauts faits et devient « Grand Maître artisan »",
+    "Premiers au niveau 200 d'un métier : seuls les joueurs qui y arrivent après la mise à jour comptent, et seulement pour l'artisanat (pas de Premier en récolte ni en forgemagie)",
+    "La fiche d'un joueur montre aussi ses métiers de récolte et de forgemagie",
+  ] },
   { v: "1.0.8.8", name: "Objets regroupés", items: [
     "Pour équiper un héros, les objets identiques tiennent sur une seule ligne avec leur nombre (×50). « Équiper » met le meilleur exemplaire",
     "Si les exemplaires n'ont pas les mêmes jets, « choisir un exemplaire » déplie la ligne pour en prendre un précis. Elle reste ouverte pendant que le jeu tourne",
@@ -4974,7 +4984,7 @@ function recolteHtml() {
   const free = S.chars.filter((c) => !c.job && !c.inTeam); const hunters = S.chars.filter((c) => !c.job && c.inTeam).length;
   const cards = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const ws = S.chars.filter((c) => c.job && c.job.job === id); const tl = E.toolLvl(S, id);
     return `<div class="panel pjob"><div class="pjh">${im(jobImg(id), "joblogo", J.name)}<div class="grow"><div class="row between"><b class="pjn">${J.name}</b><span class="lvlpill">niv. ${s.lvl}</span></div>
-        <div class="bar xp thin"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div><div class="xs muted num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))} XP</div></div></div>
+        <div class="bar xp thin"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div><div class="row between"><span class="xs muted num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))} XP</span>${ON && ON.enabled ? `<button class="pchip jlb-go" data-act="lb-jobgo" data-g="gather" data-v="${id}" data-tip="Classement des joueurs en ${h(J.name)}">${IC("couronne")} Classement</button>` : ""}</div></div></div>
       <div class="pad stack" style="gap:8px">
         ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · coup de ${hitDur(E.gatherPeriod(S, c))}</span></div><div class="row between xs pwhit"><span>Reste <b data-wleft="${c.id}">${hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog))}</b></span><span class="good">+${fmt(Math.max(1, Math.round(E.hitQty(S, c))))} ${h(c.job.res)} à la fin du coup</span></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
         <button class="pslot" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>
@@ -7275,7 +7285,8 @@ async function onBoot() {
    Niveau (avec filtre par classe), Donjons (de la semaine ou depuis toujours), Album, Succès, Premiers.
    Les records de donjon sont rejoués par le serveur avant d'entrer au classement. */
 const VF = window.VERIFY;
-const LB = { tab: "race", job: "tous", cls: "", dmode: "week", did: null, cache: {} };
+const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, cache: {} };
+const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job, LB.jgrp, LB.jmode, LB.jwho].join("|");
 const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["job", "Métiers"], ["first", "Premiers"]];
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
@@ -7331,7 +7342,7 @@ async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
   if (LB.ml === undefined) { const { error } = await db.from("lb_level").select("main_lvl").limit(1); LB.ml = !error; } // 0.1.26 : niveau du héros principal (cadre du médaillon)
   if (LB.pts === undefined) { const { error } = await db.from("lb_level").select("pts").limit(1); LB.pts = !error; } // 0.1.49 : points de succès
-  const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job].join("|");
+  const t = LB.tab, key = lbKey();
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
   const count = async (q) => { const { count: n } = await q; return (n || 0) + 1; };
@@ -7372,69 +7383,148 @@ async function lbFetch() {
   }
   LB.cache[key] = out; return out;
 }
-/* 1.0.8 : classement des métiers d'artisanat. Le niveau et l'XP des 7 métiers partent avec la sauvegarde en ligne
+/* 1.0.8 : classement des métiers d'artisanat. Le niveau et l'XP des métiers partent avec la sauvegarde en ligne
    (aucun envoi en plus) ; le serveur les range dans la vue lb_jobs (une ligne par compte et par métier, plus « tous »
-   = la somme des 7 niveaux). À niveau égal, l'XP déjà gagnée dans le niveau départage. */
+   = la somme des 7 niveaux). À niveau égal, l'XP déjà gagnée dans le niveau départage.
+   1.0.9 : Artisanat / Récolte / Forgemagie (sommes « tous_recolte » et « tous_fm »), classement de la semaine (vue lb_jobs_week :
+   l'XP gagnée depuis lundi, comptée par le serveur à chaque envoi), Joueurs / Guildes (vues lb_jobs_guild et lb_jobs_guild_week)
+   et « Encore … pour dépasser … » sur sa propre ligne. */
 const JOB_ALL = "tous";
-const jobLv = (j) => (S.crafts[j] || { lvl: 1, xp: 0 });
-const jobMine = (j) => (j === JOB_ALL ? Object.keys(CRAFT_JOBS).reduce((a, k) => [a[0] + (jobLv(k).lvl || 1), a[1] + Math.floor(jobLv(k).xp || 0)], [0, 0]) : [jobLv(j).lvl || 1, Math.floor(jobLv(j).xp || 0)]);
+const JOB_WEEK_TITLE = "Artisan de la semaine";
+const JOB_GRPS = {
+  craft: { name: "Artisanat", of: "d'artisanat", all: "tous", ic: "metiers", allName: "Tous les métiers", jobs: () => Object.keys(CRAFT_JOBS), nm: (j) => CRAFT_JOBS[j].name, img: (j) => jobImg(j), need: (l) => E.jobXpNeed(l), get: (j) => S.crafts[j] },
+  gather: { name: "Récolte", of: "de récolte", all: "tous_recolte", ic: "pioche", allName: "Toute la récolte", jobs: () => Object.keys(GATHER_JOBS), nm: (j) => GATHER_JOBS[j].name, img: (j) => jobImg(j), need: (l) => E.jobXpNeed(l), get: (j) => S.jobs[j] },
+  fm: { name: "Forgemagie", of: "de forgemagie", all: "tous_fm", ic: "forge", allName: "Toute la forgemagie", jobs: () => Object.keys(E.FM_JOBS), nm: (j) => E.FM_JOBS[j].name, img: (j) => jobImg(E.FM_JOBS[j].base), need: (l) => E.fmNeed(l), get: (j) => (E.fmLearned(S, j) ? E.fmJobs(S)[j] : null) },
+};
+const jobGrp = () => JOB_GRPS[LB.jgrp] || JOB_GRPS.craft;
+const jobKey = () => (LB.job === JOB_ALL ? jobGrp().all : LB.job);
+const jobLv = (j) => { const J = jobGrp().get(j); return J ? [Math.max(1, J.lvl || 1), Math.floor(J.xp || 0)] : null; };
+const jobMine = (j) => { if (j !== JOB_ALL) return jobLv(j); const a = jobGrp().jobs().map(jobLv).filter(Boolean); return a.length ? a.reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]) : null; };
+/* XP totale depuis le niveau 1 (pour « Encore … XP pour dépasser … ») */
+const jobTot = (G, l, xp) => { let c = G.cum; if (!c) { c = G.cum = [0, 0]; for (let i = 1; i < 200; i++) c.push(c[i] + G.need(i)); } return c[Math.max(1, Math.min(200, l || 1))] + (xp || 0); };
 function jobLbHead() {
-  if (LB.job !== JOB_ALL && !CRAFT_JOBS[LB.job]) LB.job = JOB_ALL;
-  const tiles = [[JOB_ALL, "Tous les métiers", IC("metiers"), `niv. ${fmt(jobMine(JOB_ALL)[0])}`]].concat(Object.keys(CRAFT_JOBS).map((j) => [j, CRAFT_JOBS[j].name, im(jobImg(j), "", CRAFT_JOBS[j].name), `niv. ${jobLv(j).lvl || 1}`]));
-  return `<div class="jlb-tiles">${tiles.map(([v, n, ic, sm]) => `<button data-act="lb-job" data-v="${v}" aria-pressed="${LB.job === v}"${v === JOB_ALL ? ' class="all"' : ""}>${ic}<b>${v === JOB_ALL ? `Tous<span class="hide-sm"> les métiers</span>` : h(n)}</b><small>${sm}</small></button>`).join("")}</div>
-    <span class="small muted">${LB.job === JOB_ALL ? `La somme des niveaux de tes 7 métiers d'artisanat (${fmt(200 * Object.keys(CRAFT_JOBS).length)} au maximum).` : `Le niveau de ${h(CRAFT_JOBS[LB.job].name)}, puis l'XP déjà gagnée dans ce niveau. Le premier au niveau 200 est gravé dans les Premiers et devient « Grand ${h(CRAFT_JOBS[LB.job].name)} ».`}</span>`;
+  const G = jobGrp(); if (LB.job !== JOB_ALL && !G.jobs().includes(LB.job)) LB.job = JOB_ALL;
+  const week = LB.jmode === "week", guild = LB.jwho === "g";
+  const seg = (act, cur, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
+  const segs = `<div class="jlb-segs">${seg("lb-jwho", guild ? "g" : "p", [["p", "Joueurs"], ["g", "Guildes"]])}${seg("lb-jmode", week ? "week" : "all", [["week", `<span class="hide-sm">Cette semaine</span><span class="sm-only">Semaine</span>`], ["all", `<span class="hide-sm">Depuis toujours</span><span class="sm-only">Toujours</span>`]])}${seg("lb-jgrp", LB.jgrp, Object.keys(JOB_GRPS).map((k) => [k, JOB_GRPS[k].name]))}</div>`;
+  const wEnd = Math.max(0, ((weekNow() + 1) * 7 - 3) * 86400000 - E.now());
+  const wk = week ? `<div class="panel"><div class="pad stack" style="gap:6px"><div class="row between"><b>${IC(G.ic)} Métiers de la semaine</b><span class="tag good">fin dans ${wEnd >= 86400000 ? `${Math.floor(wEnd / 86400000)} j ${Math.floor((wEnd % 86400000) / 3600000)} h` : dur(wEnd / 1000)}</span></div>
+    <span class="small muted">L'XP de métier gagnée depuis lundi : tout le monde repart de zéro chaque semaine, même un nouveau joueur peut gagner. Les 3 premiers de chaque métier portent le titre « ${JOB_WEEK_TITLE} » la semaine suivante.</span></div></div>` : "";
+  const sm = (j) => { const m = jobMine(j); return m ? `niv. ${fmt(m[0])}` : "à apprendre"; };
+  const tiles = [[JOB_ALL, G.allName, IC(G.ic), sm(JOB_ALL)]].concat(G.jobs().map((j) => [j, G.nm(j), im(G.img(j), "", G.nm(j)), sm(j)]));
+  const all = LB.job === JOB_ALL, nm = all ? "" : h(G.nm(LB.job));
+  const help = guild ? (week ? `Chaque guilde additionne l'XP gagnée cette semaine par ses membres ${all ? `dans leurs métiers ${G.of}` : `en ${nm}`}. Ta guilde est surlignée.`
+      : `Chaque guilde additionne les niveaux de ses membres ${all ? `dans leurs métiers ${G.of}` : `en ${nm}`}. Ta guilde est surlignée.`)
+    : week ? `L'XP ${all ? `de tous tes métiers ${G.of}` : `de ${nm}`} gagnée depuis lundi (comptée à chaque envoi de ta partie).`
+    : all ? `La somme des niveaux de tes ${LB.jgrp === "fm" ? "métiers de forgemagie appris" : `${G.jobs().length} métiers ${G.of}`} (${fmt(200 * G.jobs().length)} au maximum).${LB.jgrp === "craft" ? ` Le premier compte avec les 7 métiers au niveau 200 est gravé dans les Premiers et devient « ${E.JOB_MASTER_TITLE} ».` : ""}`
+    : `Le niveau de ${nm}, puis l'XP déjà gagnée dans ce niveau.${LB.jgrp === "craft" ? ` Le premier au niveau 200 est gravé dans les Premiers et devient « Grand ${nm} ».` : ""}`;
+  return `${segs}${wk}<div class="jlb-tiles n${tiles.length}">${tiles.map(([v, n, ic, s]) => `<button data-act="lb-job" data-v="${v}" aria-pressed="${LB.job === v}"${v === JOB_ALL ? ' class="all"' : ""}>${ic}<b>${v === JOB_ALL ? `<span class="hide-sm">${h(n)}</span><span class="sm-only">Tous</span>` : h(n)}</b><small>${s}</small></button>`).join("")}</div>
+    <span class="small muted">${help}</span>`;
 }
 async function jobLbFetch(out) {
-  const db = ON.db(), me = ON.user && ON.user.id, j = LB.job, all = j === JOB_ALL;
+  const db = ON.db(), me = ON.user && ON.user.id, G = jobGrp(), j = jobKey(), all = LB.job === JOB_ALL, week = LB.jmode === "week", wn = weekNow();
+  if (LB.jwho === "g") return jobGuildFetch(out, db, j, week, wn);
+  if (week) {
+    const cols = "user_id,pseudo,main,main_lvl,gain,lvl,r", sub = (r) => (r.lvl ? (all ? `${fmt(r.lvl)} niveaux ${G.of}` : `niv. ${r.lvl}`) : "");
+    const { data, error } = await db.from("lb_jobs_week").select(cols).eq("w", wn).eq("job", j).order("gain", { ascending: false }).limit(50);
+    if (error) throw error;
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, sc: `+${fmt(r.gain)} XP`, sub: sub(r), v: +r.gain || 0 }));
+    if (me) { const { data: m } = await db.from("lb_jobs_week").select(cols).eq("w", wn).eq("job", j).eq("user_id", me).limit(1);
+      if (m && m[0]) out.me = { u: me, cls: m[0].main, fl: m[0].main_lvl, sc: `+${fmt(m[0].gain)} XP`, sub: sub(m[0]), rank: m[0].r, v: +m[0].gain || 0 }; }
+    jobGoal(out, me, (a, b) => [a.v - b.v + 1, "XP"]);
+    return;
+  }
   const { data, error } = await db.from("lb_jobs").select("user_id,pseudo,main,main_lvl,lvl,xp" + (all ? ",alljobs" : "")).eq("job", j).order("lvl", { ascending: false }).order("xp", { ascending: false }).limit(50);
   if (error) throw error;
-  const top3 = (a) => Object.keys(CRAFT_JOBS).filter((k) => Array.isArray(a && a[k])).sort((x, y) => a[y][0] - a[x][0] || a[y][1] - a[x][1]).slice(0, 3)
-    .map((k) => `<span class="jlb-mini" data-tip="${h(CRAFT_JOBS[k].name)}">${im(jobImg(k), "", CRAFT_JOBS[k].name)}${a[k][0]}</span>`).join("");
-  const sub = (lvl, xp, a) => (all ? top3(a) : lvl >= 200 ? "niveau maximum" : `<span class="jlb-bar"><i style="width:${pct(xp, E.jobXpNeed(lvl))}%"></i></span>${Math.floor(pct(xp, E.jobXpNeed(lvl)))} % vers le ${lvl + 1}`);
+  const top3 = (a) => G.jobs().filter((k) => Array.isArray(a && a[k])).sort((x, y) => a[y][0] - a[x][0] || a[y][1] - a[x][1]).slice(0, 3)
+    .map((k) => `<span class="jlb-mini" data-tip="${h(G.nm(k))}">${im(G.img(k), "", G.nm(k))}${a[k][0]}</span>`).join("");
+  const sub = (lvl, xp, a) => (all ? top3(a) : lvl >= 200 ? "niveau maximum" : `<span class="jlb-bar"><i style="width:${pct(xp, G.need(lvl))}%"></i></span>${Math.floor(pct(xp, G.need(lvl)))} % vers le ${lvl + 1}`);
   const sc = (lvl) => (all ? `${fmt(lvl)} niveaux` : `niv. ${lvl}`);
-  out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, sc: sc(r.lvl), sub: sub(r.lvl, +r.xp || 0, r.alljobs) }));
-  if (me && S) {
-    const [l, x] = jobMine(j), mine = {}; if (all) for (const k in CRAFT_JOBS) mine[k] = jobMine(k);
+  out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, sc: sc(r.lvl), sub: sub(r.lvl, +r.xp || 0, r.alljobs), l: r.lvl, x: +r.xp || 0 }));
+  const mm = me && S ? jobMine(LB.job) : null;
+  if (mm) {
+    const [l, x] = mm, mine = {}; if (all) G.jobs().forEach((k) => { const v = jobLv(k); if (v) mine[k] = v; });
     const { count } = await db.from("lb_jobs").select("user_id", { count: "exact", head: true }).eq("job", j).or(`lvl.gt.${l},and(lvl.eq.${l},xp.gt.${x})`);
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
-    out.me = { u: me, cls: main.cls, fl: main.lvl, sc: sc(l), sub: sub(l, x, mine), rank: (count || 0) + 1 };
+    out.me = { u: me, cls: main.cls, fl: main.lvl, sc: sc(l), sub: sub(l, x, mine), rank: (count || 0) + 1, l, x };
   }
+  // à niveau total égal, c'est l'XP qui départage : sinon, il manque des niveaux (somme de plusieurs métiers) ou de l'XP (un métier)
+  jobGoal(out, me, (a, b) => (!all ? [jobTot(G, a.l, a.x) - jobTot(G, b.l, b.x) + 1, "XP"] : a.l > b.l ? [a.l - b.l + 1, "niveau"] : [a.x - b.x + 1, "XP"]));
+}
+/* 1.0.9 : l'objectif sur sa ligne : le joueur juste devant (ou le 50e, pour entrer dans la liste) */
+function jobGoal(out, me, need) {
+  if (!me || !out.rows.length) return;
+  const R = out.rows, i = R.findIndex((r) => r.u === me);
+  let row = null, tgt = null, top = false;
+  if (i > 0) { row = R[i]; tgt = R[i - 1]; }
+  else if (i < 0 && out.me && out.me.rank > 1) { row = out.me; top = out.me.rank - 2 >= R.length; tgt = R[Math.min(out.me.rank - 2, R.length - 1)]; }
+  if (!row || !tgt) return;
+  const [n, u] = need(tgt, row); if (!(n > 0)) return;
+  const pill = `<span class="jlb-goal">${IC("couronne")} Encore ${fmt(n)} ${u}${u === "niveau" && n > 1 ? "x" : ""} pour ${top ? `entrer dans les ${R.length} premiers` : `dépasser ${h(tgt.p)}`}</span>`;
+  if (i > 0 && i < 3) out.podGoal = pill; else row.goal = pill; // sur le podium : sous le podium ; sinon sous la ligne
+}
+async function jobGuildFetch(out, db, j, week, wn) {
+  const q = week ? db.from("lb_jobs_guild_week").select("guild_id,name,ic,col,members,gain,best").eq("w", wn).eq("job", j).order("gain", { ascending: false })
+    : db.from("lb_jobs_guild").select("guild_id,name,ic,col,members,lvl,total,best").eq("job", j).order("lvl", { ascending: false }).order("total", { ascending: false });
+  const { data, error } = await q.limit(50);
+  if (error) throw error;
+  const my = S && S.guild && S.guild.id;
+  out.guilds = (data || []).map((r) => ({ n: r.name, ic: r.ic, col: r.col, mine: !!my && String(r.guild_id) === String(my),
+    sc: week ? `+${fmt(r.gain)} XP` : `${fmt(r.lvl)} niveau${r.lvl > 1 ? "x" : ""}`,
+    sub: `${r.members} membre${r.members > 1 ? "s" : ""}${r.best ? ` · meilleur : ${h(r.best)}` : ""}` }));
+}
+function jobGuildHtml(d) {
+  if (!d.guilds.length) return `<div class="empty">${LB.jmode === "week" ? "Aucune guilde n'a encore gagné d'XP ici cette semaine." : "Aucune guilde classée ici pour l'instant."}</div>`;
+  return `<div class="lbt">${d.guilds.map((g, i) => `<div class="lbr jlb-g${g.mine ? " mine" : ""}"><span class="rk">${i + 1}</span><span class="gemb" style="--gc:${h(g.col || "#8cc63f")};--gs:34px"><img src="assets/ui/${h(g.ic || "dofus")}.webp" alt=""></span><span class="nm">${h(g.n)}${g.mine ? ` <small class="inl">ta guilde</small>` : ""}<small class="lbsub">${g.sub}</small></span><span></span><span class="sc">${h(g.sc)}</span></div>`).join("")}</div>`;
 }
 /* 1.0.8 : titre « Grand Tailleur » (etc.) pour le premier compte au niveau 200 d'un métier. Le serveur grave le premier
-   dans firsts (kind job200) ; le jeu ne demande qu'une fois par métier arrivé au niveau 200. */
+   dans firsts (kind job200) ; le jeu ne demande qu'une fois par métier arrivé au niveau 200.
+   1.0.9 : « Grand Maître artisan » pour le premier compte avec les 7 métiers au niveau 200 (kind job200all). */
 let jobFirstAt = 0;
 function jobFirstCheck() {
   if (!S || !(ON && ON.user && ON.db && ON.db()) || Date.now() - jobFirstAt < 60000) return;
   const seen = (S.unlocks.jobFirst = S.unlocks.jobFirst || {});
-  const todo = Object.keys(CRAFT_JOBS).filter((j) => (S.crafts[j] || {}).lvl >= 200 && seen[j] === undefined); if (!todo.length) return;
+  const todo = Object.keys(CRAFT_JOBS).filter((j) => (S.crafts[j] || {}).lvl >= 200 && seen[j] === undefined);
+  const askAll = seen.all === undefined && Object.keys(CRAFT_JOBS).every((j) => (S.crafts[j] || {}).lvl >= 200);
+  if (!todo.length && !askAll) return;
   jobFirstAt = Date.now();
-  try { ON.db().from("firsts").select("key,user_id").eq("kind", "job200").in("key", todo).then(({ data }) => {
-    (data || []).forEach((r) => {
-      if (!CRAFT_JOBS[r.key] || seen[r.key] !== undefined) return;
-      seen[r.key] = r.user_id === ON.user.id ? 1 : 0; dirty = true;
-      if (!seen[r.key]) return;
-      const t = E.jobFirstTitle(r.key); if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t);
-      toast(`Tu es le premier joueur au niveau 200 de ${CRAFT_JOBS[r.key].name} ! Ton nom est gravé dans les Premiers et tu gagnes le titre « ${t} » (Équipe et héros).`, "rare");
-    });
-    if (dirty) saveNow();
-  }).catch(() => {}); } catch (e) { /* hors ligne */ }
+  try {
+    if (todo.length) ON.db().from("firsts").select("key,user_id").eq("kind", "job200").in("key", todo).then(({ data }) => {
+      (data || []).forEach((r) => {
+        if (!CRAFT_JOBS[r.key] || seen[r.key] !== undefined) return;
+        seen[r.key] = r.user_id === ON.user.id ? 1 : 0; dirty = true;
+        if (!seen[r.key]) return;
+        const t = E.jobFirstTitle(r.key); if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t);
+        toast(`Tu es le premier joueur au niveau 200 de ${CRAFT_JOBS[r.key].name} ! Ton nom est gravé dans les Premiers et tu gagnes le titre « ${t} » (Équipe et héros).`, "rare");
+      });
+      if (dirty) saveNow();
+    }).catch(() => {});
+    if (askAll) ON.db().from("firsts").select("user_id").eq("kind", "job200all").limit(1).then(({ data }) => {
+      if (!data || !data.length || seen.all !== undefined) return;
+      seen.all = data[0].user_id === ON.user.id ? 1 : 0; dirty = true;
+      if (seen.all) { const t = E.JOB_MASTER_TITLE; if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t);
+        toast(`Tu es le premier Grand Maître artisan : les 7 métiers d'artisanat au niveau 200 ! Ton nom est gravé dans les Premiers et tu gagnes le titre « ${t} » (Équipe et héros).`, "rare"); }
+      saveNow();
+    }).catch(() => {});
+  } catch (e) { /* hors ligne */ }
 }
 function lbRowHtml(r, i, me) {
-  return `<button class="lbr${me ? " me" : !me && ON.user && r.u === ON.user.id ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}${r.sub ? `<small class="lbsub">${r.sub}</small>` : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span></button>`;
+  return `<button class="lbr${me ? " me" : !me && ON.user && r.u === ON.user.id ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}"><span class="rk">${me ? r.rank : i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${me ? pname((ON.profile && ON.profile.pseudo) || "Toi", ON.user && ON.user.id) : pname(r.p, r.u)}${me ? " <small>toi</small>" : ""}${r.sub ? `<small class="lbsub">${r.sub}</small>` : ""}</span>${r.ok ? `<span class="okv">✓ vérifié</span>` : "<span></span>"}<span class="sc">${h(r.sc)}</span>${r.goal ? `<span class="jlb-goalrow">${r.goal}</span>` : ""}</button>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
+  if (LB.tab === "job" && d.guilds) return jobGuildHtml(d);
   if (LB.tab === "first") {
-    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10 et le premier au niveau 200 de chaque métier seront gravés ici pour toujours.</div>`;
-    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "lvl200" || r.kind === "race10" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
+    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10, le premier au niveau 200 de chaque métier d'artisanat et le premier Grand Maître artisan seront gravés ici pour toujours.</div>`;
+    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "lvl200" || r.kind === "race10" || r.kind === "job200all" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";
-  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
+  if (!d.rows.length) return `${yest}<div class="empty">${LB.tab === "dj" ? "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !" : LB.tab === "defi" ? "Personne n'a encore réussi le défi de ce palier aujourd'hui. À toi de jouer !" : LB.tab === "job" && LB.jmode === "week" ? "Personne n'a encore gagné d'XP ici cette semaine. L'XP compte à partir du prochain envoi de ta partie : à toi de jouer !" : "Le classement est encore vide."}</div>${d.me ? `<div class="lbt">${lbRowHtml(d.me, 0, true)}</div>` : ""}`;
   const top = d.rows.slice(0, 3), rest = d.rows.slice(3);
   const pod = [1, 0, 2].filter((i) => top[i]).map((i) => { const r = top[i]; return `<button class="pod p${i + 1}${r.u === me ? " mine" : ""}${staffCls(r.u)}" data-act="lb-prof" data-u="${h(r.u)}">${i === 0 ? IC("couronne") : ""}<span class="rk">${i + 1}</span>${cmed(r.cls, r.fl)}<span class="nm">${pname(r.p, r.u)}</span>${r.fl ? `<span class="rib" data-fr="${E.frameKey(r.fl)}">${E.FRAMES[E.frameIdx(r.fl)]}</span>` : ""}<span class="sc">${h(r.sc)}</span></button>`; }).join("");
   const inTop = d.me && d.rows.some((r) => r.u === me);
-  return `${yest}<div class="podium n${top.length}">${pod}</div><div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
+  return `${yest}<div class="podium n${top.length}">${pod}</div>${d.podGoal ? `<div class="jlb-podgoal">${d.podGoal}</div>` : ""}<div class="lbt">${rest.map((r, i) => lbRowHtml(r, i + 3, false)).join("")}${d.me && !inTop ? lbRowHtml(d.me, 0, true) : ""}</div>`;
 }
 /* 1.0.5 : course de lancement en direct. Le serveur garde l'étape de la quête principale de chaque compte (ladder.qstep)
    et l'heure où il l'a atteinte : les joueurs en course sont classés par étape, puis par qui l'a atteinte en premier.
@@ -7519,8 +7609,8 @@ function renderLadder() {
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>
     <nav class="subtabs">${LB_TABS.map(([id, n]) => [id, id === "race" && ui.raceInfo && ui.raceInfo.left <= 0 ? "Légendes" : n]).map(([id, n]) => `<button data-act="lb-tab" data-v="${id}" aria-pressed="${LB.tab === id}">${n}</button>`).join("")}</nav>
     <section class="stack ladder">${login}${head}<div class="panel"><div class="pad stack" id="lbList"><div class="empty">Chargement du classement…</div></div></div></section>`;
-  const key = [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job].join("|");
-  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job].join("|")) el.innerHTML = lbListHtml(d); })
+  const key = lbKey();
+  lbFetch().then((d) => { const el = $("#lbList"); if (el && ui.tab === "ladder" && key === lbKey()) el.innerHTML = lbListHtml(d); })
     .catch(() => { const el = $("#lbList"); if (el) el.innerHTML = `<div class="empty">Classement indisponible : pas de connexion au serveur.</div>`; });
 }
 async function lbProfile(u) {
@@ -7534,7 +7624,8 @@ async function lbProfile(u) {
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
     const jl = {}; ((jb && jb.data) || []).forEach((r) => (jl[r.job] = r.lvl));
-    const jobsH = jl[JOB_ALL] ? `<b>Ses métiers <span class="xs muted">· ${fmt(jl[JOB_ALL])} niveaux</span></b><div class="jlb-prof">${Object.keys(CRAFT_JOBS).map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(CRAFT_JOBS[j].name)} niveau ${jl[j] || 1}">${im(jobImg(j), "", CRAFT_JOBS[j].name)}<small>${h(CRAFT_JOBS[j].name)}</small><b>${jl[j] || 1}</b></span>`).join("")}</div>` : "";
+    const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
+      return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}</b></span>`).join("")}</div>`; }).join("");
     openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}
@@ -7588,13 +7679,24 @@ async function lbTitles() {
     if (data && data.length && !has) { S.titlesExtra.push(WEEK_TITLE); dirty = true; toast(`Podium de la semaine passée : titre « ${WEEK_TITLE} » débloqué pour cette semaine (Équipe et héros).`, "rare"); }
     else if (data && !data.length && has) { S.titlesExtra = S.titlesExtra.filter((t) => t !== WEEK_TITLE); S.chars.forEach((c) => { if (c.title === WEEK_TITLE) c.title = null; }); dirty = true; }
   } catch (e) {}
+  // 1.0.9 : « Artisan de la semaine » : sur le podium d'un métier (pas des sommes « tous ») la semaine passée
+  try {
+    const { data, error } = await ON.db().from("lb_jobs_week").select("job,r").eq("w", weekNow() - 1).eq("user_id", ON.user.id).lte("r", 3).limit(30);
+    if (error || !data) return;
+    const won = data.some((r) => r.job && !String(r.job).startsWith(JOB_ALL)), has = (S.titlesExtra = S.titlesExtra || []).includes(JOB_WEEK_TITLE);
+    if (won && !has) { S.titlesExtra.push(JOB_WEEK_TITLE); dirty = true; toast(`Podium des métiers la semaine passée : titre « ${JOB_WEEK_TITLE} » débloqué pour cette semaine (Équipe et héros).`, "rare"); }
+    else if (!won && has) { S.titlesExtra = S.titlesExtra.filter((t) => t !== JOB_WEEK_TITLE); S.chars.forEach((c) => { if (c.title === JOB_WEEK_TITLE) c.title = null; }); dirty = true; }
+  } catch (e) {}
 }
 function lbAct(a, t) {
   const d = t.dataset;
   switch (a) {
     case "lb-tab": LB.tab = d.v; break;
     case "lb-job": LB.job = d.v; break;
-    case "lb-jobgo": LB.tab = "job"; LB.job = d.v; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return; // 1.0.8 : depuis Métiers › Artisanat
+    case "lb-jgrp": LB.jgrp = d.v; LB.job = JOB_ALL; break; // 1.0.9 : Artisanat / Récolte / Forgemagie
+    case "lb-jmode": LB.jmode = d.v; break;
+    case "lb-jwho": LB.jwho = d.v; break;
+    case "lb-jobgo": LB.tab = "job"; LB.jgrp = d.g || "craft"; LB.job = d.v; LB.jwho = "p"; ui.tab = "ladder"; render(); window.scrollTo(0, 0); return; // 1.0.8 : depuis Métiers › Artisanat (1.0.9 : et Récolte)
     case "lb-dmode": LB.dmode = d.v; break;
     case "lb-dtier": LB.dtier = d.v; break;
     case "lb-dgo": ui.defiTier = LB.dtier || ui.defiTier; ui.tab = "defi"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
