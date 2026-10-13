@@ -30,7 +30,7 @@
     craftItem: "craft", craftSpecial: "craft", craftMany: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",
     buildEnclos: "monture", startBreed: "monture", equipMount: "monture", setMountShare: "monture",
     buyShop: "boutique", buyNets: "boutique", useConsumable: "boutique",
-    enterDungeon: "donjon", leaveDungeon: "donjon", toggleIdol: "idole",
+    enterDungeon: "donjon", leaveDungeon: "donjon", stopChain: "donjon", toggleIdol: "idole",
     almanaxOffer: "quete", redeemGift: "quete", togglePin: "quete", rerollBounty: "quete",
     defiPlay: "defi", tresorClaim: "tresor", tresorStart: "tresor", tresorFight: "tresor",
     expDoor: "expedition", expChoose: "expedition", expStart: "expedition", expQuit: "expedition",

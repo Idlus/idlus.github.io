@@ -1,6 +1,15 @@
 {
-  "version": "0.1.37",
+  "version": "0.1.37.1",
   "versions": [
+    {
+      "v": "0.1.37.1",
+      "name": "Donjons à la chaîne",
+      "items": [
+        "Enchaîner des donjons : choisissez 1, 3, 5, 10 ou 20 courses, « Toutes » vos clés, ou un nombre exact avec − et +. Le jeu retient votre choix pour chaque donjon",
+        "La fiche du donjon donne la durée totale estimée d'après votre record, et le bouton indique le nombre de courses (×10)",
+        "Pendant l'enchaînement, l'écran de combat affiche « course 3 sur 10 » et un bouton « Arrêter après celui-ci ». Une défaite ou plus de clé arrête toujours l'enchaînement"
+      ]
+    },
     {
       "v": "0.1.37",
       "name": "Sac agrandi",

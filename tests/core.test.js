@@ -141,3 +141,20 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   const S2 = E.deserialize(E.serialize(S)); assert.strictEqual(S2.over.length, S.over.length);
   console.log("ok - sac de 1 000 places, trop-plein, doublons");
 }
+
+// 0.1.37.1 : enchaîner des donjons, « course n sur N », « Arrêter après celui-ci »
+{
+  E.setClock(() => T0);
+  const S = E.newState("Chaîne", "iop"); const did = Object.keys(D.DUNGEONS)[0]; const key = D.DUNGEONS[did].key;
+  const keep = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
+  S.res[key] = 5;
+  assert.ok(/Aucun/.test(E.stopChain(S)), "hors donjon, rien à arrêter");
+  assert.strictEqual(E.act(S, "enterDungeon", did, 1, 5), null);
+  assert.deepStrictEqual([S.dungeon.chain, S.dungeon.tot, S.dungeon.run], [5, 5, 1]);
+  assert.strictEqual(E.act(S, "stopChain"), undefined);
+  assert.strictEqual(S.dungeon.chain, 1); assert.strictEqual(S.dungeon.tot, 5);
+  assert.ok(/Aucun/.test(E.stopChain(S)), "déjà le dernier");
+  assert.strictEqual(S.res[key], 4, "une seule clé utilisée");
+  E.dungeonUnlocked = keep;
+  console.log("ok - enchaînement de donjons et arrêt après le donjon en cours");
+}

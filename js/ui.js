@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.37";
+const GAME_VERSION = "0.1.37.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.37.1", name: "Donjons à la chaîne", items: [
+    "Enchaîner des donjons : choisissez 1, 3, 5, 10 ou 20 courses, « Toutes » vos clés, ou un nombre exact avec − et +. Le jeu retient votre choix pour chaque donjon",
+    "La fiche du donjon donne la durée totale estimée d'après votre record, et le bouton indique le nombre de courses (×10)",
+    "Pendant l'enchaînement, l'écran de combat affiche « course 3 sur 10 » et un bouton « Arrêter après celui-ci ». Une défaite ou plus de clé arrête toujours l'enchaînement",
+  ] },
   { v: "0.1.37", name: "Sac agrandi", items: [
     "Le sac passe de 300 à 1 000 places. Le Grenier du Havre-Sac donne maintenant 50 places par niveau (au lieu de 25)",
     "Plus aucun objet perdu : quand le sac est plein, les nouveaux objets vont dans le Coffre de trop-plein (Inventaire, onglet « Trop-plein », 200 places, +10 par niveau de Grenier). Les règles automatiques passent avant",
@@ -1008,7 +1013,7 @@ function navLiveTxt() {
   const dg = S.dungeon && DUNGEONS[S.dungeon.id]; const XP = E.expActive(S) ? S.exp : null;
   if (!dg && !XP && !(S.hunting && S.sub)) return "";
   if (XP) return `Expédition · étage ${XP.floor}`;
-  if (dg) return `${dg.name} · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}`;
+  if (dg) return (S.dungeon.tot || 1) > 1 ? `Course ${S.dungeon.run || 1}/${S.dungeon.tot} · ${dg.name}` : `${dg.name} · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)}/${dg.rooms.length + 1}`;
   return `Chasse · ${E.SUBS[S.sub].name}`;
 }
 function updNavLive() {
@@ -1512,7 +1517,13 @@ function dungeonSheet(did) {
   const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
   const W = E.weekly(S); const wk = W && W.did === did ? E.STASIS_MODS[W.mod] : null;
   const FL = wk ? null : E.flashOf(S, did); const fl = FL ? E.STASIS_MODS[FL.mod] : null;
-  const chainMax = Math.max(1, keys); const chainOpts = [1, 3, 5, 10].filter((x) => x === 1 || x <= chainMax);
+  const chainMax = Math.max(1, keys); const chainAll = ui.dgChain === -1; const chainN = chainAll ? chainMax : clamp(ui.dgChain || 1, 1, chainMax);
+  const chainOpts = [1, 3, 5, 10, 20].filter((x) => x === 1 || x < chainMax);
+  const chainEst = SI.best && SI.best[k] && chainN > 1 ? ` · environ ${dur(SI.best[k] * chainN)} au total (d'après ton record)` : "";
+  const chainBox = un && keys > 1 ? `<div class="chainbox"><b>Enchaîner</b> <span class="xs muted">(${keys} clé${keys > 1 ? "s" : ""} en stock)</span>
+        <div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-v="-1">Toutes (${chainMax})</button>
+        <span class="chainstep"><button class="sbtn" data-act="dgchainset" data-v="${Math.max(1, chainN - 1)}" ${chainN <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${chainN}</b><button class="sbtn" data-act="dgchainset" data-v="${Math.min(chainMax, chainN + 1)}" ${chainN >= chainMax ? "disabled" : ""} aria-label="Un de plus">+</button></span></div>
+        <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div></div>` : "";
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
       ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${sm.hp >= 30 ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${sm.hp >= 30 ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${sm.hp >= 30 ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
@@ -1537,10 +1548,15 @@ function dungeonSheet(did) {
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
-    <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<label class="small row" style="gap:6px">Enchaîner <select data-act="dgchain">${chainOpts.map((x) => `<option value="${x}" ${(ui.dgChain || 1) === x ? "selected" : ""}>${x}×</option>`).join("")}</select></label>
-      <button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}</button>` : `<span class="small muted">${G("lock")} Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
+    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
+/* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
+function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
+  return XP ? `Expédition sans fin · ${XP.lives} vie${XP.lives > 1 ? "s" : ""} sur ${XP.livesMax} · ${XP.relics.length} relique${XP.relics.length > 1 ? "s" : ""}` : dg ? `Donjon · ${chainTxt()}salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"; }
+function chainBtn() { return S.dungeon && (S.dungeon.chain || 1) > 1 ? `<button class="btn sm" data-act="stopchain" data-tip="Le donjon en cours va jusqu'au bout, puis l'équipe s'arrête">Arrêter après celui-ci</button>` : ""; }
+function chainCount(did) { const keys = S.res[DUNGEONS[did].key] || 0; return ui.dgChain === -1 ? Math.max(1, keys) : clamp(ui.dgChain || 1, 1, Math.max(1, keys)); }
+function chainTxt() { const D = S.dungeon; return D && (D.tot || 1) > 1 ? `course ${D.run || 1} sur ${D.tot}${(D.chain || 1) <= 1 ? " (dernière)" : ""} · ` : ""; }
 /* 0.1 : panneau de la clé du donjon (recette lisible, d'où vient chaque ingrédient) */
 function keySource(r) {
   const L = resIndex().src[r] || []; const g = L.find((x) => x.job);
@@ -1652,12 +1668,12 @@ function renderCombat() {
   const XP = E.expActive(S) ? S.exp : null; // 0.1.24 : étage de l'Expédition sans fin
   const title = XP ? `Étage ${XP.floor} · règne de ${XP.regne.god}` : dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
-  <div class="pagehead combathead"><div><div class="small muted">${XP ? `Expédition sans fin · ${XP.lives} vie${XP.lives > 1 ? "s" : ""} sur ${XP.livesMax} · ${XP.relics.length} relique${XP.relics.length > 1 ? "s" : ""}` : dg ? `Donjon · salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"}</div><h1>${h(title)}</h1></div>
+  <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       <label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Chasse itinérante : après une victoire, l'équipe part vers une zone de son niveau qui a au moins 2 étoiles de plus (une fois toutes les 10 min au plus, hors ligne aussi). En échange, XP et butin −${Math.round(E.ROAM_MALUS * 100)} % tant qu'elle est cochée.${(S.roamLog || []).length ? " Dernières zones : " + S.roamLog.map((z) => (E.SUBS[z] || {}).name).filter(Boolean).join(" ← ") : ""}"><input type="checkbox" data-act="roam" ${S.settings.roam ? "checked" : ""}> Itinérante <span class="xs muted">−${Math.round(E.ROAM_MALUS * 100)} %</span></label>` : ""}
-      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir l'expédition</button>` : dg ? `<button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
+      ${idolBtn(S.dungeon)}${XP ? `<button class="btn sm" data-tab="exp">Voir l'expédition</button>` : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
   ${XP && window.EXPUI ? window.EXPUI.combatHtml(S) : ""}
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
@@ -2812,6 +2828,8 @@ function updateCombat(force) {
     A.nEnts = F.ents.length; placeEnts(F);
   }
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
+  const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
+  const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
   const cs = $("#cstreak"); if (cs) { const k = (S.chalStreak || 0) > 1 ? `${G("flame")} ×${S.chalStreak}` : ""; if (cs.dataset.k !== k) { cs.innerHTML = k; cs.dataset.k = k; } }
   const cb = $("#chalbar"); if (cb) { const ch = chalBarHtml(F); if (cb.dataset.k !== ch) { cb.innerHTML = ch; cb.dataset.k = ch; } }
   const co = $("#chalov"); if (co) { const ch = chalOverlayHtml(F); if (co.dataset.k !== ch) { co.innerHTML = ch; co.dataset.k = ch; const ar = $("#arena"); if (ar) ar.classList.toggle("haschal", !!ch); } }
@@ -5369,8 +5387,10 @@ document.addEventListener("click", (ev) => {
     case "encboss": ui.enc.boss = d.v; break;
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": ui.tab = "inv"; ui.inv = "sets"; break;
-    case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? ui.dgChain || 1 : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
-    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = 1; dungeonSheet(d.id); return; }
+    case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? chainCount(d.id) : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; break; }
+    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[d.id]) || 1; dungeonSheet(d.id); return; }
+    case "dgchainset": { ui.dgChain = +d.v; (S.dgChains = S.dgChains || {})[ui.dgSel] = ui.dgChain; dirty = true; dungeonSheet(ui.dgSel); return; }
+    case "stopchain": msg(E.stopChain(S)); break;
     case "dgfav": { ev.stopPropagation(); S.dgFav = S.dgFav || []; const i = S.dgFav.indexOf(d.id); if (i >= 0) S.dgFav.splice(i, 1); else S.dgFav.push(d.id); break; }
     case "dgfilter": ui.dgFilter = d.v; break;
     case "dgstasis": ui.dgStasis = +d.v; dungeonSheet(ui.dgSel); return;
@@ -5549,7 +5569,6 @@ document.addEventListener("change", (ev) => {
   else if (a === "slotfilter") ui.slotFilter = t.value;
   else if (a === "dgsort") ui.dgSort = t.value;
   else if (a === "focusset") { S.settings.focus = t.value; toast(t.value === "auto" ? "L'équipe vise d'abord les soigneurs, chefs, invocateurs et protecteurs." : t.value === "boss" ? "L'équipe vise d'abord le boss." : "L'équipe vise d'abord le monstre le plus faible."); }
-  else if (a === "dgchain") { ui.dgChain = +t.value; return; }
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
   else if (a === "setorn") { msg(E.setOrn(S, +t.dataset.id, t.value)); }

@@ -683,6 +683,7 @@ a.btn{text-decoration:none}
 .pill.good{background:rgba(126,224,106,.16);color:#9ff07a}
 .stasisrow{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:6px}
 .sbtn{border:1.5px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:9px;padding:6px 0;font-weight:900;cursor:pointer}
+.chainbox{margin:8px 0;display:grid;gap:4px}.chainrow{display:flex;gap:4px;flex-wrap:wrap;align-items:center}.chainrow .sbtn{min-width:44px;padding:6px 8px}.chainrow .sbtn.wide{min-width:auto}.chainstep{display:inline-flex;gap:4px;align-items:center;margin-left:4px}.chainstep .num{min-width:28px;text-align:center}
 .sbtn.done{border-color:rgba(126,224,106,.5)}.sbtn.on{background:var(--gold);color:#1a1206;border-color:var(--gold)}.sbtn:disabled{opacity:.35;cursor:not-allowed}
 .dglist{margin:4px 0 0;padding-left:18px;line-height:1.5}.dglist.steps li.cur{color:var(--gold2);font-weight:800}
 .lootico{width:34px;height:34px;border-radius:8px;background:var(--panel3);display:grid;place-items:center;filter:grayscale(1) brightness(.75)}.lootico.own{filter:none}.lootico img{width:28px;height:28px;object-fit:contain}
