@@ -13,7 +13,7 @@ const ui = {
   craftJob: "tailleur", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
-/* 1.0.8.3 : la « partie de test » du jeu public (bouton du panel admin) fonctionne comme la bêta : même sauvegarde de test,
+/* 1.0.8.2 : la « partie de test » du jeu public (bouton du panel admin) fonctionne comme la bêta : même sauvegarde de test,
    panel de test, aucun serveur. « Revenir à ma partie » rend la vraie partie, qui n'a pas bougé. */
 const TESTMODE = !/\/beta\//.test(location.pathname) && (() => { try { return localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
 const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
