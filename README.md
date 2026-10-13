@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.45.1 « Offrande fixe »
+Almanax : `E.almanax` tire l'offrande et la cible avec `S.almLvl = { day, lvl }`, le niveau du meilleur héros au premier passage du jour (seulement pour le jour en cours) ; récompenses (kamas, XP) au niveau actuel. Avant, chaque niveau gagné pouvait changer l'offrande demandée.
+
 ## 0.1.45 « Galets du Kolizéum »
 Les 6 Galets de DOFUS (cramoisi, rutilant, Lunaire, rayonnant, Solaire, brasillant) deviennent des ressources (`E.KOLI_GALETS` dans js/koli.js, icônes assets/i) vendues dans la boutique du Kolizéum et échangeables à l'HdV. Les recettes DOFUS des 300 objets du jeu qui en demandent les retrouvent au chargement (table `GALET_RECIPES` régénérée par `node tools/koli_galets.js` depuis DofusDB ; drapeau `E.KOLI_GALET_RECIPES`). Boutique en rayons (`sec`) avec achat ×1/×5/×10 (`E.buyShop(S, shop, id, qty)` pour les articles `many`, articles `res`), source des ressources hors monstres via `E.RES_SOURCE`.
 

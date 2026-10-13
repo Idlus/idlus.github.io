@@ -1,6 +1,13 @@
 {
-  "version": "0.1.45",
+  "version": "0.1.45.1",
   "versions": [
+    {
+      "v": "0.1.45.1",
+      "name": "Offrande fixe",
+      "items": [
+        "Almanax : l'offrande et la cible du jour (famille, zone, donjon) ne changent plus quand un héros gagne des niveaux. Elles sont choisies au premier passage de la journée et restent les mêmes jusqu'à minuit"
+      ]
+    },
     {
       "v": "0.1.45",
       "name": "Galets du Kolizéum",

@@ -108,7 +108,11 @@
   E.ALM_XP_MIN = 15; // l'offrande rapporte l'XP d'environ 15 minutes de chasse (simulation 0.1.39)
   E.almOfferXp = (lvl) => Math.round(E.monsterXp(lvl) * 50 * E.ALM_XP_MIN);
   E.almanax = (S, t = E.now()) => {
-    const A = E.almDay(t); const day = A.day; const top = topLvl(S);
+    const A = E.almDay(t); const day = A.day; const now = topLvl(S);
+    /* 0.1.44.2 : l'offrande et la cible du jour sont tirées avec le niveau du premier passage de la journée,
+       sinon elles changent à chaque niveau gagné (retour de joueur). Les jours suivants (aperçu) gardent le niveau actuel. */
+    let top = now;
+    if (S.res && day === dayKey()) { if (!S.almLvl || S.almLvl.day !== day) S.almLvl = { day, lvl: now }; top = S.almLvl.lvl; }
     const pool = ALM_POOL.filter(([, l]) => l <= Math.max(8, top + 2));
     const [res, lvl] = pool[Math.floor(hashStr("alm" + day) * pool.length)] || ALM_POOL[0];
     const qty = 4 + Math.floor(hashStr("q" + day) * 6) + Math.floor(lvl / 10);
@@ -116,7 +120,7 @@
     const target = done && S.almanax.kind === A.kind ? S.almanax.t || null : E.almTarget(S, A.kind, day, top);
     const K = ALM_KINDS[A.kind]; const v = Math.round(K.v * almFurn(S));
     const bonus = { kind: A.kind, v, name: K.name, ic: K.ic, txt: K.txt(v, target, A.job, day) };
-    return Object.assign(A, { res, qty, bonus, target, done, kamas: 100 + top * 20, xp: E.almOfferXp(top) });
+    return Object.assign(A, { res, qty, bonus, target, done, kamas: 100 + now * 20, xp: E.almOfferXp(now) });
   };
   /* le meuble « Calendrier de l'Almanax » renforce le bonus du jour de moitié */
   const almFurn = (S) => 1 + (E.furnBonus ? E.furnBonus(S, "almanax") : 0) / 100;
