@@ -657,7 +657,10 @@
   E.huntMon = (n) => (E.HUNT_SMALL[n] && E.HUNT_SMALL[n].mon) || 1; // 0.1.24.3 : petite équipe en chasse, part du renfort gardée
   // 0.1.12.5 : donjons bien plus durs que les autres de leur niveau (simulation) : PV et dégâts de leurs monstres ×
   E.DG_EASE = { cache_kankreblath: 0.9, labo_tynril: 0.8 };
-  const powMons = (mons, where, did, sm = 1) => { const k = (did && E.DG_EASE[did]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * (1 + (E.monPow(m.lvl, "hp", where) - 1) * sm) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
+  /* 0.1.34 : sous-zones de chasse bien plus dures que les autres de leur niveau (simulation : équipe de 4 au niveau du milieu de la zone,
+     objets 8 niveaux en dessous) : PV et dégâts de leurs monstres × ; les gains ne baissent pas */
+  E.HUNT_EASE = { ama_craqueleurs: 0.95, wab_cawotte: 0.9, wab_couronne: 0.85, wab_tombeaux: 0.8, ama_cloaque: 0.85, wab_waldo: 0.9, can_massif: 0.85, koa_bordure: 0.85, koa_kaliptus: 0.95, koa_lacs: 0.95, pan_feudala: 0.85, enu_carriere: 0.9, fri_berceau: 0.7, oto_hakam: 0.85, can_dents: 0.8, can_kanigs: 0.8, eca_lande: 0.95, fri_larmes: 0.95, grobe_cimetiere: 0.8, fri_crevasse: 0.9, fri_village: 0.85, grobe_mont: 0.85, osa_toorbz: 0.85, sah_cite: 0.9, sah_gorge: 0.9, fri_petrifiee: 0.75, sid_domaine_fungus: 0.95, sid_gisgoul: 0.7, sram_catacombres: 0.95, fri_ruche: 0.8, fri_torrideau: 0.8, val_ereboria: 0.85, har_bastion: 0.95, har_caserne: 0.85, har_clepsydre: 0.7, har_jardins: 0.85, har_remparts: 0.9, sah_pyramide: 0.8, sram_hauts: 0.85, suf_embruns: 0.7, xel_lendemains: 0.85 };
+  const powMons = (mons, where, did, sm = 1, sid = null) => { const k = (did && E.DG_EASE[did]) || (sid && E.HUNT_EASE[sid]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * (1 + (E.monPow(m.lvl, "hp", where) - 1) * sm) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
     const archi = !!opts.archi && !!base.archi;
@@ -1025,7 +1028,7 @@
       if (mons.some((m) => m.archi)) note(S, `Un archimonstre apparaît : ${mons.find((m) => m.archi).name} !`, "rare");
     }
     const hsm = S.dungeon || XP ? 1 : E.huntMon(team.length);
-    powMons(mons, S.dungeon || XP ? "dg" : "hunt", S.dungeon && S.dungeon.id, hsm);
+    powMons(mons, S.dungeon || XP ? "dg" : "hunt", S.dungeon && S.dungeon.id, hsm, !S.dungeon && !XP ? S.sub : null);
     if (IX) applyIdols(IX, mons);
     const front = E.frontSet(S);
     const ents = team.map((c) => Object.assign(charEntity(S, c), { row: front.has(c.id) ? "f" : "b" })).concat(mons);
@@ -1933,7 +1936,9 @@
   E.resRate = (rate) => (rate >= 100 ? 35 : rate * E.RES_RATE_SCALE);
   E.BONBON_RATE = 0.02;
   /* Pénalité d'XP quand les monstres sont trop faibles pour le héros */
-  E.xpPenalty = (diff) => (diff > 4 ? Math.max(0.05, 1 - (diff - 4) * 0.1) : 1);
+  /* 0.1.34 : malus adouci (avant : dès 5 niveaux d'écart, −10 % par niveau jusqu'à −95 %) ; une zone plus basse reste un repli correct */
+  E.XP_PEN = { free: 6, step: 0.05, min: 0.3 };
+  E.xpPenalty = (diff) => (diff > E.XP_PEN.free ? Math.max(E.XP_PEN.min, 1 - (diff - E.XP_PEN.free) * E.XP_PEN.step) : 1);
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
     const A = S.settings.auto; if (!A || it.radiant || it.locked || E.inGear(S, it.uid)) return null;
@@ -2031,7 +2036,19 @@
     if (zkey) {
       const z = S.zoneStats[zkey] = S.zoneStats[zkey] || { f: 0, w: 0, s: 0, xp: 0, k: 0, r: 0, i: 0 };
       z.f++; z.w += win ? 1 : 0; z.s += F.dur + E.PAUSE_MS / 1000; z.xp += xpTot; z.k += r.kamas; z.r += nres; z.i += r.items.length;
+      // 0.1.34 : réussite récente (moyenne glissante, ≈ 10 derniers combats) et niveau moyen de l'équipe à ce moment-là
+      const tm = E.team(S); z.lv = tm.length ? Math.round(tm.reduce((a, c) => a + c.lvl, 0) / tm.length) : 0;
+      z.ew = z.ew === undefined ? (z.f > 1 ? (z.w - (win ? 1 : 0)) / (z.f - 1) * 0.9 + (win ? 0.1 : 0) : win ? 1 : 0) : z.ew * 0.9 + (win ? 0.1 : 0);
     }
+  };
+  /* 0.1.34 : difficulté d'une zone d'après les derniers combats de l'équipe (null : pas assez de combats, ou l'équipe a pris 5 niveaux depuis) */
+  E.ZONE_DIFF = { min: 5, easy: 0.97, hard: 0.9, stale: 5 };
+  E.zoneDiff = (S, zkey) => {
+    const z = S.zoneStats && S.zoneStats[zkey]; if (!z || z.f < E.ZONE_DIFF.min) return null;
+    const tm = E.team(S); const avg = tm.length ? tm.reduce((a, c) => a + c.lvl, 0) / tm.length : 0;
+    if (z.lv && avg > z.lv + E.ZONE_DIFF.stale) return null;
+    const wr = z.ew === undefined ? z.w / z.f : z.ew;
+    return { wr, k: wr >= E.ZONE_DIFF.easy ? "easy" : wr >= E.ZONE_DIFF.hard ? "mid" : "hard" };
   };
   E.zoneRate = (S, zkey) => {
     const z = S.zoneStats[zkey]; if (!z || z.s < 1) return null;
@@ -2298,12 +2315,17 @@
     return tot;
   };
   /* Progression auto : suit le niveau de l'équipe (option « Suivre mon niveau ») */
+  /* 0.1.34 : on vise les zones dont le milieu est au niveau moyen de l'équipe (avant : niveau minimum ≤ niveau moyen + 1, la plus haute,
+     soit des monstres jusqu'à 25 niveaux au-dessus), sans celles où l'équipe perd souvent ces derniers temps */
+  E.subMid = (s) => (s.lvl[0] + Math.min(200, s.lvl[1])) / 2;
   E.autoZoneTarget = (S) => {
     const team = E.team(S); if (!team.length) return null;
     const avg = team.reduce((s, c) => s + c.lvl, 0) / team.length;
-    const cand = Object.values(SUBS).filter((s) => !s.hidden && E.subUnlocked(S, s.id) && s.lvl[0] <= avg + 1);
+    const open = Object.values(SUBS).filter((s) => !s.hidden && E.subUnlocked(S, s.id) && !((E.zoneDiff(S, s.id) || {}).k === "hard" && s.id !== S.sub));
+    let cand = open.filter((s) => E.subMid(s) <= avg);
+    if (!cand.length) cand = open.sort((a, b) => E.subMid(a) - E.subMid(b)).slice(0, 1);
     if (!cand.length) return null;
-    cand.sort((a, b) => (b.lvl[0] + b.lvl[1]) - (a.lvl[0] + a.lvl[1]));
+    cand.sort((a, b) => E.subMid(b) - E.subMid(a));
     return cand;
   };
   E.autoZone = (S, win) => {
@@ -2313,10 +2335,10 @@
     const cand = E.autoZoneTarget(S); if (!cand) return;
     const cur = SUBS[S.sub]; let target = null;
     if (!win && losses >= 3) { // trop dur : on redescend
-      target = cand.find((s) => (s.lvl[0] + s.lvl[1]) < (cur.lvl[0] + cur.lvl[1]));
+      target = cand.find((s) => E.subMid(s) < E.subMid(cur));
     } else if (S.settings.autoZone && win && S._az >= 12 && losses === 0) { // tout va bien : on monte si possible
       const best = cand[0];
-      if (best && (best.lvl[0] + best.lvl[1]) > (cur.lvl[0] + cur.lvl[1])) target = best;
+      if (best && E.subMid(best) > E.subMid(cur)) target = best;
     }
     if (!target || target.id === S.sub) return;
     S._az = 0; S.stats.recent.length = 0;

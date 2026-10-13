@@ -1,6 +1,17 @@
 {
-  "version": "0.1.33.2",
+  "version": "0.1.34",
   "versions": [
+    {
+      "v": "0.1.34",
+      "name": "Zones à ta mesure",
+      "items": [
+        "Zone conseillée : elle vise maintenant des monstres de ton niveau (avant, elle pouvait envoyer une équipe niveau 60 contre des monstres jusqu'au niveau 88). Une zone où l'équipe perd souvent ces derniers temps n'est plus conseillée",
+        "« Suivre mon niveau » suit la même règle : l'équipe monte vers les zones de son niveau, plus au-dessus",
+        "Zones plus basses : le malus d'XP arrive plus tard et est plus doux. Aucun malus jusqu'à 6 niveaux au-dessus des monstres, puis −5 % par niveau, au plus −70 % (avant : −10 % par niveau dès 5 niveaux, jusqu'à −95 %)",
+        "41 zones bien plus dures que les autres de leur niveau sont adoucies (Îlot des Tombeaux, Massif de Cania, Forêt pétrifiée, Berceau d'Alma, Salles des Embruns…). Les gains ne baissent pas, et une équipe sans équipement y perd toujours",
+        "Carte : un repère « Facile », « Équilibrée » ou « Difficile » sur chaque zone, d'après les derniers combats de ton équipe"
+      ]
+    },
     {
       "v": "0.1.33.2",
       "name": "Hauts faits à part",
