@@ -366,7 +366,7 @@ button[data-tip],button[data-tipitem]{cursor:pointer}
 .icount{position:absolute;right:3px;bottom:2px;font-size:11px;font-weight:900;background:var(--frame);color:#fff7e3;border-radius:6px;padding:0 4px}
 :root[data-theme="dark"] .icount{background:var(--gold);color:#1a1510}
 .ilock{position:absolute;right:3px;top:1px;font-size:11px}
-.ieq{position:absolute;left:5px;bottom:5px;width:8px;height:8px;border-radius:50%;background:var(--action)}
+.ieq{position:absolute;left:3px;bottom:3px;width:18px;height:18px;border-radius:50%;background:var(--cc,var(--action));border:1.5px solid var(--cc,var(--action));overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.25)}.ieq img{width:100%;height:100%;object-fit:cover;display:block;background:var(--panel,#fff)}
 
 /* paliers de chasse */
 .tierline{display:flex;align-items:center;gap:6px}

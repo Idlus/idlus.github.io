@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.55";
+const GAME_VERSION = "0.1.55.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.55.1", name: "Sac sans l'équipé", items: [
+    "Inventaire › Équipements : les objets portés par tes héros n'apparaissent plus dans le sac, il ne reste que ce que tu peux équiper, vendre ou briser",
+    "Une case « Afficher l'équipé » les fait revenir (le choix est retenu) : chaque objet porté montre alors la tête du héros qui le porte",
+  ] },
   { v: "0.1.55", name: "Plafonds relevés", items: [
     "Havre-Sac : nouvel Autel des Douze, 15 niveaux à acheter en kamas (500 000 kamas le premier, puis ×1,3). Chaque niveau relève de +5 les plafonds d'XP, de butin et de kamas : jusqu'à +250 % d'XP et de butin et +275 % de kamas (avant : +175 % et +200 %)",
     "Havre-Sac : nouveau cadre « Mes bonus » en haut de la page. Pour l'XP, le butin et les kamas : une barre qui montre chaque source (Havre-Sac, meubles, alignement, étoiles, guilde, bonbons, légendaires), le plafond, la partie à débloquer avec l'Autel et ce qui est perdu au-dessus. Les sources manquantes sont indiquées, avec comment les obtenir",
@@ -4068,24 +4072,29 @@ function charSpellsView(c) {
 
 /* ---------- INVENTAIRE ---------- */
 
+/* 0.1.54.1 : les objets portés par un héros sont cachés de l'inventaire, sauf avec la case « Afficher l'équipé » */
+function wornMap() { const m = new Map(); S.chars.forEach((c) => Object.values(c.equip).forEach((u) => { if (u) m.set(u, c); })); return m; }
+const invShowEq = () => !!S.settings.invShowEq;
 function invGroups() {
   const q = (ui.invSearch || "").trim().toLowerCase(); const filt = ui.slotFilter;
-  const groups = new Map();
+  const groups = new Map(); const worn = wornMap(); const showEq = invShowEq();
   Object.values(S.items).forEach((it) => {
     const T = ITEMS[it.tpl];
+    if (!showEq && worn.has(it.uid)) return;
     if (filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
     if (q && !T.name.toLowerCase().includes(q)) return;
     const g = groups.get(it.tpl) || { tpl: it.tpl, items: [] }; g.items.push(it); groups.set(it.tpl, g);
   });
   const arr = [...groups.values()];
-  arr.forEach((g) => { g.best = Math.max(...g.items.map((x) => E.itemQuality(x))); g.rad = g.items.some((x) => x.radiant); g.lock = g.items.some((x) => x.locked); g.eq = g.items.some((x) => E.equippedBy(S, x.uid)); });
+  arr.forEach((g) => { g.best = Math.max(...g.items.map((x) => E.itemQuality(x))); g.rad = g.items.some((x) => x.radiant); g.lock = g.items.some((x) => x.locked); const w = g.items.find((x) => worn.has(x.uid)); g.eq = w ? worn.get(w.uid) : null; });
   const sort = ui.invSort || "lvl";
   arr.sort((a, b) => (b.rad - a.rad) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
   return arr;
 }
 function invDetail(tpl) {
   const T = ITEMS[tpl]; if (!T) return "";
-  const copies = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
+  const worn = invShowEq() ? null : wornMap();
+  const copies = Object.values(S.items).filter((x) => x.tpl === tpl && !(worn && worn.has(x.uid))).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
   if (!copies.length) return "";
   return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
     <div class="pad xs">${tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
@@ -4223,17 +4232,19 @@ function renderInventory() {
   if (ui.inv === "items") {
     const groups = invGroups();
     const detail = ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
+    const nWorn = wornMap().size;
     body = `${autoRulesHtml()}
       <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
         <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
         <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
+        <label class="row small invshoweq" data-tip="Les objets portés par tes héros sont cachés de l'inventaire. Coche pour les revoir, avec la tête du héros qui les porte."><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé${nWorn ? ` (${nWorn})` : ""}</label>
         <span class="muted small num">${items.length}/${E.itemCap(S)} objets · ${groups.length} types</span>
         ${dupesBtn()}</div>
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
         <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
           return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
-            ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
+            ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
       </div>`;
   } else if (ui.inv === "over") {
     body = overHtml();
@@ -6319,6 +6330,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "flt") { fltOf(t.dataset.ctx)[t.dataset.k] = t.value; }
   else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
+  else if (a === "invshoweq") { S.settings.invShowEq = t.checked; dirty = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;

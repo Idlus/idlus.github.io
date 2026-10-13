@@ -1,6 +1,14 @@
 {
-  "version": "0.1.55",
+  "version": "0.1.55.1",
   "versions": [
+    {
+      "v": "0.1.55.1",
+      "name": "Sac sans l'équipé",
+      "items": [
+        "Inventaire › Équipements : les objets portés par tes héros n'apparaissent plus dans le sac, il ne reste que ce que tu peux équiper, vendre ou briser",
+        "Une case « Afficher l'équipé » les fait revenir (le choix est retenu) : chaque objet porté montre alors la tête du héros qui le porte"
+      ]
+    },
     {
       "v": "0.1.55",
       "name": "Plafonds relevés",
