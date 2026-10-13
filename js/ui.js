@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.34";
+const GAME_VERSION = "0.1.34.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.34.1", name: "Butin entier", items: [
+    "Zones basses : le butin n'est plus réduit, même quand vos héros sont bien plus forts que les monstres (avant : −6 % par niveau au-delà de 10 niveaux d'écart, jusqu'à −90 %). Les objets très bas sont toujours changés en kamas",
+  ] },
   { v: "0.1.34", name: "Zones à ta mesure", items: [
     "Zone conseillée : elle vise maintenant des monstres de ton niveau (avant, elle pouvait envoyer une équipe niveau 60 contre des monstres jusqu'au niveau 88). Une zone où l'équipe perd souvent ces derniers temps n'est plus conseillée",
     "« Suivre mon niveau » suit la même règle : l'équipe monte vers les zones de son niveau, plus au-dessus",
