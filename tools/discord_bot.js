@@ -31,11 +31,13 @@ function weeklyMessage(t = Date.now()) {
 
 function almanaxMessage(t = Date.now()) {
   const E = require("../js/engine.js"); require("../js/systems.js");
-  const at = (lvl) => E.almanax({ chars: [{ lvl }] }, t); const A = at(1); // le bonus ne dépend que du jour ; l'offrande dépend du niveau du meilleur héros
+  // 0.1.39 : un Méryde et un type de bonus par jour (calendrier de DOFUS) ; la cible et l'offrande dépendent du niveau du meilleur héros
+  const at = (lvl, tt = t) => E.almanax({ chars: [{ lvl }] }, tt); const A = at(1);
   const date = new Date(t).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-  const rows = [[1, "Débutant"], [60, "Niveau 60"], [130, "Niveau 130"]].map(([l, n]) => { const x = at(l); return `• ${n} : ${x.qty} × ${x.res}`; });
-  return { title: `📅 Almanax du ${date}`, url: GAME, color: 0xc9a227,
-    description: `**Bonus du jour : ${A.bonus.name}** jusqu'à minuit, en échange d'une offrande.\n\nL'offrande demandée dépend du niveau de ton meilleur héros, par exemple :\n${rows.join("\n")}\n\nUne offrande chaque jour fait monter ta série. 🎮 **[Jouer à idlus](${GAME})**`,
+  const rows = [[1, "Débutant"], [60, "Niveau 60"], [130, "Niveau 130"], [200, "Niveau 200"]].map(([l, n]) => { const x = at(l); return `• ${n} : ${x.target ? x.bonus.txt + " · " : ""}offrande ${x.qty} × ${x.res}`; });
+  const B = at(60, t + 864e5);
+  return { title: `📅 Almanax du ${date} · ${A.mer}`, url: GAME, color: 0xc9a227,
+    description: `**${A.mer}**, ${A.of}${A.fete ? ` : **${A.fete}** !` : ""}\n\n**Bonus du jour : ${A.bonus.name}.** ${at(60).bonus.txt.replace(/^./, (c) => c.toUpperCase())}${A.target ? " (exemple au niveau 60)" : ""}, jusqu'à minuit, en échange d'une offrande.${["xp", "drop", "kamas", "dg", "fete"].includes(A.kind) ? " Il s'ajoute par-dessus tes autres bonus." : ""}\n\nSelon le niveau de ton meilleur héros :\n${rows.join("\n")}\n\nDemain : **${B.mer}**, ${B.bonus.name.toLowerCase()}.\n\n🎮 **[Jouer à idlus](${GAME})**`,
     footer: { text: "idlus · Almanax" }, timestamp: new Date().toISOString() };
 }
 
