@@ -93,6 +93,34 @@
   };
   E.ALM_TIERS = [3, 7, 14, 30];
   E.ALM_TIERS_R = { 3: { lot: 1 }, 7: { cons: "coffre_argent" }, 14: { furn: "Calendrier de l'Almanax" }, 30: { title: "Fidèle de l'Almanax" } };
+  /* ---------------- 0.1.38 : achats du jour ----------------
+     Plus de vente au jeu : chaque jour, le jeu rachète 3 ressources de ton niveau, à bon prix (1,5 × l'ancien prix),
+     dans la limite de 100 chacune. Les mêmes pour tout le monde au même niveau, renouvelées à minuit. */
+  E.GBUY = { n: 3, max: 100, mult: 1.5 };
+  E.gameBuys = (S, t = E.now()) => {
+    const day = dayKey(t); const top = topLvl(S);
+    const ok = ALM_POOL.filter(([r]) => E.resPrice(r) > 0);
+    let pool = ok.filter(([, l]) => l <= Math.max(8, top + 2) && l >= top - 30);
+    if (pool.length < E.GBUY.n) pool = ok.filter(([, l]) => l <= Math.max(8, top + 2));
+    const got = S.gbuy && S.gbuy.d === day ? S.gbuy.got || {} : {};
+    const list = [];
+    for (let i = 0; list.length < E.GBUY.n && i < 40; i++) {
+      const [res] = pool[Math.floor(hashStr(`gbuy${day}:${Math.floor(top / 10)}:${i}`) * pool.length)] || [];
+      if (!res || list.some((x) => x.res === res)) continue;
+      list.push({ res, price: Math.ceil(E.resPrice(res) * E.GBUY.mult), max: E.GBUY.max, got: got[res] || 0 });
+    }
+    return { day, list };
+  };
+  E.gameBuySell = (S, res, qty) => {
+    const G = E.gameBuys(S); const o = G.list.find((x) => x.res === res);
+    if (!o) return "Le jeu n'achète pas cette ressource aujourd'hui.";
+    const n = Math.min(Math.floor(+qty) || 0, o.max - o.got, S.res[res] || 0);
+    if (n <= 0) return o.got >= o.max ? "Quantité du jour déjà atteinte." : `Tu n'as pas de ${res}.`;
+    if (!S.gbuy || S.gbuy.d !== G.day) S.gbuy = { d: G.day, got: {} };
+    S.gbuy.got[res] = (S.gbuy.got[res] || 0) + n;
+    S.res[res] -= n; if (!S.res[res]) delete S.res[res];
+    S.kamas += n * o.price; return null;
+  };
   const almBonus = (S, kind) => (S.almanax && S.almanax.day === dayKey() && S.almanax.kind === kind ? S.almanax.pct : 0);
 
   /* ---------------- Alignement : Bonta ou Brâkmar ---------------- */
@@ -1101,8 +1129,8 @@
     if (S.alignQuest && S.alignQuest.prog >= S.alignQuest.n) completeAlignQuest(S);
     // ornement des flammes
     if (!S.ornSeen.flammes && S.chars.some((c) => E.radiantWorn(S, c) >= 3)) { S.ornSeen.flammes = 1; note(S, "Ornement débloqué : Flammes Rayonnantes !", "rare"); }
-    // limites de stock : le surplus est vendu automatiquement
-    if (type === "win" || type === "harvest") for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0) E.sellRes(S, n, ex); }
+    // limites de stock : le surplus part au marchand de secours (30 % de l.ancien prix)
+    if (type === "win" || type === "harvest") for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0) E.merchantRes(S, n, ex); }
     checkQuest(S);
     if (type !== "harvest" || (S._achT || 0) + 1500 < E.now()) { S._achT = E.now(); checkAch(S); }
   };

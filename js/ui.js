@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.37.2";
+const GAME_VERSION = "0.1.38";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.38", name: "Tout passe par l'HdV", items: [
+    "Le jeu ne rachète plus tes objets ni tes ressources depuis l'Inventaire : on vend maintenant aux autres joueurs, à l'hôtel de vente. Le bouton « Vendre » devient « Vendre à l'HdV » et ouvre directement la mise en vente, déjà remplie. « Briser » reste là",
+    "Achats du jour (Inventaire › Ressources) : chaque jour, le jeu achète 3 ressources de ton niveau à bon prix (1,5 × leur valeur), 100 au plus chacune. La liste change à minuit",
+    "Règles automatiques : les objets à jet trop bas et les doublons sont brisés en runes au lieu d'être vendus. Les réglages « Vendre » existants passent tout seuls à « Briser »",
+    "Marchand de secours : le surplus automatique (limite « Garder au maximum » d'une ressource, limite de banque pendant l'absence) lui est vendu à 30 % de la valeur",
+    "Hôtel de vente : plus de prix minimum (1 kama par unité au plus bas). La mise en vente montre côte à côte le prix moyen des ventes et la valeur de base ; sous la moitié du prix moyen, le jeu demande « Ce prix est très bas, tu confirmes ? »",
+    "Offres d'achat : plus de prix minimum non plus, même confirmation pour un prix très bas. Les offres très basses restent visibles, en bas de la liste, avec l'étiquette « très bas »",
+  ] },
   { v: "0.1.37.2", name: "Prix des héros", items: [
     "Le prix du prochain héros est affiché sur le bouton « Recruter », qui devient doré quand vous pouvez payer. Sinon, il indique combien de kamas il manque",
     "Une pièce dorée apparaît sur « Équipe et héros » dans le menu quand vous avez de quoi recruter un héros",
@@ -3330,7 +3338,7 @@ function gearHtml(c) {
       <span class="row" style="gap:4px"><button class="btn sm ${on ? "" : "primary"}" data-act="gload" data-i="${i}" ${on ? "disabled" : ""}>${on ? "Portée" : "Mettre"}</button><button class="btn sm" data-act="gsave" data-i="${i}" title="Remplacer par l'équipement actuel">Écraser</button><button class="btn sm" data-act="gren" data-i="${i}" title="Renommer">${G("edit")}</button><button class="btn sm" data-act="gdel" data-i="${i}" title="Supprimer">✕</button></span></div>`;
   }).join("");
   return `<div class="panel"><div class="phead"><h2>Tenues</h2><span class="xs muted">changer tout l'équipement en un clic</span></div><div class="pad stack" style="gap:6px">${rows}
-    <p class="note xs" style="margin:0">Les objets d'une tenue sont protégés : ils ne sont ni vendus ni brisés, même par les règles automatiques. S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
+    <p class="note xs" style="margin:0">Les objets d'une tenue sont protégés : ils ne sont ni mis en vente ni brisés, même par les règles automatiques. S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
 }
 const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());
 const tgtTxt = (n) => (n >= 9 ? "tous les ennemis" : n > 1 ? `${n} cibles` : "");
@@ -3561,8 +3569,8 @@ function invDetail(tpl) {
     <div class="list">${copies.map((it) => { const by = E.equippedBy(S, it.uid);
       return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow"><b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
         <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button><button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">${IC("forge")}</button>
-          <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${it.locked ? "Retirer le cadenas" : "Protéger de la vente et du brisage"}">${it.locked ? G("lock") : G("unlock")}</button>
-          ${by || it.locked ? "" : `<button class="btn sm" data-act="sellitem" data-uid="${it.uid}">Vendre</button><button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
+          <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${it.locked ? "Retirer le cadenas" : "Protéger de la mise en vente et du brisage"}">${it.locked ? G("lock") : G("unlock")}</button>
+          ${by || it.locked ? "" : `${hdvOn() ? `<button class="btn sm" data-act="hdvitem" data-uid="${it.uid}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
 }
 /* mini-silhouette : emplacement de l'objet sélectionné en surbrillance */
 function miniDoll(c, slot) {
@@ -3594,25 +3602,36 @@ function resTabHtml() {
   if (f === "fav") list = list.filter(([n]) => S.resFav[n]);
   const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
   list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
-  const unused = all.filter(([n]) => !IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT && !S.resFav[n] && E.resPrice(n));
-  const unusedVal = unused.reduce((a, [n, qq]) => a + E.resPrice(n) * qq, 0);
-  const picked = ui.resPicked || new Set(); const pickVal = [...picked].reduce((a, n) => a + E.resPrice(n) * (S.res[n] || 0), 0);
+  const picked = new Set();
   const detail = ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
-      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${ui.resPick ? `<input type="checkbox" data-act="respick" data-n="${h(n)}" ${sel ? "checked" : ""}>` : ""}${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
-      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="${ui.resPick ? "respick" : "ressel"}" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}</button>`; };
+      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
+      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="ressel" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}</button>`; };
   return `<div class="row resbar">
       <div class="catchips"><button data-act="rescat" data-v="all" aria-pressed="${cat === "all"}">Tout <b>${all.length}</b></button>${cats.filter((c) => cnt[c.id]).map((c) => `<button data-act="rescat" data-v="${c.id}" aria-pressed="${cat === c.id}">${catIco(c)} ${h(c.name)} <b>${cnt[c.id]}</b></button>`).join("")}</div></div>
     <div class="row invbar"><input type="text" id="resSearch" data-act="ressearch" placeholder="Rechercher une ressource…" value="${h(ui.resQ || "")}">
       <select data-act="resf">${[["all", "Toutes"], ["recipe", "Utiles pour une recette"], ["now", "Utiles maintenant"], ["unused", "Inutilisées"], ["new", "Nouvelles"], ["fav", "Favorites"]].map(([v, n]) => `<option value="${v}" ${f === v ? "selected" : ""}>${n}</option>`).join("")}</select>
       <select data-act="ressort">${[["name", "Nom"], ["qty", "Quantité"], ["lvl", "Niveau"], ["value", "Valeur totale"], ["recent", "Récentes"]].map(([v, n]) => `<option value="${v}" ${so === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
-      <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span>
-      <button class="btn sm ${ui.resPick ? "primary" : ""}" data-act="respickmode">${ui.resPick ? "Fin de la sélection" : "Sélection multiple"}</button></div>
-    ${ui.resPick ? `<div class="awaitbar" style="margin:0">${picked.size} ressource${picked.size > 1 ? "s" : ""} sélectionnée${picked.size > 1 ? "s" : ""} <button class="btn sm danger" data-act="sellpicked" ${picked.size ? "" : "disabled"}>Vendre la sélection · ${fmt(pickVal)} k</button></div>` : ""}
-    <div class="row small">${unused.length ? (ui.confirm === "sellunused" ? `<span>Vendre ${unused.length} ressources inutilisées (hors favorites) pour ${fmt(unusedVal)} kamas ?</span><button class="btn sm danger" data-act="sellunused">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="asksellunused">Vendre les ressources inutilisées · ${fmt(unusedVal)} k</button>`) : ""}<span class="xs muted">Les ressources sont partagées entre tous vos héros.</span></div>
+      <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span></div>
+    ${gameBuysHtml()}
+    <div class="row small"><span class="xs muted">Les ressources sont partagées entre tous vos héros. Pour vendre, passe par l'hôtel de vente (bouton « Vendre à l'HdV » d'une ressource).</span></div>
     <div class="invlayout ${detail ? "withdetail" : ""}">${detail}
       ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
+}
+const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled);
+/* 0.1.38 : achats du jour (le jeu rachète 3 ressources par jour, à bon prix, en quantité limitée) */
+const gbOf = (n) => E.gameBuys(S).list.find((o) => o.res === n);
+function gbLine(o, solo) {
+  const have = S.res[o.res] || 0; const left = o.max - o.got; const q = Math.min(have, left);
+  return `<div class="li">${solo ? "" : im(resImg(o.res), "ico", o.res)}<span class="grow">${solo ? `${IC("kamas")} <b>Le jeu l'achète aujourd'hui</b>` : `<b>${h(o.res)}</b>`}<br><span class="xs muted">${fmt(o.price)} k l'unité · encore ${fmt(left)} sur ${fmt(o.max)} aujourd'hui · tu en as ${fmt(have)}</span></span>
+    ${left <= 0 ? `<span class="tag good">fait</span>` : `<button class="btn sm ${q ? "primary" : ""}" data-act="gbsell" data-n="${h(o.res)}" data-q="${q}" ${q ? "" : "disabled"}>${q ? `Vendre ${fmt(q)} · ${fmt(q * o.price)} k` : "Tu n'en as pas"}</button>`}</div>`;
+}
+function gameBuysHtml() {
+  const G = E.gameBuys(S);
+  return `<section class="panel gbuy"><div class="phead"><h2>${IC("kamas")} Achats du jour</h2><span class="xs muted">renouvelés à minuit</span></div>
+    <div class="list">${G.list.map((o) => gbLine(o)).join("")}</div>
+    <div class="pad xs muted" style="padding-top:0">Le jeu ne rachète plus tes ressources : chaque jour, il en achète 3 à bon prix (${String(E.GBUY.mult).replace(".", ",")} × leur valeur), ${E.GBUY.max} au plus chacune. Pour le reste, vends aux autres joueurs à l'hôtel de vente.</div></section>`;
 }
 function resDetail(n) {
   const IX = resIndex(); const qq = S.res[n] || 0; const r = resRarity(n); const src = IX.src[n] || []; const use = IX.use[n] || [];
@@ -3623,22 +3642,23 @@ function resDetail(n) {
     : u.special ? `<div class="li"><span class="grow">${IC("cle")} ${h(u.special)} <span class="xs muted">${u.q} requis</span></span></div>` : `<div class="li"><span class="grow">${IC("metiers")} ${h(E.TOOL_NAMES[u.tool])} ${u.L} <span class="xs muted">(${GATHER_JOBS[u.tool].name}) · ${u.q} requis</span></span></div>`).join("");
   return `<div class="panel invdetail"><div class="phead"><div class="row">${im(resImg(n), "ico lg", n)}<div><h2>${h(n)}</h2><div class="xs muted">${h(D.RES_CATS.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(qq)} en stock · ${fmt(E.resPrice(n))} k l'unité ${r ? `· <b style="color:${RAR[r][1]}">${RAR[r][0]}</b>` : ""}</div></div></div><button class="btn sm" data-act="ressel" data-n="">✕</button></div>
     <div class="pad stack" style="gap:8px">
-      <div class="row">${E.resPrice(n) ? `<button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="1">Vendre 1</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="10">Vendre 10</button><button class="btn sm" data-act="sellres" data-n="${h(n)}" data-q="${qq}">Tout · ${fmt(E.resPrice(n) * qq)} k</button>` : ""}<button class="btn sm" data-act="resfav" data-n="${h(n)}">${S.resFav[n] ? "★ Favori" : "☆ Épingler"}</button></div>
-      ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">le surplus est vendu automatiquement</span></label>` : ""}
+      ${gbOf(n) ? gbLine(gbOf(n), true) : ""}
+      <div class="row">${hdvOn() && window.MARKET.canSell(n) ? `<button class="btn sm primary" data-act="hdvres" data-n="${h(n)}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="resfav" data-n="${h(n)}">${S.resFav[n] ? "★ Favori" : "☆ Épingler"}</button></div>
+      ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">le surplus part au marchand de secours (${Math.round(E.MERCHANT * 100)} % de la valeur, ${fmt(E.merchantPrice(n, 100) / 100)} k l'unité)</span></label>` : ""}
       ${A.res === n && !A.done ? `<div class="tag good">${IC("almanax")} Offrande de l'Almanax du jour (${A.qty})</div>` : ""}
       <h3 class="sec">D'où elle vient</h3><div class="list">${srcHtml || `<div class="empty">${n === E.RARE_COMPONENT ? "Trouvailles de récolte, coffres et boss." : "Source inconnue."}</div>`}</div>
-      <h3 class="sec">À quoi elle sert</h3><div class="list">${useHtml || `<div class="empty">N'entre dans aucune recette du jeu : vous pouvez la vendre.</div>`}${use.length > 10 ? `<div class="empty">… et ${use.length - 10} autres recettes.</div>` : ""}</div>
+      <h3 class="sec">À quoi elle sert</h3><div class="list">${useHtml || `<div class="empty">N'entre dans aucune recette du jeu : tu peux la vendre à l'hôtel de vente.</div>`}${use.length > 10 ? `<div class="empty">… et ${use.length - 10} autres recettes.</div>` : ""}</div>
     </div></div>`;
 }
 function autoRulesHtml() {
   const A = S.settings.auto;
-  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">${A.action === "sell" ? "Vente" : "Brisage"} si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}</summary>
+  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}</summary>
     <div class="pad stack" style="padding-top:0;gap:8px">
       <p class="note">S'applique aux objets lâchés par les monstres. Les objets Rayonnants, protégés par cadenas et équipés ne sont jamais touchés.</p>
-      <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="sell" ${A.action === "sell" ? "selected" : ""}>Vendre</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
+      <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
         <label class="row small">si le jet est inférieur à <input type="number" min="0" max="100" step="5" data-act="autoq" value="${A.q}" style="width:70px"> %</label>
         <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
-      <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="sell" ${A.recycle === "sell" ? "selected" : ""}>vendre si j'ai déjà mieux ou égal</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
+      <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
 function renderInventory() {
@@ -3686,9 +3706,9 @@ function dupesBtn() {
 function overHtml() {
   const L = (S.over || []).slice().reverse(); const cap = E.overCap(S); const room = E.itemCap(S) - E.itemCount(S);
   if (S.overNew) { S.overNew = 0; dirty = true; }
-  const hdv = !!window.MARKET;
+  const hdv = hdvOn();
   return `<section class="panel"><div class="phead"><h2>Coffre de trop-plein</h2><span class="xs muted num">${L.length} / ${cap} places</span></div>
-    <div class="pad stack"><span class="small muted">Quand le sac est plein, les nouveaux objets arrivent ici au lieu d'être perdus. Quand ce coffre est plein à son tour, le plus ancien est brisé en runes. ${room > 0 ? `Place libre dans le sac : <b>${fmt(room)}</b>.` : `<b>Le sac est plein</b> : brise ou vends des objets pour en reprendre.`}</span>
+    <div class="pad stack"><span class="small muted">Quand le sac est plein, les nouveaux objets arrivent ici au lieu d'être perdus. Quand ce coffre est plein à son tour, le plus ancien est brisé en runes. ${room > 0 ? `Place libre dans le sac : <b>${fmt(room)}</b>.` : `<b>Le sac est plein</b> : brise des objets ou mets-les en vente pour en reprendre.`}</span>
       <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
     <div class="list">${L.map((it) => { const T = ITEMS[it.tpl]; return `<div class="li mkrow">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.at ? ` · ${agoTxt(it.at)}` : ""}</span></span>
       <button class="btn sm primary" data-act="overtake" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Prendre</button>${hdv ? `<button class="btn sm" data-act="overhdv" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="overbreak" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Le trop-plein est vide.</div>`}</div></section>`;
@@ -5010,7 +5030,7 @@ function consignesHtml() {
   return optSec("Consignes d'absence", "ce que fait l'équipe quand le jeu est fermé ; le résumé d'absence te le raconte",
       ck("roam", "Suivre les étoiles pendant l'absence", `chasse itinérante seulement quand tu n'es pas là, avec ses −${Math.round(E.ROAM_MALUS * 100)} %`)
     + ck("back", "Revenir à ma zone au retour", "si l'équipe a changé de zone")
-    + `<label class="optline">${optName("Limite de banque", "le surplus gagné pendant l'absence est vendu ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes")}<input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>`
+    + `<label class="optline">${optName("Limite de banque", "le surplus gagné pendant l'absence part au marchand de secours (30 % de la valeur) ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes")}<input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>`
     + ck("alm", "Faire l'offrande à l'Almanax au retour", "si tu as les ressources")
     + ck("cmd", "Livrer les commandes prêtes au retour", "seulement quand tout est en banque"), "consignes");
 }
@@ -5049,7 +5069,7 @@ function soundOptionsHtml() {
 }
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
-  else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource sera vendu.` : "Plus de limite de banque."); }
+  else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ira au marchand de secours.` : "Plus de limite de banque."); }
   else if (a === "vi-snd") { S.settings.snd = Object.assign(sndCfg(), { [t.dataset.k]: t.checked }); if (t.dataset.k === "on" && t.checked) sndPlay("level", true); }
   else if (a === "vi-vol") { S.settings.snd = Object.assign(sndCfg(), { vol: +t.value }); sndPlay("coin", true); }
   dirty = true;
@@ -5196,11 +5216,6 @@ document.addEventListener("click", (ev) => {
     case "resview": ui.resView = d.v; break;
     case "ressel": ui.resSel = d.n || null; break;
     case "resfav": if (S.resFav[d.n]) delete S.resFav[d.n]; else S.resFav[d.n] = 1; break;
-    case "respickmode": ui.resPick = !ui.resPick; ui.resPicked = new Set(); break;
-    case "respick": { ui.resPicked = ui.resPicked || new Set(); if (ui.resPicked.has(d.n)) ui.resPicked.delete(d.n); else ui.resPicked.add(d.n); break; }
-    case "sellpicked": { let k = 0; (ui.resPicked || new Set()).forEach((n) => (k += E.sellRes(S, n, S.res[n] || 0))); ui.resPicked = new Set(); ui.resPick = false; toast(`Vendu pour ${fmt(k)} kamas.`); break; }
-    case "asksellunused": ui.confirm = "sellunused"; break;
-    case "sellunused": { const IX = resIndex(); let k = 0; Object.keys(S.res).forEach((n) => { if (!IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT && !S.resFav[n]) k += E.sellRes(S, n, S.res[n]); }); ui.confirm = null; toast(`Ressources inutilisées vendues : ${fmt(k)} kamas.`); break; }
     case "fmfav": { const it = S.items[+d.uid]; if (it) it.fav = !it.fav; break; }
     case "fmtoggle": ui.fmF[d.k] = !ui.fmF[d.k]; break;
     case "fmsel": ui.fmSel = +d.uid; break;
@@ -5397,8 +5412,9 @@ document.addEventListener("click", (ev) => {
     case "invtab": ui.inv = d.v; ui.newResDone = false; break;
     case "givesheet": giveSheet(+d.uid); return;
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
-    case "sellitem": { const p = E.sellItem(S, +d.uid); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
-    case "sellres": { const p = E.sellRes(S, d.n, +d.q); if (p) toast(`Vendu pour ${fmt(p)} kamas.`); break; }
+    case "hdvitem": { if (!window.MARKET) break; window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
+    case "hdvres": { if (!window.MARKET) break; window.MARKET.sellRes(d.n); navGo("hdv"); window.scrollTo(0, 0); break; }
+    case "gbsell": { const k0 = S.kamas; const r = E.act(S, "gameBuySell", d.n, +d.q); if (r) toast(r, "warn"); else toast(`Vendu au jeu : ${fmt(S.kamas - k0)} kamas.`); break; }
     case "craftjob": ui.craftJob = d.v; break;
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
@@ -5474,7 +5490,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;
-  else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu automatiquement.`); }
+  else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu au marchand de secours.`); }
   else if (a === "fmslot") ui.fmF.slot = t.value;
   else if (a === "trfrom") ui.tr.from = t.value;
   else if (a === "gafrom") ui.ga = t.value;

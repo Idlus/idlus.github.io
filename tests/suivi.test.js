@@ -23,8 +23,10 @@ assert.ok(T.f > 5 && T.xp > 0 && T.k > 0, "combats, XP et kamas comptés");
 const L = E.carnetLedger(S, 7); const net = L.inn.reduce((s, x) => s + x.v, 0) - L.out.reduce((s, x) => s + x.v, 0);
 assert.strictEqual(net, S.kamas - k0, "le bilan des kamas tombe juste");
 assert.ok(L.inn.find((x) => x.k === "chasse"), "les kamas de chasse sont rangés dans « Chasse »");
-// une vente au jeu va dans « Ventes au jeu »
-const r = Object.keys(S.res)[0]; const p = E.sellRes(S, r, 1);
+// une vente au jeu (achats du jour) va dans « vente »
+const gb = E.gameBuys(S).list[0]; S.res[gb.res] = (S.res[gb.res] || 0) + 5; const kv = S.kamas;
+assert.strictEqual(E.gameBuySell(S, gb.res, 5), null); const p = S.kamas - kv;
+assert.strictEqual(p, 5 * gb.price);
 assert.strictEqual(E.carnetLedger(S, 7).inn.find((x) => x.k === "vente").v, p);
 // l'absence : heures marquées hors ligne
 const before = E.carnetTotals(S, 7).f; t += 3 * 3600000; const cu = E.catchUp(S, 3 * 3600);
