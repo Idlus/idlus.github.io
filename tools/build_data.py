@@ -111,7 +111,8 @@ ZONES = [
      'subs': [(804, 'suf_embruns', 'lake', 198, 212)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
-CO_BOSS = {'gelaxieme_dimension'}  # donjons où tous les boss se battent ensemble
+CO_BOSS = {'gelaxieme_dimension', 'labo_tynril', 'clos_blops', 'dojo_vent', 'taniere_givrefoux', 'cavernes_kolosso'}  # donjons où tous les boss se battent ensemble (0.1.43.1 : boss secondaires)
+POOL_FORCE = {'antre_dragon_cochon': {'Gorgouille'}}  # monstres de salle aux grades aberrants (Gorgouille : niveau 400) gardés au niveau du donjon
 POOL_MIN = {'donjon_larves': 40}  # niveau minimum des monstres des salles (les Larves Solitaires de niveau 11-16 restent dehors)
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (447, 'crypte_kardorim', 'inc_cimetiere'),
@@ -286,7 +287,7 @@ def el_of(r):
 
 def drop_ok(it):
     n = fr(it)
-    if n.startswith('Âme capturée') or 'Fragment' in n: return False
+    if n.startswith('Âme capturée') or n.startswith('Fragment de carte') or n.startswith('Fragment de mémoire') or it['typeId'] in (173, 248): return False  # 0.1.43.1 : les autres « Fragments » sont de vraies ressources
     t = it['typeId']
     if t in SLOT_BY_TYPE: return True
     sup = None
@@ -365,10 +366,12 @@ for tup in DUNGEONS:
     for mid in d.get('monsters', []):
         m = monsters.get(mid)
         if not m or mid in d['bosses']: continue
-        if grade(m, 0)['level'] > grade(boss, 4)['level'] + 4 or m['race'] == ARCHI_RACE or m.get('isBoss'): continue
+        force = fr(m) in POOL_FORCE.get(gid, ())
+        if (grade(m, 0)['level'] > grade(boss, 4)['level'] + 4 and not force) or m['race'] == ARCHI_RACE or (m.get('isBoss') and not force): continue
         if grade(m, 0)['level'] < POOL_MIN.get(gid, 0): continue
         k = mkey(m)
         if k not in GAME_M: GAME_M[k] = monster_entry(m)
+        if force: bl = grade(boss, 0)['level']; GAME_M[k]['lvl'] = [bl - 2, bl]
         pool.append(k)
     lvl = GAME_M[mkey(boss)]['lvl'][1]
     if lvl > (d.get('optimalPlayerLevel') or lvl) + 30:  # boss aux grades aberrants (Maître des Pantins : niveau 400)

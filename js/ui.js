@@ -31,6 +31,14 @@ const CHANGELOG = [
     "Boutique du Kolizéum : tickets, coffres, Bonbon Royal, un titre et l'ornement « Bannière du Kolizéum ». Rien qui rende les héros plus forts",
     "Sans compte (et sur la version de test), tu t'entraînes contre des Fantômes : des équipes créées par le jeu, contre lesquelles la cote bouge deux fois moins",
   ] },
+  { v: "0.1.43.1", name: "Boss secondaires", items: [
+    "Les boss secondaires de DOFUS rejoignent leur donjon et se battent avec le boss principal : les 4 Tynrils au Laboratoire du Tynril, les 4 Blops Royaux au Clos des Blops, Shihan et Hanshi au Dojo du Vent, la Fuji Givrefoux Nourricière à la Tanière Givrefoux, le Professeur Xa avec le Kolosso. Le Gorgouille apparaît dans les salles de l'Antre du Dragon Cochon",
+    "Leurs ressources (Ambre et Pistil du Tynril, Fleurs de Blop Royal, Écharpe de Hanshi, Cuir et Condyle de Fuji Givrefoux, Poignée et Fragment du Gorgouille…) débloquent 55 nouveaux équipements à fabriquer, dont les Bloptes et le Blopanneau Multicolores Royaux, la Coiffe du Tynril et les objets du Docteur Eggob",
+    "Les PV des boss qui accompagnent ont été réglés par simulation : ces donjons restent faisables en stasis 5 à 6 avec un bon équipement",
+    "Correction : 15 clés de donjon avaient une recette impossible (un ingrédient que personne ne lâchait). Ces ingrédients tombent maintenant sur les monstres de la zone du donjon",
+    "Correction : le Fragment d'Ougalurette, le Fragment de Pierre Pointue et le Fragment de pépite de Sakaï tombent enfin de leurs monstres",
+    "Quisnoa, Bois d'Aquajou, Écume de mer, Salikrone et Patelle (niveau 200) se récoltent dans la Baie de Sufokia",
+  ] },
   { v: "0.1.43", name: "Forgemagie de DOFUS", items: [
     "La forgemagie suit enfin les règles de DOFUS : chaque rune a trois issues, affichées avec leurs chances. Succès critique : la rune passe et rien ne baisse. Succès neutre : la rune passe mais une autre caractéristique baisse. Échec critique : la rune ne passe pas",
     "Le reliquat remplace le puits : ce que l'objet perd en trop paie les pertes suivantes et permet d'ajouter une caractéristique qu'il n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente",
