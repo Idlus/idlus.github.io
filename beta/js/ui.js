@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50.3";
+const GAME_VERSION = "0.1.51";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.51", name: "Armes", items: [
+    "Chaque arme a maintenant son coup d'arme, avec ses vrais dégâts de DOFUS (coût en PA, critique, lignes de dégâts, vol de vie, PA retirés) : le héros la frappe quand c'est son meilleur coup du tour",
+    "Le coup d'arme a sa propre case à côté des 8 sorts, dans la barre de sorts et en combat (aussi en mode Manuel)",
+    "Maîtrise : chaque classe a 2 types d'armes favoris qui font +20 % de dégâts (Iop : Épée et Marteau, Crâ : Arc et Dague…)",
+    "Chaque type d'arme a son effet : Dague frappe 2 fois, Arc vise mieux les critiques, Baguette soigne un allié, Bâton protège, Épée achève, Marteau touche autour, Pelle déterre des trésors, Hache et Faux font saigner, Lance perce les résistances",
+    "Forgemagie : les potions de Séisme, Incendie, Tsunami et Ouragan changent les dégâts Neutre de l'arme en Terre, Feu, Eau ou Air (les petites potions, la moitié) ; on les prépare avec l'Alchimiste",
+    "La fiche des armes montre le coup d'arme et les dégâts estimés pour le héros ; « Équiper au mieux » en tient compte",
+  ] },
   { v: "0.1.50.3", name: "Boss des mondes corrigé", items: [
     "Boss des mondes : Gargandyas a maintenant 1 000 000 PV au lieu de 2 000 000, pour tomber en 2 jours environ comme prévu (les dégâts déjà faits sont gardés)",
     "Les 4 objets de Gargandyas et les objets légendaires du Songe ne sortent plus des coffres : on ne les obtient que par leur boutique ou dans le Songe",
@@ -900,7 +908,7 @@ const EMO = { "📜": "quetes", "🧪": "teinture", "📦": "coffre", "🍬": "b
 const emo = (e) => { const k = String(e || "").replace(/\ufe0f/g, ""); return EMO[k] ? IC(EMO[k]) : `<span class="uemo">${h(e || "")}</span>`; };
 /* 0.1.30 : visuels des coffres (assets/ui/coffres) ; raw = garder l'émoji brut des autres consommables */
 const chestImg = (k, c = "") => `<img class="uico chestico ${c}" src="assets/ui/coffres/${k}.svg" alt="" loading="lazy">`;
-const consIco = (C, raw) => (C && C.img ? chestImg(C.img) : raw ? h((C && C.icon) || "•") : emo(C && C.icon));
+const consIco = (C, raw) => (C && C.img ? chestImg(C.img) : C && C.pimg ? `<img class="uico" src="assets/ui/potions/${C.pimg}.png" alt="" loading="lazy">` : raw ? h((C && C.icon) || "•") : emo(C && C.icon));
 const med = (n, sz = "") => `<i class="med ${sz}"><img src="assets/ui/${n}.webp" alt=""></i>`;
 const CATICO = {};
 const catIco = (c) => { if (!(c.id in CATICO)) { const best = Object.entries(RES).filter(([, r]) => c.types.includes(r.type)).sort((a, b) => a[1].lvl - b[1].lvl)[0]; CATICO[c.id] = best ? `<img class="uico" src="${resImg(best[0])}" alt="" loading="lazy">` : ""; } return CATICO[c.id] || emo(c.icon); };
@@ -1369,7 +1377,7 @@ const BOOST_INFO = { xp: ["🍬", "Bonbon Sagesse", "+10 % XP"], drop: ["🍭", 
 function activeBoosts() { return Object.keys(BOOST_INFO).filter((k) => E.boostPct(S, k) > 0).map((k) => ({ k, icon: BOOST_INFO[k][0], name: BOOST_INFO[k][1], txt: BOOST_INFO[k][2], left: E.boostLeft(S, k) })); }
 /* Barre de raccourcis des consommables (combat + accueil) */
 function consBar(full) {
-  const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id] && (full || CONSUMABLES[id].kind !== "scroll"));
+  const owned = Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id] && CONSUMABLES[id].kind !== "wpot" && (full || CONSUMABLES[id].kind !== "scroll"));
   const act = activeBoosts();
   const items = owned.map(([id, n]) => { const C = CONSUMABLES[id];
     return `<button class="cbtn ${C.auto ? "auto" : ""}" ${C.auto ? "" : `data-act="usecons" data-id="${id}"`} data-tip="${h(`${C.name} ×${n} — ${C.desc}${C.auto ? "" : " (cliquez pour utiliser)"}`)}"><span class="ci">${consIco(C, true)}</span><b class="num">${n}</b>${C.auto ? `<i>auto</i>` : ""}</button>`; }).join("");
@@ -1377,7 +1385,7 @@ function consBar(full) {
     ${items || (full ? `<span class="xs muted">Aucun consommable. Quêtes, avis de recherche, coffres et boss en donnent.</span>` : "")}</div>`;
 }
 function consHtml() {
-  return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy ${C.img ? "chestbox t" + C.tier : ""}">${consIco(C, true)}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
+  return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy ${C.img ? "chestbox t" + C.tier : ""}">${consIco(C, true)}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : C.kind === "wpot" ? `<button class="btn sm" data-act="wpotgo">Établi</button>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
 }
 function renderHome() {
   renderHomeInner();
@@ -2002,7 +2010,10 @@ function spellBarFor(c, ent, F) {
     const can = A ? E.manualCanCast(S, sp) : false;
     return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-tip="${h(spellTip(sp, c.lvl))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${g.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
   }).join("");
-  return { html, names: Array.from({ length: N }, (_, i) => `<div>${slots[i] && E.spellDef(c.cls, slots[i].id) ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") };
+  const wsp = ent && ent.wsp; let whtml = "";
+  if (wsp) { const g = E.spellGrade(wsp, c.lvl); const cast = F && lastCast.arme !== undefined && F.seq - lastCast.arme <= 1; const can = A ? E.manualCanCast(S, wsp) : false; // 0.1.51 : coup d'arme
+    whtml = `<div class="sp wpn ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === "arme" ? "sel" : ""}" style="--c:${elVar(wsp.el === "best" ? "n" : wsp.el)}" data-tip="${h(`Coup d'arme · ${wsp.name} · ${g.pa} PA — ${g.fx.filter((f) => f.k !== "apdrain").map(wpLineTxt).join(", ")}`)}" ${A && can ? `data-act="mspell" data-id="arme"` : ""}><img src="${itemImg(wsp.tpl)}" alt=""><span class="pa">${g.pa}</span></div>`; }
+  return { w: !!wsp, html: html + whtml, names: Array.from({ length: N }, (_, i) => `<div>${slots[i] && E.spellDef(c.cls, slots[i].id) ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") + (wsp ? `<div>Arme</div>` : "") };
 }
 /* vue de combat : scène (personnages en pied) ou compacte (cartes) */
 function combatView() { const v = S.settings.cview; if (v === "scene" || v === "compact") return v; return window.innerWidth < 640 && E.team(S).length >= 6 ? "compact" : "scene"; }
@@ -3178,7 +3189,7 @@ function updateCombat(force) {
   if (c) {
     const ent = F ? F.ents.find((e) => e.side === "c" && e.cid === c.id) : null;
     const bar = spellBarFor(c, ent, F); const sp = $("#spells");
-    if (sp && sp.dataset.k !== bar.html) { sp.innerHTML = bar.html; sp.dataset.k = bar.html; $("#spnames").innerHTML = bar.names; const n = E.spellSlots(c); sp.style.gridTemplateColumns = $("#spnames").style.gridTemplateColumns = `repeat(${n},1fr)`; }
+    if (sp && sp.dataset.k !== bar.html) { sp.innerHTML = bar.html; sp.dataset.k = bar.html; $("#spnames").innerHTML = bar.names; const n = E.spellSlots(c) + (bar.w ? 1 : 0); sp.style.gridTemplateColumns = $("#spnames").style.gridTemplateColumns = `repeat(${n},minmax(0,1fr))`; }
     const st = ent ? ent.st : E.charStats(S, c);
     let used = 0;
     if (F && ent) { const idx = F.ents.indexOf(ent); const casts = F.fx.filter((f) => f.k === "cast" && f.s === idx); const lastSeq = casts.length ? casts[casts.length - 1].seq : -1; casts.filter((f) => f.seq === lastSeq).forEach((f) => { const d = E.spellDef(c.cls, f.sp); if (d) used += E.spellGrade(d, c.lvl).pa; }); }
@@ -3231,6 +3242,52 @@ function itemStatsHtml(it) {
   const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
   return (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
     return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
+}
+/* ---------- 0.1.51 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
+const wpElName = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el] ? ELEMENTS[el].name : "");
+const wpLineTxt = (f) => `${f.min === f.max ? f.min : f.min + " à " + f.max} ${f.k === "heal" ? "soins" : f.k === "drain" ? "vol de vie" : "dégâts"} ${wpElName(f.el)}`.trim();
+const wpBestEl = (st) => [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1])[0][0];
+function wpEst(c, sp) { // dégâts moyens d'un coup pour ce héros, hors critique et résistances
+  const st = E.charStats(S, c); let t = 0;
+  sp.grades[0].fx.forEach((f) => { if (f.k !== "dmg" && f.k !== "drain") return; const el = f.el === "best" ? wpBestEl(st) : f.el; const E2 = ELEMENTS[el] || ELEMENTS.n;
+    t += (f.min + f.max) / 2 * E.DMG_SCALE * (1 + Math.max(-50, (st[E2.stat] || 0) + (st.pui || 0)) / 100) + (st.do || 0) + (st[E2.dmg] || 0); });
+  return Math.round(t * E.classPow(c.cls, c.lvl));
+}
+function wpBlockHtml(tpl, it, c) {
+  const W = E.weaponData(tpl); if (!W) return ""; const sp = E.weaponSpellOf(c ? c.cls : "", tpl, it && it.wel, it && it.welh); if (!sp) return "";
+  const g = sp.grades[0]; const ty = E.WTYPES[W.type] || { name: "Arme" }; const fav = c && sp.fav;
+  const lines = g.fx.filter((f) => f.k !== "apdrain").map((f) => `<div class="wpl"><i style="background:${f.k === "heal" ? "var(--good,#5bbf6a)" : elVar(f.el === "best" ? "n" : f.el)}"></i>${wpLineTxt(f)}</div>`).join("");
+  const rm = g.fx.find((f) => f.k === "apdrain");
+  const favs = c ? (E.CLASS_WEAPONS[c.cls] || []).map((t) => (E.WTYPES[t] || {}).name).filter(Boolean).join(" et ") : "";
+  return `<div class="wpbox"><div class="wph"><b>⚔ Coup d'arme</b><span class="tag soft">${h(ty.name)}</span><span class="grow"></span><span class="wppa">${g.pa} PA</span></div>
+    ${lines}${rm ? `<div class="wpl"><i style="background:var(--buff)"></i>−${rm.v} PA à la cible</div>` : ""}
+    <div class="xs muted">${W.ccb ? `Coup critique : +${Math.round(W.ccb * E.WEAPON.mult)} dégâts · ` : ""}${g.casts > 1 ? g.casts + " fois" : "1 fois"} par tour · portée ${W.r[0] >= W.r[1] ? W.r[1] : W.r[0] + " à " + W.r[1]}${W.guess ? " · dégâts estimés" : ""}</div>
+    ${it && it.wel ? `<div class="wpx on">🧪 Forgemagée : ${it.welh ? "la moitié du Neutre" : "le Neutre"} frappe en ${h(ELEMENTS[it.wel].name)}</div>` : ""}
+    ${c ? `<div class="wpx ${fav ? "on" : ""}">${fav ? "★" : "☆"} <b>Maîtrise</b> · ${fav ? `arme favorite des ${h(CLASSES[c.cls].name)} : +${Math.round(E.WEAPON.fav * 100)} % de dégâts` : `les ${h(CLASSES[c.cls].name)} préfèrent ${h(favs)}`}</div>` : ""}
+    ${ty.fx ? `<div class="wpx on">◆ <b>${h(ty.name)} · ${h(ty.fxName)}</b> : ${h(ty.desc)}</div>` : ""}
+    ${c ? `<div class="wpest">≈ <b>${fmt(wpEst(c, sp))}</b> dégâts par coup pour ${h(c.name)}</div>` : ""}</div>`;
+}
+function wpTipHtml(tpl, it) { // ligne courte pour les bulles d'objet
+  const sp = E.weaponSpellOf("", tpl, it && it.wel, it && it.welh); if (!sp) return ""; const g = sp.grades[0]; const ty = E.WTYPES[sp.wtype] || { name: "Arme" };
+  return `<div class="wptip">⚔ <b>Coup d'arme</b> · ${h(ty.name)} · ${g.pa} PA · ${g.fx.filter((f) => f.k !== "apdrain").map((f) => `${f.min}-${f.max} ${f.k === "heal" ? "soins" : wpElName(f.el)}`).join(" + ")}</div>`;
+}
+function wpBarHtml(c) { // case d'arme sous la barre de sorts (onglet Sorts & stratégies)
+  const uid = c.equip.arme; const it = uid && S.items[uid]; const sp = it && E.weaponSpell(S, c);
+  if (!sp) return `<div class="wpbar"><span class="wpslot empty">⚔</span><div class="grow"><b>Coup d'arme</b><br><span class="xs muted">Équipe une arme : elle aura sa propre case, en plus des sorts.</span></div></div>`;
+  const g = sp.grades[0]; const ty = E.WTYPES[sp.wtype] || { name: "Arme" };
+  return `<div class="wpbar on" data-tipitem="${uid}"><span class="wpslot" style="--c:${elVar(sp.el === "best" ? "n" : sp.el)}"><img src="${itemImg(it.tpl)}" alt=""><span class="pa">${g.pa}</span></span><div class="grow"><b>Coup d'arme</b> · ${h(ITEMS[it.tpl].name)} <span class="tag soft">${h(ty.name)}</span>${sp.fav ? ` <span class="tag good">★ maîtrise</span>` : ""}<br><span class="xs muted">${g.pa} PA · ${g.fx.filter((f) => f.k !== "apdrain").map((f) => `${f.min}-${f.max} ${f.k === "heal" ? "soins" : wpElName(f.el)}`).join(" + ")} · ≈ ${fmt(wpEst(c, sp))} par coup</span></div><span class="tag good">case en plus</span></div>
+    <p class="xs muted">L'arme a sa propre case, en plus des ${E.spellSlots(c)} sorts : le héros la frappe quand c'est son meilleur coup du tour.</p>`;
+}
+function wpFmHtml(it) { // potions de forgemagie élémentaire à l'Établi
+  const T = ITEMS[it.tpl]; if (!T || T.slot !== "arme") return ""; const W = E.weaponData(it.tpl);
+  if (!W || !W.lines.some((l) => l.el === "n" && l.k !== 2)) return "";
+  const btn = (cons) => { const C = CONSUMABLES[cons]; const n = S.cons[cons] || 0; const cur = it.wel === C.el && !!it.welh === C.half;
+    return n > 0 && !cur ? `<button class="prune" data-act="wpot" data-id="${cons}" style="--c:${elVar(C.el)}"><span class="rn"><img class="wpico" src="assets/ui/potions/${C.pimg}.png" alt=""> ${h(C.name)} <span class="xs muted">×${n}</span></span><span class="rv">Neutre → ${h(ELEMENTS[C.el].name)}${C.half ? " (moitié)" : ""}</span></button>`
+      : `<span class="prune off" ${cur ? "" : `data-act="wbrew" data-id="${cons}" role="button" tabindex="0"`} data-tip="${h(cur ? "L'arme a déjà cet élément." : `Préparer : ${E.WPOT_COST[C.half ? "s" : "g"].herb.map(([r, q]) => q + " × " + r).join(", ")} et ${fmt(E.WPOT_COST[C.half ? "s" : "g"].kamas)} kamas (Alchimiste niveau ${E.WPOT_COST[C.half ? "s" : "g"].lvl}).`)}"><span class="rn"><img class="wpico" src="assets/ui/potions/${C.pimg}.png" alt=""> ${h(C.name)} <span class="xs muted">×${n}</span></span><span class="rv xs">${cur ? "élément actuel" : "Préparer"}</span></span>`; };
+  return `<div class="pfl wpfm"><div class="pfn"><b>Élément de l'arme</b><span class="xs muted">change les dégâts Neutre du coup d'arme · réussite garantie, une potion par changement${it.wel ? ` · actuellement ${it.welh ? "moitié " : ""}${h(ELEMENTS[it.wel].name)}` : ""}</span></div>
+    <div class="pruns">${Object.values(E.WEAPON_POTIONS).map(btn).join("")}</div>
+    <div class="pruns">${Object.values(E.WEAPON_POTIONS_S).map(btn).join("")}</div>
+    <div class="xs muted">Clique sur une potion que tu n'as pas pour la préparer : herbes de l'Alchimiste et kamas (petites potions : Alchimiste 20, ne changent que la moitié des dégâts ; grandes : Alchimiste 80).</div></div>`;
 }
 function tplStatsHtml(T) { return (T.desc ? `<span class="statl">${G("sparkle")}${h(T.desc)}</span>` : "") + Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
 function deltaHtml(c, slot, uid) {
@@ -3444,7 +3501,11 @@ function buildEls(c) {
 }
 function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dmgShare = {}; for (const k in els) dmgShare[ELEMENTS[STATS[k].el].dmg] = els[k]; let sc = 0;
   for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (EL_STATS.includes(k) ? (els[k] ? 0.1 + 1.3 * els[k] : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (dmgShare[k] ? 0.1 + 0.9 * dmgShare[k] : 0.1) : 1);
-  if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5; return sc; }
+  if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5;
+  if (it.tpl && ITEMS[it.tpl] && ITEMS[it.tpl].slot === "arme") { const sp = E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); // 0.1.51 : le coup d'arme compte
+    if (sp) { const g = sp.grades[0]; const elStat = { t: "fo", n: "fo", f: "ine", e: "cha", a: "age" };
+      sc += 2 * g.fx.reduce((v, f) => v + (f.k === "dmg" || f.k === "drain" ? (f.min + f.max) / 2 * (f.el === "best" ? 1 : 0.1 + 0.9 * (els[elStat[f.el]] || 0)) : 0), 0) / Math.max(1, g.pa); } }
+  return sc; }
 /* 0.1.46.1 : score de l'équipement entier, bonus de panoplie compris (tri du choix d'objet, pastille verte, Tout équiper au mieux) */
 function gearScore(c, eq) { let sc = 0; const n = {};
   for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += itemScore(c, it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
@@ -3988,7 +4049,7 @@ function charSpellsView(c) {
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
   <div class="spgrid">
     <div class="panel spbarp"><div class="phead"><h2>Barre de sorts</h2><span class="muted xs">${eq.length}/${N}${N < 8 ? ` · ${N === 6 ? "7e au niv. 50" : "8e au niv. 100"}` : ""}</span><span class="grow"></span>${ui.spUndo && ui.spUndo.cid === c.id ? `<button class="btn sm" data-act="spundo">↶ Annuler</button>` : ""}<button class="btn sm" data-act="spopt" data-tip="Essaie tous les ordres des sorts de soutien et garde celui qui fait le plus de dégâts dans l'aperçu">✨ Ranger au mieux</button></div>
-      <div class="pad stack" style="gap:8px"><div class="spbar">${slots}</div>
+      <div class="pad stack" style="gap:8px"><div class="spbar">${slots}</div>${wpBarHtml(c)}
       <p class="xs muted">En combat, le héros lance d'abord ses invocations, protections et soins (de gauche à droite, si leur condition est remplie), puis il prépare ses attaques pour tout le tour : zone face à un groupe, gros coup sur le boss, élément que la cible résiste le moins, coup de grâce sur un monstre presque mort.${canHover ? " Glisse un sort pour changer sa place." : ""}</p></div></div>
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
     <div class="panel spprevp">${spPreviewHtml(c)}</div>
@@ -4211,7 +4272,7 @@ function tipItemHtml(uid) {
   let cmp = "";
   if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">Pour ${h(c.name)} : ${deltaHtml(c, slot, uid)}</div>`; }
   const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
-  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
+  return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.slot === "arme" ? wpTipHtml(it.tpl, it) : ""}${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
 }
 let tipEl = null;
 function showTip(target) {
@@ -4441,6 +4502,7 @@ function fmBench(it) {
     ${block ? `<div class="awaitbar" style="margin:0">${G("lock")} <span class="grow">${h(block)}</span></div>` : ""}
     <div class="pwt2"><span class="small"><b>Poids de l'objet</b> <span class="num">${Math.round(W.cur)} / ${Math.round(W.max)}</span> <span class="xs muted">(${ppc(W.load)} %) · plus l'objet est chargé, plus le succès critique est rare</span></span><div class="bar thin"><i style="width:${Math.min(100, ppc(W.load))}%"></i></div></div>
     <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
+    ${wpFmHtml(it)}
     <div class="pstatl">${keys.filter((k) => STATS[k] && !E.EXO_STATS.includes(k) || T.stats[k]).map((k) => fmStatLine(it, k)).join("")}</div>
     ${!block && extra.length && (it.well || 0) > 0 ? `<div class="pfl"><div class="pfn"><b>Ajouter une caractéristique</b><span class="xs muted">payée par le reliquat, jusqu'à ${E.EXO_STAT_W} de poids</span></div><div class="pruns">${extra.slice(0, 8).map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div></div>` : ""}
     ${it.exo ? `<div class="pfl pexo"><div class="pfn">${sIco(it.exo)}<b class="bonus">+1 ${h(STATS[it.exo].name)}</b> <span class="tag exo">Exo ${h(STATS[it.exo].short)}</span><span class="xs muted">au brisage, l'exo est perdu mais les runes sont doublées</span></div></div>`
@@ -5191,6 +5253,7 @@ function itemSheet(tpl) {
     return `<div class="li"><span class="icobox">${S.bestiary[x.mon] ? im(imgM(x.mon), "", M.name) : `<b class="muted">?</b>`}</span><span class="grow"><b>${x.k === "boss" ? "Boss" : "Butin"}</b> · ${S.bestiary[x.mon] ? h(M.name) : "???"} · ${x.p} %<br><span class="xs muted">${h([...x.subs.map((s) => E.SUBS[s].name), ...x.dgs.map((d) => DUNGEONS[d].name)].slice(0, 2).join(", "))}</span></span>${dg ? `<button class="btn sm" data-act="searchdg" data-id="${dg}">Donjon</button>` : sub ? `<button class="btn sm" data-act="searchzone" data-id="${sub}">Y aller</button>` : ""}</div>`;
   });
   openSheet(`<div class="row"><span class="icobox lg">${im(itemImg(tpl), "", T.name)}</span><div><h2 style="margin:0">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div>
+    ${T.slot === "arme" ? wpBlockHtml(tpl, null, ui.cid ? char(ui.cid) : S.chars[0]) : ""}
     <div class="xs">${tplStatsHtml(T)}</div>
     <h3 class="sec">Où le trouver</h3>
     <div class="list">${lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Jouer › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
@@ -5904,6 +5967,9 @@ document.addEventListener("click", (ev) => {
     case "fmsel": ui.fmSel = +d.uid; ui.fmBench = true; ui.confirm = null; if (narrow()) window.scrollTo(0, 0); break;
     case "fmback": ui.fmBench = false; break;
     case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
+    case "wpot": { const r = E.weaponPotion(S, ui.fmSel, d.id); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; } // 0.1.51
+    case "wbrew": { const err = E.brewPotion(S, d.id); if (err) { toast(err); return; } toast(`${CONSUMABLES[d.id].name} préparée.`, "rare"); break; }
+    case "wpotgo": ui.tab = "forge"; ui.fg = "fm"; closeSheet(); window.scrollTo(0, 0); break;
     case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
     case "exo": { const r = E.exoForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
     case "fmplan": fmPlanSheet(+d.uid); return;
@@ -5919,7 +5985,7 @@ document.addEventListener("click", (ev) => {
     case "asktraitre": ui.confirm = "traitre"; break;
     case "almanax": { const r = E.almanaxOffer(S); if (r) { toast(r); return; } break; }
     case "manual": S.settings.manual = d.v === "1"; toast(S.settings.manual ? "Mode manuel : à chaque tour d'un héros, choisissez un sort puis une cible." : "Mode automatique."); break;
-    case "mspell": { const F = S.fight; if (!F || !F.await) return; const me = F.ents[F.await.ei]; const sp = E.spellDef(me.cls, d.id);
+    case "mspell": { const F = S.fight; if (!F || !F.await) return; const me = F.ents[F.await.ei]; const sp = d.id === "arme" ? me.wsp : E.spellDef(me.cls, d.id); if (!sp) return;
       if (["dmg", "drain", "dot", "aoe", "heal"].includes(E.spellKind(E.spellGrade(sp, me.lvl)))) { ui.manualSpell = ui.manualSpell === sp.id ? null : sp.id; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
       const r = E.manualCast(S, sp.id, null); if (r) toast(r); ui.manualSpell = null; updateCombat(false); return; }
     case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
