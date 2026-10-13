@@ -6,6 +6,7 @@
 // Se montrer : avec { defi: palier }, elle rejoue le défi du jour (même hasard pour tous) et garde le meilleur score du jour.
 // Kolizéum : avec { koli: { opps: 1, r } }, trois adversaires (le jeu calcule la chance) ; avec { koli: { fight: … } }, un combat classé.
 // Guildes : avec { gboss: 1 }, un essai contre le boss de guilde de la semaine ; avec { perco: id }, une défense de Percepteur.
+// Boss des mondes : avec { wboss: 1 }, un essai contre le boss de tout le serveur (js/wboss.js, supabase/wboss.sql).
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -29,12 +30,13 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any } = {};
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
   if (body.perco) return perco(db, user.id, Number(body.perco));
   if (body.koli) return koli(db, user.id, body.koli);
+  if (body.wboss) return wboss(db, user.id);
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -156,6 +158,21 @@ async function gboss(db: any, uid: string) {
   const { data: done, error: e2 } = await db.rpc("gb_done", { p_user: uid, p_w: w, p_n: st.n, p_points: r.points, p_raw: r.raw, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, gboss: true, boss: def.name, points: r.points, rounds: r.rounds, alive: r.alive, pts: done.pts, goal: done.goal, left: done.left });
+}
+// ---------- Boss des mondes : un essai contre le boss de tout le serveur ----------
+// deno-lint-ignore no-explicit-any
+async function wboss(db: any, uid: string) {
+  const g = await guildSave(db, uid, ":wboss"); if (g.err) return g.err;
+  const { data: st, error } = await db.rpc("wb_start", { p_user: uid });
+  if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+  const def = E.wbDef(st.n); const seed = E.wbSeed(st.n, uid, st.k);
+  const r = E.wbSim(g.S, def, st.phase, seed, g.now);
+  if (r.err) return json({ ok: false, err: r.err });
+  const lvl = Math.max(1, ...E.team(g.S).map((c: { lvl: number; ren?: number }) => (c.ren ? 200 : c.lvl)));
+  const { data: done, error: e2 } = await db.rpc("wb_done", { p_user: uid, p_n: st.n, p_k: st.k, p_points: r.points, p_phase: st.phase, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
+  if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+  return json({ ok: true, wboss: true, n: st.n, k: st.k, seed, phase: st.phase, name: def.name, points: r.points, pv: r.pv, rounds: r.rounds, alive: r.alive,
+    grade: done.grade, frag: done.frag, cons: done.cons, dmg: done.dmg, hp: done.hp, killed: done.killed, left: done.left, rank: done.rank });
 }
 // deno-lint-ignore no-explicit-any
 async function perco(db: any, uid: string, id: number) {
