@@ -183,7 +183,7 @@
       if (S.trophies[sub.id]) return;
       if (sub.monsters.every((k) => E.huntTier(S, k) >= 1)) {
         S.trophies[sub.id] = 1;
-        if (E.itemCount(S) < E.itemCap(S)) { E.rollItem(S, "trophee_" + sub.id, { radiant: false }); note(S, `Trophée obtenu : ${sub.name} !`, "rare"); }
+        E.rollItem(S, "trophee_" + sub.id, { radiant: false }); note(S, `Trophée obtenu : ${sub.name} !`, "rare");
       }
     });
   };
@@ -406,8 +406,50 @@
       E.celebrate({ t: "radiant", tpl, pct: it.radiant });
     }
     S.items[it.uid] = it; if (E.wardrobeAdd) E.wardrobeAdd(S, tpl); // 0.1.19 : garde-robe
+    bagChk = true;
     return it;
   };
+  /* 0.1.37 : Coffre de trop-plein. Quand le sac dépasse sa taille, les objets les plus récents (après les règles
+     automatiques) vont dans S.over, une file de 200 places (+10 par niveau de Grenier). Quand le coffre est plein,
+     le plus ancien est brisé en runes. Rien n'est plus perdu. */
+  let bagChk = false;
+  E.OVER_CAP = 200;
+  E.overCap = (S) => E.OVER_CAP + 10 * ((S.havre && S.havre.bag) || 0);
+  const overBreakOne = (S, o) => { const uid = o.uid; delete o.at; S.items[uid] = Object.assign({}, o, { uid }); delete S.items[uid].locked; return E.breakItem(S, uid, null); };
+  E.bagFlush = (S) => {
+    bagChk = false; if (!S || !S.items) return 0;
+    if (!Array.isArray(S.over)) S.over = [];
+    let n = 0; const cap = E.itemCap(S);
+    let count = Object.keys(S.items).length; if (count <= cap) return 0;
+    const free = Object.keys(S.items).map(Number).sort((a, b) => b - a).filter((u) => { const it = S.items[u]; return !it.locked && !E.equippedBy(S, u) && !E.inGear(S, u); });
+    const now = E.now(); const broken = [];
+    for (const u of free) { if (count <= cap) break; const it = S.items[u]; delete S.items[u]; S.over.push(Object.assign({}, it, { at: now })); count--; n++; }
+    while (S.over.length > E.overCap(S)) { const o = S.over.shift(); overBreakOne(S, o); broken.push(ITEMS[o.tpl] ? ITEMS[o.tpl].name : o.tpl); }
+    if (n) { S.overNew = (S.overNew || 0) + n; S.cnt = S.cnt || {}; note(S, `Sac plein : ${n > 1 ? `${n} objets rangés` : `${ITEMS[S.over[S.over.length - 1].tpl].name} rangé`} dans le trop-plein.`, "warn"); }
+    if (broken.length) note(S, `Trop-plein plein : ${broken.length > 1 ? `${broken.length} objets les plus anciens brisés` : `${broken[0]} brisé`} en runes.`, "warn");
+    return n;
+  };
+  const overIdx = (S, uid) => (Array.isArray(S.over) ? S.over.findIndex((o) => o.uid === +uid) : -1);
+  E.overTake = (S, uid) => {
+    const i = overIdx(S, uid); if (i < 0) return "Objet introuvable.";
+    if (E.itemCount(S) >= E.itemCap(S)) return "Sac plein : fais de la place d'abord.";
+    const o = S.over.splice(i, 1)[0]; delete o.at; S.items[o.uid] = o; return null;
+  };
+  E.overBreak = (S, uid) => { const i = overIdx(S, uid); if (i < 0) return "Objet introuvable."; return overBreakOne(S, S.over.splice(i, 1)[0]); };
+  E.overBreakAll = (S) => { const got = {}; let n = 0; (S.over || []).splice(0).forEach((o) => { const r = overBreakOne(S, o); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } }); return { n, got }; };
+  /* « Briser les doublons » : garde le meilleur jet de chaque objet (Rayonnant d'abord) et brise les autres.
+     Jamais : objets portés, verrouillés, rangés dans une tenue, Rayonnants, exo, parfaits, trophées et Dofus. */
+  E.dupesList = (S) => {
+    const by = {}; Object.values(S.items).forEach((it) => { (by[it.tpl] = by[it.tpl] || []).push(it); });
+    const out = [];
+    for (const tpl in by) {
+      const T = ITEMS[tpl]; if (!T || T.slot === "dofus" || T.trophy || by[tpl].length < 2) continue;
+      const L = by[tpl].slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
+      L.slice(1).forEach((it) => { if (!it.radiant && !it.exo && !it.locked && !E.equippedBy(S, it.uid) && !E.inGear(S, it.uid) && !(E.isPerfect && E.isPerfect(it))) out.push(it.uid); });
+    }
+    return out;
+  };
+  E.breakDupes = (S) => { const got = {}; let n = 0; E.dupesList(S).forEach((u) => { const r = E.breakItem(S, u, null); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } }); return { n, got }; };
   E.itemQuality = (it) => {
     const T = ITEMS[it.tpl]; const base = it.roll || it.stats; let s = 0, n = 0;
     for (const k in T.stats) { const [a, b] = T.stats[k]; s += b === a ? 1 : (base[k] - a) / (b - a); n++; }
@@ -415,7 +457,7 @@
   };
   E.qualityTier = (q) => (q >= 0.999 ? "parfait" : q >= 0.8 ? "excellent" : q >= 0.5 ? "bon" : "commun");
   E.itemCount = (S) => Object.keys(S.items).length;
-  E.ITEM_CAP = 300;
+  E.ITEM_CAP = 1000; // 0.1.37 : 300 → 1 000 places
   E.itemCap = (S) => E.ITEM_CAP + Math.round(E.bonus(S, "bag"));
   E.equippedBy = (S, uid) => S.chars.find((c) => Object.values(c.equip).includes(uid));
   E.slotFor = (c, it) => {
@@ -1911,7 +1953,6 @@
         if (rnd() * 100 < Math.min(100, rate * E.ITEM_DROP_SCALE * dm)) {
           seen(m.key, tpl);
           const T2 = ITEMS[tpl];
-          if (E.itemCount(S) >= E.itemCap(S)) { note(S, `Sac plein : ${T2.name} perdu.`, "warn"); return; }
           const it = E.rollItem(S, tpl, { archi: m.archi, champ: m.champ });
           const auto = E.applyAuto(S, it);
           if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
@@ -2354,7 +2395,7 @@
   E.bossChest = (S, did, rew) => {
     const dg = DUNGEONS[did]; const pool = new Set();
     [dg.boss, ...dg.rooms.flatMap((r) => r.mobs)].forEach((k) => (MONSTERS[k].items || []).forEach(([t]) => { if (ITEMS[t] && ITEMS[t].lvl <= dg.lvl + 5 && ITEMS[t].lvl >= dg.lvl - 25) pool.add(t); }));
-    const arr = [...pool]; if (!arr.length || E.itemCount(S) >= E.itemCap(S)) return;
+    const arr = [...pool]; if (!arr.length) return;
     const tpl = pick(arr); const it = E.rollItem(S, tpl, {});
     note(S, `Butin du boss : ${ITEMS[tpl].name} !`, "rare");
     if (rew) rew.items.push(it.uid);
@@ -2409,6 +2450,7 @@
   E.PACE_REW = 780 / 520; // compense : les gains par heure restent les mêmes qu'avec 520 ms
   E.PAUSE_MS = 1400;
   E.tick = (S, dtMs, realMs) => {
+    if (bagChk) E.bagFlush(S); // 0.1.37 : objets en trop vers le trop-plein
     S.stats.playtime += (realMs == null ? dtMs : realMs) / 1000; // 0.1.29 : le temps de jeu reste le vrai temps, même en vitesse ×2 / ×3
     const sp = 1;
     // combat
@@ -2766,7 +2808,9 @@
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }
+    const ev2 = E.events.length; const over = E.bagFlush(S); E.events.length = ev2; // 0.1.37 : trop-plein
     return {
+      over,
       seconds, fights: hunting ? fights : 0, wins, kamas: S.kamas - before.kamas, res,
       items: E.itemCount(S) - before.items,
       newItems: Object.keys(S.items).filter((u) => !before.uids.has(u)).sort((a, b) => ITEMS[S.items[b].tpl].lvl - ITEMS[S.items[a].tpl].lvl).slice(0, 30),
@@ -2872,6 +2916,7 @@
     renaissance: "Renaissance d'un héros", chooseAlign: "choisir un alignement", setTraining: "envoyer en salle d'entraînement",
     // équipement
     equip: "équiper un objet", unequip: "retirer un objet", sellItem: "vendre un objet", breakItem: "briser un objet",
+    overTake: "reprendre un objet du trop-plein", overBreak: "briser un objet du trop-plein", overBreakAll: "vider le trop-plein", breakDupes: "briser les doublons",
     saveGear: "enregistrer un équipement", applyGear: "porter un équipement enregistré", deleteGear: "supprimer un équipement enregistré",
     applyBuild: "appliquer un build partagé", applyAuto: "réglages du tri automatique",
     savePreset: "enregistrer un préréglage", loadPreset: "charger un préréglage", applyPreset: "appliquer un préréglage", deletePreset: "supprimer un préréglage",
