@@ -1,6 +1,20 @@
 {
-  "version": "0.1.43",
+  "version": "0.1.44",
   "versions": [
+    {
+      "v": "0.1.44",
+      "name": "Kolizéum",
+      "items": [
+        "Nouveau : le Kolizéum, dans Jouer. Ton équipe d'arène de 3 héros affronte celle d'un autre joueur, jouée par l'IA, avec les vrais niveaux. Chaque adversaire montre ses classes, ses niveaux et ta chance de gagner",
+        "Un combat classé coûte un ticket de Koli : 10 tickets offerts chaque jour à minuit, jusqu'à 30 en réserve. Le combat se regarde à l'écran, et chaque combat peut être revu",
+        "La cote monte et baisse selon tes victoires. Grades Bronze, Argent, Or, Cristal, Diamant et Légende pour les 3 premiers, avec leurs emblèmes. Or et plus sont annoncés dans les Hauts faits",
+        "Ton équipe d'arène défend quand on t'attaque, même si tu n'es pas là. Une défense perdue coûte la moitié de ce que l'autre gagne ; une défense réussie rapporte un peu de cote et un Kolizeton",
+        "Dès le tour 10, l'érosion réduit les PV et les soins ; au tour 20, l'équipe qui a le plus de PV gagne. La force des 19 classes a été réglée par simulation pour que chacune gagne environ la moitié de ses combats",
+        "Saisons d'une semaine (lundi minuit) : avec 5 combats classés, ton grade donne des Kolizetons, un coffre, des titres et l'ornement « Lauriers du Kolizéum ». Chaque victoire rapporte aussi une bourse de kamas et de la Poussière de stasis",
+        "Boutique du Kolizéum : tickets, coffres, Bonbon Royal, un titre et l'ornement « Bannière du Kolizéum ». Rien qui rende les héros plus forts",
+        "Sans compte (et sur la version de test), tu t'entraînes contre des Fantômes : des équipes créées par le jeu, contre lesquelles la cote bouge deux fois moins"
+      ]
+    },
     {
       "v": "0.1.43",
       "name": "Forgemagie de DOFUS",

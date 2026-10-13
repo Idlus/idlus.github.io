@@ -4,6 +4,7 @@
 // choisis par le serveur) et n'écrit le record que si l'équipe le termine vraiment.
 // Le temps affiché dans les classements est le meilleur temps du serveur, pas celui annoncé par le jeu.
 // Se montrer : avec { defi: palier }, elle rejoue le défi du jour (même hasard pour tous) et garde le meilleur score du jour.
+// Kolizéum : avec { koli: { opps: 1, r } }, trois adversaires (le jeu calcule la chance) ; avec { koli: { fight: … } }, un combat classé.
 // Guildes : avec { gboss: 1 }, un essai contre le boss de guilde de la semaine ; avec { perco: id }, une défense de Percepteur.
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
@@ -27,11 +28,13 @@ Deno.serve(async (req) => {
   const user = who && who.user;
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number } = {};
+  // deno-lint-ignore no-explicit-any
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
   if (body.perco) return perco(db, user.id, Number(body.perco));
+  if (body.koli) return koli(db, user.id, body.koli);
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -164,4 +167,79 @@ async function perco(db: any, uid: string, id: number) {
   const { data: done, error: e2 } = await db.rpc("pc_done", { p_user: uid, p_id: id, p_aid: st.aid, p_win: !!r.win });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, perco: true, win: !!r.win, rounds: r.rounds, alive: r.alive, foes: r.foes, gxp: done.gxp || 0 });
+}
+
+// ---------- Kolizéum (js/koli.js) : 3 contre 3 contre l'équipe d'arène d'un autre joueur, jouée par l'IA ----------
+// Le serveur copie l'équipe d'arène de la partie en ligne (elle défendra), propose 3 adversaires (Fantômes pour compléter),
+// joue le combat avec un hasard qu'il choisit et tient les cotes (supabase/koli.sql).
+const ghostSeed = (uid: string, w: number, n: number, r: number, slot: number) => {
+  let x = 2166136261; const s = `${uid}:${w}:${n}:${r}:${slot}`;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); }
+  return x >>> 0;
+};
+// deno-lint-ignore no-explicit-any
+async function koli(db: any, uid: string, k: any) {
+  const opps = !!(k && k.opps);
+  const key = opps ? ":kopps" : ":kfight", wait = opps ? 2000 : 3000, now = Date.now();
+  if (now - (lastTry.get(uid + key) || 0) < wait) return json({ ok: false, err: "Doucement : réessaie dans quelques secondes." }, 429);
+  lastTry.set(uid + key, now);
+  const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
+    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
+    db.from("profiles").select("pseudo").eq("id", uid).maybeSingle(),
+  ]);
+  if (!save || !prof) return json({ ok: false, err: "aucune partie en ligne" }, 404);
+  if (lad && lad.flagged) return json({ ok: false, err: "en vérification" });
+  // deno-lint-ignore no-explicit-any
+  let S: any;
+  try { S = E.deserialize(save.data); E.events.length = 0; } catch (_) { return json({ ok: false, err: "partie illisible" }); }
+  const w = E.koliWeek(now), K = E.KOLI;
+  const Q = E.koliState(S, now);
+  const A = E.koliSnap(S, Q.team);
+  if (!A.length) return json({ ok: false, err: "Choisis ton équipe d'arène." });
+  const lvl = E.koliLvl(S);
+  const heads = A.map((x: { cls: string; sex: string; head: number; lvl: number }) => ({ cls: x.cls, sex: x.sex, head: x.head, lvl: x.lvl }));
+  const { data: me, error } = await db.rpc("koli_team", { p_user: uid, p_w: w, p_team: A, p_lvl: lvl, p_heads: heads });
+  if (error || !me) return json({ ok: false, err: "serveur indisponible" });
+  const r = Math.max(0, Math.min(20, Math.round(Number(k.r) || 0)));
+
+  if (opps) {
+    const { data: list } = await db.rpc("koli_opps", { p_user: uid, p_w: w, p_cote: me.cote });
+    // deno-lint-ignore no-explicit-any
+    const out: any[] = (list || []).map((o: any) => ({ id: o.id, name: o.name, cote: o.cote, lvl: o.lvl, heads: o.heads, team: o.team }));
+    for (let slot = out.length; slot < 3; slot++) {
+      const g = E.koliGhostOpp(ghostSeed(uid, w, me.n, r, slot), E.KOLI_GHOST_D[slot], me.cote, lvl, A.length);
+      out.push({ ghost: true, slot, name: g.name, cote: g.cote, lvl: g.lvl, heads: g.team.map((x: { cls: string; sex: string; head: number; lvl: number }) => ({ cls: x.cls, sex: x.sex, head: x.head, lvl: x.lvl })), team: g.team });
+    }
+    out.sort((a, b) => b.cote - a.cote);
+    return json({ ok: true, koli: true, w, me: { cote: me.cote, n: me.n }, opps: out.map((o) => {
+      const st = E.koliStakes(me.cote, o.cote, !!o.ghost);
+      return { id: o.id || null, ghost: !!o.ghost, slot: o.slot, name: o.name, cote: o.cote, lvl: o.lvl, heads: o.heads, team: o.team, win: st.win, lose: st.lose }; // la chance est calculée par le jeu (20 combats d'essai)
+    }) });
+  }
+
+  const f = (k && k.fight) || {};
+  // deno-lint-ignore no-explicit-any
+  let B: any, defId: string | null = null, defName = "", defCote = 1000, ghost: number | null = null;
+  if (f.id) {
+    const { data: dk } = await db.from("koli").select("user_id,team,cote,w").eq("user_id", String(f.id)).maybeSingle();
+    if (!dk || !dk.team || dk.user_id === uid) return json({ ok: false, err: "Cet adversaire n'est plus là : demande-en d'autres." });
+    const { data: dp } = await db.from("profiles").select("pseudo").eq("id", dk.user_id).maybeSingle();
+    B = dk.team; defId = dk.user_id; defName = (dp && dp.pseudo) || "?"; defCote = dk.w < w ? E.koliSoft(dk.cote) : dk.cote;
+  } else {
+    const slot = Number(f.slot);
+    if (!(slot >= 0 && slot < 3)) return json({ ok: false, err: "adversaire inconnu" }, 400);
+    const g = E.koliGhostOpp(ghostSeed(uid, w, me.n, r, slot), E.KOLI_GHOST_D[slot], me.cote, lvl, A.length);
+    B = g.team; defName = g.name; defCote = g.cote; ghost = g.seed;
+  }
+  const seed = crypto.getRandomValues(new Uint32Array(1))[0] || 1;
+  const res = E.koliSim(A, B, seed);
+  const st = E.koliStakes(me.cote, defCote, ghost !== null);
+  const dAtt = res.win ? st.win : -st.lose;
+  const dDef = defId ? (res.win ? -Math.round(st.win * K.defLoss) : Math.round(st.lose * K.defWin)) : 0;
+  const { data: done, error: e2 } = await db.rpc("koli_done", { p_user: uid, p_w: w, p_def: defId, p_ghost: ghost, p_att_name: prof.pseudo, p_def_name: defName,
+    p_att_team: A, p_def_team: B, p_seed: seed, p_win: res.win, p_rounds: res.rounds, p_d_att: dAtt, p_d_def: dDef, p_def_cote: defCote });
+  if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+  return json({ ok: true, koli: true, id: done.id, win: res.win, seed, A, B, rounds: res.rounds, hpA: res.hpA, hpB: res.hpB, delta: dAtt, cote: done.cote, rank: done.rank,
+    opp: { name: defName, cote: defCote, ghost: ghost !== null, seed: ghost, id: defId } });
 }
