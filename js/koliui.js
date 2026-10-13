@@ -119,8 +119,58 @@
     </div></div>`;
   }
   const hcard = (c) => `<div class="kz-h" style="--cc:${CLASSES[c.cls].color}">${X().lookImg(c, "l")}<span class="lv">${c.lvl}</span><span class="rw">${h(c.name)}</span></div>`;
-  function shop() { return X().shopHtml("koli").replace('class="panel"', 'class="panel kz-shop"').replace(/🏟/g, coin("kz-coin sm")); }
-  const shopSheet = () => X().openSheet(`${shop()}<p class="note" style="margin-top:8px">Les Kolizetons se gagnent au Kolizéum : ${K.kzWin} par victoire, ${K.kzLoss} par défaite, ${K.kzDef} par défense réussie, plus la récompense de la semaine. Rien ici ne rend tes héros plus forts.</p><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
+  /* boutique (0.1.45) : onglets, grille d'articles, un seul panneau d'achat (quantité libre, total, ce qu'il manque).
+     La fiche se redessine sur place après un achat : on garde l'onglet, l'article choisi et la quantité. */
+  const SECS = [["galets", "Galets", "Demandés par les recettes d'équipement, comme dans DOFUS. Ils se revendent aussi à l'Hôtel de vente."],
+    ["combat", "Combats", "Tickets, poussière et douceurs."], ["coffres", "Coffres", "Les mêmes coffres que dans le reste du jeu."], ["look", "Apparence", "Pour la carte de tes héros. Rien ici ne rend tes héros plus forts."]];
+  const sh = ui.shop = ui.shop || { tab: "galets", sel: null, q: 1 };
+  const secOf = (it) => it.sec || "combat";
+  const itemOf = (id) => E.SHOPS.koli.items.find((x) => x.id === id);
+  const stockOf = (s, it) => it.res ? (s.res[it.res] || 0) : it.cons ? (s.cons[it.cons] || 0) : 0;
+  const icoOf = (it, big) => { const C = it.cons ? CONSUMABLES[it.cons] : null;
+    return it.res ? X().im(X().resImg(it.res), big ? "ico lg" : "ico", it.res) : C ? X().consIco(C) : it.orn ? X().G("frame") : X().G("tag"); };
+  // un Galet est « pour ton équipe » si un héros de l'équipe a le niveau des objets qui le demandent
+  const useful = (s, it) => { const U = it.res && E.KOLI_GALET_USE && E.KOLI_GALET_USE[it.res]; if (!U) return false;
+    const L = E.team(s).map((c) => c.lvl); return L.some((l) => l >= U.lo && l <= U.hi + 10); };
+  const maxQ = (s, it) => Math.max(1, Math.min(100, Math.floor((s.tokens[E.KOLI_CUR] || 0) / it.cost)));
+  function pick(s) { // article choisi dans l'onglet : celui d'avant, sinon le premier utile, sinon le premier
+    const L = E.SHOPS.koli.items.filter((it) => secOf(it) === sh.tab); let it = itemOf(sh.sel);
+    if (!it || secOf(it) !== sh.tab) { it = L.find((x) => useful(s, x)) || L.find((x) => !E.shopOwned(s, x)) || L[0]; sh.sel = it && it.id; sh.q = 1; }
+    return it;
+  }
+  const tileName = (s, it) => it.title || (it.orn && E.ORN && E.ORN[it.orn] ? E.ORN[it.orn].name() : E.shopItemName(s, it));
+  function tile(s, it, sel) {
+    const owned = E.shopOwned(s, it); const st = stockOf(s, it); const u = useful(s, it);
+    return `<button class="kzs-t ${sel ? "on" : ""} ${owned ? "own" : ""}" data-act="kz-sel" data-id="${it.id}" aria-pressed="${sel}">
+      ${u ? `<span class="kzs-u">Pour ton équipe</span>` : ""}${st ? `<span class="kzs-n">${nf(st)}</span>` : ""}
+      <span class="kzs-i">${icoOf(it)}</span>${it.title || it.orn ? `<span class="kzs-k">${it.title ? "Titre" : "Ornement"}</span>` : ""}<span class="kzs-nm">${h(tileName(s, it))}</span>
+      <span class="kzs-p">${owned ? "Obtenu" : `${coin("kz-coin sm")} ${it.cost}`}</span></button>`;
+  }
+  function buyPanel(s, it, have) {
+    if (!it) return "";
+    const owned = E.shopOwned(s, it); const R = it.res ? D.RES[it.res] : null; const C = it.cons ? CONSUMABLES[it.cons] : null;
+    const U = it.res && E.KOLI_GALET_USE ? E.KOLI_GALET_USE[it.res] : null; const st = stockOf(s, it);
+    const q = it.many ? Math.max(1, Math.min(100, sh.q || 1)) : 1; const tot = it.cost * q; const miss = Math.max(0, tot - have);
+    const name = it.res ? `<button class="kz-lnk" data-act="kz-res" data-n="${h(it.res)}" title="Fiche de la ressource">${h(E.shopItemName(s, it))}</button>` : h(E.shopItemName(s, it));
+    const desc = U ? `Ressource niv. ${R.lvl} · demandée par <b>${U.n} objets</b> à fabriquer, niveau ${U.lo} à ${U.hi}` : R ? `Ressource niv. ${R.lvl}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
+    const qty = it.many && !owned ? `<div class="kzs-q"><div class="kzs-step"><button class="btn sm" data-act="kz-q" data-v="-1" ${q <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${q}</b><button class="btn sm" data-act="kz-q" data-v="1" ${q >= 100 ? "disabled" : ""} aria-label="Un de plus">+</button></div>
+      <div class="seg">${[1, 5, 10].map((n) => `<button data-act="kz-q" data-set="${n}" aria-pressed="${q === n}">×${n}</button>`).join("")}<button data-act="kz-q" data-set="max" aria-pressed="${q === maxQ(s, it) && ![1, 5, 10].includes(q)}">Max</button></div></div>` : "";
+    return `<div class="kzs-buy"><div class="kzs-sel"><span class="kzs-bi">${icoOf(it, true)}</span><div class="grow" style="min-width:0"><b>${name}</b><div class="xs muted">${desc}</div>
+      <div class="xs">${st ? `<b>${nf(st)}</b> en stock` : it.res || C ? "Aucun en stock" : ""}${U ? ` · <button class="kz-lnk" data-act="searchfill2" data-q="${h(it.res)}">voir les objets</button>` : ""}</div></div></div>
+      ${owned ? `<div class="kzs-go"><span class="muted small">Déjà obtenu.</span></div>` : `${qty}<div class="kzs-go"><span class="small">${miss ? `<span class="kzs-miss">Il te manque ${nf(miss)} Kolizeton${miss > 1 ? "s" : ""}</span>` : `Total`}</span>
+        <button class="btn primary" data-act="kz-buy" data-id="${it.id}" ${miss ? "disabled" : ""}>Acheter${q > 1 ? ` ×${q}` : ""} · ${coin("kz-coin sm")} ${nf(tot)}</button></div>`}</div>`;
+  }
+  function shop() {
+    const s = S(); const Sh = E.SHOPS.koli; const have = s.tokens[Sh.cur] || 0; const it = pick(s); const sec = SECS.find((x) => x[0] === sh.tab) || SECS[0];
+    const L = Sh.items.filter((x) => secOf(x) === sh.tab);
+    return `<div id="kzShop" class="kzs"><div class="kzs-head"><h2>${coin()} ${h(Sh.name)}</h2><span class="kzs-bal">${coin("kz-coin")}<b class="num">${nf(have)}</b><span class="xs muted">Kolizetons</span></span></div>
+      <div class="seg kzs-tabs">${SECS.map(([k, t]) => `<button data-act="kz-tab" data-v="${k}" aria-pressed="${k === sh.tab}">${t}</button>`).join("")}</div>
+      <p class="xs muted" style="margin:0">${sec[2]}</p>
+      <div class="kzs-grid">${L.map((x) => tile(s, x, it && x.id === it.id)).join("")}</div>
+      ${buyPanel(s, it, have)}</div>`;
+  }
+  const paintShop = () => { const el = $("#kzShop"); if (el) el.outerHTML = shop(); };
+  const shopSheet = () => X().openSheet(`${shop()}<p class="note" style="margin:0">Les Kolizetons se gagnent au Kolizéum : ${K.kzWin} par victoire, ${K.kzLoss} par défaite, ${K.kzDef} par défense réussie, plus la récompense de la semaine.</p><div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closesheet">Fermer</button></div>`);
   function journal(s, Q, on) {
     let rows = [];
     if (on && ui.fights) {
@@ -165,7 +215,8 @@
       <li>Dès le tour ${K.ero}, l'<b>érosion</b> réduit les PV maximum et les soins de ${K.eroStep} % par tour. Au tour ${K.maxRound}, l'équipe qui a le plus de PV (en %) gagne.</li>
       <li>Chaque victoire rapporte une bourse de kamas (selon le niveau de l'équipe), ${K.dust} Poussière de stasis et ${K.kzWin} Kolizetons ; une défaite, ${K.kzLoss} Kolizeton.</li>
       <li>La semaine finit le lundi à minuit. Avec ${K.minWeek} combats classés au moins, ton grade donne sa récompense, puis la cote revient à mi-chemin de 1 000.</li>
-      <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li></ol>
+      <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li>
+      <li>Les Kolizetons s'échangent dans la boutique contre des <b>Galets</b> (demandés par ${E.KOLI_GALET_ITEMS || "des"} recettes d'équipement, comme dans DOFUS), des tickets, des coffres et de l'apparence.</li></ol>
       <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closesheet">Compris</button></div>`);
   }
 
@@ -246,6 +297,12 @@
       case "kz-tg": { const r = E.act(s, "koliToggle", +d.id); if (r) { X().toast(r); return; } X().markDirty(); teamSheet(); ui.key = ""; return; }
       case "kz-rules": rulesSheet(); return;
       case "kz-shop": shopSheet(); return;
+      case "kz-res": X().resSheet(d.n); return;
+      case "kz-tab": sh.tab = d.v; sh.sel = null; paintShop(); return;
+      case "kz-sel": if (sh.sel !== d.id) { sh.sel = d.id; sh.q = 1; } paintShop(); return;
+      case "kz-q": { const it = itemOf(sh.sel); if (!it) return; sh.q = d.set === "max" ? maxQ(s, it) : d.set ? +d.set : Math.max(1, Math.min(100, (sh.q || 1) + +d.v)); paintShop(); return; }
+      case "kz-buy": { const it = itemOf(d.id); if (!it) return; const q = it.many ? sh.q || 1 : 1; const r = E.buyShop(s, "koli", it.id, q);
+        if (r) { X().toast(r); return; } X().markDirty(); X().toast(`${q > 1 ? q + " × " : ""}${E.shopItemName(s, it)} : acheté !`); paintShop(); return; }
       case "kz-train": { const Q = E.koliState(s); const A = E.koliSnap(s, Q.team); if (!A.length) return;
         const seed = (Date.now() >>> 0) || 1; const o = E.koliGhostOpp(seed, 0, Q.cote, E.koliLvl(s), A.length);
         watch(A, o.team, seed ^ 0x5bd1e995, { train: true, opp: o, own: true }); return; }
@@ -258,7 +315,5 @@
   // fiche de l'équipe ouverte : la rafraîchir quand l'équipe change est fait par kz-tg ; en la fermant, la page suit
   document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest('[data-act="closesheet"]'); if (t && window.DX && window.DX.ui.tab === "koli") setTimeout(paint, 0); });
 
-  // achat dans la boutique (fiche) : la fiche suit le nouveau solde
-  document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest('#sheet [data-act="buyshop"][data-shop="koli"]'); if (t) setTimeout(shopSheet, 0); });
   window.KOLIUI = { render, act, watchHtml, watchHead, watchEnd, ui };
 })();
