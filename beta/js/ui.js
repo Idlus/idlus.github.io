@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.33.1";
+const GAME_VERSION = "0.1.33.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.33.2", name: "Hauts faits à part", items: [
+    "Chat : nouvel onglet « Hauts faits ». Les records de stasis, exploits, niveaux 200, Renaissances et Dofus obtenus y sont rangés et ne remplissent plus le chat Général",
+    "Les annonces officielles restent dans le Général",
+  ] },
   { v: "0.1.33.1", name: "Chat libre", items: [
     "Chat : plus de liste de mots interdits, les messages ne sont plus refusés à cause d'un mot. Les liens et la publicité restent bloqués, le mode lent, les signalements et les sanctions des modérateurs restent en place",
   ] },
