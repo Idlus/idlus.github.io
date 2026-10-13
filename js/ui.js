@@ -727,11 +727,13 @@ const elVar = (el) => (el === "buff" ? "var(--buff)" : `var(--el-${el || "n"})`)
 const eld = (el) => `<span class="eld" style="--c:${elVar(el)}" title="${ELEMENTS[el || "n"].name}">${ELEMENTS[el || "n"].name[0]}</span>`;
 const fmtStatVal = (k, v) => (["cri", "rt", "rf", "re", "ra", "rn", "dsort"].includes(k) ? `${fmt(v)} %` : fmt(v));
 const statLine = (k, v) => `${v > 0 ? "+" : ""}${fmt(v)} ${STATS[k].name.replace("% ", "")}`;
+const statIc = (k, v) => `<span class="stli">${sIco(k)}${statLine(k, v)}</span>`; // 0.1.51 : ligne de caractéristique avec son icône
 
 /* images */
 const imgM = (key) => (MONSTERS[key] ? `assets/m/${MONSTERS[key].img}.png` : "");
 const imgI = (icon) => `assets/i/${icon}.png`;
 const resImg = (name) => (RES[name] ? imgI(RES[name].icon) : "");
+const resTag = (n, q) => `<span class="restag">${n === E.POUSSIERE ? IC("poussiere") : im(resImg(n), "rico", n)}${q ? `${fmt(q)} × ` : ""}${h(n)}</span>`; // 0.1.51 : ressource avec son icône
 const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mimg ? `assets/m/${T.mimg}.png` : imgI(T.icon); };
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
@@ -827,7 +829,10 @@ function lookSheet(c) {
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
 const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`;
-const sIco = (k) => (["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "so", "pp", "ini", "pa", "rt", "rf", "re", "ra"].includes(k) ? `<img class="sico" src="assets/c/${k}.png" alt="" loading="lazy">` : "");
+/* 0.1.51 : une icône DOFUS pour chaque caractéristique (dommages élémentaires = icône de l'élément, résistances fixes = icône de la résistance, comme dans DOFUS) */
+const SICO_OF = { dt: "fo", df: "ine", de: "cha", da: "age", xt: "rt", xf: "rf", xe: "re", xa: "ra", xn: "rn" };
+const SICO_HAS = new Set(["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "dcri", "dn", "dsort", "so", "pp", "ini", "pa", "pm", "po", "rt", "rf", "re", "ra", "rn", "tac", "fui", "rpa", "rpm", "epa", "epm", "inv", "pod"]);
+const sIco = (k) => { const f = SICO_OF[k] || k; return SICO_HAS.has(f) ? `<img class="sico" src="assets/c/${f}.png" alt="" loading="lazy">` : ""; };
 const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name.replace("% ", "") : "Points de vie") + " — " + STAT_HELP[k])}"` : "");
 const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k, v]) => `<span class="chip ${v < 0 ? "neg" : ""}" style="--c:var(--el-${k})" data-tip="Résistance ${ELEMENTS[k].name} : ${v} %">${v > 0 ? "+" : ""}${v}%</span>`).join("");
 
@@ -1273,7 +1278,7 @@ function homeTiles() {
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
   /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
   const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
-  out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${A.qty} × ${h(A.res)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
+  out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${resTag(A.res, A.qty)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
     act: ok && !A.done ? `data-act="almanax"` : `data-act="goquest" data-v="almanax"`, badge: ok ? `<span class="tag">Offrir</span>` : "" }));
   const bn = S.bounties || []; const bd = bn.filter((b) => b.prog >= b.n).length;
   if (bn.length) out.push(tile({ ic: IC("quetes"), t: "Avis de recherche", s: bn.map((b) => `${h(MONSTERS[b.key].name)} ${fmt(Math.min(b.prog, b.n))}/${b.n}`).join(" · "), done: bd === bn.length, act: `data-act="goquest" data-v="bounty"`, badge: `<span class="pill num">${bd}/${bn.length}</span>` }));
@@ -1282,7 +1287,7 @@ function homeTiles() {
   out.push(tile({ ic: chestImg(ch.length ? CONSUMABLES[ch[0]].img : "bois"), t: nCh ? "Coffres à ouvrir" : "Coffres", s: nCh ? ch.map((k) => `${S.cons[k]} ${h(CONSUMABLES[k].name.replace(/^Coffre (en |d'|de |du )?/i, "").replace(/^Bourse (du |de )?/i, ""))}`).join(" · ") : "aucun pour l'instant : boss, quêtes et avis en donnent", done: !nCh, hot: true,
     act: nCh ? `data-act="usecons" data-id="${ch[0]}"` : `data-act="hgo" data-v="cons"`, badge: nCh ? `<span class="tag">Ouvrir · ${nCh}</span>` : "" }));
   const GB = E.gameBuys(S).list; const gl = GB.filter((x) => x.got < x.max); const go = gl.filter((x) => (S.res[x.res] || 0) > 0);
-  out.push(tile({ ic: IC("bourse"), t: "Achats du jeu", s: go.length ? `tu as ${go.map((x) => h(x.res)).join(", ")}` : gl.length ? `le jeu achète : ${gl.map((x) => h(x.res)).join(", ")}` : "les 3 achats du jour sont faits", done: !gl.length, hot: go.length > 0,
+  out.push(tile({ ic: IC("bourse"), t: "Achats du jeu", s: go.length ? `tu as ${go.map((x) => resTag(x.res)).join(" ")}` : gl.length ? `le jeu achète : ${gl.map((x) => resTag(x.res)).join(" ")}` : "les 3 achats du jour sont faits", done: !gl.length, hot: go.length > 0,
     act: `data-act="hgo" data-v="gbuy"`, badge: go.length ? `<span class="tag">Vendre</span>` : `<span class="pill num">${GB.length - gl.length}/${GB.length}</span>` }));
   const sb = E.sab(S);
   if (sb.open) { const p = Math.round(sb.r / E.SAB_MAX * 100);
@@ -3425,7 +3430,7 @@ function setBlock(setId, worn) {
   const Z = SETS[setId]; if (!Z) return "";
   const tiers = Object.entries(Z.bonus).sort((a, b) => +a[0] - +b[0]);
   return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>
-    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statLine(k, v)).join(", ")}</span></div>`).join("") || `<div class="muted">Aucun bonus.</div>`}</div>`;
+    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || `<div class="muted">Aucun bonus.</div>`}</div>`;
 }
 function charStatsView(c, st) {
   const sc = c.scrolls || {};
@@ -3503,7 +3508,7 @@ function petCard(P, c, opts = {}) {
       <div class="pbar"><i style="width:${P.g}%"></i><span>${P.g < 100 ? `Croissance ${P.g} %` : "Adulte : bonus au maximum"}</span></div>
       <div class="small"><span class="muted">Maintenant :</span> <b class="pbon">${petBonus(cur) || "—"}</b></div>
       ${P.g < 100 ? `<div class="xs muted">Au maximum : ${petBonus(p.stats)}</div>` : ""}
-      ${opts.big ? `<div class="xs muted">${p.food ? `Nourriture préférée : <b>${h(p.food)}</b> (compte double) · ` : ""}${P.g < 100 ? (P.hungry ? `<span class="warnt">a faim : rien à manger dans le sac</span>` : `adulte dans ${E.etaTxt(Math.round(eta / 1000))} environ`) + (P.last ? ` · dernier repas : ${h(P.last)}` : "") : "ne mange plus"}</div>` : ""}
+      ${opts.big ? `<div class="xs muted">${p.food ? `Nourriture préférée : <b>${resTag(p.food)}</b> (compte double) · ` : ""}${P.g < 100 ? (P.hungry ? `<span class="warnt">a faim : rien à manger dans le sac</span>` : `adulte dans ${E.etaTxt(Math.round(eta / 1000))} environ`) + (P.last ? ` · dernier repas : ${h(P.last)}` : "") : "ne mange plus"}</div>` : ""}
     </div>
     ${opts.act ? (c.pet === P.uid ? `<button class="btn sm" data-act="petoff">Retirer</button>` : `<button class="btn sm primary" data-act="peton" data-uid="${P.uid}" ${lvlOk ? "" : "disabled"}>${lvlOk ? (p.kind === "monti" ? "Monter" : "Équiper") : "Niv. " + E.petReqLvl(P.id)}</button>`) : ""}
   </div>`;
@@ -3524,8 +3529,8 @@ function charPetView(c) {
     <div class="panel"><div class="phead"><h2>Repas</h2><span class="xs muted">un repas toutes les 30 min, même hors ligne</span></div><div class="pad stack">
       <p class="note xs" style="margin:0">Chaque familier porté mange ${E.PET_MEAL_N} ressources par repas : sa nourriture préférée si vous en avez (+2 % de croissance), sinon la ressource la plus abondante du sac (+1 %). Il ne touche jamais aux clés, à la poussière de stasis ni aux ressources protégées. S'il n'a rien à manger, il attend, sans pénalité.</p>
       <div class="xs muted">Ressources protégées (touchez pour protéger ou libérer) :</div>
-      <div class="row" style="gap:4px;flex-wrap:wrap">${topRes.map(([r, n]) => `<button class="pill keep ${S.petKeep[r] ? "on" : ""}" data-act="petkeep" data-r="${h(r)}" aria-pressed="${!!S.petKeep[r]}">${S.petKeep[r] ? "🔒 " : ""}${h(r)} <span class="muted num">${fmt(n)}</span></button>`).join("") || `<span class="muted xs">Sac vide.</span>`}
-        ${keep.filter((r) => !topRes.some(([x]) => x === r)).map((r) => `<button class="pill keep on" data-act="petkeep" data-r="${h(r)}" aria-pressed="true">🔒 ${h(r)}</button>`).join("")}</div>
+      <div class="row" style="gap:4px;flex-wrap:wrap">${topRes.map(([r, n]) => `<button class="pill keep ${S.petKeep[r] ? "on" : ""}" data-act="petkeep" data-r="${h(r)}" aria-pressed="${!!S.petKeep[r]}">${S.petKeep[r] ? "🔒 " : ""}${im(resImg(r), "rico", r)}${h(r)} <span class="muted num">${fmt(n)}</span></button>`).join("") || `<span class="muted xs">Sac vide.</span>`}
+        ${keep.filter((r) => !topRes.some(([x]) => x === r)).map((r) => `<button class="pill keep on" data-act="petkeep" data-r="${h(r)}" aria-pressed="true">🔒 ${im(resImg(r), "rico", r)}${h(r)}</button>`).join("")}</div>
     </div></div>
     <div class="panel"><div class="phead"><h2>Collection</h2><span class="seg">${[["zone", "Zones"], ["boss", "Boss"], ["monti", "Montiliers"]].map(([v, n]) => `<button data-act="petcoll" data-v="${v}" aria-pressed="${coll === v}">${n} ${nOwn(v)}/${nAll(v)}</button>`).join("")}</span></div>
       <div class="pad"><div class="petgrid">${(ui.petAll ? list : list.filter(([id]) => E.petOwned(S, id)).concat(list.filter(([id]) => !E.petOwned(S, id))).slice(0, 18)).map(([id, p]) => { const own = E.petOwned(S, id);
@@ -4124,7 +4129,7 @@ function setsBookHtml() {
         return `<div class="li" style="align-items:flex-start;${ok ? "" : "opacity:.92"}"><span class="icobox ${rarCls(t)}" style="${ok ? "" : "filter:grayscale(.7)"}">${im(itemImg(t), "", T.name)}</span><span class="grow"><b class="iname ${rarName(t)}">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}</span>
           <div class="xs ${ok ? "plus" : "muted"}">${ok ? `✓ dans le sac${owned[t] > 1 ? ` (×${owned[t]})` : ""}` : src.map(srcTxt).join("<br>") || "Source inconnue"}</div></span>
           ${!ok && T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${t}" data-tip="Ajouter à la liste de courses">${G("cart")}${S.shop.some((e) => e.id === t) ? " ✓" : ""}</button>` : ""}</div>`; }).join("")}</div>
-      <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statLine(sk, v)).join(", ")}</div>`).join("") || `<span class="muted">Aucun bonus de panoplie.</span>`}</div></section>`; };
+      <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statIc(sk, v)).join(" ")}</div>`).join("") || `<span class="muted">Aucun bonus de panoplie.</span>`}</div></section>`; };
   return `<p class="note">Chaque panoplie avec ses pièces : celles que vous avez, celles qui manquent et où les obtenir. Les pièces fabricables peuvent aller dans la liste de courses de l'Accueil.</p>
     <div class="row invbar"><input type="text" id="setSearch" data-act="setsearch" placeholder="Rechercher une panoplie ou une pièce…" value="${h(F.q)}">
       <select data-act="setmode" aria-label="Filtre">${[["known", "Panoplies connues"], ["hero", "Adaptées au héros"], ["all", "Toutes"]].map(([v, n]) => `<option value="${v}" ${F.mode === v ? "selected" : ""}>${n}</option>`).join("")}</select>
@@ -5115,7 +5120,7 @@ function searchGo(r) {
 function itemSheet(tpl) {
   const T = ITEMS[tpl]; if (!T) return; if (T.leg && window.SGUI) { window.SGUI.legSheet(S, T.leg); return; } /* 0.1.48 : fiche légendaire */ const owned = E.ownedTpls(S)[tpl] || 0; const src = E.itemSources(tpl); const inShop = S.shop.some((e) => e.k === "tpl" && e.id === tpl);
   const lines = src.map((x) => {
-    if (x.k === "craft") return `<div class="li"><span class="icobox">${IC("metiers")}</span><span class="grow"><b>Recette</b> · ${h(CRAFT_JOBS[x.job].name)} niveau ${x.lvl}<br><span class="xs muted">${T.craft.ing.map(([r, n]) => `${n} × ${h(r)}`).join(" · ")}</span></span><button class="btn sm" data-act="searchcraft" data-job="${x.job}" data-q="${h(T.name)}">Atelier</button></div>`;
+    if (x.k === "craft") return `<div class="li"><span class="icobox">${IC("metiers")}</span><span class="grow"><b>Recette</b> · ${h(CRAFT_JOBS[x.job].name)} niveau ${x.lvl}<br><span class="xs muted">${T.craft.ing.map(([r, n]) => resTag(r, n)).join(" ")}</span></span><button class="btn sm" data-act="searchcraft" data-job="${x.job}" data-q="${h(T.name)}">Atelier</button></div>`;
     const M = MONSTERS[x.mon]; const dg = x.dgs[0]; const sub = x.subs[0];
     return `<div class="li"><span class="icobox">${S.bestiary[x.mon] ? im(imgM(x.mon), "", M.name) : `<b class="muted">?</b>`}</span><span class="grow"><b>${x.k === "boss" ? "Boss" : "Butin"}</b> · ${S.bestiary[x.mon] ? h(M.name) : "???"} · ${x.p} %<br><span class="xs muted">${h([...x.subs.map((s) => E.SUBS[s].name), ...x.dgs.map((d) => DUNGEONS[d].name)].slice(0, 2).join(", "))}</span></span>${dg ? `<button class="btn sm" data-act="searchdg" data-id="${dg}">Donjon</button>` : sub ? `<button class="btn sm" data-act="searchzone" data-id="${sub}">Y aller</button>` : ""}</div>`;
   });
