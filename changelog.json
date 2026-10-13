@@ -1,6 +1,20 @@
 {
-  "version": "0.1.48.6",
+  "version": "0.1.49",
   "versions": [
+    {
+      "v": "0.1.49",
+      "name": "Boss des mondes",
+      "items": [
+        "Nouveau : le Boss des mondes (Jouer › Boss des mondes). Tout le serveur frappe le même boss, avec une barre de PV commune. Quand elle tombe à zéro, le boss suivant arrive aussitôt",
+        "Gargandyas ouvre la rotation : le Titan enchaîné par les Osamodas a brisé son collier. Faible à l'Air (+50 %), il résiste à la Terre (−50 %). Phase 2 sous 66 % (Cri Primitif, il frappe 30 % plus fort), phase 3 sous 33 % (Gargameha, enragé, il subit 25 % de plus)",
+        "3 essais par jour (minuit, heure de Paris) de 15 tours avec ton équipe active, joués et vérifiés par le serveur. Chaque essai donne un grade de C à SSS, un coffre (du bois à l'obsidienne) et des Fragments d'anomalie",
+        "Fragments d'anomalie : échange-les contre les 4 objets de Gargandyas de DOFUS (Collier, Griffe, Fureur, Bélier)",
+        "Quand le boss tombe : Coffre en or et 10 Fragments pour tous ceux qui l'ont frappé, Coffre des Douze, 30 Fragments et le titre « Fléau des mondes » pour les 3 premiers, titre « Briseur de Titan » pour le premier passage de Gargandyas, et +10 % d'XP pour tout le monde pendant 1 h",
+        "Annonces dans le chat Général : arrivée, phases et mort du boss sur une carte animée. Effet plein écran à l'arrivée d'un nouveau boss (une fois, à couper dans Options › Affichage) et bandeau en haut tant qu'il est en vie",
+        "Rotation : Kolosso, Korriandre, Comte Harebourg, Ougah, Roi Nidas, Ilyzaelle, Nileza et Vortex, puis Gargandyas revient. Les PV s'ajustent pour qu'un boss tienne environ une journée",
+        "Sans compte : tu vois le boss et le classement, et tu peux faire un essai d'entraînement (rien n'est compté)"
+      ]
+    },
     {
       "v": "0.1.48.6",
       "name": "Double gain prolongé",
