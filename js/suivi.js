@@ -25,7 +25,7 @@
   E.CARNET_OUT = { fm: "Forgemagie", havre: "Havre-Sac", craft: "Artisanat et clés", monture: "Montures", boutique: "Boutique", hdv: "Hôtel de vente", idole: "Idoles", donjon: "Donjons", autre: "Autres" };
   const ACT_CAT = {
     gameBuySell: "vente",
-    forgemage: "fm", feedForgemage: "fm", fuseRunes: "fm", transmute: "fm", exoForge: "fm", exoCraft: "fm", startFmPlan: "fm",
+    forgemage: "fm", transForge: "fm", signItem: "fm", fuseRunes: "fm", transmute: "fm", exoForge: "fm", exoCraft: "fm", startFmPlan: "fm",
     buyHavre: "havre", placeFurn: "havre", buildAtelier: "havre", setAtelier: "havre",
     craftItem: "craft", craftSpecial: "craft", craftMany: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",
     buildEnclos: "monture", startBreed: "monture", equipMount: "monture", setMountShare: "monture",
