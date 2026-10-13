@@ -143,7 +143,7 @@
     if (E.PETS) for (const id in E.PETS) { const P = E.PETS[id]; add(L, "pet", id, P.name, P.sub && SUBS()[P.sub] ? SUBS()[P.sub].name : P.kind === "monti" ? "montilier" : "familier"); }
     if (E.MOUNTS) for (const sp in E.MOUNTS) { const M = E.MOUNTS[sp]; add(L, "mount", sp, M.name, "monture"); for (const c in M.cols) add(L, "mount", sp, `${M.name} ${c}`, "monture"); }
     if (CONSUMABLES) for (const id in CONSUMABLES) add(L, "cons", id, CONSUMABLES[id].name, CONSUMABLES[id].desc || "consommable");
-    if (E.ACH) E.ACH.forEach((a) => add(L, "ach", a.id, a.name, a.desc || "succès"));
+    if (E.ACH) E.ACH.forEach((a) => { if (!a.secret) add(L, "ach", a.id, a.name, a.desc || "succès"); }); // 0.1.49 : les succès secrets restent cachés
     return (INDEX = L);
   };
   const KIND_ORDER = Object.keys(E.SEARCH_KINDS);

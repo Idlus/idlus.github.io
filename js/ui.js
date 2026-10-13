@@ -18,9 +18,18 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.49.2";
+const GAME_VERSION = "0.1.50";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.50", name: "Quêtes, succès et chasses", items: [
+    "Quête principale : 4 chapitres de plus jusqu'au niveau 200 (Les terres sauvages, Les îles lointaines, Le grand froid, Les Dimensions divines). Chaque chapitre fini donne un titre et 2 Coffres en or",
+    "Nouveau : une quête de région dans chacune des 31 régions, donnée par un personnage de DOFUS. Au bout : kamas, Coffre en argent, le titre « l'Ami de … » et l'emblème de la région, un ornement de carte de héros",
+    "Nouveau : 3 quêtes de la semaine à ton niveau, chaque lundi. Les 3 faites : un Coffre en or et 3 parchemins de chasse",
+    "Avis de recherche : rang de chasseur (+10 % aux primes par rang), un avis de boss en plus et un avis d'élite de la semaine (stasis 6, Coffre en or). Les avis suivent enfin le niveau de l'équipe quand elle monte vite",
+    "Chasse au trésor : elle passe dans Quêtes › Chasses, en 3 tailles (courte gratuite chaque jour, normale, légendaire une fois par semaine avec un donjon et un gardien d'élite) et avec de nouveaux indices (monstre précis, ressource à rapporter, énigme)",
+    "Succès : plus de 300 nouveaux (régions, classes, stasis 10 dans chaque donjon, Kolizéum, économie, chasses, collection) dont 15 secrets avec un indice. Points de succès, 6 paliers (coffres, 2 ornements, 2 titres), filtres, recherche et classement des points",
+    "Quêtes rangées en 3 familles (Aujourd'hui, Aventures, Chasses), avec une rangée « À faire ensuite » qui montre le plus utile du moment",
+  ] },
   { v: "0.1.49.2", name: "Roue des Options", items: [
     "Le bouton des Options, en haut à droite, devient une vraie roue dentée dorée (l'ancienne icône ressemblait à un soleil). Sur ordinateur, le mot « Options » est écrit à côté",
     "La roue dorée apparaît aussi devant « Options » dans les bulles d'aide, le Carnet des découvertes et ces notes de mise à jour, pour savoir quel bouton chercher" ] },
@@ -798,7 +807,7 @@ const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k
 const EL_ICON = { t: "fo", f: "ine", e: "cha", a: "age", n: "vit" };
 function heroCard(c, size = "", opts = {}) {
   const st = E.charStats(S, c); const el = E.domEl(st); const fi = E.frameIdx(c.lvl); const C = CLASSES[c.cls];
-  const rad = E.radiantWorn(S, c); const orn = c.orn && E.ornUnlocked(S, c.orn) ? c.orn : null;
+  const rad = E.radiantWorn(S, c); const orn = opts.orn || (c.orn && E.ornUnlocked(S, c.orn) ? c.orn : null); // 0.1.49 : opts.orn = aperçu d'un ornement pas encore obtenu
   const need = E.xpNeed(c.lvl);
   const stats3 = size === "big" ? [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa], ["pui", st.pui], ["cri", st.cri + "%"], ["pp", st.pp]] : [["vit", st.hpMax], [buildMain(c), st[buildMain(c)]], ["pa", st.pa]];
   let ornHtml = "", ornCls = "";
@@ -816,6 +825,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
   else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
   else if (orn === "koli") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/koli_cristal.svg" alt="">`; // 0.1.44 : Kolizéum
+  else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
@@ -1426,7 +1436,7 @@ function renderWorld() {
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = dungeonsHtml();
-  else if (ui.world === "tresor") body = tresorHtml();
+  else if (ui.world === "tresor") { ui.world = "map"; return renderWorld(); }
   else body = encyclopediaHtml();
   $("#main").innerHTML = `
 <div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
@@ -4796,6 +4806,8 @@ function celeHtml(ev) {
   if (ev.t === "songe") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Nouveau mode de jeu</div><div class="cele-t">Le Songe infini</div><div class="cele-s">Une carte de rêve par semaine, la même pour tous. Menu Jouer › Songe infini.</div>`;
   if (ev.t === "leg") { const T = ITEMS[ev.tpl]; const x = E.legByTpl(ev.tpl); if (!T || !x) return ""; // 0.1.48 : objet légendaire
     return `<div class="cele-art radiant"><span class="icobox lx cf ${ev.ev >= 5 ? "e5" : ev.ev <= 2 ? "e1" : ""}">${im(itemImg(ev.tpl), "", T.name)}${ev.ev >= 5 ? '<span class="lxsp"></span>' : ""}</span></div><div class="cele-k">${G("sparkle")} ${ev.up ? `Éveil ${["I", "II", "III", "IV", "V"][ev.ev - 1]}` : "Objet légendaire"}</div><div class="cele-t"><span class="lxn cf">${h(T.name)}</span></div><div class="cele-s">${h(E.legTxt(x, ev.ev))}</div>`; }
+  if (ev.t === "rq") return `<div class="cele-art pet"><img class="celeorn" src="assets/ui/orn/orn_${h(ev.id)}.svg" alt=""></div><div class="cele-k">${IC("monde")} Quête de région terminée</div><div class="cele-t">${h(ev.name)}</div><div class="cele-s">Titre « ${h(ev.title)} » et ornement « Emblème de ${h(ev.name)} » débloqués (Héros › Ornement).</div>`;
+  if (ev.t === "wk") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("coffre")} Quêtes de la semaine</div><div class="cele-t">Coffre de la semaine !</div><div class="cele-s">Les 3 quêtes sont faites : un Coffre en or et 3 parchemins de chasse. De nouvelles quêtes arrivent lundi.</div>`;
   if (ev.t === "tresor") return `<div class="cele-art pet">${IC("coffre", "celepet")}</div><div class="cele-k">${IC("carte")} Coffre au trésor · ${ev.n} trouvé${ev.n > 1 ? "s" : ""}</div><div class="cele-t">Trésor trouvé !</div><div class="cele-s">${h(ev.got.join(", "))}</div>`;
   if (ev.t === "chest") { const C = CONSUMABLES[ev.id]; // 0.1.30 : butin rangé en vignettes (rares d'abord, puis le reste)
     const m = new Map(); (ev.loot || []).forEach(([t, id, q, uid]) => { const key = t === "item" ? "item" + (uid || id + m.size) : t + id; const o = m.get(key) || { t, id, q: 0, uid }; o.q += q; m.set(key, o); });
@@ -4982,7 +4994,7 @@ function pageGo(id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
     case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
-    case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("world", "world", "tresor"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
+    case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("quests", "qt", "tresor"); break; case "region": go("quests", "qt", "region"); break; case "hebdo": go("quests", "qt", "hebdo"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
@@ -5450,29 +5462,38 @@ function tresorBanner() {
 }
 function tresorHtml() {
   const T = E.tresorState(S); const c = T.cur;
-  const free = E.tresorFreeOk(S);
-  const stock = `<section class="panel"><div class="phead"><h2>Parchemins de chasse</h2><span class="small muted">${T.stock.length} / ${E.TRESOR_STOCK}</span></div><div class="pad stack">
-    <div class="row su-stock">${T.stock.length ? T.stock.map((l, i) => `<div class="su-parch">${IC("carte")}<span><b>Niveau ${l}</b><span class="xs muted">${E.tresorSteps(Math.min(l, Math.max(...S.chars.map((x) => x.lvl)) + 10))} indices</span></span>${c ? "" : `<button class="btn sm primary" data-act="su-tstart" data-v="${i}">Ouvrir</button>`}</div>`).join("") : `<span class="small muted">Aucun parchemin. Il en tombe parfois sur les monstres en chasse, au niveau de la zone.</span>`}</div>
-    <div class="row">${free ? `<button class="btn sm" data-act="su-tclaim" ${T.stock.length >= E.TRESOR_STOCK ? "disabled" : ""}>${IC("parchemin_or")} Prendre le parchemin du jour</button>` : `<span class="xs muted">✓ Parchemin du jour pris · le prochain dans ${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</span>`}</div><p class="xs muted" style="margin:0">Un parchemin gratuit chaque jour, plus ceux trouvés en chasse (${E.TRESOR_STOCK} en réserve au plus).</p></div></section>`;
+  const free = E.tresorFreeOk(S); const topL = Math.max(...S.chars.map((x) => x.lvl));
+  // 0.1.49 : trois tailles de chasse (courte gratuite chaque jour, normale trouvée en chasse, légendaire une fois par semaine)
+  const SZ = E.TRESOR_SIZES; const nNorm = T.stock.filter((x) => E.tresorP(x).k !== "leg").length; const legOk = E.tresorLegOk(S) && topL >= 50;
+  const sizes = `<div class="qx-tsz">
+    <div class="qx-tc">${IC("parchemin_or")}<span class="grow"><b>Chasse courte</b><small>${SZ.court.steps} indices · gratuite chaque jour</small></span>${free ? `<button class="btn sm primary" data-act="su-tclaim" ${nNorm >= E.TRESOR_STOCK ? "disabled" : ""}>Prendre</button>` : `<span class="xs muted">✓ prise · ${dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "")}</span>`}</div>
+    <div class="qx-tc">${IC("carte")}<span class="grow"><b>Chasse normale</b><small>${E.tresorSteps(topL)} indices · trouvée sur les monstres en chasse</small></span><span class="xs muted">${T.stock.filter((x) => E.tresorP(x).k === "norm").length} en réserve</span></div>
+    <div class="qx-tc leg">${IC("trophee")}<span class="grow"><b>Chasse légendaire</b><small>${SZ.leg.steps} indices + un donjon · 1 par semaine · gardien d'élite · Coffre en or</small></span>${topL < 50 ? `<span class="xs muted">niveau 50</span>` : legOk ? `<button class="btn sm primary" data-act="su-tleg">Prendre</button>` : `<span class="xs muted">✓ prise · lundi</span>`}</div></div>`;
+  const pName = (x) => { const P = E.tresorP(x); return P.k === "norm" ? `Niveau ${P.l}` : `${SZ[P.k].name} · niv. ${P.l}`; };
+  const stock = `<section class="panel"><div class="phead"><h2>Parchemins en réserve</h2><span class="small muted">${nNorm} / ${E.TRESOR_STOCK}</span></div><div class="pad stack">
+    <div class="row su-stock">${T.stock.length ? T.stock.map((x, i) => `<div class="su-parch ${E.tresorP(x).k}">${IC(E.tresorP(x).k === "leg" ? "trophee" : "carte")}<span><b>${h(pName(x))}</b><span class="xs muted">${E.tresorStepsOf({ l: Math.min(E.tresorP(x).l, topL + 10), k: E.tresorP(x).k })} indices</span></span>${c ? "" : `<button class="btn sm primary" data-act="su-tstart" data-v="${i}">Ouvrir</button>`}</div>`).join("") : `<span class="small muted">Aucun parchemin. Prends la chasse courte du jour, ou chasse : il en tombe parfois sur les monstres.</span>`}</div>
+    <p class="xs muted" style="margin:0">${E.TRESOR_STOCK} parchemins courts ou normaux en réserve au plus ; le légendaire ne prend pas de place.</p></div></section>`;
   let cur = "";
   if (c) {
     const steps = c.steps.map((st, i) => { const s = E.SUBS[st.sub];
-      if (i < c.i) return `<div class="su-st done"><span class="dot">✓</span><div><b>${h(s.name)}</b><span class="xs">Repère trouvé : ${h(st.mark)}</span></div></div>`;
-      if (i === c.i && !c.ready) { const here = S.hunting && S.sub === st.sub && !S.dungeon;
-        return `<div class="su-st now"><span class="dot">${i + 1}</span><div class="stack" style="gap:6px"><div class="su-clue">Indice : va à <b>${h(s.name)}</b> <span class="xs">(niv. ${s.lvl[0]}–${s.lvl[1]})</span> et cherche <b>${h(st.mark)}</b>.</div>
-          <span class="xs">${here ? "L'équipe chasse ici" : "L'équipe n'est pas encore sur place"} · ${st.got} victoire${st.got > 1 ? "s" : ""} sur ${E.TRESOR_NEED} avant de trouver le repère</span><div class="su-prog"><i style="width:${pct(st.got, E.TRESOR_NEED)}%"></i></div></div></div>`; }
+      const where = st.t === "dg" ? DUNGEONS[st.dg].name : s.name;
+      if (i < c.i) return `<div class="su-st done"><span class="dot">✓</span><div><b>${h(where)}</b><span class="xs">${st.t === "mon" ? `${h(MONSTERS[st.mon].name)} vaincu` : st.t === "res" ? `${h(st.res)} rapporté` : st.t === "dg" ? "Salle secrète trouvée" : `Repère trouvé : ${h(st.mark)}`}</span></div></div>`;
+      if (i === c.i && !c.ready) { const here = st.t === "dg" ? false : S.hunting && S.sub === st.sub && !S.dungeon;
+        const [a, b, unit] = st.t === "mon" ? [st.got, st.n, `${MONSTERS[st.mon].name} vaincu${st.got > 1 ? "s" : ""}`] : st.t === "res" ? [Math.min(S.res[st.res] || 0, st.n), st.n, `${st.res} en banque`] : st.t === "dg" ? [0, 1, "donjon terminé"] : [st.got, E.TRESOR_NEED, `victoire${st.got > 1 ? "s" : ""} avant de trouver le repère`];
+        return `<div class="su-st now"><span class="dot">${i + 1}</span><div class="stack" style="gap:6px"><div class="su-clue">${h(E.tresorClueTxt(st))}${st.t === "dg" ? "" : ` <span class="xs">(niv. ${s.lvl[0]}–${s.lvl[1]})</span>`}.</div>
+          <span class="xs">${st.t === "dg" ? `<button class="btn xs" data-act="dgopen" data-id="${st.dg}">Voir le donjon</button>` : here ? "L'équipe chasse ici" : "L'équipe n'est pas encore sur place"} · ${a} / ${b} ${h(unit)}</span><div class="su-prog"><i style="width:${pct(a, b)}%"></i></div></div></div>`; }
       return `<div class="su-st hid"><span class="dot">${i + 1}</span><div><b>???</b><span class="xs">Se dévoile à l'étape précédente</span></div></div>`; }).join("");
     const last = E.SUBS[c.steps[c.steps.length - 1].sub];
-    const guard = `<div class="su-st ${c.ready ? "now" : "hid"}"><span class="dot">⚔</span><div><b>Le gardien du trésor</b><span class="xs">${c.ready ? `Un monstre de ${h(last.name)} renforcé comme un boss (niveau ${Math.min(200, c.lvl + 5)}). ${c.lost ? `Déjà ${c.lost} défaite${c.lost > 1 ? "s" : ""} : renforce l'équipe avant de réessayer.` : "Il apparaît au prochain combat sur place."}` : "Un combat, puis le coffre"}</span></div></div>`;
-    const target = c.ready ? last.id : c.steps[c.i].sub; const there = S.hunting && S.sub === target && !S.dungeon;
-    const btn = c.ready ? (c.go || (S.fight && S.fight.tresor && !S.fight.over) ? `<span class="xs">Le gardien arrive au prochain combat…</span><button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tfight">Affronter le gardien</button>`) : there ? `<button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tgo">Aller chasser là-bas</button>`;
-    cur = `<div class="su-paper"><div class="row between"><h3>Parchemin de chasse · niveau ${c.lvl}</h3><span class="num">${c.ready ? "gardien" : `étape ${c.i + 1} / ${c.steps.length}`}</span></div>
+    const guard = `<div class="su-st ${c.ready ? "now" : "hid"}"><span class="dot">⚔</span><div><b>${c.k === "leg" ? "Le gardien légendaire" : "Le gardien du trésor"}</b><span class="xs">${c.ready ? `Un monstre de ${h(last.name)} renforcé comme un boss${c.k === "leg" ? ", encore plus coriace" : ""} (niveau ${Math.min(200, c.lvl + 5)}). ${c.lost ? `Déjà ${c.lost} défaite${c.lost > 1 ? "s" : ""} : renforce l'équipe avant de réessayer.` : "Il apparaît au prochain combat sur place."}` : "Un combat, puis le coffre"}</span></div></div>`;
+    const stc = c.steps[c.i]; const target = c.ready ? last.id : stc.sub; const there = S.hunting && S.sub === target && !S.dungeon;
+    const btn = c.ready ? (c.go || (S.fight && S.fight.tresor && !S.fight.over) ? `<span class="xs">Le gardien arrive au prochain combat…</span><button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tfight">Affronter le gardien</button>`) : stc.t === "dg" ? `<button class="pbtn" data-act="dgopen" data-id="${stc.dg}">Aller au donjon</button>` : there ? `<button class="pbtn" data-act="su-tview">Voir le combat</button>` : `<button class="pbtn" data-act="su-tgo">Aller chasser là-bas</button>`;
+    cur = `<div class="su-paper ${c.k === "leg" ? "leg" : ""}"><div class="row between"><h3>Chasse ${c.k === "leg" ? "légendaire" : c.k === "court" ? "courte" : "au trésor"} · niveau ${c.lvl}</h3><span class="num">${c.ready ? "gardien" : `étape ${c.i + 1} / ${c.steps.length}`}</span></div>
       <div class="su-trail">${steps}${guard}</div>
       <div class="row">${btn}${SU.tq ? `<button class="pbtn alt" data-act="su-tquit2">Confirmer l'abandon</button>` : `<button class="pbtn alt" data-act="su-tquit">Abandonner</button>`}<span class="xs grow">${S.settings.roam ? "La chasse itinérante reprend après le trésor." : ""}</span></div></div>`;
-  } else cur = `<section class="panel"><div class="pad su-how"><b>Comment ça marche ?</b><span class="small">Ouvre un parchemin : chaque indice nomme une zone et un repère. L'équipe y va toute seule et le trouve après ${E.TRESOR_NEED} victoires sur place, puis l'indice suivant se dévoile. Au bout, le gardien du trésor garde un coffre : kamas, poussière de stasis, ressources des zones traversées et une clé de donjon.</span></div></section>`;
+  } else cur = `<section class="panel"><div class="pad su-how"><b>Comment ça marche ?</b><span class="small">Ouvre un parchemin : chaque indice mène l'équipe dans une zone. Il peut demander de trouver un repère (${E.TRESOR_NEED} victoires sur place), de vaincre un monstre précis, de rapporter une ressource, de résoudre une énigme ou, pour la chasse légendaire, de passer un donjon. Au bout, le gardien du trésor garde un coffre : kamas, poussière de stasis, ressources des zones traversées et une clé de donjon.</span></div></section>`;
   const lastT = T.last ? `<section class="panel"><div class="phead"><h2>Dernier trésor</h2><span class="small muted">${ago(T.last.t)}</span></div><div class="pad small">${h(T.last.got.join(", "))}.</div></section>` : "";
   const next = (T.n || 0) < 10 ? `titre « ${E.TRESOR_TITLE} » à 10` : (T.n || 0) < 50 ? "ornement « Boussole dorée » à 50" : "titre et ornement obtenus";
-  return `${cur}${stock}${lastT}<p class="xs muted" style="margin:0">${fmt(T.n || 0)} trésor${(T.n || 0) > 1 ? "s" : ""} trouvé${(T.n || 0) > 1 ? "s" : ""} · ${next}.</p>`;
+  return `${cur}${c ? "" : sizes}${stock}${lastT}<p class="xs muted" style="margin:0">${fmt(T.n || 0)} trésor${(T.n || 0) > 1 ? "s" : ""} trouvé${(T.n || 0) > 1 ? "s" : ""}${T.leg ? ` dont ${fmt(T.leg)} légendaire${T.leg > 1 ? "s" : ""}` : ""} · ${next}.</p>`;
 }
 /* ======================= 0.1.24.1 « Artisans et temples » : commandes, temples, sons, consignes ======================= */
 function commandesHtml() {
@@ -5571,7 +5592,8 @@ function suAct(a, t) {
     case "su-send": carnetSend(); return;
     case "su-copy": { const txt = carnetText(); try { navigator.clipboard.writeText(txt).then(() => toast("Résumé copié : colle-le sur Discord."), () => prompt("Copie ce résumé :", txt)); } catch (e) { prompt("Copie ce résumé :", txt); } return; }
     case "su-adm": carnetAdmin(); return;
-    case "su-tclaim": if (run("tresorClaim")) { toast("Parchemin du jour ajouté à ta réserve.", "rare"); render(); } return;
+    case "su-tclaim": if (run("tresorClaim")) { toast("Parchemin de chasse courte ajouté à ta réserve.", "rare"); render(); } return;
+    case "su-tleg": if (run("tresorLegClaim")) { toast("Parchemin légendaire ajouté à ta réserve.", "rare"); render(); } return;
     case "su-tstart": if (run("tresorStart", +d.v)) { SU.tq = false; render(); toast("Chasse au trésor lancée : l'équipe part vers le premier indice.", "rare"); } return;
     case "su-tgo": if (run("tresorGo")) render(); return;
     case "su-tfight": if (run("tresorFight")) render(); return;
@@ -5765,7 +5787,7 @@ document.addEventListener("click", (ev) => {
     case "hunt": { const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "zoneview": ui.zoneView = d.id; window.scrollTo(0, 0); break;
     case "zoneback": ui.zoneView = null; break;
-    case "worldtab": ui.world = d.v; break;
+    case "worldtab": if (d.v === "tresor") { ui.tab = "quests"; ui.qt = "tresor"; ui.zoneView = null; break; } ui.world = d.v; break; // 0.1.49 : le trésor est dans Quêtes › Chasses
     case "maptier": ui.mapTier = +d.v; break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; break;
@@ -6261,9 +6283,28 @@ function lbDefaultDid() {
   return (wl.find((x) => x.bracket === VF.bracketOf(top)) || wl[0] || {}).did;
 }
 /* Requête d'un classement, gardée 60 s. */
+/* 0.1.49 : petit classement des points de succès (page Succès) : 3 premiers et ta place, gardé 2 min */
+const ACHLB = { at: 0, busy: false, rows: null, me: null };
+function achLb() {
+  if (!(ON && ON.user && ON.db && ON.db())) return null;
+  if (!ACHLB.busy && Date.now() - ACHLB.at > 120000) {
+    ACHLB.busy = true; ACHLB.at = Date.now();
+    (async () => {
+      try {
+        const db = ON.db(); const { data, error } = await db.from("lb_level").select("user_id,pseudo,pts").order("pts", { ascending: false }).limit(3);
+        if (error) { ACHLB.rows = []; return; }
+        const mine = E.achPoints(S); const { count } = await db.from("lb_level").select("user_id", { count: "exact", head: true }).gt("pts", mine);
+        ACHLB.rows = (data || []).map((r) => ({ p: r.pseudo, v: r.pts, me: r.user_id === ON.user.id })); ACHLB.me = { rank: (count || 0) + 1, v: mine };
+        if (ui.tab === "quests" && ui.qt === "ach") dirty = true;
+      } catch (e) { ACHLB.rows = []; } finally { ACHLB.busy = false; }
+    })();
+  }
+  return ACHLB.rows ? ACHLB : null;
+}
 async function lbFetch() {
   const db = ON.db(), me = ON.user && ON.user.id, mine = S ? VF.summary(E, S) : null;
   if (LB.ml === undefined) { const { error } = await db.from("lb_level").select("main_lvl").limit(1); LB.ml = !error; } // 0.1.26 : niveau du héros principal (cadre du médaillon)
+  if (LB.pts === undefined) { const { error } = await db.from("lb_level").select("pts").limit(1); LB.pts = !error; } // 0.1.49 : points de succès
   const t = LB.tab, key = [t, LB.cls, LB.dmode, LB.did, LB.dtier].join("|");
   const c = LB.cache[key]; if (c && Date.now() - c.at < 60000) return c;
   const out = { at: Date.now(), rows: [], me: null, score: null };
@@ -6274,11 +6315,11 @@ async function lbFetch() {
     const myBest = mine && Math.max(0, ...mine.heroes.filter((x) => x.cls === LB.cls).map((x) => x.lvl + x.ren * VF.REB_LVL));
     if (me && myBest) out.me = { u: me, cls: LB.cls, sc: lvlTxt(myBest), fl: lbLvl(myBest), rank: await count(db.from("lb_class").select("user_id", { count: "exact", head: true }).eq("cls", LB.cls).gt("score", myBest)) };
   } else if (t === "lvl" || t === "album" || t === "succ") {
-    const col = t === "lvl" ? "level" : t === "album" ? "album" : "succes";
-    const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : `${v} succès`);
+    const col = t === "lvl" ? "level" : t === "album" ? "album" : LB.pts ? "pts" : "succes";
+    const fmtv = (v) => (t === "lvl" ? `${fmt(v)} niveaux` : t === "album" ? `${v} âmes` : col === "pts" ? `${fmt(v)} pts` : `${v} succès`);
     const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
-    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+    if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : col === "pts" ? mine.pts : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
     const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true, fl: r.main_lvl });
@@ -6553,7 +6594,7 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
