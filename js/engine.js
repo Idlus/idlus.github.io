@@ -517,7 +517,13 @@
   E.COBOSS_HP = 0.4; // 0.1.40 : part des PV d'un boss principal pour chaque boss qui l'accompagne (Gelées Royales)
   E.subUnlocked = (S, sid) => {
     const s = SUBS[sid]; if (!s || !E.zoneUnlocked(S, s.zone)) return false;
-    if (s.requiresItem) return (S.res[s.requiresItem] || 0) > 0;
+    if (s.requiresItem) {
+      if ((S.res[s.requiresItem] || 0) > 0 || (S.progress.hiddenOpen || {})[sid]) return true;
+      /* 1.0.4 : la Baguette Rikiki existe aussi en arme (Sculpteur, butin) : la posséder dans le sac ou équipée ouvre aussi le lieu, et il reste ouvert ensuite */
+      const own = Object.values(S.items || {}).some((it) => ITEMS[it.tpl] && ITEMS[it.tpl].name === s.requiresItem);
+      if (own) (S.progress.hiddenOpen = S.progress.hiddenOpen || {})[sid] = 1;
+      return own;
+    }
     return true;
   };
   E.dungeonUnlocked = (S, did) => E.subUnlocked(S, DUNGEON_SUB[did]) && ((DUNGEONS[did] || {}).needs || []).every((d) => (S.progress.bossKills[d] || 0) > 0);

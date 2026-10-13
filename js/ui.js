@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.3";
+const GAME_VERSION = "1.0.3.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.3.1", name: "Baguette Rikiki", items: [
+    "La Baguette Rikiki en arme (fabriquée par le Sculpteur ou trouvée en combat) ouvre maintenant la Planque des Vilinsekts, comme celle du Bricoleur",
+    "Une fois ouverte, la Planque reste accessible même si vous vendez ou brisez la baguette",
+  ] },
   { v: "1.0.3", name: "Butin par héros", items: [
     "Chaque héros de l'équipe fait maintenant son propre tirage de ressources sur chaque monstre : une équipe de 8 peut ramasser jusqu'à 8 fois la même ressource sur un seul monstre",
     "La chance est partagée entre les héros : sans bonus, la moyenne reste la même, mais les bonus de butin (prospection, Double gain, Almanax) ne sont plus perdus au-delà de 100 %",
@@ -1669,7 +1673,7 @@ function renderWorld() {
 function lockReason(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
   if (!E.zoneUnlocked(S, z.id)) return `Battez ${MONSTERS[DUNGEONS[z.requires.boss].boss].name} (${DUNGEONS[z.requires.boss].name})`;
-  if (s.requiresItem) return `Il faut : ${s.requiresItem} (Bricoleur)`;
+  if (s.requiresItem) return `Il faut : ${s.requiresItem} (Bricoleur, ou l'arme du Sculpteur)`;
   return "";
 }
 function topTeamLvl() { const t = E.team(S); return Math.max(...(t.length ? t : S.chars).map((c) => c.lvl)); }
@@ -1714,7 +1718,7 @@ function zonePanel(z, tier = -1, open = false) {
   return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
     <div class="subrows">${subs.map((s) => {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
-      if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></span></div>`;
+      if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)} : objet du Bricoleur ou arme du Sculpteur)</span></span></div>`;
       const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.5;
       return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>

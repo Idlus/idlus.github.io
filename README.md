@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.3.1 « Baguette Rikiki »
+La Planque des Vilinsekts (`ast_planque`) demandait la Baguette Rikiki du Bricoleur (ressource `S.res`), mais l'arme Baguette Rikiki (`i15990`, Sculpteur, ajoutée avec les armes) ne l'ouvrait pas : `E.subUnlocked` accepte maintenant l'arme dans le sac ou équipée et garde l'accès dans `S.progress.hiddenOpen`.
+
 ## 1.0.3 « Butin par héros »
 Un tirage de ressource par héros sur chaque monstre, chance partagée (Mathis, 13/10/2026, carte « Chance partagée ») : `E.lootRolls` dans js/engine.js, chance par tirage = min(100 %, chance × bonus / nombre de héros). Simulation (bonus ×2 + Double gain) : 3,5 → 6,7 ressources par monstre à 4 héros, 3,2 → 4,8 à 8, inchangé en solo et sans bonus.
 

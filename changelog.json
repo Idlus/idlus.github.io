@@ -1,6 +1,14 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.3.1",
   "versions": [
+    {
+      "v": "1.0.3.1",
+      "name": "Baguette Rikiki",
+      "items": [
+        "La Baguette Rikiki en arme (fabriquée par le Sculpteur ou trouvée en combat) ouvre maintenant la Planque des Vilinsekts, comme celle du Bricoleur",
+        "Une fois ouverte, la Planque reste accessible même si vous vendez ou brisez la baguette"
+      ]
+    },
     {
       "v": "1.0.3",
       "name": "Butin par héros",

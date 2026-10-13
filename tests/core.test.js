@@ -228,3 +228,17 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   assert.deepStrictEqual(E.bonusParts(S, "xp").map((p) => [p.k, p.v]), [["havre", 100], ["align", 15]]);
   console.log("ok autel des douze");
 }
+
+{
+  // 1.0.3.1 : la Baguette Rikiki en arme (Sculpteur) ouvre aussi la Planque des Vilinsekts, et l'accès reste
+  const S = E.newState("Rikiki", "iop"); S.progress.bossKills.crypte_kardorim = 1;
+  assert.strictEqual(E.subUnlocked(S, "ast_planque"), false, "lieu caché fermé au départ");
+  const tpl = Object.keys(D.ITEMS).find((t) => D.ITEMS[t].name === "Baguette Rikiki");
+  S.items[999999] = { uid: 999999, tpl, stats: {} };
+  assert.strictEqual(E.subUnlocked(S, "ast_planque"), true, "l'arme doit ouvrir la planque");
+  delete S.items[999999];
+  assert.strictEqual(E.subUnlocked(S, "ast_planque"), true, "l'accès doit rester après la vente");
+  const S2 = E.newState("Rikiki2", "iop"); S2.progress.bossKills.crypte_kardorim = 1; S2.res["Baguette Rikiki"] = 1;
+  assert.strictEqual(E.subUnlocked(S2, "ast_planque"), true, "la baguette du Bricoleur ouvre toujours");
+  console.log("ok baguette rikiki");
+}
