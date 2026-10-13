@@ -3149,6 +3149,132 @@ details>summary.alx-h{cursor:pointer}
 .hban:has(.hmenu){z-index:20}
 @media (max-width:859px){.hb-main{flex:1 1 200px}}
 @media (max-width:859px){.hmenu{min-width:226px}}
+/* 0.1.41 « Métiers et forgemagie » */
+.pinfo{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.pchip.gold{border-color:var(--gold);box-shadow:inset 0 0 0 1px rgba(228,185,85,.25)}
+.pchip .ico.sm{width:18px;height:18px}
+.pjobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+.pjh{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--panel2);border-bottom:2px solid var(--frame)}
+.pjn{font-family:var(--fd,inherit);font-size:18px}
+.bar.thin{height:6px;margin:4px 0 2px}
+.pwork{display:flex;align-items:center;gap:8px}
+.pslot{border:2px dashed var(--line);background:transparent;border-radius:12px;padding:8px;color:var(--muted);font-weight:700;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center}
+.ptool{padding:6px 8px;border-radius:10px;background:var(--panel2)}
+.presgrid{display:flex;flex-wrap:wrap;gap:4px}
+.pres{position:relative;width:38px;height:38px;border-radius:9px;background:var(--panel2);display:grid;place-items:center;border:1px solid var(--line)}
+.pres img{width:28px;height:28px;object-fit:contain}
+.pres b{position:absolute;right:1px;bottom:-1px;font-size:10px;text-shadow:0 0 3px #000,0 0 3px #000;color:#fff}
+.pres.lock{opacity:.4;filter:grayscale(1)}
+.pres.lock b{color:#ffd27a}
+.pfree{display:flex;flex-wrap:wrap;gap:10px}
+.pfreec{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 6px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.pjobchips{display:flex;flex-wrap:wrap;gap:6px}
+.pjobchips button{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:6px 12px;border-radius:12px;background:var(--panel2);border:2px solid var(--line);color:var(--ink);cursor:pointer;min-width:104px}
+.pjobchips button[aria-pressed="true"]{border-color:#8cc63f;background:linear-gradient(180deg,rgba(214,242,126,.18),rgba(140,198,63,.1))}
+.pcnt{position:absolute;top:-7px;right:-6px;background:#8cc63f;color:#13200a;border-radius:999px;font-size:11px;font-weight:800;padding:1px 6px}
+.pjobxp{display:flex;align-items:center;gap:10px}
+.psplit{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:12px;align-items:start}
+.psplit.fm{grid-template-columns:minmax(280px,360px) 1fr}
+.plist{max-height:640px;overflow:auto}
+.prec{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 12px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.prec.on{background:rgba(140,198,63,.13);box-shadow:inset 3px 0 0 #8cc63f}
+.prec .icobox{width:40px;height:40px}
+.pdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#6fdc5a;box-shadow:0 0 6px #6fdc5a;vertical-align:middle}
+.pdetp{position:sticky;top:70px}
+.icobox.lg{width:72px;height:72px}
+.pstats{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0}
+.pstats span{display:inline-flex;align-items:center;gap:4px;font-size:14px}
+.ping{display:flex;flex-direction:column;gap:6px}
+.pingr{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:var(--panel2)}
+.pingr .ico{width:28px;height:28px}
+.pingr.ko{box-shadow:inset 0 0 0 1px var(--danger)}
+.pingr.ko b{color:#ff8a7a}
+.pqty{display:flex;align-items:center;gap:10px;margin:12px 0 10px}
+.pdet .row .btn.grow{flex:1}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pfmjob{display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+.pfmlv{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#13200a;background:radial-gradient(circle at 35% 30%,#e9ff9e,#8cc63f 70%);border:2px solid var(--frame)}
+.pbadges{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.pb{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--panel2);display:inline-flex;gap:4px;align-items:center}
+.pstatl{display:flex;flex-direction:column;gap:8px}
+.pfl{padding:8px 10px;border-radius:12px;background:var(--panel2)}
+.pfl.neg{opacity:.7;display:flex;gap:10px;align-items:center}
+.pfn{display:flex;align-items:center;gap:6px}
+.pfn b{font-size:15px}
+.pfn .xs{margin-left:auto}
+.pg{position:relative;height:8px;border-radius:6px;background:rgba(0,0,0,.35);margin:6px 0 8px;overflow:hidden}
+.pg i{position:absolute;top:0;bottom:0}
+.pg .rng{background:rgba(140,198,63,.22)}
+.pg .exo{background:repeating-linear-gradient(45deg,rgba(176,108,255,.28) 0 4px,transparent 4px 8px)}
+.pg .cur{left:0;background:linear-gradient(90deg,#8cc63f,#d6f27e);border-radius:6px}
+.pg .nv{background:rgba(255,255,255,.55);animation:pblink 1.4s infinite}
+.pg .mk{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--gold)}
+@keyframes pblink{50%{opacity:.35}}
+.pruns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.prune{display:grid;grid-template-columns:auto auto;gap:0 10px;padding:5px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;text-align:left;font-size:13px}
+.prune.risk{border-color:#b06cff}
+.prune .rc{font-weight:900;text-align:right}.rc.hi{color:#8ee06b}.rc.mid{color:#f3c34f}.rc.lo{color:#ff8a7a}
+.prune .rk{text-align:right}
+.pbench-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line)}
+.seg.sm button{padding:4px 10px;font-size:13px}
+.pselbar{position:sticky;top:64px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:var(--panel2);border:2px solid #8cc63f}
+.pbri{cursor:pointer}.pbri.on{background:rgba(140,198,63,.1)}
+.pbri input{width:18px;height:18px}
+.pruneic{display:inline-flex;gap:10px;font-size:12px}.pruneic span{display:inline-flex;gap:3px;align-items:center}
+.prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.prc{padding:10px;border-radius:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px}
+.prt{display:flex;align-items:center;gap:4px}
+.prtier{flex:1;display:flex;flex-direction:column;align-items:center;padding:4px;border-radius:8px;background:var(--panel)}
+.prtier.zero{opacity:.4}
+.parr{font-weight:900;color:var(--gold)}
+@media (max-width:700px){.pjobs,.psplit,.psplit.fm{grid-template-columns:1fr}.pdetp{position:static}.plist{max-height:none}.pjobchips button{min-width:0;flex:1 1 30%}.pselbar{top:56px}}
+.pwt{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.pfbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px}.pfbar input{grid-column:span 2}
+.pfbar select,.pfbar input{min-width:0}
+.pfchip{display:inline-flex;gap:6px;align-items:center;padding:3px 10px;border-radius:999px;background:rgba(140,198,63,.18);border:1px solid #8cc63f;font-weight:700;font-size:12.5px}
+.pfchip b{opacity:.7;cursor:pointer}
+@media (max-width:700px){.pfbar{grid-template-columns:1fr 1fr}.pfbar input{grid-column:1/-1}}
+.pfbar[hidden]{display:none}.pfsheet{display:flex;flex-direction:column;gap:8px}
+.pfmjobs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.pfj{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:13px;line-height:1.2}
+.pfj img{width:30px;height:30px;border-radius:8px;flex:none}
+.pfj.lock{opacity:.6}.pfj.lock img{filter:grayscale(1)}
+.pwt2 .bar i{background:linear-gradient(90deg,#e4b955,#ff9a5a)}
+.plegend{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--muted)}
+.plegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+i.g,.podd .g{background:#6fdc5a}i.y,.podd .y{background:#f3c34f}i.r,.podd .r{background:#ff6e5e}
+b.g{color:#8ee06b}b.y{color:#f3c34f}b.r{color:#ff8a7a}
+.prune{grid-template-columns:auto auto}
+.rodd{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin-top:3px}
+.podd{display:flex;width:70px;height:6px;border-radius:4px;overflow:hidden;background:#000}
+.podd i{display:block;height:100%}
+.poddt{font-size:12px}
+.pexo{box-shadow:inset 0 0 0 1px #b06cff}
+.ptrans{box-shadow:inset 0 0 0 1px var(--gold)}
+.phist{display:flex;flex-direction:column;gap:3px;font-size:13px}
+.phist div{padding:3px 8px;border-radius:6px;border-left:4px solid}
+.phist .g{border-color:#6fdc5a}.phist .y{border-color:#f3c34f}.phist .r{border-color:#ff6e5e}
+.phist .g b{color:#8ee06b}.phist .y b{color:#f3c34f}.phist .r b{color:#ff8a7a}
+@media (max-width:700px){.pfmjobs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.prec{font:inherit}
+div.prec{cursor:pointer}
+.prec .btn.ghost{padding:2px 6px}
+.pfchip{cursor:pointer;color:var(--ink)}
+.parr{border:0;background:transparent;cursor:pointer;font-size:18px;padding:0 2px}.parr:disabled{opacity:.35;cursor:default}
+.prtier .btn.xs{font-size:10.5px;padding:0 6px;margin-top:2px}
+.prune.off{cursor:default;opacity:.65;border-style:dashed}
+.prune:not(.off):hover{border-color:#8cc63f}
+.ptool>summary{list-style:none;cursor:pointer}.ptool>summary::-webkit-details-marker{display:none}
+.ptool .toolbox{margin-top:6px}
+.pjobs .pjob{overflow:hidden}
+.pfj .bar.thin{display:block;height:4px;margin:3px 0 0}
+details.panel>summary.phead{list-style:none;cursor:pointer}details.panel>summary.phead::-webkit-details-marker{display:none}
+.sheet .pdet h2{font-size:19px}
+button.pchip{color:var(--ink);cursor:pointer;font:inherit;font-size:13px}
+.pbri input{flex:none}
+@media (max-width:700px){.pfbar input{grid-column:1/-1}.pselbar{position:sticky;top:auto;bottom:70px}}
+@media (max-width:700px){.pfmjobs{grid-template-columns:repeat(3,minmax(0,1fr))}.pfj img{display:none}.pfj{font-size:12px;padding:5px 7px}}
 /* 0.1.42 « Accueil du jour » : bandeau avec les têtes, tuiles « Aujourd'hui », « En ce moment », journal à onglets */
 .ac-ban .inner{flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;max-width:none}
 .ac-l{display:flex;flex-direction:column;gap:10px;align-items:flex-start;min-width:0}

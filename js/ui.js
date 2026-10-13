@@ -10,7 +10,7 @@ const { STATS, STAT_ORDER, BASE_STATS, ELEMENTS, CLASSES, CLASS_ORDER, CONDITION
 let S = null;
 const ui = {
   tab: "home", home: "apercu", world: "map", zoneView: null, hero: "equip", cid: null, slot: null, inv: "items", slotFilter: "all", met: "recolte", fg: "fm", qt: "jour", az: null, azf: "all", fmSel: null, manualSpell: null,
-  craftJob: "tailleur", craftMiss: -1, craftSearch: "", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
+  craftJob: "tailleur", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
 const BETA = /\/beta\//.test(location.pathname);
@@ -18,9 +18,22 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.42";
+const GAME_VERSION = "0.1.43";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.43", name: "Forgemagie de DOFUS", items: [
+    "La forgemagie suit enfin les règles de DOFUS : chaque rune a trois issues, affichées avec leurs chances. Succès critique : la rune passe et rien ne baisse. Succès neutre : la rune passe mais une autre caractéristique baisse. Échec critique : la rune ne passe pas",
+    "Le reliquat remplace le puits : ce que l'objet perd en trop paie les pertes suivantes et permet d'ajouter une caractéristique qu'il n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente",
+    "Over jusqu'à 101 de poids par caractéristique (505 Vitalité, 101 Force), de plus en plus dur quand l'objet est chargé. Plus aucun kamas à payer : seules les runes comptent",
+    "Six métiers de forgemagie : Costumage, Joaillomage, Cordomage, Forgemage, Sculptemage et Façomage, appris au niveau 65 du métier d'artisanat lié (ceux qui forgemageaient déjà les ont tous, au niveau de leur ancien Forgemage). Niveau 200 : tu peux signer tes objets",
+    "Exotique sur tous les objets : +1 PA, PM, Portée ou Invocation, en succès critique seulement. Nouvelles runes de transcendance dans les coffres de palier 20+ de l'Expédition sans fin",
+    "En ligne, le coefficient de brisage est commun à tous les joueurs, comme sur un serveur de DOFUS",
+    "Forgemagie refaite : établi avec la liste des objets à gauche et l'objet à droite (plein écran au téléphone), jauge de chaque caractéristique, historique en couleurs, onglet Plans, aide « Comment ça marche »",
+    "Brisage : filtres, cases à cocher et « Briser la sélection ». Runes : une carte par caractéristique avec « Fusionner tout »",
+    "Métiers refaits : bandeau du jour (Almanax, filon, protecteur, achats du jour, commandes prêtes), récolte en cartes de métier avec l'icône de chaque ressource et les héros libres",
+    "Artisanat : liste des recettes et fiche à côté (feuille au téléphone), « Fabricables et presque » par défaut, point vert quand l'objet est mieux que ce que porte un héros, quantité 1, 10 ou Max, « Où ? » et « Offre HdV » pour une ressource qui manque",
+    "Filtres de recettes : emplacement, niveau (dont « autour de mon équipe »), caractéristique, panoplie, pour un héros, favoris et recherche par ressource. Ils sont retenus pour chaque métier",
+  ] },
   { v: "0.1.42", name: "Accueil du jour", items: [
     "Accueil : un bloc « Aujourd'hui » rassemble ce qu'il y a à faire : Défi du jour, Almanax avec le Méryde du jour, Avis de recherche, Coffres à ouvrir, Achats du jeu, Sablier de Xélor et Prochain héros. Une tuile s'allume quand il y a quelque chose à faire et se grise avec ✓ une fois faite",
     "Les tuiles agissent tout de suite quand c'est possible : « Lancer » joue le défi, « Offrir » fait l'offrande de l'Almanax, « Ouvrir » ouvre un coffre ; les autres ouvrent la bonne page",
@@ -3859,40 +3872,6 @@ window.addEventListener("scroll", () => { const n = ui.tab === "team" && $(".hta
 function ingHtml(ing, mult = 1) {
   return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; return `<span class="${have >= q * mult ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b></span>`; }).join("")}</div>`;
 }
-function craftHtml() {
-  let body = "";
-    const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const q = ui.craftSearch.trim().toLowerCase();
-    let recipes = job === "bricoleur"
-      ? Object.entries(SPECIAL_CRAFTS).filter(([, R]) => !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ special: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }))
-      : Object.entries(ITEMS).filter(([, T]) => T.craft && T.craft.job === job).map(([id, T]) => ({ tpl: id, name: T.name, lvl: T.lvl, ing: T.craft.ing, req: E.craftReq(id), T })).sort((a, b) => a.lvl - b.lvl);
-    if (q) recipes = recipes.filter((r) => r.name.toLowerCase().includes(q));
-    recipes.forEach((r) => { r.miss = r.ing.filter(([n, qq]) => (S.res[n] || 0) < qq).length; });
-    if (ui.craftMiss >= 0) recipes = recipes.filter((r) => r.miss <= ui.craftMiss && J.lvl >= r.req).sort((a, b) => a.miss - b.miss || b.lvl - a.lvl);
-    const total = recipes.length; recipes = recipes.slice(0, 80);
-    body = `<nav class="subtabs" style="margin:0">${Object.entries(CRAFT_JOBS).map(([id, c]) => `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}">${c.name} <span class="num xs">${(S.crafts[id] || {}).lvl || 1}</span></button>`).join("")}</nav>
-      <div class="row"><div class="bar xp" style="width:200px"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><input type="text" id="craftSearch" data-act="craftsearch" placeholder="Rechercher…" value="${h(ui.craftSearch)}" style="max-width:200px">
-        <select data-act="craftmiss" style="max-width:290px" data-tip="Affiche les recettes auxquelles il manque au plus ce nombre de ressources différentes (niveau de métier atteint)">${[[-1, "Toutes les recettes"], [0, "Fabricables maintenant"], [1, "Il manque au plus 1 ressource"], [2, "Il manque au plus 2 ressources"], [3, "Il manque au plus 3 ressources"]].map(([v, l]) => `<option value="${v}" ${ui.craftMiss === v ? "selected" : ""}>${l}</option>`).join("")}</select><span class="xs muted">${total} recette${total > 1 ? "s" : ""}</span></div>
-      <section class="panel"><div class="list">${recipes.map((r) => { const ok = E.canCraft(S, { ing: r.ing }) && J.lvl >= r.req;
-        const stats = r.T ? Object.entries(r.T.stats).map(([k, [a, b]]) => `${a === b ? a : a + " à " + b} ${STATS[k].short}`).join(", ") : (E.isKey(r.special) ? "Clé de donjon" : "Objet spécial");
-        return `<div class="li" style="align-items:flex-start">${r.tpl ? `<span class="icobox">${im(itemImg(r.tpl), "", r.name)}</span>` : `<span class="icobox">${im(resImg(r.special), "", r.name)}</span>`}<span class="grow"><span class="name">${h(r.name)}</span>${ui.craftMiss > 0 && r.miss ? ` <span class="tag warn">il manque ${r.miss} ressource${r.miss > 1 ? "s" : ""}</span>` : ""} <span class="muted xs">${r.T ? `niv. ${r.lvl} · ` : ""}${stats}${r.T && r.T.set && SETS[r.T.set] ? ` · ${h(SETS[r.T.set].name)}` : ""}</span>${ingHtml(r.ing)}${J.lvl < r.req ? `<span class="xs minus">${CRAFT_JOBS[job].name} niveau ${r.req} requis</span>` : ""}</span>
-          <span class="row craftbtns"><button class="btn sm" data-act="shoppin" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}" title="Ajouter à la liste de courses">${S.shop.some((e) => e.id === (r.tpl || r.special)) ? G("cart") + " ✓" : G("cart")}</button><button class="btn sm ${ok ? "primary" : ""}" data-act="craft" ${r.tpl ? `data-tpl="${r.tpl}"` : `data-special="${h(r.special)}"`} ${ok ? "" : "disabled"}>Fabriquer</button>${(() => { const n = ok ? E.craftCount(S, r.tpl ? "tpl" : "special", r.tpl || r.special) : 0; if (n < 2) return ""; const at = `data-act="craftmany" data-k="${r.tpl ? "tpl" : "special"}" data-id="${h(r.tpl || r.special)}"`;
-            return (n > 10 ? `<button class="btn sm" ${at} data-n="10" title="Fabriquer 10 exemplaires">×10</button>` : "") + `<button class="btn sm" ${at} data-n="${n}" title="Fabriquer autant que les ressources le permettent">Max ×${fmt(n)}</button>`; })()}</span></div>`; }).join("") || `<div class="empty">Aucune recette.</div>`}${total > 80 ? `<div class="empty">… ${total - 80} autres recettes : affinez la recherche.</div>` : ""}</div></section>`;
-  return body;
-}
-function brisageHtml() {
-  let body = "";
-    const items = Object.values(S.items).filter((it) => !E.equippedBy(S, it.uid)).sort((a, b) => ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl);
-    const focusOpts = `<option value="">Aucun focus</option>${STAT_ORDER.filter((k) => k !== "pa").map((k) => `<option value="${k}" ${ui.focus === k ? "selected" : ""}>Focus ${STATS[k].name}</option>`).join("")}`;
-    const breakable = items.filter((it) => !it.radiant);
-    body = `<p class="note">Briser un objet le détruit et donne des runes selon ses statistiques et son niveau (×1,5 pour un objet Rayonnant). Le coefficient baisse de 3 % à chaque brisage d'un même objet et remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes.</p>
-      <div class="row"><select data-act="focus" aria-label="Focus">${focusOpts}</select>
-        ${breakable.length ? (ui.confirm === "breakall" ? `<span class="small">Briser les ${breakable.length} objets non équipés (hors Rayonnants) ?</span><button class="btn sm danger" data-act="breakall">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="askbreakall">Tout briser (hors Rayonnants)</button>`) : ""}</div>
-      <section class="panel"><div class="list">${items.map((it) => { const p = E.breakPreview(S, it.uid, ui.focus || null);
-        const est = Object.entries(p.weights).map(([k, w]) => `${STATS[k].short} ≈ ${(w / (STATS[k].w * STATS[k].pts)).toFixed(1)}`).join(", ");
-        return `<div class="li ${it.radiant ? "radiant" : ""}">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · coefficient <span class="${p.coef < 60 ? "minus" : ""}">${p.coef} %</span></span><br><span class="xs muted">Runes simples estimées : ${est || "aucune"}</span></span>
-          <button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}</div></section>`;
-  return body;
-}
 function toolHtml(id) {
   const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">${IC("metiers")} <b>${h(E.TOOL_NAMES[id])} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${tl * 8} % de vitesse)</span></div>`;
   const R = E.toolCost(S, id); const lvOk = S.jobs[id].lvl >= R.lvl; const ok = lvOk && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q);
@@ -3913,25 +3892,148 @@ function protBar() {
   if (B) out += `<div class="awaitbar" style="margin:0">${G("sparkle")} Protecteur vaincu : récolte de <b>${h(B.res)}</b> ×2 encore ${dur((B.until - E.now()) / 1000)}</div>`;
   return out;
 }
+/* ======================= 0.1.41 « Métiers et forgemagie » =======================
+   Bandeau du jour, récolte en cartes de métier, artisanat en liste + fiche (feuille au téléphone), filtres retenus
+   dans la sauvegarde (un jeu par métier, un pour l'établi, un pour le brisage). */
+const narrow = () => innerWidth < 700;
+const MET_ALM = ["gather", "filon", "eco", "craft2"], FM_ALM = ["fm", "brise"];
+function dayBar(where) {
+  const chips = []; const A = E.almanax(S);
+  if ((where === "met" ? MET_ALM : FM_ALM).includes(A.kind)) chips.push(`<button class="pchip gold" data-act="pagego" data-v="almanax">${IC("almanax")} Almanax : ${h(A.bonus.txt)}${A.done ? "" : ` <span class="xs muted">· offrande à faire</span>`}</button>`);
+  if (where === "met") {
+    const fil = S.filon && S.filon.until > E.now() ? S.filon : null;
+    if (fil) chips.push(`<span class="pchip">${G("sparkle")} Filon de <b>${h(fil.res)}</b> ×2 · ${dur((fil.until - E.now()) / 1000)}</span>`);
+    const GB = E.gameBuys(S).list.filter((o) => o.got < o.max);
+    if (GB.length) chips.push(`<span class="pchip">${IC("kamas")} Le jeu achète ${GB.map((o) => im(resImg(o.res), "ico sm", o.res)).join("")}${narrow() ? "" : " " + GB.map((o) => h(o.res)).join(", ")} <button class="btn sm" data-act="gbsheet">Vendre</button></span>`);
+    const C = E.cmdState(S); const open = C.list.filter((o) => o.got < o.n); const ready = open.filter((o) => (S.res[o.res] || 0) >= o.n - o.got).length;
+    if (open.length) chips.push(`<button class="pchip" data-act="pagego" data-v="commandes">${IC("quetes")} Commandes d'artisans : ${ready ? `<b class="plus">${ready} prête${ready > 1 ? "s" : ""} à livrer</b>` : `${open.length} en cours`}</button>`);
+  } else chips.push(`<span class="pchip">${IC("forge")} Vendre un objet à l'HdV efface son reliquat</span>`);
+  return `<div class="pinfo">${chips.join("")}</div>${where === "met" ? protBar() : ""}`;
+}
+/* ---------- Récolte ---------- */
+function resGrid(id) {
+  const s = S.jobs[id];
+  return `<div class="presgrid">${GATHER_JOBS[id].items.map(([r, l]) => { const lock = l > s.lvl; return `<span class="pres ${lock ? "lock" : ""}" data-tip="${h(r)} · niv. ${l}${lock ? "" : ` · ${fmt(S.res[r] || 0)} en stock`}">${im(resImg(r), "", r)}<b class="num">${lock ? l : fmtK(S.res[r] || 0)}</b></span>`; }).join("")}</div>`;
+}
 function recolteHtml() {
-  const workers = S.chars.filter((c) => c.job);
-  const fil = S.filon && S.filon.until > E.now() ? S.filon : null;
-  const jobs = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const ws = workers.filter((c) => c.job.job === id);
-    const nextRes = J.items.find(([, l]) => l > s.lvl);
-    return `<div class="panel"><div class="phead"><div class="row">${im(jobImg(id), "joblogo", J.name)}<div><h2>${J.name}</h2><span class="xs muted">${ws.length ? ws.map((c) => h(c.name)).join(", ") + " récolte" + (ws.length > 1 ? "nt" : "") : "personne ne récolte"}</span></div></div><span class="lvlpill">niv. ${s.lvl}</span></div>
+  const free = S.chars.filter((c) => !c.job && !c.inTeam); const hunters = S.chars.filter((c) => !c.job && c.inTeam).length;
+  const cards = Object.entries(GATHER_JOBS).map(([id, J]) => { const s = S.jobs[id]; const ws = S.chars.filter((c) => c.job && c.job.job === id); const tl = E.toolLvl(S, id);
+    return `<div class="panel pjob"><div class="pjh">${im(jobImg(id), "joblogo", J.name)}<div class="grow"><div class="row between"><b class="pjn">${J.name}</b><span class="lvlpill">niv. ${s.lvl}</span></div>
+        <div class="bar xp thin"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div><div class="xs muted num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))} XP</div></div></div>
       <div class="pad stack" style="gap:8px">
-        <div><div class="row between xs muted"><span>Expérience</span><span class="num">${fmt(s.xp)} / ${fmt(E.jobXpNeed(s.lvl))}</span></div><div class="bar xp"><i style="width:${pct(s.xp, E.jobXpNeed(s.lvl))}%"></i></div></div>
-        ${ws.map((c) => `<div class="row small">${head(c)}<span class="grow">${im(resImg(c.job.res), "ico sm", c.job.res)} ${h(c.job.res)} <span class="xs muted">· ${E.gatherPeriod(S, c).toFixed(1)} s</span>${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</span><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button></div><div class="bar green" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div>`).join("")}
-        <button class="btn sm" data-act="gathersheet" data-job="${id}" style="align-self:flex-start">${IC("pioche")} Envoyer un héros</button>
-        ${toolHtml(id)}
-        <div class="xs muted">Ressources : ${J.items.map(([r, l]) => `<span style="${l > s.lvl ? "opacity:.5" : ""}">${h(r)} (${l})</span>`).join(" · ")}${nextRes ? ` — prochaine : ${h(nextRes[0])} au niveau ${nextRes[1]}` : ""}</div>
+        ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · ${E.gatherPeriod(S, c).toFixed(1)} s</span></div><div class="bar green thin" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
+        <button class="pslot" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>
+        <details class="ptool"><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de vitesse</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
+        ${resGrid(id)}
       </div></div>`; }).join("");
-  return `<p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter la ressource de son choix. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). De temps en temps, un filon rare double le rendement d'une ressource pendant 10 minutes, et un protecteur de ressources peut surgir : battez-le avec l'équipe pour doubler la récolte 20 minutes.</p>
-    ${protBar()}
-    ${fil ? `<div class="awaitbar" style="margin:0">${G("sparkle")} Filon de <b>${h(fil.res)}</b> : rendement ×2 encore ${dur((fil.until - E.now()) / 1000)}</div>` : ""}
-    <section class="panel"><div class="phead"><h2>Vos héros</h2></div><div class="list">${S.chars.map((c) => `<div class="li">${head(c)}<span class="grow"><span class="name">${h(c.name)}</span> <span class="xs muted">niv. ${c.lvl}</span><br><span class="xs">${c.job ? `${IC("pioche")} ${h(GATHER_JOBS[c.job.job].name)} : ${h(c.job.res)}` : c.inTeam ? IC("combat") + " Chasse avec l'équipe" : restLabel(c)}</span></span>
-      ${c.job ? `<button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler</button>` : `<button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}</div>`).join("")}</div></section>
-    <div class="grid2">${jobs}</div>`;
+  return `${dayBar("met")}
+    <section class="panel"><div class="phead"><h2>Héros libres</h2><span class="xs muted">${hunters} chasse${hunters > 1 ? "nt" : ""} avec l'équipe</span></div>
+      <div class="pad pfree">${free.length ? free.map((c) => `<div class="pfreec">${head(c)}<span><b>${h(c.name)}</b><br><span class="xs muted">niv. ${c.lvl} · ${h(restLabel(c).replace(/<[^>]+>/g, ""))}</span></span><button class="btn sm primary" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button></div>`).join("")
+        : `<span class="small muted">Tous tes héros sont occupés. Un héros de l'équipe peut aussi récolter : « Envoyer un héros » le retire de la chasse.</span>`}</div></section>
+    <div class="pjobs">${cards}</div>
+    <p class="note">Un héros fait une seule activité : chasser avec l'équipe ou récolter. 1 % de chances de trouvaille (×5, parfois un ${h(E.RARE_COMPONENT)}). Un filon rare double parfois une ressource 10 minutes, et un protecteur de ressources peut surgir : bats-le avec l'équipe pour doubler la récolte 20 minutes.</p>`;
+}
+/* ---------- Filtres (artisanat, établi, brisage) ---------- */
+const FLT0 = { met: { q: "", slot: "", lv: "", stat: "", set: "", cid: "", mode: "near", util: false, fav: false, sort: "useful" },
+  fm: { q: "", view: "all", slot: "", lv: "", stat: "", set: "", cid: "", fav: false, sort: "lvl" }, br: { q: "", slot: "", lv: "", stat: "", set: "", mode: "", focus: "" } };
+function fltOf(ctx) {
+  const st = S.settings; if (ctx === "met") { const all = st.metF || (st.metF = {}); return all[ui.craftJob] || (all[ui.craftJob] = Object.assign({}, FLT0.met)); }
+  const key = ctx === "fm" ? "fmF" : "brF"; if (!st[key] || typeof st[key] !== "object") st[key] = Object.assign({}, FLT0[ctx]); return st[key];
+}
+const LV_OPTS = [["", "Niveau : tous"], ["team", "Autour de mon équipe (±10)"], ["1-50", "Niveau 1 à 50"], ["51-100", "Niveau 51 à 100"], ["101-150", "Niveau 101 à 150"], ["151-200", "Niveau 151 à 200"]];
+const lvRange = (v) => { if (v === "team") { const t = E.team(S); const m = t.length ? Math.round(t.reduce((a, c) => a + c.lvl, 0) / t.length) : 1; return [m - 10, m + 10]; } const [a, b] = String(v).split("-").map(Number); return [a || 1, b || 200]; };
+const ALL_SLOTS = ["coiffe", "cape", "amulette", "anneau", "ceinture", "bottes", "arme", "bouclier"];
+const slotName = (s) => SLOTS[s === "anneau" ? "anneau1" : s] || s;
+/* barre de filtres : PC = barre complète ; téléphone = bouton « Filtres · N » qui l'ouvre ; puces retirables */
+function filterBar(ctx, F, o) {
+  const sel = (k, opts) => `<select data-act="flt" data-ctx="${ctx}" data-k="${k}">${opts.map(([v, n]) => `<option value="${h(v)}" ${String(F[k]) === String(v) ? "selected" : ""}>${h(n)}</option>`).join("")}</select>`;
+  const parts = [`<input type="text" id="fltq_${ctx}" data-act="fltq" data-ctx="${ctx}" placeholder="${h(o.ph)}" value="${h(F.q)}">`];
+  if (o.slots && o.slots.length > 1) parts.push(sel("slot", [["", "Emplacement"], ...o.slots.map((s) => [s, slotName(s)])]));
+  parts.push(sel("lv", LV_OPTS));
+  if (o.stats) parts.push(sel("stat", [["", "Caractéristique"], ...o.stats.map((k) => [k, STATS[k].name])]));
+  if (o.sets && o.sets.length) parts.push(sel("set", [["", "Panoplie"], ...o.sets.map((s) => [s, SETS[s].name])]));
+  if (o.cid) parts.push(sel("cid", [["", o.cid], ...S.chars.map((c) => [String(c.id), (ctx === "fm" ? "Porté par " : "Pour ") + c.name])]));
+  if (o.sort) parts.push(sel("sort", o.sort));
+  if (o.focus) parts.push(sel("focus", [["", "Aucun focus"], ...STAT_ORDER.filter((k) => k !== "pa" && STATS[k] && STATS[k].pts > 0).map((k) => [k, "Focus " + STATS[k].name])]));
+  const chips = [];
+  if (F.slot) chips.push(["slot", slotName(F.slot)]); if (F.lv) chips.push(["lv", (LV_OPTS.find((x) => x[0] === F.lv) || [, F.lv])[1]]);
+  if (F.stat && STATS[F.stat]) chips.push(["stat", STATS[F.stat].name]); if (F.set && SETS[F.set]) chips.push(["set", SETS[F.set].name]);
+  if (F.cid) { const c = char(+F.cid); if (c) chips.push(["cid", (ctx === "fm" ? "Porté par " : "Pour ") + c.name]); } if (F.q) chips.push(["q", `« ${F.q} »`]);
+  if (F.focus && STATS[F.focus]) chips.push(["focus", "Focus " + STATS[F.focus].name]);
+  const open = !narrow() || (ui.fltOpen && ui.fltOpen[ctx]);
+  return `${narrow() ? `<div class="row"><button class="btn sm ${chips.length ? "primary" : ""}" data-act="fltopen" data-ctx="${ctx}">${G("search")} Filtres · ${chips.length}</button></div>` : ""}
+    <div class="pfbar ${ctx}" ${open ? "" : "hidden"}>${parts.join("")}</div>
+    ${chips.length ? `<div class="row small" style="gap:6px">${chips.map(([k, t]) => `<button class="pfchip" data-act="fltclr" data-ctx="${ctx}" data-k="${k}">${h(t)} <b>✕</b></button>`).join("")}<button class="btn sm ghost" data-act="fltall" data-ctx="${ctx}">Tout effacer</button></div>` : ""}`;
+}
+/* ---------- Artisanat ---------- */
+function recipesOf(job) {
+  if (job === "bricoleur") return Object.entries(SPECIAL_CRAFTS).filter(([, R]) => !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }));
+  return Object.entries(ITEMS).filter(([, T]) => T.craft && T.craft.job === job).map(([id, T]) => ({ k: "tpl", id, T, name: T.name, lvl: T.lvl, ing: T.craft.ing, req: E.craftReq(id) }));
+}
+const recMiss = (r) => r.ing.filter(([n, q]) => (S.res[n] || 0) < q).length;
+/* le héros (parmi who) pour qui l'objet, au jet moyen, ferait nettement mieux que ce qu'il porte */
+function recFor(r, who) {
+  if (!r.T || r.T.slot === "dofus") return null;
+  const fake = { tpl: r.id, stats: Object.fromEntries(Object.entries(r.T.stats).map(([k, [a, b]]) => [k, Math.round((a + b) / 2)])) };
+  const slots = r.T.slot === "anneau" ? ["anneau1", "anneau2"] : [r.T.slot];
+  for (const c of who) { if (r.T.lvl > c.lvl || !c.equip) continue; const cur = Math.min(...slots.map((s) => itemScore(c, S.items[c.equip[s]]))); if (itemScore(c, fake) > cur * 1.05 + 1) return c; }
+  return null;
+}
+function recBase(job) {
+  const J = S.crafts[job] || { lvl: 1 }; const fav = S.settings.recFav || {};
+  return recipesOf(job).map((r) => { r.miss = recMiss(r); r.okLvl = J.lvl >= r.req; r.n = r.miss || !r.okLvl ? 0 : E.craftCount(S, r.k, r.id); r.fav = !!fav[r.id]; return r; });
+}
+function craftList(job) {
+  const F = fltOf("met"); let rs = recBase(job); const q = F.q.trim().toLowerCase();
+  if (q) rs = rs.filter((r) => r.name.toLowerCase().includes(q) || r.ing.some(([n]) => n.toLowerCase().includes(q)));
+  if (F.slot) rs = rs.filter((r) => r.T && r.T.slot === F.slot);
+  if (F.lv) { const [a, b] = lvRange(F.lv); rs = rs.filter((r) => r.lvl >= a && r.lvl <= b); }
+  if (F.stat) rs = rs.filter((r) => r.T && r.T.stats[F.stat] && r.T.stats[F.stat][1] > 0);
+  if (F.set) rs = rs.filter((r) => r.T && r.T.set === F.set);
+  if (F.fav) rs = rs.filter((r) => r.fav);
+  if (F.mode === "near") rs = rs.filter((r) => r.okLvl && r.miss <= 1); else if (F.mode === "can") rs = rs.filter((r) => r.okLvl && !r.miss);
+  const who = F.cid ? S.chars.filter((c) => c.id === +F.cid) : E.team(S);
+  rs.forEach((r) => { r.for = recFor(r, who); });
+  if (F.util || F.cid) rs = rs.filter((r) => r.for);
+  const srt = F.sort === "lvl" ? (a, b) => b.lvl - a.lvl : F.sort === "lvlup" ? (a, b) => a.lvl - b.lvl : F.sort === "name" ? (a, b) => a.name.localeCompare(b.name, "fr")
+    : (a, b) => (b.for ? 1 : 0) - (a.for ? 1 : 0) || (a.okLvl ? 0 : 1) - (b.okLvl ? 0 : 1) || a.miss - b.miss || b.lvl - a.lvl;
+  return rs.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || srt(a, b));
+}
+function recDetail(r, job) {
+  if (!r) return `<div class="empty">Choisis une recette dans la liste.</div>`;
+  const J = S.crafts[job] || { lvl: 1 }; const pic = r.T ? itemImg(r.id) : resImg(r.id); const pinned = S.shop.some((e) => e.id === r.id);
+  const qty = ui.recQty === "max" ? Math.max(1, r.n) : Math.max(1, Math.min(+ui.recQty || 1, Math.max(1, r.n)));
+  const xp = (r.T ? 12 : 20) + r.lvl * 3;
+  const stats = r.T ? `<div class="pstats">${Object.entries(r.T.stats).map(([k, [a, b]]) => `<span>${sIco(k)} <b>${a === b ? a : a + " à " + b}</b> ${h(STATS[k].name)}</span>`).join("")}</div>` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
+  return `<div class="pdet"><div class="row" style="gap:12px"><span class="icobox lg">${im(pic, "", r.name)}</span><div class="grow"><h2 style="margin:0">${h(r.name)}</h2>
+      <div class="small muted">${r.T ? `${h(slotName(r.T.slot))} · ` : ""}niveau ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? ` · <a href="#" data-act="searchset" data-id="${r.T.set}">${h(SETS[r.T.set].name)}</a>` : ""}</div>
+      ${r.for ? `<div class="small plus" style="margin-top:2px"><span class="pdot"></span> Mieux que ce que porte <b>${h(r.for.name)}</b></div>` : ""}</div>
+      <button class="btn sm ghost" data-act="recfav" data-id="${h(r.id)}" title="Favori">${r.fav ? "★" : "☆"}</button></div>
+    ${stats}
+    <h3 class="sec">Ressources</h3>
+    <div class="ping">${r.ing.map(([n, q]) => { const have = S.res[n] || 0; const ok = have >= q; return `<div class="pingr ${ok ? "" : "ko"}">${im(resImg(n), "ico", n)}<span class="grow">${h(n)}</span><b class="num">${fmt(have)} / ${fmt(q)}</b>${ok ? "" : `<button class="btn sm" data-act="reswhere" data-n="${h(n)}">Où ?</button>${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="res" data-k="${h(n)}" data-n="${q - have}">Offre HdV</button>` : ""}`}</div>`; }).join("")}</div>
+    ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
+    <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${r.n > 1 ? " ×" + fmt(r.n) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div><span class="xs muted grow">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
+    <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
+}
+function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
+function craftHtml() {
+  const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const F = fltOf("met");
+  const rs = craftList(job); if (!rs.some((r) => r.id === ui.recSel)) ui.recSel = narrow() ? null : (rs[0] || {}).id;
+  const R = rs.find((r) => r.id === ui.recSel);
+  const all = job === "bricoleur" ? [] : Object.values(ITEMS).filter((T) => T.craft && T.craft.job === job);
+  const stats = STAT_ORDER.filter((k) => all.some((T) => T.stats[k] && T.stats[k][1] > 0));
+  const sets = [...new Set(all.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
+  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : `<span class="tag good">×${fmt(r.n)}</span>`}</button>`).join("");
+  const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
+  return `${dayBar("met")}
+    <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recBase(id).filter((r) => r.n > 0).length; return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
+    <div class="pjobxp small"><b>${CRAFT_JOBS[job].name} niv. ${J.lvl}</b><div class="bar xp thin grow"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><span class="num xs muted">${fmt(J.xp)} / ${fmt(E.jobXpNeed(J.lvl))} XP</span></div>
+    ${filterBar("met", F, { ph: "Nom de l'objet ou d'une ressource…", slots: job === "bricoleur" ? null : CRAFT_JOBS[job].slots, stats: stats.length ? stats : null, sets, cid: "Pour un héros", sort: [["useful", "Tri : utiles puis niveau ↓"], ["lvl", "Tri : niveau ↓"], ["lvlup", "Tri : niveau ↑"], ["name", "Tri : nom"]] })}
+    <div class="row small" style="gap:6px"><div class="seg">${[["near", "Fabricables et presque"], ["can", "Fabricables"], ["all", "Toutes"]].map(([v, n]) => `<button data-act="fltset" data-ctx="met" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div>
+      ${job === "bricoleur" ? "" : `<button class="btn sm ${F.util ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="util"><span class="pdot"></span> Utile pour mes héros</button>`}<button class="btn sm ${F.fav ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="fav">★ Favoris</button></div>
+    <div class="psplit"><section class="panel"><div class="phead"><h2>Recettes</h2><span class="xs muted">${rs.length}${rs.length > 60 ? " · 60 premières" : ""}</span></div><div class="plist">${list || empty}</div></section>
+      ${narrow() ? "" : `<section class="panel pdetp"><div class="pad">${recDetail(R, job)}</div></section>`}</div>`;
 }
 function renderMetiers() {
   const tabs = [["recolte", "Récolte"], ["craft", "Artisanat"]];
@@ -3939,49 +4041,196 @@ function renderMetiers() {
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="mettab" data-v="${id}" aria-pressed="${ui.met === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`;
 }
+/* ======================= Forgemagie (0.1.41, comme dans DOFUS) ======================= */
+const ppc = (x) => Math.round(x * 100);
+function oddBar(o) { return `<span class="podd"><i class="g" style="width:${ppc(o.sc)}%"></i><i class="y" style="width:${ppc(o.sn)}%"></i><i class="r" style="width:${ppc(o.ec)}%"></i></span><span class="poddt"><b class="g">${ppc(o.sc)}</b> · <b class="y">${ppc(o.sn)}</b> · <b class="r">${ppc(o.ec)}</b> %</span>`; }
+function fmGauge(mn, mx, cap, cur, nv) {
+  const lo = Math.min(0, mn, cur); const top = Math.max(cap, cur, 1); const W = (v) => Math.max(0, Math.min(100, ((v - lo) / Math.max(1, top - lo)) * 100));
+  return `<div class="pg"><i class="rng" style="left:${W(mn)}%;width:${W(mx) - W(mn)}%"></i><i class="exo" style="left:${W(mx)}%;width:${100 - W(mx)}%"></i><i class="cur" style="width:${W(cur)}%"></i>${nv > cur ? `<i class="nv" style="left:${W(cur)}%;width:${W(nv) - W(cur)}%"></i>` : ""}<span class="mk" style="left:${W(mx)}%"></span></div>`;
+}
+const runeW = (w) => (Math.round(w * 10) / 10).toLocaleString("fr-FR");
+function runeBtn(it, rk, q) {
+  const f = E.fmInfo(S, it.uid, rk); const nm = E.runeName(rk).replace(/^Rune /, "");
+  if (!f || !f.ok) return `<span class="prune off" data-tip="${h(f ? f.why : "")}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)}</span></span><span class="rv xs muted">${h(f ? f.why : "")}</span></span>`;
+  return `<button class="prune ${f.over || f.exoStat ? "risk" : ""}" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} (poids ${runeW(f.w)}) : +${f.add} → ${f.nv}. Succès critique ${ppc(f.sc)} % · succès neutre ${ppc(f.sn)} % · échec critique ${ppc(f.ec)} %`)}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)} · poids ${runeW(f.w)}</span></span><span class="rv">+${f.add} → <b>${f.nv}</b></span><span class="rodd">${oddBar(f)}</span></button>`;
+}
+function fmStatLine(it, k) {
+  const T = ITEMS[it.tpl]; const has = !!T.stats[k]; const [mn, mx] = has ? T.stats[k] : [0, 0]; const cur = it.stats[k] || 0;
+  const runes = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.split(":")[1] === k && !["ga", "ta"].includes(rk.split(":")[0])).sort((a, b) => E.runeInfo(a[0]).pts - E.runeInfo(b[0]).pts);
+  const tr = it.trans && it.trans.k === k ? ` <span class="tag perfect" data-tip="Ajouté par une rune de transcendance">transcendance +${it.trans.v}</span>` : "";
+  if (has && mx <= 0) return `<div class="pfl neg"><div class="pfn">${sIco(k)}<b>${statLine(k, cur)}</b><span class="xs muted">malus · une rune le fait remonter vers 0</span></div>${cur < 0 && runes.length ? `<div class="pruns">${runes.map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div>` : ""}</div>`;
+  const cap = E.fmCap(T, k); const f0 = runes.length ? E.fmInfo(S, it.uid, runes[0][0]) : null;
+  const simple = E.runeKey("", k);
+  return `<div class="pfl ${has ? "" : "pexo"}"><div class="pfn">${sIco(k)}<b class="${cur > mx && has ? "bonus" : ""}">${statLine(k, cur)}</b>${tr}<span class="xs muted">${has ? `jet ${mn} à ${mx} · over jusqu'à ${cap}` : `exo · jusqu'à ${cap}`}</span></div>${fmGauge(mn, mx, cap, cur, f0 && f0.ok ? f0.nv : 0)}
+    <div class="pruns">${runes.length ? runes.map(([rk, q]) => runeBtn(it, rk, q)).join("")
+      : `<span class="xs muted">Aucune rune de ${h(STATS[k].name)}</span>${RUNE_SIMPLE_ONLY.includes(k) && k === "pa" ? "" : `<button class="btn sm" data-act="fmtransmute" data-k="${k}" data-tip="Transmuter 5 runes d'une autre caractéristique en 1 rune de ${h(STATS[k].name)}">Transmuter</button>`}${hdvOn() ? `<button class="btn sm" data-act="hdvorder" data-c="rune" data-k="${simple}" data-n="10">Offre d'achat HdV</button>` : ""}`}</div></div>`;
+}
+function fmBench(it) {
+  const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const job = E.fmJobOf(it.tpl); const J = E.fmJob(S, job); const W = E.fmWeights(it); const block = E.fmBlock(S, it);
+  const keys = [...Object.keys(T.stats), ...Object.keys(it.stats).filter((k) => !T.stats[k] && STATS[k] && !(it.exo === k))];
+  const extra = Object.entries(S.runes).filter(([rk, q]) => q > 0 && !["ga", "ta"].includes(rk.split(":")[0]) && !keys.includes(rk.split(":")[1]) && !E.EXO_STATS.includes(rk.split(":")[1]) && STATS[rk.split(":")[1]]);
+  const exoStats = E.EXO_STATS.filter((k) => !T.stats[k]);
+  const trans = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.startsWith("ta:"));
+  const signOk = J.lvl >= E.FM_MAX;
+  const KC = { sc: "g", sn: "y", ec: "r" };
+  return `<div class="row" style="gap:12px">${itemIcon(it)}<div class="grow"><h2 style="margin:0">${itemName(it)}</h2><div class="small muted">niv. ${T.lvl}${by ? ` · porté par <b>${h(by.name)}</b>` : ""} · <b>${E.FM_JOBS[job].name} niv. ${J.lvl}</b>${it.sig ? ` · signé <b>${h(it.sig)}</b>` : ""}</div></div>
+      <div class="pbadges"><span class="pb" data-tip="Reliquat : le poids que l'objet a perdu en trop. Il paie les pertes des prochains succès neutres et permet d'ajouter une caractéristique que l'objet n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente.">${IC("forge")} Reliquat <b class="num">${runeW(it.well || 0)}</b></span>${it.trans ? `<span class="pb">Transcendé</span>` : ""}</div></div>
+    ${block ? `<div class="awaitbar" style="margin:0">${G("lock")} <span class="grow">${h(block)}</span></div>` : ""}
+    <div class="pwt2"><span class="small"><b>Poids de l'objet</b> <span class="num">${Math.round(W.cur)} / ${Math.round(W.max)}</span> <span class="xs muted">(${ppc(W.load)} %) · plus l'objet est chargé, plus le succès critique est rare</span></span><div class="bar thin"><i style="width:${Math.min(100, ppc(W.load))}%"></i></div></div>
+    <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
+    <div class="pstatl">${keys.filter((k) => STATS[k] && !E.EXO_STATS.includes(k) || T.stats[k]).map((k) => fmStatLine(it, k)).join("")}</div>
+    ${!block && extra.length && (it.well || 0) > 0 ? `<div class="pfl"><div class="pfn"><b>Ajouter une caractéristique</b><span class="xs muted">payée par le reliquat, jusqu'à ${E.EXO_STAT_W} de poids</span></div><div class="pruns">${extra.slice(0, 8).map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div></div>` : ""}
+    ${it.exo ? `<div class="pfl pexo"><div class="pfn">${sIco(it.exo)}<b class="bonus">+1 ${h(STATS[it.exo].name)}</b> <span class="tag exo">Exo ${h(STATS[it.exo].short)}</span><span class="xs muted">au brisage, l'exo est perdu mais les runes sont doublées</span></div></div>`
+      : exoStats.length && !T.trophy && T.slot !== "dofus" ? `<div class="pfl pexo"><div class="pfn"><b>Exotique</b><span class="xs muted">+1 PA, PM, Portée ou Invocation · succès critique seulement, un échec ne coûte que la rune</span></div>
+      <div class="pruns">${exoStats.map((k) => { const f = E.exoInfo(S, it.uid, k); const nm = E.runeName(E.exoKey(k)).replace(/^Rune /, "");
+        return f.ok ? `<button class="prune risk" data-act="exo" data-k="${k}" data-tip="${h(`${nm} : +1 ${STATS[k].name} · ${ppc(f.chance)} % de succès critique. Échec : la rune est perdue, l'objet reste intact.`)}"><span class="rn">${h(nm)} <span class="xs muted">×${f.have}</span></span><span class="rv">+1 ${h(STATS[k].short)}</span><span class="rodd"><span class="poddt"><b class="g">${ppc(f.chance)}</b> % · sinon la rune seule est perdue</span></span></button>`
+          : `<span class="prune off" data-tip="${h(f.why)}"><span class="rn">${h(nm)} <span class="xs muted">×${f.have}</span></span><span class="rv xs muted">${ppc(f.chance)} %</span></span>`; }).join("")}
+        <span class="xs muted">Un seul exo PA, un seul PM et un seul Po porté par héros. Runes Ga : coffres de boss des donjons ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8), archimonstres ${E.EXO_LVL}+, ou l'onglet Runes.</span></div></div>` : ""}
+    <div class="pfl ptrans"><div class="pfn"><b>Rune de transcendance</b><span class="xs muted">coffres de palier 20+ de l'Expédition sans fin</span></div>
+      ${trans.length ? `<div class="pruns">${trans.map(([rk, q]) => { const st = rk.split(":")[1]; const f = E.transInfo(S, it.uid, st);
+        return f.ok ? (ui.confirm === "trans:" + st ? `<span class="small">+${f.v} ${h(STATS[st].name)}, puis l'objet ne se forgemage plus.</span><button class="btn sm primary" data-act="trans" data-k="${st}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>`
+          : `<button class="prune" data-act="asktrans" data-k="${st}"><span class="rn">${h(E.runeName(rk).replace(/^Rune (de transcendance )?/, (m, t) => t ? "Transcendance " : ""))} <span class="xs muted">×${q}</span></span><span class="rv">+${f.v} ${h(STATS[st].short)}</span><span class="rodd"><span class="poddt"><b class="g">100</b> % · l'objet est figé ensuite</span></span></button>`)
+          : `<span class="prune off" data-tip="${h(f.why)}"><span class="rn">${h(E.runeName(rk).replace(/^Rune (de transcendance )?/, (m, t) => t ? "Transcendance " : ""))} ×${q}</span><span class="rv xs muted">${h(f.why)}</span></span>`; }).join("")}</div>`
+        : `<div class="small muted">Réussite garantie, la caractéristique s'ajoute puis l'objet ne peut plus être forgemagé. Interdite sur un objet over ou exo.</div>`}</div>
+    ${signOk ? `<div class="pfl"><div class="pfn"><b>Signature</b><span class="xs muted">${E.FM_JOBS[job].name} niveau ${E.FM_MAX}</span></div><div class="row small"><input type="text" id="fmsig" maxlength="24" value="${h(it.sig || (S.chars[0] ? S.chars[0].name : ""))}" style="max-width:220px"><button class="btn sm" data-act="fmsign">${it.sig ? "Changer la signature" : "Signer l'objet"}</button></div></div>` : ""}
+    ${it.fmLog && it.fmLog.length ? `<h3 class="sec">Historique</h3><div class="phist">${it.fmLog.map((l) => `<div class="${KC[l.k] || (l.ok ? "g" : "r")}">${h(l.txt).replace(/^([^:]+) :/, "<b>$1</b> :")} <span class="xs muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}
+    ${planBlockHtml(it)}`;
+}
+function fmJobsBar() {
+  const JJ = E.fmJobs(S);
+  return `<div class="pfmjobs">${Object.entries(E.FM_JOBS).map(([id, F]) => { const ok = E.fmLearned(S, id); const J = JJ[id]; const bl = (S.crafts[F.base] || {}).lvl || 1;
+    return `<span class="pfj ${ok ? "" : "lock"}" data-tip="${h(`${F.name} : ${F.slots.length ? F.slots.map(slotName).join(", ").toLowerCase() : id === "forgemage" ? "armes du Forgeron" : "armes du Sculpteur"}. ${ok ? `${fmt(J.xp)} / ${fmt(E.fmNeed(J.lvl))} XP` : `S'apprend au niveau ${E.FM_LEARN} de ${CRAFT_JOBS[F.base].name}.`}`)}">${im(jobImg(F.base), "", F.name)}<span class="grow"><b>${F.name}</b><br><span class="xs ${ok ? "muted" : "minus"}">${ok ? `niv. ${J.lvl}` : `${CRAFT_JOBS[F.base].name} ${bl} / ${E.FM_LEARN}`}</span>${ok && J.lvl < E.FM_MAX ? `<span class="bar thin"><i style="width:${pct(J.xp, E.fmNeed(J.lvl))}%"></i></span>` : ""}</span></span>`; }).join("")}</div>`;
+}
+function fmList() {
+  const F = fltOf("fm"); const q = F.q.trim().toLowerCase();
+  let items = Object.values(S.items).filter((x) => { const T = ITEMS[x.tpl]; if (!T || T.trophy || T.slot === "dofus") return false; const by = E.equippedBy(S, x.uid);
+    if (F.view === "worn" && !by) return false; if (F.view === "bag" && by) return false;
+    if (q && !T.name.toLowerCase().includes(q)) return false; if (F.slot && T.slot !== F.slot) return false;
+    if (F.lv) { const [a, b] = lvRange(F.lv); if (T.lvl < a || T.lvl > b) return false; }
+    if (F.stat && !(T.stats[F.stat] && T.stats[F.stat][1] > 0)) return false; if (F.set && T.set !== F.set) return false;
+    if (F.cid && (!by || by.id !== +F.cid)) return false; if (F.fav && !x.fav) return false; return true; });
+  items.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || (F.sort === "jet" ? E.itemQuality(b) - E.itemQuality(a) : F.sort === "fm" ? (b.fm || 0) - (a.fm || 0) : 0) || (E.equippedBy(S, b.uid) ? 1 : 0) - (E.equippedBy(S, a.uid) ? 1 : 0) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl);
+  return items;
+}
 function fmHtml() {
-  const F = ui.fmF || (ui.fmF = { q: "", slot: "all", sort: "lvl", cid: "", eq: false, runes: false, fav: false });
-  const runeStats = new Set(Object.keys(S.runes).filter((k) => S.runes[k] > 0).map((k) => k.split(":")[1]));
-  let items = Object.values(S.items).filter((x) => { const T = ITEMS[x.tpl]; const by = E.equippedBy(S, x.uid);
-    if (F.q && !T.name.toLowerCase().includes(F.q.toLowerCase())) return false;
-    if (F.slot !== "all" && T.slot !== F.slot) return false;
-    if (F.cid && (!by || by.id !== +F.cid)) return false;
-    if (F.eq && !by) return false; if (F.fav && !x.fav) return false;
-    if (F.runes && !Object.keys(T.stats).some((k) => runeStats.has(k) && T.stats[k][1] > 0)) return false;
-    return !T.trophy; });
-  items.sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || (F.sort === "jet" ? E.itemQuality(b) - E.itemQuality(a) : F.sort === "fm" ? (b.fm || 0) - (a.fm || 0) : ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl || (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0)));
-  const total = items.length; items = items.slice(0, 120);
-  if (!ui.fmSel || !S.items[ui.fmSel]) ui.fmSel = null;
-  const it = ui.fmSel ? S.items[ui.fmSel] : null;
-  let detail = `<div class="empty">Choisissez un objet à forgemager.</div>`;
-  if (it) {
-    const T = ITEMS[it.tpl];
-    detail = `<div class="row">${itemIcon(it)}<div><b>${itemName(it)}</b><div class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · ${it.fm} forgemagie${it.fm > 1 ? "s" : ""}` : ""}</div></div></div>
-      <div class="row small"><span data-tip="Puits : ce que l'objet perd sur un échec s'y accumule (en poids de caractéristiques). Tant que le puits couvre la rune tentée, +${Math.round(E.WELL_BONUS * 100)} % de réussite et aucune perte en cas d'échec ; une réussite le vide d'autant.">${IC("forge")} Puits : <b class="num ${it.well ? "plus" : ""}">${Math.round(it.well || 0)}</b></span>${E.isPerfect(it) ? `<span class="tag perfect" data-tip="Toutes les caractéristiques positives sont au jet maximum : +${E.PERFECT_PCT} % sur chacune (au moins +1).">★ Parfait</span>` : `<span class="xs muted">Parfait quand chaque caractéristique positive atteint son jet maximum.</span>`}</div>
-      ${Object.keys(T.stats).map((k) => { const [mn, mx] = T.stats[k]; const cur = it.stats[k] || 0; const runes = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.split(":")[1] === k);
-        const cap = mx > 0 ? mx + Math.max(1, Math.ceil(mx * 0.25)) : mx;
-        return `<div class="fmline"><div><span class="statl">${sIco(k)}<b class="${cur > mx ? "bonus" : ""}">${statLine(k, cur)}</b></span> <span class="xs muted">jet ${mn} à ${mx}${mx > 0 ? ` · exo jusqu'à ${cap}` : ""}</span>
-          <div class="runes">${mx <= 0 ? `<span class="xs muted">Caractéristique négative</span>` : runes.map(([rk, q]) => { const f = E.fmInfo(S, it.uid, rk); return f.ok ? `<button class="btn sm" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} : +${f.add} → ${f.nv}${f.over ? " (au-delà du jet max)" : ""} · ${Math.round(f.chance * 100)} % de réussite${f.wellOk ? " (puits : +" + Math.round(E.WELL_BONUS * 100) + " %, aucune perte)" : ""} · ${f.kamas} kamas. Échec : la rune est perdue et parfois une autre caractéristique baisse.`)}">${E.runeName(rk)} ×${q} · <b>${Math.round(f.chance * 100)} %</b> · ${fmt(f.kamas)} k</button>` : `<span class="xs muted" data-tip="${h(f.why)}">${E.runeName(rk)} ×${q} : ${h(f.why)}</span>`; }).join("") || `<span class="xs muted">Aucune rune de ${h(STATS[k].name)} — brisez des objets qui en ont.</span>`}</div></div></div>`; }).join("")}
-      ${exoBlockHtml(it)}
-      ${planBlockHtml(it)}
-      ${it.fmLog && it.fmLog.length ? `<h3 class="sec">Historique</h3><div class="list">${it.fmLog.map((l) => `<div class="li xs"><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span><span class="grow">${h(l.txt)}</span><span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}`;
-  }
-  return `<p class="note">La forgemagie améliore les jets d'un objet avec des runes (obtenues au brisage) et des kamas. En dessous du jet maximum, la réussite est élevée ; au-delà (« exo »), c'est risqué. Un échec détruit la rune et peut faire baisser une autre caractéristique, mais ce qui est perdu remplit le puits de l'objet et protège les tentatives suivantes.</p>
-    ${fmJobCard()}
-    ${fmPlansHtml()}
-    <div class="row invbar"><input type="text" id="fmSearch" data-act="fmsearch" placeholder="Rechercher un objet…" value="${h(F.q)}">
-      <select data-act="fmslot">${[["all", "Tous"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"]].map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>
-      <select data-act="fmcid"><option value="">Tous les héros</option>${S.chars.map((c) => `<option value="${c.id}" ${+F.cid === c.id ? "selected" : ""}>Porté par ${h(c.name)}</option>`).join("")}</select>
-      <select data-act="fmsort">${[["lvl", "Niveau"], ["jet", "Jet"], ["fm", "Forgemagies"]].map(([v, n]) => `<option value="${v}" ${F.sort === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select></div>
-    <div class="row small">${[["eq", "Équipés seulement"], ["runes", "Runes disponibles"], ["fav", "★ Favoris"]].map(([k, n]) => `<button class="btn sm ${F[k] ? "primary" : ""}" data-act="fmtoggle" data-k="${k}">${n}</button>`).join("")}<span class="xs muted">${total} objet${total > 1 ? "s" : ""}</span></div>
-    <div class="grid2"><section class="panel"><div class="phead"><h2>Objets</h2><span class="xs muted">${total > 120 ? "120 premiers" : total}</span></div><div class="list" style="max-height:560px;overflow:auto">${items.map((x) => `<div class="li ${x.radiant ? "radiant" : ""}" style="${ui.fmSel === x.uid ? "box-shadow:inset 0 0 0 2px var(--gold)" : ""}"><button class="btn sm" data-act="fmfav" data-uid="${x.uid}" title="Favori">${x.fav ? "★" : "☆"}</button>${itemIcon(x)}<span class="grow">${itemName(x)} <span class="xs muted">niv. ${ITEMS[x.tpl].lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${x.fm ? ` · ${IC("forge")} ${x.fm}` : ""}${E.equippedBy(S, x.uid) ? " · porté par " + h(E.equippedBy(S, x.uid).name) : ""}</span></span><button class="btn sm ${ui.fmSel === x.uid ? "primary" : ""}" data-act="fmsel" data-uid="${x.uid}">Choisir</button></div>`).join("") || `<div class="empty">Aucun objet ne correspond.</div>`}</div></section>
-    <section class="panel"><div class="phead"><h2>Établi du forgemage</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad stack" style="gap:8px">${detail}</div></section></div>`;
+  const F = fltOf("fm"); const items = fmList();
+  if (!ui.fmSel || !S.items[ui.fmSel]) ui.fmSel = items[0] ? items[0].uid : null; const it = ui.fmSel ? S.items[ui.fmSel] : null;
+  const present = Object.values(S.items).map((x) => ITEMS[x.tpl]).filter((T) => T && !T.trophy && T.slot !== "dofus");
+  const sets = [...new Set(present.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
+  const stats = STAT_ORDER.filter((k) => present.some((T) => T.stats[k] && T.stats[k][1] > 0));
+  const bench = `<section class="panel"><div class="phead"><h2>Établi</h2><span class="xs muted">seules les runes sont consommées</span></div><div class="pad stack" style="gap:10px">${it ? fmBench(it) : `<div class="empty">Choisis un objet à forgemager.</div>`}</div></section>`;
+  if (narrow() && ui.fmBench && it) return `<button class="btn sm" data-act="fmback" style="align-self:flex-start">← Objets</button>${bench}`;
+  const list = `<section class="panel"><div class="pad stack" style="gap:8px;padding-bottom:4px"><div class="seg sm">${[["worn", "Portés"], ["bag", "Sac"], ["all", "Tous"]].map(([v, n]) => `<button data-act="fltset" data-ctx="fm" data-k="view" data-v="${v}" aria-pressed="${F.view === v}">${n}</button>`).join("")}</div>
+      ${filterBar("fm", F, { ph: "Rechercher un objet…", slots: ALL_SLOTS, stats, sets, cid: "Tous les héros", sort: [["lvl", "Tri : niveau"], ["jet", "Tri : jet"], ["fm", "Tri : forgemagies"]] })}
+      <div class="row small"><button class="btn sm ${F.fav ? "primary" : ""}" data-act="flttog" data-ctx="fm" data-k="fav">★ Favoris</button><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div></div>
+    <div class="plist">${items.slice(0, 120).map((x) => { const by = E.equippedBy(S, x.uid); const T = ITEMS[x.tpl]; return `<div class="prec ${x.uid === ui.fmSel ? "on" : ""}" data-act="fmsel" data-uid="${x.uid}"><button class="btn sm ghost" data-act="fmfav" data-uid="${x.uid}" title="Favori">${x.fav ? "★" : "☆"}</button>${itemIcon(x)}<span class="grow"><b>${itemName(x)}</b><br><span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(x) * 100)} %${x.fm ? ` · ${IC("forge")} ${x.fm}` : ""}${x.well ? ` · reliquat ${runeW(x.well)}` : ""}</span></span>${by ? head(by) : ""}${E.fmPlanOf(S, x.uid) ? `<span class="tag good">plan</span>` : ""}</div>`; }).join("") || `<div class="empty">Aucun objet ne correspond.</div>`}${items.length > 120 ? `<div class="empty">… ${items.length - 120} autres : affine les filtres.</div>` : ""}</div></section>`;
+  return `${dayBar("fm")}<div class="psplit fm">${list}${narrow() ? "" : bench}</div>`;
+}
+/* ---------- Brisage ---------- */
+function brisageHtml() {
+  const F = fltOf("br"); const q = F.q.trim().toLowerCase(); const dup = F.mode === "dupes" ? new Set(E.dupesList(S)) : null;
+  const sel = ui.brSel || (ui.brSel = new Set()); [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u)) sel.delete(u); });
+  const items = Object.values(S.items).filter((it) => { const T = ITEMS[it.tpl]; if (!T || E.equippedBy(S, it.uid)) return false;
+    if (q && !T.name.toLowerCase().includes(q)) return false; if (F.slot && T.slot !== F.slot) return false;
+    if (F.lv) { const [a, b] = lvRange(F.lv); if (T.lvl < a || T.lvl > b) return false; }
+    if (F.stat && !(T.stats[F.stat] && T.stats[F.stat][1] > 0)) return false; if (F.set && T.set !== F.set) return false;
+    if (dup && !dup.has(it.uid)) return false; if (F.mode === "low" && E.itemQuality(it) >= 0.5) return false; return true; })
+    .sort((a, b) => ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl);
+  const present = Object.values(S.items).map((x) => ITEMS[x.tpl]).filter(Boolean);
+  const sets = [...new Set(present.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
+  const stats = STAT_ORDER.filter((k) => present.some((T) => T.stats[k] && T.stats[k][1] > 0));
+  const est = {}; let tot = 0; [...sel].forEach((u) => { const p = E.breakPreview(S, u, F.focus || null); for (const k in p.weights) { const n = p.weights[k] / (STATS[k].w * STATS[k].pts); est[k] = (est[k] || 0) + n; tot += n; } });
+  const topEst = Object.entries(est).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => STATS[k].name).join(", ");
+  const shown = items.slice(0, 150); const pickable = shown.filter((it) => !it.radiant && !it.locked && !E.inGear(S, it.uid));
+  return `<p class="note">Briser un objet le détruit et donne des runes selon ses caractéristiques et son niveau (×1,5 pour un objet Rayonnant). Le coefficient baisse de 3 % à chaque brisage d'un même objet et remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes${E.netCoef ? " : en ligne, il est commun à tous les joueurs, comme sur un serveur de DOFUS" : ""}.</p>
+    ${filterBar("br", F, { ph: "Rechercher…", slots: ALL_SLOTS, stats, sets, focus: true })}
+    <div class="row small"><div class="seg sm">${[["", "Pas porté"], ["dupes", "Doublons"], ["low", "Jet < 50 %"]].map(([v, n]) => `<button data-act="fltset" data-ctx="br" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div>
+    <div class="pselbar"><b>${sel.size} objet${sel.size > 1 ? "s" : ""} sélectionné${sel.size > 1 ? "s" : ""}</b>${sel.size ? `<span class="small">≈ ${fmt(Math.round(tot))} runes simples${topEst ? " · " + h(topEst) : ""}</span>` : `<span class="small muted">coche des objets à briser</span>`}<span class="grow"></span>
+      ${pickable.length ? `<button class="btn sm" data-act="brall">Tout sélectionner</button>` : ""}${sel.size ? `<button class="btn sm" data-act="brnone">Vider</button>` : ""}
+      ${sel.size ? (ui.confirm === "brsel" ? `<button class="btn sm danger" data-act="brgo">Confirmer : briser ${sel.size}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="brask">Briser la sélection</button>`) : ""}</div>
+    <section class="panel"><div class="list">${shown.map((it) => { const p = E.breakPreview(S, it.uid, F.focus || null); const top = Object.entries(p.weights).sort((a, b) => b[1] - a[1]).slice(0, 4); const on = sel.has(it.uid);
+      return `<div class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}" ${on ? "checked" : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span><span class="xs ${p.coef < 60 ? "minus" : "muted"}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span><button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}${items.length > 150 ? `<div class="empty">… ${items.length - 150} autres : affine les filtres.</div>` : ""}</div></section>`;
+}
+/* ---------- Runes ---------- */
+function runesView() {
+  const runes = Object.entries(S.runes).filter(([, q]) => q > 0);
+  const stats = [...new Set(runes.filter(([k]) => !["ga", "ta"].includes(k.split(":")[0])).map(([k]) => k.split(":")[1]))].filter((k) => STATS[k]).sort((a, b) => STAT_ORDER.indexOf(a) - STAT_ORDER.indexOf(b));
+  const spec = runes.filter(([k]) => ["ga", "ta"].includes(k.split(":")[0]));
+  const tr = ui.tr || (ui.tr = { from: "", to: "fo" });
+  if (!S.runes[tr.from] || ["ga", "ta"].includes(tr.from.split(":")[0])) { const r0 = runes.find(([k]) => !["ga", "ta"].includes(k.split(":")[0])); tr.from = r0 ? r0[0] : ""; }
+  const fromTier = tr.from ? tr.from.split(":")[0] : "";
+  const targets = E.transmuteTargets().filter((k) => !fromTier || !RUNE_SIMPLE_ONLY.includes(k)); if (!targets.includes(tr.to)) tr.to = targets[0];
+  const cost = E.transmuteCost(fromTier); const canTr = tr.from && (S.runes[tr.from] || 0) >= E.TRANSMUTE_N && S.kamas >= cost && tr.to !== tr.from.split(":")[1];
+  const cards = stats.map((k) => { const qq = (t) => S.runes[E.runeKey(t, k)] || 0; const only = RUNE_SIMPLE_ONLY.includes(k); const tiers = only ? [["", "Rune"]] : [["", "Rune"], ["pa", "Pa"], ["ra", "Ra"]];
+    const canFuse = !only && (qq("") >= E.RUNE_FUSE_N || qq("pa") >= E.RUNE_FUSE_N);
+    return `<div class="prc"><div class="row between"><span>${sIco(k)} <b>${h(STATS[k].name)}</b></span><button class="btn sm ghost" data-act="trpick" data-k="${k}" data-tip="Transmuter ces runes en une autre caractéristique">⇄</button></div>
+      <div class="prt">${tiers.map(([t, n], i) => `${i ? `<button class="parr" data-act="fuse" data-k="${E.runeKey(tiers[i - 1][0], k)}" data-dir="up" ${qq(tiers[i - 1][0]) >= E.RUNE_FUSE_N ? "" : "disabled"} data-tip="Fusionner ${E.RUNE_FUSE_N} ${h(E.runeName(E.runeKey(tiers[i - 1][0], k)))} → 1 ${h(E.runeName(E.runeKey(t, k)))}">›</button>` : ""}<span class="prtier ${qq(t) ? "" : "zero"}"><span class="xs muted">${n} · +${E.runeInfo(E.runeKey(t, k)).pts}</span><b class="num">${fmt(qq(t))}</b>${t && qq(t) ? `<button class="btn xs ghost" data-act="fuse" data-k="${E.runeKey(t, k)}" data-dir="down" data-tip="Casser 1 ${h(E.runeName(E.runeKey(t, k)))} en ${E.RUNE_FUSE_N} runes inférieures">casser</button>` : ""}</span>`).join("")}</div>
+      ${only ? `<span class="xs muted">n'existe qu'en rune simple</span>` : `<div class="row small"><button class="btn sm" data-act="fuseall" data-k="${k}" ${canFuse ? "" : "disabled"}>Fusionner tout</button></div>`}</div>`; }).join("");
+  return `<section class="panel"><div class="phead"><h2>Vos runes</h2><span class="xs muted">${E.RUNE_FUSE_N} identiques → 1 supérieure · gratuit</span></div><div class="pad prgrid">${cards || `<div class="empty">Aucune rune. Brise des objets pour en obtenir.</div>`}</div></section>
+    ${spec.length ? `<section class="panel"><div class="phead"><h2>Runes spéciales</h2></div><div class="pad row" style="flex-wrap:wrap;gap:6px">${spec.map(([k, q]) => { const i = E.runeInfo(k); return `<span class="pchip ${i.trans ? "gold" : ""}" data-tip="${h(i.trans ? `Transcendance : +${i.pts} ${STATS[i.stat].name}, réussite garantie, puis l'objet est figé` : `Exotique : +1 ${STATS[i.stat].name}, succès critique seulement`)}">${sIco(i.stat)} ${h(E.runeName(k))} <b class="num">×${fmt(q)}</b></span>`; }).join("")}</div></section>` : ""}
+    <details class="panel" ${ui.trOpen ? "open" : ""}><summary class="phead" data-act="tropen"><h2>Transmutation et runes Ga</h2><span class="xs muted">${E.TRANSMUTE_N} runes → 1 d'une autre caractéristique ▾</span></summary>
+      <div class="pad stack small" style="gap:8px"><div class="row small" style="flex-wrap:wrap">
+        <select data-act="trfrom">${runes.filter(([k]) => !["ga", "ta"].includes(k.split(":")[0])).map(([k, q]) => `<option value="${k}" ${tr.from === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune</option>`}</select>
+        <span>→</span><select data-act="trto">${targets.map((k) => `<option value="${k}" ${tr.to === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select>
+        <button class="btn sm ${canTr ? "primary" : ""}" data-act="transmute" ${canTr ? "" : "disabled"}>${E.TRANSMUTE_N} → 1 · ${fmt(cost)} k</button></div>
+      ${exoCraftHtml(runes)}</div></details>`;
+}
+function exoCraftHtml(runes) {
+  const ras = runes.filter(([k]) => k.split(":")[0] === "ra");
+  if (!ui.ga || !S.runes[ui.ga]) ui.ga = ras.length ? ras[0][0] : "";
+  const ecl = S.res[E.RARE_COMPONENT] || 0;
+  return `<div class="xs muted">Rune Ga : +1 PA, PM, Portée ou Invocation sur n'importe quel objet (succès critique seulement). Des runes Ra d'une même caractéristique, des ${E.RARE_COMPONENT} (tu en as ${fmt(ecl)}) et des kamas en fabriquent une. Les coffres de boss des donjons ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8) et les archimonstres ${E.EXO_LVL}+ en lâchent aussi.</div>
+    <div class="row" style="flex-wrap:wrap"><select data-act="gafrom">${ras.map(([k, q]) => `<option value="${k}" ${ui.ga === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune Ra</option>`}</select>
+    ${E.EXO_STATS.map((k) => { const f = E.exoCraftInfo(S, k, ui.ga); const C = E.EXO_CRAFT[k];
+      return `<button class="btn sm ${f.ok ? "primary" : ""}" data-act="exocraft" data-k="${k}" ${f.ok ? "" : "disabled"} data-tip="${h(`${C.ra} runes Ra + ${C.eclat} ${E.RARE_COMPONENT} + ${fmt(C.kamas)} kamas → 1 ${E.runeName(E.exoKey(k))}${f.ok ? "" : " · " + f.why}`)}">${E.runeName(E.exoKey(k))} · ${C.ra} Ra + ${C.eclat} éclats + ${fmt(C.kamas)} k</button>`; }).join("")}</div>`;
+}
+/* ---------- Plans ---------- */
+const planGoalsTxt = (p) => { const it = S.items[p.uid]; return Object.keys(p.goals).map((k) => `${STATS[k].name} ${it ? it.stats[k] || 0 : "?"} / ${p.goals[k]}`).join(" · "); };
+function planBlockHtml(it) {
+  const p = E.fmPlanOf(S, it.uid);
+  if (p) return `<div class="pbench-foot"><span class="tag good">Plan en cours</span><span class="xs muted grow">${h(planGoalsTxt(p))} · prochaine tentative dans ${dur(E.fmPlanEta(S, p))}</span><button class="btn sm danger" data-act="fmplanstop" data-uid="${it.uid}">Arrêter</button></div>`;
+  if (E.fmBlock(S, it)) return "";
+  const can = E.fmPlanActive(S).length < E.FM_PLAN_MAX;
+  return `<div class="pbench-foot"><button class="btn ${can ? "primary" : ""}" data-act="fmplan" data-uid="${it.uid}" ${can ? "" : "disabled"}>${IC("forge")} Automatiser…</button><span class="xs muted grow">Une tentative toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} min avec tes runes, même hors ligne${can ? "" : ` · ${E.FM_PLAN_MAX} plans en parallèle au maximum`}.</span></div>`;
+}
+function fmPlansHtml() {
+  const plans = E.fmPlans(S); const act = E.fmPlanActive(S).length;
+  if (!plans.length) return `<section class="panel"><div class="pad empty">Aucun plan. Choisis un objet dans l'Établi puis « Automatiser » : le jeu tente une rune toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} minutes, même hors ligne, jusqu'à tes objectifs.</div></section>`;
+  return `<section class="panel"><div class="phead"><h2>Plans de forgemagie</h2><span class="xs muted num">${act} / ${E.FM_PLAN_MAX} en cours</span></div><div class="list">${plans.slice().reverse().map((p) => { const it = S.items[p.uid];
+    return `<div class="li"><span class="grow"><b>${it ? itemName(it) : h(p.name)}</b> ${p.done ? `<span class="tag soft">Terminé</span>` : `<span class="tag good">En cours</span>`}<br><span class="xs muted">${p.done ? h(p.done) + " · " : ""}${h(planGoalsTxt(p))} · ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}${p.done ? "" : ` · prochaine dans ${dur(E.fmPlanEta(S, p))}`}</span>${p.log.length ? `<div class="xs" style="margin-top:4px">${p.log.slice(0, 4).map((l) => `<div><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span> ${h(l.txt)} <span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}</span>
+      ${it ? `<button class="btn sm" data-act="fmgo" data-uid="${p.uid}">Voir</button>` : ""}${p.done ? `<button class="btn sm" data-act="fmplandrop" data-uid="${p.uid}">Retirer</button>` : `<button class="btn sm danger" data-act="fmplanstop" data-uid="${p.uid}">Arrêter</button>`}</div>`; }).join("")}</div></section>`;
+}
+function fmPlanSheet(uid) {
+  const it = S.items[uid]; if (!it) return; const T = ITEMS[it.tpl];
+  const stats = Object.keys(T.stats).filter((k) => T.stats[k][1] > 0 && !E.EXO_STATS.includes(k));
+  openSheet(`<h2>${IC("forge")} Automatiser la forgemagie</h2><div class="row">${itemIcon(it)}<div><b>${itemName(it)}</b><div class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</div></div></div>
+    <p class="small muted">Une tentative toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} min, en jeu comme hors ligne, avec tes runes (aucun kamas). Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes manquent ou que le plancher est touché.</p>
+    <div class="stack" style="gap:8px">
+      <div class="small"><b>Objectifs</b> <span class="xs muted">au-delà du jet maximum, c'est de l'over : plus risqué</span></div>
+      ${stats.map((k) => { const [, mx] = T.stats[k]; const cap = E.fmCap(T, k); const cur = it.stats[k] || 0;
+        return `<label class="row small"><input type="checkbox" class="fmg" data-k="${k}" ${cur < mx ? "checked" : ""}> <span class="grow">${sIco(k)}${STATS[k].name} <span class="xs muted">${cur} actuellement · jet max ${mx} · over jusqu'à ${cap}</span></span><input type="number" id="fmgv_${k}" min="${cur + 1}" max="${cap}" value="${Math.max(mx, cur + 1)}" style="width:84px"></label>`; }).join("")}
+      <div class="small"><b>Runes</b></div><div class="row small" style="flex-wrap:wrap">${Object.entries(E.FM_PLAN_RUNES).map(([v, n], i) => `<label><input type="radio" name="fmr" value="${v}" ${i === 0 ? "checked" : ""}> ${n}</label>`).join("")}</div>
+      <div class="row small"><b>Plancher</b><select id="fmfloor">${Object.entries(E.FM_PLAN_FLOOR).map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select></div>
+    </div>
+    <div class="row"><button class="btn primary" data-act="fmplango" data-uid="${uid}">Lancer le plan</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
+}
+function fmHelpSheet() {
+  openSheet(`<h2>${IC("forge")} La forgemagie, comme dans DOFUS</h2><div class="stack small" style="gap:8px">
+    <p><b>Six métiers</b> : Costumage (coiffes, capes), Joaillomage (amulettes, anneaux), Cordomage (ceintures, bottes), Forgemage (armes du Forgeron), Sculptemage (armes du Sculpteur) et Façomage (boucliers). Chacun s'apprend au niveau ${E.FM_LEARN} du métier d'artisanat lié et monte jusqu'au niveau ${E.FM_MAX} en forgemageant des objets proches de son niveau. Le niveau ne change pas les chances ; au niveau ${E.FM_MAX}, tu peux signer tes objets.</p>
+    <p><b>Trois issues</b> pour chaque rune : <b class="g">succès critique</b> (la rune passe, rien ne baisse), <b class="y">succès neutre</b> (la rune passe, une autre caractéristique baisse d'autant de poids, sauf si le reliquat paie) et <b class="r">échec critique</b> (la rune ne passe pas et une caractéristique baisse). Les chances sont affichées sur chaque rune.</p>
+    <p><b>Poids</b> : chaque rune a un poids (Rune Vi 1, Rune Fo 1, Rune Sa 3, Rune Do 20…). Plus l'objet est chargé par rapport à son poids au jet maximum, plus le succès critique est rare. Au-delà du jet maximum (over), une caractéristique peut monter jusqu'à ${E.OVER_W} de poids (${Math.floor(E.OVER_W / STATS.vit.w)} Vitalité, ${E.OVER_W} Force).</p>
+    <p><b>Reliquat</b> : ce que l'objet perd en trop s'y accumule. Il paie les pertes des succès neutres suivants et permet d'ajouter une caractéristique que l'objet n'a pas (jusqu'à ${E.EXO_STAT_W} de poids). Il disparaît quand l'objet passe par l'hôtel de vente.</p>
+    <p><b>Exotique</b> : une rune Ga ajoute +1 PA, PM, Portée ou Invocation, en succès critique seulement (${E.EXO_STATS.map((k) => `${STATS[k].short} ${ppc(E.EXO[k].chance)} %`).join(", ")}). Un échec ne coûte que la rune. Un seul exo PA, PM et Po porté par héros.</p>
+    <p><b>Transcendance</b> : les coffres de palier 20+ de l'Expédition sans fin donnent des runes de transcendance. Réussite garantie, puis l'objet ne peut plus être forgemagé. Interdite sur un objet over ou exo.</p>
+    <p>La forgemagie ne coûte plus de kamas : seules les runes sont consommées.</p></div>
+    <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function renderForge() {
-  const tabs = [["fm", "Forgemagie"], ["brisage", "Brisage"], ["runes", "Runes"]];
-  $("#main").innerHTML = `<div class="pagehead"><h1>Forgemagie</h1></div>
+  const nPlans = E.fmPlanActive(S).length;
+  const tabs = [["fm", "Établi"], ["brisage", "Brisage"], ["runes", "Runes"], ["plans", `Plans${nPlans ? " · " + nPlans : ""}`]];
+  $("#main").innerHTML = `<div class="pagehead prow"><h1>Forgemagie</h1><button class="btn sm ghost" data-act="fmhelp">? Comment ça marche</button></div>${fmJobsBar()}
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="fgtab" data-v="${id}" aria-pressed="${ui.fg === id}">${n}</button>`).join("")}</nav>
-    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : fmHtml()}</section>`;
+    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : ui.fg === "plans" ? fmPlansHtml() : fmHtml()}</section>`;
 }
 /* ---------- QUÊTES ---------- */
 function mainQuestHtml() {
@@ -4072,94 +4321,6 @@ function renderQuests() {
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="qtab" data-v="${id}" aria-pressed="${ui.qt === id}">${n}</button>`).join("")}</nav>
     <section class="stack">${body}</section>`;
 }
-/* 0.1.8.2 : atelier de runes (fusion, transmutation, nourrir le forgemage) */
-function runesView() {
-  const runes = Object.entries(S.runes).filter(([, q]) => q > 0).sort((a, b) => STAT_ORDER.indexOf(E.runeInfo(a[0]).stat) - STAT_ORDER.indexOf(E.runeInfo(b[0]).stat) || E.runeInfo(a[0]).weight - E.runeInfo(b[0]).weight);
-  const tr = ui.tr || (ui.tr = { from: "", to: "fo" });
-  if (!S.runes[tr.from] || E.runeInfo(tr.from).exo) { const r0 = runes.find(([k]) => !E.runeInfo(k).exo); tr.from = r0 ? r0[0] : ""; }
-  const fromTier = tr.from ? tr.from.split(":")[0] : "";
-  const targets = E.transmuteTargets().filter((k) => !fromTier || !RUNE_SIMPLE_ONLY.includes(k));
-  if (!targets.includes(tr.to)) tr.to = targets[0];
-  const cost = E.transmuteCost(fromTier); const canTr = tr.from && (S.runes[tr.from] || 0) >= E.TRANSMUTE_N && S.kamas >= cost && tr.to !== tr.from.split(":")[1];
-  return `<p class="note">Fusion : ${E.RUNE_FUSE_N} runes identiques donnent la rune supérieure (simple → Pa → Ra) et une rune se casse en ${E.RUNE_FUSE_N} runes inférieures, gratuitement. Transmutation : ${E.TRANSMUTE_N} runes d'une caractéristique donnent 1 rune d'une autre, contre des kamas. Les runes inutiles peuvent aussi nourrir le métier de Forgemage.</p>
-    ${fmJobCard()}
-    <section class="panel"><div class="phead"><h2>Transmutation</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b></span></div><div class="pad row small">
-      <select data-act="trfrom">${runes.filter(([k]) => !E.runeInfo(k).exo).map(([k, q]) => `<option value="${k}" ${tr.from === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune</option>`}</select>
-      <span>→</span><select data-act="trto">${targets.map((k) => `<option value="${k}" ${tr.to === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select>
-      <button class="btn sm ${canTr ? "primary" : ""}" data-act="transmute" ${canTr ? "" : "disabled"}>${E.TRANSMUTE_N} → 1 · ${fmt(cost)} k</button></div></section>
-    ${exoCraftHtml(runes)}
-    <section class="panel"><div class="phead"><h2>Vos runes</h2><span class="muted xs">${runes.length} sorte${runes.length > 1 ? "s" : ""}</span></div>
-      <div class="list">${runes.map(([k, q]) => { const i = E.runeInfo(k); const simpleOnly = RUNE_SIMPLE_ONLY.includes(i.stat);
-        return `<div class="li"><span class="grow"><span class="name">${E.runeName(k)}</span> <span class="xs muted num">×${fmt(q)} · +${i.pts} ${STATS[i.stat].short}</span></span>
-          ${!simpleOnly && i.tier !== "ra" && !i.exo ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="up" ${q >= E.RUNE_FUSE_N ? "" : "disabled"} data-tip="${E.RUNE_FUSE_N} ${E.runeName(k)} → 1 ${E.runeName(E.runeKey(i.tier === "" ? "pa" : "ra", i.stat))}">Fusionner ×${E.RUNE_FUSE_N}</button>` : ""}
-          ${i.tier && !i.exo ? `<button class="btn sm" data-act="fuse" data-k="${k}" data-dir="down" data-tip="1 ${E.runeName(k)} → ${E.RUNE_FUSE_N} ${E.runeName(E.runeKey(i.tier === "ra" ? "pa" : "", i.stat))}">Casser</button>` : ""}
-          ${i.exo ? `<span class="tag exo" data-tip="Rune exotique : +1 ${STATS[i.stat].name} sur un objet de niveau ${E.EXO_LVL} ou plus (établi du forgemage, Forgemage niveau ${E.EXO_FM_LVL})">Exotique</span>` : `<button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="1" data-tip="Nourrir le Forgemage : +${i.weight * 3} XP par rune">${IC("forge")} ×1</button><button class="btn sm" data-act="fmfeed" data-k="${k}" data-q="${q}">Tout</button>`}</div>`; }).join("") || `<div class="empty">Aucune rune. Brisez des objets pour en obtenir.</div>`}</div></section>`;
-}
-/* 0.1.9.2 : runes exotiques et forgemagie automatique */
-function exoBlockHtml(it) {
-  const T = ITEMS[it.tpl];
-  if (it.exo) return `<div class="fmline exo"><div><span class="statl">${sIco(it.exo)}<b class="bonus">+1 ${STATS[it.exo].name}</b></span> <span class="tag exo">Exo ${STATS[it.exo].short}</span> <span class="xs muted">un seul exo par objet · au brisage l'exo est perdu mais les runes sont doublées</span></div></div>`;
-  if (T.slot === "dofus" || T.trophy) return "";
-  if (T.lvl < E.EXO_LVL) return `<div class="xs muted">Exotique (+1 PA, +1 PM ou +1 Portée) : objets de niveau ${E.EXO_LVL} ou plus.</div>`;
-  const J = E.fmJob(S);
-  return `<div class="fmline exo"><div><span class="statl"><b>Exotique</b></span> <span class="xs muted">ajoute une caractéristique que l'objet n'a pas (un seul exo par objet). En cas d'échec, seule la rune est perdue : l'objet ne baisse pas et le puits ne joue pas.${J.lvl < E.EXO_FM_LVL ? ` <b>Forgemage niveau ${E.EXO_FM_LVL} requis</b> (vous : ${J.lvl}).` : ""}</span>
-    <div class="runes">${E.EXO_STATS.map((k) => { const f = E.exoInfo(S, it.uid, k); const name = E.runeName(E.exoKey(k)); const pct = Math.round(f.chance * 100);
-      return f.ok ? `<button class="btn sm" data-act="exo" data-k="${k}" data-tip="${h(`${name} : +1 ${STATS[k].name} · ${pct} % de réussite (ni le puits ni le métier n'aident) · ${fmt(f.kamas)} kamas. Échec : la rune est perdue, l'objet reste intact.`)}">${name} ×${f.have} · <b>${pct} %</b> · ${fmt(f.kamas)} k</button>`
-        : `<span class="xs muted" data-tip="${h(f.why)}">${name} ×${f.have} · ${pct} % · ${fmt(f.kamas)} k : ${h(f.why)}</span>`; }).join("")}</div>
-    <div class="xs muted">Exo PA : un héros n'en porte qu'un seul. Runes Ga : coffres de boss des donjons de niveau ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8), archimonstres de niveau ${E.EXO_LVL}+, ou l'onglet Runes.</div></div></div>`;
-}
-const planGoalsTxt = (p) => { const it = S.items[p.uid]; return Object.keys(p.goals).map((k) => `${STATS[k].name} ${it ? it.stats[k] || 0 : "?"} / ${p.goals[k]}`).join(" · "); };
-function planBlockHtml(it) {
-  const p = E.fmPlanOf(S, it.uid);
-  if (p) return `<div class="row small"><span class="tag good">Plan en cours</span><span class="xs muted grow">${h(planGoalsTxt(p))} · prochaine tentative dans ${dur(E.fmPlanEta(S, p))}</span><button class="btn sm danger" data-act="fmplanstop" data-uid="${it.uid}">Arrêter</button></div>`;
-  if (ITEMS[it.tpl].trophy) return "";
-  const can = E.fmPlanActive(S).length < E.FM_PLAN_MAX;
-  return `<div class="row small"><button class="btn sm ${can ? "primary" : ""}" data-act="fmplan" data-uid="${it.uid}" ${can ? "" : "disabled"}>${IC("forge")} Automatiser</button><span class="xs muted">Une tentative toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} min avec vos runes et vos kamas, en jeu comme hors ligne${can ? "" : ` · ${E.FM_PLAN_MAX} plans en parallèle au maximum`}.</span></div>`;
-}
-function fmPlansHtml() {
-  const plans = E.fmPlans(S); if (!plans.length) return "";
-  const act = E.fmPlanActive(S).length;
-  return `<section class="panel"><div class="phead"><h2>Plans de forgemagie</h2><span class="xs muted num">${act} / ${E.FM_PLAN_MAX} en cours</span></div><div class="list">${plans.slice().reverse().map((p) => { const it = S.items[p.uid];
-    return `<div class="li"><span class="grow"><b>${it ? itemName(it) : h(p.name)}</b> ${p.done ? `<span class="tag soft">Terminé</span>` : `<span class="tag good">En cours</span>`}<br><span class="xs muted">${p.done ? h(p.done) + " · " : ""}${h(planGoalsTxt(p))} · ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""} · ${fmt(p.spent)} k${p.budget ? ` / ${fmt(p.budget)}` : ""}${p.done ? "" : ` · prochaine dans ${dur(E.fmPlanEta(S, p))}`}</span>${p.log.length ? `<div class="xs" style="margin-top:4px">${p.log.slice(0, 4).map((l) => `<div><span class="${l.ok ? "plus" : "minus"}">${l.ok ? "✓" : "✗"}</span> ${h(l.txt)} <span class="muted">${ago(l.t)}</span></div>`).join("")}</div>` : ""}</span>
-      ${it ? `<button class="btn sm" data-act="fmsel" data-uid="${p.uid}">Voir</button>` : ""}${p.done ? `<button class="btn sm" data-act="fmplandrop" data-uid="${p.uid}">Retirer</button>` : `<button class="btn sm danger" data-act="fmplanstop" data-uid="${p.uid}">Arrêter</button>`}</div>`; }).join("")}</div></section>`;
-}
-function fmPlanSheet(uid) {
-  const it = S.items[uid]; if (!it) return; const T = ITEMS[it.tpl];
-  const stats = Object.keys(T.stats).filter((k) => T.stats[k][1] > 0);
-  openSheet(`<h2>${IC("forge")} Automatiser la forgemagie</h2><div class="row">${itemIcon(it)}<div><b>${itemName(it)}</b><div class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</div></div></div>
-    <p class="small muted">Une tentative toutes les ${Math.round(E.fmPlanPeriod(S) / 60)} min, en jeu comme hors ligne, avec vos runes et vos kamas. Le plan s'arrête tout seul quand les objectifs sont atteints, que les runes ou le budget manquent, ou que le plancher est touché.</p>
-    <div class="stack" style="gap:8px">
-      <div class="small"><b>Objectifs</b> <span class="xs muted">jet visé ; au-delà du jet maximum c'est de l'exo-jet, risqué</span></div>
-      ${stats.map((k) => { const [, mx] = T.stats[k]; const cap = mx + Math.max(1, Math.ceil(mx * 0.25)); const cur = it.stats[k] || 0;
-        return `<label class="row small"><input type="checkbox" class="fmg" data-k="${k}" ${cur < mx ? "checked" : ""}> <span class="grow">${sIco(k)}${STATS[k].name} <span class="xs muted">${cur} actuellement · jet max ${mx} · exo jusqu'à ${cap}</span></span><input type="number" id="fmgv_${k}" min="${cur + 1}" max="${cap}" value="${Math.max(mx, cur + 1)}" style="width:84px"></label>`; }).join("")}
-      <div class="small"><b>Runes</b></div><div class="row small" style="flex-wrap:wrap">${Object.entries(E.FM_PLAN_RUNES).map(([v, n], i) => `<label><input type="radio" name="fmr" value="${v}" ${i === 0 ? "checked" : ""}> ${n}</label>`).join("")}</div>
-      <div class="row small"><b>Budget kamas</b><input type="number" id="fmbudget" min="0" step="1000" value="${Math.min(S.kamas, 100000)}" style="width:120px"><span class="xs muted">0 = sans limite</span></div>
-      <div class="row small"><b>Plancher</b><select id="fmfloor">${Object.entries(E.FM_PLAN_FLOOR).map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}</select></div>
-    </div>
-    <div class="row"><button class="btn primary" data-act="fmplango" data-uid="${uid}">Lancer le plan</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
-}
-function exoCraftHtml(runes) {
-  const ras = runes.filter(([k]) => k.split(":")[0] === "ra");
-  if (!ui.ga || !S.runes[ui.ga]) ui.ga = ras.length ? ras[0][0] : "";
-  const ecl = S.res[E.RARE_COMPONENT] || 0;
-  return `<section class="panel"><div class="phead"><h2>Runes exotiques</h2><span class="xs muted">${E.EXO_STATS.map((k) => `${E.runeName(E.exoKey(k))} ×${S.runes[E.exoKey(k)] || 0}`).join(" · ")}</span></div><div class="pad stack small" style="gap:6px">
-    <div class="xs muted">Une rune Ga ajoute +1 PA, +1 PM ou +1 Portée à un objet de niveau ${E.EXO_LVL} ou plus (établi du forgemage, Forgemage niveau ${E.EXO_FM_LVL}). Ici, des runes Ra d'une même caractéristique, des ${E.RARE_COMPONENT} (vous en avez ${fmt(ecl)}) et des kamas en fabriquent une. Les coffres de boss des donjons de niveau ${E.EXO_LVL}+ (stasis 7, Ga PA en stasis 8) et les archimonstres de niveau ${E.EXO_LVL}+ en lâchent aussi.</div>
-    <div class="row" style="flex-wrap:wrap"><select data-act="gafrom">${ras.map(([k, q]) => `<option value="${k}" ${ui.ga === k ? "selected" : ""}>${E.runeName(k)} ×${q}</option>`).join("") || `<option value="">Aucune rune Ra</option>`}</select>
-    ${E.EXO_STATS.map((k) => { const f = E.exoCraftInfo(S, k, ui.ga); const C = E.EXO_CRAFT[k];
-      return `<button class="btn sm ${f.ok ? "primary" : ""}" data-act="exocraft" data-k="${k}" ${f.ok ? "" : "disabled"} data-tip="${h(`${C.ra} runes Ra + ${C.eclat} ${E.RARE_COMPONENT} + ${fmt(C.kamas)} kamas → 1 ${E.runeName(E.exoKey(k))}${f.ok ? "" : " · " + f.why}`)}">${E.runeName(E.exoKey(k))} · ${C.ra} Ra + ${C.eclat} éclats + ${fmt(C.kamas)} k</button>`; }).join("")}</div></div></section>`;
-}
-/* 0.1.8.2 : carte du métier de Forgemage */
-function fmJobCard() {
-  const J = E.fmJob(S); const need = E.fmNeed(J.lvl); const max = J.lvl >= E.FM_MAX;
-  const next = E.FM_PERKS.find(([l]) => l > J.lvl);
-  return `<section class="panel"><div class="pad row" style="gap:14px;align-items:center">
-    <div style="width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--gold2),var(--gold) 60%,#8a5d14);display:grid;place-items:center;border:3px solid var(--frame);flex:none;color:#2a1a08"><b class="num" style="font-size:22px;line-height:1">${J.lvl}</b></div>
-    <div class="grow stack" style="gap:4px"><div class="row between"><h2>Forgemage niveau ${J.lvl}</h2><span class="xs muted">+${(J.lvl * 0.1).toFixed(1)} % de réussite · −${(J.lvl * 0.5).toFixed(1)} % de kamas</span></div>
-      <div class="bar xp"><i style="width:${max ? 100 : pct(J.xp, need)}%"></i></div>
-      <div class="xs muted num">${max ? "Niveau maximum" : `${fmt(J.xp)} / ${fmt(need)} XP · chaque forgemagie donne de l'expérience (le double en cas de réussite), les runes aussi (onglet Runes)`}</div>
-      <div class="xs">${E.FM_PERKS.map(([l, t]) => `<span class="${J.lvl >= l ? "plus" : "muted"}" data-tip="${h(t)}">${J.lvl >= l ? "✓" : "·"} niv. ${l}</span>`).join(" · ")}${next ? ` <span class="muted">— prochain palier (${next[0]}) : ${h(next[1])}</span>` : ""}</div></div></div></section>`;
-}
-
 /* ---------- feuilles ---------- */
 function openSheet(html) { $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
 function closeSheet() { $("#sheet").innerHTML = ""; ui.giveTo = null; }
@@ -5262,7 +5423,7 @@ document.addEventListener("click", (ev) => {
     case "searchclose": if (t.id === "wsearch" && ev.target !== t) return; searchClose(); return;
     case "searchgo": { const r = wsRes[+d.i]; if (r) searchGo(r); return; }
     case "searchfill": case "searchfill2": closeSheet(); searchOpen(d.q); searchRender(); return;
-    case "searchcraft": ui.craftJob = d.job; ui.craftSearch = d.q || ""; ui.craftMiss = -1; pageGo("craft"); return;
+    case "searchcraft": { ui.craftJob = d.job; const F = fltOf("met"); F.q = d.q || ""; F.mode = "all"; const tp = Object.keys(ITEMS).find((k) => ITEMS[k].name === d.q && ITEMS[k].craft); if (tp) ui.recSel = tp; pageGo("craft"); if (narrow() && tp) recSheet(); return; }
     case "searchdg": dungeonSheet(d.id); return;
     case "searchzone": closeSheet(); ui.zoneView = d.id; ui.tab = "world"; render(); window.scrollTo(0, 0); return;
     case "searchinv": closeSheet(); ui.tab = "inv"; ui.inv = "items"; ui.invSel = d.tpl; ui.slotFilter = "all"; render(); window.scrollTo(0, 0); return;
@@ -5314,14 +5475,14 @@ document.addEventListener("click", (ev) => {
     case "ressel": ui.resSel = d.n || null; break;
     case "resfav": if (S.resFav[d.n]) delete S.resFav[d.n]; else S.resFav[d.n] = 1; break;
     case "fmfav": { const it = S.items[+d.uid]; if (it) it.fav = !it.fav; break; }
-    case "fmtoggle": ui.fmF[d.k] = !ui.fmF[d.k]; break;
-    case "fmsel": ui.fmSel = +d.uid; break;
-    case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; window.scrollTo(0, 0); break;
+    case "fmsel": ui.fmSel = +d.uid; ui.fmBench = true; ui.confirm = null; if (narrow()) window.scrollTo(0, 0); break;
+    case "fmback": ui.fmBench = false; break;
+    case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
     case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
     case "exo": { const r = E.exoForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
     case "fmplan": fmPlanSheet(+d.uid); return;
     case "fmplango": { const goals = {}; document.querySelectorAll(".fmg:checked").forEach((x) => { const i = $("#fmgv_" + x.dataset.k); goals[x.dataset.k] = i ? +i.value : 0; });
-      const rr = document.querySelector('input[name="fmr"]:checked'); const err = E.startFmPlan(S, +d.uid, { goals, runes: rr ? rr.value : "all", budget: +($("#fmbudget") || {}).value || 0, floor: ($("#fmfloor") || {}).value });
+      const rr = document.querySelector('input[name="fmr"]:checked'); const err = E.startFmPlan(S, +d.uid, { goals, runes: rr ? rr.value : "all", floor: ($("#fmfloor") || {}).value });
       if (err) { toast(err); return; } closeSheet(); toast("Plan de forgemagie lancé."); break; }
     case "fmplanstop": E.stopFmPlan(S, +d.uid); break;
     case "fmplandrop": E.stopFmPlan(S, +d.uid, true); break;
@@ -5520,12 +5681,41 @@ document.addEventListener("click", (ev) => {
     case "hdvitem": { if (!window.MARKET) break; window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
     case "hdvres": { if (!window.MARKET) break; window.MARKET.sellRes(d.n); navGo("hdv"); window.scrollTo(0, 0); break; }
     case "gbsell": { const k0 = S.kamas; const r = E.act(S, "gameBuySell", d.n, +d.q); if (r) toast(r, "warn"); else toast(`Vendu au jeu : ${fmt(S.kamas - k0)} kamas.`); break; }
-    case "craftjob": ui.craftJob = d.v; break;
+    case "craftjob": ui.craftJob = d.v; ui.recSel = null; break;
+    /* 0.1.41 : métiers et forgemagie */
+    case "pagego": pageGo(d.v); return;
+    case "gbsheet": openSheet(`${gameBuysHtml()}<div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`); return;
+    case "recsel": ui.recSel = d.id; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
+    case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
+    case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }
+    case "reswhere": { const n = d.n; if (!RES[n]) { toast("Source inconnue pour l'instant."); return; } openSheet(`${resDetail(n)}<div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`); return; }
+    case "hdvorder": { if (!window.MARKET || !window.MARKET.orderFor) return; window.MARKET.orderFor(d.c, d.k, +d.n || 0); closeSheet(); navGo("hdv"); window.scrollTo(0, 0); return; }
+    case "fltopen": { ui.fltOpen = ui.fltOpen || {}; ui.fltOpen[d.ctx] = !ui.fltOpen[d.ctx]; break; }
+    case "fltclr": { const F = fltOf(d.ctx); F[d.k] = ""; break; }
+    case "fltall": { const F = fltOf(d.ctx); ["q", "slot", "lv", "stat", "set", "cid", "focus"].forEach((k) => { if (k in F) F[k] = ""; }); break; }
+    case "fltset": { const F = fltOf(d.ctx); F[d.k] = d.v; break; }
+    case "flttog": { const F = fltOf(d.ctx); F[d.k] = !F[d.k]; break; }
+    case "fmhelp": fmHelpSheet(); return;
+    case "fmtransmute": { ui.tr = ui.tr || { from: "", to: d.k }; ui.tr.to = d.k; ui.fg = "runes"; ui.trOpen = true; window.scrollTo(0, 0); break; }
+    case "trpick": { const k = ["", "pa", "ra"].map((t) => E.runeKey(t, d.k)).find((x) => (S.runes[x] || 0) >= E.TRANSMUTE_N) || E.runeKey("", d.k); ui.tr = ui.tr || {}; ui.tr.from = k; ui.trOpen = true; break; }
+    case "tropen": ev.preventDefault(); ui.trOpen = !ui.trOpen; break;
+    case "asktrans": ui.confirm = "trans:" + d.k; break;
+    case "trans": { ui.confirm = null; const r = E.transForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; }
+    case "fmsign": { const r = E.signItem(S, ui.fmSel, ($("#fmsig") || {}).value); toast(r || "Objet signé.", r ? "" : "rare"); break; }
+    case "brtog": { const u = +d.uid; const sel = ui.brSel || (ui.brSel = new Set()); if (sel.has(u)) sel.delete(u); else sel.add(u); ui.confirm = null; break; }
+    case "brall": { const sel = ui.brSel || (ui.brSel = new Set()); document.querySelectorAll('[data-act="brtog"]').forEach((x) => { const it = S.items[+x.dataset.uid]; if (it && !it.radiant && !it.locked && !E.inGear(S, it.uid)) sel.add(it.uid); }); break; }
+    case "brnone": if (ui.brSel) ui.brSel.clear(); ui.confirm = null; break;
+    case "brask": ui.confirm = "brsel"; break;
+    case "brgo": { const sel = ui.brSel || new Set(); const got = {}; let n = 0; const foc = fltOf("br").focus || null;
+      [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u)) return; const r = E.breakItem(S, u, foc); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } });
+      sel.clear(); ui.confirm = null; toast(`${n} objet${n > 1 ? "s" : ""} brisé${n > 1 ? "s" : ""}. Runes : ${runesTxt(got)}`); break; }
+    case "fuseall": { let n = 0; for (const t of ["", "pa"]) { const k = E.runeKey(t, d.k); while ((S.runes[k] || 0) >= E.RUNE_FUSE_N && !E.fuseRunes(S, k, "up")) n++; } toast(n ? `${n} fusion${n > 1 ? "s" : ""}.` : "Rien à fusionner."); break; }
+
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
     case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
-      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); break; }
+      toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
     case "dupesask": ui.confirm = "dupes"; break;
     case "dupesgo": { const r = E.breakDupes(S); ui.confirm = null; toast(`${r.n} doublon${r.n > 1 ? "s" : ""} brisé${r.n > 1 ? "s" : ""}. Runes : ${runesTxt(r.got)}`); break; }
     case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;
@@ -5534,11 +5724,10 @@ document.addEventListener("click", (ev) => {
     case "overallask": ui.confirm = "overall"; break;
     case "overallgo": { const r = E.overBreakAll(S); ui.confirm = null; toast(`${r.n} objets brisés. Runes : ${runesTxt(r.got)}`); break; }
     case "overhdv": { const r = E.overTake(S, +d.uid); if (r) { toast(r, "warn"); break; } window.MARKET.sellItem(+d.uid); dirty = true; navGo("hdv"); window.scrollTo(0, 0); break; }
-    case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
+    case "break": { const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
     case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
-    case "fmfeed": { const r = E.feedForgemage(S, d.k, +d.q); if (r) toast(`+${fmt(r.xp)} XP de Forgemage`); break; }
     case "fuse": { const r = E.fuseRunes(S, d.k, d.dir); if (r) toast(r); break; }
     case "transmute": { const r = E.transmute(S, ui.tr.from, ui.tr.to); toast(r || `1 ${E.runeName(E.runeKey(ui.tr.from.split(":")[0], ui.tr.to))} obtenue`); break; }
     case "savenow": saveNow(true); return;
@@ -5588,7 +5777,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "setwing") { E.setWing(S, +t.dataset.id, t.value); }
   else if (a === "focus") ui.focus = t.value;
   else if (a === "pzone") { if (!t.value) return; E.setZonePreset(S, c.id, t.value, +t.dataset.i); toast("Stratégie associée à la zone."); }
-  else if (a === "craftmiss") ui.craftMiss = +t.value;
+  else if (a === "flt") { fltOf(t.dataset.ctx)[t.dataset.k] = t.value; }
   else if (a === "autoaction") { S.settings.auto.action = t.value; ui.autoOpen = true; }
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
@@ -5596,12 +5785,9 @@ document.addEventListener("change", (ev) => {
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;
   else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu au marchand de secours.`); }
-  else if (a === "fmslot") ui.fmF.slot = t.value;
   else if (a === "trfrom") ui.tr.from = t.value;
   else if (a === "gafrom") ui.ga = t.value;
   else if (a === "trto") ui.tr.to = t.value;
-  else if (a === "fmsort") ui.fmF.sort = t.value;
-  else if (a === "fmcid") ui.fmF.cid = t.value;
   else if (a === "invsort") ui.invSort = t.value;
   else if (a === "setmode") ui.setF.mode = t.value;
   else if (a === "setcid") ui.setF.cid = +t.value;
@@ -5612,12 +5798,11 @@ document.addEventListener("input", (ev) => {
   if (ev.target.id === "wsq") { searchRender(); return; }
   const t = ev.target;
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
-  if (t.dataset.act === "fmsearch") { ui.fmF.q = t.value; const pos = t.selectionStart; renderForge(); const n = $("#fmSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "encsearch") { ui.enc.q = t.value; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
-  if (t.dataset.act !== "craftsearch") return;
-  ui.craftSearch = t.value; const pos = t.selectionStart; renderMetiers(); const n = $("#craftSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+  if (t.dataset.act !== "fltq") return;
+  const ctx = t.dataset.ctx; fltOf(ctx).q = t.value; dirty = true; const pos = t.selectionStart; if (ctx === "met") renderMetiers(); else renderForge(); const n = $("#fltq_" + ctx); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
 });
 
 /* ---------- sauvegarde ---------- */
@@ -6108,11 +6293,22 @@ function bootGame(pushNow) {
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
   if (ON && window.GUILD) setTimeout(() => window.GUILD.start(), 700);
+  if (ON) { setTimeout(brisageNet, 5000); setInterval(brisageNet, 15000); }
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);
   loop();
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
   setTimeout(checkNewVersion, 20000); setInterval(checkNewVersion, 5 * 60 * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
+}
+/* 0.1.41 : coefficient de brisage commun aux joueurs en ligne (supabase/brisage.sql) ; sans compte, chacun garde le sien */
+let coefAt = 0;
+async function brisageNet() {
+  if (!ON || !ON.user) { if (E.netCoef) { E.netCoef = null; E.netCoefHits.length = 0; } return; }
+  const hits = E.netCoefHits.splice(0, 300);
+  if (!hits.length && E.netCoef && Date.now() - coefAt < 180000) return;
+  const r = await ON.rpc(hits.length ? "brisage_hit" : "brisage_list", hits.length ? { p_tpls: hits } : {});
+  if (r.err || !r.data || r.data.err) { if (hits.length) E.netCoefHits.unshift(...hits); return; }
+  coefAt = Date.now(); const now = E.now(); const m = {}; for (const k in r.data) m[k] = { v: +r.data[k], t: now }; E.netCoef = m;
 }
 window.DX = { get S() { return S; }, ui, render, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
