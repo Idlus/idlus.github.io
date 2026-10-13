@@ -118,6 +118,13 @@ const MOCK = () => {
       // 0.1.36 : boîte à idées
       if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
         L.push({ id: L.length + 1, user_id: u.id, t: Date.now(), pseudo: me && me.pseudo, info: a.p_info, tag: a.p_tag, title: a.p_title, body: a.p_body, hidden: false, url: null, created_at: new Date().toISOString(), guest: false }); put(d); return { data: null, error: null }; }
+      // 0.1.52.1 : fiches joueurs (la partie en ligne du joueur = la partie de ce navigateur)
+      if (name === "adm_roster") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, main_lvl: 200, playtime: 7200, guild: "Les Tofus", cote: 1240, last_save: new Date().toISOString(), created_at: new Date().toISOString() }, { id: "u8", pseudo: "Tofuline", cls: "eni", level: 150, created_at: new Date().toISOString() }], error: null };
+      if (name === "adm_player") return { data: { id: a.p_user, pseudo: "Kralamour", acc: { created_at: new Date().toISOString(), last_login: new Date().toISOString(), providers: ["discord"], discord: "Krala" },
+        save: { data: window.ENGINE.serialize(window.DX.S), version: "0.1.52.1", device: "PC", at: new Date().toISOString(), size: 10 }, ladder: { main: "iop", main_lvl: 200, level: 4812 },
+        guild: { name: "Les Tofus", lvl: 3, rank: 0, given: 12000 }, koli: { cote: 1240, best: 1300, win: 4, loss: 1, dwin: 2, dloss: 3, fights: 10 },
+        hdv: { open: 2, open_k: 15000, sold: 3, sold_k: 42000, bought: 1, bought_k: 900, orders: 0, trades: 1, last: [{ name: "Blé", qty: 100, price: 900, at: new Date().toISOString(), sold: false }] },
+        boss: { wb_n: 3, wb_pts: 125000, gb_n: 0, gb_pts: 0 }, gifts: [{ code: "SABLIER", at: new Date().toISOString() }], ideas: [], chat: { pub: 12, pub7: 4, priv: 2 }, mod: { reports: 1, reported: 0, log: [{ at: new Date().toISOString(), txt: "Kralamour rendu muet 1 h" }] } }, error: null };
       if (name === "adm_ideas") return { data: (d.ideas || []).slice().reverse(), error: null };
       if (name === "adm_pin") { log(); d.views = d.views || {}; d.views.chat_settings = [{ id: 1, pin_body: a.p_body, pin_chs: a.p_chs, pin_at: ts() }]; put(d); return { data: null, error: null }; } // 0.1.50.2
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
@@ -302,6 +309,11 @@ const MOCK = () => {
     await page.evaluate(() => { window.CHAT.state.tab = "c"; window.CHAT.repaint(); });
     if (!(await page.$("#chat .ch-pin")) || !/Nouveau texte épinglé/.test(await page.textContent("#chat .ch-pin"))) fail("chat : nouveau message épinglé absent après le changement");
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
+    // 0.1.52.1 : fiches joueurs (réservées à l'admin), avec la partie lue par le jeu
+    await page.click('.adm [data-act="adm-tab"][data-v="fiches"]'); await page.waitForSelector('.adm [data-act="fj-sel"]', { timeout: 5000 });
+    await page.click('.adm [data-act="fj-sel"]'); await page.waitForSelector(".adm .fj-hero", { timeout: 5000 });
+    { const tx = await page.textContent(".adm .fj-main"); if (!/Les Tofus/.test(tx) || !/Quête principale/.test(tx) || !/Kolizéum/.test(tx)) fail("fiches joueurs : fiche incomplète"); }
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/fiche.png", fullPage: true });
     // 7d bis (0.1.36). boîte à idées : envoi depuis Communauté › Suggestions, puis lecture dans le panel admin
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.click('#nav .sn-side [data-nk="sugg"]'); await page.waitForSelector("#idTitle", { timeout: 5000 });

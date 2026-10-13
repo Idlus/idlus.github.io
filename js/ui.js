@@ -33,6 +33,10 @@ const CHANGELOG = [
     "Chaque caractéristique a son icône DOFUS : dommages par élément, dommages critiques, dommages aux sorts, résistances fixes, PM, Portée, Tacle, Fuite, Retrait et Esquive PA/PM, Invocation, Pods",
     "Icônes des ressources partout où il en manquait : recettes de la fiche d'objet, Almanax et Achats du jeu à l'Accueil, nourriture et ressources protégées des familiers ; bonus de panoplie avec leurs icônes",
   ] },
+  { v: "0.1.52.1", name: "Fiches joueurs", items: [
+    "Panel admin : nouvel onglet « Fiches joueurs », réservé au créateur, avec la liste de tous les comptes (recherche et tri) et une fiche détaillée pour chacun",
+    "La fiche montre le compte, les héros et leur équipement, la progression, l'inventaire, les métiers, la guilde, le Kolizéum, l'Hôtel de vente, les boss, le chat et la modération",
+  ] },
   { v: "0.1.52", name: "Songe plus clair", items: [
     "Le Songe infini est réorganisé : un en-tête avec tes Bribes et 3 onglets avec compteurs (Le Puits ou Mon songe, Marché onirique, Légendaires)",
     "Nouveaux emblèmes pour les 8 difficultés : des lunes en métal ciselé, turquoise pour le Rêve, violettes pour le Paradoxe, rouges et cornues pour le Cauchemar, plus riches à chaque rang",

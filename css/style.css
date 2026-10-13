@@ -3931,3 +3931,42 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .restag{white-space:nowrap;margin-right:8px}.restag:last-child{margin-right:0}
 .rico{display:inline-block;width:18px;height:18px;object-fit:contain;vertical-align:-4px;margin-right:3px;flex:none}
 .restag .uico{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
+/* 0.1.52.1 : panel admin › Fiches joueurs (js/fiches.js) */
+.adm:has(.fj){container-type:inline-size}
+.adm .fj{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:12px;align-items:start}
+.adm .fj-roster{position:sticky;top:70px;max-height:calc(100vh - 90px)}
+.adm .fj-list{overflow:auto;min-height:0;flex:1;margin:0 -4px}
+.adm .fj-main{display:flex;flex-direction:column;gap:12px;min-width:0}
+.adm .fj-who{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.adm .fj-who b{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.adm .fj-roster .fj-who{flex-direction:row;flex-wrap:wrap;column-gap:6px}
+.adm .fj-roster .fj-who .xs{flex-basis:100%}
+.adm .fj-roster select{border-radius:8px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);padding:3px 6px;min-width:0}
+.adm .fj-back{display:none}
+.adm .fj .fiche{margin:0;padding:0;border:0;grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.adm .fj .two{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.adm .fj .kpis{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.adm .fj .fiche div{overflow-wrap:anywhere}
+.adm .fj .kpi b{font-size:22px;display:flex;align-items:center;gap:4px}
+.adm .fj .kk{width:18px;height:18px}
+.adm .fj .ln .kk{width:14px;height:14px;vertical-align:-2px}
+.adm .fj-heroes{display:flex;flex-direction:column}
+.adm .fj-hero{border-bottom:1px solid var(--line)}.adm .fj-hero:last-child{border-bottom:0}
+.adm .fj-hero summary{display:flex;gap:8px;align-items:center;padding:7px 4px;cursor:pointer;list-style:none;font-size:14px}
+.adm .fj-hero summary::-webkit-details-marker{display:none}
+.adm .fj-hero summary .t{margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap}
+.adm .fj-hero[open] summary{background:var(--panel2);border-radius:8px}
+.adm .fj-gear{display:flex;flex-wrap:wrap;gap:6px;padding:8px 4px 10px}
+.adm .fj-gear span{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border-radius:8px;padding:3px 8px 3px 3px;font-size:13px;cursor:pointer}
+.adm .fj-gear img{width:26px;height:26px;object-fit:contain}
+.adm .fj-gear i{font-style:normal;color:var(--muted);font-size:11px}
+.adm .fj-jobs{display:flex;flex-wrap:wrap;gap:6px}
+.adm .fj-jobs span{background:var(--panel2);border-radius:8px;padding:4px 10px;font-size:13px}
+.adm .fj-jobs b{color:var(--gold2)}
+@container (max-width:760px){
+  .adm .fj{grid-template-columns:minmax(0,1fr)}
+  .adm .fj-roster{position:static;max-height:none}
+  .adm .fj.has-sel .fj-roster{display:none}
+  .adm .fj.has-sel .fj-back{display:inline-flex}
+}
+@container (max-width:420px){.adm .fj .fiche{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .fj .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .fj .two{grid-template-columns:minmax(0,1fr)}}

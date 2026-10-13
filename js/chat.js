@@ -258,7 +258,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="Panel admin">${X().G("shield")}<span class="hide-sm">${C.role === "admin" ? "Admin" : "Modération"}</span></button>` : ""; }
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"], ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]].concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || x[0] !== "verif");
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || x[0] !== "verif");
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -271,6 +271,7 @@
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
     if (A.tab === "codes") A.codes = await r("adm_gifts"); // 0.1.26, voir js/codes.js
     if (A.tab === "idees") A.idees = await r("adm_ideas"); // 0.1.36, voir js/idees.js
+    if (A.tab === "fiches" && window.FICHES && isAdmin()) await window.FICHES.load(); // 0.1.52.1, voir js/fiches.js
   }
   function renderAdmin(main) {
     if (!C.role) { main.innerHTML = `<section class="panel"><div class="pad empty">Le panel admin est réservé à l'équipe d'Idlus.</div></section>`; return; }
@@ -293,6 +294,7 @@
     if (A.tab === "guildes" && window.GUILD) return window.GUILD.adminHtml(A.guildes);
     if (A.tab === "codes" && window.GIFTS) return window.GIFTS.adminHtml(A.codes);
     if (A.tab === "idees" && window.IDEES) return window.IDEES.adminHtml(A.idees);
+    if (A.tab === "fiches" && window.FICHES) return window.FICHES.adminHtml();
     if (A.tab === "vue") {
       const st = o.settings || {};
       return `<div class="kpis"><div class="kpi"><b>${o.accounts}</b><span>comptes créés</span></div><div class="kpi"><b>${C.count || 1}</b><span>joueurs en ligne maintenant</span></div><div class="kpi"><b>${o.active}</b><span>parties envoyées ces 24 h</span></div><div class="kpi${o.reports + o.flagged ? " warn" : ""}"><b>${o.reports + (isAdmin() ? o.flagged : 0)}</b><span>choses à regarder</span></div></div>
@@ -351,7 +353,7 @@
     return `<div class="box"><div class="row between"><div class="row">${X().cmed(x.cls)}<h2>${h(x.pseudo)}</h2>${stTags(x)}</div><span class="xs muted">compte créé le ${new Date(x.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</span></div>
       <div class="fiche"><div><small>Niveau d'équipe</small>${x.level || 0}</div><div><small>Temps de jeu</small>${dur(x.playtime || 0)}</div><div><small>Dernier envoi de la partie</small>${when(x.last_save)}</div>
         <div><small>Héros</small>${H.slice(0, 4).map((c) => `${h(clsName(c.cls))} ${c.lvl}${c.ren ? ` (R${c.ren})` : ""}`).join(", ") || "—"}</div><div><small>Signalements reçus</small>${x.reports || 0}</div><div><small>Classements</small>${x.flagged ? `en vérification${x.flag_reason ? ` (${h(x.flag_reason)})` : ""}` : "visible"}</div></div>
-      ${self ? `<p class="small muted">C'est ton compte.</p>` : `<div class="acts"><button class="btn sm" data-act="ch-prof" data-u="${x.id}">Voir son profil</button>
+      ${self ? `<p class="small muted">C'est ton compte.</p>` : `<div class="acts"><button class="btn sm" data-act="ch-prof" data-u="${x.id}">Voir son profil</button>${isAdmin() && window.FICHES ? `<button class="btn sm" data-act="adm-fiche" data-u="${x.id}">Fiche détaillée</button>` : ""}
         ${mute ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="0">Lever le muet</button>` : ""}<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="60">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="1440">Muet 24 h</button>
         ${isAdmin() ? `<button class="btn sm${x.banned ? "" : " danger"}" data-act="adm-ban" data-u="${x.id}" data-v="${x.banned ? 0 : 1}">${x.banned ? "Lever le bannissement" : "Bannir du chat"}</button>
         <button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="${x.flagged ? 0 : 1}">${x.flagged ? "Remettre dans les classements" : "Mettre en vérification"}</button>
@@ -408,6 +410,7 @@
       case "adm-tab": A.tab = d.v; repaintAdm(); await admLoad(); repaintAdm(); return;
       case "adm-reload": A.ov = null; repaintAdm(); await admLoad(); repaintAdm(); return;
       case "adm-find": openAdmin("joueurs", d.q || ""); return;
+      case "adm-fiche": if (window.FICHES) window.FICHES.select(d.u); openAdmin("fiches"); return;
       case "adm-search": A.q = ($("#admQ").value || "").trim(); A.sel = null; A.msgs = null; await admLoad(); repaintAdm(); return;
       case "adm-sel": A.sel = (A.list || []).find((x) => x.id === d.id) || null; A.ren = A.sus = null; await admLoad(); repaintAdm(); return;
       case "adm-mute": if (await admDo("adm_mute", { p_user: d.u, p_min: +d.v }, +d.v ? "Joueur rendu muet." : "Le joueur peut de nouveau écrire.") && d.close) await admDo("adm_report_close", { p_user: d.u }); return;
@@ -448,5 +451,5 @@
   }, true);
   document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
-  window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, get role() { return C.role; }, get state() { return C; } };
+  window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; } };
 })();
