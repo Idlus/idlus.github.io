@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.2 « Encadré de chasse »
+Accueil (js/ui.js `renderHomeInner`) : en chasse, carte `.ac-hunt` avec la zone en titre, tuiles `.ac-kt` (XP/h, kamas/h, ressources/h, victoires via `E.zoneRate`), ligne `.ac-lf` du dernier combat (`S.history[0]`), barre d'XP `.ac-x` sous chaque tête, boutons-icônes `.ac-ib` au téléphone (CSS en fin de style.css).
+
 ## 1.0.1 « Défis à toutes les tailles »
 Dopeuls (js/vie.js), Protecteurs (js/systems.js `E.protGroup`) et gardiens du trésor (js/suivi.js) : force × `E.foeSize(n, niveau)` = `E.FOE_SIZE` par taille d'équipe (solo plus fort, duo et trio plus doux, compense `E.HUNT_SMALL`) × `E.FOE_LVL` par niveau (adouci vers 40 et 200 ; `E.FOE_LVL_SOLO` pour un héros seul). Réglé par simulation : bien équipé 80-100 % de victoires à toutes les tailles, sans équipement le plus souvent battu.
 

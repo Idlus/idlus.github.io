@@ -4178,3 +4178,37 @@ body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
 .launch10 .l10-list{text-align:left;width:100%;margin:0;padding-left:20px}
 .launch10 .l10-btns{justify-content:center;gap:8px;flex-wrap:wrap}
 @media (max-width:480px){.launch10 .l10-gift>img{width:72px}}
+/* 1.0.1 « Encadré de chasse » : zone en titre, 4 tuiles, dernier combat, têtes sur une ligne avec barre d'XP, boutons-icônes au téléphone */
+.ac-hunt{min-width:min(100%,420px)}
+.ac-hunt>.xs.muted{display:block;letter-spacing:.02em}
+.ac-zt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:1px 0 0}
+.ac-zl{font-family:var(--font-body);font-size:12px;color:var(--muted);font-weight:600}
+.ac-kt{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.ac-kt .k{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:5px 8px;display:grid;line-height:1.15;min-width:0}
+.ac-kt .k b{font-size:15px;color:var(--gold2);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.ac-kt .k b .uico,.ac-kt .k b svg{width:15px;height:15px;flex:none}
+.ac-kt .k span{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-kt .k-kamas b{color:#ffd76a}.ac-kt .k-win b{color:#9ff07a}
+.ac-lf{margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,.1)}
+.ac-lf .plus{color:#9ff07a}.ac-lf .minus{color:#ff8a7a}
+.ac-x{position:absolute;left:12%;right:12%;bottom:-8px;height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden;pointer-events:none}
+.ac-x i{display:block;height:100%;background:linear-gradient(90deg,#7fd3ff,#b9f0ff)}
+.ac-h .ac-x~.ac-lv,.ac-h:has(.ac-x) .ac-lv{bottom:-4px}
+.ac-heads{padding-bottom:10px}
+.ac-l>.row .btn.primary{justify-content:center}
+@media (max-width:700px){
+  .ac-l,.ac-hunt{width:100%;min-width:0}
+  .ac-l>.row{width:100%;flex-wrap:nowrap}
+  .ac-l>.row .btn.primary{flex:1}
+  .ac-l>.row .btn.ac-ib{width:46px;padding-inline:0;justify-content:center;flex:none}
+  .ac-l>.row .btn.ac-ib .lb{display:none}
+  .ac-l>.row .btn.ac-ib .uico{display:inline-block;width:22px;height:22px;margin:0}
+  .ac-kt{gap:4px}
+  .ac-kt .k{padding:4px 6px}
+  .ac-kt .k b{font-size:13.5px;gap:3px}
+  .ac-kt .k b .uico,.ac-kt .k b svg{width:13px;height:13px}
+  .ac-kt .k span{font-size:10px}
+  .ac-heads{flex-wrap:nowrap;overflow:visible;gap:4px;justify-content:space-between;width:100%;padding:4px 0 12px}
+  .ac-h{flex:1 1 0;min-width:0;max-width:46px}
+  .ac-h .head{width:100%;height:auto;aspect-ratio:1}
+}

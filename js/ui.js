@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.1";
+const GAME_VERSION = "1.0.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.2", name: "Encadré de chasse", items: [
+    "Accueil : pendant une chasse, l'encadré met la zone en titre (niveau et difficulté) avec 4 tuiles claires : XP/h, kamas/h, ressources/h et victoires",
+    "Une ligne « dernier combat » sous les tuiles : victoire ou défaite, durée, XP, kamas et ressources gagnés",
+    "Les têtes des héros ont une fine barre d'XP vers le niveau suivant ; au téléphone elles tiennent toutes sur une ligne",
+    "Au téléphone, « Voir le combat » prend toute la largeur ; Zones et Rentrer deviennent deux petits boutons-icônes",
+  ] },
   { v: "1.0.1", name: "Défis à toutes les tailles", items: [
     "Dopeuls des temples, Protecteurs des ressources et gardiens de la chasse au trésor : même difficulté seul ou en équipe. Avant, un héros seul les battait bien plus facilement, et un duo ou un trio bien équipé perdait souvent",
     "Ces combats sont un peu plus doux vers le niveau 40 et le niveau 200, où même une équipe bien équipée perdait trop souvent. Sans équipement, on perd toujours, même seul",
@@ -1437,12 +1443,18 @@ function renderHomeInner() {
   const act = S.dungeon ? `En donjon : <b>${h(DUNGEONS[S.dungeon.id].name)}</b> · salle ${Math.min(S.dungeon.room + 1, DUNGEONS[S.dungeon.id].rooms.length + 1)}/${DUNGEONS[S.dungeon.id].rooms.length + 1}`
     : !team.length ? `Tous vos héros récoltent. Rappelez-en un dans Métiers pour chasser.` : S.hunting && sub ? `Chasse : <b>${h(sub.name)}</b> <span class="xs muted">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}` : `Votre équipe se repose. Choisissez une zone pour partir chasser.`;
   const rate = !S.dungeon && S.sub ? E.zoneRate(S, S.sub) : null;
+  /* 1.0.1 « Encadré de chasse » : la zone en titre, 4 tuiles de rendement, le dernier combat */
+  const kt = rate ? `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(rate.xpH), "XP/h"], ["kamas", IC("kamas"), fmtK(rate.kH), "kamas/h"], ["res", IC("sac"), fmtK(rate.rH), "ressources/h"], ["win", IC("trophee"), `${Math.round(rate.winRate * 100)} %`, "victoires"]].map(([k, i, v, l]) => `<div class="k k-${k}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>` : "";
+  const H0 = (S.hunting || S.dungeon) && S.history && S.history[0];
+  const lf = H0 ? `<div class="ac-lf xs"><b class="${H0.w ? "plus" : "minus"}">${H0.w ? "Victoire" : "Défaite"}</b> <span class="muted">dernier combat · ${Math.max(1, Math.round(H0.d || 0))} s</span>${H0.w ? ` · <b class="num">+${fmt(H0.xp)}</b> XP · <b class="num">+${fmt(H0.k)}</b> kamas · <b class="num">${fmt(H0.r || 0)}</b> ressource${(H0.r || 0) > 1 ? "s" : ""}` : ""}</div>` : "";
+  const hunt = S.hunting && !S.dungeon && sub && team.length;
+  const card = hunt ? `<div class="card ac-hunt"><span class="xs muted">Chasse en cours</span><h1 class="ac-zt">${h(sub.name)} <span class="ac-zl">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}</h1>${kt || `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>`}${lf}</div>` : null;
   const rl = rate ? `<div class="ac-rate xs"><span><b class="num">${fmt(rate.xpH)}</b> XP/h</span><span><b class="num">${fmt(rate.kH)}</b> kamas/h</span><span><b class="num">${fmt(rate.rH)}</b> ressources/h</span><span><b class="num">${Math.round(rate.winRate * 100)} %</b> victoires</span></div>` : S.hunting ? `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>` : "";
   const best = !S.dungeon && team.length ? bestSub() : null; const B = best && E.SUBS[best];
   const reco = B && best !== S.sub ? `<div class="ac-reco">${G("star")}<span class="grow">Zone conseillée pour ton niveau : <b>${h(B.name)}</b> <span class="xs">niv. ${B.lvl[0]}-${B.lvl[1]}</span></span><button class="btn sm primary" data-act="hunt" data-id="${best}">Y aller</button></div>` : "";
   const al = teamAlerts();
   const heads = S.chars.map((c) => { const out = !(c.inTeam && !c.job); const g = al.some((a) => a.c === c && a.k === "gear"); const p = !c.autoStat && c.pts > 0;
-    return `<button class="ac-h ${out ? "out" : ""}" data-act="homehero" data-id="${c.id}" data-tip="${h(`${c.name} · ${CLASSES[c.cls].name} niv. ${c.lvl}${out ? " · hors combat" : ""}${p ? ` · ${c.pts} points à répartir` : ""}${g ? " · meilleur équipement dans le sac" : ""}`)}" aria-label="${h(c.name)}">${head(c)}<span class="ac-lv num">${c.lvl}</span>${g ? `<i class="ac-g"></i>` : ""}${p ? `<i class="ac-p num">${c.pts}</i>` : ""}</button>`; }).join("")
+    return `<button class="ac-h ${out ? "out" : ""}" data-act="homehero" data-id="${c.id}" data-tip="${h(`${c.name} · ${CLASSES[c.cls].name} niv. ${c.lvl}${out ? " · hors combat" : ""}${p ? ` · ${c.pts} points à répartir` : ""}${g ? " · meilleur équipement dans le sac" : ""}`)}" aria-label="${h(c.name)}">${head(c)}<span class="ac-lv num">${c.lvl}</span>${!out && c.lvl < E.MAX_LVL ? `<i class="ac-x"><i style="width:${Math.max(6, Math.min(100, Math.round(100 * c.xp / E.xpNeed(c.lvl))))}%"></i></i>` : ""}${g ? `<i class="ac-g"></i>` : ""}${p ? `<i class="ac-p num">${c.pts}</i>` : ""}</button>`; }).join("")
     + (S.chars.length < E.HERO_MAX ? `<button class="ac-h ac-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" data-tip="${h(`Recruter un héros : ${recruitPrice() ? `${fmt(recruitPrice())} kamas` : "gratuit"}`)}" aria-label="Recruter un héros"><span class="head">+</span></button>` : "");
   const { html: tiles, todo } = homeTiles();
   const q = E.questStep(S); const qp = E.questProgress(S);
@@ -1454,8 +1466,8 @@ function renderHomeInner() {
   <section class="hero-banner ac-ban">
     <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}</div>
     <div class="inner"><div class="ac-l">
-      <div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}</div>
-      <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn" data-tab="world">${IC("monde")} Zones</button><button class="btn" data-act="stophunt">Rentrer</button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
+      ${card || `<div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}${lf}</div>`}
+      <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn ac-ib" data-tab="world" data-tip="Changer de zone" aria-label="Zones">${IC("monde")} <span class="lb">Zones</span></button><button class="btn ac-ib" data-act="stophunt" data-tip="Rentrer au Havre-Sac" aria-label="Rentrer">${IC("havre")} <span class="lb">Rentrer</span></button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
       <div class="ac-r"><div class="ac-heads">${heads}</div>${team.length ? fsGauge() : ""}</div>
     </div>
     ${reco}

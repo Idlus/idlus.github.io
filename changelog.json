@@ -1,6 +1,16 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "versions": [
+    {
+      "v": "1.0.2",
+      "name": "Encadré de chasse",
+      "items": [
+        "Accueil : pendant une chasse, l'encadré met la zone en titre (niveau et difficulté) avec 4 tuiles claires : XP/h, kamas/h, ressources/h et victoires",
+        "Une ligne « dernier combat » sous les tuiles : victoire ou défaite, durée, XP, kamas et ressources gagnés",
+        "Les têtes des héros ont une fine barre d'XP vers le niveau suivant ; au téléphone elles tiennent toutes sur une ligne",
+        "Au téléphone, « Voir le combat » prend toute la largeur ; Zones et Rentrer deviennent deux petits boutons-icônes"
+      ]
+    },
     {
       "v": "1.0.1",
       "name": "Défis à toutes les tailles",
