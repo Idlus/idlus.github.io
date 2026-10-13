@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48.4 « Titre du songe »
+Combat (renderCombat, ui.js) : le titre d'un combat du Songe infini lit `E.SG_INT[XP.ii].name` (et le règne dès Paradoxe 1) au lieu de l'ancien `XP.floor` de l'Expédition.
+
 ## 0.1.48.2 « Salons Commerce et PvP »
 Chat : salons `c` (Commerce) et `v` (PvP) dans `chat_msgs.ch`. Serveur (supabase/chat.sql) : `chat_send` prend `p_ch` (l'ancienne version à 3 paramètres est supprimée), Commerce limité à un message toutes les 30 s, salons lisibles par tous ; supabase/koli.sql annonce les grades dans `v`. Jeu (js/chat.js) : `C.c` / `C.v`, pastilles comptées dans le chat réduit, barre `.ch-top` + `.ch-tabs`, ligne `.ch-strip` (événement + Discord).
 
