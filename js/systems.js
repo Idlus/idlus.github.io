@@ -42,38 +42,92 @@
     S.kamas -= cost; S.havre[id] = l + 1; E.emit(S, "havre", { id }); return null;
   };
 
-  /* ---------------- Almanax : une offrande par jour, un bonus pour la journée ---------------- */
-  const ALM_BONUS = [
-    { kind: "xp", pct: 15, name: "+15 % d'expérience" },
-    { kind: "drop", pct: 15, name: "+15 % de butin" },
-    { kind: "kamas", pct: 20, name: "+20 % de kamas" },
-    { kind: "gather", pct: 25, name: "+25 % de vitesse de récolte" },
-  ];
+  /* ---------------- Almanax (0.1.39) : le calendrier de DOFUS ----------------
+     Chaque jour a son Méryde et son type de bonus, les mêmes que dans DOFUS (tools/import_almanax.py).
+     La cible (famille, zone, donjon) suit le niveau du meilleur héros. Le bonus vaut jusqu'à minuit une fois
+     l'offrande faite, et compte à part du plafond commun des bonus (Mathis, 13/10). */
+  const ALM_CAL = "Mazic|de la naissance|fete;Arouz|de la famine|eco;Orage|des tempêtes|chal;Thomahon|du nord|drop;Ling|du blizzard|gather:paysan;Sebklav|de la majesté|xp;Yvad|de la boue|xp;Leszak|du ménage|chal;Stun|du perfectionnisme|eco;Trôma|de la rapidité|enclos;Ashvey|des reflets|drop;Rojers|de la couleur grise|gather:mineur;Katlestyn|du rube|chal;Guigui|des frissons|gather:bucheron;Poupline|de l'odorat|drop;Bubba|de la famille|chal1;Kia|de l'araknophobie|chal;Yêcetu|de la pêche|gather:pecheur;Eskarina|de la curiosité|archi;Inkola|de la contagion|drop;Magikow|des secrets|craft2;Danizzal|des mauvaises herbes|gather:alchimiste;Kestra|de la modestie|fm;Shiva|de la mollesse|chal;Billfer|des cimetières|xp;Pierrock|de la solidité|gather:bucheron;Maribri|de la vigueur|craft2;Koppapi|des rats|chal;Krala|de la laine|chal1;Lôrf|du toucher|drop;Teskirf|de la fraîcheur|gather:alchimiste;Tolgnas|des larmes|dg;Ruevas|du goût|eco;Marke|de l'adresse|xp;Eritem|des engelures|drop;Val|des promesses|kamas;Misdup|de la simplicité|eco;Kimykay|des frontières|archi;Eramas|du frêne|gather:bucheron;Kilistin|de la férocité|dg;Meash|de la vitalité|enclos;Bazûkana|des lacs|gather:pecheur;Karlita|du crépuscule|chal;Edyxo|du cuivre|gather:mineur;Duf|du béguin|fete;Güss|du vieillissement|drop;Tehego|du manque|eco;Eidnas|des mycoses|drop;Amirniana|de l'inquiétude|xp;Karat|de la tranquillité|gather:pecheur;Atog|de l'altitude|chal;Bii|de la barbarie|drop;Ludobel|des scrupules|xp;Rumo|du réveil|chal;Vinstyl|de la claustrophobie|chal1;Kanabal|du sang-froid|dg;Krisdip|de la détermination|chal;Tiko|de l'envie|drop;Tidihef|de l'exotisme|dg;Fitsef|du divertissement|drop;Jonat|du mauvais goût|eco;Meluze|de l'imprudence|xp;Marifriss|du charme|gather:bucheron;Sylkauf|de l'hibernation|xp;Darkchy|de l'agressivité|archi;Marilez|du commerce|eco;Tella|des acrobaties|chal;Davkaz|des Wabbits|drop;Totot|de l'enthousiasme|gather:paysan;Inndo|du succès|enclos;Laetux|des marécages|chal1;Tajonoo|de l'insipidité|eco;Maëmon|de l'arrogance|dg;Todobaï|des superstitions|gather:alchimiste;Cycloune|des grossièretés|chal1;Orété|de la différence|xp;Wish|de la couleur verte|kamas;Ninefi|de la créativité|fm;Icleen|des souterrains|gather:mineur;Elosi|de la solitude|xp;Cébeyon|du déjà-vu|archi;Konala|de l'insensibilité|drop;Perviom|de la pluie|filon;Socren|de la légèreté|xp;Fala|des microbes|drop;Dees|de la gourmandise|chal;Sha|de la digestion|drop;Clynt|de la susceptibilité|xp;Ocarian|du charisme|drop;Mahadine|des queues|xp;Kimbru|de la poisse|chal;Azra|des plaisanteries|dg;Yamato|de la soif|chal1;Jébédaï|des conjurations|xp;Typlanêt|de la sécurité|eco;Tasmalin|des montagnes|gather:alchimiste;Itourp|des inversions|drop;Bensom|de l'orge|gather:paysan;Enaibi|de la lenteur|xp;Mak|du théâtre|chal;Nunu|de la force|enclos;Jay|de l'élasticité|archi;Mobbib|des revenants|drop;Gorzarel|des parfums|gather:bucheron;Bûnty|des nuages|drop;Mascha|de la productivité|craft2;Etnop|des œufs|xp;Sehb|du sucré|drop;Duc|de la sensualité|dg;Tchoub|du luxe|gather:mineur;Viti|de l'est|chal;Scheik|des objets perdus|drop;Sylfaen|du silence|drop;Katelruz|des taches|xp;Lakha|de l'écho|chal1;Rakreveï|du dégoût|drop;Fako|des paniers percés|kamas;Proff|des mauvaises fréquentations|chal;Shinkarré|de la pureté|gather:mineur;Mylka|des plumages|drop;Franek|du jardinage|gather:alchimiste;Esthoma|de la colère|craft2;Gymcitro|des moisissures|dg;Rikku|du désordre|archi;Malava|de la vue|drop;Bo|des plaines|chal1;Bipup|de la sève|gather:bucheron;Azkatraz|des mensonges|chal;Bigg|de la bêtise|xp;Bern|des ravins|drop;Loumi|de la prospection|eco;Duanaf|de l'adaptation|craft2;Zebdara|de la germination|gather:paysan;Todeb|des fausses notes|chal;Emil|de la minutie|eco;Nell|de l'esprit d'équipe|drop;Ku|de la délicatesse|filon;Khâm|de la propreté|drop;Kevlatahmu|des pollens|archi;Tyrben|du bruit|gather:mineur;Jember|de l'imitation|eco;Ntamak|de la mode|craft2;Krisegis|de l'aventure|xp;Osebo|des fleuves|gather:pecheur;Daza|des champs|filon;Alikindoy|de la générosité|drop;Taelstrom|de l'architecture|chal1;Milidès|de l'efficacité|craft2;Izmar|du goût du sang|drop;Ani|de la pitié|xp;Xandra|de la vantardise|fm;Tiny|de l'imagination|dg;Namyknof|des plages|chal1;Elgero|de la pauvreté|kamas;Mikart|de la zizanie|kamas;Martero||drop;Toun|des mystères|xp;Mendelia|des chiffres|dg;Halden|des ongles et des griffes|xp;Tigibon|du déséquilibre|archi;Verôl|des orchidées|gather:alchimiste;Jibejan|de l'initiative|enclos;Teluomaj|des collections|drop;Aazimar|de la géométrie|chal;Blou||gather:bucheron;Yaka|de la débrouille|eco;Bek|de la couleur rouge|xp;Pytch|du sud|chal1;Seyroth|des racines|chal;Redfis|de la poussière|gather:mineur;Lim|de la passion|drop;Grut|du blé|gather:paysan;Atsu|de la musique|drop;Gnat|des coquillages|chal1;Hellmut|des malformations|xp;Azrou|des cloques|drop;Oopah|des stalactites|filon;Bouliks|de la sérénité|eco;Ansôh|des ventouses|drop;Ikoan|des malédictions|archi;Poch|des dents|drop;Lamarilu|de l'obéissance|xp;Rems|des écailles|drop;Yanouchk|de la fierté|chal;Sirdal|de la modération|eco;Eiwech|du rêve|xp;Alaokit|de la fertilité|dg;Poupik|des ruisseaux|gather:pecheur;Lazura|de la couleur jaune|gather:paysan;Unkn|des nœuds|xp;Blid|de la rigueur|fm;Jihelair|de la portée|enclos;Oskerine|du magnétisme|gather:mineur;Pasquéoz|de la pilosité|chal1;Klernodie|de la tristesse|dg;Zuart|de la désobéissance|xp;Bouilli|de la salive|drop;Okajin|des fossiles|archi;Luzbel|des prairies|xp;Titi|des malfaçons|brise;Alucard|des algues|dg;Gurvamon|de la chaleur|filon;Alhera|de la convoitise|drop;Tholank|du mal de mer|xp;Kaoly|de la fidélité|xp;Xan|de la rareté|gather:bucheron;Anulideven|de l'impureté|chal;Lokhaan|de l'égarement|chal1;Benka|de l'improvisation|drop;Nobozil|de la brise|dg;Olileb|de la déshydratation|dg;Aleb|des montées d'adrénaline|dg;Krisdanh|des extinctions|xp;Jycêdus|de la bienfaisance|gather:alchimiste;Pô|de la liberté|chal;Puliblak|de la bonté|xp;Anshâ|de la lave|drop;Meda|de la patience|gather:pecheur;Jü|du bronzage|chal1;Dramon|des arcs-en-ciel|chal;Zeg|de la paresse|eco;Tix|des coups de soleil|drop;Rigamix|de la polyvalence|craft2;Matgap|du respect|drop;Sab|des traditions|drop;Ouchim|de la nostalgie|chal1;Margarou|de la jalousie|chal;Orreip|des étoiles filantes|archi;Lortecaps|de l'excitation|gather:alchimiste;Marjul|de la couleur marron|gather:mineur;Ynniw|des cornes|drop;Pilserpus|de la satisfaction|eco;Gridoo|de la nausée|drop;Theomak|de l'espoir|chal;Pierdem|du salé|gather:pecheur;Guiboun|de l'euphorie|drop;Mikala|des pustules|dg;Lolzeolf|des paysans|gather:paysan;Fizzi|de l'injustice|kamas;Talentyre|des vagues|gather:pecheur;Noon|de l'ennui|gather:bucheron;Dyw|de la rosée|dg;So|du mauvais caractère|chal;Bitkyo|de l'astuce|fm;Manoush|des contes|dg;Ancestrotek|de la fatigue|xp;Vikotoru||drop;Lorko|de la volonté|craft2;Lucimay|de l'indécision|chal;Zouzo|de l'érudition|xp;Cherop||chal1;Davut|de l'écume marine|filon;Mud||xp;Mau|de l'agilité|enclos;Xa|de l'endurance|xp;Grugin|des querelles|kamas;Yukin||gather:paysan;Farod|de l'effroi|archi;Makss|de l'illusion|chal;Latürb|des courants d'air|drop;Nosruo|des sous-bois|filon;Guidys|de la fragilité|dg;Olvido|des pirates|dg;Nido|de la gastronomie|drop;Bodirom|de l'orgueil|eco;Djuuma|de la sécheresse|chal1;Foluk|de l'ouest|drop;Emp|du recyclage|kamas;Franho|des surprises|dg;Nufrank|de la dureté|gather:mineur;Wasaru|de la calvitie|dg;Sad|du sens de l'orientation|drop;Dethoama||chal;Sulp||dg;Moomoo|de l'oubli|xp;Kosal|de la stabilité|gather:bucheron;Chik|de la complicité|xp;Jujü|des futaies|chal1;Ounirom|des marées|gather:pecheur;Ketzakwet|des découvertes|dg;Krûnsh|des cauchemars|xp;Kroketh|de la chasse|drop;Takeza|de la grâce|enclos;Benjo|de la sagesse|enclos;Emattera|du gaz|drop;Diakollec|des voyages|xp;Astirout|de la pandrista|xp;Eylen|des ombres|chal;Dnegeleht|de la relaxation|gather:paysan;Kuri|de l'insouciance|dg;Yaloop|de la prévoyance|gather:bucheron;Fry|du brouillard|chal;Zellina|des inondations|filon;Sephy|de la mémoire|dg;Baba|de l'appétit|craft2;Viviantho|de l'apprentissage|craft2;Patawaii|de l'obscurité|archi;Sili|du fer|gather:mineur;Rikoo|des fourrures|drop;Capt|de la myxomawose|xp;Coyo|de la sculpture|eco;Fredocigam|des hallucinations|gather:alchimiste;Tchokun|de l'instinct de survie|drop;Macugny|du culot|kamas;Asid|de la peur|fete;Mitomiel|de l'impudeur|dg;Nikodeus|de la métamorphose|drop;Miloune|du tissage|eco;Kacinka|de la justice|xp;Mathrû|de la vengeance|chal;Hito|des ecchymoses|gather:bucheron;Pouki|du camouflage|drop;Poup|de la folie|xp;Tilapiatsu|des naufrages|chal;Otoul|de l'intelligence|enclos;Namsporp|de la laideur|xp;Jacoula|des abysses|drop;Dek|des poisons|chal;Flouky|de la persévérance|fm;Reniator|des stratagèmes|xp;Mustasly|des ordures|xp;Messikriss|de la conservation|drop;Annbonny|de la maniaquerie|chal1;Waro|de l'écologie|eco;Julo|des mauvais présages|archi;Mûnir|des parasites|xp;Jeffarctor|du flair|drop;Vanderivz|du remerciement|dg;Fafah|de l'avoine|gather:paysan;Lateralus|des gerçures|chal1;Uicuic|de la délinquance|drop;Tinyrus|de la souplesse|gather:bucheron;Troyle|des bouffées de chaleur|xp;Eltux|de la couleur bleue|gather:mineur;Inooni|du givre|chal;Ezimuos|de la docilité|xp;Tiris|de l'ingéniosité|craft2;Edacsak|des chutes|chal1;Eltruteht|de la musculature|gather:bucheron;Ologar|des trous|xp;Adam|des punitions|kamas;Kountar|de la douceur|drop;Moko|des flocons|gather:alchimiste;Ingmar|de la couleur blanche|dg;Foya|de la maladresse|enclos;Bovjouski|des pieds|eco;Mig|de la malveillance|xp;Sêpt|de l'abondance|filon;Jason|de la rage|chal;Eboren|de l'embonpoint|drop;Lucyvan|des récompenses|chal1;Ryf|des migrations|gather:pecheur;Sebsokk|des défis|chal;Reivax|de la joie|xp;Benjak|des alliages|craft2;Grüg|de la putréfaction|chal1;Maxarès|des marins|filon;Math|des gargouillis|drop;Milivar|du mérite|drop;Simsof|du plaisir|fete;Fhenris|de l'élégance|dg;Korri|de l'insatisfaction|xp;Ediva|de l'avidité|kamas;Cocoyuyu|de la satiété|gather:paysan;Dari|du superflu|drop;Aisk|des indigestions|archi".split(";").map((x) => x.split("|"));
+  const JOBN = { paysan: "Paysan", bucheron: "Bûcheron", mineur: "Mineur", alchimiste: "Alchimiste", pecheur: "Pêcheur" };
+  /* v : valeur (équilibrée avec Mathis : « réduit encore ») ; t : la cible ; txt : le bonus en clair */
+  const ALM_KINDS = {
+    xp:     { name: "Expérience", ic: "parchemin_or", v: 30, t: "fam", txt: (v, T) => `+${v} % d'XP contre ${T ? "les " + T.name : "une famille de monstres de ton niveau"}` },
+    drop:   { name: "Butin", ic: "coffre", v: 30, t: "zone", txt: (v, T) => `+${v} % de butin ${T ? "dans la zone " + T.name : "dans une zone de ton niveau"}` },
+    kamas:  { name: "Fortune", ic: "kamas", v: 30, t: "fam", txt: (v, T) => `+${v} % de kamas contre ${T ? "les " + T.name : "une famille de monstres de ton niveau"}` },
+    archi:  { name: "Traque", ic: "dofus", v: 100, txt: () => "Archimonstres deux fois plus fréquents" },
+    dg:     { name: "Donjon du jour", ic: "cle", v: 45, t: "dg", txt: (v, T) => `+${v} % d'XP et de butin ${T ? "au donjon " + T.name : "dans un donjon de ton niveau"}` },
+    chal:   { name: "Challenges augmentés", ic: "combat", v: 50, txt: (v) => `Bonus des challenges réussis en donjon +${v} %` },
+    chal1:  { name: "Challenge supplémentaire", ic: "combat", v: 1, txt: () => "Un challenge de plus à chaque combat" },
+    gather: { name: "Récolte abondante", ic: "pioche", v: 50, txt: (v, T, job) => `${JOBN[job] || "Un métier"} : +${v} % de ressources récoltées` },
+    filon:  { name: "Filons", ic: "cristal", v: 50, txt: () => "Les filons apparaissent 1,5 fois plus souvent" },
+    eco:    { name: "Économie d'ingrédients", ic: "metiers", v: 10, txt: (v) => `${v} % des ingrédients rendus à la fabrication` },
+    craft2: { name: "Fabrication intensive", ic: "metiers", v: 6, txt: (v) => `${v} % de chances de fabriquer un objet en plus` },
+    fm:     { name: "Forgemagie améliorée", ic: "forge", v: 10, txt: (v) => `${v} % de chances de garder la rune` },
+    brise:  { name: "Concassage", ic: "forge", v: 6, txt: (v) => `${v} % de chances d'une rune en plus en brisant` },
+    enclos: { name: "Efficacité des enclos", ic: "havre", v: 50, txt: () => "Naissances et XP de l'enclos ×1,5" },
+    fete:   { name: "Jour de fête", ic: "bonbon", v: 30, txt: (v, T, job, day) => `+${v} % d'XP et de butin partout${/-10-31$/.test(day) ? ", et des bonbons surprises dans le butin" : ""}` },
+  };
+  E.ALM_KINDS = ALM_KINDS;
+  const FETES = { "01-01": "Nouvel An", "02-14": "Saint-Ballotin", "10-31": "Nuit d'Halouine", "12-25": "Nowel" };
   const dayKey = (t = E.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   E.dayKey = dayKey;
   const hashStr = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); return (x >>> 0) / 4294967296; };
+  /* le jour du calendrier (année bissextile : le 29 février a aussi son Méryde) */
+  E.almDay = (t = E.now()) => {
+    const d = new Date(t); const i = Math.round((Date.UTC(2028, d.getMonth(), d.getDate()) - Date.UTC(2028, 0, 1)) / 864e5);
+    const [mer, of, k] = ALM_CAL[i] || ["Méryde", "", "xp"]; const [kind, job] = (k || "xp").split(":");
+    const day = dayKey(t); const fete = FETES[day.slice(5)] || null;
+    return { day, mer, of: of ? "Méryde " + of : "Méryde", kind: ALM_KINDS[kind] ? kind : "xp", job: job || null, fete };
+  };
+  /* cibles proches du niveau du meilleur héros, tirées au sort avec le jour (la même pour tous les joueurs de ce niveau) */
+  const near = (list, lvl, lo, hi) => { const ok = list.filter(([, l]) => l >= lvl - lo && l <= lvl + hi); return ok.length ? ok : list.slice().sort((a, b) => Math.abs(a[1] - lvl) - Math.abs(b[1] - lvl)).slice(0, 3); };
+  /* familles chassables : niveaux (milieu des sous-zones) où l'on rencontre au moins un de leurs monstres */
+  const FAMS = Object.keys(E.RACE_MONS).filter((r) => D.RACES[r]).map((r) => { const ms = new Set(E.RACE_MONS[r]); return [r, Object.keys(SUBS).filter((k) => SUBS[k].lvl && (SUBS[k].monsters || []).some((m) => ms.has(m))).map((k) => Math.round((SUBS[k].lvl[0] + SUBS[k].lvl[1]) / 2))]; })
+    .filter(([, ls]) => ls.length).map(([r, ls]) => [r, Math.min(...ls), ls]).sort((a, b) => a[1] - b[1] || String(a[0]).localeCompare(String(b[0])));
+  E.almTarget = (S, kind, day, top = topLvl(S)) => {
+    const K = ALM_KINDS[kind]; if (!K || !K.t) return null; const h = hashStr(kind + day);
+    if (K.t === "fam") { const ok = FAMS.filter(([, , ls]) => ls.some((l) => l >= top - 12 && l <= top + 4)); const L = ok.length ? ok : near(FAMS, top, 0, 0); const r = L[Math.floor(h * L.length)][0]; return { id: r, name: D.RACES[r] }; }
+    if (K.t === "zone") { const Z = Object.keys(SUBS).filter((k) => SUBS[k].lvl).map((k) => [k, Math.round((SUBS[k].lvl[0] + SUBS[k].lvl[1]) / 2)]).sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])); const L = near(Z, top, 10, 4); const k = L[Math.floor(h * L.length)][0]; return { id: k, name: SUBS[k].name, lvl: SUBS[k].lvl }; }
+    if (K.t === "dg") { const G = Object.keys(DUNGEONS).map((k) => [k, DUNGEONS[k].lvl]).sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])); const L = near(G, top, 15, 3); const k = L[Math.floor(h * L.length)][0]; return { id: k, name: DUNGEONS[k].name, lvl: DUNGEONS[k].lvl }; }
+    return null;
+  };
+  /* où aller pour profiter du bonus : la zone (ou le donjon) de la cible, la plus proche du niveau */
+  E.almWhere = (S, A) => {
+    const T = A.target; if (!T) return null; const top = topLvl(S); const mid = (k) => (SUBS[k].lvl[0] + SUBS[k].lvl[1]) / 2;
+    if (A.kind === "dg") return { dg: T.id, name: T.name };
+    if (A.kind === "drop") return { sub: T.id, name: T.name, lvl: SUBS[T.id].lvl };
+    const mons = new Set(E.RACE_MONS[T.id] || []);
+    const subs = Object.keys(SUBS).filter((k) => SUBS[k].lvl && (SUBS[k].monsters || []).some((m) => mons.has(m))).sort((a, b) => Math.abs(mid(a) - top) - Math.abs(mid(b) - top));
+    return subs.length ? { sub: subs[0], name: SUBS[subs[0]].name, lvl: SUBS[subs[0]].lvl } : null;
+  };
+  /* l'offrande demandée (inchangée depuis 2.6) */
   const ALM_POOL = (() => {
     const m = new Map();
     Object.values(MONSTERS).forEach((mo) => { if (mo.boss || mo.archiOf) return; mo.drops.forEach(([r, p]) => { if (p >= 5 && !E.isKey(r)) m.set(r, Math.min(m.get(r) || 999, mo.lvl[0])); }); });
     return [...m.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]));
   })();
+  E.ALM_XP_MIN = 15; // l'offrande rapporte l'XP d'environ 15 minutes de chasse (simulation 0.1.39)
+  E.almOfferXp = (lvl) => Math.round(E.monsterXp(lvl) * 50 * E.ALM_XP_MIN);
   E.almanax = (S, t = E.now()) => {
-    const day = dayKey(t); const top = topLvl(S);
+    const A = E.almDay(t); const day = A.day; const top = topLvl(S);
     const pool = ALM_POOL.filter(([, l]) => l <= Math.max(8, top + 2));
-    const h1 = hashStr("alm" + day), h2 = hashStr("bonus" + day);
-    const [res, lvl] = pool[Math.floor(h1 * pool.length)] || ALM_POOL[0];
+    const [res, lvl] = pool[Math.floor(hashStr("alm" + day) * pool.length)] || ALM_POOL[0];
     const qty = 4 + Math.floor(hashStr("q" + day) * 6) + Math.floor(lvl / 10);
-    const bonus = ALM_BONUS[Math.floor(h2 * ALM_BONUS.length)];
-    const done = S.almanax && S.almanax.day === day;
-    return { day, res, qty, bonus, done, kamas: 100 + top * 20 };
+    const done = !!(S.almanax && S.almanax.day === day);
+    const target = done && S.almanax.kind === A.kind ? S.almanax.t || null : E.almTarget(S, A.kind, day, top);
+    const K = ALM_KINDS[A.kind]; const v = Math.round(K.v * almFurn(S));
+    const bonus = { kind: A.kind, v, name: K.name, ic: K.ic, txt: K.txt(v, target, A.job, day) };
+    return Object.assign(A, { res, qty, bonus, target, done, kamas: 100 + top * 20, xp: E.almOfferXp(top) });
   };
+  /* le meuble « Calendrier de l'Almanax » renforce le bonus du jour de moitié */
+  const almFurn = (S) => 1 + (E.furnBonus ? E.furnBonus(S, "almanax") : 0) / 100;
   E.almanaxOffer = (S) => {
     const A = E.almanax(S); if (A.done) return "Offrande déjà faite aujourd'hui.";
     if ((S.res[A.res] || 0) < A.qty) return `Il faut ${A.qty} × ${A.res}.`;
     S.res[A.res] -= A.qty; if (!S.res[A.res]) delete S.res[A.res];
-    S.almanax = { day: A.day, kind: A.bonus.kind, pct: A.bonus.pct };
+    S.almanax = { day: A.day, kind: A.kind, v: A.bonus.v, t: A.target, job: A.job };
     S.kamas += A.kamas; S.cnt.almanax = (S.cnt.almanax || 0) + 1;
-    note(S, `Offrande à l'Almanax acceptée : ${A.bonus.name} jusqu'à minuit.`, "rare");
+    (E.team(S).length ? E.team(S) : S.chars).forEach((c) => E.giveXp(S, c, E.almOfferXp(c.lvl)));
+    note(S, `Offrande à ${A.mer} acceptée : ${A.bonus.txt}, jusqu'à minuit.`, "rare");
     // série de jours consécutifs (un jour manqué fait redescendre d'un palier)
     const st = S.almStreak; const yest = dayKey(E.now() - 864e5);
     if (st.last === yest) st.n++;
@@ -93,6 +147,38 @@
   };
   E.ALM_TIERS = [3, 7, 14, 30];
   E.ALM_TIERS_R = { 3: { lot: 1 }, 7: { cons: "coffre_argent" }, 14: { furn: "Calendrier de l'Almanax" }, 30: { title: "Fidèle de l'Almanax" } };
+  /* le bonus actif aujourd'hui (offrande faite), sinon null */
+  const almOn = (S) => { const A = S.almanax; if (!A || A.day !== dayKey() || !ALM_KINDS[A.kind]) return null; if (A.v === undefined) return null; return A; };
+  E.almOn = almOn;
+  const tid = (A) => A.t && A.t.id;
+  /* multiplicateurs appelés par le moteur (E.almMult, valeur neutre 1 sans offrande) */
+  E.almMult = (S, what, x) => {
+    const A = almOn(S); if (!A) return 1; const f = 1 + A.v / 100;
+    switch (what) {
+      case "xp": // x = monstre vaincu
+        if (A.kind === "fete") return f;
+        if (A.kind === "dg") return S.dungeon && S.dungeon.id === tid(A) ? f : 1;
+        return A.kind === "xp" && x && String(MONSTERS[x.base || x.key] && MONSTERS[x.base || x.key].race) === String(tid(A)) ? f : 1;
+      case "kamas": return A.kind === "kamas" && x && String(MONSTERS[x.base || x.key] && MONSTERS[x.base || x.key].race) === String(tid(A)) ? f : 1;
+      case "drop":
+        if (A.kind === "fete") return f;
+        if (A.kind === "dg") return S.dungeon && S.dungeon.id === tid(A) ? f : 1;
+        return A.kind === "drop" && !S.dungeon && S.sub === tid(A) ? f : 1;
+      case "archi": return A.kind === "archi" ? f : 1;
+      case "chal": return A.kind === "chal" && S.dungeon ? f : 1;
+      case "chal1": return A.kind === "chal1" ? A.v : 0;
+      case "gather": return A.kind === "gather" && x === A.job ? f : 1;
+      case "filon": return A.kind === "filon" ? f : 1;
+      case "enclos": return A.kind === "enclos" ? f : 1;
+      default: return A.kind === what ? A.v / 100 : 0; // eco, craft2, fm, brise : une chance
+    }
+  };
+  E.almChance = (S, what) => { const p = E.almMult(S, what); return p > 0 && p < 1 && rnd() < p; };
+  /* une quantité multipliée, arrondie au hasard (1,5 × 3 = 4 ou 5) */
+  E.almQty = (q, m) => { const v = q * m; const n = Math.floor(v); return n + (rnd() < v - n ? 1 : 0); };
+  /* Nuit d'Halouine : un bonbon surprise de temps en temps dans le butin */
+  E.almCandy = (S) => { const A = almOn(S); if (!A || A.kind !== "fete" || !/-10-31$/.test(A.day) || rnd() >= 0.03) return null; const ids = ["bonbon_sagesse", "bonbon_prospecteur", "bonbon_dore", "bonbon_recolteur", "bonbon_traqueur"]; const id = ids[Math.floor(rnd() * ids.length)]; E.addCons(S, id); return id; };
+
   /* ---------------- 0.1.38 : achats du jour ----------------
      Plus de vente au jeu : chaque jour, le jeu rachète 3 ressources de ton niveau, à bon prix (1,5 × l'ancien prix),
      dans la limite de 100 chacune. Les mêmes pour tout le monde au même niveau, renouvelées à minuit. */
@@ -121,8 +207,6 @@
     S.res[res] -= n; if (!S.res[res]) delete S.res[res];
     S.kamas += n * o.price; return null;
   };
-  const almBonus = (S, kind) => (S.almanax && S.almanax.day === dayKey() && S.almanax.kind === kind ? S.almanax.pct : 0);
-
   /* ---------------- Alignement : Bonta ou Brâkmar ---------------- */
   const ALIGN = {
     bonta: { name: "Bonta", adj: "Bontarien", badge: 24049, color: "#4f8fe0", bonusName: "PV",
@@ -174,7 +258,7 @@
   const rawBonus = (S, kind) => {
     let b = 0;
     const H = HAVRE.find((x) => x.id === kind); if (H) b += E.havreLvl(S, kind) * H.per;
-    b += almBonus(S, kind) * (1 + E.furnBonus(S, "almanax") / 100) + alignBonus(S, kind) + E.furnBonus(S, kind);
+    b += alignBonus(S, kind) + E.furnBonus(S, kind); // 0.1.39 : l'Almanax compte à part (E.almMult)
     if (kind === "drop" || kind === "kamas" || kind === "gather") b += E.boostPct(S, kind);
     if (kind === "xp" || kind === "drop" || kind === "kamas") b += E.boostPct(S, "royal");
     if (kind === "xp" || kind === "drop") b += E.starBonus(S); // étoiles de la zone chassée (0.1.8.1)
@@ -528,7 +612,7 @@
     if (!(S.runes[runeKey] > 0)) return { err: "Vous n'avez pas cette rune." };
     const f = E.fmInfo(S, uid, runeKey); if (!f.ok) return { err: f.why };
     if (S.kamas < f.kamas) return { err: `Il faut ${f.kamas} kamas.` };
-    S.kamas -= f.kamas; S.runes[runeKey]--; if (!S.runes[runeKey]) delete S.runes[runeKey];
+    S.kamas -= f.kamas; if (!E.almChance(S, "fm")) { S.runes[runeKey]--; if (!S.runes[runeKey]) delete S.runes[runeKey]; } // 0.1.39 : Almanax « Forgemagie améliorée »
     S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1;
     E.emit(S, "fm", {});
     const T = ITEMS[it.tpl]; const J = E.fmJob(S); const wasPerfect = E.isPerfect(it);
@@ -586,7 +670,7 @@
   E.exoForge = (S, uid, stat) => {
     const f = E.exoInfo(S, uid, stat); if (!f.ok) return { err: f.why };
     const it = S.items[uid]; const T = ITEMS[it.tpl];
-    S.kamas -= f.kamas; S.runes[f.key]--; if (!S.runes[f.key]) delete S.runes[f.key];
+    S.kamas -= f.kamas; if (!E.almChance(S, "fm")) { S.runes[f.key]--; if (!S.runes[f.key]) delete S.runes[f.key]; }
     S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1; S.cnt.exoTry = (S.cnt.exoTry || 0) + 1;
     E.emit(S, "fm", {});
     if (rnd() < f.chance) {
