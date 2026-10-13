@@ -1,6 +1,16 @@
 {
-  "version": "0.1.36",
+  "version": "0.1.36.1",
   "versions": [
+    {
+      "v": "0.1.36.1",
+      "name": "Stats en combat",
+      "items": [
+        "Fiche du héros › Caractéristiques : nouveau bloc « En combat » sous les statistiques totales. Il montre ce qui s'ajoute pendant les combats et n'apparaissait nulle part : points de vie réels (Esprit Libre, Havre-Sac, alignement, petite équipe en chasse et en donjon), bonus de dégâts de l'équipe (Esprit Libre, Synergie, alignement, Éveils Meneur et Fureur), dégâts reçus en moins pour les petites équipes, vraies chances de coup critique (5 % de base compris), soins des Éveils, expérience gagnée (Sagesse et Renaissance) et Prospection de l'équipe après le palier. Touchez une ligne pour le détail",
+        "Une résistance au-delà de 50 % est signalée : les points en trop ne servent à rien",
+        "Infobulles corrigées : un coup critique fait ×1,25 (et non ×1,3), la Prospection d'équipe compte à moitié au-delà de 100, les PA et l'Initiative donnent leur base, l'Esprit Libre donne la moitié de son bonus en PV et en dégâts",
+        "La Résistance Neutre et les Dommages aux sorts s'affichent maintenant avec leur « % »"
+      ]
+    },
     {
       "v": "0.1.36",
       "name": "Boîte à idées",
