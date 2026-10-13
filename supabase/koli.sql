@@ -131,12 +131,12 @@ begin
   insert into koli_fights (w, att, def, ghost, att_name, def_name, att_team, def_team, seed, win, rounds, d_att, d_def, att_cote, def_cote)
     values (p_w, p_user, p_def, p_ghost, p_att_name, p_def_name, p_att_team, p_def_team, p_seed, p_win, p_rounds, p_d_att, p_d_def, a.cote, coalesce(d.cote, p_def_cote))
     returning id into fid;
-  -- grade atteint (mêmes seuils que E.KOLI_GRADES) : Or, Cristal et Diamant sont annoncés dans les Hauts faits, une fois par semaine
+  -- grade atteint (mêmes seuils que E.KOLI_GRADES) : Or, Cristal et Diamant sont annoncés dans le salon PvP du chat (0.1.48.2), une fois par semaine
   g := case when a.cote >= 1700 then 4 when a.cote >= 1500 then 3 when a.cote >= 1300 then 2 when a.cote >= 1100 then 1 else 0 end;
   if g >= 2 and g > a.promo then
     update koli set promo = g where user_id = p_user;
     insert into chat_msgs (ch, user_id, pseudo, cls, lvl, kind, data)
-      select 'g', p_user, pr.pseudo, l.main, l.main_lvl, 'ann', jsonb_build_object('t', 'koli', 'g', g, 'cote', a.cote)
+      select 'v', p_user, pr.pseudo, l.main, l.main_lvl, 'ann', jsonb_build_object('t', 'koli', 'g', g, 'cote', a.cote)
       from profiles pr left join ladder l on l.user_id = pr.id where pr.id = p_user and not coalesce(l.flagged, false);
     ann := true;
   end if;
