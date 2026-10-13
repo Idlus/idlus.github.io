@@ -1,6 +1,13 @@
 {
-  "version": "0.1.48.2",
+  "version": "0.1.48.4",
   "versions": [
+    {
+      "v": "0.1.48.4",
+      "name": "Titre du songe",
+      "items": [
+        "Correction : pendant le Songe infini, l'onglet Combat affichait « Étage undefined ». Il indique maintenant l'intensité (et le règne du dieu dès Paradoxe 1)"
+      ]
+    },
     {
       "v": "0.1.48.2",
       "name": "Salons Commerce et PvP",
