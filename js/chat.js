@@ -32,6 +32,7 @@
     ON.chatLive(onMsg, (n) => { C.count = n; paintHead(); });
     await refresh();
     banner();
+    setInterval(banner, 120000); // 0.1.40.1 : le bandeau arrive aussi aux joueurs déjà en jeu (annonce sans message dans le chat, temps réel coupé) et disparaît à l'heure prévue
     setInterval(() => { const el = $("#chat"); if (el && !el.innerHTML && S()) paint(); }, 2000); // partie commencée après le lancement
   }
   /* Rechargé à la connexion ou au changement de compte. */

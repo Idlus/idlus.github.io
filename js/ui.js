@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.39.2";
+const GAME_VERSION = "0.1.40.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.40.1", name: "Annonces pour tous", items: [
+    "Annonces : le bandeau d'annonce arrive aussi aux joueurs déjà en jeu en moins de 2 minutes, même s'il n'est pas publié dans le chat, et disparaît tout seul à l'heure prévue",
+  ] },
   { v: "0.1.39.2", name: "Idées à l'heure", items: [
     "Suggestions : le message après l'envoi annonce maintenant la bonne attente. L'idée arrive sur le forum Idées du Discord dans la demi-heure, et non en quelques minutes",
   ] },
