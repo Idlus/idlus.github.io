@@ -23,6 +23,8 @@ create table if not exists public.ladder (
 alter table public.ladder add column if not exists main_lvl int not null default 1;
 alter table public.ladder add column if not exists title text;
 alter table public.ladder add column if not exists dofus jsonb not null default '[]'::jsonb;
+-- 0.1.35 : niveaux donnés par les recrutements (un héros recruté arrive à la moitié du meilleur niveau : ce n'est pas de la triche)
+alter table public.ladder add column if not exists rec int not null default 0;
 alter table public.ladder enable row level security;
 drop policy if exists "classement lisible" on public.ladder;
 create policy "classement lisible" on public.ladder for select using (not flagged or user_id = auth.uid());
@@ -120,26 +122,27 @@ security definer
 set search_path = public
 as $$
 declare
-  m jsonb := new.meta; o public.ladder%rowtype; lv int; al int; su int; pt int; secs numeric; reason text; bad boolean;
+  m jsonb := new.meta; o public.ladder%rowtype; lv int; al int; su int; pt int; rc int; secs numeric; reason text; bad boolean;
 begin
   if m is null or m->>'level' is null then return new; end if;
   lv := coalesce((m->>'level')::int, 0); al := coalesce((m->>'album')::int, 0);
   su := coalesce((m->>'succes')::int, 0); pt := coalesce((m->>'playtime')::int, 0);
+  rc := coalesce((m->>'rec')::int, 0);
   select * into o from public.ladder where user_id = new.user_id;
   if found then
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
-    if lv - o.level > 60 + secs / 60 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
+    if lv - o.level - greatest(0, rc - o.rec) > 60 + secs / 60 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
     elsif al - o.album > 10 + secs / 300 then reason := format('+%s âmes en %s min', al - o.album, round(secs / 60));
     elsif pt + 120 < o.playtime then reason := 'temps de jeu en baisse';
     end if;
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
-  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus)
+  insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
-      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb))
+      coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc)
     on conflict (user_id) do update set main = excluded.main, level = excluded.level, album = excluded.album, succes = excluded.succes,
-      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus,
+      playtime = excluded.playtime, heroes = excluded.heroes, updated_at = now(), main_lvl = excluded.main_lvl, title = excluded.title, dofus = excluded.dofus, rec = excluded.rec,
       flagged = public.ladder.flagged or excluded.flagged, flag_reason = coalesce(public.ladder.flag_reason, excluded.flag_reason);
   select flagged into bad from public.ladder where user_id = new.user_id;
   delete from public.ladder_class where user_id = new.user_id;

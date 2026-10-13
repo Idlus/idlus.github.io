@@ -85,6 +85,9 @@
   E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
   E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
   E.recruitCost = (n) => (n <= 1 ? 0 : Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
+  /* 0.1.35 : jusqu'à 12 héros, 8 au plus dans l'équipe qui combat (les autres récoltent, s'entraînent ou se reposent) */
+  E.HERO_MAX = 12; E.TEAM_MAX = 8;
+  E.activeCount = (S, but) => S.chars.filter((c) => c.inTeam && !c.job && c !== but).length;
 
   /* ---------------- État initial ---------------- */
   E.newState = (name, cls) => {
@@ -124,7 +127,7 @@
     S.chars.push(c);
     if (c.pts) E.autoAllocate(S, c);
     E.refreshSpells(c, E.charStats(S, c));
-    if (E.team(S).length > 8) c.inTeam = false;
+    if (E.activeCount(S) > E.TEAM_MAX) c.inTeam = false;
     return c;
   };
 
@@ -2478,7 +2481,14 @@
     const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
     if (S.dungeon && c.inTeam && !c.job) return "Impossible pendant un donjon.";
     if (E.expActive && E.expActive(S) && c.inTeam && !c.job) return "Impossible pendant une expédition.";
-    if (!job) { if (c.job) { c.job = null; S.fight = S.dungeon ? S.fight : null; note(S, `${c.name} revient chasser.`, "info"); } return null; }
+    if (!job) {
+      if (c.job) {
+        c.job = null; S.fight = S.dungeon ? S.fight : null;
+        if (c.inTeam && E.activeCount(S, c) >= E.TEAM_MAX) { c.inTeam = false; note(S, `${c.name} revient au repos : l'équipe est complète (8 héros).`, "info"); }
+        else note(S, `${c.name} revient chasser.`, "info");
+      }
+      return null;
+    }
     const list = E.jobRes(job); const lvl = S.jobs[job].lvl;
     const pickRes = res && list.find((x) => x[0] === res && x[1] <= lvl) ? res : (list.filter((x) => x[1] <= lvl).pop() || [])[0];
     if (!pickRes) return "Ressource verrouillée.";
@@ -2638,19 +2648,42 @@
   /* ---------------- Recrutement & équipe ---------------- */
   E.recruit = (S, cls, name) => {
     const n = S.chars.length + 1; const cost = E.recruitCost(n);
-    if (S.chars.length >= 8) return "Équipe complète (8 personnages).";
+    if (S.chars.length >= E.HERO_MAX) return `${E.HERO_MAX} héros au plus : congédiez-en un pour faire de la place.`;
     if (S.kamas < cost) return `Il faut ${cost} kamas.`;
     S.kamas -= cost;
-    const top = Math.max(...S.chars.map((c) => c.lvl));
-    const c = E.addChar(S, cls, name || pick(NAMES), Math.max(1, Math.floor(top / 2)));
-    note(S, `${c.name} (${CLASSES[cls].name}) rejoint l'aventure !`, "up");
+    const top = Math.max(...S.chars.map((c) => c.lvl)); const lvl = Math.max(1, Math.floor(top / 2));
+    S.recLv = (S.recLv || 0) + lvl; // niveaux donnés par les recrutements : le serveur ne les prend pas pour de la triche
+    const c = E.addChar(S, cls, name || pick(NAMES), lvl);
+    note(S, `${c.name} (${CLASSES[cls].name}) rejoint l'aventure !${c.inTeam ? "" : " Il attend au repos : l'équipe compte déjà 8 héros."}`, "up");
     S.fight = S.dungeon ? S.fight : null;
+    return null;
+  };
+  /* 0.1.35 : congédier un héros. Équipement, Dofus, familier et monture restent dans le sac ;
+     on récupère la moitié du prix du dernier recrutement, et le prochain redevient moins cher. */
+  E.dismissRefund = (S) => Math.floor(E.recruitCost(S.chars.length) / 2);
+  E.dismiss = (S, cid) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
+    if (S.chars.length <= 1) return "Il faut garder au moins un héros.";
+    const active = c.inTeam && !c.job;
+    if (active && S.dungeon) return "Impossible pendant un donjon.";
+    if (active && E.expActive && E.expActive(S)) return "Impossible pendant une expédition.";
+    if (active && E.activeCount(S) <= 1) return "C'est le seul héros de l'équipe : mettez-en un autre en équipe d'abord.";
+    const refund = E.dismissRefund(S);
+    c.equip = {}; c.pet = null; c.mount = null; c.job = null;
+    if (S.training === cid) S.training = null;
+    if (S.atelier && S.atelier.cid === cid) { S.atelier.cid = null; S.atelier.prog = 0; S.atelier.stall = null; }
+    (S.comps || []).forEach((K) => { if (K && K.ids) K.ids = K.ids.filter((id) => id !== cid); });
+    S.chars = S.chars.filter((x) => x !== c);
+    if (S.mainHero === cid) S.mainHero = S.chars.slice().sort((a, b) => (b.ren || 0) - (a.ren || 0) || b.lvl - a.lvl)[0].id;
+    if (active) S.fight = S.dungeon ? S.fight : null;
+    S.kamas += refund;
+    note(S, `${c.name} quitte l'aventure.${refund ? ` ${refund.toLocaleString("fr-FR")} kamas récupérés.` : ""}`, "info");
     return null;
   };
   E.toggleTeam = (S, cid) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return;
     if (c.inTeam && E.team(S).length <= 1) return "Il faut au moins un personnage dans l'équipe.";
-    if (!c.inTeam && E.team(S).length >= 8) return "8 personnages maximum.";
+    if (!c.inTeam && E.activeCount(S) >= E.TEAM_MAX) return "8 héros au plus dans l'équipe.";
     if (S.dungeon) return "Impossible de changer l'équipe en donjon.";
     if (E.expActive && E.expActive(S)) return "Impossible de changer l'équipe en expédition.";
     c.inTeam = !c.inTeam; S.fight = null; return null;
@@ -2832,7 +2865,7 @@
      apparence des héros, favoris et verrous d'objets, liste de courses, objectifs épinglés terminés, réglages. */
   E.ACTIONS = {
     // héros et équipe
-    recruit: "recruter un héros", toggleTeam: "entrer ou sortir de l'équipe", setRow: "placer un héros (ligne)", setPlaceAuto: "placement automatique",
+    recruit: "recruter un héros", dismiss: "congédier un héros", toggleTeam: "entrer ou sortir de l'équipe", setRow: "placer un héros (ligne)", setPlaceAuto: "placement automatique",
     allocate: "dépenser un point de caractéristique", deallocate: "retirer un point", resetPoints: "réinitialiser les points",
     setAllocMode: "répartition auto ou manuelle", autoAllocate: "relancer la répartition auto", equipSpell: "placer un sort dans la barre",
     setTitle: "choisir un titre", setOrn: "choisir un ornement", setWing: "choisir des ailes",
