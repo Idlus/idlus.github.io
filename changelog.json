@@ -1,6 +1,18 @@
 {
-  "version": "1.0.7.5",
+  "version": "1.0.7.6",
   "versions": [
+    {
+      "v": "1.0.7.6",
+      "name": "Métiers revérifiés",
+      "items": [
+        "Artisanat et Établi (PC) : cliquer une recette ou un objet en bas de la liste ne fait plus remonter la liste tout en haut",
+        "Artisanat : la recette que tu viens de fabriquer reste affichée, même si elle sort de la liste « Fabricables » ; le bouton « Max » compte bien les Galets quand un Galet est ajouté",
+        "Récolte : le menu « améliorer » de l'outil ne se referme plus tout seul après quelques secondes",
+        "Brisage : sur téléphone, la barre « objets sélectionnés · Briser la sélection » reste visible en haut quand on descend la liste, et les runes estimées ne débordent plus de l'écran",
+        "Brisage : un objet protégé par le cadenas ou rangé dans une tenue ne se coche plus (cadenas affiché), et briser un objet Rayonnant demande une confirmation",
+        "Établi sur téléphone : « ← Objets » ramène la liste là où tu l'avais laissée, le menu Forgemagie rouvre la liste, et une caractéristique en malus s'affiche lisiblement au-dessus de ses runes"
+      ]
+    },
     {
       "v": "1.0.7.5",
       "name": "Y aller depuis l'Encyclopédie",

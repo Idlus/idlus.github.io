@@ -3286,7 +3286,7 @@ details>summary.alx-h{cursor:pointer}
 .pb{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--panel2);display:inline-flex;gap:4px;align-items:center}
 .pstatl{display:flex;flex-direction:column;gap:8px}
 .pfl{padding:8px 10px;border-radius:12px;background:var(--panel2)}
-.pfl.neg{opacity:.7;display:flex;gap:10px;align-items:center}
+.pfl.neg>.pfn{opacity:.75}.pfl.neg>.pruns{margin-top:8px} /* 1.0.7.6 : malus au-dessus de ses runes (au téléphone, le nom était écrasé) */
 .pfn{display:flex;align-items:center;gap:6px}
 .pfn b{font-size:15px}
 .pfn .xs{margin-left:auto}
@@ -3308,7 +3308,7 @@ details>summary.alx-h{cursor:pointer}
 .pselbar{position:sticky;top:64px;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:var(--panel2);border:2px solid #8cc63f}
 .pbri{cursor:pointer}.pbri.on{background:rgba(140,198,63,.1)}
 .pbri input{width:18px;height:18px}
-.pruneic{display:inline-flex;gap:10px;font-size:12px}.pruneic span{display:inline-flex;gap:3px;align-items:center}
+.pruneic{display:inline-flex;flex-wrap:wrap;gap:2px 10px;font-size:12px}.pruneic span{display:inline-flex;gap:3px;align-items:center}
 .prgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
 .prc{padding:10px;border-radius:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px}
 .prt{display:flex;align-items:center;gap:4px}
@@ -3336,7 +3336,7 @@ b.g{color:#8ee06b}b.y{color:#f3c34f}b.r{color:#ff8a7a}
 .rodd{grid-column:1/-1;display:flex;align-items:center;gap:6px;margin-top:3px}
 .podd{display:flex;width:70px;height:6px;border-radius:4px;overflow:hidden;background:#000}
 .podd i{display:block;height:100%}
-.poddt{font-size:12px}
+.poddt{font-size:12px;white-space:nowrap}
 .pexo{box-shadow:inset 0 0 0 1px #b06cff}
 .ptrans{box-shadow:inset 0 0 0 1px var(--gold)}
 .phist{display:flex;flex-direction:column;gap:3px;font-size:13px}
@@ -3360,7 +3360,7 @@ details.panel>summary.phead{list-style:none;cursor:pointer}details.panel>summary
 .sheet .pdet h2{font-size:19px}
 button.pchip{color:var(--ink);cursor:pointer;font:inherit;font-size:13px}
 .pbri input{flex:none}
-@media (max-width:700px){.pfbar input{grid-column:1/-1}.pselbar{position:sticky;top:auto;bottom:70px}}
+@media (max-width:700px){.pfbar input{grid-column:1/-1}.pselbar{position:sticky;top:calc(var(--sth,48px) + 6px);bottom:auto}} /* 1.0.7.6 : la barre de sélection du brisage reste visible en haut quand on fait défiler */
 @media (max-width:700px){.pfmjobs{grid-template-columns:repeat(3,minmax(0,1fr))}.pfj img{display:none}.pfj{font-size:12px;padding:5px 7px}}
 /* 0.1.42 « Accueil du jour » : bandeau avec les têtes, tuiles « Aujourd'hui », « En ce moment », journal à onglets */
 .ac-ban .inner{flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;max-width:none}

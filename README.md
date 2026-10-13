@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.6 « Métiers revérifiés »
+Revue des panneaux Métiers et Forgemagie (PC 1280 px et téléphone 390 px, partie avec métiers montés) : `keepList()` garde le défilement des listes `.plist` au redessin, `ui.recStick` garde la recette fabriquée affichée, `ui.toolOpen` garde le menu d'outil ouvert (événement `toggle`), barre de brisage collée en haut au téléphone (`--sth`), `brLock()` (cadenas/tenue) et confirmation pour un Rayonnant au brisage, coefficient de brisage dans la ligne de l'objet, retour à la liste de l'Établi à la même position, malus de forgemagie au-dessus de ses runes.
+
 ## 1.0.7.5 « Y aller depuis l'Encyclopédie »
 Fiche de monstre de l'Encyclopédie : un bouton par sous-zone ou donjon où il vit, verrou affiché pour les lieux fermés.
 

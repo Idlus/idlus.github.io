@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.5";
+const GAME_VERSION = "1.0.7.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.6", name: "Métiers revérifiés", items: [
+    "Artisanat et Établi (PC) : cliquer une recette ou un objet en bas de la liste ne fait plus remonter la liste tout en haut",
+    "Artisanat : la recette que tu viens de fabriquer reste affichée, même si elle sort de la liste « Fabricables » ; le bouton « Max » compte bien les Galets quand un Galet est ajouté",
+    "Récolte : le menu « améliorer » de l'outil ne se referme plus tout seul après quelques secondes",
+    "Brisage : sur téléphone, la barre « objets sélectionnés · Briser la sélection » reste visible en haut quand on descend la liste, et les runes estimées ne débordent plus de l'écran",
+    "Brisage : un objet protégé par le cadenas ou rangé dans une tenue ne se coche plus (cadenas affiché), et briser un objet Rayonnant demande une confirmation",
+    "Établi sur téléphone : « ← Objets » ramène la liste là où tu l'avais laissée, le menu Forgemagie rouvre la liste, et une caractéristique en malus s'affiche lisiblement au-dessus de ses runes",
+  ] },
   { v: "1.0.7.5", name: "Y aller depuis l'Encyclopédie", items: [
     "Encyclopédie : chaque fiche de monstre montre où le trouver, avec un bouton par sous-zone ou donjon. Un clic t'y emmène directement",
     "Si le monstre vit à plusieurs endroits, ils sont tous proposés, les lieux ouverts en premier",
@@ -1236,7 +1244,7 @@ function navGo(k) {
   else if (k === "dungeons" || k === "enc") { ui.tab = "world"; ui.zoneView = null; ui.world = k; }
   else if (k === "quests") { ui.tab = "quests"; ui.qt = "jour"; }
   else if (k === "succes") { ui.tab = "quests"; if (ui.qt !== "ach" && ui.qt !== "orn") ui.qt = "ach"; }
-  else ui.tab = k;
+  else { ui.tab = k; if (k === "forge") ui.fmBench = false; } // 1.0.7.6 : au téléphone, Forgemagie rouvre la liste des objets
 }
 const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return k === "combat" ? "Jouer › Combat" : k; };
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
@@ -4745,7 +4753,7 @@ function recolteHtml() {
       <div class="pad stack" style="gap:8px">
         ${ws.map((c) => `<div class="pwork">${head(c)}${im(resImg(c.job.res), "ico sm", c.job.res)}<div class="grow"><div class="pwt small"><b>${h(c.job.res)}${E.filonOn(S, c.job.res) ? ` <span class="tag good">filon ×2</span>` : ""}</b><span class="xs muted">${h(c.name)} · ${E.gatherPeriod(S, c).toFixed(1)} s</span></div><div class="bar green thin" data-wprog="${c.id}"><i style="width:${pct(c.job.prog, E.gatherPeriod(S, c))}%"></i></div></div><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">Changer</button><button class="btn sm ghost" data-act="unjob" data-id="${c.id}" title="Rappeler ${h(c.name)}">✕</button></div>`).join("")}
         <button class="pslot" data-act="gathersheet" data-job="${id}">${IC("pioche")} Envoyer un héros${free.length ? ` <span class="xs muted">· ${free.length} libre${free.length > 1 ? "s" : ""}</span>` : ""}</button>
-        <details class="ptool"><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de vitesse</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
+        <details class="ptool" data-job="${id}" ${ui.toolOpen && ui.toolOpen[id] ? "open" : ""}><summary class="row between small"><span>${IC("metiers")} ${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "Pas d'outil"} <span class="xs muted">+${tl * 8} % de vitesse</span></span><span class="xs muted">${tl >= E.TOOL_MAX ? "niveau max" : "améliorer ▾"}</span></summary>${toolHtml(id)}</details>
         ${resGrid(id)}
       </div></div>`; }).join("");
   return `${dayBar("met")}
@@ -4847,18 +4855,21 @@ function recDetail(r, job) {
     ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
     ${galetBox(r)}
     ${r.T && r.okLvl && !r.miss ? !r.n ? `<div class="small minus" style="margin-top:8px">Ton sac et ton trop-plein sont pleins : brise ou vends des objets pour fabriquer. <a href="#" data-act="nav" data-v="inv">Ouvrir l'inventaire</a></div>` : E.itemCount(S) >= E.itemCap(S) ? `<div class="small muted" style="margin-top:8px">Sac plein (${fmt(E.itemCount(S))}/${fmt(E.itemCap(S))}) : les objets fabriqués vont dans le trop-plein de l'inventaire.</div>` : "" : ""}
-    <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${r.n > 1 ? " ×" + fmt(r.n) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div><span class="xs muted grow">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
+    <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${nMax > 1 ? " ×" + fmt(nMax) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div><span class="xs muted grow">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
     <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${gSel ? `data-g="${h(gSel)}"` : ""} ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
 }
 function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
 function craftHtml() {
   const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const F = fltOf("met");
-  const rs = craftList(job); if (!rs.some((r) => r.id === ui.recSel)) ui.recSel = narrow() ? null : (rs[0] || {}).id;
-  const R = rs.find((r) => r.id === ui.recSel);
+  const rs = craftList(job);
+  // 1.0.7.6 : la recette qu'on vient de fabriquer reste ouverte même si elle sort de la liste filtrée (« Fabricables », « il manque 1 »…)
+  const kept = ui.recStick && ui.recStick === ui.recSel && !rs.some((r) => r.id === ui.recSel) ? recBase(job).find((r) => r.id === ui.recSel) : null;
+  if (kept) kept.for = recFor(kept, E.team(S)); else if (!rs.some((r) => r.id === ui.recSel)) ui.recSel = narrow() ? null : (rs[0] || {}).id;
+  const R = kept || rs.find((r) => r.id === ui.recSel);
   const all = job === "bricoleur" ? [] : Object.values(ITEMS).filter((T) => T.craft && T.craft.job === job);
   const stats = STAT_ORDER.filter((k) => all.some((T) => T.stats[k] && T.stats[k][1] > 0));
   const sets = [...new Set(all.map((T) => T.set).filter((s) => s && SETS[s]))].sort((a, b) => SETS[a].name.localeCompare(SETS[b].name, "fr"));
-  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">sac plein</span>`}</button>`).join("");
+  const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
     <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recBase(id).filter((r) => r.n > 0).length; return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
@@ -4869,11 +4880,16 @@ function craftHtml() {
     <div class="psplit"><section class="panel"><div class="phead"><h2>Recettes</h2><span class="xs muted">${rs.length}${rs.length > 60 ? " · 60 premières" : ""}</span></div><div class="plist">${list || empty}</div></section>
       ${narrow() ? "" : `<section class="panel pdetp"><div class="pad">${recDetail(R, job)}</div></section>`}</div>`;
 }
+/* 1.0.7.6 : la liste des recettes / des objets (qui défile à part sur PC) garde sa position quand la page se redessine */
+function keepList(key, paint) {
+  const L = document.querySelectorAll("#main .plist"); const tops = ui.plKey === key ? [...L].map((e) => e.scrollTop) : [];
+  paint(); ui.plKey = key; document.querySelectorAll("#main .plist").forEach((e, i) => { if (tops[i]) e.scrollTop = tops[i]; });
+}
 function renderMetiers() {
   const tabs = [["recolte", "Récolte"], ["craft", "Artisanat"]];
-  $("#main").innerHTML = `<div class="pagehead"><h1>Métiers</h1></div>
+  keepList("met:" + ui.met + ":" + ui.craftJob, () => $("#main").innerHTML = `<div class="pagehead"><h1>Métiers</h1></div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="mettab" data-v="${id}" aria-pressed="${ui.met === id}">${n}</button>`).join("")}</nav>
-    <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`;
+    <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`);
 }
 /* ======================= Forgemagie (0.1.41, comme dans DOFUS) ======================= */
 const ppc = (x) => Math.round(x * 100);
@@ -4962,9 +4978,11 @@ function fmHtml() {
   return `${dayBar("fm")}<div class="psplit fm">${list}${narrow() ? "" : bench}</div>`;
 }
 /* ---------- Brisage ---------- */
+/* 1.0.7.6 : un objet protégé (cadenas, tenue) ne se coche plus et dit pourquoi ; un Rayonnant demande confirmation */
+const brLock = (it) => (it.locked ? "Protégé par le cadenas" : E.inGear(S, it.uid) ? `Rangé dans la tenue « ${E.inGear(S, it.uid).name} »` : "");
 function brisageHtml() {
   const F = fltOf("br"); const q = F.q.trim().toLowerCase(); const dup = F.mode === "dupes" ? new Set(E.dupesList(S)) : null;
-  const sel = ui.brSel || (ui.brSel = new Set()); [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u)) sel.delete(u); });
+  const sel = ui.brSel || (ui.brSel = new Set()); [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u) || brLock(S.items[u])) sel.delete(u); });
   const items = Object.values(S.items).filter((it) => { const T = ITEMS[it.tpl]; if (!T || E.equippedBy(S, it.uid)) return false;
     if (q && !T.name.toLowerCase().includes(q)) return false; if (F.slot && T.slot !== F.slot) return false;
     if (F.lv) { const [a, b] = lvRange(F.lv); if (T.lvl < a || T.lvl > b) return false; }
@@ -4984,7 +5002,8 @@ function brisageHtml() {
       ${pickable.length ? `<button class="btn sm" data-act="brall">Tout sélectionner</button>` : ""}${sel.size ? `<button class="btn sm" data-act="brnone">Vider</button>` : ""}
       ${sel.size ? (ui.confirm === "brsel" ? `<button class="btn sm danger" data-act="brgo">Confirmer : briser ${sel.size}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="brask">Briser la sélection</button>`) : ""}</div>
     <section class="panel"><div class="list">${shown.map((it) => { const p = E.breakPreview(S, it.uid, F.focus || null); const top = Object.entries(p.weights).sort((a, b) => b[1] - a[1]).slice(0, 4); const on = sel.has(it.uid);
-      return `<div class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}" ${on ? "checked" : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span><span class="xs ${p.coef < 60 ? "minus" : "muted"}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span><button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}${items.length > 150 ? `<div class="empty">… ${items.length - 150} autres : affine les filtres.</div>` : ""}</div></section>`;
+      const lock = brLock(it);
+      return `<div class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}" ${on ? "checked" : ""} ${lock ? `disabled title="${h(lock)}"` : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} % · <span class="${p.coef < 60 ? "minus" : ""}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span></span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span>${lock ? `<span class="xs muted" data-tip="${h(lock)}">${G("lock")}</span>` : it.radiant && ui.confirm === "br:" + it.uid ? `<button class="btn sm danger" data-act="break" data-uid="${it.uid}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="${it.radiant ? "brone" : "break"}" data-uid="${it.uid}">Briser</button>`}</div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}${items.length > 150 ? `<div class="empty">… ${items.length - 150} autres : affine les filtres.</div>` : ""}</div></section>`;
 }
 /* ---------- Runes ---------- */
 function runesView() {
@@ -5063,9 +5082,9 @@ function fmHelpSheet() {
 function renderForge() {
   const nPlans = E.fmPlanActive(S).length;
   const tabs = [["fm", "Établi"], ["brisage", "Brisage"], ["runes", "Runes"], ["plans", `Plans${nPlans ? " · " + nPlans : ""}`]];
-  $("#main").innerHTML = `<div class="pagehead prow"><h1>Forgemagie</h1><button class="btn sm ghost" data-act="fmhelp">? Comment ça marche</button></div>${fmJobsBar()}
+  keepList("fg:" + ui.fg + ":" + (fltOf("fm").view || ""), () => $("#main").innerHTML = `<div class="pagehead prow"><h1>Forgemagie</h1><button class="btn sm ghost" data-act="fmhelp">? Comment ça marche</button></div>${fmJobsBar()}
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="fgtab" data-v="${id}" aria-pressed="${ui.fg === id}">${n}</button>`).join("")}</nav>
-    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : ui.fg === "plans" ? fmPlansHtml() : fmHtml()}</section>`;
+    <section class="stack">${ui.fg === "brisage" ? brisageHtml() : ui.fg === "runes" ? runesView() : ui.fg === "plans" ? fmPlansHtml() : fmHtml()}</section>`);
 }
 /* ---------- QUÊTES ---------- */
 function mainQuestHtml() {
@@ -6397,8 +6416,8 @@ document.addEventListener("click", (ev) => {
     case "ressel": ui.resSel = d.n || null; break;
     case "resfav": if (S.resFav[d.n]) delete S.resFav[d.n]; else S.resFav[d.n] = 1; break;
     case "fmfav": { const it = S.items[+d.uid]; if (it) it.fav = !it.fav; break; }
-    case "fmsel": ui.fmSel = +d.uid; ui.fmBench = true; ui.confirm = null; if (narrow()) window.scrollTo(0, 0); break;
-    case "fmback": ui.fmBench = false; break;
+    case "fmsel": ui.fmSel = +d.uid; ui.fmBench = true; ui.confirm = null; if (narrow()) { ui.fmListY = window.scrollY; window.scrollTo(0, 0); } break;
+    case "fmback": { ui.fmBench = false; dirty = true; render(); const y = ui.fmListY || 0; requestAnimationFrame(() => window.scrollTo(0, y)); return; } // 1.0.7.6 : on retrouve la liste là où on l'avait laissée
     case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
     case "wpot": { const r = E.weaponPotion(S, ui.fmSel, d.id); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; } // 0.1.53
     case "wpprep": ui.wpPrep = !ui.wpPrep; break;
@@ -6630,11 +6649,11 @@ document.addEventListener("click", (ev) => {
     case "hvgrow": { const r = E.act(S, "growRoom", d.v); if (r) { toast(r, "warn"); return; } toast(`${E.room(d.v).name} agrandie : une place de meuble en plus.`); break; }
     case "fbuy": { const r = E.act(S, "buyFurn", d.v); if (r) { toast(r, "warn"); return; } toast(E.isPlaced(S, d.v) ? `${d.v} acheté et placé !` : `${d.v} acheté. Pièce pleine : place-le en retirant un meuble.`); break; }
     case "fshopf": ui.fShop = d.v; break;
-    case "craftjob": ui.craftJob = d.v; ui.recSel = null; break;
+    case "craftjob": ui.craftJob = d.v; ui.recSel = null; ui.recStick = null; break;
     /* 0.1.41 : métiers et forgemagie */
     case "pagego": pageGo(d.v); return;
     case "gbsheet": ui.tab = "inv"; ui.inv = "res"; window.scrollTo(0, 0); break;
-    case "recsel": ui.recSel = d.id; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
+    case "recsel": ui.recSel = d.id; ui.recStick = null; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
     case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
     case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }
     case "dofgo": closeSheet(); if (window.QUI && window.QUI.pick) window.QUI.pick(d.v); ui.tab = "quests"; ui.qt = "dofus"; render(); window.scrollTo(0, 0); return; // 1.0.6.2
@@ -6657,6 +6676,7 @@ document.addEventListener("click", (ev) => {
     case "brall": { const sel = ui.brSel || (ui.brSel = new Set()); document.querySelectorAll('[data-act="brtog"]').forEach((x) => { const it = S.items[+x.dataset.uid]; if (it && !it.radiant && !it.locked && !E.inGear(S, it.uid)) sel.add(it.uid); }); break; }
     case "brnone": if (ui.brSel) ui.brSel.clear(); ui.confirm = null; break;
     case "brask": ui.confirm = "brsel"; break;
+    case "brone": ui.confirm = "br:" + d.uid; break;
     case "brgo": { const sel = ui.brSel || new Set(); const got = {}; let n = 0; const foc = fltOf("br").focus || null;
       [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u)) return; const r = E.breakItem(S, u, foc); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } });
       sel.clear(); ui.confirm = null; toast(`${n} objet${n > 1 ? "s" : ""} brisé${n > 1 ? "s" : ""}. Runes : ${runesTxt(got)}`); break; }
@@ -6665,7 +6685,7 @@ document.addEventListener("click", (ev) => {
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
     case "recgalet": ui.recGalet = ui.recGalet === d.g ? null : d.g; ui.recQty = "1"; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
-    case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n, d.g || null); if (typeof r === "string") { toast(r); break; }
+    case "craftmany": { ui.recStick = d.id; const r = E.craftMany(S, d.k, d.id, +d.n, d.g || null); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
       toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.twins ? ` · ${d.g} : +${fmt(r.twins)} en bonus !` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
     case "dupesask": ui.confirm = "dupes"; break;
@@ -6676,7 +6696,7 @@ document.addEventListener("click", (ev) => {
     case "overallask": ui.confirm = "overall"; break;
     case "overallgo": { const r = E.overBreakAll(S); ui.confirm = null; toast(`${r.n} objets brisés. Runes : ${runesTxt(r.got)}`); break; }
     case "overhdv": { const r = E.overTake(S, +d.uid); if (r) { toast(r, "warn"); break; } window.MARKET.sellItem(+d.uid); dirty = true; navGo("hdv"); window.scrollTo(0, 0); break; }
-    case "break": { const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
+    case "break": { ui.confirm = null; const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
     case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
@@ -6748,6 +6768,7 @@ document.addEventListener("change", (ev) => {
   else return;
   dirty = true; render();
 });
+document.addEventListener("toggle", (ev) => { const d = ev.target; if (d.classList && d.classList.contains("ptool")) { ui.toolOpen = ui.toolOpen || {}; ui.toolOpen[d.dataset.job] = d.open; } }, true); // 1.0.7.6 : le menu d'outil de la Récolte reste ouvert malgré le rafraîchissement
 document.addEventListener("input", (ev) => {
   if (ev.target.id === "wsq") { searchRender(); return; }
   const t = ev.target;
