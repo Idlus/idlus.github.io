@@ -153,16 +153,30 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   // marchand de secours : 30 % de la valeur
   const r = "Laine de Bouftou"; S.res[r] = 1000; const k0 = S.kamas; E.merchantRes(S, r, 100);
   assert.strictEqual(S.kamas - k0, Math.floor(E.resPrice(r) * 100 * 0.3)); assert.strictEqual(S.res[r], 900);
-  // achats du jour : 3 ressources, même liste dans la journée, 100 au plus chacune, prix 1,5 ×
-  const G = E.gameBuys(S); assert.strictEqual(G.list.length, 3); assert.strictEqual(new Set(G.list.map((o) => o.res)).size, 3);
-  assert.deepStrictEqual(E.gameBuys(S).list.map((o) => o.res), G.list.map((o) => o.res));
-  const o = G.list[0]; assert.strictEqual(o.price, Math.ceil(E.resPrice(o.res) * 1.5));
-  S.res[o.res] = 250; const k1 = S.kamas;
-  assert.strictEqual(E.act(S, "gameBuySell", o.res, 250), null);
-  assert.strictEqual(S.kamas - k1, 100 * o.price); assert.strictEqual(S.res[o.res], 150);
-  assert.ok(E.act(S, "gameBuySell", o.res, 10), "quantité du jour atteinte");
-  assert.ok(E.act(S, "gameBuySell", "Ressource inconnue", 1), "ressource non achetée refusée");
-  console.log("ok - fin de la vente au jeu :", G.list.map((x) => `${x.res} ${x.price} k`).join(", "));
+  // 0.1.54 : commandes du jour : une par tranche de 20 niveaux jusqu'au meilleur héros, 2 000 chacune, payées selon son niveau
+  S.chars[0].lvl = 185;
+  const G = E.gameBuys(S); assert.strictEqual(G.list.length, 10); assert.strictEqual(new Set(G.list.map((o) => o.res)).size, 10);
+  assert.deepStrictEqual(E.gameBuys(S).list.map((o) => o.res), G.list.map((o) => o.res), "même liste dans la journée");
+  G.list.forEach((o, b) => { assert.strictEqual(o.lo, b * 20 + 1); assert.strictEqual(o.max, 2000); assert.strictEqual(o.price, Math.round(0.375 * 185)); });
+  const o = G.list[2]; S.res[o.res] = 2250; const k1 = S.kamas;
+  assert.strictEqual(E.act(S, "gameBuySell", o.res, 300), null);
+  assert.strictEqual(S.kamas - k1, 300 * o.price); assert.strictEqual(S.res[o.res], 1950);
+  assert.strictEqual(E.act(S, "gameBuyAll"), null, "tout livrer");
+  assert.strictEqual(S.res[o.res], 250); assert.strictEqual(S.kamas - k1, 2000 * o.price);
+  assert.ok(E.act(S, "gameBuySell", o.res, 10), "commande déjà livrée");
+  assert.ok(E.act(S, "gameBuySell", "Ressource inconnue", 1), "ressource non commandée refusée");
+  assert.ok(E.act(S, "gameBuyAll"), "rien à livrer");
+  S.chars[0].lvl = 30; assert.strictEqual(E.gameBuys(S).list.length, 2, "pas de tranche au-dessus du meilleur héros");
+  // boutique de la maison et agrandissements
+  S.kamas = 2e6; assert.strictEqual(E.roomSlots(S, "atelier"), 2); assert.ok(E.act(S, "growRoom", "atelier"), "l'atelier ne s'agrandit pas"); const sl = E.roomSlots(S, "biblio");
+  assert.strictEqual(E.act(S, "growRoom", "biblio"), null); assert.strictEqual(E.roomSlots(S, "biblio"), sl + 1); assert.ok(S.kamas < 1.6e6, "500 000 kamas payés");
+  assert.strictEqual(E.growCost(S, "biblio"), 1e6); assert.ok(E.act(S, "growRoom", "enclos"), "l'enclos ne s'agrandit pas");
+  const xp0 = E.furnBonus(S, "xp"); S.kamas = 2e6; const kf = S.kamas; assert.strictEqual(E.act(S, "buyFurn", "Pupitre de lecture"), null);
+  assert.ok(E.isPlaced(S, "Pupitre de lecture"), "placé tout de suite"); assert.strictEqual(E.furnBonus(S, "xp"), xp0 + 1); assert.ok(S.kamas <= kf - 500000 + 50000, "500 000 kamas payés"); S.kamas = 1e6;
+  assert.ok(E.act(S, "buyFurn", "Pupitre de lecture"), "déjà acheté"); assert.ok(E.act(S, "buyFurn", "Planétarium d'Osamodas"), "pas assez de kamas");
+  S.kamas = 9e6; assert.strictEqual(E.act(S, "buyFurn", "Établi d'artisan"), null); assert.strictEqual(E.furnBonus(S, "atelier"), 15);
+  const back = E.deserialize(E.serialize(S)); assert.strictEqual(E.roomSlots(back, "biblio"), sl + 1); assert.ok(E.isPlaced(back, "Pupitre de lecture"));
+  console.log("ok - commandes du jour et boutique de la maison :", G.list.map((x) => `${x.lo}-${x.hi} ${x.res}`).join(", "));
 }
 
 // 0.1.37.1 : enchaîner des donjons, « course n sur N », « Arrêter après celui-ci »

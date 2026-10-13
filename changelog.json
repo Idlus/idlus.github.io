@@ -1,6 +1,17 @@
 {
-  "version": "0.1.53.7",
+  "version": "0.1.54",
   "versions": [
+    {
+      "v": "0.1.54",
+      "name": "Commandes du jour",
+      "items": [
+        "Les Achats du jour deviennent les Commandes du jour : chaque jour, le jeu commande 2 000 ressources dans chaque tranche de 20 niveaux (1-20, 21-40… jusqu'à ton meilleur héros). Les zones de bas niveau redeviennent utiles, même après la Renaissance",
+        "Une commande est payée selon le niveau de ton meilleur héros : une commande complète vaut environ 15 minutes de chasse à ton niveau. On peut livrer en plusieurs fois",
+        "Nouvel affichage (Inventaire › Ressources) : une carte par commande, « Tout livrer » en un clic, filtre « À livrer », lien vers la zone de la ressource, commandes livrées rangées en bas, panneau qui se réduit en une ligne. Les ressources commandées ont une pièce d'or dans l'inventaire et un filtre « Commandées aujourd'hui ». La tuile de l'Accueil et la fiche d'une ressource permettent aussi de livrer",
+        "Havre-Sac : nouvelle Boutique de la maison, 16 meubles à acheter en kamas, de 300 000 à 22 millions (+1 à +3 % d'XP, de butin ou de kamas, récolte, sac, hors ligne, vitesse de l'Atelier, XP des montures à l'Enclos). Un meuble acheté se place tout de suite s'il reste de la place. L'Atelier a maintenant 2 places de meubles",
+        "Havre-Sac : chaque pièce à meubles peut être agrandie en kamas, +1 place à chaque fois (500 000 kamas, puis le prix double), 5 fois au plus"
+      ]
+    },
     {
       "v": "0.1.53.7",
       "name": "Mentions dans le chat",

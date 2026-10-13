@@ -3183,13 +3183,13 @@
     manualCast: "lancer un sort (mode manuel)", manualEnd: "finir son tour (mode manuel)", protFight: "affronter le protecteur",
     toggleIdol: "activer une idole", clearIdols: "retirer les idoles", rerollBounty: "changer d'avis de recherche",
     // métiers, forge, ressources
-    setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", gameBuySell: "vendre au jeu (achats du jour)",
+    setJob: "choisir un métier de récolte", upgradeTool: "améliorer un outil", gameBuySell: "livrer une commande du jour", gameBuyAll: "livrer toutes les commandes du jour",
     craftItem: "fabriquer un objet", craftSpecial: "fabrication spéciale", craftMany: "fabriquer en série", craftScroll: "fabriquer un parchemin",
     forgemage: "forgemager", transForge: "rune de transcendance", signItem: "signer un objet", startFmPlan: "lancer un plan de forgemagie", stopFmPlan: "arrêter un plan de forgemagie",
     fuseRunes: "fusionner des runes", transmute: "transmuter", exoForge: "exomagie", exoCraft: "fabriquer une rune exo",
     useConsumable: "utiliser un consommable", buyShop: "acheter en boutique", buyNets: "acheter des filets",
     // Havre-Sac, familiers, montures
-    buyHavre: "agrandir le Havre-Sac", placeFurn: "placer un meuble", unplaceFurn: "ranger un meuble",
+    buyHavre: "agrandir le Havre-Sac", growRoom: "agrandir une pièce du Havre-Sac", buyFurn: "acheter un meuble (boutique de la maison)", placeFurn: "placer un meuble", unplaceFurn: "ranger un meuble",
     buildAtelier: "construire l'atelier", setAtelier: "choisir la recette de l'atelier", buildEnclos: "construire l'enclos",
     equipPet: "équiper un familier", equipMount: "équiper une monture", setMountShare: "part d'XP pour la monture",
     startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement",

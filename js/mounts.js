@@ -113,6 +113,7 @@
   E.mountXpNeed = (sp, l) => Math.round(E.MOUNT_SP[sp].xp * (1 + l / 20));
   E.giveMountXp = (S, M, g) => {
     if (M.lvl >= E.MOUNT_MAX || g <= 0) return false;
+    if (E.furnBonus) g = Math.round(g * (1 + E.furnBonus(S, "mxpup") / 100)); // 0.1.54 : meubles de l'enclos
     M.xp += g; let up = false;
     while (M.lvl < E.MOUNT_MAX && M.xp >= E.mountXpNeed(M.sp, M.lvl)) { M.xp -= E.mountXpNeed(M.sp, M.lvl); M.lvl++; up = true; }
     if (M.lvl >= E.MOUNT_MAX) { M.xp = 0; const o = E.mountOwner(S, M.uid); if (o) o.mountShare = 0; note(S, `${E.mountName(M)} atteint le niveau ${E.MOUNT_MAX} : bonus au maximum${o ? `, ${o.name} garde toute son XP` : ""}.`, "up"); }
