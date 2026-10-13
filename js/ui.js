@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.1";
+const GAME_VERSION = "1.0.7.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.2", name: "Vœux de la Fontaine", items: [
+    "Songe infini : à la Fontaine onirique, un vœu acheté se voit tout de suite. Sa carte passe en vert avec « ✓ Obtenu » à la place du prix, et le haut de la fiche compte tes vœux pris",
+    "Un petit message confirme le vœu obtenu et les points de rêve qu'il te reste",
+    "Sur téléphone, les cartes de la Fontaine sont mieux rangées : le prix ne déborde plus de l'écran",
+  ] },
   { v: "1.0.7.1", name: "Chemins des menus", items: [
     "Quête principale : l'étape « Le Havre-Sac » disait « Accueil → Havre-Sac » ; le Havre-Sac est dans Artisanat › Havre-Sac. Toutes les étapes donnent maintenant le bon chemin du menu",
     "Les étapes qui se font sur une page (Havre-Sac, Récolte, Artisanat, Brisage, Équipement, Almanax, Avis de recherche, Alignement) ont un bouton « Y aller » qui ouvre directement la bonne page, dans Quêtes et sur l'Accueil",

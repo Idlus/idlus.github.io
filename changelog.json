@@ -1,6 +1,15 @@
 {
-  "version": "1.0.7.1",
+  "version": "1.0.7.2",
   "versions": [
+    {
+      "v": "1.0.7.2",
+      "name": "Vœux de la Fontaine",
+      "items": [
+        "Songe infini : à la Fontaine onirique, un vœu acheté se voit tout de suite. Sa carte passe en vert avec « ✓ Obtenu » à la place du prix, et le haut de la fiche compte tes vœux pris",
+        "Un petit message confirme le vœu obtenu et les points de rêve qu'il te reste",
+        "Sur téléphone, les cartes de la Fontaine sont mieux rangées : le prix ne déborde plus de l'écran"
+      ]
+    },
     {
       "v": "1.0.7.1",
       "name": "Chemins des menus",

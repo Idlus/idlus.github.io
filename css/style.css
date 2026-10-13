@@ -3646,6 +3646,12 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .sg-of .orb img{width:40px;height:40px;object-fit:contain}
 .sg-of .rk{font-size:10.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--oc)}
 .sg-of b{font-size:14.5px}.sg-of.sel{border-color:var(--dg);box-shadow:0 0 16px rgba(240,195,90,.35)}
+.sg-of.sold{border-color:#8ff0a0;background:rgba(143,240,160,.09);box-shadow:0 0 14px rgba(143,240,160,.22);cursor:default}
+.sg-of.sold>:not(.sg-got){opacity:.55}
+.sg-got{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:#8ff0a0;color:#0d2a17;font-size:12px;font-weight:900}
+.sg-of.just{animation:sgGot .7s ease-out}
+@keyframes sgGot{0%{transform:scale(1)}35%{transform:scale(1.06);box-shadow:0 0 28px rgba(143,240,160,.75)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.sg-of.just{animation:none}}
 .sg-shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
 .sg-it{display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:14px;background:rgba(10,8,25,.45);border:2px solid rgba(255,255,255,.14);font-size:13px;min-width:0;color:var(--di)}
 .sg-it .top{display:flex;gap:9px;align-items:center}.sg-it .ico{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.07)}
@@ -3968,6 +3974,9 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 @media (max-width:860px){
   .sgx-tabs button em{position:absolute;margin:0;top:4px;right:6px}
   .sgx-shop .sg-shop,.sgd .sg-shop{grid-template-columns:1fr}
+  .sgd .sg-shop .sg-of{display:grid;grid-template-columns:52px minmax(0,1fr);gap:2px 12px;align-items:center;text-align:left;padding:10px 12px}
+  .sgd .sg-shop .sg-of .orb{grid-row:1/span 4;width:52px;height:52px}.sgd .sg-shop .sg-of .orb img{width:34px;height:34px}
+  .sgd .sg-shop .sg-of>:not(.orb){grid-column:2;justify-self:start}
   .sgd .sg-it{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 10px;align-items:center}
   .sgd .sg-it .top{display:contents}.sgd .sg-it .top .ico{grid-row:1/span 3}
   .sgd .sg-it>.xs,.sgd .sg-it .sgx-need,.sgd .sg-it .pr{grid-column:2}

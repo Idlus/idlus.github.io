@@ -104,4 +104,18 @@ const team = (L, cls = ["iop", "eni", "feca", "cra"]) => { const S = E.newState(
   console.log("ok - songe : rechargement en cours de route");
 }
 
+// 9. 1.0.7.2 : un vœu acheté à la Fontaine reste marqué « pris » (même après sauvegarde) et ne se rachète pas
+{
+  const S = team(60); E.act(S, "expStart", 0); const X = S.exp;
+  const n3 = X.nodes.find((n) => n.d === 3); X.at = n3.i; X.path = [n3.i]; X.pts = 40;
+  assert.strictEqual(E.act(S, "expDoor", E.sgNext(X).find((i) => X.nodes[i].t === "fount")), null, "entrée dans la Fontaine");
+  const i = E.expPending(S).opts.findIndex((o) => o.k === "sable"); const pr = E.expPending(S).opts[i].price;
+  assert.strictEqual(E.act(S, "expBuy", i), null, "vœu acheté");
+  assert.ok(E.expPending(S).opts[i].sold && S.exp.pts === 40 - pr && S.exp.sable === 1, "vœu marqué pris, points payés");
+  const N = E.deserialize(E.serialize(S)); const p = E.expPending(N);
+  assert.ok(p && p.t === "fount" && p.opts[i].sold && N.exp.pts === 40 - pr, "vœu toujours pris après rechargement");
+  assert.strictEqual(E.act(N, "expBuy", i), "Déjà pris.", "pas deux fois le même vœu");
+  console.log("ok - songe : vœu de Fontaine enregistré");
+}
+
 console.log("songe.test.js : tout est bon");

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.7.2 « Vœux de la Fontaine »
+Fontaine onirique du Songe : un vœu acheté (`o.sold`, déjà sauvegardé) s'affiche en vert avec « ✓ Obtenu » (`.sg-of.sold`, `.sg-got`), compteur « N vœux pris » en haut de la fiche, petit éclat sur la carte achetée et message de confirmation ; cartes rangées en grille sur téléphone. Test 9 de `tests/songe.test.js`.
+
 ## 1.0.7.1 « Chemins des menus »
 Les étapes de la quête principale donnent le bon chemin du menu (le Havre-Sac est dans Artisanat › Havre-Sac) et ont un bouton « Y aller » ; tous les chemins de menu des textes suivent les 5 groupes, vérifiés par un test.
 

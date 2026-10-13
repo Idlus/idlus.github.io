@@ -224,13 +224,14 @@
 
   /* ---------- les fiches ---------- */
   const timer = (p) => (E.expAutoOn(S()) ? `<span class="xs muted" id="sgTimer">choix auto dans ${Math.max(0, Math.ceil((E.EXP_AUTO_MS - (E.now() - p.at)) / 1000))} s</span>` : "");
+  const offerName = (o) => !o ? "" : o.k === "relic" ? E.EXP_RELICS[o.id].name : o.k === "heal" ? (o.v >= 100 ? "Source de vie" : "Second souffle") : o.k === "sable" ? "Sable de Draconiros" : "Songeur aguerri";
   const offer = (o, i, act, extra = "") => {
     let ic = "", rk = "", nm = "", d = "", col = "#d8d2f0";
     if (o.k === "relic") { const r = E.EXP_RELICS[o.id]; ic = relImg(o.id); rk = `Bonus ${RK[r.r][0].toLowerCase()}`; nm = r.name; d = r.desc; col = RK[r.r][1]; }
     if (o.k === "heal") { ic = uimg("phenix", ""); rk = "Soin"; nm = o.v >= 100 ? "Source de vie" : "Second souffle"; d = o.v >= 100 ? "Tous les PV, et les héros à terre se relèvent" : `L'équipe récupère ${o.v} % de ses PV`; col = "#8ff0a0"; }
     if (o.k === "pts") { ic = uimg("dofus", ""); rk = "Points de rêve"; nm = "Songeur aguerri"; d = `+${o.v} points de rêve tout de suite`; col = "#f0c35a"; }
     if (o.k === "sable") { ic = uimg("poussiere", ""); rk = "Utilitaire"; nm = "Sable de Draconiros"; d = "Rejoue un combat perdu au lieu de te réveiller"; col = "#5fd8d0"; }
-    return `<button class="sg-of ${o.sold ? "sold" : ""}" style="--oc:${col}" data-act="${act}" data-i="${i}" ${o.sold ? "disabled" : ""}><span class="orb">${ic}</span><span class="rk">${h(rk)}</span><b>${h(nm)}</b><span class="xs muted">${h(d)}</span>${extra}</button>`;
+    return `<button class="sg-of ${o.sold ? "sold" : ""}" style="--oc:${col}" data-act="${act}" data-i="${i}" ${o.sold ? "disabled" : ""}><span class="orb">${ic}</span><span class="rk">${h(rk)}</span><b>${h(nm)}</b><span class="xs muted">${h(d)}</span>${o.sold && act === "sg-buy" ? `<span class="sg-got">✓ Obtenu</span>` : extra}</button>`;
   };
   function pendHtml(s, p) {
     const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : null; const room = n ? `Salle ${n.d}` : "";
@@ -238,7 +239,7 @@
     const storm = `<button class="sg-btn ghost" data-act="sg-storm" ${X_.pts < E.SG_STORM ? "disabled" : ""}>Tempête astrale · ${E.SG_STORM} points</button>`;
     let body = "";
     if (p.t === "favor") body = head(`${room} · Faveur onirique`, "Un songeur t'offre un présent", "Pas de combat ici. Choisis un bonus, il dure jusqu'au réveil.") + `<div class="sg-offer" style="grid-template-columns:repeat(${p.opts.length},minmax(0,1fr))">${p.opts.map((o, i) => offer(o, i, "sg-pick")).join("")}</div><div class="row" style="gap:8px;flex-wrap:wrap">${storm}${timer(p)}</div>`;
-    if (p.t === "fount") body = head(`${room} · Fontaine onirique`, "La Fontaine murmure cinq vœux", `Dépense tes points de rêve (il t'en reste <b>${fmt(X_.pts)}</b>). Tu peux en prendre plusieurs.`) + `<div class="sg-shop">${p.opts.map((o, i) => offer(o, i, "sg-buy", `<span class="sg-chip g">${G("star")} ${o.price} points</span>`)).join("")}</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="sg-btn" data-act="sg-no">Continuer le songe</button>${storm}${timer(p)}</div>`;
+    if (p.t === "fount") body = head(`${room} · Fontaine onirique`, "La Fontaine murmure cinq vœux", `Dépense tes points de rêve (il t'en reste <b>${fmt(X_.pts)}</b>). Tu peux en prendre plusieurs.${p.opts.some((o) => o.sold) ? ` <b style="color:#8ff0a0">✓ ${plural(p.opts.filter((o) => o.sold).length, "vœu")} pris</b>` : ""}`) + `<div class="sg-shop">${p.opts.map((o, i) => offer(o, i, "sg-buy", `<span class="sg-chip g">${G("star")} ${o.price} points</span>`)).join("")}</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="sg-btn" data-act="sg-no">Continuer le songe</button>${storm}${timer(p)}</div>`;
     if (p.t === "gob") body = head(`${room} · Gobledore`, "Un Gobledore te barre la route", "Ce petit être rare plie le songe. Il ne revient pas deux fois dans le même rêve.") + `<div class="sg-offer">
       <button class="sg-of" style="--oc:#5fd8d0" data-act="sg-gob" data-v="back" ${p.back === null || p.back === undefined ? "disabled" : ""}><span class="orb">${uimg("carte", "")}</span><span class="rk">Retour</span><b>Reprendre un chemin</b><span class="xs muted">${p.back !== null && p.back !== undefined ? `Revenir à la salle ${X_.nodes[p.back].d} et choisir un autre couloir` : "Pas encore de salle où revenir"}</span></button>
       <button class="sg-of" style="--oc:#f0c35a" data-act="sg-gob" data-v="bet" ${X_.pts < E.SG_BET ? "disabled" : ""}><span class="orb">${uimg("bourse", "")}</span><span class="rk">Pari</span><b>Quitte ou double</b><span class="xs muted">Mise ${E.SG_BET} points de rêve : une chance sur deux de les doubler</span></button>
@@ -332,7 +333,9 @@
       case "sg-pick": choose(s, +d.i); return;
       case "sg-no": choose(s, "no"); return;
       case "sg-storm": { const r = E.act(s, "expChoose", "storm"); if (r) { X().toast(r); return; } X().markDirty(); const p = E.expPending(s); if (p) openPend(s, p); return; }
-      case "sg-buy": { const r = E.act(s, "expBuy", +d.i); if (r) { X().toast(r); return; } X().markDirty(); const p = E.expPending(s); if (p) openPend(s, p); return; }
+      case "sg-buy": { const p0 = E.expPending(s); const o = p0 && p0.opts[+d.i]; const r = E.act(s, "expBuy", +d.i); if (r) { X().toast(r); return; } X().markDirty();
+        X().toast(`✓ Vœu obtenu : ${offerName(o)}. Il te reste ${fmt(s.exp.pts)} points de rêve.`);
+        const p = E.expPending(s); if (p) { openPend(s, p); const b = $(`#sheet .sg-of[data-act="sg-buy"][data-i="${+d.i}"]`); if (b) b.classList.add("just"); } return; }
       case "sg-gob": choose(s, d.v); return;
       case "sg-wave": { choose(s, d.v === "no" ? "no" : 0); if (d.v !== "no") { window.DX.ui.tab = "combat"; X().render(); } return; }
       case "sg-sable": choose(s, d.v === "no" ? "no" : 0); return;
