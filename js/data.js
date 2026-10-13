@@ -425,13 +425,19 @@
   {
     const KEY_FIX = { "Mâchoire du Chafer Draugr": ["donjon_squelettes", 5], "Fragment de Pierre Polie": ["pitons_craqueleur", 5],
       "Première partie de la clef du labyrinthe du Dragon Cochon": ["antre_dragon_cochon", 4], "Deuxième partie de la clef du labyrinthe du Dragon Cochon": ["antre_dragon_cochon", 4],
-      "Fragment de cerveau poli": ["goulet_rasboul", 5] };
+      "Fragment de cerveau poli": ["goulet_rasboul", 5],
+      /* 0.1.40 « Donjons oubliés » */
+      "Blugely": ["gelaxieme_dimension", 6], "Rougely": ["gelaxieme_dimension", 6], "Vertgely": ["gelaxieme_dimension", 6],
+      "Pièce de Koffrefor": ["fabrique_mallefisk", 5], "Larve pétrifiée d'Ecaflipuce": ["miausolee_pounicheur", 5] };
     for (const [res, [did, rate]] of Object.entries(KEY_FIX)) {
       if (!G.DUNGEONS[did] || Object.values(G.MONSTERS).some((m) => m.drops.some(([r]) => r === res))) continue;
       G.ZONES.forEach((z) => z.subs.forEach((sub) => { if (sub.dungeon !== did) return; sub.monsters.forEach((k) => { const m = G.MONSTERS[k]; if (m && !m.drops.some(([r]) => r === res)) m.drops.push([res, rate]); }); }));
       if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
     }
   }
+  /* 0.1.40 : la Petite Larve Dorée (clé du Donjon des Larves) n'a pas de recette dans DOFUS → fabriquée chez le Bricoleur avec des ressources des Craqueleurs */
+  if (G.DUNGEONS.donjon_larves && !G.SPECIAL_CRAFTS["Petite Larve Dorée"])
+    G.SPECIAL_CRAFTS["Petite Larve Dorée"] = { job: "bricoleur", lvl: 10, ing: [["Griffes de Kwak", 3], ["Plume du Kwak de Vent", 2], ["Plume du Kwak de Terre", 2], ["Cuir du Cochon de Lait", 2], ["Viande Tendre", 3], ["Pollenectar", 3], ["Avoine", 3]] };
   /* 0.1.14.2 : la Clef du Château du Wa Wabbit demandait trois morceaux de clef introuvables → ressources des Wabbits de l'île */
   { const C = G.SPECIAL_CRAFTS["Clef du Château du Wa Wabbit"];
     if (C) C.ing = [["Patte de Wabbit", 3], ["Queue de Black Wabbit", 3], ["Moustaches de Tiwabbit", 3], ["Viande Ladre", 2], ["Carpe d'Iem", 2], ["Menthe Sauvage", 2], ["Houblon", 2]]; }
