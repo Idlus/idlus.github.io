@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.53.5 « Droit au monstre »
+Recherche rapide (js/ui.js) : `dropMons()` / `monWhere()` donnent les monstres qui lâchent une ressource ou un objet et leur zone visible (sinon leur donjon) ; bouton `.wsmon` (act `searchmon`) à côté du résultat, et liste « Monstres qui la lâchent » dans `resSheet`.
+
 ## 0.1.53.4 « XP de monture arrondie »
 Montures (js/ui.js `mountBar`) : pourcentage d'XP arrondi à l'entier inférieur ; XP restante arrondie au-dessus. Calcul inchangé.
 

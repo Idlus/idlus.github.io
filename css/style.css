@@ -2249,6 +2249,17 @@ html{zoom:1}
 .wsr .grow{min-width:0}
 .wsr mark{background:transparent;color:inherit;text-decoration:underline;text-decoration-color:var(--gold);text-decoration-thickness:2px;text-underline-offset:2px}
 .wsgo{font-size:11.5px;font-weight:800;color:var(--gold);white-space:nowrap}
+/* 0.1.53.5 : bouton direct vers le monstre qui lâche la ressource ou l'objet */
+.wsrow{display:flex;align-items:stretch;gap:4px}
+.wsrow .wsr{flex:1;min-width:0}
+.wsmon{display:flex;align-items:center;gap:6px;flex:0 0 auto;max-width:42%;padding:4px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.wsmon:hover,.wsmon:focus-visible{box-shadow:inset 0 0 0 2px var(--gold)}
+.wsmon img{width:30px;height:30px;object-fit:contain;flex:0 0 auto}
+.wsmon>b{width:30px;text-align:center;color:var(--muted)}
+.wsmon span{min-width:0}
+.wsmon span b{display:block;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsmon small{display:block;font-size:11px;font-weight:800;color:var(--gold);white-space:nowrap}
+@media (max-width:560px){.wsrow .wsgo{display:none}.wsmon{max-width:46%}}
 .wsk{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex:none;background:var(--frame2)}
 .wsk.img{background:var(--panel3)}.wsk.img img{width:28px;height:28px;object-fit:contain}.wsk .uico{width:16px;height:16px}
 .wsk.k-dg{background:#8a5d33}.wsk.k-item{background:#2f86c6}.wsk.k-mon{background:#9b2c2c}.wsk.k-res{background:#4f8a2b}.wsk.k-page{background:#7a5bb0}.wsk.k-zone{background:#3f7f6b}.wsk.k-set{background:#1f6f9a}.wsk.k-dofus{background:#c77d1e}.wsk.k-idol{background:#9b4dff}.wsk.k-pet,.wsk.k-mount{background:#b0643c}.wsk.k-cons{background:#d27a9c}.wsk.k-ach{background:#c99a2e}
