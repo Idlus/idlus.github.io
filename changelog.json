@@ -1,6 +1,16 @@
 {
-  "version": "0.1.50.2",
+  "version": "0.1.50.3",
   "versions": [
+    {
+      "v": "0.1.50.3",
+      "name": "Boss des mondes corrigé",
+      "items": [
+        "Boss des mondes : Gargandyas a maintenant 1 000 000 PV au lieu de 2 000 000, pour tomber en 2 jours environ comme prévu (les dégâts déjà faits sont gardés)",
+        "Les 4 objets de Gargandyas et les objets légendaires du Songe ne sortent plus des coffres : on ne les obtient que par leur boutique ou dans le Songe",
+        "Le bandeau du boss et l'effet d'arrivée s'affichent aussi sur l'onglet Combat (ils ne se cachent plus que pendant un combat qu'on regarde)",
+        "La tuile du boss apparaît sur l'Accueil dès qu'il est chargé, la fiche de ses objets dit où les obtenir, et l'écran de fin d'essai compte bien les essais restants"
+      ]
+    },
     {
       "v": "0.1.50.2",
       "name": "Boîte à idées épinglée",
