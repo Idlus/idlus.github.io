@@ -18,7 +18,7 @@
   const h = (s) => X().h(s);
   const nf = (n) => Math.round(n || 0).toLocaleString("fr-FR");
   const FRAG = E.WB_FRAG;
-  const LOCAL_HP = 1200; // version de test : un boss local tombe en quelques jours d'essais
+  const LOCAL_HP = 300; // version de test : un boss local tombe en quelques jours d'essais
   const ui = { info: null, at: 0, loading: false, busy: false, err: "", off: 0, shown: 0 };
 
   /* ---------- préférences de cet appareil : effets, boss déjà annoncé, bandeaux fermés, boss local ---------- */
@@ -126,11 +126,17 @@
       </div>
       <div class="wb-side">${team ? side : `<span class="small">Il faut au moins un héros dans l'équipe active.</span>`}</div></section>`;
   }
+  function noteHtml(s) {
+    const t = E.team(S());
+    const lv = t.length ? Math.round(t.reduce((a, x) => a + (x.lvl || 1), 0) / t.length) : 0;
+    return `<p class="small wb-note"><b>Ton niveau, ton équipement et le nombre de héros comptent.</b>${t.length ? ` Ton équipe : ${t.length} héros, niveau moyen ${lv}.` : ""} Avec 8 héros bien équipés, on vise B au niveau 60, A vers 80-100, S vers 120-160 et SSS au niveau 200. Avec moins de héros, le boss encaisse mieux.</p>`;
+  }
   function gradesHtml(s) {
     const on = s.me && s.me.best ? gradeOf(s.me.best) : "";
     return `<section class="panel wb-p"><h3>Grade de chaque essai</h3>
       <p class="small muted" style="margin:0 0 8px">Plus ton équipe fait de dégâts en ${E.WB_ROUNDS} tours, plus le grade est haut. Le coffre arrive tout de suite dans ton sac.</p>
-      <div class="wb-grades">${E.WB_GRADES.slice().reverse().map((g) => { const [k, q] = Object.entries(g.cons)[0]; return `<div class="wb-gr ${g.g === on ? "on" : ""}"><span class="L g-${g.g}">${g.g}</span>${chest(k)}<b>${g.min ? nf(g.min * E.WB_PV) + " PV" : "moins de " + nf(100 * E.WB_PV)}</b><span class="muted">${q > 1 ? q + " × " : ""}${h(window.DATA.CONSUMABLES[k].name)}<br>+${g.frag} Fragment${g.frag > 1 ? "s" : ""}</span></div>`; }).join("")}</div></section>`;
+      ${noteHtml(s)}
+      <div class="wb-grades">${E.WB_GRADES.slice().reverse().map((g) => { const [k, q] = Object.entries(g.cons)[0]; return `<div class="wb-gr ${g.g === on ? "on" : ""}"><span class="L g-${g.g}">${g.g}</span>${chest(k)}<b>${g.min ? nf(g.min * E.WB_PV) + " PV" : "moins de " + nf(E.WB_GRADES[E.WB_GRADES.length - 2].min * E.WB_PV)}</b><span class="muted">${q > 1 ? q + " × " : ""}${h(window.DATA.CONSUMABLES[k].name)}<br>+${g.frag} Fragment${g.frag > 1 ? "s" : ""}</span></div>`; }).join("")}</div></section>`;
   }
   function lbHtml(s) {
     const me = mode() === "acc" ? ON().user.id : "me";
@@ -202,7 +208,7 @@
   }
   function watch(R) {
     const s = S(); const def = E.wbDef(R.n);
-    const W = E.wbWatch(s, def, R.phase, R.seed); if (W.err) { X().toast(W.err); return; }
+    const W = E.wbWatch(s, def, R.phase, R.watchSeed || R.seed); if (W.err) { X().toast(W.err); return; }
     X().extWatchStart(W, { step: E.wbWatchStep, html: watchHtml, head: watchHead, end: watchEnd, back: "wb", res: R, def });
   }
   function livePts(W) { const B = W.B; return Math.round((Math.max(0, B.hpMax - Math.max(0, B.hp)) / W.base) * 100 * (W.def.pow || 1)); }
@@ -245,7 +251,7 @@
     const ch = Object.entries(R.cons || {})[0] || ["coffre_bois", 1];
     const kill = R.killed ? `<div class="wb-killed">${confetti()}<b>Tu as porté le dernier coup : ${h(def.name)} est tombé !</b><br><span class="small">Coffre en or, Fragments et bonus d'XP pour tout le monde. Le boss suivant arrive.</span></div>` : "";
     return `<div class="wb-res">${kill}<span class="xs muted">${R.local ? "Version de test · " : ""}Essai ${E.WB_TRIES - (R.left || 0)} sur ${E.WB_TRIES} · ${h(def.name)} · phase ${R.phase} · ${why}</span>
-      <div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div><span class="small muted">soit ${pctTxt((R.points / R.hp) * 100)} de ses PV${R.rank ? ` · tu es ${R.rank}<sup>${R.rank === 1 ? "er" : "e"}</sup> au classement` : ""}</span><br>
+      <div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div>${R.fights ? `<div class="wb-fights"><span class="xs muted">Moyenne de ${R.fights.length} combats joués par le serveur :</span>${R.fights.map((f, i) => `<span class="tag soft">Combat ${i + 1} · ${nf(f.points * E.WB_PV)} PV${f.alive ? "" : ` · tombés au tour ${f.rounds}`}</span>`).join("")}</div>` : ""}<span class="small muted">soit ${pctTxt((R.points / R.hp) * 100)} de ses PV${R.rank ? ` · tu es ${R.rank}<sup>${R.rank === 1 ? "er" : "e"}</sup> au classement` : ""}</span><br>
       <div class="chest">${chest(ch[0])}<span style="text-align:left"><b>${h(consTxt(R.cons))}</b><br><span class="xs muted">dans ton sac</span></span>${fragImg()}<span style="text-align:left"><b>+${R.frag} Fragment${R.frag > 1 ? "s" : ""}</b><br><span class="xs muted">${nf(E.wbFrags(S()))} au total</span></span></div>
       ${R.killed ? "" : `<div class="wb-hp" style="margin:6px 0 10px"><i style="width:${(Math.max(0, R.hp - R.dmg) / R.hp) * 100}%"></i><b>Il lui reste ${pctTxt((Math.max(0, R.hp - R.dmg) / R.hp) * 100)}</b></div>`}
       <p class="small muted">${tip}L'${el2}</p>

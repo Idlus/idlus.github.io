@@ -12,7 +12,7 @@ const D = require("../js/data.js");
 assert.strictEqual(E.wbDef(1).name, "Gargandyas");
 assert.strictEqual(E.wbDef(1 + E.WB_ROT.length).name, "Gargandyas", "Gargandyas revient après la rotation");
 for (let n = 1; n <= E.WB_ROT.length; n++) { const d = E.wbDef(n); assert.ok(D.MONSTERS[d.mon], "boss inconnu " + n); assert.ok(E.WB_POW[d.key] > 0, "boss non calibré " + d.key); assert.notStrictEqual(d.weak, d.res); }
-assert.deepStrictEqual([0, 99, 100, 299, 300, 450, 600, 5000].map((p) => E.wbGrade(p).g), ["C", "C", "B", "A", "S", "SS", "SSS", "SSS"]);
+assert.deepStrictEqual([0, 49, 50, 99, 100, 200, 350, 500, 5000].map((p) => E.wbGrade(p).g), ["C", "C", "B", "B", "A", "S", "SS", "SSS", "SSS"]);
 assert.deepStrictEqual([0, 33, 34, 66, 67, 100].map((d) => E.wbPhase(d, 100)), [1, 1, 2, 2, 3, 3]);
 console.log("ok - rotation, grades, phases");
 
@@ -33,7 +33,15 @@ assert.strictEqual(Object.keys(D.DUNGEONS).length, nD, "pas de donjon de passage
 assert.ok(!Object.keys(D.DUNGEONS).some((k) => k.startsWith("wb_")));
 // le pas à pas (Revoir le combat) donne le même résultat que l'essai joué d'un coup
 const W = E.wbWatch(G, E.wbDef(1), 2, 77, t); for (let g = 0; g < 200000 && !W.done; g++) E.wbWatchStep(W);
-assert.deepStrictEqual(E.wbResult(W), E.wbSim(G, E.wbDef(1), 2, 77, t));
+assert.deepStrictEqual(E.wbResult(W), E.wbFight(G, E.wbDef(1), 2, 77, t));
+// 0.1.56 : un essai = moyenne de 3 combats ; le combat montré est l'un d'eux
+const R = E.wbSim(G, E.wbDef(1), 1, 99, t);
+assert.strictEqual(R.fights.length, E.WB_FIGHTS);
+assert.strictEqual(R.points, Math.round(R.fights.reduce((a, f) => a + f.points, 0) / R.fights.length));
+const W2 = E.wbWatch(G, E.wbDef(1), 1, R.watchSeed, t); for (let g = 0; g < 200000 && !W2.done; g++) E.wbWatchStep(W2);
+assert.ok(R.fights.some((f) => f.points === E.wbResult(W2).points), "le combat revu fait partie des 3");
+// plus de héros et plus de niveau = plus de points
+assert.ok(E.wbMult(200, 8) > E.wbMult(60, 8) && E.wbMult(60, 8) > E.wbMult(60, 4) && E.wbMult(60, 4) > E.wbMult(20, 4));
 console.log("ok - essai rejouable, partie intacte");
 
 // 3. Boutique de Fragments d'anomalie et bonus d'XP.
