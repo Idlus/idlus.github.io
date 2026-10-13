@@ -1,6 +1,14 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.4.1",
   "versions": [
+    {
+      "v": "1.0.4.1",
+      "name": "Chat et écrans pliables",
+      "items": [
+        "Téléphone pliable déplié et petites tablettes : le chat se range en bulle ronde au-dessus du menu du bas, il ne cache plus Héros ni Menu",
+        "Options › Affichage › Format d'affichage : Auto, Téléphone ou PC, pour choisir soi-même la présentation du jeu sur un écran tactile"
+      ]
+    },
     {
       "v": "1.0.4",
       "name": "Statistiques de combat",

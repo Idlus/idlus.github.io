@@ -2350,12 +2350,18 @@ html{zoom:1}
 .annbar .uico{width:24px;height:24px;flex:none}
 .admbtn{border:2px solid rgba(127,200,255,.6)!important;color:#7fc8ff!important}
 .admbtn .uico{width:16px;height:16px}
-@media (max-width:640px){
-  #chat.chat{left:0;right:0;bottom:var(--navh);width:auto;height:calc(100dvh - var(--navh) - 70px);border-radius:16px 16px 0 0;border-bottom:0;z-index:45}
+/* 1.0.4.1 : dès que la barre de menu du bas est là (jusqu'à 859 px, ex. téléphone pliable déplié), le chat reste au-dessus d'elle */
+@media (min-width:641px) and (max-width:859px){
+  #chat.chat{bottom:calc(var(--navh) + 12px);height:min(520px,calc(100dvh - var(--navh) - 90px))}
+}
+@media (max-width:859px){
   .chmin{right:12px;bottom:calc(var(--navh) + 12px);width:52px;height:52px;padding:0;border-radius:50%;justify-content:center;border-color:var(--gold)}
   .chmin .t,.chmin .last,.chmin .ev{display:none}
   .chmin .uico{width:24px;height:24px;color:var(--gold2)}
   .chmin .n{position:absolute;top:-4px;right:-4px;border:2px solid var(--panel)}
+}
+@media (max-width:640px){
+  #chat.chat{left:0;right:0;bottom:var(--navh);width:auto;height:calc(100dvh - var(--navh) - 70px);border-radius:16px 16px 0 0;border-bottom:0;z-index:45}
 }
 /* ---------- panel admin ---------- */
 .adm{display:flex;flex-direction:column;gap:14px}

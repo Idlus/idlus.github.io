@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.1 « Chat et écrans pliables »
+Chat entre 641 et 859 px (menu en bas, ex. Fold déplié) : `.chmin` en bulle ronde au-dessus de la barre de menu (règles passées de `max-width:640px` à `859px`), `#chat` ouvert posé au-dessus de la barre. Options › Affichage › « Format d'affichage » (`S.settings.layout` : `phone`/`pc`, action `setlayout`) : `applyDisplay` réécrit la balise viewport (`width=480` ou `width=1180`) ; sans effet dans un navigateur d'ordinateur.
+
 ## 1.0.4 « Statistiques de combat »
 Par héros et par combat : dégâts infligés (invocations et poisons compris, via `F.dotSrc`), soins donnés (`F.actor`), dégâts subis, ennemis achevés (`F.lastBy`). `E.fightStats(F)` dans js/engine.js, gardé dans `S.history[].s` et cumulé dans `S.fstat` (`E.addFightStats`, `E.resetFightStats`). Interface js/ui.js : `fstTable`, `fstPanel` (panneau « Statistiques » de l'écran de combat, onglet Stats au téléphone), `fstSheet` (clic sur « Derniers combats » ou « Stats » à l'accueil).
 

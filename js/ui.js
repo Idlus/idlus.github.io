@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4";
+const GAME_VERSION = "1.0.4.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4.1", name: "Chat et écrans pliables", items: [
+    "Téléphone pliable déplié et petites tablettes : le chat se range en bulle ronde au-dessus du menu du bas, il ne cache plus Héros ni Menu",
+    "Options › Affichage › Format d'affichage : Auto, Téléphone ou PC, pour choisir soi-même la présentation du jeu sur un écran tactile",
+  ] },
   { v: "1.0.4", name: "Statistiques de combat", items: [
     "Nouveau : les statistiques de combat. Pour chaque héros : dégâts infligés (avec sa part du total), soins donnés, dégâts subis et ennemis vaincus. Le héros qui a fait le plus de dégâts porte la couronne, et le meilleur de chaque colonne est en or",
     "Écran de combat : panneau « Statistiques » mis à jour en direct (onglet Stats au téléphone), avec « Ce combat » et « Cumul » de tous les combats depuis la dernière remise à zéro",
@@ -5329,6 +5333,10 @@ function applyDisplay() {
   r.classList.toggle("contrast", !!(S && S.settings.contrast));
   document.body.classList.toggle("nomotion", !!(S && motionOff()));
   const tp = (S && S.settings.toastPos) || "auto"; document.body.classList.toggle("toast-top", tp === "top"); document.body.classList.toggle("toast-bot", tp === "bottom");
+  // 1.0.4.1 : format d'affichage choisi à la main (téléphone pliable, tablette) : on fixe la largeur de la page
+  const vp = document.querySelector('meta[name="viewport"]'); const fm = S && S.settings.layout;
+  const vc = fm === "phone" ? "width=480, viewport-fit=cover" : fm === "pc" ? "width=1180, viewport-fit=cover" : "width=device-width, initial-scale=1, viewport-fit=cover";
+  if (vp && vp.content !== vc) vp.content = vc;
 }
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
@@ -5337,7 +5345,8 @@ function displayOptionsHtml() {
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v} %`]), z))
     + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
     + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes")
-    + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat.")))
+    + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat."))
+    + optLine("Format d'affichage", "pour téléphone pliable ou tablette", seg("setlayout", [["auto", "Auto"], ["phone", "Téléphone"], ["pc", "PC"]], S.settings.layout || "auto", "Auto : suit la taille de ton écran. Téléphone : la page s'affiche comme sur un téléphone (gros boutons, chat en bulle). PC : la page s'affiche comme sur un ordinateur, en plus petit. Sans effet dans un navigateur d'ordinateur.")))
     + optSec("Combat", "",
       optLine("Animations", "", seg("setanim", [["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]], animLvl()))
     + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
@@ -6110,6 +6119,7 @@ document.addEventListener("click", (ev) => {
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; } S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "settext": S.settings.textSize = +d.v; dirty = true; applyDisplay(); optionsSheet(); return;
+    case "setlayout": S.settings.layout = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); return;
     case "settoast": S.settings.toastPos = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); toast("Les notifications apparaissent ici."); return;
     case "setmotion": S.settings.motion = d.v; dirty = true; setTheme(); optionsSheet(); ui.arena = null; return;
     case "tips": tipsSheet(); return;
