@@ -1,6 +1,18 @@
 {
-  "version": "1.0.8.2",
+  "version": "1.0.8.3",
   "versions": [
+    {
+      "v": "1.0.8.3",
+      "name": "Équipements de l'Encyclopédie",
+      "items": [
+        "Nouvel onglet « Équipements » dans l'Encyclopédie : les 2 515 équipements du jeu, rangés par emplacement (armes, coiffes, capes, amulettes, anneaux, ceintures, bottes, boucliers)",
+        "Ceux que tu as déjà eus au moins une fois sont en vert, même vendus ou brisés depuis. Ton sac actuel est compté tout de suite",
+        "Filtres : niveau (« Mon niveau » par défaut), origine (Recette, Butin, Boss) et Obtenus / À trouver",
+        "Un clic sur un objet ouvre sa fiche : stats, recette, monstres qui le lâchent avec « Y aller »",
+        "Le nom de la panoplie est sur chaque objet : un clic ouvre le carnet de panoplies",
+        "La fiche d'un monstre montre aussi les équipements qu'il lâche, et une tuile « Équipements obtenus » s'ajoute en haut de l'Encyclopédie"
+      ]
+    },
     {
       "v": "1.0.8.2",
       "name": "Panel de test sur le jeu public",

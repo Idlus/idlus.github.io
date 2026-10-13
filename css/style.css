@@ -4446,3 +4446,14 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 @media (max-width:900px){.jlb-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:640px){.jlb-tiles{gap:6px}.jlb-tiles button{padding:6px 3px}.jlb-tiles button img,.jlb-tiles button .uico{width:26px;height:26px}.jlb-tiles button b{font-size:11px}.jlb-tiles button small{font-size:10px}
   .jlb-tiles .hide-sm{display:none}.jlb-prof{grid-template-columns:repeat(4,minmax(0,1fr))}.jlb-go{margin-left:0}}
+
+/* 1.0.8.3 : onglet Équipements de l'Encyclopédie */
+.enckpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.eqtools{flex-wrap:wrap;gap:6px}.eqtools .seg button{white-space:nowrap}
+.mons.enc.eqgrid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.eqcard{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:9px 10px;text-align:left}.eqcard.own{border-color:rgba(95,191,85,.55)}
+.eqcard .eq-hd{display:flex;gap:9px;align-items:center;border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.eqcard .eq-hd .grow{display:flex;flex-direction:column;min-width:0}.eqcard .eq-hd:hover b{color:var(--gold2)}
+.eqcard .icobox.lg{width:48px;height:48px;flex:none}.eqcard .icobox.lg img{width:40px;height:40px}
+.eqsts{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px 8px;font-size:12px;font-weight:700}.eqst{display:inline-flex;align-items:center;gap:2px}.eqst .sico{width:15px;height:15px}
+@media (max-width:760px){.enckpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}.mons.enc.eqgrid{grid-template-columns:1fr}.eqhead{display:flex}}

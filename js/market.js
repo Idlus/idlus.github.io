@@ -68,7 +68,7 @@
       (p.rm || []).forEach((uid) => { uid = +uid; delete s.items[uid]; s.chars.forEach((c) => { for (const sl in c.equip) if (c.equip[sl] === uid) delete c.equip[sl]; }); });
       if (p.title) { s.titlesExtra = s.titlesExtra || []; if (!s.titlesExtra.includes(p.title)) s.titlesExtra.push(String(p.title).slice(0, 40)); } // 0.1.22 : titre du boss de guilde
       if (p.untitle) { s.titlesExtra = (s.titlesExtra || []).filter((x) => x !== p.untitle); (s.chars || []).forEach((c) => { if (c.title === p.untitle) c.title = null; }); } // 0.1.49 : « Fléau des mondes » passe au podium suivant
-      (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
+      (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
       if (o.t) { s.hdv.log.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); if (!quiet && (p.sold || p.got)) X().toast(o.t, "rare"); }
     });

@@ -1070,6 +1070,16 @@
     });
     return out;
   };
+  /* 1.0.8.3 : équipements déjà obtenus au moins une fois (Encyclopédie › Équipements) ; au premier appel, on compte le sac, le surplus et la garde-robe */
+  E.itemDexAdd = (S, tpl) => { const T = ITEMS[tpl]; if (!T || T.slot === "dofus") return; (S.itemDex = S.itemDex || {})[tpl] = 1; };
+  E.itemDex = (S) => {
+    if (!S.itemDexInit) { S.itemDex = S.itemDex || {};
+      for (const u in S.items || {}) E.itemDexAdd(S, S.items[u].tpl);
+      (S.over || []).forEach((o) => o && E.itemDexAdd(S, o.tpl));
+      for (const t in S.wardrobe || {}) E.itemDexAdd(S, t);
+      S.itemDexInit = 1; }
+    return S.itemDex;
+  };
   E.ownedTpls = (S) => { const o = {}; for (const u in S.items) o[S.items[u].tpl] = (o[S.items[u].tpl] || 0) + 1; return o; };
   /* panoplie « connue » : une pièce possédée, une recette à portée de métier, ou un monstre qui la lâche déjà vu */
   E.setKnown = (S, setId, owned) => E.setPieces(setId).some((t) => owned[t] || (ITEMS[t].craft && S.crafts[ITEMS[t].craft.job] && S.crafts[ITEMS[t].craft.job].lvl >= E.craftReq(t)) || (setIdx().drops[t] || []).some(([m]) => S.bestiary[m]));

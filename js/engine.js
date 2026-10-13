@@ -415,7 +415,7 @@
       note(S, `✦ Objet Rayonnant : ${T.name} (+${it.radiant} %) !`, "radiant");
       E.celebrate({ t: "radiant", tpl, pct: it.radiant });
     }
-    S.items[it.uid] = it; if (E.wardrobeAdd) E.wardrobeAdd(S, tpl); // 0.1.19 : garde-robe
+    S.items[it.uid] = it; if (E.wardrobeAdd) E.wardrobeAdd(S, tpl); if (E.itemDexAdd) E.itemDexAdd(S, tpl); // 0.1.19 : garde-robe, 1.0.8.3 : Encyclopédie
     bagChk = true;
     return it;
   };

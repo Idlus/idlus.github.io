@@ -13,7 +13,7 @@ const ui = {
   craftJob: "tailleur", focus: "", startCls: "iop", startSex: null, confirm: null, giveTo: null, combatCid: null, encZone: "incarnam",
 };
 /* La version de test (/beta/) a sa propre sauvegarde : elle ne touche jamais la partie du jeu public. */
-/* 1.0.8.2 : la « partie de test » du jeu public (bouton du panel admin) fonctionne comme la bêta : même sauvegarde de test,
+/* 1.0.8.3 : la « partie de test » du jeu public (bouton du panel admin) fonctionne comme la bêta : même sauvegarde de test,
    panel de test, aucun serveur. « Revenir à ma partie » rend la vraie partie, qui n'a pas bougé. */
 const TESTMODE = !/\/beta\//.test(location.pathname) && (() => { try { return localStorage.getItem("idlus-partie-test") === "1"; } catch (e) { return false; } })();
 const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.2";
+const GAME_VERSION = "1.0.8.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.3", name: "Équipements de l'Encyclopédie", items: [
+    "Nouvel onglet « Équipements » dans l'Encyclopédie : les 2 515 équipements du jeu, rangés par emplacement (armes, coiffes, capes, amulettes, anneaux, ceintures, bottes, boucliers)",
+    "Ceux que tu as déjà eus au moins une fois sont en vert, même vendus ou brisés depuis. Ton sac actuel est compté tout de suite",
+    "Filtres : niveau (« Mon niveau » par défaut), origine (Recette, Butin, Boss) et Obtenus / À trouver",
+    "Un clic sur un objet ouvre sa fiche : stats, recette, monstres qui le lâchent avec « Y aller »",
+    "Le nom de la panoplie est sur chaque objet : un clic ouvre le carnet de panoplies",
+    "La fiche d'un monstre montre aussi les équipements qu'il lâche, et une tuile « Équipements obtenus » s'ajoute en haut de l'Encyclopédie",
+  ] },
   { v: "1.0.8.2", name: "Panel de test sur le jeu public", items: [
     "Panel admin › « Panel de test » (compte admin seulement) : le jeu public passe sur une partie de test, avec le panel de test ouvert, sans quitter idlus.github.io",
     "La partie de test est séparée : hors ligne, rien n'est envoyé au serveur (classements, Hôtel de vente, chat coupés). La vraie partie est envoyée en ligne avant, puis reste intacte",
@@ -2208,12 +2216,13 @@ function encyclopediaHtml() {
   const fams = Object.keys(E.RACE_MONS); const famDone = fams.filter((r) => S.families && S.families[r]).length;
   const bosses = Object.values(DUNGEONS).map((d) => d.boss); const bossMet = new Set(bosses.filter(encMet)).size; const bossN = new Set(bosses).size;
   const conn = all.filter((k) => E.huntTier(S, k) >= 0).length;
-  const kpis = [["best", "Monstres rencontrés", met, all.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length]];
+  const EQ = encEqAll(); const dex = E.itemDex(S); const eqHave = EQ.filter((t) => dex[t]).length;
+  const kpis = [["best", "Monstres rencontrés", met, all.length], ["eq", "Équipements obtenus", eqHave, EQ.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length]];
   const souls = E.soulCount(S), st = E.stones(S);
   const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>`;
-  const head = `<div class="enckpis">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
-    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`;
-  return head + (enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
+  const head = `<div class="enckpis k6">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
+    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`;
+  return head + (enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
 }
 function encBestHtml(enc) {
   if (!ui.encZone) { const s = S.sub && E.SUBS[S.sub]; ui.encZone = s ? s.zone : ZONES[0].id; }
@@ -2277,6 +2286,36 @@ function encWhereHtml(k) {
   return `<div class="encwhere">${(more ? L.slice(0, MAX) : L).map(btn).join("")}${more ? `<button class="encmore" data-act="encmore" data-k="w${k}" data-tip="Voir les ${more} autres lieux">+${more}</button>` : ""}</div>${why ? `<div class="xs muted encwhy">${G("lock")} Fermé pour l'instant : ${h(why.charAt(0).toLowerCase() + why.slice(1))}</div>` : ""}`;
 }
 /* 1.0.7.12 : fiche complète d'un monstre (clic sur son nom ou son portrait dans l'Encyclopédie) */
+/* 1.0.8.3 : onglet Équipements de l'Encyclopédie (tous les équipements, rangés par emplacement ; vert = déjà obtenu une fois) */
+const ENC_EQ_SLOTS = [["arme", "Armes"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["bouclier", "Boucliers"]];
+function encEqAll() { return ui.encEqL || (ui.encEqL = Object.keys(ITEMS).filter((t) => ITEMS[t].slot !== "dofus" && !ITEMS[t].leg).sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl || (ITEMS[a].name < ITEMS[b].name ? -1 : 1))); }
+function encEqSrc(t) { const T = ITEMS[t]; const mon = E.itemSources(t).find((x) => x.mon);
+  return { craft: T.craft ? `${IC("metiers")} ${h(CRAFT_JOBS[T.craft.job].name)} niv. ${E.craftReq(t)}` : "", mon: mon ? `${mon.k === "boss" ? "Boss" : "Butin"} : ${S.bestiary[mon.mon] ? h(MONSTERS[mon.mon].name) : "???"}` : "", boss: !!(mon && mon.k === "boss") }; }
+function encEqHtml() {
+  const F = ui.encEq || (ui.encEq = { slot: "arme", lv: "me", src: "all", st: "all" }); const dex = E.itemDex(S); const top = topTeamLvl();
+  const L0 = encEqAll(); const band = F.lv === "all" ? [1, 999] : F.lv === "me" ? [top - 10, top + 10] : F.lv.split("-").map(Number);
+  const L = L0.filter((t) => { const T = ITEMS[t]; if (T.slot !== F.slot || T.lvl < band[0] || T.lvl > band[1]) return false;
+    if (F.st === "have" && !dex[t]) return false; if (F.st === "miss" && dex[t]) return false;
+    if (F.src === "craft") return !!T.craft; if (F.src !== "all") { const S2 = encEqSrc(t); return F.src === "boss" ? S2.boss : !!S2.mon; } return true; });
+  const side = ENC_EQ_SLOTS.map(([v, n]) => { const ks = L0.filter((t) => ITEMS[t].slot === v); const a = ks.filter((t) => dex[t]).length;
+    return `<button class="enczone ${a === ks.length ? "done" : ""}" data-act="enceqslot" data-v="${v}" aria-pressed="${F.slot === v}"><span class="grow">${n}</span><span class="xs num">${a}/${ks.length}</span><span class="bar"><i style="width:${pct(a, ks.length)}%"></i></span></button>`; }).join("");
+  const sel = `<select class="encsel" data-act="enceqslotsel">${ENC_EQ_SLOTS.map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>`;
+  const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="enceqf" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
+  const tools = seg("lv", [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]])
+    + seg("src", [["all", "Toutes origines"], ["craft", "Recette"], ["drop", "Butin"], ["boss", "Boss"]]) + seg("st", [["all", "Tous"], ["have", "Obtenus"], ["miss", "À trouver"]]);
+  const MAX = ui.encEqMore || 48; const shown = L.slice(0, MAX);
+  const stats = (T) => Object.entries(T.stats).slice(0, 6).map(([k, [, b]]) => `<span class="eqst"${tipAttr(k)}>${sIco(k)}${b}</span>`).join("");
+  const card = (t) => { const T = ITEMS[t]; const o = dex[t]; const S2 = encEqSrc(t);
+    const set = T.set && SETS[T.set] ? `<div class="encwhere"><button class="encgo" data-act="searchset" data-id="${T.set}" data-tip="Ouvrir le carnet de panoplies">${IC("parchemin_or")} ${h(SETS[T.set].name)}</button></div>` : "";
+    return `<div class="mcard eqcard ${o ? "own" : ""}"><button class="eq-hd" data-act="encitem" data-v="${t}" data-tip="Ouvrir la fiche de l'objet"><span class="icobox lg">${im(itemImg(t), "", T.name)}</span><span class="grow"><b>${h(T.name)}</b><span class="xs muted">niv. ${T.lvl} · ${h(slotName(T.slot))}${o ? ` · <b class="plus">✓ obtenu</b>` : ""}</span></span></button>
+      <div class="eqsts">${stats(T)}</div><div class="xs muted eqsrc">${[S2.craft, S2.mon].filter(Boolean).join(" · ")}</div>${set}</div>`; };
+  const nm = ENC_EQ_SLOTS.find((x) => x[0] === F.slot)[1];
+  return `<section class="panel encpanel"><div class="encbest"><aside class="enczones">${side}</aside><div class="encmain">
+    <div class="enctools eqtools">${sel}${tools}</div>
+    <div class="enczhead eqhead"><h2>${nm}</h2><span class="small muted num">${L.filter((t) => dex[t]).length}/${L.length} obtenus${F.lv === "me" ? ` · autour du niveau ${top}` : ""}</span></div>
+    <div class="mons enc eqgrid">${shown.map(card).join("") || `<div class="empty">Aucun équipement avec ces filtres.</div>`}</div>
+    ${L.length > MAX ? `<button class="btn" data-act="enceqmore">Afficher plus (${L.length - MAX} restants)</button>` : ""}</div></div></section>`;
+}
 function encMonSheet(k) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const reveal = E.huntTier(S, k) >= 0;
   const els = Object.entries(m.res || {}).filter(([, v]) => v).map(([e, v]) => `<span class="tag soft" style="color:${elVar(e)}">${h(D.ELEMENTS[e] ? D.ELEMENTS[e].name : e)} ${v > 0 ? "+" : ""}${v} %</span>`).join(" ") || `<span class="muted xs">aucune</span>`;
@@ -2285,6 +2324,7 @@ function encMonSheet(k) {
     <h3 class="sec">Où le trouver</h3><div class="enccard es-where">${encWhereHtml(k) || `<span class="muted xs">Nulle part pour l'instant</span>`}</div>
     ${kills ? `<h3 class="sec">Résistances</h3><div class="row wrap">${els}</div>
     <h3 class="sec">Sorts</h3><div class="row wrap">${(m.sp || []).map((x) => `<span class="tag soft">${h(x.n)}</span>`).join(" ") || `<span class="muted xs">frappe simple</span>`}</div>` : `<p class="note">Rencontre-le une fois pour voir ses résistances et ses sorts.</p>`}
+    ${(m.items || []).some(([t]) => ITEMS[t]) ? `<h3 class="sec">Équipements qu'il lâche</h3><div class="list">${m.items.filter(([t]) => ITEMS[t]).map(([t, p]) => `<button class="li dropli" data-act="encitem" data-v="${t}">${im(itemImg(t), "ico sm", ITEMS[t].name)}<span class="grow">${h(ITEMS[t].name)} <span class="xs muted">${h(slotName(ITEMS[t].slot))} niv. ${ITEMS[t].lvl}</span></span><b class="num">${reveal ? dropPct(p) + " %" : "?"}</b></button>`).join("")}</div>` : ""}
     <h3 class="sec">Butins <span class="xs muted">${reveal ? "taux par monstre" : "taux visibles au palier Connaisseur"}</span></h3><div class="list">${drops}</div>
     <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div></div>`;
 }
@@ -6580,6 +6620,10 @@ document.addEventListener("click", (ev) => {
     case "zoneback": ui.zoneView = null; ui.zoneFromEnc = null; break;
     case "zonebackenc": { ui.zoneView = null; ui.zoneFromEnc = null; ui.tab = "world"; ui.world = "enc"; const y = ui.encScroll || 0; render(); window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); return; }
     case "encmon": openSheet(encMonSheet(d.k)); return;
+    case "encitem": itemSheet(d.v); return;
+    case "enceqslot": ui.encEq.slot = d.v; ui.encEqMore = 0; break;
+    case "enceqf": ui.encEq[d.k] = d.v; ui.encEqMore = 0; break;
+    case "enceqmore": ui.encEqMore = (ui.encEqMore || 48) + 48; break;
     case "encfamopen": (ui.encFamOpen = ui.encFamOpen || {})[d.v] = !(ui.encFamOpen || {})[d.v]; break;
     case "worldtab": if (d.v === "tresor") { ui.tab = "quests"; ui.qt = "tresor"; ui.zoneView = null; break; } ui.world = d.v; break; // 0.1.49 : le trésor est dans Quêtes › Chasses
     case "maptier": ui.mapTier = +d.v; break;
@@ -6811,6 +6855,7 @@ document.addEventListener("change", (ev) => {
   if (a.startsWith("vi-")) { viChange(a, t); return; }
   if (a.startsWith("sg-")) { if (window.SGUI) window.SGUI.change(a, t); return; }
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
+  if (a === "enceqslotsel") { ui.encEq.slot = t.value; ui.encEqMore = 0; renderWorld(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
   if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
