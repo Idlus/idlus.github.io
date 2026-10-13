@@ -107,6 +107,10 @@ const MOCK = () => {
       if (name === "guild_list") return { data: [{ id: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, open: true, motd: "", n: 7, chef: "Kralamour" }], error: null };
       if (name === "guild_give" || name === "guild_chat") return { data: name === "guild_chat" ? [] : { ok: false, none: true }, error: null };
       if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
+      // 0.1.36 : boîte à idées
+      if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
+        L.push({ id: L.length + 1, user_id: u.id, t: Date.now(), pseudo: me && me.pseudo, info: a.p_info, tag: a.p_tag, title: a.p_title, body: a.p_body, hidden: false, url: null, created_at: new Date().toISOString(), guest: false }); put(d); return { data: null, error: null }; }
+      if (name === "adm_ideas") return { data: (d.ideas || []).slice().reverse(), error: null };
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
     },
@@ -253,6 +257,22 @@ const MOCK = () => {
     if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
     if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
+    // 7d bis (0.1.36). boîte à idées : envoi depuis Communauté › Suggestions, puis lecture dans le panel admin
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click('#nav .sn-side [data-nk="sugg"]'); await page.waitForSelector("#idTitle", { timeout: 5000 });
+    await page.click('[data-act="id-send"]'); await page.waitForTimeout(200);
+    if (!/Choisis ce que ton idée concerne/.test(await page.textContent("#main"))) fail("idées : envoi sans catégorie accepté");
+    await page.click('[data-act="id-tag"][data-v="Contenu"]'); await page.fill("#idTitle", "Un donjon pour le Bouftou Royal"); await page.fill("#idBody", "Un petit donjon niveau 20 à Astrub avec le Bouftou Royal en boss.");
+    await page.click('[data-act="id-send"]'); await page.waitForSelector(".sheet", { timeout: 5000 });
+    if (!/ton idée est partie/.test(await page.textContent(".sheet"))) fail("idées : pas de remerciement");
+    await page.click('.sheet [data-act="closesheet"]');
+    m = await mock(); const idea = (m.ideas || [])[0];
+    if (!idea || idea.tag !== "Contenu" || idea.title !== "Un donjon pour le Bouftou Royal" || !/niv\. \d+ · /.test(idea.info || "")) fail("idées : idée mal envoyée " + JSON.stringify(idea));
+    if (!(await page.$('[data-act="id-send"][disabled]')) || !/Prochaine idée dans 10 min/.test(await page.textContent("#main"))) fail("idées : attente de 10 minutes absente");
+    if (!/Un donjon pour le Bouftou Royal/.test(await page.textContent("#main"))) fail("idées : absente de « Tes idées envoyées »");
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
+    await page.click('.adm [data-act="adm-tab"][data-v="idees"]'); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });
+    if (!/Bouftou Royal/.test(await page.textContent(".adm"))) fail("idées : absente du panel admin");
     // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
     await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
     await page.click('#nav [data-nk="hdv"]');
