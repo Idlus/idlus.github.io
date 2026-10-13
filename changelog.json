@@ -1,6 +1,19 @@
 {
-  "version": "0.1.49.2",
+  "version": "0.1.50",
   "versions": [
+    {
+      "v": "0.1.50",
+      "name": "Quêtes, succès et chasses",
+      "items": [
+        "Quête principale : 4 chapitres de plus jusqu'au niveau 200 (Les terres sauvages, Les îles lointaines, Le grand froid, Les Dimensions divines). Chaque chapitre fini donne un titre et 2 Coffres en or",
+        "Nouveau : une quête de région dans chacune des 31 régions, donnée par un personnage de DOFUS. Au bout : kamas, Coffre en argent, le titre « l'Ami de … » et l'emblème de la région, un ornement de carte de héros",
+        "Nouveau : 3 quêtes de la semaine à ton niveau, chaque lundi. Les 3 faites : un Coffre en or et 3 parchemins de chasse",
+        "Avis de recherche : rang de chasseur (+10 % aux primes par rang), un avis de boss en plus et un avis d'élite de la semaine (stasis 6, Coffre en or). Les avis suivent enfin le niveau de l'équipe quand elle monte vite",
+        "Chasse au trésor : elle passe dans Quêtes › Chasses, en 3 tailles (courte gratuite chaque jour, normale, légendaire une fois par semaine avec un donjon et un gardien d'élite) et avec de nouveaux indices (monstre précis, ressource à rapporter, énigme)",
+        "Succès : plus de 300 nouveaux (régions, classes, stasis 10 dans chaque donjon, Kolizéum, économie, chasses, collection) dont 15 secrets avec un indice. Points de succès, 6 paliers (coffres, 2 ornements, 2 titres), filtres, recherche et classement des points",
+        "Quêtes rangées en 3 familles (Aujourd'hui, Aventures, Chasses), avec une rangée « À faire ensuite » qui montre le plus utile du moment"
+      ]
+    },
     {
       "v": "0.1.49.2",
       "name": "Roue des Options",
