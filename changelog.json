@@ -1,6 +1,15 @@
 {
-  "version": "0.1.53.5",
+  "version": "0.1.53.6",
   "versions": [
+    {
+      "v": "0.1.53.6",
+      "name": "Droit au monstre, en mieux",
+      "items": [
+        "Recherche rapide : le bouton du monstre est mieux rangé (colonne alignée sur PC, sous le résultat sur téléphone) et montre la zone ou le donjon où il t'emmène, avec un cadenas si ce n'est pas encore débloqué",
+        "Clavier : flèche droite ou Maj+Entrée sur un résultat t'emmène directement chez le monstre",
+        "Fiches d'une ressource et d'un objet : chaque monstre affiche sa zone, son niveau conseillé, son taux et un bouton « Y aller » ou « Donjon » ; les ressources de récolte ont un bouton « Récolter »"
+      ]
+    },
     {
       "v": "0.1.53.5",
       "name": "Droit au monstre",
