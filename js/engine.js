@@ -1060,7 +1060,7 @@
         boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0; (S.bossSeen = S.bossSeen || {})[S.dungeon.id] = 1;
         mons = [boss];
         /* 0.1.40 : boss qui se battent ensemble (les 4 Gelées Royales de la Gelaxième Dimension) */
-        (dg.coBoss || []).forEach((cb) => { if (!MONSTERS[cb]) return; const c = monsterEntity(cb, blv); c.hpMax = c.hp = Math.round(c.hpMax * hk * E.COBOSS_HP); mons.push(c); });
+        (dg.coBoss || []).forEach((cb) => { if (!MONSTERS[cb]) return; const c = monsterEntity(cb, blv); c.hpMax = c.hp = Math.round(c.hpMax * hk * (dg.coBossHp || E.COBOSS_HP)); mons.push(c); });
         const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0) - (mons.length - 1), 0, 7);
         const mlv = S.dungeon.gboss ? S.dungeon.syncLvl || 1 : k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));
