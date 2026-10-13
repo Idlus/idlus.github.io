@@ -89,8 +89,8 @@
   E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
   E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
   E.recruitCost = (n) => (n <= 1 ? 0 : Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
-  /* 0.1.35 : jusqu'à 12 héros, 8 au plus dans l'équipe qui combat (les autres récoltent, s'entraînent ou se reposent) */
-  E.HERO_MAX = 12; E.TEAM_MAX = 8;
+  /* 0.1.35 (13 depuis 0.1.53.2) : jusqu'à 13 héros, 8 au plus dans l'équipe qui combat (les autres récoltent, s'entraînent ou se reposent) */
+  E.HERO_MAX = 13; E.TEAM_MAX = 8;
   E.activeCount = (S, but) => S.chars.filter((c) => c.inTeam && !c.job && c !== but).length;
 
   /* ---------------- État initial ---------------- */
