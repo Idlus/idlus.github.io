@@ -69,10 +69,21 @@ do $$ declare s record; moved int; begin
   update public.wb_state set hp = greatest(1, round(hp / 5.0)), dmg = round(dmg / 5.0) where id = 1;
   insert into public.wb_resets (id, info) values ('0.1.56', jsonb_build_object('n', s.n, 'hp', s.hp, 'dmg', s.dmg, 'hits', moved));
 end $$;
+-- 1.0.4.6 : un essai compte le total de ses 3 combats (avant : la moyenne). Une seule fois, le boss en cours (Kolosso) passe à la
+-- même échelle : ses essais déjà faits, ses PV et ses dégâts sont multipliés par 3 (même part de PV, mêmes grades ; choix 2A de Mathis).
+do $$ declare s record; moved int; begin
+  if exists (select 1 from public.wb_resets where id = '1.0.4.6') then return; end if;
+  select * into s from public.wb_state where id = 1;
+  update public.wb_hits set points = points * 3 where n = s.n;
+  get diagnostics moved = row_count;
+  update public.wb_hits_old set points = points * 3 where n = s.n;
+  update public.wb_state set hp = hp * 3, dmg = dmg * 3 where id = 1;
+  insert into public.wb_resets (id, info) values ('1.0.4.6', jsonb_build_object('n', s.n, 'hp', s.hp, 'dmg', s.dmg, 'hits', moved));
+end $$;
 
 -- ---------- outils internes ----------
 create or replace function public.wb_grade(p int) returns text language sql immutable
-as $$ select case when p >= 500 then 'SSS' when p >= 350 then 'SS' when p >= 200 then 'S' when p >= 100 then 'A' when p >= 50 then 'B' else 'C' end $$;
+as $$ select case when p >= 1500 then 'SSS' when p >= 1050 then 'SS' when p >= 600 then 'S' when p >= 300 then 'A' when p >= 150 then 'B' else 'C' end $$;
 create or replace function public.wb_frag(g text) returns int language sql immutable
 as $$ select case g when 'SSS' then 6 when 'SS' then 5 when 'S' then 4 when 'A' then 3 when 'B' then 2 else 1 end $$;
 create or replace function public.wb_cons(g text) returns jsonb language sql immutable
@@ -181,8 +192,8 @@ begin
     end loop;
     -- le suivant : PV ajustés pour tenir environ un jour (entre la moitié et le double)
     dur := greatest(600, extract(epoch from (now() - s.started)));
-    nhp := greatest(600, least(s.hp * 2, greatest(s.hp / 2, round(s.hp * 86400 / dur))));
-    if p_n = 1 then nhp := greatest(600, least(s.hp, round(s.hp * 86400 / dur))); end if; -- Gargandyas avait des PV pour 2 jours
+    nhp := greatest(1800, least(s.hp * 2, greatest(s.hp / 2, round(s.hp * 86400 / dur))));
+    if p_n = 1 then nhp := greatest(1800, least(s.hp, round(s.hp * 86400 / dur))); end if; -- Gargandyas avait des PV pour 2 jours
     update wb_state set n = p_n + 1, hp = nhp, dmg = 0, started = now(), bonus_until = now() + interval '1 hour' where id = 1;
     perform wb_ann(jsonb_build_object('ev', 'dead', 'n', p_n, 'name', nm, 'dur', round(dur)::int, 'top', (select coalesce(jsonb_agg(e->>'p'), '[]'::jsonb) from jsonb_array_elements(t3) e), 'players', pl), p_user);
     perform wb_ann(jsonb_build_object('ev', 'arr', 'n', p_n + 1, 'name', wb_name(p_n + 1)));

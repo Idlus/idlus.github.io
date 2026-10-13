@@ -18,7 +18,7 @@
   const h = (s) => X().h(s);
   const nf = (n) => Math.round(n || 0).toLocaleString("fr-FR");
   const FRAG = E.WB_FRAG;
-  const LOCAL_HP = 300; // version de test : un boss local tombe en quelques jours d'essais
+  const LOCAL_HP = 900; // version de test : un boss local tombe en quelques jours d'essais
   const ui = { info: null, at: 0, loading: false, busy: false, err: "", off: 0, shown: 0 };
 
   /* ---------- préférences de cet appareil : effets, boss déjà annoncé, bandeaux fermés, boss local ---------- */
@@ -134,7 +134,7 @@
   function gradesHtml(s) {
     const on = s.me && s.me.best ? gradeOf(s.me.best) : "";
     return `<section class="panel wb-p"><h3>Grade de chaque essai</h3>
-      <p class="small muted" style="margin:0 0 8px">Plus ton équipe fait de dégâts en ${E.WB_ROUNDS} tours, plus le grade est haut. Le coffre arrive tout de suite dans ton sac.</p>
+      <p class="small muted" style="margin:0 0 8px">Chaque essai joue ${E.WB_FIGHTS} combats de ${E.WB_ROUNDS} tours : leurs dégâts s'additionnent. Plus le total est haut, plus le grade est haut. Le coffre arrive tout de suite dans ton sac.</p>
       ${noteHtml(s)}
       <div class="wb-grades">${E.WB_GRADES.slice().reverse().map((g) => { const [k, q] = Object.entries(g.cons)[0]; return `<div class="wb-gr ${g.g === on ? "on" : ""}"><span class="L g-${g.g}">${g.g}</span>${chest(k)}<b>${g.min ? nf(g.min * E.WB_PV) + " PV" : "moins de " + nf(E.WB_GRADES[E.WB_GRADES.length - 2].min * E.WB_PV)}</b><span class="muted">${q > 1 ? q + " × " : ""}${h(window.DATA.CONSUMABLES[k].name)}<br>+${g.frag} Fragment${g.frag > 1 ? "s" : ""}</span></div>`; }).join("")}</div></section>`;
   }
@@ -211,7 +211,9 @@
     const W = E.wbWatch(s, def, R.phase, R.watchSeed || R.seed); if (W.err) { X().toast(W.err); return; }
     X().extWatchStart(W, { step: E.wbWatchStep, html: watchHtml, head: watchHead, end: watchEnd, back: "wb", res: R, def });
   }
-  function livePts(W) { const B = W.B; return Math.round((Math.max(0, B.hpMax - Math.max(0, B.hp)) / W.base) * 100 * (W.def.pow || 1)); }
+  /* points des combats de l'essai qu'on ne regarde pas (« Revoir le combat » montre l'un des 3) */
+  function others(R) { const F = R.fights || []; const i = F.findIndex((f) => f.seed === (R.watchSeed || R.seed)); return i < 0 ? 0 : Math.max(0, R.points - F[i].points); }
+  function livePts(W) { const B = W.B; return Math.round((Math.max(0, B.hpMax - Math.max(0, B.hp)) / W.base) * 100 * (W.def.pow || 1) * E.wbMult(W.lvl || 1, W.n || 1)); } // même calcul que E.wbResult
   function watchHtml(w) {
     const R = w.ext.res, def = w.ext.def; const sp = w.spd || 1;
     return `<div class="pagehead combathead"><div><div class="small muted">${X().IC("couronne")} Boss des mondes${R.train ? " · entraînement, rien n'est compté" : ""} <span id="wroom"></span></div><h1>${h(def.name)}${R.phase > 1 ? ` · ${h(phName(def, R.phase))}` : ""}</h1></div>
@@ -231,12 +233,12 @@
   }
   function watchHead(w) {
     const W = w.W, R = w.ext.res; const F = W.S2.fight; if (!F) return;
-    const pts = W.done ? R.points : livePts(W); const g = gradeOf(pts);
+    const pts = W.done ? R.points : others(R) + livePts(W); const g = gradeOf(pts); // les 2 autres combats + celui qu'on regarde
     const room = $("#wroom"); if (room) room.textContent = `· tour ${Math.min(F.round || 1, E.WB_ROUNDS)} sur ${E.WB_ROUNDS}`;
     const rest = Math.max(0, R.hp - R.dmg0 - pts);
     const bar = $("#wbwHp"); if (bar) bar.style.width = `${(rest / R.hp) * 100}%`;
     const tx = $("#wbwTxt"); if (tx) tx.textContent = `${nf(rest * E.WB_PV)} PV · ${pctTxt((rest / R.hp) * 100)}`;
-    const dm = $("#wbwDmg"); if (dm) dm.innerHTML = `Dégâts de ton équipe : <b>${nf(pts * E.WB_PV)} PV</b>`;
+    const dm = $("#wbwDmg"); if (dm) dm.innerHTML = `Dégâts de ${R.fights ? `tes ${R.fights.length} combats` : "ton équipe"} : <b>${nf(pts * E.WB_PV)} PV</b>`;
     const ge = $("#wbwG"); if (ge && ge.textContent !== g) { ge.textContent = g; ge.className = `wbw-g g-${g} up`; }
   }
   function watchEnd(w) {
@@ -251,7 +253,7 @@
     const ch = Object.entries(R.cons || {})[0] || ["coffre_bois", 1];
     const kill = R.killed ? `<div class="wb-killed">${confetti()}<b>Tu as porté le dernier coup : ${h(def.name)} est tombé !</b><br><span class="small">Coffre en or, Fragments et bonus d'XP pour tout le monde. Le boss suivant arrive.</span></div>` : "";
     return `<div class="wb-res">${kill}<span class="xs muted">${R.local ? "Version de test · " : ""}Essai ${E.WB_TRIES - (R.left || 0)} sur ${E.WB_TRIES} · ${h(def.name)} · phase ${R.phase} · ${why}</span>
-      <div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div>${R.fights ? `<div class="wb-fights"><span class="xs muted">Moyenne de ${R.fights.length} combats joués par le serveur :</span>${R.fights.map((f, i) => `<span class="tag soft">Combat ${i + 1} · ${nf(f.points * E.WB_PV)} PV${f.alive ? "" : ` · tombés au tour ${f.rounds}`}</span>`).join("")}</div>` : ""}<span class="small muted">soit ${pctTxt((R.points / R.hp) * 100)} de ses PV${R.rank ? ` · tu es ${R.rank}<sup>${R.rank === 1 ? "er" : "e"}</sup> au classement` : ""}</span><br>
+      <div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div>${R.fights ? `<div class="wb-fights"><span class="xs muted">Total de tes ${R.fights.length} combats (le combat montré est l'un d'eux) :</span>${R.fights.map((f, i) => `<span class="tag soft">Combat ${i + 1} · ${nf(f.points * E.WB_PV)} PV${f.alive ? "" : ` · tombés au tour ${f.rounds}`}</span>`).join("")}</div>` : ""}<span class="small muted">soit ${pctTxt((R.points / R.hp) * 100)} de ses PV${R.rank ? ` · tu es ${R.rank}<sup>${R.rank === 1 ? "er" : "e"}</sup> au classement` : ""}</span><br>
       <div class="chest">${chest(ch[0])}<span style="text-align:left"><b>${h(consTxt(R.cons))}</b><br><span class="xs muted">dans ton sac</span></span>${fragImg()}<span style="text-align:left"><b>+${R.frag} Fragment${R.frag > 1 ? "s" : ""}</b><br><span class="xs muted">${nf(E.wbFrags(S()))} au total</span></span></div>
       ${R.killed ? "" : `<div class="wb-hp" style="margin:6px 0 10px"><i style="width:${(Math.max(0, R.hp - R.dmg) / R.hp) * 100}%"></i><b>Il lui reste ${pctTxt((Math.max(0, R.hp - R.dmg) / R.hp) * 100)}</b></div>`}
       <p class="small muted">${tip}L'${el2}</p>

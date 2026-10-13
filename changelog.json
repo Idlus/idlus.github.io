@@ -1,6 +1,16 @@
 {
-  "version": "1.0.4.5",
+  "version": "1.0.4.6",
   "versions": [
+    {
+      "v": "1.0.4.6",
+      "name": "Boss des mondes : les 3 combats comptent",
+      "items": [
+        "Boss des mondes : chaque essai joue toujours 3 combats, mais leurs dégâts s'additionnent maintenant. Avant, seule leur moyenne comptait et on avait l'impression qu'un seul combat était pris en compte",
+        "Les grades et les coffres ne changent pas : la grille des grades est simplement passée à l'échelle des 3 combats",
+        "Kolosso passe à la même échelle : vos essais déjà faits, ses PV et ses dégâts sont multipliés par 3. Personne n'est désavantagé et il garde la même part de vie",
+        "Pendant le combat, le compteur de dégâts et la lettre de grade montrent enfin le bon chiffre (il oubliait le bonus de niveau et d'équipe)"
+      ]
+    },
     {
       "v": "1.0.4.5",
       "name": "Sorts sans dézoomer",

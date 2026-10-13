@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.6 « Boss des mondes : les 3 combats comptent »
+js/wboss.js : `E.wbSim` renvoie le TOTAL des `E.WB_FIGHTS` combats (avant : la moyenne ; `raw` reste la moyenne pour tools/wboss_calib.js), `fights[].seed` ; grille `E.WB_GRADES` ×3 (150/300/600/1050/1500), même chose dans `wb_grade` (supabase/wboss.sql). Remise à l'échelle unique `wb_resets` '1.0.4.6' : points des essais du boss en cours (wb_hits et wb_hits_old), PV et dégâts ×3. PV minimum du boss suivant 1 800 points. js/wbossui.js : pendant « Revoir le combat », le compteur = autres combats + combat regardé, × `E.wbMult` (il l'oubliait) ; `LOCAL_HP` 900.
+
 ## 1.0.4.5 « Sorts sans dézoomer »
 Sorts & stratégies (js/ui.js `charSpellsView`, css/style.css) : grille « bar det / grim det / prev det » (Grimoire sous la barre, aperçu en dessous) ; rappel `.spmini` « Ta barre » collé en haut du Grimoire (cases cliquables `spsel` et cibles de dépôt `data-spslot`, hauteur des onglets du héros mesurée dans `--spmt`) ; défilement auto pendant un glisser ; « Comment ton héros choisit ses sorts » replié par défaut (`ui.spHowOpen`). Avant, à 100 % de zoom, le Grimoire était ~1 150 px sous la barre : impossible de glisser un sort sans dézoomer.
 
@@ -56,7 +59,7 @@ Aperçu des sorts (`E.spellPreview`, js/engine.js) : le coup d'arme (`"arme"`) c
 Ligne de pastilles `#topchips` (index.html) qui contient `#objs` et `#updbar` (et `#wbbar`, créé par wbossui.js) ; `protChip()` (ui.js) y met le protecteur, l'Accueil n'a plus `protBar()` (Métiers le garde). `renderUpdBar()` est appelée à chaque `renderStatus()` et n'écrit que si le HTML change. Barre du haut sans logo ; téléphone : le sablier n'affiche que la vitesse choisie (`sabspd` fait tourner ×1→×2→×3). Notifications : une seule (la dernière), en haut sous la barre, sauf « En bas ». Combat : `combatSetHtml()` / `combatSetSheet()`, bouton « Réglages » sur téléphone. CSS en fin de style.css (bloc 0.1.57).
 
 ## 0.1.56 « Boss des mondes rééquilibré »
-Boss des mondes (js/wboss.js) : un essai = moyenne de `E.WB_FIGHTS` (3) combats (`E.wbFight` = un combat, `E.wbSim` = l'essai, renvoie `fights` et `watchSeed` du combat revu). Points × `E.wbMult(niveau, nb de héros)` (courbe `E.WB_LVLPOW`, équipe de référence 8). Charge du boss ×`E.WB_CHARGE` (1,5). Grades 50/100/200/350/500 points. supabase/wboss.sql : remise à zéro unique (`wb_resets` '0.1.56') qui archive les essais du boss en cours dans `wb_hits_old` (essais du jour rendus) et divise PV et dégâts par 5 ; ceux de `wb_hits_old` comptent pour la récompense de mort.
+Boss des mondes (js/wboss.js) : un essai = moyenne de `E.WB_FIGHTS` (3) combats (total depuis 1.0.4.6) (`E.wbFight` = un combat, `E.wbSim` = l'essai, renvoie `fights` et `watchSeed` du combat revu). Points × `E.wbMult(niveau, nb de héros)` (courbe `E.WB_LVLPOW`, équipe de référence 8). Charge du boss ×`E.WB_CHARGE` (1,5). Grades 50/100/200/350/500 points. supabase/wboss.sql : remise à zéro unique (`wb_resets` '0.1.56') qui archive les essais du boss en cours dans `wb_hits_old` (essais du jour rendus) et divise PV et dégâts par 5 ; ceux de `wb_hits_old` comptent pour la récompense de mort.
 
 ## 0.1.55.1 « Sac sans l'équipé »
 Inventaire › Équipements : les objets portés sont cachés (`invGroups`, `invDetail` dans js/ui.js, via `wornMap`) sauf si la case « Afficher l'équipé » est cochée (`S.settings.invShowEq`, sauvegardée) ; une pastille avec la tête du héros (`.ieq`) marque alors l'objet porté.

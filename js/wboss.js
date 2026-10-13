@@ -45,13 +45,14 @@
   E.WB_HP0 = 10000;   // PV (en points) du premier passage de Gargandyas : environ 2 jours (choix G4 ; 20 000 jusqu'en 0.1.50.3)
   E.WB_DAY_S = 86400; // un boss doit tenir environ un jour : les PV du suivant s'ajustent (supabase/wboss.sql)
   /* grades d'un essai (points) : coffre ouvert tout de suite et Fragments d'anomalie */
-  /* 0.1.56 : grille recalculée avec le nouveau calcul (8 héros bien équipés : B au niveau 60, S vers 120-160, SSS au niveau 200) */
+  /* 0.1.56 : grille recalculée avec le nouveau calcul (8 héros bien équipés : B au niveau 60, S vers 120-160, SSS au niveau 200)
+     1.0.4.6 : l'essai compte le TOTAL de ses 3 combats, la grille est donc ×3 (mêmes grades qu'avant avec la moyenne) */
   E.WB_GRADES = [
-    { g: "SSS", min: 500, cons: { coffre_obsidienne: 1 }, frag: 6 },
-    { g: "SS", min: 350, cons: { coffre_or: 1 }, frag: 5 },
-    { g: "S", min: 200, cons: { coffre_argent: 2 }, frag: 4 },
-    { g: "A", min: 100, cons: { coffre_argent: 1 }, frag: 3 },
-    { g: "B", min: 50, cons: { coffre_bois: 2 }, frag: 2 },
+    { g: "SSS", min: 1500, cons: { coffre_obsidienne: 1 }, frag: 6 },
+    { g: "SS", min: 1050, cons: { coffre_or: 1 }, frag: 5 },
+    { g: "S", min: 600, cons: { coffre_argent: 2 }, frag: 4 },
+    { g: "A", min: 300, cons: { coffre_argent: 1 }, frag: 3 },
+    { g: "B", min: 150, cons: { coffre_bois: 2 }, frag: 2 },
     { g: "C", min: 0, cons: { coffre_bois: 1 }, frag: 1 },
   ];
   E.wbGrade = (pts) => E.WB_GRADES.find((x) => pts >= x.min) || E.WB_GRADES[E.WB_GRADES.length - 1];
@@ -157,15 +158,16 @@
     for (let g = 0; g < 200000 && !W.done; g++) E.wbWatchStep(W);
     return E.wbResult(W);
   };
-  /* 0.1.56 : un essai = 3 combats (hasard tiré de seed), on garde la moyenne ; watchSeed = le combat le plus proche de la moyenne (« Revoir le combat »). */
+  /* 0.1.56 : un essai = 3 combats (hasard tiré de seed) ; watchSeed = le combat le plus proche de la moyenne (« Revoir le combat »).
+     1.0.4.6 : les points de l'essai sont le TOTAL des 3 combats (avant : la moyenne, un seul combat semblait compter) ; raw reste la moyenne (calibrage). */
   E.WB_FIGHTS = 3;
   E.wbSim = (S, def, phase, seed, now = E.now()) => {
     const L = [];
     for (let i = 0; i < E.WB_FIGHTS; i++) { const sd = i ? hash(`${seed >>> 0}|${i}`) : seed >>> 0; const r = E.wbFight(S, def, phase, sd, now); if (r.err) return r; L.push(Object.assign({ seed: sd }, r)); }
-    const points = Math.round(L.reduce((a, r) => a + r.points, 0) / L.length);
-    const near = L.slice().sort((a, b) => Math.abs(a.points - points) - Math.abs(b.points - points))[0];
+    const points = L.reduce((a, r) => a + r.points, 0); const avg = points / L.length;
+    const near = L.slice().sort((a, b) => Math.abs(a.points - avg) - Math.abs(b.points - avg))[0];
     return { points, raw: Math.round(L.reduce((a, r) => a + r.raw, 0) / L.length), pv: points * E.WB_PV, grade: E.wbGrade(points).g, rounds: near.rounds, alive: near.alive, watchSeed: near.seed,
-      fights: L.map((r) => ({ points: r.points, rounds: r.rounds, alive: r.alive })) };
+      fights: L.map((r) => ({ points: r.points, rounds: r.rounds, alive: r.alive, seed: r.seed })) };
   };
 
   /* ---------- boutique de Fragments ---------- */

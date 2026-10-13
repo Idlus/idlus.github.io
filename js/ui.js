@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4.5";
+const GAME_VERSION = "1.0.4.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4.6", name: "Boss des mondes : les 3 combats comptent", items: [
+    "Boss des mondes : chaque essai joue toujours 3 combats, mais leurs dégâts s'additionnent maintenant. Avant, seule leur moyenne comptait et on avait l'impression qu'un seul combat était pris en compte",
+    "Les grades et les coffres ne changent pas : la grille des grades est simplement passée à l'échelle des 3 combats",
+    "Kolosso passe à la même échelle : vos essais déjà faits, ses PV et ses dégâts sont multipliés par 3. Personne n'est désavantagé et il garde la même part de vie",
+    "Pendant le combat, le compteur de dégâts et la lettre de grade montrent enfin le bon chiffre (il oubliait le bonus de niveau et d'équipe)",
+  ] },
   { v: "1.0.4.5", name: "Sorts sans dézoomer", items: [
     "Héros › Sorts & stratégies : le Grimoire est maintenant juste sous la barre de sorts (l'aperçu « Ce que fera ton héros » passe en dessous). Plus besoin de dézoomer la page pour changer un sort",
     "Nouveau rappel « Ta barre » en haut du Grimoire : il reste collé en haut de l'écran pendant que tu parcours les sorts. Choisis la case à remplacer, puis clique un sort, ou glisse-le directement sur une case",
