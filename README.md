@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48.4 « Titre du songe »
+En-tête de l'onglet Combat pendant un songe (`renderCombat`, js/ui.js) : « Le Songe infini · intensité · règne » au lieu de l'ancien `XP.floor`.
+
 ## 0.1.48.3 « Sablier en cadeau »
 Récompense de code cadeau `s` (heures de sablier, 24 au plus) : `E.sabGift` (engine.js, plafond `E.SAB_GIFT_MAX`), `E.giveGift`/`E.giftText` (systems.js), type « Heures de sablier » dans l'onglet Codes cadeaux (js/codes.js). `E.sab` ne recharge plus au-dessus de `E.SAB_MAX` mais ne coupe pas les heures offertes.
 

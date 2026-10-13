@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.48.3";
+const GAME_VERSION = "0.1.48.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.48.4", name: "Titre du songe", items: [
+    "Correction : pendant le Songe infini, l'onglet Combat affichait « Étage undefined ». Il indique maintenant l'intensité (et le règne du dieu dès Paradoxe 1)",
+  ] },
   { v: "0.1.48.3", name: "Sablier en cadeau", items: [
     "Les codes cadeaux peuvent maintenant offrir des heures de Sablier de Xélor, qui peuvent dépasser le maximum de 9 h (jusqu'à 24 h)",
   ] },
@@ -1897,7 +1900,7 @@ function renderCombat() {
   const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   if (!ui.combatCid || !team.find((c) => c.id === ui.combatCid)) ui.combatCid = team[0] && team[0].id;
   const XP = E.expActive(S) ? S.exp : null; // 0.1.24 : étage de l'Expédition sans fin
-  const title = XP ? `Étage ${XP.floor} · règne de ${XP.regne.god}` : dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
+  const title = XP ? `Le Songe infini · ${E.SG_INT[XP.ii].name}${XP.ii > 0 && XP.regne ? ` · règne de ${XP.regne.god}` : ""}` : dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
   <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1></div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
