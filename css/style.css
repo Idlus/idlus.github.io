@@ -3762,3 +3762,12 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 /* 0.1.49.2 : bouton Options avec la roue dorée et son nom (PC), roue devant « Options » dans les textes */
 .status .ic-btn .optlbl{font-weight:800;font-size:13px}
 .uico.opt-in{width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:.2em}
+/* 0.1.50.2 : message épinglé en haut du chat (js/chat.js, pinHtml) */
+.chat .ch-pin{flex:none;position:relative;display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start;margin:6px 8px 0;padding:8px 22px 8px 10px;border-radius:12px;border:1.5px solid color-mix(in srgb,var(--gold) 55%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 16%,transparent),color-mix(in srgb,var(--gold) 4%,transparent));font-size:12.5px;line-height:1.35}
+.chat .ch-pin .pi{width:26px;height:26px;margin-top:2px}
+.chat .ch-pin .pt{min-width:0;overflow-wrap:anywhere}
+.chat .ch-pin .pt b{color:var(--gold2)}
+.chat .ch-pin .pk{display:block;font-size:10.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.chat .ch-pin .pf{display:flex;justify-content:flex-end;margin-top:5px}
+.chat .ch-pin .px{position:absolute;top:2px;right:4px;border:0;background:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:2px 4px}
+.chat .ch-pin .px:hover{color:var(--ink)}

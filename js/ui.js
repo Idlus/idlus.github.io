@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50.1";
+const GAME_VERSION = "0.1.50.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.50.2", name: "Boîte à idées épinglée", items: [
+    "Chat : un message épinglé en haut du salon Général invite à partager vos idées, avec un bouton qui ouvre la Boîte à idées",
+    "La petite croix le cache jusqu'au lendemain ; il revient tout de suite si son texte change",
+  ] },
   { v: "0.1.50.1", name: "Nouveaux noms", items: [
     "Renommer un héros : bouton doré « Renommer » à côté de son nom, dans sa fiche (Équipe et héros). Entrée pour valider, Échap pour annuler",
     "Le premier changement de nom de chaque héros est gratuit, les suivants coûtent 50 000 kamas",

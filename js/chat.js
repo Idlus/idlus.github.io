@@ -16,8 +16,8 @@
   const PREF = "idlus-chat";
   const pref = (() => { try { return JSON.parse(localStorage.getItem(PREF) || "{}"); } catch (e) { return {}; } })();
   const savePref = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
-  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false };
-  const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, busy: false };
+  const C = { started: false, open: !!pref.open, tab: "g", g: [], p: [], peer: null, names: {}, unread: 0, unreadP: 0, unreadH: 0, c: [], v: [], unreadC: 0, unreadV: 0, count: 0, role: null, ign: new Set(), item: null, err: "", next: 0, me: {}, menu: null, loaded: false, banner: null, below: false, pin: null };
+  const A = { tab: "vue", ov: null, q: "", list: null, sel: null, msgs: null, reps: null, flag: null, mods: null, anns: null, ann: { body: "", banner: true, chat: true, hours: 24 }, pin: null, busy: false };
   const myId = () => (ON.user && ON.user.id) || null;
   const canWrite = () => !!(ON.user && ON.profile);
   const hhmm = (t) => new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -32,13 +32,14 @@
     ON.chatLive(onMsg, (n) => { C.count = n; paintHead(); });
     await refresh();
     banner();
-    setInterval(banner, 120000); // 0.1.40.1 : le bandeau arrive aussi aux joueurs déjà en jeu (annonce sans message dans le chat, temps réel coupé) et disparaît à l'heure prévue
+    setInterval(banner, 120000);
+    setInterval(loadPin, 120000); // 0.1.50.2 : un message épinglé changé dans le panel arrive aussi aux joueurs déjà en jeu // 0.1.40.1 : le bandeau arrive aussi aux joueurs déjà en jeu (annonce sans message dans le chat, temps réel coupé) et disparaît à l'heure prévue
     setInterval(() => { const el = $("#chat"); if (el && !el.innerHTML && S()) paint(); }, 2000); // partie commencée après le lancement
   }
   /* Rechargé à la connexion ou au changement de compte. */
   async function refresh() {
-    const [g, p, ign, role, me, c, v] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v")]);
-    C.g = g || []; C.p = p || []; C.c = c || []; C.v = v || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    const [g, p, ign, role, me, c, v, pin] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin()]);
+    C.pin = pin; C.g = g || []; C.p = p || []; C.c = c || []; C.v = v || []; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     if (C.role) X().renderStatus();
@@ -80,7 +81,7 @@
     const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;
     const typed = el.querySelector("#chIn") ? el.querySelector("#chIn").value : pref.draft || "";
     const focus = document.activeElement && document.activeElement.id === "chIn";
-    el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
+    el.className = "chat"; el.innerHTML = headHtml() + discordHtml() + pinHtml() + `<div class="ch-list" id="chList">${listHtml()}</div><div class="ch-foot">${footHtml(typed)}</div>`;
     const nl = el.querySelector(".ch-list");
     if (nl && (atEnd || !keepScroll)) { nl.scrollTop = nl.scrollHeight; C.below = false; }
     else if (nl) { nl.scrollTop = top; if (nl.scrollHeight > oldH + 4) C.below = true; } // on lit plus haut : on reste en place, un bouton signale les nouveaux messages
@@ -105,6 +106,22 @@
   /* 0.1.48.2 : l'événement et le lien Discord tiennent sur une seule ligne fine sous les onglets */
   const eventHtml = () => { const E = window.ENGINE; return evOn() ? `<span class="ev">${X().IC("parchemin_or")}<span><b>${h(E.EVENT.name)}</b> : XP et butin x2</span></span>` : ""; };
   const discordHtml = () => `<div class="ch-strip">${eventHtml() || `<span class="ev muted">Questions, bugs, idées ?</span>`}<a class="dl" href="${DISCORD}" target="_blank" rel="noopener">${X().DISCORD_SVG} Discord</a></div>`;
+  /* 0.1.50.2 : message épinglé en haut du chat (texte et salons choisis dans le panel admin, onglet Annonces).
+     La croix le cache jusqu'au lendemain, ou jusqu'à ce que le texte change. */
+  const today = () => new Date().toDateString();
+  const pinBody = () => String((C.pin && C.pin.pin_body) || "").replace(/^\s*\u{1F4A1}\s*/u, "").trim(); // l'ampoule du jeu remplace l'emoji
+  function pinHtml() {
+    const p = C.pin, body = pinBody();
+    if (!body || !String(p.pin_chs || "g").split(",").includes(C.tab)) return "";
+    const hid = pref.pinHide; if (hid && hid.at === p.pin_at && hid.day === today()) return "";
+    const m = body.match(/^(.{4,80}?[?!])\s+(\S.*)$/s); // la première question en gras
+    return `<div class="ch-pin"><img class="pi" src="assets/ui/idee.webp" alt=""><div class="pt"><span class="pk">📌 Épinglé</span>${m ? `<b>${h(m[1])}</b> ${h(m[2])}` : h(body)}<div class="pf"><button class="btn sm primary" data-act="nav" data-v="sugg">Boîte à idées</button></div></div><button class="px" data-act="ch-pinx" title="Masquer jusqu'à demain" aria-label="Masquer le message épinglé">×</button></div>`;
+  }
+  async function loadPin() {
+    const p = await ON.chatPin(); if (!p) return;
+    const was = JSON.stringify(C.pin); C.pin = p;
+    if (JSON.stringify(p) !== was && C.open) paint(true);
+  }
   /* 0.1.48.2 : six salons sur une ligne à part, sous le titre ; chacun a son icône et sa pastille de messages non lus */
   const nb = (n) => (n ? `<span class="n">${n > 99 ? "99+" : n}</span>` : "");
   function headHtml() {
@@ -308,8 +325,11 @@
         : `<div class="box"><div class="empty">Personne n'est en vérification.</div></div>`;
     }
     if (A.tab === "ann") {
-      const a = A.ann;
-      return `<div class="box"><h2>Nouvelle annonce</h2><textarea id="admAnn" maxlength="300" placeholder="Ex. : maintenance ce soir à 22 h, le chat sera coupé 10 minutes.">${h(a.body)}</textarea>
+      const a = A.ann; const st = Object.assign({}, C.pin, o.settings); const pn = A.pin || { body: st.pin_body || "", chs: st.pin_chs || "g" }; const on = pn.chs.split(",");
+      return `<div class="box"><h2>Message épinglé du chat</h2><p class="small muted">Reste en haut du chat pour tous les joueurs, avec le bouton « Boîte à idées ». 200 caractères au plus. Un joueur qui le ferme le revoit le lendemain, ou tout de suite si tu changes le texte.</p>
+        <textarea id="admPin" maxlength="200" placeholder="Ex. : Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées !">${h(pn.body)}</textarea>
+        <div class="row small"><span class="muted">Salons :</span>${[["g", "Général"], ["c", "Commerce"], ["v", "PvP"]].map(([k, n]) => `<label class="row"><input type="checkbox" id="admPin${k}" ${on.includes(k) ? "checked" : ""}> ${n}</label>`).join("")}<span class="muted" id="admPinN" style="margin-left:auto">${pn.body.length}/200</span>${st.pin_body ? `<button class="btn sm" data-act="adm-pinoff">Retirer</button>` : ""}<button class="btn sm primary" data-act="adm-pin">Enregistrer</button></div></div>
+        <div class="box"><h2>Nouvelle annonce</h2><textarea id="admAnn" maxlength="300" placeholder="Ex. : maintenance ce soir à 22 h, le chat sera coupé 10 minutes.">${h(a.body)}</textarea>
         <div class="row small"><span class="muted">Où :</span><label class="row"><input type="checkbox" id="admAnnB" ${a.banner ? "checked" : ""}> Bandeau en haut du jeu</label><label class="row"><input type="checkbox" id="admAnnC" ${a.chat ? "checked" : ""}> Message dans le chat</label></div>
         <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-announce">Publier</button></div></div>
         <div class="box"><h2>Bandeaux affichés</h2>${(A.anns || []).map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>`;
@@ -360,6 +380,7 @@
     const t = ev.target.closest("[data-act]");
     if (!ev.target.closest("#chMenu") && !(t && t.dataset.act === "ch-who")) closeMenu();
     if (!t) return; const a = t.dataset.act, d = t.dataset;
+    if (a === "nav" && t.closest("#chat") && matchMedia("(max-width:640px)").matches) { C.open = false; pref.open = false; savePref(); paint(); return; } // le chat couvre la page sur téléphone : on le réduit
     if (!/^(ch|adm)-/.test(a)) return;
     switch (a) {
       case "ch-open": C.open = true; pref.open = true; savePref(); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
@@ -381,6 +402,7 @@
       case "ch-item": X().itemSheet(d.tpl); return;
       case "ch-share": C.item = d.tpl; C.open = true; pref.open = true; savePref(); X().closeSheet(); paint(); setTimeout(() => { const i = $("#chIn"); if (i) i.focus(); }, 30); return;
       case "ch-unitem": C.item = null; paint(true); return;
+      case "ch-pinx": pref.pinHide = { at: C.pin && C.pin.pin_at, day: today() }; savePref(); paint(true); return;
       case "ch-annok": pref.annSeen = +d.id; savePref(); banner(); return;
       case "adm-open": openAdmin(); return;
       case "adm-tab": A.tab = d.v; repaintAdm(); await admLoad(); repaintAdm(); return;
@@ -405,6 +427,14 @@
         if (await admDo("adm_announce", { p_body: b, p_banner: A.ann.banner, p_chat: A.ann.chat, p_hours: A.ann.hours }, "Annonce publiée.")) { A.ann.body = ""; repaintAdm(); banner(); }
         return;
       }
+      case "adm-pin": case "adm-pinoff": {
+        const b = a === "adm-pinoff" ? "" : ($("#admPin").value || "").trim(); const chs = a === "adm-pinoff" ? (C.pin && C.pin.pin_chs) || "g" : ["g", "c", "v"].filter((k) => $("#admPin" + k).checked).join(",");
+        if (a === "adm-pin" && !b) return X().toast("Le message est vide. Pour l'enlever, utilise « Retirer ».");
+        if (a === "adm-pin" && !chs) return X().toast("Choisis au moins un salon.");
+        A.pin = { body: b, chs };
+        if (await admDo("adm_pin", { p_body: b, p_chs: chs }, b ? "Message épinglé enregistré." : "Message épinglé retiré.")) { A.pin = null; await loadPin(); }
+        return;
+      }
       case "adm-annend": if (await admDo("adm_announce_end", { p_id: +d.id }, "Bandeau retiré.")) banner(); return;
       case "adm-mod": { const p = d.p || ($("#admMod") ? $("#admMod").value.trim() : ""); if (!p) return; admDo("adm_set_mod", { p_pseudo: p, p_on: d.v === "1" }, d.v === "1" ? `${p} est modérateur.` : `${p} n'est plus modérateur.`); return; }
     }
@@ -416,7 +446,7 @@
       ev.stopPropagation();
     } else if (ev.target && ev.target.id === "admQ" && ev.key === "Enter") { ev.preventDefault(); const b = document.querySelector('[data-act="adm-search"]'); if (b) b.click(); }
   }, true);
-  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
+  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
   window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, get role() { return C.role; }, get state() { return C; } };
 })();
