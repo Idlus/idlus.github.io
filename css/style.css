@@ -2248,14 +2248,15 @@ html{zoom:1}
 .wtip.below,.wtip.above{transform:none;animation:none;bottom:auto}
 .ck{width:16px;height:16px;border-radius:50%;flex:none;background:var(--panel3);box-shadow:inset 0 0 0 2px var(--line)}.ck.on{background:var(--action);box-shadow:inset 0 0 0 3px var(--panel)}
 /* recherche rapide */
-.wsearch-bg{position:fixed;inset:0;background:rgba(10,6,2,.55);z-index:92;display:flex;align-items:flex-start;justify-content:center;padding:max(8px,env(safe-area-inset-top,0px)) 8px 0}
-.wsearch{width:min(640px,100%);max-height:min(80vh,620px);margin-top:min(8vh,60px);background:var(--panel);border:3px solid var(--frame);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
+.wsearch-bg{position:fixed;inset:0;background:rgba(10,6,2,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:max(8px,env(safe-area-inset-top,0px)) 8px 0}
+.wsearch{width:min(640px,100%);max-height:min(80vh,620px,calc(var(--wsvh,100vh) - 16px));margin-top:min(8vh,60px);background:var(--panel);border:3px solid var(--frame);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
 .wsin{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:2px solid var(--line)}
 .wsin .uico{width:22px;height:22px;flex:none;color:var(--gold)}
 .wsin input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:17px;font-weight:700;outline:none;padding:6px 0}
 .wsin input::-webkit-search-cancel-button{-webkit-appearance:none}
 .wsres{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:2px;min-height:60px}
 .wsg{font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 8px 3px}
+.wsclr{border:0;background:none;color:var(--muted);font:inherit;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:none;text-decoration:underline;cursor:pointer;padding:2px 4px}.wsclr:hover{color:var(--ink)}
 .wsr{display:flex;align-items:center;gap:10px;padding:6px 8px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
 .wsr:hover,.wsr.sel{background:var(--panel3);box-shadow:inset 0 0 0 2px var(--gold)}
 .wsr b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2306,7 +2307,7 @@ html{zoom:1}
 .wsk.k-dg{background:#8a5d33}.wsk.k-item{background:#2f86c6}.wsk.k-mon{background:#9b2c2c}.wsk.k-res{background:#4f8a2b}.wsk.k-page{background:#7a5bb0}.wsk.k-zone{background:#3f7f6b}.wsk.k-set{background:#1f6f9a}.wsk.k-dofus{background:#c77d1e}.wsk.k-idol{background:#9b4dff}.wsk.k-pet,.wsk.k-mount{background:#b0643c}.wsk.k-cons{background:#d27a9c}.wsk.k-ach{background:#c99a2e}
 .wsfoot{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding:6px 12px}
 .wsfoot kbd{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;margin-right:2px;background:var(--panel2)}
-@media (max-width:640px){.wsearch{margin-top:0;max-height:calc(100vh - 16px)}.wsfoot span:not(:last-child){display:none}.wsfoot .grow{display:none}}
+@media (max-width:640px){.wsearch{margin-top:0;max-height:calc(var(--wsvh,100vh) - 16px)}.wsfoot span:not(:last-child){display:none}.wsfoot .grow{display:none}}
 
 /* ---------- chat (multijoueur) ---------- */
 #chat.chat{position:fixed;right:16px;bottom:16px;z-index:60;width:380px;height:min(520px,calc(100vh - 120px));display:flex;flex-direction:column;background:var(--panel);border:3px solid var(--frame);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}

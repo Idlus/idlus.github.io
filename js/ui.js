@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.3";
+const GAME_VERSION = "1.0.8.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.4", name: "Recherche revérifiée", items: [
+    "Recherche : les archimonstres, les boss qui se battent à plusieurs (les 4 Gelées Royales, les 4 Blops Royaux, les Tynril…) et Gargandyas mènent enfin quelque part. Avant, la recherche disait « nulle part » pour 318 monstres",
+    "Un monstre déjà vaincu ouvre sa fiche de l'Encyclopédie (lieux avec « Y aller », résistances, butins) ; un monstre jamais vu emmène toujours à son lieu",
+    "Les pages Kolizéum, Boss des mondes, Métiers et Suggestions se trouvent par la recherche (et Hôtel de vente et Guilde en ligne)",
+    "Dernières recherches : plus de doublons (« Bouftou » et « bouftou » ne font qu'une ligne), bouton Effacer, et les flèches ↑ ↓ + Entrée marchent aussi sur cette liste",
+    "Chaque mot tapé est surligné dans les résultats, plus seulement le dernier",
+    "Téléphone : avec le clavier ouvert, la liste des résultats reste visible au-dessus du clavier",
+    "La fenêtre de recherche passe au-dessus des bandeaux de récompense qui la cachaient en partie",
+  ] },
   { v: "1.0.8.3", name: "Équipements de l'Encyclopédie", items: [
     "Nouvel onglet « Équipements » dans l'Encyclopédie : les 2 515 équipements du jeu, rangés par emplacement (armes, coiffes, capes, amulettes, anneaux, ceintures, bottes, boucliers)",
     "Ceux que tu as déjà eus au moins une fois sont en vert, même vendus ou brisés depuis. Ton sac actuel est compté tout de suite",
@@ -1221,7 +1230,10 @@ function resIndex() {
   for (const r in src) src[r].sort((a, b) => (b.p || 0) - (a.p || 0));
   return (RIDX = { src, use });
 }
-const subOfMon = (k) => Object.values(E.SUBS).find((s) => s.monsters.includes(k)) || (Object.entries(DUNGEONS).find(([, d]) => d.boss === k || d.rooms.some((r) => r.mobs.includes(k))) || [])[0];
+let ARCHI_BASE = null; // 1.0.8.4 : un archimonstre vit là où vit son monstre de base
+const monHome = (k) => { if (!ARCHI_BASE) { ARCHI_BASE = {}; for (const b in MONSTERS) if (MONSTERS[b].archi) ARCHI_BASE[MONSTERS[b].archi] = b; } return ARCHI_BASE[k] || k; };
+const subOfMon = (k) => { k = monHome(k); return Object.values(E.SUBS).find((s) => s.monsters.includes(k)) || (Object.entries(DUNGEONS).find(([, d]) => dgHasMon(d, k)) || [])[0]; };
+const dgHasMon = (d, k) => d.boss === k || [].concat(d.coBoss || []).includes(k) || (d.bossMobs || []).includes(k) || d.rooms.some((r) => r.mobs.includes(k)); // boss, co-boss (les 4 Gelées Royales…), boss secondaires et salles
 function bestSource(r) {
   if (E.RES_SOURCE && E.RES_SOURCE[r]) return E.RES_SOURCE[r];
   const L = resIndex().src[r] || []; const g = L.find((x) => x.job); if (g) return `${GATHER_JOBS[g.job].name} niv. ${g.lvl}`;
@@ -2272,10 +2284,10 @@ function encBossHtml(enc) {
 }
 /* 1.0.7.5 : où trouver le monstre (1.0.7.12 : bouton ⚔ pour chasser tout de suite, caché en donjon), avec un bouton par sous-zone ou donjon (verrou affiché, pas de voyage vers un lieu fermé) */
 function encWhereHtml(k) {
-  const L = []; const dgWhy = (id) => dgNeedTxt(id) || (E.DUNGEON_SUB[id] ? lockReason(E.DUNGEON_SUB[id]) : "");
+  const L = []; k = monHome(k); const dgWhy = (id) => dgNeedTxt(id) || (E.DUNGEON_SUB[id] ? lockReason(E.DUNGEON_SUB[id]) : "");
   ZONES.forEach((z) => z.subs.forEach((s) => { if (!s.monsters.includes(k)) return; const un = E.subUnlocked(S, s.id);
     if (s.hidden && !un) return; L.push({ sub: s.id, name: s.name, lvl: s.lvl[0], un }); }));
-  Object.keys(DUNGEONS).forEach((id) => { const d = DUNGEONS[id]; if (d.boss === k || (d.bossMobs || []).includes(k) || d.rooms.some((r) => r.mobs.includes(k))) L.push({ dg: id, name: d.name, lvl: d.lvl, un: E.dungeonUnlocked(S, id) }); });
+  Object.keys(DUNGEONS).forEach((id) => { const d = DUNGEONS[id]; if (dgHasMon(d, k)) L.push({ dg: id, name: d.name, lvl: d.lvl, un: E.dungeonUnlocked(S, id) }); });
   if (!L.length) return "";
   L.sort((a, b) => b.un - a.un || a.lvl - b.lvl);
   const MAX = 3, open = ui.encOpen && ui.encOpen["w" + k], more = L.length > MAX + 1 && !open ? L.length - MAX : 0;
@@ -5756,7 +5768,7 @@ function tipsSheet() {
 let wsRes = [], wsSel = 0;
 const WS_KEY = "idlus-recherches";
 const wsRecent = () => { try { const a = JSON.parse(localStorage.getItem(WS_KEY) || "[]"); return Array.isArray(a) ? a.slice(0, 5) : []; } catch (e) { return []; } };
-const wsRemember = (q) => { try { const a = [q, ...wsRecent().filter((x) => x !== q)].slice(0, 5); localStorage.setItem(WS_KEY, JSON.stringify(a)); } catch (e) {} };
+const wsRemember = (q) => { q = String(q || "").trim().replace(/\s+/g, " ").slice(0, 60); if (!E.searchNorm(q)) return; try { const a = [q, ...wsRecent().filter((x) => E.searchNorm(x) !== E.searchNorm(q))].slice(0, 5); localStorage.setItem(WS_KEY, JSON.stringify(a)); } catch (e) {} }; // 1.0.8.4 : « Bouftou » et « bouftou » ne font qu'une ligne
 function searchOpen(q) {
   if (!S) return; if ($("#wsearch")) { const inp = $("#wsq"); if (q != null) { inp.value = q; searchRender(); } inp.focus(); if (q) { const n = inp.value.length; inp.setSelectionRange(n, n); } return; } // 1.0.8.1 : un clic sur « Dernières recherches » remplit le champ quand la fenêtre est déjà ouverte
   tipHide();
@@ -5766,8 +5778,10 @@ function searchOpen(q) {
     <div id="wsres" class="wsres"></div>
     <div class="wsfoot"><span><kbd>↑</kbd><kbd>↓</kbd> choisir</span><span><kbd>↵</kbd> ouvrir</span><span class="hide-sm"><kbd>→</kbd> aller chez le monstre</span><span><kbd>Échap</kbd> fermer</span><span class="grow"></span><span id="wsn"></span></div></div>`;
   document.body.appendChild(d); searchRender(); const inp = $("#wsq"); inp.focus(); if (q) inp.select();
+  const vv = window.visualViewport; if (vv) { wsFit = () => { const b = $("#wsearch"); if (!b) return; b.style.setProperty("--wsvh", Math.round(vv.height) + "px"); b.style.top = Math.round(vv.offsetTop) + "px"; b.style.bottom = "auto"; b.style.height = Math.round(vv.height) + "px"; }; wsFit(); vv.addEventListener("resize", wsFit); vv.addEventListener("scroll", wsFit); } // 1.0.8.4 : clavier du téléphone ouvert, la liste reste visible au-dessus
 }
-function searchClose() { const d = $("#wsearch"); if (d) d.remove(); wsRes = []; }
+let wsFit = null;
+function searchClose() { const d = $("#wsearch"); if (d) d.remove(); wsRes = []; const vv = window.visualViewport; if (vv && wsFit) { vv.removeEventListener("resize", wsFit); vv.removeEventListener("scroll", wsFit); } wsFit = null; }
 const WS_ICO = { page: "P", dg: "D", zone: "Z", item: "O", set: "P", res: "R", mon: "M", dofus: "D", idol: "I", pet: "F", mount: "M", cons: "C", ach: "S" };
 function wsIcon(r) {
   const img = r.k === "item" ? itemImg(r.id) : r.k === "res" ? resImg(r.id) : r.k === "mon" && !r.unknown ? imgM(r.id) : r.k === "dofus" && E.DOFUS[r.id] ? imgI(E.DOFUS[r.id].icon) : r.k === "pet" ? petImg(r.id) : "";
@@ -5778,28 +5792,32 @@ function searchRender() {
   const q = ($("#wsq") || {}).value || ""; const box = $("#wsres"); if (!box) return;
   wsRes = E.search(q, { S, online: !!ON }); wsSel = 0;
   if (!E.searchNorm(q)) { const rec = wsRecent();
-    box.innerHTML = `<div class="wsg">${rec.length ? "Dernières recherches" : "Exemples"}</div>${(rec.length ? rec : ["bouftou", "coiffe", "forge", "almanax"]).map((r) => `<button class="wsr" data-act="searchfill" data-q="${h(r)}"><span class="wsk k-page">${G("search")}</span><span class="grow"><b>${h(r)}</b></span></button>`).join("")}`;
+    wsSel = -1; // 1.0.8.4 : ↑ ↓ et Entrée marchent aussi sur cette liste
+    box.innerHTML = `<div class="wsg row between">${rec.length ? `Dernières recherches<button class="wsclr" data-act="searchclear">Effacer</button>` : "Exemples"}</div>${(rec.length ? rec : ["bouftou", "coiffe", "forge", "almanax"]).map((r) => `<button class="wsr" data-act="searchfill" data-q="${h(r)}"><span class="wsk k-page">${G("search")}</span><span class="grow"><b>${h(r)}</b></span></button>`).join("")}`;
     $("#wsn").textContent = ""; return; }
   if (!wsRes.length) { box.innerHTML = `<div class="wsg">Rien trouvé pour « ${h(q)} ». Essaie un autre mot, ou une partie du nom.</div>`; $("#wsn").textContent = ""; return; }
   let last = null; const nq = E.searchNorm(q).split(" ").filter(Boolean);
-  const mark = (name) => { let out = h(name); nq.forEach((t) => { const i = E.searchNorm(name).indexOf(t); if (i >= 0 && E.searchNorm(name).length === name.length) out = h(name.slice(0, i)) + "<mark>" + h(name.slice(i, i + t.length)) + "</mark>" + h(name.slice(i + t.length)); }); return out; };
+  const mark = (name) => { const n = E.searchNorm(name); if (n.length !== name.length) return h(name); const on = new Array(name.length).fill(false); // 1.0.8.4 : chaque mot tapé est surligné, plus seulement le dernier
+    nq.forEach((t) => { const i = n.indexOf(t); if (i >= 0) for (let j = i; j < i + t.length; j++) on[j] = true; });
+    let out = "", cur = false; for (let j = 0; j < name.length; j++) { if (on[j] !== cur) { out += on[j] ? "<mark>" : "</mark>"; cur = on[j]; } out += h(name[j]); } return out + (cur ? "</mark>" : ""); };
   box.innerHTML = wsRes.map((r, i) => { const g = r.k !== last ? `<div class="wsg">${E.SEARCH_KINDS[r.k]}</div>` : ""; last = r.k;
-    const row = `<button class="wsr ${i === wsSel ? "sel" : ""}" data-act="searchgo" data-i="${i}">${wsIcon(r)}<span class="grow"><b>${r.unknown ? "???" : mark(r.name)}</b><small>${h(r.sub)}</small></span><span class="wsgo">${WS_GO[r.k]} ↵</span></button>`;
+    const row = `<button class="wsr ${i === wsSel ? "sel" : ""}" data-act="searchgo" data-i="${i}">${wsIcon(r)}<span class="grow"><b>${r.unknown ? "???" : mark(r.name)}</b><small>${h(r.sub)}</small></span><span class="wsgo">${r.k === "mon" ? (MONSTERS[r.id].wboss ? "Boss des mondes" : r.unknown ? "Y aller" : "Fiche") : WS_GO[r.k]} ↵</span></button>`;
     const mon = r.k === "res" || r.k === "item" ? dropMons(r.k, r.id, 1)[0] : null; // 0.1.53.5 : bouton direct vers le monstre qui la lâche le plus
     if (!mon) return g + row;
     const known = r.k === "res" || S.bestiary[mon.mon]; const M = MONSTERS[mon.mon]; const w = mon.w;
     return `${g}<div class="wsrow ${i === wsSel ? "sel" : ""}">${row}<button class="wsmon ${w.open ? "" : "locked"}" data-act="searchmon" data-i="${i}" data-dg="${w.dg || ""}" data-sub="${w.sub || ""}" title="${h(`Aller chez ${known ? M.name : "ce monstre"} : ${w.dg ? "donjon " : ""}${w.name} (niv. ${w.lvl})${w.open ? "" : ", pas encore débloqué"}. Raccourci : flèche droite`)}">${known ? im(imgM(mon.mon), "", M.name) : `<b class="q">?</b>`}<span class="grow"><b>${known ? h(M.name) : "???"}</b><small>${w.open ? "" : G("lock") + " "}${h(w.name)}</small></span><span class="wsmp">${dropPct(mon.p)} %<i>${w.dg ? "Donjon" : "Y aller"} →</i></span></button></div>`; }).join("");
   $("#wsn").textContent = `${wsRes.length} résultat${wsRes.length > 1 ? "s" : ""}`;
 }
-function searchMove(dir) { if (!wsRes.length) return; wsSel = (wsSel + dir + wsRes.length) % wsRes.length; document.querySelectorAll("#wsres .wsr").forEach((b, i) => { b.classList.toggle("sel", i === wsSel); const w = b.parentElement; if (w.classList.contains("wsrow")) w.classList.toggle("sel", i === wsSel); }); const s = document.querySelector("#wsres .wsr.sel"); if (s) s.scrollIntoView({ block: "nearest" }); }
-function searchEnter() { if (wsRes.length) searchGo(wsRes[wsSel]); }
+function searchMove(dir) {
+  if (!wsRes.length) { const B = [...document.querySelectorAll("#wsres .wsr")]; const n = B.length; if (!n) return; wsSel = wsSel < 0 ? (dir > 0 ? 0 : n - 1) : (wsSel + dir + n) % n; B.forEach((b, i) => b.classList.toggle("sel", i === wsSel)); B[wsSel].scrollIntoView({ block: "nearest" }); return; } wsSel = (wsSel + dir + wsRes.length) % wsRes.length; document.querySelectorAll("#wsres .wsr").forEach((b, i) => { b.classList.toggle("sel", i === wsSel); const w = b.parentElement; if (w.classList.contains("wsrow")) w.classList.toggle("sel", i === wsSel); }); const s = document.querySelector("#wsres .wsr.sel"); if (s) s.scrollIntoView({ block: "nearest" }); }
+function searchEnter() { if (wsRes.length) searchGo(wsRes[wsSel]); else { const b = document.querySelector("#wsres .wsr.sel"); if (b) b.click(); } }
 function searchMonKey() { const b = document.querySelector(`#wsres .wsmon[data-i="${wsSel}"]`); if (!b) return false; b.click(); return true; } // 0.1.53.6 : flèche droite ou Maj+Entrée = aller chez le monstre
 function pageGo(id) {
   const go = (tab, k, v) => { ui.tab = tab; if (k) ui[k] = v; ui.slot = null; ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); };
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
-    case "combat": case "ren": case "forge": case "ladder": case "team": go(id); break;
+    case "combat": case "ren": case "forge": case "ladder": case "team": case "koli": case "wb": case "metiers": case "sugg": case "hdv": case "guild": go(id); break;
     case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("quests", "qt", "tresor"); break; case "region": go("quests", "qt", "region"); break; case "hebdo": go("quests", "qt", "hebdo"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
@@ -5820,7 +5838,10 @@ function searchGo(r) {
     case "item": itemSheet(r.id); break;
     case "set": ui.setF = { mode: "all", q: SETS[r.id].name, cid: null }; go("inv", "inv", "sets"); break;
     case "res": resSheet(r.id); break;
-    case "mon": { const s = subOfMon(r.id); if (!s) { toast("Ce monstre ne se trouve nulle part pour l'instant."); break; } if (typeof s === "string") dungeonSheet(s); else { ui.zoneView = s.id; go("world"); } break; }
+    case "mon": { // 1.0.8.4 : monstre déjà vaincu = sa fiche (lieux, résistances, butins) ; jamais vu = son lieu
+      if (MONSTERS[r.id].wboss) { go("wb"); break; }
+      if (S.bestiary[r.id]) { closeSheet(); openSheet(encMonSheet(r.id)); break; }
+      const s = subOfMon(r.id); if (!s) { toast("Ce monstre ne se trouve nulle part pour l'instant."); break; } if (typeof s === "string") dungeonSheet(s); else { ui.zoneView = s.id; go("world"); } break; }
     case "dofus": if (window.QUI && window.QUI.pick) window.QUI.pick(r.id); go("quests", "qt", "dofus"); break;
     case "idol": idolSheet(); break;
     case "pet": case "mount": go("heroes", "hero", "pet"); break;
@@ -6484,6 +6505,7 @@ document.addEventListener("click", (ev) => {
     case "search": closeSheet(); searchOpen(); return;
     case "searchclose": if (t.id === "wsearch" && ev.target !== t) return; searchClose(); return;
     case "searchgo": { const r = wsRes[+d.i]; if (r) searchGo(r); return; }
+    case "searchclear": try { localStorage.removeItem(WS_KEY); } catch (e) {} searchRender(); { const i = $("#wsq"); if (i) i.focus(); } return;
     case "searchfill": case "searchfill2": closeSheet(); searchOpen(d.q); searchRender(); return;
     case "searchcraft": { ui.craftJob = d.job; const F = fltOf("met"); F.q = d.q || ""; F.mode = "all"; const tp = Object.keys(ITEMS).find((k) => ITEMS[k].name === d.q && ITEMS[k].craft); if (tp) ui.recSel = tp; pageGo("craft"); if (narrow() && tp) recSheet(); return; }
     case "searchdg": dungeonSheet(d.id); return;
@@ -7614,7 +7636,7 @@ function repaintKeep(m, htmlStr) {
   for (const id in vals) { const n = document.getElementById(id); if (n && m.contains(n)) n.value = vals[id]; }
   if (fid) { const n = document.getElementById(fid); if (n && m.contains(n)) { n.focus({ preventScroll: true }); if (sel) try { n.setSelectionRange(Math.min(sel[0], n.value.length), Math.min(sel[1], n.value.length), sel[2] || "none"); } catch (e) {} } }
 }
-window.DX = { get S() { return S; }, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, E, diagText };
+window.DX = { get S() { return S; }, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */

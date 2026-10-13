@@ -126,7 +126,7 @@
     ["pet", "Familier et monture", "Héros › Familier"], ["inv", "Inventaire", "objets"], ["invres", "Ressources", "Héros › Inventaire › Ressources"], ["invcons", "Consommables", "Héros › Inventaire › Consommables"],
     ["sets", "Carnet de panoplies", "Héros › Inventaire › Panoplies"], ["ren", "Renaissance", "Héros › Renaissance"], ["recolte", "Récolte", "Artisanat › Métiers › Récolte"], ["craft", "Artisanat", "Artisanat › Métiers › Artisanat"],
     ["forge", "Forgemagie", "runes et puits"], ["options", "Options", "thème, affichage, sauvegarde"], ["account", "Compte en ligne", "Options › Compte"], ["archis", "Album des archimonstres", "âmes capturées"],
-    ["idols", "Idoles", "difficulté et bonus"], ["tips", "Carnet des découvertes", "relire les bulles d'aide"], ["changelog", "Nouveautés", "notes de mise à jour"],
+    ["idols", "Idoles", "difficulté et bonus"], ["koli", "Kolizéum", "Jouer › Kolizéum : combats contre d'autres équipes"], ["wb", "Boss des mondes", "Jouer › Boss des mondes"], ["metiers", "Métiers", "Artisanat › Métiers : récolte et artisanat"], ["sugg", "Suggestions", "Communauté › Suggestions"], ["hdv", "Hôtel de vente", "Communauté › Hôtel de vente"], ["guild", "Guilde", "Communauté › Guilde"], ["tips", "Carnet des découvertes", "relire les bulles d'aide"], ["changelog", "Nouveautés", "notes de mise à jour"],
   ];
   E.searchIndex = () => {
     if (INDEX) return INDEX;
@@ -152,7 +152,7 @@
     const S = ctx.S; const nq = E.searchNorm(q); if (!nq) return [];
     const toks = nq.split(" ").filter(Boolean); const out = [];
     E.searchIndex().forEach((e) => {
-      if (e.k === "page" && e.id === "ladder" && !ctx.online) return;
+      if (e.k === "page" && (e.id === "ladder" || e.id === "hdv" || e.id === "guild") && !ctx.online) return; // pages du jeu en ligne
       const words = e.n.split(" ");
       let score = 0;
       for (const t of toks) {

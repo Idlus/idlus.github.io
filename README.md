@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.8.4 « Recherche revérifiée »
+Demande de Mathis : vérifier tous les bugs possibles de la recherche rapide. Chaque entrée de l'index (≈ 8 000) a été ouverte une à une : 318 monstres menaient « nulle part » (archimonstres, co-boss `coBoss` de donjon, boss des mondes). `monHome`/`dgHasMon` (js/ui.js) servent maintenant à `subOfMon` et à `encWhereHtml` ; un monstre connu ouvre `encMonSheet`. Pages Kolizéum, Boss des mondes, Métiers, Suggestions (+ Hôtel de vente et Guilde en ligne) ajoutées à `E.SEARCH_PAGES` (js/welcome.js). Historique dédoublonné par `E.searchNorm` + bouton Effacer, ↑ ↓ Entrée sur les dernières recherches, surlignage de tous les mots, hauteur réglée sur `visualViewport` (clavier du téléphone), z-index au-dessus de #cele. Contrôles ajoutés dans tests/smoke.test.js.
+
 ## 1.0.8.3 « Équipements de l'Encyclopédie »
 Onglet Équipements (`encEqHtml`, filtres niveau / origine / obtenus, panoplie, fiche objet), collection des équipements déjà obtenus (`E.itemDex`, `S.itemDex`, comptée au premier passage depuis le sac, le surplus et la garde-robe), « Équipements qu'il lâche » sur la fiche du monstre, tuile « Équipements obtenus ». Test `tests/encyclopedie.test.js`.
 

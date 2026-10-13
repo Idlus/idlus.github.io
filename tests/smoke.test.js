@@ -113,6 +113,14 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector("#wsearch", { timeout: 3000 }); await page.click('#wsres [data-act="searchfill"][data-q="bouftou"]'); await page.waitForTimeout(150);
     if ((await page.inputValue("#wsq")) !== "bouftou" || !(await page.$('#wsres [data-act="searchgo"]'))) errors.push("recherche : un clic sur une dernière recherche ne la relance pas");
     await page.keyboard.press("Escape"); if (await page.$("#wsearch")) errors.push("recherche : Échap ne ferme pas la fenêtre");
+    // 1.0.8.4 : chaque monstre trouvé par la recherche mène quelque part (archimonstres, co-boss de donjon et boss des mondes compris), historique sans doublons
+    const lost = await page.evaluate(() => { const { E, ui } = window.DX; const out = [];
+      for (const e of E.searchIndex()) { if (e.k !== "mon") continue; document.querySelector("#sheet").innerHTML = ""; ui.tab = "home"; ui.zoneView = null; window.DX.searchGo(Object.assign({}, e));
+        if (ui.tab === "home" && !document.querySelector("#sheet").innerHTML) out.push(e.name); }
+      document.querySelector("#sheet").innerHTML = ""; ui.tab = "home"; window.DX.render(); return out; });
+    if (lost.length) errors.push(`recherche : ${lost.length} monstres ne mènent nulle part (${lost.slice(0, 3).join(", ")}…)`);
+    await page.evaluate(() => { localStorage.removeItem("idlus-recherches"); ["Bouftou", "bouftou ", "BOUFTOU"].forEach((q) => { window.DX.searchOpen(); const i = document.querySelector("#wsq"); i.value = q; window.DX.searchGo({ k: "page", id: "home" }); }); });
+    if ((await page.evaluate(() => JSON.parse(localStorage.getItem("idlus-recherches") || "[]").length)) !== 1) errors.push("recherche : la même recherche apparaît plusieurs fois dans l'historique");
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
     errors.push(`étape échouée : ${e.message.split("\n")[0]}`);

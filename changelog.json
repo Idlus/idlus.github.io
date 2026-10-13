@@ -1,6 +1,19 @@
 {
-  "version": "1.0.8.3",
+  "version": "1.0.8.4",
   "versions": [
+    {
+      "v": "1.0.8.4",
+      "name": "Recherche revérifiée",
+      "items": [
+        "Recherche : les archimonstres, les boss qui se battent à plusieurs (les 4 Gelées Royales, les 4 Blops Royaux, les Tynril…) et Gargandyas mènent enfin quelque part. Avant, la recherche disait « nulle part » pour 318 monstres",
+        "Un monstre déjà vaincu ouvre sa fiche de l'Encyclopédie (lieux avec « Y aller », résistances, butins) ; un monstre jamais vu emmène toujours à son lieu",
+        "Les pages Kolizéum, Boss des mondes, Métiers et Suggestions se trouvent par la recherche (et Hôtel de vente et Guilde en ligne)",
+        "Dernières recherches : plus de doublons (« Bouftou » et « bouftou » ne font qu'une ligne), bouton Effacer, et les flèches ↑ ↓ + Entrée marchent aussi sur cette liste",
+        "Chaque mot tapé est surligné dans les résultats, plus seulement le dernier",
+        "Téléphone : avec le clavier ouvert, la liste des résultats reste visible au-dessus du clavier",
+        "La fenêtre de recherche passe au-dessus des bandeaux de récompense qui la cachaient en partie"
+      ]
+    },
     {
       "v": "1.0.8.3",
       "name": "Équipements de l'Encyclopédie",
