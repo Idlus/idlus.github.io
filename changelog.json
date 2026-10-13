@@ -1,6 +1,14 @@
 {
-  "version": "1.0.4.1",
+  "version": "1.0.4.2",
   "versions": [
+    {
+      "v": "1.0.4.2",
+      "name": "Gelées à parts égales",
+      "items": [
+        "Gelaxième Dimension : les 4 Gelées Royales ont maintenant toutes les mêmes PV. Avant, la Gelée Royale Bleuet en avait 2,5 fois plus que les autres",
+        "Pareil pour les 4 Blops Royaux du Clos des Blops. La difficulté globale du combat ne change pas"
+      ]
+    },
     {
       "v": "1.0.4.1",
       "name": "Chat et écrans pliables",

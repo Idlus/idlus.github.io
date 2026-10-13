@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.2 « Gelées à parts égales »
+Boss jumeaux (js/engine.js, `dg.coBossEq` posé dans js/data.js pour gelaxieme_dimension et clos_blops) : les PV totaux du boss et de ses `coBoss` sont partagés à parts égales, × `E.COBOSS_EQ` (0,75, réglé par simulation : bon équipement stasis 5, optimisé 9, comme avant).
+
 ## 1.0.4.1 « Chat et écrans pliables »
 Chat entre 641 et 859 px (menu en bas, ex. Fold déplié) : `.chmin` en bulle ronde au-dessus de la barre de menu (règles passées de `max-width:640px` à `859px`), `#chat` ouvert posé au-dessus de la barre. Options › Affichage › « Format d'affichage » (`S.settings.layout` : `phone`/`pc`, action `setlayout`) : `applyDisplay` réécrit la balise viewport (`width=480` ou `width=1180`) ; sans effet dans un navigateur d'ordinateur.
 

@@ -514,6 +514,7 @@
     return true;
   };
   E.WINS_TO_UNLOCK = 12;
+  E.COBOSS_EQ = 0.75; // 1.0.4.2 : boss jumeaux à parts égales, PV totaux un peu réduits (tous frappent jusqu'au bout, réglé par simulation)
   E.COBOSS_HP = 0.4; // 0.1.40 : part des PV d'un boss principal pour chaque boss qui l'accompagne (Gelées Royales)
   E.subUnlocked = (S, sid) => {
     const s = SUBS[sid]; if (!s || !E.zoneUnlocked(S, s.zone)) return false;
@@ -1160,6 +1161,8 @@
         mons = [boss];
         /* 0.1.40 : boss qui se battent ensemble (les 4 Gelées Royales de la Gelaxième Dimension) */
         (dg.coBoss || []).forEach((cb) => { if (!MONSTERS[cb]) return; const c = monsterEntity(cb, blv); c.hpMax = c.hp = Math.round(c.hpMax * hk * (dg.coBossHp || E.COBOSS_HP)); mons.push(c); });
+        /* 1.0.4.2 : boss jumeaux (4 Gelées Royales, 4 Blops Royaux) : les PV totaux sont partagés à parts égales, aucun n'en a plus que les autres */
+        if (dg.coBossEq && mons.length > 1) { const tot = mons.reduce((a, m) => a + m.hpMax, 0); mons.forEach((m) => { m.hpMax = m.hp = Math.round(tot * E.COBOSS_EQ / mons.length); }); }
         const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0) - (mons.length - 1), 0, 7);
         const mlv = S.dungeon.gboss ? S.dungeon.syncLvl || 1 : k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));

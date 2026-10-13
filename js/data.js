@@ -457,6 +457,7 @@
   }
   /* 0.1.44.1 : boss secondaires qui accompagnent le boss principal ; part de PV réglée par simulation (stasis 5-7 avec un bon équipement) */
   [["labo_tynril", 0.2], ["cavernes_kolosso", 0.15]].forEach(([d, v]) => { if (G.DUNGEONS[d] && G.DUNGEONS[d].coBoss) G.DUNGEONS[d].coBossHp = v; });
+  ["gelaxieme_dimension", "clos_blops"].forEach((d) => { if (G.DUNGEONS[d] && G.DUNGEONS[d].coBoss) G.DUNGEONS[d].coBossEq = true; }); // 1.0.4.2 : boss de même force
   /* 0.1.45 : la Tempête de l'Eliocalypse s'ouvre après les quatre Cavaliers, qui laissent chacun des Fragments d'armure (clé) */
   if (G.DUNGEONS.tempete_eliocalypse) {
     const cav = ["arbre_mort", "fers_tyrannie", "sentence_balance", "trone_sang"].filter((d) => G.DUNGEONS[d]);

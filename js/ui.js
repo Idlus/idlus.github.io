@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4.1";
+const GAME_VERSION = "1.0.4.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4.2", name: "Gelées à parts égales", items: [
+    "Gelaxième Dimension : les 4 Gelées Royales ont maintenant toutes les mêmes PV. Avant, la Gelée Royale Bleuet en avait 2,5 fois plus que les autres",
+    "Pareil pour les 4 Blops Royaux du Clos des Blops. La difficulté globale du combat ne change pas",
+  ] },
   { v: "1.0.4.1", name: "Chat et écrans pliables", items: [
     "Téléphone pliable déplié et petites tablettes : le chat se range en bulle ronde au-dessus du menu du bas, il ne cache plus Héros ni Menu",
     "Options › Affichage › Format d'affichage : Auto, Téléphone ou PC, pour choisir soi-même la présentation du jeu sur un écran tactile",
