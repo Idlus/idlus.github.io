@@ -59,7 +59,7 @@ const MOCK = () => {
       linkIdentity: async () => ({ error: null }),
     },
     from: q,
-    channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
+    channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { window.__chatSub = cb; if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
     functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
@@ -78,6 +78,7 @@ const MOCK = () => {
       if (name === "push_save") {
         if (!a.p_force && ((a.p_expected == null && s) || (a.p_expected != null && (!s || s.updated_at !== a.p_expected)))) return { data: null, error: null };
         d.saves[u.id] = { data: a.p_data, meta: a.p_meta, device: a.p_device, game_version: a.p_version, updated_at: ts() }; d.pushes = (d.pushes || 0) + 1; put(d);
+        if (window.__lostReply) { window.__lostReply = false; throw new Error("Failed to fetch"); } // 1.0.10.2 : enregistré en ligne, mais la réponse se perd (serveur lent)
         return { data: d.saves[u.id].updated_at, error: null };
       }
       const me = d.profiles.find((p) => p.id === u.id); const log = () => { d.admCalls = (d.admCalls || []).concat([[name, a]]); put(d); };
@@ -183,24 +184,36 @@ const MOCK = () => {
     // 4. autre appareil : la partie en ligne change, celle d'ici n'a pas bougé depuis le dernier envoi -> reprise directe
     await page.evaluate(() => { window.DX.saveNow(); });
     await page.click("#onPill"); await page.waitForTimeout(300);
-    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 99999; st.savedAt = Date.now(); d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-01T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 99999; st.savedAt = Date.now(); d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-01T00:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "autre-appareil" }); localStorage.setItem("__mock", JSON.stringify(d)); });
     // la page est rechargée sans laisser le jeu sauvegarder entre-temps
     await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("dofousxen-save-beta-online")); const st = JSON.parse(localStorage.getItem("dofousxen-save-beta")); l.savedAt = st.savedAt + 10 ** 9; localStorage.setItem("dofousxen-save-beta-online", JSON.stringify(l)); });
     await page.reload(); await page.waitForSelector("#nav [data-nk]", { timeout: 10000 }); await page.waitForTimeout(300);
     if ((await S()).kamas < 99999) fail("partie en ligne plus récente non reprise");
     // 5. conflit : les deux ont avancé -> question, on garde celle en ligne
-    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 55555; d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-02T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const st = JSON.parse(d.saves.u1.data); st.kamas = 55555; d.saves.u1.data = JSON.stringify(st); d.saves.u1.updated_at = "2099-01-02T00:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "autre-appareil-2" }); localStorage.setItem("__mock", JSON.stringify(d)); });
     await page.evaluate(() => { window.DX.S.kamas = 11111; });
     await page.click("#onPill");
     await page.waitForSelector('[data-act="on-keepremote"]', { timeout: 10000 });
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/conflit.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/conflit-mob.png" }); await page.setViewportSize(vp); }
     await page.click('[data-act="on-keepremote"]'); await page.waitForTimeout(500);
     if ((await S()).kamas < 55555) fail("conflit : version en ligne non chargée");
     // 6. conflit au lancement, on garde celle d'ici (envoi forcé)
-    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.saves.u1.updated_at = "2099-01-03T00:00:00.000001Z"; localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 77777; window.DX.saveNow(); });
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.saves.u1.updated_at = "2099-01-03T00:00:00.000001Z"; d.saves.u1.meta = Object.assign({}, d.saves.u1.meta, { pid: "autre-appareil-3" }); localStorage.setItem("__mock", JSON.stringify(d)); window.DX.S.kamas = 77777; window.DX.saveNow(); });
     await page.reload(); await page.waitForSelector('[data-act="on-keeplocal"]', { timeout: 10000 });
     await page.click('[data-act="on-keeplocal"]'); await page.waitForTimeout(1200);
     m = await mock();
     if (JSON.parse(m.saves.u1.data).kamas < 77777) fail("conflit : version d'ici non envoyée");
+    // 6 bis (1.0.10.2) : envoi enregistré en ligne mais réponse perdue (serveur lent) -> pas de faux conflit, ni en jeu ni au rechargement
+    await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
+    await page.evaluate(() => { window.__lostReply = true; window.DX.S.kamas = 88888; window.DX.saveNow(); }); await page.click("#onPill"); await page.waitForTimeout(500);
+    if ((await page.$eval("#onPill", (e) => e.dataset.st)) !== "off" && (await page.$eval("#onPill", (e) => e.dataset.st)) !== "offline") fail("réponse perdue : pastille pas hors ligne (" + (await page.$eval("#onPill", (e) => e.dataset.st)) + ")");
+    await page.evaluate(() => { window.DX.S.kamas = 88889; window.DX.saveNow(); }); await page.click("#onPill"); await page.waitForTimeout(800);
+    if (await page.$('[data-act="on-keeplocal"]')) fail("réponse perdue : faux conflit « Deux versions de ta partie » en jeu");
+    if (JSON.parse((await mock()).saves.u1.data).kamas !== 88889) fail("réponse perdue : partie non envoyée après le retour du serveur");
+    await page.evaluate(() => { window.__lostReply = true; window.DX.S.kamas = 88890; window.DX.saveNow(); }); await page.click("#onPill"); await page.waitForTimeout(500);
+    await page.reload(); await page.waitForSelector("#nav [data-nk]", { timeout: 10000 }); await page.waitForTimeout(400);
+    if (await page.$('[data-act="on-keeplocal"]')) fail("réponse perdue : faux conflit au lancement");
+    if ((await S()).kamas < 88890) fail("réponse perdue : partie d'ici perdue au lancement");
     // 7. hors ligne : pastille grise, le jeu continue
     await page.evaluate(() => { window.__offline = true; }); await page.click("#onPill"); await page.waitForTimeout(400);
     if ((await page.getAttribute("#onPill", "data-st")) !== "offline") fail("pastille hors ligne absente");
@@ -287,6 +300,11 @@ const MOCK = () => {
     await page.evaluate(() => { window.__chatFail = true; return window.CHAT.refresh(); });
     if (!(await page.$("#chat .ch-list .msg"))) fail("chat : un rechargement raté efface les messages déjà affichés");
     await page.evaluate(() => { window.__chatFail = false; });
+    // 1.0.10.2 : direct coupé (panne Supabase Realtime) → ligne d'explication, qui disparaît au retour du direct
+    await page.evaluate(() => { window.__chatSub("CHANNEL_ERROR"); window.CHAT.repaint(); });
+    if (!/Chat en direct perturbé/.test(await page.textContent("#chat .ch-list"))) fail("chat : pas d'explication quand le direct est coupé");
+    await page.evaluate(() => { window.__chatSub("SUBSCRIBED"); window.CHAT.repaint(); });
+    if (/Chat en direct perturbé/.test(await page.textContent("#chat .ch-list"))) fail("chat : explication restée après le retour du direct");
     // 0.1.33.2 : les hauts faits ont leur onglet, le Général ne garde que les joueurs et les annonces officielles
     if (/entre dans l'histoire/.test(await page.textContent("#chat .ch-list"))) fail("chat : haut fait encore dans le Général");
     await page.click('#chat [data-act="ch-tab"][data-v="h"]'); await page.waitForTimeout(100);

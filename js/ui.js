@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.10.1";
+const GAME_VERSION = "1.0.10.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.10.2", name: "Sauvegarde sans fausse alerte", items: [
+    "Le jeu ne demande plus sans raison « Deux versions de ta partie » : quand le serveur était lent, une sauvegarde bien arrivée en ligne pouvait être prise pour une partie jouée ailleurs",
+    "Quand il y a vraiment deux parties différentes, l'écran montre les niveaux cumulés et les succès de chacune, et recommande la plus avancée",
+    "Chat pendant la panne du direct : mise à jour chaque minute, seulement quand le chat est ouvert, pour soulager le serveur",
+  ] },
   { v: "1.0.10.1", name: "Chat malgré la panne", items: [
     "Incident en cours chez Supabase (notre serveur) sur le chat en direct : le chat affiche « Chat momentanément indisponible, reconnexion automatique… » au bout de 6 s au lieu de tourner sans fin",
     "Tant que le direct est coupé, les messages se mettent à jour toutes les 30 s et un message le signale. Écrire marche toujours",
@@ -7150,7 +7155,9 @@ function pseudoSheet(err) {
     <div class="row"><button class="btn primary" data-act="on-pseudo">C'est parti</button><button class="btn" data-act="on-logout">Se déconnecter</button></div>`);
   setTimeout(() => { const i = $("#onPseudo"); if (i) i.focus(); }, 50);
 }
-const saveLine = (m, when, ico, title, tag) => `<div class="svc${tag ? " on" : ""}">${IC(ico)}<b>${h(title)}${tag ? ` <span class="tag">${h(tag)}</span>` : ""}</b><span class="small muted">${m && m.n ? `${m.n} héros · niveau max ${m.lvl}` : "partie"}${when ? ` · ${h(when)}` : ""}</span></div>`;
+const saveLine = (m, when, ico, title, tag) => `<div class="svc${tag ? " on" : ""}">${IC(ico)}<b>${h(title)}${tag ? ` <span class="tag">${h(tag)}</span>` : ""}</b><span class="small muted">${m && m.n ? `${m.n} héros · niveau max ${m.lvl}${m.level ? ` · ${fmt(m.level)} niveau${m.level > 1 ? "x" : ""} cumulé${m.level > 1 ? "s" : ""}` : ""}${m.succes ? ` · ${m.succes} succès` : ""}` : "partie"}${when ? ` · ${h(when)}` : ""}</span></div>`;
+/* 1.0.10.2 : laquelle est la plus avancée (niveaux cumulés, puis succès, album, héros) ; 0 = pareil */
+const saveAdv = (a, b) => { for (const k of ["level", "succes", "album", "n", "lvl"]) { const x = (a && +a[k]) || 0, y = (b && +b[k]) || 0; if (x !== y) return x > y ? 1 : -1; } return 0; };
 const agoTxt = (t) => { if (!t) return ""; const s = Math.max(0, (Date.now() - t) / 1000); return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : copyDate(t); };
 function recupSheet(st) {
   ui.onLocal = st;
@@ -7161,10 +7168,11 @@ function recupSheet(st) {
 }
 function conflictSheet(st, info) {
   ui.onConf = { st, info };
-  const rt = Date.parse(info.updated_at), lt = (st && (st.savedAt || st.lastTick)) || 0, remoteNewer = rt >= lt;
-  openGate(`<h2>Deux versions de ta partie</h2><span class="small muted">Ta partie a avancé ailleurs depuis ta dernière visite ici. Laquelle garder ?</span>
-    ${saveLine(info.meta, agoTxt(rt), "monde", `En ligne${info.device && info.device !== ON.device() ? ` (${info.device})` : ""}`, remoteNewer ? "plus récente" : "")}
-    ${saveLine(onMeta(st), agoTxt(lt), "coffre", `Cet ${ON.device() === "téléphone" ? "appareil" : "ordinateur"}`, remoteNewer ? "" : "plus récente")}
+  const rt = Date.parse(info.updated_at), lt = (st && (st.savedAt || st.lastTick)) || 0, lm = onMeta(st), adv = saveAdv(info.meta, lm);
+  const remoteNewer = adv ? adv > 0 : rt >= lt, tagTxt = adv ? "la plus avancée" : "la plus récente"; // 1.0.10.2 : on recommande la plus avancée, pas seulement la plus récente
+  openGate(`<h2>Deux versions de ta partie</h2><span class="small muted">Ta partie a avancé ailleurs depuis ta dernière visite ici. Laquelle garder ?${adv ? "" : " Elles sont aussi avancées l'une que l'autre."}</span>
+    ${saveLine(info.meta, agoTxt(rt), "monde", `En ligne${info.device && info.device !== ON.device() ? ` (${info.device})` : ""}`, remoteNewer ? tagTxt : "")}
+    ${saveLine(lm, agoTxt(lt), "coffre", `Cet ${ON.device() === "téléphone" ? "appareil" : "ordinateur"}`, remoteNewer ? "" : tagTxt)}
     <div class="row"><button class="btn ${remoteNewer ? "primary" : ""}" data-act="on-keepremote">Garder celle en ligne</button><button class="btn ${remoteNewer ? "" : "primary"}" data-act="on-keeplocal">Garder celle d'ici</button></div>
     <span class="xs muted">L'autre version n'est pas perdue : elle part dans les copies de secours (${G("gear", "opt-in")}Options).</span>`);
 }
@@ -7183,6 +7191,7 @@ async function onAfterLogin() {
   }
   if (!local) return takeRemote(info);
   if (l.uid === uid && l.base === info.updated_at) { ON.setState("ok"); return bootGame(); } // rien de neuf en ligne : on continue ici
+  if (ON.ownPush(info) && (local.savedAt || 0) >= ((info.meta && info.meta.sa) || 0)) { ON.setLink({ base: info.updated_at }); ON.setState("ok"); return bootGame(); } // 1.0.10.2 : la version en ligne est notre propre envoi (réponse perdue, serveur lent) : pas de conflit
   if (l.uid === uid && (local.savedAt || 0) <= (l.savedAt || 0)) return takeRemote(info); // rien de neuf ici : on reprend celle en ligne
   return conflictSheet(local, info);
 }
@@ -7219,6 +7228,7 @@ function raceCheck() {
 async function onConflictLive() {
   let info; try { info = await ON.remoteInfo(); } catch (e) { ON.setState("offline"); return; }
   if (!info) { ON.setLink({ base: null }); return onPush(); }
+  if (ON.ownPush(info)) { ON.setLink({ base: info.updated_at }); return onPush(); } // 1.0.10.2
   conflictSheet(S, info);
 }
 const PILL = { ok: ["", "Sauvegardé", " en ligne", "Partie à jour sur ton compte. Clique pour envoyer tout de suite."], sync: ["s", "Envoi", "…", "Envoi de la partie en cours."], offline: ["off", "Hors ligne", "", "Pas de connexion au serveur : le jeu continue et ta partie sera envoyée au retour d'Internet. Clique pour réessayer."], conflict: ["warn", "À vérifier", "", "Ta partie a avancé sur un autre appareil : clique pour choisir la version à garder."], suspended: ["off", "Compte suspendu", "", "Ton compte a été suspendu : ta partie n'est plus envoyée en ligne. Elle reste sur cet appareil."] };

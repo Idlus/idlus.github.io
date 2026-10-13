@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.10.2 « Sauvegarde sans fausse alerte »
+Faux conflits de sauvegarde (« Deux versions de ta partie ») signalés par Mathis : quand le serveur était lent, `push_save` pouvait être enregistré sans que la réponse revienne (délai de 20 s), l'appareil gardait l'ancienne date (`base`) et l'envoi suivant était refusé. Chaque envoi porte un numéro `meta.pid` (et `meta.sa` = savedAt), les 10 derniers sont gardés dans le lien de l'appareil ; `ON.ownPush(info)` reconnaît la version en ligne comme notre propre envoi : nouvel essai avec la bonne date (`ON.push`), pas de question au lancement (`onAfterLogin`) ni en jeu (`onConflictLive`). Aucun changement côté serveur. L'écran de conflit compare l'avancement (`saveAdv` : niveaux cumulés, succès, album, héros) avant la date. Chat sans direct : `catchUp` (js/chat.js) ne lit que le salon affiché, chat ouvert et onglet visible, au plus une fois par minute, jusqu'à 5 min si ça échoue ; nouvel essai du premier chargement 10 s → 2 min.
+
 ## 1.0.10.1 « Chat malgré la panne »
 Incident Supabase Realtime (présence instable, connexions qui n'aboutissent pas). Message « Chat momentanément indisponible, reconnexion automatique… » au bout de 6 s ; `ON.chatLost()` (js/online.js) vrai tant que le canal n'est pas revenu à SUBSCRIBED : messages rechargés toutes les 30 s (onglet visible) avec une ligne d'explication. L'envoi passe par `chat_send` (RPC), indépendant du temps réel.
 

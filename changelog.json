@@ -1,6 +1,15 @@
 {
-  "version": "1.0.10.1",
+  "version": "1.0.10.2",
   "versions": [
+    {
+      "v": "1.0.10.2",
+      "name": "Sauvegarde sans fausse alerte",
+      "items": [
+        "Le jeu ne demande plus sans raison « Deux versions de ta partie » : quand le serveur était lent, une sauvegarde bien arrivée en ligne pouvait être prise pour une partie jouée ailleurs",
+        "Quand il y a vraiment deux parties différentes, l'écran montre les niveaux cumulés et les succès de chacune, et recommande la plus avancée",
+        "Chat pendant la panne du direct : mise à jour chaque minute, seulement quand le chat est ouvert, pour soulager le serveur"
+      ]
+    },
     {
       "v": "1.0.10.1",
       "name": "Chat malgré la panne",

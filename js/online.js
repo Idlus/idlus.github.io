@@ -151,15 +151,30 @@
   };
   /* Envoie la partie. Résultat : "ok", "conflict" (une autre version est en ligne) ou "offline". */
   let pushing = null;
+  /* 1.0.10.2 : faux conflits. Quand le serveur est lent, un envoi peut être enregistré en ligne sans que la réponse
+     revienne (délai dépassé) : l'appareil gardait l'ancienne date et l'envoi suivant croyait qu'un autre appareil avait
+     joué (« Deux versions de ta partie »). Chaque envoi porte maintenant un numéro (meta.pid) gardé sur l'appareil :
+     si la version en ligne est l'un de nos propres envois, ce n'est pas un conflit. */
+  ON.ownPush = (info) => { const l = ON.link(); return !!(info && info.meta && info.meta.pid && ON.user && l.uid === ON.user.id && (l.pids || []).includes(info.meta.pid)); };
   ON.push = (txt, meta, savedAt, force) => {
     if (!sb || !ON.user) return Promise.resolve("offline");
     if (pushing && !force) return pushing;
-    const l = ON.link();
     setState("sync");
+    const pid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    ON.setLink({ pids: [pid].concat(ON.link().pids || []).slice(0, 10) });
+    const m = Object.assign({}, meta || {}, { pid, sa: savedAt || 0 });
     const p = (async () => {
       try {
-        const { data, error } = await withTimeout(sb.rpc("push_save", { p_data: txt, p_meta: meta || {}, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force }), 20000);
-        if (error) throw error;
+        let data = null;
+        for (let i = 0; i < 2; i++) {
+          const l = ON.link();
+          const r = await withTimeout(sb.rpc("push_save", { p_data: txt, p_meta: m, p_version: VER, p_device: ON.device(), p_expected: l.uid === ON.user.id ? l.base || null : null, p_force: !!force }), 20000);
+          if (r.error) throw r.error;
+          data = r.data; if (data || i) break;
+          const info = await ON.remoteInfo(); // envoi refusé : la version en ligne est-elle un de nos envois ?
+          if (!ON.ownPush(info)) break;
+          ON.setLink({ uid: ON.user.id, base: info.updated_at });
+        }
         if (!data) { setState("conflict"); return "conflict"; }
         ON.setLink({ uid: ON.user.id, base: data, savedAt });
         ON.lastPush = Date.now(); setState("ok"); return "ok";
