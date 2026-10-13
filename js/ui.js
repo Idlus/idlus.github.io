@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.40.1";
+const GAME_VERSION = "0.1.41";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.41", name: "Donjons oubliés", items: [
+    "18 donjons classiques de DOFUS arrivent, du niveau 40 au 110 : Gelaxième Dimension, Maison Fantôme, Akadémie des Gobs, Refuge sylvestre, Donjon des Forgerons, Grotte Hesque, Donjon des Larves, Fonderie des Waddicts, Village Kanniboul, Épreuve de Draegnerys, Cale de l'Arche d'Otomaï, Cimetière des Mastodontes, Antre de la Reine Nyée, Théâtre de Dramak, Fabrique de Malléfisk, Miausolée du Pounicheur, Garde-manger du Rat Blanc et Sousouricière du Rat Noir",
+    "Gelaxième Dimension : les 4 Gelées Royales (Bleuet, Citron, Fraise, Menthe) se battent ensemble dans la salle du boss. Le Gelano, le Gelamu et la Couronne du Roi Gelax sont enfin dans le jeu",
+    "15 nouvelles sous-zones de chasse, dont 3 nouvelles régions : Albuera, Îlots de la mer d'Asse, Bonta et Brâkmar. Les autres rejoignent Amakna, Otomaï, Moon, les Dragoeufs, les Abraknydes, Saharach, Pwâk et les Dimensions divines",
+    "312 nouveaux équipements et 39 panoplies (Boostache, Rats Blanc et Noir, Kanniboul Ebil, Pounicheur, Reine Nyée…), 133 nouveaux monstres et 28 archimonstres de plus dans l'album",
+    "Chaque clé se fabrique chez le Bricoleur et tombe aussi parfois sur les monstres de la sous-zone d'accès",
+  ] },
   { v: "0.1.40.1", name: "Annonces pour tous", items: [
     "Annonces : le bandeau d'annonce arrive aussi aux joueurs déjà en jeu en moins de 2 minutes, même s'il n'est pas publié dans le chat, et disparaît tout seul à l'heure prévue",
   ] },
