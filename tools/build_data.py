@@ -111,7 +111,7 @@ ZONES = [
      'subs': [(804, 'suf_embruns', 'lake', 198, 212)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
-CO_BOSS = {'gelaxieme_dimension', 'labo_tynril', 'clos_blops', 'dojo_vent', 'taniere_givrefoux', 'cavernes_kolosso'}  # donjons où tous les boss se battent ensemble (0.1.43.1 : boss secondaires)
+CO_BOSS = {'gelaxieme_dimension', 'labo_tynril', 'clos_blops', 'dojo_vent', 'taniere_givrefoux', 'cavernes_kolosso'}  # donjons où tous les boss se battent ensemble (0.1.44.1 : boss secondaires)
 POOL_FORCE = {'antre_dragon_cochon': {'Gorgouille'}}  # monstres de salle aux grades aberrants (Gorgouille : niveau 400) gardés au niveau du donjon
 POOL_MIN = {'donjon_larves': 40}  # niveau minimum des monstres des salles (les Larves Solitaires de niveau 11-16 restent dehors)
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
@@ -287,7 +287,7 @@ def el_of(r):
 
 def drop_ok(it):
     n = fr(it)
-    if n.startswith('Âme capturée') or n.startswith('Fragment de carte') or n.startswith('Fragment de mémoire') or it['typeId'] in (173, 248): return False  # 0.1.43.1 : les autres « Fragments » sont de vraies ressources
+    if n.startswith('Âme capturée') or n.startswith('Fragment de carte') or n.startswith('Fragment de mémoire') or it['typeId'] in (173, 248): return False  # 0.1.44.1 : les autres « Fragments » sont de vraies ressources
     t = it['typeId']
     if t in SLOT_BY_TYPE: return True
     sup = None
