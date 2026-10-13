@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.53.5";
+const GAME_VERSION = "0.1.53.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.53.6", name: "Droit au monstre, en mieux", items: [
+    "Recherche rapide : le bouton du monstre est mieux rangé (colonne alignée sur PC, sous le résultat sur téléphone) et montre la zone ou le donjon où il t'emmène, avec un cadenas si ce n'est pas encore débloqué",
+    "Clavier : flèche droite ou Maj+Entrée sur un résultat t'emmène directement chez le monstre",
+    "Fiches d'une ressource et d'un objet : chaque monstre affiche sa zone, son niveau conseillé, son taux et un bouton « Y aller » ou « Donjon » ; les ressources de récolte ont un bouton « Récolter »",
+  ] },
   { v: "0.1.53.5", name: "Droit au monstre", items: [
     "Recherche rapide : à côté d'une ressource ou d'un objet lâché par un monstre, un bouton mène directement à la zone ou au donjon du monstre qui le lâche le plus, avec son taux",
     "Fiche d'une ressource : nouvelle liste « Monstres qui la lâchent » (jusqu'à 4, avec leur taux) et un bouton « Y aller » ou « Donjon » pour chacun",
@@ -950,14 +955,20 @@ function monWhere(k) {
   const base = Object.keys(MONSTERS).find((b) => MONSTERS[b].archi === k); if (base) { const w = monWhere(base); return w && Object.assign(w, { archi: true }); } // archimonstre : là où vit le monstre normal
   const subs = Object.values(E.SUBS).filter((s) => !s.hidden && (s.monsters || []).some((m) => (Array.isArray(m) ? m[0] : m) === k))
     .sort((a, b) => E.subUnlocked(S, b.id) - E.subUnlocked(S, a.id) || a.lvl[0] - b.lvl[0]); // zone ouverte d'abord, puis la plus basse
-  if (subs.length) return { sub: subs[0].id, name: subs[0].name };
+  if (subs.length) { const s0 = subs[0]; return { sub: s0.id, name: s0.name, lvl: `${s0.lvl[0]}–${s0.lvl[1]}`, open: E.subUnlocked(S, s0.id) }; }
   const dg = Object.keys(DUNGEONS).find((id) => { const d = DUNGEONS[id]; return d.boss === k || (d.bossMobs || []).includes(k) || d.rooms.some((r) => r.mobs.includes(k)); });
-  return dg ? { dg, name: DUNGEONS[dg].name } : null;
+  return dg ? { dg, name: DUNGEONS[dg].name, lvl: String(DUNGEONS[dg].lvl), open: E.dungeonUnlocked(S, dg) } : null;
 }
 function dropMons(k, id, max) {
   const L = k === "res" ? (resIndex().src[id] || []).filter((x) => x.m).map((x) => ({ mon: x.m, p: E.resRate(x.p) }))
     : E.itemSources(id).filter((x) => x.mon).map((x) => ({ mon: x.mon, p: x.p }));
   return L.map((x) => Object.assign(x, { w: monWhere(x.mon) })).filter((x) => x.w).sort((a, b) => !!a.w.archi - !!b.w.archi).slice(0, max || 4); // archimonstres (rares) en dernier
+}
+/* 0.1.53.6 : une ligne « monstre » commune aux fiches ressource et objet : portrait, taux, zone (niveau, verrou) et bouton */
+function monLineHtml(x, unknown) {
+  const M = MONSTERS[x.mon]; const w = x.w;
+  return `<div class="li monli ${w.open ? "" : "locked"}"><span class="icobox">${unknown ? `<b class="muted">?</b>` : im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${unknown ? "???" : h(M.name)}</b>${x.boss ? ` <span class="tag soft">boss</span>` : ""}${w.archi ? ` <span class="tag soft">archimonstre</span>` : ""}
+    <span class="monwhere xs">${w.open ? IC("carte") : G("lock")} ${w.dg ? "Donjon · " : ""}${h(w.name)} · niv. ${w.lvl}</span></span><span class="monpct" data-tip="Chance de butin par monstre">${dropPct(x.p)} %</span><button class="btn sm ${w.open ? "primary" : ""}" ${monGoAttr(w)}>${w.dg ? "Donjon" : "Y aller"}</button></div>`;
 }
 const monGoAttr = (w) => (w.dg ? `data-act="searchdg" data-id="${w.dg}"` : `data-act="searchzone" data-id="${w.sub}"`);
 const dropPct = (p) => (p >= 10 ? Math.round(p) : (+p).toFixed(1).replace(".", ",").replace(",0", ""));
@@ -5114,7 +5125,7 @@ function searchOpen(q) {
   d.innerHTML = `<div class="wsearch" role="dialog" aria-label="Recherche">
     <div class="wsin">${G("search")}<input id="wsq" type="search" placeholder="Objet, monstre, donjon, zone, page…" autocomplete="off" spellcheck="false" value="${h(q || "")}"><button class="btn sm" data-act="searchclose">Fermer</button></div>
     <div id="wsres" class="wsres"></div>
-    <div class="wsfoot"><span><kbd>↑</kbd><kbd>↓</kbd> choisir</span><span><kbd>↵</kbd> ouvrir</span><span><kbd>Échap</kbd> fermer</span><span class="grow"></span><span id="wsn"></span></div></div>`;
+    <div class="wsfoot"><span><kbd>↑</kbd><kbd>↓</kbd> choisir</span><span><kbd>↵</kbd> ouvrir</span><span class="hide-sm"><kbd>→</kbd> aller chez le monstre</span><span><kbd>Échap</kbd> fermer</span><span class="grow"></span><span id="wsn"></span></div></div>`;
   document.body.appendChild(d); searchRender(); const inp = $("#wsq"); inp.focus(); if (q) inp.select();
 }
 function searchClose() { const d = $("#wsearch"); if (d) d.remove(); wsRes = []; }
@@ -5137,12 +5148,13 @@ function searchRender() {
     const row = `<button class="wsr ${i === wsSel ? "sel" : ""}" data-act="searchgo" data-i="${i}">${wsIcon(r)}<span class="grow"><b>${r.unknown ? "???" : mark(r.name)}</b><small>${h(r.sub)}</small></span><span class="wsgo">${WS_GO[r.k]} ↵</span></button>`;
     const mon = r.k === "res" || r.k === "item" ? dropMons(r.k, r.id, 1)[0] : null; // 0.1.53.5 : bouton direct vers le monstre qui la lâche le plus
     if (!mon) return g + row;
-    const known = r.k === "res" || S.bestiary[mon.mon]; const M = MONSTERS[mon.mon];
-    return `${g}<div class="wsrow">${row}<button class="wsmon" data-act="searchmon" data-dg="${mon.w.dg || ""}" data-sub="${mon.w.sub || ""}" title="${h(`${known ? M.name : "Monstre inconnu"} · ${dropPct(mon.p)} % · ${mon.w.name}`)}">${known ? im(imgM(mon.mon), "", M.name) : `<b>?</b>`}<span><b>${known ? h(M.name) : "???"}</b><small>${mon.w.dg ? "Donjon" : "Y aller"} · ${dropPct(mon.p)} %</small></span></button></div>`; }).join("");
+    const known = r.k === "res" || S.bestiary[mon.mon]; const M = MONSTERS[mon.mon]; const w = mon.w;
+    return `${g}<div class="wsrow ${i === wsSel ? "sel" : ""}">${row}<button class="wsmon ${w.open ? "" : "locked"}" data-act="searchmon" data-i="${i}" data-dg="${w.dg || ""}" data-sub="${w.sub || ""}" title="${h(`Aller chez ${known ? M.name : "ce monstre"} : ${w.dg ? "donjon " : ""}${w.name} (niv. ${w.lvl})${w.open ? "" : ", pas encore débloqué"}. Raccourci : flèche droite`)}">${known ? im(imgM(mon.mon), "", M.name) : `<b class="q">?</b>`}<span class="grow"><b>${known ? h(M.name) : "???"}</b><small>${w.open ? "" : G("lock") + " "}${h(w.name)}</small></span><span class="wsmp">${dropPct(mon.p)} %<i>${w.dg ? "Donjon" : "Y aller"} →</i></span></button></div>`; }).join("");
   $("#wsn").textContent = `${wsRes.length} résultat${wsRes.length > 1 ? "s" : ""}`;
 }
-function searchMove(dir) { if (!wsRes.length) return; wsSel = (wsSel + dir + wsRes.length) % wsRes.length; document.querySelectorAll("#wsres .wsr").forEach((b, i) => b.classList.toggle("sel", i === wsSel)); const s = document.querySelector("#wsres .wsr.sel"); if (s) s.scrollIntoView({ block: "nearest" }); }
+function searchMove(dir) { if (!wsRes.length) return; wsSel = (wsSel + dir + wsRes.length) % wsRes.length; document.querySelectorAll("#wsres .wsr").forEach((b, i) => { b.classList.toggle("sel", i === wsSel); const w = b.parentElement; if (w.classList.contains("wsrow")) w.classList.toggle("sel", i === wsSel); }); const s = document.querySelector("#wsres .wsr.sel"); if (s) s.scrollIntoView({ block: "nearest" }); }
 function searchEnter() { if (wsRes.length) searchGo(wsRes[wsSel]); }
+function searchMonKey() { const b = document.querySelector(`#wsres .wsmon[data-i="${wsSel}"]`); if (!b) return false; b.click(); return true; } // 0.1.53.6 : flèche droite ou Maj+Entrée = aller chez le monstre
 function pageGo(id) {
   const go = (tab, k, v) => { ui.tab = tab; if (k) ui[k] = v; ui.slot = null; ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); };
   switch (id) {
@@ -5182,6 +5194,7 @@ function itemSheet(tpl) {
   const T = ITEMS[tpl]; if (!T) return; if (T.leg && window.SGUI) { window.SGUI.legSheet(S, T.leg); return; } /* 0.1.48 : fiche légendaire */ const owned = E.ownedTpls(S)[tpl] || 0; const src = E.itemSources(tpl); const inShop = S.shop.some((e) => e.k === "tpl" && e.id === tpl);
   const lines = src.map((x) => {
     if (x.k === "craft") return `<div class="li"><span class="icobox">${IC("metiers")}</span><span class="grow"><b>Recette</b> · ${h(CRAFT_JOBS[x.job].name)} niveau ${x.lvl}<br><span class="xs muted">${T.craft.ing.map(([r, n]) => resTag(r, n)).join(" ")}</span></span><button class="btn sm" data-act="searchcraft" data-job="${x.job}" data-q="${h(T.name)}">Atelier</button></div>`;
+    const w = monWhere(x.mon); if (w) return monLineHtml({ mon: x.mon, p: x.p, w, boss: x.k === "boss" }, !S.bestiary[x.mon]); // 0.1.53.6
     const M = MONSTERS[x.mon]; const dg = x.dgs[0]; const sub = x.subs[0];
     return `<div class="li"><span class="icobox">${S.bestiary[x.mon] ? im(imgM(x.mon), "", M.name) : `<b class="muted">?</b>`}</span><span class="grow"><b>${x.k === "boss" ? "Boss" : "Butin"}</b> · ${S.bestiary[x.mon] ? h(M.name) : "???"} · ${x.p} %<br><span class="xs muted">${h([...x.subs.map((s) => E.SUBS[s].name), ...x.dgs.map((d) => DUNGEONS[d].name)].slice(0, 2).join(", "))}</span></span>${dg ? `<button class="btn sm" data-act="searchdg" data-id="${dg}">Donjon</button>` : sub ? `<button class="btn sm" data-act="searchzone" data-id="${sub}">Y aller</button>` : ""}</div>`;
   });
@@ -5197,14 +5210,14 @@ function itemSheet(tpl) {
 }
 /* 0.1.53.5 : monstres qui lâchent la ressource, avec un bouton vers leur zone ou leur donjon */
 function resMonsHtml(n) {
-  const L = dropMons("res", n, 4); if (!L.length) return "";
-  return `<h3 class="sec">Monstres qui la lâchent</h3><div class="list">${L.map((x) => { const M = MONSTERS[x.mon];
-    return `<div class="li"><span class="icobox">${im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${h(M.name)}</b> · ${dropPct(x.p)} %<br><span class="xs muted">${x.w.archi ? "Archimonstre, rare · " : ""}${x.w.dg ? "Donjon · " : ""}${h(x.w.name)}</span></span><button class="btn sm" ${monGoAttr(x.w)}>${x.w.dg ? "Donjon" : "Y aller"}</button></div>`; }).join("")}</div>`;
+  const L = dropMons("res", n, 4); const g = (resIndex().src[n] || []).filter((x) => x.job);
+  if (!L.length && !g.length) return `<div class="small"><b>Source :</b> ${h(bestSource(n))}</div>`;
+  const gl = g.map((x) => `<div class="li monli"><span class="icobox">${IC("pioche")}</span><span class="grow"><b>Récolte</b><span class="monwhere xs">${h(GATHER_JOBS[x.job].name)} · niv. ${x.lvl}</span></span><button class="btn sm" data-act="gathersheet" data-job="${x.job}">Récolter</button></div>`).join("");
+  return `${gl ? `<h3 class="sec">À récolter</h3><div class="list">${gl}</div>` : ""}${L.length ? `<h3 class="sec">Monstres qui la lâchent</h3><div class="list">${L.map((x) => monLineHtml(x, false)).join("")}</div>` : ""}`;
 }
 function resSheet(n) {
   const R = RES[n]; if (!R) return; const q = S.res[n] || 0;
   openSheet(`<div class="row">${im(resImg(n), "ico lg", n)}<div><h2 style="margin:0">${h(n)}</h2><div class="xs muted">ressource · niv. ${R.lvl} · ${fmt(q)} en stock</div></div></div>
-    <div class="small"><b>Source :</b> ${h(bestSource(n))}</div>
     ${resMonsHtml(n)}
     <div class="row">${q ? `<button class="btn sm" data-act="searchres" data-n="${h(n)}">Voir dans le sac</button>` : ""}<button class="btn sm" data-act="searchfill2" data-q="${h(n)}">Objets qui l'utilisent</button></div>`);
 }
@@ -5213,7 +5226,7 @@ document.addEventListener("keydown", (ev) => {
   if (!S) return; const k = ev.key;
   if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && (k === "k" || k === "K")) { ev.preventDefault(); if ($("#wsearch")) searchClose(); else { closeSheet(); searchOpen(); } return; }
   if ($("#wsearch")) {
-    if (k === "Escape") { ev.preventDefault(); searchClose(); } else if (k === "ArrowDown" || k === "ArrowUp") { ev.preventDefault(); searchMove(k === "ArrowDown" ? 1 : -1); } else if (k === "Enter") { ev.preventDefault(); searchEnter(); }
+    if (k === "Escape") { ev.preventDefault(); searchClose(); } else if (k === "ArrowDown" || k === "ArrowUp") { ev.preventDefault(); searchMove(k === "ArrowDown" ? 1 : -1); } else if (k === "Enter") { ev.preventDefault(); if (!(ev.shiftKey && searchMonKey())) searchEnter(); } else if (k === "ArrowRight" && $("#wsq") && $("#wsq").selectionStart === $("#wsq").value.length && searchMonKey()) ev.preventDefault();
     return;
   }
   if (document.activeElement && document.activeElement.id === "onRenPseudo" && k === "Enter") { ev.preventDefault(); const b = $('[data-act="on-renpseudogo"]'); if (b && !b.disabled) b.click(); return; }

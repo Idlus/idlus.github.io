@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.53.6 « Droit au monstre, en mieux »
+Recherche rapide : `.wsrow` surlignée en entier, `.wsmon` en colonne fixe (PC) ou sous le résultat (téléphone), zone + verrou (`monWhere` renvoie `lvl` et `open`) ; flèche droite / Maj+Entrée (`searchMonKey`). Fiches : `monLineHtml()` commun à `resSheet` (avec lignes de récolte) et `itemSheet`.
+
 ## 0.1.53.5 « Droit au monstre »
 Recherche rapide (js/ui.js) : `dropMons()` / `monWhere()` donnent les monstres qui lâchent une ressource ou un objet et leur zone visible (sinon leur donjon) ; bouton `.wsmon` (act `searchmon`) à côté du résultat, et liste « Monstres qui la lâchent » dans `resSheet`.
 
