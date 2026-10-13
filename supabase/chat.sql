@@ -15,6 +15,12 @@ insert into public.chat_settings (id) values (1) on conflict do nothing;
 alter table public.chat_settings enable row level security;
 drop policy if exists "réglages lisibles" on public.chat_settings;
 create policy "réglages lisibles" on public.chat_settings for select using (true);
+-- 0.1.50.2 : message épinglé en haut du chat (vide = aucun) ; pin_chs = salons (g, c, v) ; pin_at change à chaque
+-- modification, pour le remontrer aux joueurs qui l'avaient fermé
+alter table public.chat_settings add column if not exists pin_body text not null default 'Une idée pour améliorer Idlus ? Partagez-la ici ou dans la Boîte à idées, chaque proposition est lue et peut finir dans le jeu !';
+alter table public.chat_settings add column if not exists pin_chs text not null default 'g';
+alter table public.chat_settings add column if not exists pin_at timestamptz not null default now();
+grant select on public.chat_settings to anon, authenticated;
 
 -- ---------- modérateurs (nommés par Mathis) ----------
 create table if not exists public.mods (user_id uuid primary key references auth.users (id) on delete cascade, at timestamptz not null default now());
@@ -339,6 +345,14 @@ as $$ begin
   perform public.alog(format('chat : niveau minimum %s, %s s entre deux messages', p_min_level, p_slow));
 end $$;
 
+create or replace function public.adm_pin(p_body text, p_chs text) returns void language plpgsql security definer set search_path = public
+as $$ declare b text := left(btrim(coalesce(p_body, '')), 200);
+  c text := array_to_string(array(select x from unnest(string_to_array(coalesce(p_chs, ''), ',')) x where x in ('g', 'c', 'v')), ','); begin
+  perform public.adm_need(true);
+  update chat_settings set pin_body = b, pin_chs = case when c = '' then 'g' else c end, pin_at = now() where id = 1;
+  perform public.alog(case when b = '' then 'message épinglé retiré' else format('message épinglé : « %s »', left(b, 60)) end);
+end $$;
+
 create or replace function public.adm_announce(p_body text, p_banner boolean, p_chat boolean, p_hours int) returns void language plpgsql security definer set search_path = public
 as $$ declare b text := left(btrim(p_body), 300); begin
   perform public.adm_need(true);
@@ -372,7 +386,7 @@ end $$;
 do $$ declare f text; begin
   foreach f in array array['adm_overview()', 'adm_players(text)', 'adm_msgs(uuid)', 'adm_mute(uuid, int)', 'adm_ban(uuid, boolean)', 'adm_flag(uuid, boolean)',
     'adm_rename(uuid, text)', 'adm_suspend(uuid, boolean)', 'adm_reports()', 'adm_report_close(uuid)', 'adm_flagged()', 'adm_settings(int, int)',
-    'adm_announce(text, boolean, boolean, int)', 'adm_announce_end(bigint)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
+    'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;

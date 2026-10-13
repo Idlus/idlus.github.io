@@ -1,6 +1,14 @@
 {
-  "version": "0.1.50.1",
+  "version": "0.1.50.2",
   "versions": [
+    {
+      "v": "0.1.50.2",
+      "name": "Boîte à idées épinglée",
+      "items": [
+        "Chat : un message épinglé en haut du salon Général invite à partager vos idées, avec un bouton qui ouvre la Boîte à idées",
+        "La petite croix le cache jusqu'au lendemain ; il revient tout de suite si son texte change"
+      ]
+    },
     {
       "v": "0.1.50.1",
       "name": "Nouveaux noms",

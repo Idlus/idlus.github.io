@@ -209,6 +209,7 @@
     try { const q = on ? sb.from("ignores").insert({ user_id: ON.user.id, other }) : sb.from("ignores").delete().eq("user_id", ON.user.id).eq("other", other); const { error } = await withTimeout(q); return error ? error.message : null; }
     catch (e) { return "Pas de connexion au serveur."; }
   };
+  ON.chatPin = async () => { try { const { data } = await withTimeout(sb.from("chat_settings").select("pin_body,pin_chs,pin_at").eq("id", 1).maybeSingle()); return data || null; } catch (e) { return null; } }; // 0.1.50.2 : message épinglé du chat
   ON.announces = async () => { try { const { data } = await withTimeout(sb.from("announces").select("id,body,until,at").eq("banner", true).order("id", { ascending: false }).limit(3)); return data || []; } catch (e) { return []; } };
   ON.pseudos = async (ids) => { if (!ids.length) return {}; try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").in("id", ids)); const o = {}; (data || []).forEach((r) => { o[r.id] = r.pseudo; }); return o; } catch (e) { return {}; } };
   ON.findPseudo = async (p) => { try { const { data } = await withTimeout(sb.from("profiles").select("id,pseudo").ilike("pseudo", p.replace(/[\\%_]/g, (c) => "\\" + c)).limit(1)); return (data && data[0]) || null; } catch (e) { return null; } };
