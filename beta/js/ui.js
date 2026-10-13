@@ -18,9 +18,18 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.39.2";
+const GAME_VERSION = "0.1.40";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.40", name: "Équipe rangée", items: [
+    "Équipe et héros : une seule liste de héros à gauche, rangée comme en combat (Première ligne, Arrière, Réserve), et la fiche du héros choisi à droite. L'équipement est visible tout de suite, sans descendre",
+    "Dans la liste : niveau, activité, barre d'XP, ▲ vert quand un meilleur objet attend dans le sac, pastille orange quand il reste des points à répartir. Les flèches ↑ ↓ du clavier passent d'un héros à l'autre",
+    "Nouveau haut de fiche : une bannière aux couleurs de la classe, avec son symbole en filigrane. Partager le build, Suivre le niveau, Titre, Ornement et Congédier sont rangés dans le menu « ⋯ Plus »",
+    "Les onglets de la fiche restent collés en haut quand on descend, avec la tête du héros à côté",
+    "« Réorganiser » regroupe le placement Première ligne / Arrière, les compositions et le plateau. Les compositions se changent aussi d'un clic sous le titre",
+    "Téléphone : la liste d'abord, puis la fiche du héros en plein écran avec « ← Équipe » et les têtes des autres héros en haut",
+    "Thème Émeraude : les étiquettes « Passif » et l'activité du héros sont de nouveau lisibles"
+  ] },
   { v: "0.1.39.2", name: "Idées à l'heure", items: [
     "Suggestions : le message après l'envoi annonce maintenant la bonne attente. L'idée arrive sur le forum Idées du Discord dans la demi-heure, et non en quelques minutes",
   ] },
@@ -3028,21 +3037,6 @@ function actPill(c) {
   if (z === "rest") return `<span class="tpill rest">Au repos</span>`;
   return `<span class="tpill hunt">${IC("combat")} ${S.dungeon ? "Donjon" : "Chasse"} · ${z === "f" ? "première ligne" : "arrière"}</span>`;
 }
-function teamCard(c, al) {
-  const C = CLASSES[c.cls]; const need = E.xpNeed(c.lvl); const M = E.mountOf && E.mountOf(S, c); const z = teamZone(c);
-  const mt = M ? `<span class="tmount">${im(mountImg(M.sp, M.c), "tmimg")}<span>${h(E.mountName(M))} · ${M.lvl}</span>${M.lvl < E.MOUNT_MAX ? `<span class="xpb"><i style="width:${pct(M.xp, E.mountXpNeed(M.sp, M.lvl))}%"></i></span>` : ""}</span>` : `<span class="tmount muted">Pas de monture</span>`;
-  const inT = c.inTeam && !c.job;
-  return `<div class="tcard ${inT ? "" : "out"}" style="--cc:${C.color}">
-    <button class="tart" data-act="teamgo" data-id="${c.id}" data-v="equip" title="Ouvrir la fiche de ${h(c.name)}">${lookImg(c, "tlook")}</button>
-    <div class="tmain">
-      <div class="thead"><button class="tstar ${mainHero() === c ? "on" : ""}" data-act="setmain" data-id="${c.id}" title="Héros principal" aria-label="Faire de ${h(c.name)} le héros principal">★</button><span class="tnm"><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline">${E.roman(c.ren)}</span>` : ""}</b><span class="xs muted">${C.name}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}</span></span><span class="tlv">${c.lvl}</span></div>
-      <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
-      <div class="tal">${actPill(c)}${al.map((a) => `<button class="talert" data-act="teamfix" data-id="${c.id}" data-v="${a.k}">● ${h(a.t)}</button>`).join("")}${al.length ? "" : `<span class="talert ok">Rien à faire</span>`}</div>
-      ${mt}
-    </div>
-    <div class="tact">${z === "atelier" ? `<button class="btn sm" data-act="teamgo" data-id="${c.id}" data-v="havre">Voir l'atelier</button>` : `<button class="btn sm" data-act="teammove" data-id="${c.id}" data-v="${inT ? "rest" : "b"}">${inT ? "Retirer de l'équipe" : "Mettre en équipe"}</button>`}<button class="btn sm" data-act="teamgo" data-id="${c.id}" data-v="equip">Fiche</button></div>
-  </div>`;
-}
 function teamBoardHtml() {
   const zone = (z) => { const list = S.chars.filter((c) => (z === "rest" ? ["rest", "atelier"].includes(teamZone(c)) : teamZone(c) === z));
     const n = z === "f" ? `${list.length} / ${E.frontMax(E.team(S).length)}` : z === "b" ? `${list.length}` : z === "train" ? `${list.length} / 1` : `${list.length}`;
@@ -3089,70 +3083,81 @@ function compsHtml() {
   const add = K.length < E.COMP_MAX ? `<button class="compcard add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe actuelle<span class="xs muted">héros, rangées et cible prioritaire</span></button>` : "";
   return `<section class="comps"><div class="row between"><h3 class="sec" style="margin:0">Compositions</h3><span class="xs muted">${K.length}/${E.COMP_MAX} · un clic pour changer d'équipe</span></div><div class="compgrid">${cards}${add}</div></section>`;
 }
-/* 0.1.31 : une seule page « Équipe et héros » : le tableau de l'équipe en haut, la fiche du héros choisi en dessous */
+/* 0.1.40 « Équipe rangée » : une seule liste de héros à gauche (Première ligne, Arrière, Réserve) et la fiche du héros choisi à droite.
+   Au téléphone : la liste d'abord, puis la fiche en plein écran (ui.tview = "hero") avec « ← Équipe » et les têtes en haut.
+   « Réorganiser » regroupe le plateau, le placement et les compositions. */
 function renderTeam() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
-  $("#main").innerHTML = `<div id="teamtop">${teamTopHtml()}</div>${ui.teamBoard ? "" : `<div id="fiche" class="fiche">${heroesHtml()}</div>`}`;
+  if (ui.teamBoard) { $("#main").innerHTML = `<div class="teampg"><div id="teamtop">${teamTopHtml()}</div>${placementHtml()}${compsHtml()}${teamBoardHtml()}</div>`; return; }
+  $("#main").innerHTML = `<div class="teampg ${ui.tview === "hero" ? "tv-hero" : ""}"><div id="teamtop">${teamTopHtml()}</div>
+    <div class="tmd"><aside class="tlist" id="tlist" aria-label="Héros">${teamListHtml()}</aside><div id="fiche" class="fiche">${heroesHtml()}</div></div></div>`;
 }
 function teamTopHtml() {
   const al = teamAlerts(true); const team = E.team(S); const board = !!ui.teamBoard;
-  const by = (z) => S.chars.filter((c) => teamZone(c) === z).length; const fs = E.frontSet(S);
   const gearN = al.filter((a) => a.k === "gear").length;
-  return `<div class="pagehead"><h1>Équipe et héros</h1><span class="small muted">${team.length} / 8 dans l'équipe · ${S.chars.length} / ${E.HERO_MAX} héros</span><span class="grow"></span>
-    ${board ? "" : gearN ? `<button class="btn sm" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
-    ${board ? "" : `<button class="btn sm" data-act="sm-card">${G("share")} Partager mon équipe</button>`}
-    <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button></div>
-  <section class="tsum"><div class="k"><b class="num">${team.length} / 8</b><span>en équipe</span></div><div class="k"><b class="num">${team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–"}</b><span>niveau moyen</span></div>
-    <div class="k"><b class="num">${team.filter((c) => fs.has(c.id)).length} · ${team.filter((c) => !fs.has(c.id)).length}</b><span>devant · derrière</span></div><div class="k"><b class="num">${by("job")}</b><span>en récolte</span></div><div class="k"><b class="num">${by("train")}</b><span>à l'entraînement</span></div>
-    <div class="k"><b class="num">${S.idols.active.length} / ${E.IDOL_MAX}</b><span>idoles actives</span></div>${idolBtn(null)}
-<div class="k"><b class="num">${E.soulCount(S)} / ${E.ARCHI_TOTAL}</b><span>âmes capturées</span></div>${archiBtn()}
-    ${S.chars.length < E.HERO_MAX ? `<span class="grow"></span>${recruitBtn()}` : ""}</section>
-  ${board ? "" : compsHtml()}
-  ${board ? teamBoardHtml() : `<section class="tgrid">${S.chars.map((c) => teamCard(c, al.filter((a) => a.c === c))).join("")}</section>`}`;
+  const avg = team.length ? Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length) : "–";
+  const head1 = `<div class="pagehead tph"><div class="tpt"><h1>Équipe et héros</h1><span class="small muted"><b class="num">${team.length} / ${E.TEAM_MAX}</b> en équipe · <b class="num">${S.chars.length} / ${E.HERO_MAX}</b> héros · niveau moyen <b class="num">${avg}</b></span></div><span class="grow"></span>
+    ${board ? "" : gearN ? `<button class="btn sm primary" data-act="teamequipall">Tout équiper au mieux (${gearN})</button>` : ""}
+    <button class="btn sm reorg ${board ? "primary" : ""}" data-act="teamboard">${board ? "✓ Terminé" : `${G("swap")} Réorganiser`}</button>
+    ${!board && S.chars.length < E.HERO_MAX ? `<span class="trec">${recruitBtn()}</span>` : ""}</div>`;
+  if (board) return head1;
+  const K = S.comps || []; const cur = E.compMatch(S);
+  return `${head1}<div class="tbar"><span class="xs muted">Compositions</span>${K.map((k, i) => `<button class="tcomp ${i === cur ? "on" : ""}" data-act="compuse" data-i="${i}" ${i === cur || S.dungeon ? "disabled" : ""} data-tip="${h(`${k.ids.length} héros · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}`)}">${i === cur ? "✓ " : ""}${h(k.name)}</button>`).join("")}
+    ${K.length < E.COMP_MAX ? `<button class="tcomp add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe</button>` : ""}${K.length ? `<button class="tcomp add" data-act="teamboard">Gérer</button>` : ""}
+    <span class="grow"></span>${idolBtn(null)}${archiBtn()}<button class="btn sm" data-act="sm-card">${G("share")} Partager</button></div>`;
 }
+/* une ligne de la liste : tête, nom, niveau, activité, XP ; ▲ vert = mieux dans le sac, pastille orange = points à répartir */
+function teamRow(x, al) {
+  const z = teamZone(x); const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0;
+  const st = z === "f" ? ["hunt", "Première ligne"] : z === "b" ? ["hunt", "Arrière"] : z === "job" ? ["job", "Récolte · " + x.job.res] : z === "train" ? ["train", "Entraînement"] : z === "atelier" ? ["train", "Atelier"] : ["rest", "Repos"];
+  const ico = { hunt: IC("combat"), job: IC("pioche"), train: IC("havre"), rest: "" }[st[0]];
+  const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl} · ${st[1]}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}`;
+  return `<button class="trow ${x.id === ui.cid ? "on" : ""} ${["f", "b"].includes(z) ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === ui.cid}" data-tip="${h(tip)}" style="--cc:${CLASSES[x.cls].color}">
+    ${head(x)}<span class="tr-tx"><span class="tr-nm"><b class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""}</b>${mainHero() === x ? `<span class="tr-star" title="Héros principal">★</span>` : ""}<span class="grow"></span><span class="tr-lv num">${x.lvl}</span></span>
+    <span class="tr-sub"><span class="xs muted tr-sl">${h(CLASSES[x.cls].name)} · <span class="tr-st ${st[0]}">${ico}${h(st[1])}</span></span><span class="grow"></span>${g ? `<i class="tr-g" title="Meilleur objet dans le sac">▲</i>` : ""}${p ? `<i class="tr-p num" title="Points à répartir">${x.pts}</i>` : ""}</span>
+    <span class="tr-xp"><i style="width:${pct(x.xp, E.xpNeed(x.lvl))}%"></i></span></span></button>`;
+}
+function teamListHtml() {
+  const al = teamAlerts(); const team = E.team(S); const fs = E.frontSet(S);
+  const grp = (t, sub, list) => (list.length ? `<div class="tgrp"><div class="tgt"><b>${t}</b><span class="xs muted">${sub}</span></div>${list.map((x) => teamRow(x, al)).join("")}</div>` : "");
+  const front = team.filter((x) => fs.has(x.id)), back = team.filter((x) => !fs.has(x.id)), res = S.chars.filter((x) => !team.includes(x));
+  const price = recruitPrice();
+  return `${grp("Première ligne", `${front.length} / ${E.frontMax(team.length)}`, front)}${grp(team.length > 1 ? "Arrière" : "Équipe", `${back.length}`, back)}${grp("Réserve", `${res.length} · hors combat`, res)}
+    ${S.chars.length < E.HERO_MAX ? `<button class="tadd ${canRecruit() ? "ok" : ""}" data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span class="tadd-t"><b>Recruter un héros</b><span class="xs muted">${S.chars.length} / ${E.HERO_MAX} héros</span></span><span class="grow"></span><span class="coin"></span><b class="num">${price ? fmt(price) : "gratuit"}</b></button>` : ""}
+    <div class="tleg xs muted"><span><i class="tr-g">▲</i> mieux dans le sac</span><span><i class="tr-p">5</i> points à répartir</span></div>`;
+}
+/* portrait du haut de la fiche : bannière teintée de la couleur de classe, symbole officiel en filigrane */
 function heroesHtml() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
-  const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const nextCost = E.recruitCost(S.chars.length + 1); const C = CLASSES[c.cls];
-  return `
-  <div class="fichewrap"><div class="fichemain">
-  <div class="pagehead fichehead"><h2>Fiche du héros</h2><span class="small muted">${E.team(S).length} dans l'équipe · Esprit Libre +${E.freeSpirit(S)} %</span></div>
-  <section class="chips">${S.chars.map((x) => `<button class="${x.inTeam ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}">${head(x)}<span class="${x.ren ? "rname" : ""}">${h(x.name)}${x.ren ? ` <span class="renm inline sm">${E.roman(x.ren)}</span>` : ""} <span class="muted xs num">niv. ${x.lvl}</span></span></button>`).join("")}
-    ${S.chars.length < E.HERO_MAX ? `<button data-act="recruitsheet"><span class="head" style="--cc:var(--panel3)">+</span><span>Recruter <span class="muted xs num">${nextCost ? fmt(nextCost) + " k" : "gratuit"}</span></span></button>` : ""}</section>
-  ${placementHtml()}
-  <section class="panel" style="margin-bottom:12px"><div class="pad row" style="gap:18px;align-items:flex-start">
-    <div style="padding:14px 0 10px">${heroCard(c, "big", { act: "noop" })}</div>
-    <div class="grow stack" style="min-width:240px">
-      <div><h2 style="font-size:24px">${h(c.name)}</h2><div class="small muted">${C.name} · niveau ${c.lvl} · cadre ${E.FRAMES[E.frameIdx(c.lvl)]}${c.lvl < 200 ? ` (prochain au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)})` : ""}${c.ren ? ` · <b>Renaissance ${E.roman(c.ren)}</b>` : ""}</div></div>
-      ${c.lvl >= E.MAX_LVL && (c.ren || 0) < E.REN_MAX ? `<div class="row small"><button class="btn sm ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button><span class="muted">Repartir au niveau 1 avec un Éveil et +${Math.round(E.REN_XP * 100)} % d'XP</span></div>` : ""}
+  const c = char(ui.cid); const st = E.charStats(S, c); const need = E.xpNeed(c.lvl); const C = CLASSES[c.cls];
+  const al = teamAlerts(); const inT = c.inTeam && !c.job;
+  const others = (() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return inT && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })();
+  const strip = `<div class="tstrip"><button class="btn sm" data-act="teamlist">← Équipe</button>${S.chars.map((x) => `<button class="ts-h ${x.id === c.id ? "on" : ""} ${x.inTeam && !x.job ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-label="${h(x.name)}">${head(x)}${al.some((a) => a.c === x && a.k === "gear") ? `<i class="ts-g"></i>` : ""}${!x.autoStat && x.pts > 0 ? `<i class="ts-p num">${x.pts}</i>` : ""}</button>`).join("")}${S.chars.length < E.HERO_MAX ? `<button class="ts-h ts-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>`;
+  const more = ui.heroMore ? `<div class="hmenu" role="menu">
+      <button data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>
+      ${c.lvl < E.MAX_LVL ? `<button data-act="pin" data-p="${h(JSON.stringify({ k: "lvl", cid: c.id, n: lvlGoal(c) }))}">${G("pin")} ${E.pinned(S, { k: "lvl", cid: c.id, n: lvlGoal(c) }) ? "Ne plus suivre" : "Suivre"} le niveau ${lvlGoal(c)}</button>` : ""}
+      <label>Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
+      ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label>Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
+      <label>Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label>
+      ${E.titles(S).length ? "" : `<span class="xs muted hm-note">Les titres et ornements se débloquent avec les succès.</span>`}
+      ${S.chars.length > 1 ? `<hr><button class="bad" data-act="dismisssheet" data-id="${c.id}">Congédier ${h(c.name)}</button>` : ""}</div>` : "";
+  return `${strip}<div class="hban" style="--cc:${C.color};--sym:url('${new URL(symImg(c.cls), location.href).href}')"><span class="hb-bg"></span>
+    <span class="hb-por">${head(c, true)}<b class="hb-lv num">${c.lvl}</b></span>
+    <div class="hb-main"><div class="hb-l1"><h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><span class="muted small">${C.name} · niveau ${c.lvl}</span><span class="hb-fr" data-tip="${c.lvl < 200 ? `Prochain cadre au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)}` : "Cadre maximum"}">cadre ${E.FRAMES[E.frameIdx(c.lvl)]}</span>${actPill(c)}</div>
+      <div class="hb-xp xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div><span class="xs muted num">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)} XP`}</span></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}
+      <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
       ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP</span></div>` : ""}
-      <div><div class="row between small"><span class="muted">Expérience</span><span class="num muted">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)}`}</span></div><div class="xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}</div>
-      <div class="small" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> : ${h(C.passive.desc)}${(() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return c.inTeam && !c.job && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })()}</div>
-      <div class="row small"><span class="muted">Activité :</span>${c.job ? `<span class="tag good">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)} · ${h(c.job.res)}</span><button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<span class="tag soft">${c.inTeam ? "Chasse (dans l'équipe)" : restLabel(c)}</span><button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Retirer de l'équipe" : "Ajouter à l'équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Envoyer récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><button class="btn sm" data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>${S.chars.length > 1 ? `<button class="btn sm" data-act="dismisssheet" data-id="${c.id}">Congédier</button>` : ""}${c.lvl < E.MAX_LVL ? pinBtn({ k: "lvl", cid: c.id, n: lvlGoal(c) }, `Suivre le niveau ${lvlGoal(c)}`) : ""}</div>
-      <div class="row small"><label class="row">Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
-        ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label class="row">Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
-        <label class="row">Ornement <select data-act="setorn" data-id="${c.id}"><option value="">Aucun</option>${Object.keys(E.ORN).map((o) => `<option value="${o}" ${c.orn === o ? "selected" : ""} ${E.ornUnlocked(S, o) ? "" : "disabled"}>${h(E.ORN[o].name(S))}${E.ornUnlocked(S, o) ? "" : " 🔒"}</option>`).join("")}</select></label></div>
-      ${E.titles(S).length ? "" : `<p class="note xs" style="margin:0">Les titres et ornements se débloquent avec les succès (page Succès).</p>`}
-    </div>
-  </div></section>
-  <nav class="subtabs">${[["equip", "Équipement"], ["pet", "Familier & monture"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
-  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section></div>${heroRail(c)}</div>`;
+      ${c.lvl >= E.MAX_LVL && (c.ren || 0) < E.REN_MAX ? `<div class="row small"><button class="btn sm ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button><span class="muted">Repartir au niveau 1 avec un Éveil et +${Math.round(E.REN_XP * 100)} % d'XP</span></div>` : ""}</div>
+    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
+  </div>
+  <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", "Familier & monture"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
+  <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
 }
-/* 0.1.32.1 : têtes des héros toujours visibles à côté de la fiche (colonne à droite sur PC, bande collée en haut au téléphone) */
-function heroRail(c) {
-  const al = teamAlerts(true);
-  return `<aside class="hrail" aria-label="Changer de héros"><span class="hr-t">Héros</span><div class="hr-list">${S.chars.map((x) => {
-    const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0; const rest = !x.inTeam || !!x.job;
-    const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}${x.job ? " · en récolte" : !x.inTeam ? " · au repos" : ""}`;
-    return `<button class="hr-h${x.id === c.id ? " on" : ""}${rest ? " out" : ""}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === c.id}" aria-label="${h(tip)}" data-tip="${h(tip)}">${head(x)}<span class="hr-lv num">${x.lvl}</span>${g ? `<i class="hr-g"></i>` : ""}${p ? `<i class="hr-p num">${x.pts}</i>` : ""}</button>`; }).join("")}
-    ${S.chars.length < E.HERO_MAX ? `<button class="hr-h hr-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" data-tip="Recruter un héros : ${fmt(recruitPrice())} kamas" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span><span class="hr-lv num hr-price">${recruitPrice() >= 1e4 ? Math.round(recruitPrice() / 1e3) + "k" : fmt(recruitPrice())}</span></button>` : ""}</div>
-    <span class="hr-name">${h(c.name)} <small>· ${h(CLASSES[c.cls].name)} niv. ${c.lvl}</small></span><span class="hr-kb"><kbd>↑</kbd><kbd>↓</kbd>changer</span></aside>`;
-}
-/* flèches ↑ ↓ du clavier : héros précédent ou suivant, quand on est descendu dans la fiche (PC) */
+/* flèches ↑ ↓ du clavier : héros précédent ou suivant dans l'ordre de la liste (PC) */
 function heroRailKey(dir) {
-  const f = $("#fiche"); if (!S || ui.tab !== "team" || !f || !$(".hrail") || !window.matchMedia("(min-width:860px)").matches) return false;
-  if (f.getBoundingClientRect().top > window.innerHeight / 2) return false;
-  const i = S.chars.findIndex((x) => x.id === ui.cid); if (i < 0 || S.chars.length < 2) return false;
-  ui.cid = S.chars[(i + dir + S.chars.length) % S.chars.length].id; ui.slot = null; render(); return true;
+  if (!S || ui.tab !== "team" || ui.teamBoard || !$("#tlist") || !window.matchMedia("(min-width:860px)").matches) return false;
+  const ids = [...document.querySelectorAll("#tlist .trow")].map((b) => +b.dataset.id); const i = ids.indexOf(ui.cid); if (i < 0 || ids.length < 2) return false;
+  ui.cid = ids[(i + dir + ids.length) % ids.length]; ui.slot = null; ui.heroMore = false; render(); return true;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
 function placementHtml() {
@@ -3911,6 +3916,8 @@ function hideTip() { if (tipEl) tipEl.style.display = "none"; }
 const canHover = window.matchMedia && window.matchMedia("(hover: hover)").matches;
 document.addEventListener("mouseover", (ev) => { if (!canHover || !S) return; const t = ev.target.closest("[data-tip],[data-tipitem]"); if (t) showTip(t); else hideTip(); });
 document.addEventListener("scroll", hideTip, true);
+/* 0.1.40 : onglets de la fiche collés en haut ; la tête du héros s'y affiche quand ils collent */
+window.addEventListener("scroll", () => { const n = ui.tab === "team" && $(".htabs"); if (!n) return; const top = parseFloat(getComputedStyle(n).top) || 0; n.classList.toggle("stuck", n.getBoundingClientRect().top <= top + 1 && window.scrollY > 40); }, { passive: true });
 
 /* ---------- ATELIERS ---------- */
 function ingHtml(ing, mult = 1) {
@@ -4443,9 +4450,8 @@ function render() {
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
-  else if (ui.tab === "team" || ui.tab === "heroes") { // 0.1.31 : « heroes » ouvre la fiche, sous l'équipe
-    const toFiche = ui.tab === "heroes"; ui.tab = "team"; if (toFiche) ui.teamBoard = false; renderTeam();
-    if (toFiche) requestAnimationFrame(() => { const f = $("#fiche"); if (!f) return; const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--sth")) || 0; window.scrollTo(0, Math.max(0, f.getBoundingClientRect().top + window.scrollY - top - 8)); });
+  else if (ui.tab === "team" || ui.tab === "heroes") {
+    const toFiche = ui.tab === "heroes"; ui.tab = "team"; if (toFiche) { ui.teamBoard = false; ui.tview = "hero"; } renderTeam(); // 0.1.40 : « heroes » ouvre la fiche (plein écran au téléphone)
   }
   else if (ui.tab === "inv") renderInventory();
   else if (ui.tab === "metiers") renderMetiers();
@@ -5286,9 +5292,10 @@ document.addEventListener("click", (ev) => {
   const tipT = ev.target.closest("[data-tip],[data-tipitem]");
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
+  if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
-  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; if (ui.tab === "quests" && t.closest("#nav,#subnav")) ui.qt = "jour"; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (t.dataset.tab) { if (!S) return; ui.newResDone = false; ui.tab = t.dataset.tab; if (t.dataset.home) ui.home = t.dataset.home; ui.slot = null; ui.confirm = null; if (ui.tab === "world" && t.closest("#nav,#subnav")) ui.zoneView = null; if (ui.tab === "quests" && t.closest("#nav,#subnav")) ui.qt = "jour"; if (ui.tab === "team") { ui.tview = "list"; ui.heroMore = false; } closeSheet(); render(); window.scrollTo(0, 0); return; }
   const a = t.dataset.act;
   if (a === "closesheet") { if (t.classList.contains("sheet-bg") && ev.target !== t) return; closeSheet(); if (S) render(); return; }
   if (t.tagName === "SELECT" || (t.tagName === "INPUT" && t.type !== "checkbox")) return;
@@ -5466,7 +5473,9 @@ document.addEventListener("click", (ev) => {
     case "navmenu": navMenuSheet(); return;
     case "navmini": S.settings.navMini = !S.settings.navMini; break;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
-    case "selchar": ui.cid = +d.id; ui.slot = null; break;
+    case "selchar": ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; if (ui.tab === "team" && !window.matchMedia("(min-width:860px)").matches) window.scrollTo(0, 0); break;
+    case "teamlist": ui.tview = "list"; ui.heroMore = false; break;
+    case "heromore": ui.heroMore = !ui.heroMore; break;
     case "setmain": S.mainHero = +d.id; dirty = true; toast(`${char(+d.id).name} devient le héros principal.`); break;
     case "teamgo": { if (d.v === "havre") { ui.tab = "home"; ui.home = "havre"; } else { ui.cid = +d.id; ui.tab = "heroes"; ui.hero = d.v; ui.slot = null; } closeSheet(); render(); window.scrollTo(0, 0); return; }
     case "teamfix": { const cc = char(+d.id); if (d.v === "gear") { const n = equipBest(cc); toast(n ? `${cc.name} : ${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.` : "Rien de mieux à équiper."); dirty = true; break; }
@@ -5484,8 +5493,8 @@ document.addEventListener("click", (ev) => {
     case "compuse": { const r = E.applyComp(S, +d.i); if (r.err) { toast(r.err); return; } toast(`Composition « ${S.comps[+d.i].name} » en place.${r.moved.length ? ` ${r.moved.join(", ")} ${r.moved.length > 1 ? "reviennent" : "revient"} dans l'équipe.` : ""}`); dirty = true; if (d.dg) { dungeonSheet(d.dg); renderNav(); return; } break; }
     case "setrow": { const r = E.setRow(S, +d.id, d.v); if (r) { toast(r); return; } dirty = true; break; }
     case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
-    case "lossplace": ui.tab = "heroes"; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
-    case "herotab": ui.hero = d.v; ui.slot = null; break;
+    case "lossplace": ui.tab = "team"; ui.teamBoard = true; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
+    case "herotab": ui.hero = d.v; ui.slot = null; ui.heroMore = false; break;
     case "peton": msg(E.equipPet(S, c.id, +d.uid)); dirty = true; break;
     case "petoff": E.equipPet(S, c.id, null); dirty = true; break;
     case "petkeep": S.petKeep[d.r] = !S.petKeep[d.r]; if (!S.petKeep[d.r]) delete S.petKeep[d.r]; dirty = true; break;
@@ -6114,7 +6123,7 @@ function loop() {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; });
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
-    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); renderNav(); } // seul le tableau de l'équipe se rafraîchit, la fiche reste telle quelle
+    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); const tl = $("#tlist"); if (tl) tl.innerHTML = teamListHtml(); renderNav(); } // seuls le haut et la liste se rafraîchissent, la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); }
