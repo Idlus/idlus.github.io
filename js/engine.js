@@ -512,6 +512,7 @@
     return true;
   };
   E.WINS_TO_UNLOCK = 12;
+  E.COBOSS_HP = 0.4; // 0.1.40 : part des PV d'un boss principal pour chaque boss qui l'accompagne (Gelées Royales)
   E.subUnlocked = (S, sid) => {
     const s = SUBS[sid]; if (!s || !E.zoneUnlocked(S, s.zone)) return false;
     if (s.requiresItem) return (S.res[s.requiresItem] || 0) > 0;
@@ -705,7 +706,7 @@
   E.DG_EASE = { cache_kankreblath: 0.9, labo_tynril: 0.8 };
   /* 0.1.34 : sous-zones de chasse bien plus dures que les autres de leur niveau (simulation : équipe de 4 au niveau du milieu de la zone,
      objets 8 niveaux en dessous) : PV et dégâts de leurs monstres × ; les gains ne baissent pas */
-  E.HUNT_EASE = { ama_craqueleurs: 0.95, wab_cawotte: 0.9, wab_couronne: 0.85, wab_tombeaux: 0.8, ama_cloaque: 0.85, wab_waldo: 0.9, can_massif: 0.85, koa_bordure: 0.85, koa_kaliptus: 0.95, koa_lacs: 0.95, pan_feudala: 0.85, enu_carriere: 0.9, fri_berceau: 0.7, oto_hakam: 0.85, can_dents: 0.8, can_kanigs: 0.8, eca_lande: 0.95, fri_larmes: 0.95, grobe_cimetiere: 0.8, fri_crevasse: 0.9, fri_village: 0.85, grobe_mont: 0.85, osa_toorbz: 0.85, sah_cite: 0.9, sah_gorge: 0.9, fri_petrifiee: 0.75, sid_domaine_fungus: 0.95, sid_gisgoul: 0.7, sram_catacombres: 0.95, fri_ruche: 0.8, fri_torrideau: 0.8, val_ereboria: 0.85, har_bastion: 0.95, har_caserne: 0.85, har_clepsydre: 0.7, har_jardins: 0.85, har_remparts: 0.9, sah_pyramide: 0.8, sram_hauts: 0.85, suf_embruns: 0.7, xel_lendemains: 0.85 };
+  E.HUNT_EASE = { oto_corail: 0.9, ama_craqueleurs: 0.95, wab_cawotte: 0.9, wab_couronne: 0.85, wab_tombeaux: 0.8, ama_cloaque: 0.85, wab_waldo: 0.9, can_massif: 0.85, koa_bordure: 0.85, koa_kaliptus: 0.95, koa_lacs: 0.95, pan_feudala: 0.85, enu_carriere: 0.9, fri_berceau: 0.7, oto_hakam: 0.85, can_dents: 0.8, can_kanigs: 0.8, eca_lande: 0.95, fri_larmes: 0.95, grobe_cimetiere: 0.8, fri_crevasse: 0.9, fri_village: 0.85, grobe_mont: 0.85, osa_toorbz: 0.85, sah_cite: 0.9, sah_gorge: 0.9, fri_petrifiee: 0.75, sid_domaine_fungus: 0.95, sid_gisgoul: 0.7, sram_catacombres: 0.95, fri_ruche: 0.8, fri_torrideau: 0.8, val_ereboria: 0.85, har_bastion: 0.95, har_caserne: 0.85, har_clepsydre: 0.7, har_jardins: 0.85, har_remparts: 0.9, sah_pyramide: 0.8, sram_hauts: 0.85, suf_embruns: 0.7, xel_lendemains: 0.85 };
   const powMons = (mons, where, did, sm = 1, sid = null) => { const k = (did && E.DG_EASE[did]) || (sid && E.HUNT_EASE[sid]) || 1; mons.forEach((m) => { m.hpMax = m.hp = Math.round(m.hpMax * (1 + (E.monPow(m.lvl, "hp", where) - 1) * sm) * k); m.dmg *= E.monPow(m.lvl, "dmg", where) * k; }); };
   const monsterEntity = (id, lvl, opts = {}) => {
     const base = MONSTERS[id];
@@ -1058,7 +1059,9 @@
         const hk = (1 + team.length * 1.1) / 5; boss.hpMax = boss.hp = Math.round(boss.hpMax * hk);
         boss.mech = E.bossMechs(S.dungeon.id); boss.mturn = 0; (S.bossSeen = S.bossSeen || {})[S.dungeon.id] = 1;
         mons = [boss];
-        const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0), 0, 7);
+        /* 0.1.40 : boss qui se battent ensemble (les 4 Gelées Royales de la Gelaxième Dimension) */
+        (dg.coBoss || []).forEach((cb) => { if (!MONSTERS[cb]) return; const c = monsterEntity(cb, blv); c.hpMax = c.hp = Math.round(c.hpMax * hk * E.COBOSS_HP); mons.push(c); });
+        const extra = clamp(team.length - 1 + ((S.dungeon.mods || []).includes("renforts") ? 2 : 0) + (IX ? IX.extra : 0) - (mons.length - 1), 0, 7);
         const mlv = S.dungeon.gboss ? S.dungeon.syncLvl || 1 : k >= 4 ? Math.max(dg.lvl, S.dungeon.syncLvl || 0) : dg.lvl;
         for (let i = 0; i < extra; i++) mons.push(monsterEntity(pick(dg.bossMobs), mlv - ri(1, 3)));
         applyStasis(S, null, mons, -1, true);
