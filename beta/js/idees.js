@@ -82,7 +82,7 @@
     Object.assign(F, { tag: "", title: "", body: "", err: "" });
     repaint();
     X().openSheet(`<h2>✅ Merci, ton idée est partie !</h2>
-      <p class="small" style="margin:0">« <b>${h(t)}</b> » sera publiée dans le forum Idées du Discord d'ici quelques minutes. Les autres joueurs pourront voter pour elle avec 👍.</p>
+      <p class="small" style="margin:0">« <b>${h(t)}</b> » sera publiée dans le forum Idées du Discord dans la demi-heure. Les autres joueurs pourront voter pour elle avec 👍.</p>
       <p class="xs muted" style="margin:0">Tu pourras en proposer une autre dans 10 minutes.</p>
       <div class="row"><a class="btn" href="${DISCORD}" target="_blank" rel="noopener">Voir le Discord</a><button class="btn primary sm" data-act="closesheet">Fermer</button></div>`);
   }
@@ -95,7 +95,7 @@
         <span class="small">${h(x.body)}</span><br><span class="xs muted">${h(x.pseudo)}${x.guest ? " (sans compte)" : ""}${x.info ? ` · ${h(x.info)}` : ""} · ${new Date(x.created_at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span></span>
         <span class="acts">${x.url ? `<a class="btn sm" href="${h(x.url)}" target="_blank" rel="noopener">Voir sur Discord</a>` : ""}<button class="btn sm${x.hidden ? "" : " danger"}" data-act="id-hide" data-v="${x.id}" data-on="${x.hidden ? 0 : 1}">${x.hidden ? "Réafficher" : "Masquer"}</button></span></div>`;
     }).join("");
-    return `<div class="box"><h2>Suggestions des joueurs</h2><p class="small muted">Chaque idée est publiée dans le forum #idées du Discord quelques minutes après l'envoi. Masquer une idée en attente l'empêche d'y partir ; une idée déjà publiée se supprime aussi sur Discord.</p>${rows}</div>`;
+    return `<div class="box"><h2>Suggestions des joueurs</h2><p class="small muted">Chaque idée est publiée dans le forum #idées du Discord dans la demi-heure qui suit l'envoi (relais automatique, ou « Run workflow » sur « Suggestions vers Discord » pour l'envoyer tout de suite). Masquer une idée en attente l'empêche d'y partir ; une idée déjà publiée se supprime aussi sur Discord.</p>${rows}</div>`;
   }
 
   document.addEventListener("click", async (ev) => {
