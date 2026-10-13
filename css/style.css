@@ -4395,5 +4395,9 @@ img.kza-ic{width:22px;height:22px;vertical-align:-5px}
 .kza-li{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:var(--panel2);font-size:13.5px;border-left:4px solid #5fbf55}
 .kza-li.l{border-left-color:#d55}.kza-li .grow{flex:1;min-width:0}
 .topchips .updbar.kzachip{order:-1;border-color:rgba(var(--glw),.6);background:rgba(var(--glw),.1);cursor:pointer}
+/* 1.0.7.2 : même forme que les autres pastilles du haut, sur une seule ligne (avant : 3 lignes vers 1080 px) */
+.topchips .updbar.kzachip{display:inline-flex;flex-direction:row;align-items:center;gap:6px;height:36px;margin:0;padding:0 12px 0 6px;border-radius:999px;font-size:12px;line-height:1;white-space:nowrap;flex:none}
+.topchips .updbar.kzachip .ico{width:24px;height:24px}
+@media (max-width:640px){.topchips .updbar.kzachip{height:32px;gap:4px;padding:0 9px 0 4px;font-size:11.5px}.topchips .updbar.kzachip .kzac-p{display:none}}
 .kzac-p{display:inline-flex;gap:2px}.kzac-p i{width:6px;height:14px;border-radius:2px;background:#5fbf55}.kzac-p i.l{background:#d55}
 @media (max-width:640px){.kza-body{grid-template-columns:minmax(0,1fr)}.kza-go{align-items:stretch}.kza-start{min-width:0;width:100%}.kza-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.kza-pips i{width:24px;height:24px}.kza-ttl .xs{display:none}.kzac-p{display:none}}

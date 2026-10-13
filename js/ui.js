@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.3";
+const GAME_VERSION = "1.0.7.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.4", name: "Kolizéum sans freeze", items: [
+    "Kolizéum : le jeu ne se fige plus pendant le mode auto ni à l'ouverture de la page. Le calcul du « Conseillé » se fait par petits morceaux en arrière-plan, avec le même résultat qu'avant",
+    "Mode auto en ligne : un combat toutes les 8 secondes, et ta partie est envoyée une fois au début de la série au lieu d'à chaque combat. Le serveur respire et tout le monde joue plus fluide",
+    "La pastille « Koli auto » en haut de l'écran tient sur une ligne et a la même forme que les autres pastilles",
+  ] },
   { v: "1.0.7.3", name: "Panel de test depuis le jeu", items: [
     "Panel admin : nouveau bouton « Panel de test », réservé au compte admin. Il ouvre la partie de test dans un nouvel onglet avec le panel de test déjà ouvert, sans jamais toucher au jeu public",
   ] },

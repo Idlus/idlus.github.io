@@ -45,11 +45,13 @@
       paint();
     });
   }
-  /* chance : 20 combats d'essai par adversaire, un adversaire à la fois pour ne pas figer la page */
+  /* chance : 20 combats d'essai par adversaire, par petits morceaux pour ne pas figer la page (1.0.7.2) */
   function chances(s, Q, gen) {
     const A = E.koliSnap(s, Q.team); if (!A.length) return;
-    const step = (i) => { if (gen !== ui.gen || !ui.opps || i >= ui.opps.length) { if (gen === ui.gen) paintOpps(); return; }
-      ui.ch[i] = E.koliChance(A, ui.opps[i].team); paintOpps(); setTimeout(() => step(i + 1), 30); };
+    const live = () => gen === ui.gen && !!ui.opps;
+    const step = async (i) => { if (!live() || i >= ui.opps.length) { if (gen === ui.gen) paintOpps(); return; }
+      const c = await E.koliChanceAsync(A, ui.opps[i].team, live); if (c === null || !live()) return;
+      ui.ch[i] = c; paintOpps(); setTimeout(() => step(i + 1), 30); };
     setTimeout(() => step(0), 60);
   }
   const stakes = (Q, o) => (o.win !== undefined ? { win: o.win, lose: o.lose } : E.koliStakes(Q.cote, o.cote, o.ghost));
@@ -101,7 +103,7 @@
     const s = S(); const Q = E.koliState(s); const c = aset(s);
     if (!E.koliArena(s).length) { X().toast("Choisis d'abord ton équipe d'arène."); return; }
     if (mode === "count" && E.koliTickets(s) < 1) { X().toast(`Plus de ticket de Koli : il en arrive ${K.daily} chaque jour à minuit.`); return; }
-    Object.assign(AU, { st: "run", mode, tot: mode === "count" ? (c.cnt || E.koliTickets(s)) : 0, L: [], why: "", next: 0, errs: 0, c0: Q.cote });
+    Object.assign(AU, { st: "run", mode, tot: mode === "count" ? (c.cnt || E.koliTickets(s)) : 0, L: [], why: "", next: 0, errs: 0, c0: Q.cote, pushed: false });
     aPaint();
   }
   function aStop(why) {
@@ -113,7 +115,7 @@
   /* le meilleur gain attendu, comme le badge « Conseillé » */
   async function aPick(s, Q, opps) {
     const A = E.koliSnap(s, Q.team); let b = null, bv = -1e9;
-    for (const o of opps) { await sleep(20); const c = E.koliChance(A, o.team) / 100; const st = stakes(Q, o); const v = c * st.win - (1 - c) * st.lose; if (v > bv) { bv = v; b = o; } }
+    for (const o of opps) { await sleep(20); const c = ((await E.koliChanceAsync(A, o.team)) || 0) / 100; const st = stakes(Q, o); const v = c * st.win - (1 - c) * st.lose; if (v > bv) { bv = v; b = o; } }
     return b;
   }
   async function aStep() {
@@ -133,7 +135,7 @@
         const L = await ON().koli({ opps: 1, r: Q.rf });
         if (!L || !L.ok) { if (++AU.errs >= 3) { X().toast((L && L.err) || "Pas de connexion au serveur."); return aStop("err"); } AU.next = Date.now() + 10000; return; }
         o = await aPick(s, Q, L.opps); if (!o || AU.st !== "run") return;
-        try { await X().onPush(); } catch (e) { /* le serveur rejoue avec la partie en ligne */ }
+        if (!AU.pushed) { try { await X().onPush(); AU.pushed = true; } catch (e) { /* le serveur rejoue avec la partie en ligne */ } } // 1.0.7.2 : une fois par série (avant : à chaque combat), l'envoi habituel toutes les 30 s suit
         const R = await ON().koli({ fight: o.id ? { id: o.id } : { slot: o.slot }, r: Q.rf });
         if (R.net) { if (++AU.errs >= 3) { X().toast("Pas de connexion au serveur : mode auto arrêté."); return aStop("err"); } AU.next = Date.now() + 10000; return; }
         if (!R.ok) { X().toast(R.err || "Refusé par le serveur."); return aStop("err"); }
@@ -149,7 +151,7 @@
       if (last.length === K.autoStreak && last.every((x) => !x.win)) return aStop("loss");
       if (AU.mode === "count" && AU.L.length >= AU.tot) return aStop("count");
       if (AU.mode === "count" && E.koliTickets(s) < 1) return aStop("tickets");
-    } finally { AU.busy = false; AU.next = Math.max(AU.next, Date.now() + 3000); aPaint(); }
+    } finally { AU.busy = false; AU.next = Math.max(AU.next, Date.now() + (online() ? K.autoGapOn : 3000)); aPaint(); } // 1.0.7.2 : en ligne, un combat toutes les 8 s pour ménager le serveur
   }
   function aLoop() {
     try {

@@ -13,7 +13,7 @@
 
   const K = Object.assign(E.KOLI, {
     daily: 10, tkMax: 30, start: 1000, elo: 32, ghostMul: 0.5, defLoss: 0.5, defWin: 0.25, minWeek: 5,
-    purseK: 60, dust: 2, kzWin: 3, kzLoss: 1, kzDef: 1, autoKz: 0.75, autoReserve: 5, autoStreak: 3, chance: 20, logMax: 30, freeRefresh: 1,
+    purseK: 60, dust: 2, kzWin: 3, kzLoss: 1, kzDef: 1, autoKz: 0.75, autoReserve: 5, autoStreak: 3, autoGapOn: 8000, chance: 20, logMax: 30, freeRefresh: 1,
   });
   E.KOLI_TICKET = "ticket_koli";
   E.KOLI_CUR = "kolizetons";
@@ -144,6 +144,13 @@
     return { win: F.winner === 0, rounds: Math.min(F.round, K.maxRound), hpA: hp(0), hpB: hp(1), dead: F.ents.map((x, i) => (!x.alive && !x.summon ? i : -1)).filter((i) => i >= 0) }; };
   /* chance de victoire : K.chance combats d'essai (graines fixes) */
   E.koliChance = (A, B, n = K.chance) => { let w = 0; for (let i = 0; i < n; i++) if (E.koliSim(A, B, 7919 * (i + 1) + 13).win) w++; return Math.round((100 * w) / n); };
+  /* 1.0.7.2 : même calcul, par petits morceaux (rend la main au navigateur toutes les ~10 ms) pour ne plus figer le jeu ; ok() dit s'il faut continuer */
+  E.koliChanceAsync = async (A, B, ok, n = K.chance) => { let w = 0, t = Date.now();
+    for (let i = 0; i < n; i++) {
+      if (Date.now() - t > 10) { await new Promise((r) => setTimeout(r, 0)); t = Date.now(); if (ok && !ok()) return null; }
+      if (E.koliSim(A, B, 7919 * (i + 1) + 13).win) w++;
+    }
+    return Math.round((100 * w) / n); };
 
   /* ---------- adversaires hors ligne (Fantômes seulement) ---------- */
   /* un Fantôme : d = écart voulu (+60 un peu plus fort, 0 à ta hauteur, -60 un peu plus faible) ; même graine, même Fantôme (le serveur le refait) */

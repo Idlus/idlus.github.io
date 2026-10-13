@@ -122,3 +122,13 @@ const tit = E.SHOPS.koli.items.find((x) => x.title); B.tokens[E.KOLI_CUR] = 1000
 assert.strictEqual(E.koliKz(B), 1000 - tit.cost, "un titre ne s'achète qu'une fois, même avec ×10");
 assert.ok(E.SHOPS.koli.items.every((x) => ["galets", "combat", "coffres", "look"].includes(x.sec)));
 console.log("ok - Galets en bonus de fabrication et boutique en rayons");
+
+// 1.0.7.2 : chance par petits morceaux = même résultat que le calcul d'un bloc, et s'arrête si on quitte la page.
+(async () => {
+  const A = E.koliGhost(11, 120, 3), Bt = E.koliGhost(22, 120, 3);
+  assert.strictEqual(await E.koliChanceAsync(A, Bt), E.koliChance(A, Bt), "même chance qu'avant");
+  const Ah = E.koliGhost(5, 200, 3), Bh = E.koliGhost(6, 200, 3);
+  assert.strictEqual(await E.koliChanceAsync(Ah, Bh, () => false), null, "arrêt quand la page change");
+  assert.ok(K.autoGapOn >= 6000, "mode auto en ligne : combats espacés pour ménager le serveur");
+  console.log("ok - chance sans figer le jeu");
+})().catch((e) => { console.error(e); process.exit(1); });

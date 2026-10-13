@@ -1,6 +1,15 @@
 {
-  "version": "1.0.7.3",
+  "version": "1.0.7.4",
   "versions": [
+    {
+      "v": "1.0.7.4",
+      "name": "Kolizéum sans freeze",
+      "items": [
+        "Kolizéum : le jeu ne se fige plus pendant le mode auto ni à l'ouverture de la page. Le calcul du « Conseillé » se fait par petits morceaux en arrière-plan, avec le même résultat qu'avant",
+        "Mode auto en ligne : un combat toutes les 8 secondes, et ta partie est envoyée une fois au début de la série au lieu d'à chaque combat. Le serveur respire et tout le monde joue plus fluide",
+        "La pastille « Koli auto » en haut de l'écran tient sur une ligne et a la même forme que les autres pastilles"
+      ]
+    },
     {
       "v": "1.0.7.3",
       "name": "Panel de test depuis le jeu",
