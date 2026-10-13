@@ -59,6 +59,13 @@ const server = http.createServer((req, res) => {
     const noTip = () => page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // une bulle de découverte peut recouvrir le menu
     await noTip(); await page.click('#nav .sn-side [data-nk="team"]'); await page.waitForTimeout(200);
     if (!(await page.$("#teamtop")) || !(await page.$("#fiche"))) errors.push("Équipe et héros : tableau ou fiche absent");
+    // 0.1.40 : liste des héros à gauche, fiche à droite, menu « ⋯ Plus » qui s'ouvre et se referme
+    if (!(await page.$("#tlist .trow.on"))) errors.push("Équipe et héros : liste des héros absente");
+    if (!(await page.$("#fiche .hban"))) errors.push("Équipe et héros : bannière du héros absente");
+    await noTip(); await page.click("#fiche .hmore"); await page.waitForTimeout(150);
+    if (!(await page.$("#fiche .hmenu"))) errors.push("Équipe et héros : le menu « Plus » ne s'ouvre pas");
+    await page.click("#tlist .tgt"); await page.waitForTimeout(150);
+    if (await page.$("#fiche .hmenu")) errors.push("Équipe et héros : le menu « Plus » ne se referme pas");
     // menu réduit aux icônes, puis rétabli
     await noTip(); await page.click('#nav [data-act="navmini"]'); await page.waitForTimeout(150);
     if (!(await page.evaluate(() => document.body.classList.contains("navmini")))) errors.push("menu : réduction sans effet");
@@ -72,6 +79,17 @@ const server = http.createServer((req, res) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await noTip(); await page.click('#nav .sn-mob [data-nk="menu"]');
     await page.waitForSelector(".navsheet .ns-tiles button", { timeout: 5000 });
+    await page.click('.navsheet [data-v="forge"]'); await page.waitForTimeout(300);
+    // 0.1.40 : au téléphone, la liste d'abord, puis la fiche en plein écran et « ← Équipe »
+    const vis = (sel) => page.$eval(sel, (e) => !!(e.offsetWidth || e.offsetHeight)).catch(() => false);
+    await page.evaluate(() => { window.DX.ui.tab = "team"; window.DX.ui.tview = "list"; window.DX.render(); });
+    if (!(await vis("#tlist")) || (await vis("#fiche .hban"))) errors.push("téléphone : Équipe et héros devrait montrer la liste seule");
+    await noTip(); await page.click("#tlist .trow"); await page.waitForTimeout(200);
+    if ((await vis("#tlist")) || !(await vis("#fiche .hban"))) errors.push("téléphone : toucher un héros devrait ouvrir sa fiche");
+    await noTip(); await page.click('#fiche [data-act="teamlist"]'); await page.waitForTimeout(200);
+    if (!(await vis("#tlist"))) errors.push("téléphone : « ← Équipe » ne revient pas à la liste");
+    await page.evaluate(() => { window.DX.ui.tab = "home"; window.DX.render(); });
+    await noTip(); await page.click('#nav .sn-mob [data-nk="menu"]'); await page.waitForSelector(".navsheet .ns-tiles button", { timeout: 5000 });
     await page.click('.navsheet [data-v="forge"]'); await page.waitForTimeout(300);
     if ((await page.evaluate(() => window.DX.ui.tab)) !== "forge") errors.push("menu du téléphone : la tuile Forgemagie n'ouvre pas la page");
     if (await page.$(".navsheet")) errors.push("menu du téléphone : reste ouvert après le choix");
