@@ -350,7 +350,7 @@
   }
   /* récolte des sous-zones de transition : celle de la sous-zone d'origine */
   [["koa_bordure", "koa_kaliptus"], ["koa_pentes", "koa_canyon"], ["abr_oree", "abr_sombre"]].forEach(([n, o]) => { if (HARVEST[o] && !HARVEST[n]) HARVEST[n] = HARVEST[o]; });
-  /* 0.1.43.1 : ressources de récolte niveau 200 de l'Ancienne Sufokia (absente du jeu) placées dans la Baie de Sufokia : elles servent aux clés du Belvédère d'Ilyzaelle et de la Chambre de Tal Kasha */
+  /* 0.1.44.1 : ressources de récolte niveau 200 de l'Ancienne Sufokia (absente du jeu) placées dans la Baie de Sufokia : elles servent aux clés du Belvédère d'Ilyzaelle et de la Chambre de Tal Kasha */
   if (HARVEST.suf_embruns) [["Quisnoa", "paysan"], ["Bois d'Aquajou", "bucheron"], ["Écume de mer", "mineur"], ["Salikrone", "alchimiste"], ["Patelle", "pecheur"]].forEach(([n, j]) => {
     if (RES[n] && !HARVEST.suf_embruns.some((x) => x[0] === n)) HARVEST.suf_embruns.push([n, j, 200, 8]); });
   /* ---------- Trophées de sous-zone (paliers de chasse) ---------- */
@@ -432,7 +432,7 @@
       /* 0.1.40 « Donjons oubliés » */
       "Blugely": ["gelaxieme_dimension", 6], "Rougely": ["gelaxieme_dimension", 6], "Vertgely": ["gelaxieme_dimension", 6],
       "Pièce de Koffrefor": ["fabrique_mallefisk", 5], "Larve pétrifiée d'Ecaflipuce": ["miausolee_pounicheur", 5],
-      /* 0.1.43.1 : les 15 autres recettes de clés qu'on ne pouvait pas faire */
+      /* 0.1.44.1 : les 15 autres recettes de clés qu'on ne pouvait pas faire */
       "Morceau de clef Coco": ["antre_blop_multicolore", 5], "Morceau de clef Griotte": ["antre_blop_multicolore", 5],
       "Morceau de clef Indigo": ["antre_blop_multicolore", 5], "Morceau de clef Reinette": ["antre_blop_multicolore", 5],
       "Symbole de Xélomorphe": ["megalithe_fraktale", 5], "Insigne de Malveilleur": ["ring_ekarlatte", 5],
@@ -447,7 +447,7 @@
       if (!G.RES[res]) G.RES[res] = { id: 0, icon: 0, lvl: G.DUNGEONS[did].lvl, price: 20, type: 84 };
     }
   }
-  /* 0.1.43.1 : boss secondaires qui accompagnent le boss principal ; part de PV réglée par simulation (stasis 5-7 avec un bon équipement) */
+  /* 0.1.44.1 : boss secondaires qui accompagnent le boss principal ; part de PV réglée par simulation (stasis 5-7 avec un bon équipement) */
   [["labo_tynril", 0.2], ["cavernes_kolosso", 0.15]].forEach(([d, v]) => { if (G.DUNGEONS[d] && G.DUNGEONS[d].coBoss) G.DUNGEONS[d].coBossHp = v; });
   /* 0.1.40 : la Petite Larve Dorée (clé du Donjon des Larves) n'a pas de recette dans DOFUS → fabriquée chez le Bricoleur avec des ressources des Craqueleurs */
   if (G.DUNGEONS.donjon_larves && !G.SPECIAL_CRAFTS["Petite Larve Dorée"])
