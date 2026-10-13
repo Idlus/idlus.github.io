@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4 « Statistiques de combat »
+Par héros et par combat : dégâts infligés (invocations et poisons compris, via `F.dotSrc`), soins donnés (`F.actor`), dégâts subis, ennemis achevés (`F.lastBy`). `E.fightStats(F)` dans js/engine.js, gardé dans `S.history[].s` et cumulé dans `S.fstat` (`E.addFightStats`, `E.resetFightStats`). Interface js/ui.js : `fstTable`, `fstPanel` (panneau « Statistiques » de l'écran de combat, onglet Stats au téléphone), `fstSheet` (clic sur « Derniers combats » ou « Stats » à l'accueil).
+
 ## 1.0.3.3 « Copier-coller dans le chat »
 Chat (js/chat.js `paint`) : la zone d'écriture `.ch-foot` n'est plus recréée quand son contenu ne change pas (signature `footHtml("")` sans le compteur), seul le reste du chat est redessiné : le clavier du téléphone et la bulle « Coller » restent ouverts quand un message arrive. Un texte surligné dans le chat retient le redessin (`C.held`, relancé par `selectionchange`). Menu du pseudo : « Copier le message » (`ch-copy`, presse-papiers avec repli `execCommand`), icône `copy` dans `GL`. `.msg .tx` sélectionnable explicitement. Test dans tests/online.test.js.
 

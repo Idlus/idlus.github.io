@@ -1222,6 +1222,7 @@
 
   const killed = (F, tgt) => {
     if (tgt.alive) return; const idx = F.ents.indexOf(tgt); if (F.deaths.includes(idx)) return; F.deaths.push(idx);
+    if (tgt.side === "m" && F.lastBy && F.lastBy[idx] !== undefined) { const kr = F.ents[F.lastBy[idx]]; if (kr) kr.kills = (kr.kills || 0) + 1; } // 1.0.4 : statistiques de combat
     if (tgt.side === "c" && !tgt.summon) { failChal(F, "survivant", `${tgt.name} est tombé`); const lh = F.lastHit && F.lastHit.t === idx ? F.lastHit : null; (F.deathInfo = F.deathInfo || []).push({ i: idx, r: F.round, by: lh ? lh.s : -1, el: lh ? lh.el : null }); }
     if (tgt.side === "m" && tgt.role === "kamikaze" && !tgt.boom) { tgt.boom = true; const fr = alive(F, "c").filter((h) => rowOf(h) === "f");
       if (fr.length) { flog(F, `${tgt.name} explose en mourant !`, "m"); fr.forEach((h) => dealDamage(F, null, h, tgt.dmg * 1.5 * rf(0.9, 1.1), tgt.el === "n" ? null : tgt.el)); } }
@@ -1236,9 +1237,10 @@
   };
   /* 3.2.2 : suivi des dégâts pour « Pourquoi j'ai perdu ? » */
   const trackHit = (F, src, tgt, v, el) => {
+    if (!src && F.dotSrc && tgt.side === "m") src = F.dotSrc; // 1.0.4 : poisons des héros comptés dans leurs dégâts
     const ti = F.ents.indexOf(tgt); const si = src ? F.ents.indexOf(src) : -1; const k = el || "n";
     if (tgt.side === "c" && !tgt.summon) { F.taken = F.taken || {}; F.taken[k] = (F.taken[k] || 0) + v; tgt.taken = tgt.taken || {}; tgt.taken[k] = (tgt.taken[k] || 0) + v; F.lastHit = { t: ti, s: si, el: k }; }
-    else if (tgt.side === "m" && src && src.side === "c") { F.dealt = F.dealt || {}; F.dealt[ti] = (F.dealt[ti] || 0) + v; const o = src.summon ? F.ents[src.owner] : src; if (o) o.dealt = (o.dealt || 0) + v; }
+    else if (tgt.side === "m" && src && src.side === "c") { F.dealt = F.dealt || {}; F.dealt[ti] = (F.dealt[ti] || 0) + v; const o = src.summon ? F.ents[src.owner] : src; if (o) { o.dealt = (o.dealt || 0) + v; (F.lastBy = F.lastBy || {})[ti] = F.ents.indexOf(o); } }
   };
   const dealDamage = (F, src, tgt, raw, el) => {
     let v = raw;
@@ -1361,7 +1363,7 @@
     if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
     if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
-    if (F && t.side === "c" && !t.summon && g > 0) F.healed = (F.healed || 0) + g;
+    if (F && t.side === "c" && !t.summon && g > 0) { F.healed = (F.healed || 0) + g; const a = F.actor && F.actor.side === "c" ? (F.actor.summon ? F.ents[F.actor.owner] : F.actor) : null; if (a && !a.summon) a.healDone = (a.healDone || 0) + g; } // 1.0.4 : soins par héros
     if (F && F.fx && g > 0) F.fx.push({ seq: F.seq, k: "heal", t: F.ents.indexOf(t), v: g });
     return g;
   };
@@ -1851,7 +1853,8 @@
 
   const startOfTurn = (S, F, e) => {
     e.dots = e.dots.filter((d) => {
-      const v = dealDamage(F, null, e, d.v, d.el);
+      F.dotSrc = e.side === "m" && d.src ? F.ents.find((x) => x.side === "c" && !x.summon && x.name === d.src) || null : null;
+      const v = dealDamage(F, null, e, d.v, d.el); F.dotSrc = null;
       flog(F, `${e.name} subit −${v} (poison)`, "dim");
       d.turns--; return d.turns > 0 && e.alive;
     });
@@ -1900,7 +1903,7 @@
     if (F.await) {
       if (E.manualOn(S) && F.dur - F.await.t <= E.MANUAL_TIMEOUT) return;
       const A = F.await; F.await = null; const e = F.ents[A.ei];
-      if (e && e.alive) { F.seq++; if (!A.n) flog(F, `${e.name} joue en automatique.`, "dim"); charTurn(S, F, e, A.pa); }
+      if (e && e.alive) { F.seq++; F.actor = e; if (!A.n) flog(F, `${e.name} joue en automatique.`, "dim"); charTurn(S, F, e, A.pa); }
       return checkEnd(S);
     }
     F.seq++; if (F.fx.length > 80) F.fx.splice(0, F.fx.length - 80);
@@ -1908,6 +1911,7 @@
       const lim = F.bossIdx !== undefined ? E.STASIS_TL.boss : E.STASIS_TL.room; if (F.stasis >= 9 && F.round > lim) return endFight(S, false, `Stasis 9 : le temps est écoulé (${lim} tours maximum dans cette salle).`); }
     const e = F.ents[F.order[F.oi++]];
     if (!e || !e.alive) return E.step(S);
+    F.actor = e;
     if (!startOfTurn(S, F, e)) return checkEnd(S);
     if (e.side === "c") { if (e.summon) summonTurn(S, F, e); else charTurn(S, F, e); } else monsterTurn(S, F, e);
     checkEnd(S);
@@ -2239,6 +2243,15 @@
     return up;
   };
 
+  /* 1.0.4 : statistiques de combat. Par héros : dégâts infligés (invocations et poisons compris), soins donnés,
+     dégâts subis et ennemis achevés. Gardées dans l'historique (S.history[].s) et cumulées dans S.fstat. */
+  E.fightStats = (F) => F.ents.filter((e) => e.side === "c" && !e.summon && e.cid).map((e) => ({ id: e.cid, n: e.name, d: Math.round(e.dealt || 0), h: Math.round(e.healDone || 0), t: Math.round(Object.values(e.taken || {}).reduce((a, b) => a + b, 0)), k: e.kills || 0 }));
+  E.addFightStats = (S, fst) => {
+    if (!fst || !fst.length) return;
+    const T = S.fstat = S.fstat && S.fstat.h ? S.fstat : { t: E.now(), n: 0, h: {} }; T.n++;
+    fst.forEach((x) => { const o = T.h[x.id] = T.h[x.id] || { d: 0, h: 0, t: 0, k: 0, f: 0 }; o.d += x.d; o.h += x.h; o.t += x.t; o.k += x.k; o.f++; });
+  };
+  E.resetFightStats = (S) => { S.fstat = { t: E.now(), n: 0, h: {} }; };
   const endFight = (S, win, why) => {
     const F = S.fight; F.over = true; F.result = win ? "win" : "lose";
     S.stats.fights++;
@@ -2295,7 +2308,9 @@
     const r = F.rewards || { xp: {}, kamas: 0, res: {}, items: [] };
     const xpTot = Object.values(r.xp).reduce((a, b) => a + b, 0);
     const nres = Object.values(r.res).reduce((a, b) => a + b, 0);
-    S.history.unshift({ t: E.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length });
+    const fst = E.fightStats(F);
+    S.history.unshift({ t: E.now(), z: zkey, label: F.label, w: win ? 1 : 0, d: Math.round(F.dur), xp: xpTot, k: r.kamas, r: nres, i: r.items.length, s: fst });
+    E.addFightStats(S, fst);
     if (F.loss) F.loss.t = S.history[0].t; // même horodatage : le rapport s'ouvre depuis « Derniers combats »
     if (S.history.length > 30) S.history.length = 30;
     if (zkey) {

@@ -1,6 +1,16 @@
 {
-  "version": "1.0.3.3",
+  "version": "1.0.4",
   "versions": [
+    {
+      "v": "1.0.4",
+      "name": "Statistiques de combat",
+      "items": [
+        "Nouveau : les statistiques de combat. Pour chaque héros : dégâts infligés (avec sa part du total), soins donnés, dégâts subis et ennemis vaincus. Le héros qui a fait le plus de dégâts porte la couronne, et le meilleur de chaque colonne est en or",
+        "Écran de combat : panneau « Statistiques » mis à jour en direct (onglet Stats au téléphone), avec « Ce combat » et « Cumul » de tous les combats depuis la dernière remise à zéro",
+        "Cliquez sur un combat dans « Derniers combats », ou sur « Stats » dans la ligne du dernier combat à l'accueil, pour revoir qui a fait quoi. Après une défaite, « Pourquoi j'ai perdu ? » reste à un clic",
+        "Les dégâts des invocations et des poisons comptent pour le héros qui les a lancés"
+      ]
+    },
     {
       "v": "1.0.3.3",
       "name": "Copier-coller dans le chat",

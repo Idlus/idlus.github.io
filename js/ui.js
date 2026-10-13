@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.3.3";
+const GAME_VERSION = "1.0.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4", name: "Statistiques de combat", items: [
+    "Nouveau : les statistiques de combat. Pour chaque héros : dégâts infligés (avec sa part du total), soins donnés, dégâts subis et ennemis vaincus. Le héros qui a fait le plus de dégâts porte la couronne, et le meilleur de chaque colonne est en or",
+    "Écran de combat : panneau « Statistiques » mis à jour en direct (onglet Stats au téléphone), avec « Ce combat » et « Cumul » de tous les combats depuis la dernière remise à zéro",
+    "Cliquez sur un combat dans « Derniers combats », ou sur « Stats » dans la ligne du dernier combat à l'accueil, pour revoir qui a fait quoi. Après une défaite, « Pourquoi j'ai perdu ? » reste à un clic",
+    "Les dégâts des invocations et des poisons comptent pour le héros qui les a lancés",
+  ] },
   { v: "1.0.3.3", name: "Copier-coller dans le chat", items: [
     "Téléphone : un message qui arrive dans le chat ne ferme plus le clavier et ne fait plus disparaître la bulle « Coller » pendant qu'on écrit",
     "Un texte surligné dans le chat pour le copier n'est plus effacé par les nouveaux messages : ils s'affichent dès qu'on a fini",
@@ -890,7 +896,8 @@ const GL = {
   pin: '<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 14v7"/>',
   bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
   shield: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>',
-  crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>' };
+  crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/>',
+  chart: '<path d="M4 20h16"/><path d="M7 16v-5"/><path d="M12 16V6"/><path d="M17 16v-8"/>' };
 /* 0.1.49.2 : roue dentée dorée des Options (l'ancienne ressemblait à un soleil) */
 const GLF = { gear: '<path fill="#d9a646" stroke="#4a3210" stroke-width="1.1" stroke-linejoin="round" d="M10.09 4.03L10.11 1.16L13.89 1.16L13.91 4.03L16.28 5.01L18.33 3.00L21.00 5.67L18.99 7.72L19.97 10.09L22.84 10.11L22.84 13.89L19.97 13.91L18.99 16.28L21.00 18.33L18.33 21.00L16.28 18.99L13.91 19.97L13.89 22.84L10.11 22.84L10.09 19.97L7.72 18.99L5.67 21.00L3.00 18.33L5.01 16.28L4.03 13.91L1.16 13.89L1.16 10.11L4.03 10.09L5.01 7.72L3.00 5.67L5.67 3.00L7.72 5.01Z"/><circle cx="12" cy="12" r="5.6" fill="#f5d98e" stroke="#8a5f22" stroke-width="1"/><circle cx="12" cy="12" r="3.2" fill="#2b2213" stroke="#4a3210" stroke-width="1"/>',
   flame: '<path fill="#ffb347" stroke="#c2410c" stroke-width="1.2" d="M12 2.5c1 3.5 5.5 5.5 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.3 2.6-5.4.3 1.8 1.2 2.9 2.4 3.3-.6-3.3-.3-6.3.5-8.9z"/><path fill="#ffe08a" d="M12 21a2.6 2.6 0 0 1-2.6-2.6c0-1.8 1.6-2.6 2.1-4.2 1.2 1.2 3.1 2.2 3.1 4.2A2.6 2.6 0 0 1 12 21z"/>',
@@ -1465,7 +1472,7 @@ function renderHomeInner() {
   /* 1.0.1 « Encadré de chasse » : la zone en titre, 4 tuiles de rendement, le dernier combat */
   const kt = rate ? `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(rate.xpH), "XP/h"], ["kamas", IC("kamas"), fmtK(rate.kH), "kamas/h"], ["res", IC("sac"), fmtK(rate.rH), "ressources/h"], ["win", IC("trophee"), `${Math.round(rate.winRate * 100)} %`, "victoires"]].map(([k, i, v, l]) => `<div class="k k-${k}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>` : "";
   const H0 = (S.hunting || S.dungeon) && S.history && S.history[0];
-  const lf = H0 ? `<div class="ac-lf xs"><b class="${H0.w ? "plus" : "minus"}">${H0.w ? "Victoire" : "Défaite"}</b> <span class="muted">dernier combat · ${Math.max(1, Math.round(H0.d || 0))} s</span>${H0.w ? ` · <b class="num">+${fmt(H0.xp)}</b> XP · <b class="num">+${fmt(H0.k)}</b> kamas · <b class="num">${fmt(H0.r || 0)}</b> ressource${(H0.r || 0) > 1 ? "s" : ""}` : ""}</div>` : "";
+  const lf = H0 ? `<div class="ac-lf xs"><b class="${H0.w ? "plus" : "minus"}">${H0.w ? "Victoire" : "Défaite"}</b> <span class="muted">dernier combat · ${Math.max(1, Math.round(H0.d || 0))} s</span>${H0.w ? ` · <b class="num">+${fmt(H0.xp)}</b> XP · <b class="num">+${fmt(H0.k)}</b> kamas · <b class="num">${fmt(H0.r || 0)}</b> ressource${(H0.r || 0) > 1 ? "s" : ""}` : ""}${H0.s && H0.s.length ? ` <button class="ac-lfs" data-act="fstsheet" data-t="${H0.t}" data-tip="Qui a fait quoi pendant ce combat">${G("chart")} Stats</button>` : ""}</div>` : "";
   const hunt = S.hunting && !S.dungeon && sub && team.length;
   const card = hunt ? `<div class="card ac-hunt"><span class="xs muted">Chasse en cours</span><h1 class="ac-zt">${h(sub.name)} <span class="ac-zl">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}</h1>${kt || `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>`}${lf}</div>` : null;
   const rl = rate ? `<div class="ac-rate xs"><span><b class="num">${fmt(rate.xpH)}</b> XP/h</span><span><b class="num">${fmt(rate.kH)}</b> kamas/h</span><span><b class="num">${fmt(rate.rH)}</b> ressources/h</span><span><b class="num">${Math.round(rate.winRate * 100)} %</b> victoires</span></div>` : S.hunting ? `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>` : "";
@@ -1659,7 +1666,39 @@ function rateHtml(rate) {
 function historyHtml(n) {
   const rows = S.history.slice(0, n);
   if (!rows.length) return `<p class="note">Aucun combat pour l'instant.</p>`;
-  return `<div class="hist">${rows.map((r) => `<div class="hrow ${!r.w && (S.losses || []).some((x) => x.t === r.t) ? "clk" : ""}" ${!r.w && (S.losses || []).some((x) => x.t === r.t) ? `data-act="losssheet" data-t="${r.t}" data-tip="Pourquoi j'ai perdu ?"` : ""}><span class="${r.w ? "w" : "l"}">${r.w ? "Victoire" : "Défaite"}</span><span class="z">${h(r.label)} <span class="muted xs num">${r.d} s</span></span><span class="x xs muted">${r.w ? `+${fmt(r.xp)} XP · ${fmt(r.k)} k · ${r.r} res.${r.i ? ` · ${r.i} obj.` : ""}` : ""}</span></div>`).join("")}</div>`;
+  /* 1.0.4 : chaque ligne ouvre les statistiques du combat (et « Pourquoi j'ai perdu ? » pour une défaite) */
+  return `<div class="hist">${rows.map((r) => { const ls = !r.w && (S.losses || []).some((x) => x.t === r.t); const act = r.s && r.s.length ? `data-act="fstsheet" data-t="${r.t}" data-tip="Voir les statistiques du combat"` : ls ? `data-act="losssheet" data-t="${r.t}" data-tip="Pourquoi j'ai perdu ?"` : "";
+    return `<div class="hrow ${act ? "clk" : ""}" ${act}><span class="${r.w ? "w" : "l"}">${r.w ? "Victoire" : "Défaite"}</span><span class="z">${h(r.label)} <span class="muted xs num">${r.d} s</span></span><span class="x xs muted">${r.w ? `+${fmt(r.xp)} XP · ${fmt(r.k)} k · ${r.r} res.${r.i ? ` · ${r.i} obj.` : ""}` : ""}${act ? ` <span class="hst">${G("chart")}</span>` : ""}</span></div>`; }).join("")}</div>`;
+}
+/* ---------- 1.0.4 : statistiques de combat ----------
+   Une ligne par héros : dégâts infligés (part du total en barre), soins donnés, dégâts subis, ennemis achevés.
+   Le meilleur de chaque colonne est en or ; le héros qui a infligé le plus de dégâts porte la couronne. */
+function fstTable(rows, cum) {
+  rows = rows.filter((x) => x).slice().sort((a, b) => b.d - a.d || b.h - a.h);
+  if (!rows.length) return `<p class="note">Pas encore de statistiques.</p>`;
+  const tot = rows.reduce((a, x) => a + x.d, 0) || 1;
+  const mx = { d: Math.max(...rows.map((x) => x.d)), h: Math.max(...rows.map((x) => x.h)), t: Math.max(...rows.map((x) => x.t)), k: Math.max(...rows.map((x) => x.k)) };
+  const cell = (x, k) => `<span class="num ${x[k] > 0 && x[k] === mx[k] && rows.length > 1 ? "top" : ""} ${x[k] ? "" : "z"}">${x[k] ? fmtK(x[k]) : "–"}</span>`;
+  return `<div class="fst"><div class="fst-hd"><span>Héros</span><span>Dégâts</span><span>Soins</span><span>Subis</span><span>Vaincus</span></div>${rows.map((x, i) => {
+    const c = char(x.id); const p = Math.round(100 * x.d / tot); const mvp = i === 0 && x.d > 0 && rows.length > 1;
+    const tip = `${x.n || (c && c.name) || "Héros"} : ${fmt(x.d)} dégâts (${p} %), ${fmt(x.h)} soins, ${fmt(x.t)} dégâts subis, ${x.k} ennemi${x.k > 1 ? "s" : ""} vaincu${x.k > 1 ? "s" : ""}${cum && x.f ? ` · ${x.f} combat${x.f > 1 ? "s" : ""}, ${fmt(Math.round(x.d / x.f))} dégâts par combat` : ""}`;
+    return `<div class="fst-r ${mvp ? "mvp" : ""}" data-tip="${h(tip)}"><span class="fst-n">${c ? head(c) : ""}<b>${h((c && c.name) || x.n || "Héros")}</b>${mvp ? `<i class="fst-mvp" aria-label="Meilleur combattant">${G("crown")}</i>` : ""}</span>${cell(x, "d")}${cell(x, "h")}${cell(x, "t")}${cell(x, "k")}<i class="fst-bar"><i style="width:${x.d ? Math.max(2, Math.round(100 * x.d / mx.d)) : 0}%"></i><em class="num">${p} %</em></i></div>`; }).join("")}</div>`;
+}
+function fstCum() {
+  const T = S.fstat; if (!T || !T.n) return `<p class="note">Le cumul se remplit à chaque combat terminé.</p>`;
+  const rows = Object.keys(T.h).map((k) => { const c = S.chars.find((x) => String(x.id) === k); return c ? Object.assign({ id: c.id, n: c.name }, T.h[k]) : null; });
+  return `<div class="xs muted fst-since">Depuis le ${new Date(T.t).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} à ${new Date(T.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · <b class="num">${fmt(T.n)}</b> combat${T.n > 1 ? "s" : ""} <button class="btn sm" data-act="fstreset">Remettre à zéro</button></div>${fstTable(rows, true)}`;
+}
+function fstPanel(F) {
+  const v = ui.fstv === "t" ? "t" : "c";
+  const seg = `<span class="seg">${[["c", "Ce combat"], ["t", "Cumul"]].map(([k, n]) => `<button data-act="fstv" data-v="${k}" aria-pressed="${v === k}">${n}</button>`).join("")}</span>`;
+  const body = v === "t" ? fstCum() : F ? `<div class="xs muted fst-since">${F.over ? (F.result === "win" ? "Victoire" : "Défaite") : `En cours · tour ${F.round}`}</div>${fstTable(E.fightStats(F))}` : `<p class="note">Aucun combat en cours.</p>`;
+  return `<div class="fst-top">${seg}</div>${body}`;
+}
+function fstSheet(t) {
+  const r = S.history.find((x) => x.t === +t); if (!r || !r.s) return;
+  const ls = !r.w && (S.losses || []).some((x) => x.t === r.t);
+  openSheet(`<h2>${h(r.label)}</h2><div class="small"><b class="${r.w ? "plus" : "minus"}">${r.w ? "Victoire" : "Défaite"}</b> <span class="muted">· ${Math.max(1, r.d || 0)} s · ${ago(r.t)}</span></div>${fstTable(r.s)}<div class="row" style="gap:8px;flex-wrap:wrap">${ls ? `<button class="btn" data-act="losssheet" data-t="${r.t}">Pourquoi j'ai perdu ?</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 
 /* ---------- MONDE ---------- */
@@ -2064,7 +2103,7 @@ function renderCombat() {
       </div>
       <div class="chalbar" id="chalbar"></div>
       <div id="await"></div>
-      <div class="ctabs">${[["sorts", "Sorts"], ["journal", "Journal"], ["butin", "Butin"]].map(([v, n]) => `<button data-act="ctab" data-v="${v}" aria-pressed="${(ui.ctab || "sorts") === v}">${n}</button>`).join("")}</div>
+      <div class="ctabs">${[["sorts", "Sorts"], ["journal", "Journal"], ["stats", "Stats"], ["butin", "Butin"]].map(([v, n]) => `<button data-act="ctab" data-v="${v}" aria-pressed="${(ui.ctab || "sorts") === v}">${n}</button>`).join("")}</div>
       <div class="csec-sorts">
         <div class="pad" style="padding-bottom:0" id="cbar">${consBar(false)}</div>
         <div class="herotabs">${team.map((c) => `<button data-act="combatcid" data-id="${c.id}" aria-pressed="${ui.combatCid === c.id}">${head(c)}${h(c.name)}</button>`).join("")}</div>
@@ -2073,9 +2112,10 @@ function renderCombat() {
       </div>
       <div class="csec-journal"><div class="log" id="flog"></div></div>
     </div>
-    <div class="stack csec-butin">
-      <div class="panel"><div class="phead"><h2>Butin</h2><span class="small muted" id="fres"></span></div><div class="pad" id="floot"></div></div>
-      <div class="panel"><div class="phead"><h2>Derniers combats</h2></div><div class="pad" id="fhist">${historyHtml(6)}</div></div>
+    <div class="stack cside">
+      <div class="panel csec-butin"><div class="phead"><h2>Butin</h2><span class="small muted" id="fres"></span></div><div class="pad" id="floot"></div></div>
+      <div class="panel csec-stats"><div class="phead"><h2>Statistiques</h2></div><div class="pad" id="fstats"></div></div>
+      <div class="panel csec-butin"><div class="phead"><h2>Derniers combats</h2></div><div class="pad" id="fhist">${historyHtml(6)}</div></div>
     </div>
   </section>
 `;
@@ -3211,6 +3251,7 @@ function updateCombat(force) {
     A.nEnts = F.ents.length; placeEnts(F);
   }
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
+  const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
   const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
   const cs = $("#cstreak"); if (cs) { const k = (S.chalStreak || 0) > 1 ? `${G("flame")} ×${S.chalStreak}` : ""; if (cs.dataset.k !== k) { cs.innerHTML = k; cs.dataset.k = k; } }
@@ -6098,6 +6139,9 @@ document.addEventListener("click", (ev) => {
     case "notifask": { if (typeof Notification === "undefined") return; Notification.requestPermission().then((p) => { if (p === "granted") { S.settings.notifBrowser = true; toast("Notifications autorisées."); } dirty = true; optionsSheet(); }); return; }
     case "setnotifb": S.settings.notifBrowser = d.v === "1"; dirty = true; optionsSheet(); return;
     case "losssheet": lossSheet(d.t); return;
+    case "fstsheet": fstSheet(d.t); return;
+    case "fstv": ui.fstv = d.v; updateCombat(true); return;
+    case "fstreset": if (!confirm("Remettre à zéro le cumul des statistiques de combat ?")) return; E.resetFightStats(S); updateCombat(true); return;
     case "lossequip": { const r = E.equip(S, +d.id, +d.uid); if (r) { toast(r); return; } toast(`Équipé sur ${char(+d.id).name}.`); break; }
     case "lossgo": ui.tab = "heroes"; ui.cid = +d.id; ui.hero = d.v || "equip"; closeSheet(); window.scrollTo(0, 0); break;
     case "hometab": ui.home = d.v; break;

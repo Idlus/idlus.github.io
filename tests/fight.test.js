@@ -240,3 +240,17 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.ok(E.ACH.some((a) => a.id === "dofus18" && a.title) && E.ORN.ame, "succès et ornement");
   console.log("ok - archimonstres : 277 âmes en 14 zones, pierres et parfum, Éternelle moisson, 18 Dofus et leurs quêtes, Dokoko, sauvegarde");
 }
+
+// 1.0.4 : statistiques de combat (dégâts, soins, dégâts subis, ennemis vaincus par héros)
+{
+  const S = E.newState("Stat", "eni"); E.startHunt(S, firstSub);
+  for (let t = 0; t < 5 * 60 * 1000; t += 250) E.tick(S, 250);
+  const win = S.history.find((r) => r.w); assert.ok(win && Array.isArray(win.s) && win.s.length, "statistiques dans l'historique");
+  const x = win.s[0]; assert.ok(x.id === S.chars[0].id && x.d > 0, "dégâts du héros comptés");
+  assert.ok(["d", "h", "t", "k"].every((k) => Number.isFinite(x[k]) && x[k] >= 0), "valeurs valides");
+  assert.ok(S.history.filter((r) => r.w).every((r) => r.s.reduce((a, y) => a + y.k, 0) >= 1), "au moins un ennemi vaincu par victoire");
+  assert.ok(S.fstat && S.fstat.n >= S.history.length && S.fstat.h[S.chars[0].id].d >= x.d, "cumul des statistiques");
+  const S2 = E.deserialize(E.serialize(S)); assert.ok(S2.fstat.n === S.fstat.n && S2.history[0].s, "statistiques sauvegardées");
+  E.resetFightStats(S); assert.strictEqual(S.fstat.n, 0, "remise à zéro");
+  console.log("ok - statistiques de combat par héros, cumul et sauvegarde");
+}
