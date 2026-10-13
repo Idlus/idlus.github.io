@@ -36,12 +36,17 @@
   };
   const kk = (n) => `<span class="mkpx"><span class="coin"></span> ${fmt(Math.round(n))}</span>`;
   const blocked = (cat, key) => (cat === "eq" && ITEMS[key] && ITEMS[key].slot === "dofus") || (cat === "res" && SPECIAL_CRAFTS[key] && (SPECIAL_CRAFTS[key].unique || SPECIAL_CRAFTS[key].furn || SPECIAL_CRAFTS[key].idol));
-  /* Prix minimum : pas moins que la revente au jeu (évite les erreurs et les dons de kamas déguisés). */
-  const floorOf = (cat, key, lot, it) => {
+  /* 0.1.38 : plus de prix minimum (on ne vend plus au jeu). Le seul plancher est 1 kama par unité.
+     La « valeur de base » (l'ancienne revente au jeu) sert de repère et de garde-fou : sous la moitié du prix moyen
+     (ou de cette valeur quand rien ne s'est encore vendu), le jeu demande une confirmation. */
+  const floorOf = (cat, key, lot) => (cat === "eq" ? 1 : Math.max(1, lot));
+  const baseOf = (cat, key, lot, it) => {
     if (cat === "eq") { const T = ITEMS[key]; const q = it ? E.itemQuality(it) : 0.5; return Math.max(1, Math.round(T.lvl * 6 * (0.6 + q * 0.6) * (it && it.radiant ? 5 : 1))); }
     if (cat === "res") return Math.max(1, E.resPrice(key) * lot);
     return lot;
   };
+  const LOW = 0.5;
+  const refOf = (cat, key, lot, it, st) => (st && st.avg ? Math.round(st.avg * lot) : baseOf(cat, key, lot, it));
   const CATS = [["eq", "Équipements"], ["res", "Ressources"], ["clef", "Clefs"], ["rune", "Runes"], ["cons", "Consommables"]];
   const SLOTS = [["", "Tous"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"]];
   const LVLS = [["", "Tous niveaux"], ["0-50", "Niveau 1 à 50"], ["51-100", "51 à 100"], ["101-150", "101 à 150"], ["151-200", "151 à 200"]];
@@ -155,7 +160,7 @@
   }
   function statsHtml(st, cat, key) {
     if (!st) return "";
-    const res = cat === "res" ? `Revente au jeu : ${fmt(E.resPrice(key))} l'unité. ` : "";
+    const res = cat === "res" ? `Valeur de base : ${fmt(E.resPrice(key))} l'unité. ` : "";
     return `<div><div class="row between"><b class="small">Prix moyen sur 14 jours</b><span class="small">${st.avg ? `<b>${fmt(st.avg)}</b> <span class="muted">/ unité</span>` : `<span class="muted">pas encore de vente</span>`}</span></div>
       ${spark(st.days)}<span class="xs muted">${res}${fmt(st.week || 0)} vendu${st.week > 1 ? "s" : ""} cette semaine.</span></div>`;
   }
@@ -214,20 +219,26 @@
   }
   function sellForm(x) {
     const s = S(); const res = x.cat !== "eq"; const lot = res ? M.lot : 1; const maxN = res ? Math.min(MAX, Math.floor(x.n / lot)) : 1; const n = Math.max(1, Math.min(M.n, maxN || 1));
-    const price = Math.round(+String(M.price).replace(/\s/g, "")) || 0; const tax = price ? Math.max(1, Math.ceil(price * TAX)) : 0; const floor = floorOf(x.cat, x.key, lot, x.it);
+    const price = Math.round(+String(M.price).replace(/\s/g, "")) || 0; const tax = price ? Math.max(1, Math.ceil(price * TAX)) : 0; const floor = floorOf(x.cat, x.key, lot);
     const used = M.mine ? M.mine.open.length : 0; const hint = M.hint && M.hint.key === x.key ? M.hint : null;
-    const sug = hint && hint.st && hint.st.avg ? Math.max(floor, Math.round(hint.st.avg * lot)) : null;
-    const why = !price ? "Indique un prix." : price < floor ? `Prix trop bas : au moins ${fmt(floor)} (revente au jeu).` : res && x.n < lot ? `Il t'en faut au moins ${lot}.` : used + n > MAX ? "Plus de place de vente." : tax * n > s.kamas ? "Pas assez de kamas pour la taxe." : "";
+    const base = baseOf(x.cat, x.key, lot, x.it); const st = hint && hint.st; const ref = refOf(x.cat, x.key, lot, x.it, st);
+    const sug = st && st.avg ? Math.max(floor, Math.round(st.avg * lot)) : null;
+    const low = price >= floor && price < ref * LOW && M.lowOk !== `${x.key}|${price}|${lot}`;
+    const unitTxt = (v) => (res ? `${fmt(Math.round(v / lot * 10) / 10)} l'unité` : fmt(v));
+    const why = !price ? "Indique un prix." : price < floor ? (res ? `Au moins 1 kama par unité (${fmt(floor)} le lot).` : "Au moins 1 kama.") : res && x.n < lot ? `Il t'en faut au moins ${lot}.` : used + n > MAX ? "Plus de place de vente." : tax * n > s.kamas ? "Pas assez de kamas pour la taxe." : "";
     return `<section class="panel mkdet"><div class="phead"><div class="row">${icon(x.cat, x.key)}<div><h2>${h(nameOf(x.cat, x.key))}</h2><span class="xs muted">${x.cat === "eq" ? `niv. ${ITEMS[x.key].lvl} · jet ${Math.round(E.itemQuality(x.it) * 100)} %${x.it.radiant ? " · ✦ Rayonnant" : ""}${x.it.fm ? ` · forgemagé ×${x.it.fm}` : ""}` : `tu en as ${fmt(x.n)}`}</span></div></div><button class="btn sm mkback" data-act="mk-ssel" data-v="">Retour</button></div>
       <div class="pad stack">
         ${res ? `<div class="mkfield"><span class="small"><b>Taille du lot</b></span><span class="seg">${[1, 10, 100].map((q) => `<button data-act="mk-lot" data-v="${q}" aria-pressed="${lot === q}" ${x.n < q ? "disabled" : ""}>×${q}</button>`).join("")}</span></div>
           <div class="mkfield"><span class="small"><b>Nombre de lots</b></span><span class="row"><span class="seg"><button data-act="mk-n" data-v="-1">−</button><button aria-pressed="true">${n}</button><button data-act="mk-n" data-v="1">+</button></span><span class="xs muted">${fmt(n * lot)} sur ${fmt(x.n)}</span></span></div>` : ""}
-        <div class="mkfield"><span class="small"><b>${res ? "Prix d'un lot" : "Ton prix"}</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkPrice" data-act="mk-price" value="${h(M.price)}" placeholder="${sug || floor}"></div>
-        <div class="mkfield"><span></span><span class="xs muted">${hint ? `${sug ? `Prix conseillé : <b>${fmt(sug)}</b> (moyenne des ventes sur 14 jours). ` : "Pas encore de vente pour comparer. "}${hint.low ? `Le moins cher en vente : <b>${fmt(hint.low.price)}</b>${hint.low.qty > 1 ? ` le lot de ${hint.low.qty}` : ""}. ` : ""}` : "Recherche des prix…"}Minimum : ${fmt(floor)} (revente au jeu).</span></div>
+        <div class="mkfield"><span class="small"><b>${res ? "Prix d'un lot" : "Ton prix"}</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkPrice" data-act="mk-price" value="${h(M.price)}" placeholder="${sug || base}"></div>
+        <div class="mkrefs"><div><span class="xs muted">Prix moyen des ventes (14 j)</span><b>${!hint ? "…" : st && st.avg ? `${fmt(Math.round(st.avg * lot))}` : "pas encore de vente"}</b></div><div><span class="xs muted">Valeur de base</span><b>${fmt(base)}</b></div></div>
+        <div class="mkfield"><span></span><span class="xs muted">${hint ? `${hint.low ? `Le moins cher en vente : <b>${fmt(hint.low.price)}</b>${hint.low.qty > 1 ? ` le lot de ${hint.low.qty}` : ""}. ` : ""}` : "Recherche des prix… "}${res ? `Prix pour un lot de ${lot}. ` : ""}Pas de prix minimum : 1 kama par unité au plus bas.</span></div>
         ${res ? sellOrdHtml(x, hint, price, lot, n) : ""}
         <div class="mksum"><span>Taxe de mise en vente (2 %)${n > 1 ? ` × ${n}` : ""}</span><b>− ${fmt(tax * n)}</b><span>Durée</span><b>14 jours</b><span class="tot">Tu recevras à la vente</span><b class="tot">${kk(price * n)}</b></div>
         <div><div class="row between xs"><span>Places de vente</span><b>${used + n} / ${MAX}</b></div><div class="mkslots">${Array.from({ length: MAX }, (_, i) => `<i class="${i < used ? "on" : i < used + n ? "new" : ""}"></i>`).join("")}</div></div>
-        <button class="btn primary" data-act="mk-sell" ${why || M.busy ? "disabled" : ""}>${res && n > 1 ? `Mettre ${n} lots en vente` : "Mettre en vente"}</button>
+        ${low && !why ? `<div class="mklow"><span><b>Ce prix est très bas, tu confirmes ?</b> ${unitTxt(price)}, soit ${Math.round((1 - price / ref) * 100)} % de moins que ${st && st.avg ? "le prix moyen" : "la valeur de base"} (${unitTxt(ref)}).</span>
+          <span class="row"><button class="btn sm mkwarnbtn" data-act="mk-lowok" data-v="${h(`${x.key}|${price}|${lot}`)}">Oui, vendre à ${fmt(price)}</button><button class="btn sm" data-act="mk-lowfix" data-i="mkPrice">Corriger le prix</button></span></div>`
+          : `<button class="btn primary" data-act="mk-sell" ${why || M.busy ? "disabled" : ""}>${res && n > 1 ? `Mettre ${n} lots en vente` : "Mettre en vente"}</button>`}
         <span class="xs ${why ? "" : "muted"}" ${why ? 'style="color:var(--danger)"' : ""}>${why || "L'objet quitte ton sac tout de suite et attend sur le serveur. Si tu le retires, il revient dans ton sac mais la taxe est perdue."}</span>
       </div></section>`;
   }
@@ -235,7 +246,7 @@
     const x = sellable(M.sCat).find((y) => (y.uid ? String(y.uid) : y.key) === M.sSel); if (!x) return;
     const res = x.cat !== "eq"; const price = Math.round(+String(M.price).replace(/\s/g, "")) || 0; const lot = res ? M.lot : 1;
     const n = res ? Math.max(1, Math.min(M.n, Math.floor(x.n / lot))) : 1;
-    if (price < floorOf(x.cat, x.key, lot, x.it)) return X().toast("Prix trop bas.");
+    if (price < floorOf(x.cat, x.key, lot)) return X().toast("Au moins 1 kama par unité.");
     const r = await act("hdv_list", { p_cat: x.cat, p_key: x.key, p_uid: x.uid || null, p_lot: lot, p_n: n, p_price: price, p_name: nameOf(x.cat, x.key), p_lvl: lvlOf(x.cat, x.key), p_slot: slotOf(x.cat, x.key) }, res && n > 1 ? `${n} lots mis en vente.` : "Mis en vente.");
     if (r) { M.sSel = null; M.price = ""; M.n = 1; M.mine = null; M.list = null; loadMine(); }
   }
@@ -270,7 +281,10 @@
   const OCATS = [["res", "Ressources"], ["clef", "Clefs"], ["rune", "Runes"], ["cons", "Consommables"]];
   const norm = (t) => String(t).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const haveOf = (cat, key) => { const s = S(); return s ? ((s[bucket(cat)] || {})[key] || 0) : 0; };
-  const oFloor = (cat, key) => cat === "res" ? Math.max(1, E.resPrice(key)) : 1;
+  const oFloor = () => 1;
+  const oBase = (cat, key) => cat === "res" ? Math.max(1, E.resPrice(key)) : 1;
+  const oLowTag = (o) => o.cat === "res" && o.price < oBase(o.cat, o.key) * LOW ? `<span class="tag mklowtag">très bas</span>` : "";
+  const oSort = (L) => L.slice().sort((a, b) => (oLowTag(a) ? 1 : 0) - (oLowTag(b) ? 1 : 0));
   const oTax = (tot) => tot > 0 ? Math.ceil(tot * TAX) : 0;
   let RUNES = null;
   function catalog(c) {
@@ -286,11 +300,11 @@
     return n > 0 ? `<button class="btn sm primary ${cls || ""}" data-act="mk-ofill" data-id="${o.id}" data-n="${n}" data-nm="${h(nameOf(o.cat, o.key))}" data-p="${o.price}" ${M.busy ? "disabled" : ""}>Vendre ${fmt(n)}</button>`
       : `<span class="xs muted">tu n'en as pas</span>`;
   };
-  const ordLine = (o, withName) => `<div class="li mkrow mkord">${withName ? icon(o.cat, o.key) : ""}<span class="grow">${withName ? `<b>${h(nameOf(o.cat, o.key))}</b><br>` : ""}<span class="xs muted">${fmt(o.left)} voulue${o.left > 1 ? "s" : ""}${o.left < o.qty ? ` sur ${fmt(o.qty)}` : ""} · ${left(o.exp)}${haveOf(o.cat, o.key) ? ` · tu en as ${fmt(haveOf(o.cat, o.key))}` : ""}</span></span>${kk(o.price)}<span class="xs muted">/ unité</span>${fillBtn(o)}</div>`;
+  const ordLine = (o, withName) => `<div class="li mkrow mkord">${withName ? icon(o.cat, o.key) : ""}<span class="grow">${withName ? `<b>${h(nameOf(o.cat, o.key))}</b><br>` : ""}<span class="xs muted">${fmt(o.left)} voulue${o.left > 1 ? "s" : ""}${o.left < o.qty ? ` sur ${fmt(o.qty)}` : ""} · ${left(o.exp)}${haveOf(o.cat, o.key) ? ` · tu en as ${fmt(haveOf(o.cat, o.key))}` : ""}</span></span>${kk(o.price)}<span class="xs muted">/ unité</span>${oLowTag(o)}${fillBtn(o)}</div>`;
   /* Fiche d'une ressource (onglet Acheter) : les meilleures offres d'achat à côté des lots en vente. */
   function detOrdHtml(cat, key) {
     if (M.detOrd === null) return "";
-    const L = M.detOrd.slice(0, 4);
+    const L = oSort(M.detOrd).slice(0, 4);
     return `<div class="mkobox"><div class="row between"><b>On achète</b><span class="xs muted">meilleur prix d'abord</span></div>
       ${L.length ? `<div class="list">${L.map((o) => ordLine(o, false)).join("")}</div>` : `<span class="xs muted">Personne ne demande cette ressource pour l'instant.</span>`}
       ${mine() && !L.some((o) => o.mine) ? `<div><button class="btn sm" data-act="mk-onew" data-c="${cat}" data-k="${h(key)}">Faire une offre d'achat</button></div>` : ""}</div>`;
@@ -309,7 +323,7 @@
     if (M.oView === "mine") return seg + (mine() ? oMineHtml(open) : "");
     const L = M.orders;
     const list = L === null ? `<div class="empty">Chargement…</div>` : !L.length ? `<div class="empty">Aucune offre d'achat${M.oQ ? " pour cette recherche" : ""} pour l'instant.</div>`
-      : `<div class="list">${L.map((o) => ordLine(o, true)).join("")}</div>`;
+      : `<div class="list">${oSort(L).map((o) => ordLine(o, true)).join("")}</div>`;
     return `${seg}<div class="row invbar"><input type="text" id="mkOQ" data-act="mk-oq" placeholder="Rechercher une ressource…" value="${h(M.oQ)}"><span class="small muted">${L ? `${L.length} offre${L.length > 1 ? "s" : ""}` : ""}</span></div>
       <section class="panel"><div class="phead"><h2>Les joueurs achètent</h2><span class="xs muted">tu es payé tout de suite, même si l'acheteur n'est pas là</span></div>${list}</section>
       <span class="xs muted">Tu peux vendre tout ou une partie. Les acheteurs restent anonymes.</span>`;
@@ -325,15 +339,19 @@
     } else {
       const qty = Math.max(0, Math.round(+String(M.oQty).replace(/\s/g, "")) || 0); const price = Math.max(0, Math.round(+String(M.oPrice).replace(/\s/g, "")) || 0);
       const tot = qty * price, tax = oTax(tot), floor = oFloor(sel.cat, sel.key); const hint = M.hint && M.hint.key === sel.key ? M.hint : null;
+      const base = oBase(sel.cat, sel.key); const ref = hint && hint.st && hint.st.avg ? hint.st.avg : base;
+      const low = price >= floor && price < ref * LOW && M.lowOk !== `o|${sel.key}|${price}`;
       const dup = M.oMine && M.oMine.some((o) => o.st === "open" && o.key === sel.key);
-      const why = !qty ? "Indique une quantité." : qty > 100000 ? "100 000 au maximum." : !price ? "Indique un prix à l'unité." : price < floor ? `Prix trop bas : au moins ${fmt(floor)} l'unité (revente au jeu).` : tot > 2e9 ? "Offre trop grosse." : open >= OMAX ? `Déjà ${OMAX} offres en cours.` : dup ? "Tu as déjà une offre pour cette ressource." : tot + tax > s.kamas ? "Pas assez de kamas." : "";
+      const why = !qty ? "Indique une quantité." : qty > 100000 ? "100 000 au maximum." : !price ? "Indique un prix à l'unité." : price < floor ? "Au moins 1 kama l'unité." : tot > 2e9 ? "Offre trop grosse." : open >= OMAX ? `Déjà ${OMAX} offres en cours.` : dup ? "Tu as déjà une offre pour cette ressource." : tot + tax > s.kamas ? "Pas assez de kamas." : "";
       form = `<div class="row">${icon(sel.cat, sel.key)}<div class="grow"><b>${h(nameOf(sel.cat, sel.key))}</b><br><span class="xs muted">tu en as ${fmt(haveOf(sel.cat, sel.key))}</span></div><button class="btn sm" data-act="mk-opick" data-k="">Changer</button></div>
         <div class="mkfield"><span class="small"><b>Quantité</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkOQty" data-act="mk-oqty" value="${h(M.oQty)}" placeholder="100"></div>
-        <div class="mkfield"><span class="small"><b>Prix à l'unité</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkOPrice" data-act="mk-oprice" value="${h(M.oPrice)}" placeholder="${floor}"></div>
-        <div class="mkfield"><span></span><span class="xs muted">${hint ? `${hint.low ? `En vente dès <b>${fmt(Math.round(hint.low.price / hint.low.qty * 10) / 10)}</b> l'unité. ` : "Rien en vente. "}${hint.ord ? `Meilleure offre : <b>${fmt(hint.ord.price)}</b>. ` : ""}${hint.st && hint.st.avg ? `Moyenne des ventes : <b>${fmt(hint.st.avg)}</b>. ` : ""}` : "Recherche des prix… "}Minimum : ${fmt(floor)} (revente au jeu).</span></div>
+        <div class="mkfield"><span class="small"><b>Prix à l'unité</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkOPrice" data-act="mk-oprice" value="${h(M.oPrice)}" placeholder="${Math.round(ref)}"></div>
+        <div class="mkfield"><span></span><span class="xs muted">${hint ? `${hint.low ? `En vente dès <b>${fmt(Math.round(hint.low.price / hint.low.qty * 10) / 10)}</b> l'unité. ` : "Rien en vente. "}${hint.ord ? `Meilleure offre : <b>${fmt(hint.ord.price)}</b>. ` : ""}${hint.st && hint.st.avg ? `Moyenne des ventes : <b>${fmt(hint.st.avg)}</b>. ` : ""}` : "Recherche des prix… "}Valeur de base : ${fmt(base)}. Pas de prix minimum.</span></div>
         <div class="mkfield"><span class="small"><b>Durée</b></span><span class="seg">${[3, 7, 14].map((d) => `<button data-act="mk-odays" data-v="${d}" aria-pressed="${M.oDays === d}">${d} j</button>`).join("")}</span></div>
         <div class="mksum"><span>${fmt(qty)} × ${fmt(price)}</span><b>${fmt(tot)}</b><span>Taxe 2 % (seulement sur ce que tu reçois)</span><b>${fmt(tax)}</b><span class="tot">Mis de côté maintenant</span><b class="tot">${kk(tot + tax)}</b></div>
-        <button class="btn primary" data-act="mk-onewgo" ${why || M.busy ? "disabled" : ""}>Publier l'offre</button>
+        ${low && !why ? `<div class="mklow"><span><b>Ce prix est très bas, tu confirmes ?</b> ${fmt(price)} l'unité, soit ${Math.round((1 - price / ref) * 100)} % de moins que ${hint && hint.st && hint.st.avg ? "le prix moyen" : "la valeur de base"} (${fmt(Math.round(ref))}). Ton offre sera rangée en bas de la liste avec l'étiquette « très bas ».</span>
+          <span class="row"><button class="btn sm mkwarnbtn" data-act="mk-lowok" data-v="${h(`o|${sel.key}|${price}`)}">Oui, publier à ${fmt(price)}</button><button class="btn sm" data-act="mk-lowfix" data-i="mkOPrice">Corriger le prix</button></span></div>`
+          : `<button class="btn primary" data-act="mk-onewgo" ${why || M.busy ? "disabled" : ""}>Publier l'offre</button>`}
         <span class="xs ${why ? "" : "muted"}" ${why ? 'style="color:var(--danger)"' : ""}>${why || "Tu reçois la marchandise même hors ligne. Si tu retires l'offre ou à la fin, les kamas qui n'ont pas servi te reviennent, taxe comprise."}</span>`;
     }
     const L = M.oMine;
@@ -453,6 +471,8 @@
       case "mk-lot": M.lot = +d.v; M.n = 1; paint(); return;
       case "mk-n": M.n = Math.max(1, Math.min(MAX, M.n + +d.v)); paint(); return;
       case "mk-sell": doSell(); return;
+      case "mk-lowok": M.lowOk = d.v; paint(); return;
+      case "mk-lowfix": { const i = document.getElementById(d.i); if (i) { i.focus(); i.select(); } return; }
       case "mk-cancel": { const r = await act("hdv_cancel", { p_id: +d.id }, "Retiré : de retour dans ton sac."); if (r) loadMine(); return; }
       case "mk-rep": M.rep = +d.id; paint(); setTimeout(() => { const i = $("#mkRep"); if (i) i.focus(); }, 0); return;
       case "mk-repgo": { const v = Math.round(+String(($("#mkRep") || {}).value || "").replace(/\s/g, "")); if (!(v > 0)) return; const r = await act("hdv_reprice", { p_id: +d.id, p_price: v }, "Prix modifié."); M.rep = null; if (r) loadMine(); else paint(); return; }
@@ -472,7 +492,7 @@
       case "mk-odays": M.oDays = +d.v; paint(); return;
       case "mk-onew": M.tab = "ord"; M.oView = "mine"; oPick(d.c === "clef" ? "res" : d.c, d.k, +d.n || 0); render($("#main")); window.scrollTo(0, 0); return;
       case "mk-onewgo": { const o = M.oSel; if (!o) return; const qty = Math.round(+String(M.oQty).replace(/\s/g, "")) || 0, price = Math.round(+String(M.oPrice).replace(/\s/g, "")) || 0;
-        if (price < oFloor(o.cat, o.key)) return X().toast("Prix trop bas.");
+        if (price < oFloor(o.cat, o.key)) return X().toast("Au moins 1 kama l'unité.");
         const r = await act("hdv_order_new", { p_cat: o.cat, p_key: o.key, p_qty: qty, p_price: price, p_days: M.oDays, p_name: nameOf(o.cat, o.key), p_lvl: lvlOf(o.cat, o.key), p_slot: slotOf(o.cat, o.key) }, "Offre publiée : les kamas sont mis de côté.");
         if (r) { M.oSel = null; M.oQty = ""; M.oPrice = ""; M.oFind = ""; M.orders = null; loadOMine(); } return; }
       case "mk-ocancel": { const r = await act("hdv_order_cancel", { p_id: +d.id }, "Offre retirée : les kamas restants sont revenus."); if (r) loadOMine(); return; }
@@ -497,5 +517,7 @@
 
   /* 0.1.37 : « Vendre à l'HdV » depuis le trop-plein ouvre la mise en vente de cet objet */
   const sellItem = (uid) => { M.tab = "sell"; M.sCat = "eq"; M.sSel = String(uid); M.price = ""; M.n = 1; M.lot = 1; const it = S() && S().items[uid]; if (it) priceHint("eq", it.tpl); if (M.mine === null && mine()) loadMine(); };
-  window.MARKET = { start, sellItem, render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
+  /* 0.1.38 : « Vendre à l'HdV » depuis une ressource de l'inventaire */
+  const sellRes = (key) => { const c = E.isKey(key) ? "clef" : "res"; const n = (S() && S().res[key]) || 0; M.tab = "sell"; M.sCat = c; M.sSel = key; M.price = ""; M.n = 1; M.lot = n >= 100 ? 100 : n >= 10 ? 10 : 1; priceHint("res", key); if (M.mine === null && mine()) loadMine(); };
+  window.MARKET = { start, sellItem, sellRes, canSell: (key) => !blocked("res", key), render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
 })();

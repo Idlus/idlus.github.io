@@ -1,6 +1,18 @@
 {
-  "version": "0.1.37.2",
+  "version": "0.1.38",
   "versions": [
+    {
+      "v": "0.1.38",
+      "name": "Tout passe par l'HdV",
+      "items": [
+        "Le jeu ne rachète plus tes objets ni tes ressources depuis l'Inventaire : on vend maintenant aux autres joueurs, à l'hôtel de vente. Le bouton « Vendre » devient « Vendre à l'HdV » et ouvre directement la mise en vente, déjà remplie. « Briser » reste là",
+        "Achats du jour (Inventaire › Ressources) : chaque jour, le jeu achète 3 ressources de ton niveau à bon prix (1,5 × leur valeur), 100 au plus chacune. La liste change à minuit",
+        "Règles automatiques : les objets à jet trop bas et les doublons sont brisés en runes au lieu d'être vendus. Les réglages « Vendre » existants passent tout seuls à « Briser »",
+        "Marchand de secours : le surplus automatique (limite « Garder au maximum » d'une ressource, limite de banque pendant l'absence) lui est vendu à 30 % de la valeur",
+        "Hôtel de vente : plus de prix minimum (1 kama par unité au plus bas). La mise en vente montre côte à côte le prix moyen des ventes et la valeur de base ; sous la moitié du prix moyen, le jeu demande « Ce prix est très bas, tu confirmes ? »",
+        "Offres d'achat : plus de prix minimum non plus, même confirmation pour un prix très bas. Les offres très basses restent visibles, en bas de la liste, avec l'étiquette « très bas »"
+      ]
+    },
     {
       "v": "0.1.37.2",
       "name": "Prix des héros",

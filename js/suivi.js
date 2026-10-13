@@ -21,10 +21,10 @@
   const live = (S) => !!(S && Array.isArray(S.chars) && S.stats);
 
   /* ======================= CARNET DE BORD ======================= */
-  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Ventes au jeu", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", commande: "Commandes d'artisans", tresor: "Chasse au trésor", expedition: "Expédition", autre: "Autres" };
+  E.CARNET_IN = { chasse: "Chasse", donjon: "Donjons", vente: "Achats du jour", hdv: "Hôtel de vente", defi: "Défi du jour", quete: "Quêtes et succès", commande: "Commandes d'artisans", tresor: "Chasse au trésor", expedition: "Expédition", autre: "Autres" };
   E.CARNET_OUT = { fm: "Forgemagie", havre: "Havre-Sac", craft: "Artisanat et clés", monture: "Montures", boutique: "Boutique", hdv: "Hôtel de vente", idole: "Idoles", donjon: "Donjons", autre: "Autres" };
   const ACT_CAT = {
-    sellItem: "vente", sellRes: "vente",
+    gameBuySell: "vente",
     forgemage: "fm", feedForgemage: "fm", fuseRunes: "fm", transmute: "fm", exoForge: "fm", exoCraft: "fm", startFmPlan: "fm",
     buyHavre: "havre", placeFurn: "havre", buildAtelier: "havre", setAtelier: "havre",
     craftItem: "craft", craftSpecial: "craft", craftMany: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",

@@ -3012,6 +3012,16 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .id-page .box{background:var(--panel);border:3px solid var(--frame);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
 .id-page .box h2{margin:0 0 8px}
 @media (max-width:860px){.id-page{grid-template-columns:1fr}}
+/* 0.1.38 : HdV sans prix minimum, achats du jour */
+.mkrefs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mkrefs>div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;display:flex;flex-direction:column;min-width:0}
+.mkrefs b{font-variant-numeric:tabular-nums}
+.mklow{background:color-mix(in srgb,#f0b54a 12%,transparent);border:1px solid #f0b54a;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.btn.mkwarnbtn{background:#f0b54a;border-color:#f0b54a;color:#2a1a05}
+.tag.mklowtag{background:var(--panel3);color:var(--ink);opacity:.85}
+.mkord:has(.mklowtag){opacity:.65}
+.gbuy{display:flex;flex-direction:column;gap:6px}
+.gbuy .li{flex-wrap:wrap}
 
 /* 0.1.37.2 : prix des héros */
 .btn.kgold{background:linear-gradient(180deg,#ffe28a,#e3b23c);color:#2a1a08;box-shadow:0 3px 0 rgba(0,0,0,.3)}
