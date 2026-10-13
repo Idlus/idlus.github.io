@@ -1,6 +1,13 @@
 {
-  "version": "0.1.48.2",
+  "version": "0.1.48.3",
   "versions": [
+    {
+      "v": "0.1.48.3",
+      "name": "Sablier en cadeau",
+      "items": [
+        "Les codes cadeaux peuvent maintenant offrir des heures de Sablier de Xélor, qui peuvent dépasser le maximum de 9 h (jusqu'à 24 h)"
+      ]
+    },
     {
       "v": "0.1.48.2",
       "name": "Salons Commerce et PvP",

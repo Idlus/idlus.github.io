@@ -1012,6 +1012,7 @@
     (d.r || []).forEach(([n, q]) => p.push(`${q} × ${n}`));
     (d.c || []).forEach(([id, q]) => p.push(`${q} × ${(D.CONSUMABLES[id] || { name: id }).name}`));
     (d.i || []).forEach(([id, q]) => p.push(`${q} × ${(ITEMS[id] || { name: id }).name}`)); // 0.1.26 : objets d'équipement
+    if (d.s) p.push(`${d.s} h de Sablier de Xélor`);
     if (d.t) p.push(`titre « ${d.t} »`);
     if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name(null)} »`);
     return p.join(", "); };
@@ -1022,6 +1023,7 @@
     (d.r || []).forEach(([n, q]) => { if (RES[n]) addRes(S, n, Math.max(1, Math.round(+q) || 1)); });
     (d.c || []).forEach(([id, q]) => { if (D.CONSUMABLES[id]) E.addCons(S, id, Math.max(1, Math.round(+q) || 1)); });
     (d.i || []).forEach(([id, q]) => { if (ITEMS[id]) for (let n = Math.min(10, Math.max(1, Math.round(+q) || 1)); n > 0; n--) E.rollItem(S, id, { radiant: false }); });
+    if (d.s && E.sabGift) E.sabGift(S, Math.min(24, Math.max(0, +d.s || 0))); // heures de Sablier de Xélor (peut dépasser le maximum)
     S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
     if (d.t && !S.titlesExtra.includes(d.t)) S.titlesExtra.push(String(d.t).slice(0, 40));
     if (d.o && ORN[d.o]) S.unlocks[d.o] = 1;

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.48.3 « Sablier en cadeau »
+Récompense de code cadeau `s` (heures de sablier, 24 au plus) : `E.sabGift` (engine.js, plafond `E.SAB_GIFT_MAX`), `E.giveGift`/`E.giftText` (systems.js), type « Heures de sablier » dans l'onglet Codes cadeaux (js/codes.js). `E.sab` ne recharge plus au-dessus de `E.SAB_MAX` mais ne coupe pas les heures offertes.
+
 ## 0.1.48.2 « Salons Commerce et PvP »
 Chat : salons `c` (Commerce) et `v` (PvP) dans `chat_msgs.ch`. Serveur (supabase/chat.sql) : `chat_send` prend `p_ch` (l'ancienne version à 3 paramètres est supprimée), Commerce limité à un message toutes les 30 s, salons lisibles par tous ; supabase/koli.sql annonce les grades dans `v`. Jeu (js/chat.js) : `C.c` / `C.v`, pastilles comptées dans le chat réduit, barre `.ch-top` + `.ch-tabs`, ligne `.ch-strip` (événement + Discord).
 

@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.48.2";
+const GAME_VERSION = "0.1.48.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.48.3", name: "Sablier en cadeau", items: [
+    "Les codes cadeaux peuvent maintenant offrir des heures de Sablier de Xélor, qui peuvent dépasser le maximum de 9 h (jusqu'à 24 h)",
+  ] },
   { v: "0.1.48.2", name: "Salons Commerce et PvP", items: [
     "Chat : deux nouveaux salons. Commerce pour acheter, vendre et échanger (un message toutes les 30 secondes), PvP pour le Kolizéum, avec l'annonce des grades Or, Cristal et Diamant",
     "Nouvelle barre du chat : le titre en haut, puis les six salons avec leur icône et leur pastille de messages non lus. Le bouton pour réduire le chat reste toujours visible",
@@ -1224,7 +1227,7 @@ function sabHtml() {
   return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="Sablier de Xélor : réserve de temps rapide (+3 h par jour)"><span class="sb">⏳</span><b class="num" id="stSab">${sabLeft(B.r)}</b></button><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}">×${v}</button>`).join("")}</span></span>`;
 }
 function sabSheet() {
-  const B = E.sab(S); const fill = Math.round((B.r / E.SAB_MAX) * 100);
+  const B = E.sab(S); const fill = Math.min(100, Math.round((B.r / E.SAB_MAX) * 100));
   openSheet(`<h2>⏳ Sablier de Xélor</h2>
     ${B.open ? `<p style="margin:0">Le temps file plus vite tant que le sablier n'est pas vide : combats, donjons, expédition, récolte, ateliers, familiers et enclos.</p>
     <div class="bar"><i style="width:${fill}%"></i></div>
