@@ -1734,6 +1734,17 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .spgrid{grid-template-areas:"bar det" "prev det" "grim det"}
 .spprevp{grid-area:prev}
 @media (max-width:860px){.spgrid{grid-template-areas:"bar" "det" "prev" "grim"}}
+/* 1.0.4.5 : grimoire juste sous la barre, et rappel « Ta barre » collé en haut de l'écran pendant qu'on parcourt le grimoire */
+.spgrid{grid-template-areas:"bar det" "grim det" "prev det"}
+@media (max-width:860px){.spgrid{grid-template-areas:"bar" "det" "grim" "prev"}}
+.spgrimp{overflow:clip}
+.spmini{position:sticky;top:var(--spmt,calc(var(--sth,56px) + 60px));z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 14px;background:var(--panel2);border-bottom:2px solid var(--line);box-shadow:0 6px 12px rgba(0,0,0,.18)}
+.spmrow{display:flex;gap:6px;flex-wrap:wrap}
+.spslot.spm{width:40px;height:40px;max-width:none;border-radius:9px}
+.spslot.spm.empty{font-size:15px}
+.spmh{flex:1 1 200px;color:var(--ink)}
+.spdetp{top:var(--spmt,calc(var(--sth,56px) + 60px))}
+@media (max-width:600px){.spmini{padding:7px 10px}.spslot.spm{width:36px;height:36px}.spmh{flex-basis:100%}}
 .spturns{display:flex;flex-direction:column;gap:7px}
 .sptn{display:grid;grid-template-columns:62px minmax(0,1fr) 64px;gap:10px;align-items:center}
 .sptn .tn{font-family:var(--font-title);color:var(--title);font-size:15px}

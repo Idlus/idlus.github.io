@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.4.4";
+const GAME_VERSION = "1.0.4.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.4.5", name: "Sorts sans dézoomer", items: [
+    "Héros › Sorts & stratégies : le Grimoire est maintenant juste sous la barre de sorts (l'aperçu « Ce que fera ton héros » passe en dessous). Plus besoin de dézoomer la page pour changer un sort",
+    "Nouveau rappel « Ta barre » en haut du Grimoire : il reste collé en haut de l'écran pendant que tu parcours les sorts. Choisis la case à remplacer, puis clique un sort, ou glisse-le directement sur une case",
+    "Sur PC, la page défile toute seule quand tu glisses un sort vers le haut ou le bas de l'écran",
+    "L'explication « Comment ton héros choisit ses sorts » est repliée par défaut (un clic pour l'ouvrir)",
+  ] },
   { v: "1.0.4.4", name: "Fabriquer sac plein", items: [
     "Métiers : quand le sac est plein, on peut quand même fabriquer. L'objet part dans le trop-plein de l'inventaire. Avant, le bouton « Fabriquer » restait grisé sans explication (le Bricoleur n'était pas touché car il ne fabrique pas d'équipement)",
     "Si le sac et le trop-plein sont pleins tous les deux, la recette l'indique clairement (« sac plein ») avec un lien vers l'inventaire",
@@ -4172,7 +4178,7 @@ function spBarGroups(c, slots) {
 }
 function spHowHtml() {
   const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques, au mieux", "Avec les PA restants, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles. L'ordre des attaques ne compte pas."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
-  return `<details class="sphow" open><summary>Comment ton héros choisit ses sorts</summary><div class="sphs">${steps.map(([n, t, d]) => `<div class="sph"><span class="k">${n}</span><div><b>${t}</b><br><span class="xs muted">${d}</span></div></div>`).join("")}</div>${canHover ? `<p class="xs muted">Glisse un sort pour changer sa place.</p>` : ""}</details>`;
+  return `<details class="sphow" ${ui.spHowOpen ? "open" : ""}><summary>Comment ton héros choisit ses sorts</summary><div class="sphs">${steps.map(([n, t, d]) => `<div class="sph"><span class="k">${n}</span><div><b>${t}</b><br><span class="xs muted">${d}</span></div></div>`).join("")}</div>${canHover ? `<p class="xs muted">Glisse un sort pour changer sa place.</p>` : ""}</details>`;
 }
 function charSpellsView(c) {
   const eq = c.spells; const N = E.spellSlots(c);
@@ -4215,6 +4221,14 @@ function charSpellsView(c) {
     .filter((pr) => F === "all" || pr.some((sp) => sp && (F === "atk" ? isAtk(sp) : !isAtk(sp))))
     .map((pr) => { const list = pr.filter(Boolean); const has = list.some((sp) => eqIds.has(sp.id));
       return `<div class="sppt ${has ? "has" : ""}"><div class="two">${list.map((sp) => one(sp, has)).join(`<span class="or">ou</span>`)}</div><div class="nm">${list.map((sp) => h(sp.name)).join(" / ")}</div></div>`; }).join("");
+  // 1.0.4.5 : rappel de la barre en haut du grimoire (reste visible en défilant) : cible de dépôt et choix de la case à remplacer
+  const selSp = eq[sel] && E.spellDef(c.cls, eq[sel].id);
+  const mini = Array.from({ length: N }, (_, i) => { const x = eq[i]; const sp = x && E.spellDef(c.cls, x.id);
+    return sp ? `<button class="spslot spm ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-tip="${h(sp.name)}" aria-label="Case ${i + 1} : ${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}</button>`
+      : `<button class="spslot spm empty ${sel === i ? "sel" : ""}" data-act="spsel" data-i="${i}" data-spslot="${i}" aria-label="Case ${i + 1} vide">+</button>`; }).join("");
+  const full = eq.length >= N;
+  const miniHint = full && selSp ? `${canHover ? "Clique" : "Touche"} un sort : il remplace <b>${h(selSp.name)}</b>${canHover ? ", ou glisse-le sur une case" : ""}.` : `${canHover ? "Clique" : "Touche"} un sort pour l'ajouter${canHover ? ", ou glisse-le sur une case" : ""}.`;
+  const miniBar = `<div class="spmini"><span class="xs muted">Ta barre</span><div class="spmrow">${mini}</div><span class="xs spmh">${miniHint}</span></div>`;
   return `<div class="stack spells2">
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
   <div class="spgrid">
@@ -4222,10 +4236,10 @@ function charSpellsView(c) {
       <div class="pad stack" style="gap:8px">${spBarGroups(c, slots)}${wpBarHtml(c)}
       ${spHowHtml()}</div></div>
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
-    <div class="panel spprevp">${spPreviewHtml(c)}</div>
     <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
-      <div class="pad stack" style="gap:8px"><div class="sppairs">${grim}</div>
-      <p class="xs muted">${canHover ? "Glisse un sort sur une case de la barre, ou clique dessus pour l'ajouter. Survole un sort pour lire sa fiche." : "Touche un sort pour l'ajouter à la barre ; si elle est pleine, il remplace le sort sélectionné."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
+      ${miniBar}<div class="pad stack" style="gap:8px"><div class="sppairs">${grim}</div>
+      <p class="xs muted">${canHover ? "Choisis d'abord la case à remplacer dans « Ta barre », puis clique un sort ou glisse-le sur une case. Survole un sort pour lire sa fiche." : "Touche d'abord la case à remplacer dans « Ta barre », puis touche un sort ; si la barre n'est pas pleine, il s'ajoute."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
+    <div class="panel spprevp">${spPreviewHtml(c)}</div>
   </div></div>`;
 }
 
@@ -7013,6 +7027,12 @@ document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && 
 /* barre de sorts : glisser un sort de la barre ou du grimoire sur une case */
 document.addEventListener("dragstart", (ev) => { const t = ev.target.closest && ev.target.closest("[data-spdrag]"); if (!t) return; ev.dataTransfer.setData("text/plain", "sp:" + t.dataset.spdrag); ev.dataTransfer.effectAllowed = "move"; hideTip(); });
 document.addEventListener("dragover", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (!z) return; ev.preventDefault(); document.querySelectorAll(".spslot.over").forEach((e) => e !== z && e.classList.remove("over")); z.classList.add("over"); });
+/* 1.0.4.5 : pendant un glisser, la page défile quand la souris approche du haut ou du bas de l'écran */
+document.addEventListener("dragover", (ev) => { if (!document.querySelector(".spells2")) return; const m = 70, y = ev.clientY; if (y < m) window.scrollBy(0, -Math.ceil((m - y) / 3)); else if (y > innerHeight - m) window.scrollBy(0, Math.ceil((y - innerHeight + m) / 3)); });
+/* le rappel « Ta barre » et la fiche du sort se collent juste sous les onglets du héros (leur hauteur change entre PC et téléphone) */
+const spStickTop = () => { if (!document.querySelector(".spells2")) return; const t = document.querySelector(".htabs"); if (!t || getComputedStyle(t).position !== "sticky") return; const top = parseFloat(getComputedStyle(t).top) || 0; document.documentElement.style.setProperty("--spmt", Math.round(top + t.offsetHeight + 6) + "px"); };
+window.addEventListener("scroll", spStickTop, { passive: true }); window.addEventListener("resize", spStickTop);
+document.addEventListener("toggle", (ev) => { if (ev.target.classList && ev.target.classList.contains("sphow")) ui.spHowOpen = ev.target.open; }, true);
 document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("over"); });
 document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-spslot]"); if (!z || !S) return; const v = ev.dataTransfer.getData("text/plain"); if (!v.startsWith("sp:")) return; ev.preventDefault();
   const c = char(ui.cid); if (!c) return; const to = +z.dataset.spslot; const k = v.slice(3);

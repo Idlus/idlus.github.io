@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.5 « Sorts sans dézoomer »
+Sorts & stratégies (js/ui.js `charSpellsView`, css/style.css) : grille « bar det / grim det / prev det » (Grimoire sous la barre, aperçu en dessous) ; rappel `.spmini` « Ta barre » collé en haut du Grimoire (cases cliquables `spsel` et cibles de dépôt `data-spslot`, hauteur des onglets du héros mesurée dans `--spmt`) ; défilement auto pendant un glisser ; « Comment ton héros choisit ses sorts » replié par défaut (`ui.spHowOpen`). Avant, à 100 % de zoom, le Grimoire était ~1 150 px sous la barre : impossible de glisser un sort sans dézoomer.
+
 ## 1.0.4.4 « Fabriquer sac plein »
 Artisanat (js/engine.js) : `E.craftRoom` = place du sac + place du trop-plein ; `craftItem` range l'objet fabriqué dans `S.over` si le sac est plein (avant : `craftCount` tombait à 0 et le bouton restait grisé sans raison). `craftMany` renvoie `over`. Recette : étiquette « sac plein » et message si sac et trop-plein sont pleins. Test : tests/artisanat.test.js.
 
