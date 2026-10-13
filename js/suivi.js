@@ -323,7 +323,7 @@
     const pool = (last.monsters || []).filter((m) => MONSTERS[m] && !MONSTERS[m].boss && !MONSTERS[m].archiOf); if (!pool.length) return prot0(S, sub, team, monsterEntity);
     const lvl = Math.round(clamp(c.lvl + 5, 1, 200)); // un boss du niveau du parchemin
     const g = monsterEntity(pick(pool), lvl); g.name = `${g.name} gardien du trésor`;
-    g.hpMax = g.hp = Math.round(g.hpMax * (1.8 + team.length * 0.7)); g.dmg *= team.length > 1 ? 1.35 : 1.15; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80;
+    const z = E.foeSize ? E.foeSize(team.length, lvl) : { hp: 1, dmg: 1 }; /* 0.1.56.1 : même difficulté seul ou en équipe */ g.hpMax = g.hp = Math.round(g.hpMax * (1.8 + team.length * 0.7) * z.hp); g.dmg *= (team.length > 1 ? 1.35 : 1.15) * z.dmg; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80;
     if (c.k === "leg") { g.hpMax = g.hp = Math.round(g.hpMax * 1.6); g.dmg *= 1.25; g.name = g.name.replace("gardien du trésor", "gardien légendaire"); } // 0.1.49 : gardien d'élite
     const mons = [g].concat(E.makeGroup(S, last, team.length).slice(0, Math.max(0, team.length - 1)));
     c.go = false; c.fighting = true; c.need = true;
