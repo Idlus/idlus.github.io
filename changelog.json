@@ -1,6 +1,22 @@
 {
-  "version": "0.1.47.6",
+  "version": "0.1.48",
   "versions": [
+    {
+      "v": "0.1.48",
+      "name": "Le Songe infini",
+      "items": [
+        "L'Expédition sans fin devient le Songe infini, comme dans DOFUS (menu Jouer › Songe infini, dès le niveau 10) : une carte de 26 salles en 5 paliers, la même pour tous chaque semaine",
+        "Tu choisis ton couloir salle après salle : combats, combats redoutables, archimonstres, Faveurs oniriques (un bonus sans combat), Fontaines oniriques (salles 4, 10, 16 et 25) et le rare Gobledore",
+        "Les 24 reliques deviennent les bonus du songe ; les points de rêve se dépensent aux Fontaines. Tout s'efface au réveil, sauf le butin des combats",
+        "8 intensités : Rêve, Paradoxe 1 à 4, Cauchemar 1 à 3 (jusqu'à +400 % de butin). Valider demande de tenir 1, 3 ou 5 vagues à la Fin du rêve, sans regagner ses PV",
+        "Une défaite réveille l'équipe ; le Sable de Draconiros permet de rejouer le combat perdu",
+        "Bribes de rêve, gagnées seulement quand un songe est validé, à échanger au Marché onirique : coffres, poussière, le familier Draconiros miniature, la Brume onirique, le Cadre des Songes, un titre et des améliorations",
+        "38 objets légendaires : les 26 de DOFUS (niveau 200) et 12 inédits d'Idlus (niveaux 50, 100 et 150), chacun avec un passif unique. Ils tombent très rarement à la validation d'un songe, dès Paradoxe 2",
+        "Un légendaire par héros ; ses copies font monter l'Éveil (I à V) qui renforce le passif ; pas de forgemagie ; ils se vendent à l'HdV. Nouveau visuel « Brume onirique » qui grandit avec l'Éveil",
+        "Choix automatique après 30 s (prudent, équilibré ou gourmand) pour jouer sans y penser",
+        "Tes Éclats d'expédition sont convertis : 5 Bribes par Éclat et 150 par amélioration du campement. Ton record et tes titres sont gardés"
+      ]
+    },
     {
       "v": "0.1.47.6",
       "name": "Panoplies d'abord",

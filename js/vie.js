@@ -121,7 +121,7 @@
     if (!c) return `Il faut un héros ${CLASSES[cls] ? CLASSES[cls].name : ""} pour entrer dans ce temple.`;
     if (T.done[cls]) return "Ce Dopeul a déjà été vaincu aujourd'hui.";
     if (S.dungeon) return "Quittez d'abord le donjon.";
-    if (S.exp && S.exp.on) return "Termine d'abord l'expédition.";
+    if (S.exp && S.exp.on) return "Réveille d'abord l'équipe du Songe infini.";
     if (!S.hunting || !S.sub) return "Lancez d'abord une chasse : le Dopeul vient défier l'équipe sur place.";
     if (S.tresor && S.tresor.cur && S.tresor.cur.ready) return "Battez d'abord le gardien du trésor.";
     T.pend = cls; E.note(S, `Le Dopeul ${CLASSES[cls].name} arrive au prochain combat.`, "info"); return null;
