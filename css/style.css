@@ -3451,3 +3451,6 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .pmore .pmh:hover{color:var(--ink)}
 .li.pcur{background:var(--panel2,transparent);border-bottom:1px dashed var(--line)}
 .dtop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+/* Sablier économe : sablier en pause quand rien n'avance */
+.status .sabpill.idle{box-shadow:none;opacity:.75}
+.status .sabpill.idle .sb{animation:none}

@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.46.4";
+const GAME_VERSION = "0.1.46.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.46.5", name: "Sablier économe", items: [
+    "Correction : le Sablier de Xélor ne s'use plus quand rien n'avance. Il ne se vide que pendant un combat, un donjon, l'expédition, une récolte, l'atelier ou la forgemagie automatique",
+    "Équipe au repos avec ×2 ou ×3 choisi : le sablier se met en pause (il s'éteint un peu) et la réserve ne bouge pas",
+  ] },
   { v: "0.1.46.4", name: "Équiper au mieux", items: [
     "Le bouton « Équiper au mieux » revient pour un seul héros : en haut de son onglet Équipement, avec le nombre d'emplacements où le sac a mieux (même calcul que la pastille verte, panoplies comprises)"
   ] },
@@ -1193,6 +1197,7 @@ function sabSheet() {
     <ul class="small" style="margin:0;padding-left:18px">
       <li><b>×2</b> : 1 minute de réserve par minute.</li>
       <li><b>×3</b> : 2 minutes de réserve par minute. Même temps gagné qu'en ×2, juste plus vite.</li>
+      <li>Il ne s'use que quand quelque chose avance : combat, donjon, expédition, récolte, atelier ou forgemagie automatique. Équipe au repos : la réserve ne bouge pas.</li>
       <li>Sablier vide : retour à ×1 tout seul, rien n'est perdu.</li>
       <li>Jeu fermé : le sablier se remplit, les gains hors ligne ne changent pas.</li>
       <li>Les bonus à durée (potions, événements, donjons Éclair, Almanax) restent en vrai temps.</li>
@@ -6464,6 +6469,7 @@ function loop() {
         else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
     const sab = $("#stSab"); if (sab && S.sablier) { const v = sabLeft(S.sablier.r); if (sab.textContent !== v) sab.textContent = v; }
+    const sbp = sab && sab.closest(".sabpill"); if (sbp) { const idle = S.sablier.spd > 1 && !E.sabBusy(S); if (sbp.classList.contains("idle") !== idle) { sbp.classList.toggle("idle", idle); sbp.querySelector(".sbi").dataset.tip = idle ? "Sablier en pause : rien n'avance (équipe au repos), la réserve ne s'use pas" : "Sablier de Xélor : réserve de temps rapide (+3 h par jour)"; } }
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
     if (ui.tab === "combat") updateCombat(false);

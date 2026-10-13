@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.46.5 « Sablier économe »
+`E.sabBusy` (engine.js) : `E.sabSpend` ne vide la réserve que si un combat, un donjon, l'expédition, une récolte, l'atelier ou un plan de forgemagie avance ; sinon vitesse ×1 et pastille `.sabpill.idle`.
+
 ## 0.1.46.4 « Équiper au mieux »
 Bouton « Équiper au mieux (n) » pour un héros seul en haut de `charEquipView` (action `teamfix`/`gear` → `equipBest`), n = emplacements où `slotUpgrade` est vrai.
 
