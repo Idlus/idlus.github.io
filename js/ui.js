@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.47.5";
+const GAME_VERSION = "0.1.47.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.47.6", name: "Notifications polies", items: [
+    "Chat ouvert : les notifications ne le cachent plus. Sur PC, elles s'affichent à gauche du chat ; au téléphone, une seule à la fois, tout en haut de l'écran",
+    "Pendant que vous écrivez dans le chat, les notifications attendent et arrivent dès que le message est envoyé",
+    "Options › Affichage › Notifications : Auto, En haut ou En bas",
+  ] },
   { v: "0.1.47.5", name: "Panoplies d'abord", items: [
     "« Équiper au mieux » et « Tout équiper au mieux » comparent maintenant des panoplies entières : si porter toute une panoplie (ou presque) fait mieux grâce à ses bonus que des pièces isolées, elle est équipée d'un coup (par exemple le Bouftou Royal à 7 pièces pour le PA de plus)",
     "La pastille verte et « Meilleur choix » dans la liste suivent ce même plan"
@@ -4763,7 +4768,15 @@ function phaseFlash() {
   arena.appendChild(d); setTimeout(() => d.remove(), 1900);
 }
 let lvlToast = null;
+/* 0.1.47.6 : pendant qu'on écrit dans le chat, les notifications attendent (3 au plus) et arrivent dès que le champ est vide ou quitté */
+const toastQ = []; let toastT = null;
+const toastTyping = () => { const a = document.activeElement; return !!(a && a.id === "chIn" && a.value.trim()); };
 function toast(txt, kind) {
+  if (toastTyping()) {
+    toastQ.push([txt, kind]); if (toastQ.length > 3) toastQ.shift();
+    if (!toastT) toastT = setInterval(() => { if (toastTyping()) return; clearInterval(toastT); toastT = null; toastQ.splice(0).forEach(([t, k]) => toast(t, k)); }, 700);
+    return;
+  }
   const box = $("#toasts");
   /* montées de niveau regroupées : « 3 héros passent niveau 59 » */
   const lv = /^(.+) passe niveau (\d+) !$/.exec(txt || "");
@@ -4794,6 +4807,7 @@ function applyDisplay() {
   r.style.zoom = z === 100 ? "" : String(z / 100);
   r.classList.toggle("contrast", !!(S && S.settings.contrast));
   document.body.classList.toggle("nomotion", !!(S && motionOff()));
+  const tp = (S && S.settings.toastPos) || "auto"; document.body.classList.toggle("toast-top", tp === "top"); document.body.classList.toggle("toast-bot", tp === "bottom");
 }
 function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
@@ -4801,7 +4815,8 @@ function displayOptionsHtml() {
   return optSec("Écran", "se voit tout de suite",
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v} %`]), z))
     + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
-    + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes"))
+    + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes")
+    + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat.")))
     + optSec("Combat", "",
       optLine("Animations", "", seg("setanim", [["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]], animLvl()))
     + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
@@ -5542,6 +5557,7 @@ document.addEventListener("click", (ev) => {
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
     case "settext": S.settings.textSize = +d.v; dirty = true; applyDisplay(); optionsSheet(); return;
+    case "settoast": S.settings.toastPos = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); toast("Les notifications apparaissent ici."); return;
     case "setmotion": S.settings.motion = d.v; dirty = true; setTheme(); optionsSheet(); ui.arena = null; return;
     case "tips": tipsSheet(); return;
     case "tipread": { const t = E.tipInfo(d.id); if (t) { closeSheet(); showTipBubble(t); tipShown = null; } return; }
