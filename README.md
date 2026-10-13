@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.46.2 « Boutique du Kolizéum »
+Boutique du Kolizéum refaite (js/koliui.js, `shop()`) : onglets par rayon (`sec`), grille d'articles, panneau d'achat collé en bas de la fiche (quantité −/+/×5/×10/Max, total, Kolizetons manquants), badge « Pour ton équipe » sur les Galets du niveau de l'équipe, redessin sur place après achat (`ui.shop`). Recettes à Galets régénérées après les Donjons de légende (358).
+
 ## 0.1.46.1 « Bon objet en tête »
 Choix d'un objet (`charEquipView` dans js/ui.js) : tri par gain pour le héros avec `gainFor`/`gearScore` (somme d'`itemScore` + bonus de panoplie via `E.setBonus`) ; objet porté rappelé en haut, objets portés ailleurs (« Prendre ») et trop hauts repliés en bas (`ui.pmore`). `bestFor` (pastille verte, « Tout équiper au mieux ») utilise le même gain.
 

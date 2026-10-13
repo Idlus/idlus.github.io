@@ -1,6 +1,17 @@
 {
-  "version": "0.1.46.1",
+  "version": "0.1.46.2",
   "versions": [
+    {
+      "v": "0.1.46.2",
+      "name": "Boutique du Kolizéum",
+      "items": [
+        "La boutique du Kolizéum est plus pratique : des onglets (Galets, Combats, Coffres, Apparence), une grille d'articles et un seul panneau d'achat en bas, toujours visible",
+        "Choisis la quantité librement (−, +, ×5, ×10 ou Max) : le total s'affiche, et s'il te manque des Kolizetons, le jeu te dit combien",
+        "Les Galets utiles pour ton équipe sont marqués « Pour ton équipe ». Chaque Galet dit combien d'objets le demandent, avec un lien vers ces objets",
+        "Après un achat, la boutique reste sur le même onglet et le même article",
+        "Les équipements niveau 200 des Donjons de légende redemandent aussi leurs Galets brasillants, comme dans DOFUS (358 recettes en tout)"
+      ]
+    },
     {
       "v": "0.1.46.1",
       "name": "Bon objet en tête",
