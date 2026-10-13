@@ -1,6 +1,14 @@
 {
-  "version": "0.1.47.3",
+  "version": "0.1.47.4",
   "versions": [
+    {
+      "v": "0.1.47.4",
+      "name": "Curseur à sa place",
+      "items": [
+        "Guilde : en écrivant le nom de la guilde à fonder, le curseur revenait au début dès qu'on marquait une pause, et le nom s'écrivait à l'envers. Il reste maintenant là où tu écris",
+        "Même correction pour tous les champs de la guilde et de l'hôtel de vente (recherche, prix, quantité, message du jour, invitation) : la page peut se mettre à jour pendant que tu tapes sans déplacer le curseur ni effacer ce que tu as écrit"
+      ]
+    },
     {
       "v": "0.1.47.3",
       "name": "Bon élément",

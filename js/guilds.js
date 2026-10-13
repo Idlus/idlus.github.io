@@ -108,10 +108,10 @@
   /* ---------- rendu ---------- */
   const emb = (ic, col, sz) => `<span class="gemb" style="--gc:${h(col || "#8cc63f")};${sz ? `--gs:${sz}px` : ""}"><img src="assets/ui/${h(ic || "dofus")}.webp" alt=""></span>`;
   const ago = (t) => { if (!t) return "jamais"; const s = (Date.now() - new Date(t)) / 1000; return s < 300 ? "en ligne" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
-  const paint = () => { if (window.DX.ui.tab === "guild") { const m = $("#main"); if (m) { const y = window.scrollY; const f = document.activeElement && document.activeElement.id; m.innerHTML = html(); window.scrollTo(0, y); if (f && $("#" + f)) $("#" + f).focus(); } } };
+  const paint = () => { if (window.DX.ui.tab === "guild") { const m = $("#main"); if (m) { const y = window.scrollY; window.DX.repaint(m, html()); window.scrollTo(0, y); } } }; // garde le curseur là où on écrit
   function render(main) {
     if (!main) return;
-    main.innerHTML = html();
+    window.DX.repaint(main, html());
     if (mine() && !G.me) load();
     if (G.list === null && !(G.me && G.me.g)) loadList();
   }

@@ -120,12 +120,12 @@
   /* ---------- rendu ---------- */
   function render(main) {
     if (!main) return;
-    main.innerHTML = html();
+    window.DX.repaint(main, html());
     if (M.tab === "buy" && M.list === null) search();
     if (M.tab === "mine" && M.mine === null && mine()) loadMine();
     if (M.tab === "ord") { if (M.orders === null) loadOrders(); if (M.oMine === null && mine()) loadOMine(); }
   }
-  const paint = () => { if (window.DX.ui.tab === "hdv") { const m = $("#main"); if (m) { const y = window.scrollY; m.innerHTML = html(); window.scrollTo(0, y); } } };
+  const paint = () => { if (window.DX.ui.tab === "hdv") { const m = $("#main"); if (m) { const y = window.scrollY; window.DX.repaint(m, html()); window.scrollTo(0, y); } } }; // garde le curseur là où on écrit
   function html() {
     const s = S(); const open = M.mine ? M.mine.open.length : null;
     const login = mine() ? "" : guest("acheter, vendre et échanger avec les autres joueurs");
@@ -442,11 +442,11 @@
   let qTimer = null;
   document.addEventListener("input", (ev) => {
     const a = ev.target.dataset && ev.target.dataset.act; if (!a || !/^mk-/.test(a)) return;
-    if (a === "mk-q") { M.q = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { M.list = null; search(); setTimeout(() => { const i = $("#mkQ"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 0); }, 350); }
-    if (a === "mk-oq") { M.oQ = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { M.orders = null; loadOrders(); setTimeout(() => { const i = $("#mkOQ"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 0); }, 350); }
-    if (a === "mk-ofind" || a === "mk-oqty" || a === "mk-oprice") { const id = { "mk-ofind": "#mkOF", "mk-oqty": "#mkOQty", "mk-oprice": "#mkOPrice" }[a]; M[{ "mk-ofind": "oFind", "mk-oqty": "oQty", "mk-oprice": "oPrice" }[a]] = ev.target.value;
-      clearTimeout(qTimer); qTimer = setTimeout(() => { paint(); const i = $(id); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, a === "mk-ofind" ? 300 : 500); }
-    if (a === "mk-price") { M.price = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { paint(); const i = $("#mkPrice"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 500); }
+    if (a === "mk-q") { M.q = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { M.list = null; search(); }, 350); }
+    if (a === "mk-oq") { M.oQ = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => { M.orders = null; loadOrders(); }, 350); }
+    if (a === "mk-ofind" || a === "mk-oqty" || a === "mk-oprice") { M[{ "mk-ofind": "oFind", "mk-oqty": "oQty", "mk-oprice": "oPrice" }[a]] = ev.target.value;
+      clearTimeout(qTimer); qTimer = setTimeout(paint, a === "mk-ofind" ? 300 : 500); }
+    if (a === "mk-price") { M.price = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(paint, 500); }
   });
   document.addEventListener("toggle", (ev) => { if (ev.target.classList && ev.target.classList.contains("mkadd")) M.tOpen = ev.target.open; }, true);
   document.addEventListener("change", (ev) => {

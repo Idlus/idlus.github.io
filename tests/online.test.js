@@ -302,7 +302,8 @@ const MOCK = () => {
     const oa = await page.evaluate(() => ({ k: window.DX.S.kamas, r: (window.DX.S.res || {})["Laine de Bouftou"] || 0 }));
     if (oa.k !== ob + 600 || oa.r !== 0) fail("offres d'achat : vente mal appliquée " + JSON.stringify([ob, oa]));
     await page.click('[data-act="mk-oview"][data-v="mine"]'); await page.fill("#mkOF", "blé"); await page.waitForTimeout(500);
-    await page.click('[data-act="mk-opick"][data-k="Blé"]'); await page.waitForSelector("#mkOQty"); await page.fill("#mkOQty", "10"); await page.waitForTimeout(650); await page.fill("#mkOPrice", "50"); await page.waitForTimeout(800);
+    await page.click('[data-act="mk-opick"][data-k="Blé"]'); await page.waitForSelector("#mkOQty"); await page.fill("#mkOQty", "10"); await page.waitForTimeout(650); await page.click("#mkOPrice"); await page.keyboard.type("5", { delay: 50 }); await page.waitForTimeout(800); await page.keyboard.press("Home"); await page.waitForTimeout(800); await page.keyboard.press("Delete"); await page.keyboard.type("5"); await page.waitForTimeout(800); await page.keyboard.press("End"); await page.keyboard.type("0"); await page.waitForTimeout(800);
+    if ((await page.inputValue("#mkOPrice")) !== "50") fail("offres d'achat : saisie du prix cassée par le rafraîchissement : " + (await page.inputValue("#mkOPrice")));
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/offre.png" });
     // 0.1.38 : plus de prix minimum, mais une confirmation sous la moitié du prix moyen
     if (!(await page.$(".mklow")) || (await page.$('[data-act="mk-onewgo"]'))) fail("offres d'achat : pas de confirmation pour un prix très bas");
@@ -314,6 +315,10 @@ const MOCK = () => {
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
     await page.click('#nav [data-nk="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
     if (!(await page.$("#gName")) || !(await page.$('[data-act="g-join"]'))) fail("guildes : page incomplète");
+    // la page se redessine pendant la frappe : le curseur doit rester à sa place (le nom s'écrivait à l'envers)
+    await page.click("#gName"); await page.keyboard.type("Les Bouf", { delay: 120 }); await page.waitForTimeout(700); await page.keyboard.type("tous", { delay: 500 }); await page.waitForTimeout(700);
+    const gn = await page.inputValue("#gName"); if (gn !== "Les Bouftous") fail("guildes : saisie du nom cassée par le rafraîchissement : " + JSON.stringify(gn));
+    if (!(await page.evaluate(() => document.activeElement && document.activeElement.id === "gName"))) fail("guildes : le champ du nom perd le focus");
     await page.click('#nav [data-nk="world"]');
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
