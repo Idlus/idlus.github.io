@@ -3125,6 +3125,11 @@ function wpEst(c, sp) { // dégâts moyens d'un coup pour ce héros, hors critiq
     t += (f.min + f.max) / 2 * E.DMG_SCALE * (1 + Math.max(-50, (st[E2.stat] || 0) + (st.pui || 0)) / 100) + (st.do || 0) + (st[E2.dmg] || 0); });
   return Math.round(t * E.classPow(c.cls, c.lvl));
 }
+function wpPickTag(c, it) { // 0.1.52 : type, maîtrise et dégâts estimés dans le choix de l'arme
+  const W = E.weaponData(it.tpl); const sp = W && E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); if (!sp) return "";
+  const ty = E.WTYPES[W.type] || { name: "Arme" };
+  return `<span class="pset wpt">${h(ty.name)} · ${sp.grades[0].pa} PA · ≈ ${fmt(wpEst(c, sp))} par coup</span>${sp.fav ? ` <span class="pset on" data-tip="${h(`Arme favorite des ${CLASSES[c.cls].name} : +20 % de dégâts`)}">★ Maîtrise</span>` : ""}`;
+}
 function wpBlockHtml(tpl, it, c) {
   const W = E.weaponData(tpl); if (!W) return ""; const sp = E.weaponSpellOf(c ? c.cls : "", tpl, it && it.wel, it && it.welh); if (!sp) return "";
   const g = sp.grades[0]; const ty = E.WTYPES[W.type] || { name: "Arme" }; const fav = c && sp.fav;
@@ -3157,9 +3162,10 @@ function wpFmHtml(it) { // potions de forgemagie élémentaire à l'Établi
     return n > 0 && !cur ? `<button class="prune" data-act="wpot" data-id="${cons}" style="--c:${elVar(C.el)}"><span class="rn"><img class="wpico" src="assets/ui/potions/${C.pimg}.png" alt=""> ${h(C.name)} <span class="xs muted">×${n}</span></span><span class="rv">Neutre → ${h(ELEMENTS[C.el].name)}${C.half ? " (moitié)" : ""}</span></button>`
       : `<span class="prune off" ${cur ? "" : `data-act="wbrew" data-id="${cons}" role="button" tabindex="0"`} data-tip="${h(cur ? "L'arme a déjà cet élément." : `Préparer : ${E.WPOT_COST[C.half ? "s" : "g"].herb.map(([r, q]) => q + " × " + r).join(", ")} et ${fmt(E.WPOT_COST[C.half ? "s" : "g"].kamas)} kamas (Alchimiste niveau ${E.WPOT_COST[C.half ? "s" : "g"].lvl}).`)}"><span class="rn"><img class="wpico" src="assets/ui/potions/${C.pimg}.png" alt=""> ${h(C.name)} <span class="xs muted">×${n}</span></span><span class="rv xs">${cur ? "élément actuel" : "Préparer"}</span></span>`; };
   return `<div class="pfl wpfm"><div class="pfn"><b>Élément de l'arme</b><span class="xs muted">change les dégâts Neutre du coup d'arme · réussite garantie, une potion par changement${it.wel ? ` · actuellement ${it.welh ? "moitié " : ""}${h(ELEMENTS[it.wel].name)}` : ""}</span></div>
-    <div class="pruns">${Object.values(E.WEAPON_POTIONS).map(btn).join("")}</div>
-    <div class="pruns">${Object.values(E.WEAPON_POTIONS_S).map(btn).join("")}</div>
-    <div class="xs muted">Clique sur une potion que tu n'as pas pour la préparer : herbes de l'Alchimiste et kamas (petites potions : Alchimiste 20, ne changent que la moitié des dégâts ; grandes : Alchimiste 80).</div></div>`;
+    ${(() => { const all = [...Object.values(E.WEAPON_POTIONS), ...Object.values(E.WEAPON_POTIONS_S)]; const own = all.filter((k) => (S.cons[k] || 0) > 0); const rest = all.filter((k) => !own.includes(k)); // 0.1.52 : seulement les potions qu'on a, le reste replié
+      return `${own.length ? `<div class="pruns">${own.map(btn).join("")}</div>` : `<div class="xs muted">Tu n'as aucune potion d'élément pour l'instant.</div>`}
+    ${rest.length ? `<div class="pmore"><button class="pmh" data-act="wpprep" aria-expanded="${!!ui.wpPrep}">${ui.wpPrep ? "▾" : "▸"} Préparer une potion (${rest.length})</button>${ui.wpPrep ? `<div class="pruns">${rest.map(btn).join("")}</div>
+    <div class="xs muted">Clique sur une potion pour la préparer : herbes de l'Alchimiste et kamas (petites potions : Alchimiste 20, ne changent que la moitié des dégâts ; grandes : Alchimiste 80).</div>` : ""}</div>` : ""}`; })()}</div>`;
 }
 function tplStatsHtml(T) { return (T.desc ? `<span class="statl">${G("sparkle")}${h(T.desc)}</span>` : "") + Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
 function deltaHtml(c, slot, uid) {
@@ -3655,12 +3661,12 @@ function charEquipView(c, st) {
     const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
       return `<span class="pset ${on ? "on" : ""}">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""}</span>`; };
     const row = (it, mode, i) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0);
-      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span>
+      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}${T.slot === "arme" ? " " + wpPickTag(c, it) : ""}<br>${deltaHtml(c, ui.slot, it.uid)}</span>
         <button class="btn sm ${mode === "worn" ? "" : "primary"}" data-act="equip" data-uid="${it.uid}" ${mode === "high" ? "disabled" : ""}>${mode === "high" ? "Niv. " + T.lvl : mode === "worn" ? "Prendre" : "Équiper"}</button></div>`; };
     /* 0.1.46.1 : objets déjà portés et trop hauts rangés en bas, repliés (ui.pmore garde l'état ouvert) */
     const pmore = (k, t, L, mode) => !L.length ? "" : `<div class="pmore"><button class="pmh" data-act="pmore" data-v="${k}" aria-expanded="${!!(ui.pmore || {})[k]}">${(ui.pmore || {})[k] ? "▾" : "▸"} ${t} (${L.length})</button>${(ui.pmore || {})[k] ? `<div class="list">${L.slice(0, 20).map((it) => row(it, mode)).join("")}</div>` : ""}</div>`;
     pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
-      ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}</span></div>`; })() : ""}
+      ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}${ui.slot === "arme" ? " " + wpPickTag(c, it) : ""}</span></div>`; })() : ""}
       <div class="xs muted" style="padding:6px 14px 0">Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.</div>
       <div class="list">${free.slice(0, 40).map((it, i) => row(it, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
       ${pmore("w", worn.some((it) => E.equippedBy(S, it.uid) !== c) ? "Déjà portés par d'autres héros" : "Déjà portés", worn, "worn")}
@@ -5820,6 +5826,7 @@ document.addEventListener("click", (ev) => {
     case "fmback": ui.fmBench = false; break;
     case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
     case "wpot": { const r = E.weaponPotion(S, ui.fmSel, d.id); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; } // 0.1.51
+    case "wpprep": ui.wpPrep = !ui.wpPrep; break;
     case "wbrew": { const err = E.brewPotion(S, d.id); if (err) { toast(err); return; } toast(`${CONSUMABLES[d.id].name} préparée.`, "rare"); break; }
     case "wpotgo": ui.tab = "forge"; ui.fg = "fm"; closeSheet(); window.scrollTo(0, 0); break;
     case "fm": { const r = E.forgemage(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, r.ok ? "rare" : ""); break; }
