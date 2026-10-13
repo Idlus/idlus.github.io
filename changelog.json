@@ -1,6 +1,14 @@
 {
-  "version": "0.1.53",
+  "version": "0.1.53.1",
   "versions": [
+    {
+      "v": "0.1.53.1",
+      "name": "Classement du boss clarifié",
+      "items": [
+        "Boss des mondes : le classement précise que le total additionne tous les essais et que la lettre est le grade du meilleur essai, avec ses dégâts sous le nom du joueur",
+        "Le cadre « Tes dégâts » montre aussi les dégâts de ton meilleur essai à côté de son grade"
+      ]
+    },
     {
       "v": "0.1.53",
       "name": "Armes",

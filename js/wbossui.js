@@ -110,7 +110,7 @@
       : `<span class="small"><b>${tl} essai${tl > 1 ? "s" : ""} sur ${E.WB_TRIES}</b> aujourd'hui</span><div class="wb-pips">${Array.from({ length: E.WB_TRIES }, (_, i) => `<i class="${i < tl ? "on" : ""}"></i>`).join("")}</div>
         <button class="btn primary" data-act="wb-attack" ${tl && team && !ui.busy ? "" : "disabled"}>${X().IC("combat")} ${ui.busy ? "Le serveur joue ton essai…" : "Attaquer le boss"}</button>
         <span class="xs muted">${tl ? "15 tours avec ton équipe active" : `Nouveaux essais dans ${dur(nextMidnight() - Date.now())} (minuit, heure de Paris)`}</span>
-        <div class="wb-me">Tes dégâts : <b>${nf((s.me && s.me.pts) * E.WB_PV)} PV</b>${s.me && s.me.pts ? ` (${pctTxt((s.me.pts / s.hp) * 100)})<br>${s.me.rank}<sup>${s.me.rank === 1 ? "er" : "e"}</sup> sur ${s.players} · meilleur grade <b class="g g-${gradeOf(s.me.best)}">${gradeOf(s.me.best)}</b>` : "<br>Pas encore d'essai sur ce boss"}<br><span class="wb-frag">${fragImg()} ${nf(E.wbFrags(S()))} Fragments d'anomalie</span></div>`;
+        <div class="wb-me">Tes dégâts : <b>${nf((s.me && s.me.pts) * E.WB_PV)} PV</b>${s.me && s.me.pts ? ` (${pctTxt((s.me.pts / s.hp) * 100)})<br>${s.me.rank}<sup>${s.me.rank === 1 ? "er" : "e"}</sup> sur ${s.players} · meilleur essai : ${nf(s.me.best * E.WB_PV)} PV, grade <b class="g g-${gradeOf(s.me.best)}">${gradeOf(s.me.best)}</b>` : "<br>Pas encore d'essai sur ce boss"}<br><span class="wb-frag">${fragImg()} ${nf(E.wbFrags(S()))} Fragments d'anomalie</span></div>`;
     return `<section class="panel wb-hero">
       <div class="wb-img"><img src="${img(def)}" alt=""></div>
       <div class="wb-mid">
@@ -132,9 +132,9 @@
   }
   function lbHtml(s) {
     const me = mode() === "acc" ? ON().user.id : "me";
-    const rows = (s.top || []).map((r, i) => `<div class="wb-row ${r.u === me ? "me" : ""}"><span class="n">${i + 1}</span><span class="grow"><b>${h(r.p || "?")}</b><span class="xs muted">${r.n} essai${r.n > 1 ? "s" : ""}</span></span><span class="small">${nf(r.pts * E.WB_PV)} PV</span><b class="wb-lg g-${gradeOf(r.best)}">${gradeOf(r.best)}</b></div>`).join("");
+    const rows = (s.top || []).map((r, i) => `<div class="wb-row ${r.u === me ? "me" : ""}"><span class="n">${i + 1}</span><span class="grow"><b>${h(r.p || "?")}</b><span class="xs muted">${r.n} essai${r.n > 1 ? "s" : ""} · meilleur ${nf(r.best * E.WB_PV)} PV</span></span><span class="small" title="Total de ses essais">${nf(r.pts * E.WB_PV)} PV</span><b class="wb-lg g-${gradeOf(r.best)}" title="Grade de son meilleur essai">${gradeOf(r.best)}</b></div>`).join("");
     const last = s.last ? `<p class="xs muted" style="margin:8px 0 0">Boss précédent : ${h(s.last.name)}, tombé en ${dur(s.last.dur * 1000)}${s.last.by ? `, dernier coup de <b>${h(s.last.by)}</b>` : ""}.</p>` : "";
-    return `<section class="panel wb-p"><h3>Classement de ce boss</h3>${rows || `<p class="small muted">Personne ne l'a encore frappé. À toi le premier coup !</p>`}${last}</section>`;
+    return `<section class="panel wb-p"><h3>Classement de ce boss</h3><p class="xs muted" style="margin:0 0 6px">Total des dégâts de tous ses essais. La lettre est le grade de son meilleur essai.</p>${rows || `<p class="small muted">Personne ne l'a encore frappé. À toi le premier coup !</p>`}${last}</section>`;
   }
   function killHtml(s, def) {
     const K = E.WB_KILL;
