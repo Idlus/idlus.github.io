@@ -121,9 +121,11 @@
   const hcard = (c) => `<div class="kz-h" style="--cc:${CLASSES[c.cls].color}">${X().lookImg(c, "l")}<span class="lv">${c.lvl}</span><span class="rw">${h(c.name)}</span></div>`;
   /* boutique (0.1.45) : onglets, grille d'articles, un seul panneau d'achat (quantité libre, total, ce qu'il manque).
      La fiche se redessine sur place après un achat : on garde l'onglet, l'article choisi et la quantité. */
-  const SECS = [["galets", "Galets", "Demandés par les recettes d'équipement, comme dans DOFUS. Ils se revendent aussi à l'Hôtel de vente."],
+  const SECS0 = [["galets", "Galets", "Demandés par les recettes d'équipement, comme dans DOFUS. Ils se revendent aussi à l'Hôtel de vente."],
     ["combat", "Combats", "Tickets, poussière et douceurs."], ["coffres", "Coffres", "Les mêmes coffres que dans le reste du jeu."], ["look", "Apparence", "Pour la carte de tes héros. Rien ici ne rend tes héros plus forts."]];
-  const sh = ui.shop = ui.shop || { tab: "galets", sel: null, q: 1 };
+  const SECS = SECS0.filter(([k]) => E.SHOPS.koli.items.some((it) => (it.sec || "combat") === k)); // onglets vides cachés (Galets retirés en 1.0.4.3)
+  const sh = ui.shop = ui.shop || { tab: SECS[0][0], sel: null, q: 1 };
+  if (!SECS.some(([k]) => k === sh.tab)) sh.tab = SECS[0][0];
   const secOf = (it) => it.sec || "combat";
   const itemOf = (id) => E.SHOPS.koli.items.find((x) => x.id === id);
   const stockOf = (s, it) => it.res ? (s.res[it.res] || 0) : it.cons ? (s.cons[it.cons] || 0) : 0;
@@ -216,7 +218,7 @@
       <li>Chaque victoire rapporte une bourse de kamas (selon le niveau de l'équipe), ${K.dust} Poussière de stasis et ${K.kzWin} Kolizetons ; une défaite, ${K.kzLoss} Kolizeton.</li>
       <li>La semaine finit le lundi à minuit. Avec ${K.minWeek} combats classés au moins, ton grade donne sa récompense, puis la cote revient à mi-chemin de 1 000.</li>
       <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li>
-      <li>Les Kolizetons s'échangent dans la boutique contre des <b>Galets</b> (demandés par ${E.KOLI_GALET_ITEMS || "des"} recettes d'équipement, comme dans DOFUS), des tickets, des coffres et de l'apparence.</li></ol>
+      <li>Les Kolizetons s'échangent dans la boutique contre ${E.KOLI_GALETS_ON ? `des <b>Galets</b> (demandés par ${E.KOLI_GALET_ITEMS || "des"} recettes d'équipement, comme dans DOFUS), ` : ""}des tickets, des coffres et de l'apparence.</li></ol>
       <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closesheet">Compris</button></div>`);
   }
 

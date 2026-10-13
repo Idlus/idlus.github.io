@@ -204,7 +204,9 @@
 
   /* ---------- Galets du Kolizéum (comme dans DOFUS) ----------
      Six Galets, achetés en Kolizetons (et échangeables à l'Hôtel de vente). Les recettes de DOFUS qui en demandent
-     les retrouvent (le jeu les avait retirées faute de Kolizéum) : table écrite par tools/koli_galets.js. */
+     les retrouvent (le jeu les avait retirées faute de Kolizéum) : table écrite par tools/koli_galets.js.
+     1.0.4.3 : retirés pour l'instant (choix de Mathis). Les recettes ne les demandent plus et la boutique ne les vend plus ;
+     ceux déjà achetés restent dans le sac. Remettre KOLI_GALET_RECIPES à true pour les faire revenir. */
   E.KOLI_GALETS = [
     { name: "Galet cramoisi", id: 12737, icon: 15290, lvl: 50, price: 40, cost: 2 },
     { name: "Galet rutilant", id: 12738, icon: 15291, lvl: 100, price: 80, cost: 3 },
@@ -213,8 +215,9 @@
     { name: "Galet Solaire", id: 13367, icon: 152004, lvl: 150, price: 120, cost: 4 },
     { name: "Galet brasillant", id: 12740, icon: 15289, lvl: 195, price: 200, cost: 6 },
   ];
+  E.KOLI_GALETS_ON = false; // 1.0.4.3 : Galets retirés (recettes + boutique)
   E.RES_SOURCE = E.RES_SOURCE || {};
-  E.KOLI_GALETS.forEach((g) => { if (D.RES && !D.RES[g.name]) D.RES[g.name] = { id: g.id, icon: g.icon, lvl: g.lvl, price: g.price, type: 152 }; E.RES_SOURCE[g.name] = `Boutique du Kolizéum (${g.cost} Kolizetons) ou Hôtel de vente`; });
+  E.KOLI_GALETS.forEach((g) => { if (D.RES && !D.RES[g.name]) D.RES[g.name] = { id: g.id, icon: g.icon, lvl: g.lvl, price: g.price, type: 152 }; E.RES_SOURCE[g.name] = E.KOLI_GALETS_ON ? `Boutique du Kolizéum (${g.cost} Kolizetons) ou Hôtel de vente` : "Retiré du jeu pour l'instant : ne sert plus dans les recettes (se revend à l'Hôtel de vente)"; });
   const GALET_RECIPES = {
     /* GALETS:début (généré par tools/koli_galets.js : [id DofusDB de l'objet, quantité]) */
     "Galet cramoisi": [[127,1],[969,2],[2470,2],[2489,1],[2531,2],[6498,1],[6500,1],[6766,2],[6821,2],[6934,1],[7011,2],[7342,1],[7882,3],[7889,2],[8006,2],[8117,1],[8130,1],[8134,1],[8181,3],[8298,2],[8304,3],[8879,2],[9122,1],[9123,1],[9124,1],[9125,1],[9157,4],[9162,3],[9163,3],[9164,3],[9165,3],[10852,1],[10854,1],[10855,1],[11352,1],[11364,1],[12018,1],[12028,1],[12031,1],[12039,1],[12070,2],[12676,3],[13136,1],[14492,3],[14494,3],[16175,4],[16178,4],[17213,2],[18423,2],[18426,2],[18661,2],[18662,4],[18663,2],[18667,3],[19081,2],[19085,4],[19089,3],[27522,1],[27533,1],[27534,1],[33561,1],[33562,2],[33565,2],[33570,3],[33573,3],[33576,3],[33579,4],[33581,4]],
@@ -225,7 +228,7 @@
     "Galet rayonnant": [[8275,1],[9117,3],[9131,3],[9133,3],[9144,2],[9177,2],[9181,3],[11579,2],[11586,1],[11709,2],[11711,3],[11715,4],[12096,1],[12099,2],[12103,2],[12104,3],[13649,4],[15059,2],[15063,1],[15201,1],[15768,2],[15773,2],[17589,2],[17592,2],[18586,2],[18589,2],[18701,4],[23621,1],[23627,1],[26314,1],[27540,4],[27542,4],[30692,2],[31751,3],[31791,2],[32212,1],[32213,2],[32217,2],[32226,4],[33601,3],[33606,4]],
     /* GALETS:fin */
   };
-  E.KOLI_GALET_RECIPES = true; // les recettes redemandent leurs Galets
+  E.KOLI_GALET_RECIPES = E.KOLI_GALETS_ON; // les recettes redemandent leurs Galets
   if (E.KOLI_GALET_RECIPES && D.ITEMS) {
     const byDb = {}; Object.keys(D.ITEMS).forEach((k) => { byDb[D.ITEMS[k].dbid] = D.ITEMS[k]; });
     E.KOLI_GALET_ITEMS = 0; E.KOLI_GALET_USE = {}; // par Galet : nombre d'objets et leurs niveaux (fiche de la boutique)
@@ -239,7 +242,7 @@
 
   /* ---------- boutique des Kolizetons, en rayons (comptoir, comme le Bureau des primes) ---------- */
   if (E.SHOPS) E.SHOPS.koli = { name: "Boutique du Kolizéum", cur: E.KOLI_CUR, curName: "Kolizetons", icon: "🏟", items: [
-    ...E.KOLI_GALETS.map((g, i) => ({ id: "g" + (i + 1), res: g.name, cost: g.cost, many: true, sec: "galets" })),
+    ...(E.KOLI_GALETS_ON ? E.KOLI_GALETS : []).map((g, i) => ({ id: "g" + (i + 1), res: g.name, cost: g.cost, many: true, sec: "galets" })),
     { id: "k1", cons: E.KOLI_TICKET, cost: 5, many: true, sec: "combat" }, { id: "k8", res: E.POUSSIERE, n: 10, cost: 10, many: true, sec: "combat" },
     { id: "k5", cons: "bonbon_royal", cost: 15, many: true, sec: "combat" },
     { id: "k2", cons: "coffre_bois", cost: 12, many: true, sec: "coffres" }, { id: "k3", cons: "coffre_argent", cost: 30, many: true, sec: "coffres" },

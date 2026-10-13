@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.4.3 « Galets retirés »
+Galets du Kolizéum retirés pour l'instant (Mathis, 13/10/2026) : `E.KOLI_GALETS_ON = false` dans js/koli.js coupe l'ajout des Galets aux recettes (`E.KOLI_GALET_RECIPES`) et leur rayon dans la boutique (onglet caché par js/koliui.js). Les Galets restent des ressources (`D.RES`) : ceux déjà possédés restent dans le sac, revendables à l'HdV. Remettre le drapeau à `true` les fait revenir.
+
 ## 1.0.4.2 « Gelées à parts égales »
 Boss jumeaux (js/engine.js, `dg.coBossEq` posé dans js/data.js pour gelaxieme_dimension et clos_blops) : les PV totaux du boss et de ses `coBoss` sont partagés à parts égales, × `E.COBOSS_EQ` (0,75, réglé par simulation : bon équipement stasis 5, optimisé 9, comme avant).
 

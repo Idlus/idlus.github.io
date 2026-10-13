@@ -1,6 +1,14 @@
 {
-  "version": "1.0.4.2",
+  "version": "1.0.4.3",
   "versions": [
+    {
+      "v": "1.0.4.3",
+      "name": "Galets retirés",
+      "items": [
+        "Les Galets du Kolizéum sont retirés du jeu pour l'instant : plus aucun équipement ne les demande dans sa recette (358 objets redeviennent fabricables sans Galet)",
+        "La boutique du Kolizéum ne vend plus de Galets. Ceux que tu as déjà restent dans ton sac et se revendent toujours à l'Hôtel de vente"
+      ]
+    },
     {
       "v": "1.0.4.2",
       "name": "Gelées à parts égales",
