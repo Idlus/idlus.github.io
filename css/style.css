@@ -2978,3 +2978,8 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .mkobar{display:block;height:7px;border-radius:99px;background:var(--panel3);overflow:hidden;margin-top:5px;max-width:260px}
 .mkobar i{display:block;height:100%;background:linear-gradient(90deg,var(--action2,#6fa83a),var(--gold))}
 .mkonote .btn{margin-left:4px}
+/* 0.1.34 : repère de difficulté d'une zone (derniers combats) */
+.zdiff{font-size:10.5px;font-weight:800;border-radius:7px;padding:1px 6px;white-space:nowrap}
+.zdiff.easy{background:var(--action);color:var(--action-ink)}
+.zdiff.mid{background:var(--panel3);color:var(--ink)}
+.zdiff.hard{background:var(--danger);color:#fff}
