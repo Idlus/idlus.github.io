@@ -56,7 +56,8 @@ ZONES = [
      'subs': [(161, 'wab_cawotte', 'meadow'), (164, 'wab_couronne', 'meadow'), (163, 'wab_tombeaux', 'grave'), (162, 'wab_waldo', 'meadow'), (798, 'wab_labos', 'cave')]},
     {'id': 'sidimote', 'name': 'Landes de Sidimote', 'desc': 'Terres désolées, roulottes des Magik Riktus et repaire du Meulou.', 'theme': 'grave',
      'subs': [(57, 'sid_desolation', 'grave', 58, 66), (526, 'sid_roulottes', 'meadow', 78, 86), (522, 'sid_hurlements', 'grave', 88, 96),
-              (71, 'sid_gisgoul', 'quarry', 170, 182), (495, 'sid_fungus', 'cave', 170, 182), (889, 'sid_domaine_fungus', 'forest', 170, 182)]},
+              (71, 'sid_gisgoul', 'quarry', 170, 182), (495, 'sid_fungus', 'cave', 170, 182), (889, 'sid_domaine_fungus', 'forest', 170, 182),
+              (517, 'sid_desacrees', 'grave', 198, 212), (896, 'sid_magmatiques', 'quarry', 198, 212)]},
     {'id': 'koalaks', 'name': 'Montagne des Koalaks', 'desc': 'Forêts de Kaliptus, lacs enchantés et canyon sauvage.', 'theme': 'forest',
      'subs': [(234, 'koa_kaliptus', 'forest', 56, 82), (231, 'koa_lacs', 'lake', 56, 82), (253, 'koa_canyon', 'quarry', 66, 92), (275, 'koa_morhkitu', 'forest', 98, 112), (230, 'koa_cimetiere', 'grave', 98, 112)]},
     {'id': 'albuera', 'name': 'Albuera', 'desc': 'Futaies enneigées des Grolours, des Buffalourds et des Rebelles du Rakoopeur.', 'theme': 'sky',
@@ -80,16 +81,18 @@ ZONES = [
      'subs': [(600, 'fri_port', 'beach', 78, 86), (601, 'fri_bourgade', 'city', 78, 86), (602, 'fri_champs', 'sky', 108, 116),
               (604, 'fri_pins', 'forest', 130, 142), (615, 'fri_lac', 'lake', 130, 142), (609, 'fri_berceau', 'beach', 140, 152), (610, 'fri_larmes', 'mine', 150, 162),
               (603, 'fri_village', 'sky', 160, 172), (606, 'fri_crevasse', 'cave', 160, 172), (605, 'fri_petrifiee', 'forest', 170, 182),
-              (608, 'fri_crocs', 'quarry', 180, 192), (611, 'fri_torrideau', 'sky', 180, 192), (753, 'fri_ruche', 'cave', 180, 192)]},
+              (608, 'fri_crocs', 'quarry', 180, 192), (611, 'fri_torrideau', 'sky', 180, 192), (753, 'fri_ruche', 'cave', 180, 192),
+              (834, 'fri_salbatroces', 'beach', 198, 212), (897, 'fri_epaves', 'beach', 198, 212), (902, 'fri_martegel', 'mine', 198, 212)]},
     {'id': 'saharach', 'name': 'Saharach', 'desc': 'Le désert brûlant des Cacterres, des Vers des sables et de la Pyramide Maudite.', 'theme': 'beach', 'requires': {'boss': 'labyrinthe_minotoror'},
      'subs': [(873, 'sah_cacterre', 'beach', 120, 132), (878, 'sah_gorge', 'quarry', 160, 172), (879, 'sah_cite', 'city', 160, 172), (881, 'sah_pyramide', 'grave', 198, 212), (872, 'sah_ossements', 'beach', 72, 80)]},
     {'id': 'pwak', 'name': 'Île de Pwâk', 'desc': "L'île gourmande des Croquants et des Chocomanciens.", 'theme': 'meadow', 'requires': {'boss': 'labyrinthe_minotoror'},
-     'subs': [(911, 'pwak_jardins', 'meadow', 120, 132), (910, 'pwak_carriere', 'quarry', 52, 60)]},
+     'subs': [(911, 'pwak_jardins', 'meadow', 120, 132), (910, 'pwak_carriere', 'quarry', 52, 60), (912, 'pwak_chocomanciens', 'city', 198, 212)]},
     {'id': 'divines', 'name': 'Dimensions divines', 'desc': 'Srambad, Enutrosor, Écaflipus, Xélorium et Osavora : les mondes des dieux.', 'theme': 'spirit', 'requires': {'boss': 'labyrinthe_minotoror'},
      'subs': [(827, 'sram_ruelles', 'city', 120, 132), (821, 'enu_carriere', 'mine', 140, 152), (856, 'eca_lande', 'meadow', 150, 162), (837, 'xel_present', 'city', 160, 172),
               (1041, 'osa_toorbz', 'forest', 160, 172), (828, 'sram_catacombres', 'grave', 170, 182),
               (822, 'enu_retraite', 'mine', 198, 212), (829, 'sram_hauts', 'city', 198, 212), (838, 'xel_lendemains', 'spirit', 198, 212), (857, 'eca_temple', 'city', 198, 212),
-              (820, 'enu_creuset', 'mine', 92, 100), (855, 'eca_pierres', 'sky', 102, 110)]},
+              (820, 'enu_creuset', 'mine', 92, 100), (855, 'eca_pierres', 'sky', 102, 110),
+              (1042, 'osa_reserve', 'forest', 198, 212), (1043, 'osa_rhoarim', 'meadow', 198, 212)]},
     {'id': 'asse', 'name': "Îlots de la mer d'Asse", 'desc': "L'île de Kartonpath et le Théâtre de Dramak.", 'theme': 'beach',
      'subs': [(799, 'asse_kartonpath', 'beach', 89, 100)]},
     {'id': 'bontabrak', 'name': 'Bonta et Brâkmar', 'desc': 'Les égouts des deux cités rivales, repaires du Rat Blanc et du Rat Noir.', 'theme': 'city',
@@ -99,7 +102,7 @@ ZONES = [
     {'id': 'sakai', 'name': 'Île de Sakaï', 'desc': 'Plaine glacée et mine abandonnée des Gobelins de Sakaï.', 'theme': 'sky', 'requires': {'boss': 'antre_korriandre'},
      'subs': [(651, 'sak_plaine', 'sky', 180, 192), (652, 'sak_foret', 'forest', 180, 192)]},
     {'id': 'valonia', 'name': 'Archipel de Valonia', 'desc': "Les galeries d'Ereboria et le bastion des Marteaux-Aigris.", 'theme': 'quarry', 'requires': {'boss': 'antre_korriandre'},
-     'subs': [(1027, 'val_ereboria', 'mine', 180, 192)]},
+     'subs': [(1027, 'val_ereboria', 'mine', 180, 192), (1029, 'val_ephedrya', 'forest', 198, 212)]},
     {'id': 'nimotopia', 'name': 'Nimotopia', 'desc': 'Le territoire des Chassouilleurs du Comte Razof.', 'theme': 'meadow', 'requires': {'boss': 'antre_korriandre'},
      'subs': [(883, 'nimotopia', 'meadow', 180, 192)]},
     {'id': 'obscure', 'name': 'Dimension Obscure', 'desc': "Le royaume des Obscuranti et la Pyramide d'Ombre.", 'theme': 'spirit', 'requires': {'boss': 'antre_korriandre'},
@@ -108,10 +111,18 @@ ZONES = [
      'subs': [(785, 'har_jardins', 'meadow', 198, 212), (786, 'har_remparts', 'quarry', 198, 212), (787, 'har_tannerie', 'city', 198, 212),
               (788, 'har_bastion', 'quarry', 198, 212), (789, 'har_clepsydre', 'city', 198, 212), (892, 'har_caserne', 'sky', 198, 212)]},
     {'id': 'sufokia', 'name': 'Baie de Sufokia', 'desc': "La baie engloutie et l'Aquadôme de Merkator.", 'theme': 'beach', 'requires': {'boss': 'cavernes_kolosso'},
-     'subs': [(804, 'suf_embruns', 'lake', 198, 212)]},
+     'subs': [(804, 'suf_embruns', 'lake', 198, 212), (862, 'suf_vestiges', 'lake', 198, 212), (868, 'suf_rlyugluglu', 'cave', 198, 212), (865, 'suf_trithons', 'lake', 198, 212)]},
+    {'id': 'cavaliers', 'name': 'Dimensions des Cavaliers', 'desc': "Les royaumes de Corruption, Servitude, Misère et Guerre, les quatre Cavaliers de l'Eliocalypse.", 'theme': 'spirit', 'requires': {'boss': 'cavernes_kolosso'},
+     'subs': [(928, 'cav_corrompu', 'forest', 198, 212), (925, 'cav_servitude', 'beach', 198, 212), (927, 'cav_misere', 'beach', 198, 212), (926, 'cav_guerre', 'quarry', 198, 212)]},
+    {'id': 'wukin', 'name': 'Wukin et Wukang', 'desc': "Le royaume d'encre du Roi Imagami et le royaume de papier de la Reine Amirukam.", 'theme': 'city', 'requires': {'boss': 'cavernes_kolosso'},
+     'subs': [(956, 'wuk_encre', 'city', 198, 212), (957, 'wuk_papier', 'city', 198, 212)]},
+    {'id': 'possedes', 'name': 'Atoll des Possédés', 'desc': "Le port des Ravageurs, le Pandamonium de Kabahal et le cauchemar de l'Aurore Pourpre.", 'theme': 'grave', 'requires': {'boss': 'cavernes_kolosso'},
+     'subs': [(967, 'pos_port', 'beach', 198, 212), (971, 'pos_cauchemar', 'spirit', 198, 212)]},
+    {'id': 'ecailles', 'name': 'Archipel des Écailles', 'desc': 'Crocuzko, le repaire des Crocodailles de Torkélonia.', 'theme': 'beach', 'requires': {'boss': 'cavernes_kolosso'},
+     'subs': [(917, 'eca_crocuzko', 'beach', 198, 212)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
-CO_BOSS = {'gelaxieme_dimension', 'labo_tynril', 'clos_blops', 'dojo_vent', 'taniere_givrefoux', 'cavernes_kolosso'}  # donjons où tous les boss se battent ensemble (0.1.44.1 : boss secondaires)
+CO_BOSS = {'gelaxieme_dimension', 'labo_tynril', 'clos_blops', 'dojo_vent', 'taniere_givrefoux', 'cavernes_kolosso', 'tempete_eliocalypse'}  # donjons où tous les boss se battent ensemble (0.1.44.1 : boss secondaires)
 POOL_FORCE = {'antre_dragon_cochon': {'Gorgouille'}}  # monstres de salle aux grades aberrants (Gorgouille : niveau 400) gardés au niveau du donjon
 POOL_MIN = {'donjon_larves': 40}  # niveau minimum des monstres des salles (les Larves Solitaires de niveau 11-16 restent dehors)
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
@@ -216,6 +227,16 @@ DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (852, 'miausolee_pounicheur', 'eca_pierres'),
     (1013, 'garde_manger_rat_blanc', 'bon_canaux'),
     (1010, 'sousouriciere_rat_noir', 'bra_entrailles'),
+    # lot 2 : donjons niveau 200
+    (835, 'ventre_baleine', 'fri_salbatroces'), (899, 'tour_bethel', 'fri_epaves'), (903, 'brasserie_dazak', 'fri_martegel'),
+    (869, 'vaisseau_meno', 'suf_vestiges'), (871, 'temple_koutoulou', 'suf_rlyugluglu'), (870, 'palais_dantinea', 'suf_trithons'),
+    (890, 'manoir_katrepat', 'sid_desacrees'), (898, 'tour_solar', 'sid_magmatiques'), (915, 'temple_kao', 'pwak_chocomanciens'),
+    (918, 'sanctuaire_torkelonia', 'eca_crocuzko'),
+    (930, 'arbre_mort', 'cav_corrompu'), (933, 'fers_tyrannie', 'cav_servitude'), (932, 'sentence_balance', 'cav_misere'), (931, 'trone_sang', 'cav_guerre'),
+    (939, 'tempete_eliocalypse', 'cav_guerre'),
+    (958, 'memoire_orukam', 'wuk_encre'), (959, 'souvenir_imagiro', 'wuk_papier'),
+    (968, 'rituel_kabahal', 'pos_port'), (972, 'aurore_pourpre', 'pos_cauchemar'),
+    (1030, 'chambre_malefices', 'val_ephedrya'), (1045, 'breuil_venerable', 'osa_reserve'), (1046, 'autel_dechireuse', 'osa_rhoarim'),
 ]
 EXCLUDE_NAMES = ("d'Halouine", 'Ballotin')
 EXCLUDE_RACES = {32, 147, 250}  # avis de recherche, poutchs

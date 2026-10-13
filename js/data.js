@@ -440,7 +440,9 @@
       "Dent de Phorreur": ["galerie_phossile", 5], "Griffe de Matougarou": ["plateau_ush", 5], "Patte de Kabombz": ["poste_supervizoeuf", 5],
       "Poils d'Hordémon": ["horologium_xlii", 5], "Chitine de Nécrotique": ["cave_toxoliath", 5], "Fragment d'Ectorche": ["belvedere_ilyzaelle", 5],
       "Poils de Barbe d'Enutrofor": ["palais_nidas", 5], "Étoffe de la Cour Sombre": ["trone_cour_sombre", 5], "Boucle des Égarés": ["oeil_vortex", 5],
-      "Carte du Grand Jeu": ["defi_chaloeil", 5], "Fragment de Chakanoubis": ["chambre_tal_kasha", 5] };
+      "Carte du Grand Jeu": ["defi_chaloeil", 5], "Fragment de Chakanoubis": ["chambre_tal_kasha", 5],
+      /* 0.1.45 « Donjons de légende » */
+      "Dent de zarbivore": ["breuil_venerable", 5], "Shampoing Rhoarim": ["autel_dechireuse", 5] };
     for (const [res, [did, rate]] of Object.entries(KEY_FIX)) {
       if (!G.DUNGEONS[did] || Object.values(G.MONSTERS).some((m) => m.drops.some(([r]) => r === res))) continue;
       G.ZONES.forEach((z) => z.subs.forEach((sub) => { if (!(sub.dungeons || [sub.dungeon]).includes(did)) return; sub.monsters.forEach((k) => { const m = G.MONSTERS[k]; if (m && !m.drops.some(([r]) => r === res)) m.drops.push([res, rate]); }); }));
@@ -449,6 +451,12 @@
   }
   /* 0.1.44.1 : boss secondaires qui accompagnent le boss principal ; part de PV réglée par simulation (stasis 5-7 avec un bon équipement) */
   [["labo_tynril", 0.2], ["cavernes_kolosso", 0.15]].forEach(([d, v]) => { if (G.DUNGEONS[d] && G.DUNGEONS[d].coBoss) G.DUNGEONS[d].coBossHp = v; });
+  /* 0.1.45 : la Tempête de l'Eliocalypse s'ouvre après les quatre Cavaliers, qui laissent chacun des Fragments d'armure (clé) */
+  if (G.DUNGEONS.tempete_eliocalypse) {
+    const cav = ["arbre_mort", "fers_tyrannie", "sentence_balance", "trone_sang"].filter((d) => G.DUNGEONS[d]);
+    G.DUNGEONS.tempete_eliocalypse.needs = cav;
+    cav.forEach((d) => { const m = G.MONSTERS[G.DUNGEONS[d].boss]; if (m && !m.drops.some(([r]) => r === "Fragment d'armure")) m.drops.push(["Fragment d'armure", 35]); });
+  }
   /* 0.1.40 : la Petite Larve Dorée (clé du Donjon des Larves) n'a pas de recette dans DOFUS → fabriquée chez le Bricoleur avec des ressources des Craqueleurs */
   if (G.DUNGEONS.donjon_larves && !G.SPECIAL_CRAFTS["Petite Larve Dorée"])
     G.SPECIAL_CRAFTS["Petite Larve Dorée"] = { job: "bricoleur", lvl: 10, ing: [["Griffes de Kwak", 3], ["Plume du Kwak de Vent", 2], ["Plume du Kwak de Terre", 2], ["Cuir du Cochon de Lait", 2], ["Viande Tendre", 3], ["Pollenectar", 3], ["Avoine", 3]] };

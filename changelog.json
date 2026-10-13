@@ -1,6 +1,18 @@
 {
-  "version": "0.1.45.1",
+  "version": "0.1.46",
   "versions": [
+    {
+      "v": "0.1.46",
+      "name": "Donjons de légende",
+      "items": [
+        "22 nouveaux donjons de niveau 200, ouverts après le Kolosso : Ventre de la Baleine, Tour de Bethel, Brasserie du roi Dazak, Vaisseau du Capitaine Meno, Temple de Koutoulou, Palais de Dantinéa, Manoir des Katrepat, Tour de Solar, Temple du dieu Kao, Sanctuaire de Torkélonia, Mémoire d'Orukam, Souvenir d'Imagiro, Rituel de Kabahal, Bataille de l'Aurore Pourpre, Chambre des maléfices, Breuil du Vénérable, Autel de la Déchireuse et les donjons des quatre Cavaliers",
+        "La Tempête de l'Eliocalypse : Guerre, Servitude, Misère et Corruption se battent ensemble. Elle s'ouvre quand tu as battu les quatre Cavaliers dans leur donjon, qui laissent les Fragments d'armure de sa clé",
+        "21 nouvelles zones de chasse de niveau 200 et 4 nouvelles régions : Dimensions des Cavaliers, Wukin et Wukang, Atoll des Possédés, Archipel des Écailles. Frigost, Sufokia, Sidimote, Pwâk, Valonia et Osavora s'agrandissent",
+        "245 équipements et 61 panoplies de DOFUS avec leurs vraies caractéristiques, 124 nouveaux monstres",
+        "Chaque nouveau boss a ses mécaniques et son trophée pour le Havre-Sac (première victoire en stasis 5)",
+        "Difficulté réglée par simulation, un peu au-dessus des autres donjons de niveau 200 : stasis 6 environ avec un bon équipement, 9 à 10 pour les équipes optimisées"
+      ]
+    },
     {
       "v": "0.1.45.1",
       "name": "Offrande fixe",
