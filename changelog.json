@@ -1,6 +1,13 @@
 {
-  "version": "1.0.7.10",
+  "version": "1.0.7.11",
   "versions": [
+    {
+      "v": "1.0.7.11",
+      "name": "Dernières recherches",
+      "items": [
+        "Recherche rapide : un clic sur une ligne des « Dernières recherches » (ou des exemples) relance bien cette recherche. Avant, il ne se passait rien"
+      ]
+    },
     {
       "v": "1.0.7.10",
       "name": "Montée réglée",

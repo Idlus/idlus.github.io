@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.7.10";
+const GAME_VERSION = "1.0.7.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.7.11", name: "Dernières recherches", items: [
+    "Recherche rapide : un clic sur une ligne des « Dernières recherches » (ou des exemples) relance bien cette recherche. Avant, il ne se passait rien",
+  ] },
   { v: "1.0.7.10", name: "Montée réglée", items: [
     "Nouveau réglage de l'XP choisi par Mathis : du niveau 1 au niveau 200 (bon équipement, sans bonus), environ 120 h pour une équipe de 8, 150 h pour une équipe de 4 et 240 h pour un héros seul",
     "Plus l'équipe est grande, plus chaque héros monte vite : l'ordre reste le même qu'en 1.0.6.1, la montée est seulement plus longue (elle allait trop vite)",
@@ -5656,7 +5659,7 @@ const WS_KEY = "idlus-recherches";
 const wsRecent = () => { try { const a = JSON.parse(localStorage.getItem(WS_KEY) || "[]"); return Array.isArray(a) ? a.slice(0, 5) : []; } catch (e) { return []; } };
 const wsRemember = (q) => { try { const a = [q, ...wsRecent().filter((x) => x !== q)].slice(0, 5); localStorage.setItem(WS_KEY, JSON.stringify(a)); } catch (e) {} };
 function searchOpen(q) {
-  if (!S) return; if ($("#wsearch")) { $("#wsq").focus(); return; }
+  if (!S) return; if ($("#wsearch")) { const inp = $("#wsq"); if (q != null) { inp.value = q; searchRender(); } inp.focus(); if (q) { const n = inp.value.length; inp.setSelectionRange(n, n); } return; } // 1.0.7.11 : un clic sur « Dernières recherches » remplit le champ quand la fenêtre est déjà ouverte
   tipHide();
   const d = document.createElement("div"); d.id = "wsearch"; d.className = "wsearch-bg"; d.dataset.act = "searchclose";
   d.innerHTML = `<div class="wsearch" role="dialog" aria-label="Recherche">

@@ -108,6 +108,11 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => { const s = document.querySelector("#sheet"); if (s) s.innerHTML = ""; window.DX.render(); }); await noTip();
     await page.click(".ac-heads .ac-h:not(.ac-add)"); await page.waitForTimeout(200);
     if ((await page.evaluate(() => window.DX.ui.tab)) !== "team") errors.push("accueil : la tête d'un héros n'ouvre pas sa fiche");
+    // 1.0.7.11 : recherche rapide, un clic sur « Dernières recherches » remplit le champ et montre les résultats
+    await page.evaluate(() => { localStorage.setItem("idlus-recherches", JSON.stringify(["bouftou", "dragon"])); document.querySelector("#sheet").innerHTML = ""; document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true })); });
+    await page.waitForSelector("#wsearch", { timeout: 3000 }); await page.click('#wsres [data-act="searchfill"][data-q="bouftou"]'); await page.waitForTimeout(150);
+    if ((await page.inputValue("#wsq")) !== "bouftou" || !(await page.$('#wsres [data-act="searchgo"]'))) errors.push("recherche : un clic sur une dernière recherche ne la relance pas");
+    await page.keyboard.press("Escape"); if (await page.$("#wsearch")) errors.push("recherche : Échap ne ferme pas la fenêtre");
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
     errors.push(`étape échouée : ${e.message.split("\n")[0]}`);
