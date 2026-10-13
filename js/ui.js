@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.55";
+const GAME_VERSION = "0.1.56";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.56", name: "Boss des mondes rééquilibré", items: [
+    "Boss des mondes : chaque essai joue maintenant 3 combats et garde la moyenne. Fini les essais où toute l'équipe tombe d'un coup par malchance. L'écran de fin montre les 3 combats",
+    "Le niveau, l'équipement et le nombre de héros comptent : avec 8 héros bien équipés, on vise B au niveau 60, A vers 80-100, S vers 120-160 et SSS au niveau 200",
+    "La Charge du boss frappe moins fort (×1,5 au lieu de ×2,2)",
+    "Nouvelle grille : B dès 5 000 PV, A 10 000, S 20 000, SS 35 000, SSS 50 000",
+    "Gargandyas garde la même part de vie (environ 64 %), mais ses PV passent de 1 000 000 à 200 000. Le classement repart de zéro et les essais du jour sont rendus. Les coffres et Fragments déjà gagnés restent, et ceux qui l'ont déjà frappé auront quand même la récompense quand il tombe",
+  ] },
   { v: "0.1.55", name: "Plafonds relevés", items: [
     "Havre-Sac : nouvel Autel des Douze, 15 niveaux à acheter en kamas (500 000 kamas le premier, puis ×1,3). Chaque niveau relève de +5 les plafonds d'XP, de butin et de kamas : jusqu'à +250 % d'XP et de butin et +275 % de kamas (avant : +175 % et +200 %)",
     "Havre-Sac : nouveau cadre « Mes bonus » en haut de la page. Pour l'XP, le butin et les kamas : une barre qui montre chaque source (Havre-Sac, meubles, alignement, étoiles, guilde, bonbons, légendaires), le plafond, la partie à débloquer avec l'Autel et ce qui est perdu au-dessus. Les sources manquantes sont indiquées, avec comment les obtenir",
