@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.54";
+const GAME_VERSION = "0.1.55";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.55", name: "Plafonds relevés", items: [
+    "Havre-Sac : nouvel Autel des Douze, 15 niveaux à acheter en kamas (500 000 kamas le premier, puis ×1,3). Chaque niveau relève de +5 les plafonds d'XP, de butin et de kamas : jusqu'à +250 % d'XP et de butin et +275 % de kamas (avant : +175 % et +200 %)",
+    "Havre-Sac : nouveau cadre « Mes bonus » en haut de la page. Pour l'XP, le butin et les kamas : une barre qui montre chaque source (Havre-Sac, meubles, alignement, étoiles, guilde, bonbons, légendaires), le plafond, la partie à débloquer avec l'Autel et ce qui est perdu au-dessus. Les sources manquantes sont indiquées, avec comment les obtenir",
+    "Rappel : la Renaissance, la synergie de classes, les événements (Double gain), l'Almanax et les mutateurs restent hors plafond",
+  ] },
   { v: "0.1.54", name: "Commandes du jour", items: [
     "Les Achats du jour deviennent les Commandes du jour : chaque jour, le jeu commande 2 000 ressources dans chaque tranche de 20 niveaux (1-20, 21-40… jusqu'à ton meilleur héros). Les zones de bas niveau redeviennent utiles, même après la Renaissance",
     "Une commande est payée selon le niveau de ton meilleur héros : une commande complète vaut environ 15 minutes de chasse à ton niveau. On peut livrer en plusieurs fois",
@@ -1481,6 +1486,39 @@ function roomBody(R) {
   return b + R.ups.map((id) => hvUp(E.HAVRE.find((x) => x.id === id))).join("") + (R.slots ? hvSlots(R) : "");
 }
 const restLabel = (c) => (E.trainee(S) === c ? "À l'entraînement (Havre-Sac)" : E.atelierHero(S) === c ? "À l'atelier (Havre-Sac)" : "Au repos (hors équipe)");
+/* 0.1.55 : « Mes bonus » en haut du Havre-Sac : chaque bonus source par source, le plafond, l'Autel des Douze qui le relève */
+const BKIND = [["xp", "Expérience", "parchemin_or"], ["drop", "Butin", "trophee"], ["kamas", "Kamas", "kamas"]];
+const BSRC = { havre: ["Havre-Sac", "#8cc63f", "Améliorer la pièce du Havre-Sac"], meubles: ["Meubles", "#e8c063", "Placer des meubles (boutique de la maison, trophées de boss)"],
+  align: ["Alignement", "#7fb3ff", "Monter en rang d'alignement (ordre de l'Esprit pour l'XP, de l'Œil pour le butin)"], etoiles: ["Étoiles", "#f5d76e", "Chasser dans une zone étoilée (+10 % par étoile)"],
+  guilde: ["Guilde", "#4fd1c5", "Faire monter le niveau de sa guilde"], bonbons: ["Bonbons", "#ff8a6b", "Manger un bonbon (Prospecteur, Doré, Royal)"], leg: ["Légendaires", "#c77dff", "Équiper un légendaire (Diadème de Ganymède, Larme de Neru, Plume de Buhorado)"] };
+const BWHERE = { xp: ["havre", "meubles", "align", "etoiles", "guilde", "bonbons", "leg"], drop: ["havre", "meubles", "align", "etoiles", "guilde", "bonbons", "leg"], kamas: ["havre", "meubles", "guilde", "bonbons", "leg"] };
+function bonusCard(k, label, ico) {
+  const parts = E.bonusParts(S, k).sort((a, b) => b.v - a.v), raw = E.bonusRaw(S, k), cap = E.capOf(S, k), top = E.capMax(k);
+  const scale = Math.max(top, raw) * 1.04; const w = (v) => `${((100 * v) / scale).toFixed(2)}%`;
+  let x = 0; const segs = parts.map((p) => { const v = Math.min(p.v, Math.max(0, cap - x)); const s = v > 0 ? `<i class="bseg" style="left:${w(x)};width:${w(v)};background:${BSRC[p.k][1]}"></i>` : ""; x += p.v; return s; }).join("");
+  const over = Math.max(0, raw - cap), got = Math.min(raw, cap);
+  const zero = BWHERE[k].filter((id) => !parts.some((p) => p.k === id));
+  const state = over ? `<span class="bko">+${fmt(over)} % perdus au-dessus du plafond</span>` : raw >= cap ? `<span class="plus">Plafond atteint</span>` : `<span class="muted">Encore +${fmt(cap - raw)} % avant le plafond</span>`;
+  return `<article class="bcard"><div class="bch">${IC(ico)}<span class="grow">${label}</span><b class="num plus">+${fmt(got)} %</b></div>
+    <div class="bbar" role="img" aria-label="${label} : +${fmt(got)} % sur un plafond de +${fmt(cap)} %">
+      ${cap < top ? `<i class="block" style="left:${w(cap)};width:${w(top - cap)}"></i>` : ""}${segs}${over ? `<i class="bover" style="left:${w(cap)};width:${w(Math.min(over, scale - cap))}"></i>` : ""}<i class="bcap" style="left:${w(cap)}"></i></div>
+    <div class="bstat xs"><span>${state}</span><span class="muted">plafond <b class="num">+${fmt(cap)}</b>${cap < top ? ` / ${fmt(top)}` : ""} %</span></div>
+    <div class="bleg">${parts.map((p) => `<span class="bchip" data-tip="${h(BSRC[p.k][2])}"><i style="background:${BSRC[p.k][1]}"></i>${BSRC[p.k][0]} <b class="num">+${fmt(p.v)}</b></span>`).join("")}${zero.map((id) => `<span class="bchip off" data-tip="${h(BSRC[id][2])}"><i></i>${BSRC[id][0]}</span>`).join("")}</div></article>`;
+}
+function altarHtml() {
+  const A = E.ALTAR, l = E.altarLvl(S), mx = l >= A.max, c = E.altarCost(S), ok = S.kamas >= c;
+  return `<div class="altar"><span class="rico">${IC("dofus")}</span><div class="grow"><div class="row between"><span><b>Autel des Douze</b> <span class="lvlpill">${l}/${A.max}</span></span><span class="plus small">plafonds +${l * A.per}</span></div>
+      <div class="xs muted">${mx ? "Au maximum : vos plafonds sont à +" + E.capOf(S, "xp") + " % d'XP et de butin et +" + E.capOf(S, "kamas") + " % de kamas." : `Chaque niveau relève de +${A.per} les plafonds d'XP, de butin et de kamas. Prochain niveau : +${E.capOf(S, "xp") + A.per} % d'XP et de butin, +${E.capOf(S, "kamas") + A.per} % de kamas.`}</div>${hvPips(l, A.max)}</div>
+    <button class="btn sm ${!mx && ok ? "primary" : ""}" data-act="altar" ${mx || !ok ? "disabled" : ""}>${mx ? "Maximum" : ok ? `Améliorer · ${fmt(c)} k` : `${fmt(c)} k · il manque ${fmt(c - S.kamas)} k`}</button></div>`;
+}
+function bonusBox() {
+  const open = ui.bonOpen !== false, ren = Math.max(0, ...S.chars.map((c) => c.ren || 0)), syn = E.synergy(S);
+  const extra = [ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : `Renaissance +${Math.round(E.REN_XP * 100)} % d'XP par renaissance`, syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", "Almanax", "Mutateurs"].filter(Boolean);
+  const sum = BKIND.map(([k, l]) => `<span><b class="num plus">+${fmt(E.bonus(S, k))} %</b> ${l.toLowerCase()}</span>`).join("");
+  return `<section class="bonbox ${open ? "open" : ""}"><header data-act="bontoggle"><h3>${IC("trophee")} Mes bonus</h3><span class="bsum small">${sum}</span><span class="chev">▾</span></header>
+    ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
+    <div class="bextra xs"><span class="muted">En plus, hors plafond :</span>${extra.map((t) => `<span class="bchip">${h(t)}</span>`).join("")}</div>` : ""}</section>`;
+}
 function havreHtml() {
   const placedN = E.ROOMS.reduce((s, R) => s + E.placed(S, R.id).length, 0), slotsN = E.ROOMS.reduce((s, R) => s + E.roomSlots(S, R.id), 0);
   const t = E.trainee(S);
@@ -1491,10 +1529,8 @@ function havreHtml() {
       <header data-act="hvroom" data-v="${R.id}"><span class="rico">${IC(R.icon)}</span><div class="grow"><h3>${h(R.name)}</h3><div class="xs muted">${h(R.desc)}</div><div class="xs plus msum">${h(roomSum(R))}</div></div>${R.soon ? `<span class="tag soft">Bientôt</span>` : ""}<span class="chev">▾</span></header>
       ${roomBody(R)}</article>`; };
   return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
-    <div class="pad stack"><div class="hvsum">
-      <div><b class="num plus">+${fmt(E.bonus(S, "xp"))} %</b><span>expérience</span></div><div><b class="num plus">+${fmt(E.bonus(S, "drop"))} %</b><span>butin</span></div><div><b class="num plus">+${fmt(E.bonus(S, "kamas"))} %</b><span>kamas</span></div>
+    <div class="pad stack">${bonusBox()}<div class="hvsum two">
       <div><b class="num">${placedN} / ${slotsN}</b><span>meubles placés</span></div><div><b class="num">${t ? h(t.name) : "—"}</b><span>à l'entraînement</span></div></div>
-    <p class="xs muted">Bonus totaux, plafonnés à +${E.BONUS_CAP.xp} % d'XP, +${E.BONUS_CAP.drop} % de butin et +${E.BONUS_CAP.kamas} % de kamas.</p>
     <div class="rooms">${E.ROOMS.map(room).join("")}</div></div></section>
     ${houseShopHtml()}
     <section class="panel" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Meubles à placer</h2><span class="xs muted">un meuble agit seulement une fois placé</span></div><div class="pad stack"><div class="mlist">
@@ -6011,6 +6047,8 @@ document.addEventListener("click", (ev) => {
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
     case "sabinfo": sabSheet(); return;
+    case "bontoggle": ui.bonOpen = ui.bonOpen === false; break;
+    case "altar": { const r = E.buyAltar(S); if (r) { toast(r); return; } toast(`Autel des Douze niveau ${E.altarLvl(S)} : plafonds relevés de +${E.ALTAR.per} !`, "rare"); break; }
     case "sabspd": { const r = E.sabSet(S, d.v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": saveNow(); location.reload(); return;
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;

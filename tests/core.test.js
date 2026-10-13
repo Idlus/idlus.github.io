@@ -211,3 +211,20 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   S.kamas = 1e6; assert.strictEqual(E.recruit(S, "cra", "Pute du 92"), "Ce nom n'est pas autorisé."); assert.strictEqual(S.chars.length, 1);
   console.log("ok - renommer un héros et filtre des noms");
 }
+
+/* 0.1.55 : Autel des Douze, plafonds relevés */
+{
+  const S = E.newState("Autel", "iop");
+  assert.strictEqual(E.capOf(S, "xp"), 175, "plafond d'XP de base");
+  assert.strictEqual(E.capOf(S, "kamas"), 200, "plafond de kamas de base");
+  S.kamas = 100; assert.ok(E.buyAltar(S), "pas assez de kamas");
+  S.kamas = 1e9; assert.strictEqual(E.buyAltar(S), null); assert.strictEqual(S.kamas, 1e9 - 500000, "premier niveau à 500 000");
+  assert.strictEqual(E.capOf(S, "drop"), 180, "+5 par niveau");
+  for (let i = 0; i < 20; i++) E.buyAltar(S);
+  assert.strictEqual(E.altarLvl(S), 15, "15 niveaux au plus");
+  assert.strictEqual(E.capOf(S, "xp"), 250); assert.strictEqual(E.capOf(S, "kamas"), 275); assert.strictEqual(E.capOf(S, "offtime"), E.BONUS_CAP.offtime, "le hors ligne ne bouge pas");
+  S.havre.xp = 50; S.align = { side: "bonta", order: "esprit", lvl: 100, xp: 0 };
+  assert.strictEqual(E.bonusRaw(S, "xp"), 115); assert.strictEqual(E.bonus(S, "xp"), 115);
+  assert.deepStrictEqual(E.bonusParts(S, "xp").map((p) => [p.k, p.v]), [["havre", 100], ["align", 15]]);
+  console.log("ok autel des douze");
+}

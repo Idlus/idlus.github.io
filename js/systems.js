@@ -268,7 +268,19 @@
      sans dépasser ces valeurs (relevées pour le Havre-Sac 4.0 afin que les meubles comptent toujours).
      Hors ligne : 24 h et 80 % d'efficacité au total, base comprise. */
   E.BONUS_CAP = { xp: 175, drop: 175, kamas: 200, offtime: 16, offrate: 55 };
-  E.bonus = (S, kind) => Math.min(rawBonus(S, kind), E.BONUS_CAP[kind] ?? Infinity);
+  /* 0.1.55 : l'Autel des Douze (Havre-Sac) relève ces plafonds de +5 par niveau, 15 niveaux : jusqu'à +250 % d'XP et de butin,
+     +275 % de kamas. Payé en kamas (500 000 k le premier niveau, ×1,3 à chaque niveau, environ 84 M au total). */
+  E.ALTAR = { max: 15, per: 5, base: 500000, g: 1.3 };
+  E.altarLvl = (S) => Math.min(E.ALTAR.max, (S.havre && S.havre.autel) || 0);
+  E.altarCost = (S, l = E.altarLvl(S)) => Math.round(E.ALTAR.base * Math.pow(E.ALTAR.g, l));
+  E.capOf = (S, kind) => (E.BONUS_CAP[kind] == null ? Infinity : E.BONUS_CAP[kind] + (["xp", "drop", "kamas"].includes(kind) ? E.ALTAR.per * E.altarLvl(S) : 0));
+  E.capMax = (kind) => E.BONUS_CAP[kind] + E.ALTAR.per * E.ALTAR.max;
+  E.buyAltar = (S) => {
+    const l = E.altarLvl(S); if (l >= E.ALTAR.max) return "L'Autel des Douze est déjà au maximum.";
+    const k = E.altarCost(S); if (S.kamas < k) return `Il faut ${k.toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= k; S.havre.autel = l + 1; E.emit(S, "havre", { altar: l + 1 }); return null;
+  };
+  E.bonus = (S, kind) => Math.min(rawBonus(S, kind), E.capOf(S, kind));
   const rawBonus = (S, kind) => {
     let b = 0;
     const H = HAVRE.find((x) => x.id === kind); if (H) b += E.havreLvl(S, kind) * H.per;
@@ -280,6 +292,21 @@
     if (E.legTeamBonus && (kind === "xp" || kind === "drop" || kind === "kamas")) b += E.legTeamBonus(S, kind); // 0.1.48 : légendaires (Larme de Neru, Diadème, Plume)
     return b;
   };
+
+  /* 0.1.55 : détail d'un bonus, source par source (cadre « Mes bonus » du Havre-Sac) */
+  E.bonusParts = (S, kind) => {
+    const H = HAVRE.find((x) => x.id === kind); const P = [];
+    const add = (k, label, v) => { if (v > 0) P.push({ k, label, v }); };
+    add("havre", "Havre-Sac", H ? E.havreLvl(S, kind) * H.per : 0);
+    add("meubles", "Meubles", E.furnBonus(S, kind));
+    add("align", "Alignement", alignBonus(S, kind));
+    if (kind === "xp" || kind === "drop") add("etoiles", "Étoiles de la zone", E.starBonus(S));
+    add("guilde", "Guilde", E.guildBonus(S, kind));
+    add("bonbons", "Bonbons", (kind === "drop" || kind === "kamas" ? E.boostPct(S, kind) : 0) + E.boostPct(S, "royal"));
+    if (E.legTeamBonus) add("leg", "Légendaires", E.legTeamBonus(S, kind));
+    return P;
+  };
+  E.bonusRaw = (S, kind) => rawBonus(S, kind);
 
   /* ---------------- Havre-Sac 4.0 : pièces, meubles, entraînement, atelier ---------------- */
   /* Les 8 améliorations ci-dessus restent telles quelles ; elles sont rangées par pièce. Un meuble n'agit
