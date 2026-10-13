@@ -1009,11 +1009,21 @@
     else if (names.length && !S.dungeon) S.fight = null;
     if (names.length) note(S, `${names.join(", ")} ${names.length > 1 ? "reprennent" : "reprend"} la récolte.`, "info");
   };
+  /* 0.1.56.1 : Protecteurs et Dopeuls à la même difficulté quelle que soit la taille de l'équipe. Le bonus « petit groupe » de chasse
+     (E.HUNT_SMALL : PV, dégâts subis réduits, monstres moins renforcés) rendait ces adversaires bien plus faciles seul qu'en équipe,
+     et le duo, qui affronte déjà deux attaques par tour, était le plus dur. Réglé par simulation (une équipe bien équipée gagne
+     presque toujours, une équipe sans équipement perd, à toutes les tailles). */
+  E.FOE_SIZE = { 1: { hp: 1.3, dmg: 1.5 }, 2: { hp: 0.75, dmg: 0.7 }, 3: { hp: 0.85, dmg: 0.85 } };
+  /* et par niveau : un peu adoucis vers 40 (renfort de chasse tout neuf) et vers 200, où même bien équipé on perdait un combat sur deux */
+  E.FOE_LVL = [[40, 0.8], [60, 1], [160, 1], [200, 0.7]];
+  E.foeSize = (n, lvl) => { const z = E.FOE_SIZE[n] || { hp: 1, dmg: 1 }; const L = E.FOE_LVL; let f = L[0][1];
+    for (let i = 0; i < L.length; i++) { if (lvl >= L[i][0]) f = L[i][1]; if (i + 1 < L.length && lvl > L[i][0] && lvl < L[i + 1][0]) { f = L[i][1] + (L[i + 1][1] - L[i][1]) * (lvl - L[i][0]) / (L[i + 1][0] - L[i][0]); break; } }
+    return { hp: z.hp * f, dmg: z.dmg * f }; };
   E.protGroup = (S, sub, team, monsterEntity) => {
     const P = E.protActive(S); if (!P || !P.go) return null;
     const avg = team.reduce((a, c) => a + c.lvl, 0) / team.length; const lvl = Math.round(Math.min(200, avg + 3));
     const g = monsterEntity(P.mon, lvl); g.name = `${MONSTERS[P.mon].name} protecteur`; g.prot = true;
-    g.hpMax = g.hp = Math.round(g.hpMax * (1.5 + team.length * 0.6)); g.dmg *= team.length > 1 ? 1.3 : 1.1; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80; /* seul : une attaque par tour */
+    const z = E.foeSize(team.length, lvl); g.hpMax = g.hp = Math.round(g.hpMax * (1.5 + team.length * 0.6) * z.hp); g.dmg *= (team.length > 1 ? 1.3 : 1.1) * z.dmg; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80; /* seul : une attaque par tour */
     const mons = [g].concat(E.makeGroup(S, sub, team.length).slice(0, Math.max(0, team.length - 1)));
     P.go = false; P.fighting = true;
     return { mons, label: `${E.PROT_TITLE[P.job]} · ${sub.name}` };

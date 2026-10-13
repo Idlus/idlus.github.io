@@ -136,7 +136,7 @@
     const g = monsterEntity(pick(pool), clamp(hero.lvl, 1, 200));
     g.name = `Dopeul ${CLASSES[cls].name}`; g.dop = { cls, sex: hero.sex || CLASSES[cls].sex || "m", head: hero.head || 0 };
     g.el = EL_OF[CLASSES[cls].main] || g.el; g.res = { t: 10, f: 10, e: 10, a: 10, n: 10 };
-    const P = E.DOPEUL; g.hpMax = g.hp = Math.round(g.hpMax * (P.hp0 + team.length * P.hpN)); g.dmg *= P.dmg; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80;
+    const P = E.DOPEUL, z = E.foeSize(team.length, g.lvl); g.hpMax = g.hp = Math.round(g.hpMax * (P.hp0 + team.length * P.hpN) * z.hp); g.dmg *= P.dmg * z.dmg; g.attacks = team.length > 1 ? 2 : 1; g.ini += 80;
     const mons = [g].concat(E.makeGroup(S, sub, team.length).slice(0, Math.max(0, team.length - 1 - P.less)));
     T.fighting = cls; T.need = true;
     return { mons, label: `Temple ${CLASSES[cls].name} · Dopeul niveau ${g.lvl}` };
