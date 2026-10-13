@@ -29,6 +29,7 @@ const CHANGELOG = [
     "Comme dans DOFUS, 300 équipements à fabriquer (niveau 50 à 200) redemandent leurs Galets dans leur recette : 1 à 4 Galets selon l'objet. Les objets déjà fabriqués ne changent pas",
     "La boutique du Kolizéum est rangée en rayons : Galets, Combats et douceurs, Coffres, Apparence. Ce qui se cumule s'achète par 1, 5 ou 10 d'un coup",
     "Nouveau dans la boutique : 10 Poussières de stasis pour 10 Kolizetons. La fiche de chaque Galet dit combien d'objets le demandent et à quels niveaux",
+    "Nouvelle pièce de Kolizeton dans le style de DOFUS 3 : or taillé à facettes et Kolizéum en relief, assortie aux blasons des grades",
   ] },
   { v: "0.1.44.1", name: "Boss secondaires", items: [
     "Les boss secondaires de DOFUS rejoignent leur donjon et se battent avec le boss principal : les 4 Tynrils au Laboratoire du Tynril, les 4 Blops Royaux au Clos des Blops, Shihan et Hanshi au Dojo du Vent, la Fuji Givrefoux Nourricière à la Tanière Givrefoux, le Professeur Xa avec le Kolosso. Le Gorgouille apparaît dans les salles de l'Antre du Dragon Cochon",
