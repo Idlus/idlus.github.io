@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.47.4 « Curseur à sa place »
+`repaintKeep(m, html)` dans ui.js (exposé en `DX.repaint`) : redessine une zone en gardant le focus et la sélection du champ actif, et la valeur des champs libres (sans `data-act`). Utilisé par `paint` et `render` de guilds.js et market.js ; avant, `paint` de la guilde refaisait `focus()` sans position (curseur au début, le nom s'écrivait à l'envers) et celui de l'HdV perdait le focus. Test dans tests/online.test.js.
+
 ## 0.1.46.5 « Sablier économe »
 `E.sabBusy` (engine.js) : `E.sabSpend` ne vide la réserve que si un combat, un donjon, l'expédition, une récolte, l'atelier ou un plan de forgemagie avance ; sinon vitesse ×1 et pastille `.sabpill.idle`.
 

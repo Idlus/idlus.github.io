@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.46.5";
+const GAME_VERSION = "0.1.47.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.47.4", name: "Curseur à sa place", items: [
+    "Guilde : en écrivant le nom de la guilde à fonder, le curseur revenait au début dès qu'on marquait une pause, et le nom s'écrivait à l'envers. Il reste maintenant là où tu écris",
+    "Même correction pour tous les champs de la guilde et de l'hôtel de vente (recherche, prix, quantité, message du jour, invitation) : la page peut se mettre à jour pendant que tu tapes sans déplacer le curseur ni effacer ce que tu as écrit",
+  ] },
   { v: "0.1.46.5", name: "Sablier économe", items: [
     "Correction : le Sablier de Xélor ne s'use plus quand rien n'avance. Il ne se vide que pendant un combat, un donjon, l'expédition, une récolte, l'atelier ou la forgemagie automatique",
     "Équipe au repos avec ×2 ou ×3 choisi : le sablier se met en pause (il s'éteint un peu) et la réserve ne bouge pas",
@@ -6547,7 +6551,17 @@ async function brisageNet() {
   if (r.err || !r.data || r.data.err) { if (hits.length) E.netCoefHits.unshift(...hits); return; }
   coefAt = Date.now(); const now = E.now(); const m = {}; for (const k in r.data) m[k] = { v: +r.data[k], t: now }; E.netCoef = m;
 }
-window.DX = { get S() { return S; }, ui, render, E, diagText };
+/* Redessine une zone sans casser la saisie en cours : le champ actif garde le focus et la position du curseur,
+   et les champs libres (sans data-act, donc pas recopiés dans l'état) gardent ce qui y a été tapé. */
+function repaintKeep(m, htmlStr) {
+  const a = document.activeElement; const fid = a && a.id && m.contains(a) ? a.id : null;
+  const sel = fid && typeof a.selectionStart === "number" ? [a.selectionStart, a.selectionEnd, a.selectionDirection] : null;
+  const vals = {}; m.querySelectorAll("input[id]:not([data-act]), textarea[id]:not([data-act])").forEach((i) => { if (i.type !== "checkbox" && i.type !== "radio" && i.type !== "range") vals[i.id] = i.value; });
+  m.innerHTML = htmlStr;
+  for (const id in vals) { const n = document.getElementById(id); if (n && m.contains(n)) n.value = vals[id]; }
+  if (fid) { const n = document.getElementById(fid); if (n && m.contains(n)) { n.focus({ preventScroll: true }); if (sel) try { n.setSelectionRange(Math.min(sel[0], n.value.length), Math.min(sel[1], n.value.length), sel[2] || "none"); } catch (e) {} } }
+}
+window.DX = { get S() { return S; }, ui, render, repaint: repaintKeep, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { h, G, IC, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
