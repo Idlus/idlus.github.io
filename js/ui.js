@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.33.2";
+const GAME_VERSION = "0.1.34";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.34", name: "Zones à ta mesure", items: [
+    "Zone conseillée : elle vise maintenant des monstres de ton niveau (avant, elle pouvait envoyer une équipe niveau 60 contre des monstres jusqu'au niveau 88). Une zone où l'équipe perd souvent ces derniers temps n'est plus conseillée",
+    "« Suivre mon niveau » suit la même règle : l'équipe monte vers les zones de son niveau, plus au-dessus",
+    "Zones plus basses : le malus d'XP arrive plus tard et est plus doux. Aucun malus jusqu'à 6 niveaux au-dessus des monstres, puis −5 % par niveau, au plus −70 % (avant : −10 % par niveau dès 5 niveaux, jusqu'à −95 %)",
+    "41 zones bien plus dures que les autres de leur niveau sont adoucies (Îlot des Tombeaux, Massif de Cania, Forêt pétrifiée, Berceau d'Alma, Salles des Embruns…). Les gains ne baissent pas, et une équipe sans équipement y perd toujours",
+    "Carte : un repère « Facile », « Équilibrée » ou « Difficile » sur chaque zone, d'après les derniers combats de ton équipe",
+  ] },
   { v: "0.1.33.2", name: "Hauts faits à part", items: [
     "Chat : nouvel onglet « Hauts faits ». Les records de stasis, exploits, niveaux 200, Renaissances et Dofus obtenus y sont rangés et ne remplissent plus le chat Général",
     "Les annonces officielles restent dans le Général",
@@ -1155,9 +1162,9 @@ function lockReason(sid) {
 function topTeamLvl() { const t = E.team(S); return Math.max(...(t.length ? t : S.chars).map((c) => c.lvl)); }
 function lvlHint(s) {
   const top = topTeamLvl();
-  const cls = top < s.lvl[0] - 3 ? "minus" : top > s.lvl[1] + 4 ? "muted" : "plus";
+  const cls = top < s.lvl[0] - 3 ? "minus" : top > s.lvl[1] + E.XP_PEN.free ? "muted" : "plus";
   const pen = Math.round((1 - E.xpPenalty(top - s.lvl[1])) * 100);
-  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${Math.min(200, s.lvl[1])}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de 4 : −10 % d'XP par niveau d'écart.">XP −${pen} %</span>` : ""}`;
+  return `<span class="xs ${cls}" data-tip="Niveau conseillé selon les monstres de la zone. Votre meilleur héros est niveau ${top}.${pen ? ` Monstres trop faibles : expérience réduite de ${pen} %.` : ""}">Conseillé : niv. ${s.lvl[0]}–${Math.min(200, s.lvl[1])}</span>${pen ? ` <span class="xppen" data-tip="Votre meilleur héros (niv. ${top}) dépasse le niveau des monstres de plus de ${E.XP_PEN.free} : −${Math.round(E.XP_PEN.step * 100)} % d'XP par niveau d'écart, au plus −${Math.round((1 - E.XP_PEN.min) * 100)} %.">XP −${pen} %</span>` : ""}`;
 }
 function tierBadge(k) {
   const t = E.huntTier(S, k); const n = S.bestiary[k] || 0; const next = HUNT_TIERS[t + 1];
@@ -1195,24 +1202,34 @@ function zonePanel(z, tier = -1, open = false) {
     <div class="subrows">${subs.map((s) => {
       const un = E.subUnlocked(S, s.id); const here = S.hunting && S.sub === s.id && !S.dungeon;
       if (s.hidden && !un) return `<div class="subrow locked"><span class="sr-mons">${G("lock")}</span><span class="sr-txt"><b>Lieu caché</b><span class="lockmsg">Un objet permettrait de rapetisser… (${h(s.requiresItem)}, Bricoleur)</span></span></div>`;
-      const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.25;
+      const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.5;
       return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
-        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${isBest ? `<span class="tag best" data-tip="La zone qui rapporte le plus d'XP à votre équipe sans être trop dure">${G("star")}<span class="bt"> Meilleure zone</span></span>` : ""}</span>
-          <span class="sr-sub">${lvlHint(s)}${un ? starsHtml(s.id) : ""}</span>
+        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")}<span class="bt"> Meilleure zone</span></span>` : ""}</span>
+          <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}</span>
           ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
 }
-/* zone conseillée : la plus haute zone débloquée sans malus d'XP, à portée du niveau moyen de l'équipe, et pas trop dure si on y a déjà combattu */
+/* 0.1.34 : repère de difficulté d'après les derniers combats de l'équipe dans la zone */
+const DIFF_TXT = { easy: ["Facile", "L'équipe gagne presque tous ses combats ici."], mid: ["Équilibrée", "L'équipe perd parfois ici."], hard: ["Difficile", "L'équipe perd souvent ici : plus assez d'équipement ou de niveau pour cette zone."] };
+function diffTag(sid) {
+  const d = E.zoneDiff(S, sid); if (!d) return "";
+  const [n, tip] = DIFF_TXT[d.k];
+  return `<span class="zdiff ${d.k}" data-tip="${h(`${tip} ${Math.round(d.wr * 100)} % de victoires sur les derniers combats.`)}">${n}</span>`;
+}
+/* zone conseillée (0.1.34) : monstres autour du niveau de l'équipe (milieu de la zone ≤ niveau moyen), sans malus d'XP,
+   et pas « Difficile » d'après les derniers combats ; avant : la zone la plus haute dont le niveau minimum ≤ niveau moyen + 2 */
 function bestSub() {
   const t = E.team(S).length ? E.team(S) : S.chars; const avg = t.reduce((a, c) => a + c.lvl, 0) / t.length; const top = topTeamLvl();
-  let best = null;
+  const mid = E.subMid;
+  let best = null, above = null;
   ZONES.forEach((z) => z.subs.forEach((s) => {
-    if (s.hidden || !E.subUnlocked(S, s.id) || s.lvl[0] > avg + 2 || E.xpPenalty(top - s.lvl[1]) < 1) return;
-    const r = E.zoneRate(S, s.id); if (r && r.fights >= 5 && r.winRate < 0.75) return;
-    if (!best || s.lvl[0] + s.lvl[1] > best.lvl[0] + best.lvl[1]) best = s;
+    if (s.hidden || !E.subUnlocked(S, s.id) || E.xpPenalty(top - s.lvl[1]) < 1) return;
+    const d = E.zoneDiff(S, s.id); if (d && d.k === "hard") return;
+    if (mid(s) <= avg) { if (!best || mid(s) > mid(best)) best = s; }
+    else if (!above || mid(s) < mid(above)) above = s; // aucune zone à son niveau : la plus proche au-dessus
   }));
-  return best && best.id;
+  return (best || above || {}).id;
 }
 function mapOpenZone(t) {
   if (!ui.mapOpen) ui.mapOpen = {};
