@@ -1,6 +1,13 @@
 {
-  "version": "1.0.10.3",
+  "version": "1.0.10.4",
   "versions": [
+    {
+      "v": "1.0.10.4",
+      "name": "Songe pour tous",
+      "items": [
+        "Songe infini : la page ne s'ouvrait pas pour les joueurs qui avaient fait l'ancienne Expédition (son dernier résultat la faisait planter). Ce vieux résultat est oublié et le Songe s'ouvre de nouveau pour tout le monde"
+      ]
+    },
     {
       "v": "1.0.10.3",
       "name": "Bugs corrigés",

@@ -150,6 +150,8 @@
   E.sgCadre = (S, on) => { if (!(S.unlocks && S.unlocks.cadreSonge)) return "Cadre des Songes : à échanger au Marché onirique."; S.settings.cadreSonge = !!on; return null; };
   /* 0.1.48 : conversion de l'Expédition : Éclats ×5 en Bribes, 150 Bribes par amélioration du campement, record et titres gardés */
   E.sgConvert = (S) => {
+    // 1.0.10.4 : le résultat d'une ancienne Expédition (sans intensité) faisait planter la page du Songe : on l'oublie
+    if (S.expLast && !(S.expLast.ii >= 0 && E.SG_INT[S.expLast.ii])) S.expLast = null;
     const G = E.songe(S); if (G.conv) return null; G.conv = 1;
     const C = S.camp && typeof S.camp === "object" ? S.camp : null; const ec = C ? Math.max(0, Math.round(C.ec || 0)) : 0;
     const ups = C && C.ups ? Object.keys(C.ups).length : 0; const br = ec * 5 + ups * 150;

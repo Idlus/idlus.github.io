@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.10.4 « Songe pour tous »
+Le dernier résultat d'une ancienne Expédition (`S.expLast` sans `ii`) faisait planter la page du Songe (`intName(undefined)` dans `puitsHtml`) : il est oublié au chargement (`E.sgConvert`, appelé à chaque chargement) et la page ignore un résultat sans intensité. Test 10 de `tests/songe.test.js`.
+
 ## 1.0.10.3 « Bugs corrigés »
 Demande de Mathis : points 1 à 13 et 24 de l'état des lieux du 13/10 (/mnt/project-files/audit-bugs/). Renaissance : la Statue utilise `data-act="renaitre"` (le `case "rengo"` du renommage passait avant). Galets : `E.newState` pose `galRef` et la reprise de `E.deserialize` (js/koli.js) ne vise que les sauvegardes sans `galRef` dans le texte d'origine et créées avant la 1.0.6 (`created` < 13/10 16 h 45 UTC). `equipBlocked` (js/ui.js) écarte du plan d'équipement et de « Meilleur choix » un 2e légendaire ou un 2e exo PA/PM/PO. Kolizéum : `Q.picked` (choix du joueur) ; sans lui, l'équipe d'arène se complète à `K.size`. Zoom du texte : `--vz` posé par `applyDisplay`, hauteurs en vh des fenêtres, du chat et de la recherche divisées par le zoom. Challenges sur leur ligne (`.cstrip`), `stickyCheck` à chaque mise à jour du combat, taux `E.resRate` sur la fiche de zone, `scrollTo` à l'entrée en donjon, butin du 1er combat, carte du Songe (`SGUI.ui.mapT`), tuile Défi du jour (`near`), `IDEES.render` relit le formulaire.
 

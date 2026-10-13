@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.10.3";
+const GAME_VERSION = "1.0.10.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.10.4", name: "Songe pour tous", items: [
+    "Songe infini : la page ne s'ouvrait pas pour les joueurs qui avaient fait l'ancienne Expédition (son dernier résultat la faisait planter). Ce vieux résultat est oublié et le Songe s'ouvre de nouveau pour tout le monde",
+  ] },
   { v: "1.0.10.3", name: "Bugs corrigés", items: [
     "Renaissance : le bouton « Renaître » de la Statue du Phénix fonctionne de nouveau (il ne faisait plus rien depuis la 0.1.53)",
     "Galets : ceux achetés sur une partie récente ne disparaissent plus au rechargement de la page (ils étaient repris en Kolizetons par erreur)",

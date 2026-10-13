@@ -118,4 +118,13 @@ const team = (L, cls = ["iop", "eni", "feca", "cra"]) => { const S = E.newState(
   console.log("ok - songe : vœu de Fontaine enregistré");
 }
 
+// 10. 1.0.10.4 : le dernier résultat d'une ancienne Expédition (sans intensité) est oublié au chargement, un vrai songe est gardé
+{
+  const S = team(60); S.expLast = { t: now, how: "fall", floor: 12, best: 12, prev: 10, record: true, rew: { kamas: 10, xp: 0, dust: 0, res: 0, items: 0 }, eclats: 3, lives: 0, fights: 4, relics: [], bless: [], lost: null, loss: null, lvl: 60, dur: 1000 };
+  const N = E.deserialize(E.serialize(S)); assert.strictEqual(N.expLast, null, "ancien résultat d'Expédition oublié");
+  E.act(N, "expStart", 0); E.expQuit(N); const L = N.expLast; assert.ok(L && L.ii === 0, "résultat du songe enregistré");
+  assert.strictEqual(E.deserialize(E.serialize(N)).expLast.ii, 0, "résultat du songe gardé au rechargement");
+  console.log("ok - songe : ancien résultat d'Expédition oublié");
+}
+
 console.log("songe.test.js : tout est bon");

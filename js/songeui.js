@@ -92,7 +92,7 @@
   const plural = (n, s) => `${fmt(n)} ${s}${n > 1 ? "s" : ""}`;
   const weekLeft = () => { const s = Math.max(0, (E.weekEnd() - E.now()) / 1000); const d = Math.floor(s / 86400), hh = Math.floor((s % 86400) / 3600); return d ? `${d} j ${hh} h` : hh ? `${hh} h` : "moins d'une heure"; };
   const team = (s) => E.team(s);
-  const intName = (ii) => E.SG_INT[ii].name;
+  const intName = (ii) => (E.SG_INT[ii] ? E.SG_INT[ii].name : E.SG_INT[0].name);
   const bribes = (s) => `<span class="pill" data-tip="Bribes de rêve : gagnées quand un songe est validé, à échanger au Marché onirique.">${uimg("cristal", "uico")} <b class="num">${fmt(E.songe(s).br)}</b> Bribes</span>`;
 
   /* ---------- l'en-tête de la page ---------- */
@@ -127,7 +127,7 @@
     const detail = `<div class="sgx-int" style="--gc:${INT.col}"><div class="sgx-int-h"><span class="sgx-big">${gem(ii)}</span><span class="stack" style="gap:1px;min-width:0"><b>${h(INT.name)}</b><span class="xs muted">${ii < unl ? "déjà validé, tu peux le rejouer" : ii === unl ? "ta prochaine intensité à valider" : "verrouillé"}</span></span></div>
       <div class="sgx-facts"><span><b>${INT.loot ? `+${INT.loot} %` : "normal"}</b>butin</span><span><b>${INT.waves}</b>vague${INT.waves > 1 ? "s" : ""} à tenir</span><span><b class="sgx-pips">${Array.from({ length: 11 }, (_, k) => `<i class="${k < diff ? "on" : ""}"></i>`).join("")}</b>difficulté</span><span><b>≈ ${fmt(br)}</b>Bribes si validé</span><span><b>${rate ? `1 sur ${fmt(1 / rate)}` : "—"}</b>légendaire</span></div>
       <div class="sgx-go">${err ? `<span class="tag warn">${h(err)}</span>` : `<button class="sg-btn sgx-enter" data-act="sg-start" data-v="${ii}">${uimg("cristal", "sg-ui")} Entrer en ${h(INT.name)}</button>`}<span class="xs muted">monstres niveau ${lvl} · ${tm.length} héros${!err && (s.hunting || s.dungeon) ? " · la chasse reprend au réveil" : ""}</span></div></div>`;
-    const L = s.expLast;
+    const L = s.expLast && E.SG_INT[s.expLast.ii] ? s.expLast : null; // 1.0.10.4 : pas le résultat d'une ancienne Expédition
     const conv = G_.from && !G_.fromSeen ? `<section class="sgd sgx-note"><span class="small">${G("star")} <b>L'Expédition devient le Songe infini.</b> Tes ${fmt(G_.from.ec)} Éclats sont devenus <b>${fmt(G_.from.ec * 5)} Bribes de rêve</b>${G_.from.ups ? `, et tes ${G_.from.ups} améliorations du campement <b>${fmt(G_.from.ups * 150)} Bribes</b>` : ""}. Ton record et tes titres sont gardés.</span><button class="btn sm" data-act="sg-convok">Compris</button></section>` : "";
     const week = `<div class="sgx-week"><span class="sg-chip">${uimg("carte")} nouvelle carte dans <b>&nbsp;${weekLeft()}</b></span><span class="sg-chip">${uimg("couronne")} cette semaine : <b>&nbsp;${wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "rien de validé"}</b></span><span class="sg-chip">${uimg("trophee")} record : <b>&nbsp;${G_.best ? `${h(intName(G_.best.ii))}, ${plural(G_.best.waves, "vague")}` : "—"}</b></span>${M ? `<span class="sg-chip v" data-tip="${h(M.desc)}">${X().cmed(reg.cls)} Songe de ${h(reg.god)} : <b>&nbsp;${h(M.name)}</b>&nbsp;(dès P1)</span>` : ""}</div>`;
     const how = `<section class="sgd sgx-how"><span class="sg-k">${G("target")} En 4 étapes</span><ol>
