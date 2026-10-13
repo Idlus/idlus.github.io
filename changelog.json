@@ -1,6 +1,17 @@
 {
-  "version": "0.1.36.1",
+  "version": "0.1.37",
   "versions": [
+    {
+      "v": "0.1.37",
+      "name": "Sac agrandi",
+      "items": [
+        "Le sac passe de 300 à 1 000 places. Le Grenier du Havre-Sac donne maintenant 50 places par niveau (au lieu de 25)",
+        "Plus aucun objet perdu : quand le sac est plein, les nouveaux objets vont dans le Coffre de trop-plein (Inventaire, onglet « Trop-plein », 200 places, +10 par niveau de Grenier). Les règles automatiques passent avant",
+        "Depuis le trop-plein : reprendre un objet, le briser, le mettre à l'hôtel de vente, ou tout briser d'un coup. Quand le coffre est plein, le plus ancien objet est brisé en runes",
+        "Nouveau bouton « Briser les doublons » dans l'Inventaire : garde le meilleur jet de chaque objet et brise les autres. Les objets portés, verrouillés, Rayonnants, exo et parfaits ne sont jamais brisés",
+        "Pendant l'absence, le résumé du retour indique combien d'objets sont partis dans le trop-plein"
+      ]
+    },
     {
       "v": "0.1.36.1",
       "name": "Stats en combat",

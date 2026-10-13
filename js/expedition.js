@@ -389,7 +389,7 @@
     team.forEach((c) => { E.giveXp(S, c, Math.round(ch.xp * mult * E.renXpMult(c))); }); X.rew.xp += ch.xp * mult;
     E.addRes(S, E.POUSSIERE, ch.dust * mult); X.rew.dust += ch.dust * mult;
     const got = [];
-    for (let m = 0; m < mult; m++) ch.items.forEach((t) => { if (E.itemCount(S) < E.itemCap(S)) { E.rollItem(S, t, {}); X.rew.items++; got.push(ITEMS[t].name); } });
+    for (let m = 0; m < mult; m++) ch.items.forEach((t) => { E.rollItem(S, t, {}); X.rew.items++; got.push(ITEMS[t].name); });
     note(S, `Coffre du palier ${ch.palier}${mult > 1 ? " doublé" : ""} : ${(ch.kamas * mult).toLocaleString("fr-FR")} kamas, ${(ch.xp * mult).toLocaleString("fr-FR")} XP par héros, ${ch.dust * mult} ${E.POUSSIERE}${got.length ? ", " + got.join(", ") : ""}.`, "rare");
   };
 

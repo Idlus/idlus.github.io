@@ -110,3 +110,34 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   assert.strictEqual(sum.level, best8); assert.strictEqual(sum.heroes.length, 11); assert.strictEqual(sum.rec, S.recLv);
   console.log("ok - 12 héros, 8 en équipe, congédier un héros");
 }
+
+// 0.1.37 : sac de 1 000 places, Coffre de trop-plein (rien n'est perdu), « Briser les doublons »
+{
+  E.setRng(mulberry(37)); const S = E.newState("Sac", "iop");
+  assert.strictEqual(E.itemCap(S), 1000);
+  const tpl = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].lvl === 20 && D.ITEMS[k].slot === "coiffe");
+  for (let i = 0; i < 1000 - E.itemCount(S); ) E.rollItem(S, tpl, { radiant: false });
+  const last = E.rollItem(S, tpl, { radiant: false }); E.rollItem(S, tpl, { radiant: false });
+  E.tick(S, 10);
+  assert.strictEqual(E.itemCount(S), 1000, "le sac reste à sa taille");
+  assert.strictEqual(S.over.length, 2, "les deux objets en trop sont dans le trop-plein");
+  assert.ok(S.over.some((o) => o.uid === last.uid), "les plus récents vont au trop-plein");
+  assert.ok(/Sac plein/.test(E.overTake(S, last.uid)), "reprendre un objet : sac plein");
+  // trop-plein plein : le plus ancien est brisé
+  for (let i = 0; i < E.overCap(S); i++) E.rollItem(S, tpl, { radiant: false });
+  const runes0 = Object.values(S.runes).reduce((a, b) => a + b, 0);
+  E.bagFlush(S);
+  assert.strictEqual(S.over.length, E.overCap(S)); assert.ok(!S.over.some((o) => o.uid === last.uid), "le plus ancien a été brisé");
+  assert.ok(Object.values(S.runes).reduce((a, b) => a + b, 0) > runes0, "il a rendu des runes");
+  // briser les doublons : garde le meilleur jet, rien d'autre
+  const r = E.breakDupes(S);
+  const left = Object.values(S.items).filter((it) => it.tpl === tpl);
+  assert.ok(r.n > 500 && left.filter((it) => !E.isPerfect(it)).length <= 1, "il reste le meilleur jet (et les objets parfaits)");
+  assert.strictEqual(E.dupesList(S).length, 0);
+  assert.strictEqual(E.overTake(S, S.over[0].uid), null, "reprendre un objet quand il y a de la place");
+  const b = E.overBreakAll(S); assert.ok(b.n > 0 && S.over.length === 0);
+  // la sauvegarde garde le trop-plein
+  E.rollItem(S, tpl); for (let i = E.itemCount(S); i <= 1000; i++) E.rollItem(S, tpl, { radiant: false }); E.bagFlush(S);
+  const S2 = E.deserialize(E.serialize(S)); assert.strictEqual(S2.over.length, S.over.length);
+  console.log("ok - sac de 1 000 places, trop-plein, doublons");
+}

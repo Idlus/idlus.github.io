@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.36.1";
+const GAME_VERSION = "0.1.37";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.37", name: "Sac agrandi", items: [
+    "Le sac passe de 300 à 1 000 places. Le Grenier du Havre-Sac donne maintenant 50 places par niveau (au lieu de 25)",
+    "Plus aucun objet perdu : quand le sac est plein, les nouveaux objets vont dans le Coffre de trop-plein (Inventaire, onglet « Trop-plein », 200 places, +10 par niveau de Grenier). Les règles automatiques passent avant",
+    "Depuis le trop-plein : reprendre un objet, le briser, le mettre à l'hôtel de vente, ou tout briser d'un coup. Quand le coffre est plein, le plus ancien objet est brisé en runes",
+    "Nouveau bouton « Briser les doublons » dans l'Inventaire : garde le meilleur jet de chaque objet et brise les autres. Les objets portés, verrouillés, Rayonnants, exo et parfaits ne sont jamais brisés",
+    "Pendant l'absence, le résumé du retour indique combien d'objets sont partis dans le trop-plein",
+  ] },
   { v: "0.1.36.1", name: "Stats en combat", items: [
     "Fiche du héros › Caractéristiques : nouveau bloc « En combat » sous les statistiques totales. Il montre ce qui s'ajoute pendant les combats et n'apparaissait nulle part : points de vie réels (Esprit Libre, Havre-Sac, alignement, petite équipe en chasse et en donjon), bonus de dégâts de l'équipe (Esprit Libre, Synergie, alignement, Éveils Meneur et Fureur), dégâts reçus en moins pour les petites équipes, vraies chances de coup critique (5 % de base compris), soins des Éveils, expérience gagnée (Sagesse et Renaissance) et Prospection de l'équipe après le palier. Touchez une ligne pour le détail",
     "Une résistance au-delà de 50 % est signalée : les points en trop ne servent à rien",
@@ -3616,13 +3623,16 @@ function renderInventory() {
       <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
         <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
         <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
-        <span class="muted small num">${items.length}/${E.itemCap(S)} objets · ${groups.length} types</span></div>
+        <span class="muted small num">${items.length}/${E.itemCap(S)} objets · ${groups.length} types</span>
+        ${dupesBtn()}</div>
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
         <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
           return `<button class="itile ${rarCls(g.tpl)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
             ${im(itemImg(g.tpl), "", T.name)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq"></span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
       </div>`;
+  } else if (ui.inv === "over") {
+    body = overHtml();
   } else if (ui.inv === "res") {
     body = resTabHtml();
   } else if (ui.inv === "cons") {
@@ -3634,9 +3644,26 @@ function renderInventory() {
   }
   const nc = Object.values(S.cons || {}).reduce((a, b) => a + b, 0);
   $("#main").innerHTML = `<div class="pagehead"><h1>Inventaire</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
-    <nav class="subtabs">${[["items", "Équipements"], ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["sets", "Panoplies"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}">${n}</button>`).join("")}</nav>
+    <nav class="subtabs">${[["items", "Équipements"], ...(S.over && S.over.length ? [["over", `Trop-plein · ${S.over.length}`]] : []), ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["sets", "Panoplies"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}" ${id === "over" && S.overNew ? 'class="hasdot"' : ""}>${n}${id === "over" && S.overNew ? '<span class="navdot"></span>' : ""}</button>`).join("")}</nav>
     <div class="stack">${body}</div>`;
 }
+/* 0.1.37 : Coffre de trop-plein et « Briser les doublons » */
+function dupesBtn() {
+  const n = E.dupesList(S).length; if (!n) return "";
+  return ui.confirm === "dupes" ? `<span class="row small"><span>Briser ${n} doublon${n > 1 ? "s" : ""} (le meilleur jet de chaque objet est gardé) ?</span><button class="btn sm danger" data-act="dupesgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button></span>`
+    : `<button class="btn sm" data-act="dupesask" title="Garde le meilleur jet de chaque objet et brise les autres en runes. Les objets portés, verrouillés, Rayonnants, exo et parfaits ne sont jamais brisés.">Briser les doublons · ${n}</button>`;
+}
+function overHtml() {
+  const L = (S.over || []).slice().reverse(); const cap = E.overCap(S); const room = E.itemCap(S) - E.itemCount(S);
+  if (S.overNew) { S.overNew = 0; dirty = true; }
+  const hdv = !!window.MARKET;
+  return `<section class="panel"><div class="phead"><h2>Coffre de trop-plein</h2><span class="xs muted num">${L.length} / ${cap} places</span></div>
+    <div class="pad stack"><span class="small muted">Quand le sac est plein, les nouveaux objets arrivent ici au lieu d'être perdus. Quand ce coffre est plein à son tour, le plus ancien est brisé en runes. ${room > 0 ? `Place libre dans le sac : <b>${fmt(room)}</b>.` : `<b>Le sac est plein</b> : brise ou vends des objets pour en reprendre.`}</span>
+      <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
+    <div class="list">${L.map((it) => { const T = ITEMS[it.tpl]; return `<div class="li mkrow">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.at ? ` · ${agoTxt(it.at)}` : ""}</span></span>
+      <button class="btn sm primary" data-act="overtake" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Prendre</button>${hdv ? `<button class="btn sm" data-act="overhdv" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="overbreak" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Le trop-plein est vide.</div>`}</div></section>`;
+}
+const runesTxt = (got) => Object.entries(got).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune";
 /* 0.1.10.1 : carnet de panoplies */
 function srcTxt(x) {
   if (x.k === "craft") return `${G("metiers")} Recette ${h(CRAFT_JOBS[x.job].name)} niv. ${x.lvl}`;
@@ -4066,7 +4093,7 @@ function gatherSheet() {
     <div class="row"><button class="btn primary" data-act="gsgo" ${g.res ? "" : "disabled"}>Envoyer</button>${c.job ? `<button class="btn" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : ""}<button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 /* ---------- 3.2.2 : notifications ---------- */
-const NOTIF_EV = [["bag", "Sac plein", "les nouveaux objets sont perdus"], ["loss", "Combat perdu", "avec le conseil « Pourquoi j'ai perdu ? »"], ["pin", "Objectif atteint", "un objectif de la bande du haut"], ["shop", "Liste de courses prête", "tout est réuni pour un objet ou une clé"], ["lvl", "Palier de niveau", "tous les 10 niveaux"], ["rare", "Évènement rare", "Champion, objet Rayonnant ou archimonstre"]];
+const NOTIF_EV = [["bag", "Sac plein", "les nouveaux objets vont dans le trop-plein"], ["loss", "Combat perdu", "avec le conseil « Pourquoi j'ai perdu ? »"], ["pin", "Objectif atteint", "un objectif de la bande du haut"], ["shop", "Liste de courses prête", "tout est réuni pour un objet ou une clé"], ["lvl", "Palier de niveau", "tous les 10 niveaux"], ["rare", "Évènement rare", "Champion, objet Rayonnant ou archimonstre"]];
 const NOTIF_DEF = { bag: true, loss: true, pin: true, shop: true, lvl: true, rare: false };
 const notifOn = (k) => { const n = S.settings.notif || {}; return n[k] === undefined ? NOTIF_DEF[k] : !!n[k]; };
 const notifPerm = () => (typeof Notification === "undefined" ? "none" : Notification.permission);
@@ -4132,6 +4159,7 @@ function offlineSheet(r) {
     ${r.fmPlans && r.fmPlans.length ? `<p class="small">${r.fmPlans.map((p) => `${IC("forge")} Plan ${h(p.name)} : ${p.tries} tentative${p.tries > 1 ? "s" : ""}, ${p.ok} réussite${p.ok > 1 ? "s" : ""}, ${h(p.txt)}, ${fmt(p.kamas)} kamas${p.done ? ` · <b>${h(p.done)}</b>` : ""}`).join("<br>")}</p>` : ""}
     ${r.archis && r.archis.length ? `<p class="small" style="color:var(--archi);font-weight:700">Archimonstres vaincus : ${r.archis.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")}</p>` : ""}
     ${r.souls && r.souls.length ? `<p class="small" style="color:var(--archi)">💜 Âmes capturées : ${r.souls.map((k) => h(MONSTERS[k] ? MONSTERS[k].name : k)).join(", ")} · ${r.stones} Pierre${r.stones > 1 ? "s" : ""} d'âme restante${r.stones > 1 ? "s" : ""}</p>` : r.archis && r.archis.length && !r.stones ? `<p class="small muted">Aucune Pierre d'âme en sac : les âmes se sont échappées.</p>` : ""}
+    ${r.over ? `<p class="small">Sac plein : <b>${fmt(r.over)}</b> objet${r.over > 1 ? "s" : ""} rangé${r.over > 1 ? "s" : ""} dans le trop-plein. <button class="btn sm" data-act="overgo">Voir</button></p>` : ""}
     ${(r.newItems || []).filter((u) => S.items[u]).length ? `<h3 class="sec">Objets obtenus</h3><div class="list small" style="max-height:220px;overflow:auto">${r.newItems.filter((u) => S.items[u]).map((u) => { const it = S.items[u]; const T = ITEMS[it.tpl];
         const best = E.team(S).filter((c) => T.lvl <= c.lvl).map((c) => { const sl = T.slot === "anneau" ? (c.equip.anneau1 ? "anneau2" : "anneau1") : T.slot === "dofus" ? null : T.slot; const cur = sl ? S.items[c.equip[sl]] : null; return { c, gain: itemScore(c, it) - itemScore(c, cur) }; }).sort((a, b) => b.gain - a.gain)[0];
         return `<div class="li">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span>${best && best.gain > 1 ? `<br><span class="xs" style="color:var(--good)">▲ mieux pour ${h(best.c.name)}</span>` : ""}</span>${best && best.gain > 1 ? `<button class="btn sm" data-act="offequip" data-uid="${u}" data-id="${best.c.id}">Équiper</button>` : ""}</div>`; }).join("")}</div>` : ""}
@@ -5341,6 +5369,14 @@ document.addEventListener("click", (ev) => {
     case "craftmany": { const r = E.craftMany(S, d.k, d.id, +d.n); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
       toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); break; }
+    case "dupesask": ui.confirm = "dupes"; break;
+    case "dupesgo": { const r = E.breakDupes(S); ui.confirm = null; toast(`${r.n} doublon${r.n > 1 ? "s" : ""} brisé${r.n > 1 ? "s" : ""}. Runes : ${runesTxt(r.got)}`); break; }
+    case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;
+    case "overtake": { const r = E.overTake(S, +d.uid); if (r) toast(r, "warn"); else toast("Remis dans le sac."); break; }
+    case "overbreak": { const r = E.overBreak(S, +d.uid); if (typeof r === "string") toast(r, "warn"); else toast("Runes : " + runesTxt(r)); break; }
+    case "overallask": ui.confirm = "overall"; break;
+    case "overallgo": { const r = E.overBreakAll(S); ui.confirm = null; toast(`${r.n} objets brisés. Runes : ${runesTxt(r.got)}`); break; }
+    case "overhdv": { const r = E.overTake(S, +d.uid); if (r) { toast(r, "warn"); break; } window.MARKET.sellItem(+d.uid); dirty = true; navGo("hdv"); window.scrollTo(0, 0); break; }
     case "break": { const r = E.breakItem(S, +d.uid, ui.focus || null); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; break;
@@ -5861,7 +5897,7 @@ function loop() {
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
         if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
         const lv = /^(.+) passe niveau (\d+) !$/.exec(ev.txt || ""); if (lv && +lv[2] % 10 === 0) notify("lvl", `${lv[1]} passe niveau ${lv[2]}`, "");
-        else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets sont perdus : faites de la place.");
+        else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets vont dans le trop-plein : faites de la place.");
         else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
     const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
     const sab = $("#stSab"); if (sab && S.sablier) { const v = sabLeft(S.sablier.r); if (sab.textContent !== v) sab.textContent = v; }
