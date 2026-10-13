@@ -1,6 +1,15 @@
 {
-  "version": "0.1.47.4",
+  "version": "0.1.47.5",
   "versions": [
+    {
+      "v": "0.1.47.5",
+      "name": "Notifications polies",
+      "items": [
+        "Chat ouvert : les notifications ne le cachent plus. Sur PC, elles s'affichent à gauche du chat ; au téléphone, une seule à la fois, tout en haut de l'écran",
+        "Pendant que vous écrivez dans le chat, les notifications attendent et arrivent dès que le message est envoyé",
+        "Options › Affichage › Notifications : Auto, En haut ou En bas"
+      ]
+    },
     {
       "v": "0.1.47.4",
       "name": "Curseur à sa place",

@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.47.5 « Notifications polies »
+Notifications (`toast()` dans ui.js) : chat ouvert (`body.chat-open`), la pile `.toasts` passe à gauche du chat sur PC (`right:410px`) et en haut, une seule visible, au téléphone. Pendant la frappe dans `#chIn` (champ non vide), les notifications sont mises en file (3 au plus) et rendues dès que le champ est vide ou quitté. Réglage `S.settings.toastPos` (auto / top / bottom), classes `toast-top` / `toast-bot` posées par `applyDisplay()`.
+
 ## 0.1.47.4 « Curseur à sa place »
 `repaintKeep(m, html)` dans ui.js (exposé en `DX.repaint`) : redessine une zone en gardant le focus et la sélection du champ actif, et la valeur des champs libres (sans `data-act`). Utilisé par `paint` et `render` de guilds.js et market.js ; avant, `paint` de la guilde refaisait `focus()` sans position (curseur au début, le nom s'écrivait à l'envers) et celui de l'HdV perdait le focus. Test dans tests/online.test.js.
 

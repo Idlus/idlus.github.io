@@ -220,6 +220,16 @@ const MOCK = () => {
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/chat-hf.png" });
     // 0.1.35.3 : le bouton pour réduire le chat reste dans le cadre, même avec tous les onglets et des pastilles
     if (await page.evaluate(() => { const C = window.CHAT.state; C.unread = 120; C.unreadP = 15; C.unreadH = 99; window.CHAT.repaint(); const c = document.querySelector("#chat").getBoundingClientRect(), x = document.querySelector("#chat .ch-x").getBoundingClientRect(); C.unread = C.unreadP = C.unreadH = 0; window.CHAT.repaint(); return x.right > c.right || x.left < c.left; })) fail("chat : bouton de fermeture hors du cadre (PC)");
+    // 0.1.47.5 : chat ouvert, les notifications s'écartent ; pendant qu'on écrit, elles attendent
+    await page.evaluate(() => window.DX.social.toast("Test de notification"));
+    if (await page.evaluate(() => { const t = document.querySelector("#toasts").getBoundingClientRect(), c = document.querySelector("#chat").getBoundingClientRect(); return t.right > c.left; })) fail("notifications : elles recouvrent le chat (PC)");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/notif-pc.png" });
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForSelector("#chIn");
+    await page.fill("#chIn", "Je suis en train d'écrire"); await page.focus("#chIn");
+    await page.evaluate(() => { document.querySelectorAll("#toasts .toast").forEach((e) => e.remove()); window.DX.social.toast("Pendant la frappe"); });
+    if (await page.$("#toasts .toast")) fail("notifications : affichées pendant qu'on écrit");
+    await page.fill("#chIn", ""); await page.waitForTimeout(900);
+    if (!/Pendant la frappe/.test(await page.textContent("#toasts"))) fail("notifications : pas rendues une fois le champ vidé");
     await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(100);
     // 0.1.29.1 : badge du créateur (liste donnée par le serveur)
     if (!(await page.$("#chat .msg.is-crea .xen .crown")) || !/Créateur/.test(await page.textContent("#chat .msg.is-crea"))) fail("chat : badge du créateur absent");
@@ -329,6 +339,10 @@ const MOCK = () => {
     const hw = await page.evaluate(() => document.querySelector("#chat .ch-head").scrollWidth); if (hw > 392) fail(`onglets du chat trop larges sur téléphone : ${hw}px`);
     // 0.1.35.3 : le bouton pour réduire le chat reste dans le cadre, même avec tous les onglets et des pastilles
     if (await page.evaluate(() => { const C = window.CHAT.state; C.unread = 120; C.unreadP = 15; C.unreadH = 99; window.CHAT.repaint(); const c = document.querySelector("#chat").getBoundingClientRect(), x = document.querySelector("#chat .ch-x").getBoundingClientRect(); C.unread = C.unreadP = C.unreadH = 0; window.CHAT.repaint(); return x.right > c.right || x.left < c.left; })) fail("chat : bouton de fermeture hors du cadre (téléphone)");
+    await page.evaluate(() => { document.querySelectorAll("#toasts .toast").forEach((e) => e.remove()); window.DX.social.toast("Un"); window.DX.social.toast("Deux"); });
+    if (await page.evaluate(() => { const v = [...document.querySelectorAll("#toasts .toast")].filter((e) => e.offsetParent); const r = document.querySelector("#chIn").getBoundingClientRect(); return v.length !== 1 || v[0].getBoundingClientRect().bottom > r.top; })) fail("notifications : mal placées au téléphone, chat ouvert");
+    await page.waitForTimeout(400);
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/notif-tel.png" });
     await page.click("#chat .ch-x");
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');

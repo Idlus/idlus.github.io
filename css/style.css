@@ -3454,3 +3454,13 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 /* Sablier économe : sablier en pause quand rien n'avance */
 .status .sabpill.idle{box-shadow:none;opacity:.75}
 .status .sabpill.idle .sb{animation:none}
+
+/* 0.1.47.5 : notifications et chat. Auto : chat ouvert, elles s'écartent (PC : à gauche du chat ; téléphone : une seule, en haut).
+   Options › Affichage › Notifications : En haut (toujours en haut au centre) ou En bas (position d'origine). */
+@media (min-width:860px){body.chat-open:not(.toast-top):not(.toast-bot) .toasts{right:410px}}
+@media (max-width:859px){
+  body.chat-open:not(.toast-top):not(.toast-bot) .toasts{top:calc(env(safe-area-inset-top,0px) + 6px);bottom:auto}
+  body.chat-open:not(.toast-top):not(.toast-bot) .toasts .toast:not(:first-child){display:none}
+  body.chat-open:not(.toast-top):not(.toast-bot) .toasts .toast{font-size:12.5px;padding:6px 12px}
+}
+body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;left:50%;right:auto;transform:translateX(-50%);align-items:center}
