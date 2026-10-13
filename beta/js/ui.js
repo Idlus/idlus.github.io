@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.46.1";
+const GAME_VERSION = "0.1.46.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.46.2", name: "Boutique du Kolizéum", items: [
+    "La boutique du Kolizéum est plus pratique : des onglets (Galets, Combats, Coffres, Apparence), une grille d'articles et un seul panneau d'achat en bas, toujours visible",
+    "Choisis la quantité librement (−, +, ×5, ×10 ou Max) : le total s'affiche, et s'il te manque des Kolizetons, le jeu te dit combien",
+    "Les Galets utiles pour ton équipe sont marqués « Pour ton équipe ». Chaque Galet dit combien d'objets le demandent, avec un lien vers ces objets",
+    "Après un achat, la boutique reste sur le même onglet et le même article",
+    "Les équipements niveau 200 des Donjons de légende redemandent aussi leurs Galets brasillants, comme dans DOFUS (358 recettes en tout)",
+  ] },
   { v: "0.1.46.1", name: "Bon objet en tête", items: [
     "Choix d'un objet (clic sur un emplacement d'un héros) : la liste est rangée du plus utile au moins utile pour ce héros, et le premier porte l'étiquette « Meilleur choix »",
     "Les bonus de panoplie comptent : une pièce qui débloque un palier remonte (étiquette « Pano. … 4/6 · bonus débloqué »), et perdre un palier compte aussi. La pastille verte « mieux dans le sac » et « Tout équiper au mieux » suivent le même calcul",

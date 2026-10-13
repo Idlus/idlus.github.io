@@ -3409,12 +3409,30 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .kz-vsbar .side{display:flex;align-items:center;gap:8px;min-width:0}
 .kz-vsbar .vs{font-family:var(--font-title);font-size:22px;color:var(--gold2)}
 .kz-shop .hv .btn img.kz-coin{vertical-align:-4px}
-.kz-shop .phead h2{display:flex;align-items:center;gap:8px}
-.kz-sec{padding:4px 14px 12px;display:flex;flex-direction:column;gap:6px}.kz-sec+.kz-sec{border-top:1px solid var(--line)}
-.kz-sec h3{margin:8px 0 0;font-family:var(--font-title);font-size:17px;color:var(--gold2)}.kz-sec>p{margin:0}
-.kz-si{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:12px;padding:8px 10px;flex-wrap:wrap}
-.kz-si .em{width:36px;display:flex;justify-content:center;font-size:26px}.kz-si .em img.ico{width:34px;height:34px}.kz-si .em .uico{width:30px;height:30px}
-.kz-buy{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto}.kz-buy .btn{white-space:nowrap}
+/* boutique du Kolizéum (0.1.45) : onglets, grille, panneau d'achat collé en bas de la fiche */
+.kzs{display:flex;flex-direction:column;gap:10px}
+.kzs-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.kzs-head h2{margin:0;display:flex;align-items:center;gap:8px}
+.kzs-bal{display:flex;align-items:center;gap:6px;background:var(--panel2);border:2px solid var(--frame);border-radius:999px;padding:3px 12px 3px 5px}.kzs-bal b{font-size:18px}
+.kzs-tabs{align-self:flex-start;max-width:100%;overflow-x:auto;scrollbar-width:none}.kzs-tabs button{white-space:nowrap;padding:6px 14px;font-size:13.5px}
+.kzs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px 8px;padding-top:4px}
+.kzs-t{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px 8px;background:var(--panel2);border:2px solid transparent;border-radius:14px;cursor:pointer;color:var(--ink);font:inherit;text-align:center;min-width:0}
+.kzs-t:hover{border-color:var(--line)}.kzs-t.on{border-color:var(--gold2);box-shadow:0 0 0 2px rgba(240,185,42,.25),0 4px 14px rgba(0,0,0,.25)}
+.kzs-t.own{opacity:.55}
+.kzs-i{height:42px;display:flex;align-items:center;justify-content:center;font-size:30px}.kzs-i img.ico{width:42px;height:42px}.kzs-i .uico{width:34px;height:34px}
+.kzs-k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted, #9a8f78);font-weight:800;margin-bottom:-2px}
+@media (min-width:700px){.sheet:has(#kzShop){height:min(88vh,720px)}.sheet:has(#kzShop) .kzs{flex:1}.sheet:has(#kzShop) .kzs-buy{margin-top:auto}}
+.kzs-nm{font-weight:700;font-size:12.5px;line-height:1.2;min-height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kzs-p{margin-top:auto;display:flex;align-items:center;gap:4px;font-weight:800;font-size:13.5px}
+.kzs-n{position:absolute;top:5px;right:6px;font-size:11px;font-weight:800;background:rgba(0,0,0,.35);color:#fff7e3;border-radius:8px;padding:0 6px}
+.kzs-u{position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:800;background:#3fb35d;color:#fff;border-radius:999px;padding:1px 7px}
+.kzs-buy{position:sticky;bottom:-16px;margin:0 -16px;padding:12px 16px 14px;background:var(--panel);border-top:2px solid var(--frame);display:flex;flex-direction:column;gap:10px;box-shadow:0 -8px 18px rgba(0,0,0,.18);z-index:2}
+.kzs-sel{display:flex;gap:12px;align-items:center}.kzs-bi{width:52px;display:flex;justify-content:center;font-size:36px}.kzs-bi img.ico{width:52px;height:52px}.kzs-bi .uico{width:42px;height:42px}
+.kzs-q{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kzs-step{display:flex;align-items:center;gap:6px}.kzs-step b{min-width:34px;text-align:center;font-size:18px}.kzs-step .btn{width:34px;justify-content:center;font-size:18px;padding:2px 0}
+.kzs-go{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.kzs-go .btn{font-size:15px}
+.kzs-miss{color:#e0574c;font-weight:700}
+@media (max-width:560px){.kzs-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.kzs-go .btn{flex:1;justify-content:center}}
 .kz-lnk{all:unset;cursor:pointer;font-weight:700;border-bottom:1px dashed currentColor}.kz-lnk:hover{color:var(--gold2)}
 .kzw .arena .ent.m img.sprite.dop,.kzw .arena.v2 .ent.m img.sprite.dop{filter:drop-shadow(0 0 5px rgba(255,90,90,.75))}
 .kzw .cico.dop img{filter:drop-shadow(0 0 3px rgba(255,90,90,.75))}
