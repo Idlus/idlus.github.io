@@ -1,6 +1,17 @@
 {
-  "version": "1.0.8.6",
+  "version": "1.0.8.7",
   "versions": [
+    {
+      "v": "1.0.8.7",
+      "name": "Donjons par zone",
+      "items": [
+        "Les donjons sont rangés par zone, dans des groupes qui se replient. La zone où chasse l'équipe est ouverte d'abord, avec « Tout ouvrir » et « Tout replier »",
+        "Barre de recherche : nom du donjon, du boss ou de la zone, sans se soucier des accents. Elle cherche dans tous les niveaux",
+        "Filtres : niveau (« Mon niveau » par défaut), Accessibles ou Fermés, stasis atteinte, Clé en stock, Dofus à gagner et Favoris",
+        "Le jeu retient vos filtres et les groupes ouverts. Sur téléphone, les filtres sont rangés derrière le bouton « Filtres »",
+        "« Par niveau » remet tous les donjons dans une seule liste"
+      ]
+    },
     {
       "v": "1.0.8.6",
       "name": "Coups de récolte longs",

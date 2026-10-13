@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8.6";
+const GAME_VERSION = "1.0.8.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.7", name: "Donjons par zone", items: [
+    "Les donjons sont rangés par zone, dans des groupes qui se replient. La zone où chasse l'équipe est ouverte d'abord, avec « Tout ouvrir » et « Tout replier »",
+    "Barre de recherche : nom du donjon, du boss ou de la zone, sans se soucier des accents. Elle cherche dans tous les niveaux",
+    "Filtres : niveau (« Mon niveau » par défaut), Accessibles ou Fermés, stasis atteinte, Clé en stock, Dofus à gagner et Favoris",
+    "Le jeu retient vos filtres et les groupes ouverts. Sur téléphone, les filtres sont rangés derrière le bouton « Filtres »",
+    "« Par niveau » remet tous les donjons dans une seule liste",
+  ] },
   { v: "1.0.8.6", name: "Coups de récolte longs", items: [
     "Un héros qui récolte fait maintenant des coups de 30 secondes : la barre se remplit, puis toute la récolte du coup tombe d'un bloc",
     "Les ressources par heure et la montée des métiers ne changent pas. Le niveau, l'outil, le Jardin et le Bonbon Récolteur donnent plus de ressources par coup",
@@ -2117,20 +2124,75 @@ function dungeonCard(did) {
       <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
         ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(dgNeedTxt(did) || E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
 }
+/* 1.0.8.7 : liste des donjons rangée par zone (groupes repliables), recherche et filtres gardés dans la partie */
+const DGF0 = { q: "", view: "zone", lv: "me", st: "all", sk: "all", key: false, dof: false, fav: false };
+function dgF() { const st = S.settings; if (!st.dgF || typeof st.dgF !== "object") st.dgF = Object.assign({}, DGF0); for (const k in DGF0) if (!(k in st.dgF)) st.dgF[k] = DGF0[k]; return st.dgF; }
+const DG_LV = [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]];
+const DG_SK = [["all", "Stasis : toutes"], ["none", "Jamais terminé"], ["low", "Stasis 1 à 4"], ["mid", "Stasis 5 à 9"], ["max", "Stasis 10"], ["todo", "Stasis 10 pas encore"]];
+const dgZone = (did) => E.SUBS[E.DUNGEON_SUB[did]].zone;
+const dgTeamZone = () => S.dungeon && DUNGEONS[S.dungeon.id] ? dgZone(S.dungeon.id) : S.sub && E.SUBS[S.sub] ? E.SUBS[S.sub].zone : null;
+function dgDofusToWin(did) { const f = E.dofusOfDungeon(did); if (f && !E.dofusOwned(S, f)) return true; const oc = E.dofusDropInfo("ocre"); return !!(oc && DUNGEONS[did].lvl >= oc.minLvl && !E.dofusOwned(S, "ocre")); }
+function dgBand(F) { const top = topTeamLvl(); return F.lv === "all" ? [1, 999] : F.lv === "me" ? [top - 20, top + 10] : F.lv.split("-").map(Number); }
+function dgMatch(did, F, nq) {
+  const dg = DUNGEONS[did];
+  if (nq.length) { const hay = E.searchNorm([dg.name, MONSTERS[dg.boss].name, ZONES.find((z) => z.id === dgZone(did)).name, E.SUBS[E.DUNGEON_SUB[did]].name].join(" ")); if (!nq.every((w) => hay.includes(w))) return false; }
+  else { const b = dgBand(F); if (dg.lvl < b[0] || dg.lvl > b[1]) return false; } // une recherche cherche dans tous les niveaux
+  const un = E.dungeonUnlocked(S, did); if (F.st === "open" && !un) return false; if (F.st === "closed" && un) return false;
+  const mx = ((S.stasis || {})[did] || {}).max || 0; const done = !!S.progress.bossKills[did];
+  if (F.sk === "none" && done) return false; if (F.sk === "low" && !(mx >= 1 && mx <= 4)) return false; if (F.sk === "mid" && !(mx >= 5 && mx <= 9)) return false;
+  if (F.sk === "max" && mx < 10) return false; if (F.sk === "todo" && mx >= 10) return false;
+  if (F.key && !(S.res[dg.key] > 0)) return false; if (F.dof && !dgDofusToWin(did)) return false; if (F.fav && !(S.dgFav || []).includes(did)) return false;
+  return true;
+}
+function dgFilterBar(F, nShown) {
+  const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="dgf" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
+  const tog = (k, n, tip) => `<button class="dgtog" data-act="dgtog" data-k="${k}" aria-pressed="${!!F[k]}" data-tip="${h(tip)}">${F[k] ? "✓ " : ""}${n}</button>`;
+  const chips = [];
+  if (F.lv !== "me" && !F.q) chips.push(["lv", F.lv === "all" ? "Tous les niveaux" : "Niveau " + DG_LV.find((x) => x[0] === F.lv)[1]]);
+  if (F.st !== "all") chips.push(["st", F.st === "open" ? "Accessibles" : "Fermés"]); if (F.sk !== "all") chips.push(["sk", DG_SK.find((x) => x[0] === F.sk)[1]]);
+  if (F.key) chips.push(["key", "Clé en stock"]); if (F.dof) chips.push(["dof", "Dofus à gagner"]); if (F.fav) chips.push(["fav", "Favoris"]); if (F.q) chips.push(["q", `« ${F.q} »`]);
+  const nf = chips.filter(([k]) => k !== "q").length; const open = !narrow() || (ui.fltOpen && ui.fltOpen.dg);
+  return `<div class="dgsearch"><span class="dgq">${G("search")}<input type="search" id="dgq" data-act="dgq" placeholder="Donjon, boss ou zone…" autocomplete="off" spellcheck="false" value="${h(F.q)}"></span>
+      ${narrow() ? `<button class="btn sm ${nf ? "primary" : ""}" data-act="fltopen" data-ctx="dg">Filtres · ${nf}</button>` : ""}${seg("view", [["zone", "Par zone"], ["lvl", "Par niveau"]])}</div>
+    <div class="dgtools" ${open ? "" : "hidden"}>
+      <div class="dgtrow"><span class="xs muted dglab">Niveau</span>${seg("lv", DG_LV)}</div>
+      <div class="dgtrow"><span class="xs muted dglab">Afficher</span>${seg("st", [["all", "Tous"], ["open", "Accessibles"], ["closed", "Fermés"]])}
+        <select class="small" data-act="dgsk">${DG_SK.map(([v, n]) => `<option value="${v}" ${F.sk === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+        ${tog("key", "Clé en stock", "Seulement les donjons dont vous avez déjà la clé")}${tog("dof", "Dofus à gagner", "Le boss peut lâcher un Dofus que vous n'avez pas encore")}${tog("fav", "Favoris", "Les donjons marqués d'une étoile")}</div></div>
+    <div class="row small dgchips" style="gap:6px;flex-wrap:wrap"><span class="muted">${nShown} donjon${nShown > 1 ? "s" : ""} affiché${nShown > 1 ? "s" : ""}${F.q ? " · recherche dans tous les niveaux" : F.lv === "me" ? ` · autour du niveau ${topTeamLvl()}` : ""}</span>
+      ${chips.map(([k, t]) => `<button class="pfchip" data-act="dgfclr" data-k="${k}">${h(t)} <b>✕</b></button>`).join("")}${chips.length ? `<button class="btn sm ghost" data-act="dgfclr" data-k="all">Tout effacer</button>` : ""}</div>`;
+}
+function dgGroup(z, ids, open, forced) {
+  const done = ids.filter((d) => S.progress.bossKills[d]).length; const lv = ids.map((d) => DUNGEONS[d].lvl); const lo = Math.min(...lv), hi = Math.max(...lv);
+  const team = dgTeamZone() === z.id; const W = E.weekly(S); const mut = ids.some((d) => (W && W.did === d) || E.flashOf(S, d));
+  const zu = E.zoneUnlocked(S, z.id);
+  const head = `<button class="zonefold" data-act="dgzone" data-id="${z.id}" aria-expanded="${open}" ${forced ? "disabled" : ""}><span class="zf-name">${h(z.name)}</span>
+    <span class="zf-meta">${team ? `<span class="tag good">Équipe ici</span>` : ""}${mut ? `<span class="tag best">${G("bolt")} Mutateur</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} zone fermée</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${ids.length} donjon${ids.length > 1 ? "s" : ""}</span>
+      <span class="zf-prog" data-tip="${done}/${ids.length} terminé${done > 1 ? "s" : ""}"><span class="bar"><i style="width:${pct(done, ids.length)}%"></i></span><span class="xs num">${done}/${ids.length}</span></span></span>${forced ? "" : `<span class="chev">${open ? "▾" : "▸"}</span>`}</button>`;
+  return `<section class="panel zonefoldp dgzone ${open ? "open" : ""}">${head}${open ? `<div class="dggrid">${ids.map(dungeonCard).join("")}</div>` : ""}</section>`;
+}
 function dungeonsHtml() {
-  const all = Object.keys(DUNGEONS); const f = ui.dgFilter || "all";
-  const list = all.filter((id) => f === "all" ? true : f === "open" ? E.dungeonUnlocked(S, id) : f === "key" ? dgKeyState(id).k !== "no" && E.dungeonUnlocked(S, id) : (S.dgFav || []).includes(id))
-    .sort((a, b) => ui.dgSort === "zone" ? E.SUBS[E.DUNGEON_SUB[a]].zone.localeCompare(E.SUBS[E.DUNGEON_SUB[b]].zone) || DUNGEONS[a].lvl - DUNGEONS[b].lvl : DUNGEONS[a].lvl - DUNGEONS[b].lvl);
+  const all = Object.keys(DUNGEONS); const F = dgF(); const nq = E.searchNorm(F.q).split(" ").filter(Boolean);
+  const list = all.filter((id) => dgMatch(id, F, nq)).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl || (DUNGEONS[a].name < DUNGEONS[b].name ? -1 : 1));
   const done = all.filter((d) => S.progress.bossKills[d]).length; const s5 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 5).length; const s10 = all.filter((d) => ((S.stasis || {})[d] || {}).max >= 10).length;
+  let body;
+  if (!list.length) body = `<div class="empty">Aucun donjon avec ces filtres.${F.lv !== "all" && !F.q ? ` <button class="btn sm" data-act="dgf" data-k="lv" data-v="all">Voir tous les niveaux</button>` : ""}</div>`;
+  else if (F.view === "lvl") body = `<div class="dggrid">${list.map(dungeonCard).join("")}</div>`;
+  else {
+    const groups = ZONES.map((z) => [z, list.filter((d) => dgZone(d) === z.id)]).filter(([, ids]) => ids.length);
+    const O = S.settings.dgOpen || {}; const tz = dgTeamZone(); const forced = nq.length > 0 || groups.length === 1;
+    const def = (z) => z.id === tz || (!groups.some(([g]) => g.id === tz) && z.id === groups[0][0].id);
+    body = `${forced ? "" : `<div class="row dgfoldall" style="gap:6px;justify-content:flex-end"><button class="btn sm ghost" data-act="dgzall" data-v="1">Tout ouvrir</button><button class="btn sm ghost" data-act="dgzall" data-v="0">Tout replier</button></div>`}`
+      + groups.map(([z, ids]) => dgGroup(z, ids, forced || (z.id in O ? !!O[z.id] : def(z)), forced)).join("");
+  }
   return `<section class="panel"><div class="phead"><h2>Donjons</h2><span class="small muted">${done}/${all.length} terminés · ★ ${s5} en stasis 5 · ★★ ${s10} en stasis 10</span></div>
     <div class="pad stack" style="gap:10px">
-      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="seg">${[["all", "Tous"], ["open", "Accessibles"], ["key", "Clé disponible"], ["fav", "Favoris"]].map(([v, n]) => `<button data-act="dgfilter" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span>
-        <select class="small" data-act="dgsort"><option value="lvl" ${ui.dgSort !== "zone" ? "selected" : ""}>Par niveau</option><option value="zone" ${ui.dgSort === "zone" ? "selected" : ""}>Par zone</option></select></div>
       ${defiLine()}
       ${weeklyBanner()}
       ${flashBanner()}
       <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
-      <div class="dggrid">${list.map(dungeonCard).join("") || `<div class="empty">Aucun donjon dans ce filtre.</div>`}</div></div></section>`;
+      ${dgFilterBar(F, list.length)}</div></section>
+    ${F.view === "lvl" || !list.length ? `<section class="panel"><div class="pad">${body}</div></section>` : body}`;
 }
 function compSuggest(did) {
   const K = S.comps || []; if (!K.length) return ""; const cur = E.compMatch(S); const best = (S.compDg || {})[did];
@@ -6675,7 +6737,11 @@ document.addEventListener("click", (ev) => {
     case "dgchainset": { ui.dgChain = +d.v; (S.dgChains = S.dgChains || {})[ui.dgSel] = ui.dgChain; dirty = true; dungeonSheet(ui.dgSel); return; }
     case "stopchain": msg(E.stopChain(S)); break;
     case "dgfav": { ev.stopPropagation(); S.dgFav = S.dgFav || []; const i = S.dgFav.indexOf(d.id); if (i >= 0) S.dgFav.splice(i, 1); else S.dgFav.push(d.id); break; }
-    case "dgfilter": ui.dgFilter = d.v; break;
+    case "dgf": { const F = dgF(); F[d.k] = d.v; dirty = true; break; }
+    case "dgtog": { const F = dgF(); F[d.k] = !F[d.k]; dirty = true; break; }
+    case "dgfclr": { const F = dgF(); if (d.k === "all") Object.assign(F, DGF0, { view: F.view }); else F[d.k] = DGF0[d.k]; dirty = true; break; }
+    case "dgzone": { const O = S.settings.dgOpen || (S.settings.dgOpen = {}); O[d.id] = t.getAttribute("aria-expanded") !== "true"; dirty = true; break; }
+    case "dgzall": { const O = S.settings.dgOpen = {}; ZONES.forEach((z) => { O[z.id] = d.v === "1"; }); dirty = true; break; }
     case "dgstasis": ui.dgStasis = +d.v; dungeonSheet(ui.dgSel); return;
     case "dgcraftkey": { const r = E.craftSpecial(S, DUNGEONS[d.id].key); if (typeof r === "string") { toast(r); return; } toast("Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
     case "combatcid": ui.combatCid = +d.id; break;
@@ -6912,7 +6978,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "roam") { S.settings.roam = t.checked; toast(t.checked ? `Chasse itinérante : l'équipe suivra les étoiles de zone, avec ${Math.round(E.ROAM_MALUS * 100)} % d'XP et de butin en moins.` : "Chasse itinérante désactivée."); }
   else if (a === "autozone") { S.settings.autoZone = t.checked; toast(t.checked ? "Progression automatique : l'équipe change de zone selon son niveau." : "Progression automatique désactivée."); }
   else if (a === "slotfilter") ui.slotFilter = t.value;
-  else if (a === "dgsort") ui.dgSort = t.value;
+  else if (a === "dgsk") { dgF().sk = t.value; dirty = true; }
   else if (a === "focusset") { S.settings.focus = t.value; toast(t.value === "auto" ? "L'équipe vise d'abord les soigneurs, chefs, invocateurs et protecteurs." : t.value === "boss" ? "L'équipe vise d'abord le boss." : "L'équipe vise d'abord le monstre le plus faible."); }
   else if (a === "gs") { const k = t.dataset.k; ui.gs[k] = k === "cid" ? +t.value : t.value; gatherSheet(); return; }
   else if (a === "settitle") { E.setTitle(S, +t.dataset.id, t.value); }
@@ -6944,6 +7010,7 @@ document.addEventListener("input", (ev) => {
   const t = ev.target;
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "dgq") { dgF().q = t.value.slice(0, 40); dirty = true; const pos = t.selectionStart; renderWorld(); const n = $("#dgq"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "encsearch") { ui.enc.q = t.value; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.id === "recqtyn") { if (t.value !== "") recQtyLive(t, false); return; }

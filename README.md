@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.8.7 « Donjons par zone »
+La liste des donjons est rangée par zone (groupes repliables), avec une barre de recherche (donjon, boss ou zone) et des filtres : niveau, accessibles ou fermés, stasis atteinte, clé en stock, Dofus à gagner, favoris. Filtres et groupes ouverts sont gardés.
+
 ## 1.0.8.6 « Coups de récolte longs »
 Demande de Mathis (30 s partout, 2A 3A 4A 5A 6A) : un coup de récolte dure `E.HIT_S` (30 s à tous les niveaux) et vaut `E.hitScale` récoltes de l'ancien rythme (`E.basePeriod`), donc même production et même XP par heure qu'en 1.0.7.9. Trouvailles, filons et protecteur gardent leur fréquence par heure (`E.protSpawn(S, c, W, k)`). `E.gatherPartial` paie la part du coup quand le héros est rappelé. L'évènement `harvest` compte les ressources. Affichage : temps restant et « +N à la fin du coup ». Tests dans tests/recolte.test.js.
 

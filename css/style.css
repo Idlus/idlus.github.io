@@ -4458,3 +4458,18 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .eqcard .icobox.lg{width:48px;height:48px;flex:none}.eqcard .icobox.lg img{width:40px;height:40px}
 .eqsts{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px 8px;font-size:12px;font-weight:700}.eqst{display:inline-flex;align-items:center;gap:2px}.eqst .sico{width:15px;height:15px}
 @media (max-width:760px){.enckpis.k6 .enckpi.archi{grid-column:auto}.eqtools .seg{flex-wrap:wrap;border-radius:16px}.enckpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}.mons.enc.eqgrid{grid-template-columns:1fr}.eqhead{display:flex}}
+/* 1.0.8.7 : liste des donjons par zone, recherche et filtres */
+.dgsearch{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dgq{flex:1 1 220px;display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:999px;background:var(--panel2);border:2px solid var(--frame);min-width:0}
+.dgq .uico,.dgq svg{width:16px;height:16px;flex:none;opacity:.7}
+.dgq input{flex:1;min-width:0;border:0;background:transparent;padding:7px 0;color:var(--ink);font:inherit;outline:none}
+.dgtools{display:flex;flex-direction:column;gap:6px}.dgtools[hidden]{display:none}
+.dgtrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.dgtrow .seg{flex-wrap:wrap}.dgtrow .seg button{white-space:nowrap}
+.dglab{min-width:52px;font-weight:800}
+.dgtog{border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font-weight:800;font-size:12.5px;padding:4px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.dgtog[aria-pressed="true"]{background:var(--gold);color:#120d1c;border-color:var(--gold)}
+:root[data-theme="emerald"] .dgtog[aria-pressed="true"]{background:linear-gradient(180deg,#d6f27e,#8cc63f);color:#13200a;border-color:#8cc63f}
+.dgzone .dggrid{padding:0 12px 12px}
+.dgzone .zonefold:disabled{cursor:default;opacity:1}
+.dgfoldall{margin:-2px 0 -4px}
+@media (max-width:700px){.dglab{display:none}.dgtrow .seg{border-radius:14px}.dgtrow .seg button{padding:4px 8px}.dgsearch .seg{flex:none}}
