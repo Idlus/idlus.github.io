@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.57 « Affichage plus clair »
+Ligne de pastilles `#topchips` (index.html) qui contient `#objs` et `#updbar` (et `#wbbar`, créé par wbossui.js) ; `protChip()` (ui.js) y met le protecteur, l'Accueil n'a plus `protBar()` (Métiers le garde). `renderUpdBar()` est appelée à chaque `renderStatus()` et n'écrit que si le HTML change. Barre du haut sans logo ; téléphone : le sablier n'affiche que la vitesse choisie (`sabspd` fait tourner ×1→×2→×3). Notifications : une seule (la dernière), en haut sous la barre, sauf « En bas ». Combat : `combatSetHtml()` / `combatSetSheet()`, bouton « Réglages » sur téléphone. CSS en fin de style.css (bloc 0.1.57).
+
 ## 0.1.56 « Boss des mondes rééquilibré »
 Boss des mondes (js/wboss.js) : un essai = moyenne de `E.WB_FIGHTS` (3) combats (`E.wbFight` = un combat, `E.wbSim` = l'essai, renvoie `fights` et `watchSeed` du combat revu). Points × `E.wbMult(niveau, nb de héros)` (courbe `E.WB_LVLPOW`, équipe de référence 8). Charge du boss ×`E.WB_CHARGE` (1,5). Grades 50/100/200/350/500 points. supabase/wboss.sql : remise à zéro unique (`wb_resets` '0.1.56') qui archive les essais du boss en cours dans `wb_hits_old` (essais du jour rendus) et divise PV et dégâts par 5 ; ceux de `wb_hits_old` comptent pour la récompense de mort.
 

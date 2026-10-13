@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.56";
+const GAME_VERSION = "0.1.57";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.57", name: "Affichage plus clair", items: [
+    "Les bandeaux du haut (événement, boss des mondes, protecteur, objectifs suivis) deviennent une seule ligne de petites pastilles, avec leur bouton dedans, sur toutes les pages",
+    "La barre du haut tient sur une ligne : le logo est déjà dans le menu. Sur téléphone, le sablier affiche la vitesse choisie, un appui passe de ×1 à ×2 puis ×3",
+    "Les notifications s'affichent une à la fois, en haut sous la barre, sans cacher le jeu. Options › Affichage › Notifications « En bas » garde l'ancienne place",
+    "Page Combat sur téléphone : cible, suivre mon niveau, itinérante et idoles passent dans un bouton « Réglages », le combat remonte d'un demi-écran",
+    "Téléphone : titres et marges plus compacts, bouton du chat plus petit",
+  ] },
   { v: "0.1.56", name: "Boss des mondes rééquilibré", items: [
     "Boss des mondes : chaque essai joue maintenant 3 combats et garde la moyenne. Fini les essais où toute l'équipe tombe d'un coup par malchance. L'écran de fin montre les 3 combats",
     "Le niveau, l'équipement et le nombre de héros comptent : avec 8 héros bien équipés, on vise B au niveau 60, A vers 80-100, S vers 120-160 et SSS au niveau 200",
@@ -1966,7 +1973,7 @@ function encCard(k, where, extra) {
     <div class="drops">${drops}</div>
     ${a ? `<div class="xs" style="color:var(--archi)">Archimonstre : ${S.archis[a] ? h(MONSTERS[a].name) + ` (×${S.archis[a]})` : "non rencontré"}${E.hasSoul(S, a) ? " · 💜 âme capturée" : ""}</div>` : ""}</div></div>`;
 }
-/* 0.1.56 : réglages du combat (cible, suivre mon niveau, itinérante) ; sur téléphone ils passent dans le bouton « Réglages » */
+/* 0.1.57 : réglages du combat (cible, suivre mon niveau, itinérante) ; sur téléphone ils passent dans le bouton « Réglages » */
 function combatSetHtml(dg) {
   return `<label class="azchip" data-tip="Qui l'équipe frappe en premier (sorts réglés sur « le plus faible »). Les bombes et les totems passent toujours avant."><select data-act="focusset" class="small">${[["auto", "Cible : dangereux d'abord"], ["low", "Cible : le plus faible"], ["boss", "Cible : le boss"]].map(([v, n]) => `<option value="${v}" ${(S.settings.focus || "auto") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       ${!dg && S.hunting ? `<label class="azchip" data-tip="Change de sous-zone automatiquement selon le niveau de l'équipe : monte quand tout se passe bien, redescend après plusieurs défaites."><input type="checkbox" data-act="autozone" ${S.settings.autoZone ? "checked" : ""}> Suivre mon niveau</label>` : ""}
@@ -4367,7 +4374,7 @@ function toolHtml(id) {
     ${ingHtml(R.ing)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
     <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? G("cart") + " ✓" : G("cart")}</button></div></div>`;
 }
-/* 0.1.56 : le protecteur en pastille dans la ligne du haut, sur toutes les pages */
+/* 0.1.57 : le protecteur en pastille dans la ligne du haut, sur toutes les pages */
 function protChip() {
   const P = E.protActive(S); const B = S.protBoost && S.protBoost.until > E.now() ? S.protBoost : null; let out = "";
   if (P) { const M = MONSTERS[P.mon]; const err = P.fighting || P.go ? null : E.protWhy(S);
@@ -6085,7 +6092,7 @@ document.addEventListener("click", (ev) => {
     case "bontoggle": ui.bonOpen = ui.bonOpen === false; break;
     case "altar": { const r = E.buyAltar(S); if (r) { toast(r); return; } toast(`Autel des Douze niveau ${E.altarLvl(S)} : plafonds relevés de +${E.ALTAR.per} !`, "rare"); break; }
     case "csetsheet": combatSetSheet(); return;
-    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.56 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
+    case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": saveNow(); location.reload(); return;
     case "hidenewv": ui.hiddenV = ui.newVersion; ui.newVersion = null; renderUpdBar(); return;

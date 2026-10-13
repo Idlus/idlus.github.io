@@ -1,6 +1,17 @@
 {
-  "version": "0.1.56",
+  "version": "0.1.57",
   "versions": [
+    {
+      "v": "0.1.57",
+      "name": "Affichage plus clair",
+      "items": [
+        "Les bandeaux du haut (événement, boss des mondes, protecteur, objectifs suivis) deviennent une seule ligne de petites pastilles, avec leur bouton dedans, sur toutes les pages",
+        "La barre du haut tient sur une ligne : le logo est déjà dans le menu. Sur téléphone, le sablier affiche la vitesse choisie, un appui passe de ×1 à ×2 puis ×3",
+        "Les notifications s'affichent une à la fois, en haut sous la barre, sans cacher le jeu. Options › Affichage › Notifications « En bas » garde l'ancienne place",
+        "Page Combat sur téléphone : cible, suivre mon niveau, itinérante et idoles passent dans un bouton « Réglages », le combat remonte d'un demi-écran",
+        "Téléphone : titres et marges plus compacts, bouton du chat plus petit"
+      ]
+    },
     {
       "v": "0.1.56",
       "name": "Boss des mondes rééquilibré",
