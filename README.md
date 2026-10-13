@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.6.2 « Où trouver les Dofus »
+Chaque Dofus dit clairement comment et où l'obtenir (Mathis, 13/10/2026 : « Mieux savoir comment et où drop les Dofus »). Taux inchangés. js/archis.js : `E.dofusDropInfo(id)` (donjon, boss, chance, stasis minimale ; Ocre = boss niv. 160+, stasis 8), `E.ocreDungeons()`. js/ui.js : `dofusDropHtml`, `dofusQuestLineHtml`, `dofusStepGo` (bouton « Y aller » de l'étape en cours), `dgDofusBox` (fiche du donjon), icône du Dofus sur les cartes de donjon, actions `dofgo` / `dofalm`. js/questui.js : fiche en « ① Sa quête » / « ② Le butin du boss », `QUI.pick(id)` (recherche). Test : tests/quetes.test.js vérifie que chaque Dofus a des sources atteignables.
+
 ## 1.0.6.1 « Force du nombre »
 Part d'XP par héros : `E.xpShare(n)` = 0,8 × n^-0,1 dans `giveRewards` (avant 2/(n+1) × Esprit Libre). `E.freeSpirit` renvoie 0 (Esprit Libre supprimé : XP, butin, PV, dégâts) ; `E.HUNT_SMALL` (chasse) et `E.SMALL_TEAM` (donjon) relevés et étendus à 4 héros pour garder les petites équipes équipées hors de danger. Jauge `fsGauge` = taille de l'équipe + Synergie. Simulation 1 → 200 (bon équipement, sans bonus) : solo 179 h, 2 héros 140 h, 4 héros 89 h, 8 héros 61 h ; stasis des donjons inchangées (`npm run sim`).
 

@@ -102,4 +102,14 @@ ok("succès, points et paliers");
 { const S = team(120); E.refreshSystems(S); const V = require("../js/verify.js"); const j = JSON.parse(JSON.stringify(S));
   assert.ok(j.wk && j.belite); const sum = V.summary(E, S); assert.ok(typeof sum.pts === "number"); }
 ok("sauvegarde et classement des points");
+// 8. 1.0.6.2 : chaque Dofus a une source atteignable (donjon de butin et donjons/zones de sa quête existent et s'ouvrent en jouant)
+{ const killed = new Set(); const zOk = (z) => { const Z = D.ZONES.find((x) => x.id === z); return Z && (!Z.requires || !Z.requires.boss || killed.has(Z.requires.boss)); };
+  for (let ch = true; ch;) { ch = false; for (const d in D.DUNGEONS) { if (killed.has(d)) continue; const s = E.SUBS[D.DUNGEONS[d].access]; if (s && zOk(s.zone) && !s.requiresItem) { killed.add(d); ch = true; } } }
+  E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id]; const I = E.dofusDropInfo(id);
+    if (id === "jyfus") assert.strictEqual(I, null); else assert.ok(I && I.odds > 0, id);
+    if (I && I.dg) assert.ok(killed.has(I.dg), `${id} : donjon ${I.dg} inatteignable`);
+    Df.steps.forEach((st) => { [st.dg, ...(st.dgs || [])].filter(Boolean).forEach((d) => assert.ok(killed.has(d), `${id} : étape au donjon ${d} inatteignable`));
+      if (st.zone) assert.ok(zOk(st.zone), `${id} : zone ${st.zone} fermée`); if (st.chal) assert.ok(E.CHALLENGES[st.chal], st.chal); if (st.res) assert.ok(D.RES[st.res], st.res); assert.ok(E.dofusStepTxt(st), id); }); });
+  assert.ok(E.ocreDungeons().length > 0); }
+ok("chaque Dofus a sa quête et son boss, tous atteignables");
 console.log("quetes.test.js : tout est bon");

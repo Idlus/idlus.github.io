@@ -199,14 +199,18 @@
     const state = Q.done ? `Quête terminée${by ? ` · porté par ${h(by.name)}` : owned ? " · dans le sac" : ""}` : owned ? `Obtenu en butin${by ? ` · porté par ${h(by.name)}` : ""} · quête en cours` : stt[id] === "run" ? `Quête en cours${id === "ocre" ? "" : ` · étape ${Q.step + 1} sur ${Df.steps.length}`}` : "Quête à commencer";
     const steps = id === "ocre" ? E.OCRE_TIERS.map((T, i) => { const [dd, all] = E.ocreProgress(s, i); return `<li class="${i < tier ? "ok" : dd ? "cur" : "todo"}">Palier ${i + 1} · ${h(T.name)} <span class="num muted">${dd} / ${all}</span></li>`; }).join("")
       : Df.steps.map((x, i) => { const [a, bb] = E.dofusStepProgress(s, id, i); const cls = Q.done || i < Q.step ? "ok" : i === Q.step ? "cur" : "todo";
-        return `<li class="${cls}">${h(E.dofusStepTxt(x))}${cls === "cur" && bb > 1 ? ` <span class="num muted">${fmt(a)} / ${fmt(bb)}</span>` : ""}${cls === "cur" && x.dg && DUNGEONS[x.dg] ? ` <button class="btn xs" data-act="dgopen" data-id="${x.dg}">Voir le donjon</button>` : ""}</li>`; }).join("");
-    const drop = Df.dg ? `Butin du boss ${h(MONSTERS[DUNGEONS[Df.dg].boss].name)} : 1 chance sur ${Math.round(1 / E.DOFUS_DROP)} dès la stasis ${E.DOFUS_DROP_STASIS}` : `Butin de tout boss de niveau 160 ou plus : 1 chance sur ${Math.round(1 / E.OCRE_DROP)} dès la stasis 8`;
+        return `<li class="${cls}">${h(E.dofusStepTxt(x))}${cls === "cur" && bb > 1 ? ` <span class="num muted">${fmt(a)} / ${fmt(bb)}</span>` : ""}${cls === "cur" ? ` ${X().dofusStepGo(x)}` : ""}</li>`; }).join("");
+    // 1.0.6.2 « Où trouver les Dofus » : les deux façons de l'obtenir, chacune avec son bouton pour y aller
+    const gift = Df.steps[0] && Df.steps[0].t === "gift";
     const fiche = `<div class="panel qj-fiche"><div class="pad stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap">${X().im(X().dofusImg(id), "qj-fpic", Df.name)}<div class="grow"><h3>${h(Df.name)}</h3><span class="xs muted">niveau ${Df.lvl}</span><div class="qj-bon">${h(E.dofusBonusTxt(id))}</div></div></div>
       <span class="qj-tag ${stt[id] === "got" ? "ok" : stt[id] === "run" ? "todo" : ""}" style="justify-self:start">${state}</span>
-      <ol class="qj-steps">${steps}</ol><span class="xs muted">${drop}</span></div></div>`;
+      <div class="qj-how"><b>${gift ? "Comment l'obtenir" : "① Sa quête"}</b><span class="xs muted">${gift ? "" : id === "ocre" ? "un exemplaire garanti, une fois par compte : capture les âmes avec des Pierres d'âme" : "un exemplaire garanti, une fois par compte · les étapes se valident toutes seules en jouant"}</span></div>
+      <ol class="qj-steps">${steps}</ol>
+      <div class="qj-how"><b>${gift ? "Butin" : "② Le butin du boss"}</b><span class="xs muted">${gift ? "" : "très rare, sans limite : c'est ainsi qu'on équipe ses autres héros"}</span></div>
+      <div class="list qj-drop">${X().dofusDropHtml(id)}</div></div></div>`;
     const n = (f) => ids.filter((x) => f === "all" || stt[x] === f).length;
     const fil = [["all", "Tous"], ["run", "En cours"], ["lock", "À commencer"], ["got", "Obtenus"]];
-    return `${head(s, "dofus", "Chaque Dofus a sa quête : les étapes se valident toutes seules en jouant (les donjons déjà vaincus à la stasis demandée comptent). Un Dofus peut aussi tomber, très rarement, en butin du boss de son donjon. D'autres exemplaires pour tes autres héros ne viennent que de ce butin. Un héros ne porte qu'un exemplaire de chaque Dofus, dans ses 6 emplacements Dofus/Trophée.", X().archiBtn())}
+    return `${head(s, "dofus", "Un Dofus s'obtient de deux façons : ① sa quête, qui en donne un exemplaire par compte (les étapes se valident toutes seules en jouant, les donjons déjà vaincus à la stasis demandée comptent) ; ② le butin du boss de son donjon, très rare (1 chance sur " + fmt(Math.round(1 / E.DOFUS_DROP)).replace(/,/g, " ") + " par victoire dès la stasis " + E.DOFUS_DROP_STASIS + "), seul moyen d'en avoir d'autres pour tes autres héros. Choisis un Dofus : sa fiche dit où aller. Un héros porte un seul exemplaire de chaque Dofus.", X().archiBtn())}
       <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-dfil" data-v="${k}" aria-pressed="${st.dfil === k}">${l} <b class="num">${n(k)}</b></button>`).join("")}</div>
       <div class="qj-dofl"><div class="qj-eggs">${eggs}</div>${fiche}</div>`;
   }
@@ -394,5 +398,5 @@
   // recherche dans les succès : la liste se met à jour en tapant
   let qTimer = null;
   document.addEventListener("input", (e) => { if (e.target && e.target.id === "qxSearch") { st.achq = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => X().render(), 180); } });
-  window.QUI = { render, act, todo };
+  window.QUI = { render, act, todo, pick: (id) => { if (E.DOFUS[id]) { st.dof = id; st.dfil = "all"; } } };
 })();

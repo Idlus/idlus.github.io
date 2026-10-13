@@ -18,9 +18,16 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.6.1";
+const GAME_VERSION = "1.0.6.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.6.2", name: "Où trouver les Dofus", items: [
+    "Quêtes › Dofus : la fiche de chaque Dofus montre ses deux façons de l'obtenir. ① Sa quête, un exemplaire garanti par compte, avec un bouton « Y aller » sur l'étape à faire (donjon, zone de chasse, récolte, âmes, Almanax)",
+    "② Le butin du boss : le boss, son donjon, sa zone, la chance (1 sur 1 000 par victoire dès la stasis 5, 1 sur 5 000 sur les boss de niveau 160+ en stasis 8+ pour l'Ocre) et ta meilleure stasis là-bas, avec « Y aller »",
+    "La fiche d'objet d'un Dofus (recherche, chat, Héros) dit maintenant « Comment l'obtenir » au lieu de « Source inconnue », avec « Voir la quête » et le boss",
+    "Fiche d'un donjon : encadré du Dofus que lâche son boss (et du Dofus Ocre sur les boss de niveau 160+), avec la chance et un bouton vers la quête. La liste des donjons montre l'icône du Dofus sur leur carte",
+    "La recherche d'un Dofus ouvre directement sa fiche, et le choix d'un emplacement Dofus d'un héros propose « Où trouver les Dofus »",
+  ] },
   { v: "1.0.6.1", name: "Force du nombre", items: [
     "Plus l'équipe est grande, plus chaque héros monte vite. Avant, un héros seul montait 3,5 fois plus vite qu'une équipe de 8 ; maintenant c'est l'inverse",
     "Montée du niveau 1 à 200 (simulation, bon équipement) : 8 héros environ 60 h (avant 180 h), 4 héros environ 90 h (avant 100 h), un héros seul environ 180 h (avant 50 h)",
@@ -1968,7 +1975,7 @@ function dungeonCard(did) {
   return `<div class="dgcard ${un ? "" : "locked"}" data-act="dgopen" data-id="${did}">
     <span class="fav ${fav ? "on" : ""}" data-act="dgfav" data-id="${did}" title="Favori">${fav ? "★" : "☆"}</span>
     ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de l'heure">${G("star")} Heure</span>` : E.flashOf(S, did) ? `<span class="wkbadge fl" title="Mutateur éclair">${G("bolt")} Éclair</span>` : ""}
-    ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
+    ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}${(() => { const f = E.dofusOfDungeon(did); return f ? `<img class="dofbadge" src="${dofusImg(f)}" alt="" title="${h(E.DOFUS[f].name)} : 1 chance sur ${dofOdds(Math.round(1 / E.DOFUS_DROP))} dès la stasis ${E.DOFUS_DROP_STASIS}">` : ""; })()}
     <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
       <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
         ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(dgNeedTxt(did) || E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
@@ -1991,6 +1998,15 @@ function dungeonsHtml() {
 function compSuggest(did) {
   const K = S.comps || []; if (!K.length) return ""; const cur = E.compMatch(S); const best = (S.compDg || {})[did];
   return `<div class="compsug"><b>Composition</b> ${K.map((k, i) => `<button class="btn sm ${i === cur ? "primary" : ""}" data-act="compuse" data-i="${i}" data-dg="${did}" ${i === cur || S.dungeon ? "disabled" : ""}>${i === cur ? "✓ " : ""}${h(k.name)}${i === best ? ` <span class="xs">${G("star")} gagnante ici</span>` : ""}</button>`).join("")}</div>`;
+}
+/* 1.0.6.2 : le Dofus que lâche ce boss (et l'Ocre sur les boss de niveau 160 ou plus), avec la chance et la stasis demandée */
+function dgDofusBox(did, SI) {
+  const dfid = E.dofusOfDungeon(did); const out = [];
+  if (dfid) { const Df = E.DOFUS[dfid]; const I = E.dofusDropInfo(dfid); const ok = SI.max >= I.k;
+    out.push(`<div class="dofbox">${im(dofusImg(dfid), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(dfid))}${E.dofusOwned(S, dfid) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>Ce boss peut le lâcher : <b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire en stasis ${I.k} ou plus${ok ? " (déjà à ta portée)" : ` (ta meilleure : ${SI.max || "aucune"})`}. Sa quête en donne un sûr.</span><button class="btn sm" data-act="dofgo" data-v="${dfid}">Quête</button></div>`); }
+  const oc = E.dofusDropInfo("ocre");
+  if (oc && DUNGEONS[did].lvl >= oc.minLvl) out.push(`<div class="dofbox">${im(dofusImg("ocre"), "dfpic", "Dofus Ocre")}<span class="grow xs"><b>Dofus Ocre</b> · ${h(E.dofusBonusTxt("ocre"))}${E.dofusOwned(S, "ocre") ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>Comme tout boss de niveau ${oc.minLvl} ou plus : <b>1 chance sur ${dofOdds(oc.odds)}</b> à chaque victoire en stasis ${oc.k} ou plus.</span><button class="btn sm" data-act="dofgo" data-v="ocre">Quête</button></div>`);
+  return out.join("");
 }
 function dungeonSheet(did) {
   const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
@@ -2021,7 +2037,7 @@ function dungeonSheet(did) {
       <div><b>Mécaniques du boss</b><ul class="dglist">${mechs}${k >= 3 ? "<li><i>+ une mécanique supplémentaire (stasis 3+)</i></li>" : ""}${FL && FL.mod === "ruse" ? "<li><i>+ une mécanique supplémentaire (mutateur éclair)</i></li>" : ""}</ul>
         <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
         ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
-      ${(() => { const dfid = E.dofusOfDungeon(did); if (!dfid) return ""; const Df = E.DOFUS[dfid]; return `<div class="xs" style="margin:4px 0;color:var(--archi);display:flex;align-items:center;gap:6px">${im(dofusImg(dfid), "dfico", Df.name)}<span>${h(Df.name)} (${h(E.dofusBonusTxt(dfid))}) : quête dans Quêtes › Dofus, ou 1 chance sur ${Math.round(1 / E.DOFUS_DROP)} en butin dès la stasis ${E.DOFUS_DROP_STASIS}${E.dofusOwned(S, dfid) ? " · obtenu" : ""}</span></div>`; })()}
+      ${dgDofusBox(did, SI)}
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
@@ -2342,6 +2358,45 @@ function idolSheet() {
 /* ---------- 0.1.13 : album des archimonstres et Dofus ---------- */
 const dofusImg = (id) => imgI(E.DOFUS[id].icon);
 const archiZoneName = (z) => E.zoneName(z);
+/* 1.0.6.2 « Où trouver les Dofus » : la quête et le boss de chaque Dofus, au même endroit partout (Quêtes › Dofus, fiche d'objet, donjon) */
+function dofusZoneSub(zid) { // sous-zone de chasse pour « vaincre N monstres dans la zone » : ouverte d'abord, puis la plus basse
+  const L = Object.values(E.SUBS).filter((s) => s.zone === zid && !s.hidden && (s.monsters || []).length).sort((a, b) => E.subUnlocked(S, b.id) - E.subUnlocked(S, a.id) || a.lvl[0] - b.lvl[0]);
+  return L[0] ? L[0].id : null;
+}
+function dofusStepGo(st) {
+  const go = (attr, t, prim) => `<button class="btn xs ${prim ? "primary" : ""}" ${attr}>${t}</button>`;
+  switch (st.t) {
+    case "dg": return DUNGEONS[st.dg] ? go(`data-act="dgopen" data-id="${st.dg}"`, "Y aller", 1) : "";
+    case "dgs": { const d = st.dgs.find((x) => E.stasisInfo(S, x).max < st.k) || st.dgs[0]; return DUNGEONS[d] ? go(`data-act="dgopen" data-id="${d}"`, "Y aller", 1) : ""; }
+    case "kill": { const sub = dofusZoneSub(st.zone); return sub ? go(`data-act="searchzone" data-id="${sub}"`, "Y aller", 1) : ""; }
+    case "harvest": return go(`data-act="reswhere" data-n="${h(st.res)}"`, "Où récolter ?");
+    case "soul": case "ocre": return go(`data-act="archis"`, "Album des âmes");
+    case "almanax": return go(`data-act="dofalm"`, "Almanax");
+  }
+  return "";
+}
+const dofOdds = (n) => fmt(n).replace(/,/g, " ");
+/* ligne « butin du boss » : quel boss, quel donjon, quelle chance, à partir de quelle stasis, et où en est le joueur */
+function dofusDropHtml(id) {
+  const I = E.dofusDropInfo(id);
+  const box = (ico, name, tag, where, lines, btn, locked) => `<div class="dofdrop ${locked ? "locked" : ""}"><div class="dd-h"><span class="icobox">${ico}</span><span class="grow"><b>${name}</b>${tag ? ` <span class="tag soft">${tag}</span>` : ""}<small>${where}</small></span>${btn}</div>${lines.map((l) => `<div class="dd-l ${l[1] || ""}">${l[0]}</div>`).join("")}</div>`;
+  if (!I) return box("🎁", "Aucun boss ne le lâche", "", "Cadeau de lancement de la 1.0 seulement : il ne s'obtient pas autrement.", [], "");
+  if (!I.dg) { const L = E.ocreDungeons(); const ok = L.filter((d) => E.stasisInfo(S, d).max >= I.k - 1 && E.dungeonUnlocked(S, d)).length;
+    return box(IC("cle"), `Tous les boss de niveau ${I.minLvl} ou plus`, `${L.length} donjons`, "N'importe quel donjon de niveau " + I.minLvl + " à 200",
+      [[`<b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire en stasis ${I.k} ou plus`], [ok ? `✓ ${ok} donjon${ok > 1 ? "s" : ""} déjà à ta portée` : `Aucun à ta portée pour l'instant : il faut y réussir la stasis ${I.k - 1}`, ok ? "ok" : "muted"]],
+      `<button class="btn sm" data-act="pagego" data-v="dungeons">Donjons</button>`); }
+  const dg = DUNGEONS[I.dg]; const B = MONSTERS[I.boss]; const SI = E.stasisInfo(S, I.dg); const un = E.dungeonUnlocked(S, I.dg); const z = ZONES.find((x) => x.id === E.SUBS[E.DUNGEON_SUB[I.dg]].zone);
+  const need = dgNeedTxt(I.dg);
+  const me = !un ? [`${G("lock")} Donjon pas encore ouvert${need ? ` : ${h(need.replace(/^Battez/, "battez"))}` : ""}`, "muted"] : SI.max >= I.k ? [`✓ Déjà à ta portée (ta meilleure stasis ici : ${SI.max})`, "ok"] : SI.max >= I.k - 1 ? [`Tu peux tenter la stasis ${I.k} (ta meilleure ici : ${SI.max})`, ""] : [`Ta meilleure stasis ici : ${SI.max || "aucune"} · il faut atteindre la stasis ${I.k}`, "muted"];
+  return box(im(imgM(I.boss), "", B.name), h(B.name), "boss", `${un ? "" : G("lock") + " "}Donjon · ${h(dg.name)} · ${h(z ? z.name : "")} · niv. ${dg.lvl}`,
+    [[`<b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire en stasis ${I.k} ou plus`], me], `<button class="btn sm ${un ? "primary" : ""}" data-act="dgopen" data-id="${I.dg}">Y aller</button>`, !un);
+}
+/* ligne « quête » : où en est la quête, et l'étape à faire maintenant */
+function dofusQuestLineHtml(id) {
+  const Df = E.DOFUS[id]; const Q = E.dofusQuest(S, id); const st = E.dofusStep(S, id);
+  const txt = Q.done ? ["✓ Quête terminée", "ok"] : id === "ocre" ? [`Éternelle moisson · palier ${E.ocreTier(S) + 1} sur ${E.OCRE_TIERS.length} : capturer les âmes des archimonstres`] : st && st.t === "gift" ? [h(E.dofusStepTxt(st))] : st ? [`Étape ${Q.step + 1} sur ${Df.steps.length} : ${h(E.dofusStepTxt(st))}`] : [""];
+  return `<div class="dofdrop"><div class="dd-h"><span class="icobox">${IC("quetes")}</span><span class="grow"><b>Sa quête</b> <span class="tag soft">1 par compte</span><small>Un exemplaire garanti · Quêtes › Dofus</small></span><button class="btn sm primary" data-act="dofgo" data-v="${id}">Voir la quête</button></div><div class="dd-l ${txt[1] || ""}">${txt[0]}</div></div>`;
+}
 function archiBtn(cls = "btn sm") {
   const n = E.soulCount(S); const st = E.stones(S);
   return `<button class="${cls} archibtn ${n ? "on" : ""}" data-act="archis" data-tip="Album des archimonstres : ${n} âme${n > 1 ? "s" : ""} capturée${n > 1 ? "s" : ""} sur ${E.ARCHI_TOTAL}. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}">${IC("dofus")} Âmes <b class="num">${n}</b> / ${E.ARCHI_TOTAL}</button>`;
@@ -3999,7 +4054,8 @@ function charEquipView(c, st) {
     pick = `<div class="panel"><div class="phead"><h2>${SLOTS[ui.slot]} : choisir</h2><span class="row">${c.equip[ui.slot] ? `<button class="btn sm" data-act="fmgo" data-uid="${c.equip[ui.slot]}">${IC("forge")} Forgemager</button><button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
       ${c.equip[ui.slot] && S.items[c.equip[ui.slot]] ? (() => { const it = S.items[c.equip[ui.slot]]; return `<div class="li pcur">${itemIcon(it)}<span class="grow"><span class="tag soft">Porté</span> ${itemName(it)} <span class="muted xs">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %</span> ${setTag(it)}${ui.slot === "arme" ? " " + wpPickTag(c, it) : ""}</span></div>`; })() : ""}
       <div class="xs muted" style="padding:6px 14px 0">Rangés du plus utile au moins utile pour ${h(c.name)}, bonus de panoplie compris.</div>
-      <div class="list">${free.slice(0, 40).map((it, i) => row(it, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Aucun trophée. Complétez les paliers de chasse d'une sous-zone pour en obtenir." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
+      <div class="list">${free.slice(0, 40).map((it, i) => row(it, "free", i)).join("") || `<div class="empty">${want === "dofus" ? "Rien de libre ici. Les trophées viennent des paliers de chasse des sous-zones." : "Aucun objet libre de ce type. Fabriquez-en dans les Ateliers ou trouvez-en sur les monstres."}</div>`}</div>
+      ${want === "dofus" ? `<div class="row xs muted" style="padding:6px 14px;gap:8px">${im(dofusImg("emeraude"), "dfico", "")}<span class="grow">Un Dofus s'obtient par sa quête ou, très rarement, sur le boss de son donjon.</span><button class="btn xs" data-act="pagego" data-v="dofusq">Où trouver les Dofus</button></div>` : ""}
       ${pmore("w", worn.some((it) => E.equippedBy(S, it.uid) !== c) ? "Déjà portés par d'autres héros" : "Déjà portés", worn, "worn")}
       ${pmore("h", "Niveau trop haut pour l'instant", high, "high")}</div>`;
   }
@@ -5562,7 +5618,7 @@ function searchGo(r) {
     case "set": ui.setF = { mode: "all", q: SETS[r.id].name, cid: null }; go("inv", "inv", "sets"); break;
     case "res": resSheet(r.id); break;
     case "mon": { const s = subOfMon(r.id); if (!s) { toast("Ce monstre ne se trouve nulle part pour l'instant."); break; } if (typeof s === "string") dungeonSheet(s); else { ui.zoneView = s.id; go("world"); } break; }
-    case "dofus": go("quests", "qt", "dofus"); break;
+    case "dofus": if (window.QUI && window.QUI.pick) window.QUI.pick(r.id); go("quests", "qt", "dofus"); break;
     case "idol": idolSheet(); break;
     case "pet": case "mount": go("heroes", "hero", "pet"); break;
     case "cons": go("inv", "inv", "cons"); break;
@@ -5581,8 +5637,8 @@ function itemSheet(tpl) {
   openSheet(`<div class="row"><span class="icobox lg">${im(itemImg(tpl), "", T.name)}</span><div><h2 style="margin:0">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div>
     ${T.slot === "arme" ? wpBlockHtml(tpl, null, ui.cid ? char(ui.cid) : S.chars[0]) : ""}
     <div class="xs">${tplStatsHtml(T)}</div>
-    <h3 class="sec">Où le trouver</h3>
-    <div class="list">${lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Jouer › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
+    <h3 class="sec">${T.dofus ? "Comment l'obtenir" : "Où le trouver"}</h3>
+    <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Jouer › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
       ${T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${tpl}">${G("cart")} ${inShop ? "Retirer de la liste de courses" : "Liste de courses"}</button>` : ""}
       ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}
@@ -6516,6 +6572,8 @@ document.addEventListener("click", (ev) => {
     case "recsel": ui.recSel = d.id; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
     case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
     case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }
+    case "dofgo": closeSheet(); if (window.QUI && window.QUI.pick) window.QUI.pick(d.v); ui.tab = "quests"; ui.qt = "dofus"; render(); window.scrollTo(0, 0); return; // 1.0.6.2
+    case "dofalm": closeSheet(); ui.tab = "quests"; ui.qt = "almanax"; render(); window.scrollTo(0, 0); return;
     case "reswhere": { const n = d.n; if (!RES[n]) { toast("Source inconnue pour l'instant."); return; } openSheet(`${resDetail(n)}<div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`); return; }
     case "hdvorder": { if (!window.MARKET || !window.MARKET.orderFor) return; window.MARKET.orderFor(d.c, d.k, +d.n || 0); closeSheet(); navGo("hdv"); window.scrollTo(0, 0); return; }
     case "fltopen": { ui.fltOpen = ui.fltOpen || {}; ui.fltOpen[d.ctx] = !ui.fltOpen[d.ctx]; break; }
@@ -7287,7 +7345,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
-Object.assign(window.DX.social, { consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

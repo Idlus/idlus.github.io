@@ -135,7 +135,12 @@
 .qj-steps li{color:var(--muted)}
 .qj-steps li.cur{color:var(--ink);font-weight:700}
 .qj-steps li.ok{text-decoration:line-through}
-@media (max-width:860px){.qj-dofl{grid-template-columns:1fr}.qj-fiche{position:static;order:-1}.qj-eggs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* 1.0.6.2 : les deux façons d'obtenir un Dofus */
+.qj-how{display:flex;flex-direction:column;gap:1px;padding-top:8px;border-top:1px solid var(--line)}
+.qj-how b{font-size:13.5px}
+.qj-steps li .btn{margin-left:4px;vertical-align:1px}
+.qj-drop{margin:0 -12px -6px}
+@media (max-width:860px){.qj-dofl{grid-template-columns:1fr}.qj-fiche{position:relative;top:auto;order:-1}.qj-eggs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* succès */
 .qj-near{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .qj-nc{display:grid;gap:6px;padding:10px 12px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);min-width:0}

@@ -166,6 +166,11 @@
       if (ok) { E.giveDofus(S, id, "butin du boss"); if (out) out.push(Df.name); } });
   };
   E.dofusOfDungeon = (did) => E.DOFUS_ORDER.find((id) => E.DOFUS[id].dg === did) || null;
+  /* 1.0.6.2 : d'où tombe un Dofus, pour l'afficher partout pareil (fiche du Dofus, fiche d'objet, donjon) */
+  E.dofusDropInfo = (id) => { const Df = E.DOFUS[id]; if (!Df || (Df.steps[0] && Df.steps[0].t === "gift")) return null;
+    if (Df.dg) return { dg: Df.dg, boss: DUNGEONS[Df.dg].boss, odds: Math.round(1 / E.DOFUS_DROP), k: E.DOFUS_DROP_STASIS };
+    return { minLvl: 160, odds: Math.round(1 / E.OCRE_DROP), k: 8 }; };
+  E.ocreDungeons = () => Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].lvl >= 160);
   /* Dokoko en combat : soin au début du tour du porteur */
   E.dofusTurn = (S, F, e) => {
     if (e.side !== "c" || e.summon || !e.alive) return;

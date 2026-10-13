@@ -1,6 +1,17 @@
 {
-  "version": "1.0.6.1",
+  "version": "1.0.6.2",
   "versions": [
+    {
+      "v": "1.0.6.2",
+      "name": "Où trouver les Dofus",
+      "items": [
+        "Quêtes › Dofus : la fiche de chaque Dofus montre ses deux façons de l'obtenir. ① Sa quête, un exemplaire garanti par compte, avec un bouton « Y aller » sur l'étape à faire (donjon, zone de chasse, récolte, âmes, Almanax)",
+        "② Le butin du boss : le boss, son donjon, sa zone, la chance (1 sur 1 000 par victoire dès la stasis 5, 1 sur 5 000 sur les boss de niveau 160+ en stasis 8+ pour l'Ocre) et ta meilleure stasis là-bas, avec « Y aller »",
+        "La fiche d'objet d'un Dofus (recherche, chat, Héros) dit maintenant « Comment l'obtenir » au lieu de « Source inconnue », avec « Voir la quête » et le boss",
+        "Fiche d'un donjon : encadré du Dofus que lâche son boss (et du Dofus Ocre sur les boss de niveau 160+), avec la chance et un bouton vers la quête. La liste des donjons montre l'icône du Dofus sur leur carte",
+        "La recherche d'un Dofus ouvre directement sa fiche, et le choix d'un emplacement Dofus d'un héros propose « Où trouver les Dofus »"
+      ]
+    },
     {
       "v": "1.0.6.1",
       "name": "Force du nombre",
