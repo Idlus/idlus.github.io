@@ -18,9 +18,14 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.53.2";
+const GAME_VERSION = "0.1.53.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.53.3", name: "Boss qui respirent", items: [
+    "Boss des mondes : Gargandyas et les autres boss de la rotation respirent doucement sur leur page, dans le chat, en haut du combat et dans le bandeau",
+    "Plus le boss faiblit, plus il s'agite : il respire plus vite en phase 2 et s'entoure d'une aura rouge en phase 3",
+    "L'option « Effets du Boss des mondes » coupe aussi ces animations",
+  ] },
   { v: "0.1.53.2", name: "Treizième héros", items: [
     "Jusqu'à 13 héros au lieu de 12. L'équipe qui combat reste à 8, les autres récoltent, s'entraînent ou se reposent. Le 13e héros coûte 1 752 955 kamas",
   ] },

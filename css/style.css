@@ -3971,3 +3971,13 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 }
 @container (max-width:420px){.adm .fj .fiche{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .fj .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .fj .two{grid-template-columns:minmax(0,1fr)}}
 .wb-row.me .g-C{color:var(--ink)}
+
+/* 0.1.53.3 : portraits des boss des mondes animés (respiration ; plus vite en phase 2 ; aura rouge en phase 3) */
+img.wb-an{transform-origin:50% 92%;animation:wbbr 3.2s ease-in-out infinite;will-change:transform}
+img.wb-an.wb-p2{animation-duration:2.2s}
+img.wb-an.wb-p3{animation:wbp3 1.5s ease-in-out infinite}
+.wb-rc.mys img.wb-an{animation-name:wbbrt}
+@keyframes wbbr{0%,100%{transform:scale(1,1);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45)) drop-shadow(0 0 2px rgba(200,100,255,.2))}50%{transform:scale(1.025,1.055);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px rgba(200,100,255,.6))}}
+@keyframes wbp3{0%,100%{transform:scale(1,1);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45)) drop-shadow(0 0 6px rgba(255,60,40,.55))}50%{transform:scale(1.04,1.07);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45)) drop-shadow(0 0 14px rgba(255,60,40,.95))}}
+@keyframes wbbrt{0%,100%{transform:scale(1,1)}50%{transform:scale(1.025,1.055)}}
+@media (prefers-reduced-motion:reduce){img.wb-an{animation:none}}

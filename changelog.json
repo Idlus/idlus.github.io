@@ -1,6 +1,15 @@
 {
-  "version": "0.1.53.2",
+  "version": "0.1.53.3",
   "versions": [
+    {
+      "v": "0.1.53.3",
+      "name": "Boss qui respirent",
+      "items": [
+        "Boss des mondes : Gargandyas et les autres boss de la rotation respirent doucement sur leur page, dans le chat, en haut du combat et dans le bandeau",
+        "Plus le boss faiblit, plus il s'agite : il respire plus vite en phase 2 et s'entoure d'une aura rouge en phase 3",
+        "L'option « Effets du Boss des mondes » coupe aussi ces animations"
+      ]
+    },
     {
       "v": "0.1.53.2",
       "name": "Treizième héros",
