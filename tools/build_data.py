@@ -45,7 +45,8 @@ ZONES = [
               (179, 'ama_boos', 'grave', 20, 32), (3, 'ama_ingalsse', 'wheat', 30, 42), (6, 'ama_cimetiere', 'grave', 24, 44),
               (276, 'ama_gobelins', 'quarry', 30, 42), (170, 'ama_scarafeuilles', 'meadow', 32, 44), (22, 'ama_foret_malefique', 'forest', 33, 45), (9, 'ama_dark_vlad', 'forest', 140, 152),
               (8, 'ama_bworks', 'quarry', 30, 52), (2, 'ama_craqueleurs', 'quarry', 40, 52), (181, 'ama_cloaque', 'sewer', 50, 62),
-              (12, 'ama_gelees', 'beach', 52, 64), (243, 'ama_pitons', 'quarry', 57, 72)]},
+              (12, 'ama_gelees', 'beach', 52, 64), (243, 'ama_pitons', 'quarry', 57, 72),
+              (7, 'ama_cryptes', 'grave', 32, 50), (103, 'ama_bandits', 'meadow', 35, 45)]},
     {'id': 'cania', 'name': 'Plaines de Cania', 'desc': 'Vastes plaines, lacs de Blops et robots du Massif.', 'theme': 'wheat',
      'subs': [(334, 'can_baie', 'beach', 33, 48), (178, 'can_porkass', 'meadow', 38, 52), (56, 'can_lac', 'lake', 50, 62),
               (68, 'can_champs', 'wheat', 49, 66), (54, 'can_massif', 'quarry', 50, 66), (70, 'can_plaines', 'quarry', 57, 72),
@@ -58,15 +59,18 @@ ZONES = [
               (71, 'sid_gisgoul', 'quarry', 170, 182), (495, 'sid_fungus', 'cave', 170, 182), (889, 'sid_domaine_fungus', 'forest', 170, 182)]},
     {'id': 'koalaks', 'name': 'Montagne des Koalaks', 'desc': 'Forêts de Kaliptus, lacs enchantés et canyon sauvage.', 'theme': 'forest',
      'subs': [(234, 'koa_kaliptus', 'forest', 56, 82), (231, 'koa_lacs', 'lake', 56, 82), (253, 'koa_canyon', 'quarry', 66, 92), (275, 'koa_morhkitu', 'forest', 98, 112), (230, 'koa_cimetiere', 'grave', 98, 112)]},
+    {'id': 'albuera', 'name': 'Albuera', 'desc': 'Futaies enneigées des Grolours, des Buffalourds et des Rebelles du Rakoopeur.', 'theme': 'sky',
+     'subs': [(1026, 'alb_futaie', 'forest', 42, 50)]},
     {'id': 'abrak', 'name': 'Forêt des Abraknydes', 'desc': 'La sombre forêt des arbres vivants.', 'theme': 'forest',
-     'subs': [(168, 'abr_sombre', 'forest', 70, 86)]},
+     'subs': [(168, 'abr_sombre', 'forest', 70, 86), (33, 'abr_arakhai', 'forest', 82, 92)]},
     {'id': 'moon', 'name': 'Île de Moon', 'desc': 'Jungle et pirates de l\'île du terrible Moon.', 'theme': 'beach',
-     'subs': [(167, 'moon_crane', 'beach', 78, 86), (165, 'moon_jungle', 'forest', 88, 96)]},
+     'subs': [(167, 'moon_crane', 'beach', 78, 86), (165, 'moon_jungle', 'forest', 88, 96), (166, 'moon_masques', 'forest', 52, 60)]},
     {'id': 'dragoeufs', 'name': 'Terres des Dragoeufs', 'desc': 'Le village, les souterrains et le sanctuaire des Dragoeufs.', 'theme': 'quarry',
-     'subs': [(315, 'dra_village', 'city', 88, 96), (316, 'dra_souterrains', 'cave', 88, 96), (314, 'dra_sanctuaire', 'mine', 108, 116)]},
+     'subs': [(315, 'dra_village', 'city', 88, 96), (316, 'dra_souterrains', 'cave', 88, 96), (314, 'dra_sanctuaire', 'mine', 108, 116), (23, 'dra_presquile', 'beach', 62, 70)]},
     {'id': 'otomai', 'name': "Île d'Otomaï", 'desc': 'Plaines, tourbières et villages de l\'île du savant Otomaï.', 'theme': 'forest',
      'subs': [(454, 'oto_plaines', 'meadow', 90, 101), (457, 'oto_tourbiere', 'sewer', 89, 104), (471, 'oto_tourbiere2', 'sewer', 89, 104), (468, 'oto_zoths', 'city', 110, 128), (469, 'oto_canopee', 'forest', 110, 128),
-              (455, 'oto_jungle', 'forest', 123, 145), (464, 'oto_hakam', 'forest', 140, 162), (472, 'oto_feuillage', 'forest', 140, 162)]},
+              (455, 'oto_jungle', 'forest', 123, 145), (464, 'oto_hakam', 'forest', 140, 162), (472, 'oto_feuillage', 'forest', 140, 162),
+              (453, 'oto_corail', 'beach', 36, 44), (461, 'oto_arche', 'beach', 56, 70)]},
     {'id': 'minotoror', 'name': 'Île du Minotoror', 'desc': 'L\'île et le labyrinthe du Minotoror.', 'theme': 'quarry',
      'subs': [(209, 'mino_ile', 'beach', 100, 122), (319, 'mino_labyrinthe', 'cave', 104, 122)]},
     {'id': 'pandala', 'name': 'Île de Pandala', 'desc': 'L\'île des Pandawas, divisée entre les éléments.', 'theme': 'meadow',
@@ -78,13 +82,18 @@ ZONES = [
               (603, 'fri_village', 'sky', 160, 172), (606, 'fri_crevasse', 'cave', 160, 172), (605, 'fri_petrifiee', 'forest', 170, 182),
               (608, 'fri_crocs', 'quarry', 180, 192), (611, 'fri_torrideau', 'sky', 180, 192), (753, 'fri_ruche', 'cave', 180, 192)]},
     {'id': 'saharach', 'name': 'Saharach', 'desc': 'Le désert brûlant des Cacterres, des Vers des sables et de la Pyramide Maudite.', 'theme': 'beach', 'requires': {'boss': 'labyrinthe_minotoror'},
-     'subs': [(873, 'sah_cacterre', 'beach', 120, 132), (878, 'sah_gorge', 'quarry', 160, 172), (879, 'sah_cite', 'city', 160, 172), (881, 'sah_pyramide', 'grave', 198, 212)]},
+     'subs': [(873, 'sah_cacterre', 'beach', 120, 132), (878, 'sah_gorge', 'quarry', 160, 172), (879, 'sah_cite', 'city', 160, 172), (881, 'sah_pyramide', 'grave', 198, 212), (872, 'sah_ossements', 'beach', 72, 80)]},
     {'id': 'pwak', 'name': 'Île de Pwâk', 'desc': "L'île gourmande des Croquants et des Chocomanciens.", 'theme': 'meadow', 'requires': {'boss': 'labyrinthe_minotoror'},
-     'subs': [(911, 'pwak_jardins', 'meadow', 120, 132)]},
+     'subs': [(911, 'pwak_jardins', 'meadow', 120, 132), (910, 'pwak_carriere', 'quarry', 52, 60)]},
     {'id': 'divines', 'name': 'Dimensions divines', 'desc': 'Srambad, Enutrosor, Écaflipus, Xélorium et Osavora : les mondes des dieux.', 'theme': 'spirit', 'requires': {'boss': 'labyrinthe_minotoror'},
      'subs': [(827, 'sram_ruelles', 'city', 120, 132), (821, 'enu_carriere', 'mine', 140, 152), (856, 'eca_lande', 'meadow', 150, 162), (837, 'xel_present', 'city', 160, 172),
               (1041, 'osa_toorbz', 'forest', 160, 172), (828, 'sram_catacombres', 'grave', 170, 182),
-              (822, 'enu_retraite', 'mine', 198, 212), (829, 'sram_hauts', 'city', 198, 212), (838, 'xel_lendemains', 'spirit', 198, 212), (857, 'eca_temple', 'city', 198, 212)]},
+              (822, 'enu_retraite', 'mine', 198, 212), (829, 'sram_hauts', 'city', 198, 212), (838, 'xel_lendemains', 'spirit', 198, 212), (857, 'eca_temple', 'city', 198, 212),
+              (820, 'enu_creuset', 'mine', 92, 100), (855, 'eca_pierres', 'sky', 102, 110)]},
+    {'id': 'asse', 'name': "Îlots de la mer d'Asse", 'desc': "L'île de Kartonpath et le Théâtre de Dramak.", 'theme': 'beach',
+     'subs': [(799, 'asse_kartonpath', 'beach', 89, 100)]},
+    {'id': 'bontabrak', 'name': 'Bonta et Brâkmar', 'desc': 'Les égouts des deux cités rivales, repaires du Rat Blanc et du Rat Noir.', 'theme': 'city',
+     'subs': [(1011, 'bon_canaux', 'sewer', 102, 110), (985, 'bra_entrailles', 'sewer', 102, 110)]},
     {'id': 'grobe', 'name': 'Île de Grobe', 'desc': "L'île des tombeaux, de l'Armée de brume et des Yokai.", 'theme': 'grave', 'requires': {'boss': 'labo_tynril'},
      'subs': [(952, 'grobe_cimetiere', 'grave', 150, 162), (955, 'grobe_mont', 'quarry', 160, 172)]},
     {'id': 'sakai', 'name': 'Île de Sakaï', 'desc': 'Plaine glacée et mine abandonnée des Gobelins de Sakaï.', 'theme': 'sky', 'requires': {'boss': 'antre_korriandre'},
@@ -102,6 +111,8 @@ ZONES = [
      'subs': [(804, 'suf_embruns', 'lake', 198, 212)]},
 ]
 HIDDEN = {'ast_planque': 'Baguette Rikiki'}
+CO_BOSS = {'gelaxieme_dimension'}  # donjons où tous les boss se battent ensemble
+POOL_MIN = {'donjon_larves': 40}  # niveau minimum des monstres des salles (les Larves Solitaires de niveau 11-16 restent dehors)
 DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (447, 'crypte_kardorim', 'inc_cimetiere'),
     (306, 'grange_tournesol', 'ast_champs'),
@@ -185,6 +196,25 @@ DUNGEONS = [  # (sous-zone DofusDB du donjon, id jeu, sous-zone d'accès)
     (841, 'oeil_vortex', 'xel_lendemains'),
     (854, 'defi_chaloeil', 'eca_temple'),
     (882, 'chambre_tal_kasha', 'sah_pyramide'),
+    # 0.1.40 « Donjons oubliés » : donjons classiques du niveau 40 au 110
+    (77, 'gelaxieme_dimension', 'ama_gelees'),
+    (702, 'maison_fantome', 'ama_cryptes'),
+    (1018, 'akademie_gobs', 'ama_gobelins'),
+    (1022, 'refuge_sylvestre', 'alb_futaie'),
+    (528, 'donjon_forgerons', 'ama_bandits'),
+    (460, 'grotte_hesque', 'oto_corail'),
+    (491, 'donjon_larves', 'ama_craqueleurs'),
+    (913, 'fonderie_waddicts', 'pwak_carriere'),
+    (700, 'village_kanniboul', 'moon_masques'),
+    (920, 'epreuve_draegnerys', 'dra_presquile'),
+    (474, 'cale_arche_otomai', 'oto_arche'),
+    (875, 'cimetiere_mastodontes', 'sah_ossements'),
+    (844, 'antre_reine_nyee', 'abr_arakhai'),
+    (800, 'theatre_dramak', 'asse_kartonpath'),
+    (823, 'fabrique_mallefisk', 'enu_creuset'),
+    (852, 'miausolee_pounicheur', 'eca_pierres'),
+    (1013, 'garde_manger_rat_blanc', 'bon_canaux'),
+    (1010, 'sousouriciere_rat_noir', 'bra_entrailles'),
 ]
 EXCLUDE_NAMES = ("d'Halouine", 'Ballotin')
 EXCLUDE_RACES = {32, 147, 250}  # avis de recherche, poutchs
@@ -336,10 +366,13 @@ for tup in DUNGEONS:
         m = monsters.get(mid)
         if not m or mid in d['bosses']: continue
         if grade(m, 0)['level'] > grade(boss, 4)['level'] + 4 or m['race'] == ARCHI_RACE or m.get('isBoss'): continue
+        if grade(m, 0)['level'] < POOL_MIN.get(gid, 0): continue
         k = mkey(m)
         if k not in GAME_M: GAME_M[k] = monster_entry(m)
         pool.append(k)
     lvl = GAME_M[mkey(boss)]['lvl'][1]
+    if lvl > (d.get('optimalPlayerLevel') or lvl) + 30:  # boss aux grades aberrants (Maître des Pantins : niveau 400)
+        lvl = d['optimalPlayerLevel']; GAME_M[mkey(boss)]['lvl'] = [lvl, lvl]
     key = items[d['requiredObjects'][0]['id']]
     keyname = fr(key)
     RES.setdefault(keyname, {'id': key['id'], 'icon': key['iconId'], 'lvl': key['level'], 'price': max(1, key.get('price') or 1), 'type': 84})
@@ -352,6 +385,11 @@ for tup in DUNGEONS:
         rooms.append({'mobs': pool, 'lvl': round(base + (lvl - base) * (r + 1) / (nrooms + 1)), 'size': [2 + (r >= 1), 3 + r + (lvl > 25)]})
     dg_out[gid] = {'name': fr(d), 'dbid': d['id'], 'boss': mkey(boss), 'key': keyname, 'keyDrop': 1, 'lvl': lvl, 'rooms': rooms,
                    'bossMobs': pool[:3], 'access': access}
+    if gid in CO_BOSS and len(d['bosses']) > 1:  # plusieurs boss ensemble (ex. les 4 Gelées Royales de la Gelaxième Dimension)
+        co = []
+        for bid in d['bosses'][1:]:
+            if bid in monsters: GAME_M[mkey(monsters[bid])] = monster_entry(monsters[bid], boss=True); co.append(mkey(monsters[bid]))
+        if co: dg_out[gid]['coBoss'] = co
     for z in zones_out:
         for s in z['subs']:
             if s['id'] == access: s['dungeon'] = gid
