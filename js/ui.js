@@ -18,9 +18,15 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.36";
+const GAME_VERSION = "0.1.36.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.36.1", name: "Stats en combat", items: [
+    "Fiche du héros › Caractéristiques : nouveau bloc « En combat » sous les statistiques totales. Il montre ce qui s'ajoute pendant les combats et n'apparaissait nulle part : points de vie réels (Esprit Libre, Havre-Sac, alignement, petite équipe en chasse et en donjon), bonus de dégâts de l'équipe (Esprit Libre, Synergie, alignement, Éveils Meneur et Fureur), dégâts reçus en moins pour les petites équipes, vraies chances de coup critique (5 % de base compris), soins des Éveils, expérience gagnée (Sagesse et Renaissance) et Prospection de l'équipe après le palier. Touchez une ligne pour le détail",
+    "Une résistance au-delà de 50 % est signalée : les points en trop ne servent à rien",
+    "Infobulles corrigées : un coup critique fait ×1,25 (et non ×1,3), la Prospection d'équipe compte à moitié au-delà de 100, les PA et l'Initiative donnent leur base, l'Esprit Libre donne la moitié de son bonus en PV et en dégâts",
+    "La Résistance Neutre et les Dommages aux sorts s'affichent maintenant avec leur « % »",
+  ] },
   { v: "0.1.36", name: "Boîte à idées", items: [
     "Nouvelle page Communauté › Suggestions : choisissez ce que votre idée concerne (Combat, Équipement, Contenu, Interface), donnez-lui un titre et décrivez-la. Pas besoin de compte ni de Discord",
     "Chaque idée est publiée automatiquement dans le forum Idées du Discord, où tout le monde peut voter avec 👍 ; les plus votées sont regardées chaque semaine",
@@ -612,7 +618,7 @@ const dur = (s) => { s = Math.round(s); const hh = Math.floor(s / 3600), mm = Ma
 const ago = (t) => { const s = (E.now() - t) / 1000; return s < 60 ? "à l'instant" : s < 3600 ? `il y a ${Math.floor(s / 60)} min` : `il y a ${Math.floor(s / 3600)} h`; };
 const elVar = (el) => (el === "buff" ? "var(--buff)" : `var(--el-${el || "n"})`);
 const eld = (el) => `<span class="eld" style="--c:${elVar(el)}" title="${ELEMENTS[el || "n"].name}">${ELEMENTS[el || "n"].name[0]}</span>`;
-const fmtStatVal = (k, v) => (["cri", "rt", "rf", "re", "ra"].includes(k) ? `${fmt(v)} %` : fmt(v));
+const fmtStatVal = (k, v) => (["cri", "rt", "rf", "re", "ra", "rn", "dsort"].includes(k) ? `${fmt(v)} %` : fmt(v));
 const statLine = (k, v) => `${v > 0 ? "+" : ""}${fmt(v)} ${STATS[k].name.replace("% ", "")}`;
 
 /* images */
@@ -760,7 +766,7 @@ function fsGauge() {
   const team = E.team(S); const fs = E.freeSpirit(S); const solo = team.length === 1;
   const syn = E.synergy(S);
   const sub = team.length ? `${team.length} héros${syn ? ` · Synergie +${syn} %` : ""}` : "aucun héros ne chasse";
-  return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand (XP, butin, PV, dégâts). 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
+  return `<div class="fsg ${solo ? "solo" : fs ? "" : "zero"}" style="--p:${fs}" data-tip="Esprit Libre : plus l'équipe est petite, plus le bonus est grand : XP et butin du bonus entier, PV et dégâts de la moitié. 1 héros : +100 % · 2 : +80 % · 3 : +60 % · 4 : +40 % · 5 : +25 % · 6 : +15 % · 7 : +5 % · 8 : 0 %. Synergie : +2 % de dégâts et d'XP par classe différente dans l'équipe (à partir de 2 héros).">
     <span class="flame"><i></i></span><span class="txt"><b>Esprit Libre +${fs} %</b><br><span class="xs muted">${sub}</span><span class="pips5">${[1, 2, 3, 4, 5, 6, 7, 8].map((n) => `<i class="${n <= team.length ? "off" : ""}"></i>`).join("")}</span></span></div>`;
 }
 function questAlert() { if (window.QUI) return window.QUI.todo(S) > 0; return !!(S.almanax && S.almanax.day !== E.dayKey() && E.almanax(S).qty <= (S.res[E.almanax(S).res] || 0)); } // 0.1.28 : tout ce qui est prêt dans Quêtes (js/questui.js)
@@ -3157,11 +3163,40 @@ function charStatsView(c, st) {
         <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
       <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}${D.TACT_ORDER.filter((k) => st[k]).map((k) => statCell(k, k === "pm" ? 3 + st[k] : st[k])).join("")}</div>
+      ${combatStats(c, st)}
       <p class="note">${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
+}
+/* 0.1.35.4 : ce qui s'ajoute pendant le combat (équipe, Esprit Libre, Havre-Sac, alignement, Éveils), absent des stats totales */
+function combatStats(c, st) {
+  const team = E.team(S); const inT = team.includes(c); const mates = inT ? team : team.concat([c]); const n = Math.min(8, mates.length);
+  const fs = D.FREE_SPIRIT[Math.max(1, n)] || 0; const ev = c.eveils || {};
+  const syn = n < 2 ? 0 : new Set(mates.map((x) => x.cls)).size * 2;
+  const meneur = mates.reduce((a, x) => a + ((x.eveils || {}).meneur || 0), 0);
+  const bHp = E.bonus(S, "hp"); const bDmg = E.bonus(S, "dmg"); const osa = mates.some((x) => x.cls === "osa");
+  const hp = Math.round(st.hpMax * (1 + fs / 200) * (osa ? 1.05 : 1) * (1 + bHp / 100));
+  const hs = E.HUNT_SMALL[n]; const ds = E.SMALL_TEAM[n];
+  const dmg = fs / 2 + bDmg + syn + meneur; const fur = 4 * (ev.fureur || 0);
+  const crit = Math.min(60, 5 + st.cri); const over = ["rt", "rf", "re", "ra", "rn"].filter((k) => (st[k] || 0) > 50);
+  const xp = Math.round(((1 + st.sa / 100) * E.renXpMult(c) - 1) * 100); const ppRaw = E.teamProspectionRaw(S) + (inT ? 0 : st.pp);
+  const parts = (a) => a.filter((x) => x[1]).map(([t, v]) => `${t} ${v > 0 ? "+" : ""}${fmt(Math.round(v * 10) / 10)} %`).join(" · ");
+  const row = (label, val, tip) => `<div class="li"${tip ? ` data-tip="${h(tip)}"` : ""}><span class="grow">${label}</span><b class="num">${val}</b></div>`;
+  return `<div class="cbstats"><div class="row between"><b class="small">En combat</b><span class="xs muted">${inT ? `avec l'équipe actuelle (${n} héros)` : `s'il rejoint l'équipe (${n} héros)`}</span></div>
+    <div class="list">
+    ${row("Points de vie", fmt(hp) + (hs ? ` <span class="xs muted">· chasse ${fmt(Math.round(hp * (1 + hs.hp / 100)))}</span>` : "") + (ds ? ` <span class="xs muted">· donjon ${fmt(Math.round(hp * (1 + ds.hp / 100)))}</span>` : ""),
+      `Points de vie de la fiche, plus : ${parts([["Esprit Libre", fs / 2], ["Osamodas dans l'équipe", osa ? 5 : 0], ["Havre-Sac et alignement", bHp]]) || "rien pour l'instant"}.${hs || ds ? ` Petite équipe : ${hs ? `+${hs.hp} % en chasse` : ""}${hs && ds ? ", " : ""}${ds ? `+${ds.hp} % en donjon` : ""}.` : ""}`)}
+    ${row("Dégâts", dmg || fur ? `+${fmt(Math.round(dmg * 10) / 10)} %${fur ? ` <span class="xs muted">· Fureur +${fur} %</span>` : ""}` : "—",
+      `Bonus de dégâts de toute l'équipe : ${parts([["Esprit Libre", fs / 2], ["Synergie", syn], ["Alignement", bDmg], ["Éveil Meneur", meneur]]) || "aucun pour l'instant"}.${fur ? ` L'Éveil Fureur de ce héros multiplie encore ses dégâts de +${fur} %.` : ""}${ev.premier ? ` Premier sang : +${8 * ev.premier} % au premier tour.` : ""}`)}
+    ${hs || ds ? row("Dégâts reçus", `${hs ? `chasse −${hs.dr} %` : ""}${hs && ds ? " · " : ""}${ds ? `donjon −${ds.dr} %` : ""}`, "Une équipe de 1 à 3 héros encaisse moins en chasse, et une équipe de 1 ou 2 héros encaisse moins en donjon.") : ""}
+    ${row("Chances de coup critique", `${crit} %`, `5 % de base + ${fmt(st.cri)} % de Critique, 60 % au plus. Un coup critique fait ×1,25 puis +3 dégâts (+ Dommages critiques).`)}
+    ${ev.main ? row("Soins et boucliers", `+${6 * ev.main} %`, "Éveil Main bienveillante.") : ""}
+    ${over.length ? row("Résistances plafonnées", over.map((k) => STATS[k].name.replace("% Rés. ", "")).join(", "), "Une résistance en % compte au plus 50 % : les points au-delà ne servent à rien.") : ""}
+    ${row("Expérience gagnée", `+${fmt(xp)} %`, `Sagesse (+${fmt(st.sa)} %)${c.ren ? ` et Renaissance (×${E.renXpMult(c).toFixed(2).replace(".", ",")})` : ""}. S'ajoutent les bonus de l'équipe (Esprit Libre, Synergie, Havre-Sac, guilde…).`)}
+    ${row("Prospection de l'équipe", fmt(Math.round(E.effProspection(ppRaw))), `Somme de la Prospection des héros de l'équipe (${fmt(ppRaw)}), comptée entièrement jusqu'à 100, puis à moitié jusqu'à 300 et au quart au-delà. Chaque point donne +1 % de butin.`)}
+    </div></div>`;
 }
 /* ---------- 0.1.8 : familiers et montiliers ---------- */
 const petImg = (id) => (E.PETS[id] ? `assets/p/${E.PETS[id].icon}.webp` : "");
-const PCT_K = ["cri", "rt", "rf", "re", "ra", "rn"];
+const PCT_K = ["cri", "rt", "rf", "re", "ra", "rn", "dsort"];
 const petStatTxt = (k, v) => (k === "pm" ? `+${v} PM` : `+${fmt(v)}${PCT_K.includes(k) ? " %" : ""} ${STATS[k].name.replace("% ", "")}`);
 const petBonus = (stats) => Object.entries(stats).filter(([, v]) => v).map(([k, v]) => petStatTxt(k, v)).join(" · ");
 const petKind = (p) => (p.kind === "monti" ? `Montilier ${E.PET_FAMS[p.fam].toLowerCase().replace(/s$/, "")}` : p.kind === "boss" ? "Familier rare de boss" : "Familier de zone");

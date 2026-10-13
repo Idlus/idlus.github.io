@@ -468,11 +468,11 @@
     age: "+1 % de dégâts Air par point, +1 Initiative.",
     pui: "+1 % de dégâts dans tous les éléments et +1 % de soins par point.",
     do: "+1 dégât fixe ajouté à chaque attaque.",
-    cri: "+1 % de chances de coup critique (base 5 %, maximum 60 %). Un critique inflige ×1,3 +3 dégâts.",
+    cri: "+1 % de chances de coup critique (base 5 %, maximum 60 %). Un critique inflige ×1,25 puis +3 dégâts.",
     so: "+1 soin fixe ajouté à chaque soin.",
-    pp: "+1 % de chances de butin par point. La Prospection de toute l'équipe s'additionne.",
-    ini: "Détermine l'ordre de jeu : le plus haut joue en premier.",
-    pa: "Points d'action disponibles à chaque tour pour lancer des sorts (12 maximum).",
+    pp: "+1 % de chances de butin par point. La Prospection de toute l'équipe s'additionne : entière jusqu'à 100, à moitié de 100 à 300, au quart au-delà.",
+    ini: "Détermine l'ordre de jeu : le plus haut joue en premier. 100 de base, +5 par niveau, +1 par point de Force, Intelligence, Chance et Agilité.",
+    pa: "Points d'action disponibles à chaque tour pour lancer des sorts : 6 de base, +1 au niveau 100 (12 maximum).",
     rt: "Réduit les dégâts Terre reçus de 1 % par point (50 % maximum).",
     rf: "Réduit les dégâts Feu reçus de 1 % par point (50 % maximum).",
     re: "Réduit les dégâts Eau reçus de 1 % par point (50 % maximum).",
@@ -482,7 +482,7 @@
     dt: "+1 dégât fixe sur les sorts Terre.", df: "+1 dégât fixe sur les sorts Feu.", de: "+1 dégât fixe sur les sorts Eau.", da: "+1 dégât fixe sur les sorts Air.", dn: "+1 dégât fixe sur les sorts Neutre.",
     xt: "Retire 1 point de dégât à chaque attaque Terre reçue.", xf: "Retire 1 point de dégât à chaque attaque Feu reçue.", xe: "Retire 1 point de dégât à chaque attaque Eau reçue.", xa: "Retire 1 point de dégât à chaque attaque Air reçue.", xn: "Retire 1 point de dégât à chaque attaque Neutre reçue.",
     dsort: "+1 % de dégâts sur tous les sorts.",
-    hpMax: "Points de vie : 50 + 5 par niveau + Vitalité (+5 par famille de monstres complétée).",
+    hpMax: "Points de vie : 50 + 5 par niveau + Vitalité (+5 par famille de monstres complétée, +5 % par rang de l'Éveil Robustesse). En combat, d'autres bonus s'ajoutent : voir « En combat ».",
   };
 
   const SUMMONS = G.SUMMONS || {};
