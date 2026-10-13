@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.8";
+const GAME_VERSION = "1.0.8.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.8.1", name: "Quantité au choix", items: [
+    "Artisanat : en plus de 1, 10 et Max, tu peux choisir la quantité exacte à fabriquer, avec un champ et des boutons − et +, sur PC comme sur téléphone",
+    "La quantité ne peut pas dépasser ce que tu peux fabriquer (Galet compris) et reste choisie quand la page se met à jour ; un seul clic sur « Fabriquer » fabrique tout",
+  ] },
   { v: "1.0.8", name: "Classement des métiers", items: [
     "Nouvel onglet « Métiers » dans les Classements : un classement pour chacun des 7 métiers d'artisanat (Tailleur, Bijoutier, Cordonnier, Forgeron, Sculpteur, Façonneur, Bricoleur)",
     "Classement « Tous les métiers » : la somme des niveaux de tes 7 métiers, avec les 3 meilleurs métiers de chaque joueur sous son nom",
@@ -4903,7 +4907,7 @@ function galetBox(r) {
 function recDetail(r, job) {
   if (!r) return `<div class="empty">Choisis une recette dans la liste.</div>`;
   const J = S.crafts[job] || { lvl: 1 }; const pic = r.T ? itemImg(r.id) : resImg(r.id); const pinned = S.shop.some((e) => e.id === r.id);
-  const gSel = galetSel(r); const nMax = gSel ? Math.min(r.n, S.res[gSel] || 0) : r.n; // 1.0.6 : avec un Galet, une fabrication par Galet
+  const gSel = galetSel(r); const nMax = Math.min(1000, gSel ? Math.min(r.n, S.res[gSel] || 0) : r.n); // 1.0.6 : avec un Galet, une fabrication par Galet (1 000 au plus d'un coup)
   const qty = ui.recQty === "max" ? Math.max(1, nMax) : Math.max(1, Math.min(+ui.recQty || 1, Math.max(1, nMax)));
   const xp = (r.T ? 12 : 20) + r.lvl * 3;
   const stats = r.T ? `<div class="pstats">${Object.entries(r.T.stats).map(([k, [a, b]]) => `<span>${sIco(k)} <b>${a === b ? a : a + " à " + b}</b> ${h(STATS[k].name)}</span>`).join("")}</div>` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
@@ -4917,8 +4921,18 @@ function recDetail(r, job) {
     ${r.okLvl ? "" : `<div class="small minus" style="margin-top:8px">${CRAFT_JOBS[job].name} niveau ${r.req} requis (tu es niveau ${J.lvl}).</div>`}
     ${galetBox(r)}
     ${r.T && r.okLvl && !r.miss ? !r.n ? `<div class="small minus" style="margin-top:8px">Ton sac et ton trop-plein sont pleins : brise ou vends des objets pour fabriquer. <a href="#" data-act="nav" data-v="inv">Ouvrir l'inventaire</a></div>` : E.itemCount(S) >= E.itemCap(S) ? `<div class="small muted" style="margin-top:8px">Sac plein (${fmt(E.itemCount(S))}/${fmt(E.itemCap(S))}) : les objets fabriqués vont dans le trop-plein de l'inventaire.</div>` : "" : ""}
-    <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${nMax > 1 ? " ×" + fmt(nMax) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div><span class="xs muted grow">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
+    <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${nMax > 1 ? " ×" + fmt(nMax) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div>
+      <span class="pqn"><button class="btn sm" data-act="recqtyd" data-v="-1" ${nMax > 1 && qty > 1 ? "" : "disabled"} aria-label="Un de moins">−</button><input type="number" id="recqtyn" inputmode="numeric" min="1" max="${Math.max(1, nMax)}" value="${qty}" data-xp="${xp}" data-max="${Math.max(1, nMax)}" ${nMax > 1 ? "" : "disabled"} aria-label="Quantité à fabriquer"><button class="btn sm" data-act="recqtyd" data-v="1" ${qty < nMax ? "" : "disabled"} aria-label="Un de plus">+</button></span>
+      <span class="xs muted grow" id="recqtyxp">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
     <div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${gSel ? `data-g="${h(gSel)}"` : ""} ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div></div>`;
+}
+/* 1.0.8.1 : quantité libre (champ − / +) ; la valeur est gardée dans ui.recQty, donc retrouvée quand la page se redessine */
+const recQtyOf = (i) => Math.max(1, Math.min(+i.dataset.max || 1, Math.floor(+i.value) || 1));
+function recQtyLive(i, commit) {
+  const n = recQtyOf(i); ui.recQty = String(n); if (commit) i.value = n;
+  const b = (i.closest(".pdet") || document).querySelector('[data-act="craftmany"]'); if (b && !b.disabled) { b.dataset.n = n; b.textContent = "Fabriquer" + (n > 1 ? " ×" + fmt(n) : ""); }
+  const x = $("#recqtyxp"); if (x) x.textContent = x.textContent.replace(/^\+[\d\s\u202f\u00a0]+/, "+" + fmt(+i.dataset.xp * n) + " ");
+  const pd = i.closest(".pdet"); if (pd) { pd.querySelectorAll('[data-act="recqty"]').forEach((q) => q.setAttribute("aria-pressed", "false")); const [m, p] = pd.querySelectorAll('[data-act="recqtyd"]'); if (m) m.disabled = n <= 1; if (p) p.disabled = n >= +i.dataset.max; }
 }
 function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
 function craftHtml() {
@@ -5695,7 +5709,7 @@ const WS_KEY = "idlus-recherches";
 const wsRecent = () => { try { const a = JSON.parse(localStorage.getItem(WS_KEY) || "[]"); return Array.isArray(a) ? a.slice(0, 5) : []; } catch (e) { return []; } };
 const wsRemember = (q) => { try { const a = [q, ...wsRecent().filter((x) => x !== q)].slice(0, 5); localStorage.setItem(WS_KEY, JSON.stringify(a)); } catch (e) {} };
 function searchOpen(q) {
-  if (!S) return; if ($("#wsearch")) { const inp = $("#wsq"); if (q != null) { inp.value = q; searchRender(); } inp.focus(); if (q) { const n = inp.value.length; inp.setSelectionRange(n, n); } return; } // 1.0.7.11 : un clic sur « Dernières recherches » remplit le champ quand la fenêtre est déjà ouverte
+  if (!S) return; if ($("#wsearch")) { const inp = $("#wsq"); if (q != null) { inp.value = q; searchRender(); } inp.focus(); if (q) { const n = inp.value.length; inp.setSelectionRange(n, n); } return; } // 1.0.8.1 : un clic sur « Dernières recherches » remplit le champ quand la fenêtre est déjà ouverte
   tipHide();
   const d = document.createElement("div"); d.id = "wsearch"; d.className = "wsearch-bg"; d.dataset.act = "searchclose";
   d.innerHTML = `<div class="wsearch" role="dialog" aria-label="Recherche">
@@ -6721,6 +6735,7 @@ document.addEventListener("click", (ev) => {
     case "gbsheet": ui.tab = "inv"; ui.inv = "res"; window.scrollTo(0, 0); break;
     case "recsel": ui.recSel = d.id; ui.recStick = null; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
     case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
+    case "recqtyd": { const i = $("#recqtyn"); const mx = i ? +i.dataset.max : 1; ui.recQty = String(Math.max(1, Math.min(mx, (i ? +i.value || 1 : 1) + +d.v))); if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break; }
     case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }
     case "dofgo": closeSheet(); if (window.QUI && window.QUI.pick) window.QUI.pick(d.v); ui.tab = "quests"; ui.qt = "dofus"; render(); window.scrollTo(0, 0); return; // 1.0.6.2
     case "dofalm": closeSheet(); ui.tab = "quests"; ui.qt = "almanax"; render(); window.scrollTo(0, 0); return;
@@ -6751,7 +6766,7 @@ document.addEventListener("click", (ev) => {
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
       if (typeof r === "string") toast(r); else if (r && r.uid) { if (!r.radiant) toast(`Fabriqué : ${ITEMS[r.tpl].name} (jet ${Math.round(E.itemQuality(r) * 100)} %)`); } else toast(`Fabriqué : ${d.special}`); break; }
     case "recgalet": ui.recGalet = ui.recGalet === d.g ? null : d.g; ui.recQty = "1"; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
-    case "craftmany": { ui.recStick = d.id; const r = E.craftMany(S, d.k, d.id, +d.n, d.g || null); if (typeof r === "string") { toast(r); break; }
+    case "craftmany": { ui.recStick = d.id; const qi = $("#recqtyn"); const nq = qi && !qi.disabled ? recQtyOf(qi) : +d.n; const r = E.craftMany(S, d.k, d.id, nq, d.g || null); if (typeof r === "string") { toast(r); break; }
       const name = d.k === "tpl" ? ITEMS[d.id].name : d.id; const best = r.items.length ? Math.max(...r.items.map((it) => Math.round(E.itemQuality(it) * 100))) : null; const rad = r.items.filter((it) => it.radiant).length;
       toast(`Fabriqué ×${fmt(r.n)} : ${name}${best != null ? ` (meilleur jet ${best} %)` : ""}${rad ? ` · ${rad} Rayonnant${rad > 1 ? "s" : ""} !` : ""}${r.twins ? ` · ${d.g} : +${fmt(r.twins)} en bonus !` : ""}${r.over ? ` · sac plein : ${r.over > 1 ? `${fmt(r.over)} objets rangés` : "rangé"} dans le trop-plein` : ""}${r.err ? ` · arrêt : ${r.err}` : ""}`); if (ui.recSheetOn && $("#sheet").innerHTML) setTimeout(recSheet, 0); break; }
     case "dupesask": ui.confirm = "dupes"; break;
@@ -6783,7 +6798,7 @@ document.addEventListener("click", (ev) => {
   dirty = true; render();
 });
 document.addEventListener("change", (ev) => {
-  const t = ev.target; const a = t.dataset.act; if (!a || !S) return;
+  const t = ev.target; if (t.id === "recqtyn") { recQtyLive(t, true); return; } const a = t.dataset.act; if (!a || !S) return;
   if (a.startsWith("vi-")) { viChange(a, t); return; }
   if (a.startsWith("sg-")) { if (window.SGUI) window.SGUI.change(a, t); return; }
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
@@ -6842,6 +6857,7 @@ document.addEventListener("input", (ev) => {
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "encsearch") { ui.enc.q = t.value; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.id === "recqtyn") { if (t.value !== "") recQtyLive(t, false); return; }
   if (t.dataset.act !== "fltq") return;
   const ctx = t.dataset.ctx; fltOf(ctx).q = t.value; dirty = true; const pos = t.selectionStart; if (ctx === "met") renderMetiers(); else renderForge(); const n = $("#fltq_" + ctx); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
 });

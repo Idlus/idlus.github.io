@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.8.1 « Quantité au choix »
+Artisanat : champ `#recqtyn` avec − / + (`recqtyd`) à côté de 1/10/Max, borné à 1…Max fabricable (Galet compris, 1 000 au plus comme `E.craftMany`). Valeur gardée dans `ui.recQty`, mise à jour en place à la frappe (`recQtyLive`), lue directement par « Fabriquer » (`recQtyOf`).
+
 ## 1.0.8 « Classement des métiers »
 Demande de Mathis (réponses 1A à 7A sur la maquette). `VF.summary` (js/verify.js) ajoute `jobs` (niveau et XP des métiers d'artisanat) au résumé déjà envoyé avec la sauvegarde : aucun envoi en plus. `ladder_from_save` (supabase/classements.sql) ne garde que les 7 métiers connus (niveau 1 à 200) dans `ladder.jobs`, plus `tous` = somme des niveaux ; vue `lb_jobs` (une ligne par compte et par métier). Contrôle : un métier qui gagne plus de 60 niveaux entre deux envois à moins de 10 minutes d'écart met le compte en vérification (pas au premier envoi des métiers). Premier compte au niveau 200 d'un métier : `firsts` kind `job200`, annonce Hauts faits par `firsts_ann`, titre `E.jobFirstTitle` donné par `jobFirstCheck` (js/ui.js, une seule requête par métier, mémorisée dans `S.unlocks.jobFirst`). Onglet `job` des Classements (`jobLbHead`, `jobLbFetch`, `LB.job`), bouton `lb-jobgo` dans Métiers › Artisanat, métiers dans la fiche d'un joueur. Test dans tests/online.test.js.
 

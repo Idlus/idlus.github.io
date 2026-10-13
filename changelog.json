@@ -1,6 +1,14 @@
 {
-  "version": "1.0.8",
+  "version": "1.0.8.1",
   "versions": [
+    {
+      "v": "1.0.8.1",
+      "name": "Quantité au choix",
+      "items": [
+        "Artisanat : en plus de 1, 10 et Max, tu peux choisir la quantité exacte à fabriquer, avec un champ et des boutons − et +, sur PC comme sur téléphone",
+        "La quantité ne peut pas dépasser ce que tu peux fabriquer (Galet compris) et reste choisie quand la page se met à jour ; un seul clic sur « Fabriquer » fabrique tout"
+      ]
+    },
     {
       "v": "1.0.8",
       "name": "Classement des métiers",
