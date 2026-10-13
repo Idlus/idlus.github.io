@@ -1,6 +1,18 @@
 {
-  "version": "0.1.50.3",
+  "version": "0.1.51",
   "versions": [
+    {
+      "v": "0.1.51",
+      "name": "Armes",
+      "items": [
+        "Chaque arme a maintenant son coup d'arme, avec ses vrais dégâts de DOFUS (coût en PA, critique, lignes de dégâts, vol de vie, PA retirés) : le héros la frappe quand c'est son meilleur coup du tour",
+        "Le coup d'arme a sa propre case à côté des 8 sorts, dans la barre de sorts et en combat (aussi en mode Manuel)",
+        "Maîtrise : chaque classe a 2 types d'armes favoris qui font +20 % de dégâts (Iop : Épée et Marteau, Crâ : Arc et Dague…)",
+        "Chaque type d'arme a son effet : Dague frappe 2 fois, Arc vise mieux les critiques, Baguette soigne un allié, Bâton protège, Épée achève, Marteau touche autour, Pelle déterre des trésors, Hache et Faux font saigner, Lance perce les résistances",
+        "Forgemagie : les potions de Séisme, Incendie, Tsunami et Ouragan changent les dégâts Neutre de l'arme en Terre, Feu, Eau ou Air (les petites potions, la moitié) ; on les prépare avec l'Alchimiste",
+        "La fiche des armes montre le coup d'arme et les dégâts estimés pour le héros ; « Équiper au mieux » en tient compte"
+      ]
+    },
     {
       "v": "0.1.50.3",
       "name": "Boss des mondes corrigé",

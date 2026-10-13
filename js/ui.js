@@ -18,9 +18,17 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.50.3";
+const GAME_VERSION = "0.1.51";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.51", name: "Armes", items: [
+    "Chaque arme a maintenant son coup d'arme, avec ses vrais dégâts de DOFUS (coût en PA, critique, lignes de dégâts, vol de vie, PA retirés) : le héros la frappe quand c'est son meilleur coup du tour",
+    "Le coup d'arme a sa propre case à côté des 8 sorts, dans la barre de sorts et en combat (aussi en mode Manuel)",
+    "Maîtrise : chaque classe a 2 types d'armes favoris qui font +20 % de dégâts (Iop : Épée et Marteau, Crâ : Arc et Dague…)",
+    "Chaque type d'arme a son effet : Dague frappe 2 fois, Arc vise mieux les critiques, Baguette soigne un allié, Bâton protège, Épée achève, Marteau touche autour, Pelle déterre des trésors, Hache et Faux font saigner, Lance perce les résistances",
+    "Forgemagie : les potions de Séisme, Incendie, Tsunami et Ouragan changent les dégâts Neutre de l'arme en Terre, Feu, Eau ou Air (les petites potions, la moitié) ; on les prépare avec l'Alchimiste",
+    "La fiche des armes montre le coup d'arme et les dégâts estimés pour le héros ; « Équiper au mieux » en tient compte",
+  ] },
   { v: "0.1.50.3", name: "Boss des mondes corrigé", items: [
     "Boss des mondes : Gargandyas a maintenant 1 000 000 PV au lieu de 2 000 000, pour tomber en 2 jours environ comme prévu (les dégâts déjà faits sont gardés)",
     "Les 4 objets de Gargandyas et les objets légendaires du Songe ne sortent plus des coffres : on ne les obtient que par leur boutique ou dans le Songe",

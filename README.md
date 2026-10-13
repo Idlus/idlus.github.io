@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 0.1.51 « Armes »
+Mathis : « ajouter un véritable intérêt aux armes » (maquette, réponses 1A 2C 3A 4A 5A). `tools/build_armes.js` récupère sur DofusDB les dégâts propres de chaque arme (type, PA, critique, portée, lancers, lignes 91-100 / 2822 / 2828 / 108, PA retirés) et écrit `js/armes.js` (chargé avant data.js, aussi dans `tools/build_server.js`). engine.js : `E.weaponSpellOf` fait de l'arme un sort `id:"arme"` (×`E.WEAPON.mult` 1,5, maîtrise +20 % via `E.CLASS_WEAPONS`), case en plus `E.WSLOT` dans `charTurn`, effets par type `E.WTYPES` (`weaponFx`, `wguard`, perce, grâce, précision), potions `E.weaponPotion` (`it.wel`, `it.welh` moitié) et `E.brewPotion` (Alchimiste 20 / 80, herbes + kamas), arme dans `koliSnap` (`wp`). ui.js : bloc arme de la fiche (`wpBlockHtml`), case sous la barre de sorts, bloc « Élément de l'arme » à l'Établi, coup d'arme dans `itemScore`. Simulation : bon équipement stasis 6,28 (6,34 avant), sans équipement inchangé, chasses 0-0,9 % de défaites, arme ≈ 15 % des lancers. tests/armes.test.js.
+
 ## 0.1.50.3 « Boss des mondes corrigé »
 `E.chestItemPool` (systems.js) exclut les objets `leg` (Songe) et `wboss`. Gargandyas : `E.WB_HP0` 10 000 points et `wb_state.hp` ramené à 10 000 s'il valait 20 000 (supabase/wboss.sql) ; `wb_done` renvoie `before` (dégâts avant l'essai). js/wbossui.js : bandeau et effet cachés seulement pendant `ui.watch`, tuile d'Accueil redessinée au chargement. tests/wboss.test.js vérifie que index.html charge wboss.js et wbossui.js.
 
