@@ -3450,3 +3450,7 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .pmore .pmh{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;padding:10px 14px;font:inherit;font-weight:800;font-size:13px;color:var(--muted,inherit)}
 .pmore .pmh:hover{color:var(--ink)}
 .li.pcur{background:var(--panel2,transparent);border-bottom:1px dashed var(--line)}
+.dtop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+/* Sablier économe : sablier en pause quand rien n'avance */
+.status .sabpill.idle{box-shadow:none;opacity:.75}
+.status .sabpill.idle .sb{animation:none}
