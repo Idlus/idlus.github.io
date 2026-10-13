@@ -4,7 +4,7 @@
    et aux paliers de la quête « Éternelle moisson » (Dofus Ocre). Le Parfum de pistage (Bricoleur 40) double les chances
    d'archimonstre pendant 2 h, le meuble « Autel des âmes » les augmente de 40 %.
    Les 18 Dofus de DOFUS (bonus réels d'après DofusDB) se gagnent par une quête chacun (Quêtes › Dofus), avec une chance
-   infime en butin du boss de leur donjon ; une copie pour un autre héros se fabrique chez le Bricoleur avec de la Poussière de stasis. */
+   infime en butin du boss de leur donjon ; depuis la 1.0, plus de copie au Bricoleur : les autres exemplaires viennent du butin. */
 (function (root) {
   "use strict";
   const D = root.DATA || (typeof require !== "undefined" ? require("./data.js") : null);
@@ -141,7 +141,7 @@
     E.DOFUS_ORDER.push(id);
     const st = {}; for (const k in stats) st[k] = [stats[k], stats[k]];
     ITEMS[tpl] = { name, slot: "dofus", lvl, stats: st, icon, dofus: id, rarity: "legendaire", desc: id === "dokoko" ? `Chaque début de tour, le porteur récupère ${E.DOKOKO_PCT} % de ses PV.` : null };
-    SPECIAL_CRAFTS[`Copie : ${name}`] = { job: "bricoleur", lvl: Math.max(25, lvl - 10), dofus: id, ing: [[E.POUSSIERE, Math.round(lvl * 1.5)]] };
+    // 1.0 (Mathis) : un Dofus ne s'obtient que par sa quête et le butin du boss ; plus de copie chez le Bricoleur (les copies déjà faites restent)
   });
   E.dofusBonusTxt = (id) => { const Df = E.DOFUS[id]; if (id === "dokoko") return ITEMS[Df.tpl].desc; const ks = Object.keys(Df.stats); const v = Df.stats[ks[0]];
     if (ks.length > 1 && ks.every((k) => Df.stats[k] === v)) return `+${v}${/^r/.test(ks[0]) ? " %" : ""} ${ks.length === 5 && /^r/.test(ks[0]) ? "de résistance dans chaque élément" : ks.length === 5 && /^x/.test(ks[0]) ? "de résistance fixe dans chaque élément" : ks.length === 5 ? "de dommages dans chaque élément" : ks.map((k) => D.STATS[k].name).join(", ")}`;

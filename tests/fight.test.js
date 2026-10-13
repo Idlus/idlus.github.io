@@ -214,10 +214,10 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   // Éternelle moisson : tout Astrub capturé donne le palier 1
   E.addCons(S, "pierre_ame", 60); const kam = S.kamas; E.archisOf("astrub").forEach((a) => E.captureSoul(S, { key: a.k, name: a.name }));
   assert.strictEqual(E.ocreTier(S), 1, "palier 1 accompli"); assert.ok(S.kamas >= kam + 20000, "20 000 kamas du palier 1"); assert.strictEqual(E.stones(S), 1 + 60 - E.archisOf("astrub").filter((a) => a.k !== k0).length + 10, "10 pierres du palier 1");
-  // Dofus : obtention, un exemplaire par héros, copie du Bricoleur seulement après l'original
+  // Dofus : obtention, un exemplaire par héros, pas de copie au Bricoleur (1.0)
   const it = E.giveDofus(S, "cacao", "test"); assert.ok(it && it.stats.tac === 10 && E.dofusOwned(S, "cacao") && S.cnt.dofus === 1, "Dofus Cacao donné");
   assert.strictEqual(E.equip(S, c.id, it.uid), null, "Dofus équipé"); const it2 = E.giveDofus(S, "cacao", "copie"); assert.ok(/déjà ce Dofus/.test(E.equip(S, c.id, it2.uid)), "pas deux fois le même Dofus");
-  S.crafts.bricoleur = { lvl: 200, xp: 0 }; S.res[E.POUSSIERE] = 1000; assert.ok(/d'abord/.test(E.craftSpecial(S, "Copie : Dofus Vulbis")), "copie sans l'original refusée"); assert.strictEqual(E.craftSpecial(S, "Copie : Dofus Cacao"), null, "copie fabriquée"); assert.strictEqual(S.res[E.POUSSIERE], 925, "75 poussières");
+  assert.ok(!Object.keys(D.SPECIAL_CRAFTS).some((n) => /^Copie : /.test(n)), "1.0 : plus de copie de Dofus au Bricoleur (quête et butin seulement)");
   // quête : étape donjon validée par la meilleure stasis, étape chasse par les victoires dans la zone, Dofus donné à la fin
   E.stasisInfo(S, "cour_bouftou_royal").max = 3; E.emit(S, "dungeon", { id: "cour_bouftou_royal", stasis: 3, chals: [], down: 0 });
   assert.strictEqual(E.dofusQuest(S, "cacao").step, 1, "étape 1 du Cacao validée");
