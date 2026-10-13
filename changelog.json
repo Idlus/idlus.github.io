@@ -1,6 +1,14 @@
 {
-  "version": "0.1.47.5",
+  "version": "0.1.47.6",
   "versions": [
+    {
+      "v": "0.1.47.6",
+      "name": "Panoplies d'abord",
+      "items": [
+        "« Équiper au mieux » et « Tout équiper au mieux » comparent maintenant des panoplies entières : si porter toute une panoplie (ou presque) fait mieux grâce à ses bonus que des pièces isolées, elle est équipée d'un coup (par exemple le Bouftou Royal à 7 pièces pour le PA de plus)",
+        "La pastille verte et « Meilleur choix » dans la liste suivent ce même plan"
+      ]
+    },
     {
       "v": "0.1.47.5",
       "name": "Notifications polies",

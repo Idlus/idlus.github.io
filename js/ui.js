@@ -18,9 +18,13 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.47.5";
+const GAME_VERSION = "0.1.47.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.47.6", name: "Panoplies d'abord", items: [
+    "« Équiper au mieux » et « Tout équiper au mieux » comparent maintenant des panoplies entières : si porter toute une panoplie (ou presque) fait mieux grâce à ses bonus que des pièces isolées, elle est équipée d'un coup (par exemple le Bouftou Royal à 7 pièces pour le PA de plus)",
+    "La pastille verte et « Meilleur choix » dans la liste suivent ce même plan"
+  ] },
   { v: "0.1.47.5", name: "Notifications polies", items: [
     "Chat ouvert : les notifications ne le cachent plus. Sur PC, elles s'affichent à gauche du chat ; au téléphone, une seule à la fois, tout en haut de l'écran",
     "Pendant que vous écrivez dans le chat, les notifications attendent et arrivent dès que le message est envoyé",
@@ -3346,15 +3350,42 @@ function gearScore(c, eq) { let sc = 0; const n = {};
   for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += itemScore(c, it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
   for (const z in n) { const b = E.setBonus(z, n[z]); if (b) sc += itemScore(c, { stats: b }); } return sc; }
 function gainFor(c, s, uid) { const eq = Object.assign({}, c.equip); for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; return gearScore(c, eq) - gearScore(c, c.equip); }
-function bestFor(c, s) {
-  const want = s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s;
-  const cur = S.items[c.equip[s]]; const curSc = itemScore(c, cur); let best = 0, uid = null;
-  for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (T.slot !== want || T.lvl > c.lvl || E.equippedBy(S, it.uid)) continue; if ((want === "anneau" || want === "dofus") && Object.entries(c.equip).some(([sl, u]) => sl !== s && S.items[u] && S.items[u].tpl === it.tpl)) continue; const g = gainFor(c, s, it.uid); if (g > curSc * 0.05 + 1 && g > best) { best = g; uid = it.uid; } }
-  return uid;
-}
-const slotUpgrade = (c, s) => !!bestFor(c, s);
+/* 0.1.47.6 : plan d'équipement complet. On part de l'équipement actuel, on remplit emplacement par emplacement (meilleur gain, bonus
+   de panoplie compris), puis on essaie aussi, pour chaque panoplie présente dans le sac, de poser toutes ses pièces d'un coup avant de
+   compléter le reste : une panoplie entière gagne quand ses bonus valent mieux que des pièces isolées. Mémorisé tant que rien ne change. */
 const EQ_SLOTS = ["arme", "coiffe", "cape", "amulette", "anneau1", "anneau2", "ceinture", "bottes", "bouclier", ...D.DOFUS_SLOTS];
-function equipBest(c) { let n = 0; for (const s of EQ_SLOTS) { const u = bestFor(c, s); if (u && !E.equip(S, c.id, u, s)) n++; } return n; }
+const slotKind = (s) => (s.startsWith("anneau") ? "anneau" : s.startsWith("dofus") ? "dofus" : s);
+const planMemo = new Map();
+function gearPlan(c) {
+  const key = c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {});
+  const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
+  const taken = new Set(); S.chars.forEach((x) => { if (x !== c) Object.values(x.equip).forEach((u) => taken.add(u)); });
+  const pool = {}; for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (!T.slot || T.lvl > c.lvl || taken.has(it.uid)) continue; (pool[T.slot] = pool[T.slot] || []).push(it); }
+  const okIn = (eq, s, it) => { const k = slotKind(s); if (k !== "anneau" && k !== "dofus") return true; return !Object.entries(eq).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && S.items[u].tpl === it.tpl); };
+  const put = (eq, s, uid) => { for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; };
+  const fill = (eq, lock) => { for (let pass = 0; pass < 3; pass++) { let moved = false;
+    for (const s of EQ_SLOTS) { if (lock && lock.has(s)) continue; const base = gearScore(c, eq); let best = 0, uid = null;
+      for (const it of pool[slotKind(s)] || []) { if (eq[s] === it.uid || !okIn(eq, s, it)) continue; const t = Object.assign({}, eq); put(t, s, it.uid); const g = gearScore(c, t) - base; if (g > best + 0.01) { best = g; uid = it.uid; } }
+      if (uid && best > 0.5) { put(eq, s, uid); moved = true; } }
+    if (!moved) break; } return eq; };
+  let plan = fill(Object.assign({}, c.equip)), planSc = gearScore(c, plan);
+  const sets = new Set(); Object.values(pool).forEach((L) => L.forEach((it) => ITEMS[it.tpl].set && SETS[ITEMS[it.tpl].set] && sets.add(ITEMS[it.tpl].set)));
+  for (const z of sets) {
+    const eq = Object.assign({}, c.equip); const lock = new Set();
+    for (const kind in pool) { const L = pool[kind].filter((it) => ITEMS[it.tpl].set === z).sort((x, y) => itemScore(c, y) - itemScore(c, x)); if (!L.length) continue;
+      const slots = EQ_SLOTS.filter((s) => slotKind(s) === kind);
+      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore(c, S.items[eq[x]]) - itemScore(c, S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
+    fill(eq); const sc = gearScore(c, eq); if (sc > planSc + 0.5) { plan = eq; planSc = sc; }
+  }
+  const cur = gearScore(c, c.equip); if (planSc <= cur * 1.02 + 1) plan = Object.assign({}, c.equip);
+  if (planMemo.size > 60) planMemo.clear(); planMemo.set(c.id, { key, plan }); return plan;
+}
+/* meilleur objet pour un emplacement selon le plan (pastille verte « mieux dans le sac ») */
+function bestFor(c, s) { const u = gearPlan(c)[s]; return u && u !== c.equip[s] ? u : null; }
+const slotUpgrade = (c, s) => !!bestFor(c, s);
+function equipBest(c) { const plan = gearPlan(c); let n = 0;
+  for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !E.equip(S, c.id, plan[s], s)) n++;
+  return n; }
 function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
@@ -3584,13 +3615,13 @@ function charEquipView(c, st) {
     const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid);
     const g = {}; all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid)));
     const byGain = (a, b) => g[b.uid] - g[a.uid] || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl;
-    const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort(byGain);
+    const pu = bestFor(c, ui.slot); const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort((a, b) => (b.uid === pu) - (a.uid === pu) || byGain(a, b)); // le choix du plan (panoplie entière comprise) en tête
     const worn = all.filter((it) => E.equippedBy(S, it.uid)).sort(byGain);
     const high = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl > c.lvl).sort((a, b) => ITEMS[a.tpl].lvl - ITEMS[b.tpl].lvl);
     const curSet = c.equip[ui.slot] && S.items[c.equip[ui.slot]] && ITEMS[S.items[c.equip[ui.slot]].tpl].set; const counts = E.setCounts(S, c);
     const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
       return `<span class="pset ${on ? "on" : ""}">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""}</span>`; };
-    const row = (it, mode, i) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && g[it.uid] > 0;
+    const row = (it, mode, i) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0);
       return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span>
         <button class="btn sm ${mode === "worn" ? "" : "primary"}" data-act="equip" data-uid="${it.uid}" ${mode === "high" ? "disabled" : ""}>${mode === "high" ? "Niv. " + T.lvl : mode === "worn" ? "Prendre" : "Équiper"}</button></div>`; };
     /* 0.1.46.1 : objets déjà portés et trop hauts rangés en bas, repliés (ui.pmore garde l'état ouvert) */
