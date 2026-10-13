@@ -18,9 +18,12 @@ const BETA = /\/beta\//.test(location.pathname);
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 const LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save";
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "0.1.39";
+const GAME_VERSION = "0.1.39.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "0.1.39.1", name: "Almanax bien ouvert", items: [
+    "Quêtes › Almanax : le volet « Tous les bonus de l'Almanax » reste ouvert quand on clique dessus (il se refermait tout de suite)"
+  ] },
   { v: "0.1.39", name: "Les Mérydes de l'Almanax", items: [
     "L'Almanax suit maintenant le vrai calendrier de DOFUS : chaque jour a son Méryde (aujourd'hui Astirout, Méryde de la pandrista) et le même type de bonus que dans DOFUS, adapté à Idlus",
     "15 bonus au lieu de 4 : Expérience, Butin et Fortune (+30 % sur une famille de monstres ou une zone), Traque (archimonstres ×2), Donjon du jour (+45 % d'XP et de butin), Challenges augmentés (+50 %), Challenge supplémentaire, Récolte abondante (+50 % pour un métier), Filons (×1,5), Économie d'ingrédients (10 %), Fabrication intensive (6 %), Forgemagie améliorée (10 % de garder la rune), Concassage (6 %), Enclos (×1,5) et Jours de fête",
@@ -3981,7 +3984,7 @@ function almanaxHtml() {
     <div><div class="alx-h">Les 7 prochains jours</div><div class="alx-week">${week}</div></div>
     <div><b>Série : ${sn} jour${sn > 1 ? "s" : ""}</b> <span class="xs muted">(un jour manqué fait redescendre d'un palier)</span>
       <div class="row" style="margin-top:6px">${E.ALM_TIERS.map((t) => { const R = E.ALM_TIERS_R[t]; const txt = R.lot ? "lot de ressources" : R.cons ? CONSUMABLES[R.cons].name : R.furn ? `meuble « ${R.furn} »` : `titre « ${R.title} » + ornement`; return `<span class="tag ${sn >= t ? "good" : "soft"}">${t} j : ${h(txt)}</span>`; }).join("")}<span class="tag soft">puis tous les 30 j : Coffre en or</span></div></div>
-    <details><summary class="alx-h">Tous les bonus de l'Almanax (${Object.keys(K).length})</summary>
+    <details ${ui.almAll ? "open" : ""}><summary class="alx-h" data-act="almall">Tous les bonus de l'Almanax (${Object.keys(K).length})</summary>
       <div class="stack" style="gap:8px;margin-top:6px">${groups.map(([g, l]) => `<div><div class="small alx-g">${g}</div><div class="alx-all">${l.map((k) => `<div><b>${h(K[k].name)}</b> : ${h(K[k].txt(K[k].v, null, null, ""))}</div>`).join("")}</div></div>`).join("")}</div></details>
     <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, l'encyclopédie dit qui les lâche.</p></div></section>`;
 }
@@ -5302,6 +5305,7 @@ document.addEventListener("click", (ev) => {
     case "invsel": ui.invSel = d.tpl || null; break;
     case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
     case "autotoggle": ui.autoOpen = !t.parentElement.open; return;
+    case "almall": ui.almAll = !t.parentElement.open; return; // 0.1.39.1 : le volet reste ouvert malgré le rafraîchissement
     case "autonow": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && E.applyAuto(S, it)) n++; }); toast(n ? `${n} objet${n > 1 ? "s" : ""} traité${n > 1 ? "s" : ""}.` : "Aucun objet concerné."); break; }
     case "leavedg": E.leaveDungeon(S); break;
     case "stophunt": msg(E.stopHunt(S)); break;
