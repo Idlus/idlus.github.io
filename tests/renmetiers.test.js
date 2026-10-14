@@ -86,4 +86,9 @@ for (let i = 0; i < 60 && (!seen.pass || !seen.ec); i++) {
 assert.ok(seen.pass > 0, "au moins une rune passée");
 F.fmJobs.costumage.lvl = 1; assert.strictEqual(E.signItem(F, it.uid, "Xener"), null, "un métier qui a renu signe toujours");
 assert.strictEqual(E.fmTop(F), 200, "un métier qui a renu compte comme niveau 200 pour les plans");
+// 1.0.30.3 : Salle d'entraînement, le résultat de combat montre l'XP du héros avec sa Renaissance (celle qu'il reçoit vraiment)
+{ const { MONSTERS } = require("../js/data.js"); const mon = Object.keys(MONSTERS).find((k) => !MONSTERS[k].boss);
+  const T = E.newState("Salle", "iop"); E.addChar(T, "cra", "Eleve", 1); const tr = T.chars[1]; tr.inTeam = false; tr.ren = 3; tr.lvl = 120; T.training = tr.id; T.chars[0].lvl = 120;
+  assert.strictEqual(E.trainee(T), tr, "élève en salle"); { const x0 = tr.xp, l0 = tr.lvl; const r = E.giveRewards(T, [{ key: mon, lvl: 120, name: "x" }], {});
+    assert.ok(r.xp[tr.id] > 0 && tr.lvl === l0 && tr.xp - x0 === r.xp[tr.id], "l'XP affichée pour l'élève est celle qu'il reçoit, Renaissance comprise"); } }
 console.log("renmetiers.test.js : OK");

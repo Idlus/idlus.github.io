@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30.3";
+const GAME_VERSION = "1.0.30.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.30.4", name: "Renaissance affichée", items: [
+    "Résultat de combat : un héros qui a renu affiche son bonus de Renaissance (×1,3 par renaissance) à côté de son XP",
+    "Salle d'entraînement : l'XP affichée pour un héros qui a renu compte enfin son bonus de Renaissance (il la recevait déjà, seul le chiffre était trop bas)",
+  ] },
   { v: "1.0.30.3", name: "Boss des mondes et Kolizéum réparés", items: [
     "Boss des mondes, Kolizéum, Défi du jour, boss et Percepteurs de guilde, records de donjon : le serveur de combat refusait tout depuis la 1.0.30 (une erreur dans son code). Il remarche",
     "Combat en formation : les invocations tombées disparaissent au lieu de s'empiler en dizaines de cases vides (Boss des mondes, Kolizéum, donjons)",
@@ -4441,7 +4445,7 @@ function lootHtml(F) {
   const r = F.rewards; const res = Object.entries(r.res);
   $("#fres").textContent = "Victoire";
   el.innerHTML = `<div class="stack" style="gap:8px">
-    <div class="small">${Object.entries(r.xp).map(([cid, x]) => `${h(char(+cid)?.name || "")} <b class="num">+${fmt(x)} XP</b>`).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
+    <div class="small">${Object.entries(r.xp).map(([cid, x]) => { const c = char(+cid); return `${h(c?.name || "")} <b class="num">+${fmt(x)} XP</b>${c && c.ren ? ` <span class="xs renxp" data-tip="Renaissance ${E.roman(c.ren)} : XP ×${E.renXpMult(c).toFixed(1).replace(".", ",")}, déjà comptée">×${E.renXpMult(c).toFixed(1).replace(".", ",")}</span>` : ""}`; }).join(" · ")} · <span class="coin"></span> <b class="num">+${fmt(r.kamas)}</b></div>
     ${res.length || r.tk ? `<div class="loot">${r.tk ? `<div class="lcard tkcard" data-tip="Un combat classé au Kolizéum">${im("assets/ui/coffres/ticket_koli.svg", "ico sm", "Ticket de Koli")}<div class="n"><b>Ticket de Koli</b> <span class="muted num">×${r.tk}</span></div></div>` : ""}${res.map(([n, q]) => `<div class="lcard">${im(resImg(n), "ico sm", n)}<div class="n">${h(n)} <span class="muted num">×${q}</span></div></div>`).join("")}</div>` : `<p class="note">Aucune ressource.</p>`}
     ${(F.chals || []).length ? `<div class="chalres"><div class="h">${G("target")} Challenges</div>${F.chals.map((c) => `<div class="r ${c.ok ? "" : "ko"}"><span>${c.ok ? "✓" : "✕"} ${h(E.CHALLENGES[c.id].name)}</span><span>+${c.bonus} %</span></div>`).join("")}${S.chalStreak > 1 ? `<div class="r"><span>${G("flame")} Série ×${S.chalStreak}</span><span>+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></div>` : ""}<div class="r tot"><span>Bonus XP et butin</span><span>+${r.chal || 0} %</span></div></div>` : ""}
     ${r.idol ? `<div class="chalres idolres"><div class="h">${idolIco()} Idoles · score ${r.idol.score}</div><div class="row xs" style="gap:4px;flex-wrap:wrap">${r.idol.ids.map((id) => E.IDOLS[id] ? `<span class="pill">${im(idolImg(id), "iico", E.IDOLS[id].name)} ${h(E.IDOLS[id].name)} <b class="num">${E.IDOLS[id].score}</b></span>` : "").join("")}</div><div class="r tot"><span>Bonus XP et butin</span><span>+${pctTxt(r.idol.pct)} %</span></div></div>` : ""}

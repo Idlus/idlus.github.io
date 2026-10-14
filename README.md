@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.4 « Renaissance affichée »
+
+Le résultat de combat montre le bonus de Renaissance (×1,3 par renaissance) à côté de l'XP des héros qui ont renu (signalé par Mathis le 14/10/2026 : « le boost xp des renaissances marche pas »), et la Salle d'entraînement affiche enfin l'XP avec ce bonus (engine.js giveRewards : out.xp de l'élève compte E.renXpMult).
+
 ## 1.0.30.3 « Boss des mondes et Kolizéum réparés »
 
 Signalé par Mathis (14/10/2026, « le boss des mondes et le koli est bug ») : la fonction serveur `record` ne démarrait plus depuis la 1.0.30 (`worker boot error: Expected '}', got '<eof>'`, une accolade fermante perdue à la fusion entre `dofusAnn` et `songe` dans `supabase/functions/record/index.ts`), donc toutes ses requêtes (Boss des mondes, Kolizéum, Défi, guildes, records, GIGA annonce, Songe) répondaient 500. Accolade remise ; `tests/serveur.test.js` (dans `npm test`) vérifie que le fichier se lit (équilibre des accolades, puis chargement avec les types retirés sous Node 22) ; la CI passe à Node 22. Combat en formation : invocations et sbires tombés masqués (`.ent.tk.summon.dead`). `lookUrl` ignore les objets sans numéro DofusDB (légendaires `leg_…`, avant : `itemIds[]=NaN`, erreur 500).

@@ -2292,7 +2292,7 @@
     const tr = E.trainee(S);
     if (tr && team.length) {
       const g = Math.round(team.reduce((s, c) => s + (out.xp[c.id] || 0), 0) / team.length * E.trainShare(S, tr));
-      if (g > 0) { out.xp[tr.id] = g; if (E.giveXp(S, tr, Math.round(g * E.renXpMult(tr)) - E.mountXpShare(S, tr, g))) out.ups.push([tr.name, tr.lvl]); }
+      if (g > 0) { const gr = Math.round(g * E.renXpMult(tr)); out.xp[tr.id] = gr; if (E.giveXp(S, tr, gr - E.mountXpShare(S, tr, gr))) out.ups.push([tr.name, tr.lvl]); } // 1.0.30.2 : le résultat de combat montre l'XP avec la Renaissance
     }
     S.kamas += out.kamas;
     // Butin
