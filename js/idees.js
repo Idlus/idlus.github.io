@@ -11,7 +11,7 @@
   const D = window.DATA, ON = window.ONLINE;
   const X = () => window.DX.social;
   const $ = (s) => document.querySelector(s);
-  const h = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const h = (s) => X().h(s); // même échappement que le jeu (ui.js)
   const DISCORD = "https://discord.gg/9ApPgWjPUM";
   const TAGS = [["Combat", "⚔️"], ["Équipement", "🛡️"], ["Contenu", "🗺️"], ["Interface", "🖥️"]];
   const MAXT = 80, MAXB = 500, WAIT = 10 * 60000;

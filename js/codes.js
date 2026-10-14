@@ -10,7 +10,7 @@
   const E = window.ENGINE, D = window.DATA, ON = window.ONLINE;
   const X = () => window.DX.social;
   const $ = (s) => document.querySelector(s);
-  const h = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const h = (s) => X().h(s); // même échappement que le jeu (ui.js)
   const norm = (c) => String(c || "").toUpperCase().replace(/\s+/g, "");
   const OK = /^[A-Z0-9]{4,20}$/;
 

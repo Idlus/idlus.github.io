@@ -10,7 +10,7 @@
   "use strict";
   const E = window.ENGINE, D = window.DATA, ON = window.ONLINE;
   const X = () => window.DX.social;
-  const h = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const h = (s) => X().h(s); // même échappement que le jeu (ui.js)
   const F = { q: "", sort: "envoi", list: null, sel: null, data: null, S: null, key: null };
 
   const nb = (n) => Math.round(+n || 0).toLocaleString("fr-FR");

@@ -77,7 +77,6 @@
     if (g === null && C.loaded) return; // 1.0.9.1 : rechargement raté après une coupure → on garde les messages déjà affichés
     C.pin = pin; C.g = keepLive(C.g, g || []); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
-    if (role === "admin" && /[?&]testeur=1/.test(location.search)) { location.replace("beta/"); return; } // 1.0.5.3 : lien « Accès testeur » de la bêta, retour direct vers la bêta une fois le compte admin reconnu
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     if (C.role) X().renderStatus();
     paint();

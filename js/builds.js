@@ -19,7 +19,7 @@
   const { CLASSES, ITEMS, STATS, SETS } = D;
   const X = () => window.DX.social, E = () => window.DX.E, U = () => window.DX.ui, S = () => window.DX.S;
   const $ = (s) => document.querySelector(s);
-  const h = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const h = (s) => X().h(s); // même échappement que le jeu (ui.js)
   const EL = { fo: ["Terre", "t"], ine: ["Feu", "f"], cha: ["Eau", "e"], age: ["Air", "a"], multi: ["Multi", "n"] };
   const ELS = ["fo", "ine", "cha", "age"];
   const BR = [["", "Tous"], ["1-50", "1 à 50"], ["51-100", "51 à 100"], ["101-150", "101 à 150"], ["151-199", "151 à 199"], ["200", "200"]];

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.4 « Code allégé »
+
+Choix de Mathis 2A (audit du code, fil « Nettoyage du code »). Aucun changement pour les joueurs : 252 règles de style jamais utilisées retirées de `css/style.css` (511 → 490 Ko ; classes absentes du code, vérifiées une à une, dont l'ancienne Expédition `xp-*`, l'ancienne fiche `hr-*`/`fiche*`, `dfhome`) et 7 sélecteurs allégés ; vérification dans Chromium : mêmes styles calculés avec l'ancienne et la nouvelle feuille sur toutes les pages, PC 1280 et téléphone 390. `defiHomeCard`, `defiLeftTxt` et `logoImg` (jamais appelés) retirés de js/ui.js. builds.js, codes.js, fiches.js et idees.js réutilisent l'échappement `h` du jeu au lieu de leur copie. js/chat.js : plus de renvoi `?testeur=1` vers /beta/ (fermée). `test-serveur.html` (test du déménagement OVH) rangé dans `tools/serveur/`.
+
 ## 1.0.25.3 « Commandes renouvelées »
 
 Les commandes d'artisans déjà livrées (parties d'avant la 1.0.24.1) sont remplacées à l'ouverture (refill dans js/vie.js), jusqu'à 10 par jour.

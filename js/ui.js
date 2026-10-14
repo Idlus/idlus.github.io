@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.3";
+const GAME_VERSION = "1.0.25.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.4", name: "Code allégé", items: [
+    "Ménage dans le code du jeu : environ 20 Ko de styles et quelques fonctions qui ne servaient plus sont retirés, rien ne change à l'écran",
+    "L'ancienne version de test (idlus.github.io/beta) est fermée et renvoie vers le jeu",
+  ] },
   { v: "1.0.25.3", name: "Commandes renouvelées", items: [
     "Commandes d'artisans : les commandes déjà livrées avant la 1.0.24.1 restaient affichées « Livrée » sans être remplacées. Elles laissent maintenant leur place à de nouvelles commandes, jusqu'à 10 par jour",
   ] },
@@ -1421,7 +1425,6 @@ const resTag = (n, q) => `<span class="restag">${n === E.POUSSIERE ? IC("poussie
 const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mimg ? `assets/m/${T.mimg}.png` : imgI(T.icon); };
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
 const headImg = (c) => `assets/h/${c.cls}_${c.sex || CLASSES[c.cls].sex}.png`;
-const logoImg = (cls) => `assets/h/${cls}_logo.png`;
 const symImg = (cls) => `assets/h/${cls}_sym.png`;
 const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${src}" alt="${h(alt)}" loading="lazy" onerror="this.style.visibility='hidden'">` : "");
 const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
@@ -6891,19 +6894,6 @@ function defiReward(tid) {
   const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
   if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...E.team(S).map((c) => c.lvl))) : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
   return `${ui.dfEst.kamas ? `≈ ${fmt(ui.dfEst.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
-}
-const defiLeftTxt = () => dur(E.defiLeft() / 1000).replace(/ \d+ s$/, "");
-function defiHomeCard() {
-  if (!E.team(S).length) return "";
-  const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
-  const st = E.defiState(S); const dg = DUNGEONS[def.did]; const best = st.best[tid]; const streak = E.defiStreakNow(S); const T = E.defiTier(tid);
-  const tries = st.tries.filter((x) => x.tier === tid).length;
-  const state = best ? `<span class="tag good">✓ réussi en ${best.turns} tours</span>` : `<span class="muted">${tries ? `${tries} essai${tries > 1 ? "s" : ""}, pas encore réussi` : "pas encore tenté"}</span>`;
-  return `<section class="panel dfhome ${st.chest ? "done" : ""}"><div class="dfh-in">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}
-    <div class="grow dfh-txt"><span class="wk">${G("target")} Défi du jour <span class="xs muted">· palier ${h(T.name)} · nouveau dans ${defiLeftTxt()}</span></span>
-      <span class="row df-name"><b>${h(dg.name)}</b><span class="pill">Stasis ${def.k}</span>${def.mods.map(modChip).join("")}</span>
-      <span class="row xs dfh-st">${state}<span><b>Série : ${streak} jour${streak > 1 ? "s" : ""}</b></span><span>${st.chest ? "✓ Bourse du défi reçue" : `${chestImg("bourse_defi")} bourse : ${defiReward(tid)}`}</span></span></div>
-    <div class="dfh-btns"><button class="btn" data-tab="defi">Voir le défi</button><button class="btn primary" data-act="sm-dplay" data-v="${tid}">${best ? "Battre mon record" : "Lancer le défi"}</button></div></div></section>`;
 }
 function defiLine() {
   if (!E.team(S).length) return "";

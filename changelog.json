@@ -1,6 +1,14 @@
 {
-  "version": "1.0.25.3",
+  "version": "1.0.25.4",
   "versions": [
+    {
+      "v": "1.0.25.4",
+      "name": "Code allégé",
+      "items": [
+        "Ménage dans le code du jeu : environ 20 Ko de styles et quelques fonctions qui ne servaient plus sont retirés, rien ne change à l'écran",
+        "L'ancienne version de test (idlus.github.io/beta) est fermée et renvoie vers le jeu"
+      ]
+    },
     {
       "v": "1.0.25.3",
       "name": "Commandes renouvelées",
