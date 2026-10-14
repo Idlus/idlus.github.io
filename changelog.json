@@ -1,6 +1,18 @@
 {
-  "version": "1.0.14.3",
+  "version": "1.0.15",
   "versions": [
+    {
+      "v": "1.0.15",
+      "name": "Tout se drope",
+      "items": [
+        "Tous les équipements fabricables peuvent maintenant tomber sur les monstres (2 481 objets au lieu de 198) : chacun tombe dans la zone qui donne ses principaux ingrédients, ou sur le boss du donjon pour les pièces de donjon",
+        "Droper un objet précis reste bien plus long que le fabriquer (environ 15 fois le temps de réunir ses ingrédients) : l'artisanat reste le chemin sûr, le drop est un bonus",
+        "Une chance par héros : une équipe de 8 fait tomber deux fois plus d'objets qu'une équipe de 4",
+        "Boss de donjon : chances ×1 en stasis 1, ×2 en stasis 5, ×3,25 en stasis 10 (fiche du donjon)",
+        "Un équipement jamais obtenu est annoncé en grand ; les autres restent dans le butin du combat. Les objets dropés ont un jet normal et se vendent à l'HdV",
+        "Fiche de zone : chance par héros et « 1 sur N », 12 objets puis « Tout voir » ; la fiche d'un objet affiche enfin le vrai taux (avant : le taux DofusDB brut)"
+      ]
+    },
     {
       "v": "1.0.14.3",
       "name": "Reliquat corrigé",

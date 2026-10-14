@@ -11,6 +11,9 @@
           MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES } = D;
 
   const ARMES = root.ARMES || (typeof require !== "undefined" ? require("./armes.js") : {}); // 0.1.53 : dégâts propres des armes (tools/build_armes.js)
+  /* 1.0.15 : tous les équipements se dropent (tools/build_drops.js). Les drops DofusDB restent dans m.dbItems (rareté de l'HdV) */
+  const DROPS = root.DROPS || (typeof require !== "undefined" ? require("./drops.js") : {});
+  if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
   E.VERSION = 9;
@@ -389,7 +392,7 @@
     if (!rarityCache) {
       rarityCache = {};
       const drop = {};
-      for (const k in MONSTERS) (MONSTERS[k].items || []).forEach(([id]) => { drop[id] = MONSTERS[k].boss ? "epique" : drop[id] === "epique" ? "epique" : "rare"; });
+      for (const k in MONSTERS) (MONSTERS[k].dbItems || MONSTERS[k].items || []).forEach(([id]) => { drop[id] = MONSTERS[k].boss ? "epique" : drop[id] === "epique" ? "epique" : "rare"; });
       for (const id in ITEMS) {
         const T = ITEMS[id];
         rarityCache[id] = E.RARITY[T.rarity] ? T.rarity : T.slot === "dofus" ? "legendaire" : drop[id] || (T.set ? "peu" : "commun");
@@ -2201,12 +2204,18 @@
       if (m.champ) { const ok = T.drops.filter(([r, p]) => !E.isKey(r) && p < 100); const best = ok.filter(([, p]) => p >= 5).sort((a, b) => a[1] - b[1])[0] || ok.sort((a, b) => b[1] - a[1])[0] || T.drops[0]; /* la ressource typique la plus rare du monstre */ if (best) { addRes(S, best[0], 3); out.res[best[0]] = (out.res[best[0]] || 0) + 3; out.champ.res = [best[0], 3]; } }
       E.tkLoot(S, m, nRoll, out); // 1.0.7 : Tickets de Koli en combat
       if (m.boss && rnd() < E.BONBON_RATE) { S.cons.bonbon_sagesse = (S.cons.bonbon_sagesse || 0) + 1; out.cons = (out.cons || 0) + 1; note(S, "Butin rare : Bonbon Sagesse !", "rare"); }
+      /* 1.0.15 (Mathis 4A, 5A, 7C) : une chance par héros ; le boss d'un donjon a plus de chances avec la stasis (×1 à la 1, ×3,25 à la 10) ;
+         un équipement jamais obtenu est annoncé en grand */
+      const sk = m.boss && opts.dungeon ? E.bossDropMult(opts.stasis || 1) : 1;
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
-        if (rnd() * 100 < Math.min(100, rate * E.ITEM_DROP_SCALE * dm)) {
+        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk); let n = 0;
+        for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
+        for (let ii = 0; ii < n; ii++) {
           seen(m.key, tpl);
-          const T2 = ITEMS[tpl];
+          const neu = !(E.itemDex ? E.itemDex(S) : S.itemDex || {})[tpl];
           const it = E.rollItem(S, tpl, { archi: m.archi, champ: m.champ });
+          if (neu && !opts.offline && E.celebrate) E.celebrate({ t: "dropit", tpl, mon: m.base || m.key });
           const auto = E.applyAuto(S, it);
           if (auto) out.auto = (out.auto || 0) + 1; else out.items.push(it.uid);
         }
@@ -2264,7 +2273,8 @@
     if (A.action === "break" || A.action === "sell") { E.breakItem(S, it.uid, null); return "break"; }
     return null;
   };
-  E.ITEM_DROP_SCALE = 0.04; // v2.7 : les objets sont bien plus rares (×1/3)
+  E.ITEM_DROP_SCALE = 1; // 1.0.15 : les taux de js/drops.js sont déjà les vraies chances par héros (avant : taux DofusDB × 0,04)
+  E.bossDropMult = (k) => 1 + 0.25 * (Math.max(1, k) - 1);
 
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) return false;
@@ -2302,7 +2312,7 @@
       const cb = E.chalResolve(S, F);
       const sr = (F.stasis > 1 ? E.stasisMult(F.stasis).rew : 1) * (F.weekly ? E.WEEKLY_REW : 1) * (F.flash ? E.FLASH_REW : 1) * (1 + (F.idolBonus || 0) / 100);
       const xm = F.exp ? F.exp.mult : { xp: 1, drop: 1, kamas: 1 }; // 0.1.24 : +4 % par étage d'expédition, reliques de butin
-      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
+      F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, stasis: F.stasis || 1, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);

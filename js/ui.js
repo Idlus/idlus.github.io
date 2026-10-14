@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.14.3";
+const GAME_VERSION = "1.0.15";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.15", name: "Tout se drope", items: [
+    "Tous les équipements fabricables peuvent maintenant tomber sur les monstres (2 481 objets au lieu de 198) : chacun tombe dans la zone qui donne ses principaux ingrédients, ou sur le boss du donjon pour les pièces de donjon",
+    "Droper un objet précis reste bien plus long que le fabriquer (environ 15 fois le temps de réunir ses ingrédients) : l'artisanat reste le chemin sûr, le drop est un bonus",
+    "Une chance par héros : une équipe de 8 fait tomber deux fois plus d'objets qu'une équipe de 4",
+    "Boss de donjon : chances ×1 en stasis 1, ×2 en stasis 5, ×3,25 en stasis 10 (fiche du donjon)",
+    "Un équipement jamais obtenu est annoncé en grand ; les autres restent dans le butin du combat. Les objets dropés ont un jet normal et se vendent à l'HdV",
+    "Fiche de zone : chance par héros et « 1 sur N », 12 objets puis « Tout voir » ; la fiche d'un objet affiche enfin le vrai taux (avant : le taux DofusDB brut)",
+  ] },
   { v: "1.0.14.3", name: "Reliquat corrigé", items: [
     "Forgemagie : une rune qui passe en succès critique consomme maintenant le reliquat de l'objet, comme dans DOFUS",
     "Avant, faire baisser une caractéristique puis la remonter remplissait le reliquat sans limite : on pouvait obtenir un objet parfait avec un gros over et encore plus de 100 de reliquat",
@@ -1352,7 +1360,7 @@ function lookSheet(c) {
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
 const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" data-fr="${c.frPreview ? c.frame : E.heroFrame(S, c)}" ${c.frame === "align" && S.align ? ` data-side="${S.align.side}"` : ""} style="--cc:${CLASSES[c.cls].color}${c.frame === "guilde" ? guildCol() : ""}">${headTag(c.cls, c.sex, c.name)}</span>`;
-/* 1.0.13 : cadre de guilde aux couleurs de la guilde */
+/* 1.0.15 : cadre de guilde aux couleurs de la guilde */
 const guildCol = () => (S.guild && S.guild.col ? `;--gcol:${/^#[0-9a-f]{3,8}$/i.test(S.guild.col) ? S.guild.col : "#c9962e"}` : "");
 const frameName = (c) => { const f = E.heroFrame(S, c); return E.SFRAMES[f] ? E.SFRAMES[f].name(S) : `cadre ${E.FRAMES[E.frameIdx(c.lvl)]}`; };
 const FR_EMB = { pionnier: "❦", stasis: "✦", ames: "✧", dofus: "◆", align: "⚜", koli: "⚔", songe: "☽", guilde: "♜", halouine: "🎃" };
@@ -1470,7 +1478,7 @@ function monLineHtml(x, unknown) {
     <span class="monwhere xs">${w.open ? IC("carte") : G("lock")} ${w.dg ? "Donjon · " : ""}${h(w.name)} · niv. ${w.lvl}</span></span><span class="monpct" data-tip="Chance de butin par monstre">${dropPct(x.p)} %</span><button class="btn sm ${w.open ? "primary" : ""}" ${monGoAttr(w)}>${w.dg ? "Donjon" : "Y aller"}</button></div>`;
 }
 const monGoAttr = (w) => (w.dg ? `data-act="searchdg" data-id="${w.dg}"` : `data-act="searchzone" data-id="${w.sub}"`);
-const dropPct = (p) => (p >= 10 ? Math.round(p) : (+p).toFixed(1).replace(".", ",").replace(",0", ""));
+const dropPct = (p) => (p >= 10 ? Math.round(p) : p >= 1 ? (+p).toFixed(1).replace(".", ",").replace(",0", "") : String(+(+p).toPrecision(2)).replace(".", ",")); // 1.0.15 : deux chiffres sous 1 % (0,045 %)
 function shopIng(e) { return E.shopIng(S, e); }
 function shopName(e) { return E.shopName(S, e); }
 /* 3.2.2 : bouton « suivre » (bande d'objectifs) */
@@ -2304,7 +2312,8 @@ function renderZoneView(sid) {
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${E.resRate(r.p).toFixed(1).replace(".", ",")} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
-      ${its.length ? `<h3 class="sec">Équipements à looter</h3><div class="loot">${its.map((e) => `<div class="lcard"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${(e.p * E.ITEM_DROP_SCALE).toFixed(2).replace(".", ",")} %</span></div></div></div>`).join("")}</div>` : ""}
+      ${its.length ? (() => { const own0 = E.ownedTpls(S); const show = ui.zoneAll === sid ? its : its.slice(0, 12); const nT = Math.max(1, E.team(S).length); /* 1.0.15 : chance par héros, 12 premiers puis « Tout voir » */
+        return `<h3 class="sec">Équipements à looter <span class="tag soft">${its.length}</span></h3><div class="xs muted" style="margin:-4px 0 6px">Une chance par héros et par monstre : avec ${nT} héros, ${nT} chances. Chaque équipement tombe dans la zone qui donne ses ingrédients.</div><div class="loot">${show.map((e) => { const p = e.p * E.ITEM_DROP_SCALE; return `<div class="lcard" data-act="encitem" data-v="${e.t}" style="cursor:pointer"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}${own0[e.t] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${dropPct(p)} %</span> <span class="muted">par héros (1 sur ${fmt(Math.max(1, Math.round(100 / p)))})</span></div></div></div>`; }).join("")}</div>${its.length > 12 ? `<div class="row"><button class="btn sm" data-act="zoneall" data-id="${sid}">${ui.zoneAll === sid ? "Réduire" : `Tout voir (${its.length})`}</button></div>` : ""}`; })() : ""}
       ${dg ? `<h3 class="sec">Donjon${(s.dungeons || []).length > 1 ? "s" : ""}</h3>${(s.dungeons || [s.dungeon]).map(dungeonCard).join("")}` : ""}
     </div>
   </section>`;
@@ -2468,7 +2477,9 @@ function dungeonSheet(did) {
   const sigA = E.BOSS_SIGS[did] ? E.ACH.find((a) => a.id === "sig_" + did) : null;
   const steps = E.STASIS_STEPS.filter(([n]) => n <= k && n > 1).map(([n, t]) => `<li class="${n === k ? "cur" : ""}"><b>${n}</b> ${h(t)}</li>`).join("");
   const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
-  const loot = (B.items || []).filter(([t]) => ITEMS[t]).slice(0, 12).map(([t, r]) => { const own = Object.values(S.items).some((x) => x.tpl === t); return `<span class="lootico ${own ? "own" : ""}" data-tip="${h(ITEMS[t].name)} · niv. ${ITEMS[t].lvl}${own ? " · déjà obtenu" : ""}">${im(itemImg(t), "", ITEMS[t].name)}</span>`; }).join("");
+  /* 1.0.15 : équipements du boss avec leur chance par héros à la stasis choisie (×1 à la 1, ×3,25 à la 10) */
+  const bm = E.bossDropMult(k); const own0 = E.ownedTpls(S);
+  const loot = (B.items || []).filter(([t]) => ITEMS[t]).sort((a, b) => ITEMS[a[0]].lvl - ITEMS[b[0]].lvl).slice(0, 24).map(([t, r]) => { const own = !!own0[t]; return `<div class="lcard" data-act="encitem" data-v="${t}" style="cursor:pointer"><span class="icobox">${im(itemImg(t), "", ITEMS[t].name)}</span><div><div class="n">${h(ITEMS[t].name)}${own ? ` <span class="tag good">✓</span>` : ""}</div><div class="p">niv. ${ITEMS[t].lvl} · <span class="pct">${dropPct(Math.min(100, r * bm))} %</span> <span class="muted">par héros</span></div></div></div>`; }).join("");
   const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
   const W = E.weekly(S); const wk = W && W.did === did ? E.STASIS_MODS[W.mod] : null;
   const FL = wk ? null : E.flashOf(S, did); const fl = FL ? E.STASIS_MODS[FL.mod] : null;
@@ -2499,7 +2510,7 @@ function dungeonSheet(did) {
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme`}</li>
         <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
-        ${loot ? `<div class="xs muted" style="margin:4px 0">Butin du boss (en couleur : déjà obtenu)</div><div class="row" style="gap:4px;flex-wrap:wrap">${loot}</div>` : ""}</div>
+        ${loot ? `<div class="xs muted" style="margin:6px 0 4px">${G("crown")} <b>Équipements du boss</b> · stasis ${k} : chances ×${String(bm).replace(".", ",")} (×1 en stasis 1, ×2 en 5, ×3,25 en 10) · ✓ déjà obtenu</div><div class="loot">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
@@ -4102,7 +4113,7 @@ function deltaHtml(c, slot, uid) {
   c.equip = saved;
   const keys = STAT_ORDER.concat(["hpMax"]).filter((k) => k !== "ini" && Math.round((nw[k] || 0) - (cur[k] || 0)) !== 0);
   if (!keys.length) return `<span class="muted xs">Aucun changement pour ${h(c.name)}</span>`;
-  // 1.0.13 : un verdict (même calcul que « Équiper au mieux »), puis les plus gros gains et les plus grosses pertes, en deux colonnes
+  // 1.0.15 : un verdict (même calcul que « Équiper au mieux »), puis les plus gros gains et les plus grosses pertes, en deux colonnes
   const ds = keys.map((k) => ({ d: Math.round(nw[k] - cur[k]), n: k === "hpMax" ? "PV" : STATS[k].short, w: k === "hpMax" ? 0.25 : 1 })).sort((a, b) => Math.abs(b.d * b.w) - Math.abs(a.d * a.w));
   const up = ds.filter((x) => x.d > 0), dn = ds.filter((x) => x.d < 0), N = 4;
   const col = (l, cls) => l.length ? l.slice(0, N).map((x) => `<span class="${cls} num">${x.d > 0 ? "+" : ""}${x.d} ${x.n}</span>`).join("") + (l.length > N ? `<span class="cm-more">+ ${l.length - N} autre${l.length - N > 1 ? "s" : ""}</span>` : "") : `<span class="cm-more">rien</span>`;
@@ -5988,7 +5999,7 @@ function render() {
   tabsKeep();
   tipTick();
 }
-/* 1.0.13 : au téléphone, chaque rangée d'onglets tient sur une ligne qui défile ; le redessin des 3 s ne la remet pas au début */
+/* 1.0.15 : au téléphone, chaque rangée d'onglets tient sur une ligne qui défile ; le redessin des 3 s ne la remet pas au début */
 const tabScroll = {};
 const tabRows = () => [...document.querySelectorAll("#main .subtabs, #main .catchips")];
 const tabKey = (el) => ui.tab + ":" + tabRows().indexOf(el);
@@ -6018,6 +6029,8 @@ function celebrate(ev) {
 function celeHtml(ev) {
   if (ev.t === "radiant") { const T = ITEMS[ev.tpl];
     return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
+  if (ev.t === "dropit") { const T = ITEMS[ev.tpl]; if (!T) return ""; /* 1.0.15 : équipement jamais obtenu */
+    return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Nouvel équipement</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">niveau ${T.lvl} · nouveau dans l'Encyclopédie${MONSTERS[ev.mon] ? ` · ${h(MONSTERS[ev.mon].name)}` : ""}</div>`; }
   if (ev.t === "exo") { const T = ITEMS[ev.tpl]; if (!T) return "";
     return `<div class="cele-art radiant"><span class="icobox">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Forgemagie exotique</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+1 ${h(STATS[ev.stat].name)} · niveau ${T.lvl}</div>`; }
   if (ev.t === "lvl") { const cs = ev.cids.map(char).filter(Boolean); const c = cs[0]; if (!c) return "";
@@ -7083,6 +7096,7 @@ document.addEventListener("click", (ev) => {
     case "hunt": { closeSheet(); const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "zoneview": ui.zoneFromEnc = null; ui.zoneView = d.id; window.scrollTo(0, 0); break;
     case "zoneback": ui.zoneView = null; ui.zoneFromEnc = null; break;
+    case "zoneall": ui.zoneAll = ui.zoneAll === d.id ? null : d.id; break;
     case "zonebackenc": { ui.zoneView = null; ui.zoneFromEnc = null; ui.tab = "world"; ui.world = "enc"; const y = ui.encScroll || 0; render(); window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); return; }
     case "encmon": openSheet(encMonSheet(d.k)); return;
     case "encitem": itemSheet(d.v); return;

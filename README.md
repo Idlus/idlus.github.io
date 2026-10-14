@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.15 « Tout se drope »
+Demande de Mathis (« tous les stuffs droppables, un peu comme DOFUS 3 », réponses 1A, rareté ×15, 3A 4A 5A 6A 7C sur la maquette). `tools/build_drops.js` fait jouer au vrai moteur une heure de chasse dans chaque sous-zone et un passage de chaque donjon, puis écrit `js/drops.js` : chaque équipement fabricable tombe sur les monstres de la sous-zone qui donne ses principaux ingrédients (ou sur le boss quand ses ingrédients viennent surtout de lui), avec une chance par héros réglée pour que droper un objet précis prenne environ 15 fois le temps de chasse de ses ingrédients (bonus de butin de l'équipe comptés une seule fois). Les objets sans recette gardent leurs drops DofusDB. `js/engine.js` remplace les drops DofusDB par ces tables (gardés dans `m.dbItems` pour la rareté de l'HdV), `E.ITEM_DROP_SCALE` = 1, un tirage par héros, `E.bossDropMult` (×1 à ×3,25 selon la stasis) et l'annonce `dropit` pour un équipement jamais obtenu. Dofus, légendaires et trophées exclus. Test : `tests/drops.test.js`.
+
 ## 1.0.14.3 « Reliquat corrigé »
 Forgemagie : une rune qui passe consomme le reliquat de l'objet (comme dans DOFUS) ; on ne peut plus remplir le reliquat à l'infini en faisant baisser puis remonter une caractéristique. Objets déjà forgemagés inchangés.
 
