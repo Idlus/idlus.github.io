@@ -254,6 +254,17 @@
       return data || { net: true };
     } catch (e) { return { net: true }; }
   };
+  /* 1.0.30 (choix 37A) : GIGA annonce d'un Dofus tombé sur un boss (js/giga.js). Le serveur vérifie la partie en ligne
+     (fonction « record ») avant d'annoncer ; { net: true } s'il faut réessayer plus tard. Jamais pour une partie solo. */
+  ON.dofusAnn = async (o) => {
+    if (!sb || !ON.user) return { net: true };
+    if (ON.solo()) return { ok: false, err: SOLO_ERR };
+    try {
+      const { data, error } = await withTimeout(sb.functions.invoke("record", { body: { dofus: { uid: o.uid, did: o.did, k: o.k } } }), 30000);
+      if (error) { const st = error.context && error.context.status; return st === 400 || st === 404 ? { ok: false, err: "refusé" } : { net: true }; }
+      return data || { net: true };
+    } catch (e) { return { net: true }; }
+  };
   /* ---------- chat et panel admin (0.1.19, supabase/chat.sql) ---------- */
   /* 1.0.11 : une partie solo ne touche jamais à ce que le serveur tient pour la partie 1 (ventes, échanges, guilde,
      Kolizéum, coefficient de brisage commun) : sinon des kamas ou des objets passeraient d'une partie à l'autre. */
