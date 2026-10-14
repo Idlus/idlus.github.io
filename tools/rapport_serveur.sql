@@ -34,4 +34,19 @@ select
     select c.oid::regclass::text as nom, pg_total_relation_size(c.oid) as taille
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where c.relkind in ('r', 'm') and n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg_toast%'
-    order by taille desc limit 6) g) as plus_grosses_tables;
+    order by taille desc limit 6) g) as plus_grosses_tables,
+  -- Renouvellements de session de la dernière heure (comptages seulement, aucune donnée de joueur) :
+  -- combien de jetons, sur combien de sessions, au plus par session, et tous les combien de secondes (médiane).
+  (select count(*) from auth.refresh_tokens where created_at >= now() - interval '1 hour') as jetons_session_derniere_heure,
+  (select count(distinct session_id) from auth.refresh_tokens where created_at >= now() - interval '1 hour') as sessions_renouvelees_derniere_heure,
+  (select max(n) from (select count(*) as n from auth.refresh_tokens where created_at >= now() - interval '1 hour' group by session_id) s) as jetons_par_session_max,
+  (select round(percentile_cont(0.5) within group (order by ecart))::int from (
+    select extract(epoch from created_at - lag(created_at) over (partition by session_id order by created_at)) as ecart
+    from auth.refresh_tokens where created_at >= now() - interval '1 hour') e where ecart is not null) as secondes_entre_renouvellements,
+  (select count(*) from auth.refresh_tokens) as jetons_session_total,
+  -- Journal des connexions de la dernière heure, par type d'évènement (le nom de l'évènement seulement)
+  (select coalesce(string_agg(a || ' : ' || n, ', ' order by n desc), '') from (
+    select coalesce(payload->>'action', '?') as a, count(*) as n from auth.audit_log_entries
+    where created_at >= now() - interval '1 hour' group by 1) j) as journal_connexions_derniere_heure,
+  (select count(*) from auth.audit_log_entries) as journal_connexions_total,
+  to_char(now() at time zone 'UTC', 'HH24:MI:SS') as heure_serveur_utc;

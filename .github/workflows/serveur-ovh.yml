@@ -10,6 +10,8 @@
 #               lecture ni écriture des joueurs), puis fait la copie finale. Accord écrit de Mathis (14/10/2026).
 #   rouvrir   : rend l'accès du jeu à l'ancien serveur (retour en arrière).
 #   diagnostic: lecture seule : état des services, journaux récents du direct (Realtime), joueurs connectés récemment.
+#   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
+#               200 renouvellements en 10 minutes). Accord écrit de Mathis (14/10/2026).
 # domaine : adresse du serveur (ex. api.idlus.fr). Vide = adresse gratuite <ip>.sslip.io.
 name: Serveur OVH
 on:
@@ -18,7 +20,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -142,6 +144,9 @@ jobs:
           else
             printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash /tmp/idlus-serveur/restaurer.sh /tmp/idlus-copie"
           fi
+      - name: Couper la session qui se renouvelle en boucle
+        if: inputs.etape == 'couper-boucle'
+        run: bash tools/serveur/vps_sql.sh fichier tools/serveur/couper_boucle.sql
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |

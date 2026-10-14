@@ -1,6 +1,13 @@
 {
-  "version": "1.0.29.5",
+  "version": "1.0.29.6",
   "versions": [
+    {
+      "v": "1.0.29.6",
+      "name": "Connexion sans boucle",
+      "items": [
+        "Si l'heure de ton appareil est fausse, ta connexion en ligne pouvait se renouveler en boucle et charger le serveur. Le jeu la coupe maintenant tout seul et te dit de régler l'heure avant de te reconnecter. Ta partie est gardée"
+      ]
+    },
     {
       "v": "1.0.29.5",
       "name": "Dofus au boss",

@@ -54,10 +54,10 @@ const MOCK = () => {
   window.__IDLUS_SB = { createClient: () => ({
     auth: {
       getSession: async () => ({ data: { session: user() ? { user: user() } : null } }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      onAuthStateChange: (cb) => { window.__authCb = cb; return { data: { subscription: { unsubscribe() {} } } }; }, // 1.0.29.6 : __authCb rejoue les évènements de la bibliothèque
       signInWithOAuth: async () => { const d = db(); d.session = { id: "u1", email: "test@idlus.fr", identities: [{ provider: "discord", identity_data: { global_name: "Testeur" } }] }; put(d); location.reload(); return { error: null }; },
       signInWithOtp: async () => ({ error: null }),
-      signOut: async () => { const d = db(); d.session = null; put(d); return { error: null }; },
+      signOut: async (o) => { const d = db(); d.session = null; d.signOutScope = (o && o.scope) || "global"; put(d); return { error: null }; },
       linkIdentity: async () => ({ error: null }),
     },
     from: q,
@@ -685,6 +685,20 @@ const MOCK = () => {
     await page.waitForTimeout(5500);
     const ga = await page.evaluate(() => { const S = window.DX.S; return { or: (S.cons || {}).coffre_or || 0, t: (S.titlesExtra || []).filter((x) => x === "Xener va jamais pouvoir jouer").length }; });
     if (ga.or !== gb.or + 1 || ga.t !== 1) fail("code MERCI : récompenses mal redonnées " + JSON.stringify([gb, ga]));
+    // 8 quater. 1.0.29.6 : connexion qui se renouvelle en boucle (heure de l'appareil 2 h en avance) : coupée sur cet appareil seulement, joueur prévenu
+    const sess = (await mock()).session;
+    const renew = (n) => page.evaluate((n) => { const iat = Math.round(Date.now() / 1000) - 2 * 3600; const s = { expires_in: 3600, expires_at: iat + 3600, user: JSON.parse(localStorage.getItem("__mock")).session }; for (let i = 0; i < n; i++) window.__authCb("TOKEN_REFRESHED", s); }, n);
+    await renew(20); await page.waitForTimeout(300);
+    if (!(await mock()).session || (await page.$eval("#onPill", (e) => e.dataset.st)) === "anon") fail("boucle de connexion : coupée avant 20 renouvellements en une minute");
+    await renew(1); await page.waitForTimeout(400);
+    m = await mock();
+    if (m.session || m.signOutScope !== "local") fail("boucle de connexion : session pas fermée sur cet appareil seulement (" + m.signOutScope + ")");
+    if (!/2 h d'avance/.test(await page.textContent("#toasts"))) fail("boucle de connexion : le joueur n'est pas prévenu de l'heure de son appareil");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/boucle-connexion.png" });
+    if (!(await S())) fail("boucle de connexion : partie perdue");
+    await page.evaluate((s) => { const d = JSON.parse(localStorage.getItem("__mock")); d.session = s; delete d.signOutScope; localStorage.setItem("__mock", JSON.stringify(d)); }, sess);
+    await page.reload(); await page.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);

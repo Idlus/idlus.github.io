@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.29.5";
+const GAME_VERSION = "1.0.29.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.29.6", name: "Connexion sans boucle", items: [
+    "Si l'heure de ton appareil est fausse, ta connexion en ligne pouvait se renouveler en boucle et charger le serveur. Le jeu la coupe maintenant tout seul et te dit de régler l'heure avant de te reconnecter. Ta partie est gardée",
+  ] },
   { v: "1.0.29.5", name: "Dofus au boss", items: [
     "Quêtes de Dofus : une étape « vaincre le boss » qui vient après la première demande maintenant de le vaincre pendant cette étape. Le Dokille (et les autres) ne se gagne plus dans une salle avant le boss parce qu'une stasis avait déjà été faite avant",
   ] },
@@ -6736,11 +6739,11 @@ let lvlToast = null;
 /* 0.1.47.6 : pendant qu'on écrit dans le chat, les notifications attendent (3 au plus) et arrivent dès que le champ est vide ou quitté */
 const toastQ = []; let toastT = null;
 const toastTyping = () => { const a = document.activeElement; return !!(a && a.id === "chIn" && a.value.trim()); };
-function toast(txt, kind) {
+function toast(txt, kind, ms) { // ms : durée d'affichage (1.0.29.6, messages longs)
   if (kind === "warn") sndPlay("err"); // 1.0.22
   if (toastTyping()) {
-    toastQ.push([txt, kind]); if (toastQ.length > 3) toastQ.shift();
-    if (!toastT) toastT = setInterval(() => { if (toastTyping()) return; clearInterval(toastT); toastT = null; toastQ.splice(0).forEach(([t, k]) => toast(t, k)); }, 700);
+    toastQ.push([txt, kind, ms]); if (toastQ.length > 3) toastQ.shift();
+    if (!toastT) toastT = setInterval(() => { if (toastTyping()) return; clearInterval(toastT); toastT = null; toastQ.splice(0).forEach(([t, k, d]) => toast(t, k, d)); }, 700);
     return;
   }
   const box = $("#toasts");
@@ -6759,7 +6762,7 @@ function toast(txt, kind) {
   const d = document.createElement("div");
   d.className = "toast " + (kind === "rare" ? "rare" : kind === "radiant" ? "radiant" : ""); d.textContent = txt; box.prepend(d);
   while (box.children.length > 3) box.lastChild.remove();
-  setTimeout(() => d.remove(), kind === "rare" || kind === "radiant" ? 6500 : 3500);
+  setTimeout(() => d.remove(), ms || (kind === "rare" || kind === "radiant" ? 6500 : 3500));
 }
 const msg = (r) => { if (typeof r === "string") toast(r); };
 function setTheme() { const t = S && S.settings.theme === "violet" ? "violet" : "emerald"; if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ document.documentElement.dataset.theme = t === "violet" ? "dark" : "emerald"; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = t === "violet" ? "#0e0b14" : "#0d100b"; document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); }
@@ -8676,6 +8679,7 @@ async function onBoot() {
   // 14/10/2026 : nouveau serveur, la connexion de l'ancien ne vaut plus : une reconnexion avec Discord, la partie est gardée
   const moved = ON.moved ? "Idlus a déménagé sur un nouveau serveur. Reconnecte-toi une fois avec Discord : ta partie et ta progression sont gardées." : "";
   ON.onChange(() => { if (booted && S) renderPill(); });
+  ON.onLoop = (t) => toast(t, "warn", 15000); // 1.0.29.6 : connexion coupée car elle se renouvelait en boucle (heure de l'appareil fausse)
   // 0.1.19.4 : pas de compte obligatoire. 1.0.11 : l'écran « Choisis ta partie » propose la connexion (Discord).
   // 1.0.10.6 : compte connecté mais serveur injoignable au lancement (ON.stuck) : l'écran montre les parties de l'appareil et laisse jouer
   return menuStart(err || moved);
