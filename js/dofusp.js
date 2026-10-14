@@ -66,11 +66,13 @@
   const FIXED = ["vulbis", "argente", "ocre"]; // effets « tout ou rien » : ni renforcés, ni réduits au Kolizéum
   /* passifs qui agissent à chaque coup ou en continu : comptés, mais sans ligne dans le journal (il reste lisible) */
   const QUIET = ["ebene", "cauchemar", "forgelave", "veilleurs", "nebuleux", "kaliptus", "dotruche", "verdoyant", "tachete", "dokoko"];
-  E.dofpVal = (id, boost, pvp) => { const P = E.DOFP_LIST[id]; if (!P) return 0; let v = P[2]; if (FIXED.includes(id)) return v;
-    if (id === "ivoire") return pvp ? 70 : boost ? 35 : v; // un plafond : plus bas = plus fort
-    if (boost) v *= 1 + E.DOFP_RESO / 100; if (pvp) v *= E.DOFP_PVP; return Math.round(v * 10) / 10; };
+  /* r : rang de Potentiel du Dofus (1.0.30, 0 à X) : +5 % par rang ; l'Ivoire (un plafond) descend de 2,5 % par rang */
+  E.dofpVal = (id, boost, pvp, r) => { const P = E.DOFP_LIST[id]; if (!P) return 0; let v = P[2]; if (FIXED.includes(id)) return v;
+    const m = r > 0 ? Math.min(r, E.DPOT_MAX) * E.DPOT_PCT / 100 : 0;
+    if (id === "ivoire") return Math.round((pvp ? 70 : boost ? 35 : v) * (1 - m / 2) * 10) / 10; // un plafond : plus bas = plus fort
+    if (boost) v *= 1 + E.DOFP_RESO / 100; if (pvp) v *= E.DOFP_PVP; return Math.round(v * (1 + m) * 10) / 10; };
   E.dofpName = (id) => (E.DOFP_LIST[id] || [])[0] || "";
-  E.dofpTxt = (id, boost, pvp) => { const P = E.DOFP_LIST[id]; return P ? P[1](E.dofpVal(id, boost, pvp)) : ""; };
+  E.dofpTxt = (id, boost, pvp, r) => { const P = E.DOFP_LIST[id]; return P ? P[1](E.dofpVal(id, boost, pvp, r)) : ""; };
   E.dofpFam = (id) => (E.DOFP_LIST[id] || [])[3] || "";
   E.dofpTrig = (id) => E.DOFP_TRIG[(E.DOFP_LIST[id] || [])[4]] || "";
   E.dofpForKey = (id) => (E.DOFP_LIST[id] || [])[5] || "all";
@@ -90,11 +92,11 @@
   /* gains hors combat : XP du porteur (Jyfus), kamas et butin pour l'équipe, une seule fois (Argenté, Dokille) */
   const wears = (S, c, id) => E.dofpOf(S, c).includes(id);
   E.dofpTeamBonus = (S, kind) => { if (!S || !S.chars || !E.team) return 0; const id = kind === "kamas" ? "argent" : kind === "drop" ? "dokille" : null;
-    return id && E.team(S).some((c) => wears(S, c, id)) ? E.DOFP_LIST[id][2] : 0; };
-  E.dofpXpBonus = (S, c) => { const b = E.bonusRaw(S, "xp") + (c && wears(S, c, "jyfus") ? E.DOFP_LIST.jyfus[2] : 0); return Math.min(b, E.capOf(S, "xp")); };
+    return id && E.team(S).some((c) => wears(S, c, id)) ? E.dofpVal(id, false, false, E.dpotRank(S, id)) : 0; };
+  E.dofpXpBonus = (S, c) => { const b = E.bonusRaw(S, "xp") + (c && wears(S, c, "jyfus") ? E.dofpVal("jyfus", false, false, E.dpotRank(S, "jyfus")) : 0); return Math.min(b, E.capOf(S, "xp")); };
 
   const has = (e, id) => !!(e && e.dp && e.dp.includes(id));
-  const V = (F, id, e) => E.dofpVal(id, !!(e && e.dpBoost), !!(F && F.pvp));
+  const V = (F, id, e) => E.dofpVal(id, !!(e && e.dpBoost), !!(F && F.pvp), e && e.dpP ? e.dpP[id] || 0 : 0);
   const A = () => E.fightApi;
   /* un passif s'est déclenché : compteur du héros, et une ligne dorée par tour au plus pour les passifs marquants */
   const proc = (F, e, id, what) => {
@@ -107,6 +109,7 @@
   E.dofpFight = (S, F) => {
     F.dpN = {}; F.dpSeen = {};
     F.ents.forEach((e) => { if (!e.dp || e.summon) return; e.dpS = {};
+      e.dpP = E.dpotMap(S, e.dp); e.dpSub = e.dp.some((id) => E.dpotSub(S, id)); // 1.0.30 : Potentiel, aura dorée des Dofus Sublimés
       if (has(e, "emeraude")) { e.shield = (e.shield || 0) + Math.round(e.hpMax * V(F, "emeraude", e) / 100); proc(F, e, "emeraude", "bouclier"); }
       if (has(e, "vulbis")) e.paBonus = (e.paBonus || 0) + 1;
       if (has(e, "argente")) e.dpS.save = 1;
@@ -124,7 +127,7 @@
   /* résistances de la cible : Fonte des armures (pour toute l'équipe du fondeur) et Chaos des éléments */
   E.dofpRes = (src, tgt, res) => {
     if (tgt && tgt.dpMelt && tgt.dpMeltS === src.side) res -= tgt.dpMelt;
-    if (res > 0 && !src.summon && has(src, "dolmanax")) res *= 1 - E.dofpVal("dolmanax", src.dpBoost, !!src.koli) / 100;
+    if (res > 0 && !src.summon && has(src, "dolmanax")) res *= 1 - E.dofpVal("dolmanax", src.dpBoost, !!src.koli, src.dpP ? src.dpP.dolmanax || 0 : 0) / 100;
     return res;
   };
   E.dofpSummon = (F, own) => (has(own, "domakuro") ? 1 + V(F, "domakuro", own) / 100 : 1);
@@ -197,6 +200,104 @@
   E.dofusTurn = (S, F, e) => E.dofpTurn(S, F, e);
   /* le Dokoko n'a pas de caractéristiques : sa ligne de bonus renvoie à son passif */
   const bonusTxt = E.dofusBonusTxt; E.dofusBonusTxt = (id) => (id === "dokoko" ? "Pas de caractéristiques : tout est dans son passif." : bonusTxt(id));
+
+  /* ============================================================================
+     1.0.30 « POTENTIEL DES DOFUS » (choix 42A, beaucoup plus lent)
+     Chaque Dofus du compte a un Potentiel de 0 à X (état S.dofPot[id] = { r: rang, e: éclat en réserve }).
+     - Éclat : chaque donjon terminé donne E.DPOT_ECL (4) éclats par niveau de stasis à chaque Dofus porté dans l'équipe
+       (un même Dofus porté par deux héros ne compte qu'une fois).
+     - Rang n : E.dpotNeed(n) éclats (2 000 pour le rang I … 8 000 pour le rang X, 50 000 en tout) et n² × 2 M kamas (770 M en tout).
+     - Une copie du même Dofus (dans le sac : ni portée, ni dans une tenue, ni verrouillée) donne d'un coup l'éclat d'un rang.
+     - +5 % par rang aux caractéristiques et au passif. PA, PM, Portée et Invocations ne montent pas,
+       ni les passifs « tout ou rien » (Vulbis, Argenté Scintillant, Ocre).
+     - Rang X : Dofus Sublimé (+50 %), aura dorée en combat, annonce à tout le serveur (résumé « dsub », supabase/collections.sql).
+     Rythme visé (jeu régulier en stasis 7 : 20 donjons par jour, environ 1 h 45 de donjon) : 560 éclats par jour,
+     rang V vers 30 jours, rang X vers 89 jours ; stasis 10 : 40 éclats par donjon. Aucune chance d'obtenir un Dofus ne change.
+     ========================================================================== */
+  E.DPOT_MAX = 10; E.DPOT_PCT = 5; E.DPOT_ECL = 4; E.DPOT_KAMAS = 2000000;
+  E.DPOT_FIX = ["pa", "pm", "po", "inv"]; // ne montent pas
+  E.dpotNeed = (n) => (n >= 1 && n <= E.DPOT_MAX ? Math.round((n + 2) * 20 / 3) * 100 : 0); // éclat pour passer du rang n−1 au rang n
+  E.dpotCost = (n) => (n >= 1 && n <= E.DPOT_MAX ? n * n * E.DPOT_KAMAS : 0);
+  E.dpotNeedAll = (n) => { let t = 0; for (let i = 1; i <= n; i++) t += E.dpotNeed(i); return t; };
+  E.dpot = (S, id) => (S && S.dofPot && S.dofPot[id]) || { r: 0, e: 0 };
+  const potW = (S, id) => { if (!S.dofPot || typeof S.dofPot !== "object") S.dofPot = {}; const P = S.dofPot[id] || (S.dofPot[id] = { r: 0, e: 0 }); P.r = Math.max(0, Math.min(E.DPOT_MAX, P.r | 0)); P.e = Math.max(0, +P.e || 0); return P; };
+  E.dpotRank = (S, id) => Math.max(0, Math.min(E.DPOT_MAX, E.dpot(S, id).r | 0));
+  E.dpotSub = (S, id) => E.dpotRank(S, id) >= E.DPOT_MAX;
+  E.dpotPct = (r) => Math.max(0, Math.min(E.DPOT_MAX, r | 0)) * E.DPOT_PCT;
+  E.dpotSublimes = (S) => (E.DOFUS_ORDER || []).filter((id) => E.dpotSub(S, id) && E.dofusOwned(S, id));
+  /* rangs des Dofus portés, pour les passifs en combat ({ id: rang } ou null) */
+  E.dpotMap = (S, ids) => { let o = null; (ids || []).forEach((id) => { const r = E.dpotRank(S, id); if (r) (o = o || {})[id] = r; }); return o; };
+  /* caractéristiques en plus d'un Dofus au rang r (sur ses caractéristiques de base) */
+  E.dpotStatsOf = (id, r) => { const Df = E.DOFUS && E.DOFUS[id]; const out = {}; if (!Df || !r) return out; const T = D.ITEMS[Df.tpl];
+    for (const k in (T && T.stats) || {}) { if (E.DPOT_FIX.includes(k)) continue; const v = T.stats[k][1]; const add = Math.round(v * E.dpotPct(r) / 100); if (add) out[k] = add; }
+    return out; };
+  /* point d'appel de E.charStats (engine.js) : les Dofus portés par le héros */
+  E.dofPotStats = (S, c) => { let out = null;
+    D.DOFUS_SLOTS.forEach((sl) => { const it = c && c.equip && S.items[c.equip[sl]]; const id = it && D.ITEMS[it.tpl] && D.ITEMS[it.tpl].dofus; if (!id) return;
+      const x = E.dpotStatsOf(id, E.dpotRank(S, id)); for (const k in x) { out = out || {}; out[k] = (out[k] || 0) + x[k]; } });
+    return out; };
+  /* une copie qu'on peut fondre dans le Potentiel : dans le sac, ni portée, ni dans une tenue, ni verrouillée, et il en reste une autre */
+  E.dpotCopies = (S, id) => Object.values(S.items || {}).filter((it) => it.tpl === "dofus_" + id && !E.equippedBy(S, it.uid) && !(E.inGear && E.inGear(S, it.uid)) && !it.locked);
+  E.dpotCanCopy = (S, id) => E.dpotRank(S, id) < E.DPOT_MAX && E.dofusOwned(S, id) && Object.values(S.items || {}).filter((it) => it.tpl === "dofus_" + id).length >= 2 && E.dpotCopies(S, id).length > 0;
+  /* état d'un Dofus pour l'écran : rang, éclat, prochain rang, ce qui manque */
+  E.dpotInfo = (S, id) => { const r = E.dpotRank(S, id); const e = Math.floor(E.dpot(S, id).e || 0); const n = r + 1; const max = r >= E.DPOT_MAX;
+    const need = max ? 0 : E.dpotNeed(n), cost = max ? 0 : E.dpotCost(n);
+    return { r, e, max, next: max ? null : n, need, cost, pct: max ? 100 : Math.min(100, Math.floor(e / need * 100)), ready: !max && e >= need && S.kamas >= cost, eclOk: !max && e >= need, kamasOk: S.kamas >= cost, copies: E.dpotCopies(S, id).length, canCopy: E.dpotCanCopy(S, id) }; };
+
+  /* actions du joueur */
+  E.dofPotUp = (S, id) => {
+    if (!E.DOFUS || !E.DOFUS[id]) return "Dofus inconnu.";
+    if (!E.dofusOwned(S, id)) return "Il faut posséder ce Dofus.";
+    const P = potW(S, id); if (P.r >= E.DPOT_MAX) return "Ce Dofus est déjà Sublimé.";
+    const n = P.r + 1, need = E.dpotNeed(n), cost = E.dpotCost(n);
+    if (P.e < need) return `Il manque ${Math.ceil(need - P.e).toLocaleString("fr-FR")} éclats.`;
+    if (S.kamas < cost) return `Il faut ${cost.toLocaleString("fr-FR")} kamas.`;
+    S.kamas -= cost; P.e -= need; P.r = n;
+    const Df = E.DOFUS[id];
+    if (n >= E.DPOT_MAX) {
+      P.sub = E.now(); E.note(S, `${Df.name} est Sublimé : Potentiel X, +50 % aux caractéristiques et au passif, aura dorée en combat !`, "rare");
+      if (E.celebrate) E.celebrate({ t: "dsub", id });
+    } else { E.note(S, `${Df.name} : Potentiel ${E.roman ? E.roman(n) : n} (+${E.dpotPct(n)} %).`, "up"); if (E.celebrate) E.celebrate({ t: "dpot", id, r: n }); }
+    E.emit(S, "dpot", { id, r: n });
+    return null;
+  };
+  E.dofPotCopy = (S, id, uid) => {
+    if (!E.DOFUS || !E.DOFUS[id]) return "Dofus inconnu.";
+    if (E.dpotRank(S, id) >= E.DPOT_MAX) return "Ce Dofus est déjà Sublimé.";
+    if (!E.dpotCanCopy(S, id)) return "Il faut une autre copie de ce Dofus dans le sac (ni portée, ni dans une tenue, ni verrouillée).";
+    const L = E.dpotCopies(S, id); const it = (uid != null && L.find((x) => x.uid === uid || String(x.uid) === String(uid))) || L[0];
+    const P = potW(S, id); const add = E.dpotNeed(P.r + 1);
+    delete S.items[it.uid]; P.e += add; P.cp = (P.cp || 0) + 1;
+    E.note(S, `${E.DOFUS[id].name} : une copie fondue dans le Potentiel, +${add.toLocaleString("fr-FR")} éclats.`, "up");
+    return null;
+  };
+  Object.assign(E.ACTIONS, { dofPotUp: "monter le Potentiel d'un Dofus", dofPotCopy: "fondre une copie de Dofus dans son Potentiel" });
+  /* éclat : chaque donjon terminé, pour chaque Dofus porté dans l'équipe (une fois par Dofus) */
+  E.dpotGain = (S, stasis) => {
+    const k = Math.max(1, Math.min(10, stasis | 0)); const add = E.DPOT_ECL * k; const seen = new Set();
+    E.team(S).forEach((c) => D.DOFUS_SLOTS.forEach((sl) => { const it = c.equip && S.items[c.equip[sl]]; const id = it && D.ITEMS[it.tpl] && D.ITEMS[it.tpl].dofus; if (id && E.DOFUS[id]) seen.add(id); }));
+    const got = [];
+    seen.forEach((id) => { if (E.dpotRank(S, id) >= E.DPOT_MAX) return; const P = potW(S, id); const need = E.dpotNeed(P.r + 1); const was = P.e; P.e += add; got.push(id);
+      if (was < need && P.e >= need) E.note(S, `${E.DOFUS[id].name} : assez d'éclat pour le Potentiel ${E.roman ? E.roman(P.r + 1) : P.r + 1} (Suivi › Quêtes › Dofus › Potentiel).`, "up"); });
+    return got;
+  };
+  const prevEmit = E.emit; let depth = 0;
+  E.emit = (S, type, data) => {
+    if (prevEmit) prevEmit(S, type, data);
+    if (type !== "dungeon" || !S || !S.chars || !data || depth > 0) return;
+    depth++; try { E.dpotGain(S, data.stasis); } finally { depth--; }
+  };
+  /* Kolizéum : la photo de l'équipe garde les rangs de Potentiel des Dofus portés (les caractéristiques y sont déjà, par E.charStats) */
+  if (E.koliSnap && !E.koliSnap.dpot) {
+    const snap0 = E.koliSnap; E.koliSnap = (S, ids) => { const out = snap0(S, ids);
+      out.forEach((x) => { const m = x.dp ? E.dpotMap(S, x.dp) : null; if (m) x.dpP = m; if (x.dp && x.dp.some((id) => E.dpotSub(S, id))) x.dpX = 1; });
+      return out; }; E.koliSnap.dpot = 1;
+    const setup0 = E.koliSetup; E.koliSetup = (A, B, opts) => { const S2 = setup0(A, B, opts); const F = S2 && S2.fight; if (!F) return S2;
+      [A, B].forEach((T, tm) => { const ents = F.ents.filter((e) => e.tm === tm); (T || []).forEach((hh, i) => { const e = ents[i]; if (!e || !hh) return;
+        if (hh.dpP && typeof hh.dpP === "object") { const m = {}; for (const id in hh.dpP) if (E.DOFP_LIST[id]) m[id] = Math.max(0, Math.min(E.DPOT_MAX, hh.dpP[id] | 0)); e.dpP = m; }
+        if (hh.dpX) e.dpSub = true; }); });
+      return S2; };
+  }
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);

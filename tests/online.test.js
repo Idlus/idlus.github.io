@@ -685,6 +685,10 @@ const MOCK = () => {
     await page.waitForTimeout(5500);
     const ga = await page.evaluate(() => { const S = window.DX.S; return { or: (S.cons || {}).coffre_or || 0, t: (S.titlesExtra || []).filter((x) => x === "Xener va jamais pouvoir jouer").length }; });
     if (ga.or !== gb.or + 1 || ga.t !== 1) fail("code MERCI : récompenses mal redonnées " + JSON.stringify([gb, ga]));
+    // 8 quater. 1.0.30 : un Dofus Sublimé part dans le résumé envoyé (meta.dsub) : le serveur l'annonce (supabase/collections.sql)
+    await page.evaluate(() => { const { E, S } = window.DX; E.rollItem(S, "dofus_emeraude", { radiant: false }); (S.dofPot = S.dofPot || {}).emeraude = { r: 10, e: 0 }; return window.DX.social.onPush(); });
+    await page.waitForTimeout(300);
+    m = await mock(); { const mt = (m.saves.u1 || {}).meta || {}; if (!(mt.dsub || []).includes("emeraude") || !(mt.dofus || []).includes("emeraude")) fail("Dofus Sublimé absent du résumé envoyé : " + JSON.stringify(mt.dsub)); }
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);

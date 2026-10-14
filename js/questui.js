@@ -216,7 +216,7 @@
     // 1.0.6.2 « Où trouver les Dofus » : les deux façons de l'obtenir, chacune avec son bouton pour y aller
     const gift = Df.steps[0] && Df.steps[0].t === "gift";
     const fiche = `<div class="panel qj-fiche"><div class="pad stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap">${X().im(X().dofusImg(id), "qj-fpic", Df.name)}<div class="grow"><h3>${h(Df.name)}</h3><span class="xs muted">niveau ${Df.lvl}</span><div class="qj-bon">${h(E.dofusBonusTxt(id))}</div></div></div>${X().dofpBlock ? X().dofpBlock(id, { c: by || null }) : ""}
-      <span class="qj-tag ${stt[id] === "got" ? "ok" : stt[id] === "run" ? "todo" : ""}" style="justify-self:start">${state}</span>
+      <span class="qj-tag ${stt[id] === "got" ? "ok" : stt[id] === "run" ? "todo" : ""}" style="justify-self:start">${state}</span>${window.COLL && owned ? window.COLL.potLink(s, id) : ""}
       <div class="qj-how"><b>${gift ? "Comment l'obtenir" : "① Sa quête"}</b><span class="xs muted">${gift ? "" : id === "ocre" ? "un exemplaire garanti, une fois par compte : capture les âmes avec des Pierres d'âme" : "un exemplaire garanti, une fois par compte · les étapes se valident toutes seules en jouant"}</span></div>
       <ol class="qj-steps">${steps}</ol>
       <div class="qj-how"><b>${gift ? "Butin" : "② Le butin du boss"}</b><span class="xs muted">${gift ? "" : "très rare, sans limite : c'est ainsi qu'on équipe ses autres héros"}</span></div>
@@ -224,9 +224,9 @@
     const n = (f) => ids.filter((x) => f === "all" || stt[x] === f).length;
     const fil = [["all", "Tous"], ["run", "En cours"], ["lock", "À commencer"], ["got", "Obtenus"]];
     return `${head(s, "dofus", "Un Dofus s'obtient de deux façons : ① sa quête, qui en donne un exemplaire par compte (les étapes se valident toutes seules en jouant, les donjons déjà vaincus à la stasis demandée comptent) ; ② le butin du boss de son donjon, très rare : à chaque victoire, chaque héros de l'équipe a sa chance, dès la stasis 1 (1 sur " + fmt(E.dofusOdds(1)).replace(/,/g, " ") + ") et de mieux en mieux jusqu'à la stasis 10 (1 sur " + fmt(E.dofusOdds(10)).replace(/,/g, " ") + "). C'est le seul moyen d'en avoir d'autres pour tes autres héros. Choisis un Dofus : sa fiche dit où aller. Un héros porte un seul exemplaire de chaque Dofus.", X().archiBtn())}
-      <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-dfil" data-v="${k}" aria-pressed="${st.dfil === k}">${l} <b class="num">${n(k)}</b></button>`).join("")}</div>
+      <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-dfil" data-v="${k}" aria-pressed="${st.dfil === k && !(window.COLL && window.COLL.potOn())}">${l} <b class="num">${n(k)}</b></button>`).join("")}${window.COLL ? window.COLL.potBtn(s) : ""}</div>
       ${E.DOFP_LIST ? `<div class="qj-fil qj-ffam">${[["all", "Toutes les familles"]].concat(E.DOFP_FAMS.map((f) => [f, f])).map(([k, l]) => `<button class="${k === "all" ? "" : "fam-" + X().dofpFcOf(k)}" data-act="qj-dfam" data-v="${k}" aria-pressed="${dfam === k}">${k === "all" ? "" : `<i class="qj-fd"></i>`}${l}</button>`).join("")}</div>` : ""}
-      <div class="qj-dofl"><div class="qj-eggs">${eggs}</div>${fiche}</div>`;
+      ${window.COLL && window.COLL.potOn() ? window.COLL.potHtml(s, ids.filter((x) => dfam === "all" || E.dofpFam(x) === dfam)) : `<div class="qj-dofl"><div class="qj-eggs">${eggs}</div>${fiche}</div>`}`; // 1.0.30 : Potentiel des Dofus (js/collui.js)
   }
 
   /* ---------- quêtes de région (0.1.49) ---------- */
