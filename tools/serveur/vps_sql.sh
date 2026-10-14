@@ -17,11 +17,17 @@ case "$mode" in
   *) echo "mode inconnu : $mode" >&2; exit 2 ;;
 esac
 cp "$ICI/sql_distant.sh" "$loc/"
-dist=$(sshpass -e ssh $SSHO "$UTIL@$HOTE" 'mktemp -d /tmp/idlus-sql.XXXXXX')
-sshpass -e scp -q $SSHO "$loc/q.sql" "$loc/sql_distant.sh" "$UTIL@$HOTE:$dist/"
-if [ "$UTIL" = root ]; then
-  sshpass -e ssh $SSHO "root@$HOTE" "bash $dist/sql_distant.sh $mode $dist/q.sql"
-else
-  # sudo lit le mot de passe sur la première ligne (jamais affiché)
-  printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash $dist/sql_distant.sh $mode $dist/q.sql"
-fi
+# Le serveur est sur internet : des robots y tentent sans cesse des connexions SSH, et sshd en refuse parfois une
+# (« Connection reset by peer », code 255). On réessaie alors quelques fois.
+re() { local i; for i in 1 2 3 4 5 6; do "$@" && return 0; local c=$?; [ $c -eq 255 ] || return $c; echo "connexion refusée, nouvel essai ($i)" >&2; sleep $((i * 3)); done; return 255; }
+dist=$(re sshpass -e ssh $SSHO "$UTIL@$HOTE" 'mktemp -d /tmp/idlus-sql.XXXXXX')
+re sshpass -e scp -q $SSHO "$loc/q.sql" "$loc/sql_distant.sh" "$UTIL@$HOTE:$dist/"
+lancer() {
+  if [ "$UTIL" = root ]; then
+    sshpass -e ssh $SSHO "root@$HOTE" "bash $dist/sql_distant.sh $mode $dist/q.sql"
+  else
+    # sudo lit le mot de passe sur la première ligne (jamais affiché)
+    printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash $dist/sql_distant.sh $mode $dist/q.sql"
+  fi
+}
+re lancer
