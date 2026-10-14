@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.7 « Vente directe plus claire »
+
+Bouton « Vendre » des ressources (Mathis, 14/10/2026 : « quand je clique sur vendre ça ne fait rien ») : la vente passait bien sur le serveur, mais vendre tout le stock fermait la fiche (elle ne s'affiche que pour une ressource possédée), sans trace visible à part une notification. La fiche reste maintenant ouverte une minute avec le résultat (js/venteui.js `V.last`, `VENTEUI.kept`), le bouton affiche « Vente en cours… » et toute erreur donne un message.
+
 ## 1.0.30.6 « Grande annonce du Jackpot »
 
 Chaque tirage du Jackpot du Trool s'annonce à tout le serveur (demande de Mathis du 14/10/2026 : « Faire une grosse annonce sur le jeu pour chaque jackpot ») : foire_resolve (supabase/foire.sql) écrit une annonce dans le chat Général (kind 'ann', data.t 'jack' : pot, tickets, joueurs, heure) pour un tirage de moins de 2 h, et js/giga.js l'affiche en plein écran 6 s chez tous les joueurs connectés, comme la GIGA annonce d'un Dofus (même file d'attente), puis la ligne dorée reste dans le Général. Le bandeau des annonces de l'admin n'est pas touché.

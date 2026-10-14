@@ -22,7 +22,7 @@
   const fmt = (n) => X().fmt(n);
   const VV = E.VENTE;
   /* V.c[ressource] = [coef, volume récent, vendues en 24 h, heure locale de la lecture (ms)] ; une ressource absente est au plafond ×3 */
-  const V = { at: 0, c: {}, up: false, err: false, missing: false, block: null, loading: null, busy: false, curve: {}, qty: {}, cq: "" };
+  const V = { at: 0, c: {}, up: false, err: false, missing: false, block: null, loading: null, busy: false, curve: {}, qty: {}, cq: "", last: null };
 
   /* ---------- compte et serveur ---------- */
   const online = () => !!(ON && ON.enabled);
@@ -141,9 +141,10 @@
       return `<div class="vd-box">${head("prix du serveur, en direct")}${price}${gauge}${panel}</div>`;
     }
     const q = Math.max(1, Math.min(qq, V.qty[n] > 0 ? V.qty[n] : qq));
+    const done = V.last && V.last.n === n && Date.now() - V.last.at < 60000 ? `<div class="vd-done small">${h(V.last.t)}</div>` : "";
     const up = V.up ? `<span class="xs vd-gold">Comptoir de guilde : +5 % sur la vente directe.</span>` : "";
-    return `<div class="vd-box">${head(`prix du serveur, en direct · <button class="linkbtn" data-act="nav" data-v="cours">Cours</button>`)}${price}${gauge}${spark}${up}
-      <div class="row vd-go"><input type="number" id="vdQty" data-act="vd-qty" data-n="${h(n)}" min="1" max="${qq}" value="${q}" aria-label="Quantité à vendre"><button class="btn sm" data-act="vd-all" data-n="${h(n)}">Tout</button><button class="btn primary sm" id="vdGo" data-act="vd-sell" data-n="${h(n)}" ${V.busy || !qq ? "disabled" : ""}>${goTxt(q, quote(n, q))}</button>${hdvB}</div>
+    return `<div class="vd-box">${head(`prix du serveur, en direct · <button class="linkbtn" data-act="nav" data-v="cours">Cours</button>`)}${price}${gauge}${spark}${up}${done}
+      ${qq ? `<div class="row vd-go"><input type="number" id="vdQty" data-act="vd-qty" data-n="${h(n)}" min="1" max="${qq}" value="${q}" aria-label="Quantité à vendre"><button class="btn sm" data-act="vd-all" data-n="${h(n)}">Tout</button><button class="btn primary sm" id="vdGo" data-act="vd-sell" data-n="${h(n)}" ${V.busy || !qq ? "disabled" : ""}>${goTxt(q, quote(n, q))}</button>${hdvB}</div>` : ""}
       <span class="xs muted">Un gros lot fait baisser le prix pendant la vente : le total affiché en tient compte.</span>
       <div class="vd-note xs">La vente directe remplace le marchand de secours : le surplus au-delà de « Garder au maximum » est vendu au prix du moment. Les Commandes du jour restent.</div></div>`;
   }
@@ -209,10 +210,10 @@
     if (a === "vd-sell") {
       const inp = $("#vdQty"); const q = Math.floor(+(inp ? inp.value : 0) || 0);
       if (!(q > 0) || q > (s.res[n] || 0)) { X().toast("Quantité invalide."); return; }
-      t.disabled = true;
-      sell({ [n]: q }).then((r) => {
-        if (r.err) X().toast(r.err);
-        else { const got = (r.sold || {})[n] || 0; X().toast(`Vendu : ${fmt(got)} × ${n} pour ${fmt(r.k)} kamas${r.share > 0 ? ` (+${fmt(r.share)} pour le coffre de ta guilde)` : ""}.`, "rare"); delete V.qty[n]; }
+      t.disabled = true; t.textContent = "Vente en cours…";
+      sell({ [n]: q }).catch(() => ({ err: "La vente n'a pas pu se faire : réessaie dans un moment." })).then((r) => {
+        if (r.err) X().toast(r.err, "warn", 6000);
+        else { const got = (r.sold || {})[n] || 0; const txt = `Vendu : ${fmt(got)} × ${n} pour ${fmt(r.k)} kamas${r.share > 0 ? ` (+${fmt(r.share)} pour le coffre de ta guilde)` : ""}.`; X().toast(txt, "rare"); V.last = { n, t: txt, at: Date.now() }; delete V.qty[n]; setTimeout(() => { if (S() && UI().tab === "inv" && UI().resSel === n && !(S().res[n] > 0)) X().render(); }, 61000); }
         if (S()) X().render();
       });
     }
@@ -232,5 +233,5 @@
     if (tick % 10 === 0) surplus();
   }, 60000);
 
-  window.VENTEUI = { has: (n) => E.venteOk(n), box, arrow, capTxt, capToast, bankTxt, invNote, load, now, quote, sell, surplus, V };
+  window.VENTEUI = { has: (n) => E.venteOk(n), kept: (n) => !!(V.last && V.last.n === n && Date.now() - V.last.at < 60000), box, arrow, capTxt, capToast, bankTxt, invNote, load, now, quote, sell, surplus, V };
 })();

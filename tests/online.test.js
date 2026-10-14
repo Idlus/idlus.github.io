@@ -846,7 +846,13 @@ const MOCK = () => {
       if (!/Vendre 1 000/.test((await page.textContent("#vdGo")).replace(/\s/g, " "))) fail("vente directe : le bouton ne suit pas la quantité");
       await page.click("#vdGo"); await page.waitForTimeout(900);
       const r = await page.evaluate(() => ({ k: window.DX.S.kamas, q: window.DX.S.res["Laine de Bouftou"], exp: window.ENGINE.venteLot(window.ENGINE.resPrice("Laine de Bouftou"), 0.4, 1000).k, log: (window.DX.S.venteLog || [])[0], sells: (JSON.parse(localStorage.getItem("__mock")).sells || []).length }));
-      if (r.q !== 2000 || r.k - k0 !== r.exp || r.sells !== 1 || !r.log || !/Vente directe/.test(r.log.t)) fail("vente directe : vente mal appliquée " + JSON.stringify([k0, r])); }
+      if (r.q !== 2000 || r.k - k0 !== r.exp || r.sells !== 1 || !r.log || !/Vente directe/.test(r.log.t)) fail("vente directe : vente mal appliquée " + JSON.stringify([k0, r])); 
+      if (!/Vendu : 1 000/.test(((await page.textContent(".vd-box .vd-done").catch(() => "")) || "").replace(/\s/g, " "))) fail("vente directe : résultat de la vente absent de la fiche");
+      // 1.0.30.7 : tout vendre garde la fiche ouverte avec le résultat (avant : elle se fermait, « rien ne se passe »)
+      await page.fill("#vdQty", "2000"); await page.click("#vdGo"); await page.waitForTimeout(900);
+      if (await page.evaluate(() => window.DX.S.res["Laine de Bouftou"] || 0)) fail("vente directe : tout vendre n'a pas tout vendu");
+      if (!/Vendu : 2 000/.test(((await page.textContent(".vd-box .vd-done").catch(() => "")) || "").replace(/\s/g, " "))) fail("vente directe : la fiche se ferme après avoir tout vendu");
+      await page.evaluate(() => { window.DX.S.res["Laine de Bouftou"] = 3000; window.DX.render(); }); }
     { const r = await page.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; S.resCap["Bois de Frêne"] = 10; E.emit(S, "harvest", { n: 1 }); const kept = S.res["Bois de Frêne"]; await window.VENTEUI.surplus(); return { kept, now: S.res["Bois de Frêne"], direct: E.venteDirect(S) }; });
       if (!r.direct || r.kept !== 50 || r.now !== 10) fail("vente directe : le surplus n'est pas vendu au prix du moment " + JSON.stringify(r)); }
     // serveur pas encore à jour (supabase/vente.sql pas appliqué) : retour au marchand de secours, puis la vente revient

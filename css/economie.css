@@ -12,6 +12,7 @@
 .vd-go{flex-wrap:wrap;gap:6px}.vd-go input{width:100px}
 .vd-acc{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
 .vd-note{border-top:1px dashed var(--frame);padding-top:8px;color:var(--gold)}
+.vd-done{padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--good,#4caf50) 18%,transparent);border:1px solid color-mix(in srgb,var(--good,#4caf50) 45%,transparent);font-weight:600} /* 1.0.30.7 : résultat de la dernière vente directe, dans la fiche */
 .vd-gold{color:var(--gold);font-weight:800}
 .vd-guest{box-shadow:none}
 .vd-inote .btn{flex:none}

@@ -1,6 +1,14 @@
 {
-  "version": "1.0.30.6",
+  "version": "1.0.30.7",
   "versions": [
+    {
+      "v": "1.0.30.7",
+      "name": "Vente directe plus claire",
+      "items": [
+        "Ressources : après « Vendre », la fiche de la ressource reste ouverte une minute avec le résultat de la vente (quantité et kamas gagnés), même si tu as tout vendu. Avant, elle se fermait d'un coup et on avait l'impression que rien ne s'était passé",
+        "Le bouton affiche « Vente en cours… » pendant que le serveur vérifie la vente, et un message dit toujours pourquoi si elle ne passe pas"
+      ]
+    },
     {
       "v": "1.0.30.6",
       "name": "Grande annonce du Jackpot",

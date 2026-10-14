@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30.6";
+const GAME_VERSION = "1.0.30.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.30.7", name: "Vente directe plus claire", items: [
+    "Ressources : après « Vendre », la fiche de la ressource reste ouverte une minute avec le résultat de la vente (quantité et kamas gagnés), même si tu as tout vendu. Avant, elle se fermait d'un coup et on avait l'impression que rien ne s'était passé",
+    "Le bouton affiche « Vente en cours… » pendant que le serveur vérifie la vente, et un message dit toujours pourquoi si elle ne passe pas",
+  ] },
   { v: "1.0.30.6", name: "Grande annonce du Jackpot", items: [
     "Jackpot du Trool : à chaque tirage, tous les joueurs connectés voient le gagnant et le pot en plein écran, comme pour un Dofus",
     "L'annonce reste ensuite dans le chat Général. Un clic dessus la remontre",
@@ -5663,7 +5667,7 @@ function resTabHtml() {
   const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
   list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
   const picked = new Set();
-  const detail = invSide() && ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
+  const detail = invSide() && ui.resSel && (S.res[ui.resSel] || resKept(ui.resSel)) ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
       ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
@@ -5680,6 +5684,8 @@ function resTabHtml() {
       ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
 }
 const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled);
+/* 1.0.30.7 : la fiche d'une ressource vendue en entier reste ouverte une minute, avec le résultat de la vente (avant : elle disparaissait, « rien ne se passe ») */
+const resKept = (n) => !!(window.VENTEUI && window.VENTEUI.kept(n));
 const VDB = (n) => !!(window.VENTEUI && window.VENTEUI.has(n)); // 1.0.30 : encadré « Vente directe » de la fiche (js/venteui.js)
 /* 0.1.54 : commandes du jour (1 000 ressources par tranche de 20 niveaux, payées selon le niveau du meilleur héros) */
 const gbOf = (n) => E.gameBuys(S).list.find((o) => o.res === n);
@@ -5805,7 +5811,7 @@ function renderInventory() {
    la fenêtre suit les clics (cadenas, briser, favori…) et se ferme avec ✕ ou en touchant à côté */
 const invSide = () => innerWidth >= 861;
 function invSheetSync() {
-  const html = ui.inv === "items" && ui.invSel && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : ui.inv === "res" && ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
+  const html = ui.inv === "items" && ui.invSel && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : ui.inv === "res" && ui.resSel && (S.res[ui.resSel] || resKept(ui.resSel)) ? resDetail(ui.resSel) : "";
   const mine = $("#sheet .invsheet");
   if (!html) { if (mine) closeSheet(); return; }
   if ($("#sheet").innerHTML && !mine) return; // une autre fenêtre est par-dessus (Équiper, Récolter…) : la fiche revient quand elle se ferme
