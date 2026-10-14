@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.27";
+const GAME_VERSION = "1.0.28";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.28", name: "Thème d'Halouine", items: [
+    "Du 24 octobre au 3 novembre, le jeu se pare de couleurs citrouille : fond noir chaud, boutons et menus orange, lueur violette",
+    "Une citrouille à côté du logo, des chauves-souris dans la barre du haut, des toiles d'araignée dans le coin des panneaux et des braises qui montent doucement",
+    "Tout part tout seul le 4 novembre. Options › Affichage › Ambiance d'Halouine pour le couper (le Bal d'Halouine du Havre-Sac s'arrête aussi) ; les braises suivent le réglage des animations",
+  ] },
   { v: "1.0.27", name: "Choix d'objet sans gel", items: [
     "Équipe : cliquer sur un emplacement d'objet équipé ouvre tout de suite la liste des objets (0,08 s au lieu de 0,3 s avec un gros sac, et plusieurs secondes avant la 1.0.24.3)",
     "Les flèches vertes et le « Meilleur choix » s'affichent avec le dernier calcul connu, puis se mettent à jour d'eux-mêmes un instant plus tard si le sac a changé",
@@ -6688,7 +6693,22 @@ function toast(txt, kind) {
   setTimeout(() => d.remove(), kind === "rare" || kind === "radiant" ? 6500 : 3500);
 }
 const msg = (r) => { if (typeof r === "string") toast(r); };
-function setTheme() { const t = S && S.settings.theme === "violet" ? "violet" : "emerald"; if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ document.documentElement.dataset.theme = t === "violet" ? "dark" : "emerald"; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = t === "violet" ? "#0e0b14" : "#0d100b"; document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); }
+function setTheme() { const t = S && S.settings.theme === "violet" ? "violet" : "emerald"; if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ document.documentElement.dataset.theme = t === "violet" ? "dark" : "emerald"; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = t === "violet" ? "#0e0b14" : "#0d100b"; document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); }
+/* 1.0.26 : thème d'Halouine (choix de Mathis 1A 2A 3A 4C) : couleurs citrouille, décors et braises posés par-dessus le thème choisi,
+   tout seul du 24 octobre au 3 novembre (même période que le Cadre d'Halouine), coupable dans Options › Affichage.
+   window.IDLUS_HALOUINE() dit si le thème est affiché (pour la musique d'Halouine). */
+const halPeriod = () => !!window.HAL_FORCE || E.halWin(E.now());
+const halOn = () => halPeriod() && !(S && S.settings.halouine === false);
+const HAL_EMB = [[6, 15, 0], [13, 19, -7], [21, 13, -3], [29, 17, -12], [36, 14, -5], [44, 20, -15], [51, 16, -1], [58, 13, -9], [65, 18, -4], [72, 15, -13], [79, 21, -6], [86, 14, -10], [92, 17, -2], [97, 19, -16]];
+function applyHal() {
+  const r = document.documentElement; const on = halOn();
+  if (on) r.dataset.hal = "on"; else delete r.dataset.hal;
+  const mc = document.querySelector('meta[name="theme-color"]'); if (mc && on) mc.content = "#0e090b";
+  let fx = document.getElementById("halfx"); const emb = on && animLvl() === "full" && !calm();
+  if (emb && !fx) { fx = document.createElement("div"); fx.id = "halfx"; fx.setAttribute("aria-hidden", "true"); fx.innerHTML = HAL_EMB.map(([x, d, dl]) => `<i style="left:${x}%;--d:${d}s;--dl:${dl}s"></i>`).join(""); document.body.appendChild(fx); }
+  else if (!emb && fx) fx.remove();
+}
+window.IDLUS_HALOUINE = () => document.documentElement.dataset.hal === "on";
 
 /* ===================== 0.1.17 : lot Bienvenue (logique dans js/welcome.js) =====================
    Affichage (taille du texte, mouvements, contraste), bulles de découverte, recherche rapide. */
@@ -6711,6 +6731,7 @@ function displayOptionsHtml() {
   return optSec("Écran", "se voit tout de suite",
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v}&nbsp;%`]), z)) // 1.0.12.8 : « 90 % » ne se coupe plus sur deux lignes
     + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
+    + (halPeriod() ? optLine("Ambiance d'Halouine", "du 24 octobre au 3 novembre", seg("sethal", [["on", "Activée"], ["off", "Désactivée"]], S.settings.halouine === false ? "off" : "on")) : "")
     + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes")
     + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat."))
     + optLine("Format d'affichage", "pour téléphone pliable ou tablette", seg("setlayout", [["auto", "Auto"], ["phone", "Téléphone"], ["pc", "PC"]], S.settings.layout || "auto", "Auto : suit la taille de ton écran. Téléphone : la page s'affiche comme sur un téléphone (gros boutons, chat en bulle). PC : la page s'affiche comme sur un ordinateur, en plus petit. Sans effet dans un navigateur d'ordinateur.")))
@@ -7408,7 +7429,7 @@ const MUS_SUB = { bra_bordure: "brakmar", bon_canaux: "brakmar", bra_entrailles:
 const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier" };
 const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie" };
 const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
-const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return (m === 10 && j >= 24) || (m === 11 && j <= 3) ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
+const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return halOn() ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
 const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
 /* l'air « selon l'endroit » : page du Havre-Sac, page qui a son air, Songe, donjon (salle du boss à part), sinon la zone de chasse */
 function musPlace() {
@@ -7440,7 +7461,7 @@ document.addEventListener("click", (ev) => {
   if (b.dataset.act === "vi-mute" || c.clic === "none") return; if (c.clic === "all" || b.matches(SND_IMP)) sndPlay("clic");
 }, true);
 document.addEventListener("visibilitychange", musSync);
-setInterval(() => { musSync(); sndAskCheck(); }, 1000);
+setInterval(() => { musSync(); sndAskCheck(); if (S && (document.documentElement.dataset.hal === "on") !== halOn()) applyHal(); }, 1000); // 1.0.26 : le thème d'Halouine arrive et part tout seul à minuit
 /* première fois : une bulle demande « Jouer en musique ? » (une seule fois par partie) */
 let sndAskAt = 0;
 function sndAskCheck() {
@@ -7601,6 +7622,7 @@ document.addEventListener("click", (ev) => {
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; } S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
+    case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
     case "settext": S.settings.textSize = +d.v; dirty = true; applyDisplay(); optionsSheet(); return;
     case "setlayout": S.settings.layout = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); return;
     case "settoast": S.settings.toastPos = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); toast("Les notifications apparaissent ici."); return;
@@ -8271,7 +8293,7 @@ function renderMenu() {
   if ($("#sheet").innerHTML && !MENU.copies) closeSheet();
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   document.body.classList.remove("hasnav", "navmini");
-  document.documentElement.dataset.theme = menuPref().theme === "violet" ? "dark" : "emerald";
+  document.documentElement.dataset.theme = menuPref().theme === "violet" ? "dark" : "emerald"; applyHal();
   const user = ON && ON.user, id = user ? ON.identities() : null;
   const acc = !ON || menuStuck() ? `<div class="svacc"><span class="who"><span class="dot off"></span><span><b>Serveur injoignable</b><br><span class="small muted">Tes parties de cet appareil restent jouables.${ON ? " Recharge la page quand il reviendra pour retrouver ton compte : ta progression d'ici partira alors en ligne." : ""}</span></span></span>${ON ? `<button class="btn sm" data-act="sv-retry">Réessayer</button>` : ""}</div>`
     : user ? `<div class="svacc"><span class="who"><span class="dot${MENU.off ? " off" : ""}"></span><span><b>Connecté${ON.profile ? ` : ${h(ON.profile.pseudo)}` : ""}</b><br><span class="small muted">${MENU.off ? "Serveur injoignable : tes parties de cet appareil restent jouables et partiront en ligne à son retour." : `${id && id.discord ? `Discord (${h(id.discord)}) · ` : ""}la partie 1 est gardée en ligne${ON.slotsOk ? ", les parties 2 et 3 aussi" : ""}`}</span></span></span><button class="btn sm" data-act="sv-logout">Se déconnecter</button></div>`

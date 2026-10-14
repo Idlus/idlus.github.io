@@ -1,6 +1,15 @@
 {
-  "version": "1.0.27",
+  "version": "1.0.28",
   "versions": [
+    {
+      "v": "1.0.28",
+      "name": "Thème d'Halouine",
+      "items": [
+        "Du 24 octobre au 3 novembre, le jeu se pare de couleurs citrouille : fond noir chaud, boutons et menus orange, lueur violette",
+        "Une citrouille à côté du logo, des chauves-souris dans la barre du haut, des toiles d'araignée dans le coin des panneaux et des braises qui montent doucement",
+        "Tout part tout seul le 4 novembre. Options › Affichage › Ambiance d'Halouine pour le couper (le Bal d'Halouine du Havre-Sac s'arrête aussi) ; les braises suivent le réglage des animations"
+      ]
+    },
     {
       "v": "1.0.27",
       "name": "Choix d'objet sans gel",

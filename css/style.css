@@ -4795,3 +4795,46 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .bd-mine{align-items:center;gap:12px}.bd-mine .bar{max-width:420px}
 .bd-own{gap:6px;padding-top:6px;border-top:1px dashed var(--frame);margin-top:2px;flex-wrap:wrap}
 @media (max-width:700px){.bd-mine{flex-wrap:wrap}.bd-mine .btn{width:100%}}
+
+/* ===== 1.0.26 « Thème d'Halouine » : du 24 octobre au 3 novembre, posé par-dessus le thème choisi (html[data-hal="on"], js/ui.js applyHal) ===== */
+:root{
+  --hal-bat:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 30'%3E%3Cg fill='%23140a12'%3E%3Cpath id='w' d='M32 8l2-5 1.4 4.6c2.6.2 4.6 1.8 5.6 4.2 5-5 13-7 23-5-4.4 2.4-6.6 6.4-6.8 11.6-3-2.4-7-2.6-9.6.4-2.2-2.4-6.4-2.8-8.6.2-1.4-1.6-4-2-5.8-.4L32 25z'/%3E%3Cuse href='%23w' transform='matrix(-1 0 0 1 64 0)'/%3E%3C/g%3E%3Ccircle cx='30.3' cy='11.3' r='.9' fill='%23ff9b30'/%3E%3Ccircle cx='33.7' cy='11.3' r='.9' fill='%23ff9b30'/%3E%3C/svg%3E");
+  --hal-pump:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 58'%3E%3Cpath d='M30 13c-.4-5 1.6-9.6 6.4-11.6l2 3.4c-3 1.4-4.4 4.4-4.2 8.2z' fill='%23557a26'/%3E%3Cg stroke='%233a1606' stroke-width='1.6'%3E%3Cellipse cx='19' cy='35' rx='15' ry='20' fill='%23c9561a'/%3E%3Cellipse cx='45' cy='35' rx='15' ry='20' fill='%23c9561a'/%3E%3Cellipse cx='32' cy='35' rx='13.5' ry='21.5' fill='%23ec7f24'/%3E%3C/g%3E%3Cpath d='M18 29l7.5 5.5H16zM46 29l-7.5 5.5H48zM29 37.5h6l-3 4z' fill='%23ffd66a'/%3E%3Cpath d='M15 43c5 6 11 8 17 8s12-2 17-8l-4 .2-2.4 3-2.6-2.8-3.4.4-2.6 3-2.6-3-3.4-.4-2.6 2.8-2.4-3z' fill='%23ffd66a'/%3E%3C/svg%3E");
+  --hal-web:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' fill='none' stroke='%23e8dccf' stroke-width='.9' stroke-linecap='round'%3E%3Cpath d='M80 0L2 4M80 0L10 34M80 0L32 62M80 0L58 78M80 0L78 2'/%3E%3Cpath d='M64 1q-1 6 2.6 9.8T76 15'/%3E%3Cpath d='M46 2q0 10 6 16t17 6.6 9.4 0'/%3E%3Cpath d='M28 3q-1 15 9 25t26 11 15.6-2'/%3E%3Cpath d='M12 4q-2 21 12 35t36 15 18-4' opacity='.75'/%3E%3C/svg%3E");
+}
+:root[data-hal="on"]{
+  --glw:255,138,36; --kama:#f2c25a; --med-bg:#5a2c16; --med-bg2:#1d0f0c; --med-ring:#e6923e;
+  --page:#0e090b; --panel:#1a1215; --panel2:#24181c; --panel3:#302026; --frame:#5c3a2a; --frame2:#2a1a1a; --gold:#ff9b30; --gold2:#ffd7a0;
+  --ink:#f6ece2; --muted:#b9a59b; --title:#fff0e0; --tshadow:0 0 14px rgba(255,138,36,.45),0 2px 0 rgba(0,0,0,.75);
+  --action:#ff9b30; --action2:#d9641a; --action-ink:#200d03; --good:#9be36a;
+  --line:rgba(205,160,140,.15); --shadow:0 2px 0 rgba(0,0,0,.6),0 10px 28px rgba(0,0,0,.65);
+}
+:root[data-hal="on"] body{background:radial-gradient(1100px 560px at 85% -12%,rgba(255,118,24,.20),transparent 60%),radial-gradient(900px 520px at -10% 110%,rgba(118,48,170,.24),transparent 60%),var(--page);background-attachment:fixed}
+:root[data-hal="on"] .status{background:linear-gradient(180deg,#2c1a16,#170e0d);border-color:rgba(255,138,36,.5)}
+:root[data-hal="on"] nav.main button[aria-current="page"],:root[data-hal="on"] .subtabs button[aria-pressed="true"],:root[data-hal="on"] .seg button[aria-pressed="true"],:root[data-hal="on"] .catchips button[aria-pressed="true"],:root[data-hal="on"] .dgtog[aria-pressed="true"]{background:linear-gradient(180deg,#ffc070,#f07a1c);color:#200d03;border-color:#e0701a}
+:root[data-hal="on"] .btn.primary{background:linear-gradient(180deg,#ffbe6a,#ef7a1e);color:#200d03;border-color:#c55e14}
+:root[data-hal="on"] .tag,:root[data-hal="on"] .icount{color:#200d03}
+:root[data-hal="on"] .updbar{background:linear-gradient(135deg,rgba(255,138,36,.14),rgba(140,70,190,.12))}
+:root[data-hal="on"] .scene::after,:root[data-hal="on"] .arena::after{background:linear-gradient(180deg,rgba(255,120,30,.10),transparent 55%,rgba(130,60,190,.12))}
+:root[data-hal="on"] .scene .crumb,:root[data-hal="on"] .arena .turn,:root[data-hal="on"] .arena .idle div,:root[data-hal="on"] .hero-banner .card{background:rgba(20,12,12,.88)!important}
+:root[data-hal="on"] .chx .ic{background:linear-gradient(135deg,#ffc070,#e0701a)}
+:root[data-hal="on"] .status .brand{color:#fff3e6}
+
+:root[data-hal="on"] .status{position:relative}
+:root[data-hal="on"] .status::before{content:"";position:absolute;right:170px;top:50%;width:120px;height:40px;margin-top:-20px;pointer-events:none;
+  background:var(--hal-bat) 8px 12px/28px 14px no-repeat,var(--hal-bat) 44px 2px/38px 19px no-repeat,var(--hal-bat) 90px 18px/22px 11px no-repeat,radial-gradient(closest-side,rgba(255,170,70,.55),rgba(255,120,30,.18) 60%,transparent);filter:drop-shadow(0 0 3px rgba(255,150,60,.35))}
+:root[data-hal="on"] .sn-brand{position:relative}
+:root[data-hal="on"] .sn-brand::after{content:"";position:absolute;left:94px;top:5px;width:26px;height:24px;background:var(--hal-pump) center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(255,140,40,.55));pointer-events:none}
+:root[data-hal="on"] .sn-mini{position:relative;z-index:1}
+:root[data-hal="on"] .panel::before{content:"";position:absolute;top:0;right:0;width:58px;height:58px;background:var(--hal-web) top right/contain no-repeat;pointer-events:none;opacity:.42;border-top-right-radius:16px;z-index:0}
+@media (max-width:859px){
+  :root[data-hal="on"] .status::before{display:none}
+  :root[data-hal="on"] #nav .sn-mob{position:relative}
+  :root[data-hal="on"] #nav .sn-mob::before{content:"";position:absolute;left:4px;top:-17px;width:26px;height:23px;z-index:3;background:var(--hal-pump) center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(255,140,40,.6));pointer-events:none}
+  :root[data-hal="on"] #nav .sn-mob::after{content:"";position:absolute;right:6px;top:-15px;width:48px;height:20px;z-index:3;pointer-events:none;
+    background:var(--hal-bat) 0 6px/22px 11px no-repeat,var(--hal-bat) 22px 0/26px 13px no-repeat;filter:drop-shadow(0 0 3px rgba(255,160,70,.8))}
+}
+#halfx{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}
+#halfx i{position:absolute;bottom:-10px;will-change:transform,opacity;width:5px;height:5px;border-radius:50%;background:#ffb04a;box-shadow:0 0 8px 2px rgba(255,140,40,.6);opacity:0;animation:halemb var(--d,14s) linear infinite;animation-delay:var(--dl,0s)}
+@keyframes halemb{0%{transform:translate(0,0);opacity:0}10%{opacity:.75}50%{transform:translate(18px,-50vh)}90%{opacity:.5}100%{transform:translate(-12px,-100vh);opacity:0}}
+body.reduced #halfx,body.nomotion #halfx{display:none}

@@ -60,6 +60,7 @@ function panelHtml() {
   <p class="xs muted">Version de test uniquement. Ces outils modifient la partie de test de ce navigateur, jamais le jeu public. Une copie de secours est faite avant chaque remplacement de partie.</p>
   <div class="stack small">
   ${sec("Temps", "Accélère tout le jeu (combats, récolte, atelier) tant que cette page reste ouverte.", row(`<span class="seg">${[1, 10, 100].map((v) => `<button data-adm="speed" data-v="${v}" aria-pressed="${DX.speed === v}">×${v}</button>`).join("")}</span>`)
+    + row(`<span class="muted">Thème d'Halouine :</span><span class="seg">${[["0", "Selon la date"], ["1", "Forcé"]].map(([v, n]) => `<button data-adm="hal" data-v="${v}" aria-pressed="${(window.HAL_FORCE ? "1" : "0") === v}">${n}</button>`).join("")}</span>`)
     + row(`<span class="muted">Simuler une absence :</span>${[1, 4, 8].map((n) => btn("away", `${n} h`, `data-v="${n}"`)).join("")}<span class="xs muted">(plafond du jeu : ${Math.round(E.OFFLINE_MAX_S / 3600 + E.bonus(s, "offtime"))} h)</span>`))}
   ${sec("Combat", "Entre dans le donjon choisi à la stasis choisie, avec une clé offerte et la stasis débloquée. Le détail du combat s'affiche dans l'onglet Combat.",
     row(`<select id="admDg" data-adm-v="dg">${dgs.map((d) => `<option value="${d}" ${d === st.dg ? "selected" : ""}>Niv. ${DUNGEONS[d].lvl} · ${h(DUNGEONS[d].name)}</option>`).join("")}</select>
@@ -104,6 +105,7 @@ document.addEventListener("click", (ev) => {
   if (d.adm === "open") { if (!s) { DX.toast("Commencez une partie pour utiliser le panel de test."); return; } open(); return; }
   if (!s) return;
   switch (d.adm) {
+    case "hal": window.HAL_FORCE = d.v === "1"; DX.setTheme(); open(); DX.toast(window.HAL_FORCE ? "Thème d'Halouine forcé (cette page seulement)." : "Thème d'Halouine selon la date."); return;
     case "speed": if (+d.v > 1) mark(s); DX.speed = +d.v; open(); DX.toast(DX.speed > 1 ? `Temps accéléré ×${DX.speed}.` : "Vitesse normale."); return;
     case "away": { mark(s); DX.closeSheet(); const r = E.catchUp(s, +d.v * 3600); DX.markDirty(); DX.saveNow(); DX.render();
       if (r && (r.wins || Object.keys(r.res).length)) DX.offlineSheet(r); else DX.toast("Rien à rapporter : personne ne chassait ni ne récoltait."); return; }

@@ -1245,6 +1245,7 @@
   /* 1.0.13 : cadres spéciaux. Chacun se débloque une fois pour toute la partie, puis se choisit héros par héros
      (Apparence › Cadre). Sans choix, le héros garde le cadre de son niveau (ou le feu s'il est rené). */
   const halWin = (t) => { const d = new Date(t); const m = d.getMonth() + 1, j = d.getDate(); return (m === 10 && j >= 24) || (m === 11 && j <= 3); };
+  E.halWin = halWin; // 1.0.26 : aussi la période du thème d'Halouine (js/ui.js applyHal)
   E.SFRAMES = {
     pionnier: { name: () => "Cadre du Pionnier", req: "Avoir joué à la version de test avant le multijoueur (récompense des testeurs)", ok: (S) => !!(S.unlocks && S.unlocks.pionnier) },
     stasis:   { name: () => "Cadre de la Stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!(S.unlocks && S.unlocks.stasis10) },
