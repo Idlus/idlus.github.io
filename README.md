@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.23 « Builds partagés »
+
+Mathis (14/10/2026, « un menu pour partager nos builds … un peu comme sur le site Huzounet », maquette puis réponses 1A à 17A). Page Communauté › Builds (js/builds.js) : cartes (héros dessiné par DofusDB avec coiffe, cape et bouclier du build, objets, Dofus, ❤, vues), filtres classe / tranche de niveau / élément / budget (calculé depuis le prix des ressources) / recherche d'objet, de Dofus ou de titre, tris semaine / nouveautés / meilleurs / vues / favoris / mes builds, bandeau « Build de la semaine ». Fiche : poupée, caractéristiques aux jets moyens (sans les bonus de compte), panoplies, passifs des Dofus, « Comparer avec mon héros », Appliquer / Liste de courses / Copier le code, Signaler. Publication depuis la fenêtre « Partager le build » (compte Discord, 10 builds, mise à jour en un clic quand le héros change, `c.bd` et `c.bdH` dans la sauvegarde). Serveur : supabase/builds.sql (tables builds, build_likes, build_views, build_reports ; RPC builds_list, builds_me, build_publish qui relit le code du build côté serveur, build_delete, build_like, build_view, build_report caché à 3 signalements, adm_builds et adm_build_set pour l'onglet Builds du panel admin). Titre « Théorycrafteur » à 25 ❤. Test dans tests/online.test.js.
+
 ## 1.0.22.2 « Un logo par meuble »
 
 Chaque meuble de la maison a son propre logo (35 SVG dans assets/ui/meubles, style des coffres), visible dans la boutique, les tuiles de « Ma maison », les meubles à placer, les pièces et le catalogue. Les trophées de boss gardent le portrait du boss.

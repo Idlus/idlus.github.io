@@ -391,7 +391,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel admin" : "Modération"}" aria-label="${C.role === "admin" ? "Panel admin" : "Modération"}">${X().G("shield")}</button>` : ""; }
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || x[0] !== "verif");
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || x[0] !== "verif");
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -404,6 +404,7 @@
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
     if (A.tab === "codes") A.codes = await r("adm_gifts"); // 0.1.26, voir js/codes.js
     if (A.tab === "idees") A.idees = await r("adm_ideas"); // 0.1.36, voir js/idees.js
+    if (A.tab === "builds") A.builds = await r("adm_builds"); // 1.0.23, voir js/builds.js
     if (A.tab === "fiches" && window.FICHES && isAdmin()) await window.FICHES.load(); // 0.1.52.1, voir js/fiches.js
   }
   function renderAdmin(main) {
@@ -435,6 +436,7 @@
     if (A.tab === "guildes" && window.GUILD) return window.GUILD.adminHtml(A.guildes);
     if (A.tab === "codes" && window.GIFTS) return window.GIFTS.adminHtml(A.codes);
     if (A.tab === "idees" && window.IDEES) return window.IDEES.adminHtml(A.idees);
+    if (A.tab === "builds" && window.BUILDS) return window.BUILDS.adminHtml(A.builds);
     if (A.tab === "fiches" && window.FICHES) return window.FICHES.adminHtml();
     if (A.tab === "vue") {
       const st = o.settings || {};

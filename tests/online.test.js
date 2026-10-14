@@ -66,6 +66,44 @@ const MOCK = () => {
     removeChannel: () => {},
     functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
+      // 1.0.23 : builds partagés (supabase/builds.sql) ; la liste et les vues marchent sans compte
+      if (/^builds?_|^adm_builds?/.test(name)) {
+        const d = db(); const u = user(); const B = (d.builds = d.builds || []); const ok = (data) => { put(d); return { data, error: null }; };
+        const row = (b) => Object.assign({}, b, { by: b.pseudo, liked: !!(u && (b.likers || []).includes(u.id)), mine: !!(u && b.user_id === u.id), wk: (b.likers || []).length, likes: (b.likers || []).length, hidden: !!(u && b.user_id === u.id && b.hidden) });
+        if (name === "builds_list") {
+          let L = B.filter((b) => !b.removed && (a.p_sort === "mine" ? u && b.user_id === u.id : !b.hidden));
+          if (a.p_cls) L = L.filter((b) => b.cls === a.p_cls); if (a.p_el) L = L.filter((b) => b.el === a.p_el); if (a.p_bud) L = L.filter((b) => b.bud === a.p_bud);
+          if (a.p_br) { const [lo, hi] = a.p_br.includes("-") ? a.p_br.split("-").map(Number) : [+a.p_br, +a.p_br]; L = L.filter((b) => b.lvl >= lo && b.lvl <= hi); }
+          if (a.p_q) L = L.filter((b) => b.title.toLowerCase().includes(a.p_q.toLowerCase()) || (a.p_items || []).some((t) => b.items.includes(t)));
+          if (a.p_sort === "fav") L = L.filter((b) => (a.p_ids || []).includes(b.id));
+          L.sort((x, y) => (a.p_sort === "views" ? y.views - x.views : a.p_sort === "new" ? y.id - x.id : (y.likers || []).length - (x.likers || []).length || y.id - x.id));
+          const off = a.p_off || 0; const w = B.filter((b) => !b.hidden && !b.removed && (b.likers || []).length >= 3).sort((x, y) => y.likers.length - x.likers.length)[0];
+          return ok(Object.assign({ n: L.length, rows: L.slice(off, off + 24).map(row) }, off === 0 && a.p_sort !== "mine" && a.p_sort !== "fav" ? { week: w ? row(w) : null } : {}));
+        }
+        if (name === "build_view") { const b = B.find((x) => x.id === a.p_id); const who = u ? u.id : "g:" + a.p_guest; if (!b || (b.seen || []).includes(who)) return ok(false); b.seen = (b.seen || []).concat([who]); b.views++; return ok(true); }
+        if (!u) return { data: null, error: { message: "non connecté" } };
+        const me = d.profiles.find((p) => p.id === u.id);
+        if (name === "builds_me") return ok(B.filter((b) => b.user_id === u.id && !b.removed).map((b) => ({ id: b.id, hid: b.hid, title: b.title, cls: b.cls, lvl: b.lvl, likes: (b.likers || []).length, views: b.views, hidden: b.hidden, el: b.el, tags: b.tags, note: b.note, code: b.code, at: b.at })));
+        if (name === "build_publish") {
+          let j; try { j = JSON.parse(decodeURIComponent(escape(atob(a.p_code.slice(7))))); } catch (e) { return ok({ err: "Ce build ne peut pas être lu." }); }
+          const items = Object.values(j.eq || {}); if (items.length < 3) return ok({ err: "Équipe au moins 3 objets sur ce héros avant de publier son build." });
+          d.pubs = (d.pubs || []).concat([a]);
+          if (a.p_id) { const b = B.find((x) => x.id === a.p_id && x.user_id === u.id && !x.removed); if (!b) return ok({ err: "Ce build n'existe plus : publie-le à nouveau.", gone: true });
+            Object.assign(b, { code: a.p_code, cls: j.cls, lvl: j.lvl, items, bud: a.p_bud, at: new Date().toISOString() }, a.p_title == null ? {} : { title: a.p_title, note: a.p_note, tags: a.p_tags, el: a.p_el }); return ok({ id: b.id, upd: true }); }
+          if (!a.p_title || a.p_title.length < 4) return ok({ err: "Donne un titre à ton build (4 caractères au moins)." });
+          if (B.filter((x) => x.user_id === u.id && !x.removed).length >= 10) return ok({ err: "Tu as déjà 10 builds publiés." });
+          const id = B.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+          B.push({ id, user_id: u.id, pseudo: me ? me.pseudo : "?", hid: a.p_hid, cls: j.cls, lvl: j.lvl, el: a.p_el, bud: a.p_bud, tags: a.p_tags || [], title: a.p_title, note: a.p_note || "", code: a.p_code, items, sex: a.p_sex, head: a.p_head, likers: [], views: 0, reports: [], hidden: false, removed: false, at: new Date().toISOString(), new: new Date().toISOString() });
+          return ok({ id });
+        }
+        const b = B.find((x) => x.id === a.p_id);
+        if (name === "build_like") { if (!b) return ok({ err: "Ce build n'est plus disponible." }); if (b.user_id === u.id) return ok({ err: "Tu ne peux pas aimer ton propre build." });
+          const on = !(b.likers || []).includes(u.id); b.likers = on ? (b.likers || []).concat([u.id]) : b.likers.filter((x) => x !== u.id); return ok({ liked: on, likes: b.likers.length }); }
+        if (name === "build_report") { if (!b) return ok("Ce build n'est plus disponible."); if ((b.reports || []).some((r) => r[0] === u.id)) return ok("Tu as déjà signalé ce build."); b.reports = (b.reports || []).concat([[u.id, a.p_reason]]); if (b.reports.length >= 3) b.hidden = true; return ok(null); }
+        if (name === "build_delete") { d.builds = B.filter((x) => !(x.id === a.p_id && x.user_id === u.id)); put(d); return { data: null, error: null }; }
+        if (name === "adm_builds") return ok(B.map((x) => ({ id: x.id, pseudo: x.pseudo, cls: x.cls, lvl: x.lvl, title: x.title, note: x.note, likes: (x.likers || []).length, views: x.views, reports: (x.reports || []).length, hidden: x.hidden, removed: x.removed, at: x.at, reasons: (x.reports || []).map((r) => r[1]).join(" · ") })));
+        if (name === "adm_build_set") { d.admCalls = (d.admCalls || []).concat([[name, a]]); if (b) { if (a.p_act === "ok") Object.assign(b, { hidden: false, reports: [] }); if (a.p_act === "hide") b.hidden = true; if (a.p_act === "del") b.removed = true; if (a.p_act === "restore") Object.assign(b, { removed: false, hidden: false }); } return ok(null); }
+      }
       const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
       if (window.__offline) throw new Error("Failed to fetch");
       const s = d.saves[u.id];
@@ -467,6 +505,90 @@ const MOCK = () => {
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
     await page.click('.adm [data-act="adm-tab"][data-v="idees"]'); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });
     if (!/Bouftou Royal/.test(await page.textContent(".adm"))) fail("idées : absente du panel admin");
+    // 7d ter (1.0.23). builds partagés : liste, build de la semaine, filtres, recherche, fiche, j'aime, favori, appliquer, signaler, publier, mise à jour en un clic, panel admin
+    await page.evaluate(() => { const S = window.DX.S; S.settings.snd = Object.assign({}, S.settings.snd, { asked: true }); document.querySelectorAll("#sndask").forEach((x) => x.remove()); }); // 1.0.22 : la bulle « Jouer en musique ? » ne cache pas les clics du test
+    const myCls = await page.evaluate(() => { const D = window.DATA, E = window.ENGINE, S = window.DX.S;
+      const pick = (sl, L) => Object.keys(D.ITEMS).filter((k) => D.ITEMS[k].slot === sl && D.ITEMS[k].lvl <= L && D.ITEMS[k].craft).sort((a, b) => D.ITEMS[b].lvl - D.ITEMS[a].lvl)[0];
+      const code = (cls, lvl, st) => { const eq = {}; ["coiffe", "cape", "amulette", "ceinture", "bottes"].forEach((sl) => (eq[sl] = pick(sl, lvl))); eq.dofus1 = "dofus_cacao"; return E.BUILD_PREFIX + btoa(unescape(encodeURIComponent(JSON.stringify({ v: 1, cls, lvl, n: "Héros", st, as: "", ac: 200, at: "vit", sp: [], eq })))); };
+      const mk = (id, uid, pseudo, cls, lvl, el, bud, title, likers, views) => { const c = code(cls, lvl, { vit: 300, [el]: 200 }); const j = JSON.parse(decodeURIComponent(escape(atob(c.slice(7)))));
+        return { id, user_id: uid, pseudo, hid: 1, cls, lvl, el, bud, tags: ["Donjon"], title, note: "Passer en Colère dès le 3e tour.", code: c, items: Object.values(j.eq), sex: "m", head: 0, likers, views, reports: [], hidden: false, removed: false, at: new Date().toISOString(), new: new Date().toISOString() }; };
+      const mc = S.chars[0].cls; const other = mc === "eni" ? "cra" : "eni";
+      const d = JSON.parse(localStorage.getItem("__mock")); d.builds = [mk(1, "u9", "Kralamour", mc, 200, "fo", "pre", "Build Terre increvable", ["u7", "u6", "u5"], 120), mk(2, "u8", "Tofuline", other, 120, "ine", "abo", "Build Feu soin", [], 4)];
+      localStorage.setItem("__mock", JSON.stringify(d)); return { mc, other }; });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.click('#nav [data-nk="builds"]'); await page.waitForSelector("#bdPage .bd-card", { timeout: 8000 });
+    if ((await page.$$("#bdPage .bd-card")).length !== 2) fail("builds : il faut 2 cartes");
+    if (!(await page.$("#bdPage .bd-week")) || !/Build Terre increvable/.test(await page.textContent("#bdPage .bd-week"))) fail("builds : build de la semaine absent");
+    if ((await page.$$("#bdPage .bd-cls button")).length !== 19) fail("builds : il faut les 19 classes dans les filtres");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/builds.png", fullPage: true });
+    await page.click(`[data-act="bd-f"][data-k="cls"][data-v="${myCls.other}"]`); await page.waitForTimeout(500);
+    if ((await page.$$("#bdPage .bd-card")).length !== 1 || !/Build Feu soin/.test(await page.textContent("#bdPage .bd-grid"))) fail("builds : filtre par classe incorrect");
+    await page.click(`[data-act="bd-f"][data-k="cls"][data-v="${myCls.other}"]`); await page.waitForTimeout(500);
+    await page.click('[data-act="bd-f"][data-k="br"][data-v="101-150"]'); await page.waitForTimeout(500);
+    if ((await page.$$("#bdPage .bd-card")).length !== 1) fail("builds : filtre par niveau incorrect");
+    await page.click('[data-act="bd-f"][data-k="br"][data-v=""]'); await page.waitForTimeout(500);
+    const bCoiffe = await page.evaluate(() => window.DATA.ITEMS[JSON.parse(localStorage.getItem("__mock")).builds[0].items[0]].name);
+    await page.fill("#bdQ", bCoiffe); await page.waitForTimeout(1200);
+    if ((await page.$$("#bdPage .bd-card")).length !== 1 || !/Build Terre increvable/.test(await page.textContent("#bdPage .bd-grid"))) fail("builds : recherche par objet incorrecte");
+    if ((await page.inputValue("#bdQ")) !== bCoiffe) fail("builds : la recherche s'efface au redessin");
+    await page.fill("#bdQ", ""); await page.waitForTimeout(1200);
+    await page.click('.bd-card[data-id="1"]'); await page.waitForSelector("#bdPage .bd-doll", { timeout: 5000 });
+    if ((await page.$$("#bdPage .bd-doll .dslot.filled")).length !== 6) fail("builds : fiche, il faut 6 objets dans la poupée");
+    if ((await page.$$("#bdPage .bd-st")).length < 3) fail("builds : fiche, caractéristiques absentes");
+    if (!(await page.$("#bdPage .bd-cmpt"))) fail("builds : fiche, comparaison avec mon héros absente");
+    if (!(await page.$("#bdPage .bd-dofp .dofp"))) fail("builds : fiche, passif du Dofus absent");
+    await page.waitForTimeout(300);
+    if (!/👁 121/.test(await page.textContent("#bdPage .bd-dhead"))) fail("builds : vue non comptée");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/build-fiche.png", fullPage: true });
+    await page.click('#bdPage .bd-dhead [data-act="bd-like"]'); await page.waitForTimeout(300);
+    if (!/❤ 4/.test(await page.textContent("#bdPage .bd-dhead"))) fail("builds : j'aime non compté");
+    await page.click('#bdPage .bd-dhead [data-act="bd-fav"]'); await page.waitForTimeout(200);
+    if (!(await page.evaluate(() => (window.DX.S.bdFav || []).includes(1)))) fail("builds : favori non gardé");
+    await page.click('#bdPage [data-act="bd-apply"]'); await page.waitForSelector('.sheet [data-act="bd-applygo"]', { timeout: 3000 });
+    await page.click('.sheet [data-act="bd-applygo"]'); await page.waitForTimeout(300);
+    if (!(await page.evaluate(() => window.DX.S.chars[0].alloc.fo > 0 || window.DX.S.chars[0].lvl === 1))) fail("builds : « Appliquer » sans effet");
+    await page.click('#bdPage [data-act="bd-report"]'); await page.waitForSelector('.sheet [data-act="bd-reportgo"]', { timeout: 3000 });
+    await page.click('.sheet [data-act="bd-reportgo"]'); await page.waitForTimeout(400);
+    if (((await mock()).builds[0].reports || []).length !== 1) fail("builds : signalement non envoyé");
+    await page.click('#bdPage [data-act="bd-back"]'); await page.waitForSelector("#bdPage .bd-grid", { timeout: 3000 });
+    await page.selectOption("#bdSort", "fav"); await page.waitForTimeout(500);
+    if ((await page.$$("#bdPage .bd-card")).length !== 1) fail("builds : tri « Mes favoris » incorrect");
+    // publier depuis « Partager le build », avec 3 objets sur le héros
+    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE, D = window.DATA; const c = S.chars[0];
+      ["amulette", "ceinture", "bottes"].forEach((sl) => { const t = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].slot === sl && D.ITEMS[k].lvl <= c.lvl && D.ITEMS[k].craft); const it = E.rollItem(S, t); E.equip(S, c.id, it.uid); }); }); // pas de coiffe ni de cape : le rendu d'Ankama refuse le jeu (403)
+    await page.click('#bdPage [data-act="bd-pub"]'); await page.waitForSelector(".sheet #bdPub #bdPT", { timeout: 5000 });
+    if (!/Partager le build/.test(await page.textContent(".sheet h2")) || !(await page.$(".sheet #buildOut"))) fail("builds : la fenêtre « Partager le build » a perdu le code");
+    await page.fill("#bdPT", "Mon premier build"); await page.click('.sheet [data-act="bd-ptag"][data-v="Farm"]'); await page.fill("#bdPN", "À essayer !");
+    await page.click('.sheet [data-act="bd-send"]'); await page.waitForTimeout(800);
+    m = await mock();
+    { const pb = (m.builds || []).find((x) => x.title === "Mon premier build"); if (!pb || pb.tags[0] !== "Farm" || pb.note !== "À essayer !" || !["abo", "moy", "pre"].includes(pb.bud) || !["fo", "ine", "cha", "age", "multi"].includes(pb.el)) fail("builds : publication incorrecte " + JSON.stringify(pb && { t: pb.tags, n: pb.note, b: pb.bud, e: pb.el })); }
+    if (!(await page.evaluate(() => window.DX.S.chars[0].bd > 0))) fail("builds : le build publié n'est pas relié au héros");
+    if (!/Mettre à jour le build publié/.test(await page.textContent(".sheet #bdPub"))) fail("builds : bouton de mise à jour absent après la publication");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/build-publier.png" });
+    await page.click('.sheet [data-act="closesheet"].btn');
+    // le héros change : « Mettre à jour mon build publié » dans ⋯ Plus, en un clic
+    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE, D = window.DATA, c = S.chars[0]; const t = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].slot === "anneau" && D.ITEMS[k].lvl <= c.lvl && D.ITEMS[k].craft); E.equip(S, c.id, E.rollItem(S, t).uid); });
+    if (!(await page.evaluate(() => window.BUILDS.changed(window.DX.S.chars[0])))) fail("builds : changement du héros non vu");
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.builds.forEach((b) => { if (b.title === "Mon premier build") b.at = new Date(Date.now() - 60000).toISOString(); }); localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { const S = window.DX.S; window.DX.ui.tab = "team"; window.DX.ui.tview = "hero"; window.DX.ui.cid = S.chars[0].id; window.DX.ui.heroMore = true; window.DX.render(); });
+    await page.waitForSelector('.hmenu [data-act="bd-quickupd"]', { timeout: 3000 }).catch(() => fail("builds : « Mettre à jour mon build publié » absent du menu du héros"));
+    if (await page.$('.hmenu [data-act="bd-quickupd"]')) { await page.click('.hmenu [data-act="bd-quickupd"]'); await page.waitForTimeout(800);
+      m = await mock(); const last = (m.pubs || [])[(m.pubs || []).length - 1]; if (!last || last.p_title !== null || !last.p_id) fail("builds : mise à jour en un clic incorrecte");
+      if (await page.evaluate(() => window.BUILDS.changed(window.DX.S.chars[0]))) fail("builds : toujours « changé » après la mise à jour"); }
+    // panel admin : onglet Builds, cacher un build
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector('.adm [data-act="adm-tab"][data-v="builds"]', { timeout: 5000 });
+    await page.click('.adm [data-act="adm-tab"][data-v="builds"]'); await page.waitForSelector('.adm [data-act="bd-adm"]', { timeout: 5000 });
+    await page.click('.adm [data-act="bd-adm"][data-id="2"][data-v="hide"]'); await page.waitForTimeout(500);
+    m = await mock(); if (!(m.builds.find((x) => x.id === 2) || {}).hidden) fail("builds : « Cacher » du panel admin sans effet");
+    // téléphone : la page et la fiche tiennent dans l'écran
+    await page.setViewportSize({ width: 390, height: 844 }); await page.click('#nav [data-nk="builds"]').catch(async () => { await page.evaluate(() => { window.DX.ui.tab = "builds"; window.DX.render(); }); });
+    await page.evaluate(() => { window.DX.ui.tab = "builds"; window.DX.ui.bdOpen = null; window.DX.render(); }); await page.selectOption("#bdSort", "week"); await page.waitForSelector("#bdPage .bd-card", { timeout: 5000 });
+    { const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`builds : page trop large sur téléphone : ${w}px`); }
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/builds-mob.png", fullPage: true });
+    await page.$eval('.bd-card[data-id="1"]', (e) => e.click()); await page.waitForSelector("#bdPage .bd-doll", { timeout: 5000 }); // le chat ouvert couvre la page au téléphone
+    { const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`builds : fiche trop large sur téléphone : ${w}px`); }
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/build-fiche-mob.png", fullPage: true });
+    await page.setViewportSize({ width: 1280, height: 800 }); await page.evaluate(() => { window.DX.ui.bdOpen = null; window.DX.ui.tab = "admin"; window.DX.render(); });
     // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
     await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
     await page.click('#nav [data-nk="hdv"]');
@@ -654,7 +776,8 @@ const MOCK = () => {
     if ((await p3.$$(".svm .svc2:not(.empty)")).length !== 2) fail("parties : sans compte, les parties de l'appareil ne sont pas toutes montrées");
     if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/menu-invite-mob.png", fullPage: true });
     await ctx3.close();
-  } finally { await browser.close(); server.close(); }
+  } catch (e) { if (errors.length) console.error("Déjà en échec avant l'arrêt :\n" + errors.join("\n")); throw e; } // 1.0.23 : les échecs déjà notés ne sont plus perdus
+  finally { await browser.close(); server.close(); }
   if (errors.length) { console.error("ÉCHEC :\n" + errors.join("\n")); process.exit(1); }
   console.log("Compte et sauvegarde en ligne : OK");
 })();

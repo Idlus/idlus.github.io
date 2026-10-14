@@ -21,9 +21,19 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.22.2";
+const GAME_VERSION = "1.0.23";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.23", name: "Builds partagés", items: [
+    "Nouvelle page Communauté › Builds : les builds publiés par les joueurs, en cartes (héros en pied avec sa coiffe, sa cape et son bouclier, équipement, Dofus, ❤ et vues)",
+    "Filtres : les 19 classes, la tranche de niveau (1 à 50, 51 à 100, 101 à 150, 151 à 199, 200), l'élément (Terre, Feu, Eau, Air, Multi), le budget (Abordable, Moyen, Premium, calculé tout seul) et une recherche par objet, Dofus ou titre ; tri par plus aimés de la semaine, nouveautés, meilleurs, plus vus, favoris ou mes builds",
+    "Fiche d'un build : l'équipement en poupée, les caractéristiques aux jets moyens, les panoplies, les passifs des Dofus, et « Comparer avec mon héros » (ce que le build change, en vert et en rouge)",
+    "Boutons « Appliquer » (sorts et caractéristiques sur un de tes héros de la même classe), « Liste de courses » (les objets qui te manquent) et « Copier le code »",
+    "Publier : depuis le menu ⋯ d'un héros, fenêtre « Partager le build », avec un titre, l'élément, jusqu'à 3 étiquettes (Donjon, Kolizéum, Farm, Songe, Débutant) et une note. Il faut un compte Discord pour publier, pas pour regarder ; 10 builds par joueur",
+    "Quand le héros change, « Mettre à jour mon build publié » dans son menu ⋯ remet le build à jour en un clic",
+    "❤ J'aime (un par compte) et ☆ Favoris ; le build le plus aimé de la semaine est mis en avant en haut de la page ; titre « Théorycrafteur » quand un de tes builds atteint 25 ❤",
+    "« Signaler » : un build signalé 3 fois est caché en attendant la décision de l'équipe",
+  ] },
   { v: "1.0.22.2", name: "Un logo par meuble", items: [
     "Chaque meuble de la maison a maintenant son propre logo (35 dessins dans le style des coffres) : pupitre, encyclopédie, planétarium, vitrine, socle, piédestal, coffres, balance, malle, banc, fontaine, tapis volant, établi, enclume, botte de foin, abreuvoirs… et ceux du Comptoir, du Bricoleur, des succès et des butins rares",
     "On le voit partout où le meuble apparaît : Boutique de la maison, tuiles de « Ma maison », meubles à placer, pièces du Havre-Sac et catalogue ; les trophées de boss gardent le portrait du boss",
@@ -1617,7 +1627,7 @@ const NAV = [
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
-  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] : []).concat([["sugg", "Suggestions", "idee"]]) },
+  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"]]) }, // 1.0.23 : Builds (js/builds.js)
 ];
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
@@ -4502,7 +4512,8 @@ function heroesHtml() {
   const others = (() => { const tm = E.team(S); const first = tm.find((x) => x.cls === c.cls); return inT && first && first.id !== c.id ? ` <span class="tag warn">déjà actif via ${h(first.name)}</span>` : ""; })();
   const strip = `<div class="tstrip"><button class="btn sm" data-act="teamlist">← Équipe</button>${S.chars.map((x) => `<button class="ts-h ${x.id === c.id ? "on" : ""} ${x.inTeam && !x.job ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-label="${h(x.name)}">${head(x)}${al.some((a) => a.c === x && a.k === "gear") ? `<i class="ts-g"></i>` : ""}${!x.autoStat && x.pts > 0 ? `<i class="ts-p num">${x.pts}</i>` : ""}</button>`).join("")}${S.chars.length < E.HERO_MAX ? `<button class="ts-h ts-add ${canRecruit() ? "ok" : ""}" data-act="recruitsheet" aria-label="Recruter un héros pour ${fmt(recruitPrice())} kamas"><span class="head" style="--cc:var(--panel3)">+</span></button>` : ""}</div>`;
   const more = ui.heroMore ? `<div class="hmenu" role="menu">
-      <button data-act="buildsheet" data-id="${c.id}">${G("share")} Partager le build</button>
+      <button data-act="buildsheet" data-id="${c.id}">${G("share")} ${window.BUILDS && window.ONLINE && window.ONLINE.enabled ? "Partager ou publier le build" : "Partager le build"}</button>
+      ${window.BUILDS && window.BUILDS.changed(c) ? `<button data-act="bd-quickupd" data-id="${c.id}">${G("share")} Mettre à jour mon build publié</button>` : ""}
       ${c.lvl < E.MAX_LVL ? `<button data-act="pin" data-p="${h(JSON.stringify({ k: "lvl", cid: c.id, n: lvlGoal(c) }))}">${G("pin")} ${E.pinned(S, { k: "lvl", cid: c.id, n: lvlGoal(c) }) ? "Ne plus suivre" : "Suivre"} le niveau ${lvlGoal(c)}</button>` : ""}
       <label>Titre <select data-act="settitle" data-id="${c.id}"><option value="">Aucun</option>${E.titles(S).map((t) => `<option ${c.title === t ? "selected" : ""}>${h(t)}</option>`).join("")}</select></label>
       ${c.orn === "ailes" && ["or", "argent", "sombre"].some((w) => S.unlocks["wing_" + w]) ? `<label>Ailes <select data-act="setwing" data-id="${c.id}"><option value="">Classiques</option>${["or", "argent", "sombre"].filter((w) => S.unlocks["wing_" + w]).map((w) => `<option value="${w}" ${c.wing === w ? "selected" : ""}>${{ or: "Dorées", argent: "Argentées", sombre: "Sombres" }[w]}</option>`).join("")}</select></label>` : ""}
@@ -4907,9 +4918,10 @@ function buildPreview(b, c) {
 function buildSheet(cid) {
   const c = char(cid) || char(ui.cid); ui.buildCid = c.id;
   const code = E.buildCode(S, c);
-  openSheet(`<h2>Partager un build</h2>
-    <div class="stack small" style="gap:12px">
-      <div><b>Le build ${h(deNom(c.name))}</b> <span class="muted">(sorts, caractéristiques et équipement)</span>
+  const pub = window.BUILDS ? window.BUILDS.pubHtml(c) : ""; // 1.0.23 : publier dans Communauté › Builds (js/builds.js)
+  openSheet(`<h2>Partager le build</h2>
+    <div class="stack small" style="gap:12px">${pub}
+      <div><b>Le code du build ${h(deNom(c.name))}</b> <span class="muted">(sorts, caractéristiques et équipement)</span>
         <textarea id="buildOut" readonly rows="3">${h(code)}</textarea>
         <div class="row" style="gap:6px"><button class="btn sm primary" data-act="buildcopy">Copier le code</button><span class="xs muted">À coller sur Discord ou à envoyer à un ami.</span></div></div>
       <div><b>Lire un build</b> <span class="muted">(collez le code d'un autre joueur)</span>
@@ -4918,6 +4930,7 @@ function buildSheet(cid) {
       ${ui.buildRead ? buildPreview(ui.buildRead, c) : ""}
     </div>
     <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  if (pub && window.BUILDS) window.BUILDS.pubOpen(c);
 }
 /* Tenues : équipement complet enregistré, remis en un clic */
 function gearOn(c, g) { const a = Object.entries(g.eq), b = Object.entries(c.equip); return a.length === b.length && a.every(([sl, u]) => c.equip[sl] === u); }
@@ -6237,6 +6250,7 @@ function render() {
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else if (ui.tab === "sugg" && window.IDEES) window.IDEES.render($("#main")); // 0.1.36, voir js/idees.js
+  else if (ui.tab === "builds" && window.BUILDS) window.BUILDS.render($("#main")); // 1.0.23, voir js/builds.js
   else { ui.tab = "home"; renderHome(); }
   tabsKeep();
   tipTick();
@@ -6507,7 +6521,7 @@ function pageGo(id) {
   switch (id) {
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
-    case "combat": case "ren": case "forge": case "ladder": case "team": case "koli": case "wb": case "metiers": case "sugg": case "hdv": case "guild": go(id); break;
+    case "combat": case "ren": case "forge": case "ladder": case "team": case "koli": case "wb": case "metiers": case "sugg": case "builds": case "hdv": case "guild": go(id); break;
     case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("quests", "qt", "tresor"); break; case "region": go("quests", "qt", "region"); break; case "hebdo": go("quests", "qt", "hebdo"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
     case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
@@ -8683,6 +8697,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { questGoBtn, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { spIcon, spellTip, setBlock, DOLL_L, DOLL_R, dbLook, buildSheet }); // 1.0.23 : page Builds (js/builds.js)
 Object.assign(window.DX.social, { dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
