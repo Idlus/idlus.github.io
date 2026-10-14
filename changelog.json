@@ -1,6 +1,16 @@
 {
-  "version": "1.0.24",
+  "version": "1.0.24.1",
   "versions": [
+    {
+      "v": "1.0.24.1",
+      "name": "10 commandes par jour",
+      "items": [
+        "Commandes d'artisans : une commande livrée est remplacée aussitôt par une nouvelle, jusqu'à 10 livrées par jour (toujours 3 à la fois)",
+        "Deux primes : un coffre à 3 livrées (en argent avec une commande urgente), puis un Coffre en or à 10",
+        "La boîte de Quêtes › Aujourd'hui compte sur 10, montre la prochaine prime et combien de commandes arrivent encore",
+        "La boîte refaite de la 1.0.23.1 (barres, Livrer, Tout livrer, Récolter et Y aller) est de retour : une autre mise à jour l'avait effacée par erreur"
+      ]
+    },
     {
       "v": "1.0.24",
       "name": "Boutique du Kolizéum",
@@ -10,6 +20,17 @@
         "Nouvel onglet Havre-Sac : Statue du Gladiateur (+2 % d'XP) et Bourse du Kolizéum (+2 % de kamas), 350 Kolizetons chacune, avec leur logo",
         "Apparence : titres « Briseur de cotes » (250) et « Maître de l'arène » (600), ornement « Écusson du Kolizéum » (450)",
         "Coffres : le Coffre en obsidienne arrive en boutique, à 800 Kolizetons"
+      ]
+    },
+    {
+      "v": "1.0.23.1",
+      "name": "Commandes d'artisans plus claires",
+      "items": [
+        "Quêtes › Aujourd'hui : chaque commande a sa barre (déjà livré + ce que tu as en banque), « il manque X » ou « Prête à livrer », et ce qu'elle paie (kamas et XP de métier)",
+        "Bouton « Livrer » sur chaque commande prête, « Livrer 8 » pour une livraison partielle, et « Tout livrer » quand plusieurs sont prêtes",
+        "Il te manque une ressource ? « Récolter » ouvre le bon métier, « Y aller » la zone du monstre qui la lâche (aussi sur la page Commandes)",
+        "« Urgent ×1,5 » dit enfin ce qu'il donne : kamas et XP ×1,5, et la prime du jour passe au Coffre en argent ; la prime est affichée avec le temps restant avant minuit",
+        "Le logo du métier de l'artisan sur chaque commande ; une commande livrée passe au vert au lieu de s'éteindre"
       ]
     },
     {

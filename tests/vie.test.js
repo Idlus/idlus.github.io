@@ -35,6 +35,11 @@ assert.ok(E.cmdSwapCost(S) > 0, "la deuxième coûte des kamas");
 // prime du jour quand tout est livré
 C.list.forEach((x) => { if (x.got < x.n) { S.res[x.res] = (S.res[x.res] || 0) + x.n; E.cmdDeliver(S, x.id); } });
 assert.strictEqual(C.bonus, C.day); assert.ok((S.cons.coffre_bois || 0) + (S.cons.coffre_argent || 0) >= 1, "coffre de la prime du jour");
+// 1.0.24.1 : une commande livrée est remplacée aussitôt, jusqu'à 10 par jour, Coffre en or à 10
+assert.strictEqual(C.list.length, 3, "toujours 3 commandes après livraison");
+for (let k = 0; k < 20; k++) C.list.forEach((x) => { if (x.got < x.n) { S.res[x.res] = (S.res[x.res] || 0) + x.n; E.cmdDeliver(S, x.id); } });
+assert.strictEqual(C.dn, E.CMD_DAY_MAX, "10 commandes livrées au plus"); assert.strictEqual(C.made, E.CMD_DAY_MAX);
+assert.ok(C.list.every((x) => x.got >= x.n), "les dernières restent affichées livrées"); assert.strictEqual(C.bonus2, C.day); assert.ok(S.cons.coffre_or >= 1, "Coffre en or à 10");
 // nouveau jour, nouvelles commandes
 t += 864e5; assert.notStrictEqual(E.cmdState(S).list[0].id, o.id); assert.strictEqual(E.cmdState(S).list.length, 3);
 console.log("ok - commandes d'artisans");

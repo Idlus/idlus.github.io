@@ -15,6 +15,8 @@
 
   /* ======================= Commandes d'artisans ======================= */
   E.CMD_SLOTS = 3;
+  E.CMD_DAY_MAX = 10;     // 1.0.24.1 : une commande livrée est remplacée aussitôt, jusqu'à 10 livrées par jour
+  E.CMD_PRIMES = [[3, null], [10, "coffre_or"]]; // primes du jour : 3 livrées (bois, ou argent avec une urgente), 10 livrées (or)
   E.CMD_RANKS = [3, 10, 25];   // commandes livrées à un même artisan pour passer un rang (+10 % de kamas par rang)
   E.CMD_TITLE = "Fournisseur officiel";
   E.CMD_ARTS = {
@@ -26,7 +28,8 @@
   E.cmdState = (S) => {
     if (!S.cmd || typeof S.cmd !== "object") S.cmd = { day: null, list: [], rep: {}, n: 0, swap: null, bonus: null };
     const C = S.cmd; if (!Array.isArray(C.list)) C.list = []; if (!C.rep) C.rep = {};
-    if (C.day !== day()) { C.day = day(); C.list = []; C.swap = null; for (let i = 0; i < E.CMD_SLOTS; i++) addOrder(S, i === 0 && rnd() < 0.35); }
+    if (C.day !== day()) { C.day = day(); C.list = []; C.swap = null; C.dn = 0; C.made = 0; C.urg = false; C.bonus2 = null; for (let i = 0; i < E.CMD_SLOTS; i++) if (addOrder(S, i === 0 && rnd() < 0.35)) C.made++; }
+    if (C.dn === undefined) { C.dn = C.list.filter((o) => o.got >= o.n).length; C.made = C.list.length; C.urg = C.list.some((o) => o.urgent && o.got >= o.n); } // parties d'avant la 1.0.24.1
     return C;
   };
   E.cmdRank = (S, art) => { const n = (S.cmd && S.cmd.rep[art]) || 0; return E.CMD_RANKS.filter((x) => n >= x).length; };
@@ -81,13 +84,25 @@
     C.rep[o.art] = (C.rep[o.art] || 0) + 1; C.n = (C.n || 0) + 1;
     const r1 = E.cmdRank(S, o.art);
     E.note(S, `Commande livrée à ${E.CMD_ARTS[o.art]} : +${fmtK(k)} kamas, +${fmtK(o.jxp)} XP ${jobName(o.art)}.${r1 > r0 ? ` Rang ${r1} : +${r1 * 10} % de kamas avec cet artisan.` : ""}`, "rare");
-    if (C.bonus !== C.day && C.list.length && C.list.every((x) => x.got >= x.n)) { // prime du jour : toutes les commandes livrées
-      C.bonus = C.day; const chest = C.list.some((x) => x.urgent) ? "coffre_argent" : "coffre_bois"; E.addCons(S, chest);
-      E.note(S, `Prime du jour : toutes les commandes sont livrées ! ${D.CONSUMABLES[chest].name} offert.`, "rare");
+    C.dn = (C.dn || 0) + 1; if (o.urgent) C.urg = true;
+    if (C.bonus !== C.day && C.dn >= E.CMD_PRIMES[0][0]) { // 1re prime du jour : 3 commandes livrées
+      C.bonus = C.day; const chest = E.cmdChest(S); E.addCons(S, chest);
+      E.note(S, `Prime du jour : ${C.dn} commandes livrées ! ${D.CONSUMABLES[chest].name} offert.`, "rare");
+    }
+    if (C.bonus2 !== C.day && C.dn >= E.CMD_PRIMES[1][0]) { // 2e prime : 10 commandes livrées
+      C.bonus2 = C.day; E.addCons(S, E.CMD_PRIMES[1][1]);
+      E.note(S, `Grande prime : ${C.dn} commandes livrées aujourd'hui ! ${D.CONSUMABLES[E.CMD_PRIMES[1][1]].name} offert.`, "rare");
+    }
+    if ((C.made || 0) < E.CMD_DAY_MAX) { // une nouvelle commande prend sa place
+      const i = C.list.indexOf(o); C.list.splice(i, 1); const nw = addOrder(S, rnd() < 0.2);
+      if (nw) { C.list.splice(C.list.length - 1, 1); C.list.splice(i, 0, nw); C.made++; E.note(S, `Nouvelle commande : ${E.CMD_ARTS[nw.art]} demande ${nw.n} × ${nw.res}.`, "info"); }
+      else C.list.splice(i, 0, o);
     }
     E.emit(S, "commande", { art: o.art }); if (E.checkAch) E.checkAch(S);
     return null;
   };
+  E.cmdChest = (S) => (S.cmd && (S.cmd.urg || S.cmd.list.some((x) => x.urgent && x.got < x.n)) ? "coffre_argent" : "coffre_bois");
+  E.cmdLeft = (S) => { const C = E.cmdState(S); return Math.max(0, E.CMD_DAY_MAX - (C.made || 0)); }; // commandes encore à venir aujourd'hui
   E.cmdSwapCost = (S) => (S.cmd && S.cmd.swap === day() ? 25 * topLvl(S) : 0);
   E.cmdSwap = (S, id) => {
     const C = E.cmdState(S); const i = C.list.findIndex((x) => x.id === id); if (i < 0) return "Commande introuvable.";
