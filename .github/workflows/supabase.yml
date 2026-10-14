@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["supabase/**", "js/engine.js", "js/systems.js", "js/data.js", "js/gamedata.js", "js/pets.js", "js/mounts.js", "js/idols.js", "js/renaissance.js", "js/archis.js", "js/defi.js", "js/gboss.js", "js/koli.js", "js/legendaires.js", "js/dofusp.js", "js/wboss.js", "js/verify.js", "tools/build_server.js", "tools/serveur/vps_sql.sh", "tools/serveur/sql_distant.sh", ".github/workflows/supabase.yml"]
+    paths: ["supabase/**", "js/engine.js", "js/systems.js", "js/data.js", "js/gamedata.js", "js/armes.js", "js/drops.js", "js/pieces.js", "js/pets.js", "js/mounts.js", "js/idols.js", "js/renaissance.js", "js/archis.js", "js/defi.js", "js/gboss.js", "js/koli.js", "js/legendaires.js", "js/dofusp.js", "js/wboss.js", "js/verify.js", "tools/build_server.js", "tools/serveur/vps_sql.sh", "tools/serveur/sql_distant.sh", ".github/workflows/supabase.yml"]
 concurrency:
   group: serveur-en-ligne
   cancel-in-progress: false

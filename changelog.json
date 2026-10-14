@@ -1,6 +1,17 @@
 {
-  "version": "1.0.17.1",
+  "version": "1.0.18",
   "versions": [
+    {
+      "v": "1.0.18",
+      "name": "Panoplies complètes",
+      "items": [
+        "79 pièces de panoplie qui manquaient arrivent dans le jeu : les 60 panoplies dont le dernier bonus était impossible à obtenir peuvent enfin être complétées",
+        "13 faux de DOFUS arrivent aussi, du niveau 17 au niveau 200 (dont Faux Chaotique, Faux Nétik, Faux Séraphine, Serpe Aigrie et Faux've)",
+        "Chaque nouvelle pièce se fabrique avec sa recette de DOFUS (sans les ingrédients qui n'existent pas dans Idlus) et peut aussi tomber sur les monstres, comme les autres équipements",
+        "Les Bottes de Stroud n'ont pas de recette : elles tombent sur les mêmes monstres que la Ceinture de Stroud, avec la même chance",
+        "Les caractéristiques et les bonus de panoplie restent ceux de DOFUS"
+      ]
+    },
     {
       "v": "1.0.17.1",
       "name": "Bon donjon",

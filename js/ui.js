@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.17.1";
+const GAME_VERSION = "1.0.18";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.18", name: "Panoplies complètes", items: [
+    "79 pièces de panoplie qui manquaient arrivent dans le jeu : les 60 panoplies dont le dernier bonus était impossible à obtenir peuvent enfin être complétées",
+    "13 faux de DOFUS arrivent aussi, du niveau 17 au niveau 200 (dont Faux Chaotique, Faux Nétik, Faux Séraphine, Serpe Aigrie et Faux've)",
+    "Chaque nouvelle pièce se fabrique avec sa recette de DOFUS (sans les ingrédients qui n'existent pas dans Idlus) et peut aussi tomber sur les monstres, comme les autres équipements",
+    "Les Bottes de Stroud n'ont pas de recette : elles tombent sur les mêmes monstres que la Ceinture de Stroud, avec la même chance",
+    "Les caractéristiques et les bonus de panoplie restent ceux de DOFUS",
+  ] },
   { v: "1.0.17.1", name: "Bon donjon", items: [
     "Donjons : changer de stasis ou le nombre de donjons à enchaîner ne fait plus revenir le donjon vu juste avant",
     "Le bug arrivait quand la fiche du donjon était ouverte depuis la recherche ; « Entrer » prend aussi bien la stasis et le nombre choisis",

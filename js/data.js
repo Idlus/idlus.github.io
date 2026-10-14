@@ -10,6 +10,12 @@
 (function (root) {
   "use strict";
   const G = root.GAMEDATA || (typeof require !== "undefined" ? require("./gamedata.js") : null);
+  /* 1.0.18 « Panoplies complètes » : pièces de panoplie et faux qui manquaient (tools/build_pieces.js → js/pieces.js) */
+  const PIECES = root.PIECES || (typeof require !== "undefined" ? require("./pieces.js") : null);
+  if (PIECES) {
+    for (const k in PIECES.items) if (!G.ITEMS[k]) G.ITEMS[k] = PIECES.items[k];
+    PIECES.drops.forEach(([m, t, rate]) => { const M = G.MONSTERS[m]; if (M && !(M.items = M.items || []).some((x) => x[0] === t)) M.items.push([t, rate]); });
+  }
 
   /* ---------- Caractéristiques ----------
      w : poids de rune (forgemagie)   pts : points donnés par une rune simple */

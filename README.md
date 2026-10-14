@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.18 « Panoplies complètes »
+Choix de Mathis après l'audit des panoplies (maquette https://claude.ai/artifact/1sVH8YWiJxz6dHmkoNrC5C, réponse 1A 2B 3A). `tools/build_data.py` n'avait gardé que les recettes à 2 ingrédients absents au plus et jamais les faux : 60 panoplies avaient un dernier bonus impossible. `tools/build_pieces.js` récupère sur DofusDB les 79 pièces manquantes de ces panoplies et les 5 autres faux de DOFUS à recette (13 faux en tout, Jugement de Thanatena exclu car légendaire du Songe), avec leur recette DOFUS sans les ingrédients absents d'Idlus (`craft.simpl` = nombre retiré), et écrit `js/pieces.js` ; `js/data.js` les ajoute aux objets. Les Bottes de Stroud (sans recette) tombent sur les monstres de la Ceinture de Stroud à la même chance. Ensuite `tools/build_armes.js` (dégâts des armes) et `tools/build_drops.js` (drop des équipements, 1.0.15) les prennent comme les autres ; pour cette version, seules les lignes des 84 nouveaux objets ont été ajoutées à `js/drops.js`, les chances des autres équipements ne bougent pas. Caractéristiques et bonus de panoplie inchangés (3A). `js/pieces.js` fait partie du paquet du serveur (`tools/build_server.js`). Test : `tests/pieces.test.js` ; `tests/songe.test.js` fait jusqu'à 3 essais du Rêve (le résultat dépendait du nombre de tirages de butin).
+
 ## 1.0.17.1 « Bon donjon »
 Bug signalé par un joueur (relayé par Mathis) : dans la fiche d'un donjon ouverte depuis la recherche, choisir une stasis ou un nombre de donjons à enchaîner rouvrait le donjon vu juste avant. La fiche (`dungeonSheet`, js/ui.js) retient maintenant elle-même son donjon (`dgPick`), et les boutons de stasis et d'enchaînement portent l'identifiant du donjon. Test ajouté dans tests/smoke.test.js.
 
