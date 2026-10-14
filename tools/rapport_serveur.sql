@@ -28,4 +28,10 @@ select
   pg_size_pretty(pg_database_size(current_database())) as taille_base,
   round(pg_database_size(current_database()) / 1048576.0, 1) as taille_base_mo,
   pg_size_pretty(coalesce((select sum(pg_total_relation_size('public.saves'))), 0)) as taille_sauvegardes,
-  (select pg_size_pretty(coalesce(sum((metadata->>'size')::bigint), 0)) from storage.objects) as taille_fichiers_stockes;
+  (select pg_size_pretty(coalesce(sum((metadata->>'size')::bigint), 0)) from storage.objects) as taille_fichiers_stockes,
+  -- Les 6 plus grosses tables (données + index), pour voir ce qui fait grossir la base : noms et tailles seulement.
+  (select string_agg(nom || ' : ' || pg_size_pretty(taille), ', ' order by taille desc) from (
+    select c.oid::regclass::text as nom, pg_total_relation_size(c.oid) as taille
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where c.relkind in ('r', 'm') and n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg_toast%'
+    order by taille desc limit 6) g) as plus_grosses_tables;
