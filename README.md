@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.29.2 « Clés en silence »
+
+Demande de Mathis (14/10/2026, « ajoute un truc pour désactiver toutes les notifs de drop de clé »). Nouvelle case dans Options › Jeu (`S.settings.keyToastOff`, cochée par défaut = messages affichés) : décochée, la boucle d'évènements de js/ui.js n'affiche plus le toast « Butin : Clef… » ; la clé est toujours ajoutée et notée dans le journal.
+
 ## 1.0.29.1 « Le Gelano à 1 PA »
 
 Retour de Mathis (14/10/2026, « le Gelano est considéré à 2 PA même s'il y a écrit qu'un seul »). Cause : `E.perfectStats` (js/engine.js) ajoute +2 % à chaque caractéristique d'un objet Parfait avec un minimum de +1 ; le Gelano n'a qu'un jet, 1 PA (fourchette 1-1), il est donc toujours Parfait et donnait 2 PA en combat (6 → 8 PA au total). Pareil pour tout objet Parfait avec PA, PM, Portée ou Invocation. Maintenant `E.PERFECT_SKIP` exclut ces quatre caractéristiques du bonus Parfait ; les autres gardent +2 %. Test dans tests/forgemagie.test.js.

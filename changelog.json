@@ -1,6 +1,14 @@
 {
-  "version": "1.0.29.1",
+  "version": "1.0.29.2",
   "versions": [
+    {
+      "v": "1.0.29.2",
+      "name": "Clés en silence",
+      "items": [
+        "Nouvelle option dans Options › Jeu › Notifications de clé : décocher « Afficher les clés trouvées » coupe le petit message « Butin : Clef… » à chaque clé de donjon ramassée",
+        "La clé arrive toujours dans l'inventaire et reste notée dans le journal"
+      ]
+    },
     {
       "v": "1.0.29.1",
       "name": "Le Gelano à 1 PA",

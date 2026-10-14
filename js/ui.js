@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.29.1";
+const GAME_VERSION = "1.0.29.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.29.2", name: "Clés en silence", items: [
+    "Nouvelle option dans Options › Jeu › Notifications de clé : décocher « Afficher les clés trouvées » coupe le petit message « Butin : Clef… » à chaque clé de donjon ramassée",
+    "La clé arrive toujours dans l'inventaire et reste notée dans le journal" ] },
   { v: "1.0.29.1", name: "Le Gelano à 1 PA", items: [
     "Un objet Parfait ne donne plus de PA, de PM, de Portée ni d'Invocation en trop : le Gelano (toujours parfait, son seul jet est 1 PA) comptait 2 PA au lieu d'un",
     "Le bonus Parfait (+2 %) reste sur toutes les autres caractéristiques" ] },
@@ -6459,6 +6462,7 @@ function optionsSheet() {
   if (tab === "affichage") body = displayOptionsHtml() + (window.WBUI ? window.WBUI.optHtml() : "");
   else if (tab === "sons") body = soundOptionsHtml() + notifOptionsHtml();
   else if (tab === "jeu") body = consignesHtml()
+    + optSec("Notifications de clé", "", optChk(`data-act="setkeytoast"`, !S.settings.keyToastOff, "Afficher les clés trouvées", "le petit message « Butin : Clef… » à chaque clé de donjon ramassée ; décoché, la clé arrive quand même dans l'inventaire et le journal"))
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
     + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
   else if (tab === "sauvegarde") body = (menuOn() ? optSec(`Partie ${SLOT}`, SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">3 parties : la 1 pour les classements, la 2 et la 3 en solo</span></div>`) : "")
@@ -8106,6 +8110,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }
   else if (a === "compname") { const k = (S.comps || [])[+t.dataset.i]; if (k) k.name = (t.value.trim() || k.name).slice(0, 24); dirty = true; return; }
+  else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }
   else if (a === "setcontrast") { S.settings.contrast = t.checked; dirty = true; applyDisplay(); return; }
@@ -9048,7 +9053,7 @@ function loop() {
     sinceSave += dt; sinceView += dt;
     if (E.events.length) { E.events.splice(0).forEach((ev) => { if (ev.kind === "cele") { celebrate(ev); return; }
         if (ev.kind === "loss") { if (notifOn("loss")) { toast(ev.txt, "loss"); notify("loss", "Défaite", ev.txt); } return; }
-        if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
+        if (["rare", "up", "radiant"].includes(ev.kind) || (ev.kind === "loot" && !S.settings.keyToastOff && /^Butin : Clef/.test(ev.txt))) toast(ev.txt, ev.kind);
         const lv = /^(.+) passe niveau (\d+) !$/.exec(ev.txt || ""); if (lv && +lv[2] % 10 === 0) notify("lvl", `${lv[1]} passe niveau ${lv[2]}`, "");
         else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets vont dans le trop-plein : faites de la place.");
         else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
