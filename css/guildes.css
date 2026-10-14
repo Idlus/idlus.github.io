@@ -1,0 +1,51 @@
+/* ===================== 1.0.30 : refonte des guildes (js/guilds.js) =====================
+   Coffre, améliorations, Percepteurs, attaques entre guildes, boss en 5 phases. Les classes
+   communes (gban, gbar, gperco, gatk, gboss…) restent dans style.css. */
+.gx-chest{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;background:radial-gradient(400px 120px at 0 0,rgba(var(--glw),.22),transparent 70%),var(--panel2);border:2px solid var(--gold)}
+.gx-chest .big{font-size:28px;font-weight:900;line-height:1.1}
+.gx-chest img{width:56px;height:56px;flex:none;object-fit:contain}
+.gx-in{color:var(--good,#3fb35d);font-weight:800}
+.gx-out{color:var(--danger);font-weight:800}
+.gx-shield{display:inline-flex;gap:4px;align-items:center;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:#3e5a8a;color:#fff;white-space:nowrap;flex:none}
+/* attaque : les deux équipes face à face */
+.gx-vs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}
+.gx-vs .vs{font-size:26px;font-weight:900;color:var(--gold)}
+.gx-team{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gx-team .cm{width:34px;height:34px}
+.gx-alert{border:2px solid var(--danger);border-radius:14px;padding:12px;background:rgba(239,123,98,.10);display:flex;flex-direction:column;gap:8px}
+.gx-taken{background:rgba(127,179,255,.12);border-color:#7fb3ff}
+.gx-gift,.gx-win{border-color:var(--gold)}
+.gx-out-raid{border-color:var(--gold)}
+/* boss : 5 phases */
+.gx-ph{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:6px 0}
+.gx-ph div{height:22px;border-radius:6px;border:2px solid var(--frame);background:var(--panel3);position:relative;overflow:hidden}
+.gx-ph div i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#c2412d,#f08a3c)}
+.gx-ph div b{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 0 3px #000;white-space:nowrap}
+.gx-ph div.done{background:linear-gradient(90deg,var(--gold),var(--gold2));border-color:var(--gold)}
+/* améliorations */
+.gx-up{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gx-uq{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.gx-card{border:2px solid var(--frame);border-radius:14px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.gx-card h3{margin:0;font-size:16px;display:flex;gap:8px;align-items:center}
+.gx-uq .gx-card{gap:6px;padding:10px}
+.gx-uq .gx-card h3{font-size:14.5px}
+.gx-uq .gx-card.lk{opacity:.55}
+.gx-uq .gx-card.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.gx-card .uico{width:26px;height:26px;flex:none}
+.gx-card .row.between{flex-wrap:wrap;gap:6px}
+.gx-pips{display:flex;gap:3px}
+.gx-pips i{flex:1;height:8px;border-radius:4px;background:var(--panel3);border:1px solid var(--frame)}
+.gx-pips i.on{background:linear-gradient(90deg,var(--gold),var(--gold2));border-color:var(--gold)}
+/* fiche d'une autre guilde */
+.gx-vrow .gx-team .cm{width:28px;height:28px}
+.gban .row .gx-shield{margin-left:2px}
+@media (max-width:1100px){.gx-uq{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){.gx-up{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .gx-vs{grid-template-columns:minmax(0,1fr)}.gx-vs .vs{text-align:center}
+  .gx-uq{grid-template-columns:minmax(0,1fr)}
+  .gx-chest .big{font-size:24px}
+  .gx-ph div b{font-size:9.5px}
+  .gx-vrow{grid-template-columns:auto minmax(0,1fr) auto}.gx-vrow .gx-team{grid-column:1/-1}
+  .gx-alert .row.between b{font-size:16px!important}
+}
