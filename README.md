@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.22.1 « Recherche dans l'Encyclopédie »
+
+Une barre de recherche sous les onglets de l'Encyclopédie filtre l'onglet ouvert (monstres et butins, familles, boss et donjons, équipements de tous emplacements et niveaux, trophées de zone), sans accents ni majuscules, avec une croix pour vider et un message quand rien ne correspond.
+
 ## 1.0.22 « Musique et sons »
 
 Musique composée pour Idlus (Taverne d'Astrub en chasse, Profondeurs du donjon, Boîte à musique au Havre-Sac), jouée par le navigateur (js/musique.js, Web Audio, aucun fichier). Bulle « Jouer en musique ? » une fois, pause quand l'onglet est caché, icône haut-parleur à côté des Options, sons « Bois et cristal » et clic sur les boutons importants, réglages dans Options › Sons.

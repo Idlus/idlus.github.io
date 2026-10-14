@@ -3063,7 +3063,14 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .enczone.done .xs{color:var(--gold2)}
 .encmain{padding:12px 14px;min-width:0}
 .enctools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
-.encq{flex:1 1 220px;min-width:0;padding:7px 12px;border-radius:999px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:13.5px}
+/* 1.0.22.1 : recherche de l'Encyclopédie, sous les onglets, sur une ligne */
+.encsrch{position:relative;display:flex;align-items:center;margin:-2px 0 12px;max-width:560px}
+.encsrch>svg{position:absolute;left:13px;width:16px;height:16px;opacity:.6;pointer-events:none}
+.encq{flex:1 1 auto;width:100%;min-width:0;padding:9px 38px 9px 38px;border-radius:999px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:14px}
+.encq::-webkit-search-cancel-button{display:none}
+.encq:focus{outline:none;border-color:var(--gold2)}
+.encqx{position:absolute;right:6px;width:28px;height:28px;border:0;border-radius:999px;background:var(--frame);color:#fff7e3;font:inherit;font-weight:900;font-size:13px;line-height:1;cursor:pointer}
+.encqx:hover{filter:brightness(1.15)}
 .encsel{display:none;flex:1 1 100%;padding:8px 10px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-weight:800}
 .encinfo{font-size:12px;font-weight:800;color:var(--muted);border:2px solid var(--frame);border-radius:999px;padding:4px 10px;cursor:help}
 .enczhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 0 2px;scroll-margin-top:calc(var(--sth,56px) + 10px)}
@@ -3084,6 +3091,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
   .encbest{grid-template-columns:1fr}
   .enczones{display:none}
   .encsel{display:block}
+  .encsrch{max-width:none;margin-bottom:10px}.encq{font-size:16px;padding:8px 38px}
   .encmain{padding:10px}
   .mons.enc{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   .enccard{grid-template-columns:36px minmax(0,1fr);padding:7px;gap:4px 7px}

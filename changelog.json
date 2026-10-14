@@ -1,6 +1,14 @@
 {
-  "version": "1.0.22",
+  "version": "1.0.22.1",
   "versions": [
+    {
+      "v": "1.0.22.1",
+      "name": "Recherche dans l'Encyclopédie",
+      "items": [
+        "Encyclopédie : une barre de recherche sous les onglets cherche dans l'onglet ouvert : monstres et butins, familles, boss et donjons, équipements (tous emplacements et niveaux), trophées de zone",
+        "Pas besoin des accents ni des majuscules (« gelano », « bouftou royal »), la croix ✕ ou Échap vident la recherche, et un message le dit quand rien ne correspond"
+      ]
+    },
     {
       "v": "1.0.22",
       "name": "Musique et sons",

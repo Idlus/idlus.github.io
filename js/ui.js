@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.22";
+const GAME_VERSION = "1.0.22.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.22.1", name: "Recherche dans l'Encyclopédie", items: [
+    "Encyclopédie : une barre de recherche sous les onglets cherche dans l'onglet ouvert : monstres et butins, familles, boss et donjons, équipements (tous emplacements et niveaux), trophées de zone",
+    "Pas besoin des accents ni des majuscules (« gelano », « bouftou royal »), la croix ✕ ou Échap vident la recherche, et un message le dit quand rien ne correspond",
+  ] },
   { v: "1.0.22", name: "Musique et sons", items: [
     "De la musique dans Idlus ! 4 airs composés pour le jeu, dans l'esprit de DOFUS (luth, harpe, flûte, tambourin) : Taverne d'Astrub en chasse, Profondeurs du donjon pendant un donjon, Boîte à musique sur la page de ta maison. Changement en fondu",
     "Une bulle demande une seule fois « Jouer en musique ? ». La musique démarre au premier clic (règle des navigateurs) et se met en pause quand l'onglet est caché",
@@ -2313,10 +2317,10 @@ function renderWorld() {
   else if (ui.world === "tresor") { ui.world = "map"; return renderWorld(); }
   else body = encyclopediaHtml();
   const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
-  $("#main").innerHTML = `
+  repaintKeep($("#main"), `
 <div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
     ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
-    <div class="stack">${body}</div>`;
+    <div class="stack">${body}</div>`); // 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
   if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
 }
 function lockReason(sid) {
@@ -2696,8 +2700,9 @@ function encTroHtml() {
       : `<span class="xs muted num">${traq}/${s.monsters.length} monstres Traqueur</span><span class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></span>`;
     return `<button class="trocard ${got ? "got" : ""} ${un || got ? "" : "lock"}" data-act="zoneview" data-id="${s.id}"><span class="icobox">${im(itemImg("trophee_" + s.id), "", s.name)}</span>
       <span class="grow"><b>${h(s.name)}</b><span class="xs muted">niv. ${s.lvl[0]}–${s.lvl[1]} · ${h(troEffect(s.id))}</span><br>${st}</span></button>`; };
-  const regions = ZONES.map((z) => { const a = z.subs.filter((s) => S.trophies && S.trophies[s.id]).length;
-    return `<h3 class="sec">${h(z.name)} <span class="xs muted num">${a}/${z.subs.length}</span>${a ? ` <span class="tag good">+${regPct(z.id)} % dans la région</span>` : ""}</h3><div class="trogrid">${z.subs.map(card).join("")}</div>`; }).join("");
+  const q = E.searchNorm(ui.enc && ui.enc.q);
+  const regions = ZONES.map((z) => { const a = z.subs.filter((s) => S.trophies && S.trophies[s.id]).length; const L = q && !txtHas(z.name, q) ? z.subs.filter((s) => txtHas(s.name, q)) : z.subs; if (!L.length) return "";
+    return `<h3 class="sec">${h(z.name)} <span class="xs muted num">${a}/${z.subs.length}</span>${a ? ` <span class="tag good">+${regPct(z.id)} % dans la région</span>` : ""}</h3><div class="trogrid">${L.map(card).join("")}</div>`; }).join("") || encNoHit(ui.enc.q);
   return `<section class="panel encpanel"><div class="pad">
     <div class="trohead"><div><h2>${IC("trophee")} Trophées de zone</h2><div class="small muted">Tuez 250 fois chaque monstre d'une sous-zone (palier Traqueur) pour gagner son trophée. Il ne s'équipe pas : son bonus agit tout seul, pour toujours.</div></div>
       <b class="num trocount">${n} <small class="muted">/ ${tot}</small></b></div>
@@ -2714,6 +2719,10 @@ function troPopup(sid) {
     <div class="xs muted">${troN()} / ${Object.keys(E.SUBS).length} trophées de zone</div>
     <div class="row" style="justify-content:center"><button class="btn primary" data-act="trolist">Voir mes trophées</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
+/* 1.0.22.1 « Recherche dans l'Encyclopédie » : un seul champ en haut, sous les onglets, qui filtre l'onglet ouvert
+   (monstres et butins, familles, boss et donjons, équipements, trophées), sans accents ni majuscules */
+const ENC_Q_PH = { best: "Chercher un monstre ou un butin…", fam: "Chercher une famille ou un monstre…", boss: "Chercher un boss ou un donjon…", eq: "Chercher un équipement…", tro: "Chercher une zone ou une région…" };
+const encNoHit = (q) => `<div class="empty">Rien ne correspond à « ${h(q)} » dans cet onglet. Vérifiez l'orthographe, ou cherchez dans un autre onglet.</div>`;
 function encyclopediaHtml() {
   const enc = ui.enc || (ui.enc = { tab: "best", f: "all", q: "", fam: "zone", boss: "all" });
   const all = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].archiOf); const met = all.filter(encMet).length;
@@ -2725,7 +2734,8 @@ function encyclopediaHtml() {
   const souls = E.soulCount(S), st = E.stones(S);
   const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>`;
   const head = `<div class="enckpis k6 k7">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
-    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"], ["tro", "Trophées"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`;
+    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"], ["tro", "Trophées"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`
+    + `<div class="encsrch">${G("search")}<input class="encq" id="encQ" type="search" data-act="encsearch" placeholder="${ENC_Q_PH[enc.tab] || ENC_Q_PH.best}" value="${h(enc.q || "")}" autocomplete="off" spellcheck="false" enterkeyhint="search">${enc.q ? `<button class="encqx" data-act="encqclear" aria-label="Effacer la recherche" data-tip="Effacer la recherche">✕</button>` : ""}</div>`;
   return head + (enc.tab === "tro" ? encTroHtml() : enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
 }
 function encBestHtml(enc) {
@@ -2753,7 +2763,7 @@ function encBestHtml(enc) {
   }
   const [za, zb] = zprog(z);
   return `<section class="panel encpanel"><div class="encbest"><aside class="enczones">${side}</aside><div class="encmain">
-    <div class="enctools">${sel}<input class="encq" id="encQ" data-act="encsearch" placeholder="Chercher un monstre ou un butin…" value="${h(enc.q || "")}">
+    <div class="enctools">${q ? "" : sel}
       <span class="seg">${[["all", "Tous"]].concat([["near", "À ma portée"]], [["new", "À découvrir"], ["hidden", "Butins cachés"]]).map(([v, n]) => `<button data-act="encf" data-v="${v}" aria-pressed="${enc.f === v}">${n}</button>`).join("")}</span>
       <span class="encinfo" data-tip="${h(HUNT_TIERS.map((t) => `${t.name} (${fmt(t.n)} victoires) : ${t.desc}`).join(" | "))}">? Paliers</span></div>
     ${q || enc.f === "near" ? "" : `<div class="enczhead"><h2>${h(z.name)}</h2><span class="small muted num">${za}/${zb} monstres rencontrés</span></div>`}${body}</div></div></section>`;
@@ -2763,16 +2773,20 @@ function encFamHtml(enc) {
   const fo = ui.encFamOpen || {};
   const row = (x) => `<div class="famwrap ${fo[x.r] ? "open" : ""}"><button class="famrow ${x.done ? "done" : ""}" data-act="encfamopen" data-v="${x.r}"><div class="grow"><b>${h(D.RACES[x.r] || x.r)}</b><span class="bar"><i style="width:${pct(x.n, x.ks.length)}%"></i></span></div><span class="xs muted num">${x.n}/${x.ks.length}</span>${x.done ? `<span class="tag good">+5 Vi</span>` : ""}<span class="xs muted">${fo[x.r] ? "▴" : "▾"}</span></button>${fo[x.r] ? `<div class="famopen">${x.ks.map((k) => `<div class="famm">${im(imgM(k), "fm-img", MONSTERS[k].name)}<div class="grow"><b class="small">${encMet(k) ? h(MONSTERS[k].name) : "???"}</b>${tierBadge(k)}${encWhereHtml(k)}</div></div>`).join("")}</div>` : ""}</div>`;
   const done = rows.filter((x) => x.done).length;
-  let body;
-  if (enc.fam === "near") body = `<div class="famgrid">${rows.filter((x) => !x.done).sort((a, b) => (b.n / b.ks.length) - (a.n / a.ks.length) || a.ks.length - b.ks.length).map(row).join("")}</div>`;
+  let body; const q = E.searchNorm(enc.q);
+  if (q) { const L = rows.filter((x) => txtHas(D.RACES[x.r] || x.r, q) || x.ks.some((k) => encMet(k) && txtHas(MONSTERS[k].name, q)));
+    body = `<h3 class="sec">Résultats pour « ${h(enc.q)} » <span class="xs muted num">${L.length}</span></h3>` + (L.length ? `<div class="famgrid">${L.map(row).join("")}</div>` : encNoHit(enc.q)); }
+  else if (enc.fam === "near") body = `<div class="famgrid">${rows.filter((x) => !x.done).sort((a, b) => (b.n / b.ks.length) - (a.n / a.ks.length) || a.ks.length - b.ks.length).map(row).join("")}</div>`;
   else body = ZONES.map((z) => { const L = rows.filter((x) => FZ[x.r] === z.id); if (!L.length) return ""; return `<h3 class="sec">${h(z.name)} <span class="xs muted num">${L.filter((x) => x.done).length}/${L.length}</span></h3><div class="famgrid">${L.map(row).join("")}</div>`; }).join("");
   return `<section class="panel"><div class="phead"><h2>Familles</h2><span class="seg">${[["zone", "Par zone"], ["near", "Presque finies"]].map(([v, n]) => `<button data-act="encfam" data-v="${v}" aria-pressed="${enc.fam === v}">${n}</button>`).join("")}</span></div>
     <div class="pad"><p class="note">Montez tous les monstres d'une famille au palier <b>Traqueur</b> (${fmt(HUNT_TIERS[1].n)} victoires chacun) : <b>+5 Vitalité</b> pour tous vos héros. Bonus actuel : <b>+${done * 5} Vitalité</b> (${done} famille${done > 1 ? "s" : ""}).</p>${body}</div></section>`;
 }
 function encBossHtml(enc) {
-  const L = Object.entries(DUNGEONS).sort((a, b) => a[1].lvl - b[1].lvl).filter(([, d]) => enc.boss === "todo" ? !encMet(d.boss) : enc.boss === "done" ? encMet(d.boss) : true);
+  const q = E.searchNorm(enc.q);
+  const L = Object.entries(DUNGEONS).sort((a, b) => a[1].lvl - b[1].lvl).filter(([, d]) => enc.boss === "todo" ? !encMet(d.boss) : enc.boss === "done" ? encMet(d.boss) : true)
+    .filter(([, d]) => !q || txtHas(d.name, q) || (encMet(d.boss) && txtHas(MONSTERS[d.boss].name, q)));
   return `<section class="panel"><div class="phead"><h2>Boss de donjon</h2><span class="seg">${[["all", "Tous"], ["done", "Vaincus"], ["todo", "À vaincre"]].map(([v, n]) => `<button data-act="encboss" data-v="${v}" aria-pressed="${enc.boss === v}">${n}</button>`).join("")}</span></div>
-    <div class="pad"><div class="mons enc">${L.map(([id, d]) => encCard(d.boss, false, `<button class="encdg" data-act="dgopen" data-id="${id}">${h(d.name)} · niv. ${d.lvl}</button>`)).join("") || `<div class="empty">Aucun boss ici.</div>`}</div></div></section>`;
+    <div class="pad"><div class="mons enc">${L.map(([id, d]) => encCard(d.boss, false, `<button class="encdg" data-act="dgopen" data-id="${id}">${h(d.name)} · niv. ${d.lvl}</button>`)).join("") || (q ? encNoHit(enc.q) : `<div class="empty">Aucun boss ici.</div>`)}</div></div></section>`;
 }
 /* 1.0.7.5 : où trouver le monstre (1.0.7.12 : bouton ⚔ pour chasser tout de suite, caché en donjon), avec un bouton par sous-zone ou donjon (verrou affiché, pas de voyage vers un lieu fermé) */
 function encWhereHtml(k) {
@@ -2799,14 +2813,15 @@ function encEqSrc(t) { const T = ITEMS[t]; const mon = E.itemSources(t).find((x)
 function encEqHtml() {
   const F = ui.encEq || (ui.encEq = { slot: "arme", lv: "me", src: "all", st: "all" }); const dex = E.itemDex(S); const top = topTeamLvl();
   const L0 = encEqAll(); const band = F.lv === "all" ? [1, 999] : F.lv === "me" ? [top - 10, top + 10] : F.lv.split("-").map(Number);
-  const L = L0.filter((t) => { const T = ITEMS[t]; if (T.slot !== F.slot || T.lvl < band[0] || T.lvl > band[1]) return false;
+  const q = E.searchNorm(ui.enc && ui.enc.q); // recherche : tous les emplacements et tous les niveaux
+  const L = L0.filter((t) => { const T = ITEMS[t]; if (q ? !txtHas(T.name, q) : T.slot !== F.slot || T.lvl < band[0] || T.lvl > band[1]) return false;
     if (F.st === "have" && !dex[t]) return false; if (F.st === "miss" && dex[t]) return false;
     if (F.src === "craft") return !!T.craft; if (F.src !== "all") { const S2 = encEqSrc(t); return F.src === "boss" ? S2.boss : !!S2.mon; } return true; });
   const side = ENC_EQ_SLOTS.map(([v, n]) => { const ks = L0.filter((t) => ITEMS[t].slot === v); const a = ks.filter((t) => dex[t]).length;
-    return `<button class="enczone ${a === ks.length ? "done" : ""}" data-act="enceqslot" data-v="${v}" aria-pressed="${F.slot === v}"><span class="grow">${n}</span><span class="xs num">${a}/${ks.length}</span><span class="bar"><i style="width:${pct(a, ks.length)}%"></i></span></button>`; }).join("");
+    return `<button class="enczone ${a === ks.length ? "done" : ""}" data-act="enceqslot" data-v="${v}" aria-pressed="${!q && F.slot === v}"><span class="grow">${n}</span><span class="xs num">${a}/${ks.length}</span><span class="bar"><i style="width:${pct(a, ks.length)}%"></i></span></button>`; }).join("");
   const sel = `<select class="encsel" data-act="enceqslotsel">${ENC_EQ_SLOTS.map(([v, n]) => `<option value="${v}" ${F.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>`;
   const seg = (k, opts) => `<span class="seg">${opts.map(([v, n]) => `<button data-act="enceqf" data-k="${k}" data-v="${v}" aria-pressed="${F[k] === v}">${n}</button>`).join("")}</span>`;
-  const tools = seg("lv", [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]])
+  const tools = (q ? "" : seg("lv", [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"], ["101-150", "101–150"], ["151-200", "151–200"], ["all", "Tous"]]))
     + seg("src", [["all", "Toutes origines"], ["craft", "Recette"], ["drop", "Butin"], ["boss", "Boss"]]) + seg("st", [["all", "Tous"], ["have", "Obtenus"], ["miss", "À trouver"]]);
   const MAX = ui.encEqMore || 48; const shown = L.slice(0, MAX);
   const stats = (T) => Object.entries(T.stats).slice(0, 6).map(([k, [, b]]) => `<span class="eqst"${tipAttr(k)}>${sIco(k)}${b}</span>`).join("");
@@ -2816,9 +2831,9 @@ function encEqHtml() {
       <div class="eqsts">${stats(T)}</div><div class="xs muted eqsrc">${[S2.craft, S2.mon].filter(Boolean).join(" · ")}</div>${set}</div>`; };
   const nm = ENC_EQ_SLOTS.find((x) => x[0] === F.slot)[1];
   return `<section class="panel encpanel"><div class="encbest"><aside class="enczones">${side}</aside><div class="encmain">
-    <div class="enctools eqtools">${sel}${tools}</div>
-    <div class="enczhead eqhead"><h2>${nm}</h2><span class="small muted num">${L.filter((t) => dex[t]).length}/${L.length} obtenus${F.lv === "me" ? ` · autour du niveau ${top}` : ""}</span></div>
-    <div class="mons enc eqgrid">${shown.map(card).join("") || `<div class="empty">Aucun équipement avec ces filtres.</div>`}</div>
+    <div class="enctools eqtools">${q ? "" : sel}${tools}</div>
+    <div class="enczhead eqhead"><h2>${q ? `Résultats pour « ${h(ui.enc.q)} »` : nm}</h2><span class="small muted num">${L.filter((t) => dex[t]).length}/${L.length} obtenus${q ? " · tous emplacements et niveaux" : F.lv === "me" ? ` · autour du niveau ${top}` : ""}</span></div>
+    <div class="mons enc eqgrid">${shown.map(card).join("") || (q ? encNoHit(ui.enc.q) : `<div class="empty">Aucun équipement avec ces filtres.</div>`)}</div>
     ${L.length > MAX ? `<button class="btn" data-act="enceqmore">Afficher plus (${L.length - MAX} restants)</button>` : ""}</div></div></section>`;
 }
 function encMonSheet(k) {
@@ -6559,6 +6574,7 @@ document.addEventListener("keydown", (ev) => {
     return;
   }
   if (document.activeElement && document.activeElement.id === "onRenPseudo" && k === "Enter") { ev.preventDefault(); const b = $('[data-act="on-renpseudogo"]'); if (b && !b.disabled) b.click(); return; }
+  if (document.activeElement && document.activeElement.id === "encQ" && k === "Escape" && ui.enc && ui.enc.q) { ev.preventDefault(); const b = $('[data-act="encqclear"]'); if (b) b.click(); return; } // 1.0.22.1 : Échap vide la recherche de l'Encyclopédie
   if (document.activeElement && document.activeElement.id === "renName" && (k === "Enter" || k === "Escape")) { ev.preventDefault(); const b = $(`.hb-renf [data-act="${k === "Enter" ? "rengo" : "rencancel"}"]`); if (b) b.click(); return; } // 0.1.50.1 : Entrée valide le nouveau nom, Échap annule
   if (k === "/" && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !$("#sheet").innerHTML) { ev.preventDefault(); searchOpen(); }
   else if (k === "Escape" && $("#wtip")) tipLater();
@@ -7372,7 +7388,8 @@ document.addEventListener("click", (ev) => {
     case "zonebackenc": { ui.zoneView = null; ui.zoneFromEnc = null; ui.tab = "world"; ui.world = "enc"; const y = ui.encScroll || 0; render(); window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); return; }
     case "encmon": openSheet(encMonSheet(d.k)); return;
     case "encitem": itemSheet(d.v); return;
-    case "enceqslot": ui.encEq.slot = d.v; ui.encEqMore = 0; break;
+    case "enceqslot": ui.encEq.slot = d.v; ui.encEqMore = 0; if (ui.enc) ui.enc.q = ""; break;
+    case "encqclear": { ui.enc.q = ""; ui.encEqMore = 0; renderWorld(); const n = $("#encQ"); if (n) n.focus(); return; }
     case "enceqf": ui.encEq[d.k] = d.v; ui.encEqMore = 0; break;
     case "enceqmore": ui.encEqMore = (ui.encEqMore || 48) + 48; break;
     case "encfamopen": (ui.encFamOpen = ui.encFamOpen || {})[d.v] = !(ui.encFamOpen || {})[d.v]; break;
@@ -7670,7 +7687,7 @@ document.addEventListener("input", (ev) => {
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "dgq") { dgF().q = t.value.slice(0, 40); dirty = true; const pos = t.selectionStart; renderWorld(); const n = $("#dgq"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
-  if (t.dataset.act === "encsearch") { ui.enc.q = t.value; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "encsearch") { ui.enc.q = t.value.slice(0, 40); ui.encEqMore = 0; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "invsearch") { ui.invSearch = t.value; clearTimeout(invSearchT); invSearchT = setTimeout(invSearchGo, 150); return; } // 1.0.12.8 : sac plein, la saisie ne fige plus la page
   if (t.id === "recqtyn") { if (t.value !== "") recQtyLive(t, false); return; }
   if (t.dataset.act !== "fltq") return;
