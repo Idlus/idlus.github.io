@@ -95,6 +95,9 @@ const server = http.createServer((req, res) => {
     const mf = await page.evaluate(() => { const b = document.querySelector("#navmf"), f = document.querySelector("#nav .sn-fight"); return b ? { vis: !b.hidden && b.offsetHeight > 0, txt: b.innerText, after: f && f.nextElementSibling === b, units: b.querySelectorAll(".mf-u").length } : null; });
     if (!mf || !mf.vis || !mf.after || !/Château Ensablé/.test(mf.txt) || !/tour \d/.test(mf.txt) || mf.units < 2) fail(`petit module (PC) absent ou incomplet (${JSON.stringify(mf)})`);
     if (SHOTS) await shot("petit-module-pc.png", { x: 0, y: 0, width: 640, height: 420 });
+    // 1.0.30.7 : un Dopeul (monstre de la zone déguisé, il garde e.img) montre sa tête de classe, pas le monstre
+    const dopPic = await page.evaluate(() => { const F = window.DX.S.fight, i = F.ents.findIndex((e) => e.side !== "c"); F.ents[i].dop = { cls: "iop", sex: "m", head: 0 }; const b = document.querySelector("#navmf"); b.dataset.k = ""; b.dataset.s = ""; window.FORMUI.mini(); const u = b.querySelector(`.mf-u[data-mi="${i}"] img`); const src = u ? u.getAttribute("src") : null; delete F.ents[i].dop; b.dataset.k = ""; b.dataset.s = ""; window.FORMUI.mini(); return src; });
+    if (!dopPic || !/assets\/h\/iop_m/.test(dopPic)) fail(`petit module : le Dopeul montre l'image d'un monstre (${dopPic})`);
     await page.click("#navmf"); await page.waitForTimeout(400);
     if ((await page.evaluate(() => window.DX.ui.tab)) !== "combat") fail("petit module (PC) : le clic n'ouvre pas le combat");
     if (await page.evaluate(() => { const b = document.querySelector("#navmf"); return b && !b.hidden; })) fail("petit module (PC) : encore affiché dans l'onglet Combat");

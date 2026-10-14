@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.2 « Le vrai visage du Dopeul »
+
+Le petit module de combat (menu PC et bande du téléphone, js/formation.js mfPic) montrait l'image d'un monstre de la zone pour un Dopeul de quête : le Dopeul est un monstre de la zone déguisé (js/vie.js) qui garde son e.img. Le module regarde maintenant e.dop avant e.img et affiche la tête de la classe du Dopeul, comme la vue Formation (signalé par Mathis le 14/10/2026). tests/formation.test.js le vérifie.
+
 ## 1.0.32.1 « Compositions et métiers »
 
 Chaque composition d'équipe garde son placement métier (demande de Mathis du 14/10/2026 : « quand je switch entre mes teams ça sauvegarde aussi le placement métier ») : E.compOf enregistre `jobs` (héros → métier et ressource, E.compJobs), E.applyComp retient le placement actuel dans la composition qu'on quitte puis remet celui de la nouvelle (les héros sans métier prévu reviennent au repos ; entraînement, atelier ou expédition : héros laissé tel quel et cité dans le message). Une composition sans `jobs` (enregistrée avant) ne touche pas à la récolte. Test : tests/compmetiers.test.js.

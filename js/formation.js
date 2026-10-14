@@ -232,7 +232,7 @@
   }
 
   /* ---------- petit module de combat (hors de l'onglet Combat) ---------- */
-  const mfPic = (e) => (e.side === "c" && !e.summon && D.CLASSES[e.cls] ? X().symImg(e.cls) : e.img ? `assets/m/${e.img}.png` : e.dop && D.CLASSES[e.dop.cls] ? X().symImg(e.dop.cls) : "assets/ui/logo.webp");
+  const mfPic = (e) => (e.side === "c" && !e.summon && D.CLASSES[e.cls] ? X().symImg(e.cls) : e.dop && D.CLASSES[e.dop.cls] ? X().headImg(e.dop) : e.img ? `assets/m/${e.img}.png` : "assets/ui/logo.webp"); // 1.0.30.7 : le Dopeul garde sa tête (il porte aussi l'image du monstre de la zone)
   const mfPct = (v, m) => Math.max(0, Math.min(100, Math.round((Math.max(0, v) / Math.max(1, m)) * 100)));
   function mfLive(St) { // même règle que « Combat en cours » dans le menu
     if (!E.team(St).length) return false;

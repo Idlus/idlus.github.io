@@ -1,6 +1,13 @@
 {
-  "version": "1.0.32.1",
+  "version": "1.0.32.2",
   "versions": [
+    {
+      "v": "1.0.32.2",
+      "name": "Le vrai visage du Dopeul",
+      "items": [
+        "Petit module de combat (menu et bande du téléphone) : un Dopeul de quête montre enfin sa tête de classe, et plus celle d'un monstre de la zone"
+      ]
+    },
     {
       "v": "1.0.32.1",
       "name": "Compositions et métiers",
