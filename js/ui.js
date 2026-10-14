@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.11";
+const GAME_VERSION = "1.0.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.12", name: "Nouveau serveur", items: [
+    "Idlus a déménagé sur son propre serveur, hébergé en France, avec plus de 20 fois plus de mémoire : moins de ralentissements, et de la place pour beaucoup plus de joueurs",
+    "Reconnecte-toi une seule fois avec Discord : ta partie, ta guilde, l'Hôtel de vente et les classements sont gardés",
+    "Si tu as joué pendant la coupure, ta progression est envoyée au nouveau serveur dès que tu te reconnectes",
+  ] },
   { v: "1.0.11", name: "Choisis ta partie", items: [
     "Nouvel écran au lancement, comme dans Melvor Idle : tu choisis ta partie parmi 3 emplacements, chacun avec le portrait de ton héros, tes niveaux cumulés, tes succès, tes héros, tes kamas et ta dernière partie",
     "La partie 1 est celle des classements : course, Hôtel de vente, guilde, Kolizéum classé et boss des mondes. Les parties 2 et 3 se jouent en solo, pour une autre aventure sur le même compte (Kolizéum contre des Fantômes, essais d'entraînement au boss des mondes)",

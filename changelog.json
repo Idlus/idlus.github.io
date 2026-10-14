@@ -1,6 +1,15 @@
 {
-  "version": "1.0.11",
+  "version": "1.0.12",
   "versions": [
+    {
+      "v": "1.0.12",
+      "name": "Nouveau serveur",
+      "items": [
+        "Idlus a déménagé sur son propre serveur, hébergé en France, avec plus de 20 fois plus de mémoire : moins de ralentissements, et de la place pour beaucoup plus de joueurs",
+        "Reconnecte-toi une seule fois avec Discord : ta partie, ta guilde, l'Hôtel de vente et les classements sont gardés",
+        "Si tu as joué pendant la coupure, ta progression est envoyée au nouveau serveur dès que tu te reconnectes"
+      ]
+    },
     {
       "v": "1.0.11",
       "name": "Choisis ta partie",
