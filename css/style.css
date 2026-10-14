@@ -2676,6 +2676,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .optctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .optsec .notifs{margin-top:6px}
 .optsec textarea{width:100%;box-sizing:border-box}
+.optsec .jk-grp{padding:10px 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 @media (max-width:560px){.opttabs{gap:4px}.opttabs button{padding:5px 9px;font-size:12.5px}.optline:not(.optchk) .optctl{width:100%}}
 @media (min-width:700px){.sheet:has(.opttabs){height:min(calc(88vh / var(--vz,1)),820px)}.sheet:has(.opttabs)>div:last-child{margin-top:auto}}
 /* ===================== 0.1.26 — codes cadeaux (panel admin) ===================== */

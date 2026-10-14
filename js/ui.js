@@ -7360,9 +7360,12 @@ function consignesHtml() {
 /* ---------- 1.0.22 : musique et sons composés pour Idlus (js/musique.js, Web Audio, aucun fichier) ----------
    Musique : Taverne d'Astrub en chasse, Profondeurs du donjon pendant un donjon, Boîte à musique sur la page du Havre-Sac.
    Elle ne démarre qu'après un clic du joueur (règle des navigateurs) et se met en pause quand l'onglet est caché.
-   Sons : style Bois et cristal par défaut ; clic seulement sur les boutons importants. */
-const SND = { last: 0, kinds: {}, live: true, gest: false };
-const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, tH: "taverne", tD: "donjon", tV: "boite", style: "bois", clic: "imp", mute: false, asked: false };
+   Sons : style Bois et cristal par défaut ; clic seulement sur les boutons importants.
+   35 airs : la chasse suit la zone (MUS_ZONE), les pages Kolizéum, Songe, Boss des mondes, Guilde, HdV, Métiers et Forgemagie ont leur air,
+   la salle du boss d'un donjon a le sien, le Havre-Sac joue la nuit de 21 h à 7 h et les airs d'Halouine et des Fêtes à leurs dates.
+   Juke-box (Options › Sons) : « Selon l'endroit » ou « Un air fixe » (fix), chaque air s'écoute (SND.prev, tant que la fenêtre est ouverte). */
+const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null };
+const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false };
 const sndCfg = () => Object.assign({}, SND_DEF0, (S && S.settings.snd) || {});
 const sndSet = (o) => { S.settings.snd = Object.assign(sndCfg(), o); dirty = true; };
 const SND_MAP = { level: "niveau", boss: "donjon", magic: "dofus", coin: "commande", rare: "butin", gong: "donjon", win: "victoire", msg: "message", err: "erreur", clic: "clic" };
@@ -7372,13 +7375,35 @@ function sndPlay(kind, force) {
   const now = performance.now(); if (!force && kind !== "clic") { if (now - SND.last < 300 || now - (SND.kinds[kind] || 0) < 1500) return; SND.last = now; SND.kinds[kind] = now; }
   try { A.setSfxVol((cfg.vol == null ? 50 : cfg.vol) / 100); A.sfx(cfg.style, SND_MAP[kind] || kind); } catch (e) {}
 }
+/* l'air de chaque zone de chasse (Bonta et Brâkmar se partagent une zone : l'air suit la sous-zone) */
+const MUS_ZONE = { incarnam: "incarnam", astrub: "marche", amakna: "taverne", cania: "cania", wabbit: "wabbits", sidimote: "landes", koalaks: "koalaks", albuera: "foret",
+  abrak: "abrak", moon: "moon", dragoeufs: "dragoeufs", otomai: "iles", minotoror: "foret", pandala: "pandala", frigost: "frigost", saharach: "saharach",
+  pwak: "iles", divines: "divines", asse: "sufokia", bontabrak: "bonta", grobe: "iles", sakai: "frigost", valonia: "iles", nimotopia: "divines",
+  obscure: "obscure", harebourg: "harebourg", sufokia: "sufokia", cavaliers: "obscure", wukin: "wukin", possedes: "landes", ecailles: "sufokia", vulkania: "vulkania" };
+const MUS_SUB = { bra_bordure: "brakmar", bon_canaux: "brakmar", bra_entrailles: "brakmar" };
+const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier" };
+const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie" };
+const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
+const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return (m === 10 && j >= 24) || (m === 11 && j <= 3) ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
+const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
+/* l'air « selon l'endroit » : page du Havre-Sac, page qui a son air, Songe, donjon (salle du boss à part), sinon la zone de chasse */
+function musPlace() {
+  if (ui.tab === "home" && ui.home === "havre") { const h0 = new Date().getHours(); return musEvent() || (h0 >= 21 || h0 < 7 ? "nuit" : "boite"); }
+  if (MUS_PAGE[ui.tab]) return MUS_PAGE[ui.tab];
+  if (E.expActive && E.expActive(S)) return "songe";
+  if (S.dungeon) { const dg = DUNGEONS[S.dungeon.id]; return dg && dg.rooms && S.dungeon.room >= dg.rooms.length ? "salleboss" : "donjon"; }
+  return musOfSub(S.sub);
+}
 function musWant() {
-  const c = sndCfg(); if (!S || !c.mus || c.mute || !SND.gest) return null; if (!c.mbg && document.visibilityState !== "visible") return null;
-  if (ui.tab === "home" && ui.home === "havre") return c.tV; return S.dungeon ? c.tD : c.tH;
+  const c = sndCfg(); if (!S || !SND.gest) return null;
+  if (SND.prev) { if ($("#jukebox")) return SND.prev; SND.prev = null; } // l'écoute du juke-box s'arrête quand la fenêtre se ferme
+  if (!c.mus || c.mute) return null; if (!c.mbg && document.visibilityState !== "visible") return null;
+  const T = window.IdlusAudio ? window.IdlusAudio.tracks : {};
+  return c.juke === "fixe" && T[c.fix] ? c.fix : musPlace();
 }
 function musSync() {
   const A = window.IdlusAudio; if (!A) return; const w = musWant(), cur = A.playing(); if (w === cur) return;
-  try { if (!w) A.stop(1.2); else { A.setMusicVol(sndCfg().mvol / 100); A.play(w); } } catch (e) {}
+  try { if (!w) A.stop(1.2); else { A.setMusicVol(sndCfg().mvol / 100); A.play(w, SND.prev ? 0.3 : cur ? 2 : 0.6); } } catch (e) {} // fondu de 2 s d'un air à l'autre
 }
 const sndOn = () => { const c = sndCfg(); return (c.mus || c.on) && !c.mute; };
 const sndBtn = () => S ? `<button class="ic-btn snd-btn${sndOn() ? " on" : ""}" data-act="vi-mute" title="${sndOn() ? "Couper la musique et les sons" : "Remettre la musique et les sons"}" aria-label="${sndOn() ? "Couper le son" : "Remettre le son"}">${G(sndOn() ? "spk" : "spkoff")}</button>` : "";
@@ -7415,13 +7440,12 @@ function sndAskCheck() {
 })();
 function soundOptionsHtml() {
   const c = sndCfg(), A = window.IdlusAudio, T = A ? A.tracks : {};
-  const sel = (k) => `<select data-act="vi-trk" data-k="${k}">${Object.entries(T).map(([id, n]) => `<option value="${id}"${c[k] === id ? " selected" : ""}>${h(n)}</option>`).join("")}</select>`;
   const seg = (k, opts) => `<span class="seg2">${opts.map(([v, n]) => `<button class="btn sm${c[k] === v ? " primary" : ""}" data-act="vi-sndseg" data-k="${k}" data-v="${v}" aria-pressed="${c[k] === v}">${n}</button>`).join("")}</span>`;
   return optSec("Musique", "composée pour Idlus, elle change selon l'endroit ; démarre au premier clic",
       optChk(`data-act="vi-snd" data-k="mus"`, c.mus, "Activer la musique", "")
     + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-mvol" value="${c.mvol}" style="width:120px">`)
-    + optLine("En chasse", "", sel("tH")) + optLine("En donjon", "", sel("tD")) + optLine("Au Havre-Sac", "la page de ta maison", sel("tV"))
     + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Continuer quand l'onglet est caché", "sinon la musique se met en pause"))
+  + jukeboxHtml(c, T)
   + optSec("Sons du jeu", "niveau, butin rare, donjon, Dofus, commande, message privé ou @mention, erreur",
       optChk(`data-act="vi-snd" data-k="on"`, c.on, "Activer les sons", "")
     + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button>`)
@@ -7430,13 +7454,33 @@ function soundOptionsHtml() {
     + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Aussi à chaque victoire", "discret, mais fréquent")
     + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Même quand l'onglet est caché", ""));
 }
+/* juke-box : les airs rangés par endroit, chacun avec « Écouter » et « Toujours » ; replié, l'air de l'endroit et 5 autres */
+const JUKE_GRP = [["En chasse", ["incarnam", "marche", "taverne", "cania", "wabbits", "landes", "koalaks", "foret", "abrak", "moon", "dragoeufs", "iles", "pandala", "frigost", "saharach", "divines", "bonta", "brakmar", "obscure", "harebourg", "sufokia", "wukin", "vulkania"]],
+  ["Pages", ["koli", "songe", "boss", "guilde", "hdv", "atelier"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]]];
+function jukeWhere(id) {
+  if (MUS_PAGE_N[id]) return MUS_PAGE_N[id]; if (MUS_MORE[id]) return MUS_MORE[id];
+  const subs = Object.entries(MUS_SUB).filter(([, v]) => v === id).map(([k]) => E.SUBS[k] && E.SUBS[k].name).filter(Boolean);
+  const zs = ZONES.filter((z) => MUS_ZONE[z.id] === id && !(z.id === "bontabrak" && id !== "bonta")).map((z) => z.id === "bontabrak" ? z.subs.filter((x) => !MUS_SUB[x.id]).map((x) => x.name).join(", ") : z.name.replace(/^(Île du |Île de |Île d'|Îlots de la mer d'|Archipel des |Archipel de |Frigost : )/, ""));
+  const L = zs.concat(subs); return L.length ? "chasse : " + L.join(", ") : "";
+}
+function jukeboxHtml(c, T) {
+  const fixe = c.juke === "fixe", here = S ? musPlace() : "taverne", cur = window.IdlusAudio ? window.IdlusAudio.playing() : null;
+  const row = (id) => `<div class="optline jk-row">${optName(`${id === cur ? "♪ " : ""}${h(T[id])}`, h(jukeWhere(id) || "") + (id === here && !fixe ? " · ici" : ""))}<span class="optctl">`
+    + `<button class="btn sm${SND.prev === id ? " primary" : ""}" data-act="vi-jkplay" data-v="${id}">${SND.prev === id ? "■ Arrêter" : "▶ Écouter"}</button>`
+    + `<button class="btn sm${fixe && c.fix === id ? " primary" : ""}" data-act="vi-jkfix" data-v="${id}" aria-pressed="${fixe && c.fix === id}">${fixe && c.fix === id ? "✓ Toujours" : "Toujours"}</button></span></div>`;
+  let list;
+  if (ui.jukeAll) list = JUKE_GRP.map(([g, ids]) => `<div class="jk-grp xs muted">${g}</div>` + ids.filter((id) => T[id]).map(row).join("")).join("");
+  else { const ids = [...new Set([fixe ? c.fix : here, here, SND.prev, "cania", "iles", "frigost", "koli", "nuit", "pandala"].filter((id) => id && T[id]))].slice(0, 6); list = ids.map(row).join(""); }
+  return optSec("Juke-box", `${Object.keys(T).length} airs composés pour Idlus`,
+      optLine("Quel air jouer", "« Selon l'endroit » suit la zone et la page", `<span class="seg2"><button class="btn sm${fixe ? "" : " primary"}" data-act="vi-jkmode" data-v="zone" aria-pressed="${!fixe}">Selon l'endroit</button><button class="btn sm${fixe ? " primary" : ""}" data-act="vi-jkmode" data-v="fixe" aria-pressed="${fixe}">Un air fixe</button></span>`)
+    + list + `<div class="row"><button class="btn sm" data-act="vi-jkall">${ui.jukeAll ? "Replier la liste" : `Voir les ${Object.keys(T).length} airs`}</button></div>`, "jukebox");
+}
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
   else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ira au marchand de secours.` : "Plus de limite de banque."); }
   else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...((k === "on" || k === "mus") && t.checked ? { mute: false } : {}) }); if (k === "on" && t.checked) sndPlay("level", true); musSync(); renderStatus(); }
   else if (a === "vi-vol") { sndSet({ vol: +t.value }); sndPlay("coin", true); }
   else if (a === "vi-mvol") { sndSet({ mvol: +t.value }); if (window.IdlusAudio) window.IdlusAudio.setMusicVol(+t.value / 100); }
-  else if (a === "vi-trk") { sndSet({ [t.dataset.k]: t.value }); musSync(); }
   dirty = true;
 }
 function viAct(a, t) {
@@ -7454,6 +7498,10 @@ function viAct(a, t) {
     case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on) sndSet({ mus: true, on: true, mute: false, asked: true }); else sndSet({ mute: !c.mute, asked: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; }
     case "vi-sndyes": sndSet({ mus: true, on: true, mute: false, asked: true }); t.closest("#sndask").remove(); musSync(); renderStatus(); return;
     case "vi-sndno": sndSet({ asked: true }); t.closest("#sndask").remove(); return;
+    case "vi-jkplay": SND.gest = true; SND.prev = SND.prev === d.v ? null : d.v; musSync(); optionsSheet(); return;
+    case "vi-jkfix": { const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
+    case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musPlace() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
+    case "vi-jkall": ui.jukeAll = !ui.jukeAll; optionsSheet(); return;
     case "vi-optcons": pageGo("consignes"); return;
   }
 }
@@ -9018,7 +9066,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, sndPlay, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, sndPlay, musPlace, musEvent, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */

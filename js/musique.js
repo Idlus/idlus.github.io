@@ -622,9 +622,9 @@
       out.connect(dl); dl.connect(lp); lp.connect(fg); fg.connect(dl); lp.connect(wg); wg.connect(musicBus); wg.connect(send); nodes.push(dl, fg, wg, lp); }
     return { out, nodes };
   }
-  A.play = function (id) {
-    if (!init()) return; A.stop(0.6); const T = TRACKS[id]; if (!T) return;
-    const { out, nodes } = chain(T); out.gain.setValueAtTime(0.0001, ctx.currentTime); out.gain.exponentialRampToValueAtTime(T.gain || 1, ctx.currentTime + 1.5);
+  A.play = function (id, fade = 0.6) { // fade : durée du fondu entre l'air qui s'arrête et le nouveau (2 s quand on change de zone)
+    if (!init()) return; A.stop(fade); const T = TRACKS[id]; if (!T) return;
+    const { out, nodes } = chain(T); out.gain.setValueAtTime(0.0001, ctx.currentTime); out.gain.exponentialRampToValueAtTime(T.gain || 1, ctx.currentTime + Math.max(1.5, fade));
     seq = { id, T, pass: 0, start: ctx.currentTime + 0.12, ev: T.build(0), idx: 0, out, nodes }; seq.timer = setInterval(tick, 60); tick();
   };
   A.stop = function (fade = 1) {
