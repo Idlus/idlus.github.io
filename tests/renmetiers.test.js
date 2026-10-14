@@ -91,4 +91,9 @@ assert.strictEqual(E.fmTop(F), 200, "un métier qui a renu compte comme niveau 2
   const T = E.newState("Salle", "iop"); E.addChar(T, "cra", "Eleve", 1); const tr = T.chars[1]; tr.inTeam = false; tr.ren = 3; tr.lvl = 120; T.training = tr.id; T.chars[0].lvl = 120;
   assert.strictEqual(E.trainee(T), tr, "élève en salle"); { const x0 = tr.xp, l0 = tr.lvl; const r = E.giveRewards(T, [{ key: mon, lvl: 120, name: "x" }], {});
     assert.ok(r.xp[tr.id] > 0 && tr.lvl === l0 && tr.xp - x0 === r.xp[tr.id], "l'XP affichée pour l'élève est celle qu'il reçoit, Renaissance comprise"); } }
+// 1.0.30.7 : le résultat de combat donne le malus de niveau de chaque héros trop fort
+{ const { MONSTERS } = require("../js/data.js"); const mon = Object.keys(MONSTERS).find((k) => !MONSTERS[k].boss);
+  const T = E.newState("Malus", "iop"); E.addChar(T, "cra", "Haut", 1); T.chars.forEach((c) => (c.inTeam = true)); T.chars[0].lvl = 100; T.chars[1].lvl = 126;
+  const r = E.giveRewards(T, [{ key: mon, lvl: 100, name: "x" }], {});
+  assert.ok(!r.pen[T.chars[0].id], "pas de malus au niveau des monstres"); assert.deepStrictEqual(r.pen[T.chars[1].id], [0.3, 26, 100], "26 niveaux de trop : −70 %"); }
 console.log("renmetiers.test.js : OK");

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.8 « Malus de niveau affiché »
+
+Demande de Mathis (14/10/2026, « les joueurs doivent être au courant de ce malus ») : giveRewards renvoie out.pen[cid] = [malus, écart, niveau du monstre] et le résultat de combat affiche « −X % » à côté de l'XP, avec une note sous le butin.
+
 ## 1.0.30.7 « Vente directe plus claire »
 
 Bouton « Vendre » des ressources (Mathis, 14/10/2026 : « quand je clique sur vendre ça ne fait rien ») : la vente passait bien sur le serveur, mais vendre tout le stock fermait la fiche (elle ne s'affiche que pour une ressource possédée), sans trace visible à part une notification. La fiche reste maintenant ouverte une minute avec le résultat (js/venteui.js `V.last`, `VENTEUI.kept`), le bouton affiche « Vente en cours… » et toute erreur donne un message.

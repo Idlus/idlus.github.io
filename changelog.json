@@ -1,6 +1,14 @@
 {
-  "version": "1.0.30.7",
+  "version": "1.0.30.8",
   "versions": [
+    {
+      "v": "1.0.30.8",
+      "name": "Malus de niveau affiché",
+      "items": [
+        "Résultat de combat : un héros qui a trop de niveaux de plus que les monstres affiche son malus d'XP en orange à côté de son XP (par exemple −70 %), avec une explication au survol",
+        "Rappel de la règle : au-delà de 6 niveaux de plus que le plus fort monstre du combat, un héros perd 5 % d'XP par niveau en trop, 70 % au plus. Pour tout gagner, combattez des monstres de son niveau"
+      ]
+    },
     {
       "v": "1.0.30.7",
       "name": "Vente directe plus claire",

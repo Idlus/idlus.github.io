@@ -2282,7 +2282,7 @@
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
       let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp")); // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
-      out.xp[c.id] = g;
+      out.xp[c.id] = g; if (pen < 1) (out.pen = out.pen || {})[c.id] = [pen, diff, maxLvl]; // 1.0.30.5 : malus de niveau affiché dans le résultat
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
