@@ -1,6 +1,16 @@
 {
-  "version": "1.0.25.4",
+  "version": "1.0.25.5",
   "versions": [
+    {
+      "v": "1.0.25.5",
+      "name": "Toutes les coiffes et capes",
+      "items": [
+        "Chaque coiffe et chaque cape a été revérifiée une par une : 539 des 569 se voient maintenant sur le héros (avant, 64 seulement)",
+        "61 gardent la tête et les couleurs choisies du héros ; avec les autres, le héros est dessiné par DofusDB avec la tête et les couleurs d'origine de sa classe",
+        "Corrigé : les Capes et Chapeaux du Piou Jaune et du Piou Vert étaient inversés, et les Ailes en bois, la Coiffe du Koulosse et le Casque de Boufbowl montraient un autre objet",
+        "Ne se voient pas : la Coiffe et la Cape Invisibles (c'est voulu), le Bandana de Mama Ayuto et 27 objets récents dont l'apparence n'est pas encore connue ; la garde-robe les marque « Invisible »"
+      ]
+    },
     {
       "v": "1.0.25.4",
       "name": "Code allégé",

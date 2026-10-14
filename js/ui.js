@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.4";
+const GAME_VERSION = "1.0.25.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.5", name: "Toutes les coiffes et capes", items: [
+    "Chaque coiffe et chaque cape a été revérifiée une par une : 539 des 569 se voient maintenant sur le héros (avant, 64 seulement)",
+    "61 gardent la tête et les couleurs choisies du héros ; avec les autres, le héros est dessiné par DofusDB avec la tête et les couleurs d'origine de sa classe",
+    "Corrigé : les Capes et Chapeaux du Piou Jaune et du Piou Vert étaient inversés, et les Ailes en bois, la Coiffe du Koulosse et le Casque de Boufbowl montraient un autre objet",
+    "Ne se voient pas : la Coiffe et la Cape Invisibles (c'est voulu), le Bandana de Mama Ayuto et 27 objets récents dont l'apparence n'est pas encore connue ; la garde-robe les marque « Invisible »",
+  ] },
   { v: "1.0.25.4", name: "Code allégé", items: [
     "Ménage dans le code du jeu : environ 20 Ko de styles et quelques fonctions qui ne servaient plus sont retirés, rien ne change à l'écran",
     "L'ancienne version de test (idlus.github.io/beta) est fermée et renvoie vers le jeu",
@@ -1477,11 +1483,12 @@ const lookLocal = (cls, sex, hi) => `assets/look/${cls}_${sex === "f" ? "f" : "m
 function lookUrl(c, opts = {}) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return null; const sx = c.sex === "f" ? "f" : "m"; const D2 = L[sx]; const hi = Math.max(0, Math.min(D2.heads.length - 1, c.head || 0));
   const skins = [D2.body, D2.heads[hi]];
-  /* 0.1.19 : garde-robe — le héros montre l'apparence choisie ; une apparence que seul DofusDB sait dessiner (choisie exprès)
-     fait dessiner le héros par DofusDB, avec la tête et les couleurs d'origine de sa classe */
+  /* 0.1.19 : garde-robe — le héros montre l'apparence choisie. 1.0.25.5 : toute coiffe ou cape portée se voit (avant, seules
+     les 64 d'ITEM_SKINS, ou une autre choisie exprès) : une apparence que seul DofusDB sait dessiner fait dessiner le héros
+     par DofusDB, avec la tête et les couleurs d'origine de sa classe ; celles de NO_LOOK (sans apparence connue) ne se voient pas */
   const worn = []; let dbOnly = false;
   if (!opts.bare && S) ["coiffe", "cape"].forEach((sl) => { const tpl = E.shownTpl(S, c, sl); if (!tpl) return; const sk = LK.ITEM_SKINS[tpl];
-    if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (c.show && c.show[sl] === tpl) { dbOnly = true; worn.push(+tpl.slice(1)); } });
+    if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (!(LK.NO_LOOK || []).includes(tpl)) { dbOnly = true; worn.push(+tpl.slice(1)); } });
   if (c.cls === "forge") return worn.length ? forgeLook(sx, worn) : lookLocal("forge", sx, 0); // Forgelance : rendu DofusDB (voir forgeLook)
   if (dbOnly) return dbLook(c.cls, sx, worn);
   const pal = LK.PALETTES.find((p) => p.id === (opts.palette || c.palette)) || LK.PALETTES[0];
@@ -1496,13 +1503,15 @@ function lookUrl(c, opts = {}) {
 /* Forgelance : avec ses numéros d'apparence, le moteur de rendu dessine un casque et pose la tête à côté du corps.
    DofusDB sait le dessiner correctement (tête par défaut, couleurs d'origine) à partir d'un jeton qu'il fabrique pour la classe
    et les objets portés : on demande le jeton, puis l'image. Les coiffes et capes s'affichent ; ni choix de tête ni couleurs. */
-const FORGE = { tok: {}, wait: {} };
+/* 1.0.25.5 : les jetons de DofusDB sont gardés 7 jours dans le navigateur (un héros dessiné par DofusDB ne redemande rien à chaque visite) */
+const FORGE = { tok: (() => { try { const o = JSON.parse(localStorage.getItem("idlus-looktok") || "{}"), now = Date.now(), r = {}; for (const k in o) if (o[k] && now - o[k][1] < 7 * 864e5) r[k] = o[k][0]; return r; } catch (e) { return {}; } })(), wait: {} };
+function tokSave(key, t) { try { const o = JSON.parse(localStorage.getItem("idlus-looktok") || "{}"); o[key] = [t, Date.now()]; const ks = Object.keys(o); if (ks.length > 300) ks.sort((a, b) => o[a][1] - o[b][1]).slice(0, ks.length - 300).forEach((k) => delete o[k]); localStorage.setItem("idlus-looktok", JSON.stringify(o)); } catch (e) {} }
 function forgeLook(sx, items) { return dbLook("forge", sx, items); }
 function dbLook(cls, sx, items) {
   const key = cls + "-" + sx + (items.length ? "-" + items.join("-") : ""), url = (t) => { let x = ""; for (const ch of t) x += ch.charCodeAt(0).toString(16).padStart(2, "0"); return `https://renderer.dofusdb.fr/kool/${x}/full/1/300_300.png`; };
   if (FORGE.tok[key]) return url(FORGE.tok[key]);
   if (!FORGE.wait[key]) FORGE.wait[key] = fetch(`https://api.dofusdb.fr/look?breedId=${BREED[cls] || 20}&sexe=${sx}${items.map((i) => "&itemIds[]=" + i).join("")}`).then((r) => r.json()).then((t) => {
-    if (typeof t !== "string") return; FORGE.tok[key] = t; document.querySelectorAll(`img[data-fk="${key}"]`).forEach((im) => (im.src = url(t)));
+    if (typeof t !== "string") return; FORGE.tok[key] = t; tokSave(key, t); document.querySelectorAll(`img[data-fk="${key}"]`).forEach((im) => (im.src = url(t)));
   }).catch(() => {}); // hors ligne : l'image locale reste
   return { src: lookLocal(cls, sx, 0), key };
 }
@@ -6976,7 +6985,7 @@ function wardrobeHtml(c) {
     const list = ui.wMissing ? all : own;
     pick = `<div class="wpick"><div class="row between"><span class="seg"><button data-act="sm-wmiss" data-v="0" aria-pressed="${!ui.wMissing}">Obtenues (${own.length})</button><button data-act="sm-wmiss" data-v="1" aria-pressed="${!!ui.wMissing}">Toutes (${all.length})</button></span></div>
       <div class="wgrid"><button class="wit ${!cur ? "on" : ""}" data-act="sm-wset" data-v="">${G("swap")}<span>Ce qu'il porte</span></button><button class="wit ${cur === "none" ? "on" : ""}" data-act="sm-wset" data-v="none">✕<span>Aucune</span></button>
-      ${list.map((t) => { const ok = !!W[t]; const db = !LK.ITEM_SKINS[t]; return `<button class="wit ${ok ? "" : "miss"} ${cur === t ? "on" : ""}" data-act="${ok ? "sm-wset" : "sm-wwhere"}" data-v="${t}" data-tip="${h(ITEMS[t].name)} (niv. ${ITEMS[t].lvl})${ok ? (db ? " · dessinée par DofusDB : le héros garde la tête et les couleurs d'origine de sa classe" : "") : " · pas encore obtenue : où la trouver ?"}">${im(itemImg(t), "", ITEMS[t].name)}<span>${h(ITEMS[t].name)}</span>${db && ok ? `<small>DofusDB</small>` : ""}</button>`; }).join("")}</div>
+      ${list.map((t) => { const ok = !!W[t]; const db = !LK.ITEM_SKINS[t]; const nl = (LK.NO_LOOK || []).includes(t); return `<button class="wit ${ok ? "" : "miss"} ${cur === t ? "on" : ""}" data-act="${ok ? "sm-wset" : "sm-wwhere"}" data-v="${t}" data-tip="${h(ITEMS[t].name)} (niv. ${ITEMS[t].lvl})${ok ? (nl ? " · pas encore d'apparence connue : elle ne se voit pas sur le héros" : db ? " · dessinée par DofusDB : le héros garde la tête et les couleurs d'origine de sa classe" : "") : " · pas encore obtenue : où la trouver ?"}">${im(itemImg(t), "", ITEMS[t].name)}<span>${h(ITEMS[t].name)}</span>${db && ok ? `<small>${nl ? "Invisible" : "DofusDB"}</small>` : ""}</button>`; }).join("")}</div>
       ${own.length ? "" : `<span class="xs muted">Chaque ${sl === "coiffe" ? "coiffe" : "cape"} obtenue une fois (butin, fabrication, achat) rejoint la garde-robe pour toujours.</span>`}</div>`;
   }
   return `<div class="small"><b>Garde-robe</b> <span class="xs muted">${E.wardrobeCount(S)} / ${E.WARDROBE_ALL.coiffe.length + E.WARDROBE_ALL.cape.length} apparences · gratuit · sans effet sur les caractéristiques</span></div>${rows}${pick}`;
