@@ -338,13 +338,47 @@
     if (!c.autoStat) c.autoStat = c.autoLast || CLASSES[c.cls].main;
     E.autoAllocate(S, c);
   };
-  /* répartition automatique : élément principal jusqu'au palier choisi, puis Vitalité */
-  E.AUTO_CAPS = [100, 200, 300, 9999];
+  /* 1.0.30 : vrai mode automatique. Un plan = des étapes dans l'ordre (« Force jusqu'à 200 », « Force + Agilité jusqu'à 300 »…)
+     puis le reste dans une caractéristique. Le plan s'applique à TOUS les points, recalculé de zéro à chaque niveau et à chaque
+     changement de plan (c'est gratuit, comme la réinitialisation) : changer de profil déplace vraiment les points. */
+  E.AUTO_CAPS = [100, 200, 300, 400, 9999];
+  E.PLAN_MAX = 4;
+  const planStats = (k) => String(k || "").split("+").filter((x) => BASE_STATS.includes(x));
+  E.planStats = planStats;
+  /* plan du héros ; les anciennes sauvegardes (autoStat, autoCap, autoThen) donnent un plan d'une étape */
+  E.planOf = (c) => {
+    if (Array.isArray(c.autoPlan) && c.autoPlan.length) return c.autoPlan;
+    const k = c.autoStat || c.autoLast || CLASSES[c.cls].main;
+    return [{ k, to: k === "vit" || k === "sa" ? 9999 : c.autoCap || 200 }];
+  };
+  E.planRest = (c) => (BASE_STATS.includes(c.autoRest) ? c.autoRest : BASE_STATS.includes(c.autoThen) ? c.autoThen : "vit");
+  /* caractéristique d'élément « principale » du plan, pour les sorts et les flèches d'équipement (c.autoStat) */
+  E.planMain = (plan, rest) => { const all = plan.flatMap((s) => planStats(s.k)).concat([rest]); return all.find((k) => E.ELEM_STATS.includes(k)) || all[0] || "vit"; };
+  /* calcul pur : répartit pts selon le plan, renvoie { alloc, pts } (pts = reste qui ne paie aucun point, ex. 2 points pour la Sagesse) */
+  E.planAlloc = (pts, plan, rest) => {
+    const alloc = {}; BASE_STATS.forEach((k) => (alloc[k] = 0));
+    const fill = (stats, to) => { // à chaque point, la caractéristique la plus basse de l'étape monte (multi-élément équilibré)
+      for (;;) {
+        const open = stats.filter((k) => alloc[k] < to); if (!open.length) return true;
+        const k = open.sort((a, b) => alloc[a] - alloc[b])[0]; const cost = E.pointCost(k, alloc[k]);
+        if (pts < cost) return false; alloc[k]++; pts -= cost;
+      }
+    };
+    /* une étape pas encore finie garde les points restants (ex. 1 point quand la Force en coûte 2) : ils servent au niveau suivant */
+    if (plan.slice(0, E.PLAN_MAX).every((st) => fill(planStats(st.k), Math.max(1, +st.to || 9999)))) fill(planStats(rest).length ? planStats(rest) : ["vit"], Infinity);
+    return { alloc, pts };
+  };
+  E.setPlan = (S, c, plan, rest) => {
+    c.autoPlan = plan.filter((st) => planStats(st.k).length).slice(0, E.PLAN_MAX).map((st) => ({ k: planStats(st.k).join("+"), to: E.AUTO_CAPS.includes(+st.to) ? +st.to : 9999 }));
+    if (!c.autoPlan.length) c.autoPlan = [{ k: rest || "vit", to: 9999 }];
+    c.autoRest = BASE_STATS.includes(rest) ? rest : "vit";
+    c.autoStat = E.planMain(c.autoPlan, c.autoRest); c.autoLast = c.autoStat;
+    E.autoAllocate(S, c);
+  };
   E.autoAllocate = (S, c) => {
-    if (!c.autoStat || c.pts <= 0) return;
-    const cap = c.autoStat === "vit" || c.autoStat === "sa" ? 9999 : c.autoCap || 200;
-    while (c.pts > 0 && c.alloc[c.autoStat] < cap) { if (!E.allocate(S, c.id, c.autoStat, 1)) break; }
-    if (c.pts > 0 && c.alloc[c.autoStat] >= cap) E.allocate(S, c.id, c.autoThen || "vit", c.pts);
+    if (!c.autoStat) return;
+    const r = E.planAlloc(Math.max(0, (c.lvl - 1) * 5), E.planOf(c), E.planRest(c));
+    BASE_STATS.forEach((k) => (c.alloc[k] = r.alloc[k])); c.pts = r.pts;
   };
   E.SCROLL_MAX = 100;
   /* fabrication de Petits parchemins avec de la poussière de stasis (de plus en plus cher) */
@@ -675,7 +709,7 @@
   const b64d = (str) => (typeof atob !== "undefined" ? decodeURIComponent(escape(atob(str))) : Buffer.from(str, "base64").toString("utf8"));
   E.buildCode = (S, c) => {
     const eq = {}; for (const sl in c.equip) { const it = S.items[c.equip[sl]]; if (it) eq[sl] = it.tpl; }
-    const o = { v: 1, cls: c.cls, lvl: c.lvl, n: c.name, st: Object.assign({}, c.alloc), as: c.autoStat || "", ac: c.autoCap || 200, at: c.autoThen || "vit",
+    const o = { v: 1, cls: c.cls, lvl: c.lvl, n: c.name, st: Object.assign({}, c.alloc), as: c.autoStat || "", ac: c.autoCap || 200, at: c.autoThen || "vit", ap: c.autoStat ? E.planOf(c) : undefined, ar: c.autoStat ? E.planRest(c) : undefined,
       sp: c.spells.map((x) => [x.id, x.cond || "", x.tgt || "low"]), eq };
     return E.BUILD_PREFIX + b64e(JSON.stringify(o));
   };
@@ -691,7 +725,9 @@
       .map(([id, cond, tgt]) => ({ id, cond: D.CONDITIONS[cond] ? cond : undefined, tgt: D.TARGETS[tgt] ? tgt : "low" }));
     const eq = {}; for (const [sl, tpl] of Object.entries(o.eq || {})) if (D.SLOTS[sl] && ITEMS[tpl]) eq[sl] = tpl;
     return { cls: o.cls, lvl, name: String(o.n || "").slice(0, 20), st, as: BASE_STATS.includes(o.as) ? o.as : "", ac: E.AUTO_CAPS.includes(+o.ac) ? +o.ac : 200,
-      at: BASE_STATS.includes(o.at) ? o.at : "vit", sp, eq };
+      at: BASE_STATS.includes(o.at) ? o.at : "vit", sp, eq,
+      ap: Array.isArray(o.ap) ? o.ap.slice(0, E.PLAN_MAX).filter((x) => x && E.planStats(x.k).length).map((x) => ({ k: E.planStats(x.k).join("+"), to: E.AUTO_CAPS.includes(+x.to) ? +x.to : 9999 })) : null,
+      ar: BASE_STATS.includes(o.ar) ? o.ar : null };
   };
   E.applyBuild = (S, cid, b) => {
     const c = S.chars.find((x) => x.id === cid); if (!c || !b) return "Héros introuvable.";
@@ -699,6 +735,7 @@
     c.spells = b.sp.filter((x) => E.spellDef(c.cls, x.id).lvl <= c.lvl).slice(0, E.spellSlots(c)).map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
     c.spellsManual = true; c.activePreset = null;
     c.autoStat = b.as || null; c.autoCap = b.ac; c.autoThen = b.at;
+    c.autoPlan = b.as && b.ap && b.ap.length ? b.ap : b.as ? [{ k: b.as, to: b.as === "vit" || b.as === "sa" ? 9999 : b.ac }] : c.autoPlan; c.autoRest = b.ar || b.at;
     c.pts = (c.lvl - 1) * 5; BASE_STATS.forEach((k) => (c.alloc[k] = 0));
     if (c.autoStat) E.autoAllocate(S, c);
     else { // même répartition, ramenée au niveau du héros

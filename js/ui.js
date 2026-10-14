@@ -4909,28 +4909,76 @@ function setBlock(setId, worn) {
     ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
     ${off.length ? `<div class="st off"><b>${setOffTxt(off)}</b><span>inaccessible : des pièces de cette panoplie ne sont pas dans le jeu</span></div>` : ""}</div>`;
 }
+/* 1.0.30 : menu des caractéristiques refait, avec un vrai mode automatique (profils, plan par étapes, aperçu au niveau 200) */
+const EL_PAIRS = [["fo", "age"], ["fo", "ine"], ["fo", "cha"], ["ine", "cha"], ["ine", "age"], ["cha", "age"]];
+const planName = (k) => { const a = E.planStats(k); return a.length === 4 && a.every((x) => E.ELEM_STATS.includes(x)) ? "Les 4 éléments" : a.map((x) => STATS[x].name).join(" + "); };
+const planIcons = (k) => E.planStats(k).map(sIco).join("");
+const planEl = (c) => { const m = E.planOf(c).flatMap((x) => E.planStats(x.k)).find((k) => E.ELEM_STATS.includes(k)); return m || (E.ELEM_STATS.includes(c.autoEl) ? c.autoEl : CLASSES[c.cls].elRec || CLASSES[c.cls].main); };
+/* second élément de la classe : celui qui a le plus de sorts d'attaque après l'élément choisi */
+const planEl2 = (c, el) => { const EL = { t: "fo", f: "ine", e: "cha", a: "age" }; const n = { fo: 0, ine: 0, cha: 0, age: 0 };
+  (CLASSES[c.cls].spells || []).forEach((sp) => { const k = EL[sp.el]; if (k && sp.grades.some((g) => g.fx.some((f) => ["dmg", "drain", "dot"].includes(f.k)))) n[k]++; });
+  return E.ELEM_STATS.filter((k) => k !== el).sort((x, y) => n[y] - n[x])[0]; };
+const PLAN_PRESETS = [
+  ["equi", "Équilibré", "Ton élément jusqu'à 200, puis Vitalité. Le réglage conseillé.", (el) => [[{ k: el, to: 200 }], "vit"]],
+  ["deg", "Dégâts", "Tous les points dans ton élément.", (el) => [[{ k: el, to: 9999 }], "vit"]],
+  ["multi", "Multi-élément", "Deux éléments montés ensemble jusqu'à 200, puis Vitalité.", (el, el2) => [[{ k: el + "+" + el2, to: 200 }], "vit"]],
+  ["tank", "Tank", "Ton élément jusqu'à 100, puis tout en Vitalité.", (el) => [[{ k: el, to: 100 }], "vit"]],
+  ["sage", "Sagesse", "Ton élément jusqu'à 100, Sagesse jusqu'à 100 (plus d'XP), puis ton élément jusqu'à 200 et Vitalité.", (el) => [[{ k: el, to: 100 }, { k: "sa", to: 100 }, { k: el, to: 200 }], "vit"]],
+];
+const planPreset = (c, id, el) => { const p = PLAN_PRESETS.find((x) => x[0] === id); if (!p) return; el = el || planEl(c); c.autoEl = el; c.autoPreset = id; const [plan, rest] = p[3](el, planEl2(c, el)); E.setPlan(S, c, plan, rest); };
+/* profil reconnu : le plan actuel est-il exactement celui d'un profil ? */
+const planWhich = (c) => { const el = planEl(c); const cur = JSON.stringify([E.planOf(c), E.planRest(c)]); const p = PLAN_PRESETS.find((x) => JSON.stringify(x[3](el, planEl2(c, el))) === cur); return p ? p[0] : "perso"; };
+const planOpts = (sel) => [...BASE_STATS.map((k) => [k, STATS[k].name]), ...EL_PAIRS.map((p) => [p.join("+"), planName(p.join("+"))]), [E.ELEM_STATS.join("+"), "Les 4 éléments"]]
+  .map(([v, n]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${h(n)}</option>`).join("");
+const planResult = (alloc) => BASE_STATS.filter((k) => alloc[k]).sort((x, y) => alloc[y] - alloc[x]).map((k) => `<span class="plres">${sIco(k)}<b class="num">${fmt(alloc[k])}</b> ${STATS[k].name}</span>`).join("") || `<span class="muted xs">aucun point</span>`;
+function planEditor(c) {
+  const plan = E.planOf(c), rest = E.planRest(c), which = planWhich(c), el = planEl(c);
+  const lv = c.lvl, now = E.planAlloc((lv - 1) * 5, plan, rest), max = E.planAlloc((E.MAX_LVL - 1) * 5, plan, rest);
+  return `<div class="plbox stack">
+    <div class="plrow"><span class="pllab">Élément</span><span class="spchips">${E.ELEM_STATS.map((k) => `<button class="spc ${el === k ? "on" : ""}" data-act="planel" data-id="${c.id}" data-v="${k}">${sIco(k)} ${STATS[k].name}${k === CLASSES[c.cls].elRec ? " ★" : ""}</button>`).join("")}</span></div>
+    <div class="plrow"><span class="pllab">Profil</span><span class="spchips">${PLAN_PRESETS.map(([id, n, d]) => `<button class="spc ${which === id ? "on" : ""}" data-act="planpreset" data-id="${c.id}" data-v="${id}" data-tip="${h(d)}">${n}${id === "equi" ? " ★" : ""}</button>`).join("")}<span class="spc ${which === "perso" ? "on" : ""} plperso" data-tip="Modifie les étapes ci-dessous pour un plan à ta façon">Personnalisé</span></span></div>
+    <div class="plsteps">
+      <div class="xs muted">Ordre de répartition, recalculé à chaque niveau</div>
+      ${plan.map((st, i) => `<div class="plstep"><b class="pln num">${i + 1}</b><span class="plico">${planIcons(st.k)}</span>
+        <select data-act="plank" data-id="${c.id}" data-i="${i}" aria-label="Caractéristique de l'étape ${i + 1}">${planOpts(st.k)}</select>
+        <select data-act="planto" data-id="${c.id}" data-i="${i}" aria-label="Palier de l'étape ${i + 1}">${E.AUTO_CAPS.map((v) => `<option value="${v}" ${st.to === v ? "selected" : ""}>${v >= 9999 ? "sans limite" : "jusqu'à " + v}</option>`).join("")}</select>
+        ${plan.length > 1 ? `<button class="btn sm plx" data-act="plandel" data-id="${c.id}" data-i="${i}" aria-label="Retirer l'étape ${i + 1}">✕</button>` : ""}</div>`).join("")}
+      <div class="plstep"><b class="pln">⤵</b><span class="plico">${sIco(rest)}</span><span class="muted small">Puis tout le reste en</span><select data-act="planrest" data-id="${c.id}" aria-label="Caractéristique pour le reste des points">${BASE_STATS.map((k) => `<option value="${k}" ${rest === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></div>
+      ${plan.length < E.PLAN_MAX ? `<button class="btn sm pladd" data-act="planadd" data-id="${c.id}">+ Ajouter une étape</button>` : ""}
+    </div>
+    <div class="plprev">
+      <div class="plpl"><span class="xs muted">Maintenant (niv. ${lv})</span><div class="plresw">${planResult(now.alloc)}</div></div>
+      ${lv < E.MAX_LVL ? `<div class="plpl"><span class="xs muted">Au niveau ${E.MAX_LVL}</span><div class="plresw">${planResult(max.alloc)}</div></div>` : ""}
+    </div>
+  </div>`;
+}
 function charStatsView(c, st) {
   const sc = c.scrolls || {};
-  const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3\u00a0points\u00a0=\u00a01" : k === "vit" ? "1\u00a0point\u00a0=\u00a01" : `${cost}\u00a0point${cost > 1 ? "s" : ""}\u00a0=\u00a01${cur >= 100 ? ` (palier\u00a0${Math.floor(cur / 100) * 100})` : ""}`; }; // 1.0.12.8 : espaces insécables, « 1 point = 1 » ne se coupe plus
+  const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3 points = 1" : `${cost} point${cost > 1 ? "s" : ""} = 1`; };
   const scrollsOwned = (k) => (S.cons["parch_" + k + "_p"] || 0) + (S.cons["parch_" + k + "_g"] || 0);
   const dust = S.res[E.POUSSIERE] || 0; const manual = !c.autoStat;
-  return `<div class="grid2">
-    <div class="panel"><div class="phead"><h2>Points à répartir</h2><b class="num ptsleft ${manual && c.pts ? "on" : ""}" style="font-size:20px">${c.pts}</b></div>
-      <div class="pad stack" style="padding-bottom:6px">
-        <div class="row small"><span class="muted">Répartition :</span><span class="seg">${[[1, "Automatique"], [0, "Manuelle"]].map(([v, n]) => `<button data-act="allocmode" data-id="${c.id}" data-v="${v}" aria-pressed="${!manual === !!v}">${n}</button>`).join("")}</span></div>
-        ${manual ? `<p class="note xs" style="margin:0">Mode manuel : les 5 points gagnés à chaque niveau vous attendent ici. Les boutons − rendent les points, sans frais.</p>`
-          : `<label class="row small"><span class="muted">Caractéristique :</span>
-          <select data-act="autostat" data-id="${c.id}">${BASE_STATS.map((k) => `<option value="${k}" ${c.autoStat === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>`}
-        ${c.autoStat && E.ELEM_STATS.includes(c.autoStat) ? `<label class="row small"><span class="muted">jusqu'à</span><select data-act="autocap" data-id="${c.id}">${E.AUTO_CAPS.map((v) => `<option value="${v}" ${(c.autoCap || 200) === v ? "selected" : ""}>${v >= 9999 ? "sans limite" : v}</option>`).join("")}</select><span class="muted">puis</span>
-          <select data-act="autothen" data-id="${c.id}">${["vit", "sa", ...E.ELEM_STATS.filter((k) => k !== c.autoStat)].map((k) => `<option value="${k}" ${(c.autoThen || "vit") === k ? "selected" : ""}>${STATS[k].name}</option>`).join("")}</select></label>` : ""}
+  const tierBar = (k) => { if (!E.ELEM_STATS.includes(k)) return ""; const v = c.alloc[k]; const t = Math.min(4, Math.floor(v / 100)); return `<span class="tierbar" title="Paliers : 1 point jusqu'à 100, 2 jusqu'à 200, 3 jusqu'à 300, puis 4">${[0, 1, 2, 3].map((i) => `<i class="${i < t ? "full" : i === t ? "cur" : ""}" style="${i === t ? `--p:${v % 100}%` : ""}"></i>`).join("")}</span>`; };
+  const statRows = `<div class="list cstats">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow cst-n"><span class="name">${STATS[k].name}</span> <span class="muted xs">${costTxt(k)}</span>${tierBar(k)}</span>
+      <span class="num cst-v">${fmt(c.alloc[k])}${sc[k] ? `<span class="xs" style="color:var(--gold2)"> +${sc[k]}</span>` : ""}</span>
+      ${manual ? `<span class="allocbtns"><button class="btn sm" data-act="dealloc" data-k="${k}" data-n="10" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 10 en ${STATS[k].name}">−10</button><button class="btn sm" data-act="dealloc" data-k="${k}" data-n="1" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 1 en ${STATS[k].name}">−1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 1 en ${STATS[k].name}">+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 10 en ${STATS[k].name}">+10</button></span>` : ""}</div>`).join("")}</div>`;
+  const scrollRows = BASE_STATS.map((k) => { const own = scrollsOwned(k), room = E.scrollRoom(c, k), cc = E.scrollCraftCost(S, k);
+    return `<div class="li psc">${sIco(k)}<span class="grow"><span class="small"><b>${STATS[k].name}</b> <span class="num muted">${sc[k] || 0}/${E.SCROLL_MAX}</span></span><div class="scrollbar"><i style="width:${(sc[k] || 0) / E.SCROLL_MAX * 100}%"></i></div></span>
+      ${own && room > 0 ? `<button class="btn sm pluse" data-act="usescroll" data-k="${k}">Utiliser ${own}</button>` : ""}
+      ${room > 0 ? `<button class="btn sm" data-act="craftscroll" data-k="${k}" ${dust >= cc.dust && S.kamas >= cc.kamas ? "" : "disabled"} data-tip="Fabriquer un Petit parchemin (+1) : ${cc.dust} poussières de stasis et ${fmt(cc.kamas)} kamas">Fabriquer <span class="xs">${cc.dust} ✨</span></button>` : `<span class="tag soft xs">complet</span>`}</div>`; }).join("");
+  return `<div class="grid2 cstatpg">
+    <div class="stack">
+    <div class="panel"><div class="phead"><h2>Caractéristiques</h2>${manual ? `<span class="ptsleft num ${c.pts ? "on" : ""}" title="Points à placer"><b>${c.pts}</b> point${c.pts > 1 ? "s" : ""} à placer</span>` : `<span class="tag soft" title="${fmt((c.lvl - 1) * 5)} points placés par le plan">Auto</span>`}</div>
+      <div class="pad stack" style="padding-bottom:8px">
+        <div class="row between"><span class="seg">${[[1, "⚙ Automatique"], [0, "✋ Manuel"]].map(([v, n]) => `<button data-act="allocmode" data-id="${c.id}" data-v="${v}" aria-pressed="${!manual === !!v}">${n}</button>`).join("")}</span>
+          ${manual ? `<button class="btn sm" data-act="resetpts" data-id="${c.id}">Tout rendre (gratuit)</button>` : ""}</div>
+        ${manual ? `<p class="note xs">Les 5 points de chaque niveau t'attendent ici. Les boutons − les rendent sans frais. Passer en automatique remplace la répartition par le plan.</p>` : planEditor(c)}
       </div>
-      <div class="list">${BASE_STATS.map((k) => `<div class="li"${tipAttr(k)}>${sIco(k)}<span class="grow"><span class="name">${STATS[k].name}</span> <span class="muted xs">${costTxt(k)}</span>
-          <div class="scrollbar" title="Parchemins"><i style="width:${(sc[k] || 0)}%"></i></div><span class="xs muted">${IC("quetes")} ${sc[k] || 0}/${E.SCROLL_MAX}${scrollsOwned(k) ? ` · <a href="#" data-act="usescroll" data-k="${k}">${scrollsOwned(k)} à utiliser</a>` : ""}${dust && E.scrollRoom(c, k) > 0 ? (() => { const cc = E.scrollCraftCost(S, k); return ` · <a href="#" data-act="craftscroll" data-k="${k}" title="Fabriquer un Petit parchemin (+1) avec de la poussière de stasis">Fabriquer (${cc.dust} ✨ · ${fmt(cc.kamas)} k)</a>`; })() : ""}</span></span>
-          <span class="num" style="min-width:58px;text-align:right">${fmt(c.alloc[k])}${sc[k] ? `<span class="xs" style="color:var(--gold2)"> +${sc[k]}</span>` : ""}</span>
-          <span class="allocbtns">${manual ? `<button class="btn sm" data-act="dealloc" data-k="${k}" data-n="10" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 10 en ${STATS[k].name}">−10</button><button class="btn sm" data-act="dealloc" data-k="${k}" data-n="1" ${c.alloc[k] ? "" : "disabled"} aria-label="Retirer 1 en ${STATS[k].name}">−1</button>` : ""}<button class="btn sm" data-act="alloc" data-k="${k}" data-n="1" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 1 en ${STATS[k].name}">+1</button><button class="btn sm" data-act="alloc" data-k="${k}" data-n="10" ${c.pts < E.pointCost(k, c.alloc[k]) ? "disabled" : ""} aria-label="Ajouter 10 en ${STATS[k].name}">+10</button></span></div>`).join("")}</div>
-      <div class="pad stack" style="padding-top:6px">
-        <p class="note xs">Au-delà de 100 dans une caractéristique d'élément, il faut 2 points pour gagner 1, puis 3 au-delà de 200 et 4 au-delà de 300. La Vitalité reste à 1 pour 1. Les parchemins s'ajoutent hors paliers.</p>
-        <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
+      ${statRows}
+      <div class="pad"><p class="note xs">Caractéristique d'élément : 1 point pour 1 jusqu'à 100, puis 2, 3 au-delà de 200 et 4 au-delà de 300. Vitalité 1 pour 1, Sagesse 3 pour 1. ${manual ? "" : "Changer le plan redistribue tous les points, gratuitement."}</p></div>
+    </div>
+    <div class="panel"><div class="phead"><h2>Parchemins</h2><span class="xs muted">${IC("quetes")} +1 définitif, hors paliers · ${fmt(dust)} ✨</span></div>
+      <div class="list">${scrollRows}</div></div>
+    </div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
       <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}${D.TACT_ORDER.filter((k) => st[k]).map((k) => statCell(k, k === "pm" ? 3 + st[k] : st[k])).join("")}</div>
       ${combatStats(c, st)}
@@ -8060,6 +8108,12 @@ document.addEventListener("click", (ev) => {
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
     case "dealloc": E.deallocate(S, c.id, d.k, +d.n); break;
+    case "planpreset": { const x = char(+d.id); planPreset(x, d.v); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); break; }
+    case "planel": { const x = char(+d.id); const w = planWhich(x); if (w !== "perso") planPreset(x, w, d.v); else { const old = planEl(x); x.autoEl = d.v;
+      const sw = (k) => E.planStats(k).map((y) => (y === old ? d.v : y)).filter((y, j, arr) => arr.indexOf(y) === j).join("+"); E.setPlan(S, x, E.planOf(x).map((st) => ({ k: sw(st.k), to: st.to })), sw(E.planRest(x))); }
+      if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); break; }
+    case "plandel": { const x = char(+d.id); const plan = E.planOf(x).filter((_, j) => j !== +d.i); if (plan.length) E.setPlan(S, x, plan, E.planRest(x)); break; }
+    case "planadd": { const x = char(+d.id); const plan = E.planOf(x).map((st) => Object.assign({}, st)); if (plan.length < E.PLAN_MAX) { plan.push({ k: E.planRest(x), to: 100 }); E.setPlan(S, x, plan, E.planRest(x)); } break; }
     case "allocmode": { const x = char(+d.id); E.setAllocMode(S, x, d.v === "1"); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); break; }
     case "resetpts": E.resetPoints(S, +d.id); toast("Points réinitialisés" + (char(+d.id).autoStat ? " et redistribués." : ".")); break;
     case "craftscroll": { ev.preventDefault(); const r = E.craftScroll(S, d.k); if (r) { toast(r); return; } toast(`Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le dans Héros › Caractéristiques (lien « à utiliser »).`); dustRefresh(); break; }
@@ -8214,9 +8268,10 @@ document.addEventListener("change", (ev) => {
   if (a === "enceqslotsel") { ui.encEq.slot = t.value; ui.encEqMore = 0; renderWorld(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
   const c = ui.cid ? char(ui.cid) : null;
-  if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else x.autoStat = t.value; E.autoAllocate(S, x); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
-  else if (a === "autocap") { const x = char(+t.dataset.id); x.autoCap = +t.value; E.autoAllocate(S, x); }
-  else if (a === "autothen") { const x = char(+t.dataset.id); x.autoThen = t.value; E.autoAllocate(S, x); }
+  if (a === "autostat") { const x = char(+t.dataset.id); if (!t.value) { E.setAllocMode(S, x, false); } else if (E.ELEM_STATS.includes(t.value)) planPreset(x, planWhich(x) === "perso" ? "equi" : planWhich(x), t.value); else { x.autoPreset = "perso"; E.setPlan(S, x, [{ k: t.value, to: 9999 }], t.value); } if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
+  else if (a === "plank" || a === "planto" || a === "planrest") { const x = char(+t.dataset.id); const plan = E.planOf(x).map((st) => Object.assign({}, st)); const i = +t.dataset.i;
+    if (a === "plank" && plan[i]) plan[i].k = t.value; if (a === "planto" && plan[i]) plan[i].to = +t.value;
+    E.setPlan(S, x, plan, a === "planrest" ? t.value : E.planRest(x)); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); }
   else if (a === "spcond") { c.spells[+t.dataset.i].cond = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "sptgt") { c.spells[+t.dataset.i].tgt = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }

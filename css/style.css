@@ -4842,3 +4842,46 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 #halfx i{position:absolute;bottom:-10px;will-change:transform,opacity;width:5px;height:5px;border-radius:50%;background:#ffb04a;box-shadow:0 0 8px 2px rgba(255,140,40,.6);opacity:0;animation:halemb var(--d,14s) linear infinite;animation-delay:var(--dl,0s)}
 @keyframes halemb{0%{transform:translate(0,0);opacity:0}10%{opacity:.75}50%{transform:translate(18px,-50vh)}90%{opacity:.5}100%{transform:translate(-12px,-100vh);opacity:0}}
 body.reduced #halfx,body.nomotion #halfx{display:none}
+/* 1.0.30 : menu des caractéristiques, vrai mode automatique */
+.plbox{gap:10px}
+.plrow{display:flex;gap:8px;align-items:flex-start}
+.pllab{flex:0 0 58px;font-size:12px;font-weight:800;color:var(--muted);padding-top:4px}
+.plrow .spc .sico{width:14px;height:14px;vertical-align:-2px}
+.plperso{cursor:default}
+.plsteps{display:flex;flex-direction:column;gap:6px;background:var(--panel2);border:1.5px solid var(--line);border-radius:12px;padding:8px 10px}
+.plstep{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.plstep select{max-width:170px}
+.pln{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--frame);color:#fff7e3;font-size:11px;flex-shrink:0}
+.plico{display:inline-flex;gap:1px;min-width:18px}
+.plico .sico{width:16px;height:16px}
+.plx{padding:3px 8px!important;margin-left:auto}
+.pladd{align-self:flex-start}
+.plprev{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.plpl{background:color-mix(in srgb,var(--action) 10%,transparent);border-radius:10px;padding:6px 9px}
+.plresw{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px}
+.plres{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;white-space:nowrap}
+.plres .sico{width:15px;height:15px}
+.cstats .li{padding:7px 14px}
+.cst-n{min-width:0}
+.cst-v{min-width:64px;text-align:right;font-weight:800}
+.tierbar{display:flex;gap:3px;margin-top:4px;max-width:150px}
+.tierbar i{flex:1;height:4px;border-radius:3px;background:rgba(255,255,255,.09)}
+.tierbar i.full{background:linear-gradient(90deg,#f3c95f,#c9962e)}
+.tierbar i.cur{background:linear-gradient(90deg,#f3c95f var(--p),rgba(255,255,255,.09) var(--p))}
+.ptsleft{font-size:13px;color:var(--muted)}
+.ptsleft b{font-size:18px}
+.psc .scrollbar{max-width:none;width:100%}
+.psc .btn{white-space:nowrap}
+@media (max-width:600px){.plprev{grid-template-columns:1fr}.pllab{flex-basis:auto;padding-top:0}.plrow{flex-direction:column;gap:4px}.plstep select{max-width:140px}}
+.cstatpg{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.plstep select{font-size:13px;padding:4px 26px 4px 8px;min-height:0;height:30px;width:auto}
+.pluse{background:color-mix(in srgb,var(--action) 25%,var(--panel2))}
+@media (max-width:900px){.cstatpg{grid-template-columns:1fr}}
+.plstep{flex-wrap:nowrap}
+.plstep select[data-act="plank"]{flex:1 1 auto;min-width:0;max-width:none}
+.plstep select[data-act="planrest"]{flex:1 1 auto;min-width:0;max-width:none}
+.plstep .muted.small{white-space:nowrap}
+.plrow>.spchips{flex:1;min-width:0}
+@media (max-width:900px){.cstatpg{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){.plrow{align-items:stretch}}
+@media (max-width:600px){.plstep .plico{display:none}.plstep{gap:5px}.plstep select{padding-right:22px}}
