@@ -129,4 +129,55 @@ const team = (L, cls = ["iop", "eni", "feca", "cra"]) => { const S = E.newState(
   console.log("ok - songe : ancien résultat d'Expédition oublié");
 }
 
+// 11. 1.0.30 : des Bribes à chaque vague tenue, gardées même sans valider ; un songe validé rapporte autant qu'avant
+{
+  const S = team(60); E.songe(S).unl = 1; E.act(S, "expStart", 1); const X = S.exp; const end = X.nodes.find((n) => n.t === "end");
+  const per = E.sgWaveBribes(1); assert.ok(per > 0, "Bribes par vague");
+  const br0 = E.songe(S).br; X.pick = end.i; X.wave = 1; E.expWin(S, { ents: [], rewards: null });
+  assert.strictEqual(E.songe(S).br, br0 + per, "Bribes de la vague 1");
+  assert.ok(!X.valid && E.expPending(S).t === "wave", "pas encore validé en Paradoxe 1");
+  E.act(S, "expChoose", 0); assert.strictEqual(X.wave, 2, "vague 2");
+  E.expLose(S, { ents: [], rewards: null, label: "test", round: 3 });
+  assert.ok(!E.expActive(S) && !S.expLast.valid && S.expLast.bribes === per && E.songe(S).br === br0 + per, "défaite : les Bribes de la vague tenue restent");
+  const T = team(60); E.songe(T).unl = 1; E.act(T, "expStart", 1); const Y = T.exp; Y.pick = Y.nodes.find((n) => n.t === "end").i;
+  for (let w = 1; w <= 3; w++) { Y.wave = w; E.expWin(T, { ents: [], rewards: null }); if (w < 3) E.act(T, "expChoose", 0); }
+  assert.ok(Y.valid && Y.bribes === E.sgBribesFor(1, 3), "validé : le même total qu'avant (" + Y.bribes + ")");
+  E.expQuit(T);
+  console.log("ok - songe : Bribes à chaque vague,", per, "par vague en Paradoxe 1");
+}
+
+// 12. 1.0.30 : Marché onirique tournant : 3 offres de la semaine, les mêmes pour tous, en quantité limitée
+{
+  const w = E.weekIdx(); const A = E.sgWeekShop(w);
+  assert.strictEqual(A.length, 3, "3 offres"); assert.strictEqual(new Set(A.map((o) => o.id)).size, 3, "3 offres différentes");
+  assert.deepStrictEqual(E.sgWeekShop(w), A, "les mêmes toute la semaine");
+  let other = false; for (let k = 1; k < 6; k++) if (E.sgWeekShop(w + k).map((o) => o.id).join() !== A.map((o) => o.id).join()) other = true;
+  assert.ok(other, "d'autres offres les semaines suivantes");
+  A.forEach((o) => assert.ok(o.name && o.price > 0 && o.lim >= 1 && (o.cons ? D.CONSUMABLES[o.cons] : o.dust || o.stat), "offre complète : " + o.id));
+  const S = team(60); const o = A[0]; assert.ok(typeof E.act(S, "sgBuyWeek", o.id) === "string", "pas assez de Bribes");
+  E.sgGive(S, o.price * (o.lim + 1)); const br = E.songe(S).br;
+  for (let i = 0; i < o.lim; i++) assert.strictEqual(E.act(S, "sgBuyWeek", o.id), null, "achat " + (i + 1));
+  assert.ok(typeof E.act(S, "sgBuyWeek", o.id) === "string" && E.sgWeekLeft(S, o.id) === 0, "limite de la semaine");
+  assert.strictEqual(E.songe(S).br, br - o.price * o.lim, "Bribes payées");
+  if (o.cons) assert.ok((S.cons[o.cons] || 0) >= o.lim, "objet reçu");
+  now += 7 * 86400000; const B = E.sgWeekShop(); assert.ok(B.length === 3 && E.sgWeekLeft(S, B[0].id) === B[0].lim, "la semaine suivante, de nouvelles quantités");
+  console.log("ok - songe : Marché onirique de la semaine,", A.map((x) => x.name).join(", "));
+}
+
+// 13. 1.0.30 : rejeu du serveur pour le classement : même équipe, même graine, même résultat ; le hasard revient ensuite
+{
+  const S = team(60); const txt = E.serialize(S);
+  const a = E.sgReplay(txt, 0, 777, now), b = E.sgReplay(txt, 0, 777, now);
+  assert.deepStrictEqual(a, b, "rejeu reproductible");
+  assert.ok(a.ok ? a.waves >= 1 : typeof a.err === "string", "rejeu : " + JSON.stringify(a));
+  assert.strictEqual(E.sgReplay(txt, 3, 777, now).ok, false, "intensité jamais débloquée refusée");
+  assert.strictEqual(E.sgReplay("pas une partie", 0, 1, now).ok, false, "partie illisible");
+  assert.strictEqual(E.sgOfficial(20, 10), 13, "un quart de vagues de plus que le rejeu, au plus");
+  assert.strictEqual(E.sgOfficial(8, 10), 8, "jamais plus que ce que le joueur annonce");
+  assert.strictEqual(E.sgOfficial(5, 1), 3, "au moins 2 vagues de marge");
+  E.setRng(() => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; });
+  E.setClock(() => now);
+  console.log("ok - songe : rejeu du serveur", JSON.stringify(a));
+}
+
 console.log("songe.test.js : tout est bon");

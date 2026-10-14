@@ -2173,6 +2173,7 @@ function homeTiles() {
   /* 0.1.49 : Boss des mondes, tant qu'il te reste des essais aujourd'hui (js/wbossui.js) */
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
   { const xt = window.EXPUI && window.EXPUI.tile(); if (xt) out.push(tile(xt)); } // 1.0.30 : Expéditions (js/expeditionsui.js)
+  { const st = window.SGUI && window.SGUI.tile && window.SGUI.tile(); if (st) out.push(tile(st)); } // 1.0.30 : Songe infini (js/songeui.js)
   /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
   const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
   out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${resTag(A.res, A.qty)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
@@ -6702,6 +6703,7 @@ function render() {
   else if (ui.tab === "wb" && window.WBUI) window.WBUI.render($("#main")); // 0.1.49 : Boss des mondes (js/wbossui.js)
   else if (ui.tab === "hdv" && window.MARKET) window.MARKET.render($("#main"));
   else if (ui.tab === "guild" && window.GUILD) window.GUILD.render($("#main"));
+  else if (ui.tab === "admin" && window.PANEL) window.PANEL.render($("#main")); // 1.0.30 : Panel Xener (js/panel.js)
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else if (ui.tab === "sugg" && window.IDEES) window.IDEES.render($("#main")); // 0.1.36, voir js/idees.js
   else if (ui.tab === "builds" && window.BUILDS) window.BUILDS.render($("#main")); // 1.0.23, voir js/builds.js
@@ -7864,6 +7866,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("wb-")) { if (window.WBUI) window.WBUI.act(a, t); return; } // 0.1.49 : Boss des mondes (js/wbossui.js)
   if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 1.0.30 : Expéditions et donjon pendant l'absence (js/expeditionsui.js)
   if (a && a.startsWith("co-")) { if (S && window.COLL) window.COLL.act(a, t); return; } // 1.0.30 : collections (js/collui.js)
+  if (a && a.startsWith("al-")) { if (S && window.ALIGNUI) window.ALIGNUI.act(a, t); return; } // 1.0.30 : alignement (js/alignui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -8787,10 +8790,10 @@ const STAFF = { u: {}, p: {} };
 const staffOf = (u, p) => (u ? STAFF.u[u] : p ? STAFF.p[String(p).toLowerCase()] : null) || null;
 const CROWN_SVG = `<svg class="crown" viewBox="0 0 24 24" aria-hidden="true"><path fill="#f4c84a" stroke="#7a5310" stroke-width="1.4" stroke-linejoin="round" d="M3 8l4.5 4L12 4l4.5 8L21 8l-2 11H5z"/><circle cx="12" cy="4" r="1.6" fill="#ffe9a3"/><circle cx="3" cy="8" r="1.4" fill="#ffe9a3"/><circle cx="21" cy="8" r="1.4" fill="#ffe9a3"/></svg>`;
 const pname = (p, u) => {
-  const r = staffOf(u, p);
-  if (r === "crea") return `<span class="xen" data-tip="Créateur d'Idlus">${CROWN_SVG}<span class="t">${h(p)}</span></span><span class="xtag">Créateur</span>`;
-  if (r === "mod") return `${h(p)}<span class="mtag" data-tip="Modérateur d'Idlus">${G("shield")}Modérateur</span>`;
-  return h(p);
+  const r = staffOf(u, p); const al = window.ALIGNUI ? window.ALIGNUI.tag(u, p) : ""; // 1.0.30 : camp du joueur, Bonta ou Brâkmar (js/alignui.js)
+  if (r === "crea") return `<span class="xen" data-tip="Créateur d'Idlus">${CROWN_SVG}<span class="t">${h(p)}</span></span><span class="xtag">Créateur</span>${al}`;
+  if (r === "mod") return `${h(p)}<span class="mtag" data-tip="Modérateur d'Idlus">${G("shield")}Modérateur</span>${al}`;
+  return h(p) + al;
 };
 const staffCls = (u, p) => ({ crea: " is-crea", mod: " is-mod" }[staffOf(u, p)] || "");
 async function staffLoad() {
@@ -9391,7 +9394,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, NAV, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */

@@ -67,6 +67,7 @@
       ["res", "runes", "cons"].forEach((b) => { if (!p[b]) return; s[b] = s[b] || {}; for (const k in p[b]) { const v = (s[b][k] || 0) + Number(p[b][k]); if (v > 0) s[b][k] = v; else delete s[b][k]; } });
       (p.rm || []).forEach((uid) => { uid = +uid; delete s.items[uid]; s.chars.forEach((c) => { for (const sl in c.equip) if (c.equip[sl] === uid) delete c.equip[sl]; }); });
       if (p.title) { s.titlesExtra = s.titlesExtra || []; if (!s.titlesExtra.includes(p.title)) s.titlesExtra.push(String(p.title).slice(0, 40)); } // 0.1.22 : titre du boss de guilde
+      if (p.bribes && E.songe) { const G = E.songe(s), n = Math.max(0, Math.round(Number(p.bribes) || 0)); G.br += n; G.tot = (G.tot || 0) + n; } // 1.0.30 : lots du classement du Songe infini
       if (p.untitle) { s.titlesExtra = (s.titlesExtra || []).filter((x) => x !== p.untitle); (s.chars || []).forEach((c) => { if (c.title === p.untitle) c.title = null; }); } // 0.1.49 : « Fléau des mondes » passe au podium suivant
       (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;

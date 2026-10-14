@@ -10,6 +10,7 @@
 // Boss des mondes : avec { wboss: 1 }, un essai contre le boss de tout le serveur (js/wboss.js, supabase/wboss.sql).
 // 1.0.30 : les records gardent l'équipe rejouée (colonne team) ; avec { dofus: { uid, did, k } }, la GIGA annonce d'un Dofus
 // tombé sur un boss (vérifiée ici, puis envoyée à tous les joueurs connectés par le chat ; js/giga.js).
+// Songe infini (1.0.30) : avec { songe: 1 }, le record de la semaine (js/songe.js, supabase/songe.sql).
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -33,7 +34,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any } = {};
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
@@ -42,6 +43,7 @@ Deno.serve(async (req) => {
   if (body.raid) return raid(db, user.id, body.raid);
   if (body.wboss) return wboss(db, user.id);
   if (body.dofus) return dofusAnn(db, user.id, body.dofus);
+  if (body.songe) return songe(db, user.id);
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -355,4 +357,44 @@ async function dofusAnn(db: any, uid: string, b: any) {
   const boss = D.MONSTERS[dg.boss] ? D.MONSTERS[dg.boss].name : dg.name;
   await db.from("chat_msgs").insert({ ch: "g", user_id: uid, pseudo: prof.pseudo, cls: lad.main, lvl: lad.main_lvl, kind: "ann", data: { t: "giga", id, did, dname: dg.name, boss, k, odds } });
   return json({ ok: true, giga: true, id, did, k, odds });
+// ---------- Songe infini : record de la semaine (1.0.30, js/songe.js, supabase/songe.sql) ----------
+// Le serveur relit la partie en ligne (meilleur songe validé de la semaine), rejoue deux songes de cette intensité avec
+// l'équipe, la carte de la semaine et un hasard qu'il choisit, puis écrit au plus un quart de vagues (au moins 2) de plus
+// que son meilleur rejeu (E.sgOfficial). Classement : intensité puis vagues (vue lb_songe).
+// deno-lint-ignore no-explicit-any
+async function songe(db: any, uid: string) {
+  const now = Date.now();
+  if (now - (lastTry.get(uid + ":songe") || 0) < WAIT_S * 1000) return json({ ok: false, err: "trop tôt", retry: WAIT_S }, 429);
+  lastTry.set(uid + ":songe", now);
+  const [{ data: save }, { data: lad }] = await Promise.all([
+    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    db.from("ladder").select("flagged").eq("user_id", uid).maybeSingle(),
+  ]);
+  if (!save) return json({ ok: false, err: "aucune partie en ligne" }, 404);
+  if (lad && lad.flagged) return json({ ok: false, err: "en vérification" });
+  const w = V.weekIdx(now);
+  // deno-lint-ignore no-explicit-any
+  let wk: any = null;
+  try { const S = E.deserialize(save.data); E.events.length = 0; if (S.panelUsed) return json({ ok: false, err: "partie de test" }); wk = S.songe && S.songe.wk; } catch (_) { return json({ ok: false, err: "partie illisible" }); }
+  if (!wk || wk.w !== w || !(wk.ii >= 0)) return json({ ok: false, err: "aucun songe validé cette semaine" });
+  const ii = Math.min(E.SG_INT.length - 1, Math.max(0, Math.round(Number(wk.ii) || 0)));
+  const claim = Math.max(0, Math.min(50, Math.round(Number(wk.waves) || 0)));
+  if (claim < E.SG_INT[ii].waves) return json({ ok: false, err: "songe non validé" });
+  let best = -1, why = "";
+  for (let i = 0; i < 2; i++) {
+    const r = E.sgReplay(save.data, ii, crypto.getRandomValues(new Uint32Array(1))[0], now);
+    if (r.ok && r.waves > best) best = r.waves; else if (!r.ok) why = r.err;
+  }
+  if (best < 0) return json({ ok: false, ii, err: why || "l'équipe ne valide pas cette intensité" });
+  const waves = E.sgOfficial(claim, best);
+  const out: Record<string, unknown> = { ok: true, songe: true, w, ii, waves, claim, best };
+  const { data: old } = await db.from("songe_week").select("ii,waves").eq("user_id", uid).eq("w", w).maybeSingle();
+  let fin = old;
+  if (!old || ii > old.ii || (ii === old.ii && waves > old.waves)) {
+    await db.from("songe_week").upsert({ user_id: uid, w, ii, waves, at: new Date(now).toISOString() });
+    out.improved = true; fin = { ii, waves };
+  }
+  const { count: ahead } = await db.from("lb_songe").select("user_id", { count: "exact", head: true }).eq("w", w).or(`ii.gt.${fin.ii},and(ii.eq.${fin.ii},waves.gt.${fin.waves})`);
+  out.rank = (ahead || 0) + 1; out.fii = fin.ii; out.fwaves = fin.waves;
+  return json(out);
 }

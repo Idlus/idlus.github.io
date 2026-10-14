@@ -93,13 +93,13 @@
   const weekLeft = () => { const s = Math.max(0, (E.weekEnd() - E.now()) / 1000); const d = Math.floor(s / 86400), hh = Math.floor((s % 86400) / 3600); return d ? `${d} j ${hh} h` : hh ? `${hh} h` : "moins d'une heure"; };
   const team = (s) => E.team(s);
   const intName = (ii) => (E.SG_INT[ii] ? E.SG_INT[ii].name : E.SG_INT[0].name);
-  const bribes = (s) => `<span class="pill" data-tip="Bribes de rêve : gagnées quand un songe est validé, à échanger au Marché onirique.">${uimg("cristal", "uico")} <b class="num">${fmt(E.songe(s).br)}</b> Bribes</span>`;
+  const bribes = (s) => `<span class="pill" data-tip="Bribes de rêve : gagnées à chaque vague de la Fin du rêve et quand un songe est validé, à échanger au Marché onirique.">${uimg("cristal", "uico")} <b class="num">${fmt(E.songe(s).br)}</b> Bribes</span>`;
 
   /* ---------- l'en-tête de la page ---------- */
   function render(main) {
     const s = S(); const on = E.expActive(s); const X_ = s.exp;
     const legN = E.LEG_LIST.filter((x) => legOwned(s, x.k)).length;
-    const afford = E.SG_SHOP.filter((o) => !(o.once && E.sgOwned(s, o.id)) && E.songe(s).br >= o.price).length;
+    const afford = E.SG_SHOP.filter((o) => !(o.once && E.sgOwned(s, o.id)) && E.songe(s).br >= o.price).length + E.sgWeekShop().filter((o) => E.sgWeekLeft(s, o.id) > 0 && E.songe(s).br >= o.price).length; // 1.0.30 : offres de la semaine
     const tab = (v, ic, n, badge) => `<button data-act="sg-view" data-v="${v}" aria-pressed="${ui.view === v}">${uimg(ic, "sgx-ti")}<span>${n}</span>${badge !== "" ? `<em>${badge}</em>` : ""}</button>`;
     const sub = on ? `${intName(X_.ii)} · salle ${curD(X_)} sur ${E.SG_ROOMS}` : `dès le niveau ${E.EXP_MIN_LVL} · nouvelle carte dans ${weekLeft()}`;
     const head = `<div class="sgx-top"><div class="sgx-title"><span class="sgx-moon" aria-hidden="true"></span><span class="sgx-tt"><h1>Le Songe infini</h1><span class="small muted">${h(sub)}</span></span>${bribes(s)}</div>
@@ -125,7 +125,7 @@
     const rate = E.LEG_RATE[ii]; const br = Math.round((60 + 20 * INT.waves) * (1 + 0.5 * ii));
     const diff = Math.round(E.SG_INT[ii].base);
     const detail = `<div class="sgx-int" style="--gc:${INT.col}"><div class="sgx-int-h"><span class="sgx-big">${gem(ii)}</span><span class="stack" style="gap:1px;min-width:0"><b>${h(INT.name)}</b><span class="xs muted">${ii < unl ? "déjà validé, tu peux le rejouer" : ii === unl ? "ta prochaine intensité à valider" : "verrouillé"}</span></span></div>
-      <div class="sgx-facts"><span><b>${INT.loot ? `+${INT.loot} %` : "normal"}</b>butin</span><span><b>${INT.waves}</b>vague${INT.waves > 1 ? "s" : ""} à tenir</span><span><b class="sgx-pips">${Array.from({ length: 11 }, (_, k) => `<i class="${k < diff ? "on" : ""}"></i>`).join("")}</b>difficulté</span><span><b>≈ ${fmt(br)}</b>Bribes si validé</span><span><b>${rate ? `1 sur ${fmt(1 / rate)}` : "—"}</b>légendaire</span></div>
+      <div class="sgx-facts"><span><b>${INT.loot ? `+${INT.loot} %` : "normal"}</b>butin</span><span><b>${INT.waves}</b>vague${INT.waves > 1 ? "s" : ""} à tenir</span><span><b class="sgx-pips">${Array.from({ length: 11 }, (_, k) => `<i class="${k < diff ? "on" : ""}"></i>`).join("")}</b>difficulté</span><span data-tip="${h(`Dont ${fmt(E.sgWaveBribes(ii))} à chaque vague tenue, gardées même sans valider`)}"><b>≈ ${fmt(br)}</b>Bribes si validé</span><span><b>${rate ? `1 sur ${fmt(1 / rate)}` : "aucun"}</b>légendaire</span></div>
       <div class="sgx-go">${err ? `<span class="tag warn">${h(err)}</span>` : `<button class="sg-btn sgx-enter" data-act="sg-start" data-v="${ii}">${uimg("cristal", "sg-ui")} Entrer en ${h(INT.name)}</button>`}<span class="xs muted">monstres niveau ${lvl} · ${tm.length} héros${!err && (s.hunting || s.dungeon) ? " · la chasse reprend au réveil" : ""}</span></div></div>`;
     const L = s.expLast && E.SG_INT[s.expLast.ii] ? s.expLast : null; // 1.0.10.4 : pas le résultat d'une ancienne Expédition
     const conv = G_.from && !G_.fromSeen ? `<section class="sgd sgx-note"><span class="small">${G("star")} <b>L'Expédition devient le Songe infini.</b> Tes ${fmt(G_.from.ec)} Éclats sont devenus <b>${fmt(G_.from.ec * 5)} Bribes de rêve</b>${G_.from.ups ? `, et tes ${G_.from.ups} améliorations du campement <b>${fmt(G_.from.ups * 150)} Bribes</b>` : ""}. Ton record et tes titres sont gardés.</span><button class="btn sm" data-act="sg-convok">Compris</button></section>` : "";
@@ -135,7 +135,7 @@
       <li>${uimg("dofus")}<span><b>Ramasse des bonus</b>et des points de rêve, dépensés aux Fontaines</span></li>
       <li>${uimg("combat")}<span><b>Tiens les vagues</b>de la Fin du rêve, sans regagner tes PV</span></li>
       <li>${uimg("cristal")}<span><b>Échange tes Bribes</b>au Marché onirique. Le butin des combats reste toujours</span></li></ol></section>`;
-    return conv + `<section class="sgd sgx-well"><div class="sgx-well-l"><span class="sg-k">${G("star")} Le Puits des Songes</span><div class="sg-ttl">Choisis ton intensité</div>
+    return conv + rankHtml(s) + `<section class="sgd sgx-well"><div class="sgx-well-l"><span class="sg-k">${G("star")} Le Puits des Songes</span><div class="sg-ttl">Choisis ton intensité</div>
         <div class="sgx-track">${track}</div>${detail}</div>
       <div class="sgx-well-r"><div class="sg-portal">${tm.slice(0, 4).map(look).join("")}</div></div>${week}</section>
       <div class="sgx-row2">${how}${L ? lastHtml(s, L) : ""}</div>`;
@@ -246,7 +246,7 @@
       <button class="sg-of" style="--oc:#f0c35a" data-act="sg-gob" data-v="bet" ${X_.pts < E.SG_BET ? "disabled" : ""}><span class="orb">${uimg("bourse", "")}</span><span class="rk">Pari</span><b>Quitte ou double</b><span class="xs muted">Mise ${E.SG_BET} points de rêve : une chance sur deux de les doubler</span></button>
       <button class="sg-of" style="--oc:#8ff0a0" data-act="sg-gob" data-v="pass"><span class="orb">${uimg("cle", "")}</span><span class="rk">Passage</span><b>Le laisser filer</b><span class="xs muted">+${E.SG_PTS.gob} points de rêve, et tu continues</span></button></div><div class="row">${timer(p)}</div>`;
     if (p.t === "wave") { const INT = E.SG_INT[X_.ii];
-      body = head("Fin du rêve", X_.valid ? `Vague ${X_.waves} tenue · songe validé ✓` : `Vague ${X_.waves} tenue`, X_.valid ? `Chaque vague de plus donne ${Math.round(20 * (1 + 0.5 * X_.ii))} Bribes de rêve. Les PV ne remontent pas : équipe à ${E.sgAvgHp(s)} %.` : `Encore ${INT.waves - X_.waves} vague${INT.waves - X_.waves > 1 ? "s" : ""} pour valider le songe. Équipe à ${E.sgAvgHp(s)} % de ses PV.`)
+      body = head("Fin du rêve", X_.valid ? `Vague ${X_.waves} tenue · songe validé ✓` : `Vague ${X_.waves} tenue`, X_.valid ? `Chaque vague de plus donne ${Math.round(20 * (1 + 0.5 * X_.ii))} Bribes de rêve. Les PV ne remontent pas : équipe à ${E.sgAvgHp(s)} %.` : `Encore ${INT.waves - X_.waves} vague${INT.waves - X_.waves > 1 ? "s" : ""} pour valider le songe. +${fmt(E.sgWaveBribes(X_.ii))} Bribes de rêve à chaque vague tenue, gardées même en cas de défaite. Équipe à ${E.sgAvgHp(s)} % de ses PV.`)
         + `<div class="sg-wave" style="padding:0"><span class="sg-wv">${Array.from({ length: Math.max(INT.waves, X_.waves + 1) }, (_, i) => `<span class="${i < X_.waves ? "ok" : i === X_.waves ? "cur" : ""} ${i < INT.waves ? "" : "v"}">${i + 1}</span>`).join("")}</span></div>
         <div class="row" style="gap:8px;flex-wrap:wrap"><button class="sg-btn" data-act="sg-wave" data-v="1">Vague suivante</button>${X_.valid ? `<button class="sg-btn ghost" data-act="sg-wave" data-v="no">Se réveiller (tout garder)</button>` : ""}${timer(p)}</div>`; }
     if (p.t === "sable") body = head("Défaite", "Le sable se met à couler…", `Un Sable de Draconiros peut rembobiner le temps : l'équipe rejoue ce combat avec 50 % de PV en plus. Il t'en reste <b>${X_.sable}</b>.`) + `<div class="row" style="gap:8px;flex-wrap:wrap"><button class="sg-btn" data-act="sg-sable" data-v="1">Utiliser le Sable</button><button class="sg-btn ghost" data-act="sg-sable" data-v="no">Se réveiller</button>${timer(p)}</div>`;
@@ -257,7 +257,7 @@
     return `<div class="sgd sg-sheet end"><div class="stack" style="gap:6px;align-items:center;text-align:center"><span class="sg-portal" style="height:150px;width:100%">${team(s).slice(0, 4).map(look).join("")}</span>
       <span class="sg-k" style="color:${L.valid ? "#8ff0a0" : "#ffc0ca"}">${L.valid ? `✓ Songe validé · ${h(intName(L.ii))}` : `Songe non validé · ${h(intName(L.ii))}`}</span>
       <span class="sg-ttl" style="font-size:26px">${L.valid ? `Réveil après ${plural(L.waves, "vague")}` : `Réveil salle ${L.d}`}</span>
-      <span class="small muted">${L.valid ? "Tu gardes tout : butin, Bribes de rêve et le coffre du songe." : "Tu gardes le butin des combats. Les bonus et les points de rêve s'effacent."}</span></div>
+      <span class="small muted">${L.valid ? "Tu gardes tout : butin, Bribes de rêve et le coffre du songe." : `Tu gardes le butin des combats${L.bribes ? " et les Bribes des vagues tenues" : ""}. Les bonus et les points de rêve s'effacent.`}</span></div>
       ${sumHtml(L)}
       ${L.chest && L.chest.got.length ? `<div class="small"><b>Coffre du songe :</b> ${h(L.chest.got.join(", "))}</div>` : ""}
       ${L.leg ? `<div class="small" style="text-align:center">${G("star")} <b>Objet légendaire :</b> ${legName(L.leg)}</div>` : ""}
@@ -273,7 +273,7 @@
         <span class="pr"><span class="sg-chip g">${uimg("cristal")} ${fmt(o.price)}</span>${own ? (o.id === "cadre" ? `<label class="xs"><input type="checkbox" data-act="sg-cadre" ${s.settings.cadreSonge ? "checked" : ""}> porté</label>` : `<span class="xs">✓ échangé</span>`) : `<button class="btn sm ${ok ? "primary" : ""}" data-act="sg-shop" data-id="${o.id}" ${ok ? "" : "disabled"}>Échanger</button>`}</span></div>`; };
     return `<section class="sgd"><div class="sg-head" style="padding:14px 16px"><span class="stack" style="gap:2px"><span class="sg-k">${G("star")} Marché onirique</span><span class="small muted">Neru Stalar échange tes Bribes de rêve. Ce que tu peux prendre maintenant est en premier.</span></span>
       <span class="seg">${[["all", "Tout"], ["coffre", "Coffres"], ["look", "Apparence"], ["up", "Améliorations"]].map(([v, n]) => `<button data-act="sg-shopf" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</span></div>
-      <div style="padding:0 16px 16px"><div class="sg-shop">${E.SG_SHOP.filter((o) => f === "all" || o.kind === f).map((o) => [o, o.once && E.sgOwned(s, o.id) ? 2 : G_.br >= o.price ? 0 : 1]).sort((a, b) => a[1] - b[1] || a[0].price - b[0].price).map(([o]) => it(o)).join("")}</div></div></section>`;
+      <div style="padding:0 16px 16px">${f === "all" ? weekShopHtml(s) : ""}<div class="sg-shop">${E.SG_SHOP.filter((o) => f === "all" || o.kind === f).map((o) => [o, o.once && E.sgOwned(s, o.id) ? 2 : G_.br >= o.price ? 0 : 1]).sort((a, b) => a[1] - b[1] || a[0].price - b[0].price).map(([o]) => it(o)).join("")}</div></div></section>`;
   }
 
   /* ---------- les objets légendaires ---------- */
@@ -292,7 +292,7 @@
     return `<section class="sgd sgx-legs"><div class="sgx-lgh"><span class="stack" style="gap:6px;min-width:0;flex:1 1 260px"><span class="sg-k" style="color:#ff9d3c">${G("star")} ${owned.length} sur ${E.LEG_LIST.length} objets légendaires</span><span class="sgx-bar"><i style="width:${(100 * owned.length) / E.LEG_LIST.length}%"></i></span>
         <span class="xs muted">Un passif unique chacun · un par héros · les copies montent l'Éveil</span></span>
       <span class="seg">${[[0, "Tous"], [-1, "Obtenus"], [50, "50"], [100, "100"], [150, "150"], [200, "200"]].map(([v, n]) => `<button data-act="sg-legf" data-v="${v}" aria-pressed="${lv === v}">${n}</button>`).join("")}</span></div>
-      <details class="sgx-rates"><summary class="xs">Chances par songe validé (Paradoxe 2 et plus, sans garantie)</summary><div class="row" style="gap:5px;flex-wrap:wrap;margin-top:6px">${E.LEG_RATE.map((p, i) => (p ? `<span class="sg-chip ${i >= 5 ? "r" : "v"}">${h(intName(i))} · 1 sur ${fmt(1 / p)}</span>` : "")).join("")}</div></details>
+      <details class="sgx-rates"><summary class="xs">Chances par songe validé (Paradoxe 1 et plus, sans garantie)</summary><div class="row" style="gap:5px;flex-wrap:wrap;margin-top:6px">${E.LEG_RATE.map((p, i) => (p ? `<span class="sg-chip ${i >= 5 ? "r" : "v"}">${h(intName(i))} · 1 sur ${fmt(1 / p)}</span>` : "")).join("")}</div></details>
       ${mine.length ? `<div class="sgx-sub">Ta collection</div><div class="sgx-lgos">${mine.map(big).join("")}</div>` : ""}
       ${lv === -1 ? "" : `<div class="sgx-sub">À découvrir</div>${groups || `<span class="xs muted">Tu les as tous !</span>`}`}</section>`;
   }
@@ -312,6 +312,105 @@
       <div class="row" style="gap:6px;flex-wrap:wrap"><span class="pill">1 légendaire par héros</span><span class="pill">se vend à l'HdV avec son Éveil</span><span class="pill">pas de forgemagie</span><span class="pill">passif actif partout</span></div>
       <div class="row" style="gap:8px;flex-wrap:wrap">${it && copies.length && ev < 5 ? `<button class="btn primary" data-act="sg-fuse" data-u="${it.uid}" data-u2="${copies[0].uid}">Fondre une copie</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div></div>`);
   }
+
+  /* ---------- 1.0.30 : classement de la semaine, lots du top 10, nouveautés, tuile du Havre-Sac ---------- */
+  const ONL = () => window.ONLINE;
+  const linked = () => { const o = ONL(); return !!(o && o.enabled && o.user && o.profile && !(o.solo && o.solo())); };
+  const RANK = { w: -1, list: null, me: null, at: 0, busy: false, err: false, claimed: null, demo: false };
+  const isoWeek = (t) => { const d = new Date(t); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day + 3); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round((d - y0) / 864e5 / 7 - ((y0.getUTCDay() + 6) % 7 - 3) / 7); }; // numéro de la semaine du calendrier
+  const ord = (r) => `${r}${r === 1 ? "er" : "e"}`;
+  async function rkLoad(force) {
+    const o = ONL(); const db = o && o.enabled && o.db && o.db(); if (!db || RANK.busy) return;
+    const w = E.weekIdx(); if (!force && RANK.w === w && Date.now() - RANK.at < 60000) return;
+    RANK.busy = true; RANK.at = Date.now();
+    try {
+      const cols = "user_id,pseudo,main,main_lvl,ii,waves,r";
+      const [a, b] = await Promise.all([db.from("lb_songe").select(cols).eq("w", w).order("r").limit(10),
+        o.user ? db.from("lb_songe").select(cols).eq("w", w).eq("user_id", o.user.id).maybeSingle() : Promise.resolve({ data: null })]);
+      RANK.err = !!(a && a.error); RANK.list = RANK.err ? null : (a && a.data) || []; RANK.me = (b && b.data) || null; RANK.w = w;
+    } catch (e) { RANK.err = true; }
+    RANK.busy = false; rkPaint();
+  }
+  /* mise à jour ciblée : seulement le bloc du classement (et la tuile du Havre-Sac au prochain tour de boucle) */
+  const rkPaint = () => { const el = $("#sgRank"); const s = S(); if (el && s) { const html = rankBody(s); if (el.innerHTML !== html) el.innerHTML = html; } };
+  const sentGet = () => { try { return JSON.parse(localStorage.getItem("idlus-songe-envoi") || "null"); } catch (e) { return null; } };
+  const sentSet = (o) => { try { localStorage.setItem("idlus-songe-envoi", JSON.stringify(o)); } catch (e) {} };
+  /* 1.0.30 : classement d'exemple, seulement depuis le Panel Xener › Test › Essayer une nouveauté (jamais en ligne) */
+  const DEMO = [["Kraken", "iop", 7, 31], ["Lynaë", "eni", 7, 27], ["Nyx", "sram", 6, 34], ["Bwakfu", "iop", 5, 22], ["Gloubi", "osa", 4, 41], ["Tofuzz", "feca", 4, 30], ["Mélusine", "xelor", 3, 44], ["Fléchette", "cra", 3, 25], ["Baloo", "panda", 2, 38], ["Krokmou", "sacri", 2, 19]];
+  function rankBody(s) {
+    const wk = E.sgWeek(s); const o = ONL(); const mine = wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "rien de validé";
+    const row = (x, me) => `<div class="sgr-row ${me ? "me" : ""}"><b class="n">${x.r}</b><span class="who">${X().cmed(x.main, x.main_lvl)}<b>${X().pname(x.pseudo, x.user_id)}</b></span><span class="xs int">${h(intName(x.ii))}</span><b class="num">${plural(x.waves, "vague")}</b></div>`;
+    if (RANK.demo) { const c0 = s.chars[0]; const L = DEMO.map(([p, c, ii, w], i) => ({ r: i + 1, pseudo: p, main: c, main_lvl: 200, ii: Math.min(ii, E.SG_INT.length - 1), waves: w }));
+      return `<div class="sgr-list">${L.map((x) => row(x, false)).join("")}${row({ r: 14, pseudo: c0.name, main: c0.cls, main_lvl: c0.lvl, ii: Math.max(0, wk.ii), waves: wk.waves }, true)}</div><div class="sgr-foot xs muted">Classement d'exemple (Panel Xener › Test) : rien n'est envoyé au serveur.</div>`; }
+    if (!o || !o.enabled) return `<div class="sgr-empty small">Le classement se joue en ligne. Ton meilleur songe de la semaine : <b>${mine}</b>.</div>`;
+    const myId = o.user && o.user.id; const L = RANK.list;
+    let list = L === null ? `<div class="sgr-empty small muted">${RANK.err ? `Classement indisponible pour l'instant. <button class="btn sm" data-act="sg-rk">Réessayer</button>` : "Chargement du classement…"}</div>`
+      : !L.length ? `<div class="sgr-empty small muted">Personne encore cette semaine : valide un songe pour ouvrir le classement.</div>`
+      : L.map((x) => row(x, x.user_id === myId)).join("") + (RANK.me && !L.some((x) => x.user_id === myId) ? row(RANK.me, true) : "");
+    const sent = sentGet(); const ok = sent && myId && sent.u === myId && sent.w === wk.w ? sent : null;
+    const st = !myId ? `Crée ton compte (gratuit) pour y figurer. Ton meilleur songe de la semaine : <b>${mine}</b>.`
+      : o.solo && o.solo() ? "Le classement suit ta partie 1." : wk.ii < 0 ? "Valide un songe cette semaine pour entrer au classement."
+      : ok && ok.res && ok.res.err && ok.ii === wk.ii && ok.waves === wk.waves ? `Ton songe (${mine}) n'a pas été retenu : ${h(ok.res.err)}.`
+      : ok && ok.ii === wk.ii && ok.waves === wk.waves ? `Ton record est vérifié${ok.res && ok.res.waves !== undefined && ok.res.waves < wk.waves ? ` : ${plural(ok.res.waves, "vague")} comptée${ok.res.waves > 1 ? "s" : ""} par le serveur` : ""}.`
+      : `Ton record (${mine}) part au serveur à la prochaine sauvegarde, qui le rejoue avant de le compter.`;
+    return `<div class="sgr-list">${list}</div><div class="sgr-foot xs muted">${st}<br>Top 3 : titre « Maître des Songes » pour la semaine et 2 000 Bribes · top 10 : 1 000 Bribes. Records vérifiés par le serveur.</div>`;
+  }
+  function rankHtml(s) {
+    const o = ONL(); if (o && o.enabled) rkLoad(false);
+    const rk = `<section class="sgd sgr"><div class="sgr-h"><span class="sg-k">${uimg("trophee")} Classement du Songe · semaine ${isoWeek(E.now())}</span><span class="xs muted">même carte pour tous · finit dans ${weekLeft()}</span></div><div id="sgRank">${rankBody(s)}</div></section>`;
+    if (s.settings.sgNews) return `<div class="sgr-grid one">${rk}</div>`;
+    const wk = E.sgWeekShop();
+    const news = `<section class="sgd sgr-new"><div class="sgr-h"><span class="sg-k">${G("sparkle")} Ce qui s'améliore</span><button class="btn sm" data-act="sg-news">Compris</button></div><div class="sgr-nl">
+      <div>${uimg("cristal")}<span><b>Bribes à chaque vague</b><span class="xs muted">même en cas de défaite, plus seulement à la validation</span></span></div>
+      <div>${uimg("dofus")}<span><b>Légendaires dès Paradoxe 1</b><span class="xs muted">1 chance sur ${fmt(1 / E.LEG_RATE[1])}</span></span></div>
+      <button data-act="sg-view" data-v="marche">${uimg("coffre")}<span><b>Marché onirique tournant</b><span class="xs muted">3 objets neufs chaque semaine : ${h(wk.map((x) => x.name).join(", "))}</span></span></button>
+      <div>${uimg("havre")}<span><b>Songe sur le Havre-Sac</b><span class="xs muted">une tuile avec la carte de la semaine et ta place</span></span></div></div></section>`;
+    return `<div class="sgr-grid">${rk}${news}</div>`;
+  }
+  /* Marché : les 3 offres de la semaine, en tête de « Tout » */
+  function weekShopHtml(s) {
+    const br = E.songe(s).br;
+    const it = (o) => { const left = E.sgWeekLeft(s, o.id); const ok = left > 0 && br >= o.price; const C = o.cons && D.CONSUMABLES[o.cons];
+      const icon = C ? X().consIco(C) : o.dust ? uimg("poussiere", "") : uimg("forge", "");
+      return `<div class="sg-it wk ${left ? "" : "sold"}"><span class="top"><span class="ico">${icon}</span><span><span class="rk">Offre de la semaine · encore ${left} sur ${o.lim}</span><br><b>${h(o.name)}</b></span></span><span class="xs muted">${h(o.desc || "")}</span>${left && !ok ? `<span class="sgx-need"><i style="width:${Math.min(100, Math.round(100 * br / o.price))}%"></i></span><span class="xs muted">il te manque ${fmt(o.price - br)} Bribes</span>` : ""}
+        <span class="pr"><span class="sg-chip g">${uimg("cristal")} ${fmt(o.price)}</span>${left ? `<button class="btn sm ${ok ? "primary" : ""}" data-act="sg-shopw" data-id="${o.id}" ${ok ? "" : "disabled"}>Échanger</button>` : `<span class="xs">✓ plus rien cette semaine</span>`}</span></div>`; };
+    return `<div class="sgx-sub">${G("sparkle")} Cette semaine · nouvelles offres dans ${weekLeft()}</div><div class="sg-shop sgw">${E.sgWeekShop().map(it).join("")}</div><div class="sgx-sub">Toujours au Marché</div>`;
+  }
+  /* tuile du Havre-Sac : la carte de la semaine et ta place */
+  function tile() {
+    const s = S(); if (!s || !E.team(s).length) return null;
+    if (Math.max(...E.team(s).map((c) => c.lvl)) < E.EXP_MIN_LVL) return null;
+    const wk = E.sgWeek(s); const reg = E.sgRegne(E.weekIdx()); const on = E.expActive(s);
+    const me = RANK.me && RANK.w === E.weekIdx() ? RANK.me : null;
+    const txt = on ? where(s) : `carte ${/^[AEIOUÉ]/.test(reg.god) ? "d'" : "de "}${h(reg.god)} · ${wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "rien de validé cette semaine"}${me ? ` · ${ord(me.r)} du classement` : ""}`;
+    return { ic: `<img class="ac-tm" src="assets/ui/carte.webp" alt="">`, t: "Songe infini", s: txt, hot: !on && wk.ii < 0, act: `data-act="sg-view" data-v="songe"`,
+      badge: on ? `<span class="tag">Reprendre</span>` : me ? `<span class="pill num">${ord(me.r)}</span>` : `<span class="tag">Entrer</span>` };
+  }
+  /* envoi du record de la semaine (après une sauvegarde en ligne réussie) et lots des semaines passées */
+  let subBusy = false, subAt = 0;
+  async function sgSubmit() {
+    const s = S(); if (!s || !linked() || subBusy || s.panelUsed) return;
+    const wk = E.sgWeek(s); if (wk.ii < 0) return;
+    const uid = ONL().user.id; const sent = sentGet();
+    if (sent && sent.u === uid && sent.w === wk.w && (sent.ii > wk.ii || (sent.ii === wk.ii && sent.waves >= wk.waves))) return;
+    if (Date.now() - subAt < 60000) return; subAt = Date.now(); subBusy = true;
+    const r = await ONL().submitGuild({ songe: 1 }); subBusy = false;
+    if (!r || r.net || r.err === "trop tôt") return;
+    sentSet({ u: uid, w: wk.w, ii: wk.ii, waves: wk.waves, res: r.ok ? { ii: r.fii, waves: r.waves, rank: r.rank } : { err: String(r.err || "refusé").slice(0, 80) } });
+    if (r.ok && r.improved) X().toast(`Songe infini : record vérifié par le serveur, ${intName(r.ii)} · ${plural(r.waves, "vague")} (${ord(r.rank)} cette semaine).`, "rare");
+    rkLoad(true);
+  }
+  async function sgClaim() {
+    const o = ONL(); const s = S(); if (!s || !linked() || !window.MARKET) return;
+    const k = `${o.user.id}:${E.weekIdx()}`; if (RANK.claimed === k) return; RANK.claimed = k;
+    try { if (localStorage.getItem("idlus-songe-lots") === k) return; } catch (e) {}
+    const r = await o.rpc("songe_claim", { p_after: (s.hdv && s.hdv.op) || 0 });
+    if (r.err || !r.data || r.data.err) { RANK.claimed = null; return; }
+    try { localStorage.setItem("idlus-songe-lots", k); } catch (e) {}
+    if (r.data.ops) window.MARKET.apply(r.data.ops, true);
+    if (r.data.bribes) X().toast(`Classement du Songe infini : +${fmt(r.data.bribes)} Bribes de rêve${r.data.top ? " et le titre « Maître des Songes »" : ""} !`, "rare");
+  }
+  if (window.ONLINE && window.ONLINE.onChange) window.ONLINE.onChange((st) => { if (st === "ok") setTimeout(() => { sgClaim(); sgSubmit(); rkLoad(false); }, 1500); });
 
   /* ---------- actions ---------- */
   const ours = () => !!$("#sheet .sg-sheet");
@@ -342,6 +441,9 @@
       case "sg-sable": choose(s, d.v === "no" ? "no" : 0); return;
       case "sg-shop": after(E.act(s, "sgBuy", d.id)); return;
       case "sg-shopf": ui.shop = d.v; X().render(); return;
+      case "sg-shopw": after(E.act(s, "sgBuyWeek", d.id)); return; // 1.0.30 : offre de la semaine
+      case "sg-news": s.settings.sgNews = 1; X().render(); return;
+      case "sg-rk": rkLoad(true); return;
       case "sg-cadre": after(E.act(s, "sgCadre", t.checked)); return;
       case "sg-legf": ui.lv = +d.v; X().render(); return;
       case "sg-leg": legSheet(s, d.k, d.u ? +d.u : undefined); return;
@@ -368,5 +470,6 @@
 
   /* texte de l'en-tête du combat et de la barre d'état */
   const where = (s) => { if (!E.expActive(s)) return null; const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `Songe · ${intName(X_.ii)} · ${n && n.t === "end" ? `vague ${X_.wave}` : `salle ${n ? n.d : 1}`}`; };
-  window.SGUI = { render, act, change, where, combatHtml, legSheet, ui };
+  if (window.PANEL && window.PANEL.register) window.PANEL.register({ toggle: { id: "sgdemo", n: "Classement du Songe d'exemple (pour voir la page sans serveur)", on: () => !!RANK.demo, set: (v) => { RANK.demo = !!v; } } });
+  window.SGUI = { render, act, change, where, combatHtml, legSheet, ui, tile, RANK, rkLoad, submit: sgSubmit, claim: sgClaim };
 })();

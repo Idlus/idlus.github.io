@@ -393,8 +393,8 @@
 
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
-  function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel admin" : "Modération"}" aria-label="${C.role === "admin" ? "Panel admin" : "Modération"}">${X().G("shield")}</button>` : ""; }
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || x[0] !== "verif");
+  function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel Xener" : "Modération"}" aria-label="${C.role === "admin" ? "Panel Xener" : "Modération"}">${X().G("shield")}</button>` : ""; } // 1.0.30 : Panel Xener (js/panel.js)
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 1.0.30 : les modérateurs gardent seulement les outils du chat
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -409,6 +409,7 @@
     if (A.tab === "idees") A.idees = await r("adm_ideas"); // 0.1.36, voir js/idees.js
     if (A.tab === "builds") A.builds = await r("adm_builds"); // 1.0.23, voir js/builds.js
     if (A.tab === "fiches" && window.FICHES && isAdmin()) await window.FICHES.load(); // 0.1.52.1, voir js/fiches.js
+    if (window.PANEL && window.PANEL.load) await window.PANEL.load(A.tab); // 1.0.30 : pages ajoutées au Panel Xener (js/panel.js)
   }
   function renderAdmin(main) {
     if (!C.role) { main.innerHTML = `<section class="panel"><div class="pad empty">Le panel admin est réservé à l'équipe d'Idlus.</div></section>`; return; }
@@ -426,6 +427,7 @@
   }
   const repaintAdm = () => { const m = $("#main"); if (m && window.DX.ui.tab === "admin") { if (window.GIFTS) window.GIFTS.readForm(); keepFocus(() => (m.innerHTML = admHtml(false))); } };
   function admHtml(loading) {
+    if (window.PANEL && window.PANEL.html) return window.PANEL.html(loading); // 1.0.30 : Panel Xener, menu par thème et recherche (js/panel.js)
     const tabs = `<div class="atabs">${ATABS().map(([k, n, c]) => `<button class="${k === A.tab ? "on" : ""}" data-act="adm-tab" data-v="${k}">${n}${c ? ` <span class="n">${c}</span>` : ""}</button>`).join("")}</div>`;
     const body = loading || !A.ov ? `<div class="box"><div class="empty">Chargement…</div></div>` : admBody();
     return `<section class="adm"><div class="ahd"><h1>${isAdmin() ? "Administration" : "Modération"}</h1><span class="badge">${isAdmin() ? "Réservé à ton compte" : "Modérateur"}</span><button class="btn sm" data-act="adm-reload">Actualiser</button>${isAdmin() ? `<button class="btn sm" data-act="adm-test">${X().G("bug")} Panel de test</button>` : ""}</div>
@@ -503,7 +505,7 @@
         ${mute ? `<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="0">Lever le muet</button>` : ""}<button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="60">Muet 1 h</button><button class="btn sm" data-act="adm-mute" data-u="${x.id}" data-v="1440">Muet 24 h</button>
         ${isAdmin() ? `<button class="btn sm${x.banned ? "" : " danger"}" data-act="adm-ban" data-u="${x.id}" data-v="${x.banned ? 0 : 1}">${x.banned ? "Lever le bannissement" : "Bannir du chat"}</button>
         <button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="${x.flagged ? 0 : 1}">${x.flagged ? "Remettre dans les classements" : "Mettre en vérification"}</button>
-        <button class="btn sm" data-act="adm-rename" data-u="${x.id}">Changer son pseudo</button>
+        <button class="btn sm" data-act="adm-rename" data-u="${x.id}">Changer son pseudo</button>${window.PANEL ? `<button class="btn sm" data-act="adm-pxcopy" data-u="${x.id}" data-p="${h(x.pseudo)}">Copier dans ma partie de test</button>` : ""}
         <button class="btn sm${x.suspended_at ? "" : " danger"}" data-act="adm-suspend" data-u="${x.id}" data-v="${x.suspended_at ? 0 : 1}">${x.suspended_at ? "Rétablir le compte" : "Suspendre le compte"}</button>` : ""}</div>`}
       ${A.ren === x.id ? `<div class="srch"><input id="admRen" value="${h(x.pseudo)}" maxlength="16" autocomplete="off"><button class="btn primary" data-act="adm-renamego" data-u="${x.id}">Renommer</button></div>` : ""}
       ${A.sus === x.id ? `<div class="stack" style="gap:6px"><span class="minus small">Le compte de ${h(x.pseudo)} ne pourra plus envoyer sa partie ni écrire dans le chat, et disparaît des classements. Tu pourras le rétablir.</span><div class="row"><button class="btn sm danger" data-act="adm-suspendgo" data-u="${x.id}">Confirmer la suspension</button><button class="btn sm" data-act="adm-suspendno">Annuler</button></div></div>` : ""}
@@ -616,5 +618,6 @@
   }
   document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Q)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
-  window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; } };
+  window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; },
+    adm: { get A() { return A; }, body: () => admBody(), load: () => admLoad(), tabs: () => ATABS(), repaint: () => repaintAdm(), keepFocus, isAdmin } }; // 1.0.30 : pour le Panel Xener (js/panel.js)
 })();

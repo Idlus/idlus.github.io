@@ -53,13 +53,13 @@ const power = (st) => Object.entries(st).reduce((a, [k, v]) => a + (STATS[k] ? S
   console.log("ok - légendaires : un par héros, Éveil, sauvegarde");
 }
 
-// 4. Chances : rien en Rêve et Paradoxe 1, seulement ceux du niveau de l'équipe ou en dessous, et environ le taux annoncé.
+// 4. Chances : rien en Rêve, 1 sur 4 000 en Paradoxe 1 (1.0.30), seulement ceux du niveau de l'équipe ou en dessous, et environ le taux annoncé.
 {
-  assert.deepStrictEqual(E.LEG_RATE.slice(0, 2), [0, 0]);
+  assert.deepStrictEqual(E.LEG_RATE.slice(0, 2), [0, 1 / 4000]);
   assert.ok(E.legPool(60).every((x) => x.lvl <= 60) && E.legPool(60).length === 4, "niveau 60 : les 4 inédits niveau 50");
   const S = team(200); let n = 0; const N = 200000; for (let i = 0; i < N; i++) if (E.legRoll(S, 7, 200, "test")) n++;
   const exp = N * E.LEG_RATE[7]; assert.ok(n > exp * 0.7 && n < exp * 1.3, `Cauchemar 3 : ${n} pour ${exp} attendus`);
-  const T = team(200); for (let i = 0; i < 5000; i++) assert.ok(!E.legRoll(T, 1, 200, "test"), "rien en Paradoxe 1");
+  const T = team(200); for (let i = 0; i < 5000; i++) assert.ok(!E.legRoll(T, 0, 200, "test"), "rien en Rêve");
   console.log("ok - légendaires : taux de butin", n, "sur", N, "en Cauchemar 3");
 }
 

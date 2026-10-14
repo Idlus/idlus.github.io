@@ -1,0 +1,110 @@
+/* ============================================================================
+   LA COMMUNAUTÉ (1.0.30) : classement du Songe infini (js/songeui.js), alignement et guerre des cités
+   (js/alignement.js, js/alignui.js), Panel Xener (js/panel.js). Couleurs du thème par les variables de style.css.
+   ========================================================================== */
+
+/* ---------- Songe infini : classement de la semaine et nouveautés ---------- */
+.sgr-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.sgr-grid.one{grid-template-columns:minmax(0,1fr)}
+.sgr,.sgr-new{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.sgr-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.sgr-h .sg-ui,.sgr-nl .sg-ui{width:22px;height:22px}
+.sgr-list{display:flex;flex-direction:column;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+.sgr-row{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 12px;font-size:13px;border-top:1px solid rgba(255,255,255,.08);background:rgba(10,8,25,.35)}
+.sgr-row:first-child{border-top:0}
+.sgr-row .n{text-align:center;color:var(--dg)}
+.sgr-row .who{display:flex;align-items:center;gap:8px;min-width:0}
+.sgr-row .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sgr-row .cm{width:26px;height:26px}
+.sgr-row .int{color:var(--dm)}
+.sgr-row.me{background:linear-gradient(90deg,rgba(240,195,90,.22),rgba(240,195,90,.06));box-shadow:inset 3px 0 0 var(--dg)}
+.sgr-empty{padding:12px}
+.sgr-foot{line-height:1.5}
+.sgr-nl{display:flex;flex-direction:column;gap:2px}
+.sgr-nl>div,.sgr-nl>button{display:flex;gap:10px;align-items:center;padding:8px 6px;border-radius:10px;text-align:left;background:none;border:0;color:inherit;font:inherit;border-top:1px solid rgba(255,255,255,.08)}
+.sgr-nl>:first-child{border-top:0}
+.sgr-nl>button{cursor:pointer}.sgr-nl>button:hover{background:rgba(255,255,255,.06)}
+.sgr-nl span>b{display:block;font-size:13px}
+.sgr-nl span{display:flex;flex-direction:column;min-width:0}
+.sg-shop.sgw{margin-bottom:12px}
+.sg-it.wk{border-color:rgba(240,195,90,.55);background:linear-gradient(180deg,rgba(240,195,90,.12),rgba(10,8,25,.45))}
+.sg-it.wk.sold{opacity:.6}
+@media (max-width:820px){.sgr-grid{grid-template-columns:minmax(0,1fr)}.sgr-row{grid-template-columns:26px minmax(0,1fr) auto;padding:7px 9px}.sgr-row .int{display:none}}
+
+/* ---------- Alignement : cités, guerre des cités, quêtes, camps des joueurs ---------- */
+.al-cities{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.al-city{border:2px solid var(--frame);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;min-width:0}
+.al-city.b{background:linear-gradient(160deg,rgba(90,150,230,.35),rgba(255,255,255,.06) 60%),var(--panel2)}
+.al-city.k{background:linear-gradient(160deg,rgba(200,50,40,.4),rgba(0,0,0,.2) 60%),var(--panel2)}
+.al-city.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(var(--glw),.35)}
+.al-city h3{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.al-city .big{font-size:26px;font-weight:900;line-height:1.1}.al-city .big small{font-size:13px;font-weight:700;opacity:.8}
+.al-city .al-bd{position:absolute;right:8px;top:8px;width:58px;height:58px;object-fit:contain;opacity:.85;pointer-events:none}
+.al-city h3,.al-city>span{padding-right:58px}
+.al-war{position:relative;height:24px;border-radius:12px;overflow:hidden;border:2px solid var(--frame);display:flex;background:var(--panel3)}
+.al-war i{display:block;height:100%}.al-war i.b{background:linear-gradient(90deg,#3e6fb0,#7fb3ff)}.al-war i.k{background:linear-gradient(90deg,#c2412d,#7a1d17)}
+.al-war b{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 10px;font-size:12px;color:#fff;text-shadow:0 0 3px #000}
+.al-war.off b{color:var(--muted);text-shadow:none;font-weight:700;justify-content:center}
+.al-mine{flex-wrap:wrap;gap:4px 10px}
+.al-prev{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame)}
+.al-chs{display:flex;gap:6px;flex-wrap:wrap}
+.al-chs button{width:34px;height:34px;border-radius:50%;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-weight:900;cursor:pointer}
+.al-chs button.ok{background:#3fb35d;color:#fff;border-color:#2c8a45}.al-chs button.cur{border-color:var(--gold)}
+.al-chs button[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(var(--glw),.45)}
+.al-ql{display:flex;flex-direction:column;gap:5px}
+.al-ql>div{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-radius:10px;border:1px solid var(--frame);background:var(--panel2);font-size:12.5px}
+.al-ql>div.ok{opacity:.7}.al-ql>div.cur{border:2px solid var(--gold)}.al-ql>div.todo{opacity:.85}
+.al-ql .k{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:11px;background:var(--panel3)}
+.al-ql>div.ok .k{background:#3fb35d;color:#fff}
+.al-wing{display:inline-flex;align-items:center;font-size:10.5px;font-weight:900;padding:1px 6px;border-radius:6px;color:#fff;flex:none}
+.al-wing.b{background:#3e6fb0}.al-wing.k{background:#a3322a}
+.al-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.al-pend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;border:2px dashed var(--frame);background:var(--panel2)}
+.al-rks{flex-wrap:wrap}
+.al-nw{white-space:nowrap}
+/* le camp à côté du pseudo (chat, classements, profils, guilde) ; dans la fiche d'un joueur, avec le nom de la cité */
+.al-w{display:inline-flex;align-items:center;gap:3px;vertical-align:-3px;margin-left:4px;font-style:normal}
+.al-w img{width:16px;height:16px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+#sheet h2 .al-w::after{content:attr(data-n);font-size:11px;font-weight:900;padding:1px 7px;border-radius:999px;color:#fff;background:#3e6fb0}
+#sheet h2 .al-w.k::after{background:#a3322a}
+@media (max-width:640px){.al-cities{grid-template-columns:minmax(0,1fr)}.al-city .big{font-size:22px}.al-city .al-bd{width:44px;height:44px}.al-city h3,.al-city>span{padding-right:44px}}
+
+/* ---------- Panel Xener (js/panel.js, js/admin.js) : menu par thème, recherche d'action, onglet Test ---------- */
+.adm.px .ahd h1{margin-right:auto}
+.px-wrap{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}
+.px-body{display:flex;flex-direction:column;gap:14px;min-width:0}
+.px-nav{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:14px;border:2px solid var(--frame);background:var(--panel);position:sticky;top:8px}
+.px-nav h4{margin:10px 8px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.px-nav h4:first-child{margin-top:4px}
+.px-nav button{display:flex;align-items:center;gap:8px;text-align:left;padding:7px 8px;border-radius:8px;border:0;background:none;color:var(--ink);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+.px-nav button:hover{background:var(--panel2)}
+.px-nav button.on{background:linear-gradient(90deg,rgba(var(--glw),.35),transparent);font-weight:900}
+.px-nav button .uico,.px-nav button img{width:18px;height:18px;flex:none}
+.px-nav button .n{margin-left:auto;font-size:11px;font-weight:900;padding:0 6px;border-radius:999px;background:var(--danger);color:#fff}
+.px-cmd{position:relative;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;border:2px solid var(--gold);background:var(--panel)}
+.px-cmd input{flex:1;min-width:0;border:0;background:none;font:inherit;color:var(--ink);outline:none}
+.px-cmd kbd{font-size:11px;padding:1px 6px;border-radius:6px;border:1px solid var(--frame);background:var(--panel3)}
+.px-res{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:40;display:flex;flex-direction:column;background:var(--panel);border:2px solid var(--frame);border-radius:12px;box-shadow:0 10px 26px rgba(0,0,0,.45);overflow:hidden}
+.px-res:empty{display:none}
+.px-res button{display:flex;align-items:center;gap:10px;padding:9px 12px;border:0;background:none;color:var(--ink);font:inherit;font-size:14px;text-align:left;cursor:pointer;border-top:1px solid var(--line)}
+.px-res button:first-child{border-top:0}
+.px-res button.on,.px-res button:hover{background:var(--panel2)}
+.px-none{padding:9px 12px}
+.px-pre{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.px-pre button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.px-pre button:hover:not(:disabled){border-color:var(--gold)}
+.px-pre button:disabled{opacity:.55;cursor:default}
+.px-pre button b{font-size:13.5px}.px-pre button span{font-size:11.5px;color:var(--muted)}
+.px-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.px-grid select{max-width:100%}
+.px-chips{display:flex;flex-wrap:wrap;gap:6px}
+.px-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+.px-chip:hover{border-color:var(--gold)}
+.px-tog{display:inline-flex;align-items:center;gap:10px;font:inherit;font-weight:800;font-size:13px;border:0;background:none;color:var(--ink);padding:2px 0;cursor:pointer;text-align:left}
+.px-tog i{width:38px;height:22px;border-radius:999px;background:#3fb35d;position:relative;flex:none}
+.px-tog i:after{content:"";position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+.px-tog.off i{background:var(--panel3)}.px-tog.off i:after{right:auto;left:3px}
+.px-tools .li{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 2px;border-top:1px solid var(--line)}
+.px-tools .li:first-child{border-top:0}
+@media (max-width:900px){.px-wrap{grid-template-columns:minmax(0,1fr)}.px-nav{flex-direction:row;overflow-x:auto;position:static;padding:6px}.px-nav h4{display:none}.px-nav button{white-space:nowrap;flex:none}.px-pre{grid-template-columns:repeat(2,minmax(0,1fr))}.px-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.px-cmd kbd{display:none}}

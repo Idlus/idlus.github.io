@@ -11,6 +11,9 @@
    - Une défaite réveille l'équipe (le butin des combats est gardé). Un Sable de Draconiros fait rejouer le combat.
    - Les Bribes de rêve ne tombent qu'à la validation ; elles s'échangent au Marché onirique. Les points de
      rêve se gagnent pendant le songe et s'effacent au réveil, comme les bonus.
+     1.0.30 : la moitié des Bribes de la validation tombe vague par vague (gardée même sans valider), le reste à la
+     validation : un songe validé rapporte autant qu'avant. Marché onirique : 3 offres de plus chaque semaine.
+     Classement de la semaine : intensité validée puis vagues, record vérifié par le serveur (E.sgReplay, fonction « record »).
    - Monstres au niveau de l'équipe, dès le niveau 10. Objets légendaires possibles à la validation (js/legendaires.js).
    Le moteur garde les noms de l'Expédition (S.exp, E.expFight, E.expWin…) : engine.js les appelle déjà.
    Pas de DOM ici : l'interface est dans js/songeui.js. Chargé aussi par les tests et le simulateur.
@@ -148,6 +151,49 @@
     return null;
   };
   E.sgCadre = (S, on) => { if (!(S.unlocks && S.unlocks.cadreSonge)) return "Cadre des Songes : à échanger au Marché onirique."; S.settings.cadreSonge = !!on; return null; };
+  /* 1.0.30 : le Marché onirique tournant. Chaque lundi, 3 offres de plus, les mêmes pour tous, en quantité limitée par semaine. */
+  const W_ = (id, name, price, lim, extra) => Object.assign({ id, kind: "wk", name, price, lim }, extra || {});
+  E.SG_WEEK_POOL = [
+    W_("w_royal", "Bonbon Royal", 400, 3, { cons: "bonbon_royal" }),
+    W_("w_traqueur", "Bonbon Traqueur", 300, 3, { cons: "bonbon_traqueur" }),
+    W_("w_sagesse", "Bonbon Sagesse", 250, 3, { cons: "bonbon_sagesse" }),
+    W_("w_cristal", "Cristal de Forgemagie", 800, 2, { cons: "cristal_fm" }),
+    W_("w_fiole", "Fiole de Résurrection", 300, 3, { cons: "fiole_resu" }),
+    W_("w_savoir", "Potion de Savoir", 400, 2, { cons: "potion_savoir" }),
+    W_("w_argent", "Coffre en argent", 250, 5, { cons: "coffre_argent" }),
+    W_("w_douze", "Coffre des Douze", 5000, 1, { cons: "coffre_douze" }),
+    W_("w_dust", "Poussière de stasis ×50", 800, 3, { dust: 50, desc: "Pour la forgemagie" }),
+    W_("w_trans", "Rune de transcendance", 3000, 1, { trans: 1 }),
+    W_("w_parch", "Grand parchemin", 500, 5, { parch: 1 }),
+  ];
+  const PARCH = ["fo", "ine", "cha", "age", "vit", "sa"];
+  E.sgWeekShop = (w) => {
+    if (w === undefined) w = E.weekIdx();
+    const rng = seeded(hash(`idlus|songe|marche|${w}`)); const pool = E.SG_WEEK_POOL.slice(); const out = [];
+    while (out.length < 3 && pool.length) {
+      const o = Object.assign({}, pool.splice(Math.floor(rng() * pool.length), 1)[0]); const r2 = rng();
+      if (o.parch) { o.cons = `parch_${PARCH[Math.floor(r2 * PARCH.length)]}_g`; }
+      if (o.trans) { const tk = Object.keys(E.TRANS || {}); if (!tk.length) continue; o.stat = tk[Math.floor(r2 * tk.length)]; o.name = E.runeName ? E.runeName(E.transKey(o.stat)) : o.name; o.desc = "Réussite garantie, puis l'objet ne se forgemage plus"; }
+      const C = o.cons && D.CONSUMABLES[o.cons]; if (o.cons && !C) continue;
+      if (C) { o.name = C.name; if (!o.desc) o.desc = C.desc; }
+      out.push(o);
+    }
+    return out;
+  };
+  const mkWeek = (S) => { const G = E.songe(S); const w = E.weekIdx(); if (!G.mk || G.mk.w !== w) G.mk = { w, n: {} }; return G.mk; };
+  E.sgWeekLeft = (S, id) => { const o = E.sgWeekShop().find((x) => x.id === id); return o ? Math.max(0, o.lim - (mkWeek(S).n[id] || 0)) : 0; };
+  E.sgBuyWeek = (S, id) => {
+    const o = E.sgWeekShop().find((x) => x.id === id); if (!o) return "Cette offre n'est plus au Marché cette semaine.";
+    const G = E.songe(S); const mk = mkWeek(S);
+    if ((mk.n[id] || 0) >= o.lim) return "Plus rien cette semaine : nouvelles offres lundi.";
+    if (G.br < o.price) return `Il faut ${o.price.toLocaleString("fr-FR")} Bribes de rêve (tu en as ${G.br.toLocaleString("fr-FR")}).`;
+    G.br -= o.price; mk.n[id] = (mk.n[id] || 0) + 1;
+    if (o.cons) E.addCons(S, o.cons);
+    if (o.dust) E.addRes(S, E.POUSSIERE, o.dust);
+    if (o.trans && o.stat) { const rk = E.transKey(o.stat); S.runes[rk] = (S.runes[rk] || 0) + 1; }
+    note(S, `Marché onirique : ${o.name} contre ${o.price.toLocaleString("fr-FR")} Bribes de rêve.`, "up");
+    return null;
+  };
   /* 0.1.48 : conversion de l'Expédition : Éclats ×5 en Bribes, 150 Bribes par amélioration du campement, record et titres gardés */
   E.sgConvert = (S) => {
     // 1.0.10.4 : le résultat d'une ancienne Expédition (sans intensité) faisait planter la page du Songe : on l'oublie
@@ -418,6 +464,8 @@
   const addRew = (X, F) => { const r = F.rewards || { xp: {}, kamas: 0, res: {}, items: [] }; X.rew.kamas += r.kamas || 0; X.rew.xp += Object.values(r.xp || {}).reduce((a, b) => a + b, 0) / Math.max(1, Object.keys(r.xp || {}).length); X.rew.res += Object.values(r.res || {}).reduce((a, b) => a + b, 0); X.rew.items += (r.items || []).length; };
   const bribesMult = (ii) => 1 + 0.5 * ii;
   E.sgBribesFor = (ii, waves) => Math.round((60 + 20 * waves) * bribesMult(ii));
+  /* 1.0.30 : Bribes de chaque vague tenue avant la validation (la moitié du total, en parts égales), gardées même en cas de défaite */
+  E.sgWaveBribes = (ii) => { const INT = E.SG_INT[ii] || E.SG_INT[0]; return Math.round(E.sgBribesFor(ii, INT.waves) / 2 / INT.waves); };
   E.expWin = (S, F) => {
     const X = X_(S); if (!X) return; const n = X.nodes[X.pick]; if (!n) return;
     X.fights++; addRew(X, F); keepHp(X, F);
@@ -431,6 +479,7 @@
     }
     /* Fin du rêve : une vague de plus */
     X.waves = X.wave; const INT = E.SG_INT[X.ii];
+    if (!X.valid) { const b = E.sgGive(S, E.sgWaveBribes(X.ii)); X.wBribes = (X.wBribes || 0) + b; if (F.rewards) F.rewards.bribes = b; } // 1.0.30 : Bribes à chaque vague
     if (!X.valid && X.waves >= INT.waves) validate(S, X);
     else if (X.valid) { const b = E.sgGive(S, 20 * bribesMult(X.ii)); if (F.rewards) F.rewards.bribes = b; }
     recordWeek(S, X);
@@ -447,7 +496,7 @@
   /* le songe est validé : Bribes, coffre, déblocage de l'intensité suivante, légendaire peut-être */
   const validate = (S, X) => {
     X.valid = true; const G = E.songe(S); const INT = E.SG_INT[X.ii];
-    X.vBribes = E.sgGive(S, E.sgBribesFor(X.ii, INT.waves));
+    X.vBribes = E.sgGive(S, Math.max(0, E.sgBribesFor(X.ii, INT.waves) - (X.wBribes || 0))); // 1.0.30 : le reste, après les Bribes des vagues
     const L = X.lvl; const lm = 1 + INT.loot / 100;
     const kamas = Math.round(L * 150 * lm * (1 + E.bonus(S, "kamas") / 100));
     const xp = Math.round(E.monsterXp(L) * 8 * (1 + X.ii * 0.25) * E.PACE_REW * (1 + E.bonus(S, "xp") / 100));
@@ -518,7 +567,7 @@
       return ["no"];
     }
     if (p.t === "gob") return [p.back !== null && p.back !== undefined && hp < 40 ? "back" : X.pts >= E.SG_BET && m === "gourmand" ? "bet" : "pass"];
-    if (p.t === "wave") { if (!X.valid) return [0]; const lim = m === "prudent" ? 101 : m === "gourmand" ? 25 : 50; return [hp >= lim ? 0 : "no"]; }
+    if (p.t === "wave") { if (!X.valid || X.max) return [0]; /* 1.0.30 : X.max = rejeu du serveur, le plus de vagues possible */ const lim = m === "prudent" ? 101 : m === "gourmand" ? 25 : 50; return [hp >= lim ? 0 : "no"]; }
     if (p.t === "sable") return [X.sable > 0 ? 0 : "no"];
     return null;
   };
@@ -545,9 +594,30 @@
     }
     const X = S.exp; return X ? { ii: X.ii, d: X.at !== null ? X.nodes[X.at].d : 0, waves: X.waves, valid: X.valid } : null;
   };
+  /* 1.0.30 : rejeu du serveur pour le classement de la semaine (fonction « record », { songe: 1 }). Il rejoue un songe de
+     l'intensité ii avec l'équipe de la sauvegarde, la carte de la semaine, les choix automatiques et un hasard choisi par le
+     serveur, en tenant le plus de vagues possible. Renvoie { ok, ii, waves, err }. Le hasard et l'heure reviennent ensuite. */
+  E.sgReplay = (txt, ii, seed, now) => {
+    const t = now || Date.now();
+    try {
+      E.setRng(seeded(seed >>> 0)); E.setClock(() => t);
+      const S = E.deserialize(txt);
+      if (!(ii >= 0 && ii < E.SG_INT.length)) return { ok: false, err: "intensité inconnue" };
+      S.exp = null; S.dungeon = null; S.fight = null; S.hunting = false; S.acc = 0; S.pause = 0;
+      if (E.songe(S).unl < ii) return { ok: false, err: "intensité jamais débloquée dans cette partie" };
+      S.settings.sgMode = "equilibre";
+      const err = E.expStart(S, ii); if (err) return { ok: false, err };
+      S.exp.max = 1; E.expAutoPlay(S, 160); if (E.expActive(S)) E.expQuit(S);
+      const L = S.expLast || {};
+      return L.valid ? { ok: true, ii, waves: L.waves } : { ok: false, ii, waves: 0, err: "l'équipe ne valide pas cette intensité" };
+    } catch (e) { return { ok: false, err: "partie illisible" }; }
+    finally { E.setRng(Math.random); E.setClock(null); if (E.events) E.events.splice(0); }
+  };
+  /* le record de la semaine compté par le serveur : jusqu'à un quart de vagues (au moins 2) au-dessus de son meilleur rejeu */
+  E.sgOfficial = (claim, best) => Math.max(0, Math.min(claim, best + Math.max(2, Math.ceil(best * 0.25))));
 
   /* ---------- actions officielles ---------- */
-  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire" });
+  Object.assign(E.ACTIONS, { expStart: "entrer dans le Songe infini", expDoor: "choisir la salle suivante du songe", expChoose: "répondre à une faveur, une fontaine, un Gobledore ou une vague", expBuy: "acheter un vœu à la Fontaine", expQuit: "se réveiller", sgBuy: "échanger au Marché onirique", sgBuyWeek: "échanger une offre de la semaine au Marché onirique", expSetAuto: "choix automatique dans le songe", sgSetMode: "mode du choix automatique", sgCadre: "Cadre des Songes", legFuse: "fondre une copie de légendaire" });
 
   /* ---------- familier, ornement, succès, bulle de découverte ---------- */
   if (E.PETS && !E.PETS.draconiros_mini) E.PETS.draconiros_mini = { name: "Draconiros miniature", icon: 18048, stats: { pui: 70, cri: 5 }, kind: "zone", lvl: 100, food: "Viande Goûtue", songe: true };
