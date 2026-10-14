@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.21.2";
+const GAME_VERSION = "1.0.21.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.21.3", name: "Logos des meubles", items: [
+    "Sur l'accueil, les lignes « Meubles » et « Trophées de boss » de « Ma maison » ont enfin de vraies icônes : une commode en bois et une coupe dorée, dans le style des coffres",
+    "Les mêmes icônes servent sur les tuiles des pièces (« à placer ») et sur la page Havre-Sac (meubles à placer, trophées de boss à gagner)",
+  ] },
   { v: "1.0.21.2", name: "Chat sans message perdu", items: [
     "Chat : un message reçu juste après avoir écrit (une @mention par exemple) ne disparaît plus de l'écran",
   ] },
@@ -1376,6 +1380,7 @@ const hOpt = (s) => h(s).replace(/\bOptions\b/g, `${G("gear", "opt-in")}Options`
 const EMO = { "📜": "quetes", "🧪": "teinture", "📦": "coffre", "🍬": "bonbon", "🍭": "bonbon", "🪙": "kamas", "🎯": "bonbon", "👑": "couronne", "📘": "parchemin_or", "💎": "cristal", "🎁": "coffre", "💰": "bourse", "🗝": "cle", "✨": "poussiere", "⛏": "pioche", "📚": "parchemin_or", "🏺": "trophee", "🥊": "combat", "🌿": "pioche", "🎒": "sac", "🛏": "havre", "🎩": "couronne", "🎟": "carte", "🎖": "trophee", "🌾": "bonbon", "🪽": "ailes", "🪑": "havre" };
 const emo = (e) => { const k = String(e || "").replace(/\ufe0f/g, ""); return EMO[k] ? IC(EMO[k]) : `<span class="uemo">${h(e || "")}</span>`; };
 /* 0.1.30 : visuels des coffres (assets/ui/coffres) ; raw = garder l'émoji brut des autres consommables */
+const MEUBLE_IC = `<img class="uico" src="assets/ui/meuble.svg" alt="" loading="lazy">`, TROPHEE_IC = `<img class="uico" src="assets/ui/trophee_boss.svg" alt="" loading="lazy">`; // 1.0.21.2 : logos des meubles et des trophées de boss
 const chestImg = (k, c = "") => `<img class="uico chestico ${c}" src="assets/ui/coffres/${k}.svg" alt="" loading="lazy">`;
 const consIco = (C, raw) => (C && C.img ? chestImg(C.img) : C && C.pimg ? `<img class="uico" src="assets/ui/potions/${C.pimg}.png" alt="" loading="lazy">` : raw ? h((C && C.icon) || "•") : emo(C && C.icon));
 const med = (n, sz = "") => `<i class="med ${sz}"><img src="assets/ui/${n}.webp" alt=""></i>`;
@@ -2083,14 +2088,14 @@ function houseHtml() {
     const act = lock ? (R.soon ? `<span class="tag soft">Bientôt</span>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Construire · ${fmt(E.ATELIER_COST)} k</button>`)
       : R.post === "train" ? `<button class="btn sm ${t ? "" : "primary"}" data-act="hvroomgo" data-v="${R.id}">${t ? `${h(t.name)} s'entraîne` : "Choisir un héros"}</button>`
       : H ? `<button class="btn sm ${can ? "primary" : ""}" data-act="havre" data-id="${id}" ${can || lvl >= H.max ? "" : "disabled"} data-tip="${h(lvl >= H.max ? `${R.name} au maximum` : `Niveau ${lvl + 1} : +${H.per}${H.unit.split(" (")[0]} de plus`)}">${lvl >= H.max ? "Maximum" : `Améliorer · ${fmtK(cost)} k`}</button>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Ouvrir</button>`;
-    return `<article class="hvtile ${lock ? "locked" : ""} ${can || free ? "hot" : ""}" style="--rc:${R.color}"><button class="hvth" data-act="hvroomgo" data-v="${R.id}" data-tip="${h(`${R.name} : ${R.desc}`)}"><span class="rico">${IC(R.icon)}</span><span class="min0"><h3>${h(R.name)}${H ? ` <span class="hvlv num">${lvl}/${H.max}</span>` : ""}</h3><span class="xs plus">${h(sumb)}</span></span></button>${dots}<footer>${act}${free ? `<button class="btn sm ghost" data-act="hvroomgo" data-v="${R.id}">${IC("meuble")} ${free} à placer</button>` : ""}</footer></article>`; };
+    return `<article class="hvtile ${lock ? "locked" : ""} ${can || free ? "hot" : ""}" style="--rc:${R.color}"><button class="hvth" data-act="hvroomgo" data-v="${R.id}" data-tip="${h(`${R.name} : ${R.desc}`)}"><span class="rico">${IC(R.icon)}</span><span class="min0"><h3>${h(R.name)}${H ? ` <span class="hvlv num">${lvl}/${H.max}</span>` : ""}</h3><span class="xs plus">${h(sumb)}</span></span></button>${dots}<footer>${act}${free ? `<button class="btn sm ghost" data-act="hvroomgo" data-v="${R.id}">${MEUBLE_IC} ${free} à placer</button>` : ""}</footer></article>`; };
   const free = furn.filter((f) => E.FURN[f] && !E.isPlaced(S, f)); const trophies = Object.keys(E.FURN).filter((f) => E.FURN[f].trophy); const left = trophies.filter((f) => !furn.includes(f)).length;
   const all = Object.keys(E.FURN).filter((f) => E.FURN[f].shop); const own = all.filter((f) => furn.includes(f)).length;
   const placedN = E.ROOMS.reduce((a, R) => a + placedOf(R).length, 0), slotsN = E.ROOMS.reduce((a, R) => a + E.roomSlots(S, R.id), 0);
   return `<section class="panel hvhouse" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Ma maison</h2><span class="xs muted"><b class="num">${placedN}/${slotsN}</b> meubles placés · <button class="btn xs" data-act="hvroomgo" data-v="">Tout voir</button></span></div>
     <div class="hvtiles">${E.ROOMS.map(tile).join("")}</div>
-    <div class="hvfoot">${free.length ? `<button class="hvfl hot" data-act="hvroomgo" data-v="${E.FURN[free[0]].room}">${IC("meuble")}<span class="grow"><b>${free.length} meuble${free.length > 1 ? "s" : ""} à placer</b><span class="xs muted">${free.map((f) => h(f)).join(" · ")}</span></span><span class="tag">Placer</span></button>` : `<button class="hvfl" data-act="hvroomgo" data-v="">${IC("meuble")}<span class="grow"><b>Meubles</b><span class="xs muted">${furn.some((f) => E.FURN[f]) ? "tous placés" : "Boutique, trophées de boss, Comptoir, Bricoleur, Almanax et butins rares en donnent"}</span></span><span class="chev">›</span></button>`}
-      <button class="hvfl" data-act="fcatalog">${IC("trophee")}<span class="grow"><b>Trophées de boss</b><span class="xs muted">${trophies.length - left} gagné${trophies.length - left > 1 ? "s" : ""} · ${left} à gagner en stasis ${E.TROPHY_STASIS}</span></span><span class="chev">›</span></button>
+    <div class="hvfoot">${free.length ? `<button class="hvfl hot" data-act="hvroomgo" data-v="${E.FURN[free[0]].room}">${MEUBLE_IC}<span class="grow"><b>${free.length} meuble${free.length > 1 ? "s" : ""} à placer</b><span class="xs muted">${free.map((f) => h(f)).join(" · ")}</span></span><span class="tag">Placer</span></button>` : `<button class="hvfl" data-act="hvroomgo" data-v="">${MEUBLE_IC}<span class="grow"><b>Meubles</b><span class="xs muted">${furn.some((f) => E.FURN[f]) ? "tous placés" : "Boutique, trophées de boss, Comptoir, Bricoleur, Almanax et butins rares en donnent"}</span></span><span class="chev">›</span></button>`}
+      <button class="hvfl" data-act="fcatalog">${TROPHEE_IC}<span class="grow"><b>Trophées de boss</b><span class="xs muted">${trophies.length - left} gagné${trophies.length - left > 1 ? "s" : ""} · ${left} à gagner en stasis ${E.TROPHY_STASIS}</span></span><span class="chev">›</span></button>
       <button class="hvfl" data-act="hvshop">${IC("bourse")}<span class="grow"><b>Boutique de la maison</b><span class="xs muted">${own}/${all.length} meubles achetés · en kamas</span></span><span class="chev">›</span></button></div></section>`;
 }
 /* ---------- 4.0 : Havre-Sac en pièces ---------- */
@@ -2098,7 +2103,7 @@ const hvPips = (l, m) => `<div class="pipsbar">${Array.from({ length: Math.min(m
 const hvUp = (H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S, H.id); const max = l >= H.max;
   return `<div class="upl"><div class="row between"><span><b>${h(H.name)}</b> <span class="lvlpill">${l}/${H.max}</span></span><span class="plus small">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</span></div>${hvPips(l, H.max)}
     <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; };
-const furnIco = (n) => IC(E.FURN[n] && E.FURN[n].trophy ? "trophee" : "havre");
+const furnIco = (n) => (E.FURN[n] && E.FURN[n].trophy ? TROPHEE_IC : MEUBLE_IC);
 const hvSlots = (R) => {
   const n = E.roomSlots(S, R.id); const P = E.placed(S, R.id); const next = R.nextSlot ? R.nextSlot(S) : 0;
   const owned = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
@@ -2205,7 +2210,7 @@ function havreHtml() {
       ${free.map((f) => { const F = E.FURN[f]; const full = E.placed(S, F.room).length >= E.roomSlots(S, F.room);
         return `<div class="mitem"><span class="rico">${furnIco(f)}</span><div class="grow"><b>${h(f)}</b><div class="xs muted">${h(E.furnEffect(f))} · ${h(E.room(F.room).name)}${full ? " (pleine)" : ""}</div></div><button class="btn sm ${full ? "" : "primary"}" data-act="fplace" data-v="${h(f)}" ${full ? "disabled" : ""}>Placer</button></div>`; }).join("")}
       ${free.length ? "" : `<p class="note">${S.furniture.some((f) => E.FURN[f]) ? "Tous vos meubles sont placés." : "Aucun meuble pour l'instant : la Boutique de la maison, les trophées de boss, le Comptoir de la cité, le Bricoleur, l'Almanax et les butins rares de certaines zones en donnent."}</p>`}
-      <div class="mitem dim"><span class="rico">${IC("cle")}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog">Catalogue</button></div>
+      <div class="mitem dim"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog">Catalogue</button></div>
     </div></div></section>`;
 }
 function furnPickSheet(room) {

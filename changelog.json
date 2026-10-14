@@ -1,6 +1,14 @@
 {
-  "version": "1.0.21.2",
+  "version": "1.0.21.3",
   "versions": [
+    {
+      "v": "1.0.21.3",
+      "name": "Logos des meubles",
+      "items": [
+        "Sur l'accueil, les lignes « Meubles » et « Trophées de boss » de « Ma maison » ont enfin de vraies icônes : une commode en bois et une coupe dorée, dans le style des coffres",
+        "Les mêmes icônes servent sur les tuiles des pièces (« à placer ») et sur la page Havre-Sac (meubles à placer, trophées de boss à gagner)"
+      ]
+    },
     {
       "v": "1.0.21.2",
       "name": "Chat sans message perdu",

@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.21.3 « Logos des meubles »
+
+Les lignes « Meubles » et « Trophées de boss » de « Ma maison » (et les tuiles, et la page Havre-Sac) ont de vraies icônes : commode en bois et coupe dorée, dans le style des coffres.
+
 ## 1.0.21.2 « Chat sans message perdu »
 Le test du chat (tests/online.test.js, « mention mal surlignée ») échouait sur main : 1,5 s après l'envoi d'un message, js/chat.js relit le salon et remplaçait la liste, ce qui effaçait les messages reçus en direct pendant ce temps (en jeu aussi, jusqu'au rechargement suivant). `keepLive` garde les messages plus récents que la liste relue, à l'envoi, au rattrapage et au rechargement.
 
