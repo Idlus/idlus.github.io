@@ -139,14 +139,14 @@
     if (list.some((x) => x.id === m.id)) return;
     list.push(m); if (list.length > 200) list.shift();
     const mine = m.user_id === myId() && m.kind === "msg";
-    if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) C.unreadP++; }
+    if (m.ch === "p") { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; if (!mine && !(C.open && C.tab === "p" && C.peer === m.user_id)) { C.unreadP++; if (C.loaded && window.DX.sndPlay) window.DX.sndPlay("msg"); } }
     else if (m.ch === "c" || m.ch === "v") { const k = m.ch === "c" ? "unreadC" : "unreadV"; if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === m.ch)) C[k]++; }
     else if (isFeat(m)) { if (!(C.open && C.tab === "h")) C.unreadH++; }
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
     if (m.kind === "ann" && m.data && m.data.kind === "race10" && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
-    if (PING.includes(m.ch || "g") && pingsMe(m) && !(C.open && C.tab === (m.ch || "g"))) X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[m.ch || "g"]}.`); // 0.1.53.7
+    if (PING.includes(m.ch || "g") && pingsMe(m) && !(C.open && C.tab === (m.ch || "g"))) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[m.ch || "g"]}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
     paint(true);
   }
 

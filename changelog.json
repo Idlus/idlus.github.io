@@ -1,6 +1,18 @@
 {
-  "version": "1.0.21.3",
+  "version": "1.0.22",
   "versions": [
+    {
+      "v": "1.0.22",
+      "name": "Musique et sons",
+      "items": [
+        "De la musique dans Idlus ! 4 airs composés pour le jeu, dans l'esprit de DOFUS (luth, harpe, flûte, tambourin) : Taverne d'Astrub en chasse, Profondeurs du donjon pendant un donjon, Boîte à musique sur la page de ta maison. Changement en fondu",
+        "Une bulle demande une seule fois « Jouer en musique ? ». La musique démarre au premier clic (règle des navigateurs) et se met en pause quand l'onglet est caché",
+        "Nouveaux sons « Bois et cristal » : niveau, butin rare, donjon terminé, Dofus, commande livrée, message privé ou @mention, erreur, et un petit « toc » sur les boutons importants (entrer, équiper, fabriquer, acheter)",
+        "Icône haut-parleur en haut, à côté de la roue des Options : un clic coupe ou remet tout",
+        "Options › Sons : volume de la musique et des sons, air de chaque endroit, style des sons (Bois et cristal, Fanfare ou les anciens bips), clics (Tous, Importants, Aucun)",
+        "Tout est joué par le navigateur : aucun fichier à télécharger, rien sur le serveur"
+      ]
+    },
     {
       "v": "1.0.21.3",
       "name": "Logos des meubles",

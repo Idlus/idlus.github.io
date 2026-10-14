@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.22 « Musique et sons »
+
+Musique composée pour Idlus (Taverne d'Astrub en chasse, Profondeurs du donjon, Boîte à musique au Havre-Sac), jouée par le navigateur (js/musique.js, Web Audio, aucun fichier). Bulle « Jouer en musique ? » une fois, pause quand l'onglet est caché, icône haut-parleur à côté des Options, sons « Bois et cristal » et clic sur les boutons importants, réglages dans Options › Sons.
+
 ## 1.0.21.3 « Logos des meubles »
 
 Les lignes « Meubles » et « Trophées de boss » de « Ma maison » (et les tuiles, et la page Havre-Sac) ont de vraies icônes : commode en bois et coupe dorée, dans le style des coffres.

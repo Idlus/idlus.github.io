@@ -4891,3 +4891,6 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
   .hvtile{padding:8px}.hvtile h3{font-size:14px}
   .hvfoot{grid-template-columns:1fr;padding:0 10px 10px}
 }
+/* 1.0.22 : musique et sons */
+.ic-btn.snd-btn.on{color:var(--gold)}
+.seg2{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}

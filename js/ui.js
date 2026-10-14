@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.21.3";
+const GAME_VERSION = "1.0.22";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.22", name: "Musique et sons", items: [
+    "De la musique dans Idlus ! 4 airs composés pour le jeu, dans l'esprit de DOFUS (luth, harpe, flûte, tambourin) : Taverne d'Astrub en chasse, Profondeurs du donjon pendant un donjon, Boîte à musique sur la page de ta maison. Changement en fondu",
+    "Une bulle demande une seule fois « Jouer en musique ? ». La musique démarre au premier clic (règle des navigateurs) et se met en pause quand l'onglet est caché",
+    "Nouveaux sons « Bois et cristal » : niveau, butin rare, donjon terminé, Dofus, commande livrée, message privé ou @mention, erreur, et un petit « toc » sur les boutons importants (entrer, équiper, fabriquer, acheter)",
+    "Icône haut-parleur en haut, à côté de la roue des Options : un clic coupe ou remet tout",
+    "Options › Sons : volume de la musique et des sons, air de chaque endroit, style des sons (Bois et cristal, Fanfare ou les anciens bips), clics (Tous, Importants, Aucun)",
+    "Tout est joué par le navigateur : aucun fichier à télécharger, rien sur le serveur" ] },
   { v: "1.0.21.3", name: "Logos des meubles", items: [
     "Sur l'accueil, les lignes « Meubles » et « Trophées de boss » de « Ma maison » ont enfin de vraies icônes : une commode en bois et une coupe dorée, dans le style des coffres",
     "Les mêmes icônes servent sur les tuiles des pièces (« à placer ») et sur la page Havre-Sac (meubles à placer, trophées de boss à gagner)",
@@ -1345,7 +1352,7 @@ const im = (src, cls = "ico", alt = "") => (src ? `<img class="${cls}" src="${sr
 const headTag = (cls, sex, alt = "") => `<img src="assets/h/${cls}_${sex || CLASSES[cls].sex}.png" alt="${h(alt)}" loading="lazy" onerror="this.onerror=null;this.src='assets/h/${cls}_logo.png'">`;
 /* ---------- icônes 3.1.2 : objets officiels + glyphes ---------- */
 const IC = (n, c = "") => `<img class="uico ${c}" src="assets/ui/${n}.webp" alt="" loading="lazy">`;
-const GL = {
+const GL = { spk: `<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>`, spkoff: `<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/>`, note: `<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>`,
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/>',
   swap: '<path d="M7 4v16M7 4 3.5 7.5M7 4l3.5 3.5M17 20V4M17 20l-3.5-3.5M17 20l3.5-3.5"/>',
   bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
@@ -1812,7 +1819,7 @@ function statusHtml() {
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
     <span class="it hide-sm" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b></span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
+    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}<button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
 const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
@@ -6316,6 +6323,7 @@ let lvlToast = null;
 const toastQ = []; let toastT = null;
 const toastTyping = () => { const a = document.activeElement; return !!(a && a.id === "chIn" && a.value.trim()); };
 function toast(txt, kind) {
+  if (kind === "warn") sndPlay("err"); // 1.0.22
   if (toastTyping()) {
     toastQ.push([txt, kind]); if (toastQ.length > 3) toastQ.shift();
     if (!toastT) toastT = setInterval(() => { if (toastTyping()) return; clearInterval(toastT); toastT = null; toastQ.splice(0).forEach(([t, k]) => toast(t, k)); }, 700);
@@ -7029,23 +7037,53 @@ function consignesHtml() {
     + ck("alm", "Faire l'offrande à l'Almanax au retour", "si tu as les ressources")
     + ck("cmd", "Livrer les commandes prêtes au retour", "seulement quand tout est en banque"), "consignes");
 }
-/* ---------- sons : synthétisés dans le navigateur, coupés par défaut ---------- */
-const SND = { ctx: null, last: 0, kinds: {}, live: true };
-const sndCfg = () => (S && S.settings.snd) || { on: false, vol: 50, all: false, bg: false };
-function sndCtx() { try { if (!SND.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; SND.ctx = new AC(); } if (SND.ctx.state === "suspended") SND.ctx.resume(); return SND.ctx; } catch (e) { return null; } }
-const SND_DEF = {
-  win: [[523, 0, 0.09], [659, 0.08, 0.12]], level: [[523, 0, 0.1], [659, 0.09, 0.1], [784, 0.18, 0.1], [1047, 0.27, 0.22]],
-  rare: [[1319, 0, 0.07, "triangle"], [1760, 0.06, 0.07, "triangle"], [2093, 0.12, 0.16, "triangle"]], boss: [[392, 0, 0.14, "square"], [523, 0.13, 0.14, "square"], [659, 0.26, 0.14, "square"], [784, 0.39, 0.3, "square"]],
-  coin: [[1568, 0, 0.05, "triangle"], [2093, 0.05, 0.12, "triangle"]], gong: [[196, 0, 0.6, "sine"], [294, 0.02, 0.5, "sine"]], magic: [[880, 0, 0.12, "sine"], [1109, 0.1, 0.12, "sine"], [1319, 0.2, 0.12, "sine"], [1760, 0.3, 0.3, "sine"]],
-};
+/* ---------- 1.0.22 : musique et sons composés pour Idlus (js/musique.js, Web Audio, aucun fichier) ----------
+   Musique : Taverne d'Astrub en chasse, Profondeurs du donjon pendant un donjon, Boîte à musique sur la page du Havre-Sac.
+   Elle ne démarre qu'après un clic du joueur (règle des navigateurs) et se met en pause quand l'onglet est caché.
+   Sons : style Bois et cristal par défaut ; clic seulement sur les boutons importants. */
+const SND = { last: 0, kinds: {}, live: true, gest: false };
+const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, tH: "taverne", tD: "donjon", tV: "boite", style: "bois", clic: "imp", mute: false, asked: false };
+const sndCfg = () => Object.assign({}, SND_DEF0, (S && S.settings.snd) || {});
+const sndSet = (o) => { S.settings.snd = Object.assign(sndCfg(), o); dirty = true; };
+const SND_MAP = { level: "niveau", boss: "donjon", magic: "dofus", coin: "commande", rare: "butin", gong: "donjon", win: "victoire", msg: "message", err: "erreur", clic: "clic" };
 function sndPlay(kind, force) {
-  const cfg = sndCfg(); if (!force && (!cfg.on || !SND.live)) return; if (!force && !cfg.bg && document.visibilityState !== "visible") return;
-  const now = performance.now(); if (!force && (now - SND.last < 300 || now - (SND.kinds[kind] || 0) < 1500)) return; SND.last = now; SND.kinds[kind] = now;
-  const ctx = sndCtx(); const notes = SND_DEF[kind]; if (!ctx || !notes) return;
-  const vol = Math.max(0, Math.min(1, (cfg.vol == null ? 50 : cfg.vol) / 100)) * 0.18; const t0 = ctx.currentTime + 0.01;
-  notes.forEach(([f, at, len, type]) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type || "sine"; o.frequency.value = f;
-    g.gain.setValueAtTime(0.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + len);
-    o.connect(g); g.connect(ctx.destination); o.start(t0 + at); o.stop(t0 + at + len + 0.05); });
+  const A = window.IdlusAudio; if (!A) return; const cfg = sndCfg();
+  if (!force && (!S || !cfg.on || cfg.mute || !SND.live || !SND.gest)) return; if (!force && !cfg.bg && document.visibilityState !== "visible") return;
+  const now = performance.now(); if (!force && kind !== "clic") { if (now - SND.last < 300 || now - (SND.kinds[kind] || 0) < 1500) return; SND.last = now; SND.kinds[kind] = now; }
+  try { A.setSfxVol((cfg.vol == null ? 50 : cfg.vol) / 100); A.sfx(cfg.style, SND_MAP[kind] || kind); } catch (e) {}
+}
+function musWant() {
+  const c = sndCfg(); if (!S || !c.mus || c.mute || !SND.gest) return null; if (!c.mbg && document.visibilityState !== "visible") return null;
+  if (ui.tab === "home" && ui.home === "havre") return c.tV; return S.dungeon ? c.tD : c.tH;
+}
+function musSync() {
+  const A = window.IdlusAudio; if (!A) return; const w = musWant(), cur = A.playing(); if (w === cur) return;
+  try { if (!w) A.stop(1.2); else { A.setMusicVol(sndCfg().mvol / 100); A.play(w); } } catch (e) {}
+}
+const sndOn = () => { const c = sndCfg(); return (c.mus || c.on) && !c.mute; };
+const sndBtn = () => S ? `<button class="ic-btn snd-btn${sndOn() ? " on" : ""}" data-act="vi-mute" title="${sndOn() ? "Couper la musique et les sons" : "Remettre la musique et les sons"}" aria-label="${sndOn() ? "Couper le son" : "Remettre le son"}">${G(sndOn() ? "spk" : "spkoff")}</button>` : "";
+/* boutons « importants » : ceux qui font avancer la partie (entrer, équiper, fabriquer, acheter, recruter, ouvrir) */
+const SND_IMP = '.btn.primary,.btn.kgold,.btn.go,[data-act="enterdg"],[data-act="equip"],[data-act="offequip"],[data-act^="craft"],[data-act="recruit"],[data-act^="buy"],[data-act^="open"]';
+document.addEventListener("pointerdown", () => { if (!SND.gest) { SND.gest = true; musSync(); } }, true);
+document.addEventListener("keydown", () => { if (!SND.gest) { SND.gest = true; musSync(); } }, true);
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest && ev.target.closest("button,a.btn,[data-act]"); if (!b || b.disabled || !S) return; const c = sndCfg();
+  if (b.dataset.act === "vi-mute" || c.clic === "none") return; if (c.clic === "all" || b.matches(SND_IMP)) sndPlay("clic");
+}, true);
+document.addEventListener("visibilitychange", musSync);
+setInterval(() => { musSync(); sndAskCheck(); }, 1000);
+/* première fois : une bulle demande « Jouer en musique ? » (une seule fois par partie) */
+let sndAskAt = 0;
+function sndAskCheck() {
+  if (!S || TESTMODE || sndCfg().asked || $("#sndask") || $("#wtip") || ($("#sheet") && $("#sheet").innerHTML.trim()) || document.visibilityState !== "visible") return;
+  if (!sndAskAt) { sndAskAt = Date.now(); return; } if (Date.now() - sndAskAt < 8000) return;
+  const d = document.createElement("div"); d.id = "sndask"; d.className = "wtip sndask"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Musique");
+  d.innerHTML = `<div class="wt-h">${G("note")}<b>Jouer en musique ?</b></div><div class="wt-t">Une petite musique composée pour Idlus et quelques sons doux (niveau, butin, donjon). Tu pourras changer ça à tout moment dans ${G("gear")} Options › Sons.</div>
+    <div class="row between"><span class="xs" style="opacity:.75">Demandé une seule fois</span><span class="row" style="gap:6px"><button class="btn sm ghost" data-act="vi-sndno">Sans musique</button><button class="btn sm go" data-act="vi-sndyes">Avec la musique</button></span></div>`;
+  document.body.appendChild(d);
+  const a = [...document.querySelectorAll(".snd-btn")].find((x) => x.offsetParent); const pc = window.innerWidth >= 760;
+  if (a && pc) { const r = a.getBoundingClientRect(); const w = 340; d.classList.add("below"); d.style.width = w + "px"; d.style.transform = "none"; d.style.top = r.bottom + 14 + "px"; d.style.bottom = "auto";
+    const x = Math.max(12, Math.min(window.innerWidth - w - 12, r.left + r.width / 2 - w / 2)); d.style.left = x + "px"; d.style.setProperty("--ax", r.left + r.width / 2 - x + "px"); }
 }
 (function sndHooks() {
   const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
@@ -7056,18 +7094,29 @@ function sndPlay(kind, force) {
   const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
 })();
 function soundOptionsHtml() {
-  const c = sndCfg();
-  return optSec("Sons", "niveau gagné, butin rare, boss, coffre, Dopeul ; coupés par défaut",
+  const c = sndCfg(), A = window.IdlusAudio, T = A ? A.tracks : {};
+  const sel = (k) => `<select data-act="vi-trk" data-k="${k}">${Object.entries(T).map(([id, n]) => `<option value="${id}"${c[k] === id ? " selected" : ""}>${h(n)}</option>`).join("")}</select>`;
+  const seg = (k, opts) => `<span class="seg2">${opts.map(([v, n]) => `<button class="btn sm${c[k] === v ? " primary" : ""}" data-act="vi-sndseg" data-k="${k}" data-v="${v}" aria-pressed="${c[k] === v}">${n}</button>`).join("")}</span>`;
+  return optSec("Musique", "composée pour Idlus, elle change selon l'endroit ; démarre au premier clic",
+      optChk(`data-act="vi-snd" data-k="mus"`, c.mus, "Activer la musique", "")
+    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-mvol" value="${c.mvol}" style="width:120px">`)
+    + optLine("En chasse", "", sel("tH")) + optLine("En donjon", "", sel("tD")) + optLine("Au Havre-Sac", "la page de ta maison", sel("tV"))
+    + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Continuer quand l'onglet est caché", "sinon la musique se met en pause"))
+  + optSec("Sons du jeu", "niveau, butin rare, donjon, Dofus, commande, message privé ou @mention, erreur",
       optChk(`data-act="vi-snd" data-k="on"`, c.on, "Activer les sons", "")
     + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button>`)
+    + optLine("Style", "", seg("style", [["bois", "Bois et cristal"], ["fanfare", "Fanfare"], ["bips", "Bips"]]))
+    + optLine("Clics", "", seg("clic", [["all", "Tous"], ["imp", "Importants"], ["none", "Aucun"]]))
     + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Aussi à chaque victoire", "discret, mais fréquent")
     + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Même quand l'onglet est caché", ""));
 }
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
   else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ira au marchand de secours.` : "Plus de limite de banque."); }
-  else if (a === "vi-snd") { S.settings.snd = Object.assign(sndCfg(), { [t.dataset.k]: t.checked }); if (t.dataset.k === "on" && t.checked) sndPlay("level", true); }
-  else if (a === "vi-vol") { S.settings.snd = Object.assign(sndCfg(), { vol: +t.value }); sndPlay("coin", true); }
+  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...((k === "on" || k === "mus") && t.checked ? { mute: false } : {}) }); if (k === "on" && t.checked) sndPlay("level", true); musSync(); renderStatus(); }
+  else if (a === "vi-vol") { sndSet({ vol: +t.value }); sndPlay("coin", true); }
+  else if (a === "vi-mvol") { sndSet({ mvol: +t.value }); if (window.IdlusAudio) window.IdlusAudio.setMusicVol(+t.value / 100); }
+  else if (a === "vi-trk") { sndSet({ [t.dataset.k]: t.value }); musSync(); }
   dirty = true;
 }
 function viAct(a, t) {
@@ -7080,6 +7129,10 @@ function viAct(a, t) {
     case "vi-tcancel": if (run("templeCancel")) render(); return;
     case "vi-view": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
     case "vi-test": sndPlay("level", true); return;
+    case "vi-sndseg": sndSet({ [d.k]: d.v }); if (d.k === "style") sndPlay("level", true); else if (d.v !== "none") sndPlay("clic", true); optionsSheet(); return;
+    case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on) sndSet({ mus: true, on: true, mute: false, asked: true }); else sndSet({ mute: !c.mute, asked: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; }
+    case "vi-sndyes": sndSet({ mus: true, on: true, mute: false, asked: true }); t.closest("#sndask").remove(); musSync(); renderStatus(); return;
+    case "vi-sndno": sndSet({ asked: true }); t.closest("#sndask").remove(); return;
     case "vi-optcons": pageGo("consignes"); return;
   }
 }
@@ -8598,7 +8651,7 @@ function repaintKeep(m, htmlStr) {
   for (const id in vals) { const n = document.getElementById(id); if (n && m.contains(n)) n.value = vals[id]; }
   if (fid) { const n = document.getElementById(fid); if (n && m.contains(n)) { n.focus({ preventScroll: true }); if (sel) try { n.setSelectionRange(Math.min(sel[0], n.value.length), Math.min(sel[1], n.value.length), sel[2] || "none"); } catch (e) {} } }
 }
-window.DX = { get S() { return S; }, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, E, diagText };
+window.DX = { get S() { return S; }, sndPlay, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
