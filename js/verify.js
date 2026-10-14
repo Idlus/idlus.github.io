@@ -28,7 +28,9 @@
     // 1.0.9 : + métiers de récolte et de forgemagie (appris), et l'XP totale depuis le niveau 1 (classement de la semaine)
     const jobs = {}, cum = {};
     const total = (need, l, xp) => { const k = need === E.fmNeed ? "fm" : "job"; let c = cum[k]; if (!c) { c = cum[k] = [0, 0]; for (let i = 1; i < 200; i++) c.push(c[i] + need(i)); } return c[l] + xp; };
-    const put = (k, J, need) => { const l = Math.max(1, Math.min(200, (J && J.lvl) || 1)), xp = Math.max(0, Math.floor((J && J.xp) || 0)); jobs[k] = [l, xp, need ? total(need, l, xp) : 0]; };
+    // 1.0.25 « Renaissance des métiers » : l'XP totale compte toutes les vies (renXp), et le nombre de renaissances part en 4e
+    const put = (k, J, need) => { const l = Math.max(1, Math.min(200, (J && J.lvl) || 1)), xp = Math.max(0, Math.floor((J && J.xp) || 0)), rn = Math.max(0, Math.min(10, Math.floor((J && J.ren) || 0)));
+      jobs[k] = [l, xp, need ? total(need, l, xp) + (rn ? Math.max(0, Math.floor(J.renXp || 0)) : 0) : 0]; if (rn) jobs[k].push(rn); };
     for (const k in S.crafts || {}) put(k, S.crafts[k], E.jobXpNeed);
     for (const k in S.jobs || {}) put(k, S.jobs[k], E.jobXpNeed);
     if (S.fmJobs && E.FM_JOBS && E.fmNeed) for (const k in E.FM_JOBS) if (S.fmJobs[k] && (!E.fmLearned || E.fmLearned(S, k))) put(k, S.fmJobs[k], E.fmNeed);

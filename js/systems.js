@@ -670,7 +670,42 @@
   E.fmJobOf = (tpl) => { const T = ITEMS[tpl]; if (!T) return "forgemage"; if (T.slot === "arme") return T.craft && T.craft.job === "sculpteur" ? "sculptemage" : "forgemage";
     for (const j in E.FM_JOBS) if (E.FM_JOBS[j].slots.includes(T.slot)) return j; return "forgemage"; };
   E.fmJob = (S, job) => { const J = E.fmJobs(S); if (job) return J[job]; let best = J.forgemage; for (const j in E.FM_JOBS) if (J[j].lvl > best.lvl) best = J[j]; return best; };
-  E.fmTop = (S) => E.fmJob(S).lvl;
+  /* 1.0.25 : un métier de forgemagie qui a renu compte comme niveau 200 (vitesse des plans de forgemagie) */
+  E.fmTop = (S) => { const J = E.fmJobs(S); let m = 1; for (const j in E.FM_JOBS) if (J[j]) m = Math.max(m, J[j].lvl || 1, J[j].ren ? E.FM_MAX : 0); return m; };
+  /* 1.0.25 « Renaissance des métiers » : chaque renaissance d'un métier de forgemagie donne +1 point de succès critique et
+     −0,5 point d'échec critique (runes normales ; pas les runes Ga ni l'ajout d'une caractéristique) et +30 % d'XP par rune qui passe
+     (choix de Mathis 3A 4A 5A) */
+  E.FM_REN_SC = 0.01; E.FM_REN_EC = 0.005;
+  E.fmRen = (S, job) => { const J = E.fmJobs(S)[job]; return Math.max(0, Math.min(E.JOB_REN_MAX || 10, (J && J.ren) || 0)); };
+  E.fmRenOdds = (o, n) => { if (!n) return o; const sc = Math.max(o.sc, Math.min(0.95, o.sc + E.FM_REN_SC * n)); let ec = Math.max(Math.min(o.ec, 0.02), o.ec - E.FM_REN_EC * n); /* jamais pire que sans renaissance */ if (sc + ec > 1) ec = Math.max(0, 1 - sc); return { sc, sn: Math.max(0, 1 - sc - ec), ec }; };
+  /* 1.0.25 : renaître un métier d'artisanat (kind "craft") ou de forgemagie (kind "fm") au niveau 200, 10 fois au plus.
+     Il repart au niveau 1 sans XP ; tout le reste est gardé. Coût : 1 million de kamas × le numéro de la renaissance (choix 9B).
+     renXp = l'XP gagnée dans les vies passées : l'XP totale envoyée aux classements ne recule jamais (choix 6A). */
+  E.JOB_REN_COST = 1000000;
+  E.jobRenCost = (n) => E.JOB_REN_COST * Math.max(1, n);
+  E.jobRenOf = (S, kind, job) => (kind === "fm" ? (E.FM_JOBS[job] ? E.fmJobs(S)[job] : null) : D.CRAFT_JOBS[job] && S.crafts ? S.crafts[job] : null);
+  E.jobRenName = (kind, job) => (kind === "fm" ? (E.FM_JOBS[job] || {}).name : (D.CRAFT_JOBS[job] || {}).name) || job;
+  E.canJobRen = (S, kind, job) => {
+    const J = E.jobRenOf(S, kind, job); if (!J) return "Métier inconnu.";
+    if ((J.ren || 0) >= E.JOB_REN_MAX) return "Ce métier a atteint sa dixième renaissance.";
+    if ((J.lvl || 1) < 200) return "Niveau 200 requis.";
+    const cost = E.jobRenCost((J.ren || 0) + 1); if ((S.kamas || 0) < cost) return `Il faut ${cost.toLocaleString("fr-FR")} kamas.`;
+    return null;
+  };
+  E.jobRenCount = (S, n) => { let c = 0; for (const j in D.CRAFT_JOBS) if (((S.crafts || {})[j] || {}).ren >= n) c++; const F = S.fmJobs || {}; for (const j in E.FM_JOBS) if ((F[j] || {}).ren >= n) c++; return c; };
+  E.jobRenaissance = (S, kind, job) => {
+    const err = E.canJobRen(S, kind, job); if (err) return err;
+    const J = E.jobRenOf(S, kind, job), n = (J.ren || 0) + 1, cost = E.jobRenCost(n), need = kind === "fm" ? E.fmNeed : E.jobXpNeed;
+    let past = 0; for (let i = 1; i < 200; i++) past += need(i);
+    S.kamas -= cost; J.renXp = Math.floor((J.renXp || 0) + past + Math.max(0, J.xp || 0)); J.ren = n; J.lvl = 1; J.xp = 0;
+    S.unlocks = S.unlocks || {}; if (n >= E.JOB_REN_MAX) S.unlocks.enclume = 1;
+    S.stats.jobRen = (S.stats.jobRen || 0) + 1;
+    const R = E.roman ? E.roman(n) : n, name = E.jobRenName(kind, job);
+    note(S, `${name} renaît (Renaissance ${R}) : niveau 1, +${Math.round(E.JOB_REN_XP * 100 * n)} % d'XP${kind === "fm" ? " par rune qui passe" : ` par fabrication, ${n >= E.JOB_REN_MAX ? "jets parfaits" : `aucun jet sous ${n * 10} %`}`}.`, "rare");
+    if (E.celebrate) E.celebrate({ t: "jobren", jk: kind, job, n, name }); // (pas « kind » : c'est le type d'événement)
+    E.emit(S, "jobren", { kind, job, n });
+    return null;
+  };
   E.fmLearned = () => true; // 1.0.12.9 : les six métiers sont ouverts dès le départ
   E.fmNeed = (l) => 20 + 30 * l;
   E.fmGainXp = (S, x, job) => {
@@ -760,7 +795,7 @@
     if (nv > cap) return { ok: false, why: `Over maximum atteint (${cap}).`, cur, cap, mx };
     const well = it.well || 0;
     if (!has && well < w) return { ok: false, why: `Exo de ${STATS[k].name} : il faut ${Math.ceil(w)} de reliquat (l'objet en a ${Math.round(well)}).`, exoStat: true, cur, cap };
-    const W = E.fmWeights(it); const o = malus ? { sc: 0.7, sn: 0.25, ec: 0.05 } : E.fmOdds(W.load, nv, mx, cap, ri.tier, !has);
+    const W = E.fmWeights(it); const o = malus ? { sc: 0.7, sn: 0.25, ec: 0.05 } : has ? E.fmRenOdds(E.fmOdds(W.load, nv, mx, cap, ri.tier, false), E.fmRen(S, job)) : E.fmOdds(W.load, nv, mx, cap, ri.tier, true);
     return { ok: true, stat: k, cur, add, nv, mn, mx, cap, w, sc: o.sc, sn: o.sn, ec: o.ec, chance: o.sc + o.sn, over: has && mx > 0 && nv > mx, exoStat: !has, malus, load: W.load, well, wellOk: well >= w, kamas: 0, job };
   };
   const fmLog = (it, txt, ok, kind) => { (it.fmLog = it.fmLog || []).unshift({ t: E.now(), txt, ok, k: kind || (ok ? "sc" : "ec") }); if (it.fmLog.length > 8) it.fmLog.length = 8; };
@@ -789,8 +824,8 @@
     S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1;
     E.emit(S, "fm", {});
     const T = ITEMS[it.tpl]; const wasPerfect = E.isPerfect(it);
-    E.fmGainXp(S, E.fmXpFor(S, it.tpl, f.w), f.job);
     const r = rnd(); const kind = r < f.sc ? "sc" : r < f.sc + f.sn ? "sn" : "ec";
+    E.fmGainXp(S, Math.round(E.fmXpFor(S, it.tpl, f.w) * (kind !== "ec" ? 1 + E.JOB_REN_XP * E.fmRen(S, f.job) : 1)), f.job); // 1.0.25 : +30 % par renaissance quand la rune passe
     const parts = [];
     if (kind !== "ec") {
       var roll0 = it.roll ? it.roll[f.stat] : undefined; it.stats[f.stat] = f.nv; if (it.roll && it.roll[f.stat] !== undefined) it.roll[f.stat] = Math.min(f.mx, (it.roll[f.stat] || 0) + f.add);
@@ -841,8 +876,9 @@
     const it = S.items[uid]; const T = ITEMS[it.tpl]; const job = E.fmJobOf(it.tpl);
     if (!E.almChance(S, "fm")) { S.runes[f.key]--; if (!S.runes[f.key]) delete S.runes[f.key]; }
     S.cnt.fm = (S.cnt.fm || 0) + 1; it.fm = (it.fm || 0) + 1; S.cnt.exoTry = (S.cnt.exoTry || 0) + 1;
-    E.emit(S, "fm", {}); E.fmGainXp(S, E.fmXpFor(S, it.tpl, 30) * 2, job);
-    if (rnd() < f.chance) {
+    E.emit(S, "fm", {}); const won = rnd() < f.chance;
+    E.fmGainXp(S, Math.round(E.fmXpFor(S, it.tpl, 30) * 2 * (won ? 1 + E.JOB_REN_XP * E.fmRen(S, job) : 1)), job);
+    if (won) {
       it.exo = stat; S.cnt.exo = (S.cnt.exo || 0) + 1;
       const txt = `Succès critique : exo +1 ${STATS[stat].name} !`; fmLog(it, txt, true, "sc");
       note(S, `${T.name} : forgemagie exotique réussie, +1 ${STATS[stat].name} !`, "rare");
@@ -907,7 +943,7 @@
   /* Signature (niveau 200 du métier de l'objet, comme la rune de signature de DOFUS) */
   E.signItem = (S, uid, name) => {
     const it = S.items[uid]; if (!it) return "Objet introuvable."; const job = E.fmJobOf(it.tpl);
-    if (E.fmJob(S, job).lvl < E.FM_MAX) return `${E.FM_JOBS[job].name} niveau ${E.FM_MAX} requis pour signer.`;
+    if (E.fmJob(S, job).lvl < E.FM_MAX && !E.fmRen(S, job)) return `${E.FM_JOBS[job].name} niveau ${E.FM_MAX} requis pour signer.`; // 1.0.25 : un métier qui a renu signe toujours
     const n = String(name || "").trim().slice(0, 24); if (!n) return "Nom manquant.";
     it.sig = n; return null;
   };
@@ -1166,6 +1202,7 @@
     fondateur: { name: () => "Sceau du Fondateur", req: "Jouer pendant la semaine de lancement de la 1.0 (récompense exclusive)", ok: (S) => !!S.unlocks.fondateur },
     legende:   { name: () => "Couronne de la Légende", req: "Être l'un des 10 premiers comptes à finir la quête principale après la sortie de la 1.0 (récompense unique)", ok: (S) => !!S.unlocks.legende },
     phenix:    { name: () => "Ailes du Phénix", req: "Dix renaissances sur un même héros", ok: (S) => !!(S.unlocks && S.unlocks.phenix) },
+    enclume:   { name: () => "Enclume du Phénix", req: "Dix renaissances sur un même métier", ok: (S) => !!(S.unlocks && S.unlocks.enclume) }, // 1.0.25
   };
   /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */
   E.PIONEER_TITLE = "Pionnier d'Idlus";
@@ -1429,6 +1466,10 @@
   [[1, ""], [10, "le Perfectionniste"]].forEach(([n, t]) => add("parf" + n, "Forgemagie", n === 1 ? "Premier objet Parfait" : `${n} objets Parfaits`, `Posséder ${n} objet${n > 1 ? "s" : ""} Parfait${n > 1 ? "s" : ""} (toutes les caractéristiques au jet maximum).`, (S) => E.perfectCount(S) >= n, 800 * n, t ? { title: t } : {}));
   add("fmjob100", "Forgemagie", "Grand Forgemage", "Un métier de forgemagie au niveau 100.", (S) => E.fmTop(S) >= 100, 5000, { title: "Grand Forgemage" });
   add("fmjob200", "Forgemagie", "Maître Forgemage", "Un métier de forgemagie au niveau 200.", (S) => E.fmTop(S) >= 200, 20000, { title: "Maître Forgemage" });
+  /* 1.0.25 « Renaissance des métiers » : titres à la 1re, 5e et 10e renaissance d'un métier (artisanat ou forgemagie), « Sept vies » (choix 7A) */
+  [[1, "Artisan renaissant", "Un métier renaît une première fois.", 5000], [5, "Main d'or", "Un métier atteint sa cinquième renaissance.", 25000], [10, "Maître éternel", "Un métier atteint sa dixième renaissance.", 100000]]
+    .forEach(([n, nm, d, k]) => add("jren" + n, "Métiers", nm, d, (S) => E.jobRenCount(S, n) >= 1, k, { title: nm }));
+  add("jren7", "Métiers", "Sept vies", "Faire renaître une fois les 7 métiers d'artisanat.", (S) => Object.keys(D.CRAFT_JOBS).every((j) => ((S.crafts || {})[j] || {}).ren >= 1), 50000);
   add("fmtrans", "Forgemagie", "Transcendance", "Transcender un objet avec une rune de transcendance.", (S) => (S.cnt.trans || 0) >= 1, 10000);
   add("exo1", "Forgemagie", "Exotique", "Réussir une forgemagie exotique (+1 PA, PM ou Portée).", (S) => (S.cnt.exo || 0) >= 1, 10000, { title: "l'Exotique" });
   add("exopa", "Forgemagie", "Un PA de plus", "Porter un objet exo PA.", (S) => S.chars.some((c) => Object.values(c.equip).some((u) => S.items[u] && S.items[u].exo === "pa")), 20000);

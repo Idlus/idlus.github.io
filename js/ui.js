@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.24.5";
+const GAME_VERSION = "1.0.25";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25", name: "Renaissance des métiers", items: [
+    "Un métier d'artisanat au niveau 200 peut renaître : il repart au niveau 1 et gagne +30 % d'XP par fabrication à chaque renaissance, 10 renaissances au plus",
+    "Chaque renaissance relève le plancher des jets : aucune caractéristique d'un objet fabriqué sous 10 % de sa fourchette à la Renaissance I, 20 % à la II… et des jets parfaits à la X. La recette montre les nouvelles fourchettes et la chance d'obtenir un objet Parfait",
+    "Les 6 métiers de forgemagie renaissent aussi, chacun de son côté : +30 % d'XP par rune qui passe, +1 point de succès critique et −0,5 point d'échec critique par renaissance (pas sur les runes Ga). Un métier qui a renu garde la signature et la vitesse des plans",
+    "Coût : 1 million de kamas × le numéro de la renaissance (1 million pour la I, 10 millions pour la X). Bouton « Renaître » sur le bandeau du métier (Artisanat) ou sous le métier (Forgemagie)",
+    "Récompenses : pastille I à X sur le métier, titres « Artisan renaissant » (I), « Main d'or » (V) et « Maître éternel » (X), ornement « Enclume du Phénix » à la première X, succès « Sept vies » (les 7 métiers d'artisanat renés une fois)",
+    "Classement des métiers : par renaissance, puis niveau, puis XP. « Cette semaine » compte l'XP de toutes les vies, renaître ne fait rien perdre. Les guildes comptent 200 niveaux par renaissance" ] },
   { v: "1.0.24.5", name: "Recettes instantanées", items: [
     "Sur PC, choisir une autre recette ou changer la quantité à fabriquer ne redessine plus toute la page Métiers : seul le panneau de la recette change, c'est instantané",
   ] },
@@ -1539,6 +1546,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "sablier") ornHtml = `<span class="orn seal">⏳</span>`;
   else if (orn === "boussole") ornHtml = `<span class="orn seal">🧭</span>`;
   else if (orn === "tablier") ornHtml = `<span class="orn seal">🧰</span>`;
+  else if (orn === "enclume") ornHtml = `<span class="orn seal">⚒️</span>`; // 1.0.25 : dix renaissances d'un métier
   else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
   else if (orn === "koli") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/koli_cristal.svg" alt="">`; // 0.1.44 : Kolizéum
   else if (orn === "fondateur" || orn === "legende") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement
@@ -5781,7 +5789,9 @@ function recDetail(r, job) {
   const gSel = galetSel(r); const nMax = Math.min(1000, gSel ? Math.min(r.n, S.res[gSel] || 0) : r.n); // 1.0.6 : avec un Galet, une fabrication par Galet (1 000 au plus d'un coup)
   const qty = ui.recQty === "max" ? Math.max(1, nMax) : Math.max(1, Math.min(+ui.recQty || 1, Math.max(1, nMax)));
   const xb = (r.T ? 12 : 20) + r.lvl * 3; const xp = E.craftXpOf(S, job, r.req, xb), xm = E.craftXpMult(S, job, r.req); // 1.0.9.2 : XP réduite si la recette est trop facile (xm < 1)
-  const stats = r.T ? `<div class="pstats">${Object.entries(r.T.stats).map(([k, [a, b]]) => `<span>${sIco(k)} <b>${a === b ? a : a + " à " + b}</b> ${h(STATS[k].name)}</span>`).join("")}</div>` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
+  const rf = r.T ? E.craftRenFloor(S, job) : 0, rn = E.craftRen(S, job); // 1.0.25 : plancher de la renaissance du métier
+  const stats = r.T ? `<div class="pstats">${Object.entries(r.T.stats).map(([k, [a, b]]) => { const lo = rf && b > a ? Math.ceil(a + (b - a) * rf) : a; return `<span>${sIco(k)} <b>${lo === b ? b : lo + " à " + b}</b> ${h(STATS[k].name)}${lo > a ? ` <span class="xs plus">au lieu de ${a}</span>` : ""}</span>`; }).join("")}</div>
+    ${rf ? `<div class="xs pjrenl">${IC("phenix")} <b>Renaissance ${E.roman(rn)}</b> : ${rf >= 1 ? "chaque objet sort au jet parfait." : `aucun jet sous ${Math.round(rf * 100)} % de la fourchette · chance d'un objet Parfait : <b>${pctTiny(perfOdds(r.T, rf))}</b>`}</div>` : ""}` : `<div class="small muted" style="margin:8px 0">${E.isKey(r.id) ? "Clé de donjon" : "Objet spécial"}</div>`;
   return `<div class="pdet"><div class="row" style="gap:12px"><span class="icobox lg">${im(pic, "", r.name)}</span><div class="grow"><h2 style="margin:0">${h(r.name)}</h2>
       <div class="small muted">${r.T ? `${h(slotName(r.T.slot))} · ` : ""}niveau ${r.lvl}${r.T && r.T.set && SETS[r.T.set] ? ` · <a href="#" data-act="searchset" data-id="${r.T.set}">${h(SETS[r.T.set].name)}</a>` : ""}</div>
       ${r.for ? `<div class="small plus" style="margin-top:2px"><span class="pdot"></span> Mieux que ce que porte <b>${h(r.for.name)}</b></div>` : ""}</div>
@@ -5816,6 +5826,40 @@ function recPanel() {
   return true;
 }
 function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
+/* 1.0.25 « Renaissance des métiers » : un métier d'artisanat ou de forgemagie au niveau 200 renaît (10 fois au plus) contre
+   1 million de kamas × le numéro de la renaissance. Artisanat : +30 % d'XP par fabrication et un plancher de jet de 10 % par renaissance
+   (jets parfaits à la X). Forgemagie : +30 % d'XP par rune qui passe, +1 pt de succès critique et −0,5 pt d'échec critique. Choix de Mathis 1A à 9B. */
+const jobRenPip = (n, sm) => (n ? `<span class="jrenp${sm ? " sm" : ""}" data-tip="Renaissance ${E.roman(n)}">${E.roman(n)}</span>` : "");
+const jobRenFx = (kind, n) => (kind === "fm" ? `+${n} pt${n > 1 ? "s" : ""} de succès critique · −${(n / 2).toLocaleString("fr-FR")} pt${n > 2 ? "s" : ""} d'échec critique · +${Math.round(E.JOB_REN_XP * 100 * n)} % d'XP par rune qui passe`
+  : `+${Math.round(E.JOB_REN_XP * 100 * n)} % d'XP par fabrication · ${n >= E.JOB_REN_MAX ? "jets parfaits" : `aucun jet sous ${n * 10} %`}`);
+function jobRenBar(kind, job) {
+  const J = E.jobRenOf(S, kind, job); if (!J) return ""; const n = J.ren || 0, nm = h(E.jobRenName(kind, job)), at = `data-act="jobrensheet" data-k="${kind}" data-v="${job}"`;
+  if (!n && (J.lvl || 1) < 200) return `<div class="xs muted pjrenh">${IC("phenix")} Au niveau 200, le ${nm} peut renaître : +30 % d'XP ${kind === "fm" ? "par rune qui passe et plus de succès critiques" : "par fabrication et des jets plus hauts"} à chaque renaissance. <a href="#" ${at}>En savoir plus</a></div>`;
+  const btn = n >= E.JOB_REN_MAX ? `<span class="tag ren">Renaissance X</span>` : J.lvl >= 200 ? `<button class="btn sm ren" ${at}>${IC("phenix")} Renaître</button>` : `<button class="btn sm ghost" ${at}>Renaissance ${E.roman(n + 1)} au niveau 200</button>`;
+  return `<div class="panel pjren"><div class="pad"><span class="renstage small"><span class="renfl"></span>${IC("phenix", "renbig")}</span><div class="grow"><b>${nm} · Renaissance ${n ? E.roman(n) : "0"}</b> <span class="xs muted">sur X</span><br><span class="xs muted">${n ? jobRenFx(kind, n) : `Niveau 200 atteint : renais pour ${jobRenFx(kind, 1)}`}</span></div>${btn}</div></div>`;
+}
+const pctTiny = (p) => (p >= 0.995 ? "100 %" : p >= 0.1 ? Math.round(p * 100) + " %" : p >= 0.001 ? (Math.round(p * 1000) / 10).toLocaleString("fr-FR") + " %" : "moins de 0,1 %");
+/* chance qu'un objet fabriqué sorte Parfait (toutes les caractéristiques positives au maximum) avec le plancher f */
+const perfOdds = (T, f) => { let p = 1, n = 0; for (const k in T.stats) { const [a, b] = T.stats[k]; if (b <= 0) continue; n++; if (b > a) p /= b - Math.ceil(a + (b - a) * f) + 1; } return n ? p : 0; };
+function jobRenSheet(kind, job) {
+  const J = E.jobRenOf(S, kind, job); if (!J) return; const fm = kind === "fm", n = J.ren || 0, nx = n + 1, name = E.jobRenName(kind, job), nm = h(name);
+  const err = E.canJobRen(S, kind, job), full = n >= E.JOB_REN_MAX, cost = E.jobRenCost(nx), ic = im(jobImg(fm ? E.FM_JOBS[job].base : job), "joblogo", name);
+  const keep = fm ? ["Tes objets, runes et plans de forgemagie", "Tous les objets se forgemagent toujours, les plans restent aussi rapides", "La signature des objets", "Succès, titres et place dans les classements (l'XP de toutes les vies compte)"]
+    : ["Tes objets, ressources et recettes favorites", "Les Galets et leurs bonus", "Les métiers de forgemagie et les autres métiers", "Succès, titres et place dans les classements (l'XP de toutes les vies compte)"];
+  const reset = fm ? ["Niveau 1 et expérience du métier"] : ["Niveau 1 et expérience du métier", "Les recettes se débloquent à nouveau en montant"];
+  const rows = []; for (let i = 1; i <= E.JOB_REN_MAX; i++) rows.push(`<div class="lbr jrenr${i === nx ? " me" : i <= n ? " done" : ""}"><span class="rk">${E.roman(i)}</span><span class="nm">+${Math.round(E.JOB_REN_XP * 100 * i)} % d'XP${i === nx ? " <small>la prochaine</small>" : i <= n ? " <small>faite</small>" : ""}</span><span class="sc">${fm ? `+${i} SC · −${(i / 2).toLocaleString("fr-FR")} EC` : i >= E.JOB_REN_MAX ? "jets parfaits" : `jets ≥ ${i * 10} %`}</span></div>`);
+  const rew = `<p class="xs muted" style="margin:0">Récompenses : la pastille ${jobRenPip(1, 1)} sur le métier · titre « Artisan renaissant » (première renaissance d'un métier) · « Main d'or » (Renaissance V) · « Maître éternel » (Renaissance X) · ornement « Enclume du Phénix » au premier métier en Renaissance X · succès « Sept vies » (les 7 métiers d'artisanat renés une fois).</p>`;
+  openSheet(`<div class="renhead"><div class="renstage small"><span class="renfl"></span>${ic}</div><div class="stack"><h2>${IC("phenix")} Renaissance du ${nm}</h2>
+    <p class="small muted">${nm} niveau ${J.lvl} · Renaissance ${n ? E.roman(n) : "0"}${full ? " sur X" : ` → ${E.roman(nx)} sur X · <b>${fmt(cost)} kamas</b>`}</p>
+    <div class="rencols"><div><div class="cap keep">Tu gardes</div><ul class="xs">${keep.map((t) => `<li>${t}</li>`).join("")}</ul></div><div><div class="cap reset">Repart à zéro</div><ul class="xs">${reset.map((t) => `<li>${t}</li>`).join("")}</ul></div></div></div></div>
+    <h3>Ce que donne chaque renaissance</h3>
+    <p class="xs muted" style="margin:0">Chaque ligne donne le total à cette renaissance : l'XP en plus ${fm ? "pour chaque rune qui passe, et le bonus sur les chances des runes" : "pour chaque fabrication, et le plancher des jets"}.</p>
+    <div class="lbt jrent">${rows.join("")}</div>
+    ${fm ? `<p class="xs muted" style="margin:0">SC = points de succès critique, EC = points d'échec critique, sur les runes normales (pas sur les runes Ga ni pour ajouter une caractéristique).</p>` : `<p class="xs muted" style="margin:0">« Jets ≥ 30 % » : aucune caractéristique d'un objet fabriqué ne sort sous 30 % de sa fourchette. Avec un Galet, le plancher le plus haut compte.</p>`}
+    ${rew}
+    ${full ? `<p class="note">Le ${nm} a atteint sa dixième renaissance.</p>` : `<div class="renconfirm"><span class="small">${err ? h(err) : `Le ${nm} repartira du niveau 1 avec <b>${jobRenFx(kind, nx)}</b>.`}</span>
+    <div class="row"><button class="btn primary ren" data-act="jobren" data-k="${kind}" data-v="${job}" ${err ? "disabled" : ""}>${IC("phenix")} Renaître · ${fmt(cost)} kamas</button><button class="btn" data-act="closesheet">Plus tard</button></div></div>`}`);
+}
 function craftHtml() {
   const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const F = fltOf("met"); const room = E.craftRoom(S);
   const rs = craftList(job);
@@ -5829,8 +5873,9 @@ function craftHtml() {
   const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${(() => { if (!r.okLvl) return ""; const b = (r.T ? 12 : 20) + r.lvl * 3, x = E.craftXpOf(S, job, r.req, b), m = E.craftXpMult(S, job, r.req); return m >= 1 ? "" : ` · <b class="minus">${x <= 1 ? "1 XP" : `XP −${Math.round((1 - m) * 100)} %`}</b>`; })()}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
-    <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recCanN(id, room); return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
+    <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recCanN(id, room); return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}${jobRenPip(E.craftRen(S, id), 1)}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
     <div class="pjobxp small"><b>${CRAFT_JOBS[job].name} niv. ${J.lvl}</b><div class="bar xp thin grow"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><span class="num xs muted">${fmt(J.xp)} / ${fmt(E.jobXpNeed(J.lvl))} XP</span>${ON && ON.enabled ? `<button class="pchip jlb-go" data-act="lb-jobgo" data-v="${job}" data-tip="Classement des joueurs en ${h(CRAFT_JOBS[job].name)}">${IC("couronne")} Classement</button>` : ""}</div>
+    ${job === "bricoleur" && !E.craftRen(S, job) && J.lvl < 200 ? "" : jobRenBar("craft", job)}
     ${filterBar("met", F, { ph: "Nom de l'objet ou d'une ressource…", slots: job === "bricoleur" ? null : CRAFT_JOBS[job].slots, stats: stats.length ? stats : null, sets, cid: "Pour un héros", sort: [["useful", "Tri : utiles puis niveau ↓"], ["lvl", "Tri : niveau ↓"], ["lvlup", "Tri : niveau ↑"], ["name", "Tri : nom"]] })}
     <div class="row small" style="gap:6px"><div class="seg">${[["near", "Fabricables et presque"], ["can", "Fabricables"], ["all", "Toutes"]].map(([v, n]) => `<button data-act="fltset" data-ctx="met" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div>
       ${job === "bricoleur" ? "" : `<button class="btn sm ${F.util ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="util"><span class="pdot"></span> Utile pour mes héros</button>`}<button class="btn sm ${F.fav ? "primary" : ""}" data-act="flttog" data-ctx="met" data-k="fav">★ Favoris</button></div>
@@ -5878,12 +5923,13 @@ function fmBench(it) {
   const extra = Object.entries(S.runes).filter(([rk, q]) => q > 0 && !["ga", "ta"].includes(rk.split(":")[0]) && !keys.includes(rk.split(":")[1]) && !E.EXO_STATS.includes(rk.split(":")[1]) && STATS[rk.split(":")[1]]);
   const exoStats = E.EXO_STATS.filter((k) => !T.stats[k]);
   const trans = Object.entries(S.runes).filter(([rk, q]) => q > 0 && rk.startsWith("ta:"));
-  const signOk = J.lvl >= E.FM_MAX;
+  const signOk = J.lvl >= E.FM_MAX || E.fmRen(S, job) > 0; // 1.0.25 : un métier qui a renu signe toujours
   const KC = { sc: "g", sn: "y", ec: "r" };
   return `<div class="row" style="gap:12px">${itemIcon(it)}<div class="grow"><h2 style="margin:0">${itemName(it)}</h2><div class="small muted">niv. ${T.lvl}${by ? ` · porté par <b>${h(by.name)}</b>` : ""} · <b>${E.FM_JOBS[job].name} niv. ${J.lvl}</b>${it.sig ? ` · signé <b>${h(it.sig)}</b>` : ""}</div></div>
       <div class="pbadges"><span class="pb" data-tip="Reliquat : le poids que l'objet a perdu en trop. Il paie le poids des prochaines runes qui passent (au lieu de faire baisser une autre caractéristique) et permet d'ajouter une caractéristique que l'objet n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente.">${IC("forge")} Reliquat <b class="num">${runeW(it.well || 0)}</b></span>${it.trans ? `<span class="pb">Transcendé</span>` : ""}</div></div>
     ${block ? `<div class="awaitbar" style="margin:0">${G("lock")} <span class="grow">${h(block)}</span></div>` : ""}
     <div class="pwt2"><span class="small"><b>Poids de l'objet</b> <span class="num">${Math.round(W.cur)} / ${Math.round(W.max)}</span> <span class="xs muted">(${ppc(W.load)} %) · plus l'objet est chargé, plus le succès critique est rare</span></span><div class="bar thin"><i style="width:${Math.min(100, ppc(W.load))}%"></i></div></div>
+    ${E.fmRen(S, job) ? `<div class="xs pjrenl">${IC("phenix")} <b>${E.FM_JOBS[job].name} · Renaissance ${E.roman(E.fmRen(S, job))}</b> : ${jobRenFx("fm", E.fmRen(S, job))} (déjà comptés dans les chances des runes)</div>` : ""}
     <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
     ${wpFmHtml(it)}
     <div class="pstatl">${keys.filter((k) => STATS[k] && !E.EXO_STATS.includes(k) || T.stats[k]).map((k) => fmStatLine(it, k)).join("")}</div>
@@ -5907,7 +5953,8 @@ function fmBench(it) {
 function fmJobsBar() {
   const JJ = E.fmJobs(S);
   return `<div class="pfmjobs">${Object.entries(E.FM_JOBS).map(([id, F]) => { const ok = E.fmLearned(S, id); const J = JJ[id]; const bl = (S.crafts[F.base] || {}).lvl || 1;
-    return `<span class="pfj ${ok ? "" : "lock"}" data-tip="${h(`${F.name} : ${F.slots.length ? F.slots.map(slotName).join(", ").toLowerCase() : id === "forgemage" ? "armes du Forgeron" : "armes du Sculpteur"}. ${ok ? `${fmt(J.xp)} / ${fmt(E.fmNeed(J.lvl))} XP` : `S'apprend au niveau ${E.FM_LEARN} de ${CRAFT_JOBS[F.base].name}.`}`)}">${im(jobImg(F.base), "", F.name)}<span class="grow"><b>${F.name}</b><br><span class="xs ${ok ? "muted" : "minus"}">${ok ? `niv. ${J.lvl}` : `${CRAFT_JOBS[F.base].name} ${bl} / ${E.FM_LEARN}`}</span>${ok && J.lvl < E.FM_MAX ? `<span class="bar thin"><i style="width:${pct(J.xp, E.fmNeed(J.lvl))}%"></i></span>` : ""}</span></span>`; }).join("")}</div>`;
+    return `<span class="pfj ${ok ? "" : "lock"}" data-tip="${h(`${F.name} : ${F.slots.length ? F.slots.map(slotName).join(", ").toLowerCase() : id === "forgemage" ? "armes du Forgeron" : "armes du Sculpteur"}. ${ok ? `${fmt(J.xp)} / ${fmt(E.fmNeed(J.lvl))} XP` : `S'apprend au niveau ${E.FM_LEARN} de ${CRAFT_JOBS[F.base].name}.`}`)}">${im(jobImg(F.base), "", F.name)}<span class="grow"><b>${F.name}${jobRenPip(J.ren, 1)}</b><br><span class="xs ${ok ? "muted" : "minus"}">${ok ? `niv. ${J.lvl}` : `${CRAFT_JOBS[F.base].name} ${bl} / ${E.FM_LEARN}`}</span>${ok && J.lvl < E.FM_MAX ? `<span class="bar thin"><i style="width:${pct(J.xp, E.fmNeed(J.lvl))}%"></i></span>` : ok && (J.ren || 0) < E.JOB_REN_MAX ? `<button class="pfjren" data-act="jobrensheet" data-k="fm" data-v="${id}" data-tip="Renaissance ${E.roman((J.ren || 0) + 1)} : ${h(jobRenFx("fm", (J.ren || 0) + 1))}">${IC("phenix")} Renaître</button>` : ""}</span></span>`; }).join("")}</div>
+    ${Object.values(JJ).some((J) => J && (J.ren || J.lvl >= E.FM_MAX)) ? "" : `<div class="xs muted pjrenh">${IC("phenix")} Au niveau 200, chaque métier de forgemagie peut renaître : ${h(jobRenFx("fm", 1))}, à chaque renaissance. <a href="#" data-act="jobrensheet" data-k="fm" data-v="forgemage">En savoir plus</a></div>`}`;
 }
 function fmList() {
   const F = fltOf("fm"); const q = E.searchNorm(F.q);
@@ -6446,6 +6493,8 @@ function celeHtml(ev) {
     return `<div class="cele-art lvl">${cs.slice(0, 4).map((x) => LK.CLASS_LOOKS[x.cls] ? `<span class="lookwrap">${lookImg(x, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[x.cls].color}">${headTag(x.cls, x.sex, x.name)}</span>`).join("")}</div><div class="cele-k">${G("up")} Niveau supérieur</div><div class="cele-t">Niveau ${ev.lvl}</div><div class="cele-s">${h(cs.map((x) => x.name).join(", "))}${ev.frame ? ` · nouveau cadre ${h(E.FRAMES[E.frameIdx(ev.lvl)])}` : ""}</div>`; }
   if (ev.t === "ren") { const c = char(ev.cid); if (!c) return "";
     return `<div class="cele-art lvl ren">${LK.CLASS_LOOKS[c.cls] ? `<span class="lookwrap">${lookImg(c, "look")}</span>` : `<span class="medal" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`}</div><div class="cele-k">${IC("phenix")} Renaissance ${E.roman(ev.n)}</div><div class="cele-t">${h(c.name)} renaît</div><div class="cele-s">${h(ev.eveil)} ${E.roman(ev.rank)} · +${Math.round(E.REN_XP * 100 * ev.n)} % d'XP${ev.title ? ` · titre « ${h(ev.title)} »` : ""}</div>`; }
+  if (ev.t === "jobren") { const img = jobImg(ev.jk === "fm" ? (E.FM_JOBS[ev.job] || {}).base : ev.job); // 1.0.25 : renaissance d'un métier
+    return `<div class="cele-art pet ren">${im(img, "celepet", ev.name)}</div><div class="cele-k">${IC("phenix")} Renaissance ${E.roman(ev.n)}</div><div class="cele-t">${h(ev.name)} renaît</div><div class="cele-s">${h(jobRenFx(ev.jk, ev.n))}${ev.n === 1 ? " · titre « Artisan renaissant »" : ev.n === 5 ? " · titre « Main d'or »" : ev.n === 10 ? " · titre « Maître éternel » et ornement « Enclume du Phénix »" : ""}</div>`; }
   if (ev.t === "pet") { const p = E.PETS[ev.id]; if (!p) return "";
     return `<div class="cele-art pet">${im(petImg(ev.id), "celepet", p.name)}</div><div class="cele-k">${G("star")} ${p.kind === "monti" ? (p.fam === "l" ? "Montilier légendaire" : "Nouveau montilier") : "Nouveau familier"}</div><div class="cele-t">${h(p.name)}</div><div class="cele-s">Au maximum : ${h(petBonus(p.stats))}</div>`; }
   if (ev.t === "idol") { const I = E.IDOLS[ev.id]; if (!I) return "";
@@ -7711,6 +7760,8 @@ document.addEventListener("click", (ev) => {
       if (v.toLowerCase() !== c.name.trim().toLowerCase()) { toast(`Écrivez « ${c.name} » pour confirmer.`); return; }
       const r = E.dismiss(S, c.id); if (r) { toast(r); return; } closeSheet(); if (ui.cid === c.id) ui.cid = (mainHero() || S.chars[0]).id; toast(`${c.name} a quitté l'aventure.`); break; }
     case "rensheet": ui.renPick = null; renSheet(+d.id); return;
+    case "jobrensheet": jobRenSheet(d.k, d.v); return; // 1.0.25 : renaissance d'un métier
+    case "jobren": { const err = E.jobRenaissance(S, d.k, d.v); if (err) { msg(err); return; } closeSheet(); dirty = true; break; }
     case "renpick": ui.renPick = d.v; renSheet(+d.id); return;
     case "renaitre": { const err = E.renaissance(S, +d.id, ui.renPick); if (err) { msg(err); return; } ui.renPick = null; closeSheet(); dirty = true; break; } // 1.0.10.3 : action à part (le « rengo » du renommage passait avant et bloquait la Renaissance)
     case "idols": idolSheet(); return;
@@ -8398,10 +8449,10 @@ const JOB_GRPS = {
 };
 const jobGrp = () => JOB_GRPS[LB.jgrp] || JOB_GRPS.craft;
 const jobKey = () => (LB.job === JOB_ALL ? jobGrp().all : LB.job);
-const jobLv = (j) => { const J = jobGrp().get(j); return J ? [Math.max(1, J.lvl || 1), Math.floor(J.xp || 0)] : null; };
-const jobMine = (j) => { if (j !== JOB_ALL) return jobLv(j); const a = jobGrp().jobs().map(jobLv).filter(Boolean); return a.length ? a.reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]) : null; };
-/* XP totale depuis le niveau 1 (pour « Encore … XP pour dépasser … ») */
-const jobTot = (G, l, xp) => { let c = G.cum; if (!c) { c = G.cum = [0, 0]; for (let i = 1; i < 200; i++) c.push(c[i] + G.need(i)); } return c[Math.max(1, Math.min(200, l || 1))] + (xp || 0); };
+const jobLv = (j) => { const J = jobGrp().get(j); return J ? [Math.max(1, J.lvl || 1), Math.floor(J.xp || 0), Math.max(0, J.ren || 0)] : null; }; // 1.0.25 : + renaissances
+const jobMine = (j) => { if (j !== JOB_ALL) return jobLv(j); const a = jobGrp().jobs().map(jobLv).filter(Boolean); return a.length ? a.reduce((s, x) => [s[0] + x[0], s[1] + x[1], s[2] + x[2]], [0, 0, 0]) : null; };
+/* XP totale depuis le niveau 1 (pour « Encore … XP pour dépasser … ») ; 1.0.25 : une vie entière par renaissance */
+const jobTot = (G, l, xp, r) => { let c = G.cum; if (!c) { c = G.cum = [0, 0]; for (let i = 1; i < 200; i++) c.push(c[i] + G.need(i)); } return c[Math.max(1, Math.min(200, l || 1))] + (xp || 0) + (r || 0) * c[200]; };
 function jobLbHead() {
   const G = jobGrp(); if (LB.job !== JOB_ALL && !G.jobs().includes(LB.job)) LB.job = JOB_ALL;
   const week = LB.jmode === "week", guild = LB.jwho === "g";
@@ -8415,9 +8466,9 @@ function jobLbHead() {
   const all = LB.job === JOB_ALL, nm = all ? "" : h(G.nm(LB.job));
   const help = guild ? (week ? `Chaque guilde additionne l'XP gagnée cette semaine par ses membres ${all ? `dans leurs métiers ${G.of}` : `en ${nm}`}. Ta guilde est surlignée.`
       : `Chaque guilde additionne les niveaux de ses membres ${all ? `dans leurs métiers ${G.of}` : `en ${nm}`}. Ta guilde est surlignée.`)
-    : week ? `L'XP ${all ? `de tous tes métiers ${G.of}` : `de ${nm}`} gagnée depuis lundi (comptée à chaque envoi de ta partie).`
-    : all ? `La somme des niveaux de tes ${LB.jgrp === "fm" ? "métiers de forgemagie appris" : `${G.jobs().length} métiers ${G.of}`} (${fmt(200 * G.jobs().length)} au maximum).${LB.jgrp === "craft" ? ` Le premier compte avec les 7 métiers au niveau 200 est gravé dans les Premiers et devient « ${E.JOB_MASTER_TITLE} ».` : ""}`
-    : `Le niveau de ${nm}, puis l'XP déjà gagnée dans ce niveau.${LB.jgrp === "craft" ? ` Le premier au niveau 200 est gravé dans les Premiers et devient « Grand ${nm} ».` : ""}`;
+    : week ? `L'XP ${all ? `de tous tes métiers ${G.of}` : `de ${nm}`} gagnée depuis lundi (comptée à chaque envoi de ta partie).${LB.jgrp !== "gather" ? " Une renaissance ne fait rien perdre." : ""}`
+    : all ? `${LB.jgrp !== "gather" ? "Les renaissances de tes métiers, puis l" : "L"}a somme des niveaux de tes ${LB.jgrp === "fm" ? "métiers de forgemagie appris" : `${G.jobs().length} métiers ${G.of}`} (${fmt(200 * G.jobs().length)} au maximum).${LB.jgrp === "craft" ? ` Le premier compte avec les 7 métiers au niveau 200 est gravé dans les Premiers et devient « ${E.JOB_MASTER_TITLE} ».` : ""}`
+    : `${LB.jgrp !== "gather" ? `Les renaissances de ${nm}, puis le niveau` : `Le niveau de ${nm}`}, puis l'XP déjà gagnée dans ce niveau.${LB.jgrp === "craft" ? ` Le premier au niveau 200 est gravé dans les Premiers et devient « Grand ${nm} ».` : ""}`;
   return `${segs}${wk}<div class="jlb-tiles n${tiles.length}">${tiles.map(([v, n, ic, s]) => `<button data-act="lb-job" data-v="${v}" aria-pressed="${LB.job === v}"${v === JOB_ALL ? ' class="all"' : ""}>${ic}<b>${v === JOB_ALL ? `<span class="hide-sm">${h(n)}</span><span class="sm-only">Tous</span>` : h(n)}</b><small>${s}</small></button>`).join("")}</div>
     <span class="small muted">${help}</span>`;
 }
@@ -8434,22 +8485,28 @@ async function jobLbFetch(out) {
     jobGoal(out, me, (a, b) => [a.v - b.v + 1, "XP"]);
     return;
   }
-  const { data, error } = await db.from("lb_jobs").select("user_id,pseudo,main,main_lvl,lvl,xp" + (all ? ",alljobs" : "")).eq("job", j).order("lvl", { ascending: false }).order("xp", { ascending: false }).limit(50);
+  // 1.0.25 : classés par renaissances, puis niveau, puis XP (colonne ren ; sans elle, un serveur pas encore à jour classe comme avant)
+  const rc = LB.jren !== false;
+  let q = db.from("lb_jobs").select("user_id,pseudo,main,main_lvl,lvl,xp" + (rc ? ",ren" : "") + (all ? ",alljobs" : "")).eq("job", j); if (rc) q = q.order("ren", { ascending: false });
+  const { data, error } = await q.order("lvl", { ascending: false }).order("xp", { ascending: false }).limit(50);
+  if (error && rc && /\bren\b/.test(String(error.message || ""))) { LB.jren = false; return jobLbFetch(out); }
   if (error) throw error;
-  const top3 = (a) => G.jobs().filter((k) => Array.isArray(a && a[k])).sort((x, y) => a[y][0] - a[x][0] || a[y][1] - a[x][1]).slice(0, 3)
-    .map((k) => `<span class="jlb-mini" data-tip="${h(G.nm(k))}">${im(G.img(k), "", G.nm(k))}${a[k][0]}</span>`).join("");
+  const top3 = (a) => G.jobs().filter((k) => Array.isArray(a && a[k])).sort((x, y) => (a[y][4] || 0) - (a[x][4] || 0) || a[y][0] - a[x][0] || a[y][1] - a[x][1]).slice(0, 3)
+    .map((k) => `<span class="jlb-mini" data-tip="${h(G.nm(k))}${a[k][4] ? ` · Renaissance ${E.roman(a[k][4])}` : ""}">${im(G.img(k), "", G.nm(k))}${a[k][4] ? `✦${E.roman(a[k][4])} ` : ""}${a[k][0]}</span>`).join("");
   const sub = (lvl, xp, a) => (all ? top3(a) : lvl >= 200 ? "niveau maximum" : `<span class="jlb-bar"><i style="width:${pct(xp, G.need(lvl))}%"></i></span>${Math.floor(pct(xp, G.need(lvl)))} % vers le ${lvl + 1}`);
-  const sc = (lvl) => (all ? `${fmt(lvl)} niveaux` : `niv. ${lvl}`);
-  out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, sc: sc(r.lvl), sub: sub(r.lvl, +r.xp || 0, r.alljobs), l: r.lvl, x: +r.xp || 0 }));
+  const sc = (lvl, ren) => (all ? `${ren ? `✦ ${fmt(ren)} · ` : ""}${fmt(lvl)} niveaux` : `${ren ? `✦ ${E.roman(ren)} · ` : ""}niv. ${lvl}`);
+  out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, sc: sc(r.lvl, +r.ren || 0), sub: sub(r.lvl, +r.xp || 0, r.alljobs), l: r.lvl, x: +r.xp || 0, r: +r.ren || 0 }));
   const mm = me && S ? jobMine(LB.job) : null;
   if (mm) {
-    const [l, x] = mm, mine = {}; if (all) G.jobs().forEach((k) => { const v = jobLv(k); if (v) mine[k] = v; });
-    const { count } = await db.from("lb_jobs").select("user_id", { count: "exact", head: true }).eq("job", j).or(`lvl.gt.${l},and(lvl.eq.${l},xp.gt.${x})`);
+    const [l, x] = mm, rn = rc ? mm[2] || 0 : 0, mine = {}; if (all) G.jobs().forEach((k) => { const v = jobLv(k); if (v) mine[k] = [v[0], v[1], 0, 0, v[2]]; });
+    const flt = rc ? `ren.gt.${rn},and(ren.eq.${rn},lvl.gt.${l}),and(ren.eq.${rn},lvl.eq.${l},xp.gt.${x})` : `lvl.gt.${l},and(lvl.eq.${l},xp.gt.${x})`;
+    const { count } = await db.from("lb_jobs").select("user_id", { count: "exact", head: true }).eq("job", j).or(flt);
     const main = S.chars.find((c) => c.id === S.mainHero) || S.chars[0];
-    out.me = { u: me, cls: main.cls, fl: main.lvl, sc: sc(l), sub: sub(l, x, mine), rank: (count || 0) + 1, l, x };
+    out.me = { u: me, cls: main.cls, fl: main.lvl, sc: sc(l, rn), sub: sub(l, x, mine), rank: (count || 0) + 1, l, x, r: rn };
   }
   // à niveau total égal, c'est l'XP qui départage : sinon, il manque des niveaux (somme de plusieurs métiers) ou de l'XP (un métier)
-  jobGoal(out, me, (a, b) => (!all ? [jobTot(G, a.l, a.x) - jobTot(G, b.l, b.x) + 1, "XP"] : a.l > b.l ? [a.l - b.l + 1, "niveau"] : [a.x - b.x + 1, "XP"]));
+  // 1.0.25 : un métier compte l'XP de toutes ses vies ; la somme de plusieurs métiers demande d'abord des renaissances
+  jobGoal(out, me, (a, b) => (!all ? [jobTot(G, a.l, a.x, a.r) - jobTot(G, b.l, b.x, b.r) + 1, "XP"] : a.r > b.r ? [a.r - b.r, "renaissance"] : a.r < b.r ? [0, ""] : a.l > b.l ? [a.l - b.l + 1, "niveau"] : [a.x - b.x + 1, "XP"]));
 }
 /* 1.0.9 : l'objectif sur sa ligne : le joueur juste devant (ou le 50e, pour entrer dans la liste) */
 function jobGoal(out, me, need) {
@@ -8460,7 +8517,7 @@ function jobGoal(out, me, need) {
   else if (i < 0 && out.me && out.me.rank > 1) { row = out.me; top = out.me.rank - 2 >= R.length; tgt = R[Math.min(out.me.rank - 2, R.length - 1)]; }
   if (!row || !tgt) return;
   const [n, u] = need(tgt, row); if (!(n > 0)) return;
-  const pill = `<span class="jlb-goal">${IC("couronne")} Encore ${fmt(n)} ${u}${u === "niveau" && n > 1 ? "x" : ""} pour ${top ? `entrer dans les ${R.length} premiers` : `dépasser ${h(tgt.p)}`}</span>`;
+  const pill = `<span class="jlb-goal">${IC("couronne")} Encore ${fmt(n)} ${u}${u === "niveau" && n > 1 ? "x" : u === "renaissance" && n > 1 ? "s" : ""} pour ${top ? `entrer dans les ${R.length} premiers` : `dépasser ${h(tgt.p)}`}</span>`;
   if (i > 0 && i < 3) out.podGoal = pill; else row.goal = pill; // sur le podium : sous le podium ; sinon sous la ligne
 }
 async function jobGuildFetch(out, db, j, week, wn) {
@@ -8619,13 +8676,13 @@ async function lbProfile(u) {
   const db = ON.db();
   try {
     const [{ data: p }, { data: recs }, jb] = await Promise.all([db.from("lb_level").select("pseudo,main,level,album,succes,heroes" + (LB.ml ? ",main_lvl" : "")).eq("user_id", u).maybeSingle(), db.from("lb_records").select("did,dname,k,t").eq("user_id", u).order("k", { ascending: false }).order("t", { ascending: true }).limit(6),
-      db.from("lb_jobs").select("job,lvl").eq("user_id", u).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers
+      db.from("lb_jobs").select(LB.jren === false ? "job,lvl" : "job,lvl,ren").eq("user_id", u).then((r) => (r.error && LB.jren !== false ? ((LB.jren = false), db.from("lb_jobs").select("job,lvl").eq("user_id", u)) : r)).then((r) => r, () => ({}))]); // 1.0.8 : ses métiers (1.0.25 : et leurs renaissances)
     if (!p) return openSheet(`<h2>Profil</h2><div class="empty">Ce joueur n'apparaît pas dans les classements.</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
     const heroes = (p.heroes || []).slice().sort((a, b) => b.lvl + b.ren * 200 - (a.lvl + a.ren * 200));
     ui.lbProf = { u, heroes };
-    const jl = {}; ((jb && jb.data) || []).forEach((r) => (jl[r.job] = r.lvl));
+    const jl = {}, jr = {}; ((jb && jb.data) || []).forEach((r) => { jl[r.job] = r.lvl; jr[r.job] = +r.ren || 0; });
     const jobsH = Object.keys(JOB_GRPS).map((k) => { const G = JOB_GRPS[k], js = G.jobs().filter((j) => k !== "fm" || jl[j]); if (!jl[G.all] || !js.length) return ""; // 1.0.9 : + récolte et forgemagie apprise
-      return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}</b></span>`).join("")}</div>`; }).join("");
+      return `<b>${k === "craft" ? "Ses métiers" : G.name} <span class="xs muted">· ${fmt(jl[G.all])} niveaux</span></b><div class="jlb-prof">${js.map((j) => `<span class="${(jl[j] || 1) >= 200 ? "max" : ""}" data-tip="${h(G.nm(j))} niveau ${jl[j] || 1}">${im(G.img(j), "", G.nm(j))}<small>${h(G.nm(j))}</small><b>${jl[j] || 1}${jobRenPip(jr[j], 1)}</b></span>`).join("")}</div>`; }).join("");
     openSheet(`<div class="row${staffCls(u)}">${cmed(p.main, p.main_lvl)}<div class="grow"><h2>${pname(p.pseudo, u)}</h2><span class="small muted">${fmt(p.level)} niveaux d'équipe · album ${p.album}/${E.ARCHI_TOTAL} · ${p.succes} succès</span></div></div>
       <b>Son équipe</b><div class="tm">${heroes.map((x, i) => `<button data-act="lb-hero" data-v="${i}" aria-pressed="${(ui.lbHero || 0) === i}">${cmed(x.cls, x.lvl, x.ren)}<span>${h(x.name || CLASSES[x.cls].name)}</span><small>niv. ${x.lvl}${x.ren ? ` · 🔥${x.ren}` : ""}</small></button>`).join("")}</div>
       <div id="lbGear">${lbGearHtml(heroes[ui.lbHero || 0] || heroes[0])}</div>${jobsH}

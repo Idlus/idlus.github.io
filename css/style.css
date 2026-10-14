@@ -4959,3 +4959,22 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .bd-doll .drow{gap:6px}.bd-doll .drow .dslot{width:54px;height:54px}.bd-doll .drow .dslot img{width:42px;height:42px}
 @media (max-width:520px){.bd-doll .drow{gap:4px}.bd-doll .drow .dslot{width:40px;height:40px;border-radius:10px}.bd-doll .drow .dslot img{width:32px;height:32px}.bd-doll .drow .dlabel{font-size:7px}}
 @media (max-width:700px){.pagehead .bd-sub{display:none}}
+/* 1.0.25 « Renaissance des métiers » : pastille, bandeau de l'Artisanat et de la forgemagie, fenêtre, ornement « Enclume du Phénix » */
+.jrenp{display:inline-grid;place-items:center;min-width:22px;height:20px;padding:0 6px;margin-left:5px;border-radius:999px;vertical-align:middle;font-family:var(--font-title);font-size:11px;font-weight:700;line-height:1;color:#fff7e3;
+  background:radial-gradient(circle at 35% 30%,#ffc35a,#d9541e);box-shadow:0 0 0 1px rgba(14,11,20,.55),0 0 6px rgba(255,170,60,.7)}
+.jrenp.sm{min-width:18px;height:17px;padding:0 4px;font-size:10px;margin-left:4px}
+.pjren{border-color:color-mix(in srgb,#d9541e 45%,var(--line));background:linear-gradient(90deg,color-mix(in srgb,#f2a33a 12%,var(--panel)),var(--panel) 70%)}
+.pjren>.pad{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 12px}
+.pjren .renstage.small{width:44px;height:44px;border-radius:12px}.pjren .renstage .renbig{width:30px;height:30px}
+.pjren .grow{min-width:180px;line-height:1.35}
+.pjrenh{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pjrenh .uico{width:16px;height:16px}
+.pjrenl{padding:6px 10px;border-radius:10px;background:rgba(255,170,60,.12);border:1px solid rgba(255,170,60,.35);margin:-2px 0 8px}
+.pjrenl .uico{width:16px;height:16px;vertical-align:-3px}
+.renhead .renstage.small .joblogo{width:58px;height:58px;position:relative;z-index:2;border-radius:12px}
+.jrent{gap:4px}
+.lbr.jrenr{grid-template-columns:40px minmax(0,1fr) auto;cursor:default;padding:6px 10px}
+.lbr.jrenr .nm{white-space:normal}.lbr.jrenr.done{opacity:.6}.lbr.jrenr.me{margin-top:0}
+.pfjren{display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:1px 8px 1px 5px;border-radius:999px;border:1px solid #8a2f10;background:linear-gradient(180deg,#f2a33a,#d9541e);color:#fff7e3;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.pfjren .uico{width:13px;height:13px}
+.cele-art.ren .celepet{border-radius:16px;box-shadow:0 0 26px rgba(255,170,60,.85)}
+.hcard.o-enclume{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e9b93a,0 0 0 6px #7a2a0e,0 0 26px rgba(242,163,58,.85)}

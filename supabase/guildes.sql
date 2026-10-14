@@ -427,9 +427,10 @@ grant execute on function public.adm_guild(bigint, text, text) to authenticated;
 
 -- ---------- 1.0.9 : classement des métiers par guilde (vues sur public.lb_jobs et public.lb_jobs_week de classements.sql) ----------
 -- chaque guilde additionne les métiers de ses membres classés
+-- 1.0.25 « Renaissance des métiers » : chaque renaissance d'un métier compte comme 200 niveaux
 create or replace view public.lb_jobs_guild as
-  select g.id as guild_id, g.name, g.ic, g.col, j.job, count(*)::int as members, sum(j.lvl)::bigint as lvl, sum(j.total)::bigint as total,
-    (array_agg(j.pseudo order by j.lvl desc, j.total desc))[1] as best
+  select g.id as guild_id, g.name, g.ic, g.col, j.job, count(*)::int as members, sum(j.lvl + 200 * j.ren)::bigint as lvl, sum(j.total)::bigint as total,
+    (array_agg(j.pseudo order by j.ren desc, j.lvl desc, j.total desc))[1] as best
   from public.lb_jobs j join public.guild_members gm on gm.user_id = j.user_id join public.guilds g on g.id = gm.guild_id
   group by g.id, g.name, g.ic, g.col, j.job;
 grant select on public.lb_jobs_guild to anon, authenticated;

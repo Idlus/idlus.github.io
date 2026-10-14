@@ -2964,7 +2964,15 @@
     return (c[lvl] = m);
   };
   E.craftBoost = (S, job) => { const J = S.crafts[job], L = J ? J.lvl : 1; return L >= 200 ? 1 : Math.max(1, E.jobXpNeed(L) / (E.craftStep(job) * E.craftTopXp(job, L))); };
-  E.craftXpOf = (S, job, req, base) => Math.max(1, Math.round(base * E.craftXpMult(S, job, req) * E.craftBoost(S, job)));
+  /* 1.0.25 « Renaissance des métiers » : un métier d'artisanat au niveau 200 peut renaître (js/systems.js, E.jobRenaissance).
+     Chaque renaissance donne +30 % d'XP de fabrication et relève le plancher des jets : aucune caractéristique sous 10 % de sa
+     fourchette par renaissance, jets parfaits à la dixième (choix de Mathis 1A 2A). */
+  E.JOB_REN_MAX = 10; E.JOB_REN_XP = 0.3;
+  E.craftRen = (S, job) => Math.max(0, Math.min(E.JOB_REN_MAX, (S.crafts && S.crafts[job] && S.crafts[job].ren) || 0));
+  E.craftRenFloor = (S, job) => Math.min(1, E.craftRen(S, job) / E.JOB_REN_MAX);
+  E.craftXpOf = (S, job, req, base) => Math.max(1, Math.round(base * E.craftXpMult(S, job, req) * E.craftBoost(S, job) * (1 + E.JOB_REN_XP * E.craftRen(S, job))));
+  /* les options de jet d'un objet fabriqué : le plancher de la renaissance, ou celui du Galet s'il est plus haut */
+  const craftRoll = (S, job, roll) => { const f = E.craftRenFloor(S, job); if (!f) return roll || {}; const o = Object.assign({}, roll || {}); o.floor = Math.max(o.floor || 0, f); return o; };
   E.galetFx = () => "Galet inconnu."; // 1.0.6 : bonus d'un Galet ajouté à la fabrication (js/koli.js)
   E.craftItem = (S, tpl, galet) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";
@@ -2975,9 +2983,9 @@
     const gx = galet ? E.galetFx(S, tpl, galet) : null; if (typeof gx === "string") return gx;
     T.craft.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
     if (gx) { S.res[galet]--; if (!S.res[galet]) delete S.res[galet]; }
-    const it = E.rollItem(S, tpl, gx ? gx.roll : {}); craftStow(S, it);
-    if (gx && gx.double && rnd() < gx.double && E.craftRoom(S) > 0) { const it2 = E.rollItem(S, tpl); craftStow(S, it2); E.craftTwin = it2; note(S, `${galet} : un 2e ${T.name} !`, "rare"); }
-    if (E.almChance(S, "craft2") && E.craftRoom(S) > 0) { craftStow(S, E.rollItem(S, tpl)); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
+    const job = T.craft.job; const it = E.rollItem(S, tpl, craftRoll(S, job, gx ? gx.roll : {})); craftStow(S, it);
+    if (gx && gx.double && rnd() < gx.double && E.craftRoom(S) > 0) { const it2 = E.rollItem(S, tpl, craftRoll(S, job)); craftStow(S, it2); E.craftTwin = it2; note(S, `${galet} : un 2e ${T.name} !`, "rare"); }
+    if (E.almChance(S, "craft2") && E.craftRoom(S) > 0) { craftStow(S, E.rollItem(S, tpl, craftRoll(S, job))); note(S, `Fabrication intensive : un 2e ${T.name} !`, "rare"); } // 0.1.39 : Almanax
     craftXp(S, T.craft.job, E.craftXpOf(S, T.craft.job, E.craftReq(tpl), 12 + T.lvl * 3));
     E.emit(S, "craft", { tpl });
     return it;

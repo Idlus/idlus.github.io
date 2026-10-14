@@ -1,6 +1,18 @@
 {
-  "version": "1.0.24.5",
+  "version": "1.0.25",
   "versions": [
+    {
+      "v": "1.0.25",
+      "name": "Renaissance des métiers",
+      "items": [
+        "Un métier d'artisanat au niveau 200 peut renaître : il repart au niveau 1 et gagne +30 % d'XP par fabrication à chaque renaissance, 10 renaissances au plus",
+        "Chaque renaissance relève le plancher des jets : aucune caractéristique d'un objet fabriqué sous 10 % de sa fourchette à la Renaissance I, 20 % à la II… et des jets parfaits à la X. La recette montre les nouvelles fourchettes et la chance d'obtenir un objet Parfait",
+        "Les 6 métiers de forgemagie renaissent aussi, chacun de son côté : +30 % d'XP par rune qui passe, +1 point de succès critique et −0,5 point d'échec critique par renaissance (pas sur les runes Ga). Un métier qui a renu garde la signature et la vitesse des plans",
+        "Coût : 1 million de kamas × le numéro de la renaissance (1 million pour la I, 10 millions pour la X). Bouton « Renaître » sur le bandeau du métier (Artisanat) ou sous le métier (Forgemagie)",
+        "Récompenses : pastille I à X sur le métier, titres « Artisan renaissant » (I), « Main d'or » (V) et « Maître éternel » (X), ornement « Enclume du Phénix » à la première X, succès « Sept vies » (les 7 métiers d'artisanat renés une fois)",
+        "Classement des métiers : par renaissance, puis niveau, puis XP. « Cette semaine » compte l'XP de toutes les vies, renaître ne fait rien perdre. Les guildes comptent 200 niveaux par renaissance"
+      ]
+    },
     {
       "v": "1.0.24.5",
       "name": "Recettes instantanées",

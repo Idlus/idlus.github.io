@@ -160,8 +160,10 @@ create or replace view public.lb_race as
 grant select on public.lb_race to anon, authenticated;
 -- 1.0.8 : classement des métiers : une ligne par compte et par métier (et « tous »), sans les joueurs en vérification
 -- 1.0.9 : + total (xp totale depuis le niveau 1, pour « Encore … XP pour dépasser … ») ; 1.0.19 : métiers montrés convertis (jobs_shown)
+-- 1.0.25 : + ren (renaissances du métier, ou leur somme pour « tous ») : le jeu classe par renaissance, puis niveau, puis XP
 create or replace view public.lb_jobs as
-  select l.user_id, p.pseudo, l.main, l.main_lvl, j.key as job, (j.value->>0)::int as lvl, (j.value->>1)::bigint as xp, c.jj as alljobs, coalesce((j.value->>2)::bigint, 0) as total
+  select l.user_id, p.pseudo, l.main, l.main_lvl, j.key as job, (j.value->>0)::int as lvl, (j.value->>1)::bigint as xp, c.jj as alljobs, coalesce((j.value->>2)::bigint, 0) as total,
+    coalesce((j.value->>4)::int, 0) as ren
   from public.ladder l join public.profiles p on p.id = l.user_id cross join lateral (select public.jobs_shown(l.jobs, l.jobs_cobj) as jj) c cross join lateral jsonb_each(c.jj) j
   where not l.flagged and jsonb_typeof(j.value) = 'array';
 grant select on public.lb_jobs to anon, authenticated;
@@ -191,7 +193,7 @@ set search_path = public
 as $$
 declare
   m jsonb := new.meta; o public.ladder%rowtype; rk int; lv int; al int; su int; pt int; rc int; ps int; qs int; secs numeric; reason text; bad boolean;
-  jb jsonb := '{}'::jsonb; jn text; jl int; jx bigint; jtt bigint; jg text; jsum jsonb := '{}'::jsonb; wnow int; jbase jsonb; jprev jsonb := '{}'::jsonb; jpw int := 0; bt bigint; jgain bigint; jv jsonb; hadrow boolean;
+  jb jsonb := '{}'::jsonb; jn text; jl int; jr int; jx bigint; jtt bigint; jg text; jsum jsonb := '{}'::jsonb; wnow int; jbase jsonb; jprev jsonb := '{}'::jsonb; jpw int := 0; bt bigint; jgain bigint; jv jsonb; hadrow boolean;
   cobj int; conv boolean := false; stale boolean := false;
   jnames constant jsonb := '{"tailleur":"Tailleur","bijoutier":"Bijoutier","cordonnier":"Cordonnier","forgeron":"Forgeron","sculpteur":"Sculpteur","faconneur":"Façonneur","bricoleur":"Bricoleur"}';
   -- 1.0.9 : tous les métiers classés et leur groupe (le total du groupe : tous, tous_recolte, tous_fm)
@@ -231,6 +233,8 @@ begin
       if jsonb_typeof(jv) = 'array' then
         jl := least(greatest(coalesce((jv->>0)::int, 1), 1), 200);
         jx := least(greatest(coalesce((jv->>1)::bigint, 0), 0), 2000000000);
+        -- 1.0.25 « Renaissance des métiers » : 4e valeur envoyée = nombre de renaissances (0 à 10), gardé en 5e ; l'XP totale compte toutes les vies
+        jr := case when jsonb_array_length(jv) >= 4 and jsonb_typeof(jv->3) = 'number' then least(greatest(floor((jv->>3)::numeric)::int, 0), 10) else 0 end;
         if jsonb_array_length(jv) >= 3 then
           jtt := least(greatest(coalesce((jv->>2)::bigint, 0), 0), 1000000000000);
           bt := coalesce((jbase->>jn)::bigint, jtt); -- métier vu pour la première fois cette semaine : il part de là
@@ -239,14 +243,15 @@ begin
           end if;
           jbase := jbase || jsonb_build_object(jn, bt);
           jgain := greatest(0, jtt - bt); -- une partie revenue en arrière ne gagne rien (et la base ne baisse pas)
-          jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx, jtt, jgain));
+          jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx, jtt, jgain) || case when jr > 0 then jsonb_build_array(jr) else '[]'::jsonb end);
         else -- partie encore en 1.0.8 (sans xp totale) : niveau seulement, la semaine reprendra au prochain envoi
           jtt := 0; jgain := 0;
           jb := jb || jsonb_build_object(jn, jsonb_build_array(jl, jx));
         end if;
         jg := jgroup->>jn;
         jsum := jsum || jsonb_build_object(jg, jsonb_build_array(
-          coalesce((jsum->jg->>0)::bigint, 0) + jl, coalesce((jsum->jg->>1)::bigint, 0) + jx, coalesce((jsum->jg->>2)::bigint, 0) + jtt, coalesce((jsum->jg->>3)::bigint, 0) + jgain));
+          coalesce((jsum->jg->>0)::bigint, 0) + jl, coalesce((jsum->jg->>1)::bigint, 0) + jx, coalesce((jsum->jg->>2)::bigint, 0) + jtt, coalesce((jsum->jg->>3)::bigint, 0) + jgain,
+          coalesce((jsum->jg->>4)::bigint, 0) + jr));
       end if;
     end loop;
     jb := jb || jsum;
@@ -264,7 +269,8 @@ begin
     if reason is null and secs < 600 and o.jobs <> '{}'::jsonb and not conv then
       select format('%s : +%s niveaux en %s min', jnames->>k, (jb->k->>0)::int - (o.jobs->k->>0)::int, round(secs / 60)) into reason
       from jsonb_object_keys(jnames) k
-      where jsonb_typeof(jb->k) = 'array' and jsonb_typeof(o.jobs->k) = 'array' and (jb->k->>0)::int - (o.jobs->k->>0)::int > 150 limit 1;
+      where jsonb_typeof(jb->k) = 'array' and jsonb_typeof(o.jobs->k) = 'array' and (jb->k->>0)::int - (o.jobs->k->>0)::int > 150
+        and coalesce((jb->k->>4)::int, 0) = 0 limit 1; -- 1.0.25 : un métier qui a renu remonte bien plus vite (+30 % d'XP par renaissance)
     end if;
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
@@ -300,8 +306,8 @@ begin
     insert into public.firsts (kind, key, label, user_id, pseudo)
       select 'job200', k, format('Premier %s au niveau 200', jnames->>k), new.user_id, p.pseudo
       from jsonb_object_keys(jnames) k cross join public.profiles p
-      where p.id = new.user_id and jsonb_typeof(jb->k) = 'array' and (jb->k->>0)::int >= 200
-        and jsonb_typeof(o.jobs->k) = 'array' and (o.jobs->k->>0)::int < 200
+      where p.id = new.user_id and jsonb_typeof(jb->k) = 'array' and (jb->k->>0)::int >= 200 and coalesce((jb->k->>4)::int, 0) = 0
+        and jsonb_typeof(o.jobs->k) = 'array' and (o.jobs->k->>0)::int < 200 and coalesce((o.jobs->k->>4)::int, 0) = 0 -- 1.0.25 : pas en remontant après une renaissance
       on conflict do nothing;
     -- 1.0.9 : Grand Maître artisan : le premier compte avec les 7 métiers d'artisanat au niveau 200 (en y arrivant)
     if (select count(*) from jsonb_object_keys(jnames) k where jsonb_typeof(jb->k) = 'array' and (jb->k->>0)::int >= 200) = 7
