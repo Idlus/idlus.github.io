@@ -56,6 +56,12 @@ begin
     if done = 1 and w is not null then
       perform hdv_op(w, jsonb_build_object('k', tot * 9000, 'jack', 1),
         'Jackpot du Trool : tu remportes le pot de ' || replace(to_char(tot * 9000, 'FM999,999,999,999'), ',', ' ') || ' kamas (' || tot || ' tickets) !');
+      -- 1.0.30.6 « Grande annonce du Jackpot » : tout le serveur voit le gagnant en plein écran (js/giga.js), puis la ligne
+      -- reste dans le chat Général. Seulement pour un tirage récent (pas pour une vieille heure tirée en retard).
+      if H >= date_trunc('hour', clock_timestamp()) - interval '2 hours' then
+        insert into chat_msgs (ch, user_id, pseudo, kind, data) values ('g', w, ps, 'ann',
+          jsonb_build_object('t', 'jack', 'k', tot * 9000, 'n', tot, 'pl', pl, 'h', floor(extract(epoch from H) * 1000)));
+      end if;
     end if;
   end loop;
 end $$;

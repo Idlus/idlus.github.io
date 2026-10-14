@@ -12,6 +12,8 @@
    3. Chaque joueur connecté la reçoit en direct (js/chat.js → GIGA.onAnn) : plein écran, puis la ligne du Général.
    Sans compte, hors ligne ou en partie solo : rien n'est envoyé (le Dofus reste fêté comme avant, sur l'appareil).
    Le premier exemplaire de chaque Dofus garde aussi son annonce dans les Hauts faits (supabase/chat.sql).
+   1.0.30.6 « Grande annonce du Jackpot » : chaque tirage du Jackpot du Trool s'annonce de la même façon (data.t 'jack',
+   écrit par foire_resolve dans supabase/foire.sql) : le gagnant et le pot en plein écran, puis la ligne du Général.
    ========================================================================== */
 (function () {
   "use strict";
@@ -69,7 +71,7 @@
   const dnameOf = (d) => d.dname || (D.DUNGEONS[d.did] ? D.DUNGEONS[d.did].name : "");
   const imgOf = (id) => (X().dofusImg ? X().dofusImg(id) : `assets/i/${E.DOFUS[id].icon}.png`);
   function onAnn(m) {
-    const d = (m && m.data) || {}; if (!E.DOFUS[d.id] || seen.has(m.id)) return;
+    const d = (m && m.data) || {}; if ((d.t === "jack" ? !(+d.k > 0) : !E.DOFUS[d.id]) || seen.has(m.id)) return;
     seen.add(m.id);
     const at = m.created_at ? Date.parse(m.created_at) : Date.now(); if (Date.now() - at > MAX_AGE) return;
     Q.push({ m, at }); if (!cur) next();
@@ -82,7 +84,24 @@
     cur = x; show(x.m);
     timer = setTimeout(close, SHOW_MS);
   }
+  const isMe = (m) => !!(ON && ON.user && m.user_id === ON.user.id);
+  const hourAt = (ms) => `${new Date(+ms + 3600000).getHours()} h`; // l'heure du tirage : la fin de l'heure jouée
+  function showJack(m) {
+    const d = m.data;
+    let el = $("#giga"); if (!el) { el = document.createElement("div"); el.id = "giga"; document.body.appendChild(el); }
+    el.className = "giga jack"; el.setAttribute("role", "dialog"); el.setAttribute("aria-live", "assertive"); el.setAttribute("aria-label", `Annonce : Jackpot du Trool remporté`); el.dataset.act = "giga-x";
+    el.innerHTML = `<div class="giga-rays"></div><div class="giga-box">
+      <img class="giga-img" src="assets/m/129.png" alt="">
+      <div class="giga-k">${X().IC("bourse")} Jackpot du Trool${d.h ? ` · tirage de ${hourAt(d.h)}` : ""}</div>
+      <div class="giga-t">${nf(d.k)} KAMAS !</div>
+      <div class="giga-who">${isMe(m) ? `<b>C'est toi !</b> Le pot arrive dans ton sac.` : `<b>${h(m.pseudo || "Un joueur")}</b> remporte le pot`}</div>
+      <div class="giga-odd">${nf(d.n)} ticket${+d.n > 1 ? "s" : ""} en jeu${+d.pl > 0 ? ` · ${nf(d.pl)} joueur${+d.pl > 1 ? "s" : ""}` : ""}</div>
+      <div class="giga-s">Prochain tirage dans moins d'une heure, à la Foire du Trool · <span style="white-space:nowrap">se ferme seule après ${SHOW_MS / 1000}&nbsp;s</span></div>
+      <button class="btn sm" data-act="giga-x">Fermer</button></div>`;
+    try { if (window.DX.sndPlay) window.DX.sndPlay("magic"); } catch (e) { /* son coupé */ }
+  }
   function show(m) {
+    if (m.data && m.data.t === "jack") { showJack(m); return; }
     const d = m.data, Df = E.DOFUS[d.id];
     let el = $("#giga"); if (!el) { el = document.createElement("div"); el.id = "giga"; document.body.appendChild(el); }
     el.className = "giga"; el.setAttribute("role", "dialog"); el.setAttribute("aria-live", "assertive"); el.setAttribute("aria-label", `Annonce : ${Df.name} obtenu`); el.dataset.act = "giga-x";
@@ -107,13 +126,17 @@
 
   /* ligne du chat Général (js/chat.js) ; un clic remontre l'annonce */
   function card(m) {
-    const d = m.data || {}, Df = E.DOFUS[d.id]; if (!Df) return "";
+    const d = m.data || {};
+    if (d.t === "jack") { (window.GIGA._last = window.GIGA._last || {})[m.id] = m; return `<div class="ann giga-ann" data-act="giga-show" data-id="${h(m.id)}" data-tip="Revoir l'annonce"><img class="giga-ico" src="assets/ui/bourse.webp" alt=""><span>${txt(m)}</span></div>`; }
+    const Df = E.DOFUS[d.id]; if (!Df) return "";
     (window.GIGA._last = window.GIGA._last || {})[m.id] = m;
     return `<div class="ann giga-ann" data-act="giga-show" data-id="${h(m.id)}" data-tip="Revoir l'annonce"><img class="giga-ico" src="${imgOf(d.id)}" alt=""><span>${txt(m)}</span></div>`;
   }
   function txt(m, plain) {
-    const d = m.data || {}, Df = E.DOFUS[d.id]; if (!Df) return "";
+    const d = m.data || {}, Df = E.DOFUS[d.id];
     const b = (s) => (plain ? s : `<b>${h(s)}</b>`);
+    if (d.t === "jack") return `${b(m.pseudo || "Un joueur")} remporte le Jackpot du Trool : ${b(`${nf(d.k)} kamas`)} (${nf(d.n)} ticket${+d.n > 1 ? "s" : ""}) !`;
+    if (!Df) return "";
     return `${b(m.pseudo || "Un joueur")} obtient le ${b(Df.name)} en battant ${plain ? bossOf(d) : h(bossOf(d))}, stasis ${d.k}${d.odds ? ` (1 chance sur ${nf(d.odds)} par héros)` : ""} !`;
   }
 

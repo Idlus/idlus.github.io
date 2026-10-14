@@ -1,6 +1,14 @@
 {
-  "version": "1.0.30.5",
+  "version": "1.0.30.6",
   "versions": [
+    {
+      "v": "1.0.30.6",
+      "name": "Grande annonce du Jackpot",
+      "items": [
+        "Jackpot du Trool : à chaque tirage, tous les joueurs connectés voient le gagnant et le pot en plein écran, comme pour un Dofus",
+        "L'annonce reste ensuite dans le chat Général. Un clic dessus la remontre"
+      ]
+    },
     {
       "v": "1.0.30.5",
       "name": "Compteur du Jackpot",

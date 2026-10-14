@@ -87,7 +87,7 @@
     C.p.forEach((m) => { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; });
   }
   /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
-  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.kind === "race10")); // 1.0.5 : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
+  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.t === "jack" || m.data.kind === "race10")); // 1.0.5 : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
   /* 0.1.53.7 : mentions « @pseudo ». Surlignées dans le message ; le joueur mentionné voit le message mis en évidence
      et une pastille « @ » sur le chat et le salon, même s'il lit un autre salon. Seules les 3 premières mentions d'un
      message comptent (pas de mention de masse), un joueur ignoré ne prévient pas, et le mode lent du serveur s'applique. */
@@ -144,7 +144,7 @@
     else if (!mine && !C.ign.has(m.user_id) && !(C.open && C.tab === "g")) C.unread++;
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
-    if (m.kind === "ann" && m.data && m.data.t === "giga" && window.GIGA) window.GIGA.onAnn(m); // 1.0.30 : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
+    if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) window.GIGA.onAnn(m); // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
     if (m.kind === "ann" && m.data && m.data.kind === "race10" && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
     if (PING.includes(m.ch || "g") && pingsMe(m) && !(C.open && C.tab === (m.ch || "g"))) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[m.ch || "g"]}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
     paint(true);
@@ -238,7 +238,7 @@
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
-    if (m.kind === "ann" && m.data && m.data.t === "giga" && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
+    if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
     if (m.kind === "ann" && m.data && m.data.kind === "race10") return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
     if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
@@ -262,6 +262,7 @@
       case "lvl200": return t(`${b(d.name || "Un héros")}, ${h(clsName(d.cls))} de ${p}, atteint le niveau 200${d.ren ? " (encore)" : ""} !`);
       case "ren": return t(`${b(d.name || "Un héros")}, ${h(clsName(d.cls))} de ${p}, renaît : Renaissance ${d.n} !`);
       case "dofus": return t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`);
+      case "jack": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} remporte le Jackpot du Trool : ${b(`${(+d.k || 0).toLocaleString("fr-FR")} kamas`)} !`); // 1.0.30.6
       case "giga": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`); // 1.0.30
       case "dsub": return t(`${p} sublime son ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} : Potentiel X !`); // 1.0.30 : Potentiel des Dofus (supabase/collections.sql)
       case "koli": return t(`${p} atteint le grade ${b(["Bronze", "Argent", "Or", "Cristal", "Diamant"][d.g] || "Or")} au Kolizéum (cote ${(+d.cote || 0).toLocaleString("fr-FR")}) !`); // 0.1.44
