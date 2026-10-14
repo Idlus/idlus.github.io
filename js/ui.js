@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.24.2";
+const GAME_VERSION = "1.0.24.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.24.3", name: "Métiers sans lag", items: [
+    "Fabriquer un objet (ou en recevoir un en butin) pouvait figer le jeu plusieurs secondes avec un sac bien rempli : le jeu recalculait d'un coup le meilleur équipement de chaque héros pour la pastille du menu Héros",
+    "Ce calcul donne exactement le même résultat, mais il est beaucoup plus rapide et se fait maintenant au repos, par petits morceaux : la pastille se met à jour un instant plus tard, sans bloquer le jeu",
+    "Page Métiers › Artisanat plus légère : la liste des recettes de chaque métier est rangée une fois pour toutes, les pastilles des métiers et le « Mieux que ce que porte » se calculent plus vite",
+  ] },
   { v: "1.0.24.2", name: "Coiffes et capes visibles", items: [
     "Les héros portent enfin leur coiffe et leur cape à l'écran (les 37 coiffes et 27 capes qui ont une apparence), avec leur tête et leurs couleurs",
     "Les couleurs choisies dans Héros › Apparence s'affichent aussi : avant, l'image ne se chargeait pas et le héros gardait ses couleurs d'origine",
@@ -4428,7 +4433,7 @@ function teamAlerts(force) {
   const v = [];
   S.chars.forEach((c) => {
     if (!c.autoStat && c.pts > 0) v.push({ c, k: "pts", t: `${c.pts} point${c.pts > 1 ? "s" : ""} à répartir` });
-    if (c.inTeam && !c.job && EQ_SLOTS.some((s) => slotUpgrade(c, s))) v.push({ c, k: "gear", t: "Meilleur équipement dispo" });
+    if (c.inTeam && !c.job && gearAlert(c)) v.push({ c, k: "gear", t: "Meilleur équipement dispo" });
     const P = E.petOf && E.petOf(S, c); if (P && P.hungry) v.push({ c, k: "pet", t: "Familier affamé" });
   });
   alertCache = { t: Date.now(), v }; return v;
@@ -4627,25 +4632,59 @@ function equipBlocked(c, eq, s, it) {
   if (T.leg && (clash(eq, (x) => ITEMS[x.tpl].leg) || clash(c.equip, (x) => ITEMS[x.tpl].leg))) return true;
   return !!(it.exo && one.includes(it.exo) && (clash(eq, (x) => x.exo === it.exo) || clash(c.equip, (x) => x.exo === it.exo)));
 }
+const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {});
+const planFresh = (c) => { const hit = planMemo.get(c.id); return !!hit && hit.key === planKey(c); };
 function gearPlan(c) {
-  const key = c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {});
-  const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
+  const key = planKey(c); const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
+  const g = planSteps(c, key); let r; while (!(r = g.next()).done); return r.value;
+}
+/* le calcul lui-même, découpé en étapes (une par panoplie essayée) pour pouvoir le faire par petits morceaux quand le jeu est au repos */
+function* planSteps(c, key) {
+  /* 1.0.24.3 : le score de chaque objet (et de chaque palier de panoplie) n'est calculé qu'une fois par plan. Avant, chaque essai recalculait
+     tout l'équipement : avec un sac plein et 8 héros, le jeu se figeait plusieurs secondes à chaque nouvel objet (fabrication, butin). Même calcul, même ordre */
+  const isc = new Map(), bsc = new Map();
+  const sco = (it) => { if (!it) return 0; let v = isc.get(it); if (v === undefined) isc.set(it, (v = itemScore(c, it))); return v; };
+  const gearScore = (_c, eq) => { let sc = 0; const n = {};
+    for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += sco(it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
+    for (const z in n) { const v = setSc(z, n[z]); if (v) sc += v; } return sc; };
+  function setSc(z, k) { if (!k) return 0; const bk = z + ":" + k; let v = bsc.get(bk); if (v === undefined) { const b = E.setBonus(z, k); bsc.set(bk, (v = b ? itemScore(c, { stats: b }) : 0)); } return v; }
+  const itemScore_ = sco;
   const taken = new Set(); S.chars.forEach((x) => { if (x !== c) Object.values(x.equip).forEach((u) => taken.add(u)); });
   const pool = {}; for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (!T.slot || T.lvl > c.lvl || taken.has(it.uid)) continue; (pool[T.slot] = pool[T.slot] || []).push(it); }
+  /* 1.0.24.3 : des exemplaires identiques (même objet, mêmes jets) donnent le même résultat : au-delà de 2 (deux anneaux), les suivants ne
+     changent rien au plan et ne sont plus essayés. Les objets portés par le héros sont toujours gardés */
+  const mine = new Set(Object.values(c.equip));
+  for (const k in pool) { const seen = new Map(); pool[k] = pool[k].filter((it) => { if (mine.has(it.uid)) return true;
+    const sig = it.tpl + "|" + (it.exo || "") + "|" + (it.wel || "") + "|" + (it.welh || "") + "|" + JSON.stringify(it.stats); const n = seen.get(sig) || 0; seen.set(sig, n + 1); return n < 2; }); }
   const okIn = (eq, s, it) => { if (equipBlocked(c, eq, s, it)) return false; const k = slotKind(s); if (k !== "anneau" && k !== "dofus") return true; return !Object.entries(eq).some(([sl, u]) => sl !== s && u !== it.uid && S.items[u] && S.items[u].tpl === it.tpl); };
   const put = (eq, s, uid) => { for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; };
+  /* candidats rangés une fois : score, panoplie, et s'il faut vérifier les règles d'E.equip (légendaire, exo PA/PM/PO, anneau ou Dofus en double) */
+  const one = E.EXO_ONE || ["pa"]; const cand = {};
+  for (const k in pool) cand[k] = pool[k].map((it) => { const T = ITEMS[it.tpl]; return { it, uid: it.uid, tpl: it.tpl, sc: sco(it), z: T.set || null, chk: !!(T.leg || (it.exo && one.includes(it.exo))) }; });
   const fill = (eq, lock) => { for (let pass = 0; pass < 3; pass++) { let moved = false;
-    for (const s of EQ_SLOTS) { if (lock && lock.has(s)) continue; const base = gearScore(c, eq); let best = 0, uid = null;
-      for (const it of pool[slotKind(s)] || []) { if (eq[s] === it.uid || !okIn(eq, s, it)) continue; const t = Object.assign({}, eq); put(t, s, it.uid); const g = gearScore(c, t) - base; if (g > best + 0.01) { best = g; uid = it.uid; } }
+    for (const s of EQ_SLOTS) { if (lock && lock.has(s)) continue; let best = 0, uid = null;
+      // gain d'un essai = gearScore(équipement essayé) − gearScore(équipement), calculé par différence (objet remplacé, paliers des panoplies touchées)
+      const n = {}, worn = new Set(), others = []; for (const k in eq) { const u = eq[k], x = S.items[u]; if (!x) continue; worn.add(u); if (k !== s) others.push([u, x.tpl]); const z = ITEMS[x.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
+      const old = S.items[eq[s]], so = sco(old); const zo = old ? ITEMS[old.tpl].set || null : null; const kind = slotKind(s), dup = kind === "anneau" || kind === "dofus";
+      const dOut = zo ? setSc(zo, n[zo] - 1) - setSc(zo, n[zo]) : 0; const dIn = new Map();
+      for (const C of cand[kind] || []) { const u = C.uid; if (eq[s] === u) continue;
+        if (C.chk && equipBlocked(c, eq, s, C.it)) continue;
+        if (dup) { let bad = false; for (const [ou, ot] of others) if (ou !== u && ot === C.tpl) { bad = true; break; } if (bad) continue; }
+        const already = worn.has(u); const zn = already ? null : C.z; let g = (already ? 0 : C.sc) - so;
+        if (zo !== zn) { g += dOut; if (zn) { let d = dIn.get(zn); if (d === undefined) dIn.set(zn, (d = setSc(zn, (n[zn] || 0) + 1) - setSc(zn, n[zn] || 0))); g += d; } }
+        if (g > best + 0.01) { best = g; uid = u; } }
       if (uid && best > 0.5) { put(eq, s, uid); moved = true; } }
     if (!moved) break; } return eq; };
   let plan = fill(Object.assign({}, c.equip)), planSc = gearScore(c, plan);
   const sets = new Set(); Object.values(pool).forEach((L) => L.forEach((it) => ITEMS[it.tpl].set && SETS[ITEMS[it.tpl].set] && sets.add(ITEMS[it.tpl].set)));
+  const bySet = {}; for (const kind in pool) for (const it of pool[kind]) { const z = ITEMS[it.tpl].set; if (z) ((bySet[z] = bySet[z] || {})[kind] = bySet[z][kind] || []).push(it); }
   for (const z of sets) {
+    yield;
     const eq = Object.assign({}, c.equip); const lock = new Set();
-    for (const kind in pool) { const L = pool[kind].filter((it) => ITEMS[it.tpl].set === z).sort((x, y) => itemScore(c, y) - itemScore(c, x)); if (!L.length) continue;
+    for (const kind in pool) { const L = ((bySet[z] || {})[kind] || []).slice().sort((x, y) => itemScore_(y) - itemScore_(x)); if (!L.length) continue;
       const slots = EQ_SLOTS.filter((s) => slotKind(s) === kind);
-      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore(c, S.items[eq[x]]) - itemScore(c, S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
+      for (const it of L) { const s = slots.filter((x) => !lock.has(x) && okIn(eq, x, it)).sort((x, y) => itemScore_(S.items[eq[x]]) - itemScore_(S.items[eq[y]]))[0]; if (!s) break; put(eq, s, it.uid); lock.add(s); } }
+    if (!lock.size) continue; // aucune pièce posée : même départ que le premier plan, même résultat
     fill(eq); const sc = gearScore(c, eq); if (sc > planSc + 0.5) { plan = eq; planSc = sc; }
   }
   const cur = gearScore(c, c.equip); if (planSc <= cur * 1.02 + 1) plan = Object.assign({}, c.equip);
@@ -4654,6 +4693,27 @@ function gearPlan(c) {
 /* meilleur objet pour un emplacement selon le plan (pastille verte « mieux dans le sac ») */
 function bestFor(c, s) { const u = gearPlan(c)[s]; return u && u !== c.equip[s] ? u : null; }
 const slotUpgrade = (c, s) => !!bestFor(c, s);
+/* 1.0.24.3 : pastille « Meilleur équipement dispo » (menu Héros, page Équipe). Quand un objet arrive (fabrication, butin), le plan de chaque
+   héros est refait au repos, par petits morceaux ; en attendant, la pastille garde sa dernière valeur. Le jeu ne se fige plus. */
+const gearLast = new Map(), planJobs = new Map(); let planTimer = 0;
+function gearAlert(c) {
+  if (planFresh(c)) { const v = EQ_SLOTS.some((s) => slotUpgrade(c, s)); gearLast.set(c.id, v); return v; }
+  if (!planJobs.has(c.id)) planJobs.set(c.id, null); planKick(); return !!gearLast.get(c.id);
+}
+function planKick() { if (planTimer) return; planTimer = window.requestIdleCallback ? requestIdleCallback(planWork, { timeout: 1000 }) : setTimeout(() => planWork(null), 60); }
+function planWork(dl) {
+  planTimer = 0; const end = performance.now() + (dl && dl.timeRemaining ? Math.max(4, Math.min(12, dl.timeRemaining())) : 8); let done = false;
+  while (planJobs.size && performance.now() < end) {
+    const [id, job] = planJobs.entries().next().value; const c = S && char(id);
+    if (!c) { planJobs.delete(id); continue; }
+    const key = planKey(c); if (planFresh(c)) { planJobs.delete(id); done = true; continue; }
+    const J = job && job.key === key ? job : { key, gen: planSteps(c, key) }; planJobs.set(id, J); // la partie a changé pendant le calcul : on repart de zéro
+    let r; do { r = J.gen.next(); } while (!r.done && performance.now() < end);
+    if (r.done) { planJobs.delete(id); gearLast.set(id, EQ_SLOTS.some((s) => slotUpgrade(c, s))); done = true; }
+  }
+  if (done && S) { alertCache.t = 0; renderNav(); }
+  if (planJobs.size) planKick();
+}
 function equipBest(c) { const plan = gearPlan(c); let n = 0;
   for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !E.equip(S, c.id, plan[s], s)) n++;
   return n; }
@@ -5623,9 +5683,24 @@ function filterBar(ctx, F, o) {
     ${chips.length ? `<div class="row small" style="gap:6px">${chips.map(([k, t]) => `<button class="pfchip" data-act="fltclr" data-ctx="${ctx}" data-k="${k}">${h(t)} <b>✕</b></button>`).join("")}<button class="btn sm ghost" data-act="fltall" data-ctx="${ctx}">Tout effacer</button></div>` : ""}`;
 }
 /* ---------- Artisanat ---------- */
+/* 1.0.24.3 « Métiers sans lag » : la liste des recettes d'un métier ne change pas pendant la partie : elle est rangée une fois par métier
+   (avant : les 2 500 objets étaient relus pour chaque métier à chaque affichage) */
+const RECIPES = {};
+function recipesRaw(job) {
+  if (RECIPES[job]) return RECIPES[job];
+  return (RECIPES[job] = job === "bricoleur" ? Object.entries(SPECIAL_CRAFTS).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl, R }))
+    : Object.entries(ITEMS).filter(([, T]) => T.craft && T.craft.job === job).map(([id, T]) => ({ k: "tpl", id, T, name: T.name, lvl: T.lvl, ing: T.craft.ing, req: E.craftReq(id) })));
+}
 function recipesOf(job) {
-  if (job === "bricoleur") return Object.entries(SPECIAL_CRAFTS).filter(([, R]) => !(R.idol && E.idolOwned(S, R.idol))).map(([n, R]) => ({ k: "special", id: n, name: n, lvl: R.lvl, ing: R.ing, req: R.lvl }));
-  return Object.entries(ITEMS).filter(([, T]) => T.craft && T.craft.job === job).map(([id, T]) => ({ k: "tpl", id, T, name: T.name, lvl: T.lvl, ing: T.craft.ing, req: E.craftReq(id) }));
+  const L = recipesRaw(job); return (job === "bricoleur" ? L.filter((r) => !(r.R.idol && E.idolOwned(S, r.R.idol))) : L).map((r) => Object.assign({}, r));
+}
+/* nombre de fabrications possibles, comme E.craftCount, mais la place du sac n'est comptée qu'une fois pour toute la liste */
+const recCount = (r, room) => (r.k === "tpl" ? E.craftMax(S, r.ing, room) : E.craftMax(S, r.ing, r.R.unique ? 1 : Infinity));
+/* pastille des métiers : nombre de recettes fabricables, sans construire la liste complète */
+function recCanN(job, room) {
+  const L = (S.crafts[job] || { lvl: 1 }).lvl; let n = 0;
+  for (const r of recipesRaw(job)) if (L >= r.req && !(r.R && r.R.idol && E.idolOwned(S, r.R.idol)) && recCount(r, room) > 0) n++;
+  return n;
 }
 const recMiss = (r) => r.ing.filter(([n, q]) => (S.res[n] || 0) < q).length;
 /* le héros (parmi who) pour qui l'objet, au jet moyen, ferait nettement mieux que ce qu'il porte */
@@ -5633,12 +5708,16 @@ function recFor(r, who) {
   if (!r.T || r.T.slot === "dofus") return null;
   const fake = { tpl: r.id, stats: Object.fromEntries(Object.entries(r.T.stats).map(([k, [a, b]]) => [k, Math.round((a + b) / 2)])) };
   const slots = r.T.slot === "anneau" ? ["anneau1", "anneau2"] : [r.T.slot];
-  for (const c of who) { if (r.T.lvl > c.lvl || !c.equip) continue; const cur = Math.min(...slots.map((s) => itemScore(c, S.items[c.equip[s]]))); if (itemScore(c, fake) > cur * 1.05 + 1) return c; }
+  for (const c of who) { if (r.T.lvl > c.lvl || !c.equip) continue; const cur = Math.min(...slots.map((s) => curScore(c, s))); if (itemScore(c, fake) > cur * 1.05 + 1) return c; }
   return null;
 }
+/* score de ce que porte un héros sur un emplacement, gardé le temps d'un affichage (recFor le demandait pour chaque recette) */
+let curSc = null;
+function curScore(c, s) { const k = c.id + ":" + s + ":" + (c.equip[s] || ""); if (!curSc) { curSc = new Map(); setTimeout(() => (curSc = null), 0); }
+  let v = curSc.get(k); if (v === undefined) curSc.set(k, (v = itemScore(c, S.items[c.equip[s]]))); return v; }
 function recBase(job) {
-  const J = S.crafts[job] || { lvl: 1 }; const fav = S.settings.recFav || {};
-  return recipesOf(job).map((r) => { r.miss = recMiss(r); r.okLvl = J.lvl >= r.req; r.n = r.miss || !r.okLvl ? 0 : E.craftCount(S, r.k, r.id); r.fav = !!fav[r.id]; return r; });
+  const J = S.crafts[job] || { lvl: 1 }; const fav = S.settings.recFav || {}; const room = E.craftRoom(S);
+  return recipesOf(job).map((r) => { r.miss = recMiss(r); r.okLvl = J.lvl >= r.req; r.n = r.miss || !r.okLvl ? 0 : recCount(r, room); r.fav = !!fav[r.id]; return r; });
 }
 function craftList(job) {
   const F = fltOf("met"); let rs = recBase(job); const q = E.searchNorm(F.q);
@@ -5699,7 +5778,7 @@ function recQtyLive(i, commit) {
 }
 function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
 function craftHtml() {
-  const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const F = fltOf("met");
+  const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const F = fltOf("met"); const room = E.craftRoom(S);
   const rs = craftList(job);
   // 1.0.7.6 : la recette qu'on vient de fabriquer reste ouverte même si elle sort de la liste filtrée (« Fabricables », « il manque 1 »…)
   const kept = ui.recStick && ui.recStick === ui.recSel && !rs.some((r) => r.id === ui.recSel) ? recBase(job).find((r) => r.id === ui.recSel) : null;
@@ -5711,7 +5790,7 @@ function craftHtml() {
   const list = rs.slice(0, 60).map((r) => `<button class="prec ${r.id === ui.recSel ? "on" : ""}" data-act="recsel" data-id="${h(r.id)}"><span class="icobox">${im(r.T ? itemImg(r.id) : resImg(r.id), "", r.name)}</span><span class="grow"><b>${r.fav ? "★ " : ""}${h(r.name)}</b>${r.for ? ` <span class="pdot" data-tip="Mieux que ce que porte ${h(r.for.name)}"></span>` : ""}<br><span class="xs muted">niv. ${r.lvl}${(() => { if (!r.okLvl) return ""; const b = (r.T ? 12 : 20) + r.lvl * 3, x = E.craftXpOf(S, job, r.req, b), m = E.craftXpMult(S, job, r.req); return m >= 1 ? "" : ` · <b class="minus">${x <= 1 ? "1 XP" : `XP −${Math.round((1 - m) * 100)} %`}</b>`; })()}${r.T && r.T.set && SETS[r.T.set] ? " · " + h(SETS[r.T.set].name) : ""}</span></span>${!r.okLvl ? `<span class="tag soft">métier ${r.req}</span>` : r.miss ? `<span class="tag warn">il manque ${r.miss}</span>` : r.n ? `<span class="tag good">×${fmt(r.n)}</span>` : `<span class="tag warn">${r.k === "tpl" ? "sac plein" : "déjà obtenu"}</span>`}</button>`).join("");
   const empty = `<div class="empty">${F.mode !== "all" ? `Rien à fabriquer avec ces filtres. <button class="btn sm" data-act="fltset" data-ctx="met" data-k="mode" data-v="all">Voir toutes les recettes</button>` : "Aucune recette."}</div>`;
   return `${dayBar("met")}
-    <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recBase(id).filter((r) => r.n > 0).length; return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
+    <div class="pjobchips">${Object.entries(CRAFT_JOBS).map(([id, c]) => { const L = (S.crafts[id] || {}).lvl || 1; const n = recCanN(id, room); return `<button data-act="craftjob" data-v="${id}" aria-pressed="${job === id}"><b>${c.name}</b><span class="num xs">niv. ${L}</span>${n ? `<span class="pcnt" data-tip="${n} recette${n > 1 ? "s" : ""} fabricable${n > 1 ? "s" : ""}">${n}</span>` : ""}</button>`; }).join("")}</div>
     <div class="pjobxp small"><b>${CRAFT_JOBS[job].name} niv. ${J.lvl}</b><div class="bar xp thin grow"><i style="width:${pct(J.xp, E.jobXpNeed(J.lvl))}%"></i></div><span class="num xs muted">${fmt(J.xp)} / ${fmt(E.jobXpNeed(J.lvl))} XP</span>${ON && ON.enabled ? `<button class="pchip jlb-go" data-act="lb-jobgo" data-v="${job}" data-tip="Classement des joueurs en ${h(CRAFT_JOBS[job].name)}">${IC("couronne")} Classement</button>` : ""}</div>
     ${filterBar("met", F, { ph: "Nom de l'objet ou d'une ressource…", slots: job === "bricoleur" ? null : CRAFT_JOBS[job].slots, stats: stats.length ? stats : null, sets, cid: "Pour un héros", sort: [["useful", "Tri : utiles puis niveau ↓"], ["lvl", "Tri : niveau ↓"], ["lvlup", "Tri : niveau ↑"], ["name", "Tri : nom"]] })}
     <div class="row small" style="gap:6px"><div class="seg">${[["near", "Fabricables et presque"], ["can", "Fabricables"], ["all", "Toutes"]].map(([v, n]) => `<button data-act="fltset" data-ctx="met" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div>

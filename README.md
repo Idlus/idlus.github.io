@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.24.3 « Métiers sans lag »
+
+Mathis (14/10/2026, « les métiers de craft me font lag de zinzin »). Cause : chaque nouvel objet dans le sac (fabrication, butin) invalidait le plan d'équipement de tous les héros (gearPlan, pastille « Meilleur équipement dispo » du menu Héros, recalculée à chaque affichage) ; avec ~950 objets et 8 héros, un seul affichage prenait 88 s dans Chromium. gearPlan calcule maintenant le score de chaque objet et de chaque palier de panoplie une fois par plan, évalue chaque essai par différence, n'essaie plus au-delà de 2 exemplaires identiques et saute les essais de panoplie sans pièce posée (plans identiques vérifiés sur la même partie) ; teamAlerts le fait au repos (requestIdleCallback, par panoplie essayée). Artisanat : recettes par métier rangées une fois (recipesRaw), place du sac comptée une fois, pastilles des métiers sans liste complète (recCanN), score porté mis en cache (curScore). Affichage d'un métier : ~100 → ~40 ms.
+
 ## 1.0.24.2 « Coiffes et capes visibles »
 
 Mathis (14/10/2026, « les 37 coiffes et 27 capes ne sont pas visibles actuellement », carte « DofusDB partout »). Le moteur de rendu d'Ankama (static.ankama.com/dofus/renderer) répond 403 aux images demandées depuis idlus.github.io : les héros avec une coiffe, une cape ou des couleurs choisies retombaient sur l'image locale. `lookUrl` (js/ui.js) envoie la même description d'apparence à renderer.dofusdb.fr/look (tête, couleurs, coiffe, cape), qui l'accepte depuis le jeu et se met en cache longtemps ; cache des images renouvelé (media-v10) pour oublier les réponses 403 gardées.

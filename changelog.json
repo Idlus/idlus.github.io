@@ -1,6 +1,15 @@
 {
-  "version": "1.0.24.2",
+  "version": "1.0.24.3",
   "versions": [
+    {
+      "v": "1.0.24.3",
+      "name": "Métiers sans lag",
+      "items": [
+        "Fabriquer un objet (ou en recevoir un en butin) pouvait figer le jeu plusieurs secondes avec un sac bien rempli : le jeu recalculait d'un coup le meilleur équipement de chaque héros pour la pastille du menu Héros",
+        "Ce calcul donne exactement le même résultat, mais il est beaucoup plus rapide et se fait maintenant au repos, par petits morceaux : la pastille se met à jour un instant plus tard, sans bloquer le jeu",
+        "Page Métiers › Artisanat plus légère : la liste des recettes de chaque métier est rangée une fois pour toutes, les pastilles des métiers et le « Mieux que ce que porte » se calculent plus vite"
+      ]
+    },
     {
       "v": "1.0.24.2",
       "name": "Coiffes et capes visibles",
