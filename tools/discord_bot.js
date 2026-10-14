@@ -10,6 +10,8 @@
    node tools/discord_bot.js captures <dossier>                       → publie les images du dossier (png, jpg, webp, gif ; 10 par message) dans le salon DISCORD_SALON (#captures par défaut), avec le texte DISCORD_TEXTE au-dessus
    node tools/discord_bot.js suggestions <idees.json>                 → publie dans le forum #idées les idées envoyées depuis le jeu (un fil par idée, avec son tag) ; écrit dans DISCORD_SORTIE la liste [{ id, url }] des idées publiées
    node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
+   node tools/discord_bot.js notes <fichier.md>                       → publie dans le salon DISCORD_SALON (#note-de-mise-a-jour par défaut) un long patch note découpé en messages
+                                                                        (séparateurs « ════════ Message N/M … ════════ », 2 000 caractères au plus chacun), dans l'ordre, sans mention ; un message déjà présent n'est pas renvoyé
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, norm, guildId, channelId, roleId } = require("./discord_api.js");
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
@@ -150,6 +152,20 @@ async function main() {
     const role = roleName === "aucun" ? null : await roleId(gid, roleName);
     await api("POST", `/channels/${ch}/messages`, { content: (role ? `<@&${role}> ` : "") + text, allowed_mentions: { roles: role ? [role] : [] } });
     console.log("Annonce publiée :", text.length, "caractères");
+  } else if (cmd === "notes") {
+    const parts = fs.readFileSync(file, "utf8").split(/^════════ Message \d+\/\d+[^\n]*\n/m).slice(1).map((x) => x.trim()).filter(Boolean);
+    if (!parts.length) { console.log("Aucun message trouvé (séparateurs « ════════ Message N/M … ════════ » attendus)."); process.exit(1); }
+    const long = parts.findIndex((x) => x.length > 2000); if (long >= 0) { console.log(`Message ${long + 1} trop long : ${parts[long].length} caractères (2 000 au plus).`); process.exit(1); }
+    const salon = (process.env.DISCORD_SALON || "note-de-mise-a-jour").trim();
+    if (DRY) return parts.forEach((x, i) => console.log(`[#${salon} · ${i + 1}/${parts.length} · ${x.length} caractères]\n${x}\n`));
+    const gid = await guildId(); const ch = await channelId(gid, salon);
+    if (!ch) { console.log("Salon introuvable :", salon); process.exit(1); }
+    const last = await api("GET", `/channels/${ch}/messages?limit=50`); let n = 0;
+    for (const x of parts) {
+      if (last.some((m) => (m.content || "").startsWith(x.slice(0, 80)))) { console.log("Déjà publié :", x.slice(0, 60)); continue; }
+      await api("POST", `/channels/${ch}/messages`, { content: x, allowed_mentions: { parse: [] } }); n++; await new Promise((r) => setTimeout(r, 1200));
+    }
+    console.log(`Patch note publié dans #${salon} : ${n} message(s) sur ${parts.length}`);
   } else if (cmd === "sondage") {
     // Publie une série de sondages Discord (vrais sondages, votes intégrés) décrits dans un fichier JSON : { salon, categorie, sujet, duree_heures, intro, sondages: [{ question, reponses: [{ emoji, text }] }] }.
     const data = JSON.parse(fs.readFileSync(file || __dirname + "/sondages/expedition.json", "utf8"));

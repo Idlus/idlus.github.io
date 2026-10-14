@@ -1,0 +1,25 @@
+# Publie un long patch note (fichier de tools/patch-notes, découpé en messages) dans un salon Discord (lancement manuel). Nécessite le secret DISCORD_BOT_TOKEN.
+name: Patch note sur Discord
+on:
+  workflow_dispatch:
+    inputs:
+      fichier:
+        description: "Fichier du patch note (par exemple tools/patch-notes/1.0.30.md)"
+        required: true
+        type: string
+      salon:
+        description: "Salon Discord"
+        type: string
+        default: note-de-mise-a-jour
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node tools/discord_bot.js notes "$FICHIER"
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_SALON: ${{ inputs.salon }}
+          FICHIER: ${{ inputs.fichier }}
