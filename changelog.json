@@ -1,6 +1,14 @@
 {
-  "version": "1.0.25.8",
+  "version": "1.0.25.9",
   "versions": [
+    {
+      "v": "1.0.25.9",
+      "name": "Vérification plus juste",
+      "items": [
+        "Les joueurs qui montent vite une équipe de nouvelles recrues (avec le Sablier, ou après une coupure de connexion) ne sont plus retirés des classements par erreur",
+        "Une partie retouchée est toujours repérée"
+      ]
+    },
     {
       "v": "1.0.25.8",
       "name": "Jeu fluide avec une grosse banque",

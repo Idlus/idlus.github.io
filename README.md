@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.9 « Vérification plus juste »
+
+Choix de Mathis 1A 2A (fil « en vérif », 14/10/2026). Le serveur (`ladder_from_save`, supabase/classements.sql) met un joueur « en vérification » si son niveau d'équipe monte de plus de 60 niveaux + 1 par minute depuis l'envoi précédent. Simulation : un héros niveau 60 avec 7 recrues niveau 1 gagne ~77 niveaux en 2 min au Sablier ×3 (limite 62), ~84 en 5 min sans Sablier (limite 65) : une coupure de connexion pendant le jeu suffisait à le signaler. Nouvelle limite : 120 niveaux + 15 par minute (2 min : 150, 10 min : 270). Une partie retouchée (héros mis au niveau 200) saute de centaines de niveaux et reste repérée. Règles des métiers et du temps de jeu inchangées (2A).
+
 ## 1.0.25.8 « Jeu fluide avec une grosse banque »
 
 Retour d'un joueur relayé par Mathis (14/10/2026, « je lag bcp sur tous les onglets … c ptet lié à ma banque »). Mesures (Chromium, partie de test : 2 376 ressources en banque, 900 objets dans le sac, coffre plein, 13 héros niveau 180, un objet toutes les 2 s) : avant 1.0.24.3, un gel de 58 s sur l'Accueil ; depuis, aucune tâche longue sur Accueil, Équipe, Défi, Kolizéum, Encyclopédie. Restait : textes du haut réécrits à chaque tour de boucle (120 ms) même inchangés, d'où une remise en page complète 8 fois par seconde (setTxt) ; estimation de la bourse du Défi (defiSim complet, ≈ 0,5 s) faite au repos par pas (defiEstimate) ; E.koliChanceAsync rend la main au milieu d'un combat (un combat = 30 à 50 ms d'un bloc) ; plan d'équipement en coulisses au plus toutes les 20 s par héros (PLAN_GAP).

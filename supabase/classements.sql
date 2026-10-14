@@ -258,7 +258,9 @@ begin
   end if;
   if hadrow then
     secs := greatest(60, extract(epoch from (now() - o.updated_at)));
-    if lv - o.level - greatest(0, rc - o.rec) > 60 + secs / 60 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
+    -- 1.0.25.9 « Vérification plus juste » : 120 niveaux + 15 par minute (avant 60 + 1 par minute : des recrues montées au Sablier
+    -- pendant une coupure de connexion de 2 min dépassaient la limite ; une partie retouchée saute toujours de centaines de niveaux)
+    if lv - o.level - greatest(0, rc - o.rec) > 120 + secs / 4 then reason := format('+%s niveaux en %s min', lv - o.level, round(secs / 60));
     elsif al - o.album > 10 + secs / 300 then reason := format('+%s âmes en %s min', al - o.album, round(secs / 60));
     elsif pt + 120 < o.playtime then reason := 'temps de jeu en baisse';
     end if;
