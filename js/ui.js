@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.21";
+const GAME_VERSION = "1.0.21.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.21.1", name: "Absence en donjon", items: [
+    "Hors ligne, un donjon ne continue pas : votre équipe chasse dans sa dernière zone de chasse (et suit la chasse itinérante si elle est active)",
+    "Le résumé « Pendant votre absence » le dit maintenant clairement et nomme la zone où l'équipe a chassé, pour savoir d'où viennent les objets obtenus",
+  ] },
   { v: "1.0.21", name: "Havre-Sac en accueil", items: [
     "L'accueil est maintenant ton Havre-Sac : le bandeau s'appelle « Havre-Sac de <ton héros> » et montre tes bonus d'expérience, de butin, de kamas et l'Autel des Douze en pastilles (un clic ouvre le détail et les plafonds)",
     "Nouveau bloc « Ma maison » sous « Aujourd'hui » : une tuile par pièce avec son niveau, son bonus, les meubles placés (le boss pour un trophée) et les places libres ; « Améliorer » se fait directement depuis la tuile, en vert quand tu as les kamas, et la tuile se dore quand une amélioration ou un meuble attend",
@@ -6074,6 +6078,7 @@ function offlineSheet(r) {
   const res = Object.entries(r.res).sort((a, b) => b[1] - a[1]);
   openSheet(`<h2>Pendant votre absence</h2>
     <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a continué à ${Math.round(E.OFFLINE_RATE * 100 + E.bonus(S, "offrate"))} % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : "Votre équipe ne chassait pas ; seuls les héros en récolte ont travaillé."}</p>
+    ${r.fights && r.zone ? `<p class="small">${IC("carte")} ${r.dungeon ? `Le donjon (${h(r.dungeon)}) ne continue pas hors ligne : votre équipe a chassé dans <b>${h(r.zone)}</b>, sa dernière zone de chasse.` : `Zone de chasse : <b>${h(r.zone)}</b>.`}</p>` : ""}
     ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
     ${r.roamed && r.roamed.length ? `<p class="small">${G("star")} Chasse itinérante : ${r.roamed.map(h).join(" → ")}</p>` : ""}

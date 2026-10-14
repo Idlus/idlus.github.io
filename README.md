@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.21.1 « Absence en donjon »
+
+Hors ligne, un donjon ne continue pas : l'équipe chasse dans sa dernière zone de chasse. Le résumé « Pendant votre absence » le dit et nomme la zone.
+
 ## 1.0.21 « Havre-Sac en accueil »
 L'accueil est le Havre-Sac : bandeau « Havre-Sac de <héros> » avec les bonus en pastilles, bloc « Ma maison » (une tuile par pièce, amélioration sur place, meubles placés, places libres) sous « Aujourd'hui », trois lignes (meubles à placer, trophées de boss, boutique) qui ouvrent la page détaillée ; onglet Accueil renommé Havre-Sac, plus d'entrée Artisanat › Havre-Sac. Choix de Mathis 1A 2B 3A.
 ## 1.0.20 « Trophées passifs »

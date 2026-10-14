@@ -36,3 +36,10 @@ console.log("ok - un tirage par héros");
   E.ITEM_DROP_SCALE = 1; E.events.length = 0;
   assert.ok(first >= 1, "nouvel équipement annoncé"); assert.strictEqual(again, 0, "pas d'annonce pour un équipement déjà obtenu"); }
 console.log("ok - annonce des nouveaux équipements");
+
+// 5. Hors ligne dans un donjon : le donjon ne continue pas, l'équipe chasse dans sa zone et le résumé le dit.
+{ const S = mk(4); E.subUnlocked = () => true; E.startHunt(S, "cav_servitude"); S.stats.recent = Array.from({ length: 5 }, () => ({ d: 20, w: 1 }));
+  S.dungeon = { id: "antre_blop_multicolore", room: 0, stasis: 1 }; const r = E.catchUp(S, 3600);
+  assert.ok(r.fights > 0, "chasse hors ligne"); assert.strictEqual(r.zone, E.SUBS.cav_servitude.name); assert.ok(/Blop/.test(r.dungeon), "donjon nommé");
+  assert.ok(S.dungeon && S.dungeon.id === "antre_blop_multicolore", "le donjon est retrouvé au retour"); }
+console.log("ok - hors ligne dans un donjon");

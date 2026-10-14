@@ -3225,7 +3225,7 @@
     const hunting = S.hunting && S.sub && SUBS[S.sub] && E.team(S).length;
     const evLen = E.events.length;
     let wins = 0;
-    const wasDungeon = S.dungeon; S.dungeon = null;
+    const wasDungeon = S.dungeon; S.dungeon = null; const zone0 = hunting ? SUBS[S.sub].name : null; // le donjon ne continue pas hors ligne : l'équipe chasse dans sa zone
     let sub = SUBS[S.sub]; const teamSize = E.team(S).length; const roamed = [];
     // part de l'absence couverte par le bonus d'XP
     const b = S.boosts && S.boosts.xp; const now = E.now(); const startT = now - seconds * 1000;
@@ -3259,7 +3259,7 @@
       newItems: Object.keys(S.items).filter((u) => !before.uids.has(u)).sort((a, b) => ITEMS[S.items[b].tpl].lvl - ITEMS[S.items[a].tpl].lvl).slice(0, 30),
       archis: Object.keys(S.archis).filter((k) => (S.archis[k] || 0) > (before.archis[k] || 0)),
       souls: Object.keys(S.souls || {}).filter((k) => !before.souls[k]), stones: (S.cons && S.cons.pierre_ame) || 0,
-      winRate: winRate, fightLen: Math.round(cycle), fmPlans, roamed,
+      winRate: winRate, fightLen: Math.round(cycle), fmPlans, roamed, zone: zone0, dungeon: wasDungeon && DUNGEONS[wasDungeon.id] ? DUNGEONS[wasDungeon.id].name : null,
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
   };

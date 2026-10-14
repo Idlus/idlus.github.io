@@ -1,6 +1,14 @@
 {
-  "version": "1.0.21",
+  "version": "1.0.21.1",
   "versions": [
+    {
+      "v": "1.0.21.1",
+      "name": "Absence en donjon",
+      "items": [
+        "Hors ligne, un donjon ne continue pas : votre équipe chasse dans sa dernière zone de chasse (et suit la chasse itinérante si elle est active)",
+        "Le résumé « Pendant votre absence » le dit maintenant clairement et nomme la zone où l'équipe a chassé, pour savoir d'où viennent les objets obtenus"
+      ]
+    },
     {
       "v": "1.0.21",
       "name": "Havre-Sac en accueil",
