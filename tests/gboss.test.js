@@ -56,7 +56,7 @@ console.log("ok - Percepteurs : places, poche, défense rejouable");
   assert.strictEqual(E.gbossNextIn(6), 0); assert.strictEqual(E.gbossNextIn(2.5), 12.5 * 60000);
   // la phase rend le boss plus dur, même graine = même essai
   const a = E.gbossSim(G, def, 1, t, 1), b = E.gbossSim(G, def, 1, t, 5), c = E.gbossSim(G, def, 1, t, 5);
-  assert.deepStrictEqual(b, c); assert.ok(b.points <= a.points * 1.2, "phase 5 pas plus facile que la 1");
+  assert.deepStrictEqual(b, c); assert.strictEqual(b.raw, a.raw, "même essai, même combat"); assert.ok(a.points > 10 && b.points < a.points, "phase 5 : le boss résiste davantage");
   console.log("ok - boss : 5 phases, réserve d'essais");
 }
 

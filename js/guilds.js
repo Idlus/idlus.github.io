@@ -347,7 +347,7 @@
     const tro = (b.trophies || []).length ? `<div class="list">${b.trophies.map((x) => { const d2 = E.gboss(x.w); return `<div class="li small">${X().IC("trophee")}<span class="grow">${h(d2.name)}${x.first ? ` <span class="tag good">1re guilde</span>` : ""}</span><span class="xs muted">${since(x.at)}</span></div>`; }).join("")}</div>` : `<div class="empty">Finissez la phase 5 pour gagner le trophée du boss.</div>`;
     return `<section class="panel gboss"><div class="gbhead">${M.img ? `<img class="gbimg" src="${X().imgM(def.boss)}" alt="">` : ""}<div class="stack grow" style="gap:4px">
         <span class="xs muted">Boss de la semaine · change dans ${left(E.gbossLeft(srvNow()))}</span><h2 style="font-size:24px">${h(def.name)}</h2>
-        <span class="small muted">${over ? "Vaincu ! Un nouveau boss arrive lundi." : `Phase ${ph.p} / 5 : « ${E.GBOSS_PHASE_NAMES[ph.p - 1]} »${ph.p > 1 ? `, +${Math.round((E.gbossDmg(ph.p) - 1) * 100)} % de dommages` : ""}`} · ${h(def.dname)}</span></div></div>
+        <span class="small muted">${over ? "Vaincu ! Un nouveau boss arrive lundi." : `Phase ${ph.p} / 5 : « ${E.GBOSS_PHASE_NAMES[ph.p - 1]} »${ph.p > 1 ? `, +${Math.round((E.gbossDmg(ph.p) - 1) * 100)} % de résistance` : ""}`} · ${h(def.dname)}</span></div></div>
       <div class="pad stack">
         <div class="row between small"><b>Vie du boss</b><span>${over ? `${fmt(b.pts)} points` : `phase ${ph.p} : ${fmt(ph.cur)} / ${fmt(ph.need)} points`}</span></div>
         <div class="gx-ph">${segs}</div>

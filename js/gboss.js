@@ -27,7 +27,7 @@
   E.GBOSS_PHASES = [8, 14, 20, 26, 32];                         // part de la vie totale de chaque phase (%)
   E.GBOSS_PHASE_K = [300000, 600000, 900000, 1200000, 1500000]; // kamas versés au coffre de guilde quand la phase tombe
   E.GBOSS_PHASE_NAMES = ["Éveillé", "Furieux", "Enragé", "Déchaîné", "Ultime"];
-  E.GBOSS_PHASE_DMG = 8;      // +8 % de dommages du boss à chaque phase après la première (simulé : ≈ 300 points en phase 1, ≈ 230 en phase 5)
+  E.GBOSS_PHASE_DMG = 8;      // +8 % de résistance du boss à chaque phase après la première : points ÷ 1,08 par phase (≈ 300 points en phase 1, ≈ 230 en phase 5). Plus de dommages des monstres donnait plus de points à certaines équipes (renvoi, riposte).
   E.GBOSS_STEPS = [25, 50, 75, 100]; // coffres des membres : phase p tombée = palier 25 × p (phases 1 à 4)
   E.GBOSS_TITLE = "Pourfendeur de boss"; // titre gardé par les membres des 3 meilleures guildes de la semaine
   E.GBOSS_FIRST_TITLE = "Avant-garde de guilde"; // 1.0.30 : membres de la première guilde du serveur qui finit le boss de la semaine
@@ -82,12 +82,12 @@
       const F = E.startFight(S2); if (!F) return { err: "Combat impossible." };
       const B = F.ents[F.bossIdx]; if (!B) return { err: "Boss introuvable." };
       const base = B.hpMax; B.hpMax = B.hp = base * E.GBOSS_HP_MULT; if (B.shield) B.shield = 0;
-      const dm = E.gbossDmg(phase); if (dm !== 1) F.ents.forEach((e) => { if (e.side === "m" && e.dmg) e.dmg *= dm; }); // 1.0.30 : la phase suivante est plus dure
+      const dm = E.gbossDmg(phase); // 1.0.30 : la phase suivante est plus dure (le boss résiste davantage)
       for (let g = 0; g < 200000 && !F.over && F.round <= E.GBOSS_ROUNDS; g++) E.step(S2);
       const dmg = Math.max(0, B.hpMax - Math.max(0, B.hp));
       const alive = F.ents.filter((e) => e.side === "c" && !e.summon && e.alive).length;
       const raw = (dmg / base) * 100;
-      return { points: Math.round(raw * (def.pow || 1)), raw: Math.round(raw), dmg: Math.round(dmg), rounds: Math.min(F.round, E.GBOSS_ROUNDS), alive };
+      return { points: Math.round((raw * (def.pow || 1)) / dm), raw: Math.round(raw), dmg: Math.round(dmg), rounds: Math.min(F.round, E.GBOSS_ROUNDS), alive };
     } finally { E.setRng(rng0); E.setClock(clock0); E.events.length = evLen; }
   };
 
