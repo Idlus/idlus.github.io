@@ -117,7 +117,7 @@ const server = http.createServer((req, res) => {
     await page.click("#mfstrip .mf-hd"); await page.waitForTimeout(800);
     if ((await page.evaluate(() => window.DX.ui.tab)) !== "combat" || (await page.$("#mfstrip"))) fail("petit module (téléphone) : toucher la bande n'ouvre pas le combat");
     await page.waitForTimeout(1200);
-    const fmob = await page.evaluate(() => { const ar = document.querySelector("#arena"); return { fmode: ar.classList.contains("fmode"), w: ar.scrollWidth <= ar.clientWidth + 1, toks: ar.querySelectorAll(".ent.tk").length }; });
+    let fmob; for (let i = 0; i < 3; i++) { fmob = await page.evaluate(() => { const ar = document.querySelector("#arena"); return { fmode: ar.classList.contains("fmode"), w: ar.scrollWidth <= ar.clientWidth + 1, toks: ar.querySelectorAll(".ent.tk").length }; }); if (fmob.w) break; await page.waitForTimeout(400); } // un chiffre de dégâts qui s'envole peut dépasser un instant
     if (!fmob.fmode || !fmob.w || !fmob.toks) fail(`Formation (téléphone) : arène incorrecte (${JSON.stringify(fmob)})`);
     // au téléphone, toucher un monstre montre ses résistances
     const m2 = await page.$("#arena .ent.tk[data-tipmon]");
