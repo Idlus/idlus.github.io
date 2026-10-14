@@ -251,6 +251,7 @@ textarea{width:100%;min-height:80px;font-size:12px}
 .ing span{display:inline-flex;align-items:center;gap:4px}
 .ing img{width:20px;height:20px}
 .ing .ok{color:var(--action)}.ing .ko{color:var(--danger)}
+.ing .ingo{margin-left:2px;color:var(--ink)}
 
 /* ---------- accueil ---------- */
 .hero-banner{position:relative;overflow:hidden;border-radius:18px;border:3px solid var(--frame);box-shadow:var(--shadow);min-height:180px}

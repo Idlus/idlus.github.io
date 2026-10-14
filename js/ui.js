@@ -1498,7 +1498,9 @@ const statIc = (k, v) => `<span class="stli">${sIco(k)}${statLine(k, v)}</span>`
 /* images */
 const imgM = (key) => (MONSTERS[key] ? `assets/m/${MONSTERS[key].img}.png` : "");
 const imgI = (icon) => `assets/i/${icon}.png`;
-const resImg = (name) => (RES[name] ? imgI(RES[name].icon) : "");
+const resImg = (name) => (RES[name] ? imgI(RES[name].icon) : specImg(name));
+/* Idoles, meubles et filet du Bricoleur ne sont pas des ressources : leur image vient de leur propre famille (retour de Mathis, 14/10) */
+function specImg(n) { const R = SPECIAL_CRAFTS[n]; if (!R) return ""; if (R.idol && E.IDOLS && E.IDOLS[R.idol]) return idolImg(R.idol); if (R.furn) return furnImg(n); if (R.cons) { const C = CONSUMABLES[R.cons]; return C && C.pimg ? `assets/ui/potions/${C.pimg}.png` : C && C.img ? `assets/ui/coffres/${C.img}.svg` : "assets/ui/sac.webp"; } return ""; }
 const resTag = (n, q) => `<span class="restag">${n === E.POUSSIERE ? IC("poussiere") : im(resImg(n), "rico", n)}${q ? `${fmt(q)} × ` : ""}${h(n)}</span>`; // 0.1.53 : ressource avec son icône
 const itemImg = (tpl) => { const T = ITEMS[tpl]; if (!T) return ""; return T.mimg ? `assets/m/${T.mimg}.png` : imgI(T.icon); };
 const spellImg = (name) => (SPELL_IMG[name] ? `assets/s/${SPELL_IMG[name]}.png` : "");
@@ -1757,7 +1759,7 @@ function shopTotalHtml() {
 function shopListHtml() {
   return (S.shop.length > 1 ? shopTotalHtml() : "") + S.shop.map((e, i) => { const ing = shopIng(e); const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q); const ok = !miss.length && ing.length;
     return `<div class="qcard ${ok ? "cur" : ""}"><span class="qnum">${ok ? "✓" : G("cart")}</span><div class="grow"><b>${h(shopName(e))}</b>${ok ? ` <span class="tag good">tout est réuni</span>` : ` ${etaLine(ing)}`}${ingHtml(ing)}
-      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div>${ok ? `<button class="btn sm primary" data-act="shopgo" data-i="${i}" data-tip="Ouvrir la recette dans son métier">${IC("metiers")}<span class="shopgo-l"> Fabriquer</span></button>` : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
+      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div>${ok ? `<button class="btn sm primary" data-act="shopgo" data-i="${i}" data-tip="Fabriquer maintenant">${IC("metiers")}<span class="shopgo-l"> Fabriquer</span></button>` : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
 }
 
 const ICONS = {
@@ -5749,15 +5751,17 @@ document.addEventListener("scroll", hideTip, true);
 window.addEventListener("scroll", () => { const n = ui.tab === "team" && $(".htabs"); if (!n) return; const top = parseFloat(getComputedStyle(n).top) || 0; n.classList.toggle("stuck", n.getBoundingClientRect().top <= top + 1 && window.scrollY > 40); }, { passive: true });
 
 /* ---------- ATELIERS ---------- */
-function ingHtml(ing, mult = 1) {
-  return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; return `<span class="${have >= q * mult ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b></span>`; }).join("")}</div>`;
+/* « Y aller » (refonte des guildes, demande de Mathis) : pour une ressource qui manque, la zone où elle tombe le plus (sinon son donjon) */
+function resGo(r) { for (const x of resIndex().src[r] || []) { if (!x.m) continue; const sb = subOfMon(x.m); if (sb) return typeof sb === "string" ? `data-act="dgopen" data-id="${sb}" data-gotab="world"` : `data-act="zoneview" data-id="${sb.id}" data-gotab="world"`; } return ""; }
+function ingHtml(ing, mult = 1, go = false) {
+  return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; const ok = have >= q * mult; const g = go && !ok ? resGo(r) : ""; return `<span class="${ok ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b>${g ? `<button class="btn xs ingo" ${g}>${IC("carte")} Y aller</button>` : ""}</span>`; }).join("")}</div>`;
 }
 function toolHtml(id) {
   const tl = E.toolLvl(S, id); if (tl >= E.TOOL_MAX) return `<div class="row small">${IC("metiers")} <b>${h(E.TOOL_NAMES[id])} ${tl}</b> <span class="tag good">niveau max</span> <span class="xs muted">(+${tl * 8} % de ressources)</span></div>`;
   const R = E.toolCost(S, id); const lvOk = S.jobs[id].lvl >= R.lvl; const ok = lvOk && S.kamas >= R.kamas && R.ing.every(([r, q]) => (S.res[r] || 0) >= q);
   const pinned = S.shop.some((e) => e.k === "tool" && e.id === id);
   return `<div class="toolbox"><div class="row between small"><span>${IC("metiers")} Outil actuel : <b>${tl ? h(E.TOOL_NAMES[id]) + " " + tl : "aucun"}</b> <span class="xs muted">(+${tl * 8} % de ressources)</span></span><span class="xs muted">prochain : <b>${h(R.name)}</b></span></div>
-    ${ingHtml(R.ing)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
+    ${ingHtml(R.ing, 1, true)}<div class="row small" style="margin-top:4px"><span class="${lvOk ? "plus" : "minus"} xs">${GATHER_JOBS[id].name} niv. ${R.lvl} requis</span><span class="xs"><span class="coin"></span> ${fmt(R.kamas)}</span>
     <button class="btn sm ${ok ? "primary" : ""}" data-act="tool" data-job="${id}" ${ok ? "" : "disabled"}>Fabriquer</button><button class="btn sm" data-act="shoppin" data-k="tool" data-id="${id}" title="Liste de courses">${pinned ? G("cart") + " ✓" : G("cart")}</button></div></div>`;
 }
 /* 0.1.57 : le protecteur en pastille dans la ligne du haut, sur toutes les pages */
@@ -7767,6 +7771,10 @@ document.addEventListener("click", (ev) => {
     case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
     case "dustgo": dustClose(); if (d.id === "idols") { idolSheet(); return; } { const R = SPECIAL_CRAFTS[d.id]; if (!R) return; ui.craftJob = R.job; const F = fltOf("met"); F.q = d.id; F.mode = "all"; ui.recSel = d.id; ui.recStick = d.id; ui.recQty = "1"; pageGo("craft"); if (narrow()) recSheet(); return; }
     case "shopgo": { const e = S.shop[+d.i]; if (!e) return;
+      /* « Fabriquer » dans la liste de courses fabrique vraiment l'objet quand tout est réuni (retour de Mathis, 14/10) ; s'il manque un niveau ou de la place, on ouvre la recette avec la raison */
+      const name = shopName(e); const r = e.k === "tool" ? E.upgradeTool(S, e.id) : e.k === "tpl" ? E.craftItem(S, e.id) : E.craftSpecial(S, e.id);
+      if (typeof r !== "string") { S.shop.splice(+d.i, 1); toast(r && r.uid ? `Fabriqué : ${name} (jet ${Math.round(E.itemQuality(r) * 100)} %) · retiré de la liste de courses` : `Fabriqué : ${name} · retiré de la liste de courses`); break; }
+      toast(r);
       if (e.k === "tool") { ui.toolOpen = Object.assign(ui.toolOpen || {}, { [e.id]: true }); pageGo("metiers"); ui.met = "recolte"; render(); return; }
       const job = e.k === "special" ? (SPECIAL_CRAFTS[e.id] || {}).job : ITEMS[e.id] && ITEMS[e.id].craft && ITEMS[e.id].craft.job; if (!job) return;
       ui.craftJob = job; const F = fltOf("met"); F.q = shopName(e); F.mode = "all"; ui.recSel = e.id; ui.recStick = e.id; ui.recQty = "1"; pageGo("craft"); if (narrow()) recSheet(); return; }
