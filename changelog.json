@@ -1,6 +1,16 @@
 {
-  "version": "1.0.28.1",
+  "version": "1.0.29",
   "versions": [
+    {
+      "v": "1.0.29",
+      "name": "Un air pour chaque menu",
+      "items": [
+        "13 nouveaux airs joués à l'orchestre, dans l'esprit de DOFUS 3 : cordes, harpe, cors, bois, célesta et timbales",
+        "Chaque menu qui n'avait pas son air en a un : Monde, Donjons, Défi du jour, Équipe et héros, Inventaire, Renaissance, Quêtes, Succès, Encyclopédie, Carnet, Classements, Builds et Suggestions",
+        "Dans Monde, ouvrir une zone joue l'air de cette zone",
+        "Le juke-box (Options › Sons) passe à 48 airs, rangés par endroit"
+      ]
+    },
     {
       "v": "1.0.28.1",
       "name": "Brisage sans gel",
