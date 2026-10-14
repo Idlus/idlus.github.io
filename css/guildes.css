@@ -49,3 +49,6 @@
   .gx-vrow{grid-template-columns:auto minmax(0,1fr) auto}.gx-vrow .gx-team{grid-column:1/-1}
   .gx-alert .row.between b{font-size:16px!important}
 }
+/* Écran d'attaque : étiquettes courtes à gauche, texte long à droite (« À gagner » ne se coupe plus au téléphone) */
+.mksum.mkraid{grid-template-columns:auto 1fr}
+.mksum.mkraid>span{white-space:nowrap}
