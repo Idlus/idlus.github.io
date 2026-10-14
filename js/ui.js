@@ -2155,7 +2155,7 @@ function consHtml() {
 }
 /* soft = rafraîchissement automatique de la boucle (toutes les 3 s) : mise à jour ciblée (morphTo) au lieu de tout redessiner */
 function renderHome(soft) {
-  const html = homeHtml() + (ui.home !== "havre" ? `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>` : "");
+  const html = homeHtml() + (ui.home !== "havre" && ui.home !== "expe" ? `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>` : "");
   if (soft) morphTo($("#main"), html); else $("#main").innerHTML = html;
 }
 /* 0.1.42 « Accueil du jour » : bandeau (zone, rendement, têtes des héros), zone conseillée, tuiles « Aujourd'hui »,
@@ -2172,6 +2172,7 @@ function homeTiles() {
       act: st.chest ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">Lancer</span>` })); }
   /* 0.1.49 : Boss des mondes, tant qu'il te reste des essais aujourd'hui (js/wbossui.js) */
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
+  { const xt = window.EXPUI && window.EXPUI.tile(); if (xt) out.push(tile(xt)); } // 1.0.30 : Expéditions (js/expeditionsui.js)
   /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
   const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
   out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${resTag(A.res, A.qty)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
@@ -2203,6 +2204,7 @@ function homeEvents() {
 }
 function homeHtml() {
   if (ui.home === "havre") return havreHtml();
+  if (ui.home === "expe" && window.EXPUI) return window.EXPUI.html(); // 1.0.30 : Havre-Sac › Expéditions (js/expeditionsui.js)
   const team = E.team(S); const main = mainHero();
   const deco = S.dungeon ? dgDeco(S.dungeon.id) : S.sub ? subDeco(S.sub) : "sky";
   const sub = S.sub && E.SUBS[S.sub];
@@ -2524,7 +2526,7 @@ function renderWorld() {
     body = tresorBanner() + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
-  else if (ui.world === "dungeons") body = dungeonsHtml();
+  else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
   else if (ui.world === "tresor") { ui.world = "map"; return renderWorld(); }
   else body = encyclopediaHtml();
   const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
@@ -4597,22 +4599,23 @@ function teamAlerts(force) {
   });
   alertCache = { t: Date.now(), v }; return v;
 }
-const teamZone = (c) => (c.job ? "job" : E.trainee(S) === c ? "train" : E.atelierHero(S) === c ? "atelier" : !c.inTeam ? "rest" : E.frontSet(S).has(c.id) ? "f" : "b");
+const teamZone = (c) => (E.misRun && E.misRun(S, c.id) ? "mis" : c.job ? "job" : E.trainee(S) === c ? "train" : E.atelierHero(S) === c ? "atelier" : !c.inTeam ? "rest" : E.frontSet(S).has(c.id) ? "f" : "b");
 const TZ = { f: ["Première ligne", "reçoit 3 coups sur 4"], b: ["Arrière", "exposé si la première ligne tombe"], job: ["Récolte", "hors de l'équipe"], train: ["Salle d'entraînement", `${Math.round(E.TRAIN_SHARE * 100)} % de l'XP de l'équipe`], rest: ["Repos", "hors de l'équipe"] };
 function actPill(c) {
   const z = teamZone(c);
   if (z === "job") return `<span class="tpill job">${IC("pioche")} Récolte · ${h(c.job.res)}</span>`;
   if (z === "train") return `<span class="tpill train">${IC("havre")} Salle d'entraînement</span>`;
   if (z === "atelier") return `<span class="tpill train">${IC("metiers")} À l'atelier</span>`;
+  if (z === "mis") return `<span class="tpill train">${IC("carte")} En expédition</span>`; // 1.0.30
   if (z === "rest") return `<span class="tpill rest">Au repos</span>`;
   return `<span class="tpill hunt">${IC("combat")} ${S.dungeon ? "Donjon" : "Chasse"} · ${z === "f" ? "première ligne" : "arrière"}</span>`;
 }
 function teamBoardHtml() {
-  const zone = (z) => { const list = S.chars.filter((c) => (z === "rest" ? ["rest", "atelier"].includes(teamZone(c)) : teamZone(c) === z));
+  const zone = (z) => { const list = S.chars.filter((c) => (z === "rest" ? ["rest", "atelier", "mis"].includes(teamZone(c)) : teamZone(c) === z));
     const n = z === "f" ? `${list.length} / ${E.frontMax(E.team(S).length)}` : z === "b" ? `${list.length}` : z === "train" ? `${list.length} / 1` : `${list.length}`;
     const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tgt = sel && teamZone(sel) !== z;
-    return `<div class="tzone ${tgt ? "target" : ""}" data-act="teamdrop" data-v="${z}" data-zone="${z}"><div class="tzt"><b>${TZ[z][0]}</b><span class="xs muted">${TZ[z][1]} · ${n}</span></div><div class="tslots">${list.map((c) => { const at = teamZone(c) === "atelier";
-      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at ? `disabled title="Travaille à l'atelier du Havre-Sac"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline sm">${E.roman(c.ren)}</span>` : ""} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
+    return `<div class="tzone ${tgt ? "target" : ""}" data-act="teamdrop" data-v="${z}" data-zone="${z}"><div class="tzt"><b>${TZ[z][0]}</b><span class="xs muted">${TZ[z][1]} · ${n}</span></div><div class="tslots">${list.map((c) => { const at = teamZone(c) === "atelier"; const mi = teamZone(c) === "mis"; // 1.0.30 : en expédition
+      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at || mi ? `disabled title="${mi ? "En expédition (Jouer › Havre-Sac › Expéditions)" : "Travaille à l'atelier du Havre-Sac"}"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline sm">${E.roman(c.ren)}</span>` : ""} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : mi ? " · en expédition" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
   return `<div class="tboard"><p class="note xs" style="margin:0">${canHover ? "Glissez un héros d'une zone à l'autre, ou cliquez sur lui puis sur une zone." : "Touchez un héros, puis la zone où l'envoyer."}${ui.teamSel != null && char(ui.teamSel) ? ` <b>${h(char(ui.teamSel).name)}</b> est choisi.` : ""} Pour la récolte, le jeu vous demande la ressource.</p>
     <div class="tcols"><div class="tcol">${zone("f")}${zone("b")}</div><div class="tcol">${zone("job")}${zone("train")}${zone("rest")}</div></div></div>`;
 }
@@ -4621,6 +4624,7 @@ function teamMove(cid, z) {
   const c = char(cid); if (!c) return "Héros introuvable.";
   const from = teamZone(c); if (from === z) return null;
   if (from === "atelier") return `${c.name} travaille à l'atelier : rappelez-le depuis le Havre-Sac.`;
+  if (from === "mis") return E.misAwayTxt(S, c); // 1.0.30
   if (S.dungeon && (["f", "b"].includes(from) !== ["f", "b"].includes(z))) return "Impossible de changer l'équipe en donjon.";
   if (z === "job") { ui.gs = { cid: c.id, job: c.job ? c.job.job : null }; gatherSheet(); return null; }
   if (["f", "b"].includes(z)) {
@@ -4680,7 +4684,7 @@ function teamTopHtml() {
 /* une ligne de la liste : tête, nom, niveau, activité, XP ; ▲ vert = mieux dans le sac, pastille orange = points à répartir */
 function teamRow(x, al) {
   const z = teamZone(x); const g = al.some((a) => a.c === x && a.k === "gear"); const p = !x.autoStat && x.pts > 0;
-  const st = z === "f" ? ["hunt", "Première ligne"] : z === "b" ? ["hunt", "Arrière"] : z === "job" ? ["job", "Récolte · " + x.job.res] : z === "train" ? ["train", "Entraînement"] : z === "atelier" ? ["train", "Atelier"] : ["rest", "Repos"];
+  const st = z === "f" ? ["hunt", "Première ligne"] : z === "b" ? ["hunt", "Arrière"] : z === "job" ? ["job", "Récolte · " + x.job.res] : z === "train" ? ["train", "Entraînement"] : z === "atelier" ? ["train", "Atelier"] : z === "mis" ? ["train", "En expédition"] : ["rest", "Repos"];
   const ico = { hunt: IC("combat"), job: IC("pioche"), train: IC("havre"), rest: "" }[st[0]];
   const tip = `${x.name} · ${CLASSES[x.cls].name} niv. ${x.lvl} · ${st[1]}${g ? " · meilleur objet dans le sac" : ""}${p ? ` · ${x.pts} point${x.pts > 1 ? "s" : ""} à répartir` : ""}`;
   return `<button class="trow ${x.id === ui.cid ? "on" : ""} ${["f", "b"].includes(z) ? "" : "out"}" data-act="selchar" data-id="${x.id}" aria-pressed="${x.id === ui.cid}" data-tip="${h(tip)}" style="--cc:${CLASSES[x.cls].color}">
@@ -6555,14 +6559,19 @@ function optionsSheet() {
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
   if (keepTop) $(".sheet").scrollTop = keepTop;
 }
+/* 1.0.30 : donjon pendant l'absence et retours d'expédition comptent aussi pour ouvrir la fenêtre */
+const offWorth = (r) => !!r && !!(r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length) || (r.dg && r.dg.runs) || (r.mis && r.mis.length));
 function offlineSheet(r) {
   if (S) E.tipMark(S, "offline");
   const res = Object.entries(r.res).sort((a, b) => b[1] - a[1]);
+  const dgRuns = !!(r.dg && r.dg.runs); const many = dgRuns || !!(r.mis && r.mis.length); // 1.0.30 : plusieurs sources de gains
   openSheet(`<h2>Pendant votre absence</h2>
-    <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a continué à ${Math.round(E.OFFLINE_RATE * 100 + E.bonus(S, "offrate"))} % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : "Votre équipe ne chassait pas ; seuls les héros en récolte ont travaillé."}</p>
-    ${r.fights && r.zone ? `<p class="small">${IC("carte")} ${r.dungeon ? `Le donjon (${h(r.dungeon)}) ne continue pas hors ligne : votre équipe a chassé dans <b>${h(r.zone)}</b>, sa dernière zone de chasse.` : `Zone de chasse : <b>${h(r.zone)}</b>.`}</p>` : ""}
+    <p class="small">Absent ${dur(r.seconds)}. ${r.fights ? `Votre équipe a ${dgRuns ? "ensuite chassé" : "continué"} à ${Math.round(E.offRate(S) * 100)} % de son efficacité : <b>${fmt(r.wins)}</b> combats gagnés${many ? "" : `, <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}`}.` : dgRuns ? "" : "Votre équipe ne chassait pas ; seuls les héros en récolte ont travaillé."}${many ? ` En tout : <span class="coin"></span> <b>+${fmt(r.kamas)}</b> kamas${r.items ? `, ${r.items} objet${r.items > 1 ? "s" : ""}` : ""}.` : ""}</p>
+    ${window.EXPUI ? window.EXPUI.offDg(r) : ""}
+    ${r.fights && r.zone ? `<p class="small">${IC("carte")} ${r.dungeon && !dgRuns ? `Le donjon (${h(r.dungeon)}) s'est arrêté : votre équipe a chassé dans <b>${h(r.zone)}</b>, sa dernière zone de chasse.` : `Zone de chasse : <b>${h(r.zone)}</b>.`}</p>` : ""}
     ${r.fights ? `<p class="xs muted">${fmt(r.fights)} combats tentés · ${Math.round((r.winRate || 0) * 100)} % de victoires (d'après vos derniers combats) · ~${r.fightLen || "?"} s par combat.</p>` : ""}
     ${r.lvls.length ? `<p class="small">${r.lvls.map(([n, a, b]) => `${G("up")} ${h(n)} : niveau ${a} → <b>${b}</b>`).join("<br>")}</p>` : ""}
+    ${window.EXPUI ? window.EXPUI.offMis(r) : ""}
     ${r.roamed && r.roamed.length ? `<p class="small">${G("star")} Chasse itinérante : ${r.roamed.map(h).join(" → ")}</p>` : ""}
     ${r.tresor && r.tresor.length ? `<p class="small">${IC("carte")} Chasse au trésor : l'équipe a suivi les indices · ${r.tresor.map(h).join(" → ")}</p>` : ""}
     ${r.consigne && r.consigne.length ? `<p class="small">${IC("quetes")} <b>Consignes</b> : ${r.consigne.map(h).join(" ")} <button class="btn sm" data-act="vi-optcons">Régler</button></p>` : ""}
@@ -7839,6 +7848,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("sg-")) { if (S && window.SGUI) window.SGUI.act(a, t); return; } // 0.1.48 : Songe infini (js/songeui.js)
   if (a && a.startsWith("kz-")) { if (S && window.KOLIUI) window.KOLIUI.act(a, t); return; } // 0.1.44 : Kolizéum
   if (a && a.startsWith("wb-")) { if (window.WBUI) window.WBUI.act(a, t); return; } // 0.1.49 : Boss des mondes (js/wbossui.js)
+  if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 1.0.30 : Expéditions et donjon pendant l'absence (js/expeditionsui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -8627,7 +8637,7 @@ async function takeRemote(info) {
   if (!booted) return bootGame();
   closeSheet(); S = loadSave(); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); recBoot = recSnap();
   const gap = (E.now() - (S.lastTick || E.now())) / 1000; const r = gap > 60 ? E.catchUp(S, gap) : null; render();
-  if (r && (r.wins || Object.keys(r.res).length)) offlineSheet(r); else toast("Partie en ligne chargée.");
+  if (offWorth(r)) offlineSheet(r); else toast("Partie en ligne chargée.");
 }
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
@@ -9265,7 +9275,7 @@ function loop() {
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { saveNow(); if (onLive() && ON.state !== "conflict") onPush(); }
-  else if (S) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r); } last = performance.now(); }
+  else if (S) { const gap = (E.now() - (S.lastTick || E.now())) / 1000; if (gap > 60) { const r = E.catchUp(S, gap); if (offWorth(r)) offlineSheet(r); } last = performance.now(); }
 });
 window.addEventListener("pagehide", () => saveNow());
 
@@ -9285,7 +9295,7 @@ function bootGame(pushNow) {
     render();
     if (S.galRefNote) { const t = S.galRefNote; delete S.galRefNote; setTimeout(() => toast(t, "rare"), 900); } // 1.0.6 : Galets repris (js/koli.js)
     if (S.migration) { migrationSheet(S.migration); S.migration = null; }
-    else if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r);
+    else if (offWorth(r)) offlineSheet(r);
     S.sessions = (S.sessions || 0) + 1; dirty = true;
   } else render();
   if (ranked()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
