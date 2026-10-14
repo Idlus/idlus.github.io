@@ -207,7 +207,8 @@
       case "perfect": return [Math.min(perfects(S), st.n), st.n];
       case "ocre": return [E.ocreTier(S), E.OCRE_TIERS.length];
       case "gift": return [E.dofusOwned(S, id) ? 1 : 0, 1];
-      default: return [cur ? Math.min(Q.prog, st.n) : 0, st.n]; // kill, harvest, chal, almanax : comptés pendant l'étape
+      case "almanax": return [Math.min((S.cnt && S.cnt.almanax) || 0, st.n), st.n]; // 1.0.29.4 : toutes les offrandes faites depuis le début comptent
+      default: return [cur ? Math.min(Q.prog, st.n) : 0, st.n]; // kill, harvest, chal : comptés pendant l'étape
     }
   };
   E.dofusStepTxt = (st) => {
@@ -245,7 +246,6 @@
       if (type === "win" && st.t === "kill" && zoneOf(data.sub) === st.zone) Q.prog += data.mons.length;
       if (type === "win" && st.t === "chal" && (data.chals || []).includes(st.chal)) Q.prog++;
       if (type === "harvest" && st.t === "harvest" && data.res === st.res) Q.prog += data.n || 1;
-      if (type === "almanax" && st.t === "almanax") Q.prog++;
       if (type === "dungeon" && st.t === "dg" && (st.chal || st.nodown) && data.id === st.dg && data.stasis >= st.k && (!st.chal || (data.chals || []).includes(st.chal)) && (!st.nodown || !data.down)) Q.prog++;
     });
     if (type === "soul") checkOcre(S);

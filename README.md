@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.29.4 « Offrandes comptées »
+
+Retour de Mathis (14/10/2026, « les offrandes almanax déjà réalisées ne comptent pas pour les quêtes de Dofus »). Cause : l'étape `almanax` des quêtes de Dofus (js/archis.js) n'avançait que sur l'évènement d'offrande reçu pendant l'étape (`Q.prog`). Elle lit maintenant le compteur de la sauvegarde `S.cnt.almanax` (toutes les offrandes depuis la 0.1.39), comme les étapes d'âmes ou d'objets Parfaits ; les joueurs qui avaient déjà le compte voient l'étape validée au chargement (`E.refreshArchis`). Prérequis inchangés (Kaliptus 7, Veilleurs 5). Test 5 dans tests/almanax.test.js.
+
 ## 1.0.29.3 « Ceinture Séculaire »
 
 La Ceinture Séculaire et trois autres équipements oubliés (Plumodales, Cape Reski, Bottes des Voyageurs) peuvent maintenant tomber, avec la même règle que les autres. Les autres chances ne changent pas.

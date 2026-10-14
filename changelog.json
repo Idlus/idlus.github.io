@@ -1,6 +1,14 @@
 {
-  "version": "1.0.29.3",
+  "version": "1.0.29.4",
   "versions": [
+    {
+      "v": "1.0.29.4",
+      "name": "Offrandes comptées",
+      "items": [
+        "Quêtes des Dofus : les étapes « Faire X offrandes à l'Almanax » (Kaliptus, Veilleurs) comptent maintenant toutes les offrandes déjà faites, pas seulement celles faites pendant l'étape",
+        "Si tu avais déjà assez d'offrandes, l'étape se valide toute seule à l'ouverture du jeu"
+      ]
+    },
     {
       "v": "1.0.29.3",
       "name": "Ceinture Séculaire",

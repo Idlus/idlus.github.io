@@ -42,3 +42,15 @@ console.log("ok - donjon du jour, butin de zone, récolte d'un métier, challeng
   s.chars[0].lvl = 45; const b = E.almanax(s); assert.strictEqual(b.res, a.res); assert.strictEqual(b.qty, a.qty); assert.deepStrictEqual(b.target, a.target);
   now += 864e5; const c = E.almanax(s); assert.notStrictEqual(c.day, a.day); assert.strictEqual(s.almLvl.lvl, 45, "le lendemain, le niveau du jour est repris"); }
 console.log("ok - offrande et cible figées pour la journée malgré les niveaux gagnés");
+
+// 5. 1.0.29.4 : les offrandes déjà faites comptent pour les quêtes de Dofus (avant, seules celles faites pendant l'étape comptaient)
+{ require("../js/pets.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
+  now = at("2026-10-14"); const s = E.newState("G", "iop"); s.chars[0].lvl = 64; E.refreshSystems(s);
+  const vi = E.DOFUS.veilleurs.steps.findIndex((x) => x.t === "almanax"); const ka = E.DOFUS.kaliptus.steps.findIndex((x) => x.t === "almanax");
+  s.cnt.almanax = 6; Object.assign(E.dofusQuest(s, "veilleurs"), { step: vi, prog: 0 }); Object.assign(E.dofusQuest(s, "kaliptus"), { step: ka, prog: 0 });
+  E.refreshArchis(s);
+  assert.strictEqual(E.dofusQuest(s, "veilleurs").step, vi + 1, "6 offrandes déjà faites : l'étape des 5 offrandes est validée au chargement");
+  assert.deepStrictEqual(E.dofusStepProgress(s, "kaliptus", ka), [6, 7]); assert.strictEqual(E.dofusQuest(s, "kaliptus").step, ka);
+  const x = E.almanax(s); s.res[x.res] = x.qty; assert.strictEqual(E.almanaxOffer(s), null);
+  assert.strictEqual(E.dofusQuest(s, "kaliptus").step, ka + 1, "la 7e offrande valide l'étape du Kaliptus"); }
+console.log("ok - quêtes de Dofus : les offrandes déjà faites comptent");
