@@ -374,6 +374,7 @@
     "Banc de jardin":          { room: "jardin",   kind: "gather",  v: 3,  shop: 300000 },
     "Fontaine de Bonta":       { room: "jardin",   kind: "gather",  v: 6,  shop: 4000000 },
     "Tapis volant":            { room: "chambre",  kind: "offrate", v: 2,  shop: 3000000 },
+    "Gramophone":              { room: "chambre",  kind: "offrate", v: 2,  shop: 2500000, txt: "+2 % d'efficacité hors ligne · joue l'air de ton choix au Havre-Sac" }, // 1.0.30
     "Établi d'artisan":        { room: "atelier",  kind: "atelier", v: 15, shop: 2000000 },
     "Enclume de Brâkmar":      { room: "atelier",  kind: "atelier", v: 25, shop: 8000000 },
     "Botte de foin doré":      { room: "enclos",   kind: "mxpup",   v: 20, shop: 3000000 },
