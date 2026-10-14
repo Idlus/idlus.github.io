@@ -29,6 +29,18 @@ assert.ok(it.stats.vit <= E.fmCap(T, "vit"), "Vitalité sous l'over maximum");
 assert.strictEqual(E.fmCap(T, "vit"), Math.max(T.stats.vit[1], Math.floor(E.OVER_W / STATS.vit.w)), "over à 101 de poids");
 assert.ok(it.fmLog.length && ["sc", "sn", "ec"].includes(it.fmLog[0].k), "historique coloré");
 assert.ok(E.fmWeights(it).load < 1.45, "poids raisonnable après 300 runes : " + E.fmWeights(it).load.toFixed(2));
+// 1.0.14.3 : une rune qui passe consomme le reliquat ; remonter ce qu'on a perdu ne fabrique plus de reliquat à l'infini
+{ const ab = E.rollItem(S, "i6804", { radiant: false }); const TB = ITEMS["i6804"]; S.items[ab.uid] = ab; let maxWell = 0;
+  for (let i = 0; i < 1500; i++) {
+    const below = Object.keys(TB.stats).filter((k) => TB.stats[k][1] > 0 && !E.EXO_STATS.includes(k) && (ab.stats[k] || 0) < TB.stats[k][1]);
+    const key = E.runeKey("", below[0] || "fo"); S.runes[key] = 5; if (!E.fmInfo(S, ab.uid, key).ok) continue;
+    E.forgemage(S, ab.uid, key); if (!(ab.stats.pa > 0)) { ab.stats.pa = 1; ab.well = Math.max(0, (ab.well || 0) - STATS.pa.w); } // PA perdu : on le remet sans garder son poids maxWell = Math.max(maxWell, ab.well || 0);
+  }
+  assert.ok(maxWell < 150, "Amulette du Chef Bwork : le reliquat ne s'emballe plus (" + Math.round(maxWell) + ")");
+  ab.well = 30; ab.stats.fo = TB.stats.fo[1] - 1; S.runes[":fo"] = 5; const w0 = ab.well; let r;
+  for (let i = 0; i < 200; i++) { ab.well = w0; ab.stats.fo = TB.stats.fo[1] - 1; S.runes[":fo"] = 5; r = E.forgemage(S, ab.uid, ":fo"); if (r.kind === "sc") break; }
+  assert.strictEqual(r.kind, "sc"); assert.strictEqual(ab.well, w0 - STATS.fo.w, "succès critique : le reliquat paie la rune");
+  delete S.items[ab.uid]; }
 
 // 4. Exo PA/PM/Po/Invo : succès critique seulement, un échec ne coûte que la rune
 const it2 = E.rollItem(S, tplOf("coiffe", 60), { radiant: false }); const before = JSON.stringify(it2.stats);

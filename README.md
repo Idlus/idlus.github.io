@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.14.3 « Reliquat corrigé »
+Forgemagie : une rune qui passe consomme le reliquat de l'objet (comme dans DOFUS) ; on ne peut plus remplir le reliquat à l'infini en faisant baisser puis remonter une caractéristique. Objets déjà forgemagés inchangés.
+
 ## 1.0.14.2 « Menu de la poussière »
 Demande de Mathis (« un menu quand on clique sur la poussière », maquette https://claude.ai/artifact/BZJZ8paM4NVqbPKR4qkr9Z, réponse 1A 2A 3A 4A). La pastille de poussière de la barre du haut (`#dustchip`, js/ui.js `statusHtml`) devient un bouton visible aussi au téléphone ; elle ouvre `#dustpop` (`dustOpen`/`dustMenuHtml`), fenêtre accrochée sous la pastille sur PC et pleine largeur au téléphone, fermée par ✕, Échap ou un clic ailleurs, rafraîchie avec la barre du haut quand la poussière, les kamas ou les parchemins changent (`dustRefresh`). Dépenser : 6 boutons `craftscroll` (prix `E.scrollCraftCost`), Idoles (`idolSheet`), Pierre d'âme et Parfum de pistage (action `dustgo` vers la recette du Bricoleur). Gagner : donjons en stasis, coffres, Défi du jour, Kolizéum, Songe/guilde/chasses. Styles `.dm-*` en fin de css/style.css.
 

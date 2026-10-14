@@ -783,14 +783,16 @@
       var roll0 = it.roll ? it.roll[f.stat] : undefined; it.stats[f.stat] = f.nv; if (it.roll && it.roll[f.stat] !== undefined) it.roll[f.stat] = Math.min(f.mx, (it.roll[f.stat] || 0) + f.add);
       parts.push(`+${f.add} ${STATS[f.stat].name}${f.over ? " (over)" : f.exoStat ? " (exo)" : ""}`);
       if (f.exoStat) it.well = Math.max(0, (it.well || 0) - f.w);
+      else if (kind === "sc" && (it.well || 0) > 0) { const pay = Math.min(it.well, f.w); it.well -= pay; parts.push(`le reliquat paie ${wTxt(pay)}`); } // 1.0.14.3 : comme dans DOFUS, une rune qui passe consomme le reliquat (sinon on le remplit à l'infini)
       S.cnt.fmSc = (S.cnt.fmSc || 0) + (kind === "sc" ? 1 : 0);
     }
     if (kind !== "sc" && !f.exoStat) {
       if (S.fmShield) { S.fmShield = false; parts.push("le Cristal protège l'objet"); }
       else if (kind === "sn" && (it.well || 0) >= f.w) { it.well -= f.w; parts.push(`le reliquat paie ${wTxt(f.w)}`); }
-      else { const L = fmLose(it, T, f.stat, f.w); parts.push(...L.parts);
-        if (kind === "sn" && L.lost < f.w - 0.05) { it.stats[f.stat] = f.cur; if (!T.stats[f.stat] && !f.cur) delete it.stats[f.stat]; if (roll0 !== undefined) it.roll[f.stat] = roll0; parts.length = 0; parts.push(...L.parts, "rien d'autre à faire baisser : la rune ne passe pas"); it.well = (it.well || 0) + L.lost; } // objet vidé : pas de gain gratuit
-        else { const extra = kind === "ec" ? L.lost : L.lost - f.w; if (extra > 0.05) { it.well = (it.well || 0) + extra; parts.push(`+reliquat ${wTxt(extra)}`); } } }
+      else { const paid = kind === "sn" ? (it.well || 0) : 0; if (paid > 0) { it.well = 0; parts.push(`le reliquat paie ${wTxt(paid)}`); } // reliquat trop petit : il paie ce qu'il peut, les caractéristiques le reste
+        const L = fmLose(it, T, f.stat, f.w - paid); parts.push(...L.parts);
+        if (kind === "sn" && L.lost < f.w - paid - 0.05) { it.stats[f.stat] = f.cur; if (!T.stats[f.stat] && !f.cur) delete it.stats[f.stat]; if (roll0 !== undefined) it.roll[f.stat] = roll0; parts.length = 0; parts.push(...L.parts, "rien d'autre à faire baisser : la rune ne passe pas"); it.well = (it.well || 0) + L.lost + paid; } // objet vidé : pas de gain gratuit
+        else { const extra = kind === "ec" ? L.lost : L.lost - (f.w - paid); if (extra > 0.05) { it.well = (it.well || 0) + extra; parts.push(`+reliquat ${wTxt(extra)}`); } } }
     }
     if (kind === "ec" && f.exoStat) parts.push(`${E.runeName(runeKey)} perdue`);
     const perfect = !wasPerfect && E.isPerfect(it);

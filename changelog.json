@@ -1,6 +1,16 @@
 {
-  "version": "1.0.14.2",
+  "version": "1.0.14.3",
   "versions": [
+    {
+      "v": "1.0.14.3",
+      "name": "Reliquat corrigé",
+      "items": [
+        "Forgemagie : une rune qui passe en succès critique consomme maintenant le reliquat de l'objet, comme dans DOFUS",
+        "Avant, faire baisser une caractéristique puis la remonter remplissait le reliquat sans limite : on pouvait obtenir un objet parfait avec un gros over et encore plus de 100 de reliquat",
+        "En succès neutre, un reliquat trop petit paie ce qu'il peut et les autres caractéristiques paient le reste",
+        "Les objets déjà forgemagés gardent leurs caractéristiques et leur reliquat actuel"
+      ]
+    },
     {
       "v": "1.0.14.2",
       "name": "Menu de la poussière",

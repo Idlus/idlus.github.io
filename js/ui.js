@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.14.2";
+const GAME_VERSION = "1.0.14.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.14.3", name: "Reliquat corrigé", items: [
+    "Forgemagie : une rune qui passe en succès critique consomme maintenant le reliquat de l'objet, comme dans DOFUS",
+    "Avant, faire baisser une caractéristique puis la remonter remplissait le reliquat sans limite : on pouvait obtenir un objet parfait avec un gros over et encore plus de 100 de reliquat",
+    "En succès neutre, un reliquat trop petit paie ce qu'il peut et les autres caractéristiques paient le reste",
+    "Les objets déjà forgemagés gardent leurs caractéristiques et leur reliquat actuel",
+  ] },
   { v: "1.0.14.2", name: "Menu de la poussière", items: [
     "Toucher la pastille de Poussière de stasis en haut de l'écran ouvre un petit menu : combien vous en avez, à quoi elle sert et où en gagner",
     "Les Petits parchemins de caractéristique se fabriquent directement depuis ce menu (6 boutons avec leur prix en poussière et en kamas, et le nombre que vous pouvez encore fabriquer)",
@@ -5457,7 +5463,7 @@ function fmBench(it) {
   const signOk = J.lvl >= E.FM_MAX;
   const KC = { sc: "g", sn: "y", ec: "r" };
   return `<div class="row" style="gap:12px">${itemIcon(it)}<div class="grow"><h2 style="margin:0">${itemName(it)}</h2><div class="small muted">niv. ${T.lvl}${by ? ` · porté par <b>${h(by.name)}</b>` : ""} · <b>${E.FM_JOBS[job].name} niv. ${J.lvl}</b>${it.sig ? ` · signé <b>${h(it.sig)}</b>` : ""}</div></div>
-      <div class="pbadges"><span class="pb" data-tip="Reliquat : le poids que l'objet a perdu en trop. Il paie les pertes des prochains succès neutres et permet d'ajouter une caractéristique que l'objet n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente.">${IC("forge")} Reliquat <b class="num">${runeW(it.well || 0)}</b></span>${it.trans ? `<span class="pb">Transcendé</span>` : ""}</div></div>
+      <div class="pbadges"><span class="pb" data-tip="Reliquat : le poids que l'objet a perdu en trop. Il paie le poids des prochaines runes qui passent (au lieu de faire baisser une autre caractéristique) et permet d'ajouter une caractéristique que l'objet n'a pas. Il disparaît quand l'objet passe par l'hôtel de vente.">${IC("forge")} Reliquat <b class="num">${runeW(it.well || 0)}</b></span>${it.trans ? `<span class="pb">Transcendé</span>` : ""}</div></div>
     ${block ? `<div class="awaitbar" style="margin:0">${G("lock")} <span class="grow">${h(block)}</span></div>` : ""}
     <div class="pwt2"><span class="small"><b>Poids de l'objet</b> <span class="num">${Math.round(W.cur)} / ${Math.round(W.max)}</span> <span class="xs muted">(${ppc(W.load)} %) · plus l'objet est chargé, plus le succès critique est rare</span></span><div class="bar thin"><i style="width:${Math.min(100, ppc(W.load))}%"></i></div></div>
     <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
