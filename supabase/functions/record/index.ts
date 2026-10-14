@@ -6,6 +6,7 @@
 // Se montrer : avec { defi: palier }, elle rejoue le défi du jour (même hasard pour tous) et garde le meilleur score du jour.
 // Kolizéum : avec { koli: { opps: 1, r } }, trois adversaires (le jeu calcule la chance) ; avec { koli: { fight: … } }, un combat classé.
 // Guildes : avec { gboss: 1 }, un essai contre le boss de guilde de la semaine ; avec { perco: id }, une défense de Percepteur.
+// 1.0.30 : avec { raid: { go | def | end: id } }, les attaques entre guildes (lancer, défendre, le Percepteur et ses gardes).
 // Boss des mondes : avec { wboss: 1 }, un essai contre le boss de tout le serveur (js/wboss.js, supabase/wboss.sql).
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
@@ -30,12 +31,13 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number } = {};
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; raid?: any } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
   if (body.perco) return perco(db, user.id, Number(body.perco));
   if (body.koli) return koli(db, user.id, body.koli);
+  if (body.raid) return raid(db, user.id, body.raid);
   if (body.wboss) return wboss(db, user.id);
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
@@ -152,12 +154,12 @@ async function gboss(db: any, uid: string) {
   const { data: st, error } = await db.rpc("gb_start", { p_user: uid, p_w: w });
   if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
   const def = E.gboss(w);
-  const r = E.gbossSim(g.S, def, st.n, g.now);
+  const r = E.gbossSim(g.S, def, st.n, g.now, st.phase || 1); // 1.0.30 : la phase en cours (de plus en plus dure)
   if (r.err) return json({ ok: false, err: r.err });
   const lvl = Math.max(1, ...E.team(g.S).map((c: { lvl: number; ren?: number }) => (c.ren ? 200 : c.lvl)));
   const { data: done, error: e2 } = await db.rpc("gb_done", { p_user: uid, p_w: w, p_n: st.n, p_points: r.points, p_raw: r.raw, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
-  return json({ ok: true, gboss: true, boss: def.name, points: r.points, rounds: r.rounds, alive: r.alive, pts: done.pts, goal: done.goal, left: done.left });
+  return json({ ok: true, gboss: true, boss: def.name, points: r.points, rounds: r.rounds, alive: r.alive, pts: done.pts, goal: done.goal, left: done.left, phase: st.phase || 1, done: done.done, tok: done.tok, every: done.every });
 }
 // ---------- Boss des mondes : un essai contre le boss de tout le serveur ----------
 // deno-lint-ignore no-explicit-any
@@ -184,6 +186,45 @@ async function perco(db: any, uid: string, id: number) {
   const { data: done, error: e2 } = await db.rpc("pc_done", { p_user: uid, p_id: id, p_aid: st.aid, p_win: !!r.win });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, perco: true, win: !!r.win, rounds: r.rounds, alive: r.alive, foes: r.foes, gxp: done.gxp || 0 });
+}
+
+// ---------- 1.0.30 : attaques entre guildes (Guerre des Percepteurs, js/gboss.js) ----------
+// L'attaquant et les défenseurs se battent avec leur équipe d'arène (3 héros, celle du Kolizéum), copiée ici depuis la
+// partie en ligne ; supabase/gboss.sql (rd_*) tient l'attaque, le butin, les boucliers et le classement.
+// go : lancer l'attaque sur un Percepteur ; def : défendre (une fois par attaque) ; end : à la fin, le Percepteur et ses gardes.
+// deno-lint-ignore no-explicit-any
+async function raid(db: any, uid: string, q: any) {
+  const id = Number((q && (q.go || q.def || q.end)) || 0);
+  if (!(id > 0)) return json({ ok: false, err: "attaque inconnue" }, 400);
+  // deno-lint-ignore no-explicit-any
+  const team = (S: any) => { const A = E.koliSnap(S, E.koliState(S, Date.now()).team); return { A, heads: A.map((x: { cls: string; sex: string; head: number; lvl: number }) => ({ cls: x.cls, sex: x.sex, head: x.head, lvl: x.lvl })) }; };
+  if (q.end) {
+    const now = Date.now();
+    if (now - (lastTry.get(uid + ":rdend") || 0) < 3000) return json({ ok: false, err: "trop tôt", retry: 3 }, 429);
+    lastTry.set(uid + ":rdend", now);
+    const { data: st, error } = await db.rpc("rd_end_start", { p_user: uid, p_raid: id });
+    if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+    const seed = E.raidSeed(id, "perco"); const B = E.percoGuards(seed, st.lvl, st.rob);
+    const r = E.koliSim(st.att, B, seed);
+    const { data: done, error: e2 } = await db.rpc("rd_end_done", { p_raid: id, p_win: !!r.win, p_rounds: r.rounds });
+    if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+    return json({ ok: true, raid: true, end: true, win: !!r.win, rounds: r.rounds, loot: done.loot || null });
+  }
+  const g = await guildSave(db, uid, ":raid"); if (g.err) return g.err;
+  const T = team(g.S);
+  if (!T.A.length) return json({ ok: false, err: "Choisis ton équipe d'arène (Kolizéum) : elle attaque et défend les Percepteurs." });
+  if (q.go) {
+    const { data: st, error } = await db.rpc("rd_open", { p_user: uid, p_perco: id, p_team: T.A, p_heads: T.heads, p_lvl: E.koliLvl(g.S) });
+    if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+    return json({ ok: true, raid: true, id: st.id, ends: st.ends, zone: st.zone, g: st.g, left: st.left });
+  }
+  const { data: st, error } = await db.rpc("rd_def_start", { p_user: uid, p_raid: id });
+  if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+  const seed = E.raidSeed(id, uid);
+  const r = E.koliSim(T.A, st.att, seed);
+  const { data: done, error: e2 } = await db.rpc("rd_def_done", { p_user: uid, p_raid: id, p_win: !!r.win, p_heads: T.heads, p_rounds: r.rounds });
+  if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+  return json({ ok: true, raid: true, def: true, win: !!r.win, rounds: r.rounds, by: st.by });
 }
 
 // ---------- Kolizéum (js/koli.js) : 3 contre 3 contre l'équipe d'arène d'un autre joueur, jouée par l'IA ----------

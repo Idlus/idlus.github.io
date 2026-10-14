@@ -1,11 +1,18 @@
 -- ============================================================================
 -- GUILDES — Idlus (multijoueur, étape 5)
--- Créer une guilde (Guildalogemme : 100 000 kamas et un héros niveau 30), la rejoindre
--- (libre ou sur demande), rangs (Meneur, Bras droit, Membre, Recrue), 30 membres au plus,
+-- Créer une guilde (Guildalogemme), la rejoindre (libre ou sur demande),
+-- rangs (Meneur, Bras droit, Membre, Recrue), places de membres,
 -- XP de guilde donnée par les membres (part choisie de 0 à 90 %), niveaux et bonus,
 -- chat de guilde, journal, modération dans le panel admin.
+-- 1.0.30 « Refonte des guildes » (choix 1A, 3A, 4A, 5A, 6A et 18A de Mathis) : Guildalogemme à 25 000 kamas
+-- et un héros niveau 20, nouvelles guildes protégées 2 h, 5 places au départ (achetées avec le coffre
+-- jusqu'à 15 : 250 000 × (place − 5)²), coffre de guilde (kamas des Percepteurs, dépôts, part des ventes
+-- directes de 0 à 20 % ; personne ne retire), 4 améliorations à 10 rangs (100 000 × rang²) et 8 améliorations
+-- uniques, fiche complète des autres guildes. Les anciennes guildes sont dissoutes par tools/serveur/guildes_reset.sql
+-- (lancé par Mathis, jamais par ce fichier).
 -- S'appuie sur supabase/hdv.sql (opérations sur la partie : hdv_op, hdv_save, hdv_kamas)
--- et sur supabase/chat.sql (pseudo_of, adm_need, alog, chat_sanctions).
+-- et sur supabase/chat.sql (pseudo_of, adm_need, alog, chat_sanctions) ; gboss.sql (Percepteurs, boss,
+-- Guerre des Percepteurs) et codes.sql (code GUILDES) sont lus au moment de l'appel.
 -- ============================================================================
 
 create table if not exists public.guilds (
@@ -72,6 +79,33 @@ create table if not exists public.guild_log (
 create index if not exists guild_log_g on public.guild_log (guild_id, id desc);
 alter table public.guild_log enable row level security;
 
+-- ---------- 1.0.30 : coffre, places, améliorations, protection ----------
+alter table public.guilds add column if not exists chest bigint not null default 0;         -- coffre de guilde (kamas)
+alter table public.guilds add column if not exists seats int not null default 5;            -- places de membres (5 à 15)
+alter table public.guilds add column if not exists ups jsonb not null default '{}'::jsonb;  -- rangs (poche, prospection, sagesse, robustesse : 0 à 10) et améliorations uniques (1)
+alter table public.guilds add column if not exists shield_until timestamptz;                -- nouvelle guilde : Percepteurs protégés 2 h
+alter table public.guilds add column if not exists pvp_win int not null default 0;          -- attaques entre guildes gagnées (attaque ou défense)
+alter table public.guilds add column if not exists pvp_loss int not null default 0;
+-- part de ses ventes directes que chaque membre donne au coffre (0 à 20 %, choisie par le membre)
+alter table public.guild_members add column if not exists sale smallint not null default 0;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'guild_members_sale_chk') then
+    alter table public.guild_members add constraint guild_members_sale_chk check (sale between 0 and 20);
+  end if;
+end $$;
+-- mouvements du coffre (les parts des ventes d'un même membre sont regroupées par heure)
+create table if not exists public.guild_chest_log (
+  id bigint generated always as identity primary key,
+  guild_id bigint not null references public.guilds (id) on delete cascade,
+  at timestamptz not null default now(),
+  k bigint not null,
+  txt text not null,
+  src text,                 -- regroupement (« vente:<joueur> »)
+  n int not null default 1
+);
+create index if not exists guild_chest_log_g on public.guild_chest_log (guild_id, id desc);
+alter table public.guild_chest_log enable row level security;
+
 -- ---------- outils internes ----------
 create or replace function public.g_err(t text) returns jsonb language sql immutable as $$ select jsonb_build_object('err', t) $$;
 -- XP pour passer du niveau l au niveau l+1, et niveau atteint avec une XP totale (niveau 100 au plus)
@@ -124,43 +158,98 @@ end $$;
 create or replace function public.g_week(u uuid) returns void language sql security definer set search_path = public
 as $$ update guild_members set week = 0, week_of = (date_trunc('week', now()))::date where user_id = u and week_of < (date_trunc('week', now()))::date $$;
 
+-- ---------- 1.0.30 : outils du coffre et des améliorations ----------
+-- 1234567 → « 1 234 567 »
+create or replace function public.g_fmt(n bigint) returns text language sql immutable
+as $$ select case when n < 0 then '-' else '' end || regexp_replace(abs(n)::text, '(\d)(?=(\d{3})+$)', '\1 ', 'g') $$;
+create or replace function public.g_seats(g bigint) returns int language sql stable security definer set search_path = public
+as $$ select coalesce((select seats from guilds where id = g), 5) $$;
+-- prix de la n-ième place (E.guildSeatPrice) : 6e 250 000, 10e 6 250 000, 15e 25 000 000
+create or replace function public.g_seat_price(n int) returns bigint language sql immutable as $$ select 250000::bigint * greatest(0, n - 5) * greatest(0, n - 5) $$;
+-- les améliorations (E.GUILD_RANKS et E.GUILD_UQ dans js/gboss.js) : max 10 = à rangs (100 000 × rang²), max 1 = unique
+create or replace function public.g_upinfo(k text) returns jsonb language sql immutable
+as $$ select case k
+  when 'poche' then '{"n":"Poche","max":10}' when 'prospection' then '{"n":"Prospection","max":10}'
+  when 'sagesse' then '{"n":"Sagesse","max":10}' when 'robustesse' then '{"n":"Robustesse","max":10}'
+  when 'espionnage' then '{"n":"Espionnage","max":1,"lvl":3,"cost":1000000}'
+  when 'coffrefort' then '{"n":"Coffre-fort","max":1,"lvl":5,"cost":2000000}'
+  when 'vigie' then '{"n":"Vigie","max":1,"lvl":8,"cost":3000000}'
+  when 'banniere' then '{"n":"Bannière de guerre","max":1,"lvl":10,"cost":5000000}'
+  when 'comptoir' then '{"n":"Comptoir de guilde","max":1,"lvl":12,"cost":6000000}'
+  when 'qg' then '{"n":"Quartier général","max":1,"lvl":15,"cost":10000000}'
+  when 'percodore' then '{"n":"Percepteur doré","max":1,"lvl":18,"cost":14000000}'
+  when 'cor' then '{"n":"Cor de ralliement","max":1,"lvl":20,"cost":20000000}'
+  end::jsonb $$;
+-- rang d'une amélioration (0 si pas achetée)
+create or replace function public.g_up(g bigint, k text) returns int language sql stable security definer set search_path = public
+as $$ select coalesce((select (ups->>k)::int from guilds where id = g), 0) $$;
+-- Mouvement du coffre : k > 0 entre, k < 0 sort (le coffre ne descend jamais sous 0). Renvoie le nouveau contenu.
+create or replace function public.g_chest(g bigint, p_k bigint, t text, src text default null) returns bigint language plpgsql security definer set search_path = public
+as $$
+declare c bigint; lid bigint;
+begin
+  if coalesce(p_k, 0) = 0 then return (select chest from guilds where id = g); end if;
+  update guilds set chest = greatest(0, chest + p_k) where id = g returning chest into c;
+  if c is null then return null; end if;
+  if src is not null then
+    select id into lid from guild_chest_log where guild_id = g and guild_chest_log.src = g_chest.src and at > now() - interval '1 hour' order by id desc limit 1;
+    if lid is not null then update guild_chest_log set k = k + p_k, n = n + 1, txt = t, at = now() where id = lid; return c; end if;
+  end if;
+  insert into guild_chest_log (guild_id, k, txt, src) values (g, p_k, t, src);
+  delete from guild_chest_log where guild_id = g and id < (select min(id) from (select id from guild_chest_log where guild_id = g order by id desc limit 80) x);
+  return c;
+end $$;
+
 do $$ declare f text; begin
-  foreach f in array array['g_need(int)', 'g_base(int)', 'g_lvl(bigint)', 'g_rname(int)', 'g_log(bigint, text, boolean)', 'g_me(uuid)', 'g_count(bigint)', 'g_name_ok(text)', 'g_join(uuid, bigint, text)', 'g_heir(bigint)', 'g_week(uuid)', 'g_err(text)'] loop
+  foreach f in array array['g_need(int)', 'g_base(int)', 'g_lvl(bigint)', 'g_rname(int)', 'g_log(bigint, text, boolean)', 'g_me(uuid)', 'g_count(bigint)', 'g_name_ok(text)', 'g_join(uuid, bigint, text)', 'g_heir(bigint)', 'g_week(uuid)', 'g_err(text)',
+    'g_fmt(bigint)', 'g_seats(bigint)', 'g_seat_price(int)', 'g_upinfo(text)', 'g_up(bigint, text)', 'g_chest(bigint, bigint, text, text)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
 end $$;
 
 -- ---------- lecture ----------
 -- Liste des guildes (visible sans compte).
-create or replace function public.guild_list(p_q text default '') returns jsonb language sql stable security definer set search_path = public
-as $$
-  select coalesce(jsonb_agg(x order by x.lvl desc, x.n desc, x.name), '[]'::jsonb) from (
-    select g.id, g.name, g.ic, g.col, g.lvl, g.open, g.motd, (select count(*) from guild_members m where m.guild_id = g.id) n,
-      (select pseudo_of(m.user_id) from guild_members m where m.guild_id = g.id and m.rank = 0 limit 1) chef
+-- 1.0.30 : places, protection des nouvelles guildes, bilan des attaques et Percepteurs posés (plpgsql : guild_percos est dans gboss.sql).
+create or replace function public.guild_list(p_q text default '') returns jsonb language plpgsql stable security definer set search_path = public
+as $$ begin
+  return (select coalesce(jsonb_agg(x order by x.lvl desc, x.n desc, x.name), '[]'::jsonb) from (
+    select g.id, g.name, g.ic, g.col, g.lvl, g.open, g.motd, (select count(*) from guild_members m where m.guild_id = g.id) n, g.seats cap,
+      (select pseudo_of(m.user_id) from guild_members m where m.guild_id = g.id and m.rank = 0 limit 1) chef,
+      case when g.shield_until > now() then g.shield_until end shield, g.pvp_win w, g.pvp_loss l,
+      (select count(*) from guild_percos p where p.guild_id = g.id) percos
     from guilds g where coalesce(p_q, '') = '' or g.name ilike '%' || replace(replace(p_q, '%', ''), '_', '') || '%'
-    order by g.lvl desc limit 60) x
-$$;
+    order by g.lvl desc limit 60) x);
+end $$;
 grant execute on function public.guild_list(text) to anon, authenticated;
 
 -- Ma guilde (ou mes invitations si je n'en ai pas).
 create or replace function public.guild_me() returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare me uuid := auth.uid(); m guild_members; g guilds;
+declare me uuid := auth.uid(); m guild_members; g guilds; gift boolean := false;
 begin
   if me is null then return g_err('non connecté'); end if;
   perform g_week(me);
   m := g_me(me);
   if m.user_id is null then
-    return jsonb_build_object('g', null,
-      'invites', (select coalesce(jsonb_agg(jsonb_build_object('gid', r.guild_id, 'name', g2.name, 'ic', g2.ic, 'col', g2.col, 'lvl', g2.lvl, 'n', g_count(g2.id), 'by', pseudo_of(r.by_user)) order by r.at desc), '[]'::jsonb)
+    -- 1.0.30 : code GUILDES (créé par tools/serveur/guildes_reset.sql) encore valable et pas utilisé par ce compte
+    begin
+      gift := exists (select 1 from gift_codes c where c.code = 'GUILDES' and c.active and (c.ends is null or (now() at time zone 'Europe/Paris')::date <= c.ends)
+        and (c.max_uses is null or c.uses < c.max_uses)) and not exists (select 1 from gift_uses u where u.code = 'GUILDES' and u.user_id = me);
+    exception when undefined_table then gift := false; end;
+    return jsonb_build_object('g', null, 'gift', gift,
+      'invites', (select coalesce(jsonb_agg(jsonb_build_object('gid', r.guild_id, 'name', g2.name, 'ic', g2.ic, 'col', g2.col, 'lvl', g2.lvl, 'n', g_count(g2.id), 'cap', g2.seats, 'by', pseudo_of(r.by_user)) order by r.at desc), '[]'::jsonb)
         from guild_requests r join guilds g2 on g2.id = r.guild_id where r.user_id = me and r.kind = 'invite'),
       'asks', (select coalesce(jsonb_agg(r.guild_id), '[]'::jsonb) from guild_requests r where r.user_id = me and r.kind = 'ask'));
   end if;
   select * into g from guilds where id = m.guild_id;
   return jsonb_build_object(
     'g', jsonb_build_object('id', g.id, 'name', g.name, 'ic', g.ic, 'col', g.col, 'motd', g.motd, 'open', g.open, 'lvl', g.lvl, 'xp', g.xp,
-      'base', g_base(g.lvl), 'next', case when g.lvl >= 100 then null else g_base(g.lvl + 1) end, 'created', g.created_at),
-    'rank', m.rank, 'share', m.share, 'share_by', m.share_by,
+      'base', g_base(g.lvl), 'next', case when g.lvl >= 100 then null else g_base(g.lvl + 1) end, 'created', g.created_at,
+      -- 1.0.30 : coffre, places, améliorations, protection, bilan des attaques
+      'chest', g.chest, 'seats', g.seats, 'ups', g.ups, 'shield', case when g.shield_until > now() then g.shield_until end, 'pvp', jsonb_build_array(g.pvp_win, g.pvp_loss),
+      'chest24', (select coalesce(sum(k), 0) from guild_chest_log where guild_id = g.id and k > 0 and at > now() - interval '24 hours')),
+    'rank', m.rank, 'share', m.share, 'share_by', m.share_by, 'sale', m.sale,
+    'chestlog', (select coalesce(jsonb_agg(jsonb_build_object('at', at, 'k', k, 't', txt, 'n', n) order by id desc), '[]'::jsonb) from (select * from guild_chest_log where guild_id = g.id order by id desc limit 25) c),
     'members', (select coalesce(jsonb_agg(jsonb_build_object('u', x.user_id, 'p', pseudo_of(x.user_id), 'rank', x.rank, 'share', x.share, 'sby', x.share_by, 'given', x.given,
         'week', case when x.week_of < (date_trunc('week', now()))::date then 0 else x.week end, 'joined', x.joined_at,
         'cls', l.main, 'lvl', l.main_lvl, 'seen', s.updated_at) order by x.rank, x.given desc), '[]'::jsonb)
@@ -182,13 +271,14 @@ begin
   e := g_name_ok(n); if e is not null then return g_err(e); end if;
   if exists (select 1 from guilds where lower(name) = lower(n)) then return g_err('Ce nom est déjà pris.'); end if;
   select coalesce(max(case when coalesce((c->>'ren')::int, 0) > 0 then 200 else coalesce((c->>'lvl')::int, 1) end), 1) into best from jsonb_array_elements(coalesce(d->'chars', '[]'::jsonb)) c;
-  if best < 30 then return g_err('Il faut un héros au niveau 30 pour fonder une guilde.'); end if;
-  if hdv_kamas(me, d) < 100000 then return g_err('La Guildalogemme coûte 100 000 kamas.'); end if;
+  -- 1.0.30 (choix 5A) : Guildalogemme à 25 000 kamas et un héros niveau 20 (avant : 100 000 et 30)
+  if best < 20 then return g_err('Il faut un héros au niveau 20 pour fonder une guilde.'); end if;
+  if hdv_kamas(me, d) < 25000 then return g_err('La Guildalogemme coûte 25 000 kamas.'); end if;
   if p_col !~ '^#[0-9a-fA-F]{6}$' or p_ic !~ '^[a-z_]{2,20}$' then return g_err('Emblème illisible.'); end if;
-  insert into guilds (name, ic, col) values (n, p_ic, p_col) returning id into gid;
+  insert into guilds (name, ic, col, shield_until) values (n, p_ic, p_col, now() + interval '2 hours') returning id into gid; -- 1.0.30 : protégée 2 h
   insert into guild_members (user_id, guild_id, rank) values (me, gid, 0);
   delete from guild_requests where user_id = me;
-  perform hdv_op(me, jsonb_build_object('k', -100000), 'Guildalogemme : fondation de la guilde ' || n);
+  perform hdv_op(me, jsonb_build_object('k', -25000), 'Guildalogemme : fondation de la guilde ' || n);
   perform g_log(gid, pseudo_of(me) || ' fonde la guilde ' || n || ' !');
   return jsonb_build_object('ok', gid, 'ops', hdv_ops_after(me, p_after));
 end $$;
@@ -203,11 +293,11 @@ begin
   perform pg_advisory_xact_lock(hashtext('guild' || p_id));
   select * into g from guilds where id = p_id; if not found then return g_err('Cette guilde n''existe plus.'); end if;
   if exists (select 1 from guild_requests where guild_id = p_id and user_id = me and kind = 'invite') then
-    if g_count(p_id) >= 30 then return g_err('La guilde est complète (30 membres).'); end if;
+    if g_count(p_id) >= g.seats then return g_err(format('La guilde est complète (%s places).', g.seats)); end if;
     perform g_join(me, p_id, 'invitation'); return jsonb_build_object('ok', 'in');
   end if;
   if g.open then
-    if g_count(p_id) >= 30 then return g_err('La guilde est complète (30 membres).'); end if;
+    if g_count(p_id) >= g.seats then return g_err(format('La guilde est complète (%s places).', g.seats)); end if;
     perform g_join(me, p_id, null); return jsonb_build_object('ok', 'in');
   end if;
   if (select count(*) from guild_requests where user_id = me and kind = 'ask') >= 5 then return g_err('5 demandes en attente au maximum.'); end if;
@@ -224,7 +314,7 @@ begin
   if m.rank > 2 then return g_err('Les recrues ne peuvent pas encore inviter.'); end if;
   select id into o from profiles where lower(pseudo) = lower(btrim(p_pseudo)); if o is null then return g_err('Joueur introuvable.'); end if;
   if (g_me(o)).user_id is not null then return g_err('Ce joueur est déjà dans une guilde.'); end if;
-  if g_count(m.guild_id) >= 30 then return g_err('La guilde est complète (30 membres).'); end if;
+  if g_count(m.guild_id) >= g_seats(m.guild_id) then return g_err(format('La guilde est complète (%s places) : achetez une place avec le coffre.', g_seats(m.guild_id))); end if;
   insert into guild_requests (guild_id, user_id, kind, by_user) values (m.guild_id, o, 'invite', me)
     on conflict (guild_id, user_id) do update set kind = 'invite', by_user = me, at = now();
   return jsonb_build_object('ok', true);
@@ -246,7 +336,7 @@ begin
   if not exists (select 1 from guild_requests where guild_id = p_gid and user_id = p_user and kind = 'ask') then return g_err('Demande expirée.'); end if;
   if not p_yes then delete from guild_requests where guild_id = p_gid and user_id = p_user; return jsonb_build_object('ok', true); end if;
   if (g_me(p_user)).user_id is not null then delete from guild_requests where user_id = p_user; return g_err('Ce joueur a rejoint une autre guilde.'); end if;
-  if g_count(p_gid) >= 30 then return g_err('La guilde est complète (30 membres).'); end if;
+  if g_count(p_gid) >= g_seats(p_gid) then return g_err(format('La guilde est complète (%s places) : achetez une place avec le coffre.', g_seats(p_gid))); end if;
   perform g_join(p_user, p_gid, 'accepté par ' || pseudo_of(me));
   return jsonb_build_object('ok', true);
 end $$;
@@ -326,6 +416,119 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
+-- ---------- 1.0.30 : coffre de guilde (choix 3A) ----------
+-- Déposer des kamas (n'importe quel membre). Personne ne retire : le coffre sert aux places et aux améliorations.
+create or replace function public.guild_deposit(p_after bigint, p_k bigint) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); m guild_members; d jsonb; c bigint;
+begin
+  m := g_me(me); if m.user_id is null then return g_err('Tu n''es pas dans une guilde.'); end if;
+  if coalesce(p_k, 0) < 1000 then return g_err('1 000 kamas au moins.'); end if;
+  if p_k > 1000000000 then return g_err('Un milliard de kamas au plus d''un coup.'); end if;
+  begin d := hdv_save(me); exception when raise_exception then return g_err(replace(sqlerrm, 'vendre ni acheter', 'déposer au coffre')); end;
+  perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
+  if hdv_kamas(me, d) < p_k then return g_err('Tu n''as pas autant de kamas.'); end if;
+  perform hdv_op(me, jsonb_build_object('k', -p_k), format('Dépôt au coffre de guilde : %s kamas', g_fmt(p_k)));
+  perform pg_advisory_xact_lock(hashtext('guild' || m.guild_id));
+  c := g_chest(m.guild_id, p_k, 'Dépôt de ' || pseudo_of(me));
+  return jsonb_build_object('ok', true, 'chest', c, 'ops', hdv_ops_after(me, p_after));
+end $$;
+
+-- Ma part des ventes directes pour le coffre (0 à 20 %), réglée par chaque membre pour lui-même.
+create or replace function public.guild_sale_pct(p_pct int) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); m guild_members; v int := greatest(0, least(20, coalesce(p_pct, 0)));
+begin
+  m := g_me(me); if m.user_id is null then return g_err('Tu n''es pas dans une guilde.'); end if;
+  update guild_members set sale = v where user_id = me;
+  return jsonb_build_object('ok', true, 'sale', v);
+end $$;
+
+-- Interface pour la vente directe (gm-economie) : verse au coffre la part choisie par le membre sur une vente
+-- de p_kamas kamas et renvoie le montant pris (0 sans guilde ou à 0 %). À appeler dans la même transaction que la vente.
+create or replace function public.guild_sale_share(p_user uuid, p_kamas bigint) returns bigint language plpgsql security definer set search_path = public
+as $$
+declare m guild_members := g_me(p_user); s bigint;
+begin
+  if m.user_id is null or coalesce(m.sale, 0) <= 0 or coalesce(p_kamas, 0) <= 0 then return 0; end if;
+  s := floor(p_kamas * least(20, m.sale) / 100.0)::bigint;
+  if s <= 0 then return 0; end if;
+  perform g_chest(m.guild_id, s, format('Part des ventes directes (%s, %s %%)', pseudo_of(p_user), m.sale), 'vente:' || p_user::text);
+  return s;
+end $$;
+-- Interface : la guilde du joueur a-t-elle cette amélioration ('comptoir' : +5 % en vente directe) ?
+create or replace function public.guild_has_upgrade(p_user uuid, p_key text) returns boolean language sql stable security definer set search_path = public
+as $$ select coalesce((select coalesce((g.ups->>p_key)::int, 0) > 0 from guild_members m join guilds g on g.id = m.guild_id where m.user_id = p_user), false) $$;
+revoke all on function public.guild_sale_share(uuid, bigint) from public, anon, authenticated;
+revoke all on function public.guild_has_upgrade(uuid, text) from public, anon, authenticated;
+
+-- ---------- 1.0.30 : places et améliorations, payées avec le coffre (choix 1A, 4A et 18A) ----------
+-- p_k : 'place', un rang ('poche', 'prospection', 'sagesse', 'robustesse') ou une amélioration unique. Meneur ou Bras droit.
+create or replace function public.guild_buy(p_k text) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); m guild_members; g guilds; u jsonb; r int; price bigint; t text;
+begin
+  m := g_me(me); if m.user_id is null then return g_err('Tu n''es pas dans une guilde.'); end if;
+  if m.rank > 1 then return g_err('Seuls le Meneur et les Bras droits dépensent le coffre.'); end if;
+  perform pg_advisory_xact_lock(hashtext('guild' || m.guild_id));
+  select * into g from guilds where id = m.guild_id for update;
+  if p_k = 'place' then
+    if g.seats >= 15 then return g_err('La guilde a déjà 15 places, le maximum.'); end if;
+    price := g_seat_price(g.seats + 1);
+    if g.chest < price then return g_err(format('Il manque %s kamas dans le coffre.', g_fmt(price - g.chest))); end if;
+    update guilds set seats = seats + 1 where id = g.id;
+    perform g_chest(g.id, -price, format('%se place achetée par %s', g.seats + 1, pseudo_of(me)));
+    perform g_log(g.id, format('%s achète la %se place de la guilde (%s kamas du coffre).', pseudo_of(me), g.seats + 1, g_fmt(price)));
+    return jsonb_build_object('ok', true, 'seats', g.seats + 1, 'chest', g.chest - price);
+  end if;
+  u := g_upinfo(p_k); if u is null then return g_err('Amélioration inconnue.'); end if;
+  r := coalesce((g.ups->>p_k)::int, 0);
+  if (u->>'max')::int = 1 then
+    if r >= 1 then return g_err('Déjà achetée.'); end if;
+    if g.lvl < (u->>'lvl')::int then return g_err(format('Il faut une guilde niveau %s.', u->>'lvl')); end if;
+    price := (u->>'cost')::bigint;
+    t := format('%s achetée par %s', u->>'n', pseudo_of(me));
+  else
+    if r >= 10 then return g_err('Rang maximum atteint.'); end if;
+    price := 100000::bigint * (r + 1) * (r + 1);
+    t := format('Rang %s de %s acheté par %s', r + 1, u->>'n', pseudo_of(me));
+  end if;
+  if g.chest < price then return g_err(format('Il manque %s kamas dans le coffre.', g_fmt(price - g.chest))); end if;
+  update guilds set ups = ups || jsonb_build_object(p_k, r + 1) where id = g.id;
+  perform g_chest(g.id, -price, t);
+  perform g_log(g.id, format('%s (%s kamas du coffre).', t, g_fmt(price)));
+  return jsonb_build_object('ok', true, 'ups', g.ups || jsonb_build_object(p_k, r + 1), 'chest', g.chest - price);
+end $$;
+
+-- ---------- 1.0.30 : fiche d'une autre guilde (choix 6A) ----------
+-- Membres, niveau, bilan des combats, boss, Percepteurs (avec leur bouclier et l'attaque en cours).
+-- Avec l'Espionnage : l'équipe d'arène de chaque membre et le contenu de chaque poche.
+create or replace function public.guild_view(p_id bigint) returns jsonb language plpgsql stable security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); g guilds; my guild_members; mg guilds; spy boolean := false; wk int := gb_week();
+begin
+  select * into g from guilds where id = p_id; if not found then return g_err('Cette guilde n''existe plus.'); end if;
+  my := g_me(me);
+  if my.user_id is not null then select * into mg from guilds where id = my.guild_id; spy := coalesce((mg.ups->>'espionnage')::int, 0) > 0 and mg.id <> g.id; end if;
+  return jsonb_build_object('id', g.id, 'name', g.name, 'ic', g.ic, 'col', g.col, 'motd', g.motd, 'lvl', g.lvl, 'n', g_count(g.id), 'cap', g.seats, 'created', g.created_at,
+    'chef', (select pseudo_of(x.user_id) from guild_members x where x.guild_id = g.id and x.rank = 0 limit 1),
+    'shield', case when g.shield_until > now() then g.shield_until end, 'pvp', jsonb_build_array(g.pvp_win, g.pvp_loss),
+    'war', (select jsonb_build_object('pts', w.pts, 'win', w.win, 'loss', w.loss) from perco_war w where w.w = wk and w.guild_id = g.id),
+    'boss', (select count(*) from gboss_phase b where b.w = wk and b.guild_id = g.id),
+    'trophies', (select count(*) from guild_trophies t where t.guild_id = g.id),
+    'rob', coalesce((g.ups->>'robustesse')::int, 0), 'fort', case when spy then coalesce((g.ups->>'coffrefort')::int, 0) > 0 end,
+    'spy', spy, 'mine', my.guild_id is not distinct from g.id, 'mylvl', mg.lvl,
+    'members', (select coalesce(jsonb_agg(jsonb_build_object('p', pseudo_of(x.user_id), 'rank', x.rank, 'cls', l.main, 'lvl', l.main_lvl,
+        'team', case when spy then k.heads end) order by x.rank, x.joined_at), '[]'::jsonb)
+      from guild_members x left join ladder l on l.user_id = x.user_id left join koli k on k.user_id = x.user_id where x.guild_id = g.id),
+    'percos', (select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'sid', p.sid, 'name', z.name, 'zlvl', z.lvl, 'dj', z.kind = 'dj', 'fill', least(1, pc_fill(p)),
+        'shield', case when p.shield_until > now() then p.shield_until end, 'monsters', p.atk_at is not null,
+        'raid', (select jsonb_build_object('id', r.id, 'ends', r.ends, 'by', pseudo_of(r.att_user), 'g', (select name from guilds where id = r.att_guild), 'st', r.status)
+          from perco_raids r where r.perco_id = p.id and r.status in ('open', 'fight') order by r.id desc limit 1),
+        'pocket', case when spy then pc_gain(z.cap, pc_fill(p), g.ups) end) order by p.placed_at), '[]'::jsonb)
+      from guild_percos p join perco_zones z on z.sid = p.sid where p.guild_id = g.id));
+end $$;
+
 -- ---------- XP de guilde ----------
 -- Le jeu retire la part choisie de l'XP des combats et l'envoie ici. Plafond : 60 millions d'XP
 -- par heure écoulée depuis le dernier envoi (24 h au plus), pour limiter les parties trafiquées.
@@ -385,7 +588,8 @@ end $$;
 
 do $$ declare f text; begin
   foreach f in array array['guild_me()', 'guild_create(bigint, text, text, text)', 'guild_join(bigint)', 'guild_invite(text)', 'guild_answer(bigint, uuid, boolean)', 'guild_leave()',
-    'guild_rank(uuid, int)', 'guild_kick(uuid)', 'guild_share(uuid, int)', 'guild_set(text, boolean, text, text)', 'guild_give(bigint, int)', 'guild_say(text, jsonb)', 'guild_chat(bigint)'] loop
+    'guild_rank(uuid, int)', 'guild_kick(uuid)', 'guild_share(uuid, int)', 'guild_set(text, boolean, text, text)', 'guild_give(bigint, int)', 'guild_say(text, jsonb)', 'guild_chat(bigint)',
+    'guild_deposit(bigint, bigint)', 'guild_sale_pct(int)', 'guild_buy(text)', 'guild_view(bigint)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;
@@ -396,7 +600,7 @@ create or replace function public.adm_guilds(p_q text default '') returns jsonb 
 as $$ begin
   perform adm_need(false);
   return (select coalesce(jsonb_agg(x order by x.n desc), '[]'::jsonb) from (
-    select g.id, g.name, g.ic, g.col, g.lvl, g.motd, g.created_at, (select count(*) from guild_members m where m.guild_id = g.id) n,
+    select g.id, g.name, g.ic, g.col, g.lvl, g.motd, g.created_at, (select count(*) from guild_members m where m.guild_id = g.id) n, g.seats cap, g.chest, -- 1.0.30
       (select pseudo_of(m.user_id) from guild_members m where m.guild_id = g.id and m.rank = 0 limit 1) chef,
       (select coalesce(jsonb_agg(jsonb_build_object('p', pseudo_of(m.user_id), 'rank', m.rank) order by m.rank, m.joined_at), '[]'::jsonb) from guild_members m where m.guild_id = g.id) members,
       (select count(*) from guild_msgs gm where gm.guild_id = g.id and gm.created_at > now() - interval '24 hours' and gm.kind = 'msg') msgs
