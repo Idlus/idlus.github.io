@@ -72,10 +72,15 @@ const server = http.createServer((req, res) => {
     if (!/^\d/.test(fm.hp || "")) fail("Formation : PV absents des médaillons");
     if (fm.scene) fail("Formation : la scène dessinée est encore là");
     // résistances d'un monstre au survol
-    const mon = await page.$("#arena .ent.tk[data-tipmon]");
+    // l'arène se redessine pendant le combat (un monstre meurt, un tour passe) : jusqu'à 5 essais, en relisant le monstre à chaque fois
+    let mon = null, tip = null;
+    for (let k = 0; k < 5 && !(tip && tip.res === 5); k++) {
+      mon = await page.$("#arena .ent.tk[data-tipmon]"); if (!mon) break;
+      try { await page.mouse.move(0, 0); await mon.hover({ timeout: 2000 }); } catch (e) { continue; } // médaillon redessiné entre-temps
+      await page.waitForFunction(() => { const t = document.querySelector(".tooltip"); return t && t.style.display !== "none" && t.querySelectorAll(".fm-tres span").length; }, null, { timeout: 1500 }).catch(() => {});
+      tip = await page.evaluate(() => { const t = document.querySelector(".tooltip"); return t && t.style.display !== "none" ? { txt: t.innerText, res: t.querySelectorAll(".fm-tres span").length } : null; });
+    }
     if (mon) {
-      await mon.hover(); await page.waitForTimeout(250);
-      const tip = await page.evaluate(() => { const t = document.querySelector(".tooltip"); return t && t.style.display !== "none" ? { txt: t.innerText, res: t.querySelectorAll(".fm-tres span").length } : null; });
       if (!tip || tip.res !== 5 || !/Faible|Aucune faiblesse/.test(tip.txt)) fail(`Formation : infobulle d'un monstre sans ses 5 résistances (${JSON.stringify(tip)})`);
       if (SHOTS) await page.screenshot({ path: SHOTS + "/formation-pc-infobulle.png" });
       await page.mouse.move(5, 795);
