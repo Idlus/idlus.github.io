@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.7 « Dofus épinglés »
+
+Demande de Mathis du 14/10/2026 : « tu penses pouvoir ajouter le fait de pin les quetes pour les dofus ? ». Nouvel objectif épinglé `{ k: "dof", id }` (E.pinInfo dans js/quetes.js : étape en cours, avancement, terminé) ; bouton « Suivre » sur la fiche du Dofus (js/questui.js) ; dans la bande d'objectifs, la pastille porte l'œuf du Dofus et le bouton « Y aller » de l'étape (dofusStepGo(st, cls) dans js/ui.js), et un clic ouvre la quête (pingo → QUI.pick).
+
 ## 1.0.32.6 « Jackpot sans limite »
 
 Jackpot du Trool : la limite de 100 tickets par jour et par joueur est retirée (Mathis, 14/10/2026 : « ticket illimité pour le jackpot ») ; foire_jackpot_buy (supabase/foire.sql) ne vérifie plus que les kamas, et accepte 1 à 100 tickets d'un coup (bouton « 100 tickets · 1 M » dans js/foireui.js). foire_state renvoie max 0 (pas de limite).

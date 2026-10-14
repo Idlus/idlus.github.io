@@ -216,7 +216,7 @@
     // 1.0.6.2 « Où trouver les Dofus » : les deux façons de l'obtenir, chacune avec son bouton pour y aller
     const gift = Df.steps[0] && Df.steps[0].t === "gift";
     const fiche = `<div class="panel qj-fiche"><div class="pad stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap">${X().im(X().dofusImg(id), "qj-fpic", Df.name)}<div class="grow"><h3>${h(Df.name)}</h3><span class="xs muted">niveau ${Df.lvl}</span><div class="qj-bon">${h(E.dofusBonusTxt(id))}</div></div></div>${X().dofpBlock ? X().dofpBlock(id, { c: by || null }) : ""}
-      <span class="qj-tag ${stt[id] === "got" ? "ok" : stt[id] === "run" ? "todo" : ""}" style="justify-self:start">${state}</span>${window.COLL && owned ? window.COLL.potLink(s, id) : ""}
+      <div class="row" style="gap:6px"><span class="qj-tag ${stt[id] === "got" ? "ok" : stt[id] === "run" ? "todo" : ""}">${state}</span>${Q.done || gift ? "" : `<span class="grow"></span>${X().pinBtn({ k: "dof", id }, E.pinned(s, { k: "dof", id }) ? "Suivie" : "Suivre")}`}</div>${window.COLL && owned ? window.COLL.potLink(s, id) : ""}
       <div class="qj-how"><b>${gift ? "Comment l'obtenir" : "① Sa quête"}</b><span class="xs muted">${gift ? "" : id === "ocre" ? "un exemplaire garanti, une fois par compte : capture les âmes avec des Pierres d'âme" : "un exemplaire garanti, une fois par compte · les étapes se valident toutes seules en jouant"}</span></div>
       <ol class="qj-steps">${steps}</ol>
       <div class="qj-how"><b>${gift ? "Butin" : "② Le butin du boss"}</b><span class="xs muted">${gift ? "" : "très rare, sans limite : c'est ainsi qu'on équipe ses autres héros"}</span></div>

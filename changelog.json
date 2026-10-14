@@ -1,6 +1,15 @@
 {
-  "version": "1.0.32.6",
+  "version": "1.0.32.7",
   "versions": [
+    {
+      "v": "1.0.32.7",
+      "name": "Dofus épinglés",
+      "items": [
+        "Quêtes › Dofus : un bouton « Suivre » sur la fiche de chaque Dofus épingle sa quête dans la bande d'objectifs, en haut de toutes les pages (Havre-Sac compris)",
+        "La pastille montre l'œuf du Dofus, l'étape en cours ou son avancement (par exemple 120/300) et un bouton « Y aller » vers le donjon, la zone ou la ressource de l'étape. Un clic sur la pastille ouvre la quête",
+        "Jusqu'à 3 objectifs suivis en même temps, quête principale comprise. Quête terminée : la pastille passe au vert puis s'en va"
+      ]
+    },
     {
       "v": "1.0.32.6",
       "name": "Jackpot sans limite",

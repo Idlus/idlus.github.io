@@ -414,6 +414,11 @@
   E.pinInfo = (S, p) => {
     if (p.k === "rq") { const R = E.REGION[p.id]; if (!R) return null; const T = E.rqState(S, R.id); if (T.done) return null; const [a, b] = E.rqProgress(S, R); return { k: "rq", label: R.title, a, b, txt: `${T.i + 1}/${R.steps.length}`, done: false, go: { tab: "quests", qt: "region" } }; }
     if (p.k === "wk") { const W = S.wk; if (!W || W.w !== E.weekOf()) return null; const q = W.list[p.id]; if (!q) return null; return { k: "wk", label: E.wkName(q), a: q.p, b: q.n, txt: `${fmtK(q.p)}/${fmtK(q.n)}`, done: !!q.done, go: { tab: "quests", qt: "hebdo" } }; }
+    if (p.k === "dof") { const Df = E.DOFUS && E.DOFUS[p.id]; if (!Df) return null; const Q = E.dofusQuest(S, p.id); // 1.0.32.7 : quête de Dofus épinglée
+      if (Q.done) return { k: "dof", label: Df.name, a: 1, b: 1, txt: "✓", done: true, go: { tab: "quests", qt: "dofus", dof: p.id } };
+      const n = p.id === "ocre" ? E.OCRE_TIERS.length : Df.steps.length; const i = p.id === "ocre" ? E.ocreTier(S) : Q.step;
+      const [a, b] = p.id === "ocre" ? E.ocreProgress(S, Math.min(i, n - 1)) : E.dofusStepProgress(S, p.id, i);
+      return { k: "dof", label: Df.name, short: Df.name.replace(/^Dofus /, ""), a, b, txt: b > 1 ? `${fmtK(a)}/${fmtK(b)}` : `${i + 1}/${n}`, step: `Étape ${i + 1} sur ${n} : ${p.id === "ocre" ? E.OCRE_TIERS[Math.min(i, n - 1)].name : E.dofusStepTxt(Df.steps[i])}`, done: false, go: { tab: "quests", qt: "dofus", dof: p.id } }; }
     if (p.k === "belite") { const B0 = S.belite; if (!B0 || !B0.key) return null; return { k: "belite", label: `Élite : ${MONSTERS[B0.key].name}`, a: B0.prog, b: 1, txt: B0.done ? "✓" : `stasis ${B0.s}`, done: !!B0.done, go: { tab: "quests", qt: "bounty" } }; }
     return pin0(S, p);
   };

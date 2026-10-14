@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.6";
+const GAME_VERSION = "1.0.32.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.7", name: "Dofus épinglés", items: [
+    "Quêtes › Dofus : un bouton « Suivre » sur la fiche de chaque Dofus épingle sa quête dans la bande d'objectifs, en haut de toutes les pages (Havre-Sac compris)",
+    "La pastille montre l'œuf du Dofus, l'étape en cours ou son avancement (par exemple 120/300) et un bouton « Y aller » vers le donjon, la zone ou la ressource de l'étape. Un clic sur la pastille ouvre la quête",
+    "Jusqu'à 3 objectifs suivis en même temps, quête principale comprise. Quête terminée : la pastille passe au vert puis s'en va",
+  ] },
   { v: "1.0.32.6", name: "Jackpot sans limite", items: [
     "Jackpot du Trool : plus de limite de 100 tickets par jour, tu en achètes autant que tes kamas le permettent",
     "Nouveau bouton pour acheter 100 tickets d'un coup (1 M de kamas)",
@@ -2180,18 +2185,19 @@ function sabSheet() {
 }
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
-const PIN_ICO = { quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
+const PIN_ICO = { dof: "dofus", quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
   if (!S) return ""; const pins = E.pins(S); if (!pins.length) return "";
   return pins.map((p) => { const i = E.pinInfo(S, p); if (!i) return ""; const key = E.pinKey(p); const done = p.done || i.done;
-    const ico = PIN_ICO[i.k] ? IC(PIN_ICO[i.k]) : i.k === "shop" ? G("cart") : G("up");
-    return tchip({ k: done ? "done" : p.auto ? "quest" : "pin", ico, t: h(i.label), bar: done ? 100 : pct(i.a, i.b), v: done ? "✓" : h(i.txt), go: `data-act="pingo" data-key="${h(key)}"`, tip: `${i.label} · ${done ? "objectif atteint" : i.txt}${p.auto ? " · la quête principale est toujours suivie" : ""}`, x: p.auto ? "" : `data-act="unpin" data-key="${h(key)}"`, xt: "Ne plus suivre" }); }).join("");
+    const ico = i.k === "dof" ? im(dofusImg(p.id), "", "") : PIN_ICO[i.k] ? IC(PIN_ICO[i.k]) : i.k === "shop" ? G("cart") : G("up");
+    const dst = i.k === "dof" && !done ? E.dofusStep(S, p.id) : null; // 1.0.32.7 : une quête de Dofus suivie garde son bouton « Y aller »
+    return tchip({ k: done ? "done" : p.auto ? "quest" : "pin", ico, t: h(i.short || i.label), bar: done ? 100 : i.k === "dof" && i.b <= 1 ? null : pct(i.a, i.b), v: done ? "✓" : h(i.txt), act: dst ? dofusStepGo(dst, "tc-act") : "", c: i.k === "dof" ? "tc-dof" : "", go: `data-act="pingo" data-key="${h(key)}"`, tip: `${i.label} · ${done ? "objectif atteint" : i.step || i.txt}${p.auto ? " · la quête principale est toujours suivie" : ""}`, x: p.auto ? "" : `data-act="unpin" data-key="${h(key)}"`, xt: "Ne plus suivre" }); }).join("");
 }
 /* 1.0.4.7 « Pastilles du haut » : une seule forme de pastille pour toute la ligne du haut (objectifs, événement, bonus, boss des mondes, protecteur)
    k : couleur (quest, pin, done, ev, bonus, boss, prot, sys) · t / d : titre et détail (HTML déjà échappé) · bar / v : petite jauge et sa valeur
-   s : texte court montré à la place du titre sur téléphone · act : bouton d'action · go : clic sur toute la pastille · x : bouton ✕ */
+   s : texte court montré à la place du titre sur téléphone · c : classe en plus · act : bouton d'action · go : clic sur toute la pastille · x : bouton ✕ */
 function tchip(o) {
-  return `<div class="tchip k-${o.k}${o.s ? " has-s" : ""}"${o.go ? " " + o.go : ""}${o.tip ? ` data-tip="${h(o.tip)}"` : ""}><span class="tc-ico">${o.ico}</span><span class="tc-t"><b>${o.t}</b>${o.d ? ` <span class="tc-d">${o.d}</span>` : ""}</span>${o.s ? `<span class="tc-s">${o.s}</span>` : ""}${o.bar != null ? `<span class="tc-bar"><i style="width:${Math.max(0, Math.min(100, o.bar))}%"></i></span>` : ""}${o.v ? `<span class="tc-v num">${o.v}</span>` : ""}${o.act || ""}${o.x ? `<button class="tc-x" ${o.x} aria-label="${o.xt || "Fermer"}" title="${o.xt || "Fermer"}">✕</button>` : ""}</div>`;
+  return `<div class="tchip k-${o.k}${o.s ? " has-s" : ""}${o.c ? " " + o.c : ""}"${o.go ? " " + o.go : ""}${o.tip ? ` data-tip="${h(o.tip)}"` : ""}><span class="tc-ico">${o.ico}</span><span class="tc-t"><b>${o.t}</b>${o.d ? ` <span class="tc-d">${o.d}</span>` : ""}</span>${o.s ? `<span class="tc-s">${o.s}</span>` : ""}${o.bar != null ? `<span class="tc-bar"><i style="width:${Math.max(0, Math.min(100, o.bar))}%"></i></span>` : ""}${o.v ? `<span class="tc-v num">${o.v}</span>` : ""}${o.act || ""}${o.x ? `<button class="tc-x" ${o.x} aria-label="${o.xt || "Fermer"}" title="${o.xt || "Fermer"}">✕</button>` : ""}</div>`;
 }
 function renderObjs() { const el = $("#objs"); if (!el) return; const html = objsHtml(); if (el.dataset.k === html) return; el.dataset.k = html; el.innerHTML = html; el.style.display = html ? "" : "none"; }
 const findPin = (key) => E.pins(S).find((p) => E.pinKey(p) === key);
@@ -3398,8 +3404,8 @@ function dofusZoneSub(zid) { // sous-zone de chasse pour « vaincre N monstres d
   const L = Object.values(E.SUBS).filter((s) => s.zone === zid && !s.hidden && (s.monsters || []).length).sort((a, b) => E.subUnlocked(S, b.id) - E.subUnlocked(S, a.id) || a.lvl[0] - b.lvl[0]);
   return L[0] ? L[0].id : null;
 }
-function dofusStepGo(st) {
-  const go = (attr, t, prim) => `<button class="btn xs ${prim ? "primary" : ""}" ${attr}>${t}</button>`;
+function dofusStepGo(st, cls) { // cls : classe imposée (bouton d'une pastille de la bande d'objectifs)
+  const go = (attr, t, prim) => `<button class="${cls || `btn xs ${prim ? "primary" : ""}`}" ${attr}>${t}</button>`;
   switch (st.t) {
     case "dg": return DUNGEONS[st.dg] ? go(`data-act="dgopen" data-id="${st.dg}"${st.k ? ` data-k="${st.k}"` : ""}`, "Y aller", 1) : "";
     case "dgs": { const d = st.dgs.find((x) => E.stasisInfo(S, x).max < st.k) || st.dgs[0]; return DUNGEONS[d] ? go(`data-act="dgopen" data-id="${d}"${st.k ? ` data-k="${st.k}"` : ""}`, "Y aller", 1) : ""; }
@@ -7795,7 +7801,7 @@ const MUS_ZONE = { incarnam: "incarnam", astrub: "marche", amakna: "taverne", ca
 const MUS_SUB = { bra_bordure: "brakmar", bon_canaux: "brakmar", bra_entrailles: "brakmar" };
 const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier",
   defi: "defi", team: "heros", heroes: "heros", inv: "sac", ren: "phenix", carnet: "carnet", ladder: "champions", builds: "strateges", sugg: "idees", // 1.0.29 : un air pour chaque menu
-  comptoirs: "comptoirs", foire: "foire", pets: "montures", cours: "cours" }; // 1.0.32.4 : les menus arrivés avec la 1.0.30
+  comptoirs: "comptoirs", foire: "foire", pets: "montures", cours: "cours" }; // 1.0.32.7 : les menus arrivés avec la 1.0.30
 const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie",
   monde: "page Monde (une zone ouverte joue son air)", cles: "page Donjons", defi: "page Défi du jour", heros: "page Équipe et héros", sac: "page Inventaire", phenix: "page Renaissance", quetes: "page Quêtes",
   succes: "page Succès", biblio: "page Encyclopédie", carnet: "page Carnet", champions: "page Classements", strateges: "page Builds", idees: "page Suggestions",
@@ -7892,7 +7898,7 @@ function partTick() {
   if ($("#jukebox")) optionsSheet();
 }
 if (E.ACH && !E.ACH.some((a) => a.id === "melo10")) { // succès « Mélomane » : toutes les partitions de l'année (Halouine et Fêtes en plus)
-  const MELO = 50; // 1.0.32.4 : 50 airs de l'année (46 avant les airs des Comptoirs, de la Foire, des Familiers et du Cours)
+  const MELO = 50; // 1.0.32.7 : 50 airs de l'année (46 avant les airs des Comptoirs, de la Foire, des Familiers et du Cours)
   [[10, 5000], [25, 15000], [MELO, 40000]].forEach(([n, k]) => E.ACH.push({ id: n === MELO ? "melo" : "melo" + n, cat: "Collection", grp: "Partitions", name: n === MELO ? "Mélomane" : `${n} partitions`,
     desc: n === MELO ? `Trouver les ${MELO} partitions des airs de toute l'année (titre « Mélomane »). Les airs d'Halouine et des Fêtes sont en plus.` : `Trouver ${n} partitions : l'air d'un endroit se trouve en y passant quelques secondes.`,
     test: (S0) => partYearN(S0) >= n, prog: (S0) => [Math.min(partYearN(S0), n), n], kamas: k, title: n === MELO ? "Mélomane" : undefined }));
@@ -8120,7 +8126,7 @@ document.addEventListener("click", (ev) => {
     case "pin": { const p = JSON.parse(d.p); const r = E.togglePin(S, p); if (r) { toast(r); return; } toast(E.pinned(S, p) ? "Objectif suivi dans la bande du haut." : "Objectif retiré de la bande."); renderObjs(); if ($("#sheet").innerHTML) { dirty = true; return; } break; }
     case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "team") break; return; }
     case "race-open": closeSheet(); LB.tab = "race"; ui.tab = "ladder"; window.scrollTo(0, 0); break; // 1.0.5 : pastille de la course
-    case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
+    case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.dof && window.QUI && window.QUI.pick) window.QUI.pick(g.dof); if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
     case "xptip": ui.xpTip = ui.xpTip === ui.cid ? null : ui.cid; render(); return;
     case "notifask": { if (typeof Notification === "undefined") return; Notification.requestPermission().then((p) => { if (p === "granted") { S.settings.notifBrowser = true; toast("Notifications autorisées."); } dirty = true; optionsSheet(); }); return; }
     case "setnotifb": S.settings.notifBrowser = d.v === "1"; dirty = true; optionsSheet(); return;

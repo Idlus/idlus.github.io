@@ -128,4 +128,13 @@ ok("chaque Dofus a sa quête et son boss, tous atteignables");
   rolls = []; got = []; E.dofusDrop(S, did, 1, null); assert.strictEqual(got.length, 4);
   E.giveDofus = give0; E.setRng(() => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }); }
 ok("Dofus dès la stasis 1 : une chance par héros");
+// 10. 1.0.32.7 : une quête de Dofus s'épingle dans la bande d'objectifs, avec son étape et son avancement
+{ const S = team(60); const id = E.DOFUS_ORDER.find((x) => x !== "ocre" && E.DOFUS[x].steps[0].t !== "gift");
+  assert.strictEqual(E.togglePin(S, { k: "dof", id }), null); assert.ok(E.pinned(S, { k: "dof", id }));
+  const i = E.pinInfo(S, { k: "dof", id }); assert.strictEqual(i.label, E.DOFUS[id].name); assert.ok(!i.done && i.b >= 1 && /^Étape 1 sur /.test(i.step), JSON.stringify(i));
+  assert.ok(E.pins(S).some((p) => p.k === "dof"));
+  E.dofusQuest(S, id).done = true; assert.ok(E.pinInfo(S, { k: "dof", id }).done, "quête finie : objectif atteint");
+  const io = E.pinInfo(S, { k: "dof", id: "ocre" }); assert.ok(io && /^Étape 1 sur /.test(io.step));
+  assert.strictEqual(E.pinInfo(S, { k: "dof", id: "inconnu" }), null); }
+ok("quêtes de Dofus épinglées");
 console.log("quetes.test.js : tout est bon");

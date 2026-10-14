@@ -4102,6 +4102,7 @@ button.cmdico{padding:0;cursor:pointer}
 .tc-x:hover{background:rgba(226,83,59,.3);color:#fff}
 .tchip .tc-act+.tc-x{margin-left:-3px}
 .k-quest{--tc:#ffb95c}.k-pin{--tc:#e7c46a}.k-done{--tc:#3fb35d}.k-ev{--tc:#f1cf6e}.k-bonus{--tc:#9fe36a}.k-boss{--tc:#c45cff}.k-prot{--tc:#7ee06a}.k-sys{--tc:#6ab7ff}
+.tchip.tc-dof>.tc-t{flex:none} /* 1.0.32.7 : quête de Dofus suivie, son nom reste lisible */
 .k-boss .tc-bar i{background:linear-gradient(90deg,#e2533b,#ff8a5c)}
 /* 1.0.30.5 « Compteur du Jackpot » : pastille du pot, dorée et lumineuse les 5 dernières minutes avant le tirage */
 .k-jack{--tc:#f0c35a}.k-jack .tc-t b{white-space:nowrap}
