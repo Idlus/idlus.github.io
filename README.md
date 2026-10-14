@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.21.2 « Chat sans message perdu »
+Le test du chat (tests/online.test.js, « mention mal surlignée ») échouait sur main : 1,5 s après l'envoi d'un message, js/chat.js relit le salon et remplaçait la liste, ce qui effaçait les messages reçus en direct pendant ce temps (en jeu aussi, jusqu'au rechargement suivant). `keepLive` garde les messages plus récents que la liste relue, à l'envoi, au rattrapage et au rechargement.
+
 ## 1.0.21.1 « Absence en donjon »
 
 Hors ligne, un donjon ne continue pas : l'équipe chasse dans sa dernière zone de chasse. Le résumé « Pendant votre absence » le dit et nomme la zone.

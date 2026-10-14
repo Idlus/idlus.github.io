@@ -62,14 +62,20 @@
     const l = await ON.chatLoad(k);
     cuBusy = false;
     if (!l) { cuWait = Math.min(300000, cuWait * 2); return; }
-    cuWait = 60000; missed = false; C[k] = l;
+    cuWait = 60000; missed = false; C[k] = keepLive(C[k], l);
     if (k === "p") await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
     paint(true);
+  }
+  /* 1.0.21.2 : un rechargement du salon garde les messages arrivés en direct pendant la lecture (plus récents que la liste
+     reçue) ; avant, un message (une @mention par exemple) pouvait disparaître de l'écran jusqu'au rechargement suivant */
+  function keepLive(old, fresh) {
+    if (!old || !old.length || !fresh) return fresh; const top = fresh.reduce((a, m) => Math.max(a, +m.id || 0), 0); const ids = new Set(fresh.map((m) => m.id));
+    const add = old.filter((m) => (+m.id || 0) > top && !ids.has(m.id)); return add.length ? fresh.concat(add).slice(-200) : fresh;
   }
   async function load() {
     const [g, p, ign, role, me, c, v, pin] = await Promise.all([ON.chatLoad("g"), canWrite() ? ON.chatLoad("p") : [], canWrite() ? ON.ignores() : [], canWrite() ? ON.role() : null, canWrite() ? ON.chatMe() : {}, ON.chatLoad("c"), ON.chatLoad("v"), ON.chatPin()]);
     if (g === null && C.loaded) return; // 1.0.9.1 : rechargement raté après une coupure → on garde les messages déjà affichés
-    C.pin = pin; C.g = g || []; C.p = p || []; C.c = c || C.c; C.v = v || C.v; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
+    C.pin = pin; C.g = keepLive(C.g, g || []); C.p = keepLive(C.p, p || []); C.c = c ? keepLive(C.c, c) : C.c; C.v = v ? keepLive(C.v, v) : C.v; C.ign = new Set(ign); C.role = role; C.me = me || {}; C.loaded = g !== null;
     try { if (role === "admin") localStorage.setItem("idlus-testeur", "1"); } catch (e) {} // la bêta, sans serveur, ouvre le panel de test à ce navigateur
     if (role === "admin" && /[?&]testeur=1/.test(location.search)) { location.replace("beta/"); return; } // 1.0.5.3 : lien « Accès testeur » de la bêta, retour direct vers la bêta une fois le compte admin reconnu
     await names(C.p.map((m) => (m.user_id === myId() ? m.to_id : m.user_id)));
@@ -326,7 +332,7 @@
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
     // le message revient par le temps réel ; on recharge au cas où la connexion temps réel serait coupée
-    setTimeout(async () => { const k = to ? "p" : ch || "g"; const l = await ON.chatLoad(k); if (l && l.length) { C[k] = l; paint(true); } }, 1500);
+    setTimeout(async () => { const k = to ? "p" : ch || "g"; const l = await ON.chatLoad(k); if (l && l.length) { C[k] = keepLive(C[k], l); paint(true); } }, 1500);
     paint();
   }
   function menu(t) {

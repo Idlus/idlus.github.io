@@ -1,6 +1,13 @@
 {
-  "version": "1.0.21.1",
+  "version": "1.0.21.2",
   "versions": [
+    {
+      "v": "1.0.21.2",
+      "name": "Chat sans message perdu",
+      "items": [
+        "Chat : un message reçu juste après avoir écrit (une @mention par exemple) ne disparaît plus de l'écran"
+      ]
+    },
     {
       "v": "1.0.21.1",
       "name": "Absence en donjon",
