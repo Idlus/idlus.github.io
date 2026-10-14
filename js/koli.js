@@ -146,10 +146,14 @@
   /* chance de victoire : K.chance combats d'essai (graines fixes) */
   E.koliChance = (A, B, n = K.chance) => { let w = 0; for (let i = 0; i < n; i++) if (E.koliSim(A, B, 7919 * (i + 1) + 13).win) w++; return Math.round((100 * w) / n); };
   /* 1.0.7.2 : même calcul, par petits morceaux (rend la main au navigateur toutes les ~10 ms) pour ne plus figer le jeu ; ok() dit s'il faut continuer */
+  /* 1.0.25.8 : la pause se fait aussi au milieu d'un combat (un combat entier d'équipes de haut niveau prenait 30 à 50 ms d'un bloc) ; mêmes combats, même résultat */
   E.koliChanceAsync = async (A, B, ok, n = K.chance) => { let w = 0, t = Date.now();
+    const pause = async () => { if (Date.now() - t <= 8) return true; await new Promise((r) => setTimeout(r, 0)); t = Date.now(); return !(ok && !ok()); };
     for (let i = 0; i < n; i++) {
-      if (Date.now() - t > 10) { await new Promise((r) => setTimeout(r, 0)); t = Date.now(); if (ok && !ok()) return null; }
-      if (E.koliSim(A, B, 7919 * (i + 1) + 13).win) w++;
+      if (!(await pause())) return null;
+      const W = E.koliWatch(A, B, 7919 * (i + 1) + 13);
+      for (let g = 0; g < 20000 && !W.done; g++) { if (!(await pause())) return null; E.koliWatchStep(W); }
+      if (E.koliResult(W).win) w++;
     }
     return Math.round((100 * w) / n); };
 

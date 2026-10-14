@@ -1,6 +1,16 @@
 {
-  "version": "1.0.25.7",
+  "version": "1.0.25.8",
   "versions": [
+    {
+      "v": "1.0.25.8",
+      "name": "Jeu fluide avec une grosse banque",
+      "items": [
+        "Le jeu ne se fige plus quand du butin tombe avec un sac bien rempli, sur toutes les pages (correctif de la 1.0.24.3) ; le calcul de la pastille « Meilleur équipement dispo » se fait maintenant au plus toutes les 20 secondes par héros, au repos",
+        "Le haut de l'écran (kamas, monstres vaincus, bonus) n'est plus réécrit 8 fois par seconde quand rien ne change : la page n'est plus recalculée en boucle",
+        "Défi du jour : la page s'ouvre tout de suite (0,07 s au lieu de 0,5 s). L'estimation de la bourse se calcule en coulisses et s'affiche un instant plus tard",
+        "Kolizéum automatique : les combats d'essai qui choisissent l'adversaire se font par petits morceaux, sans bloquer le jeu (mêmes chances de victoire)"
+      ]
+    },
     {
       "v": "1.0.25.7",
       "name": "Pages qui ne sautent plus",

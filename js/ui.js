@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.7";
+const GAME_VERSION = "1.0.25.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.8", name: "Jeu fluide avec une grosse banque", items: [
+    "Le jeu ne se fige plus quand du butin tombe avec un sac bien rempli, sur toutes les pages (correctif de la 1.0.24.3) ; le calcul de la pastille « Meilleur équipement dispo » se fait maintenant au plus toutes les 20 secondes par héros, au repos",
+    "Le haut de l'écran (kamas, monstres vaincus, bonus) n'est plus réécrit 8 fois par seconde quand rien ne change : la page n'est plus recalculée en boucle",
+    "Défi du jour : la page s'ouvre tout de suite (0,07 s au lieu de 0,5 s). L'estimation de la bourse se calcule en coulisses et s'affiche un instant plus tard",
+    "Kolizéum automatique : les combats d'essai qui choisissent l'adversaire se font par petits morceaux, sans bloquer le jeu (mêmes chances de victoire)",
+  ] },
   { v: "1.0.25.7", name: "Pages qui ne sautent plus", items: [
     "Havre-Sac (accueil) et Quêtes : la mise à jour automatique toutes les 3 secondes ne redessine plus toute la page, seulement ce qui change",
     "Sur ces deux pages, plus rien ne saute pendant que tu lis : le défilement des listes, un champ en cours de saisie, une liste déroulante ou un menu ouverts restent tels quels",
@@ -4783,24 +4789,31 @@ function bestFor(c, s) { const u = gearPlan(c)[s]; return u && u !== c.equip[s] 
 const slotUpgrade = (c, s) => !!bestFor(c, s);
 /* 1.0.24.3 : pastille « Meilleur équipement dispo » (menu Héros, page Équipe). Quand un objet arrive (fabrication, butin), le plan de chaque
    héros est refait au repos, par petits morceaux ; en attendant, la pastille garde sa dernière valeur. Le jeu ne se fige plus. */
-const gearLast = new Map(), planJobs = new Map(); let planTimer = 0;
+const gearLast = new Map(), planJobs = new Map(), planAt = new Map(); let planTimer = 0;
+const PLAN_GAP = 20000; // 1.0.25.8 : au plus un calcul en coulisses toutes les 20 s par héros (le butin peut tomber toutes les 2 s)
 function gearAlert(c) {
   if (planFresh(c)) { const v = EQ_SLOTS.some((s) => slotUpgrade(c, s)); gearLast.set(c.id, v); return v; }
   if (!planJobs.has(c.id)) planJobs.set(c.id, null); planKick(); return !!gearLast.get(c.id);
 }
-function planKick() { if (planTimer) return; planTimer = window.requestIdleCallback ? requestIdleCallback(planWork, { timeout: 1000 }) : setTimeout(() => planWork(null), 60); }
+function planKick(wait) {
+  if (planTimer) return;
+  planTimer = wait ? setTimeout(() => { planTimer = 0; planKick(); }, wait) : window.requestIdleCallback ? requestIdleCallback(planWork, { timeout: 1000 }) : setTimeout(() => planWork(null), 60);
+}
 function planWork(dl) {
-  planTimer = 0; const end = performance.now() + (dl && dl.timeRemaining ? Math.max(4, Math.min(12, dl.timeRemaining())) : 8); let done = false;
+  planTimer = 0; const end = performance.now() + (dl && dl.timeRemaining ? Math.max(4, Math.min(12, dl.timeRemaining())) : 8); let done = false, wait = 0;
   while (planJobs.size && performance.now() < end) {
-    const [id, job] = planJobs.entries().next().value; const c = S && char(id);
+    let pick = null; const now = Date.now(); wait = 0;
+    for (const [id, job] of planJobs) { const left = job ? 0 : (planAt.get(id) || 0) + PLAN_GAP - now; if (left <= 0) { pick = [id, job]; break; } wait = wait ? Math.min(wait, left) : left; }
+    if (!pick) break;
+    const [id, job] = pick; const c = S && char(id);
     if (!c) { planJobs.delete(id); continue; }
     const key = planKey(c); if (planFresh(c)) { planJobs.delete(id); done = true; continue; }
     const J = job && job.key === key ? job : { key, gen: planSteps(c, key) }; planJobs.set(id, J); // la partie a changé pendant le calcul : on repart de zéro
     let r; do { r = J.gen.next(); } while (!r.done && performance.now() < end);
-    if (r.done) { planJobs.delete(id); gearLast.set(id, EQ_SLOTS.some((s) => slotUpgrade(c, s))); done = true; }
+    if (r.done) { planJobs.delete(id); planAt.set(id, Date.now()); gearLast.set(id, EQ_SLOTS.some((s) => slotUpgrade(c, s))); done = true; }
   }
   if (done && S) { alertCache.t = 0; renderNav(); }
-  if (planJobs.size) planKick();
+  if (planJobs.size) planKick(wait > 0 && [...planJobs.values()].every((j) => !j) ? wait : 0);
 }
 function equipBest(c) { const plan = gearPlan(c); let n = 0;
   for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !E.equip(S, c.id, plan[s], s)) n++;
@@ -6911,9 +6924,26 @@ const defiTodo = () => !!(S && E.team(S).length && !E.defiState(S).chest);
 function defiReward(tid) {
   const def = E.defi(tid); const dust = def.k * 2 + (def.k >= 4 ? 4 : 0);
   const key = [def.day, tid, E.team(S).map((c) => c.id + ":" + c.lvl).join(",")].join("|");
-  if (!ui.dfEst || ui.dfEst.key !== key) { let k = 0; try { const r = E.defiSim(S, def); k = r.win ? Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...E.team(S).map((c) => c.lvl))) : 0; } catch (e) {} ui.dfEst = { key, kamas: k }; }
-  return `${ui.dfEst.kamas ? `≈ ${fmt(ui.dfEst.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
+  if ((!ui.dfEst || ui.dfEst.key !== key) && (!dfJob || dfJob.key !== key)) defiEstimate(key, def);
+  const est = ui.dfEst && ui.dfEst.key === key ? ui.dfEst : null;
+  return `${est && est.kamas ? `≈ ${fmt(est.kamas)} kamas` : "des kamas"} et ${dust} ${h(E.POUSSIERE)}`;
 }
+/* 1.0.25.8 : l'estimation de la bourse (le défi joué en entier, en coulisses) se fait au repos, par petits morceaux, au lieu de figer
+   l'affichage (≈ 0,5 s avec une équipe de haut niveau, relancée à chaque niveau gagné) ; même combat, même estimation */
+let dfJob = null;
+function defiEstimate(key, def) {
+  let W; try { W = E.defiWatch(S, def); } catch (e) { ui.dfEst = { key, kamas: 0 }; return; }
+  const job = (dfJob = { key });
+  const done = () => { let k = 0; try { const r = W.err ? { win: false } : E.defiResult(W); k = r.win ? Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...E.team(S).map((c) => c.lvl))) : 0; } catch (e) {}
+    ui.dfEst = { key, kamas: k }; dfJob = null; if (S && ui.tab === "defi" && !$("#sheet").innerHTML && !isEditing()) render(); };
+  if (W.err) return done();
+  let g = 0;
+  const run = (dl) => { if (dfJob !== job) return; const end = performance.now() + (dl && dl.timeRemaining ? Math.max(4, Math.min(12, dl.timeRemaining())) : 8);
+    try { while (!W.done && g < 500000 && performance.now() < end) { E.defiWatchStep(W); g++; } } catch (e) { W.done = true; }
+    if (W.done || g >= 500000) done(); else onIdle(run); };
+  onIdle(run);
+}
+const onIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 500 }) : setTimeout(() => fn(null), 30));
 function defiLine() {
   if (!E.team(S).length) return "";
   const tid = defiTierCur(); const def = E.defi(tid); if (!def) return "";
@@ -8838,6 +8868,7 @@ document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.ta
 let testSpeed = 1; // panel de test (béta uniquement) : accélération du temps
 let last = performance.now(), sinceSave = 0, sinceView = 0, sinceRes = 0, lastRes = {};
 const isEditing = () => { const a = document.activeElement; return a && (a.tagName === "SELECT" || a.tagName === "INPUT" || a.tagName === "TEXTAREA"); };
+const setTxt = (el, v) => { if (el.textContent !== v) el.textContent = v; };
 function loop() {
   const now = performance.now(); const dt = Math.min(now - last, 5000); last = now;
   if (S) {
@@ -8855,11 +8886,11 @@ function loop() {
         const lv = /^(.+) passe niveau (\d+) !$/.exec(ev.txt || ""); if (lv && +lv[2] % 10 === 0) notify("lvl", `${lv[1]} passe niveau ${lv[2]}`, "");
         else if (/^Sac plein/.test(ev.txt || "")) notify("bag", "Sac plein", "Les nouveaux objets vont dans le trop-plein : faites de la place.");
         else if (ev.kind === "radiant" || /^(Archimonstre|Champion) vaincu|^Un Champion apparaît/.test(ev.txt || "")) notify("rare", ev.txt.replace(/\s*!$/, ""), ""); }); dirty = true; }
-    const k = $("#stKamas"); if (k) k.textContent = fmt(S.kamas);
+    const k = $("#stKamas"); if (k) setTxt(k, fmt(S.kamas)); // 1.0.25.8 : le texte n'est réécrit que s'il change (sinon toute la page se remettait en page 8 fois par seconde)
     const sab = $("#stSab"); if (sab && S.sablier) { const v = sabLeft(S.sablier.r); if (sab.textContent !== v) sab.textContent = v; }
     const sbp = sab && sab.closest(".sabpill"); if (sbp) { const idle = S.sablier.spd > 1 && !E.sabBusy(S); if (sbp.classList.contains("idle") !== idle) { sbp.classList.toggle("idle", idle); sbp.querySelector(".sbi").dataset.tip = idle ? "Sablier en pause : rien n'avance (équipe au repos), la réserve ne s'use pas" : "Sablier de Xélor : réserve de temps rapide (+3 h par jour)"; } }
-    const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) sb.textContent = dur(Math.min(...ab.map((b) => b.left))); else renderStatus(); }
-    const kl = $("#stKills"); if (kl) kl.textContent = fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0));
+    const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) setTxt(sb, dur(Math.min(...ab.map((b) => b.left)))); else renderStatus(); }
+    const kl = $("#stKills"); if (kl) setTxt(kl, fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0)));
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });
@@ -8876,7 +8907,7 @@ function loop() {
       for (const n in S.res) { if ((S.res[n] || 0) > (lastRes[n] || 0)) S.resT[n] = now; } lastRes = Object.assign({}, S.res);
       S.shop.forEach((e) => { const ing = shopIng(e); const ok = ing.length && ing.every(([r, q]) => (S.res[r] || 0) >= q); if (ok && !e.ok) { toast(`Tout est réuni pour : ${shopName(e)} !`, "rare"); notify("shop", "Liste de courses prête", `Tout est réuni pour : ${shopName(e)}`); } e.ok = !!ok; });
       checkPins(); if (!$("#sheet").innerHTML) renderObjs();
-      const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => (b.textContent = dur(E.boostLeft(S, b.dataset.boostleft))));
+      const bl = document.querySelectorAll("[data-boostleft]"); bl.forEach((b) => setTxt(b, dur(E.boostLeft(S, b.dataset.boostleft))));
     }
   }
   setTimeout(loop, 120);
