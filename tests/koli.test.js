@@ -3,7 +3,7 @@
 "use strict";
 const assert = require("assert");
 global.window = global;
-for (const f of ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli"]) require("../js/" + f + ".js");
+for (const f of ["gamedata", "data", "engine", "systems", "pets", "mounts", "idols", "renaissance", "archis", "defi", "gboss", "verify", "koli", "vie"]) require("../js/" + f + ".js");
 const E = window.ENGINE; const D = window.DATA;
 const K = E.KOLI;
 
@@ -127,10 +127,26 @@ const dust = E.SHOPS.koli.items.find((x) => x.res === E.POUSSIERE); const d0 = B
 assert.strictEqual(E.buyShop(B, "koli", dust.id), null); assert.strictEqual(B.res[E.POUSSIERE], d0 + dust.n);
 const tit = E.SHOPS.koli.items.find((x) => x.title); B.tokens[E.KOLI_CUR] = 1000; E.buyShop(B, "koli", tit.id, 10);
 assert.strictEqual(E.koliKz(B), 1000 - tit.cost, "un titre ne s'achète qu'une fois, même avec ×10");
-assert.ok(E.SHOPS.koli.items.every((x) => ["galets", "combat", "coffres", "look"].includes(x.sec)));
+assert.ok(E.SHOPS.koli.items.every((x) => ["galets", "combat", "progres", "coffres", "look", "maison"].includes(x.sec)));
 console.log("ok - Galets en bonus de fabrication et boutique en rayons");
 
 // 1.0.7.2 : chance par petits morceaux = même résultat que le calcul d'un bloc, et s'arrête si on quitte la page.
+{ // 1.0.24 « Boutique du Kolizéum » : Galets ×10, Sablier 2 h par jour, Trousseau de clés 3 par semaine, meubles, ornement
+  const B = E.newState("Boutique", "iop"); B.tokens[E.KOLI_CUR] = 3000; const it = (id) => E.SHOPS.koli.items.find((x) => x.id === id);
+  assert.deepStrictEqual(E.KOLI_GALETS.map((g) => g.cost), [20, 30, 30, 40, 40, 60], "Galets ×10");
+  assert.strictEqual(it("k9").cost, 800, "Coffre en obsidienne bien plus cher");
+  const r0 = E.sab(B).r; assert.strictEqual(E.buyShop(B, "koli", "p1", 2), null); assert.strictEqual(E.sab(B).r, r0 + 2 * 3600);
+  assert.ok(/aujourd'hui/.test(E.buyShop(B, "koli", "p1", 1)), "2 h de Sablier par jour au plus");
+  const K0 = E.shopKeys(B); assert.ok(K0.length > 0); const key = D.DUNGEONS[K0[0]].key;
+  assert.ok(E.buyShop(B, "koli", "p6", 1, "pas_un_donjon"), "donjon à choisir"); assert.strictEqual(E.buyShop(B, "koli", "p6", 3, K0[0]), null);
+  assert.strictEqual(B.res[key], 3); assert.ok(E.buyShop(B, "koli", "p6", 1, K0[0]), "3 clés par semaine au plus");
+  assert.ok(Object.keys(D.DUNGEONS).filter((d) => !E.dungeonUnlocked(B, d)).every((d) => !K0.includes(d)), "seulement les donjons débloqués");
+  assert.strictEqual(E.buyShop(B, "koli", "h1", 1), null); assert.ok(B.furniture.includes("Statue du Gladiateur") && E.FURN["Statue du Gladiateur"].kind === "xp");
+  assert.strictEqual(E.buyShop(B, "koli", "k12", 1), null); assert.ok(E.ORN.koli_ecu.ok(B));
+  const B2 = E.deserialize(E.serialize(B)); assert.strictEqual(E.shopWeekLeft(B2, it("p1")), 0, "limite gardée dans la sauvegarde");
+  assert.strictEqual(B.tokens[E.KOLI_CUR], 3000 - 120 - 120 - 350 - 450);
+  console.log("ok - boutique du Kolizéum 1.0.24");
+}
 (async () => {
   const A = E.koliGhost(11, 120, 3), Bt = E.koliGhost(22, 120, 3);
   assert.strictEqual(await E.koliChanceAsync(A, Bt), E.koliChance(A, Bt), "même chance qu'avant");

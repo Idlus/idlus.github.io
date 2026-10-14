@@ -1,15 +1,15 @@
 {
-  "version": "1.0.23.1",
+  "version": "1.0.24",
   "versions": [
     {
-      "v": "1.0.23.1",
-      "name": "Commandes d'artisans plus claires",
+      "v": "1.0.24",
+      "name": "Boutique du Kolizéum",
       "items": [
-        "Quêtes › Aujourd'hui : chaque commande a sa barre (déjà livré + ce que tu as en banque), « il manque X » ou « Prête à livrer », et ce qu'elle paie (kamas et XP de métier)",
-        "Bouton « Livrer » sur chaque commande prête, « Livrer 8 » pour une livraison partielle, et « Tout livrer » quand plusieurs sont prêtes",
-        "Il te manque une ressource ? « Récolter » ouvre le bon métier, « Y aller » la zone du monstre qui la lâche (aussi sur la page Commandes)",
-        "« Urgent ×1,5 » dit enfin ce qu'il donne : kamas et XP ×1,5, et la prime du jour passe au Coffre en argent ; la prime est affichée avec le temps restant avant minuit",
-        "Le logo du métier de l'artisan sur chaque commande ; une commande livrée passe au vert au lieu de s'éteindre"
+        "Les Galets coûtent maintenant 20 à 60 Kolizetons (cramoisi 20, rutilant et Lunaire 30, rayonnant et Solaire 40, brasillant 60). Ceux que tu as déjà sont gardés",
+        "Nouvel onglet Progression : 1 h de Sablier de Xélor (60, 2 par jour au plus), Trousseau de clés (40, une clé du donjon débloqué de ton choix, 3 par semaine), Potion de Savoir (60), Cristal de Forgemagie (40), Fiole de Résurrection (10) et Pierre d'âme (6)",
+        "Nouvel onglet Havre-Sac : Statue du Gladiateur (+2 % d'XP) et Bourse du Kolizéum (+2 % de kamas), 350 Kolizetons chacune, avec leur logo",
+        "Apparence : titres « Briseur de cotes » (250) et « Maître de l'arène » (600), ornement « Écusson du Kolizéum » (450)",
+        "Coffres : le Coffre en obsidienne arrive en boutique, à 800 Kolizetons"
       ]
     },
     {

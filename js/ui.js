@@ -21,16 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.23.1";
+const GAME_VERSION = "1.0.24";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
-  { v: "1.0.23.1", name: "Commandes d'artisans plus claires", items: [
-    "Quêtes › Aujourd'hui : chaque commande a sa barre (déjà livré + ce que tu as en banque), « il manque X » ou « Prête à livrer », et ce qu'elle paie (kamas et XP de métier)",
-    "Bouton « Livrer » sur chaque commande prête, « Livrer 8 » pour une livraison partielle, et « Tout livrer » quand plusieurs sont prêtes",
-    "Il te manque une ressource ? « Récolter » ouvre le bon métier, « Y aller » la zone du monstre qui la lâche (aussi sur la page Commandes)",
-    "« Urgent ×1,5 » dit enfin ce qu'il donne : kamas et XP ×1,5, et la prime du jour passe au Coffre en argent ; la prime est affichée avec le temps restant avant minuit",
-    "Le logo du métier de l'artisan sur chaque commande ; une commande livrée passe au vert au lieu de s'éteindre",
-  ] },
+  { v: "1.0.24", name: "Boutique du Kolizéum", items: [
+    "Les Galets coûtent maintenant 20 à 60 Kolizetons (cramoisi 20, rutilant et Lunaire 30, rayonnant et Solaire 40, brasillant 60). Ceux que tu as déjà sont gardés",
+    "Nouvel onglet Progression : 1 h de Sablier de Xélor (60, 2 par jour au plus), Trousseau de clés (40, une clé du donjon débloqué de ton choix, 3 par semaine), Potion de Savoir (60), Cristal de Forgemagie (40), Fiole de Résurrection (10) et Pierre d'âme (6)",
+    "Nouvel onglet Havre-Sac : Statue du Gladiateur (+2 % d'XP) et Bourse du Kolizéum (+2 % de kamas), 350 Kolizetons chacune, avec leur logo",
+    "Apparence : titres « Briseur de cotes » (250) et « Maître de l'arène » (600), ornement « Écusson du Kolizéum » (450)",
+    "Coffres : le Coffre en obsidienne arrive en boutique, à 800 Kolizetons" ] },
   { v: "1.0.23", name: "Builds partagés", items: [
     "Nouvelle page Communauté › Builds : les builds publiés par les joueurs, en cartes (héros en pied avec sa coiffe, sa cape et son bouclier, équipement, Dofus, ❤ et vues)",
     "Filtres : les 19 classes, la tranche de niveau (1 à 50, 51 à 100, 101 à 150, 151 à 199, 200), l'élément (Terre, Feu, Eau, Air, Multi), le budget (Abordable, Moyen, Premium, calculé tout seul) et une recherche par objet, Dofus ou titre ; tri par plus aimés de la semaine, nouveautés, meilleurs, plus vus, favoris ou mes builds",
@@ -1512,6 +1511,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "fondateur" || orn === "legende") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
+  else if (orn === "koli_ecu") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/kolizeton.svg" alt="">`; // 1.0.24 : boutique du Kolizéum
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   if (S.settings.cadreSonge) ornCls += " fsg"; // 0.1.48 : Cadre des Songes (Marché onirique)
@@ -1583,14 +1583,6 @@ function monLineHtml(x, unknown) {
   const M = MONSTERS[x.mon]; const w = x.w;
   return `<div class="li monli ${w.open ? "" : "locked"}"><span class="icobox">${unknown ? `<b class="muted">?</b>` : im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${unknown ? "???" : h(M.name)}</b>${x.boss ? ` <span class="tag soft">boss</span>` : ""}${w.archi ? ` <span class="tag soft">archimonstre</span>` : ""}
     <span class="monwhere xs">${w.open ? IC("carte") : G("lock")} ${w.dg ? "Donjon · " : ""}${h(w.name)} · niv. ${w.lvl}</span></span><span class="monpct" data-tip="Chance de butin par monstre">${dropPct(x.p)} %</span><button class="btn sm ${w.open ? "primary" : ""}" ${monGoAttr(w)}>${w.dg ? "Donjon" : "Y aller"}</button></div>`;
-}
-/* 1.0.23.1 : où trouver la ressource d'une commande d'artisan : son métier de récolte, sinon la zone ouverte (ou le donjon) du monstre qui la lâche le plus */
-function cmdGoBtn(r) {
-  const g = (resIndex().src[r] || []).find((x) => x.job);
-  if (g) return `<button class="btn sm" data-act="gathersheet" data-job="${g.job}" data-tip="${h(GATHER_JOBS[g.job].name)} niv. ${g.lvl}">${IC("pioche")} Récolter</button>`;
-  const L = dropMons("res", r, 4); const x = L.find((y) => y.w.open && !y.w.archi) || L[0]; if (!x) return "";
-  const tip = `${h(MONSTERS[x.mon].name)} · ${h(x.w.name)} · ${dropPct(x.p)} %`;
-  return x.w.dg ? `<button class="btn sm" data-act="dgopen" data-id="${x.w.dg}" data-tip="${tip}">Donjon</button>` : `<button class="btn sm" data-act="zoneview" data-id="${x.w.sub}" data-gotab="world" data-tip="${tip}">${IC("carte")} Y aller</button>`;
 }
 const monGoAttr = (w) => (w.dg ? `data-act="searchdg" data-id="${w.dg}"` : `data-act="searchzone" data-id="${w.sub}"`);
 const dropPct = (p) => (p >= 10 ? Math.round(p) : p >= 1 ? (+p).toFixed(1).replace(".", ",").replace(",0", "") : String(+(+p).toPrecision(2)).replace(".", ",")); // 1.0.15 : deux chiffres sous 1 % (0,045 %)
@@ -2143,7 +2135,7 @@ const hvUp = (H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S,
   return `<div class="upl"><div class="row between"><span><b>${h(H.name)}</b> <span class="lvlpill">${l}/${H.max}</span></span><span class="plus small">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</span></div>${hvPips(l, H.max)}
     <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; };
 /* 1.0.22.2 : un logo par meuble (assets/ui/meubles) ; les trophées de boss gardent le portrait du boss */
-const FURN_IMG = { "Statue de l'Ordre": "statue_ordre", "Calendrier de l'Almanax": "calendrier_almanax", "Étagère de grimoires": "etagere_grimoires", "Globe des Douze": "globe_douze", "Bannière de la cité": "banniere_cite", "Tirelire Bouftou": "tirelire_bouftou", "Coffre en frêne": "coffre_frene", "Coffre en merisier": "coffre_merisier", "Épouvantail d'Amakna": "epouvantail_amakna", "Arrosoir de Cania": "arrosoir_cania", "Bonsaï de Pandala": "bonsai_pandala", "Ruche": "ruche", "Tapis de Koalak": "tapis_koalak", "Lit à baldaquin": "lit_baldaquin", "Lanterne d'Otomaï": "lanterne_otomai", "Mangeoire": "mangeoire", "Abreuvoir": "abreuvoir", "Caresseur": "caresseur", "Deuxième couple": "deuxieme_couple", "Pupitre de lecture": "pupitre_lecture", "Encyclopédie d'Amakna": "encyclopedie_amakna", "Planétarium d'Osamodas": "planetarium_osamodas", "Vitrine en verre": "vitrine_verre", "Socle doré": "socle_dore", "Piédestal du Dragon": "piedestal_dragon", "Coffre à double fond": "coffre_double_fond", "Balance de marchand": "balance_marchand", "Malle de voyage": "malle_voyage", "Banc de jardin": "banc_jardin", "Fontaine de Bonta": "fontaine_bonta", "Tapis volant": "tapis_volant", "Établi d'artisan": "etabli_artisan", "Enclume de Brâkmar": "enclume_brakmar", "Botte de foin doré": "botte_foin_dore", "Abreuvoir de cristal": "abreuvoir_cristal" };
+const FURN_IMG = { "Statue du Gladiateur": "statue_gladiateur", "Bourse du Kolizéum": "bourse_kolizeum", "Statue de l'Ordre": "statue_ordre", "Calendrier de l'Almanax": "calendrier_almanax", "Étagère de grimoires": "etagere_grimoires", "Globe des Douze": "globe_douze", "Bannière de la cité": "banniere_cite", "Tirelire Bouftou": "tirelire_bouftou", "Coffre en frêne": "coffre_frene", "Coffre en merisier": "coffre_merisier", "Épouvantail d'Amakna": "epouvantail_amakna", "Arrosoir de Cania": "arrosoir_cania", "Bonsaï de Pandala": "bonsai_pandala", "Ruche": "ruche", "Tapis de Koalak": "tapis_koalak", "Lit à baldaquin": "lit_baldaquin", "Lanterne d'Otomaï": "lanterne_otomai", "Mangeoire": "mangeoire", "Abreuvoir": "abreuvoir", "Caresseur": "caresseur", "Deuxième couple": "deuxieme_couple", "Pupitre de lecture": "pupitre_lecture", "Encyclopédie d'Amakna": "encyclopedie_amakna", "Planétarium d'Osamodas": "planetarium_osamodas", "Vitrine en verre": "vitrine_verre", "Socle doré": "socle_dore", "Piédestal du Dragon": "piedestal_dragon", "Coffre à double fond": "coffre_double_fond", "Balance de marchand": "balance_marchand", "Malle de voyage": "malle_voyage", "Banc de jardin": "banc_jardin", "Fontaine de Bonta": "fontaine_bonta", "Tapis volant": "tapis_volant", "Établi d'artisan": "etabli_artisan", "Enclume de Brâkmar": "enclume_brakmar", "Botte de foin doré": "botte_foin_dore", "Abreuvoir de cristal": "abreuvoir_cristal" };
 const furnImg = (n) => { const F = E.FURN[n]; if (F && F.trophy) { const dg = DUNGEONS[F.trophy]; return dg && MONSTERS[dg.boss] ? imgM(dg.boss) : "assets/ui/trophee_boss.svg"; } return FURN_IMG[n] ? `assets/ui/meubles/${FURN_IMG[n]}.svg` : "assets/ui/meuble.svg"; };
 const furnIco = (n, c = "uico") => `<img class="${c}" src="${furnImg(n)}" alt="" loading="lazy">`;
 const hvSlots = (R) => {
@@ -7064,7 +7056,7 @@ function commandesHtml() {
         <div class="row">${im(resImg(o.res), "ico", o.res)}<span class="grow"><b>${o.n} × ${h(o.res)}</b>${fav ? ` <span class="tag soft" data-tip="Ressource marquée en favori dans l'inventaire">★ favori</span>` : ""}<br><span class="xs muted">en banque : ${fmt(have)}</span></span></div>
         <div class="row"><div class="bar grow"><i style="width:${pct(o.got, o.n)}%"></i></div><span class="num small">${o.got}/${o.n}</span></div>
         <div class="small">Paie : <span class="coin"></span> <b>${fmt(E.cmdReward(S, o))}</b> · <b>${fmt(o.jxp)}</b> XP ${h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art]).name)}</div>
-        <div class="row">${ok ? `<span class="tag good">Livrée ✓</span>` : `<button class="btn sm ${have ? "primary" : ""}" data-act="vi-deliver" data-id="${o.id}" ${have ? "" : "disabled"}>Livrer ${Math.min(have, left) || ""}</button>${have < left ? cmdGoBtn(o.res) : ""}${o.got ? "" : `<button class="btn sm" data-act="vi-swap" data-id="${o.id}" ${S.kamas < cost ? "disabled" : ""}>Changer · ${cost ? fmt(cost) + " k" : "gratuit"}</button>`}`}</div></div>`; }).join("")}</div>
+        <div class="row">${ok ? `<span class="tag good">Livrée ✓</span>` : `<button class="btn sm ${have ? "primary" : ""}" data-act="vi-deliver" data-id="${o.id}" ${have ? "" : "disabled"}>Livrer ${Math.min(have, left) || ""}</button>${o.got ? "" : `<button class="btn sm" data-act="vi-swap" data-id="${o.id}" ${S.kamas < cost ? "disabled" : ""}>Changer · ${cost ? fmt(cost) + " k" : "gratuit"}</button>`}`}</div></div>`; }).join("")}</div>
     <p class="small muted">Commandes livrées : <b>${fmt(C.n || 0)}</b> · aujourd'hui ${done}/${C.list.length}${C.bonus === C.day ? ` · <span class="plus">prime du jour reçue ✓</span>` : ""}. Les ressources de récolte viennent de tes métiers, celles des artisans des monstres de tes zones.</p>`;
 }
 function templesHtml() {
@@ -7175,7 +7167,6 @@ function viAct(a, t) {
   const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
   switch (a) {
     case "vi-deliver": if (run("cmdDeliver", +d.id)) render(); return;
-    case "vi-deliverall": { let n = 0; E.cmdState(S).list.filter((o) => o.got < o.n && (S.res[o.res] || 0) >= o.n - o.got).forEach((o) => { if (run("cmdDeliver", o.id)) n++; }); if (n) render(); return; } // 1.0.23.1 : « Tout livrer »
     case "vi-swap": if (run("cmdSwap", +d.id)) { toast("Nouvelle commande."); render(); } return;
     case "vi-tfight": if (run("templeFight", d.v)) { toast(`Le Dopeul ${CLASSES[d.v].name} arrive au prochain combat.`, "rare"); render(); } return;
     case "vi-tcancel": if (run("templeCancel")) render(); return;
@@ -7667,6 +7658,7 @@ document.addEventListener("change", (ev) => {
   const t = ev.target; if (t.id === "recqtyn") { recQtyLive(t, true); return; } const a = t.dataset.act; if (!a || !S) return;
   if (a.startsWith("vi-")) { viChange(a, t); return; }
   if (a.startsWith("sg-")) { if (window.SGUI) window.SGUI.change(a, t); return; }
+  if (a === "kzkey") { if (window.KOLIUI) window.KOLIUI.act("kz-key", t); return; } // 1.0.24 : donjon du Trousseau de clés
   if (a === "enczonesel") { ui.encZone = t.value; ui.enc.q = ""; renderWorld(); return; }
   if (a === "enceqslotsel") { ui.encEq.slot = t.value; ui.encEqMore = 0; renderWorld(); return; }
   if (a === "lb-cls" || a === "lb-did") { if (a === "lb-cls") LB.cls = t.value; else LB.did = t.value; renderLadder(); return; }
@@ -8712,9 +8704,9 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { questGoBtn, cmdGoBtn, chestImg, jobImg, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { questGoBtn, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { spIcon, spellTip, setBlock, DOLL_L, DOLL_R, dbLook, buildSheet }); // 1.0.23 : page Builds (js/builds.js)
-Object.assign(window.DX.social, { dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

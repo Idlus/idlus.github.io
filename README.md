@@ -7,9 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
-## 1.0.23.1 « Commandes d'artisans plus claires »
+## 1.0.24 « Boutique du Kolizéum »
 
-La boîte des commandes (Quêtes › Aujourd'hui) montre pour chaque commande une barre livré + en banque, ce qui manque, la paie, un bouton Livrer (partiel ou complet), « Tout livrer », « Récolter » ou « Y aller » pour la ressource manquante, ce que donne « Urgent » et la prime du jour avec le temps restant.
+Mathis (14/10/2026, « réajuste le prix des galets dans le koli et rajoute de nouveaux produits dans la boutique », maquette puis « 1c, 2a mais avec des prix plus haut, 3 2h par jour, 4a, 5a, 6a mais beaucoup plus cher, 7b »). Simulation (tools/koli_kz_sim.js, adversaire Conseillé contre les Fantômes) : 2,3 à 2,8 Kolizetons par combat (1,7 à 2,1 en auto), soit ≈ 25 par jour avec les seuls tickets offerts, ≈ 65 pour un joueur régulier en auto, ≈ 100 pour un gros joueur. Galets ×10 (20 à 60 ; la reprise des Galets d'avant la 1.0.6 garde l'ancien prix, champ `paid`). Onglets Progression (Sablier 1 h à 60, 2 par jour ; Trousseau de clés à 40, clé d'un donjon débloqué au choix, 3 par semaine ; Potion de Savoir 60, Cristal de Forgemagie 40, Fiole 10, Pierre d'âme 6) et Havre-Sac (Statue du Gladiateur +2 % d'XP, Bourse du Kolizéum +2 % de kamas, 350). Titres « Briseur de cotes » 250 et « Maître de l'arène » 600, ornement « Écusson du Kolizéum » 450, Coffre en obsidienne 800. Limites par jour / semaine : `it.day`, `it.week`, `S.shopLim`, `E.shopWeekLeft` ; clés : `it.key`, `E.shopKeys`, 5e argument de `E.buyShop`.
 
 ## 1.0.23 « Builds partagés »
 

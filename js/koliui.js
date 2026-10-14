@@ -235,44 +235,56 @@
   /* boutique (0.1.45) : onglets, grille d'articles, un seul panneau d'achat (quantité libre, total, ce qu'il manque).
      La fiche se redessine sur place après un achat : on garde l'onglet, l'article choisi et la quantité. */
   const SECS0 = [["galets", "Galets", "Bonus facultatifs de fabrication : un Galet ajouté à une recette de son niveau améliore l'objet. Ils se revendent aussi à l'Hôtel de vente."],
-    ["combat", "Combats", "Tickets, poussière et douceurs."], ["coffres", "Coffres", "Les mêmes coffres que dans le reste du jeu."], ["look", "Apparence", "Pour la carte de tes héros. Rien ici ne rend tes héros plus forts."]];
+    ["combat", "Combats", "Tickets, poussière et douceurs."], ["progres", "Progression", "De quoi avancer plus vite : Sablier de Xélor (2 h par jour au plus), clés de donjon (3 par semaine), métiers, forgemagie et captures."],
+    ["coffres", "Coffres", "Les mêmes coffres que dans le reste du jeu."], ["look", "Apparence", "Pour la carte de tes héros. Rien ici ne rend tes héros plus forts."],
+    ["maison", "Havre-Sac", "Des meubles du Kolizéum pour ta maison, à placer dans leur pièce."]];
   const SECS = SECS0.filter(([k]) => E.SHOPS.koli.items.some((it) => (it.sec || "combat") === k)); // onglets vides cachés (Galets retirés en 1.0.4.3)
   const sh = ui.shop = ui.shop || { tab: SECS[0][0], sel: null, q: 1 };
   if (!SECS.some(([k]) => k === sh.tab)) sh.tab = SECS[0][0];
   const secOf = (it) => it.sec || "combat";
   const itemOf = (id) => E.SHOPS.koli.items.find((x) => x.id === id);
   const stockOf = (s, it) => it.res ? (s.res[it.res] || 0) : it.cons ? (s.cons[it.cons] || 0) : 0;
+  const sabH = (s) => (E.sab ? Math.floor(E.sab(s).r / 3600) : 0); // 1.0.24 : heures de Sablier en réserve
   const icoOf = (it, big) => { const C = it.cons ? CONSUMABLES[it.cons] : null;
-    return it.res ? X().im(X().resImg(it.res), big ? "ico lg" : "ico", it.res) : C ? X().consIco(C) : it.orn ? X().G("frame") : X().G("tag"); };
+    return it.res ? X().im(X().resImg(it.res), big ? "ico lg" : "ico", it.res) : C ? X().consIco(C) : it.sab ? `<span class="kzs-em">⏳</span>` : it.key ? X().IC("cle") : it.furn ? (X().furnIco ? X().furnIco(it.furn) : `<img class="uico" src="assets/ui/meuble.svg" alt="">`) : it.orn ? X().G("frame") : X().G("tag"); };
   // un Galet est « pour ton équipe » si un héros de l'équipe a le niveau des objets qui le demandent
   const useful = (s, it) => { const U = it.res && E.KOLI_GALET_USE && E.KOLI_GALET_USE[it.res]; if (!U) return false;
     const L = E.team(s).map((c) => c.lvl); return L.some((l) => l >= U.lo && l <= U.hi + 10); };
-  const maxQ = (s, it) => Math.max(1, Math.min(100, Math.floor((s.tokens[E.KOLI_CUR] || 0) / it.cost)));
+  const maxQ = (s, it) => Math.max(1, Math.min(100, E.shopWeekLeft(s, it), Math.floor((s.tokens[E.KOLI_CUR] || 0) / it.cost)));
   function pick(s) { // article choisi dans l'onglet : celui d'avant, sinon le premier utile, sinon le premier
     const L = E.SHOPS.koli.items.filter((it) => secOf(it) === sh.tab); let it = itemOf(sh.sel);
     if (!it || secOf(it) !== sh.tab) { it = L.find((x) => useful(s, x)) || L.find((x) => !E.shopOwned(s, x)) || L[0]; sh.sel = it && it.id; sh.q = 1; }
     return it;
   }
-  const tileName = (s, it) => it.title || (it.orn && E.ORN && E.ORN[it.orn] ? E.ORN[it.orn].name() : E.shopItemName(s, it));
+  const tileName = (s, it) => it.title || it.furn || (it.orn && E.ORN && E.ORN[it.orn] ? E.ORN[it.orn].name() : E.shopItemName(s, it));
   function tile(s, it, sel) {
     const owned = E.shopOwned(s, it); const st = stockOf(s, it); const u = useful(s, it);
     return `<button class="kzs-t ${sel ? "on" : ""} ${owned ? "own" : ""}" data-act="kz-sel" data-id="${it.id}" aria-pressed="${sel}">
-      ${u ? `<span class="kzs-u">Pour ton équipe</span>` : ""}${st ? `<span class="kzs-n">${nf(st)}</span>` : ""}
-      <span class="kzs-i">${icoOf(it)}</span>${it.title || it.orn ? `<span class="kzs-k">${it.title ? "Titre" : "Ornement"}</span>` : ""}<span class="kzs-nm">${h(tileName(s, it))}</span>
+      ${u ? `<span class="kzs-u">Pour ton équipe</span>` : it.day || it.week ? `<span class="kzs-u">${E.shopWeekLeft(s, it)}/${it.day || it.week} ${it.day ? "aujourd'hui" : "cette semaine"}</span>` : ""}${st ? `<span class="kzs-n">${nf(st)}</span>` : ""}
+      <span class="kzs-i">${icoOf(it)}</span>${it.title || it.orn || it.furn ? `<span class="kzs-k">${it.title ? "Titre" : it.furn ? "Meuble" : "Ornement"}</span>` : ""}<span class="kzs-nm">${h(tileName(s, it))}</span>
       <span class="kzs-p">${owned ? "Obtenu" : `${coin("kz-coin sm")} ${it.cost}`}</span></button>`;
+  }
+  /* 1.0.24 : Trousseau de clés, choix du donjon (le plus haut débloqué à ton niveau par défaut) */
+  function keySel(s) {
+    const L = E.shopKeys(s); if (!L.length) return `<div class="xs">Aucun donjon débloqué pour l'instant.</div>`;
+    if (!L.includes(sh.key)) { const top = Math.max(...E.team(s).map((c) => c.lvl)); sh.key = L.filter((d) => D.DUNGEONS[d].lvl <= top).pop() || L[0]; }
+    return `<div style="margin-top:6px"><select data-act="kzkey" aria-label="Donjon de la clé">${L.map((d) => `<option value="${d}" ${d === sh.key ? "selected" : ""}>${h(D.DUNGEONS[d].name)} (niv. ${D.DUNGEONS[d].lvl}) · ${h(D.DUNGEONS[d].key)}</option>`).join("")}</select></div>`;
   }
   function buyPanel(s, it, have) {
     if (!it) return "";
     const owned = E.shopOwned(s, it); const R = it.res ? D.RES[it.res] : null; const C = it.cons ? CONSUMABLES[it.cons] : null;
     const U = it.res && E.KOLI_GALET_USE ? E.KOLI_GALET_USE[it.res] : null; const st = stockOf(s, it);
-    const q = it.many ? Math.max(1, Math.min(100, sh.q || 1)) : 1; const tot = it.cost * q; const miss = Math.max(0, tot - have);
+    const wl = E.shopWeekLeft(s, it); const top = Math.max(1, Math.min(100, wl));
+    const q = it.many ? Math.max(1, Math.min(100, top, sh.q || 1)) : 1; const tot = it.cost * q; const miss = Math.max(0, tot - have);
     const name = it.res ? `<button class="kz-lnk" data-act="kz-res" data-n="${h(it.res)}" title="Fiche de la ressource">${h(E.shopItemName(s, it))}</button>` : h(E.shopItemName(s, it));
     const GF = it.res && E.GALET ? E.GALET[it.res] : null;
-    const desc = U ? `Bonus de fabrication pour <b>${U.n} objets</b> de niveau ${U.lo} à ${U.hi}${GF ? ` : ${h(GF.fx)}` : ""}` : R ? `Ressource niv. ${R.lvl}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
-    const qty = it.many && !owned ? `<div class="kzs-q"><div class="kzs-step"><button class="btn sm" data-act="kz-q" data-v="-1" ${q <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${q}</b><button class="btn sm" data-act="kz-q" data-v="1" ${q >= 100 ? "disabled" : ""} aria-label="Un de plus">+</button></div>
-      <div class="seg">${[1, 5, 10].map((n) => `<button data-act="kz-q" data-set="${n}" aria-pressed="${q === n}">×${n}</button>`).join("")}<button data-act="kz-q" data-set="max" aria-pressed="${q === maxQ(s, it) && ![1, 5, 10].includes(q)}">Max</button></div></div>` : "";
+    const FU = it.furn && E.FURN ? E.FURN[it.furn] : null;
+    const desc = it.sab ? `Une heure de vitesse ×2 / ×3 ajoutée à ta réserve (jusqu'à 24 h). ${it.day} par jour au plus : encore <b>${wl}</b> aujourd'hui.`
+      : it.key ? `Une clé du donjon de ton choix (parmi ceux débloqués). ${it.week} par semaine au plus : encore <b>${wl}</b> cette semaine.${keySel(s)}` : FU ? `${h(E.furnEffect(it.furn))} · ${h(E.room ? E.room(FU.room).name : FU.room)}` : U ? `Bonus de fabrication pour <b>${U.n} objets</b> de niveau ${U.lo} à ${U.hi}${GF ? ` : ${h(GF.fx)}` : ""}` : R ? `Ressource niv. ${R.lvl}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
+    const qty = it.many && !owned ? `<div class="kzs-q"><div class="kzs-step"><button class="btn sm" data-act="kz-q" data-v="-1" ${q <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${q}</b><button class="btn sm" data-act="kz-q" data-v="1" ${q >= top ? "disabled" : ""} aria-label="Un de plus">+</button></div>
+      <div class="seg">${[1, 5, 10].filter((n) => n <= top).map((n) => `<button data-act="kz-q" data-set="${n}" aria-pressed="${q === n}">×${n}</button>`).join("")}<button data-act="kz-q" data-set="max" aria-pressed="${q === maxQ(s, it) && ![1, 5, 10].includes(q)}">Max</button></div></div>` : "";
     return `<div class="kzs-buy"><div class="kzs-sel"><span class="kzs-bi">${icoOf(it, true)}</span><div class="grow" style="min-width:0"><b>${name}</b><div class="xs muted">${desc}</div>
-      <div class="xs">${st ? `<b>${nf(st)}</b> en stock` : it.res || C ? "Aucun en stock" : ""}</div></div></div>
+      <div class="xs">${it.key ? (sh.key && D.DUNGEONS[sh.key] ? `<b>${nf(s.res[D.DUNGEONS[sh.key].key] || 0)}</b> en stock` : "") : it.sab ? `<b>${sabH(s)} h</b> en réserve` : st ? `<b>${nf(st)}</b> en stock` : it.res || C ? "Aucun en stock" : ""}</div></div></div>
       ${owned ? `<div class="kzs-go"><span class="muted small">Déjà obtenu.</span></div>` : `${qty}<div class="kzs-go"><span class="small">${miss ? `<span class="kzs-miss">Il te manque ${nf(miss)} Kolizeton${miss > 1 ? "s" : ""}</span>` : `Total`}</span>
         <button class="btn primary" data-act="kz-buy" data-id="${it.id}" ${miss ? "disabled" : ""}>Acheter${q > 1 ? ` ×${q}` : ""} · ${coin("kz-coin sm")} ${nf(tot)}</button></div>`}</div>`;
   }
@@ -333,7 +345,7 @@
       <li>Chaque victoire rapporte une bourse de kamas (selon le niveau de l'équipe), ${K.dust} Poussière de stasis et ${K.kzWin} Kolizetons ; une défaite, ${K.kzLoss} Kolizeton.</li>
       <li>La semaine finit le lundi à minuit. Avec ${K.minWeek} combats classés au moins, ton grade donne sa récompense, puis la cote revient à mi-chemin de 1 000.</li>
       <li>Grades : Bronze, Argent (1 100), Or (1 300), Cristal (1 500), Diamant (1 700) et Légende pour les ${E.KOLI_GRADES[5].top} premiers. Or et plus sont annoncés dans les Hauts faits.</li>
-      <li>Les Kolizetons s'échangent dans la boutique contre ${E.KOLI_GALETS_ON ? `des <b>Galets</b> (bonus facultatifs de fabrication), ` : ""}des tickets, des coffres et de l'apparence.</li></ol>
+      <li>Les Kolizetons s'échangent dans la boutique contre ${E.KOLI_GALETS_ON ? `des <b>Galets</b> (bonus facultatifs de fabrication), ` : ""}des tickets, de quoi progresser (Sablier, clés, potions), des coffres, de l'apparence et des meubles du Havre-Sac.</li></ol>
       <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="closesheet">Compris</button></div>`);
   }
 
@@ -423,11 +435,12 @@
       case "kz-rules": rulesSheet(); return;
       case "kz-shop": if (d.g) { const it = E.SHOPS.koli.items.find((x) => x.res === d.g); if (it) { sh.tab = "galets"; sh.sel = it.id; sh.q = 1; } } shopSheet(); return; // 1.0.6 : depuis une recette
       case "kz-res": X().resSheet(d.n); return;
+      case "kz-key": sh.key = t.value; paintShop(); return;
       case "kz-tab": sh.tab = d.v; sh.sel = null; paintShop(); return;
       case "kz-sel": if (sh.sel !== d.id) { sh.sel = d.id; sh.q = 1; } paintShop(); return;
-      case "kz-q": { const it = itemOf(sh.sel); if (!it) return; sh.q = d.set === "max" ? maxQ(s, it) : d.set ? +d.set : Math.max(1, Math.min(100, (sh.q || 1) + +d.v)); paintShop(); return; }
-      case "kz-buy": { const it = itemOf(d.id); if (!it) return; const q = it.many ? sh.q || 1 : 1; const r = E.buyShop(s, "koli", it.id, q);
-        if (r) { X().toast(r); return; } X().markDirty(); X().toast(`${q > 1 ? q + " × " : ""}${E.shopItemName(s, it)} : acheté !`); paintShop(); return; }
+      case "kz-q": { const it = itemOf(sh.sel); if (!it) return; sh.q = d.set === "max" ? maxQ(s, it) : d.set ? +d.set : Math.max(1, Math.min(100, E.shopWeekLeft(s, it), (sh.q || 1) + +d.v)); paintShop(); return; }
+      case "kz-buy": { const it = itemOf(d.id); if (!it) return; const q = it.many ? sh.q || 1 : 1; const r = E.buyShop(s, "koli", it.id, q, sh.key);
+        if (r) { X().toast(r); return; } X().markDirty(); X().toast(`${q > 1 ? q + " × " : ""}${it.key && D.DUNGEONS[sh.key] ? D.DUNGEONS[sh.key].key : E.shopItemName(s, it)} : acheté !`); paintShop(); return; }
       case "kz-train": { const Q = E.koliState(s); const A = E.koliSnap(s, Q.team); if (!A.length) return;
         const seed = (Date.now() >>> 0) || 1; const o = E.koliGhostOpp(seed, 0, Q.cote, E.koliLvl(s), A.length);
         watch(A, o.team, seed ^ 0x5bd1e995, { train: true, opp: o, own: true }); return; }

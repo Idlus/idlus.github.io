@@ -614,14 +614,22 @@
       { id: "t3", titleSide: true, cost: 25 } ] },
   };
   E.SHOPS = SHOPS;
+  /* 1.0.24 : articles limités par jour (it.day) ou par semaine de Kolizéum (it.week), heures de Sablier (it.sab),
+     clé d'un donjon débloqué au choix (it.key, arg = id du donjon) */
+  const limPer = (it) => (it.day ? ["d", it.day, E.defiDay ? E.defiDay() : 0] : it.week ? ["w", it.week, E.koliWeek ? E.koliWeek() : 0] : null);
+  E.shopWeekLeft = (S, it) => { const L = limPer(it); if (!L) return Infinity; const B = S.shopLim && S.shopLim[L[0]] && S.shopLim[L[0]].t === L[2] ? S.shopLim[L[0]].n : {}; return Math.max(0, L[1] - (B[it.id] || 0)); };
+  E.shopKeys = (S) => Object.keys(DUNGEONS).filter((d) => DUNGEONS[d].key && E.dungeonUnlocked(S, d)).sort((a, b) => DUNGEONS[a].lvl - DUNGEONS[b].lvl);
   E.shopItemName = (S, it) => it.res ? `${(it.n || 1) > 1 ? it.n + " × " : ""}${it.res}` : it.cons ? D.CONSUMABLES[it.cons].name : it.title ? `Titre « ${it.title} »` : it.titleSide ? `Titre « Champion de ${S.align ? ALIGN[S.align.side].name : "la cité"} »` : it.furn ? `Meuble : ${it.furn}` : it.name;
   E.shopOwned = (S, it) => (it.title && S.titlesExtra.includes(it.title)) || (it.titleSide && S.align && S.titlesExtra.includes(`Champion de ${ALIGN[S.align.side].name}`)) || (it.orn && S.unlocks[it.orn]) || (it.wing && S.unlocks["wing_" + it.wing]) || (it.furn && S.furniture.includes(it.furn));
   // qty (0.1.45) : plusieurs d'un coup, pour les articles « many » (Galets, coffres…)
-  E.buyShop = (S, shop, id, qty) => {
+  E.buyShop = (S, shop, id, qty, arg) => {
     const Sh = SHOPS[shop]; const it = Sh && Sh.items.find((x) => x.id === id); if (!it) return "Article inconnu.";
     if (shop === "cite" && !S.align) return "Choisissez d'abord un alignement.";
     if (E.shopOwned(S, it)) return "Déjà obtenu.";
     const n = it.many ? clamp(Math.floor(+qty || 1), 1, 100) : 1; const cost = it.cost * n;
+    if (it.sab && E.sab && E.sab(S).r + it.sab * n * 3600 > E.SAB_GIFT_MAX) return `Ta réserve de Sablier est presque pleine (24 h au plus).`;
+    if (n > E.shopWeekLeft(S, it)) { const l = E.shopWeekLeft(S, it); const p = it.day ? "aujourd'hui" : "cette semaine"; return l ? `Encore ${l} ${p} au plus.` : `Limite atteinte ${p} (${it.day || it.week}). Retour ${it.day ? "demain" : "lundi"}.`; }
+    if (it.key && !E.shopKeys(S).includes(arg)) return "Choisis un donjon débloqué.";
     if ((S.tokens[Sh.cur] || 0) < cost) return `Il faut ${cost} ${Sh.curName.toLowerCase()}.`;
     S.tokens[Sh.cur] -= cost;
     if (it.res) E.addRes(S, it.res, (it.n || 1) * n);
@@ -631,7 +639,10 @@
     if (it.orn) S.unlocks[it.orn] = 1;
     if (it.wing) S.unlocks["wing_" + it.wing] = 1;
     if (it.furn) S.furniture.push(it.furn);
-    note(S, `${Sh.name} : ${n > 1 ? n + " × " : ""}${E.shopItemName(S, it)} obtenu${n > 1 ? "s" : ""}.`, "up"); return null;
+    if (it.sab && E.sabGift) E.sabGift(S, it.sab * n);
+    if (it.key) E.addRes(S, DUNGEONS[arg].key, n);
+    { const L = limPer(it); if (L) { S.shopLim = S.shopLim || {}; if (!S.shopLim[L[0]] || S.shopLim[L[0]].t !== L[2]) S.shopLim[L[0]] = { t: L[2], n: {} }; S.shopLim[L[0]].n[it.id] = (S.shopLim[L[0]].n[it.id] || 0) + n; } }
+    note(S, `${Sh.name} : ${n > 1 ? n + " × " : ""}${it.key ? DUNGEONS[arg].key : E.shopItemName(S, it)} obtenu${n > 1 ? "s" : ""}.`, "up"); return null;
   };
   E.setWing = (S, cid, w) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; c.wing = w && S.unlocks["wing_" + w] ? w : null; };
 

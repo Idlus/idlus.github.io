@@ -218,18 +218,19 @@
      bonus 4A à 11A). Un Galet par fabrication, seulement sur les objets de son niveau (lo à hi) ; sans Galet la recette marche
      comme avant. Effets (roll = options de E.rollItem, double = chance d'un 2e objet), gains moyens simulés sur tous les objets
      fabricables : cramoisi ≈ +3,8 %, rutilant ≈ +4,2 %, rayonnant ≈ +4,4 %, Solaire ≈ +4,1 %, brasillant ≈ +5 % de caractéristiques. */
+  /* 1.0.24 : prix revus (cost) ; paid = ancien prix, celui de la reprise des Galets d'avant la 1.0.6 */
   E.KOLI_GALETS = [
-    { name: "Galet cramoisi", id: 12737, icon: 15290, lvl: 50, price: 40, cost: 2, lo: 50, hi: 99, roll: { one: true },
+    { name: "Galet cramoisi", id: 12737, icon: 15290, lvl: 50, price: 40, cost: 20, paid: 2, lo: 50, hi: 99, roll: { one: true },
       fx: "Une caractéristique (celle qui a la plus grande fourchette) est tirée dans sa moitié haute." },
-    { name: "Galet rutilant", id: 12738, icon: 15291, lvl: 100, price: 80, cost: 3, lo: 100, hi: 149, roll: { best2: true },
+    { name: "Galet rutilant", id: 12738, icon: 15291, lvl: 100, price: 80, cost: 30, paid: 3, lo: 100, hi: 149, roll: { best2: true },
       fx: "L'objet est tiré 2 fois : tu gardes le meilleur des deux." },
-    { name: "Galet Lunaire", id: 13366, icon: 152005, lvl: 100, price: 80, cost: 3, lo: 100, hi: 149, double: 0.1,
+    { name: "Galet Lunaire", id: 13366, icon: 152005, lvl: 100, price: 80, cost: 30, paid: 3, lo: 100, hi: 149, double: 0.1,
       fx: "1 chance sur 10 de fabriquer un 2e objet avec les mêmes ressources." },
-    { name: "Galet rayonnant", id: 29444, icon: 152001, lvl: 150, price: 120, cost: 4, lo: 150, hi: 194, roll: { floor: 0.25, rad: 1 / 100 },
+    { name: "Galet rayonnant", id: 29444, icon: 152001, lvl: 150, price: 120, cost: 40, paid: 4, lo: 150, hi: 194, roll: { floor: 0.25, rad: 1 / 100 },
       fx: "Chaque caractéristique sort au moins au quart de sa fourchette, et 1 chance sur 100 d'objet Rayonnant." },
-    { name: "Galet Solaire", id: 13367, icon: 152004, lvl: 150, price: 120, cost: 4, lo: 150, hi: 194, roll: { floor: 0.25 },
+    { name: "Galet Solaire", id: 13367, icon: 152004, lvl: 150, price: 120, cost: 40, paid: 4, lo: 150, hi: 194, roll: { floor: 0.25 },
       fx: "Chaque caractéristique sort au moins au quart de sa fourchette." },
-    { name: "Galet brasillant", id: 12740, icon: 15289, lvl: 195, price: 200, cost: 6, lo: 195, hi: 200, roll: { floor: 1 / 3, rad: 1 / 40 },
+    { name: "Galet brasillant", id: 12740, icon: 15289, lvl: 195, price: 200, cost: 60, paid: 6, lo: 195, hi: 200, roll: { floor: 1 / 3, rad: 1 / 40 },
       fx: "Chaque caractéristique sort au moins au tiers de sa fourchette, et 1 chance sur 40 d'objet Rayonnant." },
   ];
   E.KOLI_GALETS_ON = true; // dans la boutique (1.0.6)
@@ -252,7 +253,7 @@
   /* 1.0.6 (choix 2A de Mathis) : les Galets achetés avant le retrait sont repris une fois, au prix payé en Kolizetons */
   E.koliGaletRefund = (S) => {
     if (!S || S.galRef) return null; S.galRef = 1; let n = 0, kz = 0;
-    E.KOLI_GALETS.forEach((g) => { const q = (S.res || {})[g.name] || 0; if (q > 0) { n += q; kz += q * g.cost; delete S.res[g.name]; } });
+    E.KOLI_GALETS.forEach((g) => { const q = (S.res || {})[g.name] || 0; if (q > 0) { n += q; kz += q * (g.paid || g.cost); delete S.res[g.name]; } });
     if (!kz) return null;
     S.tokens = S.tokens || {}; S.tokens[E.KOLI_CUR] = (S.tokens[E.KOLI_CUR] || 0) + kz;
     const txt = `Galets repris : ${n} Galet${n > 1 ? "s" : ""} → ${kz} Kolizetons. Les Galets reviennent en boutique, comme bonus de fabrication.`;
@@ -301,6 +302,8 @@
     E.KOLI_GALET_ITEMS = Object.values(D.ITEMS).filter((T) => T.craft && T.craft.job !== "bricoleur" && T.lvl >= 50).length;
   }
 
+  /* 1.0.24 « Boutique du Kolizéum » (choix de Mathis 1C 2A+ 3 « 2 h par jour » 4A 5A 6A+ 7B) : Galets ×10, onglets Progression
+     (Sablier 2 h par jour, Trousseau de clés 3 par semaine) et Havre-Sac, nouveaux titres et ornement, Coffre en obsidienne. */
   /* ---------- boutique des Kolizetons, en rayons (comptoir, comme le Bureau des primes) ---------- */
   if (E.SHOPS) E.SHOPS.koli = { name: "Boutique du Kolizéum", cur: E.KOLI_CUR, curName: "Kolizetons", icon: "🏟", items: [
     ...(E.KOLI_GALETS_ON ? E.KOLI_GALETS : []).map((g, i) => ({ id: "g" + (i + 1), res: g.name, cost: g.cost, many: true, sec: "galets" })),
@@ -308,10 +311,23 @@
     { id: "k5", cons: "bonbon_royal", cost: 15, many: true, sec: "combat" },
     { id: "k2", cons: "coffre_bois", cost: 12, many: true, sec: "coffres" }, { id: "k3", cons: "coffre_argent", cost: 30, many: true, sec: "coffres" },
     { id: "k4", cons: "coffre_or", cost: 80, many: true, sec: "coffres" },
-    { id: "k6", title: "Habitué du Kolizéum", cost: 150, sec: "look" }, { id: "k7", orn: "koli_ban", name: "Ornement « Bannière du Kolizéum »", cost: 300, sec: "look" } ] };
+    { id: "k9", cons: "coffre_obsidienne", cost: 800, many: true, sec: "coffres" },
+    { id: "p1", sab: 1, name: "1 heure de Sablier de Xélor", cost: 60, many: true, day: 2, sec: "progres" },
+    { id: "p6", key: 1, name: "Trousseau de clés", cost: 40, many: true, week: 3, sec: "progres" },
+    { id: "p2", cons: "potion_savoir", cost: 60, many: true, sec: "progres" }, { id: "p3", cons: "cristal_fm", cost: 40, many: true, sec: "progres" },
+    { id: "p4", cons: "fiole_resu", cost: 10, many: true, sec: "progres" }, { id: "p5", cons: "pierre_ame", cost: 6, many: true, sec: "progres" },
+    { id: "k6", title: "Habitué du Kolizéum", cost: 150, sec: "look" }, { id: "k10", title: "Briseur de cotes", cost: 250, sec: "look" },
+    { id: "k7", orn: "koli_ban", name: "Ornement « Bannière du Kolizéum »", cost: 300, sec: "look" }, { id: "k12", orn: "koli_ecu", name: "Ornement « Écusson du Kolizéum »", cost: 450, sec: "look" },
+    { id: "k11", title: "Maître de l'arène", cost: 600, sec: "look" },
+    { id: "h1", furn: "Statue du Gladiateur", cost: 350, sec: "maison" }, { id: "h2", furn: "Bourse du Kolizéum", cost: 350, sec: "maison" } ] };
+  if (E.FURN) { // 1.0.24 : meubles de la boutique du Kolizéum
+    E.FURN["Statue du Gladiateur"] = { room: "biblio", kind: "xp", v: 2, src: "Boutique du Kolizéum (350 Kolizetons)" };
+    E.FURN["Bourse du Kolizéum"] = { room: "reserve", kind: "kamas", v: 2, src: "Boutique du Kolizéum (350 Kolizetons)" };
+  }
   if (E.ORN) {
     E.ORN.koli = { name: () => "Lauriers du Kolizéum", req: "Finir une semaine de Kolizéum en Cristal ou plus", ok: (S) => !!(S.unlocks && S.unlocks.koli) };
     E.ORN.koli_ban = { name: () => "Bannière du Kolizéum", req: "Boutique du Kolizéum (300 Kolizetons)", ok: (S) => !!(S.unlocks && S.unlocks.koli_ban) };
+    E.ORN.koli_ecu = { name: () => "Écusson du Kolizéum", req: "Boutique du Kolizéum (450 Kolizetons)", ok: (S) => !!(S.unlocks && S.unlocks.koli_ecu) };
   }
 
   E.ACTIONS.koliFight = "combattre au Kolizéum"; E.ACTIONS.koliRefresh = "changer d'adversaires au Kolizéum";
