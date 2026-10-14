@@ -19,9 +19,10 @@
   const h = (s) => X().h(s);
   const fmt = (n) => X().fmt(n);
   const MAX = 20, TAX = 0.02, OMAX = 10;
-  const M = { tab: "buy", cat: "eq", q: "", slot: "", lv: "", list: null, sel: null, offers: null, stats: null, sort: "price",
+  const M = { tab: "buy", q: "", list: null, sel: null, offers: null, stats: null,
     sCat: "eq", sSel: null, lot: 100, n: 1, price: "", mine: null, busy: false, confirm: null, rep: null, trade: null, tSeen: 0, tPick: "eq", tVer: -1,
-    oView: "all", oQ: "", oCat: "res", oFind: "", oSel: null, oQty: "", oPrice: "", oDays: 14, orders: null, oMine: null, detOrd: null };
+    oView: "all", oQ: "", oCat: "res", oFind: "", oSel: null, oQty: "", oPrice: "", oDays: 14, orders: null, oMine: null, detOrd: null,
+    fam: "eq", sub: "", lmin: "", lmax: "", stat: "", set: "", reach: false, sk: "unit", sd: 1, per: 30, fOpen: false, bq: "", mineV: "open", bought: null }; // 1.0.16 : HdV façon DOFUS 3
 
   /* ---------- noms, images, catégories ---------- */
   const bucket = (cat) => ({ res: "res", rune: "runes", cons: "cons" }[cat]);
@@ -49,7 +50,6 @@
   const refOf = (cat, key, lot, it, st) => (st && st.avg ? Math.round(st.avg * lot) : baseOf(cat, key, lot, it));
   const CATS = [["eq", "Équipements"], ["res", "Ressources"], ["clef", "Clefs"], ["rune", "Runes"], ["cons", "Consommables"]];
   const SLOTS = [["", "Tous"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"]];
-  const LVLS = [["", "Tous niveaux"], ["0-50", "Niveau 1 à 50"], ["51-100", "51 à 100"], ["101-150", "101 à 150"], ["151-200", "151 à 200"]];
   const ago = (t) => { const s = (Date.now() - new Date(t)) / 1000; return s < 90 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
   const left = (t) => { const s = (new Date(t) - Date.now()) / 1000; return s < 3600 ? `expire dans ${Math.max(1, Math.round(s / 60))} min` : s < 86400 ? `expire dans ${Math.round(s / 3600)} h` : `encore ${Math.round(s / 86400)} j`; };
 
@@ -70,7 +70,7 @@
       if (p.untitle) { s.titlesExtra = (s.titlesExtra || []).filter((x) => x !== p.untitle); (s.chars || []).forEach((c) => { if (c.title === p.untitle) c.title = null; }); } // 0.1.49 : « Fléau des mondes » passe au podium suivant
       (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
-      if (o.t) { s.hdv.log.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); if (!quiet && (p.sold || p.got)) X().toast(o.t, "rare"); }
+      if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got)) X().toast(o.t, "rare"); }
     });
     s.hdv.log = s.hdv.log.slice(0, 40);
     if (n) { X().markDirty(); X().onPush(); X().renderStatus(); }
@@ -98,26 +98,15 @@
   }
 
   /* ---------- données ---------- */
-  const lvRange = () => { const m = /^(\d+)-(\d+)$/.exec(M.lv); return m ? [+m[1], +m[2]] : [0, 1000]; };
-  async function search() {
-    const [a, b] = lvRange(); const cat = M.cat === "clef" ? "res" : M.cat;
-    const r = await ON.rpc("hdv_search", { p_cat: cat, p_q: M.q, p_slot: M.cat === "clef" ? "clef" : M.cat === "eq" ? M.slot : "", p_lmin: a, p_lmax: b });
-    M.lErr = !!r.err; // 1.0.12.8 : une panne du serveur n'est plus affichée comme une liste vide
-    M.list = r.err ? [] : (r.data || []).filter((x) => M.cat !== "res" || x.slot !== "clef");
-    M.list.sort((x, y) => (M.sort === "lvl" ? y.lvl - x.lvl : 0) || x.unit - y.unit);
-    if (M.sel && !M.list.some((x) => x.key === M.sel)) { M.sel = null; M.offers = null; }
-    if (!M.sel && M.list.length && matchMedia("(min-width:861px)").matches) return pick(M.list[0].key);
-    paint();
-  }
   async function pick(key) {
     M.sel = key; M.offers = null; M.stats = null; M.confirm = null; M.detOrd = null; paint();
-    const [o, st, od] = await Promise.all([ON.rpc("hdv_offers", { p_key: key }), ON.rpc("hdv_stats", { p_key: key }), ON.rpc("hdv_orders_list", { p_key: key, p_q: "", p_cat: "" })]);
+    const [o, st, od] = await Promise.all([ON.rpc("hdv_offers", { p_key: key }), ON.rpc("hdv_history", { p_key: key, p_days: 30 }), ON.rpc("hdv_orders_list", { p_key: key, p_q: "", p_cat: "" })]);
     if (M.sel !== key) return;
     M.offers = o.data || []; M.offErr = !!o.err; M.stats = st.data || null; M.detOrd = od.data || []; paint();
   }
   async function loadMine() { const r = await ON.rpc("hdv_mine"); M.mine = r.data || { open: [], sold: [] }; paint(); }
-  async function priceHint(cat, key) { const r = await ON.rpc("hdv_stats", { p_key: key }); const o = await ON.rpc("hdv_offers", { p_key: key }); const od = cat === "eq" ? {} : await ON.rpc("hdv_orders_list", { p_key: key, p_q: "", p_cat: "" });
-    M.hint = { key, st: r.data || null, low: (o.data || []).filter((x) => !x.mine)[0] || null, ord: (od.data || []).filter((x) => !x.mine)[0] || null }; paint(); }
+  async function priceHint(cat, key) { const r = await ON.rpc("hdv_history", { p_key: key, p_days: 30 }); const o = await ON.rpc("hdv_offers", { p_key: key }); const od = cat === "eq" ? {} : await ON.rpc("hdv_orders_list", { p_key: key, p_q: "", p_cat: "" });
+    M.hint = { key, offs: o.data || [], st: r.data || null, low: (o.data || []).filter((x) => !x.mine)[0] || null, ord: (od.data || []).filter((x) => !x.mine)[0] || null }; paint(); }
 
   /* ---------- rendu ---------- */
   function render(main) {
@@ -125,17 +114,18 @@
     window.DX.repaint(main, html());
     if (M.tab === "buy" && M.list === null) search();
     if (M.tab === "mine" && M.mine === null && mine()) loadMine();
+    if (M.tab === "mine" && M.mineV === "bought" && M.bought === null && mine()) loadBought();
     if (M.tab === "ord") { if (M.orders === null) loadOrders(); if (M.oMine === null && mine()) loadOMine(); }
   }
   const paint = () => { if (window.DX.ui.tab === "hdv") { const m = $("#main"); if (m) { const y = window.scrollY; window.DX.repaint(m, html()); window.scrollTo(0, y); } } }; // garde le curseur là où on écrit
   function html() {
-    const s = S(); const open = M.mine ? M.mine.open.length : null;
+    const s = S();
     const login = mine() ? "" : ON.user && ON.solo && ON.solo() ? X().soloPanel("l'Hôtel de vente") : guest("acheter, vendre et échanger avec les autres joueurs");
     const panel = s && s.panelUsed ? `<p class="note">Partie retouchée par le panel de test : tu peux regarder, mais pas vendre ni acheter.</p>` : "";
     const body = M.tab === "sell" ? sellHtml() : M.tab === "mine" ? mineHtml() : M.tab === "log" ? logHtml() : M.tab === "ord" ? ordHtml() : buyHtml();
     const oOpen = M.oMine ? M.oMine.filter((x) => x.st === "open").length : null;
     return `<div class="pagehead"><h1>Hôtel de vente</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s ? s.kamas : 0)}</b> kamas</span></div>
-      <nav class="subtabs">${[["buy", "Acheter"], ["sell", "Vendre"], ["ord", `Offres d'achat${oOpen !== null ? ` · ${oOpen} / ${OMAX}` : ""}`], ["mine", `Mes ventes${open !== null ? ` · ${open} / ${MAX}` : ""}`], ["log", "Historique"]].map(([id, n]) => `<button data-act="mk-tab" data-v="${id}" aria-pressed="${M.tab === id}">${n}</button>`).join("")}
+      <nav class="subtabs">${[["buy", "Acheter"], ["sell", "Vendre"], ["ord", `Offres d'achat${oOpen !== null ? ` · ${oOpen} / ${OMAX}` : ""}`], ["mine", `Mes ventes et achats${newSales() ? ` <span class="mknew">${newSales()}</span>` : ""}`], ["log", "Historique"]].map(([id, n]) => `<button data-act="mk-tab" data-v="${id}" aria-pressed="${M.tab === id}">${n}</button>`).join("")}
       ${mine() ? `<button class="btn sm mktrade" data-act="mk-trade-ask">${X().G("chat")} ${M.trade && M.trade.st === "open" ? "Échange en cours" : "Proposer un échange"}</button>` : ""}</nav>
       <div class="stack">${login}${panel}${body}</div>`;
   }
@@ -143,64 +133,12 @@
   const guest = (what) => `<div class="panel"><div class="pad row between"><span><b>Crée ton compte pour ${what}</b><br><span class="small muted">C'est gratuit, et ta partie de cet appareil te suit sur ton compte. En attendant, tu peux regarder les prix.</span></span><button class="btn primary sm" data-act="on-loginscreen">Créer mon compte</button></div></div>`;
   const netErr = (v) => `<div class="empty">Pas de connexion au serveur : réessaie dans un moment. <button class="btn sm" data-act="mk-retry" data-v="${v}">Réessayer</button></div>`;
   const cats = (act, cur, list) => `<div class="row catchips">${(list || CATS).map(([id, n]) => `<button data-act="${act}" data-v="${id}" aria-pressed="${cur === id}">${n}</button>`).join("")}</div>`;
-  function buyHtml() {
-    const L = M.list;
-    const bar = `<div class="row invbar"><input type="text" id="mkQ" data-act="mk-q" placeholder="Rechercher…" value="${h(M.q)}">
-      ${M.cat === "eq" ? `<select data-act="mk-slot" aria-label="Emplacement">${SLOTS.map(([v, n]) => `<option value="${v}" ${M.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>` : ""}
-      ${M.cat === "eq" || M.cat === "res" ? `<select data-act="mk-lv" aria-label="Niveau">${LVLS.map(([v, n]) => `<option value="${v}" ${M.lv === v ? "selected" : ""}>${n}</option>`).join("")}</select>` : ""}
-      <select data-act="mk-sort" aria-label="Tri"><option value="price" ${M.sort === "price" ? "selected" : ""}>Tri : prix</option><option value="lvl" ${M.sort === "lvl" ? "selected" : ""}>Tri : niveau</option></select>
-      <span class="small muted">${M.lErr ? "" : L ? `${L.length} en vente` : "Chargement…"}</span></div>`;
-    const list = L === null ? `<div class="empty">Chargement…</div>` : M.lErr ? netErr("list") : !L.length ? `<div class="empty">Rien en vente ici pour l'instant. Sois le premier : onglet Vendre.</div>`
-      : `<div class="list">${L.map((x) => `<button class="li mkli ${M.sel === x.key ? "on" : ""}" data-act="mk-pick" data-k="${h(x.key)}">${icon(x.cat, x.key)}<span class="grow"><b>${h(nameOf(x.cat, x.key))}</b><br><span class="xs muted">${x.lvl ? `niv. ${x.lvl} · ` : ""}${x.cat === "eq" ? `${x.n} en vente` : `${fmt(x.qty)} en vente`}</span></span>${kk(x.unit)}</button>`).join("")}</div>`;
-    return `${bar}${cats("mk-cat", M.cat)}<div class="mkgrid ${M.sel ? "hassel" : ""}"><section class="panel mklist"><div class="phead"><h2>${h((CATS.find((c) => c[0] === M.cat) || [])[1] || "")}</h2><span class="xs muted">${M.cat === "eq" ? "à partir de" : "prix le plus bas, à l'unité"}</span></div>${list}</section>${M.sel ? detailHtml() : ""}</div>`;
-  }
-  function spark(days) {
-    if (!days || days.length < 2) return "";
-    const v = days.map((d) => +d.u); const mx = Math.max(...v), mn = Math.min(...v);
-    const X_ = (i) => (i / (v.length - 1)) * 300, Y = (u) => 58 - ((u - mn) / (mx - mn || 1)) * 48;
-    const d = v.map((u, i) => `${i ? "L" : "M"}${X_(i).toFixed(1)} ${Y(u).toFixed(1)}`).join(" ");
-    return `<svg class="mkspark" viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true"><path class="a" d="${d} L300 64 L0 64 Z"/><path class="l" d="${d}"/></svg>`;
-  }
-  function statsHtml(st, cat, key) {
-    if (!st) return "";
-    const res = cat === "res" ? `Valeur de base : ${fmt(E.resPrice(key))} l'unité. ` : "";
-    return `<div><div class="row between"><b class="small">Prix moyen sur 14 jours</b><span class="small">${st.avg ? `<b>${fmt(st.avg)}</b> <span class="muted">/ unité</span>` : `<span class="muted">pas encore de vente</span>`}</span></div>
-      ${spark(st.days)}<span class="xs muted">${res}${fmt(st.week || 0)} vendu${st.week > 1 ? "s" : ""} cette semaine.</span></div>`;
-  }
-  function detailHtml() {
-    const key = M.sel; const x = (M.list || []).find((y) => y.key === key) || { cat: M.cat === "clef" ? "res" : M.cat, key };
-    const cat = x.cat; const O = M.offers;
-    const head = `<div class="phead"><div class="row">${icon(cat, key)}<div><h2>${h(nameOf(cat, key))}</h2><span class="xs muted">${lvlOf(cat, key) ? `niv. ${lvlOf(cat, key)}` : ""}${M.stats && M.stats.avg ? ` · prix moyen ${fmt(M.stats.avg * (cat === "eq" ? 1 : 1))}${cat === "eq" ? "" : " / unité"}` : ""}</span></div></div>
-      <button class="btn sm mkback" data-act="mk-unpick">Retour</button></div>`;
-    if (!O) return `<section class="panel mkdet">${head}<div class="pad empty">Chargement…</div></section>`;
-    if (M.offErr) return `<section class="panel mkdet">${head}${netErr("offers")}</section>`;
-    const buyBtn = (o) => o.mine ? `<span class="tag" style="background:var(--panel3);color:var(--ink)">ton annonce</span>`
-      : o.price > ((S() && S().kamas) || 0) ? `<button class="btn sm mkshort" disabled>Il te manque ${fmt(o.price - ((S() && S().kamas) || 0))} kamas</button>` // 1.0.12.8 : grisé quand la bourse ne suffit pas (avant : refus du serveur après coup)
-      : M.confirm === o.id ? `<button class="btn sm primary" data-act="mk-buy" data-id="${o.id}">Confirmer ${fmt(o.price)}</button>`
-      : `<button class="btn sm primary" data-act="mk-ask" data-id="${o.id}" ${M.busy ? "disabled" : ""}>Acheter</button>`;
-    if (cat === "eq") {
-      const c = X().mainHero(); const T = ITEMS[key];
-      const rows = O.map((o) => { const it = o.item || { tpl: key, stats: {} }; const q = Math.round(E.itemQuality(it) * 100);
-        return `<div class="mkoffer"><span class="mkjet ${q >= 90 ? "hi" : ""}">jet ${q} %</span><div class="grow"><div class="mkst">${X().itemStatsHtml(it)}</div>
-          <div class="xs muted">${it.radiant ? `<b style="color:var(--gold)">✦ Rayonnant +${it.radiant} %</b> · ` : ""}${it.fm ? `forgemagé ×${it.fm} · ` : ""}${c && T.lvl <= c.lvl ? X().cmpItem(c, it) : ""}</div></div>${kk(o.price)}${buyBtn(o)}</div>`; }).join("");
-      return `<section class="panel mkdet">${head}<div class="list">${rows || `<div class="empty">Plus aucune offre.</div>`}</div><div class="pad stack">${statsHtml(M.stats, cat, key)}<span class="xs muted">Chaque offre est un objet précis : tu reçois exactement ce que tu vois.</span></div></section>`;
-    }
-    const lots = [1, 10, 100].map((q) => { const os = O.filter((o) => o.qty === q && !o.mine); const best = os[0];
-      return `<div class="mklot ${best && O.filter((o) => !o.mine).every((z) => z.price / z.qty >= best.price / best.qty) ? "best" : ""}"><span class="xs muted">Lot de ${q}</span>${best ? `<b class="big">${kk(best.price)}</b><span class="xs muted">${fmt(Math.round(best.price / q * 10) / 10)} / unité · ${os.length} lot${os.length > 1 ? "s" : ""}</span>${buyBtn(best)}` : `<span class="xs muted">aucun lot</span>`}</div>`; }).join("");
-    const own = O.filter((o) => o.mine).length;
-    return `<section class="panel mkdet">${head}<div class="pad stack"><div class="mklots">${lots}</div>${own ? `<span class="xs muted">Dont ${own} lot${own > 1 ? "s" : ""} à toi (onglet Mes ventes).</span>` : ""}${detOrdHtml(cat, key)}${need(key)}${statsHtml(M.stats, cat, key)}</div></section>`;
-  }
   /* Liste de courses : ce qu'il manque de cette ressource pour les recettes épinglées. */
   function need(key) {
     const s = S(); if (!s || !s.shop || !s.shop.length) return "";
     let want = 0; (s.shop || []).forEach((e) => { const ing = E.shopIng ? E.shopIng(s, e) : []; ing.forEach(([r, q]) => { if (r === key) want += q; }); });
     const miss = want - ((s.res || {})[key] || 0); if (miss <= 0) return "";
-    return `<p class="note">${X().G("cart")} Liste de courses : il te manque <b>${fmt(miss)} ${h(key)}</b>. <button class="btn sm" data-act="mk-need" data-k="${h(key)}" data-n="${miss}">Acheter au meilleur prix</button> <button class="btn sm" data-act="mk-onew" data-c="res" data-k="${h(key)}" data-n="${miss}">Faire une offre</button></p>`;
-  }
-  async function buyNeed(key, n) {
-    let got = 0; const O = (M.offers || []).filter((o) => !o.mine).slice().sort((a, b) => a.price / a.qty - b.price / b.qty);
-    for (const o of O) { if (got >= n) break; if (o.qty > (n - got) * 1.5 && got) continue; const r = await act("hdv_buy", { p_id: o.id }); if (!r) break; got += o.qty; }
-    if (got) X().toast(`${fmt(got)} ${key} achetés.`); pick(key);
+    return `<p class="note">${X().G("cart")} Liste de courses : il te manque <b>${fmt(miss)} ${h(key)}</b>. <button class="btn sm" data-act="mk-bqset" data-v="${miss}">Acheter au meilleur prix</button> <button class="btn sm" data-act="mk-onew" data-c="res" data-k="${h(key)}" data-n="${miss}">Faire une offre</button></p>`;
   }
 
   /* ---------- vendre ---------- */
@@ -226,7 +164,7 @@
   }
   function sellForm(x) {
     const s = S(); const res = x.cat !== "eq"; const lot = res ? M.lot : 1; const maxN = res ? Math.min(MAX, Math.floor(x.n / lot)) : 1; const n = Math.max(1, Math.min(M.n, maxN || 1));
-    const price = Math.round(+String(M.price).replace(/\s/g, "")) || 0; const tax = price ? Math.max(1, Math.ceil(price * TAX)) : 0; const floor = floorOf(x.cat, x.key, lot);
+    const SG = M.hint && M.hint.key === x.key ? sugHtml(x, M.hint, res ? M.lot : 1) : null; const price = Math.round(+String(M.price === "" && SG && SG.sug ? SG.sug : M.price).replace(/\s/g, "")) || 0; const tax = price ? Math.max(1, Math.ceil(price * TAX)) : 0; const floor = floorOf(x.cat, x.key, lot); // 1.0.16 : prix conseillé déjà rempli
     const used = M.mine ? M.mine.open.length : 0; const hint = M.hint && M.hint.key === x.key ? M.hint : null;
     const base = baseOf(x.cat, x.key, lot, x.it); const st = hint && hint.st; const ref = refOf(x.cat, x.key, lot, x.it, st);
     const sug = st && st.avg ? Math.max(floor, Math.round(st.avg * lot)) : null;
@@ -237,7 +175,7 @@
       <div class="pad stack">
         ${res ? `<div class="mkfield"><span class="small"><b>Taille du lot</b></span><span class="seg">${[1, 10, 100].map((q) => `<button data-act="mk-lot" data-v="${q}" aria-pressed="${lot === q}" ${x.n < q ? "disabled" : ""}>×${q}</button>`).join("")}</span></div>
           <div class="mkfield"><span class="small"><b>Nombre de lots</b></span><span class="row"><span class="seg"><button data-act="mk-n" data-v="-1">−</button><button aria-pressed="true">${n}</button><button data-act="mk-n" data-v="1">+</button></span><span class="xs muted">${fmt(n * lot)} sur ${fmt(x.n)}</span></span></div>` : ""}
-        <div class="mkfield"><span class="small"><b>${res ? "Prix d'un lot" : "Ton prix"}</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkPrice" data-act="mk-price" value="${h(M.price)}" placeholder="${sug || base}"></div>
+        ${SG ? SG.html : ""}<div class="mkfield"><span class="small"><b>${res ? "Prix d'un lot" : "Ton prix"}</b></span><input type="text" inputmode="numeric" class="mkbigin" id="mkPrice" data-act="mk-price" value="${h(M.price === "" && SG && SG.sug ? SG.sug : M.price)}" placeholder="${sug || base}">${price && st && st.avg ? `<span></span><span>${dealTag(price / lot, st.avg)}</span>` : ""}</div>
         <div class="mkrefs"><div><span class="xs muted">Prix moyen des ventes (14 j)</span><b>${!hint ? "…" : st && st.avg ? `${fmt(Math.round(st.avg * lot))}` : "pas encore de vente"}</b></div><div><span class="xs muted">Valeur de base</span><b>${fmt(base)}</b></div></div>
         <div class="mkfield"><span></span><span class="xs muted">${hint ? `${hint.low ? `Le moins cher en vente : <b>${fmt(hint.low.price)}</b>${hint.low.qty > 1 ? ` le lot de ${hint.low.qty}` : ""}. ` : ""}` : "Recherche des prix… "}${res ? `Prix pour un lot de ${lot}. ` : ""}Pas de prix minimum : 1 kama par unité au plus bas.</span></div>
         ${res ? sellOrdHtml(x, hint, price, lot, n) : ""}
@@ -251,7 +189,8 @@
   }
   async function doSell() {
     const x = sellable(M.sCat).find((y) => (y.uid ? String(y.uid) : y.key) === M.sSel); if (!x) return;
-    const res = x.cat !== "eq"; const price = Math.round(+String(M.price).replace(/\s/g, "")) || 0; const lot = res ? M.lot : 1;
+    const res = x.cat !== "eq"; const lot = res ? M.lot : 1; const SG = M.hint && M.hint.key === x.key ? sugHtml(x, M.hint, lot) : null; // 1.0.16 : le prix conseillé déjà rempli
+    const price = Math.round(+String(M.price === "" && SG && SG.sug ? SG.sug : M.price).replace(/\s/g, "")) || 0;
     const n = res ? Math.max(1, Math.min(M.n, Math.floor(x.n / lot))) : 1;
     if (price < floorOf(x.cat, x.key, lot)) return X().toast("Au moins 1 kama par unité.");
     const r = await act("hdv_list", { p_cat: x.cat, p_key: x.key, p_uid: x.uid || null, p_lot: lot, p_n: n, p_price: price, p_name: nameOf(x.cat, x.key), p_lvl: lvlOf(x.cat, x.key), p_slot: slotOf(x.cat, x.key) }, res && n > 1 ? `${n} lots mis en vente.` : "Mis en vente.");
@@ -259,22 +198,6 @@
   }
 
   /* ---------- mes ventes, historique ---------- */
-  function mineHtml() {
-    if (!mine()) return "";
-    const m = M.mine; if (!m) return `<div class="empty">Chargement…</div>`;
-    const since = (S().hdv && S().hdv.seen) || 0; const fresh = m.sold.filter((x) => new Date(x.at) > since);
-    const sum = fresh.reduce((a, x) => a + x.price, 0);
-    const row = (x) => `${icon(x.cat, x.key)}<span class="grow"><b>${h(nameOf(x.cat, x.key))}</b> <span class="xs muted">${x.cat === "eq" && x.item ? `jet ${Math.round(E.itemQuality(x.item) * 100)} %` : `×${x.qty}`}</span>`;
-    return `${fresh.length ? `<div class="panel" style="border-color:var(--gold)"><div class="pad row between"><span><b>${fresh.length} vente${fresh.length > 1 ? "s" : ""} depuis ta dernière visite</b><br><span class="small muted">Les kamas sont déjà dans ta bourse.</span></span><b class="mkpx plus" style="font-size:20px">+ ${fmt(sum)}</b></div></div>` : ""}
-      <section class="panel"><div class="phead"><h2>En vente</h2><span class="xs muted">${m.open.length} / ${MAX} places</span></div><div class="list">
-        ${m.open.map((x) => `<div class="li mkrow">${row(x)}<br><span class="xs ${new Date(x.exp) - Date.now() < 86400000 ? "mkwarn" : "muted"}">${left(x.exp)}</span></span>${kk(x.price)}
-          ${M.rep === x.id ? `<input type="text" inputmode="numeric" class="mkrep" id="mkRep" value="${x.price}"><button class="btn sm primary" data-act="mk-repgo" data-id="${x.id}">OK</button>` : `<button class="btn sm" data-act="mk-rep" data-id="${x.id}">Modifier le prix</button>`}
-          <button class="btn sm" data-act="mk-cancel" data-id="${x.id}" ${M.busy ? "disabled" : ""}>Retirer</button></div>`).join("") || `<div class="empty">Aucune annonce. Onglet Vendre pour en créer.</div>`}
-      </div></section>
-      ${M.rep ? `<span class="xs muted">Changer le prix coûte de nouveau 2 % du nouveau prix, comme dans DOFUS.</span>` : ""}
-      <section class="panel"><div class="phead"><h2>Vendu ces 7 jours</h2></div><div class="list">${m.sold.map((x) => `<div class="li mkrow">${row(x)} · acheté par <b>${h(x.buyer || "un joueur")}</b><br><span class="xs muted">${ago(x.at)}</span></span>${kk(x.price)}</div>`).join("") || `<div class="empty">Rien de vendu cette semaine.</div>`}</div></section>
-      <span class="xs muted">Une annonce dure 14 jours ; à la fin, l'objet revient seul dans ton sac.</span>`;
-  }
   function logHtml() {
     const L = (S() && S().hdv && S().hdv.log) || [];
     return `<section class="panel"><div class="phead"><h2>Historique</h2><span class="xs muted">tes 40 derniers mouvements</span></div><div class="list">${L.map((x) => `<div class="li small"><span class="grow">${h(x.t)}<br><span class="xs muted">${ago(x.at)}</span></span>${x.k ? `<b class="mkpx ${x.k > 0 ? "plus" : ""}">${x.k > 0 ? "+" : "−"} ${fmt(Math.abs(x.k))}</b>` : ""}</div>`).join("") || `<div class="empty">Aucun mouvement pour l'instant.</div>`}</div></section>`;
@@ -445,6 +368,223 @@
       <p class="small muted">« Retirer » rend l'objet à son vendeur (taxe perdue) et note l'action dans le journal.</p>`;
   }
 
+  /* ======================================================================
+     1.0.16 « Hôtel de vente façon DOFUS 3 » (Mathis : 1A … 9A)
+     Catégories à gauche, tableau des prix ×1 / ×10 / ×100 et prix moyen, filtres faits par le jeu,
+     la ligne choisie s'ouvre dessous (lots, achat d'une quantité, historique des prix sur 7 ou 30 jours),
+     étiquettes Bonne affaire / Prix normal / Cher, favoris, prix conseillé à la vente, mes achats.
+     Le serveur ne fait que lire : hdv_market (liste), hdv_history (courbe), hdv_bought (achats).
+     ====================================================================== */
+  const FAMS = [["fav", "Favoris"], ["eq", "Équipements"], ["res", "Ressources"], ["clef", "Clefs"], ["rune", "Runes"], ["cons", "Consommables"]];
+  const famIco = (id) => id === "fav" ? X().G("star") : X().IC({ eq: "coffre", res: "pioche", clef: "cle", rune: "cristal", cons: "bonbon" }[id]);
+  const favs = () => { const s = S(); return (s && s.hdv && s.hdv.fav) || {}; };
+  const isFav = (k) => !!favs()[k];
+  const best = () => { const s = S(); return s && s.chars.length ? Math.max(...s.chars.map((c) => c.lvl)) : 200; };
+  /* repère de prix : 15 % sous la moyenne ou mieux = bonne affaire, 15 % au-dessus ou plus = cher */
+  const deal = (unit, avg) => { if (!avg || !unit) return null; const r = unit / avg; const pct = Math.round((r - 1) * 100);
+    return { pct, cls: r <= 0.85 ? "good" : r >= 1.15 ? "bad" : "mid", txt: r <= 0.85 ? "Bonne affaire" : r >= 1.15 ? "Cher" : "Prix normal" }; };
+  const pctTxt = (p) => `${p > 0 ? "+" : p < 0 ? "−" : ""}${Math.abs(p)} %`;
+  const dealTag = (unit, avg) => { const d = deal(unit, avg); return d ? `<span class="mkdeal ${d.cls}">${d.txt} <i>${pctTxt(d.pct)}</i></span>` : ""; };
+  const u1 = (v) => v >= 100 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toLocaleString("fr-FR");
+  const avgOf = (key) => { const x = (M.list || []).find((y) => y.key === key); return (M.sel === key && M.stats && M.stats.avg) || (x && x.avg) || null; };
+  let STATL = null, SETL = null;
+  const statList = () => STATL || (STATL = [...new Set(Object.values(ITEMS).flatMap((T) => Object.keys(T.stats || {})))].filter((k) => D.STATS[k]).map((k) => [k, D.STATS[k].name]).sort((a, b) => a[1].localeCompare(b[1], "fr")));
+  const setList = () => SETL || (SETL = Object.keys(D.SETS || {}).map((id) => D.SETS[id].name).sort((a, b) => a.localeCompare(b, "fr")));
+  const setName = (key) => { const T = ITEMS[key]; return T && T.set && D.SETS[T.set] ? D.SETS[T.set].name : ""; };
+  const resCatName = (key) => (D.RES_CATS.find((c) => c.id === D.RES_CAT_OF(key)) || {}).name || "";
+
+  /* ---------- données ---------- */
+  async function search() {
+    const fam = M.fam, q = M.q.trim(); const cat = q || fam === "fav" ? "" : fam === "clef" ? "res" : fam;
+    const keys = fam === "fav" && !q ? Object.keys(favs()) : null;
+    if (keys && !keys.length) { M.list = []; M.lErr = false; paint(); return; }
+    const r = await ON.rpc("hdv_market", { p_cat: cat, p_q: q, p_slot: !q && fam === "clef" ? "clef" : "", p_keys: keys });
+    if (fam !== M.fam || q !== M.q.trim()) return;
+    M.lErr = !!r.err; // une panne du serveur n'est pas affichée comme une liste vide
+    M.list = r.err ? [] : (r.data || []).map((x) => Object.assign(x, { unit: +x.unit, avg: x.avg ? +x.avg : null }));
+    if (M.sel && !rows().some((x) => x.key === M.sel)) { M.sel = null; M.offers = null; }
+    paint();
+  }
+  /* filtres faits par le jeu : le serveur ne connaît ni les caractéristiques ni les panoplies */
+  function keep(x) {
+    const q = M.q.trim();
+    if (!q) {
+      if (M.fam === "res" && x.slot === "clef") return false;
+      if (M.fam === "eq" && M.sub && x.slot !== M.sub) return false;
+      if (M.fam === "res" && M.sub && D.RES_CAT_OF(x.key) !== M.sub) return false;
+    } else if (!norm(x.name).includes(norm(q))) return false;
+    if (M.fam === "fav" && !q) return isFav(x.key);
+    const lo = +M.lmin || 0, hi = +M.lmax || 1000; if (x.lvl && (x.lvl < lo || x.lvl > hi)) return false;
+    if (M.stat) { if (x.cat === "eq" && !(ITEMS[x.key] && ITEMS[x.key].stats && ITEMS[x.key].stats[M.stat])) return false; if (x.cat === "rune" && E.runeInfo(x.key).stat !== M.stat) return false; if (x.cat !== "eq" && x.cat !== "rune") return false; }
+    if (M.set && !(x.cat === "eq" && norm(setName(x.key)).includes(norm(M.set)))) return false;
+    if (M.reach && x.cat === "eq" && x.lvl > best()) return false;
+    return true;
+  }
+  const BIG = 1e15;
+  const SORTS = { name: (a, b) => a.name.localeCompare(b.name, "fr"), lvl: (a, b) => a.lvl - b.lvl, avg: (a, b) => (a.avg || BIG) - (b.avg || BIG), unit: (a, b) => a.unit - b.unit,
+    p1: (a, b) => (a.p1 || BIG) - (b.p1 || BIG), p10: (a, b) => (a.p10 || BIG) - (b.p10 || BIG), p100: (a, b) => (a.p100 || BIG) - (b.p100 || BIG), n: (a, b) => a.qty - b.qty };
+  function rows() { const f = SORTS[M.sk] || SORTS.unit; return (M.list || []).filter(keep).sort((a, b) => M.sd * f(a, b) || a.name.localeCompare(b.name, "fr")); }
+  async function loadBought() { if (!mine()) return; const r = await ON.rpc("hdv_bought"); M.bought = r.err ? [] : r.data || []; paint(); }
+  /* ventes arrivées depuis la dernière visite de « Mes ventes et achats » (pastille de l'onglet et du menu) */
+  const newSales = () => { const s = S(); if (!s || !s.hdv || !s.hdv.log) return 0; const seen = s.hdv.seen || 0; return s.hdv.log.filter((x) => x.s && x.at > seen).length; };
+
+  /* ---------- colonne de gauche : catégories ---------- */
+  function sideHtml() {
+    const fam = M.q.trim() ? "" : M.fam;
+    const tree = FAMS.map(([id, n]) => {
+      const subs = id === "eq" ? SLOTS.slice(1) : id === "res" ? D.RES_CATS.filter((c) => c.id !== "cle").map((c) => [c.id, c.name]) : [];
+      const cnt = id === "fav" ? Object.keys(favs()).length : null;
+      return `<button class="mktr ${fam === id ? "on" : ""}" data-act="mk-fam" data-v="${id}">${famIco(id)}<span class="grow">${n}</span>${cnt !== null ? `<span class="mkcnt">${cnt}</span>` : subs.length ? `<i class="mkcar">${fam === id ? "▾" : "▸"}</i>` : ""}</button>
+        ${fam === id && subs.length ? `<div class="mksub">${[["", id === "eq" ? "Tous les équipements" : "Toutes les ressources"]].concat(subs).map(([v, nm]) => `<button class="${M.sub === v ? "on" : ""}" data-act="mk-sub" data-v="${v}">${h(nm)}</button>`).join("")}</div>` : ""}`; }).join("");
+    return `<aside class="panel mkside3"><div class="phead"><h2>Catégories</h2></div><div class="mktree">${tree}</div></aside>`;
+  }
+  function filtHtml() {
+    const fam = M.q.trim() ? "" : M.fam; if (fam === "fav") return "";
+    const lv = `<label class="mkflt"><span class="xs muted">Niveau</span><span class="mklv"><input type="text" inputmode="numeric" id="mkLmin" data-act="mk-lmin" value="${h(M.lmin)}" placeholder="1" aria-label="Niveau minimum"><span class="xs muted">à</span><input type="text" inputmode="numeric" id="mkLmax" data-act="mk-lmax" value="${h(M.lmax)}" placeholder="200" aria-label="Niveau maximum"></span></label>`;
+    const st = fam === "eq" || fam === "rune" ? `<label class="mkflt"><span class="xs muted">Caractéristique</span><select id="mkStat" data-act="mk-stat"><option value="">Toutes</option>${statList().map(([k, nm]) => `<option value="${k}" ${M.stat === k ? "selected" : ""}>${h(nm)}</option>`).join("")}</select></label>` : "";
+    const set = fam === "eq" ? `<label class="mkflt"><span class="xs muted">Panoplie</span><input type="text" id="mkSet" data-act="mk-set" list="mkSets" value="${h(M.set)}" placeholder="Bouftou, Kralamour…"><datalist id="mkSets">${setList().map((nm) => `<option value="${h(nm)}">`).join("")}</datalist></label>` : "";
+    const reach = fam === "eq" ? `<label class="mkchk"><input type="checkbox" id="mkReach" data-act="mk-reach" ${M.reach ? "checked" : ""}> <span class="small">À ma portée <span class="xs muted">(niv. ${best()} et moins)</span></span></label>` : "";
+    const any = M.lmin || M.lmax || M.stat || M.set || M.reach;
+    return `<div class="mkflts">${lv}${st}${set}${reach}${any ? `<button class="btn sm" data-act="mk-freset">Effacer</button>` : ""}</div>`;
+  }
+
+  /* ---------- tableau des prix ---------- */
+  function listHtml() {
+    const L = M.list === null ? null : rows(); const fam = M.fam, q = M.q.trim();
+    const eq = L && L.length && L.every((x) => x.cat === "eq");
+    const cur = q ? `Recherche « ${q} »` : fam === "eq" ? (M.sub ? (SLOTS.find((s) => s[0] === M.sub) || [])[1] : "Équipements") : fam === "res" && M.sub ? (D.RES_CATS.find((c) => c.id === M.sub) || {}).name : (FAMS.find((f) => f[0] === fam) || [])[1];
+    const th = (k, n, cls) => `<button class="mkth ${cls || ""} ${M.sk === k ? "on" : ""}" data-act="mk-sk" data-v="${k}">${n}${M.sk === k ? (M.sd < 0 ? " ▾" : " ▴") : ""}</button>`;
+    const star = (x) => `<span class="mkstar ${isFav(x.key) ? "on" : ""}" data-act="mk-fav" data-k="${h(x.key)}" role="button" tabindex="0" aria-label="${isFav(x.key) ? "Retirer des favoris" : "Ajouter aux favoris"}">${X().G("star")}</span>`;
+    const px = (v, avg, n) => { if (!v) return `<span class="mkpc muted">—</span>`; const d = deal(v / n, avg); return `<span class="mkpc">${fmt(v)}${d && d.cls !== "mid" ? `<i class="mkdot ${d.cls}" title="${d.txt} (${pctTxt(d.pct)})"></i>` : ""}</span>`; };
+    let body;
+    if (L === null) body = `<div class="empty">Chargement…</div>`;
+    else if (M.lErr) body = netErr("list");
+    else if (!L.length) body = `<div class="empty">${fam === "fav" && !q ? "Aucun favori en vente. Touche l'étoile d'un objet pour le suivre ici." : "Rien en vente ici avec ces filtres."}</div>`;
+    else {
+      const head = eq ? `<div class="mktr2 mkhd eq"><span></span>${th("name", "Objet", "nm")}${th("lvl", "Niv.")}${th("avg", "Prix moyen")}${th("unit", "À partir de")}${th("n", "En vente")}</div>`
+        : `<div class="mktr2 mkhd"><span></span>${th("name", "Objet", "nm")}${th("lvl", "Niv.")}${th("avg", "Moyen / u")}${th("p1", "×1")}${th("p10", "×10")}${th("p100", "×100")}</div>`;
+      body = head + L.map((x) => { const e = x.cat === "eq"; const sub = e ? setName(x.key) : x.cat === "res" ? resCatName(x.key) : "";
+        return `<div class="mktr2 ${eq ? "eq" : ""} ${M.sel === x.key ? "on" : ""}" data-act="mk-pick" data-k="${h(x.key)}" role="button" tabindex="0">${star(x)}<span class="nm">${icon(x.cat, x.key)}<span><b>${h(nameOf(x.cat, x.key))}</b>${sub ? `<br><span class="xs muted">${h(sub)}</span>` : ""}</span></span>
+          <span class="mkc lv" data-l="Niv.">${x.lvl || "—"}</span><span class="mkc av" data-l="Moyen">${x.avg ? (e ? fmt(x.avg) : u1(x.avg)) : "—"}</span>
+          ${eq ? `<span class="mkc" data-l="À partir de">${px(x.unit, x.avg, 1)}</span><span class="mkc" data-l="En vente">${x.n}</span>`
+            : `<span class="mkc" data-l="×1">${px(e ? x.unit : x.p1, x.avg, 1)}</span><span class="mkc" data-l="×10">${px(x.p10, x.avg, 10)}</span><span class="mkc" data-l="×100">${px(x.p100, x.avg, 100)}</span>`}</div>${M.sel === x.key ? `<div class="mkopen">${detailHtml(x)}</div>` : ""}`; }).join("");
+    }
+    return `<section class="panel mklist3"><div class="phead"><h2>${h(cur || "")}</h2><span class="xs muted">${L && !M.lErr ? `${L.length} objet${L.length > 1 ? "s" : ""}` : ""}</span></div>${filtHtml()}<div class="mktbl">${body}</div></section>`;
+  }
+  function buyHtml() {
+    const fam = M.fam, q = M.q.trim();
+    const curTxt = q ? "Catégories" : fam === "eq" && M.sub ? `Équipements › ${(SLOTS.find((s) => s[0] === M.sub) || [])[1]}` : fam === "res" && M.sub ? `Ressources › ${(D.RES_CATS.find((c) => c.id === M.sub) || {}).name}` : (FAMS.find((f) => f[0] === fam) || [])[1];
+    const nf = [M.lmin || M.lmax, M.stat, M.set, M.reach].filter(Boolean).length;
+    const bar = `<div class="row invbar mkbar3"><input type="text" id="mkQ" data-act="mk-q" placeholder="Rechercher un objet, une ressource…" value="${h(M.q)}">
+      <button class="btn mkfbtn" data-act="mk-fopen">${X().G("tag")} ${h(curTxt)}${nf ? ` · ${nf} filtre${nf > 1 ? "s" : ""}` : ""} ${M.fOpen ? "▴" : "▾"}</button></div>`;
+    return `${bar}<div class="mk3 ${M.fOpen ? "fopen" : ""}">${sideHtml()}${listHtml()}</div>`;
+  }
+
+  /* ---------- historique des prix ---------- */
+  function chartHtml(st, cat) {
+    if (!st) return "";
+    const per = M.per === 7 ? 7 : 30; const since = Date.now() - per * 864e5;
+    const days = (st.days || []).filter((d) => new Date(d.d) >= since - 864e5);
+    const tabs = `<span class="seg mkper">${[[7, "7 jours"], [30, "30 jours"]].map(([v, n]) => `<button data-act="mk-per" data-v="${v}" aria-pressed="${per === v}">${n}</button>`).join("")}</span>`;
+    const head = `<div class="row between"><b class="small">${X().G("chart")} Historique des prix</b>${tabs}</div>`;
+    if (days.length < 2) return `<div class="mkchart">${head}<span class="xs muted">${days.length ? "Une seule journée de ventes : la courbe arrive avec les suivantes." : "Pas encore de vente sur cette période."}${st.avg ? ` Prix moyen : <b>${cat === "eq" ? fmt(st.avg) : u1(st.avg)}</b>.` : ""}</span></div>`;
+    const W = 600, H = 170, B = 36; const v = days.map((d) => +d.u); const mx = Math.max(...v), mn = Math.min(...v); const qx = Math.max(...days.map((d) => +d.q || 0), 1);
+    const xo = (d) => Math.max(0, Math.min(W, ((new Date(d.d) - since) / (per * 864e5)) * W));
+    const yo = (u) => 8 + (1 - (u - mn) / (mx - mn || 1)) * (H - B - 18);
+    const line = days.map((d, i) => `${i ? "L" : "M"}${xo(d).toFixed(1)} ${yo(+d.u).toFixed(1)}`).join(" ");
+    const bw = Math.max(3, (W / per) * 0.6);
+    const bars = days.map((d) => { const hh = ((+d.q || 0) / qx) * (B - 6); return `<rect x="${(xo(d) - bw / 2).toFixed(1)}" y="${(H - hh).toFixed(1)}" width="${bw.toFixed(1)}" height="${hh.toFixed(1)}" rx="1.5"/>`; }).join("");
+    const avg = st.avg ? +st.avg : null; const vol = days.reduce((a, d) => a + (+d.q || 0), 0);
+    const fd = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    const f = (u) => (cat === "eq" ? fmt(u) : u1(u));
+    return `<div class="mkchart">${head}
+      <div class="mkcg"><div class="mkya"><span>${f(mx)}</span><span>${f(mn)}</span><span>ventes</span></div>
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><line class="g" x1="0" x2="${W}" y1="${H - B}" y2="${H - B}"/>${avg && avg >= mn && avg <= mx ? `<line class="avg" x1="0" x2="${W}" y1="${yo(avg).toFixed(1)}" y2="${yo(avg).toFixed(1)}"/>` : ""}
+          <g class="vol">${bars}</g><path class="a" d="${line} L${xo(days[days.length - 1]).toFixed(1)} ${H - B} L${xo(days[0]).toFixed(1)} ${H - B} Z"/><path class="l" d="${line}"/></svg></div>
+      <div class="mkxa"><span>${fd(since)}</span><span>${per === 7 ? "" : fd(since + 15 * 864e5)}</span><span>aujourd'hui</span></div>
+      <div class="mkkpi"><div><span class="xs muted">Prix moyen (14 j)</span><b>${avg ? f(avg) : "—"}</b></div><div><span class="xs muted">Plus bas</span><b>${f(mn)}</b></div><div><span class="xs muted">Plus haut</span><b>${f(mx)}</b></div><div><span class="xs muted">Vendus (${per} j)</span><b>${fmt(vol)}</b></div></div>
+      <span class="xs muted">${cat === "eq" ? "Prix de vente moyen de chaque jour, tous jets confondus." : "Prix moyen à l'unité de chaque jour ; les barres montrent la quantité vendue."}${avg && avg >= mn && avg <= mx ? " La ligne pointillée est le prix moyen." : ""}</span></div>`;
+  }
+
+  /* ---------- acheter une quantité : le jeu prend les lots les moins chers ---------- */
+  function qtyPlan(O, n) {
+    const L = O.filter((o) => !o.mine).slice().sort((a, b) => a.price / a.qty - b.price / b.qty || a.qty - b.qty); const out = []; let got = 0, cost = 0;
+    for (const o of L) { if (got >= n) break; const rem = n - got;
+      if (o.qty > rem * 1.5 && L.some((z) => !out.includes(z) && z !== o && z.qty <= rem)) continue; // un lot bien trop gros quand de plus petits suffisent
+      out.push(o); got += o.qty; cost += o.price; }
+    return { out, got, cost };
+  }
+  async function buyQty(key, n) {
+    const P = qtyPlan(M.offers || [], n); if (!P.out.length) return;
+    let got = 0, paid = 0;
+    for (const o of P.out) { const r = await act("hdv_buy", { p_id: o.id }); if (!r) break; got += o.qty; paid += o.price; }
+    if (got) X().toast(`${fmt(got)} × ${nameOf("res", key)} achetés pour ${fmt(paid)} kamas.`, "rare");
+    M.bq = ""; M.confirm = null; search(); pick(key);
+  }
+
+  /* ---------- la ligne ouverte : offres, lots, historique ---------- */
+  function detailHtml(x) {
+    const key = x.key, cat = x.cat; const O = M.offers; const avg = avgOf(key);
+    const T = cat === "eq" ? ITEMS[key] : null; const sn = T ? setName(key) : "";
+    const head = `<div class="phead"><div class="row">${icon(cat, key)}<div><h2>${h(nameOf(cat, key))}</h2><span class="xs muted">${lvlOf(cat, key) ? `niv. ${lvlOf(cat, key)}` : ""}${T ? ` · ${h((SLOTS.find((s) => s[0] === T.slot) || [, T.slot])[1])}` : cat === "res" ? ` · ${h(resCatName(key))}` : ""}${sn ? ` · ${h(sn)}` : ""}${avg ? ` · moyenne ${cat === "eq" ? fmt(avg) : u1(avg) + " / u"}` : ""}</span></div></div>
+      <span class="row"><button class="btn sm mkfavb ${isFav(key) ? "on" : ""}" data-act="mk-fav" data-k="${h(key)}">${X().G("star")} ${isFav(key) ? "Suivi" : "Suivre"}</button><button class="btn sm" data-act="mk-pick" data-k="${h(key)}">Fermer</button></span></div>`;
+    if (!O) return `<section class="panel mkdet">${head}<div class="pad empty">Chargement…</div></section>`;
+    if (M.offErr) return `<section class="panel mkdet">${head}${netErr("offers")}</section>`;
+    const kam = (S() && S().kamas) || 0;
+    const buyBtn = (o) => o.mine ? `<span class="tag" style="background:var(--panel3);color:var(--ink)">ton annonce</span>`
+      : o.price > kam ? `<button class="btn sm mkshort" disabled>Il te manque ${fmt(o.price - kam)} kamas</button>` // 1.0.12.8 : grisé quand la bourse ne suffit pas
+      : M.confirm === o.id ? `<button class="btn sm primary" data-act="mk-buy" data-id="${o.id}">Confirmer ${fmt(o.price)}</button>`
+      : `<button class="btn sm primary" data-act="mk-ask" data-id="${o.id}" ${M.busy ? "disabled" : ""}>Acheter</button>`;
+    if (cat === "eq") {
+      const c = X().mainHero();
+      const offs = O.map((o) => { const it = o.item || { tpl: key, stats: {} }; const q = Math.round(E.itemQuality(it) * 100);
+        return `<div class="mkoffer"><span class="mkjet ${q >= 90 ? "hi" : ""}">jet ${q} %</span><div class="grow"><div class="mkst">${X().itemStatsHtml(it)}</div>
+          <div class="xs muted">${it.radiant ? `<b style="color:var(--gold)">✦ Rayonnant +${it.radiant} %</b> · ` : ""}${it.fm ? `forgemagé ×${it.fm} · ` : ""}${c && T.lvl <= c.lvl ? `pour ${h(c.name)} : ${X().cmpItem(c, it)}` : ""}</div></div><span class="mkpcol">${kk(o.price)}${dealTag(o.price, avg)}</span>${buyBtn(o)}</div>`; }).join("");
+      return `<section class="panel mkdet">${head}<div class="list">${offs || `<div class="empty">Plus aucune offre.</div>`}</div><div class="pad stack">${chartHtml(M.stats, cat)}<span class="xs muted">Chaque offre est un objet précis : tu reçois exactement ce que tu vois.</span></div></section>`;
+    }
+    const lots = [1, 10, 100].map((q) => { const os = O.filter((o) => o.qty === q && !o.mine); const b = os[0];
+      return `<div class="mklot ${b && O.filter((o) => !o.mine).every((z) => z.price / z.qty >= b.price / b.qty) ? "best" : ""}"><span class="xs muted">Lot de ${q}</span>${b ? `<b class="big">${kk(b.price)}</b><span class="xs muted">${u1(b.price / q)} / unité · ${os.length} lot${os.length > 1 ? "s" : ""}</span>${dealTag(b.price / q, avg)}${buyBtn(b)}` : `<span class="xs muted">aucun lot</span>`}</div>`; }).join("");
+    const n = Math.max(0, Math.round(+String(M.bq || "").replace(/\s/g, "")) || 0); const P = n ? qtyPlan(O, n) : null;
+    const parts = P ? [100, 10, 1].map((q) => { const c = P.out.filter((o) => o.qty === q).length; return c ? `${c} lot${c > 1 ? "s" : ""} de ${q}` : ""; }).filter(Boolean).join(" + ") : "";
+    const qbox = O.some((o) => !o.mine) ? `<div class="mkqbox"><div class="row between"><b class="small">${X().G("cart")} Acheter une quantité</b><span class="xs muted">le jeu prend les lots les moins chers</span></div>
+      <div class="mkqrow"><input type="text" inputmode="numeric" class="mkbigin" id="mkBQ" data-act="mk-bq" value="${h(M.bq || "")}" placeholder="Combien ?" aria-label="Quantité à acheter"><span class="seg">${[10, 100, 1000].map((q) => `<button data-act="mk-bqset" data-v="${q}">${fmt(q)}</button>`).join("")}</span></div>
+      ${P && P.got ? `<div class="mksum"><span>${h(parts)}</span><b>${fmt(P.got)} ${P.got !== n ? `<span class="xs muted">(${P.got > n ? `${fmt(P.got - n)} de plus` : `il en manque ${fmt(n - P.got)}`})</span>` : ""}</b><span>Prix à l'unité</span><b>${u1(P.cost / P.got)} ${dealTag(P.cost / P.got, avg)}</b><span class="tot">Total</span><b class="tot">${kk(P.cost)}</b></div>
+        ${P.cost > kam ? `<button class="btn primary" disabled>Il te manque ${fmt(P.cost - kam)} kamas</button>` : M.confirm === "q" ? `<button class="btn primary" data-act="mk-bqgo" ${M.busy ? "disabled" : ""}>Confirmer : ${fmt(P.got)} pour ${fmt(P.cost)} kamas</button>` : `<button class="btn primary" data-act="mk-bqask" ${M.busy || !mine() ? "disabled" : ""}>Acheter ${fmt(P.got)} pour ${fmt(P.cost)} kamas</button>`}` : n ? `<span class="xs muted">Rien en vente pour l'instant.</span>` : ""}</div>` : "";
+    const own = O.filter((o) => o.mine).length;
+    return `<section class="panel mkdet">${head}<div class="pad mkdg"><div class="stack"><div class="mklots">${lots}</div>${qbox}${own ? `<span class="xs muted">Dont ${own} lot${own > 1 ? "s" : ""} à toi (onglet Mes ventes et achats).</span>` : ""}${need(key)}</div><div class="stack">${chartHtml(M.stats, cat)}${detOrdHtml(cat, key)}</div></div></section>`;
+  }
+
+  /* ---------- mes ventes et achats ---------- */
+  function mineHtml() {
+    if (!mine()) return "";
+    const m = M.mine; if (!m) return `<div class="empty">Chargement…</div>`;
+    const v = M.mineV || "open"; const seen = (S().hdv && S().hdv.seen) || 0;
+    const row = (x) => `${icon(x.cat, x.key)}<span class="grow"><b>${h(nameOf(x.cat, x.key))}</b> <span class="xs muted">${x.cat === "eq" && x.item ? `jet ${Math.round(E.itemQuality(x.item) * 100)} %` : `×${x.qty}`}</span>`;
+    const fresh = m.sold.filter((x) => new Date(x.at) > seen); const sum = fresh.reduce((a, x) => a + x.price, 0); const nNew = newSales();
+    const seg = `<div class="row catchips">${[["open", `En vente · ${m.open.length} / ${MAX}`], ["sold", `Vendus${nNew ? ` <span class="mknew">${nNew}</span>` : ""}`], ["bought", "Achats"]].map(([id, n]) => `<button data-act="mk-mv" data-v="${id}" aria-pressed="${v === id}">${n}</button>`).join("")}</div>`;
+    const top = fresh.length ? `<div class="panel mksold"><div class="pad row between"><span><b>${fresh.length} vente${fresh.length > 1 ? "s" : ""} depuis ta dernière visite</b><br><span class="small muted">Les kamas sont déjà dans ta bourse.</span></span><b class="mkpx plus" style="font-size:20px">+ ${fmt(sum)}</b></div></div>` : "";
+    let body;
+    if (v === "sold") body = `<section class="panel"><div class="phead"><h2>Vendu ces 7 jours</h2></div><div class="list">${m.sold.map((x) => `<div class="li mkrow">${row(x)} · acheté par <b>${h(x.buyer || "un joueur")}</b><br><span class="xs muted">${ago(x.at)}</span></span>${kk(x.price)}</div>`).join("") || `<div class="empty">Rien de vendu cette semaine.</div>`}</div></section>`;
+    else if (v === "bought") body = `<section class="panel"><div class="phead"><h2>Achats de ces 7 jours</h2></div><div class="list">${M.bought === null ? `<div class="empty">Chargement…</div>` : M.bought.map((x) => `<div class="li mkrow">${row(x)} · vendu par <b>${h(x.seller || "un joueur")}</b><br><span class="xs muted">${ago(x.at)}</span></span><b class="mkpx">− ${fmt(x.price)}</b></div>`).join("") || `<div class="empty">Aucun achat cette semaine.</div>`}</div></section>`;
+    else body = `<section class="panel"><div class="phead"><h2>En vente</h2><span class="xs muted">${m.open.length} / ${MAX} places</span></div><div class="list">
+        ${m.open.map((x) => { const a = (M.list || []).find((y) => y.key === x.key); const av = a && a.avg;
+          return `<div class="li mkrow">${row(x)}<br><span class="xs ${new Date(x.exp) - Date.now() < 86400000 ? "mkwarn" : "muted"}">${left(x.exp)}</span>${av ? ` <span class="xs muted">· moyenne ${x.cat === "eq" ? fmt(av) : u1(av * x.qty)}</span>` : ""}</span><span class="mkpcol">${kk(x.price)}${av ? dealTag(x.price / x.qty, av) : ""}</span>
+          ${M.rep === x.id ? `<input type="text" inputmode="numeric" class="mkrep" id="mkRep" value="${x.price}"><button class="btn sm primary" data-act="mk-repgo" data-id="${x.id}">OK</button>` : `<button class="btn sm" data-act="mk-rep" data-id="${x.id}">Modifier le prix</button>`}
+          <button class="btn sm" data-act="mk-cancel" data-id="${x.id}" ${M.busy ? "disabled" : ""}>Retirer</button></div>`; }).join("") || `<div class="empty">Aucune annonce. Onglet Vendre pour en créer.</div>`}</div></section>
+      ${M.rep ? `<span class="xs muted">Changer le prix coûte de nouveau 2 % du nouveau prix, comme dans DOFUS.</span>` : ""}`;
+    return `${top}${seg}${body}<span class="xs muted">Une annonce dure 14 jours ; à la fin, l'objet revient seul dans ton sac. Chaque vente est annoncée, même sur une autre page.</span>`;
+  }
+
+  /* ---------- vendre : prix conseillé (1 kama de moins que le lot le moins cher) ---------- */
+  function sugHtml(x, hint, lot) {
+    if (!hint || !hint.offs) return null;
+    const res = x.cat !== "eq"; const same = hint.offs.filter((o) => !o.mine && o.qty === lot).slice(0, 5); const st = hint.st;
+    const avgLot = st && st.avg ? Math.max(1, Math.round(st.avg * lot)) : null; const low = same[0] ? same[0].price : null;
+    const sug = low ? Math.max(lot, low - 1) : avgLot;
+    const chips = `<span class="row mkchips">${low ? `<button class="btn sm" data-act="mk-pset" data-v="${Math.max(lot, low - 1)}">Moins cher − 1 : ${fmt(Math.max(lot, low - 1))}</button>` : ""}${avgLot ? `<button class="btn sm" data-act="mk-pset" data-v="${avgLot}">Prix moyen : ${fmt(avgLot)}</button>` : ""}</span>`;
+    const tbl = `<div class="mkcur"><span class="xs muted">${res ? `Lots de ${lot} en vente` : "Le même objet en vente"}</span>${same.length ? same.map((o) => `<span class="mkcurr"><span>${res ? `${u1(o.price / lot)} / u` : `jet ${Math.round(E.itemQuality(o.item || { tpl: x.key, stats: {} }) * 100)} %`}</span><b>${fmt(o.price)}</b></span>`).join("") : `<span class="xs muted">aucun pour l'instant : c'est toi qui fixes le prix.</span>`}</div>`;
+    return { sug, html: `<div class="mksug"><div class="row between"><b class="small">${X().G("tag")} Prix conseillé</b><b class="mkpx">${sug ? fmt(sug) : "—"}</b></div><span class="xs muted">${low ? "Un kama de moins que l'offre la moins chère : la tienne passe en premier." : avgLot ? "Personne n'en vend : le prix moyen des dernières ventes." : "Ni offre ni vente récente : choisis ton prix."}</span>${sug || same.length ? chips + tbl : ""}</div>` };
+  }
   /* ---------- événements ---------- */
   let qTimer = null;
   document.addEventListener("input", (ev) => {
@@ -454,26 +594,38 @@
     if (a === "mk-ofind" || a === "mk-oqty" || a === "mk-oprice") { M[{ "mk-ofind": "oFind", "mk-oqty": "oQty", "mk-oprice": "oPrice" }[a]] = ev.target.value;
       clearTimeout(qTimer); qTimer = setTimeout(paint, a === "mk-ofind" ? 300 : 500); }
     if (a === "mk-price") { M.price = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(paint, 500); }
+    if (a === "mk-bq") M.confirm = null;
+    if (a === "mk-lmin" || a === "mk-lmax" || a === "mk-set" || a === "mk-bq") { M[{ "mk-lmin": "lmin", "mk-lmax": "lmax", "mk-set": "set", "mk-bq": "bq" }[a]] = ev.target.value; clearTimeout(qTimer); qTimer = setTimeout(paint, 400); }
   });
+  document.addEventListener("keydown", (ev) => { const t = ev.target; if ((ev.key === "Enter" || ev.key === " ") && t.getAttribute && t.getAttribute("role") === "button" && /^mk-/.test(t.dataset.act || "")) { ev.preventDefault(); t.click(); } });
   document.addEventListener("toggle", (ev) => { if (ev.target.classList && ev.target.classList.contains("mkadd")) M.tOpen = ev.target.open; }, true);
   document.addEventListener("change", (ev) => {
     const a = ev.target.dataset && ev.target.dataset.act; if (!a || !/^mk-/.test(a)) return;
-    if (ev.target.tagName !== "SELECT") return; // les champs texte sont gérés par « input »
-    if (a === "mk-slot") M.slot = ev.target.value; if (a === "mk-lv") M.lv = ev.target.value; if (a === "mk-sort") M.sort = ev.target.value;
-    M.list = null; M.sel = null; search();
+    if (a === "mk-reach") { M.reach = ev.target.checked; paint(); return; }
+    if (a === "mk-stat") { M.stat = ev.target.value; paint(); return; }
   });
   document.addEventListener("click", async (ev) => {
     const t = ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, d = t.dataset;
     if (!/^mk-/.test(a)) return;
     switch (a) {
       case "mk-tab": M.tab = d.v; M.confirm = null; if (d.v === "mine") { loadMine(); } if (d.v === "buy") { M.list = null; } if (d.v === "sell" && !M.mine) loadMine(); render($("#main")); return;
-      case "mk-cat": M.cat = d.v; M.sel = null; M.list = null; render($("#main")); return;
-      case "mk-pick": pick(d.k); if (!matchMedia("(min-width:861px)").matches) window.scrollTo(0, 0); return;
+      case "mk-fam": M.fam = d.v; M.sub = ""; M.stat = ""; M.set = ""; M.q = ""; M.sel = null; M.list = null; M.tab = "buy"; M.fOpen = false; render($("#main")); return;
+      case "mk-sub": M.sub = d.v; M.sel = null; M.fOpen = false; paint(); return;
+      case "mk-sk": if (M.sk === d.v) M.sd = -M.sd; else { M.sk = d.v; M.sd = d.v === "n" || d.v === "lvl" ? -1 : 1; } paint(); return;
+      case "mk-fav": { const s = S(); if (!s) return; s.hdv = s.hdv || { op: 0, log: [] }; const F = (s.hdv.fav = s.hdv.fav || {}); if (F[d.k]) delete F[d.k]; else F[d.k] = 1; X().markDirty(); paint(); return; }
+      case "mk-fopen": M.fOpen = !M.fOpen; paint(); return;
+      case "mk-freset": M.lmin = M.lmax = M.stat = M.set = ""; M.reach = false; paint(); return;
+      case "mk-per": M.per = +d.v; paint(); return;
+      case "mk-bqset": M.bq = d.v; M.confirm = null; paint(); return;
+      case "mk-bqask": M.confirm = "q"; paint(); return;
+      case "mk-mv": M.mineV = d.v; if (d.v === "sold") markSeen(); if (d.v === "bought") loadBought(); paint(); return;
+      case "mk-bqgo": { const n = Math.round(+String(M.bq).replace(/\s/g, "")) || 0; if (n > 0 && M.sel) buyQty(M.sel, n); return; }
+      case "mk-pset": M.price = d.v; paint(); return;
+      case "mk-pick": if (M.sel === d.k) { M.sel = null; paint(); return; } M.bq = ""; pick(d.k); return;
       case "mk-unpick": M.sel = null; paint(); return;
       case "mk-retry": if (d.v === "offers") { pick(M.sel); return; } if (d.v === "ord") M.orders = null; else M.list = null; render($("#main")); return;
       case "mk-ask": M.confirm = +d.id; paint(); return;
-      case "mk-buy": { const r = await act("hdv_buy", { p_id: +d.id }, "Acheté ! C'est dans ton sac."); M.confirm = null; if (r) { M.list = null; search(); pick(M.sel); } else if (M.sel) pick(M.sel); return; }
-      case "mk-need": buyNeed(d.k, +d.n); return;
+      case "mk-buy": { const r = await act("hdv_buy", { p_id: +d.id }, "Acheté ! C'est dans ton sac."); M.confirm = null; if (r) { search(); pick(M.sel); } else if (M.sel) pick(M.sel); return; }
       case "mk-scat": M.sCat = d.v; M.sSel = null; M.price = ""; M.n = 1; M.lot = d.v === "eq" ? 1 : 100; paint(); return;
       case "mk-ssel": { M.sSel = d.v || null; M.price = ""; M.n = 1; if (M.sSel) { const x = sellable(M.sCat).find((y) => (y.uid ? String(y.uid) : y.key) === M.sSel); if (x) { if (x.cat !== "eq") M.lot = x.n >= 100 ? 100 : x.n >= 10 ? 10 : 1; priceHint(x.cat, x.key); } } paint(); return; }
       case "mk-lot": M.lot = +d.v; M.n = 1; paint(); return;
@@ -529,5 +681,5 @@
   const sellRes = (key) => { const c = E.isKey(key) ? "clef" : "res"; const n = (S() && S().res[key]) || 0; M.tab = "sell"; M.sCat = c; M.sSel = key; M.price = ""; M.n = 1; M.lot = n >= 100 ? 100 : n >= 10 ? 10 : 1; priceHint("res", key); if (M.mine === null && mine()) loadMine(); };
   /* 0.1.41 : « Offre d'achat HdV » depuis les métiers et la forgemagie (ressource ou rune qui manque) */
   const orderFor = (cat, key, qty) => { M.tab = "ord"; M.oView = "mine"; oPick(cat, key, qty || 0); if (M.oMine === null && mine()) loadOMine(); };
-  window.MARKET = { start, sellItem, sellRes, orderFor, canSell: (key) => !blocked("res", key), render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
+  window.MARKET = { start, newSales, sellItem, sellRes, orderFor, canSell: (key) => !blocked("res", key), render: (m) => { render(m); if (M.tab === "mine") setTimeout(markSeen, 4000); if (mine()) sync(); }, sync, apply, adminHtml, tradeAsk, poll: tradePoll, M };
 })();

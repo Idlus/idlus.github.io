@@ -21,9 +21,20 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.16";
+const GAME_VERSION = "1.0.17";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.17", name: "Hôtel de vente façon DOFUS 3", items: [
+    "Nouvel hôtel de vente : les catégories à gauche (Favoris, Équipements par emplacement, Ressources par type, Clefs, Runes, Consommables), le tableau des prix au milieu, et l'objet choisi s'ouvre juste sous sa ligne",
+    "Tableau des ressources avec le prix des lots ×1, ×10 et ×100 et le prix moyen ; toutes les colonnes se trient, par défaut du moins cher à l'unité",
+    "Filtres : niveau minimum et maximum, caractéristique, panoplie et « À ma portée ». La recherche ignore les accents",
+    "Grande courbe des prix sur 7 ou 30 jours, avec les quantités vendues chaque jour, le prix moyen, le plus bas, le plus haut et le total vendu",
+    "Repères « Bonne affaire », « Prix normal » et « Cher » (15 % autour du prix moyen) sur chaque offre, et un point vert ou orange dans le tableau",
+    "Vendre : prix conseillé déjà rempli (1 kama de moins que le lot le moins cher), boutons « Moins cher − 1 » et « Prix moyen », et les 5 lots les moins chers juste à côté",
+    "Acheter une quantité : tape combien tu en veux, le jeu prend les lots les moins chers et affiche le total avant de confirmer",
+    "Favoris : une étoile sur chaque objet et une catégorie « Favoris » pour les retrouver",
+    "« Mes ventes et achats » : En vente, Vendus et Achats des 7 derniers jours, avec une pastille rouge (aussi dans le menu) quand tu as vendu quelque chose",
+  ] },
   { v: "1.0.16", name: "Passifs des Dofus", items: [
     "Chaque Dofus a maintenant son passif unique, en plus de ses caractéristiques : 31 passifs rangés en 5 familles (Attaque, Défense, Soin, Contrôle, Gains), par exemple Prison d'ambre (Ocre), Carapace d'ivoire (Ivoire) ou Lueur d'Ilyzaelle (Argenté Scintillant)",
     "Les 6 Dofus portés par un héros donnent tous leur passif. Les bonus de kamas (Dofus Argenté) et de butin (Dokille) comptent une seule fois par équipe et restent dans les plafonds ; l'XP du Jyfus va à son porteur",
@@ -1697,7 +1708,8 @@ function recruitBtn() {
 }
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
-  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
+  const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
+  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
 function renderNav() {
   const nav = $("#nav"); $("#subnav").innerHTML = "";
@@ -1712,7 +1724,7 @@ function renderNav() {
     ${NAV.map((F) => `<div class="sn-g"><span>${F.n}</span></div>${F.pages.map(([key, n, ic]) => item(key, n, ic)).join("")}`).join("")}</div>`;
   const inBar = ["home", "world", "team", "combat"]; const menuOn = !inBar.includes(k);
   const mb = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)}>${ic ? med(ic) : heroMed()}<span>${n}</span>${B[key] || ""}</button>`;
-  const mob = `<div class="sn-mob">${mb("home", "Accueil", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi ? '<span class="navdot"></span>' : ""}</button></div>`;
+  const mob = `<div class="sn-mob">${mb("home", "Accueil", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
   nav.innerHTML = side + mob;
 }

@@ -516,22 +516,60 @@ begin
   perform alog('HdV : annonce retirée (' || L.name || ', ' || coalesce(pseudo_of(L.seller), '?') || ')');
 end $$;
 
+-- ---------- 1.0.16 : Hôtel de vente façon DOFUS 3 (lecture seule, rien n'est envoyé en continu) ----------
+create index if not exists hdv_sales_buyer on public.hdv_sales (buyer, at);
+create or replace function public.hdv_fold(t text) returns text language sql immutable as $$
+  select translate(lower(coalesce(t, '')), 'àâäáãéèêëíìîïóòôöõúùûüçñœæ', 'aaaaaeeeeiiiiooooouuuucnoa')
+$$;
+-- Liste du tableau : prix des lots ×1 / ×10 / ×100, prix le plus bas à l'unité et prix moyen des 14 derniers jours.
+-- p_keys : les favoris du joueur (sinon null). La recherche ignore les accents.
+create or replace function public.hdv_market(p_cat text, p_q text, p_slot text, p_keys text[]) returns jsonb language sql stable security definer set search_path = public
+as $$
+  select coalesce(jsonb_agg(r), '[]'::jsonb) from (
+    select jsonb_build_object('key', l.key, 'cat', min(l.cat), 'name', min(l.name), 'lvl', max(l.lvl), 'slot', min(l.slot), 'n', count(*), 'qty', sum(l.qty),
+      'unit', round(min(l.price::numeric / l.qty), 2),
+      'p1', min(l.price) filter (where l.qty = 1), 'p10', min(l.price) filter (where l.qty = 10), 'p100', min(l.price) filter (where l.qty = 100),
+      'avg', (select round(sum(s.price)::numeric / nullif(sum(s.qty), 0), 1) from hdv_sales s where s.key = l.key and s.at > now() - interval '14 days')) r
+    from hdv_listings l
+    where l.status = 'open' and l.expires_at > now()
+      and (p_keys is null or l.key = any(p_keys))
+      and (p_cat is null or p_cat = '' or l.cat = p_cat)
+      and (p_slot is null or p_slot = '' or l.slot = p_slot)
+      and (p_q is null or p_q = '' or hdv_fold(l.name) like '%' || hdv_fold(replace(replace(p_q, '%', ''), '_', '')) || '%')
+    group by l.key limit 400) x
+$$;
+-- Courbe des prix : prix moyen à l'unité et quantité vendue, jour par jour (30 jours au plus), et prix moyen des 14 derniers jours.
+create or replace function public.hdv_history(p_key text, p_days int) returns jsonb language sql stable security definer set search_path = public
+as $$
+  select jsonb_build_object(
+    'days', coalesce((select jsonb_agg(jsonb_build_object('d', d, 'u', u, 'q', q) order by d) from (select date_trunc('day', at)::date d, round(sum(price)::numeric / sum(qty), 1) u, sum(qty) q
+      from hdv_sales where key = p_key and at > now() - make_interval(days => least(greatest(coalesce(p_days, 30), 1), 30)) group by 1) s), '[]'::jsonb),
+    'avg', (select round(sum(price)::numeric / nullif(sum(qty), 0), 1) from hdv_sales where key = p_key and at > now() - interval '14 days'),
+    'week', (select coalesce(sum(qty), 0) from hdv_sales where key = p_key and at > now() - interval '7 days'))
+$$;
+-- Mes achats des 7 derniers jours (annonces achetées et offres d'achat remplies).
+create or replace function public.hdv_bought() returns jsonb language sql stable security definer set search_path = public
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('cat', cat, 'key', key, 'name', name, 'qty', qty, 'price', price, 'at', at, 'seller', pseudo_of(seller)) order by at desc), '[]'::jsonb)
+  from (select * from hdv_sales where buyer = auth.uid() and at > now() - interval '7 days' order by at desc limit 40) b
+$$;
+
 -- ---------- droits ----------
 do $$
 declare f text;
 begin
   foreach f in array array['hdv_err(text)', 'hdv_save(uuid)', 'hdv_cursor(jsonb)', 'hdv_kamas(uuid, jsonb)', 'hdv_qty(uuid, jsonb, text, text)', 'hdv_bucket(text)', 'hdv_item(uuid, jsonb, bigint)',
     'hdv_op(uuid, jsonb, text)', 'hdv_ops_after(uuid, bigint)', 'hdv_back(hdv_listings)', 'hdv_expire()', 'hdv_tax(bigint)', 'trade_check(uuid, jsonb, jsonb)', 'trade_neg(jsonb)', 'trade_sum(jsonb, jsonb)',
-    'hdv_otax(numeric)', 'hdv_order_close(hdv_orders, text, text)', 'hdv_order_expire()'] loop
+    'hdv_otax(numeric)', 'hdv_order_close(hdv_orders, text, text)', 'hdv_order_expire()', 'hdv_fold(text)'] loop
     execute 'revoke all on function public.' || f || ' from public, anon, authenticated';
   end loop;
   foreach f in array array['hdv_sync(bigint)', 'hdv_list(bigint, text, text, bigint, int, int, bigint, text, int, text)', 'hdv_buy(bigint, bigint)', 'hdv_cancel(bigint, bigint)', 'hdv_reprice(bigint, bigint, bigint)',
     'hdv_mine()', 'trade_start(text)', 'trade_state()', 'trade_offer(bigint, jsonb)', 'trade_ok(bigint, int, bigint)', 'trade_cancel(bigint)', 'adm_hdv()', 'adm_hdv_remove(bigint)',
-    'hdv_order_new(bigint, text, text, int, bigint, int, text, int, text)', 'hdv_order_cancel(bigint, bigint)', 'hdv_order_fill(bigint, bigint, int)', 'hdv_orders_mine()'] loop
+    'hdv_order_new(bigint, text, text, int, bigint, int, text, int, text)', 'hdv_order_cancel(bigint, bigint)', 'hdv_order_fill(bigint, bigint, int)', 'hdv_orders_mine()', 'hdv_bought()'] loop
     execute 'revoke all on function public.' || f || ' from public, anon';
     execute 'grant execute on function public.' || f || ' to authenticated';
   end loop;
-  foreach f in array array['hdv_search(text, text, text, int, int)', 'hdv_offers(text)', 'hdv_stats(text)', 'hdv_orders_list(text, text, text)'] loop
+  foreach f in array array['hdv_search(text, text, text, int, int)', 'hdv_offers(text)', 'hdv_stats(text)', 'hdv_orders_list(text, text, text)', 'hdv_market(text, text, text, text[])', 'hdv_history(text, int)'] loop
     execute 'grant execute on function public.' || f || ' to anon, authenticated';
   end loop;
 end $$;

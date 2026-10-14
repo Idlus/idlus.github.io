@@ -110,6 +110,9 @@ const MOCK = () => {
       const item = { tpl, stats: Object.fromEntries(Object.entries(T.stats).map(([k, [lo]]) => [k, lo])) };
       if (name === "hdv_search") return { data: d.hdvSold ? [] : [{ cat: "eq", key: tpl, name: T.name, lvl: T.lvl, slot: T.slot, n: 1, qty: 1, unit: 5000 }], error: null };
       if (name === "hdv_offers") return { data: d.hdvSold ? [] : [{ id: 1, qty: 1, price: 5000, item, mine: false, exp: new Date(Date.now() + 864e5 * 14).toISOString() }], error: null };
+      if (name === "hdv_market") return { data: d.hdvSold ? [] : [{ cat: "eq", key: tpl, name: T.name, lvl: T.lvl, slot: T.slot, n: 1, qty: 1, unit: 5000, p1: 5000, avg: 6000 }], error: null };
+      if (name === "hdv_history") return { data: { avg: 4800, week: 3, days: [{ d: "2026-10-10", u: 4600, q: 1 }, { d: "2026-10-11", u: 5000, q: 2 }] }, error: null };
+      if (name === "hdv_bought") return { data: d.hdvSold ? [{ cat: "eq", key: tpl, name: T.name, qty: 1, price: 5000, at: new Date().toISOString(), seller: "Vendeur" }] : [], error: null };
       if (name === "hdv_stats") return { data: { avg: 4800, week: 3, days: [{ d: "2026-10-10", u: 4600 }, { d: "2026-10-11", u: 5000 }] }, error: null };
       if (name === "hdv_mine") return { data: { open: [], sold: [] }, error: null };
       if (name === "brisage_list" || name === "brisage_hit") return { data: {}, error: null };
@@ -467,6 +470,9 @@ const MOCK = () => {
     // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
     await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
     await page.click('#nav [data-nk="hdv"]');
+    await page.waitForSelector('.mktr2[data-k]', { timeout: 8000 });
+    if (!(await page.$(".mkdot.good"))) fail("hôtel de vente : repère de prix absent");
+    await page.click('.mktr2[data-k]');
     await page.waitForSelector('.mkdet [data-act="mk-ask"]', { timeout: 8000 });
     const before = await page.evaluate(() => ({ k: window.DX.S.kamas, n: Object.keys(window.DX.S.items).length }));
     await page.click('.mkdet [data-act="mk-ask"]'); await page.click('.mkdet [data-act="mk-buy"]'); await page.waitForTimeout(800);

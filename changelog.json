@@ -1,6 +1,21 @@
 {
-  "version": "1.0.16",
+  "version": "1.0.17",
   "versions": [
+    {
+      "v": "1.0.17",
+      "name": "Hôtel de vente façon DOFUS 3",
+      "items": [
+        "Nouvel hôtel de vente : les catégories à gauche (Favoris, Équipements par emplacement, Ressources par type, Clefs, Runes, Consommables), le tableau des prix au milieu, et l'objet choisi s'ouvre juste sous sa ligne",
+        "Tableau des ressources avec le prix des lots ×1, ×10 et ×100 et le prix moyen ; toutes les colonnes se trient, par défaut du moins cher à l'unité",
+        "Filtres : niveau minimum et maximum, caractéristique, panoplie et « À ma portée ». La recherche ignore les accents",
+        "Grande courbe des prix sur 7 ou 30 jours, avec les quantités vendues chaque jour, le prix moyen, le plus bas, le plus haut et le total vendu",
+        "Repères « Bonne affaire », « Prix normal » et « Cher » (15 % autour du prix moyen) sur chaque offre, et un point vert ou orange dans le tableau",
+        "Vendre : prix conseillé déjà rempli (1 kama de moins que le lot le moins cher), boutons « Moins cher − 1 » et « Prix moyen », et les 5 lots les moins chers juste à côté",
+        "Acheter une quantité : tape combien tu en veux, le jeu prend les lots les moins chers et affiche le total avant de confirmer",
+        "Favoris : une étoile sur chaque objet et une catégorie « Favoris » pour les retrouver",
+        "« Mes ventes et achats » : En vente, Vendus et Achats des 7 derniers jours, avec une pastille rouge (aussi dans le menu) quand tu as vendu quelque chose"
+      ]
+    },
     {
       "v": "1.0.16",
       "name": "Passifs des Dofus",
