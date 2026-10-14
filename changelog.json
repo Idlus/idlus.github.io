@@ -1,6 +1,14 @@
 {
-  "version": "1.0.12.1",
+  "version": "1.0.12.2",
   "versions": [
+    {
+      "v": "1.0.12.2",
+      "name": "Récolte qui monte jusqu'au bout",
+      "items": [
+        "La quantité reçue à chaque coup de récolte monte maintenant jusqu'au niveau 200 du métier. Avant, elle baissait un peu entre les niveaux 150 et 200 (sans outil : 5,3 au niveau 150, 4,7 au niveau 200 ; maintenant 6 au niveau 200)",
+        "Rien ne change en dessous du niveau 150 de métier"
+      ]
+    },
     {
       "v": "1.0.12.1",
       "name": "Artisanat haut niveau",

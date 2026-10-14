@@ -7,7 +7,10 @@ const E = require("../js/engine.js");
 require("../js/systems.js");
 let seed = 3; E.setRng(() => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; });
 let now = 1.8e12; E.now = () => now; E.protSpawn = () => {}; E.almMult = () => 1;
-assert.ok(Math.abs(E.gatherYield(1) - 0.35) < 0.002 && Math.abs(E.gatherYield(200) - 0.1) < 1e-9, "rendement 35 % → 10 %");
+assert.ok(Math.abs(E.gatherYield(1) - 0.35) < 0.002 && Math.abs(E.gatherYield(150) - 0.1625) < 1e-9, "rendement 35 % au niveau 1, inchangé jusqu'au niveau 150");
+// la quantité par coup monte toujours avec le niveau du métier (avant : baisse de 150 à 200)
+{ let prev = 0; for (let L = 1; L <= 200; L++) { const S = E.newState("Q", "iop"); S.jobs.paysan.lvl = L; const c = S.chars[0]; c.job = { job: "paysan", res: "Blé", prog: 0 }; const q = E.hitQty(S, c); assert.ok(q >= prev - 1e-9, `quantité par coup croissante (niveau ${L})`); prev = q; }
+  assert.ok(prev > 5.8 && prev < 6.2, `≈ 6 par coup au niveau 200 sans outil (${prev.toFixed(2)})`); }
 const make = (lvl, res) => { const S = E.newState("Rec", "iop"); S.jobs.paysan.lvl = lvl; const c = S.chars[0]; c.job = { job: "paysan", res, prog: 0 }; return { S, c }; };
 // la durée d'un coup suit E.HIT_S, quel que soit l'outil
 { const { S, c } = make(200, "Quisnoa"); const t0 = E.gatherPeriod(S, c); S.tools.paysan = 10; assert.strictEqual(E.gatherPeriod(S, c), t0, "l'outil ne raccourcit pas le coup");

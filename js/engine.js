@@ -2807,8 +2807,16 @@
   E.FIND_CHANCE = 0.01;
   /* 1.0.7.9 : rendement de la récolte, part des ressources gardées à chaque coup selon le niveau du métier
      (35 % au niveau 1, 10 % au niveau 200). L'XP de métier par coup baisse dans la même proportion. */
-  E.YIELD = { lo: 0.35, hi: 0.1 };
-  E.gatherYield = (lvl) => E.YIELD.lo + (E.YIELD.hi - E.YIELD.lo) * Math.min(200, Math.max(1, lvl)) / 200;
+  E.YIELD = { lo: 0.35, hi: 0.1, from: 150, top: 1.53 };
+  /* 1.0.12.x : au-delà du niveau 150 la baisse linéaire du rendement faisait baisser la quantité par coup (5,3 → 4,7 sans outil).
+     Du niveau 150 au 200, la quantité par coup (∝ rythme × quantité × rendement) monte maintenant en ligne droite jusqu'à top
+     au niveau 200 (≈ 6 par coup de 30 s sans outil). En dessous de 150 : inchangé. */
+  const yLin = (L) => E.YIELD.lo + (E.YIELD.hi - E.YIELD.lo) * L / 200;
+  const yBase = (L) => (1 + L * 0.025) * (1 + L / 200); // rythme (E.gatherTime) × quantité moyenne par récolte
+  E.gatherYield = (lvl) => {
+    const L = Math.min(200, Math.max(1, lvl)), F = E.YIELD.from; if (L <= F) return yLin(L);
+    const a = yBase(F) * yLin(F); return (a + (E.YIELD.top - a) * (L - F) / (200 - F)) / yBase(L);
+  };
   E.jobRes = (job) => GATHER_JOBS[job].items; // [[ressource, niveau]]
   E.setJob = (S, cid, job, res) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";

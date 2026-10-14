@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.12.2 « Récolte qui monte jusqu'au bout »
+Demande de Mathis : `E.gatherYield` (js/engine.js) reste linéaire jusqu'au niveau 150 (`E.YIELD.from`), puis la quantité par coup monte en ligne droite jusqu'à `E.YIELD.top` au niveau 200 (≈ 6 par coup de 30 s sans outil, au lieu de 4,7). L'XP de métier suit le même rendement (montée 150 → 200 un peu plus rapide). Test de croissance dans tests/recolte.test.js.
+
 ## 1.0.12.1 « Artisanat haut niveau »
 Signalement de Mathis (14/10/2026 : « on xp rien sur les craft hl, 30 items par niveau »), choix 1A 2A. Cause : l'XP d'une fabrication plafonne à 612 (objet niveau 200) dès le métier 66 alors que `E.jobXpNeed` continue de grimper (33 fabrications par niveau au 66, 180 au 199 ; Bricoleur 100 puis 343). `E.craftBoost` (js/engine.js) multiplie l'XP pour que la recette la plus haute faisable (`E.craftTopXp`, recettes refaisables) vaille au moins 1/`E.CRAFT_STEP` (10) de niveau ; jamais moins qu'avant, rien au niveau 200 ; la baisse de `E.craftXpMult` (1.0.9.2) s'applique toujours. Les mentions « XP −x % » lisent maintenant `E.craftXpMult`. Fiche de recette : `#recnext` (fabrications restantes pour le niveau suivant). Simulation : /mnt/project-files/nerf-recettes/haut-niveau/ (ressources pour les 7 métiers au 200 : ~5 millions avant, ~550 000 après). Serveur : seuil du contrôle de vitesse des métiers d'artisanat porté de 60 à 120 niveaux en 10 min (supabase/classements.sql).
 
