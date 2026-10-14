@@ -27,7 +27,7 @@
   E.GBOSS_PHASES = [8, 14, 20, 26, 32];                         // part de la vie totale de chaque phase (%)
   E.GBOSS_PHASE_K = [300000, 600000, 900000, 1200000, 1500000]; // kamas versés au coffre de guilde quand la phase tombe
   E.GBOSS_PHASE_NAMES = ["Éveillé", "Furieux", "Enragé", "Déchaîné", "Ultime"];
-  E.GBOSS_PHASE_DMG = 8;      // +8 % de résistance du boss à chaque phase après la première : points ÷ 1,08 par phase (≈ 300 points en phase 1, ≈ 230 en phase 5). Plus de dommages des monstres donnait plus de points à certaines équipes (renvoi, riposte).
+  E.GBOSS_PHASE_DMG = 8;      // +8 % de résistance du boss à chaque phase après la première : points ÷ (1 + 8 % par phase), soit ÷ 1,32 en phase 5 (≈ 300 points en phase 1, ≈ 230 en phase 5). Plus de dommages des monstres donnait plus de points à certaines équipes (renvoi, riposte).
   E.GBOSS_STEPS = [25, 50, 75, 100]; // coffres des membres : phase p tombée = palier 25 × p (phases 1 à 4)
   E.GBOSS_TITLE = "Pourfendeur de boss"; // titre gardé par les membres des 3 meilleures guildes de la semaine
   E.GBOSS_FIRST_TITLE = "Avant-garde de guilde"; // 1.0.30 : membres de la première guilde du serveur qui finit le boss de la semaine
@@ -58,7 +58,7 @@
     if (i >= T.length) { const need = T[T.length - 1] - T[T.length - 2]; return { p: T.length + 1, done: T.length, cur: need, need, T }; }
     const lo = i ? T[i - 1] : 0; return { p: i + 1, done: i, cur: Math.max(0, pts - lo), need: T[i] - lo, T };
   };
-  /* dommages du boss à la phase p (×1, ×1,15, ×1,3…) */
+  /* résistance du boss à la phase p (×1, ×1,08, ×1,16… ×1,32) : les points de l'essai sont divisés par ce nombre */
   E.gbossDmg = (p) => 1 + (E.GBOSS_PHASE_DMG * Math.max(0, Math.min(5, p || 1) - 1)) / 100;
   /* essais en réserve : t essais au moment at, +1 toutes les « every » minutes, E.GBOSS_RESERVE au plus (même calcul que gb_tok) */
   E.gbossTok = (t, at, now, every) => Math.min(E.GBOSS_RESERVE, (+t || 0) + Math.max(0, now - at) / ((every || E.GBOSS_EVERY) * 60000));
