@@ -111,6 +111,10 @@ create table if not exists public.records_week (
 alter table public.records_week enable row level security;
 drop policy if exists "records semaine lisibles" on public.records_week;
 create policy "records semaine lisibles" on public.records_week for select using (true);
+-- 1.0.30 (choix 23B) : équipe du record (classes des héros du combat rejoué par la fonction « record »), montrée dans la fiche
+-- du donjon et dans Classements › Donjons. Les records d'avant gardent une équipe vide : rien n'est modifié.
+alter table public.records add column if not exists team jsonb not null default '[]'::jsonb;
+alter table public.records_week add column if not exists team jsonb not null default '[]'::jsonb;
 
 -- ---------- les « Premiers » : gravés pour toujours ----------
 create table if not exists public.firsts (
@@ -139,6 +143,7 @@ create trigger profiles_first_admin after insert on public.profiles for each row
 
 -- ---------- vues publiques (sans les joueurs « en vérification ») ----------
 -- 0.1.26 : main_lvl (niveau du héros principal) ajouté en dernière colonne, pour le cadre du médaillon ; 0.1.49 : pts (points de succès) après
+-- 1.0.30 : team (équipe du record) en dernière colonne de lb_records et lb_week
 create or replace view public.lb_level as
   select l.user_id, p.pseudo, l.main, l.level, l.album, l.succes, l.heroes, l.main_lvl, l.pts
   from public.ladder l join public.profiles p on p.id = l.user_id where not l.flagged;
@@ -146,11 +151,11 @@ create or replace view public.lb_class as
   select c.user_id, p.pseudo, c.cls, c.score
   from public.ladder_class c join public.ladder l on l.user_id = c.user_id join public.profiles p on p.id = c.user_id where not l.flagged;
 create or replace view public.lb_records as
-  select r.user_id, p.pseudo, l.main, r.did, r.dname, r.k, r.t, r.at, l.main_lvl
+  select r.user_id, p.pseudo, l.main, r.did, r.dname, r.k, r.t, r.at, l.main_lvl, r.team
   from public.records r join public.ladder l on l.user_id = r.user_id join public.profiles p on p.id = r.user_id where not l.flagged;
 create or replace view public.lb_week as
   select r.user_id, p.pseudo, l.main, r.w, r.did, r.dname, r.bracket, r.k, r.t, r.at,
-    rank() over (partition by r.w, r.did order by r.k desc, r.t asc, r.at asc) as r, l.main_lvl
+    rank() over (partition by r.w, r.did order by r.k desc, r.t asc, r.at asc) as r, l.main_lvl, r.team
   from public.records_week r join public.ladder l on l.user_id = r.user_id join public.profiles p on p.id = r.user_id where not l.flagged;
 grant select on public.lb_level, public.lb_class, public.lb_records, public.lb_week to anon, authenticated;
 -- 1.0.5 : course de lancement : les comptes classés par étape de la quête principale, puis par qui l'a atteinte en premier
@@ -354,6 +359,23 @@ as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis';
   update public.ladder set flagged = true, flag_reason = coalesce(p_reason, 'décision de Mathis') where user_id = p_user; end $$;
 revoke all on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) from public, anon;
 grant execute on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) to authenticated;
+
+-- ---------- 1.0.30 (choix 37A) : GIGA annonce d'un Dofus ----------
+-- Un Dofus tombé sur un boss s'annonce en plein écran chez tous les joueurs connectés, puis dans le chat Général.
+-- La fonction « record » ({ dofus: { uid, did, k } }) vérifie la partie en ligne (le Dofus y est, la stasis est terminée,
+-- l'équipe la refait, compte pas « en vérification ») puis écrit ici et dans chat_msgs (kind 'ann', data.t 'giga').
+-- Une ligne par exemplaire (uid de l'objet) : jamais deux annonces pour le même Dofus. Invisible pour les joueurs.
+create table if not exists public.dofus_ann (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  uid bigint not null,
+  dofus text not null,
+  did text,
+  k int,
+  at timestamptz not null default now(),
+  primary key (user_id, uid)
+);
+alter table public.dofus_ann enable row level security; -- aucune règle : seule la fonction serveur (service_role) y touche
+create index if not exists dofus_ann_at on public.dofus_ann (user_id, at desc);
 
 -- ---------- opérations ponctuelles (jouées une seule fois, même si ce fichier est réappliqué) ----------
 create table if not exists public.ops_done (id text primary key, at timestamptz not null default now());

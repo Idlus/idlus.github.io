@@ -1942,7 +1942,7 @@ function navBadges() {
 }
 function renderNav() {
   const nav = $("#nav"); $("#subnav").innerHTML = "";
-  if (!S) { nav.innerHTML = ""; document.body.classList.remove("hasnav", "navmini"); return; }
+  if (!S) { nav.innerHTML = ""; document.body.classList.remove("hasnav", "navmini"); if (window.FORMUI) window.FORMUI.mini(); return; }
   const k = navKey(); const fight = ui.tab === "combat"; const mini = !!S.settings.navMini; const B = navBadges();
   document.body.classList.add("hasnav"); document.body.classList.toggle("navmini", mini);
   const cur = (key) => (k === key ? 'aria-current="page"' : "");
@@ -1956,6 +1956,7 @@ function renderNav() {
   const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
   nav.innerHTML = side + mob;
+  if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
 }
 /* téléphone : toutes les pages en tuiles, par groupe */
 function navMenuSheet() {
@@ -2835,6 +2836,7 @@ function dungeonSheet(did) {
         <div class="row tips" style="gap:6px;flex-wrap:wrap;margin-top:4px"><span class="xs muted">Conseillé :</span>${tips.map((t) => `<span class="pill">${h(t)}</span>`).join("")}</div>
         ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
       ${dgDofusBox(did, SI, k)}
+      ${window.DGRANK ? window.DGRANK.box(did) : ""}
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
         <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
@@ -3097,7 +3099,7 @@ function renderCombat() {
   <section class="grid2 combatgrid" data-ctab="${ui.ctab || "sorts"}">
     <div class="panel combatpanel">
       <div class="arenasticky">
-        <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog" data-tip="Scène : les personnages en pied. Compacte : une carte par combattant, plus lisible avec beaucoup de héros.">${[["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
+        <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog" data-tip="Formation : ton équipe et les ennemis en colonnes (arrière, première ligne), l'ordre de jeu en haut. Scène : les personnages en pied. Compacte : une carte par combattant.">${[["form", "Formation"], ["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
         <div class="arenawrap"><div class="arena" id="arena"></div></div>
         <div class="ftick" id="turn"></div>
       </div>
@@ -3141,7 +3143,7 @@ function spellBarFor(c, ent, F) {
   return { w: !!wsp, html: html + whtml, names: Array.from({ length: N }, (_, i) => `<div>${slots[i] && E.spellDef(c.cls, slots[i].id) ? h(E.spellDef(c.cls, slots[i].id).name) : ""}</div>`).join("") + (wsp ? `<div>Arme</div>` : "") };
 }
 /* vue de combat : scène (personnages en pied) ou compacte (cartes) */
-function combatView() { const v = S.settings.cview; if (v === "scene" || v === "compact") return v; return window.innerWidth < 640 && E.team(S).length >= 6 ? "compact" : "scene"; }
+function combatView() { if (window.FORMUI) return window.FORMUI.view(S); /* 1.0.30 : Formation par défaut (js/formation.js) */ const v = S.settings.cview; if (v === "scene" || v === "compact") return v; return window.innerWidth < 640 && E.team(S).length >= 6 ? "compact" : "scene"; }
 /* formation en quinconce : rangée avant (basse) puis rangées arrière décalées d'un demi-pas */
 function arenaLayout(F) {
   const mob = window.innerWidth < 640;
@@ -3188,9 +3190,9 @@ function buildArena(F) {
   const view = combatView();
   const so = { fx: decoFx() && !(F && F.dungeon) ? subWeather(F ? F.sub : S.sub) : "", boss: !!(F && F.bossIdx !== undefined), anim: decoFx() };
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
-  arena.className = "arena " + (view === "compact" ? "cmpmode" : "v2"); arena.style.height = "";
+  arena.className = "arena " + (view === "compact" ? "cmpmode" : view === "form" ? "fmode" : "v2"); arena.style.height = ""; // 1.0.30 : fmode = Formation (js/formation.js)
   if (!F) {
-    arena.innerHTML = sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx }) + `<div class="idle"><div>${E.expActive(S) && S.exp.pick !== null ? "Le combat de la salle commence…" : E.expActive(S) ? (E.expPending(S) ? "Un choix t'attend." : "Choisis la salle suivante sur la carte.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
+    arena.innerHTML = (view === "form" ? "" : sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx })) + `<div class="idle"><div>${E.expActive(S) && S.exp.pick !== null ? "Le combat de la salle commence…" : E.expActive(S) ? (E.expPending(S) ? "Un choix t'attend." : "Choisis la salle suivante sur la carte.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
   }
   const pasDiv = `<div class="pas"></div>`;
@@ -3208,11 +3210,11 @@ function buildArena(F) {
     return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
-  arena.innerHTML = view === "compact"
+  arena.innerHTML = view === "form" ? window.FORMUI.html(F, ui.arena) : view === "compact"
     ? `<div class="cmp"><div class="col c">${list("c")}</div><div class="col m">${list("m")}</div></div><div class="result" id="fresult"></div>`
     : sceneSVG(deco, 270, F.dungeon ? "dg" + F.label : "arena" + F.sub, so) + `<div class="fxg"></div><div class="ents">${F.ents.map((e, i) => entHtml([e, i])).join("")}</div><div class="fxl"></div><div class="result" id="fresult"></div>`;
   arena.querySelectorAll(".ent").forEach((n) => (ui.arena.nodes[+n.dataset.i] = n));
-  ui.arena.fxl = arena.querySelector(".fxl"); ui.arena.fxg = arena.querySelector(".fxg"); if (view !== "compact") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
+  ui.arena.fxl = arena.querySelector(".fxl"); ui.arena.fxg = arena.querySelector(".fxg"); if (view === "scene") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
   placeEnts(F); stickyCheck();
@@ -4286,7 +4288,7 @@ function updateCombat(force) {
   if (!ui.arena || ui.arena.el !== arena || ui.arena.fid !== (F ? F.id : null) || ui.arena.theme !== isDark() || ui.arena.view !== combatView()) buildArena(F);
   const A = ui.arena;
   if (F && A.nEnts !== undefined && F.ents.length > A.nEnts) {
-    for (let i = A.nEnts; i < F.ents.length; i++) { const e = F.ents[i]; const box = A.el.querySelector(A.view === "compact" ? (e.side === "c" ? ".col.c" : ".col.m") : ".ents"); if (!box) continue;
+    for (let i = A.nEnts; i < F.ents.length; i++) { const e = F.ents[i]; if (A.view === "form") { const nn = window.FORMUI.add(F, A, i); if (nn) A.nodes[i] = nn; continue; } const box = A.el.querySelector(A.view === "compact" ? (e.side === "c" ? ".col.c" : ".col.m") : ".ents"); if (!box) continue;
       box.insertAdjacentHTML("beforeend", A.entHtml([e, i])); A.nodes[i] = box.lastElementChild;
       if (A.view === "scene") { const nn = A.nodes[i]; axDecor(nn, e); if (axOn()) { nn.classList.add("spawn"); setTimeout(() => nn.classList.remove("spawn"), 650); } } }
     A.nEnts = F.ents.length; placeEnts(F);
@@ -4327,6 +4329,7 @@ function updateCombat(force) {
       A.nodes.forEach((n) => n && n.classList.remove("targetable", "turnnow"));
     }
     const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; A.nodes.forEach((n, i) => n && n.classList.toggle("cur", i === curI && !F.over));
+    if (A.view === "form") window.FORMUI.update(F, A, force); // 1.0.30 : ordre de jeu, PV, icônes et colonnes de la Formation
     const fresh = F.fx.filter((f) => f.seq > A.lastSeq);
     if (fresh.length) {
       A.lastSeq = Math.max(...fresh.map((f) => f.seq));
@@ -5735,7 +5738,7 @@ function tipItemHtml(uid) {
 let tipEl = null;
 function showTip(target) {
   if (!tipEl) { tipEl = document.createElement("div"); tipEl.className = "tooltip"; document.body.appendChild(tipEl); }
-  const html = target.dataset.tipitem ? tipItemHtml(+target.dataset.tipitem) : h(target.dataset.tip);
+  const html = target.dataset.tipitem ? tipItemHtml(+target.dataset.tipitem) : target.dataset.tipmon !== undefined && window.FORMUI ? window.FORMUI.tipMon(+target.dataset.tipmon) : h(target.dataset.tip); // 1.0.30 : résistances d'un monstre (js/formation.js)
   if (!html) return hideTip();
   tipEl.innerHTML = html; tipEl.style.display = "block";
   const r = target.getBoundingClientRect(); const w = tipEl.offsetWidth, hh = tipEl.offsetHeight;
@@ -5745,7 +5748,7 @@ function showTip(target) {
 }
 function hideTip() { if (tipEl) tipEl.style.display = "none"; }
 const canHover = window.matchMedia && window.matchMedia("(hover: hover)").matches;
-document.addEventListener("mouseover", (ev) => { if (!canHover || !S) return; const t = ev.target.closest("[data-tip],[data-tipitem]"); if (t) showTip(t); else hideTip(); });
+document.addEventListener("mouseover", (ev) => { if (!canHover || !S) return; const t = ev.target.closest("[data-tip],[data-tipitem],[data-tipmon]"); if (t) showTip(t); else hideTip(); });
 document.addEventListener("scroll", hideTip, true);
 /* 0.1.40 : onglets de la fiche collés en haut ; la tête du héros s'y affiche quand ils collent */
 window.addEventListener("scroll", () => { const n = ui.tab === "team" && $(".htabs"); if (!n) return; const top = parseFloat(getComputedStyle(n).top) || 0; n.classList.toggle("stuck", n.getBoundingClientRect().top <= top + 1 && window.scrollY > 40); }, { passive: true });
@@ -6808,7 +6811,8 @@ function displayOptionsHtml() {
       optLine("Animations", "", seg("setanim", [["full", "Complètes"], ["sober", "Sobres"], ["none", "Aucune"]], animLvl()))
     + optLine("Mouvements réduits", "coupe secousses, éclairs et grands zooms", seg("setmotion", [["auto", `Auto${m === "auto" ? (motionOff() ? " (oui)" : " (non)") : ""}`], ["on", "Non"], ["off", "Oui"]], m), "Coupe les secousses d'écran, les éclairs et les grands zooms des boss ; garde les barres de vie et les chiffres. « Auto » suit le réglage de ton appareil.")
     + optLine("Écrans de récompense", "objet Rayonnant, palier de 10 niveaux, stasis", `<span class="seg">${[[true, "Affichés"], [false, "Masqués"]].map(([v, n]) => `<button data-act="setcele" data-v="${v ? 1 : 0}" aria-pressed="${(S.settings.cele !== false) === v}">${n}</button>`).join("")}</span>`)
-    + optChk(`data-act="setdecofx"`, S.settings.decofx !== false, "Effets de décor", "météo et premier plan dans l'arène ; à couper sur un appareil lent"));
+    + optChk(`data-act="setdecofx"`, S.settings.decofx !== false, "Effets de décor", "météo et premier plan dans l'arène ; à couper sur un appareil lent")
+    + optChk(`data-act="fm-mini"`, S.settings.miniFight !== false, "Petit module de combat", "hors de l'onglet Combat : sous « Combat en cours » sur PC, bande au-dessus de la barre du bas sur téléphone")); // 1.0.30 (js/formation.js)
 }
 /* ---- bulles de découverte ---- */
 const tipCtx = () => ({ online: !!ON, user: !!(ON && ON.user), now: E.now() });
@@ -7281,7 +7285,7 @@ function renderWatch() {
       <span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${w.spd === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
   <section class="panel combatpanel watchpanel">
     <div class="arenasticky">
-      <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog">${[["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
+      <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog">${[["form", "Formation"], ["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
       <div class="arenawrap"><div class="arena" id="arena"></div></div>
       <div class="ftick" id="turn"></div>
     </div>
@@ -7903,7 +7907,7 @@ document.addEventListener("click", (ev) => {
     case "mspell": { const F = S.fight; if (!F || !F.await) return; const me = F.ents[F.await.ei]; const sp = d.id === "arme" ? me.wsp : E.spellDef(me.cls, d.id); if (!sp) return;
       if (["dmg", "drain", "dot", "aoe", "heal"].includes(E.spellKind(E.spellGrade(sp, me.lvl)))) { ui.manualSpell = ui.manualSpell === sp.id ? null : sp.id; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
       const r = E.manualCast(S, sp.id, null); if (r) toast(r); ui.manualSpell = null; updateCombat(false); return; }
-    case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) return; const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
+    case "mtarget": { const F = S.fight; if (!F || !F.await || !ui.manualSpell) { if (!canHover && (t.dataset.tipmon !== undefined || t.dataset.tip)) showTip(t); return; } /* 1.0.30 : au téléphone, toucher un combattant montre ses résistances et ses états */ const r = E.manualCast(S, ui.manualSpell, +t.dataset.i); if (r) { toast(r); return; } ui.manualSpell = null; const bar = $("#spells"); if (bar) bar.dataset.k = ""; updateCombat(false); return; }
     case "mend": E.manualEnd(S); ui.manualSpell = null; updateCombat(false); return;
     case "noop": return;
     case "installgame": installGame(); return;
@@ -8568,7 +8572,7 @@ async function takeRemote(info) {
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); jobFirstCheck(); raceInfoFetch(); } renderPill(); return r; });
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
 }
 /* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
 let raceAt = 0;
@@ -8759,8 +8763,9 @@ async function lbFetch() {
     if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : col === "pts" ? mine.pts : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
-    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true, fl: r.main_lvl });
-    const ml = LB.ml ? ",main_lvl" : "";
+    if (window.DGRANK) await window.DGRANK.cols(db); // 1.0.30 : équipe des records (colonne team), si le serveur l'a
+    const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: `Stasis ${r.k} · ${recTime(r.t)}`, ok: true, fl: r.main_lvl, sub: window.DGRANK ? window.DGRANK.teamMini(r.team) : "" });
+    const ml = (LB.ml ? ",main_lvl" : "") + (LB.rteam ? ",team" : "");
     if (LB.dmode === "week") {
       const { data } = await db.from("lb_week").select("user_id,pseudo,main,k,t,r" + ml).eq("w", weekNow()).eq("did", did).order("k", { ascending: false }).order("t", { ascending: true }).limit(50);
       out.rows = (data || []).map(rec);
@@ -9065,6 +9070,7 @@ async function recSubmit() {
   const l = ON.link(); const rec = l.rec || {}; rec[did] = { k: SI.max, ct: (SI.best || {})[SI.max] || 0 }; ON.setLink({ rec });
   if (recBoot) recBoot[did] = rec[did];
   Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
+  if (window.DGRANK) window.DGRANK.reset(did); // 1.0.30 : classement dans la fiche du donjon (js/dgrank.js)
   if (r.ok && (r.improved || r.weekImproved) && isFresh) recordSheet(r);
 }
 function recordSheet(r) {
@@ -9174,6 +9180,7 @@ function loop() {
     const sbp = sab && sab.closest(".sabpill"); if (sbp) { const idle = S.sablier.spd > 1 && !E.sabBusy(S); if (sbp.classList.contains("idle") !== idle) { sbp.classList.toggle("idle", idle); sbp.querySelector(".sbi").dataset.tip = idle ? "Sablier en pause : rien n'avance (équipe au repos), la réserve ne s'use pas" : "Sablier de Xélor : réserve de temps rapide (+3 h par jour)"; } }
     const sb = $("#stBoost"); if (sb) { const ab = activeBoosts(); if (ab.length) setTxt(sb, dur(Math.min(...ab.map((b) => b.left)))); else renderStatus(); }
     const kl = $("#stKills"); if (kl) setTxt(kl, fmt(Object.values(S.bestiary).reduce((a, b) => a + b, 0)));
+    if (ui.tab !== "combat" && window.FORMUI) window.FORMUI.loop(); // 1.0.30 : petit module de combat (ses propres éléments seulement)
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });

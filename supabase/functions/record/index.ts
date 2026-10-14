@@ -7,6 +7,8 @@
 // Kolizéum : avec { koli: { opps: 1, r } }, trois adversaires (le jeu calcule la chance) ; avec { koli: { fight: … } }, un combat classé.
 // Guildes : avec { gboss: 1 }, un essai contre le boss de guilde de la semaine ; avec { perco: id }, une défense de Percepteur.
 // Boss des mondes : avec { wboss: 1 }, un essai contre le boss de tout le serveur (js/wboss.js, supabase/wboss.sql).
+// 1.0.30 : les records gardent l'équipe rejouée (colonne team) ; avec { dofus: { uid, did, k } }, la GIGA annonce d'un Dofus
+// tombé sur un boss (vérifiée ici, puis envoyée à tous les joueurs connectés par le chat ; js/giga.js).
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -30,13 +32,14 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number } = {};
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
   if (body.perco) return perco(db, user.id, Number(body.perco));
   if (body.koli) return koli(db, user.id, body.koli);
   if (body.wboss) return wboss(db, user.id);
+  if (body.dofus) return dofusAnn(db, user.id, body.dofus);
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -52,9 +55,9 @@ Deno.serve(async (req) => {
   if (!save || !prof) return json({ ok: false, err: "aucune partie en ligne" }, 404);
   if (lad && lad.flagged) return json({ ok: false, err: "en vérification" });
 
-  // stasis la plus haute terminée dans la partie en ligne
-  let k = 0;
-  try { const S = E.deserialize(save.data); k = ((S.stasis || {})[did] || {}).max || 0; } catch (_) { return json({ ok: false, err: "partie illisible" }); }
+  // stasis la plus haute terminée dans la partie en ligne ; 1.0.30 : et l'équipe qui la rejoue (classes des héros, gardées avec le record)
+  let k = 0, team: string[] = [];
+  try { const S = E.deserialize(save.data); E.events.length = 0; k = ((S.stasis || {})[did] || {}).max || 0; team = E.team(S).map((c: { cls: string }) => String(c.cls)).slice(0, 12); } catch (_) { return json({ ok: false, err: "partie illisible" }); }
   if (k < 1) return json({ ok: false, err: "aucune stasis terminée dans ce donjon" });
 
   let best: number | null = null, why = "";
@@ -66,10 +69,12 @@ Deno.serve(async (req) => {
   if (best === null) return json({ ok: false, k, err: why || "l'équipe ne termine pas cette stasis" });
 
   const better = (o: { k: number; t: number } | null) => !o || k > o.k || (k === o.k && best! < o.t);
+  // 1.0.30 : record écrit avec son équipe ; si la base n'a pas encore la colonne team (supabase/classements.sql), sans elle
+  const put = async (tbl: string, row: Record<string, unknown>) => { const { error } = await db.from(tbl).upsert({ ...row, team }); if (error) await db.from(tbl).upsert(row); };
   const out: Record<string, unknown> = { ok: true, did, dname: dg.name, k, t: best };
 
   const { data: old } = await db.from("records").select("k,t").eq("user_id", user.id).eq("did", did).maybeSingle();
-  if (better(old)) { await db.from("records").upsert({ user_id: user.id, did, dname: dg.name, k, t: best, at: new Date(now).toISOString() }); out.improved = true; }
+  if (better(old)) { await put("records", { user_id: user.id, did, dname: dg.name, k, t: best, at: new Date(now).toISOString() }); out.improved = true; }
   const { count: ahead } = await db.from("lb_records").select("user_id", { count: "exact", head: true }).eq("did", did).or(`k.gt.${k},and(k.eq.${k},t.lt.${best})`);
   out.rank = (ahead || 0) + 1;
   // nouveau numéro 1 du donjon : annoncé dans le chat
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
   const wk = V.weeklyDungeons(D.DUNGEONS, w).find((x: { did: string }) => x.did === did);
   if (wk) {
     const { data: oldw } = await db.from("records_week").select("k,t").eq("user_id", user.id).eq("w", w).eq("did", did).maybeSingle();
-    if (better(oldw)) { await db.from("records_week").upsert({ user_id: user.id, w, did, dname: dg.name, bracket: wk.bracket, k, t: best, at: new Date(now).toISOString() }); out.weekImproved = true; }
+    if (better(oldw)) { await put("records_week", { user_id: user.id, w, did, dname: dg.name, bracket: wk.bracket, k, t: best, at: new Date(now).toISOString() }); out.weekImproved = true; }
     const { count: aheadW } = await db.from("records_week").select("user_id", { count: "exact", head: true }).eq("w", w).eq("did", did).or(`k.gt.${k},and(k.eq.${k},t.lt.${best})`);
     out.week = true; out.weekRank = (aheadW || 0) + 1;
   }
@@ -259,4 +264,54 @@ async function koli(db: any, uid: string, k: any) {
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, koli: true, id: done.id, win: res.win, seed, A, B, rounds: res.rounds, hpA: res.hpA, hpB: res.hpB, delta: dAtt, cote: done.cote, rank: done.rank,
     opp: { name: defName, cote: defCote, ghost: ghost !== null, seed: ghost, id: defId } });
+}
+
+// ---------- 1.0.30 (choix 37A) : GIGA annonce d'un Dofus ----------
+// Le jeu l'envoie après l'envoi de la partie qui contient le Dofus tombé sur un boss. Rien n'est cru sur parole :
+// l'exemplaire (uid) doit être dans la partie en ligne, ce Dofus doit pouvoir tomber de ce donjon à cette stasis,
+// la stasis doit être terminée et l'équipe doit la refaire (même rejeu que les records), le compte ne doit pas être
+// « en vérification » ni avoir utilisé le panel de test. Une seule annonce par exemplaire, 5 au plus par jour et par compte.
+// L'annonce part par le chat (chat_msgs, kind 'ann', data.t 'giga') : plein écran chez tous les joueurs connectés, puis une ligne dans le Général.
+const ANN_DAY = 5, ANN_FRESH = 50000;
+// deno-lint-ignore no-explicit-any
+async function dofusAnn(db: any, uid: string, b: any) {
+  const now = Date.now();
+  if (now - (lastTry.get(uid + ":giga") || 0) < 5000) return json({ ok: false, err: "trop tôt", retry: 5 }, 429);
+  lastTry.set(uid + ":giga", now);
+  const iu = Math.floor(Number(b && b.uid)), did = String((b && b.did) || ""), k = Math.floor(Number(b && b.k));
+  const dg = D.DUNGEONS[did];
+  if (!(iu > 0) || !dg || !(k >= 1 && k <= 10)) return json({ ok: false, err: "annonce invalide" }, 400);
+  const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
+    db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
+    db.from("ladder").select("flagged,main,main_lvl").eq("user_id", uid).maybeSingle(),
+    db.from("profiles").select("pseudo").eq("id", uid).maybeSingle(),
+  ]);
+  if (!save || !prof || !lad) return json({ ok: false, err: "aucune partie en ligne" }, 404);
+  if (lad.flagged) return json({ ok: false, err: "en vérification" });
+  // deno-lint-ignore no-explicit-any
+  let S: any;
+  try { S = E.deserialize(save.data); E.events.length = 0; } catch (_) { return json({ ok: false, err: "partie illisible" }); }
+  if (S.panelUsed) return json({ ok: false, err: "partie de test" });
+  const it = S.items && S.items[iu];
+  const id = it && typeof it.tpl === "string" && it.tpl.startsWith("dofus_") ? it.tpl.slice(6) : "";
+  const Df = id && E.DOFUS[id];
+  if (!Df) return json({ ok: false, err: "Dofus introuvable dans la partie en ligne" });
+  if ((S.nextUid || 0) - iu > ANN_FRESH) return json({ ok: false, err: "Dofus trop ancien" });
+  const gift = Df.steps && Df.steps[0] && Df.steps[0].t === "gift";
+  const odds = gift ? 0 : Df.dg ? (Df.dg === did ? E.dofusOdds(k) : 0) : E.ocreOdds(k, dg.lvl);
+  if (!odds) return json({ ok: false, err: "ce Dofus ne tombe pas de ce boss" });
+  const SI = (S.stasis || {})[did] || {};
+  if ((SI.max || 0) < k) return json({ ok: false, err: "stasis jamais terminée" });
+  const { data: dup } = await db.from("dofus_ann").select("uid").eq("user_id", uid).eq("uid", iu).maybeSingle();
+  if (dup) return json({ ok: true, already: true });
+  const { count: today } = await db.from("dofus_ann").select("uid", { count: "exact", head: true }).eq("user_id", uid).gte("at", new Date(now - 86400000).toISOString());
+  if ((today || 0) >= ANN_DAY) return json({ ok: false, err: "trop d'annonces aujourd'hui" });
+  let done = false, why = "";
+  for (let i = 0; i < 2 && !done; i++) { const r = V.replay(E, save.data, did, k, crypto.getRandomValues(new Uint32Array(1))[0], now); done = !!r.ok; if (!r.ok) why = r.err; }
+  if (!done) return json({ ok: false, err: why || "l'équipe ne termine pas cette stasis" });
+  const { error } = await db.from("dofus_ann").insert({ user_id: uid, uid: iu, dofus: id, did, k, at: new Date(now).toISOString() });
+  if (error) return json({ ok: true, already: true }); // déjà annoncé (deux envois en même temps)
+  const boss = D.MONSTERS[dg.boss] ? D.MONSTERS[dg.boss].name : dg.name;
+  await db.from("chat_msgs").insert({ ch: "g", user_id: uid, pseudo: prof.pseudo, cls: lad.main, lvl: lad.main_lvl, kind: "ann", data: { t: "giga", id, did, dname: dg.name, boss, k, odds } });
+  return json({ ok: true, giga: true, id, did, k, odds });
 }

@@ -64,7 +64,9 @@ const MOCK = () => {
     channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { window.__chatSub = cb; if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
-    functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
+    functions: { invoke: async (name, o) => { const d = db();
+      if (o.body.dofus) { d.dofusSent = (d.dofusSent || []).concat([o.body.dofus]); put(d); return { data: { ok: true, giga: true }, error: null }; } // 1.0.30 : GIGA annonce d'un Dofus
+      d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
       // 1.0.23 : builds partagés (supabase/builds.sql) ; la liste et les vues marchent sans compte
       if (/^builds?_|^adm_builds?/.test(name)) {
@@ -340,6 +342,35 @@ const MOCK = () => {
     if (!/Stasis 3/.test(await page.textContent(".bigrec"))) fail("fiche de record incorrecte");
     await page.click('[data-act="lb-goto"]'); await page.waitForTimeout(300);
     m = await mock(); if (!(m.invoked || []).length) fail("record non envoyé au serveur");
+    // 1.0.30 : classement du donjon dans sa fiche : top 5 et ma place, équipe de chaque record, Records / Cette semaine, « Classement complet »
+    const dgW = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const V = window.VERIFY; const W = V.weekIdx(Date.now()); const did = V.weeklyDungeons(window.DATA.DUNGEONS, W)[0].did;
+      const P = [["u9", "Kralamour", "iop", 10, 250, ["iop", "eni", "sacri", "cra"]], ["u8", "Tofuline", "eni", 10, 300, ["eni", "feca"]], ["u7", "Bworkman", "sacri", 9, 200, []], ["u6", "Xenerium", "cra", 8, 400, ["cra", "osa", "eni"]], ["u5", "Nyx", "sram", 8, 450, ["sram"]], ["u4", "Gloubi", "osa", 7, 500, ["osa", "cra"]]];
+      d.views.lb_records = (d.views.lb_records || []).concat(P.map(([u, p, c, k, t, team]) => ({ user_id: u, pseudo: p, main: c, did, dname: "x", k, t, team, main_lvl: 150 })), [{ user_id: "u1", pseudo: "Bouftou", main: "iop", did, dname: "x", k: 3, t: 600, team: ["iop"], main_lvl: 20 }]);
+      d.views.lb_week = P.slice(0, 2).map(([u, p, c, k, t, team], i) => ({ user_id: u, pseudo: p, main: c, w: W, did, k, t, r: i + 1, team, main_lvl: 150 }));
+      localStorage.setItem("__mock", JSON.stringify(d)); Object.keys(window.DX.LB.cache).forEach((k) => delete window.DX.LB.cache[k]); return did; }); // classements déjà vus : oubliés (le faux serveur vient de changer)
+    const dgOpen = (did) => page.evaluate((id) => { const o = document.createElement("button"); o.dataset.act = "dgopen"; o.dataset.id = id; o.style.display = "none"; document.querySelector("#main").appendChild(o); o.click(); o.remove(); }, did);
+    await dgOpen(dgW); await page.waitForSelector("#dgRank .lbr", { timeout: 8000 }).catch(() => fail("fiche du donjon : classement absent"));
+    if ((await page.$$("#dgRank .lbr")).length !== 6 || !(await page.$("#dgRank .lbr.me"))) fail("fiche du donjon : il faut le top 5 et ma place");
+    if ((await page.$$("#dgRank .tmini")).length !== 5) fail("fiche du donjon : équipes des records absentes (ou montrées pour un record sans équipe)");
+    if (!/top 5 : stasis 9, ou stasis 8 en moins de 7 min 30 s/.test(await page.textContent("#dgRank"))) fail("fiche du donjon : seuil du top 5 absent");
+    if (await page.evaluate(() => { const r = document.querySelector("#dgRank"), s = r && r.parentElement.querySelector(".stasisrow"); return !s || !(r.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING); })) fail("fiche du donjon : le classement doit être juste au-dessus du choix de la stasis");
+    if (!(await page.$('#dgRank [data-act="dgr-mode"][data-v="week"]'))) fail("fiche du donjon : bascule Records / Cette semaine absente (donjon de la semaine)");
+    if (process.env.SHOTS) { await page.addStyleTag({ content: "body.shots .wtip{display:none!important}" }); await page.evaluate(() => document.body.classList.add("shots")); await page.$eval("#dgRank", (e) => e.scrollIntoView({ block: "center" })); await page.screenshot({ path: process.env.SHOTS + "/dgrank-pc.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.$eval("#dgRank", (e) => e.scrollIntoView({ block: "center" })); await page.screenshot({ path: process.env.SHOTS + "/dgrank-tel.png" }); await page.setViewportSize(vp); await page.evaluate(() => document.body.classList.remove("shots")); }
+    await page.click('#dgRank [data-act="dgr-mode"][data-v="week"]'); await page.waitForFunction(() => document.querySelectorAll("#dgRank .lbr").length === 2, null, { timeout: 8000 }).catch(() => fail("fiche du donjon : classement de la semaine incorrect"));
+    if (!/pas encore classé/.test(await page.textContent("#dgRank"))) fail("fiche du donjon : « pas encore classé » absent cette semaine");
+    await page.click('#dgRank [data-act="dgr-mode"][data-v="all"]'); await page.waitForTimeout(100);
+    if ((await page.$$("#dgRank .lbr")).length !== 6) fail("fiche du donjon : retour aux records (cache) incorrect");
+    await page.click('#dgRank [data-act="lb-goto"]'); await page.waitForSelector("#lbList .podium .pod", { timeout: 10000 }).catch(() => fail("fiche du donjon : « Classement complet » ne charge pas le classement"));
+    if (await page.$("#sheet .sheet") || (await page.$eval('[data-act="lb-tab"][data-v="dj"]', (e) => e.getAttribute("aria-pressed"))) !== "true" || (await page.$eval('select[data-act="lb-did"]', (e) => e.value)) !== dgW) fail("fiche du donjon : « Classement complet » n'ouvre pas Classements › Donjons sur ce donjon");
+    if ((await page.$$("#lbList .lbt .tmini")).length !== 4) fail("classement des donjons : équipes des records absentes");
+    // 1.0.30 : un Dofus tombé sur un boss est noté, puis demandé au serveur pour la GIGA annonce une fois la partie envoyée
+    const gq = await page.evaluate(async () => { const E = window.ENGINE, S = window.DX.S; const id = E.DOFUS_ORDER.find((x) => E.DOFUS[x].dg && !(E.DOFUS[x].steps[0] && E.DOFUS[x].steps[0].t === "gift"));
+      const c0 = E.celebrate; let n = 0; E.celebrate = null; E.setRng(() => (n++ ? 0.99 : 0));
+      try { E.dofusDrop(S, E.DOFUS[id].dg, 7, []); } finally { E.setRng(Math.random); E.celebrate = c0; }
+      const q = (window.ONLINE.link().dofq || []).slice(); await window.GIGA.flush(); q.forEach((x) => delete S.items[x.uid]);
+      return { q, left: (window.ONLINE.link().dofq || []).length }; });
+    m = await mock();
+    if (gq.q.length !== 1 || !(m.dofusSent || []).length || m.dofusSent[0].uid !== gq.q[0].uid || m.dofusSent[0].k !== 7 || gq.left) fail(`GIGA annonce : Dofus tombé non demandé au serveur (${JSON.stringify([gq, m.dofusSent])})`);
     // 7c. chat : lecture, envoi, refus d'un lien, objet montré, menu d'un joueur, signalement, ignorer, privé
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const t = new Date().toISOString();
       d.views.chat_msgs = [{ id: 1, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, title: "Maître de la semaine", body: "Salut !", kind: "msg", created_at: t },
@@ -388,6 +419,28 @@ const MOCK = () => {
     if (!/PvP : Kolizéum/.test(await page.textContent("#chat .ch-list"))) fail("chat : salon PvP absent");
     await page.evaluate(() => window.__chatEmit({ id: 777, ch: "v", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, kind: "ann", data: { t: "koli", g: 3, cote: 1520 }, created_at: new Date().toISOString() })); await page.waitForTimeout(100);
     if (!/grade/.test(await page.textContent("#chat .ch-list"))) fail("chat : annonce du Kolizéum absente du salon PvP");
+    // 1.0.30 : GIGA annonce d'un Dofus : plein écran chez tous (le Dofus en grand, qui, où, sa chance), puis une ligne dans le Général
+    const giga = await page.evaluate(() => { const E = window.ENGINE, D = window.DATA; const id = E.DOFUS_ORDER.find((x) => E.DOFUS[x].dg && D.DUNGEONS[E.DOFUS[x].dg]); const did = E.DOFUS[id].dg;
+      window.__chatEmit({ id: 778, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, kind: "ann", data: { t: "giga", id, did, dname: D.DUNGEONS[did].name, boss: D.MONSTERS[D.DUNGEONS[did].boss].name, k: 7, odds: 6400 }, created_at: new Date().toISOString() });
+      return { name: E.DOFUS[id].name, dname: D.DUNGEONS[did].name }; });
+    await page.waitForSelector("#giga .giga-t", { timeout: 3000 }).catch(() => fail("GIGA annonce : pas de plein écran à la réception"));
+    if (await page.$("#giga")) {
+      const gt = (await page.textContent("#giga")).replace(/\s+/g, " ");
+      if (!gt.includes(giga.name.toUpperCase()) || !/Kralamour/.test(gt) || !gt.includes(giga.dname) || !/1 chance sur 6 400 par héros · stasis 7/.test(gt)) fail(`GIGA annonce : Dofus, joueur, lieu ou chance absents (${gt})`);
+      if (process.env.SHOTS) { await page.evaluate(() => document.body.classList.add("shots")); await page.waitForTimeout(800); await page.screenshot({ path: process.env.SHOTS + "/giga-pc.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/giga-tel.png" }); await page.setViewportSize(vp); await page.evaluate(() => document.body.classList.remove("shots")); }
+      await page.click('#giga .btn[data-act="giga-x"]'); await page.waitForTimeout(100);
+      if (await page.$("#giga")) fail("GIGA annonce : « Fermer » ne la ferme pas");
+    }
+    await page.evaluate(() => window.__chatEmit({ id: 778, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, kind: "ann", data: { t: "giga", id: window.ENGINE.DOFUS_ORDER[0], did: "x", k: 7 }, created_at: new Date().toISOString() }));
+    await page.evaluate(() => window.__chatEmit({ id: 779, ch: "g", user_id: "u9", pseudo: "Kralamour", cls: "iop", lvl: 200, kind: "ann", data: { t: "giga", id: window.ENGINE.DOFUS_ORDER[0], did: "x", k: 7 }, created_at: new Date(Date.now() - 600000).toISOString() }));
+    await page.waitForTimeout(500);
+    if (await page.$("#giga")) fail("GIGA annonce : remontrée deux fois, ou montrée alors qu'elle est vieille de 10 min");
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(100);
+    if (!(await page.$("#chat .ch-list .ann.giga-ann")) || !new RegExp(`obtient le ${giga.name}`).test(await page.textContent("#chat .ch-list"))) fail("GIGA annonce : ligne absente du Général");
+    else { await page.click("#chat .ch-list .ann.giga-ann"); await page.waitForSelector("#giga", { timeout: 2000 }).catch(() => fail("GIGA annonce : un clic sur la ligne du Général ne la remontre pas")); await page.keyboard.press("Escape"); await page.waitForTimeout(100); if (await page.$("#giga")) fail("GIGA annonce : Échap ne la ferme pas"); }
+    await page.click('#chat [data-act="ch-tab"][data-v="h"]'); await page.waitForTimeout(100);
+    if (await page.$("#chat .ch-list .giga-ann")) fail("GIGA annonce : rangée dans les Hauts faits au lieu du Général");
+    await page.click('#chat [data-act="ch-tab"][data-v="v"]'); await page.waitForTimeout(100);
     await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(4200); // le Général garde son rythme de 4 s
     // 0.1.47.6 : chat ouvert, les notifications s'écartent ; pendant qu'on écrit, elles attendent
     await page.evaluate(() => window.DX.social.toast("Test de notification"));
