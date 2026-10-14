@@ -3124,8 +3124,9 @@
     for (const k in T.stats) { const [, mx] = T.stats[k]; if (mx <= 0) continue; n++; if ((it.stats[k] || 0) < mx) return false; }
     return n > 0;
   };
-  /* +2 % sur chaque caractéristique positive (au moins +1) */
-  E.perfectStats = (it) => { const o = {}; for (const k in it.stats) { const v = it.stats[k]; o[k] = v > 0 ? v + Math.max(1, Math.round(v * E.PERFECT_PCT / 100)) : v; } return o; };
+  /* +2 % sur chaque caractéristique positive (au moins +1), sauf PA, PM, Portée et Invocations (1.0.29.1 : un Gelano parfait comptait 2 PA) */
+  E.PERFECT_SKIP = { pa: 1, pm: 1, po: 1, inv: 1 };
+  E.perfectStats = (it) => { const o = {}; for (const k in it.stats) { const v = it.stats[k]; o[k] = v > 0 && !E.PERFECT_SKIP[k] ? v + Math.max(1, Math.round(v * E.PERFECT_PCT / 100)) : v; } return o; };
   E.perfectCount = (S) => Object.values(S.items).filter(E.isPerfect).length;
 
   /* ---------------- Recrutement & équipe ---------------- */

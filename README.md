@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.29.1 « Le Gelano à 1 PA »
+
+Retour de Mathis (14/10/2026, « le Gelano est considéré à 2 PA même s'il y a écrit qu'un seul »). Cause : `E.perfectStats` (js/engine.js) ajoute +2 % à chaque caractéristique d'un objet Parfait avec un minimum de +1 ; le Gelano n'a qu'un jet, 1 PA (fourchette 1-1), il est donc toujours Parfait et donnait 2 PA en combat (6 → 8 PA au total). Pareil pour tout objet Parfait avec PA, PM, Portée ou Invocation. Maintenant `E.PERFECT_SKIP` exclut ces quatre caractéristiques du bonus Parfait ; les autres gardent +2 %. Test dans tests/forgemagie.test.js.
+
 ## 1.0.29 « Un air pour chaque menu »
 
 Demande de Mathis (fil « Musique et sons du jeu », 14/10/2026) : « rajoute des nouvelles musiques pour les menus qui n'en ont pas, avec un thème plus orienté DOFUS 3 ». js/musique.js : instruments d'orchestre (`strings` pupitre de cordes à quatre archets désaccordés, `strl` violons en mélodie, `vln`, `cb`, `harp`, `cel`, `clar`, `fhorn`) et percussions (`bdrum`, `swell`, `tri`, `sroll`), niveaux mesurés hors ligne ; 13 airs (`monde`, `cles`, `defi`, `heros`, `sac`, `phenix`, `quetes`, `succes`, `biblio`, `carnet`, `champions`, `strateges`, `idees`), chacun avec son tempo, sa mesure et son instrument principal, volume aligné sur les airs déjà en jeu (sonie pondérée), écart vérifié avec les 35 autres. js/ui.js : `MUS_PAGE` couvre tous les menus ; Monde joue `monde`, la vue d'une zone joue l'air de la zone, Donjons `cles`, Encyclopédie `biblio`, Quêtes `quetes` et Succès `succes`. L'accueil et la page Combat gardent l'air de la zone de chasse.

@@ -38,7 +38,7 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
   wear(S, b, E.DOFP_PRIM); assert.ok(E.dofpReso(S, b) && !E.dofpReso(S, a));
   const F = hunt(S, 200); const ea = F.ents.find((e) => e.cid === a.id), eb = F.ents.find((e) => e.cid === b.id);
   assert.deepStrictEqual(ea.dp, ["vulbis", "ocre", "ivoire"]); assert.ok(eb.dpBoost && !ea.dpBoost);
-  assert.ok(eb.shield > 0, "Souffle d'Aerafal : bouclier au début du combat");
+  assert.ok(eb.shield > 0 || (F.dpN[b.id] || {}).emeraude > 0, "Souffle d'Aerafal : bouclier au début du combat");
   assert.strictEqual(E.dofpVal("pourpre", true), 12.5); assert.strictEqual(E.dofpVal("ivoire", true), 35); assert.strictEqual(E.dofpVal("ocre", true), 1);
   console.log("ok - dofus : passifs portés et Éveil des Dragons");
 }

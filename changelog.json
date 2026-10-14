@@ -1,6 +1,14 @@
 {
-  "version": "1.0.29",
+  "version": "1.0.29.1",
   "versions": [
+    {
+      "v": "1.0.29.1",
+      "name": "Le Gelano à 1 PA",
+      "items": [
+        "Un objet Parfait ne donne plus de PA, de PM, de Portée ni d'Invocation en trop : le Gelano (toujours parfait, son seul jet est 1 PA) comptait 2 PA au lieu d'un",
+        "Le bonus Parfait (+2 %) reste sur toutes les autres caractéristiques"
+      ]
+    },
     {
       "v": "1.0.29",
       "name": "Un air pour chaque menu",

@@ -65,4 +65,9 @@ E.netCoef = null;
 { const Sw = E.newState("Rel", "iop"); const iw = E.rollItem(Sw, "i6804", { radiant: false }); Sw.items[iw.uid] = iw; iw.well = 800; delete Sw.wellReset; const st = JSON.stringify(iw.stats);
   const L = E.deserialize(E.serialize(Sw)); assert.ok(!L.items[iw.uid].well && L.wellReset, "reliquat remis à 0"); assert.strictEqual(JSON.stringify(L.items[iw.uid].stats), st, "caractéristiques intactes");
   L.items[iw.uid].well = 12; assert.strictEqual(E.deserialize(E.serialize(L)).items[iw.uid].well, 12, "remise à 0 une seule fois"); }
+// 1.0.29.1 : un objet Parfait ne gagne pas de PA, PM, Portée ni Invocation en plus (le Gelano comptait 2 PA)
+{ const Sg = E.newState("Gel", "iop"); const c = Sg.chars[0]; const pa0 = E.charStats(Sg, c).pa; const ig = E.rollItem(Sg, "i2469", { radiant: false }); Sg.items[ig.uid] = ig;
+  assert.ok(E.isPerfect(ig), "un Gelano est toujours parfait"); c.equip.anneau1 = ig.uid;
+  assert.strictEqual(E.charStats(Sg, c).pa, pa0 + 1, "Gelano : +1 PA, pas 2");
+  assert.deepStrictEqual(E.perfectStats({ tpl: "i2469", stats: { pa: 1, pm: 1, po: 1, inv: 1, vit: 100 } }), { pa: 1, pm: 1, po: 1, inv: 1, vit: 102 }); }
 console.log("ok - forgemagie comme dans DOFUS : six métiers, trois issues " + JSON.stringify(kinds) + ", exo, transcendance, signature, coefficient en ligne");
