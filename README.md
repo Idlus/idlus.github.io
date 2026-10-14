@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.29.6 « Connexion sans boucle »
+
+Rapport du serveur du 14/10/2026 : une seule session renouvelait son jeton environ 3 fois par seconde (12 326 renouvellements en une heure, `auth.audit_log_entries` et `auth.refresh_tokens` à 66 des 100 Mo de la base). Cause probable : l'heure de l'appareil en avance d'une heure ou plus, la bibliothèque croit alors le jeton toujours expiré. Garde-fou dans js/online.js : au-delà de 20 renouvellements (`TOKEN_REFRESHED`) en une minute, la session est fermée sur cet appareil (`signOut({ scope: "local" })`) et le joueur prévenu, avec l'avance estimée de son horloge. Test 8 quater dans tests/online.test.js.
+
 ## 1.0.29.5 « Dofus au boss »
 
 Dans une quête de Dofus, une étape « vaincre le boss » après la première se valide en battant le boss pendant l'étape : le Dofus ne tombe plus avant la salle du boss.

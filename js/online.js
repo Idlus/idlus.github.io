@@ -72,7 +72,34 @@
     KEY = o.key; VER = o.version;
     if (!ON.enabled || sb) return;
     sb = lib.createClient(URL_, KEY_, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" } });
-    sb.auth.onAuthStateChange((ev, session) => { ON.user = session ? session.user : null; if (!ON.user) setState("anon"); });
+    sb.auth.onAuthStateChange((ev, session) => {
+      ON.user = session ? session.user : null; if (!ON.user) setState("anon");
+      if (ev === "TOKEN_REFRESHED") renewed(session);
+    });
+  };
+  /* 1.0.29.6 : garde-fou contre une connexion qui se renouvelle en boucle. Si l'heure de l'appareil est fausse (une heure d'avance
+     ou plus), la bibliothèque croit le jeton toujours expiré et le renouvelle à chaque appel au serveur : le 14/10, une seule
+     session le faisait 3 fois par seconde (12 000 renouvellements par heure, +11 Mo par heure dans la base). Au-delà de 20
+     renouvellements en une minute (normalement un par heure), la connexion est fermée sur cet appareil et le joueur prévenu ;
+     la partie reste sur l'appareil. ON.onLoop(texte) : message affiché par l'interface. */
+  let renewals = [], looping = false;
+  const renewed = (session) => {
+    const t = Date.now(); renewals = renewals.filter((x) => t - x < 60000); renewals.push(t);
+    if (renewals.length <= 20 || looping) return;
+    looping = true; renewals = [];
+    // hors du rappel de la bibliothèque : y appeler signOut directement la bloquerait
+    setTimeout(() => stopLoop(session).finally(() => { looping = false; }), 0);
+  };
+  const stopLoop = async (session) => {
+    // avance de l'horloge de l'appareil = maintenant - heure d'émission du jeton par le serveur (expires_at - expires_in)
+    const min = session && session.expires_at && session.expires_in ? Math.round((Date.now() / 1000 - (session.expires_at - session.expires_in)) / 60) : 0;
+    const avance = min >= 120 ? `${Math.round(min / 60)} h` : `${min} min`;
+    const txt = min >= 30 ? `Connexion en ligne coupée : l'heure de ton appareil a environ ${avance} d'avance, ce qui la faisait tourner en boucle. Règle l'heure en automatique puis reconnecte-toi. Ta partie est gardée.`
+      : "Connexion en ligne coupée : elle se renouvelait en boucle. Reconnecte-toi, et vérifie l'heure de ton appareil si ça recommence. Ta partie est gardée.";
+    try { await sb.auth.stopAutoRefresh(); } catch (e) {}
+    try { await withTimeout(sb.auth.signOut({ scope: "local" }), 5000); } catch (e) {} // ferme cette session seulement (les autres appareils restent connectés)
+    ON.user = null; ON.profile = null; setState("anon");
+    if (ON.onLoop) { try { ON.onLoop(txt); } catch (e) {} }
   };
   /* Erreur de connexion renvoyée dans l'adresse (lien e-mail expiré…). */
   ON.urlError = () => {
