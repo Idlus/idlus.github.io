@@ -1089,12 +1089,15 @@
       return true;
     });
     const out = [];
-    while (out.length < n && pool.length) { const id = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; const ch = { id, ok: true };
-      if (id === "rapide") { const ml = mons.reduce((t, m) => t + m.lvl, 0) / Math.max(1, mons.length); ch.turns = 3 + Math.ceil(mons.length / Math.max(1, heroes.length)) + Math.floor(ml / 50) + (F.dungeon ? 1 : 0); ch.bonus = E.CHALLENGES.rapide.diff; } /* les combats de haut niveau durent plus longtemps */ else ch.bonus = E.CHALLENGES[id].diff;
-      if (id === "elitiste") { const t = mons.slice().sort((a, b) => (b.boss ? 1e6 : 0) + b.lvl - ((a.boss ? 1e6 : 0) + a.lvl))[0]; ch.target = F.ents.indexOf(t); }
-      out.push(ch); }
+    while (out.length < n && pool.length) out.push(mkChal(F, pool.splice(Math.floor(rnd() * pool.length), 1)[0], heroes, mons));
     return out;
   };
+  const mkChal = (F, id, heroes, mons) => { const ch = { id, ok: true };
+    if (id === "rapide") { const ml = mons.reduce((t, m) => t + m.lvl, 0) / Math.max(1, mons.length); ch.turns = 3 + Math.ceil(mons.length / Math.max(1, heroes.length)) + Math.floor(ml / 50) + (F.dungeon ? 1 : 0); ch.bonus = E.CHALLENGES.rapide.diff; } /* les combats de haut niveau durent plus longtemps */ else ch.bonus = E.CHALLENGES[id].diff;
+    if (id === "elitiste") { const t = mons.slice().sort((a, b) => (b.boss ? 1e6 : 0) + b.lvl - ((a.boss ? 1e6 : 0) + a.lvl))[0]; ch.target = F.ents.indexOf(t); }
+    return ch; };
+  /* 1.1 : règles du Défi du jour, les mêmes challenges imposés dans chaque salle */
+  E.fixedChals = (F, ids) => { const heroes = F.ents.filter((e) => e.side === "c"); const mons = F.ents.filter((e) => e.side === "m"); return ids.filter((id) => E.CHALLENGES[id]).map((id) => mkChal(F, id, heroes, mons)); };
   const chal = (F, id) => (F.chals || []).find((c) => c.id === id && c.ok);
   const failChal = (F, id, why) => { const c = chal(F, id); if (!c) return; c.ok = false; c.why = why; flog(F, `Challenge ${E.CHALLENGES[id].name} échoué${why ? " : " + why : ""}.`, "lose"); };
   E.chalRespect = (S, c) => !!(S.settings && S.settings.chalAI) && !(c && c.chalOff);
@@ -1274,7 +1277,8 @@
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
     if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
-    F.chals = pickChallenges(S, F, (S.dungeon ? 2 : 1) + E.almMult(S, "chal1"));
+    if (S.dungeon && S.dungeon.rules) F.defiRules = true;
+    F.chals = S.dungeon && S.dungeon.rules ? E.fixedChals(F, S.dungeon.rules) : pickChallenges(S, F, (S.dungeon ? 2 : 1) + E.almMult(S, "chal1"));
     if (XP) F.exp = XP.exp;
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }
     F.powRew = E.powRew(mons, S.dungeon || XP ? "dg" : "hunt", hsm); // 0.1.12.3 : monstres renforcés, gains par monstre en proportion

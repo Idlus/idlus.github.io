@@ -2704,6 +2704,33 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .dfline .chev{font-size:18px;color:var(--muted)}
 .df-goal .bar{margin-top:4px}
 .df-goal.ok b{color:var(--gold2)}
+/* 1.1 : refonte du Défi du jour (règles du jour, score en points, bourses, Grand défi du dimanche) */
+.df-sub{font-size:11px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.df-rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.df-rule{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.14);border:1px solid var(--line);font-size:12px;min-width:0}
+.df-rule b{font-size:13px;display:flex;gap:6px;align-items:center;justify-content:space-between}
+.df-rule .pts{font-size:11px;font-weight:900;color:var(--gold2);white-space:nowrap}
+.df-rule.team{border-style:dashed;border-color:rgba(var(--glw),.6)}
+.df-rule.ok{border-color:rgba(126,224,106,.55)}.df-rule.ko .st{color:var(--danger)}.df-rule.ok .st{color:var(--good)}
+.df-rule .st{font-size:11px;font-weight:800}.df-rule .btn{align-self:flex-start;margin-top:4px}
+.df-rule.team.ko{border-color:var(--danger);opacity:1}
+.df-med{display:inline-flex;align-items:center;font-weight:900;font-size:11px;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.df-med.br{background:#a8683a;color:#fff3e6}.df-med.ar{background:#c9d2db;color:#1d242b}.df-med.or{background:#e8c050;color:#2a1e00}
+.df-bourses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.df-bourse{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:10px 6px;border-radius:12px;background:rgba(0,0,0,.14);border:1.5px solid var(--line);font-size:12px;min-width:0}
+.df-bourse.cur{border-color:rgba(var(--glw),.9);background:rgba(var(--glw),.10)}.df-bourse .uico{width:34px;height:34px}
+.df-bourse .need{font-size:11px;color:var(--muted)}.df-bourse.got .need{color:var(--good)}
+.df-brk{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px}.df-brk span:nth-child(even){text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.df-brk .tot{border-top:1px solid var(--line);padding-top:4px;font-weight:900}
+.df-val{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:rgba(var(--glw),.08);border:1px solid rgba(var(--glw),.4);font-size:12px;margin-top:8px}
+.df-val .grow{flex:1 1 220px}
+.df-dots i.jok{background:rgba(120,170,255,.25);color:#bcd4ff;border-color:rgba(120,170,255,.6)}
+.defi.df-sun{background:linear-gradient(100deg,rgba(232,192,80,.28),rgba(232,192,80,.04) 60%),var(--panel2);border-color:#e8c050}
+.defi.df-sun .wk{color:#f4d77a}
+.df-lbtabs{margin-bottom:8px}
+.df-team{display:inline-flex;gap:2px;margin-top:2px}.df-team img{width:16px;height:16px;object-fit:contain}
+.df-bad{color:var(--danger)}.df-good{color:var(--good)}
+@media (max-width:700px){.df-rules{grid-template-columns:repeat(2,minmax(0,1fr))}.df-bourses{gap:6px}}
 /* ---------- 0.1.26 : cadres « Métal orné » ----------
    Un métal par tranche de 40 niveaux (Bois, Bronze, Argent, Or, Émeraude), en deux rangs (I et II, tous les 20 niveaux),
    puis Krosmoz au niveau 200. Biseau, rivets aux coins, coins forgés qui grandissent, ruban sous la carte avec joyaux dès l'Or.
