@@ -5763,20 +5763,31 @@ function charSpellsView(c) {
 /* 0.1.54.1 : les objets portés par un héros sont cachés de l'inventaire, sauf avec la case « Afficher l'équipé » */
 function wornMap() { const m = new Map(); S.chars.forEach((c) => Object.values(c.equip).forEach((u) => { if (u) m.set(u, c); })); return m; }
 const invShowEq = () => !!S.settings.invShowEq;
+/* 1.0.31 : inventaire lisible. Sections par emplacement, pastilles de filtre, flèche verte « mieux pour un héros », barre de jet, « Nouveau »,
+   fiche resserrée et sélection multiple (maquette validée par Mathis : 1A 2A 3A 4A 5A) */
+const INV_SLOTS = [["arme", "Armes"], ["bouclier", "Boucliers"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["dofus", "Trophées"]];
+/* objets du sac que le plan d'équipement d'un héros de l'équipe veut porter (plans déjà calculés : rien de lourd dans le rendu) */
+function invUps() { // lit le dernier plan connu de chaque héros (planView) : le calcul lui-même se fait au repos, par petits morceaux
+  const m = new Map(); S.chars.forEach((c) => { if (!c.inTeam) return; const plan = planView(c); for (const s in plan) { const u = plan[s]; if (u && u !== c.equip[s] && !m.has(u)) m.set(u, c); } }); return m; }
+/* « Nouveau » : objets arrivés depuis la visite précédente de l'inventaire (le repère est figé pendant la visite) */
+const invSeen = () => { if (!ui.invOn) { ui.invSeen0 = S.invSeenUid || 0; S.invSeenUid = S.nextUid - 1; ui.invOn = true; } return ui.invSeen0 || 0; };
+let invCnt = {};
 function invGroups() {
   const q = E.searchNorm(ui.invSearch); const filt = ui.slotFilter;
   const groups = new Map(); const worn = wornMap(); const showEq = invShowEq();
+  const ups = invUps(); const seen = invSeen(); invCnt = { all: 0, up: 0, new: 0, radiant: 0 };
   Object.values(S.items).forEach((it) => {
     const T = ITEMS[it.tpl];
     if (!showEq && worn.has(it.uid)) return;
-    if (filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
+    if (!q || txtHas(T.name, q)) { invCnt.all++; invCnt[T.slot] = (invCnt[T.slot] || 0) + 1; if (ups.has(it.uid)) invCnt.up++; if (it.uid > seen && seen) invCnt.new++; if (it.radiant) invCnt.radiant++; }
+    if (filt === "up" ? !ups.has(it.uid) : filt === "new" ? !(seen && it.uid > seen) : filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
     if (q && !txtHas(T.name, q)) return;
     const g = groups.get(it.tpl) || { tpl: it.tpl, items: [] }; g.items.push(it); groups.set(it.tpl, g);
   });
   const arr = [...groups.values()];
-  arr.forEach((g) => { g.best = Math.max(...g.items.map((x) => E.itemQuality(x))); g.rad = g.items.some((x) => x.radiant); g.lock = g.items.some((x) => x.locked); const w = g.items.find((x) => worn.has(x.uid)); g.eq = w ? worn.get(w.uid) : null; });
+  arr.forEach((g) => { g.up = (g.items.find((x) => ups.has(x.uid)) && ups.get(g.items.find((x) => ups.has(x.uid)).uid)) || null; g.nw = !!seen && g.items.some((x) => x.uid > seen); g.last = Math.max(...g.items.map((x) => x.uid)); g.best = Math.max(...g.items.map((x) => E.itemQuality(x))); g.rad = g.items.some((x) => x.radiant); g.lock = g.items.some((x) => x.locked); const w = g.items.find((x) => worn.has(x.uid)); g.eq = w ? worn.get(w.uid) : null; });
   const sort = ui.invSort || "lvl";
-  arr.sort((a, b) => (b.rad - a.rad) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
+  arr.sort((a, b) => (sort === "recent" ? b.last - a.last : sort === "up" ? (!!b.up - !!a.up) || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : 0) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
   return arr;
 }
 /* 1.0.25.11 : cadenas posé par une tenue enregistrée */
@@ -5786,21 +5797,18 @@ function invDetail(tpl) {
   const worn = invShowEq() ? null : wornMap();
   const copies = Object.values(S.items).filter((x) => x.tpl === tpl && !(worn && worn.has(x.uid))).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
   if (!copies.length) return "";
-  return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
-    <div class="pad xs">${window.FORGEUI ? (() => { const pk = window.FORGEUI.pick(copies); return tplStatsHtml(Object.assign({}, T, { stats: {} })) + window.FORGEUI.statGrid(T, pk, window.FORGEUI.wornRef(tpl, pk)); })() : tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
-      ${ui.cid && char(ui.cid) && T.lvl <= char(ui.cid).lvl ? `<div class="row" style="margin-top:6px">${miniDoll(char(ui.cid), T.slot)}</div>` : ""}</div>
-    <div class="list">${grpItems(copies, false, (x) => E.equippedBy(S, x.uid)).map((gr) => { const it = gr.rep; const by = E.equippedBy(S, it.uid);
-      return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow">${window.FORGEUI && copies.length > 1 ? `<button class="fpick ${window.FORGEUI.pick(copies) === it ? "on" : ""}" data-fx="pick" data-uid="${it.uid}" title="Voir cet exemplaire dans la grille">Jet ${Math.round(E.itemQuality(it) * 100)} %</button>` : `<b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>`}${grpN(gr.items.length)}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
-        <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button>${T.leg ? `<button class="btn sm" data-act="sg-leg" data-k="${T.leg}" data-u="${it.uid}" title="Fiche légendaire et Éveil">${G("sparkle")} Éveil</button>` : `<button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">${IC("forge")}</button>`}
-          <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${h(lockTip(it))}">${it.locked ? G("lock") : G("unlock")}</button>${E.gearOf(S, it.uid) ? ` <span class="tag soft" title="${h(lockTip(it))}">${G("lock")} ${h(E.gearOf(S, it.uid).g.name)}</span>` : ""}
-          ${by || it.locked ? "" : `${hdvOn() ? `<button class="btn sm" data-act="hdvitem" data-uid="${it.uid}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
-}
-/* mini-silhouette : emplacement de l'objet sélectionné en surbrillance */
-function miniDoll(c, slot) {
-  const want = slot === "anneau" ? ["anneau1", "anneau2"] : slot === "dofus" ? D.DOFUS_SLOTS : [slot];
-  const all = ["coiffe", "amulette", "anneau1", "anneau2", "cape", "ceinture", "bottes", "bouclier", "arme"];
-  return `<span class="xs muted">Pour ${h(c.name)} :</span><span class="row" style="gap:3px">${all.concat(slot === "dofus" ? D.DOFUS_SLOTS : []).map((s) => { const it = S.items[c.equip[s]]; const on = want.includes(s);
-    return `<span class="dslot ${on ? "hl" : ""} ${it ? "filled" : ""}" style="width:30px;height:30px;border-radius:8px;cursor:default" data-tip="${h(SLOTS[s])}${it ? " : " + h(ITEMS[it.tpl].name) : " : vide"}">${it ? `<img src="${itemImg(it.tpl)}" style="width:24px;height:24px" alt="">` : ""}</span>`; }).join("")}</span>`;
+  const pk = window.FORGEUI ? window.FORGEUI.pick(copies) : copies[0]; const by = E.equippedBy(S, pk.uid); const ups = invUps(); const up = copies.map((x) => ups.get(x.uid)).find(Boolean);
+  const slotN = SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot];
+  const acts = `<div class="invacts"><button class="btn sm primary" data-act="givesheet" data-uid="${pk.uid}">Équiper…</button>${T.leg ? `<button class="btn sm" data-act="sg-leg" data-k="${T.leg}" data-u="${pk.uid}">${G("sparkle")} Éveil</button>` : `<button class="btn sm" data-act="fmgo" data-uid="${pk.uid}">${IC("forge")} Forgemagie</button>`}
+    <button class="btn sm" data-act="lock" data-uid="${pk.uid}" title="${h(lockTip(pk))}">${pk.locked ? G("lock") : G("unlock")}</button>${by || pk.locked ? "" : `${hdvOn() ? `<button class="btn sm" data-act="hdvitem" data-uid="${pk.uid}">Vendre</button>` : ""}<button class="btn sm" data-act="break" data-uid="${pk.uid}">Briser</button>`}</div>`;
+  const gr = grpItems(copies, false, (x) => E.equippedBy(S, x.uid));
+  const rows = gr.length > 1 ? `<div class="invcopies"><div class="xs muted" style="margin:2px 0 4px">${copies.length} exemplaire${copies.length > 1 ? "s" : ""} · touche un jet pour le voir</div>${gr.map((g) => { const it = g.rep; const j = Math.round(E.itemQuality(it) * 100); const b = E.equippedBy(S, it.uid);
+      return `<button class="invcopy ${it === pk ? "on" : ""}" data-fx="pick" data-uid="${it.uid}"><span class="ijet" style="--w:${j}%;--hj:${jetHue(E.itemQuality(it))}"></span><b class="num">Jet ${j} %</b>${g.items.length > 1 ? `<span class="xs muted">×${g.items.length}</span>` : ""}${it.radiant ? `<span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.exo ? `<span class="tag exo">Exo ${STATS[it.exo].short}</span>` : ""}${it.locked ? G("lock") : ""}${b ? `<span class="xs muted">porté par ${h(b.name)}</span>` : ""}</button>`; }).join("")}</div>` : "";
+  return `<div class="panel invdetail invdA"><div class="phead"><div class="row">${itemIcon(pk)}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${slotN}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
+    ${up ? `<div class="invupl"><b>▲ Mieux pour ${h(up.name)}</b> <span class="xs muted">« Équiper au mieux » le mettrait sur ce héros</span></div>` : ""}
+    ${acts}${rows}
+    <div class="pad xs">${window.FORGEUI ? tplStatsHtml(Object.assign({}, T, { stats: {} })) + window.FORGEUI.statGrid(T, pk, window.FORGEUI.wornRef(tpl, pk)) : tplStatsHtml(T)}
+      ${T.set ? `<details class="invsetd"><summary>Bonus de la ${h(SETS[T.set].name)}</summary>${setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined)}</details>` : ""}</div></div>`;
 }
 /* ---------- Sac : ressources (v2.7) ---------- */
 function resRarity(n) { const L = (resIndex().src[n] || []).filter((x) => x.m); if (!L.length) return n === E.RARE_COMPONENT ? "epique" : ""; const best = Math.max(...L.map((x) => (MONSTERS[x.m].boss || MONSTERS[x.m].archiOf ? 0 : x.p))); return best === 0 ? "epique" : best < 1 ? "epique" : best < 5 ? "rare" : ""; }
@@ -5921,13 +5929,20 @@ function autoRulesHtml() {
 }
 /* 1.0.12.8 : la grille et le compteur à part, pour que la recherche (après une courte pause de frappe) ne redessine qu'eux */
 const invCountTxt = (groups) => `${Object.keys(S.items).length}/${E.itemCap(S)} objets · ${groups.length} types`;
-function invGridHtml(groups) {
-  return groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
-    return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
-      ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`;
+const jetHue = (q) => Math.round(q * 120);
+function invTile(g) { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0]; 
+  const pick = ui.invMulti; const on = pick && g.items.some((x) => pick.has(x.uid));
+  return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl && !pick ? "on" : ""} ${on ? "picked" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
+      ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}
+      ${g.up ? `<span class="iup" title="Mieux pour ${h(g.up.name)}">▲</span>` : ""}${g.nw ? `<span class="inewi">Nouveau</span>` : ""}${`<span class="ijet" style="--w:${Math.round(g.best * 100)}%;--hj:${jetHue(g.best)}" title="Meilleur jet ${Math.round(g.best * 100)} %"></span>`}${pick ? `<span class="ipick">${on ? "✓" : ""}</span>` : ""}</button>`; }
+function invItemsHtml(groups) {
+  const empty = `<div class="empty">${ui.invSearch || (ui.slotFilter && ui.slotFilter !== "all") ? "Aucun objet ne correspond." : "Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer."}</div>`;
+  const by = {}; groups.forEach((g) => (by[ITEMS[g.tpl].slot] = by[ITEMS[g.tpl].slot] || []).push(g));
+  return INV_SLOTS.filter(([k]) => by[k]).map(([k, n]) => { const L = by[k]; const nb = L.reduce((a, g) => a + g.items.length, 0); const up = L.filter((g) => g.up).length; const shut = ui.invShut && ui.invShut[k];
+    return `<section class="invsec"><button class="invsech" data-act="invshut" data-v="${k}" aria-expanded="${!shut}"><b>${n}</b><span class="xs muted">${L.length} modèle${L.length > 1 ? "s" : ""} · ${nb} objet${nb > 1 ? "s" : ""}</span>${up ? `<span class="tag good">▲ ${up} mieux</span>` : ""}<span class="grow"></span><span class="muted">${shut ? "▾" : "▴"}</span></button>${shut ? "" : `<div class="invgrid">${L.map(invTile).join("")}</div>`}</section>`; }).join("") || empty;
 }
 let invSearchT = 0;
-function invSearchGo() { const g = $(".invgrid"); if (!S || ui.tab !== "inv" || ui.inv !== "items" || !g) return; const groups = invGroups(); g.innerHTML = invGridHtml(groups); const n = $("#invCount"); if (n) n.textContent = invCountTxt(groups); }
+function invSearchGo() { const g = $("#invItems"); if (!S || ui.tab !== "inv" || ui.inv !== "items" || !g) return; const groups = invGroups(); g.innerHTML = invItemsHtml(groups); const n = $("#invCount"); if (n) n.textContent = invCountTxt(groups); }
 function renderInventory() {
   if (ui.inv === "sets" && window.COLL) { // 1.0.30 : l'ancien onglet Panoplies renvoie à la Collection de panoplies (Encyclopédie)
     window.COLL.setQuery(ui.setF && ui.setF.q); if (ui.setF) ui.setF.q = "";
@@ -5939,19 +5954,23 @@ function renderInventory() {
   let body = "";
   if (ui.inv === "items") {
     const groups = invGroups();
-    const detail = invSide() && ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
+    const detail = invSide() && !ui.invMulti && ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
     const nWorn = wornMap().size;
-    body = `${autoRulesHtml()}
-      <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
-        <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
-        <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
-        <label class="row small invshoweq" data-tip="Les objets portés par tes héros sont cachés de l'inventaire. Coche pour les revoir, avec la tête du héros qui les porte."><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé${nWorn ? ` (${nWorn})` : ""}</label>
-        <span class="muted small num" id="invCount">${invCountTxt(groups)}</span>
-        ${dupesBtn()}</div>
+    const pick = ui.invMulti;
+    const chips = [["all", "Tout", invCnt.all], ["up", "▲ Améliorations", invCnt.up], ["new", "Nouveaux", invCnt.new], ["radiant", "✦ Rayonnants", invCnt.radiant], ...INV_SLOTS.map(([k, n]) => [k, n, invCnt[k] || 0])].filter(([k, , c]) => k === "all" || c || ui.slotFilter === k);
+    const selBtn = `<button class="btn sm ${pick ? "primary" : ""}" data-act="invmulti">${pick ? "Terminer" : `☑<span class="ilbl"> Sélectionner</span>`}</button>`;
+    const pickBar = pick ? (() => { const n = pick.size; const brk = [...pick].filter((u) => S.items[u] && !S.items[u].locked && !E.equippedBy(S, u)).length;
+      return `<div class="invpickbar"><b class="num">${n}</b><span class="small">objet${n > 1 ? "s" : ""} sélectionné${n > 1 ? "s" : ""}</span><span class="grow"></span><button class="btn sm" data-act="invpickall">Tout ce filtre</button><button class="btn sm" data-act="invpicklock">${G("lock")} Cadenas</button>${ui.confirm === "invbrk" ? `<button class="btn sm danger" data-act="invpickbrk">Confirmer : briser ${brk}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="invpickbrk" ${brk ? "" : "disabled"} title="Les objets portés et verrouillés ne sont jamais brisés">Briser ${brk}</button>`}</div>`; })() : "";
+    const toolsA = `<div class="invtools"><div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher un objet…" value="${h(ui.invSearch || "")}">
+        <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["up", "Améliorations d'abord"], ["recent", "Récents"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
+        ${selBtn}<button class="btn sm ${ui.invMore ? "primary" : ""}" data-act="invmore" title="Options du sac">${G("gear")}<span class="ilbl"> Options</span></button></div>
+      <div class="catchips invchips">${chips.map(([k, n, c]) => `<button data-act="invchip" data-v="${k}" aria-pressed="${(ui.slotFilter || "all") === k}">${n} <b>${c}</b></button>`).join("")}</div>
+      ${ui.invMore ? `<div class="panel invmore"><div class="pad stack" style="gap:8px"><div class="row"><span class="muted small num">${invCountTxt(groups)}</span><label class="row small"><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé (${nWorn})</label>${dupesBtn()}</div>${autoRulesHtml()}</div></div>` : `<div class="xs muted num" id="invCount">${invCountTxt(groups)}</div>`}</div>`;
+    body = `${toolsA}
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
-        <div class="invgrid">${invGridHtml(groups)}</div>
-      </div>`;
+        <div id="invItems">${invItemsHtml(groups)}</div>
+      </div>${pickBar}`;
   } else if (ui.inv === "over") {
     body = overHtml();
   } else if (ui.inv === "res") {
@@ -6928,6 +6947,7 @@ function render() {
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
   if (S.navv !== 1) { S.navv = 1; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 0.1.31 : nouveau menu, bulle pour les parties déjà commencées
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
+  if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
   else if (ui.tab === "combat") renderCombat();
@@ -8281,7 +8301,15 @@ document.addEventListener("click", (ev) => {
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
     case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }
     case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
-    case "invsel": ui.invSel = d.tpl || null; if (!ui.invSel) closeSheet(); break;
+    case "invsel": if (ui.invMulti && d.tpl) { const L = Object.values(S.items).filter((x) => x.tpl === d.tpl && !(invShowEq() ? false : wornMap().has(x.uid))); const on = L.some((x) => ui.invMulti.has(x.uid)); L.forEach((x) => (on ? ui.invMulti.delete(x.uid) : ui.invMulti.add(x.uid))); break; }
+      ui.invSel = d.tpl || null; if (!ui.invSel) closeSheet(); break;
+    case "invchip": ui.slotFilter = d.v; break;
+    case "invmore": ui.invMore = !ui.invMore; break;
+    case "invshut": (ui.invShut = ui.invShut || {})[d.v] = !ui.invShut[d.v]; break;
+    case "invmulti": ui.invMulti = ui.invMulti ? null : new Set(); if (ui.invMulti) { ui.invSel = null; closeSheet(); } break;
+    case "invpickall": invGroups().forEach((g) => g.items.forEach((x) => ui.invMulti.add(x.uid))); break;
+    case "invpicklock": { const L = [...ui.invMulti].map((u) => S.items[u]).filter(Boolean); const all = L.every((x) => x.locked); L.forEach((x) => { if (!E.gearOf(S, x.uid)) x.locked = !all; }); break; }
+    case "invpickbrk": { if (ui.confirm !== "invbrk") { ui.confirm = "invbrk"; break; } ui.confirm = null; let n = 0; [...ui.invMulti].forEach((u) => { const it = S.items[u]; if (it && !it.locked && !E.equippedBy(S, u) && typeof E.breakItem(S, u, null) !== "string") n++; }); ui.invMulti = new Set(); toast(`${n} objet${n > 1 ? "s" : ""} brisé${n > 1 ? "s" : ""} en runes.`); break; }
     case "lock": { const it = S.items[+d.uid]; if (!it) break; const gg = E.gearOf(S, it.uid); if (it.locked && gg) { toast(`Objet verrouillé par la tenue « ${gg.g.name} » de ${gg.c.name} : retire-le de la tenue ou supprime la tenue pour l'enlever.`); return; } it.locked = !it.locked; delete it.glock; break; }
     case "autotoggle": ui.autoOpen = !t.parentElement.open; return;
     case "almall": ui.almAll = !t.parentElement.open; return; // 0.1.39.1 : le volet reste ouvert malgré le rafraîchissement

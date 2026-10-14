@@ -5146,3 +5146,32 @@ span.fch{cursor:default;padding-left:8px}
 .lweak{font-size:10.5px;font-weight:900;background:color-mix(in srgb,var(--el-a) 35%,var(--panel));border-radius:999px;padding:0 6px}.lres{font-size:10.5px;font-weight:900;background:color-mix(in srgb,var(--danger) 30%,var(--panel));border-radius:999px;padding:0 6px}.lrole{opacity:.8}
 .gcell.lock .gsn,.gcell.offel .gsn{display:none}
 .log .lnew{white-space:normal;align-items:flex-start}.log .lnew>span{overflow:visible}
+
+/* 1.0.31 : inventaire lisible (sections, pastilles, flèche « mieux », barre de jet, sélection multiple, fiche resserrée) */
+.invtools{display:flex;flex-direction:column;gap:8px}
+.invchips{margin:0}
+.invsec{margin-bottom:10px}
+.invsech{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;border-bottom:2px solid var(--frame);padding:4px 2px 6px;margin-bottom:8px;color:var(--ink);cursor:pointer;font:inherit;text-align:left}
+.invsech b{font-family:var(--title,inherit);font-size:16px}
+.iup{position:absolute;right:3px;top:2px;width:17px;height:17px;border-radius:50%;background:#3fbf4f;color:#fff;font-size:10px;line-height:17px;text-align:center;font-weight:900;box-shadow:0 0 0 2px var(--panel2)}
+.itile .iup~.ilock,.itile .ilock{right:22px}
+.itile:not(:has(.iup)) .ilock{right:3px}
+.ijet{display:block;position:absolute;left:6px;right:6px;bottom:3px;height:4px;border-radius:3px;background:rgba(0,0,0,.28);overflow:hidden}
+.ijet::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--w);background:hsl(var(--hj) 75% 50%);border-radius:3px}
+.itile:has(.ijet) .icount{bottom:9px}
+.itile:has(.ijet) .ieq{bottom:9px}
+.inewi{position:absolute;left:50%;transform:translateX(-50%);top:-7px;font-size:9px;font-weight:900;background:var(--gold);color:#1a1510;border-radius:6px;padding:0 4px;white-space:nowrap}
+.itile.picked{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold);filter:none}
+.ipick{position:absolute;left:4px;top:16px;width:18px;height:18px;border-radius:5px;border:2px solid var(--frame);background:var(--panel);color:#13200a;font-weight:900;font-size:12px;line-height:14px;text-align:center}
+.picked .ipick{background:var(--gold);border-color:var(--gold)}
+.invpickbar{position:sticky;bottom:10px;z-index:30;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--panel);border:2px solid var(--gold);border-radius:14px;padding:8px 12px;box-shadow:0 8px 24px rgba(0,0,0,.4);margin-top:10px}
+@media (max-width:860px){.invpickbar{bottom:96px}}
+.invacts{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line,rgba(255,255,255,.08))}
+.invupl{margin:8px 12px 0;padding:6px 10px;border-radius:10px;background:rgba(63,191,79,.15);color:var(--ink)}
+.invupl b{color:#5fd36b}
+.invcopies{display:flex;flex-direction:column;gap:4px;padding:6px 12px 2px;max-height:190px;overflow:auto}
+.invcopy{display:flex;align-items:center;gap:8px;background:var(--panel2);border:2px solid transparent;border-radius:10px;padding:5px 8px;color:var(--ink);cursor:pointer;font:inherit;font-size:13px}
+.invcopy.on{border-color:var(--gold)}
+.invcopy .ijet{position:relative;left:0;right:0;bottom:0;width:54px;flex:none}
+.invsetd summary{cursor:pointer;font-weight:800;margin:8px 0 4px}
+@media (max-width:860px){.invtools .ilbl{display:none}.invtools .invbar{flex-wrap:nowrap;gap:6px}.invtools .invbar input[type=text]{min-width:0}.invtools .invbar select{max-width:132px}}
