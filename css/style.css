@@ -2678,6 +2678,9 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .optsec .notifs{margin-top:6px}
 .optsec textarea{width:100%;box-sizing:border-box}
 .optsec .jk-grp{padding:10px 0 2px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.optsec .jk-bar{height:6px;border-radius:4px;background:color-mix(in srgb,var(--frame) 55%,transparent);overflow:hidden;margin:2px 0 6px}.optsec .jk-bar i{display:block;height:100%;background:var(--gold)}
+.optsec .jk-lock .optname b{opacity:.7;font-weight:600}.optsec .jk-lock .optname b img,.optsec .jk-lock .optname b svg{width:14px;height:14px;vertical-align:-2px}
+.fslot .gram{display:flex;align-items:center;gap:6px;margin-top:4px;font-style:normal}.fslot .gram span{white-space:nowrap}.fslot .gram select{max-width:100%;min-width:0;flex:1 1 auto;font-size:12.5px;padding:3px 6px}
 @media (max-width:560px){.opttabs{gap:4px}.opttabs button{padding:5px 9px;font-size:12.5px}.optline:not(.optchk) .optctl{width:100%}}
 @media (min-width:700px){.sheet:has(.opttabs){height:min(calc(88vh / var(--vz,1)),820px)}.sheet:has(.opttabs)>div:last-child{margin-top:auto}}
 /* ===================== 0.1.26 — codes cadeaux (panel admin) ===================== */

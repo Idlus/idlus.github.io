@@ -2287,14 +2287,14 @@ const hvUp = (H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S,
   return `<div class="upl"><div class="row between"><span><b>${h(H.name)}</b> <span class="lvlpill">${l}/${H.max}</span></span><span class="plus small">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</span></div>${hvPips(l, H.max)}
     <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; };
 /* 1.0.22.2 : un logo par meuble (assets/ui/meubles) ; les trophées de boss gardent le portrait du boss */
-const FURN_IMG = { "Statue du Gladiateur": "statue_gladiateur", "Bourse du Kolizéum": "bourse_kolizeum", "Statue de l'Ordre": "statue_ordre", "Calendrier de l'Almanax": "calendrier_almanax", "Étagère de grimoires": "etagere_grimoires", "Globe des Douze": "globe_douze", "Bannière de la cité": "banniere_cite", "Tirelire Bouftou": "tirelire_bouftou", "Coffre en frêne": "coffre_frene", "Coffre en merisier": "coffre_merisier", "Épouvantail d'Amakna": "epouvantail_amakna", "Arrosoir de Cania": "arrosoir_cania", "Bonsaï de Pandala": "bonsai_pandala", "Ruche": "ruche", "Tapis de Koalak": "tapis_koalak", "Lit à baldaquin": "lit_baldaquin", "Lanterne d'Otomaï": "lanterne_otomai", "Mangeoire": "mangeoire", "Abreuvoir": "abreuvoir", "Caresseur": "caresseur", "Deuxième couple": "deuxieme_couple", "Pupitre de lecture": "pupitre_lecture", "Encyclopédie d'Amakna": "encyclopedie_amakna", "Planétarium d'Osamodas": "planetarium_osamodas", "Vitrine en verre": "vitrine_verre", "Socle doré": "socle_dore", "Piédestal du Dragon": "piedestal_dragon", "Coffre à double fond": "coffre_double_fond", "Balance de marchand": "balance_marchand", "Malle de voyage": "malle_voyage", "Banc de jardin": "banc_jardin", "Fontaine de Bonta": "fontaine_bonta", "Tapis volant": "tapis_volant", "Établi d'artisan": "etabli_artisan", "Enclume de Brâkmar": "enclume_brakmar", "Botte de foin doré": "botte_foin_dore", "Abreuvoir de cristal": "abreuvoir_cristal" };
+const FURN_IMG = { "Statue du Gladiateur": "statue_gladiateur", "Bourse du Kolizéum": "bourse_kolizeum", "Statue de l'Ordre": "statue_ordre", "Calendrier de l'Almanax": "calendrier_almanax", "Étagère de grimoires": "etagere_grimoires", "Globe des Douze": "globe_douze", "Bannière de la cité": "banniere_cite", "Tirelire Bouftou": "tirelire_bouftou", "Coffre en frêne": "coffre_frene", "Coffre en merisier": "coffre_merisier", "Épouvantail d'Amakna": "epouvantail_amakna", "Arrosoir de Cania": "arrosoir_cania", "Bonsaï de Pandala": "bonsai_pandala", "Ruche": "ruche", "Tapis de Koalak": "tapis_koalak", "Lit à baldaquin": "lit_baldaquin", "Lanterne d'Otomaï": "lanterne_otomai", "Mangeoire": "mangeoire", "Abreuvoir": "abreuvoir", "Caresseur": "caresseur", "Deuxième couple": "deuxieme_couple", "Pupitre de lecture": "pupitre_lecture", "Encyclopédie d'Amakna": "encyclopedie_amakna", "Planétarium d'Osamodas": "planetarium_osamodas", "Vitrine en verre": "vitrine_verre", "Socle doré": "socle_dore", "Piédestal du Dragon": "piedestal_dragon", "Coffre à double fond": "coffre_double_fond", "Balance de marchand": "balance_marchand", "Malle de voyage": "malle_voyage", "Banc de jardin": "banc_jardin", "Fontaine de Bonta": "fontaine_bonta", "Tapis volant": "tapis_volant", "Établi d'artisan": "etabli_artisan", "Enclume de Brâkmar": "enclume_brakmar", "Botte de foin doré": "botte_foin_dore", "Abreuvoir de cristal": "abreuvoir_cristal", "Gramophone": "gramophone" };
 const furnImg = (n) => { const F = E.FURN[n]; if (F && F.trophy) { const dg = DUNGEONS[F.trophy]; return dg && MONSTERS[dg.boss] ? imgM(dg.boss) : "assets/ui/trophee_boss.svg"; } return FURN_IMG[n] ? `assets/ui/meubles/${FURN_IMG[n]}.svg` : "assets/ui/meuble.svg"; };
 const furnIco = (n, c = "uico") => `<img class="${c}" src="${furnImg(n)}" alt="" loading="lazy">`;
 const hvSlots = (R) => {
   const n = E.roomSlots(S, R.id); const P = E.placed(S, R.id); const next = R.nextSlot ? R.nextSlot(S) : 0;
   const owned = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
   return `<div class="fslots"><div class="xs muted">Meubles ${P.length}/${n}</div>${Array.from({ length: n }, (_, i) => P[i]
-    ? `<div class="fslot full">${furnIco(P[i])}<span class="grow"><b>${h(P[i])}</b><i>${h(E.furnEffect(P[i]))}</i></span><button class="btn sm" data-act="funplace" data-v="${h(P[i])}">Retirer</button></div>`
+    ? `<div class="fslot full">${furnIco(P[i])}<span class="grow"><b>${h(P[i])}</b><i>${h(E.furnEffect(P[i]))}</i>${P[i] === "Gramophone" ? gramCtl() : ""}</span><button class="btn sm" data-act="funplace" data-v="${h(P[i])}">Retirer</button></div>`
     : `<button class="fslot empty" data-act="fpick" data-v="${R.id}" data-tip="${owned ? "Choisir le meuble à placer" : `Voir les meubles pour ${h(R.name)} et où les trouver`}">${owned ? `+ Placer un meuble (${owned} disponible${owned > 1 ? "s" : ""})` : "+ Place libre · voir les meubles pour cette pièce"}</button>`).join("")}
     ${next ? `<span class="fslot lock">${IC("cle")} Une place de plus au niveau ${next} de la pièce</span>` : ""}${hvGrow(R)}</div>`;
 };
@@ -3489,7 +3489,7 @@ function axMechBanner(A, txt, who) {
 }
 /* effet d'un événement (impact, soin, bonus, invocation) */
 function axEvent(F, A, f) {
-  if (ui.arena !== A) return;
+  if (ui.arena !== A) return; cbtSnd(F, f); // 1.0.30 : sons de combat
   const n = A.nodes[f.t];
   if (f.k === "hit") { if (!n) return; const e = F.ents[f.t];
     pulse(n, "hit");
@@ -6470,6 +6470,7 @@ const optSec = (t, hint, body, id) => `<section class="optsec"${id ? ` id="${id}
 const optName = (n, hint, tip) => `<span class="optname"${tip ? ` data-tip="${h(tip)}"` : ""}><b>${n}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</span>`;
 const optLine = (n, hint, ctl, tip) => `<div class="optline">${optName(n, hint, tip)}<span class="optctl">${ctl}</span></div>`;
 const optChk = (attrs, on, n, hint) => `<label class="optline optchk">${optName(n, hint)}<input type="checkbox" ${attrs} ${on ? "checked" : ""}></label>`;
+const optChkBtn = (attrs, on, n, hint, btn) => `<label class="optline optchk">${optName(n, hint)}<span class="optctl">${btn}<input type="checkbox" ${attrs} ${on ? "checked" : ""}></span></label>`; // 1.0.30 : case à cocher et bouton « Écouter »
 function optionsSheet() {
   const tab = OPT_TABS.some(([k]) => k === ui.optTab) ? ui.optTab : "affichage";
   const nGift = Object.keys(S.gifts || {}).length;
@@ -7478,8 +7479,9 @@ function consignesHtml() {
    et depuis la 1.0.29 chaque autre menu aussi (MUS_PAGE, Monde / Donjons / Encyclopédie, Quêtes / Succès), à l'orchestre façon DOFUS 3,
    la salle du boss d'un donjon a le sien, le Havre-Sac joue la nuit de 21 h à 7 h et les airs d'Halouine et des Fêtes à leurs dates.
    Juke-box (Options › Sons) : « Selon l'endroit » ou « Un air fixe » (fix), chaque air s'écoute (SND.prev, tant que la fenêtre est ouverte). */
-const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null };
-const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false };
+const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null, fan: {}, cbt: 0, cbtK: {}, fanT: 0 };
+/* 1.0.30 : fan = fanfares des grands moments, cls = thème de chaque classe, cbt = sons de combat, amb + avol = ambiances seules */
+const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false, fan: true, cbt: false, amb: false, avol: 40 };
 const sndCfg = () => Object.assign({}, SND_DEF0, (S && S.settings.snd) || {});
 const sndSet = (o) => { S.settings.snd = Object.assign(sndCfg(), o); dirty = true; };
 const SND_MAP = { level: "niveau", boss: "donjon", magic: "dofus", coin: "commande", rare: "butin", gong: "donjon", win: "victoire", msg: "message", err: "erreur", clic: "clic" };
@@ -7503,8 +7505,10 @@ const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et
 const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
 const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return halOn() ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
 const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
-/* l'air « selon l'endroit » : page du Havre-Sac, page qui a son air, Songe, donjon (salle du boss à part), sinon la zone de chasse */
-function musPlace() {
+/* l'air « selon l'endroit » : page du Havre-Sac (le Gramophone d'abord), page qui a son air, Songe, donjon (salle du boss à part), sinon la zone de chasse */
+function musPlace() { return (ui.tab === "home" && ui.home === "havre" && gramTrack()) || musSpot(); }
+/* l'air de l'endroit lui-même, sans le Gramophone : c'est lui qu'on trouve comme partition */
+function musSpot() {
   if (ui.tab === "home" && ui.home === "havre") { const h0 = new Date().getHours(); return musEvent() || (h0 >= 21 || h0 < 7 ? "nuit" : "boite"); }
   if (MUS_PAGE[ui.tab]) return MUS_PAGE[ui.tab];
   if (ui.tab === "world") return ui.zoneView ? musOfSub(ui.zoneView) : ui.world === "dungeons" ? "cles" : ui.world === "enc" ? "biblio" : "monde";
@@ -7521,8 +7525,85 @@ function musWant() {
   return c.juke === "fixe" && T[c.fix] ? c.fix : musPlace();
 }
 function musSync() {
-  const A = window.IdlusAudio; if (!A) return; const w = musWant(), cur = A.playing(); if (w === cur) return;
+  const A = window.IdlusAudio; if (!A) return; ambSync(A); const w = musWant(), cur = A.playing(); if (w === cur) return;
   try { if (!w) A.stop(1.2); else { A.setMusicVol(sndCfg().mvol / 100); A.play(w, SND.prev ? 0.3 : cur ? 2 : 0.6); } } catch (e) {} // fondu de 2 s d'un air à l'autre
+}
+/* 1.0.30 : ambiances seules (vent, oiseaux, vagues…), avec leur volume, même sans musique ; sur une page sans lieu, celles de l'endroit où chasse l'équipe */
+const AMB_OF = { incarnam: ["birds", "wind"], marche: ["crowd"], taverne: ["crowd"], cania: ["wind"], wabbits: ["birds"], landes: ["wind"], koalaks: ["jungle", "birds"], foret: ["birds", "stream"],
+  abrak: ["owl", "wind"], moon: ["jungle"], dragoeufs: ["fire", "wind"], iles: ["waves", "birds"], pandala: ["stream", "birds"], frigost: ["wind"], saharach: ["wind"], divines: ["wind", "birds"],
+  bonta: ["crowd", "birds"], brakmar: ["crowd", "fire"], obscure: ["drip", "wind"], harebourg: ["wind", "owl"], sufokia: ["waves"], wukin: ["stream", "birds"], vulkania: ["lava", "waves"],
+  donjon: ["drip"], salleboss: ["drip", "fire"], boite: ["fire"], nuit: ["fire", "crickets", "owl"], halouine: ["wind", "owl"], fetes: ["fire"], koli: ["crowd"], songe: ["wind", "drip"], guilde: ["fire"] };
+function ambPlace() {
+  const p = musSpot(); if (AMB_OF[p]) return p;
+  if (E.expActive && E.expActive(S)) return "songe";
+  if (S.dungeon) { const dg = DUNGEONS[S.dungeon.id]; return dg && dg.rooms && S.dungeon.room >= dg.rooms.length ? "salleboss" : "donjon"; }
+  return musOfSub(S.sub);
+}
+function ambSync(A) {
+  if (!A.ambience) return; const c = sndCfg();
+  const on = S && SND.gest && c.amb && !c.mute && (c.mbg || document.visibilityState === "visible");
+  const want = on ? AMB_OF[ambPlace()] || [] : [];
+  if (want.join("+") === A.ambPlaying()) return;
+  try { if (want.length) A.setAmbVol(c.avol / 100); A.ambience(want); } catch (e) {}
+}
+/* 1.0.30 : fanfares des grands moments (donjon terminé, niveau, Dofus, boss des mondes, partition) : avec la musique, elles remplacent le son ; la musique baisse le temps du jingle */
+const FAN_GAP = { niveau: 20000, donjon: 45000, partition: 3000 };
+function fanPlay(kind) {
+  const A = window.IdlusAudio, c = sndCfg(); if (!A || !A.fanfare || !S || !c.fan || !c.mus || c.mute || !SND.gest || !SND.live) return false;
+  if (!c.mbg && document.visibilityState !== "visible") return false;
+  const now = performance.now(); if (now - (SND.fan[kind] || -1e9) < (FAN_GAP[kind] || 0)) return true; // trop rapproché : ni fanfare ni son
+  if (kind === "partition" && A.fanBusy()) return true; // la petite partition ne passe pas par-dessus une fanfare
+  SND.fan[kind] = now; SND.fanT = now; try { A.setMusicVol(c.mvol / 100); A.fanfare(kind); } catch (e) {} return true;
+}
+const fanOr = (kind, sfx) => { if (!fanPlay(kind)) sndPlay(sfx); };
+/* 1.0.30 : sons de combat, seulement quand un combat est affiché : un coup par élément, l'éclat du critique, le soin, le poison, le monstre vaincu, la phase du boss */
+const CBT_EL = { t: "t", f: "f", e: "e", a: "a" };
+function cbtSnd(F, f) {
+  const c = sndCfg(); if (!c.cbt || c.mute || !SND.gest || !SND.live || document.visibilityState !== "visible") return; const A = window.IdlusAudio; if (!A || !A.cbt) return;
+  let k = null, crit = false;
+  if (f.k === "hit") { k = f.s < 0 ? "dot" : CBT_EL[f.el] || "n"; crit = !!f.crit; } else if (f.k === "heal") k = "heal"; else if (f.k === "phase") k = "phase"; if (!k) return;
+  const now = performance.now(), imp = crit || k === "phase"; if (!imp && (now - SND.cbt < 70 || now - (SND.cbtK[k] || 0) < 110)) return;
+  SND.cbt = now; SND.cbtK[k] = now; try { A.setSfxVol((c.vol == null ? 50 : c.vol) / 100); A.cbt(k, crit); } catch (e) {}
+  const e = f.k === "hit" && F.ents[f.t]; if (e && e.side === "m" && !e.alive && !CBT_KO.has(e)) { CBT_KO.add(e); setTimeout(() => { try { A.cbt("ko"); } catch (x) {} }, 120); }
+}
+const CBT_KO = new WeakSet(); // un seul « vaincu » par monstre
+/* 1.0.30 : partitions à collectionner : l'air d'un endroit se trouve après 5 s passées là-bas (même sans musique) ; le juke-box et le Gramophone ne jouent que celles trouvées */
+const PART_EVENT = ["halouine", "fetes"]; // les airs de saison, en plus
+const partAll = () => Object.keys((window.IdlusAudio && window.IdlusAudio.tracks) || {});
+const partYear = () => partAll().filter((id) => !PART_EVENT.includes(id));
+const partHas = (id) => !!(S && S.partitions && S.partitions[id]);
+const partN = (S0) => partAll().filter((id) => S0.partitions && S0.partitions[id]).length;
+const partYearN = (S0) => partYear().filter((id) => S0.partitions && S0.partitions[id]).length;
+function partInit() { // une partie d'avant la 1.0.30 : les airs des zones déjà gagnées, du donjon et du Havre-Sac, sans annonce
+  if (!S || S.partitions) return; const P = {}, t = Date.now(), wins = Object.keys((S.progress && S.progress.wins) || {}); if (wins.length) P.boite = t;
+  wins.forEach((sid) => { if (E.SUBS[sid]) P[musOfSub(sid)] = t; });
+  if (Object.keys((S.progress && S.progress.bossKills) || {}).length) P.donjon = P.salleboss = t;
+  const c = sndCfg(); if (c.juke === "fixe" && c.fix) P[c.fix] = t;
+  if (S.sub && wins.length) P[musOfSub(S.sub)] = t;
+  S.partitions = P; dirty = true;
+}
+let partAt = null, partSince = 0;
+function partTick() {
+  if (!S || !window.IdlusAudio) return; partInit(); if (document.visibilityState !== "visible") { partAt = null; return; }
+  const id = musSpot(); if (id !== partAt) { partAt = id; partSince = Date.now(); return; }
+  if (partHas(id) || !window.IdlusAudio.tracks[id] || Date.now() - partSince < 5000) return;
+  S.partitions[id] = Date.now(); dirty = true; const n = partN(S), N = partAll().length;
+  toast(`♪ Partition trouvée : « ${window.IdlusAudio.tracks[id]} » · ${n}/${N}. Elle s'écoute au juke-box (Options › Sons).`, "rare");
+  if (!fanPlay("partition")) sndPlay("rare");
+  if ($("#jukebox")) optionsSheet();
+}
+if (E.ACH && !E.ACH.some((a) => a.id === "melo10")) { // succès « Mélomane » : toutes les partitions de l'année (Halouine et Fêtes en plus)
+  const MELO = 46;
+  [[10, 5000], [25, 15000], [MELO, 40000]].forEach(([n, k]) => E.ACH.push({ id: n === MELO ? "melo" : "melo" + n, cat: "Collection", grp: "Partitions", name: n === MELO ? "Mélomane" : `${n} partitions`,
+    desc: n === MELO ? `Trouver les ${MELO} partitions des airs de toute l'année (titre « Mélomane »). Les airs d'Halouine et des Fêtes sont en plus.` : `Trouver ${n} partitions : l'air d'un endroit se trouve en y passant quelques secondes.`,
+    test: (S0) => partYearN(S0) >= n, prog: (S0) => [Math.min(partYearN(S0), n), n], kamas: k, title: n === MELO ? "Mélomane" : undefined }));
+}
+/* 1.0.30 : le Gramophone du Havre-Sac joue sur la page du Havre-Sac l'air choisi parmi les partitions trouvées (sinon l'air de l'heure) */
+const gramOn = () => !!(S && E.isPlaced && E.isPlaced(S, "Gramophone"));
+const gramTrack = () => (gramOn() && S.gramo && partHas(S.gramo) && window.IdlusAudio && window.IdlusAudio.tracks[S.gramo] ? S.gramo : null);
+function gramCtl() {
+  const T = (window.IdlusAudio && window.IdlusAudio.tracks) || {}, ids = partAll().filter(partHas), cur = gramTrack() || "";
+  return `<label class="gram xs"><span>♪ Disque</span><select data-act="vi-gram" aria-label="Disque du Gramophone"><option value="">Selon l'heure (Boîte à musique, Nuit)</option>${ids.map((id) => `<option value="${id}" ${cur === id ? "selected" : ""}>${h(T[id])}</option>`).join("")}</select></label>${sndCfg().mus ? "" : `<span class="xs muted">Active la musique (Options › Sons) pour l'entendre.</span>`}`;
 }
 const sndOn = () => { const c = sndCfg(); return (c.mus || c.on) && !c.mute; };
 const sndBtn = () => S ? `<button class="ic-btn snd-btn${sndOn() ? " on" : ""}" data-act="vi-mute" title="${sndOn() ? "Couper la musique et les sons" : "Remettre la musique et les sons"}" aria-label="${sndOn() ? "Couper le son" : "Remettre le son"}">${G(sndOn() ? "spk" : "spkoff")}</button>` : "";
@@ -7535,7 +7616,7 @@ document.addEventListener("click", (ev) => {
   if (b.dataset.act === "vi-mute" || c.clic === "none") return; if (c.clic === "all" || b.matches(SND_IMP)) sndPlay("clic");
 }, true);
 document.addEventListener("visibilitychange", musSync);
-setInterval(() => { musSync(); sndAskCheck(); if (S && (document.documentElement.dataset.hal === "on") !== halOn()) applyHal(); }, 1000); // 1.0.26 : le thème d'Halouine arrive et part tout seul à minuit
+setInterval(() => { musSync(); sndAskCheck(); partTick(); if (S && (document.documentElement.dataset.hal === "on") !== halOn()) applyHal(); }, 1000); // 1.0.26 : le thème d'Halouine arrive et part tout seul à minuit
 /* première fois : une bulle demande « Jouer en musique ? » (une seule fois par partie) */
 let sndAskAt = 0;
 function sndAskCheck() {
@@ -7551,7 +7632,7 @@ function sndAskCheck() {
 }
 (function sndHooks() {
   const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
-    if (type === "level") sndPlay("level"); else if (type === "dungeon") sndPlay("boss"); else if (type === "soul" || type === "dofus" || type === "ren") sndPlay("magic");
+    if (type === "level") fanOr("niveau", "level"); else if (type === "dungeon") fanOr("donjon", "boss"); else if (type === "dofus") fanOr("dofus", "magic"); else if (type === "soul" || type === "ren") sndPlay("magic"); // 1.0.30 : fanfares
     if (type === "trophy" && SND.live && data && !$("#sheet").innerHTML.trim()) setTimeout(() => troPopup(data.sub), 0); // 1.0.20
     if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win"); } return r; };
   const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S && (kind === "rare" || kind === "radiant") && /Butin|Rayonnant|Trésor|archimonstre/i.test(txt)) sndPlay(/Trésor/.test(txt) ? "coin" : "rare"); return r; };
@@ -7563,14 +7644,19 @@ function soundOptionsHtml() {
   return optSec("Musique", "composée pour Idlus, elle change selon l'endroit ; démarre au premier clic",
       optChk(`data-act="vi-snd" data-k="mus"`, c.mus, "Activer la musique", "")
     + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-mvol" value="${c.mvol}" style="width:120px">`)
-    + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Continuer quand l'onglet est caché", "sinon la musique se met en pause"))
+    + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Continuer quand l'onglet est caché", "sinon la musique se met en pause")
+    + optChkBtn(`data-act="vi-snd" data-k="fan"`, c.fan, "Fanfares des grands moments", "donjon terminé, niveau, Dofus, boss des mondes : la musique baisse le temps du jingle", `<button class="btn sm" data-act="vi-fantest">▶ Écouter</button>`))
   + jukeboxHtml(c, T)
+  + optSec("Ambiances", "vent, oiseaux, vagues, feu de cheminée… selon la zone, même sans musique",
+      optChk(`data-act="vi-snd" data-k="amb"`, c.amb, "Activer les ambiances", "")
+    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-avol" value="${c.avol}" style="width:120px">`))
   + optSec("Sons du jeu", "niveau, butin rare, donjon, Dofus, commande, message privé ou @mention, erreur",
       optChk(`data-act="vi-snd" data-k="on"`, c.on, "Activer les sons", "")
     + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button>`)
     + optLine("Style", "", seg("style", [["bois", "Bois et cristal"], ["fanfare", "Fanfare"], ["bips", "Bips"]]))
     + optLine("Clics", "", seg("clic", [["all", "Tous"], ["imp", "Importants"], ["none", "Aucun"]]))
     + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Aussi à chaque victoire", "discret, mais fréquent")
+    + optChkBtn(`data-act="vi-snd" data-k="cbt"`, c.cbt, "Sons de combat", "coups selon l'élément, critiques, soins, quand un combat est affiché", `<button class="btn sm" data-act="vi-cbttest">▶ Écouter</button>`)
     + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Même quand l'onglet est caché", ""));
 }
 /* juke-box : les airs rangés par endroit, chacun avec « Écouter » et « Toujours » ; replié, l'air de l'endroit et 5 autres */
@@ -7584,20 +7670,25 @@ function jukeWhere(id) {
 }
 function jukeboxHtml(c, T) {
   const fixe = c.juke === "fixe", here = S ? musPlace() : "taverne", cur = window.IdlusAudio ? window.IdlusAudio.playing() : null;
-  const row = (id) => `<div class="optline jk-row">${optName(`${id === cur ? "♪ " : ""}${h(T[id])}`, h(jukeWhere(id) || "") + (id === here && !fixe ? " · ici" : ""))}<span class="optctl">`
+  const row = (id) => !partHas(id) ? `<div class="optline jk-row jk-lock">${optName(`${IC("cle")} Partition à trouver`, h(PART_EVENT.includes(id) ? (jukeWhere(id) || "").replace("Havre-Sac, du", "Havre-Sac, à jouer du") : jukeWhere(id) || ""))}<span class="optctl"><button class="btn sm" disabled>▶ Écouter</button><button class="btn sm" disabled>Toujours</button></span></div>`
+    : `<div class="optline jk-row">${optName(`${id === cur ? "♪ " : ""}${h(T[id])}`, h(jukeWhere(id) || "") + (id === here && !fixe ? " · ici" : ""))}<span class="optctl">`
     + `<button class="btn sm${SND.prev === id ? " primary" : ""}" data-act="vi-jkplay" data-v="${id}">${SND.prev === id ? "■ Arrêter" : "▶ Écouter"}</button>`
     + `<button class="btn sm${fixe && c.fix === id ? " primary" : ""}" data-act="vi-jkfix" data-v="${id}" aria-pressed="${fixe && c.fix === id}">${fixe && c.fix === id ? "✓ Toujours" : "Toujours"}</button></span></div>`;
   let list;
   if (ui.jukeAll) list = JUKE_GRP.map(([g, ids]) => `<div class="jk-grp xs muted">${g}</div>` + ids.filter((id) => T[id]).map(row).join("")).join("");
-  else { const ids = [...new Set([fixe ? c.fix : here, here, SND.prev, "monde", "cania", "heros", "iles", "nuit", "koli"].filter((id) => id && T[id]))].slice(0, 6); list = ids.map(row).join(""); }
-  return optSec("Juke-box", `${Object.keys(T).length} airs composés pour Idlus`,
+  else { const ids = [...new Set([fixe ? c.fix : here, here, SND.prev, ...partAll().filter(partHas).reverse(), "monde", "cania", "heros"].filter((id) => id && T[id]))].slice(0, 6); list = ids.map(row).join(""); }
+  const n = S ? partN(S) : 0, N = Object.keys(T).length; // 1.0.30 : partitions trouvées
+  return optSec("Juke-box", `Partitions ${n}/${N} · un air se trouve en passant quelques secondes à son endroit`,
+      `<div class="jk-bar" title="${n} partitions trouvées sur ${N}"><i style="width:${pct(n, N)}%"></i></div>` +
       optLine("Quel air jouer", "« Selon l'endroit » suit la zone et la page", `<span class="seg2"><button class="btn sm${fixe ? "" : " primary"}" data-act="vi-jkmode" data-v="zone" aria-pressed="${!fixe}">Selon l'endroit</button><button class="btn sm${fixe ? " primary" : ""}" data-act="vi-jkmode" data-v="fixe" aria-pressed="${fixe}">Un air fixe</button></span>`)
-    + list + `<div class="row"><button class="btn sm" data-act="vi-jkall">${ui.jukeAll ? "Replier la liste" : `Voir les ${Object.keys(T).length} airs`}</button></div>`, "jukebox");
+    + list + `<div class="row"><button class="btn sm" data-act="vi-jkall">${ui.jukeAll ? "Replier la liste" : `Voir les ${N} airs`}</button></div>`, "jukebox");
 }
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
   else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ira au marchand de secours.` : "Plus de limite de banque."); }
-  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...((k === "on" || k === "mus") && t.checked ? { mute: false } : {}) }); if (k === "on" && t.checked) sndPlay("level", true); musSync(); renderStatus(); }
+  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...(["on", "mus", "amb", "cbt"].includes(k) && t.checked ? { mute: false } : {}) }); if (k === "on" && t.checked) sndPlay("level", true); musSync(); renderStatus(); }
+  else if (a === "vi-avol") { sndSet({ avol: +t.value }); if (window.IdlusAudio && window.IdlusAudio.setAmbVol) window.IdlusAudio.setAmbVol(+t.value / 100); }
+  else if (a === "vi-gram") { S.gramo = t.value; SND.gest = true; musSync(); toast(t.value ? `Le Gramophone joue « ${window.IdlusAudio.tracks[t.value]} ».` : "Le Gramophone suit l'heure (Boîte à musique, Nuit)."); }
   else if (a === "vi-vol") { sndSet({ vol: +t.value }); sndPlay("coin", true); }
   else if (a === "vi-mvol") { sndSet({ mvol: +t.value }); if (window.IdlusAudio) window.IdlusAudio.setMusicVol(+t.value / 100); }
   dirty = true;
@@ -7617,8 +7708,10 @@ function viAct(a, t) {
     case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on) sndSet({ mus: true, on: true, mute: false, asked: true }); else sndSet({ mute: !c.mute, asked: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; }
     case "vi-sndyes": sndSet({ mus: true, on: true, mute: false, asked: true }); t.closest("#sndask").remove(); musSync(); renderStatus(); return;
     case "vi-sndno": sndSet({ asked: true }); t.closest("#sndask").remove(); return;
-    case "vi-jkplay": SND.gest = true; SND.prev = SND.prev === d.v ? null : d.v; musSync(); optionsSheet(); return;
-    case "vi-jkfix": { const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
+    case "vi-jkplay": if (!partHas(d.v)) return; SND.gest = true; SND.prev = SND.prev === d.v ? null : d.v; musSync(); optionsSheet(); return;
+    case "vi-fantest": { const A = window.IdlusAudio; if (!A || !A.fanfare) return; SND.gest = true; const K = ["donjon", "niveau", "dofus", "boss"], k = K[(SND.fanN = ((SND.fanN || 0) + 1)) % K.length]; A.setMusicVol(sndCfg().mvol / 100); A.fanfare(k); toast(`Fanfare : ${A.fanfares[k]}.`); return; }
+    case "vi-cbttest": { const A = window.IdlusAudio; if (!A || !A.cbt) return; SND.gest = true; A.setSfxVol((sndCfg().vol == null ? 50 : sndCfg().vol) / 100); [["t"], ["f"], ["e"], ["a"], ["n", 1], ["heal"]].forEach(([k, c], i) => setTimeout(() => A.cbt(k, c), i * 260)); return; }
+    case "vi-jkfix": { if (!partHas(d.v)) return; const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
     case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musPlace() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
     case "vi-jkall": ui.jukeAll = !ui.jukeAll; optionsSheet(); return;
     case "vi-optcons": pageGo("consignes"); return;
@@ -9191,7 +9284,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, sndPlay, musPlace, musEvent, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */

@@ -1,7 +1,7 @@
 /* 1.0.22 : musique et sons composés pour Idlus, joués par le navigateur (Web Audio) : aucun fichier, aucune œuvre d'Ankama. Utilisé par js/ui.js (sndPlay, musSync) */
 (function () {
   const A = {};
-  let ctx = null, master, musicBus, musicRv, sfxBus, reverb, seq = null;
+  let ctx = null, master, musicBus, musicRv, sfxBus, reverb, seq = null, duck, duckR, fanBus, ambBus;
   const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
   const rnd = (a) => (Math.random() * 2 - 1) * a;
 
@@ -16,10 +16,15 @@
     master.connect(comp); comp.connect(ctx.destination);
     reverb = ctx.createConvolver(); reverb.buffer = impulse(2.8, 2.4);
     const rv = ctx.createGain(); rv.gain.value = 0.9; reverb.connect(rv); rv.connect(master);
-    musicBus = ctx.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master);
-    musicRv = ctx.createGain(); musicRv.gain.value = 0.55; musicRv.connect(reverb); // envoi vers la réverbération, dosé par morceau (T.rv)
+    duck = ctx.createGain(); duck.connect(master); duckR = ctx.createGain(); duckR.connect(reverb); // 1.0.30 : la musique baisse le temps d'une fanfare
+    musicBus = ctx.createGain(); musicBus.gain.value = 0.55; musicBus.connect(duck);
+    musicRv = ctx.createGain(); musicRv.gain.value = 0.55; musicRv.connect(duckR); // envoi vers la réverbération, dosé par morceau (T.rv)
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.7; sfxBus.connect(master);
     const ss = ctx.createGain(); ss.gain.value = 0.16; sfxBus.connect(ss); ss.connect(reverb);
+    fanBus = ctx.createGain(); fanBus.gain.value = 0.55; fanBus.connect(master); // fanfares : au volume de la musique
+    const fs = ctx.createGain(); fs.gain.value = 0.4; fanBus.connect(fs); fs.connect(reverb);
+    ambBus = ctx.createGain(); ambBus.gain.value = 0.2; ambBus.connect(master); // ambiances seules : leur propre volume
+    const as = ctx.createGain(); as.gain.value = 0.3; ambBus.connect(as); as.connect(reverb);
   }
   function impulse(sec, decay) {
     const n = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, n, ctx.sampleRate);
@@ -311,6 +316,7 @@
     amb: (t, e, d, v, o) => amb(t, e.m, d, v, o),
   };
   function voice(e, t, spb, dest) {
+    if (e.i === "amb" && ambS && dest !== ambS.out) return; // les ambiances seules remplacent celles de l'air
     const d = e.d * spb, v = (e.v || 0.7) * (1 + rnd(0.08)) * (LV[e.i] || 1); t += rnd(0.006);
     if (e.pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = e.pan; p.connect(dest); dest = p; }
     const f = V[e.i]; if (f) f(t, e, d, v, dest);
@@ -758,7 +764,7 @@
   };
   A.playing = () => (seq ? seq.id : null);
   A.tracks = Object.fromEntries(Object.entries(TRACKS).map(([k, T]) => [k, T.name]));
-  A.setMusicVol = (v) => { if (init()) [musicBus, musicRv].forEach((b) => b.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05)); };
+  A.setMusicVol = (v) => { if (init()) [musicBus, musicRv, fanBus].forEach((b) => b.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05)); };
   A.setSfxVol = (v) => { if (init()) sfxBus.gain.setTargetAtTime(0.7 * v, ctx.currentTime, 0.05); };
 
   /* ---------- sons du jeu, 3 styles ---------- */
@@ -797,12 +803,115 @@
     g.gain.setValueAtTime(0.0001, t + at); g.gain.exponentialRampToValueAtTime(0.4, t + at + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + at + len); os.connect(g); g.connect(o); os.start(t + at); os.stop(t + at + len + 0.05); })));
   A.sfx = function (style, kind) { if (!init()) return; const fn = (SFX[style] || SFX.bois)[kind]; if (fn) fn(ctx.currentTime + 0.01, sfxBus); };
   A.kinds = ["clic", "victoire", "butin", "niveau", "donjon", "dofus", "commande", "message", "erreur"];
+  /* ---------- 1.0.30 : fanfares des grands moments, sons de combat, ambiances seules ---------- */
+  // une phrase : chaque voix écrite note après note (« C4+E4+G4:1 » = accord, r = silence, > accent, ' piqué, ~ glissé), percussions [temps, sorte, force]
+  function phrase(P) {
+    const ev = [];
+    P.v.forEach(([i, txt, v, o, pan]) => { if (!V[i]) throw new Error(`${P.name} : instrument ${i}`); let b = 0;
+      txt.trim().split(/\s+/).forEach((tok) => { const m = /^(r|[A-G][#b]?\d(?:\+[A-G][#b]?\d)*):([\d./]+)([>'~]*)$/.exec(tok); if (!m) throw new Error(`${P.name} : note ${tok}`); const d = dur(m[2]);
+        if (m[1] !== "r") { const ms = m[1].split("+").map(nm), vv = (v || 0.6) * (m[3].includes(">") ? 1.25 : 1), dd = m[3].includes("'") ? Math.min(d, 0.5) * 0.6 : d * 0.95;
+          const oo = m[3].includes("~") ? Object.assign({}, o, { sl: 1.5, slt: 0.14 }) : o || undefined;
+          if (POLY.has(i)) ev.push({ b, i, m: ms, d: dd, v: vv, o: oo, pan }); else ms.forEach((x) => ev.push({ b, i, m: x, d: dd, v: vv, o: oo, pan })); }
+        b += d; }); });
+    (P.dr || []).forEach(([b, k, v]) => ev.push({ b, i: "drum", m: k, d: 0.5, v }));
+    ev.sort((a, b) => a.b - b.b);
+    return { name: P.name, bpm: P.bpm, gain: P.gain || 1, duck: P.duck, ev, len: Math.max(...ev.map((e) => e.b + e.d)) * 60 / P.bpm };
+  }
+  const FAN = {
+    donjon: phrase({ name: "Donjon terminé", bpm: 132, gain: 0.87, v: [
+      ["tpt", "G4:1/3 G4:1/3 G4:1/3 C5:1> E5:.5 G5:.5 F5:.5 A5:.5 G5:.5 B5:.5 C6:3>", 0.7, { cut: 2600 }],
+      ["fhorn", "r:1 C4+E4+G4:1 C4+E4+G4:1 C4+F4+A4:1 D4+G4+B4:1 C4+E4+G4+C5:3", 0.45, null, -0.25],
+      ["str", "r:1 C4+G4+C5+E5:2 F4+A4+C5+F5:1 G4+B4+D5+G5:1 C4+G4+C5+E5+G5:3", 0.7, { att: 0.08, rel: 0.8 }, 0.25],
+      ["cb", "r:1 C3:2 F2:1 G2:1 C2:3", 0.5],
+      ["timp", "r:1 C3:3 G2:1 C3:3", 0.6],
+      ["glock", "r:5 C6+E6+G6:3", 0.35, null, 0.3]],
+      dr: [[0, "sroll", 0.35], [1, "bdrum", 0.4], [5, "crash", 0.35], [5, "bdrum", 0.5]] }),
+    niveau: phrase({ name: "Niveau gagné", bpm: 120, gain: 0.91, v: [
+      ["harp", "C4:1/8 E4:1/8 G4:1/8 C5:1/8 E5:1/8 G5:1/8 C6:1/8 E6:1/8 G6:2", 0.5, null, -0.3],
+      ["strl", "r:1 G5:.5 C6:2", 0.6],
+      ["str", "r:1 C4+E4+G4+C5:2.5", 0.6, { att: 0.15, rel: 0.9 }],
+      ["fhorn", "r:1 E4+G4:2.5", 0.35, null, -0.2],
+      ["cel", "r:1.5 E6:.5 G6:.5 C7:1", 0.45, null, 0.3]],
+      dr: [[1, "tri", 0.18]] }),
+    dofus: phrase({ name: "Dofus obtenu", bpm: 96, gain: 0.78, v: [
+      ["cel", "C6:1/4 E6:1/4 G6:1/4 C7:1/4 G6:1/4 E6:1/4 C6:1/4 E6:1/4 Ab5:1/4 C6:1/4 Eb6:1/4 Ab6:1/4 Bb5:1/4 D6:1/4 F6:1/4 Bb6:1/4 C7:3", 0.45, null, 0.3],
+      ["choir", "C4+E4+G4:2 C4+Eb4+Ab4:1 D4+F4+Bb4:1 E4+G4+C5:3", 0.55, { vow: "o", att: 0.4, rel: 1.2 }],
+      ["strl", "G5:1 E5:.5 G5:.5 Ab5:1 Bb5:1 C6:3>", 0.55],
+      ["fhorn", "r:2 Ab3+C4+Eb4:1 Bb3+D4+F4:1 C4+E4+G4:3", 0.45, null, -0.25],
+      ["harp", "C3:2 Ab2:1 Bb2:1 C3:3", 0.5, null, -0.3],
+      ["tpt", "r:4 G5:3", 0.35]],
+      dr: [[1.1, "swell", 0.35], [4, "crash", 0.3], [4, "bdrum", 0.45], [4, "tri", 0.2]] }),
+    boss: phrase({ name: "Boss des mondes vaincu", bpm: 100, gain: 0.86, v: [
+      ["tpt", "G4:1/3 G4:1/3 G4:1/3 Ab4:.5 C5:.5 Bb4:.5 D5:.5 E5:1> G5:1 C6:2>", 0.7, { cut: 2600 }],
+      ["fhorn", "C4+Eb4+G4:1 Ab3+C4+Eb4:1 Bb3+D4+F4:1 C4+E4+G4+C5:4", 0.5, null, -0.25],
+      ["choir", "r:1 Ab3+C4+Eb4:1 Bb3+D4+F4:1 C4+E4+G4+C5:4", 0.5, { att: 0.15, rel: 1.2 }],
+      ["str", "r:1 Ab3+Eb4+C5:1 Bb3+F4+D5:1 C4+G4+E5+G5:4", 0.6, { att: 0.08, rel: 1 }, 0.25],
+      ["cb", "C2:1 Ab1:1 Bb1:1 C2:4", 0.55],
+      ["timp", "C3:1/8 C3:1/8 C3:1/8 C3:1/8 C3:1/8 C3:1/8 C3:1/8 C3:1/8 Ab2:1 Bb2:1 C3:1 r:3", 0.45]],
+      dr: [[0, "sroll", 0.3], [3, "bdrum", 0.6], [3, "crash", 0.4], [3, "gong", 0.15]] }),
+    partition: phrase({ name: "Partition trouvée", bpm: 132, gain: 1.74, duck: 0.5, v: [
+      ["cel", "G5:1/2 C6:1/2 E6:1/2 G6:1.5", 0.45, null, 0.25],
+      ["harp", "C4:1/2 E4:1/2 G4:1/2 C5:1.5", 0.4, null, -0.25]],
+      dr: [[1.5, "tri", 0.1]] }),
+  };
+  let fanEnd = 0;
+  function playPhrase(Ph, dest, at) {
+    const spb = 60 / Ph.bpm, t0 = at || ctx.currentTime + 0.06, out = ctx.createGain(); out.gain.value = Ph.gain; out.connect(dest);
+    Ph.ev.forEach((e) => voice(e, t0 + e.b * spb, spb, out));
+    setTimeout(() => { try { out.disconnect(); } catch (e) {} }, (Ph.len + 6) * 1000);
+    return Ph.len;
+  }
+  // la musique baisse le temps d'une fanfare (depth = part du volume gardée), puis remonte doucement
+  function duckMusic(sec, depth) { const t = ctx.currentTime; [duck, duckR].forEach((g) => { const p = g.gain; if (p.cancelAndHoldAtTime) p.cancelAndHoldAtTime(t); else { p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); } p.setTargetAtTime(depth, t, 0.07); p.setTargetAtTime(1, t + sec, 0.45); }); }
+  function fanPlay(Ph, depth) { if (!init() || !Ph) return 0; const len = playPhrase(Ph, fanBus); duckMusic(len + 0.2, depth); fanEnd = Math.max(fanEnd, performance.now() + len * 1000); return len; }
+  A.fanfare = (kind) => fanPlay(FAN[kind], FAN[kind] && FAN[kind].duck || 0.2);
+  A.fanBusy = () => performance.now() < fanEnd; // une fanfare joue encore
+  A.fanfares = Object.fromEntries(Object.entries(FAN).map(([k, P]) => [k, P.name]));
+  // sons de combat : un coup qui sonne selon l'élément, l'éclat du critique, le soin, le poison, le monstre vaincu, la phase du boss
+  function sweep(t, f1, f2, len, v, dest, type) { const os = ctx.createOscillator(), g = ctx.createGain(); os.type = type || "sine"; os.frequency.setValueAtTime(f1, t); os.frequency.exponentialRampToValueAtTime(f2, t + len);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, v), t + Math.min(0.012, len / 3)); g.gain.exponentialRampToValueAtTime(0.0001, t + len); os.connect(g); g.connect(dest); os.start(t); os.stop(t + len + 0.05); }
+  const CBT = {
+    t: (t, v, o) => { hit(t, 120, 55, 0.07, v * 0.9, o); nz(t, "lowpass", 700, 0, 0.06, v * 0.45, o); nz(t + 0.01, "bandpass", 1800, 1, 0.02, v * 0.15, o); }, // terre : choc sourd
+    f: (t, v, o) => { nz(t, "bandpass", 1400, 0.6, 0.09, v * 0.45, o, 0.01); hit(t, 300, 120, 0.05, v * 0.3, o); for (let i = 0; i < 5; i++) nz(t + 0.02 + Math.random() * 0.15, "highpass", 3000 + Math.random() * 2500, 0, 0.004, v * (0.15 + Math.random() * 0.15), o); }, // feu : flamme qui crépite
+    e: (t, v, o) => { sweep(t, 900, 260, 0.14, v * 0.4, o); nz(t, "bandpass", 1100, 1.2, 0.07, v * 0.35, o, 0.01); sweep(t + 0.06, 1300, 1900, 0.05, v * 0.12, o); }, // eau : plouf
+    a: (t, v, o) => { const n = ctx.createBufferSource(); n.buffer = noise(); const f = ctx.createBiquadFilter(), g = ctx.createGain(); f.type = "bandpass"; f.Q.value = 2; f.frequency.setValueAtTime(600, t); f.frequency.exponentialRampToValueAtTime(3800, t + 0.16);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * 0.55, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2); n.connect(f); f.connect(g); g.connect(o); n.start(t, Math.random()); n.stop(t + 0.25); }, // air : souffle qui file
+    n: (t, v, o) => { hit(t, 190, 95, 0.045, v * 0.7, o); nz(t, "bandpass", 1500, 0.9, 0.03, v * 0.35, o); }, // neutre : coup sec
+    crit: (t, v, o) => bell(t + 0.02, 96, 0.3, v * 0.5, o, { parts: [[1, 1, 0.35], [2.76, 0.4, 0.15], [5.4, 0.2, 0.08]] }), // critique : un éclat métallique en plus
+    heal: (t, v, o) => { bell(t, 84, 0.5, v * 0.4, o, { len: 0.8 }); bell(t + 0.08, 91, 0.5, v * 0.35, o, { len: 0.9 }); }, // soin : carillon qui monte
+    dot: (t, v, o) => { for (let i = 0; i < 3; i++) sweep(t + i * 0.05, 500 + i * 120, 900 + i * 150, 0.04, v * 0.15, o); }, // poison, dégâts sur la durée : petites bulles
+    ko: (t, v, o) => { nz(t, "lowpass", 900, 0, 0.12, v * 0.5, o, 0.01); hit(t, 90, 45, 0.12, v * 0.5, o); }, // monstre vaincu : un souffle qui retombe
+    phase: (t, v, o) => DRUMS.gong(t, v * 0.5, o), // le boss change de phase
+  };
+  const CBT_LV = { t: 0.76, f: 1, e: 1.84, a: 4, n: 0.8, heal: 0.74, dot: 2.5, ko: 1.1, phase: 1 }; // mesuré : chaque coup aussi fort que les autres
+  const cbtPlay = (kind, crit, t, o) => { const k = CBT[kind] ? kind : "n"; CBT[k](t, 0.8 * (CBT_LV[k] || 1), o); if (crit) CBT.crit(t, 0.8, o); };
+  A.cbt = (kind, crit) => { if (init()) cbtPlay(kind, crit, ctx.currentTime + 0.01, sfxBus); };
+  // ambiances seules : un bus à part, avec son volume ; [toutes les combien de secondes, durée, chance]
+  const AMB_RULE = { wind: [4.5, 9, 1], waves: [4.4, 8, 1], stream: [4.5, 9, 1], crowd: [6, 12, 1], lava: [3.5, 7, 1], fire: [1.5, 3, 1], crickets: [3, 3, 1], jungle: [3, 3, 1], birds: [2.2, 1, 0.5], owl: [8, 1, 0.45], drip: [1.4, 1, 0.6] };
+  const AMB_LV = { wind: 6.5, waves: 5.4, stream: 6.3, crowd: 5.4, lava: 9.0, fire: 11.6, crickets: 18.2, jungle: 20.2, birds: 11.1, owl: 4.6, drip: 16.6 }; // mesuré : chaque ambiance aussi présente que les autres
+  let ambS = null;
+  function ambFill(s, until) { s.kinds.forEach((k) => { const R = AMB_RULE[k]; if (!R) return; if (s.next[k] < ctx.currentTime) s.next[k] = ctx.currentTime + 0.05;
+    while (s.next[k] < until) { const t = s.next[k]; if (Math.random() < R[2]) amb(t, k, R[1] * (0.9 + Math.random() * 0.2), 0.7 * (AMB_LV[k] || 1), s.out); s.next[k] = t + R[0] * (R[2] < 1 ? 0.6 + Math.random() * 0.8 : 0.9 + Math.random() * 0.2); } }); }
+  function ambNew(kinds) { const out = ctx.createGain(); out.connect(ambBus); const s = { key: kinds.join("+"), kinds, out, next: {} }; kinds.forEach((k) => (s.next[k] = ctx.currentTime + 0.05 + Math.random() * 0.4)); return s; }
+  A.ambience = function (kinds) {
+    kinds = (kinds || []).filter((k) => AMB_RULE[k]); const key = kinds.join("+"); if ((ambS ? ambS.key : "") === key) return; if (!init()) return;
+    if (ambS) { const o = ambS; clearInterval(o.timer); o.out.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.5); setTimeout(() => { try { o.out.disconnect(); } catch (e) {} }, 12000); }
+    ambS = null; if (!kinds.length) return;
+    const s = ambNew(kinds); s.out.gain.setValueAtTime(0.0001, ctx.currentTime); s.out.gain.linearRampToValueAtTime(1, ctx.currentTime + 2.5);
+    s.timer = setInterval(() => ambFill(s, ctx.currentTime + 1.5), 500); ambFill(s, ctx.currentTime + 1.5); ambS = s;
+  };
+  A.ambPlaying = () => (ambS ? ambS.key : "");
+  A.setAmbVol = (v) => { if (init()) ambBus.gain.setTargetAtTime(0.4 * v, ctx.currentTime, 0.05); };
+  A.ambKinds = Object.keys(AMB_RULE);
   // contrôle : rend un morceau ou un son hors ligne et mesure le niveau
   A._offline = async function (what, secs) {
     const live = ctx; ctx = new OfflineAudioContext(2, Math.floor(44100 * secs), 44100); Object.keys(ks).forEach((k) => delete ks[k]); noiseBuf = null; graph();
     if (what && what.ev) { const out = chain({ bpm: 60 }).out; what.ev.forEach((e) => voice(e, 0.05 + e.b, 1, out)); } // événements bruts (réglage des instruments)
     else if (TRACKS[what]) { const T = TRACKS[what], spb = 60 / T.bpm, out = chain(T).out; let p = 0, st = 0.05;
       while (st < secs) { T.build(p).forEach((e) => { const t = st + e.b * spb; if (t < secs) voice(e, t, spb, out); }); st += T.len * spb; p++; } }
+    else if (/^fan:/.test(what)) playPhrase(FAN[what.slice(4)], fanBus, 0.05);
+    else if (/^cbt:/.test(what)) { const [, k, c] = what.split(":"); cbtPlay(k, !!c, 0.05, sfxBus); }
+    else if (/^amb:/.test(what)) { const s = ambNew(what.slice(4).split("+")); ambFill(s, secs); }
     else { const [style, kind] = what.split(":"); SFX[style][kind](0.05, sfxBus); }
     const buf = await ctx.startRendering(); const d = buf.getChannelData(0); let peak = 0, sum = 0, nan = 0; const per = [];
     for (let i = 0; i < d.length; i++) { const x = d[i]; if (x !== x) nan++; else { peak = Math.max(peak, Math.abs(x)); sum += x * x; } if (i % 44100 === 44099) { per.push(+Math.sqrt(sum / 44100).toFixed(3)); sum = 0; } }

@@ -277,7 +277,7 @@
     const p = live ? pctLeft(s) : s && s.n > d.n ? 0 : 100;
     return `<div class="ann-wb${live ? "" : " old"}"><img class="b${live ? an(s.phase) : ""}" src="${img(def)}" alt=""><div><div class="k">Boss des mondes</div><div class="t">${h(def.name)} ${h(def.line)}</div></div><div class="s">${h(def.story)} Tout le serveur peut l'attaquer : ${E.WB_TRIES} essais par jour.</div><div class="hp"><i style="width:${p}%"></i></div>${live ? `<button class="btn primary sm go" data-act="wb-go">Attaquer le boss</button>` : ""}</div>`;
   }
-  function onAnn(m) { const d = m.data || {}; load(true).then(() => { if (d.ev === "dead" && fxOn()) X().toast(`${E.wbDef(d.n || 1).name} est tombé : +${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h !`, "rare"); }); }
+  function onAnn(m) { const d = m.data || {}; if (d.ev === "dead" && window.DX && window.DX.fanPlay) window.DX.fanPlay("boss"); load(true).then(() => { if (d.ev === "dead" && fxOn()) X().toast(`${E.wbDef(d.n || 1).name} est tombé : +${E.WB_KILL.xp} % d'XP pour tout le monde pendant ${E.WB_KILL.xpH} h !`, "rare"); }); }
 
   /* ---------- effet plein écran à l'arrivée d'un boss (E2) : une fois par joueur, jamais par-dessus le chat ouvert ---------- */
   function maybeOverlay() {
