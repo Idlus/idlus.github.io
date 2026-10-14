@@ -92,7 +92,7 @@
       <div class="giga-t">${h(Df.name.toUpperCase())} !</div>
       <div class="giga-who"><b>${h(m.pseudo || "Un joueur")}</b> vient de l'obtenir en battant ${h(bossOf(d))}${dnameOf(d) ? ` <span>(${h(dnameOf(d))})</span>` : ""}</div>
       <div class="giga-odd">${h(odTxt(d))}</div>
-      <div class="giga-s">Annonce envoyée à tous les joueurs connectés · se ferme seule après ${SHOW_MS / 1000} s</div>
+      <div class="giga-s">Annonce envoyée à tous les joueurs connectés · <span style="white-space:nowrap">se ferme seule après ${SHOW_MS / 1000}&nbsp;s</span></div>
       <button class="btn sm" data-act="giga-x">Fermer</button></div>`;
     try { if (window.DX.sndPlay) window.DX.sndPlay("magic"); } catch (e) { /* son coupé */ }
   }
