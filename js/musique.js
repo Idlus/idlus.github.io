@@ -90,8 +90,23 @@
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * 0.42, t + 0.015); g.gain.setTargetAtTime(v * 0.18, t + 0.05, 0.4); g.gain.setTargetAtTime(0.0001, t + d, 0.12);
     lp.connect(g); g.connect(dest);
   }
+  // violon (archet), pour les airs de ville et d'Orient
+  function fiddle(t, m, d, v, dest, o = {}) {
+    const f0 = mtof(m), g = ctx.createGain(), bp = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter(); bp.type = "peaking"; bp.frequency.value = 2200; bp.gain.value = 5; lp.type = "lowpass"; lp.frequency.value = o.cut || 3400;
+    const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5.6; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f0 * 0.009, t + Math.min(0.4, d)); lfo.connect(lg);
+    [-5, 5].forEach((c) => { const os = ctx.createOscillator(); os.type = "sawtooth"; os.frequency.value = f0; os.detune.value = c; lg.connect(os.frequency); os.connect(bp); os.start(t); os.stop(t + d + 0.5); });
+    lfo.start(t); lfo.stop(t + d + 0.5); env(g, t, v * 0.2, o.att || 0.07, d, 0.1); bp.connect(lp); lp.connect(g); g.connect(dest);
+  }
+  // accordéon (anches, léger tremolo)
+  function accord(t, m, d, v, dest, o = {}) {
+    const f0 = mtof(m), g = ctx.createGain(), lp = ctx.createBiquadFilter(), tr = ctx.createGain(); lp.type = "lowpass"; lp.frequency.value = o.cut || 2300;
+    [["square", 1, 0, 0.5], ["sawtooth", 1, 9, 0.5], ["sawtooth", 2, -6, 0.15]].forEach(([type, k, c, a]) => { const os = ctx.createOscillator(), og = ctx.createGain(); os.type = type; os.frequency.value = f0 * k; os.detune.value = c; og.gain.value = a; os.connect(og); og.connect(lp); os.start(t); os.stop(t + d + 0.4); });
+    const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 6.2; lg.gain.value = 0.12; tr.gain.value = 0.88; lfo.connect(lg); lg.connect(tr.gain); lfo.start(t); lfo.stop(t + d + 0.4);
+    env(g, t, v * 0.13, o.att || 0.04, d, 0.08); lp.connect(tr); tr.connect(g); g.connect(dest);
+  }
   // tambourin et grosse caisse en peau
   function drum(t, kind, v, dest) {
+    if (kind === "anvil") { bell(t, 93, 0.3, v, dest, { parts: [[1, 1, 0.22], [2.76, 0.5, 0.12], [5.4, 0.3, 0.06]] }); return; } // marteau sur l'enclume
     if (kind === "low" || kind === "mid") { const hi = kind === "mid";
       const os = ctx.createOscillator(), g = ctx.createGain(); os.type = "sine"; os.frequency.setValueAtTime(hi ? 210 : 120, t); os.frequency.exponentialRampToValueAtTime(hi ? 105 : 52, t + 0.18);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * 0.9, t + 0.006); g.gain.setTargetAtTime(0.0001, t + 0.02, 0.13);
@@ -108,6 +123,7 @@
     if (e.i === "pluck") pluck(t, e.m, d, v, dest, e.o); else if (e.i === "flute") flute(t, e.m, d, v, dest, e.o); else if (e.i === "horn") horn(t, e.m, d, v, dest, e.o);
     else if (e.i === "pad") pad(t, e.m, d, v, dest, e.o); else if (e.i === "bell") bell(t, e.m, d, v, dest, e.o); else if (e.i === "bass") bass(t, e.m, d, v, dest);
     else if (e.i === "drum") drum(t, e.m, v, dest); else if (e.i === "mar") marimba(t, e.m, v, dest, e.o);
+    else if (e.i === "fiddle") fiddle(t, e.m, d, v, dest, e.o); else if (e.i === "acc") accord(t, e.m, d, v, dest, e.o);
   }
 
   /* ---------- morceaux ---------- */
@@ -223,6 +239,100 @@
         ev.push(...melodyEv(this.mel, 3, "bell", 0.7, 0, { len: 1.2 })); if (p % 2) ev.push(...melodyEv(this.mel, 3, "flute", 0.5, -12));
         return ev.sort((a, b) => a.b - b.b); } },
   };
+  /* 1.0.24 : airs écrits en notation courte. ch : un accord par mesure ; mel : notes « La4:1.5 » séparées par « | » à chaque mesure ;
+     acc : accompagnement ; dr : percussions ; lead : instrument de la mélodie à chaque tour (« flute », « horn-12 »…), intro : 1er tour sans mélodie */
+  const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const acc = (x) => (x === "#" ? 1 : x === "b" ? -1 : 0);
+  function nm(x) { const m = /^([A-G])([#b]?)(\d)$/.exec(x); if (!m) throw new Error("note " + x); return 12 * (+m[3] + 1) + NOTE[m[1]] + acc(m[2]); }
+  function chordOf(x) { const m = /^([A-G])([#b]?)(m|dim|sus)?$/.exec(x); if (!m) throw new Error("accord " + x); const pc = (NOTE[m[1]] + acc(m[2]) + 12) % 12;
+    return { r: 45 + ((pc - 9 + 12) % 12), t: m[3] === "m" || m[3] === "dim" ? 3 : m[3] === "sus" ? 5 : 4, f: m[3] === "dim" ? 6 : 7 }; }
+  const parseMel = (x) => x.split("|").map((b) => b.trim().split(/\s+/).filter(Boolean).map((y) => { const [n, d] = y.split(":"); return [n === "r" ? 0 : nm(n), +d]; }));
+  const ACC = {
+    harp: (ev, c, b0, n, o) => { const off = n === 3 ? [0, c.f, 12, c.t + 12, c.f + 12, 12] : [0, c.f, 12, c.t + 12, c.f + 12, c.t + 12, 12, c.f]; off.forEach((x, k) => ev.push({ b: b0 + k * 0.5, i: o.ai || "pluck", m: c.r + x, d: 1.4, v: (k ? 0.34 : 0.5) * (o.av || 1), o: o.ao })); ev.push({ b: b0, i: "bass", m: c.r - 12, d: n - 0.3, v: 0.55 }); },
+    waltz: (ev, c, b0, n, o) => { ev.push({ b: b0, i: "bass", m: c.r - 12, d: 0.9, v: 0.62 }); for (let k = 1; k < n; k++) [c.t, c.f, 12].forEach((x) => ev.push({ b: b0 + k, i: o.ai || "pluck", m: c.r + 12 + x, d: 0.4, v: 0.2 * (o.av || 1), o: o.ao || { cut: 2400, damp: 0.99 } })); },
+    march: (ev, c, b0, n, o) => { for (let k = 0; k < n; k++) { if (k % 2 === 0) ev.push({ b: b0 + k, i: "bass", m: c.r - 12 + (k ? c.f : 0), d: 0.8, v: 0.6 }); else [c.t, c.f, 12].forEach((x) => ev.push({ b: b0 + k, i: o.ai || "pluck", m: c.r + 12 + x, d: 0.35, v: 0.22 * (o.av || 1), o: o.ao || { cut: 2600, damp: 0.99 } })); } },
+    drone: (ev, c, b0, n, o) => { ev.push({ b: b0, i: "bass", m: c.r - 12, d: n - 0.2, v: 0.5 }); for (let k = 0; k < n; k++) ev.push({ b: b0 + k, i: "pluck", m: c.r + [0, c.f, c.t + 12, c.f + 12][k % 4], d: 1.2, v: 0.26, o: { cut: 1400, damp: 0.993 } }); },
+    mar: (ev, c, b0, n) => { const off = [0, 12, c.f, c.t + 12, 12, c.f, c.t + 12, c.f + 12]; for (let k = 0; k < n * 2; k++) ev.push({ b: b0 + k * 0.5, i: "mar", m: c.r + 12 + off[k % 8], d: 0.5, v: k % 2 ? 0.35 : 0.5, o: { dec: 0.35 } }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: 1.4, v: 0.55 }); ev.push({ b: b0 + 2, i: "bass", m: c.r - 12 + c.f, d: 1.4, v: 0.45 }); },
+    box: (ev, c, b0, n) => { const off = [0, c.t, c.f, 12, c.f, c.t]; for (let k = 0; k < n * 2; k++) ev.push({ b: b0 + k * 0.5, i: "bell", m: c.r + 24 + off[k % 6], d: 0.5, v: 0.26, o: { len: 1 } }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: n - 0.2, v: 0.4 }); },
+    chime: (ev, c, b0, n) => { const off = [0, c.f, 12, c.t + 12, c.f + 12, 24, c.f + 12, 12]; for (let k = 0; k < n * 2; k++) ev.push({ b: b0 + k * 0.5, i: "bell", m: c.r + 12 + off[k % 8], d: 1, v: 0.3, o: { len: 1.6 } }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: n - 0.2, v: 0.4 }); },
+    stabs: (ev, c, b0, n) => { for (let k = 0; k < n * 2; k++) ev.push({ b: b0 + k * 0.5, i: "bass", m: c.r - 12 + (k % 2 ? 12 : 0), d: 0.4, v: 0.55 }); for (let k = 0; k < n; k++) [12, c.t + 12, c.f + 12].forEach((x) => ev.push({ b: b0 + k + 0.5, i: "pluck", m: c.r + x, d: 0.3, v: 0.22, o: { cut: 3000, damp: 0.99 } })); },
+    jig: (ev, c, b0, n, o) => { const off = [0, c.f, 12, c.t + 12, c.f + 12, 12]; for (let k = 0; k < n * 2; k++) ev.push({ b: b0 + k * 0.5, i: "pluck", m: c.r + off[k % 6], d: 1, v: k ? 0.34 : 0.5, o: o.ao || { cut: 2600, damp: 0.994 } }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: n - 0.4, v: 0.55 }); },
+    pizz: (ev, c, b0, n) => { for (let k = 0; k < n; k++) { ev.push({ b: b0 + k, i: "bass", m: c.r - 12 + (k % 2 ? c.f : 0), d: 0.4, v: 0.55 }); [c.t + 12, c.f + 12].forEach((x) => ev.push({ b: b0 + k + 0.5, i: "pluck", m: c.r + x, d: 0.25, v: 0.22, o: { cut: 3200, damp: 0.988 } })); } },
+  };
+  const DR = {
+    soft: [[0, "low", 0.45]], slow: [[0, "low", 0.6], [2, "low", 0.3]],
+    folk3: [[0, "low", 0.5], [1, "tap", 0.35], [2, "tap", 0.35], [2.5, "jingle", 0.3]], waltz: [[0, "low", 0.4], [1, "tap", 0.25], [2, "tap", 0.25]],
+    folk4: [[0, "low", 0.5], [1, "tap", 0.3], [2, "low", 0.35], [3, "tap", 0.3], [3.5, "jingle", 0.3]],
+    march: [[0, "low", 0.6], [1, "tap", 0.4], [1.75, "tap", 0.2], [2, "low", 0.45], [3, "tap", 0.4], [3.5, "tap", 0.25], [3.75, "tap", 0.25]],
+    tribal: [[0, "low", 0.8], [1.5, "mid", 0.5], [2, "mid", 0.55], [3, "low", 0.7], [3.5, "mid", 0.45]],
+    isle: [[0, "low", 0.6], [0.75, "mid", 0.35], [1.5, "mid", 0.45], [2, "low", 0.5], [2.5, "mid", 0.35], [3, "mid", 0.45], [3.5, "jingle", 0.3]],
+    desert: [[0, "low", 0.6], [1.5, "mid", 0.4], [2, "tap", 0.3], [3, "mid", 0.45], [3.5, "tap", 0.3]],
+    anvil: [[0, "low", 0.5], [1, "anvil", 0.35], [2, "low", 0.4], [2.5, "anvil", 0.25], [3, "anvil", 0.35]],
+    sleigh: [[0, "low", 0.45], [2, "low", 0.35], ...[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5].map((x) => [x, "jingle", x % 1 ? 0.25 : 0.4])],
+  };
+  function song(S0) {
+    const ch = S0.ch.trim().split(/\s+/).map(chordOf), mel = parseMel(S0.mel), n = S0.bpb;
+    mel.forEach((b, i) => { const sum = b.reduce((a, x) => a + x[1], 0); if (Math.abs(sum - n) > 1e-6) throw new Error(`${S0.name} : mesure ${i + 1} = ${sum} temps`); });
+    if (mel.length !== ch.length) throw new Error(`${S0.name} : ${mel.length} mesures pour ${ch.length} accords`);
+    const lead = (x) => { const m = /^([a-z]+)([+-]\d+)?$/.exec(x); return [m[1], +(m[2] || 0)]; };
+    return { name: S0.name, bpm: S0.bpm, bpb: n, gain: S0.gain || 1, ch,
+      build(p) { const ev = [], o = S0.o || {};
+        ch.forEach((c, i) => { const b0 = i * n; ACC[S0.acc](ev, c, b0, n, o);
+          if (S0.pad) ev.push({ b: b0, i: "pad", m: [c.r + 12, c.r + 12 + c.t, c.r + 12 + c.f], d: n, v: S0.pad, o: { cut: S0.padCut || 1000, att: 0.8 } });
+          (DR[S0.dr] || []).forEach(([x, k, v]) => { if (x < n) ev.push({ b: b0 + x, i: "drum", m: k, d: 0.5, v }); }); });
+        if (!(S0.intro && p === 0)) { const L = S0.lead[p % S0.lead.length]; const [i, sh] = lead(L); ev.push(...melodyEv(mel, n, i, S0.lv || 0.8, sh, i === "bell" ? { len: 1.4 } : i === "mar" ? { dec: 0.6 } : undefined));
+          if (S0.lead2 && p % 2 === 1) { const [i2, sh2] = lead(S0.lead2); ev.push(...melodyEv(mel, n, i2, 0.45, sh2)); } }
+        return ev.sort((a, b) => a.b - b.b); } };
+  }
+  const SONGS = {
+    incarnam: { name: "Premiers pas à Incarnam", gain: 1.1, bpm: 100, bpb: 4, acc: "harp", pad: 0.8, dr: "soft", lead: ["flute", "pluck"], intro: 1, ch: "C G Am F C F G C",
+      mel: "E5:1 G5:1 C6:1.5 G5:.5 | G5:1.5 F5:.5 D5:2 | C5:1 E5:1 A5:1 G5:1 | F5:3 r:1 | E5:1 G5:1 C6:1 B5:1 | A5:1.5 G5:.5 F5:1 A5:1 | G5:1 F5:1 E5:1 D5:1 | C5:4" },
+    marche: { name: "Marché d'Astrub", gain: 1.25, bpm: 138, bpb: 3, acc: "waltz", dr: "waltz", lead: ["acc", "fiddle"], ch: "G G D D C G D G G Em C D G C D G",
+      mel: "D5:1 G5:1 B5:1 | A5:1 G5:1 D5:1 | F#5:1.5 E5:.5 D5:1 | A4:3 | E5:1 G5:1 E5:1 | D5:1 B4:1 G4:1 | A4:1 D5:1 F#5:1 | G5:3 | B5:1 A5:1 G5:1 | E5:2 G5:1 | E5:1 D5:1 C5:1 | A4:2 D5:1 | B4:1 D5:1 G5:1 | E5:1.5 D5:.5 C5:1 | A4:1 B4:1 C5:1 | B4:1 G4:2" },
+    bonta: { name: "Remparts de Bonta", gain: 1, bpm: 104, bpb: 4, acc: "march", pad: 0.9, dr: "march", lead: ["horn", "fiddle"], ch: "Bb F Gm Eb Bb Eb F Bb",
+      mel: "F4:1 Bb4:1 D5:1.5 C5:.5 | C5:2 A4:1 F4:1 | G4:1 Bb4:1 D5:1 G5:1 | F5:3 Eb5:1 | D5:1.5 F5:.5 Bb5:2 | G5:1 F5:1 Eb5:1 G5:1 | F5:1.5 Eb5:.5 C5:1 A4:1 | Bb4:4" },
+    brakmar: { name: "Ruelles de Brâkmar", gain: 1, bpm: 92, bpb: 4, acc: "pizz", pad: 0.9, padCut: 700, dr: "march", lead: ["fiddle", "horn-12"], ch: "Cm Ab Fm G Cm Ab Fm G",
+      mel: "G4:1 C5:1 Eb5:1.5 D5:.5 | C5:2 Ab4:2 | F4:1 Ab4:1 C5:1 F5:1 | D5:3 B4:1 | C5:1 Eb5:1 G5:1.5 F5:.5 | Eb5:1 C5:1 Ab4:2 | Ab4:1.5 G4:.5 F4:1 Ab4:1 | B4:2 G4:2" },
+    abrak: { name: "Bois des Abraknydes", gain: 1.1, bpm: 80, bpb: 4, acc: "harp", pad: 0.9, dr: "soft", lead: ["flute", "pluck"], intro: 1, ch: "Am D Am G Am D F G",
+      mel: "E5:2 A5:1 G5:1 | F#5:3 A5:1 | E5:1 D5:1 C5:1 B4:1 | D5:4 | A4:1 C5:1 E5:1.5 F#5:.5 | A5:2 F#5:1 D5:1 | C5:1.5 D5:.5 F5:1 E5:1 | D5:2 B4:2" },
+    koalaks: { name: "Sommets des Koalaks", gain: 0.77, bpm: 96, bpb: 3, acc: "harp", pad: 0.8, dr: "waltz", lead: ["horn-12", "flute"], ch: "F C Dm Bb F Bb C F",
+      mel: "C5:1 F5:1 A5:1 | G5:2 E5:1 | F5:1 D5:1 A4:1 | Bb4:2 D5:1 | C5:1 A4:1 F5:1 | D5:1 F5:1 Bb5:1 | A5:1.5 G5:.5 E5:1 | F5:3" },
+    dragoeufs: { name: "Nid des Dragoeufs", gain: 0.93, bpm: 96, bpb: 4, acc: "drone", pad: 1, padCut: 600, dr: "tribal", lead: ["horn-12", "fiddle-12"], ch: "Dm Eb Dm C Bb C Eb Dm",
+      mel: "D5:1 F5:1 A5:2 | G5:1.5 F5:.5 Eb5:2 | D5:1 A4:1 D5:1 F5:1 | E5:2 G5:2 | F5:1 D5:1 Bb4:2 | C5:1 E5:1 G5:1 E5:1 | Eb5:3 F5:1 | D5:4" },
+    saharach: { name: "Dunes de Saharach", gain: 1, bpm: 88, bpb: 4, acc: "drone", pad: 0.9, padCut: 700, dr: "desert", lead: ["fiddle", "flute"], intro: 1, ch: "E F E Dm Am F E E",
+      mel: "E5:1 F5:1 G#5:1.5 A5:.5 | A5:1 F5:1 E5:2 | E5:1.5 G#5:.5 B5:2 | A5:1 F5:1 D5:2 | C5:1 E5:1 A5:1 G#5:1 | F5:2 E5:1 D5:1 | E5:1 F5:1 E5:1 D5:1 | E5:4" },
+    pandala: { name: "Jardins de Pandala", gain: 1.18, bpm: 76, bpb: 4, acc: "harp", pad: 0.7, dr: "soft", lead: ["flute", "bell"], intro: 1, ch: "D Bm G A D G Bm A",
+      mel: "F#5:1 A5:1 B5:2 | A5:1 F#5:1 E5:2 | D5:1 E5:1 B4:2 | A4:2 E5:2 | F#5:1.5 E5:.5 D5:2 | B4:1 D5:1 E5:2 | F#5:1 E5:1 D5:1 B4:1 | A4:4" },
+    moon: { name: "Tambours de Moon", gain: 0.8, bpm: 112, bpb: 4, acc: "mar", dr: "isle", lead: ["flute", "mar"], ch: "Am G F G Am G Em Am",
+      mel: "A4:.5 C5:.5 D5:.5 E5:.5 G5:1 E5:1 | D5:1.5 C5:.5 D5:2 | C5:1 A4:1 C5:1 D5:1 | E5:2 D5:2 | A5:1 G5:.5 E5:.5 D5:1 E5:1 | G5:1.5 E5:.5 D5:2 | E5:1 D5:1 C5:1 D5:1 | A4:4" },
+    wabbits: { name: "Terriers des Wabbits", gain: 0.87, bpm: 126, bpb: 4, acc: "pizz", dr: "folk4", lead: ["pluck", "flute"], ch: "C F C G C F G C",
+      mel: "C5:.5 r:.5 E5:.5 r:.5 G5:.5 E5:.5 C5:1 | F5:.5 r:.5 A5:.5 r:.5 C6:1 A5:1 | G5:.5 E5:.5 G5:.5 E5:.5 C5:2 | D5:.5 r:.5 G4:.5 r:.5 B4:1 D5:1 | E5:.5 r:.5 G5:.5 r:.5 C6:.5 B5:.5 A5:.5 G5:.5 | A5:1 F5:1 C5:1 A4:1 | B4:.5 C5:.5 D5:.5 F5:.5 G5:1 B4:1 | C5:2 r:2" },
+    sufokia: { name: "Baie de Sufokia", gain: 1.05, bpm: 120, bpb: 3, acc: "jig", dr: "folk3", lead: ["acc", "fiddle"], ch: "Dm Dm C C Dm Dm A A Dm Dm Bb C Dm Gm A Dm",
+      mel: "A4:1 D5:1 D5:1 | D5:.5 E5:.5 F5:1 D5:1 | E5:1 C5:1 C5:1 | C5:.5 D5:.5 E5:1 C5:1 | A4:1 D5:1 F5:1 | A5:2 F5:1 | E5:1 C#5:1 A4:1 | E5:3 | F5:1 E5:1 D5:1 | A5:1.5 G5:.5 F5:1 | F5:1 D5:1 Bb4:1 | C5:1 E5:1 G5:1 | F5:1 E5:1 D5:1 | G5:1 Bb5:1 D5:1 | C#5:1 E5:1 A4:1 | D5:3" },
+    divines: { name: "Dimensions divines", gain: 1.7, bpm: 66, bpb: 4, acc: "chime", pad: 1, padCut: 1600, lead: ["flute", "bell"], intro: 1, ch: "E F# G#m F# E C#m F# B",
+      mel: "G#5:2 B5:2 | A#5:3 F#5:1 | G#5:2 D#5:2 | F#5:4 | E5:2 G#5:1 B5:1 | C#6:3 G#5:1 | A#5:2 F#5:2 | D#5:4" },
+    obscure: { name: "Dimension Obscure", gain: 1.6, bpm: 58, bpb: 4, acc: "drone", pad: 1.2, padCut: 500, dr: "slow", lead: ["bell"], lead2: "fiddle-12", intro: 1, ch: "Cm Gb Cm Gb Ab Gb Fm G",
+      mel: "G5:3 Gb5:1 | Bb5:2 Db6:2 | C6:3 G5:1 | Gb5:4 | Eb5:2 C5:2 | Db5:2 Bb4:2 | C5:2 Ab4:2 | B4:4" },
+    vulkania: { name: "Archipel de Vulkania", gain: 0.7, bpm: 128, bpb: 4, acc: "stabs", pad: 0.8, padCut: 900, dr: "tribal", lead: ["horn", "fiddle"], ch: "Em Em C D Em Em C B",
+      mel: "E5:.5 E5:.5 G5:.5 A5:.5 B5:1 G5:1 | E5:1.5 D5:.5 E5:2 | G5:.5 G5:.5 A5:.5 B5:.5 C6:1 B5:1 | A5:1.5 F#5:.5 D5:2 | B5:1 G5:1 E5:1 G5:1 | B5:1.5 A5:.5 G5:1 F#5:1 | E5:1 G5:1 C6:1 B5:1 | F#5:2 D#5:2" },
+    wukin: { name: "Pagodes de Wukin", gain: 0.93, bpm: 84, bpb: 4, acc: "harp", pad: 0.8, dr: "desert", lead: ["fiddle", "flute"], intro: 1, ch: "Gm F Eb F Gm Bb F Gm",
+      mel: "D5:1 F5:1 G5:2 | F5:1.5 D5:.5 C5:2 | Bb4:1 C5:1 G5:2 | F5:4 | G5:1 Bb5:1 G5:1 F5:1 | D5:2 F5:2 | C5:1 D5:1 F5:1 C5:1 | D5:1 Bb4:1 G4:2" },
+    harebourg: { name: "Château d'Harebourg", gain: 1.18, bpm: 100, bpb: 3, acc: "waltz", pad: 0.9, padCut: 900, dr: "waltz", lead: ["bell", "fiddle"], ch: "Bm Bm Em Em F# F# Bm Bm G Em Bm F# G Em F# Bm",
+      mel: "F#5:2 D5:1 | B4:2 D5:1 | G5:2 E5:1 | B4:3 | A#4:1 C#5:1 E5:1 | F#5:3 | D5:1 C#5:1 B4:1 | D5:1 F#5:2 | G5:2 B5:1 | G5:1 E5:1 B4:1 | F#5:2 D5:1 | C#5:2 A#4:1 | B4:1 D5:1 G5:1 | E5:2 G5:1 | F#5:1 E5:1 C#5:1 | B4:3" },
+    guilde: { name: "Salle de guilde", gain: 0.9, bpm: 108, bpb: 4, acc: "jig", dr: "folk4", lead: ["acc", "flute"], ch: "F Bb F C Dm Bb C F",
+      mel: "A4:1 C5:1 F5:1.5 E5:.5 | D5:2 F5:2 | C5:1 A4:1 C5:1 F5:1 | E5:3 G5:1 | F5:1.5 E5:.5 D5:1 A4:1 | Bb4:1 D5:1 F5:2 | G5:1 F5:1 E5:1 G5:1 | F5:4" },
+    hdv: { name: "Hôtel de vente", gain: 1.05, bpm: 116, bpb: 4, acc: "pizz", dr: "folk4", lead: ["pluck", "mar"], ch: "Bb Gm Eb F Bb Gm Cm F",
+      mel: "D5:.5 F5:.5 Bb5:.5 F5:.5 D5:1 F5:1 | G5:.5 Bb5:.5 G5:.5 D5:.5 G5:2 | Eb5:1 G5:1 Bb5:1 G5:1 | F5:1.5 Eb5:.5 C5:2 | Bb4:.5 D5:.5 F5:.5 Bb5:.5 A5:1 Bb5:1 | G5:1 D5:1 Bb4:2 | C5:.5 Eb5:.5 G5:.5 Eb5:.5 C5:1 Eb5:1 | F5:2 C5:2" },
+    atelier: { name: "Atelier des artisans", gain: 1.15, bpm: 100, bpb: 4, acc: "march", dr: "anvil", lead: ["acc", "fiddle"], ch: "C Bb F C C Bb F G",
+      mel: "G4:1 C5:1 E5:1 G5:1 | F5:1.5 D5:.5 Bb4:2 | A4:1 C5:1 F5:1 A5:1 | G5:3 E5:1 | E5:1 G5:1 C6:1 G5:1 | Bb5:1.5 A5:.5 F5:2 | A5:1 F5:1 C5:1 A4:1 | B4:2 D5:2" },
+    salleboss: { name: "Salle du boss", gain: 0.7, bpm: 124, bpb: 4, acc: "stabs", pad: 1, padCut: 900, dr: "tribal", lead: ["horn", "fiddle"], ch: "Cm Cm Ab Bb Cm Cm Fm G",
+      mel: "C5:1 Eb5:1 G5:1 C6:1 | Bb5:1.5 G5:.5 Eb5:2 | C5:.5 Eb5:.5 Ab5:1 G5:1 Eb5:1 | F5:1.5 D5:.5 Bb4:2 | G5:1 C6:1 Bb5:1 G5:1 | Ab5:1 G5:1 Eb5:1 C5:1 | F5:1 Ab5:1 C6:1 Ab5:1 | B5:2 G5:2" },
+    nuit: { name: "Nuit au Havre-Sac", gain: 1.2, bpm: 66, bpb: 3, acc: "box", pad: 0.6, padCut: 800, lead: ["flute"], intro: 1, lv: 0.6, ch: "F Dm Bb F Gm C F F",
+      mel: "A5:2 F5:1 | A5:1 F5:1 D5:1 | D5:2 F5:1 | C5:3 | Bb4:1 D5:1 G5:1 | G5:2 E5:1 | F5:1 A4:1 C5:1 | F5:3" },
+    fetes: { name: "Fêtes de fin d'année", gain: 0.82, bpm: 120, bpb: 4, acc: "pizz", dr: "sleigh", lead: ["bell", "flute"], ch: "G C G D G C D G",
+      mel: "B4:1 D5:1 G5:1.5 F#5:.5 | E5:1 G5:1 E5:2 | D5:1 B4:1 G4:1 B4:1 | A4:3 r:1 | B4:1 D5:1 G5:1 B5:1 | C6:1.5 B5:.5 A5:1 G5:1 | F#5:1 E5:1 D5:1 F#5:1 | G5:4" },
+  };
+  Object.entries(SONGS).forEach(([k, v]) => (TRACKS[k] = song(v)));
   Object.values(TRACKS).forEach((T) => (T.len = T.ch.length * T.bpb));
 
   function tick() {
