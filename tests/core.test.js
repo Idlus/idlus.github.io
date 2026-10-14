@@ -85,11 +85,12 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   const S = E.newState("Réserve", "iop"); S.kamas = 1e9; S.chars[0].lvl = 120;
   const cls = ["cra", "eni", "sram", "feca", "osa", "xelor", "panda", "sadi", "enu", "eca", "roub"];
   cls.forEach((k) => assert.strictEqual(E.recruit(S, k, k), null, `recrutement ${k}`));
+  assert.ok(S.chars.slice(1).every((c) => c.lvl === 1), "toute recrue arrive au niveau 1");
   assert.strictEqual(S.chars.length, 12); assert.strictEqual(E.recruit(S, "iop", "Treize"), null, "13e héros accepté");
   assert.strictEqual(S.chars.length, 13); assert.ok(/13 héros au plus/.test(E.recruit(S, "iop", "Trop")), "14e héros refusé");
   E.dismiss(S, S.chars[12].id); assert.strictEqual(S.chars.length, 12);
   assert.strictEqual(E.team(S).length, 8); assert.strictEqual(E.activeCount(S), 8, "4 héros au repos, pas 12 en équipe");
-  assert.strictEqual(S.recLv, 12 * 60, "niveaux donnés par les recrutements");
+  assert.strictEqual(S.recLv, 12, "niveaux donnés par les recrutements");
   const rest = S.chars.find((c) => !c.inTeam); assert.ok(/8 héros au plus/.test(E.toggleTeam(S, rest.id)), "équipe pleine");
   // un récolteur rappelé quand l'équipe est pleine va au repos
   const fighter = E.team(S)[1]; assert.strictEqual(E.setJob(S, fighter.id, "paysan"), null);

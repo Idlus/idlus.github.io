@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.12.6";
+const GAME_VERSION = "1.0.12.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.12.7", name: "Recrues au niveau 1", items: [
+    "Un héros recruté arrive toujours au niveau 1 (avant : la moitié du niveau de votre meilleur héros). Les héros déjà recrutés gardent leur niveau",
+  ] },
   { v: "1.0.12.6", name: "Grades de guilde", items: [
     "Le Meneur et les Bras droits peuvent régler la part d'XP donnée à la guilde par un membre de rang plus bas (onglet Membres). Le joueur voit qui l'a réglée et peut toujours la changer lui-même",
     "Les Membres peuvent maintenant poser un Percepteur (20 000 kamas, payés par celui qui le pose). Les Recrues non, et retirer un Percepteur reste réservé au Meneur et aux Bras droits",
@@ -5589,13 +5592,13 @@ function dismissSheet(c) {
     <div class="row" style="margin-top:12px"><button class="btn danger" data-act="dismiss" data-id="${c.id}">Congédier ${h(c.name)}</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
 function recruitSheet() {
-  const cost = E.recruitCost(S.chars.length + 1); const top = Math.max(...S.chars.map((c) => c.lvl)); const sex = ui.startSex || CLASSES[ui.startCls].sex;
+  const cost = E.recruitCost(S.chars.length + 1); const sex = ui.startSex || CLASSES[ui.startCls].sex;
   openSheet(`<h2>Recruter un héros</h2>
     <div class="rprice ${S.kamas >= cost ? "ok" : "no"}"><span class="xs muted">Prix de ce héros (${S.chars.length + 1}e)</span><b class="num big"><span class="coin"></span> ${cost ? `${fmt(cost)} kamas` : "gratuit"}</b>
       <div class="rbar"><i style="width:${cost ? Math.min(100, Math.round(100 * S.kamas / cost)) : 100}%"></i></div>
       <div class="row between xs"><span>Vous avez <b class="num">${fmt(S.kamas)}</b></span><span>${S.kamas >= cost ? `Il vous restera <b class="num">${fmt(S.kamas - cost)}</b>` : `Il manque <b class="num">${fmt(cost - S.kamas)}</b>`}</span></div>
       ${S.chars.length + 1 < E.HERO_MAX ? `<span class="xs muted">Héros suivant : ${fmt(E.recruitCost(S.chars.length + 2))} k</span>` : ""}</div>
-    <p class="small muted">La recrue arrive au niveau ${Math.max(1, Math.floor(top / 2))}. Plus l'équipe est grande, plus chaque héros monte vite.</p>
+    <p class="small muted">La recrue arrive au niveau 1. Plus l'équipe est grande, plus chaque héros monte vite.</p>
     ${classPick(ui.startCls, sex)}${classInfo(ui.startCls, sex, startHeadOf(ui.startCls, sex))}
     <div class="row"><span class="small muted">Apparence</span><span class="seg">${[["m", "Masculin"], ["f", "Féminin"]].map(([v, n]) => `<button data-act="startsex" data-v="${v}" aria-pressed="${sex === v}">${n}</button>`).join("")}</span></div>
       ${headPick(ui.startCls, sex)}

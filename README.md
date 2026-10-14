@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.12.7 « Recrues au niveau 1 »
+Demande de Mathis (« quand on recrute un nouveau héros il soit forcément lvl 1 »). `E.recruit` (js/engine.js) crée la recrue au niveau 1 au lieu de la moitié du niveau du meilleur héros ; la fiche de recrutement l'annonce. `S.recLv` compte toujours le niveau donné (1), le contrôle du classement (supabase/classements.sql) ne change pas. Héros existants inchangés.
+
 ## 1.0.12.6 « Grades de guilde »
 Demande de Mathis (retour de joueurs : « avoir le grade en guilde pour modifier l'XP des gens » et « avec le grade Membre on ne peut pas poser de perco »), choix 1A 2A. Nouvelle RPC `guild_share(p_user, p_share)` (supabase/guildes.sql) : le Meneur ou un Bras droit règle la part d'un membre de rang plus bas, nom gardé dans `guild_members.share_by` et affiché au joueur, qui peut toujours la changer. `guild_give` ne réécrit plus la part quand le jeu envoie `p_share` vide (envois réguliers) et le jeu reprend la part du serveur à chaque lecture de la guilde. `perco_place` (supabase/gboss.sql) accepte le rang Membre (Recrues refusées), retirer reste Meneur et Bras droits.
 

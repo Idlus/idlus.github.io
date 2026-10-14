@@ -1,6 +1,13 @@
 {
-  "version": "1.0.12.6",
+  "version": "1.0.12.7",
   "versions": [
+    {
+      "v": "1.0.12.7",
+      "name": "Recrues au niveau 1",
+      "items": [
+        "Un héros recruté arrive toujours au niveau 1 (avant : la moitié du niveau de votre meilleur héros). Les héros déjà recrutés gardent leur niveau"
+      ]
+    },
     {
       "v": "1.0.12.6",
       "name": "Grades de guilde",

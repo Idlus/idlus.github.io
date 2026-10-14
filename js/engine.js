@@ -3082,7 +3082,7 @@
     if (S.chars.length >= E.HERO_MAX) return `${E.HERO_MAX} héros au plus : congédiez-en un pour faire de la place.`;
     if (S.kamas < cost) return `Il faut ${cost} kamas.`;
     S.kamas -= cost;
-    const top = Math.max(...S.chars.map((c) => c.lvl)); const lvl = Math.max(1, Math.floor(top / 2));
+    const lvl = 1; // 1.0.12.7 : toute recrue arrive au niveau 1 (avant : la moitié du niveau du meilleur héros)
     S.recLv = (S.recLv || 0) + lvl; // niveaux donnés par les recrutements : le serveur ne les prend pas pour de la triche
     const c = E.addChar(S, cls, name || pick(NAMES), lvl);
     note(S, `${c.name} (${CLASSES[cls].name}) rejoint l'aventure !${c.inTeam ? "" : " Il attend au repos : l'équipe compte déjà 8 héros."}`, "up");
