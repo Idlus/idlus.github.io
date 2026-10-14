@@ -7447,7 +7447,8 @@ function consignesHtml() {
    Musique : Taverne d'Astrub en chasse, Profondeurs du donjon pendant un donjon, Boîte à musique sur la page du Havre-Sac.
    Elle ne démarre qu'après un clic du joueur (règle des navigateurs) et se met en pause quand l'onglet est caché.
    Sons : style Bois et cristal par défaut ; clic seulement sur les boutons importants.
-   35 airs : la chasse suit la zone (MUS_ZONE), les pages Kolizéum, Songe, Boss des mondes, Guilde, HdV, Métiers et Forgemagie ont leur air,
+   48 airs : la chasse suit la zone (MUS_ZONE), les pages Kolizéum, Songe, Boss des mondes, Guilde, HdV, Métiers et Forgemagie ont leur air,
+   et depuis la 1.0.29 chaque autre menu aussi (MUS_PAGE, Monde / Donjons / Encyclopédie, Quêtes / Succès), à l'orchestre façon DOFUS 3,
    la salle du boss d'un donjon a le sien, le Havre-Sac joue la nuit de 21 h à 7 h et les airs d'Halouine et des Fêtes à leurs dates.
    Juke-box (Options › Sons) : « Selon l'endroit » ou « Un air fixe » (fix), chaque air s'écoute (SND.prev, tant que la fenêtre est ouverte). */
 const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null };
@@ -7467,8 +7468,11 @@ const MUS_ZONE = { incarnam: "incarnam", astrub: "marche", amakna: "taverne", ca
   pwak: "iles", divines: "divines", asse: "sufokia", bontabrak: "bonta", grobe: "iles", sakai: "frigost", valonia: "iles", nimotopia: "divines",
   obscure: "obscure", harebourg: "harebourg", sufokia: "sufokia", cavaliers: "obscure", wukin: "wukin", possedes: "landes", ecailles: "sufokia", vulkania: "vulkania" };
 const MUS_SUB = { bra_bordure: "brakmar", bon_canaux: "brakmar", bra_entrailles: "brakmar" };
-const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier" };
-const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie" };
+const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier",
+  defi: "defi", team: "heros", heroes: "heros", inv: "sac", ren: "phenix", carnet: "carnet", ladder: "champions", builds: "strateges", sugg: "idees" }; // 1.0.29 : un air pour chaque menu
+const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie",
+  monde: "page Monde (une zone ouverte joue son air)", cles: "page Donjons", defi: "page Défi du jour", heros: "page Équipe et héros", sac: "page Inventaire", phenix: "page Renaissance", quetes: "page Quêtes",
+  succes: "page Succès", biblio: "page Encyclopédie", carnet: "page Carnet", champions: "page Classements", strateges: "page Builds", idees: "page Suggestions" };
 const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
 const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return halOn() ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
 const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
@@ -7476,6 +7480,8 @@ const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SU
 function musPlace() {
   if (ui.tab === "home" && ui.home === "havre") { const h0 = new Date().getHours(); return musEvent() || (h0 >= 21 || h0 < 7 ? "nuit" : "boite"); }
   if (MUS_PAGE[ui.tab]) return MUS_PAGE[ui.tab];
+  if (ui.tab === "world") return ui.zoneView ? musOfSub(ui.zoneView) : ui.world === "dungeons" ? "cles" : ui.world === "enc" ? "biblio" : "monde";
+  if (ui.tab === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : "quetes";
   if (E.expActive && E.expActive(S)) return "songe";
   if (S.dungeon) { const dg = DUNGEONS[S.dungeon.id]; return dg && dg.rooms && S.dungeon.room >= dg.rooms.length ? "salleboss" : "donjon"; }
   return musOfSub(S.sub);
@@ -7542,7 +7548,7 @@ function soundOptionsHtml() {
 }
 /* juke-box : les airs rangés par endroit, chacun avec « Écouter » et « Toujours » ; replié, l'air de l'endroit et 5 autres */
 const JUKE_GRP = [["En chasse", ["incarnam", "marche", "taverne", "cania", "wabbits", "landes", "koalaks", "foret", "abrak", "moon", "dragoeufs", "iles", "pandala", "frigost", "saharach", "divines", "bonta", "brakmar", "obscure", "harebourg", "sufokia", "wukin", "vulkania"]],
-  ["Pages", ["koli", "songe", "boss", "guilde", "hdv", "atelier"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]]];
+  ["Pages", ["monde", "cles", "songe", "defi", "koli", "boss", "heros", "sac", "phenix", "atelier", "quetes", "succes", "biblio", "carnet", "hdv", "guilde", "champions", "strateges", "idees"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]]];
 function jukeWhere(id) {
   if (MUS_PAGE_N[id]) return MUS_PAGE_N[id]; if (MUS_MORE[id]) return MUS_MORE[id];
   const subs = Object.entries(MUS_SUB).filter(([, v]) => v === id).map(([k]) => E.SUBS[k] && E.SUBS[k].name).filter(Boolean);
@@ -7556,7 +7562,7 @@ function jukeboxHtml(c, T) {
     + `<button class="btn sm${fixe && c.fix === id ? " primary" : ""}" data-act="vi-jkfix" data-v="${id}" aria-pressed="${fixe && c.fix === id}">${fixe && c.fix === id ? "✓ Toujours" : "Toujours"}</button></span></div>`;
   let list;
   if (ui.jukeAll) list = JUKE_GRP.map(([g, ids]) => `<div class="jk-grp xs muted">${g}</div>` + ids.filter((id) => T[id]).map(row).join("")).join("");
-  else { const ids = [...new Set([fixe ? c.fix : here, here, SND.prev, "cania", "iles", "frigost", "koli", "nuit", "pandala"].filter((id) => id && T[id]))].slice(0, 6); list = ids.map(row).join(""); }
+  else { const ids = [...new Set([fixe ? c.fix : here, here, SND.prev, "monde", "cania", "heros", "iles", "nuit", "koli"].filter((id) => id && T[id]))].slice(0, 6); list = ids.map(row).join(""); }
   return optSec("Juke-box", `${Object.keys(T).length} airs composés pour Idlus`,
       optLine("Quel air jouer", "« Selon l'endroit » suit la zone et la page", `<span class="seg2"><button class="btn sm${fixe ? "" : " primary"}" data-act="vi-jkmode" data-v="zone" aria-pressed="${!fixe}">Selon l'endroit</button><button class="btn sm${fixe ? " primary" : ""}" data-act="vi-jkmode" data-v="fixe" aria-pressed="${fixe}">Un air fixe</button></span>`)
     + list + `<div class="row"><button class="btn sm" data-act="vi-jkall">${ui.jukeAll ? "Replier la liste" : `Voir les ${Object.keys(T).length} airs`}</button></div>`, "jukebox");

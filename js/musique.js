@@ -164,6 +164,20 @@
     const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = o.rate || 2.4; lg.gain.value = 380; lfo.connect(lg); lg.connect(bp.frequency); lfo.start(t); lfo.stop(t + d + 1);
     os.connect(lp); os.connect(bp); bp.connect(bg); lp.connect(g); bg.connect(g); env(g, t, v * 0.35, 0.08, d, 0.15); g.connect(dest); os.start(t); os.stop(t + d + 1);
   }
+  /* 1.0.29 : orchestre façon DOFUS 3 pour les airs des menus */
+  // pupitre de cordes : quatre archets un peu désaccordés par note, chacun avec son vibrato (accord ou note seule)
+  function strings(t, ms, d, v, dest, o = {}) {
+    const arr = [].concat(ms), g = ctx.createGain(), hp = ctx.createBiquadFilter(), pk = ctx.createBiquadFilter(), lp = ctx.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = o.hp || 110; pk.type = "peaking"; pk.frequency.value = 1400; pk.gain.value = 3; pk.Q.value = 0.8; lp.type = "lowpass"; lp.frequency.value = o.cut || 2600; lp.Q.value = 0.3;
+    const at = Math.min(o.att || 0.28, Math.max(0.03, d)), rel = o.rel || 0.5, end = t + Math.max(d, at);
+    arr.forEach((m) => { const f0 = mtof(m), lg = vib(t, d + rel, f0, o.vib || 0.0045, 4.8 + Math.random() * 1.2, 0.25);
+      [-12, -4, 5, 13].forEach((c) => { const os = ctx.createOscillator(); os.type = "sawtooth"; setF(os.frequency, f0, t, o); os.detune.value = c + rnd(3); lg.connect(os.frequency); os.connect(hp); os.start(t); os.stop(end + rel + 0.3); }); });
+    hp.connect(pk); pk.connect(lp);
+    const a = v * 0.085 / Math.sqrt(arr.length); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(a, t + at); g.gain.setValueAtTime(a, end); g.gain.linearRampToValueAtTime(0.0001, end + rel);
+    lp.connect(g); g.connect(dest);
+  }
+  // harpe de concert : corde qui sonne longtemps et un peu de rondeur
+  function harp(t, m, d, v, dest, o = {}) { pluck(t, m, Math.max(d, 1.4), v * 0.8, dest, { damp: 0.9988, cut: o.cut || 3800, hp: 90, rel: 0.9 }); bell(t, m, 1, v * 0.35, dest, { parts: [[1, 1, 1.4], [2, 0.2, 0.5]] }); }
   // percussions : une membrane (hauteur qui tombe) et un souffle filtré
   function hit(t, f1, f2, dec, v, dest, type) { const os = ctx.createOscillator(), g = ctx.createGain(); os.type = type || "sine"; os.frequency.setValueAtTime(f1, t); if (f2 !== f1) os.frequency.exponentialRampToValueAtTime(f2, t + dec * 1.2);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, v), t + 0.004); g.gain.setTargetAtTime(0.0001, t + 0.01, dec); os.connect(g); g.connect(dest); os.start(t); os.stop(t + dec * 8 + 0.1); }
@@ -196,6 +210,10 @@
     tick: (t, v, o) => { hit(t, 3300, 3300, 0.01, v * 0.35, o); nz(t, "highpass", 4500, 0, 0.006, v * 0.25, o); },
     tock: (t, v, o) => { hit(t, 2100, 2100, 0.012, v * 0.35, o); nz(t, "highpass", 3000, 0, 0.006, v * 0.2, o); },
     heart: (t, v, o) => { hit(t, 70, 45, 0.09, v * 0.9, o); hit(t + 0.2, 62, 42, 0.11, v * 0.7, o); },
+    swell: (t, v, o) => nz(t, "highpass", 3000, 0, 0.35, v * 0.22, o, 1.8), // cymbale frottée qui monte vers le temps suivant
+    bdrum: (t, v, o) => { hit(t, 62, 42, 0.32, v * 0.9, o); nz(t, "lowpass", 260, 0, 0.12, v * 0.35, o); }, // grosse caisse d'orchestre
+    tri: (t, v, o) => bell(t, 103, 1, v * 0.6, o, { parts: [[1, 1, 1.6], [2.4, 0.4, 1], [3.9, 0.25, 0.7]] }),
+    sroll: (t, v, o) => { for (let i = 0; i < 12; i++) nz(t + i * 0.045, "bandpass", 2400, 0.8, 0.03, v * (0.12 + i * 0.025), o); }, // roulement de caisse claire
     gong: (t, v, o) => { bell(t, 41, 4, v * 0.9, o, { parts: [[1, 1, 4], [1.48, 0.5, 3], [2.03, 0.4, 2.5], [2.74, 0.25, 2], [3.6, 0.15, 1.5]] }); nz(t, "bandpass", 1800, 0.8, 0.8, v * 0.06, o, 0.2); },
   };
   // tambourin et grosse caisse en peau
@@ -232,7 +250,7 @@
     else if (kind === "owl") [0, 0.5].forEach((x, i) => { const os = ctx.createOscillator(), g = ctx.createGain(); os.type = "sine"; os.frequency.setValueAtTime(400 - i * 30, t + x); os.frequency.linearRampToValueAtTime(370 - i * 30, t + x + 0.35);
       g.gain.setValueAtTime(0.0001, t + x); g.gain.linearRampToValueAtTime(v * 0.1, t + x + 0.07); g.gain.linearRampToValueAtTime(0.0001, t + x + 0.4); os.connect(g); g.connect(dest); os.start(t + x); os.stop(t + x + 0.45); });
   }
-  const POLY = new Set(["pad", "organ", "choir", "glass"]);
+  const POLY = new Set(["pad", "organ", "choir", "glass", "str"]);
   const mix = (base, o) => (o ? Object.assign({}, base, o) : base);
   const V = {
     pluck: (t, e, d, v, o) => pluck(t, e.m, d, v, o, e.o),
@@ -279,6 +297,14 @@
     vibes: (t, e, d, v, o) => vibes(t, e.m, v, o),
     mar: (t, e, d, v, o) => marimba(t, e.m, v, o, e.o),
     bass: (t, e, d, v, o) => bass(t, e.m, d, v, o),
+    str: (t, e, d, v, o) => strings(t, e.m, d, v, o, e.o),
+    strl: (t, e, d, v, o) => strings(t, e.m, d, v, o, mix({ att: 0.12, rel: 0.35, vib: 0.006 }, e.o)), // les violons qui chantent la mélodie
+    vln: (t, e, d, v, o) => fiddle(t, e.m, d, v, o, mix({ att: 0.13, rel: 0.28, vib: 0.011, vr: 5.4, cut: 4800, pk: 2600, pg: 3 }, e.o)),
+    cb: (t, e, d, v, o) => fiddle(t, e.m, d, v, o, mix({ att: 0.09, rel: 0.2, vib: 0.004, cut: 800, pk: 250, pg: 3 }, e.o)),
+    harp: (t, e, d, v, o) => harp(t, e.m, d, v, o, e.o),
+    cel: (t, e, d, v, o) => bell(t, e.m, d, v, o, { parts: [[1, 1, 1.1], [2, 0.22, 0.35], [3, 0.07, 0.18], [5.04, 0.03, 0.08]] }),
+    clar: (t, e, d, v, o) => reed(t, e.m, d, v, o, mix({ pk: 1500, pg: 3, cut: 2800, att: 0.05, rel: 0.12, vib: 0.004 }, e.o)),
+    fhorn: (t, e, d, v, o) => horn(t, e.m, d, v, o, mix({ cut: 1100, att: 0.16, rel: 0.3 }, e.o)),
     didge: (t, e, d, v, o) => didge(t, e.m, d, v, o, e.o),
     timp: (t, e, d, v, o) => timp(t, e.m, v, o),
     drum: (t, e, d, v, o) => drum(t, e.m, v, o),
@@ -290,7 +316,7 @@
     const f = V[e.i]; if (f) f(t, e, d, v, dest);
   }
   // niveau de chaque instrument, mesuré pour qu'une même force sonne aussi fort d'un instrument à l'autre
-  const LV = { pan: 0.94, lowwh: 1.02, ney: 0.99, shaku: 0.98, rec: 0.98, tin: 0.93, whistle: 1.73, theremin: 1.59, reed: 2.55, oboe: 3.74, bsn: 4.14, fiddle: 2.15, erhu: 1.62, hurdy: 3.91, stacc: 2.26, acc: 6.18, choir1: 3.42, hum: 2.98, tpt: 1.01, mute: 1.23, dist: 1.81, gtr: 0.82, banjo: 1.47, harpsi: 1.48, koto: 0.96, oud: 0.43, pizz: 0.91, glock: 1.09, kal: 1.37, steel: 1.11, xylo: 2.82, vibes: 1.19, tuba: 1.25, didge: 1.85, timp: 0.97, cello: 2.31, organ: 2.3, choir: 1.65, glass: 1.65 };
+  const LV = { pan: 0.94, lowwh: 1.02, ney: 0.99, shaku: 0.98, rec: 0.98, tin: 0.93, whistle: 1.73, theremin: 1.59, reed: 2.55, oboe: 3.74, bsn: 4.14, fiddle: 2.15, erhu: 1.62, hurdy: 3.91, stacc: 2.26, acc: 6.18, choir1: 3.42, hum: 2.98, tpt: 1.01, mute: 1.23, dist: 1.81, gtr: 0.82, banjo: 1.47, harpsi: 1.48, koto: 0.96, oud: 0.43, pizz: 0.91, glock: 1.09, kal: 1.37, steel: 1.11, xylo: 2.82, vibes: 1.19, tuba: 1.25, didge: 1.85, timp: 0.97, cello: 2.31, organ: 2.3, choir: 1.65, glass: 1.65, vln: 2.4, clar: 2.91, fhorn: 0.93, cel: 1.21, cb: 2.06, str: 0.25, strl: 3.62 };
 
   /* ---------- morceaux ---------- */
   const C = (r, t) => ({ r, t }); // racine, tierce (3 mineure, 4 majeure)
@@ -604,6 +630,104 @@
       parts: [["line", { i: "bass", oct: -1, pat: [[0, 0, 0.9, 0.6], [1, 1, 0.9, 0.5], [2, 2, 0.9, 0.55], [3, "c", 0.9, 0.5]] }],
         ["chord", { i: "horn", oct: 1, pat: [[0, 3.8, 0.25]], ao: { cut: 1000, att: 0.3 }, from: 1 }]],
       dr: [[0, "low", 0.4], [2, "low", 0.3], ...EIGHTHS.map((x) => [x, "jingle", x % 1 ? 0.22 : 0.35])] },
+    /* --- 1.0.29 : les menus, à l'orchestre façon DOFUS 3 (cordes, harpe, cors, bois, célesta, timbales) --- */
+    monde: { name: "Carte du Monde des Douze", gain: 0.61, bpm: 96, bpb: 4, rv: 0.45, lead: ["strl", "fhorn"], lead2: "vln+12", l2v: 0.3,
+      ch: "D A Bm G D A G A D A Bm F#m G D Em7 A",
+      mel: "A4:1 D5:1 A5:2 | G5:.5 F#5:.5 E5:1 C#5:1 A4:1 | B4:1.5 C#5:.5 D5:1 F#5:1 | G5:2 F#5:1 E5:1 | F#5:1.5 E5:.5 D5:1 A4:1 | C#5:1 E5:1 A5:2 | B5:1.5 A5:.5 G5:1 E5:1 | A5:3 A4:1 | D5:1 F#5:1 A5:1.5 D6:.5 | C#6:2 B5:1 A5:1 | B5:1.5 A5:.5 F#5:1 D5:1 | C#5:2 E5:1 F#5:1 | G5:1.5 F#5:.5 E5:1 D5:1 | F#5:1 A5:1 D6:2 | E6:1 D6:1 B5:1 G5:1 | C#6:2 A5:2",
+      parts: [["arp", { i: "harp", seq: [0, 1, 2, 3, 4, 3, 2, 1], step: 0.5, oct: 1, d: 1.5, v: 0.32, pan: -0.3 }],
+        ["chord", { i: "str", oct: 1, vc: [0, 1, 2], pat: [[0, 4, 0.45]], ao: { att: 0.6 } }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 1.9, 0.5], [2, 0, 1.9, 0.42]] }],
+        ["line", { i: "stacc", oct: 0, pat: [[0, 0, 0.3, 0.3], [0.5, 0, 0.3, 0.2], [1, 2, 0.3, 0.26], [1.5, 0, 0.3, 0.2], [2, 0, 0.3, 0.3], [2.5, 0, 0.3, 0.2], [3, 2, 0.3, 0.26], [3.5, 3, 0.3, 0.2]], from: 1, pan: 0.25 }],
+        ["line", { i: "timp", oct: 0, pat: [[0, 0, 1, 0.38]], every: 2 }]],
+      dr: [[0, "bdrum", 0.18]], fill: [[0, "bdrum", 0.3], [1.1, "swell", 0.5]] },
+    cles: { name: "Salle des clés", gain: 0.51, bpm: 76, bpb: 4, rv: 0.5, lead: ["cello", "clar"],
+      ch: "Cm Abmaj7 Fm6 G Cm Abmaj7 Dbmaj7 G7",
+      mel: "G4:1.5 Ab4:.5 G4:1 Eb4:1 | C5:2 Bb4:1 G4:1 | Ab4:1.5 G4:.5 F4:1 D4:1 | D4:2 B3:2 | G4:1 C5:1 Eb5:1.5 D5:.5 | C5:2 G4:2 | F4:1 Ab4:1 C5:1 Db5:1 | B4:3 r:1",
+      parts: [["line", { i: "pizz", oct: 0, pat: [[0, 0, 0.4, 0.5], [0.75, 2, 0.3, 0.35], [1.5, 0, 0.3, 0.4], [2, 1, 0.4, 0.45], [2.75, 2, 0.3, 0.35], [3.5, 1, 0.3, 0.35]] }],
+        ["chord", { i: "str", oct: 0, vc: [0, 1, 2], pat: [[0, 4, 0.35]], ao: { att: 1.2, cut: 1400 } }],
+        ["arp", { i: "cel", seq: [4, null, 3, null, 5, null, null, null], step: 0.5, oct: 1, v: 0.22, from: 1, pan: 0.35 }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 3.8, 0.35]] }]],
+      dr: [[0, "bdrum", 0.22], [3, "tri", 0.1]] },
+    defi: { name: "Défi du jour", gain: 0.68, bpm: 150, bpb: 2, rv: 0.3, lead: ["vln", "xylo"],
+      ch: "Em Em B7 B7 Em Em Am B7 C C G G Am B7 Em Em",
+      mel: "E5:.5' G5:.5' B5:.5' G5:.5' | E6:1> B5:.5' G5:.5' | F#5:.5' A5:.5' D#6:.5' A5:.5' | F#6:1> D#6:.5' B5:.5' | G5:.5' F#5:.5' E5:.5' G5:.5' | B5:.5' A5:.5' G5:.5' B5:.5' | C6:.5' B5:.5' A5:.5' C6:.5' | B5:1> r:1 | G5:.5' C6:.5' E6:.5' C6:.5' | G5:1> E5:.5' G5:.5' | D6:.5' B5:.5' G5:.5' B5:.5' | D6:1> r:.5 D6:.5' | C6:.5' B5:.5' A5:.5' G5:.5' | F#5:.5' A5:.5' D#6:.5' F#6:.5' | E6:1> B5:.5' G5:.5' | E5:1> r:1",
+      parts: [["line", { i: "pizz", oct: 0, pat: [[0, 0, 0.3, 0.5], [0.5, 2, 0.3, 0.35], [1, 1, 0.3, 0.45], [1.5, 2, 0.3, 0.35]] }],
+        ["chord", { i: "stacc", oct: 1, vc: [0, 1, 2], pat: [[0.5, 0.25, 0.32], [1.5, 0.25, 0.32]], pan: 0.25 }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 0.4, 0.45], [1, 2, 0.4, 0.4]] }],
+        ["chord", { i: "fhorn", oct: 1, pat: [[0, 1.8, 0.3]], every: 2, from: 1 }]],
+      dr: [[0, "bdrum", 0.3], [1, "snare", 0.22], [1.75, "snare", 0.1]], fill: [[0, "snare", 0.3], [0.5, "sroll", 0.45]], hits: [[16, 0, "crash", 0.22]] },
+    heros: { name: "Salle des héros", gain: 0.97, bpm: 84, bpb: 3, rv: 0.5, lead: ["fhorn", "strl"], lead2: "choir1-12", l2v: 0.3,
+      ch: "Bb F Gm Eb Bb F Eb F Gm Eb Bb F Cm F7 Bb Bb",
+      mel: "F4:1 Bb4:1 D5:1 | C5:2 A4:1 | Bb4:1.5 A4:.5 G4:1 | G4:2 F4:1 | F4:1 Bb4:1 D5:1 | F5:2 Eb5:1 | D5:1 C5:1 Bb4:1 | C5:3 | D5:1.5 Eb5:.5 F5:1 | G5:2 Eb5:1 | F5:1.5 D5:.5 Bb4:1 | C5:2 F5:1 | Eb5:1 D5:1 C5:1 | A4:1 C5:1 Eb5:1 | D5:3 | Bb4:2 r:1",
+      parts: [["arp", { i: "harp", seq: [0, 1, 2, 4, 2, 1], step: 0.5, oct: 1, d: 1.4, v: 0.3, pan: -0.3 }],
+        ["chord", { i: "str", oct: 1, vc: [0, 1, 2], pat: [[0, 3, 0.4]], ao: { att: 0.5 } }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 2.8, 0.45]] }],
+        ["line", { i: "timp", oct: 0, pat: [[0, 0, 1, 0.35]], every: 2 }],
+        ["chord", { i: "choir", oct: 1, pat: [[0, 3, 0.28]], ao: { vow: "o", att: 0.8 }, from: 1 }]],
+      dr: [[0, "bdrum", 0.14]] },
+    sac: { name: "Sac d'aventurier", gain: 0.8, bpm: 112, bpb: 4, sw: 0.3, rv: 0.3, lead: ["bsn-12", "cel+12"], lead2: "clar", l2v: 0.3,
+      ch: "D Bm Em A7 D G A7 D",
+      mel: "A4:.5' F#4:.5' D4:.5' F#4:.5' A4:1 r:1 | B4:.5' D5:.5' C#5:.5' B4:.5' F#4:1.5 r:.5 | G4:.5' B4:.5' E5:.5' D5:.5' C#5:.5' B4:.5' G4:1 | A4:.5' C#5:.5' E5:.5' G5:.5' F#5:1 E5:1 | F#5:1.5 D5:.5' A4:1 D5:1 | B4:.5' D5:.5' G5:1 F#5:.5' E5:.5' D5:1 | C#5:.5' E5:.5' A5:.5' G5:.5' E5:1 C#5:1 | D5:1' A4:1' D4:1 r:1",
+      parts: [["line", { i: "pizz", oct: 0, pat: [[0, 0, 0.4, 0.5], [1, 1, 0.4, 0.4], [2, 2, 0.4, 0.45], [3, 1, 0.4, 0.4]] }],
+        ["chord", { i: "harp", oct: 1, pat: [[1, 0.5, 0.3], [3, 0.5, 0.3]], st: 0.03 }]],
+      dr: [[1.5, "shaker", 0.18], [3.5, "shaker", 0.18], [3, "tri", 0.07]] },
+    phenix: { name: "Renaissance du Phénix", gain: 0.52, bpm: 63, bpb: 4, rv: 0.55, lead: ["flute", "vln"], lead2: "choir1", l2v: 0.28,
+      ch: "Am F C G Am F Dm E",
+      mel: "A4:1 C5:1 E5:2 | F5:1.5 E5:.5 C5:2 | G5:2 E5:1 C5:1 | D5:2 B4:1 D5:1 | E5:1 A5:1 C6:2 | B5:1.5 A5:.5 F5:2 | A5:1 F5:1 D5:1 F5:1 | B5:2 G#5:2",
+      parts: [["chord", { i: "str", oct: 1, vc: [0, 1, 2, 3], pat: [[0, 4, 0.42]], ao: { att: 1.5, rel: 1 } }],
+        ["arp", { i: "harp", seq: [0, 1, 2, 3, 4, 5, 4, 3], step: 0.5, oct: 0, d: 2, v: 0.26, pan: -0.3 }],
+        ["chord", { i: "choir", oct: 1, pat: [[0, 4, 0.25]], ao: { vow: "a", att: 1.2 }, from: 1 }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 3.9, 0.4]] }]],
+      dr: { len: 4, h: [[0, "bdrum", 0.28], [9.6, "swell", 0.42], [12, "bdrum", 0.3]] } },
+    quetes: { name: "Le fil des quêtes", gain: 0.58, bpm: 104, bpb: 4, rv: 0.4, lead: ["oboe", "flute"],
+      ch: "G Em C D G Bm C D",
+      mel: "D5:.5 G5:.5 B5:1 A5:.5 G5:.5 D5:1 | E5:1.5 G5:.5 B4:2 | C5:.5 E5:.5 G5:1 F#5:.5 E5:.5 C5:1 | D5:2 F#5:1 A5:1 | B5:1.5 A5:.5 G5:1 D5:1 | F#5:1 D5:1 B4:2 | C5:.5 D5:.5 E5:1 G5:1 E5:1 | A5:2 F#5:1 D5:1",
+      parts: [["arp", { i: "harp", seq: [0, 2, 1, 2, 3, 2, 1, 2], step: 0.5, oct: 1, d: 1.2, v: 0.28, pan: -0.25 }],
+        ["line", { i: "pizz", oct: 0, pat: [[0, 0, 0.4, 0.45], [1.5, 2, 0.4, 0.35], [2, 0, 0.4, 0.4], [3, 1, 0.4, 0.35]] }],
+        ["chord", { i: "str", oct: 1, pat: [[0, 4, 0.3]], ao: { att: 0.8 }, from: 1 }]],
+      dr: [[0, "bdrum", 0.15], [1, "jingle", 0.14], [3, "jingle", 0.14]] },
+    succes: { name: "Hymne des succès", gain: 0.71, bpm: 108, bpb: 4, rv: 0.45, lead: ["tpt", "strl"], lead2: "fhorn-12", l2: "all", l2v: 0.35,
+      ch: "C Em F G C Am Dm G",
+      mel: "G4:.5 C5:.5 E5:.5 G5:.5 C6:2 | B5:1.5 G5:.5 E5:2 | A5:1 C6:1 A5:.5 F5:.5 C5:1 | D5:.5 G5:.5 B5:1 D6:2 | E6:1.5 D6:.5 C6:1 G5:1 | A5:1.5 C6:.5 E5:2 | F5:1 A5:1 D6:1 C6:1 | B5:2 G5:1 G4:1",
+      parts: [["chord", { i: "stacc", oct: 1, vc: [0, 1, 2], pat: [[0, 0.3, 0.4], [1, 0.3, 0.3], [2, 0.3, 0.35], [3, 0.3, 0.3]] }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 1.9, 0.5], [2, 2, 1.9, 0.45]] }],
+        ["line", { i: "timp", oct: 0, pat: [[0, 0, 1, 0.45], [3.5, 2, 0.5, 0.3]] }],
+        ["arp", { i: "glock", seq: [4, null, null, null], step: 1, oct: 1, v: 0.18, from: 1 }]],
+      dr: [[0, "bdrum", 0.25], [2, "snare", 0.15], [3.5, "snare", 0.1]], hits: [[8, 0, "crash", 0.25]], fill: [[0, "bdrum", 0.3], [2, "sroll", 0.45], [3.5, "snare", 0.3]] },
+    biblio: { name: "Bibliothèque des Douze", gain: 1.28, bpm: 72, bpb: 4, rv: 0.6, lead: ["harp+12", "flute"], lead2: "cel+12", l2v: 0.22,
+      ch: "Abmaj7 Dbmaj7 Fm7 Eb Abmaj7 Dbmaj7 Bbm7 Eb",
+      mel: "C5:1 Eb5:1 G5:2 | F5:2 C5:2 | Ab5:1.5 G5:.5 Eb5:2 | G4:1 Bb4:1 Eb5:2 | C5:1 Eb5:1 Ab5:1 G5:1 | F5:3 Eb5:1 | Db5:1 F5:1 Ab5:1 F5:1 | G5:4",
+      parts: [["arp", { i: "harp", seq: [0, 2, 4, 5, 6, 5, 4, 2], step: 0.5, oct: 0, d: 2, v: 0.24, pan: -0.3 }],
+        ["chord", { i: "str", oct: 1, vc: [0, 1, 2, 3], pat: [[0, 4, 0.3]], ao: { att: 1.2, cut: 1800 } }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 3.9, 0.3]] }]] },
+    carnet: { name: "Carnet de voyage", gain: 0.53, bpm: 132, bpb: 6, rv: 0.45, lead: ["vln", "clar"],
+      ch: "F Dm Bb C F Am Bb C",
+      mel: "C5:2 F5:1 A5:2 G5:1 | F5:3 D5:3 | D5:2 F5:1 Bb5:2 A5:1 | G5:3 E5:2 C5:1 | F5:2 A5:1 C6:2 A5:1 | E5:3 C5:2 E5:1 | D5:2 C5:1 Bb4:2 D5:1 | C5:5 r:1",
+      parts: [["arp", { i: "harp", seq: [0, 2, 4, 5, 4, 2], step: 1, oct: 0, d: 2.5, v: 0.28, pan: -0.3 }],
+        ["line", { i: "cello", oct: 0, pat: [[0, 0, 2.8, 0.3], [3, 2, 2.8, 0.25]], from: 1 }],
+        ["chord", { i: "str", oct: 1, pat: [[0, 6, 0.25]], ao: { att: 0.8 }, from: 1 }]] },
+    champions: { name: "Hall des champions", gain: 0.71, bpm: 198, bpb: 6, rv: 0.35, lead: ["fhorn", "strl"], lead2: "tpt", l2v: 0.3,
+      ch: "Gm Gm Eb F Gm Eb Cm D",
+      mel: "D5:2 G5:1 Bb5:2 A5:1 | G5:3 D5:3 | Eb5:2 G5:1 Bb5:2 G5:1 | F5:2 A5:1 C6:3 | Bb5:2 A5:1 G5:2 F5:1 | G5:2 Eb5:1 Bb4:3 | C5:2 Eb5:1 G5:2 F5:1 | F#5:3 A5:2 D5:1",
+      parts: [["line", { i: "stacc", oct: 1, pat: [[0, 0, 0.4, 0.4], [1, 0, 0.3, 0.25], [2, 0, 0.3, 0.3], [3, 2, 0.4, 0.38], [4, 2, 0.3, 0.25], [5, 2, 0.3, 0.3]] }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 2.8, 0.45], [3, 0, 2.8, 0.4]] }],
+        ["line", { i: "timp", oct: 0, pat: [[0, 0, 1, 0.45], [3, 2, 1, 0.35]] }],
+        ["chord", { i: "fhorn", oct: 1, vc: [0, 1, 2], pat: [[0, 5.5, 0.25]], from: 1, every: 2 }]],
+      dr: [[0, "bdrum", 0.3], [3, "bdrum", 0.2], [2, "snare", 0.1], [5, "snare", 0.14]], hits: [[8, 0, "crash", 0.22]], fill: [[0, "bdrum", 0.3], [2, "snare", 0.2], [3, "sroll", 0.4], [5, "snare", 0.3]] },
+    strateges: { name: "Table des stratèges", gain: 0.66, bpm: 100, bpb: 4, rv: 0.4, dly: [0.75, 0.25, 0.15], lead: ["clar", "cel+12"],
+      ch: "Dm Bbmaj7 Gm A Dm Bbmaj7 Gm7 A",
+      mel: "A4:1.5 D5:1.5 F5:1 | E5:1.5 D5:1.5 A4:1 | Bb4:1.5 D5:1.5 G5:1 | E5:3 C#5:1 | D5:1.5 F5:1.5 A5:1 | G5:1.5 F5:1.5 D5:1 | F5:1.5 E5:1.5 D5:1 | C#5:2 E5:1 A4:1",
+      parts: [["line", { i: "pizz", oct: 1, pat: [[0, 0, 0.3, 0.45], [1.5, 2, 0.3, 0.38], [3, 3, 0.3, 0.4]] }],
+        ["chord", { i: "str", oct: 0, pat: [[0, 4, 0.3]], ao: { att: 0.7, cut: 1600 } }],
+        ["arp", { i: "harp", seq: [0, 2, 4, 2], step: 1, oct: 1, d: 1, v: 0.18, at: 0.5, from: 1 }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 1.4, 0.35], [1.5, 0, 1.4, 0.3], [3, 0, 0.9, 0.3]] }]],
+      dr: [[0, "rim", 0.12], [1.5, "rim", 0.1], [3, "rim", 0.12]] },
+    idees: { name: "Boîte à idées", gain: 0.89, bpm: 126, bpb: 4, rv: 0.3, lead: ["pizz+12", "flute"], lead2: "glock+12", l2v: 0.2,
+      ch: "Eb Cm Ab Bb Eb Gm Ab Bb",
+      mel: "Bb4:.5' Eb5:.5' G5:.5' Bb5:.5' G5:1 Eb5:1 | C5:.5' Eb5:.5' G5:1 F5:.5' Eb5:.5' C5:1 | Ab4:.5' C5:.5' Eb5:.5' Ab5:.5' G5:.5' F5:.5' Eb5:1 | F5:1.5 D5:.5' Bb4:2 | G5:.5' Bb5:.5' Eb6:1 D6:.5' C6:.5' Bb5:1 | Bb5:.5' G5:.5' D5:1 F5:1 G5:1 | C6:.5' Bb5:.5' Ab5:.5' G5:.5' F5:.5' Eb5:.5' C5:1 | D5:1 F5:1 Bb5:1 r:1",
+      parts: [["line", { i: "bsn", oct: 0, pat: [[0, 0, 0.4, 0.45], [1, 2, 0.4, 0.35], [2, 0, 0.4, 0.4], [3, 2, 0.4, 0.35]] }],
+        ["chord", { i: "harp", oct: 1, pat: [[0.5, 0.3, 0.25], [1.5, 0.3, 0.22], [2.5, 0.3, 0.25], [3.5, 0.3, 0.22]], st: 0.015 }]],
+      dr: [[1, "snap", 0.14], [3, "snap", 0.14], [0, "tri", 0.05]] },
   };
   Object.entries(SONGS).forEach(([k, v]) => (TRACKS[k] = song(v)));
   Object.values(TRACKS).forEach((T) => (T.len = T.ch.length * T.bpb));
