@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.12.5 « Liste de courses plus pratique »
+Demande de Mathis (« un total du contenu de sa liste de course, et un lien vers le métier quand la recette est faisable »). `shopTotalHtml` (js/ui.js) additionne les ingrédients de toutes les entrées de `S.shop` (dès 2 entrées), ressources manquantes en premier. Une entrée prête affiche « Fabriquer » (`shopgo`) : objet ou recette du Bricoleur → page Métiers › Artisanat, métier et recette sélectionnés (fiche ouverte sur téléphone) ; amélioration d'outil → Métiers › Récolte, outil déplié.
+
 ## 1.0.12.4 « Bricoleur après 120 »
 Signalement de Mathis (14/10/2026 : « Jsuis 130, les recettes me rapportent plus d'xp sur bricoleur »). Cause : `E.craftTop` (js/engine.js, référence de la baisse « recette trop facile » de 1.0.9.2) comptait aussi les recettes uniques ; le Coffre en merisier (meuble unique, niveau 120) mettait la référence du Bricoleur à 120 au lieu de 100. Passé le métier 120, les recettes niveau 100 tombaient à la moitié de leur XP et tout le reste à 1 XP (au Bricoleur 130 : 0 recette à XP pleine, 160 à 1 XP ; maintenant 7 à XP pleine, environ 10 fabrications par niveau jusqu'au 200). `E.craftTop` ne compte plus que les recettes refaisables, comme `E.craftTopXp`. Les 6 autres métiers ne changent pas (référence 66 dans les deux cas). Le message « recette trop facile » de la fiche de recette donne la référence du métier quand ton niveau la dépasse, et `#recnext` est masqué pour les recettes à 1 XP (il affichait « dans 56 719 fabrications »). Test avec la vraie baisse de chaque recette dans tests/artisanat.test.js (l'ancien test l'esquivait).
 

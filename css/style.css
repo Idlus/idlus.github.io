@@ -538,6 +538,8 @@ nav.main .lbl-s{display:none}
 .qcard{display:flex;gap:12px;align-items:center;background:var(--panel2);border-radius:14px;padding:10px 12px;border:2px solid transparent}
 .qcard.cur{border-color:var(--gold);box-shadow:0 0 16px rgba(var(--glw),.25)}
 .qcard.done{opacity:.6}
+.qcard.shoptot{border:2px dashed var(--line,rgba(255,255,255,.14));background:transparent}.qcard.shoptot .qnum{font-weight:800;font-size:16px}
+@media (max-width:600px){.qcard .shopgo-l{display:none}}
 .qnum{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--panel3);font-weight:900;flex:none}
 .qcard.done .qnum{background:#3fb35d;color:#08130a}.qcard.cur .qnum{background:var(--gold);color:#1a1206}
 .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}

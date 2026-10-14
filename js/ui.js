@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.12.4";
+const GAME_VERSION = "1.0.12.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.12.5", name: "Liste de courses plus pratique", items: [
+    "Liste de courses (Accueil) : un total en haut additionne les ressources de toutes les recettes de la liste, avec ce que tu as et ce qu'il faut. Une ressource demandée par plusieurs recettes n'apparaît qu'une fois",
+    "Quand tout est réuni pour une recette, un bouton « Fabriquer » ouvre directement la recette dans son métier",
+  ] },
   { v: "1.0.12.4", name: "Bricoleur après 120", items: [
     "Bricoleur : passé le niveau 120, les alliages, planches et substrats des niveaux 90 à 100 rapportent à nouveau l'XP pleine, soit environ 10 fabrications par niveau jusqu'au 200",
     "Avant, le Coffre en merisier, un meuble qu'on ne fabrique qu'une fois, comptait comme la recette la plus haute du métier : au-delà du niveau 120, les recettes du niveau 100 ne donnaient plus que la moitié de leur XP et toutes les autres 1 XP",
@@ -1400,10 +1404,18 @@ function questGoBtn(q, cls) {
 function pinBtn(p, label) { const on = E.pinned(S, p); return `<button class="btn sm pinbtn ${on ? "on" : ""}" data-act="pin" data-p="${h(JSON.stringify(p))}" data-tip="${on ? "Ne plus suivre dans la bande d'objectifs" : "Suivre dans la bande d'objectifs, en haut de l'écran"}">${G("pin")}${label ? " " + h(label) : ""}</button>`; }
 /* temps estimé avant d'avoir tous les ingrédients (3.2.2) */
 function etaLine(ing) { const e = E.needEta(S, ing); if (e.stuck) return `<span class="eta no">${h(e.stuck.res)} : pas dans l'activité en cours${e.stuck.where ? ` · zone : ${h(e.stuck.where)}` : ""}</span>`; if (!e.sec) return ""; return `<span class="eta">${h(E.etaTxt(e.sec))}</span>`; }
+/* 1.0.12.5 : total de la liste de courses (mêmes ressources additionnées) et lien vers la recette quand tout est réuni */
+function shopTotalHtml() {
+  const tot = {}; S.shop.forEach((e) => shopIng(e).forEach(([r, q]) => { tot[r] = (tot[r] || 0) + q; }));
+  const ing = Object.entries(tot).sort((a, b) => ((S.res[a[0]] || 0) >= a[1]) - ((S.res[b[0]] || 0) >= b[1]) || a[0].localeCompare(b[0]));
+  if (!ing.length) return "";
+  const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q).length;
+  return `<div class="qcard shoptot"><span class="qnum">Σ</span><div class="grow"><b>Total de la liste</b> <span class="xs muted">${S.shop.length} recette${S.shop.length > 1 ? "s" : ""} · ${ing.length} ressource${ing.length > 1 ? "s" : ""}</span> ${miss ? `<span class="tag warn">il manque ${miss} ressource${miss > 1 ? "s" : ""}</span>` : `<span class="tag good">tout est réuni</span>`}${ingHtml(ing)}</div></div>`;
+}
 function shopListHtml() {
-  return S.shop.map((e, i) => { const ing = shopIng(e); const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q); const ok = !miss.length && ing.length;
+  return (S.shop.length > 1 ? shopTotalHtml() : "") + S.shop.map((e, i) => { const ing = shopIng(e); const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q); const ok = !miss.length && ing.length;
     return `<div class="qcard ${ok ? "cur" : ""}"><span class="qnum">${ok ? "✓" : G("cart")}</span><div class="grow"><b>${h(shopName(e))}</b>${ok ? ` <span class="tag good">tout est réuni</span>` : ` ${etaLine(ing)}`}${ingHtml(ing)}
-      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div>${ok ? "" : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
+      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div>${ok ? `<button class="btn sm primary" data-act="shopgo" data-i="${i}" data-tip="Ouvrir la recette dans son métier">${IC("metiers")}<span class="shopgo-l"> Fabriquer</span></button>` : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
 }
 
 const ICONS = {
@@ -6781,6 +6793,10 @@ document.addEventListener("click", (ev) => {
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
     case "tool": msg(E.upgradeTool(S, d.job)); break;
     case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
+    case "shopgo": { const e = S.shop[+d.i]; if (!e) return;
+      if (e.k === "tool") { ui.toolOpen = Object.assign(ui.toolOpen || {}, { [e.id]: true }); pageGo("metiers"); ui.met = "recolte"; render(); return; }
+      const job = e.k === "special" ? (SPECIAL_CRAFTS[e.id] || {}).job : ITEMS[e.id] && ITEMS[e.id].craft && ITEMS[e.id].craft.job; if (!job) return;
+      ui.craftJob = job; const F = fltOf("met"); F.q = shopName(e); F.mode = "all"; ui.recSel = e.id; ui.recStick = e.id; ui.recQty = "1"; pageGo("craft"); if (narrow()) recSheet(); return; }
     case "shoppin": { const i = S.shop.findIndex((e) => e.k === d.k && e.id === d.id); if (i >= 0) { S.shop.splice(i, 1); toast("Retiré de la liste de courses."); } else { S.shop.push({ k: d.k, id: d.id }); toast("Ajouté à la liste de courses (Accueil)."); } break; }
     case "shopdel": S.shop.splice(+d.i, 1); break;
     case "rescat": ui.resCat = d.v; break;

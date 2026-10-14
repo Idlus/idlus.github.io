@@ -1,6 +1,14 @@
 {
-  "version": "1.0.12.4",
+  "version": "1.0.12.5",
   "versions": [
+    {
+      "v": "1.0.12.5",
+      "name": "Liste de courses plus pratique",
+      "items": [
+        "Liste de courses (Accueil) : un total en haut additionne les ressources de toutes les recettes de la liste, avec ce que tu as et ce qu'il faut. Une ressource demandée par plusieurs recettes n'apparaît qu'une fois",
+        "Quand tout est réuni pour une recette, un bouton « Fabriquer » ouvre directement la recette dans son métier"
+      ]
+    },
     {
       "v": "1.0.12.4",
       "name": "Bricoleur après 120",
