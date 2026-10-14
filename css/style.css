@@ -4911,6 +4911,7 @@ body.reduced #halfx,body.nomotion #halfx{display:none}
 .arena.fmode .ent.tk.m{border-color:rgba(255,120,110,.40)}
 .arena.fmode .ent.tk.cur{border-color:#f0b429;box-shadow:0 0 12px rgba(240,180,41,.6)}
 .arena.fmode .ent.tk.dead{opacity:.32}
+.arena.fmode .ent.tk.summon.dead{display:none} /* 1.0.30.2 : invocations et sbires tombés retirés (avant : des dizaines de cases vides au Boss des mondes et au Kolizéum) */
 .arena.fmode .ent.tk[data-tipmon]{cursor:help}
 .ent.tk .av{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.18),rgba(0,0,0,.4));border:2px solid rgba(255,255,255,.28)}
 .ent.tk .av img{width:34px;height:34px;object-fit:contain}

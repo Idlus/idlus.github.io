@@ -357,6 +357,8 @@ async function dofusAnn(db: any, uid: string, b: any) {
   const boss = D.MONSTERS[dg.boss] ? D.MONSTERS[dg.boss].name : dg.name;
   await db.from("chat_msgs").insert({ ch: "g", user_id: uid, pseudo: prof.pseudo, cls: lad.main, lvl: lad.main_lvl, kind: "ann", data: { t: "giga", id, did, dname: dg.name, boss, k, odds } });
   return json({ ok: true, giga: true, id, did, k, odds });
+}
+
 // ---------- Songe infini : record de la semaine (1.0.30, js/songe.js, supabase/songe.sql) ----------
 // Le serveur relit la partie en ligne (meilleur songe validé de la semaine), rejoue deux songes de cette intensité avec
 // l'équipe, la carte de la semaine et un hasard qu'il choisit, puis écrit au plus un quart de vagues (au moins 2) de plus

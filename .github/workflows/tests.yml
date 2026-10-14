@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       # garde-fou (14/10/2026) : une publication ne doit effacer aucune version déjà publiée ni faire reculer le numéro
       - name: Garde-fou des publications

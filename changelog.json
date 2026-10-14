@@ -1,6 +1,15 @@
 {
-  "version": "1.0.30.2",
+  "version": "1.0.30.3",
   "versions": [
+    {
+      "v": "1.0.30.3",
+      "name": "Boss des mondes et Kolizéum réparés",
+      "items": [
+        "Boss des mondes, Kolizéum, Défi du jour, boss et Percepteurs de guilde, records de donjon : le serveur de combat refusait tout depuis la 1.0.30 (une erreur dans son code). Il remarche",
+        "Combat en formation : les invocations tombées disparaissent au lieu de s'empiler en dizaines de cases vides (Boss des mondes, Kolizéum, donjons)",
+        "Les héros qui portent un objet légendaire du Songe ne demandent plus une image impossible à DofusDB"
+      ]
+    },
     {
       "v": "1.0.30.2",
       "name": "Équiper au mieux complet",

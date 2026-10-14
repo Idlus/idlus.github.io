@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30.2";
+const GAME_VERSION = "1.0.30.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.30.3", name: "Boss des mondes et Kolizéum réparés", items: [
+    "Boss des mondes, Kolizéum, Défi du jour, boss et Percepteurs de guilde, records de donjon : le serveur de combat refusait tout depuis la 1.0.30 (une erreur dans son code). Il remarche",
+    "Combat en formation : les invocations tombées disparaissent au lieu de s'empiler en dizaines de cases vides (Boss des mondes, Kolizéum, donjons)",
+    "Les héros qui portent un objet légendaire du Songe ne demandent plus une image impossible à DofusDB",
+  ] },
   { v: "1.0.30.2", name: "Équiper au mieux complet", items: [
     "« Équiper au mieux », « Tout équiper au mieux » et la pastille verte comptent enfin tout ce que donne un objet : son exo (PA, PM, PO…), le bonus d'un objet Parfait et le Potentiel des Dofus. Avant, le bouton pouvait retirer un objet meilleur que ce qu'il mettait",
     "Profil Multi-élément : les objets du 2e élément comptent autant que ceux du 1er (avant, seul le premier comptait et le bouton enlevait les objets du second)",
@@ -1606,6 +1611,7 @@ function lookUrl(c, opts = {}) {
      par DofusDB, avec la tête et les couleurs d'origine de sa classe ; celles de NO_LOOK (sans apparence connue) ne se voient pas */
   const worn = []; let dbOnly = false;
   if (!opts.bare && S) ["coiffe", "cape"].forEach((sl) => { const tpl = E.shownTpl(S, c, sl); if (!tpl) return; const sk = LK.ITEM_SKINS[tpl];
+    if (!/^i\d+$/.test(tpl)) return; // 1.0.30.2 : objets propres au jeu (légendaires du Songe « leg_… ») : pas d'apparence DofusDB (avant : demande « itemIds[]=NaN » refusée)
     if (sk) { skins.push(sk); worn.push(+tpl.slice(1)); } else if (!(LK.NO_LOOK || []).includes(tpl)) { dbOnly = true; worn.push(+tpl.slice(1)); } });
   if (c.cls === "forge") return worn.length ? forgeLook(sx, worn) : lookLocal("forge", sx, 0); // Forgelance : rendu DofusDB (voir forgeLook)
   if (dbOnly) return dbLook(c.cls, sx, worn);

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.3 « Boss des mondes et Kolizéum réparés »
+
+Signalé par Mathis (14/10/2026, « le boss des mondes et le koli est bug ») : la fonction serveur `record` ne démarrait plus depuis la 1.0.30 (`worker boot error: Expected '}', got '<eof>'`, une accolade fermante perdue à la fusion entre `dofusAnn` et `songe` dans `supabase/functions/record/index.ts`), donc toutes ses requêtes (Boss des mondes, Kolizéum, Défi, guildes, records, GIGA annonce, Songe) répondaient 500. Accolade remise ; `tests/serveur.test.js` (dans `npm test`) vérifie que le fichier se lit (équilibre des accolades, puis chargement avec les types retirés sous Node 22) ; la CI passe à Node 22. Combat en formation : invocations et sbires tombés masqués (`.ent.tk.summon.dead`). `lookUrl` ignore les objets sans numéro DofusDB (légendaires `leg_…`, avant : `itemIds[]=NaN`, erreur 500).
+
 ## 1.0.30.2 « Équiper au mieux complet »
 
 Bug signalé par Mathis (14/10/2026, « j'ai fait équiper au mieux j'ai perdu 200 de stat »). Le score d'objet de js/ui.js (itemScore, utilisé par gearPlan, « Équiper au mieux », la pastille verte et le tri du choix d'objet) lit maintenant les caractéristiques réelles comme E.charStats (itemStats : Parfait, exo, Potentiel des Dofus) ; buildEls lit les points placés aussi en mode automatique (profil Multi-élément) ; bonus de Vitalité pour le profil Tank ; paliers de panoplie avec E.setCountFx (Couture fine) ; planKey suit le Potentiel (S.dofPot).
