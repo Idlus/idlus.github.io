@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.11";
+const GAME_VERSION = "1.0.26";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.26", name: "Une musique par zone", items: [
+    "35 airs composés pour Idlus au lieu de 4, chacun dans son style : western à Cania, bluegrass chez les Wabbits, calypso à Otomaï, Chine à Pandala, Japon à Wukin, Orient à Saharach, chant de marins à Sufokia, fanfare à Bonta, swing à Brâkmar…",
+    "En chasse, la musique suit la zone, avec un fondu quand l'équipe change de zone",
+    "Les pages Kolizéum, Songe infini, Boss des mondes, Guilde, Hôtel de vente, Métiers et Forgemagie ont leur air. Le Songe et le Boss des mondes le gardent pendant leurs combats",
+    "En donjon, la salle du boss a son propre air. Au Havre-Sac, un air de nuit de 21 h à 7 h, et le Bal d'Halouine (24 octobre au 3 novembre) puis les Fêtes de fin d'année (15 décembre au 2 janvier)",
+    "Juke-box dans Options › Sons : écoute chaque air, et choisis « Selon l'endroit » ou un air qui joue partout (bouton « Toujours »). Il remplace les 3 menus de la 1.0.22" ] },
   { v: "1.0.25.11", name: "Tenues verrouillées", items: [
     "Enregistrer une tenue (Héros › Tenues) pose maintenant le cadenas sur tous ses objets : impossible de les briser ou de les mettre à l'HdV par erreur",
     "Seuls les exemplaires de la tenue sont verrouillés, pas les copies identiques du sac. Le nom de la tenue s'affiche à côté du cadenas",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.26 « Une musique par zone »
+
+Choix de Mathis 1A 2A 3A 4A 5A 6B 7A (fil « Musique et sons du jeu », 14/10/2026, maquette d'écoute des 35 airs). js/musique.js : 31 airs de plus écrits en notation courte (`song()`), un genre par air, 25 instruments de plus (niveau de chaque instrument mesuré hors ligne), réverbération et écho par air ; les 4 airs de la 1.0.22 sont inchangés. js/ui.js : `musPlace()` choisit l'air (page du Havre-Sac : événement, sinon nuit de 21 h à 7 h, sinon boîte à musique ; pages `MUS_PAGE` ; Songe actif ; donjon, salle du boss à part ; sinon zone de chasse `MUS_ZONE`, Bonta et Brâkmar selon la sous-zone `MUS_SUB`), fondu de 2 s d'un air à l'autre. 6B : les airs d'événement jouent seulement au Havre-Sac, jour et nuit. Juke-box (Options › Sons) : `S.settings.snd.juke` (« zone » ou « fixe ») et `fix` remplacent `tH`, `tD`, `tV` ; « Écouter » joue un air tant que la fenêtre est ouverte.
+
 ## 1.0.25.11 « Tenues verrouillées »
 
 Demande de Mathis : enregistrer une tenue (Héros › Tenues) verrouille ses objets. `E.syncGearLocks` (js/engine.js) pose `locked` + `glock` sur chaque objet rangé dans une tenue et retire le cadenas des objets marqués `glock` qui ne sont plus dans aucune tenue (Écraser, ✕) ; un cadenas posé à la main reste. Appelé à l'enregistrement, à la suppression et au chargement (tenues déjà enregistrées). Le bouton cadenas refuse de retirer un verrou de tenue et le détail de l'inventaire affiche le nom de la tenue. La fusion de légendaires refuse une copie rangée dans une tenue. Test : tests/tenues.test.js.

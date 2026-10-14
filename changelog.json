@@ -1,6 +1,17 @@
 {
-  "version": "1.0.25.11",
+  "version": "1.0.26",
   "versions": [
+    {
+      "v": "1.0.26",
+      "name": "Une musique par zone",
+      "items": [
+        "35 airs composés pour Idlus au lieu de 4, chacun dans son style : western à Cania, bluegrass chez les Wabbits, calypso à Otomaï, Chine à Pandala, Japon à Wukin, Orient à Saharach, chant de marins à Sufokia, fanfare à Bonta, swing à Brâkmar…",
+        "En chasse, la musique suit la zone, avec un fondu quand l'équipe change de zone",
+        "Les pages Kolizéum, Songe infini, Boss des mondes, Guilde, Hôtel de vente, Métiers et Forgemagie ont leur air. Le Songe et le Boss des mondes le gardent pendant leurs combats",
+        "En donjon, la salle du boss a son propre air. Au Havre-Sac, un air de nuit de 21 h à 7 h, et le Bal d'Halouine (24 octobre au 3 novembre) puis les Fêtes de fin d'année (15 décembre au 2 janvier)",
+        "Juke-box dans Options › Sons : écoute chaque air, et choisis « Selon l'endroit » ou un air qui joue partout (bouton « Toujours »). Il remplace les 3 menus de la 1.0.22"
+      ]
+    },
     {
       "v": "1.0.25.11",
       "name": "Tenues verrouillées",
