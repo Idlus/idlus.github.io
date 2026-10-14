@@ -707,3 +707,7 @@ Le jeu public reçoit tout le contenu de la version de test : niveau 200 et 51 n
 ## Mentions
 Projet de fan gratuit et non commercial, sans lien avec Ankama Games.
 DOFUS, ses noms, images et contenus sont la propriété d'Ankama Games. Données : [DofusDB](https://dofusdb.fr).
+
+## Annonce en jeu sans le panel admin
+
+Le workflow « Annonce en jeu » (`.github/workflows/annonce-en-jeu.yml`) publie une annonce comme le bouton « Publier » du panel admin (`adm_announce` de supabase/chat.sql, au nom du compte admin Xener) : bandeau en haut du jeu (24 h par défaut ; 1h, 7j ou permanent) et message dans le Général. Texte brut, une ligne, 200 caractères au plus, sinon le workflow échoue (`tools/annonce_en_jeu.js --verifier`). Lancement depuis l'onglet Actions, avec `node tools/annonce_en_jeu.js "<texte>"` (gh connecté) ou par l'API GitHub sur `main` ; l'entrée `essai` fait tout puis annule. À lancer après le push sur `main` d'une version, une fois `npm test` (et son garde-fou `tools/garde_fou.js`) passé.

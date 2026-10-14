@@ -1,0 +1,66 @@
+# Annonce en jeu : publie une annonce sur le serveur en ligne, exactement comme le bouton « Publier » du panel admin
+# (fonction adm_announce de supabase/chat.sql, au nom du compte admin de Mathis) : bandeau en haut du jeu
+# (#annbar, relu par les joueurs toutes les 2 minutes) et message dans le Général.
+# Lancement : onglet Actions > « Annonce en jeu » > Run workflow, ou `node tools/annonce_en_jeu.js "<texte>"`.
+# Règles : texte brut, une ligne, 200 caractères au plus (le workflow échoue sinon). « essai » = tout est annulé.
+name: Annonce en jeu
+on:
+  workflow_dispatch:
+    inputs:
+      texte:
+        description: "Texte de l'annonce (texte brut, une ligne, 200 caractères au plus)"
+        required: true
+        type: string
+      duree:
+        description: "Bandeau affiché pendant"
+        type: choice
+        default: 24h
+        options: [1h, 24h, 7j, permanent]
+      chat:
+        description: "Aussi un message dans le chat Général"
+        type: boolean
+        default: true
+      essai:
+        description: "Essai : tout passer puis annuler (rien ne change sur le serveur)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: annonce-en-jeu
+  cancel-in-progress: false
+jobs:
+  annonce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier le texte
+        env:
+          ANNONCE_TEXTE: ${{ inputs.texte }}
+        run: node tools/annonce_en_jeu.js --verifier --duree "${{ inputs.duree }}"
+      - uses: ./.github/actions/vps
+        with:
+          hote: ${{ secrets.VPS_HOST }}
+          util: ${{ secrets.VPS_USER }}
+          pass: ${{ secrets.VPS_NEW_PASSWORD }}
+      - name: Publier
+        env:
+          ANNONCE_TEXTE: ${{ inputs.texte }}
+          DUREE: ${{ inputs.duree }}
+          CHAT: ${{ inputs.chat }}
+          ESSAI: ${{ inputs.essai }}
+        run: |
+          case "$DUREE" in 1h) h=1 ;; 24h) h=24 ;; 7j) h=168 ;; permanent) h=0 ;; *) echo "durée inconnue" >&2; exit 1 ;; esac
+          # Texte passé en base64 : aucun guillemet ni caractère du texte ne peut toucher à la requête.
+          t64=$(printf '%s' "$ANNONCE_TEXTE" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | base64 -w0)
+          { echo "\\set txt64 '$t64'"; echo "\\set heures $h"
+            echo "\\set chat $([ "$CHAT" = true ] && echo true || echo false)"
+            echo "\\set essai $([ "$ESSAI" = true ] && echo true || echo false)"
+            cat tools/annonce_en_jeu.sql; } > /tmp/annonce.sql
+          bash tools/serveur/vps_sql.sh fichier /tmp/annonce.sql | tee /tmp/sortie.txt
+          grep -q "ANNONCE PUBLIÉE\|ESSAI : annonce annulée" /tmp/sortie.txt
+          {
+            [ "$ESSAI" = true ] && echo "## Annonce en jeu : essai (annulé)" || echo "## Annonce en jeu publiée"
+            echo; echo "> $(printf '%s' "$ANNONCE_TEXTE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"; echo
+            echo "Bandeau : $DUREE · chat Général : $CHAT"
+          } >> "$GITHUB_STEP_SUMMARY"
