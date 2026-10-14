@@ -4725,7 +4725,7 @@ function heroesHtml() {
 function heroRailKey(dir) {
   if (!S || ui.tab !== "team" || ui.teamBoard || !$("#tlist") || !window.matchMedia("(min-width:860px)").matches) return false;
   const ids = [...document.querySelectorAll("#tlist .trow")].map((b) => +b.dataset.id); const i = ids.indexOf(ui.cid); if (i < 0 || ids.length < 2) return false;
-  ui.cid = ids[(i + dir + ids.length) % ids.length]; ui.slot = null; ui.heroMore = false; render(); const ch = char(ui.cid); if (ch) motifPlay(ch.cls); return true;
+  ui.cid = ids[(i + dir + ids.length) % ids.length]; ui.slot = null; ui.heroMore = false; render(); return true;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
 function placementHtml() {
@@ -7472,9 +7472,9 @@ function consignesHtml() {
    et depuis la 1.0.29 chaque autre menu aussi (MUS_PAGE, Monde / Donjons / Encyclopédie, Quêtes / Succès), à l'orchestre façon DOFUS 3,
    la salle du boss d'un donjon a le sien, le Havre-Sac joue la nuit de 21 h à 7 h et les airs d'Halouine et des Fêtes à leurs dates.
    Juke-box (Options › Sons) : « Selon l'endroit » ou « Un air fixe » (fix), chaque air s'écoute (SND.prev, tant que la fenêtre est ouverte). */
-const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null, fan: {}, mot: {}, motT: 0, cbt: 0, cbtK: {}, fanT: 0, motN: 0 };
+const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null, fan: {}, cbt: 0, cbtK: {}, fanT: 0 };
 /* 1.0.30 : fan = fanfares des grands moments, cls = thème de chaque classe, cbt = sons de combat, amb + avol = ambiances seules */
-const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false, fan: true, cls: true, cbt: false, amb: false, avol: 40 };
+const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false, fan: true, cbt: false, amb: false, avol: 40 };
 const sndCfg = () => Object.assign({}, SND_DEF0, (S && S.settings.snd) || {});
 const sndSet = (o) => { S.settings.snd = Object.assign(sndCfg(), o); dirty = true; };
 const SND_MAP = { level: "niveau", boss: "donjon", magic: "dofus", coin: "commande", rare: "butin", gong: "donjon", win: "victoire", msg: "message", err: "erreur", clic: "clic" };
@@ -7549,13 +7549,6 @@ function fanPlay(kind) {
   SND.fan[kind] = now; SND.fanT = now; try { A.setMusicVol(c.mvol / 100); A.fanfare(kind); } catch (e) {} return true;
 }
 const fanOr = (kind, sfx) => { if (!fanPlay(kind)) sndPlay(sfx); };
-/* 1.0.30 : le thème de chaque classe, en ouvrant la fiche d'un héros ou en choisissant une classe à recruter (pas deux fois de suite le même) */
-function motifPlay(cls, force) {
-  const A = window.IdlusAudio, c = sndCfg(); if (!A || !A.motif || !S || !CLASSES[cls]) return;
-  if (!force && (!c.cls || !c.mus || c.mute || !SND.gest || document.visibilityState !== "visible")) return;
-  const now = performance.now(); if (!force && (now - SND.motT < 2500 || now - (SND.mot[cls] || -1e9) < 20000 || A.fanBusy())) return;
-  SND.motT = now; SND.mot[cls] = now; try { A.setMusicVol(c.mvol / 100); A.motif(cls); } catch (e) {}
-}
 /* 1.0.30 : sons de combat, seulement quand un combat est affiché : un coup par élément, l'éclat du critique, le soin, le poison, le monstre vaincu, la phase du boss */
 const CBT_EL = { t: "t", f: "f", e: "e", a: "a" };
 function cbtSnd(F, f) {
@@ -7611,13 +7604,8 @@ const sndBtn = () => S ? `<button class="ic-btn snd-btn${sndOn() ? " on" : ""}" 
 const SND_IMP = '.btn.primary,.btn.kgold,.btn.go,[data-act="enterdg"],[data-act="equip"],[data-act="offequip"],[data-act^="craft"],[data-act="recruit"],[data-act^="buy"],[data-act^="open"]';
 document.addEventListener("pointerdown", () => { if (!SND.gest) { SND.gest = true; musSync(); } }, true);
 document.addEventListener("keydown", () => { if (!SND.gest) { SND.gest = true; musSync(); } }, true);
-const MOT_ACT = new Set(["selchar", "homehero", "teamgo", "lossgo"]);
 document.addEventListener("click", (ev) => {
   const b = ev.target.closest && ev.target.closest("button,a.btn,[data-act]"); if (!b || b.disabled || !S) return; const c = sndCfg();
-  const act = b.dataset.act; // 1.0.30 : thème de la classe du héros ouvert, ou de la classe choisie au recrutement
-  if (MOT_ACT.has(act) && b.dataset.v !== "havre") setTimeout(() => { const ch = S && char(ui.cid); if (ch && ui.tab === "team") motifPlay(ch.cls); }, 0);
-  else if (act === "startcls") motifPlay(b.dataset.cls);
-  else if (act === "recruit") { const n0 = S.chars.length; setTimeout(() => { if (S && S.chars.length > n0) motifPlay(S.chars[S.chars.length - 1].cls); }, 0); }
   if (b.dataset.act === "vi-mute" || c.clic === "none") return; if (c.clic === "all" || b.matches(SND_IMP)) sndPlay("clic");
 }, true);
 document.addEventListener("visibilitychange", musSync);
@@ -7650,8 +7638,7 @@ function soundOptionsHtml() {
       optChk(`data-act="vi-snd" data-k="mus"`, c.mus, "Activer la musique", "")
     + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-mvol" value="${c.mvol}" style="width:120px">`)
     + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Continuer quand l'onglet est caché", "sinon la musique se met en pause")
-    + optChkBtn(`data-act="vi-snd" data-k="fan"`, c.fan, "Fanfares des grands moments", "donjon terminé, niveau, Dofus, boss des mondes : la musique baisse le temps du jingle", `<button class="btn sm" data-act="vi-fantest">▶ Écouter</button>`)
-    + optChkBtn(`data-act="vi-snd" data-k="cls"`, c.cls, "Thème de chaque classe", "un court motif en ouvrant la fiche d'un héros ou en choisissant une classe à recruter", `<button class="btn sm" data-act="vi-mottest">▶ Écouter</button>`))
+    + optChkBtn(`data-act="vi-snd" data-k="fan"`, c.fan, "Fanfares des grands moments", "donjon terminé, niveau, Dofus, boss des mondes : la musique baisse le temps du jingle", `<button class="btn sm" data-act="vi-fantest">▶ Écouter</button>`))
   + jukeboxHtml(c, T)
   + optSec("Ambiances", "vent, oiseaux, vagues, feu de cheminée… selon la zone, même sans musique",
       optChk(`data-act="vi-snd" data-k="amb"`, c.amb, "Activer les ambiances", "")
@@ -7716,7 +7703,6 @@ function viAct(a, t) {
     case "vi-sndno": sndSet({ asked: true }); t.closest("#sndask").remove(); return;
     case "vi-jkplay": if (!partHas(d.v)) return; SND.gest = true; SND.prev = SND.prev === d.v ? null : d.v; musSync(); optionsSheet(); return;
     case "vi-fantest": { const A = window.IdlusAudio; if (!A || !A.fanfare) return; SND.gest = true; const K = ["donjon", "niveau", "dofus", "boss"], k = K[(SND.fanN = ((SND.fanN || 0) + 1)) % K.length]; A.setMusicVol(sndCfg().mvol / 100); A.fanfare(k); toast(`Fanfare : ${A.fanfares[k]}.`); return; }
-    case "vi-mottest": { const ch = mainHero() || S.chars[0]; SND.gest = true; const ids = CLASS_ORDER.filter((k) => CLASSES[k]), k = SND.motN ? ids[(ids.indexOf(ch.cls) + SND.motN) % ids.length] : ch.cls; SND.motN++; motifPlay(k, true); toast(`Thème : ${CLASSES[k].name}.`); return; }
     case "vi-cbttest": { const A = window.IdlusAudio; if (!A || !A.cbt) return; SND.gest = true; A.setSfxVol((sndCfg().vol == null ? 50 : sndCfg().vol) / 100); [["t"], ["f"], ["e"], ["a"], ["n", 1], ["heal"]].forEach(([k, c], i) => setTimeout(() => A.cbt(k, c), i * 260)); return; }
     case "vi-jkfix": { if (!partHas(d.v)) return; const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
     case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musPlace() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
@@ -9287,7 +9273,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, sndPlay, musPlace, musSpot, musEvent, fanPlay, motifPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
