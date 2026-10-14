@@ -720,7 +720,7 @@
   /* ---------------- Fusion et transmutation des runes (0.1.8.2) ---------------- */
   E.RUNE_FUSE_N = 3; E.TRANSMUTE_N = 5;
   E.transmuteCost = (tier) => (tier === "ra" ? 2000 : tier === "pa" ? 600 : 200);
-  E.transmuteTargets = () => STAT_ORDER.filter((k) => k !== "pa" && STATS[k] && STATS[k].pts > 0);
+  E.transmuteTargets = () => STAT_ORDER.filter((k) => k !== "pa" && k !== "pm" && STATS[k] && STATS[k].pts > 0); // 1.0.30 : pas de rune PM par transmutation (comme le PA)
   E.fuseRunes = (S, key, dir) => {
     const [tier, stat] = key.split(":"); if (!STATS[stat]) return "Rune inconnue.";
     if (tier === "ga" || tier === "ta") return "Une rune exotique ou de transcendance ne se fusionne pas.";
@@ -729,6 +729,7 @@
     const give = (k, n) => { S.runes[k] = (S.runes[k] || 0) + n; };
     if (dir === "up") {
       const next = tier === "" ? "pa" : tier === "pa" ? "ra" : null; if (!next) return "Une rune Ra ne se fusionne pas.";
+      if (E.runeTiers && !E.runeTiers(stat).includes(next)) return `Pas de rune Ra pour ${STATS[stat].name} (comme dans DOFUS).`; // 1.0.30 : Tacle, Fuite
       if ((S.runes[key] || 0) < E.RUNE_FUSE_N) return `Il faut ${E.RUNE_FUSE_N} runes.`;
       take(key, E.RUNE_FUSE_N); give(E.runeKey(next, stat), 1); return null;
     }
@@ -741,6 +742,7 @@
     if (tier === "ga" || tier === "ta") return "Une rune exotique ou de transcendance ne se transmute pas.";
     if (toStat === stat) return "Choisissez une autre caractéristique.";
     if (tier && RUNE_SIMPLE_ONLY.includes(toStat)) return "Cette caractéristique n'existe qu'en rune simple : transmutez des runes simples.";
+    if (tier && E.runeTiers && !E.runeTiers(toStat).includes(tier)) return `Pas de rune Ra pour ${STATS[toStat].name} : transmutez des runes simples ou Pa.`; // 1.0.30
     if ((S.runes[key] || 0) < E.TRANSMUTE_N) return `Il faut ${E.TRANSMUTE_N} runes.`;
     const cost = E.transmuteCost(tier); if (S.kamas < cost) return `Il faut ${cost} kamas.`;
     S.kamas -= cost; S.runes[key] -= E.TRANSMUTE_N; if (!S.runes[key]) delete S.runes[key];

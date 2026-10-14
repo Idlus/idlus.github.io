@@ -55,3 +55,11 @@ console.log("ok - faux");
   const max = Math.max(...Object.keys(SETS[T.set].bonus).map(Number));
   assert.strictEqual(E.setBonus(T.set, n), SETS[T.set].bonus[max], "dernier bonus de " + SETS[T.set].name); }
 console.log("ok - fabrication et dernier bonus");
+
+// 6. 1.0.30 « Nouvelles caractéristiques » (41A) : les pièces ajoutées ont aussi leurs lignes de PM, Tacle, Fuite et Dommages de poussée.
+{ const has = (k) => ids.filter((t) => ITEMS[t].stats[k]);
+  ["pm", "tac", "fui", "pou"].forEach((k) => assert.ok(has(k).length > 0, "pièces avec " + k));
+  assert.deepStrictEqual(P.items.i12412.stats.pm, [1, 1], "Bottes de Grozilla : 1 PM"); assert.deepStrictEqual(P.items.i12412.stats.fui, [4, 5], "Bottes de Grozilla : Fuite");
+  assert.deepStrictEqual(P.items.i14059.stats.pou, [16, 20], "Ceinture Glaciale : Dommages de poussée");
+  assert.ok(P.items.i12416.stats.tac[1] < 0, "Ceinture de Grozilla : malus de Tacle"); }
+console.log("ok - lignes de PM, Tacle, Fuite et Dommages de poussée des pièces");

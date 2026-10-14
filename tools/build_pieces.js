@@ -27,7 +27,8 @@ const STAT = { 125: ["vit", 1], 153: ["vit", -1], 124: ["sa", 1], 156: ["sa", -1
   418: ["dcri", 1], 419: ["dcri", -1], 422: ["dt", 1], 423: ["dt", -1], 424: ["df", 1], 425: ["df", -1],
   426: ["de", 1], 427: ["de", -1], 428: ["da", 1], 429: ["da", -1], 430: ["dn", 1], 431: ["dn", -1],
   240: ["xt", 1], 245: ["xt", -1], 241: ["xe", 1], 246: ["xe", -1], 242: ["xa", 1], 247: ["xa", -1],
-  243: ["xf", 1], 248: ["xf", -1], 244: ["xn", 1], 249: ["xn", -1], 2812: ["dsort", 1], 2813: ["dsort", -1] };
+  243: ["xf", 1], 248: ["xf", -1], 244: ["xn", 1], 249: ["xn", -1], 2812: ["dsort", 1], 2813: ["dsort", -1],
+  128: ["pm", 1], 169: ["pm", -1], 753: ["tac", 1], 755: ["tac", -1], 752: ["fui", 1], 754: ["fui", -1], 414: ["pou", 1], 415: ["pou", -1] }; // 1.0.30 : PM, Tacle, Fuite, Dommages de poussée
 const SLOT_BY_TYPE = { 1: "amulette", 9: "anneau", 10: "ceinture", 11: "bottes", 16: "coiffe", 17: "cape",
   2: "arme", 3: "arme", 4: "arme", 5: "arme", 6: "arme", 7: "arme", 8: "arme", 19: "arme", 22: "arme", 271: "arme", 82: "bouclier" };
 const JOB = { 11: "forgeron", 13: "sculpteur", 15: "cordonnier", 16: "bijoutier", 27: "tailleur", 60: "faconneur", 65: "bricoleur" };

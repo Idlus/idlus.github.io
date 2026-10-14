@@ -50,7 +50,9 @@
     xa:  { name: "Rés. Air fixe",   short: "Rf Air",   w: 2, pts: 1 },
     xn:  { name: "Rés. Neutre fixe",short: "Rf Neu",   w: 2, pts: 1 },
     dsort:{ name: "% Dommages aux sorts", short: "% Do Sorts", w: 15, pts: 1 },
-    /* 0.1.8 : stats tactiques (familiers et montiliers) ; hors STAT_ORDER, affichées seulement quand on en a */
+    pou: { name: "Dommages de poussée", short: "Do Pou", w: 5, pts: 1 }, /* 1.0.30 : sorts qui repoussent un monstre contre un autre (poids DOFUS) */
+    /* 0.1.8 : stats tactiques (familiers et montiliers) ; hors STAT_ORDER, affichées seulement quand on en a
+       1.0.30 : PM, Tacle et Fuite arrivent aussi sur les équipements (jets et runes, comme dans DOFUS) et passent dans STAT_ORDER */
     tac: { name: "Tacle",      short: "Tacle", w: 2, pts: 1 },
     fui: { name: "Fuite",      short: "Fuite", w: 2, pts: 1 },
     pm:  { name: "PM",         short: "PM",    w: 60, pts: 1 },
@@ -63,7 +65,7 @@
     pod: { name: "Pods",       short: "Pods",  w: 0.1, pts: 1 },
   };
   const TACT_ORDER = ["pm","po","tac","fui","rpa","rpm","epa","epm","inv","pod"];
-  const STAT_ORDER = ["vit","sa","fo","ine","cha","age","pui","do","cri","dcri","dt","df","de","da","dn","dsort","so","pp","ini","pa","rt","rf","re","ra","rn","xt","xf","xe","xa","xn"];
+  const STAT_ORDER = ["vit","sa","fo","ine","cha","age","pui","do","cri","dcri","dt","df","de","da","dn","dsort","pou","so","pp","ini","pa","pm","tac","fui","rt","rf","re","ra","rn","xt","xf","xe","xa","xn"]; // 1.0.30 : pou, pm, tac, fui
   const BASE_STATS = ["vit","sa","fo","ine","cha","age"];
 
   const ELEMENTS = {
@@ -80,7 +82,10 @@
     { key: "ra", label: "Ra Rune", mult: 10 },
     { key: "ga", label: "Ga Rune", mult: 1 }, /* 0.1.9.1 : rune exotique (PA, PM, Portée), +1 sur un objet qui n'a pas la caractéristique */
   ];
-  const RUNE_SIMPLE_ONLY = ["pa", "do", "cri", "so", "rt", "rf", "re", "ra", "rn", "dcri", "dt", "df", "de", "da", "dn", "xt", "xf", "xe", "xa", "xn", "dsort"];
+  const RUNE_SIMPLE_ONLY = ["pa", "pm", "do", "cri", "so", "rt", "rf", "re", "ra", "rn", "dcri", "dt", "df", "de", "da", "dn", "xt", "xf", "xe", "xa", "xn", "dsort"];
+  /* 1.0.30 : comme dans DOFUS, Tacle et Fuite n'ont que la rune simple et la rune Pa (pas de Ra) ; la rune PM (comme la rune PA)
+     ne remonte que le PM d'un objet qui en a déjà, et ne se transmute pas */
+  const RUNE_NO_RA = ["tac", "fui"];
 
   /* ---------- Classes & sorts ----------
      Noms et icônes : sorts de DOFUS 3. Effets simplifiés pour le combat automatique.
@@ -493,7 +498,8 @@
   const STAT_HELP = {
     tac: "Première ligne : +1 % par point de bloquer un Rôdeur ou un Bondisseur qui vise l'arrière (le Tacle de toute la ligne s'additionne, 60 % au plus).",
     fui: "Arrière : +0,5 % par point d'éviter une attaque qui vise l'arrière (30 % au plus).",
-    pm: "Tout héros a 3 PM. Chaque PM en plus : +3 % d'esquiver une attaque en première ligne (15 % au plus).",
+    pm: "Tout héros a 3 PM. Chaque PM en plus : +3 % d'esquiver une attaque en première ligne (15 % au plus) et +1 case aux sorts qui repoussent (2 au plus).",
+    pou: "Un sort qui repousse peut envoyer le monstre touché contre un autre (25 % par autre monstre, 75 % au plus) : (niveau ÷ 2 + Dommages de poussée + 32) × cases restantes ÷ 6 dégâts, sans résistance d'élément, et la moitié au monstre percuté. Chaque PM au-delà de 3 ajoute une case.",
     po: "Chaque point de Portée : +20 % de chances qu'un sort à une cible touche un ennemi de plus (60 % au plus). Seule une forgemagie exotique en donne.",
     rpa: "+0,4 % par point d'affaiblir le monstre touché : −20 % de dégâts à sa prochaine attaque (−10 % pour un boss), 20 % au plus.",
     rpm: "+0,5 % par point de faire jouer le monstre touché en dernier au tour suivant ; un Bondisseur ne peut plus sauter (25 % au plus).",
@@ -501,7 +507,7 @@
     epm: "+0,5 % par point de résister à la Terreur et à l'Enracinement (50 % au plus).",
     inv: "Une invocation de plus en même temps (3 au plus).",
     pod: "+5 % de butin pendant l'absence par 100 Pods dans l'équipe (50 % au plus).",
-    vit: "+1 point de vie par point.",
+    vit: "+1 point de vie par point : la Vitalité et les Points de vie ne font qu'une ligne.",
     sa: "+1 % d'expérience gagnée par point.",
     fo: "+1 % de dégâts Terre et Neutre par point, +1 Initiative.",
     ine: "+1 % de dégâts Feu et +1 % de soins par point, +1 Initiative.",
@@ -523,11 +529,11 @@
     dt: "+1 dégât fixe sur les sorts Terre.", df: "+1 dégât fixe sur les sorts Feu.", de: "+1 dégât fixe sur les sorts Eau.", da: "+1 dégât fixe sur les sorts Air.", dn: "+1 dégât fixe sur les sorts Neutre.",
     xt: "Retire 1 point de dégât à chaque attaque Terre reçue.", xf: "Retire 1 point de dégât à chaque attaque Feu reçue.", xe: "Retire 1 point de dégât à chaque attaque Eau reçue.", xa: "Retire 1 point de dégât à chaque attaque Air reçue.", xn: "Retire 1 point de dégât à chaque attaque Neutre reçue.",
     dsort: "+1 % de dégâts sur tous les sorts.",
-    hpMax: "Points de vie : 50 + 5 par niveau + Vitalité (+5 par famille de monstres complétée, +5 % par rang de l'Éveil Robustesse). En combat, d'autres bonus s'ajoutent : voir « En combat ».",
+    hpMax: "Une seule ligne avec la Vitalité : 50 + 5 par niveau + Vitalité (+5 par famille de monstres complétée, +5 % par rang de l'Éveil Robustesse). En combat, d'autres bonus s'ajoutent : voir « En combat ».",
   };
 
   const SUMMONS = G.SUMMONS || {};
-  const DATA = { STATS, STAT_ORDER, TACT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
+  const DATA = { STATS, STAT_ORDER, TACT_ORDER, BASE_STATS, ELEMENTS, RUNE_TIERS, RUNE_SIMPLE_ONLY, RUNE_NO_RA, CLASSES, CLASS_ORDER, CONDITIONS, TARGETS, SUMMONS, GATHER_JOBS, CRAFT_JOBS, SLOTS, DOFUS_SLOTS,
                  MONSTERS, ZONES, DUNGEONS, ITEMS, SETS, SPECIAL_CRAFTS, RES, RACES, HARVEST, SPELL_IMG, HEADS, FREE_SPIRIT, NAMES, HUNT_TIERS, CONSUMABLES, RES_CATS, RES_CAT_OF, STAT_HELP, META: G.META };
   root.DATA = DATA;
   if (typeof module !== "undefined" && module.exports) module.exports = DATA;

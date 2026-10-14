@@ -121,7 +121,7 @@
   /* ---------- caractéristiques : 80-90 % du meilleur objet du même emplacement et du même niveau ---------- */
   const W = (st, k) => (STATS[k] ? STATS[k].w : 0) * st[k];
   const power = (st) => Object.keys(st).reduce((a, k) => a + W(st, k), 0);
-  const maxRoll = (T) => { const o = {}; for (const k in T.stats) o[k] = Math.max(...[].concat(T.stats[k])); return o; };
+  const maxRoll = (T) => { const o = {}; for (const k in T.stats) if (!(E.CARACS_NEW || []).includes(k)) o[k] = Math.max(...[].concat(T.stats[k])); return o; }; // 1.0.30 : les nouvelles lignes des objets (PM, Tacle, Fuite, Poussée) ne changent pas les légendaires
   E.legBest = (slot, lvl) => {
     let best = null, bw = 0;
     for (const id in ITEMS) { const T = ITEMS[id]; if (T.slot !== slot || T.leg || T.trophy || T.lvl > lvl || T.lvl <= lvl - 15) continue; const w = power(maxRoll(T)); if (w > bw) { bw = w; best = id; } }
