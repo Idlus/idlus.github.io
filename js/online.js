@@ -247,7 +247,9 @@
   let chan = null, lost = false;
   ON.chatLive = (onMsg, onCount, onBack) => {
     if (!sb || chan) return;
-    chan = sb.channel("chat-general", { config: { presence: { key: (ON.user && ON.user.id) || "anon-" + Math.random().toString(36).slice(2) } } });
+    /* 1.0.12.3 : « enabled: true » obligatoire depuis le serveur OVH (Realtime récent) : sans lui, le serveur n'envoie pas la
+       liste des joueurs présents et le compteur restait à « 1 en ligne » (le serveur Supabase d'avant l'activait pour tous). */
+    chan = sb.channel("chat-general", { config: { presence: { key: (ON.user && ON.user.id) || "anon-" + Math.random().toString(36).slice(2), enabled: true } } });
     chan.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_msgs" }, (p) => { if (p && p.new) onMsg(p.new); })
       .on("presence", { event: "sync" }, () => { try { onCount(Object.keys(chan.presenceState()).filter((k) => !/^anon-/.test(k)).length); } catch (e) {} })
       .subscribe((st) => {

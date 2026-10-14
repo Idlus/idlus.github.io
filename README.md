@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.12.3 « Compteur des joueurs en ligne »
+Mathis : « il ne fonctionne pas le compteur de joueur en ligne » (« 1 en ligne » alors que 15 parties étaient envoyées dans le quart d'heure). Le Realtime du serveur OVH (v2.134) n'active la présence d'un canal que si le client l'annonce (`config.presence.enabled`) ou si le réglage du serveur l'impose ; le Supabase d'avant l'activait pour tous. `ON.chatLive` (js/online.js) envoie maintenant `enabled: true`. Vérifié sur le serveur avec deux clients de test : sans le réglage, le second ne voit que lui ; avec, les deux voient les 17 présents.
+
 ## 1.0.12.2 « Récolte qui monte jusqu'au bout »
 Demande de Mathis : `E.gatherYield` (js/engine.js) reste linéaire jusqu'au niveau 150 (`E.YIELD.from`), puis la quantité par coup monte en ligne droite jusqu'à `E.YIELD.top` au niveau 200 (≈ 6 par coup de 30 s sans outil, au lieu de 4,7). L'XP de métier suit le même rendement (montée 150 → 200 un peu plus rapide). Test de croissance dans tests/recolte.test.js.
 

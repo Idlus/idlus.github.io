@@ -1,6 +1,13 @@
 {
-  "version": "1.0.12.2",
+  "version": "1.0.12.3",
   "versions": [
+    {
+      "v": "1.0.12.3",
+      "name": "Compteur des joueurs en ligne",
+      "items": [
+        "Le compteur « en ligne » du chat montre de nouveau tous les joueurs connectés (il restait bloqué à 1 depuis le nouveau serveur), et la liste des pseudos proposés quand tu tapes « @ » est de nouveau complète"
+      ]
+    },
     {
       "v": "1.0.12.2",
       "name": "Récolte qui monte jusqu'au bout",
