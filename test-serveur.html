@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Idlus — test du nouveau serveur</title>
+<!-- Page de test du déménagement (serveur OVH). Ne touche pas à la partie du jeu : elle lit seulement le nouveau serveur. -->
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #0f1a17; color: #e4efe9; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+  h1 { margin: 0; font-size: 1.4rem; color: #4cc492; }
+  p { margin: 0; color: #9db1a9; }
+  button { font: inherit; font-weight: 700; padding: 10px 16px; border: 0; border-radius: 8px; background: #5865f2; color: #fff; cursor: pointer; }
+  button.sec { background: #2a3d36; }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  li { background: #16241f; border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; }
+  li b { min-width: 1.4em; }
+  .ok { color: #4cc492; } .ko { color: #f08b62; } .wait { color: #d9ad55; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Test du nouveau serveur d'Idlus</h1>
+  <p>Cette page vérifie le nouveau serveur avant le déménagement. Elle ne touche pas à ta partie : le jeu reste sur l'ancien serveur.</p>
+  <div id="actions"></div>
+  <ul id="res"></ul>
+</main>
+<script src="js/vendor/supabase.js?v=2.49.4"></script>
+<script>
+(async () => {
+  const URL_ = "https://159-173-129-109.sslip.io";
+  const res = document.getElementById("res"), act = document.getElementById("actions");
+  const ligne = (txt) => { const li = document.createElement("li"); li.innerHTML = '<b class="wait">…</b><span></span>'; li.lastChild.textContent = txt; res.appendChild(li); return (ok, extra) => { li.firstChild.className = ok ? "ok" : "ko"; li.firstChild.textContent = ok ? "✔" : "✘"; if (extra) li.lastChild.textContent = txt + " : " + extra; }; };
+  const chrono = async (txt, f) => { const fin = ligne(txt); const t = performance.now(); try { const r = await f(); fin(true, (r ? r + " · " : "") + Math.round(performance.now() - t) + " ms"); return true; } catch (e) { fin(false, (e && e.message) || String(e)); return false; } };
+  let KEY = "";
+  if (!await chrono("Serveur joignable", async () => { const r = await fetch(URL_ + "/cle-publique"); if (!r.ok) throw new Error("HTTP " + r.status); KEY = (await r.text()).trim(); })) return;
+  const sb = supabase.createClient(URL_, KEY);
+  await chrono("Classement (lecture)", async () => { const { data, error } = await sb.from("lb_level").select("pseudo,pts").order("pts", { ascending: false }).limit(3); if (error) throw error; return data.map((r) => r.pseudo + " " + r.pts).join(", "); });
+  await chrono("Chat (lecture)", async () => { const { data, error } = await sb.from("chat_msgs").select("id").order("id", { ascending: false }).limit(20); if (error) throw error; return data.length + " messages lus"; });
+  await chrono("Chat en direct", () => new Promise((ok, ko) => { const ch = sb.channel("test-serveur"); const t = setTimeout(() => ko(new Error("pas de réponse")), 10000); ch.subscribe((s) => { if (s === "SUBSCRIBED") { clearTimeout(t); sb.removeChannel(ch); ok("connecté"); } else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT") { clearTimeout(t); ko(new Error(s)); } }); }));
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    const b = document.createElement("button"); b.textContent = "Se connecter avec Discord (test)";
+    b.onclick = () => sb.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: location.origin + location.pathname } });
+    act.appendChild(b);
+    return;
+  }
+  await chrono("Connexion Discord", async () => session.user.id.slice(0, 8) + "…");
+  await chrono("Ton pseudo retrouvé", async () => { const { data, error } = await sb.from("profiles").select("pseudo").eq("id", session.user.id).maybeSingle(); if (error) throw error; if (!data) throw new Error("aucun pseudo pour ce compte"); return data.pseudo; });
+  await chrono("Ta partie retrouvée", async () => { const { data, error } = await sb.rpc("save_info"); if (error) throw error; const s = data && data[0]; if (!s) throw new Error("aucune partie pour ce compte"); return "version " + (s.game_version || "?") + ", envoyée le " + new Date(s.updated_at).toLocaleString("fr-FR"); });
+  const b = document.createElement("button"); b.className = "sec"; b.textContent = "Se déconnecter du test";
+  b.onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  act.appendChild(b);
+})();
+</script>
+</body>
+</html>
