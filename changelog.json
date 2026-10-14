@@ -1,6 +1,18 @@
 {
-  "version": "1.0.18",
+  "version": "1.0.19",
   "versions": [
+    {
+      "v": "1.0.19",
+      "name": "Métiers comme dans DOFUS",
+      "items": [
+        "Métiers d'artisanat : un objet se fabrique maintenant avec le métier à son niveau, comme dans DOFUS (avant : au tiers de son niveau). Le métier 200 fabrique les objets niveau 200",
+        "Chaque niveau se gagne en environ 3 fabrications de ta meilleure recette : arriver au métier 200 demande autant d'efforts qu'avant pour le métier 66 (environ 660 fabrications)",
+        "Tes métiers sont convertis une seule fois au chargement et gardent exactement les mêmes recettes : Tailleur 30 devient 92, un métier au 66 ou plus passe au 200. Une fenêtre te montre la conversion",
+        "Les recettes trop faciles suivent la même règle qu'avant, comptée en niveaux d'objet : XP pleine jusqu'à 30 niveaux sous ton métier, 1 XP à partir de 90",
+        "Bricoleur inchangé : ses recettes étaient déjà au niveau du métier, il reste à environ 10 fabrications par niveau",
+        "Classements des métiers : la conversion ne compte pas dans la semaine et ne donne pas de « Premier au niveau 200 ». Les joueurs pas encore revenus apparaissent déjà avec leurs niveaux convertis"
+      ]
+    },
     {
       "v": "1.0.18",
       "name": "Panoplies complètes",

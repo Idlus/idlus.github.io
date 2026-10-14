@@ -21,9 +21,17 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.18";
+const GAME_VERSION = "1.0.19";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.19", name: "Métiers comme dans DOFUS", items: [
+    "Métiers d'artisanat : un objet se fabrique maintenant avec le métier à son niveau, comme dans DOFUS (avant : au tiers de son niveau). Le métier 200 fabrique les objets niveau 200",
+    "Chaque niveau se gagne en environ 3 fabrications de ta meilleure recette : arriver au métier 200 demande autant d'efforts qu'avant pour le métier 66 (environ 660 fabrications)",
+    "Tes métiers sont convertis une seule fois au chargement et gardent exactement les mêmes recettes : Tailleur 30 devient 92, un métier au 66 ou plus passe au 200. Une fenêtre te montre la conversion",
+    "Les recettes trop faciles suivent la même règle qu'avant, comptée en niveaux d'objet : XP pleine jusqu'à 30 niveaux sous ton métier, 1 XP à partir de 90",
+    "Bricoleur inchangé : ses recettes étaient déjà au niveau du métier, il reste à environ 10 fabrications par niveau",
+    "Classements des métiers : la conversion ne compte pas dans la semaine et ne donne pas de « Premier au niveau 200 ». Les joueurs pas encore revenus apparaissent déjà avec leurs niveaux convertis",
+  ] },
   { v: "1.0.18", name: "Panoplies complètes", items: [
     "79 pièces de panoplie qui manquaient arrivent dans le jeu : les 60 panoplies dont le dernier bonus était impossible à obtenir peuvent enfin être complétées",
     "13 faux de DOFUS arrivent aussi, du niveau 17 au niveau 200 (dont Faux Chaotique, Faux Nétik, Faux Séraphine, Serpe Aigrie et Faux've)",
@@ -5504,7 +5512,7 @@ function recDetail(r, job) {
       <span class="pqn"><button class="btn sm" data-act="recqtyd" data-v="-1" ${nMax > 1 && qty > 1 ? "" : "disabled"} aria-label="Un de moins">−</button><input type="number" id="recqtyn" inputmode="numeric" min="1" max="${Math.max(1, nMax)}" value="${qty}" data-xp="${xp}" data-max="${Math.max(1, nMax)}" ${nMax > 1 ? "" : "disabled"} aria-label="Quantité à fabriquer"><button class="btn sm" data-act="recqtyd" data-v="1" ${qty < nMax ? "" : "disabled"} aria-label="Un de plus">+</button></span>
       <span class="xs muted grow" id="recqtyxp">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
     ${r.okLvl && J.lvl < 200 && xp > 1 ? (() => { const nn = Math.max(1, Math.ceil((E.jobXpNeed(J.lvl) - (J.xp || 0)) / xp)); return `<div class="xs muted" id="recnext" style="margin:-4px 0 8px">Niveau ${J.lvl + 1} de ${h(CRAFT_JOBS[job].name)} dans ${fmt(nn)} fabrication${nn > 1 ? "s" : ""} de cette recette</div>`; })() : ""}
-    ${xm < 1 && r.okLvl ? `<div class="small minus" style="margin:-4px 0 8px">${xp <= 1 ? "Plus qu'1 XP" : `XP réduite de ${Math.round((1 - xm) * 100)} %`} : recette trop facile pour ton niveau de ${h(CRAFT_JOBS[job].name)}. ${r.T ? `Les objets à moins de 30 niveaux du plus haut que tu sais faire (niv. ${Math.min(200, Math.min(J.lvl, E.craftTop(job)) * 3)})` : (J.lvl > E.craftTop(job) ? `Les recettes à moins de ${E.CRAFT_FALL.full} niveaux de la plus haute du métier (niv. ${E.craftTop(job)})` : `Les recettes à moins de ${E.CRAFT_FALL.full} niveaux de ton métier`)} donnent l'XP pleine.</div>` : ""}
+    ${xm < 1 && r.okLvl ? `<div class="small minus" style="margin:-4px 0 8px">${xp <= 1 ? "Plus qu'1 XP" : `XP réduite de ${Math.round((1 - xm) * 100)} %`} : recette trop facile pour ton niveau de ${h(CRAFT_JOBS[job].name)}. ${r.T ? `Les objets à moins de ${E.craftFall(job).full} niveaux de ton métier` : (J.lvl > E.craftTop(job) ? `Les recettes à moins de ${E.craftFall(job).full} niveaux de la plus haute du métier (niv. ${E.craftTop(job)})` : `Les recettes à moins de ${E.craftFall(job).full} niveaux de ton métier`)} donnent l'XP pleine.</div>` : ""}
     ${ui.outdated ? `<div class="small minus" style="margin:-4px 0 6px">La version ${h(ui.outdated)} est en ligne : recharge le jeu pour fabriquer (ta partie est sauvegardée).</div><div class="row"><button class="btn primary grow" data-act="reloadgame">Recharger pour fabriquer</button></div>` : `<div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${gSel ? `data-g="${h(gSel)}"` : ""} ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div>`}</div>`;
 }
 /* 1.0.8.1 : quantité libre (champ − / +) ; la valeur est gardée dans ui.recQty, donc retrouvée quand la page se redessine */

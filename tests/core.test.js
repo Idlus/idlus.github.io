@@ -70,7 +70,7 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   E.setClock(() => T0);
   const S = E.newState("Serie", "iop");
   const tpl = Object.keys(D.ITEMS).find((t) => D.ITEMS[t].craft && D.ITEMS[t].lvl <= 3);
-  const T = D.ITEMS[tpl];
+  const T = D.ITEMS[tpl]; S.crafts[T.craft.job].lvl = E.craftReq(tpl); // 1.0.19 : métier au niveau de l'objet
   T.craft.ing.forEach(([r, q]) => E.addRes(S, r, q * 7));
   assert.strictEqual(E.craftCount(S, "tpl", tpl), 7, "7 exemplaires possibles");
   const before = E.itemCount(S); const r = E.craftMany(S, "tpl", tpl, 10);

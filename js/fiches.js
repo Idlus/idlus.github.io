@@ -53,8 +53,10 @@
     const G = S.songe || {}; const best = G.best && E.SG_INT && E.SG_INT[G.best.ii];
     let quest = "—"; try { const q = E.questStep(S); const n = (S.quest && S.quest.step) || 0; quest = q ? `${h(q.title)} (étape ${n + 1})` : `terminée (${n} étapes)`; } catch (e) {}
     let ach = 0, achTot = (E.ACH || []).length, pts = 0; try { ach = Object.keys(S.ach || {}).filter((k) => S.ach[k]).length; pts = E.achPoints ? E.achPoints(S) : 0; } catch (e) {}
+    let crafts = S.crafts || {}; // 1.0.19 : une partie pas encore rechargée montre ses métiers déjà convertis (comme les classements)
+    if (S.craftObj === undefined && E.craftObjConvert) { const C = { crafts: JSON.parse(JSON.stringify(crafts)) }; E.craftObjConvert(C); crafts = C.crafts; }
     const jobs = Object.entries(S.jobs || {}).map(([k, j]) => [((D.GATHER_JOBS || {})[k] || {}).name || k, j.lvl || 1])
-      .concat(Object.entries(S.crafts || {}).map(([k, j]) => [((D.CRAFT_JOBS || {})[k] || {}).name || k, j.lvl || 1]))
+      .concat(Object.entries(crafts).map(([k, j]) => [((D.CRAFT_JOBS || {})[k] || {}).name || k, j.lvl || 1]))
       .concat(S.fmJob ? [["Forgemage", S.fmJob.lvl || 1]] : []).sort((a, b) => b[1] - a[1]);
     const al = S.align && S.align.side ? `${S.align.side === "bonta" ? "Bonta" : S.align.side === "brakmar" ? "Brâkmar" : h(S.align.side)} niv. ${S.align.lvl || 0}` : "aucun";
     return {

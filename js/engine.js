@@ -117,6 +117,7 @@
       pets: {}, petUid: 1, petKeep: {}, petLuck: {},
       mounts: {}, mountUid: 1, mountSeen: {}, enclos: { built: false, pairs: [], births: 0 },
       idols: { own: {}, active: [], presets: [] },
+      craftObj: 1, // 1.0.19 : niveaux de métier d'artisanat déjà au niveau des objets
     };
     Object.keys(GATHER_JOBS).forEach((j) => (S.jobs[j] = { lvl: 1, xp: 0 }));
     Object.keys(CRAFT_JOBS).forEach((j) => (S.crafts[j] = { lvl: 1, xp: 0 }));
@@ -2900,7 +2901,9 @@
   E.gatherTick = gatherTick;
 
   /* ---------------- Artisanat ---------------- */
-  E.craftReq = (tpl) => Math.max(1, Math.floor(ITEMS[tpl].lvl / 3)); // 0.1.14.4 : métier au tiers du niveau de l’objet (avant : moitié), pour s’équiper à temps face aux monstres renforcés
+  /* 1.0.19 « Métiers comme dans DOFUS » : un objet se fabrique avec le métier à son niveau (0.1.14.4 à 1.0.16 : au tiers de son niveau).
+     Même effort qu'avant pour chaque objet : environ 3 fabrications par niveau (E.CRAFT_STEP), et les niveaux déjà gagnés sont convertis (E.deserialize). */
+  E.craftReq = (tpl) => Math.max(1, ITEMS[tpl].lvl);
   E.canCraft = (S, recipe, n = 1) => recipe.ing.every(([r, q]) => (S.res[r] || 0) >= q * n);
   /* 0.1.39 : Almanax « Économie d'ingrédients », une part des ingrédients rendue */
   const almSave = (S, q) => { const p = E.almMult(S, "eco"); return p > 0 && p < 1 ? Math.min(q, E.almQty(q, p)) : 0; };
@@ -2912,11 +2915,14 @@
     if (!Array.isArray(S.over)) S.over = [];
     delete S.items[it.uid]; S.over.push(Object.assign({}, it, { at: E.now() })); S.overNew = (S.overNew || 0) + 1;
   };
-  /* 1.0.9.2 « Recettes trop faciles » : XP pleine jusqu'à E.CRAFT_FALL.full niveaux de métier sous la recette la plus haute que le métier sait faire
-     (30 niveaux d'objet), puis elle baisse jusqu'à 1 XP à E.CRAFT_FALL.end niveaux d'écart (90 niveaux d'objet), comme dans DOFUS. Clés et alliages compris. */
-  E.CRAFT_FALL = { full: 10, end: 30 };
+  /* 1.0.9.2 « Recettes trop faciles » : XP pleine jusqu'à full niveaux sous la recette la plus haute que le métier sait faire,
+     puis elle baisse jusqu'à 1 XP à end niveaux d'écart, comme dans DOFUS. Clés et alliages compris.
+     1.0.19 : les métiers d'objets comptent en niveaux d'objet (30 et 90, la même règle qu'avant) ; le Bricoleur garde 10 et 30. */
+  E.CRAFT_FALL = { full: 30, end: 90 };
+  E.CRAFT_FALL_BRICO = { full: 10, end: 30 };
+  E.craftFall = (job) => (job === "bricoleur" ? E.CRAFT_FALL_BRICO : E.CRAFT_FALL);
   const CRAFT_TOP = {};
-  E.craftTop = (job) => { // niveau de métier de la recette la plus haute du métier (66 pour les objets niveau 200, 100 pour le Bricoleur)
+  E.craftTop = (job) => { // niveau de métier de la recette la plus haute du métier (200 pour les métiers d'objets, 100 pour le Bricoleur)
     if (CRAFT_TOP[job]) return CRAFT_TOP[job]; let m = 1;
     for (const id in ITEMS) if (ITEMS[id].craft && ITEMS[id].craft.job === job) m = Math.max(m, E.craftReq(id));
     /* 1.0.12.4 : recettes refaisables seulement (avant : le Coffre en merisier, meuble unique niveau 120, mettait la référence du Bricoleur à 120,
@@ -2925,12 +2931,15 @@
     return (CRAFT_TOP[job] = m);
   };
   E.craftXpMult = (S, job, req) => {
-    const F = E.CRAFT_FALL, J = S.crafts[job]; const gap = Math.min(J ? J.lvl : 1, E.craftTop(job)) - req;
+    const F = E.craftFall(job), J = S.crafts[job]; const gap = Math.min(J ? J.lvl : 1, E.craftTop(job)) - req;
     return gap <= F.full ? 1 : gap >= F.end ? 0 : 1 - (gap - F.full) / (F.end - F.full);
   };
-  /* « Artisanat haut niveau » : la fabrication de la recette la plus haute que tu sais faire vaut au moins 1/E.CRAFT_STEP de niveau
-     (avant : l'XP plafonnait à 612 au niveau 66 du métier, soit 33 fabrications d'objets niveau 197 par niveau au 66 et 182 au 199) */
-  E.CRAFT_STEP = 10;
+  /* « Artisanat haut niveau » : la fabrication de la recette la plus haute que tu sais faire vaut au moins 1/E.craftStep(job) de niveau
+     (avant : l'XP plafonnait à 612 au niveau 66 du métier, soit 33 fabrications d'objets niveau 197 par niveau au 66 et 182 au 199)
+     1.0.19 : 3 par niveau pour les métiers d'objets (métier 200 en ~660 fabrications, autant qu'avant pour le métier 66), 10 pour le Bricoleur (inchangé) */
+  E.CRAFT_STEP = 3;
+  E.CRAFT_STEP_BRICO = 10;
+  E.craftStep = (job) => (job === "bricoleur" ? E.CRAFT_STEP_BRICO : E.CRAFT_STEP);
   const CRAFT_TOPXP = {};
   E.craftTopXp = (job, lvl) => { // XP de base de la recette la plus haute faisable à ce niveau de métier (recettes refaisables)
     const c = CRAFT_TOPXP[job] || (CRAFT_TOPXP[job] = []); if (c[lvl]) return c[lvl]; let m = 1;
@@ -2938,7 +2947,7 @@
     for (const n in SPECIAL_CRAFTS) { const R = SPECIAL_CRAFTS[n]; if (R.job === job && R.lvl <= lvl && !R.unique && !R.dofus && !R.idol) m = Math.max(m, 20 + R.lvl * 3); }
     return (c[lvl] = m);
   };
-  E.craftBoost = (S, job) => { const J = S.crafts[job], L = J ? J.lvl : 1; return L >= 200 ? 1 : Math.max(1, E.jobXpNeed(L) / (E.CRAFT_STEP * E.craftTopXp(job, L))); };
+  E.craftBoost = (S, job) => { const J = S.crafts[job], L = J ? J.lvl : 1; return L >= 200 ? 1 : Math.max(1, E.jobXpNeed(L) / (E.craftStep(job) * E.craftTopXp(job, L))); };
   E.craftXpOf = (S, job, req, base) => Math.max(1, Math.round(base * E.craftXpMult(S, job, req) * E.craftBoost(S, job)));
   E.galetFx = () => "Galet inconnu."; // 1.0.6 : bonus d'un Galet ajouté à la fabrication (js/koli.js)
   E.craftItem = (S, tpl, galet) => {
@@ -3239,6 +3248,21 @@
     };
   };
 
+  /* 1.0.19 « Métiers comme dans DOFUS » : chaque métier d'objets passe au niveau qui donne exactement les mêmes recettes qu'avant
+     (au métier L on fabriquait jusqu'aux objets 3 × L + 2), au plus 200, avec la même part de la barre d'XP. Un métier jamais monté reste au niveau 1.
+     Le Bricoleur ne change pas (ses recettes étaient déjà au niveau du métier). Le serveur ne compte pas ce saut dans la semaine ni pour les « Premiers ». */
+  E.craftObjConvert = (S, report) => {
+    const up = [];
+    for (const j of Object.keys(CRAFT_JOBS)) {
+      const J = S.crafts && S.crafts[j]; if (j === "bricoleur" || !J) continue;
+      const L0 = Math.max(1, Math.min(200, J.lvl || 1)), x0 = Math.max(0, J.xp || 0); if (L0 >= 200 || (L0 <= 1 && x0 <= 0)) continue;
+      const L = Math.min(200, 3 * L0 + 2), f = Math.min(1, x0 / E.jobXpNeed(L0));
+      J.lvl = L; J.xp = L >= 200 ? 0 : Math.floor(f * E.jobXpNeed(L)); up.push(`${CRAFT_JOBS[j].name} ${L0} → ${L}`);
+    }
+    if (up.length && report) report.push(`1.0.19 « Métiers comme dans DOFUS » : un objet se fabrique maintenant avec le métier à son niveau (avant : le tiers), et chaque niveau se gagne en environ 3 fabrications. Tes métiers sont convertis et gardent exactement les mêmes recettes : ${up.join(", ")}.`);
+    S.craftObj = 1; return up;
+  };
+
   /* ---------------- Sauvegarde ---------------- */
   const TRANSIENT = ["fight", "acc", "pause", "manualLive"];
   E.serialize = (S) => {
@@ -3296,6 +3320,7 @@
       const ev = E.events.length; S.chars.forEach((c) => { c.ren = c.ren || 0; c.eveils = c.eveils || {}; if (c.lvl < E.MAX_LVL && c.xp >= E.xpNeed(c.lvl)) E.giveXp(S, c, 0); }); E.events.length = ev;
       report.push("0.1.12 : la montée au-delà du niveau 100 est deux fois plus rapide (l'XP demandée par niveau baisse de moitié entre les niveaux 100 et 120). Les héros qui avaient déjà l'XP nécessaire ont gagné leurs niveaux. Au niveau 200, un héros peut renaître (Héros › Renaissance).");
     }
+    if (S.craftObj === undefined) E.craftObjConvert(S, report); // avant de compléter avec la partie neuve (qui a déjà craftObj)
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });
     Object.keys(CRAFT_JOBS).forEach((j) => { if (!S.crafts[j]) S.crafts[j] = fresh.crafts[j]; });
