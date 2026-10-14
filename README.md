@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.1 « Compositions et métiers »
+
+Chaque composition d'équipe garde son placement métier (demande de Mathis du 14/10/2026 : « quand je switch entre mes teams ça sauvegarde aussi le placement métier ») : E.compOf enregistre `jobs` (héros → métier et ressource, E.compJobs), E.applyComp retient le placement actuel dans la composition qu'on quitte puis remet celui de la nouvelle (les héros sans métier prévu reviennent au repos ; entraînement, atelier ou expédition : héros laissé tel quel et cité dans le message). Une composition sans `jobs` (enregistrée avant) ne touche pas à la récolte. Test : tests/compmetiers.test.js.
+
 ## 1.0.32 « Relâcher une monture »
 
 Demande de Mathis (14/10/2026, « ajouter un bouton « Relâcher » tout de suite, en petite mise à jour avant la 1.1 ») : le jeu n'avait aucun moyen de libérer une place à l'écurie, si bien qu'une écurie pleine bloquait les naissances de l'enclos (« Le petit attend ») et les captures au filet. `E.releaseMount` (js/mounts.js, action `releaseMount`) supprime la monture après confirmation, la fait descendre de son héros et refuse une monture à l'enclos. Boutons dans la fiche de couleur (js/collui.js, `co-mfree`) et dans l'écurie du héros (js/ui.js, `mountfree`). Test dans tests/fight.test.js.

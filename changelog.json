@@ -1,6 +1,15 @@
 {
-  "version": "1.0.32",
+  "version": "1.0.32.1",
   "versions": [
+    {
+      "v": "1.0.32.1",
+      "name": "Compositions et métiers",
+      "items": [
+        "Les compositions d'équipe retiennent aussi qui récolte quoi : en changeant d'équipe, chaque héros reprend la récolte prévue pour cette composition",
+        "Quand tu quittes une composition, son placement métier du moment est gardé. Un héros occupé (entraînement, atelier, expédition) est laissé tel quel et signalé",
+        "Les compositions enregistrées avant cette version gardent la récolte en cours : clique sur « Mettre à jour » pour leur donner un placement"
+      ]
+    },
     {
       "v": "1.0.32",
       "name": "Relâcher une monture",

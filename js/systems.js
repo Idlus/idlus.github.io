@@ -1623,7 +1623,9 @@
   /* 0.1.10.1 : compositions d'équipe (jusqu'à 3, qui joue, rangées, cible prioritaire) */
   E.COMP_MAX = 3;
   E.compOf = (S) => { const T = E.team(S); const fs = E.frontSet(S); const rows = {}; T.forEach((c) => (rows[c.id] = fs.has(c.id) ? "f" : "b"));
-    return { ids: T.map((c) => c.id), rows, auto: E.isAutoPlace(S), focus: (S.settings && S.settings.focus) || "auto" }; };
+    return { ids: T.map((c) => c.id), rows, auto: E.isAutoPlace(S), focus: (S.settings && S.settings.focus) || "auto", jobs: E.compJobs(S) }; };
+  /* 1.0.32.1 (Mathis) : chaque composition garde aussi son placement métier (qui récolte quoi) */
+  E.compJobs = (S) => { const J = {}; S.chars.forEach((c) => { if (c.job) J[c.id] = { job: c.job.job, res: c.job.res }; }); return J; };
   E.compMatch = (S) => { const ids = E.team(S).map((c) => c.id).sort().join(","); return (S.comps || []).findIndex((k) => k && k.ids.slice().sort().join(",") === ids); };
   E.saveComp = (S, i, name) => {
     S.comps = S.comps || []; if (i == null || i < 0) i = S.comps.length;
@@ -1640,6 +1642,8 @@
     const ids = K.ids.filter((id) => S.chars.some((c) => c.id === id)).slice(0, 8);
     if (!ids.length) return { err: "Plus aucun héros de cette composition." };
     const moved = [];
+    // la composition qu'on quitte retient le placement métier actuel
+    const cur = E.compMatch(S); if (cur >= 0 && cur !== i && S.comps[cur]) S.comps[cur].jobs = E.compJobs(S);
     S.chars.forEach((c) => {
       const want = ids.includes(c.id);
       if (want) {
@@ -1651,7 +1655,19 @@
     });
     if (K.auto) S.placeAuto = true; else { S.placeAuto = false; E.team(S).forEach((c) => (c.row = K.rows[c.id] === "f" ? "f" : "b")); }
     S.settings.focus = K.focus || "auto"; S.fight = null;
-    return { moved: [...new Set(moved)] };
+    // placement métier de la composition (les anciennes compositions sans placement gardent celui en cours)
+    const busy = [];
+    if (K.jobs) {
+      S.chars.forEach((c) => {
+        if (ids.includes(c.id)) return; const W = K.jobs[c.id];
+        if (!W) { if (c.job) { E.gatherPartial(S, c); c.job = null; } return; }
+        if (c.job && c.job.job === W.job && c.job.res === W.res) return;
+        if (S.training === c.id || E.atelierHero(S) === c || (E.misRun && E.misRun(S, c.id))) { busy.push(c.name); return; }
+        const L = S.jobs[W.job] && S.jobs[W.job].lvl; const def = L && E.jobRes(W.job).find((x) => x[0] === W.res && x[1] <= L); if (!def) return;
+        if (c.job) E.gatherPartial(S, c); c.job = { job: W.job, res: W.res, prog: 0 }; c.inTeam = false;
+      });
+    }
+    return { moved: [...new Set(moved)], busy };
   };
   /* retenir la composition gagnante d'un donjon, pour la suggérer dans sa fiche */
   E.compWin = (S, did) => { const i = E.compMatch(S); if (i >= 0) (S.compDg = S.compDg || {})[did] = i; };

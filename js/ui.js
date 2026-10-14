@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32";
+const GAME_VERSION = "1.0.32.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.1", name: "Compositions et métiers", items: [
+    "Les compositions d'équipe retiennent aussi qui récolte quoi : en changeant d'équipe, chaque héros reprend la récolte prévue pour cette composition",
+    "Quand tu quittes une composition, son placement métier du moment est gardé. Un héros occupé (entraînement, atelier, expédition) est laissé tel quel et signalé",
+    "Les compositions enregistrées avant cette version gardent la récolte en cours : clique sur « Mettre à jour » pour leur donner un placement",
+  ] },
   { v: "1.0.32", name: "Relâcher une monture", items: [
     "Montures : un bouton « Relâcher » libère une place à l'écurie (après confirmation, la monture disparaît pour toujours)",
     "Il est dans la fiche de chaque couleur (Héros › Familiers et montures) et dans la liste de l'écurie du héros",
@@ -4734,9 +4739,9 @@ function compsHtml() {
     const f = hs.filter((c) => k.rows[c.id] === "f").length;
     return `<div class="compcard ${on ? "on" : ""}"><div class="row" style="gap:6px"><input class="compname" data-act="compname" data-i="${i}" value="${h(k.name)}" maxlength="24" aria-label="Nom de la composition">${on ? `<span class="tag good">active</span>` : ""}</div>
       <div class="row comph">${hs.map((c) => head(c)).join("")}</div>
-      <div class="xs muted">${hs.length} héros · ${k.auto ? "placement automatique" : `${f} devant, ${hs.length - f} derrière`} · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}</div>
-      <div class="row" style="gap:6px"><button class="btn sm ${on ? "" : "primary"}" data-act="compuse" data-i="${i}" ${on || S.dungeon ? "disabled" : ""}>Utiliser</button><button class="btn sm" data-act="compsave" data-i="${i}" data-tip="Remplacer par l'équipe actuelle (héros, rangées et cible)">Mettre à jour</button><button class="btn sm" data-act="compdel" data-i="${i}" title="Supprimer">✕</button></div></div>`; }).join("");
-  const add = K.length < E.COMP_MAX ? `<button class="compcard add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe actuelle<span class="xs muted">héros, rangées et cible prioritaire</span></button>` : "";
+      <div class="xs muted">${hs.length} héros · ${k.auto ? "placement automatique" : `${f} devant, ${hs.length - f} derrière`} · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}${k.jobs ? ` · ${Object.keys(k.jobs).length} en récolte` : ""}</div>
+      <div class="row" style="gap:6px"><button class="btn sm ${on ? "" : "primary"}" data-act="compuse" data-i="${i}" ${on || S.dungeon ? "disabled" : ""}>Utiliser</button><button class="btn sm" data-act="compsave" data-i="${i}" data-tip="Remplacer par l'équipe actuelle (héros, rangées, cible et placement métier)">Mettre à jour</button><button class="btn sm" data-act="compdel" data-i="${i}" title="Supprimer">✕</button></div></div>`; }).join("");
+  const add = K.length < E.COMP_MAX ? `<button class="compcard add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe actuelle<span class="xs muted">héros, rangées, cible et placement métier</span></button>` : "";
   return `<section class="comps"><div class="row between"><h3 class="sec" style="margin:0">Compositions</h3><span class="xs muted">${K.length}/${E.COMP_MAX} · un clic pour changer d'équipe</span></div><div class="compgrid">${cards}${add}</div></section>`;
 }
 /* 0.1.40 « Équipe rangée » : une seule liste de héros à gauche (Première ligne, Arrière, Réserve) et la fiche du héros choisi à droite.
@@ -8291,7 +8296,7 @@ document.addEventListener("click", (ev) => {
     case "teammove": msg(teamMove(+d.id, d.v)); dirty = true; break;
     case "compsave": { const i = +d.i; const r = E.saveComp(S, i, i >= 0 ? null : null); if (r) { toast(r); return; } toast(i >= 0 ? "Composition mise à jour." : "Équipe enregistrée."); dirty = true; break; }
     case "compdel": { E.delComp(S, +d.i); dirty = true; break; }
-    case "compuse": { const r = E.applyComp(S, +d.i); if (r.err) { toast(r.err); return; } toast(`Composition « ${S.comps[+d.i].name} » en place.${r.moved.length ? ` ${r.moved.join(", ")} ${r.moved.length > 1 ? "reviennent" : "revient"} dans l'équipe.` : ""}`); dirty = true; if (d.dg) { dungeonSheet(d.dg); renderNav(); return; } break; }
+    case "compuse": { const r = E.applyComp(S, +d.i); if (r.err) { toast(r.err); return; } toast(`Composition « ${S.comps[+d.i].name} » en place.${r.moved.length ? ` ${r.moved.join(", ")} ${r.moved.length > 1 ? "reviennent" : "revient"} dans l'équipe.` : ""}${r.busy && r.busy.length ? ` ${r.busy.join(", ")} ${r.busy.length > 1 ? "sont occupés" : "est occupé"} : pas envoyé${r.busy.length > 1 ? "s" : ""} en récolte.` : ""}`); dirty = true; if (d.dg) { dungeonSheet(d.dg); renderNav(); return; } break; }
     case "setrow": { const r = E.setRow(S, +d.id, d.v); if (r) { toast(r); return; } dirty = true; break; }
     case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
     case "lossplace": ui.tab = "team"; ui.teamBoard = true; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
