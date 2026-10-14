@@ -1,6 +1,15 @@
 {
-  "version": "1.0.30.1",
+  "version": "1.0.30.2",
   "versions": [
+    {
+      "v": "1.0.30.2",
+      "name": "Équiper au mieux complet",
+      "items": [
+        "« Équiper au mieux », « Tout équiper au mieux » et la pastille verte comptent enfin tout ce que donne un objet : son exo (PA, PM, PO…), le bonus d'un objet Parfait et le Potentiel des Dofus. Avant, le bouton pouvait retirer un objet meilleur que ce qu'il mettait",
+        "Profil Multi-élément : les objets du 2e élément comptent autant que ceux du 1er (avant, seul le premier comptait et le bouton enlevait les objets du second)",
+        "Profil Tank : la Vitalité des objets compte davantage, et la Couture fine (une pièce de panoplie en moins) est prise en compte"
+      ]
+    },
     {
       "v": "1.0.30.1",
       "name": "Jets remis à niveau",

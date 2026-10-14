@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30.1";
+const GAME_VERSION = "1.0.30.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.30.2", name: "Équiper au mieux complet", items: [
+    "« Équiper au mieux », « Tout équiper au mieux » et la pastille verte comptent enfin tout ce que donne un objet : son exo (PA, PM, PO…), le bonus d'un objet Parfait et le Potentiel des Dofus. Avant, le bouton pouvait retirer un objet meilleur que ce qu'il mettait",
+    "Profil Multi-élément : les objets du 2e élément comptent autant que ceux du 1er (avant, seul le premier comptait et le bouton enlevait les objets du second)",
+    "Profil Tank : la Vitalité des objets compte davantage, et la Couture fine (une pièce de panoplie en moins) est prise en compte",
+  ] },
   { v: "1.0.30.1", name: "Jets remis à niveau", items: [
     "Forgemagie : ce que la forgemagie avait ajouté au-dessus de 80 % du jet avec les anciennes règles est retiré, et ces objets redescendent à 80 %. Le jet d'origine et les exos ne bougent pas",
     "Compensation pour chaque objet touché : les runes qui avaient fait les points retirés, rendues ×1,5, un Cristal de forgemagie et 100 000 kamas, plus le titre « Forgemage d'antan ». Une fenêtre au lancement montre tes objets et ta compensation",
@@ -4803,15 +4808,27 @@ const buildMain = (c) => { if (["fo", "ine", "cha", "age"].includes(c.autoStat))
 /* Héros multi-élément. Chaque élément qui a au moins 20 % des points élémentaires répartis compte, au prorata de sa part
    (un seul élément : poids 1,4 pour la stat, 1 pour ses dommages ; élément non joué : 0,1) */
 const EL_STATS = ["fo", "ine", "cha", "age"];
+/* 1.0.30.2 : en automatique aussi, on lit les points vraiment placés (le profil Multi-élément monte deux éléments : avant, seul le
+   premier comptait et « Équiper au mieux » retirait les objets du second) */
 function buildEls(c) {
-  if (EL_STATS.includes(c.autoStat)) return { [c.autoStat]: 1 };
   const a = c.alloc || {}; const tot = EL_STATS.reduce((n, k) => n + Math.max(0, a[k] || 0), 0);
-  const keep = tot > 0 ? EL_STATS.filter((k) => (a[k] || 0) / tot >= 0.2) : []; if (!keep.length) return { [CLASSES[c.cls].main]: 1 };
+  const keep = tot > 0 ? EL_STATS.filter((k) => (a[k] || 0) / tot >= 0.2) : [];
+  if (!keep.length) return { [EL_STATS.includes(c.autoStat) ? c.autoStat : CLASSES[c.cls].main]: 1 };
   const sub = keep.reduce((n, k) => n + a[k], 0); const o = {}; keep.forEach((k) => (o[k] = a[k] / sub)); return o;
 }
+/* 1.0.30.2 : caractéristiques vraiment données au héros, comme E.charStats : bonus d'un objet Parfait, exo (PA, PM, PO…) et Potentiel
+   d'un Dofus. Avant, « Équiper au mieux » ne voyait que les jets de base et pouvait retirer un exo PA ou un Dofus monté en Potentiel */
+function itemStats(it) {
+  if (!it.uid || !it.tpl) return it.stats;
+  const o = Object.assign({}, E.isPerfect(it) ? E.perfectStats(it) : it.stats); if (it.exo) o[it.exo] = (o[it.exo] || 0) + 1;
+  const dof = ITEMS[it.tpl] && ITEMS[it.tpl].dofus; if (dof && E.dpotStatsOf && E.dpotRank) { const x = E.dpotStatsOf(dof, E.dpotRank(S, dof)); for (const k in x) o[k] = (o[k] || 0) + x[k]; }
+  return o;
+}
+const setFx = (z, n) => (E.setCountFx ? E.setCountFx(S, z, n) : n); // 1.0.30 : Couture fine (une pièce de moins suffit)
 function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dmgShare = {}; for (const k in els) dmgShare[ELEMENTS[STATS[k].el].dmg] = els[k]; let sc = 0;
-  for (const k in it.stats) sc += it.stats[k] * (SCORE_W[k] || 1) * (EL_STATS.includes(k) ? (els[k] ? 0.1 + 1.3 * els[k] : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (dmgShare[k] ? 0.1 + 0.9 * dmgShare[k] : 0.1) : 1);
-  if (c.autoStat === "vit") sc += (it.stats.vit || 0) * 0.5;
+  const st = itemStats(it);
+  for (const k in st) sc += st[k] * (SCORE_W[k] || 1) * (EL_STATS.includes(k) ? (els[k] ? 0.1 + 1.3 * els[k] : 0.1) : ["dt", "df", "de", "da"].includes(k) ? (dmgShare[k] ? 0.1 + 0.9 * dmgShare[k] : 0.1) : 1);
+  if (c.autoStat === "vit" || (c.autoStat && c.autoPreset === "tank")) sc += (st.vit || 0) * 0.5; // héros Tank (profil Tank du menu des caractéristiques)
   if (it.tpl && ITEMS[it.tpl] && ITEMS[it.tpl].slot === "arme") { const sp = E.weaponSpellOf(c.cls, it.tpl, it.wel, it.welh); // 0.1.53 : le coup d'arme compte
     if (sp) { const g = sp.grades[0]; const elStat = { t: "fo", n: "fo", f: "ine", e: "cha", a: "age" };
       sc += 2 * g.fx.reduce((v, f) => v + (f.k === "dmg" || f.k === "drain" ? (f.min + f.max) / 2 * (f.el === "best" ? 1 : 0.1 + 0.9 * (els[elStat[f.el]] || 0)) : 0), 0) / Math.max(1, g.pa); } }
@@ -4819,7 +4836,7 @@ function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dm
 /* 0.1.46.1 : score de l'équipement entier, bonus de panoplie compris (tri du choix d'objet, pastille verte, Tout équiper au mieux) */
 function gearScore(c, eq) { let sc = 0; const n = {};
   for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += itemScore(c, it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
-  for (const z in n) { const b = E.setBonus(z, n[z]); if (b) sc += itemScore(c, { stats: b }); } return sc; }
+  for (const z in n) { const b = E.setBonus(z, setFx(z, n[z])); if (b) sc += itemScore(c, { stats: b }); } return sc; }
 function gainFor(c, s, uid, base) { const eq = Object.assign({}, c.equip); for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; return gearScore(c, eq) - (base === undefined ? gearScore(c, c.equip) : base); }
 /* 0.1.47.5 : plan d'équipement complet. On part de l'équipement actuel, on remplit emplacement par emplacement (meilleur gain, bonus
    de panoplie compris), puis on essaie aussi, pour chaque panoplie présente dans le sac, de poser toutes ses pièces d'un coup avant de
@@ -4834,7 +4851,7 @@ function equipBlocked(c, eq, s, it) {
   if (T.leg && (clash(eq, (x) => ITEMS[x.tpl].leg) || clash(c.equip, (x) => ITEMS[x.tpl].leg))) return true;
   return !!(it.exo && one.includes(it.exo) && (clash(eq, (x) => x.exo === it.exo) || clash(c.equip, (x) => x.exo === it.exo)));
 }
-const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {});
+const planKey = (c) => c.id + "|" + c.lvl + "|" + c.autoStat + "|" + JSON.stringify(c.equip) + "|" + Object.keys(S.items).length + "|" + S.chars.map((x) => Object.values(x.equip).join(",")).join(";") + "|" + JSON.stringify(c.alloc || {}) + "|" + JSON.stringify(S.dofPot || {});
 const planFresh = (c) => { const hit = planMemo.get(c.id); return !!hit && hit.key === planKey(c); };
 function gearPlan(c) {
   const key = planKey(c); const hit = planMemo.get(c.id); if (hit && hit.key === key) return hit.plan;
@@ -4849,7 +4866,7 @@ function* planSteps(c, key) {
   const gearScore = (_c, eq) => { let sc = 0; const n = {};
     for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += sco(it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
     for (const z in n) { const v = setSc(z, n[z]); if (v) sc += v; } return sc; };
-  function setSc(z, k) { if (!k) return 0; const bk = z + ":" + k; let v = bsc.get(bk); if (v === undefined) { const b = E.setBonus(z, k); bsc.set(bk, (v = b ? itemScore(c, { stats: b }) : 0)); } return v; }
+  function setSc(z, k) { if (!k) return 0; const bk = z + ":" + k; let v = bsc.get(bk); if (v === undefined) { const b = E.setBonus(z, setFx(z, k)); bsc.set(bk, (v = b ? itemScore(c, { stats: b }) : 0)); } return v; }
   const itemScore_ = sco;
   const taken = new Set(); S.chars.forEach((x) => { if (x !== c) Object.values(x.equip).forEach((u) => taken.add(u)); });
   const pool = {}; for (const it of Object.values(S.items)) { const T = ITEMS[it.tpl]; if (!T.slot || T.lvl > c.lvl || taken.has(it.uid)) continue; (pool[T.slot] = pool[T.slot] || []).push(it); }

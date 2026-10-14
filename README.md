@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.2 « Équiper au mieux complet »
+
+Bug signalé par Mathis (14/10/2026, « j'ai fait équiper au mieux j'ai perdu 200 de stat »). Le score d'objet de js/ui.js (itemScore, utilisé par gearPlan, « Équiper au mieux », la pastille verte et le tri du choix d'objet) lit maintenant les caractéristiques réelles comme E.charStats (itemStats : Parfait, exo, Potentiel des Dofus) ; buildEls lit les points placés aussi en mode automatique (profil Multi-élément) ; bonus de Vitalité pour le profil Tank ; paliers de panoplie avec E.setCountFx (Couture fine) ; planKey suit le Potentiel (S.dofPot).
+
 ## 1.0.30.1 « Jets remis à niveau »
 
 Soft reset des jets (choix 40A), activé avec les mots de Mathis (14/10/2026, « active le soft reset ») après le comptage en lecture seule (Actions › Serveur OVH › soft-reset-comptage : 55 comptes, 15 touchés, 138 objets dont 15 Parfaits, 802 runes, 138 Cristaux, 13,8 M kamas). `E.SOFT_RESET_ON = true` (js/forge.js) : au lancement, une fois par partie (`S.softReset`), ce que la forgemagie d'avant la 1.0.30 a ajouté au-dessus de 80 % de la fourchette est retiré, avec la compensation et le titre « Forgemage d'antan ».
