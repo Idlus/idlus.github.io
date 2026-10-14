@@ -81,12 +81,19 @@ jobs:
         if: inputs.etape == 'installer'
         env:
           DOMAINE_DEMANDE: ${{ inputs.domaine }}
+          D_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          D_SECRET: ${{ secrets.DISCORD_SECRET }}
         run: |
           dom="$DOMAINE_DEMANDE"; [ -n "$dom" ] || dom="$(echo "$HOTE" | tr . -).sslip.io"
           if ! echo "$dom" | grep -qE '^[a-z0-9.-]+$'; then echo "Domaine invalide : $dom" >&2; exit 1; fi
           echo "Domaine : $dom"
           sshpass -e ssh $SSHO "$UTIL@$HOTE" 'rm -rf /tmp/idlus-serveur && mkdir -p /tmp/idlus-serveur'
           sshpass -e scp $SSHO tools/serveur/* "$UTIL@$HOTE:/tmp/idlus-serveur/"
+          # Connexion Discord (si les secrets existent) : petit fichier privé, lu puis effacé par installer.sh
+          if [ -n "$D_ID" ] && [ -n "$D_SECRET" ]; then
+            (umask 077; printf 'D_ID=%q\nD_SECRET=%q\n' "$D_ID" "$D_SECRET" > /tmp/discord.env)
+            sshpass -e scp $SSHO /tmp/discord.env "$UTIL@$HOTE:/tmp/idlus-serveur/discord.env"; rm -f /tmp/discord.env
+          fi
           if [ "$UTIL" = "root" ]; then
             sshpass -e ssh $SSHO "root@$HOTE" "bash /tmp/idlus-serveur/installer.sh '$dom'"
           else

@@ -50,13 +50,25 @@ regle CERTBOT_EMAIL "admin@$DOMAINE"
 regle COMPOSE_FILE "docker-compose.yml:docker-compose.caddy.yml:docker-compose.idlus.yml"
 # Les valeurs Discord sont remplies à l'étape du déménagement ; vides en attendant (connexion Discord inactive)
 grep -q '^DISCORD_ENABLED=' .env || { echo "DISCORD_ENABLED=false"; echo "DISCORD_CLIENT_ID="; echo "DISCORD_SECRET="; } >> .env
+# Connexion Discord : valeurs envoyées par le workflow (secrets GitHub DISCORD_CLIENT_ID / DISCORD_SECRET), fichier effacé aussitôt
+if [ -f "$ICI/discord.env" ]; then
+  . "$ICI/discord.env"; shred -u "$ICI/discord.env" 2>/dev/null || rm -f "$ICI/discord.env"
+  if [ -n "${D_ID:-}" ] && [ -n "${D_SECRET:-}" ]; then
+    regle DISCORD_ENABLED true; regle DISCORD_CLIENT_ID "$D_ID"; regle DISCORD_SECRET "$D_SECRET"
+    log "Connexion Discord activée"
+  fi
+fi
 cp "$ICI/docker-compose.idlus.yml" docker-compose.idlus.yml
 cp "$ICI/Caddyfile" volumes/proxy/caddy/Caddyfile
+# Clé publique (faite pour être dans le code du jeu) lisible sur https://<domaine>/cle-publique
+mkdir -p volumes/proxy/caddy/public
+grep '^ANON_KEY=' .env | cut -d= -f2- > volumes/proxy/caddy/public/cle.txt
 chmod 600 .env
 
 log "Démarrage (le premier passage télécharge les images, quelques minutes)"
 docker compose pull -q
 docker compose up -d --remove-orphans
+docker compose restart caddy >/dev/null   # relit le Caddyfile s'il a changé
 
 log "Sauvegarde de la base chaque nuit à 4 h (14 dernières gardées dans /opt/idlus/sauvegardes)"
 install -m 700 "$ICI/sauvegarde.sh" /opt/idlus/sauvegarde.sh
@@ -75,5 +87,4 @@ done
 docker compose ps --format 'table {{.Service}}\t{{.Status}}'
 if [ -z "$ok" ]; then echo "Le serveur ne répond pas encore en HTTPS sur https://$DOMAINE (le domaine pointe-t-il vers ce serveur ?)" >&2; exit 1; fi
 log "OK : https://$DOMAINE répond"
-# Clé publique (faite pour être dans le code du jeu, comme celle de Supabase aujourd'hui)
-echo "CLE_PUBLIQUE=$CLE_PUB"
+echo "Clé publique : https://$DOMAINE/cle-publique"

@@ -7,6 +7,14 @@
         reverse_proxy api-gw:8000
     }
 
+    handle /cle-publique {
+        root * /etc/caddy/public
+        rewrite * /cle.txt
+        header Content-Type "text/plain; charset=utf-8"
+        header Access-Control-Allow-Origin "*"
+        file_server
+    }
+
     handle {
         respond "Serveur d'Idlus" 404
     }
