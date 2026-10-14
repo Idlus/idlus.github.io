@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.14 « Cadres spéciaux »
+Demande de Mathis (question 2B de la maquette des cadres). Le portrait rond `.head` porte `data-fr` (`E.heroFrame` dans js/systems.js : cadre spécial choisi, sinon feu si rené, sinon métal du niveau). `E.SFRAMES` liste 9 cadres spéciaux avec leur condition, `E.setFrame` / action `setFrame` enregistre le choix (`c.frame`). Choix dans la feuille Apparence (`frameHtml` dans js/ui.js). Le cadre du Kolizéum reste acquis après la remise à zéro de la semaine (`S.unlocks.frKoli`), celui d'Halouine se débloque en gagnant un combat du 24/10 au 3/11 (`S.unlocks.frHal`). Styles en fin de css/style.css.
+
 ## 1.0.13 « Interface plus nette »
 Demande de Mathis (maquette https://claude.ai/artifact/VnzZRvd1troVA6gjeakeS9, réponse 1A 2A 3A 4A 5A 6A 7A). Barre du haut : libellés Options/Admin/« tués »/« en ligne » retirés au profit des icônes, zone en `.st-wt` raccourcie. Annonce : une ligne partout (`-webkit-line-clamp:1` sur `.atx`, « Lire la suite » géré par `annClip` de chat.js). Menu de gauche : rangées de 27 px. Menu du téléphone : 4 colonnes. Onglets `.subtabs` / `.catchips` au téléphone : une ligne défilante, position gardée par `tabsKeep` (ui.js, clé page + rang de la rangée, observateur sur #main). `deltaHtml` : verdict par `gainFor` + 4 gains / 4 pertes en colonnes (`.cmpbox`). Bulle `.chmin` sur PC : sans aperçu ni pastille d'événement.
 

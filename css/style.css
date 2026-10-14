@@ -4639,3 +4639,43 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
   .chmin{padding:6px 14px;border-radius:999px;border-color:var(--gold);max-width:none}
   .chmin .last,.chmin .ev{display:none}
 }
+
+/* ---------- 1.0.14 : cadres sur les portraits + cadres spéciaux ----------
+   Le portrait rond d'un héros (.head) porte data-fr : métal du niveau (bois1 … krosmoz), « feu » s'il est rené,
+   ou le cadre spécial choisi dans Apparence › Cadre (E.SFRAMES). Les variables --m1/--m2/--m3 viennent du bloc 0.1.27. */
+[data-fr="pionnier"]{--m1:#2f6b1a;--m2:#c8f57a;--m3:#173a0c;--gem:#9bd84a;--glow:rgba(155,216,74,.5);--ring:conic-gradient(#c8f57a,#2f6b1a 15%,#7cc243 30%,#173a0c 45%,#c8f57a 60%,#2f6b1a 75%,#7cc243 90%,#c8f57a)}
+[data-fr="stasis"]{--m1:#2433a8;--m2:#7fe0ff;--m3:#120d4a;--gem:#7fe0ff;--glow:rgba(110,200,255,.6);--ring:conic-gradient(from var(--ang),#7fe0ff,#2433a8,#9b6bff,#120d4a,#7fe0ff)}
+[data-fr="ames"]{--m1:#5a2a9a;--m2:#d6a8ff;--m3:#1e0b3a;--gem:#c77dff;--glow:rgba(170,90,255,.55);--ring:conic-gradient(#d6a8ff,#5a2a9a 20%,#1e0b3a 40%,#c77dff 60%,#1e0b3a 80%,#d6a8ff)}
+[data-fr="dofus"]{--m1:#b8a98a;--m2:#fff6dc;--m3:#5a4d36;--gem:#3fe08a;--glow:rgba(255,240,200,.35);--ring:conic-gradient(#2fbf6a 0 60deg,#d23a3a 0 120deg,#3fc8d8 0 180deg,#e08a2a 0 240deg,#f5f1e6 0 300deg,#2a2a2a 0)}
+[data-fr="align"]{--m1:#2f5fb8;--m2:#ffffff;--m3:#c9a54a;--gem:#fff;--glow:rgba(150,190,255,.55);--ring:conic-gradient(#fff,#2f5fb8 20%,#c9a54a 35%,#fff 50%,#2f5fb8 70%,#c9a54a 85%,#fff)}
+[data-fr="align"][data-side="brakmar"]{--m1:#8a1414;--m2:#ff6a4a;--m3:#1a0606;--gem:#ff4a2a;--glow:rgba(255,80,50,.55);--ring:conic-gradient(#ff6a4a,#8a1414 20%,#1a0606 35%,#ff6a4a 50%,#8a1414 70%,#1a0606 85%,#ff6a4a)}
+[data-fr="koli"]{--m1:#a8761a;--m2:#ffd36a;--m3:#7a1a12;--gem:#e8304a;--glow:rgba(255,190,80,.45);--ring:repeating-conic-gradient(#ffd36a 0 15deg,#7a1a12 0 30deg)}
+[data-fr="songe"]{--m1:#2a2f7a;--m2:#ffb8e8;--m3:#0e1030;--gem:#5fd8d0;--glow:rgba(255,160,230,.5);--ring:conic-gradient(from var(--ang),#5fd8d0,#2a2f7a,#ffb8e8,#0e1030,#5fd8d0)}
+[data-fr="guilde"]{--gcol:#c9962e;--m1:color-mix(in srgb,var(--gcol) 70%,#000);--m2:color-mix(in srgb,var(--gcol) 45%,#fff);--m3:#1a1206;--gem:#ffd36a;--glow:color-mix(in srgb,var(--gcol) 55%,transparent);--ring:conic-gradient(var(--gcol),#ffd36a 15%,var(--gcol) 30%,#1a1206 45%,var(--gcol) 60%,#ffd36a 75%,var(--gcol))}
+[data-fr="halouine"]{--m1:#e0761a;--m2:#ffb347;--m3:#140a04;--gem:#ff7a1a;--glow:rgba(255,130,30,.55);--ring:repeating-conic-gradient(#ff8a1a 0 22.5deg,#1a0d04 0 45deg)}
+/* anneau du portrait */
+.head[data-fr]{border:3px solid transparent;background:linear-gradient(var(--cc),var(--cc)) padding-box,var(--ring,conic-gradient(from 210deg,var(--m2),var(--m1) 25%,var(--m3) 50%,var(--m1) 75%,var(--m2))) border-box;box-shadow:0 0 0 1px #000a}
+.head.lg[data-fr]{border-width:4px}
+.head[data-fr$="2"]{box-shadow:0 0 0 1px #000a,0 0 0 2.5px var(--m2),0 0 0 3.5px #000a}
+.head[data-fr="krosmoz"]{--ring:conic-gradient(from var(--ang),#c77dff,#4fd1e0,#f0c35a,#ff7ac8,#c77dff);box-shadow:0 0 0 1px #000a,0 0 8px rgba(199,125,255,.7);animation:spin 6s linear infinite}
+.head[data-fr="feu"]{--ring:conic-gradient(from var(--ang),#ffc35a,#d9541e,#7a2a0e,#ff9a3d,#ffc35a);box-shadow:0 0 0 1px #000a,0 0 8px rgba(255,140,60,.7);animation:spin 5s linear infinite}
+.head:is([data-fr="pionnier"],[data-fr="stasis"],[data-fr="ames"],[data-fr="dofus"],[data-fr="align"],[data-fr="koli"],[data-fr="songe"],[data-fr="guilde"],[data-fr="halouine"]){box-shadow:0 0 0 1px #000a,0 0 8px var(--glow)}
+.head:is([data-fr="stasis"],[data-fr="songe"]){animation:spin 8s linear infinite}
+.hb-por .head.lg[data-fr]{box-shadow:0 0 0 1px #000c,0 0 16px var(--glow,color-mix(in srgb,var(--cc) 45%,transparent))}
+.hb-por .head.lg[data-fr$="2"]{box-shadow:0 0 0 1px #000c,0 0 0 3px var(--m2),0 0 0 4px #000a,0 0 16px var(--glow,transparent)}
+.hb-emb{position:absolute;top:-4px;right:-6px;z-index:2;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:14px;line-height:1;
+  background:radial-gradient(circle at 40% 35%,var(--m2),var(--m1));color:var(--m3);border:1.5px solid #000a;box-shadow:0 2px 6px #0009,0 0 8px var(--glow)}
+.hb-fr{border:0;cursor:pointer;font:inherit;font-size:11px;font-weight:800}
+.hb-fr[data-fr]{background:linear-gradient(180deg,var(--m2),color-mix(in srgb,var(--m2) 50%,var(--m1)));color:var(--m3);box-shadow:inset 0 0 0 1px #0005}
+.hb-fr[data-fr="krosmoz"]{background:linear-gradient(90deg,#c77dff,#4fd1e0,#f0c35a);color:#1a0f2e}
+.hb-fr[data-fr="feu"]{--m1:#d9541e;--m2:#ffc35a;--m3:#3a1206}
+/* choix du cadre (Apparence) */
+.frpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.frit{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 6px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);font:inherit;font-size:12px;font-weight:800;text-align:center;cursor:pointer}
+.frit .head.lg{width:48px;height:48px}
+.frit.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(var(--glw),.35)}
+.frit.lock{opacity:.6}.frit.lock .head{filter:grayscale(.75)}
+.frit small{font-weight:600;color:var(--muted);font-size:10.5px;line-height:1.25}
+@media (prefers-reduced-motion:reduce){.head[data-fr]{animation:none}}
+.reduced .head[data-fr]{animation:none}
+.ac-h .head[data-fr],.hr-h .head[data-fr]{border-width:4px}

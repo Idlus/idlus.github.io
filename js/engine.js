@@ -3309,7 +3309,7 @@
     recruit: "recruter un héros", dismiss: "congédier un héros", toggleTeam: "entrer ou sortir de l'équipe", setRow: "placer un héros (ligne)", setPlaceAuto: "placement automatique",
     allocate: "dépenser un point de caractéristique", deallocate: "retirer un point", resetPoints: "réinitialiser les points",
     setAllocMode: "répartition auto ou manuelle", autoAllocate: "relancer la répartition auto", equipSpell: "placer un sort dans la barre",
-    setTitle: "choisir un titre", setOrn: "choisir un ornement", setWing: "choisir des ailes",
+    setTitle: "choisir un titre", setOrn: "choisir un ornement", setFrame: "choisir un cadre", setWing: "choisir des ailes",
     renaissance: "Renaissance d'un héros", chooseAlign: "choisir un alignement", setTraining: "envoyer en salle d'entraînement",
     // équipement
     equip: "équiper un objet", unequip: "retirer un objet", breakItem: "briser un objet",

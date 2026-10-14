@@ -1,6 +1,15 @@
 {
-  "version": "1.0.13",
+  "version": "1.0.14",
   "versions": [
+    {
+      "v": "1.0.14",
+      "name": "Cadres spéciaux",
+      "items": [
+        "Le portrait rond de chaque héros porte maintenant un cadre : le métal de son niveau (Bois, Bronze, Argent, Or, Émeraude, Krosmoz), le feu s'il est rené",
+        "9 cadres spéciaux à débloquer : Pionnier, Stasis (donjon en stasis 10), Âmes (100 âmes d'archimonstres), Dofus (6 Dofus différents), Bonta ou Brâkmar (rang 3 d'alignement), Kolizéum (grade Or), Songe (Cauchemar 1), Guilde (guilde niveau 10, à ses couleurs) et Halouine (un combat gagné du 24 octobre au 3 novembre)",
+        "Choisis le cadre de chaque héros dans Héros › Apparence › Cadre. Les cadres verrouillés montrent comment les obtenir"
+      ]
+    },
     {
       "v": "1.0.13",
       "name": "Interface plus nette",

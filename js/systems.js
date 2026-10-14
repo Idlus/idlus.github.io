@@ -1190,6 +1190,29 @@
   E.FRAME_KEYS = ["bois1", "bois2", "bronze1", "bronze2", "argent1", "argent2", "or1", "or2", "eme1", "eme2", "krosmoz"];
   E.frameKey = (lvl) => E.FRAME_KEYS[E.frameIdx(lvl || 1)];
   E.frameIdx = (lvl) => (lvl >= 200 ? 10 : Math.min(9, Math.floor(lvl / 20)));
+  /* 1.0.13 : cadres spéciaux. Chacun se débloque une fois pour toute la partie, puis se choisit héros par héros
+     (Apparence › Cadre). Sans choix, le héros garde le cadre de son niveau (ou le feu s'il est rené). */
+  const halWin = (t) => { const d = new Date(t); const m = d.getMonth() + 1, j = d.getDate(); return (m === 10 && j >= 24) || (m === 11 && j <= 3); };
+  E.SFRAMES = {
+    pionnier: { name: () => "Cadre du Pionnier", req: "Avoir joué à la version de test avant le multijoueur (récompense des testeurs)", ok: (S) => !!(S.unlocks && S.unlocks.pionnier) },
+    stasis:   { name: () => "Cadre de la Stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!(S.unlocks && S.unlocks.stasis10) },
+    ames:     { name: () => "Cadre des Âmes", req: "Capturer 100 âmes d'archimonstres", ok: (S) => (E.soulCount ? E.soulCount(S) : 0) >= 100 },
+    dofus:    { name: () => "Cadre des Dofus", req: "Posséder 6 Dofus différents", ok: (S) => !!E.DOFUS_ORDER && E.DOFUS_ORDER.filter((id) => E.dofusOwned(S, id)).length >= 6 },
+    align:    { name: (S) => (S.align && S.align.side === "brakmar" ? "Cadre de Brâkmar" : S.align ? "Cadre de Bonta" : "Cadre d'alignement"), req: "Atteindre le rang 3 d'alignement (Bonta ou Brâkmar)", ok: (S) => !!S.align && E.alignRankIdx(S) >= 3 },
+    koli:     { name: () => "Cadre du Kolizéum", req: "Atteindre le grade Or au Kolizéum (cote 1 300)", ok: (S) => { if (S.unlocks && S.unlocks.frKoli) return true; const ok = !!S.koli && Math.max(S.koli.best || 0, S.koli.cote || 0) >= 1300; if (ok && S.unlocks) S.unlocks.frKoli = 1; return ok; } },
+    songe:    { name: () => "Cadre du Songe", req: "Valider le Songe infini en Cauchemar 1", ok: (S) => !!S.songe && (S.songe.unl || 0) >= 6 },
+    guilde:   { name: () => "Cadre de guilde", req: "Être dans une guilde de niveau 10 ou plus (aux couleurs de la guilde)", ok: (S) => !!(S.guild && S.guild.id) && (S.guild.lvl || 1) >= 10 },
+    halouine: { name: () => "Cadre d'Halouine", req: "Gagner un combat pendant Halouine (du 24 octobre au 3 novembre)", ok: (S) => !!(S.unlocks && S.unlocks.frHal) },
+  };
+  E.sframeOk = (S, id) => !!E.SFRAMES[id] && E.SFRAMES[id].ok(S);
+  /* clé du cadre montré : cadre spécial choisi, sinon feu (rené), sinon métal du niveau */
+  E.heroFrame = (S, c) => (c.frame && E.sframeOk(S, c.frame) ? c.frame : c.ren ? "feu" : E.frameKey(c.lvl));
+  E.setFrame = (S, cid, id) => {
+    const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
+    if (id && !E.sframeOk(S, id)) return "Cadre pas encore débloqué.";
+    c.frame = id || null; return null;
+  };
+  { const prev = E.emit; E.emit = (S, type, data) => { if (prev) prev(S, type, data); if (type === "win" && S.unlocks && !S.unlocks.frHal && halWin(E.now())) { S.unlocks.frHal = 1; if (S.cnt) note(S, "Cadre d'Halouine débloqué ! Choisis-le dans Héros › Apparence › Cadre.", "rare"); } }; }
   E.domEl = (st) => { const m = [["t", st.fo], ["f", st.ine], ["e", st.cha], ["a", st.age]].sort((a, b) => b[1] - a[1]); return m[0][1] > 0 ? m[0][0] : "n"; };
   E.radiantWorn = (S, c) => Object.values(c.equip).filter((u) => S.items[u] && S.items[u].radiant).length;
 

@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.13";
+const GAME_VERSION = "1.0.14";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.14", name: "Cadres spéciaux", items: [
+    "Le portrait rond de chaque héros porte maintenant un cadre : le métal de son niveau (Bois, Bronze, Argent, Or, Émeraude, Krosmoz), le feu s'il est rené",
+    "9 cadres spéciaux à débloquer : Pionnier, Stasis (donjon en stasis 10), Âmes (100 âmes d'archimonstres), Dofus (6 Dofus différents), Bonta ou Brâkmar (rang 3 d'alignement), Kolizéum (grade Or), Songe (Cauchemar 1), Guilde (guilde niveau 10, à ses couleurs) et Halouine (un combat gagné du 24 octobre au 3 novembre)",
+    "Choisis le cadre de chaque héros dans Héros › Apparence › Cadre. Les cadres verrouillés montrent comment les obtenir",
+  ] },
   { v: "1.0.13", name: "Interface plus nette", items: [
     "Barre du haut sur une seule ligne sur PC : Options et Admin deviennent des icônes, le nombre de monstres tués garde son icône, le nom de la zone se raccourcit si la place manque",
     "Les annonces du serveur tiennent sur une ligne, sur PC comme au téléphone : « Lire la suite » les ouvre en entier",
@@ -1325,10 +1330,24 @@ function lookSheet(c) {
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
     ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${frameHtml(c)}
     ${wardrobeHtml(c)}
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
 }
-const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</span>`;
+const head = (c, lg) => `<span class="head ${lg ? "lg" : ""}" data-fr="${c.frPreview ? c.frame : E.heroFrame(S, c)}" ${c.frame === "align" && S.align ? ` data-side="${S.align.side}"` : ""} style="--cc:${CLASSES[c.cls].color}${c.frame === "guilde" ? guildCol() : ""}">${headTag(c.cls, c.sex, c.name)}</span>`;
+/* 1.0.13 : cadre de guilde aux couleurs de la guilde */
+const guildCol = () => (S.guild && S.guild.col ? `;--gcol:${/^#[0-9a-f]{3,8}$/i.test(S.guild.col) ? S.guild.col : "#c9962e"}` : "");
+const frameName = (c) => { const f = E.heroFrame(S, c); return E.SFRAMES[f] ? E.SFRAMES[f].name(S) : `cadre ${E.FRAMES[E.frameIdx(c.lvl)]}`; };
+const FR_EMB = { pionnier: "❦", stasis: "✦", ames: "✧", dofus: "◆", align: "⚜", koli: "⚔", songe: "☽", guilde: "♜", halouine: "🎃" };
+/* choix du cadre (feuille Apparence) */
+function frameHtml(c) {
+  const cur = c.frame && E.sframeOk(S, c.frame) ? c.frame : "";
+  const auto = { lvl: c.lvl, ren: c.ren, cls: c.cls, sex: c.sex, name: c.name };
+  const ids = Object.keys(E.SFRAMES); const n = ids.filter((id) => E.sframeOk(S, id)).length;
+  return `<div class="small"><b>Cadre</b> <span class="xs muted">${n} / ${ids.length} cadres spéciaux débloqués · le cadre entoure le portrait du héros partout dans le jeu</span></div>
+    <div class="frpick"><button class="frit ${cur ? "" : "on"}" data-act="setframe" data-v="">${head(Object.assign({}, auto), true)}<span>${c.ren ? "Feu de la Renaissance" : `Niveau · ${E.FRAMES[E.frameIdx(c.lvl)]}`}</span></button>
+    ${ids.map((id) => { const ok = E.sframeOk(S, id); const F = E.SFRAMES[id]; return `<button class="frit ${ok ? "" : "lock"} ${cur === id ? "on" : ""}" data-act="${ok ? "setframe" : "frwhere"}" data-v="${id}" data-tip="${h(F.name(S) + " · " + (ok ? "débloqué" : "à débloquer : " + F.req))}">${head(Object.assign({}, auto, { frame: id, frPreview: 1 }), true)}<span>${h(F.name(S))}</span>${ok ? "" : `<small>🔒 ${h(F.req)}</small>`}</button>`; }).join("")}</div>`;
+}
 /* 0.1.53 : une icône DOFUS pour chaque caractéristique (dommages élémentaires = icône de l'élément, résistances fixes = icône de la résistance, comme dans DOFUS) */
 const SICO_OF = { dt: "fo", df: "ine", de: "cha", da: "age", xt: "rt", xf: "rf", xe: "re", xa: "ra", xn: "rn" };
 const SICO_HAS = new Set(["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "dcri", "dn", "dsort", "so", "pp", "ini", "pa", "pm", "po", "rt", "rf", "re", "ra", "rn", "tac", "fui", "rpa", "rpm", "epa", "epm", "inv", "pod"]);
@@ -1365,7 +1384,7 @@ function heroCard(c, size = "", opts = {}) {
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
   if (S.settings.cadreSonge) ornCls += " fsg"; // 0.1.48 : Cadre des Songes (Marché onirique)
   const job = c.job ? `<span class="jobtag">${IC("pioche")} ${h(D.GATHER_JOBS[c.job.job].name)}</span>` : "";
-  return `<button class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}`)}">
+  return `<button data-fr="${E.heroFrame(S, c)}" class="hcard ${size} f${fi} ${rad ? "radiant" : ""} ${ornCls}" style="--el:${elVar(el)};--cc:${C.color}${opts.ws ? ";--ws:" + opts.ws : ""}" data-act="${opts.act || "selchar"}" data-id="${c.id}" data-tip="${h(`${c.name} · ${C.name} niv. ${c.lvl} · cadre ${E.FRAMES[fi]} · élément ${ELEMENTS[el].name}${orn ? " · ornement " + E.ORN[orn].name(S) : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}`)}">
     ${ornHtml}<div class="in"><div class="art">${lookImg(c, "hlook")}<span class="lv">${c.lvl}</span>${c.ren ? `<span class="renm" title="Renaissance ${E.roman(c.ren)}">${E.roman(c.ren)}</span><span class="rembers"><i></i><i></i><i></i><i></i></span>` : ""}<span class="elb"><img src="assets/c/${EL_ICON[el]}.png" alt=""></span>${job}${rad ? `<span class="rb">✦ ${rad > 1 ? rad + " " : ""}Rayonnant${rad > 1 ? "s" : ""}</span>` : ""}</div>
     <div class="nm"><b class="${c.ren ? "rname" : ""}">${h(c.name)}</b>${c.ren ? `<span class="rstar">✦ ${E.roman(c.ren)}</span>` : ""}<span class="ttl">${c.title ? h(c.title) : ""}</span></div><div class="cl">${C.name}${E.isSolo(S) && c.inTeam && !c.job ? " · solo" : ""}${c.ren ? ` · Renaissance ${E.roman(c.ren)}` : ""}</div>
     <div class="xpb"><i style="width:${pct(c.xp, need)}%"></i></div>
@@ -4181,8 +4200,8 @@ function heroesHtml() {
       ${E.titles(S).length ? "" : `<span class="xs muted hm-note">Les titres et ornements se débloquent avec les succès.</span>`}
       ${S.chars.length > 1 ? `<hr><button class="bad" data-act="dismisssheet" data-id="${c.id}">Congédier ${h(c.name)}</button>` : ""}</div>` : "";
   return `${strip}<div class="hban" style="--cc:${C.color};--sym:url('${new URL(symImg(c.cls), location.href).href}')"><span class="hb-bg"></span>
-    <span class="hb-por">${head(c, true)}<b class="hb-lv num">${c.lvl}</b></span>
-    <div class="hb-main"><div class="hb-l1">${renameHtml(c)}<span class="muted small">${C.name} · niveau ${c.lvl}</span><span class="hb-fr" data-tip="${c.lvl < 200 ? `Prochain cadre au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)}` : "Cadre maximum"}">cadre ${E.FRAMES[E.frameIdx(c.lvl)]}</span>${actPill(c)}</div>
+    <span class="hb-por">${head(c, true)}${FR_EMB[E.heroFrame(S, c)] ? `<i class="hb-emb" data-fr="${E.heroFrame(S, c)}">${FR_EMB[E.heroFrame(S, c)]}</i>` : ""}<b class="hb-lv num">${c.lvl}</b></span>
+    <div class="hb-main"><div class="hb-l1">${renameHtml(c)}<span class="muted small">${C.name} · niveau ${c.lvl}</span><button class="hb-fr" data-fr="${E.heroFrame(S, c)}" data-act="looksheet" data-id="${c.id}" data-tip="${h((E.SFRAMES[E.heroFrame(S, c)] ? "Cadre spécial · " : c.lvl < 200 ? `Prochain cadre au niveau ${Math.min(200, (Math.floor(c.lvl / 20) + 1) * 20)} · ` : "Cadre maximum · ") + "changer dans Apparence")}">${h(frameName(c))}</button>${actPill(c)}</div>
       <div class="hb-xp xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div><span class="xs muted num">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)} XP`}</span></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}
       <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
       ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP</span></div>` : ""}
@@ -6956,6 +6975,8 @@ document.addEventListener("click", (ev) => {
     case "installgame": installGame(); return;
     case "looksheet": ui.lookCid = +d.id; ui.wSlot = null; lookSheet(char(+d.id)); return;
     case "looksex": { const x = char(ui.lookCid); x.sex = d.v; dirty = true; lookSheet(x); render(); return; }
+    case "setframe": { const r = E.act(S, "setFrame", ui.lookCid, d.v || null); if (r) { toast(r, "warn"); return; } dirty = true; lookSheet(char(ui.lookCid)); render(); return; }
+    case "frwhere": { const F = E.SFRAMES[d.v]; if (F) toast(`${F.name(S)} : ${F.req}.`); return; }
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
