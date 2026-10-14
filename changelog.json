@@ -1,6 +1,15 @@
 {
-  "version": "1.0.32.4",
+  "version": "1.0.32.5",
   "versions": [
+    {
+      "v": "1.0.32.5",
+      "name": "Y aller au donjon",
+      "items": [
+        "Une ressource qui ne tombe qu'en donjon a enfin son bouton « Y aller » : il ouvre la fiche du donjon, prête pour « Entrer » (fiche de la ressource, « Où ? » de l'Artisanat)",
+        "Si plusieurs donjons la donnent, le jeu choisit un donjon ouvert, au plus près du niveau de ton équipe. Un donjon encore fermé affiche un cadenas et ce qui l'ouvre",
+        "Liste de courses : chaque ressource qui manque a son « Y aller » (zone ou donjon). Clés de donjon et commandes de ressources : le donjon devient un bouton aussi"
+      ]
+    },
     {
       "v": "1.0.32.4",
       "name": "Airs des nouveaux menus",

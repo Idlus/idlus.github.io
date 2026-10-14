@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.4";
+const GAME_VERSION = "1.0.32.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.5", name: "Y aller au donjon", items: [
+    "Une ressource qui ne tombe qu'en donjon a enfin son bouton « Y aller » : il ouvre la fiche du donjon, prête pour « Entrer » (fiche de la ressource, « Où ? » de l'Artisanat)",
+    "Si plusieurs donjons la donnent, le jeu choisit un donjon ouvert, au plus près du niveau de ton équipe. Un donjon encore fermé affiche un cadenas et ce qui l'ouvre",
+    "Liste de courses : chaque ressource qui manque a son « Y aller » (zone ou donjon). Clés de donjon et commandes de ressources : le donjon devient un bouton aussi",
+  ] },
   { v: "1.0.32.4", name: "Airs des nouveaux menus", items: [
     "Musique : quatre nouveaux airs à l'orchestre pour les menus arrivés avec la grande mise à jour",
     "Comptoirs : un air de boutique, avec la clochette de la porte, des pièces qui tintent et la caisse. Foire du Trool : une valse de fête foraine à l'orgue de barbarie",
@@ -1800,6 +1805,10 @@ let ARCHI_BASE = null; // 1.0.8.4 : un archimonstre vit là où vit son monstre 
 const monHome = (k) => { if (!ARCHI_BASE) { ARCHI_BASE = {}; for (const b in MONSTERS) if (MONSTERS[b].archi) ARCHI_BASE[MONSTERS[b].archi] = b; } return ARCHI_BASE[k] || k; };
 const subOfMon = (k) => { k = monHome(k); return Object.values(E.SUBS).find((s) => s.monsters.includes(k)) || (Object.entries(DUNGEONS).find(([, d]) => dgHasMon(d, k)) || [])[0]; };
 const dgHasMon = (d, k) => d.boss === k || [].concat(d.coBoss || []).includes(k) || (d.bossMobs || []).includes(k) || d.rooms.some((r) => r.mobs.includes(k)); // boss, co-boss (les 4 Gelées Royales…), boss secondaires et salles
+/* 1.0.32.2 : donjon où vit un monstre (ouvert d'abord, puis le plus proche du niveau de l'équipe) et bouton « Y aller » vers sa fiche ; verrouillé, il dit ce qui l'ouvre */
+function dgOfMon(k) { k = monHome(k); const t = topTeamLvl(); return Object.keys(DUNGEONS).filter((id) => dgHasMon(DUNGEONS[id], k)).sort((a, b) => E.dungeonUnlocked(S, b) - E.dungeonUnlocked(S, a) || Math.abs(DUNGEONS[a].lvl - t) - Math.abs(DUNGEONS[b].lvl - t))[0] || null; }
+const dgLockTxt = (did) => (E.dungeonUnlocked(S, did) ? "" : dgNeedTxt(did) || `Débloque ${E.SUBS[E.DUNGEON_SUB[did]] ? E.SUBS[E.DUNGEON_SUB[did]].name : "sa zone"}`);
+function dgGoBtn(did, cls = "sm") { const lk = dgLockTxt(did); return `<button class="btn ${cls}" data-act="dgopen" data-id="${did}" data-tip="${h(`Donjon · ${DUNGEONS[did].name}${lk ? ` · ${lk} pour y accéder` : ""}`)}">${lk ? G("lock") : IC("carte")} Y aller</button>`; }
 function bestSource(r) {
   if (E.RES_SOURCE && E.RES_SOURCE[r]) return E.RES_SOURCE[r];
   const L = resIndex().src[r] || []; const g = L.find((x) => x.job); if (g) return `${GATHER_JOBS[g.job].name} niv. ${g.lvl}`;
@@ -1861,7 +1870,7 @@ function shopTotalHtml() {
 function shopListHtml() {
   return (S.shop.length > 1 ? shopTotalHtml() : "") + S.shop.map((e, i) => { const ing = shopIng(e); const miss = ing.filter(([r, q]) => (S.res[r] || 0) < q); const ok = !miss.length && ing.length;
     return `<div class="qcard ${ok ? "cur" : ""}"><span class="qnum">${ok ? "✓" : G("cart")}</span><div class="grow"><b>${h(shopName(e))}</b>${ok ? ` <span class="tag good">tout est réuni</span>` : ` ${etaLine(ing)}`}${ingHtml(ing)}
-      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => `${h(r)} : ${h(bestSource(r))}`).join("<br>")}</div>` : ""}</div>${ok ? `<button class="btn sm primary" data-act="shopgo" data-i="${i}" data-tip="Fabriquer maintenant">${IC("metiers")}<span class="shopgo-l"> Fabriquer</span></button>` : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
+      ${miss.length ? `<div class="xs muted" style="margin-top:4px">${miss.map(([r]) => { const g = resGo(r); return `<div class="shopsrc">${h(r)} : ${h(bestSource(r))}${g ? ` <button class="btn xs ingo" ${g}>${IC("carte")} Y aller</button>` : ""}</div>`; }).join("")}</div>` : ""}</div>${ok ? `<button class="btn sm primary" data-act="shopgo" data-i="${i}" data-tip="Fabriquer maintenant">${IC("metiers")}<span class="shopgo-l"> Fabriquer</span></button>` : pinBtn({ k: "shop", sk: e.k, id: e.id })}<button class="btn sm" data-act="shopdel" data-i="${i}" title="Retirer">✕</button></div>`; }).join("");
 }
 
 const ICONS = {
@@ -2978,7 +2987,8 @@ function keySource(r) {
   const m = L.find((x) => x.m && typeof subOfMon(x.m) !== "string" && subOfMon(x.m)) || L.find((x) => x.m); if (!m) return `<span class="xs muted">${r === E.RARE_COMPONENT ? "trouvailles, boss et coffres" : "source inconnue"}</span>`;
   const sb = subOfMon(m.m); const pct = E.resRate(m.p).toFixed(1).replace(".", ",");
   if (sb && typeof sb !== "string") return `<button class="btn xs" data-act="zoneview" data-id="${sb.id}" data-gotab="world" data-tip="${h(MONSTERS[m.m].name)} · ${pct} %">${IC("carte")} ${h(sb.name)}</button>`;
-  return `<span class="xs muted">${h(MONSTERS[m.m].name)}${sb ? " · " + h(DUNGEONS[sb].name) : ""} · ${pct} %</span>`;
+  if (sb) { const dg = dgOfMon(m.m); return `<button class="btn xs" data-act="dgopen" data-id="${dg}" data-tip="${h(`${MONSTERS[m.m].name} · ${pct} %${dgLockTxt(dg) ? ` · ${dgLockTxt(dg)} pour y accéder` : ""}`)}">${dgLockTxt(dg) ? G("lock") : IC("carte")} ${h(DUNGEONS[dg].name)}</button>`; }
+  return `<span class="xs muted">${h(MONSTERS[m.m].name)} · ${pct} %</span>`;
 }
 function keyPanel(did) {
   const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
@@ -5816,9 +5826,10 @@ function gbLine(o) {
 }
 function gbCard(g) {
   const sb = gbSub(g.res); const go = sb ? `data-act="zoneview" data-id="${sb.id}" data-gotab="world"` : "";
+  const gm = sb ? null : (resIndex().src[g.res] || []).find((x) => x.m && subOfMon(x.m)); const gdg = gm ? dgOfMon(gm.m) : null; // 1.0.32.2 : ressource de donjon
   return `<article class="cmdc ${g.st}" style="--bh:${gbHue(g.lo)}">
     <div class="cmdtop"><span class="cmdband">Niv. ${g.lo}-${g.hi}</span>${g.st === "ready" ? `<span class="cmdst go">Prête à livrer</span>` : `<span class="cmdst">Il t'en manque ${fmt(g.left - g.have)}</span>`}</div>
-    <div class="cmdmid"><button class="cmdico" data-act="ressel" data-n="${h(g.res)}" title="Fiche de la ressource">${im(resImg(g.res), "", g.res)}</button><div class="cmdname"><b>${h(g.res)}</b>${sb ? `<button class="cmdzone" ${go}>${IC("carte")} ${h(sb.name)}</button>` : `<span class="xs muted">butin de monstres</span>`}</div><span class="cmdrew"><b class="num">${fmt(g.max * g.price)}</b><span class="xs muted">kamas</span></span></div>
+    <div class="cmdmid"><button class="cmdico" data-act="ressel" data-n="${h(g.res)}" title="Fiche de la ressource">${im(resImg(g.res), "", g.res)}</button><div class="cmdname"><b>${h(g.res)}</b>${sb ? `<button class="cmdzone" ${go}>${IC("carte")} ${h(sb.name)}</button>` : gdg ? `<button class="cmdzone" data-act="dgopen" data-id="${gdg}" data-tip="${h(dgLockTxt(gdg) ? `${dgLockTxt(gdg)} pour y accéder` : "Ouvrir le donjon")}">${dgLockTxt(gdg) ? G("lock") : IC("carte")} ${h(DUNGEONS[gdg].name)}</button>` : `<span class="xs muted">butin de monstres</span>`}</div><span class="cmdrew"><b class="num">${fmt(g.max * g.price)}</b><span class="xs muted">kamas</span></span></div>
     <div class="cmdbar"><i class="got" style="width:${pct(g.got, g.max)}%"></i><i class="can" style="left:${pct(g.got, g.max)}%;width:${pct(g.q, g.max)}%"></i></div>
     <div class="cmdnums xs"><span><b class="num">${fmt(g.got)}</b> / ${fmt(g.max)} livrées</span><span class="muted">tu en as ${fmt(g.have)} · ${fmt(g.price)} k l'unité</span></div>
     ${g.st === "ready" ? `<button class="btn primary cmdbtn" data-act="gbsell" data-n="${h(g.res)}" data-q="${g.q}">${IC("bourse")} Livrer ${fmt(g.q)} · ${fmt(g.q * g.price)} k</button>` : ""}
@@ -5847,7 +5858,7 @@ function resDetail(n) {
   const IX = resIndex(); const qq = S.res[n] || 0; const r = resRarity(n); const src = IX.src[n] || []; const use = IX.use[n] || [];
   const A = E.almanax(S);
   const srcHtml = src.slice(0, 8).map((x) => x.job ? `<div class="li">${im(jobImg(x.job), "joblogo sm", GATHER_JOBS[x.job].name)}<span class="grow">${GATHER_JOBS[x.job].name} niv. ${x.lvl}</span><button class="btn sm" data-act="gathersheet" data-job="${x.job}">${IC("pioche")} Récolter</button></div>`
-    : (() => { const sb = subOfMon(x.m); const isSub = sb && typeof sb !== "string"; return `<div class="li">${im(imgM(x.m), "ico", MONSTERS[x.m].name)}<span class="grow">${S.bestiary[x.m] ? h(MONSTERS[x.m].name) : "???"} <span class="xs muted">${sb ? h(isSub ? sb.name : DUNGEONS[sb].name) : ""}</span></span><span class="pct">${E.resRate(x.p).toFixed(1).replace(".", ",")} %</span>${isSub ? `<button class="btn sm" data-act="zoneview" data-id="${sb.id}" data-gotab="world">Y aller</button>` : ""}</div>`; })()).join("");
+    : (() => { const sb = subOfMon(x.m); const isSub = sb && typeof sb !== "string"; const dg = sb && !isSub ? dgOfMon(x.m) : null; return `<div class="li">${im(imgM(x.m), "ico", MONSTERS[x.m].name)}<span class="grow">${S.bestiary[x.m] ? h(MONSTERS[x.m].name) : "???"} <span class="xs muted">${sb ? isSub ? h(sb.name) : `${/^Donjon/.test(DUNGEONS[dg].name) ? "" : "Donjon · "}${h(DUNGEONS[dg].name)}${dgLockTxt(dg) ? ` · ${G("lock")} ${h(dgLockTxt(dg))} pour y accéder` : ""}` : ""}</span></span><span class="pct">${E.resRate(x.p).toFixed(1).replace(".", ",")} %</span>${isSub ? `<button class="btn sm" data-act="zoneview" data-id="${sb.id}" data-gotab="world">Y aller</button>` : dg ? dgGoBtn(dg) : ""}</div>`; })()).join("");
   const useHtml = use.slice(0, 10).map((u) => u.tpl ? `<div class="li"><span class="icobox">${im(itemImg(u.tpl), "", ITEMS[u.tpl].name)}</span><span class="grow">${h(ITEMS[u.tpl].name)} <span class="xs muted">niv. ${ITEMS[u.tpl].lvl} · ${u.q} requis</span></span>${E.canCraft(S, ITEMS[u.tpl].craft) ? `<span class="tag good">fabricable</span>` : ""}</div>`
     : u.special ? `<div class="li"><span class="grow">${IC("cle")} ${h(u.special)} <span class="xs muted">${u.q} requis</span></span></div>` : `<div class="li"><span class="grow">${IC("metiers")} ${h(E.TOOL_NAMES[u.tool])} ${u.L} <span class="xs muted">(${GATHER_JOBS[u.tool].name}) · ${u.q} requis</span></span></div>`).join("");
   return `<div class="panel invdetail"><div class="phead"><div class="row">${im(resImg(n), "ico lg", n)}<div><h2>${h(n)}</h2><div class="xs muted">${h(D.RES_CATS.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(qq)} en stock · ${fmt(E.resPrice(n))} k l'unité ${r ? `· <b style="color:${RAR[r][1]}">${RAR[r][0]}</b>` : ""}</div></div></div><button class="btn sm" data-act="ressel" data-n="">✕</button></div>
@@ -6013,7 +6024,7 @@ window.addEventListener("scroll", () => { const n = ui.tab === "team" && $(".hta
 
 /* ---------- ATELIERS ---------- */
 /* « Y aller » (refonte des guildes, demande de Mathis) : pour une ressource qui manque, la zone où elle tombe le plus (sinon son donjon) */
-function resGo(r) { for (const x of resIndex().src[r] || []) { if (!x.m) continue; const sb = subOfMon(x.m); if (sb) return typeof sb === "string" ? `data-act="dgopen" data-id="${sb}" data-gotab="world"` : `data-act="zoneview" data-id="${sb.id}" data-gotab="world"`; } return ""; }
+function resGo(r) { for (const x of resIndex().src[r] || []) { if (!x.m) continue; const sb = subOfMon(x.m); if (sb) return typeof sb === "string" ? `data-act="dgopen" data-id="${dgOfMon(x.m)}"` : `data-act="zoneview" data-id="${sb.id}" data-gotab="world"`; } return ""; }
 function ingHtml(ing, mult = 1, go = false) {
   return `<div class="ing">${ing.map(([r, q]) => { const have = S.res[r] || 0; const ok = have >= q * mult; const g = go && !ok ? resGo(r) : ""; return `<span class="${ok ? "ok" : "ko"}" title="${h(r)}">${im(resImg(r), "", r)}${h(r)} <b class="num">${fmt(have)}/${q * mult}</b>${g ? `<button class="btn xs ingo" ${g}>${IC("carte")} Y aller</button>` : ""}</span>`; }).join("")}</div>`;
 }
