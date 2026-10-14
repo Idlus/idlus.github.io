@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.5";
+const GAME_VERSION = "1.0.32.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.6", name: "Jackpot sans limite", items: [
+    "Jackpot du Trool : plus de limite de 100 tickets par jour, tu en achètes autant que tes kamas le permettent",
+    "Nouveau bouton pour acheter 100 tickets d'un coup (1 M de kamas)",
+  ] },
   { v: "1.0.32.5", name: "Y aller au donjon", items: [
     "Une ressource qui ne tombe qu'en donjon a enfin son bouton « Y aller » : il ouvre la fiche du donjon, prête pour « Entrer » (fiche de la ressource, « Où ? » de l'Artisanat)",
     "Si plusieurs donjons la donnent, le jeu choisit un donjon ouvert, au plus près du niveau de ton équipe. Un donjon encore fermé affiche un cadenas et ce qui l'ouvre",

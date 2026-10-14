@@ -3,7 +3,8 @@
 -- Appliqué automatiquement par le workflow « Serveur en ligne » ; relançable sans danger : ne supprime ni ne modifie
 -- aucune donnée de joueur.
 --
--- Un ticket coûte 10 000 kamas : 9 000 vont au pot de l'heure, 1 000 sortent du jeu. 100 tickets par jour (heure de
+-- Un ticket coûte 10 000 kamas : 9 000 vont au pot de l'heure, 1 000 sortent du jeu. Tickets illimités depuis la 1.0.32.6
+-- (Mathis, 14/10/2026 : « ticket illimité pour le jackpot ») ; avant, 100 tickets par jour (heure de
 -- Paris) et par joueur au plus. À la fin de chaque heure, un gagnant est tiré au sort parmi les tickets de l'heure
 -- (chaque ticket est une chance) et reçoit tout le pot.
 -- Pas de tâche planifiée : le tirage d'une heure finie se fait au premier appel qui suit (foire_jackpot, que le jeu
@@ -80,7 +81,7 @@ begin
     'players', (select count(*) from foire_tickets where hour = H and n > 0),
     'mine', coalesce((select n from foire_tickets where hour = H and user_id = p_user), 0),
     'day', coalesce((select sum(n) from foire_tickets where user_id = p_user and day = dd), 0),
-    'max', 100,
+    'max', 0, -- 0 : pas de limite (1.0.32.6)
     'last', coalesce((select jsonb_agg(jsonb_build_object('p', coalesce(pseudo, '?'), 'k', pot, 'n', tickets, 'h', floor(extract(epoch from hour) * 1000), 'me', winner = p_user) order by hour desc)
       from (select * from foire_draws where winner is not null order by hour desc limit 6) x), '[]'::jsonb));
 end $$;
@@ -94,21 +95,17 @@ begin
   return foire_state(auth.uid());
 end $$;
 
--- Acheter p_n tickets (1 à 10) pour le tirage de l'heure.
+-- Acheter p_n tickets (1 à 100 d'un coup, sans limite par jour depuis la 1.0.32.6) pour le tirage de l'heure.
 create or replace function public.foire_jackpot_buy(p_after bigint, p_n int) returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare me uuid := auth.uid(); d jsonb; n int := coalesce(p_n, 0); used bigint; H timestamptz; dd date;
+declare me uuid := auth.uid(); d jsonb; n int := coalesce(p_n, 0); H timestamptz; dd date;
 begin
   begin d := hdv_save(me); exception when raise_exception then return hdv_err(replace(sqlerrm, 'l''hôtel de vente', 'le Jackpot')); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
-  if n < 1 or n > 10 then return hdv_err('De 1 à 10 tickets d''un coup.'); end if;
+  if n < 1 or n > 100 then return hdv_err('De 1 à 100 tickets d''un coup.'); end if;
   perform foire_resolve();
   perform pg_advisory_xact_lock_shared(hashtext('foire_draw'));
   H := date_trunc('hour', clock_timestamp()); dd := (clock_timestamp() at time zone 'Europe/Paris')::date;
-  select coalesce(sum(t.n), 0) into used from foire_tickets t where t.user_id = me and t.day = dd;
-  if used + n > 100 then
-    return hdv_err(case when used >= 100 then 'Tu as déjà tes 100 tickets du jour : reviens demain.' else 'Encore ' || (100 - used) || ' tickets au plus aujourd''hui.' end);
-  end if;
   if hdv_kamas(me, d) < n * 10000 then return hdv_err('Pas assez de kamas (ou ta partie en ligne n''est pas encore à jour : attends quelques secondes).'); end if;
   insert into foire_tickets as x (hour, user_id, n, day) values (H, me, n, dd)
     on conflict (hour, user_id) do update set n = x.n + excluded.n;

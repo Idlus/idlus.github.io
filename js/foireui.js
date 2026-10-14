@@ -70,16 +70,15 @@
       return `<section class="panel" id="foJack">${head}<div class="pad stack">${rule}<div class="empty">${J.missing ? "Le Jackpot n'est pas encore ouvert sur le serveur." : J.err ? `Pas de réponse du serveur. <button class="btn sm" data-act="fo-jretry">Réessayer</button>` : "Lecture du pot…"}</div></div></section>`;
     }
     const solo = ON.user && ON.solo && ON.solo();
-    const left = Math.max(0, (+d.max || 100) - (+d.day || 0));
-    const can = acct() && !J.busy && left > 0;
-    const btns = acct() ? `<button class="btn primary" data-act="fo-jbuy" data-n="1" ${can && s.kamas >= 10000 ? "" : "disabled"}>Acheter un ticket · 10 000 k</button><button class="btn" data-act="fo-jbuy" data-n="10" ${can && left >= 10 && s.kamas >= 100000 ? "" : "disabled"}>10 tickets · 100 000 k</button>`
+    const can = acct() && !J.busy; // 1.0.32.6 : tickets illimités (seuls les kamas comptent)
+    const btns = acct() ? `<button class="btn primary" data-act="fo-jbuy" data-n="1" ${can && s.kamas >= 10000 ? "" : "disabled"}>Acheter un ticket · 10 000 k</button><button class="btn" data-act="fo-jbuy" data-n="10" ${can && s.kamas >= 100000 ? "" : "disabled"}>10 tickets · 100 000 k</button><button class="btn" data-act="fo-jbuy" data-n="100" ${can && s.kamas >= 1000000 ? "" : "disabled"}>100 tickets · 1 M</button>`
       : solo ? "" : `<button class="btn primary" data-act="on-loginscreen">Créer mon compte pour jouer</button>`;
     const L = (d.last || []).slice(0, 5);
     const last = L.length ? `<div class="xs fo-c fo-gold">Dernier gagnant : ${h(L[0].p)}, ${fmt(L[0].k)} k (${hourTxt(L[0].h)})${L[0].me ? " : toi !" : ""}</div>` : `<div class="xs muted fo-c">Pas encore de gagnant : le premier tirage aura lieu à la fin de l'heure.</div>`;
     return `<section class="panel" id="foJack">${head}<div class="pad stack">
       <div class="fo-jack num">${fmt(d.pot)} k</div>${rule}
       ${solo ? X().soloPanel("le Jackpot") : ""}
-      <div class="row fo-jrow">${btns}<span class="xs muted"><span id="foTimer">tirage dans ${minTxt(jLeft())}</span> · tu as ${fmt(d.mine)} ticket${d.mine > 1 ? "s" : ""} sur ${fmt(d.tickets)} · ${fmt(d.max || 100)} tickets par jour au plus${acct() ? ` (encore ${fmt(left)} aujourd'hui)` : ""}</span></div>
+      <div class="row fo-jrow">${btns}<span class="xs muted"><span id="foTimer">tirage dans ${minTxt(jLeft())}</span> · tu as ${fmt(d.mine)} ticket${d.mine > 1 ? "s" : ""} sur ${fmt(d.tickets)} · tickets illimités${acct() && d.day ? ` (${fmt(d.day)} aujourd'hui)` : ""}</span></div>
       ${last}${L.length > 1 ? `<div class="fo-wins">${L.slice(1).map((w) => `<span class="xs"><b>${h(w.p)}</b> ${fmt(w.k)} k · ${hourTxt(w.h)}</span>`).join("")}</div>` : ""}</div></section>`;
   }
   const paintJack = () => { const el = $("#foJack"); if (el && UI().tab === "foire") el.outerHTML = jackHtml(); };
@@ -188,7 +187,7 @@
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act; if (!/^fo-/.test(a) || !S()) return;
     if (a === "fo-pick") { if (st.rolling) return; st.pick = t.dataset.v; paint(); return; }
     if (a === "fo-open") { open(); return; }
-    if (a === "fo-jbuy") { jBuy(Math.max(1, Math.min(10, +t.dataset.n || 1))); return; }
+    if (a === "fo-jbuy") { jBuy(Math.max(1, Math.min(100, +t.dataset.n || 1))); return; }
     if (a === "fo-jretry") { J.err = false; jLoad().then(paintJack); return; }
     if (a === "fo-go") { UI().tab = "foire"; X().closeSheet(); X().render(); window.scrollTo(0, 0); return; }
   });

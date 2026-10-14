@@ -1,6 +1,14 @@
 {
-  "version": "1.0.32.5",
+  "version": "1.0.32.6",
   "versions": [
+    {
+      "v": "1.0.32.6",
+      "name": "Jackpot sans limite",
+      "items": [
+        "Jackpot du Trool : plus de limite de 100 tickets par jour, tu en achètes autant que tes kamas le permettent",
+        "Nouveau bouton pour acheter 100 tickets d'un coup (1 M de kamas)"
+      ]
+    },
     {
       "v": "1.0.32.5",
       "name": "Y aller au donjon",
