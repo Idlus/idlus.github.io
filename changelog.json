@@ -1,6 +1,13 @@
 {
-  "version": "1.0.12.8",
+  "version": "1.0.12.9",
   "versions": [
+    {
+      "v": "1.0.12.9",
+      "name": "Forgemagie pour tous",
+      "items": [
+        "Les six métiers de forgemagie (Costumage, Joaillomage, Cordomage, Forgemage, Sculptemage, Façomage) sont ouverts dès le départ : plus besoin du niveau 65 du métier d'artisanat lié"
+      ]
+    },
     {
       "v": "1.0.12.8",
       "name": "Grand nettoyage",

@@ -12,8 +12,7 @@ const S0 = E.newState("Fm", "iop"); S0.fmJob = { lvl: 37, xp: 10 }; delete S0.fm
 const J0 = E.fmJobs(S0); for (const j in E.FM_JOBS) assert.strictEqual(J0[j].lvl, 37, "niveau repris pour " + j);
 assert.ok(J0.old && E.fmLearned(S0, "facomage"), "ancien forgemage : métiers ouverts");
 const S = E.newState("Fm2", "iop"); delete S.fmJob; delete S.fmJobs; S.cnt.fm = 0;
-assert.ok(!E.fmLearned(S, "costumage"), "nouveau joueur : Costumage fermé avant Tailleur 65");
-S.crafts.tailleur.lvl = 65; assert.ok(E.fmLearned(S, "costumage"), "Tailleur 65 : Costumage appris");
+for (const j in E.FM_JOBS) assert.ok(E.fmLearned(S, j), "nouveau joueur : " + j + " ouvert dès le départ (1.0.12.9)");
 
 // 2. Métier de chaque objet
 const tplOf = (slot, lvl) => Object.keys(ITEMS).find((k) => ITEMS[k].slot === slot && ITEMS[k].lvl >= lvl && Object.keys(ITEMS[k].stats).some((s) => s === "vit"));

@@ -636,7 +636,7 @@
   /* ---------------- Métiers de forgemagie (0.1.41, comme dans DOFUS) ----------------
      Six métiers, un par famille d'objets : Costumage (coiffes, capes), Joaillomage (amulettes, anneaux), Cordomage (ceintures, bottes),
      Forgemage (armes du Forgeron), Sculptemage (armes du Sculpteur), Façomage (boucliers). Niveau 1 à 200.
-     Chacun s'apprend au niveau 65 du métier d'artisanat lié (sauf pour ceux qui forgemageaient déjà avant 0.1.41).
+     Ouverts dès le départ (1.0.12.9 : plus besoin du niveau 65 du métier d'artisanat lié).
      Comme dans DOFUS, le niveau ne change pas les chances : il monte en forgemageant des objets proches de son niveau,
      et le niveau 200 permet de signer un objet. L'ancien métier unique (S.fmJob) donne son niveau aux six. */
   E.FM_MAX = 200; E.FM_LEARN = 65;
@@ -658,7 +658,7 @@
     for (const j in E.FM_JOBS) if (E.FM_JOBS[j].slots.includes(T.slot)) return j; return "forgemage"; };
   E.fmJob = (S, job) => { const J = E.fmJobs(S); if (job) return J[job]; let best = J.forgemage; for (const j in E.FM_JOBS) if (J[j].lvl > best.lvl) best = J[j]; return best; };
   E.fmTop = (S) => E.fmJob(S).lvl;
-  E.fmLearned = (S, job) => { const J = E.fmJobs(S); if (J.old) return true; const b = S.crafts[E.FM_JOBS[job].base]; return !!b && b.lvl >= E.FM_LEARN; };
+  E.fmLearned = () => true; // 1.0.12.9 : les six métiers sont ouverts dès le départ
   E.fmNeed = (l) => 20 + 30 * l;
   E.fmGainXp = (S, x, job) => {
     const J = E.fmJob(S, job || "forgemage"); if (!J || J.lvl >= E.FM_MAX) return; J.xp += x;
@@ -1264,7 +1264,7 @@
     { title: "Le Bouftou Royal", txt: "Vainquez le Bouftou Royal.", t: "boss", dg: "cour_bouftou_royal" },
     { title: "Les terres d'Amakna", txt: "Chassez dans la Forêt d'Amakna.", t: "kill", sub: "ama_foret", n: 30 },
     { title: "Le choix d'un camp", txt: `Atteignez le niveau ${30} et choisissez Bonta ou Brâkmar (Suivi › Quêtes › Alignement).`, t: "align" },
-    { title: "Briseur de runes", txt: "Brisez un objet en runes (Artisanat › Forgemagie › Brisage). La forgemagie s'apprend ensuite au niveau 65 d'un métier d'artisanat.", t: "brk", n: 1 }, // 0.1.41 : la forgemagie s'apprend au niveau 65 (comme dans DOFUS)
+    { title: "Briseur de runes", txt: "Brisez un objet en runes (Artisanat › Forgemagie › Brisage). Les six métiers de forgemagie sont ouverts dès le départ.", t: "brk", n: 1 }, // 1.0.12.9 : plus de niveau 65 requis
     { title: "Le Scarabosse Doré", txt: "Vainquez le Donjon des Scarafeuilles.", t: "boss", dg: "donjon_scarafeuilles" },
     { title: "Les plaines de Cania", txt: "Chassez dans la Plaine des Porkass.", t: "kill", sub: "can_porkass", n: 30 },
     { title: "La Bworkette", txt: "Vainquez le Donjon des Bworks.", t: "boss", dg: "donjon_bworks" },

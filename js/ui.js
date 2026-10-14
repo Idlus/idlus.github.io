@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.12.8";
+const GAME_VERSION = "1.0.12.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.12.9", name: "Forgemagie pour tous", items: [
+    "Les six métiers de forgemagie (Costumage, Joaillomage, Cordomage, Forgemage, Sculptemage, Façomage) sont ouverts dès le départ : plus besoin du niveau 65 du métier d'artisanat lié",
+  ] },
   { v: "1.0.12.8", name: "Grand nettoyage", items: [
     "Téléphone et tablette : toucher un objet ou une ressource de l'inventaire ouvre sa fiche en fenêtre, et toucher un Dofus dans les quêtes fait remonter la page jusqu'à sa fiche",
     "Téléphone : toucher un sort du grimoire montre d'abord sa fiche, puis « Ajouter à la barre » ou « Remplacer »",
@@ -5513,7 +5516,7 @@ function fmPlanSheet(uid) {
 }
 function fmHelpSheet() {
   openSheet(`<h2>${IC("forge")} La forgemagie, comme dans DOFUS</h2><div class="stack small" style="gap:8px">
-    <p><b>Six métiers</b> : Costumage (coiffes, capes), Joaillomage (amulettes, anneaux), Cordomage (ceintures, bottes), Forgemage (armes du Forgeron), Sculptemage (armes du Sculpteur) et Façomage (boucliers). Chacun s'apprend au niveau ${E.FM_LEARN} du métier d'artisanat lié et monte jusqu'au niveau ${E.FM_MAX} en forgemageant des objets proches de son niveau. Le niveau ne change pas les chances ; au niveau ${E.FM_MAX}, tu peux signer tes objets.</p>
+    <p><b>Six métiers</b> : Costumage (coiffes, capes), Joaillomage (amulettes, anneaux), Cordomage (ceintures, bottes), Forgemage (armes du Forgeron), Sculptemage (armes du Sculpteur) et Façomage (boucliers). Chacun est ouvert dès le départ et monte jusqu'au niveau ${E.FM_MAX} en forgemageant des objets proches de son niveau. Le niveau ne change pas les chances ; au niveau ${E.FM_MAX}, tu peux signer tes objets.</p>
     <p><b>Trois issues</b> pour chaque rune : <b class="g">succès critique</b> (la rune passe, rien ne baisse), <b class="y">succès neutre</b> (la rune passe, une autre caractéristique baisse d'autant de poids, sauf si le reliquat paie) et <b class="r">échec critique</b> (la rune ne passe pas et une caractéristique baisse). Les chances sont affichées sur chaque rune.</p>
     <p><b>Poids</b> : chaque rune a un poids (Rune Vi 1, Rune Fo 1, Rune Sa 3, Rune Do 20…). Plus l'objet est chargé par rapport à son poids au jet maximum, plus le succès critique est rare. Au-delà du jet maximum (over), une caractéristique peut monter jusqu'à ${E.OVER_W} de poids (${Math.floor(E.OVER_W / STATS.vit.w)} Vitalité, ${E.OVER_W} Force).</p>
     <p><b>Reliquat</b> : ce que l'objet perd en trop s'y accumule. Il paie les pertes des succès neutres suivants et permet d'ajouter une caractéristique que l'objet n'a pas (jusqu'à ${E.EXO_STAT_W} de poids). Il disparaît quand l'objet passe par l'hôtel de vente.</p>
