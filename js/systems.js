@@ -769,9 +769,9 @@
   E.fmCap = (T, k) => { const s = T.stats[k]; if (s) return s[1] > 0 ? Math.max(s[1], Math.floor(E.OVER_W / STATS[k].w)) : 0; return Math.max(1, Math.floor(E.EXO_STAT_W / STATS[k].w)); };
   E.FM_ODDS = { sc: 0.66, scLoad: 0.7, scNear: 0.1, ec: 0.07, ecLoad: 0.3, oSc: 0.3, oScSlope: 0.5, oScLoad: 0.5, oEc: 0.3, oEcSlope: 0.4, oTop: 1.3 };
   /* 1.0.30 « Forge » (choix 36A de Mathis) : près du jet maximum, la forgemagie devient dure, comme dans DOFUS. Quand la rune mène une
-     caractéristique au-dessus de 80 % de sa fourchette (du jet min au jet max, over compris), succès critique ×0,3 et échec critique
-     +15 points. La Renaissance des métiers s'ajoute ensuite (E.fmRenOdds). Rien ne change sur les objets : les Parfaits le restent. */
-  E.FM_HARD = { at: 0.8, sc: 0.3, ec: 0.15 };
+     caractéristique au-dessus de 80 % de sa fourchette (du jet min au jet max, over compris), succès critique ×0,25 et échec critique
+     +20 points (≈ 350 runes pour passer un objet niv. 200 Parfait, 80 avant). La Renaissance des métiers s'ajoute ensuite (E.fmRenOdds). Rien ne change sur les objets : les Parfaits le restent. */
+  E.FM_HARD = { at: 0.8, sc: 0.25, ec: 0.2 };
   E.fmHardAt = (mn, mx) => mn + (mx - mn) * E.FM_HARD.at; // au-delà de cette valeur, la forgemagie est dure
   E.fmOdds = (load, nv, mx, cap, tier, exoStat, mn) => {
     const O = E.FM_ODDS; let sc, ec;

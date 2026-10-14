@@ -26,9 +26,9 @@
   const FX = {};
 
   /* ---------------- 36A : forgemagie dure près du maximum ---------------- */
-  /* simulation 1.0.30 (scratch sim36, 300 objets niv. 190 à 200 au jet moyen de 52 %, runes Ra, Pa puis simples) : médiane des runes
-     pour passer Parfait, avant et après ; un objet de ce niveau brisé à 100 % rend environ 518 runes. À refaire si E.FM_HARD change. */
-  FX.HARD_SIM = { before: 74, after: 243, brk: 518 };
+  /* simulation 1.0.30 (scratch sim36, 300 objets niv. 190 à 200 au jet moyen de 52 %, runes Ra, Pa puis simples, version finale avec PM, Tacle et Fuite) : médiane des runes
+     pour passer Parfait, avant et après ; un objet de ce niveau brisé à 100 % rend environ 533 runes. À refaire si E.FM_HARD change. */
+  FX.HARD_SIM = { before: 80, after: 350, brk: 533 };
   const dec = (x) => (Math.round(x * 10) / 10).toLocaleString("fr-FR");
   FX.hardNote = (it) => {
     const s = S(); const job = E.fmJobOf(it.tpl); const ren = E.fmRen(s, job); const sc = String(E.FM_HARD.sc).replace(".", ","), ec = pc(E.FM_HARD.ec);

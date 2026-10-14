@@ -75,13 +75,13 @@ console.log("ok - forgemagie comme dans DOFUS : six métiers, trois issues " + J
 /* ---------------- 1.0.30 « Forge » ---------------- */
 require("../js/forge.js");
 const near = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m} : ${a} au lieu de ${b}`);
-// 8. 36A : au-dessus de 80 % de la fourchette (du jet min au jet max), succès critique ×0,3 et échec critique +15 points, over compris
+// 8. 36A : au-dessus de 80 % de la fourchette (du jet min au jet max), succès critique ×0,25 et échec critique +20 points, over compris
 { const lo = E.fmOdds(0.5, 50, 100, 150, "", false, 0), hi = E.fmOdds(0.5, 81, 100, 150, "", false, 0);
-  near(hi.sc, lo.sc * E.FM_HARD.sc, "succès critique ×0,3"); near(hi.ec, lo.ec + E.FM_HARD.ec, "échec critique +15 points"); near(hi.sc + hi.sn + hi.ec, 1, "les chances font 100 %");
+  near(hi.sc, lo.sc * E.FM_HARD.sc, "succès critique ×0,25"); near(hi.ec, lo.ec + E.FM_HARD.ec, "échec critique +20 points"); near(hi.sc + hi.sn + hi.ec, 1, "les chances font 100 %");
   assert.deepStrictEqual(E.fmOdds(0.5, 80, 100, 150, "", false, 0), lo, "à 80 % pile : règles d'avant");
   assert.ok(E.fmOdds(0.5, 91, 100, 150, "", false, 60).sc > E.fmOdds(0.5, 91, 100, 150, "", false, 0).sc * 2, "fourchette 60 à 100 : 91 reste sous 92 (80 % de la fourchette)");
   assert.ok(E.fmOdds(0.5, 93, 100, 150, "", false, 60).sc < E.fmOdds(0.5, 91, 100, 150, "", false, 60).sc * 0.5, "fourchette 60 à 100 : dur à partir de 93");
-  const ov = E.fmOdds(0.5, 110, 100, 150, "", false, 0); E.FM_HARD.sc = 1; E.FM_HARD.ec = 0; const ov0 = E.fmOdds(0.5, 110, 100, 150, "", false, 0); E.FM_HARD.sc = 0.3; E.FM_HARD.ec = 0.15;
+  const ov = E.fmOdds(0.5, 110, 100, 150, "", false, 0), H0 = { ...E.FM_HARD }; E.FM_HARD.sc = 1; E.FM_HARD.ec = 0; const ov0 = E.fmOdds(0.5, 110, 100, 150, "", false, 0); Object.assign(E.FM_HARD, H0);
   assert.ok(ov.sc < ov0.sc && ov.ec > ov0.ec, "over compris");
   assert.deepStrictEqual(E.fmOdds(0.5, 3, 0, 5, "", true), E.fmOdds(0.5, 3, 0, 5, "", true), "exo : inchangé");
   const Sh = E.newState("Dur", "iop"); const tpl = Object.keys(ITEMS).find((k) => ITEMS[k].lvl >= 100 && ITEMS[k].stats.vit && ITEMS[k].stats.vit[0] >= 0 && ITEMS[k].stats.vit[1] - ITEMS[k].stats.vit[0] >= 60 && !ITEMS[k].trophy);
