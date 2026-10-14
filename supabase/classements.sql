@@ -219,10 +219,11 @@ begin
     end if;
     -- 1.0.8 : un métier qui gagne plus de 60 niveaux en moins de 10 minutes (seulement si le serveur connaissait déjà les métiers)
     -- (1.0.9 : seulement l'artisanat ; la récolte et la forgemagie montent bien moins vite et ne gagnent pas de « Premier »)
+    -- (1.0.12.1 « Artisanat haut niveau » : environ 10 fabrications par niveau, une réserve de ressources peut faire 60 niveaux d'un coup : seuil à 120)
     if reason is null and secs < 600 and o.jobs <> '{}'::jsonb then
       select format('%s : +%s niveaux en %s min', jnames->>k, (jb->k->>0)::int - (o.jobs->k->>0)::int, round(secs / 60)) into reason
       from jsonb_object_keys(jnames) k
-      where jsonb_typeof(jb->k) = 'array' and jsonb_typeof(o.jobs->k) = 'array' and (jb->k->>0)::int - (o.jobs->k->>0)::int > 60 limit 1;
+      where jsonb_typeof(jb->k) = 'array' and jsonb_typeof(o.jobs->k) = 'array' and (jb->k->>0)::int - (o.jobs->k->>0)::int > 120 limit 1;
     end if;
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
@@ -303,3 +304,23 @@ as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis';
   update public.ladder set flagged = true, flag_reason = coalesce(p_reason, 'décision de Mathis') where user_id = p_user; end $$;
 revoke all on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) from public, anon;
 grant execute on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) to authenticated;
+
+-- ---------- opérations ponctuelles (jouées une seule fois, même si ce fichier est réappliqué) ----------
+create table if not exists public.ops_done (id text primary key, at timestamptz not null default now());
+alter table public.ops_done enable row level security; -- aucune règle : invisible pour les joueurs
+-- 1.0.12.1 : « remets à zéro la semaine des métiers » (Mathis, 13/10/2026 23:47 Paris, après le nerf des recettes 1.0.9.2) :
+-- la semaine en cours repart de 0 XP pour tout le monde (le point de départ de la semaine devient l'XP totale actuelle).
+-- Les niveaux, l'XP totale et la semaine passée ne changent pas.
+do $$
+declare wnow int := floor((extract(epoch from now()) / 86400 + 3) / 7)::int;
+begin
+  if not exists (select 1 from public.ops_done where id = 'raz-semaine-metiers-2026-10-13') then
+    update public.ladder l set
+      jobs_base = coalesce((select jsonb_object_agg(j.key, (j.value->>2)::bigint) from jsonb_each(l.jobs) j
+        where jsonb_typeof(j.value) = 'array' and j.value->>2 is not null and j.key not like 'tous%'), '{}'::jsonb),
+      jobs = coalesce((select jsonb_object_agg(j.key, case when jsonb_typeof(j.value) = 'array' and jsonb_array_length(j.value) >= 4
+        then jsonb_set(j.value, '{3}', '0'::jsonb) else j.value end) from jsonb_each(l.jobs) j), '{}'::jsonb)
+    where l.jobs_w = wnow;
+    insert into public.ops_done (id) values ('raz-semaine-metiers-2026-10-13');
+  end if;
+end $$;

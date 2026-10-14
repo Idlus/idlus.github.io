@@ -2895,7 +2895,18 @@
     const F = E.CRAFT_FALL, J = S.crafts[job]; const gap = Math.min(J ? J.lvl : 1, E.craftTop(job)) - req;
     return gap <= F.full ? 1 : gap >= F.end ? 0 : 1 - (gap - F.full) / (F.end - F.full);
   };
-  E.craftXpOf = (S, job, req, base) => Math.max(1, Math.round(base * E.craftXpMult(S, job, req)));
+  /* « Artisanat haut niveau » : la fabrication de la recette la plus haute que tu sais faire vaut au moins 1/E.CRAFT_STEP de niveau
+     (avant : l'XP plafonnait à 612 au niveau 66 du métier, soit 33 fabrications d'objets niveau 197 par niveau au 66 et 182 au 199) */
+  E.CRAFT_STEP = 10;
+  const CRAFT_TOPXP = {};
+  E.craftTopXp = (job, lvl) => { // XP de base de la recette la plus haute faisable à ce niveau de métier (recettes refaisables)
+    const c = CRAFT_TOPXP[job] || (CRAFT_TOPXP[job] = []); if (c[lvl]) return c[lvl]; let m = 1;
+    for (const id in ITEMS) { const T = ITEMS[id]; if (T.craft && T.craft.job === job && E.craftReq(id) <= lvl) m = Math.max(m, 12 + T.lvl * 3); }
+    for (const n in SPECIAL_CRAFTS) { const R = SPECIAL_CRAFTS[n]; if (R.job === job && R.lvl <= lvl && !R.unique && !R.dofus && !R.idol) m = Math.max(m, 20 + R.lvl * 3); }
+    return (c[lvl] = m);
+  };
+  E.craftBoost = (S, job) => { const J = S.crafts[job], L = J ? J.lvl : 1; return L >= 200 ? 1 : Math.max(1, E.jobXpNeed(L) / (E.CRAFT_STEP * E.craftTopXp(job, L))); };
+  E.craftXpOf = (S, job, req, base) => Math.max(1, Math.round(base * E.craftXpMult(S, job, req) * E.craftBoost(S, job)));
   E.galetFx = () => "Galet inconnu."; // 1.0.6 : bonus d'un Galet ajouté à la fabrication (js/koli.js)
   E.craftItem = (S, tpl, galet) => {
     const T = ITEMS[tpl]; if (!T || !T.craft) return "Recette inconnue.";

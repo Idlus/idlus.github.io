@@ -22,11 +22,21 @@ assert.ok(typeof E.craftItem(S, tpl) === "string", "message d'erreur clair");
   const casque = Object.keys(ITEMS).find((k) => ITEMS[k].name === "Casque" && ITEMS[k].craft); const C = ITEMS[casque]; const base = 12 + C.lvl * 3;
   const xpAt = (lvl, id = casque) => { const S2 = E.newState("Xp", "iop"); S2.crafts.tailleur.lvl = lvl; S2.crafts.tailleur.xp = 0; ITEMS[id].craft.ing.forEach(([r, q]) => (S2.res[r] = q)); E.craftItem(S2, id); return S2.crafts.tailleur.lvl === lvl ? S2.crafts.tailleur.xp : -1; };
   assert.strictEqual(E.craftTop("tailleur"), 66, "Tailleur : recette la plus haute au métier 66");
-  assert.strictEqual(xpAt(E.craftReq(casque) + 10), base, "10 niveaux d'écart : XP pleine");
-  assert.strictEqual(xpAt(E.craftReq(casque) + 20), Math.round(base / 2), "20 niveaux d'écart : moitié");
+  const bo = (lvl, job = "tailleur") => E.craftBoost({ crafts: { [job]: { lvl } } }, job);
+  assert.strictEqual(xpAt(E.craftReq(casque) + 10), Math.round(base * bo(E.craftReq(casque) + 10)), "10 niveaux d'écart : XP pleine");
+  assert.strictEqual(xpAt(E.craftReq(casque) + 20), Math.round(base / 2 * bo(E.craftReq(casque) + 20)), "20 niveaux d'écart : moitié");
   assert.strictEqual(xpAt(60), 1, "30 niveaux d'écart ou plus : 1 XP");
   assert.strictEqual(E.craftXpOf({ crafts: { tailleur: { lvl: 200 } } }, "tailleur", 66, 612), 612, "niveau 200 : la recette la plus haute garde l'XP pleine");
   const S3 = E.newState("Clé", "iop"); S3.crafts.bricoleur.lvl = 70; S3.crafts.bricoleur.xp = 0; const key = Object.keys(SPECIAL_CRAFTS).find((n) => E.isKey(n) && SPECIAL_CRAFTS[n].lvl === 10);
   SPECIAL_CRAFTS[key].ing.forEach(([r, q]) => (S3.res[r] = q)); E.craftSpecial(S3, key); assert.strictEqual(S3.crafts.bricoleur.xp, 1, "clé niveau 10 au Bricoleur 70 : 1 XP");
+}
+/* « Artisanat haut niveau » : la recette la plus haute vaut au moins 1/10 de niveau (environ 10 fabrications par niveau), jamais moins d'XP qu'avant */
+{ assert.strictEqual(E.craftBoost({ crafts: { tailleur: { lvl: 5 } } }, "tailleur"), 1, "petit niveau : XP inchangée");
+  for (const job of ["tailleur", "bijoutier", "bricoleur"]) for (const lvl of [20, 40, 66, 100, 150, 199]) {
+    const S4 = { crafts: { [job]: { lvl } } }; const x = E.craftXpOf(S4, job, lvl + 99, E.craftTopXp(job, lvl)); const n = Math.ceil(E.jobXpNeed(lvl) / x);
+    assert.ok(n >= 9 && n <= 11, `${job} ${lvl} : ${n} fabrications de la recette la plus haute pour un niveau`);
+    assert.ok(E.craftBoost(S4, job) >= 1, `${job} ${lvl} : jamais moins d'XP qu'avant`); }
+  assert.strictEqual(E.craftTopXp("tailleur", 66), 612, "Tailleur 66 : objet niveau 200");
+  assert.strictEqual(E.craftTopXp("bricoleur", 100), 320, "Bricoleur 100 : clés et alliages niveau 100");
 }
 console.log("artisanat : OK");

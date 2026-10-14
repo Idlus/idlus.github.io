@@ -1,6 +1,19 @@
 {
-  "version": "1.0.12",
+  "version": "1.0.12.1",
   "versions": [
+    {
+      "v": "1.0.12.1",
+      "name": "Artisanat haut niveau",
+      "items": [
+        "Métiers d'artisanat : la recette la plus haute que tu sais faire vaut toujours au moins 1/10 de niveau, soit environ 10 fabrications par niveau jusqu'au 200 (avant : 33 au niveau 66, 62 au 100, 180 au 199)",
+        "Bricoleur compris : environ 10 clés ou alliages de ton niveau par niveau (avant : 100 au niveau 66)",
+        "Les recettes trop faciles pour ton niveau gardent leur XP réduite (1.0.9.2)",
+        "Fiche de recette : « Niveau 81 de Bijoutier dans 11 fabrications de cette recette » sous l'XP gagnée",
+        "Classements › Métiers › Cette semaine : tout le monde repart de 0 XP, avec la nouvelle règle pour tous",
+        "Les niveaux de métier, l'XP totale et le classement « Depuis toujours » ne changent pas",
+        "Quand une nouvelle version est en ligne, le bouton « Fabriquer » devient « Recharger pour fabriquer » : ta partie est sauvegardée, le reste du jeu continue"
+      ]
+    },
     {
       "v": "1.0.12",
       "name": "Nouveau serveur",
