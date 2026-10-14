@@ -197,6 +197,20 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   console.log("ok - enchaînement de donjons et arrêt après le donjon en cours");
 }
 
+// 1.0.24.3 « XP/h en donjon » : le rendement se mesure sur tout l'enchaînement (il suit la course suivante)
+{
+  const S = E.newState("Rendement", "iop"); S.chars = []; const did = Object.keys(D.DUNGEONS)[0]; const dg = D.DUNGEONS[did];
+  const keep = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
+  ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S, c, "H" + i, 190); x.inTeam = true; E.refreshSpells(x, E.charStats(S, x)); });
+  S.res[dg.key] = 3; assert.strictEqual(E.enterDungeon(S, did, 1, 3), null);
+  assert.strictEqual(E.dgChainRate(S), null, "rien avant le premier combat");
+  let last = null, n = 0; while (S.dungeon && n++ < 20000) { last = S.dungeon; E.tick(S, 500); }
+  assert.strictEqual(last.run, 3, "trois courses"); const r = E.dgChainRate({ dungeon: last });
+  assert.strictEqual(r.runs, 3); assert.ok(r.xpH > 0 && r.kH > 0 && r.pH > 0 && r.runH > 0 && r.perRun > 0, "XP, kamas, poussières et donjons par heure");
+  E.dungeonUnlocked = keep;
+  console.log("ok - XP/h, kamas/h, donjons/h et poussières/h sur un enchaînement de donjons :", Math.round(r.runH), "donjons/h");
+}
+
 // 0.1.50.1 : renommer un héros (premier changement gratuit, ensuite 50 000 kamas) et filtre des noms
 {
   const S = E.newState("Tristepin", "iop"); const c = S.chars[0]; S.kamas = 60000;

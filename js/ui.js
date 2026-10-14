@@ -2110,7 +2110,9 @@ function renderHomeInner() {
   const H0 = (S.hunting || S.dungeon) && S.history && S.history[0];
   const lf = H0 ? `<div class="ac-lf xs"><b class="${H0.w ? "plus" : "minus"}">${H0.w ? "Victoire" : "Défaite"}</b> <span class="muted">dernier combat · ${Math.max(1, Math.round(H0.d || 0))} s</span>${H0.w ? ` · <b class="num">+${fmt(H0.xp)}</b> XP · <b class="num">+${fmt(H0.k)}</b> kamas · <b class="num">${fmt(H0.r || 0)}</b> ressource${(H0.r || 0) > 1 ? "s" : ""}` : ""}${H0.s && H0.s.length ? ` <button class="ac-lfs" data-act="fstsheet" data-t="${H0.t}" data-tip="Qui a fait quoi pendant ce combat">${G("chart")} Stats</button>` : ""}</div>` : "";
   const hunt = S.hunting && !S.dungeon && sub && team.length;
-  const card = hunt ? `<div class="card ac-hunt"><span class="xs muted">Chasse en cours</span><h1 class="ac-zt">${h(sub.name)} <span class="ac-zl">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}</h1>${kt || `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>`}${lf}</div>` : null;
+  const DG = S.dungeon && !S.dungeon.defi && DUNGEONS[S.dungeon.id]; const dr = DG ? E.dgChainRate(S) : null;
+  const card = DG ? `<div class="card ac-hunt"><span class="xs muted">Donjon en cours${(S.dungeon.tot || 1) > 1 ? ` · course ${S.dungeon.run || 1} sur ${S.dungeon.tot}` : ""}</span><h1 class="ac-zt">${h(DG.name)} <span class="ac-zl">stasis ${S.dungeon.stasis || 1} · salle ${Math.min(S.dungeon.room + 1, DG.rooms.length + 1)}/${DG.rooms.length + 1}</span></h1>${dr ? dgRateTiles(dr) + (dr.runs ? `<div class="ac-rate xs"><span><b class="num">${dur(dr.perRun)}</b> par donjon</span><span><b class="num">${fmt(dr.rH)}</b> ressources/h</span><span><b class="num">${Math.round(dr.winRate * 100)} %</b> victoires</span></div>` : "") : `<div class="ac-rate xs muted">Rendement affiché après le premier combat du donjon.</div>`}${lf}</div>`
+    : hunt ? `<div class="card ac-hunt"><span class="xs muted">Chasse en cours</span><h1 class="ac-zt">${h(sub.name)} <span class="ac-zl">niv. ${sub.lvl[0]}-${sub.lvl[1]}</span> ${diffTag(S.sub)}</h1>${kt || `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>`}${lf}</div>` : null;
   const rl = rate ? `<div class="ac-rate xs"><span><b class="num">${fmt(rate.xpH)}</b> XP/h</span><span><b class="num">${fmt(rate.kH)}</b> kamas/h</span><span><b class="num">${fmt(rate.rH)}</b> ressources/h</span><span><b class="num">${Math.round(rate.winRate * 100)} %</b> victoires</span></div>` : S.hunting ? `<div class="ac-rate xs muted">Rendement affiché après quelques combats.</div>` : "";
   const best = !S.dungeon && team.length ? bestSub() : null; const B = best && E.SUBS[best];
   const reco = B && best !== S.sub ? `<div class="ac-reco">${G("star")}<span class="grow">Zone conseillée pour ton niveau : <b>${h(B.name)}</b> <span class="xs">niv. ${B.lvl[0]}-${B.lvl[1]}</span></span><button class="btn sm primary" data-act="hunt" data-id="${best}">Y aller</button></div>` : "";
@@ -2350,6 +2352,16 @@ function atelierSheet() {
       ${total > recs.length ? `<p class="xs muted">${total - recs.length} autres recettes : les fabricables maintenant sont en premier.</p>` : ""}
     </div>
     <div class="row"><button class="btn primary" data-act="atgo" ${a.cid != null && a.rec ? "" : "disabled"}>Lancer</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
+}
+/* 1.0.24.3 « XP/h en donjon » : mêmes tuiles que l'encadré de chasse, mesurées sur l'enchaînement de donjons en cours */
+const dec1 = (x) => (Math.round(x * 10) / 10).toString().replace(".", ",");
+const DGT = { xp: "XP gagnée par heure par toute l'équipe, sur cet enchaînement", kamas: "Kamas gagnés par heure, sur cet enchaînement", dg: "Donjons terminés par heure (une clé par donjon)", dust: "Poussières de stasis gagnées par heure" };
+function dgRateTiles(r) {
+  return `<div class="ac-kt">${[["xp", G("sparkle"), fmtK(r.xpH), "XP/h"], ["kamas", IC("kamas"), fmtK(r.kH), "kamas/h"], ["dg", IC("cle"), r.runs ? dec1(r.runH) : "–", "donjons/h"], ["dust", IC("poussiere"), r.runs ? fmtK(r.pH) : "–", `poussières<span class="hide-sm">/h</span>`]].map(([k, i, v, l]) => `<div class="k k-${k}" data-tip="${h(DGT[k])}"><b class="num">${i}${v}</b><span>${l}</span></div>`).join("")}</div>`;
+}
+function dgRateLine(r) {
+  if (!r) return `<span class="muted">Rendement affiché après le premier combat du donjon.</span>`;
+  return `<span><b class="num">${fmtK(r.xpH)}</b> XP/h</span><span><b class="num">${fmtK(r.kH)}</b> kamas/h</span><span>${r.runs ? `<b class="num">${dec1(r.runH)}</b> donjons/h · <b class="num">${dur(r.perRun)}</b> par donjon` : "donjons/h après le premier boss"}</span>${r.runs ? `<span><b class="num">${fmt(r.pH)}</b> poussières/h</span>` : ""}<span class="cdg-res"><b class="num">${fmtK(r.rH)}</b> ressources/h</span>`;
 }
 function rateHtml(rate) {
   if (!rate) return `<p class="note">Les statistiques apparaissent après quelques combats dans une zone : XP, kamas et ressources par heure, pour comparer les zones.</p>`;
@@ -2714,6 +2726,7 @@ function dungeonSheet(did) {
         <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div></div>` : "";
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
+      ${S.dungeon && S.dungeon.id === did && !S.dungeon.defi ? `<div class="wkbox">${IC("combat")} <div class="grow"><b>En cours : ${chainTxt()}stasis ${S.dungeon.stasis || 1}</b><div class="ac-rate xs" style="margin-top:2px">${dgRateLine(E.dgChainRate(S))}</div></div></div>` : ""}
       ${(() => { const sm = E.SMALL_TEAM[E.team(S).length]; const one = E.team(S).length === 1; return sm ? `<div class="smallbox">${G("shield")} <span><b>Bonus petit groupe (${sm.name.toLowerCase()})</b> : ${one ? "votre héros a" : "vos héros ont"} <b>+${sm.hp} % de PV</b> et ${one ? "subit" : "subissent"} <b>${String(sm.dr).replace(".", ",")} % de dégâts en moins</b> dans ce donjon.${one ? " Les mécaniques qui visent plusieurs héros sont adoucies." : ""}</span></div>` : ""; })()}
       ${compSuggest(did)}
       ${wk ? `<div class="wkbox">${G("star")} <span><b>Mutateur de l'heure : ${h(wk.name)}</b> (${h(wk.desc.charAt(0).toLowerCase() + wk.desc.slice(1).replace(/\.$/, ""))}). Actif à toutes les stasis${k >= 6 ? ", il remplace un des modificateurs tirés au hasard" : ""}. En échange : <b>+${Math.round((E.WEEKLY_REW - 1) * 100)} % d'XP et de butin</b> et <b>+${Math.round((E.WEEKLY_DUST - 1) * 100)} % de poussière</b> pendant cette heure (encore ${weeklyLeft()}). Une course commencée garde son bonus.</span></div>` : ""}
@@ -2976,7 +2989,7 @@ function renderCombat() {
   const XP = E.expActive(S) ? S.exp : null; // 0.1.24 : étage de l'Expédition sans fin
   const title = XP ? `Le Songe infini · ${E.SG_INT[XP.ii].name}${XP.ii > 0 && XP.regne ? ` · règne de ${XP.regne.god}` : ""}` : dg ? dg.name : S.fight && S.fight.prot && !S.fight.over ? S.fight.label : S.hunting && sub ? sub.name : "Aucun combat";
   $("#main").innerHTML = `
-  <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1></div>
+  <div class="pagehead combathead"><div><div class="small muted" id="csub">${combatSub()}</div><h1>${h(title)}</h1>${dg && !XP && !S.dungeon.defi ? `<div class="ac-rate xs cdgrate" id="cdgrate">${dgRateLine(E.dgChainRate(S))}</div>` : ""}</div>
     <div class="row">${fsGauge()}<span class="seg mantoggle" data-tip="Mode manuel : à chaque tour d'un héros, choisissez le sort puis la cible. Sans action pendant ${E.MANUAL_TIMEOUT} s, ou si vous quittez cet écran, le combat repasse en automatique. Aucun bonus : c'est pour le plaisir !">${[[false, "Auto"], [true, "Manuel"]].map(([v, n]) => `<button data-act="manual" data-v="${v ? 1 : 0}" aria-pressed="${!!S.settings.manual === v}">${n}</button>`).join("")}</span>
       <span class="cset">${combatSetHtml(dg)}${idolBtn(S.dungeon)}</span><button class="btn sm csetbtn" data-act="csetsheet">${G("gear")} Réglages</button>
       ${XP ? "" : dg ? `<span id="cchain">${chainBtn()}</span><button class="btn sm danger" data-act="leavedg">Quitter le donjon</button>` : S.hunting ? `<button class="btn sm" data-act="stophunt">Rentrer</button>` : ""}</div></div>
@@ -4182,6 +4195,7 @@ function updateCombat(force) {
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
   const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
+  const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.24.3
   const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
   const cs = $("#cstreak"); if (cs) { const k = (S.chalStreak || 0) > 1 ? `${G("flame")} ×${S.chalStreak}` : ""; if (cs.dataset.k !== k) { cs.innerHTML = k; cs.dataset.k = k; } }
   const cb = $("#chalbar"); if (cb) { const ch = chalBarHtml(F); if (cb.dataset.k !== ch) { cb.innerHTML = ch; cb.dataset.k = ch; } }

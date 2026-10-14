@@ -2332,6 +2332,7 @@
   E.resetFightStats = (S) => { S.fstat = { t: E.now(), n: 0, h: {} }; };
   const endFight = (S, win, why) => {
     const F = S.fight; F.over = true; F.result = win ? "win" : "lose";
+    const D0 = S.dungeon; let dgDone = false; // 1.0.24.3 : rendement de l'enchaînement de donjons
     S.stats.fights++;
     if (F.prot) E.protEnd(S, win);
     if (win) {
@@ -2358,8 +2359,8 @@
           E.stasisClear(S, S.dungeon, F.rewards);
           E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
-          const chainD = S.dungeon; S.dungeon = null;
-          if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); else { S.dungeon.tot = chainD.tot || chainD.chain; S.dungeon.run = (chainD.run || 1) + 1; } }
+          const chainD = S.dungeon; S.dungeon = null; dgDone = true;
+          if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); else { S.dungeon.tot = chainD.tot || chainD.chain; S.dungeon.run = (chainD.run || 1) + 1; S.dungeon.cs = chainD.cs; } }
           if (!S.dungeon && S.hunting && S.sub) E.applyZonePresets(S, S.sub);
         } else S.dungeon.room++;
       }
@@ -2379,6 +2380,12 @@
       }
     }
     if (F.dungeonId && S.dungeon) S.dungeon.t = (S.dungeon.t || 0) + F.dur;
+    /* 1.0.24.3 « XP/h en donjon » : XP, kamas, ressources, poussières et donjons finis, mesurés sur l'enchaînement en cours (suit la course suivante) */
+    if (F.dungeonId && D0 && !D0.defi) {
+      const cs = D0.cs = D0.cs || { s: 0, f: 0, w: 0, xp: 0, k: 0, r: 0, i: 0, p: 0, n: 0 }; const rw = F.rewards || { xp: {}, kamas: 0, res: {}, items: [] };
+      cs.s += F.dur + E.PAUSE_MS / 1000; cs.f++; cs.w += win ? 1 : 0; cs.xp += Object.values(rw.xp).reduce((a, b) => a + b, 0); cs.k += rw.kamas || 0;
+      cs.r += Object.values(rw.res).reduce((a, b) => a + b, 0); cs.i += (rw.items || []).length; cs.p += (rw.stasis && rw.stasis.dust) || 0; if (dgDone) cs.n++;
+    }
     S.stats.recent.push({ d: Math.round(F.dur * 10) / 10, w: win ? 1 : 0 });
     if (S.stats.recent.length > 20) S.stats.recent.shift();
     // historique et rendement par zone
@@ -2407,6 +2414,12 @@
     if (z.lv && avg > z.lv + E.ZONE_DIFF.stale) return null;
     const wr = z.ew === undefined ? z.w / z.f : z.ew;
     return { wr, k: wr >= E.ZONE_DIFF.easy ? "easy" : wr >= E.ZONE_DIFF.hard ? "mid" : "hard" };
+  };
+  /* 1.0.24.3 : rendement de l'enchaînement de donjons en cours (null avant le premier combat) */
+  E.dgChainRate = (S) => {
+    const D = S.dungeon; const z = D && D.cs; if (!z || z.s < 1) return null;
+    const h = 3600 / z.s;
+    return { fights: z.f, winRate: z.w / Math.max(1, z.f), xpH: z.xp * h, kH: z.k * h, rH: z.r * h, iH: z.i * h, pH: z.p * h, runs: z.n, runH: z.n * h, perRun: z.n ? z.s / z.n : null };
   };
   E.zoneRate = (S, zkey) => {
     const z = S.zoneStats[zkey]; if (!z || z.s < 1) return null;
@@ -2737,7 +2750,7 @@
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
     if (k === 10) S.unlocks.stasis10 = true;
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");
-    if (rew) rew.stasis = { k, out };
+    if (rew) rew.stasis = { k, out, dust };
   };
   E.enterDungeon = (S, did, stasis, chain) => {
     const dg = DUNGEONS[did]; if (!dg) return "Donjon inconnu.";

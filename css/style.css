@@ -4379,6 +4379,7 @@ body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
 .ac-kt .k b .uico,.ac-kt .k b svg{width:15px;height:15px;flex:none}
 .ac-kt .k span{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-kt .k-kamas b{color:#ffd76a}.ac-kt .k-win b{color:#9ff07a}
+.ac-kt .k-dg b{color:#ffb98a}.ac-kt .k-dust b{color:#bfe3ff}
 .ac-lf{margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,.1)}
 .ac-lf .plus{color:#9ff07a}.ac-lf .minus{color:#ff8a7a}
 .ac-x{position:absolute;left:12%;right:12%;bottom:-8px;height:4px;border-radius:3px;background:rgba(0,0,0,.55);overflow:hidden;pointer-events:none}
@@ -4398,6 +4399,7 @@ body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
   .ac-kt .k b{font-size:13.5px;gap:3px}
   .ac-kt .k b .uico,.ac-kt .k b svg{width:13px;height:13px}
   .ac-kt .k span{font-size:10px}
+  .ac-kt .hide-sm,.cdgrate .cdg-res{display:none}
   .ac-heads{flex-wrap:nowrap;overflow:visible;gap:4px;justify-content:space-between;width:100%;padding:4px 0 12px}
   .ac-h{flex:1 1 0;min-width:0;max-width:46px}
   .ac-h .head{width:100%;height:auto;aspect-ratio:1}
