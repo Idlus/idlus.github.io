@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.24.4 « Places libres cliquables »
+
+Une place vide de pièce (« + » de « Ma maison » et de la page Havre-Sac) se clique même sans meuble à placer : fenêtre avec les meubles de la pièce, leur bonus, où les trouver et un bouton pour y aller ; infobulle au survol sur PC. Publiée en 1.0.24.2 (32f124d), effacée par 4b069c1 (envoyé depuis une copie d'avant), rétablie telle quelle.
+
 ## 1.0.24.3 « Métiers sans lag »
 
 Mathis (14/10/2026, « les métiers de craft me font lag de zinzin »). Cause : chaque nouvel objet dans le sac (fabrication, butin) invalidait le plan d'équipement de tous les héros (gearPlan, pastille « Meilleur équipement dispo » du menu Héros, recalculée à chaque affichage) ; avec ~950 objets et 8 héros, un seul affichage prenait 88 s dans Chromium. gearPlan calcule maintenant le score de chaque objet et de chaque palier de panoplie une fois par plan, évalue chaque essai par différence, n'essaie plus au-delà de 2 exemplaires identiques et saute les essais de panoplie sans pièce posée (plans identiques vérifiés sur la même partie) ; teamAlerts le fait au repos (requestIdleCallback, par panoplie essayée). Artisanat : recettes par métier rangées une fois (recipesRaw), place du sac comptée une fois, pastilles des métiers sans liste complète (recCanN), score porté mis en cache (curScore). Affichage d'un métier : ~100 → ~40 ms.
