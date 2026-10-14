@@ -1,6 +1,15 @@
 {
-  "version": "1.0.25",
+  "version": "1.0.25.1",
   "versions": [
+    {
+      "v": "1.0.25.1",
+      "name": "XP/h en donjon",
+      "items": [
+        "En enchaînant des donjons, l'encadré du Havre-Sac montre le rendement comme pour la chasse : XP/h, kamas/h, donjons/h et poussières/h",
+        "En dessous : le temps moyen par donjon, les ressources/h et le taux de victoires, mesurés sur tout l'enchaînement en cours",
+        "Le même rendement s'affiche sous le nom du donjon dans Combat et en haut de la fiche du donjon"
+      ]
+    },
     {
       "v": "1.0.25",
       "name": "Renaissance des métiers",

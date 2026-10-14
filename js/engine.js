@@ -2332,7 +2332,7 @@
   E.resetFightStats = (S) => { S.fstat = { t: E.now(), n: 0, h: {} }; };
   const endFight = (S, win, why) => {
     const F = S.fight; F.over = true; F.result = win ? "win" : "lose";
-    const D0 = S.dungeon; let dgDone = false; // 1.0.24.3 : rendement de l'enchaînement de donjons
+    const D0 = S.dungeon; let dgDone = false; // 1.0.25.1 : rendement de l'enchaînement de donjons
     S.stats.fights++;
     if (F.prot) E.protEnd(S, win);
     if (win) {
@@ -2380,7 +2380,7 @@
       }
     }
     if (F.dungeonId && S.dungeon) S.dungeon.t = (S.dungeon.t || 0) + F.dur;
-    /* 1.0.24.3 « XP/h en donjon » : XP, kamas, ressources, poussières et donjons finis, mesurés sur l'enchaînement en cours (suit la course suivante) */
+    /* 1.0.25.1 « XP/h en donjon » : XP, kamas, ressources, poussières et donjons finis, mesurés sur l'enchaînement en cours (suit la course suivante) */
     if (F.dungeonId && D0 && !D0.defi) {
       const cs = D0.cs = D0.cs || { s: 0, f: 0, w: 0, xp: 0, k: 0, r: 0, i: 0, p: 0, n: 0 }; const rw = F.rewards || { xp: {}, kamas: 0, res: {}, items: [] };
       cs.s += F.dur + E.PAUSE_MS / 1000; cs.f++; cs.w += win ? 1 : 0; cs.xp += Object.values(rw.xp).reduce((a, b) => a + b, 0); cs.k += rw.kamas || 0;
@@ -2415,7 +2415,7 @@
     const wr = z.ew === undefined ? z.w / z.f : z.ew;
     return { wr, k: wr >= E.ZONE_DIFF.easy ? "easy" : wr >= E.ZONE_DIFF.hard ? "mid" : "hard" };
   };
-  /* 1.0.24.3 : rendement de l'enchaînement de donjons en cours (null avant le premier combat) */
+  /* 1.0.25.1 : rendement de l'enchaînement de donjons en cours (null avant le premier combat) */
   E.dgChainRate = (S) => {
     const D = S.dungeon; const z = D && D.cs; if (!z || z.s < 1) return null;
     const h = 3600 / z.s;

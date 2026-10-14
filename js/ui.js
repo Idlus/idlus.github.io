@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25";
+const GAME_VERSION = "1.0.25.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.1", name: "XP/h en donjon", items: [
+    "En enchaînant des donjons, l'encadré du Havre-Sac montre le rendement comme pour la chasse : XP/h, kamas/h, donjons/h et poussières/h",
+    "En dessous : le temps moyen par donjon, les ressources/h et le taux de victoires, mesurés sur tout l'enchaînement en cours",
+    "Le même rendement s'affiche sous le nom du donjon dans Combat et en haut de la fiche du donjon",
+  ] },
   { v: "1.0.25", name: "Renaissance des métiers", items: [
     "Un métier d'artisanat au niveau 200 peut renaître : il repart au niveau 1 et gagne +30 % d'XP par fabrication à chaque renaissance, 10 renaissances au plus",
     "Chaque renaissance relève le plancher des jets : aucune caractéristique d'un objet fabriqué sous 10 % de sa fourchette à la Renaissance I, 20 % à la II… et des jets parfaits à la X. La recette montre les nouvelles fourchettes et la chance d'obtenir un objet Parfait",
@@ -2353,7 +2358,7 @@ function atelierSheet() {
     </div>
     <div class="row"><button class="btn primary" data-act="atgo" ${a.cid != null && a.rec ? "" : "disabled"}>Lancer</button><button class="btn" data-act="closesheet">Annuler</button></div>`);
 }
-/* 1.0.24.3 « XP/h en donjon » : mêmes tuiles que l'encadré de chasse, mesurées sur l'enchaînement de donjons en cours */
+/* 1.0.25.1 « XP/h en donjon » : mêmes tuiles que l'encadré de chasse, mesurées sur l'enchaînement de donjons en cours */
 const dec1 = (x) => (Math.round(x * 10) / 10).toString().replace(".", ",");
 const DGT = { xp: "XP gagnée par heure par toute l'équipe, sur cet enchaînement", kamas: "Kamas gagnés par heure, sur cet enchaînement", dg: "Donjons terminés par heure (une clé par donjon)", dust: "Poussières de stasis gagnées par heure" };
 function dgRateTiles(r) {
@@ -4195,7 +4200,7 @@ function updateCombat(force) {
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
   const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
-  const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.24.3
+  const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.25.1
   const cch = $("#cchain"); if (cch) { const v = chainBtn(); if (cch.dataset.k !== v) { cch.innerHTML = v; cch.dataset.k = v; } }
   const cs = $("#cstreak"); if (cs) { const k = (S.chalStreak || 0) > 1 ? `${G("flame")} ×${S.chalStreak}` : ""; if (cs.dataset.k !== k) { cs.innerHTML = k; cs.dataset.k = k; } }
   const cb = $("#chalbar"); if (cb) { const ch = chalBarHtml(F); if (cb.dataset.k !== ch) { cb.innerHTML = ch; cb.dataset.k = ch; } }

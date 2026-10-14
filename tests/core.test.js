@@ -197,7 +197,7 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   console.log("ok - enchaînement de donjons et arrêt après le donjon en cours");
 }
 
-// 1.0.24.3 « XP/h en donjon » : le rendement se mesure sur tout l'enchaînement (il suit la course suivante)
+// 1.0.25.1 « XP/h en donjon » : le rendement se mesure sur tout l'enchaînement (il suit la course suivante)
 {
   const S = E.newState("Rendement", "iop"); S.chars = []; const did = Object.keys(D.DUNGEONS)[0]; const dg = D.DUNGEONS[did];
   const keep = E.dungeonUnlocked; E.dungeonUnlocked = () => true;

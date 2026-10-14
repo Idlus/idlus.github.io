@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.25.1 « XP/h en donjon »
+
+Mathis (14/10/2026, « afficher l'xp/h quand on enchaîne les donjons, de la même façon que le farm d'une zone »). `S.dungeon.cs` cumule durée, combats, XP, kamas, ressources, objets, poussières de stasis et donjons finis sur l'enchaînement (passé à la course suivante dans `endFight`, js/engine.js) ; `E.dgChainRate` donne les taux par heure. Affiché dans l'encadré du Havre-Sac (tuiles XP/h, kamas/h, donjons/h, poussières/h), sous le titre de Combat et en haut de la fiche du donjon. Défi du jour exclu.
+
 ## 1.0.25 « Renaissance des métiers »
 
 Un métier d'artisanat ou de forgemagie au niveau 200 peut renaître (10 fois au plus, 1 million de kamas × le numéro de la renaissance). Artisanat : +30 % d'XP par fabrication et un plancher de jet relevé de 10 % par renaissance, jets parfaits à la X. Forgemagie : +30 % d'XP par rune qui passe, +1 point de succès critique et −0,5 point d'échec critique par renaissance (pas sur les runes Ga). Titres « Artisan renaissant », « Main d'or », « Maître éternel », ornement « Enclume du Phénix », succès « Sept vies ». Les classements des métiers trient par renaissance puis niveau, et l'XP de la semaine compte toutes les vies (supabase/classements.sql, supabase/guildes.sql). Test tests/renmetiers.test.js.
