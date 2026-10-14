@@ -1620,9 +1620,9 @@ function frameHtml(c) {
 }
 /* 0.1.53 : une icône DOFUS pour chaque caractéristique (dommages élémentaires = icône de l'élément, résistances fixes = icône de la résistance, comme dans DOFUS) */
 const SICO_OF = { dt: "fo", df: "ine", de: "cha", da: "age", xt: "rt", xf: "rf", xe: "re", xa: "ra", xn: "rn" };
-const SICO_HAS = new Set(["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "dcri", "dn", "dsort", "so", "pp", "ini", "pa", "pm", "po", "rt", "rf", "re", "ra", "rn", "tac", "fui", "rpa", "rpm", "epa", "epm", "inv", "pod"]);
+const SICO_HAS = new Set(["vit", "sa", "fo", "ine", "cha", "age", "pui", "do", "cri", "dcri", "dn", "dsort", "so", "pp", "ini", "pa", "pm", "po", "rt", "rf", "re", "ra", "rn", "tac", "fui", "rpa", "rpm", "epa", "epm", "inv", "pod", "pou"]);
 const sIco = (k) => { const f = SICO_OF[k] || k; return SICO_HAS.has(f) ? `<img class="sico" src="assets/c/${f}.png" alt="" loading="lazy">` : ""; };
-const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name.replace("% ", "") : "Points de vie") + " — " + STAT_HELP[k])}"` : "");
+const tipAttr = (k) => (STAT_HELP[k] ? ` data-tip="${h((STATS[k] ? STATS[k].name.replace("% ", "") : "Vitalité (Points de vie)") + " — " + STAT_HELP[k])}"` : ""); // 1.0.30 : Vitalité et PV en une ligne
 const resChips = (res) => Object.entries(res || {}).filter(([, v]) => v).map(([k, v]) => `<span class="chip ${v < 0 ? "neg" : ""}" style="--c:var(--el-${k})" data-tip="Résistance ${ELEMENTS[k].name} : ${v} %">${v > 0 ? "+" : ""}${v}%</span>`).join("");
 
 /* ---------- carte de héros (v2.6) ---------- */
@@ -4554,7 +4554,7 @@ function deltaHtml(c, slot, uid) {
     if (otherSaved) other.equip = otherSaved;
   } else { delete c.equip[slot]; nw = E.charStats(S, c); }
   c.equip = saved;
-  const keys = STAT_ORDER.concat(["hpMax"]).filter((k) => k !== "ini" && Math.round((nw[k] || 0) - (cur[k] || 0)) !== 0);
+  const keys = STAT_ORDER.concat(["hpMax"]).filter((k) => k !== "ini" && k !== "vit" && Math.round((nw[k] || 0) - (cur[k] || 0)) !== 0); // 1.0.30 : la Vitalité compte dans les PV
   if (!keys.length) return `<span class="muted xs">Aucun changement pour ${h(c.name)}</span>`;
   // 1.0.15 : un verdict (même calcul que « Équiper au mieux »), puis les plus gros gains et les plus grosses pertes, en deux colonnes
   const ds = keys.map((k) => ({ d: Math.round(nw[k] - cur[k]), n: k === "hpMax" ? "PV" : STATS[k].short, w: k === "hpMax" ? 0.25 : 1 })).sort((a, b) => Math.abs(b.d * b.w) - Math.abs(a.d * a.w));
@@ -4747,9 +4747,10 @@ function placementHtml() {
     <p class="note xs" style="margin:0">En automatique, le jeu place devant les héros qui encaissent le mieux (PV et résistances). Les Rôdeurs visent l'arrière et les Bondisseurs ignorent les rangées.</p>
   </div></section>`;
 }
-function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k)}${k === "hpMax" ? "Points de vie" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
+function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k === "hpMax" ? "vit" : k)}${k === "hpMax" ? "Vitalité (Points de vie)" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
-const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3, rn: 3, dcri: 2.5, dsort: 7, dt: 4, df: 4, de: 4, da: 4, dn: 1, xt: 2, xf: 2, xe: 2, xa: 2, xn: 2 };
+const SCORE_W = { vit: 0.25, sa: 0.6, fo: 1, ine: 1, cha: 1, age: 1, pui: 1.2, do: 5, cri: 4, so: 3, pp: 0.6, ini: 0.05, pa: 60, rt: 3, rf: 3, re: 3, ra: 3, rn: 3, dcri: 2.5, dsort: 7, dt: 4, df: 4, de: 4, da: 4, dn: 1, xt: 2, xf: 2, xe: 2, xa: 2, xn: 2,
+  pm: 25, tac: 0.8, fui: 0.8, pou: 1.5 }; // 1.0.30 : nouvelles lignes des équipements
 /* élément du héros : stat de la répartition auto, sinon la stat élémentaire la plus investie à la main, sinon celle de la classe */
 const buildMain = (c) => { if (["fo", "ine", "cha", "age"].includes(c.autoStat)) return c.autoStat; const a = c.alloc || {}; const k = ["fo", "ine", "cha", "age"].sort((x, y) => (a[y] || 0) - (a[x] || 0))[0]; return (a[k] || 0) > 0 ? k : CLASSES[c.cls].main; };
 /* Héros multi-élément. Chaque élément qui a au moins 20 % des points élémentaires répartis compte, au prorata de sa part
@@ -4929,7 +4930,7 @@ function charStatsView(c, st) {
         <p class="note xs">Au-delà de 100 dans une caractéristique d'élément, il faut 2 points pour gagner 1, puis 3 au-delà de 200 et 4 au-delà de 300. La Vitalité reste à 1 pour 1. Les parchemins s'ajoutent hors paliers.</p>
         <div><button class="btn sm" data-act="resetpts" data-id="${c.id}">Réinitialiser les points (gratuit)</button></div></div></div>
     <div class="panel"><div class="phead"><h2>Statistiques totales</h2><span class="xs muted">survolez ou touchez une stat pour son effet</span></div><div class="pad stack">
-      <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.map((k) => statCell(k, st[k])).join("")}${D.TACT_ORDER.filter((k) => st[k]).map((k) => statCell(k, k === "pm" ? 3 + st[k] : st[k])).join("")}</div>
+      <div class="statgrid num">${statCell("hpMax", st.hpMax)}${STAT_ORDER.filter((k) => k !== "vit").map((k) => statCell(k, k === "pm" ? 3 + st[k] : st[k])).join("")}${D.TACT_ORDER.filter((k) => st[k] && !STAT_ORDER.includes(k)).map((k) => statCell(k, st[k])).join("")}</div>
       ${combatStats(c, st)}
       <p class="note">${Object.keys(S.families || {}).length ? `Familles complétées : +${E.familyBonusVit(S)} PV.` : ""}</p></div></div></div>`;
 }
@@ -4949,7 +4950,7 @@ function combatStats(c, st) {
   const row = (label, val, tip) => `<div class="li"${tip ? ` data-tip="${h(tip)}"` : ""}><span class="grow">${label}</span><b class="num">${val}</b></div>`;
   return `<div class="cbstats"><div class="row between"><b class="small">En combat</b><span class="xs muted">${inT ? `avec l'équipe actuelle (${n} héros)` : `s'il rejoint l'équipe (${n} héros)`}</span></div>
     <div class="list">
-    ${row("Points de vie", fmt(hp) + (hs ? ` <span class="xs muted">· chasse ${fmt(Math.round(hp * (1 + hs.hp / 100)))}</span>` : "") + (ds ? ` <span class="xs muted">· donjon ${fmt(Math.round(hp * (1 + ds.hp / 100)))}</span>` : ""),
+    ${row("Vitalité (Points de vie)", fmt(hp) + (hs ? ` <span class="xs muted">· chasse ${fmt(Math.round(hp * (1 + hs.hp / 100)))}</span>` : "") + (ds ? ` <span class="xs muted">· donjon ${fmt(Math.round(hp * (1 + ds.hp / 100)))}</span>` : ""),
       `Points de vie de la fiche, plus : ${parts([["Osamodas dans l'équipe", osa ? 5 : 0], ["Havre-Sac et alignement", bHp]]) || "rien pour l'instant"}.${hs || ds ? ` Petite équipe : ${hs ? `+${hs.hp} % en chasse` : ""}${hs && ds ? ", " : ""}${ds ? `+${ds.hp} % en donjon` : ""}.` : ""}`)}
     ${row("Dégâts", dmg || fur ? `+${fmt(Math.round(dmg * 10) / 10)} %${fur ? ` <span class="xs muted">· Fureur +${fur} %</span>` : ""}` : "—",
       `Bonus de dégâts de toute l'équipe : ${parts([["Synergie", syn], ["Alignement", bDmg], ["Éveil Meneur", meneur]]) || "aucun pour l'instant"}.${fur ? ` L'Éveil Fureur de ce héros multiplie encore ses dégâts de +${fur} %.` : ""}${ev.premier ? ` Premier sang : +${8 * ev.premier} % au premier tour.` : ""}`)}
@@ -5230,6 +5231,7 @@ function fxLine(f) {
     case "vuln": return `la cible subit +${f.v} % de dégâts, ${f.t || 1} t.`;
     case "summon": { const m = (D.SUMMONS || {})[String(f.mid)]; return `invoque ${m ? h(m.name) : "une créature"}`; }
     case "leech": return `vol de vie ${f.v} %`;
+    case "push": return `repousse de ${f.v} case${f.v > 1 ? "s" : ""} (Dommages de poussée)`; // 1.0.30
   }
   return "";
 }

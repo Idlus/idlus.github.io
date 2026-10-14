@@ -255,3 +255,78 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   E.resetFightStats(S); assert.strictEqual(S.fstat.n, 0, "remise à zéro");
   console.log("ok - statistiques de combat par héros, cumul et sauvegarde");
 }
+
+// 1.0.30 « Nouvelles caractéristiques » (41A) : PM, Tacle, Fuite et Dommages de poussée sur les objets, poussée en combat,
+// runes, migration des objets déjà dans les parties.
+{
+  const { ITEMS, SETS, STATS, STAT_ORDER } = D;
+  // données : lignes de DOFUS (Bottes de Grozilla : 1 PM et 4 à 5 Fuite ; Cape Ulais : 2 à 3 Tacle et 4 Dommages de poussée)
+  ["pm", "tac", "fui", "pou"].forEach((k) => assert.ok(STATS[k] && STAT_ORDER.includes(k), "caractéristique " + k));
+  for (const t in ITEMS) for (const k in ITEMS[t].stats) assert.ok(STATS[k], `${ITEMS[t].name} : caractéristique inconnue ${k}`);
+  assert.deepStrictEqual(ITEMS.i12412.stats.pm, [1, 1]); assert.deepStrictEqual(ITEMS.i12412.stats.fui, [4, 5]);
+  assert.deepStrictEqual(ITEMS.i774.stats.tac, [2, 3]); assert.deepStrictEqual(ITEMS.i774.stats.pou, [4, 4]);
+  assert.ok(ITEMS.i12416.stats.tac[1] < 0, "malus de Tacle (Ceinture de Grozilla)");
+  assert.strictEqual(SETS.s58.bonus[7].pm, 1, "Panoplie du Dragon Cochon : +1 PM à 7 objets"); assert.strictEqual(SETS.s58.bonus[7].pou, 30);
+  const push = []; D.CLASS_ORDER.forEach((cls) => (D.CLASSES[cls].spells || []).forEach((sp) => { if (sp.grades.some((g) => g.fx.some((f) => f.k === "push"))) push.push(sp.name); }));
+  assert.ok(push.length >= 40 && push.includes("Flèche de Recul"), push.length + " sorts qui repoussent");
+  // les lignes passent dans les caractéristiques du héros ; PM jamais augmenté par Rayonnant ni Parfait ; pas d'over PM
+  const S = E.newState("Car", "cra"); const c = S.chars[0]; c.lvl = 200; const st0 = E.charStats(S, c);
+  const b = E.rollItem(S, "i12412", { radiant: false }), u = E.rollItem(S, "i774", { radiant: false });
+  assert.strictEqual(E.equip(S, c.id, b.uid), null); assert.strictEqual(E.equip(S, c.id, u.uid), null);
+  const st1 = E.charStats(S, c);
+  assert.strictEqual((st1.pm || 0) - (st0.pm || 0), 1, "+1 PM"); assert.strictEqual((st1.fui || 0) - (st0.fui || 0), b.stats.fui, "Fuite");
+  assert.strictEqual((st1.tac || 0) - (st0.tac || 0), u.stats.tac, "Tacle"); assert.strictEqual((st1.pou || 0) - (st0.pou || 0), 4, "Dommages de poussée");
+  const r = E.rollItem(S, "i12412", { radiant: true }); assert.strictEqual(r.stats.pm, 1, "Rayonnant : toujours 1 PM"); assert.ok(r.stats.fui > r.roll.fui, "Rayonnant : la Fuite monte");
+  const p = { tpl: "i12412", stats: {} }; for (const k in ITEMS.i12412.stats) p.stats[k] = ITEMS.i12412.stats[k][1];
+  assert.ok(E.isPerfect(p) && E.perfectStats(p).pm === 1 && E.perfectStats(p).fui > 5, "Parfait : pas de PM en plus");
+  assert.strictEqual(E.fmCap(ITEMS.i12412, "pm"), 1, "pas d'over PM");
+  // runes : Tacle et Fuite sans rune Ra, PM en rune simple et sans transmutation, Dommages de poussée en trois tailles
+  assert.deepStrictEqual(E.runeTiers("tac"), ["pa", ""]); assert.deepStrictEqual(E.runeTiers("fui"), ["pa", ""]);
+  assert.deepStrictEqual(E.runeTiers("pm"), [""]); assert.deepStrictEqual(E.runeTiers("pou"), ["ra", "pa", ""]);
+  assert.strictEqual(E.runeName("pa:pou"), "Rune Pa Do Pou");
+  S.runes[":tac"] = 3; S.runes["pa:tac"] = 3; assert.strictEqual(E.fuseRunes(S, ":tac", "up"), null); assert.strictEqual(S.runes["pa:tac"], 4);
+  assert.ok(/Pas de rune Ra/.test(E.fuseRunes(S, "pa:tac", "up")), "pas de Ra Tacle");
+  assert.ok(E.transmuteTargets().includes("fui") && E.transmuteTargets().includes("pou") && !E.transmuteTargets().includes("pm"), "cibles de transmutation");
+  S.runes["ra:vit"] = 10; S.kamas = 1e6; assert.ok(/Pas de rune Ra/.test(E.transmute(S, "ra:vit", "fui"))); assert.strictEqual(E.transmute(S, "ra:vit", "pou"), null);
+  const big = Object.keys(ITEMS).filter((t) => ITEMS[t].stats.tac && ITEMS[t].stats.tac[0] > 0 && ITEMS[t].slot !== "dofus" && !ITEMS[t].trophy).sort((x, y) => ITEMS[y].lvl - ITEMS[x].lvl)[0];
+  let ra = 0, pa = 0; for (let i = 0; i < 20; i++) { const x = E.rollItem(S, big, { radiant: false }); const got = E.breakItem(S, x.uid, "tac"); ra += got["ra:tac"] || 0; pa += got["pa:tac"] || 0; }
+  assert.ok(!ra && pa > 0, `brisage focus Tacle (${ITEMS[big].name}) : ${pa} Pa, ${ra} Ra`);
+  console.log("ok - nouvelles caractéristiques : lignes des objets, héros, Rayonnant, Parfait, runes");
+}
+{
+  // poussée : formule, chance selon le nombre de monstres, cases en plus avec les PM
+  assert.strictEqual(E.pushChance(1), 0, "seul : pas de poussée"); assert.strictEqual(E.pushChance(2), 0.25); assert.strictEqual(E.pushChance(8), 0.75);
+  assert.strictEqual(E.pushDmg(200, 0, 3), (100 + 32) * 3 / 6); assert.ok(E.pushDmg(200, 50, 3) > E.pushDmg(200, 0, 3), "Dommages de poussée");
+  assert.strictEqual(E.pushCells({ pm: 0 }, 2), 2); assert.strictEqual(E.pushCells({ pm: 1 }, 2), 3); assert.strictEqual(E.pushCells({ pm: 6 }, 2), 4, "2 cases en plus au plus");
+  // en chasse : des coups de poussée dans le journal ; au Kolizéum : aucun
+  const S = E.newState("Pou", "cra"); S.chars[0].lvl = 120; for (let i = 0; i < 3; i++) E.addChar(S, "cra", "P" + i, 120).inTeam = true;
+  S.chars.forEach((c) => { c.inTeam = true; E.refreshSpells(c, E.charStats(S, c)); });
+  const sub = Object.values(E.SUBS).filter((s) => s.lvl[0] <= 110).sort((a, b) => b.lvl[0] - a.lvl[0])[0];
+  assert.strictEqual(E.startHunt(S, sub.id), null); E.tactLog = {}; let seen = null;
+  for (let t = 0; t < 4 * 60 * 1000 && !seen; t += 250) { E.tick(S, 250); const F = S.fight; if (F) seen = F.log.find((l) => /^Poussée : .+ percute .+ \(\d case/.test(l.txt) && /pou/.test(l.cls)); }
+  assert.ok(seen && E.tactLog.pou > 0, "un coup de poussée en chasse"); S.hunting = false; S.fight = null;
+  const A = E.koliSnap(S, S.chars.map((c) => c.id)); const n0 = E.tactLog.pou; const W = E.koliSetup(A, A.map((h) => Object.assign({}, h)));
+  for (let i = 0; i < 20000 && !W.fight.over; i++) E.step(W);
+  assert.ok(W.fight.over && E.tactLog.pou === n0 && !W.fight.log.some((l) => /^Poussée/.test(l.txt)), "pas de poussée au Kolizéum"); E.tactLog = null;
+  console.log("ok - poussée : " + seen.txt);
+}
+{
+  // migration (idempotente) : les objets déjà dans les parties reçoivent les nouvelles lignes selon la qualité de leur jet
+  const { ITEMS } = D; const T = ITEMS.i12412;
+  const S = E.newState("Mig", "iop"); S.runes = S.runes || {};
+  const old = (q) => { const it = E.rollItem(S, "i12412", { radiant: false }); for (const k in T.stats) it.stats[k] = T.stats[k][q]; delete it.stats.pm; delete it.stats.fui; return it; };
+  const a = old(1), m = old(0); m.exo = "pm"; const ga0 = S.runes["ga:pm"] || 0;
+  const r = E.rollItem(S, "i12412", { radiant: true }); delete r.stats.pm; delete r.stats.fui; delete r.roll.pm; delete r.roll.fui;
+  const ov = old(1); S.over = [Object.assign({}, ov)]; delete S.items[ov.uid];
+  const S2 = E.deserialize(E.serialize(S)); const A = S2.items[a.uid], M = S2.items[m.uid], R = S2.items[r.uid];
+  assert.ok(A.stats.pm === 1 && A.stats.fui === 5 && E.isPerfect(A), "un objet parfait reste parfait");
+  assert.ok(M.stats.pm === 1 && M.stats.fui === 4 && !M.exo && S2.runes["ga:pm"] === ga0 + 1, "exo PM devenu ligne normale, rune Ga rendue");
+  assert.ok(R.stats.pm === 1 && R.roll.fui >= 4 && R.stats.fui === Math.ceil(R.roll.fui * (1 + R.radiant / 100)), "Rayonnant");
+  assert.ok(S2.over[0].stats.pm === 1, "coffre de trop-plein"); assert.ok(S2.journal.some((j) => /Nouvelles caractéristiques : 4 objets/.test(j.txt)), "message au joueur");
+  const snap = JSON.stringify(S2.items); assert.strictEqual(E.caracsMigrate(S2), 0, "rien à refaire"); assert.strictEqual(JSON.stringify(S2.items), snap, "idempotent");
+  const S3 = E.deserialize(E.serialize(S2)); assert.strictEqual(JSON.stringify(S3.items), snap, "deuxième chargement : rien ne bouge");
+  // objet arrivé plus tard sans les lignes (HdV) : complété au tick suivant
+  const uid = S3.nextUid++; S3.items[uid] = { uid, tpl: "i12412", stats: { vit: 200, cha: 50, age: 50, sa: 30, cri: 3, de: 10, da: 10, pp: 15, re: 6, ra: 6 } }; E.tick(S3, 250);
+  assert.ok(S3.items[uid].stats.pm === 1 && S3.items[uid].stats.fui === 5, "objet de l'HdV complété");
+  console.log("ok - nouvelles caractéristiques : migration des objets (parfait, exo, Rayonnant, trop-plein, HdV), idempotente");
+}

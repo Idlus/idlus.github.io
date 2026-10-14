@@ -277,7 +277,9 @@ STAT = {125: ('vit', 1), 153: ('vit', -1), 124: ('sa', 1), 156: ('sa', -1), 118:
         418: ('dcri', 1), 419: ('dcri', -1), 422: ('dt', 1), 423: ('dt', -1), 424: ('df', 1), 425: ('df', -1),
         426: ('de', 1), 427: ('de', -1), 428: ('da', 1), 429: ('da', -1), 430: ('dn', 1), 431: ('dn', -1),
         240: ('xt', 1), 245: ('xt', -1), 241: ('xe', 1), 246: ('xe', -1), 242: ('xa', 1), 247: ('xa', -1),
-        243: ('xf', 1), 248: ('xf', -1), 244: ('xn', 1), 249: ('xn', -1), 2812: ('dsort', 1), 2813: ('dsort', -1)}
+        243: ('xf', 1), 248: ('xf', -1), 244: ('xn', 1), 249: ('xn', -1), 2812: ('dsort', 1), 2813: ('dsort', -1),
+        # 1.0.30 « Nouvelles caractéristiques » (41A) : PM, Tacle, Fuite et Dommages de poussée des équipements
+        128: ('pm', 1), 169: ('pm', -1), 753: ('tac', 1), 755: ('tac', -1), 752: ('fui', 1), 754: ('fui', -1), 414: ('pou', 1), 415: ('pou', -1)}
 SLOT_BY_TYPE = {1: 'amulette', 9: 'anneau', 10: 'ceinture', 11: 'bottes', 16: 'coiffe', 17: 'cape',
                 2: 'arme', 3: 'arme', 4: 'arme', 5: 'arme', 6: 'arme', 7: 'arme', 8: 'arme', 19: 'arme', 271: 'arme', 82: 'bouclier'}
 JOB = {11: 'forgeron', 13: 'sculpteur', 15: 'cordonnier', 16: 'bijoutier', 27: 'tailleur', 60: 'faconneur', 65: 'bricoleur'}
@@ -665,7 +667,8 @@ for cls, bid in BREEDS.items():
 RACES = {str(m['race']): races.get(m['race'], '') for m in GAME_M.values()}
 STAT_ICONS = {'vit': 'tx_vitality', 'sa': 'tx_wisdom', 'fo': 'tx_strength', 'ine': 'tx_intelligence', 'cha': 'tx_chance', 'age': 'tx_agility',
               'pui': 'tx_damagesPercent', 'do': 'tx_damage', 'cri': 'tx_crit', 'so': 'tx_heal', 'pp': 'tx_prospecting', 'ini': 'tx_initiative',
-              'pa': 'tx_actionPoints', 'rt': 'tx_strengthRes', 'rf': 'tx_intelligenceRes', 're': 'tx_chanceRes', 'ra': 'tx_agilityRes', 'rn': 'tx_neutralRes', 'pm': 'tx_movementPoints'}
+              'pa': 'tx_actionPoints', 'rt': 'tx_strengthRes', 'rf': 'tx_intelligenceRes', 're': 'tx_chanceRes', 'ra': 'tx_agilityRes', 'rn': 'tx_neutralRes', 'pm': 'tx_movementPoints',
+              'tac': 'tx_tackle', 'fui': 'tx_escape', 'pou': 'tx_push'}
 images['c'] = {f"{k}.png": f"https://dofusdb.fr/icons/characteristics/{v}.png" for k, v in STAT_ICONS.items()}
 
 # ------------------------------------------------------------------ v3 : sorts (classes + monstres)
@@ -708,6 +711,7 @@ def convert_fx(effects, desc=''):
         elif aid in SUMMON: fx.append({'k': 'summon', 'mid': e.get('diceNum') or e.get('value') or 0})
         elif aid == 111 and b > 0 and selfish: fx.append({'k': 'buff', 'st': 'pa', 'v': min(2, b), 't': 1, 'all': False})
         elif aid in (786, 2973): fx.append({'k': 'leech', 'v': b or a or 20})
+        elif aid in (5, 1021) and a > 0 and ('A' in m or not m): fx.append({'k': 'push', 'v': min(4, a)})  # 1.0.30 : repousse la cible (Dommages de poussée)
     # fusionne les dégâts identiques (mêmes élément/cibles)
     out = []
     for f in fx:
@@ -795,7 +799,7 @@ for k, gm in GAME_M.items():
         except Exception: g = len(sp['spellLevels'])
         L = ML.get(sp['spellLevels'][min(len(sp['spellLevels']), max(1, g)) - 1])
         if not L: continue
-        fx = [f for f in convert_fx(L.get('effects'), (sp.get('description') or {}).get('fr', '')) if not f.get('fb') and f['k'] != 'summon']
+        fx = [f for f in convert_fx(L.get('effects'), (sp.get('description') or {}).get('fr', '')) if not f.get('fb') and f['k'] not in ('summon', 'push')]
         if not fx: continue
         lst.append({'n': sp['name']['fr'], 'cd': min(4, L.get('minCastInterval') or 0), 'fx': fx})
     if lst: gm['sp'] = lst[:3]; nsp += 1

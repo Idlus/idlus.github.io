@@ -49,6 +49,9 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
   const F = hunt(S, 200); const API = E.fightApi;
   const ea = F.ents.find((e) => e.cid === a.id), eb = F.ents.find((e) => e.cid === b.id), ec = F.ents.find((e) => e.cid === c.id);
   const mon = F.ents.find((e) => e.side === "m" && e.alive);
+  // 1.0.30 : selon le tirage, des héros ont pu tomber dès les premiers tours (et la Lueur servir) : on repart d'une équipe debout
+  F.ents.forEach((e) => { if (e.side === "c" && !e.summon) { e.alive = true; e.hp = e.hpMax; } }); F.deaths = F.deaths.filter((i) => F.ents[i].side !== "c");
+  eb.dpS.save = 1; eb.dpS.rage = 0; F.dpN = {}; F.dpSeen = {};
   ea.shield = 0; ea.hp = ea.hpMax; const d = API.dealDamage(F, mon, ea, ea.hpMax * 3, null);
   assert.ok(d <= Math.ceil(ea.hpMax * 0.4) && ea.alive, `Carapace d'ivoire : coup de ${d} pour ${ea.hpMax} PV`);
   ea.hp = 5; ea.shield = 0; API.dealDamage(F, mon, ea, ea.hpMax, null);

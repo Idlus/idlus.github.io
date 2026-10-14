@@ -209,6 +209,7 @@ textarea{width:100%;min-height:80px;font-size:12px}
 .log div{padding:2px 0;border-bottom:1px dashed var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .log div:last-child{border:0}
 .log .win{color:var(--action);font-weight:800}.log .lose,.log .ko{color:var(--danger)}.log .crit{font-weight:800}.log .heal{color:var(--el-a)}.log .buff{color:var(--gold)}.log .dim{opacity:.7}
+.log .pou{color:var(--el-f);font-weight:700} /* 1.0.30 : coup de poussée */
 .hist{display:flex;flex-direction:column;gap:6px}
 .hrow{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;background:var(--panel2);border-radius:10px;padding:6px 10px;font-size:13px}
 .hrow .w{color:var(--action);font-weight:800}.hrow .l{color:var(--danger);font-weight:800}

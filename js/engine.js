@@ -378,6 +378,7 @@
   /* ---------------- Objets ---------------- */
   /* Objets Rayonnants : très rares, +10 à +50 % sur les statistiques positives de l'objet */
   E.RADIANT_CHANCE = 1 / 400;
+  E.RADIANT_SKIP = { pm: 1 }; // 1.0.30 : le bonus Rayonnant ne donne pas de PM en plus (un objet à 1 PM reste à 1 PM)
   E.radiantBonus = () => Math.round(10 + 40 * Math.pow(rnd(), 2.2));
   /* Raretés (3.2) : déduites de l'origine de l'objet. Pour en ajouter une plus tard (ex. Mythique),
      ajouter une entrée ici (dans l'ordre croissant) et la donner aux objets via ITEMS[x].rarity ou la règle ci-dessous. */
@@ -415,7 +416,7 @@
     if (opts.rad && opts.radiant !== true) chance = Math.max(chance, opts.rad * E.radiantMult(S));
     if (opts.radiant !== false && rnd() < chance) {
       it.radiant = E.radiantBonus(); it.roll = roll;
-      for (const k in it.stats) if (it.stats[k] > 0) it.stats[k] = Math.ceil(it.stats[k] * (1 + it.radiant / 100));
+      for (const k in it.stats) if (it.stats[k] > 0 && !E.RADIANT_SKIP[k]) it.stats[k] = Math.ceil(it.stats[k] * (1 + it.radiant / 100));
       S.radiants = (S.radiants || 0) + 1;
       note(S, `✦ Objet Rayonnant : ${T.name} (+${it.radiant} %) !`, "radiant");
       E.celebrate({ t: "radiant", tpl, pct: it.radiant });
@@ -864,6 +865,16 @@
   E.TACT = { po: [20, 60], tac: [1, 60], fui: [0.5, 30], pm: [3, 15], rpa: [0.4, 20], rpaV: 20, rpaBoss: 10, rpm: [0.5, 25], epa: [0.5, 50], epm: [0.5, 50], invMax: 3 };
   E.tact = (st, k) => { const t = E.TACT[k]; return st ? Math.min(t[1], (st[k] || 0) * t[0]) : 0; };
   E.tactLog = null;
+  /* 1.0.30 « Nouvelles caractéristiques » (41A) : poussée. Un sort qui repousse (effet push de DOFUS, v cases) peut envoyer le monstre
+     touché contre un autre monstre : 25 % par autre monstre debout, 75 % au plus. Dégâts comme dans DOFUS, à l'échelle du jeu :
+     (niveau / 2 + Dommages de poussée + 32) × cases restantes / 6, sans résistance d'élément ; le monstre percuté en prend la moitié.
+     Cases restantes : 1 à la portée du sort ; chaque PM au-delà de 3 ajoute une case (2 au plus). Pas de poussée au Kolizéum.
+     Ce sont des dommages de poussée, pas un coup du héros : ni reflet, ni riposte, ni effet « au coup ». L'IA ne les compte pas pour
+     choisir ses sorts (simulation : elle écartait des sorts de retrait de PA ou de vol de vie et perdait plus souvent) : c'est un bonus. */
+  E.PUSH = { hit: 0.25, hitMax: 0.75, div: 6, base: 32, other: 0.5, pmMax: 2 };
+  E.pushCells = (st, v) => v + clamp((st && st.pm) || 0, 0, E.PUSH.pmMax);
+  E.pushDmg = (lvl, pou, cells) => Math.max(0, (lvl / 2 + (pou || 0) + E.PUSH.base) * cells / E.PUSH.div);
+  E.pushChance = (nFoes) => Math.min(E.PUSH.hitMax, E.PUSH.hit * Math.max(0, nFoes - 1));
   /* Esquive PA/PM des monstres : dès le niveau 100, +0,4 % par niveau (40 % au plus), +10 pour les boss, Coriaces et Chefs */
   E.monDodge = (m) => (m.lvl > 100 ? Math.min(40, (m.lvl - 100) * 0.4) + (m.boss || m.role === "coriace" || m.role === "chef" ? 10 : 0) : 0); // le simulateur compte ici combien de fois chaque effet se déclenche
   E.frontMax = (n) => Math.max(1, Math.ceil(n / 2));
@@ -1318,7 +1329,7 @@
     if (isHero(F, tgt) && src && (F && F.pvp ? src.tm !== tgt.tm : src.side === "m") && glyphOf(F, tgt) === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
     if (isHero(F, tgt) && tgt.cls === "sacri") tgt.suffer = Math.min(15, (tgt.suffer || 0) + 1);
-    if (src && src.side === "c" && tgt.side === "m" && v > 0) { // 0.1.24 : reliques d'expédition (vol de vie, poison)
+    if (src && src.side === "c" && tgt.side === "m" && v > 0 && !(F && F.pushHit)) { // 0.1.24 : reliques d'expédition (vol de vie, poison) ; 1.0.30 : pas sur la poussée
       if (src.vamp && src.alive) doHeal(src, v * src.vamp, F);
       if (src.expPoison && tgt.alive && !tgt.noDot && !tgt.dots.some((d) => d.exp)) tgt.dots.push({ v: Math.max(1, Math.round(tgt.hpMax * src.expPoison / 100)), el: null, turns: 2, exp: 1 });
     }
@@ -1328,7 +1339,7 @@
     if (tgt.hp <= 0 && F && tgt.side === "m" && F.idol && F.idol.revive && !tgt.revived && !tgt.summon) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * F.idol.revive / 100); flog(F, `${tgt.name} revient à la vie (idole Sakai) !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.dp && E.dofpSave) E.dofpSave(F, tgt); // 1.0.16 : Lueur d'Ilyzaelle
     if (tgt.hp <= 0) { tgt.hp = 0; tgt.alive = false; killed(F, tgt); }
-    if (F && src && v > 0) {
+    if (F && src && v > 0 && !F.pushHit) { // 1.0.30 : la poussée ne déclenche ni retrait, ni reflet, ni riposte (dommages de poussée, comme dans DOFUS)
       if (src.side === "m" && tgt.side === "c") {
         if (src.role === "sangsue" && src.alive) doHeal(src, v * 0.2, F);
         if (src.role === "poison" && tgt.alive && tgt.dots.filter((d) => d.role).length < 2) tgt.dots.push({ v: Math.max(1, v * 0.25), turns: 3, el, src: src.name, role: true });
@@ -1345,8 +1356,8 @@
       }
     }
     if (F && F.fx) F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(tgt), s: src ? F.ents.indexOf(src) : -1, v, el: el || "n" });
-    if (F && src && v > 0) { if (src.lg && E.legHit) E.legHit(F, src, tgt, v, el); if (tgt.lg && E.legHurt) E.legHurt(F, src, tgt, v); } // 0.1.48 : légendaires
-    if (F && src && v > 0 && E.dofpHit) { if (src.dp) E.dofpHit(F, src, tgt, v, el); if (tgt.dp) E.dofpHurt(F, src, tgt, v); } // 1.0.16 : passifs des Dofus
+    if (F && src && v > 0 && !F.pushHit) { if (src.lg && E.legHit) E.legHit(F, src, tgt, v, el); if (tgt.lg && E.legHurt) E.legHurt(F, src, tgt, v); } // 0.1.48 : légendaires (1.0.30 : pas sur la poussée)
+    if (F && src && v > 0 && E.dofpHit && !F.pushHit) { if (src.dp) E.dofpHit(F, src, tgt, v, el); if (tgt.dp) E.dofpHurt(F, src, tgt, v); } // 1.0.16 : passifs des Dofus
     return v;
   };
   E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a) };
@@ -1560,9 +1571,29 @@
         if (f0 === undefined || !F.ents[f0].alive) cs.focus[key] = foeHits[0];
       }
     }
+    const pushed = foeHits.length && !F.pvp ? pushFoes(F, e, g, foeHits) : null; // 1.0.30 : poussée
     flog(F, `${e.name} · ${sp.name}${parts.length ? " → " + parts.join(", ") : ""}`, "c");
+    if (pushed) pushed.lines.forEach((x) => flog(F, x, "c pou"));
     foeHits.forEach((i) => { if (!F.ents[i].alive) flog(F, `${F.ents[i].name} est vaincu.`, "ko"); });
+    if (pushed) pushed.ko.forEach((t) => { if (!foeHits.includes(F.ents.indexOf(t))) flog(F, `${t.name} est vaincu.`, "ko"); });
     return { ok: true, extraPa };
+  };
+  /* 1.0.30 : chaque monstre touché par un sort qui repousse peut percuter un autre monstre (E.PUSH) */
+  const pushFoes = (F, e, g, idx) => {
+    const f = g.fx.find((x) => x.k === "push"); if (!f) return null;
+    const out = { lines: [], ko: [] };
+    [...new Set(idx)].map((i) => F.ents[i]).forEach((t) => {
+      if (!t || !t.alive || t.side !== "m") return;
+      const others = alive(F, "m").filter((m) => m !== t);
+      if (!others.length || rnd() >= E.pushChance(others.length + 1)) return;
+      const o = pick(others); const left = 1 + Math.floor(rnd() * E.pushCells(e.st, f.v));
+      const v = E.pushDmg(e.lvl, e.st && e.st.pou, left);
+      F.pushHit = 1; const d = dealDamage(F, e, t, v, null); const d2 = dealDamage(F, e, o, v * E.PUSH.other, null); F.pushHit = 0; // pas un coup du héros : ni reflet, ni riposte, ni effet « au coup »
+      tlog("pou"); F.pushDmg = (F.pushDmg || 0) + d + d2;
+      out.lines.push(`Poussée : ${t.name} percute ${o.name} (${left} case${left > 1 ? "s" : ""}) : −${d}, −${d2} à ${o.name}`);
+      [t, o].forEach((m) => { if (!m.alive && !out.ko.includes(m)) out.ko.push(m); });
+    });
+    return out;
   };
   /* 0.1.53 : effet du type d'arme, après le coup */
   const weaponFx = (S, F, e, sp, dealt, hitIdx, parts) => {
@@ -2795,6 +2826,7 @@
   E.PAUSE_MS = 1400;
   E.tick = (S, dtMs, realMs) => {
     if (bagChk) E.bagFlush(S); // 0.1.37 : objets en trop vers le trop-plein
+    if (S.caracsUid !== S.nextUid) E.caracsMigrate(S, S.caracsUid || 0); // 1.0.30 : objets arrivés d'ailleurs (HdV) sans les nouvelles lignes
     S.stats.playtime += (realMs == null ? dtMs : realMs) / 1000; // 0.1.29 : le temps de jeu reste le vrai temps, même en vitesse ×2 / ×3
     const sp = 1;
     // combat
@@ -3085,10 +3117,12 @@
     }
     return { coef, weights: w };
   };
+  /* 1.0.30 : runes qui existent pour une caractéristique (Tacle et Fuite : simple et Pa, comme dans DOFUS) */
+  E.runeTiers = (stat) => (RUNE_SIMPLE_ONLY.includes(stat) ? [""] : (D.RUNE_NO_RA || []).includes(stat) ? ["pa", ""] : ["ra", "pa", ""]);
   // Convertit un poids en runes (Ra puis Pa puis simple ; le reste a une chance de donner une rune)
   const weightToRunes = (stat, w) => {
     const s = STATS[stat]; const base = s.w * s.pts; const out = {};
-    const tiers = RUNE_SIMPLE_ONLY.includes(stat) ? [["", 1]] : [["ra", 10], ["pa", 3], ["", 1]];
+    const tiers = E.runeTiers(stat).map((t) => [t, t === "ra" ? 10 : t === "pa" ? 3 : 1]);
     let rem = w;
     tiers.forEach(([t, m]) => {
       const unit = base * m; if (unit <= 0) return;
@@ -3128,6 +3162,39 @@
   E.PERFECT_SKIP = { pa: 1, pm: 1, po: 1, inv: 1 };
   E.perfectStats = (it) => { const o = {}; for (const k in it.stats) { const v = it.stats[k]; o[k] = v > 0 && !E.PERFECT_SKIP[k] ? v + Math.max(1, Math.round(v * E.PERFECT_PCT / 100)) : v; } return o; };
   E.perfectCount = (S) => Object.values(S.items).filter(E.isPerfect).length;
+
+  /* ---------------- 1.0.30 « Nouvelles caractéristiques » (41A) : PM, Tacle, Fuite et Dommages de poussée sur les objets ----------------
+     Les objets déjà dans les parties gagnent aussi ces lignes (migration idempotente : seulement une ligne du modèle absente de l'objet).
+     La valeur suit la qualité du jet de l'objet (moyenne de ses autres lignes, jet d'origine pour un Rayonnant) : un objet Parfait
+     les reçoit au maximum et reste Parfait. Un objet qui avait déjà un exo de la même caractéristique (exo PM sur un objet qui a
+     maintenant du PM) garde son PM en ligne normale au maximum et rend sa rune Ga. */
+  E.CARACS_NEW = ["pm", "tac", "fui", "pou"];
+  E.caracsFix = (S, it) => {
+    const T = it && ITEMS[it.tpl]; if (!T || !T.stats || !it.stats) return 0;
+    const miss = E.CARACS_NEW.filter((k) => T.stats[k] && it.stats[k] === undefined); if (!miss.length) return 0;
+    let q = 0, m = 0, perfect = true, any = false;
+    for (const k in T.stats) {
+      if (miss.includes(k)) continue; const [a, b] = T.stats[k]; const v = it.roll && it.roll[k] !== undefined ? it.roll[k] : it.stats[k] || 0;
+      if (b > 0) { any = true; if ((it.stats[k] || 0) < b) perfect = false; }
+      if (b > a) { q += clamp((v - a) / (b - a), 0, 1); m++; }
+    }
+    q = any && perfect ? 1 : m ? q / m : 0.5;
+    miss.forEach((k) => {
+      const [a, b] = T.stats[k]; let v = Math.round(a + (b - a) * q);
+      if (it.exo === k && b > 0) { v = b; delete it.exo; S.runes = S.runes || {}; const rk = E.runeKey("ga", k); S.runes[rk] = (S.runes[rk] || 0) + 1; }
+      if (it.roll) it.roll[k] = v;
+      it.stats[k] = it.radiant && v > 0 && !E.RADIANT_SKIP[k] ? Math.ceil(v * (1 + it.radiant / 100)) : v;
+    });
+    return miss.length;
+  };
+  /* sac, trop-plein ; from : seulement les objets arrivés depuis (uid ≥ from), comme ceux de l'HdV */
+  E.caracsMigrate = (S, from = 0) => {
+    let n = 0; const fix = (it) => { if (it && it.uid >= from && E.caracsFix(S, it)) n++; };
+    for (const uid in S.items || {}) fix(S.items[uid]);
+    if (Array.isArray(S.over)) S.over.forEach(fix);
+    S.caracsUid = S.nextUid;
+    return n;
+  };
 
   /* ---------------- Recrutement & équipe ---------------- */
   /* 0.1.50.1 : noms de héros. Même filtre que les pseudos du compte (mots interdits, imitation du créateur ou de l'équipe),
@@ -3392,6 +3459,7 @@
     S.chars.forEach((c) => { for (const sl in c.equip) if (!S.items[c.equip[sl]]) delete c.equip[sl]; });
     E.syncGearLocks(S); // 1.0.25.11 : objets des tenues déjà enregistrées verrouillés au chargement
     if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
+    { const n = E.caracsMigrate(S); if (n) note(S, `Nouvelles caractéristiques : ${n} objet${n > 1 ? "s ont" : " a"} reçu ${n > 1 ? "leurs" : "ses"} lignes de PM, Tacle, Fuite ou Dommages de poussée, comme dans DOFUS.`, "info"); } // 1.0.30 (41A)
     S.v = E.VERSION;
     return S;
   };
