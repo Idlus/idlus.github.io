@@ -39,7 +39,7 @@
       <table><thead><tr><th></th><th>Avant</th><th>Maintenant</th><th>Renaissance X</th></tr></thead><tbody>
         <tr><td>Runes pour passer un objet niv. 200 Parfait</td><td>≈ ${Hs.before}</td><td>≈ ${Hs.after}</td><td>0 (né Parfait)</td></tr>
         <tr><td>Objets brisés pour ces runes</td><td>≈ ${dec(Hs.before / Hs.brk)}</td><td>≈ ${dec(Hs.after / Hs.brk)}</td><td>0</td></tr>
-        <tr><td>Plan automatique</td><td>≈ ${Math.round(Hs.before * per)} h</td><td>≈ ${Math.round(Hs.after * per)} h</td><td>–</td></tr></tbody></table>
+        <tr><td>Plan automatique</td><td>≈&nbsp;${Math.round(Hs.before * per)}&nbsp;h</td><td>≈&nbsp;${Math.round(Hs.after * per)}&nbsp;h</td><td>–</td></tr></tbody></table>
       <span class="xs muted">${E.SOFT_RESET_ON ? "" : "Les objets déjà Parfaits le restent. "}La Renaissance des métiers de forgemagie (+1 point de succès critique par renaissance) compte en plus${ren ? ` : la tienne en ${h(E.FM_JOBS[job] ? E.FM_JOBS[job].name : job)} est ${E.roman(ren)}` : ""}.</span>
       <div class="row"><span class="grow"></span><button class="btn sm" data-fx="hardok">Compris</button></div></div>`;
   };
