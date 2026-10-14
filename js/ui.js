@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.23";
+const GAME_VERSION = "1.0.23.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.23.1", name: "Commandes d'artisans plus claires", items: [
+    "Quêtes › Aujourd'hui : chaque commande a sa barre (déjà livré + ce que tu as en banque), « il manque X » ou « Prête à livrer », et ce qu'elle paie (kamas et XP de métier)",
+    "Bouton « Livrer » sur chaque commande prête, « Livrer 8 » pour une livraison partielle, et « Tout livrer » quand plusieurs sont prêtes",
+    "Il te manque une ressource ? « Récolter » ouvre le bon métier, « Y aller » la zone du monstre qui la lâche (aussi sur la page Commandes)",
+    "« Urgent ×1,5 » dit enfin ce qu'il donne : kamas et XP ×1,5, et la prime du jour passe au Coffre en argent ; la prime est affichée avec le temps restant avant minuit",
+    "Le logo du métier de l'artisan sur chaque commande ; une commande livrée passe au vert au lieu de s'éteindre",
+  ] },
   { v: "1.0.23", name: "Builds partagés", items: [
     "Nouvelle page Communauté › Builds : les builds publiés par les joueurs, en cartes (héros en pied avec sa coiffe, sa cape et son bouclier, équipement, Dofus, ❤ et vues)",
     "Filtres : les 19 classes, la tranche de niveau (1 à 50, 51 à 100, 101 à 150, 151 à 199, 200), l'élément (Terre, Feu, Eau, Air, Multi), le budget (Abordable, Moyen, Premium, calculé tout seul) et une recherche par objet, Dofus ou titre ; tri par plus aimés de la semaine, nouveautés, meilleurs, plus vus, favoris ou mes builds",
@@ -1576,6 +1583,14 @@ function monLineHtml(x, unknown) {
   const M = MONSTERS[x.mon]; const w = x.w;
   return `<div class="li monli ${w.open ? "" : "locked"}"><span class="icobox">${unknown ? `<b class="muted">?</b>` : im(imgM(x.mon), "", M.name)}</span><span class="grow"><b>${unknown ? "???" : h(M.name)}</b>${x.boss ? ` <span class="tag soft">boss</span>` : ""}${w.archi ? ` <span class="tag soft">archimonstre</span>` : ""}
     <span class="monwhere xs">${w.open ? IC("carte") : G("lock")} ${w.dg ? "Donjon · " : ""}${h(w.name)} · niv. ${w.lvl}</span></span><span class="monpct" data-tip="Chance de butin par monstre">${dropPct(x.p)} %</span><button class="btn sm ${w.open ? "primary" : ""}" ${monGoAttr(w)}>${w.dg ? "Donjon" : "Y aller"}</button></div>`;
+}
+/* 1.0.23.1 : où trouver la ressource d'une commande d'artisan : son métier de récolte, sinon la zone ouverte (ou le donjon) du monstre qui la lâche le plus */
+function cmdGoBtn(r) {
+  const g = (resIndex().src[r] || []).find((x) => x.job);
+  if (g) return `<button class="btn sm" data-act="gathersheet" data-job="${g.job}" data-tip="${h(GATHER_JOBS[g.job].name)} niv. ${g.lvl}">${IC("pioche")} Récolter</button>`;
+  const L = dropMons("res", r, 4); const x = L.find((y) => y.w.open && !y.w.archi) || L[0]; if (!x) return "";
+  const tip = `${h(MONSTERS[x.mon].name)} · ${h(x.w.name)} · ${dropPct(x.p)} %`;
+  return x.w.dg ? `<button class="btn sm" data-act="dgopen" data-id="${x.w.dg}" data-tip="${tip}">Donjon</button>` : `<button class="btn sm" data-act="zoneview" data-id="${x.w.sub}" data-gotab="world" data-tip="${tip}">${IC("carte")} Y aller</button>`;
 }
 const monGoAttr = (w) => (w.dg ? `data-act="searchdg" data-id="${w.dg}"` : `data-act="searchzone" data-id="${w.sub}"`);
 const dropPct = (p) => (p >= 10 ? Math.round(p) : p >= 1 ? (+p).toFixed(1).replace(".", ",").replace(",0", "") : String(+(+p).toPrecision(2)).replace(".", ",")); // 1.0.15 : deux chiffres sous 1 % (0,045 %)
@@ -7049,7 +7064,7 @@ function commandesHtml() {
         <div class="row">${im(resImg(o.res), "ico", o.res)}<span class="grow"><b>${o.n} × ${h(o.res)}</b>${fav ? ` <span class="tag soft" data-tip="Ressource marquée en favori dans l'inventaire">★ favori</span>` : ""}<br><span class="xs muted">en banque : ${fmt(have)}</span></span></div>
         <div class="row"><div class="bar grow"><i style="width:${pct(o.got, o.n)}%"></i></div><span class="num small">${o.got}/${o.n}</span></div>
         <div class="small">Paie : <span class="coin"></span> <b>${fmt(E.cmdReward(S, o))}</b> · <b>${fmt(o.jxp)}</b> XP ${h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art]).name)}</div>
-        <div class="row">${ok ? `<span class="tag good">Livrée ✓</span>` : `<button class="btn sm ${have ? "primary" : ""}" data-act="vi-deliver" data-id="${o.id}" ${have ? "" : "disabled"}>Livrer ${Math.min(have, left) || ""}</button>${o.got ? "" : `<button class="btn sm" data-act="vi-swap" data-id="${o.id}" ${S.kamas < cost ? "disabled" : ""}>Changer · ${cost ? fmt(cost) + " k" : "gratuit"}</button>`}`}</div></div>`; }).join("")}</div>
+        <div class="row">${ok ? `<span class="tag good">Livrée ✓</span>` : `<button class="btn sm ${have ? "primary" : ""}" data-act="vi-deliver" data-id="${o.id}" ${have ? "" : "disabled"}>Livrer ${Math.min(have, left) || ""}</button>${have < left ? cmdGoBtn(o.res) : ""}${o.got ? "" : `<button class="btn sm" data-act="vi-swap" data-id="${o.id}" ${S.kamas < cost ? "disabled" : ""}>Changer · ${cost ? fmt(cost) + " k" : "gratuit"}</button>`}`}</div></div>`; }).join("")}</div>
     <p class="small muted">Commandes livrées : <b>${fmt(C.n || 0)}</b> · aujourd'hui ${done}/${C.list.length}${C.bonus === C.day ? ` · <span class="plus">prime du jour reçue ✓</span>` : ""}. Les ressources de récolte viennent de tes métiers, celles des artisans des monstres de tes zones.</p>`;
 }
 function templesHtml() {
@@ -7160,6 +7175,7 @@ function viAct(a, t) {
   const run = (name, ...args) => { const r = E.act(S, name, ...args); if (r) { toast(r, "warn"); return false; } dirty = true; return true; };
   switch (a) {
     case "vi-deliver": if (run("cmdDeliver", +d.id)) render(); return;
+    case "vi-deliverall": { let n = 0; E.cmdState(S).list.filter((o) => o.got < o.n && (S.res[o.res] || 0) >= o.n - o.got).forEach((o) => { if (run("cmdDeliver", o.id)) n++; }); if (n) render(); return; } // 1.0.23.1 : « Tout livrer »
     case "vi-swap": if (run("cmdSwap", +d.id)) { toast("Nouvelle commande."); render(); } return;
     case "vi-tfight": if (run("templeFight", d.v)) { toast(`Le Dopeul ${CLASSES[d.v].name} arrive au prochain combat.`, "rare"); render(); } return;
     case "vi-tcancel": if (run("templeCancel")) render(); return;
@@ -8696,7 +8712,7 @@ function cmpItem(c, it) {
   const tmp = -1; S.items[tmp] = Object.assign({}, it, { uid: tmp });
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
-Object.assign(window.DX.social, { questGoBtn, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
+Object.assign(window.DX.social, { questGoBtn, cmdGoBtn, chestImg, jobImg, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { spIcon, spellTip, setBlock, DOLL_L, DOLL_R, dbLook, buildSheet }); // 1.0.23 : page Builds (js/builds.js)
 Object.assign(window.DX.social, { dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */

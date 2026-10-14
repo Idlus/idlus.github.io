@@ -115,12 +115,23 @@
       ${bs.map((b) => { const m = MONSTERS[b.key]; const where = b.dg ? DUNGEONS[b.dg].name : E.SUBS[b.sub] ? E.SUBS[b.sub].name : "";
         return `<div class="qj-mini">${X().im(X().imgM(b.key), "", m.name)}<span class="grow"><b>${h(m.name)}</b><br><span class="xs muted">${b.dg ? "Boss · " : ""}${h(where)}</span></span><div class="bar"><i style="width:${X().pct(b.prog, b.n)}%"></i></div><span class="num xs">${b.prog}/${b.n}</span></div>`; }).join("") || `<span class="small muted">Aucun avis pour l'instant.</span>`}
       <div class="row"><button class="btn sm" data-act="qtab" data-v="bounty">Ouvrir</button><span class="xs muted">un avis rempli est remplacé aussitôt</span></div></article>`;
-    // Commandes
-    const C = E.cmdState(s); const cdone = C.list.filter((o) => o.got >= o.n).length;
-    const cmd = `<article class="qj-card ${C.list.some((o) => cmdReady(s, o)) ? "hot" : ""} ${cdone === C.list.length ? "done" : ""}"><div class="qj-ch">${IC("metiers")}<h3>Commandes d'artisans</h3><span class="qj-tag ${cdone === C.list.length ? "ok" : ""}">${cdone} / ${C.list.length} livrées</span></div>
-      ${C.list.map((o) => { const ok = o.got >= o.n; const rd = cmdReady(s, o);
-        return `<div class="qj-mini">${X().im(X().resImg(o.res), "", o.res)}<span class="grow"><b>${o.n} × ${h(o.res)}</b><br><span class="xs muted">${h(E.CMD_ARTS[o.art])}${o.urgent ? " · urgent" : ""}</span></span>${ok ? `<span class="qj-tag ok">Livrée ✓</span>` : rd ? `<button class="btn sm primary" data-act="vi-deliver" data-id="${o.id}">Livrer</button>` : `<span class="num xs muted">${Math.min(o.got + (s.res[o.res] || 0), o.n)}/${o.n}</span>`}</div>`; }).join("")}
-      <div class="row"><button class="btn sm" data-act="qtab" data-v="commandes">Ouvrir</button><span class="xs muted">${C.bonus === C.day ? "coffre du jour reçu ✓" : "tout livrer : coffre du jour"}</span></div></article>`;
+    // Commandes (1.0.23.1 « Commandes d'artisans plus claires » : barre livré + en banque, ce qui manque, paie, « Livrer », « Tout livrer », où trouver, prime du jour)
+    const C = E.cmdState(s); const cdone = C.list.filter((o) => o.got >= o.n).length; const cready = C.list.filter((o) => cmdReady(s, o));
+    const chest = C.list.some((o) => o.urgent) ? "coffre_argent" : "coffre_bois"; const CH = D.CONSUMABLES[chest]; const allDone = cdone === C.list.length;
+    const jn = (o) => h((D.GATHER_JOBS[o.art] || D.CRAFT_JOBS[o.art] || { name: "" }).name);
+    const cmd = `<article class="qj-card qj-cmd ${cready.length ? "hot" : ""} ${allDone ? "alldone" : ""}"><div class="qj-ch">${IC("metiers")}<h3>Commandes d'artisans</h3><span class="qj-tag ${allDone ? "ok" : cready.length ? "todo" : ""}">${cdone} / ${C.list.length} livrées</span></div>
+      ${C.list.map((o) => { const ok = o.got >= o.n; const bank = Math.min(s.res[o.res] || 0, o.n - o.got); const miss = o.n - o.got - bank; const rd = !ok && !miss;
+        const st = ok ? `<span class="plus">Livrée</span>` : rd ? `<span class="qj-co-rd">Prête à livrer</span>` : `il manque <b>${fmt(miss)}</b>`;
+        const act = ok ? `<span class="qj-co-ok" aria-label="Livrée">✓</span>` : rd ? `<button class="btn sm primary" data-act="vi-deliver" data-id="${o.id}">Livrer</button>`
+          : `${bank ? `<button class="btn sm" data-act="vi-deliver" data-id="${o.id}" data-tip="Les livraisons partielles comptent">Livrer ${fmt(bank)}</button>` : ""}${X().cmdGoBtn(o.res)}`;
+        return `<div class="qj-co ${ok ? "done" : rd ? "ready" : "miss"} ${o.urgent ? "urgent" : ""}">
+          <span class="qj-co-ic">${X().im(X().resImg(o.res), "", o.res)}<img class="qj-co-job" src="${X().jobImg(o.art)}" alt="" data-tip="${h(E.CMD_ARTS[o.art])} · ${jn(o)}"></span>
+          <div class="qj-co-b"><div class="qj-co-t"><b>${o.n} × ${h(o.res)}</b>${o.urgent ? `<span class="qj-urg" data-tip="Commande urgente : kamas et XP ×1,5, et la prime du jour devient un Coffre en argent">Urgent ×1,5</span>` : ""}</div>
+            <span class="qj-co-who"><span>${h(E.CMD_ARTS[o.art])}</span><span class="nw" data-tip="Paie : ${fmt(E.cmdReward(s, o))} kamas et ${fmt(o.jxp)} XP ${jn(o)}"><span class="coin"></span> <b>${fmt(E.cmdReward(s, o))}</b> · <b>${fmt(o.jxp)}</b> XP</span></span>
+            <div class="qj-co-p"><span class="qj-cbar" data-tip="${fmt(o.got)} livrée${o.got > 1 ? "s" : ""} · ${fmt(bank)} en banque"><i style="width:${X().pct(o.got, o.n)}%"></i><i class="bk" style="width:${X().pct(bank, o.n)}%"></i></span><span class="num xs">${fmt(Math.min(o.got + bank, o.n))}/${fmt(o.n)}</span><span class="xs qj-co-st">${st}</span></div></div>
+          <div class="qj-co-a">${act}</div></div>`; }).join("") || `<span class="small muted">Aucune commande aujourd'hui.</span>`}
+      <div class="qj-cfoot ${C.bonus === C.day ? "got" : ""}"><span class="qj-chest" data-tip="${h(CH.name)} : ${h(CH.desc)}${chest === "coffre_bois" ? " Une commande urgente le change en Coffre en argent." : " (en argent grâce à la commande urgente)"}">${X().chestImg(CH.img)}</span><span class="grow"><b>Prime du jour${C.bonus === C.day ? " reçue" : ""} : ${h(CH.name)}</b><br><span class="xs muted">${C.bonus === C.day ? "nouvelles commandes à minuit" : `toutes livrées avant minuit · <span class="nw">encore ${untilMidnight()}</span>`}</span></span>
+        ${cready.length > 1 ? `<button class="btn sm primary" data-act="vi-deliverall">Tout livrer (${cready.length})</button>` : ""}<button class="btn sm" data-act="qtab" data-v="commandes">Ouvrir</button></div></article>`;
     // Temples
     const T = E.templeState(s); const cls = E.templeClasses(s); const left = cls.filter((k) => !T.done[k]); const pend = T.pend || T.fighting;
     const tpl = `<article class="qj-card ${left.length && !pend ? "hot" : ""} ${cls.length && !left.length ? "done" : ""}"><div class="qj-ch">${IC("combat")}<h3>Temples</h3><span class="qj-tag ${left.length ? "" : "ok"}">${cls.length - left.length} / ${cls.length} Dopeuls</span></div>

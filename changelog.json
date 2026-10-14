@@ -1,6 +1,17 @@
 {
-  "version": "1.0.23",
+  "version": "1.0.23.1",
   "versions": [
+    {
+      "v": "1.0.23.1",
+      "name": "Commandes d'artisans plus claires",
+      "items": [
+        "Quêtes › Aujourd'hui : chaque commande a sa barre (déjà livré + ce que tu as en banque), « il manque X » ou « Prête à livrer », et ce qu'elle paie (kamas et XP de métier)",
+        "Bouton « Livrer » sur chaque commande prête, « Livrer 8 » pour une livraison partielle, et « Tout livrer » quand plusieurs sont prêtes",
+        "Il te manque une ressource ? « Récolter » ouvre le bon métier, « Y aller » la zone du monstre qui la lâche (aussi sur la page Commandes)",
+        "« Urgent ×1,5 » dit enfin ce qu'il donne : kamas et XP ×1,5, et la prime du jour passe au Coffre en argent ; la prime est affichée avec le temps restant avant minuit",
+        "Le logo du métier de l'artisan sur chaque commande ; une commande livrée passe au vert au lieu de s'éteindre"
+      ]
+    },
     {
       "v": "1.0.23",
       "name": "Builds partagés",
