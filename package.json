@@ -8,7 +8,8 @@
     "test:smoke": "node tests/smoke.test.js",
     "test:online": "node tests/online.test.js",
     "sim": "node tools/simulate.js",
-    "test": "npm run check && npm run test:fight && npm run test:smoke && npm run test:online"
+    "guard": "node tools/garde_fou.js",
+    "test": "npm run guard && npm run check && npm run test:fight && npm run test:smoke && npm run test:online"
   },
   "devDependencies": {
     "playwright": "1.56.1"

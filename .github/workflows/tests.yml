@@ -13,6 +13,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      # garde-fou (14/10/2026) : une publication ne doit effacer aucune version déjà publiée ni faire reculer le numéro
+      - name: Garde-fou des publications
+        run: |
+          REF="${{ github.event.pull_request.base.sha || github.event.before }}"
+          if [ -n "$REF" ] && ! echo "$REF" | grep -qE '^0+$'; then git fetch -q --depth=1 origin "$REF" || true; fi
+          node tools/garde_fou.js "$REF"
       - name: Syntaxe JS
         run: npm run check
       - name: Combat simulé (moteur)

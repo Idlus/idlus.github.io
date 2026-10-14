@@ -12,7 +12,7 @@ Idle game de fan inspiré de DOFUS, par Mathis. Jeu : https://idlus.github.io/ (
 ## Publier une version
 1. `GAME_VERSION` + entrée `CHANGELOG` dans `js/ui.js`, `version.json`, `?v=` dans `index.html`, `VERSION` dans `sw.js`, section du README.
 2. `node tools/export_changelog.js` (met à jour `changelog.json`).
-3. Tester PC (1280 px) et mobile (390 px) avec Playwright, sans erreur console.
+3. `git fetch origin main` puis rebase, `npm test` (commence par `tools/garde_fou.js` : échoue si une version publiée disparaît des nouveautés ou si GAME_VERSION recule), tester PC (1280 px) et mobile (390 px) avec Playwright, sans erreur console.
 4. Commit (message en français), push sur `main`, vérifier que `version.json` est en ligne.
 5. Annonce Discord : `node tools/post_discord.js <version> --print` puis envoi au webhook (jamais dans le dépôt).
 6. Récap en français à Mathis.
