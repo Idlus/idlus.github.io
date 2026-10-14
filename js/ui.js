@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.24.1";
+const GAME_VERSION = "1.0.24.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.24.2", name: "Places libres cliquables", items: [
+    "Les places vides des pièces (les « + » de « Ma maison » et de la page Havre-Sac) se cliquent même quand on n'a rien à placer : une fenêtre montre les meubles à placer, puis tous les meubles de la pièce avec leur bonus et où les trouver (Boutique de la maison et son prix, Comptoir de la cité, recette du Bricoleur, succès, Almanax, butin rare d'une région, Kolizéum), avec un bouton pour y aller",
+    "Sur PC, survoler une place vide affiche une infobulle ; la place est dorée quand un meuble attend d'être placé",
+  ] },
   { v: "1.0.24.1", name: "10 commandes par jour", items: [
     "Commandes d'artisans : une commande livrée est remplacée aussitôt par une nouvelle, jusqu'à 10 livrées par jour (toujours 3 à la fois)",
     "Deux primes : un coffre à 3 livrées (en argent avec une commande urgente), puis un Coffre en or à 10",
@@ -2136,7 +2140,8 @@ function houseHtml() {
     const sumb = H ? `+${fmt(lvl * H.per)}${H.unit.split(" (")[0]}` : R.post === "atelier" ? (lock ? `à construire · ${fmt(E.ATELIER_COST)} k` : "fabrication automatique") : "élevage des montures";
     const icons = pl.slice(0, 5).map((f) => `<span class="hvfi" data-tip="${h(f)}">${furnIco(f)}</span>`).join("");
     const empty = Math.max(0, slots - pl.length);
-    const dots = R.slots ? `<span class="hvslots">${icons}${Array.from({ length: empty }, () => `<span class="hvfi empty" data-tip="Place libre">+</span>`).join("")}</span>` : "";
+    const tip = free ? `Place libre : ${free} meuble${free > 1 ? "s" : ""} à placer` : `Place libre : voir les meubles pour ${R.name}`; // 1.0.24.2 : une place vide se clique
+    const dots = R.slots ? `<span class="hvslots">${icons}${Array.from({ length: empty }, () => `<button class="hvfi empty ${free ? "hot" : ""}" data-act="fpick" data-v="${R.id}" data-tip="${h(tip)}" aria-label="${h(tip)}">+</button>`).join("")}</span>` : "";
     const act = lock ? (R.soon ? `<span class="tag soft">Bientôt</span>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Construire · ${fmt(E.ATELIER_COST)} k</button>`)
       : R.post === "train" ? `<button class="btn sm ${t ? "" : "primary"}" data-act="hvroomgo" data-v="${R.id}">${t ? `${h(t.name)} s'entraîne` : "Choisir un héros"}</button>`
       : H ? `<button class="btn sm ${can ? "primary" : ""}" data-act="havre" data-id="${id}" ${can || lvl >= H.max ? "" : "disabled"} data-tip="${h(lvl >= H.max ? `${R.name} au maximum` : `Niveau ${lvl + 1} : +${H.per}${H.unit.split(" (")[0]} de plus`)}">${lvl >= H.max ? "Maximum" : `Améliorer · ${fmtK(cost)} k`}</button>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Ouvrir</button>`;
@@ -2164,7 +2169,7 @@ const hvSlots = (R) => {
   const owned = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
   return `<div class="fslots"><div class="xs muted">Meubles ${P.length}/${n}</div>${Array.from({ length: n }, (_, i) => P[i]
     ? `<div class="fslot full">${furnIco(P[i])}<span class="grow"><b>${h(P[i])}</b><i>${h(E.furnEffect(P[i]))}</i></span><button class="btn sm" data-act="funplace" data-v="${h(P[i])}">Retirer</button></div>`
-    : `<button class="fslot empty" data-act="fpick" data-v="${R.id}" ${owned ? "" : "disabled"}>${owned ? `+ Placer un meuble (${owned} disponible${owned > 1 ? "s" : ""})` : "Aucun meuble à placer ici"}</button>`).join("")}
+    : `<button class="fslot empty" data-act="fpick" data-v="${R.id}" data-tip="${owned ? "Choisir le meuble à placer" : `Voir les meubles pour ${h(R.name)} et où les trouver`}">${owned ? `+ Placer un meuble (${owned} disponible${owned > 1 ? "s" : ""})` : "+ Place libre · voir les meubles pour cette pièce"}</button>`).join("")}
     ${next ? `<span class="fslot lock">${IC("cle")} Une place de plus au niveau ${next} de la pièce</span>` : ""}${hvGrow(R)}</div>`;
 };
 /* 0.1.54 : agrandir une pièce en kamas */
@@ -2268,9 +2273,31 @@ function havreHtml() {
       <div class="mitem dim"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss à gagner : ${left}</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="fcatalog">Catalogue</button></div>
     </div></div></section>`;
 }
+/* 1.0.24.2 : une place libre se clique : les meubles à placer, puis tous les meubles de la pièce avec où les trouver et un bouton pour y aller */
+const furnWhere = (f) => { const F = E.FURN[f]; if (!F) return { txt: "", btn: "" };
+  if (F.shop) return { txt: `Boutique de la maison · ${fmt(F.shop)} kamas`, btn: `<button class="btn sm ${S.kamas >= F.shop ? "primary" : ""}" data-act="hvshop">Boutique</button>` };
+  if (F.trophy) { const dg = DUNGEONS[F.trophy]; return { txt: `${dg ? dg.name : "Donjon"} · première victoire en stasis ${E.TROPHY_STASIS}`, btn: dg ? `<button class="btn sm" data-act="dgopen" data-id="${F.trophy}">Y aller</button>` : "" }; }
+  if (F.zone) { const z = ZONES.find((x) => x.id === F.zone); return { txt: `Butin rare en chassant à ${z ? z.name : F.zone} (environ 1 chance sur ${fmt(Math.round(1 / E.FURN_DROP))} par victoire)`, btn: `<button class="btn sm" data-act="zonego" data-v="${F.zone}">Y aller</button>` }; }
+  const src = F.src || "";
+  if (/^Bricoleur/.test(src)) return { txt: `Recette du ${src}`, btn: `<button class="btn sm" data-act="gobric">Bricoleur</button>` };
+  if (/^Comptoir/.test(src)) return { txt: `${src} (Insignes de cité)`, btn: `<button class="btn sm" data-act="qj-shop" data-v="cite">Comptoir</button>` };
+  if (/^Succès/.test(src)) return { txt: src, btn: `<button class="btn sm" data-act="pagego" data-v="ach">Succès</button>` };
+  if (/Almanax/.test(src)) return { txt: src, btn: `<button class="btn sm" data-act="pagego" data-v="almanax">Almanax</button>` };
+  if (/Kolizéum/.test(src)) return { txt: src, btn: `<button class="btn sm" data-act="pagego" data-v="koli">Kolizéum</button>` };
+  return { txt: src, btn: "" }; };
 function furnPickSheet(room) {
-  const R = E.room(room); const list = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === room && !E.isPlaced(S, f));
-  openSheet(`<h2>${IC(R.icon)} ${h(R.name)} : placer un meuble</h2><div class="list">${list.map((f) => `<div class="li"><span class="rico">${furnIco(f)}</span><span class="grow"><b>${h(f)}</b><br><span class="xs plus">${h(E.furnEffect(f))}</span></span><button class="btn sm primary" data-act="fplace" data-v="${h(f)}">Placer</button></div>`).join("") || `<div class="empty">Aucun meuble pour cette pièce.</div>`}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  const R = E.room(room); if (!R) return; const furn = Array.isArray(S.furniture) ? S.furniture : [];
+  const list = furn.filter((f) => E.FURN[f] && E.FURN[f].room === room && !E.isPlaced(S, f));
+  const all = Object.keys(E.FURN).filter((f) => E.FURN[f].room === room); const placed = all.filter((f) => E.isPlaced(S, f));
+  const rest = all.filter((f) => !furn.includes(f) && !E.FURN[f].trophy); const troph = all.filter((f) => E.FURN[f].trophy); const tleft = troph.filter((f) => !furn.includes(f));
+  const row = (f, btn) => `<div class="li"><span class="rico">${furnIco(f)}</span><span class="grow"><b>${h(f)}</b><br><span class="xs plus">${h(E.furnEffect(f))}</span></span>${btn}</div>`;
+  const whereRow = (f) => { const W = furnWhere(f); return `<div class="li"><span class="rico">${furnIco(f)}</span><span class="grow"><b>${h(f)}</b> <span class="xs plus">${h(E.furnEffect(f))}</span><br><span class="xs muted">${h(W.txt)}</span></span>${W.btn}</div>`; };
+  openSheet(`<h2>${IC(R.icon)} ${h(R.name)} : place libre</h2><p class="small muted">${placed.length}/${E.roomSlots(S, room)} meuble${placed.length > 1 ? "s" : ""} placé${placed.length > 1 ? "s" : ""} · ${h(R.desc)}</p>
+    ${list.length ? `<h3>À placer maintenant</h3><div class="list">${list.map((f) => row(f, `<button class="btn sm primary" data-act="fplace" data-v="${h(f)}">Placer</button>`)).join("")}</div>` : `<p class="note">Vous n'avez aucun meuble à placer ici pour l'instant. Voici ceux qui vont dans cette pièce et où les trouver.</p>`}
+    ${rest.length ? `<h3>${list.length ? "Les autres meubles de la pièce" : "Meubles pour cette pièce"}</h3><div class="list">${rest.map(whereRow).join("")}</div>` : ""}
+    ${troph.length ? `<div class="mitem dim" style="margin-top:8px"><span class="rico">${TROPHEE_IC}</span><div class="grow"><b>Trophées de boss : ${troph.length - tleft.length} gagné${troph.length - tleft.length > 1 ? "s" : ""} · ${tleft.length} à gagner</b><div class="xs muted">Chaque boss de donjon donne son trophée à la première victoire en stasis ${E.TROPHY_STASIS}.</div></div><button class="btn sm" data-act="pagego" data-v="dungeons">Donjons</button></div>` : ""}
+    ${placed.length ? `<p class="xs muted" style="margin-top:8px">Déjà placés : ${placed.map((f) => h(f)).join(" · ")}</p>` : ""}
+    <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 function furnCatalogSheet() {
   const rows = Object.keys(E.FURN).sort((a, b) => E.ROOMS.findIndex((r) => r.id === E.FURN[a].room) - E.ROOMS.findIndex((r) => r.id === E.FURN[b].room));
@@ -7315,10 +7342,13 @@ document.addEventListener("click", (ev) => {
     case "hvroom": ui.hvRoom = ui.hvRoom === d.v ? null : d.v; break;
     /* 1.0.21 : depuis « Ma maison » sur l'accueil : la page détaillée, ouverte sur la pièce, sur la boutique ou sur les bonus */
     case "hvroomgo": ui.tab = "home"; ui.home = "havre"; if (d.v) ui.hvRoom = d.v; render(); { const el = d.v && $(`.room[data-room="${d.v}"]`); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); else window.scrollTo(0, 0); } return;
-    case "hvshop": ui.tab = "home"; ui.home = "havre"; render(); { const el = $("#main .panel.shop"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); } return;
+    case "hvshop": ui.tab = "home"; ui.home = "havre"; closeSheet(); render(); { const el = $("#main .panel.shop"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); } return;
     case "hvbonus": ui.tab = "home"; ui.home = "havre"; ui.bonOpen = true; render(); window.scrollTo(0, 0); return;
     case "fpick": furnPickSheet(d.v); return;
     case "fcatalog": furnCatalogSheet(); return;
+    case "zonego": { const subs = Object.keys(E.SUBS).filter((k) => E.SUBS[k].zone === d.v); const sid = subs.find((k) => E.subUnlocked(S, k)) || subs[0]; ui.tab = "world"; ui.world = "map"; ui.zoneView = sid || null; ui.slot = null; closeSheet(); render(); window.scrollTo(0, 0); return; } // 1.0.24.2 : depuis une place libre, ouvre une sous-zone de la région
+    case "gobric": ui.craftJob = "bricoleur"; ui.recSel = null; pageGo("craft"); return;
+    case "pagego": pageGo(d.v); return;
     case "fplace": { const r = E.placeFurn(S, d.v); if (r) { toast(r); return; } closeSheet(); toast(`${d.v} placé !`); break; }
     case "funplace": E.unplaceFurn(S, d.v); break;
     case "trainpick": trainSheet(); return;

@@ -4883,7 +4883,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .hvslots{display:flex;gap:4px;flex-wrap:wrap}
 .hvfi{width:30px;height:30px;object-fit:contain;display:grid;place-items:center;background:var(--panel3);border-radius:8px;border:1px solid var(--line)}
 .hvfi .uico{width:24px;height:24px}
-.hvfi.empty{border-style:dashed;color:var(--muted);font-weight:900;background:none}
+.hvfi.empty{border-style:dashed;color:var(--muted);font-weight:900;background:none;font:inherit;font-weight:900;cursor:pointer;padding:0}.hvfi.empty:hover,.hvfi.empty:focus-visible{border-color:var(--gold);color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent)}.hvfi.empty.hot{border-color:var(--gold);color:var(--gold)}
 .hvtile footer{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
 .hvtile footer .btn.sm{padding:3px 9px;font-size:12.5px}
 .btn.ghost{background:none;border:1px dashed var(--gold2);color:var(--gold)}

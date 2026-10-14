@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.24.2 « Places libres cliquables »
+
+Une place vide de pièce (« + » de « Ma maison » et de la page Havre-Sac) se clique même sans meuble à placer : fenêtre avec les meubles de la pièce, leur bonus, où les trouver et un bouton pour y aller ; infobulle au survol sur PC.
+
 ## 1.0.24.1 « 10 commandes par jour »
 
 Une commande d'artisan livrée est remplacée aussitôt, jusqu'à 10 livrées par jour (E.CMD_DAY_MAX, js/vie.js) ; primes à 3 (bois ou argent) et à 10 (Coffre en or). Retour de la boîte de la 1.0.23.1 effacée par la 1.0.24.

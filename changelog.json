@@ -1,6 +1,14 @@
 {
-  "version": "1.0.24.1",
+  "version": "1.0.24.2",
   "versions": [
+    {
+      "v": "1.0.24.2",
+      "name": "Places libres cliquables",
+      "items": [
+        "Les places vides des pièces (les « + » de « Ma maison » et de la page Havre-Sac) se cliquent même quand on n'a rien à placer : une fenêtre montre les meubles à placer, puis tous les meubles de la pièce avec leur bonus et où les trouver (Boutique de la maison et son prix, Comptoir de la cité, recette du Bricoleur, succès, Almanax, butin rare d'une région, Kolizéum), avec un bouton pour y aller",
+        "Sur PC, survoler une place vide affiche une infobulle ; la place est dorée quand un meuble attend d'être placé"
+      ]
+    },
     {
       "v": "1.0.24.1",
       "name": "10 commandes par jour",
