@@ -2,6 +2,7 @@
 # Nécessite le secret DISCORD_WEBHOOK (Settings › Secrets and variables › Actions).
 name: Annonce Discord
 on:
+  workflow_dispatch: # relance à la main (1.0.30 : l'annonce trop longue avait été refusée par Discord)
   push:
     branches: [main]
     paths: [version.json]
