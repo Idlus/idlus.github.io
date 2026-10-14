@@ -30,6 +30,7 @@
     const C = S.cmd; if (!Array.isArray(C.list)) C.list = []; if (!C.rep) C.rep = {};
     if (C.day !== day()) { C.day = day(); C.list = []; C.swap = null; C.dn = 0; C.made = 0; C.urg = false; C.bonus2 = null; for (let i = 0; i < E.CMD_SLOTS; i++) if (addOrder(S, i === 0 && rnd() < 0.35)) C.made++; }
     if (C.dn === undefined) { C.dn = C.list.filter((o) => o.got >= o.n).length; C.made = C.list.length; C.urg = C.list.some((o) => o.urgent && o.got >= o.n); } // parties d'avant la 1.0.24.1
+    refill(S); // 1.0.25.1 : une commande déjà livrée (avant la mise à jour, ou si aucune n'a pu être tirée) est remplacée dès que possible
     return C;
   };
   E.cmdRank = (S, art) => { const n = (S.cmd && S.cmd.rep[art]) || 0; return E.CMD_RANKS.filter((x) => n >= x).length; };
@@ -42,6 +43,17 @@
     }));
     return [...out.entries()];
   };
+  /* 1.0.24.1 : chaque commande livrée est remplacée, jusqu'à E.CMD_DAY_MAX commandes tirées dans la journée */
+  function refill(S) {
+    const C = S.cmd;
+    for (let i = 0; i < C.list.length && (C.made || 0) < E.CMD_DAY_MAX; i++) {
+      const o = C.list[i]; if (o.got < o.n) continue;
+      C.list.splice(i, 1); const nw = addOrder(S, rnd() < 0.2);
+      if (!nw) { C.list.splice(i, 0, o); break; } // rien à tirer pour l'instant : on réessaiera
+      C.list.splice(C.list.length - 1, 1); C.list.splice(i, 0, nw); C.made = (C.made || 0) + 1;
+      E.note(S, `Nouvelle commande : ${E.CMD_ARTS[nw.art]} demande ${nw.n} × ${nw.res}.`, "info");
+    }
+  }
   function addOrder(S, urgent) {
     const C = S.cmd; const taken = new Set(C.list.map((o) => o.art)); const used = new Set(C.list.map((o) => o.res));
     let o = null;
@@ -93,11 +105,7 @@
       C.bonus2 = C.day; E.addCons(S, E.CMD_PRIMES[1][1]);
       E.note(S, `Grande prime : ${C.dn} commandes livrées aujourd'hui ! ${D.CONSUMABLES[E.CMD_PRIMES[1][1]].name} offert.`, "rare");
     }
-    if ((C.made || 0) < E.CMD_DAY_MAX) { // une nouvelle commande prend sa place
-      const i = C.list.indexOf(o); C.list.splice(i, 1); const nw = addOrder(S, rnd() < 0.2);
-      if (nw) { C.list.splice(C.list.length - 1, 1); C.list.splice(i, 0, nw); C.made++; E.note(S, `Nouvelle commande : ${E.CMD_ARTS[nw.art]} demande ${nw.n} × ${nw.res}.`, "info"); }
-      else C.list.splice(i, 0, o);
-    }
+    refill(S); // une nouvelle commande prend sa place
     E.emit(S, "commande", { art: o.art }); if (E.checkAch) E.checkAch(S);
     return null;
   };

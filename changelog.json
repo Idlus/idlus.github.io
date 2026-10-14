@@ -1,6 +1,13 @@
 {
-  "version": "1.0.25.2",
+  "version": "1.0.25.3",
   "versions": [
+    {
+      "v": "1.0.25.3",
+      "name": "Commandes renouvelées",
+      "items": [
+        "Commandes d'artisans : les commandes déjà livrées avant la 1.0.24.1 restaient affichées « Livrée » sans être remplacées. Elles laissent maintenant leur place à de nouvelles commandes, jusqu'à 10 par jour"
+      ]
+    },
     {
       "v": "1.0.25.2",
       "name": "Mes builds",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.3 « Commandes renouvelées »
+
+Les commandes d'artisans déjà livrées (parties d'avant la 1.0.24.1) sont remplacées à l'ouverture (refill dans js/vie.js), jusqu'à 10 par jour.
+
 ## 1.0.25.2 « Mes builds »
 
 Mathis (14/10/2026, « avoir un onglet "mes builds" et augmente la limite à 30 builds par compte »). Page Communauté › Builds : onglets « Tous les builds » / « Mes builds n/30 » (`U().bdTab`, js/builds.js). « Mes builds » liste ses builds publiés sans filtre (builds_list p_sort 'mine', jusqu'à 30 d'un coup), avec un compteur, « Publier un build », et sur chaque carte le héros relié (« Mettre à jour depuis … » s'il a changé) et « Supprimer ». Le tri « Mes builds » du menu disparaît. Limite de publication 10 → 30 (supabase/builds.sql, build_publish). Test dans tests/online.test.js.

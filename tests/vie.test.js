@@ -40,6 +40,9 @@ assert.strictEqual(C.list.length, 3, "toujours 3 commandes après livraison");
 for (let k = 0; k < 20; k++) C.list.forEach((x) => { if (x.got < x.n) { S.res[x.res] = (S.res[x.res] || 0) + x.n; E.cmdDeliver(S, x.id); } });
 assert.strictEqual(C.dn, E.CMD_DAY_MAX, "10 commandes livrées au plus"); assert.strictEqual(C.made, E.CMD_DAY_MAX);
 assert.ok(C.list.every((x) => x.got >= x.n), "les dernières restent affichées livrées"); assert.strictEqual(C.bonus2, C.day); assert.ok(S.cons.coffre_or >= 1, "Coffre en or à 10");
+// 1.0.25.1 : partie d'avant la 1.0.24.1 avec ses 3 commandes déjà livrées : elles sont remplacées
+{ const Q = team(60); const Cq = E.cmdState(Q); Cq.list.forEach((x) => { x.got = x.n; }); delete Cq.dn; delete Cq.made; Cq.bonus = Cq.day;
+  const C2 = E.cmdState(Q); assert.strictEqual(C2.dn, 3); assert.strictEqual(C2.list.length, 3); assert.ok(C2.list.every((x) => x.got < x.n), "les commandes déjà livrées sont remplacées"); assert.strictEqual(C2.made, 6); }
 // nouveau jour, nouvelles commandes
 t += 864e5; assert.notStrictEqual(E.cmdState(S).list[0].id, o.id); assert.strictEqual(E.cmdState(S).list.length, 3);
 console.log("ok - commandes d'artisans");
