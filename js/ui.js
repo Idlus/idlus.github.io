@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.7";
+const GAME_VERSION = "1.0.32.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.8", name: "Sauvegarde à l'abri", items: [
+    "Grosse partie et stockage du navigateur plein : la sauvegarde efface d'abord de vieilles copies de secours au lieu d'échouer sans rien dire (avant, au redémarrage, on pouvait retrouver une partie de plusieurs heures en arrière)",
+    "Si une sauvegarde échoue quand même, un message le dit tout de suite",
+    "Horloge de l'appareil en avance puis remise à l'heure : les copies de secours automatiques ne s'arrêtent plus",
+    "Les copies de secours prennent moins de place quand la partie est très grosse (on garde toujours la plus récente)",
+  ] },
   { v: "1.0.32.7", name: "Dofus épinglés", items: [
     "Quêtes › Dofus : un bouton « Suivre » sur la fiche de chaque Dofus épingle sa quête dans la bande d'objectifs, en haut de toutes les pages (Havre-Sac compris)",
     "La pastille montre l'œuf du Dofus, l'étape en cours ou son avancement (par exemple 120/300) et un bouton « Y aller » vers le donjon, la zone ou la ressource de l'étape. Un clic sur la pastille ouvre la quête",
@@ -8591,14 +8597,14 @@ document.addEventListener("input", (ev) => {
 });
 
 /* ---------- sauvegarde ---------- */
-let dirty = false, lastSaveOk = 0, sinceTip = 0;
+let dirty = false, lastSaveOk = 0, sinceTip = 0, saveWarnAt = 0;
 /* La lecture et l'écriture de la partie sont dans js/save.js (support interchangeable : navigateur aujourd'hui, serveur demain). */
 SV.init({ key: LS_KEY, version: GAME_VERSION, engine: E });
 function saveNow(manual) {
   if (!S) return; S.savedAt = E.now(); S.lastTick = E.now();
   let ok = false; try { ok = SV.write(E.serialize(S), S); } catch (e) {}
-  if (ok) { lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); }
-  else if (manual) toast("Impossible de sauvegarder dans ce navigateur.");
+  if (ok) { lastSaveOk = Date.now(); dirty = false; if (manual) toast("Partie sauvegardée."); if (SV.freed) { SV.freed = null; toast("Stockage du navigateur plein : de vieilles copies de secours ont été effacées pour garder ta partie à jour.", "warn", 10000); } }
+  else if (manual || Date.now() - saveWarnAt > 120000) { saveWarnAt = Date.now(); toast(`Impossible de sauvegarder dans ce navigateur (stockage plein) : exporte ta partie (Options) pour ne rien perdre.`, "warn", 15000); } // 1.0.32.8 : avant, l'échec d'une sauvegarde automatique ne disait rien
 }
 const readCopies = () => SV.copies(), pushCopy = (txt, why, st, v) => SV.pushCopy(txt, why, st, v);
 let restoredCopy = null, transferred = false;

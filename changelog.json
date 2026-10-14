@@ -1,6 +1,16 @@
 {
-  "version": "1.0.32.7",
+  "version": "1.0.32.8",
   "versions": [
+    {
+      "v": "1.0.32.8",
+      "name": "Sauvegarde à l'abri",
+      "items": [
+        "Grosse partie et stockage du navigateur plein : la sauvegarde efface d'abord de vieilles copies de secours au lieu d'échouer sans rien dire (avant, au redémarrage, on pouvait retrouver une partie de plusieurs heures en arrière)",
+        "Si une sauvegarde échoue quand même, un message le dit tout de suite",
+        "Horloge de l'appareil en avance puis remise à l'heure : les copies de secours automatiques ne s'arrêtent plus",
+        "Les copies de secours prennent moins de place quand la partie est très grosse (on garde toujours la plus récente)"
+      ]
+    },
     {
       "v": "1.0.32.7",
       "name": "Dofus épinglés",

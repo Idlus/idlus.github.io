@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.8 « Sauvegarde à l'abri »
+
+Signalement relayé par Mathis le 15/10/2026 (joueur JustEver : héros 200 revenus à 115, Dofus 14 → 8 après avoir fermé le navigateur). Une partie de 640 Ko plus ses 6 copies de secours approche la limite du navigateur (environ 5 millions de caractères) ; l'écriture de la partie échouait alors sans rien dire. js/save.js : SV.makeRoom libère de la place (copies de cette partie, puis des autres parties, puis parties de test du panel) et réessaie ; copies limitées à 3 millions de caractères (COPY_BUDGET) ; js/ui.js : message si une sauvegarde échoue ; SV.lastCopy ignore une copie datée dans le futur (horloge en avance de 21 h chez le joueur : plus aucune copie automatique ensuite). Test tests/sauvegarde.test.js.
+
 ## 1.0.32.7 « Dofus épinglés »
 
 Demande de Mathis du 14/10/2026 : « tu penses pouvoir ajouter le fait de pin les quetes pour les dofus ? ». Nouvel objectif épinglé `{ k: "dof", id }` (E.pinInfo dans js/quetes.js : étape en cours, avancement, terminé) ; bouton « Suivre » sur la fiche du Dofus (js/questui.js) ; dans la bande d'objectifs, la pastille porte l'œuf du Dofus et le bouton « Y aller » de l'étape (dofusStepGo(st, cls) dans js/ui.js), et un clic ouvre la quête (pingo → QUI.pick).
