@@ -4825,3 +4825,30 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .mklist3 .li{cursor:pointer;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:inherit;font:inherit}
 .mklist3 .mkli .mkstar{margin-right:2px}
 .mkopen .phead{flex-wrap:wrap;gap:8px}.mkopen .phead>.row:first-child{flex:1 1 220px;min-width:0}
+/* 1.0.20 « Trophées passifs » : onglet Trophées de l'Encyclopédie, bandeau et compteurs de la sous-zone, fenêtre « Nouveau trophée » */
+@media (min-width:1200px){.enckpis.k6.k7{grid-template-columns:repeat(7,minmax(0,1fr))}}
+@media (min-width:761px) and (max-width:1199px){.enckpis.k6.k7{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:760px){.enckpis.k6.k7 .enckpi.archi{grid-column:1/-1}}
+.trohead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:6px}
+.trohead .trocount{font-size:22px}
+.trosum{display:flex;gap:10px;align-items:center;background:var(--panel2);border:2px solid var(--action);border-radius:12px;padding:10px 12px;margin:6px 0 10px}
+.trosum img.uico{width:28px;height:28px}
+.trogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:12px}
+.trocard{display:flex;gap:10px;align-items:flex-start;background:var(--panel2);border:2px solid var(--line);border-radius:12px;padding:8px 10px;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.trocard.got{border-color:var(--gold)}
+.trocard.got .icobox{background:radial-gradient(circle,rgba(255,215,110,.45),rgba(255,215,110,0) 72%),var(--panel3)}
+.trocard.lock{opacity:.55}
+.trocard .bar{height:5px;margin-top:4px}
+.trocard b{display:block;line-height:1.2}
+.troact{display:flex;gap:10px;align-items:center;background:linear-gradient(90deg,rgba(232,192,99,.22),transparent);border:2px solid #e8c063;border-radius:12px;padding:8px 12px}
+.troact img.uico{width:30px;height:30px}
+.tromons{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px;margin-top:8px}
+.tromons>div{display:flex;gap:8px;align-items:center;background:var(--panel2);border-radius:10px;padding:5px 8px;border:2px solid var(--line)}
+.tromons>div.ok{border-color:var(--action)}
+.tromons img{width:34px;height:34px;object-fit:contain}
+.tromons .bar{height:4px;margin-top:3px}
+.trogetbox{display:grid;justify-items:center;gap:8px;text-align:center;padding:6px 0}
+.trogetbox .big{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,rgba(255,215,110,.7),rgba(255,215,110,0) 70%)}
+.trogetbox .big img{width:96px;height:96px;object-fit:contain}
+.trogetbox .st{display:flex;flex-direction:column;gap:2px;font-weight:800}
+@media (max-width:700px){.trogrid{grid-template-columns:1fr}}

@@ -324,7 +324,7 @@
   const SLOTS = {
     coiffe: "Coiffe", cape: "Cape", amulette: "Amulette", anneau1: "Anneau", anneau2: "Anneau",
     ceinture: "Ceinture", bottes: "Bottes", arme: "Arme", bouclier: "Bouclier",
-    dofus1: "Dofus / Trophée", dofus2: "Dofus / Trophée", dofus3: "Dofus / Trophée", dofus4: "Dofus / Trophée", dofus5: "Dofus / Trophée", dofus6: "Dofus / Trophée",
+    dofus1: "Dofus", dofus2: "Dofus", dofus3: "Dofus", dofus4: "Dofus", dofus5: "Dofus", dofus6: "Dofus",
   };
   const DOFUS_SLOTS = ["dofus1", "dofus2", "dofus3", "dofus4", "dofus5", "dofus6"];
 

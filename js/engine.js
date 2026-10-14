@@ -190,8 +190,8 @@
     Object.values(SUBS).forEach((sub) => {
       if (S.trophies[sub.id]) return;
       if (sub.monsters.every((k) => E.huntTier(S, k) >= 1)) {
-        S.trophies[sub.id] = 1;
-        E.rollItem(S, "trophee_" + sub.id, { radiant: false }); note(S, `Trophée obtenu : ${sub.name} !`, "rare");
+        S.trophies[sub.id] = 1; // 1.0.20 : le trophée ne s'équipe plus, son bonus agit tout seul (E.trophyZoneMult, E.trophyVitrine)
+        note(S, `Trophée obtenu : ${sub.name} ! Bonus actif.`, "rare"); E.emit(S, "trophy", { sub: sub.id });
       }
     });
   };
@@ -302,6 +302,7 @@
     Object.values(c.equip).forEach((uid) => { const it = S.items[uid]; if (it) { addStats(st, E.isPerfect(it) ? E.perfectStats(it) : it.stats); if (it.exo) st[it.exo] = (st[it.exo] || 0) + 1; } }); // 0.1.8.2 : objets parfaits ; 0.1.9.1 : exo
     const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
     const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
+    const vt = E.trophyVitrine(S); st.vit += vt.vit; st.sa += vt.sa; // 1.0.20 : Vitrine des trophées, pour tous les héros
     const counts = E.setCounts(S, c);
     for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
     st.hpMax = Math.round((50 + 5 * c.lvl + st.vit + E.familyBonusVit(S)) * (1 + 0.05 * E.eveil(c, "robu")));
@@ -486,6 +487,7 @@
     const c = S.chars.find((x) => x.id === cid); const it = S.items[uid];
     if (!c || !it) return "Objet introuvable.";
     const T = ITEMS[it.tpl];
+    if (T.trophy) return "Les trophées ne s'équipent plus : leur bonus agit tout seul.";
     if (T.lvl > c.lvl) return `Niveau ${T.lvl} requis.`;
     if (it.exo && (E.EXO_ONE || ["pa"]).includes(it.exo) && Object.entries(c.equip).some(([sl, u]) => u !== uid && sl !== slotOverride && S.items[u] && S.items[u].exo === it.exo)) return `Ce héros porte déjà un objet exo ${STATS[it.exo].short} (un seul par héros).`; // 0.1.41 : PA, PM et Po
     const other = E.equippedBy(S, uid);
@@ -2162,6 +2164,20 @@
   E.zoneRew = (S, opts = {}) => (opts.dungeon || S.dungeon || !S.sub || (E.expActive && E.expActive(S)) ? 1 : E.ZONE_REW[S.sub] || 1);
   /* 1.0.14.1 (Mathis) : clés de donjon un peu plus rares à la chasse (×0,7 : une clé pour ~1,4 fois le temps de chasse d'avant) */
   E.KEY_DROP_SCALE = 0.7;
+  /* 1.0.20 « Trophées passifs » (choix de Mathis) : un trophée de sous-zone ne s'équipe plus.
+     - Dans sa région (chasse, pas en donjon ni au Songe) : +3 % d'XP, de butin et de kamas par trophée de la région, hors plafond.
+     - Vitrine : la Vitalité et la Sagesse des 6 meilleurs trophées vont à tous les héros (autant qu'en les portant). */
+  E.TROPHY_REGION = 0.03; E.VITRINE_N = 6;
+  E.trophyRegionN = (S, zoneId) => { const z = ZONES.find((x) => x.id === zoneId); return z && S.trophies ? z.subs.filter((s) => S.trophies[s.id]).length : 0; };
+  E.trophyZoneMult = (S, opts = {}) => (opts.dungeon || S.dungeon || !S.sub || !SUBS[S.sub] || (E.expActive && E.expActive(S)) ? 1 : 1 + E.TROPHY_REGION * E.trophyRegionN(S, SUBS[S.sub].zone));
+  const vitrineCache = new WeakMap();
+  E.trophyVitrine = (S) => {
+    const keys = Object.keys(S.trophies || {}); const memo = vitrineCache.get(S);
+    if (memo && memo.n === keys.length) return memo.v;
+    const list = keys.map((k) => ITEMS["trophee_" + k]).filter(Boolean).sort((a, b) => b.stats.vit[0] - a.stats.vit[0] || b.lvl - a.lvl).slice(0, E.VITRINE_N);
+    const v = { vit: list.reduce((t, T) => t + T.stats.vit[0], 0), sa: list.reduce((t, T) => t + T.stats.sa[0], 0), list: list.map((T) => T.trophy) };
+    vitrineCache.set(S, { n: keys.length, v }); return v;
+  };
   E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
   const giveRewards = (S, mons, opts = {}) => {
     const team = E.team(S);
@@ -2176,7 +2192,7 @@
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
-    const zr = E.zoneRew(S, opts); xp *= zr; out.kamas = Math.round(out.kamas * zr); // 1.0.7.4 : rendement de la sous-zone (XP et kamas), réglé par simulation
+    const zr = E.zoneRew(S, opts) * E.trophyZoneMult(S, opts); xp *= zr; out.kamas = Math.round(out.kamas * zr); // 1.0.7.4 : rendement de la sous-zone (XP et kamas), réglé par simulation
     const share = E.xpShare(team.length);
     team.forEach((c) => {
       const st = E.charStats(S, c);
@@ -2198,7 +2214,7 @@
     }
     S.kamas += out.kamas;
     // Butin
-    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop");
+    const dm = E.dropMult(S) * (opts.dropMult || 1) * E.evMult("drop") * E.roamMult(S) * (E.teamHas(S, "enu") ? 1.15 : 1) * E.almMult(S, "drop") * E.trophyZoneMult(S, opts);
     const topL = Math.max(...S.chars.map((c) => c.lvl));
     const ougi = E.teamHas(S, "ougi");
     const sub = SUBS[S.sub];
@@ -3338,6 +3354,8 @@
     S.migration = report.length ? report : null;
     if (S.v < 3) { const ev = E.events.length; checkHunt(S, Object.keys(S.bestiary).filter((k) => MONSTERS[k])); E.events.length = ev; S.journal = S.journal.filter((j) => !/^Palier /.test(j.txt)); }
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
+    for (const uid in S.items) { const T = ITEMS[S.items[uid].tpl]; if (T.trophy) { S.trophies[T.trophy] = 1; delete S.items[uid]; } } // 1.0.20 : trophées passifs
+    S.chars.forEach((c) => { for (const sl in c.equip) if (!S.items[c.equip[sl]]) delete c.equip[sl]; });
     if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
     S.v = E.VERSION;
     return S;

@@ -1,6 +1,19 @@
 {
-  "version": "1.0.19.1",
+  "version": "1.0.20",
   "versions": [
+    {
+      "v": "1.0.20",
+      "name": "Trophées passifs",
+      "items": [
+        "Les trophées de zone ne s'équipent plus : leur bonus agit tout seul, pour toujours, et les 6 emplacements redeviennent des emplacements Dofus",
+        "Bonus de région : chaque trophée donne +3 % d'XP, de butin et de kamas quand vous chassez dans sa région (7 trophées d'Incarnam = +21 % dans tout Incarnam), hors plafond",
+        "Vitrine : la Vitalité et la Sagesse de vos 6 meilleurs trophées vont à tous vos héros, sans rien équiper. Vos héros restent aussi forts qu'avant",
+        "Les trophées déjà portés ou dans le sac deviennent actifs tout seuls",
+        "Encyclopédie : nouvel onglet « Trophées » avec les trophées de chaque région et ce qu'il reste à faire",
+        "Page d'une sous-zone : chaque monstre affiche son compteur sur 250, et un bandeau rappelle le bonus de la région",
+        "Une fenêtre « Nouveau trophée » s'ouvre quand vous en gagnez un"
+      ]
+    },
     {
       "v": "1.0.19.1",
       "name": "Havre-Sac réparé",

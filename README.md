@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.20 « Trophées passifs »
+Mathis (13-14/10/2026, propal « trophées de zone », réponses 1A 2A puis 1B 2A 3A 4A 5A ; idée présentée dans le forum #idées). Un trophée de sous-zone (S.trophies) ne s'équipe plus : `E.equip` le refuse, `checkHunt` ne crée plus d'objet et émet `trophy` (fenêtre « Nouveau trophée »), et au chargement les objets `trophee_*` portés ou en sac sont retirés (le trophée reste acquis). `E.trophyZoneMult` (js/engine.js) : +3 % d'XP, de butin et de kamas par trophée de la région chassée (hors donjon et Songe), hors plafond, appliqué avec `E.zoneRew` et au multiplicateur de butin. `E.trophyVitrine` : Vitalité et Sagesse des 6 meilleurs trophées ajoutées à tous les héros dans `E.charStats` (simulation : autant de PV qu'en portant les trophées, +583 Vitalité au niveau 70). Emplacements renommés « Dofus ». UI : onglet Trophées de l'Encyclopédie, bandeau de région et compteurs sur 250 sur la page de sous-zone, ligne dans « Mes bonus ». Test tests/trophees.test.js.
+
 ## 1.0.19.1 « Havre-Sac réparé »
 Mathis (14/10/2026 : « le havre sac ne fonctionne pas chez certain joueurs »). Depuis 1.0.16, `E.bonusParts` (js/systems.js) renvoie une source `dofus` (Dokille pour le butin, Argenté pour les kamas) que le cadre « Mes bonus » (`BSRC`, js/ui.js) ne connaissait pas : la page plantait pour les joueurs dont un héros de l'équipe porte l'un de ces Dofus. Source ajoutée, et `bsrc()` donne un libellé neutre à toute source inconnue. Test dans tests/smoke.test.js.
 

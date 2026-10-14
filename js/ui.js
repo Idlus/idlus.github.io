@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.19.1";
+const GAME_VERSION = "1.0.20";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.20", name: "Trophées passifs", items: [
+    "Les trophées de zone ne s'équipent plus : leur bonus agit tout seul, pour toujours, et les 6 emplacements redeviennent des emplacements Dofus",
+    "Bonus de région : chaque trophée donne +3 % d'XP, de butin et de kamas quand vous chassez dans sa région (7 trophées d'Incarnam = +21 % dans tout Incarnam), hors plafond",
+    "Vitrine : la Vitalité et la Sagesse de vos 6 meilleurs trophées vont à tous vos héros, sans rien équiper. Vos héros restent aussi forts qu'avant",
+    "Les trophées déjà portés ou dans le sac deviennent actifs tout seuls",
+    "Encyclopédie : nouvel onglet « Trophées » avec les trophées de chaque région et ce qu'il reste à faire",
+    "Page d'une sous-zone : chaque monstre affiche son compteur sur 250, et un bandeau rappelle le bonus de la région",
+    "Une fenêtre « Nouveau trophée » s'ouvre quand vous en gagnez un",
+  ] },
   { v: "1.0.19.1", name: "Havre-Sac réparé", items: [
     "Havre-Sac : la page ne s'ouvrait plus quand un héros de l'équipe portait le Dokille ou l'Argenté (passifs des Dofus de la 1.0.16)",
     "Ces deux passifs apparaissent maintenant dans « Mes bonus », en orange, sous Butin et Kamas",
@@ -2128,7 +2137,7 @@ function altarHtml() {
 }
 function bonusBox() {
   const open = ui.bonOpen !== false, ren = Math.max(0, ...S.chars.map((c) => c.ren || 0)), syn = E.synergy(S);
-  const extra = [ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : `Renaissance +${Math.round(E.REN_XP * 100)} % d'XP par renaissance`, syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", "Almanax", "Mutateurs"].filter(Boolean);
+  const extra = [ren ? `Renaissance ×${(1 + E.REN_XP * ren).toFixed(1).replace(".", ",")} d'XP` : `Renaissance +${Math.round(E.REN_XP * 100)} % d'XP par renaissance`, syn ? `Synergie de classes +${syn} % d'XP` : "", E.eventOn() ? `${E.EVENT.name} : XP et butin ×2` : "", E.trophyZoneMult(S) > 1 ? `Trophées de la région +${Math.round((E.trophyZoneMult(S) - 1) * 100)} % XP, butin et kamas` : "", "Almanax", "Mutateurs"].filter(Boolean);
   const sum = BKIND.map(([k, l]) => `<span><b class="num plus">+${fmt(E.bonus(S, k))} %</b> ${l.toLowerCase()}</span>`).join("");
   return `<section class="bonbox ${open ? "open" : ""}"><header data-act="bontoggle"><h3>${IC("trophee")} Mes bonus</h3><span class="bsum small">${sum}</span><span class="chev">▾</span></header>
     ${open ? `<div class="bgrid">${BKIND.map(([k, l, i]) => bonusCard(k, l, i)).join("")}</div>${altarHtml()}
@@ -2360,7 +2369,9 @@ function renderZoneView(sid) {
         <span class="small muted">${E.team(S).length} héros${E.synergy(S) ? ` · Synergie +${E.synergy(S)} %` : ""} · ${lvlHint(s)}</span></div>
       ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
       ${rate ? `<div>${rateHtml(rate)}</div>` : ""}
-      <div><div class="row between small"><span data-tip="Quand tous les monstres de la zone atteignent le palier Traqueur (250 tués), vous recevez le trophée de la zone, à équiper dans un emplacement Dofus/Trophée.">${IC("trophee")} Trophée ${h(s.name)}${trophyDone ? " : obtenu" : ""}</span><span class="num">${traq}/${s.monsters.length} monstres Traqueur</span></div><div class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></div></div>
+      ${E.trophyRegionN(S, s.zone) ? `<div class="troact">${IC("trophee")}<span class="grow"><b>Trophées de ${h(z.name)} : +${regPct(s.zone)} % d'XP, de butin et de kamas ici</b><br><span class="xs muted">${E.trophyRegionN(S, s.zone)} trophée${E.trophyRegionN(S, s.zone) > 1 ? "s" : ""} de la région × ${Math.round(E.TROPHY_REGION * 100)} %, en plus des étoiles de zone, hors plafond.${trophyDone ? " Le trophée de cette zone est actif." : ""}</span></span></div>` : ""}
+      <div><div class="row between small"><span data-tip="Quand tous les monstres de la zone atteignent le palier Traqueur (250 tués), vous recevez le trophée de la zone. Il ne s'équipe pas : +${Math.round(E.TROPHY_REGION * 100)} % d'XP, de butin et de kamas dans toute la région, et ses bonus vont dans la Vitrine de tous vos héros.">${IC("trophee")} Trophée ${h(s.name)}${trophyDone ? " : obtenu" : ""}</span><span class="num">${traq}/${s.monsters.length} monstres Traqueur</span></div><div class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></div>
+        <div class="tromons">${s.monsters.map((k) => { const n = Math.min(250, S.bestiary[k] || 0), ok = n >= 250; return `<div class="${ok ? "ok" : ""}">${im(imgM(k), "", MONSTERS[k].name)}<span class="grow"><b class="small">${h(MONSTERS[k].name)}</b><br><span class="xs ${ok ? "plus" : "muted"} num">${ok ? "Traqueur ✓" : `${fmt(n)} / 250 tués`}</span>${ok ? "" : `<span class="bar"><i style="width:${pct(n, 250)}%"></i></span>`}</span></div>`; }).join("")}</div></div>
       <h3 class="sec">Monstres</h3>
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
@@ -2616,6 +2627,37 @@ function encFamZone() { // famille → première zone où on la croise
   ZONES.forEach((z) => z.subs.forEach((s) => s.monsters.forEach((k) => { const r = MONSTERS[k] && MONSTERS[k].race; if (r !== undefined && o[r] === undefined) o[r] = z.id; })));
   return (ui.encFamZ = o);
 }
+/* 1.0.20 « Trophées passifs » : les 179 trophées de sous-zone, rangés par région, avec ce qu'il reste à faire */
+const troN = () => Object.keys(S.trophies || {}).filter((k) => E.SUBS[k]).length;
+const troEffect = (sid) => { const T = ITEMS["trophee_" + sid]; return `Toute la région : +${Math.round(E.TROPHY_REGION * 100)} % XP, butin et kamas · Vitrine : +${fmt(T.stats.vit[0])} Vitalité, +${fmt(T.stats.sa[0])} Sagesse`; };
+const regPct = (zoneId) => Math.round(E.TROPHY_REGION * 100 * E.trophyRegionN(S, zoneId));
+const vitrineTxt = () => { const v = E.trophyVitrine(S); return `+${fmt(v.vit)} Vitalité et +${fmt(v.sa)} Sagesse`; };
+function encTroHtml() {
+  const n = troN(), tot = Object.keys(E.SUBS).length, vt = E.trophyVitrine(S), zp = Math.round(E.TROPHY_REGION * 100);
+  const card = (s) => { const got = S.trophies && S.trophies[s.id]; const un = E.subUnlocked(S, s.id); const traq = s.monsters.filter((k) => E.huntTier(S, k) >= 1).length;
+    const st = got ? `<span class="xs plus">✓ Actif${vt.list.includes(s.id) ? " · dans la Vitrine" : ""}</span>`
+      : !un ? `<span class="xs muted">${G("lock")} Zone verrouillée</span>`
+      : `<span class="xs muted num">${traq}/${s.monsters.length} monstres Traqueur</span><span class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></span>`;
+    return `<button class="trocard ${got ? "got" : ""} ${un || got ? "" : "lock"}" data-act="zoneview" data-id="${s.id}"><span class="icobox">${im(itemImg("trophee_" + s.id), "", s.name)}</span>
+      <span class="grow"><b>${h(s.name)}</b><span class="xs muted">niv. ${s.lvl[0]}–${s.lvl[1]} · ${h(troEffect(s.id))}</span><br>${st}</span></button>`; };
+  const regions = ZONES.map((z) => { const a = z.subs.filter((s) => S.trophies && S.trophies[s.id]).length;
+    return `<h3 class="sec">${h(z.name)} <span class="xs muted num">${a}/${z.subs.length}</span>${a ? ` <span class="tag good">+${regPct(z.id)} % dans la région</span>` : ""}</h3><div class="trogrid">${z.subs.map(card).join("")}</div>`; }).join("");
+  return `<section class="panel encpanel"><div class="pad">
+    <div class="trohead"><div><h2>${IC("trophee")} Trophées de zone</h2><div class="small muted">Tuez 250 fois chaque monstre d'une sous-zone (palier Traqueur) pour gagner son trophée. Il ne s'équipe pas : son bonus agit tout seul, pour toujours.</div></div>
+      <b class="num trocount">${n} <small class="muted">/ ${tot}</small></b></div>
+    <div class="trosum">${IC("combat")}<span class="grow"><b>+${zp} % d'XP, de butin et de kamas dans une région, par trophée de cette région</b><br><span class="xs muted">Exemple : 7 trophées d'Incarnam = +21 % partout dans Incarnam. Le bonus agit quand vous chassez dans la région, en plus des autres bonus (hors plafond).</span></span></div>
+    <div class="trosum">${IC("trophee")}<span class="grow"><b>Vitrine : <span class="plus">${vitrineTxt()}</span> pour chacun de vos héros</b><br><span class="xs muted">Vos ${E.VITRINE_N} meilleurs trophées donnent leurs bonus à tous les héros, sans rien équiper. Ils changent tout seuls quand vous en gagnez un meilleur.</span></span></div>
+    ${regions}</div></section>`;
+}
+/* fenêtre « Nouveau trophée » */
+function troPopup(sid) {
+  const s = E.SUBS[sid]; if (!s) return;
+  openSheet(`<div class="trogetbox"><span class="tag good">Nouveau trophée</span><div class="big">${im(itemImg("trophee_" + sid), "", s.name)}</div>
+    <h2>Trophée : ${h(s.name)}</h2><div class="small muted">Vous avez tué 250 fois chaque monstre de ${h(s.name)}. Le trophée est actif tout de suite, sans rien équiper.</div>
+    <div class="st"><span class="plus">${h(ZONES.find((z) => z.id === s.zone).name)} : +${regPct(s.zone)} % d'XP, de butin et de kamas dans toute la région</span><span class="plus">Vitrine de tous les héros : ${vitrineTxt()}</span></div>
+    <div class="xs muted">${troN()} / ${Object.keys(E.SUBS).length} trophées de zone</div>
+    <div class="row" style="justify-content:center"><button class="btn primary" data-act="trolist">Voir mes trophées</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+}
 function encyclopediaHtml() {
   const enc = ui.enc || (ui.enc = { tab: "best", f: "all", q: "", fam: "zone", boss: "all" });
   const all = Object.keys(MONSTERS).filter((k) => !MONSTERS[k].archiOf); const met = all.filter(encMet).length;
@@ -2623,12 +2665,12 @@ function encyclopediaHtml() {
   const bosses = Object.values(DUNGEONS).map((d) => d.boss); const bossMet = new Set(bosses.filter(encMet)).size; const bossN = new Set(bosses).size;
   const conn = all.filter((k) => E.huntTier(S, k) >= 0).length;
   const EQ = encEqAll(); const dex = E.itemDex(S); const eqHave = EQ.filter((t) => dex[t]).length;
-  const kpis = [["best", "Monstres rencontrés", met, all.length], ["eq", "Équipements obtenus", eqHave, EQ.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length]];
+  const kpis = [["best", "Monstres rencontrés", met, all.length], ["eq", "Équipements obtenus", eqHave, EQ.length], ["fam", "Familles complètes", famDone, fams.length], ["boss", "Boss vaincus", bossMet, bossN], ["best", "Butins révélés", conn, all.length], ["tro", "Trophées de zone", troN(), Object.keys(E.SUBS).length]];
   const souls = E.soulCount(S), st = E.stones(S);
   const archi = `<button class="enckpi archi" data-act="archis" data-tip="Album des archimonstres : les âmes capturées avec une Pierre d'âme. ${st ? `${st} Pierre${st > 1 ? "s" : ""} d'âme en sac.` : "Aucune Pierre d'âme : fabriquez-en chez le Bricoleur (niveau 25)."}"><span class="xs">${IC("dofus")} Âmes d'archimonstres</span><b class="num">${fmt(souls)} <small>/ ${fmt(E.ARCHI_TOTAL)}</small></b><span class="bar"><i style="width:${pct(souls, E.ARCHI_TOTAL)}%"></i></span><span class="xs encopen">Ouvrir l'album ›</span></button>`;
-  const head = `<div class="enckpis k6">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
-    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`;
-  return head + (enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
+  const head = `<div class="enckpis k6 k7">${kpis.map(([t, n, a, b]) => `<button class="enckpi" data-act="enctab" data-v="${t}"><span class="xs muted">${n}</span><b class="num">${fmt(a)} <small>/ ${fmt(b)}</small></b><span class="bar"><i style="width:${pct(a, b)}%"></i></span></button>`).join("")}${archi}</div>
+    <nav class="subtabs enctabs">${[["best", "Bestiaire"], ["fam", "Familles"], ["boss", "Boss de donjon"], ["eq", "Équipements"], ["tro", "Trophées"]].map(([v, n]) => `<button data-act="enctab" data-v="${v}" aria-pressed="${enc.tab === v}">${n}</button>`).join("")}<button class="enclink" data-act="encsets" data-tip="Le carnet de panoplies est rangé dans l'Inventaire">Panoplies ›</button></nav>`;
+  return head + (enc.tab === "tro" ? encTroHtml() : enc.tab === "eq" ? encEqHtml() : enc.tab === "fam" ? encFamHtml(enc) : enc.tab === "boss" ? encBossHtml(enc) : encBestHtml(enc));
 }
 function encBestHtml(enc) {
   if (!ui.encZone) { const s = S.sub && E.SUBS[S.sub]; ui.encZone = s ? s.zone : ZONES[0].id; }
@@ -5853,7 +5895,7 @@ function closeSheet() { if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null;
 /* 0.1.12 : Renaissance */
 function renSheet(cid) {
   const c = char(cid); if (!c) return; const err = E.canRenaissance(S, c); const n = (c.ren || 0) + 1; const choices = E.renChoices(c); const pick = ui.renPick && choices.some(([id]) => id === ui.renPick) ? ui.renPick : null;
-  const keep = ["Nom, classe, sexe, tête et couleurs", "Succès, titres et ornements", "Dofus et trophées, toujours équipés", "Familier ou montilier, et monture", "Parchemins de caractéristiques", "Ses Éveils déjà choisis"];
+  const keep = ["Nom, classe, sexe, tête et couleurs", "Succès, titres et ornements", "Dofus toujours équipés, trophées toujours actifs", "Familier ou montilier, et monture", "Parchemins de caractéristiques", "Ses Éveils déjà choisis"];
   const reset = ["Niveau 1 et expérience", "Points de caractéristiques (répartis à nouveau en montant)", "Sorts : réappris avec les niveaux", "Équipement rangé dans le sac (rien n'est perdu)"];
   const ch = (id, r) => `<button class="evbtn ${pick === id ? "on" : ""} ${id === "classe" ? "cls" : ""}" data-act="renpick" data-id="${c.id}" data-v="${id}" aria-pressed="${pick === id}"><span class="n">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)}<span class="rk">rang ${E.roman(r)} → ${E.roman(r + 1)}</span></span><span class="xs">${h(id === "classe" ? E.CLASS_EVEIL[c.cls] || "Renforce le passif de la classe" : E.EVEILS[id].desc(r + 1))}</span></button>`;
   openSheet(`<div class="renhead"><div class="renstage"><span class="renfl"></span>${lookImg(c, "renlook")}</div><div class="stack"><h2>${IC("phenix")} Statue du Phénix</h2><p class="small muted"><b>${h(c.name)}</b> · ${h(CLASSES[c.cls].name)} niveau ${c.lvl} · Renaissance ${E.roman(c.ren || 0)} → ${E.roman(n)} · gratuit</p>
@@ -6958,7 +7000,8 @@ function sndPlay(kind, force) {
 (function sndHooks() {
   const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
     if (type === "level") sndPlay("level"); else if (type === "dungeon") sndPlay("boss"); else if (type === "soul" || type === "dofus" || type === "ren") sndPlay("magic");
-    else if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win"); } return r; };
+    if (type === "trophy" && SND.live && data && !$("#sheet").innerHTML.trim()) setTimeout(() => troPopup(data.sub), 0); // 1.0.20
+    if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win"); } return r; };
   const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S && (kind === "rare" || kind === "radiant") && /Butin|Rayonnant|Trésor|archimonstre/i.test(txt)) sndPlay(/Trésor/.test(txt) ? "coin" : "rare"); return r; };
   const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
 })();
@@ -7231,6 +7274,7 @@ document.addEventListener("click", (ev) => {
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
     case "enczone": { ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; dirty = true; render(); const hd = $(".enczhead"); if (hd && hd.getBoundingClientRect().top < $("#status").getBoundingClientRect().bottom) hd.scrollIntoView(); return; } // 1.0.12.8 : on remonte au titre de la zone choisie
     case "enctab": ui.enc.tab = d.v; break;
+    case "trolist": $("#sheet").innerHTML = ""; navGo("enc"); (ui.enc || (ui.enc = { tab: "best", f: "all", q: "", fam: "zone", boss: "all" })).tab = "tro"; window.scrollTo(0, 0); break;
     case "encf": ui.enc.f = d.v; break;
     case "encfam": ui.enc.fam = d.v; break;
     case "encboss": ui.enc.boss = d.v; break;
