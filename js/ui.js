@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.26";
+const GAME_VERSION = "1.0.27";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.27", name: "Choix d'objet sans gel", items: [
+    "Équipe : cliquer sur un emplacement d'objet équipé ouvre tout de suite la liste des objets (0,08 s au lieu de 0,3 s avec un gros sac, et plusieurs secondes avant la 1.0.24.3)",
+    "Les flèches vertes et le « Meilleur choix » s'affichent avec le dernier calcul connu, puis se mettent à jour d'eux-mêmes un instant plus tard si le sac a changé",
+    "Seule la fiche du héros se redessine quand on choisit un emplacement ou qu'on ouvre un groupe d'objets",
+    "« Équiper au mieux » utilise toujours le calcul à jour",
+  ] },
   { v: "1.0.26", name: "Une musique par zone", items: [
     "35 airs composés pour Idlus au lieu de 4, chacun dans son style : western à Cania, bluegrass chez les Wabbits, calypso à Otomaï, Chine à Pandala, Japon à Wukin, Orient à Saharach, chant de marins à Sufokia, fanfare à Bonta, swing à Brâkmar…",
     "En chasse, la musique suit la zone, avec un fondu quand l'équipe change de zone",
@@ -4610,6 +4616,7 @@ function compsHtml() {
 /* 0.1.40 « Équipe rangée » : une seule liste de héros à gauche (Première ligne, Arrière, Réserve) et la fiche du héros choisi à droite.
    Au téléphone : la liste d'abord, puis la fiche en plein écran (ui.tview = "hero") avec « ← Équipe » et les têtes en haut.
    « Réorganiser » regroupe le plateau, le placement et les compositions. */
+function ficheOnly() { const f = ui.tab === "team" && !ui.teamBoard && $("#fiche"); if (!f) return false; f.innerHTML = heroesHtml(); return true; }
 function renderTeam() {
   if (!ui.cid || !char(ui.cid)) ui.cid = S.chars[0].id;
   if (ui.teamBoard) { $("#main").innerHTML = `<div class="teampg"><div id="teamtop">${teamTopHtml()}</div>${placementHtml()}${compsHtml()}${teamBoardHtml()}</div>`; return; }
@@ -4731,7 +4738,7 @@ function itemScore(c, it) { if (!it) return 0; const els = buildEls(c); const dm
 function gearScore(c, eq) { let sc = 0; const n = {};
   for (const k in eq) { const it = S.items[eq[k]]; if (!it) continue; sc += itemScore(c, it); const z = ITEMS[it.tpl].set; if (z) n[z] = (n[z] || 0) + 1; }
   for (const z in n) { const b = E.setBonus(z, n[z]); if (b) sc += itemScore(c, { stats: b }); } return sc; }
-function gainFor(c, s, uid) { const eq = Object.assign({}, c.equip); for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; return gearScore(c, eq) - gearScore(c, c.equip); }
+function gainFor(c, s, uid, base) { const eq = Object.assign({}, c.equip); for (const k in eq) if (eq[k] === uid) delete eq[k]; eq[s] = uid; return gearScore(c, eq) - (base === undefined ? gearScore(c, c.equip) : base); }
 /* 0.1.47.5 : plan d'équipement complet. On part de l'équipement actuel, on remplit emplacement par emplacement (meilleur gain, bonus
    de panoplie compris), puis on essaie aussi, pour chaque panoplie présente dans le sac, de poser toutes ses pièces d'un coup avant de
    compléter le reste : une panoplie entière gagne quand ses bonus valent mieux que des pièces isolées. Mémorisé tant que rien ne change. */
@@ -4804,7 +4811,16 @@ function* planSteps(c, key) {
   if (planMemo.size > 60) planMemo.clear(); planMemo.set(c.id, { key, plan }); return plan;
 }
 /* meilleur objet pour un emplacement selon le plan (pastille verte « mieux dans le sac ») */
-function bestFor(c, s) { const u = gearPlan(c)[s]; return u && u !== c.equip[s] ? u : null; }
+function bestFor(c, s) { const u = planView(c)[s]; return u && u !== c.equip[s] && S.items[u] ? u : null; }
+/* 1.0.27 : pour l'affichage (flèches vertes, « Meilleur choix »), le dernier plan connu sert pendant que le nouveau se calcule en coulisses,
+   en priorité pour le héros affiché ; la fiche se met à jour quand il est prêt. Avant : cliquer un emplacement figeait le jeu le temps du calcul.
+   « Équiper au mieux » attend toujours le plan à jour (gearPlan) */
+const planHot = new Set();
+function planView(c) {
+  const hit = planMemo.get(c.id); if (hit && hit.key === planKey(c)) return hit.plan;
+  planHot.add(c.id); if (!planJobs.has(c.id)) planJobs.set(c.id, null); planKick();
+  return hit ? hit.plan : c.equip;
+}
 const slotUpgrade = (c, s) => !!bestFor(c, s);
 /* 1.0.24.3 : pastille « Meilleur équipement dispo » (menu Héros, page Équipe). Quand un objet arrive (fabrication, butin), le plan de chaque
    héros est refait au repos, par petits morceaux ; en attendant, la pastille garde sa dernière valeur. Le jeu ne se fige plus. */
@@ -4822,17 +4838,19 @@ function planWork(dl) {
   planTimer = 0; const end = performance.now() + (dl && dl.timeRemaining ? Math.max(4, Math.min(12, dl.timeRemaining())) : 8); let done = false, wait = 0;
   while (planJobs.size && performance.now() < end) {
     let pick = null; const now = Date.now(); wait = 0;
-    for (const [id, job] of planJobs) { const left = job ? 0 : (planAt.get(id) || 0) + PLAN_GAP - now; if (left <= 0) { pick = [id, job]; break; } wait = wait ? Math.min(wait, left) : left; }
+    for (const id of planHot) if (planJobs.has(id)) { pick = [id, planJobs.get(id)]; break; }
+    if (!pick) for (const [id, job] of planJobs) { const left = job ? 0 : (planAt.get(id) || 0) + PLAN_GAP - now; if (left <= 0) { pick = [id, job]; break; } wait = wait ? Math.min(wait, left) : left; }
     if (!pick) break;
     const [id, job] = pick; const c = S && char(id);
     if (!c) { planJobs.delete(id); continue; }
-    const key = planKey(c); if (planFresh(c)) { planJobs.delete(id); done = true; continue; }
+    const key = planKey(c); if (planFresh(c)) { planJobs.delete(id); planHot.delete(id); done = true; continue; }
     const J = job && job.key === key ? job : { key, gen: planSteps(c, key) }; planJobs.set(id, J); // la partie a changé pendant le calcul : on repart de zéro
     let r; do { r = J.gen.next(); } while (!r.done && performance.now() < end);
-    if (r.done) { planJobs.delete(id); planAt.set(id, Date.now()); gearLast.set(id, EQ_SLOTS.some((s) => slotUpgrade(c, s))); done = true; }
+    if (r.done) { planJobs.delete(id); planAt.set(id, Date.now()); gearLast.set(id, EQ_SLOTS.some((s) => slotUpgrade(c, s))); done = true;
+      if (planHot.delete(id) && ui.tab === "team" && ui.cid === id && !ui.teamBoard && !isEditing() && !$("#sheet").innerHTML) { const f = $("#fiche"); if (f) f.innerHTML = heroesHtml(); } }
   }
   if (done && S) { alertCache.t = 0; renderNav(); }
-  if (planJobs.size) planKick(wait > 0 && [...planJobs.values()].every((j) => !j) ? wait : 0);
+  if (planJobs.size) planKick(wait > 0 && !planHot.size && [...planJobs.values()].every((j) => !j) ? wait : 0);
 }
 function equipBest(c) { const plan = gearPlan(c); let n = 0;
   for (const s of EQ_SLOTS) if (plan[s] && plan[s] !== c.equip[s] && !E.equip(S, c.id, plan[s], s)) n++;
@@ -5068,7 +5086,7 @@ function charEquipView(c, st) {
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
     const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === want && c.equip[ui.slot] !== it.uid);
-    const g = {}; all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid)));
+    const g = {}; const g0 = gearScore(c, c.equip); all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid, g0)));
     const byGain = (a, b) => g[b.uid] - g[a.uid] || ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl;
     const pu = bestFor(c, ui.slot); const free = all.filter((it) => !E.equippedBy(S, it.uid) && ITEMS[it.tpl].lvl <= c.lvl).sort((a, b) => (b.uid === pu) - (a.uid === pu) || equipBlocked(c, c.equip, ui.slot, a) - equipBlocked(c, c.equip, ui.slot, b) || byGain(a, b)); // le choix du plan (panoplie entière comprise) en tête
     const worn = all.filter((it) => E.equippedBy(S, it.uid)).sort(byGain);
@@ -7852,10 +7870,10 @@ document.addEventListener("click", (ev) => {
     case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
       for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }
-    case "slot": ui.slot = d.slot || null; break;
-    case "pmore": ui.pmore = ui.pmore || {}; ui.pmore[d.v] = !ui.pmore[d.v]; break;
+    case "slot": ui.slot = d.slot || null; if (ficheOnly()) return; break; // 1.0.27 : seule la fiche du héros se redessine
+    case "pmore": ui.pmore = ui.pmore || {}; ui.pmore[d.v] = !ui.pmore[d.v]; if (ficheOnly()) return; break;
     case "dpfam": ui.dpFam = d.v; break; // 1.0.16 : choix du Dofus, filtre par famille
-    case "pgrp": ui.pgrp = ui.pgrp || {}; ui.pgrp[d.v] = !ui.pgrp[d.v]; break;
+    case "pgrp": ui.pgrp = ui.pgrp || {}; ui.pgrp[d.v] = !ui.pgrp[d.v]; if (ficheOnly()) return; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
     case "spup": case "spdown": { const i = +d.i, j = a === "spup" ? i - 1 : i + 1; if (j < 0 || j >= c.spells.length) return; [c.spells[i], c.spells[j]] = [c.spells[j], c.spells[i]]; ui.spSel = j; c.activePreset = null; c.spellsManual = true; break; }

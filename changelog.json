@@ -1,6 +1,16 @@
 {
-  "version": "1.0.26",
+  "version": "1.0.27",
   "versions": [
+    {
+      "v": "1.0.27",
+      "name": "Choix d'objet sans gel",
+      "items": [
+        "Équipe : cliquer sur un emplacement d'objet équipé ouvre tout de suite la liste des objets (0,08 s au lieu de 0,3 s avec un gros sac, et plusieurs secondes avant la 1.0.24.3)",
+        "Les flèches vertes et le « Meilleur choix » s'affichent avec le dernier calcul connu, puis se mettent à jour d'eux-mêmes un instant plus tard si le sac a changé",
+        "Seule la fiche du héros se redessine quand on choisit un emplacement ou qu'on ouvre un groupe d'objets",
+        "« Équiper au mieux » utilise toujours le calcul à jour"
+      ]
+    },
     {
       "v": "1.0.26",
       "name": "Une musique par zone",
