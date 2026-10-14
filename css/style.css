@@ -4590,3 +4590,52 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .dgzone .zonefold:disabled{cursor:default;opacity:1}
 .dgfoldall{margin:-2px 0 -4px}
 @media (max-width:700px){.dglab{display:none}.dgtrow .seg{border-radius:14px}.dgtrow .seg button{padding:4px 8px}.dgsearch .seg{flex:none}}
+/* 1.0.13 « Interface plus nette » */
+/* barre du haut sur une ligne (PC) : Options et Admin en icônes, la zone se raccourcit si la place manque */
+@media (min-width:601px){
+  .status{gap:4px 12px}
+  .status .st-where{min-width:0;flex:0 1 auto}
+  .status .st-wt{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+.status .admbtn{padding-left:8px;padding-right:8px}
+/* annonce du serveur sur une ligne (PC et téléphone), « Lire la suite » l'ouvre en entier (annClip dans chat.js) */
+.annbar{padding:5px 8px 5px 12px;font-size:13.5px;gap:8px}
+.annbar .uico{width:20px;height:20px}
+.annbar .grow{display:flex;align-items:center;gap:8px;min-width:0}
+.annbar .grow .atx{flex:1 1 auto;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;line-clamp:1;overflow:hidden;word-break:break-word}
+.annbar .grow .lnk{flex:none}
+.annbar.more .grow{display:block}.annbar.more .grow .atx{display:inline;-webkit-line-clamp:unset}.annbar.more .grow .lnk{margin-left:6px}
+.annbar .tc-x{flex:none}
+.annbar.clip .grow .lnk,.annbar.more .grow .lnk{display:inline}
+/* menu de gauche plus serré : les 22 pages tiennent sur un écran de 800 px */
+@media (min-width:860px){
+  #nav .sn-side{gap:0;padding-top:6px}
+  #nav .sn-side button{min-height:27px;font-size:13.5px;padding:0 8px}
+  #nav .sn-side .med{width:24px;height:24px}#nav .sn-side .med img{width:17px;height:17px}
+  #nav .sn-g{padding:4px 10px 0;font-size:10px}
+  #nav .sn-side .sn-fight{min-height:40px}
+}
+/* menu du téléphone : 4 tuiles par ligne, tout sur un écran */
+.ns-tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.ns-tiles button{padding:6px 2px;font-size:10.5px;gap:3px;border-radius:10px}
+.ns-tiles .med{width:30px;height:30px}.ns-tiles .med img{width:22px;height:22px}
+.navsheet h3{margin:8px 2px 4px}
+/* onglets du téléphone sur une ligne qui défile (position gardée par tabsKeep dans ui.js) */
+@media (max-width:640px){
+  .subtabs,.catchips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:28px}
+  .subtabs::-webkit-scrollbar,.catchips::-webkit-scrollbar{display:none}
+  .subtabs>*,.catchips>*{flex:none}
+}
+/* comparaison d'objet : verdict + gains / pertes en deux colonnes */
+.cmpbox{display:grid;gap:4px;font-size:12px}
+.cmpbox .cm-v{font-weight:900;font-size:12.5px}
+.cmpbox .cm-v.up{color:var(--good)}.cmpbox .cm-v.down{color:var(--danger)}
+.cmpbox .cm-cols{display:grid;grid-template-columns:repeat(2,minmax(0,max-content));gap:1px 18px}
+.cmpbox .cm-h{font-size:10px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.cmpbox .cm-c{display:grid;align-content:start}
+.cmpbox .cm-more{font-size:11px;color:var(--muted)}
+/* bulle du chat (PC) : juste « Chat » et les non lus */
+@media (min-width:860px){
+  .chmin{padding:6px 14px;border-radius:999px;border-color:var(--gold);max-width:none}
+  .chmin .last,.chmin .ev{display:none}
+}

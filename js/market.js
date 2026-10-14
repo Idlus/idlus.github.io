@@ -182,7 +182,7 @@
       const c = X().mainHero(); const T = ITEMS[key];
       const rows = O.map((o) => { const it = o.item || { tpl: key, stats: {} }; const q = Math.round(E.itemQuality(it) * 100);
         return `<div class="mkoffer"><span class="mkjet ${q >= 90 ? "hi" : ""}">jet ${q} %</span><div class="grow"><div class="mkst">${X().itemStatsHtml(it)}</div>
-          <div class="xs muted">${it.radiant ? `<b style="color:var(--gold)">✦ Rayonnant +${it.radiant} %</b> · ` : ""}${it.fm ? `forgemagé ×${it.fm} · ` : ""}${c && T.lvl <= c.lvl ? `pour ${h(c.name)} : ${X().cmpItem(c, it)}` : ""}</div></div>${kk(o.price)}${buyBtn(o)}</div>`; }).join("");
+          <div class="xs muted">${it.radiant ? `<b style="color:var(--gold)">✦ Rayonnant +${it.radiant} %</b> · ` : ""}${it.fm ? `forgemagé ×${it.fm} · ` : ""}${c && T.lvl <= c.lvl ? X().cmpItem(c, it) : ""}</div></div>${kk(o.price)}${buyBtn(o)}</div>`; }).join("");
       return `<section class="panel mkdet">${head}<div class="list">${rows || `<div class="empty">Plus aucune offre.</div>`}</div><div class="pad stack">${statsHtml(M.stats, cat, key)}<span class="xs muted">Chaque offre est un objet précis : tu reçois exactement ce que tu vois.</span></div></section>`;
     }
     const lots = [1, 10, 100].map((q) => { const os = O.filter((o) => o.qty === q && !o.mine); const best = os[0];

@@ -384,7 +384,7 @@
 
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
-  function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="Panel admin">${X().G("shield")}<span class="hide-sm">${C.role === "admin" ? "Admin" : "Modération"}</span></button>` : ""; }
+  function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel admin" : "Modération"}" aria-label="${C.role === "admin" ? "Panel admin" : "Modération"}">${X().G("shield")}</button>` : ""; }
   const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && A.ov.flagged]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || x[0] !== "verif");
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });

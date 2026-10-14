@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.12.9";
+const GAME_VERSION = "1.0.13";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.13", name: "Interface plus nette", items: [
+    "Barre du haut sur une seule ligne sur PC : Options et Admin deviennent des icônes, le nombre de monstres tués garde son icône, le nom de la zone se raccourcit si la place manque",
+    "Les annonces du serveur tiennent sur une ligne, sur PC comme au téléphone : « Lire la suite » les ouvre en entier",
+    "Menu de gauche plus serré sur PC : les 22 pages, Hôtel de vente, Guilde, Classements et Suggestions compris, tiennent sur un écran de 800 px de haut",
+    "Menu du téléphone en 4 tuiles par ligne : toutes les pages tiennent sur un écran, sans défiler",
+    "Au téléphone, les onglets (Hôtel de vente, Inventaire, Quêtes…) tiennent sur une ligne qu'on fait glisser au doigt ; elle reste où vous l'avez mise malgré le rafraîchissement de la page",
+    "Comparaison d'un objet plus claire (bulle de l'inventaire, Hôtel de vente, fiche « Donner ») : « ▲ Mieux » ou « ▼ Moins bien » pour le héros, calculé comme « Équiper au mieux », puis ses 4 plus gros gains et ses 4 plus grosses pertes",
+    "Bulle du chat plus petite sur PC : juste « Chat » et les messages non lus, elle ne cache plus le bas de la page",
+  ] },
   { v: "1.0.12.9", name: "Forgemagie pour tous", items: [
     "Les six métiers de forgemagie (Costumage, Joaillomage, Cordomage, Forgemage, Sculptemage, Façomage) sont ouverts dès le départ : plus besoin du niveau 65 du métier d'artisanat lié",
   ] },
@@ -1677,13 +1686,13 @@ function statusHtml() {
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     ${sabHtml()}
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
-    <span class="it hide-sm">${IC("monde")} <span>${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
+    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
-    <span class="it hide-sm">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b> tués</span>
+    <span class="it hide-sm" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b></span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}<span class="optlbl hide-sm">Options</span></button>`;
+    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button><button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
 }
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
 const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
@@ -4013,9 +4022,15 @@ function deltaHtml(c, slot, uid) {
     if (otherSaved) other.equip = otherSaved;
   } else { delete c.equip[slot]; nw = E.charStats(S, c); }
   c.equip = saved;
-  const keys = STAT_ORDER.concat(["hpMax"]).filter((k) => k !== "ini" && (nw[k] || 0) !== (cur[k] || 0));
-  if (!keys.length) return `<span class="muted xs">Aucun changement</span>`;
-  return keys.map((k) => { const d = Math.round(nw[k] - cur[k]); const n = k === "hpMax" ? "PV" : STATS[k].short; return `<span class="${d > 0 ? "plus" : "minus"} xs num">${d > 0 ? "+" : ""}${d} ${n}</span>`; }).join(" ");
+  const keys = STAT_ORDER.concat(["hpMax"]).filter((k) => k !== "ini" && Math.round((nw[k] || 0) - (cur[k] || 0)) !== 0);
+  if (!keys.length) return `<span class="muted xs">Aucun changement pour ${h(c.name)}</span>`;
+  // 1.0.13 : un verdict (même calcul que « Équiper au mieux »), puis les plus gros gains et les plus grosses pertes, en deux colonnes
+  const ds = keys.map((k) => ({ d: Math.round(nw[k] - cur[k]), n: k === "hpMax" ? "PV" : STATS[k].short, w: k === "hpMax" ? 0.25 : 1 })).sort((a, b) => Math.abs(b.d * b.w) - Math.abs(a.d * a.w));
+  const up = ds.filter((x) => x.d > 0), dn = ds.filter((x) => x.d < 0), N = 4;
+  const col = (l, cls) => l.length ? l.slice(0, N).map((x) => `<span class="${cls} num">${x.d > 0 ? "+" : ""}${x.d} ${x.n}</span>`).join("") + (l.length > N ? `<span class="cm-more">+ ${l.length - N} autre${l.length - N > 1 ? "s" : ""}</span>` : "") : `<span class="cm-more">rien</span>`;
+  let g = null; if (uid !== undefined && uid !== null && S.items[uid]) try { g = gainFor(c, slot, uid); } catch (e) {}
+  const vd = g === null ? "" : g > 1 ? `<span class="cm-v up">▲ Mieux pour ${h(c.name)}</span>` : g < -1 ? `<span class="cm-v down">▼ Moins bien pour ${h(c.name)}</span>` : `<span class="cm-v">≈ À peu près pareil pour ${h(c.name)}</span>`;
+  return `<span class="cmpbox">${vd}<span class="cm-cols"><span class="cm-h">Gagne</span><span class="cm-h">Perd</span><span class="cm-c">${col(up, "plus")}</span><span class="cm-c">${col(dn, "minus")}</span></span></span>`;
 }
 
 /* ---------- HÉROS ---------- */
@@ -5101,7 +5116,7 @@ function tipItemHtml(uid) {
   const it = S.items[uid]; if (!it) return "";
   const T = ITEMS[it.tpl]; const c = ui.cid ? char(ui.cid) : S.chars[0];
   let cmp = "";
-  if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">Pour ${h(c.name)} : ${deltaHtml(c, slot, uid)}</div>`; }
+  if (c && T.lvl <= c.lvl && !E.equippedBy(S, uid)) { const slot = E.slotFor(c, it); cmp = `<div class="tipcmp">${deltaHtml(c, slot, uid)}</div>`; }
   const worn = T.set && c ? E.setCounts(S, c)[T.set] || 0 : undefined;
   return `<b class="iname ${rarName(it.tpl)}">${h(T.name)}</b> ${rarTag(it.tpl)}${T.leg ? " " + legEvHtml(it) : ""} <span class="muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.fm ? ` · forgemagé ×${it.fm}` : ""}</span>${it.radiant ? ` <b style="color:var(--gold)">✦ +${it.radiant} %</b>` : ""}<div class="tipstats">${itemStatsHtml(it)}</div>${T.slot === "arme" ? wpTipHtml(it.tpl, it) : ""}${T.set ? setBlock(T.set, worn) : ""}${cmp}`;
 }
@@ -5892,8 +5907,26 @@ function render() {
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else if (ui.tab === "sugg" && window.IDEES) window.IDEES.render($("#main")); // 0.1.36, voir js/idees.js
   else { ui.tab = "home"; renderHome(); }
+  tabsKeep();
   tipTick();
 }
+/* 1.0.13 : au téléphone, chaque rangée d'onglets tient sur une ligne qui défile ; le redessin des 3 s ne la remet pas au début */
+const tabScroll = {};
+const tabRows = () => [...document.querySelectorAll("#main .subtabs, #main .catchips")];
+const tabKey = (el) => ui.tab + ":" + tabRows().indexOf(el);
+function tabsKeep() {
+  if (!matchMedia("(max-width:640px)").matches) return;
+  tabRows().forEach((el) => {
+    if (el.scrollWidth <= el.clientWidth + 2) return;
+    const k = tabKey(el);
+    if (tabScroll[k] !== undefined) { el.scrollLeft = tabScroll[k]; return; }
+    const on = el.querySelector('[aria-pressed="true"]'); if (!on) return;
+    const r = on.getBoundingClientRect(), b = el.getBoundingClientRect();
+    if (r.right > b.right - 24) el.scrollLeft = r.left - b.left + el.scrollLeft - 24; // l'onglet ouvert reste visible
+  });
+}
+document.addEventListener("scroll", (e) => { const t = e.target; if (t && t.classList && (t.classList.contains("subtabs") || t.classList.contains("catchips"))) tabScroll[tabKey(t)] = t.scrollLeft; }, true);
+new MutationObserver(() => tabsKeep()).observe(document.getElementById("main") || document.body, { childList: true });
 /* Moments de récompense (3.1.3) : un grand encart à la fois, qui se ferme seul ou d'un clic */
 const celeQ = []; let celeOn = null;
 function celebrate(ev) {

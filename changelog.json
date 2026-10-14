@@ -1,6 +1,19 @@
 {
-  "version": "1.0.12.9",
+  "version": "1.0.13",
   "versions": [
+    {
+      "v": "1.0.13",
+      "name": "Interface plus nette",
+      "items": [
+        "Barre du haut sur une seule ligne sur PC : Options et Admin deviennent des icônes, le nombre de monstres tués garde son icône, le nom de la zone se raccourcit si la place manque",
+        "Les annonces du serveur tiennent sur une ligne, sur PC comme au téléphone : « Lire la suite » les ouvre en entier",
+        "Menu de gauche plus serré sur PC : les 22 pages, Hôtel de vente, Guilde, Classements et Suggestions compris, tiennent sur un écran de 800 px de haut",
+        "Menu du téléphone en 4 tuiles par ligne : toutes les pages tiennent sur un écran, sans défiler",
+        "Au téléphone, les onglets (Hôtel de vente, Inventaire, Quêtes…) tiennent sur une ligne qu'on fait glisser au doigt ; elle reste où vous l'avez mise malgré le rafraîchissement de la page",
+        "Comparaison d'un objet plus claire (bulle de l'inventaire, Hôtel de vente, fiche « Donner ») : « ▲ Mieux » ou « ▼ Moins bien » pour le héros, calculé comme « Équiper au mieux », puis ses 4 plus gros gains et ses 4 plus grosses pertes",
+        "Bulle du chat plus petite sur PC : juste « Chat » et les messages non lus, elle ne cache plus le bas de la page"
+      ]
+    },
     {
       "v": "1.0.12.9",
       "name": "Forgemagie pour tous",

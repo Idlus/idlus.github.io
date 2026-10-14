@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.13 « Interface plus nette »
+Demande de Mathis (maquette https://claude.ai/artifact/VnzZRvd1troVA6gjeakeS9, réponse 1A 2A 3A 4A 5A 6A 7A). Barre du haut : libellés Options/Admin/« tués »/« en ligne » retirés au profit des icônes, zone en `.st-wt` raccourcie. Annonce : une ligne partout (`-webkit-line-clamp:1` sur `.atx`, « Lire la suite » géré par `annClip` de chat.js). Menu de gauche : rangées de 27 px. Menu du téléphone : 4 colonnes. Onglets `.subtabs` / `.catchips` au téléphone : une ligne défilante, position gardée par `tabsKeep` (ui.js, clé page + rang de la rangée, observateur sur #main). `deltaHtml` : verdict par `gainFor` + 4 gains / 4 pertes en colonnes (`.cmpbox`). Bulle `.chmin` sur PC : sans aperçu ni pastille d'événement.
+
 ## 1.0.12.9 « Forgemagie pour tous »
 Demande de Mathis (« ne pas bloquer les métiers de forgemagie, enlever la condition des métiers de craft »). `E.fmLearned` (js/systems.js) renvoie toujours vrai : Costumage, Joaillomage, Cordomage, Forgemage, Sculptemage et Façomage sont ouverts dès le départ, sans le niveau 65 du métier d'artisanat lié. Textes de l'atelier et de l'étape « Briseur de runes » de la quête principale mis à jour ; niveaux et XP déjà gagnés inchangés.
 
