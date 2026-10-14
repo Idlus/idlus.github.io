@@ -230,19 +230,26 @@ create trigger ladder_chat after update on public.ladder for each row execute fu
 -- PANEL ADMIN : réservé à Mathis (is_admin) ; les modérateurs (mods) peuvent rendre muet
 -- et traiter les signalements, rien de plus. Chaque action est notée dans le journal.
 -- ============================================================================
+-- 1.0.30 (Panel Xener) : tout le panel est réservé à Mathis, vérifié à chaque appel (adm_need, quel que soit p_admin,
+-- gardé pour les appels des autres fichiers) ; les modérateurs gardent seulement les outils du chat (adm_need_chat :
+-- vue d'ensemble, joueurs, messages, muet, signalements).
 create or replace function public.adm_need(p_admin boolean) returns void language plpgsql stable security definer set search_path = public
 as $$ begin
-  if p_admin and not public.is_admin() then raise exception 'réservé à Mathis'; end if;
-  if not public.is_staff() then raise exception 'réservé à l''équipe'; end if;
+  if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
 end $$;
 revoke all on function public.adm_need(boolean) from public, anon, authenticated;
+create or replace function public.adm_need_chat() returns void language plpgsql stable security definer set search_path = public
+as $$ begin
+  if not public.is_staff() then raise exception 'réservé à l''équipe'; end if;
+end $$;
+revoke all on function public.adm_need_chat() from public, anon, authenticated;
 create or replace function public.pseudo_of(p uuid) returns text language sql stable security definer set search_path = public
   as $$ select pseudo from public.profiles where id = p $$;
 revoke all on function public.pseudo_of(uuid) from public, anon, authenticated;
 
 create or replace function public.adm_overview() returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
-  perform public.adm_need(false);
+  perform public.adm_need_chat();
   return jsonb_build_object(
     'accounts', (select count(*) from profiles),
     'active', (select count(*) from saves where updated_at > now() - interval '24 hours'),
@@ -257,7 +264,7 @@ end $$;
 
 create or replace function public.adm_players(p_q text) returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
-  perform public.adm_need(false);
+  perform public.adm_need_chat();
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (
     select p.id, p.pseudo, p.created_at, p.suspended_at, l.main cls, l.level, l.playtime, l.heroes, l.flagged, l.flag_reason,
       s.updated_at last_save, cs.mute_until, coalesce(cs.banned, false) banned,
@@ -271,13 +278,13 @@ end $$;
 -- Derniers messages publics d'un joueur (pas ses messages privés)
 create or replace function public.adm_msgs(p_user uuid) returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
-  perform public.adm_need(false);
+  perform public.adm_need_chat();
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (select id, body, created_at from chat_msgs where user_id = p_user and ch in ('g', 'c', 'v') and kind = 'msg' order by id desc limit 15) x);
 end $$;
 
 create or replace function public.adm_mute(p_user uuid, p_min int) returns void language plpgsql security definer set search_path = public
 as $$ begin
-  perform public.adm_need(false);
+  perform public.adm_need_chat();
   if exists (select 1 from admins where user_id = p_user) then raise exception 'impossible sur Mathis'; end if;
   insert into chat_sanctions (user_id, mute_until, at) values (p_user, case when p_min > 0 then now() + make_interval(mins => p_min) end, now())
     on conflict (user_id) do update set mute_until = excluded.mute_until, at = now();
@@ -319,7 +326,7 @@ end $$;
 
 create or replace function public.adm_reports() returns jsonb language plpgsql security definer set search_path = public
 as $$ begin
-  perform public.adm_need(false);
+  perform public.adm_need_chat();
   return (select coalesce(jsonb_agg(x order by x.last desc), '[]'::jsonb) from (
     select r.target id, public.pseudo_of(r.target) pseudo, count(distinct r.reporter) n, string_agg(distinct r.reason, ', ') reasons,
       jsonb_agg(distinct r.body) bodies, max(r.at) last, (select l.main from ladder l where l.user_id = r.target) cls
@@ -327,7 +334,7 @@ as $$ begin
 end $$;
 create or replace function public.adm_report_close(p_user uuid) returns void language plpgsql security definer set search_path = public
 as $$ begin
-  perform public.adm_need(false);
+  perform public.adm_need_chat();
   update reports set open = false where target = p_user and open;
   perform public.alog(format('signalements de %s traités', public.pseudo_of(p_user)));
 end $$;

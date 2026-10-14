@@ -125,7 +125,7 @@
     const rate = E.LEG_RATE[ii]; const br = Math.round((60 + 20 * INT.waves) * (1 + 0.5 * ii));
     const diff = Math.round(E.SG_INT[ii].base);
     const detail = `<div class="sgx-int" style="--gc:${INT.col}"><div class="sgx-int-h"><span class="sgx-big">${gem(ii)}</span><span class="stack" style="gap:1px;min-width:0"><b>${h(INT.name)}</b><span class="xs muted">${ii < unl ? "déjà validé, tu peux le rejouer" : ii === unl ? "ta prochaine intensité à valider" : "verrouillé"}</span></span></div>
-      <div class="sgx-facts"><span><b>${INT.loot ? `+${INT.loot} %` : "normal"}</b>butin</span><span><b>${INT.waves}</b>vague${INT.waves > 1 ? "s" : ""} à tenir</span><span><b class="sgx-pips">${Array.from({ length: 11 }, (_, k) => `<i class="${k < diff ? "on" : ""}"></i>`).join("")}</b>difficulté</span><span data-tip="${h(`Dont ${fmt(E.sgWaveBribes(ii))} à chaque vague tenue, gardées même sans valider`)}"><b>≈ ${fmt(br)}</b>Bribes si validé</span><span><b>${rate ? `1 sur ${fmt(1 / rate)}` : "—"}</b>légendaire</span></div>
+      <div class="sgx-facts"><span><b>${INT.loot ? `+${INT.loot} %` : "normal"}</b>butin</span><span><b>${INT.waves}</b>vague${INT.waves > 1 ? "s" : ""} à tenir</span><span><b class="sgx-pips">${Array.from({ length: 11 }, (_, k) => `<i class="${k < diff ? "on" : ""}"></i>`).join("")}</b>difficulté</span><span data-tip="${h(`Dont ${fmt(E.sgWaveBribes(ii))} à chaque vague tenue, gardées même sans valider`)}"><b>≈ ${fmt(br)}</b>Bribes si validé</span><span><b>${rate ? `1 sur ${fmt(1 / rate)}` : "aucun"}</b>légendaire</span></div>
       <div class="sgx-go">${err ? `<span class="tag warn">${h(err)}</span>` : `<button class="sg-btn sgx-enter" data-act="sg-start" data-v="${ii}">${uimg("cristal", "sg-ui")} Entrer en ${h(INT.name)}</button>`}<span class="xs muted">monstres niveau ${lvl} · ${tm.length} héros${!err && (s.hunting || s.dungeon) ? " · la chasse reprend au réveil" : ""}</span></div></div>`;
     const L = s.expLast && E.SG_INT[s.expLast.ii] ? s.expLast : null; // 1.0.10.4 : pas le résultat d'une ancienne Expédition
     const conv = G_.from && !G_.fromSeen ? `<section class="sgd sgx-note"><span class="small">${G("star")} <b>L'Expédition devient le Songe infini.</b> Tes ${fmt(G_.from.ec)} Éclats sont devenus <b>${fmt(G_.from.ec * 5)} Bribes de rêve</b>${G_.from.ups ? `, et tes ${G_.from.ups} améliorations du campement <b>${fmt(G_.from.ups * 150)} Bribes</b>` : ""}. Ton record et tes titres sont gardés.</span><button class="btn sm" data-act="sg-convok">Compris</button></section>` : "";
@@ -316,7 +316,8 @@
   /* ---------- 1.0.30 : classement de la semaine, lots du top 10, nouveautés, tuile du Havre-Sac ---------- */
   const ONL = () => window.ONLINE;
   const linked = () => { const o = ONL(); return !!(o && o.enabled && o.user && o.profile && !(o.solo && o.solo())); };
-  const RANK = { w: -1, list: null, me: null, at: 0, busy: false, err: false, claimed: null };
+  const RANK = { w: -1, list: null, me: null, at: 0, busy: false, err: false, claimed: null, demo: false };
+  const isoWeek = (t) => { const d = new Date(t); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day + 3); const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round((d - y0) / 864e5 / 7 - ((y0.getUTCDay() + 6) % 7 - 3) / 7); }; // numéro de la semaine du calendrier
   const ord = (r) => `${r}${r === 1 ? "er" : "e"}`;
   async function rkLoad(force) {
     const o = ONL(); const db = o && o.enabled && o.db && o.db(); if (!db || RANK.busy) return;
@@ -334,10 +335,14 @@
   const rkPaint = () => { const el = $("#sgRank"); const s = S(); if (el && s) { const html = rankBody(s); if (el.innerHTML !== html) el.innerHTML = html; } };
   const sentGet = () => { try { return JSON.parse(localStorage.getItem("idlus-songe-envoi") || "null"); } catch (e) { return null; } };
   const sentSet = (o) => { try { localStorage.setItem("idlus-songe-envoi", JSON.stringify(o)); } catch (e) {} };
+  /* 1.0.30 : classement d'exemple, seulement depuis le Panel Xener › Test › Essayer une nouveauté (jamais en ligne) */
+  const DEMO = [["Kraken", "iop", 7, 31], ["Lynaë", "eni", 7, 27], ["Nyx", "sram", 6, 34], ["Bwakfu", "iop", 5, 22], ["Gloubi", "osa", 4, 41], ["Tofuzz", "feca", 4, 30], ["Mélusine", "xelor", 3, 44], ["Fléchette", "cra", 3, 25], ["Baloo", "panda", 2, 38], ["Krokmou", "sacri", 2, 19]];
   function rankBody(s) {
     const wk = E.sgWeek(s); const o = ONL(); const mine = wk.ii >= 0 ? `${h(intName(wk.ii))}, ${plural(wk.waves, "vague")}` : "rien de validé";
-    if (!o || !o.enabled) return `<div class="sgr-empty small">Le classement se joue en ligne. Ton meilleur songe de la semaine : <b>${mine}</b>.</div>`;
     const row = (x, me) => `<div class="sgr-row ${me ? "me" : ""}"><b class="n">${x.r}</b><span class="who">${X().cmed(x.main, x.main_lvl)}<b>${X().pname(x.pseudo, x.user_id)}</b></span><span class="xs int">${h(intName(x.ii))}</span><b class="num">${plural(x.waves, "vague")}</b></div>`;
+    if (RANK.demo) { const c0 = s.chars[0]; const L = DEMO.map(([p, c, ii, w], i) => ({ r: i + 1, pseudo: p, main: c, main_lvl: 200, ii: Math.min(ii, E.SG_INT.length - 1), waves: w }));
+      return `<div class="sgr-list">${L.map((x) => row(x, false)).join("")}${row({ r: 14, pseudo: c0.name, main: c0.cls, main_lvl: c0.lvl, ii: Math.max(0, wk.ii), waves: wk.waves }, true)}</div><div class="sgr-foot xs muted">Classement d'exemple (Panel Xener › Test) : rien n'est envoyé au serveur.</div>`; }
+    if (!o || !o.enabled) return `<div class="sgr-empty small">Le classement se joue en ligne. Ton meilleur songe de la semaine : <b>${mine}</b>.</div>`;
     const myId = o.user && o.user.id; const L = RANK.list;
     let list = L === null ? `<div class="sgr-empty small muted">${RANK.err ? `Classement indisponible pour l'instant. <button class="btn sm" data-act="sg-rk">Réessayer</button>` : "Chargement du classement…"}</div>`
       : !L.length ? `<div class="sgr-empty small muted">Personne encore cette semaine : valide un songe pour ouvrir le classement.</div>`
@@ -352,7 +357,7 @@
   }
   function rankHtml(s) {
     const o = ONL(); if (o && o.enabled) rkLoad(false);
-    const rk = `<section class="sgd sgr"><div class="sgr-h"><span class="sg-k">${uimg("trophee")} Classement du Songe · semaine ${E.weekIdx() % 52 + 1}</span><span class="xs muted">même carte pour tous · finit dans ${weekLeft()}</span></div><div id="sgRank">${rankBody(s)}</div></section>`;
+    const rk = `<section class="sgd sgr"><div class="sgr-h"><span class="sg-k">${uimg("trophee")} Classement du Songe · semaine ${isoWeek(E.now())}</span><span class="xs muted">même carte pour tous · finit dans ${weekLeft()}</span></div><div id="sgRank">${rankBody(s)}</div></section>`;
     if (s.settings.sgNews) return `<div class="sgr-grid one">${rk}</div>`;
     const wk = E.sgWeekShop();
     const news = `<section class="sgd sgr-new"><div class="sgr-h"><span class="sg-k">${G("sparkle")} Ce qui s'améliore</span><button class="btn sm" data-act="sg-news">Compris</button></div><div class="sgr-nl">
@@ -465,5 +470,6 @@
 
   /* texte de l'en-tête du combat et de la barre d'état */
   const where = (s) => { if (!E.expActive(s)) return null; const X_ = s.exp; const n = X_.pick !== null ? X_.nodes[X_.pick] : X_.at !== null ? X_.nodes[X_.at] : null; return `Songe · ${intName(X_.ii)} · ${n && n.t === "end" ? `vague ${X_.wave}` : `salle ${n ? n.d : 1}`}`; };
+  if (window.PANEL && window.PANEL.register) window.PANEL.register({ toggle: { id: "sgdemo", n: "Classement du Songe d'exemple (pour voir la page sans serveur)", on: () => !!RANK.demo, set: (v) => { RANK.demo = !!v; } } });
   window.SGUI = { render, act, change, where, combatHtml, legSheet, ui, tile, RANK, rkLoad, submit: sgSubmit, claim: sgClaim };
 })();

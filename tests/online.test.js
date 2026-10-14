@@ -64,7 +64,9 @@ const MOCK = () => {
     channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { window.__chatSub = cb; if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
-    functions: { invoke: async (name, o) => { const d = db(); d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
+    functions: { invoke: async (name, o) => { const d = db();
+      if (o.body.songe) { d.songeSub = (d.songeSub || 0) + 1; put(d); return { data: { ok: true, songe: 1, w: Math.floor((Date.now() / 864e5 + 3) / 7), ii: 2, waves: 20, claim: 20, best: 20, improved: true, rank: 3, fii: 2, fwaves: 20 }, error: null }; } // 1.0.30 : Songe infini rejoué par le serveur
+      d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
       // 1.0.23 : builds partagés (supabase/builds.sql) ; la liste et les vues marchent sans compte
       if (/^builds?_|^adm_builds?/.test(name)) {
@@ -178,6 +180,10 @@ const MOCK = () => {
         boss: { wb_n: 3, wb_pts: 125000, gb_n: 0, gb_pts: 0 }, gifts: [{ code: "SABLIER", at: new Date().toISOString() }], ideas: [], chat: { pub: 12, pub7: 4, priv: 2 }, mod: { reports: 1, reported: 0, log: [{ at: new Date().toISOString(), txt: "Kralamour rendu muet 1 h" }] } }, error: null };
       if (name === "adm_ideas") return { data: (d.ideas || []).slice().reverse(), error: null };
       if (name === "adm_pin") { log(); d.views = d.views || {}; d.views.chat_settings = [{ id: 1, pin_body: a.p_body, pin_chs: a.p_chs, pin_at: ts() }]; put(d); return { data: null, error: null }; } // 0.1.50.2
+      // 1.0.30 : guerre des cités (supabase/alignement.sql) et lots du Songe infini (supabase/songe.sql)
+      if (name === "align_war_state") { const w = d.war || {}; return { data: { w: a.p_w, b: w.b || 0, k: w.k || 0, nb: 3, nk: 2, cb: 5, ck: 4, prev: { w: a.p_w - 1, b: 900, k: 1100, win: "brakmar" } }, error: null }; }
+      if (name === "align_me") return { data: {}, error: null };
+      if (name === "songe_claim") { d.claims = (d.claims || 0) + 1; put(d); return { data: { ok: 1, bribes: 0, top: false, ops: [] }, error: null }; } // ops vides : les numéros d'opération de l'HdV restent ceux du test
       if (name.startsWith("adm_")) { log(); return { data: null, error: null }; }
       if (name === "gift_mine") return d.giftMine ? { data: d.giftMine, error: null } : { data: null, error: { message: "pas encore" } }; // 1.0.6.2
       if (name === "delete_my_account") { delete d.saves[u.id]; d.profiles = d.profiles.filter((p) => p.id !== u.id); d.session = null; put(d); return { data: null, error: null }; }
@@ -650,6 +656,39 @@ const MOCK = () => {
     const gn = await page.inputValue("#gName"); if (gn !== "Les Bouftous") fail("guildes : saisie du nom cassée par le rafraîchissement : " + JSON.stringify(gn));
     if (!(await page.evaluate(() => document.activeElement && document.activeElement.id === "gName"))) fail("guildes : le champ du nom perd le focus");
     await page.click('#nav [data-nk="world"]');
+    // 7g. 1.0.30 : la Communauté. Alignement (camp du serveur, guerre de la semaine), Songe infini classé, Panel Xener
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const W = window.ENGINE.weekIdx();
+      d.views.lb_align = [{ user_id: "u9", pseudo: "Kralamour", side: "brakmar", ord: "coeur", lvl: 80, chap: 3, main: "iop", main_lvl: 200 }, { user_id: "u8", pseudo: "Tofuline", side: "bonta", ord: "coeur", lvl: 41, chap: 2, main: "eni", main_lvl: 180 }];
+      d.views.lb_songe = [{ user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, w: W, ii: 4, waves: 30, r: 1 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, w: W, ii: 3, waves: 22, r: 2 }];
+      d.war = { b: 1200, k: 800 }; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; S.chars[0].lvl = Math.max(S.chars[0].lvl, E.ALIGN_MIN_LVL); E.chooseAlign(S, "brakmar", "coeur"); window.DX.ui.tab = "quests"; window.DX.ui.qt = "align"; window.DX.render(); });
+    await page.evaluate(() => Promise.all([window.ALIGNUI.warLoad(true), window.ALIGNUI.campLoad(true)])); await page.waitForTimeout(300);
+    { const tx = await page.textContent("#main"); ["Guerre des cités", "Bonta 60 %", "Kralamour", "victoire de Brâkmar", "Quêtes de Brâkmar"].forEach((x) => { if (!tx.includes(x)) fail("alignement : « " + x + " » absent de la page"); }); if (/—/.test(tx)) fail("alignement : tiret long dans la page"); }
+    if (!(await page.evaluate(() => window.ENGINE.alignWarOn()))) fail("alignement : le camp gagnant de la semaine passée n'a pas son bonus");
+    if (!(await page.evaluate(() => /al-w k/.test(window.DX.social.pname("Kralamour", "u9")) && /al-w b/.test(window.DX.social.pname("Tofuline", "u8"))))) fail("alignement : le camp du serveur n'est pas affiché à côté du pseudo");
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/alignement.png", fullPage: true });
+    // Songe infini : classement de la semaine, record envoyé au serveur (rejoué là-bas), lots récupérés
+    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; const wk = E.sgWeek(S); wk.ii = 2; wk.waves = 20; S.panelUsed = false; window.DX.ui.tab = "exp"; window.DX.render(); });
+    await page.evaluate(() => window.SGUI.rkLoad(true)); await page.waitForTimeout(200);
+    if (!/Kralamour/.test((await page.textContent("#sgRank").catch(() => "")) || "")) fail("Songe : classement de la semaine absent");
+    await page.evaluate(() => window.SGUI.submit()); await page.waitForTimeout(400);
+    m = await mock(); if (!(m.songeSub >= 1)) fail("Songe : record de la semaine non envoyé au serveur");
+    if (!(m.claims >= 1)) fail("Songe : lots de la semaine passée jamais demandés");
+    { const r = await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; const op = S.hdv && S.hdv.op; const b0 = E.songe(S).br; window.MARKET.apply([{ id: 99999, p: { bribes: 1000 } }], true); const b1 = E.songe(S).br; S.hdv.op = op; return b1 - b0; });
+      if (r !== 1000) fail("Songe : Bribes des lots non ajoutées (" + r + ")"); }
+    // Panel Xener : menu par thème, recherche d'actions, onglet Test ; les modérateurs ne voient que le chat
+    await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .px-nav", { timeout: 5000 }).catch(() => fail("Panel Xener : menu par thème absent"));
+    await page.click("#pxQ"); await page.keyboard.type("Krala"); await page.waitForTimeout(200);
+    if (await page.$('#pxRes button:has-text("Chercher le joueur")')) { await page.click('#pxRes button:has-text("Chercher le joueur")'); await page.waitForSelector('.adm [data-act="adm-sel"]', { timeout: 5000 }).catch(() => fail("Panel Xener : la recherche d'un pseudo n'ouvre pas Joueurs")); }
+    else fail("Panel Xener : « Chercher le joueur » absent de la recherche");
+    await page.click('.adm [data-act="adm-tab"][data-v="test"]'); await page.waitForSelector('.adm [data-adm="preset"]', { timeout: 5000 }).catch(() => fail("Panel Xener : onglet Test absent"));
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "mod"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForTimeout(300);
+    await page.click('#status [data-act="adm-open"]'); await page.click('.adm [data-act="adm-tab"][data-v="vue"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 }).catch(() => fail("Panel Xener : vue des modérateurs absente"));
+    { const V = await page.$$eval('.adm [data-act="adm-tab"]', (L) => L.map((b) => b.dataset.v)); if (V.some((v) => !["vue", "joueurs", "sig", "test"].includes(v)) || (await page.$(".adm #pxQ"))) fail("Panel Xener : un modérateur voit des outils réservés à l'admin : " + V.join(", ")); } // « test » : outils de la version de test, sur la partie de l'appareil seulement
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.role = "admin"; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.CHAT.refresh()); await page.waitForTimeout(300);
+    await page.evaluate(() => { window.DX.ui.tab = "world"; window.DX.render(); window.scrollTo(0, 0); });
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);

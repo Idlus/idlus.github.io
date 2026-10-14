@@ -196,7 +196,7 @@
     const A = S && S.align; if (!A || !A.pend || A.pend.at > E.now()) return false;
     const P = A.pend; const from = E.ALIGN[A.side].name;
     S.align = { side: P.side, order: E.ALIGN[P.side].orders[P.order] ? P.order : "coeur", lvl: Math.min(A.lvl || 0, E.ALIGN_SWITCH_LVL), xp: 0 };
-    S.alignQuest = null; if (E.newAlignQuest) E.newAlignQuest(S); E.alInit(S);
+    S.alignQuest = null; if (E.newAlignQuest) E.newAlignQuest(S); E.alInit(S); if (WAR.side) WAR.side = P.side;
     note(S, `Tu quittes ${from} : te voici ${E.ALIGN[P.side].adj}, ordre ${E.ALIGN[P.side].orders[S.align.order].name}, au rang ${E.alignRankIdx(S)}.`, "rare");
     E.emit(S, "align", { side: P.side }); return true;
   };
