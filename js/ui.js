@@ -5771,16 +5771,20 @@ function invUps() { // lit le dernier plan connu de chaque héros (planView) : l
   const m = new Map(); S.chars.forEach((c) => { if (!c.inTeam) return; const plan = planView(c); for (const s in plan) { const u = plan[s]; if (u && u !== c.equip[s] && !m.has(u)) m.set(u, c); } }); return m; }
 /* « Nouveau » : objets arrivés depuis la visite précédente de l'inventaire (le repère est figé pendant la visite) */
 const invSeen = () => { if (!ui.invOn) { ui.invSeen0 = S.invSeenUid || 0; S.invSeenUid = S.nextUid - 1; ui.invOn = true; } return ui.invSeen0 || 0; };
-let invCnt = {};
+let SETTPL = null; const setTpls = (z) => { if (!SETTPL) { SETTPL = {}; for (const k in ITEMS) if (ITEMS[k].set) (SETTPL[ITEMS[k].set] = SETTPL[ITEMS[k].set] || []).push(k); } return SETTPL[z] || []; };
+let invCnt = {}; let invOwn = new Set(); let invTrash = new Set();
 function invGroups() {
   const q = E.searchNorm(ui.invSearch); const filt = ui.slotFilter;
   const groups = new Map(); const worn = wornMap(); const showEq = invShowEq();
-  const ups = invUps(); const seen = invSeen(); invCnt = { all: 0, up: 0, new: 0, radiant: 0 };
+  const ups = invUps(); const seen = invSeen(); invCnt = { all: 0, up: 0, new: 0, radiant: 0, trash: 0, sets: 0 };
+  invOwn = new Set(Object.values(S.items).map((x) => x.tpl)); invTrash = new Set();
+  const lo = E.team(S).length ? Math.min(...E.team(S).map((c) => c.lvl)) - 30 : 0; // « À trier » : 30 niveaux sous le plus bas héros de l'équipe
+  Object.values(S.items).forEach((it) => { const T = ITEMS[it.tpl]; if (!ups.has(it.uid) && !it.locked && !it.radiant && !it.exo && !T.leg && !T.set && T.slot !== "dofus" && T.lvl < lo && !worn.has(it.uid)) invTrash.add(it.uid); });
   Object.values(S.items).forEach((it) => {
     const T = ITEMS[it.tpl];
     if (!showEq && worn.has(it.uid)) return;
-    if (!q || txtHas(T.name, q)) { invCnt.all++; invCnt[T.slot] = (invCnt[T.slot] || 0) + 1; if (ups.has(it.uid)) invCnt.up++; if (it.uid > seen && seen) invCnt.new++; if (it.radiant) invCnt.radiant++; }
-    if (filt === "up" ? !ups.has(it.uid) : filt === "new" ? !(seen && it.uid > seen) : filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
+    if (!q || txtHas(T.name, q)) { invCnt.all++; invCnt[T.slot] = (invCnt[T.slot] || 0) + 1; if (ups.has(it.uid)) invCnt.up++; if (it.uid > seen && seen) invCnt.new++; if (it.radiant) invCnt.radiant++; if (invTrash.has(it.uid)) invCnt.trash++; if (T.set) invCnt.sets++; }
+    if (filt === "trash" ? !invTrash.has(it.uid) : filt === "sets" ? !T.set : filt === "up" ? !ups.has(it.uid) : filt === "new" ? !(seen && it.uid > seen) : filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
     if (q && !txtHas(T.name, q)) return;
     const g = groups.get(it.tpl) || { tpl: it.tpl, items: [] }; g.items.push(it); groups.set(it.tpl, g);
   });
@@ -5806,6 +5810,7 @@ function invDetail(tpl) {
       return `<button class="invcopy ${it === pk ? "on" : ""}" data-fx="pick" data-uid="${it.uid}"><span class="ijet" style="--w:${j}%;--hj:${jetHue(E.itemQuality(it))}"></span><b class="num">Jet ${j} %</b>${g.items.length > 1 ? `<span class="xs muted">×${g.items.length}</span>` : ""}${it.radiant ? `<span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.exo ? `<span class="tag exo">Exo ${STATS[it.exo].short}</span>` : ""}${it.locked ? G("lock") : ""}${b ? `<span class="xs muted">porté par ${h(b.name)}</span>` : ""}</button>`; }).join("")}</div>` : "";
   return `<div class="panel invdetail invdA"><div class="phead"><div class="row">${itemIcon(pk)}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${slotN}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
     ${up ? `<div class="invupl"><b>▲ Mieux pour ${h(up.name)}</b> <span class="xs muted">« Équiper au mieux » le mettrait sur ce héros</span></div>` : ""}
+    ${E.team(S).length > 1 ? `<div class="invcmpl"><span class="xs muted">Comparer avec</span>${E.team(S).map((c) => `<button class="invcmp ${ui.cid === c.id ? "on" : ""}" data-act="invcmp" data-cid="${c.id}" title="${h(c.name)}" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}${copies.some((x) => ups.get(x.uid) === c) ? "<i>▲</i>" : ""}</button>`).join("")}</div>` : ""}
     ${acts}${rows}
     <div class="pad xs">${window.FORGEUI ? tplStatsHtml(Object.assign({}, T, { stats: {} })) + window.FORGEUI.statGrid(T, pk, window.FORGEUI.wornRef(tpl, pk)) : tplStatsHtml(T)}
       ${T.set ? `<details class="invsetd"><summary>Bonus de la ${h(SETS[T.set].name)}</summary>${setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined)}</details>` : ""}</div></div>`;
@@ -5934,7 +5939,7 @@ function invTile(g) { const T = ITEMS[g.tpl]; const best = g.items.slice().sort(
   const pick = ui.invMulti; const on = pick && g.items.some((x) => pick.has(x.uid));
   return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl && !pick ? "on" : ""} ${on ? "picked" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
       ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}
-      ${g.up ? `<span class="iup" title="Mieux pour ${h(g.up.name)}">▲</span>` : ""}${g.nw ? `<span class="inewi">Nouveau</span>` : ""}${`<span class="ijet" style="--w:${Math.round(g.best * 100)}%;--hj:${jetHue(g.best)}" title="Meilleur jet ${Math.round(g.best * 100)} %"></span>`}${pick ? `<span class="ipick">${on ? "✓" : ""}</span>` : ""}</button>`; }
+      ${g.up ? `<span class="iup" title="Mieux pour ${h(g.up.name)}">▲</span>` : ""}${g.nw ? `<span class="inewi">Nouveau</span>` : ""}${`<span class="ijet" style="--w:${Math.round(g.best * 100)}%;--hj:${jetHue(g.best)}" title="Meilleur jet ${Math.round(g.best * 100)} %"></span>`}${T.set && SETS[T.set] && !g.eq ? `<span class="iset" title="${h(SETS[T.set].name)}">${setTpls(T.set).filter((t) => invOwn.has(t)).length}/${setTpls(T.set).length}</span>` : ""}${pick ? `<span class="ipick">${on ? "✓" : ""}</span>` : ""}</button>`; }
 function invItemsHtml(groups) {
   const empty = `<div class="empty">${ui.invSearch || (ui.slotFilter && ui.slotFilter !== "all") ? "Aucun objet ne correspond." : "Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer."}</div>`;
   const by = {}; groups.forEach((g) => (by[ITEMS[g.tpl].slot] = by[ITEMS[g.tpl].slot] || []).push(g));
@@ -5957,19 +5962,21 @@ function renderInventory() {
     const detail = invSide() && !ui.invMulti && ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
     const nWorn = wornMap().size;
     const pick = ui.invMulti;
-    const chips = [["all", "Tout", invCnt.all], ["up", "▲ Améliorations", invCnt.up], ["new", "Nouveaux", invCnt.new], ["radiant", "✦ Rayonnants", invCnt.radiant], ...INV_SLOTS.map(([k, n]) => [k, n, invCnt[k] || 0])].filter(([k, , c]) => k === "all" || c || ui.slotFilter === k);
+    const chips = [["all", "Tout", invCnt.all], ["up", "▲ Améliorations", invCnt.up], ["new", "Nouveaux", invCnt.new], ["radiant", "✦ Rayonnants", invCnt.radiant], ["sets", "Panoplies", invCnt.sets], ["trash", "À trier", invCnt.trash], ...INV_SLOTS.map(([k, n]) => [k, n, invCnt[k] || 0])].filter(([k, , c]) => k === "all" || c || ui.slotFilter === k);
     const selBtn = `<button class="btn sm ${pick ? "primary" : ""}" data-act="invmulti">${pick ? "Terminer" : `☑<span class="ilbl"> Sélectionner</span>`}</button>`;
     const pickBar = pick ? (() => { const n = pick.size; const brk = [...pick].filter((u) => S.items[u] && !S.items[u].locked && !E.equippedBy(S, u)).length;
       return `<div class="invpickbar"><b class="num">${n}</b><span class="small">objet${n > 1 ? "s" : ""} sélectionné${n > 1 ? "s" : ""}</span><span class="grow"></span><button class="btn sm" data-act="invpickall">Tout ce filtre</button><button class="btn sm" data-act="invpicklock">${G("lock")} Cadenas</button>${ui.confirm === "invbrk" ? `<button class="btn sm danger" data-act="invpickbrk">Confirmer : briser ${brk}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="invpickbrk" ${brk ? "" : "disabled"} title="Les objets portés et verrouillés ne sont jamais brisés">Briser ${brk}</button>`}</div>`; })() : "";
     const toolsA = `<div class="invtools"><div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher un objet…" value="${h(ui.invSearch || "")}">
         <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["up", "Améliorations d'abord"], ["recent", "Récents"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
-        ${selBtn}<button class="btn sm ${ui.invMore ? "primary" : ""}" data-act="invmore" title="Options du sac">${G("gear")}<span class="ilbl"> Options</span></button></div>
+        <button class="btn sm ${S.settings.invSmall ? "primary" : ""}" data-act="invsmall" title="${S.settings.invSmall ? "Grandes cases" : "Petites cases : plus d'objets à l'écran"}" aria-pressed="${!!S.settings.invSmall}">▦</button>${selBtn}<button class="btn sm ${ui.invMore ? "primary" : ""}" data-act="invmore" title="Options du sac">${G("gear")}<span class="ilbl"> Options</span></button></div>
       <div class="catchips invchips">${chips.map(([k, n, c]) => `<button data-act="invchip" data-v="${k}" aria-pressed="${(ui.slotFilter || "all") === k}">${n} <b>${c}</b></button>`).join("")}</div>
+      ${ui.slotFilter === "up" && invCnt.up ? (() => { const hs = new Set([...invUps().values()].map((c) => c.id)); return `<div class="invhint">${G("sparkle")}<span class="grow"><b>${invCnt.up} objets</b> sont mieux pour <b>${hs.size} héros</b> de l'équipe.</span><button class="btn sm primary" data-act="invupall">Tout équiper au mieux</button></div>`; })() : ""}
+      ${ui.slotFilter === "trash" && invCnt.trash ? `<div class="invhint"><span class="grow"><b>${invCnt.trash} objets</b> ne servent à aucun héros de l'équipe : niveau bien plus bas, aucune panoplie, ni cadenas ni Rayonnant.</span><button class="btn sm" data-act="invtrashpick">Tout sélectionner</button></div>` : ""}
       ${ui.invMore ? `<div class="panel invmore"><div class="pad stack" style="gap:8px"><div class="row"><span class="muted small num">${invCountTxt(groups)}</span><label class="row small"><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé (${nWorn})</label>${dupesBtn()}</div>${autoRulesHtml()}</div></div>` : `<div class="xs muted num" id="invCount">${invCountTxt(groups)}</div>`}</div>`;
     body = `${toolsA}
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
-        <div id="invItems">${invItemsHtml(groups)}</div>
+        <div id="invItems" class="${S.settings.invSmall ? "invsmall" : ""}">${invItemsHtml(groups)}</div>
       </div>${pickBar}`;
   } else if (ui.inv === "over") {
     body = overHtml();
@@ -8304,6 +8311,11 @@ document.addEventListener("click", (ev) => {
     case "invsel": if (ui.invMulti && d.tpl) { const L = Object.values(S.items).filter((x) => x.tpl === d.tpl && !(invShowEq() ? false : wornMap().has(x.uid))); const on = L.some((x) => ui.invMulti.has(x.uid)); L.forEach((x) => (on ? ui.invMulti.delete(x.uid) : ui.invMulti.add(x.uid))); break; }
       ui.invSel = d.tpl || null; if (!ui.invSel) closeSheet(); break;
     case "invchip": ui.slotFilter = d.v; break;
+    case "invsmall": S.settings.invSmall = !S.settings.invSmall; break;
+    case "invcmp": ui.cid = +d.cid; break;
+    case "invtrashpick": ui.invMulti = new Set(invTrash); ui.invSel = null; closeSheet(); break;
+    case "invupall": { let n = 0; // 1.0.31 : « Équiper au mieux » pour chaque héros de l'équipe (plans à jour, calcul synchrone voulu)
+      E.team(S).forEach((c) => { n += equipBest(c); }); toast(`${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.`); break; }
     case "invmore": ui.invMore = !ui.invMore; break;
     case "invshut": (ui.invShut = ui.invShut || {})[d.v] = !ui.invShut[d.v]; break;
     case "invmulti": ui.invMulti = ui.invMulti ? null : new Set(); if (ui.invMulti) { ui.invSel = null; closeSheet(); } break;

@@ -5175,3 +5175,9 @@ span.fch{cursor:default;padding-left:8px}
 .invcopy .ijet{position:relative;left:0;right:0;bottom:0;width:54px;flex:none}
 .invsetd summary{cursor:pointer;font-weight:800;margin:8px 0 4px}
 @media (max-width:860px){.invtools .ilbl{display:none}.invtools .invbar{flex-wrap:nowrap;gap:6px}.invtools .invbar input[type=text]{min-width:0}.invtools .invbar select{max-width:132px}}
+.invhint{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:rgba(63,191,79,.13);border:1.5px solid rgba(63,191,79,.45);font-size:13.5px}
+.invsmall .invgrid{grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:5px}.invsmall .itile{border-radius:9px}.invsmall .ilvl{font-size:9px}.invsmall .icount{font-size:9.5px}.invsmall .iup{width:14px;height:14px;line-height:14px;font-size:8px}.invsmall .inewi{display:none}
+.iset{position:absolute;left:3px;bottom:9px;font-size:9.5px;font-weight:900;background:#5b7fd6;color:#fff;border-radius:5px;padding:0 3px}
+.invcmpl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px 0}
+.invcmp{position:relative;width:32px;height:32px;border-radius:50%;padding:0;border:2px solid var(--frame);background:var(--panel2);overflow:visible;cursor:pointer}.invcmp img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.invcmp.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}.invcmp i{position:absolute;right:-4px;top:-4px;font-style:normal;font-size:8px;width:14px;height:14px;line-height:14px;border-radius:50%;background:#3fbf4f;color:#fff;text-align:center}
