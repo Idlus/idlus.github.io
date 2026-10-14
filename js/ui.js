@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.29.2";
+const GAME_VERSION = "1.0.29.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.29.3", name: "Ceinture Séculaire", items: [
+    "La Ceinture Séculaire peut maintenant tomber (sur le Sylargh) : toute la panoplie Séculaire se drope",
+    "Trois autres équipements oubliés se dropent aussi : Plumodales (Batofu), Cape Reski (Obsidiantre), Bottes des Voyageurs (Ush Galesh)",
+  ] },
   { v: "1.0.29.2", name: "Clés en silence", items: [
     "Nouvelle option dans Options › Jeu › Notifications de clé : décocher « Afficher les clés trouvées » coupe le petit message « Butin : Clef… » à chaque clé de donjon ramassée",
     "La clé arrive toujours dans l'inventaire et reste notée dans le journal" ] },

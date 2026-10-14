@@ -51,3 +51,8 @@ console.log("ok - hors ligne dans un donjon");
     const st = Object.keys(DATA.SETS).find((k) => D.SETS[k].name === set); const ps = Object.keys(ITEMS).filter((t) => ITEMS[t].set === st);
     assert.ok(ps.length >= 4, set); ps.forEach((t) => assert.deepStrictEqual(src(t), [boss(b)], `${ITEMS[t].name} tombe sur ${b}`)); } }
 console.log("ok - panoplies de boss");
+
+// 8. Toute la panoplie Séculaire se drope (la Ceinture n'avait aucune source avant 1.0.29.2).
+{ const st = Object.keys(D.SETS).find((k) => D.SETS[k].name === "Panoplie Séculaire"); const ps = Object.keys(ITEMS).filter((t) => ITEMS[t].set === st);
+  assert.ok(ps.length >= 3); ps.forEach((t) => assert.ok(Object.keys(MONSTERS).some((k) => (MONSTERS[k].items || []).some(([x]) => x === t)), `${ITEMS[t].name} se drope`)); }
+console.log("ok - panoplie Séculaire");

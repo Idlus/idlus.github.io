@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.29.3 « Ceinture Séculaire »
+
+La Ceinture Séculaire et trois autres équipements oubliés (Plumodales, Cape Reski, Bottes des Voyageurs) peuvent maintenant tomber, avec la même règle que les autres. Les autres chances ne changent pas.
+
 ## 1.0.29.2 « Clés en silence »
 
 Demande de Mathis (14/10/2026, « ajoute un truc pour désactiver toutes les notifs de drop de clé »). Nouvelle case dans Options › Jeu (`S.settings.keyToastOff`, cochée par défaut = messages affichés) : décochée, la boucle d'évènements de js/ui.js n'affiche plus le toast « Butin : Clef… » ; la clé est toujours ajoutée et notée dans le journal.
