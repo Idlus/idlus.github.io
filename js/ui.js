@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.20";
+const GAME_VERSION = "1.0.21";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.21", name: "Havre-Sac en accueil", items: [
+    "L'accueil est maintenant ton Havre-Sac : le bandeau s'appelle « Havre-Sac de <ton héros> » et montre tes bonus d'expérience, de butin, de kamas et l'Autel des Douze en pastilles (un clic ouvre le détail et les plafonds)",
+    "Nouveau bloc « Ma maison » sous « Aujourd'hui » : une tuile par pièce avec son niveau, son bonus, les meubles placés (le boss pour un trophée) et les places libres ; « Améliorer » se fait directement depuis la tuile, en vert quand tu as les kamas, et la tuile se dore quand une amélioration ou un meuble attend",
+    "Trois lignes en bas de « Ma maison » : meubles à placer, trophées de boss (gagnés / à gagner) et Boutique de la maison ; un clic ouvre la page détaillée du Havre-Sac, qui garde ses pièces dépliées, sa boutique et son bouton « ‹ Accueil »",
+    "Menu : l'onglet Accueil s'appelle Havre-Sac (sur PC comme dans la barre du téléphone) et l'entrée Artisanat › Havre-Sac disparaît, tout est sur l'accueil. La chasse en cours, les têtes des héros, la zone conseillée, « Aujourd'hui », « En ce moment », la quête et le journal sont gardés" ] },
   { v: "1.0.20", name: "Trophées passifs", items: [
     "Les trophées de zone ne s'équipent plus : leur bonus agit tout seul, pour toujours, et les 6 emplacements redeviennent des emplacements Dofus",
     "Bonus de région : chaque trophée donne +3 % d'XP, de butin et de kamas quand vous chassez dans sa région (7 trophées d'Incarnam = +21 % dans tout Incarnam), hors plafond",
@@ -1541,7 +1546,7 @@ function shopIng(e) { return E.shopIng(S, e); }
 function shopName(e) { return E.shopName(S, e); }
 /* 3.2.2 : bouton « suivre » (bande d'objectifs) */
 /* 1.0.6.4 : bouton « Y aller » d'une étape de la quête principale (zone, donjon, ou la page où se fait l'étape) */
-const QUEST_GO = { havre: "Artisanat › Havre-Sac", harvest: "Artisanat › Métiers › Récolte", craft: "Artisanat › Métiers › Artisanat", brk: "Artisanat › Forgemagie › Brisage", equip: "Héros › Équipe et héros › Équipement", almanax: "Suivi › Quêtes › Almanax", bounty: "Suivi › Quêtes › Avis de recherche", align: "Suivi › Quêtes › Alignement" };
+const QUEST_GO = { havre: "Havre-Sac (accueil)", harvest: "Artisanat › Métiers › Récolte", craft: "Artisanat › Métiers › Artisanat", brk: "Artisanat › Forgemagie › Brisage", equip: "Héros › Équipe et héros › Équipement", almanax: "Suivi › Quêtes › Almanax", bounty: "Suivi › Quêtes › Avis de recherche", align: "Suivi › Quêtes › Alignement" };
 function questGoBtn(q, cls) {
   if (!q) return "";
   if (q.sub) return `<button class="btn sm ${cls}" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>`;
@@ -1580,9 +1585,9 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Accueil", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["wb", "Boss des mondes", "couronne"]] },
+  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["wb", "Boss des mondes", "couronne"]] },
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
-  { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["havre", "Havre-Sac", "havre"]] },
+  { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
   { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"]] : []).concat([["sugg", "Suggestions", "idee"]]) },
@@ -1590,7 +1595,7 @@ const NAV = [
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
-  if (t === "home") return ui.home === "havre" ? "havre" : "home";
+  if (t === "home") return "home"; // 1.0.21 : le Havre-Sac est l'accueil, sa page détaillée (ui.home = "havre") reste sous le même onglet
   if (t === "world") return ui.zoneView ? "world" : ui.world === "dungeons" || ui.world === "enc" ? ui.world : "world";
   if (t === "heroes") return "team";
   if (t === "quests") return ui.qt === "ach" || ui.qt === "orn" ? "succes" : "quests";
@@ -1756,7 +1761,7 @@ function renderNav() {
     ${NAV.map((F) => `<div class="sn-g"><span>${F.n}</span></div>${F.pages.map(([key, n, ic]) => item(key, n, ic)).join("")}`).join("")}</div>`;
   const inBar = ["home", "world", "team", "combat"]; const menuOn = !inBar.includes(k);
   const mb = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)}>${ic ? med(ic) : heroMed()}<span>${n}</span>${B[key] || ""}</button>`;
-  const mob = `<div class="sn-mob">${mb("home", "Accueil", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv ? '<span class="navdot"></span>' : ""}</button></div>`;
+  const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
   nav.innerHTML = side + mob;
 }
@@ -2026,10 +2031,14 @@ function renderHomeInner() {
   const jt = ui.hj === "c" ? "c" : "j"; const n = ui.hjAll ? 20 : 5;
   const jour = jt === "c" ? `<div class="pad">${historyHtml(n)}</div>` : `<div class="list journal">${S.journal.slice(0, n).map((j) => `<div class="li k-${j.kind}"><span class="grow">${h(j.txt)}</span><span class="xs muted">${ago(j.t)}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div>`;
   const more = (jt === "c" ? S.history.length : S.journal.length) > 5;
+  /* 1.0.21 « Havre-Sac en accueil » (choix de Mathis 1A 2B 3A, menu A, bandeau avec décor) : le bandeau porte la maison (titre, bonus en pastilles),
+     puis « Aujourd'hui », puis « Ma maison » (une tuile par pièce), puis « En ce moment », la quête et le journal. */
+  const chips = BKIND.map(([k, l, i]) => `<button class="hvchip" data-act="hvbonus" data-tip="${h(`${l} : détail des bonus et plafonds`)}">${IC(i)}<b class="num plus">+${fmt(E.bonus(S, k))} %</b><span>${l.toLowerCase()}</span></button>`).join("")
+    + `<button class="hvchip dim" data-act="hvbonus" data-tip="Autel des Douze : relève les plafonds de bonus">${G("star")}<b class="num">${E.altarLvl(S)}/${E.ALTAR.max}</b><span>autel</span></button>`;
   $("#main").innerHTML = `
   <section class="hero-banner ac-ban">
     <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}</div>
-    <div class="inner"><div class="ac-l">
+    <div class="inner"><div class="hvtitle"><h1>${IC("havre")} Havre-Sac de ${h(main.name)}</h1><div class="hvchips">${chips}</div></div><div class="ac-l">
       ${card || `<div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}${lf}</div>`}
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn ac-ib" data-tab="world" data-tip="Changer de zone" aria-label="Zones">${IC("monde")} <span class="lb">Zones</span></button><button class="btn ac-ib" data-act="stophunt" data-tip="Rentrer au Havre-Sac" aria-label="Rentrer">${IC("havre")} <span class="lb">Rentrer</span></button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
       <div class="ac-r"><div class="ac-heads">${heads}</div>${team.length ? fsGauge() : ""}</div>
@@ -2037,6 +2046,7 @@ function renderHomeInner() {
     ${reco}
   </section>
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("target")} Aujourd'hui</h2><span class="xs muted ac-hide">${todo ? `${todo} chose${todo > 1 ? "s" : ""} à faire` : "rien d'urgent"} · renouvelé à minuit</span></div><div class="ac-tds">${tiles}</div></section>
+  ${houseHtml()}
   <section class="grid2 ac-grid" style="margin-top:14px">
     ${homeEvents()}
     <div class="stack" style="gap:14px">
@@ -2048,6 +2058,33 @@ function renderHomeInner() {
     </div>
   </section>
   ${S.shop.length ? `<section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("cart")} Liste de courses</h2></div><div class="pad stack" style="gap:8px">${shopListHtml()}</div></section>` : ""}`;
+}
+/* 1.0.21 : « Ma maison » sur l'accueil : une tuile par pièce (niveau, bonus, meubles placés, amélioration sur place),
+   puis trois lignes : meubles à placer, trophées de boss, boutique de la maison. Tolère une partie incomplète (meuble ou pièce inconnus). */
+function houseHtml() {
+  const furn = Array.isArray(S.furniture) ? S.furniture : [];
+  const placedOf = (R) => E.placed(S, R.id).filter((f) => E.FURN[f]);
+  const tile = (R) => { const lock = R.soon || (R.post === "atelier" && !(S.atelier && S.atelier.built)); const id = R.ups[0]; const H = id ? E.HAVRE.find((x) => x.id === id) : null;
+    const lvl = H ? E.havreLvl(S, id) : 0; const cost = H ? E.havreCost(S, id) : 0; const can = !!H && lvl < H.max && S.kamas >= cost;
+    const pl = R.slots ? placedOf(R) : []; const slots = R.slots ? E.roomSlots(S, R.id) : 0; const free = furn.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
+    const t = R.post === "train" ? E.trainee(S) : null;
+    const sumb = H ? `+${fmt(lvl * H.per)}${H.unit.split(" (")[0]}` : R.post === "atelier" ? (lock ? `à construire · ${fmt(E.ATELIER_COST)} k` : "fabrication automatique") : "élevage des montures";
+    const icons = pl.slice(0, 5).map((f) => { const F = E.FURN[f]; const dg = F.trophy && DUNGEONS[F.trophy];
+      return dg && MONSTERS[dg.boss] ? im(imgM(dg.boss), "hvfi", f) : `<span class="hvfi" data-tip="${h(f)}">${IC(F.room === "biblio" ? "parchemin_or" : F.kind === "bag" || F.kind === "kamas" ? "coffre" : F.kind === "gather" ? "pioche" : R.icon)}</span>`; }).join("");
+    const empty = Math.max(0, slots - pl.length);
+    const dots = R.slots ? `<span class="hvslots">${icons}${Array.from({ length: empty }, () => `<span class="hvfi empty" data-tip="Place libre">+</span>`).join("")}</span>` : "";
+    const act = lock ? (R.soon ? `<span class="tag soft">Bientôt</span>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Construire · ${fmt(E.ATELIER_COST)} k</button>`)
+      : R.post === "train" ? `<button class="btn sm ${t ? "" : "primary"}" data-act="hvroomgo" data-v="${R.id}">${t ? `${h(t.name)} s'entraîne` : "Choisir un héros"}</button>`
+      : H ? `<button class="btn sm ${can ? "primary" : ""}" data-act="havre" data-id="${id}" ${can || lvl >= H.max ? "" : "disabled"} data-tip="${h(lvl >= H.max ? `${R.name} au maximum` : `Niveau ${lvl + 1} : +${H.per}${H.unit.split(" (")[0]} de plus`)}">${lvl >= H.max ? "Maximum" : `Améliorer · ${fmtK(cost)} k`}</button>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Ouvrir</button>`;
+    return `<article class="hvtile ${lock ? "locked" : ""} ${can || free ? "hot" : ""}" style="--rc:${R.color}"><button class="hvth" data-act="hvroomgo" data-v="${R.id}" data-tip="${h(`${R.name} : ${R.desc}`)}"><span class="rico">${IC(R.icon)}</span><span class="min0"><h3>${h(R.name)}${H ? ` <span class="hvlv num">${lvl}/${H.max}</span>` : ""}</h3><span class="xs plus">${h(sumb)}</span></span></button>${dots}<footer>${act}${free ? `<button class="btn sm ghost" data-act="hvroomgo" data-v="${R.id}">${IC("meuble")} ${free} à placer</button>` : ""}</footer></article>`; };
+  const free = furn.filter((f) => E.FURN[f] && !E.isPlaced(S, f)); const trophies = Object.keys(E.FURN).filter((f) => E.FURN[f].trophy); const left = trophies.filter((f) => !furn.includes(f)).length;
+  const all = Object.keys(E.FURN).filter((f) => E.FURN[f].shop); const own = all.filter((f) => furn.includes(f)).length;
+  const placedN = E.ROOMS.reduce((a, R) => a + placedOf(R).length, 0), slotsN = E.ROOMS.reduce((a, R) => a + E.roomSlots(S, R.id), 0);
+  return `<section class="panel hvhouse" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Ma maison</h2><span class="xs muted"><b class="num">${placedN}/${slotsN}</b> meubles placés · <button class="btn xs" data-act="hvroomgo" data-v="">Tout voir</button></span></div>
+    <div class="hvtiles">${E.ROOMS.map(tile).join("")}</div>
+    <div class="hvfoot">${free.length ? `<button class="hvfl hot" data-act="hvroomgo" data-v="${E.FURN[free[0]].room}">${IC("meuble")}<span class="grow"><b>${free.length} meuble${free.length > 1 ? "s" : ""} à placer</b><span class="xs muted">${free.map((f) => h(f)).join(" · ")}</span></span><span class="tag">Placer</span></button>` : `<button class="hvfl" data-act="hvroomgo" data-v="">${IC("meuble")}<span class="grow"><b>Meubles</b><span class="xs muted">${furn.some((f) => E.FURN[f]) ? "tous placés" : "Boutique, trophées de boss, Comptoir, Bricoleur, Almanax et butins rares en donnent"}</span></span><span class="chev">›</span></button>`}
+      <button class="hvfl" data-act="fcatalog">${IC("trophee")}<span class="grow"><b>Trophées de boss</b><span class="xs muted">${trophies.length - left} gagné${trophies.length - left > 1 ? "s" : ""} · ${left} à gagner en stasis ${E.TROPHY_STASIS}</span></span><span class="chev">›</span></button>
+      <button class="hvfl" data-act="hvshop">${IC("bourse")}<span class="grow"><b>Boutique de la maison</b><span class="xs muted">${own}/${all.length} meubles achetés · en kamas</span></span><span class="chev">›</span></button></div></section>`;
 }
 /* ---------- 4.0 : Havre-Sac en pièces ---------- */
 const hvPips = (l, m) => `<div class="pipsbar">${Array.from({ length: Math.min(m, 50) }, (_, i) => `<i class="${i < l ? "on" : ""}"></i>`).join("")}</div>`;
@@ -2149,10 +2186,10 @@ function havreHtml() {
   const free = S.furniture.filter((f) => E.FURN[f] && !E.isPlaced(S, f)).sort((a, b) => E.FURN[a].room.localeCompare(E.FURN[b].room));
   const left = Object.keys(E.FURN).filter((f) => E.FURN[f].trophy && !S.furniture.includes(f)).length;
   const room = (R) => { const open = ui.hvRoom === R.id;
-    return `<article class="room ${open ? "open" : ""} ${R.soon || (R.post === "atelier" && !S.atelier.built) ? "locked" : ""} ${R.soon ? "soon" : ""}" style="--rc:${R.color}">
+    return `<article class="room ${open ? "open" : ""} ${R.soon || (R.post === "atelier" && !S.atelier.built) ? "locked" : ""} ${R.soon ? "soon" : ""}" style="--rc:${R.color}" data-room="${R.id}">
       <header data-act="hvroom" data-v="${R.id}"><span class="rico">${IC(R.icon)}</span><div class="grow"><h3>${h(R.name)}</h3><div class="xs muted">${h(R.desc)}</div><div class="xs plus msum">${h(roomSum(R))}</div></div>${R.soon ? `<span class="tag soft">Bientôt</span>` : ""}<span class="chev">▾</span></header>
       ${roomBody(R)}</article>`; };
-  return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
+  return `<section class="panel"><div class="phead"><h2>${IC("havre")} Havre-Sac</h2><span class="small row" style="gap:10px"><span><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span><button class="btn sm" data-act="nav" data-v="home">‹ Accueil</button></span></div>
     <div class="pad stack">${bonusBox()}<div class="hvsum two">
       <div><b class="num">${placedN} / ${slotsN}</b><span>meubles placés</span></div><div><b class="num">${t ? h(t.name) : "—"}</b><span>à l'entraînement</span></div></div>
     <div class="rooms">${E.ROOMS.map(room).join("")}</div></div></section>
@@ -7146,6 +7183,10 @@ document.addEventListener("click", (ev) => {
     case "hometab": ui.home = d.v; break;
     case "havre": { const r = E.buyHavre(S, d.id); if (r) { toast(r); return; } toast(`${E.HAVRE.find((x) => x.id === d.id).name} amélioré !`); break; }
     case "hvroom": ui.hvRoom = ui.hvRoom === d.v ? null : d.v; break;
+    /* 1.0.21 : depuis « Ma maison » sur l'accueil : la page détaillée, ouverte sur la pièce, sur la boutique ou sur les bonus */
+    case "hvroomgo": ui.tab = "home"; ui.home = "havre"; if (d.v) ui.hvRoom = d.v; render(); { const el = d.v && $(`.room[data-room="${d.v}"]`); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); else window.scrollTo(0, 0); } return;
+    case "hvshop": ui.tab = "home"; ui.home = "havre"; render(); { const el = $("#main .panel.shop"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); } return;
+    case "hvbonus": ui.tab = "home"; ui.home = "havre"; ui.bonOpen = true; render(); window.scrollTo(0, 0); return;
     case "fpick": furnPickSheet(d.v); return;
     case "fcatalog": furnCatalogSheet(); return;
     case "fplace": { const r = E.placeFurn(S, d.v); if (r) { toast(r); return; } closeSheet(); toast(`${d.v} placé !`); break; }

@@ -1283,7 +1283,7 @@
     { title: "La Crypte de Kardorim", txt: "Trouvez la clé au Cimetière d'Incarnam et vainquez Kardorim.", t: "boss", dg: "crypte_kardorim" },
     { title: "Bienvenue à Astrub", txt: "Chassez dans la Cité d'Astrub.", t: "kill", sub: "ast_cite", n: 20 },
     { title: "Apprenti artisan", txt: "Fabriquez un objet (Artisanat › Métiers › Artisanat).", t: "craft", n: 1 },
-    { title: "Le Havre-Sac", txt: "Achetez 3 améliorations du Havre-Sac (Artisanat › Havre-Sac).", t: "havre", n: 3 },
+    { title: "Le Havre-Sac", txt: "Achetez 3 améliorations du Havre-Sac (sur l'accueil, « Ma maison »).", t: "havre", n: 3 },
     { title: "Monter en puissance", txt: "Atteignez le niveau 15.", t: "lvl", n: 15 },
     { title: "Le Tournesol Affamé", txt: "Vainquez le boss de la Grange du Tournesol Affamé.", t: "boss", dg: "grange_tournesol" },
     { title: "Dévotion", txt: "Faites une offrande à l'Almanax (Suivi › Quêtes › Almanax).", t: "almanax", n: 1 },

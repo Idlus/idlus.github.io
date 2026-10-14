@@ -1,6 +1,16 @@
 {
-  "version": "1.0.20",
+  "version": "1.0.21",
   "versions": [
+    {
+      "v": "1.0.21",
+      "name": "Havre-Sac en accueil",
+      "items": [
+        "L'accueil est maintenant ton Havre-Sac : le bandeau s'appelle « Havre-Sac de <ton héros> » et montre tes bonus d'expérience, de butin, de kamas et l'Autel des Douze en pastilles (un clic ouvre le détail et les plafonds)",
+        "Nouveau bloc « Ma maison » sous « Aujourd'hui » : une tuile par pièce avec son niveau, son bonus, les meubles placés (le boss pour un trophée) et les places libres ; « Améliorer » se fait directement depuis la tuile, en vert quand tu as les kamas, et la tuile se dore quand une amélioration ou un meuble attend",
+        "Trois lignes en bas de « Ma maison » : meubles à placer, trophées de boss (gagnés / à gagner) et Boutique de la maison ; un clic ouvre la page détaillée du Havre-Sac, qui garde ses pièces dépliées, sa boutique et son bouton « ‹ Accueil »",
+        "Menu : l'onglet Accueil s'appelle Havre-Sac (sur PC comme dans la barre du téléphone) et l'entrée Artisanat › Havre-Sac disparaît, tout est sur l'accueil. La chasse en cours, les têtes des héros, la zone conseillée, « Aujourd'hui », « En ce moment », la quête et le journal sont gardés"
+      ]
+    },
     {
       "v": "1.0.20",
       "name": "Trophées passifs",

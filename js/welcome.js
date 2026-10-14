@@ -40,9 +40,9 @@
     { id: "loss", name: "Une défaite", hint: "première défaite", anchor: '[data-act="losssheet"]',
       cond: (S) => (S.losses || []).length >= 1,
       txt: "Une défaite n'enlève rien : l'équipe se relève et recommence. Le rapport dit qui est tombé et pourquoi. Change de zone, d'équipement ou de sorts plutôt que d'insister." },
-    { id: "havre", name: "Le Havre-Sac", hint: "quête « Le Havre-Sac »", anchor: '#nav [data-nk="havre"], #nav [data-nk="menu"]',
+    { id: "havre", name: "Le Havre-Sac", hint: "quête « Le Havre-Sac »", anchor: '#nav [data-nk="home"]',
       cond: (S) => qstep(S) >= 8,
-      txt: "Ton Havre-Sac est une maison qui s'améliore avec des kamas : expérience, butin, récolte, place dans le sac… Ses meubles donnent leurs bonus à toute l'équipe (Artisanat › Havre-Sac)." },
+      txt: "Ton Havre-Sac est une maison qui s'améliore avec des kamas : expérience, butin, récolte, place dans le sac… Ses meubles donnent leurs bonus à toute l'équipe (onglet Havre-Sac, « Ma maison »)." },
     { id: "almanax", name: "L'Almanax", hint: "quête « Dévotion »", dofus: true, anchor: '#nav [data-nk="quests"], #nav [data-nk="menu"]',
       cond: (S) => qstep(S) >= 11,
       txt: "Chaque jour, l'Almanax demande une offrande (quelques ressources) et donne un bonus jusqu'à minuit. Suivi › Quêtes › Almanax." },
@@ -119,7 +119,7 @@
   const add = (L, k, id, name, sub, extra) => L.push(Object.assign({ k, id, name, sub: sub || "", n: E.searchNorm(name) }, extra || {}));
   E.SEARCH_KINDS = { page: "Pages", dg: "Donjons", zone: "Zones", item: "Objets", set: "Panoplies", res: "Ressources", mon: "Monstres", dofus: "Dofus", idol: "Idoles", pet: "Familiers", mount: "Montures", cons: "Consommables", ach: "Succès" };
   E.SEARCH_PAGES = [
-    ["home", "Accueil", "aperçu de la partie, journal"], ["havre", "Havre-Sac", "maison et améliorations"], ["world", "Monde", "carte des zones de chasse"],
+    ["home", "Havre-Sac", "ta maison, la chasse en cours, le journal"], ["world", "Monde", "carte des zones de chasse"],
     ["combat", "Combat", "le combat en cours"], ["quests", "Quêtes", "quête principale"], ["dofusq", "Quêtes des Dofus", "Suivi › Quêtes › Dofus"], ["bounty", "Avis de recherche", "Suivi › Quêtes › Avis"],
     ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Suivi › Succès"], ["ladder", "Classements", "Communauté › Classements"], ["defi", "Défi du jour", "Jouer › Défi du jour"], ["dungeons", "Donjons", "clés, stasis et coffres"], ["enc", "Encyclopédie", "monstres, objets, panoplies"], ["exp", "Songe infini", "Jouer › Songe infini"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
     ["team", "Équipe et héros", "composition et placement"], ["heroes", "Héros", "équipement du héros"], ["hstats", "Caractéristiques", "Héros › Caractéristiques"], ["spells", "Sorts", "Héros › Sorts"],

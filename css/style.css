@@ -4852,3 +4852,42 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .trogetbox .big img{width:96px;height:96px;object-fit:contain}
 .trogetbox .st{display:flex;flex-direction:column;gap:2px;font-weight:800}
 @media (max-width:700px){.trogrid{grid-template-columns:1fr}}
+/* 1.0.21 « Havre-Sac en accueil » : titre et bonus dans le bandeau, « Ma maison » en tuiles, trois lignes (meubles, trophées, boutique) */
+.hvtitle{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hvtitle h1{margin:0;font-size:24px;color:#fff6dc;text-shadow:0 2px 4px rgba(0,0,0,.6);display:flex;align-items:center;gap:8px}
+.hvtitle h1 .uico{width:28px;height:28px}
+.hvchips{display:flex;gap:6px;flex-wrap:wrap}
+.hvchip{display:inline-flex;align-items:center;gap:5px;background:rgba(14,18,10,.82);border:1px solid var(--gold2);border-radius:999px;padding:3px 10px 3px 6px;color:#fff6dc;font:inherit;font-size:12.5px;cursor:pointer}
+.hvchip .uico{width:18px;height:18px}.hvchip b{font-size:14px}.hvchip span{color:#d9cfb0}
+.hvchip:hover{border-color:var(--gold)}.hvchip:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.hvchip.dim{opacity:.85}
+.hvhouse .phead .btn.xs{margin-left:4px}
+.hvtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px}
+.hvtile{display:flex;flex-direction:column;gap:8px;background:var(--panel2);border:2px solid var(--line);border-left:5px solid var(--rc);border-radius:14px;padding:10px;min-width:0}
+.hvtile.hot{border-color:var(--gold);border-left-color:var(--rc)}
+.hvtile.locked{opacity:.6}
+.hvth{display:flex;gap:8px;align-items:center;background:none;border:0;padding:0;color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.hvth:hover h3{text-decoration:underline}.hvth:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+.hvth .min0{display:flex;flex-direction:column;gap:2px}
+.hvtile h3{margin:0;font-size:15px;line-height:1.15;color:var(--rc)}
+.hvtile .rico{flex:none;width:34px;height:34px;display:grid;place-items:center;background:var(--panel3);border-radius:10px}.hvtile .rico .uico{width:24px;height:24px}
+.hvlv{font-size:11px;color:var(--muted);font-weight:800;margin-left:4px}
+.hvslots{display:flex;gap:4px;flex-wrap:wrap}
+.hvfi{width:30px;height:30px;object-fit:contain;display:grid;place-items:center;background:var(--panel3);border-radius:8px;border:1px solid var(--line)}
+.hvfi .uico{width:20px;height:20px}
+.hvfi.empty{border-style:dashed;color:var(--muted);font-weight:900;background:none}
+.hvtile footer{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.hvtile footer .btn.sm{padding:3px 9px;font-size:12.5px}
+.btn.ghost{background:none;border:1px dashed var(--gold2);color:var(--gold)}
+.hvfoot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 12px 12px}
+.hvfl{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px 10px;color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
+.hvfl .grow{display:flex;flex-direction:column;min-width:0}.hvfl .grow .xs{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hvfl>.uico{width:24px;height:24px;flex:none}
+.hvfl.hot{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.hvfl:hover{border-color:var(--gold)}.hvfl:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (max-width:700px){
+  .hvtitle h1{font-size:19px}.hvchip{font-size:11.5px;padding:2px 8px 2px 5px}.hvchip span{display:none}
+  .hvtiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}
+  .hvtile{padding:8px}.hvtile h3{font-size:14px}
+  .hvfoot{grid-template-columns:1fr;padding:0 10px 10px}
+}
