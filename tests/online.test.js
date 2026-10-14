@@ -51,6 +51,72 @@ const MOCK = () => {
     return b;
   };
   const user = () => db().session;
+  /* 1.0.30 : faux serveur des guildes (supabase/guildes.sql et gboss.sql) : code GUILDES, invitation, coffre, améliorations,
+     Percepteurs, attaques entre guildes, boss en 5 phases, fiche d'une autre guilde. L'état vit dans d.gm. */
+  const guildMock = (name, a, d, u, me) => {
+    const E = window.ENGINE; const iso = (ms) => new Date(Date.now() + (ms || 0)).toISOString();
+    const gm = (d.gm = d.gm || {}); if (gm.chest == null) Object.assign(gm, { in: false, gift: true, chest: 3000000, seats: 5, ups: { poche: 2, sagesse: 2 }, sale: 0, op: 100, chestlog: [{ at: iso(-3600e3), k: 215000, t: "Percepteur de la zone récolté par Lynaë", n: 1 }] });
+    const ok = (x) => { put(d); return { data: x, error: null }; };
+    const sid = Object.keys(E.SUBS).find((k) => E.SUBS[k].monsters && E.SUBS[k].monsters.length && E.percoCap(k)); const zone = E.percoName(sid);
+    const G3 = { id: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 14 }, G4 = { id: 4, name: "Ordre du Kralamour", ic: "phenix", col: "#7fb3ff", lvl: 22 }, G5 = { id: 5, name: "Les Tofus Enragés", ic: "ailes", col: "#ff8a6b", lvl: 9 };
+    const hd = (cls, lvl) => ({ cls, sex: "m", head: 1, lvl });
+    const pseudo = (me && me.pseudo) || "Moi";
+    if (name === "gift_redeem") { if (a.p_code !== "GUILDES" || !gm.gift) return ok({ err: "Ce code n'existe pas." }); gm.gift = false; return ok({ reward: { k: 300000, s: 6 }, msg: "Refonte des guildes" }); }
+    if (name === "guild_list") return ok([Object.assign({ open: true, motd: "", n: gm.in ? 5 : 4, cap: 5, chef: "Kralamour", shield: null, w: 6, l: 2, percos: 2 }, G3), Object.assign({ open: false, motd: "", n: 12, cap: 12, chef: "Kraken", shield: null, w: 18, l: 4, percos: 2 }, G4), Object.assign({ open: true, motd: "", n: 3, cap: 5, chef: "Nyx", shield: iso(70 * 60e3), w: 0, l: 0, percos: 0 }, G5, { lvl: 1 })]);
+    if (name === "guild_me") {
+      if (!gm.in) return ok({ g: null, gift: gm.gift, invites: [Object.assign({ gid: 3, n: 4, cap: 5, by: "Kralamour" }, G3)], asks: [] });
+      const base = 450000 * 13 * 14 * 27 / 6, next = 450000 * 14 * 15 * 29 / 6;
+      const mem = [[u.id, pseudo, 1, "iop", 150], ["u9", "Kralamour", 0, "iop", 200], ["u8", "Tofuline", 2, "eni", 150], ["u7", "Lynaë", 2, "eni", 187], ["u6", "Baloo", 3, "panda", 164]];
+      return ok({ g: Object.assign({ motd: "Ce soir : on reprend le Percepteur des Pitons !", open: true, xp: 400000000, base, next, created: iso(-5 * 864e5), chest: gm.chest, seats: gm.seats, ups: gm.ups, shield: null, pvp: [6, 2], chest24: 1210000 }, G3),
+        rank: 1, share: 0, share_by: null, sale: gm.sale, chestlog: gm.chestlog,
+        members: mem.map(([uu, p, rank, cls, lvl]) => ({ u: uu, p, rank, share: 10, sby: null, given: 1000, week: 500, joined: iso(-864e5), cls, lvl, seen: iso() })),
+        log: [{ at: iso(-60e3), t: "⚔ Nyx (Les Tofus Enragés) attaque le Percepteur !" }], asks: [], invited: [] });
+    }
+    if (name === "guild_answer" || name === "guild_join") { gm.in = true; return ok({ ok: name === "guild_join" ? "in" : true }); }
+    if (name === "guild_give") return ok(gm.in ? { ok: true, lvl: 14 } : { ok: false, none: true });
+    if (name === "guild_chat") return ok([]);
+    if (name === "guild_deposit") { gm.chest += a.p_k; gm.chestlog.unshift({ at: iso(), k: a.p_k, t: "Dépôt de " + pseudo, n: 1 }); gm.op++; return ok({ ok: true, chest: gm.chest, ops: [{ id: gm.op, p: { k: -a.p_k }, t: "Dépôt au coffre de guilde" }] }); }
+    if (name === "guild_sale_pct") { gm.sale = a.p_pct; return ok({ ok: true, sale: a.p_pct }); }
+    if (name === "guild_buy") {
+      const U = E.GUILD_UQ_BY[a.p_k]; const r = gm.ups[a.p_k] || 0;
+      const price = a.p_k === "place" ? E.guildSeatPrice(gm.seats + 1) : U ? U.cost : E.guildRankPrice(r + 1);
+      if (gm.chest < price) return ok({ err: "Il manque des kamas dans le coffre." });
+      gm.chest -= price; if (a.p_k === "place") gm.seats++; else gm.ups = Object.assign({}, gm.ups, { [a.p_k]: r + 1 });
+      gm.chestlog.unshift({ at: iso(), k: -price, t: a.p_k + " acheté", n: 1 }); return ok({ ok: true, ups: gm.ups, seats: gm.seats, chest: gm.chest });
+    }
+    if (name === "guild_view") {
+      const spy = !!gm.ups.espionnage;
+      return ok(Object.assign({ motd: "On farm et on assume.", n: 12, cap: 12, created: iso(-2 * 864e5), chef: "Kraken", shield: null, pvp: [18, 4], war: { pts: 20, win: 6, loss: 1 }, boss: 3, trophies: 1, rob: 6, fort: spy ? false : null, spy, mine: false, mylvl: 14,
+        members: [["Kraken", 0, "iop", 200], ["Gloubi", 1, "osa", 160], ["Rakoon", 2, "roub", 155]].map(([p, rank, cls, lvl]) => ({ p, rank, cls, lvl, team: spy ? [hd(cls, lvl), hd("eni", lvl), hd("sacri", lvl)] : null })),
+        percos: [{ id: 41, sid, name: zone, zlvl: E.percoLvl(sid), dj: false, fill: 0.7, shield: null, monsters: false, raid: null, pocket: spy ? E.percoGain(E.percoCap(sid), 0.7, { poche: 3 }) : null },
+          { id: 42, sid: "x", name: "Plaines Rocheuses", zlvl: 65, dj: false, fill: 0.35, shield: iso(4 * 3600e3), monsters: false, raid: null, pocket: null }] }, G4));
+    }
+    if (name === "guild_extra") {
+      const cap = E.percoCap(sid);
+      const rIn = gm.def ? [] : [{ id: 77, pid: 31, sid, zone, st: "open", at: iso(-42 * 60e3), ends: iso(78 * 60e3), res: null, by: "Nyx", me: false, heads: [hd("sram", 196), hd("eni", 190), hd("osa", 185)], lvl: 190, ag: G5, dg: G3, tries: [{ p: "Lynaë", win: false, at: iso(-31 * 60e3), heads: [hd("eni", 187)] }], tried: false }];
+      const rOut = [{ id: 70, pid: 99, sid, zone: "Coin des Bouftous", st: "won", at: iso(-3 * 3600e3), ends: iso(-3600e3), res: { k: 31000, res: { "Laine de Bouftou": 212, "Corne de Boufton": 208 }, part: 0.25, half: true, fort: false, zone: "Coin des Bouftous" }, by: pseudo, me: true, heads: [], lvl: 150, ag: G3, dg: { id: 6, name: "Les Bouftous Fous", ic: "trophee", col: "#e8c063", lvl: 4 }, tries: [{ p: "Gloubi", win: false, at: iso(-2 * 3600e3) }, { p: "Rakoon", win: false, at: iso(-2 * 3600e3) }], tried: false }]
+        .concat(gm.go ? [{ id: 80, pid: 41, sid, zone, st: "open", at: iso(), ends: iso(2 * 3600e3), res: null, by: pseudo, me: true, heads: [], lvl: 150, ag: G3, dg: G4, tries: [], tried: false }] : []);
+      return ok({ boss: { w: E.gbossWeek(), pts: gm.bp || 42100, goal: 125000, lvl: 150, done: 2, tok: gm.tok != null ? gm.tok : 4.3, every: 25, next: 420, mine: 3200, today: 3, hitters: [{ p: "Kralamour", pts: 9000, n: 30, best: 410 }],
+          top: [Object.assign({ pts: 60000, who: 12, ph: 3 }, G4), Object.assign({ pts: 42100, who: 5, ph: 2 }, G3)], last: [], trophies: [], claim: false },
+        percos: [{ id: 31, sid, name: zone, zlvl: E.percoLvl(sid), dj: false, cap, fill: 0.82, by: "Lynaë", placed: iso(-864e5), wins: 3, losses: 1, next: iso(10 * 3600e3), shield: null, raided: !gm.def, atk: null },
+          { id: 32, sid, name: zone + " (bis)", zlvl: E.percoLvl(sid), dj: false, cap, fill: gm.col ? 0 : 1, by: "Baloo", placed: iso(-864e5), wins: 0, losses: 0, next: iso(12 * 3600e3), shield: null, raided: false, atk: null }],
+        slots: 3, ko: [], raids_in: rIn, raids_out: rOut, left: gm.go ? 2 : 3, max: 3,
+        war: { me: { pts: 7, win: 2, loss: 1, def: 1 }, rank: 2, top: [Object.assign({ pts: 20, win: 6, loss: 1, def: 2 }, G4), Object.assign({ pts: 7, win: 2, loss: 1, def: 1 }, G3)], last: [] },
+        taken: {}, holds: {}, glvl: 14, rank: 1, ups: gm.ups, now: iso() });
+    }
+    if (name === "perco_collect") { gm.col = true; gm.op++; return ok({ ok: true, k: 108000, res: { "Laine de Bouftou": 40 }, item: null, gxp: 5000, txp: 0.02, zl: 30, ops: [{ id: gm.op, p: { res: { "Laine de Bouftou": 40 } }, t: "Percepteur récolté" }] }); }
+    if (name === "gboss_claim") return ok({ ok: 0, k: 0, dust: 0, titles: [], ops: [] });
+    return undefined;
+  };
+  /* fonction serveur « record » pour les guildes : boss, défense contre les monstres, attaques */
+  const guildInvoke = (body) => {
+    const d = db(); const gm = (d.gm = d.gm || {}); gm.calls = (gm.calls || []).concat([body]); let r;
+    if (body.raid && body.raid.def) { gm.def = true; r = { ok: true, raid: true, def: true, win: true, rounds: 7, by: "Nyx" }; }
+    else if (body.raid && body.raid.go) { gm.go = true; r = { ok: true, raid: true, id: 80, ends: new Date(Date.now() + 7200e3).toISOString(), zone: "la zone", g: "Ordre du Kralamour", left: 2 }; }
+    else if (body.gboss) { gm.bp = 42410; gm.tok = 3.3; r = { ok: true, gboss: true, boss: "Boss", points: 310, rounds: 15, alive: 3, pts: 42410, goal: 125000, left: 0, phase: 3, done: 2, tok: 3.3, every: 25 }; }
+    else r = { ok: false, err: "refusé" };
+    put(d); return { data: r, error: null };
+  };
   window.__IDLUS_SB = { createClient: () => ({
     auth: {
       getSession: async () => ({ data: { session: user() ? { user: user() } : null } }),
@@ -64,7 +130,7 @@ const MOCK = () => {
     channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { window.__chatSub = cb; if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
-    functions: { invoke: async (name, o) => { const d = db();
+    functions: { invoke: async (name, o) => { if (o.body.gboss || o.body.raid || o.body.perco) return guildInvoke(o.body); const d = db();
       if (o.body.dofus) { d.dofusSent = (d.dofusSent || []).concat([o.body.dofus]); put(d); return { data: { ok: true, giga: true }, error: null }; } // 1.0.30 : GIGA annonce d'un Dofus
       d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
     rpc: async (name, a) => {
@@ -173,9 +239,7 @@ const MOCK = () => {
       if (name === "hdv_order_new") { const held = a.p_qty * a.p_price + Math.ceil(a.p_qty * a.p_price * 0.02); d.ordMine = [{ id: 9, cat: a.p_cat, key: a.p_key, name: a.p_name, qty: a.p_qty, filled: 0, price: a.p_price, held, st: "open", exp: new Date(Date.now() + 864e5 * a.p_days).toISOString() }]; put(d);
         return { data: { ok: true, ops: [{ id: 3, p: { k: -held }, t: "Offre d'achat" }] }, error: null }; }
       if (name === "hdv_order_fill") { d.ordSold = true; put(d); return { data: { ok: true, n: a.p_qty, k: a.p_qty * 30, ops: [{ id: 2, p: { k: a.p_qty * 30, res: { "Laine de Bouftou": -a.p_qty } }, t: "Vendu à une offre d'achat" }] }, error: null }; }
-      if (name === "guild_me") return { data: { g: null, invites: [{ gid: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, n: 7, by: "Kralamour" }], asks: [] }, error: null };
-      if (name === "guild_list") return { data: [{ id: 3, name: "Les Bouftous", ic: "dofus", col: "#8cc63f", lvl: 4, open: true, motd: "", n: 7, chef: "Kralamour" }], error: null };
-      if (name === "guild_give" || name === "guild_chat") return { data: name === "guild_chat" ? [] : { ok: false, none: true }, error: null };
+      if (/^(guild_|perco_|gboss_)/.test(name) || name === "gift_redeem") { const r = guildMock(name, a, d, u, me); if (r) return r; } // 1.0.30 : refonte des guildes
       if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
       // 0.1.36 : boîte à idées
       if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
@@ -730,6 +794,69 @@ const MOCK = () => {
     await page.click("#gName"); await page.keyboard.type("Les Bouf", { delay: 120 }); await page.waitForTimeout(700); await page.keyboard.type("tous", { delay: 500 }); await page.waitForTimeout(700);
     const gn = await page.inputValue("#gName"); if (gn !== "Les Bouftous") fail("guildes : saisie du nom cassée par le rafraîchissement : " + JSON.stringify(gn));
     if (!(await page.evaluate(() => document.activeElement && document.activeElement.id === "gName"))) fail("guildes : le champ du nom perd le focus");
+    // 7g. 1.0.30 : refonte des guildes : code GUILDES, invitation, coffre, améliorations, Percepteurs, attaques, boss, autres guildes
+    const gtxt = async () => (await page.textContent("#main")).replace(/\s/g, " ");
+    const gwide = async (what, shot) => { // téléphone : rien ne déborde (et captures PC et téléphone avec SHOTS)
+      if (shot && process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/${shot}-pc.png`, fullPage: true });
+      await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(250); const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`guildes : ${what} trop large sur téléphone : ${w}px`);
+      if (shot && process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/${shot}-mob.png`, fullPage: true });
+      await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(150); };
+    if (!/Les guildes repartent de zéro/.test(await gtxt()) || !/25 000 kamas et un héros niveau 20/.test(await gtxt())) fail("guildes : bandeau du code GUILDES ou fondation à 25 000 absent");
+    await gwide("la page sans guilde", "guilde-sans");
+    { const k0 = await page.evaluate(() => window.DX.S.kamas);
+      await page.click('[data-act="g-gift"]'); await page.waitForTimeout(700);
+      if ((await page.evaluate(() => window.DX.S.kamas)) !== k0 + 300000) fail("guildes : code GUILDES non reçu");
+      if (await page.$('[data-act="g-gift"]')) fail("guildes : bandeau du code GUILDES encore là après usage"); }
+    await page.click('[data-act="g-inv"][data-v="1"]'); await page.waitForSelector('.subtabs [data-act="g-tab"][data-v="coffre"]', { timeout: 8000 });
+    await page.waitForFunction(() => /phase 3 \/ 5/.test(document.querySelector("#main").textContent), null, { timeout: 8000 }).catch(() => fail("guildes : boss absent de l'accueil"));
+    { const t = await gtxt(); if (!/Dans le coffre/.test(t) || !/6e place/.test(t) || !/Guerre des Percepteurs/.test(t) || !/attaqué par Les Tofus Enragés/.test(t)) fail("guildes : accueil incomplet"); }
+    await gwide("l'accueil", "guilde-accueil");
+    // coffre : dépôt (opération de partie) et part des ventes
+    await page.click('[data-act="g-tab"][data-v="coffre"]'); await page.waitForSelector("#gDep");
+    await page.evaluate(() => { window.DX.S.kamas = Math.max(window.DX.S.kamas, 500000); });
+    { const k1 = await page.evaluate(() => window.DX.S.kamas);
+      await page.fill("#gDep", "100000"); await page.click('[data-act="g-deposit"]'); await page.waitForTimeout(800);
+      if ((await page.evaluate(() => window.DX.S.kamas)) !== k1 - 100000) fail("guildes : dépôt au coffre mal appliqué");
+      if (!/3 100 000 k/.test(await gtxt()) || !/Personne ne peut retirer/.test(await gtxt())) fail("guildes : coffre mal affiché après le dépôt"); }
+    await page.$eval("#gSale", (e) => { e.value = "10"; e.dispatchEvent(new Event("change", { bubbles: true })); }); await page.waitForTimeout(500);
+    if ((await mock()).gm.sale !== 10) fail("guildes : part des ventes non envoyée");
+    await gwide("le coffre", "guilde-coffre");
+    // améliorations : une unique achetée avec le coffre (deux clics), lue par E.guildHas
+    await page.click('[data-act="g-tab"][data-v="upg"]'); await page.waitForSelector('[data-act="g-buy"][data-k="espionnage"]');
+    if ((await page.$$(".gx-uq .gx-card")).length !== 8 || (await page.$$(".gx-up .gx-card")).length !== 4) fail("guildes : 8 améliorations uniques et 4 rangs attendus");
+    await page.click('[data-act="g-buy"][data-k="espionnage"]'); await page.click('[data-act="g-buy"][data-k="espionnage"]'); await page.waitForTimeout(800);
+    if (!(await page.evaluate(() => window.ENGINE.guildHas(window.DX.S, "espionnage")))) fail("guildes : amélioration unique non achetée");
+    await gwide("les améliorations", "guilde-ameliorations");
+    // Percepteurs : attaque d'une autre guilde, victoire, récolte (Sagesse), défense avec l'équipe d'arène
+    await page.evaluate(() => { const S = window.DX.S; window.ENGINE.koliState(S); S.koli.team = S.chars.slice(0, 3).map((c) => c.id); });
+    await page.click('[data-act="g-tab"][data-v="percos"]'); await page.waitForSelector(".gx-alert", { timeout: 8000 });
+    { const t = await gtxt(); if (!/Victoire/.test(t) || !/Et si personne ne gagne/.test(t) || !/Règles des attaques/.test(t) || !/Défenseurs/.test(t)) fail("guildes : page des Percepteurs incomplète"); }
+    await gwide("les Percepteurs", "guilde-percepteurs");
+    { const x0 = await page.evaluate(() => { const c = window.DX.S.chars[0]; if (c.lvl < 40) { c.lvl = 40; c.xp = 0; } return JSON.stringify(window.DX.S.chars.map((x) => [x.lvl, x.xp])); });
+      await page.click('[data-act="g-collect"]:not([disabled])'); await page.waitForTimeout(800);
+      if (x0 === (await page.evaluate(() => JSON.stringify(window.DX.S.chars.map((c) => [c.lvl, c.xp]))))) fail("guildes : la Sagesse ne donne pas d'XP à l'équipe qui récolte"); }
+    await page.click('[data-act="g-rdef"]'); await page.waitForTimeout(1000);
+    if (!((await mock()).gm.calls || []).some((b) => b.raid && b.raid.def === 77)) fail("guildes : défense non envoyée au serveur");
+    if (await page.$(".gx-alert")) fail("guildes : l'attaque repoussée est encore affichée");
+    await page.click('[data-act="g-rseen"]'); await page.waitForTimeout(200);
+    if (/Victoire !/.test(await gtxt())) fail("guildes : l'encart de victoire ne se ferme pas");
+    // boss en 5 phases, essais en réserve
+    await page.click('[data-act="g-tab"][data-v="boss"]'); await page.waitForSelector(".gx-ph");
+    if ((await page.$$(".gx-ph > div")).length !== 5 || !/4 en réserve/.test(await gtxt())) fail("guildes : boss en 5 phases incomplet");
+    await page.click('[data-act="g-boss"]'); await page.waitForTimeout(1000);
+    if (!/310 points en 15 tours/.test(await gtxt()) || !/3 en réserve/.test(await gtxt())) fail("guildes : essai de boss mal affiché");
+    await gwide("le boss", "guilde-boss");
+    // autres guildes : fiche (avec l'Espionnage) puis attaque
+    await page.click('[data-act="g-tab"][data-v="others"]'); await page.waitForSelector('[data-act="g-view"][data-g="4"]', { timeout: 8000 });
+    await page.click('[data-act="g-view"][data-g="4"]'); await page.waitForSelector('[data-act="g-atk"]', { timeout: 8000 });
+    { const t = await gtxt(); if (!/Robustesse rang 6/.test(t) || !/équipes d'arène \(Espionnage\)/.test(t) || !/18 victoires/.test(t)) fail("guildes : fiche d'une autre guilde incomplète"); }
+    await gwide("la fiche d'une guilde", "guilde-fiche");
+    await page.click('[data-act="g-atk"]'); await page.waitForSelector('[data-act="g-rgo"]:not([disabled])', { timeout: 5000 }).catch(() => fail("guildes : attaque impossible"));
+    if (!/À gagner/.test(await gtxt()) || !/Ton équipe d'arène \(1 héros/.test(await gtxt())) fail("guildes : écran d'attaque incomplet");
+    await gwide("l'écran d'attaque", "guilde-attaque");
+    await page.click('[data-act="g-rgo"]'); await page.waitForTimeout(1000);
+    if (!((await mock()).gm.calls || []).some((b) => b.raid && b.raid.go === 41)) fail("guildes : attaque non envoyée au serveur");
+    if (!/Attaque en cours/.test(await gtxt())) fail("guildes : attaque en cours absente des Percepteurs");
     await page.click('#nav [data-nk="world"]');
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
