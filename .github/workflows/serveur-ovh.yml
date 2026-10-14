@@ -187,4 +187,7 @@ jobs:
         run: |
           echo "SSHO=$SSHO" >> "$GITHUB_ENV"
           bash tools/serveur/vps_sql.sh commande "docker ps --format '{{.Names}} {{.Image}} {{.Status}}'; echo '== Realtime (journal récent)'; docker logs --since 30m realtime-dev.supabase-realtime 2>&1 | grep -viE 'debug' | tail -60; echo '== Réglages du direct'; docker exec supabase-db psql -U supabase_admin -d postgres -Atc \"select name, max_concurrent_users, max_events_per_second, max_presence_events_per_second, max_joins_per_second, private_only from _realtime.tenants\" 2>&1 | head"
+          # 15/10/2026 : journal de la fonction « record » (Boss des mondes, Kolizéum, guildes…) et derniers essais du boss, sans données personnelles
+          bash tools/serveur/vps_sql.sh commande "echo '== Fonction record (journal récent)'; docker logs --since 60m supabase-edge-functions 2>&1 | grep -iE 'error|erreur|exception|limit|timeout|boot' | tail -40"
+          bash tools/serveur/vps_sql.sh lecture "select n, count(*) as essais, max(at) as dernier from public.wb_hits where at > now() - interval '3 hours' group by n order by n"
           bash tools/serveur/vps_sql.sh lecture "select (select count(*) from auth.users where last_sign_in_at > now() - interval '2 hours') as connexions_2h, (select count(*) from public.saves where updated_at > now() - interval '15 minutes') as envois_15min, (select count(*) from public.saves where updated_at > now() - interval '1 hour') as envois_1h"
