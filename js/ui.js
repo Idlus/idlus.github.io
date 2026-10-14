@@ -21,9 +21,20 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.15.1";
+const GAME_VERSION = "1.0.16";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.16", name: "Passifs des Dofus", items: [
+    "Chaque Dofus a maintenant son passif unique, en plus de ses caractéristiques : 31 passifs rangés en 5 familles (Attaque, Défense, Soin, Contrôle, Gains), par exemple Prison d'ambre (Ocre), Carapace d'ivoire (Ivoire) ou Lueur d'Ilyzaelle (Argenté Scintillant)",
+    "Les 6 Dofus portés par un héros donnent tous leur passif. Les bonus de kamas (Dofus Argenté) et de butin (Dokille) comptent une seule fois par équipe et restent dans les plafonds ; l'XP du Jyfus va à son porteur",
+    "Éveil des Dragons : un héros qui porte les 6 Dofus primordiaux (Émeraude, Pourpre, Turquoise, Ocre, Ivoire, Ébène) a leurs passifs renforcés de 25 %",
+    "En combat, une ligne dorée ✦ dans le journal quand un passif marquant se déclenche",
+    "Équipement du héros : nouveau panneau « Passifs des Dofus » avec ce que fait chaque Dofus porté, combien de fois il s'est déclenché pendant le combat et la progression de l'Éveil",
+    "Nouveau choix du Dofus : filtre par famille, passif écrit en clair, Dofus conseillés pour ce héros en premier, Dofus pas encore obtenus avec leur quête",
+    "Encadré « Passif » sur la fiche des Dofus, dans l'info-bulle et dans Quêtes › Dofus (avec un filtre par famille)",
+    "Kolizéum : les passifs agissent à moitié (ceux du Vulbis, de l'Ocre et de l'Argenté Scintillant restent entiers). Le soin du Dokoko devient son passif « Sève de Moon »",
+    "Aucun passif ne change les chances d'obtenir un Dofus",
+  ] },
   { v: "1.0.15.1", name: "Reliquats remis à zéro", items: [
     "Forgemagie : le reliquat de tous les objets repart à 0, une seule fois, parce que le bug corrigé en 1.0.14.3 avait permis de le gonfler (PA qui saute puis revient)",
     "Les caractéristiques des objets ne changent pas, seul le reliquat est remis à 0",
@@ -4046,10 +4057,75 @@ function grpItems(L, byTpl, solo) {
 const grpN = (n) => (n > 1 ? ` <span class="tag soft gcount">×${n}</span>` : "");
 function itemName(it) { return `<span class="iname ${rarName(it.tpl)} ${it.radiant ? "radiant" : ""}">${h(ITEMS[it.tpl].name)}</span>${ITEMS[it.tpl].leg ? " " + legEvHtml(it) : ""}${it.exo ? ` <span class="tag exo" title="Forgemagie exotique : +1 ${STATS[it.exo].name}">Exo ${STATS[it.exo].short}</span>` : ""}${E.isPerfect(it) ? ` <span class="tag perfect" title="Parfait : toutes les caractéristiques au jet maximum, +${E.PERFECT_PCT} %">★ Parfait</span>` : ""}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${it.locked ? ` <span title="Protégé">${G("lock")}</span>` : ""}`; }
 const legEvHtml = (it) => { const ev = E.legEv(it); return `<span class="lgev" title="Éveil ${["I", "II", "III", "IV", "V"][ev - 1]}">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= ev ? "on" : ""}"></i>`).join("")}</span>`; };
+/* ---------- 1.0.16 « Passifs des Dofus » : encadré du passif, panneau sous le héros, choix du Dofus (js/dofusp.js) ---------- */
+const DOFP_FC = { Attaque: ["att", "c/do.png"], Défense: ["def", "c/rn.png"], Soin: ["soin", "c/so.png"], Contrôle: ["ctrl", "c/rpm.png"], Gains: ["gain", "ui/kamas.webp"] };
+const dofpFc = (id) => (DOFP_FC[E.dofpFam(id)] || DOFP_FC.Attaque)[0];
+const DOFP_SVG = { att: '<path d="M19.5 4.5 9 15M19.5 4.5h-4.2M19.5 4.5v4.2M6.5 12.5l5 5M8.3 15.7l-3.8 3.8"/>', def: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>', soin: '<path d="M12 20s-7.5-4.6-7.5-10.2A4.1 4.1 0 0 1 12 7.4a4.1 4.1 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z"/><path d="M12 10.5v5M9.5 13h5"/>', ctrl: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="M9.5 4.5 12 7l2.5-2.5M9.5 19.5 12 17l2.5 2.5"/>', gain: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/>' };
+const dofpSvg = (fc) => `<svg class="dofp-fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOFP_SVG[fc] || ""}</svg>`;
+const dofpIco = (id) => dofpSvg(dofpFc(id));
+const dofpHi = (t) => h(t).replace(/([+−-]?\d+(?:,\d+)? ?%|\+1 PA|1 PM|1 PV)/g, '<b class="dofp-v">$1</b>');
+function dofpNotes(id) {
+  const out = [E.dofpOnce(id) ? "Compté une seule fois par équipe, même si plusieurs héros le portent." : "Chaque héros qui le porte a son propre passif."];
+  if (E.dofpFam(id) !== "Gains") out.push(["vulbis", "argente", "ocre"].includes(id) ? "Kolizéum : effet entier (tout ou rien)." : "Kolizéum : moitié de l'effet.");
+  if (E.DOFP_PRIM.includes(id)) out.push(`Dofus primordial : avec les 6 sur le même héros, Éveil des Dragons (+${E.DOFP_RESO} %).`);
+  return out;
+}
+function dofpChips(id, c) {
+  const fit = c ? E.dofpFits(S, c, id) : null;
+  return `<span class="dofp-chips"><span class="dofp-chip">${G("bolt")}${h(E.dofpTrig(id))}</span>${c && E.dofpForKey(id) !== "all" ? `<span class="dofp-chip ${fit ? "ok" : "dim"}">${fit ? "✓ Idéal pour " + h(c.name) : "Plutôt pour : " + h(E.dofpFor(id))}</span>` : `<span class="dofp-chip">${G("target")}Idéal : ${h(E.dofpFor(id))}</span>`}</span>`;
+}
+function dofpBlock(id, opt = {}) {
+  if (!E.DOFP_LIST || !E.DOFP_LIST[id]) return "";
+  const boost = !!opt.boost;
+  return `<div class="dofp fam-${dofpFc(id)}${opt.mini ? " mini" : ""}"><div class="dofp-h">${dofpIco(id)}<span class="dofp-nm"><small>Passif du Dofus</small><b>${h(E.dofpName(id))}</b></span><span class="dofp-f">${h(E.dofpFam(id))}</span></div>
+    <div class="dofp-t">${dofpHi(E.dofpTxt(id, boost))}${boost ? ` <span class="dofp-eveil">Éveil +25 %</span>` : ""}</div>${dofpChips(id, opt.c)}${opt.mini ? "" : `<div class="dofp-n">${dofpNotes(id).map(h).join(" · ")}</div>`}</div>`;
+}
+/* panneau sous l'équipement : une carte par emplacement Dofus, compteur du combat en cours, Éveil des Dragons */
+function dofpHeroPanel(c) {
+  if (!E.DOFP_LIST) return "";
+  const slots = D.DOFUS_SLOTS.map((sl) => { const it = S.items[c.equip[sl]]; return { sl, id: it && ITEMS[it.tpl].dofus && E.DOFP_LIST[ITEMS[it.tpl].dofus] ? ITEMS[it.tpl].dofus : null, tro: it && !ITEMS[it.tpl].dofus ? it : null }; });
+  const worn = slots.filter((x) => x.id);
+  if (!worn.length && !E.DOFUS_ORDER.some((id) => E.dofusOwned(S, id))) return `<div class="panel dofp-panel"><div class="pad row" style="gap:10px;flex-wrap:nowrap">${im(dofusImg("emeraude"), "dofp-img", "")}<span class="grow small"><b>Passifs des Dofus</b><br><span class="xs muted">Chaque Dofus porté ajoute un passif unique à ses caractéristiques.</span></span><button class="btn sm" data-act="pagego" data-v="dofusq">Où trouver les Dofus</button></div></div>`;
+  const reso = E.dofpReso(S, c), boost = reso;
+  const N = (S.fight && S.fight.dpN && S.fight.dpN[c.id]) || {};
+  const prim = E.DOFP_PRIM.filter((id) => worn.some((x) => x.id === id)).length;
+  const cards = slots.map(({ sl, id, tro }) => {
+    if (!id) return `<button class="dofp-card empty" data-act="slot" data-slot="${sl}">${tro ? im(itemImg(tro.tpl), "dofp-img", "") : `<span class="dofp-plus">+</span>`}<b>${tro ? h(ITEMS[tro.tpl].name) : "Emplacement libre"}</b><span class="xs muted">${tro ? "Trophée : pas de passif" : "Équiper un Dofus"}</span></button>`;
+    return `<button class="dofp-card fam-${dofpFc(id)} ${ui.slot === sl ? "on" : ""}" data-act="slot" data-slot="${sl}"><span class="dofp-ch">${im(dofusImg(id), "dofp-img", E.DOFUS[id].name)}<span class="dofp-nm"><small>${h(E.DOFUS[id].name)}</small><b>${h(E.dofpName(id))}</b></span>${dofpIco(id)}</span>
+      <span class="dofp-ct">${dofpHi(E.dofpTxt(id, boost))}</span>${dofpChips(id, c)}${N[id] ? `<span class="dofp-live">✦ déclenché ${N[id]} fois ce combat</span>` : ""}</button>`; }).join("");
+  const resoH = reso ? `<div class="dofp-reso on">${E.DOFP_PRIM.map((id) => im(dofusImg(id), "", "")).join("")}<span><b>Éveil des Dragons</b><br><span class="xs">Les 6 Dofus primordiaux sont réunis : leurs passifs sont renforcés de ${E.DOFP_RESO} %.</span></span></div>`
+    : prim ? `<div class="dofp-reso">${E.DOFP_PRIM.map((id) => `<span class="${worn.some((x) => x.id === id) ? "" : "off"}">${im(dofusImg(id), "", "")}</span>`).join("")}<span class="xs"><b>Dofus primordiaux ${prim} / 6</b><br><span class="muted">Avec les 6 : Éveil des Dragons, passifs +${E.DOFP_RESO} %.</span></span></div>` : "";
+  return `<div class="panel dofp-panel"><div class="phead"><h2>${G("sparkle")} Passifs des Dofus</h2><span class="tag ${worn.length ? "good" : "soft"}">${worn.length} / 6 actifs</span></div><div class="pad stack" style="gap:8px">${resoH}<div class="dofp-grid">${cards}</div><p class="xs muted">Chaque Dofus garde ses caractéristiques et ajoute son passif. Touche une carte pour changer de Dofus.</p></div></div>`;
+}
+/* choix du Dofus : familles, passif lisible, conseillés pour le héros en premier, Dofus pas encore obtenus avec leur quête */
+function dofpPickHtml(c, all, g) {
+  const fam = ui.dpFam || "all"; const curUid = c.equip[ui.slot]; const cur = curUid && S.items[curUid];
+  const byTpl = {}; all.forEach((it) => { const T = ITEMS[it.tpl]; if (!T.dofus || !E.DOFP_LIST[T.dofus]) return; (byTpl[it.tpl] = byTpl[it.tpl] || []).push(it); });
+  const wornIds = D.DOFUS_SLOTS.map((sl) => S.items[c.equip[sl]]).filter(Boolean).map((it) => ITEMS[it.tpl].dofus).filter(Boolean);
+  const rows = Object.values(byTpl).map((L) => { const free = L.filter((it) => !E.equippedBy(S, it.uid)); const it = free[0] || L[0]; const id = ITEMS[it.tpl].dofus; return { it, id, n: free.length, by: free.length ? null : E.equippedBy(S, it.uid), fit: E.dofpFits(S, c, id), dup: wornIds.includes(id) && !(cur && ITEMS[cur.tpl].dofus === id) }; })
+    .filter((r) => fam === "all" || E.dofpFam(r.id) === fam)
+    .sort((a, b) => (b.n > 0) - (a.n > 0) || a.dup - b.dup || b.fit - a.fit || (g[b.it.uid] || 0) - (g[a.it.uid] || 0));
+  const row = (r) => { const T = ITEMS[r.it.tpl]; const high = T.lvl > c.lvl;
+    return `<div class="li dofp-pr fam-${dofpFc(r.id)} ${r.n ? "" : "plow"}"><span class="dofp-primg">${im(dofusImg(r.id), "", T.name)}</span><span class="grow"><span class="dofp-prn"><b>${h(T.name)}</b>${r.n > 1 ? ` <span class="tag soft gcount">×${r.n}</span>` : ""} <span class="xs muted">niv. ${T.lvl}${r.by ? ` · porté par ${h(r.by === c ? "ce héros" : r.by.name)}` : ""}</span></span>
+      <span class="dofp-prp">${dofpIco(r.id)}<b>${h(E.dofpName(r.id))}</b> · ${dofpHi(E.dofpTxt(r.id))}</span>${dofpChips(r.id, c)}${r.dup ? `<span class="xs muted">Déjà porté par ce héros : un même Dofus ne donne son passif qu'une fois.</span>` : ""}<span class="dofp-prd">${deltaHtml(c, ui.slot, r.it.uid)}</span></span>
+      <button class="btn sm ${r.n && !r.dup ? "primary" : ""}" data-act="equip" data-uid="${r.it.uid}" ${high || r.dup ? "disabled" : ""}>${high ? "Niv. " + T.lvl : r.n ? "Équiper" : "Prendre"}</button></div>`; };
+  const fams = [["all", "Tous"]].concat(E.DOFP_FAMS.map((f) => [f, f]));
+  const cnt = (f) => Object.values(byTpl).filter((L) => f === "all" || E.dofpFam(ITEMS[L[0].tpl].dofus) === f).length;
+  const missing = E.DOFUS_ORDER.filter((id) => !byTpl["dofus_" + id] && !(cur && ITEMS[cur.tpl].dofus === id) && (fam === "all" || E.dofpFam(id) === fam));
+  const tro = all.filter((it) => !ITEMS[it.tpl].dofus && !E.equippedBy(S, it.uid));
+  const pm = (k, t, n, inner) => !n ? "" : `<div class="pmore"><button class="pmh" data-act="pmore" data-v="${k}" aria-expanded="${!!(ui.pmore || {})[k]}">${(ui.pmore || {})[k] ? "▾" : "▸"} ${t} (${n})</button>${(ui.pmore || {})[k] ? `<div class="list">${inner()}</div>` : ""}</div>`;
+  return `<div class="panel dofp-pick"><div class="phead"><h2>Choisir un Dofus</h2><span class="row">${cur ? `<button class="btn sm" data-act="unequip" data-slot="${ui.slot}">Retirer</button>` : ""}<button class="btn sm" data-act="slot" data-slot="">Fermer</button></span></div>
+    ${cur && ITEMS[cur.tpl].dofus ? `<div class="li pcur">${im(dofusImg(ITEMS[cur.tpl].dofus), "ico", "")}<span class="grow"><span class="tag soft">Porté</span> <b>${h(ITEMS[cur.tpl].name)}</b> <span class="xs muted">· ${h(E.dofpName(ITEMS[cur.tpl].dofus))}</span></span></div>` : ""}
+    <div class="dofp-fams">${fams.map(([k, l]) => `<button class="${k === "all" ? "" : "fam-" + DOFP_FC[k][0]}" data-act="dpfam" data-v="${k}" aria-pressed="${fam === k}">${k === "all" ? "" : dofpSvg(DOFP_FC[k][0])}${l} <b class="num">${cnt(k)}</b></button>`).join("")}</div>
+    <div class="xs muted" style="padding:2px 14px 0">Conseillés pour ${h(c.name)} en premier (${h(E.DOFP_FOR[E.dofpRole(S, c)])}), puis par gain de caractéristiques.</div>
+    <div class="list">${rows.map(row).join("") || `<div class="empty">Aucun Dofus de cette famille dans ton sac.</div>`}</div>
+    ${pm("dpmiss", "Pas encore obtenus", missing.length, () => missing.map((id) => `<div class="li dofp-pr fam-${dofpFc(id)} dofp-lock"><span class="dofp-primg">${im(dofusImg(id), "", "")}</span><span class="grow"><span class="dofp-prn"><b>${h(E.DOFUS[id].name)}</b> <span class="xs muted">niv. ${E.DOFUS[id].lvl}</span></span><span class="dofp-prp">${dofpIco(id)}<b>${h(E.dofpName(id))}</b> · ${dofpHi(E.dofpTxt(id))}</span></span><button class="btn sm" data-act="pagego" data-v="dofusq">${G("lock")} Sa quête</button></div>`).join(""))}
+    ${pm("dptro", "Trophées (sans passif)", tro.length, () => tro.slice(0, 20).map((it) => `<div class="li">${itemIcon(it)}<span class="grow">${itemName(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span><button class="btn sm" data-act="equip" data-uid="${it.uid}">Équiper</button></div>`).join(""))}</div>`;
+}
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
   const lg = E.legByTpl(it.tpl); // 0.1.48 : passif de l'objet légendaire
-  return (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
+  return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus, { mini: true }) : "") + (lg ? `<span class="statl lgline">${G("sparkle")}<span><b>Passif légendaire · Éveil ${E.LEG_ROMAN[E.legEv(it) - 1]}</b> · ${h(E.legTxt(lg, E.legEv(it)))}</span></span>` : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}<span>${h(T.desc)}</span></span>` : "") + Object.keys(T.stats).map((k) => { const [a, b] = T.stats[k]; const v = it.stats[k]; const base = it.roll ? it.roll[k] : v;
     return `<span class="statl"${tipAttr(k)}>${sIco(k)}<span${base === b && a !== b ? ' style="color:var(--gold);font-weight:800"' : ""}>${statLine(k, v)}</span>${it.radiant && v !== base ? `<span class="bonus">(+${v - base})</span>` : ""} <span class="muted xs">${a === b ? "" : `(${a} à ${b})`}</span></span>`; }).join("") + (it.exo ? `<span class="statl"${tipAttr(it.exo)}>${sIco(it.exo)}<span class="bonus">+1 ${STATS[it.exo].name}</span> <span class="muted xs">(exo)</span></span>` : "");
 }
 /* ---------- 0.1.53 « Armes » : coup d'arme (fiche, bulle, barre de sorts, forgemagie) ---------- */
@@ -4104,7 +4180,7 @@ function wpFmHtml(it) { // potions de forgemagie élémentaire à l'Établi
     ${rest.length ? `<div class="pmore"><button class="pmh" data-act="wpprep" aria-expanded="${!!ui.wpPrep}">${ui.wpPrep ? "▾" : "▸"} Préparer une potion (${rest.length})</button>${ui.wpPrep ? `<div class="pruns">${rest.map(btn).join("")}</div>
     <div class="xs muted">Clique sur une potion pour la préparer : herbes de l'Alchimiste et kamas (petites potions : Alchimiste 20, ne changent que la moitié des dégâts ; grandes : Alchimiste 80).</div>` : ""}</div>` : ""}`; })()}</div>`;
 }
-function tplStatsHtml(T) { return (T.desc ? `<span class="statl">${G("sparkle")}${h(T.desc)}</span>` : "") + Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
+function tplStatsHtml(T) { return (T.dofus && E.DOFP_LIST ? dofpBlock(T.dofus) : "") + (T.desc && !(T.dofus && E.DOFP_LIST) ? `<span class="statl">${G("sparkle")}${h(T.desc)}</span>` : "") + Object.entries(T.stats).map(([k, [a, b]]) => `<span class="statl"${tipAttr(k)}>${sIco(k)}${a === b ? a : a + " à " + b} ${STATS[k].name.replace("% ", "")}</span>`).join(""); }
 function deltaHtml(c, slot, uid) {
   const cur = E.charStats(S, c); const saved = Object.assign({}, c.equip); let nw;
   if (uid) {
@@ -4379,7 +4455,7 @@ function dollSlot(c, s) {
   const it = S.items[c.equip[s]]; const T = it && ITEMS[it.tpl];
   const hl = ui.hlSlot && (ui.hlSlot === s || (ui.hlSlot === "anneau" && s.startsWith("anneau")) || (ui.hlSlot === "dofus" && s.startsWith("dofus")));
   return `<button class="dslot ${it ? "filled " + rarCls(it.tpl, it) : ""} ${it && it.radiant ? "radiant" : ""} ${ui.slot === s ? "on" : ""} ${hl ? "hl" : !it || ui.slot !== s ? (slotUpgrade(c, s) ? "up" : "") : ""}" data-act="slot" data-slot="${s}" ${it ? `data-tipitem="${it.uid}"` : `data-tip="${h(SLOTS[s])} : vide"`}>
-    ${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
+    ${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) + (T.dofus && E.DOFP_LIST && E.DOFP_LIST[T.dofus] ? `<span class="dofp-badge fam-${dofpFc(T.dofus)}">${dofpIco(T.dofus)}</span>` : "") : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
 /* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */
@@ -4633,6 +4709,7 @@ function charEquipView(c, st) {
       ${pmore("w", worn.some((it) => E.equippedBy(S, it.uid) !== c) ? "Déjà portés par d'autres héros" : "Déjà portés", worn.length, () => worn.slice(0, 20).map((it) => row(it, "worn")).join(""))}
       ${pmore("h", "Niveau trop haut pour l'instant", highG.length, () => highG.slice(0, 20).map((gr) => grow(gr, "high")).join(""))}</div>`;
   }
+  if (ui.slot && ui.slot.startsWith("dofus") && E.DOFP_LIST) { const all = Object.values(S.items).filter((it) => ITEMS[it.tpl].slot === "dofus" && c.equip[ui.slot] !== it.uid); const g = {}; all.forEach((it) => (g[it.uid] = gainFor(c, ui.slot, it.uid))); pick = dofpPickHtml(c, all, g); } // 1.0.16 : choix du Dofus avec les passifs
   const mainK = buildMain(c);
   const upN = EQ_SLOTS.filter((s) => slotUpgrade(c, s)).length; // 0.1.47.2 : « Équiper au mieux » pour ce héros seul
   return `<div class="stack">
@@ -4646,7 +4723,7 @@ function charEquipView(c, st) {
         <div class="dcol">${DOLL_R.map((s) => dollSlot(c, s)).join("")}</div>
         <div class="drow">${dollSlot(c, "arme")}${petSlot(c)}${mountSlot(c)}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
       </div></div></div>
-    ${pick}
+    ${ui.slot ? pick + dofpHeroPanel(c) : dofpHeroPanel(c) + pick}
     ${gearHtml(c)}
     ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies actives</h2></div><div class="pad">${sets}</div></div>` : ""}
     <p class="note xs">▲ en vert : un objet plus intéressant est disponible dans le sac pour cet emplacement.</p></div>`;
@@ -6048,7 +6125,7 @@ function celeHtml(ev) {
   if (ev.t === "soul") { const A = E.ARCHIS[ev.key]; if (!A) return "";
     return `<div class="cele-art pet">${im(imgM(ev.key), "celepet soulpic", A.name)}</div><div class="cele-k">${IC("dofus")} Âme capturée · ${E.soulCount(S)} / ${E.ARCHI_TOTAL}</div><div class="cele-t">${h(A.name)}</div><div class="cele-s">Archimonstre de ${h(A.base)} · ${h(archiZoneName(A.zone))}</div>`; }
   if (ev.t === "dofus") { const Df = E.DOFUS[ev.id]; if (!Df) return "";
-    return `<div class="cele-art pet">${im(dofusImg(ev.id), "celepet", Df.name)}</div><div class="cele-k">${IC("dofus")} ${ev.first ? "Nouveau Dofus" : "Copie de Dofus"}</div><div class="cele-t">${h(Df.name)}</div><div class="cele-s">${h(E.dofusBonusTxt(ev.id))} · à équiper dans un emplacement Dofus</div>`; }
+    return `<div class="cele-art pet">${im(dofusImg(ev.id), "celepet", Df.name)}</div><div class="cele-k">${IC("dofus")} ${ev.first ? "Nouveau Dofus" : "Copie de Dofus"}</div><div class="cele-t">${h(Df.name)}</div><div class="cele-s">${h(E.dofusBonusTxt(ev.id))} · à équiper dans un emplacement Dofus</div>${E.DOFP_LIST && E.DOFP_LIST[ev.id] ? `<div class="cele-s"><b style="color:var(--gold)">✦ ${h(E.dofpName(ev.id))}</b> : ${h(E.dofpTxt(ev.id))}</div>` : ""}`; } // 1.0.16 : avec son passif
   if (ev.t === "legend") return `<div class="cele-art pet"><img class="celepet" src="assets/ui/orn/orn_legende.svg" alt="Couronne de la Légende"></div><div class="cele-k">${IC("couronne")} Course de lancement · n° ${ev.rank} sur 10</div><div class="cele-t">Légende de la 1.0</div><div class="cele-s">Titre « Légende de la 1.0 » et ornement unique « Couronne de la Légende », réservés aux 10 premiers.</div>`;
   if (ev.t === "ocre") { const T = E.OCRE_TIERS[ev.tier - 1]; if (!T) return "";
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
@@ -7206,6 +7283,7 @@ document.addEventListener("click", (ev) => {
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }
     case "slot": ui.slot = d.slot || null; break;
     case "pmore": ui.pmore = ui.pmore || {}; ui.pmore[d.v] = !ui.pmore[d.v]; break;
+    case "dpfam": ui.dpFam = d.v; break; // 1.0.16 : choix du Dofus, filtre par famille
     case "pgrp": ui.pgrp = ui.pgrp || {}; ui.pgrp[d.v] = !ui.pgrp[d.v]; break;
     case "equip": msg(E.equip(S, c.id, +d.uid, ui.slot)); ui.slot = null; break;
     case "unequip": E.unequip(S, c.id, d.slot); ui.slot = null; break;
@@ -8390,7 +8468,7 @@ function cmpItem(c, it) {
   try { return deltaHtml(c, E.slotFor(c, S.items[tmp]), tmp); } catch (e) { return ""; } finally { delete S.items[tmp]; }
 }
 Object.assign(window.DX.social, { questGoBtn, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
-Object.assign(window.DX.social, { dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
+Object.assign(window.DX.social, { dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });

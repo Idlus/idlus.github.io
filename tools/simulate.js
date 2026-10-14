@@ -148,7 +148,7 @@ if (arg("chasse", "")) {
    (chaque équipe monte d'une intensité tant qu'elle valide : -1 = même pas le Rêve, 0 = Rêve, 1-4 = Paradoxe, 5-7 = Cauchemar).
    Cibles : sans équipement au plus le Rêve, bon équipement Paradoxe 1-2, optimisé Paradoxe 4 - Cauchemar 1 et plus. */
 if (flag("songe")) {
-  require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/songe.js");
+  require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/dofusp.js"); require("../js/songe.js");
   const lvls = arg("niveaux", "60,120,200").split(",").map(Number);
   const PROFS = arg("profils", "aucun,bon,optimise").split(",");
   const XT = { aucun: [-1, 0], bon: [1, 2], optimise: [4, 7] };

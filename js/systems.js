@@ -290,6 +290,7 @@
     if (kind === "xp" || kind === "drop") b += E.starBonus(S); // étoiles de la zone chassée (0.1.8.1)
     b += E.guildBonus(S, kind); // 0.1.21 : bonus de la guilde, sous les mêmes plafonds
     if (E.legTeamBonus && (kind === "xp" || kind === "drop" || kind === "kamas")) b += E.legTeamBonus(S, kind); // 0.1.48 : légendaires (Larme de Neru, Diadème, Plume)
+    if (E.dofpTeamBonus && (kind === "drop" || kind === "kamas")) b += E.dofpTeamBonus(S, kind); // 1.0.16 : passifs des Dofus (Dokille, Argenté)
     return b;
   };
 
@@ -304,6 +305,7 @@
     add("guilde", "Guilde", E.guildBonus(S, kind));
     add("bonbons", "Bonbons", (kind === "drop" || kind === "kamas" ? E.boostPct(S, kind) : 0) + E.boostPct(S, "royal"));
     if (E.legTeamBonus) add("leg", "Légendaires", E.legTeamBonus(S, kind));
+    if (E.dofpTeamBonus) add("dofus", "Dofus", E.dofpTeamBonus(S, kind));
     return P;
   };
   E.bonusRaw = (S, kind) => rawBonus(S, kind);

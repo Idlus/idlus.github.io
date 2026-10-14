@@ -187,13 +187,14 @@
     const ids = E.DOFUS_ORDER.slice().sort((a, b) => E.DOFUS[a].lvl - E.DOFUS[b].lvl || (E.DOFUS[a].name < E.DOFUS[b].name ? -1 : 1));
     const stt = Object.fromEntries(ids.map((id) => [id, dofState(s, id)]));
     if (!st.dof || !E.DOFUS[st.dof]) st.dof = ids.find((id) => stt[id] === "run") || ids.find((id) => stt[id] === "lock") || ids[0];
-    const list = ids.filter((id) => st.dfil === "all" || stt[id] === st.dfil);
+    const dfam = E.DOFP_LIST ? st.dfam || "all" : "all"; // 1.0.16 : filtre par famille de passif
+    const list = ids.filter((id) => (st.dfil === "all" || stt[id] === st.dfil) && (dfam === "all" || E.dofpFam(id) === dfam));
     const tier = E.ocreTier(s);
     const dots = (id) => { const Df = E.DOFUS[id]; const Q = E.dofusQuest(s, id);
       if (id === "ocre") return E.OCRE_TIERS.map((T, i) => `<i class="${i < tier ? "ok" : i === tier && stt[id] === "run" ? "cur" : ""}"></i>`).join("");
       return Df.steps.map((x, i) => `<i class="${Q.done || i < Q.step ? "ok" : i === Q.step && stt[id] === "run" ? "cur" : ""}"></i>`).join(""); };
     const eggs = list.map((id) => { const Df = E.DOFUS[id];
-      return `<button class="qj-egg ${stt[id]}" data-act="qj-dof" data-v="${id}" aria-pressed="${st.dof === id}">${X().im(X().dofusImg(id), "", Df.name)}<b>${h(Df.name.replace(/^Dofus /, ""))}</b><small>niv. ${Df.lvl}</small><span class="qj-dots">${dots(id)}</span></button>`; }).join("") || `<p class="small muted">Aucun Dofus dans cette liste.</p>`;
+      return `<button class="qj-egg ${stt[id]}" data-act="qj-dof" data-v="${id}" aria-pressed="${st.dof === id}">${X().im(X().dofusImg(id), "", Df.name)}<b>${h(Df.name.replace(/^Dofus /, ""))}</b>${E.DOFP_LIST ? `<em class="qj-pas fam-${X().dofpFc(id)}"><i></i>${h(E.dofpName(id))}</em>` : ""}<small>niv. ${Df.lvl}</small><span class="qj-dots">${dots(id)}</span></button>`; }).join("") || `<p class="small muted">Aucun Dofus dans cette liste.</p>`;
     // fiche du Dofus choisi (mêmes informations que l'ancienne carte)
     const id = st.dof; const Df = E.DOFUS[id]; const Q = E.dofusQuest(s, id); const owned = E.dofusOwned(s, id); const by = E.dofusWornBy(s, id);
     const state = Q.done ? `Quête terminée${by ? ` · porté par ${h(by.name)}` : owned ? " · dans le sac" : ""}` : owned ? `Obtenu en butin${by ? ` · porté par ${h(by.name)}` : ""} · quête en cours` : stt[id] === "run" ? `Quête en cours${id === "ocre" ? "" : ` · étape ${Q.step + 1} sur ${Df.steps.length}`}` : "Quête à commencer";
@@ -202,7 +203,7 @@
         return `<li class="${cls}">${h(E.dofusStepTxt(x))}${cls === "cur" && bb > 1 ? ` <span class="num muted">${fmt(a)} / ${fmt(bb)}</span>` : ""}${cls === "cur" ? ` ${X().dofusStepGo(x)}` : ""}</li>`; }).join("");
     // 1.0.6.2 « Où trouver les Dofus » : les deux façons de l'obtenir, chacune avec son bouton pour y aller
     const gift = Df.steps[0] && Df.steps[0].t === "gift";
-    const fiche = `<div class="panel qj-fiche"><div class="pad stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap">${X().im(X().dofusImg(id), "qj-fpic", Df.name)}<div class="grow"><h3>${h(Df.name)}</h3><span class="xs muted">niveau ${Df.lvl}</span><div class="qj-bon">${h(E.dofusBonusTxt(id))}</div></div></div>
+    const fiche = `<div class="panel qj-fiche"><div class="pad stack" style="gap:10px"><div class="row" style="flex-wrap:nowrap">${X().im(X().dofusImg(id), "qj-fpic", Df.name)}<div class="grow"><h3>${h(Df.name)}</h3><span class="xs muted">niveau ${Df.lvl}</span><div class="qj-bon">${h(E.dofusBonusTxt(id))}</div></div></div>${X().dofpBlock ? X().dofpBlock(id, { c: by || null }) : ""}
       <span class="qj-tag ${stt[id] === "got" ? "ok" : stt[id] === "run" ? "todo" : ""}" style="justify-self:start">${state}</span>
       <div class="qj-how"><b>${gift ? "Comment l'obtenir" : "① Sa quête"}</b><span class="xs muted">${gift ? "" : id === "ocre" ? "un exemplaire garanti, une fois par compte : capture les âmes avec des Pierres d'âme" : "un exemplaire garanti, une fois par compte · les étapes se valident toutes seules en jouant"}</span></div>
       <ol class="qj-steps">${steps}</ol>
@@ -212,6 +213,7 @@
     const fil = [["all", "Tous"], ["run", "En cours"], ["lock", "À commencer"], ["got", "Obtenus"]];
     return `${head(s, "dofus", "Un Dofus s'obtient de deux façons : ① sa quête, qui en donne un exemplaire par compte (les étapes se valident toutes seules en jouant, les donjons déjà vaincus à la stasis demandée comptent) ; ② le butin du boss de son donjon, très rare : à chaque victoire, chaque héros de l'équipe a sa chance, dès la stasis 1 (1 sur " + fmt(E.dofusOdds(1)).replace(/,/g, " ") + ") et de mieux en mieux jusqu'à la stasis 10 (1 sur " + fmt(E.dofusOdds(10)).replace(/,/g, " ") + "). C'est le seul moyen d'en avoir d'autres pour tes autres héros. Choisis un Dofus : sa fiche dit où aller. Un héros porte un seul exemplaire de chaque Dofus.", X().archiBtn())}
       <div class="qj-fil">${fil.map(([k, l]) => `<button data-act="qj-dfil" data-v="${k}" aria-pressed="${st.dfil === k}">${l} <b class="num">${n(k)}</b></button>`).join("")}</div>
+      ${E.DOFP_LIST ? `<div class="qj-fil qj-ffam">${[["all", "Toutes les familles"]].concat(E.DOFP_FAMS.map((f) => [f, f])).map(([k, l]) => `<button class="${k === "all" ? "" : "fam-" + X().dofpFcOf(k)}" data-act="qj-dfam" data-v="${k}" aria-pressed="${dfam === k}">${k === "all" ? "" : `<i class="qj-fd"></i>`}${l}</button>`).join("")}</div>` : ""}
       <div class="qj-dofl"><div class="qj-eggs">${eggs}</div>${fiche}</div>`;
   }
 
@@ -381,6 +383,7 @@
       case "qj-dof": { st.dof = d.v; X().render(); const f = document.querySelector(".qj-fiche"); // 1.0.12.8 : au téléphone la fiche est au-dessus de la grille, on la fait venir à l'écran
         if (f && window.matchMedia("(max-width:860px)").matches) f.scrollIntoView({ block: "start" }); return; }
       case "qj-dfil": st.dfil = d.v; break;
+      case "qj-dfam": st.dfam = d.v; break; // 1.0.16
       case "qj-cat": st.cat = d.v; break;
       case "qj-shop": st.shop = d.v; ui.tab = "quests"; ui.qt = "shops"; X().closeSheet(); break;
       case "qj-chap": st.chap = +d.v; break;

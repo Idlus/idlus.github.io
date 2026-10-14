@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.16 « Passifs des Dofus »
+Demande de Mathis (« un passif unique pour chaque Dofus », réponses 1A 2A 3A 4A 5A puis 1B 2A 3A sur la maquette). `js/dofusp.js` donne à chacun des 31 Dofus un passif (`E.DOFP_LIST` : nom, texte, valeur, famille, déclencheur, rôle conseillé) qui s'ajoute à ses caractéristiques. Branché dans `js/engine.js` (début de combat, coups donnés et reçus, soins, mort d'un allié, invocations, XP) et `js/systems.js` (kamas et butin d'équipe une seule fois, dans les plafonds). Éveil des Dragons : les 6 primordiaux sur un héros renforcent leurs passifs de 25 % (`E.DOFP_RESO`). Kolizéum à moitié (`E.DOFP_PVP`), passifs copiés dans l'instantané de défense. Journal de combat seul (ligne dorée pour les passifs marquants). Interface : encadré « Passif », panneau « Passifs des Dofus » sous le héros, nouveau choix du Dofus, filtre par famille dans Quêtes › Dofus. Aucun effet sur `E.dofusDrop`. Fonction serveur : `dofusp` ajouté à `tools/build_server.js`. Test : `tests/dofusp.test.js`.
+
 ## 1.0.15.1 « Reliquats remis à zéro »
 Choix de Mathis après la 1.0.14.3 : au chargement, `E.deserialize` (js/engine.js) remet à 0 le reliquat (`it.well`) de tous les objets une seule fois (drapeau `S.wellReset`), caractéristiques inchangées.
 

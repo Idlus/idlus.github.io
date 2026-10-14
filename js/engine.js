@@ -828,6 +828,7 @@
       ini: st.ini, buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [],
       evc: E.eveil(c, "classe"), ev: c.eveils || {}, // 0.1.12 : Éveils (Renaissance)
       lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
+      dp: E.dofpOf ? E.dofpOf(S, c) : null, dpBoost: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus, Éveil des Dragons
       wsp: E.weaponSpell(S, c), // 0.1.53 : coup d'arme
     };
   };
@@ -1215,6 +1216,7 @@
     F.cs = { focus: {}, first: {}, last: {}, turnCasts: {}, el: {}, hitTurn: {} };
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     if (E.legFight) E.legFight(S, F); // 0.1.48 : passifs des objets légendaires
+    if (E.dofpFight) E.dofpFight(S, F); // 1.0.16 : passifs des Dofus
     newRound(F);
     return F;
   };
@@ -1240,6 +1242,7 @@
   const killed = (F, tgt) => {
     if (tgt.alive) return; const idx = F.ents.indexOf(tgt); if (F.deaths.includes(idx)) return; F.deaths.push(idx);
     if (tgt.side === "m" && F.lastBy && F.lastBy[idx] !== undefined) { const kr = F.ents[F.lastBy[idx]]; if (kr) kr.kills = (kr.kills || 0) + 1; } // 1.0.4 : statistiques de combat
+    if (E.dofpDeath) E.dofpDeath(F, tgt); // 1.0.16 : Colère du Bworker
     if (tgt.side === "c" && !tgt.summon) { failChal(F, "survivant", `${tgt.name} est tombé`); const lh = F.lastHit && F.lastHit.t === idx ? F.lastHit : null; (F.deathInfo = F.deathInfo || []).push({ i: idx, r: F.round, by: lh ? lh.s : -1, el: lh ? lh.el : null }); }
     if (tgt.side === "m" && tgt.role === "kamikaze" && !tgt.boom) { tgt.boom = true; const fr = alive(F, "c").filter((h) => rowOf(h) === "f");
       if (fr.length) { flog(F, `${tgt.name} explose en mourant !`, "m"); fr.forEach((h) => dealDamage(F, null, h, tgt.dmg * 1.5 * rf(0.9, 1.1), tgt.el === "n" ? null : tgt.el)); } }
@@ -1266,6 +1269,7 @@
     else if (tgt.st) { const rk = ELEMENTS[el] && ELEMENTS[el].res; res = rk ? tgt.st[rk] || 0 : 0; res += tgt.resBonus || 0; }
     if (tgt.wguard > 0) res += 10; // 0.1.53 : Bâton (Garde)
     if (src && src.wcast && src.wcast.wfx === "perce" && res > 0) res *= 0.85; // 0.1.53 : Lance (Perce-armure)
+    if (src && E.dofpRes) res = E.dofpRes(src, tgt, res); // 1.0.16 : Dolmanax, Forgelave
     res = Math.min(50, res);
     v = v * (1 - res / 100);
     v *= 1 + (debSum(tgt, "vuln") + (tgt.mark > 0 ? 10 : 0)) / 100;
@@ -1286,6 +1290,7 @@
     }
     if (src && src.expVs && tgt.side === "m") v *= 1 + ((tgt.boss ? src.expVs.boss : 0) + (tgt.hp > tgt.hpMax * 0.8 ? src.expVs.fresh : 0)) / 100; // 0.1.24 : reliques d'expédition
     if (F && src && E.legPre) { v = E.legPre(F, src, tgt, v); if (v <= 0) return 0; } // 0.1.48 : légendaires (esquive, garde, miroir)
+    if (F && src && E.dofpPre) { v = E.dofpPre(F, src, tgt, v); if (v <= 0) return 0; } // 1.0.16 : passifs des Dofus (marque, défenses)
     v = Math.max(1, Math.round(v));
     if (F && tgt.side === "m" && tgt.mech) { // une partie des dégâts part sur un serviteur
       const share = (m) => { const p = Math.min(m.hp, Math.round(v * 0.5)); if (p <= 0) return; v -= p; m.hp -= p; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(m), s: -1, v: p, el: el || "n" }); if (m.hp <= 0) { m.hp = 0; m.alive = false; killed(F, m); } };
@@ -1306,6 +1311,7 @@
     if (tgt.hp <= 0 && F && tgt.side === "c" && !tgt.summon && F.expRevive > 0) { F.expRevive--; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} se relève (Sang de Bouftou) !`, "buff"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.mech && tgt.mech.includes("immortel") && !tgt.revived) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * 0.25); flog(F, `${tgt.name} refuse de mourir et se relève !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
     if (tgt.hp <= 0 && F && tgt.side === "m" && F.idol && F.idol.revive && !tgt.revived && !tgt.summon) { tgt.revived = true; tgt.hp = Math.round(tgt.hpMax * F.idol.revive / 100); flog(F, `${tgt.name} revient à la vie (idole Sakai) !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: F.ents.indexOf(tgt) }); }
+    if (tgt.hp <= 0 && F && tgt.dp && E.dofpSave) E.dofpSave(F, tgt); // 1.0.16 : Lueur d'Ilyzaelle
     if (tgt.hp <= 0) { tgt.hp = 0; tgt.alive = false; killed(F, tgt); }
     if (F && src && v > 0) {
       if (src.side === "m" && tgt.side === "c") {
@@ -1325,6 +1331,7 @@
     }
     if (F && F.fx) F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(tgt), s: src ? F.ents.indexOf(src) : -1, v, el: el || "n" });
     if (F && src && v > 0) { if (src.lg && E.legHit) E.legHit(F, src, tgt, v, el); if (tgt.lg && E.legHurt) E.legHurt(F, src, tgt, v); } // 0.1.48 : légendaires
+    if (F && src && v > 0 && E.dofpHit) { if (src.dp) E.dofpHit(F, src, tgt, v, el); if (tgt.dp) E.dofpHurt(F, src, tgt, v); } // 1.0.16 : passifs des Dofus
     return v;
   };
   E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a) };
@@ -1348,6 +1355,7 @@
     if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri") + (wc ? (wc.ccb || 0) * E.DMG_SCALE * E.WEAPON.mult : 0);
     if (wc && wc.wfx === "grace" && tgt && tgt.hp < tgt.hpMax * 0.3) v *= 1.25;
     if (e.lg && E.legDmg) { const o = E.legDmg(F, e, tgt, el, crit, v); v = o.v; crit = o.crit; } // 0.1.48 : passifs des légendaires
+    if (e.dp && E.dofpDmg) v = E.dofpDmg(F, e, tgt, crit, v); // 1.0.16 : passifs des Dofus
     v *= 1 + (e.dmgBonus || 0) / 100;
     v *= 1 + (e.st.dsort || 0) / 100;
     v *= mult;
@@ -1379,8 +1387,10 @@
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
     if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
     if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
+    if (F && E.dofpHealIn && F.actor && F.actor.side === t.side && (t.dp || F.actor.dp)) v *= E.dofpHealIn(F, t) * E.dofpHealOut(F, F.actor); // 1.0.16 : Kaliptus, Dofawa
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
     if (F && t.side === "c" && !t.summon && g > 0) { F.healed = (F.healed || 0) + g; const a = F.actor && F.actor.side === "c" ? (F.actor.summon ? F.ents[F.actor.owner] : F.actor) : null; if (a && !a.summon) a.healDone = (a.healDone || 0) + g; } // 1.0.4 : soins par héros
+    if (F && E.dofpHealed && F.actor && F.actor.dp && F.actor.side === t.side) E.dofpHealed(F, F.actor, t, g); // 1.0.16 : Dotruche, Verdoyant, Kaliptus
     if (F && F.fx && g > 0) F.fx.push({ seq: F.seq, k: "heal", t: F.ents.indexOf(t), v: g });
     return g;
   };
@@ -1709,7 +1719,7 @@
     const own = F.ents[e.owner], oc = own && S.chars.find((x) => x.id === own.cid);
     const t = (own && own.alive && oc && E.chalRespect(S, oc) && F.chals && F.chals.some((c) => c.ok) ? pickFoes(S, F, own, null, 1)[0] : null) || alive(F, "m").sort((a, b) => a.hp - b.hp)[0]; if (!t) return; // les invocations suivent les challenges de leur maître
     F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
-    const d = dealDamage(F, e, t, e.dmg * rf(0.85, 1.15), e.el);
+    const d = dealDamage(F, e, t, e.dmg * rf(0.85, 1.15) * (E.dofpSummon && own ? E.dofpSummon(F, own) : 1), e.el); // 1.0.16 : Domakuro
     flog(F, `${e.name} (invocation) → ${t.name} : −${d}`, "c");
     if (!t.alive) flog(F, `${t.name} est vaincu.`, "ko");
   };
@@ -1980,6 +1990,7 @@
   E.koliSnap = (S, ids) => ids.map((id) => S.chars.find((c) => c.id === id)).filter(Boolean).slice(0, E.KOLI.size).map((c) => ({
     n: String(c.name || "").slice(0, 20), cls: c.cls, sex: c.sex || (CLASSES[c.cls] || {}).sex || "m", head: c.head || 0, lvl: c.lvl || 1, ren: c.ren || 0,
     sp: (c.spells || []).map((x) => ({ id: x.id, cond: x.cond || null, tgt: x.tgt || "low" })), st: E.charStats(S, c), ev: c.eveils || {}, evc: E.eveil(c, "classe"), lg: E.legOf ? E.legOf(S, c) : null,
+    dp: E.dofpOf ? E.dofpOf(S, c) : null, dpB: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus
     wp: (() => { const it = c.equip && c.equip.arme && S.items[c.equip.arme]; return it ? { t: it.tpl, e: it.wel || null, h: it.welh ? 1 : 0 } : null; })() })); // 0.1.53 : l'arme (coup d'arme)
   /* Prépare le combat : A (équipe 0, l'attaquant) contre B (équipe 1). Renvoie une petite partie de travail S2 dont S2.fight est le combat. */
   E.koliSetup = (A, B, opts = {}) => {
@@ -1990,7 +2001,7 @@
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
         buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {},
-        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null,
+        row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null, dp: h.dp || null, dpBoost: !!h.dpB,
         wsp: h.wp && ITEMS[h.wp.t] ? E.weaponSpellOf(h.cls, h.wp.t, h.wp.e, h.wp.h) : null });
     }));
     [0, 1].forEach((tm) => { // première ligne : le plus robuste ; Osamodas : +5 % de PV pour son équipe (comme en chasse)
@@ -2171,7 +2182,7 @@
       const diff = c.lvl - maxLvl;
       const pen = E.xpPenalty(diff);
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
-      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + (E.bonus(S, "xp") + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp"));
+      let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp")); // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
       out.xp[c.id] = g;
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde

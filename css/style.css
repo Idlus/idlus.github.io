@@ -4700,3 +4700,32 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .dm-sc:hover{border-color:var(--gold)}
 .dm-sc>span{display:flex;flex-direction:column;line-height:1.2;min-width:0}.dm-sc .sico{width:22px;height:22px;flex:none}
 .dm-sc.off{opacity:.5}.dm-i{width:13px;height:13px;display:inline;vertical-align:-2px}
+/* 1.0.16 « Passifs des Dofus » : encadré du passif (couleur de sa famille), panneau sous le héros, choix du Dofus, Quêtes › Dofus */
+.fam-att{--fc:#e2654c}.fam-def{--fc:#4f94e3}.fam-soin{--fc:#36b878}.fam-ctrl{--fc:#a06ee8}.fam-gain{--fc:#d9a646}
+.dofp{display:grid;gap:6px;margin:6px 0;padding:10px 12px;border-radius:12px;border:2px solid color-mix(in srgb,var(--gold) 70%,transparent);border-left:5px solid var(--fc,var(--gold));background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 14%,var(--panel2)),var(--panel2) 70%);box-shadow:0 0 14px color-mix(in srgb,var(--gold) 20%,transparent)}
+.dofp-h{display:flex;align-items:center;gap:8px}.dofp-fi{width:18px;height:18px;object-fit:contain;flex:none;color:var(--fc)}.dofp-h .dofp-fi{width:28px;height:28px;padding:5px;border-radius:8px;background:color-mix(in srgb,var(--fc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 55%,transparent)}
+.dofp-nm{display:grid;line-height:1.15;min-width:0}.dofp-nm small{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--gold)}.dofp-nm b{font-size:14.5px;color:var(--ink)}
+.dofp-f{margin-left:auto;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--fc);border:1.5px solid color-mix(in srgb,var(--fc) 60%,transparent);background:color-mix(in srgb,var(--fc) 12%,transparent);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.dofp-t{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.35}.dofp-v{color:var(--gold);font-weight:900;white-space:nowrap}
+.dofp-eveil{font-size:11px;font-weight:800;color:#1a1206;background:var(--gold);border-radius:999px;padding:0 7px;white-space:nowrap}
+.dofp-chips{display:flex;flex-wrap:wrap;gap:5px}.dofp-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--muted);background:color-mix(in srgb,var(--ink) 6%,transparent);border:1px solid var(--frame);border-radius:999px;padding:1px 8px;white-space:nowrap}.dofp-chip svg{width:12px;height:12px}.dofp-chip .dofp-fi{width:14px;height:14px}
+.dofp-chip.ok{color:var(--good,#2e9d5b);border-color:color-mix(in srgb,var(--good,#2e9d5b) 50%,transparent);background:color-mix(in srgb,var(--good,#2e9d5b) 10%,transparent)}.dofp-chip.dim{opacity:.8}
+.dofp-chip[class*="fam-"]{color:var(--ink);border-color:color-mix(in srgb,var(--fc) 55%,transparent);background:color-mix(in srgb,var(--fc) 12%,transparent)}
+.dofp-n{font-size:11.5px;color:var(--muted);line-height:1.35}
+.dofp.mini{padding:7px 10px;margin:2px 0 6px;gap:4px}.dofp.mini .dofp-t{font-size:12.5px}.dofp.mini .dofp-nm b{font-size:13.5px}
+.dofp-badge{position:absolute;right:-6px;bottom:-6px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:2px solid var(--fc,var(--gold));box-shadow:0 0 6px color-mix(in srgb,var(--fc) 70%,transparent)}.dofp-badge .dofp-fi{width:12px;height:12px;stroke-width:3}
+.dofp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.dofp-card{display:grid;gap:6px;align-content:start;text-align:left;font:inherit;color:inherit;cursor:pointer;padding:9px 10px;border-radius:12px;border:1.5px solid var(--frame);border-top:4px solid var(--fc,var(--frame));background:linear-gradient(180deg,color-mix(in srgb,var(--fc,var(--gold)) 10%,var(--panel2)),var(--panel2) 60%)}
+.dofp-card:hover,.dofp-card.on{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 35%,transparent)}
+.dofp-ch{display:flex;align-items:center;gap:8px}.dofp-ch .dofp-nm{flex:1}.dofp-ch .dofp-nm small{color:var(--muted);text-transform:none;letter-spacing:0;font-weight:700;font-size:11px}.dofp-img{width:38px;height:38px;object-fit:contain;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+.dofp-ct{font-size:12.5px;line-height:1.35}.dofp-live{font-size:11.5px;font-weight:800;color:var(--gold)}
+.dofp-card.empty{place-items:center;text-align:center;border-style:dashed;border-top-width:1.5px;background:transparent;color:var(--muted);min-height:96px}.dofp-plus{font-size:26px;line-height:1;font-weight:300}
+.dofp-reso{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:12px;border:1.5px dashed var(--frame)}.dofp-reso img{width:26px;height:26px;object-fit:contain}.dofp-reso .off img{filter:grayscale(1);opacity:.35}
+.dofp-reso.on{border:2px solid var(--gold);background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 22%,transparent),transparent);box-shadow:0 0 16px color-mix(in srgb,var(--gold) 30%,transparent)}.dofp-reso.on b{color:var(--gold)}
+.dofp-fams{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 2px}.dofp-fams button{display:inline-flex;align-items:center;gap:5px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink);border:1.5px solid var(--frame);background:var(--panel2);border-radius:999px;padding:3px 10px}.dofp-fams button[aria-pressed="true"]{border-color:var(--fc,var(--gold));background:color-mix(in srgb,var(--fc,var(--gold)) 18%,var(--panel2))}
+.dofp-pr{align-items:flex-start;border-left:4px solid var(--fc)}.dofp-pr .grow{display:grid;gap:4px;justify-items:start}.dofp-primg img{width:40px;height:40px;object-fit:contain}.dofp-prp{display:block;font-size:12.5px;line-height:1.4}.dofp-prp .dofp-fi{vertical-align:-3px;margin-right:4px}.dofp-prp > b:first-of-type{color:var(--fc)}
+.dofp-lock{opacity:.75}.dofp-lock .dofp-primg img{filter:grayscale(.8)}
+.log .dofpl{color:var(--gold);font-weight:800}
+.qj-pas{display:flex;align-items:center;gap:4px;font-style:normal;font-size:11px;font-weight:700;color:var(--muted);line-height:1.2;text-align:center;justify-content:center}.qj-pas i,.qj-fd{width:8px;height:8px;border-radius:50%;background:var(--fc);flex:none;display:inline-block}
+.qj-ffam button{display:inline-flex;align-items:center;gap:5px}.qj-ffam button[aria-pressed="true"][class*="fam-"]{border-color:var(--fc)}
+@media (max-width:700px){.dofp-grid{grid-template-columns:1fr}.dofp-card{grid-template-columns:1fr}}

@@ -1,6 +1,21 @@
 {
-  "version": "1.0.15.1",
+  "version": "1.0.16",
   "versions": [
+    {
+      "v": "1.0.16",
+      "name": "Passifs des Dofus",
+      "items": [
+        "Chaque Dofus a maintenant son passif unique, en plus de ses caractéristiques : 31 passifs rangés en 5 familles (Attaque, Défense, Soin, Contrôle, Gains), par exemple Prison d'ambre (Ocre), Carapace d'ivoire (Ivoire) ou Lueur d'Ilyzaelle (Argenté Scintillant)",
+        "Les 6 Dofus portés par un héros donnent tous leur passif. Les bonus de kamas (Dofus Argenté) et de butin (Dokille) comptent une seule fois par équipe et restent dans les plafonds ; l'XP du Jyfus va à son porteur",
+        "Éveil des Dragons : un héros qui porte les 6 Dofus primordiaux (Émeraude, Pourpre, Turquoise, Ocre, Ivoire, Ébène) a leurs passifs renforcés de 25 %",
+        "En combat, une ligne dorée ✦ dans le journal quand un passif marquant se déclenche",
+        "Équipement du héros : nouveau panneau « Passifs des Dofus » avec ce que fait chaque Dofus porté, combien de fois il s'est déclenché pendant le combat et la progression de l'Éveil",
+        "Nouveau choix du Dofus : filtre par famille, passif écrit en clair, Dofus conseillés pour ce héros en premier, Dofus pas encore obtenus avec leur quête",
+        "Encadré « Passif » sur la fiche des Dofus, dans l'info-bulle et dans Quêtes › Dofus (avec un filtre par famille)",
+        "Kolizéum : les passifs agissent à moitié (ceux du Vulbis, de l'Ocre et de l'Argenté Scintillant restent entiers). Le soin du Dokoko devient son passif « Sève de Moon »",
+        "Aucun passif ne change les chances d'obtenir un Dofus"
+      ]
+    },
     {
       "v": "1.0.15.1",
       "name": "Reliquats remis à zéro",
