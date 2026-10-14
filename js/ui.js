@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.3";
+const GAME_VERSION = "1.0.32.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.4", name: "Airs des nouveaux menus", items: [
+    "Musique : quatre nouveaux airs à l'orchestre pour les menus arrivés avec la grande mise à jour",
+    "Comptoirs : un air de boutique, avec la clochette de la porte, des pièces qui tintent et la caisse. Foire du Trool : une valse de fête foraine à l'orgue de barbarie",
+    "Familiers et montures : un galop aux cordes avec des sabots. Cours des ressources : la bourse, avec la cloche d'ouverture, le téléscripteur et des cours qui montent, chutent et remontent",
+    "Ce sont 4 partitions de plus à trouver : le titre « Mélomane » demande maintenant les 50 airs de l'année",
+  ] },
   { v: "1.0.32.3", name: "Montée de stasis", items: [
     "Donjons : nouvelle option « Monter jusqu'à la stasis » dans l'encadré Enchaîner. Choisis la stasis de départ et la stasis visée (par exemple 1 → 5) : l'équipe enchaîne les donjons en montant d'une stasis après chaque victoire, sans revenir sur la fiche",
     "La montée s'arrête à la stasis visée, à la première défaite ou quand il n'y a plus de clé. Un résumé dit jusqu'où l'équipe est allée",
@@ -7773,10 +7779,12 @@ const MUS_ZONE = { incarnam: "incarnam", astrub: "marche", amakna: "taverne", ca
   obscure: "obscure", harebourg: "harebourg", sufokia: "sufokia", cavaliers: "obscure", wukin: "wukin", possedes: "landes", ecailles: "sufokia", vulkania: "vulkania" };
 const MUS_SUB = { bra_bordure: "brakmar", bon_canaux: "brakmar", bra_entrailles: "brakmar" };
 const MUS_PAGE = { koli: "koli", exp: "songe", wb: "boss", guild: "guilde", hdv: "hdv", metiers: "atelier", forge: "atelier",
-  defi: "defi", team: "heros", heroes: "heros", inv: "sac", ren: "phenix", carnet: "carnet", ladder: "champions", builds: "strateges", sugg: "idees" }; // 1.0.29 : un air pour chaque menu
+  defi: "defi", team: "heros", heroes: "heros", inv: "sac", ren: "phenix", carnet: "carnet", ladder: "champions", builds: "strateges", sugg: "idees", // 1.0.29 : un air pour chaque menu
+  comptoirs: "comptoirs", foire: "foire", pets: "montures", cours: "cours" }; // 1.0.32.4 : les menus arrivés avec la 1.0.30
 const MUS_PAGE_N = { koli: "page du Kolizéum", songe: "Songe infini, la page et ses combats", boss: "Boss des mondes, la page et le combat", guilde: "page de la guilde", hdv: "page de l'Hôtel de vente", atelier: "pages Métiers et Forgemagie",
   monde: "page Monde (une zone ouverte joue son air)", cles: "page Donjons", defi: "page Défi du jour", heros: "page Équipe et héros", sac: "page Inventaire", phenix: "page Renaissance", quetes: "page Quêtes",
-  succes: "page Succès", biblio: "page Encyclopédie", carnet: "page Carnet", champions: "page Classements", strateges: "page Builds", idees: "page Suggestions" };
+  succes: "page Succès", biblio: "page Encyclopédie", carnet: "page Carnet", champions: "page Classements", strateges: "page Builds", idees: "page Suggestions",
+  comptoirs: "page Comptoirs", foire: "page Foire du Trool", montures: "page Familiers et montures", cours: "page Cours des ressources" };
 const MUS_MORE = { donjon: "donjons, les salles", salleboss: "donjons, la salle du boss", boite: "Havre-Sac, de 7 h à 21 h", nuit: "Havre-Sac, de 21 h à 7 h", halouine: "Havre-Sac, du 24 octobre au 3 novembre", fetes: "Havre-Sac, du 15 décembre au 2 janvier" };
 const musEvent = (d = new Date()) => { const m = d.getMonth() + 1, j = d.getDate(); return halOn() ? "halouine" : (m === 12 && j >= 15) || (m === 1 && j <= 2) ? "fetes" : null; };
 const musOfSub = (sid) => { const sb = sid && E.SUBS[sid]; return (sb && (MUS_SUB[sid] || MUS_ZONE[sb.zone])) || "taverne"; };
@@ -7807,7 +7815,8 @@ function musSync() {
 const AMB_OF = { incarnam: ["birds", "wind"], marche: ["crowd"], taverne: ["crowd"], cania: ["wind"], wabbits: ["birds"], landes: ["wind"], koalaks: ["jungle", "birds"], foret: ["birds", "stream"],
   abrak: ["owl", "wind"], moon: ["jungle"], dragoeufs: ["fire", "wind"], iles: ["waves", "birds"], pandala: ["stream", "birds"], frigost: ["wind"], saharach: ["wind"], divines: ["wind", "birds"],
   bonta: ["crowd", "birds"], brakmar: ["crowd", "fire"], obscure: ["drip", "wind"], harebourg: ["wind", "owl"], sufokia: ["waves"], wukin: ["stream", "birds"], vulkania: ["lava", "waves"],
-  donjon: ["drip"], salleboss: ["drip", "fire"], boite: ["fire"], nuit: ["fire", "crickets", "owl"], halouine: ["wind", "owl"], fetes: ["fire"], koli: ["crowd"], songe: ["wind", "drip"], guilde: ["fire"] };
+  donjon: ["drip"], salleboss: ["drip", "fire"], boite: ["fire"], nuit: ["fire", "crickets", "owl"], halouine: ["wind", "owl"], fetes: ["fire"], koli: ["crowd"], songe: ["wind", "drip"], guilde: ["fire"],
+  comptoirs: ["crowd"], foire: ["crowd"], montures: ["birds", "wind"] };
 function ambPlace() {
   const p = musSpot(); if (AMB_OF[p]) return p;
   if (E.expActive && E.expActive(S)) return "songe";
@@ -7868,7 +7877,7 @@ function partTick() {
   if ($("#jukebox")) optionsSheet();
 }
 if (E.ACH && !E.ACH.some((a) => a.id === "melo10")) { // succès « Mélomane » : toutes les partitions de l'année (Halouine et Fêtes en plus)
-  const MELO = 46;
+  const MELO = 50; // 1.0.32.4 : 50 airs de l'année (46 avant les airs des Comptoirs, de la Foire, des Familiers et du Cours)
   [[10, 5000], [25, 15000], [MELO, 40000]].forEach(([n, k]) => E.ACH.push({ id: n === MELO ? "melo" : "melo" + n, cat: "Collection", grp: "Partitions", name: n === MELO ? "Mélomane" : `${n} partitions`,
     desc: n === MELO ? `Trouver les ${MELO} partitions des airs de toute l'année (titre « Mélomane »). Les airs d'Halouine et des Fêtes sont en plus.` : `Trouver ${n} partitions : l'air d'un endroit se trouve en y passant quelques secondes.`,
     test: (S0) => partYearN(S0) >= n, prog: (S0) => [Math.min(partYearN(S0), n), n], kamas: k, title: n === MELO ? "Mélomane" : undefined }));
@@ -7936,7 +7945,7 @@ function soundOptionsHtml() {
 }
 /* juke-box : les airs rangés par endroit, chacun avec « Écouter » et « Toujours » ; replié, l'air de l'endroit et 5 autres */
 const JUKE_GRP = [["En chasse", ["incarnam", "marche", "taverne", "cania", "wabbits", "landes", "koalaks", "foret", "abrak", "moon", "dragoeufs", "iles", "pandala", "frigost", "saharach", "divines", "bonta", "brakmar", "obscure", "harebourg", "sufokia", "wukin", "vulkania"]],
-  ["Pages", ["monde", "cles", "songe", "defi", "koli", "boss", "heros", "sac", "phenix", "atelier", "quetes", "succes", "biblio", "carnet", "hdv", "guilde", "champions", "strateges", "idees"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]]];
+  ["Pages", ["monde", "cles", "songe", "defi", "koli", "boss", "heros", "sac", "phenix", "atelier", "quetes", "succes", "biblio", "carnet", "hdv", "guilde", "champions", "strateges", "idees", "comptoirs", "foire", "montures", "cours"]], ["Donjons", ["donjon", "salleboss"]], ["Havre-Sac", ["boite", "nuit", "halouine", "fetes"]]];
 function jukeWhere(id) {
   if (MUS_PAGE_N[id]) return MUS_PAGE_N[id]; if (MUS_MORE[id]) return MUS_MORE[id];
   const subs = Object.entries(MUS_SUB).filter(([, v]) => v === id).map(([k]) => E.SUBS[k] && E.SUBS[k].name).filter(Boolean);

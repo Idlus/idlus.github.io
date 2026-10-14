@@ -1,6 +1,16 @@
 {
-  "version": "1.0.32.3",
+  "version": "1.0.32.4",
   "versions": [
+    {
+      "v": "1.0.32.4",
+      "name": "Airs des nouveaux menus",
+      "items": [
+        "Musique : quatre nouveaux airs à l'orchestre pour les menus arrivés avec la grande mise à jour",
+        "Comptoirs : un air de boutique, avec la clochette de la porte, des pièces qui tintent et la caisse. Foire du Trool : une valse de fête foraine à l'orgue de barbarie",
+        "Familiers et montures : un galop aux cordes avec des sabots. Cours des ressources : la bourse, avec la cloche d'ouverture, le téléscripteur et des cours qui montent, chutent et remontent",
+        "Ce sont 4 partitions de plus à trouver : le titre « Mélomane » demande maintenant les 50 airs de l'année"
+      ]
+    },
     {
       "v": "1.0.32.3",
       "name": "Montée de stasis",

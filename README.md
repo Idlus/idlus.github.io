@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.4 « Airs des nouveaux menus »
+
+Quatre airs à l'orchestre pour les menus arrivés avec la 1.0.30, qui jouaient encore l'air de la zone de chasse (demande de Mathis du 14/10/2026 : « Il reste quel menu sans musique ? » puis « Go », écoutés et validés sur maquette) : Comptoirs des marchands (air de boutique : clochette de la porte, pièces, caisse ; js/musique.js `comptoirs`), Valse de la Foire du Trool (orgue de barbarie, `foire`), Galop des montures (Familiers et montures, `montures`), Cotations des ressources (la bourse : cloche d'ouverture, téléscripteur, cours qui montent, chutent et remontent ; Cours des ressources, `cours`). MUS_PAGE, le juke-box et les ambiances de js/ui.js les connaissent ; volumes calés sur la médiane des autres airs. Le succès « Mélomane » passe de 46 à 50 airs de l'année (ceux qui l'ont déjà le gardent).
+
 ## 1.0.32.3 « Montée de stasis »
 
 Demande de Mathis (14/10/2026, « enchaîner de 1 à 5 sans attendre la fin du donjon, retourner sur la page, choisir le niveau ») : l'encadré Enchaîner de la fiche de donjon propose « Monter jusqu'à la stasis N ». `E.enterDungeon(S, did, stasis, chain, climb)` garde `S.dungeon.climb` (stasis visée) et `k0` (départ) ; à chaque victoire contre le boss, la course suivante prend la stasis du dessus jusqu'à la stasis visée. Défaite, plus de clé ou fin : résumé dans le journal. Les boutons « Y aller » des étapes de quête de Dofus passent `data-k` pour régler la montée. Les chances de Dofus ne changent pas.

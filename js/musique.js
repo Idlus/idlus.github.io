@@ -734,6 +734,41 @@
       parts: [["line", { i: "bsn", oct: 0, pat: [[0, 0, 0.4, 0.45], [1, 2, 0.4, 0.35], [2, 0, 0.4, 0.4], [3, 2, 0.4, 0.35]] }],
         ["chord", { i: "harp", oct: 1, pat: [[0.5, 0.3, 0.25], [1.5, 0.3, 0.22], [2.5, 0.3, 0.25], [3.5, 0.3, 0.22]], st: 0.015 }]],
       dr: [[1, "snap", 0.14], [3, "snap", 0.14], [0, "tri", 0.05]] },
+    /* --- 1.0.30.6 : les quatre menus arrivés avec la 1.0.30 --- */
+    comptoirs: { name: "Comptoirs des marchands", gain: 0.65, bpm: 104, bpb: 4, sw: 0.3, rv: 0.3, lead: ["acc", "clar"], lead2: "glock+12", l2v: 0.18, // musique de boutique : clochette de la porte, pièces qui tintent, caisse au bout de la phrase
+      ch: "G Em C D G Em Am D7 G E7 Am D G C D7 G",
+      mel: "D5:.5 G5:.5 B5:.5 G5:.5 D5:1 B4:1 | E5:.5 G5:.5 B5:.5 G5:.5 E5:2 | C5:.5 E5:.5 G5:.5 C6:.5 B5:.5 A5:.5 G5:1 | F#5:1 A5:1 D5:2 | D5:.5 G5:.5 B5:.5 D6:.5 C6:.5 B5:.5 A5:1 | G5:.5 B5:.5 E6:1 D6:.5 B5:.5 G5:1 | A5:.5 C6:.5 E6:.5 C6:.5 A5:.5 G5:.5 F#5:.5 E5:.5 | D5:1 F#5:1 A5:1 r:1 | B5:1 D6:1 B5:.5 A5:.5 G5:1 | G#5:1 B5:1 E6:2 | A5:.5 C6:.5 E6:.5 C6:.5 A5:2 | F#5:.5 A5:.5 D6:.5 A5:.5 F#5:2 | G5:.5 B5:.5 D6:.5 G6:.5 F#6:.5 E6:.5 D6:1 | E6:1 C6:1 G5:2 | F#5:.5 G5:.5 A5:.5 C6:.5 B5:.5 A5:.5 F#5:1 | G5:2 r:2",
+      parts: [["line", { i: "bell", pat: [[0, "B6", 1.2, 0.3], [0.5, "G6", 1.6, 0.26]], every: 16 }],
+        ["line", { i: "tuba", oct: -1, pat: [[0, 0, 0.9, 0.5], [1.5, 2, 0.4, 0.4], [2, 1, 0.9, 0.42], [3.5, 2, 0.4, 0.36]] }],
+        ["chord", { i: "stacc", oct: 1, vc: [0, 1, 2], pat: [[0, 0.3, 0.3], [1.5, 0.3, 0.3], [3, 0.3, 0.22]] }],
+        ["chord", { i: "str", oct: 1, pat: [[0, 4, 0.22]], ao: { att: 0.6 }, from: 1 }]],
+      dr: [[0, "bdrum", 0.14], [1, "jingle", 0.14], [3, "jingle", 0.14], [3.5, "jingle", 0.1]],
+      fill: [[0, "bdrum", 0.2], [2, "jingle", 0.4], [2.06, "jingle", 0.34], [2.12, "jingle", 0.3], [2.2, "tri", 0.2]] },
+    foire: { name: "Valse de la Foire du Trool", gain: 0.94, bpm: 176, bpb: 3, rv: 0.3, amb: "crowd", lead: ["organ", "organ"], lead2: "glock+12", l2v: 0.16, // orgue de barbarie, « oum-pa-pa »
+      lo: { organ: { reg: [[1, 1], [2, 0.6], [3, 0.3], [4, 0.35], [6, 0.1]], cut: 4200 } },
+      ch: "F F C7 C7 C7 C7 F F F F Bb Bb F C7 F F",
+      mel: "C5:1 F5:1 A5:1 | C6:2 A5:1 | Bb5:1 A5:1 G5:1 | E5:.5 D#5:.5 E5:1 C5:1 | Bb4:1 E5:1 G5:1 | Bb5:2 G5:1 | A5:1 G5:1 F5:1 | C5:2 r:1 | A5:1 Bb5:1 C6:1 | F6:2 C6:1 | D6:1 C6:1 Bb5:1 | F5:2 D5:1 | C5:1 F5:1 A5:1 | G5:1.5 A5:.5 Bb5:1 | A5:1 F5:1 C5:1 | F5:2 r:1",
+      parts: [["line", { i: "tuba", oct: -1, pat: [[0, 0, 0.8, 0.55]] }],
+        ["chord", { i: "stacc", oct: 1, vc: [0, 1, 2], pat: [[1, 0.35, 0.34], [2, 0.35, 0.34]] }],
+        ["arp", { i: "glock", seq: [4, null, null], step: 1, oct: 1, v: 0.14, from: 1 }]],
+      dr: [[0, "bdrum", 0.2], [1, "hat", 0.05], [2, "hat", 0.05]], hits: [[8, 0, "crash", 0.16]], fill: [[0, "bdrum", 0.3], [1, "snare", 0.15], [1.5, "snare", 0.12], [2, "sroll", 0.35]] },
+    montures: { name: "Galop des montures", gain: 0.61, bpm: 228, bpb: 6, rv: 0.35, amb: "birds", lead: ["flute", "vln"], lead2: "glock+12", l2v: 0.15, // cordes au galop, sabots en bois
+      ch: "D D G A D Bm G A D D G A Bm G A D",
+      mel: "A4:1 D5:1 F#5:1 A5:2 F#5:1 | D6:2 C#6:1 A5:3 | B5:2 A5:1 G5:2 B5:1 | A5:3 E5:3 | F#5:1 G5:1 A5:1 D6:2 A5:1 | B5:2 F#5:1 D5:3 | G5:1 A5:1 B5:1 D6:2 B5:1 | A5:5 r:1 | D6:2 A5:1 F#5:2 A5:1 | D5:2 F#5:1 A5:3 | G5:2 B5:1 D6:2 B5:1 | C#6:3 A5:3 | B5:2 D6:1 F#6:2 D6:1 | E6:2 D6:1 B5:3 | C#6:1 B5:1 A5:1 E5:2 C#5:1 | D5:5 r:1",
+      parts: [["line", { i: "stacc", oct: 0, pat: [[0, 0, 0.4, 0.32], [1, 0, 0.3, 0.18], [2, 0, 0.3, 0.22], [3, 2, 0.4, 0.3], [4, 2, 0.3, 0.18], [5, 2, 0.3, 0.22]], pan: -0.2 }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 2.8, 0.45], [3, 2, 2.8, 0.38]] }],
+        ["chord", { i: "str", oct: 1, pat: [[0, 6, 0.25]], ao: { att: 0.5 }, from: 1 }],
+        ["chord", { i: "fhorn", oct: 0, vc: [0, 1, 2], pat: [[0, 5.5, 0.22]], every: 4, from: 1 }]],
+      dr: [[0, "wood", 0.18], [2, "wood2", 0.12], [3, "wood", 0.16], [5, "wood2", 0.12]], hits: [[8, 0, "tri", 0.12]] },
+    cours: { name: "Cotations des ressources", gain: 0.93, bpm: 132, bpb: 4, rv: 0.3, amb: "crowd", lead: ["xylo", "strl"], lead2: "fhorn-12", l2v: 0.22, // la bourse : cloche d'ouverture, téléscripteur, des cours qui montent, s'effondrent et remontent
+      ch: "Dm F Gm A Bb C Dm A Dm F Gm A Bb A7 Dm Dm",
+      mel: "D5:.5' F5:.5' A5:.5' D6:.5' A5:1 r:1 | F5:.5' A5:.5' C6:.5' F6:.5' C6:1 r:1 | G5:.5' Bb5:.5' D6:.5' G6:.5' D6:1 r:1 | A5:.5' C#6:.5' E6:.5' A6:.5' E6:1 C#6:1 | D6:1> F6:1> D6:1 Bb5:1 | E6:1> G6:1> E6:1 C6:1 | F6:.25 E6:.25 D6:.25 C6:.25 Bb5:.25 A5:.25 G5:.25 F5:.25 E5:.25 D5:.25 C#5:.25 D5:.25 r:1 | A4:1 C#5:1 E5:1 r:1 | D5:1 E5:.5 F5:.5 A5:2 | C6:1 A5:.5 F5:.5 C5:2 | Bb5:1 A5:.5 G5:.5 D5:1 G5:1 | A5:1.5 G5:.5 E5:1 C#5:1 | D5:.5' F5:.5' Bb5:.5' D6:.5' F6:2> | E6:.5 D6:.5 C#6:.5 Bb5:.5 A5:2 | D6:1 A5:1 F5:1 D5:1 | D5:2 r:2",
+      parts: [["line", { i: "bell", pat: [[0, "E6", 0.4, 0.26], [0.25, "E6", 0.4, 0.22], [0.5, "E6", 0.4, 0.22], [0.75, "E6", 1.4, 0.26]], every: 16 }],
+        ["arp", { i: "mar", seq: [0, 2, 4, 2], step: 0.25, oct: 1, d: 0.25, v: 0.15, pan: -0.25 }],
+        ["line", { i: "cb", oct: -1, pat: [[0, 0, 0.4, 0.45], [0.5, 0, 0.3, 0.25], [1, 0, 0.4, 0.35], [1.5, 0, 0.3, 0.25], [2, 0, 0.4, 0.4], [2.5, 0, 0.3, 0.25], [3, 0, 0.4, 0.35], [3.5, 2, 0.3, 0.25]] }],
+        ["chord", { i: "str", oct: 1, pat: [[0, 4, 0.28]], ao: { att: 0.8 }, from: 1 }],
+        ["line", { i: "timp", oct: 0, pat: [[0, 0, 1, 0.35]], every: 4 }]],
+      dr: [[0, "bdrum", 0.2], [2, "bdrum", 0.14], [1, "rim", 0.07], [3, "rim", 0.07]].concat(steps(EIGHTHS, "tick", 0.04)) },
   };
   Object.entries(SONGS).forEach(([k, v]) => (TRACKS[k] = song(v)));
   Object.values(TRACKS).forEach((T) => (T.len = T.ch.length * T.bpb));
