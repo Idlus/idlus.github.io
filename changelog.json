@@ -1,6 +1,13 @@
 {
-  "version": "1.0.24.4",
+  "version": "1.0.24.5",
   "versions": [
+    {
+      "v": "1.0.24.5",
+      "name": "Recettes instantanées",
+      "items": [
+        "Sur PC, choisir une autre recette ou changer la quantité à fabriquer ne redessine plus toute la page Métiers : seul le panneau de la recette change, c'est instantané"
+      ]
+    },
     {
       "v": "1.0.24.4",
       "name": "Places libres cliquables",

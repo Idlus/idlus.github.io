@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.24.5 « Recettes instantanées »
+
+Mathis (14/10/2026, « dès que je swipe de recette ou que je modifie les qt de craft », PC Chrome). Sur PC, les actions recsel / recqty / recqtyd ne font plus render() de toute la page : recPanel() redessine seulement le panneau de la recette et la ligne sélectionnée (≈ 65 ms → 12 ms par clic sur la partie de test). Le téléphone gardait déjà la fiche seule.
+
 ## 1.0.24.4 « Places libres cliquables »
 
 Une place vide de pièce (« + » de « Ma maison » et de la page Havre-Sac) se clique même sans meuble à placer : fenêtre avec les meubles de la pièce, leur bonus, où les trouver et un bouton pour y aller ; infobulle au survol sur PC. Publiée en 1.0.24.2 (32f124d), effacée par 4b069c1 (envoyé depuis une copie d'avant), rétablie telle quelle.

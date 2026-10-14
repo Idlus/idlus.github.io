@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.24.4";
+const GAME_VERSION = "1.0.24.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.24.5", name: "Recettes instantanées", items: [
+    "Sur PC, choisir une autre recette ou changer la quantité à fabriquer ne redessine plus toute la page Métiers : seul le panneau de la recette change, c'est instantané",
+  ] },
   { v: "1.0.24.4", name: "Places libres cliquables", items: [
     "Les places vides des pièces (les « + » de « Ma maison » et de la page Havre-Sac) se cliquent même quand on n'a rien à placer : une fenêtre montre les meubles à placer, puis tous les meubles de la pièce avec leur bonus et où les trouver (Boutique de la maison et son prix, Comptoir de la cité, recette du Bricoleur, succès, Almanax, butin rare d'une région, Kolizéum), avec un bouton pour y aller",
     "Sur PC, survoler une place vide affiche une infobulle ; la place est dorée quand un meuble attend d'être placé",
@@ -5804,6 +5807,14 @@ function recQtyLive(i, commit) {
   const x = $("#recqtyxp"); if (x) x.textContent = x.textContent.replace(/^\+[\d\s\u202f\u00a0]+/, "+" + fmt(+i.dataset.xp * n) + " ");
   const pd = i.closest(".pdet"); if (pd) { pd.querySelectorAll('[data-act="recqty"]').forEach((q) => q.setAttribute("aria-pressed", "false")); const [m, p] = pd.querySelectorAll('[data-act="recqtyd"]'); if (m) m.disabled = n <= 1; if (p) p.disabled = n >= +i.dataset.max; }
 }
+/* 1.0.24.5 : sur PC, changer de recette ou de quantité ne redessine plus toute la page Métiers, seulement le panneau de la recette */
+function recPanel() {
+  if (narrow() || ui.tab !== "metiers" || ui.met !== "craft") return false; const pad = $("#main .pdetp .pad"); if (!pad) return false;
+  const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return false;
+  const F = fltOf("met"); r.for = recFor(r, F.cid ? S.chars.filter((c) => c.id === +F.cid) : E.team(S));
+  pad.innerHTML = recDetail(r, job); document.querySelectorAll('#main .plist [data-act="recsel"]').forEach((b) => b.classList.toggle("on", b.dataset.id === ui.recSel));
+  return true;
+}
 function recSheet() { const job = ui.craftJob; const r = recBase(job).find((x) => x.id === ui.recSel); if (!r) return; r.for = recFor(r, E.team(S)); ui.recSheetOn = true; openSheet(recDetail(r, job)); }
 function craftHtml() {
   const job = ui.craftJob; const J = S.crafts[job] || { lvl: 1, xp: 0 }; const F = fltOf("met"); const room = E.craftRoom(S);
@@ -7728,9 +7739,9 @@ document.addEventListener("click", (ev) => {
     /* 0.1.41 : métiers et forgemagie */
     case "pagego": pageGo(d.v); return;
     case "gbsheet": ui.tab = "inv"; ui.inv = "res"; window.scrollTo(0, 0); break;
-    case "recsel": ui.recSel = d.id; ui.recStick = null; ui.recQty = "1"; if (narrow()) { recSheet(); return; } break;
-    case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break;
-    case "recqtyd": { const i = $("#recqtyn"); const mx = i ? +i.dataset.max : 1; ui.recQty = String(Math.max(1, Math.min(mx, (i ? +i.value || 1 : 1) + +d.v))); if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } break; }
+    case "recsel": ui.recSel = d.id; ui.recStick = null; ui.recQty = "1"; if (narrow()) { recSheet(); return; } if (recPanel()) return; break;
+    case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } if (recPanel()) return; break;
+    case "recqtyd": { const i = $("#recqtyn"); const mx = i ? +i.dataset.max : 1; ui.recQty = String(Math.max(1, Math.min(mx, (i ? +i.value || 1 : 1) + +d.v))); if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } if (recPanel()) return; break; }
     case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }
     case "dofgo": closeSheet(); if (window.QUI && window.QUI.pick) window.QUI.pick(d.v); ui.tab = "quests"; ui.qt = "dofus"; render(); window.scrollTo(0, 0); return; // 1.0.6.2
     case "dofalm": closeSheet(); ui.tab = "quests"; ui.qt = "almanax"; render(); window.scrollTo(0, 0); return;
