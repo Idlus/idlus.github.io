@@ -1564,7 +1564,8 @@
     // ornement des flammes
     if (!S.ornSeen.flammes && S.chars.some((c) => E.radiantWorn(S, c) >= 3)) { S.ornSeen.flammes = 1; note(S, "Ornement débloqué : Flammes Rayonnantes !", "rare"); }
     // limites de stock : le surplus part au marchand de secours (30 % de l.ancien prix)
-    if (type === "win" || type === "harvest") for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0) E.merchantRes(S, n, ex); }
+    // 1.0.30 : compte connecté, le surplus attend la vente directe (js/vente.js, js/venteui.js) au lieu du marchand
+    if (type === "win" || type === "harvest") { const vd = !!(E.venteDirect && E.venteDirect(S)); for (const n in S.resCap) { const ex = (S.res[n] || 0) - S.resCap[n]; if (ex > 0 && !(vd && E.venteOk(n))) E.merchantRes(S, n, ex); } }
     checkQuest(S);
     if (type !== "harvest" || (S._achT || 0) + 1500 < E.now()) { S._achT = E.now(); checkAch(S); }
   };

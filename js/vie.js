@@ -236,12 +236,18 @@
     if (C.back && from && S.sub !== from && !(S.tresor && S.tresor.cur && S.tresor.cur.follow) && SUBS[from] && !S.dungeon && E.subUnlocked(S, from)) { E.startHunt(S, from); out.push(`Retour à ta zone : ${SUBS[from].name}.`); }
     if (C.cap > 0) { // limite de banque : le surplus gagné pendant l'absence part au marchand de secours (sauf favoris, clés et ressources réservées)
       const keep = new Set([...E.cmdNeeds(S), ...(E.almanax ? [E.almanax(S).res] : [])]);
+      // 1.0.30 : compte connecté, le surplus est vendu au prix de la vente directe (js/venteui.js lit S.venteQ, E.venteSurplus)
+      const vd = !!(E.venteDirect && E.venteDirect(S) && E.venteFix); if (vd) E.venteFix(S);
       let n = 0, k0 = S.kamas;
       Object.keys(r.res || {}).forEach((name) => {
         if (keep.has(name) || (S.resFav && S.resFav[name]) || E.isKey(name) || (S.resCap && S.resCap[name] !== undefined) || !E.resPrice(name)) return;
-        const ex = (S.res[name] || 0) - C.cap; if (ex > 0) { E.merchantRes(S, name, ex); n += ex; }
+        const ex = (S.res[name] || 0) - C.cap; if (ex <= 0) return;
+        if (vd && E.venteOk(name)) S.venteQ[name] = C.cap; else E.merchantRes(S, name, ex);
+        n += ex;
       });
-      const dk = S.kamas - k0; if (n) { out.push(`Limite de banque : ${fmtK(n)} ressources en trop vendues au marchand de secours (+${fmtK(dk)} kamas).`); }
+      const dk = S.kamas - k0;
+      if (n && vd) out.push(`Limite de banque : ${fmtK(n)} ressources en trop, vendues dans quelques minutes au prix de la vente directe${dk > 0 ? ` (+${fmtK(dk)} kamas au marchand de secours)` : ""}.`);
+      else if (n) out.push(`Limite de banque : ${fmtK(n)} ressources en trop vendues au marchand de secours (+${fmtK(dk)} kamas).`);
     }
     if (C.alm && E.almanaxOffer) { const A = E.almanax(S); if (!A.done && (S.res[A.res] || 0) >= A.qty) { if (!E.almanaxOffer(S)) out.push(`Offrande à l'Almanax faite : ${A.bonus.txt}.`); } }
     if (C.cmd) { const Cm = E.cmdState(S); let nd = 0;

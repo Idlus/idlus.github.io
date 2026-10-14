@@ -173,6 +173,45 @@ const MOCK = () => {
         if (name === "adm_builds") return ok(B.map((x) => ({ id: x.id, pseudo: x.pseudo, cls: x.cls, lvl: x.lvl, title: x.title, note: x.note, likes: (x.likers || []).length, views: x.views, reports: (x.reports || []).length, hidden: x.hidden, removed: x.removed, at: x.at, reasons: (x.reports || []).map((r) => r[1]).join(" · ") })));
         if (name === "adm_build_set") { d.admCalls = (d.admCalls || []).concat([[name, a]]); if (b) { if (a.p_act === "ok") Object.assign(b, { hidden: false, reports: [] }); if (a.p_act === "hide") b.hidden = true; if (a.p_act === "del") b.removed = true; if (a.p_act === "restore") Object.assign(b, { removed: false, hidden: false }); } return ok(null); }
       }
+      // 1.0.30 : vente directe et Jackpot du Trool (supabase/vente.sql, supabase/foire.sql) ; les prix et le pot se lisent sans compte.
+      // Le serveur lit la partie en ligne (ressources, kamas) et répond par des opérations, comme l'HdV.
+      if (/^vente_|^foire_/.test(name)) {
+        const d = db(); const u = user(); const E = window.ENGINE; const ok = (data) => { put(d); return { data, error: null }; };
+        if (d.ecoOff) return { data: null, error: { message: `Could not find the function public.${name} without parameters in the schema cache` } }; // SQL pas encore appliqué
+        if (window.__offline) throw new Error("Failed to fetch");
+        const V = (d.vente = d.vente || { c: { "Laine de Bouftou": [0.4, 4000, 9000], "Bois de Frêne": [2.6, 300, 300], "Plume de Tofu": [1.2, 9000, 2500] } });
+        const hr = Math.floor(Date.now() / 3600000) * 3600000;
+        const J = (d.jack = d.jack || { hour: hr, n: 4, mine: 0, day: 0, last: [{ p: "Kralamour", k: 270000, n: 30, h: hr - 3600000, me: false }, { p: "Tofuline", k: 90000, n: 10, h: hr - 7200000, me: false }] });
+        if (J.hour < hr || d.jackDraw) { // tirage de l'heure finie au premier appel : le joueur gagne s'il avait des tickets (une seule chance dans ce faux serveur)
+          if (J.mine && u) { d.op = (d.op || 100) + 1; d.syncOps = (d.syncOps || []).concat([{ id: d.op, p: { k: J.n * 9000, jack: 1 }, t: `Jackpot du Trool : tu remportes le pot de ${J.n * 9000} kamas (${J.n} tickets) !` }]); J.last.unshift({ p: "Bouftou", k: J.n * 9000, n: J.n, h: J.hour, me: true }); }
+          Object.assign(J, { hour: hr, n: 0, mine: 0 }); d.jackDraw = false;
+        }
+        const jst = () => ({ hour: hr, end: hr + 3600000, now: Date.now(), pot: J.n * 9000, tickets: J.n, players: J.n ? 1 + (J.mine ? 1 : 0) : 0, mine: u ? J.mine : 0, day: u ? J.day : 0, max: 100, last: J.last.slice(0, 6) });
+        if (name === "vente_cours") return ok({ c: V.c, up: !!(u && d.venteUp), t: Date.now() });
+        if (name === "vente_courbe") { const x = V.c[a.p_key]; return ok({ pts: x ? [[Date.now() - 30 * 3600000, 1.5, 500], [Date.now() - 20 * 60000, x[0], 120]] : [], c: x ? [x[0], x[1]] : [3, 0], base: E.resPrice(a.p_key), t: Date.now() }); }
+        if (name === "foire_jackpot") return ok(jst());
+        if (!u) return { data: null, error: { message: "non connecté" } };
+        const sv = d.saves[u.id] ? JSON.parse(d.saves[u.id].data) : null;
+        if (!sv) return ok({ err: "Pas de partie en ligne pour la vente directe." });
+        if (name === "vente_sell") {
+          const sold = {}, res = {}, cs = {}; let k = 0;
+          Object.keys(a.p_lots || {}).sort().forEach((n) => { const q = Math.min(Math.floor(+a.p_lots[n] || 0), Math.floor((sv.res || {})[n] || 0)); if (!(q >= 1) || !E.venteOk(n)) return;
+            const x = V.c[n] || [3, 0, 0]; const L = E.venteLot(E.resPrice(n), x[0], q, d.venteUp ? 1.05 : 1); k += L.k; V.c[n] = [L.c, x[1] + q, (x[2] || 0) + q]; sold[n] = q; res[n] = -q; cs[n] = [L.c, x[1] + q]; });
+          d.sells = (d.sells || []).concat([a.p_lots]);
+          if (!Object.keys(sold).length) return ok({ err: "Rien à vendre : ta partie en ligne n'a pas ces ressources (attends quelques secondes et réessaie)." });
+          const share = d.guildShare ? Math.floor(k * d.guildShare) : 0; d.op = (d.op || 100) + 1;
+          const op = { id: d.op, p: { k: k - share, res, vd: 1 }, t: `Vente directe : ${Object.keys(sold).length} ressource(s) pour ${k - share} kamas` };
+          return ok({ ok: true, sold, k: k - share, share, up: !!d.venteUp, c: cs, ops: [op] });
+        }
+        if (name === "foire_jackpot_buy") {
+          const n = a.p_n; if (!(n >= 1 && n <= 10)) return ok({ err: "De 1 à 10 tickets d'un coup." });
+          if (J.day + n > 100) return ok({ err: J.day >= 100 ? "Tu as déjà tes 100 tickets du jour : reviens demain." : `Encore ${100 - J.day} tickets au plus aujourd'hui.` });
+          if ((sv.kamas || 0) < n * 10000) return ok({ err: "Pas assez de kamas (ou ta partie en ligne n'est pas encore à jour : attends quelques secondes)." });
+          J.n += n; J.mine += n; J.day += n; d.op = (d.op || 100) + 1;
+          return ok(Object.assign(jst(), { ok: true, ops: [{ id: d.op, p: { k: -n * 10000, jt: n }, t: `Jackpot du Trool : ${n} ticket(s) pour ${n * 10000} kamas` }] }));
+        }
+        return { data: null, error: { message: "fonction inconnue " + name } };
+      }
       const d = db(); const u = user(); if (!u) return { error: { message: "non connecté" } };
       if (window.__offline) throw new Error("Failed to fetch");
       const s = d.saves[u.id];
@@ -232,7 +271,7 @@ const MOCK = () => {
       }
       if (name === "hdv_prix7") { const o = {}; (a.p_keys || []).forEach((k) => { if (window.DATA.ITEMS[k]) o[k] = 5000; else if (k.startsWith("ra:")) o[k] = 120; else if (k.startsWith("pa:")) o[k] = 35; else if (k.startsWith(":")) o[k] = 10; });
         d.prix7 = (d.prix7 || 0) + 1; put(d); return { data: o, error: null }; }
-      if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: [] } : null, error: null };
+      if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: (d.syncOps || []).filter((o) => o.id > (a.p_after || 0)) } : null, error: null }; // 1.0.30 : gain du Jackpot
       if (name === "hdv_buy") { if (d.hdvSold) return { data: { err: "Déjà vendu." }, error: null }; d.hdvSold = true; put(d); return { data: { ok: true, ops: [{ id: 1, p: { k: -5000, add: [item] }, t: "Acheté : " + T.name }] }, error: null }; }
       // 0.1.33 : offres d'achat
       if (name === "hdv_orders_list") return { data: d.ordSold ? [] : [{ id: 5, cat: "res", key: "Laine de Bouftou", name: "Laine de Bouftou", lvl: 1, left: 50, qty: 50, price: 30, exp: new Date(Date.now() + 864e5 * 3).toISOString(), mine: false }], error: null };
@@ -550,7 +589,9 @@ const MOCK = () => {
     if (!/Pendant que tu colles/.test(await page.textContent("#chat .ch-list"))) fail("chat : message reçu absent pendant l'écriture");
     await page.fill("#chIn", "");
     await page.evaluate(() => { const tx = [...document.querySelectorAll("#chat .msg .tx")].find((e) => /Coucou en direct/.test(e.textContent)); const r = document.createRange(); r.selectNodeContents(tx); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
-    await page.evaluate(() => window.__chatEmit({ id: 52, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Pendant que tu copies", kind: "msg", created_at: new Date().toISOString() })); await page.waitForTimeout(100);
+    // 1.0.30 : le message est aussi rangé sur le faux serveur (comme le 51), sinon un rechargement du chat pendant la copie le faisait disparaître (test instable)
+    await page.evaluate(() => { const m = { id: 52, ch: "g", user_id: "u8", pseudo: "Tofuline", cls: "eni", lvl: 150, body: "Pendant que tu copies", kind: "msg", created_at: new Date().toISOString() };
+      const d = JSON.parse(localStorage.getItem("__mock")); d.views.chat_msgs.push(m); localStorage.setItem("__mock", JSON.stringify(d)); window.__chatEmit(m); }); await page.waitForTimeout(100);
     if ((await page.evaluate(() => String(getSelection()))) !== "Coucou en direct") fail("chat : un message reçu efface le texte surligné");
     await page.evaluate(() => getSelection().removeAllRanges()); await page.waitForTimeout(150);
     if (!/Pendant que tu copies/.test(await page.textContent("#chat .ch-list"))) fail("chat : message reçu pendant la copie jamais affiché");
@@ -608,6 +649,7 @@ const MOCK = () => {
     if (!(await page.$("#chat .ch-pin")) || !/Nouveau texte épinglé/.test(await page.textContent("#chat .ch-pin"))) fail("chat : nouveau message épinglé absent après le changement");
     // 1.0.5.2 : codes cadeaux, la liste de choix reste ouverte quand le panel se redessine
     await page.click('.adm [data-act="adm-tab"][data-v="codes"]'); await page.waitForSelector("#gcCode", { timeout: 5000 });
+    await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.30 : le menu a deux pages de plus, la bulle « Équiper un objet » descend sur le bouton
     await page.click('[data-act="gc-add"]'); await page.waitForSelector("#gcN1"); await page.click("#gcN1"); await page.keyboard.type("coffr"); await page.waitForTimeout(300);
     await page.evaluate(() => window.CHAT.repaintAdmin()); await page.waitForTimeout(200);
     if (!(await page.evaluate(() => document.activeElement.id === "gcN1" && document.activeElement.value === "coffr" && document.querySelectorAll(".gc-sug:not([hidden]) .gc-opt").length > 0))) fail("codes cadeaux : la liste de choix se referme au redessin");
@@ -791,6 +833,62 @@ const MOCK = () => {
     if (await page.evaluate((u) => !!window.DX.S.items[u], fx.a)) fail("atelier de brisage : objet pas brisé");
     await page.waitForFunction((t) => { const d = JSON.parse(localStorage.getItem("__mock")); return d.brCoef && d.brCoef[t]; }, fx.tpl, { timeout: 20000 }).catch(() => fail("brisage : brisage pas envoyé au serveur (brisage_hit_sync)"));
     { const r = await page.evaluate((t) => ({ srv: JSON.parse(localStorage.getItem("__mock")).brCoef[t][0], c: window.ENGINE.getCoef(window.DX.S, t) }), fx.tpl); if (r.srv !== 147 || r.c !== 147) fail("brisage : coefficient commun après brisage " + JSON.stringify(r)); }
+    // 7e quater (1.0.30). vente directe : fiche d'une ressource (prix du serveur, tendance, courbe 48 h, « Vendre » et « Vendre à l'HdV »),
+    // flèche sur chaque case, vente vérifiée par le serveur, surplus au-delà de « Garder au maximum », page Cours des ressources
+    await page.evaluate(() => { const S = window.DX.S; Object.assign(S.res, { "Laine de Bouftou": 3000, "Bois de Frêne": 50, "Plume de Tofu": 20 }); S.resCap = {}; const ui = window.DX.ui; ui.tab = "inv"; ui.inv = "res"; ui.resView = "grid"; ui.resQ = ""; ui.resF = "all"; ui.resSel = "Laine de Bouftou"; window.DX.render(); window.scrollTo(0, 0); });
+    await page.waitForSelector(".vd-box .vd-price", { timeout: 8000 }).catch(() => fail("vente directe : prix absent de la fiche"));
+    { const t = (await page.textContent(".vd-box")).replace(/\s/g, " ");
+      if (!/×0,4/.test(t) || !/▲/.test(t)) fail("vente directe : prix ou tendance faux dans la fiche : " + t.slice(0, 160));
+      if (!(await page.$(".vd-box #vdSpark")) || !(await page.$('.vd-box [data-act="vd-sell"]')) || !(await page.$('.vd-box [data-act="hdvres"]'))) fail("vente directe : courbe, « Vendre » ou « Vendre à l'HdV » absent"); }
+    if (!(await page.$(".rtile .vd-ar.vd-up")) || !(await page.$(".rtile .vd-ar.vd-dn"))) fail("vente directe : flèches ▲ ▼ absentes des cases");
+    { const k0 = await page.evaluate(() => window.DX.S.kamas);
+      await page.fill("#vdQty", "1000"); await page.waitForTimeout(100);
+      if (!/Vendre 1 000/.test((await page.textContent("#vdGo")).replace(/\s/g, " "))) fail("vente directe : le bouton ne suit pas la quantité");
+      await page.click("#vdGo"); await page.waitForTimeout(900);
+      const r = await page.evaluate(() => ({ k: window.DX.S.kamas, q: window.DX.S.res["Laine de Bouftou"], exp: window.ENGINE.venteLot(window.ENGINE.resPrice("Laine de Bouftou"), 0.4, 1000).k, log: (window.DX.S.venteLog || [])[0], sells: (JSON.parse(localStorage.getItem("__mock")).sells || []).length }));
+      if (r.q !== 2000 || r.k - k0 !== r.exp || r.sells !== 1 || !r.log || !/Vente directe/.test(r.log.t)) fail("vente directe : vente mal appliquée " + JSON.stringify([k0, r])); }
+    { const r = await page.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; S.resCap["Bois de Frêne"] = 10; E.emit(S, "harvest", { n: 1 }); const kept = S.res["Bois de Frêne"]; await window.VENTEUI.surplus(); return { kept, now: S.res["Bois de Frêne"], direct: E.venteDirect(S) }; });
+      if (!r.direct || r.kept !== 50 || r.now !== 10) fail("vente directe : le surplus n'est pas vendu au prix du moment " + JSON.stringify(r)); }
+    // serveur pas encore à jour (supabase/vente.sql pas appliqué) : retour au marchand de secours, puis la vente revient
+    { const r = await page.evaluate(async () => { const S = window.DX.S, E = window.ENGINE; const d = JSON.parse(localStorage.getItem("__mock")); d.ecoOff = true; localStorage.setItem("__mock", JSON.stringify(d));
+        await window.VENTEUI.load(true); const off = E.venteDirect(S); S.res["Bois de Frêne"] = 30; S.resCap["Bois de Frêne"] = 5; E.emit(S, "harvest", { n: 1 }); const merch = S.res["Bois de Frêne"];
+        d.ecoOff = false; localStorage.setItem("__mock", JSON.stringify(d)); await window.VENTEUI.load(true); delete S.resCap["Bois de Frêne"]; return { off, merch, back: E.venteDirect(S) }; });
+      if (r.off || r.merch !== 5 || !r.back) fail("vente directe : sans les fonctions du serveur, le marchand de secours ne reprend pas " + JSON.stringify(r)); }
+    if (!(await page.$('#nav [data-nk="cours"]'))) fail("vente directe : Cours des ressources absent du menu");
+    await page.click('.vd-box [data-act="nav"][data-v="cours"]'); await page.waitForSelector(".vd-cours", { timeout: 5000 });
+    { const t = await page.textContent("#main"); if (!/Les plus chères/.test(t) || !/Les plus vendues/.test(t) || !/Laine de Bouftou/.test(t) || !/Tes dernières ventes directes/.test(t)) fail("cours des ressources : page incomplète"); }
+    await page.fill("#vdCq", "frene"); await page.waitForTimeout(400);
+    if (!/Bois de Frêne/.test(await page.textContent("#vdList")) || /Les plus chères/.test(await page.textContent("#vdList"))) fail("cours des ressources : recherche cassée");
+    await page.fill("#vdCq", "");
+    // Foire du Trool : Jackpot du serveur (ticket, pot, gain versé comme une vente de l'HdV) et Caisses du Trool
+    await page.evaluate(() => { window.DX.S.kamas = Math.max(window.DX.S.kamas, 3e6); });
+    await page.click('#nav [data-nk="foire"]'); await page.waitForSelector("#foJack .fo-jack", { timeout: 8000 }).catch(() => fail("foire : Jackpot absent"));
+    if (!/36 000 k/.test((await page.textContent("#foJack .fo-jack")).replace(/\s/g, " "))) fail("foire : pot de l'heure faux");
+    { const k0 = await page.evaluate(() => window.DX.S.kamas);
+      await page.click('[data-act="fo-jbuy"][data-n="1"]'); await page.waitForTimeout(900);
+      const k1 = await page.evaluate(() => window.DX.S.kamas);
+      if (k0 - k1 !== 10000 || !/45 000 k/.test((await page.textContent("#foJack")).replace(/\s/g, " ")) || !/tu as 1 ticket/.test(await page.textContent("#foJack"))) fail("foire : ticket de Jackpot mal acheté " + JSON.stringify([k0, k1]));
+      const r = await page.evaluate(async () => { const d = JSON.parse(localStorage.getItem("__mock")); d.jackDraw = true; localStorage.setItem("__mock", JSON.stringify(d)); await window.FOIREUI.jLoad(); await window.MARKET.sync(); return { k: window.DX.S.kamas, log: window.DX.S.hdv.log[0] && window.DX.S.hdv.log[0].t }; });
+      if (r.k - k1 !== 45000 || !/Jackpot du Trool : tu remportes/.test(r.log || "")) fail("foire : gain du Jackpot non versé " + JSON.stringify(r)); }
+    { const k0 = await page.evaluate(() => window.DX.S.kamas);
+      await page.click('[data-act="fo-pick"][data-v="bois"]'); await page.click("#foGo"); await page.waitForTimeout(4500);
+      const r = await page.evaluate(() => ({ k: window.DX.S.kamas, left: window.ENGINE.foireLeft(window.DX.S), lot: window.FOIREUI.st.last && window.FOIREUI.st.last.lot }));
+      if (r.left !== 19 || !r.lot || r.k !== k0 - 50000 + r.lot.k || !(await page.$(".fo-track .it.win")) || !/!/.test(await page.textContent("#foRes"))) fail("foire : caisse mal ouverte " + JSON.stringify([k0, r])); }
+    // Comptoirs : les 6 boutiques, point sur le menu quand on peut acheter du neuf, achat, offre de la semaine
+    await page.evaluate(() => { const S = window.DX.S; S.tokens.jetons = 50; window.DX.render(); });
+    if (!(await page.$('#nav [data-nk="comptoirs"] .navdot'))) fail("comptoirs : pas de point sur le menu avec de quoi acheter");
+    await page.click('#nav [data-nk="comptoirs"]'); await page.waitForSelector(".cp-shops", { timeout: 5000 });
+    if ((await page.$$(".cp-sh")).length !== 6 || !(await page.$(".cp-offer")) || !/NOUVEAU/.test(await page.textContent(".cp-items"))) fail("comptoirs : page incomplète");
+    await page.click('.cp-sh[data-v="prime"]'); await page.waitForTimeout(100);
+    { const b0 = await page.evaluate(() => [window.DX.S.tokens.jetons, window.DX.S.cons.bonbon_sagesse || 0]);
+      await page.click('[data-act="cp-buy"][data-s="prime"][data-id="b1"][data-q="1"]:not([data-o])'); await page.waitForTimeout(200);
+      const b1 = await page.evaluate(() => [window.DX.S.tokens.jetons, window.DX.S.cons.bonbon_sagesse || 0]);
+      if (b1[0] !== b0[0] - 4 || b1[1] !== b0[1] + 1) fail("comptoirs : achat mal fait " + JSON.stringify([b0, b1])); }
+    await page.click('#nav [data-nk="world"]'); await page.waitForTimeout(200);
+    if (await page.evaluate(() => window.ENGINE.cptNew(window.DX.S, "prime").length)) fail("comptoirs : les objets vus restent neufs");
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const tb of ["cours", "foire", "comptoirs"]) { await page.evaluate((x) => { window.DX.ui.tab = x; window.DX.render(); }, tb); await page.waitForTimeout(250); const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`${tb} : page trop large sur téléphone : ${w}px`); }
+    await page.setViewportSize({ width: 1280, height: 800 }); await page.evaluate(() => { window.DX.ui.tab = "world"; window.DX.render(); });
     // 7f. guildes : invitation reçue, liste, formulaire de fondation
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
     await page.click('#nav [data-nk="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
@@ -992,8 +1090,8 @@ const MOCK = () => {
     if (JSON.parse(await p2.evaluate(() => localStorage.getItem("dofousxen-save-beta"))).chars[0].name !== "Premier") fail("parties : la partie 2 a écrasé la partie 1 de l'appareil");
     // une partie solo n'entre pas aux classements et ne touche ni à l'Hôtel de vente, ni à la guilde, ni au Kolizéum classé
     const inv0 = (m2.invoked || []).length;
-    const solo = await p2.evaluate(async () => { const O = window.ONLINE; return { solo: O.solo(), rec: await O.submitRecord("x"), hdv: await O.rpc("hdv_buy", { p_id: 1 }), sync: await O.rpc("hdv_sync", { p_after: 0 }), list: (await O.rpc("guild_list")).err || null }; });
-    if (!solo.solo || solo.rec.ok !== false || !solo.hdv.err || !solo.sync.err || solo.list) fail("parties : une partie solo peut agir sur le serveur " + JSON.stringify(solo));
+    const solo = await p2.evaluate(async () => { const O = window.ONLINE; return { solo: O.solo(), rec: await O.submitRecord("x"), hdv: await O.rpc("hdv_buy", { p_id: 1 }), sync: await O.rpc("hdv_sync", { p_after: 0 }), vd: await O.rpc("vente_sell", { p_after: 0, p_lots: {} }), jt: await O.rpc("foire_jackpot_buy", { p_after: 0, p_n: 1 }), list: (await O.rpc("guild_list")).err || null }; });
+    if (!solo.solo || solo.rec.ok !== false || !solo.hdv.err || !solo.sync.err || !solo.vd.err || !solo.jt.err || solo.list) fail("parties : une partie solo peut agir sur le serveur " + JSON.stringify(solo));
     if (((await mock2()).invoked || []).length !== inv0) fail("parties : record envoyé depuis une partie solo");
     await p2.evaluate(() => { window.DX.ui.tab = "hdv"; window.DX.render(); }); await p2.waitForTimeout(300);
     if (!/Partie 2 : solo/.test(await p2.textContent("#main"))) fail("parties : l'Hôtel de vente ne signale pas la partie solo");
@@ -1050,6 +1148,16 @@ const MOCK = () => {
     // sans compte (5A) : même écran, « Se connecter avec Discord » en haut
     await p3.click('.svm [data-act="sv-logout"]'); await p3.waitForSelector('.svm [data-act="on-discord"]', { timeout: 10000 });
     if ((await p3.$$(".svm .svc2:not(.empty)")).length !== 2) fail("parties : sans compte, les parties de l'appareil ne sont pas toutes montrées");
+    // 1.0.30 : sans compte, la vente directe montre les prix et invite à créer un compte ; le surplus part au marchand de secours (v-guest)
+    await p3.click('.svc2[data-slot="1"] [data-act="sv-play"]'); await p3.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
+    await p3.evaluate(() => { const S = window.DX.S; S.res["Laine de Bouftou"] = 500; S.resCap["Laine de Bouftou"] = 100; window.ENGINE.emit(S, "harvest", { n: 1 }); window.DX.ui.tab = "cours"; window.DX.render(); });
+    await p3.waitForSelector(".vd-cours", { timeout: 8000 }).catch(() => fail("vente directe (invité) : prix absents"));
+    if (!(await p3.$('.vd-guest [data-act="on-loginscreen"]'))) fail("vente directe (invité) : pas d'invitation à créer un compte");
+    if ((await p3.evaluate(() => window.DX.S.res["Laine de Bouftou"])) !== 100) fail("vente directe (invité) : le marchand de secours ne rachète plus le surplus");
+    if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/cours-invite-mob.png", fullPage: true });
+    await p3.evaluate(() => { window.DX.ui.tab = "foire"; window.DX.render(); }); await p3.waitForSelector("#foJack .fo-jack", { timeout: 8000 }).catch(() => fail("foire (invité) : pot absent"));
+    if (!(await p3.$('#foJack [data-act="on-loginscreen"]')) || (await p3.$('[data-act="fo-jbuy"]'))) fail("foire (invité) : tickets achetables sans compte");
+    await p3.evaluate(() => window.DX.saveNow()); await p3.reload(); await p3.waitForSelector(".svm", { timeout: 10000 });
     if (process.env.SHOTS) await p3.screenshot({ path: process.env.SHOTS + "/menu-invite-mob.png", fullPage: true });
     await ctx3.close();
   } catch (e) { if (errors.length) console.error("Déjà en échec avant l'arrêt :\n" + errors.join("\n")); throw e; } // 1.0.23 : les échecs déjà notés ne sont plus perdus

@@ -268,7 +268,7 @@
   /* ---------- chat et panel admin (0.1.19, supabase/chat.sql) ---------- */
   /* 1.0.11 : une partie solo ne touche jamais à ce que le serveur tient pour la partie 1 (ventes, échanges, guilde,
      Kolizéum, coefficient de brisage commun) : sinon des kamas ou des objets passeraient d'une partie à l'autre. */
-  const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_)/;
+  const SOLO_BLOCK = /^(hdv_(sync|buy|list|cancel|reprice|order_new|order_cancel|order_fill)|trade_|guild_(?!list$|me$|chat$|say$)|gboss_|perco_|koli_|brisage_|vente_sell$|foire_jackpot_buy$)/; // 1.0.30 : vente directe et Jackpot du Trool
   const rpc = async (name, args) => {
     if (ON.solo() && SOLO_BLOCK.test(name)) return { err: SOLO_ERR };
     try { const { data, error } = await withTimeout(sb.rpc(name, args || {}), 12000); return error ? { err: error.message || "erreur" } : { data }; }

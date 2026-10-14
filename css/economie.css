@@ -1,0 +1,86 @@
+/* 1.0.30 « L'économie » : vente directe et Cours des ressources (js/venteui.js), Foire du Trool (js/foireui.js), Comptoirs (js/comptoirsui.js) */
+
+/* ---------- vente directe : encadré de la fiche d'une ressource ---------- */
+.vd-box{border:2px solid var(--gold);border-radius:12px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.vd-price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.vd-price .big{font-size:26px;font-weight:900}
+.vd-up{color:#3fb35d;font-weight:900}.vd-dn{color:var(--danger);font-weight:900}.vd-eq{color:var(--muted);font-weight:900}
+.vd-gauge{position:relative;height:12px;border-radius:8px;background:linear-gradient(90deg,#c2412d,#e8c063 35%,#3fb35d);border:2px solid var(--frame)}
+.vd-gauge b{position:absolute;top:-6px;width:4px;height:20px;background:#fff;border-radius:2px;box-shadow:0 0 0 2px #000}
+.vd-scale{position:relative;display:flex;justify-content:space-between;min-height:1.3em}
+.vd-scale span:nth-child(2){position:absolute;transform:translateX(-50%)}
+.vd-spark{width:100%;height:70px;display:block;color:var(--muted)}
+.vd-go{flex-wrap:wrap;gap:6px}.vd-go input{width:100px}
+.vd-acc{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.vd-note{border-top:1px dashed var(--frame);padding-top:8px;color:var(--gold)}
+.vd-gold{color:var(--gold);font-weight:800}
+.vd-guest{box-shadow:none}
+.vd-inote .btn{flex:none}
+/* flèche de tendance sur une case de ressource */
+.rtile .vd-ar{position:absolute;left:4px;top:1px;font-size:12px;line-height:1.1;text-shadow:0 0 2px #000,0 0 2px #000}
+.rtile .inew~.vd-ar{top:15px}
+.li .vd-ar{margin-left:4px;font-size:12px}
+/* page Cours des ressources */
+.vd-cours .vd-row .vd-p{min-width:64px;text-align:right}
+.vd-cours .vd-c{min-width:62px;text-align:right;white-space:nowrap}
+@media (max-width:640px){
+  .vd-cours .vd-row{flex-wrap:wrap}.vd-cours .vd-row .grow{flex-basis:55%}
+  .vd-scale span:first-child,.vd-scale span:last-child{font-size:10px}
+  .vd-price .big{font-size:22px}
+}
+
+/* ---------- Foire du Trool ---------- */
+.fo-hd{display:flex;gap:14px;align-items:center;padding:14px;border-radius:14px;border:2px solid var(--gold);background:radial-gradient(500px 160px at 0 0,rgba(240,195,90,.25),transparent 70%),var(--panel2)}
+.fo-hd img{width:74px;height:74px;object-fit:contain;flex:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+.fo-hd .fo-t{font-size:17px}
+.fo-c{text-align:center;justify-content:center}
+.fo-gold{color:var(--gold);font-weight:800}
+.fo-jack{text-align:center;font-size:34px;font-weight:900;color:var(--gold);text-shadow:0 2px 0 rgba(0,0,0,.25);letter-spacing:.5px}
+.fo-jrow{justify-content:center;flex-wrap:wrap;gap:8px}
+.fo-wins{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;color:var(--muted)}
+.fo-crates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fo-crate{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;border-radius:14px;border:2px solid var(--frame);background:var(--panel2);text-align:center;cursor:pointer;color:var(--ink);font:inherit}
+.fo-crate img{width:72px;height:72px}
+.fo-crate.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.fo-roll{position:relative;height:86px;overflow:hidden;border-radius:10px;background:var(--panel3);border:2px solid var(--frame)}
+.fo-roll:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--gold);box-shadow:0 0 8px var(--gold);z-index:2}
+.fo-track{position:absolute;left:50%;top:8px;display:flex;gap:6px;will-change:transform}
+.fo-track .it{flex:0 0 62px;width:62px;height:70px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--panel);border-bottom:4px solid var(--r);font-size:9.5px;text-align:center;line-height:1.05;overflow:hidden;padding:0 2px}
+.fo-track .it span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.fo-track .it img{width:34px;height:34px;object-fit:contain;flex:none}
+.fo-track .it.win{box-shadow:0 0 0 2px var(--r),0 0 18px var(--r)}
+.fo-idle{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:0 16px}
+.fo-odds{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;font-size:10.5px;text-align:center}
+.fo-odds span{padding:3px 0;border-radius:6px;background:var(--panel);border-bottom:3px solid var(--r);font-weight:800}
+@media (max-width:700px){
+  .fo-crates{gap:6px}.fo-crate{padding:8px 4px}.fo-crate img{width:48px;height:48px}.fo-crate .xs{font-size:10px}
+  .fo-hd{padding:10px;gap:10px}.fo-hd img{width:54px;height:54px}
+  .fo-jack{font-size:28px}
+  .fo-odds{font-size:9.5px}
+}
+
+/* ---------- Comptoirs ---------- */
+.cp-shops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cp-sh{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:8px;row-gap:1px;align-items:center;padding:10px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.cp-sh .cp-shi{grid-row:1/4;display:grid;place-items:center}.cp-sh .cp-shi .uico{width:30px;height:30px}
+.cp-sh b{font-size:13px}.cp-sh span{font-size:11px;color:var(--muted)}.cp-sh .cur{color:var(--gold);font-weight:900;font-size:13px}
+.cp-sh.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.cp-sh .navdot{top:6px;right:6px}
+.cp-gold{color:var(--gold)}
+.cp-offer{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border-radius:12px;border:2px dashed var(--gold);background:radial-gradient(400px 120px at 0 0,rgba(240,195,90,.18),transparent 70%),var(--panel2)}
+.cp-offer .cp-ic .uico,.cp-offer .cp-ic img{width:40px;height:40px;object-fit:contain}
+.cp-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cp-it{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2)}
+.cp-it.new{border-color:#3fb35d}
+.cp-it.own{opacity:.75}
+.cp-ic{display:grid;place-items:center}.cp-ic .uico,.cp-ic img{width:36px;height:36px;object-fit:contain}
+.cp-mid{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cp-d{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cp-nm{display:block}.cp-tag{font-size:10px;padding:1px 6px;vertical-align:middle;display:inline-block}
+.cp-it s,.cp-offer s{opacity:.6;text-decoration:line-through}
+.cp-tag.good{background:#3fb35d;color:#0e1a08;border-color:#3fb35d}
+.cp-btns{display:flex;flex-direction:column;gap:4px}
+.cp-ok{font-size:18px;color:#3fb35d;font-weight:900;padding:0 6px}
+.cp-mid select{max-width:100%;margin-top:2px;font-size:12px}
+.cp-need{flex-wrap:wrap;gap:8px;padding:8px 10px;border-radius:10px;background:var(--panel3)}
+@media (max-width:1100px){.cp-items{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.cp-shops{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-items{grid-template-columns:minmax(0,1fr)}}
