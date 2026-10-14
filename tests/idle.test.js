@@ -5,7 +5,7 @@ const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
-require("../js/welcome.js"); require("../js/defi.js"); require("../js/gboss.js"); require("../js/legendaires.js"); require("../js/songe.js");
+require("../js/welcome.js"); require("../js/defi.js"); require("../js/gboss.js"); require("../js/legendaires.js"); require("../js/songe.js"); require("../js/koli.js");
 require("../js/expeditions.js"); require("../js/suivi.js"); require("../js/vie.js"); require("../js/quetes.js");
 const D = require("../js/data.js");
 
@@ -101,6 +101,10 @@ assert.strictEqual(bench.length, 4, "4 héros hors de l'équipe");
   for (const h of [a, b, c]) { const m = fit(h); assert.ok(m, "une mission à sa portée"); assert.strictEqual(E.misSend(S, h.id, m.id), null); }
   assert.ok(/places/.test(E.misSend(S, d.id, fit(d).id)), "3 places");
   E.kamas = 0; S.kamas = E.MIS.roomCost; assert.strictEqual(E.misBuildRoom(S), null); assert.strictEqual(E.misSlots(S), 4, "la Salle des cartes donne une 4e place");
+  if (E.koliToggle) { // équipe d'arène : un héros en expédition n'y entre pas, un héros de l'arène ne part pas
+    const Q = E.koliState(S); const t0 = Q.team.slice(); Q.team = Q.team.filter((id) => id !== a.id);
+    assert.ok(/expédition/.test(E.koliToggle(S, a.id) || ""), "un héros en expédition n'entre pas dans l'équipe d'arène");
+    Q.team = [d.id]; assert.ok(/arène/.test(E.misSend(S, d.id, (fit(d) || B[0]).id) || ""), "un héros de l'équipe d'arène ne part pas"); Q.team = t0; }
   assert.strictEqual(E.misSend(S, d.id, fit(d).id), null); assert.strictEqual(S.training, null, "le héros quitte la salle d'entraînement");
   // un héros en mission ne fait rien d'autre
   assert.ok(/expédition/.test(E.toggleTeam(S, a.id)), "pas d'équipe"); assert.ok(!a.inTeam);

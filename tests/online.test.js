@@ -75,7 +75,7 @@ const MOCK = () => {
     if (name === "guild_answer" || name === "guild_join") { gm.in = true; return ok({ ok: name === "guild_join" ? "in" : true }); }
     if (name === "guild_give") return ok(gm.in ? { ok: true, lvl: 14 } : { ok: false, none: true });
     if (name === "guild_chat") return ok([]);
-    if (name === "guild_deposit") { gm.chest += a.p_k; gm.chestlog.unshift({ at: iso(), k: a.p_k, t: "Dépôt de " + pseudo, n: 1 }); gm.op++; return ok({ ok: true, chest: gm.chest, ops: [{ id: gm.op, p: { k: -a.p_k }, t: "Dépôt au coffre de guilde" }] }); }
+    if (name === "guild_deposit") { gm.chest += a.p_k; gm.chestlog.unshift({ at: iso(), k: a.p_k, t: "Dépôt de " + pseudo, n: 1 }); gm.op = d.op = Math.max(gm.op, d.op || 100) + 1; return ok({ ok: true, chest: gm.chest, ops: [{ id: gm.op, p: { k: -a.p_k }, t: "Dépôt au coffre de guilde" }] }); }
     if (name === "guild_sale_pct") { gm.sale = a.p_pct; return ok({ ok: true, sale: a.p_pct }); }
     if (name === "guild_buy") {
       const U = E.GUILD_UQ_BY[a.p_k]; const r = gm.ups[a.p_k] || 0;
@@ -104,7 +104,7 @@ const MOCK = () => {
         war: { me: { pts: 7, win: 2, loss: 1, def: 1 }, rank: 2, top: [Object.assign({ pts: 20, win: 6, loss: 1, def: 2 }, G4), Object.assign({ pts: 7, win: 2, loss: 1, def: 1 }, G3)], last: [] },
         taken: {}, holds: {}, glvl: 14, rank: 1, ups: gm.ups, now: iso() });
     }
-    if (name === "perco_collect") { gm.col = true; gm.op++; return ok({ ok: true, k: 108000, res: { "Laine de Bouftou": 40 }, item: null, gxp: 5000, txp: 0.02, zl: 30, ops: [{ id: gm.op, p: { res: { "Laine de Bouftou": 40 } }, t: "Percepteur récolté" }] }); }
+    if (name === "perco_collect") { gm.col = true; gm.op = d.op = Math.max(gm.op, d.op || 100) + 1; return ok({ ok: true, k: 108000, res: { "Laine de Bouftou": 40 }, item: null, gxp: 5000, txp: 0.02, zl: 30, ops: [{ id: gm.op, p: { res: { "Laine de Bouftou": 40 } }, t: "Percepteur récolté" }] }); }
     if (name === "gboss_claim") return ok({ ok: 0, k: 0, dust: 0, titles: [], ops: [] });
     return undefined;
   };
