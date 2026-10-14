@@ -44,13 +44,35 @@ console.log("ok - donjon du jour, butin de zone, récolte d'un métier, challeng
 console.log("ok - offrande et cible figées pour la journée malgré les niveaux gagnés");
 
 // 5. 1.0.29.4 : les offrandes déjà faites comptent pour les quêtes de Dofus (avant, seules celles faites pendant l'étape comptaient)
-{ require("../js/pets.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
+//    1.0.30 (choix 30A) : les offrandes passent au Dolmanax (7) ; le Kaliptus demande 300 Bois de Kaliptus, les Veilleurs 30 fois le challenge « Survivant »
+{ require("../js/pets.js"); require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js"); require("../js/quetes.js");
   now = at("2026-10-14"); const s = E.newState("G", "iop"); s.chars[0].lvl = 64; E.refreshSystems(s);
-  const vi = E.DOFUS.veilleurs.steps.findIndex((x) => x.t === "almanax"); const ka = E.DOFUS.kaliptus.steps.findIndex((x) => x.t === "almanax");
-  s.cnt.almanax = 6; Object.assign(E.dofusQuest(s, "veilleurs"), { step: vi, prog: 0 }); Object.assign(E.dofusQuest(s, "kaliptus"), { step: ka, prog: 0 });
-  E.refreshArchis(s);
-  assert.strictEqual(E.dofusQuest(s, "veilleurs").step, vi + 1, "6 offrandes déjà faites : l'étape des 5 offrandes est validée au chargement");
-  assert.deepStrictEqual(E.dofusStepProgress(s, "kaliptus", ka), [6, 7]); assert.strictEqual(E.dofusQuest(s, "kaliptus").step, ka);
+  assert.ok(!E.DOFUS.kaliptus.steps.some((x) => x.t === "almanax") && !E.DOFUS.veilleurs.steps.some((x) => x.t === "almanax"), "plus d'offrandes pour le Kaliptus et les Veilleurs");
+  assert.deepStrictEqual(E.DOFUS.kaliptus.steps[E.ALM30.kaliptus], { t: "harvest", res: "Bois de Kaliptus", n: 300 });
+  assert.strictEqual(E.dofusStepTxt(E.DOFUS.veilleurs.steps[E.ALM30.veilleurs]), "Réussir 30 fois le challenge « Survivant »");
+  assert.ok(D.RES["Bois de Kaliptus"], "le Bois de Kaliptus existe");
+  assert.strictEqual(E.DOFUS.dolmanax.steps.findIndex((x) => x.t === "almanax"), 0, "le Dolmanax commence par les offrandes");
+  assert.strictEqual(E.DOFUS.dolmanax.steps[0].n, 7);
+  s.cnt.almanax = 6; E.refreshArchis(s);
+  assert.deepStrictEqual(E.dofusStepProgress(s, "dolmanax", 0), [6, 7]); assert.strictEqual(E.dofusQuest(s, "dolmanax").step, 0);
   const x = E.almanax(s); s.res[x.res] = x.qty; assert.strictEqual(E.almanaxOffer(s), null);
-  assert.strictEqual(E.dofusQuest(s, "kaliptus").step, ka + 1, "la 7e offrande valide l'étape du Kaliptus"); }
-console.log("ok - quêtes de Dofus : les offrandes déjà faites comptent");
+  assert.strictEqual(E.dofusQuest(s, "dolmanax").step, 1, "la 7e offrande valide l'étape du Dolmanax");
+  // Veilleurs : 30 victoires avec « Survivant » réussi ; Kaliptus : 300 Bois de Kaliptus
+  Object.assign(E.dofusQuest(s, "veilleurs"), { step: E.ALM30.veilleurs, prog: 0 }); Object.assign(E.dofusQuest(s, "kaliptus"), { step: E.ALM30.kaliptus, prog: 0 });
+  for (let i = 0; i < 29; i++) E.emit(s, "win", { mons: [], sub: null, chals: ["survivant"] });
+  E.emit(s, "win", { mons: [], sub: null, chals: ["barbare"] }); assert.strictEqual(E.dofusQuest(s, "veilleurs").step, E.ALM30.veilleurs);
+  E.emit(s, "win", { mons: [], sub: null, chals: ["survivant"] }); assert.strictEqual(E.dofusQuest(s, "veilleurs").step, E.ALM30.veilleurs + 1, "30 fois Survivant");
+  E.emit(s, "harvest", { res: "Bois de Chêne", n: 300 }); assert.strictEqual(E.dofusQuest(s, "kaliptus").step, E.ALM30.kaliptus);
+  E.emit(s, "harvest", { res: "Bois de Kaliptus", n: 300 }); assert.strictEqual(E.dofusQuest(s, "kaliptus").step, E.ALM30.kaliptus + 1, "300 Bois de Kaliptus"); }
+console.log("ok - quêtes de Dofus : les offrandes passent au Dolmanax, où celles déjà faites comptent");
+
+// 6. 1.0.30 : migration au chargement (une seule fois) : l'étape Almanax déjà commencée est validée, le Dolmanax commencé garde son avancement
+{ const s = E.newState("H", "iop"); assert.strictEqual(s.alm30, 1, "partie neuve : rien à reprendre");
+  s.dofusQ = { kaliptus: { step: 2, prog: 0, done: 0 }, veilleurs: { step: 1, prog: 0, done: 0 }, dolmanax: { step: 1, prog: 0, done: 0 }, dokille: { step: 1, prog: 4, done: 0 } };
+  delete s.alm30; const N = E.deserialize(E.serialize(s));
+  assert.deepStrictEqual([N.dofusQ.kaliptus.step, N.dofusQ.veilleurs.step, N.dofusQ.dolmanax.step, N.dofusQ.dokille.step], [3, 2, 2, 1]);
+  assert.ok(N.alm30 && (N.migration || []).some((m) => /Dolmanax/.test(m)));
+  const N2 = E.deserialize(E.serialize(N)); assert.deepStrictEqual([N2.dofusQ.kaliptus.step, N2.dofusQ.veilleurs.step, N2.dofusQ.dolmanax.step], [3, 2, 2], "relancer ne décale plus rien");
+  const f = E.newState("I", "iop"); f.dofusQ = { kaliptus: { step: 2, prog: 50, done: 0 }, dolmanax: { step: 0, prog: 0, done: 0 } };
+  const F2 = E.deserialize(E.serialize(f)); assert.deepStrictEqual([F2.dofusQ.kaliptus.step, F2.dofusQ.kaliptus.prog, F2.dofusQ.dolmanax.step], [2, 50, 0], "une partie déjà migrée garde la récolte en cours"); }
+console.log("ok - 1.0.30 : migration des quêtes du Kaliptus, des Veilleurs et du Dolmanax");
