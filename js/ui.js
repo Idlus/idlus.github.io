@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30.8";
+const GAME_VERSION = "1.0.31";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.31", name: "Sorts expliqués", items: [
+    "Fiche de chaque sort en une phrase : son rôle (Attaque, Soin, Bouclier, Invocation…), ce qu'il fait avec les vrais chiffres de ton héros, son coût et ses dégâts par tour. Même texte dans les infobulles et en combat",
+    "Grimoire en liste : les attaques de la plus forte à la plus faible avec tes caractéristiques, puis le soutien. « Pas ton élément » et le niveau de déblocage sont affichés",
+    "Les attaques en doublon sont signalées : « moins fort que Concentration » dans le grimoire et dans la fiche",
+    "« Quand le lancer ? » ne propose plus que les choix utiles pour ce sort, écrits en phrases",
+    "Journal de combat : icône du sort, dégâts dans la couleur de l'élément, et « faible Terre » ou « résiste » quand le monstre y est sensible",
+  ] },
   { v: "1.0.30.8", name: "Malus de niveau affiché", items: [
     "Résultat de combat : un héros qui a trop de niveaux de plus que les monstres affiche son malus d'XP en orange à côté de son XP (par exemple −70 %), avec une explication au survol",
     "Rappel de la règle : au-delà de 6 niveaux de plus que le plus fort monstre du combat, un héros perd 5 % d'XP par niveau en trop, 70 % au plus. Pour tout gagner, combattez des monstres de son niveau",
@@ -3209,7 +3216,7 @@ function spellBarFor(c, ent, F) {
     const sp = E.spellDef(c.cls, x.id); if (!sp) return `<div class="sp empty"></div>`; const g = E.spellGrade(sp, c.lvl); const cd = ent && ent.cd ? (ent.cd[sp.id] || 0) : 0;
     const cast = F && lastCast[sp.id] !== undefined && F.seq - lastCast[sp.id] <= 1;
     const can = A ? E.manualCanCast(S, sp) : false;
-    return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-tip="${h(spellTip(sp, c.lvl))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${g.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
+    return `<div class="sp ${cast ? "cast" : ""} ${A ? (can ? "can" : "no") : ""} ${A && ui.manualSpell === sp.id ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-tip="${h(spTip(c, sp))}" ${A && can ? `data-act="mspell" data-id="${sp.id}"` : ""}>${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : `<span class="glyph">✦</span>`}<span class="pa">${g.pa}</span>${cd > 1 ? `<span class="cd">${cd - 1}</span>` : ""}</div>`;
   }).join("");
   const wsp = ent && ent.wsp; let whtml = "";
   if (wsp) { const g = E.spellGrade(wsp, c.lvl); const cast = F && lastCast.arme !== undefined && F.seq - lastCast.arme <= 1; const can = A ? E.manualCanCast(S, wsp) : false; // 0.1.53 : coup d'arme
@@ -4422,7 +4429,7 @@ function updateCombat(force) {
     }
     if (F.log.length !== A.lastLog || force) {
       A.lastLog = F.log.length;
-      $("#flog").innerHTML = F.log.slice(-7).reverse().map((l) => `<div class="${l.cls}">${h(l.txt)}</div>`).join("");
+      $("#flog").innerHTML = F.log.slice(-7).reverse().map((l) => logLineNew(F, l)).join("");
       const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? last.txt : F.label;
     }
     if (F.over && !A.over) {
@@ -5385,12 +5392,58 @@ function zoneOptions() {
   Object.entries(DUNGEONS).forEach(([id, d]) => { if (E.dungeonUnlocked(S, id)) opts.push(["dg:" + id, `Donjon · ${d.name}`]); });
   return opts;
 }
+/* 1.0.31 « Sorts plus clairs » : rôle, phrase avec les vrais chiffres du héros, doublons signalés */
+const ROLE = { dmg: ["Attaque", "⚔"], aoe: ["Attaque de zone", "💥"], drain: ["Attaque qui soigne", "🩸"], dot: ["Poison", "☠"], heal: ["Soin", "✚"], shield: ["Bouclier", "🛡"], buff: ["Bonus", "▲"], summon: ["Invocation", "✦"], debuff: ["Malus", "▼"] };
+const spRole = (c, sp) => { const g = E.spellGrade(sp, Math.max(c.lvl, sp.lvl)); let k = E.spellKind(g);
+  if (k === "buff" && g.fx.some((f) => ["weaken", "vuln", "apdrain"].includes(f.k)) && !g.fx.some((f) => f.k === "buff")) k = "debuff"; return k; };
+const who = (f, self) => (f.all || (f.n > 1 && !self) ? "toute l'équipe" : f.self || self ? "le lanceur" : "un allié");
+const spMemo = { t: 0, m: new Map() };
+function spSentence(c, sp) { // mémorisé un court instant : le grimoire calcule 44 sorts et leurs doublons à chaque rendu
+  const now = Date.now(); if (now - spMemo.t > 400) { spMemo.t = now; spMemo.m.clear(); }
+  const key = c.id + "|" + sp.id + "|" + c.lvl; if (!spMemo.m.has(key)) spMemo.m.set(key, spSentence0(c, sp)); return spMemo.m.get(key);
+}
+function spSentence0(c, sp) {
+  const L = Math.max(c.lvl, sp.lvl); const g = E.spellGrade(sp, L); const out = []; const st = E.charStats(S, c);
+  const r = ["dmg", "drain", "dot"].some((k) => g.fx.some((f) => f.k === k)) ? E.spellEstimate(S, c, sp, 0) : null;
+  const tg = (n) => (n >= 9 ? "tous les ennemis" : n > 1 ? `${n} ennemis` : "1 ennemi");
+  let dmgDone = false; const ord = (f) => (["dmg", "drain", "dot"].includes(f.k) ? 0 : f.k === "summon" ? 0 : 1);
+  g.fx.slice().sort((a, b) => ord(a) - ord(b)).forEach((f) => {
+    const elN = (el) => (el === "best" ? "de ton meilleur élément" : ELEMENTS[el || "n"].name);
+    const elS = (el) => `<b style="color:${elVar(el === "best" ? "n" : el)}">${elN(el)}</b>`;
+    switch (f.k) {
+      case "dmg": case "drain": if (dmgDone) break; dmgDone = true;
+        out.push(`Frappe <b>${tg(f.n || 1)}</b> pour <b>≈ ${fmt(r ? r.avg : (f.min + f.max) / 2)}</b> dégâts ${elS(f.el)}${f.k === "drain" ? ", et rend au lanceur la moitié en PV" : ""}`); break;
+      case "dot": out.push(`Empoisonne <b>${tg(f.n || 1)}</b> : <b>≈ ${fmt(r ? r.avg / (f.t || 2) : f.min)}</b> dégâts ${elS(f.el)} par tour pendant ${f.t || 2} tours`); break;
+      case "heal": out.push(`Soigne <b>${who(f)}</b> de <b>≈ ${fmt(((f.min + f.max) / 2) * E.DMG_SCALE * (1 + (st.ine + st.pui) / 100) + st.so)} PV</b>`); break;
+      case "healpct": out.push(`Soigne <b>${f.n > 1 ? "toute l'équipe" : "l'allié le plus blessé"}</b> de <b>${f.v} %</b> de ses PV`); break;
+      case "shield": out.push(`Donne un <b>bouclier de ${f.pct} % des PV</b> à <b>${f.all ? "toute l'équipe" : "le lanceur"}</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
+      case "buff": out.push(f.st === "pa" ? `Donne <b>+${f.v} PA</b> tout de suite` : `Donne <b>+${f.v} ${(STATS[f.st] || {}).name || f.st}</b> à <b>${f.all ? "toute l'équipe" : "le lanceur"}</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
+      case "apdrain": out.push(`Retire <b>${f.v} PA</b> à la cible : elle joue moins`); break;
+      case "weaken": out.push(`La cible frappe <b>${f.v} % moins fort</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
+      case "vuln": out.push(`La cible <b>prend +${f.v} % de dégâts</b> pendant ${f.t || 1} tour${(f.t || 1) > 1 ? "s" : ""}`); break;
+      case "summon": { const m = (D.SUMMONS || {})[String(f.mid)]; out.push(`Invoque <b>${m ? h(m.name) : "une créature"}</b>, qui se bat avec l'équipe`); break; }
+      case "leech": out.push(`Vole <b>${f.v} %</b> des dégâts en PV`); break;
+      case "push": out.push(`Repousse la cible de ${f.v} case${f.v > 1 ? "s" : ""} : si elle percute un monstre, les deux prennent des dégâts`); break;
+    }
+  });
+  const txt = out.length ? out.map((s, i) => (i ? s.charAt(0).toLowerCase() + s.slice(1) : s)).join(", ") + "." : "Aucun effet en combat automatique.";
+  const use = [`${g.pa} PA`, g.casts ? `jusqu'à ${g.casts} fois par tour` : "", g.cd ? `puis attend ${g.cd} tour${g.cd > 1 ? "s" : ""}` : ""].filter(Boolean);
+  return { g, r, txt, use, perTurn: r ? r.turn : 0, adapt: g.fx.some((f) => f.adapt || f.fb) };
+}
+const roleBadge = (c, sp) => { const k = spRole(c, sp); const R = ROLE[k] || ROLE.buff; const g = E.spellGrade(sp, Math.max(c.lvl, sp.lvl)); const n = Math.max(0, ...g.fx.filter((f) => ["dmg", "drain", "dot"].includes(f.k)).map((f) => f.n || 1));
+  return `<span class="rolb r-${k}">${R[1]} ${R[0]}${["dmg", "drain", "dot"].includes(k) && n > 1 ? ` · ${n >= 9 ? "zone" : n + " cibles"}` : k === "dmg" ? " · 1 cible" : ""}</span>`; };
+/* doublons : une attaque du même élément et du même type (1 cible / zone) fait ≥ 25 % de plus par PA */
+function spDouble(c, sp) {
+  const k = spRole(c, sp); if (!["dmg", "aoe", "drain", "dot"].includes(k)) return null;
+  const v = (s) => { const x = spSentence(c, s); return x.r ? x.r.avg / Math.max(1, x.g.pa) : 0; };
+  const me = v(sp); const z = (s) => (spRole(c, s) === "aoe" ? 1 : 0);
+  const best = E.knownSpells(c).filter((s) => s.id !== sp.id && s.pair !== sp.pair && ["dmg", "aoe", "drain", "dot"].includes(spRole(c, s)) && z(s) === z(sp) && (s.el === sp.el || s.el === "best")).map((s) => ({ s, x: v(s) })).sort((a, b) => b.x - a.x)[0];
+  return best && best.x > me * 1.25 ? best.s : null;
+}
 /* ---------- Sorts : barre de sorts, fiche du sort et grimoire par paires (0.1.11.1) ---------- */
 const COND_SHORT = { always: "", first_turn: "1er tour", ally_low: "Allié bas", self_low: "PV < 50 %", enemy_many: "3+ ennemis", enemy_one: "1 ennemi", boss: "Boss", no_summon: "Sans invoc.", ally_shield: "Sans bouclier" };
-const KIND_NAME = { dmg: "Dégâts", aoe: "Dégâts de zone", drain: "Vol de vie", dot: "Poison", heal: "Soin", shield: "Bouclier", buff: "Bonus", summon: "Invocation" };
 const spKindOf = (c, sp) => E.spellKind(E.spellGrade(sp, c.lvl));
-const spMeta = (c, sp) => { const g = E.spellGrade(sp, Math.max(c.lvl, sp.lvl)); return `${g.pa} PA${g.cd ? ` · relance ${g.cd} t.` : ""}${g.casts ? ` · ${g.casts}×/tour` : ""}`; };
-const spTip = (c, sp) => `${sp.name} · ${spMeta(c, sp)}${sp.lvl > c.lvl ? ` · niveau ${sp.lvl}` : ""} — ${spellText(sp, Math.max(c.lvl, sp.lvl))}`;
+const spTip = (c, sp) => { const x = spSentence(c, sp); return `${sp.name} — ${(ROLE[spRole(c, sp)] || ROLE.buff)[0]} · ${x.use.join(" · ")}${sp.lvl > c.lvl ? ` · niveau ${sp.lvl}` : ""}\n${x.txt.replace(/<[^>]+>/g, "")}`; };
 /* place un sort dans la barre : remplace sa variante si elle y est ; sinon l'ajoute, ou remplace la case « at » si la barre est pleine (ou si replace) */
 function spPlace(c, id, at, replace) {
   const sp = E.spellDef(c.cls, id); if (!sp || sp.lvl > c.lvl) return `${sp ? sp.name : "Ce sort"} se débloque au niveau ${sp ? sp.lvl : "?"}.`;
@@ -5403,30 +5456,48 @@ function spPlace(c, id, at, replace) {
   c.spellsManual = true; c.activePreset = null; ui.spSel = idx; return null;
 }
 function spMove(c, from, to) { if (from === to || from < 0 || from >= c.spells.length) return; const [m] = c.spells.splice(from, 1); to = Math.min(to, c.spells.length); c.spells.splice(to, 0, m); ui.spSel = to; c.spellsManual = true; c.activePreset = null; }
+const COND_BY_ROLE = { dmg: ["always", "boss", "enemy_many", "enemy_one"], aoe: ["always", "enemy_many", "boss"], drain: ["always", "self_low", "boss"], dot: ["always", "boss", "enemy_one"], heal: ["ally_low", "self_low", "always"], shield: ["always", "first_turn", "ally_shield", "self_low"], summon: ["no_summon", "first_turn"], buff: ["always", "first_turn", "boss"], debuff: ["always", "boss", "enemy_one"] };
+const COND_PHRASE = { always: "Dès que c'est utile", first_turn: "Seulement au 1er tour", ally_low: "Quand un allié passe sous 60 % de PV", self_low: "Quand le lanceur passe sous 50 % de PV", enemy_many: "Quand il reste 3 ennemis ou plus", enemy_one: "Quand il ne reste qu'1 ennemi", boss: "Seulement contre un boss", no_summon: "Quand son invocation est morte", ally_shield: "Quand un allié n'a plus de bouclier" };
+const TGT_PHRASE = { low: "Le plus blessé (pour l'achever)", high: "Le plus en forme", boss: "Le boss ou le plus fort", mark: "Celui qui est déjà affaibli" };
+function spCondHtml(c, x, sp) { // 1.0.31 : seulement les choix utiles pour ce type de sort, écrits en phrases
+  const k = spRole(c, sp); const cur = x.cond || "always"; const list = (COND_BY_ROLE[k] || ["always"]).slice(); if (!list.includes(cur) && COND_PHRASE[cur]) list.push(cur); // un ancien réglage reste visible tant qu'on ne le change pas
+  const tg = ["dmg", "dot", "drain", "debuff"].includes(k) ? `<div class="splab">Sur quel ennemi ?</div><div class="cradio">${Object.entries(TGT_PHRASE).map(([v, n]) => `<button class="${(x.tgt || "low") === v ? "on" : ""}" data-act="sptgtc" data-k="${v}"><i></i>${n}</button>`).join("")}</div>` : "";
+  return `<div class="splab">Quand le lancer ?</div><div class="cradio">${list.map((v) => `<button class="${cur === v ? "on" : ""}" data-act="spcondc" data-k="${v}"><i></i>${COND_PHRASE[v]}</button>`).join("")}</div>${tg}`;
+}
+function spCardNew(c, sp, x, i) {
+  const s = spSentence(c, sp); const other = CLASSES[c.cls].spells.find((o) => o.pair === sp.pair && o.id !== sp.id);
+  const dbl = sp.lvl <= c.lvl ? spDouble(c, sp) : null;
+  const fxRows = sp.desc && s.adapt ? `<details class="dofd"><summary>Pourquoi ce sort est différent de DOFUS ?</summary><p class="xs muted">Dans DOFUS : ${h(sp.desc).replace(/\n+/g, "<br>")}</p><p class="xs">Le combat d'idlus est automatique et sans cases : les déplacements et les états du jeu original sont remplacés par l'effet ci-dessus.</p></details>` : "";
+  const varHtml = other ? `<div class="splab">${sp.variant ? "Sort de base" : "Variante"} · on n'équipe que l'un des deux</div>${other.lvl <= c.lvl
+    ? `<button class="spvar" data-act="spg" data-id="${other.id}">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b> ${roleBadge(c, other)}<br><span class="xs muted">${spSentence(c, other).txt.replace(/<[^>]+>/g, "")}</span></span><span class="btn sm">⇄ Échanger</span></button>`
+    : `<div class="spvar off">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">se débloque au niveau ${other.lvl}</span></span>🔒</div>`}` : "";
+  return `<div class="spdet spnew">
+    <div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2>${h(sp.name)}</h2>${roleBadge(c, sp)}</div></div>
+    <p class="spsent">${s.txt}</p>
+    <div class="spuse">${s.use.map((u) => `<span>${u}</span>`).join("")}${s.perTurn ? `<span class="hi">≈ ${fmt(s.perTurn)} par tour</span>` : ""}</div>
+    ${dbl ? `<div class="spdbl">⚠ <b>${h(dbl.name)}</b> fait plus de dégâts par PA dans le même élément : ce sort sera rarement choisi.</div>` : ""}
+    ${fxRows}
+    ${x ? spCondHtml(c, x, sp) : ""}
+    ${varHtml}
+    ${x ? `<div class="row" style="gap:6px"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Avancer">◀</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === c.spells.length - 1 ? "disabled" : ""} aria-label="Reculer">▶</button><span class="grow xs muted">case ${i + 1} sur ${E.spellSlots(c)}</span><button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div>` : ""}
+  </div>`;
+}
+function logLineNew(F, l) {
+  const m = /^(.+?) · (.+?)(?: → (.*))?$/.exec(l.txt); const e = m && F.ents.find((x) => x.name === m[1] && x.side === "c" && x.cls);
+  const sp = e && CLASSES[e.cls].spells.find((x) => x.name === m[2]);
+  if (!sp) return `<div class="${l.cls}">${h(l.txt)}</div>`;
+  const el = sp.el && sp.el !== "best" ? sp.el : null; const k = E.spellKind(E.spellGrade(sp, 200)); const R = ROLE[k] || ROLE.buff;
+  let rest = h(m[3] || "");
+  const tm = /^(.+?) : (.+)$/.exec(m[3] || ""); let weak = "";
+  if (tm && el) { const t = F.ents.find((x) => x.name === tm[1] && x.side === "m"); const rv = t && t.res ? t.res[el] : 0; if (rv < 0) weak = `<span class="lweak">faible ${ELEMENTS[el].name} ${rv} %</span>`; else if (rv >= 20) weak = `<span class="lres">résiste ${rv} %</span>`; }
+  if (tm) rest = `${h(tm[1])} <b class="lv" style="color:${elVar(el || "n")}">${h(tm[2])}</b>`;
+  return `<div class="${l.cls} lnew">${spIcon(sp)}<span><b>${h(m[1])}</b> · ${h(sp.name)} <span class="lrole">${R[1]}</span>${m[3] ? ` → ${rest}` : ""} ${weak}</span></div>`;
+}
 function spDetailHtml(c) {
   const eq = c.spells; const i = Math.min(ui.spSel || 0, Math.max(0, eq.length - 1)); const x = eq[i];
   if (!x) return `<div class="spdet"><h2>Aucun sort équipé</h2><p class="small muted">Ce héros ne fera rien en combat. Touche un sort du grimoire pour le placer dans la barre.</p></div>`;
   const sp = E.spellDef(c.cls, x.id); if (!sp) return "";
-  const k = spKindOf(c, sp); const res = ui.simRes || 0; const st = E.charStats(S, c);
-  const other = CLASSES[c.cls].spells.find((s) => s.pair === sp.pair && s.id !== sp.id);
-  let est = "";
-  if (["dmg", "aoe", "drain", "dot", "heal"].includes(k)) {
-    const r = E.spellEstimate(S, c, sp, res);
-    est = `<div class="spest"><div class="row" style="justify-content:space-between;gap:6px"><b>${k === "heal" ? `Soigne ≈ ${fmt(r.heal)}` : `${fmt(r.min)}–${fmt(r.max)} dégâts`}</b>
-      <select class="small" data-act="simres" aria-label="Résistance de la cible">${[0, 10, 20, 30, 40].map((v) => `<option value="${v}" ${res === v ? "selected" : ""}>Cible ${v} % rés.</option>`).join("")}</select></div>
-      ${k === "heal" ? "" : `<div class="xs muted">moyenne ${fmt(r.avg)} avec ${Math.min(60, 5 + st.cri)} % de critiques · ≈ ${fmt(r.turn)} par tour (${r.casts}×${r.tgts > 1 ? `, ${r.tgts >= 9 ? "zone" : r.tgts + " cibles"}` : ""})</div>`}</div>`;
-  }
-  const varHtml = other ? `<div class="splab">${sp.variant ? "Sort de base" : "Variante"}</div>${other.lvl <= c.lvl
-    ? `<button class="spvar" data-act="spg" data-id="${other.id}">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">${spMeta(c, other)}</span></span><span class="btn sm">⇄ Échanger</span></button>`
-    : `<div class="spvar off">${spIcon(other)}<span class="grow"><b class="small">${h(other.name)}</b><br><span class="xs muted">se débloque au niveau ${other.lvl}</span></span>🔒</div>`}` : "";
-  return `<div class="spdet">
-    <div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2>${h(sp.name)}</h2><div class="xs muted">${KIND_NAME[k] || ""} · ${spMeta(c, sp)}</div></div></div>
-    <div class="small">${spellDesc(sp, c.lvl)}</div>${est}
-    <div class="splab">Quand le lancer ?</div><div class="spchips">${Object.entries(CONDITIONS).map(([v, n]) => `<button class="spc ${x.cond === v ? "on" : ""}" data-act="spcondc" data-k="${v}">${n}</button>`).join("")}</div>
-    ${["summon", "buff", "shield"].includes(k) ? "" : `<div class="splab">Sur qui ?</div><div class="spchips">${Object.entries(D.TARGETS).map(([v, n]) => `<button class="spc ${(x.tgt || "low") === v ? "on" : ""}" data-act="sptgtc" data-k="${v}">${n}</button>`).join("")}</div>`}
-    ${varHtml}
-    <div class="row" style="gap:6px"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Avancer">◀</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === eq.length - 1 ? "disabled" : ""} aria-label="Reculer">▶</button><span class="grow xs muted">case ${i + 1} sur ${E.spellSlots(c)}</span><button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div>
-  </div>`;
+  return spCardNew(c, sp, x, i);
 }
 /* 1.0.12.8 : au téléphone (pas de survol), toucher un sort du grimoire ouvre d'abord sa fiche, avec le bouton pour le placer */
 function spSheet(c, id) {
@@ -5436,8 +5507,7 @@ function spSheet(c, id) {
   const old = twin || (eq.length >= E.spellSlots(c) && eq[sel] ? E.spellDef(c.cls, eq[sel].id) : null);
   const act = sp.lvl > c.lvl ? `<span class="small muted">Se débloque au niveau ${sp.lvl}.</span>` : at >= 0 ? `<span class="small muted">Déjà dans ta barre (case ${at + 1}).</span>`
     : `<button class="btn primary" data-act="spg" data-id="${sp.id}">${old ? `Remplacer ${h(old.name)}` : "Ajouter à la barre"}</button>`;
-  openSheet(`<div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2 style="margin:0">${h(sp.name)}</h2><div class="xs muted">${KIND_NAME[spKindOf(c, sp)] || ""} · ${spMeta(c, sp)}</div></div></div>
-    <div class="small">${spellDesc(sp, Math.max(c.lvl, sp.lvl))}</div>
+  openSheet(`${spCardNew(c, sp, null, -1)}
     <div class="row" style="gap:8px">${act}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* 0.1.11.2 : aperçu des 3 premiers tours (vrai moteur), conseils et « Ranger au mieux » */
@@ -5539,6 +5609,23 @@ function spHowHtml() {
   const steps = [["1", "Soutien, dans l'ordre", "Invocations, boucliers, soins et bonus, de gauche à droite, seulement si leur condition est remplie."], ["2", "Attaques, au mieux", "Avec les PA restants, il essaie toutes les combinaisons d'attaques (arme comprise) et garde celle qui fait le plus de dégâts utiles. L'ordre des attaques ne compte pas."], ["3", "Tour sauté", "Un tour vide vient d'un passif (Pandawa qui cuve), d'un étourdissement ou d'un héros à terre : l'aperçu le dit."]];
   return `<details class="sphow" ${ui.spHowOpen ? "open" : ""}><summary>Comment ton héros choisit ses sorts</summary><div class="sphs">${steps.map(([n, t, d]) => `<div class="sph"><span class="k">${n}</span><div><b>${t}</b><br><span class="xs muted">${d}</span></div></div>`).join("")}</div>${canHover ? `<p class="xs muted">Glisse un sort pour changer sa place.</p>` : ""}</details>`;
 }
+function grimNew(c, pairs, eqIds, F) {
+  const pel = c.autoStat && STATS[c.autoStat] && STATS[c.autoStat].el;
+  const isAtkP = (pr) => pr.some((sp) => sp && ["dmg", "aoe", "drain", "dot"].includes(spRole(c, sp)));
+  const cell = (sp, has) => { const ok = sp.lvl <= c.lvl; const s = spSentence(c, sp); const off = pel && sp.el && !["best", "buff", "n", pel].includes(sp.el) && ["dmg", "aoe", "drain", "dot"].includes(spRole(c, sp));
+    const dbl = ok ? spDouble(c, sp) : null;
+    return `<button class="gcell ${eqIds.has(sp.id) ? "on" : ""} ${ok ? "" : "lock"} ${off ? "offel" : ""}" data-act="${canHover ? "spg" : "spsee"}" data-id="${sp.id}" ${ok ? `data-spdrag="g${sp.id}" draggable="true"` : ""}>
+      ${spIcon(sp)}<span class="gtx"><span class="gnm"><b>${h(sp.name)}</b>${eqIds.has(sp.id) ? `<span class="gin">✓ dans ta barre</span>` : ""}${ok ? "" : `<span class="glv">🔒 niv. ${sp.lvl}</span>`}</span>
+      <span class="gbd">${roleBadge(c, sp)}${s.perTurn ? `<span class="gpt">≈ ${fmt(s.perTurn)}/tour</span>` : ""}${off ? `<span class="gof">pas ton élément</span>` : ""}${dbl ? `<span class="gdb">moins fort que ${h(dbl.name)}</span>` : ""}</span>
+      <span class="gsn">${s.txt.replace(/<[^>]+>/g, "")}</span></span></button>`; };
+  const row = (pr) => { const list = pr.filter(Boolean); const has = list.some((sp) => eqIds.has(sp.id));
+    return `<div class="gpair ${has ? "has" : ""}">${list.map((sp) => cell(sp, has)).join(`<span class="gor">ou</span>`)}</div>`; };
+  const all = Object.values(pairs).filter((pr) => pr[0] || pr[1]);
+  const best = (pr) => Math.max(...pr.filter(Boolean).map((sp) => (sp.lvl <= c.lvl ? spSentence(c, sp).perTurn : -1)));
+  const atk = all.filter(isAtkP).sort((a, b) => best(b) - best(a)); const sup = all.filter((pr) => !isAtkP(pr)).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl);
+  const sec = (t, d, l) => (l.length ? `<div class="gsec"><div class="gsh"><b>${t}</b> <span class="xs muted">${d}</span></div>${l.map(row).join("")}</div>` : "");
+  return (F !== "sup" ? sec("Attaques", "de la plus forte à la plus faible avec tes caractéristiques", atk) : "") + (F !== "atk" ? sec("Soutien", "soins, boucliers, bonus, malus et invocations", sup) : "");
+}
 function charSpellsView(c) {
   const eq = c.spells; const N = E.spellSlots(c);
   if ((ui.spSel || 0) >= Math.max(eq.length, 1) && (ui.spSel || 0) >= N) ui.spSel = 0;
@@ -5573,13 +5660,6 @@ function charSpellsView(c) {
   // grimoire par paires
   const F = ui.spFilt || "all"; const eqIds = new Set(eq.map((x) => x.id));
   const pairs = {}; CLASSES[c.cls].spells.forEach((sp) => { (pairs[sp.pair] = pairs[sp.pair] || [])[sp.variant ? 1 : 0] = sp; });
-  const isAtk = (sp) => ["dmg", "aoe", "drain", "dot"].includes(spKindOf(c, sp));
-  const one = (sp, has) => { const ok = sp.lvl <= c.lvl;
-    return `<button class="gsp ${eqIds.has(sp.id) ? "on" : has ? "off" : ""} ${ok ? "" : "lock"}" style="--c:${elVar(spEl(sp))}" data-act="${canHover ? "spg" : "spsee"}" data-id="${sp.id}" ${ok ? `data-spdrag="g${sp.id}" draggable="true"` : ""} data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}${ok ? "" : `<span class="lv">niv. ${sp.lvl}</span>`}</button>`; };
-  const grim = Object.values(pairs).filter((pr) => pr[0] || pr[1]).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl)
-    .filter((pr) => F === "all" || pr.some((sp) => sp && (F === "atk" ? isAtk(sp) : !isAtk(sp))))
-    .map((pr) => { const list = pr.filter(Boolean); const has = list.some((sp) => eqIds.has(sp.id));
-      return `<div class="sppt ${has ? "has" : ""}"><div class="two">${list.map((sp) => one(sp, has)).join(`<span class="or">ou</span>`)}</div><div class="nm">${list.map((sp) => h(sp.name)).join(" / ")}</div></div>`; }).join("");
   // 1.0.4.5 : rappel de la barre en haut du grimoire (reste visible en défilant) : cible de dépôt et choix de la case à remplacer
   const selSp = eq[sel] && E.spellDef(c.cls, eq[sel].id);
   const mini = Array.from({ length: N }, (_, i) => { const x = eq[i]; const sp = x && E.spellDef(c.cls, x.id);
@@ -5596,7 +5676,7 @@ function charSpellsView(c) {
       ${spHowHtml()}</div></div>
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
     <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
-      ${miniBar}<div class="pad stack" style="gap:8px"><div class="sppairs">${grim}</div>
+      ${miniBar}<div class="pad stack" style="gap:8px"><div class="glist">${grimNew(c, pairs, eqIds, F)}</div>
       <p class="xs muted">${canHover ? "Choisis d'abord la case à remplacer dans « Ta barre », puis clique un sort ou glisse-le sur une case. Survole un sort pour lire sa fiche." : "Touche d'abord la case à remplacer dans « Ta barre », puis touche un sort pour lire sa fiche et le placer ; si la barre n'est pas pleine, il s'ajoute."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
     <div class="panel spprevp">${spPreviewHtml(c)}</div>
   </div></div>`;
@@ -8399,7 +8479,6 @@ document.addEventListener("change", (ev) => {
   else if (a === "sptgt") { c.spells[+t.dataset.i].tgt = t.value; c.activePreset = null; c.spellsManual = true; }
   else if (a === "spauto") { c.spellsManual = !t.checked; if (t.checked) { E.refreshSpells(c, E.charStats(S, c)); toast("Sorts réoptimisés."); } }
   else if (a === "chaloff") c.chalOff = t.checked;
-  else if (a === "simres") ui.simRes = +t.value;
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }
   else if (a === "compname") { const k = (S.comps || [])[+t.dataset.i]; if (k) k.name = (t.value.trim() || k.name).slice(0, 24); dirty = true; return; }

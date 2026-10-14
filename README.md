@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.31 « Sorts expliqués »
+
+Demande de Mathis (14/10/2026, « Préparer une refonte des sorts pour qu'il soit plus compréhensible », réponses 1A 2A 3A 4A) : spSentence (js/ui.js) écrit chaque sort en une phrase avec spellEstimate, roleBadge donne son rôle ; grimNew remplace la grille d'icônes par une liste triée par dégâts par tour ; spDouble signale une attaque du même élément et du même type qui fait 25 % de plus par PA ; spCondHtml ne garde que les conditions utiles par rôle (COND_BY_ROLE) ; logLineNew illustre les sorts dans le journal. Aucune règle de combat ne change.
+
 ## 1.0.30.8 « Malus de niveau affiché »
 
 Demande de Mathis (14/10/2026, « les joueurs doivent être au courant de ce malus ») : giveRewards renvoie out.pen[cid] = [malus, écart, niveau du monstre] et le résultat de combat affiche « −X % » à côté de l'XP, avec une note sous le butin.

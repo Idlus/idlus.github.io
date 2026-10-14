@@ -1,6 +1,17 @@
 {
-  "version": "1.0.30.8",
+  "version": "1.0.31",
   "versions": [
+    {
+      "v": "1.0.31",
+      "name": "Sorts expliqués",
+      "items": [
+        "Fiche de chaque sort en une phrase : son rôle (Attaque, Soin, Bouclier, Invocation…), ce qu'il fait avec les vrais chiffres de ton héros, son coût et ses dégâts par tour. Même texte dans les infobulles et en combat",
+        "Grimoire en liste : les attaques de la plus forte à la plus faible avec tes caractéristiques, puis le soutien. « Pas ton élément » et le niveau de déblocage sont affichés",
+        "Les attaques en doublon sont signalées : « moins fort que Concentration » dans le grimoire et dans la fiche",
+        "« Quand le lancer ? » ne propose plus que les choix utiles pour ce sort, écrits en phrases",
+        "Journal de combat : icône du sort, dégâts dans la couleur de l'élément, et « faible Terre » ou « résiste » quand le monstre y est sensible"
+      ]
+    },
     {
       "v": "1.0.30.8",
       "name": "Malus de niveau affiché",
