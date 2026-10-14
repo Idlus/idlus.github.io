@@ -2168,6 +2168,7 @@ function homeTiles() {
       act: st.chest ? `data-tab="defi"` : `data-act="sm-dplay" data-v="${tid}"`, badge: `<span class="tag">Lancer</span>` })); }
   /* 0.1.49 : Boss des mondes, tant qu'il te reste des essais aujourd'hui (js/wbossui.js) */
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
+  { const st = window.SGUI && window.SGUI.tile && window.SGUI.tile(); if (st) out.push(tile(st)); } // 1.0.30 : Songe infini (js/songeui.js)
   /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
   const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
   out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${resTag(A.res, A.qty)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,

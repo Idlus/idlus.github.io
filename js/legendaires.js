@@ -1,7 +1,7 @@
 /* ============================================================================
    LES OBJETS LÉGENDAIRES — Idlus (0.1.48)
    38 objets : les 26 légendaires de DOFUS (niveau 200) et 12 inédits d'Idlus (niveaux 50, 100 et 150).
-   - Ils ne tombent que dans le Songe infini, à la validation d'un songe (Paradoxe 2 et plus), très rarement,
+   - Ils ne tombent que dans le Songe infini, à la validation d'un songe (Paradoxe 1 et plus depuis 1.0.30), très rarement,
      sans garantie, et seulement ceux du niveau de l'équipe ou en dessous (E.LEG_RATE).
    - Caractéristiques fixes : 80 à 90 % du meilleur objet du même emplacement et du même niveau (poids de
      forgemagie), calculées au chargement sur les objets du jeu. Les légendaires de DOFUS gardent leur profil,
@@ -23,7 +23,7 @@
   E.LEG_COPIES = [1, 2, 3, 5, 8]; // copies au total pour l'Éveil I à V (+1, +1, +2, +3)
   E.LEG_ROMAN = ["I", "II", "III", "IV", "V"];
   /* chance par songe validé, selon l'intensité (0 Rêve, 1-4 Paradoxe, 5-7 Cauchemar) */
-  E.LEG_RATE = [0, 0, 1 / 3000, 1 / 2000, 1 / 1200, 1 / 900, 1 / 650, 1 / 500];
+  E.LEG_RATE = [0, 1 / 4000, 1 / 3000, 1 / 2000, 1 / 1200, 1 / 900, 1 / 650, 1 / 500]; // 1.0.30 : dès Paradoxe 1 (1 sur 4 000)
   E.LEG_SPECIAL = ["pa", "pm", "po", "inv"]; // gardés tels quels, les autres caractéristiques suivent la règle des 80-90 %
 
   /* ---------- les 38 légendaires ----------
