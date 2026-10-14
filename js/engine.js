@@ -2896,7 +2896,9 @@
   E.craftTop = (job) => { // niveau de métier de la recette la plus haute du métier (66 pour les objets niveau 200, 100 pour le Bricoleur)
     if (CRAFT_TOP[job]) return CRAFT_TOP[job]; let m = 1;
     for (const id in ITEMS) if (ITEMS[id].craft && ITEMS[id].craft.job === job) m = Math.max(m, E.craftReq(id));
-    for (const n in SPECIAL_CRAFTS) if (SPECIAL_CRAFTS[n].job === job) m = Math.max(m, SPECIAL_CRAFTS[n].lvl);
+    /* 1.0.12.4 : recettes refaisables seulement (avant : le Coffre en merisier, meuble unique niveau 120, mettait la référence du Bricoleur à 120,
+       et passé le niveau 120 les alliages du niveau 100 ne valaient plus que la moitié, tout le reste 1 XP) */
+    for (const n in SPECIAL_CRAFTS) { const R = SPECIAL_CRAFTS[n]; if (R.job === job && !R.unique && !R.dofus && !R.idol) m = Math.max(m, R.lvl); }
     return (CRAFT_TOP[job] = m);
   };
   E.craftXpMult = (S, job, req) => {

@@ -39,4 +39,17 @@ assert.ok(typeof E.craftItem(S, tpl) === "string", "message d'erreur clair");
   assert.strictEqual(E.craftTopXp("tailleur", 66), 612, "Tailleur 66 : objet niveau 200");
   assert.strictEqual(E.craftTopXp("bricoleur", 100), 320, "Bricoleur 100 : clés et alliages niveau 100");
 }
+/* 1.0.12.4 : le Coffre en merisier (meuble unique niveau 120) ne compte plus comme recette la plus haute du Bricoleur.
+   Avec la vraie recette (sa vraie baisse « trop facile »), la meilleure recette refaisable vaut toujours ~1/10 de niveau, même au-delà de 120 */
+{ const { SPECIAL_CRAFTS } = require("../js/data.js");
+  assert.strictEqual(E.craftTop("bricoleur"), 100, "Bricoleur : recette refaisable la plus haute au niveau 100");
+  for (const job of ["tailleur", "bijoutier", "bricoleur"]) for (const lvl of [100, 121, 130, 150, 199]) {
+    const S5 = { crafts: { [job]: { lvl } } }; let best = 0;
+    for (const id in ITEMS) { const T = ITEMS[id]; if (T.craft && T.craft.job === job && E.craftReq(id) <= lvl) best = Math.max(best, E.craftXpOf(S5, job, E.craftReq(id), 12 + T.lvl * 3)); }
+    for (const n in SPECIAL_CRAFTS) { const R = SPECIAL_CRAFTS[n]; if (R.job === job && R.lvl <= lvl && !R.unique) best = Math.max(best, E.craftXpOf(S5, job, R.lvl, 20 + R.lvl * 3)); }
+    const n = Math.ceil(E.jobXpNeed(lvl) / best); assert.ok(n >= 9 && n <= 11, `${job} ${lvl} : ${n} fabrications de la meilleure recette refaisable pour un niveau`); }
+  const S6 = E.newState("Brico", "iop"); S6.crafts.bricoleur.lvl = 130; S6.crafts.bricoleur.xp = 0;
+  SPECIAL_CRAFTS["Ardonite"].ing.forEach(([r, q]) => (S6.res[r] = q)); E.craftSpecial(S6, "Ardonite");
+  assert.ok(S6.crafts.bricoleur.xp >= E.jobXpNeed(130) / 11, `Bricoleur 130 : une Ardonite vaut ~1/10 de niveau (${S6.crafts.bricoleur.xp} XP)`);
+}
 console.log("artisanat : OK");

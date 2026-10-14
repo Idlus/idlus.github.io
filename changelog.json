@@ -1,6 +1,16 @@
 {
-  "version": "1.0.12.3",
+  "version": "1.0.12.4",
   "versions": [
+    {
+      "v": "1.0.12.4",
+      "name": "Bricoleur après 120",
+      "items": [
+        "Bricoleur : passé le niveau 120, les alliages, planches et substrats des niveaux 90 à 100 rapportent à nouveau l'XP pleine, soit environ 10 fabrications par niveau jusqu'au 200",
+        "Avant, le Coffre en merisier, un meuble qu'on ne fabrique qu'une fois, comptait comme la recette la plus haute du métier : au-delà du niveau 120, les recettes du niveau 100 ne donnaient plus que la moitié de leur XP et toutes les autres 1 XP",
+        "Fiche de recette : le message « recette trop facile » donne le niveau de référence du métier (niveau 100 pour le Bricoleur), et la ligne « Niveau … dans … fabrications » n'apparaît plus pour les recettes à 1 XP",
+        "Les autres métiers ne changent pas"
+      ]
+    },
     {
       "v": "1.0.12.3",
       "name": "Compteur des joueurs en ligne",

@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.12.3";
+const GAME_VERSION = "1.0.12.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.12.4", name: "Bricoleur après 120", items: [
+    "Bricoleur : passé le niveau 120, les alliages, planches et substrats des niveaux 90 à 100 rapportent à nouveau l'XP pleine, soit environ 10 fabrications par niveau jusqu'au 200",
+    "Avant, le Coffre en merisier, un meuble qu'on ne fabrique qu'une fois, comptait comme la recette la plus haute du métier : au-delà du niveau 120, les recettes du niveau 100 ne donnaient plus que la moitié de leur XP et toutes les autres 1 XP",
+    "Fiche de recette : le message « recette trop facile » donne le niveau de référence du métier (niveau 100 pour le Bricoleur), et la ligne « Niveau … dans … fabrications » n'apparaît plus pour les recettes à 1 XP",
+    "Les autres métiers ne changent pas",
+  ] },
   { v: "1.0.12.3", name: "Compteur des joueurs en ligne", items: [
     "Le compteur « en ligne » du chat montre de nouveau tous les joueurs connectés (il restait bloqué à 1 depuis le nouveau serveur), et la liste des pseudos proposés quand tu tapes « @ » est de nouveau complète",
   ] },
@@ -5195,8 +5201,8 @@ function recDetail(r, job) {
     <div class="pqty"><span class="small muted">Quantité</span><div class="seg">${[["1", "1"], ["10", "10"], ["max", `Max${nMax > 1 ? " ×" + fmt(nMax) : ""}`]].map(([v, n]) => `<button data-act="recqty" data-v="${v}" aria-pressed="${String(ui.recQty || "1") === v}">${n}</button>`).join("")}</div>
       <span class="pqn"><button class="btn sm" data-act="recqtyd" data-v="-1" ${nMax > 1 && qty > 1 ? "" : "disabled"} aria-label="Un de moins">−</button><input type="number" id="recqtyn" inputmode="numeric" min="1" max="${Math.max(1, nMax)}" value="${qty}" data-xp="${xp}" data-max="${Math.max(1, nMax)}" ${nMax > 1 ? "" : "disabled"} aria-label="Quantité à fabriquer"><button class="btn sm" data-act="recqtyd" data-v="1" ${qty < nMax ? "" : "disabled"} aria-label="Un de plus">+</button></span>
       <span class="xs muted grow" id="recqtyxp">+${fmt(xp * (r.n ? qty : 1))} XP de ${CRAFT_JOBS[job].name}</span></div>
-    ${r.okLvl && J.lvl < 200 ? (() => { const nn = Math.max(1, Math.ceil((E.jobXpNeed(J.lvl) - (J.xp || 0)) / xp)); return `<div class="xs muted" id="recnext" style="margin:-4px 0 8px">Niveau ${J.lvl + 1} de ${h(CRAFT_JOBS[job].name)} dans ${fmt(nn)} fabrication${nn > 1 ? "s" : ""} de cette recette</div>`; })() : ""}
-    ${xm < 1 && r.okLvl ? `<div class="small minus" style="margin:-4px 0 8px">${xp <= 1 ? "Plus qu'1 XP" : `XP réduite de ${Math.round((1 - xm) * 100)} %`} : recette trop facile pour ton niveau de ${h(CRAFT_JOBS[job].name)}. ${r.T ? `Les objets à moins de 30 niveaux du plus haut que tu sais faire (niv. ${Math.min(200, Math.min(J.lvl, E.craftTop(job)) * 3)})` : `Les recettes à moins de ${E.CRAFT_FALL.full} niveaux de ton métier`} donnent l'XP pleine.</div>` : ""}
+    ${r.okLvl && J.lvl < 200 && xp > 1 ? (() => { const nn = Math.max(1, Math.ceil((E.jobXpNeed(J.lvl) - (J.xp || 0)) / xp)); return `<div class="xs muted" id="recnext" style="margin:-4px 0 8px">Niveau ${J.lvl + 1} de ${h(CRAFT_JOBS[job].name)} dans ${fmt(nn)} fabrication${nn > 1 ? "s" : ""} de cette recette</div>`; })() : ""}
+    ${xm < 1 && r.okLvl ? `<div class="small minus" style="margin:-4px 0 8px">${xp <= 1 ? "Plus qu'1 XP" : `XP réduite de ${Math.round((1 - xm) * 100)} %`} : recette trop facile pour ton niveau de ${h(CRAFT_JOBS[job].name)}. ${r.T ? `Les objets à moins de 30 niveaux du plus haut que tu sais faire (niv. ${Math.min(200, Math.min(J.lvl, E.craftTop(job)) * 3)})` : (J.lvl > E.craftTop(job) ? `Les recettes à moins de ${E.CRAFT_FALL.full} niveaux de la plus haute du métier (niv. ${E.craftTop(job)})` : `Les recettes à moins de ${E.CRAFT_FALL.full} niveaux de ton métier`)} donnent l'XP pleine.</div>` : ""}
     ${ui.outdated ? `<div class="small minus" style="margin:-4px 0 6px">La version ${h(ui.outdated)} est en ligne : recharge le jeu pour fabriquer (ta partie est sauvegardée).</div><div class="row"><button class="btn primary grow" data-act="reloadgame">Recharger pour fabriquer</button></div>` : `<div class="row"><button class="btn primary grow" data-act="craftmany" data-k="${r.k}" data-id="${h(r.id)}" data-n="${qty}" ${gSel ? `data-g="${h(gSel)}"` : ""} ${r.n ? "" : "disabled"}>Fabriquer${r.n && qty > 1 ? " ×" + fmt(qty) : ""}</button><button class="btn" data-act="shoppin" data-k="${r.k}" data-id="${h(r.id)}">${G("cart")} ${pinned ? "✓ Liste de courses" : "Liste de courses"}</button></div>`}</div>`;
 }
 /* 1.0.8.1 : quantité libre (champ − / +) ; la valeur est gardée dans ui.recQty, donc retrouvée quand la page se redessine */
