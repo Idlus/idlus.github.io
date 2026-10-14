@@ -140,7 +140,7 @@
 .qj-how b{font-size:13.5px}
 .qj-steps li .btn{margin-left:4px;vertical-align:1px}
 .qj-drop{margin:0 -12px -6px}
-@media (max-width:860px){.qj-dofl{grid-template-columns:1fr}.qj-fiche{position:relative;top:auto;order:-1}.qj-eggs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:860px){.qj-dofl{grid-template-columns:1fr}.qj-fiche{position:relative;top:auto;order:-1;scroll-margin-top:calc(var(--sth,0px) + 10px)}.qj-eggs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* succès */
 .qj-near{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .qj-nc{display:grid;gap:6px;padding:10px 12px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);min-width:0}

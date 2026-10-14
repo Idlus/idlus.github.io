@@ -178,6 +178,7 @@
       nl.addEventListener("scroll", () => { if (C.below && nl.scrollTop + nl.clientHeight >= nl.scrollHeight - 30) { C.below = false; const b = nl.querySelector(".ch-new"); if (b) b.remove(); } }, { passive: true });
     }
     if (focus && $("#chIn") && document.activeElement !== $("#chIn")) { const i = $("#chIn"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+    cntTick(); // 1.0.12.8
   }
   const selIn = (el) => { const s = window.getSelection && window.getSelection(); return !!(s && !s.isCollapsed && s.rangeCount && el.contains(s.anchorNode) && !(s.anchorNode.closest ? s.anchorNode : s.anchorNode.parentElement).closest(".ch-foot")); };
   document.addEventListener("selectionchange", () => { if (C.held && C.open) { const el = $("#chat"); if (el && !selIn(el)) paint(true); } });
@@ -301,21 +302,29 @@
     const it = C.item && window.DATA.ITEMS[C.item];
     const wait = Math.max(0, Math.ceil((nextAt() - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Parler Kolizéum, chercher un adversaire…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
-      <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>${C.tab === "p" ? "Bouton « Montrer dans le chat » sur la fiche d'un objet" : "@pseudo pour mentionner un joueur"}</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`;
+      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>${C.tab === "p" ? "Bouton « Montrer dans le chat » sur la fiche d'un objet" : "@pseudo pour mentionner un joueur"}</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`; // 1.0.12.8 : texte d'aide du PvP raccourci (coupé au téléphone)
   }
 
   /* ---------- actions du chat ---------- */
   const nextAt = () => (C.tab === "c" ? Math.max(C.next, C.nextC || 0) : C.next); // 0.1.48.2 : le Commerce a son propre rythme (30 s)
+  /* 1.0.12.8 : le compteur décompte « encore N s » chaque seconde, puis montre la longueur du texte tapé (et retire « Doucement… ») */
+  let cntT = 0;
+  function cntTick() {
+    clearTimeout(cntT); const c = $("#chCnt"), i = $("#chIn"); if (!c || !i) return;
+    const left = nextAt() - Date.now();
+    if (left > 0) { c.textContent = `encore ${Math.ceil(left / 1000)} s`; cntT = setTimeout(cntTick, (left % 1000 || 1000) + 20); return; }
+    c.textContent = `${i.value.length}/200`;
+    if (C.err && C.err === C.errWait) { C.err = ""; const b = $("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; }
+  }
   async function send() {
     const i = $("#chIn"); if (!i) return; const body = i.value.trim();
     if (!body && !C.item) return;
-    if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; return paint(true); }
+    if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; C.errWait = C.err; return paint(true); }
     const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" ? C.tab : null;
     const err = C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
-    setTimeout(() => { const c = $("#chCnt"); if (c) c.textContent = "0/200"; }, (ch === "c" ? 30000 : 4000) + 100);
     // le message revient par le temps réel ; on recharge au cas où la connexion temps réel serait coupée
     setTimeout(async () => { const k = to ? "p" : ch || "g"; const l = await ON.chatLoad(k); if (l && l.length) { C[k] = l; paint(true); } }, 1500);
     paint();
@@ -336,8 +345,9 @@
       ${C.role && !mine ? `<button data-act="adm-find" data-q="${h(p)}">${X().G("shield")} Fiche admin</button>` : ""}`;
     document.body.appendChild(el);
     const w = el.offsetWidth, hgt = el.offsetHeight;
+    const nv = $("#nav .sn-mob"), nr = nv && nv.getBoundingClientRect(), bot = (nr && nr.height ? nr.top : innerHeight) - 8; // 1.0.12.8 : jamais sur la barre du bas du téléphone
     el.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left - 20)) + "px";
-    el.style.top = Math.max(8, Math.min(innerHeight - hgt - 8, r.bottom + 4)) + "px";
+    el.style.top = Math.max(8, r.bottom + 4 + hgt <= bot ? r.bottom + 4 : Math.min(bot, r.top - 4) - hgt) + "px"; // 1.0.12.8 : pas la place dessous : le menu s'ouvre au-dessus du pseudo
   }
   const msgById = (id) => C.g.concat(C.p, C.c, C.v, (window.GUILD && window.GUILD.msgs) || []).find((x) => x.id === id);
   const closeMenu = () => { const m = $("#chMenu"); if (m) m.remove(); };
@@ -360,9 +370,17 @@
   async function banner() {
     const el = $("#annbar"); if (!el) return;
     const list = await ON.announces(); const seen = pref.annSeen || 0;
-    const a = list.find((x) => x.id > seen);
-    el.innerHTML = a ? `<div class="annbar">${X().IC("parchemin_or")}<span class="grow">${h(a.body)}</span><button class="tc-x" data-act="ch-annok" data-id="${a.id}" aria-label="Fermer" title="Fermer">✕</button></div>` : "";
+    const a = list.find((x) => x.id > seen) || null; if (!a || !C.ann || a.id !== C.ann.id) C.annMore = false;
+    C.ann = a; annPaint();
   }
+  /* 1.0.12.8 : au téléphone, une annonce longue tient sur 2 lignes ; « Lire la suite » l'ouvre en entier */
+  function annPaint() {
+    const el = $("#annbar"), a = C.ann; if (!el) return;
+    el.innerHTML = a ? `<div class="annbar${C.annMore ? " more" : ""}">${X().IC("parchemin_or")}<span class="grow"><span class="atx">${h(a.body)}</span><button class="lnk" data-act="ch-annmore">${C.annMore ? "Réduire" : "Lire la suite"}</button></span><button class="tc-x" data-act="ch-annok" data-id="${a.id}" aria-label="Fermer" title="Fermer">✕</button></div>` : "";
+    annClip();
+  }
+  const annClip = () => { const t = $("#annbar .atx"); if (t && !C.annMore) t.closest(".annbar").classList.toggle("clip", t.scrollHeight > t.clientHeight + 1); };
+  addEventListener("resize", annClip, { passive: true }); // téléphone tourné
 
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
@@ -499,7 +517,7 @@
     const t = ev.target.closest("[data-act]");
     if (!ev.target.closest("#chMenu") && !(t && t.dataset.act === "ch-who")) closeMenu();
     if (!t) return; const a = t.dataset.act, d = t.dataset;
-    if (a === "nav" && t.closest("#chat") && matchMedia("(max-width:640px)").matches) { C.open = false; pref.open = false; savePref(); paint(); return; } // le chat couvre la page sur téléphone : on le réduit
+    if (a === "nav" && t.closest("#chat") && matchMedia("(max-width:640px)").matches) { C.open = false; pref.open = false; if ($("#chIn")) pref.draft = $("#chIn").value; savePref(); paint(); return; } // le chat couvre la page sur téléphone : on le réduit (1.0.12.8 : en gardant le message en cours, comme la croix)
     if (!/^(ch|adm)-/.test(a)) return;
     switch (a) {
       case "ch-open": C.open = true; pref.open = true; savePref(); if (missed) setTimeout(() => catchUp(0), 50); if (C.tab === "g") C.unread = 0; if (C.tab === "c") C.unreadC = 0; if (C.tab === "v") C.unreadV = 0; paint(); setTimeout(() => { const i = $("#chIn"); if (i && matchMedia("(min-width:641px)").matches) i.focus(); }, 30); return;
@@ -527,6 +545,7 @@
       case "ch-unitem": C.item = null; paint(true); return;
       case "ch-pinx": pref.pinHide = { at: C.pin && C.pin.pin_at, day: today() }; savePref(); paint(true); return;
       case "ch-annok": pref.annSeen = +d.id; savePref(); banner(); return;
+      case "ch-annmore": C.annMore = !C.annMore; annPaint(); return; // 1.0.12.8
       case "adm-open": openAdmin(); return;
       case "adm-tab": A.tab = d.v; repaintAdm(); await admLoad(); repaintAdm(); return;
       case "adm-reload": A.ov = null; repaintAdm(); await admLoad(); repaintAdm(); return;
@@ -578,7 +597,13 @@
       ev.stopPropagation();
     } else if (ev.target && ev.target.id === "admQ" && ev.key === "Enter") { ev.preventDefault(); const b = document.querySelector('[data-act="adm-search"]'); if (b) b.click(); }
   }, true);
-  document.addEventListener("input", (ev) => { if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
+  /* 1.0.12.8 : ce qui est tapé dans le panel (annonce, message épinglé, recherche d'un pseudo) est gardé en changeant d'onglet */
+  function admKeep(id) {
+    if (/^admAnn/.test(id)) A.ann = { body: $("#admAnn").value, banner: $("#admAnnB").checked, chat: $("#admAnnC").checked, hours: +$("#admAnnH").value };
+    else if (/^admPin/.test(id)) A.pin = { body: $("#admPin").value, chs: ["g", "c", "v"].filter((k) => $("#admPin" + k).checked).join(",") };
+    else if (id === "admQ") A.q = $("#admQ").value.trim();
+  }
+  document.addEventListener("input", (ev) => { if (ev.target && /^adm(Ann|Pin|Q)/.test(ev.target.id || "")) admKeep(ev.target.id); if (ev.target && ev.target.id === "admPin") { const n = $("#admPinN"); if (n) n.textContent = `${ev.target.value.length}/200`; return; } if (ev.target && ev.target.id === "chIn") { acUpdate(ev.target); const c = $("#chCnt"); if (c && Date.now() >= nextAt()) c.textContent = `${ev.target.value.length}/200`; if (C.err) { C.err = ""; const b = document.querySelector("#chat .ch-hint .bad"); if (b) b.outerHTML = "<span></span>"; } } });
 
   window.CHAT = { start, refresh, renderAdmin, adminBtn, repaint: () => { const el = $("#chat"); if (el && C.open) paint(true); else if (el) paint(); }, canShare: () => canWrite(), openAdmin, repaintAdmin: () => repaintAdm(), get role() { return C.role; }, get state() { return C; } };
 })();

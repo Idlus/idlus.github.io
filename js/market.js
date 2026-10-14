@@ -102,6 +102,7 @@
   async function search() {
     const [a, b] = lvRange(); const cat = M.cat === "clef" ? "res" : M.cat;
     const r = await ON.rpc("hdv_search", { p_cat: cat, p_q: M.q, p_slot: M.cat === "clef" ? "clef" : M.cat === "eq" ? M.slot : "", p_lmin: a, p_lmax: b });
+    M.lErr = !!r.err; // 1.0.12.8 : une panne du serveur n'est plus affichée comme une liste vide
     M.list = r.err ? [] : (r.data || []).filter((x) => M.cat !== "res" || x.slot !== "clef");
     M.list.sort((x, y) => (M.sort === "lvl" ? y.lvl - x.lvl : 0) || x.unit - y.unit);
     if (M.sel && !M.list.some((x) => x.key === M.sel)) { M.sel = null; M.offers = null; }
@@ -112,7 +113,7 @@
     M.sel = key; M.offers = null; M.stats = null; M.confirm = null; M.detOrd = null; paint();
     const [o, st, od] = await Promise.all([ON.rpc("hdv_offers", { p_key: key }), ON.rpc("hdv_stats", { p_key: key }), ON.rpc("hdv_orders_list", { p_key: key, p_q: "", p_cat: "" })]);
     if (M.sel !== key) return;
-    M.offers = o.data || []; M.stats = st.data || null; M.detOrd = od.data || []; paint();
+    M.offers = o.data || []; M.offErr = !!o.err; M.stats = st.data || null; M.detOrd = od.data || []; paint();
   }
   async function loadMine() { const r = await ON.rpc("hdv_mine"); M.mine = r.data || { open: [], sold: [] }; paint(); }
   async function priceHint(cat, key) { const r = await ON.rpc("hdv_stats", { p_key: key }); const o = await ON.rpc("hdv_offers", { p_key: key }); const od = cat === "eq" ? {} : await ON.rpc("hdv_orders_list", { p_key: key, p_q: "", p_cat: "" });
@@ -140,6 +141,7 @@
   }
   /* 0.1.19.4 : pas de compte obligatoire. Sans compte on regarde les prix ; on propose le compte, sans mur. */
   const guest = (what) => `<div class="panel"><div class="pad row between"><span><b>Crée ton compte pour ${what}</b><br><span class="small muted">C'est gratuit, et ta partie de cet appareil te suit sur ton compte. En attendant, tu peux regarder les prix.</span></span><button class="btn primary sm" data-act="on-loginscreen">Créer mon compte</button></div></div>`;
+  const netErr = (v) => `<div class="empty">Pas de connexion au serveur : réessaie dans un moment. <button class="btn sm" data-act="mk-retry" data-v="${v}">Réessayer</button></div>`;
   const cats = (act, cur, list) => `<div class="row catchips">${(list || CATS).map(([id, n]) => `<button data-act="${act}" data-v="${id}" aria-pressed="${cur === id}">${n}</button>`).join("")}</div>`;
   function buyHtml() {
     const L = M.list;
@@ -147,8 +149,8 @@
       ${M.cat === "eq" ? `<select data-act="mk-slot" aria-label="Emplacement">${SLOTS.map(([v, n]) => `<option value="${v}" ${M.slot === v ? "selected" : ""}>${n}</option>`).join("")}</select>` : ""}
       ${M.cat === "eq" || M.cat === "res" ? `<select data-act="mk-lv" aria-label="Niveau">${LVLS.map(([v, n]) => `<option value="${v}" ${M.lv === v ? "selected" : ""}>${n}</option>`).join("")}</select>` : ""}
       <select data-act="mk-sort" aria-label="Tri"><option value="price" ${M.sort === "price" ? "selected" : ""}>Tri : prix</option><option value="lvl" ${M.sort === "lvl" ? "selected" : ""}>Tri : niveau</option></select>
-      <span class="small muted">${L ? `${L.length} en vente` : "Chargement…"}</span></div>`;
-    const list = L === null ? `<div class="empty">Chargement…</div>` : !L.length ? `<div class="empty">Rien en vente ici pour l'instant. Sois le premier : onglet Vendre.</div>`
+      <span class="small muted">${M.lErr ? "" : L ? `${L.length} en vente` : "Chargement…"}</span></div>`;
+    const list = L === null ? `<div class="empty">Chargement…</div>` : M.lErr ? netErr("list") : !L.length ? `<div class="empty">Rien en vente ici pour l'instant. Sois le premier : onglet Vendre.</div>`
       : `<div class="list">${L.map((x) => `<button class="li mkli ${M.sel === x.key ? "on" : ""}" data-act="mk-pick" data-k="${h(x.key)}">${icon(x.cat, x.key)}<span class="grow"><b>${h(nameOf(x.cat, x.key))}</b><br><span class="xs muted">${x.lvl ? `niv. ${x.lvl} · ` : ""}${x.cat === "eq" ? `${x.n} en vente` : `${fmt(x.qty)} en vente`}</span></span>${kk(x.unit)}</button>`).join("")}</div>`;
     return `${bar}${cats("mk-cat", M.cat)}<div class="mkgrid ${M.sel ? "hassel" : ""}"><section class="panel mklist"><div class="phead"><h2>${h((CATS.find((c) => c[0] === M.cat) || [])[1] || "")}</h2><span class="xs muted">${M.cat === "eq" ? "à partir de" : "prix le plus bas, à l'unité"}</span></div>${list}</section>${M.sel ? detailHtml() : ""}</div>`;
   }
@@ -171,7 +173,9 @@
     const head = `<div class="phead"><div class="row">${icon(cat, key)}<div><h2>${h(nameOf(cat, key))}</h2><span class="xs muted">${lvlOf(cat, key) ? `niv. ${lvlOf(cat, key)}` : ""}${M.stats && M.stats.avg ? ` · prix moyen ${fmt(M.stats.avg * (cat === "eq" ? 1 : 1))}${cat === "eq" ? "" : " / unité"}` : ""}</span></div></div>
       <button class="btn sm mkback" data-act="mk-unpick">Retour</button></div>`;
     if (!O) return `<section class="panel mkdet">${head}<div class="pad empty">Chargement…</div></section>`;
+    if (M.offErr) return `<section class="panel mkdet">${head}${netErr("offers")}</section>`;
     const buyBtn = (o) => o.mine ? `<span class="tag" style="background:var(--panel3);color:var(--ink)">ton annonce</span>`
+      : o.price > ((S() && S().kamas) || 0) ? `<button class="btn sm mkshort" disabled>Il te manque ${fmt(o.price - ((S() && S().kamas) || 0))} kamas</button>` // 1.0.12.8 : grisé quand la bourse ne suffit pas (avant : refus du serveur après coup)
       : M.confirm === o.id ? `<button class="btn sm primary" data-act="mk-buy" data-id="${o.id}">Confirmer ${fmt(o.price)}</button>`
       : `<button class="btn sm primary" data-act="mk-ask" data-id="${o.id}" ${M.busy ? "disabled" : ""}>Acheter</button>`;
     if (cat === "eq") {
@@ -226,7 +230,7 @@
     const used = M.mine ? M.mine.open.length : 0; const hint = M.hint && M.hint.key === x.key ? M.hint : null;
     const base = baseOf(x.cat, x.key, lot, x.it); const st = hint && hint.st; const ref = refOf(x.cat, x.key, lot, x.it, st);
     const sug = st && st.avg ? Math.max(floor, Math.round(st.avg * lot)) : null;
-    const low = price >= floor && price < ref * LOW && M.lowOk !== `${x.key}|${price}|${lot}`;
+    const low = price >= floor && price < ref * LOW && M.lowOk !== `${x.key}|${price}|${lot}`; // 1.0.12.8 : « N % de moins » plafonné à 99 (« 100 % » se lisait « gratuit »)
     const unitTxt = (v) => (res ? `${fmt(Math.round(v / lot * 10) / 10)} l'unité` : fmt(v));
     const why = !price ? "Indique un prix." : price < floor ? (res ? `Au moins 1 kama par unité (${fmt(floor)} le lot).` : "Au moins 1 kama.") : res && x.n < lot ? `Il t'en faut au moins ${lot}.` : used + n > MAX ? "Plus de place de vente." : tax * n > s.kamas ? "Pas assez de kamas pour la taxe." : "";
     return `<section class="panel mkdet"><div class="phead"><div class="row">${icon(x.cat, x.key)}<div><h2>${h(nameOf(x.cat, x.key))}</h2><span class="xs muted">${x.cat === "eq" ? `niv. ${ITEMS[x.key].lvl} · jet ${Math.round(E.itemQuality(x.it) * 100)} %${x.it.radiant ? " · ✦ Rayonnant" : ""}${x.it.fm ? ` · forgemagé ×${x.it.fm}` : ""}` : `tu en as ${fmt(x.n)}`}</span></div></div><button class="btn sm mkback" data-act="mk-ssel" data-v="">Retour</button></div>
@@ -239,7 +243,7 @@
         ${res ? sellOrdHtml(x, hint, price, lot, n) : ""}
         <div class="mksum"><span>Taxe de mise en vente (2 %)${n > 1 ? ` × ${n}` : ""}</span><b>− ${fmt(tax * n)}</b><span>Durée</span><b>14 jours</b><span class="tot">Tu recevras à la vente</span><b class="tot">${kk(price * n)}</b></div>
         <div><div class="row between xs"><span>Places de vente</span><b>${used + n} / ${MAX}</b></div><div class="mkslots">${Array.from({ length: MAX }, (_, i) => `<i class="${i < used ? "on" : i < used + n ? "new" : ""}"></i>`).join("")}</div></div>
-        ${low && !why ? `<div class="mklow"><span><b>Ce prix est très bas, tu confirmes ?</b> ${unitTxt(price)}, soit ${Math.round((1 - price / ref) * 100)} % de moins que ${st && st.avg ? "le prix moyen" : "la valeur de base"} (${unitTxt(ref)}).</span>
+        ${low && !why ? `<div class="mklow"><span><b>Ce prix est très bas, tu confirmes ?</b> ${unitTxt(price)}, soit ${Math.min(99, Math.round((1 - price / ref) * 100))} % de moins que ${st && st.avg ? "le prix moyen" : "la valeur de base"} (${unitTxt(ref)}).</span>
           <span class="row"><button class="btn sm mkwarnbtn" data-act="mk-lowok" data-v="${h(`${x.key}|${price}|${lot}`)}">Oui, vendre à ${fmt(price)}</button><button class="btn sm" data-act="mk-lowfix" data-i="mkPrice">Corriger le prix</button></span></div>`
           : `<button class="btn primary" data-act="mk-sell" ${why || M.busy ? "disabled" : ""}>${res && n > 1 ? `Mettre ${n} lots en vente` : "Mettre en vente"}</button>`}
         <span class="xs ${why ? "" : "muted"}" ${why ? 'style="color:var(--danger)"' : ""}>${why || "L'objet quitte ton sac tout de suite et attend sur le serveur. Si tu le retires, il revient dans ton sac mais la taxe est perdue."}</span>
@@ -295,7 +299,7 @@
     if (c === "cons") return Object.keys(CONSUMABLES).map((k) => ["cons", k]);
     return Object.keys(RES).filter((k) => !blocked("res", k) && (c === "clef" ? E.isKey(k) : !E.isKey(k))).map((k) => ["res", k]);
   }
-  async function loadOrders() { const r = await ON.rpc("hdv_orders_list", { p_key: "", p_q: M.oQ, p_cat: "" }); M.orders = r.data || []; paint(); }
+  async function loadOrders() { const r = await ON.rpc("hdv_orders_list", { p_key: "", p_q: M.oQ, p_cat: "" }); M.orders = r.data || []; M.ordErr = !!r.err; paint(); }
   async function loadOMine() { if (!mine()) return; const r = await ON.rpc("hdv_orders_mine"); M.oMine = r.data || []; paint(); }
   const fillBtn = (o, cls) => {
     if (o.mine) return `<span class="tag" style="background:var(--panel3);color:var(--ink)">ton offre</span>`;
@@ -325,9 +329,9 @@
     const seg = `<div class="row catchips">${[["all", "On achète"], ["mine", `Mes offres${M.oMine ? ` · ${open} / ${OMAX}` : ""}`]].map(([id, n]) => `<button data-act="mk-oview" data-v="${id}" aria-pressed="${M.oView === id}">${n}</button>`).join("")}</div>`;
     if (M.oView === "mine") return seg + (mine() ? oMineHtml(open) : "");
     const L = M.orders;
-    const list = L === null ? `<div class="empty">Chargement…</div>` : !L.length ? `<div class="empty">Aucune offre d'achat${M.oQ ? " pour cette recherche" : ""} pour l'instant.</div>`
+    const list = L === null ? `<div class="empty">Chargement…</div>` : M.ordErr ? netErr("ord") : !L.length ? `<div class="empty">Aucune offre d'achat${M.oQ ? " pour cette recherche" : ""} pour l'instant.</div>`
       : `<div class="list">${oSort(L).map((o) => ordLine(o, true)).join("")}</div>`;
-    return `${seg}<div class="row invbar"><input type="text" id="mkOQ" data-act="mk-oq" placeholder="Rechercher une ressource…" value="${h(M.oQ)}"><span class="small muted">${L ? `${L.length} offre${L.length > 1 ? "s" : ""}` : ""}</span></div>
+    return `${seg}<div class="row invbar"><input type="text" id="mkOQ" data-act="mk-oq" placeholder="Rechercher une ressource…" value="${h(M.oQ)}"><span class="small muted">${L && !M.ordErr ? `${L.length} offre${L.length > 1 ? "s" : ""}` : ""}</span></div>
       <section class="panel"><div class="phead"><h2>Les joueurs achètent</h2><span class="xs muted">tu es payé tout de suite, même si l'acheteur n'est pas là</span></div>${list}</section>
       <span class="xs muted">Tu peux vendre tout ou une partie. Les acheteurs restent anonymes.</span>`;
   }
@@ -343,7 +347,7 @@
       const qty = Math.max(0, Math.round(+String(M.oQty).replace(/\s/g, "")) || 0); const price = Math.max(0, Math.round(+String(M.oPrice).replace(/\s/g, "")) || 0);
       const tot = qty * price, tax = oTax(tot), floor = oFloor(sel.cat, sel.key); const hint = M.hint && M.hint.key === sel.key ? M.hint : null;
       const base = oBase(sel.cat, sel.key); const ref = hint && hint.st && hint.st.avg ? hint.st.avg : base;
-      const low = price >= floor && price < ref * LOW && M.lowOk !== `o|${sel.key}|${price}`;
+      const low = price >= floor && price < ref * LOW && M.lowOk !== `o|${sel.key}|${price}`; // 1.0.12.8 : « N % de moins » plafonné à 99 (« 100 % » se lisait « gratuit »)
       const dup = M.oMine && M.oMine.some((o) => o.st === "open" && o.key === sel.key);
       const why = !qty ? "Indique une quantité." : qty > 100000 ? "100 000 au maximum." : !price ? "Indique un prix à l'unité." : price < floor ? "Au moins 1 kama l'unité." : tot > 2e9 ? "Offre trop grosse." : open >= OMAX ? `Déjà ${OMAX} offres en cours.` : dup ? "Tu as déjà une offre pour cette ressource." : tot + tax > s.kamas ? "Pas assez de kamas." : "";
       form = `<div class="row">${icon(sel.cat, sel.key)}<div class="grow"><b>${h(nameOf(sel.cat, sel.key))}</b><br><span class="xs muted">tu en as ${fmt(haveOf(sel.cat, sel.key))}</span></div><button class="btn sm" data-act="mk-opick" data-k="">Changer</button></div>
@@ -352,7 +356,7 @@
         <div class="mkfield"><span></span><span class="xs muted">${hint ? `${hint.low ? `En vente dès <b>${fmt(Math.round(hint.low.price / hint.low.qty * 10) / 10)}</b> l'unité. ` : "Rien en vente. "}${hint.ord ? `Meilleure offre : <b>${fmt(hint.ord.price)}</b>. ` : ""}${hint.st && hint.st.avg ? `Moyenne des ventes : <b>${fmt(hint.st.avg)}</b>. ` : ""}` : "Recherche des prix… "}Valeur de base : ${fmt(base)}. Pas de prix minimum.</span></div>
         <div class="mkfield"><span class="small"><b>Durée</b></span><span class="seg">${[3, 7, 14].map((d) => `<button data-act="mk-odays" data-v="${d}" aria-pressed="${M.oDays === d}">${d} j</button>`).join("")}</span></div>
         <div class="mksum"><span>${fmt(qty)} × ${fmt(price)}</span><b>${fmt(tot)}</b><span>Taxe 2 % (seulement sur ce que tu reçois)</span><b>${fmt(tax)}</b><span class="tot">Mis de côté maintenant</span><b class="tot">${kk(tot + tax)}</b></div>
-        ${low && !why ? `<div class="mklow"><span><b>Ce prix est très bas, tu confirmes ?</b> ${fmt(price)} l'unité, soit ${Math.round((1 - price / ref) * 100)} % de moins que ${hint && hint.st && hint.st.avg ? "le prix moyen" : "la valeur de base"} (${fmt(Math.round(ref))}). Ton offre sera rangée en bas de la liste avec l'étiquette « très bas ».</span>
+        ${low && !why ? `<div class="mklow"><span><b>Ce prix est très bas, tu confirmes ?</b> ${fmt(price)} l'unité, soit ${Math.min(99, Math.round((1 - price / ref) * 100))} % de moins que ${hint && hint.st && hint.st.avg ? "le prix moyen" : "la valeur de base"} (${fmt(Math.round(ref))}). Ton offre sera rangée en bas de la liste avec l'étiquette « très bas ».</span>
           <span class="row"><button class="btn sm mkwarnbtn" data-act="mk-lowok" data-v="${h(`o|${sel.key}|${price}`)}">Oui, publier à ${fmt(price)}</button><button class="btn sm" data-act="mk-lowfix" data-i="mkOPrice">Corriger le prix</button></span></div>`
           : `<button class="btn primary" data-act="mk-onewgo" ${why || M.busy ? "disabled" : ""}>Publier l'offre</button>`}
         <span class="xs ${why ? "" : "muted"}" ${why ? 'style="color:var(--danger)"' : ""}>${why || "Tu reçois la marchandise même hors ligne. Si tu retires l'offre ou à la fin, les kamas qui n'ont pas servi te reviennent, taxe comprise."}</span>`;
@@ -466,6 +470,7 @@
       case "mk-cat": M.cat = d.v; M.sel = null; M.list = null; render($("#main")); return;
       case "mk-pick": pick(d.k); if (!matchMedia("(min-width:861px)").matches) window.scrollTo(0, 0); return;
       case "mk-unpick": M.sel = null; paint(); return;
+      case "mk-retry": if (d.v === "offers") { pick(M.sel); return; } if (d.v === "ord") M.orders = null; else M.list = null; render($("#main")); return;
       case "mk-ask": M.confirm = +d.id; paint(); return;
       case "mk-buy": { const r = await act("hdv_buy", { p_id: +d.id }, "Acheté ! C'est dans ton sac."); M.confirm = null; if (r) { M.list = null; search(); pick(M.sel); } else if (M.sel) pick(M.sel); return; }
       case "mk-need": buyNeed(d.k, +d.n); return;

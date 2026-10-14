@@ -2328,7 +2328,7 @@
       else { E.autoZone(S, true); E.roam(S); } // 0.1.10.2 : chasse itinérante
     } else {
       E.chalResolve(S, F, true);
-      flog(F, why || "Défaite… l'équipe se repose.", "lose");
+      flog(F, why || (S.dungeon && S.dungeon.defi ? "Défaite." : "Défaite… l'équipe se repose."), "lose"); // 1.0.12.8 : pas de repos dans la relecture du Défi du jour
       try { F.loss = E.lossReport(S, F); } catch (e) { F.loss = null; }
       if (F.loss) { S.losses = (S.losses || []).filter((x) => x && x.t); S.losses.unshift(F.loss); if (S.losses.length > 6) S.losses.length = 6; E.events.push({ kind: "loss", txt: F.loss.txt, rep: F.loss }); }
       if (F.exp) E.expLose(S, F); // 0.1.24 : une vie de moins

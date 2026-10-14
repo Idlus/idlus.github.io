@@ -58,8 +58,8 @@
     await load();
   }
   async function load() {
-    const r = await ON.rpc("guild_me"); if (r.err || !r.data || r.data.err) return;
-    G.me = r.data; const s = S(); if (!s) return;
+    const r = await ON.rpc("guild_me"); if (r.err || !r.data || r.data.err) { if (r.err && !G.me) { G.meErr = true; paint(); } return; } // 1.0.12.8 : panne du serveur affichée (avant : « Chargement… » sans fin)
+    G.me = r.data; G.meErr = false; const s = S(); if (!s) return;
     const q = (s.guild = s.guild || { share: 0, pend: 0 });
     const was = q.id;
     if (G.me.g) { Object.assign(q, { id: G.me.g.id, name: G.me.g.name, lvl: G.me.g.lvl, ic: G.me.g.ic, col: G.me.g.col }); q.share = Math.max(0, Math.min(90, +G.me.share || 0)); }
@@ -83,7 +83,7 @@
     }
     paint();
   }
-  async function loadList() { const r = await ON.rpc("guild_list", { p_q: G.q }); G.list = r.data || []; paint(); }
+  async function loadList() { const r = await ON.rpc("guild_list", { p_q: G.q }); G.list = r.data || []; G.lErr = !!r.err; paint(); } // 1.0.12.8 : une panne n'est plus « Aucune guilde »
 
   /* ---------- chat de guilde (onglet « Guilde » du chat) ---------- */
   async function chatPoll() {
@@ -108,6 +108,7 @@
   /* ---------- rendu ---------- */
   const emb = (ic, col, sz) => `<span class="gemb" style="--gc:${h(col || "#8cc63f")};${sz ? `--gs:${sz}px` : ""}"><img src="assets/ui/${h(ic || "dofus")}.webp" alt=""></span>`;
   const ago = (t) => { if (!t) return "jamais"; const s = (Date.now() - new Date(t)) / 1000; return s < 300 ? "en ligne" : s < 3600 ? `il y a ${Math.round(s / 60)} min` : s < 86400 ? `il y a ${Math.round(s / 3600)} h` : `il y a ${Math.round(s / 86400)} j`; };
+  const netErr = (v) => `<div class="empty">Pas de connexion au serveur : réessaie dans un moment. <button class="btn sm" data-act="g-retry" data-v="${v}">Réessayer</button></div>`;
   const paint = () => { if (window.DX.ui.tab === "guild") { const m = $("#main"); if (m) { const y = window.scrollY; window.DX.repaint(m, html()); window.scrollTo(0, y); } } }; // garde le curseur là où on écrit
   function render(main) {
     if (!main) return;
@@ -120,7 +121,7 @@
     const head = `<div class="pagehead"><h1>Guilde</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(s ? s.kamas : 0)}</b> kamas</span></div>`;
     if (!mine() && ON.user && ON.solo && ON.solo()) return head + `<div class="stack">${X().soloPanel("la guilde")}${listHtml(false)}</div>`;
     if (!mine()) return head + `<div class="stack"><div class="panel"><div class="pad row between"><span><b>Crée ton compte pour rejoindre une guilde</b><br><span class="small muted">C'est gratuit, et ta partie de cet appareil te suit sur ton compte. En attendant, tu peux regarder les guildes.</span></span><button class="btn primary sm" data-act="on-loginscreen">Créer mon compte</button></div></div>${listHtml(false)}</div>`;
-    if (!G.me) return head + `<div class="empty">Chargement…</div>`;
+    if (!G.me) return head + (G.meErr ? netErr("me") : `<div class="empty">Chargement…</div>`);
     return head + (G.me.g ? guildHtml() : noneHtml());
   }
 
@@ -143,7 +144,7 @@
   }
   function listHtml(canJoin) {
     const L = G.list; const asks = (G.me && G.me.asks) || [];
-    const rows = L === null ? `<div class="empty">Chargement…</div>` : !L.length ? `<div class="empty">Aucune guilde pour l'instant. Fonde la première !</div>`
+    const rows = L === null ? `<div class="empty">Chargement…</div>` : G.lErr ? netErr("list") : !L.length ? `<div class="empty">Aucune guilde pour l'instant. Fonde la première !</div>`
       : `<div class="list">${L.map((g) => `<div class="li">${emb(g.ic, g.col, 40)}<span class="grow"><b>${h(g.name)}</b> <span class="tag" style="background:var(--panel3);color:var(--ink)">niv. ${g.lvl}</span><br><span class="xs muted">${g.n} / ${MAXM} membres · Meneur : ${h(g.chef || "?")} · ${g.open ? "entrée libre" : "sur demande"}</span>${g.motd ? `<br><span class="xs">« ${h(g.motd)} »</span>` : ""}</span>
         ${canJoin ? (asks.includes(g.id) ? `<span class="xs muted">demande envoyée</span>` : g.n >= MAXM ? `<span class="xs muted">complète</span>` : `<button class="btn sm ${g.open ? "primary" : ""}" data-act="g-join" data-g="${g.id}" ${G.busy ? "disabled" : ""}>${g.open ? "Rejoindre" : "Demander"}</button>`) : ""}</div>`).join("")}</div>`;
     return `<section class="panel"><div class="phead"><h2>Guildes</h2><input type="text" id="gQ" data-act="g-q" placeholder="Rechercher…" value="${h(G.q)}" style="max-width:220px"></div>${rows}</section>`;
@@ -331,6 +332,7 @@
       case "g-collect": { const r = await call("perco_collect", { p_after: (S().hdv && S().hdv.op) || 0, p_id: +d.g }); if (r) { if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true); X().toast(`Percepteur récolté : +${fmt(r.k)} kamas et ses ressources, +${fmt(r.gxp)} XP de guilde.`, "rare"); load(); } else loadEx(); return; }
       case "g-place": { const z = G.zone || (($("#gZone") || {}).value); if (!z) return; const r = await call("perco_place", { p_after: (S().hdv && S().hdv.op) || 0, p_sid: z }, "Percepteur posé !"); if (r) { if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true); G.zone = ""; loadEx(); } return; }
       case "g-prm": { if (G.sureRm !== +d.g) { G.sureRm = +d.g; paint(); return; } G.sureRm = null; const r = await call("perco_remove", { p_id: +d.g }, "Percepteur retiré."); if (r) loadEx(); return; }
+      case "g-retry": G.meErr = false; if (G.lErr) G.list = null; render($("#main")); return;
       case "g-ic": G.form.ic = d.v; paint(); return;
       case "g-col": G.form.col = d.v; paint(); return;
       case "g-create": { const r = await call("guild_create", { p_after: (S().hdv && S().hdv.op) || 0, p_name: G.form.name.trim(), p_ic: G.form.ic, p_col: G.form.col }, "Guilde fondée ! Tu en es le Meneur.");

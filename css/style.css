@@ -50,6 +50,9 @@ img{display:block}
 .dot.off{background:#9a8a6a;box-shadow:none}
 .coin{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#e2b33a 60%,#a87a14);border:1px solid #7a560c;display:inline-block;flex:none}
 @media (max-width:600px){.status{font-size:12px;gap:2px 12px}.status .brand{font-size:18px}.status .hide-sm{display:none}}
+/* 1.0.12.8 : barre étroite (1080 px, chat ouvert à côté) : connecté, la pastille de sauvegarde, le bouton Admin et Options ne gardent que leur icône, la barre reste sur une ligne */
+.status{container-type:inline-size}
+@container (max-width:980px){.status #onPill>span:not(.dot),.status .admbtn .hide-sm,.status:has(#onPill) .optlbl{display:none}}
 
 nav.main{display:flex;gap:6px;margin-bottom:12px}
 nav.main button{display:flex;align-items:center;gap:7px;border:2px solid transparent;background:var(--panel2);color:var(--ink);border-radius:12px;padding:8px 14px;font-weight:800;cursor:pointer}
@@ -234,6 +237,7 @@ textarea{width:100%;min-height:80px;font-size:12px}
 .chips button.out{opacity:.6}
 .statgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .statgrid .s{display:flex;justify-content:space-between;gap:6px;background:var(--panel2);border-radius:8px;padding:5px 8px;font-size:13px}
+.statgrid .s b{white-space:nowrap} /* 1.0.12.8 : « 0 % » ne se coupe plus en deux */
 .cbstats{border-top:1px solid var(--line,rgba(255,255,255,.08));padding-top:8px}.cbstats .list .li{padding:5px 8px;font-size:13px;gap:8px}.cbstats .li b{text-align:right}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
 .slot{display:flex;gap:8px;align-items:center;text-align:left;background:var(--panel2);border:2px solid var(--frame);border-radius:12px;padding:6px 8px;cursor:pointer;min-height:58px;color:var(--ink)}
@@ -351,11 +355,12 @@ button[data-tip],button[data-tipitem]{cursor:pointer}
 .medal.big img{width:62%}
 .dstats{display:grid;grid-template-columns:repeat(3,auto);gap:4px 10px;margin-top:6px;font-size:13px}
 .dstats span{display:inline-flex;align-items:center}
-@media (max-width:520px){.dslot{width:52px;height:52px}.dslot img{width:40px;height:40px}.medal.big{width:86px;height:86px}.doll{gap:8px}.dstats{grid-template-columns:repeat(2,auto)}}
+@media (max-width:520px){.dslot{width:52px;height:52px}.dslot img{width:40px;height:40px}.dlabel{font-size:8.5px;letter-spacing:0}.medal.big{width:86px;height:86px}.doll{gap:8px}.dstats{grid-template-columns:repeat(2,auto)}} /* 1.0.12.8 : .dlabel plus petit, « CEINTURE » tient dans la case */
 
 /* inventaire en grille */
 .invbar input[type=text]{flex:1;min-width:140px}
 .invlayout{display:grid;gap:12px}
+.invsheet .invdetail{border:0;box-shadow:none;margin:-16px -16px 0}.invsheet .invdetail::after{display:none} /* 1.0.12.8 : fiche d'objet ou de ressource en fenêtre (téléphone) : un seul cadre */
 @media (min-width:861px){.invlayout.withdetail{grid-template-columns:minmax(0,1fr) 380px}.invlayout.withdetail .invdetail{order:2;position:sticky;top:70px;align-self:start;max-height:calc(100vh - 90px);overflow:auto}}
 .invgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;align-content:start}
 .itile{position:relative;aspect-ratio:1;border-radius:12px;background:var(--panel2);border:2px solid var(--frame);display:grid;place-items:center;cursor:pointer;padding:0}
@@ -488,7 +493,7 @@ nav.main .lbl-s{display:none}
 @keyframes flame{from{transform:scale(.94) translateY(1px)}to{transform:scale(1.06,1.12) translateY(-2px)}}
 .fsg .txt b{font-family:var(--font-title);font-size:18px;color:#8fe8ff}.fsg.solo .txt b{color:var(--gold2)}
 .fsg .pips5{display:flex;gap:3px;margin-top:3px}.fsg .pips5 i{width:14px;height:5px;border-radius:3px;background:#6fd0ff}.fsg .pips5 i.off{background:var(--panel3)}
-.xppen{font-size:10.5px;font-weight:900;color:#1a0d00;background:#ff9b4a;border-radius:7px;padding:1px 6px;animation:pulseo 2s ease-in-out infinite}
+.xppen{font-size:10.5px;font-weight:900;color:#1a0d00;background:#ff9b4a;border-radius:7px;padding:1px 6px;animation:pulseo 2s ease-in-out infinite;white-space:nowrap} /* 1.0.12.8 : « XP −70 % » d'un seul tenant */
 @keyframes pulseo{50%{box-shadow:0 0 10px #ff9b4a}}
 
 /* effets élémentaires en combat */
@@ -527,6 +532,7 @@ nav.main .lbl-s{display:none}
 .setbox{background:var(--panel2);border-radius:10px;padding:6px 8px;margin-top:6px;font-size:12px}
 .setbox .st{display:flex;gap:6px;align-items:baseline;opacity:.55}.setbox .st.on{opacity:1;color:var(--good)}
 .setbox .st b{min-width:54px}
+.setbox .st.off{opacity:.45;font-style:italic} /* 1.0.12.8 : paliers impossibles (pièces absentes du jeu) */
 
 /* métiers */
 .joblogo{width:44px;height:44px;border-radius:10px;object-fit:cover;border:2px solid var(--gold);flex:none}
@@ -634,10 +640,10 @@ nav.main button{position:relative}
 }
 .arena .ent.summon{width:auto;min-width:0}
 .arena .ent.summon .sprite{max-height:46px}
-@media (max-width:640px){
-  .arena .ent.summon .who{display:none}
-  .arena .ent.summon .sprite{max-height:34px}
-  .arena .ent.summon .hpb{width:34px}
+@media (max-width:640px){ /* 1.0.12.8 : vue Scène seulement ; en vue Compacte, l'invocation garde son nom */
+  .arena:not(.cmpmode) .ent.summon .who{display:none}
+  .arena:not(.cmpmode) .ent.summon .sprite{max-height:34px}
+  .arena:not(.cmpmode) .ent.summon .hpb{width:34px}
 }
 .spcard.later{opacity:.45;padding:6px 8px}
 .spcard.later .spicon{filter:grayscale(1)}
@@ -816,7 +822,7 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
 .ent.card .t{min-width:0;flex:1}
 .ent.card .who{text-align:left;font-size:12px}
 .ent.card .hpb{margin:3px 0;height:7px}
-.ent.card .row2{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:10px;color:var(--muted);white-space:nowrap}
+.ent.card .row2{display:flex;justify-content:space-between;align-items:center;gap:0 4px;font-size:10px;color:var(--muted);white-space:nowrap;flex-wrap:wrap} /* 1.0.12.8 : l'état (« Distance +40 % ») passe dessous au lieu de sortir de la carte */
 .ent.card .pas{font-size:9.5px;margin:0}
 .ent.card .float{top:-4px;font-size:16px}
 .ent.card.dead{opacity:.35}
@@ -1126,11 +1132,10 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .subrow.weak:hover{opacity:.85}
 .sr-name{display:flex;align-items:center;gap:6px;min-width:0}
 .sr-name .uico{width:18px;height:18px;flex:none}
-.sr-name .tag{flex:none;font-size:11px;padding:1px 7px}
+.sr-sub .tag{flex:none;font-size:11px;padding:1px 7px} /* 1.0.12.8 : « Meilleure zone » sous le nom, qui n'est plus coupé */
 .zf-prog{display:flex;align-items:center;gap:4px}
 .zf-prog .bar{width:70px;margin:0 4px 0 0}
 .zf-prog .uico{width:16px;height:16px}
-@media (max-width:600px){.sr-name .tag .bt{display:none}}
 .sigmk svg{width:13px;height:13px;fill:var(--gold);stroke:none;vertical-align:-2px}
 .mrole.inl{display:inline-block;margin-right:4px;font-size:10px;font-weight:900;padding:0 6px;border-radius:999px;background:rgba(160,110,255,.22);box-shadow:0 0 0 1px rgba(160,110,255,.6)}
 /* 0.1 : panneau de clé de donjon */
@@ -1362,7 +1367,8 @@ span.pinbtn.auto{display:inline-flex;align-items:center;gap:4px;font-size:11px;f
 .mtree .node.hint{border-color:var(--archi);border-style:dashed}.mtree .node.hint span{color:var(--archi);font-weight:800}
 .mtree .node b{font-size:12.5px}.mtree .node span{font-size:10.5px;color:var(--muted);line-height:1.2}
 .mtree path{fill:none;stroke:var(--frame);stroke-width:2;opacity:.5}.mtree path.lit{stroke:var(--gold);opacity:.9}.mtree path.hint{stroke:var(--archi);stroke-dasharray:5 4;opacity:.9}
-@media (max-width:520px){.gen{grid-template-columns:1fr}.carnet .nx{flex-wrap:wrap}.carnet .nx .btn{width:100%}}
+.carnet{container-type:inline-size}
+@container (max-width:520px){.gen{grid-template-columns:1fr}.carnet .nx{flex-wrap:wrap}.carnet .nx .btn{width:100%}} /* 1.0.12.8 : d'après la largeur du carnet (pièce étroite du Havre-Sac sur PC), plus seulement de l'écran */
 .mtshare .seg{flex-wrap:wrap}.mtshare .seg button{white-space:nowrap}
 /* 0.1.8.2 : objets parfaits */
 .tag.perfect{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#2a1a08;border-color:var(--gold);font-weight:800}
@@ -1765,6 +1771,7 @@ nav.subnav .navdot{position:static;display:inline-block;margin-left:2px}
 .pips{display:inline-flex;gap:2px;margin-left:4px}
 .pips i{width:7px;height:11px;border-radius:2px;background:#2f6fb0}
 .pips i.off{background:var(--panel3)}
+.pips i.plus{background:var(--gold2)} /* 1.0.12.8 : PA gagnés en combat */
 @media (max-width:600px){.sptn{grid-template-columns:48px minmax(0,1fr) 52px;gap:6px}.spcast{padding:1px;border-radius:7px}.spcast span{display:none}.spcast img{width:24px;height:24px}}
 .spsum{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
 .spsum b{font-size:15px}
@@ -2273,7 +2280,7 @@ nav.main:empty{display:none} /* écran de choix et choix du héros : pas de barr
 .wkd{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:2px solid var(--line);color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-width:0}
 .wkd small{color:var(--muted);font-weight:700}.wkd b{font-size:13.5px}
 .wkd[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 12px rgba(var(--glw),.25)}
-.bigrec{font-family:var(--font-title);font-size:30px;color:var(--gold2);text-align:center}
+.bigrec{font-family:var(--font-title);font-size:30px;color:var(--gold2);text-align:center}.bigrec.lose{color:var(--danger)} /* 1.0.12.8 : « Défaite » en rouge, pas en vert */
 .chk{display:flex;flex-direction:column;gap:8px}.chk>div{display:flex;gap:10px;align-items:flex-start}.chk .okc{color:var(--good);font-weight:900}
 .tm{display:flex;flex-wrap:wrap;gap:6px}
 .tm button{display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;font-size:11.5px;font-weight:800;color:var(--ink);background:none;border:2px solid transparent;border-radius:12px;padding:4px 6px;cursor:pointer;max-width:84px}
@@ -2300,6 +2307,9 @@ html{zoom:1}
 .wtip.below::before{display:block;top:-18px;border-bottom-color:var(--gold)}
 .wtip.above::before{display:block;bottom:-18px;border-top-color:var(--gold)}
 .wl-target{box-shadow:0 0 0 3px var(--gold2),0 0 0 8px rgba(228,185,85,.4)!important;border-radius:12px;position:relative;z-index:94}
+/* 1.0.12.8 : une bulle posée en bas laisse de la place sous la page (on fait défiler le bas au-dessus d'elle) et la bulle du chat passe au-dessus */
+body:has(#wtip:not(.below):not(.side)) .app{padding-bottom:calc(var(--wtipb,0px) + 24px)}
+@media (max-width:859px){body:has(#wtip:not(.below):not(.side)) .chmin{bottom:calc(var(--wtipb,0px) + 10px)}}
 @keyframes wtipin{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1}}
 .wtip.below,.wtip.above{transform:none;animation:none;bottom:auto}
 .ck{width:16px;height:16px;border-radius:50%;flex:none;background:var(--panel3);box-shadow:inset 0 0 0 2px var(--line)}.ck.on{background:var(--action);box-shadow:inset 0 0 0 3px var(--panel)}
@@ -2437,6 +2447,14 @@ html{zoom:1}
 .rep-q{border-left:3px solid var(--frame);padding:6px 10px;background:var(--panel2);border-radius:0 10px 10px 0;font-size:14px;overflow-wrap:anywhere}
 .annbar{display:flex;gap:10px;align-items:center;border-radius:12px;padding:8px 12px;margin:0 0 12px;border:2px solid var(--gold);background:linear-gradient(90deg,rgba(231,196,106,.18),rgba(231,196,106,.04));font-weight:700}
 .annbar .uico{width:24px;height:24px;flex:none}
+/* 1.0.12.8 : au téléphone, l'annonce tient sur 2 lignes ; « Lire la suite » l'ouvre en entier */
+.annbar .grow .lnk{display:none}
+@media (max-width:640px){
+  .annbar{font-size:13px;padding:6px 10px}
+  .annbar .atx{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  .annbar.more .atx{display:block}
+  .annbar.clip .grow .lnk,.annbar.more .grow .lnk{display:inline}
+}
 .admbtn{border:2px solid rgba(127,200,255,.6)!important;color:#7fc8ff!important}
 .admbtn .uico{width:16px;height:16px}
 /* 1.0.4.1 : dès que la barre de menu du bas est là (jusqu'à 859 px, ex. téléphone pliable déplié), le chat reste au-dessus d'elle */
@@ -2484,8 +2502,9 @@ html{zoom:1}
 .adm .acts{display:flex;gap:6px;flex-wrap:wrap}
 .adm textarea{width:100%;min-height:80px;border-radius:10px;border:2px solid var(--frame);background:var(--panel);padding:8px 10px;resize:vertical}
 @media (max-width:760px){.adm .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.adm .two{grid-template-columns:1fr}.adm .fiche{grid-template-columns:repeat(2,minmax(0,1fr))}}
-/* chat ouvert sur un grand écran : le jeu se décale pour laisser la place au chat */
-@media (min-width:1100px){body.chat-open .app{margin-left:max(0px,calc((100vw - 1180px - 400px) / 2));margin-right:400px}}
+/* chat ouvert sur un grand écran : le jeu se décale pour laisser la place au chat
+   1.0.12.8 : à partir de 1280 px (en dessous, la page était tassée : le chat flotte comme en 1080 px), et le chat prend toute la hauteur de sa colonne */
+@media (min-width:1280px){body.chat-open .app{margin-left:max(0px,calc((100vw - 1180px - 400px) / 2));margin-right:400px}body.chat-open #chat.chat{top:16px;height:auto}}
 /* ===================== 0.1.19 — lot Se montrer : défi du jour, garde-robe, carte d'équipe ===================== */
 .defi{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:14px;background:linear-gradient(100deg,rgba(var(--glw),.16),rgba(var(--glw),.03) 60%),var(--panel2);border:1.5px solid rgba(var(--glw),.6)}
 .defi .df-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
@@ -2559,6 +2578,7 @@ html{zoom:1}
 .mkback{display:none}
 .mkoffer{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
 .mkoffer:first-child{border-top:0}
+.btn.mkshort{white-space:normal;text-align:center} /* 1.0.12.8 : « Il te manque N kamas » tient dans un lot étroit */
 .mkst{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:12px}
 .mkjet{font-weight:900;font-size:12px;padding:1px 7px;border-radius:999px;background:var(--panel3);border:1px solid var(--frame);white-space:nowrap}
 .mkjet.hi{background:linear-gradient(180deg,#d6f27e,#8cc63f);color:#13200a;border-color:#8cc63f}
@@ -2614,7 +2634,7 @@ html{zoom:1}
 .gban{display:flex;gap:16px;align-items:center;padding:16px;background:radial-gradient(600px 200px at 0 0,rgba(var(--glw),.18),transparent 70%),var(--panel)}
 .gbar{position:relative;height:20px;border-radius:12px;background:var(--hp-bg,rgba(255,255,255,.08));border:2px solid var(--frame);overflow:hidden}
 .gbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--gold),var(--gold2))}
-.gbar b{position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;color:#fff;text-shadow:0 1px 2px #000,0 0 4px #000}
+.gbar b{position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;font-weight:900;color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 0 3px #000,0 1px 2px #000} /* 1.0.12.8 : contour noir plus net, lisible sur le vert clair rempli */
 .gmotd{background:var(--panel2);border-left:3px solid var(--gold);border-radius:0 12px 12px 0;padding:6px 12px;font-size:13.5px}
 .grid2g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 .grid2g>section:last-child{grid-column:1/-1}
@@ -3002,6 +3022,16 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
   body.navmini #nav .sn-side .navcnt{position:absolute;top:-2px;right:2px}
   body.navmini #nav .sn-side .navdot{position:absolute;top:3px;right:8px}
 }
+/* 1.0.12.8 : chat ouvert de 1280 à 1599 px : le menu de gauche passe en icônes (comme « Réduire le menu »), la page garde 800 px au lieu de 650 */
+@media (min-width:1280px) and (max-width:1599px){
+  body.hasnav.chat-open{padding-left:78px}
+  body.chat-open #nav.sidenav{width:68px}
+  body.chat-open #nav .sn-l,body.chat-open #nav .sn-g span,body.chat-open #nav .sn-mini{display:none}
+  body.chat-open #nav .sn-g{height:1px;padding:0;margin:8px 6px;background:var(--line)}
+  body.chat-open #nav .sn-side button{justify-content:center;padding:3px 0}
+  body.chat-open #nav .sn-side .navcnt{position:absolute;top:-2px;right:2px}
+  body.chat-open #nav .sn-side .navdot{position:absolute;top:3px;right:8px}
+}
 @media (max-width:859px){
   #nav.sidenav .sn-side{display:none}
   #nav.sidenav{display:block}
@@ -3036,7 +3066,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .encq{flex:1 1 220px;min-width:0;padding:7px 12px;border-radius:999px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:13.5px}
 .encsel{display:none;flex:1 1 100%;padding:8px 10px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-weight:800}
 .encinfo{font-size:12px;font-weight:800;color:var(--muted);border:2px solid var(--frame);border-radius:999px;padding:4px 10px;cursor:help}
-.enczhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 0 2px}
+.enczhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:8px 0 2px;scroll-margin-top:calc(var(--sth,56px) + 10px)}
 .enczhead h2{margin:0}
 .mons.enc{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
 .enccard{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;align-items:center;padding:8px 10px}
@@ -3265,6 +3295,9 @@ details>summary.alx-h{cursor:pointer}
 .htabs{position:sticky;top:calc(var(--sth,56px) + 8px);z-index:15;margin:0;padding:6px;background:var(--page);border-radius:999px}
 .ht-h{display:none;align-items:center;gap:6px;padding:0 10px 0 4px;font-weight:800}.ht-h .head{width:28px;height:28px}
 .htabs.stuck .ht-h{display:inline-flex}
+/* 1.0.12.8 : les onglets de la fiche restent sur une ligne (plus de « 3 + 1 ») : libellés courts quand la fiche est étroite (PC), sinon la barre défile */
+.htabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;container-type:inline-size}.htabs button{flex:none}
+@media (min-width:860px){@container (max-width:599px){.htabs .htl,.htabs.stuck .ht-h{display:none}}@container (max-width:719px){.htabs.stuck .htl{display:none}}}
 @media (max-width:859px){
   .tmd{grid-template-columns:minmax(0,1fr)}
   .tlist{position:static;max-height:none}
@@ -3285,6 +3318,7 @@ details>summary.alx-h{cursor:pointer}
   .htabs button{flex:none}
   .htabs.stuck .ht-h{display:none}
 }
+@media (max-width:640px){.tstrip,.htabs{margin:0 -10px;padding-left:10px;padding-right:10px}} /* 1.0.12.8 : la page fait 10 px de marge au téléphone, la fiche ne déborde plus de 4 px */
 .hban:has(.hmenu){z-index:20}
 @media (max-width:859px){.hb-main{flex:1 1 200px}}
 @media (max-width:859px){.hmenu{min-width:226px}}
@@ -3507,6 +3541,8 @@ img.kz-emb.sm{width:30px;height:30px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)
 img.kz-tk{width:30px;height:30px;object-fit:contain}img.kz-tk.sm{width:18px;height:18px;margin:-3px 0}
 img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;height:18px;vertical-align:-4px}
 .kz-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media (max-width:1150px){.kz-grid{grid-template-columns:minmax(0,1fr)}} /* 1.0.12.8 : une colonne quand la page est étroite (1080 px : noms coupés), ou avec le chat ouvert à côté */
+@media (min-width:1100px) and (max-width:1550px){body.chat-open .kz-grid{grid-template-columns:minmax(0,1fr)}}
 .kz-team{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .kz-h{position:relative;width:92px;height:118px;border-radius:14px;background:radial-gradient(70% 60% at 50% 70%,color-mix(in srgb,var(--cc) 55%,transparent),transparent 72%),var(--panel2);border:2px solid var(--frame);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex:none}
 .kz-h img.l{height:108px;width:auto;object-fit:contain;margin-bottom:-4px}
@@ -3535,6 +3571,7 @@ img.kz-coin{width:24px;height:24px;object-fit:contain}img.kz-coin.sm{width:18px;
 .kz-log .res{font-weight:900;font-size:12.5px;white-space:nowrap}
 .kz-log .res.w{color:#3fb35d}.kz-log .res.l{color:#e0574c}
 .kz-rw .li,.kz-lb .li{gap:10px}
+.kz-rw .phead .xs{white-space:nowrap} /* 1.0.12.8 : « dans 5 j 2 h » sur une ligne */
 .kz-rw .li.me,.kz-lb .li.me{background:rgba(var(--glw),.12)}
 .kz-lb .rk{width:22px;text-align:center;font-weight:900}
 .kz-lb .kz-heads .head{width:26px;height:26px}.kz-lb .kz-heads .head em{display:none}.kz-lb .kz-heads{gap:2px;flex-wrap:nowrap}
@@ -3802,6 +3839,7 @@ body.toast-top .toasts{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto
 .wb-el{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;color:#fff}
 .wb-el.feu{background:#d0502a}.wb-el.eau{background:#2f78c4}.wb-el.terre{background:#7a5a2a}.wb-el.air{background:#4a9a5a}
 .wb-side{display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:center}
+.wb-side .btn{white-space:normal} /* 1.0.12.8 : « Créer un compte pour frapper » passe à la ligne dans la colonne de 230 px (avant : rogné) */
 .wb-pips{display:flex;gap:6px;justify-content:center}.wb-pips i{width:16px;height:16px;border-radius:50%;border:2px solid var(--frame);background:var(--panel3)}.wb-pips i.on{background:var(--action);border-color:var(--action2)}
 .wb-me{background:var(--panel2);border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.35}
 .wb-me b.g{font-family:var(--font-title);font-size:20px;color:#c46b12}
@@ -4477,6 +4515,7 @@ img.kza-ic{width:22px;height:22px;vertical-align:-5px}
 .encgo{display:inline-flex;align-items:center;gap:4px;max-width:100%;border:1px solid var(--line);background:var(--panel2,rgba(255,255,255,.04));border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;font-weight:800;color:var(--gold2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .encgo:hover{border-color:var(--gold2)}
 .encgo .uico,.encgo svg,.encgo img{width:13px;height:13px;flex:none}
+.encgo .encn{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .encgo.locked{color:var(--muted);cursor:help;font-weight:700;border-style:dashed}
 button.encgo.locked{cursor:pointer}
 .encgo.hunt{flex:none;background:var(--gold);color:#13200a;border-color:var(--gold)}

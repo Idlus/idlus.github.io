@@ -34,14 +34,14 @@
   /* ---------- adversaires ---------- */
   const oppKey = (s, Q) => `${online() ? "on" : "off"}:${E.defiDay()}:${Q.rf}:${Q.n}:${Q.win}:${Q.team.join(",")}:${E.koliLvl(s)}`;
   function ensureOpps(s, Q) {
-    const k = oppKey(s, Q); if (ui.key === k && (ui.opps || ui.loading)) return;
+    const k = oppKey(s, Q); if (ui.key === k && (ui.opps || ui.loading || ui.srvErr)) return; // 1.0.12.8 : l'erreur reste affichée jusqu'à « Réessayer » (avant : nouvelle recherche aussitôt, sans fin)
     ui.key = k; ui.ch = {}; ui.opps = null; ui.srvErr = ""; const gen = ++ui.gen;
     if (!online()) { ui.opps = E.koliGhostOpps(s).map((o, i) => Object.assign(o, { slot: i, heads: o.team.map((x) => ({ cls: x.cls, sex: x.sex, head: x.head, lvl: x.lvl })) })); chances(s, Q, gen); return; }
     ui.loading = true;
     ON().koli({ opps: 1, r: Q.rf }).then((r) => {
       if (gen !== ui.gen) return; ui.loading = false;
-      if (r && r.ok) { ui.opps = r.opps.map((o) => Object.assign(o, { team: o.team })); chances(s, Q, gen); }
-      else { ui.srvErr = r && r.err ? r.err : "Pas de connexion au serveur : réessaie dans un moment."; ui.key = ""; }
+      if (r && r.ok && Array.isArray(r.opps)) { ui.opps = r.opps.map((o) => Object.assign(o, { team: o.team })); chances(s, Q, gen); } // 1.0.12.8 : réponse sans liste d'adversaires = erreur
+      else ui.srvErr = r && r.err ? r.err : "Pas de connexion au serveur : réessaie dans un moment.";
       paint();
     });
   }
@@ -92,12 +92,13 @@
   }
 
   /* ---------- 1.0.7 : mode automatique ----------
-     Il joue les combats classés contre le Conseillé, sans animation, un toutes les 3 secondes, sur toutes les pages (jeu ouvert).
+     Il joue les combats classés contre le Conseillé, sans animation, 3 s après le précédent (8 s en ligne), sur toutes les pages (jeu ouvert).
      S'arrête au nombre choisi, sans ticket, ou après 3 défaites d'affilée. « Tickets de chasse » : un combat dès qu'un ticket arrive (5 gardés).
      Kolizetons ×0,75 en auto (E.koliApply). L'état de la série n'est pas sauvegardé, les réglages oui (S.koli.auto). */
   const AU = { st: "idle", mode: "count", tot: 10, L: [], why: "", busy: false, next: 0, errs: 0, det: false };
   const aset = (s) => { const Q = E.koliState(s); return (Q.auto = Object.assign({ cnt: 10, hunt: false }, Q.auto || {})); };
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const every = (on) => `un toutes les ${on ? Math.round(K.autoGapOn / 1000) + 2 : 4} secondes environ`; // 1.0.12.8 : la vraie cadence (attente + combat) : 4 s, 10 s en ligne
   const aSum = () => { const w = AU.L.filter((x) => x.win).length; return { w, l: AU.L.length - w, d: AU.L.reduce((a, x) => a + x.d, 0), kz: AU.L.reduce((a, x) => a + x.kz, 0), kam: AU.L.reduce((a, x) => a + x.kam, 0) }; };
   function aStart(mode) {
     const s = S(); const Q = E.koliState(s); const c = aset(s);
@@ -133,7 +134,7 @@
         r.B = o.team;
       } else {
         const L = await ON().koli({ opps: 1, r: Q.rf });
-        if (!L || !L.ok) { if (++AU.errs >= 3) { X().toast((L && L.err) || "Pas de connexion au serveur."); return aStop("err"); } AU.next = Date.now() + 10000; return; }
+        if (!L || !L.ok || !Array.isArray(L.opps)) { if (++AU.errs >= 3) { X().toast((L && L.err) || "Pas de connexion au serveur."); return aStop("err"); } AU.next = Date.now() + 10000; return; } // 1.0.12.8 : une réponse sans adversaires compte comme une erreur
         o = await aPick(s, Q, L.opps); if (!o || AU.st !== "run") return;
         if (!AU.pushed) { try { await X().onPush(); AU.pushed = true; } catch (e) { /* le serveur rejoue avec la partie en ligne */ } } // 1.0.7.2 : une fois par série (avant : à chaque combat), l'envoi habituel toutes les 30 s suit
         const R = await ON().koli({ fight: o.id ? { id: o.id } : { slot: o.slot }, r: Q.rf });
@@ -173,7 +174,7 @@
   function autoPanel(s) {
     const Q = E.koliState(s); const c = aset(s); const tk = E.koliTickets(s); const st = AU.st; const run = st === "run";
     const ic = `<img class="kza-ic" src="assets/ui/coffres/ticket_koli.svg" alt="">`;
-    const head = `<div class="kza-head"><div class="kza-ttl">${X().IC("combat")}<div><h2>Mode automatique</h2><span class="xs muted">Il joue tes combats classés contre le Conseillé, un toutes les 3 secondes, même si tu changes de page.</span></div></div>
+    const head = `<div class="kza-head"><div class="kza-ttl">${X().IC("combat")}<div><h2>Mode automatique</h2><span class="xs muted">Il joue tes combats classés contre le Conseillé, ${every(online())}, même si tu changes de page.</span></div></div>
       ${run ? `<span class="kza-live"><i></i>${AU.mode === "hunt" ? "Tickets de chasse" : "En cours"}</span>` : st === "done" ? `<span class="tag">Terminé</span>` : `<span class="kza-cut" data-tip="En auto, chaque combat rapporte 25 % de Kolizetons en moins qu'en manuel. La cote, la bourse et la poussière ne changent pas.">Kolizetons −25 %</span>`}</div>`;
     const sw = `<button class="kza-row kza-sw" data-act="kz-ahunt" aria-pressed="${!!c.hunt}"><span class="sw ${c.hunt ? "on" : ""}"><i></i></span><span><b>Tickets de chasse</b><span class="xs muted"> · un combat se lance dès qu'un ticket arrive en chasse, ${K.autoReserve} tickets restent en réserve</span></span></button>`;
     if (st === "idle") {
@@ -211,7 +212,7 @@
       <div class="row"><button class="btn sm" data-act="kz-shop">${coin("kz-coin sm")} Boutique</button><button class="btn sm" data-act="kz-rules">${X().IC("parchemin_or")} Règles</button></div></div>
     ${on ? "" : ON() && ON().user && ON().solo && ON().solo() ? `<div class="kz-off">${X().IC("logo")} <span><b>Partie solo : tu t'entraînes contre des Fantômes</b> (des équipes créées par le jeu). Le Kolizéum classé se joue avec ta partie 1.</span></div>` : `<div class="kz-off">${X().IC("logo")} <span><b>Sans compte, tu t'entraînes contre des Fantômes</b> (des équipes créées par le jeu). ${ON() && ON().enabled ? "Avec un compte gratuit, tu affrontes les équipes des autres joueurs et tu entres au classement." : "Sur la version de test, tous les adversaires sont des Fantômes."}</span></div>`}
     <section class="panel"><div class="kz-band">${emb(g, "big")}
-      <div class="kz-cote"><span class="big">${nf(Q.cote)}<small>de cote</small></span><span class="small"><b>${g.name}</b> · ${rank}${nx ? ` · <b>${nx.name} à ${nf(nx.min)}</b>` : ""}</span><div class="kz-prog g-${g.id}"><i style="width:${prog}%"></i></div>
+      <div class="kz-cote"><span class="big">${nf(Q.cote)}<small>de cote</small></span><span class="small"><b>${g.name}</b> · ${rank}${nx ? ` · <b>${nx.name} à&nbsp;${nf(nx.min)}</b>` : ""}</span><div class="kz-prog g-${g.id}"><i style="width:${prog}%"></i></div>
         <span class="xs muted">Cette semaine : ${Q.n} combat${Q.n > 1 ? "s" : ""} classé${Q.n > 1 ? "s" : ""}${Q.n < K.minWeek ? ` (${K.minWeek} pour la récompense)` : ""} · meilleure cote ${nf(Q.best || Q.cote)}</span></div>
       <div class="kz-left"><span class="kz-tkn" data-tip="${h(CONSUMABLES[E.KOLI_TICKET].desc)}">${tick()}<b class="num">${tk}</b><span class="xs">ticket${tk > 1 ? "s" : ""} de Koli</span></span>
         <span class="xs muted">${K.daily} offerts chaque jour à minuit (${K.tkMax} en réserve au plus)</span>${(() => { const f = E.tkFound(s); const T = E.TK_LOOT; return `<span class="xs kz-found" data-tip="Chaque monstre vaincu peut donner un ticket : ${String(T.hero).replace(".", ",")} % par héros de l'équipe (${T.boss} % sur un boss de donjon), les bonus de butin comptent à moitié. Un archimonstre en donne toujours un.">+ <b class="num">${f.n} / ${T.day}</b> trouvés en combat aujourd'hui</span>`; })()}
@@ -325,7 +326,7 @@
     X().openSheet(`<h2>Règles du Kolizéum</h2><ol class="kz-rules">
       <li>Ton équipe d'arène (${K.size} héros) affronte celle d'un autre joueur, jouée par l'IA. Les vrais niveaux comptent.</li>
       <li>Un combat classé coûte un <b>ticket de Koli</b>. ${K.daily} tickets sont offerts chaque jour à minuit, jusqu'à ${K.tkMax} en réserve. On en trouve aussi dans la boutique, et en combat : chaque monstre vaincu peut en donner un (${String(E.TK_LOOT.hero).replace(".", ",")} % par héros, ${E.TK_LOOT.boss} % sur un boss de donjon, toujours un sur un archimonstre), jusqu'à ${E.TK_LOOT.day} par jour.</li>
-      <li><b>Mode automatique</b> : il joue tes combats classés contre le Conseillé, un toutes les 3 secondes, même sur une autre page. Il s'arrête après ${K.autoStreak} défaites d'affilée. En auto, les Kolizetons sont réduits de 25 %.</li>
+      <li><b>Mode automatique</b> : il joue tes combats classés contre le Conseillé, ${every(false)} (${Math.round(K.autoGapOn / 1000) + 2} en ligne), même sur une autre page. Il s'arrête après ${K.autoStreak} défaites d'affilée. En auto, les Kolizetons sont réduits de 25 %.</li>
       <li>La <b>cote</b> monte quand tu gagnes et baisse quand tu perds, plus ou moins selon la cote de l'adversaire. Contre un Fantôme, elle bouge deux fois moins.</li>
       <li>Quand on t'attaque et que tu perds, tu perds la moitié de ce que l'autre gagne. Une défense réussie rapporte un peu de cote et 1 Kolizeton.</li>
       <li>Dès le tour ${K.ero}, l'<b>érosion</b> réduit les PV maximum et les soins de ${K.eroStep} % par tour. Au tour ${K.maxRound}, l'équipe qui a le plus de PV (en %) gagne.</li>

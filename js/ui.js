@@ -21,9 +21,34 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.12.7";
+const GAME_VERSION = "1.0.12.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.12.8", name: "Grand nettoyage", items: [
+    "Téléphone et tablette : toucher un objet ou une ressource de l'inventaire ouvre sa fiche en fenêtre, et toucher un Dofus dans les quêtes fait remonter la page jusqu'à sa fiche",
+    "Téléphone : toucher un sort du grimoire montre d'abord sa fiche, puis « Ajouter à la barre » ou « Remplacer »",
+    "Panoplies : seules celles qui donnent vraiment un bonus sont listées comme actives, et les paliers impossibles à atteindre sont signalés",
+    "Sorts : plus de lettre en trop devant les dégâts, et les PA gagnés en combat sont expliqués et dessinés en doré (« 10 PA utilisés (9 + 1 gagné en combat) »)",
+    "Familiers et montures : prendre celui d'un autre héros est annoncé clairement (« Prendre à Mirlina »)",
+    "Inventaire : la recherche ne fige plus la page avec un sac plein. Ressources : pendant une recherche, les résultats s'affichent juste sous le champ",
+    "Recherches : on trouve sans taper les accents ni les majuscules (« kolizeum », « chimerique », « coeur »), dans les succès, l'Encyclopédie, l'inventaire, les recettes, les panoplies, la forgemagie et le brisage",
+    "Options : changer un réglage ne renvoie plus la fenêtre en haut, les boutons « 90 % », « 100 % » ne se coupent plus en texte agrandi, et la pastille de sauvegarde se met à jour quand la connexion tombe",
+    "Encyclopédie : choisir une zone garde la liste où elle était, et un nom de lieu trop long finit par « … » avec le nom complet au survol",
+    "Succès : « Grade Argent » n'est plus annoncé presque fini avant le premier combat de Kolizéum, et l'emblème de l'Archipel de Vulkania a enfin son image",
+    "Bulles de découverte : le bouton visé reste entouré d'or, la bulle ne cache plus la page sur PC, et une bulle relue depuis le carnet affiche « Relecture »",
+    "Chat sur PC : chat ouvert, la page n'est plus tassée (le menu de gauche passe en icônes jusqu'à 1 600 px de large). Connecté, la barre du haut tient sur une ligne",
+    "Chat au téléphone : le message en cours est gardé, le menu d'un pseudo ne cache plus la barre du bas, le texte d'aide du salon PvP n'est plus coupé, et le bandeau d'annonce tient sur 2 lignes avec « Lire la suite »",
+    "Chat : le compteur décompte les secondes d'attente, puis affiche la longueur du texte tapé",
+    "Panel admin : l'annonce, le message épinglé et la recherche d'un pseudo en cours restent là quand on change d'onglet",
+    "Barre du bas : une seule pastille sur « Héros », plus de pastilles l'une sur l'autre",
+    "Kolizéum : le mode automatique annonce sa vraie cadence (un combat toutes les 4 s environ, 10 en ligne), la recherche d'adversaires affiche l'erreur et « Réessayer » au lieu de tourner sans fin, et la page passe sur une colonne sur les écrans moyens",
+    "Hôtel de vente et guilde : si le serveur ne répond pas, le jeu le dit avec un bouton « Réessayer ». « Acheter » est grisé et dit combien de kamas il manque, un prix très bas affiche au plus « 99 % de moins », et la jauge d'XP de guilde se lit mieux",
+    "Boss des mondes : « Le Feu fait +50 % » au lieu de « L'Feu », et le bouton « Créer un compte pour frapper » n'est plus coupé",
+    "Monde : l'étiquette « Meilleure zone » passe sous le nom de la zone et la pastille « XP −70 % » ne se coupe plus au téléphone. Havre-Sac : les croisements de l'Enclos se lisent normalement",
+    "Combat, vue Compacte : les invocations ont leur nom et celui de leur héros, et l'état d'un héros ne déborde plus de sa carte",
+    "Textes : « la fiche d'Auditeur », « Songe d'Ecaflip », la relecture d'un défi perdu ne dit plus que l'équipe se repose, et « Défaite » s'affiche en rouge",
+    "Héros : au téléphone, la fiche ne glisse plus sur le côté et les noms des emplacements vides ne touchent plus les bords. Sur PC, les 4 onglets de la fiche tiennent sur une ligne et les caractéristiques ne se coupent plus en deux",
+  ] },
   { v: "1.0.12.7", name: "Recrues au niveau 1", items: [
     "Un héros recruté arrive toujours au niveau 1 (avant : la moitié du niveau de votre meilleur héros). Les héros déjà recrutés gardent leur niveau",
   ] },
@@ -1179,6 +1204,7 @@ window.addEventListener("unhandledrejection", (e) => logErr(`Promesse rejetée :
 const h = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (n) => Math.floor(n).toLocaleString("fr-FR");
 const pct = (a, b) => Math.max(0, Math.min(100, b ? (a / b) * 100 : 0));
+const deNom = (n) => (/^[aeiouyàâéèêëîïôûh]/i.test(n) ? "d'" : "de ") + n; // 1.0.12.8 : « la fiche d'Auditeur », pas « de Auditeur »
 const char = (id) => S.chars.find((c) => c.id === id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dur = (s) => { s = Math.round(s); const hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60); return hh ? `${hh} h ${mm} min` : mm ? `${mm} min` : `${s} s`; };
@@ -1282,7 +1308,7 @@ const lookImg = (c, cls = "look", opts) => { const u = lookUrl(c, opts); if (!u)
 function lookSheet(c) {
   const L = LK.CLASS_LOOKS[c.cls]; if (!L) return;
   const sx = c.sex === "f" ? "f" : "m";
-  openSheet(`<h2>Apparence de ${h(c.name)}</h2>
+  openSheet(`<h2>Apparence ${h(deNom(c.name))}</h2>
     <div class="lookprev">${lookImg(c, "lookbig")}</div>
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
@@ -1600,7 +1626,7 @@ function recruitBtn() {
 }
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
-  return { team: (nAl ? `<span class="navcnt">${nAl}</span>` : "") + (canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : ""), quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "" };
+  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
 function renderNav() {
   const nav = $("#nav"); $("#subnav").innerHTML = "";
@@ -2070,10 +2096,12 @@ function renderWorld() {
   else if (ui.world === "dungeons") body = dungeonsHtml();
   else if (ui.world === "tresor") { ui.world = "map"; return renderWorld(); }
   else body = encyclopediaHtml();
+  const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
   $("#main").innerHTML = `
 <div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
     ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
     <div class="stack">${body}</div>`;
+  if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
 }
 function lockReason(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
@@ -2127,8 +2155,8 @@ function zonePanel(z, tier = -1, open = false) {
       const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.5;
       return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
-        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")}<span class="bt"> Meilleure zone</span></span>` : ""}</span>
-          <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}</span>
+        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</span>
+          <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")} Meilleure zone</span>` : ""}</span>
           ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
 }
@@ -2422,6 +2450,8 @@ function keyPanel(did) {
 }
 /* 0.1.32 : Encyclopédie rangée en onglets (Bestiaire, Familles, Boss de donjon), zones avec progression,
    recherche (monstre ou butin) et filtres, cartes plus compactes (2 par ligne sur téléphone) */
+/* 1.0.12.8 : les recherches de texte ignorent accents, majuscules et ponctuation (« kolizeum », « coeur »), comme la recherche rapide */
+const txtHas = (t, q) => E.searchNorm(t).includes(q);
 const encMet = (k) => (S.bestiary[k] || 0) > 0;
 function encZoneMons(z) { const ks = new Set(); z.subs.forEach((s) => s.monsters.forEach((k) => MONSTERS[k] && !MONSTERS[k].archiOf && ks.add(k))); return [...ks]; }
 function encFamZone() { // famille → première zone où on la croise
@@ -2452,10 +2482,10 @@ function encBestHtml(enc) {
   const sel = `<select class="encsel" data-act="enczonesel">${ZONES.map((x) => { const [a, b] = zprog(x); return `<option value="${x.id}" ${x.id === z.id ? "selected" : ""}>${h(x.name)} · ${a}/${b}</option>`; }).join("")}</select>`;
   const top = topTeamLvl(); const near = (k) => { const L = MONSTERS[k].lvl; return L[1] >= top - 8 && L[0] <= top + 5; };
   const keep = (k) => enc.f === "near" ? near(k) : enc.f === "new" ? !encMet(k) : enc.f === "hidden" ? encMet(k) && E.huntTier(S, k) < 0 : true;
-  const q = (enc.q || "").trim().toLowerCase(); let body;
+  const q = E.searchNorm(enc.q); let body;
   if (q) { // recherche dans tout le bestiaire : nom du monstre ou d'un butin
     const hits = Object.keys(MONSTERS).filter((k) => { const m = MONSTERS[k]; if (m.archiOf || !keep(k)) return false;
-      return (encMet(k) && m.name.toLowerCase().includes(q)) || m.drops.some(([n]) => n.toLowerCase().includes(q) && ((S.seenDrops[k] || {})[n] || E.huntTier(S, k) >= 0)); }).slice(0, 60);
+      return (encMet(k) && txtHas(m.name, q)) || m.drops.some(([n]) => txtHas(n, q) && ((S.seenDrops[k] || {})[n] || E.huntTier(S, k) >= 0)); }).slice(0, 60);
     body = `<h3 class="sec">Résultats pour « ${h(enc.q)} » <span class="xs muted">${hits.length}${hits.length === 60 ? "+" : ""}</span></h3>${hits.length ? `<div class="mons enc">${hits.map((k) => encCard(k, true)).join("")}</div>` : `<div class="empty">Aucun monstre connu ne correspond. Les butins se révèlent en les obtenant ou au palier Connaisseur.</div>`}`;
   } else if (enc.f === "near") {
     const out = []; ZONES.forEach((zz) => zz.subs.forEach((s) => { if (!E.subUnlocked(S, s.id)) return; const ks = s.monsters.filter((k) => MONSTERS[k] && !MONSTERS[k].archiOf && near(k)); if (ks.length) out.push(`<h3 class="sec">${h(s.name)} <span class="xs muted num">${h(zz.name)} · niv. ${s.lvl[0]}–${s.lvl[1]}</span></h3><div class="mons enc">${ks.map((k) => encCard(k)).join("")}</div>`); }));
@@ -2498,9 +2528,10 @@ function encWhereHtml(k) {
   if (!L.length) return "";
   L.sort((a, b) => b.un - a.un || a.lvl - b.lvl);
   const MAX = 3, open = ui.encOpen && ui.encOpen["w" + k], more = L.length > MAX + 1 && !open ? L.length - MAX : 0;
-  const btn = (x) => x.dg ? `<button class="encgo ${x.un ? "" : "locked"}" data-act="searchdg" data-id="${x.dg}" data-tip="${x.un ? "Voir le donjon" : h("Donjon verrouillé" + (dgWhy(x.dg) ? " : " + dgWhy(x.dg) : ""))}">${x.un ? IC("cle") : G("lock")} Donjon · ${h(x.name)}</button>`
-    : x.un ? `<span class="encpl"><button class="encgo" data-act="searchzone" data-from="enc" data-id="${x.sub}" data-tip="Y aller : ouvrir ${h(x.name)}">${IC("carte")} ${h(x.name)} <span class="xs muted num">niv. ${x.lvl}</span> ›</button>${S.dungeon ? "" : `<button class="encgo hunt" data-act="hunt" data-id="${x.sub}" data-tip="Chasser ici tout de suite">⚔</button>`}</span>`
-    : `<span class="encgo locked" data-tip="${h("Zone verrouillée : " + lockReason(x.sub))}">${G("lock")} ${h(x.name)}</span>`;
+  // 1.0.12.8 : le nom est dans son propre <span class="encn"> (points de suspension) et en entier dans la bulle d'aide
+  const btn = (x) => x.dg ? `<button class="encgo ${x.un ? "" : "locked"}" data-act="searchdg" data-id="${x.dg}" data-tip="${h(x.un ? "Voir le donjon : " + x.name : x.name + " · donjon verrouillé" + (dgWhy(x.dg) ? " : " + dgWhy(x.dg) : ""))}">${x.un ? IC("cle") : G("lock")}<span class="encn">Donjon · ${h(x.name)}</span></button>`
+    : x.un ? `<span class="encpl"><button class="encgo" data-act="searchzone" data-from="enc" data-id="${x.sub}" data-tip="Y aller : ouvrir ${h(x.name)}">${IC("carte")}<span class="encn">${h(x.name)} <span class="xs muted num">niv. ${x.lvl}</span></span> ›</button>${S.dungeon ? "" : `<button class="encgo hunt" data-act="hunt" data-id="${x.sub}" data-tip="Chasser ici tout de suite">⚔</button>`}</span>`
+    : `<span class="encgo locked" data-tip="${h(x.name + " · zone verrouillée : " + lockReason(x.sub))}">${G("lock")}<span class="encn">${h(x.name)}</span></span>`;
   const why = L[0].un ? "" : L[0].dg ? dgWhy(L[0].dg) : lockReason(L[0].sub); // aucun lieu ouvert : on dit comment l'ouvrir
   return `<div class="encwhere">${(more ? L.slice(0, MAX) : L).map(btn).join("")}${more ? `<button class="encmore" data-act="encmore" data-k="w${k}" data-tip="Voir les ${more} autres lieux">+${more}</button>` : ""}</div>${why ? `<div class="xs muted encwhy">${G("lock")} Fermé pour l'instant : ${h(why.charAt(0).toLowerCase() + why.slice(1))}</div>` : ""}`;
 }
@@ -2525,7 +2556,7 @@ function encEqHtml() {
   const MAX = ui.encEqMore || 48; const shown = L.slice(0, MAX);
   const stats = (T) => Object.entries(T.stats).slice(0, 6).map(([k, [, b]]) => `<span class="eqst"${tipAttr(k)}>${sIco(k)}${b}</span>`).join("");
   const card = (t) => { const T = ITEMS[t]; const o = dex[t]; const S2 = encEqSrc(t);
-    const set = T.set && SETS[T.set] ? `<div class="encwhere"><button class="encgo" data-act="searchset" data-id="${T.set}" data-tip="Ouvrir le carnet de panoplies">${IC("parchemin_or")} ${h(SETS[T.set].name)}</button></div>` : "";
+    const set = T.set && SETS[T.set] ? `<div class="encwhere"><button class="encgo" data-act="searchset" data-id="${T.set}" data-tip="${h("Ouvrir le carnet de panoplies : " + SETS[T.set].name)}">${IC("parchemin_or")}<span class="encn">${h(SETS[T.set].name)}</span></button></div>` : "";
     return `<div class="mcard eqcard ${o ? "own" : ""}"><button class="eq-hd" data-act="encitem" data-v="${t}" data-tip="Ouvrir la fiche de l'objet"><span class="icobox lg">${im(itemImg(t), "", T.name)}</span><span class="grow"><b>${h(T.name)}</b><span class="xs muted">niv. ${T.lvl} · ${h(slotName(T.slot))}${o ? ` · <b class="plus">✓ obtenu</b>` : ""}</span></span></button>
       <div class="eqsts">${stats(T)}</div><div class="xs muted eqsrc">${[S2.craft, S2.mon].filter(Boolean).join(" · ")}</div>${set}</div>`; };
   const nm = ENC_EQ_SLOTS.find((x) => x[0] === F.slot)[1];
@@ -2550,9 +2581,9 @@ function encMonSheet(k) {
 function encCard(k, where, extra) {
   const m = MONSTERS[k]; const kills = S.bestiary[k] || 0; const seen = S.seenDrops[k] || {}; const a = m.archi; const t = E.huntTier(S, k);
   const reveal = t >= 0;
-  const q = where && ui.enc && ui.enc.q ? ui.enc.q.trim().toLowerCase() : "";
+  const q = where && ui.enc && ui.enc.q ? E.searchNorm(ui.enc.q) : "";
   const MAXD = 8, open = ui.encOpen && ui.encOpen[k], more = m.drops.length > MAXD + 1 && !open ? m.drops.length - MAXD : 0;
-  const drops = (more ? m.drops.slice(0, MAXD) : m.drops).map(([n, p]) => seen[n] || reveal ? `<button class="dropico dropbtn ${q && n.toLowerCase().includes(q) ? "hit" : ""}" data-act="reswhere" data-n="${h(n)}" data-tip="${h(n)} · ${p} % · voir où le trouver et à quoi il sert">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</button>` : `<span class="icobox dq" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("") + (more ? `<button class="encmore" data-act="encmore" data-k="${k}" data-tip="Voir les ${more} autres butins">+${more}</button>` : "");
+  const drops = (more ? m.drops.slice(0, MAXD) : m.drops).map(([n, p]) => seen[n] || reveal ? `<button class="dropico dropbtn ${q && txtHas(n, q) ? "hit" : ""}" data-act="reswhere" data-n="${h(n)}" data-tip="${h(n)} · ${p} % · voir où le trouver et à quoi il sert">${im(resImg(n), "ico sm", n)}${reveal ? `<span class="xs">${p}%</span>` : ""}</button>` : `<span class="icobox dq" data-tip="Butin inconnu : obtenez-le une fois ou atteignez le palier Connaisseur">?</span>`).join("") + (more ? `<button class="encmore" data-act="encmore" data-k="${k}" data-tip="Voir les ${more} autres butins">+${more}</button>` : "");
   const zn = where ? (() => { const z = ZONES.find((x) => x.subs.some((s) => s.monsters.includes(k))); return z ? ` · ${h(z.name)}` : ""; })() : "";
   const op = ` data-act="encmon" data-k="${k}" data-tip="Ouvrir la fiche du monstre"`;
   return `<div class="mcard enccard ${kills ? "" : "unknown"} ${m.boss ? "boss" : ""}"><button class="encimg"${op}>${im(imgM(k), "mimg", m.name)}</button>
@@ -2612,7 +2643,7 @@ function renderCombat() {
 `;
   ui.arena = null; updateCombat(true);
 }
-function spellTip(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return `${sp.name} · ${g.pa} PA${g.cd ? ` · relance ${g.cd} tour${g.cd > 1 ? "s" : ""}` : ""}${g.casts ? ` · ${g.casts} lancer${g.casts > 1 ? "s" : ""}/tour` : ""} — ${spellDesc(sp, lvl).replace(/<[^>]+>/g, "").trim()}`; }
+function spellTip(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return `${sp.name} · ${g.pa} PA${g.cd ? ` · relance ${g.cd} tour${g.cd > 1 ? "s" : ""}` : ""}${g.casts ? ` · ${g.casts} lancer${g.casts > 1 ? "s" : ""}/tour` : ""} — ${spellText(sp, lvl)}`; }
 const spEl = (sp) => (sp.el && sp.el !== "best" ? sp.el : sp.el === "best" ? "n" : "buff");
 function spellBarFor(c, ent, F) {
   const N = E.spellSlots(c); const slots = c.spells.slice(0, N);
@@ -2689,7 +2720,8 @@ function buildArena(F) {
     const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: e.sex || "m", head: e.head, name: e.name } : null;
     const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.dop ? `<span class="cico dop">${im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
     const rn = c && c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : "";
-    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : ""}</div></div></div>`;
+    const own = e.summon ? F.ents[e.owner] : null; // 1.0.12.8 : on voit à qui est l'invocation
+    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(own ? `${e.name}, invocation ${deNom(own.name)}` : entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : own ? `<span class="sown">${h(deNom(own.name))}</span>` : ""}</div></div></div>`;
   } : ([e, i]) => {
     if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: e.sex || "m", head: e.head, name: e.name };
@@ -3865,7 +3897,7 @@ function lossHtml(R) {
     <div class="facts">${R.facts.map((f) => `<span class="pill ${f.k === "killer" ? "bad" : f.k === "streak" ? "gold" : ""}">${h(f.txt)}</span>`).join("")}</div>
     ${gear.length && c ? `<div class="sec">Équipement conseillé pour ${h(c.name)}${stat ? ` (${h(stat.name.replace("% ", ""))})` : ""}</div><div class="sugg">${gear.map((g) => { const T = ITEMS[g.tpl]; const [tag, btn, attrs] = GK[g.k]; const it = g.k === "bag" ? S.items[g.uid] : null; const miss = g.k === "craft" ? g.miss : null; const eta = miss && miss.length ? E.needEtaTxt(S, T.craft.ing) : null;
       return `<div class="sl">${it ? itemIcon(it) : `<span class="icobox ${rarCls(g.tpl)}">${im(itemImg(g.tpl), "", T.name)}</span>`}<div class="t"><b>${h(T.name)}</b> <span class="tag soft">${tag}</span><small>${stat ? `+${fmt(g.v)} ${h(stat.name.replace("% ", ""))}` : ""} · niv. ${T.lvl}${miss ? miss.length ? ` · manque ${miss.map(([r, q]) => `${q} ${h(r)}`).join(", ")}${eta ? ` (${h(eta)})` : ""}` : " · tout est réuni" : ""}${g.k === "loot" ? ` · ${h(MONSTERS[g.m].name)} · ${g.p} %` : ""}</small></div>${g.k === "craft" && S.shop.some((e) => e.id === g.tpl) ? `<span class="tag good">dans la liste</span>` : `<button class="btn sm" ${attrs(g)}>${btn}</button>`}</div>`; }).join("")}</div>` : ""}
- <div class="row">${R.place ? `<button class="btn sm primary" data-act="lossplace">Ouvrir le placement</button>` : ""}${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche de ${h(c.name)}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
+ <div class="row">${R.place ? `<button class="btn sm primary" data-act="lossplace">Ouvrir le placement</button>` : ""}${c ? `<button class="btn sm" data-act="lossgo" data-id="${c.id}" data-v="${R.cause === "heal" || R.cause === "target" ? "spells" : R.cause === "dmg" && !gear.length ? "stats" : "equip"}">Ouvrir la fiche ${h(deNom(c.name))}</button>` : ""}<button class="btn sm" data-act="worldtab" data-v="${R.did ? "dungeons" : "map"}" data-gotab="world">${R.did ? "Changer de donjon" : "Changer de zone"}</button></div></div>`;
 }
 function lossSheet(t) { const R = (S.losses || []).find((x) => x.t === +t); if (!R) return; openSheet(`<h2>${h(R.label)}</h2><div class="small">${lossHtml(R)}</div><div><button class="btn" data-act="closesheet">Fermer</button></div>`); }
 function lootHtml(F) {
@@ -4111,7 +4143,7 @@ function teamListHtml() {
 /* portrait du haut de la fiche : bannière teintée de la couleur de classe, symbole officiel en filigrane */
 /* 0.1.50.1 : renommer le héros depuis sa fiche (crayon doré à côté du nom). Premier changement gratuit, ensuite E.RENAME_COST kamas. */
 function renameHtml(c) {
-  if (ui.renaming !== c.id) return `<h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><button class="hb-ren" data-act="renhero" data-id="${c.id}" data-tip="Changer le nom de ${h(c.name)}" aria-label="Renommer ${h(c.name)}">${G("edit")}<span>Renommer</span></button>`;
+  if (ui.renaming !== c.id) return `<h2 class="${c.ren ? "rname" : ""}">${h(c.name)}</h2><button class="hb-ren" data-act="renhero" data-id="${c.id}" data-tip="Changer le nom ${h(deNom(c.name))}" aria-label="Renommer ${h(c.name)}">${G("edit")}<span>Renommer</span></button>`;
   const cost = E.renameCost(c);
   const hint = cost ? `Changer de nom coûte ${fmt(cost)} kamas${S.kamas < cost ? ` (tu en as ${fmt(S.kamas)})` : ""}.` : "Premier changement gratuit pour ce héros, ensuite " + fmt(E.RENAME_COST) + " kamas.";
   return `<div class="hb-renf"><input type="text" id="renName" maxlength="${E.NAME_MAX}" value="${h(ui.renVal != null ? ui.renVal : c.name)}" aria-label="Nouveau nom" autocomplete="off" spellcheck="false"><button type="button" class="btn sm primary" data-act="rengo" data-id="${c.id}">✓ Valider${cost ? ` · ${fmt(cost)} kamas` : ""}</button><button type="button" class="btn sm" data-act="rencancel">Annuler</button>${ui.renErr ? `<span class="hb-renerr">${h(ui.renErr)}</span>` : ""}<span class="xs muted hb-renhint">${hint}</span></div>`;
@@ -4139,7 +4171,7 @@ function heroesHtml() {
       ${c.lvl >= E.MAX_LVL && (c.ren || 0) < E.REN_MAX ? `<div class="row small"><button class="btn sm ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button><span class="muted">Repartir au niveau 1 avec un Éveil et +${Math.round(E.REN_XP * 100)} % d'XP</span></div>` : ""}</div>
     <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
-  <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", "Familier & monture"], ["stats", "Caractéristiques"], ["spells", "Sorts & stratégies"]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
+  <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
 }
 /* flèches ↑ ↓ du clavier : héros précédent ou suivant dans l'ordre de la liste (PC) */
@@ -4239,15 +4271,19 @@ function dollSlot(c, s) {
     ${it ? im(itemImg(it.tpl), "", T.name) + lxSp(it) : `<span class="dlabel">${h(SLOTS[s].split(" ")[0])}</span>`}</button>`;
 }
 /* Panoplie : paliers de bonus, ceux actifs en vert */
+/* 1.0.12.8 : les paliers qui demandent plus de pièces qu'il n'en existe dans le jeu sont regroupés en une ligne grisée */
+const setTiers = (setId) => { const Z = SETS[setId]; const all = Object.entries(Z.bonus).sort((a, b) => +a[0] - +b[0]); const n = Z.size || 0; return { ok: all.filter(([k]) => +k <= n), off: all.filter(([k]) => +k > n).map(([k]) => +k) }; };
+const setOffTxt = (off) => !off.length ? "" : `${off[0]}${off.length > 1 ? ` à ${off[off.length - 1]}` : ""} pièces`;
 function setBlock(setId, worn) {
   const Z = SETS[setId]; if (!Z) return "";
-  const tiers = Object.entries(Z.bonus).sort((a, b) => +a[0] - +b[0]);
+  const { ok: tiers, off } = setTiers(setId);
   return `<div class="setbox"><b>${h(Z.name)}</b> <span class="muted">${worn !== undefined ? `${worn}/${Z.size || "?"} portée${worn > 1 ? "s" : ""}` : `${Z.size || "?"} pièces`}</span>
-    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || `<div class="muted">Aucun bonus.</div>`}</div>`;
+    ${tiers.map(([n, b]) => `<div class="st ${worn !== undefined && worn >= +n ? "on" : ""}"><b>${n} pièces</b><span>${Object.entries(b).map(([k, v]) => statIc(k, v)).join(" ")}</span></div>`).join("") || (off.length ? "" : `<div class="muted">Aucun bonus.</div>`)}
+    ${off.length ? `<div class="st off"><b>${setOffTxt(off)}</b><span>inaccessible : des pièces de cette panoplie ne sont pas dans le jeu</span></div>` : ""}</div>`;
 }
 function charStatsView(c, st) {
   const sc = c.scrolls || {};
-  const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3 points = 1" : k === "vit" ? "1 point = 1" : `${cost} point${cost > 1 ? "s" : ""} = 1${cur >= 100 ? ` (palier ${Math.floor(cur / 100) * 100})` : ""}`; };
+  const costTxt = (k) => { const cur = c.alloc[k]; const cost = E.pointCost(k, cur); return k === "sa" ? "3\u00a0points\u00a0=\u00a01" : k === "vit" ? "1\u00a0point\u00a0=\u00a01" : `${cost}\u00a0point${cost > 1 ? "s" : ""}\u00a0=\u00a01${cur >= 100 ? ` (palier\u00a0${Math.floor(cur / 100) * 100})` : ""}`; }; // 1.0.12.8 : espaces insécables, « 1 point = 1 » ne se coupe plus
   const scrollsOwned = (k) => (S.cons["parch_" + k + "_p"] || 0) + (S.cons["parch_" + k + "_g"] || 0);
   const dust = S.res[E.POUSSIERE] || 0; const manual = !c.autoStat;
   return `<div class="grid2">
@@ -4323,7 +4359,7 @@ function petCard(P, c, opts = {}) {
       ${P.g < 100 ? `<div class="xs muted">Au maximum : ${petBonus(p.stats)}</div>` : ""}
       ${opts.big ? `<div class="xs muted">${p.food ? `Nourriture préférée : <b>${resTag(p.food)}</b> (compte double) · ` : ""}${P.g < 100 ? (P.hungry ? `<span class="warnt">a faim : rien à manger dans le sac</span>` : `adulte dans ${E.etaTxt(Math.round(eta / 1000))} environ`) + (P.last ? ` · dernier repas : ${h(P.last)}` : "") : "ne mange plus"}</div>` : ""}
     </div>
-    ${opts.act ? (c.pet === P.uid ? `<button class="btn sm" data-act="petoff">Retirer</button>` : `<button class="btn sm primary" data-act="peton" data-uid="${P.uid}" ${lvlOk ? "" : "disabled"}>${lvlOk ? (p.kind === "monti" ? "Monter" : "Équiper") : "Niv. " + E.petReqLvl(P.id)}</button>`) : ""}
+    ${opts.act ? (c.pet === P.uid ? `<button class="btn sm" data-act="petoff">Retirer</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="peton" data-uid="${P.uid}" ${lvlOk ? "" : "disabled"}>${lvlOk ? (owner ? `Prendre à ${h(owner.name)}` : p.kind === "monti" ? "Monter" : "Équiper") : "Niv. " + E.petReqLvl(P.id)}</button>`) : ""}
   </div>`;
 }
 function charPetView(c) {
@@ -4334,7 +4370,7 @@ function charPetView(c) {
   const keep = Object.keys(S.petKeep).filter((r) => S.petKeep[r]);
   const topRes = Object.entries(S.res).filter(([r]) => !E.isKey(r) && r !== E.POUSSIERE && D.RES[r]).sort((a, b) => b[1] - a[1]).slice(0, 40);
   return `<div class="stack">
-    <div class="panel"><div class="phead"><h2>${P && E.isMonti(P.id) ? "Montilier" : "Familier"} de ${h(c.name)}</h2>${P ? `<button class="btn sm" data-act="petoff">Retirer</button>` : ""}</div><div class="pad stack">
+    <div class="panel"><div class="phead"><h2>${P && E.isMonti(P.id) ? "Montilier" : "Familier"} ${h(deNom(c.name))}</h2>${P ? `<button class="btn sm" data-act="petoff">Retirer</button>` : ""}</div><div class="pad stack">
       ${P ? petCard(P, c, { big: true }) + (E.isMonti(P.id) ? `<p class="note xs" style="margin:0">Un montilier prend à la fois la place du familier et celle de la monture.</p>` : "") : `<div class="empty">${c.lvl < E.PET_LVL ? `Un familier se porte dès le niveau ${E.PET_LVL}.` : mine.length ? "Aucun familier porté : choisissez-en un ci-dessous." : "Aucun familier pour l'instant. Chaque sous-zone de chasse cache le sien (rare), et les boss en stasis 6 et plus gardent des familiers rares et des montiliers."}</div>`}
     </div></div>
     ${mountPanel(c)}
@@ -4375,7 +4411,7 @@ function mountCard(M, c, opts = {}) {
       ${M.lvl < E.MOUNT_MAX ? `<div class="xs muted">Au niveau ${E.MOUNT_MAX} : ${mountStatTxt(mx)}</div>` : ""}
       ${opts.big ? `<div class="xs muted">Petits : ${M.kids}/${E.kidsCap(S)}${why ? ` · élevage : ${why}` : " · peut aller à l'enclos"}</div>` : ""}
     </div>
-    ${opts.act ? (c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm primary" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? "Monter" : "Niv. " + E.mountReq(M)}</button>`) : ""}
+    ${opts.act ? (c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? (owner ? `Prendre à ${h(owner.name)}` : "Monter") : "Niv. " + E.mountReq(M)}</button>`) : ""}
   </div>`;
 }
 function mountPanel(c) {
@@ -4385,7 +4421,7 @@ function mountPanel(c) {
   const nets = S.cons.filet || 0; const hunting = S.hunting && S.sub;
   const zones = E.MOUNT_ORDER.map((sp) => { const Z = E.MOUNT_SP[sp]; const s = E.SUBS[Z.sub]; const here = hunting === Z.sub;
     return `<div class="li ${here ? "" : ""}"><span class="icobox">${im(mountImg(sp, Z.wild[0]), "", E.MOUNTS[sp].name)}</span><span class="grow"><b>${mountSpName(sp)} sauvages</b> <span class="xs muted">héros niveau ${Z.req}</span><br><span class="xs muted">${h(s.name)} (niv. ${s.lvl[0]}-${s.lvl[1]}) · couleurs : ${Z.wild.join(", ")}</span></span>${here ? `<span class="tag good">en chasse ici</span>` : ""}</div>`; }).join("");
-  return `<div class="panel"><div class="phead"><h2>Monture de ${h(c.name)}</h2>${M && !blocked ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : ""}</div><div class="pad stack">
+  return `<div class="panel"><div class="phead"><h2>Monture ${h(deNom(c.name))}</h2>${M && !blocked ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : ""}</div><div class="pad stack">
     ${blocked ? `<div class="empty">Le montilier prend la place de la monture. Retirez-le pour monter une dragodinde, un muldo ou un volkorne.</div>`
       : M ? mountCard(M, c, { big: true }) + (M.lvl < E.MOUNT_MAX ? `<div class="mtshare"><span class="small"><b>Part d'XP donnée à la monture</b></span>${c.lvl >= E.MAX_LVL ? `<span class="tag good">toute l'XP (héros au niveau maximum)</span>` : `<span class="seg">${E.MOUNT_SHARES.map((v) => `<button data-act="mountshare" data-v="${v}" aria-pressed="${share === v}">${v} %</button>`).join("")}</span>`}
           <p class="note xs" style="margin:0">${share ? `${h(c.name)} garde ${100 - share} % de son XP et sa monture reçoit le reste` : "La monture ne gagne pas d'XP pour l'instant"} · niveau ${M.lvl + 1} dans ${fmt(Math.ceil(E.mountXpNeed(M.sp, M.lvl) - M.xp))} XP. Quand elle atteint le niveau ${E.MOUNT_MAX}, la part repasse toute seule à 0 %.</p></div>` : "")
@@ -4454,7 +4490,7 @@ function drawTree() {
 }
 function charEquipView(c, st) {
   const counts = E.setCounts(S, c);
-  const sets = Object.entries(counts).filter(([id]) => SETS[id]).map(([id, n]) => setBlock(id, n)).join("");
+  const sets = Object.entries(counts).filter(([id, n]) => SETS[id] && E.setBonus(id, n)).map(([id, n]) => setBlock(id, n)).join(""); // 1.0.12.8 : seulement les panoplies dont un palier est atteint
   let pick = "";
   if (ui.slot) {
     const want = ui.slot.startsWith("anneau") ? "anneau" : ui.slot.startsWith("dofus") ? "dofus" : ui.slot;
@@ -4518,14 +4554,14 @@ function buildPreview(b, c) {
     ${eqs ? `<div><div class="xs muted">Équipement (en couleur : vous en avez un)</div><div class="row" style="gap:4px;flex-wrap:wrap">${eqs}</div></div>` : ""}
     <div class="row" style="gap:6px;flex-wrap:wrap">${same ? `<button class="btn sm primary" data-act="buildapply">Appliquer à ${h(c.name)}</button>` : `<span class="small muted">Pour l'appliquer, choisissez un ${h(C.name)} dans vos héros.</span>`}
       ${craftable.length ? `<button class="btn sm" data-act="buildshop">${G("cart")} Ajouter ${craftable.length} objet${craftable.length > 1 ? "s" : ""} fabricable${craftable.length > 1 ? "s" : ""} à la liste de courses</button>` : ""}</div>
-    ${same ? `<p class="note xs" style="margin:0">Appliquer remplace les sorts et la répartition des caractéristiques de ${h(c.name)}. L'équipement n'est pas copié.</p>` : ""}</div>`;
+    ${same ? `<p class="note xs" style="margin:0">Appliquer remplace les sorts et la répartition des caractéristiques ${h(deNom(c.name))}. L'équipement n'est pas copié.</p>` : ""}</div>`;
 }
 function buildSheet(cid) {
   const c = char(cid) || char(ui.cid); ui.buildCid = c.id;
   const code = E.buildCode(S, c);
   openSheet(`<h2>Partager un build</h2>
     <div class="stack small" style="gap:12px">
-      <div><b>Le build de ${h(c.name)}</b> <span class="muted">(sorts, caractéristiques et équipement)</span>
+      <div><b>Le build ${h(deNom(c.name))}</b> <span class="muted">(sorts, caractéristiques et équipement)</span>
         <textarea id="buildOut" readonly rows="3">${h(code)}</textarea>
         <div class="row" style="gap:6px"><button class="btn sm primary" data-act="buildcopy">Copier le code</button><span class="xs muted">À coller sur Discord ou à envoyer à un ami.</span></div></div>
       <div><b>Lire un build</b> <span class="muted">(collez le code d'un autre joueur)</span>
@@ -4570,6 +4606,8 @@ function fxLine(f) {
   return "";
 }
 function spellDesc(sp, lvl) { const g = E.spellGrade(sp, lvl || 200); return g.fx.map(fxLine).filter(Boolean).join(" · ") + (g.fx.some((f) => f.fb) ? ` <span class="muted">(effet simplifié)</span>` : g.fx.some((f) => f.adapt) ? ` <span class="muted" title="Effet de placement ou d'état du jeu original, adapté au combat automatique">(adapté)</span>` : ""); }
+// 1.0.12.8 : texte des infobulles sans la lettre des pastilles d'élément (« A 27–31 air » devient « 27–31 air »)
+const spellText = (sp, lvl) => spellDesc(sp, lvl).replace(/<span class="eld"[^>]*>[^<]*<\/span>\s*/g, "").replace(/<[^>]+>/g, "").trim();
 const spIcon = (sp) => `<span class="spicon" style="--c:${elVar(spEl(sp))}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}</span>`;
 function zoneOptions() {
   const opts = [];
@@ -4582,7 +4620,7 @@ const COND_SHORT = { always: "", first_turn: "1er tour", ally_low: "Allié bas",
 const KIND_NAME = { dmg: "Dégâts", aoe: "Dégâts de zone", drain: "Vol de vie", dot: "Poison", heal: "Soin", shield: "Bouclier", buff: "Bonus", summon: "Invocation" };
 const spKindOf = (c, sp) => E.spellKind(E.spellGrade(sp, c.lvl));
 const spMeta = (c, sp) => { const g = E.spellGrade(sp, Math.max(c.lvl, sp.lvl)); return `${g.pa} PA${g.cd ? ` · relance ${g.cd} t.` : ""}${g.casts ? ` · ${g.casts}×/tour` : ""}`; };
-const spTip = (c, sp) => `${sp.name} · ${spMeta(c, sp)}${sp.lvl > c.lvl ? ` · niveau ${sp.lvl}` : ""} — ${spellDesc(sp, Math.max(c.lvl, sp.lvl)).replace(/<[^>]+>/g, "")}`;
+const spTip = (c, sp) => `${sp.name} · ${spMeta(c, sp)}${sp.lvl > c.lvl ? ` · niveau ${sp.lvl}` : ""} — ${spellText(sp, Math.max(c.lvl, sp.lvl))}`;
 /* place un sort dans la barre : remplace sa variante si elle y est ; sinon l'ajoute, ou remplace la case « at » si la barre est pleine (ou si replace) */
 function spPlace(c, id, at, replace) {
   const sp = E.spellDef(c.cls, id); if (!sp || sp.lvl > c.lvl) return `${sp ? sp.name : "Ce sort"} se débloque au niveau ${sp ? sp.lvl : "?"}.`;
@@ -4619,6 +4657,18 @@ function spDetailHtml(c) {
     ${varHtml}
     <div class="row" style="gap:6px"><button class="btn sm" data-act="spup" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="Avancer">◀</button><button class="btn sm" data-act="spdown" data-i="${i}" ${i === eq.length - 1 ? "disabled" : ""} aria-label="Reculer">▶</button><span class="grow xs muted">case ${i + 1} sur ${E.spellSlots(c)}</span><button class="btn sm" data-act="sprem" data-i="${i}">Retirer</button></div>
   </div>`;
+}
+/* 1.0.12.8 : au téléphone (pas de survol), toucher un sort du grimoire ouvre d'abord sa fiche, avec le bouton pour le placer */
+function spSheet(c, id) {
+  const sp = E.spellDef(c.cls, id); if (!sp) return;
+  const eq = c.spells; const sel = ui.spSel || 0; const at = eq.findIndex((x) => x.id === sp.id);
+  const twin = eq.map((x) => E.spellDef(c.cls, x.id)).find((d) => d && d.pair === sp.pair && d.id !== sp.id);
+  const old = twin || (eq.length >= E.spellSlots(c) && eq[sel] ? E.spellDef(c.cls, eq[sel].id) : null);
+  const act = sp.lvl > c.lvl ? `<span class="small muted">Se débloque au niveau ${sp.lvl}.</span>` : at >= 0 ? `<span class="small muted">Déjà dans ta barre (case ${at + 1}).</span>`
+    : `<button class="btn primary" data-act="spg" data-id="${sp.id}">${old ? `Remplacer ${h(old.name)}` : "Ajouter à la barre"}</button>`;
+  openSheet(`<div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2 style="margin:0">${h(sp.name)}</h2><div class="xs muted">${KIND_NAME[spKindOf(c, sp)] || ""} · ${spMeta(c, sp)}</div></div></div>
+    <div class="small">${spellDesc(sp, Math.max(c.lvl, sp.lvl))}</div>
+    <div class="row" style="gap:8px">${act}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* 0.1.11.2 : aperçu des 3 premiers tours (vrai moteur), conseils et « Ranger au mieux » */
 const ATK_KINDS = ["dmg", "aoe", "drain", "dot"];
@@ -4680,8 +4730,9 @@ function spPreviewHtml(c) {
     const sp = E.spellDef(c.cls, id); return sp ? `<span class="spcast" data-tip="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span>${h(sp.name)}</span></span>` : ""; };
   const emptyHtml = (r) => r.why ? `<span class="spwhy"><b>${WHY[r.why][0]}</b> ${h(WHY[r.why][1])}</span>` : `<span class="small muted">rien à lancer</span>`;
   const dmgOf = (r) => r.dmg1; // dégâts du combat affiché (le total reste la moyenne de 3 combats)
+  // 1.0.12.8 : les PA gagnés en combat (au-delà du maximum) sont dits dans l'infobulle et dessinés en doré
   const rows = P.rounds.filter((r) => r.r <= P.endRound).map((r) => `<div class="sptn ${!r.casts.length && r.why ? "why" : ""}"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map(castHtml).join("") || emptyHtml(r)}
-    ${!r.casts.length && r.why ? "" : `<span class="pips" data-tip="${r.pa}/${P.paMax} PA utilisés">${Array.from({ length: Math.min(P.paMax, 14) }, (_, i) => `<i class="${i < r.pa ? "" : "off"}"></i>`).join("")}</span>`}</div><span class="tot">${dmgOf(r) ? `≈ ${fmt(dmgOf(r))}` : ""}</span></div>`).join("");
+    ${!r.casts.length && r.why ? "" : `<span class="pips" data-tip="${r.pa > P.paMax ? `${r.pa} PA utilisés (${P.paMax} + ${r.pa - P.paMax} gagné${r.pa - P.paMax > 1 ? "s" : ""} en combat)` : `${r.pa}/${P.paMax} PA utilisés`}">${Array.from({ length: Math.min(Math.max(P.paMax, r.pa), 14) }, (_, i) => `<i class="${i >= P.paMax ? "plus" : i < r.pa ? "" : "off"}"></i>`).join("")}</span>`}</div><span class="tot">${dmgOf(r) ? `≈ ${fmt(dmgOf(r))}` : ""}</span></div>`).join("");
   const cnt = {}; c.spells.forEach((x) => { const sp = E.spellDef(c.cls, x.id); if (sp && ATK_KINDS.includes(spKindOf(c, sp))) { const el = sp.el && sp.el !== "best" ? sp.el : "n"; cnt[el] = (cnt[el] || 0) + 1; } });
   const nAtk = Object.values(cnt).reduce((a, b) => a + b, 0) || 1;
   const tips = spTips(c, P);
@@ -4754,7 +4805,7 @@ function charSpellsView(c) {
   const pairs = {}; CLASSES[c.cls].spells.forEach((sp) => { (pairs[sp.pair] = pairs[sp.pair] || [])[sp.variant ? 1 : 0] = sp; });
   const isAtk = (sp) => ["dmg", "aoe", "drain", "dot"].includes(spKindOf(c, sp));
   const one = (sp, has) => { const ok = sp.lvl <= c.lvl;
-    return `<button class="gsp ${eqIds.has(sp.id) ? "on" : has ? "off" : ""} ${ok ? "" : "lock"}" style="--c:${elVar(spEl(sp))}" data-act="spg" data-id="${sp.id}" ${ok ? `data-spdrag="g${sp.id}" draggable="true"` : ""} data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}${ok ? "" : `<span class="lv">niv. ${sp.lvl}</span>`}</button>`; };
+    return `<button class="gsp ${eqIds.has(sp.id) ? "on" : has ? "off" : ""} ${ok ? "" : "lock"}" style="--c:${elVar(spEl(sp))}" data-act="${canHover ? "spg" : "spsee"}" data-id="${sp.id}" ${ok ? `data-spdrag="g${sp.id}" draggable="true"` : ""} data-tip="${h(spTip(c, sp))}" aria-label="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}${ok ? "" : `<span class="lv">niv. ${sp.lvl}</span>`}</button>`; };
   const grim = Object.values(pairs).filter((pr) => pr[0] || pr[1]).sort((a, b) => (a[0] || a[1]).lvl - (b[0] || b[1]).lvl)
     .filter((pr) => F === "all" || pr.some((sp) => sp && (F === "atk" ? isAtk(sp) : !isAtk(sp))))
     .map((pr) => { const list = pr.filter(Boolean); const has = list.some((sp) => eqIds.has(sp.id));
@@ -4765,7 +4816,7 @@ function charSpellsView(c) {
     return sp ? `<button class="spslot spm ${sel === i ? "sel" : ""}" style="--c:${elVar(spEl(sp))}" data-act="spsel" data-i="${i}" data-spslot="${i}" data-tip="${h(sp.name)}" aria-label="Case ${i + 1} : ${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}</button>`
       : `<button class="spslot spm empty ${sel === i ? "sel" : ""}" data-act="spsel" data-i="${i}" data-spslot="${i}" aria-label="Case ${i + 1} vide">+</button>`; }).join("");
   const full = eq.length >= N;
-  const miniHint = full && selSp ? `${canHover ? "Clique" : "Touche"} un sort : il remplace <b>${h(selSp.name)}</b>${canHover ? ", ou glisse-le sur une case" : ""}.` : `${canHover ? "Clique" : "Touche"} un sort pour l'ajouter${canHover ? ", ou glisse-le sur une case" : ""}.`;
+  const miniHint = !canHover ? (full && selSp ? `Touche un sort pour lire sa fiche ; il peut remplacer <b>${h(selSp.name)}</b>.` : "Touche un sort pour lire sa fiche et l'ajouter.") : full && selSp ? `Clique un sort : il remplace <b>${h(selSp.name)}</b>, ou glisse-le sur une case.` : "Clique un sort pour l'ajouter, ou glisse-le sur une case.";
   const miniBar = `<div class="spmini"><span class="xs muted">Ta barre</span><div class="spmrow">${mini}</div><span class="xs spmh">${miniHint}</span></div>`;
   return `<div class="stack spells2">
   <div class="panel"><div class="phead"><h2>Stratégies</h2><span class="xs muted">${h(CLASSES[c.cls].signature || "")}</span></div><div class="pad stack" style="gap:8px">${strat}${setup}</div></div>
@@ -4776,7 +4827,7 @@ function charSpellsView(c) {
     <div class="panel spdetp"><div class="pad">${spDetailHtml(c)}</div></div>
     <div class="panel spgrimp"><div class="phead"><h2>Grimoire</h2><span class="spchips">${[["all", "Tous"], ["atk", "Dégâts"], ["sup", "Soutien"]].map(([k, n]) => `<button class="spc ${F === k ? "on" : ""}" data-act="spfilt" data-k="${k}">${n}</button>`).join("")}</span></div>
       ${miniBar}<div class="pad stack" style="gap:8px"><div class="sppairs">${grim}</div>
-      <p class="xs muted">${canHover ? "Choisis d'abord la case à remplacer dans « Ta barre », puis clique un sort ou glisse-le sur une case. Survole un sort pour lire sa fiche." : "Touche d'abord la case à remplacer dans « Ta barre », puis touche un sort ; si la barre n'est pas pleine, il s'ajoute."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
+      <p class="xs muted">${canHover ? "Choisis d'abord la case à remplacer dans « Ta barre », puis clique un sort ou glisse-le sur une case. Survole un sort pour lire sa fiche." : "Touche d'abord la case à remplacer dans « Ta barre », puis touche un sort pour lire sa fiche et le placer ; si la barre n'est pas pleine, il s'ajoute."} Un seul sort par paire : la variante remplace le sort de base.</p></div></div>
     <div class="panel spprevp">${spPreviewHtml(c)}</div>
   </div></div>`;
 }
@@ -4787,13 +4838,13 @@ function charSpellsView(c) {
 function wornMap() { const m = new Map(); S.chars.forEach((c) => Object.values(c.equip).forEach((u) => { if (u) m.set(u, c); })); return m; }
 const invShowEq = () => !!S.settings.invShowEq;
 function invGroups() {
-  const q = (ui.invSearch || "").trim().toLowerCase(); const filt = ui.slotFilter;
+  const q = E.searchNorm(ui.invSearch); const filt = ui.slotFilter;
   const groups = new Map(); const worn = wornMap(); const showEq = invShowEq();
   Object.values(S.items).forEach((it) => {
     const T = ITEMS[it.tpl];
     if (!showEq && worn.has(it.uid)) return;
     if (filt === "radiant" ? !it.radiant : filt !== "all" && T.slot !== filt) return;
-    if (q && !T.name.toLowerCase().includes(q)) return;
+    if (q && !txtHas(T.name, q)) return;
     const g = groups.get(it.tpl) || { tpl: it.tpl, items: [] }; g.items.push(it); groups.set(it.tpl, g);
   });
   const arr = [...groups.values()];
@@ -4837,8 +4888,8 @@ function resTabHtml() {
   const IX = resIndex(); const cats = D.RES_CATS; const all = Object.entries(S.res).filter(([, q]) => q > 0);
   if (!ui.newResDone) { ui.newRes = new Set(all.map(([n]) => n).filter((n) => !S.resSeen[n])); all.forEach(([n]) => (S.resSeen[n] = 1)); ui.newResDone = true; }
   const cnt = {}; all.forEach(([n]) => { const c = D.RES_CAT_OF(n); cnt[c] = (cnt[c] || 0) + 1; });
-  const cat = ui.resCat || "all"; const q = (ui.resQ || "").trim().toLowerCase(); const f = ui.resF || "all"; const now = f === "now" ? usefulNow() : null;
-  let list = all.filter(([n]) => (cat === "all" || D.RES_CAT_OF(n) === cat) && (!q || n.toLowerCase().includes(q)));
+  const cat = ui.resCat || "all"; const q = E.searchNorm(ui.resQ); const f = ui.resF || "all"; const now = f === "now" ? usefulNow() : null; // 1.0.12.8 : pendant une recherche (q), les commandes du jour s'effacent : les résultats suivent le champ
+  let list = all.filter(([n]) => (cat === "all" || D.RES_CAT_OF(n) === cat) && (!q || txtHas(n, q)));
   if (f === "recipe") list = list.filter(([n]) => IX.use[n]);
   if (f === "now") list = list.filter(([n]) => now.has(n));
   if (f === "unused") list = list.filter(([n]) => !IX.use[n] && !E.isKey(n) && n !== E.RARE_COMPONENT);
@@ -4849,7 +4900,7 @@ function resTabHtml() {
   const so = ui.resSort || "name"; const lv = (n) => (RES[n] && RES[n].lvl) || 0;
   list.sort((a, b) => (S.resFav[b[0]] ? 1 : 0) - (S.resFav[a[0]] ? 1 : 0) || (so === "qty" ? b[1] - a[1] : so === "lvl" ? lv(b[0]) - lv(a[0]) : so === "value" ? E.resPrice(b[0]) * b[1] - E.resPrice(a[0]) * a[1] : so === "recent" ? (S.resT[b[0]] || 0) - (S.resT[a[0]] || 0) : a[0].localeCompare(b[0], "fr")));
   const picked = new Set();
-  const detail = ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
+  const detail = invSide() && ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
       ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
@@ -4860,8 +4911,8 @@ function resTabHtml() {
       <select data-act="resf">${[["all", "Toutes"], ["recipe", "Utiles pour une recette"], ["now", "Utiles maintenant"], ["unused", "Inutilisées"], ["new", "Nouvelles"], ["fav", "Favorites"], ["cmd", "Commandées aujourd'hui"]].map(([v, n]) => `<option value="${v}" ${f === v ? "selected" : ""}>${n}</option>`).join("")}</select>
       <select data-act="ressort">${[["name", "Nom"], ["qty", "Quantité"], ["lvl", "Niveau"], ["value", "Valeur totale"], ["recent", "Récentes"]].map(([v, n]) => `<option value="${v}" ${so === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
       <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span></div>
-    ${gameBuysHtml()}
-    <div class="row small"><span class="xs muted">Les ressources sont partagées entre tous vos héros. Pour vendre, passe par l'hôtel de vente (bouton « Vendre à l'HdV » d'une ressource).</span></div>
+    ${q ? "" : `${gameBuysHtml()}
+    <div class="row small"><span class="xs muted">Les ressources sont partagées entre tous vos héros. Pour vendre, passe par l'hôtel de vente (bouton « Vendre à l'HdV » d'une ressource).</span></div>`}
     <div class="invlayout ${detail ? "withdetail" : ""}">${detail}
       ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
 }
@@ -4935,27 +4986,33 @@ function autoRulesHtml() {
       <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
+/* 1.0.12.8 : la grille et le compteur à part, pour que la recherche (après une courte pause de frappe) ne redessine qu'eux */
+const invCountTxt = (groups) => `${Object.keys(S.items).length}/${E.itemCap(S)} objets · ${groups.length} types`;
+function invGridHtml(groups) {
+  return groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
+    return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
+      ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`;
+}
+let invSearchT = 0;
+function invSearchGo() { const g = $(".invgrid"); if (!S || ui.tab !== "inv" || ui.inv !== "items" || !g) return; const groups = invGroups(); g.innerHTML = invGridHtml(groups); const n = $("#invCount"); if (n) n.textContent = invCountTxt(groups); }
 function renderInventory() {
-  const items = Object.values(S.items);
   const res = Object.entries(S.res).sort((a, b) => a[0].localeCompare(b[0], "fr"));
   const runes = Object.entries(S.runes).sort((a, b) => E.runeInfo(b[0]).weight - E.runeInfo(a[0]).weight);
   let body = "";
   if (ui.inv === "items") {
     const groups = invGroups();
-    const detail = ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
+    const detail = invSide() && ui.invSel && S && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : "";
     const nWorn = wornMap().size;
     body = `${autoRulesHtml()}
       <div class="row invbar"><input type="text" id="invSearch" data-act="invsearch" placeholder="Rechercher…" value="${h(ui.invSearch || "")}">
         <select data-act="slotfilter" aria-label="Filtrer">${[["all", "Tous"], ["radiant", "✦ Rayonnants"], ["coiffe", "Coiffes"], ["cape", "Capes"], ["amulette", "Amulettes"], ["anneau", "Anneaux"], ["ceinture", "Ceintures"], ["bottes", "Bottes"], ["arme", "Armes"], ["bouclier", "Boucliers"], ["dofus", "Trophées"]].map(([v, n]) => `<option value="${v}" ${ui.slotFilter === v ? "selected" : ""}>${n}</option>`).join("")}</select>
         <select data-act="invsort" aria-label="Trier">${[["lvl", "Niveau"], ["jet", "Meilleur jet"], ["count", "Quantité"], ["name", "Nom"]].map(([v, n]) => `<option value="${v}" ${(ui.invSort || "lvl") === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
         <label class="row small invshoweq" data-tip="Les objets portés par tes héros sont cachés de l'inventaire. Coche pour les revoir, avec la tête du héros qui les porte."><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé${nWorn ? ` (${nWorn})` : ""}</label>
-        <span class="muted small num">${items.length}/${E.itemCap(S)} objets · ${groups.length} types</span>
+        <span class="muted small num" id="invCount">${invCountTxt(groups)}</span>
         ${dupesBtn()}</div>
       <div class="invlayout ${detail ? "withdetail" : ""}">
         ${detail}
-        <div class="invgrid">${groups.map((g) => { const T = ITEMS[g.tpl]; const best = g.items.slice().sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a))[0];
-          return `<button class="itile ${rarCls(g.tpl, best)} ${g.rad ? "radiant" : ""} ${ui.invSel === g.tpl ? "on" : ""}" data-act="invsel" data-tpl="${g.tpl}" data-tipitem="${best.uid}">
-            ${im(itemImg(g.tpl), "", T.name)}${lxSp(best)}<span class="ilvl">${T.lvl}</span>${g.items.length > 1 ? `<span class="icount">×${g.items.length}</span>` : ""}${g.lock ? `<span class="ilock">${G("lock")}</span>` : ""}${g.eq ? `<span class="ieq" title="Porté par ${h(g.eq.name)}" style="--cc:${CLASSES[g.eq.cls].color}">${headTag(g.eq.cls, g.eq.sex, g.eq.name)}</span>` : ""}</button>`; }).join("") || `<div class="empty" style="grid-column:1/-1">Aucun objet. Les monstres en lâchent parfois, et les Ateliers permettent d'en fabriquer.</div>`}</div>
+        <div class="invgrid">${invGridHtml(groups)}</div>
       </div>`;
   } else if (ui.inv === "over") {
     body = overHtml();
@@ -4972,6 +5029,18 @@ function renderInventory() {
   $("#main").innerHTML = `<div class="pagehead"><h1>Inventaire</h1><span class="small muted"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> kamas</span></div>
     <nav class="subtabs">${[["items", "Équipements"], ...(S.over && S.over.length ? [["over", `Trop-plein · ${S.over.length}`]] : []), ["res", "Ressources"], ["cons", `Consommables${nc ? ` (${nc})` : ""}`], ["sets", "Panoplies"], ["runes", "Runes"]].map(([id, n]) => `<button data-act="invtab" data-v="${id}" aria-pressed="${ui.inv === id}" ${id === "over" && S.overNew ? 'class="hasdot"' : ""}>${n}${id === "over" && S.overNew ? '<span class="navdot"></span>' : ""}</button>`).join("")}</nav>
     <div class="stack">${body}</div>`;
+  if (!invSide()) invSheetSync();
+}
+/* 1.0.12.8 : sous 861 px, la fiche d'un objet ou d'une ressource s'ouvre en fenêtre (placée au-dessus de la grille, elle était hors de l'écran) ;
+   la fenêtre suit les clics (cadenas, briser, favori…) et se ferme avec ✕ ou en touchant à côté */
+const invSide = () => innerWidth >= 861;
+function invSheetSync() {
+  const html = ui.inv === "items" && ui.invSel && Object.values(S.items).some((x) => x.tpl === ui.invSel) ? invDetail(ui.invSel) : ui.inv === "res" && ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
+  const mine = $("#sheet .invsheet");
+  if (!html) { if (mine) closeSheet(); return; }
+  if ($("#sheet").innerHTML && !mine) return; // une autre fenêtre est par-dessus (Équiper, Récolter…) : la fiche revient quand elle se ferme
+  const y = mine ? $("#sheet .sheet").scrollTop : 0;
+  openSheet(`<div class="invsheet">${html}</div>`); $("#sheet .sheet").scrollTop = y;
 }
 /* 0.1.37 : Coffre de trop-plein et « Briser les doublons » */
 function dupesBtn() {
@@ -5004,19 +5073,19 @@ function setsBookHtml() {
   if (F.mode === "known") sets = sets.filter((id) => E.setKnown(S, id, owned));
   if (F.mode === "hero") sets = sets.filter((id) => { const L = E.setLvl(id); if (L > c.lvl || L < c.lvl - 40) return false;
     const ks = new Set(E.setPieces(id).flatMap((t) => Object.keys(ITEMS[t].stats))); return ks.has(main) || !["fo", "ine", "cha", "age"].some((k) => ks.has(k)); });
-  if (F.q) { const q = F.q.toLowerCase(); sets = sets.filter((id) => SETS[id].name.toLowerCase().includes(q) || E.setPieces(id).some((t) => ITEMS[t].name.toLowerCase().includes(q))); }
+  const q = E.searchNorm(F.q); if (q) sets = sets.filter((id) => txtHas(SETS[id].name, q) || E.setPieces(id).some((t) => txtHas(ITEMS[t].name, q)));
   const have = (id) => E.setPieces(id).filter((t) => owned[t]).length;
   sets.sort((a, b) => (worn[b] || 0) - (worn[a] || 0) || have(b) / E.setPieces(b).length - have(a) / E.setPieces(a).length || E.setLvl(b) - E.setLvl(a));
   const total = sets.length; sets = sets.slice(0, 30);
   const card = (id) => { const P = E.setPieces(id); const n = have(id); const miss = P.filter((t) => !owned[t]); const craftMiss = miss.filter((t) => ITEMS[t].craft);
-    const tiers = Object.entries(SETS[id].bonus).sort((a, b) => +a[0] - +b[0]);
+    const { ok: tiers, off } = setTiers(id);
     return `<section class="panel"><div class="phead"><div><h2>${h(SETS[id].name)}</h2><span class="xs muted">niv. ${E.setLvl(id)} · ${n} / ${P.length} pièces dans le sac${worn[id] ? ` · ${worn[id]} portée${worn[id] > 1 ? "s" : ""} par ${h(c.name)}` : ""}</span></div>
       ${craftMiss.length ? `<button class="btn sm" data-act="setshop" data-id="${id}" data-tip="Ajoute les ${craftMiss.length} pièce${craftMiss.length > 1 ? "s" : ""} fabricable${craftMiss.length > 1 ? "s" : ""} qui manquent à la liste de courses">${G("cart")} Pièces manquantes</button>` : ""}</div>
       <div class="list">${P.map((t) => { const T = ITEMS[t]; const ok = !!owned[t]; const src = ok ? [] : E.itemSources(t).slice(0, 2);
         return `<div class="li" style="align-items:flex-start;${ok ? "" : "opacity:.92"}"><span class="icobox ${rarCls(t)}" style="${ok ? "" : "filter:grayscale(.7)"}">${im(itemImg(t), "", T.name)}</span><span class="grow"><b class="iname ${rarName(t)}">${h(T.name)}</b> <span class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}</span>
           <div class="xs ${ok ? "plus" : "muted"}">${ok ? `✓ dans le sac${owned[t] > 1 ? ` (×${owned[t]})` : ""}` : src.map(srcTxt).join("<br>") || "Source inconnue"}</div></span>
           ${!ok && T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${t}" data-tip="Ajouter à la liste de courses">${G("cart")}${S.shop.some((e) => e.id === t) ? " ✓" : ""}</button>` : ""}</div>`; }).join("")}</div>
-      <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statIc(sk, v)).join(" ")}</div>`).join("") || `<span class="muted">Aucun bonus de panoplie.</span>`}</div></section>`; };
+      <div class="pad xs">${tiers.map(([k, b]) => `<div class="${(worn[id] || 0) >= +k ? "plus" : ""}"><b>${k} pièces</b> : ${Object.entries(b).map(([sk, v]) => statIc(sk, v)).join(" ")}</div>`).join("") || (off.length ? "" : `<span class="muted">Aucun bonus de panoplie.</span>`)}${off.length ? `<div class="muted"><b>${setOffTxt(off)}</b> : inaccessible, des pièces de cette panoplie ne sont pas dans le jeu</div>` : ""}</div></section>`; };
   return `<p class="note">Chaque panoplie avec ses pièces : celles que vous avez, celles qui manquent et où les obtenir. Les pièces fabricables peuvent aller dans la liste de courses de l'Accueil.</p>
     <div class="row invbar"><input type="text" id="setSearch" data-act="setsearch" placeholder="Rechercher une panoplie ou une pièce…" value="${h(F.q)}">
       <select data-act="setmode" aria-label="Filtre">${[["known", "Panoplies connues"], ["hero", "Adaptées au héros"], ["all", "Toutes"]].map(([v, n]) => `<option value="${v}" ${F.mode === v ? "selected" : ""}>${n}</option>`).join("")}</select>
@@ -5176,8 +5245,8 @@ function recBase(job) {
   return recipesOf(job).map((r) => { r.miss = recMiss(r); r.okLvl = J.lvl >= r.req; r.n = r.miss || !r.okLvl ? 0 : E.craftCount(S, r.k, r.id); r.fav = !!fav[r.id]; return r; });
 }
 function craftList(job) {
-  const F = fltOf("met"); let rs = recBase(job); const q = F.q.trim().toLowerCase();
-  if (q) rs = rs.filter((r) => r.name.toLowerCase().includes(q) || r.ing.some(([n]) => n.toLowerCase().includes(q)));
+  const F = fltOf("met"); let rs = recBase(job); const q = E.searchNorm(F.q);
+  if (q) rs = rs.filter((r) => txtHas(r.name, q) || r.ing.some(([n]) => txtHas(n, q)));
   if (F.slot) rs = rs.filter((r) => r.T && r.T.slot === F.slot);
   if (F.lv) { const [a, b] = lvRange(F.lv); rs = rs.filter((r) => r.lvl >= a && r.lvl <= b); }
   if (F.stat) rs = rs.filter((r) => r.T && r.T.stats[F.stat] && r.T.stats[F.stat][1] > 0);
@@ -5327,10 +5396,10 @@ function fmJobsBar() {
     return `<span class="pfj ${ok ? "" : "lock"}" data-tip="${h(`${F.name} : ${F.slots.length ? F.slots.map(slotName).join(", ").toLowerCase() : id === "forgemage" ? "armes du Forgeron" : "armes du Sculpteur"}. ${ok ? `${fmt(J.xp)} / ${fmt(E.fmNeed(J.lvl))} XP` : `S'apprend au niveau ${E.FM_LEARN} de ${CRAFT_JOBS[F.base].name}.`}`)}">${im(jobImg(F.base), "", F.name)}<span class="grow"><b>${F.name}</b><br><span class="xs ${ok ? "muted" : "minus"}">${ok ? `niv. ${J.lvl}` : `${CRAFT_JOBS[F.base].name} ${bl} / ${E.FM_LEARN}`}</span>${ok && J.lvl < E.FM_MAX ? `<span class="bar thin"><i style="width:${pct(J.xp, E.fmNeed(J.lvl))}%"></i></span>` : ""}</span></span>`; }).join("")}</div>`;
 }
 function fmList() {
-  const F = fltOf("fm"); const q = F.q.trim().toLowerCase();
+  const F = fltOf("fm"); const q = E.searchNorm(F.q);
   let items = Object.values(S.items).filter((x) => { const T = ITEMS[x.tpl]; if (!T || T.trophy || T.slot === "dofus") return false; const by = E.equippedBy(S, x.uid);
     if (F.view === "worn" && !by) return false; if (F.view === "bag" && by) return false;
-    if (q && !T.name.toLowerCase().includes(q)) return false; if (F.slot && T.slot !== F.slot) return false;
+    if (q && !txtHas(T.name, q)) return false; if (F.slot && T.slot !== F.slot) return false;
     if (F.lv) { const [a, b] = lvRange(F.lv); if (T.lvl < a || T.lvl > b) return false; }
     if (F.stat && !(T.stats[F.stat] && T.stats[F.stat][1] > 0)) return false; if (F.set && T.set !== F.set) return false;
     if (F.cid && (!by || by.id !== +F.cid)) return false; if (F.fav && !x.fav) return false; return true; });
@@ -5355,10 +5424,10 @@ function fmHtml() {
 /* 1.0.7.6 : un objet protégé (cadenas, tenue) ne se coche plus et dit pourquoi ; un Rayonnant demande confirmation */
 const brLock = (it) => (it.locked ? "Protégé par le cadenas" : E.inGear(S, it.uid) ? `Rangé dans la tenue « ${E.inGear(S, it.uid).name} »` : "");
 function brisageHtml() {
-  const F = fltOf("br"); const q = F.q.trim().toLowerCase(); const dup = F.mode === "dupes" ? new Set(E.dupesList(S)) : null;
+  const F = fltOf("br"); const q = E.searchNorm(F.q); const dup = F.mode === "dupes" ? new Set(E.dupesList(S)) : null;
   const sel = ui.brSel || (ui.brSel = new Set()); [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u) || brLock(S.items[u])) sel.delete(u); });
   const items = Object.values(S.items).filter((it) => { const T = ITEMS[it.tpl]; if (!T || E.equippedBy(S, it.uid)) return false;
-    if (q && !T.name.toLowerCase().includes(q)) return false; if (F.slot && T.slot !== F.slot) return false;
+    if (q && !txtHas(T.name, q)) return false; if (F.slot && T.slot !== F.slot) return false;
     if (F.lv) { const [a, b] = lvRange(F.lv); if (T.lvl < a || T.lvl > b) return false; }
     if (F.stat && !(T.stats[F.stat] && T.stats[F.stat][1] > 0)) return false; if (F.set && T.set !== F.set) return false;
     if (dup && !dup.has(it.uid)) return false; if (F.mode === "low" && E.itemQuality(it) >= 0.5) return false; return true; })
@@ -5551,7 +5620,7 @@ function renderQuests() {
 }
 /* ---------- feuilles ---------- */
 function openSheet(html) { $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
-function closeSheet() { $("#sheet").innerHTML = ""; ui.giveTo = null; }
+function closeSheet() { if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null; $("#sheet").innerHTML = ""; ui.giveTo = null; } // 1.0.12.8 : fermer la fiche d'inventaire (téléphone) la désélectionne
 /* 0.1.12 : Renaissance */
 function renSheet(cid) {
   const c = char(cid); if (!c) return; const err = E.canRenaissance(S, c); const n = (c.ren || 0) + 1; const choices = E.renChoices(c); const pick = ui.renPick && choices.some(([id]) => id === ui.renPick) ? ui.renPick : null;
@@ -5685,10 +5754,12 @@ function optionsSheet() {
     + optSec("Le jeu", "", `<div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>`)
     + optSec("Un souci ou une idée ?", "les bugs vont dans le forum Bugs du Discord, les idées dans le forum Idées", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="nav" data-v="sugg">${IC("idee")} Proposer une idée</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
     + `<p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>`;
+  const was = $('.sheet .opttabs [aria-pressed="true"]'); const keepTop = was && was.dataset.v === tab ? $(".sheet").scrollTop : 0; // 1.0.12.8 : un réglage changé garde la position de la fenêtre (même onglet)
   openSheet(`<div class="opthead"><h2>${G("gear")} Options</h2><button class="btn sm" data-act="closesheet" aria-label="Fermer">✕</button></div>
     <div class="subtabs opttabs" role="tablist">${OPT_TABS.map(([k, n]) => `<button role="tab" data-opt="${k}" data-act="opttab" data-v="${k}" aria-pressed="${tab === k}">${k === "sauvegarde" && ON ? "Compte" : n}</button>`).join("")}</div>
     <div class="optbody small">${body}</div>
     <div><button class="btn" data-act="closesheet">Fermer</button></div>`);
+  if (keepTop) $(".sheet").scrollTop = keepTop;
 }
 function offlineSheet(r) {
   if (S) E.tipMark(S, "offline");
@@ -5949,7 +6020,7 @@ function displayOptionsHtml() {
   const z = S.settings.textSize || 100; const m = S.settings.motion || "auto";
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
   return optSec("Écran", "se voit tout de suite",
-      optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v} %`]), z))
+      optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v}&nbsp;%`]), z)) // 1.0.12.8 : « 90 % » ne se coupe plus sur deux lignes
     + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
     + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes")
     + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat."))
@@ -5962,9 +6033,10 @@ function displayOptionsHtml() {
 }
 /* ---- bulles de découverte ---- */
 const tipCtx = () => ({ online: !!ON, user: !!(ON && ON.user), now: E.now() });
-let tipShown = null, tipSince = 0;
+let tipShown = null, tipSince = 0, tipAnchor = null;
 function tipTick() {
-  if (!S || tipShown || !booted) return;
+  tipRing();
+  if (!S || tipShown || !booted || $("#wtip")) return; // une bulle relue (Carnet) n'est pas remplacée par une autre
   if ($("#sheet").innerHTML || $("#wsearch") || $("#cele").innerHTML || document.querySelector(".bossintro") || (ui.tab === "combat" && S.settings.manual) || !S.chars.length) return;
   if (S.navNews) return showTipBubble(NAV_NEWS);
   const t = E.tipDue(S, tipCtx()); if (t) showTipBubble(t);
@@ -5972,19 +6044,25 @@ function tipTick() {
 /* 0.1.31 : une bulle, une seule fois, pour les joueurs qui connaissaient l'ancien menu */
 const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav [data-nk="dungeons"], #nav [data-nk="menu"]',
   txt: "Toutes les pages sont maintenant rangées en 5 groupes : Jouer, Héros, Artisanat, Suivi et Communauté. Sur PC, le menu est à gauche (le bouton « à côté du logo le réduit aux icônes) ; sur téléphone, le bouton Menu ouvre toutes les pages. Les Donjons et les Succès ont leur propre page." };
-function showTipBubble(t) {
-  tipHide(); tipShown = t.id;
+const tipVis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
+/* 1.0.12.8 : le menu et la page se redessinent (toutes les 3 s sur Quêtes et l'Accueil) : on remet l'anneau doré sur le bouton visé */
+function tipRing() { if (!tipAnchor || !$("#wtip")) return; const a = [...document.querySelectorAll(tipAnchor)].find(tipVis); if (a && !a.classList.contains("wl-target")) a.classList.add("wl-target"); }
+function showTipBubble(t, again) {
+  tipHide(); tipShown = t.id; tipAnchor = t.anchor || null;
   const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
   const d = document.createElement("div"); d.id = "wtip"; d.className = "wtip"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Découverte");
   d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${hOpt(t.txt)}</div>
-    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${news ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
+    <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : again ? "Relecture" : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${news || again ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
   document.body.appendChild(d);
-  const vis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
-  const a = t.anchor ? [...document.querySelectorAll(t.anchor)].find(vis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
+  const a = t.anchor ? [...document.querySelectorAll(t.anchor)].find(tipVis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
   if (a) { a.classList.add("wl-target"); place(a.getBoundingClientRect()); }
+  // 1.0.12.8 : sous une bulle posée en bas (téléphone), la page garde de la place pour faire passer son bas au-dessus d'elle
+  document.documentElement.style.setProperty("--wtipb", Math.round(window.innerHeight - d.getBoundingClientRect().top) + "px");
   function place(r) {
-    const W = window.innerWidth, w = Math.min(340, W - 24); d.style.width = w + "px";
-    let x = Math.max(12, Math.min(W - w - 12, r.left + r.width / 2 - w / 2));
+    // 1.0.12.8 : sur PC, la bulle d'un bouton du menu de gauche reste dans le menu (elle ne cache plus le Journal ni la page)
+    const side = a.closest("#nav .sn-side"); const sr = side && side.getBoundingClientRect(); const inSide = !!sr && sr.width >= 200; d.classList.toggle("side", inSide);
+    const W = window.innerWidth, w = inSide ? sr.width - 16 : Math.min(340, W - 24); d.style.width = w + "px";
+    let x = inSide ? sr.left + 8 : Math.max(12, Math.min(W - w - 12, r.left + r.width / 2 - w / 2));
     const below = r.bottom + 12 + d.offsetHeight < window.innerHeight - 70;
     d.style.left = x + "px"; d.style.bottom = ""; d.style.transform = "";
     d.style.top = (below ? r.bottom + 12 : Math.max(8, r.top - 12 - d.offsetHeight)) + "px";
@@ -5992,7 +6070,7 @@ function showTipBubble(t) {
   }
   tipSince = E.now();
 }
-function tipHide() { const d = $("#wtip"); if (d) d.remove(); document.querySelectorAll(".wl-target").forEach((n) => n.classList.remove("wl-target")); tipShown = null; }
+function tipHide() { const d = $("#wtip"); if (d) d.remove(); document.querySelectorAll(".wl-target").forEach((n) => n.classList.remove("wl-target")); tipShown = null; tipAnchor = null; }
 function tipOk() { if (tipShown === NAV_NEWS.id) S.navNews = 0; else if (tipShown) E.tipSeen(S, tipShown); dirty = true; tipHide(); }
 function tipLater() { if (tipShown) E.tipLater(S, tipShown); dirty = true; tipHide(); }
 function tipsSheet() {
@@ -6180,7 +6258,7 @@ function defiSheet(r) {
   const rooms = r.rooms.map((x, i) => `<li>${x.boss ? "Salle du boss" : `Salle ${i + 1}`} : ${x.turns} tour${x.turns > 1 ? "s" : ""} ${x.win ? "✓" : "✗"}</li>`).join("");
   const tries = st.tries.filter((x) => x.tier === r.tier).slice(0, 5);
   openSheet(`<h2>${r.win ? "Défi réussi !" : "Défi perdu"}</h2>
-    <div class="bigrec">${r.win ? `${r.turns} tours` : "Défaite"}</div>
+    <div class="bigrec ${r.win ? "" : "lose"}">${r.win ? `${r.turns} tours` : "Défaite"}</div>
     <span class="small muted" style="text-align:center">${h(dg.name)} · stasis ${r.k} · palier ${h(T.name)} · ${r.mods.map((m) => h(E.STASIS_MODS[m].name)).join(", ")}</span>
     ${r.win ? `<div class="chk"><div><span class="okc">✓</span><span>${r.improved ? (gain > 0 ? `<b>Nouveau record du jour</b>, ${gain} tour${gain > 1 ? "s" : ""} de mieux` : "<b>Premier record du jour</b> dans ce palier") : `Ton record du jour reste <b>${r.prev.turns} tours</b>`}</span></div>
       <div><span class="okc">♥</span><span>PV restants de l'équipe : ${r.hp} %</span></div>
@@ -6740,7 +6818,7 @@ document.addEventListener("click", (ev) => {
     case "settoast": S.settings.toastPos = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); toast("Les notifications apparaissent ici."); return;
     case "setmotion": S.settings.motion = d.v; dirty = true; setTheme(); optionsSheet(); ui.arena = null; return;
     case "tips": tipsSheet(); return;
-    case "tipread": { const t = E.tipInfo(d.id); if (t) { closeSheet(); showTipBubble(t); tipShown = null; } return; }
+    case "tipread": { const t = E.tipInfo(d.id); if (t) { closeSheet(); showTipBubble(t, true); tipShown = null; } return; } // 1.0.12.8 : « Relecture », sans « Plus tard »
     case "tipsknow": E.tipState(S).know = d.v === "1"; dirty = true; tipsSheet(); return;
     case "tipok": tipOk(); return;
     case "tiplater": tipLater(); return;
@@ -6808,12 +6886,12 @@ document.addEventListener("click", (ev) => {
     case "shopdel": S.shop.splice(+d.i, 1); break;
     case "rescat": ui.resCat = d.v; break;
     case "resview": ui.resView = d.v; break;
-    case "ressel": ui.resSel = d.n || null; break;
+    case "ressel": ui.resSel = d.n || null; if (!ui.resSel) closeSheet(); break;
     case "resfav": if (S.resFav[d.n]) delete S.resFav[d.n]; else S.resFav[d.n] = 1; break;
     case "fmfav": { const it = S.items[+d.uid]; if (it) it.fav = !it.fav; break; }
     case "fmsel": ui.fmSel = +d.uid; ui.fmBench = true; ui.confirm = null; if (narrow()) { ui.fmListY = window.scrollY; window.scrollTo(0, 0); } break;
     case "fmback": { ui.fmBench = false; dirty = true; render(); const y = ui.fmListY || 0; requestAnimationFrame(() => window.scrollTo(0, y)); return; } // 1.0.7.6 : on retrouve la liste là où on l'avait laissée
-    case "fmgo": ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
+    case "fmgo": closeSheet(); ui.tab = "forge"; ui.fg = "fm"; ui.fmSel = +d.uid; ui.fmBench = true; window.scrollTo(0, 0); break;
     case "wpot": { const r = E.weaponPotion(S, ui.fmSel, d.id); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; } // 0.1.53
     case "wpprep": ui.wpPrep = !ui.wpPrep; break;
     case "wbrew": { const err = E.brewPotion(S, d.id); if (err) { toast(err); return; } toast(`${CONSUMABLES[d.id].name} préparée.`, "rare"); break; }
@@ -6877,7 +6955,7 @@ document.addEventListener("click", (ev) => {
       const C = CONSUMABLES[d.id]; const r = E.useConsumable(S, d.id); if (r) { toast(r); return; } if (C.kind === "boost") toast(`${C.name} activé.`); break; }
     case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }
     case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
-    case "invsel": ui.invSel = d.tpl || null; break;
+    case "invsel": ui.invSel = d.tpl || null; if (!ui.invSel) closeSheet(); break;
     case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
     case "autotoggle": ui.autoOpen = !t.parentElement.open; return;
     case "almall": ui.almAll = !t.parentElement.open; return; // 0.1.39.1 : le volet reste ouvert malgré le rafraîchissement
@@ -6897,7 +6975,7 @@ document.addEventListener("click", (ev) => {
     case "worldtab": if (d.v === "tresor") { ui.tab = "quests"; ui.qt = "tresor"; ui.zoneView = null; break; } ui.world = d.v; break; // 0.1.49 : le trésor est dans Quêtes › Chasses
     case "maptier": ui.mapTier = +d.v; break;
     case "zonefold": { const t = String(mapTier()); mapOpenZone(+t); ui.mapOpen[t] = ui.mapOpen[t] === d.id ? null : d.id; break; }
-    case "enczone": ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; break;
+    case "enczone": { ui.encZone = d.v; if (ui.enc) ui.enc.q = ""; dirty = true; render(); const hd = $(".enczhead"); if (hd && hd.getBoundingClientRect().top < $("#status").getBoundingClientRect().bottom) hd.scrollIntoView(); return; } // 1.0.12.8 : on remonte au titre de la zone choisie
     case "enctab": ui.enc.tab = d.v; break;
     case "encf": ui.enc.f = d.v; break;
     case "encfam": ui.enc.fam = d.v; break;
@@ -6964,12 +7042,12 @@ document.addEventListener("click", (ev) => {
     case "placeautob": E.setPlaceAuto(S, true); dirty = true; break;
     case "lossplace": ui.tab = "team"; ui.teamBoard = true; ui.placeFlash = true; closeSheet(); setTimeout(() => { const p = $("#placement"); if (p) p.scrollIntoView({ block: "center" }); ui.placeFlash = false; }, 60); break;
     case "herotab": ui.hero = d.v; ui.slot = null; ui.heroMore = false; break;
-    case "peton": msg(E.equipPet(S, c.id, +d.uid)); dirty = true; break;
+    case "peton": { const o = E.petOwner(S, +d.uid); const r = E.equipPet(S, c.id, +d.uid); msg(r); if (!r && o && o !== c) toast(`${o.name} n'a plus de ${E.isMonti(S.pets[+d.uid].id) ? "montilier" : "familier"}.`); dirty = true; break; } // 1.0.12.8 : prendre le familier d'un autre héros le dit
     case "petoff": E.equipPet(S, c.id, null); dirty = true; break;
     case "petkeep": S.petKeep[d.r] = !S.petKeep[d.r]; if (!S.petKeep[d.r]) delete S.petKeep[d.r]; dirty = true; break;
     case "petcoll": ui.petColl = d.v; ui.petAll = false; break;
     case "petall": ui.petAll = true; break;
-    case "mounton": msg(E.equipMount(S, c.id, +d.uid)); dirty = true; break;
+    case "mounton": { const o = E.mountOwner(S, +d.uid); const r = E.equipMount(S, c.id, +d.uid); msg(r); if (!r && o && o !== c) toast(`${o.name} n'a plus de monture.`); dirty = true; break; } // 1.0.12.8 : idem pour la monture
     case "mountoff": E.equipMount(S, c.id, null); dirty = true; break;
     case "mountshare": E.setMountShare(S, c.id, +d.v); dirty = true; break;
     case "buynet": { const r = E.buyNets(S, 1); if (r) { toast(r); return; } toast("Filet de capture acheté."); dirty = true; break; }
@@ -7006,8 +7084,10 @@ document.addEventListener("click", (ev) => {
     case "spundo": if (ui.spUndo && ui.spUndo.cid === c.id) { c.spells = ui.spUndo.spells; c.activePreset = null; c.spellsManual = true; } ui.spUndo = null; break;
     case "spfilt": ui.spFilt = d.k; break;
     case "spcondc": case "sptgtc": { const x = c.spells[ui.spSel || 0]; if (!x) return; ui.spUndo = null; x[a === "spcondc" ? "cond" : "tgt"] = d.k; c.activePreset = null; c.spellsManual = true; break; }
-    case "spg": { const i = c.spells.findIndex((x) => x.id === d.id); if (i >= 0) { ui.spSel = i; break; } ui.spUndo = null;
-      const full = c.spells.length >= E.spellSlots(c); const sel = ui.spSel || 0; const old = full && c.spells[sel] ? E.spellDef(c.cls, c.spells[sel].id) : null;
+    case "spsee": spSheet(c, d.id); return;
+    case "spg": { closeSheet(); const i = c.spells.findIndex((x) => x.id === d.id); if (i >= 0) { ui.spSel = i; break; } ui.spUndo = null;
+      const full = c.spells.length >= E.spellSlots(c); const sel = ui.spSel || 0; const pr = (E.spellDef(c.cls, d.id) || {}).pair; const tw = c.spells.find((x) => (E.spellDef(c.cls, x.id) || {}).pair === pr); // 1.0.12.8 : la variante remplacée est nommée dans le message
+      const old = tw ? E.spellDef(c.cls, tw.id) : full && c.spells[sel] ? E.spellDef(c.cls, c.spells[sel].id) : null;
       const r = spPlace(c, d.id, sel); if (r) { toast(r); return; }
       const sp = E.spellDef(c.cls, d.id); const was = c.spells.length && old && !c.spells.some((x) => x.id === old.id) ? old : null;
       toast(was ? `${sp.name} remplace ${was.name}.` : `${sp.name} est dans la barre.`); break; }
@@ -7047,8 +7127,8 @@ document.addEventListener("click", (ev) => {
     case "invtab": ui.inv = d.v; ui.newResDone = false; break;
     case "givesheet": giveSheet(+d.uid); return;
     case "giveto": { const r = E.equip(S, +d.id, ui.giveTo); if (r) { toast(r); return; } closeSheet(); toast("Objet équipé."); break; }
-    case "hdvitem": { if (!window.MARKET) break; window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
-    case "hdvres": { if (!window.MARKET) break; window.MARKET.sellRes(d.n); navGo("hdv"); window.scrollTo(0, 0); break; }
+    case "hdvitem": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellItem(+d.uid); navGo("hdv"); window.scrollTo(0, 0); break; }
+    case "hdvres": { if (!window.MARKET) break; closeSheet(); window.MARKET.sellRes(d.n); navGo("hdv"); window.scrollTo(0, 0); break; }
     case "gbsell": { const k0 = S.kamas; const r = E.act(S, "gameBuySell", d.n, +d.q); if (r) toast(r, "warn"); else toast(`Commande livrée : +${fmt(S.kamas - k0)} kamas.`); break; }
     case "gball": { const k0 = S.kamas; const r = E.act(S, "gameBuyAll"); if (r) toast(r, "warn"); else toast(`Commandes livrées : +${fmt(S.kamas - k0)} kamas.`); break; }
     case "gbfilter": ui.gbF = d.v; break;
@@ -7185,7 +7265,7 @@ document.addEventListener("input", (ev) => {
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "dgq") { dgF().q = t.value.slice(0, 40); dirty = true; const pos = t.selectionStart; renderWorld(); const n = $("#dgq"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "encsearch") { ui.enc.q = t.value; const pos = t.selectionStart; renderWorld(); const n = $("#encQ"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
-  if (t.dataset.act === "invsearch") { ui.invSearch = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#invSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
+  if (t.dataset.act === "invsearch") { ui.invSearch = t.value; clearTimeout(invSearchT); invSearchT = setTimeout(invSearchGo, 150); return; } // 1.0.12.8 : sac plein, la saisie ne fige plus la page
   if (t.id === "recqtyn") { if (t.value !== "") recQtyLive(t, false); return; }
   if (t.dataset.act !== "fltq") return;
   const ctx = t.dataset.ctx; fltOf(ctx).q = t.value; dirty = true; const pos = t.selectionStart; if (ctx === "met") renderMetiers(); else renderForge(); const n = $("#fltq_" + ctx); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
@@ -7509,12 +7589,15 @@ async function onConflictLive() {
   conflictSheet(S, info);
 }
 const PILL = { ok: ["", "Sauvegardé", " en ligne", "Partie à jour sur ton compte. Clique pour envoyer tout de suite."], sync: ["s", "Envoi", "…", "Envoi de la partie en cours."], offline: ["off", "Hors ligne", "", "Pas de connexion au serveur : le jeu continue et ta partie sera envoyée au retour d'Internet. Clique pour réessayer."], conflict: ["warn", "À vérifier", "", "Ta partie a avancé sur un autre appareil : clique pour choisir la version à garder."], suspended: ["off", "Compte suspendu", "", "Ton compte a été suspendu : ta partie n'est plus envoyée en ligne. Elle reste sur cet appareil."] };
-function pillHtml() {
+function pillHtml(opt) {
   if (!ON || !ON.user || !ON.profile || !ON.slotOnline()) return "";
   const p = PILL[ON.state] || PILL.sync;
-  return `<button class="cloud" id="onPill" data-act="on-pill" data-st="${ON.state}" data-tip="${h(p[3])}"><span class="dot ${p[0]}"></span><span>${p[1]}<span class="hide-sm">${p[2]}</span></span></button>`;
+  return `<button class="cloud" id="${opt ? "onPillOpt" : "onPill"}" data-act="on-pill" data-st="${ON.state}" data-tip="${h(p[3])}"><span class="dot ${p[0]}"></span><span>${p[1]}<span class="hide-sm">${p[2]}</span></span></button>`;
 }
-function renderPill() { const el = $("#onPill"); if (!el) return renderStatus(); if (el.dataset.st !== ON.state) el.outerHTML = pillHtml(); }
+function renderPill() {
+  const o = $("#onPillOpt"); if (o && o.dataset.st !== ON.state) o.outerHTML = pillHtml(true) || `<span class="muted">—</span>`; // 1.0.12.8 : la pastille d'Options › Compte (fenêtre ouverte) suit aussi
+  const el = $("#onPill"); if (!el) return renderStatus(); if (el.dataset.st !== ON.state) el.outerHTML = pillHtml();
+}
 function accountHtml() {
   if (!ON) return "";
   if (!ON.user) return `<div class="stack" style="gap:6px"><span class="xs muted">Pas connecté : la partie n'est gardée que sur cet appareil.</span><div><button class="btn sm primary" data-act="on-loginscreen">Se connecter</button></div></div>`;
@@ -7523,7 +7606,7 @@ function accountHtml() {
     <div class="kvg"><span class="muted">Pseudo</span><b>${h((ON.profile && ON.profile.pseudo) || "—")}</b>${ON.profile && !ui.pren ? `<button class="btn sm" data-act="on-renpseudo">${G("edit")} Changer</button>` : "<span></span>"}
     <span class="muted">Discord</span>${id.discord ? `<b>${h(id.discord)}</b><span class="tag good">lié</span>` : `<span class="muted">non lié</span><button class="btn sm" data-act="on-linkdiscord">Lier</button>`}
     <span class="muted">E-mail</span>${id.email ? `<b class="oneline">${h(id.email)}</b><span></span>` : `<span class="muted">aucun</span><span></span>`}
-    <span class="muted">Sauvegarde</span>${pillHtml() || `<span class="muted">${ON.slotOnline() ? "—" : `partie ${SLOT} gardée sur cet appareil`}</span>`}${ON.slotOnline() ? `<button class="btn sm" data-act="on-pill">Envoyer</button>` : "<span></span>"}</div>
+    <span class="muted">Sauvegarde</span>${pillHtml(true) || `<span class="muted">${ON.slotOnline() ? "—" : `partie ${SLOT} gardée sur cet appareil`}</span>`}${ON.slotOnline() ? `<button class="btn sm" data-act="on-pill">Envoyer</button>` : "<span></span>"}</div>
     ${ON.profile ? pseudoChangeHtml() : ""}
     <span class="xs muted">${ON.lastPush ? `Dernier envoi : ${new Date(ON.lastPush).toLocaleTimeString("fr-FR")}. ` : ""}${ON.mail ? "Avec la même adresse e-mail, Discord et le lien par e-mail ouvrent le même compte." : ""}</span>
     ${conf ? `<div class="stack" style="gap:6px"><span class="minus small">Ton compte, ton pseudo et ta partie en ligne seront effacés pour toujours. La partie reste sur cet appareil. Tape ton pseudo pour confirmer :</span><div class="row"><input type="text" id="onDelPseudo" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm danger" data-act="on-delete">Supprimer</button><button class="btn sm" data-act="cancelreset">Annuler</button></div></div>`
@@ -8092,7 +8175,7 @@ function loop() {
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); const tl = $("#tlist"); if (tl) tl.innerHTML = teamListHtml(); renderNav(); } // seuls le haut et la liste se rafraîchissent, la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
-    sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); }
+    sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
     // ressources récemment obtenues + liste de courses prête
     sinceRes += dt;

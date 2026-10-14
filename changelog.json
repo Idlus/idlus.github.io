@@ -1,6 +1,35 @@
 {
-  "version": "1.0.12.7",
+  "version": "1.0.12.8",
   "versions": [
+    {
+      "v": "1.0.12.8",
+      "name": "Grand nettoyage",
+      "items": [
+        "Téléphone et tablette : toucher un objet ou une ressource de l'inventaire ouvre sa fiche en fenêtre, et toucher un Dofus dans les quêtes fait remonter la page jusqu'à sa fiche",
+        "Téléphone : toucher un sort du grimoire montre d'abord sa fiche, puis « Ajouter à la barre » ou « Remplacer »",
+        "Panoplies : seules celles qui donnent vraiment un bonus sont listées comme actives, et les paliers impossibles à atteindre sont signalés",
+        "Sorts : plus de lettre en trop devant les dégâts, et les PA gagnés en combat sont expliqués et dessinés en doré (« 10 PA utilisés (9 + 1 gagné en combat) »)",
+        "Familiers et montures : prendre celui d'un autre héros est annoncé clairement (« Prendre à Mirlina »)",
+        "Inventaire : la recherche ne fige plus la page avec un sac plein. Ressources : pendant une recherche, les résultats s'affichent juste sous le champ",
+        "Recherches : on trouve sans taper les accents ni les majuscules (« kolizeum », « chimerique », « coeur »), dans les succès, l'Encyclopédie, l'inventaire, les recettes, les panoplies, la forgemagie et le brisage",
+        "Options : changer un réglage ne renvoie plus la fenêtre en haut, les boutons « 90 % », « 100 % » ne se coupent plus en texte agrandi, et la pastille de sauvegarde se met à jour quand la connexion tombe",
+        "Encyclopédie : choisir une zone garde la liste où elle était, et un nom de lieu trop long finit par « … » avec le nom complet au survol",
+        "Succès : « Grade Argent » n'est plus annoncé presque fini avant le premier combat de Kolizéum, et l'emblème de l'Archipel de Vulkania a enfin son image",
+        "Bulles de découverte : le bouton visé reste entouré d'or, la bulle ne cache plus la page sur PC, et une bulle relue depuis le carnet affiche « Relecture »",
+        "Chat sur PC : chat ouvert, la page n'est plus tassée (le menu de gauche passe en icônes jusqu'à 1 600 px de large). Connecté, la barre du haut tient sur une ligne",
+        "Chat au téléphone : le message en cours est gardé, le menu d'un pseudo ne cache plus la barre du bas, le texte d'aide du salon PvP n'est plus coupé, et le bandeau d'annonce tient sur 2 lignes avec « Lire la suite »",
+        "Chat : le compteur décompte les secondes d'attente, puis affiche la longueur du texte tapé",
+        "Panel admin : l'annonce, le message épinglé et la recherche d'un pseudo en cours restent là quand on change d'onglet",
+        "Barre du bas : une seule pastille sur « Héros », plus de pastilles l'une sur l'autre",
+        "Kolizéum : le mode automatique annonce sa vraie cadence (un combat toutes les 4 s environ, 10 en ligne), la recherche d'adversaires affiche l'erreur et « Réessayer » au lieu de tourner sans fin, et la page passe sur une colonne sur les écrans moyens",
+        "Hôtel de vente et guilde : si le serveur ne répond pas, le jeu le dit avec un bouton « Réessayer ». « Acheter » est grisé et dit combien de kamas il manque, un prix très bas affiche au plus « 99 % de moins », et la jauge d'XP de guilde se lit mieux",
+        "Boss des mondes : « Le Feu fait +50 % » au lieu de « L'Feu », et le bouton « Créer un compte pour frapper » n'est plus coupé",
+        "Monde : l'étiquette « Meilleure zone » passe sous le nom de la zone et la pastille « XP −70 % » ne se coupe plus au téléphone. Havre-Sac : les croisements de l'Enclos se lisent normalement",
+        "Combat, vue Compacte : les invocations ont leur nom et celui de leur héros, et l'état d'un héros ne déborde plus de sa carte",
+        "Textes : « la fiche d'Auditeur », « Songe d'Ecaflip », la relecture d'un défi perdu ne dit plus que l'équipe se repose, et « Défaite » s'affiche en rouge",
+        "Héros : au téléphone, la fiche ne glisse plus sur le côté et les noms des emplacements vides ne touchent plus les bords. Sur PC, les 4 onglets de la fiche tiennent sur une ligne et les caractéristiques ne se coupent plus en deux"
+      ]
+    },
     {
       "v": "1.0.12.7",
       "name": "Recrues au niveau 1",

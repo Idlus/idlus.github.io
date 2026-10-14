@@ -30,6 +30,8 @@ ok("quête principale en 5 chapitres");
 
 // 2. Quêtes de région : une par région, chasse et boss tout seuls, remise et fin avec un bouton
 assert.ok(E.REGIONS.length >= 27);
+// 1.0.12.8 : chaque région a son emblème (Vulkania n'en avait pas : image absente)
+E.REGIONS.forEach((R) => assert.ok(require("fs").existsSync(require("path").join(__dirname, "..", "assets/ui/orn/orn_" + R.id + ".svg")), "emblème de " + R.id));
 { const S = team(30); const R = E.REGION.incarnam; Object.values(E.SUBS).forEach((s) => (S.progress.wins[s.id] = 20));
   assert.ok(E.rqOpen(S, R));
   const st0 = R.steps[0]; E.emit(S, "win", { mons: Array.from({ length: st0.n }, () => ({ key: E.SUBS[st0.sub].monsters[0] })), sub: st0.sub });
@@ -96,6 +98,8 @@ assert.strictEqual(E.ACH.filter((a) => /^s10_/.test(a.id)).length, Object.keys(D
   E.checkAch(S); const k = E.ACH_PALIERS.filter((x) => x.n <= E.achPoints(S)).length; assert.strictEqual(S.achPal, k);
   if (k >= 2) assert.ok(E.ornUnlocked(S, "pal1"));
   E.ACH.forEach((a) => { const pr = E.achProgress(S, a.id); if (pr) assert.ok(Array.isArray(pr) && pr.length === 2 && isFinite(pr[0]) && isFinite(pr[1]), a.id); }); }
+// 1.0.12.8 : les grades du Kolizéum se comptent depuis la cote de départ (une partie neuve n'a rien de « presque fini »)
+{ const S = team(50); assert.deepStrictEqual(E.achProgress(S, "koliG_argent"), [0, 100]); E.koliState(S).best = 1050; assert.deepStrictEqual(E.achProgress(S, "koliG_argent"), [50, 100]); }
 ok("succès, points et paliers");
 
 // 7. Sauvegarde : tout tient en JSON et le résumé du classement donne les points

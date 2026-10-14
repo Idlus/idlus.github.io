@@ -41,6 +41,7 @@ const M = {
   fer: `<path d="M-13-12C-15 6-8 16 0 16S15 6 13-12H6C7 2 4 9 0 9S-7 2-6-12Z"/>${[[-10, -6], [-9, 4], [9, 4], [10, -6]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#000" opacity=".45"/>`).join("")}`,
   encre: `<path d="M0-18C6-8 12-2 12 6A12 12 0 0 1-12 6C-12-2-6-8 0-18Z"/><path d="M-6 4c0 4 3 7 6 7" stroke="#fff" stroke-opacity=".5" stroke-width="2" fill="none"/>`,
   ecaille: `<path d="M-15-4C-15-14-6-18 0-18S15-14 15-4C15 8 7 16 0 18-7 16-15 8-15-4Z"/>${[[-5, -8], [5, -8], [0, 0], [-8, 0], [8, 0], [-4, 8], [4, 8]].map(([x, y]) => `<path d="M${x - 4} ${y}a4 4 0 0 0 8 0" stroke="#000" stroke-opacity=".4" stroke-width="1.6" fill="none"/>`).join("")}`,
+  volcan: `<path d="M-17 17-6-2h3l3 3 3-3h3l11 19Z"/><path d="M-3-2c-2-5 0-9-4-14 4 1 6 4 6 7 0-5 3-8 7-9-3 4-3 10-2 16Z"/><path d="M-2 2c-1 4-5 7-4 12M2 2c1 5 5 7 3 12" stroke="#000" stroke-opacity=".4" stroke-width="1.8" fill="none"/>`, // 1.0.12.8 : Vulkania (l'archipel volcanique) n'avait pas d'emblème
   lanterne: `<path d="M-4-18h8v4h-8Z"/><path d="M-10-14h20c3 6 3 22 0 28h-20c-3-6-3-22 0-28Z"/><path d="M-11-6h22M-11 6h22" stroke="#000" stroke-opacity=".35" stroke-width="1.6"/><rect x="-5" y="14" width="10" height="4" rx="1"/>`,
 };
 // volutes latérales (côté gauche, en coordonnées viewBox 200x96, miroir pour la droite)
@@ -84,6 +85,7 @@ const R = [
   ["wukin", "Wukin et Wukang", "encre", "volutes", "argent", "#3a3a4a"],
   ["possedes", "Atoll des Possédés", "crane", "flammes", "sombre", "#d63a7a"],
   ["ecailles", "Archipel des Écailles", "ecaille", "vagues", "jade", "#3fa36a"],
+  ["vulkania", "Archipel de Vulkania", "volcan", "flammes", "or", "#e0461f"],
   ["pal1", "Médaillon du Mérite", "etoile", "volutes", "argent", "#2f7fd6"],
   ["pal2", "Couronne d'étoiles", "couronne", "ailes", "or", "#8a3fe0"],
 ];

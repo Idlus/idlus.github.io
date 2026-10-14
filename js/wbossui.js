@@ -248,9 +248,10 @@
     const s = st(); const tl = R.left != null ? Math.max(0, R.left) : s ? triesLeft(s) : 0; // le serveur sait combien il en reste, même avant le rechargement
     const why = R.alive ? `${R.rounds} tours joués` : `ton équipe est tombée au tour ${R.rounds}`;
     const tip = up ? `Au grade ${up.g}, il te manquait ${nf((up.min - R.points) * E.WB_PV)} PV. ` : "";
-    const el2 = `${E.wbElName(def.weak)} fait +50 % sur lui, ${E.wbElName(def.res)} seulement la moitié.`;
+    const le = (k) => `${{ t: "la ", a: "l'", e: "l'" }[k] || "le "}${E.wbElName(k)}`; const w2 = le(def.weak); // 1.0.12.8 : « Le Feu », « La Terre », « L'Air » (avant : « L'Feu »)
+    const el2 = `${w2[0].toUpperCase() + w2.slice(1)} fait +50 % sur lui, ${le(def.res)} seulement la moitié.`;
     if (R.train) return `<div class="wb-res"><span class="xs muted">Essai d'entraînement · ${why}</span><div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div>
-      <p class="small muted">${solo() ? "Rien n'est compté dans une partie solo." : "Rien n'est compté sans compte."} ${tip}L'${el2}</p>
+      <p class="small muted">${solo() ? "Rien n'est compté dans une partie solo." : "Rien n'est compté sans compte."} ${tip}${el2}</p>
       <div class="row" style="gap:8px;justify-content:center"><button class="btn" data-act="wb-rewatch">Revoir le combat</button>${solo() ? `<button class="btn primary" data-act="sv-menu">Changer de partie</button>` : `<button class="btn primary" data-act="on-loginscreen">Créer un compte pour frapper</button>`}<button class="btn" data-act="sm-wquit">Retour</button></div></div>`;
     const ch = Object.entries(R.cons || {})[0] || ["coffre_bois", 1];
     const kill = R.killed ? `<div class="wb-killed">${confetti()}<b>Tu as porté le dernier coup : ${h(def.name)} est tombé !</b><br><span class="small">Coffre en or, Fragments et bonus d'XP pour tout le monde. Le boss suivant arrive.</span></div>` : "";
@@ -258,7 +259,7 @@
       <div class="big g-${G.g}">${G.g}</div><div class="dmg">${nf(R.pv)} PV de dégâts</div>${R.fights ? `<div class="wb-fights"><span class="xs muted">Total de tes ${R.fights.length} combats (le combat montré est l'un d'eux) :</span>${R.fights.map((f, i) => `<span class="tag soft">Combat ${i + 1} · ${nf(f.points * E.WB_PV)} PV${f.alive ? "" : ` · tombés au tour ${f.rounds}`}</span>`).join("")}</div>` : ""}<span class="small muted">soit ${pctTxt((R.points / R.hp) * 100)} de ses PV${R.rank ? ` · tu es ${R.rank}<sup>${R.rank === 1 ? "er" : "e"}</sup> au classement` : ""}</span><br>
       <div class="chest">${chest(ch[0])}<span style="text-align:left"><b>${h(consTxt(R.cons))}</b><br><span class="xs muted">dans ton sac</span></span>${fragImg()}<span style="text-align:left"><b>+${R.frag} Fragment${R.frag > 1 ? "s" : ""}</b><br><span class="xs muted">${nf(E.wbFrags(S()))} au total</span></span></div>
       ${R.killed ? "" : `<div class="wb-hp" style="margin:6px 0 10px"><i style="width:${(Math.max(0, R.hp - R.dmg) / R.hp) * 100}%"></i><b>Il lui reste ${pctTxt((Math.max(0, R.hp - R.dmg) / R.hp) * 100)}</b></div>`}
-      <p class="small muted">${tip}L'${el2}</p>
+      <p class="small muted">${tip}${el2}</p>
       <div class="row" style="gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn" data-act="usecons" data-id="${ch[0]}">Ouvrir le coffre</button><button class="btn" data-act="wb-rewatch">Revoir le combat</button>${tl ? `<button class="btn primary" data-act="wb-again">Encore ${tl} essai${tl > 1 ? "s" : ""}</button>` : ""}<button class="btn" data-act="sm-wquit">Retour</button></div></div>`;
   }
   function confetti() { const c = ["#f1cf6e", "#e2533b", "#9fd84a", "#6cb6ff", "#c45cff"]; let s = ""; for (let i = 0; i < 14; i++) s += `<i class="cf" style="left:${i < 7 ? i * 14 + 2 : (i - 7) * 14 + 4}%;top:${i < 7 ? 2 + (i % 2) * 4 : 86 + (i % 2) * 5}%;background:${c[i % 5]};transform:rotate(${i * 41}deg)"></i>`; return s; }

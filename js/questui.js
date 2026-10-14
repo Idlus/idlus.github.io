@@ -309,11 +309,11 @@
       <div class="qx-lb"><span class="qj-lab">Classement des points</span>${lbHtml}</div></div>`;
     const FIL = [["all", "Tous"], ["near", "Presque finis"], ["run", "En cours"], ["got", "Obtenus"], ["sec", "Secrets"]];
     const tools = `<div class="row qx-atools"><div class="qj-fil">${FIL.map(([k, l]) => `<button data-act="qj-af" data-v="${k}" aria-pressed="${st.af === k}">${l}</button>`).join("")}</div><span class="grow"></span><input class="qx-search" id="qxSearch" type="search" placeholder="Chercher un succès…" aria-label="Chercher un succès" value="${h(st.achq)}" autocomplete="off"></div>`;
-    const q = st.achq.trim().toLowerCase();
+    const q = E.searchNorm(st.achq); // 1.0.12.8 : sans accents ni majuscules (« kolizeum » trouve les succès du Kolizéum)
     const fil = (a) => st.af === "all" || (st.af === "got" ? s.ach[a.id] : st.af === "sec" ? a.secret : st.af === "near" ? !s.ach[a.id] && !hidden(s, a) && achRatio(s, a) >= 0.5 : !s.ach[a.id] && !hidden(s, a) && achRatio(s, a) > 0);
     let main;
     if (q || st.af !== "all") {
-      const L = E.ACH.filter((a) => fil(a) && (!q || (!hidden(s, a) && (a.name + " " + a.desc).toLowerCase().includes(q))));
+      const L = E.ACH.filter((a) => fil(a) && (!q || (!hidden(s, a) && E.searchNorm(a.name + " " + a.desc).includes(q))));
       main = `<section class="panel"><div class="phead"><h2>${q ? `Recherche « ${h(st.achq)} »` : h(FIL.find((x) => x[0] === st.af)[1])}</h2><span class="xs muted num">${L.length} succès</span></div>${L.length ? achList(s, L.slice(0, 300)) : `<div class="pad small muted">Aucun succès ne correspond.</div>`}</section>`;
     } else {
       const near = nearAch(s, 3);
@@ -378,7 +378,8 @@
     const d = t.dataset; const ui = UI();
     switch (a) {
       case "qj-help": st.help[d.v] = !st.help[d.v]; break;
-      case "qj-dof": st.dof = d.v; break;
+      case "qj-dof": { st.dof = d.v; X().render(); const f = document.querySelector(".qj-fiche"); // 1.0.12.8 : au téléphone la fiche est au-dessus de la grille, on la fait venir à l'écran
+        if (f && window.matchMedia("(max-width:860px)").matches) f.scrollIntoView({ block: "start" }); return; }
       case "qj-dfil": st.dfil = d.v; break;
       case "qj-cat": st.cat = d.v; break;
       case "qj-shop": st.shop = d.v; ui.tab = "quests"; ui.qt = "shops"; X().closeSheet(); break;

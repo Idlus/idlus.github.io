@@ -443,6 +443,7 @@ const MOCK = () => {
     if (!/^Coffre/.test(await page.inputValue("#gcN1")) || !/Coffre/.test(await page.textContent(".gc-card"))) fail("codes cadeaux : choix dans la liste non pris");
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
     // 0.1.52.1 : fiches joueurs (réservées à l'admin), avec la partie lue par le jeu
+    await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.12.8 : chat ouvert à 1280 px, le menu en icônes laisse la bulle « Découverte » sur la liste des joueurs
     await page.click('.adm [data-act="adm-tab"][data-v="fiches"]'); await page.waitForSelector('.adm [data-act="fj-sel"]', { timeout: 5000 });
     await page.click('.adm [data-act="fj-sel"]'); await page.waitForSelector(".adm .fj-hero", { timeout: 5000 });
     { const tx = await page.textContent(".adm .fj-main"); if (!/Les Tofus/.test(tx) || !/Quête principale/.test(tx) || !/Kolizéum/.test(tx)) fail("fiches joueurs : fiche incomplète"); }
