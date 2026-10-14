@@ -5199,3 +5199,4 @@ span.fch{cursor:default;padding-left:8px}
 .toast.lootup{display:flex;align-items:center;gap:8px}.toast.lootup b{color:#5fd36b}.toast.lootup .btn{flex:none}
 .toast.lootup{pointer-events:auto}
 @media (max-width:860px){.invtools .invbar select{flex:1 1 0;min-width:0}.invfor{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.invfor>*{flex:none}}
+@media (max-width:860px){.invcmpl{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.invcmpl>*{flex:none}}
