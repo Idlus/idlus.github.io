@@ -152,7 +152,10 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   const S10 = E.deserialize(E.serialize ? E.serialize(S9) : JSON.stringify(S9)); assert.ok(S10.mounts[M.uid] && S10.chars[0].mount === M.uid && S10.enclos.built, "montures perdues à la sauvegarde");
   const old = JSON.parse(JSON.stringify(S9)); delete old.mounts; delete old.mountUid; delete old.mountSeen; delete old.enclos; delete old.chars[0].mount; const S11 = E.deserialize(JSON.stringify(old)); assert.ok(S11.mounts && S11.enclos && !S11.enclos.built, "ancienne sauvegarde sans montures");
   assert.ok(D.SPECIAL_CRAFTS["Filet de capture"] && D.SPECIAL_CRAFTS["Filet de capture"].cons === "filet", "recette du filet");
-  console.log(`ok - montures : ${n} couleurs, capture, part d'XP, enclos, sauvegarde`);
+  // 1.0.32 : relâcher une monture (refusé à l'enclos, fait descendre son cavalier, libère une place)
+  { const n0 = E.stableN(S9); assert.strictEqual(E.startBreed(S9, A.uid, B.uid), null, "couple relancé"); assert.ok(E.act(S9, "releaseMount", A.uid), "pas de relâche à l'enclos");
+    E.stopBreed(S9, 0); assert.strictEqual(E.act(S9, "releaseMount", M.uid), null, "relâcher la monture montée"); assert.ok(!c.mount && !S9.mounts[M.uid], "le héros descend, la monture disparaît"); assert.strictEqual(E.stableN(S9), n0 - 1, "une place libérée"); }
+  console.log(`ok - montures : ${n} couleurs, capture, part d'XP, enclos, sauvegarde, relâcher`);
 }
 
 /* 0.1.10 : idoles */

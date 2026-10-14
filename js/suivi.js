@@ -28,7 +28,7 @@
     forgemage: "fm", transForge: "fm", signItem: "fm", fuseRunes: "fm", transmute: "fm", exoForge: "fm", exoCraft: "fm", startFmPlan: "fm",
     buyHavre: "havre", growRoom: "havre", buyFurn: "havre", placeFurn: "havre", buildAtelier: "havre", setAtelier: "havre",
     craftItem: "craft", craftSpecial: "craft", craftMany: "craft", craftScroll: "craft", upgradeTool: "craft", setJob: "craft",
-    buildEnclos: "monture", startBreed: "monture", equipMount: "monture", setMountShare: "monture",
+    buildEnclos: "monture", startBreed: "monture", releaseMount: "monture", equipMount: "monture", setMountShare: "monture",
     buyShop: "boutique", buyNets: "boutique", useConsumable: "boutique",
     enterDungeon: "donjon", leaveDungeon: "donjon", stopChain: "donjon", toggleIdol: "idole",
     almanaxOffer: "quete", redeemGift: "quete", togglePin: "quete", rerollBounty: "quete",

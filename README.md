@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32 « Relâcher une monture »
+
+Demande de Mathis (14/10/2026, « ajouter un bouton « Relâcher » tout de suite, en petite mise à jour avant la 1.1 ») : le jeu n'avait aucun moyen de libérer une place à l'écurie, si bien qu'une écurie pleine bloquait les naissances de l'enclos (« Le petit attend ») et les captures au filet. `E.releaseMount` (js/mounts.js, action `releaseMount`) supprime la monture après confirmation, la fait descendre de son héros et refuse une monture à l'enclos. Boutons dans la fiche de couleur (js/collui.js, `co-mfree`) et dans l'écurie du héros (js/ui.js, `mountfree`). Test dans tests/fight.test.js.
+
 ## 1.0.31 « Sorts expliqués »
 
 Demande de Mathis (14/10/2026, « Préparer une refonte des sorts pour qu'il soit plus compréhensible », réponses 1A 2A 3A 4A) : spSentence (js/ui.js) écrit chaque sort en une phrase avec spellEstimate, roleBadge donne son rôle ; grimNew remplace la grille d'icônes par une liste triée par dégâts par tour ; spDouble signale une attaque du même élément et du même type qui fait 25 % de plus par PA ; spCondHtml ne garde que les conditions utiles par rôle (COND_BY_ROLE) ; logLineNew illustre les sorts dans le journal. Aucune règle de combat ne change.

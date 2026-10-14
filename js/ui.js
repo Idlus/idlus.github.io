@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.31";
+const GAME_VERSION = "1.0.32";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32", name: "Relâcher une monture", items: [
+    "Montures : un bouton « Relâcher » libère une place à l'écurie (après confirmation, la monture disparaît pour toujours)",
+    "Il est dans la fiche de chaque couleur (Héros › Familiers et montures) et dans la liste de l'écurie du héros",
+    "Un petit bloqué à l'enclos par une écurie pleine naît dès qu'une place se libère",
+  ] },
   { v: "1.0.31", name: "Sorts expliqués", items: [
     "Fiche de chaque sort en une phrase : son rôle (Attaque, Soin, Bouclier, Invocation…), ce qu'il fait avec les vrais chiffres de ton héros, son coût et ses dégâts par tour. Même texte dans les infobulles et en combat",
     "Grimoire en liste : les attaques de la plus forte à la plus faible avec tes caractéristiques, puis le soutien. « Pas ton élément » et le niveau de déblocage sont affichés",
@@ -5184,7 +5189,7 @@ function mountCard(M, c, opts = {}) {
       ${M.lvl < E.MOUNT_MAX ? `<div class="xs muted">Au niveau ${E.MOUNT_MAX} : ${mountStatTxt(mx)}</div>` : ""}
       ${opts.big ? `<div class="xs muted">Petits : ${M.kids}/${E.kidsCap(S)}${why ? ` · élevage : ${why}` : " · peut aller à l'enclos"}</div>` : ""}
     </div>
-    ${opts.act ? (c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? (owner ? `Prendre à ${h(owner.name)}` : "Monter") : "Niv. " + E.mountReq(M)}</button>`) : ""}
+    ${opts.act ? `<div class="stack" style="gap:4px">${c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? (owner ? `Prendre à ${h(owner.name)}` : "Monter") : "Niv. " + E.mountReq(M)}</button>`}<button class="btn sm" data-act="mountfree" data-uid="${M.uid}" ${E.inPair(S, M.uid) ? `disabled data-tip="À l'enclos"` : ""}>Relâcher</button></div>` : ""}
   </div>`;
 }
 function mountPanel(c) {
@@ -5217,7 +5222,7 @@ function enclosBody() {
   const pairs = S.enclos.pairs.map((p, i) => { const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return "";
     return `<div class="breed"><div class="bpair">${im(mountImg(A.sp, A.c), "", "")}<b>+</b>${im(mountImg(B.sp, B.c), "", "")}</div><div class="grow"><b>${h(E.colourName(A.sp, A.c))} + ${h(E.colourName(B.sp, B.c))}</b> <span class="xs muted">${h(E.MOUNTS[A.sp].name)}s</span>
       <div class="xs">${E.breedOdds(S, A, B).map(([c, pc, neu]) => `${neu ? `<b class="neu">${seenCol(A.sp, c) ? h(E.colourName(A.sp, c)) : "nouvelle couleur"}</b>` : h(E.colourName(A.sp, c))} ${pc} %`).join(" · ")}</div>
-      <div class="xs ${p.wait ? "ko" : "muted"}">${p.wait ? "Le petit attend : l'écurie est pleine" : `Naissance dans ${E.etaTxt(Math.ceil(p.t / 1000))} · continue hors ligne`}</div><div class="bar"><i style="width:${100 - pct(p.t, E.birthMs(S))}%"></i></div></div><button class="btn sm" data-act="breedstop" data-i="${i}">Annuler</button></div>`; }).join("");
+      <div class="xs ${p.wait ? "ko" : "muted"}">${p.wait ? "Le petit attend : l'écurie est pleine, relâchez une monture (Héros › Familiers et montures)" : `Naissance dans ${E.etaTxt(Math.ceil(p.t / 1000))} · continue hors ligne`}</div><div class="bar"><i style="width:${100 - pct(p.t, E.birthMs(S))}%"></i></div></div><button class="btn sm" data-act="breedstop" data-i="${i}">Annuler</button></div>`; }).join("");
   const gens = {}; for (const c in Sp.cols) (gens[Sp.cols[c].g] = gens[Sp.cols[c].g] || []).push(c);
   const bicos = Object.keys(S.mountSeen[sp] || {}).filter(E.isBico);
   return `<div class="stack carnet">
@@ -8298,6 +8303,7 @@ document.addEventListener("click", (ev) => {
     case "petall": ui.petAll = true; break;
     case "mounton": { const o = E.mountOwner(S, +d.uid); const r = E.equipMount(S, c.id, +d.uid); msg(r); if (!r && o && o !== c) toast(`${o.name} n'a plus de monture.`); dirty = true; break; } // 1.0.12.8 : idem pour la monture
     case "mountoff": E.equipMount(S, c.id, null); dirty = true; break;
+    case "mountfree": { const M = S.mounts[+d.uid]; if (!M) return; if (!confirm(`Relâcher ${E.mountName(M)} (niveau ${M.lvl}) ? Elle disparaît pour toujours et libère une place à l'écurie.`)) return; const r = E.act(S, "releaseMount", +d.uid); if (r) { toast(r); return; } toast(`${E.mountName(M)} est relâché${M.sp === "dd" ? "e" : ""}.`); dirty = true; break; } // 1.0.32
     case "mountshare": E.setMountShare(S, c.id, +d.v); dirty = true; break;
     case "buynet": { const r = E.buyNets(S, 1); if (r) { toast(r); return; } toast("Filet de capture acheté."); dirty = true; break; }
     case "enclosbuild": { const r = E.buildEnclos(S); if (r) { toast(r); return; } dirty = true; break; }

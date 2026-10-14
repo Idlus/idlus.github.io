@@ -1,6 +1,15 @@
 {
-  "version": "1.0.31",
+  "version": "1.0.32",
   "versions": [
+    {
+      "v": "1.0.32",
+      "name": "Relâcher une monture",
+      "items": [
+        "Montures : un bouton « Relâcher » libère une place à l'écurie (après confirmation, la monture disparaît pour toujours)",
+        "Il est dans la fiche de chaque couleur (Héros › Familiers et montures) et dans la liste de l'écurie du héros",
+        "Un petit bloqué à l'enclos par une écurie pleine naît dès qu'une place se libère"
+      ]
+    },
     {
       "v": "1.0.31",
       "name": "Sorts expliqués",

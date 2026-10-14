@@ -103,6 +103,16 @@
     S.stats.captures = (S.stats.captures || 0) + 1;
     return M;
   };
+  /* 1.0.32 : relâcher une monture pour libérer une place à l'écurie (définitif ; refusé si elle est à l'enclos) */
+  E.releaseMount = (S, uid) => {
+    const M = S.mounts && S.mounts[uid]; if (!M) return "Monture introuvable.";
+    if (E.inPair(S, M.uid)) return "Elle est à l'enclos : annulez d'abord le couple.";
+    const o = E.mountOwner(S, M.uid); if (o) { delete o.mount; E.refreshSpells(o, E.charStats(S, o)); }
+    delete S.mounts[uid]; S.stats.released = (S.stats.released || 0) + 1;
+    note(S, `${E.mountName(M)} (niveau ${M.lvl}) est relâché${M.sp === "dd" ? "e" : ""} : une place se libère à l'écurie.`, "info");
+    if (o) E.emit(S, "equip", {});
+    return null;
+  };
   E.buyNets = (S, n) => {
     n = Math.max(1, n | 0); const cost = n * E.NET_COST;
     if (S.kamas < cost) return `Il faut ${cost.toLocaleString("fr-FR")} kamas.`;
@@ -165,7 +175,7 @@
   E.stopBreed = (S, i) => { const p = S.enclos.pairs[i]; if (!p) return "Couple introuvable."; S.enclos.pairs.splice(i, 1); return null; };
   const birth = (S, p) => {
     const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return true; // monture disparue : couple annulé
-    if (E.stableN(S) >= E.stableCap(S)) { if (!p.wait) { p.wait = true; note(S, "Un petit attend à l'enclos : l'écurie est pleine.", "warn"); } return false; }
+    if (E.stableN(S) >= E.stableCap(S)) { if (!p.wait) { p.wait = true; note(S, "Un petit attend à l'enclos : l'écurie est pleine. Relâchez une monture pour lui faire de la place.", "warn"); } return false; }
     const odds = E.breedOdds(S, A, B); let r = rnd() * 100; let c = odds[odds.length - 1][0];
     for (const [col, pc] of odds) { if (r < pc) { c = col; break; } r -= pc; }
     A.kids++; B.kids++; S.enclos.births = (S.enclos.births || 0) + 1;

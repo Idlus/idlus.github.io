@@ -3559,7 +3559,7 @@
     buyHavre: "agrandir le Havre-Sac", growRoom: "agrandir une pièce du Havre-Sac", buyFurn: "acheter un meuble (boutique de la maison)", placeFurn: "placer un meuble", unplaceFurn: "ranger un meuble",
     buildAtelier: "construire l'atelier", setAtelier: "choisir la recette de l'atelier", buildEnclos: "construire l'enclos",
     equipPet: "équiper un familier", equipMount: "équiper une monture", setMountShare: "part d'XP pour la monture",
-    startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement",
+    startBreed: "lancer un accouplement", stopBreed: "arrêter l'accouplement", releaseMount: "relâcher une monture",
     // divers
     almanaxOffer: "offrande de l'Almanax", togglePin: "épingler un objectif", redeemGift: "utiliser un code cadeau",
   };

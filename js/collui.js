@@ -105,6 +105,8 @@
       <div class="small co-where"><span><span class="muted">Où :</span> ${h(e.where)}</span>${e.own ? "" : goBtn(e)}</div>
       ${e.food ? `<div class="small"><span class="muted">Aime :</span> ${h(e.food)} <span class="xs muted">(compte double)</span></div>` : ""}
       ${wearer}
+      ${e.sp && e.L.length ? `<div class="small muted">À l'écurie (${E.stableN(s)} / ${E.stableCap(s)} places) :</div><div class="stack" style="gap:4px">${e.L.map((M) => { const o = E.mountOwner(s, M.uid); const enc = E.inPair(s, M.uid);
+        return `<div class="row between small"><span>Niveau ${M.lvl} · petits ${M.kids}/${E.kidsCap(s)}${o ? ` · montée par ${h(o.name)}` : ""}${enc ? " · à l'enclos" : ""}</span><button class="btn sm" data-act="co-mfree" data-uid="${M.uid}" ${enc ? "disabled" : ""}>Relâcher</button></div>`; }).join("")}</div>` : ""}
       ${e.own ? `<div class="small muted">Équiper sur :</div><div class="co-heroes">${heroBtns(s, e)}</div>` : `<p class="note xs">${e.sp ? (e.wild ? "Avec un filet dans le sac, chaque victoire dans cette zone sauvage peut la capturer, en ligne comme hors ligne." : "Cette couleur naît à l'enclos du Havre-Sac, en faisant se reproduire les deux couleurs indiquées.") : e.kind === "zone" ? "1 chance sur 2 000 par victoire dans sa sous-zone, même hors ligne." : e.kind === "boss" ? "Sur son boss, à partir de la stasis 7 : 1 chance sur 25." : "Sur son boss, à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire."}</p>`}
       <div class="xs muted">Les ${word} que tu n'as pas encore : touche-les pour voir où les trouver, avec « Y aller ».</div></div>`;
   }
@@ -293,6 +295,10 @@
         if (r) { X().toast(r, "warn"); return; }
         X().markDirty(); X().toast(`${nm} : ${st.pk === "mt" ? "montée" : "équipé"} sur ${c ? c.name : "le héros"}.`);
         X().render(); paintSheet(); return; }
+      case "co-mfree": { const M = s.mounts[+d.uid]; if (!M) return; // 1.0.32 : relâcher une monture
+        if (!confirm(`Relâcher ${E.mountName(M)} (niveau ${M.lvl}) ? Elle disparaît pour toujours et libère une place à l'écurie.`)) return;
+        const r = E.act(s, "releaseMount", M.uid); if (r) { X().toast(r, "warn"); return; }
+        X().markDirty(); X().toast(`${E.mountName(M)} est relâché${M.sp === "dd" ? "e" : ""}.`); X().render(); paintSheet(); return; }
       case "co-regall": st.regAll = !st.regAll; break;
       case "co-sf": st.sf = d.v; st.sn = 30; break;
       case "co-smore": st.sn += 30; break;
