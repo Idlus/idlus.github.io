@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.14.1";
+const GAME_VERSION = "1.0.14.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.14.2", name: "Menu de la poussière", items: [
+    "Toucher la pastille de Poussière de stasis en haut de l'écran ouvre un petit menu : combien vous en avez, à quoi elle sert et où en gagner",
+    "Les Petits parchemins de caractéristique se fabriquent directement depuis ce menu (6 boutons avec leur prix en poussière et en kamas, et le nombre que vous pouvez encore fabriquer)",
+    "Idoles, Pierres d'âme et Parfum de pistage : un bouton « Y aller » ouvre la bonne recette du Bricoleur",
+    "Sources rappelées avec leurs quantités : donjons en stasis, coffres, Défi du jour, Kolizéum, Songe, guilde et chasses au trésor",
+    "La pastille s'affiche aussi sur téléphone",
+  ] },
   { v: "1.0.14.1", name: "Clés un peu plus rares", items: [
     "Les clés de donjon tombent un peu moins souvent en chasse : environ 30 % de moins qu'avant (il faut chasser à peu près 1,4 fois plus longtemps pour une clé)",
     "Les clés des quêtes, des commandes du jour et des autres récompenses ne changent pas",
@@ -1709,7 +1716,7 @@ function statusHtml() {
     <span class="it"><span class="coin"></span><b class="num" id="stKamas">${fmt(S.kamas)}</b><span class="hide-sm">kamas</span></span>
     ${sabHtml()}
     <span class="it"><span class="dot ${(S.hunting && E.team(S).length) || S.dungeon || E.expActive(S) ? "" : "off"}"></span><b>${team.length}</b>/8 <span class="hide-sm">héros</span></span>
-    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<span class="it hide-sm" data-tip="Poussières de stasis">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></span>` : ""}
+    <span class="it hide-sm st-where" data-tip="${h(where)}">${IC("monde")} <span class="st-wt">${h(where)}</span></span>${(S.res[E.POUSSIERE] || 0) > 0 ? `<button class="it dustchip" id="dustchip" data-act="dustmenu" aria-haspopup="dialog" aria-expanded="${$("#dustpop") ? "true" : "false"}" title="Poussière de stasis : à quoi elle sert, où en gagner">${IC("poussiere")}<b class="num">${fmt(S.res[E.POUSSIERE])}</b></button>` : ""}
     ${(S.chalStreak || 0) > 1 ? `<span class="it flame" data-tip="Série de combats où tous les challenges sont réussis : +1 % d'XP et de butin par combat (max +10 %). Elle retombe à zéro au premier échec.">${G("flame")} <b>×${S.chalStreak}</b> <span class="hide-sm">+${Math.min(E.CHAL_STREAK_MAX, (S.chalStreak - 1) * E.CHAL_STREAK_STEP)} %</span></span>` : ""}
     ${activeBoosts().length ? `<span class="it boostchip" data-tip="${h(activeBoosts().map((b) => `${b.name} : ${b.txt} (${dur(b.left)})`).join(" · "))}">${activeBoosts().map((b) => emo(b.icon)).join("")} <span id="stBoost">${dur(Math.min(...activeBoosts().map((b) => b.left)))}</span></span>` : ""}
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
@@ -1724,6 +1731,48 @@ function sabHtml() {
   if (!B.open) return `<button class="it sabpill lock" data-act="sabinfo" data-tip="Vitesse ×2 / ×3 : se débloque à la fin d'Incarnam (quête « La Crypte de Kardorim »)."><span class="sb">⏳</span>${G("lock")}<span class="hide-sm">Vitesse</span></button>`;
   return `<span class="it sabpill ${B.spd > 1 ? "on" : ""}"><button class="sbi" data-act="sabinfo" data-tip="Sablier de Xélor : réserve de temps rapide (+3 h par jour)"><span class="sb">⏳</span><b class="num" id="stSab">${sabLeft(B.r)}</b></button><span class="seg">${[1, 2, 3].map((v) => `<button data-act="sabspd" data-v="${v}" aria-pressed="${B.spd === v}" title="Vitesse ×${v}">×${v}</button>`).join("")}</span></span>`;
 }
+/* 1.0.14.2 « Menu de la poussière » : la pastille de poussière de stasis ouvre une petite fenêtre accrochée dessous
+   (pleine largeur au téléphone) : parchemins à fabriquer sur place, autres dépenses avec « Y aller », et d'où elle vient. */
+const DUST_SRC = [["cle", "Donjons en stasis", "2 par stasis, +4 dès la stasis 4 · mutateurs +25 à +50 %", "2 à 24"], ["coffre", "Coffres", "Du coffre en bois au Coffre des Douze", "5 à 100"],
+  ["combat", "Défi du jour", "Autant qu'un passage du donjon", "2 à 24"], ["trophee", "Kolizéum", "Par victoire, et 10 contre 10 Kolizetons à la boutique", "2"],
+  ["havre", "Songe, guilde et chasses", "Fin de songe, boss de guilde, Percepteur, chasses au trésor", "selon le palier"]];
+function dustScrollsLeft(have) { // nombre de Petits parchemins faisables avec la poussière, du moins cher au plus cher
+  const done = Object.assign({}, S.scrollCrafted || {}); let n = 0;
+  for (; n < 999; n++) { let k = BASE_STATS[0]; BASE_STATS.forEach((x) => { if ((done[x] || 0) < (done[k] || 0)) k = x; }); const c = E.scrollCraftCost({ scrollCrafted: done }, k).dust; if (c > have) break; have -= c; done[k] = (done[k] || 0) + 1; }
+  return n;
+}
+function dustMenuHtml() {
+  const have = S.res[E.POUSSIERE] || 0; const n = dustScrollsLeft(have);
+  const li = (ico, t, d, q, btn) => `<div class="dm-li">${ico}<span class="grow"><b>${t}</b><span class="xs muted">${d}</span></span><span class="dm-q num">${q}</span>${btn || ""}</div>`;
+  const sc = BASE_STATS.map((k) => { const c = E.scrollCraftCost(S, k); const ok = have >= c.dust && S.kamas >= c.kamas;
+    return `<button class="dm-sc${ok ? "" : " off"}" data-act="craftscroll" data-k="${k}" title="Fabriquer un Petit parchemin de ${h(STATS[k].name)}">${sIco(k)}<span><b>${h(STATS[k].name)}</b><span class="xs muted">${fmt(c.dust)} ${IC("poussiere", "dm-i")} · ${fmt(c.kamas)} ${IC("kamas", "dm-i")}</span></span></button>`; }).join("");
+  const go = (id) => `<button class="btn sm" data-act="dustgo" data-id="${h(id)}">Y aller</button>`;
+  return `<div class="dm-head">${IC("poussiere", "dm-big")}<span class="grow"><b class="dm-t">Poussière de stasis</b><span class="xs muted">Tu en as</span></span><b class="num dm-n">${fmt(have)}</b><button class="ic-btn" data-act="dustclose" aria-label="Fermer">✕</button></div>
+    <section class="dm-sec"><h3>${G("cart")} Dépenser</h3>
+      <div class="small"><b>Petits parchemins</b> <span class="xs muted">+1 définitif pour un héros, à utiliser dans Héros › Caractéristiques · ${n ? `${fmt(n)} fabricable${n > 1 ? "s" : ""} avec ta poussière` : "pas assez de poussière"}</span></div>
+      <div class="dm-grid">${sc}</div>
+      ${li(`<img class="uico" src="assets/id/pro.webp" alt="">`, "Idoles", "Fabrication chez le Bricoleur, à partir du niveau 80", "10 à 35", `<button class="btn sm" data-act="dustgo" data-id="idols">Y aller</button>`)}
+      ${li(IC("dofus"), "Pierres d'âme ×5", "Bricoleur niv. 25 · capturent les archimonstres pour l'album", "5", go("Pierre d'âme"))}
+      ${li(IC("bonbon"), "Parfum de pistage", "Bricoleur niv. 40 · chances d'archimonstre ×2 pendant 2 h", "15", go("Parfum de pistage"))}</section>
+    <section class="dm-sec"><h3>${G("star")} Gagner</h3>${DUST_SRC.map(([ic, t, d, q]) => li(IC(ic), t, d, q)).join("")}</section>`;
+}
+const dustKey = () => `${S.res[E.POUSSIERE] || 0}|${Math.floor(S.kamas / 100)}|${JSON.stringify(S.scrollCrafted || {})}`;
+function dustClose() { const p = $("#dustpop"); if (p) p.remove(); const c = $("#dustchip"); if (c) c.setAttribute("aria-expanded", "false"); }
+function dustPlace() {
+  const p = $("#dustpop"), c = $("#dustchip"); if (!p) return;
+  if (c && !narrow()) { const r = c.getBoundingClientRect(); p.style.top = r.bottom + 8 + "px"; p.style.left = Math.max(8, Math.min(innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + "px"; }
+  else p.style.top = Math.max(0, $("#status").getBoundingClientRect().bottom) + 6 + "px";
+}
+function dustOpen() {
+  if ($("#dustpop")) return dustClose();
+  const p = document.createElement("div"); p.id = "dustpop"; p.className = "dm-pop"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Poussière de stasis");
+  p.dataset.k = dustKey(); p.innerHTML = dustMenuHtml(); document.body.appendChild(p); dustPlace();
+  const c = $("#dustchip"); if (c) c.setAttribute("aria-expanded", "true");
+}
+function dustRefresh() { const p = $("#dustpop"); if (!p || !S) return; const k = dustKey(); if (p.dataset.k !== k) { p.dataset.k = k; p.innerHTML = dustMenuHtml(); } dustPlace(); }
+document.addEventListener("click", (ev) => { const p = $("#dustpop"); if (p && !ev.target.closest("#dustpop,#dustchip")) dustClose(); }, true);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && $("#dustpop")) dustClose(); });
+addEventListener("resize", () => dustPlace());
 function sabSheet() {
   const B = E.sab(S); const fill = Math.min(100, Math.round((B.r / E.SAB_MAX) * 100));
   openSheet(`<h2>⏳ Sablier de Xélor</h2>
@@ -1743,7 +1792,7 @@ function sabSheet() {
     </ul>
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); requestAnimationFrame(() => document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px")); }
+function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
 const PIN_ICO = { quest: "quetes", bounty: "combat", align: "ailes", shop: null, lvl: null, ach: "trophee" };
 function objsHtml() {
@@ -6937,6 +6986,7 @@ document.addEventListener("click", (ev) => {
     case "unjob": { E.setJob(S, +d.id, null); closeSheet(); break; }
     case "tool": msg(E.upgradeTool(S, d.job)); break;
     case "setshop": { let n = 0; E.setPieces(d.id).filter((t) => ITEMS[t].craft && !Object.values(S.items).some((x) => x.tpl === t)).forEach((t) => { if (!S.shop.some((e) => e.k === "tpl" && e.id === t)) { S.shop.push({ k: "tpl", id: t }); n++; } }); toast(n ? `${n} pièce${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la liste de courses (Accueil).` : "Ces pièces sont déjà dans la liste de courses."); break; }
+    case "dustgo": dustClose(); if (d.id === "idols") { idolSheet(); return; } { const R = SPECIAL_CRAFTS[d.id]; if (!R) return; ui.craftJob = R.job; const F = fltOf("met"); F.q = d.id; F.mode = "all"; ui.recSel = d.id; ui.recStick = d.id; ui.recQty = "1"; pageGo("craft"); if (narrow()) recSheet(); return; }
     case "shopgo": { const e = S.shop[+d.i]; if (!e) return;
       if (e.k === "tool") { ui.toolOpen = Object.assign(ui.toolOpen || {}, { [e.id]: true }); pageGo("metiers"); ui.met = "recolte"; render(); return; }
       const job = e.k === "special" ? (SPECIAL_CRAFTS[e.id] || {}).job : ITEMS[e.id] && ITEMS[e.id].craft && ITEMS[e.id].craft.job; if (!job) return;
@@ -7002,6 +7052,7 @@ document.addEventListener("click", (ev) => {
     case "updseen": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); return;
     case "changelog": S.seenVersion = GAME_VERSION; dirty = true; renderUpdBar(); renderStatus(); changelogSheet(); return;
     case "sabinfo": sabSheet(); return;
+    case "dustmenu": dustOpen(); return; case "dustclose": dustClose(); return;
     case "bontoggle": ui.bonOpen = ui.bonOpen === false; break;
     case "altar": { const r = E.buyAltar(S); if (r) { toast(r); return; } toast(`Autel des Douze niveau ${E.altarLvl(S)} : plafonds relevés de +${E.ALTAR.per} !`, "rare"); break; }
     case "csetsheet": combatSetSheet(); return;
@@ -7125,7 +7176,7 @@ document.addEventListener("click", (ev) => {
     case "dealloc": E.deallocate(S, c.id, d.k, +d.n); break;
     case "allocmode": { const x = char(+d.id); E.setAllocMode(S, x, d.v === "1"); if (!x.spellsManual) E.refreshSpells(x, E.charStats(S, x)); break; }
     case "resetpts": E.resetPoints(S, +d.id); toast("Points réinitialisés" + (char(+d.id).autoStat ? " et redistribués." : ".")); break;
-    case "craftscroll": { ev.preventDefault(); const r = E.craftScroll(S, d.k); if (r) { toast(r); return; } toast(`Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le avec le lien « à utiliser ».`); break; }
+    case "craftscroll": { ev.preventDefault(); const r = E.craftScroll(S, d.k); if (r) { toast(r); return; } toast(`Petit parchemin de ${STATS[d.k].name} fabriqué : utilisez-le dans Héros › Caractéristiques (lien « à utiliser »).`); dustRefresh(); break; }
     case "usescroll": { ev.preventDefault(); const k = d.k; const ids = ["parch_" + k + "_g", "parch_" + k + "_p"].filter((id) => S.cons[id] > 0); let n = 0, r = null;
       for (const id of ids) while (S.cons[id] > 0 && !(r = E.useConsumable(S, id, c.id))) n++;
       toast(n ? `${n} parchemin${n > 1 ? "s" : ""} utilisé${n > 1 ? "s" : ""} sur ${c.name}.` : r || "Rien à utiliser."); break; }

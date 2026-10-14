@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.14.2 « Menu de la poussière »
+Demande de Mathis (« un menu quand on clique sur la poussière », maquette https://claude.ai/artifact/BZJZ8paM4NVqbPKR4qkr9Z, réponse 1A 2A 3A 4A). La pastille de poussière de la barre du haut (`#dustchip`, js/ui.js `statusHtml`) devient un bouton visible aussi au téléphone ; elle ouvre `#dustpop` (`dustOpen`/`dustMenuHtml`), fenêtre accrochée sous la pastille sur PC et pleine largeur au téléphone, fermée par ✕, Échap ou un clic ailleurs, rafraîchie avec la barre du haut quand la poussière, les kamas ou les parchemins changent (`dustRefresh`). Dépenser : 6 boutons `craftscroll` (prix `E.scrollCraftCost`), Idoles (`idolSheet`), Pierre d'âme et Parfum de pistage (action `dustgo` vers la recette du Bricoleur). Gagner : donjons en stasis, coffres, Défi du jour, Kolizéum, Songe/guilde/chasses. Styles `.dm-*` en fin de css/style.css.
+
 ## 1.0.14.1 « Clés un peu plus rares »
 Demande de Mathis (« baisser un peu le taux de drop des clés de donjon »). `E.KEY_DROP_SCALE = 0.7` (js/engine.js) multiplie la chance de clé des monstres de chasse (et le rythme affiché par `E.resRateH`). Simulation (bon équipement, sans Double gain, 4 h par zone, 4 sous-zones à donjon par niveau), clés par heure avant → après : niv. 50 : 29 → 21 (4 héros), 36 → 23 (8) ; niv. 100 : 43 → 30, 68 → 47 ; niv. 150 : 55 → 40, 97 → 66 ; niv. 200 : 57 → 41, 102 → 72. Clés de quêtes, commandes et récompenses inchangées.
 

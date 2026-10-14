@@ -1,6 +1,17 @@
 {
-  "version": "1.0.14.1",
+  "version": "1.0.14.2",
   "versions": [
+    {
+      "v": "1.0.14.2",
+      "name": "Menu de la poussière",
+      "items": [
+        "Toucher la pastille de Poussière de stasis en haut de l'écran ouvre un petit menu : combien vous en avez, à quoi elle sert et où en gagner",
+        "Les Petits parchemins de caractéristique se fabriquent directement depuis ce menu (6 boutons avec leur prix en poussière et en kamas, et le nombre que vous pouvez encore fabriquer)",
+        "Idoles, Pierres d'âme et Parfum de pistage : un bouton « Y aller » ouvre la bonne recette du Bricoleur",
+        "Sources rappelées avec leurs quantités : donjons en stasis, coffres, Défi du jour, Kolizéum, Songe, guilde et chasses au trésor",
+        "La pastille s'affiche aussi sur téléphone"
+      ]
+    },
     {
       "v": "1.0.14.1",
       "name": "Clés un peu plus rares",
