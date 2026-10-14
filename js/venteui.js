@@ -125,7 +125,7 @@
     const s = S(); const b = E.resPrice(n); const qq = s.res[n] || 0;
     const hdvB = online() && window.MARKET && window.MARKET.canSell(n) ? `<button class="btn sm" data-act="hdvres" data-n="${h(n)}">Vendre à l'HdV</button>` : "";
     const head = (sub) => `<div class="row between"><b>Vente directe</b><span class="xs muted">${sub}</span></div>`;
-    if (!online()) return `<div class="vd-box">${head("prix du serveur")}<span class="small">${h(whyNot())} En attendant, le surplus au-delà de « Garder au maximum » part au marchand de secours (30 % de la valeur).</span></div>`;
+    if (!online()) return `<div class="vd-box">${head("prix du serveur")}<span class="small">${h(whyNot())} En attendant, le surplus au-delà de « Garder au maximum » part au marchand de secours (30 % de la valeur).</span></div>`;
     if (!V.at) {
       if (!V.loading && !V.err) again(() => UI().tab === "inv" && UI().resSel === n);
       return `<div class="vd-box">${head("prix du serveur, en direct")}<span class="small muted">${V.err ? `Pas de réponse du serveur : réessaie dans un moment. <button class="btn sm" data-act="vd-retry">Réessayer</button>` : "Lecture du prix…"}</span>${hdvB ? `<div class="row">${hdvB}</div>` : ""}</div>`;
@@ -145,7 +145,7 @@
     return `<div class="vd-box">${head(`prix du serveur, en direct · <button class="linkbtn" data-act="nav" data-v="cours">Cours</button>`)}${price}${gauge}${spark}${up}
       <div class="row vd-go"><input type="number" id="vdQty" data-act="vd-qty" data-n="${h(n)}" min="1" max="${qq}" value="${q}" aria-label="Quantité à vendre"><button class="btn sm" data-act="vd-all" data-n="${h(n)}">Tout</button><button class="btn primary sm" id="vdGo" data-act="vd-sell" data-n="${h(n)}" ${V.busy || !qq ? "disabled" : ""}>${goTxt(q, quote(n, q))}</button>${hdvB}</div>
       <span class="xs muted">Un gros lot fait baisser le prix pendant la vente : le total affiché en tient compte.</span>
-      <div class="vd-note xs">La vente directe remplace le marchand de secours : le surplus au-delà de « Garder au maximum » est vendu au prix du moment. Les Commandes du jour restent.</div></div>`;
+      <div class="vd-note xs">La vente directe remplace le marchand de secours : le surplus au-delà de « Garder au maximum » est vendu au prix du moment. Les Commandes du jour restent.</div></div>`;
   }
   /* flèche de tendance sur une case de ressource (seulement quand les prix sont lus) */
   const arrow = (n) => (V.at && E.venteOk(n) ? arrowHtml(now(n).trend, "vd-ar") : "");

@@ -29,7 +29,7 @@
 .dgh-bank{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .dgh-hg{font-size:36px;line-height:1;flex:none}
 .dgh-hg .uico{width:40px;height:40px}
-.dgh-bs{display:none}
+.dgh-bs{display:block}
 @media (max-width:480px){.dgh-bank .dgh-bl{display:none}.dgh-bs{display:block}}
 .dgh-ch{display:flex;gap:8px;flex-wrap:wrap}
 .dgh-ch select{max-width:100%;min-width:0}
@@ -49,3 +49,7 @@
 .dgh-off{border:2px solid var(--gold);border-radius:12px;padding:8px 10px;background:var(--panel2);display:flex;flex-direction:column;gap:4px;margin:6px 0}
 .dgh-offimg{width:44px;height:44px;object-fit:contain;flex:none}
 .dgh-dof{color:var(--gold)}
+/* lisibilité (relecture des captures) : texte des cartes de héros en police du texte, jauge des heures sans texte dedans, texte des jauges de réussite bien contrasté */
+.exm-card h3 .xs{font-family:var(--font-body);font-weight:700}
+.gbar.dgh-g{height:12px}
+.gbar.exm-bar b{color:#fff;text-shadow:0 0 2px #000,0 0 3px #000,0 0 4px #000,0 1px 2px #000}

@@ -996,6 +996,7 @@ const MOCK = () => {
     await page.evaluate(() => { window.DX.ui.tab = "world"; window.DX.render(); window.scrollTo(0, 0); });
     // 8. mobile : la pastille tient dans la barre
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);
+    await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle de découverte du tutoriel (comme en 7f)
     const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`page trop large sur téléphone : ${w}px`);
     await page.click("#chat .chmin"); await page.waitForSelector("#chat .ch-list", { timeout: 3000 });
     const cw = await page.evaluate(() => document.querySelector("#chat").getBoundingClientRect().width); if (cw > 392) fail(`chat trop large sur téléphone : ${cw}px`);

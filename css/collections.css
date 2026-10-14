@@ -7,7 +7,7 @@
 .co-top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:10px 0 8px}
 .co-top .seg{max-width:100%;overflow-x:auto}
 .co-tb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
-.co-tb input[type=search]{flex:1 1 220px;min-width:0;max-width:340px}
+.co-tb input[type=search]{flex:1 1 260px;min-width:220px;max-width:360px}
 .co-tb select{max-width:100%;min-width:0}
 .co-chips{display:flex;flex-wrap:wrap;gap:6px}
 .co-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
@@ -118,3 +118,11 @@
 @keyframes coAura{0%,100%{opacity:.75;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.08)}}
 @keyframes coGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @media (prefers-reduced-motion:reduce){.arena .ent.hero.co-gold::before,.cele-art .celepet.co-sublpic{animation:none}}
+/* 1.0.30 : aura en vue Formation (médaillons) */
+.arena.fmode .ent.tk.co-gold{color:inherit;font-weight:inherit;background:linear-gradient(90deg,rgba(240,180,41,.24),rgba(0,0,0,.38))}
+.arena.fmode .ent.tk.co-gold::before{display:none}
+.arena.fmode .ent.tk.co-dsub{border-color:#f0b429;box-shadow:0 0 12px rgba(240,180,41,.55)}
+.arena.fmode .ent.tk.co-dsub .av{filter:drop-shadow(0 0 6px rgba(240,180,41,.9))}
+/* champs de recherche des collections : même style que les autres recherches du jeu */
+#coQ,#coSQ{border-radius:10px;border:2px solid var(--frame);background:var(--panel);color:inherit;padding:8px 10px;font:inherit}
+@media (max-width:480px){.co-tb input[type=search]{min-width:0;flex-basis:100%}}

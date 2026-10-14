@@ -303,7 +303,7 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   S.chars.forEach((c) => { c.inTeam = true; E.refreshSpells(c, E.charStats(S, c)); });
   const sub = Object.values(E.SUBS).filter((s) => s.lvl[0] <= 110).sort((a, b) => b.lvl[0] - a.lvl[0])[0];
   assert.strictEqual(E.startHunt(S, sub.id), null); E.tactLog = {}; let seen = null;
-  for (let t = 0; t < 4 * 60 * 1000 && !seen; t += 250) { E.tick(S, 250); const F = S.fight; if (F) seen = F.log.find((l) => /^Poussée : .+ percute .+ \(\d case/.test(l.txt) && /pou/.test(l.cls)); }
+  for (let t = 0; t < 4 * 60 * 1000 && !seen; t += 250) { E.tick(S, 250); const F = S.fight; if (F) seen = F.log.find((l) => /^Poussée : .+ percute .+ : −\d+ \/ −\d+$/.test(l.txt) && /pou/.test(l.cls)); }
   assert.ok(seen && E.tactLog.pou > 0, "un coup de poussée en chasse"); S.hunting = false; S.fight = null;
   const A = E.koliSnap(S, S.chars.map((c) => c.id)); const n0 = E.tactLog.pou; const W = E.koliSetup(A, A.map((h) => Object.assign({}, h)));
   for (let i = 0; i < 20000 && !W.fight.over; i++) E.step(W);

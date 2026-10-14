@@ -106,7 +106,7 @@
     const odds = `<div class="fo-odds">${F.RAR.map((r) => `<span style="--r:${r.color}">${r.name}<br>${r.p} %</span>`).join("")}</div>`;
     const can = left > 0 && s.kamas >= C.cost && !st.rolling;
     return `<section class="panel" id="foCrates"><div class="phead"><h2>${X().IC("coffre")} Choisis ta caisse</h2><span class="xs muted">${left ? `encore ${left} ouverture${left > 1 ? "s" : ""} aujourd'hui` : "plus d'ouverture aujourd'hui"}</span></div>
-      <div class="pad stack"><div class="fo-crates">${cards}</div>${rollHtml(false)}${resHtml()}${odds}
+      <div class="pad stack"><div class="fo-crates">${cards}</div>${rollHtml(st.rolling)}${resHtml()}${odds}
       <div class="row fo-c"><button class="btn primary" id="foGo" data-act="fo-open" ${can ? "" : "disabled"}>Ouvrir la ${h(C.name)} · ${kShort(C.cost)}</button></div>
       <span class="xs muted fo-c">${!left ? `Le Trool rouvre ses caisses demain (${F.DAY} par jour).` : s.kamas < C.cost ? `Il te manque ${fmt(C.cost - s.kamas)} kamas.` : `Chaque rareté vaut une part de la mise : ×${String(F.RAR[0].mult).replace(".", ",")} à ×${F.RAR[4].mult}. En moyenne, ${Math.round(E.foireRtp() * 100)} % de la mise revient en lots.`}</span></div></section>`;
   }

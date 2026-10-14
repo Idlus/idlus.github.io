@@ -230,7 +230,7 @@
     const fixed = base === now && r > 0;
     const pas = E.DOFP_LIST && E.DOFP_LIST[id] ? `<span>Passif « ${h(E.dofpName(id))} »</span>${fixed || ["vulbis", "argente", "ocre"].includes(id) ? `<span class="xs muted">tout ou rien</span><b>=</b>` : `<span class="o">${r ? `${String(base).replace(".", ",")} %` : ""}</span><b class="${r ? "n" : ""}">${String(now).replace(".", ",")} %</b>`}` : "";
     const nx = I.next; const kOk = I.kamasOk, eOk = I.eclOk;
-    const up = I.max ? "" : `<button class="btn ${I.ready ? "primary" : ""}" data-act="co-dup" data-v="${id}" ${I.ready ? "" : "disabled"}>Monter au rang ${roman(nx)} · ${fmt(I.cost)} k</button>
+    const up = I.max ? "" : `<button class="btn ${I.ready ? "primary" : ""}" data-act="co-dup" data-v="${id}" ${I.ready ? "" : "disabled"}>Monter au rang ${roman(nx)} · ${I.cost >= 1e6 ? `${(I.cost / 1e6).toLocaleString("fr-FR")} M` : fmt(I.cost)} kamas</button>
       <span class="xs ${I.ready ? "plus" : "muted"}">${I.ready ? `+${E.dpotPct(nx)} % au rang ${roman(nx)}` : !eOk ? `il manque ${fmt(I.need - I.e)} éclats` : `il manque ${fmt(I.cost - s.kamas)} kamas`}</span>`;
     const cfm = st.cfm === id && I.canCopy; // une copie de Dofus est précieuse : deux clics pour la fondre
     const cp = I.max ? "" : `<button class="btn sm ${cfm ? "primary" : ""}" data-act="co-dcopy" data-v="${id}" ${I.canCopy ? "" : "disabled"} title="${h(I.canCopy ? "Fond une copie libre du sac dans le Potentiel" : "Il faut une autre copie de ce Dofus dans le sac, ni portée, ni dans une tenue, ni verrouillée")}">${cfm ? "Confirmer : la copie disparaît" : "Fondre une copie"} · +${fmt(E.dpotNeed(nx))} éclats</button>`;

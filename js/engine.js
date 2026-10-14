@@ -1629,7 +1629,7 @@
       const v = E.pushDmg(e.lvl, e.st && e.st.pou, left);
       F.pushHit = 1; const d = dealDamage(F, e, t, v, null); const d2 = dealDamage(F, e, o, v * E.PUSH.other, null); F.pushHit = 0; // pas un coup du héros : ni reflet, ni riposte, ni effet « au coup »
       tlog("pou"); F.pushDmg = (F.pushDmg || 0) + d + d2;
-      out.lines.push(`Poussée : ${t.name} percute ${o.name} (${left} case${left > 1 ? "s" : ""}) : −${d}, −${d2} à ${o.name}`);
+      out.lines.push(`Poussée : ${t.name} percute ${o.name} : −${d} / −${d2}`); // court : la ligne tient au téléphone
       [t, o].forEach((m) => { if (!m.alive && !out.ko.includes(m)) out.ko.push(m); });
     });
     return out;
