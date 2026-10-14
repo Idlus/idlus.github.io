@@ -92,14 +92,14 @@
   }
   // tambourin et grosse caisse en peau
   function drum(t, kind, v, dest) {
-    if (kind === "low") {
-      const os = ctx.createOscillator(), g = ctx.createGain(); os.type = "sine"; os.frequency.setValueAtTime(120, t); os.frequency.exponentialRampToValueAtTime(52, t + 0.18);
+    if (kind === "low" || kind === "mid") { const hi = kind === "mid";
+      const os = ctx.createOscillator(), g = ctx.createGain(); os.type = "sine"; os.frequency.setValueAtTime(hi ? 210 : 120, t); os.frequency.exponentialRampToValueAtTime(hi ? 105 : 52, t + 0.18);
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * 0.9, t + 0.006); g.gain.setTargetAtTime(0.0001, t + 0.02, 0.13);
       os.connect(g); g.connect(dest); os.start(t); os.stop(t + 0.8);
     }
     const n = ctx.createBufferSource(); n.buffer = noise(); const f = ctx.createBiquadFilter(), g = ctx.createGain();
-    if (kind === "low") { f.type = "lowpass"; f.frequency.value = 380; } else if (kind === "jingle") { f.type = "highpass"; f.frequency.value = 6500; } else { f.type = "bandpass"; f.frequency.value = 2400; f.Q.value = 0.9; }
-    const dec = kind === "jingle" ? 0.06 : kind === "low" ? 0.07 : 0.025, a = kind === "low" ? 0.5 : kind === "jingle" ? 0.22 : 0.3;
+    if (kind === "low" || kind === "mid") { f.type = "lowpass"; f.frequency.value = kind === "mid" ? 700 : 380; } else if (kind === "jingle") { f.type = "highpass"; f.frequency.value = 6500; } else { f.type = "bandpass"; f.frequency.value = 2400; f.Q.value = 0.9; }
+    const dec = kind === "jingle" ? 0.06 : kind === "low" || kind === "mid" ? 0.07 : 0.025, a = kind === "low" || kind === "mid" ? 0.5 : kind === "jingle" ? 0.22 : 0.3;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * a, t + 0.003); g.gain.setTargetAtTime(0.0001, t + 0.005, dec);
     n.connect(f); f.connect(g); g.connect(dest); n.start(t, Math.random() * 0.5); n.stop(t + 0.5);
   }
@@ -107,7 +107,7 @@
     const d = e.d * spb, v = (e.v || 0.7) * (1 + rnd(0.08)); t += rnd(0.006);
     if (e.i === "pluck") pluck(t, e.m, d, v, dest, e.o); else if (e.i === "flute") flute(t, e.m, d, v, dest, e.o); else if (e.i === "horn") horn(t, e.m, d, v, dest, e.o);
     else if (e.i === "pad") pad(t, e.m, d, v, dest, e.o); else if (e.i === "bell") bell(t, e.m, d, v, dest, e.o); else if (e.i === "bass") bass(t, e.m, d, v, dest);
-    else if (e.i === "drum") drum(t, e.m, v, dest);
+    else if (e.i === "drum") drum(t, e.m, v, dest); else if (e.i === "mar") marimba(t, e.m, v, dest, e.o);
   }
 
   /* ---------- morceaux ---------- */
@@ -149,6 +149,78 @@
           [0, 7, 12, c.t + 12].forEach((o, k) => ev.push({ b: b0 + k, i: "pluck", m: c.r + o, d: 1.2, v: 0.3, o: { cut: 1500, damp: 0.993 } }));
           ev.push({ b: b0, i: "drum", m: "low", d: 1, v: 0.8 }); ev.push({ b: b0 + 2, i: "drum", m: "low", d: 1, v: 0.4 }); ev.push({ b: b0 + 3.5, i: "drum", m: "low", d: 1, v: 0.3 }); });
         if (p > 0) ev.push(...(p % 3 === 0 ? melodyEv(this.mel, 4, "bell", 0.6, 12, { len: 1.6 }) : melodyEv(this.mel, 4, "horn", 0.8)));
+        return ev.sort((a, b) => a.b - b.b); } },
+
+    /* 1.0.24 : nouveaux airs (régions, Songe, Kolizéum, boss des mondes, Halouine) */
+    cania: { name: "Plaines de Cania", gain: 0.9, bpm: 96, bpb: 4,
+      ch: [C(50, 4), C(45, 4), C(47, 3), C(55, 4), C(50, 4), C(55, 4), C(52, 3), C(45, 4)],
+      mel: [[[69, 1.5], [74, 0.5], [78, 2]], [[76, 1.5], [73, 0.5], [69, 2]], [[71, 1], [74, 1], [78, 1], [76, 1]], [[74, 3], [71, 1]], [[69, 1], [74, 1], [78, 1.5], [81, 0.5]], [[79, 2], [78, 1], [76, 1]], [[76, 1.5], [79, 0.5], [71, 2]], [[73, 3], [76, 1]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 4; [0, 7, 12, c.t + 12, 19, c.t + 12, 12, 7].forEach((o, k) => ev.push({ b: b0 + k * 0.5, i: "pluck", m: c.r + o, d: 1.4, v: k === 0 ? 0.5 : 0.34 }));
+          ev.push({ b: b0, i: "pad", m: [c.r + 12, c.r + 12 + c.t, c.r + 19], d: 4, v: 0.9 }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: 3.6, v: 0.6 });
+          ev.push({ b: b0, i: "drum", m: "low", d: 1, v: 0.45 }); ev.push({ b: b0 + 2, i: "drum", m: "tap", d: 1, v: 0.25 }); });
+        if (p > 0) ev.push(...(p % 2 ? melodyEv(this.mel, 4, "flute", 0.8) : melodyEv(this.mel, 4, "horn", 0.75, -12)));
+        return ev.sort((a, b) => a.b - b.b); } },
+    iles: { name: "Rivages d'Otomaï", gain: 0.75, bpm: 104, bpb: 4,
+      ch: [C(53, 4), C(50, 3), C(46, 4), C(48, 4), C(53, 4), C(45, 3), C(46, 4), C(48, 4)],
+      mel: [[[72, 1], [77, 1], [81, 1.5], [79, 0.5]], [[77, 2], [74, 2]], [[74, 1], [77, 1], [82, 1], [81, 1]], [[79, 3], [76, 1]], [[77, 1], [81, 1], [84, 1.5], [81, 0.5]], [[76, 2], [72, 2]], [[74, 1.5], [77, 0.5], [79, 1], [77, 1]], [[76, 2], [79, 2]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 4; [0, 12, 7, c.t + 12, 12, 7, c.t + 12, 19].forEach((o, k) => ev.push({ b: b0 + k * 0.5, i: "mar", m: c.r + 12 + o, d: 0.5, v: k % 2 ? 0.35 : 0.5, o: { dec: 0.35 } }));
+          ev.push({ b: b0, i: "bass", m: c.r - 12, d: 1.4, v: 0.6 }); ev.push({ b: b0 + 1.5, i: "bass", m: c.r - 12, d: 0.4, v: 0.45 }); ev.push({ b: b0 + 2, i: "bass", m: c.r - 5, d: 1.6, v: 0.5 });
+          [0.5, 1.5, 2.5, 3.5].forEach((x) => ev.push({ b: b0 + x, i: "drum", m: "jingle", d: 0.5, v: 0.3 })); ev.push({ b: b0, i: "drum", m: "mid", d: 1, v: 0.35 }); ev.push({ b: b0 + 2.5, i: "drum", m: "mid", d: 1, v: 0.3 }); });
+        ev.push(...(p % 3 === 2 ? melodyEv(this.mel, 4, "mar", 0.7, 0, { dec: 0.6 }) : melodyEv(this.mel, 4, "flute", 0.75)));
+        return ev.sort((a, b) => a.b - b.b); } },
+    frigost: { name: "Neiges de Frigost", gain: 1.8, bpm: 84, bpb: 3,
+      ch: [C(52, 3), C(48, 4), C(55, 4), C(50, 4), C(52, 3), C(45, 3), C(47, 4), C(47, 4)],
+      mel: [[[83, 2], [79, 1]], [[76, 2], [79, 1]], [[74, 1], [71, 1], [74, 1]], [[78, 3]], [[76, 1], [79, 1], [83, 1]], [[84, 2], [81, 1]], [[78, 1], [75, 1], [78, 1]], [[71, 1], [75, 1], [78, 1]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 3; ev.push({ b: b0, i: "pluck", m: c.r, d: 2.8, v: 0.4, o: { cut: 1600 } });
+          [1, 2].forEach((k) => [c.r + 12 + c.t, c.r + 19].forEach((m) => ev.push({ b: b0 + k, i: "pluck", m, d: 0.9, v: 0.2, o: { cut: 2400 } })));
+          ev.push({ b: b0, i: "pad", m: [c.r + 12, c.r + 19, c.r + 24 + c.t], d: 3, v: 0.8, o: { cut: 1300, att: 1.2 } }); });
+        if (p > 0) ev.push(...melodyEv(this.mel, 3, "bell", 0.7, 0, { len: 1.6 })); if (p % 2 === 0 && p > 0) ev.push(...melodyEv(this.mel, 3, "flute", 0.45, -12, { att: 0.2 }));
+        return ev.sort((a, b) => a.b - b.b); } },
+    landes: { name: "Landes de Sidimote", gain: 1.1, bpm: 70, bpb: 4,
+      ch: [C(47, 3), C(48, 4), C(47, 3), C(45, 4), C(43, 4), C(42, 4), C(47, 3), C(48, 4)],
+      mel: [[[66, 3], [67, 1]], [[67, 2], [64, 2]], [[66, 2], [62, 2]], [[64, 2], [61, 2]], [[62, 2], [59, 2]], [[61, 2], [58, 2]], [[59, 3], [62, 1]], [[60, 4]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 4;
+          ev.push({ b: b0, i: "pad", m: [c.r - 12, c.r - 5, c.r + c.t], d: 4, v: 1.1, o: { cut: 550 } }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: 3.8, v: 0.55 });
+          [0, 7, c.t + 12, 13].forEach((o, k) => ev.push({ b: b0 + k, i: "pluck", m: c.r + o, d: 1.2, v: 0.26, o: { cut: 1400, damp: 0.993 } }));
+          if (i % 2 === 0) ev.push({ b: b0, i: "drum", m: "low", d: 1, v: 0.5 });
+          if (i % 4 === 3) ev.push({ b: b0 + 2, i: "bell", m: c.r + 37, d: 2, v: 0.3, o: { len: 2 } }); });
+        if (p > 0) ev.push(...melodyEv(this.mel, 4, "flute", 0.85, 12, { cut: 1500, att: 0.15 }));
+        return ev.sort((a, b) => a.b - b.b); } },
+    songe: { name: "Songe infini", gain: 1.6, bpm: 60, bpb: 4,
+      ch: [C(48, 4), C(50, 4), C(52, 3), C(50, 4), C(48, 4), C(45, 3), C(50, 4), C(48, 4)],
+      mel: [[[79, 4]], [[78, 2], [81, 2]], [[79, 3], [76, 1]], [[78, 4]], [[76, 2], [79, 2]], [[81, 3], [76, 1]], [[78, 2], [74, 2]], [[76, 4]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 4; [0, 7, 12, c.t + 12, 19, 24, 19, 12].forEach((o, k) => ev.push({ b: b0 + k * 0.5, i: "bell", m: c.r + 12 + o, d: 1, v: 0.32, o: { len: 1.6 } }));
+          ev.push({ b: b0, i: "pad", m: [c.r, c.r + 7, c.r + 12 + c.t, c.r + 19], d: 4, v: 1, o: { cut: 1100, att: 1.5 } }); ev.push({ b: b0, i: "bass", m: c.r - 12, d: 3.8, v: 0.4 }); });
+        if (p > 0) ev.push(...melodyEv(this.mel, 4, "flute", 0.7, 0, { att: 0.3 }));
+        return ev.sort((a, b) => a.b - b.b); } },
+    koli: { name: "Arène du Kolizéum", gain: 0.7, bpm: 132, bpb: 4,
+      ch: [C(45, 3), C(45, 3), C(53, 4), C(55, 4), C(45, 3), C(48, 4), C(52, 4), C(52, 4)],
+      mel: [[[69, 0.5], [69, 0.5], [72, 0.5], [76, 0.5], [81, 1], [79, 1]], [[76, 1.5], [74, 0.5], [72, 1], [71, 1]], [[69, 0.5], [72, 0.5], [77, 1], [76, 1], [72, 1]], [[74, 1.5], [71, 0.5], [67, 2]], [[69, 0.5], [72, 0.5], [76, 0.5], [81, 0.5], [84, 1], [83, 1]], [[79, 1.5], [76, 0.5], [72, 2]], [[71, 1], [74, 1], [76, 1], [80, 1]], [[83, 2], [80, 1], [76, 1]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 4;
+          for (let k = 0; k < 8; k++) ev.push({ b: b0 + k * 0.5, i: "bass", m: c.r - 12 + (k % 2 ? 12 : 0), d: 0.4, v: 0.55 });
+          [0.5, 1.5, 2.5, 3.5].forEach((x) => [c.r + 12, c.r + 12 + c.t, c.r + 19].forEach((m) => ev.push({ b: b0 + x, i: "pluck", m, d: 0.3, v: 0.22, o: { cut: 3000, damp: 0.99 } })));
+          [0, 2].forEach((x) => ev.push({ b: b0 + x, i: "drum", m: "low", d: 1, v: 0.75 })); [1, 3].forEach((x) => ev.push({ b: b0 + x, i: "drum", m: "mid", d: 1, v: 0.5 }));
+          for (let k = 0; k < 8; k++) ev.push({ b: b0 + k * 0.5 + 0.25, i: "drum", m: "jingle", d: 0.2, v: 0.2 }); });
+        if (p > 0) ev.push(...(p % 3 === 0 ? melodyEv(this.mel, 4, "pluck", 0.8, 0, { cut: 4000 }) : melodyEv(this.mel, 4, "horn", 0.8, 0, { att: 0.04, cut: 2200 })));
+        return ev.sort((a, b) => a.b - b.b); } },
+    boss: { name: "Boss des mondes", gain: 0.75, bpm: 88, bpb: 4,
+      ch: [C(50, 3), C(50, 3), C(46, 4), C(48, 4), C(50, 3), C(55, 3), C(45, 4), C(45, 4)],
+      mel: [[[74, 3], [69, 1]], [[77, 2], [76, 1], [74, 1]], [[74, 2], [77, 2]], [[76, 3], [72, 1]], [[81, 3], [77, 1]], [[79, 2], [82, 1], [81, 1]], [[76, 2], [73, 2]], [[69, 4]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 4;
+          for (let k = 0; k < 8; k++) ev.push({ b: b0 + k * 0.5, i: "bass", m: c.r - 12 + (k % 4 === 3 ? 7 : 0), d: 0.45, v: 0.6 });
+          ev.push({ b: b0, i: "pad", m: [c.r, c.r + c.t, c.r + 7, c.r + 12], d: 4, v: 1, o: { cut: 900, att: 0.3 } });
+          [[0, "low", 0.85], [1.5, "mid", 0.5], [2, "mid", 0.55], [3, "low", 0.7], [3.5, "mid", 0.45]].forEach(([x, k, v]) => ev.push({ b: b0 + x, i: "drum", m: k, d: 1, v }));
+          if (i % 4 === 0) ev.push({ b: b0, i: "bell", m: c.r + 24, d: 3, v: 0.4, o: { len: 2 } }); });
+        if (p > 0) ev.push(...melodyEv(this.mel, 4, "horn", 0.85, -12, { cut: 1600 })); if (p % 2 === 0 && p > 0) ev.push(...melodyEv(this.mel, 4, "horn", 0.5, 0, { cut: 2200 }));
+        return ev.sort((a, b) => a.b - b.b); } },
+    halouine: { name: "Bal d'Halouine", gain: 1, bpm: 120, bpb: 3,
+      ch: [C(52, 3), C(52, 3), C(47, 4), C(47, 4), C(52, 3), C(45, 3), C(47, 4), C(52, 3)],
+      mel: [[[76, 1], [79, 1], [83, 1]], [[84, 1], [83, 1], [79, 1]], [[81, 1], [78, 1], [75, 1]], [[78, 3]], [[76, 1], [79, 1], [83, 1]], [[84, 2], [81, 1]], [[75, 1], [78, 1], [81, 1]], [[79, 1], [76, 2]]],
+      build(p) { const ev = []; this.ch.forEach((c, i) => { const b0 = i * 3; ev.push({ b: b0, i: "bass", m: c.r - 12, d: 0.9, v: 0.65 });
+          [1, 2].forEach((k) => [c.r + c.t, c.r + 7, c.r + 12].forEach((m) => ev.push({ b: b0 + k, i: "pluck", m, d: 0.35, v: 0.24, o: { cut: 2200, damp: 0.99 } })));
+          ev.push({ b: b0, i: "drum", m: "low", d: 1, v: 0.4 }); ev.push({ b: b0 + 1, i: "drum", m: "tap", d: 1, v: 0.25 }); ev.push({ b: b0 + 2, i: "drum", m: "tap", d: 1, v: 0.25 });
+          ev.push({ b: b0, i: "pad", m: [c.r, c.r + 6, c.r + 12], d: 3, v: 0.5, o: { cut: 700 } }); });
+        ev.push(...melodyEv(this.mel, 3, "bell", 0.7, 0, { len: 1.2 })); if (p % 2) ev.push(...melodyEv(this.mel, 3, "flute", 0.5, -12));
         return ev.sort((a, b) => a.b - b.b); } },
   };
   Object.values(TRACKS).forEach((T) => (T.len = T.ch.length * T.bpb));
