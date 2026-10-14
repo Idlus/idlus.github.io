@@ -41,9 +41,9 @@ function almanaxMessage(t = Date.now()) {
     footer: { text: "idlus · Almanax" }, timestamp: new Date().toISOString() };
 }
 
-/* Podium des donjons de la semaine (multijoueur, classements) : lecture publique de la base Supabase.
+/* Podium des donjons de la semaine (multijoueur, classements) : lecture publique de la base (serveur OVH depuis le 14/10/2026).
    L'adresse et la clé « publishable » sont publiques par nature (les mêmes que dans le jeu). */
-const SB_URL = "https://bolbuxuxydfslwpfbfff.supabase.co", SB_KEY = "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H";
+const SB_URL = "https://159-173-129-109.sslip.io", SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc";
 const weekIdx = (t) => Math.floor((t / 86400000 + 3) / 7); // comme le jeu : semaines commençant le lundi (UTC)
 const recTime = (t) => { const m = Math.floor(t / 60), s = t % 60; return m ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`; };
 async function podiumMessage(t = Date.now()) {

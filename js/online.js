@@ -15,10 +15,14 @@
   /* slots = parties 2 et 3 gardées en ligne (tools/emplacements.sql, à passer dans supabase/). Tant qu'il n'est pas appliqué sur
      le serveur (accord écrit de Mathis), les parties 2 et 3 restent sur l'appareil. */
   const SERVERS = {
-    public: { url: "https://bolbuxuxydfslwpfbfff.supabase.co", key: "sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H", mail: false, slots: false },
+    /* 14/10/2026 : déménagement sur le serveur OVH de Mathis (Supabase auto-hébergé, tools/serveur/). La clé « anon » est publique
+       par nature (https://159-173-129-109.sslip.io/cle-publique). */
+    public: { url: "https://159-173-129-109.sslip.io", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkxOTM0NDE5LCJleHAiOjE5NDk2MTQ0MTl9.1iCHQ2UlFSeE2G9IkUjKk47KuG-469_M1wXINPv5Mbc", mail: false, slots: false },
     beta: { url: "", key: "", mail: false, slots: false }
   };
   const ON = {};
+  /* Session de l'ancien serveur gardée sur l'appareil : le joueur doit se reconnecter une fois sur le nouveau (message à l'écran de choix). */
+  const OLD_TOKEN = "sb-bolbuxuxydfslwpfbfff-auth-token";
   const lib = root.__IDLUS_SB || (root.supabase && root.supabase.createClient ? root.supabase : null); // __IDLUS_SB : faux serveur des tests
   /* 1.0.8.2 : « partie de test » du jeu public (compte admin) : le jeu tourne sans serveur, comme la bêta, sur une
      sauvegarde séparée. Rien n'est envoyé en ligne et la vraie partie n'est pas touchée. */
@@ -84,6 +88,7 @@
     try { const { data } = await withTimeout(sb.auth.getSession(), 6000); ON.user = data && data.session ? data.session.user : null; } catch (e) { ON.user = null; }
     /* 1.0.10.6 : session gardée sur l'appareil mais serveur muet (jeton à renouveler pendant une panne) : ce n'est pas une déconnexion */
     ON.stuck = false;
+    try { if (ON.user) root.localStorage.removeItem(OLD_TOKEN); ON.moved = !ON.user && !!root.localStorage.getItem(OLD_TOKEN); } catch (e) { ON.moved = false; }
     if (!ON.user) { try { const ref = (/^https:\/\/([^.]+)\./.exec(URL_) || [])[1]; ON.stuck = !!(ref && root.localStorage.getItem("sb-" + ref + "-auth-token")); } catch (e) {} }
     return ON.user;
   };

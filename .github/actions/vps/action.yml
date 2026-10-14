@@ -1,0 +1,23 @@
+# Connexion au serveur OVH (VPS) depuis un workflow : prépare HOTE, UTIL, SSHPASS et SSHO pour ssh / scp,
+# utilisés ensuite par tools/serveur/vps_sql.sh. Les valeurs viennent des secrets VPS_* (jamais écrites ailleurs).
+name: Connexion au serveur OVH
+description: Prépare la connexion SSH au serveur en ligne d'Idlus
+inputs:
+  hote: { description: "secrets.VPS_HOST", required: true }
+  util: { description: "secrets.VPS_USER", required: true }
+  pass: { description: "secrets.VPS_NEW_PASSWORD (ou VPS_PASSWORD)", required: true }
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        S_HOTE: ${{ inputs.hote }}
+        S_UTIL: ${{ inputs.util }}
+        S_PASS: ${{ inputs.pass }}
+      run: |
+        for s in S_HOTE S_UTIL S_PASS; do if [ -z "${!s}" ]; then echo "Secret du serveur manquant (VPS_HOST, VPS_USER ou VPS_NEW_PASSWORD)." >&2; exit 1; fi; done
+        h=$(printf '%s' "$S_HOTE" | tr -d '[:space:]'); u=$(printf '%s' "$S_UTIL" | tr -d '[:space:]'); p=$(printf '%s' "$S_PASS" | tr -d '\r\n')
+        for v in "$h" "$u" "$p"; do echo "::add-mask::$v"; done
+        { echo "HOTE=$h"; echo "UTIL=$u"; echo "SSHPASS=$p"; } >> "$GITHUB_ENV"
+        echo "SSHO=-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=20 -o ServerAliveInterval=15" >> "$GITHUB_ENV"
+        command -v sshpass >/dev/null || sudo apt-get -qq install -y sshpass >/dev/null

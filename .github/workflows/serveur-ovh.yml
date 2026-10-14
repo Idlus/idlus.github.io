@@ -6,6 +6,9 @@
 #   installer : installe ou met à jour Supabase + HTTPS + pare-feu + sauvegarde de nuit (tools/serveur/installer.sh)
 #   copier    : copie l'ancienne base Supabase (accès en lecture seule) et la charge dans le nouveau serveur, à la place
 #               de ce qu'il contient (tools/serveur/copier.sh puis restaurer.sh). Secret : SUPABASE_ACCESS_TOKEN.
+#   bascule   : coupe l'accès du jeu à l'ancien serveur Supabase (son API ne montre plus les tables du jeu : plus aucune
+#               lecture ni écriture des joueurs), puis fait la copie finale. Accord écrit de Mathis (14/10/2026).
+#   rouvrir   : rend l'accès du jeu à l'ancien serveur (retour en arrière).
 # domaine : adresse du serveur (ex. api.idlus.fr). Vide = adresse gratuite <ip>.sslip.io.
 name: Serveur OVH
 on:
@@ -14,7 +17,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier]
+        options: [verifier, installer, copier, bascule, rouvrir]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -100,8 +103,26 @@ jobs:
             # sudo lit le mot de passe sur la première ligne (jamais affiché)
             printf '%s\n' "$SSHPASS" | sshpass -e ssh $SSHO "$UTIL@$HOTE" "sudo -S -p '' bash /tmp/idlus-serveur/installer.sh '$dom'"
           fi
+      - name: Accès du jeu à l'ancien serveur (couper ou rouvrir)
+        if: inputs.etape == 'bascule' || inputs.etape == 'rouvrir'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: bolbuxuxydfslwpfbfff
+          ETAPE: ${{ inputs.etape }}
+        run: |
+          # Réglage de l'API de l'ancien Supabase (pas de la base) : schémas visibles par le jeu. « public » retiré = le jeu ne
+          # peut plus rien lire ni écrire ; remis = retour comme avant. Les données ne sont pas touchées.
+          api="https://api.supabase.com/v1/projects/$PROJECT_REF/postgrest"; H=(-H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json")
+          echo "Avant : $(curl -sS -m 60 "$api" "${H[@]}" | jq -c '{db_schema}')"
+          if [ "$ETAPE" = rouvrir ]; then v="public, graphql_public"; else v="graphql_public"; fi
+          r=$(curl -sS -m 60 -X PATCH "$api" "${H[@]}" --data "$(jq -nc --arg v "$v" '{db_schema: $v}')")
+          echo "Après : $(echo "$r" | jq -c '{db_schema}' 2>/dev/null || echo "$r" | head -c 300)"
+          [ "$(echo "$r" | jq -r '.db_schema // empty')" = "$v" ] || { echo "Réglage refusé." >&2; exit 1; }
+          sleep 20
+          code=$(curl -sS -m 30 -o /dev/null -w "%{http_code}" "https://$PROJECT_REF.supabase.co/rest/v1/lb_level?select=pts&limit=1" -H "apikey: sb_publishable__Kojf1wLJLnbi3eqquQ_8g_AR6lVP9H")
+          echo "Lecture du classement par le jeu sur l'ancien serveur : HTTP $code"
       - name: Copie de l'ancienne base vers le nouveau serveur
-        if: inputs.etape == 'copier'
+        if: inputs.etape == 'copier' || inputs.etape == 'bascule'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: bolbuxuxydfslwpfbfff

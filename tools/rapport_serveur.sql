@@ -27,6 +27,5 @@ select
   (select round(100.0 * sum(blks_hit) / nullif(sum(blks_hit) + sum(blks_read), 0), 1) from pg_stat_database) as cache_memoire_pourcentage,
   pg_size_pretty(pg_database_size(current_database())) as taille_base,
   round(pg_database_size(current_database()) / 1048576.0, 1) as taille_base_mo,
-  round(100 * pg_database_size(current_database()) / (500 * 1048576.0), 1) as pourcentage_limite_gratuite_500_mo,
   pg_size_pretty(coalesce((select sum(pg_total_relation_size('public.saves'))), 0)) as taille_sauvegardes,
   (select pg_size_pretty(coalesce(sum((metadata->>'size')::bigint), 0)) from storage.objects) as taille_fichiers_stockes;

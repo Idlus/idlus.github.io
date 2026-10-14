@@ -7244,6 +7244,9 @@ function slotPlan(sl) {
   if (!st) return "remote";
   if (l.uid === uid && l.base === rem.updated_at) return "sync";
   if (ON.ownPush(rem, l) && (st.savedAt || 0) >= ((rem.meta && rem.meta.sa) || 0)) return "own"; // 1.0.10.2
+  // 14/10/2026 (déménagement du serveur) : la version en ligne est plus ancienne que le dernier envoi connu de cet appareil :
+  // le serveur a perdu des envois, la partie d'ici les contient tous : on la renvoie par-dessus (comme « own »)
+  if (l.uid === uid && l.base && rem.updated_at && Date.parse(rem.updated_at) < Date.parse(l.base)) return "own";
   if (l.uid === uid && (st.savedAt || 0) <= (l.savedAt || 0)) return "take";
   return "both";
 }
@@ -7535,10 +7538,12 @@ async function onBoot() {
   const err = ON.urlError();
   onBlank("Chargement…");
   await ON.ready();
+  // 14/10/2026 : nouveau serveur, la connexion de l'ancien ne vaut plus : une reconnexion avec Discord, la partie est gardée
+  const moved = ON.moved ? "Idlus a déménagé sur un nouveau serveur. Reconnecte-toi une fois avec Discord : ta partie et ta progression sont gardées." : "";
   ON.onChange(() => { if (booted && S) renderPill(); });
   // 0.1.19.4 : pas de compte obligatoire. 1.0.11 : l'écran « Choisis ta partie » propose la connexion (Discord).
   // 1.0.10.6 : compte connecté mais serveur injoignable au lancement (ON.stuck) : l'écran montre les parties de l'appareil et laisse jouer
-  return menuStart(err);
+  return menuStart(err || moved);
 }
 
 /* ---------- 0.1.16 : classements (js/verify.js + fonction serveur « record ») ----------

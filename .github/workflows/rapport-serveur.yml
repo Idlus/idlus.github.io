@@ -1,5 +1,6 @@
 # Rapport du serveur (à la demande) : donne les chiffres du serveur en ligne (joueurs, comptes, actifs du jour,
 # taille de la base, mémoire, processeur, disque) en lecture seule, sans jamais afficher la clé ni une donnée personnelle.
+# Serveur OVH depuis le déménagement (14/10/2026) : base lue par SSH (tools/serveur/vps_sql.sh).
 # Lancement : onglet Actions > « Rapport du serveur » > Run workflow (ou Claude, sur demande dans le projet).
 # Le rapport s'affiche dans le résumé de l'exécution et dans le journal de l'étape « Rapport ».
 name: Rapport du serveur
@@ -10,42 +11,24 @@ permissions:
 concurrency:
   group: rapport-serveur
   cancel-in-progress: false
-env:
-  PROJECT_REF: bolbuxuxydfslwpfbfff
 jobs:
   rapport:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/vps
+        with:
+          hote: ${{ secrets.VPS_HOST }}
+          util: ${{ secrets.VPS_USER }}
+          pass: ${{ secrets.VPS_NEW_PASSWORD }}
       - name: Rapport
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN manquant." >&2; exit 1; fi
-          api="https://api.supabase.com/v1/projects/$PROJECT_REF"
-          # Requête en lecture seule (read_only : la base refuse toute écriture).
-          jq -Rs '{query: ., read_only: true}' tools/rapport_serveur.sql > /tmp/q.json
-          code=$(curl -sS -o /tmp/r.json -w "%{http_code}" -X POST "$api/database/query" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @/tmp/q.json)
-          if [ "$code" -ge 300 ]; then echo "Erreur HTTP $code"; head -c 600 /tmp/r.json; echo; exit 1; fi
-          # État du projet (nom, région, état) : aucune donnée de joueur.
-          curl -sS "$api" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -o /tmp/p.json || echo '{}' > /tmp/p.json
-          # Machine du serveur (mémoire, processeur, disque) : métriques Supabase, lues avec la clé de service
-          # récupérée ici et masquée dans le journal ; elle n'est jamais affichée ni enregistrée (accord de Mathis, 12/10).
-          echo '{}' > /tmp/m.json
-          cle=$(curl -sS "$api/api-keys?reveal=true" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '[.[] | select(.name == "service_role")][0].api_key // empty' 2>/dev/null || true)
-          if [ -n "$cle" ]; then
-            echo "::add-mask::$cle"
-            url="https://$PROJECT_REF.supabase.co/customer/v1/privileged/metrics"
-            if curl -sSf -u "service_role:$cle" "$url" -o /tmp/m1.txt; then
-              sleep 10
-              curl -sSf -u "service_role:$cle" "$url" -o /tmp/m2.txt || cp /tmp/m1.txt /tmp/m2.txt
-              node tools/rapport_metriques.js /tmp/m1.txt /tmp/m2.txt > /tmp/m.json || echo '{}' > /tmp/m.json
-            else echo "Métriques de la machine indisponibles."; fi
-          else echo "Clé de service introuvable : pas de métriques de la machine."; fi
-          unset cle
-          jq -n --slurpfile r /tmp/r.json --slurpfile p /tmp/p.json --slurpfile m /tmp/m.json \
-            '($r[0][0]) + {etat_serveur: ($p[0].status // "?"), region: ($p[0].region // "?")} + $m[0]' > rapport.json
+          # Requête en lecture seule (la base refuse toute écriture de cette session).
+          bash tools/serveur/vps_sql.sh lecture "$(cat tools/rapport_serveur.sql)" > /tmp/r.json
+          # Machine du serveur OVH (mémoire, processeur, disque, services, dernière sauvegarde de nuit)
+          bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/machine.sh)" > /tmp/m.json || echo '{}' > /tmp/m.json
+          jq -n --slurpfile r /tmp/r.json --slurpfile m /tmp/m.json \
+            '($r[0][0]) + {etat_serveur: "en ligne", region: "OVH"} + $m[0]' > rapport.json
           echo "== RAPPORT"; cat rapport.json
           {
             echo "## Rapport du serveur"
