@@ -6,7 +6,8 @@
    - Fiche : équipement en « poupée » comme l'onglet Équipement, panoplies, caractéristiques aux jets moyens,
      « Comparer avec mon héros », sorts, conseil de l'auteur ; Appliquer (sorts + caractéristiques),
      Liste de courses, Copier le code, ☆ Favori, ⚑ Signaler.
-   - Publication depuis la fenêtre « Partager le build » du héros (compte Discord, 10 builds au plus),
+   - Publication depuis la fenêtre « Partager le build » du héros (compte Discord, 30 builds au plus),
+     onglet « Mes builds » (1.0.25.2) : ses builds publiés, mise à jour depuis le héros et suppression sur place,
      mise à jour en un clic quand le héros change ; titre « Théorycrafteur » à 25 ❤.
    - Panel admin : onglet « Builds » (signalés d'abord : remettre en ligne, cacher, supprimer, rétablir).
    Le build est le code « IDLUS1-… » du jeu (E.buildCode / E.parseBuild) ; le serveur : supabase/builds.sql.
@@ -26,16 +27,20 @@
   const ORDER = ["coiffe", "cape", "amulette", "anneau1", "anneau2", "ceinture", "bottes", "arme", "bouclier"];
   const DOF = ["dofus1", "dofus2", "dofus3", "dofus4", "dofus5", "dofus6"];
   const TAGS = ["Donjon", "Kolizéum", "Farm", "Songe", "Débutant"];
-  const SORTS = [["week", "Les plus aimés cette semaine"], ["new", "Les plus récents"], ["top", "Les plus aimés de tous les temps"], ["views", "Les plus vus"], ["fav", "Mes favoris"], ["mine", "Mes builds"]];
-  const MAX = 10, LIKES_TITLE = 25, TITLE = "Théorycrafteur";
+  const SORTS = [["week", "Les plus aimés cette semaine"], ["new", "Les plus récents"], ["top", "Les plus aimés de tous les temps"], ["views", "Les plus vus"], ["fav", "Mes favoris"]]; // « Mes builds » est un onglet (1.0.25.2)
+  const MAX = 30, LIKES_TITLE = 25, TITLE = "Théorycrafteur";
   const REASONS = ["Titre ou conseil insultant", "Pseudo ou texte inapproprié", "Spam ou publicité", "Autre"];
 
   const online = () => !!(ON && ON.enabled && ON.db && ON.db());
   const logged = () => !!(ON && ON.user);
   const F = { cls: "", br: "", el: "", bud: "", q: "", sort: "week" };
+  /* 1.0.25.2 : onglet « Mes builds » (ses builds publiés, sans filtre) */
+  const MINE = { cls: "", br: "", el: "", bud: "", q: "", sort: "mine" };
+  const tab = () => (U().bdTab === "mine" ? "mine" : "all");
+  const Q = () => (tab() === "mine" ? MINE : F);
   const L = { key: null, rows: [], n: 0, week: null, busy: false, err: "", at: 0, seq: 0 };
   const CACHE = {}; // numéro → build (ligne du serveur + build lu)
-  let ME = null, meAt = 0, meBusy = null; // mes builds (builds_me)
+  let ME = null, meAt = 0, meBusy = null, meTry = 0; // mes builds (builds_me)
   const seen = new Set(); // vues déjà envoyées pendant cette session
   let lastHtml = "";
 
@@ -142,7 +147,14 @@
       <div class="bd-top">${look(x, "bd-look")}<img class="bd-wm" src="${X().symImg(x.cls)}" alt=""><span class="bd-lv num">${x.lvl}</span>${elTag(x.el)}${x.hidden ? `<span class="tag warn bd-hid">Caché</span>` : ""}</div>
       <div class="bd-body"><b class="bd-t">${h(x.title)}</b><span class="xs muted">${h(C.name)} · par <b>${h(x.by)}</b> · ${ago(x.at)}</span>
         <div class="bd-gear">${gear}</div>${df ? `<div class="bd-gear dof">${df}</div>` : ""}
-        <div class="row bd-foot">${budTag(x.bud)}${(x.tags || []).map((t) => `<span class="tag soft">${h(t)}</span>`).join("")}<span class="grow"></span>${viewTag(x)}${votes(x)}</div></div></div>`;
+        <div class="row bd-foot">${budTag(x.bud)}${(x.tags || []).map((t) => `<span class="tag soft">${h(t)}</span>`).join("")}<span class="grow"></span>${viewTag(x)}${votes(x)}</div>${tab() === "mine" && x.mine ? ownActs(x) : ""}</div></div>`;
+  }
+  /* « Mes builds » : le héros relié (mise à jour en un clic s'il a changé) et la suppression, sur la carte */
+  function ownActs(x) {
+    const c = S().chars.find((y) => y.bd === x.id);
+    const st = !c ? `<span class="xs muted" data-tip="Publié depuis une autre partie ou un autre appareil">Aucun héros relié ici</span>`
+      : changed(c) ? `<button class="btn sm primary" data-act="bd-upd" data-c="${c.id}">Mettre à jour depuis ${h(c.name)}</button>` : `<span class="xs muted">À jour avec ${h(c.name)}</span>`;
+    return `<div class="row bd-own">${st}<span class="grow"></span><button class="btn xs bd-rep" data-act="bd-del" data-id="${x.id}">Supprimer</button></div>`;
   }
 
   /* ---------- liste ---------- */
@@ -160,19 +172,29 @@
     const x = L.week; if (!x) return "";
     return `<div class="bd-week" data-act="bd-open" data-id="${x.id}" style="--cc:${CLASSES[x.cls].color}">${look(x, "bd-look")}<div class="grow stack" style="gap:3px"><span><span class="tag good">🏆 Build de la semaine</span></span><b>${h(x.title)}</b><span class="xs muted">${h(CLASSES[x.cls].name)} niv. ${x.lvl} · par <b>${h(x.by)}</b> · ${X().fmt(x.wk)} ❤ cette semaine</span></div><div class="bd-gear">${ORDER.filter((s) => x.b.eq[s]).slice(0, 6).map((s) => ico(x.b.eq[s])).join("")}</div></div>`;
   }
+  function gridHtml(empty) {
+    if (L.err && !L.rows.length) return `<div class="empty">${h(L.err)}<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm" data-act="bd-retry">Réessayer</button></div></div>`;
+    if (!L.rows.length) return L.busy || L.key !== key() ? `<div class="empty">Chargement des builds…</div>` : `<div class="empty">${empty}</div>`;
+    return `<div class="bd-grid">${L.rows.map(card).join("")}</div>${L.rows.length < L.n ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="bd-more" ${L.busy ? "disabled" : ""}>${L.busy ? "Chargement…" : `Voir ${Math.min(24, L.n - L.rows.length)} builds de plus`}</button></div>` : ""}`;
+  }
   function listHtml() {
     const anyF = F.cls || F.br || F.el || F.bud || F.q.trim();
-    let body;
-    if (F.sort === "mine" && !logged()) body = `<div class="empty">Connecte-toi avec Discord pour publier et retrouver tes builds.<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm primary" data-act="on-loginscreen">Se connecter avec Discord</button></div></div>`;
-    else if (F.sort === "fav" && !favs().length) body = `<div class="empty">Aucun favori pour l'instant : touche ☆ sur un build pour le retrouver ici.</div>`;
-    else if (L.err && !L.rows.length) body = `<div class="empty">${h(L.err)}<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm" data-act="bd-retry">Réessayer</button></div></div>`;
-    else if (!L.rows.length) body = L.busy || L.key !== key() ? `<div class="empty">Chargement des builds…</div>`
-      : `<div class="empty">${F.sort === "mine" ? "Tu n'as encore publié aucun build. Ouvre un héros, menu ⋯ Plus, « Partager ou publier le build »." : anyF ? "Aucun build ne correspond à ces filtres." : "Aucun build publié pour l'instant : sois le premier !"}</div>`;
-    else body = `<div class="bd-grid">${L.rows.map(card).join("")}</div>${L.rows.length < L.n ? `<div class="row" style="justify-content:center;margin-top:12px"><button class="btn sm" data-act="bd-more" ${L.busy ? "disabled" : ""}>${L.busy ? "Chargement…" : `Voir ${Math.min(24, L.n - L.rows.length)} builds de plus`}</button></div>` : ""}`;
+    const body = F.sort === "fav" && !favs().length ? `<div class="empty">Aucun favori pour l'instant : touche ☆ sur un build pour le retrouver ici.</div>`
+      : gridHtml(anyF ? "Aucun build ne correspond à ces filtres." : "Aucun build publié pour l'instant : sois le premier !");
     const count = L.rows.length ? `<span class="small muted">${X().fmt(L.n)} build${L.n > 1 ? "s" : ""}${anyF ? " pour ces filtres" : ""}</span>` : "";
     return `${F.sort === "week" && !anyF ? weekHtml() : ""}${filtersHtml()}${count}${body}`;
   }
-  const key = () => JSON.stringify([F.cls, F.br, F.el, F.bud, fold(F.q.trim()), F.sort, F.sort === "fav" ? favs().join(",") : ""]);
+  const myCount = () => (tab() === "mine" && L.key === key() && !L.busy && !L.err ? L.n : ME ? ME.length : null);
+  function mineHtml() {
+    if (!logged()) return `<div class="empty">Connecte-toi avec Discord pour publier et retrouver tes builds.<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm primary" data-act="on-loginscreen">Se connecter avec Discord</button></div></div>`;
+    const n = myCount(); const full = n !== null && n >= MAX;
+    const top = `<div class="panel pad row bd-mine"><span class="grow stack" style="gap:5px"><b>${n === null ? "Tes builds publiés" : `${n} build${n > 1 ? "s" : ""} publié${n > 1 ? "s" : ""} sur ${MAX}`}</b>
+      <span class="bar"><i style="width:${n === null ? 0 : Math.min(100, Math.round((100 * n) / MAX))}%"></i></span>
+      <span class="xs muted">${full ? `Tu as atteint ${MAX} builds : supprimes-en un pour en publier un autre.` : "Quand un héros change, mets son build à jour ici ou depuis son menu ⋯. Supprimer un build retire aussi ses ❤ et ses vues."}</span></span>
+      <button class="btn primary sm" data-act="bd-pub" ${full ? "disabled" : ""}>＋ Publier un build</button></div>`;
+    return top + gridHtml("Tu n'as encore publié aucun build. Touche « Publier un build », ou ouvre un héros : menu ⋯ Plus, « Partager ou publier le build ».");
+  }
+  const key = () => { const q = Q(); return JSON.stringify([q.cls, q.br, q.el, q.bud, fold(q.q.trim()), q.sort, q.sort === "fav" ? favs().join(",") : ""]); };
   let NAMES = null;
   function itemsFor(q) {
     const f = fold(q.trim()); if (f.length < 3) return null;
@@ -184,11 +206,12 @@
     if (!online()) return;
     const k = key();
     if (!more && L.key === k && (L.busy || Date.now() - L.at < 60000)) return;
-    if ((F.sort === "mine" && !logged()) || (F.sort === "fav" && !favs().length)) { L.key = k; L.rows = []; L.n = 0; L.err = ""; return; }
+    const G = Q();
+    if ((G.sort === "mine" && !logged()) || (G.sort === "fav" && !favs().length)) { L.key = k; L.rows = []; L.n = 0; L.err = ""; return; }
     const seq = ++L.seq; if (!more) { L.key = k; L.rows = []; L.week = null; } L.busy = true; L.err = "";
-    const q = F.q.trim();
-    const r = await ON.rpc("builds_list", { p_cls: F.cls || null, p_br: F.br || null, p_el: F.el || null, p_bud: F.bud || null, p_q: q.length >= 2 ? q : null, p_items: itemsFor(q),
-      p_sort: F.sort, p_off: more ? L.rows.length : 0, p_ids: F.sort === "fav" ? favs() : null });
+    const q = G.q.trim();
+    const r = await ON.rpc("builds_list", { p_cls: G.cls || null, p_br: G.br || null, p_el: G.el || null, p_bud: G.bud || null, p_q: q.length >= 2 ? q : null, p_items: itemsFor(q),
+      p_sort: G.sort, p_off: more ? L.rows.length : 0, p_ids: G.sort === "fav" ? favs() : null });
     if (seq !== L.seq) return;
     L.busy = false; L.at = Date.now();
     if (r.err || !r.data) L.err = netErr(r.err);
@@ -251,7 +274,7 @@
         <button class="btn sm" data-act="bd-copy" data-id="${x.id}">Copier le code</button>
         <span class="grow"></span>${x.mine ? `${by ? `<button class="btn sm" data-act="bd-upd" data-c="${by.id}">Mettre à jour depuis ${h(by.name)}</button>` : ""}<button class="btn xs bd-rep" data-act="bd-del" data-id="${x.id}">Supprimer</button>` : `<button class="btn xs bd-rep" data-act="bd-report" data-id="${x.id}">⚑ Signaler</button>`}</div>
       <p class="xs muted" style="margin:0">${tc ? `Appliquer copie les sorts et la répartition des caractéristiques sur ${h(tc.name)}. L'équipement n'est pas donné : la liste de courses dit quoi fabriquer.` : `Pour appliquer ce build, il te faut un ${h(C.name)}.`} Le code se colle sur Discord ou dans « Partager le build ».</p>`;
-    return `<div class="row" style="margin-bottom:10px"><button class="btn sm" data-act="bd-back">← Tous les builds</button></div>
+    return `<div class="row" style="margin-bottom:10px"><button class="btn sm" data-act="bd-back">← ${tab() === "mine" ? "Mes builds" : "Tous les builds"}</button></div>
       <div class="bd-dhead" style="--cc:${C.color}"><img class="bd-dsym" src="${X().symImg(x.cls)}" alt="">
         <div class="grow stack" style="gap:6px;position:relative"><h2>${h(x.title)}</h2><span class="small">${h(C.name)} · niveau ${x.lvl} · ${elTag(x.el)} ${budTag(x.bud)} · par <b>${h(x.by)}</b> · mis à jour ${ago(x.at)}</span>
           ${x.tags && x.tags.length ? `<div class="row">${x.tags.map((t) => `<span class="tag soft">${h(t)}</span>`).join("")}</div>` : ""}
@@ -271,13 +294,16 @@
   function html() {
     const u = U(); const x = u.bdOpen && CACHE[u.bdOpen];
     if (u.bdOpen && !x) u.bdOpen = null;
-    const head = `<div class="pagehead row"><h1>Builds</h1><span class="muted small grow bd-sub">Les builds partagés par les joueurs d'Idlus</span>${online() ? `<button class="btn primary sm" data-act="bd-pub">＋ Publier un build</button>` : ""}</div>`;
+    const head = `<div class="pagehead row"><h1>Builds</h1><span class="muted small grow bd-sub">Les builds partagés par les joueurs d'Idlus</span>${online() && !(tab() === "mine" && !u.bdOpen) ? `<button class="btn primary sm" data-act="bd-pub">＋ Publier un build</button>` : ""}</div>`; // « Mes builds » a le sien
     if (!online()) return `<div id="bdPage">${head}<div class="empty">Les builds des joueurs sont sur le serveur d'Idlus, qui n'est pas joignable ici. Tu peux toujours partager un build avec son code (héros, menu ⋯ Plus).</div></div>`;
-    return `<div id="bdPage">${head}${x ? detailHtml(x) : `<div class="stack" style="gap:12px">${listHtml()}</div>`}</div>`;
+    const n = logged() ? myCount() : null;
+    const tabs = `<div class="subtabs bd-tabs" role="tablist"><button data-act="bd-tab" data-v="all" aria-pressed="${tab() === "all"}">Tous les builds</button><button data-act="bd-tab" data-v="mine" aria-pressed="${tab() === "mine"}">Mes builds${n !== null ? ` <span class="num">${n}/${MAX}</span>` : ""}</button></div>`;
+    return `<div id="bdPage">${head}${x ? detailHtml(x) : `${tabs}<div class="stack" style="gap:12px">${tab() === "mine" ? mineHtml() : listHtml()}</div>`}</div>`;
   }
   function render(main) {
     if (!main) return;
     if (!U().bdOpen) load();
+    if (logged() && Date.now() - meTry > 60000) { meTry = Date.now(); mine().then(() => repaint()); } // nombre de builds publiés (onglet « Mes builds »), une fois par minute au plus
     const s = html();
     if (s === lastHtml && main.querySelector("#bdPage")) return; // rien n'a changé : la page n'est pas redessinée (images, survol, saisie)
     lastHtml = s; window.DX.repaint(main, s);
@@ -434,6 +460,7 @@
     const a = t.dataset.act, d = t.dataset, id = +d.id;
     if (a === "bd-open") return openBuild(id);
     if (a === "bd-back") { U().bdOpen = null; repaint(); return; }
+    if (a === "bd-tab") { readQ(); U().bdTab = d.v === "mine" ? "mine" : "all"; U().bdOpen = null; repaint(); window.scrollTo(0, 0); return; }
     if (a === "bd-f") { readQ(); F[d.k] = F[d.k] === d.v && d.k === "cls" ? "" : d.v; repaint(); return; }
     if (a === "bd-more") { load(true); repaint(); return; }
     if (a === "bd-retry") { L.at = 0; L.key = null; repaint(); return; }
@@ -453,7 +480,7 @@
     if (a === "bd-pel") { readPub(); P.el = d.v; return pubRefresh(); }
     if (a === "bd-ptag") { readPub(); const i = P.tags.indexOf(d.v); if (i >= 0) P.tags.splice(i, 1); else if (P.tags.length < 3) P.tags.push(d.v); else P.err = "Trois usages au plus."; return pubRefresh(); }
     if (a === "bd-send") return send(+d.c);
-    if (a === "bd-see") { X().closeSheet(); U().tab = "builds"; U().bdOpen = null; F.sort = "mine"; Object.assign(F, { cls: "", br: "", el: "", bud: "", q: "" }); L.at = 0; window.DX.render(); return; }
+    if (a === "bd-see") { X().closeSheet(); U().tab = "builds"; U().bdOpen = null; U().bdTab = "mine"; L.at = 0; window.DX.render(); return; }
     if (a === "bd-adm") return admAct(id, d.v);
   });
   let qT = null;

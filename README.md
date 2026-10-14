@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.25.2 « Mes builds »
+
+Mathis (14/10/2026, « avoir un onglet "mes builds" et augmente la limite à 30 builds par compte »). Page Communauté › Builds : onglets « Tous les builds » / « Mes builds n/30 » (`U().bdTab`, js/builds.js). « Mes builds » liste ses builds publiés sans filtre (builds_list p_sort 'mine', jusqu'à 30 d'un coup), avec un compteur, « Publier un build », et sur chaque carte le héros relié (« Mettre à jour depuis … » s'il a changé) et « Supprimer ». Le tri « Mes builds » du menu disparaît. Limite de publication 10 → 30 (supabase/builds.sql, build_publish). Test dans tests/online.test.js.
+
 ## 1.0.25.1 « XP/h en donjon »
 
 Mathis (14/10/2026, « afficher l'xp/h quand on enchaîne les donjons, de la même façon que le farm d'une zone »). `S.dungeon.cs` cumule durée, combats, XP, kamas, ressources, objets, poussières de stasis et donjons finis sur l'enchaînement (passé à la course suivante dans `endFight`, js/engine.js) ; `E.dgChainRate` donne les taux par heure. Affiché dans l'encadré du Havre-Sac (tuiles XP/h, kamas/h, donjons/h, poussières/h), sous le titre de Combat et en haut de la fiche du donjon. Défi du jour exclu.

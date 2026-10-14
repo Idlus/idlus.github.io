@@ -1,6 +1,15 @@
 {
-  "version": "1.0.25.1",
+  "version": "1.0.25.2",
   "versions": [
+    {
+      "v": "1.0.25.2",
+      "name": "Mes builds",
+      "items": [
+        "Communauté › Builds a deux onglets : « Tous les builds » et « Mes builds », avec le nombre de builds publiés",
+        "« Mes builds » montre tous tes builds publiés : mise à jour en un clic quand le héros relié a changé, et « Supprimer » directement sur la carte",
+        "Tu peux maintenant publier jusqu'à 30 builds par compte (10 avant)"
+      ]
+    },
     {
       "v": "1.0.25.1",
       "name": "XP/h en donjon",

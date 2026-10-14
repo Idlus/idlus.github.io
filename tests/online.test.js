@@ -78,7 +78,7 @@ const MOCK = () => {
           if (a.p_sort === "fav") L = L.filter((b) => (a.p_ids || []).includes(b.id));
           L.sort((x, y) => (a.p_sort === "views" ? y.views - x.views : a.p_sort === "new" ? y.id - x.id : (y.likers || []).length - (x.likers || []).length || y.id - x.id));
           const off = a.p_off || 0; const w = B.filter((b) => !b.hidden && !b.removed && (b.likers || []).length >= 3).sort((x, y) => y.likers.length - x.likers.length)[0];
-          return ok(Object.assign({ n: L.length, rows: L.slice(off, off + 24).map(row) }, off === 0 && a.p_sort !== "mine" && a.p_sort !== "fav" ? { week: w ? row(w) : null } : {}));
+          return ok(Object.assign({ n: L.length, rows: L.slice(off, off + (a.p_sort === "mine" ? 30 : 24)).map(row) }, off === 0 && a.p_sort !== "mine" && a.p_sort !== "fav" ? { week: w ? row(w) : null } : {}));
         }
         if (name === "build_view") { const b = B.find((x) => x.id === a.p_id); const who = u ? u.id : "g:" + a.p_guest; if (!b || (b.seen || []).includes(who)) return ok(false); b.seen = (b.seen || []).concat([who]); b.views++; return ok(true); }
         if (!u) return { data: null, error: { message: "non connecté" } };
@@ -91,7 +91,7 @@ const MOCK = () => {
           if (a.p_id) { const b = B.find((x) => x.id === a.p_id && x.user_id === u.id && !x.removed); if (!b) return ok({ err: "Ce build n'existe plus : publie-le à nouveau.", gone: true });
             Object.assign(b, { code: a.p_code, cls: j.cls, lvl: j.lvl, items, bud: a.p_bud, at: new Date().toISOString() }, a.p_title == null ? {} : { title: a.p_title, note: a.p_note, tags: a.p_tags, el: a.p_el }); return ok({ id: b.id, upd: true }); }
           if (!a.p_title || a.p_title.length < 4) return ok({ err: "Donne un titre à ton build (4 caractères au moins)." });
-          if (B.filter((x) => x.user_id === u.id && !x.removed).length >= 10) return ok({ err: "Tu as déjà 10 builds publiés." });
+          if (B.filter((x) => x.user_id === u.id && !x.removed).length >= 30) return ok({ err: "Tu as déjà 30 builds publiés." }); // 1.0.25.2 : 30 (10 avant)
           const id = B.reduce((m, x) => Math.max(m, x.id), 0) + 1;
           B.push({ id, user_id: u.id, pseudo: me ? me.pseudo : "?", hid: a.p_hid, cls: j.cls, lvl: j.lvl, el: a.p_el, bud: a.p_bud, tags: a.p_tags || [], title: a.p_title, note: a.p_note || "", code: a.p_code, items, sex: a.p_sex, head: a.p_head, likers: [], views: 0, reports: [], hidden: false, removed: false, at: new Date().toISOString(), new: new Date().toISOString() });
           return ok({ id });
@@ -575,6 +575,18 @@ const MOCK = () => {
     if (await page.$('.hmenu [data-act="bd-quickupd"]')) { await page.click('.hmenu [data-act="bd-quickupd"]'); await page.waitForTimeout(800);
       m = await mock(); const last = (m.pubs || [])[(m.pubs || []).length - 1]; if (!last || last.p_title !== null || !last.p_id) fail("builds : mise à jour en un clic incorrecte");
       if (await page.evaluate(() => window.BUILDS.changed(window.DX.S.chars[0]))) fail("builds : toujours « changé » après la mise à jour"); }
+    // 1.0.25.2 : onglet « Mes builds » (compteur sur 30, mise à jour depuis le héros, suppression sur la carte)
+    await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE, D = window.DATA, c = S.chars[0]; const t = Object.keys(D.ITEMS).filter((k) => D.ITEMS[k].slot === "anneau" && D.ITEMS[k].lvl <= c.lvl && D.ITEMS[k].craft)[1]; E.equip(S, c.id, E.rollItem(S, t).uid, "anneau2"); window.DX.ui.heroMore = false; window.DX.ui.tab = "builds"; window.DX.ui.bdOpen = null; window.DX.render(); });
+    await page.click('#bdPage [data-act="bd-tab"][data-v="mine"]'); await page.waitForSelector("#bdPage .bd-own", { timeout: 5000 }).catch(() => fail("builds : onglet « Mes builds » sans ses builds"));
+    { const tx = await page.textContent("#bdPage"); if (!/Mes builds 1\/30/.test(tx) || !/1 build publié sur 30/.test(tx)) fail("builds : compteur de « Mes builds » faux : " + tx.slice(0, 160)); if (await page.$("#bdPage #bdSort")) fail("builds : les filtres ne doivent pas être dans « Mes builds »"); }
+    if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/builds-mine.png", fullPage: true });
+    if (await page.$('#bdPage .bd-own [data-act="bd-upd"]')) { const n0 = ((await mock()).pubs || []).length; await page.click('#bdPage .bd-own [data-act="bd-upd"]'); await page.waitForTimeout(800); m = await mock(); if ((m.pubs || []).length !== n0 + 1 || m.pubs[n0].p_title !== null) fail("builds : « Mettre à jour depuis » de « Mes builds » sans effet"); }
+    else fail("builds : « Mettre à jour depuis » absent de « Mes builds » alors que le héros a changé");
+    await page.waitForSelector('#bdPage .bd-own [data-act="bd-del"]', { timeout: 5000 }); await page.click('#bdPage .bd-own [data-act="bd-del"]'); await page.waitForSelector('.sheet [data-act="bd-delgo"]', { timeout: 3000 }); await page.click('.sheet [data-act="bd-delgo"]'); await page.waitForTimeout(800);
+    m = await mock(); if (!(m.builds.find((x) => x.title === "Mon premier build") || {}).removed && m.builds.some((x) => x.title === "Mon premier build")) fail("builds : suppression depuis « Mes builds » sans effet");
+    if (await page.evaluate(() => window.DX.S.chars[0].bd)) fail("builds : le héros reste relié à un build supprimé");
+    if (!/Tu n'as encore publié aucun build/.test(await page.textContent("#bdPage"))) fail("builds : « Mes builds » vide sans message");
+    await page.click('#bdPage [data-act="bd-tab"][data-v="all"]'); await page.waitForSelector("#bdPage #bdSort", { timeout: 5000 });
     // panel admin : onglet Builds, cacher un build
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector('.adm [data-act="adm-tab"][data-v="builds"]', { timeout: 5000 });
     await page.click('.adm [data-act="adm-tab"][data-v="builds"]'); await page.waitForSelector('.adm [data-act="bd-adm"]', { timeout: 5000 });

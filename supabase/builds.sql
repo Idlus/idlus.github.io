@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Idlus — builds partagés (1.0.23). Appliqué automatiquement par le workflow « Serveur en ligne »
 -- après chat.sql (il s'appuie sur adm_need, alog, profiles, chat_sanctions) ; relançable sans danger.
--- Page Communauté › Builds : un joueur connecté avec Discord publie le build d'un de ses héros (10 au plus)
+-- Page Communauté › Builds : un joueur connecté avec Discord publie le build d'un de ses héros (30 au plus, 10 avant 1.0.25.2)
 -- depuis la fenêtre « Partager le build » ; tout le monde, même sans compte, regarde, filtre et copie.
 -- ❤ J'aime (un par compte, pas sur ses propres builds), vues (une par joueur et par build),
 -- « Signaler » (caché dès 3 signalements, jusqu'à la décision de l'équipe dans le panel admin).
@@ -106,7 +106,7 @@ begin
         case when s in ('week', 'top') then (f.b).likes end desc nulls last,
         case when s = 'views' then (f.b).views end desc nulls last,
         (f.b).updated_at desc) o
-      from f order by o limit 24 offset off) x), '[]'::jsonb)) into res;
+      from f order by o limit (case when s = 'mine' then 30 else 24 end) offset off) x), '[]'::jsonb)) into res; -- « Mes builds » : les 30 d'un coup
   if off = 0 and s <> 'mine' and s <> 'fav' then
     select build_row(b, w.wk) into wb from builds b join (
       select build_id, count(*) wk from build_likes where created_at > now() - interval '7 days' group by build_id) w on w.build_id = b.id
@@ -179,8 +179,8 @@ begin
     if nid is null then return jsonb_build_object('err', 'Ce build n''existe plus : publie-le à nouveau.', 'gone', true); end if;
     return jsonb_build_object('id', nid, 'upd', true);
   end if;
-  if (select count(*) from builds where user_id = u and not removed) >= 10 then
-    return jsonb_build_object('err', 'Tu as déjà 10 builds publiés : supprimes-en un dans « Mes builds » ou mets-en un à jour.'); end if;
+  if (select count(*) from builds where user_id = u and not removed) >= 30 then -- 1.0.25.2 : 30 builds par compte (10 avant)
+    return jsonb_build_object('err', 'Tu as déjà 30 builds publiés : supprimes-en un dans « Mes builds » ou mets-en un à jour.'); end if;
   insert into builds (user_id, pseudo, hid, cls, lvl, el, bud, tags, title, note, code, items, sex, head)
     values (u, pr.pseudo, p_hid, cl, lv, p_el, p_bud, tg, t, n, c, its, case when p_sex = 'f' then 'f' else 'm' end, greatest(0, least(coalesce(p_head, 0), 20)))
     returning id into nid;

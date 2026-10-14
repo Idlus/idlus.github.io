@@ -4980,3 +4980,8 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .pfjren .uico{width:13px;height:13px}
 .cele-art.ren .celepet{border-radius:16px;box-shadow:0 0 26px rgba(255,170,60,.85)}
 .hcard.o-enclume{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e9b93a,0 0 0 6px #7a2a0e,0 0 26px rgba(242,163,58,.85)}
+/* 1.0.25.2 : onglet « Mes builds » */
+.bd-tabs{margin:0 0 10px}.bd-tabs .num{opacity:.8;font-size:12px}
+.bd-mine{align-items:center;gap:12px}.bd-mine .bar{max-width:420px}
+.bd-own{gap:6px;padding-top:6px;border-top:1px dashed var(--frame);margin-top:2px;flex-wrap:wrap}
+@media (max-width:700px){.bd-mine{flex-wrap:wrap}.bd-mine .btn{width:100%}}

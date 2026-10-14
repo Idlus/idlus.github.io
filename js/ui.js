@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.1";
+const GAME_VERSION = "1.0.25.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.2", name: "Mes builds", items: [
+    "Communauté › Builds a deux onglets : « Tous les builds » et « Mes builds », avec le nombre de builds publiés",
+    "« Mes builds » montre tous tes builds publiés : mise à jour en un clic quand le héros relié a changé, et « Supprimer » directement sur la carte",
+    "Tu peux maintenant publier jusqu'à 30 builds par compte (10 avant)",
+  ] },
   { v: "1.0.25.1", name: "XP/h en donjon", items: [
     "En enchaînant des donjons, l'encadré du Havre-Sac montre le rendement comme pour la chasse : XP/h, kamas/h, donjons/h et poussières/h",
     "En dessous : le temps moyen par donjon, les ressources/h et le taux de victoires, mesurés sur tout l'enchaînement en cours",
