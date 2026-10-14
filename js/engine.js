@@ -636,6 +636,7 @@
     const c = S.chars.find((x) => x.id === cid); if (!c || idx < 0 || idx >= E.MAX_GEAR) return;
     c.gear = c.gear || [];
     c.gear[idx] = { name: (name || (c.gear[idx] && c.gear[idx].name) || `Tenue ${idx + 1}`).slice(0, 24), eq: Object.assign({}, c.equip) };
+    E.syncGearLocks(S);
   };
   /* remet la tenue : les objets portés par un autre héros changent de main, les objets vendus ou brisés sont ignorés */
   E.applyGear = (S, cid, idx) => {
@@ -652,10 +653,21 @@
     E.emit(S, "equip", {});
     return { missing };
   };
-  E.deleteGear = (S, cid, idx) => { const c = S.chars.find((x) => x.id === cid); if (c && c.gear) c.gear[idx] = null; };
+  E.deleteGear = (S, cid, idx) => { const c = S.chars.find((x) => x.id === cid); if (c && c.gear) c.gear[idx] = null; E.syncGearLocks(S); };
   E.gearMissing = (S, c, g) => Object.values(g.eq).filter((uid) => !S.items[uid]).length;
   /* un objet rangé dans une tenue est protégé comme un objet porté (ni vendu, ni brisé) */
   E.inGear = (S, uid) => S.chars.find((c) => (c.gear || []).some((g) => g && Object.values(g.eq).includes(uid))) || null;
+  E.gearOf = (S, uid) => { for (const c of S.chars) for (const g of (c.gear || [])) if (g && Object.values(g.eq).includes(uid)) return { c, g }; return null; };
+  /* 1.0.25.11 « Tenues verrouillées » : enregistrer une tenue pose le cadenas sur ses objets (marqués glock) ;
+     il s'enlève tout seul quand l'objet ne fait plus partie d'aucune tenue. Un cadenas posé à la main reste. */
+  E.syncGearLocks = (S) => {
+    const inG = new Set(); S.chars.forEach((c) => (c.gear || []).forEach((g) => { if (g) Object.values(g.eq).forEach((u) => inG.add(+u)); }));
+    for (const uid in S.items) {
+      const it = S.items[uid];
+      if (inG.has(+uid)) { if (!it.locked) { it.locked = true; it.glock = 1; } }
+      else if (it.glock) { delete it.locked; delete it.glock; }
+    }
+  };
 
   /* ---------------- Codes de build (3.1.3) : partager sorts, caractéristiques et équipement ---------------- */
   E.BUILD_PREFIX = "IDLUS1-";
@@ -3377,6 +3389,7 @@
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
     for (const uid in S.items) { const T = ITEMS[S.items[uid].tpl]; if (T.trophy) { S.trophies[T.trophy] = 1; delete S.items[uid]; } } // 1.0.20 : trophées passifs
     S.chars.forEach((c) => { for (const sl in c.equip) if (!S.items[c.equip[sl]]) delete c.equip[sl]; });
+    E.syncGearLocks(S); // 1.0.25.11 : objets des tenues déjà enregistrées verrouillés au chargement
     if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
     S.v = E.VERSION;
     return S;

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.11 « Tenues verrouillées »
+
+Demande de Mathis : enregistrer une tenue (Héros › Tenues) verrouille ses objets. `E.syncGearLocks` (js/engine.js) pose `locked` + `glock` sur chaque objet rangé dans une tenue et retire le cadenas des objets marqués `glock` qui ne sont plus dans aucune tenue (Écraser, ✕) ; un cadenas posé à la main reste. Appelé à l'enregistrement, à la suppression et au chargement (tenues déjà enregistrées). Le bouton cadenas refuse de retirer un verrou de tenue et le détail de l'inventaire affiche le nom de la tenue. La fusion de légendaires refuse une copie rangée dans une tenue. Test : tests/tenues.test.js.
+
 ## 1.0.25.10 « Récolte et Équipe sans saut »
 
 Suite du choix de Mathis 3A (fil « Nettoyage du code », « Go ») : la boucle du jeu passe aussi la Récolte (`renderMetiers(soft)`, toutes les 4 s) et la liste de l'Équipe (`#teamtop` / `#tlist`, toutes les 4 s) en mise à jour ciblée `morphTo` au lieu de `innerHTML`. `renderMetiers(soft)` ne fait la mise à jour ciblée que si la page affichée est la même (`ui.plKey`), sinon redessin complet comme avant (`keepList`). Vérifié dans Chromium (PC 1280 et téléphone 390, annonce admin affichée) : même DOM qu'un redessin complet sur Récolte, Artisanat et Équipe après un changement d'état ; dans la vraie boucle les éléments restent les mêmes et le défilement est gardé. Les quatre pages que la boucle du jeu redessinait en entier (accueil, Quêtes, Récolte, Équipe) sont toutes passées en mise à jour ciblée.

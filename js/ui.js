@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.10";
+const GAME_VERSION = "1.0.25.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.11", name: "Tenues verrouillées", items: [
+    "Enregistrer une tenue (Héros › Tenues) pose maintenant le cadenas sur tous ses objets : impossible de les briser ou de les mettre à l'HdV par erreur",
+    "Seuls les exemplaires de la tenue sont verrouillés, pas les copies identiques du sac. Le nom de la tenue s'affiche à côté du cadenas",
+    "Le cadenas s'enlève tout seul quand l'objet quitte la tenue (Écraser ou ✕). Les tenues déjà enregistrées sont verrouillées dès le chargement",
+  ] },
   { v: "1.0.25.10", name: "Récolte et Équipe sans saut", items: [
     "Métiers › Récolte et la liste de l'Équipe ne sont plus redessinées en entier toutes les 4 secondes, seulement ce qui change (barres, compteurs, niveaux)",
     "Comme pour le Havre-Sac et les Quêtes : la page ne remonte plus et ce que tu regardes ou tapes reste en place",
@@ -5148,7 +5153,7 @@ function gearHtml(c) {
       <span class="row" style="gap:4px"><button class="btn sm ${on ? "" : "primary"}" data-act="gload" data-i="${i}" ${on ? "disabled" : ""}>${on ? "Portée" : "Mettre"}</button><button class="btn sm" data-act="gsave" data-i="${i}" title="Remplacer par l'équipement actuel">Écraser</button><button class="btn sm" data-act="gren" data-i="${i}" title="Renommer">${G("edit")}</button><button class="btn sm" data-act="gdel" data-i="${i}" title="Supprimer">✕</button></span></div>`;
   }).join("");
   return `<div class="panel"><div class="phead"><h2>Tenues</h2><span class="xs muted">changer tout l'équipement en un clic</span></div><div class="pad stack" style="gap:6px">${rows}
-    <p class="note xs" style="margin:0">Les objets d'une tenue sont protégés : ils ne sont ni mis en vente ni brisés, même par les règles automatiques. S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
+    <p class="note xs" style="margin:0">${G("lock")} Enregistrer une tenue verrouille ses objets : ils ne peuvent être ni brisés, ni mis en vente, même par les règles automatiques. Le cadenas s'enlève tout seul quand l'objet quitte la tenue (Écraser ou ✕). S'ils sont portés par un autre héros, ils changent de main.</p></div></div>`;
 }
 const EL_NAME = (el) => (el === "best" ? "meilleur élément" : ELEMENTS[el || "n"].name.toLowerCase());
 const tgtTxt = (n) => (n >= 9 ? "tous les ennemis" : n > 1 ? `${n} cibles` : "");
@@ -5418,6 +5423,8 @@ function invGroups() {
   arr.sort((a, b) => (b.rad - a.rad) || (sort === "lvl" ? ITEMS[b.tpl].lvl - ITEMS[a.tpl].lvl : sort === "jet" ? b.best - a.best : sort === "count" ? b.items.length - a.items.length : ITEMS[a.tpl].name.localeCompare(ITEMS[b.tpl].name, "fr")));
   return arr;
 }
+/* 1.0.25.11 : cadenas posé par une tenue enregistrée */
+function lockTip(it) { const gg = E.gearOf(S, it.uid); return gg ? `Verrouillé par la tenue « ${gg.g.name} » de ${gg.c.name}` : it.locked ? "Retirer le cadenas" : "Protéger de la mise en vente et du brisage"; }
 function invDetail(tpl) {
   const T = ITEMS[tpl]; if (!T) return "";
   const worn = invShowEq() ? null : wornMap();
@@ -5429,7 +5436,7 @@ function invDetail(tpl) {
     <div class="list">${grpItems(copies, false, (x) => E.equippedBy(S, x.uid)).map((gr) => { const it = gr.rep; const by = E.equippedBy(S, it.uid);
       return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow"><b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>${grpN(gr.items.length)}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
         <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button>${T.leg ? `<button class="btn sm" data-act="sg-leg" data-k="${T.leg}" data-u="${it.uid}" title="Fiche légendaire et Éveil">${G("sparkle")} Éveil</button>` : `<button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">${IC("forge")}</button>`}
-          <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${it.locked ? "Retirer le cadenas" : "Protéger de la mise en vente et du brisage"}">${it.locked ? G("lock") : G("unlock")}</button>
+          <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${h(lockTip(it))}">${it.locked ? G("lock") : G("unlock")}</button>${E.gearOf(S, it.uid) ? ` <span class="tag soft" title="${h(lockTip(it))}">${G("lock")} ${h(E.gearOf(S, it.uid).g.name)}</span>` : ""}
           ${by || it.locked ? "" : `${hdvOn() ? `<button class="btn sm" data-act="hdvitem" data-uid="${it.uid}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
 }
 /* mini-silhouette : emplacement de l'objet sélectionné en surbrillance */
@@ -7676,7 +7683,7 @@ document.addEventListener("click", (ev) => {
     case "scrollto": { const r = E.useConsumable(S, d.sid, +d.id); closeSheet(); if (r) { toast(r); return; } toast(`${CONSUMABLES[d.sid].name} utilisé sur ${char(+d.id).name}.`); break; }
     case "savoir": { const r = E.useConsumable(S, "potion_savoir", d.job); closeSheet(); if (r) { toast(r); return; } break; }
     case "invsel": ui.invSel = d.tpl || null; if (!ui.invSel) closeSheet(); break;
-    case "lock": { const it = S.items[+d.uid]; if (it) it.locked = !it.locked; break; }
+    case "lock": { const it = S.items[+d.uid]; if (!it) break; const gg = E.gearOf(S, it.uid); if (it.locked && gg) { toast(`Objet verrouillé par la tenue « ${gg.g.name} » de ${gg.c.name} : retire-le de la tenue ou supprime la tenue pour l'enlever.`); return; } it.locked = !it.locked; delete it.glock; break; }
     case "autotoggle": ui.autoOpen = !t.parentElement.open; return;
     case "almall": ui.almAll = !t.parentElement.open; return; // 0.1.39.1 : le volet reste ouvert malgré le rafraîchissement
     case "autonow": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && E.applyAuto(S, it)) n++; }); toast(n ? `${n} objet${n > 1 ? "s" : ""} traité${n > 1 ? "s" : ""}.` : "Aucun objet concerné."); break; }

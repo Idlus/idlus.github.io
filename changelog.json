@@ -1,6 +1,15 @@
 {
-  "version": "1.0.25.10",
+  "version": "1.0.25.11",
   "versions": [
+    {
+      "v": "1.0.25.11",
+      "name": "Tenues verrouillées",
+      "items": [
+        "Enregistrer une tenue (Héros › Tenues) pose maintenant le cadenas sur tous ses objets : impossible de les briser ou de les mettre à l'HdV par erreur",
+        "Seuls les exemplaires de la tenue sont verrouillés, pas les copies identiques du sac. Le nom de la tenue s'affiche à côté du cadenas",
+        "Le cadenas s'enlève tout seul quand l'objet quitte la tenue (Écraser ou ✕). Les tenues déjà enregistrées sont verrouillées dès le chargement"
+      ]
+    },
     {
       "v": "1.0.25.10",
       "name": "Récolte et Équipe sans saut",

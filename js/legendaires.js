@@ -155,6 +155,7 @@
     if (a.tpl !== b.tpl || !ITEMS[a.tpl].leg) return "Seul un exemplaire du même légendaire se fond.";
     if (E.legEv(a) >= 5) return "Éveil V atteint : il ne monte plus.";
     if (E.equippedBy(S, uid2)) return "Retire d'abord la copie du héros qui la porte.";
+    if (E.inGear(S, uid2)) return "Cette copie est rangée dans une tenue : retire-la de la tenue d'abord.";
     const before = E.legEv(a); a.lgc = Math.min(E.LEG_COPIES[4], E.legCopies(a) + E.legCopies(b)); delete S.items[uid2];
     const x = E.legByTpl(a.tpl); const after = E.legEv(a);
     E.note(S, after > before ? `${x.name} passe à l'Éveil ${E.LEG_ROMAN[after - 1]} : ${E.legTxt(x, after)}` : `${x.name} : copie fondue (${E.legNext(a)} de plus pour l'Éveil ${E.LEG_ROMAN[after]}).`, after > before ? "rare" : "up");
