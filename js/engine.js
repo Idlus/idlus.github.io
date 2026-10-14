@@ -2442,7 +2442,10 @@
           E.emit(S, "dungeon", { id: S.dungeon.id, stasis: S.dungeon.stasis || 1, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
           note(S, `${MONSTERS[dg.boss].name} est vaincu ! Donjon terminé.`, "rare");
           const chainD = S.dungeon; S.dungeon = null; dgDone = true;
-          if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, chainD.stasis, chainD.chain - 1); if (r2) note(S, `Enchaînement arrêté : ${r2}`, "warn"); else { S.dungeon.tot = chainD.tot || chainD.chain; S.dungeon.run = (chainD.run || 1) + 1; S.dungeon.cs = chainD.cs; } }
+          /* 1.0.32.3 « Montée de stasis » : la course suivante prend la stasis du dessus jusqu'à la stasis visée */
+          const nextK = chainD.climb && (chainD.stasis || 1) < chainD.climb ? (chainD.stasis || 1) + 1 : chainD.stasis;
+          if (chainD.chain > 1) { const r2 = E.enterDungeon(S, chainD.id, nextK, chainD.chain - 1, chainD.climb); if (r2) { note(S, `Enchaînement arrêté : ${r2}`, "warn"); if (chainD.climb) climbEnd(S, chainD, false); } else { S.dungeon.tot = chainD.tot || chainD.chain; S.dungeon.run = (chainD.run || 1) + 1; S.dungeon.cs = chainD.cs; S.dungeon.k0 = chainD.k0; } }
+          else if (chainD.climb) climbEnd(S, chainD, true);
           if (!S.dungeon && S.hunting && S.sub) E.applyZonePresets(S, S.sub);
         } else S.dungeon.room++;
       }
@@ -2458,7 +2461,7 @@
       else E.autoZone(S, false);
       if (S.dungeon) {
         if ((S.cons.fiole_resu || 0) > 0 && !S.dungeon.revived) { S.cons.fiole_resu--; if (!S.cons.fiole_resu) delete S.cons.fiole_resu; S.dungeon.revived = true; note(S, `Fiole de Résurrection : l'équipe se relève et recommence la salle (${DUNGEONS[S.dungeon.id].name}).`, "rare"); }
-        else { note(S, `Échec dans ${DUNGEONS[S.dungeon.id].name}. La clé est perdue.`, "warn"); S.dungeon = null; }
+        else { note(S, `Échec dans ${DUNGEONS[S.dungeon.id].name}. La clé est perdue.`, "warn"); if (S.dungeon.climb) climbEnd(S, S.dungeon, false, true); S.dungeon = null; }
       }
     }
     if (F.dungeonId && S.dungeon) S.dungeon.t = (S.dungeon.t || 0) + F.dur;
@@ -2835,7 +2838,13 @@
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");
     if (rew) rew.stasis = { k, out, dust };
   };
-  E.enterDungeon = (S, did, stasis, chain) => {
+  /* 1.0.32.3 : résumé de fin de montée de stasis (stasis de départ, dernière stasis réussie) */
+  const climbEnd = (S, D2, full, lost) => {
+    const name = DUNGEONS[D2.id] ? DUNGEONS[D2.id].name : "Donjon"; const k0 = D2.k0 || D2.stasis || 1; const last = lost ? (D2.stasis || 1) - 1 : D2.stasis || 1;
+    if (full && last >= D2.climb) note(S, `Montée réussie : ${name}, stasis ${k0} à ${last} enchaînées sans t'arrêter !`, "rare");
+    else note(S, `Montée de stasis arrêtée : ${name}, ${last >= k0 ? `stasis ${k0} à ${last} réussies` : "aucune stasis réussie"}${lost ? `, défaite en stasis ${D2.stasis || 1}` : ""}.`, "warn");
+  };
+  E.enterDungeon = (S, did, stasis, chain, climb) => {
     const dg = DUNGEONS[did]; if (!dg) return "Donjon inconnu.";
     const SI = E.stasisInfo(S, did); const k = clamp(stasis || SI.sel || 1, 1, E.STASIS_MAX);
     if (k > SI.max + 1) return `Stasis ${k} verrouillée : terminez d'abord la stasis ${SI.max + 1}.`;
@@ -2847,6 +2856,7 @@
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, tot: chain || 1, run: 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
       mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
+    if (climb > 0) { S.dungeon.climb = Math.min(E.STASIS_MAX, climb); S.dungeon.k0 = k; } // 1.0.32.3 : montée de stasis
     SI.sel = k;
     S.fight = null; S.pause = 0;
     E.applyZonePresets(S, "dg:" + did);

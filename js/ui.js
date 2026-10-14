@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.2";
+const GAME_VERSION = "1.0.32.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.3", name: "Montée de stasis", items: [
+    "Donjons : nouvelle option « Monter jusqu'à la stasis » dans l'encadré Enchaîner. Choisis la stasis de départ et la stasis visée (par exemple 1 → 5) : l'équipe enchaîne les donjons en montant d'une stasis après chaque victoire, sans revenir sur la fiche",
+    "La montée s'arrête à la stasis visée, à la première défaite ou quand il n'y a plus de clé. Un résumé dit jusqu'où l'équipe est allée",
+    "Quêtes de Dofus : le bouton « Y aller » d'une étape « en stasis N » ouvre la fiche avec la montée déjà réglée de ta meilleure stasis jusqu'à N",
+  ] },
   { v: "1.0.32.2", name: "Le vrai visage du Dopeul", items: [
     "Petit module de combat (menu et bande du téléphone) : un Dopeul de quête montre enfin sa tête de classe, et plus celle d'un monstre de la zone",
   ] },
@@ -2894,7 +2899,7 @@ function dgDofusBox(did, SI, k) {
     out.push(`<div class="dofbox col">${im(dofusImg("ocre"), "dfpic", "Dofus Ocre")}<span class="grow xs"><b>Dofus Ocre</b> · ${h(E.dofusBonusTxt("ocre"))}${E.dofusOwned(S, "ocre") ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${ocreWhy(lv)} En stasis ${k}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}<br>${dofLadder(lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="ocre">Quête</button></div>`); }
   return out.join("");
 }
-function dgPick(did) { if (ui.dgSel !== did) { ui.dgSel = did; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[did]) || 1; } }
+function dgPick(did) { if (ui.dgSel !== did) { ui.dgSel = did; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[did]) || 1; ui.dgClimb = 0; } }
 function dungeonSheet(did) {
   // 1.0.17.1 : la fiche retient elle-même son donjon (ouverte par la recherche, une quête…), sinon stasis et enchaînement rouvraient le donjon vu juste avant
   dgPick(did);
@@ -2912,13 +2917,17 @@ function dungeonSheet(did) {
   const best = Object.entries(SI.best || {}).sort((a, b) => b[0] - a[0]).slice(0, 3).map(([n, t]) => `stasis ${n} : ${dur(t)}`).join(" · ");
   const W = E.weekly(S); const wk = W && W.did === did ? E.STASIS_MODS[W.mod] : null;
   const FL = wk ? null : E.flashOf(S, did); const fl = FL ? E.STASIS_MODS[FL.mod] : null;
-  const chainMax = Math.max(1, keys); const chainAll = ui.dgChain === -1; const chainN = chainAll ? chainMax : clamp(ui.dgChain || 1, 1, chainMax);
+  const chainMax = Math.max(1, keys); const chainAll = ui.dgChain === -1; const climbT = climbTarget(did, k);
+  const chainN = climbT ? Math.min(chainMax, climbT - k + 1) : chainAll ? chainMax : clamp(ui.dgChain || 1, 1, chainMax);
   const chainOpts = [1, 3, 5, 10, 20].filter((x) => x === 1 || x < chainMax);
-  const chainEst = SI.best && SI.best[k] && chainN > 1 ? ` · environ ${dur(SI.best[k] * chainN)} au total (d'après ton record)` : "";
+  const chainEst = SI.best && SI.best[k] && chainN > 1 && !climbT ? ` · environ ${dur(SI.best[k] * chainN)} au total (d'après ton record)` : "";
+  /* 1.0.32.3 « Montée de stasis » : enchaîner en montant d'une stasis après chaque victoire, jusqu'à la stasis choisie */
+  const climbRow = k < E.STASIS_MAX ? `<div class="chainrow climbrow"><span class="xs"><b>Monter</b> jusqu'à la stasis</span><button class="sbtn ${climbT ? "" : "on"}" data-act="dgclimb" data-id="${did}" data-v="0">Non</button>${Array.from({ length: E.STASIS_MAX - k }, (_, i) => k + 1 + i).map((n) => `<button class="sbtn ${climbT === n ? "on" : ""}" data-act="dgclimb" data-id="${did}" data-v="${n}">${n}</button>`).join("")}</div>` : "";
+  const climbTxt = climbT ? `<div class="xs climbtxt">Stasis <b>${k} → ${climbT}</b> : ${climbT - k + 1} donjons, une clé chacun. Après chaque victoire l'équipe monte d'une stasis ; une défaite ou plus de clé arrête la montée.${keys < climbT - k + 1 ? ` <span class="warn">Il te manque ${climbT - k + 1 - keys} clé${climbT - k + 1 - keys > 1 ? "s" : ""} : la montée s'arrêtera en stasis ${k + keys - 1}.</span>` : ""}</div>` : "";
   const chainBox = un && keys > 1 ? `<div class="chainbox"><b>Enchaîner</b> <span class="xs muted">(${keys} clé${keys > 1 ? "s" : ""} en stock)</span>
-        <div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="-1">Toutes (${chainMax})</button>
+        ${climbRow}${climbT ? climbTxt : `<div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="-1">Toutes (${chainMax})</button>
         <span class="chainstep"><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.max(1, chainN - 1)}" ${chainN <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${chainN}</b><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.min(chainMax, chainN + 1)}" ${chainN >= chainMax ? "disabled" : ""} aria-label="Un de plus">+</button></span></div>
-        <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div></div>` : "";
+        <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div>`}</div>` : "";
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
       ${S.dungeon && S.dungeon.id === did && !S.dungeon.defi ? `<div class="wkbox">${IC("combat")} <div class="grow"><b>En cours : ${chainTxt()}stasis ${S.dungeon.stasis || 1}</b><div class="ac-rate xs" style="margin-top:2px">${dgRateLine(E.dgChainRate(S))}</div></div></div>` : ""}
@@ -2945,15 +2954,17 @@ function dungeonSheet(did) {
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
-    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
+    ${chainBox}<div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">${un ? `<button class="btn primary" data-act="enterdg" data-id="${did}" ${keys && !S.dungeon ? "" : "disabled"}>Entrer en stasis ${k}${climbT && chainN > 1 ? ` → ${k + chainN - 1}` : keys > 1 && chainN > 1 ? ` (×${chainN})` : ""}</button>` : `<span class="small muted">${G("lock")} ${dgNeedTxt(did) ? `${h(dgNeedTxt(did))} pour y accéder.` : `Débloquez ${h(E.SUBS[E.DUNGEON_SUB[did]].name)} pour y accéder.`}</span>`}
       <button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* 0.1.37.1 : nombre de donjons à enchaîner (-1 = toutes les clés), borné par les clés en stock */
 function combatSub() { const XP = E.expActive(S) ? S.exp : null; const dg = S.dungeon ? DUNGEONS[S.dungeon.id] : null; const sub = S.sub ? E.SUBS[S.sub] : null;
   return XP ? `${window.SGUI ? window.SGUI.where(S) : "Songe infini"} · ${XP.relics.length} bonus${XP.sable ? ` · ${XP.sable} Sable${XP.sable > 1 ? "s" : ""}` : ""}` : dg ? `Donjon · ${chainTxt()}salle ${Math.min(S.dungeon.room + 1, dg.rooms.length + 1)} sur ${dg.rooms.length + 1}` : sub && S.hunting ? `${h(ZONES.find((z) => z.id === sub.zone).name)} · niv. ${sub.lvl[0]}–${sub.lvl[1]}` : "Votre équipe se repose"; }
 function chainBtn() { return S.dungeon && (S.dungeon.chain || 1) > 1 ? `<button class="btn sm" data-act="stopchain" data-tip="Le donjon en cours va jusqu'au bout, puis l'équipe s'arrête">Arrêter après celui-ci</button>` : ""; }
-function chainCount(did) { const keys = S.res[DUNGEONS[did].key] || 0; return ui.dgChain === -1 ? Math.max(1, keys) : clamp(ui.dgChain || 1, 1, Math.max(1, keys)); }
-function chainTxt() { const D = S.dungeon; return D && (D.tot || 1) > 1 ? `course ${D.run || 1} sur ${D.tot}${(D.chain || 1) <= 1 ? " (dernière)" : ""} · ` : ""; }
+function chainCount(did) { const keys = S.res[DUNGEONS[did].key] || 0; const k = ui.dgStasis || 1; const T = climbTarget(did, k); if (T) return Math.min(Math.max(1, keys), T - k + 1); return ui.dgChain === -1 ? Math.max(1, keys) : clamp(ui.dgChain || 1, 1, Math.max(1, keys)); }
+/* 1.0.32.3 : stasis visée par la montée (0 = pas de montée), seulement si plusieurs clés et au-dessus de la stasis de départ */
+function climbTarget(did, k) { const keys = S.res[DUNGEONS[did].key] || 0; return ui.dgSel === did && keys > 1 && ui.dgClimb > k ? Math.min(E.STASIS_MAX, ui.dgClimb) : 0; }
+function chainTxt() { const D = S.dungeon; return D && (D.tot || 1) > 1 ? `${D.climb ? `montée vers la stasis ${D.climb} · ` : ""}course ${D.run || 1} sur ${D.tot}${(D.chain || 1) <= 1 ? " (dernière)" : ""} · ` : ""; }
 /* 0.1 : panneau de la clé du donjon (recette lisible, d'où vient chaque ingrédient) */
 function keySource(r) {
   const L = resIndex().src[r] || []; const g = L.find((x) => x.job);
@@ -3370,8 +3381,8 @@ function dofusZoneSub(zid) { // sous-zone de chasse pour « vaincre N monstres d
 function dofusStepGo(st) {
   const go = (attr, t, prim) => `<button class="btn xs ${prim ? "primary" : ""}" ${attr}>${t}</button>`;
   switch (st.t) {
-    case "dg": return DUNGEONS[st.dg] ? go(`data-act="dgopen" data-id="${st.dg}"`, "Y aller", 1) : "";
-    case "dgs": { const d = st.dgs.find((x) => E.stasisInfo(S, x).max < st.k) || st.dgs[0]; return DUNGEONS[d] ? go(`data-act="dgopen" data-id="${d}"`, "Y aller", 1) : ""; }
+    case "dg": return DUNGEONS[st.dg] ? go(`data-act="dgopen" data-id="${st.dg}"${st.k ? ` data-k="${st.k}"` : ""}`, "Y aller", 1) : "";
+    case "dgs": { const d = st.dgs.find((x) => E.stasisInfo(S, x).max < st.k) || st.dgs[0]; return DUNGEONS[d] ? go(`data-act="dgopen" data-id="${d}"${st.k ? ` data-k="${st.k}"` : ""}`, "Y aller", 1) : ""; }
     case "kill": { const sub = dofusZoneSub(st.zone); return sub ? go(`data-act="searchzone" data-id="${sub}"`, "Y aller", 1) : ""; }
     case "harvest": return go(`data-act="reswhere" data-n="${h(st.res)}"`, "Où récolter ?");
     case "soul": case "ocre": return go(`data-act="archis"`, "Album des âmes");
@@ -8244,8 +8255,12 @@ document.addEventListener("click", (ev) => {
     case "encboss": ui.enc.boss = d.v; break;
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": if (window.COLL) { ui.tab = "world"; ui.world = "enc"; ui.zoneView = null; (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "sets"; break; } ui.tab = "inv"; ui.inv = "sets"; break; // 1.0.30 : la Collection de panoplies est dans l'Encyclopédie
-    case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? chainCount(d.id) : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
-    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null; dungeonSheet(d.id); return; }
+    case "enterdg": { const cn = ui.dgSel === d.id ? chainCount(d.id) : 1; const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, cn, ui.dgSel === d.id && cn > 1 ? climbTarget(d.id, ui.dgStasis || 1) : 0); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
+    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null;
+      /* 1.0.32.3 : depuis une étape de quête « en stasis N », la fiche propose déjà la montée de la meilleure stasis jusqu'à N */
+      if (d.k && DUNGEONS[d.id]) { dgPick(d.id); const SI = E.stasisInfo(S, d.id); const T = +d.k; if (SI.max < T) { ui.dgStasis = Math.min(T, SI.max + 1); if (ui.dgStasis < T) ui.dgClimb = T; } }
+      dungeonSheet(d.id); return; }
+    case "dgclimb": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgClimb = +d.v; dungeonSheet(id); return; }
     case "dgchainset": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgChain = +d.v; (S.dgChains = S.dgChains || {})[id] = ui.dgChain; dirty = true; dungeonSheet(id); return; }
     case "stopchain": msg(E.stopChain(S)); break;
     case "dgfav": { ev.stopPropagation(); S.dgFav = S.dgFav || []; const i = S.dgFav.indexOf(d.id); if (i >= 0) S.dgFav.splice(i, 1); else S.dgFav.push(d.id); break; }

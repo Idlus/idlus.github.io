@@ -211,6 +211,22 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   console.log("ok - XP/h, kamas/h, donjons/h et poussières/h sur un enchaînement de donjons :", Math.round(r.runH), "donjons/h");
 }
 
+// 1.0.32.3 « Montée de stasis » : enchaîner en montant d'une stasis après chaque victoire, jusqu'à la stasis visée
+{
+  const S = E.newState("Montée", "iop"); S.chars = []; const did = Object.keys(D.DUNGEONS)[0]; const dg = D.DUNGEONS[did];
+  const keep = E.dungeonUnlocked; E.dungeonUnlocked = () => true;
+  ["iop", "eni", "feca", "cra"].forEach((c, i) => { const x = E.addChar(S, c, "H" + i, 200); x.inTeam = true; E.refreshSpells(x, E.charStats(S, x)); });
+  S.res[dg.key] = 6; assert.strictEqual(E.enterDungeon(S, did, 1, 3, 3), null);
+  assert.deepStrictEqual([S.dungeon.stasis, S.dungeon.climb, S.dungeon.k0], [1, 3, 1]);
+  const seen = []; let n = 0; while (S.dungeon && n++ < 40000) { if (seen[seen.length - 1] !== S.dungeon.stasis) seen.push(S.dungeon.stasis); E.tick(S, 500); }
+  assert.deepStrictEqual(seen, [1, 2, 3], "stasis 1, puis 2, puis 3");
+  assert.strictEqual(E.stasisInfo(S, did).max, 3, "stasis 3 réussie");
+  assert.strictEqual(S.res[dg.key], 3, "une clé par donjon, la montée s'arrête à la stasis visée");
+  assert.ok(S.journal.some((l) => /Montée réussie/.test(l.txt)), "résumé de fin de montée");
+  E.dungeonUnlocked = keep;
+  console.log("ok - montée de stasis 1 à 3 en un seul lancement");
+}
+
 // 0.1.50.1 : renommer un héros (premier changement gratuit, ensuite 50 000 kamas) et filtre des noms
 {
   const S = E.newState("Tristepin", "iop"); const c = S.chars[0]; S.kamas = 60000;

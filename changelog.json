@@ -1,6 +1,15 @@
 {
-  "version": "1.0.32.2",
+  "version": "1.0.32.3",
   "versions": [
+    {
+      "v": "1.0.32.3",
+      "name": "Montée de stasis",
+      "items": [
+        "Donjons : nouvelle option « Monter jusqu'à la stasis » dans l'encadré Enchaîner. Choisis la stasis de départ et la stasis visée (par exemple 1 → 5) : l'équipe enchaîne les donjons en montant d'une stasis après chaque victoire, sans revenir sur la fiche",
+        "La montée s'arrête à la stasis visée, à la première défaite ou quand il n'y a plus de clé. Un résumé dit jusqu'où l'équipe est allée",
+        "Quêtes de Dofus : le bouton « Y aller » d'une étape « en stasis N » ouvre la fiche avec la montée déjà réglée de ta meilleure stasis jusqu'à N"
+      ]
+    },
     {
       "v": "1.0.32.2",
       "name": "Le vrai visage du Dopeul",
