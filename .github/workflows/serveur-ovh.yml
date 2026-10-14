@@ -12,6 +12,13 @@
 #   diagnostic: lecture seule : état des services, journaux récents du direct (Realtime), joueurs connectés récemment.
 #   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
 #               200 renouvellements en 10 minutes). Accord écrit de Mathis (14/10/2026).
+#   guildes-zero-essai : 1.0.30, remise à zéro des guildes À BLANC (tools/serveur/guildes_reset.sql) : affiche les guildes
+#               dissoutes, les envois de compensation et le code GUILDES, puis annule tout. Après « Serveur en ligne ».
+#   guildes-zero : la même chose pour de vrai (une seule fois : le script refuse si le code GUILDES existe déjà).
+#               Accord écrit de Mathis (14/10/2026, « lance la remise à zéro des guildes »).
+#   soft-reset-comptage : 1.0.30, lecture seule : combien de parties et d'objets le soft reset des jets toucherait
+#               (tools/soft_reset_compte.js). Seuls des totaux et des pseudos sont affichés, jamais les parties.
+#               Accord écrit de Mathis (14/10/2026, « fais le comptage du soft reset »).
 # domaine : adresse du serveur (ex. api.idlus.fr). Vide = adresse gratuite <ip>.sslip.io.
 name: Serveur OVH
 on:
@@ -20,7 +27,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -147,6 +154,23 @@ jobs:
       - name: Couper la session qui se renouvelle en boucle
         if: inputs.etape == 'couper-boucle'
         run: bash tools/serveur/vps_sql.sh fichier tools/serveur/couper_boucle.sql
+      - name: Remise à zéro des guildes (essai, rien n'est changé)
+        if: inputs.etape == 'guildes-zero-essai'
+        run: bash tools/serveur/vps_sql.sh fichier tools/serveur/guildes_reset.sql
+      - name: Remise à zéro des guildes (pour de vrai)
+        if: inputs.etape == 'guildes-zero'
+        run: |
+          f="$RUNNER_TEMP/guildes_reset.sql"
+          sed "s/^\\\\set CONFIRMATION 'non'$/\\\\set CONFIRMATION 'JE DISSOUS TOUTES LES GUILDES'/" tools/serveur/guildes_reset.sql > "$f"
+          grep -qx "\\\\set CONFIRMATION 'JE DISSOUS TOUTES LES GUILDES'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
+          bash tools/serveur/vps_sql.sh fichier "$f"
+      - name: Comptage du soft reset des jets (lecture seule)
+        if: inputs.etape == 'soft-reset-comptage'
+        run: |
+          f="$RUNNER_TEMP/parties.json"
+          bash tools/serveur/vps_sql.sh lecture "select s.user_id, public.pseudo_of(s.user_id) as pseudo, s.data from public.saves s" > "$f"
+          node tools/soft_reset_compte.js "$f"
+          rm -f "$f"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |

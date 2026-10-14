@@ -1,6 +1,41 @@
 {
-  "version": "1.0.29.6",
+  "version": "1.0.30",
   "versions": [
+    {
+      "v": "1.0.30",
+      "name": "La grande mise à jour",
+      "items": [
+        "Guildes refaites de A à Z. Toutes les guildes repartent de zéro : fonder coûte 25 000 kamas et un héros niveau 20, avec 2 h de bouclier. 5 places au départ, jusqu'à 15 achetées avec le coffre",
+        "Code GUILDES pour les comptes, 7 jours : 300 000 kamas et 6 h de Sablier de Xélor, de quoi refonder ta guilde. Les anciens membres reçoivent aussi le titre « Pionnier des guildes » et des kamas selon le niveau de leur ancienne guilde",
+        "Coffre de guilde : les kamas des Percepteurs, les dépôts et une part de tes ventes directes (de 0 à 20 %). Personne ne peut retirer",
+        "Améliorations : les 4 améliorations des Percepteurs à 10 rangs, et 8 améliorations uniques achetées une fois (Espionnage, Coffre-fort, Vigie, Bannière de guerre, Comptoir de guilde, Quartier général, Percepteur doré, Cor de ralliement)",
+        "Percepteurs : en zone ou en donjon (fait en stasis 1 ou plus), un seul par zone sur tout le serveur. Attaque-les avec ton équipe d'arène de 3 héros, 3 attaques par jour. Les défenseurs ont 2 h pour répondre, puis le Percepteur se défend seul avec ses gardes",
+        "Fiche complète des autres guildes (membres, Percepteurs, bouton Attaquer) et classement de la Guerre des Percepteurs",
+        "Boss de guilde en 5 phases : un essai toutes les 25 min (6 en réserve), chaque phase rend le boss plus résistant",
+        "Vente directe : vends tes ressources au jeu à un prix qui va de ×0,1 à ×3 selon ce que le serveur vend, en direct (compte nécessaire). Elle remplace le marchand de secours ; les Commandes du jour restent. Nouvelle page Cours des ressources",
+        "Foire du Trool : Caisses du Trool en bois, en argent et dorées (20 par jour), et le Jackpot du serveur : ticket à 10 000 kamas, 100 par jour, un tirage toutes les heures",
+        "Comptoirs : les 6 boutiques réunies dans Jouer › Comptoirs, avec une offre de la semaine et des objets qu'on peut racheter",
+        "Combat : nouvelle vue Formation, ton équipe à gauche et les ennemis à droite, en arrière et en première ligne. Les faiblesses et les boosts des monstres sont affichés",
+        "Petit module de combat : la zone, le tour et la vie de tout le monde sur les autres pages (dans le menu sur PC, en bande repliable sur téléphone)",
+        "Donjons : le top 5 du serveur et ta place dans la fiche du donjon, avec l'équipe du record",
+        "GIGA annonce : quand quelqu'un obtient un Dofus, tout le serveur le voit en plein écran, avec sa chance",
+        "Expéditions : les héros hors de l'équipe partent en missions de 4 à 12 h, en jeu comme hors ligne",
+        "Heures de donjon : +2 h par jour, jusqu'à 8 h. Pendant ton absence, ton équipe continue son donjon tant qu'il reste des heures et des clés",
+        "Forgemagie : au-dessus de 80 % du jet, elle devient dure, comme dans DOFUS (repère rouge sur les barres). Les objets déjà Parfaits le restent",
+        "Brisage : vrai atelier, avec un coefficient de 10 % à 200 %, les runes exactes (Ra, Pa, simples), la valeur de chaque focus en kamas et la comparaison avec la revente de l'objet",
+        "Fiche d'objet d'un coup d'œil : toutes les caractéristiques sur deux colonnes, les jets min et max et l'écart avec l'objet porté",
+        "Nouvelles caractéristiques : PM, Tacle, Fuite et Dommages de poussée sur les équipements, avec leurs runes ; Vitalité et Points de vie sur une seule ligne. Un monstre poussé contre un autre prend des dégâts",
+        "Caractéristiques refaites : vrai mode automatique avec profils (Équilibré, Dégâts, Multi-élément, Tank, Sagesse) ou plan personnalisé en 4 étapes, aperçu au niveau 200 ; changer de plan redistribue tous les points gratuitement. Parchemins dans un bloc à part",
+        "Familiers et montures : une page à part dans le menu Héros, avec recherche, filtres et tri",
+        "Collection de panoplies : 9 paliers de bonus dont 4 uniques, et un bonus par région complète",
+        "Potentiel des Dofus : chaque Dofus monte du rang 0 au rang X en jouant (+5 % par rang), sans changer les chances d'en obtenir un. Au rang X, il devient Sublimé",
+        "Almanax : dans les quêtes du Kaliptus et des Veilleurs, l'étape des offrandes est remplacée (300 Bois de Kaliptus, 30 challenges « Survivant »). Les offrandes passent au Dolmanax, et celles déjà faites comptent",
+        "Alignement : un seul camp par compte, des quêtes en 5 chapitres par cité, le camp visible dans le chat et les classements, et une guerre des cités chaque semaine (+5 % d'XP et de butin pour le camp gagnant)",
+        "Songe infini : classement de la semaine avec des lots pour le top 10, des Bribes à chaque vague, des légendaires dès Paradoxe 1 et un Marché onirique qui change chaque semaine",
+        "Musique et sons : fanfares des grands moments, 46 partitions à collectionner (titre « Mélomane »), Gramophone pour le Havre-Sac, sons de combat et ambiances (Options › Sons)",
+        "Métiers : « Y aller » sur les ressources qui manquent pour les outils, et « Fabriquer » depuis la liste de courses fabrique vraiment l'objet"
+      ]
+    },
     {
       "v": "1.0.29.6",
       "name": "Connexion sans boucle",

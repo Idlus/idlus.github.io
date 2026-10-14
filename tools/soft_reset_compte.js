@@ -1,7 +1,8 @@
 /* 1.0.30 « Forge » : comptage du soft reset des jets (choix 40A) AVANT de l'activer. Lecture seule : ne change aucune partie.
    Le soft reset lui-même se fait dans le jeu, au lancement, quand E.SOFT_RESET_ON passe à true dans js/forge.js (avec les mots de Mathis).
    1. Relevé des parties, en lecture seule :
-        bash tools/serveur/vps_sql.sh lecture "select user_id, data from saves" > parties.json
+        bash tools/serveur/vps_sql.sh lecture "select s.user_id, public.pseudo_of(s.user_id) as pseudo, s.data from public.saves s" > parties.json
+      (ou Actions › Serveur OVH › soft-reset-comptage)
       (les parties 2 et 3 : « select user_id, slot, data from save_slots » dans un autre fichier)
    2. node tools/soft_reset_compte.js parties.json
    Le fichier peut aussi être une partie seule (export du jeu) ou une partie par ligne. */
@@ -27,7 +28,7 @@ for (const r of rows) {
   T.parties++; if (S.softReset) { T.deja++; continue; }
   const P = E.softResetPlan(S); if (!P.n) continue;
   T.touchees++; T.objets += P.n; T.runes += P.runesN; T.kamas += P.kamas; T.cristaux += P.cristaux; T.parfaits += P.items.filter((x) => x.perfect).length;
-  parJoueur.push([r.user_id || S.chars[0].name, P.n, P.runesN]);
+  parJoueur.push([(r && r.pseudo) || `partie ${T.parties}`, P.n, P.runesN]); // jamais l'identifiant du compte (journaux publics des Actions)
   P.items.forEach((x) => { parModele[x.tpl] = (parModele[x.tpl] || 0) + 1; });
 }
 const f = (n) => Math.round(n).toLocaleString("fr-FR");

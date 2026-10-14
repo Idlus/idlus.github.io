@@ -9,6 +9,20 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30 « La grande mise à jour »
+
+Réponses de Mathis du 14/10/2026 (questions 1 à 43 de la maquette « Refonte des guildes », « Et tu fait tout en 1 seule fois »), construites en une seule version :
+
+- Guildes refaites (js/guilds.js, js/gboss.js, supabase/guildes.sql, gboss.sql, percos_data.sql) : coffre, 5 à 15 places, 4 améliorations à rangs et 8 uniques, Percepteurs en zone ou en donjon (un par zone), attaques avec l'équipe d'arène rejouées par le serveur (supabase/functions/record), Guerre des Percepteurs, boss de guilde en 5 phases. Remise à zéro de toutes les guildes, compensation et code GUILDES : tools/serveur/guildes_reset.sql, lancé à part (Serveur OVH › guildes-zero).
+- Économie : vente directe et Cours des ressources (js/vente.js, supabase/vente.sql, vente_data.sql), Foire du Trool et Jackpot (js/foire.js, supabase/foire.sql), page Comptoirs (js/comptoirs.js).
+- Combat : vue Formation et petit module de combat (js/formation.js), top 5 dans la fiche du donjon avec l'équipe du record (js/dgrank.js, supabase/classements.sql), GIGA annonce de Dofus (js/giga.js).
+- Absence : Expéditions et heures de donjon (js/expeditions.js ; tools/idle_sim.js : une expédition ≤ 61 % d'une heure de chasse, 8 h de donjon hors ligne ≈ 2 h jouées).
+- Forge (js/forge.js) : forgemagie dure au-dessus de 80 % de la fourchette (E.FM_HARD : succès critique ×0,25, échec +20 points, ≈ 350 runes pour un objet niv. 200 Parfait contre 80), atelier de brisage avec coefficient de 10 à 200 % (supabase/brisage.sql), fiche d'objet en deux colonnes. Soft reset des jets construit mais éteint (E.SOFT_RESET_ON), comptage en lecture seule par tools/soft_reset_compte.js.
+- Caractéristiques : PM, Tacle, Fuite et Dommages de poussée sur les équipements (tools/build_caracs.js), menu des caractéristiques avec mode automatique à profils ou plan en 4 étapes (tests/carac.test.js).
+- Collections (js/collections.js, supabase/collections.sql) : page Familiers et montures, collection de panoplies, Potentiel des Dofus 0 à X (+5 % par rang) et Dofus Sublimé ; Almanax du Kaliptus et des Veilleurs passé au Dolmanax.
+- Communauté : alignement à camp unique avec quêtes et guerre des cités (js/alignement.js, supabase/alignement.sql), Songe infini classé (supabase/songe.sql), Panel Xener qui réunit l'admin et le test (js/panel.js).
+- Musique et sons : fanfares, partitions et titre « Mélomane », Gramophone, sons de combat, ambiances (js/musique.js).
+
 ## 1.0.29.6 « Connexion sans boucle »
 
 Rapport du serveur du 14/10/2026 : une seule session renouvelait son jeton environ 3 fois par seconde (12 326 renouvellements en une heure, `auth.audit_log_entries` et `auth.refresh_tokens` à 66 des 100 Mo de la base). Cause probable : l'heure de l'appareil en avance d'une heure ou plus, la bibliothèque croit alors le jeton toujours expiré. Garde-fou dans js/online.js : au-delà de 20 renouvellements (`TOKEN_REFRESHED`) en une minute, la session est fermée sur cet appareil (`signOut({ scope: "local" })`) et le joueur prévenu, avec l'avance estimée de son horloge. Test 8 quater dans tests/online.test.js.
