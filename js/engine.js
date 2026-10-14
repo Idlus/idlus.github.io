@@ -3302,6 +3302,7 @@
     S.migration = report.length ? report : null;
     if (S.v < 3) { const ev = E.events.length; checkHunt(S, Object.keys(S.bestiary).filter((k) => MONSTERS[k])); E.events.length = ev; S.journal = S.journal.filter((j) => !/^Palier /.test(j.txt)); }
     for (const uid in S.items) if (!ITEMS[S.items[uid].tpl]) delete S.items[uid];
+    if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
     S.v = E.VERSION;
     return S;
   };

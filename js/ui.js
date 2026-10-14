@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.15";
+const GAME_VERSION = "1.0.15.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.15.1", name: "Reliquats remis à zéro", items: [
+    "Forgemagie : le reliquat de tous les objets repart à 0, une seule fois, parce que le bug corrigé en 1.0.14.3 avait permis de le gonfler (PA qui saute puis revient)",
+    "Les caractéristiques des objets ne changent pas, seul le reliquat est remis à 0",
+  ] },
   { v: "1.0.15", name: "Tout se drope", items: [
     "Tous les équipements fabricables peuvent maintenant tomber sur les monstres (2 481 objets au lieu de 198) : chacun tombe dans la zone qui donne ses principaux ingrédients, ou sur le boss du donjon pour les pièces de donjon",
     "Droper un objet précis reste bien plus long que le fabriquer (environ 15 fois le temps de réunir ses ingrédients) : l'artisanat reste le chemin sûr, le drop est un bonus",

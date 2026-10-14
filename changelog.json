@@ -1,6 +1,14 @@
 {
-  "version": "1.0.15",
+  "version": "1.0.15.1",
   "versions": [
+    {
+      "v": "1.0.15.1",
+      "name": "Reliquats remis à zéro",
+      "items": [
+        "Forgemagie : le reliquat de tous les objets repart à 0, une seule fois, parce que le bug corrigé en 1.0.14.3 avait permis de le gonfler (PA qui saute puis revient)",
+        "Les caractéristiques des objets ne changent pas, seul le reliquat est remis à 0"
+      ]
+    },
     {
       "v": "1.0.15",
       "name": "Tout se drope",

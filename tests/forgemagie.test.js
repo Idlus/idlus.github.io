@@ -61,4 +61,8 @@ E.fmJobs(S).costumage.lvl = 200; assert.strictEqual(E.signItem(S, it.uid, "Xener
 const it4 = E.rollItem(S, tplOf("coiffe", 60), { radiant: false }); E.netCoef = {}; E.netCoefHits.length = 0;
 E.breakItem(S, it4.uid, null); assert.strictEqual(E.netCoefHits.length, 1, "brisage noté pour le serveur"); assert.ok(E.getCoef(S, it4.tpl) < 100, "coefficient commun baissé");
 E.netCoef = null;
+// 1.0.15.1 : au chargement, les reliquats déjà gonflés repartent à 0, une seule fois, sans toucher aux caractéristiques
+{ const Sw = E.newState("Rel", "iop"); const iw = E.rollItem(Sw, "i6804", { radiant: false }); Sw.items[iw.uid] = iw; iw.well = 800; delete Sw.wellReset; const st = JSON.stringify(iw.stats);
+  const L = E.deserialize(E.serialize(Sw)); assert.ok(!L.items[iw.uid].well && L.wellReset, "reliquat remis à 0"); assert.strictEqual(JSON.stringify(L.items[iw.uid].stats), st, "caractéristiques intactes");
+  L.items[iw.uid].well = 12; assert.strictEqual(E.deserialize(E.serialize(L)).items[iw.uid].well, 12, "remise à 0 une seule fois"); }
 console.log("ok - forgemagie comme dans DOFUS : six métiers, trois issues " + JSON.stringify(kinds) + ", exo, transcendance, signature, coefficient en ligne");
