@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.6";
+const GAME_VERSION = "1.0.25.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.7", name: "Pages qui ne sautent plus", items: [
+    "Havre-Sac (accueil) et Quêtes : la mise à jour automatique toutes les 3 secondes ne redessine plus toute la page, seulement ce qui change",
+    "Sur ces deux pages, plus rien ne saute pendant que tu lis : le défilement des listes, un champ en cours de saisie, une liste déroulante ou un menu ouverts restent tels quels",
+    "Un peu moins de travail pour le navigateur à chaque mise à jour",
+  ] },
   { v: "1.0.25.6", name: "Panoplies de boss", items: [
     "La panoplie du Minotot tombe maintenant sur le Minotot (et non plus sur le Minotoror)",
     "Même correction pour 71 panoplies au nom d'un boss de donjon ou d'un monstre de donjon (Blop Multicolore Royal, Strigide…) : chaque pièce tombe sur le boss de son donjon, avec les mêmes chances",
@@ -2079,9 +2084,10 @@ function consBar(full) {
 function consHtml() {
   return consBar(true) + `<div class="list" style="margin-top:8px">${Object.entries(S.cons || {}).filter(([id, n]) => n > 0 && CONSUMABLES[id]).map(([id, n]) => { const C = CONSUMABLES[id]; return `<div class="li"><span class="icobox candy ${C.img ? "chestbox t" + C.tier : ""}">${consIco(C, true)}</span><span class="grow"><span class="name">${h(C.name)}</span> <span class="num muted">×${n}</span><br><span class="xs muted">${h(C.desc)}</span></span>${C.auto ? `<span class="tag soft">automatique</span>` : C.kind === "wpot" ? `<button class="btn sm" data-act="wpotgo">Établi</button>` : `<button class="btn sm primary" data-act="usecons" data-id="${id}">${C.kind === "chest" ? "Ouvrir" : "Utiliser"}</button>`}</div>`; }).join("")}</div>`;
 }
-function renderHome() {
-  renderHomeInner();
-  if (ui.home !== "havre") $("#main").insertAdjacentHTML("beforeend", `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>`);
+/* soft = rafraîchissement automatique de la boucle (toutes les 3 s) : mise à jour ciblée (morphTo) au lieu de tout redessiner */
+function renderHome(soft) {
+  const html = homeHtml() + (ui.home !== "havre" ? `<a class="dcline" href="${DISCORD}" target="_blank" rel="noopener"><span class="dc-i">${DISCORD_SVG}</span><span class="grow">Rejoins la communauté idlus sur Discord <span class="xs muted">annonces, aide, builds et idées</span></span><b>Rejoindre ›</b></a>` : "");
+  if (soft) morphTo($("#main"), html); else $("#main").innerHTML = html;
 }
 /* 0.1.42 « Accueil du jour » : bandeau (zone, rendement, têtes des héros), zone conseillée, tuiles « Aujourd'hui »,
    « En ce moment » (mutateurs), quête et chiffres, journal à onglets. Choix de Mathis : toutes les options recommandées. */
@@ -2126,8 +2132,8 @@ function homeEvents() {
     ${E.flash(S).map((x) => row(x.did, `Donjon éclair · ${x.tier}`, x.mod, Math.round((E.FLASH_REW - 1) * 100))).join("")}
   </div>${WD && nextHourlyTxt() ? `<div class="xs muted wknext">Mutateur de l'heure suivante : ${nextHourlyTxt().replace(/^Ensuite : /, "")}</div>` : ""}</section>`;
 }
-function renderHomeInner() {
-  if (ui.home === "havre") { $("#main").innerHTML = havreHtml(); return; }
+function homeHtml() {
+  if (ui.home === "havre") return havreHtml();
   const team = E.team(S); const main = mainHero();
   const deco = S.dungeon ? dgDeco(S.dungeon.id) : S.sub ? subDeco(S.sub) : "sky";
   const sub = S.sub && E.SUBS[S.sub];
@@ -2159,7 +2165,7 @@ function renderHomeInner() {
      puis « Aujourd'hui », puis « Ma maison » (une tuile par pièce), puis « En ce moment », la quête et le journal. */
   const chips = BKIND.map(([k, l, i]) => `<button class="hvchip" data-act="hvbonus" data-tip="${h(`${l} : détail des bonus et plafonds`)}">${IC(i)}<b class="num plus">+${fmt(E.bonus(S, k))} %</b><span>${l.toLowerCase()}</span></button>`).join("")
     + `<button class="hvchip dim" data-act="hvbonus" data-tip="Autel des Douze : relève les plafonds de bonus">${G("star")}<b class="num">${E.altarLvl(S)}/${E.ALTAR.max}</b><span>autel</span></button>`;
-  $("#main").innerHTML = `
+  return `
   <section class="hero-banner ac-ban">
     <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}</div>
     <div class="inner"><div class="hvtitle"><h1>${IC("havre")} Havre-Sac de ${h(main.name)}</h1><div class="hvchips">${chips}</div></div><div class="ac-l">
@@ -6214,8 +6220,8 @@ function achHtml() {
   return `<section class="panel"><div class="phead"><h2>Ornements</h2><span class="xs muted">à équiper dans Héros (contour de la carte)</span></div><div class="pad achgrid">${Object.entries(E.ORN).map(([id, O]) => `<div class="ach ${E.ornUnlocked(S, id) ? "ok" : ""}"><span class="ic">${E.ornUnlocked(S, id) ? G("sparkle") : G("lock")}</span><span><b>${h(O.name(S))}</b><br><span class="xs muted">${h(O.req)}</span></span></div>`).join("")}</div></section>
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
 }
-function renderQuests() {
-  if (window.QUI) { window.QUI.render($("#main")); return; } // 0.1.28 : journal de quêtes (js/questui.js)
+function renderQuests(soft) {
+  if (window.QUI) { window.QUI.render($("#main"), soft); return; } // 0.1.28 : journal de quêtes (js/questui.js)
   const tabs = [["main", "Quête principale"], ["dofus", "Dofus"], ["bounty", "Avis de recherche"], ["align", "Alignement"], ["almanax", "Almanax"], ["commandes", "Commandes"], ["temples", "Temples"], ["ach", "Succès"]];
   const body = ui.qt === "bounty" ? bountiesHtml() : ui.qt === "dofus" ? dofusHtml() : ui.qt === "align" ? alignHtml() : ui.qt === "almanax" ? almanaxHtml() : ui.qt === "commandes" ? commandesHtml() : ui.qt === "temples" ? templesHtml() : ui.qt === "ach" ? achHtml() : mainQuestHtml();
   $("#main").innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div>
@@ -8858,9 +8864,9 @@ function loop() {
     else if (ui.tab === "metiers" && ui.met === "recolte") {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });
       if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
-    } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(); renderStatus(); }
+    } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(true); renderStatus(); }
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); const tl = $("#tlist"); if (tl) tl.innerHTML = teamListHtml(); renderNav(); } // seuls le haut et la liste se rafraîchissent, la fiche reste telle quelle
-    else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(); renderNav(); }
+    else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(true); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
@@ -8932,7 +8938,39 @@ function repaintKeep(m, htmlStr) {
   for (const id in vals) { const n = document.getElementById(id); if (n && m.contains(n)) n.value = vals[id]; }
   if (fid) { const n = document.getElementById(fid); if (n && m.contains(n)) { n.focus({ preventScroll: true }); if (sel) try { n.setSelectionRange(Math.min(sel[0], n.value.length), Math.min(sel[1], n.value.length), sel[2] || "none"); } catch (e) {} } }
 }
-window.DX = { get S() { return S; }, sndPlay, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, E, diagText };
+/* Nettoyage du code (choix de Mathis 3A) : mise à jour ciblée d'une page déjà affichée.
+   Le nouveau HTML est comparé à la page : seuls les textes, attributs et éléments qui changent sont touchés. Les éléments identiques
+   restent en place, donc le défilement des listes, le champ en cours de saisie, une liste déroulante ouverte, un menu <details> ouvert,
+   le survol et les animations sont gardés. Sert au rafraîchissement automatique des pages (boucle du jeu), pas aux clics. */
+function morphTo(m, htmlStr) {
+  const t = document.createElement("template"); t.innerHTML = htmlStr;
+  morphKids(m, t.content);
+}
+const morphKey = (n) => n.nodeType === 1 ? n.nodeName + "#" + (n.id || "") + "|" + (n.getAttribute("data-k") || "") : n.nodeType;
+function morphKids(a, b) {
+  const nk = Array.from(b.childNodes);
+  for (let i = 0; i < nk.length; i++) {
+    const o = a.childNodes[i], n = nk[i];
+    if (!o) { a.appendChild(n); continue; }
+    if (morphKey(o) !== morphKey(n)) { a.replaceChild(n, o); continue; }
+    if (n.nodeType !== 1) { if (o.nodeValue !== n.nodeValue) o.nodeValue = n.nodeValue; continue; }
+    morphEl(o, n);
+  }
+  while (a.childNodes.length > nk.length) a.removeChild(a.lastChild);
+}
+function morphEl(o, n) {
+  const focused = o === document.activeElement;
+  if (focused && o.nodeName === "SELECT") return; // liste déroulante ouverte : on n'y touche pas
+  const field = o.nodeName === "INPUT" || o.nodeName === "TEXTAREA" || o.nodeName === "SELECT";
+  for (const at of Array.from(n.attributes)) if (o.getAttribute(at.name) !== at.value && !(focused && at.name === "value")) o.setAttribute(at.name, at.value);
+  for (const at of Array.from(o.attributes)) if (!n.hasAttribute(at.name) && at.name !== "open") o.removeAttribute(at.name); // un <details> ouvert à la main reste ouvert
+  if (o.nodeName === "TEXTAREA") { if (!focused && !(o.id && !o.dataset.act) && o.value !== n.value) o.value = n.value; return; }
+  morphKids(o, n);
+  if (field && !focused && !(o.nodeName === "INPUT" && o.id && !o.dataset.act)) { // comme un redessin : la valeur affichée suit l'état du jeu, sauf les champs libres (voir repaintKeep)
+    if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
+  }
+}
+window.DX = { get S() { return S; }, sndPlay, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */

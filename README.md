@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.7 « Pages qui ne sautent plus »
+
+Choix de Mathis 3A (audit du code, fil « Nettoyage du code ») : la boucle du jeu (`loop`, js/ui.js) redessinait l'accueil (Havre-Sac, `ui.home` « apercu ») et les Quêtes en entier toutes les 3 s (`innerHTML`), ce qui remettait à zéro défilements, champs et listes ouvertes. Nouveau `morphTo(m, html)` (js/ui.js, exposé en `DX.morph`) : compare le nouveau HTML à la page et ne touche que les textes, attributs et éléments qui changent (même balise et même `id` à la même place = élément gardé ; `<details open>` ouvert à la main gardé ; champ ou liste déroulante qui a le focus intouchés ; champs libres sans `data-act` gardent leur saisie, comme `repaintKeep`). `renderHome(soft)` (le HTML vient maintenant de `homeHtml()`, ancien `renderHomeInner`) et `QUI.render(main, soft)` / `renderQuests(soft)` : `soft` seulement depuis la boucle ; un clic redessine toujours en entier. Vérifié dans Chromium (PC 1280 et téléphone 390) : sur 15 pages et sous-pages, morph donne exactement le même DOM qu'un redessin complet, et 420 passages d'une page à n'importe quelle autre aussi ; dans la vraie boucle, les éléments de l'accueil et des Quêtes restent les mêmes et le défilement est gardé. Restent à passer en mise à jour ciblée : Récolte et liste de l'Équipe (4 s).
+
 ## 1.0.25.6 « Panoplies de boss »
 
 Chaque pièce d'une panoplie au nom d'un boss de donjon (Minotot, Blop Multicolore Royal, Strigide…) tombe sur ce boss, au lieu du donjon voisin qui donnait le plus d'ingrédients. 71 panoplies corrigées.

@@ -368,7 +368,7 @@
     return `${head(s, qt, note)}${rest}`;
   }
 
-  function render(main) {
+  function render(main, soft) { // soft : rafraîchissement automatique (toutes les 3 s), mise à jour ciblée qui garde défilement et saisie
     const s = S(); const ui = UI();
     const valid = ["jour", "shops"].concat(FAMS.flatMap((F) => F.pages.map((p) => p[0])), COL.map((p) => p[0]));
     if (!valid.includes(ui.qt)) ui.qt = "jour";
@@ -384,7 +384,9 @@
     // 1.0.3.2 : la page se redessine toutes les 3 s ; on garde le défilement des rangées horizontales (chapitres…)
     const keep = st.lastQt === qt ? [...main.querySelectorAll(".qj-main *")].filter((e) => e.scrollLeft > 0 && typeof e.className === "string" && e.className.trim()).map((e) => [e.className, e.scrollLeft]) : [];
     st.lastQt = qt;
-    main.innerHTML = `<div class="pagehead"><h1>Quêtes</h1></div><div class="qj-lay">${journal(s, qt)}<div class="qj-main">${mtabs(s, qt)}<section class="stack">${body}</section></div></div>`;
+    const html = `<div class="pagehead"><h1>Quêtes</h1></div><div class="qj-lay">${journal(s, qt)}<div class="qj-main">${mtabs(s, qt)}<section class="stack">${body}</section></div></div>`;
+    if (soft && window.DX.morph) { window.DX.morph(main, html); return; }
+    main.innerHTML = html;
     keep.forEach(([c, x]) => { const e = main.querySelector(".qj-main ." + c.trim().split(/\s+/).join(".")); if (e) e.scrollLeft = x; });
   }
 
