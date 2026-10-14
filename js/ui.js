@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.28";
+const GAME_VERSION = "1.0.28.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.28.1", name: "Brisage sans gel", items: [
+    "Brisage : cocher un objet, « Tout sélectionner », « Vider » et les confirmations répondent tout de suite (0,03 s au lieu de 0,2 s avec un gros sac) : seules la ligne touchée et la barre de sélection se redessinent",
+    "Briser un objet ne redessine plus toute la page : la ligne disparaît, les autres restent en place (deux fois plus rapide). Avant la 1.0.24.3, chaque brisage figeait le jeu plus d'une minute avec un gros sac",
+    "La page affichée est exactement la même qu'avant, défilement compris",
+  ] },
   { v: "1.0.28", name: "Thème d'Halouine", items: [
     "Du 24 octobre au 3 novembre, le jeu se pare de couleurs citrouille : fond noir chaud, boutons et menus orange, lueur violette",
     "Une citrouille à côté du logo, des chauves-souris dans la barre du haut, des toiles d'araignée dans le coin des panneaux et des braises qui montent doucement",
@@ -4385,7 +4390,7 @@ function grpItems(L, byTpl, solo) {
   L.forEach((it) => { if (itemSolo(it) || (solo && solo(it))) { out.push({ rep: it, items: [it], vars: [{ rep: it, items: [it] }] }); return; }
     const gk = byTpl ? it.tpl : itemKey(it); let g = at.get(gk);
     if (!g) { g = { rep: it, items: [], vars: [], vk: new Map() }; at.set(gk, g); out.push(g); }
-    g.items.push(it); const vk = itemKey(it); let v = g.vk.get(vk); if (!v) { v = { rep: it, items: [] }; g.vk.set(vk, v); g.vars.push(v); } v.items.push(it); });
+    g.items.push(it); const vk = byTpl ? itemKey(it) : gk; let v = g.vk.get(vk); if (!v) { v = { rep: it, items: [] }; g.vk.set(vk, v); g.vars.push(v); } v.items.push(it); });
   return out;
 }
 const grpN = (n) => (n > 1 ? ` <span class="tag soft gcount">×${n}</span>` : "");
@@ -6092,7 +6097,7 @@ function fmHtml() {
 /* ---------- Brisage ---------- */
 /* 1.0.7.6 : un objet protégé (cadenas, tenue) ne se coche plus et dit pourquoi ; un Rayonnant demande confirmation */
 const brLock = (it) => (it.locked ? "Protégé par le cadenas" : E.inGear(S, it.uid) ? `Rangé dans la tenue « ${E.inGear(S, it.uid).name} »` : "");
-function brisageHtml() {
+function brisageParts() {
   const F = fltOf("br"); const q = E.searchNorm(F.q); const dup = F.mode === "dupes" ? new Set(E.dupesList(S)) : null;
   const sel = ui.brSel || (ui.brSel = new Set()); [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u) || brLock(S.items[u])) sel.delete(u); });
   const items = Object.values(S.items).filter((it) => { const T = ITEMS[it.tpl]; if (!T || E.equippedBy(S, it.uid)) return false;
@@ -6107,15 +6112,51 @@ function brisageHtml() {
   const est = {}; let tot = 0; [...sel].forEach((u) => { const p = E.breakPreview(S, u, F.focus || null); for (const k in p.weights) { const n = p.weights[k] / (STATS[k].w * STATS[k].pts); est[k] = (est[k] || 0) + n; tot += n; } });
   const topEst = Object.entries(est).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => STATS[k].name).join(", ");
   const groups = grpItems(items); const shown = groups.slice(0, 150); const pickable = shown.filter((gr) => !gr.rep.radiant && !gr.rep.locked && !E.inGear(S, gr.rep.uid)); // 1.0.8.8 : exemplaires identiques sur une ligne, la case les coche tous
-  return `<p class="note">Briser un objet le détruit et donne des runes selon ses caractéristiques et son niveau (×1,5 pour un objet Rayonnant). Le coefficient baisse de 3 % à chaque brisage d'un même objet et remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes${E.netCoef ? " : en ligne, il est commun à tous les joueurs, comme sur un serveur de DOFUS" : ""}.</p>
-    ${filterBar("br", F, { ph: "Rechercher…", slots: ALL_SLOTS, stats, sets, focus: true })}
-    <div class="row small"><div class="seg sm">${[["", "Pas porté"], ["dupes", "Doublons"], ["low", "Jet < 50 %"]].map(([v, n]) => `<button data-act="fltset" data-ctx="br" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div>
+  const head = `<p class="note">Briser un objet le détruit et donne des runes selon ses caractéristiques et son niveau (×1,5 pour un objet Rayonnant). Le coefficient baisse de 3 % à chaque brisage d'un même objet et remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes${E.netCoef ? " : en ligne, il est commun à tous les joueurs, comme sur un serveur de DOFUS" : ""}.</p>
+    ${filterBar("br", F, { ph: "Rechercher…", slots: ALL_SLOTS, stats, sets, focus: true })}`, mode = `
+    <div class="row small"><div class="seg sm">${[["", "Pas porté"], ["dupes", "Doublons"], ["low", "Jet < 50 %"]].map(([v, n]) => `<button data-act="fltset" data-ctx="br" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div>`, bar = `
     <div class="pselbar"><b>${sel.size} objet${sel.size > 1 ? "s" : ""} sélectionné${sel.size > 1 ? "s" : ""}</b>${sel.size ? `<span class="small">≈ ${fmt(Math.round(tot))} runes simples${topEst ? " · " + h(topEst) : ""}</span>` : `<span class="small muted">coche des objets à briser</span>`}<span class="grow"></span>
       ${pickable.length ? `<button class="btn sm" data-act="brall">Tout sélectionner</button>` : ""}${sel.size ? `<button class="btn sm" data-act="brnone">Vider</button>` : ""}
-      ${sel.size ? (ui.confirm === "brsel" ? `<button class="btn sm danger" data-act="brgo">Confirmer : briser ${sel.size}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="brask">Briser la sélection</button>`) : ""}</div>
-    <section class="panel"><div class="list">${shown.map((gr) => { const it = gr.rep; const p = E.breakPreview(S, it.uid, F.focus || null); const top = Object.entries(p.weights).sort((a, b) => b[1] - a[1]).slice(0, 4); const nOn = gr.items.filter((x) => sel.has(x.uid)).length; const on = nOn === gr.items.length;
+      ${sel.size ? (ui.confirm === "brsel" ? `<button class="btn sm danger" data-act="brgo">Confirmer : briser ${sel.size}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="brask">Briser la sélection</button>`) : ""}</div>`;
+  const rows = shown.map((gr) => { const it = gr.rep; const p = E.breakPreview(S, it.uid, F.focus || null); const top = Object.entries(p.weights).sort((a, b) => b[1] - a[1]).slice(0, 4); const nOn = gr.items.filter((x) => sel.has(x.uid)).length; const on = nOn === gr.items.length;
       const lock = brLock(it);
-      return `<div class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}"${gr.items.length > 1 ? ` data-uids="${gr.items.map((x) => x.uid).join(",")}"` : ""} ${on ? "checked" : ""} ${lock ? `disabled title="${h(lock)}"` : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)}${grpN(gr.items.length)}${nOn && !on ? ` <span class="xs muted">${nOn} coché${nOn > 1 ? "s" : ""}</span>` : ""} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} % · <span class="${p.coef < 60 ? "minus" : ""}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span></span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span>${lock ? `<span class="xs muted" data-tip="${h(lock)}">${G("lock")}</span>` : it.radiant && ui.confirm === "br:" + it.uid ? `<button class="btn sm danger" data-act="break" data-uid="${it.uid}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="${it.radiant ? "brone" : "break"}" data-uid="${it.uid}">Briser</button>`}</div>`; }).join("") || `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`}${groups.length > 150 ? `<div class="empty">… ${groups.length - 150} autres : affine les filtres.</div>` : ""}</div></section>`;
+      return `<div data-k="${it.uid}" class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}"${gr.items.length > 1 ? ` data-uids="${gr.items.map((x) => x.uid).join(",")}"` : ""} ${on ? "checked" : ""} ${lock ? `disabled title="${h(lock)}"` : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)}${grpN(gr.items.length)}${nOn && !on ? ` <span class="xs muted">${nOn} coché${nOn > 1 ? "s" : ""}</span>` : ""} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} % · <span class="${p.coef < 60 ? "minus" : ""}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span></span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span>${lock ? `<span class="xs muted" data-tip="${h(lock)}">${G("lock")}</span>` : it.radiant && ui.confirm === "br:" + it.uid ? `<button class="btn sm danger" data-act="break" data-uid="${it.uid}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="${it.radiant ? "brone" : "break"}" data-uid="${it.uid}">Briser</button>`}</div>`; }).map((x, i) => [String(shown[i].rep.uid), x]);
+  return { head, mode, bar, rows, tail: (rows.length ? "" : `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`) + (groups.length > 150 ? `<div class="empty">… ${groups.length - 150} autres : affine les filtres.</div>` : "") };
+}
+function brisageHtml() {
+  const P = brisageParts(); brLast = P;
+  return `${P.head}${P.mode}${P.bar}
+    <section class="panel"><div class="list">${P.rows.map((r) => r[1]).join("")}${P.tail}</div></section>`;
+}
+/* 1.0.28.1 : au Brisage, cocher, briser, « Tout sélectionner », « Vider » et les confirmations ne redessinent plus toute la page :
+   seules la barre de sélection, le compte d'objets, les listes des filtres si elles changent et les lignes qui changent sont remplacées (lignes repérées par data-k, comparées
+   au dernier dessin). Si les filtres ou leurs listes changent, ou si la page n'est pas celle attendue, on redessine tout comme avant. */
+let brLast = null;
+function brisageOnly(chg) { if (!brisagePatch()) return false; if (chg) { dirty = true; clearDonePins(); renderNav(); renderStatus(); renderUpdBar(); } return true; } // chg : des objets ont disparu (barre du haut, pastilles)
+function brisagePatch() {
+  if (!S || ui.tab !== "forge" || ui.fg !== "brisage" || !brLast || $("#sheet").innerHTML) return false;
+  const bar = $("#main .pselbar"), mode = bar && bar.previousElementSibling, L = bar && bar.nextElementSibling && bar.nextElementSibling.querySelector(".list");
+  if (!L || !mode || L.children.length !== brLast.rows.length + (brLast.tail ? (brLast.tail.match(/class="empty"/g) || []).length : 0)) return false;
+  const P = brisageParts();
+  if (P.head !== brLast.head) { // un objet brisé était le dernier de sa panoplie : seules les listes des filtres changent
+    const fb = /<div class="pfbar br"[^>]*>[\s\S]*?<\/div>/, el = $("#main .pfbar.br"), m = P.head.match(fb);
+    if (!el || !m || P.head.replace(fb, "") !== brLast.head.replace(fb, "")) return false;
+    el.outerHTML = m[0];
+  }
+  if (P.mode !== brLast.mode) mode.outerHTML = P.mode.trim();
+  if (P.bar !== brLast.bar) bar.outerHTML = P.bar.trim();
+  const prev = new Map(brLast.rows), old = new Map();
+  for (const el of [...L.children]) { if (el.dataset.k && !old.has(el.dataset.k)) old.set(el.dataset.k, el); else el.remove(); }
+  let ref = L.firstElementChild;
+  for (const [k, html] of P.rows) {
+    let el = old.get(k); if (el) old.delete(k);
+    if (!el || prev.get(k) !== html) { const t = document.createElement("template"); t.innerHTML = html; const n = t.content.firstElementChild; if (el) { if (el === ref) ref = el.nextElementSibling; el.remove(); } el = n; }
+    else { const cb = el.querySelector("input[type=checkbox]"); if (cb) cb.checked = cb.hasAttribute("checked"); } // case cliquée mais ligne inchangée : on remet l'état dessiné
+    if (el === ref) ref = ref.nextElementSibling; else L.insertBefore(el, ref);
+  }
+  old.forEach((el) => el.remove());
+  if (P.tail) L.insertAdjacentHTML("beforeend", P.tail);
+  brLast = P; return true;
 }
 /* ---------- Runes ---------- */
 function runesView() {
@@ -7987,14 +8028,14 @@ document.addEventListener("click", (ev) => {
     case "asktrans": ui.confirm = "trans:" + d.k; break;
     case "trans": { ui.confirm = null; const r = E.transForge(S, ui.fmSel, d.k); if (r.err) { toast(r.err); return; } toast(r.txt, "rare"); break; }
     case "fmsign": { const r = E.signItem(S, ui.fmSel, ($("#fmsig") || {}).value); toast(r || "Objet signé.", r ? "" : "rare"); break; }
-    case "brtog": { const U = (d.uids || d.uid).split(",").map(Number); const sel = ui.brSel || (ui.brSel = new Set()); const all = U.every((u) => sel.has(u)); U.forEach((u) => (all ? sel.delete(u) : sel.add(u))); ui.confirm = null; break; }
-    case "brall": { const sel = ui.brSel || (ui.brSel = new Set()); document.querySelectorAll('[data-act="brtog"]').forEach((x) => (x.dataset.uids || x.dataset.uid).split(",").forEach((u) => { const it = S.items[+u]; if (it && !it.radiant && !it.locked && !E.inGear(S, it.uid)) sel.add(it.uid); })); break; }
-    case "brnone": if (ui.brSel) ui.brSel.clear(); ui.confirm = null; break;
-    case "brask": ui.confirm = "brsel"; break;
-    case "brone": ui.confirm = "br:" + d.uid; break;
+    case "brtog": { const U = (d.uids || d.uid).split(",").map(Number); const sel = ui.brSel || (ui.brSel = new Set()); const all = U.every((u) => sel.has(u)); U.forEach((u) => (all ? sel.delete(u) : sel.add(u))); ui.confirm = null; if (brisageOnly()) return; break; }
+    case "brall": { const sel = ui.brSel || (ui.brSel = new Set()); document.querySelectorAll('[data-act="brtog"]').forEach((x) => (x.dataset.uids || x.dataset.uid).split(",").forEach((u) => { const it = S.items[+u]; if (it && !it.radiant && !it.locked && !E.inGear(S, it.uid)) sel.add(it.uid); })); if (brisageOnly()) return; break; }
+    case "brnone": if (ui.brSel) ui.brSel.clear(); ui.confirm = null; if (brisageOnly()) return; break;
+    case "brask": ui.confirm = "brsel"; if (brisageOnly()) return; break;
+    case "brone": ui.confirm = "br:" + d.uid; if (brisageOnly()) return; break;
     case "brgo": { const sel = ui.brSel || new Set(); const got = {}; let n = 0; const foc = fltOf("br").focus || null;
       [...sel].forEach((u) => { if (!S.items[u] || E.equippedBy(S, u)) return; const r = E.breakItem(S, u, foc); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } });
-      sel.clear(); ui.confirm = null; toast(`${n} objet${n > 1 ? "s" : ""} brisé${n > 1 ? "s" : ""}. Runes : ${runesTxt(got)}`); break; }
+      sel.clear(); ui.confirm = null; toast(`${n} objet${n > 1 ? "s" : ""} brisé${n > 1 ? "s" : ""}. Runes : ${runesTxt(got)}`); if (brisageOnly(true)) return; break; }
     case "fuseall": { let n = 0; for (const t of ["", "pa"]) { const k = E.runeKey(t, d.k); while ((S.runes[k] || 0) >= E.RUNE_FUSE_N && !E.fuseRunes(S, k, "up")) n++; } toast(n ? `${n} fusion${n > 1 ? "s" : ""}.` : "Rien à fusionner."); break; }
 
     case "craft": { const r = d.tpl ? E.craftItem(S, d.tpl) : E.craftSpecial(S, d.special);
@@ -8011,9 +8052,9 @@ document.addEventListener("click", (ev) => {
     case "overallask": ui.confirm = "overall"; break;
     case "overallgo": { const r = E.overBreakAll(S); ui.confirm = null; toast(`${r.n} objets brisés. Runes : ${runesTxt(r.got)}`); break; }
     case "overhdv": { const r = E.overTake(S, +d.uid); if (r) { toast(r, "warn"); break; } window.MARKET.sellItem(+d.uid); dirty = true; navGo("hdv"); window.scrollTo(0, 0); break; }
-    case "break": { ui.confirm = null; const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); break; }
+    case "break": { ui.confirm = null; const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); if (brisageOnly(true)) return; break; }
     case "askbreakall": ui.confirm = "breakall"; break;
-    case "cancel": ui.confirm = null; break;
+    case "cancel": ui.confirm = null; if (brisageOnly()) return; break;
     case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
     case "fuse": { const r = E.fuseRunes(S, d.k, d.dir); if (r) toast(r); break; }
     case "transmute": { const r = E.transmute(S, ui.tr.from, ui.tr.to); toast(r || `1 ${E.runeName(E.runeKey(ui.tr.from.split(":")[0], ui.tr.to))} obtenue`); break; }

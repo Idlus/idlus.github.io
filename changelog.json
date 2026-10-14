@@ -1,6 +1,15 @@
 {
-  "version": "1.0.28",
+  "version": "1.0.28.1",
   "versions": [
+    {
+      "v": "1.0.28.1",
+      "name": "Brisage sans gel",
+      "items": [
+        "Brisage : cocher un objet, « Tout sélectionner », « Vider » et les confirmations répondent tout de suite (0,03 s au lieu de 0,2 s avec un gros sac) : seules la ligne touchée et la barre de sélection se redessinent",
+        "Briser un objet ne redessine plus toute la page : la ligne disparaît, les autres restent en place (deux fois plus rapide). Avant la 1.0.24.3, chaque brisage figeait le jeu plus d'une minute avec un gros sac",
+        "La page affichée est exactement la même qu'avant, défilement compris"
+      ]
+    },
     {
       "v": "1.0.28",
       "name": "Thème d'Halouine",
