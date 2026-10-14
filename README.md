@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.10 « Récolte et Équipe sans saut »
+
+Suite du choix de Mathis 3A (fil « Nettoyage du code », « Go ») : la boucle du jeu passe aussi la Récolte (`renderMetiers(soft)`, toutes les 4 s) et la liste de l'Équipe (`#teamtop` / `#tlist`, toutes les 4 s) en mise à jour ciblée `morphTo` au lieu de `innerHTML`. `renderMetiers(soft)` ne fait la mise à jour ciblée que si la page affichée est la même (`ui.plKey`), sinon redessin complet comme avant (`keepList`). Vérifié dans Chromium (PC 1280 et téléphone 390, annonce admin affichée) : même DOM qu'un redessin complet sur Récolte, Artisanat et Équipe après un changement d'état ; dans la vraie boucle les éléments restent les mêmes et le défilement est gardé. Les quatre pages que la boucle du jeu redessinait en entier (accueil, Quêtes, Récolte, Équipe) sont toutes passées en mise à jour ciblée.
+
 ## 1.0.25.9 « Vérification plus juste »
 
 Choix de Mathis 1A 2A (fil « en vérif », 14/10/2026). Le serveur (`ladder_from_save`, supabase/classements.sql) met un joueur « en vérification » si son niveau d'équipe monte de plus de 60 niveaux + 1 par minute depuis l'envoi précédent. Simulation : un héros niveau 60 avec 7 recrues niveau 1 gagne ~77 niveaux en 2 min au Sablier ×3 (limite 62), ~84 en 5 min sans Sablier (limite 65) : une coupure de connexion pendant le jeu suffisait à le signaler. Nouvelle limite : 120 niveaux + 15 par minute (2 min : 150, 10 min : 270). Une partie retouchée (héros mis au niveau 200) saute de centaines de niveaux et reste repérée. Règles des métiers et du temps de jeu inchangées (2A).

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.25.9";
+const GAME_VERSION = "1.0.25.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.25.10", name: "Récolte et Équipe sans saut", items: [
+    "Métiers › Récolte et la liste de l'Équipe ne sont plus redessinées en entier toutes les 4 secondes, seulement ce qui change (barres, compteurs, niveaux)",
+    "Comme pour le Havre-Sac et les Quêtes : la page ne remonte plus et ce que tu regardes ou tapes reste en place",
+  ] },
   { v: "1.0.25.9", name: "Vérification plus juste", items: [
     "Les joueurs qui montent vite une équipe de nouvelles recrues (avec le Sablier, ou après une coupure de connexion) ne sont plus retirés des classements par erreur",
     "Une partie retouchée est toujours repérée",
@@ -5953,11 +5957,13 @@ function keepList(key, paint) {
   const L = document.querySelectorAll("#main .plist"); const tops = ui.plKey === key ? [...L].map((e) => e.scrollTop) : [];
   paint(); ui.plKey = key; document.querySelectorAll("#main .plist").forEach((e, i) => { if (tops[i]) e.scrollTop = tops[i]; });
 }
-function renderMetiers() {
-  const tabs = [["recolte", "Récolte"], ["craft", "Artisanat"]];
-  keepList("met:" + ui.met + ":" + ui.craftJob, () => $("#main").innerHTML = `<div class="pagehead"><h1>Métiers</h1></div>
+function renderMetiers(soft) { // soft : rafraîchissement automatique de la Récolte (boucle), mise à jour ciblée qui garde défilement et saisie
+  const tabs = [["recolte", "Récolte"], ["craft", "Artisanat"]]; const key = "met:" + ui.met + ":" + ui.craftJob;
+  const html = `<div class="pagehead"><h1>Métiers</h1></div>
     <nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="mettab" data-v="${id}" aria-pressed="${ui.met === id}">${n}</button>`).join("")}</nav>
-    <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`);
+    <section class="stack">${ui.met === "craft" ? craftHtml() : recolteHtml()}</section>`;
+  if (soft && ui.plKey === key) { morphTo($("#main"), html); return; }
+  keepList(key, () => $("#main").innerHTML = html);
 }
 /* ======================= Forgemagie (0.1.41, comme dans DOFUS) ======================= */
 const ppc = (x) => Math.round(x * 100);
@@ -8898,9 +8904,9 @@ function loop() {
     if (ui.tab === "combat") updateCombat(false);
     else if (ui.tab === "metiers" && ui.met === "recolte") {
       document.querySelectorAll("[data-wprog]").forEach((b) => { const c = char(+b.dataset.wprog); if (c && c.job) b.firstElementChild.style.width = pct(c.job.prog, E.gatherPeriod(S, c)) + "%"; }); document.querySelectorAll("[data-wleft]").forEach((b) => { const c = char(+b.dataset.wleft); if (c && c.job) b.textContent = hitDur(Math.max(0, E.gatherPeriod(S, c) - c.job.prog)); });
-      if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(); }
+      if (sinceView > 4000 && !isEditing() && !$("#sheet").innerHTML) { sinceView = 0; renderMetiers(true); }
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(true); renderStatus(); }
-    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) tt.innerHTML = teamTopHtml(); const tl = $("#tlist"); if (tl) tl.innerHTML = teamListHtml(); renderNav(); } // seuls le haut et la liste se rafraîchissent, la fiche reste telle quelle
+    else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) morphTo(tt, teamTopHtml()); const tl = $("#tlist"); if (tl) morphTo(tl, teamListHtml()); renderNav(); } // seuls le haut et la liste se rafraîchissent (mise à jour ciblée), la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(true); renderNav(); }
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();

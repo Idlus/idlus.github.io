@@ -1,6 +1,14 @@
 {
-  "version": "1.0.25.9",
+  "version": "1.0.25.10",
   "versions": [
+    {
+      "v": "1.0.25.10",
+      "name": "Récolte et Équipe sans saut",
+      "items": [
+        "Métiers › Récolte et la liste de l'Équipe ne sont plus redessinées en entier toutes les 4 secondes, seulement ce qui change (barres, compteurs, niveaux)",
+        "Comme pour le Havre-Sac et les Quêtes : la page ne remonte plus et ce que tu regardes ou tapes reste en place"
+      ]
+    },
     {
       "v": "1.0.25.9",
       "name": "Vérification plus juste",
