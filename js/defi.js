@@ -67,10 +67,10 @@
     if (!ids.length) return null;
     const h = (s) => hash(`idlus|defi|${day}|${T.id}|${s}`);
     const sun = E.defiSunday(day);
-    /* le dimanche : un des trois donjons les plus hauts du palier, stasis +1, un modificateur et une règle de plus */
-    const top = ids.slice().sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl || (a < b ? -1 : 1)).slice(0, 3);
-    const did = sun ? top[h("donjon") % top.length] : ids[h("donjon") % ids.length];
-    const k = Math.min(10, T.k[0] + (h("stasis") % (T.k[1] - T.k[0] + 1)) + (sun ? 1 : 0));
+    /* le dimanche (Grand défi) : un modificateur et une règle de plus, bourses ×3. Simulé : le donjon le plus haut du palier
+       et la stasis +1 en plus le rendaient presque impossible (1 victoire sur 12 dimanches, même bien équipé). */
+    const did = ids[h("donjon") % ids.length];
+    const k = Math.min(10, T.k[0] + (h("stasis") % (T.k[1] - T.k[0] + 1)));
     const mods = pickN(E.DEFI_MODS, (T.mods || 2) + (sun ? 1 : 0), h, "mod");
     const rules = pickN(E.DEFI_RULES, sun ? 4 : 3, h, "regle");
     const tk = Object.keys(E.DEFI_TEAM); const team = tk[h("equipe") % tk.length];
