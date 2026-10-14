@@ -418,6 +418,36 @@
     return pin0(S, p);
   };
 
+  /* ======================= 1.0.30 : LES OFFRANDES PASSENT AU DOLMANAX (choix 30A) =======================
+     Le Kaliptus (7 offrandes) et les Veilleurs (5) ont une étape à leur image à la place : 300 Bois de Kaliptus récoltés,
+     et 30 victoires avec le challenge « Survivant » réussi. Le Dolmanax commence par 7 offrandes, où toutes celles déjà faites comptent (S.cnt.almanax).
+     Migration au chargement (S.alm30 absent de la sauvegarde) : un joueur déjà à l'étape Almanax passe à la suivante,
+     un Dolmanax déjà commencé garde son avancement (une étape de plus devant). */
+  if (E.DOFUS && E.DOFUS.kaliptus && E.DOFUS.veilleurs && E.DOFUS.dolmanax && !E.DOFUS.dolmanax.alm30) {
+    const swap = (id, st) => { const L0 = E.DOFUS[id].steps; const i = L0.findIndex((x) => x.t === "almanax"); if (i >= 0) L0[i] = st; return i; };
+    E.ALM30 = {
+      kaliptus: swap("kaliptus", { t: "harvest", res: "Bois de Kaliptus", n: 300 }),
+      veilleurs: swap("veilleurs", { t: "chal", chal: "survivant", n: 30, txt: "Réussir 30 fois le challenge « Survivant »" }),
+    };
+    E.DOFUS.dolmanax.steps.unshift({ t: "almanax", n: 7 }); E.DOFUS.dolmanax.alm30 = 1;
+    const stTxt0 = E.dofusStepTxt; E.dofusStepTxt = (st) => (st && st.txt) || stTxt0(st);
+    E.alm30Migrate = (S) => {
+      if (!S || S.alm30) return false; S.alm30 = 1;
+      const q = S.dofusQ || {}; const moved = [];
+      ["kaliptus", "veilleurs"].forEach((id) => { const Q = q[id]; const i = E.ALM30[id]; if (Q && !Q.done && i >= 0 && Q.step === i) { Q.step = i + 1; Q.prog = 0; moved.push(E.DOFUS[id].name); } });
+      const Qd = q.dolmanax; if (Qd && !Qd.done && ((Qd.step || 0) > 0 || (Qd.prog || 0) > 0)) Qd.step = (Qd.step || 0) + 1;
+      if (moved.length) (S.migration = S.migration || []).push(`1.0.30 : les offrandes à l'Almanax passent au Dolmanax. Ton étape Almanax est validée (${moved.join(", ")}).`);
+      return true;
+    };
+    const new30 = E.newState; E.newState = (name, cls) => { const S = new30(name, cls); S.alm30 = 1; return S; };
+    /* la partie neuve qui comble les champs manquants pose alm30 : on regarde donc le texte d'origine */
+    const des30 = E.deserialize; E.deserialize = (txt) => {
+      const had = typeof txt === "string" && txt.indexOf('"alm30"') >= 0; const S = des30(txt);
+      if (!had) { S.alm30 = 0; E.alm30Migrate(S); }
+      return S;
+    };
+  }
+
   /* ======================= ACTIONS, ÉTAT, RECHERCHE ======================= */
   Object.assign(E.ACTIONS, { rqGive: "remettre des ressources pour une quête de région", rqClaim: "terminer une quête de région" });
   if (E.carnetCat) E.carnetCat({ rqGive: "quete", rqClaim: "quete" });

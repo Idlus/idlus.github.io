@@ -304,8 +304,9 @@
     const pet = E.petStats(S, c); if (pet) addStats(st, pet); // 0.1.8 : familier ou montilier
     const mt = E.mountStats(S, c); if (mt) addStats(st, mt); // 0.1.9 : monture
     const vt = E.trophyVitrine(S); st.vit += vt.vit; st.sa += vt.sa; // 1.0.20 : Vitrine des trophées, pour tous les héros
+    const dpt = E.dofPotStats ? E.dofPotStats(S, c) : null; if (dpt) addStats(st, dpt); // 1.0.30 : Potentiel des Dofus (dofusp.js)
     const counts = E.setCounts(S, c);
-    for (const s in counts) { const b = E.setBonus(s, counts[s]); if (b) addStats(st, b); }
+    for (const s in counts) { const b = E.setBonus(s, E.setCountFx ? E.setCountFx(S, s, counts[s]) : counts[s]); if (b) addStats(st, b); } // 1.0.30 : Couture fine (collections.js)
     st.hpMax = Math.round((50 + 5 * c.lvl + st.vit + E.familyBonusVit(S)) * (1 + 0.05 * E.eveil(c, "robu")));
     if (c.eveils) { // 0.1.12 : Éveils de la Renaissance
       const ec = E.eveil(c, "ecorce"); if (ec) ["rt", "rf", "re", "ra", "rn"].forEach((k) => (st[k] = (st[k] || 0) + 3 * ec));

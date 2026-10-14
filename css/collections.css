@@ -1,0 +1,120 @@
+/* ============================================================================
+   1.0.30 : COLLECTIONS (js/collui.js). Héros › Familiers et montures, Encyclopédie › Panoplies,
+   Quêtes › Dofus › Potentiel, aura dorée en combat. Mêmes couleurs que le reste du jeu (variables du thème).
+   ========================================================================== */
+
+/* ---------- barre d'outils commune : recherche, puces, listes ---------- */
+.co-top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:10px 0 8px}
+.co-top .seg{max-width:100%;overflow-x:auto}
+.co-tb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.co-tb input[type=search]{flex:1 1 220px;min-width:0;max-width:340px}
+.co-tb select{max-width:100%;min-width:0}
+.co-chips{display:flex;flex-wrap:wrap;gap:6px}
+.co-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+.co-chip[aria-pressed="true"]{border-color:var(--gold);background:linear-gradient(180deg,rgba(var(--glw,240,195,90),.28),var(--panel2))}
+.co-chip .n{opacity:.7;font-weight:700}
+
+/* ---------- Familiers et montures ---------- */
+.co-2c{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+.co-fiche{position:sticky;top:8px}
+@media (max-width:900px){.co-2c{grid-template-columns:minmax(0,1fr)}}
+.co-pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.co-pt{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;text-align:center;font-size:11px;min-width:0;cursor:pointer}
+.co-pt img{width:52px;height:52px;object-fit:contain}
+.co-pt b{font-size:12px;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co-pt span{color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co-pt.no img{filter:grayscale(1) brightness(.55);opacity:.7}
+.co-pt.no b{opacity:.7}
+.co-pt.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(var(--glw,240,195,90),.35)}
+.co-pt .own{position:absolute;top:4px;right:6px;font-size:11px;font-weight:900;color:#3fb35d}
+.co-pt .worn{position:absolute;top:4px;left:6px;font-size:10px;font-weight:900;padding:0 5px;border-radius:6px;background:var(--gold);color:#1b1b1b}
+.co-pd{display:flex;flex-direction:column;gap:8px}
+.co-pd .big{display:flex;gap:12px;align-items:center}
+.co-pd .big>img{width:84px;height:84px;flex:0 0 84px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35))}
+.co-where{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between}
+.co-heroes{display:flex;flex-wrap:wrap;gap:6px}
+.co-heroes .btn{display:inline-flex;gap:6px;align-items:center}
+.co-heroes .btn.on{border-color:#3fb35d;opacity:1}
+.co-sheet{display:flex;flex-direction:column;gap:8px}
+.co-sheet.panel{border:0;box-shadow:none;background:none}
+
+/* ---------- Encyclopédie › Panoplies : la Collection ---------- */
+.co-gbar{position:relative;height:22px;border-radius:12px;background:var(--panel3);border:2px solid var(--frame);overflow:hidden}
+.co-gbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.co-gbar b{position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;font-weight:900;color:#fff;text-shadow:0 0 2px #000,0 0 2px #000,0 1px 2px #000;white-space:nowrap;overflow:hidden;padding:0 6px}
+.co-mil{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.co-mil>div{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px;align-items:center;padding:6px 8px;border-radius:10px;border:1px solid var(--frame);background:var(--panel2);font-size:11.5px;min-width:0}
+.co-mil>div b.n{font-size:15px;color:var(--gold);text-align:center}
+.co-mil>div.ok{border-color:#3fb35d}
+.co-mil>div.u{border:2px solid #f0b429;background:linear-gradient(180deg,rgba(240,180,41,.14),var(--panel2))}
+.co-mil>div:not(.ok){opacity:.85}
+.co-mil .u1{display:inline-block;font-size:9.5px;font-weight:900;padding:0 5px;border-radius:5px;background:#f0b429;color:#1b1b1b;margin-left:4px;vertical-align:1px}
+.co-reg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.co-reg>div{padding:7px 9px;border-radius:10px;border:1px solid var(--frame);background:var(--panel2);font-size:12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.co-reg>div.ok{border-color:#3fb35d}
+.co-coll>.pad>.btn{justify-self:start}
+@media (max-width:700px){.co-mil{grid-template-columns:repeat(2,minmax(0,1fr))}.co-reg{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- Encyclopédie › Panoplies : les cartes ---------- */
+.co-sets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.co-sets{grid-template-columns:minmax(0,1fr)}}
+.co-set{border:2px solid var(--frame);border-radius:14px;background:var(--panel2);padding:10px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.co-set.done{border-color:var(--gold)}
+.co-set .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.co-set .hd b{font-size:15px;min-width:0}
+.co-set .hd .tag{margin-left:auto}
+.co-set .pcs{display:flex;flex-wrap:wrap;gap:4px}
+.co-set .pcs span{width:40px;height:40px;border-radius:8px;border:2px solid var(--frame);background:var(--panel);display:grid;place-items:center}
+.co-set .pcs span img{width:32px;height:32px;object-fit:contain}
+.co-set .pcs span.no{opacity:.45;filter:grayscale(1);border-style:dashed}
+.co-set .pcs span.out{opacity:.75;border-style:dotted}
+.co-set .bon{font-size:11.5px;color:var(--muted)}
+.co-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.co-acts .co-more{margin-left:auto}
+
+/* ---------- Quêtes › Dofus › Potentiel ---------- */
+.co-potbtn{border:2px solid #f0b429;background:linear-gradient(180deg,rgba(240,180,41,.18),var(--panel2));border-radius:999px;padding:5px 12px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;color:var(--ink);display:inline-flex;gap:6px;align-items:center}
+.co-potbtn[aria-pressed="true"]{background:#f0b429;color:#1b1b1b}
+.co-plink{justify-self:start;border-color:#f0b429}
+.co-pot{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;align-items:start}
+@media (max-width:900px){.co-pot{grid-template-columns:minmax(0,1fr)}.co-pot>section{order:-1}}
+.co-dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.co-dt{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 6px 8px;border-radius:12px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);font:inherit;text-align:center;min-width:0;cursor:pointer}
+.co-dt img{width:50px;height:50px;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.co-dt b{font-size:12px;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co-dt.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(var(--glw,240,195,90),.35)}
+.co-dt.ready::after{content:"";position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;background:#3fb35d;box-shadow:0 0 6px #3fb35d}
+.co-dt.sub{border-color:#f0b429;background:radial-gradient(120px 80px at 50% 20%,rgba(240,180,41,.35),transparent 70%),var(--panel2)}
+.co-dt.sub img{filter:drop-shadow(0 0 10px rgba(240,180,41,.95))}
+.co-stars{display:flex;gap:1px;font-size:10px;letter-spacing:-1px;color:var(--muted)}
+.co-stars i{font-style:normal;color:#f0b429}
+.co-gold{color:#f0b429;font-weight:900}
+.co-mini{width:100%;height:6px;border-radius:4px;background:var(--panel3);overflow:hidden}
+.co-mini.big{height:10px}
+.co-mini i{display:block;height:100%;background:linear-gradient(90deg,#f0b429,#ffd977)}
+.co-dfiche.sub{border-color:#f0b429}
+.co-dd{display:flex;flex-direction:column;gap:10px;text-align:left}
+.co-dd .big{display:flex;gap:12px;align-items:center}
+.co-dd .big>img{width:80px;height:80px;flex:0 0 80px;object-fit:contain;filter:drop-shadow(0 0 14px rgba(240,180,41,.6))}
+.co-dn{font-size:16px}
+.co-rk{font-size:22px;font-weight:900;color:#f0b429;line-height:1}
+.co-ln{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;font-size:12.5px;align-items:center}
+.co-ln .o{color:var(--muted);text-decoration:line-through}
+.co-ln .n{font-weight:900;color:#3fb35d}
+.co-src{display:flex;flex-direction:column;gap:5px}
+.co-src>div{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 9px;border-radius:10px;border:1px solid var(--frame);background:var(--panel2);font-size:12px}
+.co-src>div img{width:24px;height:24px;object-fit:contain}
+.co-subl{border:2px dashed #f0b429;border-radius:12px;padding:9px 10px;font-size:12px;background:linear-gradient(180deg,rgba(240,180,41,.14),transparent)}
+.cele-art .celepet.co-sublpic{filter:drop-shadow(0 0 16px rgba(240,180,41,1)) drop-shadow(0 0 4px #fff3c4);animation:coGlow 1.6s ease-in-out infinite}
+
+/* ---------- aura dorée en combat ---------- */
+/* Grand Couturier (palier 150) : un halo doré aux pieds des héros */
+.arena .ent.hero.co-gold::before{content:"";position:absolute;left:50%;bottom:-6px;width:96%;height:22px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(rgba(240,180,41,.7),rgba(240,180,41,.18) 60%,transparent 72%);z-index:-1;pointer-events:none;animation:coAura 2.6s ease-in-out infinite}
+.arena.v2 .ent.hero.co-gold::before{bottom:calc(var(--plate, 12px) - 10px)}
+/* Dofus Sublimé porté : le héros brille d'or */
+.arena .ent.co-dsub .lookwrap,.arena .ent.co-dsub .medal,.arena .ent.co-dsub img.sprite{filter:drop-shadow(0 0 7px rgba(240,180,41,.9)) drop-shadow(0 0 2px rgba(255,243,196,.9))}
+.ent.card.co-dsub{border-color:#f0b429;box-shadow:0 0 10px rgba(240,180,41,.5)}
+.ent.card.co-gold{background:linear-gradient(90deg,rgba(240,180,41,.22),rgba(0,0,0,.35))}
+@keyframes coAura{0%,100%{opacity:.75;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.08)}}
+@keyframes coGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.arena .ent.hero.co-gold::before,.cele-art .celepet.co-sublpic{animation:none}}

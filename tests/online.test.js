@@ -780,6 +780,10 @@ const MOCK = () => {
     await page.evaluate((s) => { const d = JSON.parse(localStorage.getItem("__mock")); d.session = s; delete d.signOutScope; localStorage.setItem("__mock", JSON.stringify(d)); }, sess);
     await page.reload(); await page.waitForSelector("#nav [data-nk]", { state: "attached", timeout: 10000 });
     await page.waitForFunction(() => document.querySelector("#onPill") && document.querySelector("#onPill").dataset.st === "ok", null, { timeout: 10000 });
+    // 8 quinquies. 1.0.30 : un Dofus Sublimé part dans le résumé envoyé (meta.dsub) : le serveur l'annonce (supabase/collections.sql)
+    await page.evaluate(() => { const { E, S } = window.DX; E.rollItem(S, "dofus_emeraude", { radiant: false }); (S.dofPot = S.dofPot || {}).emeraude = { r: 10, e: 0 }; return window.DX.social.onPush(); });
+    await page.waitForTimeout(300);
+    m = await mock(); { const mt = (m.saves.u1 || {}).meta || {}; if (!(mt.dsub || []).includes("emeraude") || !(mt.dofus || []).includes("emeraude")) fail("Dofus Sublimé absent du résumé envoyé : " + JSON.stringify(mt.dsub)); }
     // 9. suppression du compte
     await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
