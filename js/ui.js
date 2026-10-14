@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30";
+const GAME_VERSION = "1.0.30.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.30.1", name: "Jets remis à niveau", items: [
+    "Forgemagie : ce que la forgemagie avait ajouté au-dessus de 80 % du jet avec les anciennes règles est retiré, et ces objets redescendent à 80 %. Le jet d'origine et les exos ne bougent pas",
+    "Compensation pour chaque objet touché : les runes qui avaient fait les points retirés, rendues ×1,5, un Cristal de forgemagie et 100 000 kamas, plus le titre « Forgemage d'antan ». Une fenêtre au lancement montre tes objets et ta compensation",
+    "Pas touchés : les objets jamais forgemagés, ceux forgemagés depuis la 1.0.30, les objets transcendés, les Dofus, les trophées et les légendaires",
+  ] },
   { v: "1.0.30", name: "La grande mise à jour", items: [
     "Guildes refaites de A à Z. Toutes les guildes repartent de zéro : fonder coûte 25 000 kamas et un héros niveau 20, avec 2 h de bouclier. 5 places au départ, jusqu'à 15 achetées avec le coffre",
     "Code GUILDES pour les comptes, 7 jours : 300 000 kamas et 6 h de Sablier de Xélor, de quoi refonder ta guilde. Les anciens membres reçoivent aussi le titre « Pionnier des guildes » et des kamas selon le niveau de leur ancienne guilde",

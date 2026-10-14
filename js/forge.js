@@ -1,6 +1,6 @@
 /* ============================================================================
    LA FORGE — Idlus (1.0.30), moteur sans DOM. Chargé après systems.js (jeu et tests).
-   - Soft reset des jets (choix 40A de Mathis, « plus punitif »), construit DÉSACTIVÉ : E.SOFT_RESET_ON = false.
+   - Soft reset des jets (choix 40A de Mathis, « plus punitif »), construit désactivé puis activé en 1.0.30.1 (E.SOFT_RESET_ON).
    - Calculs de l'atelier de brisage (choix 43A) : runes attendues (Ra, Pa, simples) et leur valeur aux prix de l'HdV.
    La forgemagie plus dure près du maximum (choix 36A) est dans systems.js (E.FM_HARD), le coefficient de brisage
    de 10 % à 200 % dans engine.js (E.getCoef). L'affichage est dans js/forgeui.js.
@@ -23,8 +23,9 @@
      ajouté par la forgemagie (rendu en runes ×1,5). Jamais touchés : objets jamais forgemagés (jets parfaits de la Renaissance X
      compris), objets dont l'historique ne montre que des exos, objets transcendés (ils ne se forgemagent plus), Dofus, trophées,
      légendaires, malus, caractéristiques ajoutées en exo et exos PA/PM/Po/Invocation.
-     C'EST UNE MODIFICATION DES PARTIES : n'activer qu'avec les mots de Mathis. */
-  E.SOFT_RESET_ON = false;
+     C'EST UNE MODIFICATION DES PARTIES : n'activer qu'avec les mots de Mathis.
+     1.0.30.1 : ACTIVÉ (Mathis, 14/10/2026, « envoie tout » après le comptage : 15 comptes, 138 objets). */
+  E.SOFT_RESET_ON = true;
   E.SOFT_AT = 0.8; E.SOFT_RUNES = 1.5; E.SOFT_KAMAS = 100000; E.SOFT_TITLE = "Forgemage d'antan";
   const EXO_LOG = /^(Succès critique : exo \+1 |Échec critique : Rune Ga )/;
   /* objet forgemagé avec les anciennes règles ? */

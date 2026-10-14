@@ -1,6 +1,15 @@
 {
-  "version": "1.0.30",
+  "version": "1.0.30.1",
   "versions": [
+    {
+      "v": "1.0.30.1",
+      "name": "Jets remis à niveau",
+      "items": [
+        "Forgemagie : ce que la forgemagie avait ajouté au-dessus de 80 % du jet avec les anciennes règles est retiré, et ces objets redescendent à 80 %. Le jet d'origine et les exos ne bougent pas",
+        "Compensation pour chaque objet touché : les runes qui avaient fait les points retirés, rendues ×1,5, un Cristal de forgemagie et 100 000 kamas, plus le titre « Forgemage d'antan ». Une fenêtre au lancement montre tes objets et ta compensation",
+        "Pas touchés : les objets jamais forgemagés, ceux forgemagés depuis la 1.0.30, les objets transcendés, les Dofus, les trophées et les légendaires"
+      ]
+    },
     {
       "v": "1.0.30",
       "name": "La grande mise à jour",

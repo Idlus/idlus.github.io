@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.1 « Jets remis à niveau »
+
+Soft reset des jets (choix 40A), activé avec les mots de Mathis (14/10/2026, « active le soft reset ») après le comptage en lecture seule (Actions › Serveur OVH › soft-reset-comptage : 55 comptes, 15 touchés, 138 objets dont 15 Parfaits, 802 runes, 138 Cristaux, 13,8 M kamas). `E.SOFT_RESET_ON = true` (js/forge.js) : au lancement, une fois par partie (`S.softReset`), ce que la forgemagie d'avant la 1.0.30 a ajouté au-dessus de 80 % de la fourchette est retiré, avec la compensation et le titre « Forgemage d'antan ».
+
 ## 1.0.30 « La grande mise à jour »
 
 Réponses de Mathis du 14/10/2026 (questions 1 à 43 de la maquette « Refonte des guildes », « Et tu fait tout en 1 seule fois »), construites en une seule version :

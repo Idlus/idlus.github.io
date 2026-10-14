@@ -113,8 +113,8 @@ const near = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m} : ${a} au lieu
   assert.strictEqual(E.getCoef(Sc, tpl, now), 40); assert.strictEqual(E.getCoef(Sc, other, now), 150, "en ligne, jamais brisé : départ du serveur");
   E.netCoefT0 = null; assert.strictEqual(E.getCoef(Sc, other, now), 100, "serveur d'avant la 1.0.30 : 100 %"); E.netCoef = null; }
 
-// 10. 40A : soft reset des jets (désactivé : E.SOFT_RESET_ON = false ; activé ici pour le test)
-{ assert.strictEqual(E.SOFT_RESET_ON, false, "le soft reset est livré désactivé");
+// 10. 40A : soft reset des jets (activé en 1.0.30.1 ; le test le coupe puis le remet)
+{ assert.strictEqual(E.SOFT_RESET_ON, true, "1.0.30.1 : le soft reset est activé"); const ON0 = E.SOFT_RESET_ON; E.SOFT_RESET_ON = false;
   const Ss = E.newState("Soft", "iop"); const tpl = Object.keys(ITEMS).find((k) => { const T = ITEMS[k]; return T.lvl >= 100 && !T.trophy && !T.leg && T.slot !== "dofus" && Object.keys(T.stats).filter((x) => STATS[x] && T.stats[x][0] >= 0 && T.stats[x][1] - T.stats[x][0] >= 10).length >= 3; });
   const T = ITEMS[tpl]; const pos = Object.keys(T.stats).filter((k) => STATS[k] && T.stats[k][1] > 0);
   const mk = (o) => { const it = E.rollItem(Ss, tpl, { radiant: false }); pos.forEach((k) => { it.stats[k] = T.stats[k][1]; }); delete it.fmNew; delete it.fmSnap; delete it.fm; Object.assign(it, o); return it; };
@@ -147,7 +147,7 @@ const near = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m} : ${a} au lieu
   assert.strictEqual(keep(old), st); assert.strictEqual(Ss.kamas, k1); assert.strictEqual(Ss.titlesExtra.filter((x) => x === "Forgemage d'antan").length, 1);
   // Rayonnant : la cible garde le bonus du Rayonnant
   const rad = mk({ fm: 5, radiant: 10 }); const Sr = Ss; rad.stats[k0] = Math.ceil(T.stats[k0][1] * 1.1); assert.strictEqual(E.softTarget(rad, k0), Math.ceil(Math.round(T.stats[k0][0] + (T.stats[k0][1] - T.stats[k0][0]) * 0.8) * 1.1));
-  assert.ok(E.softItem(rad).cut[k0] > 0); delete Sr.items[rad.uid]; }
+  assert.ok(E.softItem(rad).cut[k0] > 0); delete Sr.items[rad.uid]; E.SOFT_RESET_ON = ON0; }
 
 // 11. 43A : atelier de brisage (le calcul des runes ne change pas : E.breakPreview)
 { const Sb = E.newState("Atelier", "iop"); const tpl = Object.keys(ITEMS).find((k) => ITEMS[k].lvl >= 150 && !ITEMS[k].trophy && ITEMS[k].stats.vit && ITEMS[k].stats.fo);
@@ -163,4 +163,4 @@ const near = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m} : ${a} au lieu
   const all = {}; rows.forEach((r) => ["", "pa", "ra"].forEach((t) => { all[E.runeKey(t, r.k)] = 1; }));
   const V = E.breakValue(all, rows); assert.strictEqual(V.cov, 1); near(V.v, rows.reduce((x, r) => x + r.ra + r.pa + r.s, 0), "valeur au prix connu");
   assert.deepStrictEqual(E.breakValue({}, rows), { v: 0, cov: 0, d: false }, "sans prix : rien"); }
-console.log("ok - 1.0.30 « Forge » : forgemagie dure près du maximum, coefficient de 10 % à 200 %, soft reset des jets (désactivé), atelier de brisage");
+console.log("ok - 1.0.30 « Forge » : forgemagie dure près du maximum, coefficient de 10 % à 200 %, soft reset des jets (activé en 1.0.30.1), atelier de brisage");
