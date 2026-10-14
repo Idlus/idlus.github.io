@@ -50,12 +50,25 @@ for (const did of Object.keys(D.DUNGEONS)) { const dg = D.DUNGEONS[did]; const S
 // 3. coût de chaque objet en heures de chasse, puis chance par héros
 const best = {}; for (const s in SRC) for (const r in SRC[s].rate) if (!best[r] || SRC[s].rate[r] > best[r].h) best[r] = { s, h: SRC[s].rate[r] };
 const flat = (ing, mul = 1, acc = {}) => { ing.forEach(([r, q]) => { if (best[r]) acc[r] = (acc[r] || 0) + q * mul; else if (SC[r]) flat(SC[r].ing, q * mul, acc); }); return acc; };
+// panoplie au nom d'un boss de donjon (« Panoplie du Minotot ») → ce donjon ; le nom le plus long l'emporte (Minotot avant Minot…)
+const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const SET_DG = {}; for (const st in D.SETS) { const sn = norm(D.SETS[st].name).replace(/royale/g, "royal"); let best = null;
+  for (const did in D.DUNGEONS) { const bn = norm(M[D.DUNGEONS[did].boss].name); if (new RegExp("(^|[^a-z])" + bn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z]|$)").test(sn) && (!best || bn.length > best.n)) best = { d: "d:" + did, n: bn.length }; }
+  if (best) SET_DG[st] = best.d; }
+// sinon, panoplie au nom d'un monstre qu'on ne trouve que dans un seul donjon (« Panoplie du Strigide ») → le boss de ce donjon
+{ const inZone = new Set(); for (const sid in E.SUBS) (E.SUBS[sid].monsters || []).forEach((m) => inZone.add(Array.isArray(m) ? m[0] : m));
+  const dgOf = {}; for (const did in D.DUNGEONS) D.DUNGEONS[did].rooms.flatMap((r) => r.mobs).forEach((m) => (dgOf[m] = dgOf[m] || new Set()).add(did));
+  for (const st in D.SETS) { if (SET_DG[st]) continue; const sn = norm(D.SETS[st].name);
+    for (const m in dgOf) { if (inZone.has(m) || dgOf[m].size !== 1) continue; const mn = norm(M[m].name);
+      if (mn.length > 3 && new RegExp("(^|[^a-z])" + mn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z]|$)").test(sn)) { SET_DG[st] = "d:" + [...dgOf[m]][0]; break; } } } }
 const dropsOf = {}; for (const k in M) M[k].drops.forEach(([r]) => (dropsOf[r] = dropsOf[r] || []).push(k));
 const OUT = {};
 for (const id of Object.keys(I).sort()) { const T = I[id]; if (!T.craft || T.slot === "dofus" || T.leg || T.trophy) continue;
   const f = flat(T.craft.ing); const by = {}; for (const r in f) { const b = best[r]; by[b.s] = Math.max(by[b.s] || 0, f[r] / b.h); }
   const hours = Object.values(by).reduce((a, b) => a + b, 0); if (!hours) continue;
-  const main = Object.entries(by).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0]; const src = SRC[main];
+  let main = Object.entries(by).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+  if (T.set && SET_DG[T.set] && SRC[SET_DG[T.set]]) main = SET_DG[T.set]; // 1.0.25.1 : une panoplie au nom d'un boss de donjon tombe sur ce boss (Minotot, et non Minotoror)
+  const src = SRC[main];
   let mons, kh;
   if (main.startsWith("d:")) { mons = [src.boss]; kh = 1 / src.cyc; }
   else { mons = [...new Set(Object.keys(f).flatMap((r) => dropsOf[r] || []))].filter((k) => src.kills[k] && !M[k].archiOf); kh = mons.reduce((a, k) => a + src.kills[k], 0); }
@@ -65,9 +78,10 @@ for (const id of Object.keys(I).sort()) { const T = I[id]; if (!T.craft || T.slo
 }
 // objets sans recette (drops DofusDB, futurs objets de boss) : on garde leur source, taux DofusDB × 0,04 partagé entre les 4 héros de référence
 for (const k in M) (M[k].items || []).forEach(([t, rate]) => { const T = I[t]; if (!T || T.craft || T.slot === "dofus" || T.leg || T.trophy) return; (OUT[k] = OUT[k] || []).push([t, +(rate * 0.04 / HEROES).toPrecision(3)]); });
+console.log(`panoplies rattachées à un boss : ${Object.keys(SET_DG).length}`);
 const keys = Object.keys(OUT).sort((a, b) => +a.slice(1) - +b.slice(1));
 const body = keys.map((k) => JSON.stringify(k) + ":" + JSON.stringify(OUT[k])).join(",\n");
-fs.writeFileSync(path.join(ROOT, "js", "drops.js"), `/* Généré par tools/build_drops.js — ne pas modifier à la main. Données DOFUS via DofusDB, © Ankama Games.
+fs.writeFileSync(process.env.DROPS_OUT || path.join(ROOT, "js", "drops.js"), `/* Généré par tools/build_drops.js — ne pas modifier à la main. Données DOFUS via DofusDB, © Ankama Games.
    Pour chaque monstre : [équipement, chance par héros en %]. Lu par js/engine.js à la place des drops DofusDB. */
 (function (root) {
   const DROPS = {

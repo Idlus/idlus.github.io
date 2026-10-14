@@ -43,3 +43,11 @@ console.log("ok - annonce des nouveaux équipements");
   assert.ok(r.fights > 0, "chasse hors ligne"); assert.strictEqual(r.zone, E.SUBS.cav_servitude.name); assert.ok(/Blop/.test(r.dungeon), "donjon nommé");
   assert.ok(S.dungeon && S.dungeon.id === "antre_blop_multicolore", "le donjon est retrouvé au retour"); }
 console.log("ok - hors ligne dans un donjon");
+
+// 6. Une panoplie au nom d'un boss de donjon tombe sur ce boss (Minotot, et non Minotoror).
+{ const src = (t) => Object.keys(MONSTERS).filter((k) => (MONSTERS[k].items || []).some(([x]) => x === t));
+  const boss = (n) => Object.keys(MONSTERS).find((k) => MONSTERS[k].name === n);
+  for (const [set, b] of [["Panoplie du Minotot", "Minotot"], ["Panoplie du Minotoror", "Minotoror"], ["Panoplie Blop Multicolore Royale", "Blop Multicolore Royal"]]) {
+    const st = Object.keys(DATA.SETS).find((k) => D.SETS[k].name === set); const ps = Object.keys(ITEMS).filter((t) => ITEMS[t].set === st);
+    assert.ok(ps.length >= 4, set); ps.forEach((t) => assert.deepStrictEqual(src(t), [boss(b)], `${ITEMS[t].name} tombe sur ${b}`)); } }
+console.log("ok - panoplies de boss");

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.25.6 « Panoplies de boss »
+
+Chaque pièce d'une panoplie au nom d'un boss de donjon (Minotot, Blop Multicolore Royal, Strigide…) tombe sur ce boss, au lieu du donjon voisin qui donnait le plus d'ingrédients. 71 panoplies corrigées.
+
 ## 1.0.25.5 « Toutes les coiffes et capes »
 
 Mathis (14/10/2026, « ça ne fonctionne pas pour tout. Revérifie chaque item »). Seules les 64 coiffes et capes d'ITEM_SKINS (js/looks.js) se dessinaient sur le héros. Vérification des 569 : l'API look de DofusDB (jeton par objet) connaît 542 objets ; chaque rendu comparé au héros nu (539 changent le dessin) ; les 64 apparences connues comparées au pixel près au rendu DofusDB : 57 justes, Piou Jaune et Vert inversés (cape 168/170, chapeau 283/284, corrigés), Ailes en bois, Coiffe du Koulosse et Casque de Boufbowl faux (retirés, dessinés par DofusDB). `lookUrl` (js/ui.js) dessine toute coiffe ou cape sans apparence connue par le jeton DofusDB (tête et couleurs d'origine de la classe), sauf `LOOKS.NO_LOOK` (30 : Coiffe et Cape Invisibles, Bandana de Mama Ayuto dessiné vide, 27 objets récents inconnus de DofusDB), marqués « Invisible » dans la garde-robe. Jetons DofusDB gardés 7 jours dans le navigateur (`idlus-looktok`). Liste complète : verif-coiffes-capes.csv dans les fichiers du projet.

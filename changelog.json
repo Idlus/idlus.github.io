@@ -1,6 +1,14 @@
 {
-  "version": "1.0.25.5",
+  "version": "1.0.25.6",
   "versions": [
+    {
+      "v": "1.0.25.6",
+      "name": "Panoplies de boss",
+      "items": [
+        "La panoplie du Minotot tombe maintenant sur le Minotot (et non plus sur le Minotoror)",
+        "Même correction pour 71 panoplies au nom d'un boss de donjon ou d'un monstre de donjon (Blop Multicolore Royal, Strigide…) : chaque pièce tombe sur le boss de son donjon, avec les mêmes chances"
+      ]
+    },
     {
       "v": "1.0.25.5",
       "name": "Toutes les coiffes et capes",
