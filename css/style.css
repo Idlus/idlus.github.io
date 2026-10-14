@@ -4220,7 +4220,7 @@ img.wb-an.wb-p3{animation:wbp3 1.5s ease-in-out infinite}
 .shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
 .shopc{display:flex;gap:10px;align-items:center;background:var(--panel2);border-radius:14px;padding:10px;border:2px solid color-mix(in srgb,var(--rc) 35%,transparent);flex-wrap:wrap;position:relative}
 .shopc.placed{opacity:.7}
-.shopico{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--rc) 22%,var(--panel))}.shopico .uico{width:32px;height:32px}
+.shopico{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--rc) 22%,var(--panel))}.shopico .uico{width:38px;height:38px}
 .shopt{display:flex;flex-direction:column;flex:1;min-width:120px}.shopfx{color:var(--action);font-weight:800;font-size:13px}
 .shopmiss{width:100%;text-align:right}
 .fslot.hvgrow{border:2px dashed color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 7%,transparent);cursor:pointer;text-align:left}.fslot.hvgrow:disabled{opacity:.6;cursor:default}
@@ -4882,7 +4882,7 @@ button.famrow{width:100%;font:inherit;color:inherit;cursor:pointer;text-align:le
 .hvlv{font-size:11px;color:var(--muted);font-weight:800;margin-left:4px}
 .hvslots{display:flex;gap:4px;flex-wrap:wrap}
 .hvfi{width:30px;height:30px;object-fit:contain;display:grid;place-items:center;background:var(--panel3);border-radius:8px;border:1px solid var(--line)}
-.hvfi .uico{width:20px;height:20px}
+.hvfi .uico{width:24px;height:24px}
 .hvfi.empty{border-style:dashed;color:var(--muted);font-weight:900;background:none}
 .hvtile footer{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
 .hvtile footer .btn.sm{padding:3px 9px;font-size:12.5px}

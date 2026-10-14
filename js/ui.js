@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.22.1";
+const GAME_VERSION = "1.0.22.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.22.2", name: "Un logo par meuble", items: [
+    "Chaque meuble de la maison a maintenant son propre logo (35 dessins dans le style des coffres) : pupitre, encyclopédie, planétarium, vitrine, socle, piédestal, coffres, balance, malle, banc, fontaine, tapis volant, établi, enclume, botte de foin, abreuvoirs… et ceux du Comptoir, du Bricoleur, des succès et des butins rares",
+    "On le voit partout où le meuble apparaît : Boutique de la maison, tuiles de « Ma maison », meubles à placer, pièces du Havre-Sac et catalogue ; les trophées de boss gardent le portrait du boss",
+  ] },
   { v: "1.0.22.1", name: "Recherche dans l'Encyclopédie", items: [
     "Encyclopédie : une barre de recherche sous les onglets cherche dans l'onglet ouvert : monstres et butins, familles, boss et donjons, équipements (tous emplacements et niveaux), trophées de zone",
     "Pas besoin des accents ni des majuscules (« gelano », « bouftou royal »), la croix ✕ ou Échap vident la recherche, et un message le dit quand rien ne correspond",
@@ -2092,8 +2096,7 @@ function houseHtml() {
     const pl = R.slots ? placedOf(R) : []; const slots = R.slots ? E.roomSlots(S, R.id) : 0; const free = furn.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
     const t = R.post === "train" ? E.trainee(S) : null;
     const sumb = H ? `+${fmt(lvl * H.per)}${H.unit.split(" (")[0]}` : R.post === "atelier" ? (lock ? `à construire · ${fmt(E.ATELIER_COST)} k` : "fabrication automatique") : "élevage des montures";
-    const icons = pl.slice(0, 5).map((f) => { const F = E.FURN[f]; const dg = F.trophy && DUNGEONS[F.trophy];
-      return dg && MONSTERS[dg.boss] ? im(imgM(dg.boss), "hvfi", f) : `<span class="hvfi" data-tip="${h(f)}">${IC(F.room === "biblio" ? "parchemin_or" : F.kind === "bag" || F.kind === "kamas" ? "coffre" : F.kind === "gather" ? "pioche" : R.icon)}</span>`; }).join("");
+    const icons = pl.slice(0, 5).map((f) => `<span class="hvfi" data-tip="${h(f)}">${furnIco(f)}</span>`).join("");
     const empty = Math.max(0, slots - pl.length);
     const dots = R.slots ? `<span class="hvslots">${icons}${Array.from({ length: empty }, () => `<span class="hvfi empty" data-tip="Place libre">+</span>`).join("")}</span>` : "";
     const act = lock ? (R.soon ? `<span class="tag soft">Bientôt</span>` : `<button class="btn sm" data-act="hvroomgo" data-v="${R.id}">Construire · ${fmt(E.ATELIER_COST)} k</button>`)
@@ -2114,7 +2117,10 @@ const hvPips = (l, m) => `<div class="pipsbar">${Array.from({ length: Math.min(m
 const hvUp = (H) => { const l = E.havreLvl(S, H.id); const cost = E.havreCost(S, H.id); const max = l >= H.max;
   return `<div class="upl"><div class="row between"><span><b>${h(H.name)}</b> <span class="lvlpill">${l}/${H.max}</span></span><span class="plus small">+${fmt(l * H.per)}${h(H.unit.split(" (")[0])}</span></div>${hvPips(l, H.max)}
     <button class="btn sm ${!max && S.kamas >= cost ? "primary" : ""}" data-act="havre" data-id="${H.id}" ${max || S.kamas < cost ? "disabled" : ""}>${max ? "Maximum" : `Améliorer · ${fmt(cost)} k`}</button></div>`; };
-const furnIco = (n) => (E.FURN[n] && E.FURN[n].trophy ? TROPHEE_IC : MEUBLE_IC);
+/* 1.0.22.2 : un logo par meuble (assets/ui/meubles) ; les trophées de boss gardent le portrait du boss */
+const FURN_IMG = { "Statue de l'Ordre": "statue_ordre", "Calendrier de l'Almanax": "calendrier_almanax", "Étagère de grimoires": "etagere_grimoires", "Globe des Douze": "globe_douze", "Bannière de la cité": "banniere_cite", "Tirelire Bouftou": "tirelire_bouftou", "Coffre en frêne": "coffre_frene", "Coffre en merisier": "coffre_merisier", "Épouvantail d'Amakna": "epouvantail_amakna", "Arrosoir de Cania": "arrosoir_cania", "Bonsaï de Pandala": "bonsai_pandala", "Ruche": "ruche", "Tapis de Koalak": "tapis_koalak", "Lit à baldaquin": "lit_baldaquin", "Lanterne d'Otomaï": "lanterne_otomai", "Mangeoire": "mangeoire", "Abreuvoir": "abreuvoir", "Caresseur": "caresseur", "Deuxième couple": "deuxieme_couple", "Pupitre de lecture": "pupitre_lecture", "Encyclopédie d'Amakna": "encyclopedie_amakna", "Planétarium d'Osamodas": "planetarium_osamodas", "Vitrine en verre": "vitrine_verre", "Socle doré": "socle_dore", "Piédestal du Dragon": "piedestal_dragon", "Coffre à double fond": "coffre_double_fond", "Balance de marchand": "balance_marchand", "Malle de voyage": "malle_voyage", "Banc de jardin": "banc_jardin", "Fontaine de Bonta": "fontaine_bonta", "Tapis volant": "tapis_volant", "Établi d'artisan": "etabli_artisan", "Enclume de Brâkmar": "enclume_brakmar", "Botte de foin doré": "botte_foin_dore", "Abreuvoir de cristal": "abreuvoir_cristal" };
+const furnImg = (n) => { const F = E.FURN[n]; if (F && F.trophy) { const dg = DUNGEONS[F.trophy]; return dg && MONSTERS[dg.boss] ? imgM(dg.boss) : "assets/ui/trophee_boss.svg"; } return FURN_IMG[n] ? `assets/ui/meubles/${FURN_IMG[n]}.svg` : "assets/ui/meuble.svg"; };
+const furnIco = (n, c = "uico") => `<img class="${c}" src="${furnImg(n)}" alt="" loading="lazy">`;
 const hvSlots = (R) => {
   const n = E.roomSlots(S, R.id); const P = E.placed(S, R.id); const next = R.nextSlot ? R.nextSlot(S) : 0;
   const owned = S.furniture.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
@@ -2133,7 +2139,7 @@ function houseShopHtml() {
   const all = E.SHOP_FURN(); const f = ui.fShop || "all"; const rooms = E.ROOMS.filter((R) => all.some((n) => E.FURN[n].room === R.id));
   const own = all.filter((n) => S.furniture.includes(n)).length;
   const card = (n) => { const F = E.FURN[n]; const R = E.room(F.room); const has = S.furniture.includes(n); const pl = E.isPlaced(S, n); const can = S.kamas >= F.shop;
-    return `<article class="shopc ${pl ? "placed" : has ? "owned" : can ? "can" : "far"}" style="--rc:${R.color}"><span class="shopico">${IC(R.icon)}</span><div class="shopt"><b>${h(n)}</b><span class="shopfx">${h(E.furnEffect(n))}</span><span class="xs muted">${h(R.name)}</span></div>
+    return `<article class="shopc ${pl ? "placed" : has ? "owned" : can ? "can" : "far"}" style="--rc:${R.color}"><span class="shopico">${furnIco(n)}</span><div class="shopt"><b>${h(n)}</b><span class="shopfx">${h(E.furnEffect(n))}</span><span class="xs muted">${h(R.name)}</span></div>
       ${pl ? `<span class="tag good">✓ Placé</span>` : has ? `<button class="btn sm primary" data-act="fplace" data-v="${h(n)}">Placer</button>`
         : `<button class="btn sm ${can ? "primary" : ""}" data-act="fbuy" data-v="${h(n)}" ${can ? "" : "disabled"}><span class="coin"></span> ${fmt(F.shop)}</button>${can ? "" : `<span class="xs muted shopmiss">il manque ${fmt(F.shop - S.kamas)} k</span>`}`}</article>`; };
   return `<section class="panel shop" style="margin-top:14px"><div class="phead"><h2>${IC("havre")} Boutique de la maison</h2><span class="small"><span class="coin"></span> <b class="num">${fmt(S.kamas)}</b> · ${own}/${all.length} meubles achetés</span></div>

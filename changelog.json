@@ -1,6 +1,14 @@
 {
-  "version": "1.0.22.1",
+  "version": "1.0.22.2",
   "versions": [
+    {
+      "v": "1.0.22.2",
+      "name": "Un logo par meuble",
+      "items": [
+        "Chaque meuble de la maison a maintenant son propre logo (35 dessins dans le style des coffres) : pupitre, encyclopédie, planétarium, vitrine, socle, piédestal, coffres, balance, malle, banc, fontaine, tapis volant, établi, enclume, botte de foin, abreuvoirs… et ceux du Comptoir, du Bricoleur, des succès et des butins rares",
+        "On le voit partout où le meuble apparaît : Boutique de la maison, tuiles de « Ma maison », meubles à placer, pièces du Havre-Sac et catalogue ; les trophées de boss gardent le portrait du boss"
+      ]
+    },
     {
       "v": "1.0.22.1",
       "name": "Recherche dans l'Encyclopédie",

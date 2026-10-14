@@ -7,6 +7,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.22.2 « Un logo par meuble »
+
+Chaque meuble de la maison a son propre logo (35 SVG dans assets/ui/meubles, style des coffres), visible dans la boutique, les tuiles de « Ma maison », les meubles à placer, les pièces et le catalogue. Les trophées de boss gardent le portrait du boss.
+
 ## 1.0.22.1 « Recherche dans l'Encyclopédie »
 
 Une barre de recherche sous les onglets de l'Encyclopédie filtre l'onglet ouvert (monstres et butins, familles, boss et donjons, équipements de tous emplacements et niveaux, trophées de zone), sans accents ni majuscules, avec une croix pour vider et un message quand rien ne correspond.
