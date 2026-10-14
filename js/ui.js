@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.19";
+const GAME_VERSION = "1.0.19.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.19.1", name: "Havre-Sac réparé", items: [
+    "Havre-Sac : la page ne s'ouvrait plus quand un héros de l'équipe portait le Dokille ou l'Argenté (passifs des Dofus de la 1.0.16)",
+    "Ces deux passifs apparaissent maintenant dans « Mes bonus », en orange, sous Butin et Kamas",
+  ] },
   { v: "1.0.19", name: "Métiers comme dans DOFUS", items: [
     "Métiers d'artisanat : un objet se fabrique maintenant avec le métier à son niveau, comme dans DOFUS (avant : au tiers de son niveau). Le métier 200 fabrique les objets niveau 200",
     "Chaque niveau se gagne en environ 3 fabrications de ta meilleure recette : arriver au métier 200 demande autant d'efforts qu'avant pour le métier 66 (environ 660 fabrications)",
@@ -2098,12 +2102,15 @@ const restLabel = (c) => (E.trainee(S) === c ? "À l'entraînement (Havre-Sac)" 
 const BKIND = [["xp", "Expérience", "parchemin_or"], ["drop", "Butin", "trophee"], ["kamas", "Kamas", "kamas"]];
 const BSRC = { havre: ["Havre-Sac", "#8cc63f", "Améliorer la pièce du Havre-Sac"], meubles: ["Meubles", "#e8c063", "Placer des meubles (boutique de la maison, trophées de boss)"],
   align: ["Alignement", "#7fb3ff", "Monter en rang d'alignement (ordre de l'Esprit pour l'XP, de l'Œil pour le butin)"], etoiles: ["Étoiles", "#f5d76e", "Chasser dans une zone étoilée (+10 % par étoile)"],
-  guilde: ["Guilde", "#4fd1c5", "Faire monter le niveau de sa guilde"], bonbons: ["Bonbons", "#ff8a6b", "Manger un bonbon (Prospecteur, Doré, Royal)"], leg: ["Légendaires", "#c77dff", "Équiper un légendaire (Diadème de Ganymède, Larme de Neru, Plume de Buhorado)"] };
-const BWHERE = { xp: ["havre", "meubles", "align", "etoiles", "guilde", "bonbons", "leg"], drop: ["havre", "meubles", "align", "etoiles", "guilde", "bonbons", "leg"], kamas: ["havre", "meubles", "guilde", "bonbons", "leg"] };
+  guilde: ["Guilde", "#4fd1c5", "Faire monter le niveau de sa guilde"], bonbons: ["Bonbons", "#ff8a6b", "Manger un bonbon (Prospecteur, Doré, Royal)"], leg: ["Légendaires", "#c77dff", "Équiper un légendaire (Diadème de Ganymède, Larme de Neru, Plume de Buhorado)"],
+  dofus: ["Dofus", "#ffb347", "Porter un Dofus à passif de gains dans l'équipe (Dokille pour le butin, Argenté pour les kamas)"] };
+/* 1.0.19.1 : une source inconnue (ajoutée plus tard) ne doit jamais casser le Havre-Sac */
+const bsrc = (k) => BSRC[k] || [k, "#9aa5b1", ""];
+const BWHERE = { xp: ["havre", "meubles", "align", "etoiles", "guilde", "bonbons", "leg"], drop: ["havre", "meubles", "align", "etoiles", "guilde", "bonbons", "leg", "dofus"], kamas: ["havre", "meubles", "guilde", "bonbons", "leg", "dofus"] };
 function bonusCard(k, label, ico) {
   const parts = E.bonusParts(S, k).sort((a, b) => b.v - a.v), raw = E.bonusRaw(S, k), cap = E.capOf(S, k), top = E.capMax(k);
   const scale = Math.max(top, raw) * 1.04; const w = (v) => `${((100 * v) / scale).toFixed(2)}%`;
-  let x = 0; const segs = parts.map((p) => { const v = Math.min(p.v, Math.max(0, cap - x)); const s = v > 0 ? `<i class="bseg" style="left:${w(x)};width:${w(v)};background:${BSRC[p.k][1]}"></i>` : ""; x += p.v; return s; }).join("");
+  let x = 0; const segs = parts.map((p) => { const v = Math.min(p.v, Math.max(0, cap - x)); const s = v > 0 ? `<i class="bseg" style="left:${w(x)};width:${w(v)};background:${bsrc(p.k)[1]}"></i>` : ""; x += p.v; return s; }).join("");
   const over = Math.max(0, raw - cap), got = Math.min(raw, cap);
   const zero = BWHERE[k].filter((id) => !parts.some((p) => p.k === id));
   const state = over ? `<span class="bko">+${fmt(over)} % perdus au-dessus du plafond</span>` : raw >= cap ? `<span class="plus">Plafond atteint</span>` : `<span class="muted">Encore +${fmt(cap - raw)} % avant le plafond</span>`;
@@ -2111,7 +2118,7 @@ function bonusCard(k, label, ico) {
     <div class="bbar" role="img" aria-label="${label} : +${fmt(got)} % sur un plafond de +${fmt(cap)} %">
       ${cap < top ? `<i class="block" style="left:${w(cap)};width:${w(top - cap)}"></i>` : ""}${segs}${over ? `<i class="bover" style="left:${w(cap)};width:${w(Math.min(over, scale - cap))}"></i>` : ""}<i class="bcap" style="left:${w(cap)}"></i></div>
     <div class="bstat xs"><span>${state}</span><span class="muted">plafond <b class="num">+${fmt(cap)}</b>${cap < top ? ` / ${fmt(top)}` : ""} %</span></div>
-    <div class="bleg">${parts.map((p) => `<span class="bchip" data-tip="${h(BSRC[p.k][2])}"><i style="background:${BSRC[p.k][1]}"></i>${BSRC[p.k][0]} <b class="num">+${fmt(p.v)}</b></span>`).join("")}${zero.map((id) => `<span class="bchip off" data-tip="${h(BSRC[id][2])}"><i></i>${BSRC[id][0]}</span>`).join("")}</div></article>`;
+    <div class="bleg">${parts.map((p) => `<span class="bchip" data-tip="${h(bsrc(p.k)[2])}"><i style="background:${bsrc(p.k)[1]}"></i>${bsrc(p.k)[0]} <b class="num">+${fmt(p.v)}</b></span>`).join("")}${zero.map((id) => `<span class="bchip off" data-tip="${h(bsrc(id)[2])}"><i></i>${bsrc(id)[0]}</span>`).join("")}</div></article>`;
 }
 function altarHtml() {
   const A = E.ALTAR, l = E.altarLvl(S), mx = l >= A.max, c = E.altarCost(S), ok = S.kamas >= c;

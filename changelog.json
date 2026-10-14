@@ -1,6 +1,14 @@
 {
-  "version": "1.0.19",
+  "version": "1.0.19.1",
   "versions": [
+    {
+      "v": "1.0.19.1",
+      "name": "Havre-Sac réparé",
+      "items": [
+        "Havre-Sac : la page ne s'ouvrait plus quand un héros de l'équipe portait le Dokille ou l'Argenté (passifs des Dofus de la 1.0.16)",
+        "Ces deux passifs apparaissent maintenant dans « Mes bonus », en orange, sous Butin et Kamas"
+      ]
+    },
     {
       "v": "1.0.19",
       "name": "Métiers comme dans DOFUS",

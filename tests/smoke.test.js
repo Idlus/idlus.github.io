@@ -141,6 +141,14 @@ const server = http.createServer((req, res) => {
     const dgName = await page.evaluate((b) => window.GAMEDATA.DUNGEONS[b].name, dgIds[1]);
     if (dgAfter.name !== dgName || dgAfter.on !== "3") errors.push(`donjon : changer de stasis ouvre un autre donjon (${JSON.stringify(dgAfter)}, attendu ${dgName})`);
     await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; });
+    // 1.0.19.1 : un héros de l'équipe qui porte le Dokille (passif de butin) ou l'Argenté (kamas) ne casse plus le Havre-Sac
+    const hv = await page.evaluate(() => { const { E, S, ui } = window.DX; const c = S.chars[0]; const lvl = c.lvl; c.lvl = 200;
+      ["dokille", "argent"].forEach((id, i) => E.equip(S, c.id, E.rollItem(S, "dofus_" + id, {}).uid, "dofus" + (i + 1)));
+      ui.tab = "home"; ui.home = "havre"; ui.bonOpen = true; let err = ""; try { window.DX.render(); } catch (e) { err = e.message; }
+      const leg = [...document.querySelectorAll("#main .bonbox .bleg .bchip:not(.off)")].map((x) => x.textContent).join(" "); const out = { err, dof: /Dofus \+/.test(leg) };
+      ["dofus1", "dofus2"].forEach((sl) => { delete c.equip[sl]; }); c.lvl = lvl; ui.home = "apercu"; window.DX.render(); return out; });
+    if (hv.err) errors.push("Havre-Sac : la page plante avec un Dofus à passif de gains (" + hv.err + ")");
+    else if (!hv.dof) errors.push("Havre-Sac : le passif du Dofus n'apparaît pas dans « Mes bonus »");
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
     errors.push(`étape échouée : ${e.message.split("\n")[0]}`);
