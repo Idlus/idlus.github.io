@@ -45,6 +45,8 @@ regle API_EXTERNAL_URL "https://$DOMAINE/auth/v1"
 regle SITE_URL "https://idlus.github.io"
 regle ADDITIONAL_REDIRECT_URLS "https://idlus.github.io/**,https://mathiss29.github.io/**,http://localhost:8080/**"
 regle PROXY_DOMAIN "$DOMAINE"
+# Comme sur l'ancien serveur : pas d'inscription par e-mail (le jeu n'a pas encore de vrai service d'envoi d'e-mails)
+regle ENABLE_EMAIL_SIGNUP false
 regle CERTBOT_EMAIL "admin@$DOMAINE"
 # Caddy (HTTPS automatique) + nos réglages
 regle COMPOSE_FILE "docker-compose.yml:docker-compose.caddy.yml:docker-compose.idlus.yml"
