@@ -573,3 +573,18 @@ begin
     execute 'grant execute on function public.' || f || ' to anon, authenticated';
   end loop;
 end $$;
+
+-- ---------- 1.0.30 « Forge » : prix moyens des 7 derniers jours pour l'atelier de brisage ----------
+-- { clé: prix moyen à l'unité } pour des runes et des objets (400 clés au plus). Seules les clés vendues ces 7 derniers jours
+-- sont renvoyées : sans vente, le jeu n'affiche aucun prix. Lecture seule.
+create or replace function public.hdv_prix7(p_keys text[]) returns jsonb language sql stable security definer set search_path = public
+as $$
+  select coalesce(jsonb_object_agg(key, u), '{}'::jsonb)
+  from (select s.key, round(sum(s.price)::numeric / nullif(sum(s.qty), 0), 1) u
+    from hdv_sales s
+    where s.key = any ((coalesce(p_keys, '{}'::text[]))[1:400]) and s.cat in ('eq', 'rune') and s.at > now() - interval '7 days'
+    group by s.key) x
+  where u is not null
+$$;
+revoke all on function public.hdv_prix7(text[]) from public;
+grant execute on function public.hdv_prix7(text[]) to anon, authenticated;

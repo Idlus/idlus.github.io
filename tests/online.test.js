@@ -154,6 +154,15 @@ const MOCK = () => {
       if (name === "hdv_stats") return { data: { avg: 4800, week: 3, days: [{ d: "2026-10-10", u: 4600 }, { d: "2026-10-11", u: 5000 }] }, error: null };
       if (name === "hdv_mine") return { data: { open: [], sold: [] }, error: null };
       if (name === "brisage_list" || name === "brisage_hit") return { data: {}, error: null };
+      // 1.0.30 « Forge » : coefficients de 10 % à 200 % (supabase/brisage.sql), départ il y a 50 h : un objet jamais brisé est à 150 %
+      if (name === "brisage_sync" || name === "brisage_hit_sync") {
+        const E = window.ENGINE, now = Date.now(); if (!d.brT0) d.brT0 = now - 50 * 3600000; const B = (d.brCoef = d.brCoef || {}); const def = E.coefAt(100, d.brT0, now);
+        (a.p_tpls || []).forEach((t) => { const c = B[t]; B[t] = [Math.max(10, (c ? Math.min(def, E.coefAt(c[0], c[1], now)) : def) - 3), now]; }); put(d);
+        const since = a.p_since ? Date.parse(a.p_since) : 0; const rows = {}; for (const t in B) if (since ? B[t][1] > since : E.coefAt(B[t][0], B[t][1], now) < def) rows[t] = B[t];
+        return { data: { now, t0: d.brT0, since: new Date(now - 60000).toISOString(), rows }, error: null };
+      }
+      if (name === "hdv_prix7") { const o = {}; (a.p_keys || []).forEach((k) => { if (window.DATA.ITEMS[k]) o[k] = 5000; else if (k.startsWith("ra:")) o[k] = 120; else if (k.startsWith("pa:")) o[k] = 35; else if (k.startsWith(":")) o[k] = 10; });
+        d.prix7 = (d.prix7 || 0) + 1; put(d); return { data: o, error: null }; }
       if (name === "hdv_sync" || name === "trade_state") return { data: name === "hdv_sync" ? { ops: [] } : null, error: null };
       if (name === "hdv_buy") { if (d.hdvSold) return { data: { err: "Déjà vendu." }, error: null }; d.hdvSold = true; put(d); return { data: { ok: true, ops: [{ id: 1, p: { k: -5000, add: [item] }, t: "Acheté : " + T.name }] }, error: null }; }
       // 0.1.33 : offres d'achat
@@ -641,6 +650,25 @@ const MOCK = () => {
     await page.click('[data-act="mk-onewgo"]'); await page.waitForTimeout(800);
     if ((await page.evaluate(() => window.DX.S.kamas)) !== oa.k - 510) fail("offres d'achat : kamas non mis de côté");
     if (!/0 \/ 10 reçus/.test(await page.textContent("#main"))) fail("offres d'achat : offre absente de Mes offres");
+    // 7e ter (1.0.30 « Forge ») : coefficients de 10 % à 200 % donnés par le serveur (brisage_sync), atelier de brisage aux prix moyens de l'HdV sur 7 jours (hdv_prix7)
+    await page.waitForFunction(() => window.ENGINE.netCoef && window.ENGINE.netCoefT0, null, { timeout: 20000 });
+    const fx = await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE, IT = window.DATA.ITEMS; const tpl = Object.keys(IT).find((k) => IT[k].lvl === 60 && IT[k].slot === "coiffe");
+      const a = E.rollItem(S, tpl, { radiant: false }); window.DX.ui.tab = "forge"; window.DX.ui.fg = "brisage"; window.DX.render(); window.scrollTo(0, 0); return { tpl, a: a.uid, base: E.coefBase(S), c: E.getCoef(S, tpl) }; });
+    if (fx.base !== 150 || fx.c !== 150) fail("brisage : coefficient de départ du serveur non appliqué " + JSON.stringify(fx));
+    await page.waitForSelector(".fcstrip", { timeout: 5000 });
+    if (!/jamais brisés/.test(await page.textContent(".fcstrip")) || !/150 %/.test(await page.textContent(".fcstrip"))) fail("brisage : bandeau des coefficients sans les objets jamais brisés à 150 %");
+    if (!(await page.$(`.pbri[data-k="${fx.a}"] .fco.hi`))) fail("brisage : coefficient au-dessus de 100 % pas mis en avant");
+    await page.click(`.pbri[data-k="${fx.a}"] input[data-act="brtog"]`); await page.waitForSelector(".fbat .frt", { timeout: 5000 });
+    await page.waitForSelector(".fbat .fval .big", { timeout: 8000 }).catch(() => fail("atelier de brisage : valeur des runes aux prix de l'HdV absente"));
+    if (!/k/.test(await page.textContent(".fbat .fval")) || !/Revendre/.test(await page.textContent(".fbat .fval"))) fail("atelier de brisage : valeur ou revente absente");
+    if ((await page.$$(".fbat .ffc .fchip")).length < 2) fail("atelier de brisage : focus absents");
+    if (!(await page.$(`.pbri[data-k="${fx.a}"] .frent`))) fail("brisage : « ×1,8 » ou « vendre » absent de la ligne");
+    if (!(await page.$(".fbat .fbgo .frent"))) fail("atelier de brisage : verdict briser ou vendre absent");
+    if (process.env.SHOTS) { await page.evaluate(() => window.scrollTo(0, document.querySelector(".fcstrip").getBoundingClientRect().top + window.scrollY - 76)); await page.screenshot({ path: process.env.SHOTS + "/atelier-en-ligne.png" }); }
+    await page.click('.fbat [data-act="brask"]'); await page.click('.fbat [data-act="brgo"]'); await page.waitForTimeout(300);
+    if (await page.evaluate((u) => !!window.DX.S.items[u], fx.a)) fail("atelier de brisage : objet pas brisé");
+    await page.waitForFunction((t) => { const d = JSON.parse(localStorage.getItem("__mock")); return d.brCoef && d.brCoef[t]; }, fx.tpl, { timeout: 20000 }).catch(() => fail("brisage : brisage pas envoyé au serveur (brisage_hit_sync)"));
+    { const r = await page.evaluate((t) => ({ srv: JSON.parse(localStorage.getItem("__mock")).brCoef[t][0], c: window.ENGINE.getCoef(window.DX.S, t) }), fx.tpl); if (r.srv !== 147 || r.c !== 147) fail("brisage : coefficient commun après brisage " + JSON.stringify(r)); }
     // 7f. guildes : invitation reçue, liste, formulaire de fondation
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
     await page.click('#nav [data-nk="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });

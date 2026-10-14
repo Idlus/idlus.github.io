@@ -5489,10 +5489,10 @@ function invDetail(tpl) {
   const copies = Object.values(S.items).filter((x) => x.tpl === tpl && !(worn && worn.has(x.uid))).sort((a, b) => (b.radiant ? 1 : 0) - (a.radiant ? 1 : 0) || E.itemQuality(b) - E.itemQuality(a));
   if (!copies.length) return "";
   return `<div class="panel invdetail"><div class="phead"><div class="row">${itemIcon(copies[0])}<div><h2 class="iname ${rarName(tpl)}">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot]}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div><button class="btn sm" data-act="invsel" data-tpl="">✕</button></div>
-    <div class="pad xs">${tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
+    <div class="pad xs">${window.FORGEUI ? (() => { const pk = window.FORGEUI.pick(copies); return tplStatsHtml(Object.assign({}, T, { stats: {} })) + window.FORGEUI.statGrid(T, pk, window.FORGEUI.wornRef(tpl, pk)); })() : tplStatsHtml(T)}${T.set ? setBlock(T.set, ui.cid && char(ui.cid) ? E.setCounts(S, char(ui.cid))[T.set] || 0 : undefined) : ""}
       ${ui.cid && char(ui.cid) && T.lvl <= char(ui.cid).lvl ? `<div class="row" style="margin-top:6px">${miniDoll(char(ui.cid), T.slot)}</div>` : ""}</div>
     <div class="list">${grpItems(copies, false, (x) => E.equippedBy(S, x.uid)).map((gr) => { const it = gr.rep; const by = E.equippedBy(S, it.uid);
-      return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow"><b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>${grpN(gr.items.length)}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
+      return `<div class="li ${it.radiant ? "radiant" : ""}" style="align-items:flex-start"><span class="grow">${window.FORGEUI && copies.length > 1 ? `<button class="fpick ${window.FORGEUI.pick(copies) === it ? "on" : ""}" data-fx="pick" data-uid="${it.uid}" title="Voir cet exemplaire dans la grille">Jet ${Math.round(E.itemQuality(it) * 100)} %</button>` : `<b class="num">Jet ${Math.round(E.itemQuality(it) * 100)} %</b>`}${grpN(gr.items.length)}${it.radiant ? ` <span class="tag" style="background:linear-gradient(90deg,#ffb347,#ff5fbf,#8a7dff);color:#fff">✦ +${it.radiant} %</span>` : ""}${by ? ` <span class="tag good">${h(by.name)}</span>` : ""}<br><span class="small">${itemStatsHtml(it)}</span></span>
         <span class="row" style="gap:4px;justify-content:flex-end;max-width:170px"><button class="btn sm" data-act="givesheet" data-uid="${it.uid}">Équiper</button>${T.leg ? `<button class="btn sm" data-act="sg-leg" data-k="${T.leg}" data-u="${it.uid}" title="Fiche légendaire et Éveil">${G("sparkle")} Éveil</button>` : `<button class="btn sm" data-act="fmgo" data-uid="${it.uid}" title="Forgemagie">${IC("forge")}</button>`}
           <button class="btn sm" data-act="lock" data-uid="${it.uid}" title="${h(lockTip(it))}">${it.locked ? G("lock") : G("unlock")}</button>${E.gearOf(S, it.uid) ? ` <span class="tag soft" title="${h(lockTip(it))}">${G("lock")} ${h(E.gearOf(S, it.uid).g.name)}</span>` : ""}
           ${by || it.locked ? "" : `${hdvOn() ? `<button class="btn sm" data-act="hdvitem" data-uid="${it.uid}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="break" data-uid="${it.uid}">Briser</button>`}</span></div>`; }).join("")}</div></div>`;
@@ -6037,13 +6037,13 @@ const ppc = (x) => Math.round(x * 100);
 function oddBar(o) { return `<span class="podd"><i class="g" style="width:${ppc(o.sc)}%"></i><i class="y" style="width:${ppc(o.sn)}%"></i><i class="r" style="width:${ppc(o.ec)}%"></i></span><span class="poddt"><b class="g">${ppc(o.sc)}</b> · <b class="y">${ppc(o.sn)}</b> · <b class="r">${ppc(o.ec)}</b> %</span>`; }
 function fmGauge(mn, mx, cap, cur, nv) {
   const lo = Math.min(0, mn, cur); const top = Math.max(cap, cur, 1); const W = (v) => Math.max(0, Math.min(100, ((v - lo) / Math.max(1, top - lo)) * 100));
-  return `<div class="pg"><i class="rng" style="left:${W(mn)}%;width:${W(mx) - W(mn)}%"></i><i class="exo" style="left:${W(mx)}%;width:${100 - W(mx)}%"></i><i class="cur" style="width:${W(cur)}%"></i>${nv > cur ? `<i class="nv" style="left:${W(cur)}%;width:${W(nv) - W(cur)}%"></i>` : ""}<span class="mk" style="left:${W(mx)}%"></span></div>`;
+  return `<div class="pg"><i class="rng" style="left:${W(mn)}%;width:${W(mx) - W(mn)}%"></i><i class="exo" style="left:${W(mx)}%;width:${100 - W(mx)}%"></i><i class="cur" style="width:${W(cur)}%"></i>${nv > cur ? `<i class="nv" style="left:${W(cur)}%;width:${W(nv) - W(cur)}%"></i>` : ""}<span class="mk" style="left:${W(mx)}%"></span>${mx > mn && mx > 0 && E.fmHardAt ? `<span class="mk80" style="left:${W(E.fmHardAt(mn, mx))}%" data-tip="Au-delà, la forgemagie devient dure (1.0.30)"></span>` : ""}</div>`; // 1.0.30 : repère des 80 %
 }
 const runeW = (w) => (Math.round(w * 10) / 10).toLocaleString("fr-FR");
 function runeBtn(it, rk, q) {
   const f = E.fmInfo(S, it.uid, rk); const nm = E.runeName(rk).replace(/^Rune /, "");
   if (!f || !f.ok) return `<span class="prune off" data-tip="${h(f ? f.why : "")}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)}</span></span><span class="rv xs muted">${h(f ? f.why : "")}</span></span>`;
-  return `<button class="prune ${f.over || f.exoStat ? "risk" : ""}" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} (poids ${runeW(f.w)}) : +${f.add} → ${f.nv}. Succès critique ${ppc(f.sc)} % · succès neutre ${ppc(f.sn)} % · échec critique ${ppc(f.ec)} %`)}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)} · poids ${runeW(f.w)}</span></span><span class="rv">+${f.add} → <b>${f.nv}</b></span><span class="rodd">${oddBar(f)}</span></button>`;
+  return `<button class="prune ${f.over || f.exoStat ? "risk" : ""}" data-act="fm" data-k="${rk}" data-tip="${h(`${E.runeName(rk)} (poids ${runeW(f.w)}) : +${f.add} → ${f.nv}. Succès critique ${ppc(f.sc)} % · succès neutre ${ppc(f.sn)} % · échec critique ${ppc(f.ec)} %${window.FORGEUI ? window.FORGEUI.hardTip(f) : ""}`)}"><span class="rn">${h(nm)} <span class="xs muted">×${fmt(q)} · poids ${runeW(f.w)}</span></span><span class="rv">+${f.add} → <b>${f.nv}</b></span><span class="rodd">${oddBar(f)}</span></button>`;
 }
 function fmStatLine(it, k) {
   const T = ITEMS[it.tpl]; const has = !!T.stats[k]; const [mn, mx] = has ? T.stats[k] : [0, 0]; const cur = it.stats[k] || 0;
@@ -6070,6 +6070,7 @@ function fmBench(it) {
     <div class="pwt2"><span class="small"><b>Poids de l'objet</b> <span class="num">${Math.round(W.cur)} / ${Math.round(W.max)}</span> <span class="xs muted">(${ppc(W.load)} %) · plus l'objet est chargé, plus le succès critique est rare</span></span><div class="bar thin"><i style="width:${Math.min(100, ppc(W.load))}%"></i></div></div>
     ${E.fmRen(S, job) ? `<div class="xs pjrenl">${IC("phenix")} <b>${E.FM_JOBS[job].name} · Renaissance ${E.roman(E.fmRen(S, job))}</b> : ${jobRenFx("fm", E.fmRen(S, job))} (déjà comptés dans les chances des runes)</div>` : ""}
     <div class="plegend xs"><span><i class="g"></i>Succès critique : la rune passe, rien ne baisse</span><span><i class="y"></i>Succès neutre : la rune passe, une autre caractéristique baisse (ou le reliquat paie)</span><span><i class="r"></i>Échec critique : la rune ne passe pas et une caractéristique baisse</span></div>
+    ${window.FORGEUI && !block ? window.FORGEUI.hardNote(it) : ""}
     ${wpFmHtml(it)}
     <div class="pstatl">${keys.filter((k) => STATS[k] && !E.EXO_STATS.includes(k) || T.stats[k]).map((k) => fmStatLine(it, k)).join("")}</div>
     ${!block && extra.length && (it.well || 0) > 0 ? `<div class="pfl"><div class="pfn"><b>Ajouter une caractéristique</b><span class="xs muted">payée par le reliquat, jusqu'à ${E.EXO_STAT_W} de poids</span></div><div class="pruns">${extra.slice(0, 8).map(([rk, q]) => runeBtn(it, rk, q)).join("")}</div></div>` : ""}
@@ -6138,21 +6139,23 @@ function brisageParts() {
   const est = {}; let tot = 0; [...sel].forEach((u) => { const p = E.breakPreview(S, u, F.focus || null); for (const k in p.weights) { const n = p.weights[k] / (STATS[k].w * STATS[k].pts); est[k] = (est[k] || 0) + n; tot += n; } });
   const topEst = Object.entries(est).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => STATS[k].name).join(", ");
   const groups = grpItems(items); const shown = groups.slice(0, 150); const pickable = shown.filter((gr) => !gr.rep.radiant && !gr.rep.locked && !E.inGear(S, gr.rep.uid)); // 1.0.8.8 : exemplaires identiques sur une ligne, la case les coche tous
-  const head = `<p class="note">Briser un objet le détruit et donne des runes selon ses caractéristiques et son niveau (×1,5 pour un objet Rayonnant). Le coefficient baisse de 3 % à chaque brisage d'un même objet et remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes${E.netCoef ? " : en ligne, il est commun à tous les joueurs, comme sur un serveur de DOFUS" : ""}.</p>
-    ${filterBar("br", F, { ph: "Rechercher…", slots: ALL_SLOTS, stats, sets, focus: true })}`, mode = `
-    <div class="row small"><div class="seg sm">${[["", "Pas porté"], ["dupes", "Doublons"], ["low", "Jet < 50 %"]].map(([v, n]) => `<button data-act="fltset" data-ctx="br" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div>`, bar = `
+  const FX = window.FORGEUI; // 1.0.30 « Forge » : atelier de brisage, bandeau et coefficients de 10 % à 200 % (js/forgeui.js)
+  const head = `<p class="note">${FX ? `Comme dans DOFUS : chaque objet a son coefficient de brisage, de ${E.COEF_MIN} % à ${E.COEF_MAX} %${E.netCoef ? ", commun à tous les joueurs en ligne" : ""}. Il baisse de 3 % à chaque brisage, remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes jusqu'à 100 %, puis de 1 % par heure jusqu'à ${E.COEF_MAX} % si personne ne le brise. Les runes suivent les jets, le niveau et le coefficient (×1,5 pour un objet Rayonnant) ; le focus regroupe tout sur une caractéristique.` : `Briser un objet le détruit et donne des runes selon ses caractéristiques et son niveau (×1,5 pour un objet Rayonnant). Le coefficient baisse de 3 % à chaque brisage d'un même objet et remonte de 1 % toutes les ${E.COEF_REGEN_MIN} minutes${E.netCoef ? " : en ligne, il est commun à tous les joueurs, comme sur un serveur de DOFUS" : ""}.`}</p>
+    ${filterBar("br", F, { ph: "Rechercher…", slots: ALL_SLOTS, stats, sets, focus: true })}`, strip = FX ? FX.strip() : "", mode = `
+    <div class="row small fbrmode"><div class="seg sm">${[["", "Pas porté"], ["dupes", "Doublons"], ["low", "Jet < 50 %"]].map(([v, n]) => `<button data-act="fltset" data-ctx="br" data-k="mode" data-v="${v}" aria-pressed="${F.mode === v}">${n}</button>`).join("")}</div><span class="xs muted">${items.length} objet${items.length > 1 ? "s" : ""}</span></div>`, bar = `
     <div class="pselbar"><b>${sel.size} objet${sel.size > 1 ? "s" : ""} sélectionné${sel.size > 1 ? "s" : ""}</b>${sel.size ? `<span class="small">≈ ${fmt(Math.round(tot))} runes simples${topEst ? " · " + h(topEst) : ""}</span>` : `<span class="small muted">coche des objets à briser</span>`}<span class="grow"></span>
       ${pickable.length ? `<button class="btn sm" data-act="brall">Tout sélectionner</button>` : ""}${sel.size ? `<button class="btn sm" data-act="brnone">Vider</button>` : ""}
       ${sel.size ? (ui.confirm === "brsel" ? `<button class="btn sm danger" data-act="brgo">Confirmer : briser ${sel.size}</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm danger" data-act="brask">Briser la sélection</button>`) : ""}</div>`;
   const rows = shown.map((gr) => { const it = gr.rep; const p = E.breakPreview(S, it.uid, F.focus || null); const top = Object.entries(p.weights).sort((a, b) => b[1] - a[1]).slice(0, 4); const nOn = gr.items.filter((x) => sel.has(x.uid)).length; const on = nOn === gr.items.length;
       const lock = brLock(it);
-      return `<div data-k="${it.uid}" class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}"${gr.items.length > 1 ? ` data-uids="${gr.items.map((x) => x.uid).join(",")}"` : ""} ${on ? "checked" : ""} ${lock ? `disabled title="${h(lock)}"` : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)}${grpN(gr.items.length)}${nOn && !on ? ` <span class="xs muted">${nOn} coché${nOn > 1 ? "s" : ""}</span>` : ""} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} % · <span class="${p.coef < 60 ? "minus" : ""}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span></span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span>${lock ? `<span class="xs muted" data-tip="${h(lock)}">${G("lock")}</span>` : it.radiant && ui.confirm === "br:" + it.uid ? `<button class="btn sm danger" data-act="break" data-uid="${it.uid}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="${it.radiant ? "brone" : "break"}" data-uid="${it.uid}">Briser</button>`}</div>`; }).map((x, i) => [String(shown[i].rep.uid), x]);
-  return { head, mode, bar, rows, tail: (rows.length ? "" : `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`) + (groups.length > 150 ? `<div class="empty">… ${groups.length - 150} autres : affine les filtres.</div>` : "") };
+      return `<div data-k="${it.uid}" class="li pbri ${on ? "on" : ""} ${it.radiant ? "radiant" : ""}"><input type="checkbox" data-act="brtog" data-uid="${it.uid}"${gr.items.length > 1 ? ` data-uids="${gr.items.map((x) => x.uid).join(",")}"` : ""} ${on ? "checked" : ""} ${lock ? `disabled title="${h(lock)}"` : ""} aria-label="Sélectionner">${itemIcon(it)}<span class="grow">${itemName(it)}${grpN(gr.items.length)}${nOn && !on ? ` <span class="xs muted">${nOn} coché${nOn > 1 ? "s" : ""}</span>` : ""} <span class="xs muted">niv. ${ITEMS[it.tpl].lvl} · jet ${Math.round(E.itemQuality(it) * 100)} % · ${FX ? FX.coefTag(p.coef) : `<span class="${p.coef < 60 ? "minus" : ""}" data-tip="${E.netCoef ? "Coefficient commun à tous les joueurs en ligne" : "Coefficient de brisage de cet objet"}">coef. ${p.coef} %</span>`}</span><br><span class="pruneic">${top.map(([k, w]) => `<span>${sIco(k)}${sIco(k) ? "" : h(STATS[k].short) + " "}${(w / (STATS[k].w * STATS[k].pts)).toFixed(1).replace(".", ",")}</span>`).join("") || `<span class="muted">aucune rune</span>`}</span></span>${FX && !lock ? FX.rowBadge(it, F.focus || null) : ""}${lock ? `<span class="xs muted" data-tip="${h(lock)}">${G("lock")}</span>` : it.radiant && ui.confirm === "br:" + it.uid ? `<button class="btn sm danger" data-act="break" data-uid="${it.uid}">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="${it.radiant ? "brone" : "break"}" data-uid="${it.uid}">Briser</button>`}</div>`; }).map((x, i) => [String(shown[i].rep.uid), x]);
+  return { head, strip, mode, bar, rows, atelier: FX ? FX.atelier(sel, F.focus || null, ui.confirm) : "", tail: (rows.length ? "" : `<div class="empty">Aucun objet à briser. Les objets équipés sont protégés.</div>`) + (groups.length > 150 ? `<div class="empty">… ${groups.length - 150} autres : affine les filtres.</div>` : "") };
 }
 function brisageHtml() {
   const P = brisageParts(); brLast = P;
-  return `${P.head}${P.mode}${P.bar}
+  const list = `${P.bar}
     <section class="panel"><div class="list">${P.rows.map((r) => r[1]).join("")}${P.tail}</div></section>`;
+  return `${P.head}${P.mode}${P.strip}${P.atelier ? `<div class="fbrg"><div class="fbrl">${list}</div>${P.atelier}</div>` : list}`; // 1.0.30 : l'atelier à droite (au-dessus sur téléphone)
 }
 /* 1.0.28.1 : au Brisage, cocher, briser, « Tout sélectionner », « Vider » et les confirmations ne redessinent plus toute la page :
    seules la barre de sélection, le compte d'objets, les listes des filtres si elles changent et les lignes qui changent sont remplacées (lignes repérées par data-k, comparées
@@ -6161,7 +6164,7 @@ let brLast = null;
 function brisageOnly(chg) { if (!brisagePatch()) return false; if (chg) { dirty = true; clearDonePins(); renderNav(); renderStatus(); renderUpdBar(); } return true; } // chg : des objets ont disparu (barre du haut, pastilles)
 function brisagePatch() {
   if (!S || ui.tab !== "forge" || ui.fg !== "brisage" || !brLast || $("#sheet").innerHTML) return false;
-  const bar = $("#main .pselbar"), mode = bar && bar.previousElementSibling, L = bar && bar.nextElementSibling && bar.nextElementSibling.querySelector(".list");
+  const bar = $("#main .pselbar"), mode = $("#main .fbrmode") || (bar && bar.previousElementSibling), L = bar && bar.nextElementSibling && bar.nextElementSibling.querySelector(".list");
   if (!L || !mode || L.children.length !== brLast.rows.length + (brLast.tail ? (brLast.tail.match(/class="empty"/g) || []).length : 0)) return false;
   const P = brisageParts();
   if (P.head !== brLast.head) { // un objet brisé était le dernier de sa panoplie : seules les listes des filtres changent
@@ -6169,8 +6172,11 @@ function brisagePatch() {
     if (!el || !m || P.head.replace(fb, "") !== brLast.head.replace(fb, "")) return false;
     el.outerHTML = m[0];
   }
+  if (P.atelier !== brLast.atelier && !$("#main .fbat")) return false;
   if (P.mode !== brLast.mode) mode.outerHTML = P.mode.trim();
   if (P.bar !== brLast.bar) bar.outerHTML = P.bar.trim();
+  if (P.strip !== brLast.strip) { const el = $("#main .fcstrip"); if (el && P.strip) el.outerHTML = P.strip; else if (el) el.remove(); else if (P.strip) { const md = $("#main .fbrmode"); if (md) md.insertAdjacentHTML("afterend", P.strip); } } // 1.0.30 : bandeau des coefficients
+  if (P.atelier !== brLast.atelier) { const t = document.createElement("template"); t.innerHTML = P.atelier; morphTo($("#main .fbat"), t.content.firstElementChild.innerHTML); } // 1.0.30 : atelier de brisage, seul ce qui change est touché
   const prev = new Map(brLast.rows), old = new Map();
   for (const el of [...L.children]) { if (el.dataset.k && !old.has(el.dataset.k)) old.set(el.dataset.k, el); else el.remove(); }
   let ref = L.firstElementChild;
@@ -6252,6 +6258,7 @@ function fmHelpSheet() {
     <p><b>Six métiers</b> : Costumage (coiffes, capes), Joaillomage (amulettes, anneaux), Cordomage (ceintures, bottes), Forgemage (armes du Forgeron), Sculptemage (armes du Sculpteur) et Façomage (boucliers). Chacun est ouvert dès le départ et monte jusqu'au niveau ${E.FM_MAX} en forgemageant des objets proches de son niveau. Le niveau ne change pas les chances ; au niveau ${E.FM_MAX}, tu peux signer tes objets.</p>
     <p><b>Trois issues</b> pour chaque rune : <b class="g">succès critique</b> (la rune passe, rien ne baisse), <b class="y">succès neutre</b> (la rune passe, une autre caractéristique baisse d'autant de poids, sauf si le reliquat paie) et <b class="r">échec critique</b> (la rune ne passe pas et une caractéristique baisse). Les chances sont affichées sur chaque rune.</p>
     <p><b>Poids</b> : chaque rune a un poids (Rune Vi 1, Rune Fo 1, Rune Sa 3, Rune Do 20…). Plus l'objet est chargé par rapport à son poids au jet maximum, plus le succès critique est rare. Au-delà du jet maximum (over), une caractéristique peut monter jusqu'à ${E.OVER_W} de poids (${Math.floor(E.OVER_W / STATS.vit.w)} Vitalité, ${E.OVER_W} Force).</p>
+    ${E.FM_HARD ? `<p><b>Près du jet maximum</b> : quand une rune mène une caractéristique au-dessus de ${Math.round(E.FM_HARD.at * 100)} % de son jet (repère rouge sur les barres de l'établi), succès critique ×${String(E.FM_HARD.sc).replace(".", ",")} et échec critique +${Math.round(E.FM_HARD.ec * 100)} points, over compris. Monter un objet jusqu'au Parfait demande beaucoup de runes ; la Renaissance des métiers aide.</p>` : ""}
     <p><b>Reliquat</b> : ce que l'objet perd en trop s'y accumule. Il paie les pertes des succès neutres suivants et permet d'ajouter une caractéristique que l'objet n'a pas (jusqu'à ${E.EXO_STAT_W} de poids). Il disparaît quand l'objet passe par l'hôtel de vente.</p>
     <p><b>Exotique</b> : une rune Ga ajoute +1 PA, PM, Portée ou Invocation, en succès critique seulement (${E.EXO_STATS.map((k) => `${STATS[k].short} ${ppc(E.EXO[k].chance)} %`).join(", ")}). Un échec ne coûte que la rune. Un seul exo PA, PM et Po porté par héros.</p>
     <p><b>Transcendance</b> : le coffre d'un songe validé en Paradoxe 2 et plus peut donner une rune de transcendance. Réussite garantie, puis l'objet ne peut plus être forgemagé. Interdite sur un objet over ou exo.</p>
@@ -6959,7 +6966,7 @@ function itemSheet(tpl) {
   });
   openSheet(`<div class="row"><span class="icobox lg">${im(itemImg(tpl), "", T.name)}</span><div><h2 style="margin:0">${h(T.name)}</h2><div class="xs muted">niv. ${T.lvl} · ${h(SLOTS[T.slot === "anneau" ? "anneau1" : T.slot === "dofus" ? "dofus1" : T.slot] || T.slot)}${T.set && SETS[T.set] ? ` · ${h(SETS[T.set].name)}` : ""}</div></div></div>
     ${T.slot === "arme" ? wpBlockHtml(tpl, null, ui.cid ? char(ui.cid) : S.chars[0]) : ""}
-    <div class="xs">${tplStatsHtml(T)}</div>
+    <div class="xs">${window.FORGEUI && !T.dofus ? (() => { const best = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => E.itemQuality(b) - E.itemQuality(a))[0] || null; return tplStatsHtml(Object.assign({}, T, { stats: {} })) + (best ? `<div class="xs muted">Ton meilleur exemplaire · jet ${Math.round(E.itemQuality(best) * 100)} %</div>` : "") + window.FORGEUI.statGrid(T, best, window.FORGEUI.wornRef(tpl, best)); })() : tplStatsHtml(T)}</div>
     <h3 class="sec">${T.dofus ? "Comment l'obtenir" : "Où le trouver"}</h3>
     <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Jouer › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
@@ -9219,6 +9226,7 @@ function bootGame(pushNow) {
     if (S.migration) { migrationSheet(S.migration); S.migration = null; }
     else if (r && (r.wins || Object.keys(r.res).length || (r.fmPlans && r.fmPlans.length))) offlineSheet(r);
     S.sessions = (S.sessions || 0) + 1; dirty = true;
+    if (window.FORGEUI) window.FORGEUI.boot(S); // 1.0.30 : soft reset des jets, seulement si E.SOFT_RESET_ON (js/forge.js)
   } else render();
   if (ranked()) { recBoot = recSnap(); setTimeout(lbTitles, 4000); }
   if (ON && ON.enabled) setTimeout(staffLoad, 200);
@@ -9233,11 +9241,24 @@ function bootGame(pushNow) {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) checkNewVersion(); });
 }
 /* 0.1.41 : coefficient de brisage commun aux joueurs en ligne (supabase/brisage.sql) ; sans compte, chacun garde le sien */
-let coefAt = 0;
+/* 1.0.30 « Forge » : coefficients de 10 % à 200 %. brisage_sync et brisage_hit_sync renvoient l'heure du serveur, l'heure de départ des
+   coefficients au-dessus de 100 % et seulement ce qui a changé depuis le dernier appel ({ modèle: [coefficient, heure] }) ;
+   si le serveur ne les a pas encore, retour à brisage_list et brisage_hit (plafond de 100 %) */
+let coefAt = 0, coefSince = null, coefOld = false;
 async function brisageNet() {
-  if (!ON || !ON.user || SLOT !== 1) { if (E.netCoef) { E.netCoef = null; E.netCoefHits.length = 0; } return; } // 1.0.11 : partie solo : coefficient propre, comme sans compte
+  if (!ON || !ON.user || SLOT !== 1) { if (E.netCoef) { E.netCoef = null; E.netCoefT0 = null; E.netCoefHits.length = 0; coefSince = null; } return; } // 1.0.11 : partie solo : coefficient propre, comme sans compte
   const hits = E.netCoefHits.splice(0, 300);
   if (!hits.length && E.netCoef && Date.now() - coefAt < 180000) return;
+  if (!coefOld) {
+    const q = await ON.rpc(hits.length ? "brisage_hit_sync" : "brisage_sync", hits.length ? { p_tpls: hits, p_since: coefSince } : { p_since: coefSince }); const d = q.data;
+    if (!q.err && d && !d.err && d.rows) {
+      coefAt = Date.now(); const off = (+d.now || E.now()) - E.now(); const m = E.netCoef && coefSince ? E.netCoef : {};
+      for (const k in d.rows) { const x = d.rows[k]; if (Array.isArray(x)) m[k] = { v: +x[0], t: +x[1] - off }; }
+      E.netCoef = m; E.netCoefT0 = d.t0 ? +d.t0 - off : null; coefSince = d.since || null; return;
+    }
+    if (!q.err || !/function|schema|exist/i.test(q.err)) { if (hits.length) E.netCoefHits.unshift(...hits); return; }
+    coefOld = true; coefSince = null; E.netCoefT0 = null;
+  }
   const r = await ON.rpc(hits.length ? "brisage_hit" : "brisage_list", hits.length ? { p_tpls: hits } : {});
   if (r.err || !r.data || r.data.err) { if (hits.length) E.netCoefHits.unshift(...hits); return; }
   coefAt = Date.now(); const now = E.now(); const m = {}; for (const k in r.data) m[k] = { v: +r.data[k], t: now }; E.netCoef = m;
@@ -9294,6 +9315,7 @@ function cmpItem(c, it) {
 }
 Object.assign(window.DX.social, { questGoBtn, cmdGoBtn, chestImg, jobImg, tresorHtml, achLb, bountiesHtml, alignHtml, almanaxHtml, commandesHtml, templesHtml, shopHtml, pinBtn, archiBtn, dofusImg, emo, pct, symImg, imgI, ornHtml: () => achHtml().split("</section>")[0] + "</section>", defiLine, defiTodo });
 Object.assign(window.DX.social, { spIcon, spellTip, setBlock, DOLL_L, DOLL_R, dbLook, buildSheet }); // 1.0.23 : page Builds (js/builds.js)
+Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "forge" && ui.fg === "brisage" && !brisageOnly() && !isEditing() && !$("#sheet").innerHTML) render(); } }); // 1.0.30 : prix de l'HdV reçus (js/forgeui.js)
 Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });

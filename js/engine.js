@@ -109,6 +109,7 @@
       jobs: {}, crafts: {}, coef: {}, tools: {}, finds: 0,
       fmJob: { lvl: 1, xp: 0 }, // 0.1.8.2 : métier de Forgemage
       fmPlans: [], // 0.1.9.1 : forgemagie automatique
+      coefT0: E.now(), // 1.0.30 : départ des coefficients de brisage au-dessus de 100 % (E.coefBase)
       bestiary: {}, archis: {},
       stats: { fights: 0, wins: 0, recent: [], playtime: 0 },
       settings: { theme: "dark", chalAI: false, autoZone: false, auto: { action: "break", q: 50, keepSets: true, recycle: "break" } },
@@ -3067,10 +3068,18 @@
   /* 0.1.41 : en ligne, le coefficient est commun à tous les joueurs (comme sur un serveur DOFUS) : online.js remplit E.netCoef
      ({ modèle: { v, t } }, seulement ceux sous 100 %) et envoie au serveur les brisages notés dans E.netCoefHits. */
   E.netCoef = null; E.netCoefHits = [];
+  /* 1.0.30 « Forge » (choix 43A de Mathis) : comme dans DOFUS, le coefficient va de 10 % à 200 %. −3 % par brisage, +1 % toutes les
+     6 minutes jusqu'à 100 %, puis +1 % par heure jusqu'à 200 % tant que personne ne brise l'objet. Un objet jamais brisé part de 100 %
+     à l'heure de départ (S.coefT0 sans compte ; en ligne, E.netCoefT0 vient du serveur, supabase/brisage.sql). Sans heure de départ,
+     le coefficient reste plafonné à 100 % comme avant. */
+  E.COEF_MIN = 10; E.COEF_MAX = 200; E.COEF_HI_MIN = 60; E.netCoefT0 = null;
+  E.coefAt = (v, t, now) => { const m = Math.max(0, (now - t) / 60000);
+    if (v < 100) { const up = (100 - v) * E.COEF_REGEN_MIN; if (m < up) return Math.floor(v + m / E.COEF_REGEN_MIN); return Math.min(E.COEF_MAX, 100 + Math.floor((m - up) / E.COEF_HI_MIN)); }
+    return Math.min(E.COEF_MAX, Math.floor(v + m / E.COEF_HI_MIN)); };
+  E.coefBase = (S, now = E.now()) => { const t0 = E.netCoef ? E.netCoefT0 : S && S.coefT0; return t0 ? E.coefAt(100, t0, now) : 100; }; // objet jamais brisé
   E.getCoef = (S, tpl, now = E.now()) => {
-    const c = E.netCoef ? E.netCoef[tpl] : S.coef[tpl]; if (!c) return 100;
-    const gained = Math.floor((now - c.t) / (E.COEF_REGEN_MIN * 60000));
-    return Math.min(100, c.v + gained);
+    const c = E.netCoef ? E.netCoef[tpl] : S.coef[tpl]; const base = E.coefBase(S, now); if (!c) return base;
+    return Math.min(base, E.coefAt(c.v, c.t, now));
   };
   E.breakPreview = (S, uid, focus) => {
     const it = S.items[uid]; if (!it) return null;
@@ -3392,6 +3401,8 @@
     S.chars.forEach((c) => { for (const sl in c.equip) if (!S.items[c.equip[sl]]) delete c.equip[sl]; });
     E.syncGearLocks(S); // 1.0.25.11 : objets des tenues déjà enregistrées verrouillés au chargement
     if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
+    if (!S.coefT0) S.coefT0 = E.now(); // 1.0.30 : départ des coefficients de brisage au-dessus de 100 % (une seule fois)
+    { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     S.v = E.VERSION;
     return S;
   };
