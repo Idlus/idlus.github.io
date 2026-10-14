@@ -1,0 +1,51 @@
+/* 1.0.30 « Place à l'optimisation » : Expéditions (Havre-Sac) et donjon pendant l'absence (Jouer › Donjons). Voir js/expeditionsui.js. */
+.exm-intro{margin:0}
+.exm-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:860px){.exm-cards{grid-template-columns:minmax(0,1fr)}}
+.exm-card{border:2px solid var(--frame);border-radius:14px;padding:12px;background:var(--panel2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.exm-card h3{margin:0;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.exm-card h3 .exm-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.exm-card .uico{width:18px;height:18px;vertical-align:-3px}
+.exm-req{display:flex;flex-wrap:wrap;gap:4px}
+.exm-q{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel3);color:var(--ink);line-height:1.5}
+.exm-q.ok{background:color-mix(in srgb,#3fb35d 32%,var(--panel3))}
+.exm-q.mid{background:color-mix(in srgb,var(--gold) 30%,var(--panel3))}
+.exm-q.no{background:color-mix(in srgb,#e2553f 32%,var(--panel3))}
+.exm-have{font-weight:600;opacity:.8}
+.exm-run{align-items:center}
+.exm-prog{display:block;height:6px;border-radius:4px;background:var(--panel3);overflow:hidden;margin-top:5px;max-width:420px}
+.exm-prog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.exm-left{display:flex;flex-direction:column;align-items:flex-end;text-align:right;white-space:nowrap}
+.exm-m{align-items:center}
+.exm-m.taken{opacity:.6}
+.exm-nw{white-space:nowrap}
+.exm-m>.uico{width:26px;height:26px;flex:none}
+@media (max-width:640px){
+  .exm-run,.exm-m{flex-wrap:wrap}
+  .exm-run .grow,.exm-m .grow{flex-basis:calc(100% - 46px);min-width:0}
+  .exm-run .exm-left{align-items:flex-start;text-align:left;margin-left:42px}
+  .exm-run .btn,.exm-m .btn,.exm-m>.tag,.exm-m>.xs{margin-left:auto}
+}
+.dgh-bank{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dgh-hg{font-size:36px;line-height:1;flex:none}
+.dgh-hg .uico{width:40px;height:40px}
+.dgh-bs{display:none}
+@media (max-width:480px){.dgh-bank .dgh-bl{display:none}.dgh-bs{display:block}}
+.dgh-ch{display:flex;gap:8px;flex-wrap:wrap}
+.dgh-ch select{max-width:100%;min-width:0}
+.dgh-sel{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px;border-radius:12px;border:2px solid var(--gold);background:var(--panel2)}
+.dgh-sel>img{width:56px;height:56px;object-fit:contain}
+.dgh-sel.dgh-none .dgh-hg{display:grid;place-items:center;width:56px}
+@media (max-width:700px){.dgh-sel{grid-template-columns:48px minmax(0,1fr)}.dgh-sel>img{width:48px;height:48px}.dgh-sel.dgh-none .dgh-hg{width:48px}.dgh-sel>:last-child{grid-column:1/-1}}
+.dgh-tog{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;cursor:pointer;user-select:none;position:relative;white-space:nowrap}
+.dgh-tog input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.dgh-tog i{width:38px;height:22px;border-radius:999px;background:#3fb35d;position:relative;flex:none;transition:background .15s}
+.dgh-tog i::after{content:"";position:absolute;top:3px;left:19px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.dgh-tog input:not(:checked)+i{background:var(--panel3)}
+.dgh-tog input:not(:checked)+i::after{left:3px}
+.dgh-tog input:focus-visible+i{outline:2px solid var(--gold);outline-offset:2px}
+.dgh-lab{min-width:92px}
+.dgh-last{color:var(--gold)}
+.dgh-off{border:2px solid var(--gold);border-radius:12px;padding:8px 10px;background:var(--panel2);display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.dgh-offimg{width:44px;height:44px;object-fit:contain;flex:none}
+.dgh-dof{color:var(--gold)}

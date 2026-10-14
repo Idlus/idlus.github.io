@@ -2398,6 +2398,7 @@
       cs.s += F.dur + E.PAUSE_MS / 1000; cs.f++; cs.w += win ? 1 : 0; cs.xp += Object.values(rw.xp).reduce((a, b) => a + b, 0); cs.k += rw.kamas || 0;
       cs.r += Object.values(rw.res).reduce((a, b) => a + b, 0); cs.i += (rw.items || []).length; cs.p += (rw.stasis && rw.stasis.dust) || 0; if (dgDone) cs.n++;
     }
+    if (F.dungeonId && D0 && E.dghRecord) E.dghRecord(S, D0, F, win, dgDone); // 1.0.30 : durée et réussite des vraies courses, pour le donjon pendant l'absence (js/expeditions.js)
     S.stats.recent.push({ d: Math.round(F.dur * 10) / 10, w: win ? 1 : 0 });
     if (S.stats.recent.length > 20) S.stats.recent.shift();
     // historique et rendement par zone
@@ -3246,25 +3247,30 @@
   /* ---------------- Hors-ligne ---------------- */
   E.OFFLINE_RATE = 0.25;
   E.OFFLINE_MAX_S = 8 * 3600;
+  E.offRate = (S) => E.OFFLINE_RATE + E.bonus(S, "offrate") / 100; // 1.0.30 : rendement hors ligne (plafond 80 %)
   E.catchUp = (S, seconds) => {
     seconds = Math.min(seconds, E.OFFLINE_MAX_S + E.bonus(S, "offtime") * 3600);
     if (seconds < 60) return null;
-    const eff = seconds * (E.OFFLINE_RATE + E.bonus(S, "offrate") / 100);
+    const eff = seconds * E.offRate(S);
     const rec = S.stats.recent;
     const avg = rec.length ? rec.reduce((s, r) => s + r.d, 0) / rec.length : 15;
     const winRate = rec.length ? rec.reduce((s, r) => s + r.w, 0) / rec.length : 0.5;
     const cycle = avg + E.PAUSE_MS / 1000;
-    const fights = Math.min(5000, Math.floor(eff / cycle));
+    let fights = Math.min(5000, Math.floor(eff / cycle));
     const before = { kamas: S.kamas, res: Object.assign({}, S.res), lvls: S.chars.map((c) => c.lvl), items: E.itemCount(S), uids: new Set(Object.keys(S.items)), archis: Object.assign({}, S.archis), souls: Object.assign({}, S.souls || {}), xp: S.chars.map((c) => c.xp) };
     const hunting = S.hunting && S.sub && SUBS[S.sub] && E.team(S).length;
     const evLen = E.events.length;
     let wins = 0;
-    const wasDungeon = S.dungeon; S.dungeon = null; const zone0 = hunting ? SUBS[S.sub].name : null; // le donjon ne continue pas hors ligne : l'équipe chasse dans sa zone
+    const wasDungeon = S.dungeon; S.dungeon = null; const zone0 = hunting ? SUBS[S.sub].name : null; // le donjon en cours s'arrête là ; 1.0.30 : les heures de donjon le continuent (E.dghRun), puis l'équipe chasse dans sa zone
     let sub = SUBS[S.sub]; const teamSize = E.team(S).length; const roamed = [];
     // part de l'absence couverte par le bonus d'XP
     const b = S.boosts && S.boosts.xp; const now = E.now(); const startT = now - seconds * 1000;
     const covered = b ? clamp((b.until - startT) / (seconds * 1000), 0, 1) : 0;
     const xpBoost = b ? b.pct * covered : 0;
+    /* 1.0.30 « Heures de donjon » (js/expeditions.js) : d'abord le donjon choisi, tant qu'il reste des heures et des clés ; la chasse prend le reste de l'absence */
+    const dg = E.dghRun ? E.dghRun(S, seconds, eff / seconds, { cur: wasDungeon, xpBoost }) : null;
+    const dgUsed = dg && dg.used ? Math.min(seconds, dg.used) : 0;
+    if (dgUsed) fights = Math.min(5000, Math.floor((seconds - dgUsed) * eff / seconds / cycle));
     for (let i = 0; hunting && i < fights; i++) {
       if (rnd() >= winRate) continue;
       wins++;
@@ -3273,7 +3279,7 @@
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;
       E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne
-      if (S.settings.roam) { const tz = startT + (i + 1) * seconds * 1000 / fights; if (E.roam(S, tz, true)) { roamed.push(SUBS[S.sub].name); sub = SUBS[S.sub]; } }
+      if (S.settings.roam) { const tz = startT + (dgUsed + (i + 1) * (seconds - dgUsed) / fights) * 1000; if (E.roam(S, tz, true)) { roamed.push(SUBS[S.sub].name); sub = SUBS[S.sub]; } }
     }
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
@@ -3282,6 +3288,7 @@
     const fmPlans = E.fmPlanTick(S, eff, { quiet: true }); // 0.1.9.1 : la forgemagie automatique continue
     E.petTick(S, seconds * 1000); // les familiers mangent en temps réel
     E.enclosTick(S, seconds * 1000 * E.almMult(S, "enclos")); // les naissances continuent
+    const mis = E.misTick ? E.misTick(S) : null; // 1.0.30 : expéditions terminées pendant l'absence (js/expeditions.js)
     E.events.length = evLen; // pas de pluie de notifications
     const res = {};
     for (const k in S.res) { const d = S.res[k] - (before.res[k] || 0); if (d > 0) res[k] = d; }
@@ -3294,6 +3301,7 @@
       archis: Object.keys(S.archis).filter((k) => (S.archis[k] || 0) > (before.archis[k] || 0)),
       souls: Object.keys(S.souls || {}).filter((k) => !before.souls[k]), stones: (S.cons && S.cons.pierre_ame) || 0,
       winRate: winRate, fightLen: Math.round(cycle), fmPlans, roamed, zone: zone0, dungeon: wasDungeon && DUNGEONS[wasDungeon.id] ? DUNGEONS[wasDungeon.id].name : null,
+      dg: dg && (dg.runs || (dg.why && dg.why !== "short")) ? dg : null, mis, // 1.0.30 : donjon pendant l'absence et retours d'expédition
       lvls: S.chars.map((c, i) => [c.name, before.lvls[i] || c.lvl, c.lvl]).filter((x) => x[2] > x[1]),
     };
   };
