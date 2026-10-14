@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.14";
+const GAME_VERSION = "1.0.14.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.14.1", name: "Clés un peu plus rares", items: [
+    "Les clés de donjon tombent un peu moins souvent en chasse : environ 30 % de moins qu'avant (il faut chasser à peu près 1,4 fois plus longtemps pour une clé)",
+    "Les clés des quêtes, des commandes du jour et des autres récompenses ne changent pas",
+  ] },
   { v: "1.0.14", name: "Cadres spéciaux", items: [
     "Le portrait rond de chaque héros porte maintenant un cadre : le métal de son niveau (Bois, Bronze, Argent, Or, Émeraude, Krosmoz), le feu s'il est rené",
     "9 cadres spéciaux à débloquer : Pionnier, Stasis (donjon en stasis 10), Âmes (100 âmes d'archimonstres), Dofus (6 Dofus différents), Bonta ou Brâkmar (rang 3 d'alignement), Kolizéum (grade Or), Songe (Cauchemar 1), Guilde (guilde niveau 10, à ses couleurs) et Halouine (un combat gagné du 24 octobre au 3 novembre)",

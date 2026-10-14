@@ -1,6 +1,14 @@
 {
-  "version": "1.0.14",
+  "version": "1.0.14.1",
   "versions": [
+    {
+      "v": "1.0.14.1",
+      "name": "Clés un peu plus rares",
+      "items": [
+        "Les clés de donjon tombent un peu moins souvent en chasse : environ 30 % de moins qu'avant (il faut chasser à peu près 1,4 fois plus longtemps pour une clé)",
+        "Les clés des quêtes, des commandes du jour et des autres récompenses ne changent pas"
+      ]
+    },
     {
       "v": "1.0.14",
       "name": "Cadres spéciaux",

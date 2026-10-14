@@ -2145,6 +2145,8 @@
      pour que chaque zone rapporte à peu près autant que ses voisines de même niveau (le butin ne change pas) */
   E.ZONE_REW = { inc_lac: 1.17, inc_paturages: 1.13, bon_rives: 1.52, vul_pillar: 1.48, vul_etraktopel: 1.46, can_rives_lac: 1.18, oto_naufrages: 0.64, ama_cimetiere: 1.18, ast_cimetiere: 1.24, ama_foret_malefique: 1.15, can_dopeuls: 1.13, ama_bworks: 1.3, ama_cryptes: 1.39, ama_bandits: 1.13, wab_couronne: 1.53, wab_tombeaux: 1.37, vul_espartiate: 1.92, wab_waldo: 1.32, ama_marecages: 1.25, vul_mopyle: 1.43, ama_pitons: 1.5, can_plaines: 1.43, abr_oree: 1.34, abr_sombre: 1.14, fri_bourgade: 1.17, fri_port: 1.2, oto_tourbiere2: 1.14, oto_tourbiere: 1.12, can_bibliotheque: 1.21, bon_canaux: 1.21, bra_entrailles: 1.26, mino_labyrinthe: 1.13, oto_feuillage: 1.13, vul_ponefarr: 1.24, eca_lande: 1.17, fri_larmes: 1.18, vul_monseleya: 1.31, sah_cite: 1.11, oto_tourbiere_fond: 1.17, fri_crocs: 1.07, obs_dimension: 1.13, sak_foret: 1.13, fri_torrideau: 1.09, sak_plaine: 1.14 };
   E.zoneRew = (S, opts = {}) => (opts.dungeon || S.dungeon || !S.sub || (E.expActive && E.expActive(S)) ? 1 : E.ZONE_REW[S.sub] || 1);
+  /* 1.0.14.1 (Mathis) : clés de donjon un peu plus rares à la chasse (×0,7 : une clé pour ~1,4 fois le temps de chasse d'avant) */
+  E.KEY_DROP_SCALE = 0.7;
   E.lootRolls = (S) => Math.max(1, E.team(S).length); // 1.0.3 : un tirage de ressource par héros
   const giveRewards = (S, mons, opts = {}) => {
     const team = E.team(S);
@@ -2212,7 +2214,7 @@
       // clés de donjon
       if (!opts.dungeon && sub && sub.dungeon && sub.monsters.includes(m.base || m.key)) (sub.dungeons || [sub.dungeon]).forEach((did) => {
         const dg = DUNGEONS[did]; if (!dg) return;
-        if (rnd() * 100 < dg.keyDrop * dm) { addRes(S, dg.key, 1); out.res[dg.key] = (out.res[dg.key] || 0) + 1; note(S, `Butin : ${dg.key}`, "loot"); }
+        if (rnd() * 100 < dg.keyDrop * E.KEY_DROP_SCALE * dm) { addRes(S, dg.key, 1); out.res[dg.key] = (out.res[dg.key] || 0) + 1; note(S, `Butin : ${dg.key}`, "loot"); }
       });
       if (lp < 1) out.lootPen = Math.min(out.lootPen || 1, lp); }
     });
@@ -2407,7 +2409,7 @@
         let per = 0; const nR = E.lootRolls(S);
         sub.monsters.forEach((k) => { const m = MONSTERS[k]; if (!m) return; const d = m.drops.find(([r]) => r === name); const tq = E.huntTier(S, k) >= 1 ? 1.05 : 1;
           if (d) per += nR * Math.min(1, E.resRate(d[1]) * dm * tq / 100 / nR) / sub.monsters.length;
-          (sub.dungeons || (sub.dungeon ? [sub.dungeon] : [])).forEach((did) => { if (DUNGEONS[did] && DUNGEONS[did].key === name) per += Math.min(1, DUNGEONS[did].keyDrop * dm / 100) / sub.monsters.length; }); });
+          (sub.dungeons || (sub.dungeon ? [sub.dungeon] : [])).forEach((did) => { if (DUNGEONS[did] && DUNGEONS[did].key === name) per += Math.min(1, DUNGEONS[did].keyDrop * E.KEY_DROP_SCALE * dm / 100) / sub.monsters.length; }); });
         if (per > 0) { h += (3600 / cyc.s) * cyc.win * grp * per; src.push(sub.name); }
       }
     }
