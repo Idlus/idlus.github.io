@@ -128,8 +128,9 @@ const server = http.createServer((req, res) => {
     let fmob; for (let i = 0; i < 3; i++) { fmob = await page.evaluate(() => { const ar = document.querySelector("#arena"); return { fmode: ar.classList.contains("fmode"), w: ar.scrollWidth <= ar.clientWidth + 1, toks: ar.querySelectorAll(".ent.tk").length }; }); if (fmob.w) break; await page.waitForTimeout(400); } // un chiffre de dégâts qui s'envole peut dépasser un instant
     if (!fmob.fmode || !fmob.w || !fmob.toks) fail(`Formation (téléphone) : arène incorrecte (${JSON.stringify(fmob)})`);
     // au téléphone, toucher un monstre montre ses résistances
-    const m2 = await page.$("#arena .ent.tk[data-tipmon]");
-    if (m2) { await m2.click(); await page.waitForTimeout(200);
+    let m2 = null; // même précaution : le médaillon peut être redessiné entre la recherche et le toucher
+    for (let k = 0; k < 4; k++) { m2 = await page.$("#arena .ent.tk[data-tipmon]"); if (!m2 || await m2.click({ timeout: 2000 }).then(() => true, () => false)) break; }
+    if (m2) { await page.waitForTimeout(200);
       if (!(await page.evaluate(() => { const t = document.querySelector(".tooltip"); return !!(t && t.style.display !== "none" && t.querySelector(".fm-tres")); })) && !(await page.evaluate(() => window.matchMedia("(hover: hover)").matches))) fail("Formation (téléphone) : toucher un monstre ne montre pas ses résistances"); }
     if (SHOTS) { await clean(); await shot("formation-tel.png"); }
   } catch (e) {
