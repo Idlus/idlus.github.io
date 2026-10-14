@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.17.1 « Bon donjon »
+Bug signalé par un joueur (relayé par Mathis) : dans la fiche d'un donjon ouverte depuis la recherche, choisir une stasis ou un nombre de donjons à enchaîner rouvrait le donjon vu juste avant. La fiche (`dungeonSheet`, js/ui.js) retient maintenant elle-même son donjon (`dgPick`), et les boutons de stasis et d'enchaînement portent l'identifiant du donjon. Test ajouté dans tests/smoke.test.js.
+
 ## 1.0.17 « Hôtel de vente façon DOFUS 3 »
 Demande de Mathis (« améliore l'hdv pour qu'il soit comme sur dofus 3 », réponses 1A à 9A sur la maquette). `js/market.js` : onglet Acheter refait (arbre de catégories, tableau ×1 / ×10 / ×100 + prix moyen triable, ligne choisie ouverte en dessous, filtres niveau / caractéristique / panoplie / « À ma portée » calculés sur l'appareil), courbe 7 / 30 jours avec volumes, repères ±15 % autour du prix moyen, prix conseillé à la vente, « Acheter une quantité » (lots les moins chers combinés), favoris (`S.hdv.fav`), « Mes ventes et achats » (En vente / Vendus / Achats) avec pastille dans le menu (`MARKET.newSales`, journal local, rien de plus envoyé au serveur). Serveur (`supabase/hdv.sql`) : fonctions en lecture seule `hdv_market`, `hdv_history`, `hdv_bought` et `hdv_fold` (recherche sans accents), index `hdv_sales_buyer` ; `hdv_search` et `hdv_stats` gardées pour les anciennes versions du jeu.
 

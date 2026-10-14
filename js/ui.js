@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.17";
+const GAME_VERSION = "1.0.17.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.17.1", name: "Bon donjon", items: [
+    "Donjons : changer de stasis ou le nombre de donjons à enchaîner ne fait plus revenir le donjon vu juste avant",
+    "Le bug arrivait quand la fiche du donjon était ouverte depuis la recherche ; « Entrer » prend aussi bien la stasis et le nombre choisis",
+  ] },
   { v: "1.0.17", name: "Hôtel de vente façon DOFUS 3", items: [
     "Nouvel hôtel de vente : les catégories à gauche (Favoris, Équipements par emplacement, Ressources par type, Clefs, Runes, Consommables), le tableau des prix au milieu, et l'objet choisi s'ouvre juste sous sa ligne",
     "Tableau des ressources avec le prix des lots ×1, ×10 et ×100 et le prix moyen ; toutes les colonnes se trient, par défaut du moins cher à l'unité",
@@ -2495,7 +2499,10 @@ function dgDofusBox(did, SI, k) {
     out.push(`<div class="dofbox col">${im(dofusImg("ocre"), "dfpic", "Dofus Ocre")}<span class="grow xs"><b>Dofus Ocre</b> · ${h(E.dofusBonusTxt("ocre"))}${E.dofusOwned(S, "ocre") ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${ocreWhy(lv)} En stasis ${k}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}<br>${dofLadder(lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="ocre">Quête</button></div>`); }
   return out.join("");
 }
+function dgPick(did) { if (ui.dgSel !== did) { ui.dgSel = did; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[did]) || 1; } }
 function dungeonSheet(did) {
+  // 1.0.17.1 : la fiche retient elle-même son donjon (ouverte par la recherche, une quête…), sinon stasis et enchaînement rouvraient le donjon vu juste avant
+  dgPick(did);
   const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
   const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(10, SI.max + 1)); ui.dgStasis = k;
   const M = E.stasisMult(k); const stat = E.dungeonScrollStat(did); const d = dgDifficulty(did, k);
@@ -2514,8 +2521,8 @@ function dungeonSheet(did) {
   const chainOpts = [1, 3, 5, 10, 20].filter((x) => x === 1 || x < chainMax);
   const chainEst = SI.best && SI.best[k] && chainN > 1 ? ` · environ ${dur(SI.best[k] * chainN)} au total (d'après ton record)` : "";
   const chainBox = un && keys > 1 ? `<div class="chainbox"><b>Enchaîner</b> <span class="xs muted">(${keys} clé${keys > 1 ? "s" : ""} en stock)</span>
-        <div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-v="-1">Toutes (${chainMax})</button>
-        <span class="chainstep"><button class="sbtn" data-act="dgchainset" data-v="${Math.max(1, chainN - 1)}" ${chainN <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${chainN}</b><button class="sbtn" data-act="dgchainset" data-v="${Math.min(chainMax, chainN + 1)}" ${chainN >= chainMax ? "disabled" : ""} aria-label="Un de plus">+</button></span></div>
+        <div class="chainrow">${chainOpts.map((x) => `<button class="sbtn ${!chainAll && chainN === x ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="${x}">${x}</button>`).join("")}<button class="sbtn wide ${chainAll || chainN === chainMax ? "on" : ""}" data-act="dgchainset" data-id="${did}" data-v="-1">Toutes (${chainMax})</button>
+        <span class="chainstep"><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.max(1, chainN - 1)}" ${chainN <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${chainN}</b><button class="sbtn" data-act="dgchainset" data-id="${did}" data-v="${Math.min(chainMax, chainN + 1)}" ${chainN >= chainMax ? "disabled" : ""} aria-label="Un de plus">+</button></span></div>
         <div class="xs muted">Retenu pour ce donjon · une clé par donjon · une défaite ou plus de clé arrête l'enchaînement${chainEst}</div></div>` : "";
   openSheet(`<div class="dghead">${im(imgM(dg.boss), "dgboss lg", B.name)}<div><h2 style="margin:0">${h(dg.name)}</h2><div class="small muted">Boss ${h(B.name)} · niv. ${dg.lvl} · ${dg.rooms.length + 1} salles · vaincu ${S.progress.bossKills[did] || 0} fois</div><div style="margin-top:4px">${dgStars(did)}</div></div></div>
     <div class="stack small" style="gap:10px">
@@ -2528,7 +2535,7 @@ function dungeonSheet(did) {
         ${sigA ? `<div class="xs muted" style="margin-top:4px">${IC("trophee")} Succès ${seen ? `« ${h(sigA.name)} »` : "caché"} : ${h(sigA.desc.charAt(0).toLowerCase() + sigA.desc.slice(1))} ${seen ? `Titre « ${h(sigA.title)} »` : "Un titre en récompense"}${S.ach[sigA.id] ? " · obtenu" : ""}.</div>` : ""}</div>
       ${dgDofusBox(did, SI, k)}
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
-        <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
+        <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
         ${(() => { const fake = { mods: [], stasis: k }; const ids = E.idolsFor(S, fake); const sc = E.idolScore(S, fake, ids); return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 6px">${idolBtn(fake)}<span class="xs muted">${ids.length ? `En plus de la stasis : +${pctTxt(E.idolBonus(S, fake, ids))} % d'XP et de butin${sc > E.IDOL_DG_CAP ? ` (score compté jusqu'à ${E.IDOL_DG_CAP} en donjon)` : ""}${k >= 6 ? " · une idole en doublon avec un modificateur tiré ne compte pas" : ""}.` : "Aucune idole active : les idoles rendent le donjon plus dur contre plus d'XP et de butin."}</span></div>`; })()}
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de l'heure" : ""}.</p>`}
@@ -7208,8 +7215,8 @@ document.addEventListener("click", (ev) => {
     case "encmore": (ui.encOpen = ui.encOpen || {})[d.k] = 1; break;
     case "encsets": ui.tab = "inv"; ui.inv = "sets"; break;
     case "enterdg": { const r = E.enterDungeon(S, d.id, ui.dgSel === d.id ? ui.dgStasis : undefined, ui.dgSel === d.id ? chainCount(d.id) : 1); if (r) { toast(r); return; } closeSheet(); ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
-    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = d.id; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[d.id]) || 1; dungeonSheet(d.id); return; }
-    case "dgchainset": { ui.dgChain = +d.v; (S.dgChains = S.dgChains || {})[ui.dgSel] = ui.dgChain; dirty = true; dungeonSheet(ui.dgSel); return; }
+    case "dgopen": { if (ev.target.closest("[data-act=dgfav]")) return; ui.dgSel = null; dungeonSheet(d.id); return; }
+    case "dgchainset": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgChain = +d.v; (S.dgChains = S.dgChains || {})[id] = ui.dgChain; dirty = true; dungeonSheet(id); return; }
     case "stopchain": msg(E.stopChain(S)); break;
     case "dgfav": { ev.stopPropagation(); S.dgFav = S.dgFav || []; const i = S.dgFav.indexOf(d.id); if (i >= 0) S.dgFav.splice(i, 1); else S.dgFav.push(d.id); break; }
     case "dgf": { const F = dgF(); F[d.k] = d.v; dirty = true; break; }
@@ -7217,7 +7224,7 @@ document.addEventListener("click", (ev) => {
     case "dgfclr": { const F = dgF(); if (d.k === "all") Object.assign(F, DGF0, { view: F.view }); else F[d.k] = DGF0[d.k]; dirty = true; break; }
     case "dgzone": { const O = S.settings.dgOpen || (S.settings.dgOpen = {}); O[d.id] = t.getAttribute("aria-expanded") !== "true"; dirty = true; break; }
     case "dgzall": { const O = S.settings.dgOpen = {}; ZONES.forEach((z) => { O[z.id] = d.v === "1"; }); dirty = true; break; }
-    case "dgstasis": ui.dgStasis = +d.v; dungeonSheet(ui.dgSel); return;
+    case "dgstasis": { const id = d.id || ui.dgSel; if (!DUNGEONS[id]) return; dgPick(id); ui.dgStasis = +d.v; dungeonSheet(id); return; }
     case "dgcraftkey": { const r = E.craftSpecial(S, DUNGEONS[d.id].key); if (typeof r === "string") { toast(r); return; } toast("Clé fabriquée."); dirty = true; dungeonSheet(d.id); return; }
     case "combatcid": ui.combatCid = +d.id; break;
     case "cview": S.settings.cview = d.v; dirty = true; break;

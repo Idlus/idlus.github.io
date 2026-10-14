@@ -1,6 +1,14 @@
 {
-  "version": "1.0.17",
+  "version": "1.0.17.1",
   "versions": [
+    {
+      "v": "1.0.17.1",
+      "name": "Bon donjon",
+      "items": [
+        "Donjons : changer de stasis ou le nombre de donjons à enchaîner ne fait plus revenir le donjon vu juste avant",
+        "Le bug arrivait quand la fiche du donjon était ouverte depuis la recherche ; « Entrer » prend aussi bien la stasis et le nombre choisis"
+      ]
+    },
     {
       "v": "1.0.17",
       "name": "Hôtel de vente façon DOFUS 3",

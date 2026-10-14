@@ -131,6 +131,16 @@ const server = http.createServer((req, res) => {
     if (lost.length) errors.push(`recherche : ${lost.length} monstres ne mènent nulle part (${lost.slice(0, 3).join(", ")}…)`);
     await page.evaluate(() => { localStorage.removeItem("idlus-recherches"); ["Bouftou", "bouftou ", "BOUFTOU"].forEach((q) => { window.DX.searchOpen(); const i = document.querySelector("#wsq"); i.value = q; window.DX.searchGo({ k: "page", id: "home" }); }); });
     if ((await page.evaluate(() => JSON.parse(localStorage.getItem("idlus-recherches") || "[]").length)) !== 1) errors.push("recherche : la même recherche apparaît plusieurs fois dans l'historique");
+    // 1.0.17.1 : un donjon ouvert par la recherche garde sa fiche quand on change de stasis ou d'enchaînement (avant : le donjon vu juste avant revenait)
+    const dgIds = await page.evaluate(() => { const D = window.GAMEDATA.DUNGEONS; const ids = Object.keys(D).slice(0, 2); const S = window.DX.S;
+      ids.forEach((id) => { S.res[D[id].key] = 6; (S.stasis = S.stasis || {})[id] = { max: 4, sel: 1, firsts: {}, best: {} }; }); return ids; });
+    await page.evaluate((a) => { document.querySelector("#sheet").innerHTML = ""; const b = document.createElement("button"); b.dataset.act = "dgopen"; b.dataset.id = a; document.body.appendChild(b); b.click(); b.remove(); }, dgIds[0]);
+    await page.evaluate((b) => { document.querySelector("#sheet").innerHTML = ""; window.DX.searchGo({ k: "dg", id: b }); }, dgIds[1]);
+    await page.click('#sheet [data-act="dgstasis"][data-v="3"]');
+    const dgAfter = await page.evaluate(() => ({ name: (document.querySelector("#sheet .dghead h2") || {}).textContent, on: (document.querySelector('#sheet [data-act="dgstasis"].on') || {}).textContent }));
+    const dgName = await page.evaluate((b) => window.GAMEDATA.DUNGEONS[b].name, dgIds[1]);
+    if (dgAfter.name !== dgName || dgAfter.on !== "3") errors.push(`donjon : changer de stasis ouvre un autre donjon (${JSON.stringify(dgAfter)}, attendu ${dgName})`);
+    await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; });
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
     errors.push(`étape échouée : ${e.message.split("\n")[0]}`);
