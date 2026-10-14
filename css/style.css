@@ -5036,3 +5036,88 @@ body.reduced #halfx,body.nomotion #halfx{display:none}
 @media (max-width:600px){.giga-img{width:120px;height:120px}.giga-t{font-size:26px}.giga-who{font-size:14px}.giga-odd{font-size:12.5px;padding:4px 11px}}
 .ann.giga-ann{cursor:pointer;background:linear-gradient(90deg,rgba(255,206,92,.24),rgba(255,206,92,.05));box-shadow:inset 0 0 0 1px rgba(255,206,92,.55)}
 .ann.giga-ann .giga-ico{width:24px;height:24px;object-fit:contain;flex:none;filter:drop-shadow(0 0 5px rgba(255,214,110,.8))}
+
+/* ---------- 1.0.30 « Forge » (js/forge.js, js/forgeui.js) ---------- */
+/* 36A : repère des 80 % sur les barres de l'établi, ligne de la forgemagie dure */
+.pg .mk80{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);opacity:.85}
+.fhard{display:flex;gap:8px;align-items:flex-start;padding:7px 10px;margin:4px 0 8px;border-radius:10px;border:1px solid color-mix(in srgb,var(--danger) 45%,transparent);background:color-mix(in srgb,var(--danger) 9%,transparent);line-height:1.35}
+.fhard .uico{color:var(--danger);margin-top:1px}
+.fhardbox{display:flex;flex-direction:column;gap:6px;padding:10px 12px;margin:4px 0 10px;border-radius:12px;border:2px solid var(--gold);background:rgba(var(--glw,240,195,90),.07)}
+.fhardbox>b{display:flex;gap:6px;align-items:center}
+.fhardbox table{width:100%;border-collapse:collapse;font-size:12px}
+.fhardbox th{font-size:10.5px;color:var(--muted);font-weight:800;text-align:left;padding:2px 6px}
+.fhardbox td{padding:3px 6px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.fhardbox td:nth-child(3){font-weight:900;color:var(--gold)}
+@media (max-width:600px){.fhardbox th:nth-child(4),.fhardbox td:nth-child(4){display:none}}
+/* 43A : coefficients, bandeau des plus hauts et plus bas */
+.fco{font-weight:900;padding:0 5px;border-radius:5px;white-space:nowrap}
+.fco.hi{background:rgba(63,179,93,.2);color:#3fb35d}
+.fco.vhi{background:rgba(240,180,41,.25);color:#d79a0e}
+.fco.lo{background:rgba(216,71,60,.18);color:#d8473c}
+.fcstrip{display:flex;flex-wrap:wrap;align-items:center;gap:5px 6px;padding:7px 10px;margin:0 0 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--frame);font-size:12px}
+.fcstrip>b{font-size:11.5px;margin-left:4px}
+.fch{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 3px;border-radius:999px;border:1px solid var(--frame);background:var(--panel);color:var(--ink);font-size:12px;cursor:pointer;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+span.fch{cursor:default;padding-left:8px}
+.fch img{width:18px;height:18px;object-fit:contain}
+/* 43A : atelier à droite de la liste (au-dessus sur téléphone) */
+.fbrg{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
+.fbrl{display:flex;flex-direction:column;gap:10px;min-width:0;contain:layout style}
+.fbat{contain:layout style}
+.fbat .pad{display:flex;flex-direction:column;gap:8px}
+@media (min-width:901px){.fbat{position:sticky;top:70px;max-height:calc(100vh - 86px);overflow:auto}}
+@media (max-width:900px){.fbrg{grid-template-columns:1fr}.fbat{order:-1}}
+.fbits{display:flex;flex-wrap:wrap;gap:6px}
+.fbit{position:relative;width:44px;height:44px;border-radius:9px;background:var(--panel2);border:2px solid var(--frame);display:grid;place-items:center}
+.fbit img{width:36px;height:36px;object-fit:contain}
+.fbit u{position:absolute;left:-5px;top:-6px;font-size:9.5px;font-weight:900;text-decoration:none;padding:0 4px;border-radius:6px;background:var(--gold);color:#1b1b1b}
+.fbit i{position:absolute;right:-5px;bottom:-6px;font-style:normal;font-size:9.5px;font-weight:900;padding:0 4px;border-radius:6px;background:#2b2b2b;color:#fff;border:1px solid rgba(255,255,255,.25)}
+.fbit i.hi{background:#2f8f4e}.fbit i.lo{background:#b2362d}
+.fbit.more{font-size:12px;font-weight:800;color:var(--muted)}
+.frt{width:100%;border-collapse:collapse;font-size:12.5px}
+.frt th{font-size:10.5px;font-weight:800;color:var(--muted);text-align:right;padding:2px 6px}
+.frt th:first-child,.frt td:first-child{text-align:left}
+.frt td{padding:3px 6px;border-top:1px solid var(--frame);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.frt td:first-child .uico{margin-right:4px}
+.frt td.z{color:var(--muted);opacity:.55}
+.frt tr.fo td{background:rgba(var(--glw,240,195,90),.16)}
+.ffc{display:flex;flex-wrap:wrap;gap:5px}
+.fchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;border:1px solid var(--frame);background:var(--panel2);color:var(--ink);font-size:11.5px;white-space:nowrap;cursor:pointer}
+.fchip .uico{width:14px;height:14px}
+.fchip em{font-style:normal;font-weight:900;color:var(--gold)}
+.fchip.best{border-color:var(--gold)}
+.fchip.on{border:2px solid var(--gold);background:rgba(var(--glw,240,195,90),.18);font-weight:800}
+.fval{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--frame);font-size:12.5px}
+.fval b.num{text-align:right}
+.fval .big{font-size:16px;color:var(--gold)}
+.fval.muted{display:block}
+.frent{display:inline-block;font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:999px;white-space:nowrap;flex:none}
+.frent.ok{background:rgba(63,179,93,.22);color:#3fb35d;border:1px solid rgba(63,179,93,.5)}
+.frent.no{background:var(--panel3);color:var(--muted);border:1px solid var(--frame)}
+.fbgo{padding-top:6px;border-top:1px solid var(--line)}
+/* 39A : un objet d'un coup d'œil (deux colonnes, jet min et max, écart avec l'objet porté) */
+.fsg{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin:4px 0}
+.fsg-c{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:6px;align-items:center;padding:3px 2px;border-bottom:1px solid var(--line);font-size:13px;min-width:0}
+.fsg-c>.uico,.fsg-c>i:first-child{width:18px;height:18px}
+.fsg-c .n{min-width:0;overflow-wrap:break-word;line-height:1.25}
+.fsg-c .n i{font-style:normal;color:var(--muted);font-size:11px;margin-left:5px;white-space:nowrap;display:inline-block}
+.fsg-c b{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap;text-align:right}
+.fsg-c b em{font-style:normal;font-size:11.5px;font-weight:900;margin-left:5px}
+.fsg-c em.up{color:var(--good,#3fb35d)}
+.fsg-c em.dn{color:var(--danger)}
+.fsg-c .mx{color:var(--gold)}
+.fsg-c .ov{color:#b06cff}
+.fsg-c.exo .n{color:#b06cff}
+.fsg-c.miss{opacity:.7}
+.fsgcap{margin:2px 0 6px}
+@media (max-width:380px){.fsg{grid-template-columns:1fr}}
+.fpick{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:999px;padding:1px 9px;font-weight:800;font-size:13px;cursor:pointer;font-variant-numeric:tabular-nums}
+.fpick.on{background:var(--frame);color:#fff7e3;border-color:var(--gold)}
+/* 40A : fenêtre du soft reset des jets */
+.fsoft h2{margin-top:2px}
+.fsoft-l{display:flex;flex-direction:column;max-height:42vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.fsoft-it{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 10px;border-top:1px solid var(--line);font-size:13px}
+.fsoft-it:first-child{border-top:0}
+.fsoft-it img{width:40px;height:40px;object-fit:contain}
+.fsoft-it>b{text-align:right;color:var(--danger);font-size:12.5px}
+.fcomp{display:flex;flex-wrap:wrap;gap:6px}
+.fcomp span{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:var(--panel2);border:1px solid var(--gold);font-weight:800;font-size:13px}

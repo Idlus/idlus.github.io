@@ -76,6 +76,7 @@ function panelHtml() {
     + `<datalist id="admResL">${Object.keys(RES).sort().map((n) => `<option value="${h(n)}">`).join("")}</datalist><datalist id="admItemL">${Object.keys(ITEMS).sort((a, b) => ITEMS[a].lvl - ITEMS[b].lvl).map((t) => `<option value="${h(ITEMS[t].name)}">niv. ${ITEMS[t].lvl}</option>`).join("")}</datalist>`)}
   ${sec("Progression", "", row(`${btn("unlock", "Débloquer toutes les zones")}${btn("stasis", "Stasis 10 dans tous les donjons")}`))}
   ${sec("Songe infini", "Bribes de rêve, intensités débloquées, objets légendaires (tirés au hasard).", row(`${btn("bribes", "+1 000 Bribes", `data-v="1000"`)}${btn("bribes", "+10 000 Bribes", `data-v="10000"`)}${btn("sgunl", "Toutes les intensités")}${btn("legone", "Un légendaire au hasard")}${btn("legall", "Les 38 légendaires")}${btn("expend", "Réveiller l'équipe")}`))}
+  ${window.FORGEUI ? sec("Forge (1.0.30)", "Soft reset des jets : désactivé dans le jeu (E.SOFT_RESET_ON). L'aperçu ne change rien ; « Appliquer » le fait sur cette partie de test seulement.", row(`${btn("fxgive", "4 objets forgemagés à l'ancienne")}${btn("fxplan", "Soft reset : aperçu")}${btn("fxapply", "Soft reset : appliquer", "", "danger")}`)) : ""}
   ${sec("Parties types", "Enregistrez la partie actuelle pour y revenir, ou créez une équipe toute prête.",
     row(`${inp("admSnapN", `placeholder="Nom (ex. équipe niveau 100)" style="width:220px"`)}${btn("snapsave", "Enregistrer la partie")}`)
     + (snaps.length ? snaps.map((x, i) => row(`<span class="grow"><b>${h(x.name)}</b> <span class="xs muted">${h(x.meta || "")}</span></span>${btn("snapload", "Charger", `data-i="${i}"`)}${btn("snapdel", "Supprimer", `data-i="${i}"`, "danger")}`)).join("") : `<span class="xs muted">Aucune partie enregistrée.</span>`)
@@ -144,6 +145,9 @@ document.addEventListener("click", (ev) => {
     case "legone": { const x = E.LEG_LIST[Math.floor(Math.random() * E.LEG_LIST.length)]; E.giveLeg(s, x.k, "panel de test"); done(`${x.name} ajouté au sac.`); return; }
     case "legall": E.LEG_LIST.forEach((x) => E.giveLeg(s, x.k, "panel de test")); done("Les 38 légendaires sont dans le sac."); return;
     case "expend": { if (!E.expActive(s)) { DX.toast("Aucun songe en cours."); return; } E.expQuit(s); done("L'équipe se réveille."); return; }
+    case "fxgive": { const n = window.FORGEUI.softGive(); done(`${n} objets forgemagés à l'ancienne dans le sac.`); return; } // 1.0.30 « Forge » (js/forgeui.js)
+    case "fxplan": window.FORGEUI.softTry(); return;
+    case "fxapply": mark(s); window.FORGEUI.softTry("apply"); DX.saveNow(); return;
     case "stasis": Object.keys(DUNGEONS).forEach((did) => { const SI = E.stasisInfo(s, did); SI.max = Math.max(SI.max, E.STASIS_MAX); }); unlockAll(s); done("Stasis 10 débloquée partout."); return;
     case "snapsave": { const name = (val("admSnapN") || `Partie du ${new Date().toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`).slice(0, 40);
       const a = readSnaps().filter((x) => x.name !== name); if (a.length >= SNAP_MAX) { DX.toast(`${SNAP_MAX} parties au maximum : supprimez-en une.`); return; }
