@@ -70,7 +70,9 @@
       if (p.untitle) { s.titlesExtra = (s.titlesExtra || []).filter((x) => x !== p.untitle); (s.chars || []).forEach((c) => { if (c.title === p.untitle) c.title = null; }); } // 0.1.49 : « Fléau des mondes » passe au podium suivant
       (p.add || []).forEach((it) => { if (!it || !ITEMS[it.tpl]) return; const uid = s.nextUid++; s.items[uid] = Object.assign({}, it, { uid }); delete s.items[uid].locked; delete s.items[uid].well; delete s.items[uid].fmLog; if (E.itemDexAdd) E.itemDexAdd(s, it.tpl); }); // 0.1.41 : passer par l'HdV efface le reliquat (comme dans DOFUS)
       s.hdv.op = o.id; n++; if (p.got) got = true;
-      if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got)) X().toast(o.t, "rare"); }
+      // 1.0.30 : la vente directe (p.vd, js/venteui.js) a son propre journal (le surplus part toutes les 10 minutes) ; le Jackpot du Trool (p.jack) s'annonce
+      if (o.t && p.vd) { s.venteLog = (Array.isArray(s.venteLog) ? s.venteLog : []); s.venteLog.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); s.venteLog = s.venteLog.slice(0, 20); }
+      else if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got || p.jack)) X().toast(o.t, "rare"); }
     });
     s.hdv.log = s.hdv.log.slice(0, 40);
     if (n) { X().markDirty(); X().onPush(); X().renderStatus(); }

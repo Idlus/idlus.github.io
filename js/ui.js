@@ -1599,7 +1599,7 @@ function lookSheet(c) {
     <div class="lookprev">${lookImg(c, "lookbig")}</div>
     <div class="small"><b>Sexe</b> <span class="seg">${[["m", "Homme"], ["f", "Femme"]].map(([v, n]) => `<button data-act="looksex" data-v="${v}" aria-pressed="${sx === v}">${n}</button>`).join("")}</span></div>
     ${c.cls === "forge" ? "" : `<div class="small"><b>Tête</b><div class="headpick">${L[sx].heads.map((_, i) => `<button class="${(c.head || 0) === i ? "on" : ""}" data-act="lookhead" data-v="${i}">${`<img src="${lookLocal(c.cls, sx, i)}" alt="">`}</button>`).join("")}</div></div>`}
-    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
+    ${c.cls === "forge" ? `<p class="xs muted">Le Forgelance s'affiche avec sa tête et ses couleurs d'origine ; ses coiffes et capes apparaissent.</p>` : ""}<div class="small" ${c.cls === "forge" ? 'style="display:none"' : ""}><b>Couleurs</b><div class="palpick">${LK.PALETTES.filter((p) => !p.lock || S.unlocks[p.lock]).map((p) => { const cols = L[sx].colors.slice(); if (p.c) p.c.forEach((v, i) => (cols[i + 1] = v)); return `<button class="${(c.palette || "classique") === p.id ? "on" : ""}" data-act="lookpal" data-v="${p.id}"><span class="sw">${cols.slice(1, 5).map((v) => `<i style="background:#${v.toString(16).padStart(6, "0")}"></i>`).join("")}</span>${h(p.name)}</button>`; }).join("")}</div></div>
     ${frameHtml(c)}
     ${wardrobeHtml(c)}
     <div><button class="btn primary" data-act="closesheet">Terminé</button></div>`);
@@ -1777,12 +1777,12 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["wb", "Boss des mondes", "couronne"]] },
+  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] },
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
-  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"]]) }, // 1.0.23 : Builds (js/builds.js)
+  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"]]) }, // 1.0.23 : Builds (js/builds.js) ; 1.0.30 : Cours des ressources (js/venteui.js)
 ];
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
@@ -1938,7 +1938,7 @@ function recruitBtn() {
 function navBadges() {
   const nAl = teamAlerts().length; const dot = '<span class="navdot"></span>';
   const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
-  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
+  return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
 function renderNav() {
   const nav = $("#nav"); $("#subnav").innerHTML = "";
@@ -1953,7 +1953,7 @@ function renderNav() {
     ${NAV.map((F) => `<div class="sn-g"><span>${F.n}</span></div>${F.pages.map(([key, n, ic]) => item(key, n, ic)).join("")}`).join("")}</div>`;
   const inBar = ["home", "world", "team", "combat"]; const menuOn = !inBar.includes(k);
   const mb = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)}>${ic ? med(ic) : heroMed()}<span>${n}</span>${B[key] || ""}</button>`;
-  const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv ? '<span class="navdot"></span>' : ""}</button></div>`;
+  const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv || B.comptoirs ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
   nav.innerHTML = side + mob;
 }
@@ -5533,8 +5533,8 @@ function resTabHtml() {
   const detail = invSide() && ui.resSel && S.res[ui.resSel] ? resDetail(ui.resSel) : "";
   const tile = ([n, qq]) => { const r = resRarity(n); const sel = picked.has(n);
     return ui.resView === "list"
-      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
-      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="ressel" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}</button>`; };
+      ? `<div class="li ${ui.resSel === n ? "selrow" : ""}">${im(resImg(n), "ico", n)}<span class="grow"><span class="name">${S.resFav[n] ? "★ " : ""}${h(n)}</span> ${r ? `<span class="tag" style="background:${RAR[r][1]};color:#0e0b14">${RAR[r][0]}</span>` : ""}${ui.newRes.has(n) ? ` <span class="tag good">Nouveau</span>` : ""}${GBN.has(n) ? ` <span class="tag gold">Commandée</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}<br><span class="xs muted">${h(cats.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(E.resPrice(n))} k l'unité</span></span><span class="num">${fmt(qq)}</span><button class="btn sm" data-act="ressel" data-n="${h(n)}">Détails</button></div>`
+      : `<button class="itile rtile ${r} ${ui.resSel === n ? "on" : ""} ${sel ? "picked" : ""}" data-act="ressel" data-n="${h(n)}" data-tip="${h(`${n} ×${fmt(qq)} · ${fmt(E.resPrice(n))} k l'unité${r ? " · " + RAR[r][0] : ""}${GBN.has(n) ? " · commandée aujourd'hui" : ""}`)}">${im(resImg(n), "", n)}<span class="icount">${qq >= 1000 ? Math.floor(qq / 1000) + "k" : qq}</span>${S.resFav[n] ? `<span class="ilock">★</span>` : ""}${ui.newRes.has(n) ? `<span class="inew">●</span>` : ""}${GBN.has(n) ? `<span class="icmd" title="Commandée aujourd'hui">${IC("kamas")}</span>` : ""}${window.VENTEUI ? window.VENTEUI.arrow(n) : ""}</button>`; };
   return `<div class="row resbar">
       <div class="catchips"><button data-act="rescat" data-v="all" aria-pressed="${cat === "all"}">Tout <b>${all.length}</b></button>${cats.filter((c) => cnt[c.id]).map((c) => `<button data-act="rescat" data-v="${c.id}" aria-pressed="${cat === c.id}">${catIco(c)} ${h(c.name)} <b>${cnt[c.id]}</b></button>`).join("")}</div></div>
     <div class="row invbar"><input type="text" id="resSearch" data-act="ressearch" placeholder="Rechercher une ressource…" value="${h(ui.resQ || "")}">
@@ -5542,11 +5542,12 @@ function resTabHtml() {
       <select data-act="ressort">${[["name", "Nom"], ["qty", "Quantité"], ["lvl", "Niveau"], ["value", "Valeur totale"], ["recent", "Récentes"]].map(([v, n]) => `<option value="${v}" ${so === v ? "selected" : ""}>Tri : ${n}</option>`).join("")}</select>
       <span class="seg">${[["grid", "▦"], ["list", "☰"]].map(([v, n]) => `<button data-act="resview" data-v="${v}" aria-pressed="${(ui.resView || "grid") === v}" title="${v === "grid" ? "Grille" : "Liste"}">${n}</button>`).join("")}</span></div>
     ${q ? "" : `${gameBuysHtml()}
-    <div class="row small"><span class="xs muted">Les ressources sont partagées entre tous vos héros. Pour vendre, passe par l'hôtel de vente (bouton « Vendre à l'HdV » d'une ressource).</span></div>`}
+    ${window.VENTEUI ? window.VENTEUI.invNote() : `<div class="row small"><span class="xs muted">Les ressources sont partagées entre tous vos héros. Pour vendre, passe par l'hôtel de vente (bouton « Vendre à l'HdV » d'une ressource).</span></div>`}`}
     <div class="invlayout ${detail ? "withdetail" : ""}">${detail}
       ${ui.resView === "list" ? `<section class="panel"><div class="list">${list.map(tile).join("") || `<div class="empty">Aucune ressource.</div>`}</div></section>` : `<div class="invgrid">${list.map(tile).join("") || `<div class="empty" style="grid-column:1/-1">Aucune ressource.</div>`}</div>`}</div>`;
 }
 const hdvOn = () => !!(window.MARKET && window.ONLINE && window.ONLINE.enabled);
+const VDB = (n) => !!(window.VENTEUI && window.VENTEUI.has(n)); // 1.0.30 : encadré « Vente directe » de la fiche (js/venteui.js)
 /* 0.1.54 : commandes du jour (1 000 ressources par tranche de 20 niveaux, payées selon le niveau du meilleur héros) */
 const gbOf = (n) => E.gameBuys(S).list.find((o) => o.res === n);
 const GB_RANK = { ready: 0, prog: 1, none: 2, done: 3 };
@@ -5598,8 +5599,9 @@ function resDetail(n) {
   return `<div class="panel invdetail"><div class="phead"><div class="row">${im(resImg(n), "ico lg", n)}<div><h2>${h(n)}</h2><div class="xs muted">${h(D.RES_CATS.find((c) => c.id === D.RES_CAT_OF(n)).name)} · ${fmt(qq)} en stock · ${fmt(E.resPrice(n))} k l'unité ${r ? `· <b style="color:${RAR[r][1]}">${RAR[r][0]}</b>` : ""}</div></div></div><button class="btn sm" data-act="ressel" data-n="">✕</button></div>
     <div class="pad stack" style="gap:8px">
       ${gbOf(n) ? gbLine(gbOf(n)) : ""}
-      <div class="row">${hdvOn() && window.MARKET.canSell(n) ? `<button class="btn sm primary" data-act="hdvres" data-n="${h(n)}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="resfav" data-n="${h(n)}">${S.resFav[n] ? "★ Favori" : "☆ Épingler"}</button></div>
-      ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">le surplus part au marchand de secours (${Math.round(E.MERCHANT * 100)} % de la valeur, ${fmt(E.merchantPrice(n, 100) / 100)} k l'unité)</span></label>` : ""}
+      <div class="row">${hdvOn() && window.MARKET.canSell(n) && !VDB(n) ? `<button class="btn sm primary" data-act="hdvres" data-n="${h(n)}">Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="resfav" data-n="${h(n)}">${S.resFav[n] ? "★ Favori" : "☆ Épingler"}</button></div>
+      ${VDB(n) ? window.VENTEUI.box(n) : ""}
+      ${E.resPrice(n) ? `<label class="row small">Garder au maximum <input type="number" min="0" step="10" data-act="rescap" data-n="${h(n)}" value="${S.resCap[n] !== undefined ? S.resCap[n] : ""}" placeholder="∞" style="width:90px"> <span class="xs muted">${window.VENTEUI ? window.VENTEUI.capTxt(n) : `le surplus part au marchand de secours (${Math.round(E.MERCHANT * 100)} % de la valeur, ${fmt(E.merchantPrice(n, 100) / 100)} k l'unité)`}</span></label>` : ""}
       ${A.res === n && !A.done ? `<div class="tag good">${IC("almanax")} Offrande de l'Almanax du jour (${A.qty})</div>` : ""}
       <h3 class="sec">D'où elle vient</h3><div class="list">${srcHtml || `<div class="empty">${n === E.RARE_COMPONENT ? "Trouvailles de récolte, coffres et boss." : "Source inconnue."}</div>`}</div>
       <h3 class="sec">À quoi elle sert</h3><div class="list">${useHtml || `<div class="empty">N'entre dans aucune recette du jeu : tu peux la vendre à l'hôtel de vente.</div>`}${use.length > 10 ? `<div class="empty">… et ${use.length - 10} autres recettes.</div>` : ""}</div>
@@ -6600,6 +6602,8 @@ function checkNewVersion() {
     if (j && j.v && vNum(j.v) > vNum(GAME_VERSION) && ui.newVersion !== j.v && ui.hiddenV !== j.v) { ui.newVersion = j.v; renderUpdBar(); }
   }).catch(() => {}); } catch (e) {}
 }
+/* 1.0.30 : pages tenues par d'autres fichiers (js/comptoirsui.js, js/foireui.js, js/venteui.js) : DX.pages[clé] = (main) => … */
+const PAGES = {};
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
@@ -6628,6 +6632,7 @@ function render() {
   else if (ui.tab === "admin" && window.CHAT) window.CHAT.renderAdmin($("#main"));
   else if (ui.tab === "sugg" && window.IDEES) window.IDEES.render($("#main")); // 0.1.36, voir js/idees.js
   else if (ui.tab === "builds" && window.BUILDS) window.BUILDS.render($("#main")); // 1.0.23, voir js/builds.js
+  else if (PAGES[ui.tab]) PAGES[ui.tab]($("#main")); // 1.0.30 : Comptoirs, Foire du Trool, Cours des ressources
   else { ui.tab = "home"; renderHome(); }
   tabsKeep();
   tipTick();
@@ -6924,6 +6929,7 @@ function pageGo(id) {
     case "inv": go("inv", "inv", "items"); break; case "invres": go("inv", "inv", "res"); break; case "invcons": go("inv", "inv", "cons"); break; case "sets": go("inv", "inv", "sets"); break;
     case "recolte": go("metiers", "met", "recolte"); break; case "craft": go("metiers", "met", "craft"); break;
     case "options": optionsSheet(); break; case "account": ui.optTab = "sauvegarde"; optionsSheet(); break; case "archis": archiSheet(); break; case "idols": idolSheet(); break; case "tips": tipsSheet(); break; case "changelog": changelogSheet(); break;
+    default: if (PAGES[id]) go(id); // 1.0.30 : Comptoirs, Foire du Trool, Cours des ressources
   }
 }
 function searchGo(r) {
@@ -7467,7 +7473,7 @@ function consignesHtml() {
   return optSec("Consignes d'absence", "ce que fait l'équipe quand le jeu est fermé ; le résumé d'absence te le raconte",
       ck("roam", "Suivre les étoiles pendant l'absence", `chasse itinérante seulement quand tu n'es pas là, avec ses −${Math.round(E.ROAM_MALUS * 100)} %`)
     + ck("back", "Revenir à ma zone au retour", "si l'équipe a changé de zone")
-    + `<label class="optline">${optName("Limite de banque", "le surplus gagné pendant l'absence part au marchand de secours (30 % de la valeur) ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes")}<input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>`
+    + `<label class="optline">${optName("Limite de banque", `le surplus gagné pendant l'absence ${window.VENTEUI ? window.VENTEUI.bankTxt() : "part au marchand de secours (30 % de la valeur)"} ; jamais les favoris, les clés ni ce que demandent l'Almanax et les commandes`)}<input type="number" min="0" step="50" data-act="vi-cap" value="${C.cap || ""}" placeholder="aucune" style="width:90px"></label>`
     + ck("alm", "Faire l'offrande à l'Almanax au retour", "si tu as les ressources")
     + ck("cmd", "Livrer les commandes prêtes au retour", "seulement quand tout est en banque"), "consignes");
 }
@@ -7685,7 +7691,7 @@ function jukeboxHtml(c, T) {
 }
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
-  else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ira au marchand de secours.` : "Plus de limite de banque."); }
+  else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ${window.VENTEUI ? window.VENTEUI.bankTxt(true) : "ira au marchand de secours"}.` : "Plus de limite de banque."); }
   else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...(["on", "mus", "amb", "cbt"].includes(k) && t.checked ? { mute: false } : {}) }); if (k === "on" && t.checked) sndPlay("level", true); musSync(); renderStatus(); }
   else if (a === "vi-avol") { sndSet({ avol: +t.value }); if (window.IdlusAudio && window.IdlusAudio.setAmbVol) window.IdlusAudio.setAmbVol(+t.value / 100); }
   else if (a === "vi-gram") { S.gramo = t.value; SND.gest = true; musSync(); toast(t.value ? `Le Gramophone joue « ${window.IdlusAudio.tracks[t.value]} ».` : "Le Gramophone suit l'heure (Boîte à musique, Nuit)."); }
@@ -7853,7 +7859,7 @@ document.addEventListener("click", (ev) => {
     case "atstop": E.setAtelier(S, null); break;
     case "mettab": ui.met = d.v; ui.confirm = null; break;
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
-    case "qtab": ui.qt = d.v; ui.confirm = null; break;
+    case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Jouer › Comptoirs
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
     case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
     case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;
@@ -7912,7 +7918,7 @@ document.addEventListener("click", (ev) => {
     case "setframe": { const r = E.act(S, "setFrame", ui.lookCid, d.v || null); if (r) { toast(r, "warn"); return; } dirty = true; lookSheet(char(ui.lookCid)); render(); return; }
     case "frwhere": { const F = E.SFRAMES[d.v]; if (F) toast(`${F.name(S)} : ${F.req}.`); return; }
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
-    case "lookpal": { const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
+    case "lookpal": { const pl = LK.PALETTES.find((p) => p.id === d.v); if (pl && pl.lock && !S.unlocks[pl.lock]) return; const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
     case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
@@ -8247,7 +8253,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;
-  else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : `Surplus au-delà de ${v} vendu au marchand de secours.`); }
+  else if (a === "rescap") { const v = t.value === "" ? null : Math.max(0, +t.value || 0); if (v === null) delete S.resCap[t.dataset.n]; else S.resCap[t.dataset.n] = v; toast(v === null ? "Plus de limite." : window.VENTEUI ? window.VENTEUI.capToast(v) : `Surplus au-delà de ${v} vendu au marchand de secours.`); }
   else if (a === "trfrom") ui.tr.from = t.value;
   else if (a === "gafrom") ui.ga = t.value;
   else if (a === "trto") ui.tr.to = t.value;
@@ -9284,7 +9290,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
