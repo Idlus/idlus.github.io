@@ -7,6 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
+## 1.0.12.6 « Grades de guilde »
+Demande de Mathis (retour de joueurs : « avoir le grade en guilde pour modifier l'XP des gens » et « avec le grade Membre on ne peut pas poser de perco »), choix 1A 2A. Nouvelle RPC `guild_share(p_user, p_share)` (supabase/guildes.sql) : le Meneur ou un Bras droit règle la part d'un membre de rang plus bas, nom gardé dans `guild_members.share_by` et affiché au joueur, qui peut toujours la changer. `guild_give` ne réécrit plus la part quand le jeu envoie `p_share` vide (envois réguliers) et le jeu reprend la part du serveur à chaque lecture de la guilde. `perco_place` (supabase/gboss.sql) accepte le rang Membre (Recrues refusées), retirer reste Meneur et Bras droits.
+
 ## 1.0.12.5 « Liste de courses plus pratique »
 Demande de Mathis (« un total du contenu de sa liste de course, et un lien vers le métier quand la recette est faisable »). `shopTotalHtml` (js/ui.js) additionne les ingrédients de toutes les entrées de `S.shop` (dès 2 entrées), ressources manquantes en premier. Une entrée prête affiche « Fabriquer » (`shopgo`) : objet ou recette du Bricoleur → page Métiers › Artisanat, métier et recette sélectionnés (fiche ouverte sur téléphone) ; amélioration d'outil → Métiers › Récolte, outil déplié.
 

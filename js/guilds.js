@@ -51,7 +51,7 @@
     const s = S(); s.guild = s.guild || { share: 0, pend: 0 };
     const q = s.guild; const pend = Math.floor(q.pend || 0);
     if (q.id) {
-      const r = await ON.rpc("guild_give", { p_xp: pend, p_share: q.share || 0 });
+      const r = await ON.rpc("guild_give", { p_xp: pend, p_share: null });
       if (r.data && r.data.ok) { q.pend = Math.max(0, (q.pend || 0) - pend); if (r.data.lvl) q.lvl = r.data.lvl; }
       else if (r.data && r.data.none) q.id = null;
     }
@@ -62,7 +62,7 @@
     G.me = r.data; const s = S(); if (!s) return;
     const q = (s.guild = s.guild || { share: 0, pend: 0 });
     const was = q.id;
-    if (G.me.g) { Object.assign(q, { id: G.me.g.id, name: G.me.g.name, lvl: G.me.g.lvl, ic: G.me.g.ic, col: G.me.g.col }); if (!was) q.share = G.me.share || q.share || 0; }
+    if (G.me.g) { Object.assign(q, { id: G.me.g.id, name: G.me.g.name, lvl: G.me.g.lvl, ic: G.me.g.ic, col: G.me.g.col }); q.share = Math.max(0, Math.min(90, +G.me.share || 0)); }
     else { q.id = null; q.pend = 0; }
     if (was !== q.id) { X().markDirty(); G.chat = []; G.after = 0; G.ex = null; if (q.id) chatPoll(); }
     paint();
@@ -169,6 +169,7 @@
     return `<div class="grid2g">
       <section class="panel"><div class="phead"><h2>Ma part d'XP pour la guilde</h2><b class="num">${share} %</b></div><div class="pad stack">
         <input type="range" min="0" max="90" step="5" value="${share}" data-act="g-share" id="gShare" aria-label="Part d'XP donnée à la guilde">
+        ${G.me.share_by ? `<span class="xs" style="color:var(--gold)">Réglée par ${h(G.me.share_by)}. Tu peux toujours la changer.</span>` : ""}
         <span class="small muted">Comme dans DOFUS : cette part de l'XP gagnée par tes héros en combat part à la guilde au lieu d'aller aux héros. La guilde monte de niveau et tout le monde profite de ses bonus.</span>
         <div class="mksum"><span>Donné cette semaine</span><b>${fmt(me.week || 0)} XP</b><span>Donné depuis ton arrivée</span><b>${fmt(me.given || 0)} XP</b></div>
       </div></section>
@@ -224,7 +225,7 @@
   /* --- Percepteurs --- */
   function percosHtml() {
     if (!G.ex) return `<div class="empty">Chargement…</div>`;
-    const s = S(); const P = G.ex.percos || []; const lvl = G.me.g.lvl; const slots = E.percoSlots(lvl); const off = G.me.rank <= 1;
+    const s = S(); const P = G.ex.percos || []; const lvl = G.me.g.lvl; const slots = E.percoSlots(lvl); const off = G.me.rank <= 1; const canPlace = G.me.rank <= 2;
     const cards = P.map((p) => {
       const f = Math.max(0, p.fill || 0); const cap = p.cap || { k: 0, res: {} };
       const res = Object.keys(cap.res || {}).slice(0, 5).map((k) => `<span class="gres" data-tip="${h(k)}">${X().resImg(k) ? `<img src="${X().resImg(k)}" alt="">` : ""}${fmt(Math.floor(cap.res[k] * Math.min(f, 2.5)))}</span>`).join("");
@@ -247,7 +248,7 @@
     const z = G.zone || zones[0]; const cap = z ? E.percoCap(z) : null;
     const place = !slots ? `<div class="pad small muted">Le premier Percepteur arrive au niveau 5 de guilde.</div>`
       : P.length >= slots ? `<div class="pad small muted">${P.length} / ${slots} Percepteurs posés.${E.percoNextSlot(lvl) ? ` Le suivant au niveau ${E.percoNextSlot(lvl)} de guilde.` : ""}</div>`
-      : !off ? `<div class="pad small muted">Le Meneur et les Bras droits posent les Percepteurs (${P.length} / ${slots}).</div>`
+      : !canPlace ? `<div class="pad small muted">Les Membres, les Bras droits et le Meneur posent les Percepteurs (${P.length} / ${slots}). Les Recrues pourront en poser une fois Membres.</div>`
       : !zones.length ? `<div class="pad small muted">Il faut une zone finie : tous ses monstres au palier Traqueur (le trophée de la zone).</div>`
       : `<div class="pad stack"><div class="row"><select id="gZone" data-act="g-zone">${zones.map((k) => `<option value="${k}" ${k === z ? "selected" : ""}>${h(E.SUBS[k].name)} (niv. ${E.SUBS[k].lvl[0]}-${E.SUBS[k].lvl[1]})</option>`).join("")}</select>
           <button class="btn primary sm" data-act="g-place" ${s.kamas < E.PERCO_PRICE || G.busy ? "disabled" : ""}>Poser (${fmt(E.PERCO_PRICE)} kamas)</button></div>
@@ -262,14 +263,16 @@
     const me = G.me.rank; const asks = G.me.asks || [];
     const canRank = (m) => m.u !== ON.user.id && (me === 0 || (me === 1 && m.rank >= 2));
     const canKick = (m) => m.u !== ON.user.id && me <= 1 && m.rank > me;
+    const canShare = canKick;
+    const shareSel = (m) => `<select data-act="g-mshare" data-u="${h(m.u)}" aria-label="Part d'XP" title="Part d'XP donnée à la guilde">${Array.from({ length: 19 }, (_, i) => i * 5).concat(m.share % 5 ? [m.share] : []).sort((a, b) => a - b).map((v) => `<option value="${v}" ${v === m.share ? "selected" : ""}>${v} % XP</option>`).join("")}</select>`;
     const req = me <= 1 && asks.length ? `<section class="panel" style="border-color:var(--gold)"><div class="phead"><h2>Demandes pour entrer</h2></div><div class="list">${asks.map((a) => `<div class="li">${X().cmed(a.cls, a.lvl)}<span class="grow"><b>${h(a.p)}</b> <span class="xs muted">niv. ${a.lvl || 1}</span></span><button class="btn sm primary" data-act="g-ask" data-u="${h(a.u)}" data-v="1">Accepter</button><button class="btn sm" data-act="g-ask" data-u="${h(a.u)}" data-v="0">Refuser</button></div>`).join("")}</div></section>` : "";
     const rows = G.me.members.map((m) => `<div class="gmrow${X().staffCls(m.u)}">${X().cmed(m.cls, m.lvl)}<span class="grow"><b>${X().pname(m.p, m.u)}</b>${m.u === ON.user.id ? ` <span class="xs muted">(toi)</span>` : ""}<br><span class="xs muted">niv. ${m.lvl || 1} · ${ago(m.seen)}</span></span>
       <span class="grk r${m.rank}">${RANKS[m.rank]}</span>
-      <span class="xs num hm">${m.share} % · ${fmt(m.week)} XP cette semaine</span>
-      <span class="gact">${canRank(m) ? `<select data-act="g-rank" data-u="${h(m.u)}" aria-label="Rang">${RANKS.map((r, i) => (me === 0 || i >= 2) ? `<option value="${i}" ${i === m.rank ? "selected" : ""}>${i === 0 ? "Meneur (donner ma place)" : r}</option>` : "").join("")}</select>` : ""}${canKick(m) ? `<button class="btn sm" data-act="g-kick" data-u="${h(m.u)}" data-p="${h(m.p)}">Renvoyer</button>` : ""}</span></div>`).join("");
+      <span class="xs num hm">${m.share} %${m.sby ? ` <span class="muted" title="Réglée par ${h(m.sby)}">(${h(m.sby)})</span>` : ""} · ${fmt(m.week)} XP cette semaine</span>
+      <span class="gact">${canShare(m) ? shareSel(m) : ""}${canRank(m) ? `<select data-act="g-rank" data-u="${h(m.u)}" aria-label="Rang">${RANKS.map((r, i) => (me === 0 || i >= 2) ? `<option value="${i}" ${i === m.rank ? "selected" : ""}>${i === 0 ? "Meneur (donner ma place)" : r}</option>` : "").join("")}</select>` : ""}${canKick(m) ? `<button class="btn sm" data-act="g-kick" data-u="${h(m.u)}" data-p="${h(m.p)}">Renvoyer</button>` : ""}</span></div>`).join("");
     const inv = me <= 2 ? `<div class="pad row"><input type="text" id="gInv" placeholder="Pseudo d'un joueur" maxlength="16" style="max-width:220px"><button class="btn sm" data-act="g-invite" ${G.me.members.length >= MAXM ? "disabled" : ""}>Inviter</button>${(G.me.invited || []).length ? `<span class="xs muted">Invités : ${G.me.invited.map(h).join(", ")}</span>` : ""}</div>` : `<div class="pad xs muted">Les recrues pourront inviter une fois Membres.</div>`;
     return `${req}<section class="panel"><div class="phead"><h2>Membres</h2><span class="xs muted">${G.me.members.length} / ${MAXM}</span></div><div class="list">${rows}</div>${inv}</section>
-      <p class="xs muted">Meneur : tout. Bras droit : accepte les demandes, gère et renvoie Membres et Recrues, change le message du jour. Membre : invite. Recrue : discute et participe.</p>`;
+      <p class="xs muted">Meneur : tout. Bras droit : accepte les demandes, gère et renvoie Membres et Recrues, règle leur part d'XP, change le message du jour. Membre : invite et pose des Percepteurs. Recrue : discute et participe.</p>`;
   }
   function logHtml() {
     return `<section class="panel"><div class="phead"><h2>Journal de la guilde</h2></div><div class="list">${(G.me.log || []).map((l) => `<div class="li small"><span class="grow">${h(l.t)}</span><span class="xs muted">${ago(l.at).replace("en ligne", "à l'instant")}</span></div>`).join("") || `<div class="empty">Rien pour l'instant.</div>`}</div></section>`;
@@ -304,8 +307,9 @@
   });
   document.addEventListener("change", (ev) => {
     const a = ev.target.dataset && ev.target.dataset.act; if (!a || !/^g-/.test(a)) return;
-    if (a === "g-share") { const s = S(); s.guild = s.guild || { pend: 0 }; s.guild.share = Math.max(0, Math.min(90, +ev.target.value)); X().markDirty(); ON.rpc("guild_give", { p_xp: 0, p_share: s.guild.share }); paint(); }
+    if (a === "g-share") { const s = S(); s.guild = s.guild || { pend: 0 }; s.guild.share = Math.max(0, Math.min(90, +ev.target.value)); if (G.me) { G.me.share = s.guild.share; G.me.share_by = null; } X().markDirty(); ON.rpc("guild_give", { p_xp: 0, p_share: s.guild.share }); paint(); }
     if (a === "g-zone") { G.zone = ev.target.value; paint(); }
+    if (a === "g-mshare") { const u = ev.target.dataset.u; const v = +ev.target.value; call("guild_share", { p_user: u, p_share: v }, `Part d'XP réglée à ${v} %.`).then(load); }
     if (a === "g-rank") { const u = ev.target.dataset.u; const v = +ev.target.value; call("guild_rank", { p_user: u, p_rank: v }, v === 0 ? "Tu as donné ta place de Meneur." : "Rang changé.").then(load); }
   });
   document.addEventListener("click", async (ev) => {

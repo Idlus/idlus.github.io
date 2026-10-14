@@ -2643,7 +2643,7 @@ html{zoom:1}
 .gperco.hot{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger),0 0 18px rgba(224,103,79,.25)}
 .gatk{padding:10px 12px;border-radius:10px;background:rgba(224,103,79,.12);border:1px solid rgba(224,103,79,.5)}
 .gres{display:inline-flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums}.gres img{width:20px;height:20px;object-fit:contain}
-@media (max-width:600px){.gmrow{grid-template-columns:auto minmax(0,1fr) auto}.gmrow .hm{display:none}.gmrow .gact{grid-column:1/-1;justify-content:flex-start}.gfound{flex-direction:column}.gban{flex-wrap:wrap}}
+@media (max-width:600px){.gmrow{grid-template-columns:auto minmax(0,1fr) auto}.gmrow .hm{display:none}.gmrow .gact{grid-column:1/-1;justify-content:flex-start;flex-wrap:wrap}.gmrow .gact select{max-width:100%}.gfound{flex-direction:column}.gban{flex-wrap:wrap}}
 /* ===================== lot Suivi : carnet de bord et chasse au trésor ===================== */
 .su-up{color:var(--good,#5fae3a)}.su-down{color:var(--danger)}
 .su-kpis .kpi{display:flex;flex-direction:column;gap:2px;min-width:0}.su-kpis .kpi b{font-size:21px}

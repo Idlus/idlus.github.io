@@ -1,6 +1,14 @@
 {
-  "version": "1.0.12.5",
+  "version": "1.0.12.6",
   "versions": [
+    {
+      "v": "1.0.12.6",
+      "name": "Grades de guilde",
+      "items": [
+        "Le Meneur et les Bras droits peuvent régler la part d'XP donnée à la guilde par un membre de rang plus bas (onglet Membres). Le joueur voit qui l'a réglée et peut toujours la changer lui-même",
+        "Les Membres peuvent maintenant poser un Percepteur (20 000 kamas, payés par celui qui le pose). Les Recrues non, et retirer un Percepteur reste réservé au Meneur et aux Bras droits"
+      ]
+    },
     {
       "v": "1.0.12.5",
       "name": "Liste de courses plus pratique",

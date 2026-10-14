@@ -35,6 +35,8 @@ create table if not exists public.guild_members (
   joined_at timestamptz not null default now()
 );
 create index if not exists guild_members_g on public.guild_members (guild_id);
+-- 1.0.12.6 : le Meneur ou un Bras droit peut régler la part d'XP d'un membre de rang plus bas (pseudo gardé ici ; vide = réglée par le joueur).
+alter table public.guild_members add column if not exists share_by text;
 alter table public.guild_members enable row level security;
 
 -- demandes (un joueur demande à entrer) et invitations (la guilde invite un joueur)
@@ -158,8 +160,8 @@ begin
   return jsonb_build_object(
     'g', jsonb_build_object('id', g.id, 'name', g.name, 'ic', g.ic, 'col', g.col, 'motd', g.motd, 'open', g.open, 'lvl', g.lvl, 'xp', g.xp,
       'base', g_base(g.lvl), 'next', case when g.lvl >= 100 then null else g_base(g.lvl + 1) end, 'created', g.created_at),
-    'rank', m.rank, 'share', m.share,
-    'members', (select coalesce(jsonb_agg(jsonb_build_object('u', x.user_id, 'p', pseudo_of(x.user_id), 'rank', x.rank, 'share', x.share, 'given', x.given,
+    'rank', m.rank, 'share', m.share, 'share_by', m.share_by,
+    'members', (select coalesce(jsonb_agg(jsonb_build_object('u', x.user_id, 'p', pseudo_of(x.user_id), 'rank', x.rank, 'share', x.share, 'sby', x.share_by, 'given', x.given,
         'week', case when x.week_of < (date_trunc('week', now()))::date then 0 else x.week end, 'joined', x.joined_at,
         'cls', l.main, 'lvl', l.main_lvl, 'seen', s.updated_at) order by x.rank, x.given desc), '[]'::jsonb)
       from guild_members x left join ladder l on l.user_id = x.user_id left join saves s on s.user_id = x.user_id where x.guild_id = g.id),
@@ -308,6 +310,22 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
+-- Régler la part d'XP d'un membre : Meneur ou Bras droit, sur quelqu'un de rang plus bas.
+-- Le joueur la voit (« réglée par … ») et peut toujours la changer lui-même.
+create or replace function public.guild_share(p_user uuid, p_share int) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); m guild_members; o guild_members; v int := greatest(0, least(90, coalesce(p_share, 0)));
+begin
+  m := g_me(me); o := g_me(p_user);
+  if m.user_id is null or o.user_id is null or o.guild_id <> m.guild_id then return g_err('Ce joueur n''est pas dans ta guilde.'); end if;
+  if p_user = me then return g_err('Règle ta propre part dans l''onglet Accueil.'); end if;
+  if m.rank > 1 or o.rank <= m.rank then return g_err('Seuls le Meneur et les Bras droits règlent la part d''un membre de rang plus bas.'); end if;
+  if v = o.share then return jsonb_build_object('ok', true); end if;
+  update guild_members set share = v, share_by = pseudo_of(me) where user_id = p_user;
+  perform g_log(m.guild_id, pseudo_of(me) || ' règle la part d''XP de ' || pseudo_of(p_user) || ' à ' || v || ' %.');
+  return jsonb_build_object('ok', true);
+end $$;
+
 -- ---------- XP de guilde ----------
 -- Le jeu retire la part choisie de l'XP des combats et l'envoie ici. Plafond : 60 millions d'XP
 -- par heure écoulée depuis le dernier envoi (24 h au plus), pour limiter les parties trafiquées.
@@ -317,7 +335,10 @@ declare me uuid := auth.uid(); m guild_members; cap numeric; x bigint; g guilds;
 begin
   m := g_me(me); if m.user_id is null then return jsonb_build_object('ok', false, 'none', true); end if;
   perform g_week(me);
-  update guild_members set share = greatest(0, least(90, coalesce(p_share, share))) where user_id = me;
+  -- p_share vide : on garde la part enregistrée (elle a pu être réglée par le Meneur ou un Bras droit).
+  if p_share is not null and p_share is distinct from m.share then
+    update guild_members set share = greatest(0, least(90, p_share)), share_by = null where user_id = me;
+  end if;
   if coalesce(p_xp, 0) <= 0 then return jsonb_build_object('ok', true, 'xp', 0); end if;
   cap := 60000000 * least(24, greatest(1.0 / 60, extract(epoch from (now() - coalesce(m.last_give, m.joined_at))) / 3600));
   x := least(p_xp, cap)::bigint;
@@ -364,7 +385,7 @@ end $$;
 
 do $$ declare f text; begin
   foreach f in array array['guild_me()', 'guild_create(bigint, text, text, text)', 'guild_join(bigint)', 'guild_invite(text)', 'guild_answer(bigint, uuid, boolean)', 'guild_leave()',
-    'guild_rank(uuid, int)', 'guild_kick(uuid)', 'guild_set(text, boolean, text, text)', 'guild_give(bigint, int)', 'guild_say(text, jsonb)', 'guild_chat(bigint)'] loop
+    'guild_rank(uuid, int)', 'guild_kick(uuid)', 'guild_share(uuid, int)', 'guild_set(text, boolean, text, text)', 'guild_give(bigint, int)', 'guild_say(text, jsonb)', 'guild_chat(bigint)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;

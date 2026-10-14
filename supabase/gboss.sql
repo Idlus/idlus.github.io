@@ -174,7 +174,7 @@ as $$
 declare me uuid := auth.uid(); m guild_members; g guilds; d jsonb; z perco_zones; slots int;
 begin
   m := g_me(me); if m.user_id is null then return g_err('Tu n''es pas dans une guilde.'); end if;
-  if m.rank > 1 then return g_err('Seuls le Meneur et les Bras droits posent les Percepteurs.'); end if;
+  if m.rank > 2 then return g_err('Les Recrues ne posent pas de Percepteur : il faut être Membre, Bras droit ou Meneur.'); end if;
   begin d := hdv_save(me); exception when raise_exception then return g_err(replace(sqlerrm, 'vendre ni acheter', 'poser de Percepteur')); end;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   perform pg_advisory_xact_lock(hashtext('guild' || m.guild_id));
