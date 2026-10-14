@@ -4,7 +4,7 @@
 const VERSION = "1.0.24.2";
 /* La version de test (/beta/) a ses propres caches : chaque service worker ne nettoie que les siens. */
 const P = /\/beta\/$/.test(self.registration.scope) ? "idlus-beta-" : "idlus-";
-const CORE = P + "core-" + VERSION, MEDIA = P + "media-v9";
+const CORE = P + "core-" + VERSION, MEDIA = P + "media-v10";
 const PRECACHE = ["./", "index.html", "css/style.css", "js/gamedata.js", "js/looks.js", "js/armes.js", "js/drops.js", "js/pieces.js", "js/data.js", "js/engine.js", "js/systems.js", "js/pets.js", "js/mounts.js", "js/idols.js", "js/renaissance.js", "js/archis.js", "js/welcome.js", "js/defi.js", "js/suivi.js", "js/vie.js", "js/quetes.js", "js/verify.js", "js/save.js", "js/vendor/supabase.js", "js/online.js", "js/chat.js", "js/market.js", "js/guilds.js", "js/codes.js", "js/fiches.js", "js/musique.js", "js/ui.js", "js/admin.js", "js/questui.js", "js/idees.js", "js/builds.js", "css/quetes.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CORE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {

@@ -7,9 +7,9 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 **Discord :** https://discord.gg/9ApPgWjPUM
 
-## 1.0.24.2 « Places libres cliquables »
+## 1.0.24.2 « Coiffes et capes visibles »
 
-Une place vide de pièce (« + » de « Ma maison » et de la page Havre-Sac) se clique même sans meuble à placer : fenêtre avec les meubles de la pièce, leur bonus, où les trouver et un bouton pour y aller ; infobulle au survol sur PC.
+Mathis (14/10/2026, « les 37 coiffes et 27 capes ne sont pas visibles actuellement », carte « DofusDB partout »). Le moteur de rendu d'Ankama (static.ankama.com/dofus/renderer) répond 403 aux images demandées depuis idlus.github.io : les héros avec une coiffe, une cape ou des couleurs choisies retombaient sur l'image locale. `lookUrl` (js/ui.js) envoie la même description d'apparence à renderer.dofusdb.fr/look (tête, couleurs, coiffe, cape), qui l'accepte depuis le jeu et se met en cache longtemps ; cache des images renouvelé (media-v10) pour oublier les réponses 403 gardées.
 
 ## 1.0.24.1 « 10 commandes par jour »
 
