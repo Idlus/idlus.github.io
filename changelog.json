@@ -1,6 +1,13 @@
 {
-  "version": "1.0.29.4",
+  "version": "1.0.29.5",
   "versions": [
+    {
+      "v": "1.0.29.5",
+      "name": "Dofus au boss",
+      "items": [
+        "Quêtes de Dofus : une étape « vaincre le boss » qui vient après la première demande maintenant de le vaincre pendant cette étape. Le Dokille (et les autres) ne se gagne plus dans une salle avant le boss parce qu'une stasis avait déjà été faite avant"
+      ]
+    },
     {
       "v": "1.0.29.4",
       "name": "Offrandes comptées",

@@ -201,7 +201,7 @@
     if (Q.done || i < Q.step) return [st.n || (st.dgs ? st.dgs.length : 1), st.n || (st.dgs ? st.dgs.length : 1)];
     const cur = i === Q.step;
     switch (st.t) {
-      case "dg": return st.chal || st.nodown ? [cur ? Math.min(Q.prog, 1) : 0, 1] : [dgDone(S, st.dg, st.k) ? 1 : 0, 1];
+      case "dg": return st.chal || st.nodown || i > 0 ? [cur ? Math.min(Q.prog, 1) : 0, 1] : [dgDone(S, st.dg, st.k) ? 1 : 0, 1]; // 1.0.29.5 : après la 1re étape, il faut vaincre le boss pendant l'étape (le Dofus ne tombe plus avant la salle du boss)
       case "dgs": return [st.dgs.filter((d) => dgDone(S, d, st.k)).length, st.dgs.length];
       case "soul": return [Math.min(E.soulCount(S, st.zone), st.n), st.n];
       case "perfect": return [Math.min(perfects(S), st.n), st.n];
@@ -246,7 +246,7 @@
       if (type === "win" && st.t === "kill" && zoneOf(data.sub) === st.zone) Q.prog += data.mons.length;
       if (type === "win" && st.t === "chal" && (data.chals || []).includes(st.chal)) Q.prog++;
       if (type === "harvest" && st.t === "harvest" && data.res === st.res) Q.prog += data.n || 1;
-      if (type === "dungeon" && st.t === "dg" && (st.chal || st.nodown) && data.id === st.dg && data.stasis >= st.k && (!st.chal || (data.chals || []).includes(st.chal)) && (!st.nodown || !data.down)) Q.prog++;
+      if (type === "dungeon" && st.t === "dg" && (st.chal || st.nodown || Q.step > 0) && data.id === st.dg && data.stasis >= st.k && (!st.chal || (data.chals || []).includes(st.chal)) && (!st.nodown || !data.down)) Q.prog++;
     });
     if (type === "soul") checkOcre(S);
     advance(S);

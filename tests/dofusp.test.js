@@ -123,4 +123,14 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
   console.log("ok - dofus : fichier chargé par le jeu et le serveur");
 }
 
+
+// 1.0.29.5 : la quête du Dokille ne se termine plus en salle (stasis 6 déjà faite avant) ; il faut revaincre le boss pendant la dernière étape
+{ const S = E.newState("Q", "iop"); S.cnt = S.cnt || {}; const Q = E.dofusQuest(S, "dokille"); Q.step = 1; Q.prog = 29;
+  E.stasisInfo(S, "cimetiere_mastodontes").max = 6;
+  E.emit(S, "win", { mons: [], sub: null, chals: ["survivant"] });
+  assert.strictEqual(Q.step, 2, "challenge validé"); assert.ok(!Q.done && !E.dofusOwned(S, "dokille"), "pas de Dokille avant le boss");
+  E.emit(S, "dungeon", { id: "cimetiere_mastodontes", stasis: 6, chals: [], down: 0 });
+  assert.ok(Q.done && E.dofusOwned(S, "dokille"), "Dokille en battant le boss"); }
+console.log("ok - Dokille seulement après le boss");
+
 console.log("dofusp.test.js : tout est bon");

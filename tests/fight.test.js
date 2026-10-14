@@ -223,7 +223,8 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.strictEqual(E.dofusQuest(S, "cacao").step, 1, "étape 1 du Cacao validée");
   const sub = Object.values(E.SUBS).find((s) => s.zone === "astrub"); for (let i = 0; i < 50; i++) E.emit(S, "win", { mons: [{ key: "m52" }, { key: "m52" }, { key: "m52" }], sub: sub.id, chals: [], down: 0 });
   assert.strictEqual(E.dofusQuest(S, "cacao").step, 2, "150 monstres d'Astrub"); const nb = Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length;
-  E.stasisInfo(S, "cour_bouftou_royal").max = 5; E.refreshArchis(S); assert.ok(E.dofusQuest(S, "cacao").done, "quête du Cacao terminée");
+  E.stasisInfo(S, "cour_bouftou_royal").max = 5; E.refreshArchis(S); assert.ok(!E.dofusQuest(S, "cacao").done, "1.0.29.5 : une stasis faite avant ne suffit plus pour la dernière étape");
+  E.emit(S, "dungeon", { id: "cour_bouftou_royal", stasis: 5, chals: [], down: 0 }); assert.ok(E.dofusQuest(S, "cacao").done, "quête du Cacao terminée en battant le boss");
   assert.strictEqual(Object.values(S.items).filter((x) => x.tpl === "dofus_cacao").length, nb + 1, "Dofus donné par la quête");
   // étape avec challenge : seulement si le challenge est réussi
   E.stasisInfo(S, "arbre_moon").max = 3; E.refreshArchis(S); assert.strictEqual(E.dofusQuest(S, "dokoko").step, 1, "Dokoko étape 1");
