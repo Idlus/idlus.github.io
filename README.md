@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.30.5 « Compteur du Jackpot »
+
+Une pastille dans la ligne du haut (#jpbar, js/foireui.js paintChip) montre le pot du Jackpot du Trool et le temps avant le tirage sur toutes les pages, pour les joueurs connectés à un compte (choix de Mathis 1A 2A 3A 4A, 14/10/2026). Le pot est relu toutes les 5 minutes quand le jeu est à l'écran (foire_jackpot, environ 12 lectures par heure et par joueur), après chaque achat et juste après le tirage ; la pastille se cache sur la page Foire, défile quand le pot monte et brille en or les 5 dernières minutes.
+
 ## 1.0.30.4 « Renaissance affichée »
 
 Le résultat de combat montre le bonus de Renaissance (×1,3 par renaissance) à côté de l'XP des héros qui ont renu (signalé par Mathis le 14/10/2026 : « le boost xp des renaissances marche pas »), et la Salle d'entraînement affiche enfin l'XP avec ce bonus (engine.js giveRewards : out.xp de l'élève compte E.renXpMult).

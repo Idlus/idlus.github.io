@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.30.4";
+const GAME_VERSION = "1.0.30.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.30.5", name: "Compteur du Jackpot", items: [
+    "Jackpot du Trool : une pastille sous la barre du haut montre le pot et le temps avant le tirage, sur toutes les pages. Un clic t'emmène à la Foire",
+    "Le pot se met à jour toutes les 5 minutes, et tout de suite quand tu achètes un ticket ou après un tirage. Les chiffres défilent quand il monte",
+    "Les 5 dernières minutes avant le tirage, la pastille brille en or. Elle s'affiche aux joueurs connectés à un compte",
+  ] },
   { v: "1.0.30.4", name: "Renaissance affichée", items: [
     "Résultat de combat : un héros qui a renu affiche son bonus de Renaissance (×1,3 par renaissance) à côté de son XP",
     "Salle d'entraînement : l'XP affichée pour un héros qui a renu compte enfin son bonus de Renaissance (il la recevait déjà, seul le chiffre était trop bas)",

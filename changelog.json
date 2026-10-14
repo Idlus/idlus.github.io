@@ -1,6 +1,15 @@
 {
-  "version": "1.0.30.4",
+  "version": "1.0.30.5",
   "versions": [
+    {
+      "v": "1.0.30.5",
+      "name": "Compteur du Jackpot",
+      "items": [
+        "Jackpot du Trool : une pastille sous la barre du haut montre le pot et le temps avant le tirage, sur toutes les pages. Un clic t'emmène à la Foire",
+        "Le pot se met à jour toutes les 5 minutes, et tout de suite quand tu achètes un ticket ou après un tirage. Les chiffres défilent quand il monte",
+        "Les 5 dernières minutes avant le tirage, la pastille brille en or. Elle s'affiche aux joueurs connectés à un compte"
+      ]
+    },
     {
       "v": "1.0.30.4",
       "name": "Renaissance affichée",

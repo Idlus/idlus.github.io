@@ -4095,7 +4095,7 @@ button.cmdico{padding:0;cursor:pointer}
 .topchips{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:-7px 0 9px;padding:3px 2px}
 .topchips::-webkit-scrollbar{display:none}
 .topchips:not(:has(.tchip)){display:none}
-.topchips>#objs,.topchips>#updbar,.topchips #wbbar{display:contents!important}
+.topchips>#objs,.topchips>#updbar,.topchips #wbbar,.topchips #jpbar{display:contents!important}
 .topchips>:not(#objs):not(#updbar){display:none}
 /* 1.0.4.7 « Pastilles du haut » : toutes les pastilles ont la même forme (pastille ronde colorée + titre + détail + jauge, action, ✕) */
 .tchip{--tc:var(--gold);display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 4px;border-radius:999px;background:linear-gradient(180deg,color-mix(in srgb,var(--tc) 13%,var(--panel2)),var(--panel2));border:1.5px solid color-mix(in srgb,var(--tc) 55%,transparent);font-size:12px;line-height:1;white-space:nowrap;flex:0 1 auto;min-width:0;box-shadow:0 2px 4px rgba(0,0,0,.25)}
@@ -4116,6 +4116,12 @@ button.cmdico{padding:0;cursor:pointer}
 .tchip .tc-act+.tc-x{margin-left:-3px}
 .k-quest{--tc:#ffb95c}.k-pin{--tc:#e7c46a}.k-done{--tc:#3fb35d}.k-ev{--tc:#f1cf6e}.k-bonus{--tc:#9fe36a}.k-boss{--tc:#c45cff}.k-prot{--tc:#7ee06a}.k-sys{--tc:#6ab7ff}
 .k-boss .tc-bar i{background:linear-gradient(90deg,#e2533b,#ff8a5c)}
+/* 1.0.30.5 « Compteur du Jackpot » : pastille du pot, dorée et lumineuse les 5 dernières minutes avant le tirage */
+.k-jack{--tc:#f0c35a}.k-jack .tc-t b{white-space:nowrap}
+.tchip.k-jack.hot{background:linear-gradient(90deg,#f0c35a,#ffe3a0);border-color:#ffe3a0;animation:jpGlow 1.6s ease-in-out infinite}
+.tchip.k-jack.hot .tc-t b,.tchip.k-jack.hot .tc-d,.tchip.k-jack.hot .tc-s{color:#2a1d05}
+@keyframes jpGlow{0%,100%{box-shadow:0 0 0 2px rgba(255,216,77,.25),0 0 10px rgba(255,216,77,.45)}50%{box-shadow:0 0 0 3px rgba(255,216,77,.4),0 0 20px rgba(255,216,77,.8)}}
+@media (prefers-reduced-motion:reduce){.tchip.k-jack.hot{animation:none;box-shadow:0 0 0 3px rgba(255,216,77,.35),0 0 16px rgba(255,216,77,.6)}}
 .annbar .tc-x{margin-left:auto}
 @media (max-width:640px){
   /* téléphone : pastilles réduites (pastille + chiffre clé), elles tiennent sur une ligne ; toucher ouvre la page ou le détail */
