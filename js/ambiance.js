@@ -47,9 +47,9 @@
     const e = FX[name]; if (!e) return stop();
     if (st && st.name === name && st.k === k) return;
     if (!cv) { cv = document.createElement("canvas"); cv.id = "ambfx"; cv.setAttribute("aria-hidden", "true"); document.body.appendChild(cv); window.addEventListener("resize", fit); }
-    st = { name, k, names: e.mix || [name], layers: [] }; cv.width = 0; fit(); last = 0;
+    st = { name, k, names: e.mix || [name], layers: [] }; cv.width = 0; fit(); last = 0; document.body.classList.add("amb-on"); // les poussières des décors (js/decors.js) s'effacent : l'ambiance suffit
     if (!raf) raf = requestAnimationFrame(loop);
   }
-  function stop() { st = null; if (raf) cancelAnimationFrame(raf); raf = 0; if (cv) { cv.remove(); cv = null; window.removeEventListener("resize", fit); } }
+  function stop() { st = null; document.body.classList.remove("amb-on"); if (raf) cancelAnimationFrame(raf); raf = 0; if (cv) { cv.remove(); cv = null; window.removeEventListener("resize", fit); } }
   window.AMB = { start, stop, names: Object.keys(FX), get on() { return st ? st.name : null; } };
 })();

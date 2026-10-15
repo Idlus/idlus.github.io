@@ -5601,7 +5601,8 @@ nav.subnav .sn-strip button[aria-current="page"]{background:var(--gold);color:#1
 nav.subnav .sn-strip .med,nav.subnav .sn-tabs .med{width:24px;height:24px}nav.subnav .sn-strip .med img,nav.subnav .sn-tabs .med img{width:17px;height:17px}
 nav.subnav .sn-strip .sn-star{margin-left:auto;padding:2px 8px;font-size:17px;line-height:1;color:var(--muted);min-width:32px;justify-content:center}
 nav.subnav .sn-strip .sn-star.on,nav.subnav .sn-strip .sn-star:hover{color:var(--gold)}
-.sn-tabs{display:flex;gap:4px;border-bottom:2px solid var(--frame);padding:0 4px}
+.sn-tabs{display:flex;gap:4px;border-bottom:2px solid var(--frame);padding:0 4px;overflow-x:auto;scrollbar-width:none}
+.sn-tabs::-webkit-scrollbar{display:none}
 nav.subnav .sn-tabs button{border-radius:12px 12px 0 0;padding:6px 14px 6px 6px;font-size:14px;background:var(--panel2);border:2px solid var(--frame);border-bottom:0;margin-bottom:-2px;opacity:.75}
 nav.subnav .sn-tabs button[aria-current="page"]{opacity:1;background:var(--panel3);color:var(--gold2);box-shadow:inset 0 3px 0 var(--gold)}
 nav.subnav .navcnt{position:static;margin-left:2px;box-shadow:none;flex:none}
@@ -5649,6 +5650,7 @@ body.reduced .sn-ripple,body.nomotion .sn-ripple,body.reduced .sn-clk .med,body.
 /* 13A : effet d'ambiance du thème (js/ambiance.js), par-dessus la page comme les braises d'Halouine */
 #ambfx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}
 body.reduced #ambfx,body.nomotion #ambfx{display:none}
+body.amb-on .as-motes{display:none} /* une seule couche de particules : celles du thème */
 
 /* ===================== 1.2 « Réorganisation des menus » (Mathis 12ABCD) : quatre thèmes posés par-dessus Émeraude, html[data-skin] ===================== */
 /* Givre de Frigost */

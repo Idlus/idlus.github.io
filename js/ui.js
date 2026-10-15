@@ -2303,6 +2303,7 @@ function renderNav() {
     if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
   }
   sub.innerHTML = strip;
+  { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.offsetWidth / 2; } // téléphone : la page en cours reste visible dans le bandeau
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
   navAfter(k, B);
 }
@@ -2320,7 +2321,7 @@ function navMenuSheet() {
   const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
   const tile = (key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key || kk === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || (navIsNew(key) ? '<span class="sn-new t">nouveau</span>' : "")}</button>` : ""; };
   const hit = (p) => `<button class="ns-hit" data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${k === p[0] ? 'aria-current="page"' : ""}>${icon(p[2])}<span class="sn-l">${h(p[1])}<small>${h(NAV_DESC[p[0]] || "")}</small></span>${B[p[0]] || ""}</button>`;
-  openSheet(`<div class="navsheet"><label class="sn-srch ns-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
+  openSheet(`<div class="navsheet"><label class="sn-srch ns-srch">${G("search")}<input id="navqm" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
     ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
       : `${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles">${pins.map(tile).join("")}</div>` : ""}${NAV.map((F) => `<h3>${h(F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}`}
     <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="nav" data-v="bug">${med("bug")} Signaler un bug</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
@@ -2601,7 +2602,7 @@ function homeHtml() {
     + `<button class="hvchip dim" data-act="hvbonus" data-tip="Autel des Douze : relève les plafonds de bonus">${G("star")}<b class="num">${E.altarLvl(S)}/${E.ALTAR.max}</b><span>autel</span></button>`;
   return `
   <section class="hero-banner ac-ban">
-    <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}${window.DECORS ? window.DECORS.html(S.dungeon || (S.hunting && S.sub) ? { sub: S.sub, dungeonId: S.dungeon ? S.dungeon.id : null } : { home: document.documentElement.dataset.hal === "on" ? "hal" : document.documentElement.dataset.theme === "dark" ? "dark" : "jardin" }) : ""}</div>
+    <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}${window.DECORS ? window.DECORS.html(S.dungeon || (S.hunting && S.sub) ? { sub: S.sub, dungeonId: S.dungeon ? S.dungeon.id : null } : { home: document.documentElement.dataset.hal === "on" ? "hal" : document.documentElement.dataset.theme === "dark" || ["givre", "ecume"].includes(document.documentElement.dataset.skin) ? "dark" : "jardin" }) : ""}</div>
     <div class="inner"><div class="hvtitle"><h1>${IC("havre")} Havre-Sac de ${h(main.name)}</h1><div class="hvchips">${chips}</div></div><div class="ac-l">
       ${card || `<div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}${lf}</div>`}
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn ac-ib" data-tab="world" data-tip="Changer de zone" aria-label="Zones">${IC("monde")} <span class="lb">Zones</span></button><button class="btn ac-ib" data-act="stophunt" data-tip="Rentrer au Havre-Sac" aria-label="Rentrer">${IC("havre")} <span class="lb">Rentrer</span></button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
@@ -7826,9 +7827,9 @@ document.addEventListener("keydown", (ev) => {
     if (k === "Escape") { ev.preventDefault(); searchClose(); } else if (k === "ArrowDown" || k === "ArrowUp") { ev.preventDefault(); searchMove(k === "ArrowDown" ? 1 : -1); } else if (k === "Enter") { ev.preventDefault(); if (!(ev.shiftKey && searchMonKey())) searchEnter(); } else if (k === "ArrowRight" && $("#wsq") && $("#wsq").selectionStart === $("#wsq").value.length && searchMonKey()) ev.preventDefault();
     return;
   }
-  if (document.activeElement && document.activeElement.id === "navq") { // 1.2 (7A) : Entrée ouvre la première page trouvée, Échap vide la case
+  if (document.activeElement && (document.activeElement.id === "navq" || document.activeElement.id === "navqm")) { // 1.2 (7A) : Entrée ouvre la première page trouvée, Échap vide la case
     if (k === "Enter") { ev.preventDefault(); const hit = navSearchHits(ui.navQ || "")[0]; if (hit) hotGo(hit[0]); return; }
-    if (k === "Escape") { ev.preventDefault(); if (ui.navQ) { ui.navQ = ""; if (document.activeElement.closest(".navsheet")) navMenuSheet(); else renderNav(); const n = $("#navq"); if (n) n.focus(); } else document.activeElement.blur(); return; }
+    if (k === "Escape") { ev.preventDefault(); if (ui.navQ) { ui.navQ = ""; const id = document.activeElement.id; if (id === "navqm") navMenuSheet(); else renderNav(); const n = $("#" + id); if (n) n.focus(); } else document.activeElement.blur(); return; }
     return;
   }
   if (document.activeElement && document.activeElement.id === "onRenPseudo" && k === "Enter") { ev.preventDefault(); const b = $('[data-act="on-renpseudogo"]'); if (b && !b.disabled) b.click(); return; }
@@ -9132,12 +9133,12 @@ document.addEventListener("click", (ev) => {
       else if (t === "equip") { navGo("heroes"); const c = mainHero(); if (c) ui.cid = c.id; ui.hero = "equip"; }
       else { navGo("quests"); ui.qt = t; }
       closeSheet(); window.scrollTo(0, 0); break; }
-    case "navmenu": ui.navQ = ""; navMenuSheet(); { const i = $("#navq"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
+    case "navmenu": ui.navQ = ""; navMenuSheet(); { const i = $("#navqm"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
     case "navfam": { const cf = navFam(navKey()); const open = ui.navOpen === undefined ? (cf && cf.id) : ui.navOpen; ui.navOpen = open === d.v ? null : d.v; ui.navJust = ui.navOpen; renderNav(); return; } // 1A : une famille ouverte à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
     case "navpin": { const P = navPins(); const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (P.length >= NAV_PINS_MAX) { toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); S.settings.pins = P; dirty = true; renderNav(); return; }
-    case "navq": ui.navQ = ""; if (t.closest(".navsheet")) navMenuSheet(); else renderNav(); { const i = $("#navq"); if (i) i.focus(); } return;
+    case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     /* 0.1.42 : accueil du jour */
     case "homehero": ui.tab = "team"; ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; window.scrollTo(0, 0); break;
@@ -9414,7 +9415,7 @@ document.addEventListener("change", (ev) => {
 document.addEventListener("toggle", (ev) => { const d = ev.target; if (d.classList && d.classList.contains("ptool")) { ui.toolOpen = ui.toolOpen || {}; ui.toolOpen[d.dataset.job] = d.open; } }, true); // 1.0.7.6 : le menu d'outil de la Récolte reste ouvert malgré le rafraîchissement
 document.addEventListener("input", (ev) => {
   if (ev.target.id === "wsq") { searchRender(); return; }
-  if (ev.target.id === "navq") { ui.navQ = ev.target.value.slice(0, 40); const pos = ev.target.selectionStart; if (ev.target.closest(".navsheet")) navMenuSheet(); else renderNav(); const n = $("#navq"); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } return; } // 1.2 (7A) : « Aller à une page »
+  if (ev.target.id === "navq" || ev.target.id === "navqm") { ui.navQ = ev.target.value.slice(0, 40); const pos = ev.target.selectionStart; const id = ev.target.id; if (id === "navqm") navMenuSheet(); else renderNav(); const n = $("#" + id); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } return; } // 1.2 (7A) : « Aller à une page »
   const t = ev.target;
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
