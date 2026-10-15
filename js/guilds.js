@@ -37,7 +37,7 @@
   /* ---------- bonus de guilde (sous les plafonds du jeu) ---------- */
   const perks = (l) => ({ xp: Math.floor(l / 5), drop: Math.floor(l / 10), kamas: Math.floor(l / 10) });
   const inGuild = () => { const s = S(); return !!(s && s.guild && s.guild.id); };
-  E.guildBonus = (s, kind) => { const g = s && s.guild; if (!g || !g.id) return 0; return perks(g.lvl || 1)[kind] || 0; };
+  E.guildBonus = (s, kind) => { const g = s && s.guild; if (!g || !g.id) return 0; return (perks(g.lvl || 1)[kind] || 0) + (window.CHASSE ? window.CHASSE.domBonus(s, kind) : 0) + (window.ALLY ? window.ALLY.bonus(s, kind) : 0); }; // Chasse aux Percepteurs : région dominée (9A) ; Alliances : prisme de son alliance (6A, js/allianceui.js)
   E.guildXpShare = (s, c, g) => {
     const q = s && s.guild; if (!q || !q.id || !(q.share > 0) || g <= 0) return 0;
     const d = Math.floor(g * Math.min(90, q.share) / 100); q.pend = (q.pend || 0) + d; return d;
@@ -130,7 +130,7 @@
     const r = await ON.submitGuild({ raid: { end: x.id } }); G.ending = 0;
     if (r.net || !r.ok) { if (!auto) X().toast(r.err || "Pas de connexion au serveur : réessaie dans un moment."); paint(); return; }
     const ours = (G.ex.raids_in || []).some((y) => y.id === x.id);
-    X().toast(x.me ? (r.win ? `🏆 Victoire ! Tu pilles le Percepteur de ${x.zone} : +${fmt((r.loot && r.loot.k) || 0)} kamas au coffre de ta guilde.` : `Le Percepteur de ${x.zone} et ses gardes ont battu ton équipe.`)
+    X().toast(x.me ? (r.win ? `🏆 Victoire ! Tu pilles le Percepteur de ${x.zone} : +${fmt((r.loot && r.loot.k) || 0)} kamas au coffre de ta guilde${r.loot && r.loot.bounty ? ` et une prime de ${fmt(r.loot.bounty)} kamas pour toi` : ""}.` : `Le Percepteur de ${x.zone} et ses gardes ont battu ton équipe.`)
       : ours ? (r.win ? `Le Percepteur de ${x.zone} a été pillé par ${x.by}.` : `🛡 Le Percepteur de ${x.zone} et ses gardes ont repoussé ${x.by} !`)
       : r.win ? `🏆 ${x.by} pille le Percepteur de ${x.zone} !` : `${x.by} est battu par le Percepteur de ${x.zone}.`, r.win === !ours ? "rare" : undefined);
     await loadEx();
@@ -233,6 +233,7 @@
   // 1.0.34.1 : « Quitter la guilde » aussi dans le bandeau, visible depuis chaque onglet, avec confirmation
   const leaveTxt = () => G.me.rank === 0 && G.me.members.length > 1 ? "Ta place de Meneur passera au Bras droit (ou au membre) le plus ancien." : G.me.members.length === 1 ? "Tu es seul : la guilde sera dissoute, avec son coffre." : "Tu pourras en rejoindre une autre tout de suite.";
   const leaveBtns = (cls) => `<span class="row ${cls}" style="gap:6px">${G.leave ? `<button class="btn sm danger" data-act="g-leave2" ${G.busy ? "disabled" : ""}>Oui, quitter</button><button class="btn sm" data-act="g-leave0">Annuler</button>` : `<button class="btn sm" data-act="g-leave">Quitter la guilde</button>`}</span>`;
+  const revNow = () => !!(G.ex && (G.ex.revenge || []).some((v) => !v.used && Date.parse(v.until) > srvNow())); // revanche à prendre
   const hot = () => !!(G.ex && ((G.ex.percos || []).some((p) => p.atk && !p.atk.done) || (G.ex.raids_in || []).some((x) => x.st === "open" || x.st === "fight")));
   function guildHtml() {
     const g = G.me.g; const n = G.me.members.length;
@@ -242,10 +243,10 @@
       <div class="gbar"><i style="width:${pct.toFixed(1)}%"></i><b>${g.next ? `${fmt(g.xp - g.base)} / ${fmt(span)} XP` : "niveau maximum"}</b></div>
       ${g.motd ? `<div class="gmotd">${h(g.motd)}</div>` : ""}</div></section>`;
     const asks = (G.me.asks || []).length;
-    const tabs = `<nav class="subtabs">${[["home", "Accueil"], ["coffre", "Coffre"], ["upg", "Améliorations"], ["percos", `Percepteurs${hot() ? " ⚔" : ""}`], ["boss", "Boss"], ["members", `Membres${asks ? ` · ${asks} demande${asks > 1 ? "s" : ""}` : ""}`], ["others", "Autres guildes"], ["log", "Journal"]].map(([id, t]) => `<button data-act="g-tab" data-v="${id}" aria-pressed="${G.tab === id || (id === "members" && G.tab === "set")}">${t}</button>`).join("")}
+    const tabs = `<nav class="subtabs">${[["home", "Accueil"], ["coffre", "Coffre"], ["upg", "Améliorations"], ["percos", `Percepteurs${hot() ? " ⚔" : ""}`], ["chasse", `Chasse aux Percepteurs${revNow() ? " ⚔" : ""}`], ["boss", "Boss"], ...(window.ALLY ? [["alliance", "Alliance"]] : []), ["members", `Membres${asks ? ` · ${asks} demande${asks > 1 ? "s" : ""}` : ""}`], ["others", "Autres guildes"], ["log", "Journal"]].map(([id, t]) => `<button data-act="g-tab" data-v="${id}" aria-pressed="${G.tab === id || (id === "members" && G.tab === "set")}">${t}</button>`).join("")}
       <button class="btn sm mktrade" data-act="g-chat">${X().G("chat")} Chat de guilde</button></nav>`;
     const T = G.tab;
-    const body = G.atk ? attackHtml() : T === "coffre" ? coffreHtml() : T === "upg" ? upgHtml() : T === "boss" ? bossHtml() : T === "percos" ? percosHtml() : T === "members" || T === "set" ? membersHtml() + setHtml() : T === "others" ? othersHtml() : T === "log" ? logHtml() : homeHtml(); // 1.0.30 : les réglages sont sous les membres (8 onglets, comme la maquette)
+    const body = G.atk ? attackHtml() : T === "coffre" ? coffreHtml() : T === "upg" ? upgHtml() : T === "boss" ? bossHtml() : T === "percos" ? percosHtml() : T === "chasse" && window.CHASSE ? window.CHASSE.huntHtml() : T === "alliance" && window.ALLY ? window.ALLY.pageHtml() : T === "members" || T === "set" ? membersHtml() + setHtml() : T === "others" ? othersHtml() : T === "log" ? logHtml() : homeHtml(); // 1.0.30 : les réglages sont sous les membres (8 onglets, comme la maquette)
     return `<div class="stack">${banner}${tabs}${body}</div>`;
   }
 
@@ -435,7 +436,7 @@
     if (x.st === "won") { const L = x.res || {}; const tried = (x.tries || []).map((t) => h(t.p));
       return `<section class="panel gx-win"><div class="phead"><h2>🏆 Victoire !</h2><span class="xs muted">${h(x.zone)} · ${h(dg.name || "?")}</span></div><div class="pad stack">
         <span class="small">Personne ne t'a battu en ${left(ends - Date.parse(x.at))}${tried.length ? ` (${tried.join(" et ")} ${tried.length > 1 ? "ont" : "a"} essayé)` : ""}, puis ton équipe a battu le Percepteur et ses gardes.</span>
-        <div class="mksum"><span>Pillé (${Math.round((L.part || 0.5) * 100)} % de la poche)</span><b class="gx-in">+${fk(L.k || 0)} pour le coffre${L.half ? " (butin ÷ 2 : ils ont 10 niveaux de moins)" : ""}${L.fort ? " (Coffre-fort : 25 %)" : ""}</b><span>Ressources pour toi</span><b>${resList(L.res, 3)}</b><span>Guerre des Percepteurs</span><b>+${E.RAID.win} points pour ta guilde</b><span>La zone</span><b>leur Percepteur rentre chez lui ; pose le tien dans l'heure (avec ${E.RAID.shield} h de bouclier)</b></div>${ok}</div></section>`; }
+        <div class="mksum"><span>Pillé (${Math.round((L.part || 0.5) * 100)} % de la poche)</span><b class="gx-in">+${fk(L.k || 0)} pour le coffre${L.half ? " (butin ÷ 2 : ils ont 10 niveaux de moins)" : ""}${L.fort ? " (Coffre-fort : 25 %)" : ""}</b><span>Ressources pour toi</span><b>${resList(L.res, 3)}</b>${L.bounty ? `<span>Prime</span><b class="gx-in">+${fk(L.bounty)} pour toi</b>` : ""}${L.free || L.night ? `<span>Bonus</span><b>${L.free ? `revanche +${E.HUNT.revengeLoot} %` : ""}${L.free && L.night ? ", " : ""}${L.night ? `Nuit des Percepteurs ×${String(E.HUNT.nightLoot).replace(".", ",")}` : ""}</b>` : ""}<span>Guerre des Percepteurs</span><b>+${E.RAID.win} points pour ta guilde</b><span>La zone</span><b>leur Percepteur rentre chez lui ; pose le tien dans l'heure (avec ${E.RAID.shield} h de bouclier)</b></div>${ok}</div></section>`; }
     const txt = x.st === "repelled" ? `${h((x.res && x.res.by) || "Un défenseur")} a battu ton équipe : l'attaque est repoussée (bouclier de ${E.RAID.shield} h sur leur Percepteur).`
       : x.res && x.res.gone ? "Le Percepteur n'était plus là à la fin de l'attaque." : `Le Percepteur et ses gardes ont battu ton équipe (bouclier de ${E.RAID.shield} h sur leur Percepteur).`;
     return `<section class="panel"><div class="phead"><h2>Attaque perdue</h2><span class="xs muted">${h(x.zone)} · ${h(dg.name || "?")}</span></div><div class="pad stack"><span class="small">${txt}</span>${ok}</div></section>`;
@@ -484,6 +485,7 @@
         <div class="row" style="margin-top:6px"><button class="btn sm primary" data-act="g-def" data-g="${p.id}" ${a.done || G.fighting ? "disabled" : ""}>${G.fighting === p.id ? "Combat en cours…" : a.done ? "Tu as déjà tenté" : "Défendre avec mon équipe"}</button><span class="xs muted">Victoire : poche +25 %, XP de guilde et la Bourse du Percepteur pour toi. Sans victoire en ${E.PERCO_ATK_H} h : ${Math.round((1 - Math.min(0.8, 0.5 + 0.03 * up("robustesse"))) * 100)} % de la poche est perdue.</span></div></div>` : "";
     const r = G.res && G.res.perco && G.res.id === p.id ? `<div class="small ${G.res.win ? "" : "muted"}">${G.res.win ? `🛡 Victoire en ${G.res.rounds} tours ! Poche +25 %${G.res.gxp ? `, +${fmt(G.res.gxp)} XP de guilde` : ""}, Bourse du Percepteur reçue.` : `Défaite contre ${G.res.foes} monstres : le suivant en affrontera un de plus.`}</div>` : "";
     return `<section class="panel gperco ${a || raided ? "hot" : ""}"><div class="phead"><h2>${h(p.name || p.sid)}</h2><span class="xs muted">niv. ${p.zlvl || "?"}${p.dj ? " · donjon" : ""} · posé par ${h(p.by || "?")} · ${p.wins} défense${p.wins > 1 ? "s" : ""} réussie${p.wins > 1 ? "s" : ""}, ${p.losses} pillage${p.losses > 1 ? "s" : ""}</span>${shieldPill(p.shield, "bouclier ")}</div><div class="pad stack">
+        ${window.CHASSE ? `<div class="pc-tags">${window.CHASSE.vetHtml(p)}${window.CHASSE.bountyHtml(window.CHASSE.find(p.id) || {})}</div>` : ""}
         <div class="gbar"><i style="width:${Math.min(100, f * 100).toFixed(1)}%"></i><b>poche ${Math.round(f * 100)} %${f > 1 ? " (bonus de défense)" : f >= 1 ? " (pleine)" : ""}</b></div>
         <div class="row small"><span class="coin"></span><b class="num">${fmt(gain.k)}</b> kamas pour le coffre · ressources pour toi ${res}</div>
         ${raided ? `<div class="gatk"><b>⚔ Une guilde l'attaque.</b> <span class="small">Pas de récolte avant la fin de l'attaque : repoussez-la plus haut.</span></div>` : ""}${atk}${r}
@@ -497,12 +499,17 @@
     const w = G.ex.war || {}; const me = w.me || {}; const myId = G.me.g.id;
     const top = (w.top || []).map((g, i) => `<div class="li small ${g.id === myId ? "gme" : ""}"><b class="num lv">${i + 1}</b>${emb(g.ic, g.col, 26)}<span class="grow">${h(g.name)} <span class="xs muted">· niv. ${g.lvl} · ⚔ ${g.win} / ${g.loss}${g.def ? ` · ${g.def} repoussée${g.def > 1 ? "s" : ""}` : ""}</span></span><b class="num">${fmt(g.pts)} pt${g.pts > 1 ? "s" : ""}</b></div>`).join("") || `<div class="empty">Aucune guilde n'a encore marqué de point cette semaine.</div>`;
     const lastW = (w.last || [])[0];
-    const rules = [["⚔", `${G.ex.max || E.RAID.day} attaques par joueur et par jour, avec ton équipe d'arène (3 héros, celle du Kolizéum)${up("banniere") ? " (Bannière de guerre)" : ""}`], ["⏳", `${E.RAID.h} h pour défendre (${E.RAID.hVigie} h avec la Vigie) : chaque membre de la guilde attaquée peut affronter l'attaquant une fois`], ["🏰", "Personne n'a gagné ? L'attaquant affronte le Percepteur et ses gardes (plus forts avec la Robustesse)"], ["💰", `Victoire : ${E.RAID.loot} % de la poche (${E.RAID.lootFort} % contre un Coffre-fort), kamas au coffre et ressources pour l'attaquant ; le Percepteur battu rentre chez lui, sa place est assommée ${E.RAID.ko} h`], ["🛡", `Attaque repoussée : bouclier de ${E.RAID.shield} h sur le Percepteur`], ["⚖", `Butin divisé par 2 si la guilde attaquée a ${E.RAID.gap} niveaux de moins que la tienne`], ["🌱", `Nouvelles guildes protégées ${E.GUILD_SHIELD_H} h`], ["🏆", `${E.RAID.win} points par attaque gagnée, ${E.RAID.def} par attaque repoussée ; titre « ${E.WAR_TITLE} » pour la 1re guilde de la semaine`]];
+    const rules = [["⚔", `${G.ex.max || E.RAID.day} attaques par joueur et par jour, avec ton équipe d'arène (3 héros, celle du Kolizéum)${up("banniere") ? " (Bannière de guerre)" : ""}`], ["⏳", `${E.RAID.h} h pour défendre (${E.RAID.hVigie} h avec la Vigie) : chaque membre de la guilde attaquée peut affronter l'attaquant une fois`], ["🏰", "Personne n'a gagné ? L'attaquant affronte le Percepteur et ses gardes (plus forts avec la Robustesse)"], ["💰", `Victoire : ${E.RAID.loot} % de la poche (${E.RAID.lootFort} % contre un Coffre-fort), kamas au coffre et ressources pour l'attaquant ; le Percepteur battu rentre chez lui, sa place est assommée ${E.RAID.ko} h`], ["🛡", `Attaque repoussée : bouclier de ${E.RAID.shield} h sur le Percepteur`], ["⚖", `Butin divisé par 2 si la guilde attaquée a ${E.RAID.gap} niveaux de moins que la tienne`], ["🌱", `Nouvelles guildes protégées ${E.GUILD_SHIELD_H} h`], ["🏆", `${E.RAID.win} points par attaque gagnée, ${E.RAID.def} par attaque repoussée ; titre « ${E.WAR_TITLE} » pour la 1re guilde de la semaine`],
+      ["⚔", `Revanche : une guilde pillée a ${E.HUNT.revenge} h pour attaquer un Percepteur de la guilde pilleuse, une fois par membre, sans compter ses attaques du jour, avec +${E.HUNT.revengeLoot} % de butin`],
+      ["★", `Vétérans : une étoile par attaque de guilde repoussée (${E.HUNT.stars} au plus), +${Math.round(E.HUNT.star * 100)} % de PV et de dommages chacune pour le Percepteur et ses gardes ; perdues s'il est pillé`],
+      ["💰", `Primes : le Meneur ou un Bras droit met une prime sur un Percepteur ennemi (payée par le coffre) ; celui qui le pille la touche, sinon elle revient au coffre au bout de ${E.HUNT.bountyDays} jours`],
+      ["🏴", `Domination : la guilde qui a le plus de Percepteurs dans une région y gagne +${E.HUNT.dom} % de kamas et de butin`],
+      ["🌙", `Nuit des Percepteurs, samedi de ${E.HUNT.nightFrom} h à ${E.HUNT.nightTo} h : butin ×${String(E.HUNT.nightLoot).replace(".", ",")}, boucliers réduits de moitié, une attaque de plus ; titre « ${E.HUNT.nightTitle} » pour la guilde qui pille le plus`]];
     const done = (G.ex.raids_in || []).map((x) => Object.assign({ in: true }, x)).concat((G.ex.raids_out || []).map((x) => Object.assign({ in: false }, x))).filter((x) => !(x.st === "open" || x.st === "fight")).sort((a, b) => b.id - a.id).slice(0, 8);
     const res = (x) => x.in ? (x.st === "won" ? [`pillé par ${h(x.by)} (${h(x.ag ? x.ag.name : "?")})`, "gx-out"] : [`${h(x.by)} (${h(x.ag ? x.ag.name : "?")}) repoussé`, "gx-in"]) : (x.st === "won" ? [`${h(x.by)} pille ${h(x.dg ? x.dg.name : "?")}`, "gx-in"] : [`${h(x.by)} repoussé par ${h(x.dg ? x.dg.name : "?")}`, "gx-out"]);
     return `<div class="grid2g even"><section class="panel"><div class="phead"><h2>Guerre des Percepteurs</h2><span class="xs muted">cette semaine${me.pts ? ` · ta guilde : ${me.pts} pt${me.pts > 1 ? "s" : ""}, ${w.rank === 1 ? "1re" : nth(w.rank)}` : ""}</span></div><div class="list">${top}</div>
         ${lastW ? `<div class="pad xs muted">Semaine passée : ${h(lastW.name)} (titre « ${E.WAR_TITLE} »)</div>` : ""}
-        <div class="pad xs muted">Tes attaques aujourd'hui : ${G.ex.left} / ${G.ex.max} restante${G.ex.left > 1 ? "s" : ""}. Pour attaquer, ouvre la fiche d'une guilde dans « Autres guildes ».</div></section>
+        <div class="pad xs muted">Tes attaques aujourd'hui : ${G.ex.left} / ${G.ex.max} restante${G.ex.left > 1 ? "s" : ""}. Pour attaquer, ouvre <button class="btn xs" data-act="g-tab" data-v="chasse">Chasse aux Percepteurs</button></div></section>
       <section class="panel"><div class="phead"><h2>Règles des attaques</h2></div><div class="list">${rules.map(([i, t]) => `<div class="li small"><b style="width:22px;text-align:center">${i}</b><span class="grow">${t}</span></div>`).join("")}</div>
         ${done.length ? `<div class="phead"><h2>Attaques récentes</h2></div><div class="list">${done.map((x) => { const [t, c] = res(x); return `<div class="li small"><span class="grow">${h(x.zone)} : ${t}</span><span class="xs ${c}">${since(x.at)}</span></div>`; }).join("")}</div>` : ""}</section></div>`;
   }
@@ -520,24 +527,31 @@
     const mem = `<section class="panel"><div class="phead"><h2>Membres</h2>${g.spy ? `<span class="xs muted">équipes d'arène (Espionnage)</span>` : ""}</div><div class="list">${(g.members || []).map((m) => `<div class="gmrow gx-vrow">${X().cmed(m.cls, m.lvl)}<span class="grow"><b>${h(m.p)}</b><br><span class="xs muted">niv. ${m.lvl || 1}</span></span><span class="grk r${m.rank}">${RANKS[m.rank]}</span>${g.spy ? (m.team && m.team.length ? team(m.team) : `<span class="xs muted">pas d'équipe</span>`) : "<span></span>"}<span></span></div>`).join("")}</div></section>`;
     const P = g.percos || [];
     const act = (p) => g.mine ? `<span class="xs muted">ta guilde</span>` : g.shield && Date.parse(g.shield) > srvNow() ? shieldPill(g.shield, "encore ") : p.raid ? `<span class="tag warn">attaque en cours</span>` : p.shield && Date.parse(p.shield) > srvNow() ? shieldPill(p.shield, "encore ") : p.monsters ? `<span class="tag soft">attaqué par des monstres</span>` : inG ? `<button class="btn sm primary" data-act="g-atk" data-g="${g.id}" data-p="${p.id}">⚔ Attaquer</button>` : "";
-    const percos = `<section class="panel"><div class="phead"><h2>Percepteurs</h2><span class="xs muted">${P.length} posé${P.length > 1 ? "s" : ""}${g.rob ? ` · Robustesse rang ${g.rob}` : ""}</span></div><div class="list">${P.map((p) => `<div class="li">${X().IC("bourse")}<span class="grow"><b>${h(p.name)}</b> <span class="xs muted">niv. ${p.zlvl}${p.dj ? " · donjon" : ""}</span><br><span class="xs muted">poche ${Math.round((p.fill || 0) * 100)} %${p.pocket ? ` · ${fk(p.pocket.k)} et ${fmt(resSum(p.pocket.res))} ressources` : ""}${p.raid ? ` · attaqué par ${h(p.raid.g || p.raid.by)}` : ""}</span></span>${act(p)}</div>`).join("") || `<div class="empty">Aucun Percepteur posé.</div>`}</div></section>`;
+    const percos = `<section class="panel"><div class="phead"><h2>Percepteurs</h2><span class="xs muted">${P.length} posé${P.length > 1 ? "s" : ""}${g.rob ? ` · Robustesse rang ${g.rob}` : ""}</span></div><div class="list">${P.map((p) => `<div class="li">${X().IC("bourse")}<span class="grow"><b>${h(p.name)}</b> <span class="xs muted">niv. ${p.zlvl}${p.dj ? " · donjon" : ""}</span>${window.CHASSE ? `<div class="pc-tags">${window.CHASSE.vetHtml(p)}${window.CHASSE.bountyHtml(window.CHASSE.find(p.id) || {})}</div>` : "<br>"}<span class="xs muted">poche ${Math.round((p.fill || 0) * 100)} %${p.pocket ? ` · ${fk(p.pocket.k)} et ${fmt(resSum(p.pocket.res))} ressources` : ""}${p.raid ? ` · attaqué par ${h(p.raid.g || p.raid.by)}` : ""}</span></span>${act(p)}</div>`).join("") || `<div class="empty">Aucun Percepteur posé.</div>`}</div></section>`;
     return `${back}${sheet}<div class="grid2g even">${mem}${percos}</div>`;
   }
   function attackHtml() {
     const back = `<div class="row"><button class="btn sm" data-act="g-atkback">← Retour</button></div>`;
     const v = G.view && G.view.id === G.atk.gid ? G.view.d : null; if (!v) return back + `<div class="empty">${G.view && G.view.err ? h(G.view.err) : "Chargement…"}</div>`;
     const p = (v.percos || []).find((x) => x.id === G.atk.pid); if (!p) return back + `<div class="empty">Ce Percepteur n'est plus là.</div>`;
-    const T = myTeam(); const cap = E.percoCap(p.sid); const part = E.raidPart(v.mylvl || G.me.g.lvl, v.lvl, !!v.fort);
+    const T = myTeam(); const cap = E.percoCap(p.sid); const part0 = E.raidPart(v.mylvl || G.me.g.lvl, v.lvl, !!v.fort);
+    /* Chasse aux Percepteurs : revanche (+25 %, hors attaques du jour), Nuit des Percepteurs (×1,5), primes, vétérans */
+    const CH = window.CHASSE; const rv = (G.ex && G.ex.revenge || []).find((x) => x.gid === v.id && !x.used && Date.parse(x.until) > srvNow());
+    const nt = CH ? CH.night() : false; const part = Math.min(1, part0 * (rv ? 1 + E.HUNT.revengeLoot / 100 : 1) * (nt ? E.HUNT.nightLoot : 1));
+    const mp = CH && CH.find(p.id); const bk = mp ? (mp.bounty || []).filter((b) => b.gid !== G.me.g.id).reduce((a, b) => a + (+b.k || 0), 0) : 0;
     const est = p.pocket ? E.raidLoot(p.pocket, part) : E.raidLoot(E.percoGain(cap, Math.min(1, p.fill || 0), {}), part);
     const leftN = G.ex ? G.ex.left : E.RAID.day; const maxN = G.ex ? G.ex.max : E.RAID.day;
     const blocked = v.shield && Date.parse(v.shield) > srvNow() ? `Jeune guilde protégée encore ${left(Date.parse(v.shield) - srvNow())}.` : p.shield && Date.parse(p.shield) > srvNow() ? `Ce Percepteur a un bouclier encore ${left(Date.parse(p.shield) - srvNow())}.`
-      : p.raid ? "Une attaque est déjà en cours sur ce Percepteur." : p.monsters ? "Des monstres l'attaquent déjà : reviens plus tard." : !leftN ? `Plus d'attaque aujourd'hui (${maxN} par jour) : reviens demain.` : "";
+      : p.raid ? "Une attaque est déjà en cours sur ce Percepteur." : p.monsters ? "Des monstres l'attaquent déjà : reviens plus tard." : !leftN && !rv ? `Plus d'attaque aujourd'hui (${maxN} par jour) : reviens demain.` : "";
+    const extra = [rv ? `<div class="pc-ban" style="--gc:#e0674f"><span class="big">⚔</span><div class="grow stack" style="gap:2px"><b>Revanche contre ${h(v.name)}</b><span class="small">Cette attaque ne compte pas dans tes attaques du jour, et le butin est +${E.HUNT.revengeLoot} %. Encore ${left(Date.parse(rv.until) - srvNow())}.</span></div></div>` : "",
+      nt ? `<div class="pc-ban" style="--gc:#c77dff"><span class="big">🌙</span><div class="grow stack" style="gap:2px"><b>Nuit des Percepteurs</b><span class="small">Butin ×${String(E.HUNT.nightLoot).replace(".", ",")} pour toute attaque lancée avant ${E.HUNT.nightTo} h.</span></div></div>` : ""].join("");
+    const tags = mp ? `<div class="pc-tags">${CH.vetHtml(mp)}${CH.bountyHtml(mp)}</div>` : "";
     const def = `<div class="gatk"><b>Attaque annoncée à ${h(v.name)}</b> <span class="small">Ils ont ${E.RAID.h} h (${E.RAID.hVigie} h avec la Vigie) pour venir défendre : chaque membre qui se connecte peut affronter ton équipe une fois (rejouée par le serveur). Si personne ne te bat, ton équipe affronte à la fin le Percepteur et ses gardes${v.rob ? ` (Robustesse rang ${v.rob} : +${3 * v.rob} %)` : ""} : gagne, et tu pilles la poche.</span></div>
       ${v.spy ? `<div class="stack" style="gap:4px;margin-top:6px"><b class="xs">Leurs équipes d'arène (Espionnage)</b>${(v.members || []).filter((m) => m.team && m.team.length).map((m) => `<div class="row xs">${h(m.p)} ${team(m.team)}</div>`).join("") || `<span class="xs muted">aucune équipe d'arène</span>`}</div>` : ""}`;
-    return `${back}<section class="panel"><div class="phead"><h2>⚔ Attaquer le Percepteur de ${h(p.name)}</h2><span class="xs muted">${h(v.name)} · niv. ${v.lvl} · poche ${Math.round((p.fill || 0) * 100)} %</span></div><div class="pad stack">
+    return `${back}<section class="panel"><div class="phead"><h2>⚔ ${rv ? "Revanche sur" : "Attaquer"} le Percepteur de ${h(p.name)}</h2><span class="xs muted">${h(v.name)} · niv. ${v.lvl} · poche ${Math.round((p.fill || 0) * 100)} %</span></div><div class="pad stack">${tags}${extra}
       <div class="gx-vs"><div class="stack" style="gap:6px"><b class="small">Ton équipe d'arène (${T.length} héros, celle du Kolizéum)</b>${T.length ? team(T) : `<button class="btn sm" data-act="nav" data-v="koli">Choisir mon équipe d'arène</button>`}</div><span class="vs">VS</span><div>${def}</div></div>
-      <div class="row"><button class="btn primary" data-act="g-rgo" data-g="${p.id}" ${blocked || !T.length || G.busy || G.fighting ? "disabled" : ""}>${G.fighting === "go" ? "Envoi…" : "Lancer l'attaque"}</button><span class="xs ${blocked ? "" : "muted"}" ${blocked ? 'style="color:var(--danger)"' : ""}>${blocked || `Ton équipe attend leurs défenseurs pendant ${E.RAID.h} h, puis le Percepteur. ${leftN} / ${maxN} attaque${leftN > 1 ? "s" : ""} restante${leftN > 1 ? "s" : ""} aujourd'hui.`}</span></div>
-      <div class="mksum mkraid"><span>À gagner${p.pocket ? "" : " (environ)"}</span><b>${fk(est.k)} pour ton coffre et ${p.pocket ? "" : "~"}${fmt(resSum(est.res))} ressources pour toi${part < 0.5 ? ` (butin ÷ 2 : ils ont ${E.RAID.gap} niveaux de moins)` : ""}</b><span>Si tu gagnes</span><b>son Percepteur rentre chez lui, la zone est à ta guilde pendant ${E.RAID.hold} h</b></div></div></section>`;
+      <div class="row"><button class="btn primary" data-act="g-rgo" data-g="${p.id}" ${blocked || !T.length || G.busy || G.fighting ? "disabled" : ""}>${G.fighting === "go" ? "Envoi…" : rv ? "Lancer la revanche" : "Lancer l'attaque"}</button><span class="xs ${blocked ? "" : "muted"}" ${blocked ? 'style="color:var(--danger)"' : ""}>${blocked || `Ton équipe attend leurs défenseurs pendant ${E.RAID.h} h, puis le Percepteur. ${rv ? "Revanche : ne compte pas dans tes attaques du jour." : `${leftN} / ${maxN} attaque${leftN > 1 ? "s" : ""} restante${leftN > 1 ? "s" : ""} aujourd'hui.`}`}</span></div>
+      <div class="mksum mkraid"><span>À gagner${p.pocket ? "" : " (environ)"}</span><b>${fk(est.k)} pour ton coffre et ${p.pocket ? "" : "~"}${fmt(resSum(est.res))} ressources pour toi${part0 < 0.5 ? ` (butin ÷ 2 : ils ont ${E.RAID.gap} niveaux de moins)` : ""}${rv ? ` (revanche +${E.HUNT.revengeLoot} %)` : ""}${nt ? ` (nuit ×${String(E.HUNT.nightLoot).replace(".", ",")})` : ""}</b>${bk ? `<span>Prime</span><b class="gx-in">+${fk(bk)} pour toi si tu le pilles</b>` : ""}<span>Si tu gagnes</span><b>son Percepteur rentre chez lui, la zone est à ta guilde pendant ${E.RAID.hold} h</b></div></div></section>`;
   }
 
   function membersHtml() {
@@ -602,7 +616,7 @@
     const t = ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, d = t.dataset;
     if (!/^g-/.test(a)) return;
     switch (a) {
-      case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; G.sureBuy = null; G.atk = null; if (d.v !== "others") G.view = null; paint(); if (d.v === "boss" || d.v === "percos" || d.v === "home") loadEx(); if (d.v === "others") loadList(); if (d.v === "coffre" || d.v === "upg") load(); return;
+      case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; G.sureBuy = null; G.atk = null; if (d.v !== "others") G.view = null; paint(); if (d.v === "boss" || d.v === "percos" || d.v === "home" || d.v === "chasse") loadEx(); if ((d.v === "chasse" || d.v === "percos") && window.CHASSE) window.CHASSE.load(d.v === "chasse"); if (d.v === "alliance" && window.ALLY) window.ALLY.load(true); if (d.v === "others") loadList(); if (d.v === "coffre" || d.v === "upg") load(); return;
       case "g-bwatch": bossWatch(); return;
       case "g-bstop": if (G.batch) G.batch.stop = true; return;
       case "g-boss": case "g-def": {
@@ -639,14 +653,16 @@
         G.fighting = false;
         if (r.net) X().toast("Pas de connexion au serveur : réessaie dans un moment.");
         else if (!r.ok) X().toast(r.err || "Refusé par le serveur.");
-        else if (a === "g-rgo") { X().toast(`⚔ Attaque lancée sur le Percepteur de ${r.zone} ! ${r.g} a ${E.RAID.h} h pour la repousser, puis ton équipe affrontera le Percepteur et ses gardes.`, "rare"); G.atk = null; G.view = null; G.tab = "percos"; }
+        else if (a === "g-rgo") { X().toast(`⚔ ${r.free ? "Revanche lancée" : "Attaque lancée"} sur le Percepteur de ${r.zone} ! ${r.g} a ${E.RAID.h} h pour la repousser, puis ton équipe affrontera le Percepteur et ses gardes.`, "rare"); G.atk = null; G.view = null; G.tab = "percos"; }
         else X().toast(r.win ? `🛡 Attaque repoussée ! Bouclier de ${E.RAID.shield} h pour le Percepteur, +${E.RAID.def} point de Guerre des Percepteurs.` : `Défaite contre l'équipe de ${r.by} : un autre membre peut encore tenter.`, r.win ? "rare" : undefined);
+        if (window.CHASSE) window.CHASSE.load(true);
+        if (window.ALLY && G.tab === "alliance") window.ALLY.load(true); // Alliances (9A) : défense d'un Percepteur allié
         await loadEx(); return; }
       case "g-rend": { const x = ((G.ex && G.ex.raids_out) || []).concat((G.ex && G.ex.raids_in) || []).find((y) => y.id === +d.g); if (x) { G.endTry[x.id] = 0; endRaid(x, false); } return; }
       case "g-rseen": seenAdd(+d.g); paint(); return;
       case "g-view": if (!mine()) return; openView(+d.g); if (G.me && G.me.g) G.tab = "others"; paint(); window.scrollTo(0, 0); return;
       case "g-vback": G.view = null; G.atk = null; paint(); return;
-      case "g-atk": if (!mine()) { solo(); return; } openView(+d.g); G.atk = { gid: +d.g, pid: +d.p }; G.tab = "others"; paint(); window.scrollTo(0, 0); if (!G.ex) loadEx(); return;
+      case "g-atk": if (!mine()) { solo(); return; } openView(+d.g); G.atk = { gid: +d.g, pid: +d.p }; G.tab = d.gotab || G.tab === "chasse" ? "chasse" : "others"; /* Chasse aux Percepteurs : « Retour » ramène à la chasse */ paint(); window.scrollTo(0, 0); if (!G.ex) loadEx(); return;
       case "g-atkback": G.atk = null; paint(); return;
       case "g-collect": { const r = await call("perco_collect", { p_after: after(), p_id: +d.g }); if (r) { if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true);
           const tx = r.txp > 0 ? E.percoTeamXp(S(), r.txp, r.zl) : 0; if (tx) X().markDirty(); // 1.0.30 : Sagesse : XP pour l'équipe qui récolte
@@ -699,9 +715,10 @@
       else if (here && inGuild() && tick % 5 === 0) loadEx(); // 1.0.30 : attaques et boss plus frais quand on regarde la guilde
       else if (here && G.me && !G.busy && !document.querySelector("#sheet .sheet")) paint(true); // comptes à rebours (DX.morph, pas de redessin complet)
       if (inGuild() && G.ex && !here && tick % 15 === 1) autoEnd();
+      if (inGuild() && window.CHASSE && tick % 150 === 2) window.CHASSE.load(true); // Chasse aux Percepteurs : régions dominées (9A)
     }, 4000);
   }
 
-  window.GUILD = { start, render, sync, load, say, adminHtml, chatSeen, inGuild,
+  window.GUILD = { start, render, sync, load, loadEx, say, adminHtml, chatSeen, inGuild, paint, call, // paint, call, loadEx : js/chasse.js
     get msgs() { return G.chat; }, get unread() { return G.unread; }, G };
 })();

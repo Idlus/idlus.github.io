@@ -63,3 +63,35 @@
 /* Écran d'attaque : étiquettes courtes à gauche, texte long à droite (« À gagner » ne se coupe plus au téléphone) */
 .mksum.mkraid{grid-template-columns:auto 1fr}
 .mksum.mkraid>span{white-space:nowrap}
+/* Chasse aux Percepteurs (js/chasse.js) : liste groupée par guilde, emblèmes sur la carte, revanche, primes, vétérans, nuit */
+.pc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pc-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center}
+.pc-ic img{width:30px;height:30px}
+.pc-bar{height:8px;border-radius:5px;background:var(--panel3);border:1px solid var(--frame);overflow:hidden;margin-top:5px;max-width:260px}
+.pc-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#e8c063)}
+.pc-loot{text-align:right;line-height:1.25}.pc-loot b{font-size:15px}
+.pc-act{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.pc-row.dim{opacity:.62}
+.pc-rev{background:linear-gradient(180deg,#ffb38a,#e0674f)!important;border-color:#e0674f!important;color:#1a0d08!important}
+.pc-grp{display:flex;gap:8px;align-items:center;padding:10px 14px 4px;font-weight:800;flex-wrap:wrap}
+.pc-grp>.grow{flex:1 1 220px;min-width:0}
+.pc-revg{border-color:#e0674f}
+.pc-chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 8px 1px 2px;font-size:11.5px;font-weight:800;border:1px solid var(--gc);background:color-mix(in srgb,var(--gc) 22%,transparent);color:var(--ink);white-space:nowrap}
+.pc-chip img{width:16px;height:16px;border-radius:50%;background:var(--gc);padding:1px}
+.pc-line{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:12px}
+.pc-dom{display:inline-flex;align-items:center;gap:4px}
+.pc-zone{border:2px solid var(--gc);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center;background:color-mix(in srgb,var(--gc) 12%,var(--panel2))}
+.pc-tags{display:flex;gap:6px;flex-wrap:wrap;margin:3px 0 1px}
+.pc-bnty{font-weight:800;font-size:11.5px;border-radius:999px;padding:1px 8px;border:1px solid #c9a227;background:rgba(201,162,39,.2);color:var(--gold)}
+.pc-vet{font-weight:800;font-size:11.5px;color:var(--gold)}
+.pc-vet .muted{color:var(--muted);opacity:.45}
+.pc-ban{border:2px solid var(--gc);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:color-mix(in srgb,var(--gc) 14%,var(--panel2))}
+.pc-ban .big{font-size:26px}
+.pc-night:not(.on){border-width:1px}
+.pc-note{border:1px dashed var(--frame);border-radius:12px;padding:10px 12px}
+@media (max-width:700px){
+  .pc-row{grid-template-columns:auto minmax(0,1fr);row-gap:8px}
+  .pc-row .pc-loot{grid-column:2;text-align:left}
+  .pc-row .pc-act{grid-column:1 / -1;justify-content:flex-start}
+  .pc-ban{padding:10px 12px}
+}

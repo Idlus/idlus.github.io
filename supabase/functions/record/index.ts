@@ -11,6 +11,7 @@
 // 1.0.30 : les records gardent l'équipe rejouée (colonne team) ; avec { dofus: { uid, did, k } }, la GIGA annonce d'un Dofus
 // tombé sur un boss (vérifiée ici, puis envoyée à tous les joueurs connectés par le chat ; js/giga.js).
 // Songe infini (1.0.30) : avec { songe: 1 }, le record de la semaine (js/songe.js, supabase/songe.sql).
+// Alliances (1.1) : avec { prism: région }, un combat de la bataille des prismes (js/alliance.js, supabase/alliances.sql).
 // game.js est assemblé par tools/build_server.js au déploiement.
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { D, E, V } from "./game.js";
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ ok: false, err: "non connecté" }, 401);
 
   // deno-lint-ignore no-explicit-any
-  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number } = {};
+  let body: { did?: string; defi?: string; gboss?: number; perco?: number; koli?: any; wboss?: number; dofus?: any; raid?: any; songe?: number; prism?: string } = {};
   try { body = await req.json(); } catch (_) { /* corps vide */ }
   if (body.defi) return defi(db, user.id, String(body.defi));
   if (body.gboss) return gboss(db, user.id);
@@ -44,6 +45,7 @@ Deno.serve(async (req) => {
   if (body.wboss) return wboss(db, user.id);
   if (body.dofus) return dofusAnn(db, user.id, body.dofus);
   if (body.songe) return songe(db, user.id);
+  if (body.prism) return prism(db, user.id, String(body.prism));
   const did = String(body.did || "");
   const dg = D.DUNGEONS[did];
   if (!dg) return json({ ok: false, err: "donjon inconnu" }, 400);
@@ -213,7 +215,8 @@ async function raid(db: any, uid: string, q: any) {
     lastTry.set(uid + ":rdend", now);
     const { data: st, error } = await db.rpc("rd_end_start", { p_user: uid, p_raid: id });
     if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
-    const seed = E.raidSeed(id, "perco"); const B = E.percoGuards(seed, st.lvl, st.rob);
+    const seed = E.raidSeed(id, "perco"); let B = E.percoGuards(seed, st.lvl, st.rob, st.stars); // Chasse aux Percepteurs : +2 % par étoile de vétéran
+    if (st.ally && E.allyPercoBoost) B = E.allyPercoBoost(B); // Alliances (6A) : +20 % de PV dans une région du prisme de son alliance
     const r = E.koliSim(st.att, B, seed);
     const { data: done, error: e2 } = await db.rpc("rd_end_done", { p_raid: id, p_win: !!r.win, p_rounds: r.rounds });
     if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
@@ -234,6 +237,26 @@ async function raid(db: any, uid: string, q: any) {
   const { data: done, error: e2 } = await db.rpc("rd_def_done", { p_user: uid, p_raid: id, p_win: !!r.win, p_heads: T.heads, p_rounds: r.rounds });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
   return json({ ok: true, raid: true, def: true, win: !!r.win, rounds: r.rounds, by: st.by });
+}
+
+// ---------- Alliances (1.1) : un combat de la bataille des prismes (js/alliance.js, supabase/alliances.sql) ----------
+// En attaque (12A) : l'équipe d'arène affronte le prisme et ses gardes (+30 %, +10 % par rang de Rempart) ;
+// en défense (le prisme est à son alliance) : une vague d'assaillants (+30 %). 1 point par victoire.
+// deno-lint-ignore no-explicit-any
+async function prism(db: any, uid: string, zone: string) {
+  const g = await guildSave(db, uid, ":prism"); if (g.err) return g.err;
+  // deno-lint-ignore no-explicit-any
+  const A = E.koliSnap(g.S, E.koliState(g.S, Date.now()).team).filter((x: any) => x);
+  if (!A.length) return json({ ok: false, err: "Choisis ton équipe d'arène (Kolizéum) : elle combat pour les prismes." });
+  const { data: st, error } = await db.rpc("ps_start", { p_user: uid, p_zone: zone });
+  if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
+  const lvl = Math.max(st.lo || 1, E.koliLvl(g.S));
+  const seed = E.prismSeed(st.w, zone, uid, st.n);
+  const B = st.def ? E.prismAssail(seed, lvl) : E.prismGuards(seed, lvl, st.rempart || 0);
+  const r = E.koliSim(A, B, seed);
+  const { data: done, error: e2 } = await db.rpc("ps_done", { p_user: uid, p_w: st.w, p_zone: zone, p_n: st.n, p_def: !!st.def, p_win: !!r.win, p_rounds: r.rounds });
+  if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
+  return json({ ok: true, prism: true, zone, def: !!st.def, free: !!st.free, win: !!r.win, rounds: r.rounds, used: done.used, extra: !!done.extra, pts: done.pts || {} });
 }
 
 // ---------- Kolizéum (js/koli.js) : 3 contre 3 contre l'équipe d'arène d'un autre joueur, jouée par l'IA ----------

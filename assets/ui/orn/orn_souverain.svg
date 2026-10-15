@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 96" width="200" height="96"><title>Ornement · Prisme des Douze</title>
+<defs><linearGradient id="m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b8"/><stop offset=".45" stop-color="#f2c75a"/><stop offset="1" stop-color="#b07a22"/></linearGradient>
+<linearGradient id="p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#8fd8ff"/><stop offset="1" stop-color="#3a6fd8"/></linearGradient>
+<filter id="s" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#000" flood-opacity=".55"/></filter></defs>
+<g filter="url(#s)">
+<g><path d="M76 50C62 34 40 26 14 28c9 3 16 7 20 12-9-1-16 1-22 5 11 0 19 2 25 7-7 1-12 4-16 9 15-4 33-1 55 1Z" fill="url(#m)" stroke="#5a3a10" stroke-width="2"/><path d="M70 50C54 40 38 35 24 35M68 55C54 50 40 49 28 51" stroke="#5a3a10" stroke-opacity=".45" stroke-width="1.5" fill="none"/></g>
+<g transform="translate(200 0) scale(-1 1)"><path d="M76 50C62 34 40 26 14 28c9 3 16 7 20 12-9-1-16 1-22 5 11 0 19 2 25 7-7 1-12 4-16 9 15-4 33-1 55 1Z" fill="url(#m)" stroke="#5a3a10" stroke-width="2"/><path d="M70 50C54 40 38 35 24 35M68 55C54 50 40 49 28 51" stroke="#5a3a10" stroke-opacity=".45" stroke-width="1.5" fill="none"/></g>
+<path d="M100 4 L114 26 L108 56 L92 56 L86 26 Z" fill="url(#p)" stroke="#fff" stroke-opacity=".8" stroke-width="1.5"/>
+<path d="M100 4 L100 56 M86 26 L100 34 L114 26" stroke="#fff" stroke-opacity=".55" stroke-width="1.2" fill="none"/>
+<path d="M84 62 L116 62 L112 54 L88 54 Z" fill="url(#m)" stroke="#5a3a10" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="100" cy="20" r="3" fill="#fff"/>
+</g></svg>

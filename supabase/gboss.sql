@@ -36,7 +36,7 @@ create index if not exists gboss_hits_g on public.gboss_hits (w, guild_id);
 alter table public.gboss_hits enable row level security;
 
 -- coffres ouverts et titres reçus (1.0.30 : 1001 à 1004 = coffres des phases 1 à 4, 1100 = première guilde
--- à finir le boss, 1200 = Conquérant ; 0 = 3 meilleures guildes ; 25 à 100 = anciens paliers)
+-- à finir le boss, 1200 = Conquérant, 1300 = Ombre de la nuit (Chasse aux Percepteurs) ; 0 = 3 meilleures guildes ; 25 à 100 = anciens paliers)
 create table if not exists public.gboss_claims (
   user_id uuid not null references auth.users (id) on delete cascade,
   w int not null, step int not null,
@@ -143,6 +143,39 @@ create index if not exists perco_raids_att on public.perco_raids (att_guild, id 
 create index if not exists perco_raids_user on public.perco_raids (att_user, at desc);
 create index if not exists perco_raids_perco on public.perco_raids (perco_id, status);
 alter table public.perco_raids enable row level security;
+-- « Chasse aux Percepteurs » (choix 6A à 10A de Mathis) :
+-- vétérans (une étoile par attaque de guilde repoussée, 5 au plus, perdues au pillage), revanche (attaque gratuite,
+-- butin +25 %), Nuit des Percepteurs (samedi 20 h-23 h, Paris : butin ×1,5), primes payées par le coffre.
+alter table public.guild_percos add column if not exists stars int not null default 0;
+alter table public.perco_raids add column if not exists free boolean not null default false;  -- revanche : ne compte pas dans les attaques du jour
+alter table public.perco_raids add column if not exists bonus real not null default 1;         -- butin ×1,25 (revanche), ×1,5 (nuit)
+alter table public.perco_raids add column if not exists night boolean not null default false; -- lancée pendant la Nuit des Percepteurs
+-- revanche : la guilde guild_id a été pillée par target ; chaque membre peut l'attaquer une fois jusqu'à until
+create table if not exists public.perco_revenge (
+  id bigint generated always as identity primary key,
+  guild_id bigint not null references public.guilds (id) on delete cascade,
+  target bigint not null references public.guilds (id) on delete cascade,
+  sid text not null,
+  at timestamptz not null default now(),
+  until timestamptz not null
+);
+create index if not exists perco_revenge_g on public.perco_revenge (guild_id, until);
+alter table public.perco_revenge enable row level security;
+-- primes (avis de recherche) : k kamas pris au coffre de by_guild, versés à celui qui pille le Percepteur avant until
+create table if not exists public.perco_bounty (
+  id bigint generated always as identity primary key,
+  perco_id bigint not null,
+  sid text not null,
+  def_guild bigint references public.guilds (id) on delete cascade,
+  by_guild bigint not null references public.guilds (id) on delete cascade,
+  by_user uuid references auth.users (id) on delete set null,
+  k bigint not null,
+  at timestamptz not null default now(),
+  until timestamptz not null,
+  done text check (done in ('paid', 'back'))
+);
+create index if not exists perco_bounty_p on public.perco_bounty (perco_id) where done is null;
+alter table public.perco_bounty enable row level security;
 -- 1.0.30 : Guerre des Percepteurs, classement de la semaine (3 points par attaque gagnée, 1 par attaque repoussée)
 create table if not exists public.perco_war (
   w int not null, guild_id bigint not null references public.guilds (id) on delete cascade,
@@ -275,10 +308,33 @@ as $$ select coalesce(jsonb_agg(x order by x.pts desc, x.win desc, x.id), '[]'::
   select g.id, g.name, g.ic, g.col, g.lvl, w.pts, w.win, w.loss, w.def from perco_war w join guilds g on g.id = w.guild_id
   where w.w = wk and w.pts > 0 order by w.pts desc, w.win desc, g.id limit lim) x $$;
 -- attaques par jour : 3 (4 avec la Bannière de guerre)
+-- Chasse aux Percepteurs (10A) : Nuit des Percepteurs, chaque samedi de 20 h à 23 h (heure de Paris) : butin ×1,5, boucliers des
+-- Percepteurs réduits de moitié, une attaque de plus pour chacun ; titre « Ombre de la nuit » (gb_claim_do).
+create or replace function public.gb_nuit() returns boolean language sql stable
+as $$ select extract(isodow from (now() at time zone 'Europe/Paris')) = 6 and extract(hour from (now() at time zone 'Europe/Paris')) between 20 and 22 $$;
+-- fin du bouclier d'un Percepteur (moitié moins long la nuit)
+create or replace function public.pc_shield(p guild_percos) returns timestamptz language sql stable
+as $$ select case when p.shield_until is null then null when gb_nuit() then p.shield_until - interval '3 hours' else p.shield_until end $$;
+-- attaques par jour : 3 (4 avec la Bannière de guerre), +1 pendant la Nuit des Percepteurs
 create or replace function public.rd_max(g bigint) returns int language sql stable security definer set search_path = public
-as $$ select case when g_up(g, 'banniere') > 0 then 4 else 3 end $$;
+as $$ select case when g_up(g, 'banniere') > 0 then 4 else 3 end + case when gb_nuit() then 1 else 0 end $$;
+-- Chasse aux Percepteurs : les revanches (free) ne comptent pas
 create or replace function public.rd_today(u uuid) returns int language sql stable security definer set search_path = public
-as $$ select count(*)::int from perco_raids where att_user = u and at > now() - interval '30 hours' and (at at time zone 'Europe/Paris')::date = gb_day() $$;
+as $$ select count(*)::int from perco_raids where att_user = u and not free and at > now() - interval '30 hours' and (at at time zone 'Europe/Paris')::date = gb_day() $$;
+-- Chasse aux Percepteurs (6A) : revanche encore possible pour ce joueur contre la guilde dg (la plus récente, pas encore utilisée)
+create or replace function public.rd_revenge(u uuid, g bigint, dg bigint) returns perco_revenge language sql stable security definer set search_path = public
+as $$ select v.* from perco_revenge v where v.guild_id = g and v.target = dg and v.until > now()
+  and not exists (select 1 from perco_raids r where r.att_user = u and r.free and r.def_guild = dg and r.at >= v.at) order by v.until desc limit 1 $$;
+-- Chasse aux Percepteurs (7A) : primes finies (3 jours passés, ou Percepteur parti sans pillage) : retour au coffre
+create or replace function public.pb_expire() returns void language plpgsql security definer set search_path = public
+as $$
+declare b perco_bounty;
+begin
+  for b in select * from perco_bounty x where x.done is null and (x.until < now() or not exists (select 1 from guild_percos p where p.id = x.perco_id)) for update skip locked loop
+    update perco_bounty set done = 'back' where id = b.id;
+    perform g_chest(b.by_guild, b.k, format('Prime sur le Percepteur de %s : personne ne l''a pillé, elle revient au coffre', pc_name(b.sid)));
+  end loop;
+end $$;
 -- une attaque vue par les deux guildes
 create or replace function public.rd_json(r perco_raids, me uuid) returns jsonb language sql stable security definer set search_path = public
 as $$ select jsonb_build_object('id', r.id, 'pid', r.perco_id, 'sid', r.sid, 'zone', pc_name(r.sid), 'st', r.status, 'at', r.at, 'ends', r.ends, 'res', r.res,
@@ -292,7 +348,7 @@ as $$ select jsonb_build_object('id', r.id, 'pid', r.perco_id, 'sid', r.sid, 'zo
 -- dry : seulement compter (pour afficher « à ouvrir »). Renvoie { n, k, dust, titles }.
 create or replace function public.gb_claim_do(me uuid, dry boolean) returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare wk int := gb_week(); x int; gid bigint; lv int; p int; k numeric := 0; dust int := 0; n int := 0; titles text[] := '{}'; c jsonb; m guild_members := g_me(me); top jsonb; w0 date;
+declare wk int := gb_week(); x int; gid bigint; lv int; p int; k numeric := 0; dust int := 0; n int := 0; titles text[] := '{}'; c jsonb; m guild_members := g_me(me); top jsonb; w0 date; n0 date; wn int;
   res jsonb := '{}'::jsonb; items jsonb := '[]'::jsonb; gg gboss_goal; it jsonb; tries int;
 begin
   foreach x in array array[wk - 1, wk] loop
@@ -335,13 +391,26 @@ begin
       titles := titles || 'Conquérant'::text;
     end if;
   end if;
+  -- Chasse aux Percepteurs (10A) « Ombre de la nuit » : membres (déjà là ce soir-là) de la guilde qui a pillé le plus de Percepteurs
+  -- pendant la dernière Nuit des Percepteurs ; donné à partir du dimanche 3 h (les dernières attaques sont finies)
+  if m.user_id is not null then
+    n0 := (now() at time zone 'Europe/Paris' - interval '27 hours')::date; n0 := n0 - ((extract(isodow from n0)::int + 1) % 7);
+    wn := ((n0 - date '1970-01-01') + 3) / 7;
+    if not exists (select 1 from gboss_claims where user_id = me and w = wn and step = 1300)
+       and m.joined_at < ((n0 + time '20:00') at time zone 'Europe/Paris')
+       and (select r.att_guild from perco_raids r where r.night and r.status = 'won' and (r.at at time zone 'Europe/Paris')::date = n0
+            group by r.att_guild order by count(*) desc, max(r.done_at) limit 1) = m.guild_id then
+      if not dry then insert into gboss_claims (user_id, w, step) values (me, wn, 1300); end if;
+      titles := titles || 'Ombre de la nuit'::text;
+    end if;
+  end if;
   return jsonb_build_object('n', n, 'k', k, 'dust', dust, 'res', res, 'items', items, 'titles', to_jsonb(titles));
 end $$;
 
 do $$ declare f text; begin
   foreach f in array array['gb_goal(bigint)', 'gb_active(bigint)', 'gb_goalw(bigint, int)', 'gb_pts(bigint, int)', 'gb_top(int, int)', 'g_addxp(bigint, bigint)', 'pc_tick(bigint)', 'pc_name(text)',
     'gb_every(bigint)', 'gb_tok(uuid, bigint)', 'pc_fillsec(bigint)', 'pc_kind(text)', 'pc_next(text)', 'pc_slots(bigint)', 'pc_used(bigint)', 'pc_raided(bigint)', 'pc_item(jsonb)',
-    'pw_add(bigint, int, int, int, int)', 'pw_top(int, int)', 'rd_max(bigint)', 'rd_today(uuid)', 'rd_json(perco_raids, uuid)', 'gb_claim_do(uuid, boolean)'] loop
+    'pw_add(bigint, int, int, int, int)', 'pw_top(int, int)', 'rd_max(bigint)', 'rd_today(uuid)', 'rd_revenge(uuid, bigint, bigint)', 'pb_expire()', 'rd_json(perco_raids, uuid)', 'gb_claim_do(uuid, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
 end $$;
@@ -355,6 +424,7 @@ begin
   perform pc_tick(m.guild_id);
   delete from perco_ko where until < now() - interval '1 day';
   delete from perco_hold where until < now() - interval '1 day';
+  delete from perco_revenge where until < now() - interval '1 day';
   select * into g from guilds where id = m.guild_id;
   bp := gb_pts(g.id, wk); goal := gb_goal(g.id); ev := gb_every(g.id); tok := gb_tok(me, g.id);
   select max(lvl) into mylvl from gboss_hits where user_id = me and w = wk;
@@ -374,7 +444,7 @@ begin
       'claim', (cl->>'n')::int > 0 or jsonb_array_length(cl->'titles') > 0),
     'percos', (select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'sid', p.sid, 'name', z.name, 'zlvl', z.lvl, 'dj', z.kind = 'dj', 'cap', z.cap, 'fill', pc_fill(p),
         'by', pseudo_of(p.by_user), 'placed', p.placed_at, 'wins', p.wins, 'losses', p.losses, 'next', p.next_atk,
-        'shield', case when p.shield_until > now() then p.shield_until end, 'raided', pc_raided(p.id),
+        'shield', case when pc_shield(p) > now() then pc_shield(p) end, 'raided', pc_raided(p.id), 'stars', p.stars,
         'atk', case when p.atk_at is null then null else jsonb_build_object('at', p.atk_at, 'ends', p.atk_at + interval '2 hours', 'n', p.atk_n,
           'by', (select coalesce(jsonb_agg(pseudo_of(u)), '[]'::jsonb) from unnest(p.atk_by) u), 'done', me = any(p.atk_by)) end) order by p.placed_at), '[]'::jsonb)
       from guild_percos p left join perco_zones z on z.sid = p.sid where p.guild_id = g.id),
@@ -391,6 +461,11 @@ begin
       from guild_percos p join guilds gg on gg.id = p.guild_id where p.guild_id <> g.id),
     'holds', (select coalesce(jsonb_object_agg(h.sid, jsonb_build_object('gid', h.guild_id, 'g', gg.name, 'until', h.until)), '{}'::jsonb)
       from perco_hold h join guilds gg on gg.id = h.guild_id where h.until > now()),
+    -- Chasse aux Percepteurs : revanches en cours (6A), Nuit des Percepteurs (10A)
+    'revenge', (select coalesce(jsonb_agg(jsonb_build_object('gid', v.target, 'name', gg.name, 'ic', gg.ic, 'col', gg.col, 'zone', pc_name(v.sid), 'at', v.at, 'until', v.until,
+        'used', exists (select 1 from perco_raids r where r.att_user = me and r.free and r.def_guild = v.target and r.at >= v.at)) order by v.until desc), '[]'::jsonb)
+      from perco_revenge v join guilds gg on gg.id = v.target where v.guild_id = g.id and v.until > now()),
+    'nuit', gb_nuit(),
     'glvl', g.lvl, 'rank', m.rank, 'ups', g.ups, 'now', now());
 end $$;
 
@@ -411,6 +486,7 @@ begin
   for t in select jsonb_array_elements_text(c->'titles') loop
     perform hdv_op(me, jsonb_build_object('title', t), case t
       when 'Conquérant' then 'Guerre des Percepteurs : ta guilde a gagné la semaine, titre « Conquérant » !'
+      when 'Ombre de la nuit' then 'Nuit des Percepteurs : ta guilde a pillé le plus de Percepteurs, titre « Ombre de la nuit » !'
       when 'Avant-garde de guilde' then 'Boss de guilde : ta guilde est la première du serveur à le finir, titre « Avant-garde de guilde » !'
       else 'Boss de guilde : ta guilde finit dans les 3 meilleures de la semaine, titre « Pourfendeur de boss » !' end);
   end loop;
@@ -496,8 +572,53 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
+-- ---------- Chasse aux Percepteurs (choix 1C, 2C et 6A à 10A de Mathis) ----------
+-- Tous les Percepteurs du serveur, pour l'onglet « Chasse aux Percepteurs » et la carte du Monde (emblèmes, domination
+-- des régions calculée par le jeu). Le jeu le relit au plus une fois par minute. Rend aussi les primes finies.
+create or replace function public.perco_map() returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); m guild_members;
+begin
+  if me is null then return g_err('non connecté'); end if;
+  m := g_me(me);
+  perform pb_expire();
+  return jsonb_build_object('now', now(), 'nuit', gb_nuit(), 'me', m.guild_id,
+    'percos', (select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'sid', p.sid, 'gid', p.guild_id, 'zlvl', z.lvl, 'dj', z.kind = 'dj', 'fill', least(1, pc_fill(p)), 'stars', p.stars,
+        'shield', case when pc_shield(p) > now() then pc_shield(p) end, 'monsters', p.atk_at is not null,
+        'raid', (select gg.name from perco_raids r join guilds gg on gg.id = r.att_guild where r.perco_id = p.id and r.status in ('open', 'fight') order by r.id desc limit 1),
+        'bounty', (select jsonb_agg(jsonb_build_object('k', b.k, 'gid', b.by_guild, 'by', bg.name, 'until', b.until) order by b.k desc)
+          from perco_bounty b join guilds bg on bg.id = b.by_guild where b.perco_id = p.id and b.done is null)) order by p.id), '[]'::jsonb)
+      from guild_percos p left join perco_zones z on z.sid = p.sid),
+    'guilds', (select coalesce(jsonb_object_agg(g.id, jsonb_build_object('name', g.name, 'ic', g.ic, 'col', g.col, 'lvl', g.lvl, 'rob', coalesce((g.ups->>'robustesse')::int, 0),
+        'young', case when g.shield_until > now() then g.shield_until end)), '{}'::jsonb)
+      from guilds g where exists (select 1 from guild_percos p where p.guild_id = g.id)));
+end $$;
+-- Prime (7A) : le Meneur ou un Bras droit met une prime sur un Percepteur ennemi, payée par le coffre (50 000 à 2 000 000 kamas,
+-- une par guilde et par Percepteur). Celui qui le pille la touche ; sans pillage en 3 jours, elle revient au coffre (pb_expire).
+create or replace function public.guild_bounty(p_perco bigint, p_k bigint) returns jsonb language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); m guild_members; p guild_percos; g guilds; dg guilds; z text;
+begin
+  m := g_me(me); if m.user_id is null then return g_err('Tu n''es pas dans une guilde.'); end if;
+  if m.rank > 1 then return g_err('Seuls le Meneur et les Bras droits mettent une prime (payée par le coffre).'); end if;
+  if p_k is null or p_k < 50000 or p_k > 2000000 then return g_err('Une prime va de 50 000 à 2 000 000 kamas.'); end if;
+  perform pg_advisory_xact_lock(hashtext('guild' || m.guild_id));
+  perform pg_advisory_xact_lock(hashtext('raid:' || p_perco));
+  select * into p from guild_percos where id = p_perco; if not found then return g_err('Ce Percepteur n''est plus là.'); end if;
+  if p.guild_id = m.guild_id then return g_err('C''est un Percepteur de ta guilde.'); end if;
+  if exists (select 1 from perco_bounty where perco_id = p.id and by_guild = m.guild_id and done is null) then return g_err('Ta guilde a déjà une prime sur ce Percepteur.'); end if;
+  select * into g from guilds where id = m.guild_id; select * into dg from guilds where id = p.guild_id;
+  if g.chest < p_k then return g_err(format('Il n''y a que %s kamas dans le coffre.', g_fmt(g.chest))); end if;
+  z := pc_name(p.sid);
+  perform g_chest(g.id, -p_k, format('Prime sur le Percepteur de %s (%s) mise par %s', z, dg.name, pseudo_of(me)));
+  insert into perco_bounty (perco_id, sid, def_guild, by_guild, by_user, k, until) values (p.id, p.sid, dg.id, g.id, me, p_k, now() + interval '3 days');
+  perform g_log(g.id, format('💰 %s met une prime de %s kamas sur le Percepteur de %s (%s) : celui qui le pille dans les 3 jours la touche.', pseudo_of(me), g_fmt(p_k), z, dg.name));
+  perform g_log(dg.id, format('💰 La guilde %s met une prime de %s kamas sur votre Percepteur de %s !', g.name, g_fmt(p_k), z));
+  return jsonb_build_object('ok', true, 'chest', g.chest - p_k);
+end $$;
+
 do $$ declare f text; begin
-  foreach f in array array['guild_extra()', 'gboss_claim(bigint)', 'perco_place(bigint, text)', 'perco_collect(bigint, bigint)', 'perco_remove(bigint)'] loop
+  foreach f in array array['guild_extra()', 'gboss_claim(bigint)', 'perco_place(bigint, text)', 'perco_collect(bigint, bigint)', 'perco_remove(bigint)', 'perco_map()', 'guild_bounty(bigint, bigint)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
   end loop;
@@ -605,28 +726,36 @@ end $$;
 -- Lancer : p_team = équipe d'arène de l'attaquant, copiée par le serveur depuis sa partie en ligne.
 create or replace function public.rd_open(p_user uuid, p_perco bigint, p_team jsonb, p_heads jsonb, p_lvl int) returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare m guild_members := g_me(p_user); p guild_percos; dg guilds; ag guilds; ends timestamptz; rid bigint; z text;
+declare m guild_members := g_me(p_user); p guild_percos; dg guilds; ag guilds; ends timestamptz; rid bigint; z text; sh timestamptz; rv perco_revenge; fr boolean := false; nt boolean := gb_nuit(); bn real := 1;
 begin
   if m.user_id is null then return g_err('Rejoins une guilde pour attaquer un Percepteur.'); end if;
   if jsonb_typeof(p_team) <> 'array' or jsonb_array_length(p_team) < 1 then return g_err('Choisis ton équipe d''arène (Kolizéum).'); end if;
   perform pg_advisory_xact_lock(hashtext('raid:' || p_perco));
   select * into p from guild_percos where id = p_perco for update; if not found then return g_err('Ce Percepteur n''est plus là.'); end if;
   if p.guild_id = m.guild_id then return g_err('C''est un Percepteur de ta guilde.'); end if;
+  if to_regprocedure('public.al_allied(bigint, bigint)') is not null then -- Alliances (9A) : les alliés ne s'attaquent pas (supabase/alliances.sql)
+    if al_allied(p.guild_id, m.guild_id) then return g_err('C''est un Percepteur d''une guilde de ton alliance.'); end if;
+  end if;
   select * into dg from guilds where id = p.guild_id; select * into ag from guilds where id = m.guild_id;
   if dg.shield_until > now() then return g_err(format('Jeune guilde protégée encore %s min.', ceil(extract(epoch from (dg.shield_until - now())) / 60))); end if;
-  if p.shield_until > now() then return g_err(format('Ce Percepteur a un bouclier encore %s.', case when p.shield_until - now() >= interval '1 hour' then floor(extract(epoch from (p.shield_until - now())) / 3600) || ' h' else ceil(extract(epoch from (p.shield_until - now())) / 60) || ' min' end)); end if;
+  sh := pc_shield(p); -- Chasse aux Percepteurs : moitié moins long pendant la Nuit des Percepteurs
+  if sh > now() then return g_err(format('Ce Percepteur a un bouclier encore %s.', case when sh - now() >= interval '1 hour' then floor(extract(epoch from (sh - now())) / 3600) || ' h' else ceil(extract(epoch from (sh - now())) / 60) || ' min' end)); end if;
   if p.atk_at is not null then return g_err('Des monstres l''attaquent déjà : reviens plus tard.'); end if;
   if pc_raided(p.id) then return g_err('Une autre attaque est déjà en cours sur ce Percepteur.'); end if;
   perform pg_advisory_xact_lock(hashtext('raidu:' || p_user::text));
-  if rd_today(p_user) >= rd_max(m.guild_id) then return g_err(format('Plus d''attaque aujourd''hui (%s par jour) : reviens demain.', rd_max(m.guild_id))); end if;
+  -- Chasse aux Percepteurs (6A) : revanche contre la guilde qui nous a pillés, une par membre, hors attaques du jour, butin +25 %
+  rv := rd_revenge(p_user, m.guild_id, dg.id); fr := rv.id is not null;
+  if not fr and rd_today(p_user) >= rd_max(m.guild_id) then return g_err(format('Plus d''attaque aujourd''hui (%s par jour) : reviens demain.', rd_max(m.guild_id))); end if;
+  bn := case when fr then 1.25 else 1 end * case when nt then 1.5 else 1 end;
   ends := now() + case when g_up(dg.id, 'vigie') > 0 then interval '3 hours' else interval '2 hours' end;
-  insert into perco_raids (perco_id, sid, def_guild, att_guild, att_user, att_team, att_heads, att_lvl, ends)
-    values (p.id, p.sid, dg.id, ag.id, p_user, p_team, coalesce(p_heads, '[]'::jsonb), greatest(1, coalesce(p_lvl, 1)), ends) returning id into rid;
+  insert into perco_raids (perco_id, sid, def_guild, att_guild, att_user, att_team, att_heads, att_lvl, ends, free, bonus, night)
+    values (p.id, p.sid, dg.id, ag.id, p_user, p_team, coalesce(p_heads, '[]'::jsonb), greatest(1, coalesce(p_lvl, 1)), ends, fr, bn, nt) returning id into rid;
   z := pc_name(p.sid);
-  perform g_log(dg.id, format('⚔ %s (%s) attaque le Percepteur de %s ! Vous avez %s h pour battre son équipe d''arène (Guilde › Percepteurs), sinon le Percepteur et ses gardes se défendront seuls.',
-    pseudo_of(p_user), ag.name, z, case when g_up(dg.id, 'vigie') > 0 then 3 else 2 end));
-  perform g_log(ag.id, format('⚔ %s attaque le Percepteur de %s (%s) à %s.', pseudo_of(p_user), dg.name, z, to_char(ends at time zone 'Europe/Paris', 'HH24"h"MI')), false);
-  return jsonb_build_object('ok', true, 'id', rid, 'ends', ends, 'zone', z, 'g', dg.name, 'left', greatest(0, rd_max(m.guild_id) - rd_today(p_user)));
+  perform g_log(dg.id, format('⚔ %s (%s) attaque le Percepteur de %s%s ! Vous avez %s h pour battre son équipe d''arène (Guilde › Percepteurs), sinon le Percepteur et ses gardes se défendront seuls.',
+    pseudo_of(p_user), ag.name, z, case when fr then ' (revanche)' else '' end, case when g_up(dg.id, 'vigie') > 0 then 3 else 2 end));
+  perform g_log(ag.id, format('⚔ %s attaque le Percepteur de %s (%s) à %s%s.', pseudo_of(p_user), dg.name, z, to_char(ends at time zone 'Europe/Paris', 'HH24"h"MI'),
+    case when fr then ' : revanche, butin +25 %' else '' end || case when nt then ' (Nuit des Percepteurs : butin ×1,5)' else '' end), false);
+  return jsonb_build_object('ok', true, 'id', rid, 'ends', ends, 'zone', z, 'g', dg.name, 'free', fr, 'bonus', bn, 'left', greatest(0, rd_max(m.guild_id) - rd_today(p_user)));
 end $$;
 -- Défendre : un membre de la guilde attaquée, une fois par attaque, avec son équipe d'arène.
 create or replace function public.rd_def_start(p_user uuid, p_raid bigint) returns jsonb language plpgsql security definer set search_path = public
@@ -634,7 +763,11 @@ as $$
 declare m guild_members := g_me(p_user); r perco_raids;
 begin
   select * into r from perco_raids where id = p_raid; if not found then return g_err('Cette attaque n''existe plus.'); end if;
-  if m.user_id is null or m.guild_id <> r.def_guild then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+  if m.user_id is null then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  if m.guild_id <> r.def_guild then -- Alliances (9A) : les guildes alliées défendent aussi (supabase/alliances.sql)
+    if to_regprocedure('public.al_allied(bigint, bigint)') is null then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+    if not al_allied(m.guild_id, r.def_guild) then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  end if;
   if r.status <> 'open' or now() >= r.ends then return g_err('L''attaque est finie.'); end if;
   if exists (select 1 from jsonb_array_elements(r.tries) t where t->>'u' = p_user::text) then return g_err('Tu as déjà défendu pendant cette attaque.'); end if;
   return jsonb_build_object('ok', true, 'att', r.att_team, 'by', pseudo_of(r.att_user));
@@ -645,7 +778,11 @@ declare m guild_members := g_me(p_user); r perco_raids; z text;
 begin
   perform pg_advisory_xact_lock(hashtext('raid:' || (select perco_id from perco_raids where id = p_raid)));
   select * into r from perco_raids where id = p_raid for update; if not found then return g_err('Cette attaque n''existe plus.'); end if;
-  if m.user_id is null or m.guild_id <> r.def_guild then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+  if m.user_id is null then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  if m.guild_id <> r.def_guild then -- Alliances (9A) : les guildes alliées défendent aussi (supabase/alliances.sql)
+    if to_regprocedure('public.al_allied(bigint, bigint)') is null then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+    if not al_allied(m.guild_id, r.def_guild) then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  end if;
   if r.status <> 'open' or now() >= r.ends then return g_err('L''attaque est finie.'); end if;
   if exists (select 1 from jsonb_array_elements(r.tries) t where t->>'u' = p_user::text) then return g_err('Tu as déjà défendu pendant cette attaque.'); end if;
   update perco_raids set tries = tries || jsonb_build_array(jsonb_build_object('u', p_user, 'p', pseudo_of(p_user), 'heads', coalesce(p_heads, '[]'::jsonb), 'win', p_win, 'at', now(), 'rounds', p_rounds)) where id = r.id;
@@ -655,11 +792,17 @@ begin
     return jsonb_build_object('ok', true, 'win', false);
   end if;
   update perco_raids set status = 'repelled', done_at = now(), res = jsonb_build_object('by', pseudo_of(p_user)) where id = r.id;
-  update guild_percos set shield_until = now() + interval '6 hours' where id = r.perco_id;
+  update guild_percos set shield_until = now() + interval '6 hours', stars = least(5, stars + 1) where id = r.perco_id; -- Chasse aux Percepteurs (8A) : une étoile
   update guilds set pvp_win = pvp_win + 1 where id = r.def_guild;
   update guilds set pvp_loss = pvp_loss + 1 where id = r.att_guild;
-  perform pw_add(r.def_guild, 1, 0, 0, 1); perform pw_add(r.att_guild, 0, 0, 1, 0);
-  perform g_log(r.def_guild, format('🛡 %s repousse l''attaque de %s sur le Percepteur de %s ! Bouclier de 6 h, +1 point de Guerre des Percepteurs.', pseudo_of(p_user), pseudo_of(r.att_user), z));
+  -- Alliances (9A) : un allié qui repousse l'attaque gagne le point pour sa propre guilde
+  perform pw_add(m.guild_id, 1, 0, 0, 1); perform pw_add(r.att_guild, 0, 0, 1, 0);
+  if m.guild_id <> r.def_guild then
+    perform g_log(r.def_guild, format('🛡 %s (%s, guilde alliée) repousse l''attaque de %s sur le Percepteur de %s ! Bouclier de 6 h et une étoile de vétéran.', pseudo_of(p_user), (select name from guilds where id = m.guild_id), pseudo_of(r.att_user), z));
+    perform g_log(m.guild_id, format('🛡 %s défend le Percepteur de %s (%s, guilde alliée) contre %s : +1 point de Guerre des Percepteurs.', pseudo_of(p_user), z, (select name from guilds where id = r.def_guild), pseudo_of(r.att_user)));
+  else
+  perform g_log(r.def_guild, format('🛡 %s repousse l''attaque de %s sur le Percepteur de %s ! Bouclier de 6 h, une étoile de vétéran, +1 point de Guerre des Percepteurs.', pseudo_of(p_user), pseudo_of(r.att_user), z));
+  end if;
   perform g_log(r.att_guild, format('L''attaque de %s sur le Percepteur de %s (%s) est repoussée par %s.', pseudo_of(r.att_user), z, (select name from guilds where id = r.def_guild), pseudo_of(p_user)), false);
   return jsonb_build_object('ok', true, 'win', true);
 end $$;
@@ -667,7 +810,7 @@ end $$;
 -- Peut être lancée par l'attaquant ou un membre de l'une des deux guildes, une fois l'heure passée.
 create or replace function public.rd_end_start(p_user uuid, p_raid bigint) returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare m guild_members := g_me(p_user); r perco_raids; zl int;
+declare m guild_members := g_me(p_user); r perco_raids; zl int; al boolean := false;
 begin
   select * into r from perco_raids where id = p_raid for update; if not found then return g_err('Cette attaque n''existe plus.'); end if;
   if r.att_user <> p_user and (m.user_id is null or m.guild_id not in (r.att_guild, r.def_guild)) then return g_err('Cette attaque ne te concerne pas.'); end if;
@@ -680,7 +823,10 @@ begin
   end if;
   update perco_raids set status = 'fight', fight_at = now() where id = r.id;
   zl := coalesce((select lvl from perco_zones where sid = r.sid), 1);
-  return jsonb_build_object('ok', true, 'att', r.att_team, 'lvl', greatest(zl, r.att_lvl), 'rob', g_up(r.def_guild, 'robustesse'));
+  if to_regprocedure('public.al_prism_cover(bigint, text)') is not null then al := al_prism_cover(r.def_guild, r.sid); end if; -- Alliances (6A)
+  return jsonb_build_object('ok', true, 'att', r.att_team, 'lvl', greatest(zl, r.att_lvl), 'rob', g_up(r.def_guild, 'robustesse'),
+    'stars', (select stars from guild_percos where id = r.perco_id), -- Chasse aux Percepteurs (8A) : +2 % par étoile (E.percoGuards)
+    'ally', al); -- Alliances (6A) : +20 % de PV dans une région du prisme de son alliance (E.allyPercoBoost)
 end $$;
 -- Résultat du combat contre le Percepteur et ses gardes : pillage (50 %, 25 % contre un Coffre-fort, ÷ 2 si la guilde
 -- visée a 10 niveaux de moins), Percepteur renvoyé (sa guilde garde le reste de la poche), place assommée 12 h,
@@ -688,7 +834,7 @@ end $$;
 create or replace function public.rd_end_done(p_raid bigint, p_win boolean, p_rounds int) returns jsonb language plpgsql security definer set search_path = public
 as $$
 declare r perco_raids; p guild_percos; z perco_zones; dg guilds; ag guilds; f real; gain jsonb; part numeric; half boolean; fort boolean;
-  lk bigint; rk bigint; lres jsonb := '{}'::jsonb; rres jsonb := '{}'::jsonb; e record; q bigint; lq bigint; out jsonb;
+  lk bigint; rk bigint; lres jsonb := '{}'::jsonb; rres jsonb := '{}'::jsonb; e record; q bigint; lq bigint; out jsonb; b perco_bounty; bk bigint := 0;
 begin
   select * into r from perco_raids where id = p_raid for update; if not found then return g_err('Cette attaque n''existe plus.'); end if;
   if r.status <> 'fight' then return g_err('L''attaque est déjà finie.'); end if;
@@ -699,23 +845,31 @@ begin
   select * into z from perco_zones where sid = p.sid;
   if not p_win then
     update perco_raids set status = 'lost', done_at = now(), res = jsonb_build_object('rounds', p_rounds) where id = r.id;
-    update guild_percos set shield_until = now() + interval '6 hours' where id = p.id;
+    update guild_percos set shield_until = now() + interval '6 hours', stars = least(5, stars + 1) where id = p.id;
     update guilds set pvp_win = pvp_win + 1 where id = dg.id; update guilds set pvp_loss = pvp_loss + 1 where id = ag.id;
     perform pw_add(dg.id, 1, 0, 0, 1); perform pw_add(ag.id, 0, 0, 1, 0);
-    perform g_log(dg.id, format('🛡 Le Percepteur de %s et ses gardes repoussent seuls l''équipe de %s (%s) ! Bouclier de 6 h, +1 point de Guerre des Percepteurs.', z.name, pseudo_of(r.att_user), ag.name));
+    perform g_log(dg.id, format('🛡 Le Percepteur de %s et ses gardes repoussent seuls l''équipe de %s (%s) ! Bouclier de 6 h, une étoile de vétéran, +1 point de Guerre des Percepteurs.', z.name, pseudo_of(r.att_user), ag.name));
     perform g_log(ag.id, format('%s est battu par le Percepteur de %s (%s) et ses gardes.', pseudo_of(r.att_user), z.name, dg.name));
     return jsonb_build_object('ok', true, 'win', false);
   end if;
   f := pc_fill(p); gain := pc_gain(z.cap, f, dg.ups);
   fort := coalesce((dg.ups->>'coffrefort')::int, 0) > 0; half := dg.lvl <= ag.lvl - 10;
   part := case when fort then 0.25 else 0.5 end * case when half then 0.5 else 1 end;
+  part := least(1, part * coalesce(r.bonus, 1)); -- Chasse aux Percepteurs : revanche ×1,25, Nuit des Percepteurs ×1,5
   lk := floor((gain->>'k')::numeric * part); rk := (gain->>'k')::bigint - lk;
   for e in select key, value::bigint v from jsonb_each_text(gain->'res') loop
     lq := floor(e.v * part); q := e.v - lq;
     if lq >= 1 then lres := lres || jsonb_build_object(e.key, lq); end if;
     if q >= 1 then rres := rres || jsonb_build_object(e.key, q); end if;
   end loop;
-  out := jsonb_build_object('k', lk, 'res', lres, 'part', part, 'half', half, 'fort', fort, 'rounds', p_rounds, 'zone', z.name);
+  -- Chasse aux Percepteurs (7A) : primes sur ce Percepteur, pour l'attaquant (celle de sa propre guilde revient à son coffre)
+  for b in select * from perco_bounty where perco_id = p.id and done is null for update loop
+    update perco_bounty set done = 'paid' where id = b.id;
+    if b.by_guild = ag.id then perform g_chest(ag.id, b.k, format('Prime sur le Percepteur de %s (%s) : revient au coffre', z.name, dg.name));
+    else bk := bk + b.k; perform hdv_op(r.att_user, jsonb_build_object('k', b.k), format('Prime sur le Percepteur de %s (%s) : %s kamas', z.name, dg.name, g_fmt(b.k)));
+      perform g_log(b.by_guild, format('💰 %s (%s) pille le Percepteur de %s et touche votre prime de %s kamas.', pseudo_of(r.att_user), ag.name, z.name, g_fmt(b.k)), false); end if;
+  end loop;
+  out := jsonb_build_object('k', lk, 'res', lres, 'part', part, 'half', half, 'fort', fort, 'rounds', p_rounds, 'zone', z.name, 'bounty', bk, 'bonus', coalesce(r.bonus, 1), 'free', r.free, 'night', r.night, 'stars', p.stars);
   update perco_raids set status = 'won', done_at = now(), res = out where id = r.id;
   -- butin : kamas au coffre de la guilde de l'attaquant, ressources pour lui
   perform g_chest(ag.id, lk, format('Pillage du Percepteur de %s (%s) par %s', z.name, dg.name, pseudo_of(r.att_user)));
@@ -726,12 +880,15 @@ begin
   delete from guild_percos where id = p.id;
   insert into perco_ko (guild_id, sid, until) values (dg.id, p.sid, now() + interval '12 hours');
   insert into perco_hold (sid, guild_id, until) values (p.sid, ag.id, now() + interval '1 hour') on conflict (sid) do update set guild_id = excluded.guild_id, until = excluded.until;
+  -- Chasse aux Percepteurs (6A) : la guilde pillée a 6 h de revanche contre la guilde de l'attaquant
+  insert into perco_revenge (guild_id, target, sid, until) values (dg.id, ag.id, p.sid, now() + interval '6 hours');
   update guilds set pvp_win = pvp_win + 1 where id = ag.id; update guilds set pvp_loss = pvp_loss + 1 where id = dg.id;
   perform pw_add(ag.id, 3, 1, 0, 0); perform pw_add(dg.id, 0, 0, 1, 0);
-  perform g_log(ag.id, format('🏆 %s pille le Percepteur de %s (%s) : +%s kamas au coffre%s, +3 points de Guerre des Percepteurs. La zone est à vous pendant 1 h !',
-    pseudo_of(r.att_user), z.name, dg.name, g_fmt(lk), case when half then ' (butin ÷ 2 : ils ont 10 niveaux de moins)' else '' end));
-  perform g_log(dg.id, format('Le Percepteur de %s a été battu par %s (%s) : %s %% de sa poche pillée, il rentre chez lui (place assommée 12 h).',
-    z.name, pseudo_of(r.att_user), ag.name, round(part * 100)));
+  perform g_log(ag.id, format('🏆 %s pille le Percepteur de %s (%s) : +%s kamas au coffre%s%s, +3 points de Guerre des Percepteurs. La zone est à vous pendant 1 h !',
+    pseudo_of(r.att_user), z.name, dg.name, g_fmt(lk), case when half then ' (butin ÷ 2 : ils ont 10 niveaux de moins)' else '' end,
+    case when bk > 0 then format(' et une prime de %s kamas', g_fmt(bk)) else '' end));
+  perform g_log(dg.id, format('Le Percepteur de %s a été battu par %s (%s) : %s %% de sa poche pillée, il rentre chez lui (place assommée 12 h). Revanche : pendant 6 h, chaque membre peut attaquer une fois un Percepteur de la guilde %s, sans compter ses attaques du jour, avec +25 %% de butin.',
+    z.name, pseudo_of(r.att_user), ag.name, round(part * 100), ag.name));
   return jsonb_build_object('ok', true, 'win', true, 'loot', out);
 end $$;
 
