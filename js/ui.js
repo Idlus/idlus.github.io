@@ -1903,8 +1903,8 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["chasse", "Chasse", "trophee"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
-  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["pets", "Familiers et montures", "../p/18003"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
+  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
+  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["chasse", "Chasse", "trophee"], ["pets", "Familiers et montures", "../p/18003"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
