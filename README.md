@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.10.5 « Compteurs en direct »
+
+Le nombre de monstres tués (fiche de zone, Encyclopédie) se met à jour pendant les combats, sans changer d'onglet.
+
 ## 1.2.10.4 « Placement en un clic »
 
 Mathis (15/10/2026) : « comment on déplace un perso « arrière » devant ? » puis « c'est le plus ergonomique ? » → choix A. `rowBtn(c, cls)` (js/ui.js) : flèche `.tr-mv` à côté de chaque héros de l'équipe dans la liste (enveloppe `.trw`, visible au survol, toujours sur écran tactile) et bouton « Passer devant / derrière » sur la fiche, via `E.setRow`. `placementHtml` ne garde que la case « Placement automatique » (le cadre à boutons en double est retiré, `#placement` reste la cible de « Ouvrir le placement »). Chapitre Équipe du guide mis à jour.

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.10.4";
+const GAME_VERSION = "1.2.10.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.10.5", name: "Compteurs en direct", items: [
+    "Fiche d'une zone (Monde) : le nombre de monstres tués, le palier de chasse et la progression du trophée se mettent à jour pendant les combats, sans changer d'onglet",
+    "Encyclopédie : pareil pour le Bestiaire, les Familles, les Boss et les Trophées. La page garde sa position, seuls les chiffres changent"
+  ] },
   { v: "1.2.10.4", name: "Placement en un clic", guide: "equipe", items: [
     "Équipe et héros : une flèche ↑ ou ↓ à côté de chaque héros de l'équipe le fait passer en première ligne ou à l'arrière en un clic (au survol sur PC, toujours visible sur téléphone).",
     "La fiche du héros a un bouton « Passer devant » ou « Passer derrière » à côté de « Mettre en réserve ».",
@@ -3066,6 +3070,12 @@ function fstSheet(t) {
 /* ---------- MONDE ---------- */
 function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
+  if (ui.world === "tresor") ui.world = "map";
+  const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
+  repaintKeep($("#main"), worldHtml()); // 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
+  if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
+}
+function worldHtml() {
   const tabs = [["map", "Carte"], ["tresor", "Trésor"]]; // 0.1.31 : Donjons et Encyclopédie sont des pages du menu
   const solo = ui.world === "dungeons" || ui.world === "enc";
   let body = "";
@@ -3075,14 +3085,11 @@ function renderWorld() {
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
-  else if (ui.world === "tresor") { ui.world = "map"; return renderWorld(); }
   else body = encyclopediaHtml();
-  const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
-  repaintKeep($("#main"), `
+  return `
 <div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
     ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
-    <div class="stack">${body}</div>`); // 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
-  if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
+    <div class="stack">${body}</div>`;
 }
 function lockReason(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
@@ -3191,13 +3198,14 @@ function mountZoneBox(sid) {
     <div class="loot">${Z.wild.map((c) => `<div class="lcard"><span class="icobox">${im(mountImg(sp, c), "", E.mountName({ sp, c }))}</span><div><div class="n">${h(E.mountName({ sp, c }))}${seen[c] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p"><span class="pct">${dropPct(R.col * 100)} %</span> <span class="muted">par victoire (1 sur ${fmt(R.colOneIn)})</span></div></div></div>`).join("")}</div>
     ${nets ? "" : `<div class="xs" style="margin-top:6px"><span class="tag soft">${emo("🪢")} Aucun filet</span> <span class="muted">sans filet, aucune capture : ${fmt(E.NET_COST)} kamas l'unité (Héros › Élevage › Capture) ou fabriqué par le Bricoleur niveau 40.</span></div>`}`;
 }
-function renderZoneView(sid) {
+function renderZoneView(sid) { $("#main").innerHTML = zoneViewHtml(sid); }
+function zoneViewHtml(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone); const un = E.subUnlocked(S, sid);
   const here = S.hunting && S.sub === sid && !S.dungeon;
   const res = subResources(s); const its = subItems(s); const rate = E.zoneRate(S, sid);
   const dg = s.dungeon ? DUNGEONS[s.dungeon] : null;
   const trophyDone = S.trophies && S.trophies[sid]; const traq = s.monsters.filter((k) => E.huntTier(S, k) >= 1).length;
-  $("#main").innerHTML = `
+  return `
   <div class="row" style="margin-bottom:10px">${ui.zoneFromEnc === sid ? `<button class="btn sm primary" data-act="zonebackenc">← Encyclopédie</button>` : ""}<button class="btn sm" data-act="zoneback">← Carte</button></div>
   <section class="panel">
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}${window.DECORS ? window.DECORS.html({ sub: s.id }) : ""}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
@@ -10692,6 +10700,7 @@ function loop() {
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) morphTo(tt, teamTopHtml()); const tl = $("#tlist"); if (tl) morphTo(tl, teamListHtml()); renderNav(); } // seuls le haut et la liste se rafraîchissent (mise à jour ciblée), la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(true); renderNav(); }
     else if (ui.tab === "dofus" && PAGES.dofus && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; PAGES.dofus($("#main"), true); } // 1.0.33 : page Dofus, mise à jour ciblée
+    else if (ui.tab === "world" && (ui.zoneView || (ui.world === "enc" && ["best", "fam", "boss", "tro"].includes(ui.enc && ui.enc.tab))) && sinceView > 2500 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; morphTo($("#main"), ui.zoneView ? zoneViewHtml(ui.zoneView) : worldHtml()); } // 1.2.10.5 : fiche de zone et Encyclopédie, compteurs de monstres tués à jour sans changer d'onglet (mise à jour ciblée)
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
