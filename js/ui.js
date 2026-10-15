@@ -2975,7 +2975,7 @@ function dungeonSheet(did) {
   // 1.0.17.1 : la fiche retient elle-même son donjon (ouverte par la recherche, une quête…), sinon stasis et enchaînement rouvraient le donjon vu juste avant
   dgPick(did);
   const dg = DUNGEONS[did]; const B = MONSTERS[dg.boss]; const un = E.dungeonUnlocked(S, did); const SI = E.stasisInfo(S, did);
-  const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(10, SI.max + 1)); ui.dgStasis = k;
+  const k = clamp(ui.dgStasis || SI.sel || 1, 1, Math.min(E.STASIS_MAX, SI.max + 1)); ui.dgStasis = k;
   const M = E.stasisMult(k); const stat = E.dungeonScrollStat(did); const d = dgDifficulty(did, k);
   const seen = E.bossSeen(S, did); const tips = E.bossTips(did);
   const mechs = E.bossMechs(did).map((m) => { const M = E.BOSS_MECHS[m]; return seen ? `<li>${M.sig ? `<span class="sigmk" data-tip="Mécanique unique de ce boss">${G("star")}</span> ` : ""}<b>${h(M.name)}</b> : ${h(M.desc)}</li>` : `<li><b>???</b> <span class="muted">${M.sig ? "mécanique unique, " : ""}à découvrir en affrontant le boss</span></li>`; }).join("");
@@ -6831,6 +6831,7 @@ function optionsSheet() {
   if (tab === "affichage") body = displayOptionsHtml() + (window.WBUI ? window.WBUI.optHtml() : "");
   else if (tab === "sons") body = soundOptionsHtml() + notifOptionsHtml();
   else if (tab === "jeu") body = consignesHtml()
+    + optSec("Raccourcis clavier", "", optChk(`data-act="setkeys"`, !S.settings.keysOff, "Raccourcis clavier sur PC", "une lettre par page (H Havre-Sac, D Donjons, Q Quêtes…), flèches gauche et droite pour la page voisine, ? pour la liste"))
     + optSec("Notifications de clé", "", optChk(`data-act="setkeytoast"`, !S.settings.keyToastOff, "Afficher les clés trouvées", "le petit message « Butin : Clef… » à chaque clé de donjon ramassée ; décoché, la clé arrive quand même dans l'inventaire et le journal"))
     + optSec("Récolte", "", optChk(`data-act="setprot"`, !S.settings.protOff, "Protecteurs de ressources", "un gardien apparaît parfois pendant la récolte ; le battre double la récolte 20 min"))
     + optSec("Code cadeau", "donné sur le Discord ; un code par partie", `<div class="row"><input type="text" id="giftCode" placeholder="${window.GIFTS ? "HALLOWEEN26 ou IDLUS-…" : "IDLUS-…"}" value="${h(ui.giftCode || "")}" style="flex:1;min-width:0" autocomplete="off"><button class="btn sm primary" data-act="gift">Utiliser</button></div>${nGift ? `<span class="xs muted">${nGift} code${nGift > 1 ? "s" : ""} déjà utilisé${nGift > 1 ? "s" : ""}</span>` : ""}`);
@@ -7361,8 +7362,33 @@ document.addEventListener("keydown", (ev) => {
   if (document.activeElement && document.activeElement.id === "renName" && (k === "Enter" || k === "Escape")) { ev.preventDefault(); const b = $(`.hb-renf [data-act="${k === "Enter" ? "rengo" : "rencancel"}"]`); if (b) b.click(); return; } // 0.1.50.1 : Entrée valide le nouveau nom, Échap annule
   if (k === "/" && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !$("#sheet").innerHTML) { ev.preventDefault(); searchOpen(); }
   else if (k === "Escape" && $("#wtip")) tipLater();
+  else if (hotkey(ev)) ev.preventDefault();
   else if ((k === "ArrowUp" || k === "ArrowDown") && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && !$("#sheet").innerHTML && heroRailKey(k === "ArrowDown" ? 1 : -1)) ev.preventDefault();
 });
+/* 1.1 (Mathis 4A) : raccourcis clavier sur PC, une lettre par page ; les pages absentes (hors ligne) sont ignorées.
+   D'autres pages de la 1.1 s'ajoutent ici avec leur lettre. */
+const HOTKEYS = [["h", "home"], ["m", "world"], ["d", "dungeons"], ["c", "combat"], ["s", "exp"], ["j", "defi"], ["k", "koli"], ["b", "wb"], ["e", "team"], ["i", "inv"], ["r", "ren"],
+  ["t", "metiers"], ["f", "forge"], ["q", "quests"], ["u", "succes"], ["n", "enc"], ["v", "hdv"], ["g", "guild"], ["l", "ladder"]];
+const hotPages = () => { const out = ["combat"]; NAV.forEach((F) => F.pages.forEach((p) => out.push(p[0]))); return out; };
+function hotGo(k) { const b = $(`.sn-side [data-nk="${k}"]`); if (b) { b.click(); return; } navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
+function hotkey(ev) {
+  const k = ev.key; if (!S || (S.settings && S.settings.keysOff) || isEditing() || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
+  if (window.matchMedia && !window.matchMedia("(min-width: 900px)").matches) return false; // PC seulement
+  if (k === "?") { hotSheet(); return true; }
+  if ($("#sheet").innerHTML) return false;
+  if (k === "o" || k === "O") { optionsSheet(); return true; }
+  if (k === "ArrowLeft" || k === "ArrowRight") { if (ev.shiftKey) return false; const L = hotPages(); const i = L.indexOf(navKey()); if (i < 0) return false; hotGo(L[(i + (k === "ArrowRight" ? 1 : L.length - 1)) % L.length]); return true; }
+  if (ev.shiftKey || k.length !== 1) return false;
+  const hit = HOTKEYS.find(([x]) => x === k.toLowerCase()); if (!hit || !hotPages().includes(hit[1])) return false;
+  hotGo(hit[1]); return true;
+}
+function hotSheet() {
+  const all = hotPages(); const row = (key, txt) => `<div class="hk-row"><kbd>${key}</kbd><span>${h(txt)}</span></div>`;
+  openSheet(`<h2>Raccourcis clavier</h2><div class="hk-grid">${HOTKEYS.filter(([, p]) => all.includes(p)).map(([x, p]) => row(x.toUpperCase(), navName(p).replace(/^.* › /, ""))).join("")}
+    ${row("O", "Options")}${row("← →", "Page précédente ou suivante du menu")}${row("↑ ↓", "Héros précédent ou suivant")}${row("Ctrl K ou /", "Rechercher")}${row("Échap", "Fermer une fenêtre")}${row("?", "Cette liste")}</div>
+    <p class="xs muted">Sur PC seulement. Ils ne s'activent pas quand tu écris dans un champ. Tu peux les couper dans Options › Jeu.</p>
+    <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
 /* ---------- actions ---------- */
 /* ===================== 0.1.19 : lot Se montrer (logique dans js/defi.js) =====================
    Défi du jour (page Défi du jour, résultat, classement), carte d'équipe à partager, garde-robe. */
@@ -8610,6 +8636,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "chalai") { S.settings.chalAI = t.checked; toast(t.checked ? "L'IA respecte maintenant les challenges." : "L'IA ignore les challenges."); }
   else if (a === "placeauto") { E.setPlaceAuto(S, t.checked); dirty = true; render(); return; }
   else if (a === "compname") { const k = (S.comps || [])[+t.dataset.i]; if (k) k.name = (t.value.trim() || k.name).slice(0, 24); dirty = true; return; }
+  else if (a === "setkeys") { S.settings.keysOff = !t.checked; dirty = true; return; }
   else if (a === "setkeytoast") { S.settings.keyToastOff = !t.checked; dirty = true; return; }
   else if (a === "setprot") { S.settings.protOff = !t.checked; dirty = true; return; }
   else if (a === "setdecofx") { S.settings.decofx = t.checked; dirty = true; ui.arena = null; return; }

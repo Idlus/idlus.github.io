@@ -5148,3 +5148,7 @@ span.fch{cursor:default;padding-left:8px}
 .lweak{font-size:10.5px;font-weight:900;background:color-mix(in srgb,var(--el-a) 35%,var(--panel));border-radius:999px;padding:0 6px}.lres{font-size:10.5px;font-weight:900;background:color-mix(in srgb,var(--danger) 30%,var(--panel));border-radius:999px;padding:0 6px}.lrole{opacity:.8}
 .gcell.lock .gsn,.gcell.offel .gsn{display:none}
 .log .lnew{white-space:normal;align-items:flex-start}.log .lnew>span{overflow:visible}
+
+/* 1.1 : raccourcis clavier */
+.hk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin:8px 0}.hk-row{display:flex;gap:8px;align-items:center;min-width:0}.hk-row kbd{min-width:34px;text-align:center;padding:3px 7px;border-radius:7px;border:1.5px solid var(--line);border-bottom-width:3px;background:var(--panel2);font:800 12px/1.2 inherit;white-space:nowrap}
+.stars .s15{color:#c9a2ff}
