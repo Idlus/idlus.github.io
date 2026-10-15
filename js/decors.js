@@ -1,7 +1,8 @@
 /* ============================================================================
    DÉCORS DE COMBAT — vraies cartes DOFUS (rendus de cartes DofusDB, assets/z pour les sous-zones, assets/asc pour les
    salles de boss des donjons), posées derrière le combat avec un lent travelling, des poussières et un voile.
-   Demande de Mathis (15/10/2026) : d'abord pour L'Ascension, puis les zones et les donjons. Crédit visible sur la scène.
+   Demande de Mathis (15/10/2026) : d'abord pour L'Ascension, puis les zones et les donjons, sans crédit sur la scène
+   (« sans crédit pour les scènes ») : la mention DofusDB demandée par leur licence est dans le README.
    Pour changer de source d'images : seules les deux dossiers et les deux fonctions ci-dessous sont à toucher.
    ========================================================================== */
 (function () {
@@ -19,6 +20,6 @@
   };
   /* les couches à poser dans l'arène (classes partagées avec la scène de L'Ascension, css/ascension.css) */
   const html = (F) => { const d = of(F); if (!d) return "";
-    return `<div class="as-bg" style="background-image:url(${d.url})"></div><div class="as-motes">${Array.from({ length: 9 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div><div class="as-veil"></div><span class="as-credit">${esc(d.name)} · rendu de carte DofusDB</span>`; };
+    return `<div class="as-bg" style="background-image:url(${d.url})"></div><div class="as-motes">${Array.from({ length: 9 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div><div class="as-veil"></div>`; };
   window.DECORS = { of, html };
 })();
