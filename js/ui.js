@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.9.2";
+const GAME_VERSION = "1.2.9.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.9.3", name: "Le menu reste en place", items: [
+    "Le menu de gauche (PC) ne remonte plus tout seul en haut pendant un combat : il garde l'endroit où tu l'as fait défiler, même quand « Combat en cours » se met à jour."
+  ] },
   { v: "1.2.9.2", name: "Nouvelle stratégie réparée", items: [
     "Sorts & stratégies : le bouton « + Nouvelle stratégie » enregistre de nouveau tes sorts. Il partageait son nom avec les jeux d'idoles et ne créait rien." ] },
   { v: "1.2.9.1", name: "Reliques au bon tour", items: [
@@ -2422,6 +2425,7 @@ function renderNav() {
   const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo", k === "home")}${mb(F0.pages[0][0], F0.n, F0.ic, famOn(F0), famBadge(F0))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null, famOn(FH), famBadge(FH))}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${restDot ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
   const qf = document.activeElement && document.activeElement.id === "navq" ? document.activeElement : null; const qs = qf ? [qf.value, qf.selectionStart, qf.selectionEnd] : null; // 1.2.7.2 : le menu se redessine en tâche de fond, la case « Aller à une page » garde ce qui est tapé
+  const keep = [".sn-side", ".sn-fly"].map((c) => { const n = nav.querySelector(c); return n ? n.scrollTop : 0; }); // 1.2.9.3 : le menu se redessine pendant les combats, il garde sa position de défilement
   nav.innerHTML = side + mob;
   if (qs) { const n = $("#navq"); if (n) { n.value = qs[0]; n.focus(); try { n.setSelectionRange(qs[1], qs[2]); } catch (e) {} } }
   /* 5A : bandeau de la famille en haut de chaque page, et 3A les onglets des pages rangées ensemble */
@@ -2435,6 +2439,7 @@ function renderNav() {
   sub.innerHTML = strip;
   { const st = sub.querySelector(".sn-strip"); const c = st && st.querySelector('[aria-current="page"]'); if (c && st.scrollWidth > st.clientWidth) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.offsetWidth / 2; } // téléphone : la page en cours reste visible dans le bandeau
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
+  [".sn-side", ".sn-fly"].forEach((c, i) => { const n = keep[i] && nav.querySelector(c); if (n) n.scrollTop = keep[i]; }); // après le petit module de combat, qui change la hauteur
   navAfter(k, B);
 }
 /* animations du menu (Mathis 20A à 25A), jamais avec « Animations réduites » */

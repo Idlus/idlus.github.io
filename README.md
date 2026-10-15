@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.9.3 « Le menu reste en place »
+
+Le menu de gauche ne remonte plus tout seul en haut quand on le fait défiler pendant un combat.
+
 ## 1.2.9.2 « Nouvelle stratégie réparée »
 
 Le bouton « + Nouvelle stratégie » (Héros › Sorts & stratégies) ne créait rien : js/idols.js redéfinissait `E.savePreset` / `E.loadPreset` pour les jeux d'idoles et écrasait la version des stratégies de sorts (js/engine.js). Les fonctions des idoles s'appellent maintenant `E.saveIdolPreset` / `E.loadIdolPreset`. Au chargement, `S.idols.presets` est ramené à 3 jeux (les anciens clics y rangeaient un jeu fantôme au numéro du héros).
