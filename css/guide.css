@@ -63,3 +63,16 @@ abbr.gd-g{text-decoration:underline dotted;text-underline-offset:3px;cursor:help
 .gd-day{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 14px;border-radius:14px;background:var(--panel);border:2px solid var(--frame)}
 .gd-day .uico{width:26px;height:26px;flex:none}
 @media (max-width:640px){.gd-day{flex-wrap:wrap}.gd-day .grow{flex:1 1 calc(100% - 40px)}.gd-day .btn{margin-left:auto}}
+/* menu déroulant : familles repliables */
+.gd-fh{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;border-radius:10px;padding:6px 8px;cursor:pointer;color:var(--ink);text-align:left}
+.gd-fh:hover{background:var(--panel2)}
+.gd-fh .gd-fn{padding:0;flex:1}
+.gd-fc{font-size:11px;font-weight:800;color:var(--muted)}
+.gd-chev{font-size:16px;line-height:1;color:var(--muted);transition:transform .15s}
+.gd-fam.open .gd-chev{transform:rotate(90deg)}
+.gd-fl{display:flex;flex-direction:column;gap:2px;padding-left:4px}
+.gd-sumb{display:none}
+@media (max-width:899px){
+  .gd-sumb{display:inline-flex;align-self:flex-start}
+  .gd.sum .gd-list{display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:12px;border:2px solid var(--frame);background:var(--panel)}
+}

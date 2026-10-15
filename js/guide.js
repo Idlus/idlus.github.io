@@ -1002,7 +1002,7 @@
   }
 
   /* ---------- calculateurs (idée 5A) ---------- */
-  const st = { id: null, q: "", at: null, calc: {} };
+  const st = { id: null, q: "", at: null, calc: {}, fam: {}, sum: false };
   const sel = (k, opts, v) => `<select data-act="gd-calc" data-k="${k}" aria-label="${h(k)}">${opts.map(([a, b]) => `<option value="${h(a)}" ${String(a) === String(v) ? "selected" : ""}>${h(b)}</option>`).join("")}</select>`;
   const dur = (sec) => { sec = Math.max(0, Math.round(sec)); const hh = Math.floor(sec / 3600), mm = Math.round((sec % 3600) / 60); return hh ? `${hh} h ${String(mm).padStart(2, "0")}` : `${mm} min`; };
   const runsFor = (q, goal) => (q > 0 ? Math.ceil(Math.log(1 - goal) / Math.log(1 - q)) : Infinity);
@@ -1232,7 +1232,10 @@
     const item = (c) => `<button class="gd-it" data-act="gd-go" data-v="${h(c.id)}" aria-pressed="${c.id === cur}">${ico(c)}<span>${h(c.n)}</span>${isNew(c) ? '<span class="sn-newdot" title="Nouveau"></span>' : R[c.id] ? '<span class="gd-lu" title="Lu">✓</span>' : ""}</button>`;
     const fav = F.length ? `<div class="gd-fam"><span class="gd-fn">★ Favoris</span>${F.map(item).join("")}</div>` : "";
     const by = FAM.map((f) => [f, L.filter((c) => c.f === f)]).filter(([, x]) => x.length);
-    return fav + by.map(([f, x]) => `<div class="gd-fam"><span class="gd-fn">${h(f)}</span>${x.map(item).join("")}</div>`).join("");
+    const curF = (CH.find((c) => c.id === cur) || {}).f;
+    /* menu déroulant (demande de Mathis, 1.2.4.x) : une famille repliée par défaut, celle du chapitre affiché ouverte ; tout ouvert pendant une recherche */
+    return fav + by.map(([f, x]) => { const op = srch || (f in st.fam ? st.fam[f] : f === curF); const lu = x.filter((c) => R[c.id]).length;
+      return `<div class="gd-fam ${op ? "open" : ""}"><button class="gd-fh" data-act="gd-fam" data-v="${h(f)}" aria-expanded="${op}"><span class="gd-fn">${h(f)}</span><span class="gd-fc">${lu ? `${lu}/` : ""}${x.length}</span><span class="gd-chev" aria-hidden="true">›</span></button>${op ? `<div class="gd-fl">${x.map(item).join("")}</div>` : ""}</div>`; }).join("");
   }
   function html() {
     const F = st.q ? found(st.q) : null;
@@ -1240,9 +1243,9 @@
     if (F && F.length && !F.includes(cur)) cur = F[0];
     const L = F || CH;
     return `<div class="pagehead"><h1>Guide</h1><span class="small muted"><b class="num">${readN()}</b> / ${CH.length} chapitres lus</span><span class="gd-zb" role="group" aria-label="Taille du texte"><button class="btn sm ghost" data-act="gd-z" data-v="-1" ${zoom <= 0 ? "disabled" : ""} aria-label="Texte plus petit">A−</button><button class="btn sm ghost" data-act="gd-z" data-v="1" ${zoom >= 3 ? "disabled" : ""} aria-label="Texte plus grand">A+</button></span></div>
-      <div class="gd gd-z${zoom} ${F ? "srch" : ""}">
+      <div class="gd gd-z${zoom} ${F ? "srch" : ""} ${st.sum ? "sum" : ""}">
         <aside class="gd-side"><label class="gd-q">${X().G("search")}<input id="gdQ" type="search" placeholder="Chercher dans le guide" aria-label="Chercher dans le guide" autocomplete="off" value="${h(st.q)}"></label>
-          ${F && !F.length ? `<p class="note">Rien ne correspond à « ${h(st.q)} ».</p>` : `<div class="gd-list">${list(cur.id, L, !!F)}</div>`}
+          ${F && !F.length ? `<p class="note">Rien ne correspond à « ${h(st.q)} ».</p>` : `${F ? "" : `<button class="btn sm gd-sumb" data-act="gd-sum" aria-expanded="${st.sum}">${st.sum ? "Fermer le sommaire" : "Sommaire par famille"}</button>`}<div class="gd-list">${list(cur.id, L, !!F)}</div>`}
           <label class="gd-sel"><span class="xs muted">Chapitre</span><select data-act="gd-sel" aria-label="Chapitre">${!F && favs().length ? `<optgroup label="★ Favoris">${favs().map((id) => CH.find((c) => c.id === id)).filter(Boolean).map((c) => `<option value="${h(c.id)}">${h(c.n)}</option>`).join("")}</optgroup>` : ""}${FAM.map((f) => { const x = L.filter((c) => c.f === f); return x.length ? `<optgroup label="${h(f)}">${x.map((c) => `<option value="${h(c.id)}" ${c.id === cur.id ? "selected" : ""}>${h(c.n)}</option>`).join("")}</optgroup>` : ""; }).join("")}</select></label></aside>
         <div class="gd-main">${F && !F.length ? "" : chapter(cur)}</div>
       </div>`;
@@ -1280,10 +1283,12 @@
     const t = ev.target.closest && ev.target.closest("[data-act]"); if (!t || !S()) return; const a = t.dataset.act;
     if (a === "gd-open") { ev.preventDefault(); ev.stopPropagation(); open(t.dataset.v || null); return; }
     if (a === "gd-link") { copyLink(t.dataset.v); return; }
+    if (a === "gd-fam") { const f = t.dataset.v; const cur = (CH.find((c) => c.id === st.id) || {}).f; const now = f in st.fam ? st.fam[f] : f === cur; st.fam[f] = !now; paint(); return; }
+    if (a === "gd-sum") { st.sum = !st.sum; paint(); return; }
     if (a === "gd-fav") { const s = S(); const L = favs().slice(); const i = L.indexOf(t.dataset.v); if (i >= 0) L.splice(i, 1); else L.unshift(t.dataset.v); s.guideFav = L; X().markDirty(); paint(); return; }
     if (a === "gd-z") { zoom = Math.max(0, Math.min(3, zoom + (+t.dataset.v || 0))); try { localStorage.setItem(ZK, String(zoom)); } catch (e) {} paint(); return; }
     if (a === "gd-gl") { const g = GLOSS.find((x) => x[0] === t.dataset.v); if (g) X().toast(`${g[0]} : ${g[1]}`, "info"); return; }
-    if (a === "gd-go") { st.id = t.dataset.v; paint(); const c = document.querySelector(".gd-main"); if (c && window.matchMedia("(max-width:899px)").matches) c.scrollIntoView({ block: "start" }); else window.scrollTo(0, 0); }
+    if (a === "gd-go") { st.id = t.dataset.v; st.sum = false; paint(); const c = document.querySelector(".gd-main"); if (c && window.matchMedia("(max-width:899px)").matches) c.scrollIntoView({ block: "start" }); else window.scrollTo(0, 0); }
   }, true);
   document.addEventListener("change", (ev) => {
     const t = ev.target; if (!t.dataset) return;

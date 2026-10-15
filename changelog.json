@@ -1,6 +1,15 @@
 {
-  "version": "1.2.5.2",
+  "version": "1.2.5.3",
   "versions": [
+    {
+      "v": "1.2.5.3",
+      "name": "Sommaire du guide",
+      "guide": "parcours",
+      "items": [
+        "Guide : les familles de chapitres se replient et se déroulent, seule celle du chapitre affiché est ouverte (le compteur montre les chapitres lus)",
+        "Sur téléphone, le bouton « Sommaire par famille » déroule la même liste ; la liste déroulante des chapitres reste là"
+      ]
+    },
     {
       "v": "1.2.5.2",
       "name": "Bugs signalés",

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.5.2";
+const GAME_VERSION = "1.2.5.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.5.3", name: "Sommaire du guide", guide: "parcours", items: [
+    "Guide : les familles de chapitres se replient et se déroulent, seule celle du chapitre affiché est ouverte (le compteur montre les chapitres lus)",
+    "Sur téléphone, le bouton « Sommaire par famille » déroule la même liste ; la liste déroulante des chapitres reste là",
+  ] },
   { v: "1.2.5.2", name: "Bugs signalés", items: [
     "Chasse : la liste des héros qui portent un Sceau ne pousse plus le bouton +1 ◆ hors de la carte (nom complet au survol).",
     "Menu : le 6e épinglé passe à la ligne au lieu d’être caché à droite.",
