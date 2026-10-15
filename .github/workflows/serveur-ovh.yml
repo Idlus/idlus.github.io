@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, codes-liste]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -185,6 +185,11 @@ jobs:
           node tools/compensation_fm.js "$f" "$q" $([ "${{ inputs.etape }}" = compensation-fm ] && echo --appliquer)
           rm -f "$f"
           bash tools/serveur/vps_sql.sh fichier "$q"
+      - name: Liste des codes cadeaux (lecture seule)
+        if: inputs.etape == 'codes-liste'
+        run: |
+          echo "== CODES"
+          bash tools/serveur/vps_sql.sh lecture "select c.code, c.reward, c.msg, c.max_uses, c.uses, (select count(*) from public.gift_uses u where u.code = c.code) as utilisations, c.ends, c.accounts_only, c.active, c.created_at, (now() at time zone 'Europe/Paris')::date as aujourdhui from public.gift_codes c order by c.created_at"
       - name: Diagnostic (lecture seule)
         if: inputs.etape == 'diagnostic'
         run: |
