@@ -1,4 +1,4 @@
-/* 1.0.34 « Sorts et boss animés » : un sort signature de plus pour chaque classe (le plus joué), une attaque à eux pour les boss des mondes
+/* 1.0.36 « Sorts et boss animés » : un sort signature de plus pour chaque classe (le plus joué), une attaque à eux pour les boss des mondes
    dans leur donjon, et la mise en scène « Titan » des boss des mondes (Gargandyas a la sienne). Chargé après ui.js : complète SG et BXSP. */
 (function () {
   const K = window.DX && window.DX.anim; if (!K) return;

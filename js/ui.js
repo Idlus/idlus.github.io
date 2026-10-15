@@ -21,9 +21,19 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.35.1";
+const GAME_VERSION = "1.0.36";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.36", name: "La Scène", items: [
+    "Vue Scène refaite : chaque combattant a sa case sur un plateau isométrique façon DOFUS, le boss au premier plan. Les noms, PV, invocations et passifs passent dans un bandeau sous la scène. La Formation reste la vue par défaut (bouton « Scène » au-dessus du combat)",
+    "Nouvelles animations sur le plateau : chacun respire à son rythme, les héros arrivent en bondissant et les monstres tombent sur leur case, on recule sous les coups (plus loin sur un critique), celui qui joue fait un pas en avant",
+    "Effets des sorts visibles : la cible poussée glisse, les PA et la vie volés partent en orbes vers le lanceur, un bouclier forme un dôme, un boost fait monter des étincelles, l'affaiblissement et la vulnérabilité ont leur marque",
+    "38 nouveaux sorts avec leur propre animation, les 2 plus joués de chaque classe (Tempête de Puissance, Vacarme, Flèche Dévorante, Remblai, Glacier, Pelotage…)",
+    "20 boss ont maintenant leur attaque à eux : les boss des mondes dans leur donjon (Kolosso, Korriandre, Harebourg, Ougah, Nidas, Ilyzaelle, Nileza, Vortex) et les 12 premiers donjons (Kardorim, Tournesol Affamé, Mob l'Éponge, Bworkette, Kwakwa…)",
+    "Boss des mondes en Titans : ils tombent du ciel, deux fois plus grands, et lancent une attaque ultime aux tours 4, 8 et 12. Purement visuel, les dégâts ne changent pas",
+    "Gargandyas a sa mise en scène : son collier se brise à l'arrivée, ses 3 sorts ont leur animation, et son ultime Gargameha fend le sol",
+    "Tout cela en animations « Complètes » ; « Sobres » reste calme. Choix de Mathis",
+  ] },
   { v: "1.0.35.1", name: "Textes de la Renaissance", items: [
     "Les anciens textes qui parlaient de « +30 % d'XP par renaissance » sont corrigés (conseil d'accueil, notes de mise à jour) : depuis la 1.0.35, chaque renaissance apprend un sort d'une autre classe et demande +50 % d'XP par niveau",
   ] },
@@ -3350,7 +3360,7 @@ function spellBarFor(c, ent, F) {
 }
 /* vue de combat : scène (personnages en pied) ou compacte (cartes) */
 function combatView() { if (window.FORMUI) return window.FORMUI.view(S); /* 1.0.30 : Formation par défaut (js/formation.js) */ const v = S.settings.cview; if (v === "scene" || v === "compact") return v; return window.innerWidth < 640 && E.team(S).length >= 6 ? "compact" : "scene"; }
-/* 1.0.33 « Plateau » : chaque combattant sur sa case d'un sol isométrique façon DOFUS, sans chevauchement.
+/* 1.0.36 « Plateau » : chaque combattant sur sa case d'un sol isométrique façon DOFUS, sans chevauchement.
    Par camp : colonnes depuis le centre (la première ligne au plus près des ennemis), rangées en profondeur décalées d'un demi-pas.
    On choisit le nombre de rangées qui donne les plus grandes cases ; les invocations prennent la case voisine de leur maître. */
 function arenaLayout(F) {
@@ -3386,7 +3396,7 @@ function placeEnts(F) {
   F.ents.forEach((e, i) => { const n = A.nodes[i], p = L.pos[i]; if (!n || !p) return; n.style.left = p.x + "%"; n.style.bottom = p.y + "px"; n.style.zIndex = p.z; });
   stickyCheck();
 }
-/* 1.0.33 « Plateau » : le bandeau sous la scène porte les noms, les PV, les invocations et les passifs ;
+/* 1.0.36 « Plateau » : le bandeau sous la scène porte les noms, les PV, les invocations et les passifs ;
    la structure ne se redessine que si la liste change, les barres se mettent à jour en place */
 function hudPic(e) {
   const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: e.sex } : null;
@@ -3731,7 +3741,7 @@ function axMechBanner(A, txt, who) {
   A.fxl.appendChild(d); axLater(d, 2000);
 }
 /* effet d'un événement (impact, soin, bonus, invocation) */
-/* 1.0.33 « Nouvelles animations » (plateau, animations Complètes) : vie au repos, arrivée en combat, recul sous les coups, pas en avant de celui qui joue */
+/* 1.0.36 « Nouvelles animations » (plateau, animations Complètes) : vie au repos, arrivée en combat, recul sous les coups, pas en avant de celui qui joue */
 const anOn = (A) => axFull() && A && A.view === "scene" && A.el;
 const AN_FLY = /Tofu|Moskito|Chauve|Corbac|Pious|Abeille|Kwak|Libellule|Papillon|Fantôme|Spectre|Mouche|Vampyre|Scarafeuille|Plume|Ailé|Aéro/;
 const anFoot = (A, n) => { const a = A.el.getBoundingClientRect(), r = n.getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.bottom - a.top - 2 }; }; // pied = case du plateau
@@ -4634,7 +4644,7 @@ function updateCombat(force) {
       const hn = n.querySelector(".hpn"); if (hn) hn.textContent = `${fmt(Math.max(0, Math.round(e.hp)))} / ${fmt(e.hpMax)}`;
       if (e.side === "c" && !e.summon) { const pn = n.querySelector(".pas"); if (pn) { const P = E.passiveInfo(e, F); const html = P ? `${h(P.n)}${P.m ? ` <span class="pg">${Array.from({ length: Math.min(P.m, 12) }, (_, k) => `<i class="${k < Math.round(P.v * Math.min(P.m, 12) / P.m) ? "on" : ""}"></i>`).join("")}</span>` : ""}` : ""; if (pn.dataset.k !== html) { pn.innerHTML = html; pn.dataset.k = html; } } }
     });
-    sceneHud(F); // 1.0.33 « Plateau »
+    sceneHud(F); // 1.0.36 « Plateau »
     // mode manuel : héros à qui c'est le tour, cibles possibles
     const AW = F.await && !F.over ? F.await : null; const aw = $("#await");
     if (AW) {
@@ -9899,7 +9909,7 @@ Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "f
 Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
-window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun }; // 1.0.34 : js/animsorts.js complète les sorts et boss animés
+window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun }; // 1.0.36 : js/animsorts.js complète les sorts et boss animés
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 start();
 })();

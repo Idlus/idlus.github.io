@@ -5168,7 +5168,7 @@ span.fch{cursor:default;padding-left:8px}
 .c19c .ck{position:absolute;top:1px;right:4px;font-style:normal;font-weight:800;color:var(--gold)}
 @media (max-width:600px){.c19p{display:none}.c19g{grid-template-columns:repeat(5,minmax(0,1fr))}.c19c img{width:24px;height:24px}.c19{margin:0 0 10px}}
 .hcard .orn.c19{filter:drop-shadow(0 0 8px #ffd84d)}
-/* 1.0.33 « Plateau » : sol isométrique façon DOFUS, une case par combattant ; noms et PV dans le bandeau (.schud) */
+/* 1.0.36 « Plateau » : sol isométrique façon DOFUS, une case par combattant ; noms et PV dans le bandeau (.schud) */
 .arena.v2.iso::before{content:"";position:absolute;left:0;right:0;bottom:0;height:64%;z-index:1;pointer-events:none;
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Cpath d='M32 1L63 16L32 31L1 16Z' fill='rgba(255,255,255,.035)' stroke='rgba(255,255,255,.15)'/%3E%3C/svg%3E");
  background-size:var(--tw,64px) calc(var(--tw,64px) / 2);background-position:center bottom;-webkit-mask:linear-gradient(transparent,#000 45%);mask:linear-gradient(transparent,#000 45%)}
@@ -5211,7 +5211,7 @@ span.fch{cursor:default;padding-left:8px}
  .schud .hc{grid-template-columns:1fr;justify-items:center;padding:3px 2px;gap:2px}.schud .hb{width:100%}.schud .hb b,.schud .hpv{display:none}
  .schud .hp{width:26px;height:26px}.schud .hss{justify-content:center}.schud .hc.boss{grid-column:span 2}.schud .hsum{width:15px;height:15px}}
 
-/* 1.0.33 « Nouvelles animations » : chacun respire à son rythme (héros compris), les volants flottent */
+/* 1.0.36 « Nouvelles animations » : chacun respire à son rythme (héros compris), les volants flottent */
 .arena.v2.anlive .ent.hero:not(.act):not(.hit):not([data-pv]) .look{transform-origin:50% 100%;animation:anbr var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
 .arena.v2.anlive .ent:not(.act):not(.hit) img.sprite{transform-origin:50% 100%;animation:anbr var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
 .arena.v2.anlive .ent.anfly:not(.act):not(.hit) img.sprite{animation:anfly var(--bp,2.6s) ease-in-out var(--bd,0s) infinite}
