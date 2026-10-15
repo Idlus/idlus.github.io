@@ -120,7 +120,7 @@
     const fd = G.find((g) => g.id === a.founder);
     return `<section class="panel al-ban" style="--ac:${h(a.col)}">${shield(a, 74)}<div class="grow stack" style="gap:6px"><div class="row"><h2>${h(a.name)}</h2>${tagH(a)}</div>
       <div class="row"><span class="tag good">${G.length} / ${E.ALLY.max} guildes</span><span class="xs muted">${n} membres · ${P.length} prisme${P.length > 1 ? "s" : ""}${fd ? ` · dirigée par ${h(fd.name)}` : ""}</span></div>
-      <div class="al-bon"><span class="xs muted" style="align-self:center">${P.length ? `Dans nos ${P.length > 1 ? `${P.length} régions` : "région"} :` : "Dans chaque région de nos prismes :"}</span>${bonusTags(null)}</div></div>
+      <div class="al-bon"><span class="xs muted" style="align-self:center">${P.length ? (P.length > 1 ? `Dans nos ${P.length} régions :` : "Dans notre région :") : "Dans chaque région de nos prismes :"}</span>${bonusTags(null)}</div></div>
       <button class="btn sm mktrade" data-act="al-chat">${X().G("chat")} Chat d'alliance</button></section>`;
   }
   function prismsPanel() {
