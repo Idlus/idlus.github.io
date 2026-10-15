@@ -101,7 +101,7 @@ alter table public.alliance_msgs enable row level security;
 
 -- ---------- outils internes ----------
 -- jour de la bataille (1 = lundi … 7 = dimanche) et heures : les mêmes que E.ALLY (js/alliance.js)
-create or replace function public.al_battle_day() returns int language sql stable as $$ select 7 $$;
+create or replace function public.al_battle_day() returns int language sql stable as $$ select 6 $$;
 create or replace function public.al_battle_from() returns int language sql stable as $$ select 21 $$;
 create or replace function public.al_battle_to() returns int language sql stable as $$ select 22 $$;
 -- début et fin de la bataille de la semaine wk (gb_week : semaines du lundi)

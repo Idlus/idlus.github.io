@@ -23,7 +23,7 @@
   E.ALLY = {
     max: 3, foundK: 1000000, foundLvl: 10, prismK: 1000000, bonus: 5, percoHp: 0.20,
     prism: 0.30, rempart: 0.10, assail: 0.30, fights: 10, rally: 2, freeMin: 5,
-    day: 7, from: 21, to: 22, title: "Souverain des Douze", nameMin: 3, nameMax: 24,
+    day: 6, from: 21, to: 22, title: "Souverain des Douze", nameMin: 3, nameMax: 24,
   };
   /* Améliorations du prisme (8A), payées par le coffre de la guilde qui l'a posé (ou d'une guilde de l'alliance) */
   E.ALLY_MODS = {

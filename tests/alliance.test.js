@@ -24,8 +24,9 @@ const sqlInt = (fn) => +(sql.match(new RegExp(`function public\\.${fn}\\(\\) ret
 assert.strictEqual(sqlInt("al_battle_day"), E.ALLY.day, "jour de la bataille différent entre le jeu et le serveur");
 assert.strictEqual(sqlInt("al_battle_from"), E.ALLY.from);
 assert.strictEqual(sqlInt("al_battle_to"), E.ALLY.to);
-const sun = Date.parse("2026-10-18T19:30:00Z"); // dimanche 21 h 30 à Paris (heure d'été)
-assert.strictEqual(E.allyBattle(sun).on, E.ALLY.day === 7);
+const sat = Date.parse("2026-10-17T19:30:00Z"); // samedi 21 h 30 à Paris (heure d'été)
+assert.strictEqual(E.allyBattle(sat).on, E.ALLY.day === 6);
+assert.strictEqual(E.allyBattleWhen(), "samedi de 21 h à 22 h");
 assert.ok(E.allyBattle(Date.parse("2026-10-15T10:00:00Z")).ms > 0);
 
 // 8A : prix des améliorations identiques des deux côtés
