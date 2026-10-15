@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.8";
+const GAME_VERSION = "2.0.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.9", name: "Clés de voûte reliées", guide: "maitrise", items: [
+    "Maîtrise : dans les 19 ciels, les 3 clés de voûte de chaque domaine sont reliées par le dernier cercle, comme celles du Feu. Plus besoin de redescendre vers le cœur pour passer de l'une à l'autre. Les étoiles déjà prises ne changent pas"
+  ] },
   { v: "2.0.8", name: "Maîtrise plafonnée", guide: "maitrise", items: [
     "Arbre de Maîtrise : en combat, un héros ne profite jamais de plus d'étoiles que de points de Maîtrise. Rien ne change pour un arbre construit dans le jeu"
   ] },

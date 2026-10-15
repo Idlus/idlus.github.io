@@ -1,6 +1,14 @@
 {
-  "version": "2.0.8",
+  "version": "2.0.9",
   "versions": [
+    {
+      "v": "2.0.9",
+      "name": "Clés de voûte reliées",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : dans les 19 ciels, les 3 clés de voûte de chaque domaine sont reliées par le dernier cercle, comme celles du Feu. Plus besoin de redescendre vers le cœur pour passer de l'une à l'autre. Les étoiles déjà prises ne changent pas"
+      ]
+    },
     {
       "v": "2.0.8",
       "name": "Maîtrise plafonnée",

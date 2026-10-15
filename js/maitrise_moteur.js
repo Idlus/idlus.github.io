@@ -131,7 +131,7 @@
       let best = 0, bd = 9; r2.forEach((id) => { const dd = Math.abs(((N[id].th - S0.th + TAU * 1.5) % TAU) - Math.PI); if (dd < bd) { bd = dd; best = id; } }); link(best, S0.root);
     });
     SP.forEach((S0, si) => { const T2 = SP[(si + 1) % SP.length]; link(S0.root, T2.root);
-      S0.lv.forEach((ring, cc) => { if (cc === 0 || rnd() < 0.45) { const a = ring[2], b = T2.lv[cc][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, cc + si), mt, N[a].r + (cc ? 0 : 52))); link(a, m1); link(m1, b); } }); });
+      S0.lv.forEach((ring, cc) => { if (cc === 0 || rnd() < 0.45) { const a = ring[2], b = T2.lv[cc][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, cc + si), mt, N[a].r + (cc ? 0 : 52))); link(a, m1); link(m1, b); if (cc === 4) S0.c4 = 1; } }); });
     (KSC[cls] || []).forEach((kk, i) => {
       const th = TAU * [2, 3, 4][i] / 6; let prev = r2[Math.round(th / TAU * 18) % 18];
       for (let j = 0; j < 4; j++) { const id = add(P({ t: "cls", d: f[0], n: `Voie : ${kk[0]}`, txt: `+1 % d'effet du passif ${pas} ; mène à ${kk[0]}.`, b: [[`Passif ${pas} (%)`, 1]] }, th, 190 + j * 34)); link(prev, id); prev = id; }
@@ -146,6 +146,8 @@
       ringN.forEach((id, j) => { link(id, ringN[(j + 1) % 12]); if (j % 4 === 0) link(hub, id); });
       NKS.forEach((kk, i) => { const th = Math.PI + (i - 1) * 0.11; let prev = ringN[[5, 6, 7][i]]; for (let j = 0; j < 6; j++) { const id = add(P(nb(i + j), th, 1930 + j * 34)); link(prev, id); prev = id; } link(prev, add(P({ t: "ks", neb: true, d: 5, n: kk[0], fx: kk[1], txt: E.mtFxTxt(kk[1]), b: [] }, th, 2160))); });
     }
+    /* 2.0.9 : les 3 clés de voûte d'un domaine sont reliées entre elles par le dernier cercle, dans tous les ciels (Mathis : « côté Feu c'est tout relié… mais pas dans la voie Terre »). Étoiles ajoutées à la fin : les numéros des autres ne changent pas */
+    SP.forEach((S0, si) => { const T2 = SP[(si + 1) % SP.length]; if (T2.d !== S0.d || S0.c4) return; const a = S0.lv[4][2], b = T2.lv[4][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, 4 + si), mt, N[a].r)); link(a, m1); link(m1, b); });
     for (const n of N) { const X0 = Math.sin(n.th) * n.r, Y0 = -Math.cos(n.th) * n.r, psi = n.th - Math.PI / 2; n.X = X0 + Math.cos(psi) * n.lr - Math.sin(psi) * n.lt; n.Y = Y0 + Math.sin(psi) * n.lr + Math.cos(psi) * n.lt; }
     const coreIds = N.filter((n) => n.t === "cls" && n.r <= 150).map((n) => n.id);
     return (TREES[cls] = { cls, N, ED, SP, cks, start, domTh, coreIds, order, pas });

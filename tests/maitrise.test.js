@@ -93,3 +93,8 @@ console.log("maitrise.test.js : OK");
   assert.strictEqual(E.mtFx(S9, h9).n, 40); M9.lvl = 0; assert.strictEqual(E.mtFx(S9, h9).n, 0, "0 point : aucune étoile en combat");
   console.log("ok - étoiles plafonnées aux points en combat");
 }
+// 2.0.9 : dans les 19 ciels, les 3 clés de voûte de chaque domaine sont reliées par le dernier cercle (sans repasser par le cœur)
+{ const D0 = require("../js/data.js"); for (const cl of D0.CLASS_ORDER || Object.keys(D0.CLASSES)) { const T = E.mtTree(cl);
+  const dist = (a, b) => { const seen = new Map([[a, 0]]); const q = [a]; while (q.length) { const x = q.shift(); if (x === b) return seen.get(x); for (const y of T.N[x].adj) { if (seen.has(y) || T.N[y].neb || T.N[y].r < 1000) continue; seen.set(y, seen.get(x) + 1); q.push(y); } } return -1; };
+  for (let d = 0; d < 6; d++) { const ks = T.SP.filter((s) => s.d === d).map((s) => s.ks); assert.ok(dist(ks[0], ks[1]) > 0 && dist(ks[1], ks[2]) > 0, `${cl} : clés de voûte du domaine ${d} reliées`); } } }
+console.log("ok - clés de voûte reliées dans chaque domaine");
