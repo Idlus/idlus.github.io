@@ -1,6 +1,15 @@
 {
-  "version": "1.1.2.9",
+  "version": "1.1.2.10",
   "versions": [
+    {
+      "v": "1.1.2.10",
+      "name": "Bugs signalés",
+      "items": [
+        "L'Ascension : avec la règle « Un seul élément », le Roublard qui commence par l'Explobombe garde aussi ses sorts Feu (l'élément vient du premier sort qui en a un)",
+        "L'Ascension : l'Explobombe se lance de nouveau quand un monstre recruté (ou l'âme du boss) accompagne le Roublard",
+        "Page Dofus : le Jyfus, cadeau de lancement, s'affiche « quête terminée » quand il est dans le sac"
+      ]
+    },
     {
       "v": "1.1.2.9",
       "name": "Le Havre-Sac en scène",

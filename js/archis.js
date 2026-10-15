@@ -269,7 +269,8 @@
       const Df = E.DOFUS[id]; const Q = dq(S, id); let guard = 0;
       while (!Q.done && guard++ < 8) {
         const st = Df.steps[Q.step]; if (!st) { Q.done = E.now(); E.giveDofus(S, id, "quête terminée"); break; }
-        if (st.t === "ocre" || st.t === "gift") break; // l'Ocre est donné par le dernier palier
+        if (st.t === "gift") { if (E.dofusOwned(S, id)) Q.done = E.now(); break; } // cadeau (Jyfus) : quête terminée dès qu'il est dans le sac, sinon la page le montrait « non réalisé »
+        if (st.t === "ocre") break; // l'Ocre est donné par le dernier palier
         const [a, b] = E.dofusStepProgress(S, id, Q.step); if (a < b) break;
         Q.step++; Q.prog = 0;
         if (Q.step < Df.steps.length) E.note(S, `${Df.name} : étape ${Q.step} sur ${Df.steps.length} accomplie.`, "up");

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2.9";
+const GAME_VERSION = "1.1.2.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.2.10", name: "Bugs signalés", items: [
+    "L'Ascension : avec la règle « Un seul élément », le Roublard qui commence par l'Explobombe garde aussi ses sorts Feu (l'élément vient du premier sort qui en a un)",
+    "L'Ascension : l'Explobombe se lance de nouveau quand un monstre recruté (ou l'âme du boss) accompagne le Roublard",
+    "Page Dofus : le Jyfus, cadeau de lancement, s'affiche « quête terminée » quand il est dans le sac" ] },
   { v: "1.1.2.9", name: "Le Havre-Sac en scène", items: [
     "Quand l'équipe se repose, le bandeau du Havre-Sac a lui aussi son vrai décor DOFUS animé : le jardin du Havre-Sac, une plateforme sous les étoiles en Nuit violette, et un Havre-Sac hanté pendant Halouine" ] },
   { v: "1.1.2.8", name: "La tour t'attend", items: [

@@ -1532,7 +1532,7 @@
       case "enemy_many": return foes.length >= 3;
       case "enemy_one": return foes.length === 1;
       case "boss": return foes.some((f) => f.boss);
-      case "no_summon": return !allies.some((a) => a.summon && a.owner === F.ents.indexOf(e));
+      case "no_summon": return !ownSums(F, F.ents.indexOf(e)).length;
       case "ally_shield": return allies.some((a) => !a.summon && !(a.shield > 0));
       default: return true;
     }
@@ -1566,9 +1566,11 @@
     return [prim, ...sorted.filter((x) => x !== prim)].slice(0, Math.max(1, n));
   };
   const SUM_LIMIT = (e) => Math.min(E.TACT.invMax, (e.cls === "osa" ? 2 : 1) + ((e.st && e.st.inv) || 0));
+  /* invocations posées par un héros (les recrues et l'âme de boss de l'Ascension ne comptent pas) */
+  const ownSums = (F, own) => alive(F, "c").filter((a) => a.summon && a.owner === own && a.recruit === undefined && !a.soul);
   const makeSummon = (S, F, e, f) => {
     const own = F.ents.indexOf(e);
-    if (alive(F, "c").filter((a) => a.summon && a.owner === own).length >= SUM_LIMIT(e)) return null;
+    if (ownSums(F, own).length >= SUM_LIMIT(e)) return null;
     const info = (D.SUMMONS || {})[String(f.mid)] || {}; const boost = e.cls === "osa" ? 1.3 + 0.15 * (e.evc || 0) : 1;
     const hp = Math.round(e.hpMax * 0.35 * boost);
     const s = { side: "c", tm: e.tm, summon: true, owner: own, name: info.name || "Invocation", img: info.img || null, cls: e.cls, lvl: e.lvl, hpMax: hp, hp, ini: e.ini - 1,
@@ -1587,7 +1589,7 @@
     const kind = E.spellKind(g); e.wcast = sp.wp ? sp : null;
     // sorts inutiles : ne pas les gaspiller
     if (kind === "heal" && !alive(F, "c").some((a) => a.hp < a.hpMax)) return { ok: false };
-    if (kind === "summon" && alive(F, "c").filter((a) => a.summon && a.owner === F.ents.indexOf(e)).length >= SUM_LIMIT(e)) return { ok: false };
+    if (kind === "summon" && ownSums(F, F.ents.indexOf(e)).length >= SUM_LIMIT(e)) return { ok: false };
     if (kind === "shield" && !g.fx.some((f) => f.k === "shield" && (f.all ? allies.some((a) => !(a.shield > 0)) : !(e.shield > 0)))) return { ok: false };
     if (kind === "buff") { // pas de bonus déjà actif, pas d'affaiblissement déjà posé sur la cible
       const bf = g.fx.filter((f) => f.k === "buff" && f.st !== "pa");

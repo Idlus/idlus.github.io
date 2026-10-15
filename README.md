@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.10 « Bugs signalés »
+
+Premiers bugs envoyés par le bouton « Signaler un bug » (tickets 110, 112, 113). Ascension : la règle « Un seul élément » prend l'élément du premier sort élémentaire (`E.ascSetup`, `js/ascension.js`) ; les recrues et l'âme de boss ne comptent plus dans la limite d'invocations du héros (`ownSums` dans `js/engine.js`). Jyfus : une étape « cadeau » est terminée dès que le Dofus est possédé (`advance` de `js/archis.js`).
+
 ## 1.1.2.9 « Le Havre-Sac en scène »
 
 Mathis (15/10/2026) : « Avoir une scène quand on est dans l'havre sac ». `assets/hs/{jardin,nuit,halouine}.webp` = trois cartes de la sous-zone DofusDB « Havres-Sacs » (id 851 ; cartes 162793486, 162793490, 162795540), même traitement que les zones. `DECORS.of({ home })` choisit selon le thème (data-theme, data-hal) ; `homeHtml` l'affiche quand aucune chasse ni donjon n'est en cours.

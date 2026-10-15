@@ -344,7 +344,7 @@
       let list = bar.map((s) => s);
       if (rule === "silence" && list.length > 1) { const top = list.slice().sort((a, b) => (R.used[b.k] || 0) - (R.used[a.k] || 0))[0]; list = list.filter((s) => s !== top); }
       E.ASC_DEFS = list.map((s) => E.ascDef(s));
-      if (rule === "element") { const el = (E.ASC_DEFS[0] || {}).el; const keep = E.ASC_DEFS.map((d, i) => (d && (d.el === el || !d.el || d.el === "best") ? i : -1)).filter((i) => i >= 0); list = keep.map((i) => list[i]); E.ASC_DEFS = keep.map((i) => E.ASC_DEFS[i]); }
+      if (rule === "element") { const el = (E.ASC_DEFS.find((d) => d && d.el && d.el !== "best") || {}).el; /* premier sort élémentaire (une bombe n'a pas d'élément) */ const keep = E.ASC_DEFS.map((d, i) => (d && (d.el === el || !d.el || d.el === "best") ? i : -1)).filter((i) => i >= 0); list = keep.map((i) => list[i]); E.ASC_DEFS = keep.map((i) => E.ASC_DEFS[i]); }
       c.lvl = L; c.autoStat = domStat(E.ASC_DEFS); E.resetPoints(S2, c.id);
       c.spells = E.ASC_DEFS.map((d, i) => ({ id: "a~" + i, cond: d ? E.defaultCond(d, c) : "always", tgt: "low" }));
       /* monstres */
