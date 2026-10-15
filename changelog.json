@@ -1,6 +1,15 @@
 {
-  "version": "1.1",
+  "version": "1.1.1",
   "versions": [
+    {
+      "v": "1.1.1",
+      "name": "Fonder une alliance",
+      "items": [
+        "Alliances : le nom et le sigle tapés restent en place même quand la page se rafraîchit ou qu'on choisit l'emblème",
+        "Alliances : si le bouton « Fonder l'alliance » est grisé, la page dit ce qui manque (niveau de guilde ou kamas du coffre), et explique que seul le Meneur peut fonder",
+        "Alliances : un refus du serveur affiche son vrai message au lieu de « Pas de connexion au serveur »"
+      ]
+    },
     {
       "v": "1.1",
       "name": "La 1.1",

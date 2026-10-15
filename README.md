@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.1 « Fonder une alliance »
+- Le nom et le sigle de l'alliance tapés ne s'effacent plus ; la page dit ce qui manque quand le bouton est grisé (niveau de guilde, kamas du coffre, Meneur seulement).
+- Un refus du serveur affiche son vrai message.
+
 ## 1.1 « La 1.1 »
 
 Grosse mise à jour validée par Mathis sur maquette (15/10/2026, 1A 2D 3A), assemblée depuis les branches de chaque fil : L'Ascension (`js/ascension.js`, `js/ascensionui.js`, `supabase/ascension.sql`, course `race11`), stasis 11 à 15 (`E.STASIS_MAX`, `E.STASIS_UP` dans `js/engine.js`, chances de Dofus plafonnées à la stasis 10), 4 nouveaux Dofus (`js/dofusp.js`, Premiers `gardien11`), menu Dofus (`js/dofusui.js`), Champions (`js/champions.js`, `js/champui.js`), élevage (`js/elevage.js`, `supabase/elevage.sql`), familiers et montiliers, Défi du jour, inventaire, boss de guilde (`supabase/gboss.sql`), Chasse aux Percepteurs (`js/chasse.js`), Alliances et prismes (`js/alliance.js`, `supabase/alliances.sql`) et raccourcis clavier (`HOTKEYS` dans `js/ui.js`). Simulation : stasis 1 à 10 inchangées, équipes au maximum ≈ 10,5 à Nileza. Le workflow « Serveur en ligne » applique les SQL modifiés et redéploie la fonction « record ».

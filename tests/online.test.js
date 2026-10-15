@@ -134,6 +134,7 @@ const MOCK = () => {
         help: [{ id: 88, sid, zone: "Plaine des Scarafeuilles", ends: iso(72 * 60e3), by: "Nyx", dg: G4, ag: G5, tried: false, n: 1 }] }));
     }
     if (name === "ally_answer") { gm.al.in = true; return ok({ ok: true }); }
+    if (name === "ally_found") { gm.found = a; return ok(a.p_name && /^[A-Z0-9]{2,4}$/.test(a.p_tag || "") ? { ok: true, id: 9 } : { err: "Nom ou sigle vide" }); }
     if (name === "ally_chat") return ok((gm.al && gm.al.in) ? [{ id: 5, ch: "a", user_id: "u9", pseudo: "Kraken", cls: "iop", lvl: 200, body: "Tous à Cania ce soir !", kind: "msg", gname: "Ordre du Kralamour", created_at: iso(-60e3) }] : []);
     if (name === "ally_say") return ok(null);
     if (name === "prism_place") { if (gm.chest < 1000000) return ok({ err: "coffre" }); gm.chest -= 1000000; gm.al.placed = a.p_zone; return ok({ ok: true, chest: gm.chest }); }
@@ -1034,6 +1035,13 @@ const MOCK = () => {
     await page.waitForSelector('[data-act="al-inv"][data-v="1"]', { timeout: 8000 }).catch(() => fail("alliances : invitation absente"));
     { const t = await gtxt(); ["Fonder une alliance", "Alliogemme", "Pacte de Djaul", "Les Gardiens d'Émeraude"].forEach((x) => { if (!t.includes(x)) fail("alliances : « " + x + " » absent (sans alliance)"); }); }
     await gwide("l'alliance (sans alliance)", "alliance-fonder");
+    // fonder : le nom et le sigle tapés doivent survivre au choix de l'emblème et aux rafraîchissements de la page
+    await page.fill("#alName", "Les Veilleurs"); await page.fill("#alTag", "vlr");
+    await page.click('[data-act="al-ic"]:nth-child(2)'); await page.click('[data-act="al-col"]:nth-child(3)'); await page.waitForTimeout(4600);
+    if ((await page.inputValue("#alName")) !== "Les Veilleurs") fail("alliances : le nom tapé s'efface (emblème ou rafraîchissement)");
+    await page.click('[data-act="al-found"]'); await page.waitForTimeout(800);
+    { const f = (await mock()).gm.found; if (!f || f.p_name !== "Les Veilleurs" || f.p_tag !== "VLR") fail("alliances : fondation mal envoyée (" + JSON.stringify(f) + ")"); }
+    await page.waitForSelector('[data-act="al-inv"][data-v="1"]', { timeout: 8000 });
     await page.click('[data-act="al-inv"][data-v="1"]'); await page.waitForSelector(".al-ban", { timeout: 8000 }).catch(() => fail("alliances : l'alliance ne s'affiche pas après l'invitation"));
     { const t = await gtxt(); ["Bataille des prismes", "Nos prismes", "Rempart rang 2", "Percepteurs alliés", "Aider à défendre", "Poser un prisme", "Île de Moon", "Classement des alliances", "Tes combats : 3 / 10"].forEach((x) => { if (!t.includes(x)) fail("alliances : « " + x + " » absent"); }); }
     await gwide("l'alliance", "alliance");

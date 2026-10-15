@@ -60,7 +60,7 @@
     A.loading = true;
     const r = await ON.rpc("ally_me");
     A.loading = false; A.at = Date.now();
-    if (r.err || !r.data || r.data.err) { const was = A.err; A.err = true; if (!was && window.DX.ui.tab === "guild") repaint(); return; }
+    if (r.err || !r.data || r.data.err) { const was = A.err; A.err = true; A.errTxt = errTxt(r.err || (r.data && r.data.err)); if (!was && window.DX.ui.tab === "guild") repaint(); return; }
     A.err = false; A.d = r.data; A.off = Date.parse(r.data.now) - Date.now();
     if (A.d.claim && !A.claiming) claim();
     repaint();
@@ -77,12 +77,14 @@
     if (r.data && r.data.ops && window.MARKET) window.MARKET.apply(r.data.ops, true);
     if (r.data && r.data.ok) { X().toast(`👑 Ton alliance est première du classement des prismes : titre « ${E.ALLY.title} » et ornement « Prisme des Douze » !`, "rare"); A.d.claim = false; }
   }
+  /* le vrai message du serveur quand il y en a un (avant : toujours « Pas de connexion », même pour une erreur de la base) */
+  const errTxt = (e) => (!e || /connexion|fetch|network|timeout|délai/i.test(String(e)) ? "Pas de connexion au serveur : réessaie dans un moment." : `Le serveur refuse : ${String(e).slice(0, 160)}`);
   async function call(name, args, okTxt) {
     if (A.busy) return null;
     A.busy = true; GU().paint();
     const r = await ON.rpc(name, args);
     A.busy = false;
-    const err = r.err ? "Pas de connexion au serveur : réessaie dans un moment." : r.data && r.data.err;
+    const err = r.err ? errTxt(r.err) : r.data && r.data.err;
     if (err) { X().toast(err); GU().paint(); return null; }
     if (okTxt) X().toast(okTxt, "rare");
     return r.data || {};
@@ -105,7 +107,8 @@
       <div class="al-cost"><span class="tag ${chestOk ? "good" : "soft"}">${X().IC("coffre")} ${fk(E.ALLY.foundK)} du coffre de guilde</span><span class="tag ${lvlOk ? "good" : "soft"}">guilde niveau ${E.ALLY.foundLvl}</span><span class="tag ${chef() ? "good" : "soft"}">Meneur seulement</span></div>
       ${chef() ? `<div class="gpick">${ICONS.map((ic) => `<button class="${f.ic === ic ? "on" : ""}" data-act="al-ic" data-v="${ic}" aria-label="${ic}"><img src="assets/ui/${ic}.webp" alt=""></button>`).join("")}</div>
         <div class="gpick col">${COLS.map((c) => `<button class="${f.col === c ? "on" : ""}" data-act="al-col" data-v="${c}" style="background:${c}" aria-label="couleur"></button>`).join("")}</div>
-        <div class="row"><input type="text" id="alName" maxlength="${E.ALLY.nameMax}" placeholder="Nom de l'alliance" value="${h(f.name)}" style="max-width:240px"><input type="text" id="alTag" maxlength="4" placeholder="Sigle" value="${h(f.tag)}" style="max-width:80px;text-transform:uppercase"><button class="btn primary" data-act="al-found" ${!lvlOk || !chestOk || A.busy ? "disabled" : ""}>Fonder l'alliance</button></div>` : ""}
+        <div class="row"><input type="text" id="alName" maxlength="${E.ALLY.nameMax}" placeholder="Nom de l'alliance" value="${h(f.name)}" style="max-width:240px"><input type="text" id="alTag" maxlength="4" placeholder="Sigle" value="${h(f.tag)}" style="max-width:80px;text-transform:uppercase"><button class="btn primary" data-act="al-found" ${!lvlOk || !chestOk || A.busy ? "disabled" : ""}>Fonder l'alliance</button></div>
+        ${!lvlOk || !chestOk ? `<span class="small al-warn">Il manque : ${[!lvlOk ? `guilde niveau ${E.ALLY.foundLvl} (elle est niveau ${d.glvl || 1})` : "", !chestOk ? `${fk(E.ALLY.foundK)} dans le coffre de guilde (il y a ${fk(d.chest)})` : ""].filter(Boolean).join(" et ")}.</span>` : ""}` : `<span class="small muted">Seul le Meneur de ta guilde peut fonder l'alliance ou demander à en rejoindre une.</span>`}
       <span class="xs muted">Coffre de ta guilde : ${fk(d.chest)} · guilde niveau ${d.glvl || 1}${lvlOk ? " ✓" : ""}</span></div></div></section>`;
     const list = (d.list || []); const asked = d.asked || [];
     const rows = list.map((x) => { const full = x.n >= E.ALLY.max;
@@ -206,7 +209,7 @@
   function pageHtml() {
     if (!mine()) return `<div class="empty">Les alliances se jouent avec la partie en ligne.</div>`;
     load();
-    if (!A.d) return `<div class="empty">${A.err ? "Pas de connexion au serveur : réessaie dans un moment." : "Chargement…"}</div>`;
+    if (!A.d) return `<div class="empty">${A.err ? h(A.errTxt) : "Chargement…"}</div>`;
     if (!al()) return noneHtml();
     return `${banner()}<div class="grid2g even">${battlePanel()}${prismsPanel()}${helpPanel()}${guildsPanel()}${posePanel()}${rankPanel()}</div>`;
   }
@@ -311,6 +314,8 @@
     }
   });
   document.addEventListener("change", (ev) => { if (ev.target.id === "alFree") A.sel = ev.target.value; });
+  /* le nom et le sigle tapés sont gardés : la page se redessine (emblème choisi, rafraîchissement toutes les 4 s) */
+  document.addEventListener("input", (ev) => { if (ev.target.id === "alName") A.form.name = ev.target.value; else if (ev.target.id === "alTag") A.form.tag = ev.target.value.toUpperCase(); });
 
   /* rafraîchissements : chat d'alliance (comme celui de la guilde), données de temps en temps */
   let tick = 0;

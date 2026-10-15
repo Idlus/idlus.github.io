@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1";
+const GAME_VERSION = "1.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.1", name: "Fonder une alliance", items: [
+    "Alliances : le nom et le sigle tapés restent en place même quand la page se rafraîchit ou qu'on choisit l'emblème",
+    "Alliances : si le bouton « Fonder l'alliance » est grisé, la page dit ce qui manque (niveau de guilde ou kamas du coffre), et explique que seul le Meneur peut fonder",
+    "Alliances : un refus du serveur affiche son vrai message au lieu de « Pas de connexion au serveur »",
+  ] },
   { v: "1.1", name: "La 1.1", items: [
     "L'Ascension (Jouer › L'Ascension) : une tour de 100 étages qui change chaque mois. Un héros neuf niveau 1, 3 classes tirées au sort, sorts et échos, Volonté, Fragments et Écus",
     "Course de lancement : les 10 premiers comptes à l'étage 100 de L'Ascension en Difficile gagnent le titre « Légende de la 1.1 »",
