@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.5 « Bouton des Éclats »
+
+Héros › Chasse : le bouton des Éclats de champion reste visible sur chaque Sceau, grisé (« 0 ◆ ») quand on n'a pas d'Éclat.
+
 ## 1.1.2.4 « Annonces en boucle »
 
 Demande de Mathis (15/10/2026) : « créer un système d'annonce programmé en boucle par exemple toutes les 1H ». Panel Xener › Annonces › « Annonces en boucle » (`loopBox` de `js/chat.js`), serveur `supabase/annonces_boucle.sql` (table `announce_loops`, fonctions `adm_loop_save`, `adm_loop_on`, `adm_loop_del`, `adm_loops`). Pas de tâche planifiée : le jeu des joueurs connectés appelle `ann_tick()` quand une annonce est due (au plus toutes les 2 minutes) ; le premier appel publie le bandeau (`announces.loop_id`) et/ou le message du Général au nom de Xener, les passages manqués sont sautés. Si une annonce ponctuelle occupe le bandeau, la boucle passe seulement dans le chat.

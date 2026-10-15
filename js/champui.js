@@ -28,6 +28,11 @@
   const ico = (k, cls = "") => { const i = ICO[k]; return i ? `<svg class="ch-pw ${cls}" viewBox="0 0 24 24" style="--pw:${i[0]}" aria-hidden="true"><path fill-rule="evenodd" d="${i[1]}"/></svg>` : crown; };
   const icoSeal = (key) => key.split("+").map((k) => ico(k)).join("");
 
+  // « +1 ◆ » : un Éclat sur ce Sceau ; sans Éclat, le bouton reste visible mais grisé (« 0 ◆ ») pour montrer que ça existe
+  const shardBtn = (C, k, nx) => !nx ? "" : C.sh > 0
+    ? `<button class="btn sm ch-ghost" data-act="chp-shard" data-v="${k}" data-tip="Utiliser un Éclat : compte comme un Champion ${E().SEALS[k].name} vaincu">+1 ◆</button>`
+    : `<button class="btn sm ch-ghost ch-off" disabled data-tip="Aucun Éclat de champion : bats un Champion légendaire pour en gagner ${E().CHAMP_LEG_SHARDS}">0 ◆</button>`;
+
   /* ---------- page du héros ---------- */
   function heroPanel(S, c) {
     const e = E(); if (!e.SEALS || !c) return "";
@@ -44,7 +49,7 @@
     const tiles = e.SEAL_ORDER.map((k) => {
       const n = e.sealKills(S, k), r = e.sealRank(S, k), nx = nextAt(n), on = c.seal === k, w = wornBy(k);
       const act = on ? `<span class="ch-tag">Porté</span>` : r ? `<button class="btn sm" data-act="chp-wear" data-id="${c.id}" data-v="${k}">Porter</button>` : "";
-      const shard = C.sh > 0 && nx ? `<button class="btn sm ch-ghost" data-act="chp-shard" data-v="${k}" data-tip="Utiliser un Éclat : compte comme un Champion ${e.SEALS[k].name} vaincu">+1 ◆</button>` : "";
+      const shard = shardBtn(C, k, nx);
       return `<div class="ch-st ${on ? "on" : ""} ${r ? "" : "off"}"><div class="ch-sth">${ico(k)}<b>${e.SEALS[k].name}</b>${pips(r)}</div>
         <span class="ch-std">${r ? h(e.SEALS[k].txt(e.sealVal(k, r))) : `Vaincs un Champion ${e.SEALS[k].name} pour le débloquer.`}</span>
         <div class="ch-bar"><i style="width:${barPct(n, r)}%"></i></div>
@@ -136,7 +141,7 @@
     // les 6 Sceaux (progression du compte) et les fusions : le panneau du héros, sans les boutons Porter
     const tiles = e.SEAL_ORDER.map((k) => { const n = e.sealKills(S, k), r = e.sealRank(S, k), nx = nextAt(n); const w = S.chars.filter((x) => x.seal === k).map((x) => x.name);
       return `<div class="ch-st ${r ? "" : "off"}"><div class="ch-sth">${ico(k)}<b>${e.SEALS[k].name}</b>${pips(r)}</div><span class="ch-std">${r ? h(e.SEALS[k].txt(e.sealVal(k, r))) : `Vaincs un Champion ${e.SEALS[k].name} pour le débloquer.`}</span><div class="ch-bar"><i style="width:${barPct(n, r)}%"></i></div>
-        <div class="ch-stf"><span class="ch-cnt">${nx ? `${X().fmt(n)} / ${nx}` : `${X().fmt(n)} · max`}${w.length ? `<small>${h(w.join(", "))}</small>` : ""}</span><span class="ch-btns">${C.sh > 0 && nx ? `<button class="btn sm ch-ghost" data-act="chp-shard" data-v="${k}" data-tip="Utiliser un Éclat : compte comme un Champion ${e.SEALS[k].name} vaincu">+1 ◆</button>` : ""}</span></div></div>`; }).join("");
+        <div class="ch-stf"><span class="ch-cnt">${nx ? `${X().fmt(n)} / ${nx}` : `${X().fmt(n)} · max`}${w.length ? `<small>${h(w.join(", "))}</small>` : ""}</span><span class="ch-btns">${shardBtn(C, k, nx)}</span></div></div>`; }).join("");
     const ready = e.SEAL_ORDER.filter((k) => e.sealRank(S, k) >= 5); const pairs = []; for (let i = 0; i < ready.length; i++) for (let j = i + 1; j < ready.length; j++) pairs.push(e.fuseKey(ready[i], ready[j]));
     const toFuse = pairs.filter((p) => !C.f.includes(p));
     const fz = C.f.map((f) => `<div class="ch-fc ok"><span class="ch-fi">${icoSeal(f)}</span><span class="ch-fn"><b>${h(e.SEAL_FUSIONS[f])}</b><small>${f.split("+").map((k) => e.SEALS[k].name).join(" + ")}</small></span></div>`)

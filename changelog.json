@@ -1,6 +1,13 @@
 {
-  "version": "1.1.2.4",
+  "version": "1.1.2.5",
   "versions": [
+    {
+      "v": "1.1.2.5",
+      "name": "Bouton des Éclats",
+      "items": [
+        "Héros › Chasse : le bouton des Éclats de champion reste visible sur chaque Sceau, grisé (« 0 ◆ ») quand tu n'as pas d'Éclat. On en gagne 10 en battant un Champion légendaire"
+      ]
+    },
     {
       "v": "1.1.2.4",
       "name": "Annonces en boucle",
