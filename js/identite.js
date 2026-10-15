@@ -146,6 +146,11 @@
         s = sig(id); j++;
       }
       if (seen.has(s)) { const pool = atk ? ALLATK : FALL_SUP.concat(["telefrag", "portail", "pioche", "tp", "recul"]); for (const k of pool) { if (tr.some((t) => t.k === k)) continue; tr.push({ k }); if (!seen.has(sig(id))) break; tr.pop(); } s = sig(id); } // dernier recours : une troisième mécanique
+      tr.forEach((t) => { // 1.2.6.3 : une mécanique ajoutée pour départager deux sorts reçoit aussi ses réglages (sans eux, Cumul donnait des PV NaN aux monstres)
+        if (t.k === "cumul" && !(t.max > 0 && t.a > 0)) { t.max = 3; t.a = 10; }
+        if ((t.k === "etat" || t.k === "contagion") && !t.st) t.st = st || "Marqué";
+        if ((t.k === "vol" || t.k === "sape") && !t.st) t.st = "des caractéristiques";
+      });
       seen.add(s); tr.forEach((t) => (used[t.k] = (used[t.k] || 0) + 1));
       id.v = tr.reduce((a, t) => a + ((T[t.k] && T[t.k].v) || 0), 0);
       id.motif = motif(sp.name, desc, g);
@@ -181,7 +186,7 @@
     const id = E.ID[sp.id]; if (!id) return null;
     const c = { id, sp, m: E.ID_G, crit: 0, tgt: null }; // E.ID_G : les mécaniques ajoutent de la puissance, la base baisse d'autant
     const x = (e.idn = e.idn || {});
-    const cu = has(id, "cumul"); if (cu) { const n = x["c" + sp.id] || 0; c.m *= 1 + cu.a * n / 100; if (n) { parts.push(`cumul ×${n}`); say(F, e, `Cumul ×${n}`, "cumul"); } x["c" + sp.id] = Math.min(cu.max, n + 1); }
+    const cu = has(id, "cumul"); if (cu) { const n = x["c" + sp.id] || 0; c.m *= 1 + (cu.a || 10) * n / 100; if (n) { parts.push(`cumul ×${n}`); say(F, e, `Cumul ×${n}`, "cumul"); } x["c" + sp.id] = Math.min(cu.max || 3, n + 1); }
     if (has(id, "hasard")) { c.m *= 0.6 + rnd() * 1.1; }
     if (has(id, "sacrifice") && e.hp > e.hpMax * 0.2) { e.hp -= Math.round(e.hpMax * 0.05); c.m *= 1.25; c.heal = 1.25; parts.push("sacrifice"); say(F, e, "Sacrifice", "sacrifice"); }
     if (has(id, "contact") && (e.row || "f") === "f") c.m *= 1.18;

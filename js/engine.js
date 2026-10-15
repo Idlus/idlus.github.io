@@ -1424,8 +1424,10 @@
       else if (tgt.mech.includes("sacrifice")) { const ms = alive(F, "m").filter((m) => m.minion); if (ms.length) share(pick(ms)); }
     }
     if (F && E.idDef && (tgt.idHalf || tgt.idGuard || (src && src.idn && src.idn.trap))) v = Math.max(1, Math.round(E.idDef(F, src, tgt, v))); // identité : esquive, garde, piège
+    if (!Number.isFinite(v)) v = 1; // 1.2.6.3 : filet de sécurité, un coup invalide ne rend plus un monstre immortel (PV NaN)
     if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
     tgt.hp -= v;
+    if (!Number.isFinite(tgt.hp)) tgt.hp = Number.isFinite(tgt.hpMax) ? Math.max(0, tgt.hpMax - v) : 0;
     if (F) trackHit(F, src, tgt, v, el);
     if (isHero(F, tgt) && src && (F && F.pvp ? src.tm !== tgt.tm : src.side === "m") && glyphOf(F, tgt) === "renvoi" && v > 0 && src.alive) { const rv = Math.max(1, Math.round(v * 0.15)); src.hp -= rv; if (src.hp <= 0) { src.hp = 0; src.alive = false; killed(F, src); } }
     if (tgt.side === "m" && tgt.hp <= 0 && src && src.cls === "enu" && !src.summon && rnd() < 0.15) { F.treasure = (F.treasure || 0) + 1; flog(F, `${src.name} déterre un trésor !`, "buff"); }
@@ -3664,6 +3666,7 @@
     { const n = E.caracsMigrate(S); if (n) note(S, `Nouvelles caractéristiques : ${n} objet${n > 1 ? "s ont" : " a"} reçu ${n > 1 ? "leurs" : "ses"} lignes de PM, Tacle, Fuite ou Dommages de poussée, comme dans DOFUS.`, "info"); } // 1.0.30 (41A)
     if (!S.coefT0) S.coefT0 = E.now(); // 1.0.30 : départ des coefficients de brisage au-dessus de 100 % (une seule fois)
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
+    (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »
     S.v = E.VERSION;
     return S;
   };

@@ -367,3 +367,17 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.ok(S3.items[uid].stats.pm === 1 && S3.items[uid].stats.fui === 5, "objet de l'HdV complété");
   console.log("ok - nouvelles caractéristiques : migration des objets (parfait, exo, Rayonnant, trop-plein, HdV), idempotente");
 }
+
+// 1.2.6.3 : chaque mécanique d'identité a ses réglages (Cumul sans valeur donnait des PV NaN aux monstres : Gousset du Xélor)
+{
+  require("../js/identite.js");
+  for (const id in E.ID) for (const t of E.ID[id].tr) {
+    if (t.k === "cumul") assert.ok(t.a > 0 && t.max > 0, `sort ${id} : Cumul sans réglage`);
+    if (["etat", "contagion", "vol", "sape"].includes(t.k)) assert.ok(t.st, `sort ${id} : ${t.k} sans nom`);
+  }
+  const S = E.newState("Test", "xelor"); E.addChar(S, "eca", "H1", 180).inTeam = true; S.chars[0].lvl = 180;
+  S.chars.forEach((c) => E.refreshSpells(c, E.charStats(S, c)));
+  E.startHunt(S, D.ZONES[0].subs[0].id);
+  for (let t = 0; t < 5 * 60 * 1000; t += 250) { E.tick(S, 250); if (S.fight) for (const e of S.fight.ents) assert.ok(Number.isFinite(e.hp), `PV invalides pour ${e.name}`); }
+  console.log("ok - identité des sorts : aucune mécanique sans réglage, aucun PV NaN");
+}

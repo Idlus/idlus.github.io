@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.7.1 « Monstres immortels corrigés »
+
+Quelques sorts recevaient la mécanique d'identité « cumul » sans ses réglages (`a`, `max`) quand elle était ajoutée pour départager deux sorts d'une même classe (`js/identite.js`, build) : `1 + undefined × n` donnait des dégâts NaN, et un monstre à PV NaN ne meurt jamais. Les mécaniques ajoutées reçoivent maintenant leurs réglages, `dealDamage` remplace un coup non fini par 1 (filet de sécurité), et les rapports de défaite enregistrés pendant le bug sont réécrits au chargement. Test dans `tests/fight.test.js`.
+
 ## 1.2.7 « La refonte des sons »
 
 Sons de l'interface, du combat et des grands moments dans `js/sons.js` (window.SONS), joués avec les instruments de `js/musique.js` (`IdlusAudio._h`), aucun fichier. Un timbre par thème (`KIT`), réglage « Timbre » (`snd.sty`, « theme » par défaut). Table de mixage dans Options › Sons : `gvol`, `mvol`, `rvol` (fanfares et récompenses, `A.setFanVol`), `ivol` (interface, `snd.ui`), `cvol` (combat, `snd.cmode` scene / impacts / fin), `avol`. Reliques de l'Ascension : son selon la rareté (`relSnd` dans `js/ascensionui.js`). Les joueurs déjà installés voient une fois la bulle « Nouveaux sons » (`snd.nv13`). Volumes égalisés par `node tools/mesure_sons.js` (réécrit la table `LV`).

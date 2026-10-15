@@ -1,6 +1,15 @@
 {
-  "version": "1.2.7",
+  "version": "1.2.7.1",
   "versions": [
+    {
+      "v": "1.2.7.1",
+      "name": "Monstres immortels corrigés",
+      "items": [
+        "Corrigé : certains monstres (ex. Fongeur au donjon du Korriandre) affichaient « NaN » PV et ne pouvaient plus mourir. Cause : la mécanique Cumul de quelques sorts (Gousset du Xélor, Tromperie de l'Ecaflip, Brèche du Huppermage) n'avait pas de valeur depuis la 1.2.6",
+        "Ces sorts cumulent maintenant normalement (+10 % de dégâts par lancer, jusqu'à 3 fois), et un coup invalide ne peut plus jamais rendre un monstre immortel",
+        "Les rapports de défaite « NaN % de PV » enregistrés pendant le bug sont remplacés par une explication : la défaite n'était pas de ta faute"
+      ]
+    },
     {
       "v": "1.2.7",
       "name": "La refonte des sons",
