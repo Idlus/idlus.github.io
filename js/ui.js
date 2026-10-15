@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2.5";
+const GAME_VERSION = "1.1.2.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.2.6", name: "La zone à l'accueil", items: [
+    "La vraie carte de la zone (ou la salle du boss du donjon) s'affiche aussi derrière le bandeau du Havre-Sac pendant une chasse, et sur la fiche de chaque sous-zone" ] },
   { v: "1.1.2.5", name: "Bouton des Éclats", items: [
     "Héros › Chasse : le bouton des Éclats de champion reste visible sur chaque Sceau, grisé (« 0 ◆ ») quand tu n'as pas d'Éclat. On en gagne 10 en battant un Champion légendaire" ] },
   { v: "1.1.2.4", name: "Annonces en boucle", items: [
@@ -2516,7 +2518,7 @@ function homeHtml() {
     + `<button class="hvchip dim" data-act="hvbonus" data-tip="Autel des Douze : relève les plafonds de bonus">${G("star")}<b class="num">${E.altarLvl(S)}/${E.ALTAR.max}</b><span>autel</span></button>`;
   return `
   <section class="hero-banner ac-ban">
-    <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}</div>
+    <div class="scene">${sceneSVG(deco, 200, "home" + (S.sub || ""))}${window.DECORS && (S.dungeon || (S.hunting && S.sub)) ? window.DECORS.html({ sub: S.sub, dungeonId: S.dungeon ? S.dungeon.id : null }) : ""}</div>
     <div class="inner"><div class="hvtitle"><h1>${IC("havre")} Havre-Sac de ${h(main.name)}</h1><div class="hvchips">${chips}</div></div><div class="ac-l">
       ${card || `<div class="card"><h1>Bonjour ${h(main.name)} !</h1><div class="small" style="margin-top:4px">${act}</div>${rl}${lf}</div>`}
       <div class="row">${S.hunting || S.dungeon ? `<button class="btn primary" data-tab="combat">${IC("combat")} Voir le combat</button>${S.dungeon ? "" : `<button class="btn ac-ib" data-tab="world" data-tip="Changer de zone" aria-label="Zones">${IC("monde")} <span class="lb">Zones</span></button><button class="btn ac-ib" data-act="stophunt" data-tip="Rentrer au Havre-Sac" aria-label="Rentrer">${IC("havre")} <span class="lb">Rentrer</span></button>`}` : `<button class="btn primary" data-tab="world">${IC("monde")} Choisir une zone</button>`}</div></div>
@@ -2921,7 +2923,7 @@ function renderZoneView(sid) {
   $("#main").innerHTML = `
   <div class="row" style="margin-bottom:10px">${ui.zoneFromEnc === sid ? `<button class="btn sm primary" data-act="zonebackenc">← Encyclopédie</button>` : ""}<button class="btn sm" data-act="zoneback">← Carte</button></div>
   <section class="panel">
-    <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
+    <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}${window.DECORS ? window.DECORS.html({ sub: s.id }) : ""}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
     <div class="pad stack">${window.ALLY ? window.ALLY.zoneBox(sid) : ""}${window.CHASSE ? window.CHASSE.zoneBox(sid) : ""}
       <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) + archiBtn() : ""}

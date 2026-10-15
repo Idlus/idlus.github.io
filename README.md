@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.6 « La zone à l'accueil »
+
+Mathis (15/10/2026) : « Pouvoir voir les zones ici aussi » (capture du bandeau du Havre-Sac). `homeHtml` et `renderZoneView` (js/ui.js) ajoutent les couches de `DECORS.html` (carte, poussières, voile) derrière le bandeau d'accueil pendant une chasse ou un donjon, et sur la fiche de sous-zone.
+
 ## 1.1.2.5 « Bouton des Éclats »
 
 Héros › Chasse : le bouton des Éclats de champion reste visible sur chaque Sceau, grisé (« 0 ◆ ») quand on n'a pas d'Éclat.

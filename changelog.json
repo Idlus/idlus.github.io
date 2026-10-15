@@ -1,6 +1,13 @@
 {
-  "version": "1.1.2.5",
+  "version": "1.1.2.6",
   "versions": [
+    {
+      "v": "1.1.2.6",
+      "name": "La zone à l'accueil",
+      "items": [
+        "La vraie carte de la zone (ou la salle du boss du donjon) s'affiche aussi derrière le bandeau du Havre-Sac pendant une chasse, et sur la fiche de chaque sous-zone"
+      ]
+    },
     {
       "v": "1.1.2.5",
       "name": "Bouton des Éclats",
