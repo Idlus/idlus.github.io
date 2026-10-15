@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.34.1 « Quitter la guilde »
+
+Demande de Mathis (15/10/2026) : « avoir une option pour quitter la guilde ». Le départ existait déjà (`guild_leave` dans `supabase/guildes.sql`, le Meneur est remplacé par `g_heir`, guilde dissoute si seul) mais le bouton était caché tout en bas de l'onglet Membres. Bouton « Quitter la guilde » ajouté dans le bandeau (`leaveBtns`, `leaveTxt` dans `js/guilds.js`), avec confirmation « Oui, quitter » / « Annuler » (`g-leave0`). Aucun changement côté serveur. Tests : `tests/online.test.js`.
+
 ## 1.0.34 « Les 19 classes »
 
 Demande de Mathis (15/10/2026) : « J'aurai bien aimé pouvoir monter toutes les classes au lvl 200 mais on manque de slot, fait des propals », réponse « 1B 2B 3C 4A » sur la maquette. `E.HERO_MAX` 13 → 19, toutes classes ; places 14 à 19 au prix de `E.RECRUIT_HIGH` (2,5 / 3,5 / 5 / 7 / 10 / 15 M, la courbe ×2,2 aurait mené le 19e à 199 M). Collection `S.cls200` (`E.classesDone`, `E.classesN`) : une classe compte pour toujours dès qu'un héros de cette classe a atteint le niveau 200 (ou a renu). `E.classesMult` : +1 % d'XP et de kamas par classe, hors plafond, dans `giveRewards`. Succès `cls5`, `cls10`, `cls19` (titre « Maître des 19 classes »), ornement `classes19`. Tableau repliable en haut de la page Équipe et héros (`classesBoardHtml`, `S.settings.c19Shut`). Tests : `tests/core.test.js`.

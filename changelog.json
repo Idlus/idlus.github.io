@@ -1,6 +1,14 @@
 {
-  "version": "1.0.34",
+  "version": "1.0.34.1",
   "versions": [
+    {
+      "v": "1.0.34.1",
+      "name": "Quitter la guilde",
+      "items": [
+        "Bouton « Quitter la guilde » dans le bandeau de ta guilde, visible depuis chaque onglet (avant, il était tout en bas de l'onglet Membres)",
+        "Une confirmation s'affiche avec « Oui, quitter » et « Annuler », et explique ce qui se passe : si tu es Meneur, ta place passe au Bras droit (ou au membre) le plus ancien ; si tu es seul, la guilde est dissoute avec son coffre"
+      ]
+    },
     {
       "v": "1.0.34",
       "name": "Les 19 classes",
