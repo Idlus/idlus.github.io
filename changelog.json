@@ -1,6 +1,18 @@
 {
-  "version": "1.2.6.3",
+  "version": "1.2.7",
   "versions": [
+    {
+      "v": "1.2.7",
+      "name": "La refonte des sons",
+      "items": [
+        "Les menus ont leurs sons, très doux : famille, page, onglet, case, fenêtre, recherche, épingle et changement de thème",
+        "Un instrument par thème : orchestre (Émeraude), vibraphone (Nuit violette), cristal (Givre), luth et flûte (Ambre), forge (Braise), gouttes et harpe (Écume), thérémine et orgue à l'Halouine",
+        "Combat en scène : le sort part selon l'élément puis le coup arrive, avec critique, soin, bouclier, esquive, invocation, monstre vaincu, héros tombé, victoire et défaite",
+        "Nouveaux sons des grands moments : quête, succès, coffre, Forgemagie réussie ou ratée, fabrication, vente, monture, code cadeau, palier de l'Ascension, relique (plus éclatante selon sa rareté), Kolizéum, et un butin qui sonne plus fort selon sa rareté",
+        "Options › Sons devient une table de mixage : un volume général et un volume par famille (musique, fanfares et récompenses, interface, combat, ambiances)",
+        "Tout est composé pour Idlus et joué par ton navigateur : aucun fichier à télécharger, et rien ne tourne quand c'est silencieux"
+      ]
+    },
     {
       "v": "1.2.6.3",
       "name": "Boss sans nom",

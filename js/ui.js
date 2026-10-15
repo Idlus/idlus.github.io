@@ -21,9 +21,16 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.6.3";
+const GAME_VERSION = "1.2.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.7", name: "La refonte des sons", items: [
+    "Les menus ont leurs sons, très doux : famille, page, onglet, case, fenêtre, recherche, épingle et changement de thème",
+    "Un instrument par thème : orchestre (Émeraude), vibraphone (Nuit violette), cristal (Givre), luth et flûte (Ambre), forge (Braise), gouttes et harpe (Écume), thérémine et orgue à l'Halouine",
+    "Combat en scène : le sort part selon l'élément puis le coup arrive, avec critique, soin, bouclier, esquive, invocation, monstre vaincu, héros tombé, victoire et défaite",
+    "Nouveaux sons des grands moments : quête, succès, coffre, Forgemagie réussie ou ratée, fabrication, vente, monture, code cadeau, palier de l'Ascension, relique (plus éclatante selon sa rareté), Kolizéum, et un butin qui sonne plus fort selon sa rareté",
+    "Options › Sons devient une table de mixage : un volume général et un volume par famille (musique, fanfares et récompenses, interface, combat, ambiances)",
+    "Tout est composé pour Idlus et joué par ton navigateur : aucun fichier à télécharger, et rien ne tourne quand c'est silencieux" ] },
   { v: "1.2.6.3", name: "Boss sans nom", items: [
     "Combat : les attaques spéciales des boss n’affichent plus leur nom dans le bandeau, comme les sorts des héros. On les reconnaît à leur animation." ] },
   { v: "1.2.6.2", name: "Jeu fluide", items: [

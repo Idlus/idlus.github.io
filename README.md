@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.7 « La refonte des sons »
+
+Sons de l'interface, du combat et des grands moments dans `js/sons.js` (window.SONS), joués avec les instruments de `js/musique.js` (`IdlusAudio._h`), aucun fichier. Un timbre par thème (`KIT`), réglage « Timbre » (`snd.sty`, « theme » par défaut). Table de mixage dans Options › Sons : `gvol`, `mvol`, `rvol` (fanfares et récompenses, `A.setFanVol`), `ivol` (interface, `snd.ui`), `cvol` (combat, `snd.cmode` scene / impacts / fin), `avol`. Reliques de l'Ascension : son selon la rareté (`relSnd` dans `js/ascensionui.js`). Les joueurs déjà installés voient une fois la bulle « Nouveaux sons » (`snd.nv13`). Volumes égalisés par `node tools/mesure_sons.js` (réécrit la table `LV`).
+
 ## 1.2.6.3 « Boss sans nom »
 
 Les attaques spéciales des boss n'affichent plus leur nom dans le bandeau du combat, comme les sorts des héros depuis la 1.2.6.
