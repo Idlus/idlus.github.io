@@ -379,6 +379,7 @@
   function watchHead(w) { const el = $("#wroom"); const F = w.W.S2.fight; if (el) el.textContent = F.ero ? `· érosion ${F.ero} %` : F.round >= K.ero - 2 && !F.over ? `· érosion au tour ${K.ero}` : ""; }
   function watchEnd(w) {
     const I = w.koli; const R = E.koliResult(w.W); const won = I.me === 1 ? !R.win : R.win;
+    if (!w.snd) { w.snd = 1; if (window.DX && window.DX.sndPlay) window.DX.sndPlay(won ? "evt:koli_v" : "evt:koli_d"); } // 1.3 : la foule de l'arène
     const s = S(); const tk = E.koliTickets(s);
     const reason = R.rounds >= K.maxRound && R.hpA > 0 && R.hpB > 0 ? `au tour ${K.maxRound}, ${won ? "ton équipe" : "l'autre équipe"} avait le plus de PV` : `en ${R.rounds} tour${R.rounds > 1 ? "s" : ""}`;
     if (I.train) return `<div class="kz-res"><b>${won ? "Victoire à l'entraînement" : "Défaite à l'entraînement"}</b> <span class="small muted">${reason}. Rien n'est compté.</span>

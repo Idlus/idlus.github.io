@@ -799,7 +799,9 @@
   };
   A.playing = () => (seq ? seq.id : null);
   A.tracks = Object.fromEntries(Object.entries(TRACKS).map(([k, T]) => [k, T.name]));
-  A.setMusicVol = (v) => { if (init()) [musicBus, musicRv, fanBus].forEach((b) => b.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05)); };
+  A.setMusicVol = (v) => { if (init()) [musicBus, musicRv].concat(fanOwn ? [] : [fanBus]).forEach((b) => b.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05)); };
+  let fanOwn = false; // 1.3 : les fanfares ont leur propre volume (Fanfares et récompenses) dès qu'on le règle
+  A.setFanVol = (v) => { if (init()) { fanOwn = true; fanBus.gain.setTargetAtTime(0.55 * v, ctx.currentTime, 0.05); } };
   A.setSfxVol = (v) => { if (init()) sfxBus.gain.setTargetAtTime(0.7 * v, ctx.currentTime, 0.05); };
 
   /* ---------- sons du jeu, 3 styles ---------- */
@@ -953,5 +955,8 @@
     ctx = live; Object.keys(ks).forEach((k) => delete ks[k]); noiseBuf = null; if (live) graph();
     return { peak: +peak.toFixed(3), nan, rmsPerSec: per, wav: A._wav ? A._wav(buf) : null };
   };
+  // 1.3 : les instruments prêtés à js/sons.js (sons de l'interface, du combat et des récompenses, un timbre par thème)
+  A._h = { get ctx() { return ctx; }, get sfx() { return sfxBus; }, init, mtof, pluck, harp, bell, marimba, vibes, horn, pad, strings, choir, glass, flute, whistle, organ, hit, nz, sweep, drum, noise, timp, cbtPlay, SFX,
+    setCtx(c) { ctx = c; Object.keys(ks).forEach((k) => delete ks[k]); noiseBuf = null; graph(); } };
   window.IdlusAudio = A;
 })();

@@ -4763,6 +4763,7 @@ function axGroup(F, A, g) {
   const hits = g.filter((f) => f.k === "hit" && f.s === s && f.t !== s), rest = g.filter((f) => f !== cast && !hits.includes(f));
   const def = src && src.side === "c" && cast.sp && src.cls && !src.summon ? E.spellDef(src.cls, cast.sp) : null;
   const el = hits.length ? hits[0].el || "n" : g.some((f) => f.k === "heal") ? "h" : "n";
+  cbtSnd(F, { k: "cast", s, sp: cast.sp, el: el === "h" ? null : el }); // 1.3 : le sort part
   if (src && src.side === "c" && !src.summon && sgPlay(F, A, def, src, sn, hits, rest, el)) return; // sort signature : animation unique
   const go = (hs, rs) => axPlain(F, A, src, sn, hs || hits, rs || rest, el, def, sp);
   if (src && src.side === "m" && src.mech && sn && axFull() && bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go)) return; // boss mis en scène
@@ -4977,6 +4978,7 @@ function updateCombat(force) {
         const run = (g) => { const b = Math.max(0, (A.sgHold || 0) - Date.now()); if (b) setTimeout(() => run(g), b); else axGroup(F, A, g); }; // un sort signature en cours retient les actions suivantes
         gs.forEach((g, k) => (k ? setTimeout(() => run(g), k * gap) : run(g)));
       } else fresh.forEach((f) => {
+        if (fresh.length <= 40) cbtSnd(F, f); // 1.3 : les sons du combat aussi en vue Formation, compacte ou sans animation
         if (f.k === "cast") { pulse(A.nodes[f.s], "act"); if (A.view === "form" && axOn()) idFormTag(F, A, f); }
         else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
         else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) { floatAt(n, "+" + f.v, "#7ee06a"); burst(n, "h"); } }
@@ -4990,7 +4992,7 @@ function updateCombat(force) {
       const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? last.txt : F.label;
     }
     if (F.over && !A.over) {
-      A.over = true; axVictory(F, A); $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`;
+      A.over = true; axVictory(F, A); cbtEnd(F); // 1.3 : jingle de fin du combat affiché $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`;
       lootHtml(F); const fh = $("#fhist"); if (fh) fh.innerHTML = historyHtml(6);
     } else if (!F.over && (force || ($("#floot") && $("#floot").dataset.none))) { $("#floot").innerHTML = `<p class="note">Le butin apparaîtra à la fin du combat.</p>`; delete $("#floot").dataset.none; $("#fres").textContent = `Tour ${F.round}`; } // 1.0.10.3 : plus de « Aucun combat en cours » pendant le premier combat
   } else if (force) { $("#flog").innerHTML = ""; $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; $("#floot").dataset.none = "1"; }
@@ -7228,8 +7230,8 @@ function renderQuests(soft) {
     <section class="stack">${body}</section>`;
 }
 /* ---------- feuilles ---------- */
-function openSheet(html) { $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
-function closeSheet() { if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null; $("#sheet").innerHTML = ""; ui.giveTo = null; } // 1.0.12.8 : fermer la fiche d'inventaire (téléphone) la désélectionne
+function openSheet(html) { if (!$("#sheet").innerHTML.trim()) uiSnd("fenetre"); $("#sheet").innerHTML = `<div class="sheet-bg" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
+function closeSheet() { if ($("#sheet").innerHTML.trim()) uiSnd("fermer"); if ($("#sheet .invsheet")) ui.invSel = ui.resSel = null; $("#sheet").innerHTML = ""; ui.giveTo = null; } // 1.0.12.8 : fermer la fiche d'inventaire (téléphone) la désélectionne
 /* 0.1.12 : Renaissance */
 function renSheet(cid) {
   const c = char(cid); if (!c) return; const err = E.canRenaissance(S, c); const n = (c.ren || 0) + 1; const choices = E.renChoices(c); const pick = ui.renPick && choices.some(([id]) => id === ui.renPick) ? ui.renPick : null;
@@ -7655,7 +7657,7 @@ let lvlToast = null;
 const toastQ = []; let toastT = null;
 const toastTyping = () => { const a = document.activeElement; return !!(a && a.id === "chIn" && a.value.trim()); };
 function toast(txt, kind, ms) { // ms : durée d'affichage (1.0.29.6, messages longs)
-  if (kind === "warn") sndPlay("err"); // 1.0.22
+  if (kind === "warn") sndPlay("err"); else sndText(txt, kind); // 1.0.22 ; 1.3 : les bulles des autres modules (vente, code, Kolizéum…) sonnent aussi
   if (toastTyping()) {
     toastQ.push([txt, kind, ms]); if (toastQ.length > 3) toastQ.shift();
     if (!toastT) toastT = setInterval(() => { if (toastTyping()) return; clearInterval(toastT); toastT = null; toastQ.splice(0).forEach(([t, k, d]) => toast(t, k, d)); }, 700);
@@ -7825,7 +7827,7 @@ const WS_KEY = "idlus-recherches";
 const wsRecent = () => { try { const a = JSON.parse(localStorage.getItem(WS_KEY) || "[]"); return Array.isArray(a) ? a.slice(0, 5) : []; } catch (e) { return []; } };
 const wsRemember = (q) => { q = String(q || "").trim().replace(/\s+/g, " ").slice(0, 60); if (!E.searchNorm(q)) return; try { const a = [q, ...wsRecent().filter((x) => E.searchNorm(x) !== E.searchNorm(q))].slice(0, 5); localStorage.setItem(WS_KEY, JSON.stringify(a)); } catch (e) {} }; // 1.0.8.4 : « Bouftou » et « bouftou » ne font qu'une ligne
 function searchOpen(q) {
-  if (!S) return; if ($("#wsearch")) { const inp = $("#wsq"); if (q != null) { inp.value = q; searchRender(); } inp.focus(); if (q) { const n = inp.value.length; inp.setSelectionRange(n, n); } return; } // 1.0.8.1 : un clic sur « Dernières recherches » remplit le champ quand la fenêtre est déjà ouverte
+  if (!S) return; if (!$("#wsearch")) uiSnd("recherche"); if ($("#wsearch")) { const inp = $("#wsq"); if (q != null) { inp.value = q; searchRender(); } inp.focus(); if (q) { const n = inp.value.length; inp.setSelectionRange(n, n); } return; } // 1.0.8.1 : un clic sur « Dernières recherches » remplit le champ quand la fenêtre est déjà ouverte
   tipHide();
   const d = document.createElement("div"); d.id = "wsearch"; d.className = "wsearch-bg"; d.dataset.act = "searchclose";
   d.innerHTML = `<div class="wsearch" role="dialog" aria-label="Recherche">
@@ -8683,17 +8685,37 @@ function consignesHtml() {
    et depuis la 1.0.29 chaque autre menu aussi (MUS_PAGE, Monde / Donjons / Encyclopédie, Quêtes / Succès), à l'orchestre façon DOFUS 3,
    la salle du boss d'un donjon a le sien, le Havre-Sac joue la nuit de 21 h à 7 h et les airs d'Halouine et des Fêtes à leurs dates.
    Juke-box (Options › Sons) : « Selon l'endroit » ou « Un air fixe » (fix), chaque air s'écoute (SND.prev, tant que la fenêtre est ouverte). */
-const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null, fan: {}, cbt: 0, cbtK: {}, fanT: 0 };
+const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null, fan: {}, cbt: 0, cbtK: {}, fanT: 0, uiT: 0, uiK: {}, cbtN: [], volKey: "" };
 /* 1.0.30 : fan = fanfares des grands moments, cls = thème de chaque classe, cbt = sons de combat, amb + avol = ambiances seules */
-const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false, fan: true, cbt: false, amb: false, avol: 40 };
+const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false, fan: true, cbt: false, amb: false, avol: 40,
+  ui: false, gvol: 80, ivol: 50, cvol: 50, rvol: 80, sty: "theme", cmode: "scene", nv13: false }; // 1.3 « Refonte des sons » : interface (ui, ivol), combat (cvol, cmode), récompenses (on, rvol), volume général (gvol), timbre (sty = « theme » ou un thème)
 const sndCfg = () => Object.assign({}, SND_DEF0, (S && S.settings.snd) || {});
 const sndSet = (o) => { S.settings.snd = Object.assign(sndCfg(), o); dirty = true; };
 const SND_MAP = { level: "niveau", boss: "donjon", magic: "dofus", coin: "commande", rare: "butin", gong: "donjon", win: "victoire", msg: "message", err: "erreur", clic: "clic" };
+/* 1.3 : tous les sons passent par js/sons.js (window.SONS) ; un son a sa famille : interface (menus), récompenses (grands moments), combat */
+const SND_UI = { clic: "clic", err: "erreur", msg: "message" }; // sons de l'interface
+const SND_REC = { coin: "ui:kamas", rare: "ui:butin", quete: "ui:quete", level: "evt:niveau", boss: "evt:donjon", gong: "evt:donjon", magic: "evt:dofus", win: "evt:rel_commune" }; // sons des récompenses
+const sndTheme = () => { const c = sndCfg(); if (c.sty !== "theme" && window.SONS && window.SONS.KIT[c.sty]) return c.sty; return halOn() ? "halouine" : themeId(S && S.settings.theme); };
+/* volumes : général × famille, posés une fois à chaque changement (et quand le moteur audio démarre) */
+function sndVol(force) {
+  const A = window.IdlusAudio, c = sndCfg(); if (!A) return; const g = c.gvol / 100, key = [c.gvol, c.mvol, c.avol, c.ivol, c.cvol, c.rvol, A.playing ? 1 : 0].join(",");
+  if (!force && key === SND.volKey && SND.volCtx) return; SND.volKey = key; SND.volCtx = 1;
+  try { A.setMusicVol(c.mvol / 100 * g); if (A.setFanVol) A.setFanVol(c.rvol / 100 * g); if (A.setAmbVol) A.setAmbVol(c.avol / 100 * g); A.setSfxVol(g); if (window.SONS) window.SONS.setVol({ interface: c.ivol / 100, combat: c.cvol / 100, recompenses: c.rvol / 100 }); } catch (e) {}
+}
+const sndLive = (c, bg) => S && !c.mute && SND.live && SND.gest && (bg || document.visibilityState === "visible");
 function sndPlay(kind, force) {
-  const A = window.IdlusAudio; if (!A) return; const cfg = sndCfg();
-  if (!force && (!S || !cfg.on || cfg.mute || !SND.live || !SND.gest)) return; if (!force && !cfg.bg && document.visibilityState !== "visible") return;
-  const now = performance.now(); if (!force && kind !== "clic") { if (now - SND.last < 300 || now - (SND.kinds[kind] || 0) < 1500) return; SND.last = now; SND.kinds[kind] = now; }
-  try { A.setSfxVol((cfg.vol == null ? 50 : cfg.vol) / 100); A.sfx(cfg.style, SND_MAP[kind] || kind); } catch (e) {}
+  if (!window.SONS) return; const c = sndCfg();
+  if (SND_UI[kind]) return uiSnd(SND_UI[kind], force);
+  const id = SND_REC[kind] || (/^(evt|ui):/.test(kind) ? kind : null); if (!id) return;
+  if (!force && !(c.on && sndLive(c, c.bg))) return;
+  const now = performance.now(); if (!force) { if (now - SND.last < 300 || now - (SND.kinds[id] || 0) < 1500) return; SND.last = now; SND.kinds[id] = now; }
+  sndVol(); try { window.SONS.play(/^ui:/.test(id) ? `ui:${sndTheme()}:${id.slice(3)}` : id, null, "recompenses"); } catch (e) {}
+}
+/* sons de l'interface (2A) : chaque geste des menus, très doux, dans le timbre du thème */
+function uiSnd(kind, force) {
+  if (!window.SONS) return; const c = sndCfg(); if (!force && !(c.ui && sndLive(c, false))) return;
+  const now = performance.now(); if (!force && (now - SND.uiT < 45 || now - (SND.uiK[kind] || 0) < 90)) return; SND.uiT = now; SND.uiK[kind] = now;
+  sndVol(); try { window.SONS.play(`ui:${sndTheme()}:${kind}`); } catch (e) {}
 }
 /* l'air de chaque zone de chasse (Bonta et Brâkmar se partagent une zone : l'air suit la sous-zone) */
 const MUS_ZONE = { incarnam: "incarnam", astrub: "marche", amakna: "taverne", cania: "cania", wabbit: "wabbits", sidimote: "landes", koalaks: "koalaks", albuera: "foret",
@@ -8732,7 +8754,7 @@ function musWant() {
 }
 function musSync() {
   const A = window.IdlusAudio; if (!A) return; ambSync(A); const w = musWant(), cur = A.playing(); if (w === cur) return;
-  try { if (!w) A.stop(1.2); else { A.setMusicVol(sndCfg().mvol / 100); A.play(w, SND.prev ? 0.3 : cur ? 2 : 0.6); } } catch (e) {} // fondu de 2 s d'un air à l'autre
+  try { if (!w) A.stop(1.2); else { sndVol(true); A.play(w, SND.prev ? 0.3 : cur ? 2 : 0.6); } } catch (e) {} // fondu de 2 s d'un air à l'autre
 }
 /* 1.0.30 : ambiances seules (vent, oiseaux, vagues…), avec leur volume, même sans musique ; sur une page sans lieu, celles de l'endroit où chasse l'équipe */
 const AMB_OF = { incarnam: ["birds", "wind"], marche: ["crowd"], taverne: ["crowd"], cania: ["wind"], wabbits: ["birds"], landes: ["wind"], koalaks: ["jungle", "birds"], foret: ["birds", "stream"],
@@ -8751,29 +8773,44 @@ function ambSync(A) {
   const on = S && SND.gest && c.amb && !c.mute && (c.mbg || document.visibilityState === "visible");
   const want = on ? AMB_OF[ambPlace()] || [] : [];
   if (want.join("+") === A.ambPlaying()) return;
-  try { if (want.length) A.setAmbVol(c.avol / 100); A.ambience(want); } catch (e) {}
+  try { if (want.length) sndVol(true); A.ambience(want); } catch (e) {}
 }
 /* 1.0.30 : fanfares des grands moments (donjon terminé, niveau, Dofus, boss des mondes, partition) : avec la musique, elles remplacent le son ; la musique baisse le temps du jingle */
 const FAN_GAP = { niveau: 20000, donjon: 45000, partition: 3000 };
 function fanPlay(kind) {
-  const A = window.IdlusAudio, c = sndCfg(); if (!A || !A.fanfare || !S || !c.fan || !c.mus || c.mute || !SND.gest || !SND.live) return false;
+  const A = window.IdlusAudio, c = sndCfg(); if (!A || !A.fanfare || !S || !c.fan || !(c.mus || c.on) || c.mute || !SND.gest || !SND.live) return false;
   if (!c.mbg && document.visibilityState !== "visible") return false;
   const now = performance.now(); if (now - (SND.fan[kind] || -1e9) < (FAN_GAP[kind] || 0)) return true; // trop rapproché : ni fanfare ni son
   if (kind === "partition" && A.fanBusy()) return true; // la petite partition ne passe pas par-dessus une fanfare
-  SND.fan[kind] = now; SND.fanT = now; try { A.setMusicVol(c.mvol / 100); A.fanfare(kind); } catch (e) {} return true;
+  SND.fan[kind] = now; SND.fanT = now; sndVol(); try { A.fanfare(kind); } catch (e) {} return true;
 }
 const fanOr = (kind, sfx) => { if (!fanPlay(kind)) sndPlay(sfx); };
 /* 1.0.30 : sons de combat, seulement quand un combat est affiché : un coup par élément, l'éclat du critique, le soin, le poison, le monstre vaincu, la phase du boss */
 const CBT_EL = { t: "t", f: "f", e: "e", a: "a" };
-function cbtSnd(F, f) {
-  const c = sndCfg(); if (!c.cbt || c.mute || !SND.gest || !SND.live || document.visibilityState !== "visible") return; const A = window.IdlusAudio; if (!A || !A.cbt) return;
-  let k = null, crit = false;
-  if (f.k === "hit") { k = f.s < 0 ? "dot" : CBT_EL[f.el] || "n"; crit = !!f.crit; } else if (f.k === "heal") k = "heal"; else if (f.k === "phase") k = "phase"; if (!k) return;
-  const now = performance.now(), imp = crit || k === "phase"; if (!imp && (now - SND.cbt < 70 || now - (SND.cbtK[k] || 0) < 110)) return;
-  SND.cbt = now; SND.cbtK[k] = now; try { A.setSfxVol((c.vol == null ? 50 : c.vol) / 100); A.cbt(k, crit); } catch (e) {}
-  const e = f.k === "hit" && F.ents[f.t]; if (e && e.side === "m" && !e.alive && !CBT_KO.has(e)) { CBT_KO.add(e); setTimeout(() => { try { A.cbt("ko"); } catch (x) {} }, 120); }
+/* 1.3 (3A) : la scène complète : le sort part (selon l'élément), le coup arrive, critique, soin, bouclier, esquive, invocation, monstre vaincu, héros tombé, victoire, défaite.
+   « Coups seuls » garde les sons de la 1.0.30, « Fin du combat » seulement le jingle. Au plus 8 sons par seconde, rien quand l'onglet est caché. */
+const spellEl = (d) => { const g = d && d.grades && d.grades[d.grades.length - 1]; const x = g && g.fx && g.fx.find((y) => y.el && y.el !== "n"); return (x && x.el) || "n"; };
+function cbtPlayK(id, imp) {
+  const now = performance.now(); SND.cbtN = SND.cbtN.filter((x) => now - x < 1000); if (!imp && SND.cbtN.length >= 8) return; const k = id.split(":")[1];
+  if (!imp && (now - SND.cbt < 70 || now - (SND.cbtK[k] || 0) < 110)) return; SND.cbt = now; SND.cbtK[k] = now; SND.cbtN.push(now);
+  sndVol(); try { window.SONS.play(id); } catch (e) {}
 }
+function cbtSnd(F, f) {
+  const c = sndCfg(); if (!c.cbt || !window.SONS || !sndLive(c, false) || c.cmode === "fin") return; const scene = c.cmode !== "impacts";
+  let id = null, imp = false;
+  if (f.k === "hit") { const el = CBT_EL[f.el] || "n"; id = f.s < 0 ? "cbt:poison" : f.crit ? `cbt:crit:${el}` : `cbt:impact:${el}`; imp = !!f.crit; }
+  else if (f.k === "heal") id = "cbt:soin"; else if (f.k === "phase") { id = "cbt:phase"; imp = true; }
+  else if (scene && f.k === "cast") { const e = F.ents[f.s]; if (e) { const el = CBT_EL[f.el] || (e.side === "c" && f.sp ? spellEl(E.spellDef(e.cls, f.sp)) : CBT_EL[e.el] || "n"); id = `cbt:cast:${el}`; } }
+  else if (scene && f.k === "buff") id = f.txt === "Esquive" ? "cbt:esquive" : /^Bouclier/.test(f.txt || "") ? "cbt:bouclier" : null;
+  else if (scene && f.k === "summon") id = "cbt:invocation";
+  if (id) cbtPlayK(id, imp);
+  const e = f.k === "hit" && F.ents[f.t]; if (e && !e.alive && !CBT_KO.has(e)) { CBT_KO.add(e); const ko = e.side === "m" ? "cbt:vaincu" : scene && !e.summon ? "cbt:tombe" : null; if (ko) setTimeout(() => cbtPlayK(ko, true), 120); }
+}
+/* fin du combat affiché : un court jingle de victoire ou de défaite (pas en « Coups seuls ») */
+function cbtEnd(F) { const c = sndCfg(); if (!F || !c.cbt || !window.SONS || !sndLive(c, false) || c.cmode === "impacts" || ui.tab !== "combat") return; cbtPlayK(F.result === "win" ? "cbt:victoire" : "cbt:defaite", true); }
 const CBT_KO = new WeakSet(); // un seul « vaincu » par monstre
+function cbtTest(short) { if (!window.SONS) return; sndVol(true); const L = short ? [["cbt:cast:f", 0], ["cbt:impact:f", 240]] : [["cbt:cast:f", 0], ["cbt:impact:f", 240], ["cbt:cast:e", 700], ["cbt:crit:e", 900], ["cbt:soin", 1400], ["cbt:esquive", 1900], ["cbt:vaincu", 2300], ["cbt:victoire", 2900]];
+  L.forEach(([id, d]) => setTimeout(() => { try { window.SONS.play(id); } catch (e) {} }, d)); }
 /* 1.0.30 : partitions à collectionner : l'air d'un endroit se trouve après 5 s passées là-bas (même sans musique) ; le juke-box et le Gramophone ne jouent que celles trouvées */
 const PART_EVENT = ["halouine", "fetes"]; // les airs de saison, en plus
 const partAll = () => Object.keys((window.IdlusAudio && window.IdlusAudio.tracks) || {});
@@ -8812,25 +8849,32 @@ function gramCtl() {
   const T = (window.IdlusAudio && window.IdlusAudio.tracks) || {}, ids = partAll().filter(partHas), cur = gramTrack() || "";
   return `<label class="gram xs"><span>♪ Disque</span><select data-act="vi-gram" aria-label="Disque du Gramophone"><option value="">Selon l'heure (Boîte à musique, Nuit)</option>${ids.map((id) => `<option value="${id}" ${cur === id ? "selected" : ""}>${h(T[id])}</option>`).join("")}</select></label>${sndCfg().mus ? "" : `<span class="xs muted">Active la musique (Options › Sons) pour l'entendre.</span>`}`;
 }
-const sndOn = () => { const c = sndCfg(); return (c.mus || c.on) && !c.mute; };
+const sndOn = () => { const c = sndCfg(); return (c.mus || c.on || c.ui || c.cbt || c.amb) && !c.mute; };
+const SND_ALL = { mus: true, on: true, ui: true, cbt: true, fan: true, mute: false, asked: true, nv13: true }; // 6A : « Avec la musique » allume tout
 const sndBtn = () => S ? `<button class="ic-btn snd-btn${sndOn() ? " on" : ""}" data-act="vi-mute" title="${sndOn() ? "Couper la musique et les sons" : "Remettre la musique et les sons"}" aria-label="${sndOn() ? "Couper le son" : "Remettre le son"}">${G(sndOn() ? "spk" : "spkoff")}</button>` : "";
 /* boutons « importants » : ceux qui font avancer la partie (entrer, équiper, fabriquer, acheter, recruter, ouvrir) */
 const SND_IMP = '.btn.primary,.btn.kgold,.btn.go,[data-act="enterdg"],[data-act="equip"],[data-act="offequip"],[data-act^="craft"],[data-act="recruit"],[data-act^="buy"],[data-act^="open"]';
 document.addEventListener("pointerdown", () => { if (!SND.gest) { SND.gest = true; musSync(); } }, true);
 document.addEventListener("keydown", () => { if (!SND.gest) { SND.gest = true; musSync(); } }, true);
+const UI_ACT = { nav: "page", navfam: "famille", navpin: "epingle", pin: "epingle", opttab: "onglet", navmenu: null, closesheet: null, settheme: null, "vi-mute": null }; // null : le geste fait déjà son propre son
 document.addEventListener("click", (ev) => {
-  const b = ev.target.closest && ev.target.closest("button,a.btn,[data-act]"); if (!b || b.disabled || !S) return; const c = sndCfg();
-  if (b.dataset.act === "vi-mute" || c.clic === "none") return; if (c.clic === "all" || b.matches(SND_IMP)) sndPlay("clic");
+  const b = ev.target.closest && ev.target.closest("button,a.btn,[data-act]"); if (!b || b.disabled || !S || b.matches("input")) return; const c = sndCfg(); if (!c.ui) return;
+  const a = b.dataset.act; let k = a in UI_ACT ? UI_ACT[a] : b.closest('[role="tablist"],.subtabs,.seg2,.seg') ? "onglet" : (c.clic === "all" || (c.clic === "imp" && b.matches(SND_IMP))) ? "clic" : null;
+  if (!k) return; const t0 = SND.uiT; setTimeout(() => { if (SND.uiT === t0) uiSnd(k); }, 0); // une fenêtre qui s'ouvre joue son propre son à la place
 }, true);
+document.addEventListener("change", (ev) => { const t = ev.target; if (t && t.type === "checkbox" && S && !t.closest("#sndask")) uiSnd(t.checked ? "inter" : "decoche"); }, true);
 document.addEventListener("visibilitychange", musSync);
 setInterval(() => { musSync(); sndAskCheck(); partTick(); if (S && (document.documentElement.dataset.hal === "on") !== halOn()) applyHal(); }, 1000); // 1.0.26 : le thème d'Halouine arrive et part tout seul à minuit
 /* première fois : une bulle demande « Jouer en musique ? » (une seule fois par partie) */
 let sndAskAt = 0;
 function sndAskCheck() {
-  if (!S || TESTMODE || sndCfg().asked || $("#sndask") || $("#wtip") || ($("#sheet") && $("#sheet").innerHTML.trim()) || document.visibilityState !== "visible") return;
+  const c0 = sndCfg(), v13 = c0.asked && !c0.nv13; // 1.3 (6A) : les joueurs déjà installés sont invités une fois à essayer les nouveaux sons
+  if (!S || TESTMODE || (c0.asked && !v13) || $("#sndask") || $("#wtip") || ($("#sheet") && $("#sheet").innerHTML.trim()) || document.visibilityState !== "visible") return;
   if (!sndAskAt) { sndAskAt = Date.now(); return; } if (Date.now() - sndAskAt < 8000) return;
-  const d = document.createElement("div"); d.id = "sndask"; d.className = "wtip sndask"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Musique");
-  d.innerHTML = `<div class="wt-h">${G("note")}<b>Jouer en musique ?</b></div><div class="wt-t">Une petite musique composée pour Idlus et quelques sons doux (niveau, butin, donjon). Tu pourras changer ça à tout moment dans ${G("gear")} Options › Sons.</div>
+  const d = document.createElement("div"); d.id = "sndask"; d.className = "wtip sndask"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", v13 ? "Nouveaux sons" : "Musique");
+  d.innerHTML = v13 ? `<div class="wt-h">${G("note")}<b>Nouveaux sons</b></div><div class="wt-t">Les menus, les combats et les grands moments ont maintenant leurs sons, dans le timbre de ton thème. Tout se règle famille par famille dans ${G("gear")} Options › Sons.</div>
+    <div class="row between"><span class="xs" style="opacity:.75">Demandé une seule fois</span><span class="row" style="gap:6px"><button class="btn sm ghost" data-act="vi-snd13no">Non merci</button><button class="btn sm go" data-act="vi-snd13">Essayer les nouveaux sons</button></span></div>`
+    : `<div class="wt-h">${G("note")}<b>Jouer en musique ?</b></div><div class="wt-t">Une musique composée pour Idlus et des sons doux pour les menus, les combats et les récompenses. Tu pourras changer ça à tout moment dans ${G("gear")} Options › Sons.</div>
     <div class="row between"><span class="xs" style="opacity:.75">Demandé une seule fois</span><span class="row" style="gap:6px"><button class="btn sm ghost" data-act="vi-sndno">Sans musique</button><button class="btn sm go" data-act="vi-sndyes">Avec la musique</button></span></div>`;
   document.body.appendChild(d);
   const a = [...document.querySelectorAll(".snd-btn")].find((x) => x.offsetParent); const pc = window.innerWidth >= 760;
@@ -8838,34 +8882,48 @@ function sndAskCheck() {
     const ch = document.body.classList.contains("chat-open") && $("#chat.chat"); const maxX = ch ? Math.min(window.innerWidth, ch.getBoundingClientRect().left) - w - 12 : window.innerWidth - w - 12; // 1.2 : le bouton du son est tout à droite, la bulle ne recouvre pas le chat ouvert
     const x = Math.max(12, Math.min(maxX, r.left + r.width / 2 - w / 2)); d.style.left = x + "px"; d.style.setProperty("--ax", Math.max(16, Math.min(w - 16, r.left + r.width / 2 - x)) + "px"); }
 }
+/* 1.3 (4A) : le son d'un message du journal ou d'une bulle ; il grandit avec la rareté (butin rare, Rayonnant, archimonstre) */
+function sndText(txt, kind) {
+  if (!txt || !(kind === "rare" || kind === "radiant")) return; const t = String(txt);
+  const id = /^Quête terminée/.test(t) ? "quete" : /^Succès :/.test(t) ? "evt:succes" : /^(Nouvelle couleur|Monture) : |^(Familier|Montilier) obtenu/.test(t) ? "evt:monture"
+    : /^Vendu :/.test(t) ? "evt:vente" : /^Récompenses du code/.test(t) ? "evt:code" : /archimonstre/i.test(t) ? "evt:legendaire" : kind === "radiant" || /Rayonnant/.test(t) ? "evt:epique"
+    : /Trésor/.test(t) ? "coin" : /Butin/.test(t) ? "evt:rare" : null;
+  if (id) sndPlay(id);
+}
 (function sndHooks() {
   const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
     if (type === "level") fanOr("niveau", "level"); else if (type === "dungeon") fanOr("donjon", "boss"); else if (type === "dofus") fanOr("dofus", "magic"); else if (type === "soul" || type === "ren") sndPlay("magic"); // 1.0.30 : fanfares
     if (type === "trophy" && SND.live && data && !$("#sheet").innerHTML.trim()) setTimeout(() => troPopup(data.sub), 0); // 1.0.20
-    if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win"); } return r; };
-  const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S && (kind === "rare" || kind === "radiant") && /Butin|Rayonnant|Trésor|archimonstre/i.test(txt)) sndPlay(/Trésor/.test(txt) ? "coin" : "rare"); return r; };
+    if (type === "commande") sndPlay("coin"); else if (type === "dopeul") sndPlay("gong"); else if (type === "win" && sndCfg().all) sndPlay("win");
+    else if (type === "craft") sndPlay("evt:craft"); else if (type === "chest") sndPlay("evt:coffre"); // 1.3 (4A) : les moments qui étaient muets
+    else if (type === "fm") setTimeout(() => sndPlay(E.fmLastK === "ec" ? "evt:fm_ko" : "evt:fm_ok"), 0); } return r; };
+  const note0 = E.note; E.note = (S0, txt, kind) => { const r = note0(S0, txt, kind); if (S0 === S) sndText(txt, kind); return r; };
   const cu0 = E.catchUp; E.catchUp = (...a) => { SND.live = false; try { return cu0(...a); } finally { SND.live = true; } }; // pas de pluie de sons au retour
 })();
+/* 1.3 (5A) : table de mixage : un volume général, puis un volume et une case par famille ; le haut-parleur du haut coupe tout et garde les réglages */
 function soundOptionsHtml() {
-  const c = sndCfg(), A = window.IdlusAudio, T = A ? A.tracks : {};
+  const c = sndCfg(), A = window.IdlusAudio, T = A ? A.tracks : {}, SO = window.SONS;
   const seg = (k, opts) => `<span class="seg2">${opts.map(([v, n]) => `<button class="btn sm${c[k] === v ? " primary" : ""}" data-act="vi-sndseg" data-k="${k}" data-v="${v}" aria-pressed="${c[k] === v}">${n}</button>`).join("")}</span>`;
-  return optSec("Musique", "composée pour Idlus, elle change selon l'endroit ; démarre au premier clic",
-      optChk(`data-act="vi-snd" data-k="mus"`, c.mus, "Activer la musique", "")
-    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-mvol" value="${c.mvol}" style="width:120px">`)
-    + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Continuer quand l'onglet est caché", "sinon la musique se met en pause")
-    + optChkBtn(`data-act="vi-snd" data-k="fan"`, c.fan, "Fanfares des grands moments", "donjon terminé, niveau, Dofus, boss des mondes : la musique baisse le temps du jingle", `<button class="btn sm" data-act="vi-fantest">▶ Écouter</button>`))
-  + jukeboxHtml(c, T)
-  + optSec("Ambiances", "vent, oiseaux, vagues, feu de cheminée… selon la zone, même sans musique",
-      optChk(`data-act="vi-snd" data-k="amb"`, c.amb, "Activer les ambiances", "")
-    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-avol" value="${c.avol}" style="width:120px">`))
-  + optSec("Sons du jeu", "niveau, butin rare, donjon, Dofus, commande, message privé ou @mention, erreur",
-      optChk(`data-act="vi-snd" data-k="on"`, c.on, "Activer les sons", "")
-    + optLine("Volume", "", `<input type="range" min="0" max="100" step="5" data-act="vi-vol" value="${c.vol == null ? 50 : c.vol}" style="width:120px"><button class="btn sm" data-act="vi-test">Écouter</button>`)
-    + optLine("Style", "", seg("style", [["bois", "Bois et cristal"], ["fanfare", "Fanfare"], ["bips", "Bips"]]))
+  const rng = (k) => `<input type="range" min="0" max="100" step="5" data-act="vi-vk" data-k="${k}" value="${c[k]}" style="width:120px" aria-label="Volume"><span class="xs muted mixv" id="mixv-${k}">${c[k]} %</span>`;
+  const row = (on, k, n, hint, test) => `<div class="optline mixrow">${optName(n, hint)}<span class="optctl">${test || ""}${rng(k)}<input type="checkbox" data-act="vi-snd" data-k="${on}" ${c[on] ? "checked" : ""} aria-label="${n}"></span></div>`;
+  const ply = (act) => `<button class="btn sm" data-act="${act}" title="Écouter" aria-label="Écouter">▶</button>`;
+  const th = sndTheme();
+  return optSec("Volumes", "chaque famille de sons a son volume ; le haut-parleur en haut de l'écran coupe tout d'un coup et garde ces réglages",
+      `<div class="optline mixrow">${optName("Volume général", "")}<span class="optctl">${rng("gvol")}<button class="btn sm" data-act="vi-mute">${G(sndOn() ? "spkoff" : "spk")} ${sndOn() ? "Tout couper" : "Remettre"}</button></span></div>`
+    + row("mus", "mvol", "Musique", "l'air de chaque endroit ; démarre au premier clic")
+    + row("on", "rvol", "Fanfares et récompenses", "niveau, donjon, Dofus, coffre, succès, quête, butin rare, vente", ply("vi-rtest"))
+    + row("ui", "ivol", "Interface", "menus, pages, onglets, cases, fenêtres, recherche", ply("vi-itest"))
+    + row("cbt", "cvol", "Combat", "sorts, coups, soins, victoire, quand un combat est affiché", ply("vi-cbttest"))
+    + row("amb", "avol", "Ambiances", "vent, oiseaux, vagues, feu de cheminée… selon la zone"))
+  + optSec("Sons", "composés pour Idlus, joués par ton navigateur",
+      optLine("Timbre", `l'interface sonne selon le thème : ${SO ? h(SO.themeName(th)) : ""}`, `<select data-act="vi-sty" aria-label="Timbre des sons"><option value="theme" ${c.sty === "theme" ? "selected" : ""}>Selon le thème</option>${SO ? SO.THEMES.map((k) => `<option value="${k}" ${c.sty === k ? "selected" : ""}>${h(SO.themeName(k))}</option>`).join("") : ""}</select>`)
     + optLine("Clics", "", seg("clic", [["all", "Tous"], ["imp", "Importants"], ["none", "Aucun"]]))
-    + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Aussi à chaque victoire", "discret, mais fréquent")
-    + optChkBtn(`data-act="vi-snd" data-k="cbt"`, c.cbt, "Sons de combat", "coups selon l'élément, critiques, soins, quand un combat est affiché", `<button class="btn sm" data-act="vi-cbttest">▶ Écouter</button>`)
-    + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Même quand l'onglet est caché", ""));
+    + optLine("Combat", "", seg("cmode", [["scene", "Scène complète"], ["impacts", "Coups seuls"], ["fin", "Fin du combat"]]))
+    + optChkBtn(`data-act="vi-snd" data-k="fan"`, c.fan, "Fanfares des grands moments", "donjon terminé, niveau, Dofus, boss des mondes : la musique baisse le temps du jingle", `<button class="btn sm" data-act="vi-fantest">▶ Écouter</button>`)
+    + optChk(`data-act="vi-snd" data-k="all"`, c.all, "Un petit son à chaque victoire", "discret, mais fréquent")
+    + optChk(`data-act="vi-snd" data-k="mbg"`, c.mbg, "Musique quand l'onglet est caché", "sinon elle se met en pause")
+    + optChk(`data-act="vi-snd" data-k="bg"`, c.bg, "Récompenses quand l'onglet est caché", "l'interface et le combat se taisent toujours"))
+  + jukeboxHtml(c, T);
 }
 /* juke-box : les airs rangés par endroit, chacun avec « Écouter » et « Toujours » ; replié, l'air de l'endroit et 5 autres */
 const JUKE_GRP = [["En chasse", ["incarnam", "marche", "taverne", "cania", "wabbits", "landes", "koalaks", "foret", "abrak", "moon", "dragoeufs", "iles", "pandala", "frigost", "saharach", "divines", "bonta", "brakmar", "obscure", "harebourg", "sufokia", "wukin", "vulkania"]],
@@ -8894,11 +8952,14 @@ function jukeboxHtml(c, T) {
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
   else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ${window.VENTEUI ? window.VENTEUI.bankTxt(true) : "ira au marchand de secours"}.` : "Plus de limite de banque."); }
-  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...(["on", "mus", "amb", "cbt"].includes(k) && t.checked ? { mute: false } : {}) }); if (k === "on" && t.checked) sndPlay("level", true); musSync(); renderStatus(); }
-  else if (a === "vi-avol") { sndSet({ avol: +t.value }); if (window.IdlusAudio && window.IdlusAudio.setAmbVol) window.IdlusAudio.setAmbVol(+t.value / 100); }
+  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...(["on", "mus", "amb", "cbt", "ui"].includes(k) && t.checked ? { mute: false } : {}) }); SND.gest = true; if (k === "on" && t.checked) sndPlay("rare", true); musSync(); renderStatus(); }
+  else if (a === "vi-vk") { const k = t.dataset.k; sndSet({ [k]: +t.value }); const v = $("#mixv-" + k); if (v) v.textContent = t.value + " %"; SND.gest = true; sndVol(true); // 1.3 : on entend le volume choisi
+    if (k === "ivol" || k === "gvol") uiSnd("page", true); else if (k === "rvol") sndPlay("rare", true); else if (k === "cvol") cbtTest(true); }
+  else if (a === "vi-sty") { sndSet({ sty: t.value }); SND.gest = true; uiSnd("theme", true); optionsSheet(); }
+
   else if (a === "vi-gram") { S.gramo = t.value; SND.gest = true; musSync(); toast(t.value ? `Le Gramophone joue « ${window.IdlusAudio.tracks[t.value]} ».` : "Le Gramophone suit l'heure (Boîte à musique, Nuit)."); }
-  else if (a === "vi-vol") { sndSet({ vol: +t.value }); sndPlay("coin", true); }
-  else if (a === "vi-mvol") { sndSet({ mvol: +t.value }); if (window.IdlusAudio) window.IdlusAudio.setMusicVol(+t.value / 100); }
+
+
   dirty = true;
 }
 function viAct(a, t) {
@@ -8911,14 +8972,17 @@ function viAct(a, t) {
     case "vi-tfight": if (run("templeFight", d.v)) { toast(`Le Dopeul ${CLASSES[d.v].name} arrive au prochain combat.`, "rare"); render(); } return;
     case "vi-tcancel": if (run("templeCancel")) render(); return;
     case "vi-view": ui.tab = "combat"; ui.zoneView = null; render(); window.scrollTo(0, 0); return;
-    case "vi-test": sndPlay("level", true); return;
-    case "vi-sndseg": sndSet({ [d.k]: d.v }); if (d.k === "style") sndPlay("level", true); else if (d.v !== "none") sndPlay("clic", true); optionsSheet(); return;
-    case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on) sndSet({ mus: true, on: true, mute: false, asked: true }); else sndSet({ mute: !c.mute, asked: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; }
-    case "vi-sndyes": sndSet({ mus: true, on: true, mute: false, asked: true }); t.closest("#sndask").remove(); musSync(); renderStatus(); return;
-    case "vi-sndno": sndSet({ asked: true }); t.closest("#sndask").remove(); return;
+    case "vi-test": case "vi-rtest": SND.gest = true; sndVol(true); ["rare", "quete", "evt:coffre"].forEach((k, i) => setTimeout(() => sndPlay(k, true), i * 900)); return;
+    case "vi-itest": SND.gest = true; sndVol(true); ["famille", "page", "onglet", "inter", "fenetre", "fermer"].forEach((k, i) => setTimeout(() => uiSnd(k, true), i * 380)); return;
+    case "vi-sndseg": sndSet({ [d.k]: d.v }); SND.gest = true; if (d.k === "cmode") { if (d.v === "fin") cbtPlayK("cbt:victoire", true); else cbtTest(); } else if (d.v !== "none") uiSnd("clic", true); optionsSheet(); return;
+    case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on && !c.ui && !c.cbt && !c.amb) sndSet(SND_ALL); else sndSet({ mute: !c.mute, asked: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; }
+    case "vi-sndyes": sndSet(SND_ALL); t.closest("#sndask").remove(); musSync(); renderStatus(); return;
+    case "vi-snd13": sndSet(Object.assign({}, SND_ALL, { mus: sndCfg().mus })); t.closest("#sndask").remove(); SND.gest = true; musSync(); renderStatus(); uiSnd("theme", true); toast("Nouveaux sons activés. Chaque famille se règle dans Options › Sons."); return;
+    case "vi-snd13no": sndSet({ nv13: true }); t.closest("#sndask").remove(); return;
+    case "vi-sndno": sndSet({ asked: true, nv13: true }); t.closest("#sndask").remove(); return;
     case "vi-jkplay": if (!partHas(d.v)) return; SND.gest = true; SND.prev = SND.prev === d.v ? null : d.v; musSync(); optionsSheet(); return;
     case "vi-fantest": { const A = window.IdlusAudio; if (!A || !A.fanfare) return; SND.gest = true; const K = ["donjon", "niveau", "dofus", "boss"], k = K[(SND.fanN = ((SND.fanN || 0) + 1)) % K.length]; A.setMusicVol(sndCfg().mvol / 100); A.fanfare(k); toast(`Fanfare : ${A.fanfares[k]}.`); return; }
-    case "vi-cbttest": { const A = window.IdlusAudio; if (!A || !A.cbt) return; SND.gest = true; A.setSfxVol((sndCfg().vol == null ? 50 : sndCfg().vol) / 100); [["t"], ["f"], ["e"], ["a"], ["n", 1], ["heal"]].forEach(([k, c], i) => setTimeout(() => A.cbt(k, c), i * 260)); return; }
+    case "vi-cbttest": SND.gest = true; cbtTest(); return;
     case "vi-jkfix": { if (!partHas(d.v)) return; const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
     case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musPlace() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
     case "vi-jkall": ui.jukeAll = !ui.jukeAll; optionsSheet(); return;
@@ -9011,7 +9075,7 @@ document.addEventListener("click", (ev) => {
     case "startsex": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startSex = d.v; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; } S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
-    case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
+    case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); uiSnd("theme"); return; // 1.3 : le nouveau thème se fait entendre
     case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
     case "settext": S.settings.textSize = +d.v; dirty = true; applyDisplay(); optionsSheet(); return;

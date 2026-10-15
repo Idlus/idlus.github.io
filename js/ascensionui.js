@@ -333,6 +333,9 @@
   window.DX.pages.asc = (main) => { page(main); if (st.tab === "rank") rkLoad(false); };
   const paint = () => { const main = $("#main"); if (!main || UI().tab !== "asc" || !S()) return; const y = window.scrollY; page(main); if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y); };
   const done = (r) => { if (r) { X().toast(r); return false; } X().markDirty(); paint(); return true; };
+  const REL_SND = { c: "evt:rel_commune", r: "evt:rel_rare", l: "evt:rel_legendaire" }; // 1.2.6 : la relique prise sonne selon sa rareté
+  const relSnd = (s, id) => { const x = id && E.relById(id); if (x && REL_SND[x.r] && window.DX && window.DX.sndPlay) window.DX.sndPlay(REL_SND[x.r]); };
+  const relOf = (s, i) => { const P = s.asc && s.asc.run && s.asc.run.pend; return P ? (P.t === "relic" ? (P.opts || [])[i] : i >= 100 ? (P.rel || [])[i - 100] : null) : null; };
 
   /* ---------- le combat sous les yeux ---------- */
   function liveStart(s) {
@@ -352,6 +355,7 @@
     if (out.dead) X().toast(`L'Ascension : montée finie à l'étage ${Q.last ? Q.last.top : out.f}. +${Q.last ? fmt(Q.last.frag) : 0} Fragments gardés.`, "rare");
     else if (out.sursis) X().toast(`Sursis utilisé à l'étage ${out.f} : les ennemis gardent leurs blessures.`);
     else if (out.boss && out.newSoul) X().toast(`Âme de ${monName(out.boss)} inscrite au bestiaire !`, "rare");
+    if (!out.dead && !out.sursis && (out.boss || out.f % 5 === 0) && window.DX && window.DX.sndPlay) window.DX.sndPlay("evt:etage"); // 1.3 : un palier franchi
     st.wait = Date.now() + 900;
     paint();
   }
@@ -422,11 +426,11 @@
       case "as-soul": { const r = E.act(s, "ascChoose", 0, st.rep); if (!r) st.rep = -1; done(r); return; }
       case "as-glyph": done(E.act(s, "ascChoose", +d.i)); return;
       case "as-pass": st.rep = -1; done(E.act(s, "ascChoose", -1)); return;
-      case "as-relic": done(E.act(s, "ascChoose", +d.i)); return; // 1.2.x
+      case "as-relic": { const id = relOf(s, +d.i); if (done(E.act(s, "ascChoose", +d.i))) relSnd(s, id); return; } // 1.2.x
       case "as-rr": done(E.act(s, "ascChoose", -2)); return;
       case "as-rslot": st.relSlot = d.v; paint(); return;
       case "as-ev": done(E.act(s, "ascChoose", +d.v)); return;
-      case "as-shop": done(E.act(s, "ascChoose", +d.i)); return;
+      case "as-shop": { const id = +d.i >= 100 ? relOf(s, +d.i) : null; if (done(E.act(s, "ascChoose", +d.i))) relSnd(s, id); return; }
       case "as-altar": done(E.act(s, "ascChoose", +d.v)); return;
       case "as-auto": done(E.act(s, "ascSetAuto", d.v === "1")); return;
       case "as-next": { st.wait = 0; liveStart(s); if (st.live) window.scrollTo(0, 0); return; }

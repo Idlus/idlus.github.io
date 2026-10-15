@@ -573,7 +573,7 @@
     if (T.eclats) { addRes(S, E.RARE_COMPONENT, T.eclats); got.push(`${T.eclats} × ${E.RARE_COMPONENT}`); loot.push(["res", E.RARE_COMPONENT, T.eclats]); }
     if (T.items) { const pool = E.chestItemPool(top); for (let i = 0; i < T.items && pool.length; i++) { const t = pool[Math.floor(rnd() * pool.length)]; const it = E.rollItem(S, t, {}); got.push(ITEMS[t].name); loot.push(["item", t, 1, it && it.uid]); } }
     if (T.scroll && rnd() < T.scroll[1]) { const st = ["fo", "ine", "cha", "age", "vit", "sa"][Math.floor(rnd() * 6)]; const sid = "parch_" + st + "_" + T.scroll[0]; E.addCons(S, sid); got.push(D.CONSUMABLES[sid].name); loot.push(["cons", sid, 1]); }
-    S.cnt.chests = (S.cnt.chests || 0) + 1;
+    S.cnt.chests = (S.cnt.chests || 0) + 1; E.emit(S, "chest", { tier: C.tier }); // 1.3 : le son du coffre ouvert
     // message court : la fenêtre d'ouverture montre le détail ; sans fenêtre, les récompenses rares regroupées (×2, ×3)
     const nRes = loot.filter((x) => x[0] === "res").length; const cnt = new Map();
     loot.filter((x) => x[0] !== "res").forEach((x) => { const n = x[0] === "item" ? ITEMS[x[1]].name : D.CONSUMABLES[x[1]].name; cnt.set(n, (cnt.get(n) || 0) + 1); });
@@ -811,7 +811,7 @@
     return { ok: true, stat: k, cur, add, nv, mn, mx, cap, w, sc: o.sc, sn: o.sn, ec: o.ec, chance: o.sc + o.sn, over: has && mx > 0 && nv > mx, exoStat: !has, malus, load: W.load, well, wellOk: well >= w, kamas: 0, job,
       hard: has && !malus && mx > 0 && nv > E.fmHardAt(Math.min(mn, mx), mx) }; // 1.0.30 : rune dans la zone dure (près du maximum)
   };
-  const fmLog = (it, txt, ok, kind) => { (it.fmLog = it.fmLog || []).unshift({ t: E.now(), txt, ok, k: kind || (ok ? "sc" : "ec") }); if (it.fmLog.length > 8) it.fmLog.length = 8; };
+  const fmLog = (it, txt, ok, kind) => { E.fmLastK = kind || (ok ? "sc" : "ec"); (it.fmLog = it.fmLog || []).unshift({ t: E.now(), txt, ok, k: E.fmLastK }); if (it.fmLog.length > 8) it.fmLog.length = 8; }; // 1.3 : E.fmLastK, pour le son de la forgemagie
   const wTxt = (w) => (Math.round(w * 10) / 10).toLocaleString("fr-FR");
   /* retire au moins w de poids aux autres caractéristiques positives, l'over et les exo d'abord (comme dans DOFUS) */
   const fmLose = (it, T, skip, w) => {
