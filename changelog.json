@@ -1,6 +1,15 @@
 {
-  "version": "2.0.1",
+  "version": "2.0.2",
   "versions": [
+    {
+      "v": "2.0.2",
+      "name": "Chemins du ciel",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : le ciel de chaque classe est redessiné pour que les chemins suivent les liens visibles. Les branches ne traversent plus la branche voisine, les cercles d'étoiles ne se chevauchent plus et les passages entre deux branches ne coupent plus un cercle (de 200 croisements de liens à une vingtaine)",
+        "Les étoiles et les liens restent les mêmes : vos points placés, vos arbres enregistrés et vos codes de partage ne changent pas"
+      ]
+    },
     {
       "v": "2.0.1",
       "name": "Étoiles expliquées",

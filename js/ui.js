@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.1";
+const GAME_VERSION = "2.0.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.2", name: "Chemins du ciel", guide: "maitrise", items: [
+    "Maîtrise : le ciel de chaque classe est redessiné pour que les chemins suivent les liens visibles. Les branches ne traversent plus la branche voisine, les cercles d'étoiles ne se chevauchent plus et les passages entre deux branches ne coupent plus un cercle (de 200 croisements de liens à une vingtaine)",
+    "Les étoiles et les liens restent les mêmes : vos points placés, vos arbres enregistrés et vos codes de partage ne changent pas"
+  ] },
   { v: "2.0.1", name: "Étoiles expliquées", guide: "maitrise", items: [
     "Maîtrise : l'effet d'une étoile s'affiche directement sur l'arbre, au survol sur PC et au premier toucher sur téléphone, avec ce que l'étoile (ou tout le chemin jusqu'à elle) ajoute à vos bonus et son coût en points",
     "Sur téléphone, un premier toucher montre l'étoile sans la prendre ; on la touche une seconde fois pour la prendre (ou la rendre)"

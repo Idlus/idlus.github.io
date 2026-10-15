@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.2 « Chemins du ciel »
+
+Maîtrise : le ciel de chaque classe est redessiné (mêmes étoiles et mêmes liens) pour que les chemins suivent les liens visibles, sans branches qui se croisent ni cercles qui se chevauchent.
+
 ## 2.0.1 « Étoiles expliquées »
 
 Maîtrise : l'effet de chaque étoile et le gain du chemin s'affichent sur l'arbre (survol sur PC, premier toucher sur téléphone ; second toucher pour prendre).

@@ -114,12 +114,12 @@
         for (let i = 0; i < 4; i++) { const id = add(P(small(S0.d, si + cc + i), th + (rnd() - 0.5) * 0.02, r)); if (prev != null) link(prev, id); else S0.root = id; prev = id; r += 30; }
         r += 38;
         const ctr = add(P(notable(S0.d), th, r)); const ring = [];
-        for (let j = 0; j < 8; j++) { const a = TAU * j / 8 + Math.PI; const o = small(S0.d, si * 3 + cc + j); if (j === 3 && cc % 2 === 0) Object.assign(o, { t: "joy", n: "Emplacement de joyau", txt: "Sertis un joyau trouvé sur les boss en stasis 10+.", b: [], ic: null }); ring.push(add(P(o, th, r, Math.cos(a) * 46, Math.sin(a) * 46))); }
+        for (let j = 0; j < 8; j++) { const a = TAU * j / 8 + Math.PI; const o = small(S0.d, si * 3 + cc + j); if (j === 3 && cc % 2 === 0) Object.assign(o, { t: "joy", n: "Emplacement de joyau", txt: "Sertis un joyau trouvé sur les boss en stasis 10+.", b: [], ic: null }); ring.push(add(P(o, th, r, Math.cos(a) * Math.min(46, r * 0.09), -Math.sin(a) * Math.min(46, r * 0.09)))); }
         for (let j = 0; j < 8; j++) link(ring[j], ring[(j + 1) % 8]);
         link(prev, ring[0]); link(ctr, ring[2]); link(ctr, ring[6]); S0.lv.push(ring);
         if (cc === 1 || cc === 3) { const side = cc === 1 ? 1 : -1; let p2 = ring[side > 0 ? 2 : 6];
-          for (let i = 0; i < 5; i++) { const id = add(P(small(S0.d, cc * 7 + i), th, r + 10 + i * 6, 0, side * (70 + i * 26))); link(p2, id); p2 = id; }
-          link(p2, add(P(notable(S0.d), th, r + 44, 0, side * 190))); }
+          const lt0 = side > 0 ? 1 : -1; for (let i = 0; i < 5; i++) { const id = add(P(small(S0.d, cc * 7 + i), th, r + 34 + i * 26, 0, lt0 * 84)); link(p2, id); p2 = id; }
+          link(p2, add(P(notable(S0.d), th, r + 172, 0, lt0 * 84))); }
         prev = ring[4]; r += 76;
       }
       const kq = SP.filter((x) => x.d === S0.d).indexOf(S0); const kk = DOM[S0.d].ks[kq];
@@ -127,7 +127,7 @@
       let best = 0, bd = 9; r2.forEach((id) => { const dd = Math.abs(((N[id].th - S0.th + TAU * 1.5) % TAU) - Math.PI); if (dd < bd) { bd = dd; best = id; } }); link(best, S0.root);
     });
     SP.forEach((S0, si) => { const T2 = SP[(si + 1) % SP.length]; link(S0.root, T2.root);
-      S0.lv.forEach((ring, cc) => { if (cc === 0 || rnd() < 0.45) { const a = ring[2], b = T2.lv[cc][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, cc + si), mt, N[a].r)); link(a, m1); link(m1, b); } }); });
+      S0.lv.forEach((ring, cc) => { if (cc === 0 || rnd() < 0.45) { const a = ring[2], b = T2.lv[cc][6]; let mt = (N[a].th + N[b].th) / 2; if (Math.abs(N[a].th - N[b].th) > Math.PI) mt += Math.PI; const m1 = add(P(small(S0.d, cc + si), mt, N[a].r + (cc ? 0 : 52))); link(a, m1); link(m1, b); } }); });
     (KSC[cls] || []).forEach((kk, i) => {
       const th = TAU * [2, 3, 4][i] / 6; let prev = r2[Math.round(th / TAU * 18) % 18];
       for (let j = 0; j < 4; j++) { const id = add(P({ t: "cls", d: f[0], n: `Voie : ${kk[0]}`, txt: `+1 % d'effet du passif ${pas} ; mène à ${kk[0]}.`, b: [[`Passif ${pas} (%)`, 1]] }, th, 190 + j * 34)); link(prev, id); prev = id; }
@@ -140,7 +140,7 @@
       [-1, 1].forEach((sd) => { const S0 = near(Math.PI + sd * 0.3); let prev = S0.lv[4][sd > 0 ? 2 : 6]; for (let i = 0; i < 4; i++) { const id = add(P(nb(i + (sd > 0 ? 2 : 0)), Math.PI + sd * (0.24 - i * 0.05), 1540 + i * 60)); link(prev, id); prev = id; } link(prev, hub); });
       const ringN = []; for (let j = 0; j < 12; j++) { const a = TAU * j / 12; ringN.push(add(P(nb(j), Math.PI, 1800, Math.cos(a) * 80, Math.sin(a) * 80))); }
       ringN.forEach((id, j) => { link(id, ringN[(j + 1) % 12]); if (j % 4 === 0) link(hub, id); });
-      NKS.forEach((kk, i) => { const th = Math.PI + (i - 1) * 0.11; let prev = ringN[[5, 6, 7][i]]; for (let j = 0; j < 6; j++) { const id = add(P(nb(i + j), th, 1900 + j * 34)); link(prev, id); prev = id; } link(prev, add(P({ t: "ks", neb: true, d: 5, n: kk[0], fx: kk[1], txt: E.mtFxTxt(kk[1]), b: [] }, th, 2130))); });
+      NKS.forEach((kk, i) => { const th = Math.PI + (i - 1) * 0.11; let prev = ringN[[5, 6, 7][i]]; for (let j = 0; j < 6; j++) { const id = add(P(nb(i + j), th, 1930 + j * 34)); link(prev, id); prev = id; } link(prev, add(P({ t: "ks", neb: true, d: 5, n: kk[0], fx: kk[1], txt: E.mtFxTxt(kk[1]), b: [] }, th, 2160))); });
     }
     for (const n of N) { const X0 = Math.sin(n.th) * n.r, Y0 = -Math.cos(n.th) * n.r, psi = n.th - Math.PI / 2; n.X = X0 + Math.cos(psi) * n.lr - Math.sin(psi) * n.lt; n.Y = Y0 + Math.sin(psi) * n.lr + Math.cos(psi) * n.lt; }
     const coreIds = N.filter((n) => n.t === "cls" && n.r <= 150).map((n) => n.id);
