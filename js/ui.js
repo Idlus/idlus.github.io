@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.10";
+const GAME_VERSION = "1.0.32.11";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.11", name: "Dofus retrouvé", items: [
+    "Quête de Dofus terminée mais Dofus absent : quand le sac était plein, le Dofus partait au trop-plein (et pouvait même y être brisé en runes). Il reste maintenant toujours dans le sac",
+    "Au chargement, les Dofus restés au trop-plein reviennent dans le sac, et une quête de Dofus terminée sans son Dofus le rend. Un message te le dit",
+    "Un Dofus ne se brise plus (ni à l'unité, ni avec « Tout briser ») : une copie se fond dans son Potentiel",
+  ] },
   { v: "1.0.32.10", name: "Équiper en Sagesse", items: [
     "Nouveau choix « Privilégier » à côté d'« Équiper au mieux » (fiche du héros, onglet Équipement) : Sagesse, Prospection, Vitalité, Puissance, Dommages, Critique, Soins, Initiative, Résistances, PA, PM, Tacle ou Fuite",
     "« Équiper au mieux » et « Tout équiper au mieux » choisissent alors d'abord les objets qui donnent cette caractéristique. Pratique pour monter une Renaissance avec un équipement Sagesse, puis revenir à « Rien (équilibré) »",
@@ -8525,7 +8530,7 @@ document.addEventListener("click", (ev) => {
     case "break": { ui.confirm = null; const r = E.breakItem(S, +d.uid, fltOf("br").focus || null); if (ui.brSel) ui.brSel.delete(+d.uid); if (typeof r === "string") toast(r); else toast("Runes : " + (Object.entries(r).map(([k, q]) => `${E.runeName(k)} ×${q}`).join(", ") || "aucune")); if (brisageOnly(true)) return; break; }
     case "askbreakall": ui.confirm = "breakall"; break;
     case "cancel": ui.confirm = null; if (brisageOnly()) return; break;
-    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid)) { E.breakItem(S, it.uid, ui.focus || null); n++; } }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
+    case "breakall": { let n = 0; Object.values(S.items).forEach((it) => { if (!E.equippedBy(S, it.uid) && !it.radiant && !it.locked && !E.inGear(S, it.uid) && typeof E.breakItem(S, it.uid, ui.focus || null) === "object") n++; }); ui.confirm = null; toast(`${n} objets brisés.`); break; }
     case "fuse": { const r = E.fuseRunes(S, d.k, d.dir); if (r) toast(r); break; }
     case "transmute": { const r = E.transmute(S, ui.tr.from, ui.tr.to); toast(r || `1 ${E.runeName(E.runeKey(ui.tr.from.split(":")[0], ui.tr.to))} obtenue`); break; }
     case "savenow": saveNow(true); return;

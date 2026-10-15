@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.11 « Dofus retrouvé »
+
+Retour de joueurs relayé par Mathis le 15/10/2026 : quêtes du Dofus Verdoyant et du Dofus du Cauchemar « Quête terminée » sans Dofus. Cause : E.bagFlush (js/engine.js) range au trop-plein les objets les plus récents quand le sac dépasse sa taille, donc le Dofus tout juste donné par la quête ; E.dofusOwned ne regarde que le sac, et le trop-plein plein brise le plus ancien en runes. Correction : bagFlush ne range jamais un Dofus, le trop-plein ne brise jamais un Dofus, E.breakItem refuse un Dofus ; E.dofusRepair (js/archis.js, à chaque E.deserialize) remet au sac les Dofus du trop-plein et redonne le Dofus d'une quête terminée qui n'est nulle part (un Dofus ne se vend pas à l'HdV), avec un message de migration. Test : tests/dofusp.test.js.
+
 ## 1.0.32.10 « Équiper en Sagesse »
 
 Demande de Mathis le 15/10/2026 : « qu'on peut focus une stat en particulier avec l'auto équipement ? Pour les renaissances […] les stuffs sagesse ». js/ui.js : réglage par héros c.gearFocus (GEAR_FOCUS : sa, pp, vit, pui, do, cri, so, ini, res, pa, pm, tac, fui), choisi dans le menu « Privilégier » de l'onglet Équipement ; itemScore compte la caractéristique choisie 10 fois (GEAR_FOCUS_X = 9 en plus), donc gearPlan, la pastille verte, « Équiper au mieux » et « Tout équiper au mieux » la suivent ; planKey inclut c.gearFocus. Sans choix, rien ne change.

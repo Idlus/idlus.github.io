@@ -1,6 +1,15 @@
 {
-  "version": "1.0.32.10",
+  "version": "1.0.32.11",
   "versions": [
+    {
+      "v": "1.0.32.11",
+      "name": "Dofus retrouvé",
+      "items": [
+        "Quête de Dofus terminée mais Dofus absent : quand le sac était plein, le Dofus partait au trop-plein (et pouvait même y être brisé en runes). Il reste maintenant toujours dans le sac",
+        "Au chargement, les Dofus restés au trop-plein reviennent dans le sac, et une quête de Dofus terminée sans son Dofus le rend. Un message te le dit",
+        "Un Dofus ne se brise plus (ni à l'unité, ni avec « Tout briser ») : une copie se fond dans son Potentiel"
+      ]
+    },
     {
       "v": "1.0.32.10",
       "name": "Équiper en Sagesse",

@@ -473,10 +473,10 @@
     if (!Array.isArray(S.over)) S.over = [];
     let n = 0; const cap = E.itemCap(S);
     let count = Object.keys(S.items).length; if (count <= cap) return 0;
-    const free = Object.keys(S.items).map(Number).sort((a, b) => b - a).filter((u) => { const it = S.items[u]; return !it.locked && !E.equippedBy(S, u) && !E.inGear(S, u); });
+    const free = Object.keys(S.items).map(Number).sort((a, b) => b - a).filter((u) => { const it = S.items[u]; return !it.locked && !E.equippedBy(S, u) && !E.inGear(S, u) && !(ITEMS[it.tpl] && ITEMS[it.tpl].slot === "dofus"); }); // 1.0.32.11 : un Dofus reste toujours dans le sac (avant : le Dofus d'une quête finie, le plus récent, partait au trop-plein)
     const now = E.now(); const broken = [];
     for (const u of free) { if (count <= cap) break; const it = S.items[u]; delete S.items[u]; S.over.push(Object.assign({}, it, { at: now })); count--; n++; }
-    while (S.over.length > E.overCap(S)) { const o = S.over.shift(); overBreakOne(S, o); broken.push(ITEMS[o.tpl] ? ITEMS[o.tpl].name : o.tpl); }
+    while (S.over.length > E.overCap(S)) { const o = S.over.shift(); if (ITEMS[o.tpl] && ITEMS[o.tpl].slot === "dofus") { delete o.at; S.items[o.uid] = o; continue; } overBreakOne(S, o); broken.push(ITEMS[o.tpl] ? ITEMS[o.tpl].name : o.tpl); }
     if (n) { S.overNew = (S.overNew || 0) + n; S.cnt = S.cnt || {}; note(S, `Sac plein : ${n > 1 ? `${n} objets rangés` : `${ITEMS[S.over[S.over.length - 1].tpl].name} rangé`} dans le trop-plein.`, "warn"); }
     if (broken.length) note(S, `Trop-plein plein : ${broken.length > 1 ? `${broken.length} objets les plus anciens brisés` : `${broken[0]} brisé`} en runes.`, "warn");
     return n;
@@ -3196,6 +3196,7 @@
     if (E.equippedBy(S, uid)) return "Retirez d'abord cet objet.";
     if (it.locked) return "Objet protégé par le cadenas.";
     if (E.inGear(S, uid)) return `Objet rangé dans une tenue de ${E.inGear(S, uid).name}.`;
+    if (ITEMS[it.tpl] && ITEMS[it.tpl].slot === "dofus") return "Un Dofus ne se brise pas : une copie se fond dans son Potentiel (menu Dofus)."; // 1.0.32.11
     const p = E.breakPreview(S, uid, focus);
     const got = {}; const exoMult = it.exo ? E.EXO_BREAK_MULT : 1; // 0.1.9.1 : un objet exo rend ses runes ×2 (l'exo est perdu)
     for (const k in p.weights) {
