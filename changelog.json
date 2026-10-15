@@ -1,6 +1,14 @@
 {
-  "version": "1.0.32.8",
+  "version": "1.0.32.9",
   "versions": [
+    {
+      "v": "1.0.32.9",
+      "name": "Boss sur l'accueil de la guilde",
+      "items": [
+        "Le boss de la semaine est en haut de l'accueil de la guilde : sa vie en 5 phases, tes essais en réserve et le bouton « Affronter le boss », sans changer d'onglet",
+        "L'onglet Boss garde le classement entre guildes, les récompenses des phases et les trophées"
+      ]
+    },
     {
       "v": "1.0.32.8",
       "name": "Sauvegarde à l'abri",

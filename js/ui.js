@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.8";
+const GAME_VERSION = "1.0.32.9";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.9", name: "Boss sur l'accueil de la guilde", items: [
+    "Le boss de la semaine est en haut de l'accueil de la guilde : sa vie en 5 phases, tes essais en réserve et le bouton « Affronter le boss », sans changer d'onglet",
+    "L'onglet Boss garde le classement entre guildes, les récompenses des phases et les trophées",
+  ] },
   { v: "1.0.32.8", name: "Sauvegarde à l'abri", items: [
     "Grosse partie et stockage du navigateur plein : la sauvegarde efface d'abord de vieilles copies de secours au lieu d'échouer sans rien dire (avant, au redémarrage, on pouvait retrouver une partie de plusieurs heures en arrière)",
     "Si une sauvegarde échoue quand même, un message le dit tout de suite",

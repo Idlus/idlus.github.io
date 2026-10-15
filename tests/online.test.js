@@ -917,8 +917,10 @@ const MOCK = () => {
       if ((await page.evaluate(() => window.DX.S.kamas)) !== k0 + 300000) fail("guildes : code GUILDES non reçu");
       if (await page.$('[data-act="g-gift"]')) fail("guildes : bandeau du code GUILDES encore là après usage"); }
     await page.click('[data-act="g-inv"][data-v="1"]'); await page.waitForSelector('.subtabs [data-act="g-tab"][data-v="coffre"]', { timeout: 8000 });
-    await page.waitForFunction(() => /phase 3 \/ 5/.test(document.querySelector("#main").textContent), null, { timeout: 8000 }).catch(() => fail("guildes : boss absent de l'accueil"));
+    await page.waitForFunction(() => /phase 3 \/ 5/i.test(document.querySelector("#main").textContent), null, { timeout: 8000 }).catch(() => fail("guildes : boss absent de l'accueil"));
     { const t = await gtxt(); if (!/Dans le coffre/.test(t) || !/6e place/.test(t) || !/Guerre des Percepteurs/.test(t) || !/attaqué par Les Tofus Enragés/.test(t)) fail("guildes : accueil incomplet"); }
+    if ((await page.$$("#main .gx-ph > div")).length !== 5) fail("guildes : barre de vie du boss absente de l'accueil");
+    if (!(await page.$('#main [data-act="g-boss"]:not([disabled])')) || !/Affronter le boss \(4 en réserve\)/.test(await gtxt())) fail("guildes : bouton « Affronter le boss » absent de l'accueil"); // 1.0.32.9
     await gwide("l'accueil", "guilde-accueil");
     // coffre : dépôt (opération de partie) et part des ventes
     await page.click('[data-act="g-tab"][data-v="coffre"]'); await page.waitForSelector("#gDep");

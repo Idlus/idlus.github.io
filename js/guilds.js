@@ -260,12 +260,12 @@
     const next = E.GUILD_RANKS.filter((u) => up(u.k) < E.GUILD_RANK_MAX).map((u) => ({ k: u.k, ic: u.ic, name: `${u.name} des Percepteurs`, tag: `rang ${up(u.k)}`, d: u.d.split(" ; ")[0], price: E.guildRankPrice(up(u.k) + 1) }))
       .concat(E.GUILD_UQ.filter((u) => !up(u.k) && g.lvl >= u.lvl).map((u) => ({ k: u.k, ic: u.ic, name: u.name, tag: "unique", d: u.d, price: u.cost })))
       .sort((a, b) => a.price - b.price).slice(0, 2);
-    return `<div class="grid2g">
+    return `${bossCard(true)}<div class="grid2g">
       <section class="panel"><div class="phead"><h2>Coffre de guilde</h2><span class="xs muted">kamas des Percepteurs et dépôts</span></div><div class="pad stack">${chestBox(true)}</div></section>
       <section class="panel"><div class="phead"><h2>À améliorer avec le coffre</h2></div><div class="list">${seatLine()}
         ${next.map((u) => `<div class="li">${X().IC(u.ic)}<span class="grow"><b>${h(u.name)}</b> <span class="tag soft">${u.tag}</span><br><span class="xs muted">${h(u.d)}</span></span>${buyBtn(u.k, u.price)}</div>`).join("")}
         <div class="li clk small" data-act="g-tab" data-v="upg"><span class="grow muted">Toutes les améliorations</span><span class="tag good">Voir</span></div></div></section>
-      <section class="panel"><div class="phead"><h2>Activités de guilde</h2></div><div class="list">${percoLine()}${bossLine()}${warLine()}</div></section>
+      <section class="panel"><div class="phead"><h2>Activités de guilde</h2></div><div class="list">${percoLine()}${warLine()}</div></section>
       <section class="panel"><div class="phead"><h2>Ma part d'XP pour la guilde</h2><b class="num">${share} %</b></div><div class="pad stack">
         <input type="range" min="0" max="90" step="5" value="${share}" data-act="g-share" id="gShare" aria-label="Part d'XP donnée à la guilde">
         ${G.me.share_by ? `<span class="xs" style="color:var(--gold)">Réglée par ${h(G.me.share_by)}. Tu peux toujours la changer.</span>` : ""}
@@ -277,12 +277,6 @@
         <div class="list gperks">${lines.map(([l, t]) => `<div class="li small ${g.lvl >= l ? "" : "lock"}"><b class="lv">niv. ${l}</b><span class="grow">${t}</span>${g.lvl >= l ? "✓" : ""}</div>`).join("")}</div>
         <span class="xs muted">Entre deux paliers : +1 % XP tous les 5 niveaux, +1 % butin et kamas tous les 10 niveaux.</span>
       </div></section></div>`;
-  }
-  function bossLine() {
-    const b = G.ex && G.ex.boss; const def = E.gboss(b ? b.w : undefined);
-    let t = "Chargement…";
-    if (b) { const ph = E.gbossPhase(b.pts, b.goal); const n = Math.floor(tok(b)); t = ph.p > 5 ? "vaincu cette semaine ✓" : `phase ${ph.p} / 5 · ${n} essai${n > 1 ? "s" : ""} en réserve`; }
-    return `<div class="li clk" data-act="g-tab" data-v="boss">${X().IC("trophee")}<span class="grow"><b>Boss de la semaine : ${h(def.name)}</b><br><span class="xs muted">${t}</span></span><span class="tag good">Voir</span></div>`;
   }
   function percoLine() {
     const P = (G.ex && G.ex.percos) || []; const slots = G.ex ? G.ex.slots : E.percoSlots(G.me.g.lvl, up("qg"));
@@ -299,7 +293,7 @@
   /* --- coffre (v-coffre, choix 3A) --- */
   function coffreHtml() {
     const sale = +G.me.sale || 0; const L = G.me.chestlog || [];
-    return `<div class="grid2g">
+    return `${bossCard(true)}<div class="grid2g">
       <section class="panel"><div class="phead"><h2>Coffre de guilde</h2></div><div class="pad stack">${chestBox(false)}
         <span class="small muted">Les kamas des Percepteurs vont au coffre (les ressources vont à celui qui récolte). Chacun peut déposer, et donner une part de ses ventes directes. Personne ne peut retirer : le coffre sert seulement aux améliorations.</span>
         <div class="row"><input type="number" id="gDep" min="1000" step="1000" value="100000" style="max-width:150px" aria-label="Montant"><button class="btn primary sm" data-act="g-deposit" ${G.busy ? "disabled" : ""}>Déposer</button></div></div></section>
@@ -326,11 +320,11 @@
 
   /* --- boss de la semaine (12A et 20A : 5 phases, un essai toutes les 25 min, 6 en réserve) --- */
   const tok = (b) => E.gbossTok(b.tok, G.exAt || Date.now(), Date.now(), b.every);
-  function bossHtml() {
-    const b = G.ex && G.ex.boss; if (!b) return `<div class="empty">Chargement…</div>`;
+  /* 1.0.32.9 : la carte du boss (vie, phases, bouton Affronter) sert à l'onglet Boss et à l'accueil de la guilde (home = version courte) */
+  function bossCard(home) {
+    const b = G.ex && G.ex.boss; if (!b) return home ? `<section class="panel gboss"><div class="empty">Boss de la semaine : chargement…</div></section>` : `<div class="empty">Chargement…</div>`;
     const def = E.gboss(b.w); const M = D().MONSTERS[def.boss] || {};
     const ph = E.gbossPhase(b.pts, b.goal); const t = tok(b); const n = Math.floor(t); const every = b.every || E.GBOSS_EVERY;
-    const s = S(); const lvl = b.lvl || Math.max(...E.team(s).map((c) => (c.ren ? 200 : c.lvl)), 1);
     const r = G.res && G.res.gboss ? G.res : null; const over = ph.p > 5;
     const segs = E.GBOSS_PHASES.map((_, i) => { const d = i < ph.done, cur = i === ph.done && !over; return `<div class="${d ? "done" : ""}">${cur && ph.cur > 0 ? `<i style="width:${Math.min(100, (ph.cur / ph.need) * 100).toFixed(1)}%"></i>` : ""}<b>${d ? "✓ " : ""}Phase ${i + 1}</b></div>`; }).join("");
     const nextIn = E.gbossNextIn(t, every);
@@ -338,6 +332,20 @@
       : `<div class="row"><button class="btn primary" data-act="g-boss" ${!n || G.busy || G.fighting ? "disabled" : ""}>${G.fighting === true ? "Combat en cours…" : n ? `Affronter le boss (${n} en réserve)` : "Pas d'essai en réserve"}</button>
         <span class="xs muted">${n} essai${n > 1 ? "s" : ""} en réserve (${E.GBOSS_RESERVE} au plus)${nextIn ? ` · le prochain dans ${left(nextIn)}` : ""}</span></div>`;
     const res = r ? `<span class="small"><b class="num">${fmt(r.points)}</b> points en ${r.rounds} tours · ${r.alive} héros debout</span>` : "";
+    return `<section class="panel gboss"><div class="gbhead">${M.img ? `<img class="gbimg" src="${X().imgM(def.boss)}" alt="">` : ""}<div class="stack grow" style="gap:4px">
+        <span class="xs muted">Boss de la semaine · change dans ${left(E.gbossLeft(srvNow()))}</span><h2 style="font-size:24px">${h(def.name)}</h2>
+        <span class="small muted">${over ? "Vaincu ! Un nouveau boss arrive lundi." : `Phase ${ph.p} / 5 : « ${E.GBOSS_PHASE_NAMES[ph.p - 1]} »${ph.p > 1 ? `, +${Math.round((E.gbossDmg(ph.p) - 1) * 100)} % de résistance` : ""}`} · ${h(def.dname)}</span></div></div>
+      <div class="pad stack">
+        <div class="row between small"><b>Vie du boss</b><span>${over ? `${fmt(b.pts)} points` : `phase ${ph.p} : ${fmt(ph.cur)} / ${fmt(ph.need)} points`}</span></div>
+        <div class="gx-ph">${segs}</div>
+        ${home ? "" : `<span class="xs muted">Un essai toutes les ${every} min. Ils s'accumulent jusqu'à ${E.GBOSS_RESERVE} (${left(E.GBOSS_RESERVE * every * 60000)}) : un joueur qui revient après une pause en a plusieurs d'avance. Tes points cette semaine : <b>${fmt(b.mine)}</b>.</span>`}
+        ${fight}${res}
+        ${home ? `<div class="row between"><span class="xs muted">Tes points cette semaine : <b>${fmt(b.mine)}</b></span><button class="btn sm" data-act="g-tab" data-v="boss">Classement et récompenses</button></div>` : ""}
+      </div></section>`;
+  }
+  function bossHtml() {
+    const b = G.ex && G.ex.boss; if (!b) return `<div class="empty">Chargement…</div>`;
+    const ph = E.gbossPhase(b.pts, b.goal); const s = S(); const lvl = b.lvl || Math.max(...E.team(s).map((c) => (c.ren ? 200 : c.lvl)), 1);
     const T = ph.T; const names = Object.values(E.GBOSS_CHEST_NAMES);
     const phases = E.GBOSS_PHASES.map((_, i) => { const need = T[i] - (i ? T[i - 1] : 0); const c = i < 4 ? E.gbossChest(E.GBOSS_STEPS[i], lvl) : null;
       return `<div class="li small ${i < ph.done ? "" : "lock"}"><b class="lv">Phase ${i + 1}</b><span class="grow">${big(E.GBOSS_PHASE_K[i])} au coffre · ${i < 4 ? `<span data-tip="${fmt(c.k)} kamas et ${c.dust} Poussières de stasis pour chaque membre qui a frappé">${names[i]}</span>` : "trophée du boss, titre pour la 1re guilde"}<br><span class="xs muted">« ${E.GBOSS_PHASE_NAMES[i]} » · ${fmt(need)} points</span></span>${i < ph.done ? "✓" : ""}</div>`; }).join("");
@@ -345,15 +353,7 @@
     const last = (b.last || []).length ? `<div class="pad xs muted">Semaine passée : ${b.last.map((g, i) => `${i + 1}. ${h(g.name)}`).join(" · ")}</div>` : "";
     const hit = (b.hitters || []).map((x, i) => `<div class="li small"><b class="num lv">${i + 1}</b><span class="grow">${X().pname(x.p, x.u)} <span class="xs muted">· ${x.n} essai${x.n > 1 ? "s" : ""} · meilleur ${fmt(x.best)}</span></span><b class="num">${fmt(x.pts)}</b></div>`).join("") || `<div class="empty">Personne n'a encore frappé cette semaine.</div>`;
     const tro = (b.trophies || []).length ? `<div class="list">${b.trophies.map((x) => { const d2 = E.gboss(x.w); return `<div class="li small">${X().IC("trophee")}<span class="grow">${h(d2.name)}${x.first ? ` <span class="tag good">1re guilde</span>` : ""}</span><span class="xs muted">${since(x.at)}</span></div>`; }).join("")}</div>` : `<div class="empty">Finissez la phase 5 pour gagner le trophée du boss.</div>`;
-    return `<section class="panel gboss"><div class="gbhead">${M.img ? `<img class="gbimg" src="${X().imgM(def.boss)}" alt="">` : ""}<div class="stack grow" style="gap:4px">
-        <span class="xs muted">Boss de la semaine · change dans ${left(E.gbossLeft(srvNow()))}</span><h2 style="font-size:24px">${h(def.name)}</h2>
-        <span class="small muted">${over ? "Vaincu ! Un nouveau boss arrive lundi." : `Phase ${ph.p} / 5 : « ${E.GBOSS_PHASE_NAMES[ph.p - 1]} »${ph.p > 1 ? `, +${Math.round((E.gbossDmg(ph.p) - 1) * 100)} % de résistance` : ""}`} · ${h(def.dname)}</span></div></div>
-      <div class="pad stack">
-        <div class="row between small"><b>Vie du boss</b><span>${over ? `${fmt(b.pts)} points` : `phase ${ph.p} : ${fmt(ph.cur)} / ${fmt(ph.need)} points`}</span></div>
-        <div class="gx-ph">${segs}</div>
-        <span class="xs muted">Un essai toutes les ${every} min. Ils s'accumulent jusqu'à ${E.GBOSS_RESERVE} (${left(E.GBOSS_RESERVE * every * 60000)}) : un joueur qui revient après une pause en a plusieurs d'avance. Tes points cette semaine : <b>${fmt(b.mine)}</b>.</span>
-        ${fight}${res}
-      </div></section>
+    return `${bossCard()}
       <div class="grid2g even"><section class="panel"><div class="phead"><h2>Phases</h2><span class="xs muted">vie pour ta guilde (${fmt(b.goal)} points)</span></div><div class="list">${phases}</div><div class="pad xs muted">Chaque phase tombée : des kamas dans le coffre de guilde, de l'XP de guilde et un coffre pour chaque membre qui a frappé. La phase suivante est plus dure.</div></section>
       <section class="panel"><div class="phead"><h2>Course entre guildes</h2><span class="xs muted">titre « ${h(E.GBOSS_TITLE)} » pour le podium</span></div><div class="list">${top}</div>${last}<div class="pad xs muted">Un essai rapporte environ 300 points avec une bonne équipe. Le boss entier vaut ${fmt(E.GBOSS_PER_MEMBER)} points par membre (au moins ${E.GBOSS_MIN_MEMBERS} comptés) : une guilde qui joue tous les jours le finit en fin de semaine.</div></section></div>
       <div class="grid2g even"><section class="panel"><div class="phead"><h2>Dans ta guilde</h2></div><div class="list">${hit}</div></section>
