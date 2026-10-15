@@ -1,6 +1,16 @@
 {
-  "version": "2.0.9",
+  "version": "2.0.10",
   "versions": [
+    {
+      "v": "2.0.10",
+      "name": "Derniers bugs de la Maîtrise",
+      "guide": "maitrise",
+      "items": [
+        "Kolizéum : les anciennes équipes de défense envoyées avant la 2.0 ne gardent plus les bonus des Éveils, qui n'existent plus",
+        "Arbre de Maîtrise : la page ne s'alourdit plus à chaque affichage, et elle relit bien l'arbre après un changement de partie ou une restauration de sauvegarde",
+        "Premiers des donjons : un compte en vérification ne prend plus de Premier tant que Xener n'a pas regardé, comme pour les autres Premiers"
+      ]
+    },
     {
       "v": "2.0.9",
       "name": "Clés de voûte reliées",

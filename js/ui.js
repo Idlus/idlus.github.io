@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.9";
+const GAME_VERSION = "2.0.10";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.10", name: "Derniers bugs de la Maîtrise", guide: "maitrise", items: [
+    "Kolizéum : les anciennes équipes de défense envoyées avant la 2.0 ne gardent plus les bonus des Éveils, qui n'existent plus",
+    "Arbre de Maîtrise : la page ne s'alourdit plus à chaque affichage, et elle relit bien l'arbre après un changement de partie ou une restauration de sauvegarde",
+    "Premiers des donjons : un compte en vérification ne prend plus de Premier tant que Xener n'a pas regardé, comme pour les autres Premiers"
+  ] },
   { v: "2.0.9", name: "Clés de voûte reliées", guide: "maitrise", items: [
     "Maîtrise : dans les 19 ciels, les 3 clés de voûte de chaque domaine sont reliées par le dernier cercle, comme celles du Feu. Plus besoin de redescendre vers le cœur pour passer de l'une à l'autre. Les étoiles déjà prises ne changent pas"
   ] },

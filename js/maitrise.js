@@ -119,10 +119,11 @@
   const center = () => { st.z = Math.min(W, H) / 760; st.ox = 0; st.oy = 0; draw(); };
   const fitAll = () => { const N = T().N.filter((n) => !(n.neb && !nebOpen())); let a = 1e9, b = -1e9, c2 = 1e9, d = -1e9; N.forEach((n) => { a = Math.min(a, n.X); b = Math.max(b, n.X); c2 = Math.min(c2, n.Y); d = Math.max(d, n.Y); }); st.z = Math.min(W / (b - a + 160), H / (d - c2 + 160)); st.ox = -(a + b) / 2; st.oy = -(c2 + d) / 2; draw(); };
   const pick = (mx, my) => { let best = null, bd = 1e9; for (const n of T().N) { if (n.neb && !nebOpen()) continue; const [x, y] = toS(n); const dd = Math.hypot(x - mx, y - my); if (dd < Math.max(16, rad(n) + 10) && dd < bd) { bd = dd; best = n.id; } } return best; };
+  let RO = null;
   function mount() {
     const box = document.getElementById("mtCv"); if (!box) return; cv = box.querySelector("canvas"); g = cv.getContext("2d");
     const resize = () => { dpr = Math.min(2, devicePixelRatio || 1); W = box.clientWidth; H = box.clientHeight; cv.width = W * dpr; cv.height = H * dpr; if (!st.z) center(); else draw(); };
-    new ResizeObserver(resize).observe(box); resize();
+    if (RO) RO.disconnect(); RO = new ResizeObserver(resize); RO.observe(box); resize(); /* 2.0.10 : un seul observateur (avant : un de plus à chaque affichage de la page) */
     /* 2.0.4 : position du pointeur en pixels du dessin, même avec le zoom de l'interface (Options) : offsetX se décalait avec le zoom */
     const P = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * (W / (r.width || W)), (e.clientY - r.top) * (H / (r.height || H))]; };
     const ptrs = new Map(); let drag = null, moved = 0, pinch = null;
@@ -242,7 +243,7 @@
 
   function page(main) {
     const c = hero(); if (!c) { main.innerHTML = `<div class="empty">Recrute un héros d'abord.</div>`; return; }
-    const key = `${st.cid}:${st.view}:${E.mt(c).lo}`; if (key !== st.key) { st.key = key; loadGot(); st.sel = null; st.hov = null; st.cmp = null; }
+    const key = `${st.cid}:${st.view}:${E.mt(c).lo}`; if (key !== st.key || st.M !== E.mt(c)) { st.key = key; st.M = E.mt(c); st.hist = []; loadGot(); st.sel = null; st.hov = null; st.cmp = null; }
     main.innerHTML = `<section class="panel mt-page"><div class="phead"><h2>${IC("cristal")} Maîtrise</h2><span class="seg">${[["arbre", "Arbre"], ["best", "Bestiaire"], ["rank", "Classement"]].map(([v, n]) => `<button data-act="mt-tab" data-v="${v}" aria-pressed="${st.tab === v}">${n}</button>`).join("")}</span></div>
       ${st.tab === "best" ? bestHtml() : st.tab === "rank" ? rankHtml() : treeHtml()}</section>`;
     if (st.tab === "arbre") mount();

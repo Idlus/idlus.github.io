@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
   const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
     db.from("saves").select("data").eq("user_id", user.id).maybeSingle(),
-    db.from("ladder").select("flagged").eq("user_id", user.id).maybeSingle(),
+    db.from("ladder").select("flagged,suspect").eq("user_id", user.id).maybeSingle(),
     db.from("profiles").select("pseudo").eq("id", user.id).maybeSingle(),
   ]);
   if (!save || !prof) return json({ ok: false, err: "aucune partie en ligne" }, 404);
@@ -101,13 +101,15 @@ Deno.serve(async (req) => {
   }
 
   // les « Premiers » : stasis 10, et 1.1 : stasis 15 (une stasis 15 compte aussi pour la 10 si personne ne l'avait)
-  for (const fk of [10, 15]) if (k >= fk) {
+  // 2.0.10 : un compte « en vérification » (suspect) ne prend pas de Premier tant que Mathis n'a pas regardé, comme pour les autres Premiers
+  const sus = !!(lad && lad.suspect);
+  if (!sus) for (const fk of [10, 15]) if (k >= fk) {
     const { error } = await db.from("firsts").insert({ kind: "s" + fk, key: did, label: `Premier en stasis ${fk} : ${dg.name}`, user_id: user.id, pseudo: prof.pseudo, at: new Date(now).toISOString() });
     if (!error && fk === k) out.first = true;
   }
   // Premiers depuis les sorts des boss : le premier compte à terminer chaque stasis de chaque donjon pendant la saison
   // (firsts, kind « sb », key « donjon:stasis »). Une stasis plus haute prend aussi les stasis en dessous encore libres.
-  if (E.STASIS_SAISON) {
+  if (E.STASIS_SAISON && !sus) {
     const rows = [];
     for (let j = 1; j <= k; j++) rows.push({ kind: "sb", key: `${did}:${j}`, label: `Premier en stasis ${j} depuis les sorts des boss : ${dg.name}`, user_id: user.id, pseudo: prof.pseudo, at: new Date(now).toISOString() });
     const { data: won } = await db.from("firsts").upsert(rows, { onConflict: "kind,key", ignoreDuplicates: true }).select("key");

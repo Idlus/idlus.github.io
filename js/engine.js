@@ -2181,10 +2181,10 @@
     const chars = [], ents = [];
     [A, B].forEach((T, tm) => T.forEach((h, i) => {
       const id = tm ? 1000000 + i : (opts.ids && opts.ids[i]) || 900000 + i; const st = Object.assign({}, h.st);
-      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), alloc: {}, equip: {}, eveils: h.ev || {} });
+      chars.push({ id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, ren: h.ren, spells: h.sp.map((x) => Object.assign({}, x)), alloc: {}, equip: {}, eveils: {} }); /* 2.0.10 : les Éveils n'existent plus, une ancienne équipe de défense ne les garde pas */
       const hp = Math.max(1, Math.round(st.hpMax));
       ents.push({ side: tm ? "m" : "c", tm, cid: id, name: h.n, cls: h.cls, sex: h.sex, head: h.head, lvl: h.lvl, st, hpMax: hp, hp, hpBase: hp, ini: st.ini || 0,
-        buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.evc || 0, ev: h.ev || {}, mt: h.mt || null, bt: h.bt || null,
+        buffs: [], dots: [], debuffs: [], shield: 0, alive: true, cd: {}, weaken: 0, paLoss: 0, stack: 0, suffer: 0, nCast: 0, els: [], evc: h.mt ? h.evc || 0 : 0, ev: {}, mt: h.mt || null, bt: h.bt || null,
         row: i === 0 ? "f" : "b", dop: tm ? { cls: h.cls, sex: h.sex, head: h.head } : null, koli: true, kp: E.koliPow(h.cls, h.lvl), lg: h.lg || null, dp: h.dp || null, dpBoost: !!h.dpB,
         wsp: h.wp && ITEMS[h.wp.t] ? E.weaponSpellOf(h.cls, h.wp.t, h.wp.e, h.wp.h) : null });
     }));

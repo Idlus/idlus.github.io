@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.10 « Derniers bugs de la Maîtrise »
+
+Anciennes défenses du Kolizéum sans les Éveils ; arbre de Maîtrise sans observateur en double et relu après un changement de partie ; pas de Premier de donjon pour un compte en vérification.
+
 ## 2.0.9 « Clés de voûte reliées »
 
 Maîtrise : dans les 19 ciels, les 3 clés de voûte de chaque domaine sont reliées par le dernier cercle (129 étoiles de passage ajoutées, les étoiles déjà prises ne changent pas).
