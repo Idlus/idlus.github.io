@@ -1,6 +1,17 @@
 {
-  "version": "1.2.5.5",
+  "version": "1.2.6",
   "versions": [
+    {
+      "v": "1.2.6",
+      "name": "L’identité des sorts",
+      "items": [
+        "Chacun des 836 sorts a maintenant sa propre mécanique, tirée de sa description DOFUS : cumul, retardement, piège, glyphe, bombe, portail, carte piochée, téléportation… Deux sorts d’une même classe ne se ressemblent plus.",
+        "Fiche du sort : un bloc « Identité du sort » explique sa mécanique en une phrase.",
+        "Combat : chaque sort lance son motif (flèche, bombe, carte, horloge…) et ses mécaniques se voient à l’écran. En vue Formation, l’icône du sort jaillit au-dessus du héros.",
+        "Combat : les noms des sorts et des attaques de boss ne s’affichent plus, l’animation suffit. Ils restent sur la fiche du sort et dans le Grimoire.",
+        "Équilibrage vérifié par simulation : la puissance des équipes reste presque la même."
+      ]
+    },
     {
       "v": "1.2.5.5",
       "name": "Plusieurs familles ouvertes",

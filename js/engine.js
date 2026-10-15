@@ -1344,7 +1344,7 @@
   };
 
   const newRound = (F) => {
-    const ini = (e) => e.ini + (F.round === 1 && (e.cls === "cra" || e.expFirst) ? 1e7 : 0);
+    const ini = (e) => e.ini + (F.round === 1 && (e.cls === "cra" || e.expFirst) ? 1e7 : 0) + (e.idFirst === F.round ? 1e7 : 0); // identité : Élan
     F.order = F.ents.filter((e) => e.alive).sort((a, b) => (a.slowR === F.round) - (b.slowR === F.round) || ini(b) - ini(a)).map((e) => F.ents.indexOf(e));
     F.oi = 0;
     if (F.round === 1 && F.idol && F.idol.major) F.order = F.order.concat(F.order.filter((i) => F.ents[i].side === "m")); // idole Major
@@ -1423,6 +1423,7 @@
       const link = tgt.mech.includes("liens") ? alive(F, "m").find((m) => m.linked) : null; if (link) share(link);
       else if (tgt.mech.includes("sacrifice")) { const ms = alive(F, "m").filter((m) => m.minion); if (ms.length) share(pick(ms)); }
     }
+    if (F && E.idDef && (tgt.idHalf || tgt.idGuard || (src && src.idn && src.idn.trap))) v = Math.max(1, Math.round(E.idDef(F, src, tgt, v))); // identité : esquive, garde, piège
     if (tgt.shield > 0) { const a = Math.min(tgt.shield, v); tgt.shield -= a; v -= a; }
     tgt.hp -= v;
     if (F) trackHit(F, src, tgt, v, el);
@@ -1478,7 +1479,7 @@
     const pui = e.st.pui + buffSum(e, "pui");
     let v = rf(f.min, f.max) * E.DMG_SCALE * (1 + Math.max(-50, stat + pui) / 100) + e.st.do + buffSum(e, "do") + (e.st[E2.dmg] || 0);
     const wc = e.wcast; // 0.1.53 : coup d'arme en cours
-    let crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri") + (wc && wc.wfx === "precis" ? 10 : 0));
+    let crit = !(F && F.idol && F.idol.noCrit) && rnd() * 100 < Math.min(60, 5 + e.st.cri + buffSum(e, "cri") + (wc && wc.wfx === "precis" ? 10 : 0) + (e.idCrit || 0)); // identité : Critique
     if (crit) v = v * 1.25 + 3 + (e.st.dcri || 0) + buffSum(e, "dcri") + (wc ? (wc.ccb || 0) * E.DMG_SCALE * E.WEAPON.mult : 0);
     if (wc && wc.wfx === "grace" && tgt && tgt.hp < tgt.hpMax * 0.3) v *= 1.25;
     if (e.lg && E.legDmg) { const o = E.legDmg(F, e, tgt, el, crit, v); v = o.v; crit = o.crit; } // 0.1.48 : passifs des légendaires
@@ -1514,6 +1515,7 @@
   const doHeal = (t, v, F) => {
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
     if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
+    if (t.side === "m" && E.idHealIn) v *= E.idHealIn(t); // identité : Érosion
     if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
     if (F && E.dofpHealIn && F.actor && F.actor.side === t.side && (t.dp || F.actor.dp)) v *= E.dofpHealIn(F, t) * E.dofpHealOut(F, F.actor); // 1.0.16 : Kaliptus, Dofawa
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
@@ -1605,6 +1607,7 @@
     if (e.cls === "hupper" && (e.els || []).length >= 4) { classMult *= 1.3 + 0.1 * (e.evc || 0); e.els = []; }
     if (e.cls === "eni" && e.eniDmg && kind !== "heal") { classMult *= 1.15 + 0.05 * (e.evc || 0); e.eniDmg = false; }
     let leech = 0; let dealt = 0; const hitIdx = [];
+    const idc = E.idPre ? E.idPre(F, e, sp, g, parts) : null; if (idc && idc.crit) e.idCrit = idc.crit; // identité des sorts (js/identite.js)
     for (const f of g.fx) {
       if (f.k === "leech") { leech = f.v; continue; }
       if (f.k === "dmg" || f.k === "drain" || f.k === "dot") {
@@ -1616,11 +1619,11 @@
         if (f.k === "dot") m *= 0.55 * (e.cls === "sram" ? 1.25 + 0.1 * (e.evc || 0) : 1) * (e.cls === "roub" ? 1.15 : 1);
         const vals = [];
         ts.forEach((t) => {
-          const r = charDamage(S, F, e, f, m * classMult, t);
+          const r = charDamage(S, F, e, f, m * classMult * (idc ? E.idMul(F, e, idc, t, f) : 1), t);
           if (f.k === "dot" && t.noDot) vals.push("immunisé"); else if (f.k === "dot") { if (e.cls === "sadi") { const mine = t.dots.filter((x) => x.src === e.name); if (mine.length >= 3 + (e.evc || 0)) t.dots.splice(t.dots.indexOf(mine[0]), 1); } t.dots.push({ v: r.v, turns: f.t || 2, el: r.el, src: e.name }); vals.push(`poison ${Math.round(r.v)}×${f.t || 2}`); }
           else { const d = dealDamage(F, e, t, r.v, r.el); dealt += d;
             if (r.crit) { const lf = F.fx[F.fx.length - 1]; if (lf && lf.k === "hit" && lf.t === F.ents.indexOf(t)) lf.crit = true; }
-            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; }
+            if (e.cls === "enu" && f.n === 1 && t.alive && t.pelle !== F.round && rnd() < 0.1 + 0.05 * (e.evc || 0)) { t.pelle = F.round; t.paLoss = Math.min(3, (t.paLoss || 0) + 1); vals.push("Pelle ! −1 PA"); } vals.push(`−${d}${r.crit ? "!" : ""}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.cls === "cra" && f.n === 1 && t.alive) t.mark = 2; if (idc) E.idHit(F, e, idc, t, d, f, vals); }
           hitIdx.push(F.ents.indexOf(t));
           if (!e.els.includes(r.el)) e.els.push(r.el);
           const ce = chal(F, "elementaire"); if (ce && r.el && e.cid !== undefined) { const ek = F.cs.el = F.cs.el || {}; if (!ek[e.cid]) ek[e.cid] = r.el; else if (ek[e.cid] !== r.el) failChal(F, "elementaire", `${e.name} a utilisé deux éléments`); }
@@ -1653,6 +1656,7 @@
     if (e.cls === "iop" && dealt) doHeal(e, dealt * 0.08, F); // Vigueur
     if (e.cls === "elio" && dealt) { if (!e.portal && g.fx.some((f) => f.n > 1 && ["dmg", "drain", "dot"].includes(f.k))) { e.portal = true; e.shield = Math.max(e.shield || 0, Math.round(e.hpMax * 0.08)); parts.push("bouclier de portail"); } doHeal(e, dealt * 0.1, F); }
     if (leech && dealt) { const h = doHeal(e, dealt * leech / 100, F); if (h) parts.push(`+${h} PV`); failChal(F, "incurable", "vol de vie"); }
+    if (idc && ok) extraPa += E.idPost(F, e, idc, g, dealt, hitIdx, parts); e.idCrit = 0;
     if (sp.wp && ok) weaponFx(S, F, e, sp, dealt, hitIdx, parts);
     e.wcast = null;
     if (!ok) return { ok: false };
@@ -2029,6 +2033,7 @@
   };
 
   const startOfTurn = (S, F, e) => {
+    if (E.idTurn && (e.idn || e.idRegen || F.idGly) && !E.idTurn(F, e)) { flog(F, `${e.name} est vaincu.`, "ko"); return false; } // identité : retardement, bombes, glyphes
     e.dots = e.dots.filter((d) => {
       F.dotSrc = e.side === "m" && d.src ? F.ents.find((x) => x.side === "c" && !x.summon && x.name === d.src) || null : null;
       const v = dealDamage(F, null, e, d.v, d.el); F.dotSrc = null;

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.6 « L'identité des sorts »
+
+Chacun des 836 sorts a sa propre mécanique tirée de sa description DOFUS (cumul, retardement, piège, glyphe, bombe, portail, téléportation…) et son motif animé en combat. La fiche du sort l'explique dans un bloc « Identité du sort ». Les noms des sorts et des attaques de boss ne s'affichent plus pendant le combat. Puissance des équipes vérifiée par simulation (bon équipement 6,35 → 6,46 de stasis).
+
 ## 1.2.5.5 « Plusieurs familles ouvertes »
 
 Menu principal et sommaire du guide : plusieurs familles ouvertes à la fois, état gardé sur l'appareil (`idlus-menu-familles`, `idlus-guide-familles` dans localStorage) ; la famille de la page affichée s'ouvre, rien ne se referme tout seul.

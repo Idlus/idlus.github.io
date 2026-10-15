@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.5.5";
+const GAME_VERSION = "1.2.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.6", name: "L’identité des sorts", items: [
+    "Chacun des 836 sorts a maintenant sa propre mécanique, tirée de sa description DOFUS : cumul, retardement, piège, glyphe, bombe, portail, carte piochée, téléportation… Deux sorts d’une même classe ne se ressemblent plus.",
+    "Fiche du sort : un bloc « Identité du sort » explique sa mécanique en une phrase.",
+    "Combat : chaque sort lance son motif (flèche, bombe, carte, horloge…) et ses mécaniques se voient à l’écran. En vue Formation, l’icône du sort jaillit au-dessus du héros.",
+    "Combat : les noms des sorts et des attaques de boss ne s’affichent plus, l’animation suffit. Ils restent sur la fiche du sort et dans le Grimoire.",
+    "Équilibrage vérifié par simulation : la puissance des équipes reste presque la même." ] },
   { v: "1.2.5.5", name: "Plusieurs familles ouvertes", items: [
     "Menu principal : plusieurs familles peuvent être ouvertes en même temps ; chacune s'ouvre et se ferme seule et reste comme tu l'as laissée (gardé sur l'appareil)",
     "Guide : pareil pour le sommaire, les familles ouvertes restent ouvertes quand tu changes de chapitre",
@@ -4019,12 +4025,6 @@ function axZone(A, src, sn, nodes, el, sp) {
   w.animate([{ left: a.x + "px", opacity: 0 }, { opacity: 1, offset: 0.15 }, { left: end + "px", opacity: 0.3 }], { duration: dur, easing: "ease-in", fill: "forwards" }); axLater(w, dur + 20);
   return (n) => dur * Math.pow(Math.min(1, Math.abs(axPt(A, n).x - a.x) / Math.max(1, Math.abs(end - a.x))), 1.5);
 }
-function axSpellTag(A, n, name, el) {
-  if (!axOn()) return; const a = A.el.getBoundingClientRect(), r = axBody(n).getBoundingClientRect();
-  if (n._tag) n._tag.remove();
-  const d = axMk(A, "spelltag", r.left - a.left + r.width / 2, r.top - a.top - 4, { "--c": axC(el) }); d.innerHTML = `<i></i>${h(name)}`; n._tag = d;
-  const hw = d.offsetWidth / 2, W = A.el.clientWidth; d.style.left = Math.min(W - hw - 4, Math.max(hw + 4, r.left - a.left + r.width / 2)) + "px"; axLater(d, 1150);
-}
 function axMechBanner(A, txt, who) {
   if (!axOn()) return; const charge = /Charge/.test(txt) && /⚠/.test(txt);
   const d = document.createElement("div"); d.className = "axbanner" + (charge ? " warn" : "");
@@ -4123,7 +4123,7 @@ function axEvent(F, A, f) {
   } else if (f.k === "heal") { if (!n) return; floatAt(n, "+" + f.v, "#7ee06a");
     if (axOn()) { const p = axPt(A, n, 0.6); for (let i = 0; i < (axFull() ? 8 : 4); i++) { const s = axMk(A, "streak", p.x + axRnd(-24, 24), p.y + axRnd(-12, 12), { "--c": "#b6ff8a" }); s.style.animationDelay = i * 40 + "ms"; axLater(s, 1100); } const r = axMk(A, "ring", p.x, p.y, { "--c": "#8fe36a" }); axLater(r, 520); }
     else burst(n, "h");
-  } else if (f.k === "buff") { if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true); anBuff(A, n, F.ents[f.t], f.txt);
+  } else if (f.k === "buff") { if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (!n || A.view === "compact") return; if (!f.idx) floatAt(n, f.txt, "var(--gold2)", true); if (f.idx && window.anIdTrig) { window.anIdTrig(F, A, f, n); return; } anBuff(A, n, F.ents[f.t], f.txt);
     const e = F.ents[f.t]; if (e && e.side === "m" && e.mech && !/^[+−-]|^Bouclier|^Esquive|^Invulnérable|^Condamné/.test(f.txt) && !(axFull() && bxFor(e, f.txt))) axMechBanner(A, f.txt, e.name);
   } else if (f.k === "phase") { const e = F.ents[f.t]; if (e && e.mech && e.mech.includes("immortel") && e.revived && axFull() && n) bxRun(F, A, e, n, [], [], "n", BXM.immortel, null); else phaseFlash(); }
 }
@@ -4751,7 +4751,6 @@ function axGroup(F, A, g) {
   const hits = g.filter((f) => f.k === "hit" && f.s === s && f.t !== s), rest = g.filter((f) => f !== cast && !hits.includes(f));
   const def = src && src.side === "c" && cast.sp && src.cls && !src.summon ? E.spellDef(src.cls, cast.sp) : null;
   const el = hits.length ? hits[0].el || "n" : g.some((f) => f.k === "heal") ? "h" : "n";
-  if (def && sn) axSpellTag(A, sn, def.name, el);
   if (src && src.side === "c" && !src.summon && sgPlay(F, A, def, src, sn, hits, rest, el)) return; // sort signature : animation unique
   const go = (hs, rs) => axPlain(F, A, src, sn, hs || hits, rs || rest, el, def, sp);
   if (src && src.side === "m" && src.mech && sn && axFull() && bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go)) return; // boss mis en scène
@@ -4761,7 +4760,7 @@ function axGroup(F, A, g) {
 function axPlain(F, A, src, sn, hits, rest, el, def, sp) {
   const tg = [...new Set(hits.map((f) => f.t))].filter((t) => A.nodes[t]);
   if (src && src.side === "m" && sn && tg.length === 1 && axFull()) { const fam = bxFamOf(src); // famille de monstres : attaque à sa façon
-    if (fam) { const tn = A.nodes[tg[0]]; const d = bxRun(F, A, src, sn, hits, [], el, (c) => fam[3](c, tn), null); if (d) { axSpellTag(A, sn, fam[1], fam[2] || el); A.sgHold = Date.now() + d; rest.forEach((f) => setTimeout(() => { if (!(f.k === "hit" && bxReact(F, A, f))) axEvent(F, A, f); }, Math.min(d, 300))); return; } } }
+    if (fam) { const tn = A.nodes[tg[0]]; const d = bxRun(F, A, src, sn, hits, [], el, (c) => fam[3](c, tn), null); if (d) { A.sgHold = Date.now() + d; rest.forEach((f) => setTimeout(() => { if (!(f.k === "hit" && bxReact(F, A, f))) axEvent(F, A, f); }, Math.min(d, 300))); return; } } }
   let when = () => 0;
   if (sn && src && tg.length === 1) { const d = axSingle(A, src, sn, A.nodes[tg[0]], el, def, sp); when = () => d; }
   else if (sn && src && tg.length > 1) { const fn = axZone(A, src, sn, tg.map((t) => A.nodes[t]), el, sp); when = (f) => fn(A.nodes[f.t]); }
@@ -4769,6 +4768,7 @@ function axPlain(F, A, src, sn, hits, rest, el, def, sp) {
   const late = tg.length ? when({ t: tg[0] }) : 0;
   hits.forEach((f) => setTimeout(() => axEvent(F, A, f), when(f)));
   if (def && src && src.side === "c" && sn && anOn(A)) anFx(F, A, src, sn, def, hits, when); // effets visibles
+  if (def && src && src.side === "c" && sn && anOn(A) && window.anId) window.anId(F, A, src, sn, def, hits, when); // identité du sort : son motif (js/animid.js)
   rest.forEach((f) => setTimeout(() => { if (!(f.k === "hit" && bxReact(F, A, f))) axEvent(F, A, f); }, f.k === "hit" ? late : Math.min(late, 200 * sp)));
 }
 /* chute d'un monstre (fumée, kamas) ; tombe d'un héros */
@@ -4965,7 +4965,7 @@ function updateCombat(force) {
         const run = (g) => { const b = Math.max(0, (A.sgHold || 0) - Date.now()); if (b) setTimeout(() => run(g), b); else axGroup(F, A, g); }; // un sort signature en cours retient les actions suivantes
         gs.forEach((g, k) => (k ? setTimeout(() => run(g), k * gap) : run(g)));
       } else fresh.forEach((f) => {
-        if (f.k === "cast") pulse(A.nodes[f.s], "act");
+        if (f.k === "cast") { pulse(A.nodes[f.s], "act"); if (A.view === "form" && axOn()) idFormTag(F, A, f); }
         else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
         else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) { floatAt(n, "+" + f.v, "#7ee06a"); burst(n, "h"); } }
         else if (f.k === "buff") { const n = A.nodes[f.t]; if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (n && A.view !== "compact") floatAt(n, f.txt, "var(--gold2)", true); }
@@ -6028,6 +6028,19 @@ function spCondHtml(c, x, sp) { // 1.0.31 : seulement les choix utiles pour ce t
   const tg = ["dmg", "dot", "drain", "debuff"].includes(k) ? `<div class="splab">Sur quel ennemi ?</div><div class="cradio">${Object.entries(TGT_PHRASE).map(([v, n]) => `<button class="${(x.tgt || "low") === v ? "on" : ""}" data-act="sptgtc" data-k="${v}"><i></i>${n}</button>`).join("")}</div>` : "";
   return `<div class="splab">Quand le lancer ?</div><div class="cradio">${list.map((v) => `<button class="${cur === v ? "on" : ""}" data-act="spcondc" data-k="${v}"><i></i>${COND_PHRASE[v]}</button>`).join("")}</div>${tg}`;
 }
+/* identité du sort (js/identite.js) : ses mécaniques propres, tirées de sa description DOFUS */
+const ID_ICO = { cumul: "📈", retard: "⏳", etat: "🔖", contagion: "🦠", erosion: "🩸", vol: "🫳", sape: "📉", crit: "✴️", contact: "⚔️", recul: "↩️", attire: "🧲", tp: "✨", telefrag: "💥", piege: "🪤", glyphe: "🔯", bombe: "💣", portail: "🌀", relance: "🔁", elan: "💨", entrave: "⛓️", garde: "🛡️", regen: "🌿", sacrifice: "🩸", hasard: "🎲", pioche: "🃏", rune: "🔷", acharne: "🐺", pleine: "🎯", puissance: "💪", execute: "☠️", premier: "🗡️", percegarde: "🔨", echo: "〰️", brulure: "👣", soutien: "💚", bouclier: "🧱", invoc: "🐾", poussee: "👊", retraitpa: "🐌", volvie: "❤️" };
+function spIdHtml(sp) {
+  const L = E.idText ? E.idText(sp) : []; if (!L.length) return "";
+  return `<div class="spid"><div class="splab">Identité du sort</div>${L.map((t) => `<div class="spidr"><span class="spidi">${ID_ICO[t.k] || "◆"}</span><span><b>${h(t.n)}</b> : ${h(t.d)}</span></div>`).join("")}</div>`;
+}
+/* vue Formation : l'icône du sort lancé jaillit au-dessus du héros avec sa mécanique (identité du sort) */
+function idFormTag(F, A, f) {
+  const e = F.ents[f.s], n = A.nodes[f.s]; if (!e || !n || e.side !== "c" || e.summon || !f.sp || !e.cls) return;
+  const def = E.spellDef(e.cls, f.sp); const t = def && E.idText ? E.idText(def)[0] : null; if (!t) return;
+  const old = n.querySelector(".idftag"); if (old) old.remove();
+  const d = document.createElement("span"); d.className = "idftag"; d.innerHTML = `${spIcon(def)}<b>${ID_ICO[t.k] || "◆"}</b>`; d.title = t.n; n.appendChild(d); setTimeout(() => d.remove(), 1300);
+}
 function spCardNew(c, sp, x, i) {
   const s = spSentence(c, sp); const other = CLASSES[c.cls].spells.find((o) => o.pair === sp.pair && o.id !== sp.id);
   const dbl = sp.lvl <= c.lvl ? spDouble(c, sp) : null;
@@ -6038,6 +6051,7 @@ function spCardNew(c, sp, x, i) {
   return `<div class="spdet spnew">
     <div class="row" style="gap:10px;flex-wrap:nowrap">${spIcon(sp)}<div class="grow" style="min-width:0"><h2>${h(sp.name)}</h2>${roleBadge(c, sp)}</div></div>
     <p class="spsent">${s.txt}</p>
+    ${spIdHtml(sp)}
     <div class="spuse">${s.use.map((u) => `<span>${u}</span>`).join("")}${s.perTurn ? `<span class="hi">≈ ${fmt(s.perTurn)} par tour</span>` : ""}</div>
     ${dbl ? `<div class="spdbl">⚠ <b>${h(dbl.name)}</b> fait plus de dégâts par PA dans le même élément : ce sort sera rarement choisi.</div>` : ""}
     ${fxRows}
@@ -10640,7 +10654,7 @@ Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "f
 Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
-window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun }; // 1.0.36 : js/animsorts.js complète les sorts et boss animés
+window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun, axBody, axC, ID_ICO }; // 1.0.36 : js/animsorts.js complète les sorts et boss animés
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 start();
 })();
