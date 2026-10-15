@@ -161,7 +161,7 @@
      niveau compté au plus 10 au-dessus de la zone). txp vient du serveur (rang × poche / 100). */
   E.percoTeamXp = (S, txp, zl) => {
     let tot = 0; if (!(txp > 0)) return 0;
-    E.team(S).forEach((c) => { if (c.lvl >= E.MAX_LVL) return; const g = Math.round(E.xpNeed(Math.min(c.lvl, (zl || c.lvl) + 10)) * Math.min(0.2, txp)); if (g > 0) { E.giveXp(S, c, g); tot += g; } });
+    E.team(S).forEach((c) => { if (c.lvl >= E.MAX_LVL) return; const g = Math.round(E.heroXpNeed(c, Math.min(c.lvl, (zl || c.lvl) + 10)) * Math.min(0.2, txp)); if (g > 0) { E.giveXp(S, c, g); tot += g; } });
     return tot;
   };
 

@@ -17,7 +17,7 @@
   const addRes = (S, n, q) => E.addRes(S, n, q);
   const giveTeamXp = (S, pctOfLevel) => {
     const list = E.team(S).length ? E.team(S) : S.chars;
-    list.forEach((c) => E.giveXp(S, c, Math.round(E.xpNeed(c.lvl) * pctOfLevel)));
+    list.forEach((c) => E.giveXp(S, c, Math.round(E.heroXpNeed(c) * pctOfLevel)));
   };
 
   /* ---------------- Havre-Sac : améliorations permanentes payées en kamas ---------------- */

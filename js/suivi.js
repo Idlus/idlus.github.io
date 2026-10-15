@@ -118,7 +118,7 @@
     C.kLast = S.kamas; C.tag = 0; C.hop = (S.hdv && S.hdv.op) || 0;
     return r;
   };
-  const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.xpNeed(l); return s + x; }, 0);
+  const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.heroXpNeed(c, l); return s + x; }, 0);
   const catch0 = E.catchUp;
   E.catchUp = (S, seconds) => {
     if (!live(S)) return catch0(S, seconds);

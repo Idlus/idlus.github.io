@@ -2,8 +2,9 @@
    RENAISSANCE (0.1.12) — Idlus
    Un héros niveau 200 peut renaître à la Statue du Phénix : il repart au niveau 1 en gardant
    son apparence, ses titres et ornements, ses Dofus et trophées (toujours équipés), son familier,
-   sa monture et ses parchemins. Son équipement est rangé dans le sac. Chaque renaissance donne
-   +30 % d'XP à ce héros (hors plafond commun) et un Éveil : 8 Éveils communs en 3 rangs, ou
+   sa monture et ses parchemins. Son équipement est rangé dans le sac. Chaque renaissance demande
+   +50 % d'XP par niveau (1.0.35 « Vies plus longues », avant : +30 % d'XP), apprend un sort d'une autre
+   classe (« Mémoire des vies », au choix parmi 3) et donne un Éveil : 8 Éveils communs en 3 rangs, ou
    l'Éveil de classe (renaissances V et X) qui renforce le passif de la classe. 10 renaissances au plus.
    Récompenses visibles : médaillon du Phénix, aura, titres aux renaissances I, V et X, ornement à X.
    ========================================================================== */
@@ -70,6 +71,28 @@
     return EVEIL_ORDER.filter((id) => E.eveil(c, id) < E.EVEIL_MAX).map((id) => [id, E.eveil(c, id)]);
   };
 
+  /* 1.0.35 « Mémoire des vies » : à chaque renaissance, le héros apprend pour toujours un sort d'une autre classe,
+     au choix parmi 3 (3 classes différentes, sans invocation). Il en équipe 1 (Ren I à IV), 2 (dès la V) ou 3 (à la X). */
+  const isSummon = (sp) => sp.grades.some((g) => g.fx.some((f) => f.k === "summon"));
+  E.memPool = (c) => { const out = []; for (const k in CLASSES) if (k !== c.cls) CLASSES[k].spells.forEach((sp) => { if (!isSummon(sp) && !(c.mem || []).includes(sp.id)) out.push(sp); }); return out; };
+  E.memOffer = (S, c) => {
+    if (!c || !(c.memPend > 0)) return null;
+    if (c.memOffer && c.memOffer.length && c.memOffer.every((id) => E.memDef(id) && !(c.mem || []).includes(id))) return c.memOffer;
+    const pool = E.memPool(c); const byCls = {}; pool.forEach((sp) => (byCls[E.spellCls(sp.id)] = byCls[E.spellCls(sp.id)] || []).push(sp));
+    const ks = Object.keys(byCls); const pick = [];
+    while (pick.length < 3 && ks.length) { const k = ks.splice(Math.floor(E.rnd() * ks.length), 1)[0]; const l = byCls[k]; pick.push(l[Math.floor(E.rnd() * l.length)].id); }
+    c.memOffer = pick; return pick;
+  };
+  E.memPick = (S, cid, id) => {
+    const c = S.chars.find((x) => x.id === cid);
+    if (!c || !(c.memPend > 0)) return "Aucun sort à apprendre.";
+    const off = E.memOffer(S, c); if (!off || !off.includes(id)) return "Choisissez un des 3 sorts proposés.";
+    c.mem = c.mem || []; c.mem.push(id); c.memPend--; c.memOffer = null;
+    E.refreshSpells(c, E.charStats(S, c));
+    const d = E.memDef(id); E.note(S, `${c.name} se souvient de « ${d.name} » (${CLASSES[d.mem].name})${d.lvl > c.lvl ? `, utilisable dès le niveau ${d.lvl}` : ""}.`, "rare");
+    return null;
+  };
+
   E.renaissance = (S, cid, eveilId) => {
     const c = S.chars.find((x) => x.id === cid);
     const err = E.canRenaissance(S, c); if (err) return err;
@@ -77,6 +100,7 @@
     c.ren = (c.ren || 0) + 1; c.eveils = c.eveils || {}; c.eveils[eveilId] = (c.eveils[eveilId] || 0) + 1;
     // l'équipement retourne au sac, sauf les Dofus et trophées
     let stored = 0; for (const slot in c.equip) if (!DOFUS_SLOTS.includes(slot)) { delete c.equip[slot]; stored++; }
+    c.memPend = (c.memPend || 0) + 1; c.memOffer = null; // 1.0.35 : Mémoire des vies
     c.lvl = 1; c.xp = 0; c.pts = 0; Object.keys(c.alloc).forEach((k) => (c.alloc[k] = 0));
     c.spells = []; c.presets = c.presets || []; E.refreshSpells(c, E.charStats(S, c));
     // récompenses
@@ -85,7 +109,7 @@
     if (c.ren >= E.REN_MAX) S.unlocks.phenix = 1;
     S.stats.ren = (S.stats.ren || 0) + 1;
     const evName = eveilId === "classe" ? "Éveil de classe" : EVEILS[eveilId].name;
-    E.note(S, `${c.name} renaît (Renaissance ${E.roman(c.ren)}) : ${evName} ${E.roman(c.eveils[eveilId])}, +${Math.round(E.REN_XP * 100 * c.ren)} % d'XP.${stored ? ` ${stored} objet${stored > 1 ? "s rangés" : " rangé"} dans le sac.` : ""}`, "rare");
+    E.note(S, `${c.name} renaît (Renaissance ${E.roman(c.ren)}) : ${evName} ${E.roman(c.eveils[eveilId])}, un sort d'une autre classe à apprendre.${stored ? ` ${stored} objet${stored > 1 ? "s rangés" : " rangé"} dans le sac.` : ""}`, "rare");
     E.celebrate({ t: "ren", cid: c.id, n: c.ren, eveil: evName, rank: c.eveils[eveilId], title: t || null });
     E.emit(S, "ren", { cid: c.id, n: c.ren });
     return null;
@@ -93,10 +117,12 @@
 
   /* Bonus total d'un héros, pour l'affichage : [[libellé, valeur], ...] */
   E.renBonuses = (c) => {
-    const out = []; if (c.ren) out.push(["XP du héros", `+${Math.round(E.REN_XP * 100 * c.ren)} %`]);
+    const out = []; if (c.ren) { out.push(["XP par niveau", `+${Math.round(E.REN_NEED * 100 * Math.min(E.REN_MAX, c.ren))} %`]); out.push(["Mémoire des vies", `${(c.mem || []).length} sort${(c.mem || []).length > 1 ? "s" : ""} appris, ${E.MEM_SLOTS(c)} équipable${E.MEM_SLOTS(c) > 1 ? "s" : ""}`]); }
     E.eveilList(c).forEach(([id, r]) => out.push([id === "classe" ? "Éveil de classe" : EVEILS[id].name, id === "classe" ? `rang ${E.roman(r)}` : EVEILS[id].desc(r)]));
     return out;
   };
+
+  if (E.ACTIONS) E.ACTIONS.memPick = "apprendre un sort d'une autre classe (Mémoire des vies)";
 
   if (typeof module !== "undefined") module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);
