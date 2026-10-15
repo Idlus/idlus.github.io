@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0";
+const GAME_VERSION = "2.0.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.1", name: "Étoiles expliquées", guide: "maitrise", items: [
+    "Maîtrise : l'effet d'une étoile s'affiche directement sur l'arbre, au survol sur PC et au premier toucher sur téléphone, avec ce que l'étoile (ou tout le chemin jusqu'à elle) ajoute à vos bonus et son coût en points",
+    "Sur téléphone, un premier toucher montre l'étoile sans la prendre ; on la touche une seconde fois pour la prendre (ou la rendre)"
+  ] },
   { v: "2.0", name: "La Maîtrise", guide: "maitrise", items: [
     "Après le niveau 200, l'expérience remplit la Maîtrise : chaque niveau de Maîtrise donne un point à placer dans la Constellation, un arbre de talents propre à chaque classe (Héros › Maîtrise)",
     "La Constellation : six domaines, des cœurs de classe et des étoiles clés, une Nébuleuse cachée à 1 000 points, 3 arbres enregistrés, lien de partage, recherche et 10 retours en arrière. Réinitialisation gratuite jusqu'à 50 points",

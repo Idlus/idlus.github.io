@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.1 « Étoiles expliquées »
+
+Maîtrise : l'effet de chaque étoile et le gain du chemin s'affichent sur l'arbre (survol sur PC, premier toucher sur téléphone ; second toucher pour prendre).
+
 ## 2.0 « La Maîtrise »
 
 Après le niveau 200, l'expérience remplit la Maîtrise : un point par niveau à placer dans la Constellation, un arbre de talents par classe (six domaines, étoiles clés, Nébuleuse cachée à 1 000 points). Maîtrise du Bestiaire (20 paliers par famille), joyaux de Maîtrise sur les boss de stasis 10+, classement de la Maîtrise, part d'expérience de la monture au choix (0 à 50 %). La Renaissance disparaît : 2 % de l'expérience des vies passées devient de la Maîtrise, 2 points par Éveil et par sort appris, titre « Le Phénix renaît de ses cendres ». Nouveau départ des classements de donjons (« Premiers », titre « Pionnier des boss »). Semaine de la Maîtrise : XP et butin x2 jusqu'au 22 octobre 23 h.

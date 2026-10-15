@@ -49,7 +49,7 @@
   function draw() {
     if (!g || !cv || !cv.isConnected) return; const Tr = T(), N = Tr.N, cc = CLASSES[Tr.cls].color, HIT = hits();
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    const path = st.hov != null && !got.has(st.hov) ? pathTo(st.hov) || [] : []; const ps = new Set(path);
+    const fo = st.hov != null ? st.hov : st.sel; const path = fo != null && !got.has(fo) && canEdit() ? pathTo(fo) || [] : []; const ps = new Set(path);
     /* Nébuleuse */
     { const c0 = [W / 2 + st.ox * st.z, H / 2 + (1880 + st.oy) * st.z], R = 420 * st.z; const gr = g.createRadialGradient(c0[0], c0[1], 0, c0[0], c0[1], R);
       gr.addColorStop(0, nebOpen() ? "rgba(196,155,255,.30)" : "rgba(160,150,200,.22)"); gr.addColorStop(1, "rgba(160,150,200,0)"); g.fillStyle = gr; g.beginPath(); g.arc(c0[0], c0[1], R, 0, TAU); g.fill();
@@ -91,7 +91,25 @@
       if (HIT.has(n.id)) ring(x, y, r + 6); if (n.id === st.sel) ring(x, y, r + 4, "#fff");
       if (((n.t === "ks" || n.t === "cks") && st.z > 0.3) || (n.t === "nt" && st.z > 0.85)) { g.font = `800 ${n.t === "nt" ? 11.5 : 13}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)"; g.strokeText(n.n, x, y - r - 7); g.fillStyle = n.t === "cks" ? "#e2f5ae" : n.t === "ks" ? "#ffd2b0" : "#f6e3b0"; g.fillText(n.n, x, y - r - 7); }
     }
-    if (path.length) { const [x, y] = toS(N[st.hov]); const left = pts() - used(); const t = `${path.length} point${path.length > 1 ? "s" : ""}${path.length > left ? " · à planifier" : ""}`; g.font = "800 12px Nunito, system-ui, sans-serif"; g.textAlign = "left"; g.fillStyle = "rgba(13,16,11,.88)"; g.fillRect(x + 14, y + 6, g.measureText(t).width + 12, 20); g.fillStyle = path.length <= left ? "#e2f5ae" : "#ffb07a"; g.fillText(t, x + 20, y + 20); }
+    tip(fo);
+  }
+  /* 2.0.1 : l'effet d'une étoile s'affiche sur l'arbre, au survol (souris) ou au premier toucher, avec ce que le chemin rapporte */
+  const gainOf = (ids) => { if (!ids.length) return [];
+    if (st.view) { const t = {}; ids.forEach((id) => (T().N[id].b || []).forEach(([k, v]) => (t[k] = (t[k] || 0) + v))); return Object.entries(t); }
+    const A = E.mtStats(S(), hero(), got), B = E.mtStats(S(), hero(), new Set([...got, ...ids]));
+    const ks = B.ks.filter((k) => !A.ks.some((a) => a.n === k.n)).map((k) => ["✦ " + k.n, null]);
+    return ks.concat(Object.keys(B.t).map((k) => [k, B.t[k] - (A.t[k] || 0)]).filter(([, d]) => d > 0.0001).sort((a, b) => b[1] - a[1]))
+      .concat(B.sym && !A.sym ? [["✦ Symbole allumé", null]] : []); };
+  function tip(id) {
+    const el = cv && cv.parentNode.querySelector(".mt-tip"); if (!el) return;
+    if (id == null || T().N[id].t === "start" || (T().N[id].neb && !nebOpen())) { el.hidden = true; return; }
+    const n = T().N[id], on = got.has(id), p = on ? [] : canEdit() ? pathTo(id) || [] : [], left = pts() - used();
+    const gl = gainOf(on || st.view ? [id] : p.length ? p : [id]);
+    const foot = st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
+    el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${TYP[n.t]}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
+    el.hidden = false; const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
+    let lx = x + rad(n) + 12, ly = y - bh / 2; if (lx + bw > W - 8) lx = x - rad(n) - 12 - bw; if (lx < 8) { lx = Math.max(8, Math.min(W - bw - 8, x - bw / 2)); ly = y + rad(n) + 12; if (ly + bh > H - 8) ly = y - rad(n) - 12 - bh; }
+    el.style.left = Math.round(lx) + "px"; el.style.top = Math.round(Math.max(8, Math.min(H - bh - 8, ly))) + "px";
   }
   function ring(x, y, r, col = "#7fffd4") { g.strokeStyle = col; g.lineWidth = 2.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke(); }
   const center = () => { st.z = Math.min(W, H) / 760; st.ox = 0; st.oy = 0; draw(); };
@@ -107,12 +125,12 @@
       if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; st.z = Math.max(0.12, Math.min(3, pinch[1] * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch[0])); moved = 99; draw(); return; }
       if (drag && ptrs.size === 1) { const dx = e.offsetX - drag[0], dy = e.offsetY - drag[1]; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); if (moved > 4) { st.ox = drag[2] + dx / st.z; st.oy = drag[3] + dy / st.z; draw(); } return; }
       if (e.pointerType === "mouse") { const hv = pick(e.offsetX, e.offsetY); if (hv !== st.hov) { st.hov = hv; draw(); } } });
-    const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (drag && moved <= 4 && e.type === "pointerup" && !e.target.closest(".mt-zoom")) { const id = pick(e.offsetX, e.offsetY); if (id != null) clickNode(id); } if (!ptrs.size) drag = null; };
-    box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
+    const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (drag && moved <= 4 && e.type === "pointerup" && !e.target.closest(".mt-zoom")) { const id = pick(e.offsetX, e.offsetY); if (id == null) { if (st.sel != null) { st.sel = null; draw(); } } else if (e.pointerType !== "mouse" && st.sel !== id) { st.sel = id; st.hov = null; side(); draw(); } else clickNode(id); } if (!ptrs.size) drag = null; };
+    box.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse" && st.hov != null) { st.hov = null; draw(); } }); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
     box.addEventListener("wheel", (e) => { e.preventDefault(); const nz = Math.max(0.12, Math.min(3, st.z * Math.exp(-e.deltaY * 0.0015))); const mx = (e.offsetX - W / 2) / st.z - st.ox, my = (e.offsetY - H / 2) / st.z - st.oy; st.z = nz; st.ox = (e.offsetX - W / 2) / st.z - mx; st.oy = (e.offsetY - H / 2) / st.z - my; draw(); }, { passive: false });
   }
   function clickNode(id) {
-    const n = T().N[id]; st.sel = id; st.hov = id;
+    const n = T().N[id]; st.sel = id; if (st.hov != null) st.hov = id;
     if (canEdit() && allowed(id)) { const before = [...got];
       if (got.has(id)) { if (connectedWithout(id)) got.delete(id); } else { const p = pathTo(id); if (p) p.slice(0, Math.max(0, pts() - used())).forEach((x) => got.add(x)); }
       if (got.size !== before.length) { st.hist.push(before); if (st.hist.length > E.MT_UNDO) st.hist.shift(); save(); } }
@@ -168,7 +186,7 @@
     return `<div class="mt-heroes" role="group" aria-label="Héros">${heroes.map((x) => `<button class="mt-hb ${E.mtOn(x) ? "" : "off"}" data-act="mt-hero" data-v="${x.id}" aria-pressed="${!st.view && x.id === c.id}" style="--cc:${CLASSES[x.cls].color}"><img src="${sym(x.cls)}" alt=""><span><b>${h(x.name)}</b><span class="xs">${E.mtOn(x) ? `Maîtrise ${fmt(E.mt(x).lvl)}` : `niv. ${x.lvl}`}</span></span></button>`).join("")}</div>
       <div class="mt-head" style="--cc:${C.color}"><img src="${sym(Tc)}" alt=""><div><h2>Ciel ${h(C.name)}</h2><div class="mt-chips">${f.map((d) => `<span class="mt-chip" style="color:${DOM[d].c}">${DOM[d].n}</span>`).join("")}<span class="mt-chip">Passif : ${h(build(Tc).pas)}</span><span class="mt-chip num">${fmt(build(Tc).N.length)} étoiles</span></div></div>
         <details class="mt-other" ${st.view ? "open" : ""}><summary>Voir une autre classe</summary><div class="mt-cls">${CLS_IDX().map((k) => `<button data-act="mt-view" data-v="${k}" aria-pressed="${Tc === k}" title="${h(CLASSES[k].name)}" aria-label="Ciel ${h(CLASSES[k].name)}"><img src="${sym(k)}" alt=""></button>`).join("")}</div></details></div>
-      <div class="mt-grid"><div class="mt-cv" id="mtCv" style="--cc:${C.color}"><div class="mt-bg">${STARS}</div><canvas></canvas><span class="mt-hint">${st.view ? "Lecture seule" : E.mtOn(c) ? "Touche une étoile pour la prendre" : "La Maîtrise s'ouvre au niveau 200"}</span><div class="mt-zoom"><button class="btn sm" data-act="mt-z" data-v="in" aria-label="Zoomer">+</button><button class="btn sm" data-act="mt-z" data-v="out" aria-label="Dézoomer">−</button><button class="btn sm" data-act="mt-z" data-v="c">Centrer</button><button class="btn sm" data-act="mt-z" data-v="all">Tout voir</button></div></div>
+      <div class="mt-grid"><div class="mt-cv" id="mtCv" style="--cc:${C.color}"><div class="mt-bg">${STARS}</div><canvas></canvas><div class="mt-tip" hidden></div><span class="mt-hint">${st.view ? "Lecture seule : touche une étoile pour voir son effet" : E.mtOn(c) ? (matchMedia("(hover: hover)").matches ? "Survole une étoile pour voir son effet, clique pour la prendre" : "Touche une étoile pour voir son effet, touche-la encore pour la prendre") : "La Maîtrise s'ouvre au niveau 200"}</span><div class="mt-zoom"><button class="btn sm" data-act="mt-z" data-v="in" aria-label="Zoomer">+</button><button class="btn sm" data-act="mt-z" data-v="out" aria-label="Dézoomer">−</button><button class="btn sm" data-act="mt-z" data-v="c">Centrer</button><button class="btn sm" data-act="mt-z" data-v="all">Tout voir</button></div></div>
       <aside class="mt-side" id="mtSide">${sideHtml()}</aside></div>`;
   }
   const STARS = (() => { let sd = 7; const r = () => { sd = (sd * 1103515245 + 12345) & 0x7fffffff; return sd / 0x7fffffff; }; let o = ""; for (let i = 0; i < 110; i++) o += `<i style="left:${(r() * 100).toFixed(1)}%;top:${(r() * 100).toFixed(1)}%;animation-duration:${(2 + r() * 4).toFixed(1)}s;animation-delay:-${(r() * 6).toFixed(1)}s"></i>`; return o + "<b></b><b></b><b></b>"; })();

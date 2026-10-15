@@ -1,6 +1,15 @@
 {
-  "version": "2.0",
+  "version": "2.0.1",
   "versions": [
+    {
+      "v": "2.0.1",
+      "name": "Étoiles expliquées",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : l'effet d'une étoile s'affiche directement sur l'arbre, au survol sur PC et au premier toucher sur téléphone, avec ce que l'étoile (ou tout le chemin jusqu'à elle) ajoute à vos bonus et son coût en points",
+        "Sur téléphone, un premier toucher montre l'étoile sans la prendre ; on la touche une seconde fois pour la prendre (ou la rendre)"
+      ]
+    },
     {
       "v": "2.0",
       "name": "La Maîtrise",

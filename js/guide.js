@@ -382,6 +382,7 @@
       ["kv", [["XP par niveau de Maîtrise", N(() => E.mtNeed())], ["Tout rendre gratuit jusqu'à", N(() => E.MT_FREE) + " points"], ["Ensuite, par point rendu", N(() => E.MT_RESPEC) + " kamas"], ["Nébuleuse cachée", N(() => E.MT_OPEN) + " points"], ["Part de la monture au niveau 200", "0 à 50 %"]]],
       ["ul", [
         "Un **ciel par classe** d'environ 1 500 étoiles : le cœur renforce le passif de la classe (son symbole s'allume quand les 26 étoiles du cœur sont prises), 6 domaines (les deux éléments forts de la classe en haut) et des **clés de voûte** qui changent le style de jeu avec une contrepartie.",
+        "**Voir l'effet d'une étoile** : survole-la sur PC, ou touche-la une fois sur téléphone (une seconde fois pour la prendre). La bulle montre son effet, ce que tout le chemin ajoute et son coût ; le total de l'arbre est dans « Total des bonus ».",
         "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche, chemin planifié et code de partage.",
         "**Joyaux** : ils tombent sur les boss en stasis 10 et plus et se sertissent dans les emplacements ◆.",
         "**Maîtrise du compte** : +1 % d'XP pour tout le compte par tranche de 100 points, tous héros confondus.",
