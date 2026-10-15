@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.34.3 « Cours rééquilibré »
+
+Demande de Mathis (15/10/2026) : « réequilibre le cours des ressources », choix 1A 2B 3A sur la maquette https://claude.ai/artifact/KzhF1woyfPJ3Zvsp8vbQ9r. `E.resPrice` prenait le niveau du monstre le plus fort qui donne la ressource : Pollenectar et Oueille (624 et 547 monstres, dès les Pious niveau 11-15, à 100 %) valaient 142 et rapportaient la moitié des 114 M de kamas de la vente directe en 13 h. Désormais `E.resPriceLvl` prend le monstre le plus faible (`E.PRICE_LVL = "min"`) ; `E.resLvl` (niveau affiché, tranches de la Foire) ne change pas. Rejouées sur les vraies ventes du serveur : 53 M au lieu de 114 M. `supabase/vente_data.sql` régénéré (`node tools/build_vente.js`, 183 prix). Le cours (VOL 2 000, ×0,1 à ×3) ne change pas (2B).
+
 ## 1.0.34.2 « Tout prendre »
 
 Demande de Mathis (15/10/2026) : « Avoir un bouton "tout prendre" dans le trop plein pour tout récupérer si on ne veut pas briser ». `E.overTakeAll(S)` remet les objets du trop-plein (les plus récents d'abord) dans la limite de `E.itemCap`, renvoie `{ n, left }` ; bouton `overtakeall` dans `overHtml()`. Test : `tests/sac.test.js`.

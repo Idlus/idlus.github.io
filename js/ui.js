@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.34.2";
+const GAME_VERSION = "1.0.34.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.34.3", name: "Cours rééquilibré", items: [
+    "Vente directe : le prix de base d'une ressource suit maintenant le monstre le plus faible qui la donne, là où on la farme. Avant, il suivait le plus fort : le Pollenectar et l'Oueille, que donnent des Pious niveau 11, valaient le prix d'une ressource niveau 200 (142 au lieu de 13)",
+    "183 ressources baissent (Pollenectar, Oueille, Minowang, Muldo d'eau, Sachets, Tonneaux…). Les ressources rares, données seulement par des monstres forts, ne changent pas, et aucun prix ne monte",
+    "Le marchand de secours, les Commandes du jour et la valeur affichée à l'hôtel de vente suivent le nouveau prix. Le fonctionnement du cours (de ×0,1 à ×3) ne change pas",
+  ] },
   { v: "1.0.34.2", name: "Tout prendre", items: [
     "Coffre de trop-plein : nouveau bouton « Tout prendre », qui remet d'un coup dans le sac autant d'objets que la place le permet (les plus récents d'abord). S'il n'y a pas assez de place, le jeu dit combien restent au trop-plein",
   ] },

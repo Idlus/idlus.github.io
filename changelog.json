@@ -1,6 +1,15 @@
 {
-  "version": "1.0.34.2",
+  "version": "1.0.34.3",
   "versions": [
+    {
+      "v": "1.0.34.3",
+      "name": "Cours rééquilibré",
+      "items": [
+        "Vente directe : le prix de base d'une ressource suit maintenant le monstre le plus faible qui la donne, là où on la farme. Avant, il suivait le plus fort : le Pollenectar et l'Oueille, que donnent des Pious niveau 11, valaient le prix d'une ressource niveau 200 (142 au lieu de 13)",
+        "183 ressources baissent (Pollenectar, Oueille, Minowang, Muldo d'eau, Sachets, Tonneaux…). Les ressources rares, données seulement par des monstres forts, ne changent pas, et aucun prix ne monte",
+        "Le marchand de secours, les Commandes du jour et la valeur affichée à l'hôtel de vente suivent le nouveau prix. Le fonctionnement du cours (de ×0,1 à ×3) ne change pas"
+      ]
+    },
     {
       "v": "1.0.34.2",
       "name": "Tout prendre",
