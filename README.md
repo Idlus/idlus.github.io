@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.34.2 « Tout prendre »
+
+Demande de Mathis (15/10/2026) : « Avoir un bouton "tout prendre" dans le trop plein pour tout récupérer si on ne veut pas briser ». `E.overTakeAll(S)` remet les objets du trop-plein (les plus récents d'abord) dans la limite de `E.itemCap`, renvoie `{ n, left }` ; bouton `overtakeall` dans `overHtml()`. Test : `tests/sac.test.js`.
+
 ## 1.0.34.1 « Quitter la guilde »
 
 Demande de Mathis (15/10/2026) : « avoir une option pour quitter la guilde ». Le départ existait déjà (`guild_leave` dans `supabase/guildes.sql`, le Meneur est remplacé par `g_heir`, guilde dissoute si seul) mais le bouton était caché tout en bas de l'onglet Membres. Bouton « Quitter la guilde » ajouté dans le bandeau (`leaveBtns`, `leaveTxt` dans `js/guilds.js`), avec confirmation « Oui, quitter » / « Annuler » (`g-leave0`). Aucun changement côté serveur. Tests : `tests/online.test.js`.

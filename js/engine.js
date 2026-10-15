@@ -495,6 +495,14 @@
     if (E.itemCount(S) >= E.itemCap(S)) return "Sac plein : fais de la place d'abord.";
     const o = S.over.splice(i, 1)[0]; delete o.at; S.items[o.uid] = o; return null;
   };
+  /* 1.0.34.2 : « Tout prendre » : remet dans le sac autant d'objets du trop-plein que la place le permet (les plus récents d'abord). */
+  E.overTakeAll = (S) => {
+    if (!Array.isArray(S.over)) S.over = [];
+    let n = 0; let room = E.itemCap(S) - E.itemCount(S);
+    while (room > 0 && S.over.length) { const o = S.over.pop(); delete o.at; S.items[o.uid] = o; room--; n++; }
+    if (!S.over.length) S.overNew = 0;
+    return { n, left: S.over.length };
+  };
   E.overBreak = (S, uid) => { const i = overIdx(S, uid); if (i < 0) return "Objet introuvable."; return overBreakOne(S, S.over.splice(i, 1)[0]); };
   E.overBreakAll = (S) => { const got = {}; let n = 0; (S.over || []).splice(0).forEach((o) => { const r = overBreakOne(S, o); if (r && typeof r === "object") { n++; for (const k in r) got[k] = (got[k] || 0) + r[k]; } }); return { n, got }; };
   /* « Briser les doublons » : garde le meilleur jet de chaque objet (Rayonnant d'abord) et brise les autres.

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.34.1";
+const GAME_VERSION = "1.0.34.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.34.2", name: "Tout prendre", items: [
+    "Coffre de trop-plein : nouveau bouton « Tout prendre », qui remet d'un coup dans le sac autant d'objets que la place le permet (les plus récents d'abord). S'il n'y a pas assez de place, le jeu dit combien restent au trop-plein",
+  ] },
   { v: "1.0.34.1", name: "Quitter la guilde", items: [
     "Bouton « Quitter la guilde » dans le bandeau de ta guilde, visible depuis chaque onglet (avant, il était tout en bas de l'onglet Membres)",
     "Une confirmation s'affiche avec « Oui, quitter » et « Annuler », et explique ce qui se passe : si tu es Meneur, ta place passe au Bras droit (ou au membre) le plus ancien ; si tu es seul, la guilde est dissoute avec son coffre",
@@ -6046,7 +6049,7 @@ function overHtml() {
   const hdv = hdvOn();
   return `<section class="panel"><div class="phead"><h2>Coffre de trop-plein</h2><span class="xs muted num">${L.length} / ${cap} places</span></div>
     <div class="pad stack"><span class="small muted">Quand le sac est plein, les nouveaux objets arrivent ici au lieu d'être perdus. Quand ce coffre est plein à son tour, le plus ancien est brisé en runes. ${room > 0 ? `Place libre dans le sac : <b>${fmt(room)}</b>.` : `<b>Le sac est plein</b> : brise des objets ou mets-les en vente pour en reprendre.`}</span>
-      <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
+      <div class="row">${ui.confirm === "overall" ? `<span class="small">Briser les ${L.length} objets du trop-plein ?</span><button class="btn sm danger" data-act="overallgo">Confirmer</button><button class="btn sm" data-act="cancel">Annuler</button>` : `<button class="btn sm primary" data-act="overtakeall" ${L.length && room > 0 ? "" : "disabled"} title="Remet dans le sac autant d'objets que la place le permet">Tout prendre</button><button class="btn sm" data-act="overallask" ${L.length ? "" : "disabled"}>Tout briser</button>`}</div></div>
     <div class="list">${L.map((it) => { const T = ITEMS[it.tpl]; return `<div class="li mkrow">${itemIcon(it)}<span class="grow">${itemName(it)} <span class="xs muted">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${it.at ? ` · ${agoTxt(it.at)}` : ""}</span></span>
       <button class="btn sm primary" data-act="overtake" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Prendre</button>${hdv ? `<button class="btn sm" data-act="overhdv" data-uid="${it.uid}" ${room > 0 ? "" : "disabled"}>Vendre à l'HdV</button>` : ""}<button class="btn sm" data-act="overbreak" data-uid="${it.uid}">Briser</button></div>`; }).join("") || `<div class="empty">Le trop-plein est vide.</div>`}</div></section>`;
 }
@@ -8591,6 +8594,7 @@ document.addEventListener("click", (ev) => {
     case "overgo": closeSheet(); ui.inv = "over"; navGo("inv"); window.scrollTo(0, 0); break;
     case "overtake": { const r = E.overTake(S, +d.uid); if (r) toast(r, "warn"); else toast("Remis dans le sac."); break; }
     case "overbreak": { const r = E.overBreak(S, +d.uid); if (typeof r === "string") toast(r, "warn"); else toast("Runes : " + runesTxt(r)); break; }
+    case "overtakeall": { const r = E.overTakeAll(S); toast(!r.n ? "Le sac est plein : fais de la place d'abord." : r.left ? `${fmt(r.n)} objets remis dans le sac. Il en reste ${fmt(r.left)} au trop-plein : le sac est plein.` : `${fmt(r.n)} objet${r.n > 1 ? "s" : ""} remis dans le sac.`, r.n && !r.left ? "" : "warn"); if (!r.left) ui.inv = "items"; break; }
     case "overallask": ui.confirm = "overall"; break;
     case "overallgo": { const r = E.overBreakAll(S); ui.confirm = null; toast(`${r.n} objets brisés. Runes : ${runesTxt(r.got)}`); break; }
     case "overhdv": { const r = E.overTake(S, +d.uid); if (r) { toast(r, "warn"); break; } window.MARKET.sellItem(+d.uid); dirty = true; navGo("hdv"); window.scrollTo(0, 0); break; }

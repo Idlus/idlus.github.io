@@ -57,4 +57,14 @@ console.log("ok - sac de 3 000 places");
   T.settings.auto.low = 0; const f = mk(low); assert.strictEqual(E.applyAuto(T, f), null, "règle éteinte");
 }
 console.log("ok - règle Bas niveau");
+// 5. « Tout prendre » : le trop-plein revient dans le sac, dans la limite de la place
+{
+  const T = E.newState("Prendre", "iop"); const tpl = tpls[5]; const cap = E.itemCap(T);
+  for (let i = E.itemCount(T); i < cap - 3; i++) E.rollItem(T, tpl, { radiant: false });
+  T.over = []; for (let i = 0; i < 5; i++) T.over.push({ uid: 900000 + i, tpl, stats: {}, at: 1 });
+  const r = E.overTakeAll(T);
+  assert.deepStrictEqual(r, { n: 3, left: 2 }); assert.strictEqual(E.itemCount(T), cap); assert.ok(T.items[900004] && !T.items[900004].at, "les plus récents d'abord");
+  assert.deepStrictEqual(E.overTakeAll(T), { n: 0, left: 2 }, "sac plein : rien ne bouge");
+}
+console.log("ok - Tout prendre");
 console.log("sac.test.js : OK");

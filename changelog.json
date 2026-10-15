@@ -1,6 +1,13 @@
 {
-  "version": "1.0.34.1",
+  "version": "1.0.34.2",
   "versions": [
+    {
+      "v": "1.0.34.2",
+      "name": "Tout prendre",
+      "items": [
+        "Coffre de trop-plein : nouveau bouton « Tout prendre », qui remet d'un coup dans le sac autant d'objets que la place le permet (les plus récents d'abord). S'il n'y a pas assez de place, le jeu dit combien restent au trop-plein"
+      ]
+    },
     {
       "v": "1.0.34.1",
       "name": "Quitter la guilde",
