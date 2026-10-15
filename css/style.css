@@ -584,6 +584,8 @@ nav.main button{position:relative}
 .hcard.o-heros{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #c9962e,0 0 24px rgba(255,215,100,.7)}
 .hcard.o-avis{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 4px #8a6038,0 0 0 7px #3a2a18}
 .hcard.o-almanax{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 22px rgba(120,200,255,.7)}
+.hcard.o-cadreDefi{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #b9e769,0 0 0 6px #2a3f14,0 0 20px rgba(185,231,105,.6)}
+.hcard.o-couronneDefi{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #e8c050,0 0 0 6px #c9d2db,0 0 26px rgba(232,192,80,.8)}
 .hcard.o-pionnier{box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 0 3px #9bd84a,0 0 0 6px #1f3a12,0 0 26px rgba(155,216,74,.75)}
 .hcard .orn.sprout{filter:drop-shadow(0 0 8px #9bd84a);animation:sprout 2.4s ease-in-out infinite}@keyframes sprout{50%{transform:translateX(-50%) translateY(-3px) rotate(-6deg)}}
 
@@ -2729,6 +2731,24 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .defi.df-sun .wk{color:#f4d77a}
 .df-lbtabs{margin-bottom:8px}
 .df-team{display:inline-flex;gap:2px;margin-top:2px}.df-team img{width:16px;height:16px;object-fit:contain}
+/* 1.1 (série 3) : calendrier du mois, notes du classement, carte du défi dans le chat */
+.df-cal-w{display:flex;flex-direction:column;gap:6px}
+.df-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.df-cal b{font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase}
+.df-cal i{aspect-ratio:1;max-height:38px;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:900;background:rgba(0,0,0,.14);border:1px solid var(--line);color:var(--muted)}
+.df-cal i.nil{visibility:hidden}
+.df-cal i.on{background:var(--action);color:var(--action-ink);border-color:transparent}
+.df-cal i.br{background:#a8683a;color:#fff3e6;border-color:transparent}
+.df-cal i.ar{background:#c9d2db;color:#1d242b;border-color:transparent}
+.df-cal i.or{background:#e8c050;color:#2a1e00;border-color:transparent}
+.df-cal i.jk{background:rgba(120,170,255,.25);color:#bcd4ff;border-color:rgba(120,170,255,.6)}
+.df-cal i.today{outline:2px solid var(--gold2);outline-offset:1px}
+.df-cal i.fut{opacity:.35}
+.df-leg{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted);align-items:center}
+.df-note{display:flex;gap:8px;align-items:flex-start;margin-top:8px}.df-note .uico{width:18px;height:18px;flex:none}
+.df-lbtabs{flex-wrap:wrap}
+.chat .ann.ann-defi{align-items:flex-start}.chat .ann-defi .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.chat .ann-defi small{font-weight:600;color:var(--muted)}
 .df-bad{color:var(--danger)}.df-good{color:var(--good)}
 @media (max-width:700px){.df-rules{grid-template-columns:repeat(2,minmax(0,1fr))}.df-bourses{gap:6px}}
 /* ---------- 0.1.26 : cadres « Métal orné » ----------

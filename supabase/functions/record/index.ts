@@ -133,7 +133,7 @@ async function defi(db: any, uid: string, tier: string) {
   const te = E.defiTeamErr(S, def); if (te) return json({ ok: false, err: te });
   const r = E.defiSim(S, def, now);
   if (!r.win) return json({ ok: false, tier, day, err: "l'équipe ne termine pas le défi" });
-  const team = E.team(S).map((c: { cls: string }) => c.cls);
+  const team = E.defiTeam(S, def).map((c: { cls: string }) => c.cls); // 1.1 : l'équipe du défi (« Adapter mon équipe ») si le joueur en a gardé une
   const out: Record<string, unknown> = { ok: true, defi: true, tier, day, did: def.did, dname: D.DUNGEONS[def.did].name, turns: r.turns, hp: r.hp, score: r.score, sends: sends + 1 };
   const better = !old || r.score > (old.score || 0) || (r.score === (old.score || 0) && (r.turns < old.turns || (r.turns === old.turns && r.hp > old.hp)));
   if (better) {

@@ -82,6 +82,34 @@ console.log(`ok - défi : coffre, série (${wins}/9 victoires)`);
   console.log(`ok - défi 1.1 : score ${r.score} (${r.win ? "victoire" : "défaite"}), règle d'équipe, joker, Élite`);
 }
 
+// 4 ter. Série 3 de la refonte : équipe du défi (« Adapter mon équipe »), calendrier des bourses, saison du mois.
+{
+  t = Date.UTC(2030, 1, 1, 12, 0); let day = E.defiDay(); let def; for (;; day++) { def = E.defi("dec", day); if (def.team === "max3") break; }
+  t = Date.UTC(2030, 1, 1, 12, 0) + (day - E.defiDay()) * 86400000;
+  const A = E.newState("Adapter", "iop"); A.chars[0].lvl = 40; [["feca", 50], ["cra", 30], ["sram", 45]].forEach(([k, l], i) => { const x = E.addChar(A, k, "A" + i, l); x.inTeam = true; });
+  assert.ok(E.defiTeamErr(A, def), "4 héros : règle pas respectée");
+  const sug = E.defiSuggest(A, def); assert.deepStrictEqual(sug.map((c) => c.lvl).sort((x, y) => y - x), [50, 45, 40], "les 3 plus forts proposés");
+  assert.strictEqual(E.defiSetPick(A, "dec", sug.map((c) => c.id)), null);
+  assert.strictEqual(E.defiTeamErr(A, def), null, "l'équipe du défi respecte la règle");
+  assert.strictEqual(E.team(A).length, 4, "l'équipe de farm ne change pas");
+  const r = E.defiPlay(A, "dec"); assert.ok(typeof r === "object" && r.team.length === 3, "le défi se joue à 3");
+  const back = E.defiSim(JSON.parse(E.serialize(A)), def, t); assert.strictEqual(back.turns, r.turns, "le serveur rejoue avec la même équipe du défi");
+  if (r.win) assert.strictEqual(A.defiHist[day], r.chest.medal, "le calendrier garde la bourse du jour");
+  A.chars[3].inTeam = false; assert.ok(!E.defiPicked(A, def), "équipe réglée à la main : l'équipe du défi ne sert plus");
+  assert.ok(typeof E.defiSetPick(A, "dec", [A.chars[0].id, A.chars[1].id, A.chars[2].id, A.chars[3].id]) === "string", "pas d'équipe du défi qui casse la règle");
+  t += 86400000; const def2 = E.defi("dec"); A.chars.forEach((c) => (c.inTeam = true));
+  assert.ok(!A.defiPick || A.defiPick.day !== def2.day || !E.defiPicked(A, def2), "l'équipe du défi ne vaut que pour son jour");
+  // saison : mois, nom, récompenses
+  assert.strictEqual(E.defiMonth(E.defiDay(Date.UTC(2026, 9, 15, 12))), 2026 * 12 + 9); assert.strictEqual(E.defiDeMois(2026 * 12 + 9), "d'octobre"); assert.strictEqual(E.defiDeMois(2026 * 12 + 10), "de novembre");
+  assert.strictEqual(E.defiMonthEnd(E.defiDay(Date.UTC(2026, 9, 15, 12))), E.defiDay(Date.UTC(2026, 9, 31, 12)));
+  const Z = E.newState("Saison", "iop"); const m = 2026 * 12 + 9;
+  assert.deepStrictEqual(E.defiSeasonGrant(Z, m, [{ tier: "ave", r: 12 }]), [], "hors du top 10 : rien");
+  const got = E.defiSeasonGrant(Z, m, [{ tier: "leg", r: 7 }, { tier: "ave", r: 2 }]);
+  assert.strictEqual(got.length, 2); assert.ok(E.titles(Z).includes("Défieur d'octobre") && E.ornUnlocked(Z, "couronneDefi") && E.ORN.couronneDefi.name(Z) === "Couronne d'octobre");
+  assert.deepStrictEqual(E.defiSeasonGrant(Z, m, [{ tier: "ave", r: 2 }]), [], "une seule fois par mois");
+  console.log("ok - défi 1.1 série 3 : équipe du défi, calendrier, saison");
+}
+
 // 5. Garde-robe : tout ce qu'on possède y entre, on garde l'apparence après avoir vendu l'objet.
 const W = E.newState("Garde", "iop");
 const coiffe = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].slot === "coiffe" && D.ITEMS[k].lvl <= 20);

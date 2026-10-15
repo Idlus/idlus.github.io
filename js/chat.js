@@ -87,7 +87,7 @@
     C.p.forEach((m) => { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; });
   }
   /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
-  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.t === "jack" || m.data.kind === "race10")); // 1.0.5 : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
+  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.t === "jack" || m.data.t === "defi" || m.data.kind === "race10")); // 1.1 : « Montrer dans le chat » du Défi du jour reste dans le Général // 1.0.5 : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
   /* 0.1.53.7 : mentions « @pseudo ». Surlignées dans le message ; le joueur mentionné voit le message mis en évidence
      et une pastille « @ » sur le chat et le salon, même s'il lit un autre salon. Seules les 3 premières mentions d'un
      message comptent (pas de mention de masse), un joueur ignoré ne prévient pas, et le mode lent du serveur s'applique. */
@@ -239,6 +239,7 @@
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
+    if (m.kind === "ann" && m.data && m.data.t === "defi") return defiCard(m); // 1.1 : score du Défi du jour montré par le joueur
     if (m.kind === "ann" && m.data && m.data.kind === "race10") return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
     if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
@@ -250,6 +251,16 @@
   function raceTxt(m, plain) {
     const n = +m.data.key || 1, left = 10 - n, b = (x) => (plain ? x : `<b>${x}</b>`);
     return `${b(h(m.pseudo || "?"))} prend la ${b(`${n === 1 ? "1re" : n + "e"} place`)} de la Course de lancement !${plain ? " " : "<small>"}${left > 0 ? `Plus que ${left} place${left > 1 ? "s" : ""} pour le titre « Légende de la 1.0 ».` : "La course est finie : les 10 Légendes de la 1.0 sont connues."}${plain ? "" : "</small>"}`;
+  }
+  /* 1.1 (Défi du jour, série 3) : carte du score validé, postée par le serveur (supabase/defi.sql, defi_share) */
+  function defiInfo(d) {
+    const E = window.DX.E; const T = E.defiTier && E.defiTier(d.tier); const dg = window.DATA.DUNGEONS[d.did];
+    const M = E.defiMedal ? E.defiMedal(+d.score || 0) : null; const R = d.rules && typeof d.rules === "object" ? Object.values(d.rules) : [];
+    return { sc: (+d.score || 0).toLocaleString("fr-FR"), tier: T ? T.name : "", dg: dg ? dg.name : "", med: M ? M.name : "", held: R.filter(Boolean).length, tot: R.length };
+  }
+  function defiCard(m) {
+    const d = m.data; const i = defiInfo(d); const team = Array.isArray(d.team) ? d.team.slice(0, 8) : [];
+    return `<div class="ann ann-defi">${X().IC("trophee")}<span class="t"><span><b>${h(m.pseudo || "?")}</b> a fait <b>${i.sc} points</b> au Défi du jour !</span><small>${[i.tier, i.dg, i.med ? `bourse ${i.med.toLowerCase()}` : "", i.tot ? `${i.held} règle${i.held > 1 ? "s" : ""} sur ${i.tot}` : ""].filter(Boolean).map(h).join(" · ")}</small>${team.length ? `<span class="df-team">${team.map((c) => (/^[a-z]+$/.test(c) ? `<img src="assets/h/${c}_sym.png" alt="">` : "")).join("")}</span>` : ""}</span></div>`;
   }
   function annTxt(m, plain) {
     const d = Object.assign({}, m.data); if (typeof d.t !== "string") d.t = d.did ? "top1" : ""; // 0.1.18-0.1.20 : le temps du record écrasait le type (t)
@@ -265,6 +276,7 @@
       case "jack": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} remporte le Jackpot du Trool : ${b(`${(+d.k || 0).toLocaleString("fr-FR")} kamas`)} !`); // 1.0.30.6
       case "giga": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`); // 1.0.30
       case "dsub": return t(`${p} sublime son ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} : Potentiel X !`); // 1.0.30 : Potentiel des Dofus (supabase/collections.sql)
+      case "defi": { const i = defiInfo(d); return t(`${p} a fait ${b(`${i.sc} points`)} au Défi du jour${i.tier ? ` (${h(i.tier)})` : ""} !`); } // 1.1
       case "koli": return t(`${p} atteint le grade ${b(["Bronze", "Argent", "Or", "Cristal", "Diamant"][d.g] || "Or")} au Kolizéum (cote ${(+d.cote || 0).toLocaleString("fr-FR")}) !`); // 0.1.44
       case "admin": return t(`${plain ? "Annonce" : "<b>Annonce</b>"} : ${h(m.body || "")}`);
       case "wb": return t(d.ev === "dead" ? `${b(d.name || "Le boss")} est tombé ! Dernier coup : ${p}.` : d.ev === "ph" ? `${b(d.name || "Le boss")} passe en phase ${d.ph} !` : `Boss des mondes : ${b(d.name || "un boss")} arrive !`); // 0.1.49

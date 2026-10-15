@@ -53,6 +53,25 @@
   E.DEFI_TITLE = "Habitué du défi";
   E.DEFI_TITLE100 = "Inarrêtable";
   E.DEFI_CHAMP = "Champion du défi";
+  /* 1.1 (série 3) : défi entre guildes (2A) et saison du mois (4A) */
+  E.DEFI_GUILD_TOP = 5;            // une guilde compte les 5 meilleurs scores de la semaine de ses membres
+  E.DEFI_GUILD_XP = 5000000;       // la 1re guilde de chaque palier gagne cette XP de guilde le lundi (supabase/defi.sql)
+  E.DEFI_SEASON_ORN = 3;           // top 3 du mois d'un palier : ornement « Couronne de <mois> »
+  E.DEFI_SEASON_TITLE = 10;        // top 10 : titre « Défieur de <mois> »
+  const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  /* mois de la saison : année × 12 + mois (0 = janvier), comme la vue lb_defi_month */
+  E.defiMonth = (day = E.defiDay()) => { const d = new Date(day * 86400000 + 43200000); return d.getUTCFullYear() * 12 + d.getUTCMonth(); };
+  E.defiMonthName = (m) => MOIS[((m % 12) + 12) % 12];
+  E.defiDeMois = (m) => { const n = E.defiMonthName(m); return /^[aeiouéèh]/.test(n) ? `d'${n}` : `de ${n}`; };
+  E.defiMonthEnd = (day = E.defiDay()) => { const d = new Date(day * 86400000 + 43200000); return day + (new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate() - d.getUTCDate()); };
+  /* récompenses de la saison passée, lues au classement : rows = [{ tier, r }] */
+  E.defiSeasonGrant = (S, m, rows) => {
+    const got = []; const top = rows.filter((x) => x.r <= E.DEFI_SEASON_TITLE).sort((a, b) => a.r - b.r)[0]; if (!top) return got;
+    const title = `Défieur ${E.defiDeMois(m)}`; S.titlesExtra = S.titlesExtra || [];
+    if (!S.titlesExtra.includes(title)) { S.titlesExtra.push(title); got.push(`titre « ${title} »`); }
+    if (top.r <= E.DEFI_SEASON_ORN && (!S.defiCrown || S.defiCrown.m < m)) { S.unlocks = S.unlocks || {}; S.unlocks.couronneDefi = 1; S.defiCrown = { m, tier: top.tier, r: top.r }; got.push(`ornement « Couronne ${E.defiDeMois(m)} »`); }
+    return got;
+  };
   E.DEFI_PURSE_K = 500;
   E.DEFI_MAX_SENDS = 3;
   const hash = (str) => { let x = 2166136261; for (let i = 0; i < str.length; i++) x = Math.imul(x ^ str.charCodeAt(i), 16777619); x = Math.imul(x ^ (x >>> 15), 0x85ebca6b); return (x ^ (x >>> 13)) >>> 0; };
@@ -78,10 +97,40 @@
   };
   const topTeam = (S) => Math.max(0, ...E.team(S).map((c) => c.lvl));
   /* on peut viser plus haut que son niveau, jamais plus bas que son héros le plus fort */
-  E.defiTierOk = (S, tid) => { const T = E.defiTier(tid); return !!T && E.team(S).length > 0 && topTeam(S) <= T.hi && topTeam(S) >= (T.min || 0); };
+  E.defiTierOk = (S, tid) => { const T = E.defiTier(tid); if (!T) return false; if (E.team(S).length > 0 && topTeam(S) <= T.hi && topTeam(S) >= (T.min || 0)) return true;
+    return !!(S.defiPick && S.defiPick.tier === tid) && tierFits(E.defiTeam(S, E.defi(tid)), T); };
   E.defiTierDefault = (S) => (E.DEFI_TIERS.find((T) => !T.min && topTeam(S) <= T.hi && topTeam(S) >= T.lo) || E.DEFI_TIERS.find((T) => E.defiTierOk(S, T.id)) || E.DEFI_TIERS[2]).id;
   /* la règle d'équipe du jour : null si l'équipe la respecte, sinon ce qu'il faut changer */
-  E.defiTeamErr = (S, def) => { const R = def && E.DEFI_TEAM[def.team]; const t = E.team(S); return !R || R.ok(t) ? null : `Règle d'équipe du jour, « ${R.name} » : ${R.fix(t)}`; };
+  E.defiTeamErr = (S, def) => { const R = def && E.DEFI_TEAM[def.team]; const t = E.defiTeam(S, def); return !R || R.ok(t) ? null : `Règle d'équipe du jour, « ${R.name} » : ${R.fix(t)}`; };
+  /* 1.1 (série 3, 5A) : « Adapter mon équipe ». Quand l'équipe ne respecte pas la règle du jour, le joueur peut garder une équipe
+     du défi (S.defiPick, pour ce jour et ce palier seulement) : ses héros les plus forts qui respectent la règle. L'équipe de farm ne change pas.
+     Le serveur rejoue avec la même équipe (la partie en ligne garde S.defiPick). */
+  const tierFits = (t, T) => { const top = Math.max(0, ...t.map((c) => c.lvl)); return t.length > 0 && top <= T.hi && top >= (T.min || 0); };
+  E.defiTeam = (S, def) => {
+    const t = E.team(S); const R = def && E.DEFI_TEAM[def.team]; const P = S.defiPick;
+    if (!R || R.ok(t) || !P || P.day !== def.day || P.tier !== def.tier || !Array.isArray(P.ids)) return t;
+    const p = P.ids.map((id) => S.chars.find((c) => c.id === id && !c.job)).filter(Boolean).slice(0, 8);
+    return p.length === P.ids.length && R.ok(p) && tierFits(p, E.defiTier(def.tier)) ? p : t;
+  };
+  E.defiPicked = (S, def) => { const t = E.defiTeam(S, def); const r = E.team(S); return t.length !== r.length || t.some((c, i) => c !== r[i]); };
+  /* la proposition : les héros de l'équipe d'abord (les plus forts), puis ceux du Havre-Sac pour garder le même nombre de héros */
+  const heroPow = (c) => c.lvl * 1000 + (c.ren || 0) * 200000 + (c.xp ? Math.min(999, Math.floor(c.xp / 1e6)) : 0);
+  E.defiSuggest = (S, def) => {
+    const R = def && E.DEFI_TEAM[def.team]; const T = def && E.defiTier(def.tier); if (!R || !T) return [];
+    const t = E.team(S); const n = Math.min(t.length, def.team === "max3" ? 3 : def.team === "max4" ? 4 : 8);
+    const cand = t.slice().sort((a, b) => heroPow(b) - heroPow(a)).concat(S.chars.filter((c) => !c.inTeam && !c.job && c.lvl <= T.hi).sort((a, b) => heroPow(b) - heroPow(a)));
+    const out = [];
+    for (const c of cand) { if (out.length >= n) break; if (R.ok(out.concat([c]))) out.push(c); }
+    return out.length && tierFits(out, T) ? S.chars.filter((c) => out.includes(c)) : [];
+  };
+  /* Action : garder (ids) ou oublier (null) l'équipe du défi du jour */
+  E.defiSetPick = (S, tid, ids) => {
+    if (!ids) { delete S.defiPick; return null; }
+    const def = E.defi(tid); if (!def) return "Palier inconnu.";
+    S.defiPick = { day: def.day, tier: tid, ids: ids.slice(0, 8) };
+    if (E.defiTeamErr(S, def) || !E.defiPicked(S, def)) { delete S.defiPick; return "Cette équipe ne respecte pas la règle du jour."; }
+    return null;
+  };
 
   /* ---------- le combat, joué d'un coup sur une copie de la partie ----------
      Renvoie { win, turns, hp (% de PV de l'équipe à la fin), rooms: [{ turns, win }], kamas, dust }. */
@@ -94,6 +143,7 @@
     S2.fight = null; S2.pause = 0; S2.acc = 0; S2.hunting = false; S2.protector = null; S2.manualLive = false;
     S2.settings = Object.assign({}, S2.settings, { manual: false });
     S2.cons = Object.assign({}, S2.cons); delete S2.cons.fiole_resu; // pas de seconde chance : le même défi pour tous
+    if (E.defiPicked(S2, def)) { const keep = new Set(E.defiTeam(S2, def).map((c) => c.id)); S2.chars.forEach((c) => { c.inTeam = keep.has(c.id); }); }
     const dg = DUNGEONS[def.did]; const team = E.team(S2);
     const W = { def, now, S2, rng: mulberry(def.seed), rooms: [], hp: 0, kam: 0, done: false, win: false };
     if (!team.length || !dg) { W.done = true; W.err = "Il faut au moins un héros dans l'équipe."; return W; }
@@ -175,7 +225,7 @@
     const st = E.defiState(S, day);
     const r = E.defiSim(S, def, now);
     if (r.err) return r.err;
-    const team = E.team(S).map((c) => ({ id: c.id, name: c.name, cls: c.cls, lvl: c.lvl }));
+    const team = E.defiTeam(S, def).map((c) => ({ id: c.id, name: c.name, cls: c.cls, lvl: c.lvl }));
     const prev = st.best[tid] || null;
     const out = Object.assign({ tier: tid, did: def.did, k: def.k, mods: def.mods, def, day, team, n: st.tries.filter((x) => x.tier === tid).length + 1 }, r);
     out.improved = E.defiBetter(r, prev); out.prev = prev;
@@ -186,7 +236,7 @@
       /* 1.1 : bourses de bronze (victoire), d'argent (1 500 pts) et d'or (2 000 pts), une fois chacune par jour ;
          la plus haute atteinte complète les précédentes. Le Grand défi du dimanche les triple. */
       const M = E.defiMedal(r.score); const lvl = M ? E.DEFI_MEDALS.indexOf(M) + 1 : 0;
-      const base = Math.max(r.kamas, E.DEFI_PURSE_K * topTeam(S)) * def.mult;
+      const base = Math.max(r.kamas, E.DEFI_PURSE_K * Math.max(0, ...team.map((c) => c.lvl))) * def.mult;
       const got = { kamas: 0, dust: 0, cons: [] };
       for (let m = st.medal + 1; m <= lvl; m++) {
         if (m === 1) { got.kamas += base; got.dust += r.dust; }
@@ -197,6 +247,8 @@
         S.kamas += got.kamas; if (got.dust) E.addRes(S, E.POUSSIERE, got.dust);
         got.cons.forEach((k) => { for (let i = 0; i < def.mult; i++) E.addCons(S, k); });
         out.chest = Object.assign(got, { medal: lvl, from: st.medal }); st.medal = lvl;
+        /* 1.1 (série 3, 1A) : le calendrier du mois garde la meilleure bourse de chaque jour (62 jours) */
+        const H = (S.defiHist = S.defiHist || {}); H[day] = lvl; Object.keys(H).forEach((d) => { if (+d < day - 62) delete H[d]; });
       }
       if (!st.chest) {
         st.chest = true;
@@ -249,6 +301,7 @@
   };
   E.ACTIONS.setShow = "choisir l'apparence montrée (garde-robe)";
   E.ACTIONS.defiPlay = "jouer le défi du jour";
+  E.ACTIONS.defiSetPick = "choisir l'équipe du défi du jour";
 
   /* ---------- résumé de l'équipe (carte à partager) ---------- */
   E.teamCardData = (S) => {
@@ -271,6 +324,7 @@
     add({ id: "garde50", cat: "Progression", name: "Collectionneur", desc: "Réunir 50 coiffes et capes dans la garde-robe.", test: (S) => E.wardrobeCount(S) >= 50, kamas: 15000, title: "le Collectionneur" });
   }
   if (E.ORN && !E.ORN.sablier) E.ORN.sablier = { name: () => "Sablier du défi", req: "Réussir le défi du jour 30 jours de suite", ok: (S) => !!(S.unlocks && S.unlocks.sablier) };
+  if (E.ORN && !E.ORN.couronneDefi) E.ORN.couronneDefi = { name: (S) => (S && S.defiCrown ? `Couronne ${E.defiDeMois(S.defiCrown.m)}` : "Couronne du défi"), req: "Finir dans les 3 premiers d'un palier à la saison du défi (un mois)", ok: (S) => !!(S.unlocks && S.unlocks.couronneDefi) };
   if (E.ORN && !E.ORN.cadreDefi) E.ORN.cadreDefi = { name: () => "Cadre du défi", req: "Réussir le défi du jour 100 jours de suite", ok: (S) => !!(S.unlocks && S.unlocks.cadreDefi) };
   /* 1.1 : « Champion du défi », porté la semaine qui suit une première place au classement de la semaine */
   if (E.titles && !E.titles.defiChamp) { const t0 = E.titles; E.titles = (S) => { const t = t0(S); if (E.defiChampOn(S) && !t.includes(E.DEFI_CHAMP)) t.push(E.DEFI_CHAMP); return t; }; E.titles.defiChamp = 1; }
