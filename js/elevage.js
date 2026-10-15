@@ -6,6 +6,8 @@
    objets d'élevage achetés en kamas + Essence qui s'usent (8A), 3 commandes par jour (9A), naissances
    exceptionnelles annoncées dans le chat (10A, supabase/elevage.sql), classement Élevage (12A), balades (13A),
    chromatiques 1 sur 150 (14A), filtres et relâcher en masse (15A), noms et famille (17A), places en kamas (18A).
+   Série 4 : résumé « Pendant ton absence » (19A), quête « Apprenti éleveur » (22A), 10 succès d'élevage (23A),
+   jours Almanax « Efficacité des enclos » = évènement d'élevage (24A). Pas de planificateur (20B), pas de don (21B).
 
    Champs ajoutés à une monture (js/mounts.js) : st (étoiles), cap (capacité), chr (chromatique), nm (nom),
    pc (couleurs des parents), gc (couleurs des grands-parents), pol (jour du dernier polissage d'étoile).
@@ -83,6 +85,7 @@
     if (S.enclos) { if (!Array.isArray(S.enclos.pairs)) S.enclos.pairs = []; S.enclos.pairs.forEach((p, i) => { if (p.s == null) p.s = i; if (!p.T) p.T = Math.max(p.t || 0, E.BIRTH_MS); }); }
     for (const uid in S.mounts || {}) { const M = S.mounts[uid]; if (!M.st) M.st = 1; }
     while (v.slots.length < E.pairCap(S)) v.slots.push({});
+    if ((v.q || 0) < 6 && E.ELQ) questTick(S);
     return v;
   };
   const EV = (S) => (S.elev && S.elev.log ? S.elev : E.elevState(S));
@@ -132,7 +135,7 @@
   E.capName = (k) => (E.CAPS[k] ? E.CAPS[k].name : "");
 
   /* ---------- écurie (18A, 6A) ---------- */
-  E.stableCap = (S) => Math.min(E.STABLE_MAXCAP, E.STABLE + (S.enclos && S.enclos.built ? E.STABLE_ENCLOS : 0) + E.STABLE_CARNET * E.spDoneN(S) + E.STABLE_BUY * ((S.elev && S.elev.buy) || 0));
+  E.stableCap = (S) => Math.min(E.STABLE_MAXCAP + 1, E.STABLE + ((S.elev && S.elev.qPlace) || 0) + (S.enclos && S.enclos.built ? E.STABLE_ENCLOS : 0) + E.STABLE_CARNET * E.spDoneN(S) + E.STABLE_BUY * ((S.elev && S.elev.buy) || 0));
   E.stableBuyCost = (S) => E.STABLE_BUY_COST * Math.pow(2, (S.elev && S.elev.buy) || 0);
   E.stableBuy = (S) => {
     const v = EV(S); if (E.stableCap(S) + E.STABLE_BUY > E.STABLE_MAXCAP) return `L'écurie a déjà ${E.STABLE_MAXCAP} places au plus.`;
@@ -150,6 +153,8 @@
     if (opts.st) M.st = opts.st; if (opts.cap) M.cap = opts.cap; if (opts.chr) M.chr = 1; if (opts.pc) M.pc = opts.pc; if (opts.gc) M.gc = opts.gc;
     const neu = !(S.mountSeen[sp] && S.mountSeen[sp][c]); E.seeColour(S, sp, c);
     if (M.chr) { const v = EV(S); (v.chrSeen[sp] = v.chrSeen[sp] || {})[E.mainColour(c)] = 1; v.n.chr++; }
+    noteStar(S, M);
+    if (!isBico(c) && E.gen(sp, c) >= 3 && Array.isArray(M.pc) && Array.isArray(M.gc) && M.pc.concat(M.gc).every((x) => x === E.mainColour(c))) EV(S).n.pure = (EV(S).n.pure || 0) + 1;
     const extra = [M.st > 1 ? "★".repeat(M.st) : "", M.cap ? E.capName(M.cap) : ""].filter(Boolean).join(", ");
     note(S, `${neu ? "Nouvelle couleur : " : "Monture : "}${E.mountName(M)}${extra ? ` (${extra})` : ""}${why ? " (" + why + ")" : ""} !`, "rare");
     E.celebrate({ t: "mount", uid, neu });
@@ -197,7 +202,7 @@
     }
     return list;
   };
-  E.starUpPct = (S, si) => E.ST_UP + itemV(S, si, "baf");
+  E.starUpPct = (S, si) => E.ST_UP + itemV(S, si, "baf") + (E.elevAlm(S) ? E.ALM_STAR : 0);
   E.capPct = (S, si) => E.CAP_PCT + itemV(S, si, "car");
   E.breedInfo = (S, A, B, si) => ({ odds: E.breedOdds(S, A, B, si), st: Math.round(((A.st || 1) + (B.st || 1)) / 2), up: E.starUpPct(S, si), down: E.ST_DOWN, cap: E.capPct(S, si), ms: E.birthMs(S, A, B, si) });
   E.startBreed = (S, ua, ub, why) => {
@@ -235,7 +240,7 @@
     A.kids++; B.kids++; S.enclos.births = (S.enclos.births || 0) + 1; EV(S).n.births++;
     const neu = !(S.mountSeen[A.sp] && S.mountSeen[A.sp][c]);
     const M = E.giveMount(S, A.sp, c, `né${fem(A.sp)} à l'enclos, ${E.colourName(A.sp, A.c)} + ${E.colourName(B.sp, B.c)}`, { st, cap, chr, pc, gc });
-    wear(S, si);
+    wear(S, si); elevCheck(S);
     if (M) {
       log(S, `Naissance : ${E.mountName(M)} ${"★".repeat(M.st)}${M.cap ? `, ${E.capName(M.cap)}` : ""}${neu ? " (nouvelle couleur)" : ""}`);
       /* 10A : naissance exceptionnelle (dernière génération jamais vue, ★5 ou plus, chromatique) : fête et annonce dans le chat */
@@ -252,7 +257,7 @@
   E.elevBirth = birth;
 
   /* ---------- objets d'élevage (8A) ---------- */
-  E.elvPrice = (S, k, t) => ({ k: E.ELV_KAMAS[t], e: E.ELV_ESS[t] });
+  E.elvPrice = (S, k, t) => { const f = E.elevAlm(S) ? 1 - E.ALM_ITEMS / 100 : 1; return { k: Math.round(E.ELV_KAMAS[t] * f), e: Math.round(E.ELV_ESS[t] * f) }; };
   E.elvBuy = (S, k, t) => {
     const v = EV(S); t = t | 0; if (!E.ELV_ITEMS[k] || t < 0 || t > 4) return "Objet inconnu.";
     const P = E.elvPrice(S, k, t);
@@ -318,7 +323,7 @@
     if ((M.st || 1) >= E.starCap(S, M)) return `Déjà ${E.starCap(S, M)} étoiles, le maximum.`;
     if (M.pol === day()) return "Une étoile par jour et par monture : revenez demain.";
     if (v.ess < E.ESS_STAR) return `Il faut ${fmt(E.ESS_STAR)} Essence.`;
-    v.ess -= E.ESS_STAR; M.st = (M.st || 1) + 1; M.pol = day();
+    v.ess -= E.ESS_STAR; M.st = (M.st || 1) + 1; M.pol = day(); noteStar(S, M); elevCheck(S);
     const o = E.mountOwner(S, M.uid); if (o) { E.refreshSpells(o, E.charStats(S, o)); E.emit(S, "equip", {}); }
     note(S, `${E.mountName(M)} gagne une étoile : ${"★".repeat(M.st)}.`, "up");
     return null;
@@ -381,7 +386,7 @@
   E.setAuto = (S, on, goal) => {
     const v = EV(S); if (goal != null) v.auto.goal = String(goal).slice(0, 60);
     if (on != null) v.auto.on = !!on;
-    if (v.auto.on) { v.autoT = 0; log(S, `Éleveur automatique : ${E.autoGoalTxt(v.auto.goal)}`); }
+    if (v.auto.on) { v.autoT = 0; v.autoUsed = 1; elevCheck(S); log(S, `Éleveur automatique : ${E.autoGoalTxt(v.auto.goal)}`); }
     return null;
   };
   const autoTick = (S, ms) => {
@@ -407,19 +412,20 @@
   E.baladeStop = (S, uid) => { const v = EV(S); const i = v.bal.findIndex((b) => b.uid === uid); if (i < 0) return "Pas en balade."; v.bal.splice(i, 1); return null; };
   const baladeEnd = (S, b) => {
     const M = S.mounts[b.uid]; if (!M) return;
-    const R = E.BAL[b.h] || E.BAL[4]; const v = EV(S); v.ess += R.ess; v.n.bal++;
+    const R = E.BAL[b.h] || E.BAL[4]; const v = EV(S); const x2 = E.elevAlm(S) ? 2 : 1; v.ess += R.ess * x2; v.n.bal++;
     const sub = E.SUBS && E.SUBS[E.MOUNT_SP[M.sp].sub]; const got = {};
     const D = root.DATA || {};
     if (sub && D.MONSTERS) {
       const drops = []; (sub.monsters || []).forEach((m) => { const mo = D.MONSTERS[m]; if (mo && mo.drops) mo.drops.forEach(([r, p]) => { if (!(E.isKey && E.isKey(r))) drops.push([r, p]); }); });
-      const tot = drops.reduce((a, d) => a + d[1], 0); const n = R.res[0] + Math.floor(rnd() * (R.res[1] - R.res[0] + 1));
+      const tot = drops.reduce((a, d) => a + d[1], 0); const n = (R.res[0] + Math.floor(rnd() * (R.res[1] - R.res[0] + 1))) * x2;
       for (let i = 0; i < n && tot > 0; i++) { let x = rnd() * tot; for (const [r, p] of drops) { if (x < p) { got[r] = (got[r] || 0) + 1; break; } x -= p; } }
       for (const r in got) E.addRes(S, r, got[r]);
     }
     let net = false; if (R.net && rnd() < R.net) { E.addCons(S, "filet", 1); net = true; }
     const res = Object.entries(got).map(([r, q]) => `${q} × ${r}`).join(", ");
-    log(S, `Balade finie : ${E.mountName(M)} rapporte ${R.ess} Essence${res ? `, ${res}` : ""}${net ? " et un filet" : ""}`);
-    note(S, `${E.mountName(M)} revient de balade : +${R.ess} Essence${res ? `, ${res}` : ""}${net ? ", un filet de capture" : ""}.`, "info");
+    elevCheck(S);
+    log(S, `Balade finie : ${E.mountName(M)} rapporte ${R.ess * x2} Essence${res ? `, ${res}` : ""}${net ? " et un filet" : ""}`);
+    note(S, `${E.mountName(M)} revient de balade : +${R.ess * x2} Essence${res ? `, ${res}` : ""}${net ? ", un filet de capture" : ""}.`, "info");
   };
 
   /* ---------- commandes (9A) ---------- */
@@ -445,7 +451,7 @@
     const v = EV(S); delete S.mounts[M.uid]; v.ord.done.push(i); v.n.ord++;
     S.kamas += o.kamas; v.ess += o.ess; if (o.nets) E.addCons(S, "filet", o.nets);
     note(S, `Commande livrée : ${E.mountName(M)}. +${fmt(o.kamas)} kamas, +${fmt(o.ess)} Essence${o.nets ? `, ${o.nets} filets` : ""}.`, "rare");
-    log(S, `Commande livrée : ${E.mountName(M)}`); return null;
+    log(S, `Commande livrée : ${E.mountName(M)}`); elevCheck(S); return null;
   };
 
   /* ---------- temps réel (ms), en jeu comme hors ligne ---------- */
@@ -481,6 +487,72 @@
   };
   E.elevColoursTotal = () => E.MOUNT_ORDER.reduce((a, sp) => a + E.spColours(sp).length, 0);
 
+  /* ---------- série 4 ---------- */
+  /* 24A : les jours Almanax « Efficacité des enclos » sont des jours de l'élevage, pour tout le monde (l'offrande garde son ×1,5) */
+  E.ALM_ITEMS = 30; E.ALM_STAR = 10;
+  E.elevAlm = (S) => !!(E.almDay && E.almDay().kind === "enclos");
+  E.elevAlmTxt = () => `Objets d'élevage −${E.ALM_ITEMS} %, balades ×2, +${E.ALM_STAR} % de chance d'étoile`;
+  function noteStar(S, M) { const v = EV(S); if ((M.st || 1) > (v.n.maxSt || 1)) v.n.maxSt = M.st || 1; }
+  /* 22A : quête « Apprenti éleveur », 6 étapes validées toutes seules, dans l'ordre */
+  E.ELQ = [
+    { t: "Capturer une monture", ok: (S) => (S.stats.captures || 0) >= 1 || Object.keys(S.mounts || {}).length > 0, r: "5 filets de capture", give: (S) => E.addCons(S, "filet", 5) },
+    { t: "Construire l'enclos", ok: (S) => !!S.enclos.built, r: "200 Essence", give: (S) => { EV(S).ess += 200; } },
+    { t: "Faire naître un premier petit", ok: (S) => (EV(S).n.births || 0) >= 1, r: "un Baffeur I", give: (S) => { EV(S).inv.push({ k: "baf", t: 0, n: E.ITEM_USES }); } },
+    { t: "Obtenir une monture ★★", ok: (S) => (EV(S).n.maxSt || 1) >= 2, r: "500 Essence", give: (S) => { EV(S).ess += 500; } },
+    { t: "Allumer l'éleveur automatique", ok: (S) => !!EV(S).autoUsed, r: "1 place d'écurie", give: (S) => { EV(S).qPlace = 1; } },
+    { t: "Trouver une couleur de génération 3", ok: (S) => E.MOUNT_ORDER.some((sp) => Object.keys(S.mountSeen[sp] || {}).some((c) => !isBico(c) && E.gen(sp, c) >= 3)), r: "titre « Éleveur en herbe »", give: (S) => { S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes("Éleveur en herbe")) S.titlesExtra.push("Éleveur en herbe"); } },
+  ];
+  function questTick(S) {
+    const v = EV(S); v.q = v.q || 0;
+    while (v.q < E.ELQ.length && E.ELQ[v.q].ok(S)) {
+      const Q = E.ELQ[v.q]; Q.give(S); v.q++;
+      note(S, `Apprenti éleveur ${v.q}/${E.ELQ.length} : ${Q.t}. Récompense : ${Q.r}.`, "rare"); log(S, `Quête : ${Q.t} (${Q.r})`);
+    }
+  }
+  function elevCheck(S) { questTick(S); if (E.checkAch) E.checkAch(S); }
+  E.elevCheck = elevCheck;
+  /* 23A : 10 succès d'élevage */
+  if (E.ACH) {
+    const add = (o) => { if (!E.ACH.some((a) => a.id === o.id)) E.ACH.push(Object.assign({ cat: "Élevage" }, o)); };
+    const n = (S, k) => (S.elev && S.elev.n && S.elev.n[k]) || 0;
+    const colours = (S) => E.MOUNT_ORDER.reduce((a, sp) => a + E.spSeen(S, sp), 0);
+    add({ id: "elv1", name: "Premier petit", desc: "Faire naître une monture à l'enclos.", test: (S) => n(S, "births") >= 1, prog: (S) => [n(S, "births"), 1], kamas: 2000 });
+    add({ id: "elv100", name: "Cent naissances", desc: "Faire naître 100 montures à l'enclos.", test: (S) => n(S, "births") >= 100, prog: (S) => [n(S, "births"), 100], kamas: 30000, title: "Sage-femme des Douze" });
+    add({ id: "elvst5", name: "Pur-sang", desc: "Avoir une monture ★★★★★.", test: (S) => n(S, "maxSt") >= 5, prog: (S) => [Math.max(1, n(S, "maxSt")), 5], kamas: 20000 });
+    add({ id: "elvst7", name: "Étoile filante", desc: "Avoir une monture à 7 étoiles (chromatique d'une espèce au carnet complet).", test: (S) => n(S, "maxSt") >= 7, prog: (S) => [Math.max(1, n(S, "maxSt")), 7], kamas: 100000, title: "Dresseur étoilé" });
+    add({ id: "elv41", name: "Arc-en-ciel", desc: "Trouver les 41 couleurs de montures.", test: (S) => colours(S) >= 41, prog: (S) => [colours(S), 41], kamas: 200000, title: "l'Arc-en-ciel" });
+    add({ id: "elvchr", name: "Chromatique !", desc: "Faire naître une monture chromatique (une naissance sur 150).", test: (S) => n(S, "chr") >= 1, kamas: 30000 });
+    add({ id: "elvpure", name: "Lignée pure", desc: "Faire naître une couleur de génération 3 ou plus dont les 2 parents et les 4 grands-parents ont sa couleur.", test: (S) => n(S, "pure") >= 1, kamas: 15000 });
+    add({ id: "elvord", name: "Grand livreur", desc: "Livrer 50 commandes d'élevage.", test: (S) => n(S, "ord") >= 50, prog: (S) => [n(S, "ord"), 50], kamas: 50000, title: "Grand livreur" });
+    add({ id: "elvbal", name: "Promeneur", desc: "Finir 50 balades.", test: (S) => n(S, "bal") >= 50, prog: (S) => [n(S, "bal"), 50], kamas: 20000 });
+    add({ id: "elvst100", name: "Écurie étoilée", desc: "Avoir 100 étoiles en tout dans l'écurie.", test: (S) => Object.values(S.mounts || {}).reduce((a, M) => a + (M.st || 1), 0) >= 100, prog: (S) => [Object.values(S.mounts || {}).reduce((a, M) => a + (M.st || 1), 0), 100], kamas: 40000 });
+  }
+  /* 19A : « Pendant ton absence » : ce que l'élevage a fait hors ligne (affiché en haut de la page Élevage) */
+  if (E.catchUp && !E.catchUp.__elev) {
+    const c0 = E.catchUp;
+    E.catchUp = (S, seconds) => {
+      const v = S && S.mounts ? EV(S) : null; if (!v) return c0(S, seconds);
+      const b = { uid: S.mountUid, births: v.n.births, bal: v.n.bal, ess: v.ess, worn: v.worn || 0, seen: E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(S.mountSeen[sp] || {}).length, 0) };
+      const r = c0(S, seconds);
+      try {
+        const kids = Object.values(S.mounts).filter((M) => M.uid >= b.uid).map((M) => M.uid);
+        const A = { at: E.now(), sec: Math.round(seconds), births: v.n.births - b.births, bal: v.n.bal - b.bal, ess: Math.max(0, v.ess - b.ess), worn: (v.worn || 0) - b.worn, neu: E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(S.mountSeen[sp] || {}).length, 0) - b.seen, kids: kids.slice(-6) };
+        if (seconds >= 600 && (A.births || A.bal || A.worn)) v.away = A;
+      } catch (e) { /* résumé facultatif */ }
+      return r;
+    };
+    E.catchUp.__elev = 1;
+  }
+  E.awayOk = (S) => { delete EV(S).away; return null; };
+  E.elevTodo = (S) => {
+    const v = EV(S); const out = [];
+    for (let i = 0; i < E.pairCap(S); i++) { const sl = v.slots[i] || {}; if (!E.ELV_ORDER.some((k) => sl[k]) && v.inv.length) out.push(`objet d'élevage à poser sur le couple ${i + 1}`); }
+    const O = E.orders(S).filter((o) => !o.done && E.orderFits(S, o).length); if (O.length) out.push(`${O.length} commande${O.length > 1 ? "s" : ""} prête${O.length > 1 ? "s" : ""} à livrer`);
+    if (S.enclos.pairs.some((p) => p.wait)) out.push("un petit attend : écurie pleine");
+    if (S.enclos.built && E.freeSlot(S) >= 0 && !v.auto.on) out.push("un couple libre à l'enclos");
+    return out;
+  };
+
   /* ---------- sauvegarde ---------- */
   if (E.deserialize && !E.deserialize.__elev) { const d0 = E.deserialize; E.deserialize = (txt) => { const S = d0(txt); try { if (S) E.elevState(S); } catch (e) { /* partie sans montures */ } return S; }; E.deserialize.__elev = 1; }
   if (E.newState && !E.newState.__elev) { const n0 = E.newState; E.newState = function () { const S = n0.apply(this, arguments); try { if (S && S.enclos) E.elevState(S); } catch (e) {} return S; }; E.newState.__elev = 1; }
@@ -489,7 +561,7 @@
     elvBuy: "acheter un objet d'élevage", elvEquip: "poser un objet d'élevage", elvUnequip: "retirer un objet d'élevage", elvAutoEquip: "poser les meilleurs objets d'élevage",
     feedMount: "nourrir une monture d'Essence", polishMount: "polir une étoile de monture", renameMount: "renommer une monture", massRelease: "relâcher des montures en masse",
     setAuto: "régler l'éleveur automatique", baladeStart: "envoyer une monture en balade", baladeStop: "rappeler une monture de balade", orderDeliver: "livrer une commande d'élevage",
-    stableBuy: "agrandir l'écurie", pair4Buy: "acheter le 4e couple",
+    stableBuy: "agrandir l'écurie", pair4Buy: "acheter le 4e couple", awayOk: "fermer le résumé de l'élevage",
   });
 
   root.ELEVAGE_READY = true;

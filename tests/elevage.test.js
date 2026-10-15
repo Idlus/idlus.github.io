@@ -13,7 +13,8 @@ const ROOT = path.join(__dirname, "..");
 
 let seed = 1101;
 E.setRng(() => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; });
-const fresh = () => { const S = E.newState("Élevage", "iop"); S.chars[0].lvl = 200; S.chars[0].inTeam = true; S.kamas = 1e9; S.enclos.built = true; E.elevState(S); return S; };
+const fresh = () => { const S = E.newState("Élevage", "iop"); S.chars[0].lvl = 200; S.chars[0].inTeam = true; S.kamas = 1e9; S.enclos.built = true; S.elev = { q: 6 }; E.elevState(S); return S; };
+const alm0 = E.elevAlm; E.elevAlm = () => false; // jour de l'élevage testé à part (24A)
 const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Object.assign({}, o)); assert.ok(M, "monture donnée"); M.lvl = o.lvl || 100; return M; };
 
 // 1. Étoiles : +12,5 % par étoile sur la stat de couleur seulement (PA, PM, Invocation jamais), Endurante +20 %
@@ -144,7 +145,7 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
 {
   const S = fresh(); mk(S, "dd", "Rousse"); mk(S, "dd", "Amande"); mk(S, "dd", "Dorée");
   const O = E.orders(S); assert.strictEqual(O.length, 3); assert.deepStrictEqual(E.orders(S), O, "les mêmes toute la journée");
-  const o = O[0]; const M = mk(S, o.sp, o.c, { st: o.st }); const k0 = S.kamas, n0 = E.stableN(S);
+  const o = O[0]; const M = mk(S, o.sp, o.c, { st: o.st }); E.checkAch(S); const k0 = S.kamas, n0 = E.stableN(S);
   assert.strictEqual(E.orderDeliver(S, 0, M.uid), null); assert.strictEqual(S.kamas, k0 + o.kamas); assert.strictEqual(E.stableN(S), n0 - 1);
   assert.ok(/déjà/.test(E.orderDeliver(S, 0))); assert.ok(E.orders(S)[0].done);
   console.log(`ok - commandes : ${O.map((x) => `${x.c} ★${x.st}`).join(", ")}`);
@@ -170,9 +171,34 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
   const S = fresh(); const A = mk(S, "dd", "Rousse"), B = mk(S, "dd", "Dorée"); E.startBreed(S, A.uid, B.uid);
   const old = JSON.parse(E.serialize(S)); delete old.elev; old.mounts[A.uid].st = undefined; delete old.enclos.pairs[0].s; delete old.enclos.pairs[0].T;
   const S2 = E.deserialize(JSON.stringify(old)); assert.strictEqual(S2.mounts[A.uid].st, 1); assert.strictEqual(S2.enclos.pairs[0].s, 0); assert.ok(S2.enclos.pairs[0].T > 0);
-  assert.strictEqual(S2.elev.ess, 0); assert.strictEqual(E.purity(S2.mounts[A.uid]), 2, "monture d'avant la refonte : pure");
+  assert.ok(S2.elev.q >= 2 && S2.elev.ess >= 200, "quête Apprenti éleveur : les étapes déjà faites sont validées au chargement"); assert.strictEqual(E.purity(S2.mounts[A.uid]), 2, "monture d'avant la refonte : pure");
   const S3 = E.deserialize(E.serialize(S2)); assert.deepStrictEqual(S3.elev.slots.length, 3);
   console.log("ok - ancienne partie : étoiles, couples, Essence, aller-retour de la sauvegarde");
+}
+
+// 14. Série 4 : quête Apprenti éleveur (22A), succès (23A), jour de l'élevage (24A), résumé au retour (19A)
+{
+  const S = E.newState("Quête", "iop"); S.kamas = 1e9; E.elevState(S); assert.strictEqual(S.elev.q, 0);
+  const A = E.giveMount(S, "dd", "Rousse", "t"); A.lvl = 100; S.stats.captures = 1; E.elevCheck(S);
+  assert.strictEqual(S.elev.q, 1); assert.strictEqual(S.cons.filet, 5, "5 filets pour la capture");
+  S.enclos.built = true; E.elevCheck(S); assert.strictEqual(S.elev.q, 2); assert.strictEqual(S.elev.ess, 200);
+  const B = E.giveMount(S, "dd", "Rousse", "t"); B.lvl = 100; E.startBreed(S, A.uid, B.uid); E.enclosTick(S, 9 * 3600e3);
+  assert.ok(S.elev.q >= 3 && S.elev.inv.some((it) => it.k === "baf"), "Baffeur I pour le premier petit");
+  assert.ok(S.ach.elv1, "succès Premier petit");
+  const cap0 = E.stableCap(S); S.elev.n.maxSt = 2; E.setAuto(S, true, "carnet"); assert.strictEqual(S.elev.q, 5); assert.strictEqual(E.stableCap(S), cap0 + 1);
+  S.mountSeen.dd.Pourpre = 1; E.elevCheck(S); assert.strictEqual(S.elev.q, 6); assert.ok(S.titlesExtra.includes("Éleveur en herbe"));
+  assert.strictEqual(E.ACH.filter((a) => a.cat === "Élevage").length, 10, "10 succès d'élevage");
+  // jour de l'élevage : objets −30 %, balades ×2, +10 % d'étoile
+  E.elevAlm = () => true;
+  assert.deepStrictEqual(E.elvPrice(S, "baf", 0), { k: 35000, e: 70 }); assert.strictEqual(E.starUpPct(S, null), 40);
+  const C = E.giveMount(S, "dd", "Amande", "t"); C.lvl = 100; S.elev.ess = 0; E.baladeStart(S, C.uid, 4); E.enclosTick(S, 4 * 3600e3 + 1); assert.strictEqual(S.elev.ess, 120);
+  E.elevAlm = () => false; assert.strictEqual(typeof alm0(S), "boolean");
+  // résumé au retour
+  S.elev.auto.on = false; S.enclos.pairs.length = 0; const D1 = E.giveMount(S, "dd", "Dorée", "t"), D2 = E.giveMount(S, "dd", "Dorée", "t"); D1.lvl = D2.lvl = 100;
+  E.startBreed(S, D1.uid, D2.uid); delete S.elev.away; E.catchUp(S, 10 * 3600);
+  assert.ok(S.elev.away && S.elev.away.births >= 1 && S.elev.away.kids.length >= 1, "résumé « Pendant ton absence »");
+  assert.strictEqual(E.awayOk(S), null); assert.ok(!S.elev.away);
+  console.log("ok - série 4 : quête Apprenti éleveur, 10 succès, jour de l'élevage, résumé au retour");
 }
 
 // 13. Résumé pour le classement et les annonces ; fichiers du jeu et du serveur

@@ -107,7 +107,7 @@
     return `<section class="panel"><div class="phead"><h2>Objets d'élevage</h2><span class="xs muted">chacun dure ${E.ITEM_USES} naissances</span></div><div class="pad stack" style="gap:6px">
       ${E.ELV_ORDER.map((k) => { const I = E.ELV_ITEMS[k]; const t = st.tier[k] == null ? 0 : st.tier[k]; const P = E.elvPrice(s, k, t); const ok = s.kamas >= P.k && s.elev.ess >= P.e;
         return `<div class="el-shop"><div class="grow"><b>${h(I.name)}</b> <span class="xs">${h(I.txt(I.v[t]))}</span><div class="el-tiers">${E.ROMAN5.map((r, i) => `<button class="el-tier" data-act="el-tier" data-k="${k}" data-v="${i}" aria-pressed="${t === i}">${r}</button>`).join("")}</div></div>
-          <button class="btn sm ${ok ? "primary" : ""}" data-act="el-buy" data-k="${k}" data-v="${t}" ${ok ? "" : "disabled"}>${fmt(P.k)} k + ${fmt(P.e)} Ess.</button></div>`; }).join("")}
+          ${E.elevAlm(s) ? `<span class="tag good">−${E.ALM_ITEMS} %</span>` : ""}<button class="btn sm ${ok ? "primary" : ""}" data-act="el-buy" data-k="${k}" data-v="${t}" ${ok ? "" : "disabled"}>${fmt(P.k)} k + ${fmt(P.e)} Ess.</button></div>`; }).join("")}
       ${inv.length ? `<div class="xs"><span class="muted">Dans le sac :</span> ${Object.entries(cnt).map(([key, n]) => { const [k, t] = key.split(":"); return `${h(E.ELV_ITEMS[k].name)} ${E.ROMAN5[+t]}${n > 1 ? ` ×${n}` : ""}`; }).join(", ")}</div>` : ""}
       <p class="note xs" style="margin:0">Un objet se pose sur un couple de l'enclos et sert à toutes les naissances de cet emplacement, puis s'use. Baffeur : étoiles. Caresseur : capacités. Foudroyeur : naissances plus rapides. Dragofesse : nouvelles couleurs.</p></div></section>`;
   }
@@ -224,15 +224,37 @@
       <div class="pad"><p class="note xs" style="margin:0">Avec un filet dans le sac, chaque victoire dans une zone sauvage peut capturer une monture ★ de niveau 1, en ligne comme hors ligne. Le filet n'est utilisé que si la capture réussit. Le Bricoleur en fabrique dès le niveau 40. Les autres couleurs naissent à l'enclos.</p></div></section>`;
   }
 
+  /* ======================= SÉRIE 4 ======================= */
+  /* 19A : « Pendant ton absence » */
+  function awayBox(s) {
+    const A = s.elev.away; if (!A) return "";
+    const kids = (A.kids || []).map((u) => s.mounts[u]).filter(Boolean);
+    const hrs = A.sec >= 3600 ? `${Math.floor(A.sec / 3600)} h ${String(Math.floor((A.sec % 3600) / 60)).padStart(2, "0")}` : `${Math.round(A.sec / 60)} min`;
+    const todo = E.elevTodo(s);
+    return `<section class="panel el-away"><div class="phead"><h2>Pendant ton absence</h2><span class="xs muted">${hrs} hors ligne</span></div><div class="pad stack" style="gap:6px">
+      ${A.births ? `<div class="el-arow">${kids.slice(0, 4).map((M) => mImg(M.sp, M.c, M.chr)).join("")}<div class="grow"><b>${A.births} naissance${A.births > 1 ? "s" : ""} à l'enclos</b><div class="xs">${A.neu > 0 ? `${A.neu} nouvelle${A.neu > 1 ? "s" : ""} couleur${A.neu > 1 ? "s" : ""} · ` : ""}${kids.map((M) => `${h(E.colourName(M.sp, M.c))} ${"★".repeat(M.st || 1)}${M.cap ? ` (${h(E.capName(M.cap))})` : ""}`).join(", ")}</div></div></div>` : ""}
+      ${A.bal ? `<div class="el-arow"><div class="grow"><b>${A.bal} balade${A.bal > 1 ? "s" : ""} terminée${A.bal > 1 ? "s" : ""}</b></div></div>` : ""}
+      ${A.ess ? `<div class="xs">+${fmt(A.ess)} Essence en tout</div>` : ""}
+      ${A.worn > 0 || todo.length ? `<div class="el-arow"><div class="grow"><b>À faire</b><div class="xs">${[A.worn > 0 ? `${A.worn} objet${A.worn > 1 ? "s" : ""} d'élevage usé${A.worn > 1 ? "s" : ""}` : ""].concat(todo).filter(Boolean).map(h).join(" · ")}</div></div></div>` : ""}
+      <div><button class="btn sm primary" data-act="el-awayok">Compris</button></div></div></section>`;
+  }
+  /* 22A : quête « Apprenti éleveur » */
+  function questPanel(s) {
+    const q = s.elev.q || 0; if (q >= E.ELQ.length) return "";
+    return `<section class="panel"><div class="phead"><h2>Apprenti éleveur</h2><span class="xs muted">quête de départ · ${q} / ${E.ELQ.length}</span></div><div class="pad">${E.ELQ.map((Q, i) => `<div class="el-q ${i === q ? "now" : ""}"><span class="ck ${i < q ? "ok" : ""}">${i < q ? "✓" : i + 1}</span><span class="grow">${h(Q.t)}</span><span class="xs muted">${h(Q.r)}</span></div>`).join("")}</div></section>`;
+  }
+  /* 24A : jour de l'élevage */
+  const almBar = (s) => (E.elevAlm(s) ? `<div class="el-alm"><b>Aujourd'hui : jour de l'élevage</b> <span class="xs">${h(E.elevAlmTxt())}</span><span class="tag good">jusqu'à minuit</span></div>` : "");
+
   /* ======================= PAGE ======================= */
   const TABS = [["enclos", "Enclos"], ["ecurie", "Écurie"], ["carnet", "Carnet"], ["capture", "Capture"]];
   function pageHtml(s) {
     E.elevState(s);
     const n = { ecurie: `${E.stableN(s)}/${E.stableCap(s)}`, carnet: `${E.MOUNT_ORDER.reduce((a, sp) => a + E.spSeen(s, sp), 0)}/${E.elevColoursTotal()}`, enclos: s.enclos.built ? `${s.enclos.pairs.length}/${E.pairCap(s)}` : "" };
     const body = st.tab === "ecurie" ? ecurie(s) : st.tab === "carnet" ? carnet(s) : st.tab === "capture" ? capture(s)
-      : `<div class="el-2c"><div class="col">${autoPanel(s)}${enclosPanel(s)}${nextPanel(s)}</div><div class="col">${essPanel(s)}${shopPanel(s)}${ordersPanel(s)}</div></div>`;
+      : `<div class="el-2c"><div class="col">${questPanel(s)}${autoPanel(s)}${enclosPanel(s)}${nextPanel(s)}</div><div class="col">${essPanel(s)}${shopPanel(s)}${ordersPanel(s)}</div></div>`;
     return `<div class="el-page"><div class="pagehead"><h1>Élevage</h1><span class="small muted">${essTxt(s.elev.ess)} · <span class="coin"></span> <b class="num">${fmt(s.kamas)}</b> kamas</span></div>
-      <nav class="subtabs">${TABS.map(([k, nm]) => `<button data-act="el-tab" data-v="${k}" aria-pressed="${st.tab === k}">${nm}${n[k] ? ` <span class="num xs">${n[k]}</span>` : ""}</button>`).join("")}</nav>${body}</div>`;
+      ${almBar(s)}${awayBox(s)}<nav class="subtabs">${TABS.map(([k, nm]) => `<button data-act="el-tab" data-v="${k}" aria-pressed="${st.tab === k}">${nm}${n[k] ? ` <span class="num xs">${n[k]}</span>` : ""}</button>`).join("")}</nav>${body}</div>`;
   }
   function page(main, soft) {
     const s = S(); if (!s) return; const html = pageHtml(s);
@@ -279,6 +301,7 @@
       case "el-balstop": { if (!confirm("Rappeler cette monture ? La balade s'arrête sans rien rapporter.")) return; done(E.act(s, "baladeStop", +d.uid)); break; }
       case "el-balpick": balPickSheet(); return;
       case "el-stbuy": done(E.act(s, "stableBuy")); break;
+      case "el-awayok": done(E.act(s, "awayOk")); break;
       case "el-go": UI().tab = "elev"; if (d.v) st.tab = d.v; X().closeSheet(); X().render(); window.scrollTo(0, 0); return;
       default: return;
     }
