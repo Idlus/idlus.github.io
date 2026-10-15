@@ -9,7 +9,7 @@
    Règles (Mathis) : texte brut, une ligne, 200 caractères au plus. */
 const { execFileSync } = require("child_process");
 const MAX = 200;
-const DUREES = { "1h": 1, "24h": 24, "7j": 168, permanent: 0 };
+const DUREES = { "1h": 1, "24h": 24, "7j": 168, permanent: 0, "1h si libre": 1, "chat seul": 1 }; // « 1h si libre » : bandeau seulement si aucun autre n'est affiché
 
 function verifier(t) {
   const err = [];

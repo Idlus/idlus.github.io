@@ -10,7 +10,11 @@ select public.pseudo_of(u) compte_admin, set_config('request.jwt.claim.sub', u::
        set_config('request.jwt.claims', json_build_object('sub', u, 'role', 'authenticated')::text, true) is not null s3
   from (select a.user_id u from public.admins a left join public.profiles p on p.id = a.user_id
         order by (p.pseudo = 'Xener') desc nulls last limit 1) x;
-select public.adm_announce(convert_from(decode(:'txt64', 'base64'), 'UTF8'), true, :'chat'::boolean, :'heures'::int);
+-- ban : oui, non (chat seul) ou libre (bandeau seulement si aucun autre bandeau n'est affiché en ce moment)
+select case :'ban' when 'oui' then true when 'non' then false
+  else not exists (select 1 from public.announces where banner and (until is null or until > now())) end as bandeau \gset
+select public.adm_announce(convert_from(decode(:'txt64', 'base64'), 'UTF8'), :'bandeau'::boolean, :'chat'::boolean, :'heures'::int);
+\echo 'Bandeau publié :' :bandeau
 select id, until, length(body) caracteres, body from public.announces order by id desc limit 1;
 \if :essai
   rollback;

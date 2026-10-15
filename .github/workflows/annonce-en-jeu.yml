@@ -15,7 +15,7 @@ on:
         description: "Bandeau affiché pendant"
         type: choice
         default: 24h
-        options: [1h, 24h, 7j, permanent]
+        options: [1h, 24h, 7j, permanent, "1h si libre", chat seul]
       chat:
         description: "Aussi un message dans le chat Général"
         type: boolean
@@ -50,10 +50,11 @@ jobs:
           CHAT: ${{ inputs.chat }}
           ESSAI: ${{ inputs.essai }}
         run: |
-          case "$DUREE" in 1h) h=1 ;; 24h) h=24 ;; 7j) h=168 ;; permanent) h=0 ;; *) echo "durée inconnue" >&2; exit 1 ;; esac
+          # « 1h si libre » : bandeau d'1 h seulement si aucun autre bandeau n'est affiché (sinon chat seul) ; « chat seul » : pas de bandeau
+          ban=oui; case "$DUREE" in 1h) h=1 ;; 24h) h=24 ;; 7j) h=168 ;; permanent) h=0 ;; "1h si libre") h=1; ban=libre ;; "chat seul") h=1; ban=non ;; *) echo "durée inconnue" >&2; exit 1 ;; esac
           # Texte passé en base64 : aucun guillemet ni caractère du texte ne peut toucher à la requête.
           t64=$(printf '%s' "$ANNONCE_TEXTE" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | base64 -w0)
-          { echo "\\set txt64 '$t64'"; echo "\\set heures $h"
+          { echo "\\set txt64 '$t64'"; echo "\\set heures $h"; echo "\\set ban $ban"
             echo "\\set chat $([ "$CHAT" = true ] && echo true || echo false)"
             echo "\\set essai $([ "$ESSAI" = true ] && echo true || echo false)"
             cat tools/annonce_en_jeu.sql; } > /tmp/annonce.sql
