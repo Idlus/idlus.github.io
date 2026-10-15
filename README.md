@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.36 « La Scène »
+
+Choix de Mathis (15/10/2026) : vue Scène en plateau isométrique avec bandeau d'infos (1A 2A), nouvelles animations (1A-4A), sorts et boss animés (1A 2A 3A 4A + mise en scène de Gargandyas, puis 1A-6A sur la seconde maquette), publiés ensemble. La Formation reste la vue par défaut. Code : `arenaLayout`/`sceneHud`/`anStart` dans `js/ui.js`, sorts et boss des lots 1 et 2 dans `js/animsorts.js` (complète `SG` et `BXSP` via `window.DX.anim`). Le moteur ajoute `msp` (nom du sort de monstre) aux évènements de lancer, purement visuel.
+
 ## 1.0.35.1 « Textes de la Renaissance »
 
 Demande de Mathis (15/10/2026) : « enleve Chaque renaissance lui donne +30 % d'XP ». Conseil d'accueil (`js/welcome.js`) et ancienne note 0.1.12 (`js/ui.js`) corrigés : plus de bonus d'XP depuis la 1.0.35.

@@ -21,9 +21,19 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.35.1";
+const GAME_VERSION = "1.0.36";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.36", name: "La Scène", items: [
+    "Vue Scène refaite : chaque combattant a sa case sur un plateau isométrique façon DOFUS, le boss au premier plan. Les noms, PV, invocations et passifs passent dans un bandeau sous la scène. La Formation reste la vue par défaut (bouton « Scène » au-dessus du combat)",
+    "Nouvelles animations sur le plateau : chacun respire à son rythme, les héros arrivent en bondissant et les monstres tombent sur leur case, on recule sous les coups (plus loin sur un critique), celui qui joue fait un pas en avant",
+    "Effets des sorts visibles : la cible poussée glisse, les PA et la vie volés partent en orbes vers le lanceur, un bouclier forme un dôme, un boost fait monter des étincelles, l'affaiblissement et la vulnérabilité ont leur marque",
+    "38 nouveaux sorts avec leur propre animation, les 2 plus joués de chaque classe (Tempête de Puissance, Vacarme, Flèche Dévorante, Remblai, Glacier, Pelotage…)",
+    "20 boss ont maintenant leur attaque à eux : les boss des mondes dans leur donjon (Kolosso, Korriandre, Harebourg, Ougah, Nidas, Ilyzaelle, Nileza, Vortex) et les 12 premiers donjons (Kardorim, Tournesol Affamé, Mob l'Éponge, Bworkette, Kwakwa…)",
+    "Boss des mondes en Titans : ils tombent du ciel, deux fois plus grands, et lancent une attaque ultime aux tours 4, 8 et 12. Purement visuel, les dégâts ne changent pas",
+    "Gargandyas a sa mise en scène : son collier se brise à l'arrivée, ses 3 sorts ont leur animation, et son ultime Gargameha fend le sol",
+    "Tout cela en animations « Complètes » ; « Sobres » reste calme. Choix de Mathis",
+  ] },
   { v: "1.0.35.1", name: "Textes de la Renaissance", items: [
     "Les anciens textes qui parlaient de « +30 % d'XP par renaissance » sont corrigés (conseil d'accueil, notes de mise à jour) : depuis la 1.0.35, chaque renaissance apprend un sort d'une autre classe et demande +50 % d'XP par niveau",
   ] },
@@ -3368,27 +3378,31 @@ function spellBarFor(c, ent, F) {
 }
 /* vue de combat : scène (personnages en pied) ou compacte (cartes) */
 function combatView() { if (window.FORMUI) return window.FORMUI.view(S); /* 1.0.30 : Formation par défaut (js/formation.js) */ const v = S.settings.cview; if (v === "scene" || v === "compact") return v; return window.innerWidth < 640 && E.team(S).length >= 6 ? "compact" : "scene"; }
-/* formation en quinconce : rangée avant (basse) puis rangées arrière décalées d'un demi-pas */
+/* 1.0.36 « Plateau » : chaque combattant sur sa case d'un sol isométrique façon DOFUS, sans chevauchement.
+   Par camp : colonnes depuis le centre (la première ligne au plus près des ennemis), rangées en profondeur décalées d'un demi-pas.
+   On choisit le nombre de rangées qui donne les plus grandes cases ; les invocations prennent la case voisine de leur maître. */
 function arenaLayout(F) {
   const mob = window.innerWidth < 640;
+  const AW = (ui.arena && ui.arena.el && ui.arena.el.clientWidth) || (mob ? 360 : 600);
   const sides = { c: [], m: [] }, sums = []; F.ents.forEach((e, i) => (e.summon ? sums : sides[e.side === "c" ? "c" : "m"]).push(i));
-  sides.c.sort((a, b) => (F.ents[a].row === "b") - (F.ents[b].row === "b")); // 3.3.0 : la première ligne devant
-  const rowsOf = (n) => (n <= 1 ? 1 : n <= 6 ? 2 : 3);
-  const rows = Math.max(rowsOf(sides.c.length), rowsOf(sides.m.length));
-  const perRow = Math.max(1, ...["c", "m"].map((k) => Math.ceil(sides[k].length / Math.max(1, rowsOf(sides[k].length)))));
-  const h = mob ? (rows <= 2 ? (perRow >= 3 ? 92 : 104) : 76) : (rows <= 2 ? (perRow >= 4 ? 128 : 148) : 112);
-  const plate = mob ? 30 : 36, lift = rows <= 2 ? (mob ? 0.7 : 0.76) : 0.55;
-  const step = mob ? Math.min(21, 41 / perRow) : Math.min(14, 41 / perRow), x0 = mob ? 40 : 43;
-  const AW = (ui.arena && ui.arena.el && ui.arena.el.clientWidth) || (mob ? 360 : 700);
-  const w = Math.max(56, Math.min(mob ? 82 : 110, Math.round((step / 100) * AW * 1.05)));
-  const pos = [];
-  ["c", "m"].forEach((k) => { const L = sides[k], R = rowsOf(L.length);
-    L.forEach((ei, n) => { const r = n % R, jx = Math.floor(n / R); const x = x0 - jx * step - r * step / 2;
-      pos[ei] = { x: k === "c" ? x : 100 - x, y: 8 + r * (plate + h * lift), z: 30 - r * 10 - jx }; }); });
-  /* invocations : petites, devant l'équipe, au centre de l'arène */
-  sums.forEach((ei, k) => { pos[ei] = { x: (mob ? 47 : 48) - (k % 3) * (mob ? 7 : 5), y: 8 + Math.floor(k / 3) * (plate + h * 0.3) + (k % 2) * 10, z: 40 - k }; });
-  const H = Math.max(mob ? 250 : 300, Math.round(8 + (rows - 1) * (plate + h * lift) + plate + h + (mob ? 34 : 40)));
-  return { h, plate, w, pos, H };
+  sides.c.sort((a, b) => (F.ents[a].row === "b") - (F.ents[b].row === "b"));
+  sides.m.sort((a, b) => !!F.ents[b].boss - !!F.ents[a].boss); // le boss sur la première case, face à l'équipe // la première ligne devant
+  const Wd = AW / 2 - AW * 0.04, cap = mob ? 62 : 78, minT = mob ? 26 : 40;
+  const fit = (n, R) => { const cols = Math.max(1, Math.ceil(n / R)); return Wd / (0.8 + (cols - 1) * 1.45 + (R - 1) * 0.8 + 0.6); };
+  const pick = (n) => { let best = { R: 1, t: 0 }; for (let R = 1; R <= Math.min(4, Math.max(1, n)); R++) { const t = fit(n, R); if (t > best.t * 1.08) best = { R, t }; } return best; };
+  const P = { c: pick(sides.c.length), m: pick(sides.m.length) };
+  const tw = Math.round(Math.max(minT, Math.min(cap, P.c.t, P.m.t)));
+  const h = Math.round(tw * 1.55), w = Math.round(tw * 1.1), rowY = tw * 1.0, base = Math.round(tw * 0.42);
+  const R = Math.max(P.c.R, P.m.R), pos = [], px = (v) => (v / AW) * 100;
+  ["c", "m"].forEach((k) => { const Rk = P[k].R;
+    sides[k].forEach((ei, q) => { const r = q % Rk, j = Math.floor(q / Rk);
+      const xpx = AW / 2 - tw * (0.8 + j * 1.45 + r * 0.8);
+      pos[ei] = { x: k === "c" ? px(xpx) : 100 - px(xpx), y: base + r * rowY, z: 30 - r * 6 - j }; }); });
+  sums.forEach((ei) => { const e = F.ents[ei], o = pos[e.owner] || { x: 30, y: base, z: 30 };
+    const sib = sums.filter((x) => F.ents[x].owner === e.owner).indexOf(ei);
+    pos[ei] = { x: o.x + px(tw * (0.6 + sib * 0.45)), y: Math.max(2, o.y - tw * 0.34), z: o.z + 2 }; });
+  const H = Math.max(mob ? 200 : 240, Math.round(base + (R - 1) * rowY + h * 1.15 + (mob ? 26 : 34)));
+  return { h, plate: 0, w, pos, H, tw };
 }
 /* l'arène reste visible en haut (mobile) seulement si elle laisse de la place au reste */
 function stickyCheck() { const st = document.querySelector(".arenasticky"); if (!st) return; st.classList.toggle("stick", st.offsetHeight < window.innerHeight * 0.58); }
@@ -3396,8 +3410,38 @@ function placeEnts(F) {
   const A = ui.arena; if (!A || A.view !== "scene" || !F) return;
   const L = arenaLayout(F); A.el.style.height = L.H + "px";
   A.el.style.setProperty("--h", L.h + "px"); A.el.style.setProperty("--plate", L.plate + "px"); A.el.style.setProperty("--w", L.w + "px");
+  A.el.style.setProperty("--tw", L.tw + "px");
   F.ents.forEach((e, i) => { const n = A.nodes[i], p = L.pos[i]; if (!n || !p) return; n.style.left = p.x + "%"; n.style.bottom = p.y + "px"; n.style.zIndex = p.z; });
   stickyCheck();
+}
+/* 1.0.36 « Plateau » : le bandeau sous la scène porte les noms, les PV, les invocations et les passifs ;
+   la structure ne se redessine que si la liste change, les barres se mettent à jour en place */
+function hudPic(e) {
+  const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: e.sex } : null;
+  return c ? im(headImg(c), "", e.name) : e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name) : e.img ? im(`assets/m/${e.img}.png`, "", e.name) : "✦";
+}
+function sceneHud(F) {
+  const A = ui.arena; const wrap = A && A.el ? A.el.parentNode : null; if (!wrap) return;
+  let hd = wrap.querySelector(".schud");
+  if (!F || A.view !== "scene") { if (hd) hd.remove(); return; }
+  if (!hd) { hd = document.createElement("div"); hd.className = "schud"; wrap.appendChild(hd); }
+  const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1;
+  const own = (i) => F.ents.map((x, k) => [x, k]).filter(([x]) => x.summon && x.owner === i);
+  const key = F.id + "|" + F.ents.map((e) => `${e.name}${e.summon ? "^" + e.owner : ""}`).join(",");
+  if (hd.dataset.k !== key) { hd.dataset.k = key;
+    const card = (e, i) => `<div class="hc ${e.side === "c" ? "c" : "m"}${e.boss ? " boss" : ""}${e.champ ? " champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}"><span class="hp">${hudPic(e)}</span><span class="hb"><b>${e.champ ? G("crown") : ""}${h(e.name)}</b><span class="hbar"><i></i><u></u></span><span class="hpv"></span></span><span class="hss"></span></div>`;
+    const L = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => !e.summon && (e.side === "c") === (k === "c")).sort((a, b) => !!b[0].boss - !!a[0].boss).map(([e, i]) => card(e, i)).join("");
+    hd.innerHTML = `<div class="hside">${L("c")}</div><div class="hside m">${L("m")}</div>`; }
+  hd.querySelectorAll(".hc").forEach((n) => { const i = +n.dataset.i, e = F.ents[i]; if (!e) return;
+    n.classList.toggle("ko", !e.alive); n.classList.toggle("now", i === curI && !F.over);
+    n.querySelector(".hbar i").style.width = pct(Math.max(0, e.hp), e.hpMax) + "%";
+    n.querySelector(".hbar u").style.width = Math.min(100, pct(e.shield || 0, e.hpMax)) + "%";
+    const pv = n.querySelector(".hpv"); let t = "";
+    if (e.side === "c" && !e.summon) { const P = E.passiveInfo(e, F); if (P) t = h(P.n); } else if (e.role && E.MON_ROLES[e.role]) t = h(E.MON_ROLES[e.role].name);
+    if (pv.dataset.k !== t) { pv.innerHTML = t; pv.dataset.k = t; }
+    const ss = n.querySelector(".hss"); const live = own(i).filter(([x]) => x.alive); const sk = live.map(([, k]) => k).join(",");
+    if (ss.dataset.k !== sk) { ss.dataset.k = sk; ss.innerHTML = live.map(([x, k]) => `<span class="hsum" data-i="${k}" title="${h(x.name)}">${x.img ? `<img src="assets/m/${x.img}.png" alt="${h(x.name)}" onerror="this.style.visibility='hidden'">` : "✦"}<i></i></span>`).join(""); }
+    ss.querySelectorAll(".hsum").forEach((c) => { const x = F.ents[+c.dataset.i]; if (x) c.lastChild.style.width = pct(Math.max(0, x.hp), x.hpMax) + "%"; }); });
 }
 /* 3.3.0 : infobulles et classes de rangée, Champion et rôle */
 const rowCls = (e) => (e.side === "c" && !e.summon ? (e.row === "b" ? "back" : "front") : "");
@@ -3414,7 +3458,8 @@ function buildArena(F) {
   const view = combatView();
   const so = { fx: decoFx() && !(F && F.dungeon) ? subWeather(F ? F.sub : S.sub) : "", boss: !!(F && F.bossIdx !== undefined), anim: decoFx() };
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
-  arena.className = "arena " + (view === "compact" ? "cmpmode" : view === "form" ? "fmode" : "v2"); arena.style.height = ""; // 1.0.30 : fmode = Formation (js/formation.js)
+  arena.className = "arena " + (view === "compact" ? "cmpmode" : view === "form" ? "fmode" : "v2 iso"); arena.style.height = ""; // 1.0.30 : fmode = Formation (js/formation.js) ; 1.0.33 : iso = plateau
+  { const old = arena.parentNode && arena.parentNode.querySelector(".schud"); if (old && (view !== "scene" || !F)) old.remove(); }
   if (!F) {
     arena.innerHTML = (view === "form" ? "" : sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx })) + `<div class="idle"><div>${E.expActive(S) && S.exp.pick !== null ? "Le combat de la salle commence…" : E.expActive(S) ? (E.expPending(S) ? "Un choix t'attend." : "Choisis la salle suivante sur la carte.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
@@ -3441,8 +3486,8 @@ function buildArena(F) {
   ui.arena.fxl = arena.querySelector(".fxl"); ui.arena.fxg = arena.querySelector(".fxg"); if (view === "scene") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
-  placeEnts(F); stickyCheck();
-  if (F.bossIdx !== undefined && F.round === 1 && !F.over && ui.bossIntro !== F.id) bossIntro(F);
+  placeEnts(F); stickyCheck(); if (view === "scene") anStart(F, ui.arena);
+  if (F.bossIdx !== undefined && F.round === 1 && !F.over && ui.bossIntro !== F.id && !F.wboss) bossIntro(F);
 }
 /* bandeau des challenges et mécaniques de boss */
 const CHAL_ICON = (id) => IC("chal_" + (["survivant", "versatile", "econome", "focus", "elitiste", "ordonne", "incurable", "elementaire", "rapide", "chacun", "barbare"].includes(id) ? id : "focus"), "mono");
@@ -3730,11 +3775,87 @@ function axMechBanner(A, txt, who) {
   A.fxl.appendChild(d); axLater(d, 2000);
 }
 /* effet d'un événement (impact, soin, bonus, invocation) */
+/* 1.0.36 « Nouvelles animations » (plateau, animations Complètes) : vie au repos, arrivée en combat, recul sous les coups, pas en avant de celui qui joue */
+const anOn = (A) => axFull() && A && A.view === "scene" && A.el;
+const AN_FLY = /Tofu|Moskito|Chauve|Corbac|Pious|Abeille|Kwak|Libellule|Papillon|Fantôme|Spectre|Mouche|Vampyre|Scarafeuille|Plume|Ailé|Aéro/;
+const anFoot = (A, n) => { const a = A.el.getBoundingClientRect(), r = n.getBoundingClientRect(); return { x: r.left - a.left + r.width / 2, y: r.bottom - a.top - 2 }; }; // pied = case du plateau
+function anStart(F, A) {
+  clearInterval(A._gt); if (!anOn(A)) return;
+  A.el.classList.add("anlive");
+  A.nodes.forEach((n, i) => { if (!n) return; const e = F.ents[i];
+    if (e.gone && F.wboss) { n.style.display = "none"; return; } // boss des mondes : seul sur le plateau, ses gardes du donjon ne s'affichent pas
+    n.style.setProperty("--bp", (2.2 + Math.random() * 1.4).toFixed(2) + "s"); n.style.setProperty("--bd", (-Math.random() * 3).toFixed(2) + "s");
+    if (e.side === "m" && AN_FLY.test(e.name)) n.classList.add("anfly");
+    if (e.boss && F.wboss) n.classList.add("antitan"); });
+  // de temps en temps, un combattant qui ne joue pas fait un petit geste
+  A._gt = setInterval(() => { if (ui.arena !== A || !A.el.isConnected || !axFull()) return clearInterval(A._gt); const G = S.fight; if (!G || G.id !== A.fid || G.over || document.hidden) return;
+    const cur = G.order && G.oi > 0 ? G.order[G.oi - 1] : -1;
+    const pool = A.nodes.map((n, i) => [n, i]).filter(([n, i]) => n && G.ents[i] && G.ents[i].alive && !G.ents[i].summon && i !== cur);
+    if (!pool.length) return; const [n, i] = pool[(Math.random() * pool.length) | 0], e = G.ents[i], b = axBody(n); if (!b || !b.animate || b.getAnimations().length) return;
+    const d = e.side === "c" ? 1 : -1, r = Math.random();
+    b.animate(r < 0.45 ? [{ transform: "none" }, { transform: "translateY(-16px)", offset: 0.3 }, { transform: "scale(1.06,.92)", offset: 0.55 }, { transform: "translateY(-6px)", offset: 0.75 }, { transform: "none" }]
+      : r < 0.75 ? [{ transform: "none" }, { transform: "scaleX(-1)", offset: 0.15 }, { transform: "scaleX(-1)", offset: 0.75 }, { transform: "none" }]
+      : [{ transform: "none" }, { transform: `rotate(${d * 7}deg) translateX(${d * 6}px)`, offset: 0.35 }, { transform: `rotate(${d * 7}deg) translateX(${d * 6}px)`, offset: 0.6 }, { transform: "none" }],
+      { duration: r < 0.45 ? 620 : 1100, easing: "ease-in-out" }); }, 1300);
+  // arrivée : les héros bondissent jusqu'à leur case, les monstres tombent sur la leur ; tout est fini avant la première action (un pas de combat)
+  if (F.round > 1 || F.over || F.seq > 1 || ui.anArr === F) return; ui.anArr = F; // un combat regardé (boss des mondes, Défi) arrive ici après sa première action
+  const sp = axSpd(), T = Math.min(1, (E.STEP_MS * sp) / 800); let kh = 0, km = 0;
+  // on attend que la page soit peinte : sinon, si son premier rendu est long, l'arrivée est déjà finie quand elle s'affiche
+  const bodies = A.nodes.map((n, i) => { const e = F.ents[i], b = n && axBody(n); if (!e || !b || !b.animate || e.summon) return null; b.style.opacity = "0"; return b; });
+  requestAnimationFrame(() => requestAnimationFrame(() => { bodies.forEach((b) => { if (b) b.style.opacity = ""; }); if (ui.arena !== A) return;
+  A.nodes.forEach((n, i) => { const e = F.ents[i], b = bodies[i]; if (!b || !n.isConnected) return;
+    const p = anFoot(A, n);
+    if (e.side === "c") { const dist = p.x + 60, dl = kh++ * 35 * T, du = 480 * T;
+      b.animate([{ transform: `translateX(${-dist}px)`, opacity: 0 }, { transform: `translate(${-dist * 0.7}px,-26px)`, opacity: 1, offset: 0.22 }, { transform: `translateX(${-dist * 0.45}px)`, offset: 0.42 }, { transform: `translate(${-dist * 0.2}px,-20px)`, offset: 0.62 }, { transform: "scale(1.05,.9)", offset: 0.84 }, { transform: "none" }], { duration: du, delay: dl, easing: "ease-out", fill: "backwards" });
+      setTimeout(() => { if (!n.isConnected) return; const q = anFoot(A, n); axDust(A, q.x, q.y, 4, 1); }, dl + du * 0.84);
+    } else if (e.boss && F.wboss && window.anTitanEntry) { b._anBusy = Date.now() + anTitanEntry(A, F, n, e, b, p, T);
+    } else { const big = e.boss, dl = (60 + km++ * 35) * T, du = (big ? 560 : 440) * T;
+      b.animate([{ transform: `translateY(${-(p.y + 40)}px)`, opacity: 0 }, { transform: `translateY(${-(p.y + 40) * 0.6}px)`, opacity: 1, offset: 0.25 }, { transform: "translateY(0) scale(1.12,.8)", offset: 0.72 }, { transform: "scale(.96,1.05)", offset: 0.86 }, { transform: "none" }], { duration: du, delay: dl, easing: "cubic-bezier(.5,0,.9,.5)", fill: "backwards" });
+      setTimeout(() => { if (!n.isConnected) return; const q = anFoot(A, n); axDust(A, q.x, q.y, big ? 9 : 5); if (big) pulse(A.el, "shake2"); }, dl + du * 0.72); }
+  }); }));
+}
+/* coup reçu : recul sur sa case en clignotant blanc ; un critique soulève et repousse plus loin */
+/* effets visibles des sorts : poussée, vol de PA, vol de vie, affaiblissement, vulnérabilité */
+function anFx(F, A, src, sn, def, hits, when) {
+  const g = E.spellGrade ? E.spellGrade(def, src.lvl) : def.grades[def.grades.length - 1]; if (!g) return;
+  const K = new Set(g.fx.map((x) => x.k)), seen = new Set(), tw = parseFloat(A.el.style.getPropertyValue("--tw")) || 60;
+  hits.forEach((f) => { if (seen.has(f.t)) return; seen.add(f.t); const n = A.nodes[f.t], e = F.ents[f.t]; if (!n || !e) return;
+    setTimeout(() => { if (!n.isConnected) return; const b = axBody(n), d = e.side === "c" ? -1 : 1, p = axPt(A, n, 0.45), q = axPt(A, sn, 0.45);
+      if (K.has("push") && b && b.animate) { b.animate([{ translate: "0 0" }, { translate: `${d * tw * 0.6}px -6px`, offset: 0.25 }, { translate: `${d * tw * 0.7}px 0`, offset: 0.4 }, { translate: `${d * tw * 0.7}px 0`, offset: 0.75 }, { translate: "0 0" }], { duration: 1100, easing: "ease-out" });
+        const fo = anFoot(A, n); for (let i = 0; i < 5; i++) setTimeout(() => axDust(A, fo.x + d * i * tw * 0.14, fo.y, 2, -d), i * 50); }
+      const orbs = (c, k) => { for (let i = 0; i < k; i++) { const o = axMk(A, "anorb", p.x + axRnd(-14, 14), p.y + axRnd(-14, 14), { "--c": c }); const dx = q.x - p.x, dy = q.y - p.y;
+        o.animate([{ transform: "translate(-50%,-50%) scale(.4)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.2)", opacity: 1, offset: 0.2 }, { transform: `translate(calc(-50% + ${dx * 0.5}px),calc(-50% + ${dy * 0.5 - 40}px))`, offset: 0.6 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.5)`, opacity: 0.2 }], { duration: 760, delay: i * 70, easing: "ease-in", fill: "both" }); axLater(o, 900 + i * 70); }
+        setTimeout(() => { const r = axMk(A, "ring", q.x, q.y, { "--c": c }); axLater(r, 700); }, 700); };
+      if (K.has("apdrain")) orbs("#5fb4ff", 3);
+      if (K.has("drain") || K.has("leech")) orbs("#ff5a6e", 3);
+      if (K.has("weaken")) for (let i = 0; i < 3; i++) { const a = axMk(A, "anarw", p.x + (i - 1) * 16, p.y - 30); a.innerHTML = '<svg viewBox="0 0 12 16"><path d="M6 16L0 8h4V0h4v8h4z" fill="#c77dff"/></svg>'; a.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.25 }, { transform: "translate(-50%,calc(-50% + 34px))", opacity: 0 }], { duration: 800, delay: i * 90, fill: "both" }); axLater(a, 1000); }
+      if (K.has("vuln")) { const c = axMk(A, "ancross", p.x, p.y); c.animate([{ transform: "translate(-50%,-50%) scale(2) rotate(-90deg)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1) rotate(0)", opacity: 1, offset: 0.4 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-50%) scale(.8)", opacity: 0 }], { duration: 900 }); axLater(c, 950); }
+    }, when(f) + 40); });
+}
+function anBuff(A, n, e, txt) {
+  if (!anOn(A) || !n || !e) return; const b = axBody(n); if (!b) return; const f = anFoot(A, n), p = axPt(A, n, 0.5), r = b.getBoundingClientRect();
+  if (/^Bouclier/.test(txt)) { const d = axMk(A, "andome", p.x, p.y + r.height * 0.08); d.style.width = r.width * 1.15 + "px"; d.style.height = r.height * 1.05 + "px";
+    d.animate([{ transform: "translate(-50%,-50%) scale(.2,0)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.08)", opacity: 1, offset: 0.35 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0.9, offset: 0.7 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0 }], { duration: 1100 }); axLater(d, 1150); }
+  else if (/^\+/.test(txt)) { const r2 = axMk(A, "ring", f.x, f.y - 4, { "--c": "#ffd84d" }); axLater(r2, 700);
+    for (let i = 0; i < 7; i++) { const s = axMk(A, "anspark", f.x + axRnd(-r.width * 0.35, r.width * 0.35), f.y - 4); s.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(-50%,calc(-50% - ${axRnd(40, r.height * 0.9)}px))`, opacity: 0 }], { duration: 900, delay: i * 60, fill: "both" }); axLater(s, 1000 + i * 60); } }
+}
+function anHit(A, n, e, f) {
+  if (!anOn(A) || !e) return; const b = axBody(n); if (!b || !b.animate || b._anBusy > Date.now()) return; // pas de recul pendant l'arrivée
+  const d = e.side === "c" ? -1 : 1, k = f.crit ? 2.2 : 1;
+  b.animate([{ transform: "none", filter: "none" }, { transform: `translateX(${d * 12 * k}px) ${f.crit ? "translateY(-12px) " : ""}rotate(${d * 6}deg)`, filter: "brightness(2.6) saturate(.4)", offset: 0.2 }, { transform: `translateX(${d * 9 * k}px) rotate(${d * 3}deg)`, filter: "none", offset: 0.5 }, { transform: f.crit ? `translateX(${d * 4}px) translateY(-4px)` : `translateX(${d * 3}px)`, offset: 0.75 }, { transform: "none" }], { duration: f.crit ? 560 : 420, easing: "ease-out" });
+}
+/* tour de jeu : celui qui joue avance d'une demi-case, puis retourne sur sa case dorée (propriété translate : ne gêne pas les autres animations) */
+function anTurn(F, A, curI) {
+  if (!anOn(A) || F.over || curI < 0 || A._turn === F.oi + ":" + F.round) return; A._turn = F.oi + ":" + F.round;
+  const n = A.nodes[curI], e = F.ents[curI], b = n && axBody(n); if (!b || !e || !e.alive || !b.animate) return;
+  const tw = parseFloat(A.el.style.getPropertyValue("--tw")) || 60, d = e.side === "c" ? 1 : -1;
+  b.animate([{ translate: "0 0" }, { translate: `${d * tw * 0.45}px -4px`, offset: 0.18 }, { translate: `${d * tw * 0.45}px 0`, offset: 0.24 }, { translate: `${d * tw * 0.45}px 0`, offset: 0.78 }, { translate: "0 0" }], { duration: Math.max(500, E.STEP_MS * axSpd() * 0.95), easing: "ease-in-out" });
+}
 function axEvent(F, A, f) {
   if (ui.arena !== A) return; cbtSnd(F, f); // 1.0.30 : sons de combat
   const n = A.nodes[f.t];
   if (f.k === "hit") { if (!n) return; const e = F.ents[f.t];
-    pulse(n, "hit");
+    pulse(n, "hit"); anHit(A, n, e, f);
     if (f.crit && axOn()) { floatAt(n, "−" + f.v, "#ffd84d", false, "crit"); if (axFull()) { const p = axPt(A, n); const fl = axMk(A, "flashw", p.x, p.y); axLater(fl, 220); const b = axBody(n); if (b && b.animate) b.animate([{ filter: "brightness(3)" }, { filter: "brightness(3)", offset: 0.6 }, { filter: "none" }], { duration: 160 }); pulse(A.el, "shake"); } }
     else if (f.s < 0 && axOn()) floatAt(n, "−" + f.v, "#b6ff9a", true);
     else floatAt(n, "-" + f.v, elVar(f.el));
@@ -3745,7 +3866,7 @@ function axEvent(F, A, f) {
   } else if (f.k === "heal") { if (!n) return; floatAt(n, "+" + f.v, "#7ee06a");
     if (axOn()) { const p = axPt(A, n, 0.6); for (let i = 0; i < (axFull() ? 8 : 4); i++) { const s = axMk(A, "streak", p.x + axRnd(-24, 24), p.y + axRnd(-12, 12), { "--c": "#b6ff8a" }); s.style.animationDelay = i * 40 + "ms"; axLater(s, 1100); } const r = axMk(A, "ring", p.x, p.y, { "--c": "#8fe36a" }); axLater(r, 520); }
     else burst(n, "h");
-  } else if (f.k === "buff") { if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true);
+  } else if (f.k === "buff") { if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true); anBuff(A, n, F.ents[f.t], f.txt);
     const e = F.ents[f.t]; if (e && e.side === "m" && e.mech && !/^[+−-]|^Bouclier|^Esquive|^Invulnérable|^Condamné/.test(f.txt) && !(axFull() && bxFor(e, f.txt))) axMechBanner(A, f.txt, e.name);
   } else if (f.k === "phase") { const e = F.ents[f.t]; if (e && e.mech && e.mech.includes("immortel") && e.revived && axFull() && n) bxRun(F, A, e, n, [], [], "n", BXM.immortel, null); else phaseFlash(); }
 }
@@ -3768,7 +3889,7 @@ function sgCtx(F, A, src, sn, hits, rest, el) {
     mk: (cls, x, y, v) => axMk(A, "sg " + cls, x, y, v),
     mkg: (cls, x, y, v) => { const d = axMk(A, "sg " + cls, x, y, v); if (A.fxg) A.fxg.appendChild(d); return d; },
     pt: (n, k) => axPt(A, n, k), foot: (n) => { const f = axFoot(A, n); return { x: f.x, y: f.y - 4 }; }, body: axBody,
-    anim: (n, kf, o) => { const b = axBody(n); return b && b.animate ? b.animate(kf, typeof o === "number" ? { duration: o * SG_T } : Object.assign({}, o, { duration: o.duration * SG_T, delay: (o.delay || 0) * SG_T })) : null; },
+    anim: (n, kf, o) => { const b = axBody(n); return b && b.animate && !(b._anBusy > Date.now()) ? b.animate(kf, typeof o === "number" ? { duration: o * SG_T } : Object.assign({}, o, { duration: o.duration * SG_T, delay: (o.delay || 0) * SG_T })) : null; },
     cancel: (n) => { const b = axBody(n); if (b && b.getAnimations) b.getAnimations().forEach((x) => x.cancel()); },
     clone: (n, cls, v) => sgClone(A, n, cls, v), W: () => A.el.clientWidth, H: () => A.el.clientHeight, rnd: axRnd, C: axC,
     dir: (n) => (c.pt(n).x >= c.pt(sn).x ? 1 : -1),
@@ -4163,6 +4284,8 @@ function bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go) {
   const tags = rest.filter((f) => f.k === "buff" && f.t === cast.s && bxFor(src, f.txt));
   let left = rest.filter((f) => !tags.includes(f)), hitsLeft = hits.slice();
   const Q = [], post = []; // [mise en scène, coups, argument]
+  const ult = window.anBossPick && anBossPick(F, A, src, cast, hitsLeft, true); // boss des mondes : l'attaque ultime prend tous les coups du tour
+  if (ult) { Q.push([ult, hitsLeft]); hitsLeft = []; }
   const cond = tags.find((f) => f.txt === "Condamnation");
   if (cond) { const b = rest.find((f) => f.k === "buff" && f.txt === "Condamné"); A.bxDoom = b && A.nodes[b.t] ? { e: F.ents[b.t], n: A.nodes[b.t], until: F.round + 3 } : null; }
   tags.forEach((f) => { const [k, fn, x] = bxFor(src, f.txt); if (!fn) return;
@@ -4175,7 +4298,9 @@ function bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go) {
   if (has("sacrifice") && !A.bxSacr && F.round <= 2) { A.bxSacr = true; Q.push([BXS.sacrifice, []]); }
   if ((has("horloge") || has("rebours")) && !src.isDouble && F.round >= 15 && F.round < 20 && A.bxTick !== F.round) { A.bxTick = F.round; Q.push([has("horloge") ? BXS.horloge : BXM.rebours, [], { x: 20 - F.round }]); }
   const sp = BXSP[src.img];
-  if (!Q.length && sp && hitsLeft.length && Math.random() < 0.34) { Q.push([sp, hitsLeft]); hitsLeft = []; }
+  const pk = hitsLeft.length && window.anBossPick && anBossPick(F, A, src, cast, hitsLeft); // sorts de Gargandyas
+  if (pk) { Q.push([pk, hitsLeft]); hitsLeft = []; }
+  if (sp && hitsLeft.length && !Q.length && Math.random() < 0.34) { Q.push([sp, hitsLeft]); hitsLeft = []; }
   if (has("miasmes")) Q.unshift([BXM.miasmes, []]);
   if (has("festin") && hitsLeft.length && left.some((f) => f.k === "heal" && f.t === cast.s)) { const heals = left.filter((f) => f.k === "heal" && f.t === cast.s); left = left.filter((f) => !heals.includes(f)); post.push([BXM.festin, hitsLeft.slice(0, 1), null, heals]); hitsLeft = hitsLeft.slice(1); }
   if (!Q.length && !post.length) return false;
@@ -4386,6 +4511,7 @@ function axPlain(F, A, src, sn, hits, rest, el, def, sp) {
   else if (sn) pulse(sn, "act");
   const late = tg.length ? when({ t: tg[0] }) : 0;
   hits.forEach((f) => setTimeout(() => axEvent(F, A, f), when(f)));
+  if (def && src && src.side === "c" && sn && anOn(A)) anFx(F, A, src, sn, def, hits, when); // effets visibles
   rest.forEach((f) => setTimeout(() => { if (!(f.k === "hit" && bxReact(F, A, f))) axEvent(F, A, f); }, f.k === "hit" ? late : Math.min(late, 200 * sp)));
 }
 /* chute d'un monstre (fumée, kamas) ; tombe d'un héros */
@@ -4554,6 +4680,7 @@ function updateCombat(force) {
       const hn = n.querySelector(".hpn"); if (hn) hn.textContent = `${fmt(Math.max(0, Math.round(e.hp)))} / ${fmt(e.hpMax)}`;
       if (e.side === "c" && !e.summon) { const pn = n.querySelector(".pas"); if (pn) { const P = E.passiveInfo(e, F); const html = P ? `${h(P.n)}${P.m ? ` <span class="pg">${Array.from({ length: Math.min(P.m, 12) }, (_, k) => `<i class="${k < Math.round(P.v * Math.min(P.m, 12) / P.m) ? "on" : ""}"></i>`).join("")}</span>` : ""}` : ""; if (pn.dataset.k !== html) { pn.innerHTML = html; pn.dataset.k = html; } } }
     });
+    sceneHud(F); // 1.0.36 « Plateau »
     // mode manuel : héros à qui c'est le tour, cibles possibles
     const AW = F.await && !F.over ? F.await : null; const aw = $("#await");
     if (AW) {
@@ -4570,7 +4697,7 @@ function updateCombat(force) {
       if (ui.manualSpell) ui.manualSpell = null;
       A.nodes.forEach((n) => n && n.classList.remove("targetable", "turnnow"));
     }
-    const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; A.nodes.forEach((n, i) => n && n.classList.toggle("cur", i === curI && !F.over));
+    const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; A.nodes.forEach((n, i) => n && n.classList.toggle("cur", i === curI && !F.over)); anTurn(F, A, curI);
     if (A.view === "form") window.FORMUI.update(F, A, force); // 1.0.30 : ordre de jeu, PV, icônes et colonnes de la Formation
     const fresh = F.fx.filter((f) => f.seq > A.lastSeq);
     if (fresh.length) {
@@ -10175,6 +10302,7 @@ Object.assign(window.DX.social, { brisageRefresh: () => { if (S && ui.tab === "f
 Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (DOFP_FC[f] || DOFP_FC.Attaque)[0], dofusDropHtml, dofusQuestLineHtml, dofusStepGo, consIco, fmt, im, imgM, resImg, sIco, itemStatsHtml, mainHero, cmpItem, headImg, lookImg, lookLocal, heroCard, resSheet, koliWatchStart, extWatchStart, watchStop, chestImg, dur, markDirty: () => { dirty = true; }, onPush: () => onPush() });
 /* Panel de test (js/admin.js) : uniquement sur la version de test, jamais sur le jeu public. */
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
+window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun }; // 1.0.36 : js/animsorts.js complète les sorts et boss animés
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
 start();
 })();
