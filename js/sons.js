@@ -125,8 +125,8 @@
   const CATS = { ui: "interface", cbt: "combat", evt: "recompenses" }; const vol = { interface: 0.5, combat: 0.5, recompenses: 0.8 };
   let bctx = null; const bus = {}; let voices = 0;
   function out(cat) { const c = H.ctx; if (bctx !== c) { bctx = c; voices = 0; Object.values(CATS).forEach((k) => { bus[k] = c.createGain(); bus[k].gain.value = vol[k]; bus[k].connect(H.sfx); }); } return bus[cat]; }
-  function play(id, at) { // id : « ui:givre:page », « cbt:cast:f », « evt:coffre »
-    if (!H.init()) return false; const [k, a, b] = id.split(":"), cat = CATS[k]; if (!cat) return false;
+  function play(id, at, over) { // id : « ui:givre:page », « cbt:cast:f », « evt:coffre » ; over : jouer sur un autre bus (« recompenses » pour le butin de l'interface)
+    if (!H.init()) return false; const [k, a, b] = id.split(":"), cat = vol[over] != null ? over : CATS[k]; if (!cat) return false;
     const fn = k === "ui" ? UI[b] && KIT[a] && ((t, o) => UI[b](KIT[a], t, o)) : k === "cbt" ? CBT[a] && ((t, o) => CBT[a](t, o, b)) : EVT[a];
     if (!fn) return false; const dst = out(cat); if (voices >= 12) return false; // plafond : jamais plus de 12 sons à la fois
     const c = H.ctx, t = at == null ? c.currentTime + 0.01 : at, g = c.createGain(); g.gain.value = (LV[k === "ui" ? `ui:${b}:${a}` : id] || LV[k === "ui" ? `ui:${b}` : id] || 1) * R(0.05); g.connect(dst);
