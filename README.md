@@ -9,6 +9,18 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.10.2 « Rayonnants sans PA en plus »
+
+Le bonus d'un objet Rayonnant ne donne plus de PA, de Portée ni d'Invocation en plus (un objet à 1 PA restait arrondi à 2 PA). Les Rayonnants déjà obtenus reviennent à leur PA, Portée et Invocation normaux, le reste du bonus est gardé.
+
+## 1.2.10.1 « Le chat entre de bonnes mains »
+
+Modération du chat pour le compte admin Xener : supprimer un message, sanctions depuis le pseudo (muet 10 min à 7 jours, bannir), effacer les messages publics d'un joueur, vider un salon, fermer le chat (supabase/chat.sql : adm_msg_del, adm_msg_purge, adm_chat_clear, adm_chat_close ; suppression en direct par le temps réel DELETE).
+
+## 1.2.10 « Le Poutch »
+
+Mathis (15/10/2026) : « le simuler vs un poutch qui a 100k hp, qu'il ait le temps de dérouler toute la séquence, pour valider ce qu'on a mis comme instruction » ; « uniquement un poutch comme dans dofus » ; choix 1A (8 tours) 2A et B (seul ou avec l'équipe). `E.poutchPreview` (js/engine.js) remplace `E.spellPreview` : copie de la partie, un seul monstre devenu Poutch (100 000 PV, ne frappe pas, sans résistances), PV des héros remis au maximum à chaque pas, 8 tours, aléatoire fixe restauré ensuite. `spPreviewHtml` (js/ui.js) : boutons Seul / Avec l'équipe, sorts avec dégâts et mécaniques, PA par tour, lancers sur 8 tours ; « Ranger au mieux » note les ordres sur le Poutch. Mesure qui a motivé le changement (19 classes, niveaux 60/120/200, 2 052 combats) : un vrai combat dure ≈ 6,3 tours, 40 % des dégâts tombaient après le tour 3.
+
 ## 1.2.9.4 « Poisons des monstres »
 
 Choix de Mathis 1A 2A 3B après la relecture de la 1.2.8. `monsterTurn` (js/engine.js) appelle `E.midHit` aussi pour les sorts de poison (valeur d'un tick), les mécaniques des sorts « dot » et les uniques du Minotot et du Kabahal marchent. `minionKey` (js/identboss.js) : un boss invoque les `bossMobs` de son donjon, même hors donjon (Songe infini), jamais une copie de lui-même. js/identmon.js : « prépare son attaque signature… » sans nom. js/pluie.js : bouton désactivé à 00:00. Difficulté de la 1.2.8 gardée (3B). Simulation `--essais 2` avant / après : écarts dans le bruit.

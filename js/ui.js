@@ -21,9 +21,21 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.9.4";
+const GAME_VERSION = "1.2.10.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.10.2", name: "Rayonnants sans PA en plus", items: [
+    "Un objet Rayonnant ne donne plus de PA, de Portée ni d'Invocation en plus : son bonus ne touche que les autres caractéristiques (comme le PM). Avant, l'arrondi faisait passer un objet à 1 PA à 2 PA.",
+    "Les Rayonnants déjà obtenus reviennent à leur PA, Portée et Invocation normaux (2 PA → 1 PA) ; le reste de leur bonus est gardé."
+  ] },
+  { v: "1.2.10.1", name: "Le chat entre de bonnes mains", items: [
+    "Modération du chat : Xener peut supprimer un message, rendre muet (10 min à 7 jours) ou bannir directement depuis le pseudo, effacer tous les messages d'un joueur, vider un salon ou fermer le chat le temps de calmer les choses.",
+  ] },
+  { v: "1.2.10", name: "Le Poutch", guide: "sorts", items: [
+    "Sorts & stratégies : « Ce que fera ton héros » le fait maintenant taper un Poutch de 100 000 PV qui ne riposte pas, pendant 8 tours, comme dans DOFUS. Toute sa séquence s'affiche, recharges comprises : c'est le moyen de vérifier ses instructions.",
+    "Chaque sort lancé montre ses dégâts et ses mécaniques (Bombe, Piège, Cumul…), avec les PA de chaque tour, puis le nombre de lancers de chaque sort sur les 8 tours et ceux qui ne partent jamais.",
+    "Deux boutons : « Seul » pour voir uniquement ses instructions, ou « Avec l'équipe » pour que ses alliés jouent aussi (conditions sur les alliés comprises).",
+    "Avant, l'aperçu ne jouait que 3 tours contre des monstres de la zone : il oubliait 40 % des dégâts et un sort sur deux dans certains cas." ] },
   { v: "1.2.9.4", name: "Poisons des monstres", items: [
     "Les sorts de poison des monstres font enfin ce que dit leur fiche (Venin, Effroi, Gel, Vampirisme, Saignement), comme les sorts uniques du Minotot (Destinos) et du Kabahal (Ratafia Putride). L'équilibrage ne bouge presque pas (vérifié par simulation).",
     "Songe infini : Corruption, Blop Coco Royal et Ben le Ripate appellent leurs vrais serviteurs au lieu de copies d'eux-mêmes.",
@@ -6165,13 +6177,17 @@ function spSheet(c, id) {
   openSheet(`${spCardNew(c, sp, null, -1)}
     <div class="row" style="gap:8px">${act}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-/* 0.1.11.2 : aperçu des 3 premiers tours (vrai moteur), conseils et « Ranger au mieux » */
+/* 0.1.11.2 : aperçu (vrai moteur), conseils et « Ranger au mieux ».
+   1.2.10 « Le Poutch » : comme dans DOFUS, le héros tape un Poutch de 100 000 PV pendant 8 tours, seul ou avec l'équipe,
+   pour vérifier ses instructions (E.poutchPreview) : chaque sort, ses dégâts, ses mécaniques et les PA de chaque tour. */
 const ATK_KINDS = ["dmg", "aoe", "drain", "dot"];
+const MECA_NOMS = { cumul: "Cumul", retard: "Retardement", etat: "État", contagion: "Contagion", erosion: "Érosion", attire: "Attirance", tp: "Téléportation", telefrag: "Téléfrag", piege: "Piège", glyphe: "Glyphe", boom: "Bombe", portail: "Portail", sacrifice: "Sacrifice", pioche: "Main pleine", echo: "Écho", relance: "Relance", rune: "Rune" };
 const spPrevCache = { key: null, data: null };
+const spPrevTeam = (c) => ui.spPrevMode === "team" && c.inTeam && !c.job && E.team(S).length > 1;
 function spPreviewOf(c) {
-  const mode = ui.spPrevMode || "hunt";
-  const key = JSON.stringify([c.id, c.lvl, c.spells, c.equip, c.pet, c.mount, c.stats, mode, S.sub, S.hunting, S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job])]);
-  if (spPrevCache.key !== key) { let d = null; try { d = E.spellPreview(S, c.id, mode); } catch (e) { console.warn("aperçu des sorts", e); } spPrevCache.key = key; spPrevCache.data = d; }
+  const team = spPrevTeam(c);
+  const key = JSON.stringify([c.id, c.lvl, c.spells, c.equip, c.pet, c.mount, c.stats, team, team ? S.chars.map((x) => [x.id, x.inTeam, x.lvl, x.job, x.spells, x.equip]) : 0]);
+  if (spPrevCache.key !== key) { let d = null; try { d = E.poutchPreview(S, c.id, { team }); } catch (e) { console.warn("aperçu des sorts", e); } spPrevCache.key = key; spPrevCache.data = d; }
   return spPrevCache.data;
 }
 function spTips(c, P) {
@@ -6186,7 +6202,7 @@ function spTips(c, P) {
   if (idle.length && top && P.casted.has(top.id)) tips.push({ ico: defs[idle[0]], txt: `${idle.map((i) => `<b>${h(defs[i].name)}</b>`).join(", ")} ${idle.length > 1 ? "ne sont" : "n'est"} jamais choisi${idle.length > 1 ? "s" : ""} : ${h(top.name)} est plus utile ici. Échange ${idle.length > 1 ? "l'un d'eux" : "ce sort"} contre un sort plus utile.`, btn: "Voir", act: `data-act="spsel" data-i="${idle[0]}"` });
   // 2) sorts bloqués par leur condition
   const SAFE = ["self_low", "ally_low", "ally_shield", "no_summon", "always"];
-  eq.forEach((x, i) => { if (!defs[i] || P.casted.has(x.id) || SAFE.includes(x.cond || "always")) return; if (x.cond === "boss" && P.mode !== "boss") return;
+  eq.forEach((x, i) => { if (!defs[i] || P.casted.has(x.id) || SAFE.includes(x.cond || "always")) return; if (x.cond === "boss" && P.mode !== "boss") return; if (x.cond === "enemy_many" && P.mode === "poutch") return;
     tips.push({ ico: defs[i], txt: `<b>${h(defs[i].name)}</b> ne s'est pas lancé : sa condition est « ${h(CONDITIONS[x.cond] || x.cond)} ».`, btn: "Régler", act: `data-act="spsel" data-i="${i}"` }); });
   // 3) PA perdus
   const known = E.knownSpells(c);
@@ -6215,27 +6231,32 @@ function spTips(c, P) {
   return tips.slice(0, 4);
 }
 function spPreviewHtml(c) {
-  const P = spPreviewOf(c); const mode = ui.spPrevMode || "hunt";
-  const head = `<div class="phead"><h2>Ce que fera ton héros</h2><span class="spchips">${[["hunt", "Chasse"], ["boss", "Boss"]].map(([k, n]) => `<button class="spc ${mode === k ? "on" : ""}" data-act="spprev" data-k="${k}">${n}</button>`).join("")}</span></div>`;
+  const P = spPreviewOf(c); const canTeam = c.inTeam && !c.job && E.team(S).length > 1; const team = spPrevTeam(c);
+  const head = `<div class="phead"><h2>Ce que fera ton héros</h2><span class="spchips">${[["solo", "Seul"], ["team", "Avec l'équipe"]].map(([k, n]) => `<button class="spc ${(k === "team") === team ? "on" : ""}" data-act="spprev" data-k="${k}" ${k === "team" && !canTeam ? `disabled data-tip="Ce héros n'est pas dans l'équipe de combat"` : ""}>${n}</button>`).join("")}</span></div>`;
   if (!P) return `${head}<div class="pad"><p class="small muted">Aperçu indisponible pour ce héros.</p></div>`;
-  const team = E.team(S); const withTeam = c.inTeam && !c.job && team.length > 1;
   const wIt = c.equip.arme && S.items[c.equip.arme]; // 0.1.55.2 : le coup d'arme apparaît dans l'aperçu
-  const WHY = { cuve: ["🍺", "Il cuve son ivresse : passif du Pandawa, un tour sur trois (5 Ivresse)."], ko: ["💀", "Héros à terre : il ne joue plus."], stun: ["💫", "Étourdi par un monstre : il passe son tour."], gold: ["🪙", "Changé en statue d'or : il passe son tour."], over: ["🏁", "Combat fini avant son tour."], none: ["⚠️", "Aucun sort possible : PA, recharges ou conditions."] };
-  const castHtml = (id) => { if (id === "arme" && wIt) return `<span class="spcast wcast" data-tip="Coup d'arme"><img src="${itemImg(wIt.tpl)}" alt=""><span>${h(ITEMS[wIt.tpl].name)}</span></span>`;
-    const sp = E.spellDef(c.cls, id); return sp ? `<span class="spcast" data-tip="${h(sp.name)}">${spellImg(sp.name) ? `<img src="${spellImg(sp.name)}" alt="">` : "✦"}<span>${h(sp.name)}</span></span>` : ""; };
-  const emptyHtml = (r) => r.why ? `<span class="spwhy"><b>${WHY[r.why][0]}</b> ${h(WHY[r.why][1])}</span>` : `<span class="small muted">rien à lancer</span>`;
-  const dmgOf = (r) => r.dmg1; // dégâts du combat affiché (le total reste la moyenne de 3 combats)
+  const WHY = { cuve: ["🍺", "Il cuve son ivresse : passif du Pandawa, un tour sur trois (5 Ivresse)."], none: ["⚠️", "Aucun sort possible : PA, recharges ou conditions."] };
+  const spOf = (id) => { if (id === "arme" && wIt) return { ico: itemImg(wIt.tpl), name: ITEMS[wIt.tpl].name }; const sp = E.spellDef(c.cls, id); return sp ? { ico: spellImg(sp.name), name: sp.name } : null; };
+  const castHtml = (x) => { const o = spOf(x.sp); if (!o) return "";
+    return `<span class="spcast det ${x.sp === "arme" ? "wcast" : ""}" data-tip="${x.sp === "arme" ? "Coup d'arme" : h(o.name)}">${o.ico ? `<img src="${o.ico}" alt="">` : "✦"}<span>${h(o.name)}</span>${x.dmg ? `<em class="dm">−${fmt(x.dmg)}</em>` : ""}${x.mech.map((m) => `<em class="mc">${h(MECA_NOMS[m] || m)}</em>`).join("")}</span>`; };
+  const emptyHtml = (r) => r.why && WHY[r.why] ? `<span class="spwhy"><b>${WHY[r.why][0]}</b> ${h(WHY[r.why][1])}</span>` : `<span class="small muted">rien à lancer</span>`;
   // 1.0.12.8 : les PA gagnés en combat (au-delà du maximum) sont dits dans l'infobulle et dessinés en doré
-  const rows = P.rounds.filter((r) => r.r <= P.endRound).map((r) => `<div class="sptn ${!r.casts.length && r.why ? "why" : ""}"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map(castHtml).join("") || emptyHtml(r)}
-    ${!r.casts.length && r.why ? "" : `<span class="pips" data-tip="${r.pa > P.paMax ? `${r.pa} PA utilisés (${P.paMax} + ${r.pa - P.paMax} gagné${r.pa - P.paMax > 1 ? "s" : ""} en combat)` : `${r.pa}/${P.paMax} PA utilisés`}">${Array.from({ length: Math.min(Math.max(P.paMax, r.pa), 14) }, (_, i) => `<i class="${i >= P.paMax ? "plus" : i < r.pa ? "" : "off"}"></i>`).join("")}</span>`}</div><span class="tot">${dmgOf(r) ? `≈ ${fmt(dmgOf(r))}` : ""}</span></div>`).join("");
-  const cnt = {}; c.spells.forEach((x) => { const sp = E.spellDef(c.cls, x.id); if (sp && ATK_KINDS.includes(spKindOf(c, sp))) { const el = sp.el && sp.el !== "best" ? sp.el : "n"; cnt[el] = (cnt[el] || 0) + 1; } });
-  const nAtk = Object.values(cnt).reduce((a, b) => a + b, 0) || 1;
-  const tips = spTips(c, P);
+  const pips = (r) => `<span class="pips" data-tip="${r.pa > P.paMax ? `${r.pa} PA utilisés (${P.paMax} + ${r.pa - P.paMax} gagné${r.pa - P.paMax > 1 ? "s" : ""} en combat)` : `${r.pa}/${P.paMax} PA utilisés`}">${Array.from({ length: Math.min(Math.max(P.paMax, r.pa), 14) }, (_, i) => `<i class="${i >= P.paMax ? "plus" : i < r.pa ? "" : "off"}"></i>`).join("")}</span>`;
+  const rows = P.rounds.map((r) => `<div class="sptn ${!r.casts.length && r.why ? "why" : ""}"><span class="tn">Tour ${r.r}</span><div class="casts">${r.casts.map(castHtml).join("")}${r.late ? `<span class="spcast det late" data-tip="Bombes, glyphes, retardements… posés aux tours d'avant"><b>💥</b><span>Effets posés avant</span><em class="dm">−${fmt(r.late)}</em></span>` : ""}${r.casts.length ? pips(r) : emptyHtml(r)}</div><span class="tot">${r.dmg ? `≈ ${fmt(r.dmg)}` : ""}</span></div>`).join("");
+  const nR = P.rounds.length; const paAvg = P.rounds.reduce((a, r) => a + r.pa, 0) / Math.max(1, nR);
+  const cnt = {}; P.rounds.forEach((r) => r.casts.forEach((x) => { const k = (cnt[x.sp] = cnt[x.sp] || { n: 0, dmg: 0 }); k.n++; k.dmg += x.dmg; }));
+  const eq = c.spells.map((x) => x.id).filter((id) => E.spellDef(c.cls, id)); const list = eq.concat(cnt.arme ? ["arme"] : []);
+  const mx = Math.max(1, ...Object.values(cnt).map((x) => x.n)); const nUsed = eq.filter((id) => cnt[id]).length;
+  const freq = list.map((id) => { const o = spOf(id); const k = cnt[id]; if (!o) return "";
+    return `<div class="spf ${k ? "" : "off"}">${o.ico ? `<img src="${o.ico}" alt="">` : "<i></i>"}<span class="nm">${h(o.name)}</span><span class="bar"><i style="width:${k ? Math.round((k.n / mx) * 100) : 0}%"></i></span><span class="v">${k ? `${k.n} lancer${k.n > 1 ? "s" : ""} · ${Math.round((k.dmg / Math.max(1, P.total)) * 100)} % des dégâts` : "jamais lancé"}</span></div>`; }).join("");
+  const LP = { mode: "poutch", rounds: P.rounds.map((r) => ({ r: r.r, casts: r.casts.map((x) => x.sp), pa: r.pa, why: r.why })), paMax: P.paMax, endRound: nR, end: null, casted: new Set(Object.keys(cnt)) };
+  const tips = spTips(c, LP);
   return `${head}<div class="pad stack" style="gap:8px">
-    <p class="xs muted">Contre ${h(P.label)} (${P.mons} monstre${P.mons > 1 ? "s" : ""})${withTeam ? ", avec ton équipe" : ", seul"} · ${P.paMax} PA par tour · joué par le vrai moteur de combat, tours et dégâts d'un même combat (total : moyenne de 3 combats).</p>
+    <p class="xs muted">${team ? "Avec ton équipe" : "Seul"} contre un <b>Poutch de ${fmt(P.hp)} PV</b> qui ne riposte pas, pendant ${nR} tours : toute sa séquence, pour vérifier ses instructions. Une seule cible : ses sorts de zone partent moins souvent qu'en vrai combat.</p>
+    <div class="spstat"><div><b>${fmt(Math.round(P.total / Math.max(1, nR)))}</b><span>dégâts par tour</span></div><div><b>${paAvg.toFixed(1).replace(".", ",")}/${P.paMax}</b><span>PA utilisés par tour</span></div><div class="${nUsed < eq.length ? "warn" : ""}"><b>${nUsed}/${eq.length}</b><span>sorts lancés</span></div></div>
     <div class="spturns">${rows}</div>
-    ${P.end ? `<p class="xs ${P.end === "win" ? "" : "muted"}">${P.end === "win" ? `Combat gagné au tour ${P.endRound}.` : `Combat perdu au tour ${P.endRound}.`}</p>` : ""}
-    <div class="spsum"><span>≈ <b>${fmt(P.total)}</b> dégâts sur ${P.endRound} tour${P.endRound > 1 ? "s" : ""}</span><span class="elbar" data-tip="Éléments des sorts d'attaque équipés">${Object.entries(cnt).map(([e, n]) => `<i style="width:${(n / nAtk) * 100}%;background:var(--el-${e})"></i>`).join("")}</span><span class="xs muted">${Object.entries(cnt).map(([e, n]) => `${ELEMENTS[e].name} ${n}`).join(" · ")}</span></div>
+    <div class="splab">Sur ses ${nR} tours</div>
+    <div class="spfreq">${freq}</div>
     <div class="splab">Conseils</div>
     <div class="sptips">${tips.length ? tips.map((t) => `<div class="sptip">${t.ico && spellImg(t.ico.name) ? `<img src="${spellImg(t.ico.name)}" alt="">` : ""}<span class="grow small">${t.txt}</span>${t.btn ? `<button class="btn sm" ${t.act}>${t.btn}</button>` : ""}</div>`).join("") : `<div class="sptip ok"><span class="grow small">Rien à signaler : tous les sorts servent et les PA sont bien utilisés.</span></div>`}</div>
   </div>`;
@@ -6243,11 +6264,11 @@ function spPreviewHtml(c) {
 /* « Ranger au mieux » : l'IA lance les sorts de soutien dans l'ordre de la barre, puis la meilleure attaque par PA ;
    on essaie donc tous les ordres des sorts de soutien (5 au plus) et on garde celui qui fait le plus de dégâts dans l'aperçu */
 function spOptimize(c) {
-  const mode = ui.spPrevMode || "hunt"; const eq = c.spells.map((x) => ({ ...x }));
+  const team = spPrevTeam(c); const eq = c.spells.map((x) => ({ ...x }));
   const isSup = (x) => { const sp = E.spellDef(c.cls, x.id); return sp && !ATK_KINDS.includes(spKindOf(c, sp)); };
   const sup = eq.filter(isSup).slice(0, 5); const rest = eq.filter((x) => !sup.includes(x));
   const perms = (a) => (a.length <= 1 ? [a] : a.flatMap((x, i) => perms(a.slice(0, i).concat(a.slice(i + 1))).map((p) => [x].concat(p))));
-  const score = (order) => { const P = E.spellPreview(S, c.id, mode, order, 2); return P ? P.total : 0; };
+  const score = (order) => { const P = E.poutchPreview(S, c.id, { team, spells: order }); return P ? P.total : 0; };
   const cur = score(c.spells); let best = null, bestV = cur;
   perms(sup).forEach((p) => { const order = p.concat(rest); const v = score(order); if (v > bestV * 1.01) { bestV = v; best = order; } });
   return { best, gain: cur > 0 ? Math.round(((bestV - cur) / cur) * 100) : 0 };

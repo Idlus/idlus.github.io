@@ -298,3 +298,22 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   assert.strictEqual(E.subUnlocked(S2, "ast_planque"), true, "la baguette du Bricoleur ouvre toujours");
   console.log("ok baguette rikiki");
 }
+
+// 1.2.10.2 : un objet Rayonnant ne gagne ni PA, ni PM, ni Portée, ni Invocation (avant : 1 PA arrondi à 2 PA)
+{
+  const S = E.newState("Rayonnant", "iop");
+  const tpl = Object.keys(D.ITEMS).find((id) => { const s = D.ITEMS[id].stats || {}; return s.pa && s.pa[1] === 1 && Object.keys(s).some((k) => k !== "pa" && s[k][0] > 0); });
+  assert.ok(tpl, "un objet à 1 PA existe");
+  for (let i = 0; i < 20; i++) {
+    const it = E.rollItem(S, tpl, { radiant: true });
+    assert.ok(it.radiant > 0, "objet Rayonnant forcé");
+    assert.strictEqual(it.stats.pa, 1, "le bonus Rayonnant ne doit pas ajouter de PA");
+  }
+  // ancien Rayonnant (avant 1.2.10.2) : 2 PA arrondis → revient à 1 PA, le reste du bonus gardé, une seule fois
+  const it = E.rollItem(S, tpl, { radiant: false }); const k2 = Object.keys(it.stats).find((k) => k !== "pa" && it.stats[k] > 0);
+  it.radiant = 30; it.roll = Object.assign({}, it.stats); for (const k in it.stats) if (it.stats[k] > 0 && k !== "pm") it.stats[k] = Math.ceil(it.stats[k] * 1.3);
+  const keep = it.stats[k2]; assert.strictEqual(it.stats.pa, 2);
+  E.caracsMigrate(S); E.caracsMigrate(S);
+  assert.strictEqual(it.stats.pa, 1, "l'ancien Rayonnant revient à 1 PA"); assert.strictEqual(it.stats[k2], keep, "le reste du bonus est gardé");
+  console.log("ok - Rayonnant sans PA en plus");
+}

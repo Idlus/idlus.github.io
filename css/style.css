@@ -2356,6 +2356,7 @@ body:has(#wtip:not(.below):not(.side)) .app{padding-bottom:calc(var(--wtipb,0px)
 .chmenu button:hover{background:var(--panel3)}
 .chmenu button.red{color:var(--danger)}
 .chmenu .uico{width:18px;height:18px}
+.chmenu{max-height:calc(100vh - 16px);overflow-y:auto}.chmenu .sub{padding:6px 8px 2px;border-top:1px solid var(--line);margin-top:4px;text-transform:uppercase;letter-spacing:.04em} /* 1.2.10.1 : sanctions dans le menu du pseudo */
 .rep-opts{display:flex;flex-direction:column;gap:6px}
 .rep-opts label{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel2);border:2px solid var(--line);font-weight:700;cursor:pointer}
 .rep-opts label:has(input:checked){border-color:var(--gold)}
@@ -5764,3 +5765,21 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .midwarn{position:absolute;left:50%;top:-4px;transform:translate(-50%,-100%);font-size:18px;line-height:1;padding:3px 6px;border-radius:999px;background:rgba(40,6,6,.9);border:2px solid #ff3b2f;color:#ffd84d;z-index:8;pointer-events:none;animation:midwarn 1s ease-in-out infinite}
 @keyframes midwarn{0%,100%{transform:translate(-50%,-100%) scale(1)}50%{transform:translate(-50%,-112%) scale(1.15)}}
 @media (prefers-reduced-motion:reduce){.midwarn{animation:none}}
+/* 1.2.10 « Le Poutch » : aperçu des sorts contre un Poutch */
+.spcast.det{flex-wrap:wrap;padding-right:9px}
+.spcast em{font-style:normal;font-weight:800;font-size:11px}
+.spcast .dm{color:var(--ink)}
+.spcast .mc{display:inline-block;font-size:10.5px;font-weight:900;padding:1px 6px;border-radius:999px;background:color-mix(in srgb,var(--gold) 26%,transparent);color:var(--ink)}
+.spcast.late{background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.spstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
+.spstat>div{background:var(--panel2);border-radius:10px;padding:6px 10px;display:flex;flex-direction:column}
+.spstat b{font-size:17px;font-family:var(--font-title);color:var(--title);font-variant-numeric:tabular-nums}.spstat span{font-size:11.5px;color:var(--muted);font-weight:700}
+.spstat .warn b{color:var(--danger)}
+.spfreq{display:flex;flex-direction:column;gap:5px}
+.spf{display:grid;grid-template-columns:24px minmax(0,1.3fr) minmax(60px,1fr) auto;gap:8px;align-items:center;font-size:12.5px}
+.spf img{width:24px;height:24px;border-radius:6px}.spf .nm{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spf .bar{height:8px;border-radius:99px;background:var(--panel2);overflow:hidden}.spf .bar i{display:block;height:100%;background:var(--action);border-radius:99px}
+.spf .v{font-size:11.5px;color:var(--muted);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.spf.off{opacity:.55}.spf.off .v{color:var(--danger)}
+.spc:disabled{opacity:.45;cursor:default}
+@media (max-width:600px){.spcast.det span{display:inline}.spcast.det{padding:2px 7px 2px 2px}.spf{grid-template-columns:22px minmax(0,1fr) auto;row-gap:3px}.spf img{grid-row:1/3}.spf .nm{grid-column:2;grid-row:1}.spf .v{grid-column:3;grid-row:1}.spf .bar{grid-column:2/4;grid-row:2}}

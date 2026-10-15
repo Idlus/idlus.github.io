@@ -451,7 +451,7 @@
   /* ---------------- Objets ---------------- */
   /* Objets Rayonnants : très rares, +10 à +50 % sur les statistiques positives de l'objet */
   E.RADIANT_CHANCE = 1 / 400;
-  E.RADIANT_SKIP = { pm: 1 }; // 1.0.30 : le bonus Rayonnant ne donne pas de PM en plus (un objet à 1 PM reste à 1 PM)
+  E.RADIANT_SKIP = { pa: 1, pm: 1, po: 1, inv: 1 }; // 1.0.30 : le bonus Rayonnant ne donne pas de PM en plus (un objet à 1 PM reste à 1 PM) ; 1.2.10.2 : ni PA, ni Portée, ni Invocation (avant, l'arrondi au-dessus faisait 1 PA → 2 PA), comme E.PERFECT_SKIP
   E.radiantBonus = () => Math.round(10 + 40 * Math.pow(rnd(), 2.2));
   /* Raretés (3.2) : déduites de l'origine de l'objet. Pour en ajouter une plus tard (ex. Mythique),
      ajouter une entrée ici (dans l'ordre croissant) et la donner aux objets via ITEMS[x].rarity ou la règle ci-dessous. */
@@ -2188,50 +2188,46 @@
     else if (!alive(F, "c").filter((x) => !x.summon).length) endFight(S, false);
   };
 
-  /* 0.1.11.2 : aperçu des 3 premiers tours d'un héros, joué par le vrai moteur de combat sur une copie de la partie
-     mode "hunt" : un groupe de sa zone de chasse (ou d'une zone de son niveau) · mode "boss" : la salle du boss d'un donjon de son niveau
-     spells : barre à tester (sinon celle du héros) · seeds : nombre de combats (dégâts moyens ; les lancers affichés sont ceux du 1er) */
-  E.spellPreview = (S, cid, mode, spells, seeds = 3) => {
+  /* 1.2.10 « Le Poutch » : comme dans DOFUS, le héros tape un Poutch de 100 000 PV qui ne riposte pas, pendant 8 tours,
+     pour vérifier ses instructions (toute la séquence, recharges comprises). Seul ou avec l'équipe (o.team).
+     Joué par le vrai moteur sur une copie de la partie ; renvoie, tour par tour, les sorts lancés, leurs dégâts et les mécaniques déclenchées. */
+  E.POUTCH_HP = 100000; E.POUTCH_TOURS = 8;
+  const POUTCH_MECH = ["cumul", "retard", "etat", "contagion", "erosion", "attire", "tp", "telefrag", "piege", "glyphe", "boom", "portail", "sacrifice", "pioche", "echo", "relance", "rune"];
+  E.poutchPreview = (S, cid, o = {}) => {
     const c0 = S.chars.find((x) => x.id === cid); if (!c0) return null;
-    const evLen = E.events.length; const rng0 = rnd; const base = JSON.stringify(S); let out = null;
+    const nT = o.rounds || E.POUTCH_TOURS; const evLen = E.events.length; const rng0 = rnd; let out = null;
     try {
-      for (let k = 0; k < seeds; k++) {
-        let seed = 7919 * (k + 1);
-        rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-        const S2 = JSON.parse(base); const c = S2.chars.find((x) => x.id === cid);
-        if (spells) c.spells = spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
-        S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
-        if (!(c.inTeam && !c.job)) S2.chars.forEach((x) => (x.inTeam = x.id === cid));
-        c.job = null;
-        let label;
-        if (mode === "boss") {
-          const ids = Object.keys(DUNGEONS).filter((id) => DUNGEONS[id].lvl <= c.lvl + 5).sort((a, b) => DUNGEONS[b].lvl - DUNGEONS[a].lvl);
-          const did = ids[0] || Object.keys(DUNGEONS)[0]; const dg = DUNGEONS[did];
-          S2.dungeon = { id: did, room: dg.rooms.length, stasis: 1, chain: 1, t: 0, syncLvl: c.lvl, mods: [], eliteRoom: -1 };
-          label = `${MONSTERS[dg.boss].name} (${dg.name})`;
-        } else {
-          let sid = S.hunting && S.sub && SUBS[S.sub] && SUBS[S.sub].lvl && Math.abs(SUBS[S.sub].lvl[1] - c.lvl) <= 30 ? S.sub : null;
-          if (!sid) sid = Object.keys(SUBS).filter((s) => SUBS[s].lvl && SUBS[s].monsters && SUBS[s].monsters.length).sort((a, b) => Math.abs((SUBS[a].lvl[0] + SUBS[a].lvl[1]) / 2 - c.lvl) - Math.abs((SUBS[b].lvl[0] + SUBS[b].lvl[1]) / 2 - c.lvl))[0];
-          S2.hunting = true; S2.sub = sid; label = SUBS[sid].name;
-        }
-        const F = E.startFight(S2); if (!F) return null;
-        const hi = F.ents.findIndex((e) => e.side === "c" && e.cid === cid && !e.summon); const he = F.ents[hi]; if (hi < 0) return null;
-        const rounds = [1, 2, 3].map((r) => ({ r, casts: [], pa: 0, dmg: 0 }));
-        let lastSeq = -1, dealt = 0; const seen = new WeakSet(); F.log.forEach((l) => seen.add(l));
-        const grab = () => {
-          F.fx.forEach((f) => { if (f.seq <= lastSeq) return; if (f.k === "cast" && f.s === hi && f.sp && F.round <= 3) { const d = f.sp === "arme" ? he.wsp : E.spellDef(c.cls, f.sp); const g = d && E.spellGrade(d, c.lvl); rounds[F.round - 1].casts.push(f.sp); rounds[F.round - 1].pa += g ? g.pa : 0; } });
-          if (F.round <= 3) { const R = rounds[F.round - 1];
-            F.log.forEach((l) => { if (seen.has(l)) return; seen.add(l); if (!l.txt.startsWith(he.name + " ")) return;
-              if (/cuve son ivresse/.test(l.txt)) R.why = R.why || "cuve"; else if (/ne peut pas bouger/.test(l.txt)) R.why = R.why || "stun"; else if (/statue d'or/.test(l.txt)) R.why = R.why || "gold"; else if (/passe son tour/.test(l.txt)) R.why = R.why || "none"; });
-            if (!he.alive && !R.casts.length) R.why = R.why || "ko"; }
-          lastSeq = F.seq; if (F.round <= 3) { rounds[F.round - 1].dmg += (he.dealt || 0) - dealt; } dealt = he.dealt || 0;
-        };
-        for (let g = 0; g < 600 && !F.over && F.round <= 3; g++) { E.step(S2); grab(); }
-        const res = { mode, label, mons: F.ents.filter((e) => e.side === "m").length, paMax: he.st.pa, rounds, end: F.over ? F.result : null, endRound: Math.min(3, F.round), total: rounds.reduce((a, r) => a + r.dmg, 0) };
-        res.rounds.forEach((r) => (r.dmg1 = r.dmg)); if (F.over) res.rounds.forEach((r) => { if (r.r === res.endRound && !r.casts.length && !r.why) r.why = "over"; });
-        if (!out) out = res; else { out.rounds.forEach((r, i) => (r.dmgSum = (r.dmgSum || r.dmg) + res.rounds[i].dmg)); out.totalSum = (out.totalSum || out.total) + res.total; out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); res.rounds.forEach((r) => r.casts.forEach((id) => out.casted.add(id))); }
+      let seed = 7919; rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      const S2 = JSON.parse(JSON.stringify(S)); const c = S2.chars.find((x) => x.id === cid);
+      if (o.spells) c.spells = o.spells.map((x) => ({ id: x.id, cond: x.cond, tgt: x.tgt }));
+      S2.fight = null; S2.dungeon = null; S2.pause = 0; S2.settings = Object.assign({}, S2.settings, { manual: false }); S2.manualLive = false; S2.protector = null;
+      const team = o.team && c.inTeam && !c.job;
+      if (!team) S2.chars.forEach((x) => (x.inTeam = x.id === cid));
+      c.job = null;
+      S2.hunting = true; S2.sub = Object.keys(SUBS).find((s) => SUBS[s].monsters && SUBS[s].monsters.length);
+      const F = E.startFight(S2); if (!F) return null;
+      const hi = F.ents.findIndex((e) => e.side === "c" && e.cid === cid && !e.summon); const he = F.ents[hi]; if (hi < 0) return null;
+      F.ents.filter((e) => e.side === "m").forEach((m, i) => {
+        if (i) { m.alive = false; m.hp = 0; return; }
+        Object.assign(m, { name: "Poutch", hp: E.POUTCH_HP, hpMax: E.POUTCH_HP, dmg: 0, boss: false, mech: null, shield: 0, sp: null, res: {}, archi: false, attacks: 0, poutch: true });
+      });
+      F.order = F.order.filter((i) => F.ents[i].alive); F.bossIdx = undefined;
+      const R = Array.from({ length: nT }, (_, i) => ({ r: i + 1, casts: [], pa: 0, dmg: 0, late: 0 }));
+      let last = F.seq; const seen = new WeakSet(); F.log.forEach((l) => seen.add(l));
+      for (let g = 0; g < 4000 && !F.over && F.round <= nT; g++) {
+        const rd = F.round; E.step(S2);
+        F.ents.forEach((e) => { if (e.side === "c" && e.alive) e.hp = e.hpMax; }); // le Poutch ne fait pas mal (et les PV n'influencent pas les conditions)
+        const T = R[Math.min(rd, nT) - 1]; const nf = F.fx.filter((f) => f.seq > last); const bySeq = {};
+        nf.forEach((f) => { if (f.k === "cast" && f.s === hi && f.sp) { const d = f.sp === "arme" ? he.wsp : E.spellDef(c.cls, f.sp); const gr = d && E.spellGrade(d, c.lvl); const x = { sp: f.sp, dmg: 0, mech: [] }; bySeq[f.seq] = x; T.casts.push(x); T.pa += gr ? gr.pa : 0; } });
+        nf.forEach((f) => {
+          if (f.k === "hit" && f.s === hi) { const x = bySeq[f.seq]; T.dmg += f.v || 0; if (x) x.dmg += f.v || 0; else T.late += f.v || 0; }
+          else if (f.k === "buff" && f.idx && POUTCH_MECH.includes(f.idx) && bySeq[f.seq] && !bySeq[f.seq].mech.includes(f.idx)) bySeq[f.seq].mech.push(f.idx);
+        });
+        F.log.forEach((l) => { if (seen.has(l)) return; seen.add(l); if (!l.txt.startsWith(he.name + " ")) return;
+          if (/cuve son ivresse/.test(l.txt)) T.why = T.why || "cuve"; else if (/passe son tour/.test(l.txt)) T.why = T.why || "none"; });
+        last = F.seq;
       }
-      if (out) { out.casted = out.casted || new Set(out.rounds.flatMap((r) => r.casts)); out.rounds.forEach((r) => (r.dmg = Math.round((r.dmgSum || r.dmg) / seeds))); out.total = Math.round((out.totalSum || out.total) / seeds); }
+      out = { rounds: R, paMax: he.st.pa, total: R.reduce((a, r) => a + r.dmg, 0), team: !!team, hp: E.POUTCH_HP };
     } finally { rnd = rng0; E.events.length = evLen; }
     return out;
   };
@@ -3340,8 +3336,18 @@
     return miss.length;
   };
   /* sac, trop-plein ; from : seulement les objets arrivés depuis (uid ≥ from), comme ceux de l'HdV */
+  /* 1.2.10.2 (choix de Mathis) : les Rayonnants obtenus avant la 1.2.10.2 rendent le PA, la Portée et l'Invocation gagnés par l'arrondi
+     de leur bonus (1 PA → 2 PA) ; le reste du bonus est gardé. Une seule fois par objet (it.radFix), aussi pour ceux venus de l'HdV. */
+  E.radiantSkipFix = (it) => {
+    if (!it || !it.radiant || it.radFix || !it.stats) return 0; it.radFix = 1; let n = 0;
+    for (const k in E.RADIANT_SKIP) {
+      const r = it.roll && it.roll[k] !== undefined ? it.roll[k] : null; if (!(r > 0)) continue;
+      const d = Math.ceil(r * (1 + it.radiant / 100)) - r; if (d > 0 && it.stats[k] >= r + d) { it.stats[k] -= d; n++; }
+    }
+    return n ? 1 : 0;
+  };
   E.caracsMigrate = (S, from = 0) => {
-    let n = 0; const fix = (it) => { if (it && it.uid >= from && E.caracsFix(S, it)) n++; };
+    let n = 0; const fix = (it) => { if (it && it.uid >= from && E.caracsFix(S, it)) n++; if (E.radiantSkipFix(it)) S.radFixN = (S.radFixN || 0) + 1; };
     for (const uid in S.items || {}) fix(S.items[uid]);
     if (Array.isArray(S.over)) S.over.forEach(fix);
     S.caracsUid = S.nextUid;
@@ -3672,6 +3678,7 @@
     E.syncGearLocks(S); // 1.0.25.11 : objets des tenues déjà enregistrées verrouillés au chargement
     if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
     { const n = E.caracsMigrate(S); if (n) note(S, `Nouvelles caractéristiques : ${n} objet${n > 1 ? "s ont" : " a"} reçu ${n > 1 ? "leurs" : "ses"} lignes de PM, Tacle, Fuite ou Dommages de poussée, comme dans DOFUS.`, "info"); } // 1.0.30 (41A)
+    if (S.radFixN) { note(S, `Rayonnants : ${S.radFixN > 1 ? `${S.radFixN} objets reviennent à leurs` : "1 objet revient à ses"} PA, Portée et Invocation normaux (le bonus Rayonnant ne les augmente plus) ; le reste du bonus est gardé.`, "info"); S.radFixN = 0; } // 1.2.10.2
     if (!S.coefT0) S.coefT0 = E.now(); // 1.0.30 : départ des coefficients de brisage au-dessus de 100 % (une seule fois)
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »

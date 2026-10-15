@@ -283,12 +283,13 @@
   };
   /* Temps réel : chaque nouveau message arrive par onMsg ; le nombre de joueurs connectés par onCount. */
   let chan = null, lost = false;
-  ON.chatLive = (onMsg, onCount, onBack) => {
+  ON.chatLive = (onMsg, onCount, onBack, onDel) => {
     if (!sb || chan) return;
     /* 1.0.12.3 : « enabled: true » obligatoire depuis le serveur OVH (Realtime récent) : sans lui, le serveur n'envoie pas la
        liste des joueurs présents et le compteur restait à « 1 en ligne » (le serveur Supabase d'avant l'activait pour tous). */
     chan = sb.channel("chat-general", { config: { presence: { key: (ON.user && ON.user.id) || "anon-" + Math.random().toString(36).slice(2), enabled: true } } });
     chan.on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_msgs" }, (p) => { if (p && p.new) onMsg(p.new); })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_msgs" }, (p) => { if (p && p.old && p.old.id && onDel) onDel(p.old.id); }) // 1.2.10.1 : message supprimé par Mathis, retiré chez tout le monde
       .on("presence", { event: "sync" }, () => { try { onCount(Object.keys(chan.presenceState()).filter((k) => !/^anon-/.test(k)).length); } catch (e) {} })
       .subscribe((st) => {
         if (st === "SUBSCRIBED") { if (ON.user && ON.profile) chan.track({ p: ON.profile.pseudo }); if (lost && onBack) onBack(); lost = false; } // 1.0.9.1 : retour après une coupure → messages manqués rechargés

@@ -276,10 +276,12 @@ const MOCK = () => {
         L.push(m); put(d); setTimeout(() => window.__chatEmit && window.__chatEmit(m), 50); return { data: null, error: null };
       }
       if (name === "chat_report") { d.reports = (d.reports || []).concat([a]); put(d); return { data: null, error: null }; }
-      if (name === "chat_me") return { data: { banned: false }, error: null };
+      if (name === "chat_me") return { data: { banned: false, closed: !!d.chatClosed }, error: null };
+      if (name === "adm_msg_del") { log(); d.views.chat_msgs = (d.views.chat_msgs || []).filter((x) => x.id !== a.p_id); put(d); return { data: null, error: null }; } // 1.2.10.1
+      if (name === "adm_chat_close") { log(); d.chatClosed = a.p_on; put(d); return { data: null, error: null }; }
       if (name === "staff_list") return { data: [{ u: "u9", p: "Kralamour", r: "crea" }, { u: "u8", p: "Tofuline", r: "mod" }], error: null };
       if (name === "my_role") return { data: d.role || null, error: null };
-      if (name === "adm_overview") return { data: { accounts: d.profiles.length, active: 1, reports: 1, flagged: 0, muted: 0, signups: [{ id: "u9", pseudo: "Kralamour", cls: "iop", at: new Date().toISOString() }], log: [{ at: new Date().toISOString(), txt: "test", who: "Xener" }], settings: { min_level: 0, slow_s: 4 }, role: d.role }, error: null };
+      if (name === "adm_overview") return { data: { accounts: d.profiles.length, active: 1, reports: 1, flagged: 0, muted: 0, signups: [{ id: "u9", pseudo: "Kralamour", cls: "iop", at: new Date().toISOString() }], log: [{ at: new Date().toISOString(), txt: "test", who: "Xener" }], settings: { min_level: 0, slow_s: 4, closed: !!d.chatClosed }, role: d.role }, error: null };
       if (name === "adm_players") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, playtime: 7200, heroes: [{ cls: "iop", lvl: 200, ren: 1 }], created_at: new Date().toISOString(), last_save: new Date().toISOString(), reports: 1, flagged: false }], error: null };
       if (name === "adm_msgs" || name === "adm_mods" || name === "adm_flagged") return { data: [], error: null };
       if (name === "adm_reports") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", n: 1, reasons: "Spam", bodies: ["coucou"] }], error: null };
@@ -693,6 +695,20 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.click('.adm [data-act="adm-mute"][data-v="60"]'); await page.waitForTimeout(400);
     await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admAnn", { timeout: 5000 });
     await page.fill("#admAnn", "Maintenance ce soir"); await page.click('[data-act="adm-announce"]'); await page.waitForTimeout(600);
+    // 1.2.10.1 : tous les droits de Mathis sur le chat : supprimer un message, sanctions depuis le pseudo, fermer le chat
+    await page.click('#chat [data-act="ch-tab"][data-v="g"]'); await page.waitForTimeout(200);
+    await page.click('#chat .ps[data-u="u8"]'); await page.waitForSelector('#chMenu [data-act="adm-del"]', { timeout: 5000 });
+    if (!(await page.$('#chMenu [data-act="adm-mute"][data-v="10080"]')) || !(await page.$('#chMenu [data-act="adm-ban"]'))) fail("chat admin : sanctions absentes du menu du pseudo");
+    if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/chat-admin.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.click('#chat .ps[data-u="u8"]'); await page.waitForTimeout(200); await page.screenshot({ path: process.env.SHOTS + "/chat-admin-mob.png" }); await page.setViewportSize(vp); await page.waitForTimeout(300); await page.click('#chat .ps[data-u="u8"]'); await page.waitForSelector('#chMenu [data-act="adm-del"]'); }
+    const delId = +(await page.getAttribute('#chMenu [data-act="adm-del"]', "data-id")); await page.click('#chMenu [data-act="adm-del"]'); await page.waitForTimeout(500);
+    m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_msg_del" && x[1].p_id === delId)) fail("chat admin : suppression non envoyée");
+    if (await page.$(`#chat [data-id="${delId}"]`)) fail("chat admin : message supprimé encore affiché");
+    await page.click('.adm [data-act="adm-tab"][data-v="vue"]'); await page.waitForSelector('.adm [data-act="adm-chclose"]', { timeout: 5000 });
+    await page.click('.adm [data-act="adm-chclose"][data-v="1"]'); await page.waitForTimeout(500);
+    m = await mock(); if (!m.chatClosed) fail("chat admin : fermeture du chat non envoyée");
+    if (!(await page.$('.adm [data-act="adm-chclose"][data-v="0"]'))) fail("chat admin : bouton Rouvrir absent");
+    await page.click('.adm [data-act="adm-chclose"][data-v="0"]'); await page.waitForTimeout(500);
+    await page.click('.adm [data-act="adm-tab"][data-v="ann"]'); await page.waitForSelector("#admPin", { timeout: 5000 });
     m = await mock(); const calls = (m.admCalls || []).map((x) => x[0]);
     if (!calls.includes("adm_mute") || !calls.includes("adm_announce")) fail("panel admin : actions non envoyées " + calls.join(","));
     if (!/Maintenance ce soir/.test(await page.textContent("#annbar"))) fail("panel admin : bandeau d'annonce absent");

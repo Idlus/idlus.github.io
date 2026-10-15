@@ -11,6 +11,7 @@ create table if not exists public.chat_settings (
   min_level int not null default 0,
   slow_s int not null default 4
 );
+alter table public.chat_settings add column if not exists closed boolean not null default false; -- 1.2.10.1 : chat public fermé par Mathis
 insert into public.chat_settings (id) values (1) on conflict do nothing;
 alter table public.chat_settings enable row level security;
 drop policy if exists "réglages lisibles" on public.chat_settings;
@@ -139,6 +140,7 @@ begin
   if p_item is not null and (length(p_item::text) > 1500 or jsonb_typeof(p_item->'tpl') <> 'string') then return 'Objet illisible.'; end if;
   if b ~* '(https?://|www\.|discord\.(gg|com)|[a-z0-9-]+\.(com|fr|net|org|gg|io|be|ch|xyz|ru|ly|me|tv)(/|\s|$))' then return 'Les liens ne sont pas autorisés dans le chat.'; end if;
   select * into st from chat_settings where id = 1;
+  if coalesce(st.closed, false) and p_to is null and not public.is_staff() then return 'Le chat est fermé pour le moment.'; end if; -- 1.2.10.1 : chat fermé par Mathis (les messages privés restent ouverts)
   select * into lad from ladder where user_id = me;
   if coalesce(st.min_level, 0) > 0 then
     select coalesce(max(case when coalesce((x->>'ren')::int, 0) > 0 then 200 else coalesce((x->>'lvl')::int, 1) end), 1) into best
@@ -182,7 +184,7 @@ grant execute on function public.chat_report(bigint, text) to authenticated;
 
 -- Ma situation dans le chat (muet, banni) pour l'afficher sous la zone de texte.
 create or replace function public.chat_me() returns jsonb language sql stable security definer set search_path = public
-as $$ select jsonb_build_object('mute_until', s.mute_until, 'banned', coalesce(s.banned, false)) from (select 1) x left join chat_sanctions s on s.user_id = auth.uid() $$;
+as $$ select jsonb_build_object('mute_until', s.mute_until, 'banned', coalesce(s.banned, false), 'closed', coalesce((select closed from chat_settings where id = 1), false)) from (select 1) x left join chat_sanctions s on s.user_id = auth.uid() $$;
 grant execute on function public.chat_me() to authenticated;
 
 -- ---------- annonces automatiques dans le chat ----------
@@ -391,8 +393,41 @@ as $$ declare u uuid; begin
   return null;
 end $$;
 
+-- ---------- 1.2.10.1 : tous les droits de Mathis sur le chat ----------
+-- Supprimer un message, effacer tous les messages publics d'un joueur, vider un salon, fermer le chat.
+-- Réservé au compte admin (adm_need) ; les joueurs voient la suppression en direct (temps réel DELETE).
+create or replace function public.adm_msg_del(p_id bigint) returns void language plpgsql security definer set search_path = public
+as $$ declare m record; begin
+  perform public.adm_need(true);
+  delete from chat_msgs where id = p_id returning user_id, body into m;
+  if m.user_id is not null then perform public.alog(format('message de %s supprimé : « %s »', public.pseudo_of(m.user_id), left(coalesce(m.body, ''), 60))); end if;
+end $$;
+create or replace function public.adm_msg_purge(p_user uuid) returns int language plpgsql security definer set search_path = public
+as $$ declare n int; begin
+  perform public.adm_need(true);
+  delete from chat_msgs where user_id = p_user and kind = 'msg' and ch in ('g', 'c', 'v');
+  get diagnostics n = row_count;
+  perform public.alog(format('%s messages de %s effacés', n, public.pseudo_of(p_user)));
+  return n;
+end $$;
+create or replace function public.adm_chat_clear(p_ch text) returns int language plpgsql security definer set search_path = public
+as $$ declare n int; begin
+  perform public.adm_need(true);
+  if p_ch not in ('g', 'c', 'v') then raise exception 'salon inconnu'; end if;
+  delete from chat_msgs where ch = p_ch and kind = 'msg';
+  get diagnostics n = row_count;
+  perform public.alog(format('salon %s vidé (%s messages)', case p_ch when 'g' then 'Général' when 'c' then 'Commerce' else 'PvP' end, n));
+  return n;
+end $$;
+create or replace function public.adm_chat_close(p_on boolean) returns void language plpgsql security definer set search_path = public
+as $$ begin
+  perform public.adm_need(true);
+  update chat_settings set closed = p_on where id = 1;
+  perform public.alog(case when p_on then 'chat fermé' else 'chat rouvert' end);
+end $$;
+
 do $$ declare f text; begin
-  foreach f in array array['adm_overview()', 'adm_players(text)', 'adm_msgs(uuid)', 'adm_mute(uuid, int)', 'adm_ban(uuid, boolean)', 'adm_flag(uuid, boolean)',
+  foreach f in array array['adm_overview()', 'adm_msg_del(bigint)', 'adm_msg_purge(uuid)', 'adm_chat_clear(text)', 'adm_chat_close(boolean)', 'adm_players(text)', 'adm_msgs(uuid)', 'adm_mute(uuid, int)', 'adm_ban(uuid, boolean)', 'adm_flag(uuid, boolean)',
     'adm_rename(uuid, text)', 'adm_suspend(uuid, boolean)', 'adm_reports()', 'adm_report_close(uuid)', 'adm_flagged()', 'adm_settings(int, int)',
     'adm_announce(text, boolean, boolean, int)', 'adm_pin(text, text)', 'adm_announce_end(bigint)', 'adm_mods()', 'adm_set_mod(text, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon', f);
