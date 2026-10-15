@@ -5711,9 +5711,11 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 @keyframes bgneb{to{transform:rotate(360deg)}}
 @keyframes bgresp{50%{opacity:.45;transform:scale(1.06)}}
 /* G (mix A + D) : les halos dérivent, un rideau d'aurore passe de temps en temps */
-:root[data-bgfx="mix"] body::before{animation:bgaur 20s ease-in-out infinite alternate}
-:root[data-bgfx="mix"] body::after{background:linear-gradient(100deg,transparent 0 24%,var(--bg1) 42%,transparent 60%,transparent 64%,var(--bg2) 80%,transparent 96%);opacity:0;animation:bgmix 18s ease-in-out infinite}
-@keyframes bgmix{0%{opacity:0;transform:translateX(-18%) skewX(-12deg)}35%{opacity:.75}70%{opacity:.45}100%{opacity:0;transform:translateX(18%) skewX(-18deg)}}
+/* 1.2.6.2 : G est maintenant peint par js/ambiance.js dans une petite toile #ambbg (mêmes dégradés, même mouvement) :
+   les deux couches de 150 % de l'écran recomposées à chaque image faisaient tomber le jeu vers 20 images/s */
+:root[data-bgfx="mix"] body::before,:root[data-bgfx="mix"] body::after{content:none;animation:none;will-change:auto}
+#ambbg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+body.reduced #ambbg,body.nomotion #ambbg{display:none}
 body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::after{animation:none}
 @media (prefers-reduced-motion:reduce){:root[data-bgfx] body::before,:root[data-bgfx] body::after{animation:none}}
 /* 1.2.2 : Sablier de Xélor, « Comment en obtenir » */

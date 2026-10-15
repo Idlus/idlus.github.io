@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.6.1";
+const GAME_VERSION = "1.2.6.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.6.2", name: "Jeu fluide", items: [
+    "Le fond de page animé (halos et rideau d’aurore) est maintenant peint dans une toute petite image au lieu de deux couches géantes recalculées à chaque image : même rendu, le jeu repasse d’environ 20 à 40 images/s dans nos mesures avec l’ambiance active.",
+    "Les petits effets d’ambiance (lucioles, flocons, braises…) bougent à 30 images/s au lieu de 60 : à leur vitesse, la différence ne se voit pas, et la page garde le reste pour elle." ] },
   { v: "1.2.6.1", name: "Nouveau logo", items: [
     "Idlus a son logo : le « i » d'idlus devient un fût doré coiffé d'un Dofus émeraude",
     "Écran de départ : le nom est dessiné, avec un reflet qui passe toutes les 6 secondes ; même reflet sur l'emblème de la fenêtre de bienvenue",
@@ -7699,8 +7702,9 @@ function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.setti
 const BG_FX = "mix"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse, mix = Aurore + rideau de temps en temps), réglé au choix de Mathis
 function applyAmbiance() {
   const a = S && S.settings.ambiance || "soft"; const r = document.documentElement;
-  if (S && a !== "off" && animLvl() === "full" && !calm()) r.dataset.bgfx = BG_FX; else delete r.dataset.bgfx; // le fond suit le même réglage que l'ambiance
+  const fx = !!S && a !== "off" && animLvl() === "full" && !calm(); if (fx) r.dataset.bgfx = BG_FX; else delete r.dataset.bgfx; // le fond suit le même réglage que l'ambiance
   if (!window.AMB) return;
+  window.AMB.bg(fx); // 1.2.6.2 : le fond G est peint dans une petite toile (js/ambiance.js), bien plus léger que les deux couches CSS géantes
   const on = !!S && a !== "off" && animLvl() === "full" && !calm() && !halOn();
   if (!on) return window.AMB.stop();
   window.AMB.start(THEMES.find((x) => x[0] === themeId(S.settings.theme))[3], a === "strong" ? 1 : .55);
@@ -9734,7 +9738,7 @@ function renderMenu() {
   if ($("#sheet").innerHTML && !MENU.copies) closeSheet();
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   document.body.classList.remove("hasnav", "navmini");
-  applySkin(menuPref().theme); applyHal(); if (window.AMB) window.AMB.stop(); delete document.documentElement.dataset.bgfx;
+  applySkin(menuPref().theme); applyHal(); if (window.AMB) { window.AMB.stop(); window.AMB.bg(false); } delete document.documentElement.dataset.bgfx;
   const user = ON && ON.user, id = user ? ON.identities() : null;
   const acc = !ON || menuStuck() ? `<div class="svacc"><span class="who"><span class="dot off"></span><span><b>Serveur injoignable</b><br><span class="small muted">Tes parties de cet appareil restent jouables.${ON ? " Recharge la page quand il reviendra pour retrouver ton compte : ta progression d'ici partira alors en ligne." : ""}</span></span></span>${ON ? `<button class="btn sm" data-act="sv-retry">Réessayer</button>` : ""}</div>`
     : user ? `<div class="svacc"><span class="who"><span class="dot${MENU.off ? " off" : ""}"></span><span><b>Connecté${ON.profile ? ` : ${h(ON.profile.pseudo)}` : ""}</b><br><span class="small muted">${MENU.off ? "Serveur injoignable : tes parties de cet appareil restent jouables et partiront en ligne à son retour." : `${id && id.discord ? `Discord (${h(id.discord)}) · ` : ""}la partie 1 est gardée en ligne${ON.slotsOk ? ", les parties 2 et 3 aussi" : ""}`}</span></span></span><button class="btn sm" data-act="sv-logout">Se déconnecter</button></div>`

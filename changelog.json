@@ -1,6 +1,14 @@
 {
-  "version": "1.2.6.1",
+  "version": "1.2.6.2",
   "versions": [
+    {
+      "v": "1.2.6.2",
+      "name": "Jeu fluide",
+      "items": [
+        "Le fond de page animé (halos et rideau d’aurore) est maintenant peint dans une toute petite image au lieu de deux couches géantes recalculées à chaque image : même rendu, le jeu repasse d’environ 20 à 40 images/s dans nos mesures avec l’ambiance active.",
+        "Les petits effets d’ambiance (lucioles, flocons, braises…) bougent à 30 images/s au lieu de 60 : à leur vitesse, la différence ne se voit pas, et la page garde le reste pour elle."
+      ]
+    },
     {
       "v": "1.2.6.1",
       "name": "Nouveau logo",
