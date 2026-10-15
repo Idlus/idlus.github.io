@@ -1,6 +1,13 @@
 {
-  "version": "1.1.2.8",
+  "version": "1.1.2.9",
   "versions": [
+    {
+      "v": "1.1.2.9",
+      "name": "Le Havre-Sac en scène",
+      "items": [
+        "Quand l'équipe se repose, le bandeau du Havre-Sac a lui aussi son vrai décor DOFUS animé : le jardin du Havre-Sac, une plateforme sous les étoiles en Nuit violette, et un Havre-Sac hanté pendant Halouine"
+      ]
+    },
     {
       "v": "1.1.2.8",
       "name": "La tour t'attend",

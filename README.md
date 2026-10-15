@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.9 « Le Havre-Sac en scène »
+
+Mathis (15/10/2026) : « Avoir une scène quand on est dans l'havre sac ». `assets/hs/{jardin,nuit,halouine}.webp` = trois cartes de la sous-zone DofusDB « Havres-Sacs » (id 851 ; cartes 162793486, 162793490, 162795540), même traitement que les zones. `DECORS.of({ home })` choisit selon le thème (data-theme, data-hal) ; `homeHtml` l'affiche quand aucune chasse ni donjon n'est en cours.
+
 ## 1.1.2.8 « La tour t'attend »
 
 Mathis (15/10/2026) : « Ne pas rentrer directement dans le prochain combat pour l'ascension ». En manuel, la boucle de js/ascensionui.js ne lance plus `liveStart` toute seule : `readyHtml` affiche l'étage qui vient et le bouton `as-next` lance le combat. Le mode auto et la montée en arrière-plan (`E.ascTick`) ne changent pas.
