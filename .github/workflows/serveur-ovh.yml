@@ -10,6 +10,8 @@
 #               lecture ni écriture des joueurs), puis fait la copie finale. Accord écrit de Mathis (14/10/2026).
 #   rouvrir   : rend l'accès du jeu à l'ancien serveur (retour en arrière).
 #   diagnostic: lecture seule : état des services, journaux récents du direct (Realtime), joueurs connectés récemment.
+#   boucle-guide : crée l'annonce en boucle du Guide (chat Général, toutes les 2 h ; tools/serveur/boucle_guide.sql).
+#               Demande de Mathis (15/10/2026).
 #   couper-boucle : supprime la seule session qui renouvelle son jeton en boucle (tools/serveur/couper_boucle.sql, plus de
 #               200 renouvellements en 10 minutes). Accord écrit de Mathis (14/10/2026).
 #   guildes-zero-essai : 1.0.30, remise à zéro des guildes À BLANC (tools/serveur/guildes_reset.sql) : affiche les guildes
@@ -30,7 +32,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, boucle-guide]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -157,6 +159,11 @@ jobs:
       - name: Limites de calcul des fonctions (Boss des mondes, Kolizéum…)
         if: inputs.etape == 'fonctions-limites'
         run: bash tools/serveur/vps_sql.sh commande "$(cat tools/serveur/fonctions_limites.sh)"
+      - name: Annonce en boucle « le Guide » (chat Général, toutes les 2 h)
+        if: inputs.etape == 'boucle-guide'
+        run: |
+          bash tools/serveur/vps_sql.sh fichier tools/serveur/boucle_guide.sql | tee /tmp/sortie.txt
+          grep -q "Création : OK\|existe déjà" /tmp/sortie.txt
       - name: Couper la session qui se renouvelle en boucle
         if: inputs.etape == 'couper-boucle'
         run: bash tools/serveur/vps_sql.sh fichier tools/serveur/couper_boucle.sql
