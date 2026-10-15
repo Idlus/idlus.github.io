@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.3";
+const GAME_VERSION = "1.2.3.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.3.1", name: "Cadeaux rendus", items: [
+    "Fondateurs : si ton Jyfus (cadeau de lancement) avait disparu, il revient dans ton sac au chargement.",
+    "Guilde : l’XP donnée au-delà du plafond du serveur n’est plus perdue, elle part avec les envois suivants." ] },
   { v: "1.2.3", name: "Sablier de 24 h", items: [
     "Sablier de Xélor : la réserve monte à 24 h (15 h en 1.2.2). La recharge reste de 3 h par jour, même jeu fermé",
     "Les heures achetées (comptoirs, Kolizéum, Foire) ou gagnées (Ascension, codes cadeaux) peuvent dépasser la réserve jusqu'à 36 h",

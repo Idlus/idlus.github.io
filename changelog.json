@@ -1,6 +1,14 @@
 {
-  "version": "1.2.3",
+  "version": "1.2.3.1",
   "versions": [
+    {
+      "v": "1.2.3.1",
+      "name": "Cadeaux rendus",
+      "items": [
+        "Fondateurs : si ton Jyfus (cadeau de lancement) avait disparu, il revient dans ton sac au chargement.",
+        "Guilde : l’XP donnée au-delà du plafond du serveur n’est plus perdue, elle part avec les envois suivants."
+      ]
+    },
     {
       "v": "1.2.3",
       "name": "Sablier de 24 h",

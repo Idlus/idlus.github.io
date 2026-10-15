@@ -38,6 +38,7 @@
   const perks = (l) => ({ xp: Math.floor(l / 5), drop: Math.floor(l / 10), kamas: Math.floor(l / 10) });
   const inGuild = () => { const s = S(); return !!(s && s.guild && s.guild.id); };
   E.guildBonus = (s, kind) => { const g = s && s.guild; if (!g || !g.id) return 0; return (perks(g.lvl || 1)[kind] || 0) + (window.CHASSE ? window.CHASSE.domBonus(s, kind) : 0) + (window.ALLY ? window.ALLY.bonus(s, kind) : 0); }; // Chasse aux Percepteurs : région dominée (9A) ; Alliances : prisme de son alliance (6A, js/allianceui.js)
+  E.GUILD_PEND_MAX = 24 * 60000000; // ce que guild_give accepte au plus en un envoi (supabase/guildes.sql)
   E.guildXpShare = (s, c, g) => {
     const q = s && s.guild; if (!q || !q.id || !(q.share > 0) || g <= 0) return 0;
     const d = Math.floor(g * Math.min(90, q.share) / 100); q.pend = (q.pend || 0) + d; return d;
@@ -64,7 +65,9 @@
     const q = s.guild; const pend = Math.floor(q.pend || 0);
     if (q.id) {
       const r = await ON.rpc("guild_give", { p_xp: pend, p_share: null });
-      if (r.data && r.data.ok) { q.pend = Math.max(0, (q.pend || 0) - pend); if (r.data.lvl) q.lvl = r.data.lvl; }
+      if (r.data && r.data.ok) { /* 1.1.2.11 : le serveur plafonne (60 M/h depuis le dernier envoi) ; le reste attend le prochain envoi au lieu d'être perdu (au plus 24 h de plafond en attente) */
+        const got = Number.isFinite(+r.data.xp) ? Math.min(pend, +r.data.xp) : pend;
+        q.pend = Math.max(0, Math.min(E.GUILD_PEND_MAX, (q.pend || 0) - got)); if (r.data.lvl) q.lvl = r.data.lvl; }
       else if (r.data && r.data.none) q.id = null;
     }
     await load();

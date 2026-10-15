@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.3.1 « Cadeaux rendus »
+
+Bugs signalés par les joueurs : le Jyfus revient aux comptes fondateurs qui l'avaient perdu, et l'XP de guilde au-dessus du plafond du serveur attend l'envoi suivant au lieu d'être perdue.
+
 ## 1.2.3 « Sablier de 24 h »
 
 Réserve du Sablier de Xélor à 24 h (`E.SAB_MAX`, `js/engine.js`), les heures achetées ou offertes montent jusqu'à 36 h (`E.SAB_GIFT_MAX`). Recharge inchangée (3 h par jour).

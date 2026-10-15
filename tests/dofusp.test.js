@@ -154,4 +154,16 @@ console.log("ok - Dokille seulement après le boss");
   assert.strictEqual(E.dofusRepair(N).length, 0, "rien de plus au chargement suivant"); }
 console.log("ok - Dofus de quête jamais perdu (sac plein, trop-plein, brisage)");
 
+// 1.1.2.11 : un compte fondateur qui a perdu son Jyfus le retrouve au chargement ; un compte non fondateur ne le reçoit pas
+{ const S = team(200); S.unlocks = S.unlocks || {}; S.unlocks.fondateur = 1;
+  Object.keys(S.items).filter((u) => S.items[u].tpl === E.DOFUS.jyfus.tpl).forEach((u) => delete S.items[u]);
+  const N = E.deserialize(E.serialize(S));
+  assert.ok(E.dofusOwned(N, "jyfus"), "Jyfus rendu au fondateur");
+  assert.ok(N.migration && N.migration.some((m) => /fondateur/.test(m)), "message au fondateur");
+  assert.strictEqual(E.dofusRepair(N).length, 0, "un seul Jyfus");
+  const T = team(200); if (T.unlocks) delete T.unlocks.fondateur;
+  Object.keys(T.items).filter((u) => T.items[u].tpl === E.DOFUS.jyfus.tpl).forEach((u) => delete T.items[u]);
+  assert.ok(!E.dofusOwned(E.deserialize(E.serialize(T)), "jyfus"), "pas de Jyfus sans être fondateur"); }
+console.log("ok - Jyfus rendu aux fondateurs");
+
 console.log("dofusp.test.js : tout est bon");
