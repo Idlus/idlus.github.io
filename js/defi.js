@@ -52,7 +52,7 @@
   E.DEFI_HERO_MAX = 2;             // 1.1 (série 4, 1A) : règles héroïques gardées au plus
   E.DEFI_DANGER_H = 4;             // 1.1 (série 4, 2A) : rappel de série en danger dans les 4 dernières heures
   E.DEFI_GOLD_MONTH = 20;          // 1.1 (série 4, 5A) : « Mois doré » à 20 bourses en or dans le mois
-  E.DEFI_MEDALS = [{ id: "br", name: "Bronze", pts: 1000 }, { id: "ar", name: "Argent", pts: 1500 }, { id: "or", name: "Or", pts: 2000 }];
+  E.DEFI_MEDALS = [{ id: "br", name: "Bronze", of: "de bronze", pts: 1000 }, { id: "ar", name: "Argent", of: "d'argent", pts: 1500 }, { id: "or", name: "Or", of: "en or", pts: 2000 }];
   E.DEFI_TITLE = "Habitué du défi";
   E.DEFI_TITLE100 = "Inarrêtable";
   E.DEFI_CHAMP = "Champion du défi";
@@ -299,7 +299,7 @@
         if (ss.n >= 30 && !S.unlocks.sablier) { S.unlocks.sablier = 1; out.orn = true; E.addCons(S, "coffre_douze"); out.bonus = "coffre_douze"; }
         if (ss.n >= 100 && !S.unlocks.cadreDefi) { S.unlocks.cadreDefi = 1; out.orn100 = true; }
       }
-      if (out.chest) E.note(S, `Défi du jour : ${r.score.toLocaleString("fr-FR")} points. Bourse ${E.DEFI_MEDALS[lvl - 1].name.toLowerCase()} : ${out.chest.kamas ? `${out.chest.kamas.toLocaleString("fr-FR")} kamas` : ""}${out.chest.dust ? ` et ${out.chest.dust} ${E.POUSSIERE}` : ""}${out.chest.cons.length ? `${out.chest.kamas ? ", " : ""}${out.chest.cons.map((k) => D.CONSUMABLES[k].name).join(", ")}` : ""}${out.streak ? ` (série : ${out.streak} jour${out.streak > 1 ? "s" : ""})` : ""}${out.bonus ? `. Série récompensée : ${D.CONSUMABLES[out.bonus].name} !` : ""}.`, "rare");
+      if (out.chest) E.note(S, `Défi du jour : ${r.score.toLocaleString("fr-FR")} points. Bourse ${E.DEFI_MEDALS[lvl - 1].of} : ${out.chest.kamas ? `${out.chest.kamas.toLocaleString("fr-FR")} kamas` : ""}${out.chest.dust ? ` et ${out.chest.dust} ${E.POUSSIERE}` : ""}${out.chest.cons.length ? `${out.chest.kamas ? ", " : ""}${out.chest.cons.map((k) => D.CONSUMABLES[k].name).join(", ")}` : ""}${out.streak ? ` (série : ${out.streak} jour${out.streak > 1 ? "s" : ""})` : ""}${out.bonus ? `. Série récompensée : ${D.CONSUMABLES[out.bonus].name} !` : ""}.`, "rare");
       if (E.checkAch) E.checkAch(S);
     }
     return out;

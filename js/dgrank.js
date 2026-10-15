@@ -77,7 +77,7 @@
       return `<div class="lbr${mine ? " me" : r.u === me ? " mine" : ""}${X().staffCls(r.u)}"><span class="rk">${mine ? r.rank : i + 1}</span>${X().cmed(r.cls, r.fl)}<span class="nm">${mine ? X().pname((ON.profile && ON.profile.pseudo) || r.p || "Toi", me) : X().pname(r.p, r.u)}${mine || r.u === me ? ` <small class="inl">toi</small>` : ""}${tm ? `<small>${tm}</small>` : ""}</span><span class="sc">Stasis ${r.k} · ${recTime(r.t)}</span></div>`; };
     const r5 = c.rows[N - 1], foot = [];
     if (!c.rows.length) foot.push(week ? "Personne n'est encore classé cette semaine dans ce donjon : à toi de jouer !" : "Aucun record vérifié ici pour l'instant. Termine une stasis de ce donjon pour ouvrir le classement !");
-    else if (!inTop) foot.push(r5 ? `Pour entrer dans le top ${N} : ${r5.k < 10 ? `stasis ${r5.k + 1}, ou ` : ""}stasis ${r5.k} en moins de ${recTime(r5.t)}.` : `Il reste des places dans le top ${N} : termine une stasis de ce donjon pour y entrer.`);
+    else if (!inTop) foot.push(r5 ? `Pour entrer dans le top ${N} : ${r5.k < E.STASIS_MAX ? `stasis ${r5.k + 1}, ou ` : ""}stasis ${r5.k} en moins de ${recTime(r5.t)}.` : `Il reste des places dans le top ${N} : termine une stasis de ce donjon pour y entrer.`);
     if (!me) foot.push("Connecte-toi pour que tes records y entrent.");
     else if (ON.solo && ON.solo()) foot.push("Ta partie solo n'entre pas aux classements : seule la partie 1 y compte.");
     else if (!inTop && !c.me && c.rows.length) foot.push("Toi : pas encore classé ici.");

@@ -1,6 +1,23 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.1.1",
   "versions": [
+    {
+      "v": "1.1.1.1",
+      "name": "Chasse aux bugs de la 1.1",
+      "items": [
+        "Élevage : pendant une longue absence, l'éleveur automatique enchaîne les naissances au lieu d'une seule par couple",
+        "Élevage : les commandes du jour ne changent plus quand tu découvres une couleur ; la place de la quête ne bloque plus le dernier achat de places",
+        "Élevage : « Annuler » arrête toujours le bon couple ; messages en double, bouton « +1 niveaux » en double et pourcentages du croisement corrigés",
+        "Champion légendaire : il attend ton retour au lieu d'être battu sans toi pendant l'absence",
+        "L'Ascension : l'auto ne reste plus bloqué sur un mercenaire quand l'équipe a déjà 2 recrues ; la montée en cours rend ses Fragments et Écus au changement de mois ; un glyphe se pose sur le sort signature",
+        "Défi du jour : 1 Fiole de Volonté par jour (pas une par bourse) ; « Bourse de bronze / d'argent / en or »",
+        "Fiche de donjon : Poussière ×2 et Pierre d'âme dorée affichées dès la stasis 11 ; « 15 niveaux de stasis » ; classement des donjons au-delà de la stasis 10",
+        "Inventaire : « À trier » ne propose plus les objets Parfaits ni ceux rangés dans une tenue",
+        "Légendaires : fondre deux exemplaires ne fait plus disparaître les copies au-delà de l'Éveil V",
+        "Échap ferme la fenêtre ouverte sur PC ; restaurer une copie de sauvegarde prend toujours la bonne copie",
+        "Renaissance impossible pendant le Songe infini ; Cor de ralliement : « un essai toutes les 1 h 40 au lieu de 2 h » ; « 2 héros hors de l'équipe »"
+      ]
+    },
     {
       "v": "1.1.1",
       "name": "Fonder une alliance",

@@ -3472,6 +3472,7 @@
     const dg = E.dghRun ? E.dghRun(S, seconds, eff / seconds, { cur: wasDungeon, xpBoost }) : null;
     const dgUsed = dg && dg.used ? Math.min(seconds, dg.used) : 0;
     if (dgUsed) fights = Math.min(5000, Math.floor((seconds - dgUsed) * eff / seconds / cycle));
+    E.catchingUp = true; // 1.1.0.1 : le Champion légendaire appelé attend le retour du joueur (js/champions.js)
     for (let i = 0; hunting && i < fights; i++) {
       if (rnd() >= winRate) continue;
       wins++;
@@ -3483,6 +3484,7 @@
       E.starsTick(S, cycle, now); // les étoiles de la zone fondent aussi hors ligne
       if (S.settings.roam) { const tz = startT + (dgUsed + (i + 1) * (seconds - dgUsed) / fights) * 1000; if (E.roam(S, tz, true)) { roamed.push(SUBS[S.sub].name); sub = SUBS[S.sub]; } }
     }
+    E.catchingUp = false;
     S.dungeon = wasDungeon;
     if (hunting) checkHunt(S, sub.monsters);
     gatherTick(S, eff, { quiet: true });

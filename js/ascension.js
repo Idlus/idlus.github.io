@@ -184,8 +184,8 @@
     if (!S.asc) S.asc = { m: E.ascMonth(), w: E.weekIdx(), best: { n: 0, d: 0, x: 100 }, wounds: {}, vol: A.volMax, volT: E.now(), volAcc: 0, frag: 0, ecus: 0,
       unl: { pool: [], cls: [], start: 0, bonus: {} }, best0: 0, bestiary: {}, souls: [], run: null, auto: false, prio: "dmg", roll: { d: 0, n: 0 }, runs: 0, titles: [], hist: [] };
     const Q = S.asc;
-    if (Q.m !== E.ascMonth()) { Q.m = E.ascMonth(); Q.best.n = 0; Q.best.d = 0; Q.wounds = {}; Q.chest = {}; if (Q.run && Q.run.mode !== "x") Q.run = null; }
-    if (Q.w !== E.weekIdx()) { Q.w = E.weekIdx(); Q.best.x = 100; Object.keys(Q.wounds).forEach((k) => { if (k[0] === "x") delete Q.wounds[k]; }); if (Q.run && Q.run.mode === "x") Q.run = null; }
+    if (Q.m !== E.ascMonth()) { Q.m = E.ascMonth(); Q.best.n = 0; Q.best.d = 0; Q.wounds = {}; Q.chest = {}; if (Q.run && Q.run.mode !== "x") E.ascEnd(S, "reset"); } // 1.1.0.1 : la montée en cours rend ses Fragments et Écus au changement de mois
+    if (Q.w !== E.weekIdx()) { Q.w = E.weekIdx(); Q.best.x = 100; Object.keys(Q.wounds).forEach((k) => { if (k[0] === "x") delete Q.wounds[k]; }); if (Q.run && Q.run.mode === "x") E.ascEnd(S, "reset"); }
     return Q;
   };
   /* classes que le tirage peut sortir : 12 au départ, les autres avec des Fragments */
@@ -562,7 +562,7 @@
     if (P.t === "pick") { let bi = 0; P.opts.forEach((k, i) => { if (score(k) > score(P.opts[bi])) bi = i; }); return E.ascChoose(S, bi, worst()); }
     if (P.t === "soul") return E.ascChoose(S, 0, worst());
     if (P.t === "glyph") { const i = R.spells.findIndex((s) => !s.soul && (s.gl || []).length < 2 && !s.gl.includes(P.g)); return E.ascChoose(S, i >= 0 ? i : -1); }
-    if (P.t === "event") return E.ascChoose(S, P.ev === "prisoner" ? 1 : P.ev === "merc" && R.frag >= P.price + 40 ? 0 : 1); // l'auto ne libère pas de prisonnier (événement risqué)
+    if (P.t === "event") return E.ascChoose(S, P.ev === "prisoner" ? 1 : P.ev === "merc" && R.frag >= P.price + 40 && R.recruits.length < A.recruitsMax ? 0 : 1); // 1.1.0.1 : pas de mercenaire de plus quand l'équipe a déjà ses recrues (la montée restait bloquée) // l'auto ne libère pas de prisonnier (événement risqué)
     if (P.t === "shop") return E.ascChoose(S, -1);
     if (P.t === "altar") return E.ascChoose(S, 0); // l'auto refuse toujours l'autel
     return E.ascChoose(S, -1);
@@ -584,7 +584,7 @@
     E.ascVolSync(S);
     const R = Q.run; if (!R || E.ASC_LIVE) return; // l'interface joue le combat en cours
     R.pause = (R.pause || 0) + dt; if (R.pause < A.fightPauseMs * 4) return; R.pause = 0;
-    if (R.pend && (Q.auto || (Q.autoPick !== false && E.now() - R.pend.at > A.autoPickMs && Q.auto))) { E.ascAutoPick(S); return; }
+    if (R.pend && (Q.auto || (Q.autoPick !== false && E.now() - R.pend.at > A.autoPickMs && Q.auto))) { if (E.ascAutoPick(S) && R.pend) R.pend = null; return; }
     if (R.pend) return;
     const fl = E.ascFloor(S, R.mode, R.f);
     if (["fight", "boss"].includes(fl.t) && E.ascCost(S, R.mode, R.f) > Q.vol) return;
@@ -614,7 +614,8 @@
     } catch (e) { /* jamais bloquer le jeu */ }
     return r; };
   // B : Défi du jour réussi (la bourse du jour, une fois par jour)
-  if (E.defiPlay) { const dp0 = E.defiPlay; E.defiPlay = (S, tid) => { const out = dp0(S, tid); if (out && out.chest) { giveFiole(S, "Défi du jour"); out.fiole = 1; } return out; }; }
+  if (E.defiPlay) { const dp0 = E.defiPlay; E.defiPlay = (S, tid) => { const out = dp0(S, tid); if (out && out.chest && !out.chest.from) { giveFiole(S, "Défi du jour"); // 1.1.0.1 : une seule par jour (avant : une par bourse, jusqu'à 3)
+      out.fiole = 1; } return out; }; }
   // C : recette de l'Alchimiste, 3 par jour (la fiole se vend à l'Hôtel de vente comme tout consommable)
   E.ASC_BREW = { lvl: 20, herb: [["Sauge", 10], ["Trèfle à 5 feuilles", 5]], kamas: 5000 };
   E.ascBrewLeft = (S) => { const Q = E.ascState(S); const d = E.ascDay(); return Q.brew && Q.brew.d === d ? Math.max(0, A.brewDay - Q.brew.n) : A.brewDay; };

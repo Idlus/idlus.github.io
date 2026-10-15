@@ -125,6 +125,14 @@ const mk = (S, sp, c, o = {}) => { const M = E.giveMount(S, sp, c, "test", Objec
   assert.deepStrictEqual([S2.mounts[p.a].c, S2.mounts[p.b].c].sort(), ["Dorée", "Rousse"]);
   assert.deepStrictEqual(E.colourPath(S2, "dd", "Pourpre").map((x) => x[2]), ["Indigo", "Pourpre"]);
   S2.mountSeen.dd.Pourpre = 1; E.enclosTick(S2, 6000); assert.strictEqual(E.elevState(S2).auto.on, false, "objectif atteint : arrêt");
+  // 1.1.0.1 : une longue absence donne plusieurs naissances par place (avant : une par couple, le reste du temps perdu)
+  const S3 = fresh(); for (let i = 0; i < 4; i++) { mk(S3, "dd", "Rousse"); mk(S3, "dd", "Dorée"); }
+  const pick0 = E.autoPick; E.autoPick = (S) => { const L = Object.values(S.mounts).filter((M) => M.lvl >= 100 && !E.inPair(S, M.uid)); return L.length >= 2 ? [L[0], L[1]] : null; };
+  E.setAuto(S3, true, "carnet"); E.enclosTick(S3, 6000);
+  const T = S3.enclos.pairs[0] ? S3.enclos.pairs[0].t : 0; const np = S3.enclos.pairs.length; assert.ok(T > 0 && np >= 2, "couples lancés");
+  const n0 = Object.keys(S3.mounts).length; E.enclosTick(S3, T * 2 + 300000); E.autoPick = pick0;
+  const born = Object.keys(S3.mounts).length - n0;
+  assert.ok(born >= 2 * np, `deux naissances par place en deux temps de naissance (${born} pour ${np} places)`);
   console.log("ok - éleveur automatique : carnet, couleur visée, montures montées laissées, arrêt à l'objectif");
 }
 

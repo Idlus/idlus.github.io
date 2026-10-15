@@ -138,7 +138,7 @@
   E.stableCap = (S) => Math.min(E.STABLE_MAXCAP + 1, E.STABLE + ((S.elev && S.elev.qPlace) || 0) + (S.enclos && S.enclos.built ? E.STABLE_ENCLOS : 0) + E.STABLE_CARNET * E.spDoneN(S) + E.STABLE_BUY * ((S.elev && S.elev.buy) || 0));
   E.stableBuyCost = (S) => E.STABLE_BUY_COST * Math.pow(2, (S.elev && S.elev.buy) || 0);
   E.stableBuy = (S) => {
-    const v = EV(S); if (E.stableCap(S) + E.STABLE_BUY > E.STABLE_MAXCAP) return `L'écurie a déjà ${E.STABLE_MAXCAP} places au plus.`;
+    const v = EV(S); if (E.stableCap(S) - (v.qPlace || 0) + E.STABLE_BUY > E.STABLE_MAXCAP) return `L'écurie a déjà ${E.STABLE_MAXCAP} places au plus.`;
     const c = E.stableBuyCost(S); if (S.kamas < c) return `Il faut ${fmt(c)} kamas.`;
     S.kamas -= c; v.buy++; note(S, `L'écurie gagne ${E.STABLE_BUY} places (${E.stableCap(S)} en tout).`, "up"); return null;
   };
@@ -432,11 +432,15 @@
   E.orders = (S) => {
     const v = EV(S); const d = day(); if (v.ord.day !== d) v.ord = { day: d, done: [] };
     const seed = String(S.created || 0) + d; const out = [];
-    const pool = []; for (const sp of E.MOUNT_ORDER) for (const c of Object.keys(MOUNTS[sp].cols)) if (S.mountSeen[sp] && S.mountSeen[sp][c]) pool.push([sp, c]);
-    if (!pool.length) return out;
-    pool.sort((x, y) => hash(seed + x.join(":")) - hash(seed + y.join(":"))); // trois couleurs différentes quand c'est possible
+    // 1.1.0.1 : les couleurs du jour sont tirées une fois et gardées (avant, voir une nouvelle couleur rebattait les commandes en cours de journée)
+    if (!Array.isArray(v.ord.list) || !v.ord.list.length || v.ord.list.some(([sp, c]) => !MOUNTS[sp] || !MOUNTS[sp].cols[c])) {
+      const pool = []; for (const sp of E.MOUNT_ORDER) for (const c of Object.keys(MOUNTS[sp].cols)) if (S.mountSeen[sp] && S.mountSeen[sp][c]) pool.push([sp, c]);
+      if (!pool.length) return out;
+      pool.sort((x, y) => hash(seed + x.join(":")) - hash(seed + y.join(":"))); // trois couleurs différentes quand c'est possible
+      v.ord.list = Array.from({ length: E.ORD_N }, (_, i) => pool[i % pool.length]);
+    }
     for (let i = 0; i < E.ORD_N; i++) {
-      const [sp, c] = pool[i % pool.length];
+      const [sp, c] = v.ord.list[i % v.ord.list.length];
       const g = MOUNTS[sp].cols[c].g; const st = 1 + Math.floor(hash(seed + "s" + i) * Math.min(4, 1 + Math.floor(g / 2) + (i === 2 ? 1 : 0)));
       const hard = st >= 3;
       out.push({ i, sp, c, st, lvl: E.ORD_LVL, kamas: Math.round(20000 * g * st * (hard ? 1.5 : 1) / 1000) * 1000, ess: 40 * g + 60 * st, nets: hard ? 3 : 0, done: v.ord.done.includes(i) });
@@ -455,8 +459,19 @@
   };
 
   /* ---------- temps réel (ms), en jeu comme hors ligne ---------- */
+  /* 1.1.0.1 : une longue absence avance par étapes (naissance, fin de balade, passage de l'éleveur), sinon chaque couple ne donnait qu'un petit par absence et l'éleveur perdait le reste du temps */
   E.enclosTick = (S, ms) => {
     if (!S.enclos) return; const v = EV(S);
+    for (let g = 0; ms > 0 && g < 5000; g++) {
+      let dt = ms;
+      for (const p of S.enclos.pairs) if (p.t > 0) dt = Math.min(dt, p.t);
+      for (const b of v.bal) if (b.t > 0) dt = Math.min(dt, b.t);
+      if (v.auto && v.auto.on && S.enclos.built) dt = Math.min(dt, Math.max(v.autoT || 0, 60000));
+      enclosStep(S, dt); ms -= dt;
+    }
+  };
+  const enclosStep = (S, ms) => {
+    const v = EV(S);
     if (S.enclos.pairs.length) {
       for (const p of S.enclos.pairs) p.t = Math.max(0, p.t - ms);
       S.enclos.pairs = S.enclos.pairs.filter((p) => p.t > 0 || !birth(S, p));

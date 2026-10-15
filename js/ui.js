@@ -21,9 +21,22 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.1";
+const GAME_VERSION = "1.1.1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.1.1", name: "Chasse aux bugs de la 1.1", items: [
+    "Élevage : pendant une longue absence, l'éleveur automatique enchaîne les naissances au lieu d'une seule par couple",
+    "Élevage : les commandes du jour ne changent plus quand tu découvres une couleur ; la place de la quête ne bloque plus le dernier achat de places",
+    "Élevage : « Annuler » arrête toujours le bon couple ; messages en double, bouton « +1 niveaux » en double et pourcentages du croisement corrigés",
+    "Champion légendaire : il attend ton retour au lieu d'être battu sans toi pendant l'absence",
+    "L'Ascension : l'auto ne reste plus bloqué sur un mercenaire quand l'équipe a déjà 2 recrues ; la montée en cours rend ses Fragments et Écus au changement de mois ; un glyphe se pose sur le sort signature",
+    "Défi du jour : 1 Fiole de Volonté par jour (pas une par bourse) ; « Bourse de bronze / d'argent / en or »",
+    "Fiche de donjon : Poussière ×2 et Pierre d'âme dorée affichées dès la stasis 11 ; « 15 niveaux de stasis » ; classement des donjons au-delà de la stasis 10",
+    "Inventaire : « À trier » ne propose plus les objets Parfaits ni ceux rangés dans une tenue",
+    "Légendaires : fondre deux exemplaires ne fait plus disparaître les copies au-delà de l'Éveil V",
+    "Échap ferme la fenêtre ouverte sur PC ; restaurer une copie de sauvegarde prend toujours la bonne copie",
+    "Renaissance impossible pendant le Songe infini ; Cor de ralliement : « un essai toutes les 1 h 40 au lieu de 2 h » ; « 2 héros hors de l'équipe »",
+  ] },
   { v: "1.1.1", name: "Fonder une alliance", items: [
     "Alliances : le nom et le sigle tapés restent en place même quand la page se rafraîchit ou qu'on choisit l'emblème",
     "Alliances : si le bouton « Fonder l'alliance » est grisé, la page dit ce qui manque (niveau de guilde ou kamas du coffre), et explique que seul le Meneur peut fonder",
@@ -3024,7 +3037,7 @@ function dungeonsHtml() {
       ${defiLine()}
       ${weeklyBanner()}
       ${flashBanner()}
-      <p class="note xs">Chaque donjon a 10 niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
+      <p class="note xs">Chaque donjon a ${E.STASIS_MAX} niveaux de <b>stasis</b> : plus difficiles, mais plus d'XP et de butin, avec un coffre au premier passage de chaque niveau. Touchez un donjon pour le détail.</p>
       ${dgFilterBar(F, list.length)}</div></section>
     ${F.view === "lvl" || !list.length ? `<section class="panel"><div class="pad">${body}</div></section>` : body}`;
 }
@@ -3100,8 +3113,8 @@ function dungeonSheet(did) {
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de l'heure" : ""}.</p>`}
         ${k >= 6 ? `<p class="xs muted">Les modificateurs sont tirés au hasard à l'entrée : ${Object.values(E.STASIS_MODS).map((m) => `<b>${h(m.name)}</b> (${h(m.desc.toLowerCase())})`).join(", ")}.</p>` : ""}</div>
       <div><b>Récompenses</b><ul class="dglist">
-        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme`}</li>
-        <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
+        <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme${k >= 11 ? `, ${k >= 15 ? "2 Pierres d'âme dorées" : "1 Pierre d'âme dorée"}` : ""}`}</li>
+        <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (k >= 11 ? 2 : 1) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
         ${loot ? `<div class="xs muted" style="margin:6px 0 4px">${G("crown")} <b>Équipements du boss</b> · stasis ${k} : chances ×${String(bm).replace(".", ",")} (×1 en stasis 1, ×2 en 5, ×3,25 en 10) · ✓ déjà obtenu</div><div class="loot">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
@@ -5546,7 +5559,7 @@ function enclosBody() {
   const pairs = S.enclos.pairs.map((p, i) => { const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return "";
     return `<div class="breed"><div class="bpair">${im(mountImg(A.sp, A.c), "", "")}<b>+</b>${im(mountImg(B.sp, B.c), "", "")}</div><div class="grow"><b>${h(E.colourName(A.sp, A.c))} + ${h(E.colourName(B.sp, B.c))}</b> <span class="xs muted">${h(E.MOUNTS[A.sp].name)}s</span>
       <div class="xs">${E.breedOdds(S, A, B).map(([c, pc, neu]) => `${neu ? `<b class="neu">${seenCol(A.sp, c) ? h(E.colourName(A.sp, c)) : "nouvelle couleur"}</b>` : h(E.colourName(A.sp, c))} ${pc} %`).join(" · ")}</div>
-      <div class="xs ${p.wait ? "ko" : "muted"}">${p.wait ? "Le petit attend : l'écurie est pleine, relâchez une monture (Héros › Familiers et montures)" : `Naissance dans ${E.etaTxt(Math.ceil(p.t / 1000))} · continue hors ligne`}</div><div class="bar"><i style="width:${100 - pct(p.t, E.birthMs(S))}%"></i></div></div><button class="btn sm" data-act="breedstop" data-i="${i}">Annuler</button></div>`; }).join("");
+      <div class="xs ${p.wait ? "ko" : "muted"}">${p.wait ? "Le petit attend : l'écurie est pleine, relâchez une monture (Héros › Familiers et montures)" : `Naissance dans ${E.etaTxt(Math.ceil(p.t / 1000))} · continue hors ligne`}</div><div class="bar"><i style="width:${100 - pct(p.t, E.birthMs(S))}%"></i></div></div><button class="btn sm" data-act="breedstop" data-i="${i}" data-a="${p.a}">Annuler</button></div>`; }).join("");
   const gens = {}; for (const c in Sp.cols) (gens[Sp.cols[c].g] = gens[Sp.cols[c].g] || []).push(c);
   const bicos = Object.keys(S.mountSeen[sp] || {}).filter(E.isBico);
   return `<div class="stack carnet">
@@ -5568,7 +5581,7 @@ function breedPickSheet() {
   const A = ui.breedA ? S.mounts[ui.breedA] : null;
   openSheet(`<h2>${IC("ailes")} Croiser deux montures</h2><p class="small muted">${A ? `Première monture : <b>${h(E.mountName(A))}</b>. Choisissez la seconde (même espèce).` : "Choisissez la première monture. Il faut le niveau " + E.BREED_LVL + " et des petits restants."}</p>
     <div class="list">${list.map((M) => { const why = E.breedWhy(S, M); const odds = A ? E.breedOdds(S, A, M) : null;
-      return `<div class="li"><span class="icobox">${im(mountImg(M.sp, M.c), "", "")}</span><span class="grow"><b>${h(E.mountName(M))}</b> <span class="xs muted">niv. ${M.lvl} · petits ${M.kids}/${E.kidsCap(S)}</span>${odds ? `<br><span class="xs">${odds.map(([c, pc, neu]) => `${neu && !seenCol(M.sp, c) ? `<b class="neu">nouvelle couleur</b>` : h(E.colourName(M.sp, c))} ${pc} %`).join(" · ")}</span>` : ""}${why ? `<br><span class="xs ko">${why}</span>` : ""}</span>
+      return `<div class="li"><span class="icobox">${im(mountImg(M.sp, M.c), "", "")}</span><span class="grow"><b>${h(E.mountName(M))}</b> <span class="xs muted">niv. ${M.lvl} · petits ${M.kids}/${E.kidsCap(S, M)}</span>${odds ? `<br><span class="xs">${odds.map(([c, pc, neu]) => `${neu && !seenCol(M.sp, c) ? `<b class="neu">nouvelle couleur</b>` : h(E.colourName(M.sp, c))} ${String(Math.round(pc * 10) / 10).replace(".", ",")} %`).join(" · ")}</span>` : ""}${why ? `<br><span class="xs ko">${why}</span>` : ""}</span>
         <button class="btn sm primary" data-act="${A ? "breed" : "breedsel"}" ${A ? `data-a="${A.uid}" data-b="${M.uid}"` : `data-uid="${M.uid}"`} ${why ? "disabled" : ""}>${A ? "Lancer" : "Choisir"}</button></div>`; }).join("") || `<div class="empty">Aucune monture${sp ? " de cette espèce" : ""}.</div>`}</div>
     <div class="row">${A ? `<button class="btn" data-act="breedpick" data-reset="1">Changer la première</button>` : ""}<button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
@@ -6041,7 +6054,7 @@ function invGroups() {
   const ups = invUps(); const seen = invSeen(); invCnt = { all: 0, up: 0, new: 0, radiant: 0, trash: 0, sets: 0 };
   invOwn = new Set(Object.values(S.items).map((x) => x.tpl)); invTrash = new Set();
   const lo = E.team(S).length ? Math.min(...E.team(S).map((c) => c.lvl)) - 30 : 0; // « À trier » : 30 niveaux sous le plus bas héros de l'équipe
-  Object.values(S.items).forEach((it) => { const T = ITEMS[it.tpl]; if (!ups.has(it.uid) && !it.locked && !it.radiant && !it.exo && !T.leg && !T.set && T.slot !== "dofus" && T.lvl < lo && !worn.has(it.uid)) invTrash.add(it.uid); });
+  Object.values(S.items).forEach((it) => { const T = ITEMS[it.tpl]; if (!ups.has(it.uid) && !it.locked && !it.radiant && !it.exo && !T.leg && !T.set && T.slot !== "dofus" && T.lvl < lo && !worn.has(it.uid) && !E.isPerfect(it) && !(E.inGear && E.inGear(S, it.uid))) invTrash.add(it.uid); });
   const sks = invStats(); const sk = sks[0] || null; const qn = statOfQ(q) ? "" : q; invStatCnt = {}; const forC = ui.invFor ? char(ui.invFor) : null; const lv = ui.invLv ? ui.invLv : null;
   Object.values(S.items).forEach((it) => {
     const T = ITEMS[it.tpl];
@@ -6244,8 +6257,8 @@ function renderInventory() {
       ${`<div class="invfor"><span class="xs muted">Pour</span><button class="invcmp ${ui.invFor ? "" : "on"} all" data-act="invfor" data-cid="">Tous</button>${E.team(S).map((c) => `<button class="invcmp ${ui.invFor === c.id ? "on" : ""}" data-act="invfor" data-cid="${c.id}" title="${h(c.name)} : objets qu'il peut porter, du plus utile au moins utile" style="--cc:${CLASSES[c.cls].color}">${headTag(c.cls, c.sex, c.name)}</button>`).join("")}${ui.invFor && char(ui.invFor) ? `<span class="small"><b>${h(char(ui.invFor).name)}</b> niv. ${char(ui.invFor).lvl} : gain de puissance sur chaque case</span>` : ""}</div>`}
       ${ui.invStatOpen ? `<div class="panel invstp"><div class="pad stack" style="gap:6px">${INV_STG.map(([gn, ks]) => { const L = ks.filter((k) => STATS[k] && (invStatCnt[k] || (ui.invStats || []).includes(k))); return L.length ? `<div class="invstg"><span class="xs muted">${gn}</span>${L.map((k) => `<button data-act="invstat" data-k="${k}" aria-pressed="${(ui.invStats || []).includes(k)}">${sIco(k)}${h(STATS[k].name.replace(/^% /, ""))} <b>${invStatCnt[k] || 0}</b></button>`).join("")}</div>` : ""; }).join("")}<span class="xs muted">Plusieurs choix : les objets doivent avoir toutes ces caractéristiques. Tri du plus fort au plus faible.</span></div></div>` : ""}
       ${invStats().length ? `<div class="invhint"><span class="grow">Objets avec ${invStats().map((k) => `<button class="invstx" data-act="invstat" data-k="${k}" title="Retirer">${h(STATS[k].name)} ✕</button>`).join(" ")}, du plus fort au plus faible.</span>${(ui.invStats || []).length ? `<button class="btn sm" data-act="invstatclr">Effacer</button>` : ""}</div>` : ""}
-      ${ui.slotFilter === "up" && invCnt.up ? (() => { const hs = new Set([...invUps().values()].map((c) => c.id)); return `<div class="invhint">${G("sparkle")}<span class="grow"><b>${invCnt.up} objets</b> sont mieux pour <b>${hs.size} héros</b> de l'équipe.</span><button class="btn sm primary" data-act="invupall">Tout équiper au mieux</button></div>`; })() : ""}
-      ${ui.slotFilter === "trash" && invCnt.trash ? `<div class="invhint"><span class="grow"><b>${invCnt.trash} objets</b> ne servent à aucun héros de l'équipe : niveau bien plus bas, aucune panoplie, ni cadenas ni Rayonnant.</span><button class="btn sm" data-act="invtrashpick">Tout sélectionner</button></div>` : ""}
+      ${ui.slotFilter === "up" && invCnt.up ? (() => { const hs = new Set([...invUps().values()].map((c) => c.id)); return `<div class="invhint">${G("sparkle")}<span class="grow"><b>${invCnt.up} ${invCnt.up > 1 ? "objets</b> sont" : "objet</b> est"} mieux pour <b>${hs.size} héros</b> de l'équipe.</span><button class="btn sm primary" data-act="invupall">Tout équiper au mieux</button></div>`; })() : ""}
+      ${ui.slotFilter === "trash" && invCnt.trash ? `<div class="invhint"><span class="grow"><b>${invCnt.trash} ${invCnt.trash > 1 ? "objets</b> ne servent" : "objet</b> ne sert"} à aucun héros de l'équipe : niveau bien plus bas, aucune panoplie, ni cadenas, ni Rayonnant, ni Parfait.</span><button class="btn sm" data-act="invtrashpick">Tout sélectionner</button></div>` : ""}
       ${ui.invMore ? `<div class="panel invmore"><div class="pad stack" style="gap:8px"><div class="row"><span class="muted small num">${invCountTxt(groups)}</span>${`<span class="row small">Niveau <input type="number" min="1" max="200" data-act="invlv0" value="${ui.invLv ? ui.invLv[0] : ""}" placeholder="1" style="width:64px"> à <input type="number" min="1" max="200" data-act="invlv1" value="${ui.invLv ? ui.invLv[1] : ""}" placeholder="200" style="width:64px"></span>`}<label class="row small"><input type="checkbox" data-act="invshoweq" ${invShowEq() ? "checked" : ""}> Afficher l'équipé (${nWorn})</label>${dupesBtn()}</div>${autoRulesHtml()}</div></div>` : `<div class="xs muted num" id="invCount">${invCountTxt(groups)}</div>`}</div>`;
     body = `${toolsA}
       <div class="invlayout ${detail ? "withdetail" : ""}">
@@ -7669,7 +7682,9 @@ document.addEventListener("keydown", (ev) => {
   if (document.activeElement && document.activeElement.id === "encQ" && k === "Escape" && ui.enc && ui.enc.q) { ev.preventDefault(); const b = $('[data-act="encqclear"]'); if (b) b.click(); return; } // 1.0.22.1 : Échap vide la recherche de l'Encyclopédie
   if (document.activeElement && document.activeElement.id === "renName" && (k === "Enter" || k === "Escape")) { ev.preventDefault(); const b = $(`.hb-renf [data-act="${k === "Enter" ? "rengo" : "rencancel"}"]`); if (b) b.click(); return; } // 0.1.50.1 : Entrée valide le nouveau nom, Échap annule
   if (k === "/" && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !$("#sheet").innerHTML) { ev.preventDefault(); searchOpen(); }
-  else if (k === "Escape" && $("#wtip")) tipLater();
+  else if (k === "Escape" && ($("#wtip") || $('#sheet .sheet-bg[data-act="closesheet"]'))) { // 1.1.0.1 : Échap ferme aussi la fenêtre ouverte (pas celles de connexion)
+    if ($("#wtip")) tipLater();
+    if (!isEditing() && $('#sheet .sheet-bg[data-act="closesheet"]')) { ev.preventDefault(); closeSheet(); render(); } }
   else if (hotkey(ev)) ev.preventDefault();
   else if ((k === "ArrowUp" || k === "ArrowDown") && !isEditing() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey && !$("#sheet").innerHTML && heroRailKey(k === "ArrowDown" ? 1 : -1)) ev.preventDefault();
 });
@@ -7725,7 +7740,7 @@ function defiCal() {
   for (let d = first; d <= last; d++) {
     const n = d - first + 1; const m = H[d]; if (m === 3) ors++;
     const k = d > day ? "fut" : m ? cls[m] : won.has(d) ? "on" : jok.has(d) ? "jk" : "";
-    const tip = d > day ? "" : m ? `bourse ${E.DEFI_MEDALS[m - 1].name.toLowerCase()}` : won.has(d) ? "défi réussi" : jok.has(d) ? "joker utilisé" : d === day ? "pas encore réussi" : "pas de défi réussi";
+    const tip = d > day ? "" : m ? `bourse ${E.DEFI_MEDALS[m - 1].of}` : won.has(d) ? "défi réussi" : jok.has(d) ? "joker utilisé" : d === day ? "pas encore réussi" : "pas de défi réussi";
     cells.push(`<i class="${k}${d === day ? " today" : ""}"${tip ? ` data-tip="${h(E.defiDate(d))} : ${tip}"` : ""}>${k === "jk" ? "J" : n}</i>`);
   }
   const mn = E.defiMonthName(E.defiMonth(day));
@@ -7863,8 +7878,8 @@ function defiSheet(r) {
     <div class="bigrec ${r.win ? "" : "lose"}">${r.win ? `${fmt(r.score)} points` : "Défaite"}</div>
     <span class="small muted" style="text-align:center">${h(dg.name)} · stasis ${r.k} · palier ${h(T.name)}${r.win ? ` · ${r.turns} tours · ${medTag(ml)}` : ""}</span>
     ${r.win ? `<div class="chk"><div><span class="okc">✓</span><span>${r.improved ? (gain > 0 ? `<b>Nouveau record du jour</b>, ${fmt(gain)} points de mieux` : "<b>Premier score du jour</b> dans ce palier") : `Ton record du jour reste <b>${fmt(r.prev.score || 0)} points</b>`}</span></div>
-      ${ch ? `<div><span class="okc">${chestImg("bourse_defi")}</span><span>Bourse ${h(E.DEFI_MEDALS[ch.medal - 1].name.toLowerCase())} : ${chTxt}${r.streak ? ` · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}` : ""}${r.bonus ? ` · <b>${h(CONSUMABLES[r.bonus].name)}</b> offert !` : ""}</span></div>` : ""}
-      ${next ? `<div><span class="okc">${IC("coffre")}</span><span>Bourse ${h(next.name.toLowerCase())} à ${fmt(next.pts)} points : il t'en manque <b>${fmt(next.pts - (st.best[r.tier] ? st.best[r.tier].score : r.score))}</b>.</span></div>` : `<div><span class="okc">✓</span><span>Les trois bourses du jour sont à toi.</span></div>`}</div>
+      ${ch ? `<div><span class="okc">${chestImg("bourse_defi")}</span><span>Bourse ${h(E.DEFI_MEDALS[ch.medal - 1].of)} : ${chTxt}${r.streak ? ` · série de ${r.streak} jour${r.streak > 1 ? "s" : ""}` : ""}${r.bonus ? ` · <b>${h(CONSUMABLES[r.bonus].name)}</b> offert !` : ""}</span></div>` : ""}
+      ${next ? `<div><span class="okc">${IC("coffre")}</span><span>Bourse ${h(next.of)} à ${fmt(next.pts)} points : il t'en manque <b>${fmt(next.pts - (st.best[r.tier] ? st.best[r.tier].score : r.score))}</b>.</span></div>` : `<div><span class="okc">✓</span><span>Les trois bourses du jour sont à toi.</span></div>`}</div>
       ${defiPtsHtml(r)}`
       : `<p class="small">Le hasard du défi est le même à chaque essai : réessayer sans rien changer donne le même combat. Change d'équipement, de sorts, d'idoles ou de composition, puis relance.</p>`}
     <details ${r.win ? "" : "open"}><summary class="small"><b>Salle par salle</b></summary><ul class="dglist">${rooms}</ul></details>
@@ -9014,7 +9029,8 @@ document.addEventListener("click", (ev) => {
     case "breedpick": ui.breedA = d.reset ? null : ui.breedA; breedPickSheet(); return;
     case "breedsel": ui.breedA = +d.uid; breedPickSheet(); return;
     case "breed": { const r = E.startBreed(S, +d.a, +d.b); if (r) { toast(r); return; } ui.breedA = null; closeSheet(); toast("Le couple est à l'enclos."); dirty = true; break; }
-    case "breedstop": { const r = E.stopBreed(S, +d.i); if (r) { toast(r); return; } dirty = true; break; }
+    case "breedstop": { const ai = d.a ? S.enclos.pairs.findIndex((p) => String(p.a) === d.a) : +d.i; const r = E.stopBreed(S, ai); // 1.1.0.1 : le couple par sa monture, pas par sa place dans la liste (une naissance la décalait)
+      if (r) { toast(r); return; } dirty = true; break; }
     case "toggleteam": msg(E.toggleTeam(S, +d.id)); break;
     case "alloc": E.allocate(S, c.id, d.k, +d.n); break;
     case "dealloc": E.deallocate(S, c.id, d.k, +d.n); break;
@@ -9165,7 +9181,7 @@ document.addEventListener("click", (ev) => {
     case "askreset": ui.confirm = "reset"; optionsSheet(); return;
     case "askrestore": ui.confirm = "restore" + d.i; if (S) optionsSheet(); else renderStart(); return;
     case "cancelrestore": ui.confirm = null; if (S) optionsSheet(); else renderStart(); return;
-    case "restorecopy": restoreCopy(+d.i); return;
+    case "restorecopy": restoreCopy(+d.i, +d.t); return;
     case "frompublic": { try { const txt = SV.store().get("dofousxen-save"); S = E.deserialize(txt); ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); ui.tab = "home"; render(); toast("Partie du jeu public copiée dans la version de test."); } catch (e) { toast("Aucune partie du jeu public à copier."); } return; }
     case "cancelreset": ui.confirm = null; optionsSheet(); return;
     case "reset": if (S) pushCopy(E.serialize(S), "avant", S); S = null; ui.confirm = null; closeSheet(); SV.remove(); render(); return;
@@ -9463,7 +9479,7 @@ function menuCopies(n) {
   setSlot(n); MENU.copies = n;
   const a = readCopies(), why = { auto: "copie automatique", maj: "avant la mise à jour", avant: "avant le dernier remplacement de partie", enligne: "version en ligne remplacée" };
   openSheet(`<h2>Copies de secours · partie ${n}</h2><span class="small muted">Restaurer remplace la partie ${n} de cet appareil par la copie (la partie actuelle devient une copie à son tour).</span>
-    <div class="stack small" style="gap:6px">${a.length ? a.map((c, i) => `<div class="row"><span>${h(copyDate(c.t))} · ${why[c.why] || "copie"}${c.lvl ? ` · ${c.n} héros, niveau ${c.lvl} max` : ""}</span><button class="btn sm" data-act="sv-restore" data-n="${n}" data-i="${i}">Restaurer</button></div>`).join("") : `<div class="muted">Aucune copie pour l'instant.</div>`}</div>
+    <div class="stack small" style="gap:6px">${a.length ? a.map((c, i) => `<div class="row"><span>${h(copyDate(c.t))} · ${why[c.why] || "copie"}${c.lvl ? ` · ${c.n} héros, niveau ${c.lvl} max` : ""}</span><button class="btn sm" data-act="sv-restore" data-n="${n}" data-i="${i}" data-t="${c.t}">Restaurer</button></div>`).join("") : `<div class="muted">Aucune copie pour l'instant.</div>`}</div>
     <div><button class="btn" data-act="sv-copiesx">Fermer</button></div>`);
 }
 async function svPlay(n, which) {
@@ -9512,10 +9528,10 @@ async function svAct(a, t) {
     case "sv-copies": return menuCopies(n);
     case "sv-copiesx": MENU.copies = null; closeSheet(); return;
     case "sv-restore": {
-      const c = readCopies()[+t.dataset.i]; if (!c) return;
+      const cs = readCopies(); const c = t.dataset.t ? cs.find((x) => x.t === +t.dataset.t) : cs[+t.dataset.i]; if (!c) return;
       try { E.deserialize(c.txt); } catch (e) { toast("Cette copie est illisible."); return; }
       setSlot(n); const raw = SV.read(); if (raw) pushCopy(raw, "avant", sl && sl.st);
-      SV.store().set(LS_KEY, c.txt);
+      if (!SV.store().set(LS_KEY, c.txt)) { toast("Le navigateur n'a plus de place : la copie n'a pas pu être restaurée.", "warn"); return; }
       if (ON) { const l = ON.linkOf(LS_KEY); if (l.uid) ON.setLink({ savedAt: 0 }); } // la copie compte comme une partie d'ici : si la version en ligne a aussi bougé, les deux sont montrées
       MENU.copies = null; closeSheet(); MENU.slots[n - 1] = Object.assign(slotRead(n), { rem: sl ? sl.rem : null }); MENU.slots[n - 1].plan = slotPlan(MENU.slots[n - 1]);
       renderMenu(); toast(`Copie du ${copyDate(c.t)} restaurée dans la partie ${n} : clique sur « Jouer ».`); return; }
@@ -10124,8 +10140,8 @@ function lbAct(a, t) {
   }
   renderLadder();
 }
-function restoreCopy(i) {
-  const c = readCopies()[i]; if (!c) return;
+function restoreCopy(i, t) {
+  const a = readCopies(); const c = t ? a.find((x) => x.t === t) : a[i]; if (!c) return; // 1.1.0.1 : la copie par sa date (une copie automatique écrite entre-temps décalait la liste)
   let N; try { N = E.deserialize(c.txt); } catch (e) { toast("Cette copie est illisible."); return; }
   if (S) pushCopy(E.serialize(S), "avant", S);
   S = N; ui.cid = S.chars[0].id; setTheme(S.settings.theme || "dark"); dirty = true; saveNow(); ui.confirm = null; closeSheet(); ui.tab = "home"; render();
@@ -10135,7 +10151,7 @@ const copyDate = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", mo
 function copiesHtml() {
   const a = readCopies(); if (!a.length) return `<div class="muted">Aucune copie pour l'instant.</div>`;
   const why = { auto: "copie automatique", maj: "avant la mise à jour", avant: "avant le dernier remplacement de partie", enligne: "version en ligne remplacée" };
-  return a.map((c, i) => `<div class="row"><span>${h(copyDate(c.t))} · ${why[c.why] || "copie"}${c.why === "maj" && c.v ? ` (version ${h(c.v)})` : ""}${c.lvl ? ` · ${c.n} héros, niveau ${c.lvl} max` : ""}</span>${ui.confirm === "restore" + i ? `<span class="minus">La partie actuelle sera remplacée.</span> <button class="btn sm danger" data-act="restorecopy" data-i="${i}">Restaurer</button> <button class="btn sm" data-act="cancelrestore">Annuler</button>` : `<button class="btn sm" data-act="askrestore" data-i="${i}">Restaurer</button>`}</div>`).join("");
+  return a.map((c, i) => `<div class="row"><span>${h(copyDate(c.t))} · ${why[c.why] || "copie"}${c.why === "maj" && c.v ? ` (version ${h(c.v)})` : ""}${c.lvl ? ` · ${c.n} héros, niveau ${c.lvl} max` : ""}</span>${ui.confirm === "restore" + i ? `<span class="minus">La partie actuelle sera remplacée.</span> <button class="btn sm danger" data-act="restorecopy" data-i="${i}" data-t="${c.t}">Restaurer</button> <button class="btn sm" data-act="cancelrestore">Annuler</button>` : `<button class="btn sm" data-act="askrestore" data-i="${i}">Restaurer</button>`}</div>`).join("");
 }
 
 /* 0.1.9.1 : glisser-déposer du plateau « Réorganiser » de la page Équipe (souris) */

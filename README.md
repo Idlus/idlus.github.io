@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.1.1 « Chasse aux bugs de la 1.1 »
+
+Demande de Mathis (15/10/2026) : « Vérifie tous les bugs possibles du jeu et corrige ». Balayage Playwright de toutes les pages et de leurs boutons (PC et téléphone, partie neuve et avancée, en ligne simulé) : aucune erreur. Relecture du code de la 1.1 : `enclosTick` avance par étapes (`js/elevage.js`), commandes du jour gardées dans `elev.ord.list`, `E.catchingUp` pendant `catchUp` (le Champion légendaire n'apparaît pas hors ligne), auto de L'Ascension (mercenaire, fin de montée au changement de mois via `ascEnd(S, "reset")`, fiole du Défi une fois par jour), fiche de donjon stasis 11+, `invTrash` sans Parfaits, `legFuse` garde le surplus, Échap ferme `#sheet`, copies restaurées par leur date.
+
 ## 1.1.1 « Fonder une alliance »
 - Le nom et le sigle de l'alliance tapés ne s'effacent plus ; la page dit ce qui manque quand le bouton est grisé (niveau de guilde, kamas du coffre, Meneur seulement).
 - Un refus du serveur affiche son vrai message.

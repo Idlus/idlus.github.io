@@ -70,8 +70,8 @@
   }
 
   /* ---------- les choix en attente ---------- */
-  function slotsPick(R, act) {
-    return `<div class="as-slots">${R.spells.map((sp, i) => { if (sp.sig) return ""; const x = sp.soul ? null : E.ascSpell(sp.k);
+  function slotsPick(R, act) { // 1.1.0.1 : un glyphe se pose aussi sur le sort signature, jamais sur une âme
+    return `<div class="as-slots">${R.spells.map((sp, i) => { if (act === "as-glyph" ? sp.soul : sp.sig) return ""; const x = sp.soul ? null : E.ascSpell(sp.k);
       return `<button class="as-slot ${st.rep === i ? "on" : ""}" data-act="${act}" data-i="${i}">${sp.soul ? `<img class="as-soulimg" src="${monImg(sp.k.slice(5))}" alt="">` : spIco(x)}<small>${h(sp.soul ? "Âme : " + monName(sp.k.slice(5)) : x ? x.name : "?")}</small></button>`; }).join("")}</div>`;
   }
   function pendHtml(s) {

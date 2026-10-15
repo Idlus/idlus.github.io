@@ -72,9 +72,9 @@
     return `<div class="el-couple"><div class="bpair">${mImg(A.sp, A.c, A.chr)}<b>+</b>${mImg(B.sp, B.c, B.chr)}</div><div class="grow" style="min-width:0">
       <b>${h(E.colourName(A.sp, A.c))} ${starsOf(A)} + ${h(E.colourName(B.sp, B.c))} ${starsOf(B)}</b> <span class="xs muted">couple ${p.s + 1}</span>
       <div class="el-odds xs">${odds}</div>
-      <div class="xs">Petit : ${starsHtml(Math.min(cap, I.st), cap)} <span class="muted">· ${fmtPct(I.up)} une étoile de plus, ${I.down} % une de moins · ${fmtPct(I.cap)} une capacité</span></div>
+      <div class="xs">Petit : ${starsHtml(Math.min(cap, I.st), cap)} <span class="muted">· ${fmtPct(I.up)} une étoile de plus, ${fmtPct(I.down)} une de moins · ${fmtPct(I.cap)} une capacité</span></div>
       <div class="xs ${p.wait ? "ko" : "muted"}" data-elt="${idx}">${p.wait ? "Le petit attend : l'écurie est pleine, relâchez une monture" : `Naissance dans ${eta(p.t)} · continue hors ligne`}</div><div class="bar"><i data-elb="${idx}" style="width:${100 - Math.round((p.t / (p.T || p.t || 1)) * 100)}%"></i></div>
-      ${slotItems(s, p.s)}</div><button class="btn sm" data-act="breedstop" data-i="${idx}">Annuler</button></div>`;
+      ${slotItems(s, p.s)}</div><button class="btn sm" data-act="breedstop" data-i="${idx}" data-a="${p.a}">Annuler</button></div>`;
   }
   const fmtPct = (v) => `${String(Math.round(v * 10) / 10).replace(".", ",")} %`;
   function enclosPanel(s) {
@@ -175,7 +175,7 @@
       ${fam}
       <div class="el-acts">
         <button class="btn sm" data-act="el-name" data-uid="${M.uid}">Renommer</button>
-        ${toMax > 0 ? `<button class="btn sm" data-act="el-feed" data-uid="${M.uid}" data-n="1" ${v.ess >= E.ESS_LVL ? "" : "disabled"}>+1 niveau · ${E.ESS_LVL}</button><button class="btn sm" data-act="el-feed" data-uid="${M.uid}" data-n="10" ${v.ess >= E.ESS_LVL * Math.min(10, toMax) ? "" : "disabled"}>+${Math.min(10, toMax)} niveaux · ${fmt(E.ESS_LVL * Math.min(10, toMax))}</button>` : ""}
+        ${toMax > 0 ? `<button class="btn sm" data-act="el-feed" data-uid="${M.uid}" data-n="1" ${v.ess >= E.ESS_LVL ? "" : "disabled"}>+1 niveau · ${E.ESS_LVL}</button>${toMax > 1 ? `<button class="btn sm" data-act="el-feed" data-uid="${M.uid}" data-n="10" ${v.ess >= E.ESS_LVL * Math.min(10, toMax) ? "" : "disabled"}>+${Math.min(10, toMax)} niveaux · ${fmt(E.ESS_LVL * Math.min(10, toMax))}</button>` : ""}` : ""}
         ${(M.st || 1) < cap ? `<button class="btn sm ${v.ess >= E.ESS_STAR && !pol ? "primary" : ""}" data-act="el-polish" data-uid="${M.uid}" ${v.ess >= E.ESS_STAR && !pol ? "" : "disabled"} data-tip="${pol ? "Déjà polie aujourd'hui" : "Une étoile par jour et par monture"}">+1 étoile · ${fmt(E.ESS_STAR)}</button>` : ""}
         ${!balWhy && !balFull ? `<button class="btn sm" data-act="el-bal" data-uid="${M.uid}" data-h="4">Balade 4 h</button><button class="btn sm" data-act="el-bal" data-uid="${M.uid}" data-h="8">Balade 8 h</button>` : ""}
         <button class="btn sm" data-act="el-free" data-uid="${M.uid}" ${E.inPair(s, M.uid) || E.onBalade(s, M.uid) ? "disabled" : ""}>Relâcher · +${fmt(E.releaseEss(M))} Essence</button></div>
@@ -191,7 +191,7 @@
   function massSheet() {
     const s = S(); const L = E.massReleaseList(s);
     X().openSheet(`<div class="el-sheet"><h2>Relâcher en masse</h2><div class="list">${L.map((M) => `<div class="li"><span class="icobox">${mImg(M.sp, M.c)}</span><span class="grow"><b>${h(E.mountName(M))}</b> ${starsOf(M)}<br><span class="xs muted">niveau ${M.lvl} · +${fmt(E.releaseEss(M))} Essence</span></span></div>`).join("")}</div>
-      <div class="row"><button class="btn primary" data-act="el-mass">Relâcher les ${L.length}</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+      <div class="row"><button class="btn primary" data-act="el-mass">${L.length > 1 ? `Relâcher les ${L.length}` : "Relâcher"}</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
   }
 
   /* ======================= CARNET ======================= */
@@ -282,10 +282,10 @@
       case "el-logall": st.logAll = !st.logAll; break;
       case "el-uneq": done(E.act(s, "elvUnequip", +d.s, d.k)); break;
       case "el-autoeq": { const n = E.act(s, "elvAutoEquip", +d.s); X().markDirty(); if (!n) X().toast("Rien à poser.", "warn"); break; }
-      case "el-pair4": done(E.act(s, "pair4Buy"), "L'enclos accueille un 4e couple."); break;
+      case "el-pair4": done(E.act(s, "pair4Buy")); break;
       case "el-tier": st.tier[d.k] = +d.v; break;
       case "el-buy": done(E.act(s, "elvBuy", d.k, +d.v), `${E.ELV_ITEMS[d.k].name} ${E.ROMAN5[+d.v]} acheté : il se pose sur un couple de l'enclos.`); break;
-      case "el-ord": { const o = E.orders(s)[+d.i]; if (o && done(E.act(s, "orderDeliver", +d.i))) X().toast(`Commande livrée : +${fmt(o.kamas)} kamas, +${fmt(o.ess)} Essence.`, "rare"); break; }
+      case "el-ord": done(E.act(s, "orderDeliver", +d.i)); break; // 1.1.0.1 : la note du moteur suffit (le message s'affichait deux fois)
       case "el-sp": st.sp = d.v; break;
       case "el-f": st.f = d.v; break;
       case "el-csp": st.csp = d.v; break;
@@ -293,7 +293,7 @@
       case "el-free": { if (!M) return; if (!confirm(`Relâcher ${E.mountName(M)} (niveau ${M.lvl}, ${"★".repeat(M.st || 1)}) ? Elle disparaît pour toujours et rend ${fmt(E.releaseEss(M))} Essence.`)) return;
         if (done(E.act(s, "releaseMount", M.uid), `${E.mountName(M)} est relâché${fem(M.sp)} : +${fmt(E.releaseEss(M))} Essence.`)) X().closeSheet(); break; }
       case "el-masslist": massSheet(); return;
-      case "el-mass": { const L = E.massReleaseList(s); if (!L.length) return; if (!confirm(`Relâcher ${L.length} monture${L.length > 1 ? "s" : ""} faibles ? Elles disparaissent pour toujours.`)) return; done(E.act(s, "massRelease")); X().closeSheet(); break; }
+      case "el-mass": { const L = E.massReleaseList(s); if (!L.length) return; if (!confirm(`Relâcher ${L.length > 1 ? `${L.length} montures faibles ? Elles disparaissent` : "1 monture faible ? Elle disparaît"} pour toujours.`)) return; done(E.act(s, "massRelease")); X().closeSheet(); break; }
       case "el-feed": if (done(E.act(s, "feedMount", +d.uid, +d.n))) ficheSheet(+d.uid); X().render(); return;
       case "el-polish": if (done(E.act(s, "polishMount", +d.uid))) ficheSheet(+d.uid); X().render(); return;
       case "el-name": { if (!M) return; const nm = prompt("Nom de la monture (20 caractères, vide pour retirer le nom)", M.nm || ""); if (nm === null) return; done(E.act(s, "renameMount", M.uid, nm)); ficheSheet(M.uid); X().render(); return; }

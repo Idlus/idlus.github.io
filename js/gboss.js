@@ -285,7 +285,7 @@
     { k: "comptoir", name: "Comptoir de guilde", ic: "kamas", lvl: 12, cost: 6000000, d: "Les membres vendent leurs ressources 5 % plus cher en vente directe." },
     { k: "qg", name: "Quartier général", ic: "havre", lvl: 15, cost: 10000000, d: "Un emplacement de Percepteur en plus : 6 au lieu de 5." },
     { k: "percodore", name: "Percepteur doré", ic: "cristal", lvl: 18, cost: 14000000, d: "La poche de vos Percepteurs se remplit en 10 h au lieu de 12." },
-    { k: "cor", name: "Cor de ralliement", ic: "trophee", lvl: 20, cost: 20000000, d: "Boss de guilde : un essai toutes les 20 min au lieu de 25." },
+    { k: "cor", name: "Cor de ralliement", ic: "trophee", lvl: 20, cost: 20000000, d: "Boss de guilde : un essai toutes les 1 h 40 au lieu de 2 h." },
   ];
   E.GUILD_UQ_BY = Object.fromEntries(E.GUILD_UQ.map((u) => [u.k, u]));
   /* rang d'une amélioration (0 à 10) ou amélioration unique achetée (1) : S.guild.ups, rempli par js/guilds.js depuis guild_me */

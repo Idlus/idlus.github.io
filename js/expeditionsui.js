@@ -105,7 +105,7 @@
     const s = S(); if (!s || s.chars.length < 2) return null;
     const M = E.mis(s); const n = E.misSlots(s); const av = E.misHeroes(s).length; const free = n - M.runs.length;
     const next = M.runs.length ? Math.min(...M.runs.map((r) => r.t1)) : 0;
-    return { ic: IC("carte"), t: "Expéditions", s: M.runs.length ? `${M.runs.length} en cours · prochain retour dans ${hrs((next - E.now()) / 1000)}${free > 0 && av ? ` · ${free} ${pl(free, "place libre", "places libres")}` : ""}` : av ? `${av} ${pl(av, "héros")} hors de l'équipe ${av > 1 ? "peuvent" : "peut"} partir en mission` : "les héros hors de l'équipe partent en mission",
+    return { ic: IC("carte"), t: "Expéditions", s: M.runs.length ? `${M.runs.length} en cours · prochain retour dans ${hrs((next - E.now()) / 1000)}${free > 0 && av ? ` · ${free} ${pl(free, "place libre", "places libres")}` : ""}` : av ? `${av} ${pl(av, "héros", "héros")} hors de l'équipe ${av > 1 ? "peuvent" : "peut"} partir en mission` : "les héros hors de l'équipe partent en mission",
       hot: free > 0 && av > 0, done: free <= 0, act: `data-act="ex-go"`, badge: `<span class="pill num">${M.runs.length}/${n}</span>` };
   }
 

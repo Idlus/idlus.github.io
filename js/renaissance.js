@@ -62,6 +62,7 @@
     const inTeam = E.team(S).some((x) => x.id === c.id);
     if (inTeam && S.dungeon) return "Terminez ou quittez le donjon en cours.";
     if (inTeam && S.fight && !S.fight.over) return "Attendez la fin du combat.";
+    if (inTeam && E.expActive && E.expActive(S)) return "Réveillez d'abord l'équipe du Songe infini."; // 1.1.0.1
     return null;
   };
   /* Choix possibles pour la prochaine renaissance : [id, rang actuel] */

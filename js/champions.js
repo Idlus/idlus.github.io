@@ -142,7 +142,7 @@
   const mg = E.makeGroup;
   E.makeGroup = (S, sub, teamSize) => {
     const g = mg(S, sub, teamSize);
-    const C = S.ch; if (!C || !C.pend || E.SUBS[C.pend] !== sub) return g;
+    const C = S.ch; if (!C || !C.pend || E.catchingUp || E.SUBS[C.pend] !== sub) return g; // 1.1.0.1 : jamais pendant l'absence (combat tiré d'avance, gagné sans le voir)
     if ((C.t[C.pend] || 0) < E.CHAMP_TRAILS) { C.pend = null; return g; }
     const cand = g.filter((m) => !m.archi); if (!cand.length) return g;
     const m = cand.sort((a, b) => b.lvl - a.lvl || b.hpMax - a.hpMax)[0];
