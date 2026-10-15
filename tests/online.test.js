@@ -348,6 +348,8 @@ const MOCK = () => {
   }) };
 };
 
+/* 1.2 : une page peut être repliée dans sa famille (ou rangée en onglet) : on ouvre la famille puis on clique, sinon DX.go */
+const navClick = async (page, k) => { const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "go"; }, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
 (async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = `http://127.0.0.1:${server.address().port}/beta/`;
@@ -461,7 +463,7 @@ const MOCK = () => {
       d.views.lb_jobs_guild = [{ guild_id: 1, name: "Les Artisans", ic: "combat", col: "#e0a030", job: "tous", members: 4, lvl: 2100, total: 9000000, best: "Kralamour" }, { guild_id: 2, name: "Bwork Team", ic: "dofus", col: "#30a0e0", job: "tous", members: 2, lvl: 900, total: 2000000, best: "Bworkman" }];
       d.views.lb_jobs_guild_week = [];
       localStorage.setItem("__mock", JSON.stringify(d)); });
-    await page.click('#nav [data-nk="ladder"]');
+    await navClick(page, "ladder");
     // 1.0.5 : l'onglet Course s'ouvre en premier : 10 places, puis les joueurs en course
     await page.waitForSelector("#lbList .rc-slots", { timeout: 10000 });
     if ((await page.$$("#lbList .rc-slot")).length !== 10) fail("course : il faut 10 places");
@@ -722,7 +724,7 @@ const MOCK = () => {
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/fiche.png", fullPage: true });
     // 7d bis (0.1.36). boîte à idées : envoi depuis Communauté › Suggestions, puis lecture dans le panel admin
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.click('#nav .sn-side [data-nk="sugg"]'); await page.waitForSelector("#idTitle", { timeout: 5000 });
+    await navClick(page, "sugg"); await page.waitForSelector("#idTitle", { timeout: 5000 });
     await page.click('[data-act="id-send"]'); await page.waitForTimeout(200);
     if (!/Choisis ce que ton idée concerne/.test(await page.textContent("#main"))) fail("idées : envoi sans catégorie accepté");
     await page.click('[data-act="id-tag"][data-v="Contenu"]'); await page.fill("#idTitle", "Un donjon pour le Bouftou Royal"); await page.fill("#idBody", "Un petit donjon niveau 20 à Astrub avec le Bouftou Royal en boss.");
@@ -759,7 +761,7 @@ const MOCK = () => {
       const d = JSON.parse(localStorage.getItem("__mock")); d.builds = [mk(1, "u9", "Kralamour", mc, 200, "fo", "pre", "Build Terre increvable", ["u7", "u6", "u5"], 120), mk(2, "u8", "Tofuline", other, 120, "ine", "abo", "Build Feu soin", [], 4)];
       localStorage.setItem("__mock", JSON.stringify(d)); return { mc, other }; });
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.click('#nav [data-nk="builds"]'); await page.waitForSelector("#bdPage .bd-card", { timeout: 8000 });
+    await navClick(page, "builds"); await page.waitForSelector("#bdPage .bd-card", { timeout: 8000 });
     if ((await page.$$("#bdPage .bd-card")).length !== 2) fail("builds : il faut 2 cartes");
     if (!(await page.$("#bdPage .bd-week")) || !/Build Terre increvable/.test(await page.textContent("#bdPage .bd-week"))) fail("builds : build de la semaine absent");
     if ((await page.$$("#bdPage .bd-cls button")).length !== 19) fail("builds : il faut les 19 classes dans les filtres");
@@ -836,7 +838,7 @@ const MOCK = () => {
     await page.click('.adm [data-act="bd-adm"][data-id="2"][data-v="hide"]'); await page.waitForTimeout(500);
     m = await mock(); if (!(m.builds.find((x) => x.id === 2) || {}).hidden) fail("builds : « Cacher » du panel admin sans effet");
     // téléphone : la page et la fiche tiennent dans l'écran
-    await page.setViewportSize({ width: 390, height: 844 }); await page.click('#nav [data-nk="builds"]').catch(async () => { await page.evaluate(() => { window.DX.ui.tab = "builds"; window.DX.render(); }); });
+    await page.setViewportSize({ width: 390, height: 844 }); await navClick(page, "builds").catch(async () => { await page.evaluate(() => { window.DX.ui.tab = "builds"; window.DX.render(); }); });
     await page.evaluate(() => { window.DX.ui.tab = "builds"; window.DX.ui.bdOpen = null; window.DX.render(); }); await page.selectOption("#bdSort", "week"); await page.waitForSelector("#bdPage .bd-card", { timeout: 5000 });
     { const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`builds : page trop large sur téléphone : ${w}px`); }
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/builds-mob.png", fullPage: true });
@@ -846,7 +848,7 @@ const MOCK = () => {
     await page.setViewportSize({ width: 1280, height: 800 }); await page.evaluate(() => { window.DX.ui.bdOpen = null; window.DX.ui.tab = "admin"; window.DX.render(); });
     // 7e. hôtel de vente : achat d'un objet, il arrive dans le sac et les kamas baissent
     await page.click("#chat .ch-x"); await page.evaluate(() => window.scrollTo(0, 0));
-    await page.click('#nav [data-nk="hdv"]');
+    await navClick(page, "hdv");
     await page.waitForSelector('.mktr2[data-k]', { timeout: 8000 });
     if (!(await page.$(".mkdot.good"))) fail("hôtel de vente : repère de prix absent");
     await page.click('.mktr2[data-k]');
@@ -930,7 +932,7 @@ const MOCK = () => {
         await window.VENTEUI.load(true); const off = E.venteDirect(S); S.res["Bois de Frêne"] = 30; S.resCap["Bois de Frêne"] = 5; E.emit(S, "harvest", { n: 1 }); const merch = S.res["Bois de Frêne"];
         d.ecoOff = false; localStorage.setItem("__mock", JSON.stringify(d)); await window.VENTEUI.load(true); delete S.resCap["Bois de Frêne"]; return { off, merch, back: E.venteDirect(S) }; });
       if (r.off || r.merch !== 5 || !r.back) fail("vente directe : sans les fonctions du serveur, le marchand de secours ne reprend pas " + JSON.stringify(r)); }
-    if (!(await page.$('#nav [data-nk="cours"]'))) fail("vente directe : Cours des ressources absent du menu");
+    if (!(await page.evaluate(() => window.DX.NAV.some((F) => F.pages.some((p) => p[0] === "cours"))))) fail("vente directe : Cours des ressources absent du menu");
     await page.click('.vd-box [data-act="nav"][data-v="cours"]'); await page.waitForSelector(".vd-cours", { timeout: 5000 });
     { const t = await page.textContent("#main"); if (!/Les plus chères/.test(t) || !/Les plus vendues/.test(t) || !/Laine de Bouftou/.test(t) || !/Tes dernières ventes directes/.test(t)) fail("cours des ressources : page incomplète"); }
     await page.fill("#vdCq", "frene"); await page.waitForTimeout(400);
@@ -938,7 +940,7 @@ const MOCK = () => {
     await page.fill("#vdCq", "");
     // Foire du Trool : Jackpot du serveur (ticket, pot, gain versé comme une vente de l'HdV) et Caisses du Trool
     await page.evaluate(() => { window.DX.S.kamas = Math.max(window.DX.S.kamas, 3e6); });
-    await page.click('#nav [data-nk="foire"]'); await page.waitForSelector("#foJack .fo-jack", { timeout: 8000 }).catch(() => fail("foire : Jackpot absent"));
+    await navClick(page, "foire"); await page.waitForSelector("#foJack .fo-jack", { timeout: 8000 }).catch(() => fail("foire : Jackpot absent"));
     if (!/36 000 k/.test((await page.textContent("#foJack .fo-jack")).replace(/\s/g, " "))) fail("foire : pot de l'heure faux");
     { const k0 = await page.evaluate(() => window.DX.S.kamas);
       await page.click('[data-act="fo-jbuy"][data-n="1"]'); await page.waitForTimeout(900);
@@ -952,22 +954,22 @@ const MOCK = () => {
       if (r.left !== 19 || !r.lot || r.k !== k0 - 50000 + r.lot.k || !(await page.$(".fo-track .it.win")) || !/!/.test(await page.textContent("#foRes"))) fail("foire : caisse mal ouverte " + JSON.stringify([k0, r])); }
     // Comptoirs : les 6 boutiques, point sur le menu quand on peut acheter du neuf, achat, offre de la semaine
     await page.evaluate(() => { const S = window.DX.S; S.tokens.jetons = 50; window.DX.render(); });
-    if (!(await page.$('#nav [data-nk="comptoirs"] .navdot'))) fail("comptoirs : pas de point sur le menu avec de quoi acheter");
-    await page.click('#nav [data-nk="comptoirs"]'); await page.waitForSelector(".cp-shops", { timeout: 5000 });
+    if (!(await page.evaluate(() => /navdot/.test(window.DX.navBadges().comptoirs || "")))) fail("comptoirs : pas de point sur le menu avec de quoi acheter");
+    await navClick(page, "comptoirs"); await page.waitForSelector(".cp-shops", { timeout: 5000 });
     if ((await page.$$(".cp-sh")).length !== 6 || !(await page.$(".cp-offer")) || !/NOUVEAU/.test(await page.textContent(".cp-items"))) fail("comptoirs : page incomplète");
     await page.click('.cp-sh[data-v="prime"]'); await page.waitForTimeout(100);
     { const b0 = await page.evaluate(() => [window.DX.S.tokens.jetons, window.DX.S.cons.bonbon_sagesse || 0]);
       await page.click('[data-act="cp-buy"][data-s="prime"][data-id="b1"][data-q="1"]:not([data-o])'); await page.waitForTimeout(200);
       const b1 = await page.evaluate(() => [window.DX.S.tokens.jetons, window.DX.S.cons.bonbon_sagesse || 0]);
       if (b1[0] !== b0[0] - 4 || b1[1] !== b0[1] + 1) fail("comptoirs : achat mal fait " + JSON.stringify([b0, b1])); }
-    await page.click('#nav [data-nk="world"]'); await page.waitForTimeout(200);
+    await navClick(page, "world"); await page.waitForTimeout(200);
     if (await page.evaluate(() => window.ENGINE.cptNew(window.DX.S, "prime").length)) fail("comptoirs : les objets vus restent neufs");
     await page.setViewportSize({ width: 390, height: 844 });
     for (const tb of ["cours", "foire", "comptoirs"]) { await page.evaluate((x) => { window.DX.ui.tab = x; window.DX.render(); }, tb); await page.waitForTimeout(250); const w = await page.evaluate(() => document.documentElement.scrollWidth); if (w > 392) fail(`${tb} : page trop large sur téléphone : ${w}px`); }
     await page.setViewportSize({ width: 1280, height: 800 }); await page.evaluate(() => { window.DX.ui.tab = "world"; window.DX.render(); });
     // 7f. guildes : invitation reçue, liste, formulaire de fondation
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // bulle « Équiper un objet » après l'achat
-    await page.click('#nav [data-nk="guild"]'); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
+    await navClick(page, "guild"); await page.waitForSelector('[data-act="g-inv"]', { timeout: 8000 });
     if (!(await page.$("#gName")) || !(await page.$('[data-act="g-join"]'))) fail("guildes : page incomplète");
     // la page se redessine pendant la frappe : le curseur doit rester à sa place (le nom s'écrivait à l'envers)
     await page.click("#gName"); await page.keyboard.type("Les Bouf", { delay: 120 }); await page.waitForTimeout(700); await page.keyboard.type("tous", { delay: 500 }); await page.waitForTimeout(700);
@@ -1107,7 +1109,7 @@ const MOCK = () => {
     await page.click('.gban [data-act="g-leave"]'); await page.click('.gban [data-act="g-leave2"]');
     await page.waitForSelector('.gban', { state: "detached", timeout: 8000 }).catch(() => fail("guildes : toujours dans la guilde après Quitter"));
     if ((await mock()).gm.left !== 1) fail("guildes : départ non envoyé au serveur");
-    await page.click('#nav [data-nk="world"]');
+    await navClick(page, "world");
     // 7h. 1.0.30 : la Communauté. Alignement (camp du serveur, guerre de la semaine), Songe infini classé, Panel Xener
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const W = window.ENGINE.weekIdx();
       d.views.lb_align = [{ user_id: "u9", pseudo: "Kralamour", side: "brakmar", ord: "coeur", lvl: 80, chap: 3, main: "iop", main_lvl: 200 }, { user_id: "u8", pseudo: "Tofuline", side: "bonta", ord: "coeur", lvl: 41, chap: 2, main: "eni", main_lvl: 180 }];

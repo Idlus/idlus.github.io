@@ -159,7 +159,7 @@
   }
   function paint(keepScroll) {
     const el = $("#chat"); if (!el || !S()) { if (el) el.innerHTML = ""; document.body.classList.remove("chat-open"); return; }
-    document.body.classList.toggle("chat-open", C.open);
+    const was = document.body.classList.contains("chat-open"); document.body.classList.toggle("chat-open", C.open); if (was !== C.open && DX.nav && S()) DX.nav(); // 1.2 : le menu passe en icônes quand le chat prend la place
     if (!C.open) { el.className = ""; el.innerHTML = minHtml(); return; }
     // 0.1.31.1 : la position de lecture est lue AVANT de redessiner (l'ancienne liste, une fois retirée, répondait 0 et le chat remontait tout en haut)
     const list = el.querySelector(".ch-list"); const top = list ? list.scrollTop : 0, oldH = list ? list.scrollHeight : 0; const atEnd = !list || top + list.clientHeight >= oldH - 30;

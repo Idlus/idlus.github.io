@@ -21,6 +21,8 @@ const server = http.createServer((req, res) => {
   });
 });
 
+/* 1.2 : une page peut être repliée dans sa famille : on ouvre la famille puis on clique (comme un joueur), sinon DX.go */
+const navClick = async (page, k) => { const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "go"; }, k); if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`); else await page.evaluate((k) => window.DX.go(k), k); };
 (async () => {
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const base = `http://127.0.0.1:${server.address().port}/`;
@@ -47,11 +49,14 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; const c = document.querySelector("#cele"); if (c) c.innerHTML = ""; });
 
     // 0.1.31 : chaque page du menu de gauche (PC)
-    const keys = await page.$$eval("#nav .sn-side [data-nk]", (bs) => bs.map((b) => b.dataset.nk));
+    // 1.2 : 6 familles repliables ; une page peut être repliée (on ouvre sa famille) ou rangée en onglet dans une autre (Élevage, Cours, Succès)
+    const keys = await page.evaluate(() => ["home"].concat(window.DX.NAV.flatMap((F) => F.pages.map((p) => p[0]))));
     const tabs = [];
     for (const k of keys) {
       await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); });
-      await page.click(`#nav .sn-side [data-nk="${k}"]`);
+      const how = await page.evaluate((k) => { const vis = (e) => !!(e && (e.offsetWidth || e.offsetHeight)); let b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); if (vis(b)) return "nav"; const F = window.DX.NAV.find((F) => F.pages.some((p) => p[0] === k)); const fh = F && document.querySelector(`#nav .sn-side .sn-fh[data-fam="${F.id}"]`); if (fh && fh.getAttribute("aria-expanded") !== "true") { fh.click(); const w = document.querySelector("#wtip"); if (w) w.remove(); } b = document.querySelector(`#nav .sn-side [data-nk="${k}"]`); return vis(b) ? "nav" : "tab"; }, k);
+      if (how === "nav") await page.click(`#nav .sn-side [data-nk="${k}"]`);
+      else { await page.evaluate((k) => window.DX.go(k), k); if (!(await page.$(`#subnav .sn-tabs [data-nk="${k}"][aria-current]`))) errors.push(`page ${k} : pas d'onglet dans le bandeau`); }
       await page.waitForTimeout(300);
       if (k === "bug") { // 1.1.1.3 : « Signaler un bug » ouvre une fenêtre, pas une page
         if (!(await page.$("#sheet #bgWhat"))) errors.push("Signaler un bug : fenêtre absente");
@@ -59,13 +64,13 @@ const server = http.createServer((req, res) => {
       }
       const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
       if (!filled) errors.push(`page ${k} vide`);
-      const cur = await page.$eval("#nav .sn-side [aria-current]", (b) => b.dataset.nk).catch(() => null);
+      const cur = await page.evaluate(() => { const b = document.querySelector("#subnav .sn-tabs [aria-current]") || document.querySelector("#nav .sn-side .sn-fp [aria-current], #nav .sn-side [aria-current]"); return b ? b.dataset.nk : null; });
       if (cur !== k) errors.push(`page ${k} : le menu montre ${cur}`);
       tabs.push(k);
     }
     // « Fiche » d'un héros : la page Équipe et héros garde la fiche sous l'équipe
     const noTip = () => page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // une bulle de découverte peut recouvrir le menu
-    await noTip(); await page.click('#nav .sn-side [data-nk="team"]'); await page.waitForTimeout(200);
+    await noTip(); await navClick(page, "team"); await page.waitForTimeout(200);
     if (!(await page.$("#teamtop")) || !(await page.$("#fiche"))) errors.push("Équipe et héros : tableau ou fiche absent");
     // 0.1.40 : liste des héros à gauche, fiche à droite, menu « ⋯ Plus » qui s'ouvre et se referme
     if (!(await page.$("#tlist .trow.on"))) errors.push("Équipe et héros : liste des héros absente");
@@ -155,7 +160,7 @@ const server = http.createServer((req, res) => {
     else if (!hv.dof) errors.push("Havre-Sac : le passif du Dofus n'apparaît pas dans « Mes bonus »");
     console.log(`Onglets visités : ${tabs.join(", ")}`);
   } catch (e) {
-    errors.push(`étape échouée : ${e.message.split("\n")[0]}`);
+    errors.push(`étape échouée : ${e.message.split("\n").slice(0, 3).join(" / ")}`);
   } finally {
     await browser.close();
     server.close();

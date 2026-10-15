@@ -204,7 +204,7 @@
   let navOn = null;
   function navSync() {
     const on = !!(admin() || testEnv()); if (on === navOn || !DX.NAV) return;
-    const F = DX.NAV.find((x) => x.id === "comm"); if (!F) return;
+    const F = DX.NAV.find((x) => x.id === "co"); if (!F) return;
     navOn = on; F.pages = F.pages.filter((p) => p[0] !== "admin"); if (on) F.pages.push(["admin", "Panel Xener", "couronne"]);
     if (DX.S && DX.ui.tab !== "combat") DX.render();
   }

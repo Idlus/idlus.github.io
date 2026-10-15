@@ -2066,14 +2066,32 @@ const ICONS = {
 /* 0.1.31 : menu rangé en 5 groupes. Sur PC, une colonne à gauche avec toutes les pages ; sur téléphone, une barre
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
+/* 1.2 « Réorganisation des menus » (Mathis, réponses 1A à 11A) : 6 familles repliables sur PC, barre du bas + Menu au téléphone,
+   recherche « Aller à une page », épinglés, étiquette « nouveau », Options et Signaler un bug en bas du menu.
+   Les pages rangées dans une autre (NAV_MERGE) restent dans NAV (raccourcis, noms) mais s'ouvrent en onglets au-dessus de la page. */
+const navOnline = () => !!(window.ONLINE && window.ONLINE.enabled);
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
-  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["chasse", "Chasse", "trophee"], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["dofus", "Dofus", "dofus"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
-  { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
-  { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
-  // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
-  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]]) }, // 1.0.23 : Builds (js/builds.js) ; 1.0.30 : Cours des ressources (js/venteui.js) ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js, pas une page
+  { id: "av", n: "Aventure", ic: "monde", pages: [["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"]] },
+  { id: "df", n: "Défis", ic: "ailes", pages: [["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["wb", "Boss des mondes", "couronne"]] },
+  { id: "he", n: "Héros", ic: null, pages: [["team", "Équipe et héros", null], ["inv", "Inventaire", "sac"], ["dofus", "Dofus", "dofus"], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["chasse", "Chasse", "trophee"], ["ren", "Renaissance", "phenix"]] },
+  { id: "ec", n: "Économie", ic: "metiers", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"], ["comptoirs", "Comptoirs", "havre"]].concat(navOnline() ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"]] : []).concat([["foire", "Foire du Trool", "bonbon"]]) },
+  // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord) ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js, pas une page
+  { id: "co", n: "Communauté", ic: "couronne", pages: (navOnline() ? [["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]]) },
+  { id: "jo", n: "Journal", ic: "quetes", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
 ];
+/* une ligne par page pour la recherche et le mode icônes */
+const NAV_DESC = { home: "Ton accueil : chasse en cours, équipe, choses du jour", combat: "L'arène en direct", world: "Zones de chasse, carte et trésors", dungeons: "Clés, salles de boss et stasis", exp: "Expéditions dans le rêve", comptoirs: "Commandes et marché onirique", asc: "La tour du mois, étage par étage", defi: "Un donjon imposé, une série à tenir", koli: "Combats contre d'autres équipes", wb: "Un boss pour tout le serveur", foire: "Caisses et jackpot", team: "Composition, équipement, sorts", inv: "Équipements, ressources, runes", dofus: "Collection et quêtes des Dofus", pets: "Ménagerie et montures", elev: "Enclos, écurie, capture", chasse: "Champions et sceaux", ren: "Renaître plus fort", metiers: "Récolte et artisanat", forge: "Établi, brisage, runes", hdv: "Acheter et vendre aux joueurs", cours: "Les prix du serveur", quests: "Quêtes du jour et de l'histoire", succes: "Succès et ornements", enc: "Bestiaire, objets, panoplies", carnet: "Tes courbes et bilans", guild: "Ta guilde et ton alliance", ladder: "Les meilleurs du serveur", builds: "Les équipements partagés", sugg: "Proposer une idée", bug: "Prévenir Xener d'un souci", admin: "Le panneau de Xener" };
+const NAV_MERGE = { pets: ["elev"], hdv: ["cours"], quests: ["succes"] }; // 3A : Élevage dans Familiers, Cours dans l'HdV, Succès dans Quêtes
+const NAV_PINS_DEF = ["dungeons", "defi", "forge", "hdv"]; const NAV_PINS_MAX = 6; // 6A : épinglés (★ dans le bandeau de la page)
+const NAV_NEW = { until: Date.UTC(2026, 9, 22), pages: ["asc", "dofus", "chasse", "elev"] }; // 10A : étiquette « nouveau » une semaine après la mise à jour
+const navParent = (k) => { for (const p in NAV_MERGE) if (NAV_MERGE[p].includes(k)) return p; return k; };
+const navPage = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return p; } return k === "home" ? ["home", "Havre-Sac", "logo"] : k === "combat" ? ["combat", "Combat", "combat"] : null; };
+const navFam = (k) => { const kk = navParent(k); return NAV.find((F) => F.pages.some((p) => p[0] === kk)) || null; };
+const navFamPages = (F) => F.pages.filter((p) => navParent(p[0]) === p[0]);
+const navIsNew = (k) => E.now() < NAV_NEW.until && NAV_NEW.pages.includes(k);
+const navPins = () => { if (!S.settings.pins) S.settings.pins = NAV_PINS_DEF.slice(); return S.settings.pins.filter((k) => navPage(k)); };
+const navNorm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { if (navNorm(p[1]).includes(n) || navNorm(NAV_DESC[p[0]] || "").includes(n)) out.push(p); })); return out; }
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
@@ -2084,7 +2102,7 @@ function navKey() {
   return t;
 }
 function navGo(k) {
-  ui.slot = null; ui.confirm = null; ui.newResDone = false;
+  ui.slot = null; ui.confirm = null; ui.newResDone = false; ui.navOpen = undefined; ui.navFly = null; ui.navQ = ""; // 1.2 : le menu rouvre la famille de la page
   if (k === "home" || k === "havre") { ui.tab = "home"; ui.home = k === "havre" ? "havre" : "apercu"; }
   else if (k === "world") { ui.tab = "world"; ui.zoneView = null; if (ui.world === "dungeons" || ui.world === "enc") ui.world = "map"; }
   else if (k === "dungeons" || k === "enc") { ui.tab = "world"; ui.zoneView = null; ui.world = k; }
@@ -2092,7 +2110,7 @@ function navGo(k) {
   else if (k === "succes") { ui.tab = "quests"; if (ui.qt !== "ach" && ui.qt !== "orn") ui.qt = "ach"; }
   else { ui.tab = k; if (k === "forge") ui.fmBench = false; } // 1.0.7.6 : au téléphone, Forgemagie rouvre la liste des objets
 }
-const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return k === "combat" ? "Jouer › Combat" : k; };
+const navName = (k) => { for (const F of NAV) { const p = F.pages.find((x) => x[0] === k); if (p) return `${F.n} › ${p[1]}`; } return k === "combat" ? "Combat" : k === "home" ? "Havre-Sac" : k; };
 const mainHero = () => (S ? S.chars.find((c) => c.id === S.mainHero) || E.team(S)[0] || S.chars[0] : null);
 const heroMed = () => { const c = mainHero(); return c ? `<i class="med halo" style="--cc:${CLASSES[c.cls].color}"><img src="${symImg(c.cls)}" alt=""></i>` : med("dofus"); };
 
@@ -2230,29 +2248,82 @@ function navBadges() {
   const nHdv = window.MARKET && window.MARKET.newSales ? window.MARKET.newSales() : 0; // 1.0.16 : ventes à l'HdV depuis la dernière visite
   return { team: nAl ? `<span class="navcnt">${nAl}</span>` : canRecruit() ? `<span class="navcoin" title="Vous pouvez recruter un héros"></span>` : "", quests: questAlert() ? dot : "", defi: S && E.defiDanger(S) ? `<span class="navcnt" title="Ta série du défi va casser ce soir">!</span>` : defiTodo() ? dot : "", hdv: nHdv ? `<span class="navcnt" title="Ventes depuis ta dernière visite">${nHdv}</span>` : "", comptoirs: window.CPTUI && window.CPTUI.dot() ? dot : "" }; // 1.0.12.8 : une seule pastille sur Héros (le chiffre rouge, sinon la pièce : elles se superposaient)
 }
+/* 9A : menu réduit aux icônes (bouton « ou chat ouvert de 1280 à 1599 px) : une icône par famille, le panneau de la famille s'ouvre à côté */
+const navMiniOn = () => !!(S && S.settings.navMini) || (document.body.classList.contains("chat-open") && !!window.matchMedia && window.matchMedia("(min-width:1280px) and (max-width:1599px)").matches);
+let navFx = null; // 20A : la page cliquée et le point du clic, pour l'onde et le rebond posés après le redessin
+let navBadgeSeen = null; // 23A : pastilles déjà vues, pour ne faire pulser que celles qui apparaissent ou changent
 function renderNav() {
-  const nav = $("#nav"); $("#subnav").innerHTML = "";
-  if (!S) { nav.innerHTML = ""; document.body.classList.remove("hasnav", "navmini"); if (window.FORMUI) window.FORMUI.mini(); return; }
-  const k = navKey(); const fight = ui.tab === "combat"; const mini = !!S.settings.navMini; const B = navBadges();
+  const nav = $("#nav"); const sub = $("#subnav");
+  if (!S) { nav.innerHTML = ""; sub.innerHTML = ""; document.body.classList.remove("hasnav", "navmini"); if (window.FORMUI) window.FORMUI.mini(); return; }
+  const k = navKey(); const kk = navParent(k); const fight = ui.tab === "combat"; const mini = navMiniOn(); const B = navBadges(); const live = navLiveTxt();
+  const curFam = navFam(k); const pins = navPins(); const q = (ui.navQ || "").trim(); const hits = q ? navSearchHits(q) : [];
   document.body.classList.add("hasnav"); document.body.classList.toggle("navmini", mini);
-  const cur = (key) => (k === key ? 'aria-current="page"' : "");
-  const live = navLiveTxt();
-  const item = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}">${ic ? med(ic) : heroMed()}<span class="sn-l">${h(n)}</span>${B[key] || ""}</button>`;
-  const side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="${mini ? "Afficher le nom des pages" : "Réduire le menu aux icônes"}" aria-label="${mini ? "Agrandir le menu" : "Réduire le menu"}">${mini ? "»" : "«"}</button></div>
-    <button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>
-    ${NAV.map((F) => `<div class="sn-g"><span>${F.n}</span></div>${F.pages.map(([key, n, ic]) => item(key, n, ic)).join("")}`).join("")}</div>`;
-  const inBar = ["home", "world", "team", "combat"]; const menuOn = !inBar.includes(k);
-  const mb = (key, n, ic) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)}>${ic ? med(ic) : heroMed()}<span>${n}</span>${B[key] || ""}</button>`;
-  const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo")}${mb("world", "Monde", "monde")}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${cur("combat")}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null)}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${B.quests || B.defi || B.hdv || B.comptoirs ? '<span class="navdot"></span>' : ""}</button></div>`;
+  const cur = (key) => (k === key || kk === key ? 'aria-current="page"' : "");
+  const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
+  const badge = (key) => { let b = B[key] || ""; (NAV_MERGE[key] || []).forEach((x) => { if (!b && B[x]) b = B[x]; }); return b; };
+  const famCount = (F) => { let n = 0, coin = false; navFamPages(F).forEach((p) => { const b = badge(p[0]); const m = /navcnt[^>]*>(\d+)</.exec(b); if (m) n += +m[1]; else if (/navcoin/.test(b)) coin = true; else if (b) n += 1; }); return { n, coin }; };
+  const famBadge = (F) => { const c = famCount(F); return c.n ? `<span class="navcnt" title="${c.n} chose${c.n > 1 ? "s" : ""} à faire">${c.n}</span>` : c.coin ? '<span class="navcoin" title="Vous pouvez recruter un héros"></span>' : ""; }; // 8A : le total des pastilles d'une famille repliée
+  const famNew = (F) => (navFamPages(F).some((p) => navIsNew(p[0])) ? '<span class="sn-newdot" title="Nouveauté"></span>' : "");
+  const item = (key, n, ic, desc) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(n)}">${icon(ic)}<span class="sn-l">${h(n)}${desc ? `<small>${h(NAV_DESC[key] || "")}</small>` : ""}</span>${navIsNew(key) ? '<span class="sn-new">nouveau</span>' : ""}${badge(key)}</button>`;
+  const fightBtn = `<button class="sn-fight${live ? " on" : ""}" data-act="nav" data-v="combat" data-nk="combat" ${k === "combat" ? 'aria-current="page"' : ""} title="Combat">${med("combat")}<span class="sn-l"><b>${live ? "Combat en cours" : "Combat"}</b><small id="navlive">${h(live || "voir l'arène")}</small></span></button>`;
+  const foot = `<div class="sn-foot"><button class="sn-fb" data-act="options" title="Options">${G("gear")}<span class="sn-l">Options</span></button><button class="sn-fb" data-act="nav" data-v="bug" title="Signaler un bug">${med("bug")}<span class="sn-l">Signaler un bug</span></button></div>`; // 11A
+  let side;
+  if (mini) {
+    const fly = ui.navFly && NAV.find((F) => F.id === ui.navFly);
+    side = `<div class="sn-side sn-mcol"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""></button><button class="sn-mini" data-act="navmini" title="Afficher le nom des pages" aria-label="Agrandir le menu">»</button>
+      ${fightBtn}${item("home", "Havre-Sac", "logo")}<i class="sn-msep"></i>
+      ${NAV.map((F) => `<button class="sn-fh${curFam && curFam.id === F.id ? " cur" : ""}${fly && fly.id === F.id ? " fly" : ""}" data-act="navfly" data-v="${F.id}" data-fam="${F.id}" title="${h(F.n)}" aria-expanded="${!!(fly && fly.id === F.id)}">${icon(F.ic)}${famNew(F)}${famBadge(F)}</button>`).join("")}
+      <span class="sn-grow"></span>${foot}</div>${fly ? `<div class="sn-fly"><h4>${h(fly.n)}</h4>${navFamPages(fly).map((p) => item(p[0], p[1], p[2], true)).join("")}</div>` : ""}`;
+  } else {
+    const openId = ui.navOpen === undefined ? (curFam && curFam.id) : ui.navOpen; // une seule famille ouverte : celle de la page, sauf si le joueur en a ouvert une autre
+    side = `<div class="sn-side"><div class="sn-top"><button class="sn-brand" data-act="nav" data-v="home" title="Accueil"><img src="assets/ui/logo.webp" alt=""><span class="sn-l">idlus</span></button><button class="sn-mini" data-act="navmini" title="Réduire le menu aux icônes" aria-label="Réduire le menu">«</button></div>
+      <label class="sn-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Aller à une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
+      ${fightBtn}${item("home", "Havre-Sac", "logo")}
+      ${pins.length ? `<div class="sn-pins"><span>★ Épinglés</span><div>${pins.map((key) => { const p = navPage(key); return `<button class="sn-pin" data-act="nav" data-v="${key}" data-nk="${key}" ${cur(key)} title="${h(p[1])}">${icon(p[2])}${badge(key)}</button>`; }).join("")}</div></div>` : ""}
+      ${q ? `<div class="sn-hits"><span>${hits.length ? `${hits.length} page${hits.length > 1 ? "s" : ""}` : "Aucune page"} pour « ${h(q)} »</span>${hits.map((p) => item(p[0], p[1], p[2], true)).join("")}</div>`
+        : NAV.map((F) => { const op = F.id === openId; return `<div class="sn-fam${op ? " open" : ""}${curFam && curFam.id === F.id ? " cur" : ""}${ui.navJust === F.id ? " just" : ""}"><button class="sn-fh" data-act="navfam" data-v="${F.id}" data-fam="${F.id}" aria-expanded="${op}">${icon(F.ic)}<span class="sn-l">${h(F.n)}</span>${op ? "" : famNew(F) + famBadge(F)}<i class="sn-chev"></i></button>${op ? `<div class="sn-fp">${navFamPages(F).map((p) => item(p[0], p[1], p[2])).join("")}</div>` : ""}</div>`; }).join("")}
+      <span class="sn-grow"></span>${foot}</div>`;
+  }
+  ui.navJust = null;
+  /* 4A téléphone : Havre-Sac, Aventure, Combat, Héros, Menu */
+  const F0 = NAV[0]; const FH = NAV.find((F) => F.id === "he") || NAV[2];
+  const famOn = (F) => !fight && !!(curFam && curFam.id === F.id);
+  const menuOn = !fight && k !== "home" && !famOn(F0) && !famOn(FH);
+  const mb = (key, n, ic, on, b) => `<button data-act="nav" data-v="${key}" data-nk="${key}" ${on ? 'aria-current="page"' : ""}>${icon(ic)}<span>${n}</span>${b || ""}</button>`;
+  const restDot = NAV.some((F) => F !== F0 && F !== FH && famCount(F).n) || !!B.comptoirs;
+  const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo", k === "home")}${mb(F0.pages[0][0], F0.n, F0.ic, famOn(F0), famBadge(F0))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null, famOn(FH), famBadge(FH))}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${restDot ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
   nav.innerHTML = side + mob;
+  /* 5A : bandeau de la famille en haut de chaque page, et 3A les onglets des pages rangées ensemble */
+  let strip = "";
+  if (curFam && !fight && k !== "home") {
+    const pinned = pins.includes(kk);
+    strip = `<div class="sn-strip"><span class="sn-sf">${icon(curFam.ic)}<span>${h(curFam.n)}</span></span>${navFamPages(curFam).map((p) => `<button data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${cur(p[0])}>${icon(p[2])}<span>${h(p[1])}</span>${badge(p[0])}</button>`).join("")}<button class="sn-star${pinned ? " on" : ""}" data-act="navpin" data-v="${kk}" aria-pressed="${pinned}" title="${pinned ? "Retirer des épinglés" : "Épingler cette page en haut du menu"}">${pinned ? "★" : "☆"}</button></div>`;
+    const tabs = NAV_MERGE[kk];
+    if (tabs) strip += `<div class="sn-tabs">${[kk].concat(tabs).map((key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || ""}</button>` : ""; }).join("")}</div>`;
+  }
+  sub.innerHTML = strip;
   if (window.FORMUI) window.FORMUI.mini(); // 1.0.30 : petit module de combat sous « Combat en cours » (js/formation.js)
+  navAfter(k, B);
 }
-/* téléphone : toutes les pages en tuiles, par groupe */
+/* animations du menu (Mathis 20A à 25A), jamais avec « Animations réduites » */
+function navAfter(k, B) {
+  const anim = !calm() && animLvl() === "full";
+  if (navFx) { const f = navFx; navFx = null; if (anim) document.querySelectorAll(`#nav [data-nk="${f.k}"], #subnav [data-nk="${f.k}"]`).forEach((b) => { if (!(b.offsetWidth || b.offsetHeight)) return; b.classList.add("sn-clk"); const r = document.createElement("i"); r.className = "sn-ripple"; r.style.left = `${f.x * 100}%`; r.style.top = `${f.y * 100}%`; b.appendChild(r); setTimeout(() => { r.remove(); b.classList.remove("sn-clk"); }, 650); }); }
+  const seen = {}; for (const key in B) seen[key] = B[key] || "";
+  if (navBadgeSeen && anim) for (const key in seen) if (seen[key] && seen[key] !== navBadgeSeen[key]) document.querySelectorAll(`#nav [data-nk="${key}"] .navcnt, #nav [data-nk="${key}"] .navdot, #nav .sn-fh[data-fam="${(navFam(key) || {}).id}"] .navcnt`).forEach((b) => b.classList.add("bpulse"));
+  navBadgeSeen = seen;
+}
+/* téléphone : toutes les pages en tuiles, par famille, avec la recherche et les épinglés */
 function navMenuSheet() {
-  const k = navKey(); const B = navBadges();
-  openSheet(`<div class="navsheet">${NAV.map((F) => `<h3>${F.n}</h3><div class="ns-tiles">${F.pages.map(([key, n, ic]) => `<button data-act="nav" data-v="${key}" ${k === key ? 'aria-current="page"' : ""}>${ic ? med(ic) : heroMed()}<span>${h(n)}</span>${B[key] || ""}</button>`).join("")}</div>`).join("")}
-    <div class="row ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><span class="grow"></span><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
+  const k = navKey(); const kk = navParent(k); const B = navBadges(); const pins = navPins(); const q = (ui.navQ || "").trim(); const hits = q ? navSearchHits(q) : [];
+  const icon = (ic) => (ic === null ? heroMed() : ic ? med(ic) : "");
+  const tile = (key) => { const p = navPage(key); return p ? `<button data-act="nav" data-v="${key}" data-nk="${key}" ${k === key || kk === key ? 'aria-current="page"' : ""}>${icon(p[2])}<span>${h(p[1])}</span>${B[key] || (navIsNew(key) ? '<span class="sn-new t">nouveau</span>' : "")}</button>` : ""; };
+  const hit = (p) => `<button class="ns-hit" data-act="nav" data-v="${p[0]}" data-nk="${p[0]}" ${k === p[0] ? 'aria-current="page"' : ""}>${icon(p[2])}<span class="sn-l">${h(p[1])}<small>${h(NAV_DESC[p[0]] || "")}</small></span>${B[p[0]] || ""}</button>`;
+  openSheet(`<div class="navsheet"><label class="sn-srch ns-srch">${G("search")}<input id="navq" type="search" value="${h(q)}" placeholder="Chercher une page…" aria-label="Chercher une page" autocomplete="off" spellcheck="false">${q ? '<button type="button" class="sn-x" data-act="navq" aria-label="Effacer la recherche">✕</button>' : ""}</label>
+    ${q ? `<div class="ns-hits">${hits.map(hit).join("") || '<span class="ns-none">Aucune page</span>'}</div>`
+      : `${pins.length ? `<h3>★ Épinglés</h3><div class="ns-tiles">${pins.map(tile).join("")}</div>` : ""}${NAV.map((F) => `<h3>${h(F.n)}</h3><div class="ns-tiles">${navFamPages(F).map((p) => tile(p[0])).join("")}</div>`).join("")}`}
+    <div class="ns-foot"><button class="btn" data-act="options">${G("gear")} Options</button><button class="btn" data-act="nav" data-v="bug">${med("bug")} Signaler un bug</button><button class="btn" data-act="closesheet">Fermer</button></div></div>`);
 }
 /* « Combat en cours » dans le menu (PC) : donjon et salle, expédition, ou zone de chasse ; rafraîchi par la boucle */
 function navLiveTxt() {
@@ -2283,7 +2354,7 @@ function statusHtml() {
     ${E.almOn(S) ? `<span class="it boostchip hide-sm" data-tip="Bonus de l'Almanax jusqu'à minuit : ${h(E.almanax(S).bonus.txt)}">${IC("almanax")} ${h(E.ALM_KINDS[S.almanax.kind].name)}</span>` : ""}
     <span class="it hide-sm" data-tip="Monstres tués">${IC("combat")} <b class="num" id="stKills">${fmt(kills)}</b></span>
     ${S.seenVersion !== GAME_VERSION ? `<button class="updpill" data-act="changelog" data-tip="Voir les nouveautés de la mise à jour">${G("sparkle")}<span class="hide-sm"> ${h(GAME_VERSION)} · nouveautés</span></button>` : ""}
-    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn ic-bug" data-act="reportbug" title="Signaler un bug" aria-label="Signaler un bug"><img class="uico" src="assets/ui/bug.webp" alt=""></button><button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}<button class="ic-btn" data-act="options" title="Options" aria-label="Options">${G("gear")}</button>`;
+    ${ON ? pillHtml() : ""}${ON && window.CHAT ? window.CHAT.adminBtn() : ""}<button class="ic-btn" data-act="search" title="Rechercher (Ctrl+K ou /)" aria-label="Rechercher">${G("search")}</button>${sndBtn()}`; // 1.2 (11A) : Options et Signaler un bug sont en bas du menu
 }
 /* 0.1.29 : Sablier de Xélor, vitesse ×2 / ×3 dans la barre du haut */
 const sabLeft = (r) => { const m = Math.floor(r / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}` : `${m} min`; };
@@ -7322,12 +7393,14 @@ function checkNewVersion() {
 }
 /* 1.0.30 : pages tenues par d'autres fichiers (js/comptoirsui.js, js/foireui.js, js/venteui.js) : DX.pages[clé] = (main) => … */
 const PAGES = {};
+let pageSeen = null;
 function render() {
   if (!S) { renderUpdBar(); return renderStart(); }
   if (ui.watch && ui.tab !== "combat") watchStop();
   if (!S.carnet || S.carnet.ver !== GAME_VERSION) E.carnetVersion(S, GAME_VERSION); // lot Suivi : une mise à jour devient un moment du carnet
-  if (S.navv !== 1) { S.navv = 1; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 0.1.31 : nouveau menu, bulle pour les parties déjà commencées
+  if (S.navv !== 2) { S.navv = 2; S.navNews = S.stats.fights > 0 ? 1 : 0; } // 1.2 : nouveau menu, bulle pour les parties déjà commencées
   clearDonePins(); renderNav(); renderStatus(); renderUpdBar();
+  if (ui.tab !== pageSeen) { pageSeen = ui.tab; const m = $("#main"); if (!calm() && animLvl() === "full") { m.classList.remove("pgin"); void m.offsetWidth; m.classList.add("pgin"); } } // 1.2 (24A) : fondu court au changement de page
   if (ui.tab !== "inv" || ui.inv !== "items") ui.invOn = false; // 1.0.31 : fin de la visite de l'inventaire (repère des « Nouveau »)
   if (ui.tab === "home") renderHome();
   else if (ui.tab === "world") renderWorld();
@@ -7508,7 +7581,18 @@ function lootUpCheck() {
   d.innerHTML = `<span class="grow"><b>▲ Mieux pour ${h(best.c.name)}</b> : ${h(ITEMS[best.it.tpl].name)} <span class="tsub">+${Math.max(1, Math.round(best.g * 100))} % de puissance</span></span><button class="btn sm primary" data-act="lootup" data-cid="${best.c.id}" data-uid="${best.it.uid}" data-s="${best.s}">Équiper</button>`;
   box.prepend(d); while (box.children.length > 3) box.lastChild.remove(); setTimeout(() => d.remove(), 8000);
 }
-function setTheme() { const t = S && S.settings.theme === "violet" ? "violet" : "emerald"; if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ document.documentElement.dataset.theme = t === "violet" ? "dark" : "emerald"; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = t === "violet" ? "#0e0b14" : "#0d100b"; document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); }
+/* 1.2 (12ABCD) : quatre thèmes de plus, posés par-dessus Émeraude avec html[data-skin] ; chacun a son effet d'ambiance (14A 15D 16A 17B 18A 19A) */
+const THEMES = [["emerald", "Émeraude", "#0d100b", "lucioles"], ["violet", "Nuit violette", "#0e0b14", "nuit"], ["givre", "Givre de Frigost", "#0a1017", "flocons"], ["ambre", "Ambre d'Amakna", "#120d08", "etincelles"], ["braise", "Braise de Brâkmar", "#100909", "braises"], ["ecume", "Écume de Sufokia", "#071315", "bulles"]];
+const themeId = (t) => (THEMES.some((x) => x[0] === t) ? t : "emerald");
+function applySkin(t) { t = themeId(t); const r = document.documentElement; r.dataset.theme = t === "violet" ? "dark" : "emerald"; if (t === "emerald" || t === "violet") delete r.dataset.skin; else r.dataset.skin = t; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = THEMES.find((x) => x[0] === t)[2]; }
+function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); applyAmbiance(); }
+/* 1.2 (13A) : effet d'ambiance du thème (js/ambiance.js), discret par défaut ; jamais pendant l'Halouine (qui a ses braises) ni avec les animations réduites */
+function applyAmbiance() {
+  if (!window.AMB) return; const a = S && S.settings.ambiance || "soft";
+  const on = !!S && a !== "off" && animLvl() === "full" && !calm() && !halOn();
+  if (!on) return window.AMB.stop();
+  window.AMB.start(THEMES.find((x) => x[0] === themeId(S.settings.theme))[3], a === "strong" ? 1 : .55);
+}
 /* 1.0.26 : thème d'Halouine (choix de Mathis 1A 2A 3A 4C) : couleurs citrouille, décors et braises posés par-dessus le thème choisi,
    tout seul du 24 octobre au 3 novembre (même période que le Cadre d'Halouine), coupable dans Options › Affichage.
    window.IDLUS_HALOUINE() dit si le thème est affiché (pour la musique d'Halouine). */
@@ -7522,11 +7606,13 @@ function applyHal() {
   let fx = document.getElementById("halfx"); const emb = on && animLvl() === "full" && !calm();
   if (emb && !fx) { fx = document.createElement("div"); fx.id = "halfx"; fx.setAttribute("aria-hidden", "true"); fx.innerHTML = HAL_EMB.map(([x, d, dl]) => `<i style="left:${x}%;--d:${d}s;--dl:${dl}s"></i>`).join(""); document.body.appendChild(fx); }
   else if (!emb && fx) fx.remove();
+  if (typeof applyAmbiance === "function") applyAmbiance();
 }
 window.IDLUS_HALOUINE = () => document.documentElement.dataset.hal === "on";
 
 /* ===================== 0.1.17 : lot Bienvenue (logique dans js/welcome.js) =====================
    Affichage (taille du texte, mouvements, contraste), bulles de découverte, recherche rapide. */
+if (window.matchMedia) { const mqMini = window.matchMedia("(min-width:1280px) and (max-width:1599px)"); if (mqMini.addEventListener) mqMini.addEventListener("change", () => { if (S) renderNav(); }); } // 1.2 : chat ouvert, le menu passe en icônes entre 1280 et 1599 px
 const motionOff = () => { const m = S && S.settings.motion; if (m === "off") return true; if (m === "on") return false; return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); };
 const calm = () => !!(S && (S.settings.reduced || motionOff()));
 function applyDisplay() {
@@ -7545,7 +7631,8 @@ function displayOptionsHtml() {
   const seg = (act, opts, cur, tip) => `<span class="seg"${tip ? ` data-tip="${h(tip)}"` : ""}>${opts.map(([v, n]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${n}</button>`).join("")}</span>`;
   return optSec("Écran", "se voit tout de suite",
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v}&nbsp;%`]), z)) // 1.0.12.8 : « 90 % » ne se coupe plus sur deux lignes
-    + optLine("Thème", "", seg("settheme", [["emerald", "Émeraude"], ["violet", "Nuit violette"]], S.settings.theme || "emerald"))
+    + optLine("Thème", "", seg("settheme", THEMES.map((t) => [t[0], t[1]]), themeId(S.settings.theme)))
+    + optLine("Ambiance animée", "lucioles, flocons, bulles… selon le thème", seg("setamb", [["soft", "Discrète"], ["strong", "Marquée"], ["off", "Aucune"]], S.settings.ambiance || "soft", "Petits effets qui flottent par-dessus la page, dans l'esprit du thème. Ils s'arrêtent aussi avec « Animations réduites » et les mouvements désactivés."))
     + (halPeriod() ? optLine("Ambiance d'Halouine", "du 24 octobre au 3 novembre", seg("sethal", [["on", "Activée"], ["off", "Désactivée"]], S.settings.halouine === false ? "off" : "on")) : "")
     + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes")
     + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat."))
@@ -7568,11 +7655,13 @@ function tipTick() {
   const t = E.tipDue(S, tipCtx()); if (t) showTipBubble(t);
 }
 /* 0.1.31 : une bulle, une seule fois, pour les joueurs qui connaissaient l'ancien menu */
-const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav [data-nk="dungeons"], #nav [data-nk="menu"]',
-  txt: "Toutes les pages sont maintenant rangées en 5 groupes : Jouer, Héros, Artisanat, Suivi et Communauté. Sur PC, le menu est à gauche (le bouton « à côté du logo le réduit aux icônes) ; sur téléphone, le bouton Menu ouvre toutes les pages. Les Donjons et les Succès ont leur propre page." };
+const NAV_NEWS = { id: "navnews", name: "Les menus ont changé", anchor: '#nav .sn-fh[data-fam="av"], #nav [data-nk="menu"]',
+  txt: "Les pages sont rangées en 6 familles : Aventure, Défis, Héros, Économie, Communauté et Journal. Sur PC, une famille s'ouvre à la fois, la case « Aller à une page » trouve n'importe quelle page, et l'étoile en haut d'une page l'épingle dans le menu. Sur téléphone, le bouton Menu ouvre tout. Options et Signaler un bug sont en bas du menu." };
 const tipVis = (n) => { const r = n.getBoundingClientRect(); return r.width && r.bottom > 0 && r.top < window.innerHeight ? r : null; };
 /* 1.0.12.8 : le menu et la page se redessinent (toutes les 3 s sur Quêtes et l'Accueil) : on remet l'anneau doré sur le bouton visé */
-function tipRing() { if (!tipAnchor || !$("#wtip")) return; const a = [...document.querySelectorAll(tipAnchor)].find(tipVis); if (a && !a.classList.contains("wl-target")) a.classList.add("wl-target"); }
+function tipRing() { if (!tipAnchor || !$("#wtip")) return; const a = tipEls(tipAnchor).find(tipVis); if (a && !a.classList.contains("wl-target")) a.classList.add("wl-target"); }
+/* 1.2 : la page visée peut être repliée dans sa famille : on vise alors l'en-tête de la famille (PC) */
+function tipEls(sel) { const out = [...document.querySelectorAll(sel)]; (sel.match(/data-nk="([a-z]+)"/g) || []).forEach((m) => { const F = navFam(m.slice(9, -1)); if (F) out.push(...document.querySelectorAll(`#nav .sn-fh[data-fam="${F.id}"]`)); }); return out; }
 function showTipBubble(t, again) {
   tipHide(); tipShown = t.id; tipAnchor = t.anchor || null;
   const [seen, total] = E.tipCount(S); const n = Math.min(total, seen + 1); const news = t === NAV_NEWS;
@@ -7580,7 +7669,7 @@ function showTipBubble(t, again) {
   d.innerHTML = `<div class="wt-h">${G("sparkle")}<b>${h(t.name)}</b></div><div class="wt-t">${hOpt(t.txt)}</div>
     <div class="row between"><span class="xs" style="opacity:.75">${news ? `Nouveauté de la ${h(GAME_VERSION)}` : again ? "Relecture" : `Découverte ${n} sur ${total}`}</span><span class="row" style="gap:6px">${news || again ? "" : `<button class="btn sm ghost" data-act="tiplater">Plus tard</button>`}<button class="btn sm go" data-act="tipok">Compris</button></span></div>`;
   document.body.appendChild(d);
-  const a = t.anchor ? [...document.querySelectorAll(t.anchor)].find(tipVis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
+  const a = t.anchor ? tipEls(t.anchor).find(tipVis) : null; // le premier bouton visible (PC et téléphone n'ont pas les mêmes)
   if (a) { a.classList.add("wl-target"); place(a.getBoundingClientRect()); }
   // 1.0.12.8 : sous une bulle posée en bas (téléphone), la page garde de la place pour faire passer son bas au-dessus d'elle
   document.documentElement.style.setProperty("--wtipb", Math.round(window.innerHeight - d.getBoundingClientRect().top) + "px");
@@ -7737,6 +7826,11 @@ document.addEventListener("keydown", (ev) => {
     if (k === "Escape") { ev.preventDefault(); searchClose(); } else if (k === "ArrowDown" || k === "ArrowUp") { ev.preventDefault(); searchMove(k === "ArrowDown" ? 1 : -1); } else if (k === "Enter") { ev.preventDefault(); if (!(ev.shiftKey && searchMonKey())) searchEnter(); } else if (k === "ArrowRight" && $("#wsq") && $("#wsq").selectionStart === $("#wsq").value.length && searchMonKey()) ev.preventDefault();
     return;
   }
+  if (document.activeElement && document.activeElement.id === "navq") { // 1.2 (7A) : Entrée ouvre la première page trouvée, Échap vide la case
+    if (k === "Enter") { ev.preventDefault(); const hit = navSearchHits(ui.navQ || "")[0]; if (hit) hotGo(hit[0]); return; }
+    if (k === "Escape") { ev.preventDefault(); if (ui.navQ) { ui.navQ = ""; if (document.activeElement.closest(".navsheet")) navMenuSheet(); else renderNav(); const n = $("#navq"); if (n) n.focus(); } else document.activeElement.blur(); return; }
+    return;
+  }
   if (document.activeElement && document.activeElement.id === "onRenPseudo" && k === "Enter") { ev.preventDefault(); const b = $('[data-act="on-renpseudogo"]'); if (b && !b.disabled) b.click(); return; }
   if (document.activeElement && document.activeElement.id === "encQ" && k === "Escape" && ui.enc && ui.enc.q) { ev.preventDefault(); const b = $('[data-act="encqclear"]'); if (b) b.click(); return; } // 1.0.22.1 : Échap vide la recherche de l'Encyclopédie
   if (document.activeElement && document.activeElement.id === "renName" && (k === "Enter" || k === "Escape")) { ev.preventDefault(); const b = $(`.hb-renf [data-act="${k === "Enter" ? "rengo" : "rencancel"}"]`); if (b) b.click(); return; } // 0.1.50.1 : Entrée valide le nouveau nom, Échap annule
@@ -7752,7 +7846,7 @@ document.addEventListener("keydown", (ev) => {
 const HOTKEYS = [["h", "home"], ["m", "world"], ["d", "dungeons"], ["c", "combat"], ["s", "exp"], ["j", "defi"], ["k", "koli"], ["b", "wb"], ["e", "team"], ["i", "inv"], ["r", "ren"],
   ["t", "metiers"], ["f", "forge"], ["q", "quests"], ["u", "succes"], ["n", "enc"], ["v", "hdv"], ["g", "guild"], ["l", "ladder"], ["a", "asc"], ["p", "pets"], ["y", "dofus"]];
 const hotPages = () => { const out = ["combat"]; NAV.forEach((F) => F.pages.forEach((p) => out.push(p[0]))); return out; };
-function hotGo(k) { const b = $(`.sn-side [data-nk="${k}"]`); if (b) { b.click(); return; } navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
+function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
 function hotkey(ev) {
   const k = ev.key; if (!S || (S.settings && S.settings.keysOff) || isEditing() || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
   if (window.matchMedia && !window.matchMedia("(min-width: 900px)").matches) return false; // PC seulement
@@ -8621,7 +8715,8 @@ function sndAskCheck() {
   document.body.appendChild(d);
   const a = [...document.querySelectorAll(".snd-btn")].find((x) => x.offsetParent); const pc = window.innerWidth >= 760;
   if (a && pc) { const r = a.getBoundingClientRect(); const w = 340; d.classList.add("below"); d.style.width = w + "px"; d.style.transform = "none"; d.style.top = r.bottom + 14 + "px"; d.style.bottom = "auto";
-    const x = Math.max(12, Math.min(window.innerWidth - w - 12, r.left + r.width / 2 - w / 2)); d.style.left = x + "px"; d.style.setProperty("--ax", r.left + r.width / 2 - x + "px"); }
+    const ch = document.body.classList.contains("chat-open") && $("#chat.chat"); const maxX = ch ? Math.min(window.innerWidth, ch.getBoundingClientRect().left) - w - 12 : window.innerWidth - w - 12; // 1.2 : le bouton du son est tout à droite, la bulle ne recouvre pas le chat ouvert
+    const x = Math.max(12, Math.min(maxX, r.left + r.width / 2 - w / 2)); d.style.left = x + "px"; d.style.setProperty("--ax", Math.max(16, Math.min(w - 16, r.left + r.width / 2 - x)) + "px"); }
 }
 (function sndHooks() {
   const emit0 = E.emit; E.emit = (S0, type, data) => { const r = emit0(S0, type, data); if (S0 === S && !(data && data.offline)) {
@@ -8765,6 +8860,7 @@ document.addEventListener("click", (ev) => {
   const tipT = ev.target.closest("[data-tip],[data-tipitem]");
   if (!canHover && tipT && !ev.target.closest("[data-tab],[data-act]")) { showTip(tipT); return; }
   hideTip();
+  if (ui.navFly && !ev.target.closest("#nav")) { ui.navFly = null; renderNav(); } // 1.2 : un clic ailleurs referme le panneau du menu réduit
   if (ui.heroMore && !ev.target.closest(".hmw")) { ui.heroMore = false; const m = $(".hmenu"); if (m) { m.remove(); const b = $(".hmore"); if (b) { b.classList.remove("on"); b.setAttribute("aria-expanded", "false"); } } } // 0.1.40 : un clic ailleurs referme « ⋯ Plus »
   const t = ev.target.closest("[data-tab],[data-act]"); if (!t) return;
   if (t.dataset.gotab && S) { ui.tab = t.dataset.gotab; closeSheet(); }
@@ -8796,6 +8892,7 @@ document.addEventListener("click", (ev) => {
     case "starthead": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startHead = +d.v; if (!S) renderStart(); else recruitSheet(); return; }
     case "startgame": { const name = ($("#startName").value || "").trim() || "Aventurier"; if (E.nameBad(name)) { toast("Ce nom n'est pas autorisé. Choisis-en un autre."); return; } S = E.newState(name.slice(0, 20), ui.startCls); S.seenVersion = GAME_VERSION; S.chars[0].sex = ui.startSex || CLASSES[ui.startCls].sex; S.chars[0].head = startHeadOf(ui.startCls, S.chars[0].sex); E.tipsStart(S, ui.startKnow); setTheme(document.documentElement.dataset.theme || "dark"); ui.cid = S.chars[0].id; ui.tab = "world"; dirty = true; saveNow(); render(); toast("Choisissez une zone pour partir chasser !"); if (onLive()) onPush(); return; }
     case "settheme": S.settings.theme = d.v; setTheme(); optionsSheet(); render(); return;
+    case "setamb": S.settings.ambiance = d.v; dirty = true; applyAmbiance(); optionsSheet(); return;
     case "sethal": S.settings.halouine = d.v === "on"; dirty = true; applyHal(); optionsSheet(); return;
     case "settext": S.settings.textSize = +d.v; dirty = true; applyDisplay(); optionsSheet(); return;
     case "setlayout": S.settings.layout = d.v === "auto" ? undefined : d.v; dirty = true; applyDisplay(); optionsSheet(); return;
@@ -9027,7 +9124,7 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
-    case "nav": if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 0.1.31 : menu en 5 groupes
+    case "nav": if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
     case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
       if (t === "havre") navGo("havre");
       else if (t === "harvest" || t === "craft") { navGo("metiers"); ui.met = t === "craft" ? "craft" : "recolte"; }
@@ -9035,8 +9132,12 @@ document.addEventListener("click", (ev) => {
       else if (t === "equip") { navGo("heroes"); const c = mainHero(); if (c) ui.cid = c.id; ui.hero = "equip"; }
       else { navGo("quests"); ui.qt = t; }
       closeSheet(); window.scrollTo(0, 0); break; }
-    case "navmenu": navMenuSheet(); return;
-    case "navmini": S.settings.navMini = !S.settings.navMini; break;
+    case "navmenu": ui.navQ = ""; navMenuSheet(); { const i = $("#navq"); if (i && !window.matchMedia("(pointer:coarse)").matches) i.focus(); } return;
+    case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
+    case "navfam": { const cf = navFam(navKey()); const open = ui.navOpen === undefined ? (cf && cf.id) : ui.navOpen; ui.navOpen = open === d.v ? null : d.v; ui.navJust = ui.navOpen; renderNav(); return; } // 1A : une famille ouverte à la fois
+    case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
+    case "navpin": { const P = navPins(); const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (P.length >= NAV_PINS_MAX) { toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); S.settings.pins = P; dirty = true; renderNav(); return; }
+    case "navq": ui.navQ = ""; if (t.closest(".navsheet")) navMenuSheet(); else renderNav(); { const i = $("#navq"); if (i) i.focus(); } return;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     /* 0.1.42 : accueil du jour */
     case "homehero": ui.tab = "team"; ui.cid = +d.id; ui.slot = null; ui.heroMore = false; ui.tview = "hero"; window.scrollTo(0, 0); break;
@@ -9313,6 +9414,7 @@ document.addEventListener("change", (ev) => {
 document.addEventListener("toggle", (ev) => { const d = ev.target; if (d.classList && d.classList.contains("ptool")) { ui.toolOpen = ui.toolOpen || {}; ui.toolOpen[d.dataset.job] = d.open; } }, true); // 1.0.7.6 : le menu d'outil de la Récolte reste ouvert malgré le rafraîchissement
 document.addEventListener("input", (ev) => {
   if (ev.target.id === "wsq") { searchRender(); return; }
+  if (ev.target.id === "navq") { ui.navQ = ev.target.value.slice(0, 40); const pos = ev.target.selectionStart; if (ev.target.closest(".navsheet")) navMenuSheet(); else renderNav(); const n = $("#navq"); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } return; } // 1.2 (7A) : « Aller à une page »
   const t = ev.target;
   if (t.dataset.act === "ressearch") { ui.resQ = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#resSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
   if (t.dataset.act === "setsearch") { ui.setF.q = t.value; const pos = t.selectionStart; renderInventory(); const n = $("#setSearch"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } return; }
@@ -9518,7 +9620,7 @@ function renderMenu() {
   if ($("#sheet").innerHTML && !MENU.copies) closeSheet();
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   document.body.classList.remove("hasnav", "navmini");
-  document.documentElement.dataset.theme = menuPref().theme === "violet" ? "dark" : "emerald"; applyHal();
+  applySkin(menuPref().theme); applyHal(); if (window.AMB) window.AMB.stop();
   const user = ON && ON.user, id = user ? ON.identities() : null;
   const acc = !ON || menuStuck() ? `<div class="svacc"><span class="who"><span class="dot off"></span><span><b>Serveur injoignable</b><br><span class="small muted">Tes parties de cet appareil restent jouables.${ON ? " Recharge la page quand il reviendra pour retrouver ton compte : ta progression d'ici partira alors en ligne." : ""}</span></span></span>${ON ? `<button class="btn sm" data-act="sv-retry">Réessayer</button>` : ""}</div>`
     : user ? `<div class="svacc"><span class="who"><span class="dot${MENU.off ? " off" : ""}"></span><span><b>Connecté${ON.profile ? ` : ${h(ON.profile.pseudo)}` : ""}</b><br><span class="small muted">${MENU.off ? "Serveur injoignable : tes parties de cet appareil restent jouables et partiront en ligne à son retour." : `${id && id.discord ? `Discord (${h(id.discord)}) · ` : ""}la partie 1 est gardée en ligne${ON.slotsOk ? ", les parties 2 et 3 aussi" : ""}`}</span></span></span><button class="btn sm" data-act="sv-logout">Se déconnecter</button></div>`
@@ -10387,7 +10489,7 @@ function morphEl(o, n) {
     if (o.type === "checkbox" || o.type === "radio") o.checked = n.checked; else if (o.value !== n.value) o.value = n.value;
   }
 }
-window.DX = { get S() { return S; }, NAV, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
+window.DX = { get S() { return S; }, NAV, nav: renderNav, go: hotGo, navBadges, pages: PAGES, sndPlay, musPlace, musSpot, musEvent, fanPlay, partTick, ambPlace, gramTrack, searchGo, searchOpen, LB, raceRefresh: () => { raceInfoAt = 0; raceInfoFetch(); }, ui, render, repaint: repaintKeep, morph: morphTo, E, diagText };
 /* Outils de l'interface pour le chat et le panel admin (js/chat.js). */
 window.DX.social = { soloPanel, h, G, IC, tchip, cmed, pname, staffCls, itemImg, openSheet, closeSheet, toast, lbProfile, itemSheet, render, renderStatus, DISCORD_SVG, options: (tab) => { ui.optTab = tab; optionsSheet(); } };
 /* Hôtel de vente (js/market.js) : comparaison d'un objet qu'on n'a pas encore avec l'équipement du héros. */
