@@ -130,7 +130,7 @@
         ["p", `Chaque héros est en première ligne ou à l'arrière. Tant que la première ligne tient, les attaques à une cible des monstres la visent ${pc(V(() => E.FRONT_P, 0.75))} du temps. La première ligne compte au plus la moitié de l'équipe (arrondie au-dessus).`],
         ["ul", [
           "Le placement automatique met devant les héros les plus solides (points de vie × résistances, bonus pour Sacrieur, Féca, Pandawa, Zobal et Forgelance).",
-          "Glisser un héros passe en placement manuel ; il faut toujours au moins un héros devant.",
+          "Pour changer la ligne d'un héros : la flèche ↑ ou ↓ à côté de son nom dans la liste de l'équipe, le bouton « Passer devant » ou « Passer derrière » sur sa fiche, ou le plateau de « Réorganiser ». Le placement passe alors en manuel ; il faut toujours au moins un héros devant.",
           "Les monstres **Rôdeurs** visent l'arrière, les **Bondisseurs** ignorent les lignes. Le Tacle ramène les coups devant, la Fuite aide l'arrière à esquiver.",
         ]],
       ];

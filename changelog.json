@@ -1,6 +1,16 @@
 {
-  "version": "1.2.10.3",
+  "version": "1.2.10.4",
   "versions": [
+    {
+      "v": "1.2.10.4",
+      "name": "Placement en un clic",
+      "guide": "equipe",
+      "items": [
+        "Équipe et héros : une flèche ↑ ou ↓ à côté de chaque héros de l'équipe le fait passer en première ligne ou à l'arrière en un clic (au survol sur PC, toujours visible sur téléphone).",
+        "La fiche du héros a un bouton « Passer devant » ou « Passer derrière » à côté de « Mettre en réserve ».",
+        "« Réorganiser » ne garde que le plateau à glisser, avec la case « Placement automatique » au-dessus : le cadre à boutons en double a été retiré."
+      ]
+    },
     {
       "v": "1.2.10.3",
       "name": "Idole Djim revue",

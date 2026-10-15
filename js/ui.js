@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.10.3";
+const GAME_VERSION = "1.2.10.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.10.4", name: "Placement en un clic", guide: "equipe", items: [
+    "Équipe et héros : une flèche ↑ ou ↓ à côté de chaque héros de l'équipe le fait passer en première ligne ou à l'arrière en un clic (au survol sur PC, toujours visible sur téléphone).",
+    "La fiche du héros a un bouton « Passer devant » ou « Passer derrière » à côté de « Mettre en réserve ».",
+    "« Réorganiser » ne garde que le plateau à glisser, avec la case « Placement automatique » au-dessus : le cadre à boutons en double a été retiré." ] },
   { v: "1.2.10.3", name: "Idole Djim revue", items: [
     "Idole Djim : ses Champions (un par combat) gardent leur difficulté et leur butin doublé, mais ne font plus monter les Sceaux, les trophées de zone ni la traque. Les Sceaux et les Éclats déjà gagnés ne bougent pas." ] },
   { v: "1.2.10.2", name: "Rayonnants sans PA en plus", items: [
@@ -5420,7 +5424,7 @@ function teamRow(x, al) {
 }
 function teamListHtml() {
   const al = teamAlerts(); const team = E.team(S); const fs = E.frontSet(S);
-  const grp = (t, sub, list) => (list.length ? `<div class="tgrp"><div class="tgt"><b>${t}</b><span class="xs muted">${sub}</span></div>${list.map((x) => teamRow(x, al)).join("")}</div>` : "");
+  const grp = (t, sub, list) => (list.length ? `<div class="tgrp"><div class="tgt"><b>${t}</b><span class="xs muted">${sub}</span></div>${list.map((x) => { const mv = rowBtn(x, "tr-mv"); return mv ? `<div class="trw">${teamRow(x, al)}${mv}</div>` : teamRow(x, al); }).join("")}</div>` : "");
   const front = team.filter((x) => fs.has(x.id)), back = team.filter((x) => !fs.has(x.id)), res = S.chars.filter((x) => !team.includes(x));
   const price = recruitPrice();
   return `${grp("Première ligne", `${front.length} / ${E.frontMax(team.length)}`, front)}${grp(team.length > 1 ? "Arrière" : "Équipe", `${back.length}`, back)}${grp("Réserve", `${res.length} · hors combat`, res)}
@@ -5457,7 +5461,7 @@ function heroesHtml() {
       <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
       ${c.ren ? `<div class="small renev"><span class="tag ren">Éveils</span> ${E.eveilList(c).map(([id, r]) => `<span class="evpill" data-tip="${h(E.eveilDesc(c, id))}">${h(id === "classe" ? "Éveil de classe" : E.EVEILS[id].name)} ${E.roman(r)}</span>`).join(" ")} <span class="muted">· ${memTxt(c)} · +${Math.round(E.REN_NEED * 100 * Math.min(E.REN_MAX, c.ren))} % d'XP par niveau</span></div>${c.memPend > 0 ? `<div class="row small"><button class="btn sm ren" data-act="memsheet" data-id="${c.id}">${IC("phenix")} Apprendre un sort</button><span class="muted">Mémoire des vies : ${c.memPend} sort${c.memPend > 1 ? "s" : ""} d'autres classes à choisir</span></div>` : ""}` : ""}
       ${c.lvl >= E.MAX_LVL && (c.ren || 0) < E.REN_MAX ? `<div class="row small"><button class="btn sm ren" data-act="rensheet" data-id="${c.id}">${IC("phenix")} Renaître</button><span class="muted">Repartir au niveau 1 avec un Éveil et un sort d'une autre classe</span></div>` : ""}</div>
-    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
+    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
   <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
@@ -5469,19 +5473,21 @@ function heroRailKey(dir) {
   ui.cid = ids[(i + dir + ids.length) % ids.length]; ui.slot = null; ui.heroMore = false; render(); return true;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
+/* 1.2.10.4 « Placement en un clic » : la ligne se change depuis la liste et la fiche du héros ; « Réorganiser » ne garde que le plateau
+   et ce bandeau (placement automatique). Le cadre à boutons en double a été retiré. */
 function placementHtml() {
   const team = E.team(S); if (team.length < 2) return "";
-  const fs = E.frontSet(S); const max = E.frontMax(team.length); const auto = E.isAutoPlace(S);
-  const card = (c, f) => { const st = E.charStats(S, c);
-    return `<div class="pcard">${head(c)}<div class="tx"><b>${h(c.name)} <span class="muted xs">${h(CLASSES[c.cls].name)} niv. ${c.lvl}</span></b><span class="xs muted num">${fmt(st.hpMax)} PV · Rés. moy. ${Math.round(E.avgRes(st))} %</span></div><button class="btn sm" data-act="setrow" data-id="${c.id}" data-v="${f ? "b" : "f"}">${f ? "↓ Arrière" : "↑ Première ligne"}</button></div>`; };
-  const L = (f) => team.filter((c) => fs.has(c.id) === f).map((c) => card(c, f)).join("");
-  return `<section class="panel placement${ui.placeFlash ? " flash" : ""}" id="placement" style="margin-bottom:12px"><div class="pad stack" style="gap:10px">
-    <div class="row between"><h3 style="margin:0">Placement de l'équipe</h3><span class="xs muted">Première ligne : 1 à ${max} héros sur ${team.length}</span></div>
-    <div class="row between"><label class="row small"><input type="checkbox" data-act="placeauto" ${auto ? "checked" : ""}> <b>Placement automatique</b></label>${auto ? "" : `<button class="btn sm" data-act="placeautob">Revenir au placement automatique</button>`}</div>
-    <div class="plines"><div class="pline front"><div class="lt">${G("shield")} Première ligne <span class="xs muted">reçoit 3 coups sur 4</span></div>${L(true)}</div>
-      <div class="pline"><div class="lt">Arrière <span class="xs muted">exposé si la première ligne tombe</span></div>${L(false)}</div></div>
-    <p class="note xs" style="margin:0">En automatique, le jeu place devant les héros qui encaissent le mieux (PV et résistances). Les Rôdeurs visent l'arrière et les Bondisseurs ignorent les rangées.</p>
+  const max = E.frontMax(team.length); const auto = E.isAutoPlace(S);
+  return `<section class="panel placement${ui.placeFlash ? " flash" : ""}" id="placement" style="margin-bottom:12px"><div class="pad stack" style="gap:6px">
+    <div class="row between"><label class="row small"><input type="checkbox" data-act="placeauto" ${auto ? "checked" : ""}> <b>Placement automatique</b></label>${auto ? `<span class="xs muted">Première ligne : 1 à ${max} héros sur ${team.length}</span>` : `<button class="btn sm" data-act="placeautob">Revenir au placement automatique</button>`}</div>
+    <p class="note xs" style="margin:0">En automatique, le jeu place devant les héros qui encaissent le mieux (PV et résistances). Glisser un héros entre Première ligne et Arrière passe en manuel. Les Rôdeurs visent l'arrière et les Bondisseurs ignorent les rangées.</p>
   </div></section>`;
+}
+/* bouton qui fait passer un héros de l'équipe devant ou derrière (null hors équipe ou équipe d'un seul héros) */
+function rowBtn(c, cls) {
+  const z = teamZone(c); if (!["f", "b"].includes(z) || E.team(S).length < 2) return "";
+  const f = z === "f"; const tip = f ? `Passer ${c.name} à l'arrière` : `Passer ${c.name} en première ligne`;
+  return `<button class="${cls}" data-act="setrow" data-id="${c.id}" data-v="${f ? "b" : "f"}" data-tip="${h(tip)}" aria-label="${h(tip)}">${f ? "↓" : "↑"}${cls.includes("btn") ? (f ? " Passer derrière" : " Passer devant") : ""}</button>`;
 }
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k === "hpMax" ? "vit" : k)}${k === "hpMax" ? "Vitalité (Points de vie)" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
