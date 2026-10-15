@@ -21,9 +21,20 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2.10";
+const GAME_VERSION = "1.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2", name: "Les menus", items: [
+    "Les pages sont rangées en six familles : Aventure, Défis, Héros, Économie, Communauté et Journal. Sur PC, une famille s'ouvre à la fois dans la colonne de gauche, les autres affichent le nombre de choses à faire",
+    "« Aller à une page » en haut du menu : tapez trois lettres, la page sort, Entrée l'ouvre. Sur téléphone, la même recherche en haut du bouton Menu",
+    "Épinglés : vos pages favorites en haut du menu (Donjons, Défi du jour, Forgemagie et Hôtel de vente pour commencer). L'étoile dans le bandeau d'une page l'épingle ou la retire, six au maximum",
+    "Un bandeau en haut de chaque page montre les pages de sa famille. Élevage est un onglet de Familiers et montures, Cours des ressources un onglet de l'Hôtel de vente, Succès un onglet de Quêtes",
+    "Menu réduit aux icônes : une icône par famille, le panneau de la famille s'ouvre à côté (aussi quand le chat prend la place sur un écran moyen)",
+    "Options et Signaler un bug sont en bas du menu ; sur téléphone, la barre du haut tient de nouveau sur une ligne et le bouton Menu range tout en tuiles de quatre",
+    "Quatre thèmes de plus dans Options › Écran : Givre de Frigost, Ambre d'Amakna, Braise de Brâkmar et Écume de Sufokia",
+    "Chaque thème a son ambiance animée : lucioles en Émeraude, étoiles et poussière en Nuit violette, flocons, étincelles de forge, braises, bulles. Le fond de page dérive lentement avec un voile d'aurore de temps en temps. Réglage « Ambiance animée » (discrète, marquée, aucune), coupé aussi par « Animations réduites »",
+    "Le menu s'anime : onde et petit rebond au clic, familles qui se déplient en glissant, icône qui s'avance au survol, pastilles qui pulsent quand elles changent, fondu court au changement de page, liseré du Combat en cours qui respire",
+    "Étiquette « nouveau » sur L'Ascension, Dofus, Chasse et Élevage jusqu'au 22 octobre" ] },
   { v: "1.1.2.10", name: "Bugs signalés", items: [
     "L'Ascension : avec la règle « Un seul élément », le Roublard qui commence par l'Explobombe garde aussi ses sorts Feu (l'élément vient du premier sort qui en a un)",
     "L'Ascension : l'Explobombe se lance de nouveau quand un monstre recruté (ou l'âme du boss) accompagne le Roublard",

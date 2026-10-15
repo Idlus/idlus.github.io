@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2 « Les menus »
+
+Mathis (15/10/2026) : « Réorganiser tout les menus et fait moi des prototype cliquable », puis 28 réponses sur deux maquettes. `NAV` (js/ui.js) passe à six familles (`av df he ec co jo`) ; `NAV_MERGE` range Élevage, Cours des ressources et Succès en onglets de Familiers, HdV et Quêtes (`#subnav` : bandeau de famille + onglets + étoile d'épinglage, `S.settings.pins`) ; `renderNav` redessine la colonne (une famille ouverte `ui.navOpen`, recherche `ui.navQ` sur `NAV_DESC`, mode icônes `ui.navFly`), la barre du téléphone et la fenêtre Menu ; `NAV_NEW` pose l'étiquette « nouveau » jusqu'au 22/10. Options et Signaler un bug quittent la barre du haut. Thèmes : `THEMES`/`applySkin` posent `html[data-skin]` par-dessus Émeraude (blocs CSS en fin de style.css, palettes de la maquette) ; `js/ambiance.js` (`AMB.start/stop`) dessine l'effet du thème sur un canvas fixe, `html[data-bgfx="mix"]` anime le fond (CSS seul) ; les deux suivent `S.settings.ambiance`. Animations du menu en CSS (`.sn-ripple`, `.bpulse`, `#main.pgin`, `.sn-fight.on`), coupées par `body.reduced`/`.nomotion`. Maquettes : https://claude.ai/artifact/WChVczjZzGRTZ8Nmegqkoq et https://claude.ai/artifact/W6MKGmYu6E1zMdnc19fyLT ; scripts dans /mnt/project-files/menus/.
+
 ## 1.1.2.10 « Bugs signalés »
 
 Premiers bugs envoyés par le bouton « Signaler un bug » (tickets 110, 112, 113). Ascension : la règle « Un seul élément » prend l'élément du premier sort élémentaire (`E.ascSetup`, `js/ascension.js`) ; les recrues et l'âme de boss ne comptent plus dans la limite d'invocations du héros (`ownSums` dans `js/engine.js`). Jyfus : une étape « cadeau » est terminée dès que le Dofus est possédé (`advance` de `js/archis.js`).

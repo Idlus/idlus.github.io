@@ -1,6 +1,22 @@
 {
-  "version": "1.1.2.10",
+  "version": "1.2",
   "versions": [
+    {
+      "v": "1.2",
+      "name": "Les menus",
+      "items": [
+        "Les pages sont rangées en six familles : Aventure, Défis, Héros, Économie, Communauté et Journal. Sur PC, une famille s'ouvre à la fois dans la colonne de gauche, les autres affichent le nombre de choses à faire",
+        "« Aller à une page » en haut du menu : tapez trois lettres, la page sort, Entrée l'ouvre. Sur téléphone, la même recherche en haut du bouton Menu",
+        "Épinglés : vos pages favorites en haut du menu (Donjons, Défi du jour, Forgemagie et Hôtel de vente pour commencer). L'étoile dans le bandeau d'une page l'épingle ou la retire, six au maximum",
+        "Un bandeau en haut de chaque page montre les pages de sa famille. Élevage est un onglet de Familiers et montures, Cours des ressources un onglet de l'Hôtel de vente, Succès un onglet de Quêtes",
+        "Menu réduit aux icônes : une icône par famille, le panneau de la famille s'ouvre à côté (aussi quand le chat prend la place sur un écran moyen)",
+        "Options et Signaler un bug sont en bas du menu ; sur téléphone, la barre du haut tient de nouveau sur une ligne et le bouton Menu range tout en tuiles de quatre",
+        "Quatre thèmes de plus dans Options › Écran : Givre de Frigost, Ambre d'Amakna, Braise de Brâkmar et Écume de Sufokia",
+        "Chaque thème a son ambiance animée : lucioles en Émeraude, étoiles et poussière en Nuit violette, flocons, étincelles de forge, braises, bulles. Le fond de page dérive lentement avec un voile d'aurore de temps en temps. Réglage « Ambiance animée » (discrète, marquée, aucune), coupé aussi par « Animations réduites »",
+        "Le menu s'anime : onde et petit rebond au clic, familles qui se déplient en glissant, icône qui s'avance au survol, pastilles qui pulsent quand elles changent, fondu court au changement de page, liseré du Combat en cours qui respire",
+        "Étiquette « nouveau » sur L'Ascension, Dofus, Chasse et Élevage jusqu'au 22 octobre"
+      ]
+    },
     {
       "v": "1.1.2.10",
       "name": "Bugs signalés",
