@@ -40,6 +40,9 @@ alter table public.ladder add column if not exists jobs_prev jsonb not null defa
 alter table public.ladder add column if not exists jobs_pw int not null default 0;
 -- 1.0.19 « Métiers comme dans DOFUS » : 1 quand la partie envoyée a ses métiers d'objets au niveau des objets (niveaux convertis)
 alter table public.ladder add column if not exists jobs_cobj int not null default 0;
+-- 1.0.32.11 « Vérifié par Mathis » : un joueur que Mathis remet dans les classements n'est plus remis « en vérification »
+-- automatiquement (avant, une partie qui avait servi au panel de test y retombait à chaque envoi) ; seul Mathis peut l'y remettre
+alter table public.ladder add column if not exists verified boolean not null default false;
 -- 1.0.19 : pour les classements, un compte pas encore revenu depuis la mise à jour montre ses métiers d'objets au niveau converti
 -- (3 × niveau + 2, au plus 200, même part de la barre d'XP, comme la conversion du jeu) ; rien n'est modifié en base, le jeu
 -- convertit la partie au prochain chargement. L'XP totale suit la courbe du jeu (30 × niveau^1,55 par niveau), le gain de la semaine reste.
@@ -282,6 +285,7 @@ begin
   elsif lv > 400 and pt < 3600 then reason := 'niveau trop élevé pour le temps de jeu';
   end if;
   if coalesce((m->>'panel')::boolean, false) then reason := 'panel de test utilisé dans cette partie'; end if;
+  if hadrow and o.verified then reason := null; end if; -- 1.0.32.11 : vérifié par Mathis, il reste dans les classements
   insert into public.ladder (user_id, main, level, album, succes, playtime, heroes, flagged, flag_reason, updated_at, main_lvl, title, dofus, rec, pts, qstep, qstep_at, jobs, jobs_w, jobs_base, jobs_prev, jobs_pw, jobs_cobj)
     values (new.user_id, m->>'main', lv, al, su, pt, coalesce(m->'heroes', '[]'::jsonb), reason is not null, reason, now(),
       coalesce((m->>'mainLvl')::int, 1), left(m->>'title', 40), coalesce(m->'dofus', '[]'::jsonb), rc, ps, qs, now(), jb,
@@ -352,11 +356,11 @@ as $$ select l.user_id, p.pseudo, l.flag_reason, l.level, l.updated_at from publ
 create or replace function public.admin_unflag(p_user uuid)
 returns void language plpgsql security definer set search_path = public
 as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
-  update public.ladder set flagged = false, flag_reason = null where user_id = p_user; end $$;
+  update public.ladder set flagged = false, flag_reason = null, verified = true where user_id = p_user; end $$;
 create or replace function public.admin_flag(p_user uuid, p_reason text)
 returns void language plpgsql security definer set search_path = public
 as $$ begin if not public.is_admin() then raise exception 'réservé à Mathis'; end if;
-  update public.ladder set flagged = true, flag_reason = coalesce(p_reason, 'décision de Mathis') where user_id = p_user; end $$;
+  update public.ladder set flagged = true, flag_reason = coalesce(p_reason, 'décision de Mathis'), verified = false where user_id = p_user; end $$;
 revoke all on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) from public, anon;
 grant execute on function public.admin_flagged(), public.admin_unflag(uuid), public.admin_flag(uuid, text) to authenticated;
 

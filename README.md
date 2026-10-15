@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.12 « Vérifié, il reste classé »
+
+Un joueur vérifié et remis dans les classements par Mathis y reste : il n'est plus remis « en vérification » automatiquement (colonne `ladder.verified`, supabase/classements.sql et chat.sql). Badge « Vérifié » dans le panel Xener.
+
 ## 1.0.32.11 « Dofus retrouvé »
 
 Retour de joueurs relayé par Mathis le 15/10/2026 : quêtes du Dofus Verdoyant et du Dofus du Cauchemar « Quête terminée » sans Dofus. Cause : E.bagFlush (js/engine.js) range au trop-plein les objets les plus récents quand le sac dépasse sa taille, donc le Dofus tout juste donné par la quête ; E.dofusOwned ne regarde que le sac, et le trop-plein plein brise le plus ancien en runes. Correction : bagFlush ne range jamais un Dofus, le trop-plein ne brise jamais un Dofus, E.breakItem refuse un Dofus ; E.dofusRepair (js/archis.js, à chaque E.deserialize) remet au sac les Dofus du trop-plein et redonne le Dofus d'une quête terminée qui n'est nulle part (un Dofus ne se vend pas à l'HdV), avec un message de migration. Test : tests/dofusp.test.js.

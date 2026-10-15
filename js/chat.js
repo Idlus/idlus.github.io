@@ -472,7 +472,7 @@
     }
     if (A.tab === "verif") {
       const F = A.flag || [];
-      return F.length ? `<div class="box">${F.map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="xs muted">${h(x.reason || "")}</span><span class="t">${when(x.updated_at)}</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0">Remettre</button><button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Fiche</button></div>`).join("")}</div>`
+      return F.length ? `<div class="box">${F.map((x) => `<div class="ln">${X().cmed(x.cls)}<b>${h(x.pseudo)}</b><span class="xs muted">${h(x.reason || "")}</span><span class="t">${when(x.updated_at)}</span><button class="btn sm" data-act="adm-flag" data-u="${x.id}" data-v="0" title="Vérifié : il reste dans les classements, même après ses prochains envois">Remettre</button><button class="btn sm" data-act="adm-find" data-q="${h(x.pseudo)}">Fiche</button></div>`).join("")}</div>`
         : `<div class="box"><div class="empty">Personne n'est en vérification.</div></div>`;
     }
     if (A.tab === "ann") {
@@ -494,7 +494,7 @@
   }
   function stTags(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now();
-    return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">En vérification</span>` : ""}`;
+    return `${x.is_admin ? `<span class="st mod">Admin</span>` : x.is_mod ? `<span class="st mod">Modérateur</span>` : ""}${x.suspended_at ? `<span class="st m">Suspendu</span>` : ""}${x.banned ? `<span class="st m">Banni du chat</span>` : mute ? `<span class="st m">Muet ${dur((new Date(x.mute_until) - Date.now()) / 1000)}</span>` : ""}${x.flagged ? `<span class="st v">En vérification</span>` : x.verified ? `<span class="st mod">Vérifié</span>` : ""}`;
   }
   function ficheHtml(x) {
     const mute = x.mute_until && new Date(x.mute_until) > Date.now(); const H = x.heroes || [];

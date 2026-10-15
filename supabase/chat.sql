@@ -266,7 +266,7 @@ create or replace function public.adm_players(p_q text) returns jsonb language p
 as $$ begin
   perform public.adm_need_chat();
   return (select coalesce(jsonb_agg(x), '[]'::jsonb) from (
-    select p.id, p.pseudo, p.created_at, p.suspended_at, l.main cls, l.level, l.playtime, l.heroes, l.flagged, l.flag_reason,
+    select p.id, p.pseudo, p.created_at, p.suspended_at, l.main cls, l.level, l.playtime, l.heroes, l.flagged, l.flag_reason, coalesce(l.verified, false) verified,
       s.updated_at last_save, cs.mute_until, coalesce(cs.banned, false) banned,
       (select count(distinct r.reporter) from reports r where r.target = p.id) reports,
       exists (select 1 from mods m where m.user_id = p.id) is_mod, exists (select 1 from admins a where a.user_id = p.id) is_admin
@@ -301,7 +301,7 @@ end $$;
 create or replace function public.adm_flag(p_user uuid, p_on boolean) returns void language plpgsql security definer set search_path = public
 as $$ begin
   perform public.adm_need(true);
-  update ladder set flagged = p_on, flag_reason = case when p_on then 'décision de Mathis' end where user_id = p_user;
+  update ladder set flagged = p_on, flag_reason = case when p_on then 'décision de Mathis' end, verified = not p_on where user_id = p_user; -- 1.0.32.11 : remis = vérifié, il y reste
   perform public.alog(format(case when p_on then '%s mis en vérification' else '%s remis dans les classements' end, public.pseudo_of(p_user)));
 end $$;
 

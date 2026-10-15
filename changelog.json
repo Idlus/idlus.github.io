@@ -1,6 +1,14 @@
 {
-  "version": "1.0.32.11",
+  "version": "1.0.32.12",
   "versions": [
+    {
+      "v": "1.0.32.12",
+      "name": "Vérifié, il reste classé",
+      "items": [
+        "Un joueur que Mathis a vérifié et remis dans les classements y reste : il n'est plus remis « en vérification » automatiquement à ses envois suivants (avant, une partie passée par le panel de test y retombait à chaque sauvegarde)",
+        "Seul Mathis peut encore le remettre en vérification. Panel Xener : badge « Vérifié » sur la fiche du joueur"
+      ]
+    },
     {
       "v": "1.0.32.11",
       "name": "Dofus retrouvé",

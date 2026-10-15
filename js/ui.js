@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.32.11";
+const GAME_VERSION = "1.0.32.12";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.32.12", name: "Vérifié, il reste classé", items: [
+    "Un joueur que Mathis a vérifié et remis dans les classements y reste : il n'est plus remis « en vérification » automatiquement à ses envois suivants (avant, une partie passée par le panel de test y retombait à chaque sauvegarde)",
+    "Seul Mathis peut encore le remettre en vérification. Panel Xener : badge « Vérifié » sur la fiche du joueur",
+  ] },
   { v: "1.0.32.11", name: "Dofus retrouvé", items: [
     "Quête de Dofus terminée mais Dofus absent : quand le sac était plein, le Dofus partait au trop-plein (et pouvait même y être brisé en runes). Il reste maintenant toujours dans le sac",
     "Au chargement, les Dofus restés au trop-plein reviennent dans le sac, et une quête de Dofus terminée sans son Dofus le rend. Un message te le dit",
