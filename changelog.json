@@ -1,6 +1,15 @@
 {
-  "version": "1.2.5.1",
+  "version": "1.2.5.2",
   "versions": [
+    {
+      "v": "1.2.5.2",
+      "name": "Bugs signalés",
+      "items": [
+        "Chasse : la liste des héros qui portent un Sceau ne pousse plus le bouton +1 ◆ hors de la carte (nom complet au survol).",
+        "Menu : le 6e épinglé passe à la ligne au lieu d’être caché à droite.",
+        "Équipement : au survol d’un objet dans la liste « choisir », sa fiche complète s’affiche."
+      ]
+    },
     {
       "v": "1.2.5.1",
       "name": "Course de L'Ascension",

@@ -5280,8 +5280,8 @@ span.fch{cursor:default;padding-left:8px}
 .ch-std{font-size:12.5px;line-height:1.35;min-height:2.7em}
 .ch-st.on{box-shadow:inset 0 0 0 2px #ffc94a;background:rgba(255,201,74,.1)}
 .ch-st.off{opacity:.55}.ch-st.off .ch-pw{filter:grayscale(1)}
-.ch-stf{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:30px}
-.ch-cnt{font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;min-width:0;font-variant-numeric:tabular-nums}
+.ch-stf{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:30px;min-width:0} /* 1.2.4.2 : une longue liste de porteurs ne pousse plus le bouton +1 ◆ hors de la carte */
+.ch-cnt{font-size:12px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;flex:1 1 auto;min-width:0;overflow:hidden;font-variant-numeric:tabular-nums}
 .ch-cnt small{font-weight:600;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ch-btns{display:flex;gap:4px;flex:none}
 .ch-pips{letter-spacing:1px;color:#ffc94a;font-size:11px;flex:none}
@@ -5525,7 +5525,7 @@ details.ch-zg summary b{color:#ffd76a;font-size:13.5px}details.ch-zg summary b::
   #nav .sn-side .sn-fight{min-height:42px;margin-bottom:2px}
   #nav .sn-pins{margin:5px 0 3px;padding:5px 6px 6px;border-radius:12px;background:var(--panel2);border:1px dashed var(--line);flex:none}
   #nav .sn-pins>span{display:block;font-size:10px;font-weight:900;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);margin:0 0 4px 2px}
-  #nav .sn-pins>div{display:flex;gap:5px}
+  #nav .sn-pins>div{display:flex;flex-wrap:wrap;gap:5px} /* 1.2.4.2 : le 6e épinglé passe à la ligne au lieu d'être caché à droite */
   #nav .sn-side .sn-pin{width:34px;min-width:0;height:34px;min-height:0;flex:none;display:grid;place-items:center;padding:0;border-radius:10px}
   #nav .sn-side .sn-pin .med{width:28px;height:28px}#nav .sn-side .sn-pin .med img{width:20px;height:20px}
   #nav .sn-side .sn-pin .navcnt,#nav .sn-side .sn-pin .navdot,#nav .sn-side .sn-pin .navcoin{position:absolute;top:-3px;right:-3px;margin:0}

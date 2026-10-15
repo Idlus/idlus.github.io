@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.5.2 « Bugs signalés »
+
+Bugs signalés par les joueurs : bouton +1 ◆ des Sceaux toujours visible, 6e épinglé à la ligne, fiche complète d'un objet au survol dans la liste pour équiper.
+
 ## 1.2.5.1 « Course de L'Ascension »
 Classements › Course montre la course de lancement de L'Ascension (10 places du titre « Légende de la 1.1 », joueurs classés par meilleur étage en Difficile du mois). La pastille du haut suit cette course ; les Légendes de la 1.0 restent dessous.
 

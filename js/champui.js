@@ -141,7 +141,7 @@
     // les 6 Sceaux (progression du compte) et les fusions : le panneau du héros, sans les boutons Porter
     const tiles = e.SEAL_ORDER.map((k) => { const n = e.sealKills(S, k), r = e.sealRank(S, k), nx = nextAt(n); const w = S.chars.filter((x) => x.seal === k).map((x) => x.name);
       return `<div class="ch-st ${r ? "" : "off"}"><div class="ch-sth">${ico(k)}<b>${e.SEALS[k].name}</b>${pips(r)}</div><span class="ch-std">${r ? h(e.SEALS[k].txt(e.sealVal(k, r))) : `Vaincs un Champion ${e.SEALS[k].name} pour le débloquer.`}</span><div class="ch-bar"><i style="width:${barPct(n, r)}%"></i></div>
-        <div class="ch-stf"><span class="ch-cnt">${nx ? `${X().fmt(n)} / ${nx}` : `${X().fmt(n)} · max`}${w.length ? `<small>${h(w.join(", "))}</small>` : ""}</span><span class="ch-btns">${shardBtn(C, k, nx)}</span></div></div>`; }).join("");
+        <div class="ch-stf"><span class="ch-cnt">${nx ? `${X().fmt(n)} / ${nx}` : `${X().fmt(n)} · max`}${w.length ? `<small data-tip="${h(w.join(", "))}">${h(w.join(", "))}</small>` : ""}</span><span class="ch-btns">${shardBtn(C, k, nx)}</span></div></div>`; }).join("");
     const ready = e.SEAL_ORDER.filter((k) => e.sealRank(S, k) >= 5); const pairs = []; for (let i = 0; i < ready.length; i++) for (let j = i + 1; j < ready.length; j++) pairs.push(e.fuseKey(ready[i], ready[j]));
     const toFuse = pairs.filter((p) => !C.f.includes(p));
     const fz = C.f.map((f) => `<div class="ch-fc ok"><span class="ch-fi">${icoSeal(f)}</span><span class="ch-fn"><b>${h(e.SEAL_FUSIONS[f])}</b><small>${f.split("+").map((k) => e.SEALS[k].name).join(" + ")}</small></span></div>`)

@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.5.1";
+const GAME_VERSION = "1.2.5.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.5.2", name: "Bugs signalés", items: [
+    "Chasse : la liste des héros qui portent un Sceau ne pousse plus le bouton +1 ◆ hors de la carte (nom complet au survol).",
+    "Menu : le 6e épinglé passe à la ligne au lieu d’être caché à droite.",
+    "Équipement : au survol d’un objet dans la liste « choisir », sa fiche complète s’affiche." ] },
   { v: "1.2.5.1", name: "Course de L'Ascension", items: [
     "Classements › Course : la course de lancement de L'Ascension s'affiche enfin. Les 10 places du titre « Légende de la 1.1 », puis tous les joueurs en course classés par meilleur étage en Difficile",
     "La pastille en haut de l'écran suit maintenant cette course, et L'Ascension › Classements a un bouton « Voir la course ». Les Légendes de la 1.0 restent dessous",
@@ -5094,7 +5098,7 @@ function dofpPickHtml(c, all, g) {
     <div class="xs muted" style="padding:2px 14px 0">Conseillés pour ${h(c.name)} en premier (${h(E.DOFP_FOR[E.dofpRole(S, c)])}), puis par gain de caractéristiques.</div>
     <div class="list">${rows.map(row).join("") || `<div class="empty">Aucun Dofus de cette famille dans ton sac.</div>`}</div>
     ${pm("dpmiss", "Pas encore obtenus", missing.length, () => missing.map((id) => `<div class="li dofp-pr fam-${dofpFc(id)} dofp-lock"><span class="dofp-primg">${im(dofusImg(id), "", "")}</span><span class="grow"><span class="dofp-prn"><b>${h(E.DOFUS[id].name)}</b> <span class="xs muted">niv. ${E.DOFUS[id].lvl}</span></span><span class="dofp-prp">${dofpIco(id)}<b>${h(E.dofpName(id))}</b> · ${dofpHi(E.dofpTxt(id))}</span></span><button class="btn sm" data-act="pagego" data-v="dofusq">${G("lock")} Sa quête</button></div>`).join(""))}
-    ${pm("dptro", "Trophées (sans passif)", tro.length, () => tro.slice(0, 20).map((it) => `<div class="li">${itemIcon(it)}<span class="grow">${itemName(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span><button class="btn sm" data-act="equip" data-uid="${it.uid}">Équiper</button></div>`).join(""))}</div>`;
+    ${pm("dptro", "Trophées (sans passif)", tro.length, () => tro.slice(0, 20).map((it) => `<div class="li"><span class="ptip" data-tipitem="${it.uid}">${itemIcon(it)}</span><span class="grow">${itemName(it)}<br>${deltaHtml(c, ui.slot, it.uid)}</span><button class="btn sm" data-act="equip" data-uid="${it.uid}">Équiper</button></div>`).join(""))}</div>`;
 }
 function itemStatsHtml(it) {
   const T = ITEMS[it.tpl];
@@ -5818,7 +5822,7 @@ function charEquipView(c, st) {
     const setTag = (it) => { const z = ITEMS[it.tpl].set; if (!z || !SETS[z]) return ""; const n0 = counts[z] || 0; const n1 = n0 + (z === curSet ? 0 : 1); const on = E.setBonus(z, n1) && JSON.stringify(E.setBonus(z, n1)) !== JSON.stringify(E.setBonus(z, n0));
       return `<span class="pset ${on ? "on" : ""}">${h(SETS[z].name.replace("Panoplie ", "Pano. "))} ${n1}/${SETS[z].size || "?"}${on ? " · bonus débloqué" : ""}</span>`; };
     const row = (it, mode, i, n, tog, sub) => { const T = ITEMS[it.tpl]; const by = E.equippedBy(S, it.uid); const top = mode === "free" && i === 0 && (it.uid === pu || g[it.uid] > 0) && !equipBlocked(c, c.equip, ui.slot, it);
-      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""} ${sub ? "psub" : ""}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)}${grpN(n)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}${T.slot === "arme" ? " " + wpPickTag(c, it) : ""}<br>${deltaHtml(c, ui.slot, it.uid)}${tog || ""}</span>
+      return `<div class="li ${it.radiant ? "radiant" : ""} ${top ? "pbest" : ""} ${mode === "high" ? "plow" : ""} ${sub ? "psub" : ""}" data-tipitem="${it.uid}">${itemIcon(it)}<span class="grow">${top ? `<span class="tag good">Meilleur choix</span> ` : ""}${itemName(it)}${grpN(n)} <span class="muted xs">niv. ${T.lvl} · jet ${Math.round(E.itemQuality(it) * 100)} %${by ? ` · porté par ${h(by === c ? "ce héros" : by.name)}` : ""}</span> ${setTag(it)}${T.slot === "arme" ? " " + wpPickTag(c, it) : ""}<br>${deltaHtml(c, ui.slot, it.uid)}${tog || ""}</span>
         <button class="btn sm ${mode === "worn" ? "" : "primary"}" data-act="equip" data-uid="${it.uid}" ${mode === "high" ? "disabled" : ""}>${mode === "high" ? "Niv. " + T.lvl : mode === "worn" ? "Prendre" : "Équiper"}</button></div>`; };
     /* 0.1.46.1 : objets déjà portés et trop hauts rangés en bas, repliés (ui.pmore garde l'état ouvert) */
     /* 1.0.8.8 : une ligne par objet (×N) ; si les exemplaires ont des jets différents, la ligne montre le meilleur et se déplie (ui.pgrp garde l'état ouvert malgré le redessin) */
