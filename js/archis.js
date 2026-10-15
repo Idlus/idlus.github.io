@@ -27,6 +27,7 @@
 
   /* ---------- consommables, recettes, meuble, comptoir ---------- */
   CONSUMABLES.pierre_ame = { name: "Pierre d'âme", icon: "🔮", kind: "util", auto: true, desc: "Automatique : quand un archimonstre est vaincu, une pierre capture son âme pour l'album (une fois par archimonstre)." };
+  CONSUMABLES.pierre_ame_doree = { name: "Pierre d'âme dorée", icon: "🔮", kind: "boost", boost: "piste", pct: 200, dur: 3600, desc: "Chances d'archimonstre ×3 pendant 1 h. Premier passage d'une stasis 11 à 15." }; // 1.1
   CONSUMABLES.parfum_piste = { name: "Parfum de pistage", icon: "🧴", kind: "boost", boost: "piste", pct: 100, dur: 7200, desc: "Chances d'archimonstre ×2 pendant 2 h (se cumule avec le Bonbon Traqueur)." };
   SPECIAL_CRAFTS["Pierre d'âme"] = { job: "bricoleur", lvl: 25, cons: "pierre_ame", n: 5, ing: [["Bois de Châtaignier", 10], ["Sauge", 10], [E.POUSSIERE, 5]] };
   SPECIAL_CRAFTS["Parfum de pistage"] = { job: "bricoleur", lvl: 40, cons: "parfum_piste", n: 1, ing: [["Menthe Sauvage", 10], ["Trèfle à 5 feuilles", 10], [E.POUSSIERE, 15]] };
@@ -55,7 +56,8 @@
     return "new";
   };
   /* premier passage d'une stasis : des pierres en plus du coffre */
-  E.firstPassStones = (S, k, out) => { const n = k >= 8 ? 3 : k >= 4 ? 2 : 1; E.addCons(S, "pierre_ame", n); if (out) out.push(`${n} × Pierre d'âme`); };
+  E.firstPassStones = (S, k, out) => { const n = k >= 8 ? 3 : k >= 4 ? 2 : 1; E.addCons(S, "pierre_ame", n); if (out) out.push(`${n} × Pierre d'âme`);
+    if (k >= 11) { const g = k >= 15 ? 2 : 1; E.addCons(S, "pierre_ame_doree", g); if (out) out.push(`${g} × Pierre d'âme dorée`); } }; // 1.1 : stasis 11 à 15
 
   /* ---------- quête de l'Ocre : « Éternelle moisson », six paliers ---------- */
   E.OCRE_TIERS = [
@@ -137,11 +139,11 @@
      Aucun bonus (évènement, mutateur, idole, prospection…) ne change ces chances. */
   E.DOFUS_ODDS = [160000, 80000, 40000, 20000, 8000, 7200, 6400, 5600, 4800, 4000]; // 1 chance sur … par héros, stasis 1 à 10
   E.OCRE_ODDS = E.DOFUS_ODDS.map((n) => n * 5); // l'Ocre : 5 fois plus rare, sur un boss de niveau 200
-  E.dofusOdds = (k) => E.DOFUS_ODDS[k - 1] || 0;
+  E.dofusOdds = (k) => E.DOFUS_ODDS[Math.min(k, 10) - 1] || 0; // 1.1 : au-delà de la stasis 10, mêmes chances qu'en 10
   /* l'Ocre tombe de tout boss de donjon, d'autant mieux que le boss est haut niveau (niveau 100 : 2 fois moins qu'au niveau 200) */
   E.ocreMult = (lvl) => Math.min(1, Math.max(0, lvl) / 200);
   const nice = (n) => { const p = Math.pow(10, Math.max(0, Math.floor(Math.log10(n)) - 1)); return Math.round(n / p) * p; }; // 2 chiffres utiles
-  E.ocreOdds = (k, lvl = 200) => { const m = E.ocreMult(lvl); return m && E.OCRE_ODDS[k - 1] ? nice(E.OCRE_ODDS[k - 1] / m) : 0; };
+  E.ocreOdds = (k, lvl = 200) => { const m = E.ocreMult(lvl); const i = Math.min(k, 10) - 1; return m && E.OCRE_ODDS[i] ? nice(E.OCRE_ODDS[i] / m) : 0; };
   L.forEach(([id, name, lvl, icon, stats, dgid, steps]) => {
     const tpl = "dofus_" + id;
     E.DOFUS[id] = { id, name, lvl, icon, stats, dg: dgid, steps, tpl };

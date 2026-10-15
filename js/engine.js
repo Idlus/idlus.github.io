@@ -1100,7 +1100,9 @@
   E.chalRespect = (S, c) => !!(S.settings && S.settings.chalAI) && !(c && c.chalOff);
 
   /* ---------------- Stasis (3.1) ---------------- */
-  E.STASIS_MAX = 10;
+  E.STASIS_MAX = 15; // 1.1 : stasis 11 à 15 (Mathis 3A)
+  E.STASIS_UP = 1.12; // 1.1 : au-delà de la stasis 10, monstres +12 % de PV et +12 % de dégâts par palier (environ +25 % de difficulté, simulé)
+  E.STASIS15_TITLE = "Maître du temps";
   E.STASIS_TL = { room: 15, boss: 24 };
   E.STASIS_MODS = {
     enrages:   { name: "Enragés",     desc: "Les monstres infligent +25 % de dégâts sous 50 % de PV." },
@@ -1118,9 +1120,11 @@
     [4, "Synchronisation : les monstres prennent le niveau de votre meilleur héros."], [5, "Une salle d'élite (monstre Élite : PV ×2, +15 % de dégâts pour ses alliés)."],
     [6, "Un modificateur de donjon."], [7, "Deux modificateurs de donjon."], [8, "Le boss a une seconde phase sous 30 % de PV."],
     [9, "Temps limité : 15 tours par salle, 24 contre le boss."], [10, "Boss légendaire : 3 mécaniques, butin exclusif."],
+    [11, "Monstres +12 % de PV et de dégâts (environ +25 % de difficulté), de même à chaque palier suivant. Poussière de stasis ×2."], [12, "Trois modificateurs de donjon."], [13, "Monstres encore plus forts."],
+    [14, "Le boss légendaire a 4 mécaniques."], [15, "Le sommet. Titre « Maître du temps » au premier passage."],
   ];
   E.stasisInfo = (S, did) => { S.stasis = S.stasis || {}; return (S.stasis[did] = S.stasis[did] || { max: 0, sel: 1, firsts: {}, best: {} }); };
-  E.stasisMult = (k) => ({ hp: 1 + 0.12 * (k - 1), dmg: Math.pow(1.2, k - 1), rew: 1 + 0.15 * (k - 1) });
+  E.stasisMult = (k) => { const up = Math.pow(E.STASIS_UP, Math.max(0, k - 10)); return { hp: (1 + 0.12 * (Math.min(k, 10) - 1)) * up, dmg: Math.pow(1.2, Math.min(k, 10) - 1) * up, rew: 1 + 0.15 * (k - 1) }; };
   /* caractéristique des parchemins de chaque donjon (élément du boss) */
   E.dungeonScrollStat = (did) => { const dg = DUNGEONS[did]; const el = (MONSTERS[dg.boss] || {}).el; const ids = Object.keys(DUNGEONS).sort(); if (ids.indexOf(did) % 5 === 4) return "sa"; return { t: "fo", f: "ine", e: "cha", a: "age" }[el] || "vit"; };
   const pickMods = (n, first) => { const ks = Object.keys(E.STASIS_MODS).filter((x) => !E.STASIS_MODS[x].flash); const out = first ? [first] : []; while (out.length < n) { const k = pick(ks); if (!out.includes(k)) out.push(k); } return out; };
@@ -1196,7 +1200,7 @@
       const pool = E.mechPool(DUNGEONS[D2.id] ? DUNGEONS[D2.id].lvl : 1);
       if (k >= 3) { const keys = pool.filter((x) => !b.mech.includes(x)); if (keys.length) b.mech = b.mech.concat([pick(keys)]); }
       if (k >= 8) b.phase2 = true;
-      if (k >= 10) { b.legend = true; b.name = b.name + " Légendaire"; b.hpMax = b.hp = Math.round(b.hpMax * 1.5); const keys = pool.filter((x) => !b.mech.includes(x)); while (b.mech.length < 3 && keys.length) b.mech.push(keys.splice(Math.floor(rnd() * keys.length), 1)[0]); }
+      if (k >= 10) { b.legend = true; b.name = b.name + " Légendaire"; b.hpMax = b.hp = Math.round(b.hpMax * 1.5); const keys = pool.filter((x) => !b.mech.includes(x)); while (b.mech.length < (k >= 14 ? 4 : 3) && keys.length) b.mech.push(keys.splice(Math.floor(rnd() * keys.length), 1)[0]); }
     }
     return mons;
   };
@@ -2393,7 +2397,7 @@
     return null;
   };
   E.ITEM_DROP_SCALE = 1; // 1.0.15 : les taux de js/drops.js sont déjà les vraies chances par héros (avant : taux DofusDB × 0,04)
-  E.bossDropMult = (k) => 1 + 0.25 * (Math.max(1, k) - 1);
+  E.bossDropMult = (k) => 1 + 0.25 * (Math.min(10, Math.max(1, k)) - 1); // 1.1 : plafonné à la stasis 10
 
   E.giveXp = (S, c, g) => {
     if (c.lvl >= E.MAX_LVL) return false;
@@ -2829,7 +2833,7 @@
   E.stasisClear = (S, D2, rew) => {
     const did = D2.id; const k = D2.stasis || 1; const SI = E.stasisInfo(S, did); const stat = E.dungeonScrollStat(did);
     const out = [];
-    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
+    const dust = Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (k >= 11 ? 2 : 1) * (D2.weekly ? E.WEEKLY_DUST : 1) * (D2.flash ? E.FLASH_DUST : 1)); addRes(S, E.POUSSIERE, dust); out.push(`${dust} ${E.POUSSIERE}`);
     if (!SI.firsts[k]) { SI.firsts[k] = E.now();
       const chest = E.stasisChest(k); E.addCons(S, chest, 1); out.push(`premier passage : ${CONSUMABLES[chest].name}`);
       if (E.firstPassStones) E.firstPassStones(S, k, out); // 0.1.13 : Pierres d'âme
@@ -2844,7 +2848,8 @@
     if (E.dofusDrop) E.dofusDrop(S, did, k, out); // 0.1.13 : Dofus en butin très rare du boss
     if (k > SI.max) { SI.max = k; if (k < E.STASIS_MAX) note(S, `${DUNGEONS[did].name} : stasis ${k + 1} débloquée !`, "up"); }
     const t = Math.round(D2.t || 0); if (!SI.best[k] || t < SI.best[k]) SI.best[k] = t;
-    if (k === 10) S.unlocks.stasis10 = true;
+    if (k >= 10) S.unlocks.stasis10 = true;
+    if (k >= 15) { S.unlocks.stasis15 = true; S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.STASIS15_TITLE)) { S.titlesExtra.push(E.STASIS15_TITLE); note(S, `Stasis 15 : titre « ${E.STASIS15_TITLE} » !`, "rare"); } }
     note(S, `Stasis ${k} terminée : ${out.join(", ")}.`, "rare");
     if (rew) rew.stasis = { k, out, dust };
   };
@@ -2865,7 +2870,7 @@
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;
     S.dungeon = { id: did, room: 0, stasis: k, chain: chain || 1, tot: chain || 1, run: 1, t: 0, syncLvl: Math.round(E.team(S).reduce((a, c) => a + c.lvl, 0) / Math.max(1, E.team(S).length)),
-      mods: k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
+      mods: k >= 12 ? pickMods(3, wk) : k >= 7 ? pickMods(2, wk) : k >= 6 ? pickMods(1, wk) : wk ? [wk] : [], weekly: W && W.did === did ? wk : undefined, flash: FL ? FL.mod : undefined, eliteRoom: k >= 5 ? Math.floor(dg.rooms.length / 2) : -1 };
     if (climb > 0) { S.dungeon.climb = Math.min(E.STASIS_MAX, climb); S.dungeon.k0 = k; } // 1.0.32.3 : montée de stasis
     SI.sel = k;
     S.fight = null; S.pause = 0;

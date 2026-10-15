@@ -648,7 +648,8 @@ a.btn{text-decoration:none}
 .pill.key.ok{background:rgba(126,224,106,.16);color:#9ff07a}.pill.key.craft{background:rgba(var(--glw),.16);color:var(--gold2)}.pill.key.no{color:var(--muted)}
 .pill.diff.easy{background:rgba(126,224,106,.16);color:#9ff07a}.pill.diff.mid{background:rgba(var(--glw),.16);color:var(--gold2)}.pill.diff.risk{background:rgba(255,107,122,.16);color:#ff8a8a}
 .pill.good{background:rgba(126,224,106,.16);color:#9ff07a}
-.stasisrow{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:6px}
+.stasisrow{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin-top:6px}
+.sbtn.hi{border-color:rgba(190,140,255,.55);background:linear-gradient(180deg,rgba(150,100,230,.18),var(--panel2))}.sbtn.hi.on{background:var(--gold)}
 .sbtn{border:1.5px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:9px;padding:6px 0;font-weight:900;cursor:pointer}
 .chainbox{margin:8px 0;display:grid;gap:4px}.chainrow{display:flex;gap:4px;flex-wrap:wrap;align-items:center}.chainrow .sbtn{min-width:44px;padding:6px 8px}.chainrow .sbtn.wide{min-width:auto}.chainstep{display:inline-flex;gap:4px;align-items:center;margin-left:4px}.chainstep .num{min-width:28px;text-align:center}
 .climbrow .sbtn{min-width:36px}.climbrow > span{margin-right:2px}.climbtxt{padding:6px 10px;border-radius:10px;background:rgba(var(--glw),.10);border:1px solid rgba(var(--glw),.35);line-height:1.4}

@@ -2831,7 +2831,7 @@ function monCard(k, opts = {}) {
     ${archiKey ? `<div class="xs" style="margin-top:3px;color:var(--archi)">Archi : ${archiMet ? h(MONSTERS[archiKey].name) + ` ×${S.archis[archiKey]}` : "???"}${E.hasSoul(S, archiKey) ? " · 💜 âme" : ""}</div>` : ""}</div></div>`;
 }
 /* ---------- Donjons (3.1) : cartes, stasis, filtres ---------- */
-function dgStars(did) { const SI = (S.stasis || {})[did] || { max: 0 }; const k = S.progress.bossKills[did] ? 1 : 0; return `<span class="stars" title="Terminé · stasis 5 · stasis 10">${k ? "✓" : "·"}<b class="${SI.max >= 5 ? "on" : ""}">★</b><b class="${SI.max >= 10 ? "on" : ""}">★</b></span>`; }
+function dgStars(did) { const SI = (S.stasis || {})[did] || { max: 0 }; const k = S.progress.bossKills[did] ? 1 : 0; return `<span class="stars" title="Terminé · stasis 5 · stasis 10">${k ? "✓" : "·"}<b class="${SI.max >= 5 ? "on" : ""}">★</b><b class="${SI.max >= 10 ? "on" : ""}">★</b>${SI.max >= 15 ? `<b class="on s15" title="Stasis 15">★</b>` : ""}</span>`; }
 function dgKeyState(did) { const dg = DUNGEONS[did]; const keys = S.res[dg.key] || 0; const R = SPECIAL_CRAFTS[dg.key];
   if (keys) return { k: "ok", txt: `${keys} clé${keys > 1 ? "s" : ""}` }; if (R && E.canCraft(S, R)) return { k: "craft", txt: "clé fabricable" }; return { k: "no", txt: "pas de clé" }; }
 function dgDifficulty(did, k) {
@@ -2877,7 +2877,7 @@ function dungeonCard(did) {
     ${(E.weekly(S) || {}).did === did ? `<span class="wkbadge" title="Mutateur de l'heure">${G("star")} Heure</span>` : E.flashOf(S, did) ? `<span class="wkbadge fl" title="Mutateur éclair">${G("bolt")} Éclair</span>` : ""}
     ${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}${(() => { const f = E.dofusOfDungeon(did); return f ? `<img class="dofbadge" src="${dofusImg(f)}" alt="" title="${h(E.DOFUS[f].name)} : chaque héros a 1 chance sur ${dofOdds(E.dofusOdds(1))} en stasis 1, jusqu'à 1 sur ${dofOdds(E.dofusOdds(10))} en stasis 10">` : ""; })()}
     <div class="dgtxt"><b>${h(dg.name)}</b><span class="xs muted">niv. ${dg.lvl} · ${h(ZONES.find((z) => z.id === E.SUBS[E.DUNGEON_SUB[did]].zone).name)}</span>
-      <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/10</span>` : ""}
+      <span class="row" style="gap:6px;flex-wrap:wrap;margin-top:4px">${dgStars(did)}${SI.max ? `<span class="pill">Stasis ${SI.max}/${E.STASIS_MAX}</span>` : ""}
         ${un ? `<span class="pill key ${ks.k}">${IC("cle")} ${ks.txt}</span><span class="pill diff ${d.k}">${d.txt}</span>` : `<span class="pill">${G("lock")} ${h(dgNeedTxt(did) || E.SUBS[E.DUNGEON_SUB[did]].name)}</span>`}</span></div></div>`;
 }
 /* 1.0.8.7 : liste des donjons rangée par zone (groupes repliables), recherche et filtres gardés dans la partie */
@@ -3012,7 +3012,7 @@ function dungeonSheet(did) {
       ${dgDofusBox(did, SI, k)}
       ${window.DGRANK ? window.DGRANK.box(did) : ""}
       <div><b>Stasis</b> <span class="xs muted">(meilleure : ${SI.max || "aucune"})</span>
-        <div class="stasisrow">${Array.from({ length: 10 }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
+        <div class="stasisrow">${Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1).map((n) => `<button class="sbtn ${n === k ? "on" : ""} ${n <= SI.max ? "done" : ""} ${n > 10 ? "hi" : ""}" data-act="dgstasis" data-id="${did}" data-v="${n}" ${n > SI.max + 1 ? "disabled" : ""}>${n}</button>`).join("")}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin:6px 0"><span class="pill">PV monstres +${Math.round((M.hp - 1) * 100)} %</span><span class="pill">Dégâts +${Math.round((M.dmg - 1) * 100)} %</span><span class="pill good">XP et butin +${Math.round((M.rew * (wk ? E.WEEKLY_REW : 1) * (fl ? E.FLASH_REW : 1) - 1) * 100)} %</span><span class="pill diff ${d.k}">${d.txt}</span></div>
         ${(() => { const fake = { mods: [], stasis: k }; const ids = E.idolsFor(S, fake); const sc = E.idolScore(S, fake, ids); return `<div class="row small" style="gap:6px;flex-wrap:wrap;margin:0 0 6px">${idolBtn(fake)}<span class="xs muted">${ids.length ? `En plus de la stasis : +${pctTxt(E.idolBonus(S, fake, ids))} % d'XP et de butin${sc > E.IDOL_DG_CAP ? ` (score compté jusqu'à ${E.IDOL_DG_CAP} en donjon)` : ""}${k >= 6 ? " · une idole en doublon avec un modificateur tiré ne compte pas" : ""}.` : "Aucune idole active : les idoles rendent le donjon plus dur contre plus d'XP et de butin."}</span></div>`; })()}
         ${steps ? `<ul class="dglist steps">${steps}</ul>` : `<p class="xs muted">Stasis 1 : le donjon normal${wk ? ", avec le mutateur de l'heure" : ""}.</p>`}
@@ -7071,7 +7071,7 @@ function celeHtml(ev) {
       ${top.length ? `<div class="ctl-h">À ne pas manquer</div><div class="ctl-grid">${top.map(tile).join("")}</div><div class="ctl-names">${h(names.join(" · "))}</div>` : ""}
       <div class="ctl-h">Ressources</div><div class="ctl-grid">${rest.map(tile).join("")}</div>`; }
   if (ev.t === "stasis") { const dg = DUNGEONS[ev.did]; const C = CONSUMABLES[ev.chest];
-    return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${consIco(C)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k < 10 ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
+    return `<div class="cele-art stasis">${im(imgM(dg.boss), "dgboss", MONSTERS[dg.boss].name)}<span class="chest">${consIco(C)}</span></div><div class="cele-k">${G("star")} Premier passage</div><div class="cele-t">Stasis ${ev.k}${ev.k >= 10 ? " · Boss légendaire vaincu" : ""}</div><div class="cele-s">${h(dg.name)} · ${h(C.name)} obtenu${ev.k >= 15 ? ` · titre « ${h(E.STASIS15_TITLE)} »` : ""}${ev.k < E.STASIS_MAX ? ` · stasis ${ev.k + 1} débloquée` : ""}</div>`; }
   return "";
 }
 function nextCele() {
@@ -9319,7 +9319,7 @@ function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
   if (LB.tab === "job" && d.guilds) return jobGuildHtml(d);
   if (LB.tab === "first") {
-    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10, le premier au niveau 200 de chaque métier d'artisanat et le premier Grand Maître artisan seront gravés ici pour toujours.</div>`;
+    if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10 puis en stasis 15, le premier au niveau 200 de chaque métier d'artisanat et le premier Grand Maître artisan seront gravés ici pour toujours.</div>`;
     return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "lvl200" || r.kind === "race10" || r.kind === "job200all" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
@@ -9473,7 +9473,7 @@ function recordSheet(r) {
   openSheet(`<h2>${r.first ? "Premier au monde !" : "Nouveau record !"}</h2><div class="bigrec">Stasis ${r.k} · ${recTime(r.t)}</div><span class="small muted" style="text-align:center">${h(r.dname)}${r.week ? ", donjon de la semaine" : ""}</span>
     <div class="chk"><div><span class="okc">✓</span><span>Partie envoyée au serveur</span></div><div><span class="okc">✓</span><span>Le serveur a rejoué la stasis avec ton équipe et l'a terminée en ${recTime(r.t)} (temps officiel)</span></div>
     <div><span class="okc">✓</span><span><b>Record vérifié</b> : ${r.rank}${r.rank === 1 ? "er" : "e"} sur ce donjon${r.week ? ` · ${r.weekRank}${r.weekRank === 1 ? "er" : "e"} cette semaine` : ""}</span></div>
-    ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis 10 : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}</div>
+    ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis ${r.k} : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}</div>
     <div class="row"><button class="btn primary" data-act="lb-goto" data-v="${h(r.did)}" data-w="${r.week ? 1 : 0}">Voir le classement</button><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* Titre « Maître de la semaine » : porté la semaine qui suit un podium. */

@@ -97,10 +97,10 @@ Deno.serve(async (req) => {
     out.week = true; out.weekRank = (aheadW || 0) + 1;
   }
 
-  // les « Premiers » : stasis 10
-  if (k === 10) {
-    const { error } = await db.from("firsts").insert({ kind: "s10", key: did, label: `Premier en stasis 10 : ${dg.name}`, user_id: user.id, pseudo: prof.pseudo, at: new Date(now).toISOString() });
-    if (!error) out.first = true;
+  // les « Premiers » : stasis 10, et 1.1 : stasis 15 (une stasis 15 compte aussi pour la 10 si personne ne l'avait)
+  for (const fk of [10, 15]) if (k >= fk) {
+    const { error } = await db.from("firsts").insert({ kind: "s" + fk, key: did, label: `Premier en stasis ${fk} : ${dg.name}`, user_id: user.id, pseudo: prof.pseudo, at: new Date(now).toISOString() });
+    if (!error && fk === k) out.first = true;
   }
   return json(out);
 });
@@ -323,7 +323,7 @@ async function dofusAnn(db: any, uid: string, b: any) {
   lastTry.set(uid + ":giga", now);
   const iu = Math.floor(Number(b && b.uid)), did = String((b && b.did) || ""), k = Math.floor(Number(b && b.k));
   const dg = D.DUNGEONS[did];
-  if (!(iu > 0) || !dg || !(k >= 1 && k <= 10)) return json({ ok: false, err: "annonce invalide" }, 400);
+  if (!(iu > 0) || !dg || !(k >= 1 && k <= 15)) return json({ ok: false, err: "annonce invalide" }, 400);
   const [{ data: save }, { data: lad }, { data: prof }] = await Promise.all([
     db.from("saves").select("data").eq("user_id", uid).maybeSingle(),
     db.from("ladder").select("flagged,main,main_lvl").eq("user_id", uid).maybeSingle(),
