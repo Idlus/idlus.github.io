@@ -19,15 +19,15 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
 
 // 1. Un passif par Dofus : nom, texte, famille, déclencheur et rôle connus ; les caractéristiques des Dofus ne bougent pas.
 {
-  assert.strictEqual(E.DOFUS_ORDER.length, 31);
+  assert.strictEqual(E.DOFUS_ORDER.length, 35);
   E.DOFUS_ORDER.forEach((id) => { const P = E.DOFP_LIST[id]; assert.ok(P, "passif de " + id);
     assert.ok(E.dofpName(id).length > 2 && E.dofpTxt(id).length > 10, "texte " + id);
     assert.ok(E.DOFP_FAMS.includes(E.dofpFam(id)), "famille " + id); assert.ok(E.dofpTrig(id), "déclencheur " + id); assert.ok(E.DOFP_FOR[E.dofpForKey(id)], "rôle " + id); });
-  assert.strictEqual(new Set(E.DOFUS_ORDER.map((id) => E.dofpName(id))).size, 31, "31 noms différents");
+  assert.strictEqual(new Set(E.DOFUS_ORDER.map((id) => E.dofpName(id))).size, 35, "35 noms différents");
   assert.strictEqual(E.DOFP_PRIM.length, 6); assert.ok(E.DOFP_PRIM.every((id) => E.DOFUS[id]));
   assert.ok(Object.keys(ITEMS.dofus_vulbis.stats).length > 0, "le Vulbis garde ses caractéristiques");
   assert.ok(!/\d,\d0/.test(E.DOFUS_ORDER.map((id) => E.dofpTxt(id, true) + E.dofpTxt(id, false, true)).join(" ")), "nombres propres");
-  console.log("ok - dofus : 31 passifs");
+  console.log("ok - dofus : 35 passifs");
 }
 
 // 2. Portés : sans doublon, sur l'entité de combat, Éveil des Dragons avec les 6 primordiaux.
@@ -71,7 +71,7 @@ const hunt = (S, lvl) => { const sub = Object.values(E.SUBS).filter((s) => s.lvl
     const sub = Object.values(E.SUBS).filter((s) => s.lvl[0] <= L).sort((a, b) => b.lvl[0] - a.lvl[0])[0]; assert.ok(!E.startHunt(S, sub.id));
     for (let i = 0; i < 40; i++) { now += 1000; E.tick(S, now); const F = S.fight; if (F) F.ents.forEach((e) => assert.ok(Number.isFinite(e.hp) && e.hp >= 0 && e.hp <= e.hpMax + 1e-9, `${id} : PV ${e.hp}/${e.hpMax}`)); }
     assert.ok(S.stats.fights > 0, "combats " + id); });
-  console.log("ok - dofus : les 31 passifs en combat");
+  console.log("ok - dofus : les 35 passifs en combat");
 }
 
 // 5. Gains : kamas et butin une seule fois par équipe, XP pour le seul porteur, tout dans les plafonds.

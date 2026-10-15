@@ -1808,7 +1808,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "enclume") ornHtml = `<span class="orn seal">⚒️</span>`; // 1.0.25 : dix renaissances d'un métier
   else if (orn === "dopeul") ornHtml = `<span class="orn seal">🪞</span>`;
   else if (orn === "koli") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/koli_cristal.svg" alt="">`; // 0.1.44 : Kolizéum
-  else if (orn === "fondateur" || orn === "legende") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement
+  else if (orn === "fondateur" || orn === "legende" || orn === "gardien") ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn}.svg" alt="">`; // 1.0 : lancement
   else if (orn && (orn.startsWith("reg_") || orn === "pal1" || orn === "pal2")) ornHtml = `<img class="orn regorn" src="assets/ui/orn/orn_${orn.startsWith("reg_") ? orn.slice(4) : orn}.svg" alt="">`; // 0.1.49 : emblèmes de région et paliers de succès
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
   else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
@@ -2887,7 +2887,7 @@ const DG_LV = [["me", "Mon niveau"], ["1-50", "1–50"], ["51-100", "51–100"],
 const DG_SK = [["all", "Stasis : toutes"], ["none", "Jamais terminé"], ["low", "Stasis 1 à 4"], ["mid", "Stasis 5 à 9"], ["max", "Stasis 10"], ["todo", "Stasis 10 pas encore"]];
 const dgZone = (did) => E.SUBS[E.DUNGEON_SUB[did]].zone;
 const dgTeamZone = () => S.dungeon && DUNGEONS[S.dungeon.id] ? dgZone(S.dungeon.id) : S.sub && E.SUBS[S.sub] ? E.SUBS[S.sub].zone : null;
-function dgDofusToWin(did) { const f = E.dofusOfDungeon(did); if (f && !E.dofusOwned(S, f)) return true; return DUNGEONS[did].lvl >= 160 && !E.dofusOwned(S, "ocre"); } // 1.0.10 : l'Ocre tombe partout, mais le filtre ne le compte que là où sa chance est bonne
+function dgDofusToWin(did) { const f = E.dofusOfDungeon(did); if (f && !E.dofusOwned(S, f)) return true; if (E.DOFUS_ORDER.some((id) => { const d = E.DOFUS[id].drop; return d && d.lvl && DUNGEONS[did].lvl >= d.lvl && !E.dofusOwned(S, id); })) return true; return DUNGEONS[did].lvl >= 160 && !E.dofusOwned(S, "ocre"); } // 1.0.10 : l'Ocre tombe partout, mais le filtre ne le compte que là où sa chance est bonne
 function dgBand(F) { const top = topTeamLvl(); return F.lv === "all" ? [1, 999] : F.lv === "me" ? [top - 20, top + 10] : F.lv.split("-").map(Number); }
 function dgMatch(did, F, nq) {
   const dg = DUNGEONS[did];
@@ -2966,6 +2966,9 @@ function dgDofusBox(did, SI, k) {
   if (dfid) { const Df = E.DOFUS[dfid]; const I = E.dofusDropInfo(dfid); const n = I.lad[k - 1];
     out.push(`<div class="dofbox col">${im(dofusImg(dfid), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(dfid))}${E.dofusOwned(S, dfid) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${n ? `En stasis ${k}, chaque héros a 1 chance sur ${dofOdds(n)} de le recevoir à chaque victoire. ${dofTeam(n)}` : `Ce boss le lâche dès la stasis ${I.k}.`} Sa quête en donne un sûr.<br>${dofLadder(I.lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="${dfid}">Quête</button></div>`); }
   const lv = DUNGEONS[did].lvl;
+  E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id]; if (!Df.drop || !Df.drop.lvl || lv < Df.drop.lvl) return; // 1.1 : Dofus des Alliances sur les boss de niveau 180 et plus
+    const I = E.dofusDropInfo(id); const n = I.lad[k - 1];
+    out.push(`<div class="dofbox col">${im(dofusImg(id), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(id))}${E.dofusOwned(S, id) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${n ? `En stasis ${k}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}` : `Tout boss de niveau ${Df.drop.lvl} et plus le lâche dès la stasis ${Df.drop.k}.`}<br>${dofLadder(I.lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="${id}">Quête</button></div>`); });
   if (lv > 0) { const lad = Array.from({ length: 10 }, (_, i) => E.ocreOdds(i + 1, lv)); const n = lad[k - 1];
     out.push(`<div class="dofbox col">${im(dofusImg("ocre"), "dfpic", "Dofus Ocre")}<span class="grow xs"><b>Dofus Ocre</b> · ${h(E.dofusBonusTxt("ocre"))}${E.dofusOwned(S, "ocre") ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${ocreWhy(lv)} En stasis ${k}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}<br>${dofLadder(lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="ocre">Quête</button></div>`); }
   return out.join("");
@@ -3459,6 +3462,12 @@ function dofusStepGo(st, cls) { // cls : classe imposée (bouton d'une pastille 
     case "harvest": return go(`data-act="reswhere" data-n="${h(st.res)}"`, "Où récolter ?");
     case "soul": case "ocre": return go(`data-act="archis"`, "Album des âmes");
     case "almanax": return go(`data-act="dofalm"`, "Almanax");
+    /* 1.1 : étapes des Dofus des Alliances, du Trool, Onirique et d'Idlus */
+    case "bosses": case "bossk": return go(`data-act="pagego" data-v="dungeons"`, "Donjons", 1);
+    case "koli": return go(`data-act="pagego" data-v="koli"`, "Kolizéum", 1);
+    case "gdep": case "gboss": return go(`data-act="pagego" data-v="guild"`, "Guilde", 1);
+    case "foire": return go(`data-act="pagego" data-v="foire"`, "Foire du Trool", 1);
+    case "songe": case "sgarchi": return go(`data-act="pagego" data-v="exp"`, "Songe infini", 1);
   }
   return "";
 }
@@ -3468,6 +3477,14 @@ function dofusDropHtml(id) {
   const I = E.dofusDropInfo(id);
   const box = (ico, name, tag, where, lines, btn, locked) => `<div class="dofdrop ${locked ? "locked" : ""}"><div class="dd-h"><span class="icobox">${ico}</span><span class="grow"><b>${name}</b>${tag ? ` <span class="tag soft">${tag}</span>` : ""}<small>${where}</small></span>${btn}</div>${lines.map((l) => `<div class="dd-l ${l[1] || ""}">${l[0]}</div>`).join("")}</div>`;
   if (!I) return box("🎁", "Aucun boss ne le lâche", "", "Cadeau de lancement de la 1.0 seulement : il ne s'obtient pas autrement.", [], "");
+  if (I.songe) { const G0 = S.songe || {};
+    return box(IC("carte"), "Fin du rêve du Songe infini", "Songe", "Chaque songe validé, de Rêve à Cauchemar 3",
+      [[`Chaque héros de l'équipe, à chaque songe validé : <b>1 chance sur ${dofOdds(I.lad[0])}</b> en Rêve, de mieux en mieux selon l'intensité, jusqu'à 1 sur ${dofOdds(I.lad[I.lad.length - 1])} en Cauchemar 3.`], [E.SG_INT.map((x, ii) => `${h(x.name || x.n || "")} : 1 sur ${dofOdds(I.lad[ii])}`).join(" · "), "muted"], [G0.runs ? `✓ ${G0.runs} songe${G0.runs > 1 ? "s" : ""} déjà joué${G0.runs > 1 ? "s" : ""}` : "Aucun songe joué pour l'instant", G0.runs ? "ok" : "muted"]],
+      `<button class="btn sm primary" data-act="pagego" data-v="exp">Songe infini</button>`); }
+  if (I.dgs) { const ok = I.dgs.filter((d) => E.dungeonUnlocked(S, d)).length;
+    return box(IC("cle"), `Tous les boss de niveau ${I.minLvl} et plus`, `${I.dgs.length} donjons`, `Dès la stasis ${I.k}, sur n'importe quel boss de niveau ${I.minLvl} à 200`,
+      [[`Chaque héros de l'équipe : <b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire en stasis ${I.k}, jusqu'à 1 sur ${dofOdds(I.lad[9])} en stasis 10. Aucun bonus ne change ces chances.`], [dofLadder(I.lad, 0)], [ok ? `✓ ${ok} de ces donjons déjà ouvert${ok > 1 ? "s" : ""}` : "Aucun de ces donjons ouvert pour l'instant", ok ? "ok" : "muted"]],
+      `<button class="btn sm" data-act="pagego" data-v="dungeons">Donjons</button>`); }
   if (!I.dg) { const L = E.ocreDungeons(); const ok = L.filter((d) => E.dungeonUnlocked(S, d)).length;
     const why = "Plus le boss est haut niveau, meilleure est la chance : un boss de niveau 100 donne 2 fois moins qu'un boss de niveau 200, un boss de niveau 20 10 fois moins.";
     return box(IC("cle"), "Tous les boss de donjon", `${L.length} donjons`, "N'importe quel donjon, du niveau 10 au niveau 200",
@@ -3525,7 +3542,9 @@ function dofusHtml() {
     const steps = id === "ocre" ? E.OCRE_TIERS.map((T, i) => { const [d, all] = E.ocreProgress(S, i); return `<li class="${i < tier ? "ok" : d ? "cur" : "todo"}">Palier ${i + 1} · ${h(T.name)} <span class="num muted">${d} / ${all}</span></li>`; }).join("")
       : Df.steps.map((st, i) => { const [a, bb] = E.dofusStepProgress(S, id, i); const cls = Q.done || i < Q.step ? "ok" : i === Q.step ? "cur" : "todo";
         return `<li class="${cls}">${h(E.dofusStepTxt(st))}${cls === "cur" && bb > 1 ? ` <span class="num muted">${fmt(a)} / ${fmt(bb)}</span>` : ""}${cls === "cur" && st.dg && DUNGEONS[st.dg] ? ` <button class="btn xs" data-act="dgopen" data-id="${st.dg}">Voir le donjon</button>` : ""}</li>`; }).join("");
-    const drop = Df.dg ? `Butin du boss ${h(MONSTERS[DUNGEONS[Df.dg].boss].name)} : par héros, 1 chance sur ${dofOdds(E.dofusOdds(1))} en stasis 1, jusqu'à 1 sur ${dofOdds(E.dofusOdds(10))} en stasis 10` : `Butin de tout boss de donjon (meilleur sur les boss de haut niveau) : par héros, 1 chance sur ${dofOdds(E.ocreOdds(1))} en stasis 1, jusqu'à 1 sur ${dofOdds(E.ocreOdds(10))} en stasis 10 sur un boss de niveau 200`;
+    const drop = Df.drop && Df.drop.songe ? `Fin du rêve du Songe infini : par héros, à chaque songe validé, 1 chance sur ${dofOdds(E.dofusOdds(E.songeDofusK(0)))} en Rêve, jusqu'à 1 sur ${dofOdds(E.dofusOdds(E.songeDofusK(7)))} en Cauchemar 3`
+      : Df.drop && Df.drop.lvl ? `Butin de tout boss de niveau ${Df.drop.lvl} et plus dès la stasis ${Df.drop.k} : par héros, 1 chance sur ${dofOdds(E.dofusOdds(Df.drop.k) * Df.drop.x)}, jusqu'à 1 sur ${dofOdds(E.dofusOdds(10) * Df.drop.x)} en stasis 10`
+      : Df.dg ? `Butin du boss ${h(MONSTERS[DUNGEONS[Df.dg].boss].name)} : par héros, 1 chance sur ${dofOdds(E.dofusOdds(1))} en stasis 1, jusqu'à 1 sur ${dofOdds(E.dofusOdds(10))} en stasis 10` : `Butin de tout boss de donjon (meilleur sur les boss de haut niveau) : par héros, 1 chance sur ${dofOdds(E.ocreOdds(1))} en stasis 1, jusqu'à 1 sur ${dofOdds(E.ocreOdds(10))} en stasis 10 sur un boss de niveau 200`;
     return `<div class="dcard ${stt}"><div class="pic">${im(dofusImg(id), "dpic", Df.name)}</div><div class="t"><div class="nm"><b>${h(Df.name)}</b><small>niv. ${Df.lvl}</small>${owned ? `<span class="tag good">✓</span>` : ""}</div><div class="bon">${h(E.dofusBonusTxt(id))}</div><span class="src">${state}</span><ol>${steps}</ol><span class="xs muted">${drop}</span></div></div>`; }).join("");
   return `<p class="note">Chaque Dofus a sa quête : les étapes se valident toutes seules en jouant (les donjons déjà vaincus à la stasis demandée comptent). Un Dofus peut aussi tomber, très rarement, en butin du boss de son donjon. D'autres exemplaires pour tes autres héros ne viennent que de ce butin. Un héros ne porte qu'un exemplaire de chaque Dofus, dans ses 6 emplacements Dofus/Trophée.</p>
     <section class="panel"><div class="phead"><h2>${IC("dofus")} Les ${E.DOFUS_ORDER.length} Dofus</h2><span class="small muted num">${own}/${E.DOFUS_ORDER.length}</span>${archiBtn()}</div><div class="pad dgrid">${cards}</div></section>`;
@@ -7046,6 +7065,7 @@ function celeHtml(ev) {
     return `<div class="cele-art pet">${im(imgM(ev.key), "celepet soulpic", A.name)}</div><div class="cele-k">${IC("dofus")} Âme capturée · ${E.soulCount(S)} / ${E.ARCHI_TOTAL}</div><div class="cele-t">${h(A.name)}</div><div class="cele-s">Archimonstre de ${h(A.base)} · ${h(archiZoneName(A.zone))}</div>`; }
   if (ev.t === "dofus") { const Df = E.DOFUS[ev.id]; if (!Df) return "";
     return `<div class="cele-art pet">${im(dofusImg(ev.id), "celepet", Df.name)}</div><div class="cele-k">${IC("dofus")} ${ev.first ? "Nouveau Dofus" : "Copie de Dofus"}</div><div class="cele-t">${h(Df.name)}</div><div class="cele-s">${h(E.dofusBonusTxt(ev.id))} · à équiper dans un emplacement Dofus</div>${E.DOFP_LIST && E.DOFP_LIST[ev.id] ? `<div class="cele-s"><b style="color:var(--gold)">✦ ${h(E.dofpName(ev.id))}</b> : ${h(E.dofpTxt(ev.id))}</div>` : ""}`; } // 1.0.16 : avec son passif
+  if (ev.t === "gardien") return `<div class="cele-art pet"><img class="celepet" src="assets/ui/orn/orn_gardien.svg" alt="Gardien de la 1.1"></div><div class="cele-k">${IC("dofus")} Gardiens de la 1.1 · n° ${ev.rank} sur 10</div><div class="cele-t">Gardien de la 1.1</div><div class="cele-s">Ornement unique « Gardien de la 1.1 », réservé aux 10 premiers comptes à réunir les Dofus des Alliances, du Trool, Onirique et d'Idlus.</div>`;
   if (ev.t === "legend") return `<div class="cele-art pet"><img class="celepet" src="assets/ui/orn/orn_legende.svg" alt="Couronne de la Légende"></div><div class="cele-k">${IC("couronne")} Course de lancement · n° ${ev.rank} sur 10</div><div class="cele-t">Légende de la 1.0</div><div class="cele-s">Titre « Légende de la 1.0 » et ornement unique « Couronne de la Légende », réservés aux 10 premiers.</div>`;
   if (ev.t === "ocre") { const T = E.OCRE_TIERS[ev.tier - 1]; if (!T) return "";
     return `<div class="cele-art pet">${im(dofusImg("ocre"), "celepet", "Dofus Ocre")}</div><div class="cele-k">${IC("dofus")} Éternelle moisson · palier ${ev.tier} / ${E.OCRE_TIERS.length}</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">${h(T.txt)}</div>`; }
@@ -8957,7 +8977,7 @@ async function takeRemote(info) {
 function onPush(force) {
   if (!onLive()) return Promise.resolve(null);
   saveNow(); const sa = S.savedAt;
-  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
+  return ON.push(SV.read(), onMeta(S), sa, force).then((r) => { if (r === "conflict") onConflictLive(); else if (r === "ok") { recSubmit(); raceCheck(); gardienRaceCheck(); jobFirstCheck(); raceInfoFetch(); if (window.GIGA) window.GIGA.flush(); } renderPill(); return r; });
 }
 /* 1.0 : course de lancement : le serveur grave les 10 premiers comptes à finir la quête principale ; la partie récupère sa place */
 let raceAt = 0;
@@ -8969,6 +8989,18 @@ function raceCheck() {
     dirty = true; saveNow();
     celebrate({ kind: "cele", t: "legend", rank: +data[0].key || 1 });
     toast(`Course de lancement : tu es n° ${+data[0].key || 1} sur 10 ! Titre « Légende de la 1.0 » et ornement unique « Couronne de la Légende » débloqués (Équipe et héros).`, "rare");
+  }).catch(() => {}); } catch (e) { /* hors ligne */ }
+}
+/* 1.1 : les 10 premiers comptes à réunir les 4 Dofus de la 1.1 : ornement unique « Gardien de la 1.1 » (le titre, lui, vient avec les 4 Dofus) */
+let gardienAt = 0;
+function gardienRaceCheck() {
+  if (!S || SLOT !== 1 || S.unlocks.gardien || !E.DOFUS_11 || !E.DOFUS_11.every((id) => E.dofusOwned(S, id)) || !(ON.user && ON.db && ON.db()) || Date.now() - gardienAt < 60000) return;
+  gardienAt = Date.now();
+  try { ON.db().from("firsts").select("key").eq("kind", "gardien11").eq("user_id", ON.user.id).limit(1).then(({ data }) => {
+    if (!data || !data[0] || !E.grantGardien(S, +data[0].key || 1)) return;
+    dirty = true; saveNow();
+    celebrate({ kind: "cele", t: "gardien", rank: +data[0].key || 1 });
+    toast(`Gardiens de la 1.1 : tu es n° ${+data[0].key || 1} sur 10 à réunir les 4 Dofus ! Ornement unique « Gardien de la 1.1 » débloqué (Équipe et héros).`, "rare");
   }).catch(() => {}); } catch (e) { /* hors ligne */ }
 }
 async function onConflictLive() {
@@ -9320,7 +9352,7 @@ function lbListHtml(d) {
   if (LB.tab === "job" && d.guilds) return jobGuildHtml(d);
   if (LB.tab === "first") {
     if (!d.rows.length) return `<div class="empty">Personne n'est encore entré dans l'histoire. Le premier héros au niveau 200, le premier à finir chaque donjon en stasis 10, le premier au niveau 200 de chaque métier d'artisanat et le premier Grand Maître artisan seront gravés ici pour toujours.</div>`;
-    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "lvl200" || r.kind === "race10" || r.kind === "job200all" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
+    return `<div class="lbt">${d.rows.map((r) => `<button class="lbr first" data-act="lb-prof" data-u="${h(r.user_id || "")}">${r.kind === "job200" && CRAFT_JOBS[r.key] ? im(jobImg(r.key), "joblogo sm", CRAFT_JOBS[r.key].name) : IC(r.kind === "gardien11" ? "dofus" : r.kind === "lvl200" || r.kind === "race10" || r.kind === "job200all" ? "couronne" : "trophee")}<span class="nm">${h(r.label || "")}<small>${h(r.pseudo || "compte supprimé")} · ${new Date(r.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</small></span></button>`).join("")}</div>`;
   }
   const me = ON.user && ON.user.id;
   const yest = LB.tab === "defi" && d.yest && d.yest.length ? `<div class="xs muted df-yest">${IC("couronne")} Podium d'hier : ${d.yest.map(h).join(" · ")}</div>` : "";

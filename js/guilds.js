@@ -574,6 +574,7 @@
         else if (!r.ok) X().toast(r.err || "Refusé par le serveur.");
         else {
           G.res = Object.assign({ id: +d.g || 0 }, r);
+          if (r.gboss && E.dofusQuestEvent) E.dofusQuestEvent(S(), "guild", { k: "boss" }); // 1.1 : étape du Dofus des Alliances
           if (r.gboss && G.ex && G.ex.boss) { const b = G.ex.boss; const was = E.gbossPhase(b.pts, b.goal).done; Object.assign(b, { pts: r.pts, goal: r.goal || b.goal, tok: r.tok != null ? r.tok : b.tok, every: r.every || b.every }); G.exAt = Date.now();
             const now2 = E.gbossPhase(b.pts, b.goal).done; if (now2 > was) X().toast(now2 >= 5 ? "🏆 Boss de la semaine vaincu ! Trophée pour la guilde." : `Phase ${now2} tombée ! Des kamas dans le coffre et un coffre pour chaque membre qui a frappé.`, "rare"); }
           X().toast(r.gboss ? `Boss de la semaine : ${fmt(r.points)} points pour ta guilde !` : r.win ? "Percepteur défendu !" : "Défense ratée : un autre membre peut encore tenter.", r.win || r.gboss ? "rare" : undefined);
@@ -610,7 +611,7 @@
         if (r && G.me && G.me.g) { if (r.ups) G.me.g.ups = r.ups; if (r.seats) G.me.g.seats = r.seats; if (r.chest != null) G.me.g.chest = r.chest; const s = S(); if (s.guild && r.ups) s.guild.ups = Object.assign({}, r.ups); }
         paint(); load(); return; }
       case "g-deposit": { const k = Math.floor(+(($("#gDep") || {}).value || 0)); if (!(k >= 1000)) { X().toast("1 000 kamas au moins."); return; } if (k > S().kamas) { X().toast("Tu n'as pas autant de kamas."); return; }
-        const r = await call("guild_deposit", { p_after: after(), p_k: k }, `${fmt(k)} kamas déposés au coffre de guilde.`); if (r) { if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true); if (G.me && G.me.g && r.chest != null) G.me.g.chest = r.chest; X().markDirty(); load(); } return; }
+        const r = await call("guild_deposit", { p_after: after(), p_k: k }, `${fmt(k)} kamas déposés au coffre de guilde.`); if (r) { if (E.dofusQuestEvent) E.dofusQuestEvent(S(), "guild", { k: "dep", kamas: k }); /* 1.1 : étape du Dofus des Alliances */ if (r.ops && window.MARKET) window.MARKET.apply(r.ops, true); if (G.me && G.me.g && r.chest != null) G.me.g.chest = r.chest; X().markDirty(); load(); } return; }
       case "g-gift": { if (G.gifting || !window.GIFTS) return; G.gifting = true; paint();
         const r = await window.GIFTS.redeem(S(), "GUILDES"); G.gifting = false;
         if (r && r.err) X().toast(r.err); else { if (G.me) G.me.gift = false; X().markDirty(); X().renderStatus(); }

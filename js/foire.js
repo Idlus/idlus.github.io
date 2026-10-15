@@ -148,6 +148,7 @@
     const lot = E.foireLot(S, C.id, mkRng(G));
     give(S, lot);
     G.tot.n++; G.tot.mise += C.cost; G.tot.k += lot.k;
+    if (E.dofusQuestEvent) E.dofusQuestEvent(S, "foire", { n: 1 }); // 1.1 : étape du Dofus du Trool
     const txt = E.foireLotTxt(lot);
     G.log.unshift({ t: E.now(), c: C.id, r: lot.r, txt }); G.log = G.log.slice(0, 8);
     E.note(S, `${C.name} : ${F.RAR[lot.r].name.toLowerCase()}, ${txt}.`, "info"); // pas de bulle : la page montre le lot au bout du défilement

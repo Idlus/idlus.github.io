@@ -341,7 +341,7 @@ async function dofusAnn(db: any, uid: string, b: any) {
   if (!Df) return json({ ok: false, err: "Dofus introuvable dans la partie en ligne" });
   if ((S.nextUid || 0) - iu > ANN_FRESH) return json({ ok: false, err: "Dofus trop ancien" });
   const gift = Df.steps && Df.steps[0] && Df.steps[0].t === "gift";
-  const odds = gift ? 0 : Df.dg ? (Df.dg === did ? E.dofusOdds(k) : 0) : E.ocreOdds(k, dg.lvl);
+  const odds = gift ? 0 : E.dofusDropOdds ? E.dofusDropOdds(id, did, k) : Df.dg ? (Df.dg === did ? E.dofusOdds(k) : 0) : E.ocreOdds(k, dg.lvl); // 1.1 : Dofus des Alliances (boss ≥ 180), l'Onirique ne tombe que dans le Songe
   if (!odds) return json({ ok: false, err: "ce Dofus ne tombe pas de ce boss" });
   const SI = (S.stasis || {})[did] || {};
   if ((SI.max || 0) < k) return json({ ok: false, err: "stasis jamais terminée" });
