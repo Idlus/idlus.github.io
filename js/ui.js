@@ -3459,7 +3459,7 @@ function buildArena(F) {
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
   placeEnts(F); stickyCheck(); if (view === "scene") anStart(F, ui.arena);
-  if (F.bossIdx !== undefined && F.round === 1 && !F.over && ui.bossIntro !== F.id) bossIntro(F);
+  if (F.bossIdx !== undefined && F.round === 1 && !F.over && ui.bossIntro !== F.id && !window.__titan) bossIntro(F);
 }
 /* bandeau des challenges et mécaniques de boss */
 const CHAL_ICON = (id) => IC("chal_" + (["survivant", "versatile", "econome", "focus", "elitiste", "ordonne", "incurable", "elementaire", "rapide", "chacun", "barbare"].includes(id) ? id : "focus"), "mono");
@@ -3740,7 +3740,8 @@ function anStart(F, A) {
   A.el.classList.add("anlive");
   A.nodes.forEach((n, i) => { if (!n) return; const e = F.ents[i];
     n.style.setProperty("--bp", (2.2 + Math.random() * 1.4).toFixed(2) + "s"); n.style.setProperty("--bd", (-Math.random() * 3).toFixed(2) + "s");
-    if (e.side === "m" && AN_FLY.test(e.name)) n.classList.add("anfly"); });
+    if (e.side === "m" && AN_FLY.test(e.name)) n.classList.add("anfly");
+    if (e.boss && window.__titan) n.classList.add("antitan"); });
   // de temps en temps, un combattant qui ne joue pas fait un petit geste
   A._gt = setInterval(() => { if (ui.arena !== A || !A.el.isConnected || !axFull()) return clearInterval(A._gt); const G = S.fight; if (!G || G.id !== A.fid || G.over || document.hidden) return;
     const cur = G.order && G.oi > 0 ? G.order[G.oi - 1] : -1;
@@ -3759,12 +3760,39 @@ function anStart(F, A) {
     if (e.side === "c") { const dist = p.x + 60, dl = kh++ * 35 * T, du = 480 * T;
       b.animate([{ transform: `translateX(${-dist}px)`, opacity: 0 }, { transform: `translate(${-dist * 0.7}px,-26px)`, opacity: 1, offset: 0.22 }, { transform: `translateX(${-dist * 0.45}px)`, offset: 0.42 }, { transform: `translate(${-dist * 0.2}px,-20px)`, offset: 0.62 }, { transform: "scale(1.05,.9)", offset: 0.84 }, { transform: "none" }], { duration: du, delay: dl, easing: "ease-out", fill: "backwards" });
       setTimeout(() => { if (!n.isConnected) return; const q = anFoot(A, n); axDust(A, q.x, q.y, 4, 1); }, dl + du * 0.84);
+    } else if (e.boss && window.__titan) { const dl = 120 * T, du = 900 * T; n.classList.add("antitan"); const sh = axMk(A, "anshadow", p.x, p.y - 4); sh.animate([{ transform: "translate(-50%,-50%) scale(.1)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0.8 }], { duration: du * 0.75, delay: dl, fill: "both" }); axLater(sh, dl + du + 200);
+      b.animate([{ transform: `translateY(${-(p.y + 200)}px) scale(1.4)`, opacity: 0 }, { transform: `translateY(${-(p.y + 200)}px) scale(1.4)`, opacity: 1, offset: 0.5 }, { transform: "translateY(0) scale(1.2,.75)", offset: 0.8 }, { transform: "none" }], { duration: du, delay: dl, easing: "cubic-bezier(.6,0,1,.6)", fill: "backwards" });
+      setTimeout(() => { if (!n.isConnected) return; const q = anFoot(A, n); axDust(A, q.x, q.y, 14); pulse(A.el, "shake2"); const w = axMk(A, "whiteout sg", 0, 0); w.animate([{ opacity: 0.8 }, { opacity: 0 }], { duration: 300 }); axLater(w, 320); }, dl + du * 0.8);
     } else { const big = e.boss, dl = (60 + km++ * 35) * T, du = (big ? 560 : 440) * T;
       b.animate([{ transform: `translateY(${-(p.y + 40)}px)`, opacity: 0 }, { transform: `translateY(${-(p.y + 40) * 0.6}px)`, opacity: 1, offset: 0.25 }, { transform: "translateY(0) scale(1.12,.8)", offset: 0.72 }, { transform: "scale(.96,1.05)", offset: 0.86 }, { transform: "none" }], { duration: du, delay: dl, easing: "cubic-bezier(.5,0,.9,.5)", fill: "backwards" });
       setTimeout(() => { if (!n.isConnected) return; const q = anFoot(A, n); axDust(A, q.x, q.y, big ? 9 : 5); if (big) pulse(A.el, "shake2"); }, dl + du * 0.72); }
   });
 }
 /* coup reçu : recul sur sa case en clignotant blanc ; un critique soulève et repousse plus loin */
+/* maquette « effets visibles » : poussée, vol de PA, vol de vie, affaiblissement, vulnérabilité */
+function anFx(F, A, src, sn, def, hits, when) {
+  const g = E.spellGrade ? E.spellGrade(def, src.lvl) : def.grades[def.grades.length - 1]; if (!g) return;
+  const K = new Set(g.fx.map((x) => x.k)), seen = new Set(), tw = parseFloat(A.el.style.getPropertyValue("--tw")) || 60;
+  hits.forEach((f) => { if (seen.has(f.t)) return; seen.add(f.t); const n = A.nodes[f.t], e = F.ents[f.t]; if (!n || !e) return;
+    setTimeout(() => { if (!n.isConnected) return; const b = axBody(n), d = e.side === "c" ? -1 : 1, p = axPt(A, n, 0.45), q = axPt(A, sn, 0.45);
+      if (K.has("push") && b && b.animate) { b.animate([{ translate: "0 0" }, { translate: `${d * tw * 0.6}px -6px`, offset: 0.25 }, { translate: `${d * tw * 0.7}px 0`, offset: 0.4 }, { translate: `${d * tw * 0.7}px 0`, offset: 0.75 }, { translate: "0 0" }], { duration: 1100, easing: "ease-out" });
+        const fo = anFoot(A, n); for (let i = 0; i < 5; i++) setTimeout(() => axDust(A, fo.x + d * i * tw * 0.14, fo.y, 2, -d), i * 50); }
+      const orbs = (c, k) => { for (let i = 0; i < k; i++) { const o = axMk(A, "anorb", p.x + axRnd(-14, 14), p.y + axRnd(-14, 14), { "--c": c }); const dx = q.x - p.x, dy = q.y - p.y;
+        o.animate([{ transform: "translate(-50%,-50%) scale(.4)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.2)", opacity: 1, offset: 0.2 }, { transform: `translate(calc(-50% + ${dx * 0.5}px),calc(-50% + ${dy * 0.5 - 40}px))`, offset: 0.6 }, { transform: `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.5)`, opacity: 0.2 }], { duration: 760, delay: i * 70, easing: "ease-in", fill: "both" }); axLater(o, 900 + i * 70); }
+        setTimeout(() => { const r = axMk(A, "ring", q.x, q.y, { "--c": c }); axLater(r, 700); }, 700); };
+      if (K.has("apdrain")) orbs("#5fb4ff", 3);
+      if (K.has("drain") || K.has("leech")) orbs("#ff5a6e", 3);
+      if (K.has("weaken")) for (let i = 0; i < 3; i++) { const a = axMk(A, "anarw", p.x + (i - 1) * 16, p.y - 30); a.innerHTML = '<svg viewBox="0 0 12 16"><path d="M6 16L0 8h4V0h4v8h4z" fill="#c77dff"/></svg>'; a.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.25 }, { transform: "translate(-50%,calc(-50% + 34px))", opacity: 0 }], { duration: 800, delay: i * 90, fill: "both" }); axLater(a, 1000); }
+      if (K.has("vuln")) { const c = axMk(A, "ancross", p.x, p.y); c.animate([{ transform: "translate(-50%,-50%) scale(2) rotate(-90deg)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1) rotate(0)", opacity: 1, offset: 0.4 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-50%) scale(.8)", opacity: 0 }], { duration: 900 }); axLater(c, 950); }
+    }, when(f) + 40); });
+}
+function anBuff(A, n, e, txt) {
+  if (!(window.__fx || {}).on || !n || !e || !axFull()) return; const b = axBody(n); if (!b) return; const f = anFoot(A, n), p = axPt(A, n, 0.5), r = b.getBoundingClientRect();
+  if (/^Bouclier/.test(txt)) { const d = axMk(A, "andome", p.x, p.y + r.height * 0.08); d.style.width = r.width * 1.15 + "px"; d.style.height = r.height * 1.05 + "px";
+    d.animate([{ transform: "translate(-50%,-50%) scale(.2,0)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.08)", opacity: 1, offset: 0.35 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0.9, offset: 0.7 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 0 }], { duration: 1100 }); axLater(d, 1150); }
+  else if (/^\+/.test(txt)) { const r2 = axMk(A, "ring", f.x, f.y - 4, { "--c": "#ffd84d" }); axLater(r2, 700);
+    for (let i = 0; i < 7; i++) { const s = axMk(A, "anspark", f.x + axRnd(-r.width * 0.35, r.width * 0.35), f.y - 4); s.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(-50%,calc(-50% - ${axRnd(40, r.height * 0.9)}px))`, opacity: 0 }], { duration: 900, delay: i * 60, fill: "both" }); axLater(s, 1000 + i * 60); } }
+}
 function anHit(A, n, e, f) {
   if (!anOn(A) || !e) return; const b = axBody(n); if (!b || !b.animate) return;
   const d = e.side === "c" ? -1 : 1, k = f.crit ? 2.2 : 1;
@@ -3792,7 +3820,7 @@ function axEvent(F, A, f) {
   } else if (f.k === "heal") { if (!n) return; floatAt(n, "+" + f.v, "#7ee06a");
     if (axOn()) { const p = axPt(A, n, 0.6); for (let i = 0; i < (axFull() ? 8 : 4); i++) { const s = axMk(A, "streak", p.x + axRnd(-24, 24), p.y + axRnd(-12, 12), { "--c": "#b6ff8a" }); s.style.animationDelay = i * 40 + "ms"; axLater(s, 1100); } const r = axMk(A, "ring", p.x, p.y, { "--c": "#8fe36a" }); axLater(r, 520); }
     else burst(n, "h");
-  } else if (f.k === "buff") { if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true);
+  } else if (f.k === "buff") { if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true); anBuff(A, n, F.ents[f.t], f.txt);
     const e = F.ents[f.t]; if (e && e.side === "m" && e.mech && !/^[+−-]|^Bouclier|^Esquive|^Invulnérable|^Condamné/.test(f.txt) && !(axFull() && bxFor(e, f.txt))) axMechBanner(A, f.txt, e.name);
   } else if (f.k === "phase") { const e = F.ents[f.t]; if (e && e.mech && e.mech.includes("immortel") && e.revived && axFull() && n) bxRun(F, A, e, n, [], [], "n", BXM.immortel, null); else phaseFlash(); }
 }
@@ -3837,6 +3865,18 @@ function sgCtx(F, A, src, sn, hits, rest, el) {
   return c;
 }
 const SG = {
+  /* maquette · Iop · Tempête de Puissance : une tornade de flammes se lève sous la cible et l'emporte */
+  s13121: async (c) => { c.hold(1300); const t = c.foes[0], f = c.foot(t), r = c.body(t).getBoundingClientRect();
+    const tor = c.mkg("antor", f.x, f.y); tor.style.height = r.height * 1.5 + "px"; tor.style.width = r.width * 0.9 + "px"; c.later(tor, 1500);
+    for (let i = 0; i < 16; i++) { const e = c.mk("anember", f.x + c.rnd(-r.width * 0.3, r.width * 0.3), f.y); e.animate([{ transform: "translate(-50%,-50%)", opacity: 1 }, { transform: `translate(calc(-50% + ${c.rnd(-30, 30)}px),calc(-50% - ${c.rnd(r.height * 0.6, r.height * 1.5)}px)) rotate(${c.rnd(180, 540)}deg)`, opacity: 0 }], { duration: 900 * c.T, delay: i * 45 * c.T, fill: "both" }); c.later(e, 1500); }
+    await c.wait(250); c.anim(t, [{ transform: "none" }, { transform: "translateY(-26px) rotate(-8deg)", offset: 0.3 }, { transform: "translateY(-34px) rotate(8deg)", offset: 0.6 }, { transform: "none" }], 900);
+    c.hit(t); await c.wait(300); await c.hitAll(80); await c.wait(500); },
+  /* maquette · Eniripsa · Vacarme : un cri en ondes sonores et en notes, la cible vacille, les alliés reprennent de la vie */
+  s25856: async (c) => { c.hold(1200); const t = c.foes[0], a = c.pt(c.me, 0.3), b = c.pt(t, 0.45), d = c.dir(t);
+    c.anim(c.me, [{ transform: "none" }, { transform: `rotate(${-d * 6}deg) scale(1.08)`, offset: 0.3 }, { transform: "none" }], 500);
+    for (let i = 0; i < 4; i++) { const w = c.mk("anwave", a.x, a.y); w.animate([{ left: a.x + "px", top: a.y + "px", transform: "translate(-50%,-50%) scale(.3)", opacity: 1 }, { left: b.x + "px", top: b.y + "px", transform: "translate(-50%,-50%) scale(1.4)", opacity: 0.2 }], { duration: 420 * c.T, delay: i * 90 * c.T, easing: "ease-out", fill: "both" }); c.later(w, 900); }
+    for (let i = 0; i < 6; i++) { const nt = c.mk("annote", a.x, a.y); nt.textContent = i % 2 ? "♪" : "♫"; nt.animate([{ left: a.x + "px", top: a.y + "px", opacity: 0 }, { opacity: 1, offset: 0.2 }, { left: b.x + c.rnd(-20, 20) + "px", top: b.y - c.rnd(20, 60) + "px", opacity: 0 }], { duration: 700 * c.T, delay: i * 70 * c.T, fill: "both" }); c.later(nt, 1300); }
+    await c.wait(420); c.anim(t, [{ transform: "none" }, { transform: "skewX(10deg)" }, { transform: "skewX(-10deg)" }, { transform: "skewX(6deg)" }, { transform: "none" }], 500); c.shake("shake"); c.hit(t); await c.wait(150); await c.hitAll(60); c.rest(); await c.wait(400); },
   /* Iop · Épée Céleste : le ciel se fend, une lame tombe en hélice et vibre dans le sol */
   s13122: async (c) => { c.hold(900); const t = c.foes[0], b = c.pt(t, 0.5); let pts = ""; for (let i = 0; i <= 8; i++) pts += `${b.x - 70 + i * 17.5},${16 + (i % 2 ? 9 : -9) + c.rnd(-3, 3)} `;
     const s = c.svg(`<polyline points="${pts}" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>`, 900); s.style.transformOrigin = b.x + "px 0"; s.animate([{ opacity: 0, transform: "scaleX(0)" }, { opacity: 1, transform: "scaleX(1)", offset: 0.3 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 900 * c.T });
@@ -4020,7 +4060,7 @@ const SG = {
 };
 /* lance l'animation signature d'un sort ; renvoie faux si le sort n'en a pas (ou si les animations ne sont pas « complètes ») */
 function sgPlay(F, A, def, src, sn, hits, rest, el) {
-  const fn = def && axFull() && SG[def.id]; if (!fn || !sn) return false;
+  const fn = def && axFull() && (!["s13121", "s25856"].includes(def.id) || window.__sig) && SG[def.id]; if (!fn || !sn) return false; // maquette : 2 nouveaux sorts derrière window.__sig
   const c = sgCtx(F, A, src, sn, hits, rest, el); if (!c.foes.length) return false;
   fn(c).catch(() => {}).finally(() => { c.flush(); c.fin.forEach((f) => { try { f(); } catch (e) { /* le nœud a pu disparaître */ } }); });
   return true;
@@ -4151,6 +4191,14 @@ const BXS = {
 const A_cls = (c, k, ms) => { c.A.el.classList.add(k); setTimeout(() => c.A.el.classList.remove(k), ms * c.T); };
 /* ---- sorts signature de 10 boss phares : purement visuels, l'attaque normale prend cette forme environ une fois sur trois (clé = image du boss) ---- */
 const BXSP = {
+  /* maquette · Nileza · Engrenages : un plan s'affiche, trois engrenages roulent jusqu'aux héros et explosent en étincelles */
+  976: async (c) => { c.hold(2100); c.banner("Engrenages"); const T = c.tg.length ? c.tg : c.heroes; const a = c.foot(c.me);
+    const bp = c.bg("anplan", 0, 0); c.later(bp, 2300);
+    c.anim(c.me, [{ transform: "none" }, { transform: "translateY(-10px) rotate(-6deg) scale(1.08)", offset: 0.4 }, { transform: "none" }], 600); await c.wait(350);
+    T.slice(0, 4).forEach((n, i) => { const b = c.foot(n); const g = c.b("angear", a.x, a.y - 18); g.innerHTML = '<svg viewBox="0 0 40 40"><path fill="#c9a24a" stroke="#6b4e16" stroke-width="2" d="M17 2h6l1 5 4 2 4-3 4 4-3 4 2 4 5 1v6l-5 1-2 4 3 4-4 4-4-3-4 2-1 5h-6l-1-5-4-2-4 3-4-4 3-4-2-4-5-1v-6l5-1 2-4-3-4 4-4 4 3 4-2z"/><circle cx="20" cy="20" r="6" fill="#3a2a0c"/></svg>';
+      g.animate([{ left: a.x + "px", top: a.y - 18 + "px", transform: "translate(-50%,-50%) rotate(0)" }, { left: b.x + "px", top: b.y - 18 + "px", transform: "translate(-50%,-50%) rotate(-900deg)" }], { duration: 700 * c.T, delay: i * 150 * c.T, easing: "cubic-bezier(.3,0,.8,1)", fill: "both" });
+      setTimeout(() => { g.remove(); c.scatter(b.x, b.y - 20, "b-spark", 10, 60, 500); c.puff(b.x, b.y - 18, "rgba(255,210,120,.85)", 5); c.hit(n); c.shake("shake"); }, (700 + i * 150) * c.T); });
+    await c.wait(700 + Math.min(4, T.length) * 150 + 400); },
   74: async (c) => { c.hold(1900); c.banner("Boule de laine"); const a = c.pt(c.me); c.z(c.me, true); c.anim(c.me, [{ transform: "none" }, { transform: "scale(.7) rotate(-90deg)" }], { duration: 300, fill: "forwards" }); await c.wait(300);
     c.anim(c.me, [{ transform: "scale(.7) rotate(-90deg)" }, { transform: `translate(${-a.x - 80}px,-10px) scale(.7) rotate(-1080deg)` }], { duration: 900, easing: "linear", fill: "forwards" });
     const fy = c.foot(c.me).y; const tt = setInterval(() => { if (ui.arena !== c.A) return clearInterval(tt); const p = c.pt(c.me); const t = c.b("b-tuft", p.x + c.rnd(-10, 10), p.y + c.rnd(-14, 14)); c.later(t, 600); c.dust(p.x + 14, fy - 8, 1); }, 55 * c.T); setTimeout(() => clearInterval(tt), 950 * c.T);
@@ -4204,6 +4252,13 @@ function bxRun(F, A, src, sn, hits, rest, el, fn, arg) {
   fn(c, arg && arg.fx, arg && arg.x).catch(() => {}).finally(() => { c.flush(); c.fin.forEach((f) => { try { f(); } catch (e) { /* nœud disparu */ } }); });
   return Math.max(0, (A.sgHold || 0) - Date.now());
 }
+/* maquette · boss des mondes : attaque ultime (l'écran s'assombrit, le boss grandit, une onde frappe toute l'équipe) */
+async function anUltime(c) { c.hold(2600); c.dim(true, true); const sn = c.me, a = c.pt(sn, 0.5); c.z(sn, true); c.banner("Attaque ultime");
+  c.anim(sn, [{ transform: "none" }, { transform: "scale(1.35) translateY(-12px)", filter: "drop-shadow(0 0 18px #ff3b2f) brightness(1.3)" }], { duration: 900, fill: "forwards" });
+  for (let i = 0; i < 3; i++) { const r = c.mk("anult", a.x, a.y); r.style.animationDelay = i * 220 + "ms"; c.later(r, 1600); }
+  await c.wait(1000); c.whiteout(220); c.shake("shake2"); c.cls("rumble", true);
+  for (const n of c.heroes) { c.anim(n, [{ transform: "none" }, { transform: "translateX(-26px) rotate(-12deg)", offset: 0.3 }, { transform: "none" }], 600); c.hit(n); await c.wait(70); }
+  await c.wait(600); c.cls("rumble", false); c.cancel(sn); c.z(sn, false); c.dim(false); await c.wait(200); }
 /* tour d'un boss : les étiquettes de mécaniques du groupe jouent l'une après l'autre, puis l'attaque (sort signature de boss ou attaque ordinaire) ; les mécaniques qui frappent consomment les coups du moteur */
 function bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go) {
   const M = src.mech || [], has = (k) => M.includes(k);
@@ -4222,7 +4277,8 @@ function bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go) {
   if (has("sacrifice") && !A.bxSacr && F.round <= 2) { A.bxSacr = true; Q.push([BXS.sacrifice, []]); }
   if ((has("horloge") || has("rebours")) && !src.isDouble && F.round >= 15 && F.round < 20 && A.bxTick !== F.round) { A.bxTick = F.round; Q.push([has("horloge") ? BXS.horloge : BXM.rebours, [], { x: 20 - F.round }]); }
   const sp = BXSP[src.img];
-  if (!Q.length && sp && hitsLeft.length && Math.random() < 0.34) { Q.push([sp, hitsLeft]); hitsLeft = []; }
+  if (sp && hitsLeft.length && ((window.__bxsp && !A.anSp && (A.anSp = 1)) || (!Q.length && Math.random() < 0.34))) { Q.push([sp, hitsLeft]); hitsLeft = []; }
+  if (window.__titan && hitsLeft.length && src.boss && !A.anUlt) { A.anUlt = 1; Q.push([anUltime, hitsLeft]); hitsLeft = []; } // maquette : attaque ultime du boss des mondes
   if (has("miasmes")) Q.unshift([BXM.miasmes, []]);
   if (has("festin") && hitsLeft.length && left.some((f) => f.k === "heal" && f.t === cast.s)) { const heals = left.filter((f) => f.k === "heal" && f.t === cast.s); left = left.filter((f) => !heals.includes(f)); post.push([BXM.festin, hitsLeft.slice(0, 1), null, heals]); hitsLeft = hitsLeft.slice(1); }
   if (!Q.length && !post.length) return false;
@@ -4433,6 +4489,7 @@ function axPlain(F, A, src, sn, hits, rest, el, def, sp) {
   else if (sn) pulse(sn, "act");
   const late = tg.length ? when({ t: tg[0] }) : 0;
   hits.forEach((f) => setTimeout(() => axEvent(F, A, f), when(f)));
+  if (def && src && src.side === "c" && sn && (window.__fx || {}).on) anFx(F, A, src, sn, def, hits, when); // maquette : effets visibles
   rest.forEach((f) => setTimeout(() => { if (!(f.k === "hit" && bxReact(F, A, f))) axEvent(F, A, f); }, f.k === "hit" ? late : Math.min(late, 200 * sp)));
 }
 /* chute d'un monstre (fumée, kamas) ; tombe d'un héros */
