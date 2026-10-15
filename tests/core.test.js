@@ -87,7 +87,7 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   cls.forEach((k) => assert.strictEqual(E.recruit(S, k, k), null, `recrutement ${k}`));
   assert.ok(S.chars.slice(1).every((c) => c.lvl === 1), "toute recrue arrive au niveau 1");
   assert.strictEqual(S.chars.length, 12); assert.strictEqual(E.recruit(S, "iop", "Treize"), null, "13e héros accepté");
-  assert.strictEqual(S.chars.length, 13); assert.ok(/13 héros au plus/.test(E.recruit(S, "iop", "Trop")), "14e héros refusé");
+  assert.strictEqual(S.chars.length, 13);
   E.dismiss(S, S.chars[12].id); assert.strictEqual(S.chars.length, 12);
   assert.strictEqual(E.team(S).length, 8); assert.strictEqual(E.activeCount(S), 8, "4 héros au repos, pas 12 en équipe");
   assert.strictEqual(S.recLv, 12, "niveaux donnés par les recrutements");
@@ -112,6 +112,30 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   const best8 = S.chars.map((c) => c.lvl + (c.ren || 0) * 200).sort((a, b) => b - a).slice(0, 8).reduce((a, n) => a + n, 0);
   assert.strictEqual(sum.level, best8); assert.strictEqual(sum.heroes.length, 11); assert.strictEqual(sum.rec, S.recLv);
   console.log("ok - 12 héros, 8 en équipe, congédier un héros");
+}
+
+// 1.0.34 : jusqu'à 19 héros de n'importe quelle classe (places 14 à 19 à prix adoucis) et collection « Les 19 classes »
+{
+  const S = E.newState("Collection", "iop"); S.kamas = 1e9;
+  for (let i = 0; i < 12; i++) assert.strictEqual(E.recruit(S, "cra", "Crâ" + i), null);
+  const prices = [14, 15, 16, 17, 18, 19].map((n) => E.recruitCost(n));
+  assert.deepStrictEqual(prices, [2500000, 3500000, 5000000, 7000000, 10000000, 15000000], "prix adoucis des places 14 à 19");
+  const k0 = S.kamas;
+  for (let i = 0; i < 6; i++) assert.strictEqual(E.recruit(S, "iop", "Iop" + i), null, "même classe acceptée");
+  assert.strictEqual(k0 - S.kamas, 43000000, "43 M pour les 6 places");
+  assert.strictEqual(S.chars.length, 19); assert.ok(/19 héros au plus/.test(E.recruit(S, "sram", "Trop")), "20e héros refusé");
+  assert.strictEqual(E.team(S).length, 8, "toujours 8 en équipe");
+  assert.strictEqual(E.classesN(S), 0); assert.strictEqual(E.classesMult(S), 1);
+  S.chars[0].lvl = 200; S.chars[1].lvl = 200; S.chars[2].lvl = 200; // 1 Iop + 2 Crâ : 2 classes
+  assert.strictEqual(E.classesN(S), 2); assert.ok(Math.abs(E.classesMult(S) - 1.02) < 1e-9, "+1 % par classe");
+  S.chars[0].lvl = 1; S.chars[0].ren = 1; assert.strictEqual(E.classesN(S), 2, "une Renaissance ne retire pas la classe");
+  E.dismiss(S, S.chars[1].id); E.dismiss(S, S.chars[1].id); assert.strictEqual(E.classesN(S), 2, "congédier ne retire pas la classe");
+  ["feca", "osa", "enu", "sram", "xelor", "eca", "eni", "sadi", "sacri", "panda", "roub", "zobal", "steam", "elio", "hupper", "ougi", "forge"].forEach((k) => { S.cls200[k] = 1; });
+  assert.strictEqual(E.classesN(S), 19); assert.ok(Math.abs(E.classesMult(S) - 1.19) < 1e-9);
+  assert.ok(E.ornUnlocked(S, "classes19"), "Blason des 19 classes");
+  const a19 = E.ACH.find((a) => a.id === "cls19"); assert.ok(a19 && a19.test(S) && a19.title === "Maître des 19 classes");
+  const r = E.deserialize(E.unpackSave(E.packSave(E.serialize(S)))); assert.ok(r.cls200 && r.cls200.forge && E.classesN(r) === 19, "collection gardée dans la sauvegarde");
+  console.log("ok - 19 héros et collection « Les 19 classes »");
 }
 
 // 0.1.37 : sac de 1 000 places (3 000 depuis 1.0.33.1), Coffre de trop-plein (rien n'est perdu), « Briser les doublons »

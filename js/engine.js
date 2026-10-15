@@ -91,9 +91,17 @@
   E.REN_MAX = 10; E.REN_XP = 0.3;
   E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
   E.eveil = (c, id) => (c && c.eveils && c.eveils[id]) || 0;
-  E.recruitCost = (n) => (n <= 1 ? 0 : Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
-  /* 0.1.35 (13 depuis 0.1.53.2) : jusqu'à 13 héros, 8 au plus dans l'équipe qui combat (les autres récoltent, s'entraînent ou se reposent) */
-  E.HERO_MAX = 13; E.TEAM_MAX = 8;
+  /* 1.0.34 « Les 19 classes » : les places 14 à 19 ont un prix adouci (la courbe aurait mené le 19e à 199 M). Choix de Mathis 1B 2B */
+  E.RECRUIT_HIGH = { 14: 2500000, 15: 3500000, 16: 5000000, 17: 7000000, 18: 10000000, 19: 15000000 };
+  E.recruitCost = (n) => (n <= 1 ? 0 : E.RECRUIT_HIGH[n] || Math.round(300 * Math.pow(2.2, n - 2))); // n = numéro du personnage
+  /* 0.1.35 (13 depuis 0.1.53.2, 19 depuis 1.0.34) : jusqu'à 19 héros, de n'importe quelle classe, 8 au plus dans l'équipe qui combat (les autres récoltent, s'entraînent ou se reposent) */
+  E.HERO_MAX = 19; E.TEAM_MAX = 8;
+  /* 1.0.34 : collection « Les 19 classes ». Une classe compte pour toujours dès qu'un de ses héros a atteint le niveau 200
+     (une Renaissance ou un Congédier ne la retire pas). +1 % d'XP et de kamas par classe pour tout le compte, hors plafond (choix 4A). */
+  E.CLASS_BONUS = 1;
+  E.classesDone = (S) => { const d = S.cls200 || (S.cls200 = {}); S.chars.forEach((c) => { if ((c.lvl >= E.MAX_LVL || c.ren) && CLASSES[c.cls]) d[c.cls] = 1; }); return d; };
+  E.classesN = (S) => Object.keys(E.classesDone(S)).filter((k) => CLASSES[k]).length;
+  E.classesMult = (S) => 1 + (E.classesN(S) * E.CLASS_BONUS) / 100;
   E.activeCount = (S, but) => S.chars.filter((c) => c.inTeam && !c.job && c !== but).length;
 
   /* ---------------- État initial ---------------- */
@@ -2278,7 +2286,7 @@
       if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
-    const zr = E.zoneRew(S, opts) * E.trophyZoneMult(S, opts); xp *= zr; out.kamas = Math.round(out.kamas * zr); // 1.0.7.4 : rendement de la sous-zone (XP et kamas), réglé par simulation
+    const zr = E.zoneRew(S, opts) * E.trophyZoneMult(S, opts) * E.classesMult(S); xp *= zr; out.kamas = Math.round(out.kamas * zr); // 1.0.34 : + Les 19 classes // 1.0.7.4 : rendement de la sous-zone (XP et kamas), réglé par simulation
     const share = E.xpShare(team.length);
     team.forEach((c) => {
       const st = E.charStats(S, c);

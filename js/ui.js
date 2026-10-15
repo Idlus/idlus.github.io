@@ -21,9 +21,20 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.33.1";
+const GAME_VERSION = "1.0.34.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.34.1", name: "Quitter la guilde", items: [
+    "Bouton « Quitter la guilde » dans le bandeau de ta guilde, visible depuis chaque onglet (avant, il était tout en bas de l'onglet Membres)",
+    "Une confirmation s'affiche avec « Oui, quitter » et « Annuler », et explique ce qui se passe : si tu es Meneur, ta place passe au Bras droit (ou au membre) le plus ancien ; si tu es seul, la guilde est dissoute avec son coffre",
+  ] },
+  { v: "1.0.34", name: "Les 19 classes", items: [
+    "Jusqu'à 19 héros au lieu de 13, de n'importe quelle classe. L'équipe qui combat reste à 8",
+    "Les places 14 à 19 ont un prix adouci : 2,5 M, 3,5 M, 5 M, 7 M, 10 M et 15 M de kamas (43 M en tout)",
+    "Nouveau tableau « Les 19 classes » en haut de la page Équipe et héros : une case par classe, dorée quand un de ses héros atteint le niveau 200. Une Renaissance ou un Congédier ne la retire pas",
+    "Chaque classe au niveau 200 donne +1 % d'XP et de kamas à tout le compte, hors plafond (jusqu'à +19 %)",
+    "Succès « Cinq classes au niveau 200 », « Dix classes au niveau 200 » et « Maître des 19 classes » (titre), et ornement « Blason des 19 classes »",
+  ] },
   { v: "1.0.33.1", name: "Sac de 3 000 places", items: [
     "Le sac d'équipements passe de 1 000 à 3 000 places, et chaque niveau de Grenier en ajoute 100 au lieu de 50 (jusqu'à 5 000 places)",
     "Sauvegarde plus légère : dans le navigateur, les objets sont rangés en compact. La partie en ligne et l'export ne changent pas",
@@ -1813,6 +1824,7 @@ function heroCard(c, size = "", opts = {}) {
   else if (orn === "koli_ban") ornHtml = `<span class="orn seal">🏟️</span>`;
   else if (orn === "chroma") ornHtml = `<span class="orn seal">✨</span>`; // 1.0.33 : album chromatique, palier 25
   else if (orn === "prisme") ornHtml = `<span class="orn seal">🌈</span>`; // 1.0.33 : Atelier du prisme
+  else if (orn === "classes19") ornHtml = `<span class="orn crown c19">🏆</span>`; // 1.0.34 : les 19 classes au niveau 200
   else if (orn === "koli_ecu") ornHtml = `<img class="orn kzlaur" src="assets/ui/koli/kolizeton.svg" alt="">`; // 1.0.24 : boutique du Kolizéum
   if (orn && orn !== "ailes") ornCls = "o-" + orn;
   const aura = E.renAura(c); if (aura) ornCls += " ren-" + aura; // 0.1.12 : aura de la Renaissance
@@ -4851,9 +4863,22 @@ function teamTopHtml() {
     ${!board && S.chars.length < E.HERO_MAX ? `<span class="trec">${recruitBtn()}</span>` : ""}</div>`;
   if (board) return head1;
   const K = S.comps || []; const cur = E.compMatch(S);
-  return `${head1}<div class="tbar"><span class="xs muted">Compositions</span>${K.map((k, i) => `<button class="tcomp ${i === cur ? "on" : ""}" data-act="compuse" data-i="${i}" ${i === cur || S.dungeon ? "disabled" : ""} data-tip="${h(`${k.ids.length} héros · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}`)}">${i === cur ? "✓ " : ""}${h(k.name)}</button>`).join("")}
+  return `${head1}${classesBoardHtml()}<div class="tbar"><span class="xs muted">Compositions</span>${K.map((k, i) => `<button class="tcomp ${i === cur ? "on" : ""}" data-act="compuse" data-i="${i}" ${i === cur || S.dungeon ? "disabled" : ""} data-tip="${h(`${k.ids.length} héros · cible : ${FOCUS_N[k.focus] || FOCUS_N.auto}`)}">${i === cur ? "✓ " : ""}${h(k.name)}</button>`).join("")}
     ${K.length < E.COMP_MAX ? `<button class="tcomp add" data-act="compsave" data-i="-1">+ Enregistrer l'équipe</button>` : ""}${K.length ? `<button class="tcomp add" data-act="teamboard">Gérer</button>` : ""}
     <span class="grow"></span>${idolBtn(null)}${archiBtn()}<button class="btn sm" data-act="sm-card">${G("share")} Partager</button></div>`;
+}
+/* 1.0.34 : collection « Les 19 classes » en haut de la page Équipe : une case par classe (meilleur niveau), dorée une fois le niveau 200 atteint.
+   +1 % d'XP et de kamas par classe (E.classesMult), titre « Maître des 19 classes » et Blason à 19. Repliable (S.settings.c19Shut). */
+function classesBoardHtml() {
+  const done = E.classesDone(S); const n = E.classesN(S); const best = {};
+  S.chars.forEach((c) => { best[c.cls] = Math.max(best[c.cls] || 0, c.lvl); });
+  const shut = !!S.settings.c19Shut; const bon = n * E.CLASS_BONUS;
+  const head = `<div class="c19h"><b class="c19t">Les 19 classes</b><span class="c19n num">${n} / 19 au niveau 200</span>${bon ? `<span class="c19b">+${bon} % d'XP et de kamas</span>` : ""}<span class="grow"></span><button class="btn sm" data-act="c19fold" aria-expanded="${!shut}">${shut ? "Voir" : "Replier"}</button></div>`;
+  if (shut) return `<div class="c19 shut">${head}</div>`;
+  return `<div class="c19">${head}<div class="c19bar"><i style="width:${Math.round((n / 19) * 100)}%"></i></div>
+    <p class="xs muted c19p">Monte un héros de chaque classe au niveau 200. Chaque classe donne +${E.CLASS_BONUS} % d'XP et de kamas à tout le compte (+19 % au plus, hors plafond). À 19 : titre « Maître des 19 classes » et ornement « Blason des 19 classes ».</p>
+    <div class="c19g">${CLASS_ORDER.map((id) => { const C = CLASSES[id]; const ok = !!done[id]; const l = best[id];
+      return `<span class="c19c ${ok ? "done" : l ? "" : "no"}" style="--cc:${C.color}" data-tip="${h(`${C.name} : ${ok ? "niveau 200 atteint" : l ? `meilleur héros niveau ${l}` : "aucun héros de cette classe"}`)}">${ok ? `<i class="ck">✓</i>` : ""}${im(symImg(id), "", C.name)}<span class="c19nm">${C.name}</span><b class="num">${ok && !(l >= E.MAX_LVL) ? "200" : l || "—"}</b></span>`; }).join("")}</div></div>`;
 }
 /* une ligne de la liste : tête, nom, niveau, activité, XP ; ▲ vert = mieux dans le sac, pastille orange = points à répartir */
 function teamRow(x, al) {
@@ -8429,6 +8454,7 @@ document.addEventListener("click", (ev) => {
       ui.cid = cc.id; ui.tab = "heroes"; ui.hero = d.v === "pts" ? "stats" : "pet"; ui.slot = null; render(); window.scrollTo(0, 0); return; }
     case "teamequipall": { let n = 0; E.team(S).forEach((x) => (n += equipBest(x))); toast(n ? `${n} objet${n > 1 ? "s" : ""} équipé${n > 1 ? "s" : ""}.` : "Rien de mieux à équiper."); dirty = true; break; }
     case "teamboard": ui.teamBoard = !ui.teamBoard; ui.teamSel = null; break;
+    case "c19fold": S.settings.c19Shut = !S.settings.c19Shut; break;
     case "teamsel": { const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tc = char(+d.id);
       /* un héros est déjà choisi et on touche un héros d'une autre zone : on l'y envoie */
       if (sel && tc && sel !== tc && teamZone(sel) !== teamZone(tc)) { ui.teamSel = null; const z = teamZone(tc) === "atelier" ? "rest" : teamZone(tc); msg(teamMove(sel.id, z)); dirty = true; break; }

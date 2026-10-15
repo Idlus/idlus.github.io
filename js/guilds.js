@@ -230,11 +230,15 @@
   }
 
   /* --- dans une guilde --- */
+  // 1.0.34.1 : « Quitter la guilde » aussi dans le bandeau, visible depuis chaque onglet, avec confirmation
+  const leaveTxt = () => G.me.rank === 0 && G.me.members.length > 1 ? "Ta place de Meneur passera au Bras droit (ou au membre) le plus ancien." : G.me.members.length === 1 ? "Tu es seul : la guilde sera dissoute, avec son coffre." : "Tu pourras en rejoindre une autre tout de suite.";
+  const leaveBtns = (cls) => `<span class="row ${cls}" style="gap:6px">${G.leave ? `<button class="btn sm danger" data-act="g-leave2" ${G.busy ? "disabled" : ""}>Oui, quitter</button><button class="btn sm" data-act="g-leave0">Annuler</button>` : `<button class="btn sm" data-act="g-leave">Quitter la guilde</button>`}</span>`;
   const hot = () => !!(G.ex && ((G.ex.percos || []).some((p) => p.atk && !p.atk.done) || (G.ex.raids_in || []).some((x) => x.st === "open" || x.st === "fight")));
   function guildHtml() {
     const g = G.me.g; const n = G.me.members.length;
     const span = g.next ? g.next - g.base : 1; const pct = g.next ? Math.min(100, ((g.xp - g.base) / span) * 100) : 100;
-    const banner = `<section class="panel gban">${emb(g.ic, g.col, 76)}<div class="grow stack" style="gap:6px"><div class="row"><h2 style="font-size:26px">${h(g.name)}</h2><span class="tag good">niveau ${g.lvl}</span><span class="xs muted">${n} / ${seats()} membres · tu es ${RANKS[G.me.rank]}</span>${shieldPill(g.shield, "jeune guilde, encore ")}</div>
+    const banner = `<section class="panel gban">${emb(g.ic, g.col, 76)}<div class="grow stack" style="gap:6px"><div class="row"><h2 style="font-size:26px">${h(g.name)}</h2><span class="tag good">niveau ${g.lvl}</span><span class="xs muted">${n} / ${seats()} membres · tu es ${RANKS[G.me.rank]}</span>${shieldPill(g.shield, "jeune guilde, encore ")}${leaveBtns("gleave")}</div>
+      ${G.leave ? `<div class="small muted gleavet">${leaveTxt()}</div>` : ""}
       <div class="gbar"><i style="width:${pct.toFixed(1)}%"></i><b>${g.next ? `${fmt(g.xp - g.base)} / ${fmt(span)} XP` : "niveau maximum"}</b></div>
       ${g.motd ? `<div class="gmotd">${h(g.motd)}</div>` : ""}</div></section>`;
     const asks = (G.me.asks || []).length;
@@ -528,8 +532,8 @@
         <label class="row small"><input type="checkbox" id="gOpen" ${f.open ? "checked" : ""}> Entrée libre (sinon, les joueurs envoient une demande)</label>
         ${G.me.rank === 0 ? `<div class="gfound">${emb(f.ic, f.col, 60)}<div class="stack grow"><div class="gpick">${ICONS.map((ic) => `<button class="${f.ic === ic ? "on" : ""}" data-act="g-ic" data-v="${ic}" aria-label="${ic}"><img src="assets/ui/${ic}.webp" alt=""></button>`).join("")}</div><div class="gpick col">${COLS.map((c) => `<button class="${f.col === c ? "on" : ""}" data-act="g-col" data-v="${c}" style="background:${c}" aria-label="couleur"></button>`).join("")}</div></div></div>` : ""}
         <div><button class="btn primary" data-act="g-save">Enregistrer</button></div></div></section>` : ""}
-      <section class="panel"><div class="phead"><h2>Quitter la guilde</h2></div><div class="pad row between"><span class="small muted">${G.me.rank === 0 && G.me.members.length > 1 ? "Ta place de Meneur passera au Bras droit (ou au membre) le plus ancien." : G.me.members.length === 1 ? "Tu es seul : la guilde sera dissoute, avec son coffre." : "Tu pourras en rejoindre une autre tout de suite."}</span>
-        ${G.leave ? `<button class="btn sm danger" data-act="g-leave2">Oui, quitter</button>` : `<button class="btn sm" data-act="g-leave">Quitter</button>`}</div></section>`;
+      <section class="panel"><div class="phead"><h2>Quitter la guilde</h2></div><div class="pad row between"><span class="small muted">${leaveTxt()}</span>
+        ${leaveBtns("")}</div></section>`;
   }
 
   /* ---------- panel admin (onglet « Guildes ») ---------- */
@@ -627,6 +631,7 @@
       case "g-kick": { if (G.kick !== d.u) { G.kick = d.u; X().toast(`Clique encore sur « Renvoyer » pour confirmer (${d.p}).`); return; } G.kick = null; const r = await call("guild_kick", { p_user: d.u }, `${d.p} a été renvoyé.`); if (r) load(); return; }
       case "g-save": { const f = G.form; const r = await call("guild_set", { p_motd: (($("#gMotd") || {}).value || ""), p_open: !!($("#gOpen") || {}).checked, p_ic: f.ic, p_col: f.col }, "Réglages enregistrés."); G.setInit = false; if (r) load(); return; }
       case "g-leave": G.leave = true; paint(); return;
+      case "g-leave0": G.leave = false; paint(); return;
       case "g-leave2": { const r = await call("guild_leave", {}, "Tu as quitté la guilde."); G.leave = false; if (r) { G.list = null; await load(); loadList(); } return; }
       case "g-chat": { const C = window.CHAT && window.CHAT.state; if (C) { C.open = true; C.tab = "u"; chatSeen(); window.CHAT.repaint(); } return; }
       case "g-adm": { if (d.v === "dissolve" && G.admSure !== d.g) { G.admSure = d.g; X().toast("Clique encore sur « Dissoudre » pour confirmer."); return; } const r = await ON.rpc("adm_guild", { p_id: +d.g, p_act: d.v }); X().toast(r.err || (r.data && r.data.err) || "Fait."); admReload(); return; }

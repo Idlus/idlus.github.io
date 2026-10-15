@@ -72,6 +72,7 @@ const MOCK = () => {
         members: mem.map(([uu, p, rank, cls, lvl]) => ({ u: uu, p, rank, share: 10, sby: null, given: 1000, week: 500, joined: iso(-864e5), cls, lvl, seen: iso() })),
         log: [{ at: iso(-60e3), t: "⚔ Nyx (Les Tofus Enragés) attaque le Percepteur !" }], asks: [], invited: [] });
     }
+    if (name === "guild_leave") { gm.in = false; gm.left = (gm.left || 0) + 1; return ok({ ok: true }); }
     if (name === "guild_answer" || name === "guild_join") { gm.in = true; return ok({ ok: name === "guild_join" ? "in" : true }); }
     if (name === "guild_give") return ok(gm.in ? { ok: true, lvl: 14 } : { ok: false, none: true });
     if (name === "guild_chat") return ok([]);
@@ -968,6 +969,15 @@ const MOCK = () => {
     await page.click('[data-act="g-rgo"]'); await page.waitForTimeout(1000);
     if (!((await mock()).gm.calls || []).some((b) => b.raid && b.raid.go === 41)) fail("guildes : attaque non envoyée au serveur");
     if (!/Attaque en cours/.test(await gtxt())) fail("guildes : attaque en cours absente des Percepteurs");
+    // 1.0.34.1 : quitter la guilde depuis le bandeau (confirmation, Annuler, puis Oui, quitter)
+    await page.click('.gban [data-act="g-leave"]'); await page.waitForSelector('.gban [data-act="g-leave2"]');
+    if (!/Tu pourras en rejoindre une autre/.test(await page.textContent(".gban"))) fail("guildes : quitter sans explication");
+    await gwide("la confirmation de départ", "guilde-quitter");
+    await page.click('.gban [data-act="g-leave0"]'); await page.waitForSelector('.gban [data-act="g-leave"]');
+    if ((await mock()).gm.left) fail("guildes : Annuler a quitté la guilde");
+    await page.click('.gban [data-act="g-leave"]'); await page.click('.gban [data-act="g-leave2"]');
+    await page.waitForSelector('.gban', { state: "detached", timeout: 8000 }).catch(() => fail("guildes : toujours dans la guilde après Quitter"));
+    if ((await mock()).gm.left !== 1) fail("guildes : départ non envoyé au serveur");
     await page.click('#nav [data-nk="world"]');
     // 7h. 1.0.30 : la Communauté. Alignement (camp du serveur, guerre de la semaine), Songe infini classé, Panel Xener
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const W = window.ENGINE.weekIdx();
