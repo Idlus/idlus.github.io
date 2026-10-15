@@ -335,11 +335,12 @@
   window.COLL = {
     render: renderPets, act, setsHtml, potBtn, potHtml, potLink, potOn: () => st.pot, cele, auraCls,
     pickDofus: (id) => { if (id) st.dsel = id; st.pot = true; },
+    potSet: (v) => { st.pot = !!v; }, // 1.0.33 : onglets de la page Dofus (js/dofusui.js)
     setQuery: (q) => { st.sq = q || ""; st.sf = "all"; st.sn = 30; },
     /* recherche du jeu : un familier ou une monture ouvre sa fiche dans la page */
     pick: (k, id) => { const s = S(); st.q = ""; st.f = "all"; st.bon = "all";
       if (k === "pet" && E.PETS[id]) { st.pk = E.PETS[id].kind === "monti" ? "monti" : "fam"; st.sel[st.pk] = id; }
       else if (k === "mount" && E.MOUNTS[id]) { st.pk = "mt"; const own = s ? Object.values(s.mounts || {}).filter((M) => M.sp === id).sort((a, b) => b.lvl - a.lvl)[0] : null; st.sel.mt = id + ":" + (own ? own.c : Object.keys(E.MOUNTS[id].cols)[0]); } },
   };
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "pets")) E.SEARCH_PAGES.push(["pets", "Familiers et montures", "Héros › Familiers et montures : collection, recherche, Équiper sur"], ["sets", "Collection de panoplies", "Suivi › Encyclopédie › Panoplies : paliers et régions"], ["dpot", "Potentiel des Dofus", "Suivi › Quêtes › Dofus › Potentiel : rangs, éclat, Sublimé"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "pets")) E.SEARCH_PAGES.push(["pets", "Familiers et montures", "Héros › Familiers et montures : collection, recherche, Équiper sur"], ["sets", "Collection de panoplies", "Suivi › Encyclopédie › Panoplies : paliers et régions"], ["dpot", "Potentiel des Dofus", "Héros › Dofus › Potentiel : rangs, éclat, Sublimé"]);
 })();

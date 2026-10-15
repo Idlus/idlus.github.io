@@ -1956,7 +1956,7 @@ const ICONS = {
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
   { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
-  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["pets", "Familiers et montures", "../p/18003"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
+  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["pets", "Familiers et montures", "../p/18003"], ["dofus", "Dofus", "dofus"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
@@ -3495,7 +3495,7 @@ function dofusDropHtml(id) {
 function dofusQuestLineHtml(id) {
   const Df = E.DOFUS[id]; const Q = E.dofusQuest(S, id); const st = E.dofusStep(S, id);
   const txt = Q.done ? ["✓ Quête terminée", "ok"] : id === "ocre" ? [`Éternelle moisson · palier ${E.ocreTier(S) + 1} sur ${E.OCRE_TIERS.length} : capturer les âmes des archimonstres`] : st && st.t === "gift" ? [h(E.dofusStepTxt(st))] : st ? [`Étape ${Q.step + 1} sur ${Df.steps.length} : ${h(E.dofusStepTxt(st))}`] : [""];
-  return `<div class="dofdrop"><div class="dd-h"><span class="icobox">${IC("quetes")}</span><span class="grow"><b>Sa quête</b> <span class="tag soft">1 par compte</span><small>Un exemplaire garanti · Suivi › Quêtes › Dofus</small></span><button class="btn sm primary" data-act="dofgo" data-v="${id}">Voir la quête</button></div><div class="dd-l ${txt[1] || ""}">${txt[0]}</div></div>`;
+  return `<div class="dofdrop"><div class="dd-h"><span class="icobox">${IC("quetes")}</span><span class="grow"><b>Sa quête</b> <span class="tag soft">1 par compte</span><small>Un exemplaire garanti · Héros › Dofus</small></span><button class="btn sm primary" data-act="dofgo" data-v="${id}">Voir la quête</button></div><div class="dd-l ${txt[1] || ""}">${txt[0]}</div></div>`;
 }
 function archiBtn(cls = "btn sm") {
   const n = E.soulCount(S); const st = E.stones(S);
@@ -7311,7 +7311,7 @@ function pageGo(id) {
     case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
     case "combat": case "ren": case "forge": case "ladder": case "team": case "koli": case "wb": case "metiers": case "sugg": case "builds": case "hdv": case "guild": case "pets": go(id); break; // 1.0.30 : pets = Familiers et montures
     case "defi": go("defi"); break; case "exp": go("exp"); break; case "dungeons": go("world", "world", "dungeons"); break; case "enc": go("world", "world", "enc"); break; case "tresor": go("quests", "qt", "tresor"); break; case "region": go("quests", "qt", "region"); break; case "hebdo": go("quests", "qt", "hebdo"); break; case "carnet": go("carnet"); break; case "wardrobe": { const c = mainHero(); if (c) { closeSheet(); ui.lookCid = c.id; ui.wSlot = "coiffe"; lookSheet(c); } break; } case "card": closeSheet(); cardSheet(); break;
-    case "quests": go("quests", "qt", "main"); break; case "dofusq": go("quests", "qt", "dofus"); break; case "dpot": if (window.COLL) window.COLL.pickDofus(null); go("quests", "qt", "dofus"); break; case "chroma": (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "chroma"; go("world", "world", "enc"); break; /* 1.0.33 : album chromatique */ /* 1.0.30 : Potentiel des Dofus */ case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
+    case "quests": go("quests", "qt", "main"); break; case "dofusq": if (window.DOFUI) { window.DOFUI.open("quetes"); break; } go("quests", "qt", "dofus"); break; case "dpot": if (window.DOFUI) { window.DOFUI.open("pot"); break; } if (window.COLL) window.COLL.pickDofus(null); go("quests", "qt", "dofus"); break; case "chroma": (ui.enc = ui.enc || { tab: "best", f: "all", q: "", fam: "zone", boss: "all" }).tab = "chroma"; go("world", "world", "enc"); break; /* 1.0.33 : album chromatique */ /* 1.1 : page Dofus (js/dofusui.js) */ /* 1.0.30 : Potentiel des Dofus */ case "bounty": go("quests", "qt", "bounty"); break; case "commandes": go("quests", "qt", "commandes"); break; case "temples": go("quests", "qt", "temples"); break; case "consignes": closeSheet(); ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#consignes"); if (n) n.scrollIntoView({ block: "center" }); }, 50); break;
     case "align": go("quests", "qt", "align"); break; case "almanax": go("quests", "qt", "almanax"); break; case "ach": go("quests", "qt", "ach"); break;
     case "heroes": go("heroes", "hero", "equip"); break; case "hstats": go("heroes", "hero", "stats"); break; case "spells": go("heroes", "hero", "spells"); break; case "pet": go("heroes", "hero", "pet"); break;
     case "inv": go("inv", "inv", "items"); break; case "invres": go("inv", "inv", "res"); break; case "invcons": go("inv", "inv", "cons"); break; case "sets": go("inv", "inv", "sets"); break;
@@ -8208,6 +8208,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("co-")) { if (S && window.COLL) window.COLL.act(a, t); return; } // 1.0.30 : collections (js/collui.js)
   if (a && a.startsWith("cx-")) { if (S && window.CHROMA) window.CHROMA.act(a, t); return; } // 1.0.33 : chromatiques (js/chromaui.js)
   if (a && a.startsWith("al-")) { if (S && window.ALIGNUI) window.ALIGNUI.act(a, t); return; } // 1.0.30 : alignement (js/alignui.js)
+  if (a && a.startsWith("du-")) { if (S && window.DOFUI) window.DOFUI.act(a, t); return; } // 1.0.33 : page Dofus (js/dofusui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {
     case "startcls": { const n = $("#startName") || $("#recName"); if (n) { if (S) ui.recName = n.value; else ui.startName = n.value; } ui.startCls = d.cls; ui.startSex = null; ui.startHead = 0; if (!S) renderStart(); else recruitSheet(); return; }
@@ -8244,7 +8245,7 @@ document.addEventListener("click", (ev) => {
     case "pin": { const p = JSON.parse(d.p); const r = E.togglePin(S, p); if (r) { toast(r); return; } toast(E.pinned(S, p) ? "Objectif suivi dans la bande du haut." : "Objectif retiré de la bande."); renderObjs(); if ($("#sheet").innerHTML) { dirty = true; return; } break; }
     case "unpin": { const p = findPin(d.key); if (p) E.togglePin(S, p); renderObjs(); dirty = true; if (ui.tab === "quests" || ui.tab === "home" || ui.tab === "team") break; return; }
     case "race-open": closeSheet(); LB.tab = "race"; ui.tab = "ladder"; window.scrollTo(0, 0); break; // 1.0.5 : pastille de la course
-    case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.dof && window.QUI && window.QUI.pick) window.QUI.pick(g.dof); if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
+    case "pingo": { const p = findPin(d.key); const i = p && E.pinInfo(S, p); if (!i) return; const g = i.go; if (g.dof && window.DOFUI) { window.DOFUI.open("quetes", g.dof); return; } /* 1.0.33 : Héros › Dofus */ ui.tab = g.tab; if (g.qt) ui.qt = g.qt; if (g.cid) { ui.cid = g.cid; ui.hero = "equip"; } if (g.dof && window.QUI && window.QUI.pick) window.QUI.pick(g.dof); if (g.tab === "home") ui.home = "apercu"; closeSheet(); window.scrollTo(0, 0); break; }
     case "xptip": ui.xpTip = ui.xpTip === ui.cid ? null : ui.cid; render(); return;
     case "notifask": { if (typeof Notification === "undefined") return; Notification.requestPermission().then((p) => { if (p === "granted") { S.settings.notifBrowser = true; toast("Notifications autorisées."); } dirty = true; optionsSheet(); }); return; }
     case "setnotifb": S.settings.notifBrowser = d.v === "1"; dirty = true; optionsSheet(); return;
@@ -8279,7 +8280,7 @@ document.addEventListener("click", (ev) => {
     case "atstop": E.setAtelier(S, null); break;
     case "mettab": ui.met = d.v; ui.confirm = null; break;
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
-    case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Jouer › Comptoirs
+    case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Jouer › Comptoirs ; 1.0.33 : Héros › Dofus
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
     case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
     case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;
@@ -8580,7 +8581,7 @@ document.addEventListener("click", (ev) => {
     case "recqty": ui.recQty = d.v; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } if (recPanel()) return; break;
     case "recqtyd": { const i = $("#recqtyn"); const mx = i ? +i.dataset.max : 1; ui.recQty = String(Math.max(1, Math.min(mx, (i ? +i.value || 1 : 1) + +d.v))); if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); return; } if (recPanel()) return; break; }
     case "recfav": { const f = S.settings.recFav || (S.settings.recFav = {}); if (f[d.id]) delete f[d.id]; else f[d.id] = 1; if (ui.recSheetOn && $("#sheet").innerHTML) { recSheet(); dirty = true; renderMetiers(); return; } break; }
-    case "dofgo": closeSheet(); if (window.QUI && window.QUI.pick) window.QUI.pick(d.v); ui.tab = "quests"; ui.qt = "dofus"; render(); window.scrollTo(0, 0); return; // 1.0.6.2
+    case "dofgo": if (window.DOFUI) { window.DOFUI.open("quetes", d.v); return; } closeSheet(); if (window.QUI && window.QUI.pick) window.QUI.pick(d.v); ui.tab = "quests"; ui.qt = "dofus"; render(); window.scrollTo(0, 0); return; // 1.0.6.2
     case "dofalm": closeSheet(); ui.tab = "quests"; ui.qt = "almanax"; render(); window.scrollTo(0, 0); return;
     case "reswhere": { const n = d.n; if (!RES[n]) { toast("Source inconnue pour l'instant."); return; } openSheet(`${resDetail(n)}<div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`); return; }
     case "hdvorder": { if (!window.MARKET || !window.MARKET.orderFor) return; window.MARKET.orderFor(d.c, d.k, +d.n || 0); closeSheet(); navGo("hdv"); window.scrollTo(0, 0); return; }
@@ -9636,6 +9637,7 @@ function loop() {
     } else if (ui.tab === "home" && ui.home === "apercu" && sinceView > 3000 && !$("#sheet").innerHTML) { sinceView = 0; renderHome(true); renderStatus(); }
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) morphTo(tt, teamTopHtml()); const tl = $("#tlist"); if (tl) morphTo(tl, teamListHtml()); renderNav(); } // seuls le haut et la liste se rafraîchissent (mise à jour ciblée), la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(true); renderNav(); }
+    else if (ui.tab === "dofus" && PAGES.dofus && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; PAGES.dofus($("#main"), true); } // 1.0.33 : page Dofus, mise à jour ciblée
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }

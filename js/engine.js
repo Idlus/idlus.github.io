@@ -3125,7 +3125,7 @@
     const J = S.crafts[R.job];
     if (J.lvl < R.lvl) return `${CRAFT_JOBS[R.job].name} niveau ${R.lvl} requis.`;
     if (R.unique && ((S.res[name] || 0) > 0 || (R.furn && S.furniture.includes(name)) || (R.idol && E.idolOwned(S, R.idol)))) return "Vous possédez déjà cet objet.";
-    if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Suivi › Quêtes › Dofus).";
+    if (R.dofus && !(E.dofusOwned && E.dofusOwned(S, R.dofus))) return "Obtenez d'abord ce Dofus par sa quête (Héros › Dofus).";
     if (!E.canCraft(S, R)) return "Ressources insuffisantes.";
     R.ing.forEach(([r, q]) => { S.res[r] -= q - almSave(S, q); if (!S.res[r]) delete S.res[r]; });
     if (R.idol) E.giveIdol(S, R.idol, "fabriquée"); else if (R.dofus) E.giveDofus(S, R.dofus, "copie du Bricoleur"); else if (R.furn && E.giveFurn) E.giveFurn(S, name, "fabriqué"); else if (R.cons) E.addCons(S, R.cons, R.n || 1); else addRes(S, name, 1);

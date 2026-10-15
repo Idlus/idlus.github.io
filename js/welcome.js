@@ -120,7 +120,7 @@
   E.SEARCH_KINDS = { page: "Pages", dg: "Donjons", zone: "Zones", item: "Objets", set: "Panoplies", res: "Ressources", mon: "Monstres", dofus: "Dofus", idol: "Idoles", pet: "Familiers", mount: "Montures", cons: "Consommables", ach: "Succès" };
   E.SEARCH_PAGES = [
     ["home", "Havre-Sac", "ta maison, la chasse en cours, le journal"], ["world", "Monde", "carte des zones de chasse"],
-    ["combat", "Combat", "le combat en cours"], ["quests", "Quêtes", "quête principale"], ["dofusq", "Quêtes des Dofus", "Suivi › Quêtes › Dofus"], ["bounty", "Avis de recherche", "Suivi › Quêtes › Avis"],
+    ["combat", "Combat", "le combat en cours"], ["quests", "Quêtes", "quête principale"], ["dofusq", "Quêtes des Dofus", "Héros › Dofus › Quêtes et butin"], ["bounty", "Avis de recherche", "Suivi › Quêtes › Avis"],
     ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Suivi › Succès"], ["ladder", "Classements", "Communauté › Classements"], ["defi", "Défi du jour", "Jouer › Défi du jour"], ["dungeons", "Donjons", "clés, stasis et coffres"], ["enc", "Encyclopédie", "monstres, objets, panoplies"], ["exp", "Songe infini", "Jouer › Songe infini"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
     ["team", "Équipe et héros", "composition et placement"], ["heroes", "Héros", "équipement du héros"], ["hstats", "Caractéristiques", "Héros › Caractéristiques"], ["spells", "Sorts", "Héros › Sorts"],
     ["pet", "Familier et monture", "Héros › Familier"], ["inv", "Inventaire", "objets"], ["invres", "Ressources", "Héros › Inventaire › Ressources"], ["invcons", "Consommables", "Héros › Inventaire › Consommables"],

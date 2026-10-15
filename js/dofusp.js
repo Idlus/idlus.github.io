@@ -278,7 +278,7 @@
     E.team(S).forEach((c) => D.DOFUS_SLOTS.forEach((sl) => { const it = c.equip && S.items[c.equip[sl]]; const id = it && D.ITEMS[it.tpl] && D.ITEMS[it.tpl].dofus; if (id && E.DOFUS[id]) seen.add(id); }));
     const got = [];
     seen.forEach((id) => { if (E.dpotRank(S, id) >= E.DPOT_MAX) return; const P = potW(S, id); const need = E.dpotNeed(P.r + 1); const was = P.e; P.e += add; got.push(id);
-      if (was < need && P.e >= need) E.note(S, `${E.DOFUS[id].name} : assez d'éclat pour le Potentiel ${E.roman ? E.roman(P.r + 1) : P.r + 1} (Suivi › Quêtes › Dofus › Potentiel).`, "up"); });
+      if (was < need && P.e >= need) E.note(S, `${E.DOFUS[id].name} : assez d'éclat pour le Potentiel ${E.roman ? E.roman(P.r + 1) : P.r + 1} (Héros › Dofus › Potentiel).`, "up"); });
     return got;
   };
   const prevEmit = E.emit; let depth = 0;

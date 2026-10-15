@@ -1,0 +1,125 @@
+/* 1.0.33 : page Héros › Dofus (js/dofusui.js) */
+.du-page{gap:12px}
+.du-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.du-k{display:flex;flex-direction:column;gap:2px;background:var(--panel);border:2px solid var(--frame);border-radius:14px;padding:9px 12px;min-width:0}
+.du-k b{font-size:20px;line-height:1.1}.du-k b small{font-size:12px;color:var(--muted);font-weight:700}
+.du-k .bar{margin-top:3px}
+.du-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.du-c{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px;min-width:0}
+.du-c.got{border-color:var(--gold)}
+.du-c.lock .du-pic{filter:grayscale(.85) brightness(.8);opacity:.75}
+.du-pic{width:54px;height:54px;object-fit:contain;flex:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))}
+.du-t{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.du-nm{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.du-nm b{font-size:14px;line-height:1.2}.du-nm small{font-size:11px;color:var(--muted)}
+.du-t .qj-pas{justify-content:flex-start;text-align:left}
+.du-tags{display:flex;gap:4px;flex-wrap:wrap}
+.du-who{display:flex;gap:4px;flex-wrap:wrap}
+.du-hd{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;background:var(--panel2);border-radius:999px;padding:1px 8px 1px 2px}
+.du-hd img{width:18px;height:18px;border-radius:50%;object-fit:cover}
+.du-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.du-gold{color:var(--gold);font-weight:900}
+.du-hr{display:flex;align-items:center;gap:10px;padding:8px;border:2px solid var(--line);border-radius:12px;background:var(--panel)}
+.du-hh{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;background:var(--panel2)}
+.du-hn{display:flex;flex-direction:column;min-width:0;flex:0 1 190px}
+.du-sls{display:grid;grid-template-columns:repeat(6,40px);gap:5px;flex:1}
+.du-sl{width:40px;height:40px;border-radius:10px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;background:var(--panel2)}
+.du-sl img{width:32px;height:32px;object-fit:contain}
+.du-sl.on{border:2px solid var(--fc,var(--gold));background:var(--panel3)}
+.du-sl.tro{border-style:solid}
+@media (max-width:860px){
+  .du-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .du-k{padding:6px 8px;border-radius:12px}.du-k b{font-size:16px}.du-k>span.xs:first-child{font-size:10.5px;line-height:1.2}.du-k>span.xs+b+span.xs{display:none}
+  .du-grid{grid-template-columns:1fr}
+  .du-hr{flex-wrap:wrap}.du-hn{flex:1 1 0}
+  .du-sls{order:3;flex:1 1 100%;grid-template-columns:repeat(6,minmax(0,1fr))}.du-sl{width:auto;aspect-ratio:1}
+}
+/* vitrine */
+.du-vit{display:flex;gap:16px;align-items:center;padding:14px 16px;border-radius:18px;border:2px solid var(--gold);background:radial-gradient(120% 140% at 0% 0%,rgba(241,207,110,.18),transparent 55%),var(--panel)}
+.du-ring{--p:0;width:96px;height:96px;flex:none;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(closest-side,var(--panel) 78%,transparent 80% 100%),conic-gradient(var(--gold2) calc(var(--p)*1%),var(--hp-bg) 0)}
+.du-ring b{font-size:30px;line-height:1}.du-ring small{font-size:11px;color:var(--muted);font-weight:700}
+.du-vr{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.du-vt{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.du-vt b{font-size:16px}
+.du-shelf{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px;padding:6px;border-radius:12px;background:linear-gradient(180deg,transparent 70%,rgba(0,0,0,.18));border-bottom:4px solid var(--frame2)}
+.du-ve{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:8px}
+.du-ve img{width:100%;max-width:34px;object-fit:contain;filter:grayscale(1) brightness(.45) opacity(.55);transition:transform .15s}
+.du-ve.got img{filter:drop-shadow(0 0 5px var(--fc,var(--gold2))) drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.du-ve:hover img{transform:translateY(-3px) scale(1.12)}
+.du-vps{display:flex;gap:6px;flex-wrap:wrap}
+.du-vp{display:inline-flex;gap:5px;align-items:baseline;font-size:12px;color:var(--muted);background:var(--panel2);border-radius:999px;padding:3px 10px}.du-vp b{color:var(--ink);font-size:14px}
+/* à faire */
+.du-td{display:flex;gap:10px;align-items:center}
+.du-tdi{width:36px;height:36px;object-fit:contain;flex:none}
+.du-tdt{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}.du-tdt b{font-size:13px}.du-tdt .bar{height:6px}
+.du-tdb{flex:none}
+.du-free{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line)}
+.du-frl{display:flex;gap:2px}.du-fri{width:24px;height:24px;object-fit:contain}
+/* collection : œufs + fiche */
+.du-lay{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+.du-fiche{position:sticky;top:calc(var(--sth,0px) + 10px)}
+.du-fiche h3{margin:0;font-size:17px}
+.du-fpic{width:72px;height:72px;object-fit:contain;flex:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}.du-fpic.off{filter:grayscale(.8) brightness(.8)}
+.du-fs{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}.du-fs>div{display:flex;flex-direction:column;gap:2px;background:var(--panel2);border-radius:10px;padding:6px 8px;min-width:0}.du-fs b{font-size:13px;display:flex;gap:4px;flex-wrap:wrap}
+.du-stars{color:var(--gold);font-size:10px;letter-spacing:-1px;overflow-wrap:anywhere}
+.du-fq{display:flex;flex-direction:column;gap:5px;padding:8px 10px;border-radius:12px;border:1px solid var(--line)}
+.du-fam{display:flex;flex-direction:column;gap:6px}
+.du-famh{display:flex;gap:6px;align-items:center;font-size:13px}.du-famh .qj-fd{width:10px;height:10px}
+.du-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.du-tile{all:unset;box-sizing:border-box;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px 8px;border-radius:14px;background:var(--panel);border:2px solid var(--line);text-align:center;min-width:0}
+.du-tile img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))}
+.du-tile.lock img{filter:grayscale(.9) brightness(.6)}.du-tile.run img{filter:grayscale(.45) brightness(.85)}
+.du-tile b{font-size:12px;line-height:1.2}.du-tile small{font-size:10.5px;font-weight:800}
+.du-tile .qj-pas{font-size:10.5px}
+.du-tile.got{border-color:color-mix(in srgb,var(--fc,var(--gold)) 70%,transparent);background:radial-gradient(90% 70% at 50% 25%,color-mix(in srgb,var(--fc,var(--gold)) 22%,transparent),transparent),var(--panel)}
+.du-tile[aria-pressed="true"]{border-color:var(--gold2);box-shadow:0 0 0 2px var(--gold2)}
+.du-tile .bar.sm{width:80%;height:5px}
+.du-cp{position:absolute;top:5px;left:6px;font-size:10px;font-weight:900;background:var(--gold);color:#2a1a08;border-radius:999px;padding:0 5px}
+.du-wh{position:absolute;top:4px;right:4px;display:flex;align-items:center;font-size:10px;font-weight:800}.du-wh img{width:20px;height:20px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
+/* par héros */
+.du-hcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:10px}
+.du-hc{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;border:2px solid var(--line);background:var(--panel)}
+.du-hc.reso{border-color:var(--gold);box-shadow:0 0 14px rgba(241,207,110,.25)}
+.du-hch{display:flex;gap:10px;align-items:center}
+.du-prim{display:flex;gap:3px;align-items:center;flex-wrap:wrap;margin-top:3px}
+.du-pe img{width:20px;height:20px;object-fit:contain;filter:grayscale(1) brightness(.4)}.du-pe.own img{filter:grayscale(.6) brightness(.8)}.du-pe.on img{filter:drop-shadow(0 0 4px var(--gold2))}
+.du-hss{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.du-hs{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border-radius:10px;border:2px dashed var(--line);background:var(--panel2);text-align:center;min-width:0}
+.du-hs img{width:34px;height:34px;object-fit:contain}.du-hs b{font-size:10.5px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.du-hs small{font-size:9.5px;color:var(--muted);line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.du-hs.on{border:2px solid var(--fc,var(--gold));background:radial-gradient(80% 60% at 50% 30%,color-mix(in srgb,var(--fc,var(--gold)) 22%,transparent),transparent),var(--panel3)}
+.du-hs.tro{border-style:solid}
+.du-plus{font-size:22px;color:var(--muted);line-height:34px;height:34px}
+.du-sug{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.du-sug .du-hd img{border-radius:0}
+@media (max-width:860px){
+  .du-vit{display:grid;grid-template-columns:64px minmax(0,1fr);padding:10px;gap:8px 12px;align-items:center}.du-vr{display:contents}.du-ring{width:64px;height:64px}.du-ring b{font-size:21px}
+  .du-vt{flex-direction:column;gap:2px}.du-shelf,.du-vps{grid-column:1/-1}
+  .du-shelf{grid-template-columns:repeat(8,minmax(0,1fr))}.du-vp{font-size:11px;padding:2px 8px}.du-vp b{font-size:12.5px}
+  .du-lay{grid-template-columns:1fr}.du-fiche{position:relative;top:auto;order:-1;scroll-margin-top:calc(var(--sth,0px) + 10px)}
+  .du-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .du-hcs{grid-template-columns:1fr}
+  .du-hs b{display:none}
+}
+/* 6A : Dofus animés (seulement avec .du-live : pas d'animations réduites) */
+.du-egg,.du-fegg{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.du-egg img,.du-fegg img{position:relative;z-index:1}
+.du-sh{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;display:none}
+.du-live .du-sh{display:block}
+.du-live .du-sh::before{content:"";position:absolute;top:-20%;bottom:-20%;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.7),transparent);animation:du-swp 5s ease-in-out infinite;animation-delay:calc(var(--i,0)*-1s)}
+.du-tile .du-sh,.du-fegg .du-sh{--i:inherit}
+.du-live .du-tile.got .du-egg::before,.du-live .du-fegg.got::before,.du-live .du-ve.got::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--fc,var(--gold2)) 60%,transparent),transparent 68%);animation:du-glw 2.8s ease-in-out infinite;animation-delay:calc(var(--i,0)*-.45s);pointer-events:none}
+.du-ve{position:relative}
+.du-live .du-ve.got img,.du-live .du-tile.got .du-egg,.du-live .du-fegg.got img{animation:du-flt 3.4s ease-in-out infinite;animation-delay:calc(var(--i,0)*-.6s)}
+.du-tile .du-egg{--i:inherit}
+.du-live .du-tile.sub .du-egg::before,.du-live .du-fegg.sub::before,.du-live .du-ve.sub::before{inset:-8px;background:radial-gradient(circle,rgba(255,214,90,.7),transparent 66%);animation:du-aur 1.8s ease-in-out infinite}
+.du-spk{display:none;position:absolute;width:5px;height:5px;border-radius:50%;background:#fff3b0;box-shadow:0 0 6px #ffd65a;z-index:3;pointer-events:none}
+.du-live .du-spk{display:block;animation:du-spkk 1.6s ease-in-out infinite}
+.du-live .du-tile.pop .du-egg img{animation:du-pop .6s ease-out}
+.du-live .du-tile.pop .du-egg::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid var(--fc,var(--gold2));animation:du-ring .6s ease-out forwards;pointer-events:none;z-index:3}
+.du-live .du-hs.on img{animation:du-flt 3.4s ease-in-out infinite}
+.du-live .du-hs.on:nth-child(2n) img{animation-delay:-1.2s}.du-live .du-hs.on:nth-child(3n) img{animation-delay:-2.1s}
+@keyframes du-flt{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes du-glw{0%,100%{opacity:.25;transform:scale(.85)}50%{opacity:.9;transform:scale(1.05)}}
+@keyframes du-swp{0%,72%{left:-60%}100%{left:130%}}
+@keyframes du-aur{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes du-spkk{0%,100%{opacity:0;transform:translate(0,0) scale(.4)}50%{opacity:1;transform:translate(var(--x),var(--y)) scale(1)}}
+@keyframes du-pop{0%{transform:scale(1)}40%{transform:scale(1.25) rotate(-6deg)}100%{transform:scale(1)}}
+@keyframes du-ring{from{opacity:1;transform:scale(.6)}to{opacity:0;transform:scale(1.6)}}
+@media (prefers-reduced-motion: reduce){.du-live *,.du-live *::before,.du-live *::after{animation:none!important}}

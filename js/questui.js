@@ -416,5 +416,5 @@
   // recherche dans les succès : la liste se met à jour en tapant
   let qTimer = null;
   document.addEventListener("input", (e) => { if (e.target && e.target.id === "qxSearch") { st.achq = e.target.value; clearTimeout(qTimer); qTimer = setTimeout(() => X().render(), 180); } });
-  window.QUI = { render, act, todo, pick: (id) => { if (E.DOFUS[id]) { st.dof = id; st.dfil = "all"; } } };
+  window.QUI = { render, act, todo, dofusHtml, pick: (id) => { if (E.DOFUS[id]) { st.dof = id; st.dfil = "all"; } } };
 })();
