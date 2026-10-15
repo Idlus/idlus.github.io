@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.5";
+const GAME_VERSION = "1.2.5.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.5.1", name: "Course de L'Ascension", items: [
+    "Classements › Course : la course de lancement de L'Ascension s'affiche enfin. Les 10 places du titre « Légende de la 1.1 », puis tous les joueurs en course classés par meilleur étage en Difficile",
+    "La pastille en haut de l'écran suit maintenant cette course, et L'Ascension › Classements a un bouton « Voir la course ». Les Légendes de la 1.0 restent dessous",
+  ] },
   { v: "1.2.5", name: "Les reliques", items: [
     "L'Ascension : 240 reliques propres à la tour, avec de vrais visuels d'objets DOFUS. Tous les 5 étages, après le sort du palier, la tour en propose 3 (de 3 emplacements différents), vous en gardez 1. Chaque relique donne des caractéristiques et un effet unique (« tuer un monstre rend 2 PA », « 20 % de chance d'esquiver le premier coup de chaque tour », « le marchand te rend 20 % de ce que tu dépenses »…)",
     "Six emplacements : Arme, Coiffe, Cape, Anneau, Amulette, Bottes. Une relique par emplacement, la nouvelle remplace l'ancienne. Les reliques sont perdues à la fin de la montée, comme les sorts et les glyphes ; la rareté (commune, rare, légendaire) monte avec l'étage, et l'Au-delà en offre toujours",
@@ -10194,7 +10198,49 @@ const raceTot = () => (E.MAIN_QUEST || []).length;
 function raceChap(step) { const i = E.questChapter(Math.min(step, raceTot() - 1)); const c = E.QUEST_CHAPTERS[i]; return c ? `Chapitre ${i + 1} · ${c.name}` : ""; }
 const raceDate = (at) => new Date(at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
 const raceOrd = (n) => (n === 1 ? "1re" : `${n}e`);
+/* 1.2.3.2 : course de lancement de la 1.1 (L'Ascension) : les 10 premiers comptes à l'étage 100 en Difficile (firsts, kind race11).
+   Les joueurs en course viennent du classement « par classe » du mois (lb_asc, cat classe) : le meilleur étage en Difficile du compte,
+   toutes classes confondues, puis qui l'a atteint en premier. Aucun envoi en plus. */
+const ASC_TOP = 100;
+async function raceAscFetch(out) {
+  const db = ON.db(), me = ON.user && ON.user.id;
+  const [{ data: w }, { data: run }] = await Promise.all([
+    db.from("firsts").select("key,pseudo,user_id,at").eq("kind", "race11").order("at", { ascending: true }).limit(RACE_N),
+    db.from("lb_asc").select("user_id,pseudo,main,k,score,at").eq("m", E.ascMonth()).eq("cat", "classe").order("score", { ascending: false }).order("at", { ascending: true }).limit(600)]);
+  out.win = (w || []).slice().sort((a, b) => (+a.key || 99) - (+b.key || 99));
+  const done = new Set(out.win.map((r) => r.user_id)), seen = new Set(), all = [];
+  (run || []).forEach((r) => { if (seen.has(r.user_id)) return; seen.add(r.user_id); all.push(r); });
+  const info = {}; all.forEach((r) => (info[r.user_id] = r));
+  out.win.forEach((r) => { const i = info[r.user_id]; if (i) r.main = i.main; });
+  out.run = all.filter((r) => !done.has(r.user_id) && r.score < ASC_TOP).slice(0, 50);
+  out.meRun = null;
+  if (me && !done.has(me) && S) {
+    const fl = Math.max((S.asc && S.asc.best && S.asc.best.d) || 0, (info[me] || {}).score || 0), mi = out.run.findIndex((r) => r.user_id === me);
+    const rank = mi >= 0 ? mi + 1 : all.filter((r) => !done.has(r.user_id) && r.user_id !== me && r.score > fl).length + 1;
+    out.meRun = { rank, fl };
+  }
+  ui.raceInfo = { left: RACE_N - out.win.length, rank: out.meRun && out.meRun.fl > 0 ? out.meRun.rank : 0, fl: out.meRun ? out.meRun.fl : 0, at: Date.now() };
+  renderUpdBar();
+}
+function raceAscHtml(d) {
+  const left = RACE_N - d.win.length, me = ON.user && ON.user.id, end = left <= 0;
+  const head = `<div class="rc-head${end ? " end" : ""}"><img src="assets/ui/orn/orn_legende.svg" alt=""><div class="grow"><b>${end ? "Les 10 Légendes de la 1.1" : "Course de lancement de L'Ascension"}</b>
+    <span class="small muted">${end ? `Course terminée le ${raceDate(d.win[RACE_N - 1].at)}. Ces 10 comptes ont atteint l'étage ${ASC_TOP} de L'Ascension en Difficile les premiers : le titre « Légende de la 1.1 » ne sera plus jamais donné.` : `Les 10 premiers comptes à atteindre l'étage ${ASC_TOP} de L'Ascension en Difficile gagnent le titre « Légende de la 1.1 ».`}</span></div>
+    ${end ? "" : `<div class="rc-left"><b>${left}</b><small>place${left > 1 ? "s" : ""} libre${left > 1 ? "s" : ""}</small></div>`}</div>`;
+  const slots = `<div class="rc-slots${end ? " end" : ""}">${Array.from({ length: RACE_N }, (_, i) => { const r = d.win[i];
+    return r ? `<button class="rc-slot got${r.user_id === me ? " mine" : ""}${i < 3 ? " p" + (i + 1) : ""}${staffCls(r.user_id)}" data-act="lb-prof" data-u="${h(r.user_id || "")}"><span class="rk">${i + 1}</span>${cmed(r.main)}<span class="nm">${pname(r.pseudo || "compte supprimé", r.user_id)}<small>${raceDate(r.at)}</small></span>${IC("couronne")}</button>`
+      : `<div class="rc-slot${i === d.win.length ? " next" : ""}"><span class="rk">${i + 1}</span><span class="nm">${i === d.win.length ? "Prochaine place" : "Place libre"}</span></div>`; }).join("")}</div>`;
+  if (end) return head + slots;
+  const row = (r, i, mine) => { const pc = Math.max(2, Math.round((100 * r.score) / ASC_TOP)), c = CLASSES[r.k];
+    return `<button class="lbr rc-run${mine ? " me" : ""}${staffCls(r.user_id)}" data-act="lb-prof" data-u="${h(r.user_id)}"><span class="rk">${i}</span>${cmed(r.main)}<span class="nm">${pname(r.pseudo, r.user_id)}${mine ? ` <small class="inl">toi</small>` : ""}<small>${c ? `Meilleure montée avec ${h(c.name)}` : "En Difficile"}</small></span><span class="rc-bar"><i style="width:${pc}%"></i></span><span class="sc">${r.score}<small>/${ASC_TOP}</small></span></button>`; };
+  const meIn = d.meRun && d.run.some((r) => r.user_id === me);
+  const meRow = d.meRun && !meIn && d.meRun.fl > 0 ? row({ user_id: me, pseudo: (ON.profile && ON.profile.pseudo) || "Toi", main: S.chars[0].cls, score: d.meRun.fl }, d.meRun.rank, true) : "";
+  const list = d.run.length ? d.run.map((r, i) => row(r, i + 1, r.user_id === me)).join("") : `<div class="empty">Personne n'est encore en course. Monte L'Ascension en Difficile pour ouvrir le classement !</div>`;
+  return `${head}${slots}<div class="rc-h">${IC("trophee")}<b>En course</b><span class="xs muted">classés par meilleur étage atteint en Difficile ce mois-ci, puis par qui l'a atteint en premier. Ton étage part avec la sauvegarde en ligne.</span></div>
+    <div class="lbt">${list}${meRow}</div>`;
+}
 async function raceFetch(out) {
+  out.asc = {}; await raceAscFetch(out.asc);
   const db = ON.db(), me = ON.user && ON.user.id;
   const [{ data: w }, { data: run }] = await Promise.all([
     db.from("firsts").select("key,pseudo,user_id,at").eq("kind", "race10").order("at", { ascending: true }).limit(RACE_N),
@@ -10207,16 +10253,15 @@ async function raceFetch(out) {
   out.win.forEach((r) => { const i = info[r.user_id]; if (i) { r.main = i.main; r.main_lvl = i.main_lvl; } });
   out.run = (run || []).filter((r) => !done.has(r.user_id) && r.qstep < raceTot()).slice(0, 50);
   out.meRun = null;
-  if (me && !done.has(me) && S) {
+  if (me && !done.has(me) && S && out.win.length < RACE_N) {
     const step = Math.max(S.quest.step, (info[me] || {}).qstep || 0), mi = out.run.findIndex((r) => r.user_id === me);
     let rank = mi + 1;
     if (mi < 0) { const { count } = await db.from("lb_race").select("user_id", { count: "exact", head: true }).gt("qstep", step); rank = Math.max(1, (count || 0) - out.win.length + 1); }
     out.meRun = { rank, step };
   }
-  ui.raceInfo = { left: RACE_N - out.win.length, rank: out.meRun ? out.meRun.rank : 0, step: out.meRun ? out.meRun.step : 0, at: Date.now() };
-  renderUpdBar();
 }
-function raceHtml(d) {
+function raceHtml(d) { return (d.asc ? raceAscHtml(d.asc) : "") + `<div class="rc-sep"></div>` + raceHtml10(d); }
+function raceHtml10(d) {
   const tot = raceTot(), left = RACE_N - d.win.length, me = ON.user && ON.user.id, end = left <= 0;
   const head = `<div class="rc-head${end ? " end" : ""}"><img src="assets/ui/orn/orn_legende.svg" alt=""><div class="grow"><b>${end ? "Les 10 Légendes de la 1.0" : "Course de lancement de la 1.0"}</b>
     <span class="small muted">${end ? `Course terminée le ${raceDate(d.win[RACE_N - 1].at)}. Ces 10 comptes ont fini la quête principale les premiers : le titre « Légende de la 1.0 » et la Couronne de la Légende ne seront plus jamais donnés.` : `Les 10 premiers comptes à finir la quête principale (${tot} étapes) gagnent le titre « Légende de la 1.0 » et l'ornement unique « Couronne de la Légende ».`}</span></div>
@@ -10236,17 +10281,17 @@ function raceHtml(d) {
 /* pastille en haut de l'écran tant que la course est ouverte (rafraîchie toutes les 5 min) */
 let raceInfoAt = 0;
 function raceInfoFetch() {
-  if (!S || !ON || !ON.db || !ON.db() || (S.unlocks && S.unlocks.legende) || Date.now() - raceInfoAt < 300000) return;
+  if (!S || !ON || !ON.db || !ON.db() || (S.unlocks && S.unlocks.legende11) || Date.now() - raceInfoAt < 300000) return;
   if (ui.raceInfo && ui.raceInfo.left <= 0) return;
   raceInfoAt = Date.now();
-  raceFetch({}).then(() => renderUpdBar()).catch(() => {});
+  raceAscFetch({}).then(() => renderUpdBar()).catch(() => {});
 }
 function raceChip() {
-  const R = ui.raceInfo; if (!R || R.left <= 0 || !ON || (S.unlocks && S.unlocks.legende)) return "";
+  const R = ui.raceInfo; if (!R || R.left <= 0 || !ON || (S.unlocks && S.unlocks.legende11)) return "";
   const pl = `${R.left} place${R.left > 1 ? "s" : ""}`, me = ON.user && R.rank;
-  return tchip({ k: "race", ico: IC("couronne"), t: "Course de lancement", d: me ? `tu es ${raceOrd(R.rank)} · ${pl}` : ON.user ? pl : `${pl} · connecte-toi pour courir`,
+  return tchip({ k: "race", ico: IC("couronne"), t: "Course de L'Ascension", d: me ? `tu es ${raceOrd(R.rank)} · ${pl}` : ON.user ? pl : `${pl} · connecte-toi pour courir`,
     s: me ? `${raceOrd(R.rank)} · ${pl}` : pl, go: `data-act="race-open"`,
-    tip: `Course de lancement : les 10 premiers comptes à finir la quête principale gagnent le titre « Légende de la 1.0 ». Encore ${pl}.${me ? ` Tu es ${raceOrd(R.rank)} en course (étape ${R.step}/${raceTot()}).` : ""} Toucher pour voir la course.` });
+    tip: `Course de lancement de L'Ascension : les 10 premiers comptes à l'étage ${ASC_TOP} en Difficile gagnent le titre « Légende de la 1.1 ». Encore ${pl}.${me ? ` Tu es ${raceOrd(R.rank)} en course (étage ${R.fl}/${ASC_TOP}).` : ""} Toucher pour voir la course.` });
 }
 function renderLadder() {
   if (!ON) { ui.tab = "home"; return renderHome(); }

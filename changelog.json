@@ -1,6 +1,14 @@
 {
-  "version": "1.2.5",
+  "version": "1.2.5.1",
   "versions": [
+    {
+      "v": "1.2.5.1",
+      "name": "Course de L'Ascension",
+      "items": [
+        "Classements › Course : la course de lancement de L'Ascension s'affiche enfin. Les 10 places du titre « Légende de la 1.1 », puis tous les joueurs en course classés par meilleur étage en Difficile",
+        "La pastille en haut de l'écran suit maintenant cette course, et L'Ascension › Classements a un bouton « Voir la course ». Les Légendes de la 1.0 restent dessous"
+      ]
+    },
     {
       "v": "1.2.5",
       "name": "Les reliques",

@@ -452,7 +452,8 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // 7b. classements : liste, onglets, profil, record vérifié
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const H = [{ cls: "iop", lvl: 120, ren: 1, name: "Grokk", gear: [] }];
       d.views = { lb_level: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", level: 4812, album: 150, succes: 300, heroes: H }, { user_id: "u8", pseudo: "Tofuline", main: "eni", level: 4650, album: 120, succes: 250, heroes: H }, { user_id: "u7", pseudo: "Bworkman", main: "sacri", level: 4377, album: 90, succes: 200, heroes: H }, { user_id: "u6", pseudo: "Xenerium", main: "cra", level: 4102, album: 80, succes: 150, heroes: H }],
-        lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], firsts: [{ kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }, { kind: "job200", key: "tailleur", label: "Premier Tailleur au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T11:00:00Z" }],
+        lb_class: [{ user_id: "u9", pseudo: "Kralamour", cls: "iop", score: 320 }], lb_records: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", did: "x", dname: "Château", k: 10, t: 72 }], lb_week: [], lb_asc: [{ user_id: "u8", pseudo: "Grimpeur", main: "iop", m: window.ENGINE.ascMonth(), cat: "classe", k: "cra", score: 73, at: "2026-10-15T10:00:00Z" }, { user_id: "u8", pseudo: "Grimpeur", main: "iop", m: window.ENGINE.ascMonth(), cat: "classe", k: "iop", score: 40, at: "2026-10-15T09:00:00Z" }],
+        firsts: [{ kind: "race11", key: "1", label: "Course de lancement de la 1.1 (L'Ascension) : n° 1 sur 10", pseudo: "Zephyr", user_id: "u7", at: "2026-10-15T17:23:57Z" }, { kind: "lvl200", key: "", label: "Premier héros au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T10:00:00Z" }, { kind: "job200", key: "tailleur", label: "Premier Tailleur au niveau 200", pseudo: "Kralamour", user_id: "u9", at: "2026-10-12T11:00:00Z" }],
         lb_jobs: [{ user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tous", lvl: 812, xp: 900, alljobs: { tailleur: [200, 0], bijoutier: [190, 500], forgeron: [180, 400], tous: [812, 900] } }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tous", lvl: 640, xp: 10, alljobs: { tailleur: [150, 10] } },
           { user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tailleur", lvl: 200, xp: 0 }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tailleur", lvl: 150, xp: 10 },
           { user_id: "u9", pseudo: "Kralamour", main: "iop", main_lvl: 200, job: "tous_recolte", lvl: 600, xp: 0, alljobs: { paysan: [150, 0], mineur: [140, 0] } }, { user_id: "u8", pseudo: "Tofuline", main: "eni", main_lvl: 180, job: "tous_recolte", lvl: 400, xp: 0, alljobs: { paysan: [90, 0] } }] };
@@ -466,7 +467,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await navClick(page, "ladder");
     // 1.0.5 : l'onglet Course s'ouvre en premier : 10 places, puis les joueurs en course
     await page.waitForSelector("#lbList .rc-slots", { timeout: 10000 });
-    if ((await page.$$("#lbList .rc-slot")).length !== 10) fail("course : il faut 10 places");
+    if ((await page.$$("#lbList .rc-slot")).length !== 20) fail("course : il faut 10 places pour L'Ascension (1.1) et 10 pour la 1.0");
+    // 1.2.3.2 : la course de lancement de L'Ascension (race11, lb_asc cat classe) s'affiche en premier
+    { const t = await page.$eval("#lbList", (e) => e.textContent); if (!/Course de lancement de L'Ascension/.test(t) || !/Zephyr/.test(t) || !/Grimpeur/.test(t)) fail("course de L'Ascension absente : " + t.slice(0, 200)); }
     await page.click('[data-act="lb-tab"][data-v="lvl"]');
     await page.waitForSelector(".podium .pod", { timeout: 10000 });
     if ((await page.$$(".lbt .lbr")).length < 2) fail("classement : lignes manquantes (dont la mienne)");

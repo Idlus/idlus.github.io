@@ -286,7 +286,8 @@
     const list = !online ? `<p class="note">Le classement de tous les joueurs demande un compte (gratuit).</p>` : st.rk.err ? `<p class="note">Classement indisponible pour l'instant.</p>`
       : !rows ? `<p class="note">Chargement…</p>` : !rows.length ? `<p class="empty">Personne n'est encore classé.</p>`
       : `<div class="list">${rows.map((r) => `<div class="li small ${ON.user && r.user_id === ON.user.id ? "me" : ""}"><b class="num">${r.r}</b><span class="grow">${h(r.pseudo || "?")}</span><span class="num">${fmtS(r.score)}</span></div>`).join("")}</div>`;
-    return `<div class="subtabs">${RK_CATS.map(([k, n]) => `<button data-act="as-rk" data-v="${k}" aria-pressed="${cat === k}">${n}</button>`).join("")}</div>
+    const race = online && !(s.unlocks && s.unlocks.legende11) ? `<p class="note">Course de lancement : les 10 premiers comptes à l'étage 100 en Difficile gagnent le titre « Légende de la 1.1 ». <button class="btn sm" data-act="race-open">Voir la course</button></p>` : ""; // 1.2.3.2
+    return `${race}<div class="subtabs">${RK_CATS.map(([k, n]) => `<button data-act="as-rk" data-v="${k}" aria-pressed="${cat === k}">${n}</button>`).join("")}</div>
       ${cat === "classe" ? `<div class="row"><select data-act="as-rkcls" aria-label="Classe">${D.CLASS_ORDER.map((c) => `<option value="${c}" ${c === myCls ? "selected" : ""}>${h(CL()[c].name)}</option>`).join("")}</select></div>` : ""}
       <p class="note">${RK_D[cat]} Ton score : <b>${fmtS(mine)}</b>. Le top 10 gagne un titre${cat === "audela" ? " et 2 Fioles" : ", 3 Fioles et 100 000 kamas"} au ${cat === "audela" ? "lundi" : "début du mois"} suivant.</p>${list}`;
   }
