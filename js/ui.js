@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.1.1";
+const GAME_VERSION = "1.1.1.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.1.2", name: "Chances des stasis 11 à 15", items: [
+    "Fiche de donjon : les chances de Dofus s'affichent pour les stasis 11 à 15 (les mêmes qu'en stasis 10), avec la stasis choisie en surbrillance",
+    "Équipements du boss : « ×3,25 dès la stasis 10 », les chances restent au plafond au-delà",
+  ] },
   { v: "1.1.1.1", name: "Chasse aux bugs de la 1.1", items: [
     "Élevage : pendant une longue absence, l'éleveur automatique enchaîne les naissances au lieu d'une seule par couple",
     "Élevage : les commandes du jour ne changent plus quand tu découvres une couleur ; la place de la quête ne bloque plus le dernier achat de places",
@@ -3047,6 +3051,7 @@ function compSuggest(did) {
 }
 /* 1.0.6.2 : le Dofus que lâche ce boss (et l'Ocre sur les boss de niveau 160 ou plus), avec la chance et la stasis demandée */
 function dofLadder(lad, k, SI) {
+  lad = lad.concat(Array(Math.max(0, E.STASIS_MAX - lad.length)).fill(lad[lad.length - 1])); // 1.1.1.2 : stasis 11 à 15 affichées, mêmes chances qu'en 10
   return `<span class="xs muted">Chance de chaque héros, selon la stasis (1 sur …) :</span><div class="doflad">${lad.map((n, i) => `<span class="${i + 1 === k ? "on" : ""} ${n ? "" : "off"} ${SI && i + 1 <= SI.max + 1 ? "" : "far"}"><i>Stasis ${i + 1}</i>${!n ? "—" : n >= 1e6 ? String(Math.round(n / 1e5) / 10).replace(".", ",") + " M" : dofOdds(n)}</span>`).join("")}</div>`; }
 function dofTeam(n, k) { const t = Math.max(1, E.team(S).length); return n ? `Avec tes ${t} héros${k ? `, en stasis ${k}` : ""} : <b>1 chance sur ${dofOdds(Math.round(n / t))}</b> par victoire.` : ""; }
 /* 1.0.10 : l'Ocre tombe de tout boss de donjon, d'autant mieux que le boss est haut niveau */
@@ -3056,13 +3061,13 @@ function dgDofusBox(did, SI, k) {
   const dfid = E.dofusOfDungeon(did); const out = []; k = k || SI.sel || 1;
   const kk = Math.min(k, 10), sk = k > 10 ? " (comme en stasis 10)" : ""; // 1.1 : au-delà de la stasis 10, mêmes chances qu'en 10
   if (dfid) { const Df = E.DOFUS[dfid]; const I = E.dofusDropInfo(dfid); const n = I.lad[kk - 1];
-    out.push(`<div class="dofbox col">${im(dofusImg(dfid), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(dfid))}${E.dofusOwned(S, dfid) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${n ? `En stasis ${k}${sk}, chaque héros a 1 chance sur ${dofOdds(n)} de le recevoir à chaque victoire. ${dofTeam(n)}` : `Ce boss le lâche dès la stasis ${I.k}.`} Sa quête en donne un sûr.<br>${dofLadder(I.lad, kk, SI)}</span><button class="btn sm" data-act="dofgo" data-v="${dfid}">Quête</button></div>`); }
+    out.push(`<div class="dofbox col">${im(dofusImg(dfid), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(dfid))}${E.dofusOwned(S, dfid) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${n ? `En stasis ${k}${sk}, chaque héros a 1 chance sur ${dofOdds(n)} de le recevoir à chaque victoire. ${dofTeam(n)}` : `Ce boss le lâche dès la stasis ${I.k}.`} Sa quête en donne un sûr.<br>${dofLadder(I.lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="${dfid}">Quête</button></div>`); }
   const lv = DUNGEONS[did].lvl;
   E.DOFUS_ORDER.forEach((id) => { const Df = E.DOFUS[id]; if (!Df.drop || !Df.drop.lvl || lv < Df.drop.lvl) return; // 1.1 : Dofus des Alliances sur les boss de niveau 180 et plus
     const I = E.dofusDropInfo(id); const n = I.lad[kk - 1];
-    out.push(`<div class="dofbox col">${im(dofusImg(id), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(id))}${E.dofusOwned(S, id) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${n ? `En stasis ${k}${sk}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}` : `Tout boss de niveau ${Df.drop.lvl} et plus le lâche dès la stasis ${Df.drop.k}.`}<br>${dofLadder(I.lad, kk, SI)}</span><button class="btn sm" data-act="dofgo" data-v="${id}">Quête</button></div>`); });
+    out.push(`<div class="dofbox col">${im(dofusImg(id), "dfpic", Df.name)}<span class="grow xs"><b>${h(Df.name)}</b> · ${h(E.dofusBonusTxt(id))}${E.dofusOwned(S, id) ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${n ? `En stasis ${k}${sk}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}` : `Tout boss de niveau ${Df.drop.lvl} et plus le lâche dès la stasis ${Df.drop.k}.`}<br>${dofLadder(I.lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="${id}">Quête</button></div>`); });
   if (lv > 0) { const lad = Array.from({ length: 10 }, (_, i) => E.ocreOdds(i + 1, lv)); const n = lad[kk - 1];
-    out.push(`<div class="dofbox col">${im(dofusImg("ocre"), "dfpic", "Dofus Ocre")}<span class="grow xs"><b>Dofus Ocre</b> · ${h(E.dofusBonusTxt("ocre"))}${E.dofusOwned(S, "ocre") ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${ocreWhy(lv)} En stasis ${k}${sk}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}<br>${dofLadder(lad, kk, SI)}</span><button class="btn sm" data-act="dofgo" data-v="ocre">Quête</button></div>`); }
+    out.push(`<div class="dofbox col">${im(dofusImg("ocre"), "dfpic", "Dofus Ocre")}<span class="grow xs"><b>Dofus Ocre</b> · ${h(E.dofusBonusTxt("ocre"))}${E.dofusOwned(S, "ocre") ? ` <span class="tag good">✓ obtenu</span>` : ""}<br>${ocreWhy(lv)} En stasis ${k}${sk}, chaque héros a 1 chance sur ${dofOdds(n)}. ${dofTeam(n)}<br>${dofLadder(lad, k, SI)}</span><button class="btn sm" data-act="dofgo" data-v="ocre">Quête</button></div>`); }
   return out.join("");
 }
 function dgPick(did) { if (ui.dgSel !== did) { ui.dgSel = did; ui.dgStasis = null; ui.dgChain = (S.dgChains && S.dgChains[did]) || 1; ui.dgClimb = 0; } }
@@ -3116,7 +3121,7 @@ function dungeonSheet(did) {
         <li>${SI.firsts[k] ? "✓ Coffre de premier passage déjà obtenu" : `${consIco(CONSUMABLES[E.stasisChest(k)])} Premier passage : ${CONSUMABLES[E.stasisChest(k)].name} et ${k >= 8 ? 3 : k >= 4 ? 2 : 1} Pierre${k >= 4 ? "s" : ""} d'âme${k >= 11 ? `, ${k >= 15 ? "2 Pierres d'âme dorées" : "1 Pierre d'âme dorée"}` : ""}`}</li>
         <li>${IC("poussiere")} ${Math.round((k * 2 + (k >= 4 ? 4 : 0)) * (k >= 11 ? 2 : 1) * (wk ? E.WEEKLY_DUST : 1) * (fl ? E.FLASH_DUST : 1))} Poussières de stasis à chaque victoire</li>
         <li>${IC("quetes")} Parchemins de <b>${h(STATS[stat].name)}</b> : Grand parchemin au premier passage en stasis 10 (un par héros), Petit parchemin rare sur le boss dès la stasis 6</li></ul>
-        ${loot ? `<div class="xs muted" style="margin:6px 0 4px">${G("crown")} <b>Équipements du boss</b> · stasis ${k} : chances ×${String(bm).replace(".", ",")} (×1 en stasis 1, ×2 en 5, ×3,25 en 10) · ✓ déjà obtenu</div><div class="loot">${loot}</div>` : ""}</div>
+        ${loot ? `<div class="xs muted" style="margin:6px 0 4px">${G("crown")} <b>Équipements du boss</b> · stasis ${k} : chances ×${String(bm).replace(".", ",")} (×1 en stasis 1, ×2 en 5, ×3,25 dès la 10) · ✓ déjà obtenu</div><div class="loot">${loot}</div>` : ""}</div>
       ${best ? `<div class="xs muted">Records : ${best}</div>` : ""}
       ${keyPanel(did)}
     </div>
@@ -3610,7 +3615,7 @@ function dofusDropHtml(id) {
       `<button class="btn sm primary" data-act="pagego" data-v="exp">Songe infini</button>`); }
   if (I.dgs) { const ok = I.dgs.filter((d) => E.dungeonUnlocked(S, d)).length;
     return box(IC("cle"), `Tous les boss de niveau ${I.minLvl} et plus`, `${I.dgs.length} donjons`, `Dès la stasis ${I.k}, sur n'importe quel boss de niveau ${I.minLvl} à 200`,
-      [[`Chaque héros de l'équipe : <b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire en stasis ${I.k}, jusqu'à 1 sur ${dofOdds(I.lad[9])} en stasis 10. Aucun bonus ne change ces chances.`], [dofLadder(I.lad, 0)], [ok ? `✓ ${ok} de ces donjons déjà ouvert${ok > 1 ? "s" : ""}` : "Aucun de ces donjons ouvert pour l'instant", ok ? "ok" : "muted"]],
+      [[`Chaque héros de l'équipe : <b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire en stasis ${I.k}, jusqu'à 1 sur ${dofOdds(I.lad[9])} en stasis 10 et au-delà. Aucun bonus ne change ces chances.`], [dofLadder(I.lad, 0)], [ok ? `✓ ${ok} de ces donjons déjà ouvert${ok > 1 ? "s" : ""}` : "Aucun de ces donjons ouvert pour l'instant", ok ? "ok" : "muted"]],
       `<button class="btn sm" data-act="pagego" data-v="dungeons">Donjons</button>`); }
   if (!I.dg) { const L = E.ocreDungeons(); const ok = L.filter((d) => E.dungeonUnlocked(S, d)).length;
     const why = "Plus le boss est haut niveau, meilleure est la chance : un boss de niveau 100 donne 2 fois moins qu'un boss de niveau 200, un boss de niveau 20 10 fois moins.";
@@ -3621,7 +3626,7 @@ function dofusDropHtml(id) {
   const need = dgNeedTxt(I.dg);
   const me = !un ? [`${G("lock")} Donjon pas encore ouvert${need ? ` : ${h(need.replace(/^Battez/, "battez"))}` : ""}`, "muted"] : SI.max >= I.k ? [`✓ Déjà à ta portée (ta meilleure stasis ici : ${SI.max})`, "ok"] : SI.max >= I.k - 1 ? [`Tu peux tenter la stasis ${I.k} (ta meilleure ici : ${SI.max})`, ""] : [`Ta meilleure stasis ici : ${SI.max || "aucune"} · il faut atteindre la stasis ${I.k}`, "muted"];
   return box(im(imgM(I.boss), "", B.name), h(B.name), "boss", `${un ? "" : G("lock") + " "}Donjon · ${h(dg.name)} · ${h(z ? z.name : "")} · niv. ${dg.lvl}`,
-    [[`Chaque héros de l'équipe : <b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire dès la stasis ${I.k}${I.lad[9] !== I.odds ? `, jusqu'à 1 sur ${dofOdds(I.lad[9])} en stasis 10` : ""}`], [dofLadder(I.lad, SI.max || 0, SI) + dofTeam(I.lad[Math.max(1, SI.max || 1) - 1], Math.max(1, SI.max || 1))], me], `<button class="btn sm ${un ? "primary" : ""}" data-act="dgopen" data-id="${I.dg}">Y aller</button>`, !un);
+    [[`Chaque héros de l'équipe : <b>1 chance sur ${dofOdds(I.odds)}</b> à chaque victoire dès la stasis ${I.k}${I.lad[9] !== I.odds ? `, jusqu'à 1 sur ${dofOdds(I.lad[9])} en stasis 10 et au-delà` : ""}`], [dofLadder(I.lad, SI.max || 0, SI) + dofTeam(I.lad[Math.max(1, SI.max || 1) - 1], Math.max(1, SI.max || 1))], me], `<button class="btn sm ${un ? "primary" : ""}" data-act="dgopen" data-id="${I.dg}">Y aller</button>`, !un);
 }
 /* ligne « quête » : où en est la quête, et l'étape à faire maintenant */
 function dofusQuestLineHtml(id) {

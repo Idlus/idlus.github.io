@@ -1,6 +1,14 @@
 {
-  "version": "1.1.1.1",
+  "version": "1.1.1.2",
   "versions": [
+    {
+      "v": "1.1.1.2",
+      "name": "Chances des stasis 11 à 15",
+      "items": [
+        "Fiche de donjon : les chances de Dofus s'affichent pour les stasis 11 à 15 (les mêmes qu'en stasis 10), avec la stasis choisie en surbrillance",
+        "Équipements du boss : « ×3,25 dès la stasis 10 », les chances restent au plafond au-delà"
+      ]
+    },
     {
       "v": "1.1.1.1",
       "name": "Chasse aux bugs de la 1.1",

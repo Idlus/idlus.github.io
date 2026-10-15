@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.1.2 « Chances des stasis 11 à 15 »
+
+Signalé par Mathis (15/10/2026) : « on voit pas le coef de drop des stasis + que 10 ». `dofLadder()` (`js/ui.js`) complète l'échelle des chances jusqu'à `E.STASIS_MAX` avec la valeur de la stasis 10 (les chances sont plafondées à la 10 depuis la 1.1) et met la stasis choisie en surbrillance.
+
 ## 1.1.1.1 « Chasse aux bugs de la 1.1 »
 
 Demande de Mathis (15/10/2026) : « Vérifie tous les bugs possibles du jeu et corrige ». Balayage Playwright de toutes les pages et de leurs boutons (PC et téléphone, partie neuve et avancée, en ligne simulé) : aucune erreur. Relecture du code de la 1.1 : `enclosTick` avance par étapes (`js/elevage.js`), commandes du jour gardées dans `elev.ord.list`, `E.catchingUp` pendant `catchUp` (le Champion légendaire n'apparaît pas hors ligne), auto de L'Ascension (mercenaire, fin de montée au changement de mois via `ascEnd(S, "reset")`, fiole du Défi une fois par jour), fiche de donjon stasis 11+, `invTrash` sans Parfaits, `legFuse` garde le surplus, Échap ferme `#sheet`, copies restaurées par leur date.
