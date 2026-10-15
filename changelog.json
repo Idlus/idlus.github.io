@@ -1,6 +1,14 @@
 {
-  "version": "1.0.32.12",
+  "version": "1.0.32.13",
   "versions": [
+    {
+      "v": "1.0.32.13",
+      "name": "Mathis décide",
+      "items": [
+        "La vérification automatique ne retire plus personne des classements : un progrès étonnant signale seulement le compte à Mathis, et le joueur reste classé",
+        "C'est Mathis qui décide : « C'est bon » (il reste classé pour de bon) ou « Retirer » (il sort des classements jusqu'à ce que Mathis le remette)"
+      ]
+    },
     {
       "v": "1.0.32.12",
       "name": "Vérifié, il reste classé",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.32.13 « Mathis décide »
+
+Demande de Mathis (15/10/2026) : « C'est à moi de décider si oui ou non il triche ». La vérification automatique (ladder_from_save) ne met plus `flagged` : elle met `suspect` + `flag_reason`, le joueur reste classé et apparaît dans l'onglet « En vérification » du panel Xener avec « C'est bon » (verified) ou « Retirer » (flagged). Pas de « Premier » tant qu'il est signalé. Exception : la partie de Mathis retouchée par le panel de test reste hors classement.
+
 ## 1.0.32.12 « Vérifié, il reste classé »
 
 Un joueur vérifié et remis dans les classements par Mathis y reste : il n'est plus remis « en vérification » automatiquement (colonne `ladder.verified`, supabase/classements.sql et chat.sql). Badge « Vérifié » dans le panel Xener.
