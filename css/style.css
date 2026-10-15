@@ -5752,3 +5752,4 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 @media (prefers-reduced-motion:reduce){.shine::after{animation:none;opacity:0}}
 .launch10 .shine.l10-logo{width:110px;height:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
 .launch10 .shine.l10-logo img{width:100%;height:auto}
+.shine.nom{--m:url(../assets/ui/logo-nom.svg)}.shine.emb{--m:url(../assets/ui/logo-embleme.svg)}

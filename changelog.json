@@ -1,6 +1,15 @@
 {
-  "version": "1.2.6",
+  "version": "1.2.6.1",
   "versions": [
+    {
+      "v": "1.2.6.1",
+      "name": "Nouveau logo",
+      "items": [
+        "Idlus a son logo : le « i » d'idlus devient un fût doré coiffé d'un Dofus émeraude",
+        "Écran de départ : le nom est dessiné, avec un reflet qui passe toutes les 6 secondes ; même reflet sur l'emblème de la fenêtre de bienvenue",
+        "Nouvel œuf dans le menu, l'onglet du navigateur et l'icône de l'appli installée (téléphone et PC)"
+      ]
+    },
     {
       "v": "1.2.6",
       "name": "L’identité des sorts",

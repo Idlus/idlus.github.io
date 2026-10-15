@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.6";
+const GAME_VERSION = "1.2.6.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.6.1", name: "Nouveau logo", items: [
+    "Idlus a son logo : le « i » d'idlus devient un fût doré coiffé d'un Dofus émeraude",
+    "Écran de départ : le nom est dessiné, avec un reflet qui passe toutes les 6 secondes ; même reflet sur l'emblème de la fenêtre de bienvenue",
+    "Nouvel œuf dans le menu, l'onglet du navigateur et l'icône de l'appli installée (téléphone et PC)",
+  ] },
   { v: "1.2.6", name: "L’identité des sorts", items: [
     "Chacun des 836 sorts a maintenant sa propre mécanique, tirée de sa description DOFUS : cumul, retardement, piège, glyphe, bombe, portail, carte piochée, téléportation… Deux sorts d’une même classe ne se ressemblent plus.",
     "Fiche du sort : un bloc « Identité du sort » explique sa mécanique en une phrase.",
@@ -2573,7 +2578,7 @@ function renderStart() {
   $("#main").innerHTML = `
   <section class="start stack">
     ${menuOn() && (SLOT !== 1 || (ON && ON.user) || [1, 2, 3].some((k) => k !== SLOT && SV.local.get(slotKey(k)))) ? `<div class="svback"><button class="lnk" data-act="sv-menu">← Choisir une autre partie</button><span class="tag ${SLOT === 1 ? "cl" : "lo"}">Partie ${SLOT}${SLOT === 1 ? " · classements" : " · solo"}</span></div>` : ""}
-    <div class="logo"><span class="shine" style="--m:url(assets/ui/logo-nom.svg)"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>
+    <div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>
     ${BETA && hasPublicSave() ? `<div class="panel"><div class="pad stack"><b>Version de test</b><span class="small muted">Votre partie du jeu public n'est pas modifiée ici. Vous pouvez en faire une copie pour tester les nouveautés avec vos héros.</span><div><button class="btn primary" data-act="frompublic">Copier ma partie du jeu public</button></div></div></div>` : ""}
     ${ON && !ON.user ? `<div class="panel"><div class="pad row between"><span><b>Déjà un compte ?</b><br><span class="small muted">Connecte-toi pour retrouver ta partie. Sinon, joue tout de suite : tu pourras créer un compte plus tard, ta partie te suivra.</span></span><button class="btn sm" data-act="on-loginscreen">Se connecter</button></div></div>` : ""}
     <p class="muted" style="text-align:center;margin:0">Un idle inspiré de DOFUS : vos héros combattent seuls, à vous d'optimiser leur équipement, leurs sorts et leurs stratégies.</p>
@@ -7473,7 +7478,7 @@ function renderUpdBar() {
 function launchSheet() {
   const C = CHANGELOG.find((x) => x.v === "1.0") || CHANGELOG[0]; // 1.0.10.3 : les nouveautés de la 1.0 (pas celles de la dernière version)
   openSheet(`<div class="launch10">
-    <span class="shine l10-logo" style="--m:url(assets/ui/logo-embleme.svg)"><img src="assets/ui/logo-embleme.svg" alt="Idlus"></span>
+    <span class="shine emb l10-logo"><img src="assets/ui/logo-embleme.svg" alt="Idlus"></span>
     <div class="l10-v">Version 1.0</div>
     <h2>Bienvenue dans Idlus 1.0 !</h2>
     <p class="small">Merci d'être là pour la sortie officielle.${S.stats && S.stats.fights ? " Ta partie est gardée telle quelle : rien n'est remis à zéro." : ""}</p>
@@ -9578,7 +9583,7 @@ const ranked = () => onLive() && SLOT === 1;
 const soloPanel = (what) => `<div class="panel solob"><div class="pad row between"><span><b>Partie ${SLOT} : solo</b><br><span class="small muted">${what[0].toUpperCase() + what.slice(1)} se joue${/^les /.test(what) ? "nt" : ""} avec ta partie 1. Ici, tu regardes sans y prendre part.</span></span><button class="btn sm" data-act="sv-menu">Changer de partie</button></div></div>`;
 function openGate(html) { hideTip(); $("#sheet").innerHTML = `<div class="sheet-bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
 const DISCORD_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19.6 5.3A17 17 0 0 0 15.4 4l-.5 1a15.6 15.6 0 0 0-5.8 0l-.5-1a17 17 0 0 0-4.2 1.3C1.7 9.3 1 13.2 1.3 17a17 17 0 0 0 5.2 2.6l1.1-1.8c-.6-.2-1.2-.5-1.7-.8l.4-.3a12 12 0 0 0 11.4 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.3-2.9-11.7ZM8.7 14.7c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg>`;
-function onBlank(txt) { $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = ""; $("#main").innerHTML = `<section class="start stack"><div class="logo"><span class="shine" style="--m:url(assets/ui/logo-nom.svg)"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div><p class="muted" style="text-align:center">${h(txt)}</p></section>`; }
+function onBlank(txt) { $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = ""; $("#main").innerHTML = `<section class="start stack"><div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div><p class="muted" style="text-align:center">${h(txt)}</p></section>`; }
 function pseudoSheet(err) {
   openGate(`<h2>Choisis ton pseudo</h2><span class="small muted">Il sera affiché dans les classements, le chat et ta guilde. Tu le choisis une seule fois.</span>
     <label class="stack" style="gap:4px"><span class="small muted">Pseudo (3 à 16 caractères)</span><input type="text" id="onPseudo" maxlength="16" autocomplete="nickname" value="${h(ui.onPseudo || "")}"></label>
@@ -9737,7 +9742,7 @@ function renderMenu() {
       <div class="svlog"><button class="btn primary dbtn" data-act="on-discord">${DISCORD_SVG} Se connecter avec Discord</button>
       ${ON.mail ? `<div class="row svmail"><input type="email" id="onMail" autocomplete="email" placeholder="ou ton adresse e-mail" value="${h(ui.onMail || "")}"><button class="btn sm" data-act="on-mail">Recevoir un lien</button></div>${ui.onMailSent ? `<span class="xs muted">Lien envoyé à ${h(ui.onMailSent)} : ouvre l'e-mail et clique dessus (regarde aussi dans les indésirables).</span>` : ""}` : ""}</div></div>`;
   const pref = menuPref();
-  $("#main").innerHTML = `<section class="svm"><div class="logo"><span class="shine" style="--m:url(assets/ui/logo-nom.svg)"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>${acc}
+  $("#main").innerHTML = `<section class="svm"><div class="logo"><span class="shine nom"><img src="assets/ui/logo-nom.svg" alt="idlus"></span></div>${acc}
     ${MENU.msg ? `<div class="svmsg minus small" id="onMsg">${h(MENU.msg)}</div>` : `<span id="onMsg" class="minus small" hidden></span>`}
     <div class="svtitle"><h2>Choisis ta partie</h2><span class="small muted">La partie 1 porte les classements, la course, l'Hôtel de vente, la guilde, le Kolizéum classé et le boss des mondes. Les parties 2 et 3 se jouent en solo.</span></div>
     <div class="svgrid">${MENU.slots.map(slotCard).join("")}</div>

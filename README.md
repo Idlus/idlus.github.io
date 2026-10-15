@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.6.1 « Nouveau logo »
+
+Logo « i » à l'œuf : `assets/ui/logo.webp` (emblème sans fond, menu et médaillons), `assets/ui/logo-nom.svg` (nom dessiné des écrans de départ), `assets/ui/logo-embleme.svg` (fenêtre de bienvenue), `icons/favicon.svg`, icônes de l'appli et `icons/discord.png` régénérés ; reflet `.shine` toutes les 6 s. Sources et générateur : dossier `logo/` du projet.
+
 ## 1.2.6 « L'identité des sorts »
 
 Chacun des 836 sorts a sa propre mécanique tirée de sa description DOFUS (cumul, retardement, piège, glyphe, bombe, portail, téléportation…) et son motif animé en combat. La fiche du sort l'explique dans un bloc « Identité du sort ». Les noms des sorts et des attaques de boss ne s'affichent plus pendant le combat. Puissance des équipes vérifiée par simulation (bon équipement 6,35 → 6,46 de stasis).
