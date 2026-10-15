@@ -418,7 +418,7 @@
   window.anBossPick = (F, A, src, cast, hitsLeft, first) => {
     if (!hitsLeft.length || !src.boss) return null;
     if (first) { const t = F.round >= 12 ? 3 : F.round >= 8 ? 2 : F.round >= 4 ? 1 : 0; if (!F.wboss || t <= (A.anUlt || 0)) return null; A.anUlt = t; return ultime; }
-    if (garga(src) && cast.msp && GARGA[cast.msp]) return GARGA[cast.msp];
+    if (garga(src) && cast.msp && GARGA[cast.msp]) { const fn = GARGA[cast.msp]; return (c, ...r) => { c.banner = () => {}; return fn(c, ...r); }; } // pas de nom de sort en combat
     return null;
   };
 })();

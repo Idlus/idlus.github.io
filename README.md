@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.6.3 « Boss sans nom »
+
+Les attaques spéciales des boss n'affichent plus leur nom dans le bandeau du combat, comme les sorts des héros depuis la 1.2.6.
+
 ## 1.2.6.2 « Jeu fluide »
 
 Baisse d'images par seconde depuis la 1.2 corrigée : le fond de page animé est peint dans une petite toile au lieu de deux couches CSS géantes, et les effets d'ambiance tournent à 30 images/s (environ 20 → 40 images/s mesurées avec l'ambiance active).

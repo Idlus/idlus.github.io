@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.6.2";
+const GAME_VERSION = "1.2.6.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.6.3", name: "Boss sans nom", items: [
+    "Combat : les attaques spéciales des boss n’affichent plus leur nom dans le bandeau, comme les sorts des héros. On les reconnaît à leur animation." ] },
   { v: "1.2.6.2", name: "Jeu fluide", items: [
     "Le fond de page animé (halos et rideau d’aurore) est maintenant peint dans une toute petite image au lieu de deux couches géantes recalculées à chaque image : même rendu, le jeu repasse d’environ 20 à 40 images/s dans nos mesures avec l’ambiance active.",
     "Les petits effets d’ambiance (lucioles, flocons, braises…) bougent à 30 images/s au lieu de 60 : à leur vitesse, la différence ne se voit pas, et la page garde le reste pour elle." ] },
@@ -4489,6 +4491,8 @@ const BXS = {
 };
 const A_cls = (c, k, ms) => { c.A.el.classList.add(k); setTimeout(() => c.A.el.classList.remove(k), ms * c.T); };
 /* ---- sorts signature de 10 boss phares : purement visuels, l'attaque normale prend cette forme environ une fois sur trois (clé = image du boss) ---- */
+/* 1.2.6 : pas de nom de sort en combat ; les attaques de boss se reconnaissent à leur animation (les bandeaux de mécanique restent) */
+const bxNameless = (fn) => (c, ...r) => { c.banner = () => {}; return fn(c, ...r); };
 const BXSP = {
   74: async (c) => { c.hold(1900); c.banner("Boule de laine"); const a = c.pt(c.me); c.z(c.me, true); c.anim(c.me, [{ transform: "none" }, { transform: "scale(.7) rotate(-90deg)" }], { duration: 300, fill: "forwards" }); await c.wait(300);
     c.anim(c.me, [{ transform: "scale(.7) rotate(-90deg)" }, { transform: `translate(${-a.x - 80}px,-10px) scale(.7) rotate(-1080deg)` }], { duration: 900, easing: "linear", fill: "forwards" });
@@ -4565,7 +4569,7 @@ function bxBossGroup(F, A, g, cast, src, sn, hits, rest, el, go) {
   const sp = BXSP[src.img];
   const pk = hitsLeft.length && window.anBossPick && anBossPick(F, A, src, cast, hitsLeft); // sorts de Gargandyas
   if (pk) { Q.push([pk, hitsLeft]); hitsLeft = []; }
-  if (sp && hitsLeft.length && !Q.length && Math.random() < 0.34) { Q.push([sp, hitsLeft]); hitsLeft = []; }
+  if (sp && hitsLeft.length && !Q.length && Math.random() < 0.34) { Q.push([bxNameless(sp), hitsLeft]); hitsLeft = []; }
   if (has("miasmes")) Q.unshift([BXM.miasmes, []]);
   if (has("festin") && hitsLeft.length && left.some((f) => f.k === "heal" && f.t === cast.s)) { const heals = left.filter((f) => f.k === "heal" && f.t === cast.s); left = left.filter((f) => !heals.includes(f)); post.push([BXM.festin, hitsLeft.slice(0, 1), null, heals]); hitsLeft = hitsLeft.slice(1); }
   if (!Q.length && !post.length) return false;

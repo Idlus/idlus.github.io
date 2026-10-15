@@ -1,6 +1,13 @@
 {
-  "version": "1.2.6.2",
+  "version": "1.2.6.3",
   "versions": [
+    {
+      "v": "1.2.6.3",
+      "name": "Boss sans nom",
+      "items": [
+        "Combat : les attaques spéciales des boss n’affichent plus leur nom dans le bandeau, comme les sorts des héros. On les reconnaît à leur animation."
+      ]
+    },
     {
       "v": "1.2.6.2",
       "name": "Jeu fluide",
