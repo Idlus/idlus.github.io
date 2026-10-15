@@ -2266,7 +2266,7 @@
     const out = { xp: {}, kamas: 0, res: {}, items: [], ups: [] };
     let xp = 0; const maxLvl = Math.max(...mons.map((m) => m.lvl));
     mons.forEach((m) => {
-      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * E.almMult(S, "xp", m); // 0.1.39 : Almanax (famille, donjon ou fête)
+      let x = E.monsterXp(m.lvl) * (m.boss ? 6 : 1) * (m.archi ? 5 : 1) * (m.champ ? 3 : 1) * (m.chroma ? E.CHROMA_MULT || 1 : 1) * E.almMult(S, "xp", m); // 1.0.33 : chromatique (js/chroma.js) // 0.1.39 : Almanax (famille, donjon ou fête)
       xp += x;
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.almMult(S, "kamas", m));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
@@ -2303,7 +2303,7 @@
     const seen = (k, what) => { (S.seenDrops[k] = S.seenDrops[k] || {})[what] = 1; };
     const nRoll = E.lootRolls(S);
     mons.forEach((m) => {
-      const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1);
+      const T = MONSTERS[m.base || m.key]; const q = (m.archi ? 3 : 1) * (m.champ ? 2 : 1) * (m.chroma ? E.CHROMA_MULT || 1 : 1);
       const lp = E.lootPenalty(topL - m.lvl); const dm0 = dm; { const dm = dm0 * lp * (m.champ ? 2 : 1);
       const tq = E.huntTier(S, m.base || m.key) >= 1 ? 1.05 : 1;
       // 1.0.3 : un tirage par héros, la chance est partagée entre eux (même moyenne, le bonus au-delà de 100 % n'est plus perdu)
@@ -2319,7 +2319,7 @@
       const sk = m.boss && opts.dungeon ? E.bossDropMult(opts.stasis || 1) : 1;
       T.items.forEach(([tpl, rate]) => {
         if (!ITEMS[tpl]) return;
-        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk); let n = 0;
+        const p = Math.min(100, rate * E.ITEM_DROP_SCALE * dm * sk * (m.chroma ? E.CHROMA_MULT || 1 : 1)); let n = 0;
         for (let rr = 0; rr < rolls; rr++) if (rnd() * 100 < p) n++;
         for (let ii = 0; ii < n; ii++) {
           seen(m.key, tpl);
@@ -2425,6 +2425,7 @@
       const xm = F.exp ? F.exp.mult : { xp: 1, drop: 1, kamas: 1 }; // 0.1.24 : +4 % par étage d'expédition, reliques de butin
       F.rewards = giveRewards(S, mons, { dungeon: !!S.dungeon, stasis: F.stasis || 1, xpMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * xm.xp, dropMult: (1 + cb / 100) * sr * E.PACE_REW * (F.powRew || 1) * (F.roulette === "jackpot" ? 2 : 1) * xm.drop, kamasMult: E.PACE_REW * (F.powRew || 1) * xm.kamas, treasure: F.treasure || 0 });
       if (cb) F.rewards.chal = cb;
+      if (F.cr && E.chromaWin) { const ch = E.chromaWin(S, mons, {}); if (ch.length) F.rewards.chroma = ch; } // 1.0.33 : chromatiques (js/chroma.js), seulement les vrais combats
       if (F.idolBonus) { F.rewards.idol = { score: F.idolScore, pct: F.idolBonus, ids: F.idol.ids }; S.cnt = S.cnt || {}; S.cnt.idolWins = (S.cnt.idolWins || 0) + 1; if (F.idolScore > (S.cnt.idolBest || 0)) S.cnt.idolBest = F.idolScore; if (F.idol.ids.length >= E.IDOL_MAX) S.cnt.idolSix = (S.cnt.idolSix || 0) + 1; }
       checkHunt(S, [...new Set(mons.map((m) => m.key))]);
       E.emit(S, "win", { mons: mons.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.dungeon || F.exp ? null : S.sub, dungeon: S.dungeon ? S.dungeon.id : null, stasis: F.stasis || 0, chals: (F.chals || []).filter((c) => c.ok).map((c) => c.id), down: (F.deathInfo || []).length });
@@ -2887,7 +2888,7 @@
       if (!S.fight || S.fight.over) {
         if (!S.dungeon && !S.hunting && !(E.expBusy && E.expBusy(S))) { S.acc = 0; break; }
         S.pause = (S.pause || 0) + E.STEP_MS;
-        if (S.pause >= E.PAUSE_MS) { S.pause = 0; E.startFight(S); }
+        if (S.pause >= E.PAUSE_MS) { S.pause = 0; const F0 = E.startFight(S); if (F0 && !F0.exp && E.chromaRoll) { E.chromaRoll(S, F0.ents); F0.cr = 1; } } // 1.0.33 : chromatiques
         continue;
       }
       S.fight.dur += E.STEP_MS / 1000;
@@ -3400,6 +3401,7 @@
       if (rnd() >= winRate) continue;
       wins++;
       const g = E.makeGroup(S, sub, teamSize);
+      if (E.chromaOffline) E.chromaOffline(S, g); // 1.0.33 : chromatiques pendant l'absence (le butin ×3 suit dans giveRewards)
       const pr = E.powRew(g, "hunt", E.huntMon(teamSize)); giveRewards(S, g, { xpBoost, offline: true, xpMult: E.PACE_REW * pr, dropMult: E.PACE_REW * (1 + E.podBonus(S)) * pr, kamasMult: E.PACE_REW * pr });
       E.emit(S, "win", { mons: g.map((m) => ({ key: m.base || m.key, boss: m.boss, archi: m.archi, champ: m.champ, lvl: m.lvl })), sub: S.sub, offline: true });
       S.progress.wins[S.sub] = (S.progress.wins[S.sub] || 0) + 1;

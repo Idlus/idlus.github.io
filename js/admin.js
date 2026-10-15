@@ -244,6 +244,8 @@ function act(a, d) {
     case "nets": E.addCons(s, "filet", 10); done("10 filets de capture."); return;
     case "stones": E.addCons(s, "pierre_ame", 20); E.addCons(s, "parfum_piste", 3); done("20 Pierres d'âme et 3 Parfums de pistage dans le sac."); return;
     case "souls": { E.addCons(s, "pierre_ame", E.ARCHI_TOTAL); Object.keys(E.ARCHIS).forEach((k) => { if (!E.hasSoul(s, k)) E.captureSoul(s, { key: k, name: E.ARCHIS[k].name }, { offline: true }); }); E.events.length = 0; done(`${E.soulCount(s)} âmes dans l'album.`); return; }
+    case "cxnext": E.chromaForce = d.v === "p" ? "p" : "c"; done(`Le prochain monstre sera ${d.v === "p" ? "prismatique" : "chromatique"}.`); return; // 1.0.33 : chromatiques
+    case "cxalbum": { const L = E.CHROMA_KEYS.filter((k) => !E.chromaHas(s, k)).slice(0, +d.v || 60); E.chromaWin(s, L.map((k) => ({ side: "m", key: k, name: D.MONSTERS[k].name, lvl: 1, chroma: true })), { offline: true }); E.chroma(s).ec = (E.chroma(s).ec || 0) + 100; E.events.length = 0; done(`${E.chromaCount(s)} chromatiques dans l'album, +100 Éclats.`); return; }
     case "dofus": E.DOFUS_ORDER.forEach((id) => { if (!E.dofusOwned(s, id)) E.giveDofus(s, id, "panel de test"); }); E.events.length = 0; done(`Les ${E.DOFUS_ORDER.length} Dofus sont dans le sac.`); return;
     case "idols": E.IDOL_ORDER.forEach((id) => { if (!E.idolOwned(s, id)) E.giveIdol(s, id, "panel de test"); }); E.events.length = 0; done(`Les ${E.IDOL_ORDER.length} idoles sont dans la collection.`); return;
     case "garunes": E.EXO_STATS.forEach((k) => { const key = E.exoKey(k); s.runes[key] = (s.runes[key] || 0) + 5; }); E.addRes(s, E.RARE_COMPONENT, 20); done("5 runes Ga de chaque sorte et 20 Éclats de trouvaille."); return;
@@ -289,7 +291,7 @@ if (P) {
     load: (txt, who) => { let N; try { N = E.deserialize(txt); } catch (e) { DX.toast("Sa partie est illisible."); return; } replaceGame(N, `Partie de ${who || "ce joueur"} copiée dans ta partie de test.`); } });
   const run = (a, d) => () => { if (!DX.testerOk()) return; act(a, d || {}); };
   [["Donner tous les Dofus", "dofus", "donner dofus tous"], ["Donner toutes les idoles", "idols", "donner idoles"], ["Donner tous les familiers", "pets", "donner familiers montiliers"],
-    ["Donner 10 M kamas", "kamas", "donner kamas argent", { v: "10000000" }], ["5 clés de chaque donjon", "keys", "donner cles donjon"], ["Toutes les âmes", "souls", "donner ames archimonstres"],
+    ["Donner 10 M kamas", "kamas", "donner kamas argent", { v: "10000000" }], ["5 clés de chaque donjon", "keys", "donner cles donjon"], ["Toutes les âmes", "souls", "donner ames archimonstres"], ["Chromatique au prochain combat", "cxnext", "chromatique shiny prochain"], ["Prismatique au prochain combat", "cxnext", "prismatique chromatique shiny", { v: "p" }], ["Album chromatique : +60 espèces, +100 Éclats", "cxalbum", "chromatiques album eclats", { v: "60" }],
     [`Stasis ${E.STASIS_MAX} dans tous les donjons`, "stasis", "stasis 10 donjons debloquer"], ["Débloquer toutes les zones", "unlock", "zones debloquer carte"],
     ["Tous les légendaires", "legall", "donner legendaires songe"], ["+10 000 Bribes de rêve", "bribes", "donner bribes songe", { v: "10000" }], ["Toutes les intensités du Songe", "sgunl", "songe intensites"],
     ["Forgemagie niveau 200", "fm100", "metiers forgemagie fm"], ["Runes Ga ×5", "garunes", "donner runes ga exo"], ["Bon équipement pour l'équipe", "gear", "equiper equipement bon", { v: "bon" }],

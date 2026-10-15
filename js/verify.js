@@ -35,7 +35,7 @@
     for (const k in S.jobs || {}) put(k, S.jobs[k], E.jobXpNeed);
     if (S.fmJobs && E.FM_JOBS && E.fmNeed) for (const k in E.FM_JOBS) if (S.fmJobs[k] && (!E.fmLearned || E.fmLearned(S, k))) put(k, S.fmJobs[k], E.fmNeed);
     // 1.0.19 : cobj = métiers d'objets au niveau des objets (le serveur ne compte pas la conversion dans la semaine ni pour les « Premiers »)
-    return { cobj: S.craftObj ? 1 : 0, rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, jobs, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0 };
+    return { cobj: S.craftObj ? 1 : 0, rec: S.recLv || 0, main: main ? main.cls : null, mainLvl: main ? main.lvl || 1 : 1, title: main && main.title ? String(main.title).slice(0, 40) : null, heroes, level, album, succes, pts: E.achPoints ? E.achPoints(S) : 0, lvl200, mainq: E.mainQuestDone ? E.mainQuestDone(S) : false, qstep: Math.max(0, Math.min(500, (S.quest && S.quest.step) || 0)), dofus, jobs, panel: !!S.panelUsed, playtime: Math.round((S.stats && S.stats.playtime) || 0), created: S.created || 0, ...(E.chromaMeta && S.chroma ? E.chromaMeta(S) : {}) }; // 1.0.33 : chromatiques (classement, vitrine, Hauts faits)
   };
 
   /* Donjons de la semaine : un par tranche de niveau, les mêmes pour tous les joueurs

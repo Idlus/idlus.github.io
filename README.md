@@ -9,6 +9,15 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.33 « Chromatiques »
+- Monstres chromatiques : 1 monstre sur 4 096, en chasse et en donjon (boss compris), a les couleurs inversées et un halo doré. Même force, mais butin et XP ×3 et 1 Éclat chromatique.
+- La chaîne : rester dans la même zone fait monter la chance, jusqu'à ×3 après 500 victoires d'affilée. Elle repart à zéro quand on change de zone.
+- Prismatiques : 1 chromatique sur 50 est arc-en-ciel (5 Éclats, titre « Prisme vivant » pour le premier).
+- Album chromatique (Encyclopédie › Chromatiques) : paliers 5, 10, 25, 50 et 100 (titres, ornement, teinture, Charme ×1,5, cadre), trophée chromatique d'une sous-zone complète (+3 % de butin et d'XP), vitrine de 3, compteur de chasse, espèce recherchée ×2 (1 changement par jour).
+- Atelier du prisme : teinture chromatique d'un héros, ornement et cadre « Prisme », aura chromatique en combat, payés en Éclats.
+- Fiche de rencontre, célébration à la première trouvaille de chaque espèce, chromatiques trouvés pendant l'absence, onglet « Chromatiques » dans les Classements et annonce dans les Hauts faits.
+- Les Dofus ne changent jamais.
+
 ## 1.0.32.13 « Mathis décide »
 
 Demande de Mathis (15/10/2026) : « C'est à moi de décider si oui ou non il triche ». La vérification automatique (ladder_from_save) ne met plus `flagged` : elle met `suspect` + `flag_reason`, le joueur reste classé et apparaît dans l'onglet « En vérification » du panel Xener avec « C'est bon » (verified) ou « Retirer » (flagged). Pas de « Premier » tant qu'il est signalé. Exception : la partie de Mathis retouchée par le panel de test reste hors classement.
