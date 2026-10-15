@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.1.3 « Signaler un bug »
+
+Demande de Mathis (15/10/2026) : « Créer un bouton report bug, pour te permettre d'automatiser les corrections de bug », plus « une liaison sur le serveur discord ». Fenêtre `js/bugs.js` (Communauté › Signaler un bug, Options › Aide, page Suggestions ; diagnostic de `diagText()` joint), table et fonctions `supabase/bugs.sql` (`bug_send` avec ou sans compte, `bug_mine`, `adm_bugs`, onglet admin « Bugs »). Le workflow « Bugs signalés » (`bugs-signales.yml`, toutes les 15 min) en fait un ticket GitHub `bug-joueur` sans pseudo (`tools/bugs_github.js`) et un fil dans le forum #bugs du Discord (`discord_bot.js bugs`), puis recopie l'état des tickets (fermé + « Corrigé dans la x » → le joueur et le fil Discord le voient). Une tâche planifiée de Claude reprend les tickets ouverts pour les corriger.
+
 ## 1.1.1.2 « Chances des stasis 11 à 15 »
 
 Signalé par Mathis (15/10/2026) : « on voit pas le coef de drop des stasis + que 10 ». `dofLadder()` (`js/ui.js`) complète l'échelle des chances jusqu'à `E.STASIS_MAX` avec la valeur de la stasis 10 (les chances sont plafondées à la 10 depuis la 1.1) et met la stasis choisie en surbrillance.

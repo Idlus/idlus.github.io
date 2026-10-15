@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.1.2";
+const GAME_VERSION = "1.1.1.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.1.3", name: "Signaler un bug", items: [
+    "Nouveau bouton « Signaler un bug » (Communauté, Options › Aide et page Suggestions) : décrivez le bug, le jeu joint tout seul la version, l'appareil, la page ouverte et les dernières erreurs. Avec ou sans compte",
+    "Chaque signalement part directement pour être corrigé et arrive aussi dans le forum Bugs du Discord, où les autres joueurs peuvent dire s'ils ont le même",
+    "Suivez vos signalements en rouvrant la fenêtre : Reçu, Correction en cours, puis « Corrigé dans la … »" ] },
   { v: "1.1.1.2", name: "Chances des stasis 11 à 15", items: [
     "Fiche de donjon : les chances de Dofus s'affichent pour les stasis 11 à 15 (les mêmes qu'en stasis 10), avec la stasis choisie en surbrillance",
     "Équipements du boss : « ×3,25 dès la stasis 10 », les chances restent au plafond au-delà",
@@ -2031,7 +2035,7 @@ const NAV = [
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
-  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"]]) }, // 1.0.23 : Builds (js/builds.js) ; 1.0.30 : Cours des ressources (js/venteui.js)
+  { id: "comm", n: "Communauté", pages: (window.ONLINE && window.ONLINE.enabled ? [["hdv", "Hôtel de vente", "bourse"], ["cours", "Cours des ressources", "kamas"], ["guild", "Guilde", "couronne"], ["ladder", "Classements", "trophee"], ["builds", "Builds", "parchemin_or"]] : []).concat([["sugg", "Suggestions", "idee"], ["bug", "Signaler un bug", "bug"]]) }, // 1.0.23 : Builds (js/builds.js) ; 1.0.30 : Cours des ressources (js/venteui.js) ; 1.1.1.3 : « bug » ouvre la fenêtre de js/bugs.js, pas une page
 ];
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
@@ -7151,7 +7155,7 @@ function optionsSheet() {
     + `<section class="optsec danger"><div class="optsec-h"><b>Nouvelle partie</b><span class="xs muted">efface toute la progression de cet appareil</span></div><div>${ui.confirm === "reset" ? `<span class="minus small">Toute la progression sera effacée.</span> <button class="btn sm danger" data-act="reset">Effacer et recommencer</button> <button class="btn sm" data-act="cancelreset">Annuler</button>` : `<button class="btn sm danger" data-act="askreset">Recommencer depuis le début</button>`}</div></section>`;
   else body = optSec("Découvertes", "les bulles d'aide déjà vues, et la recherche dans tout le jeu", `<div class="row"><button class="btn sm" data-act="tips">Carnet des découvertes ${(() => { const [a, b] = E.tipCount(S); return `${a} / ${b}`; })()}</button><button class="btn sm" data-act="search">${G("search")} Recherche <span class="xs muted">Ctrl+K</span></button></div>`)
     + optSec("Le jeu", "", `<div class="row"><button class="btn sm" data-act="changelog">Notes de mise à jour</button>${isStandalone() ? `<span class="tag good">Application installée</span>` : `<button class="btn sm primary" data-act="installgame">${G("phone")} Installer idlus</button>`}</div>`)
-    + optSec("Un souci ou une idée ?", "les bugs vont dans le forum Bugs du Discord, les idées dans le forum Idées", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="nav" data-v="sugg">${IC("idee")} Proposer une idée</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
+    + optSec("Un souci ou une idée ?", "les bugs partent directement pour être corrigés, les idées vont dans le forum Idées du Discord", `<div class="row"><a class="btn sm" href="${DISCORD}" target="_blank" rel="noopener">${G("chat")} Discord</a><button class="btn sm" data-act="reportbug">${G("bug")} Signaler un bug</button><button class="btn sm" data-act="nav" data-v="sugg">${IC("idee")} Proposer une idée</button><button class="btn sm" data-act="copydiag" data-tip="Copie la version, l'appareil, l'onglet ouvert, un résumé de la partie et les 5 dernières erreurs, à coller dans le forum Bugs">Copier le diagnostic</button></div>`)
     + `<p class="note">Version ${GAME_VERSION} « ${h(CHANGELOG[0].name)} » · Données DOFUS via DofusDB (${h(D.META.built)}). Projet de fan non officiel, sans lien avec Ankama Games.</p>`;
   const was = $('.sheet .opttabs [aria-pressed="true"]'); const keepTop = was && was.dataset.v === tab ? $(".sheet").scrollTop : 0; // 1.0.12.8 : un réglage changé garde la position de la fenêtre (même onglet)
   openSheet(`<div class="opthead"><h2>${G("gear")} Options</h2><button class="btn sm" data-act="closesheet" aria-label="Fermer">✕</button></div>
@@ -7608,6 +7612,7 @@ function searchMonKey() { const b = document.querySelector(`#wsres .wsmon[data-i
 function pageGo(id) {
   const go = (tab, k, v) => { ui.tab = tab; if (k) ui[k] = v; ui.slot = null; ui.zoneView = null; closeSheet(); render(); window.scrollTo(0, 0); };
   switch (id) {
+    case "bug": if (window.BUGS) window.BUGS.open(); break; // 1.1.1.3 : Signaler un bug (js/bugs.js)
     case "home": go("home", "home", "apercu"); break; case "havre": go("home", "home", "havre"); break;
     case "world": ui.world = ui.world === "dungeons" || ui.world === "enc" ? "map" : ui.world; ui.zoneView = null; go(id); break;
     case "combat": case "ren": case "forge": case "ladder": case "team": case "koli": case "wb": case "metiers": case "sugg": case "builds": case "hdv": case "guild": case "pets": go(id); break; // 1.0.30 : pets = Familiers et montures
@@ -8866,7 +8871,7 @@ document.addEventListener("click", (ev) => {
     case "frwhere": { const F = E.SFRAMES[d.v]; if (F) toast(`${F.name(S)} : ${F.req}.`); return; }
     case "lookhead": { const x = char(ui.lookCid); x.head = +d.v; dirty = true; lookSheet(x); render(); return; }
     case "lookpal": { const pl = LK.PALETTES.find((p) => p.id === d.v); if (pl && pl.lock && !S.unlocks[pl.lock]) return; const x = char(ui.lookCid); x.palette = d.v; dirty = true; lookSheet(x); render(); return; }
-    case "reportbug": { const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
+    case "reportbug": { if (window.BUGS) { window.BUGS.open(); return; } const txt = `🐞 Bug — idlus ${GAME_VERSION}\nCe qui s'est passé :\nCe que j'attendais :\nÉtapes pour reproduire :\n\n${diagText()}`;
       const open = () => window.open(DISCORD_BUGS, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { toast("Modèle de rapport copié : ouvrez un fil dans le forum Bugs et collez-le."); open(); }, open); } catch (e) { open(); } return; }
     case "gift": {
@@ -8973,7 +8978,7 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
-    case "nav": navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 0.1.31 : menu en 5 groupes
+    case "nav": if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 0.1.31 : menu en 5 groupes
     case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
       if (t === "havre") navGo("havre");
       else if (t === "harvest" || t === "craft") { navGo("metiers"); ui.met = t === "craft" ? "craft" : "recolte"; }

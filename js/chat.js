@@ -414,7 +414,7 @@
   /* ---------- panel admin ---------- */
   const isAdmin = () => C.role === "admin";
   function adminBtn() { return C.role ? `<button class="cloud admbtn" data-act="adm-open" data-tip="${C.role === "admin" ? "Panel Xener" : "Modération"}" aria-label="${C.role === "admin" ? "Panel Xener" : "Modération"}">${X().G("shield")}</button>` : ""; } // 1.0.30 : Panel Xener (js/panel.js)
-  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && (A.ov.flagged + (A.ov.suspect || 0))]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 1.0.30 : les modérateurs gardent seulement les outils du chat
+  const ATABS = () => [["vue", "Vue d'ensemble"], ["joueurs", "Joueurs"]].concat(isAdmin() && window.FICHES ? [["fiches", "Fiches joueurs"]] : []).concat([ ["sig", "Signalements", A.ov && A.ov.reports], ["verif", "En vérification", A.ov && (A.ov.flagged + (A.ov.suspect || 0))]]).concat(window.MARKET ? [["hdv", "Hôtel de vente"]] : []).concat(window.GUILD ? [["guildes", "Guildes"]] : []).concat(window.IDEES ? [["idees", "Suggestions"]] : []).concat(window.BUGS ? [["bugs", "Bugs"]] : []).concat(window.BUILDS ? [["builds", "Builds"]] : []).concat(isAdmin() ? [["ann", "Annonces"]].concat(window.GIFTS ? [["codes", "Codes cadeaux"]] : []).concat([["equipe", "Équipe"]]) : []).filter((x) => isAdmin() || ["vue", "joueurs", "sig"].includes(x[0])); // 1.0.30 : les modérateurs gardent seulement les outils du chat
   async function admLoad() {
     const r = (n, a) => ON.rpc(n, a).then((x) => { if (x.err) X().toast(x.err); return x.data; });
     A.ov = await r("adm_overview");
@@ -427,6 +427,7 @@
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
     if (A.tab === "codes") A.codes = await r("adm_gifts"); // 0.1.26, voir js/codes.js
     if (A.tab === "idees") A.idees = await r("adm_ideas"); // 0.1.36, voir js/idees.js
+    if (A.tab === "bugs") A.bugs = await r("adm_bugs"); // 1.1.1.3, voir js/bugs.js
     if (A.tab === "builds") A.builds = await r("adm_builds"); // 1.0.23, voir js/builds.js
     if (A.tab === "fiches" && window.FICHES && isAdmin()) await window.FICHES.load(); // 0.1.52.1, voir js/fiches.js
     if (window.PANEL && window.PANEL.load) await window.PANEL.load(A.tab); // 1.0.30 : pages ajoutées au Panel Xener (js/panel.js)
@@ -461,6 +462,7 @@
     if (A.tab === "guildes" && window.GUILD) return window.GUILD.adminHtml(A.guildes);
     if (A.tab === "codes" && window.GIFTS) return window.GIFTS.adminHtml(A.codes);
     if (A.tab === "idees" && window.IDEES) return window.IDEES.adminHtml(A.idees);
+    if (A.tab === "bugs" && window.BUGS) return window.BUGS.adminHtml(A.bugs);
     if (A.tab === "builds" && window.BUILDS) return window.BUILDS.adminHtml(A.builds);
     if (A.tab === "fiches" && window.FICHES) return window.FICHES.adminHtml();
     if (A.tab === "vue") {

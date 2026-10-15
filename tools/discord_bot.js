@@ -12,6 +12,9 @@
    node tools/discord_bot.js annonce [texte.md]                       → publie dans #annonces un message libre (texte dans DISCORD_TEXTE ou dans le fichier), en mentionnant le rôle DISCORD_ROLE (Testeur par défaut, « aucun » pour ne mentionner personne)
    node tools/discord_bot.js notes <fichier.md>                       → publie dans le salon DISCORD_SALON (#note-de-mise-a-jour par défaut) un long patch note découpé en messages
                                                                         (séparateurs « ════════ Message N/M … ════════ », 2 000 caractères au plus chacun), dans l'ordre, sans mention ; un message déjà présent n'est pas renvoyé
+   node tools/discord_bot.js bugs <bugs.json>                         → 1.1.1.3 : publie dans le forum #bugs les bugs signalés depuis le jeu (un fil par bug, étiquette « Ouvert »,
+                                                                        lien du ticket GitHub) ; écrit dans DISCORD_SORTIE la liste [{ id, thread }]
+   node tools/discord_bot.js bugs-etats <etats.json>                  → change l'étiquette du fil (En cours, Corrigé, Pas un bug) et y répond quand l'état d'un bug change
    Ajouter --print pour afficher le message sans l'envoyer. */
 const fs = require("fs"); const { api, norm, guildId, channelId, roleId } = require("./discord_api.js");
 const GAME = "https://idlus.github.io/", BETA = GAME + "beta/";
@@ -223,11 +226,46 @@ async function main() {
       }
     } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
     console.log("Idées publiées dans #idées :", done.length);
+  } else if (cmd === "bugs" || cmd === "bugs-etats") {
+    // 1.1.1.3 : bugs signalés depuis le jeu (table bugs, workflow « Bugs signalés ») ; textes des joueurs sans mention ni lien actif
+    const list = JSON.parse(fs.readFileSync(file, "utf8")); const out = process.env.DISCORD_SORTIE; const done = [];
+    const clean = (t, n) => String(t || "").replace(/@/g, "@\u200b").replace(/https?:\/\//g, "").slice(0, n);
+    const TAG = { transmis: "Ouvert", nouveau: "Ouvert", a_voir: "En cours", en_cours: "En cours", corrige: "Corrigé", pas_un_bug: "Pas un bug" };
+    const REPO = "https://github.com/idlus/idlus.github.io/issues/";
+    const first = (x) => ({ name: `🐞 ${clean(x.what, 90).replace(/\s+/g, " ")}`.slice(0, 100),
+      content: [`**Ce qui s'est passé**\n${clean(x.what, 1000)}`, x.expected ? `**Attendu**\n${clean(x.expected, 400)}` : "",
+        `— signalé dans le jeu par **${String(x.pseudo || "Joueur").replace(/[*_`~|>@]/g, "")}**${x.guest ? " (sans compte)" : ""} · version ${clean(x.version, 20) || "?"} · ${clean(x.page, 80) || "?"} · ${clean(x.device, 40) || "?"}`,
+        x.issue ? `🔧 Ticket de correction : <${REPO}${+x.issue}>` : "", "Tu as le même bug ? Dis-le dans ce fil, avec une capture si possible."].filter(Boolean).join("\n\n") });
+    const reply = (x) => x.status === "corrige" ? `✅ **Corrigé${x.fixed_in ? ` dans la ${clean(x.fixed_in, 16)}` : ""}**${x.note ? ` : ${clean(x.note, 200)}` : ""}. Rechargez le jeu pour avoir la correction.`
+      : x.status === "pas_un_bug" ? `⚪ **Pas un bug**${x.note ? ` : ${clean(x.note, 200)}` : " : le jeu fonctionne comme prévu ici."}`
+      : x.status === "en_cours" ? "🟡 **Correction en cours.**" : x.status === "a_voir" ? "🟡 **Regardé par Xener**, la correction arrive." : "";
+    if (DRY) { list.forEach((x) => { if (cmd === "bugs") { const p = first(x); console.log(`${p.name}\n${p.content}\n`); } else console.log(`[${TAG[x.status]}] fil ${x.discord} : ${reply(x)}`); }); return; }
+    if (!list.length) return console.log("Rien à publier.");
+    const gid = await guildId(); const forum = await channelId(gid, "bugs");
+    const tags = (await api("GET", `/channels/${forum}`)).available_tags || []; const tagId = (st) => { const t = tags.find((x) => norm(x.name) === norm(TAG[st] || "Ouvert")); return t ? [t.id] : []; };
+    try {
+      for (const x of list) {
+        if (cmd === "bugs") {
+          const p = first(x);
+          const th = await api("POST", `/channels/${forum}/threads`, { name: p.name, applied_tags: tagId("transmis"), message: { content: p.content.slice(0, 2000), allowed_mentions: { parse: [] } } });
+          done.push({ id: +x.id, thread: String(th.id) });
+        } else {
+          if (!/^[0-9]{5,25}$/.test(String(x.discord || ""))) continue;
+          const msg = reply(x); const end = x.status === "corrige" || x.status === "pas_un_bug";
+          await api("PATCH", `/channels/${x.discord}`, { applied_tags: tagId(x.status), archived: false });
+          if (msg) await api("POST", `/channels/${x.discord}/messages`, { content: msg, allowed_mentions: { parse: [] } });
+          if (end) await api("PATCH", `/channels/${x.discord}`, { archived: true });
+          done.push({ id: +x.id });
+        }
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    } finally { if (out) fs.writeFileSync(out, JSON.stringify(done)); }
+    console.log(cmd === "bugs" ? "Bugs publiés dans #bugs :" : "Fils de bugs mis à jour :", done.length);
   } else if (cmd === "icone") {
     const img = fs.readFileSync(file || __dirname + "/../icons/discord.png"); if (DRY) return console.log("Image :", img.length, "octets");
     await api("PATCH", `/guilds/${await guildId()}`, { icon: "data:image/png;base64," + img.toString("base64") });
     console.log("Icône du serveur remplacée.");
-  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json] | suggestions <idees.json>"); process.exit(1); }
+  } else { console.log("Commande attendue : beta <changelog.json> | semaine | almanax | idees | resume <révision> | icone [image.png] | tweet <adresse> | podium | captures <dossier> | annonce [texte.md] | sondage [sondages.json] | suggestions <idees.json> | bugs <bugs.json> | bugs-etats <etats.json>"); process.exit(1); }
 }
 if (!process.env.DISCORD_BOT_TOKEN && !DRY) { console.log("DISCORD_BOT_TOKEN absent : rien à publier."); process.exit(0); }
 main().catch((e) => { console.error("Échec :", e.message); process.exit(1); });

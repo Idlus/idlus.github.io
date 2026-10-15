@@ -53,6 +53,10 @@ const server = http.createServer((req, res) => {
       await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); });
       await page.click(`#nav .sn-side [data-nk="${k}"]`);
       await page.waitForTimeout(300);
+      if (k === "bug") { // 1.1.1.3 : « Signaler un bug » ouvre une fenêtre, pas une page
+        if (!(await page.$("#sheet #bgWhat"))) errors.push("Signaler un bug : fenêtre absente");
+        await page.evaluate(() => { document.querySelector("#sheet").innerHTML = ""; }); continue;
+      }
       const filled = await page.$eval("#main", (m) => m.innerHTML.trim().length > 0);
       if (!filled) errors.push(`page ${k} vide`);
       const cur = await page.$eval("#nav .sn-side [aria-current]", (b) => b.dataset.nk).catch(() => null);

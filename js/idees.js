@@ -45,7 +45,8 @@
         <span class="grow"></span><span class="xs muted">${on ? (left ? `Prochaine idée dans ${Math.ceil(left / 60000)} min` : "Une idée toutes les 10 min") : ""}${on ? " · " : ""}<a href="${DISCORD}" target="_blank" rel="noopener">${on ? "ou poster sur Discord" : "Ouvrir le Discord"}</a></span></div>
     </div>`;
     const list = `<div class="box"><h2>Tes idées envoyées</h2>${mine.length ? `<div class="list">${mine.map((x) => `<div class="li"><span class="grow"><b>${h(x.t)}</b><br><span class="xs muted">${h(x.g)} · ${date(x.d)}</span></span></div>`).join("")}</div>` : `<div class="empty">Aucune idée pour l'instant. La première sera peut-être dans le jeu !</div>`}
-      <p class="xs muted" style="margin:8px 0 0">Les idées retenues sont marquées « Retenue » sur le Discord, et les plus votées sont regardées chaque semaine.</p></div>`;
+      <p class="xs muted" style="margin:8px 0 0">Les idées retenues sont marquées « Retenue » sur le Discord, et les plus votées sont regardées chaque semaine.</p></div>
+      <div class="box id-bug"><span class="grow small">Plutôt un <b>bug</b> ? Signale-le ici : il part directement pour être corrigé.</span><button class="btn sm" data-act="reportbug"><img class="uico" src="assets/ui/bug.webp" alt=""> Signaler un bug</button></div>`;
     return `<div class="pagehead"><h1>Suggestions</h1></div><div class="two id-page">${form}<div class="stack" style="gap:12px">${list}</div></div>`;
   }
   function render(main) { if (main) { readForm(); main.innerHTML = html(); } } // 1.0.10.3 : le texte en cours n'est plus effacé par un redessin de la page

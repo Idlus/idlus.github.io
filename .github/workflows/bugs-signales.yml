@@ -1,0 +1,70 @@
+# Bugs signalés (1.1.1.3) : toutes les 15 minutes, fait un ticket GitHub (étiquette bug-joueur, sans pseudo) de chaque bug
+# envoyé depuis le jeu (bouton « Signaler un bug », table « bugs » de supabase/bugs.sql), puis recopie dans la table l'état
+# des tickets (en cours, corrigé dans telle version, pas un bug) pour que le joueur le voie dans le jeu. Chaque bug a aussi
+# son fil dans le forum #bugs du Discord (étiquette Ouvert / En cours / Corrigé / Pas un bug, réponse quand il est corrigé).
+# Claude reprend les tickets bug-joueur ouverts pour corriger les bugs (tâche planifiée du fil « Bouton signaler un bug »).
+# Secrets : VPS_HOST, VPS_USER, VPS_NEW_PASSWORD (serveur OVH), DISCORD_BOT_TOKEN (forum #bugs). Les tickets sont créés avec le jeton du workflow.
+name: Bugs signalés
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: bugs-signales
+  cancel-in-progress: false
+jobs:
+  relais:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: ./.github/actions/vps
+        with:
+          hote: ${{ secrets.VPS_HOST }}
+          util: ${{ secrets.VPS_USER }}
+          pass: ${{ secrets.VPS_NEW_PASSWORD }}
+      - name: Nouveaux bugs → tickets, puis état des tickets → jeu
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          sql() { bash tools/serveur/vps_sql.sh json "$1" > /tmp/r.json || { echo "Erreur de la base"; head -c 600 /tmp/r.json; echo; exit 1; }; }
+          sql "select to_regclass('public.bugs') is not null as ok"
+          if [ "$(jq -r '.[0].ok' /tmp/r.json)" != "true" ]; then echo "Table bugs absente : rien à faire."; exit 0; fi
+          sql "select id, pseudo, version, page, device, what, expected, diag, (user_id is null) as guest from public.bugs where issue is null and status = 'nouveau' order by id limit 10"
+          cp /tmp/r.json /tmp/bugs.json; n=$(jq length /tmp/bugs.json); echo "Nouveaux bugs : $n"
+          status=0
+          if [ "$n" != "0" ]; then
+            echo '[]' > /tmp/tickets.json
+            node tools/bugs_github.js tickets /tmp/bugs.json /tmp/tickets.json || status=$?
+            if [ "$(jq length /tmp/tickets.json)" != "0" ]; then
+              j=$(jq -c '[.[] | {id: (.id | tonumber), issue: (.issue | tonumber)}]' /tmp/tickets.json)
+              sql "update public.bugs b set issue = v.issue, status = 'transmis', updated_at = now() from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, issue int) where b.id = v.id returning b.id"
+              echo "Bugs transmis : $(jq length /tmp/tickets.json)"
+              # fil Discord pour chaque bug transmis (une panne de Discord ne bloque pas les tickets)
+              jq -s '.[1] as $t | [.[0][] | . as $b | ($t[] | select(.id == ($b.id | tonumber)) | .issue) as $i | $b + {issue: $i}]' /tmp/bugs.json /tmp/tickets.json > /tmp/bugs_t.json
+              echo '[]' > /tmp/fils.json
+              if [ -n "$DISCORD_BOT_TOKEN" ]; then DISCORD_SORTIE=/tmp/fils.json node tools/discord_bot.js bugs /tmp/bugs_t.json || echo "::warning::Discord : fils de bugs non publiés"; fi
+              if [ "$(jq length /tmp/fils.json)" != "0" ]; then
+                j=$(jq -c '[.[] | {id: (.id | tonumber), thread: (.thread | select(test("^[0-9]{5,25}$")))}]' /tmp/fils.json)
+                sql "update public.bugs b set discord = v.thread from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, thread text) where b.id = v.id returning b.id"
+                echo "Fils Discord : $(jq length /tmp/r.json)"
+              fi
+            fi
+          fi
+          node tools/bugs_github.js etats /tmp/etats.json || exit 1
+          # seulement des numéros, un état connu, une version en chiffres et une note sans $ (fabriqués par tools/bugs_github.js)
+          j=$(jq -c '[.[] | select(.status | test("^(transmis|en_cours|corrige|pas_un_bug|a_voir)$")) | {id: (.id | tonumber), status, fixed_in: (.fixed_in | if . != null and test("^[0-9.]{1,16}$") then . else null end), note: (.note | if . != null then gsub("\\$"; "") else null end)}]' /tmp/etats.json)
+          if [ "$j" != "[]" ]; then
+            sql "update public.bugs b set status = v.status, fixed_in = coalesce(v.fixed_in, b.fixed_in), note = coalesce(v.note, b.note), updated_at = now() from jsonb_to_recordset(\$j\$${j}\$j\$::jsonb) as v(id bigint, status text, fixed_in text, note text) where b.id = v.id and (b.status is distinct from v.status or b.fixed_in is distinct from coalesce(v.fixed_in, b.fixed_in) or b.note is distinct from coalesce(v.note, b.note)) returning b.id, b.status, b.fixed_in, b.note, b.discord"
+            echo "Bugs mis à jour dans le jeu : $(jq length /tmp/r.json)"
+            if [ -n "$DISCORD_BOT_TOKEN" ] && [ "$(jq '[.[] | select(.discord != null)] | length' /tmp/r.json)" != "0" ]; then
+              jq '[.[] | select(.discord != null)]' /tmp/r.json > /tmp/chg.json
+              node tools/discord_bot.js bugs-etats /tmp/chg.json || echo "::warning::Discord : fils de bugs non mis à jour"
+            fi
+          fi
+          exit $status

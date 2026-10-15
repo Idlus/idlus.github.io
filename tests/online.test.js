@@ -317,6 +317,11 @@ const MOCK = () => {
       // 0.1.36 : boîte à idées
       if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
         L.push({ id: L.length + 1, user_id: u.id, t: Date.now(), pseudo: me && me.pseudo, info: a.p_info, tag: a.p_tag, title: a.p_title, body: a.p_body, hidden: false, url: null, created_at: new Date().toISOString(), guest: false }); put(d); return { data: null, error: null }; }
+      // 1.1.1.3 : signaler un bug
+      if (name === "bug_send") { const L = (d.bugs = d.bugs || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 120000)) return { data: { err: "Un signalement toutes les 2 minutes : réessaie un peu plus tard." }, error: null };
+        L.push({ id: L.length + 1, user_id: u.id, t: Date.now(), pseudo: me && me.pseudo, what: a.p_what, expected: a.p_expected, page: a.p_page, version: a.p_version, device: a.p_device, diag: a.p_diag, status: "nouveau", issue: null, created_at: new Date().toISOString(), guest: false }); put(d); return { data: { id: L.length }, error: null }; }
+      if (name === "bug_mine") return { data: (d.bugs || []).map((b) => ({ id: b.id, what: b.what, status: b.id === 1 ? "corrige" : b.status, fixed_in: b.id === 1 ? "1.1.0.9" : null, note: null, created_at: b.created_at })).reverse(), error: null };
+      if (name === "adm_bugs") return { data: (d.bugs || []).slice().reverse(), error: null };
       // 0.1.52.1 : fiches joueurs (la partie en ligne du joueur = la partie de ce navigateur)
       if (name === "adm_roster") return { data: [{ id: "u9", pseudo: "Kralamour", cls: "iop", level: 4812, main_lvl: 200, playtime: 7200, guild: "Les Tofus", cote: 1240, last_save: new Date().toISOString(), created_at: new Date().toISOString() }, { id: "u8", pseudo: "Tofuline", cls: "eni", level: 150, created_at: new Date().toISOString() }], error: null };
       if (name === "adm_player") return { data: { id: a.p_user, pseudo: "Kralamour", acc: { created_at: new Date().toISOString(), last_login: new Date().toISOString(), providers: ["discord"], discord: "Krala" },
@@ -708,9 +713,21 @@ const MOCK = () => {
     if (!idea || idea.tag !== "Contenu" || idea.title !== "Un donjon pour le Bouftou Royal" || !/niv\. \d+ · /.test(idea.info || "")) fail("idées : idée mal envoyée " + JSON.stringify(idea));
     if (!(await page.$('[data-act="id-send"][disabled]')) || !/Prochaine idée dans 10 min/.test(await page.textContent("#main"))) fail("idées : attente de 10 minutes absente");
     if (!/Un donjon pour le Bouftou Royal/.test(await page.textContent("#main"))) fail("idées : absente de « Tes idées envoyées »");
+    // 7d bis (1.1.1.3). signaler un bug : fenêtre depuis la page Suggestions, diagnostic joint, suivi « Corrigé dans la … », panel admin
+    await page.waitForSelector('#main [data-act="reportbug"]', { timeout: 5000 }); await page.click('#main [data-act="reportbug"]'); await page.waitForSelector("#bgWhat", { timeout: 5000 });
+    await page.click('[data-act="bg-send"]'); await page.waitForTimeout(200);
+    if (!/Décris un peu plus le bug/.test(await page.textContent(".sheet"))) fail("bugs : envoi vide accepté");
+    await page.fill("#bgWhat", "Ma cape a disparu de l'équipement de mon héros."); await page.fill("#bgExp", "La cape reste équipée.");
+    await page.click('[data-act="bg-send"]'); await page.waitForFunction(() => /signalement est parti/.test((document.querySelector(".sheet") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : pas de remerciement"));
+    m = await mock(); const bug = (m.bugs || [])[0];
+    if (!bug || bug.what !== "Ma cape a disparu de l'équipement de mon héros." || bug.expected !== "La cape reste équipée." || !/Diagnostic idlus/.test(bug.diag || "") || !/Suggestions/.test(bug.page || "") || !bug.version) fail("bugs : signalement mal envoyé " + JSON.stringify(bug && Object.assign({}, bug, { diag: (bug.diag || "").slice(0, 80) })));
+    await page.click('.sheet [data-act="closesheet"]'); await page.click('#main [data-act="reportbug"]');
+    await page.waitForFunction(() => /Corrigé dans la 1\.1\.0\.9/.test((document.querySelector(".sheet") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : suivi « Corrigé dans la … » absent"));
+    await page.click('.sheet [data-act="closesheet"]');
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
     await page.click('.adm [data-act="adm-tab"][data-v="idees"]'); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });
     if (!/Bouftou Royal/.test(await page.textContent(".adm"))) fail("idées : absente du panel admin");
+    await page.click('.adm [data-act="adm-tab"][data-v="bugs"]'); await page.waitForFunction(() => /Ma cape a disparu/.test((document.querySelector(".adm") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : absent du panel admin"));
     // 7d ter (1.0.23). builds partagés : liste, build de la semaine, filtres, recherche, fiche, j'aime, favori, appliquer, signaler, publier, mise à jour en un clic, panel admin
     await page.evaluate(() => { const S = window.DX.S; S.settings.snd = Object.assign({}, S.settings.snd, { asked: true }); document.querySelectorAll("#sndask").forEach((x) => x.remove()); }); // 1.0.22 : la bulle « Jouer en musique ? » ne cache pas les clics du test
     const myCls = await page.evaluate(() => { const D = window.DATA, E = window.ENGINE, S = window.DX.S;
