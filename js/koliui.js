@@ -279,7 +279,7 @@
     const name = it.res ? `<button class="kz-lnk" data-act="kz-res" data-n="${h(it.res)}" title="Fiche de la ressource">${h(E.shopItemName(s, it))}</button>` : h(E.shopItemName(s, it));
     const GF = it.res && E.GALET ? E.GALET[it.res] : null;
     const FU = it.furn && E.FURN ? E.FURN[it.furn] : null;
-    const desc = it.sab ? `Une heure de vitesse ×2 / ×3 ajoutée à ta réserve (jusqu'à 24 h). ${it.day} par jour au plus : encore <b>${wl}</b> aujourd'hui.`
+    const desc = it.sab ? `Une heure de vitesse ×2 / ×3 ajoutée à ta réserve (jusqu'à ${E.SAB_GIFT_MAX / 3600} h). ${it.day} par jour au plus : encore <b>${wl}</b> aujourd'hui.`
       : it.key ? `Une clé du donjon de ton choix (parmi ceux débloqués). ${it.week} par semaine au plus : encore <b>${wl}</b> cette semaine.${keySel(s)}` : FU ? `${h(E.furnEffect(it.furn))} · ${h(E.room ? E.room(FU.room).name : FU.room)}` : U ? `Bonus de fabrication pour <b>${U.n} objets</b> de niveau ${U.lo} à ${U.hi}${GF ? ` : ${h(GF.fx)}` : ""}` : R ? `Ressource niv. ${R.lvl}` : C ? h(C.desc) : it.orn ? "Ornement de carte de héros" : "Titre affiché sur la carte";
     const qty = it.many && !owned ? `<div class="kzs-q"><div class="kzs-step"><button class="btn sm" data-act="kz-q" data-v="-1" ${q <= 1 ? "disabled" : ""} aria-label="Un de moins">−</button><b class="num">${q}</b><button class="btn sm" data-act="kz-q" data-v="1" ${q >= top ? "disabled" : ""} aria-label="Un de plus">+</button></div>
       <div class="seg">${[1, 5, 10].filter((n) => n <= top).map((n) => `<button data-act="kz-q" data-set="${n}" aria-pressed="${q === n}">×${n}</button>`).join("")}<button data-act="kz-q" data-set="max" aria-pressed="${q === maxQ(s, it) && ![1, 5, 10].includes(q)}">Max</button></div></div>` : "";

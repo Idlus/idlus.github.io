@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.2";
+const GAME_VERSION = "1.2.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.3", name: "Sablier de 24 h", items: [
+    "Sablier de Xélor : la réserve monte à 24 h (15 h en 1.2.2). La recharge reste de 3 h par jour, même jeu fermé",
+    "Les heures achetées (comptoirs, Kolizéum, Foire) ou gagnées (Ascension, codes cadeaux) peuvent dépasser la réserve jusqu'à 36 h",
+  ] },
   { v: "1.2.2", name: "Sablier plus grand", items: [
     "Sablier de Xélor : la réserve monte à 15 h (9 h avant). La recharge reste de 3 h par jour, même jeu fermé",
     "La fenêtre du Sablier montre « Comment en obtenir » : recharge du jour, Bureau des primes, Comptoir de la cité, Comptoir des temples, Kolizéum, coffres de l'Ascension, Foire du Trool et codes cadeaux, chacun avec un bouton « Y aller »",
@@ -2456,7 +2460,7 @@ const SAB_WHERE = [
 ];
 function sabWhereHtml() {
   return `<div class="sab-where"><b>Comment en obtenir</b>
-    <p class="xs muted" style="margin:2px 0 6px">Achats, coffres et codes peuvent dépasser le maximum, jusqu'à ${E.SAB_GIFT_MAX / 3600} h.</p>
+    <p class="xs muted" style="margin:2px 0 6px">Les heures achetées ou gagnées peuvent dépasser la réserve, jusqu'à ${E.SAB_GIFT_MAX / 3600} h.</p>
     ${SAB_WHERE.map(([ic, t, d, v]) => `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`).join("")}</div>`;
 }
 function sabGo(v) {

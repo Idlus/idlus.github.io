@@ -47,7 +47,7 @@
     if (o) return o.desc;
     if (it.cons) return D.CONSUMABLES[it.cons].desc;
     if (it.res) return `Ressource niv. ${(D.RES[it.res] || {}).lvl || "?"}`;
-    if (it.sab) return "Une heure de vitesse ×2 / ×3 ajoutée à ta réserve (jusqu'à 24 h).";
+    if (it.sab) return `Une heure de vitesse ×2 / ×3 ajoutée à ta réserve (jusqu'à ${E.SAB_GIFT_MAX / 3600} h).`;
     if (it.key) return "Une clé du donjon de ton choix, parmi ceux débloqués.";
     if (it.teint) return "Nouvelles couleurs pour tous tes héros (Héros › Apparence).";
     if (it.wing) return "Couleur des ailes d'alignement (Héros › Ornement).";

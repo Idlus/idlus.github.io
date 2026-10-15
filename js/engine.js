@@ -3411,7 +3411,7 @@
      La vitesse ×2 retire 1 s de réserve par seconde, ×3 en retire 2 : la réserve est du « temps de jeu en plus ».
      Il se débloque à la fin d'Incarnam (quête principale « La Crypte de Kardorim » terminée). Hors ligne, rien n'accélère. */
   E.SAB_RATE = 7.5 / 60;          // +7 min 30 par heure = 3 h par jour
-  E.SAB_MAX = 15 * 3600;          // 5 jours de réserve (1.2.2 : 9 h avant)
+  E.SAB_MAX = 24 * 3600;          // 8 jours de réserve (9 h avant la 1.2.2, 15 h en 1.2.2)
   E.SAB_UNLOCK_STEP = 6;          // étapes de la quête principale à finir (jusqu'à la Crypte de Kardorim)
   E.sabUnlocked = (S) => !!(S.sablier && S.sablier.open) || !!(S.quest && S.quest.step >= E.SAB_UNLOCK_STEP);
   E.sab = (S) => {
@@ -3437,7 +3437,7 @@
     note(S, "Sablier de Xélor vide : retour à la vitesse normale. Il se remplit tout seul (3 h par jour).", "info");
     return m;
   };
-  E.SAB_GIFT_MAX = 24 * 3600;    // réserve maximale avec des heures offertes par code cadeau
+  E.SAB_GIFT_MAX = 36 * 3600;    // réserve maximale avec des heures achetées ou offertes (1.2.3 : 24 h avant, la réserve normale monte à 24 h)
   E.sabGift = (S, hours) => { const B = E.sab(S); B.r = Math.min(E.SAB_GIFT_MAX, B.r + Math.max(0, +hours || 0) * 3600); return B.r; };
   E.sabSet = (S, v) => {
     const B = E.sab(S); v = +v;

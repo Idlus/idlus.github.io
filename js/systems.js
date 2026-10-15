@@ -631,7 +631,7 @@
     if (shop === "cite" && !S.align) return "Choisissez d'abord un alignement.";
     if (E.shopOwned(S, it)) return "Déjà obtenu.";
     const n = it.many ? clamp(Math.floor(+qty || 1), 1, 100) : 1; const cost = it.cost * n;
-    if (it.sab && E.sab && E.sab(S).r + it.sab * n * 3600 > E.SAB_GIFT_MAX) return `Ta réserve de Sablier est presque pleine (24 h au plus).`;
+    if (it.sab && E.sab && E.sab(S).r + it.sab * n * 3600 > E.SAB_GIFT_MAX) return `Ta réserve de Sablier est presque pleine (${E.SAB_GIFT_MAX / 3600} h au plus).`;
     if (n > E.shopWeekLeft(S, it)) { const l = E.shopWeekLeft(S, it); const p = it.day ? "aujourd'hui" : "cette semaine"; return l ? `Encore ${l} ${p} au plus.` : `Limite atteinte ${p} (${it.day || it.week}). Retour ${it.day ? "demain" : "lundi"}.`; }
     if (it.key && !E.shopKeys(S).includes(arg)) return "Choisis un donjon débloqué.";
     if ((S.tokens[Sh.cur] || 0) < cost) return `Il faut ${cost} ${Sh.curName.toLowerCase()}.`;
