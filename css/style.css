@@ -5743,3 +5743,12 @@ body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::af
 .idftag .spicon img{width:100%;height:100%}
 .idftag b{color:var(--gold2);font-weight:800}
 @keyframes idftag{0%{opacity:0;transform:translate(-50%,-60%) scale(.6);filter:brightness(2.5)}18%{opacity:1;transform:translate(-50%,-100%) scale(1.12);filter:brightness(1.8)}35%{transform:translate(-50%,-100%) scale(1);filter:none}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-125%)}}
+/* ===== Logo d'Idlus (« i » à l'œuf) : nom dessiné sur les écrans de départ, reflet doux toutes les 6 s sur les grands logos ===== */
+.start .logo,.svm .logo{text-shadow:none;line-height:0;display:flex;justify-content:center}
+.start .logo img,.svm .logo img{height:clamp(64px,12vw,104px);width:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45))}
+.shine{position:relative;display:inline-block;line-height:0}
+.shine::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,255,236,.6) 49%,transparent 60%) no-repeat;background-size:250% 100%;background-position:150% 0;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;animation:logoShine 6s ease-in-out 1.2s infinite}
+@keyframes logoShine{0%,72%{background-position:150% 0}100%{background-position:-60% 0}}
+@media (prefers-reduced-motion:reduce){.shine::after{animation:none;opacity:0}}
+.launch10 .shine.l10-logo{width:110px;height:auto;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
+.launch10 .shine.l10-logo img{width:100%;height:auto}
