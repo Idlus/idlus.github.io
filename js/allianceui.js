@@ -54,13 +54,13 @@
 
   /* ---------- données ---------- */
   async function load(force) {
-    if (!ON.user || A.loading || !mine()) return;
-    const gap = battle().on && window.DX.ui.tab === "guild" && GU() && GU().G.tab === "alliance" ? 15000 : 60000;
-    if (!force && A.d && Date.now() - A.at < gap) return;
+    if (!ON.user || A.loading || !mine() || !myGid()) return;
+    const gap = A.err ? 30000 : battle().on && window.DX.ui.tab === "guild" && GU() && GU().G.tab === "alliance" ? 15000 : 60000;
+    if (!force && A.at && Date.now() - A.at < gap) return; // aussi après une erreur : pas de relecture à chaque rendu
     A.loading = true;
     const r = await ON.rpc("ally_me");
     A.loading = false; A.at = Date.now();
-    if (r.err || !r.data || r.data.err) { A.err = true; repaint(); return; }
+    if (r.err || !r.data || r.data.err) { const was = A.err; A.err = true; if (!was && window.DX.ui.tab === "guild") repaint(); return; }
     A.err = false; A.d = r.data; A.off = Date.parse(r.data.now) - Date.now();
     if (A.d.claim && !A.claiming) claim();
     repaint();
@@ -242,7 +242,7 @@
     X().openSheet(`<h2>Inviter une guilde</h2><div class="empty">Chargement…</div>`);
     const r = await ON.rpc("guild_list", { p_q: "" }); const ids = new Set((al().guilds || []).map((g) => g.id).concat((al().invited || []).map((x) => x.gid)));
     const L = (r.data || []).filter((g) => !ids.has(g.id));
-    X().openSheet(`<h2>Inviter une guilde</h2><p class="small muted">Son Meneur accepte dans Guilde › Alliance. ${E.ALLY.max} guildes au plus.</p>
+    X().openSheet(`<h2>Inviter une guilde</h2><p class="small muted">Son Meneur accepte dans Communauté › Guilde › Alliance. ${E.ALLY.max} guildes au plus.</p>
       <div class="list" style="max-height:60vh;overflow:auto">${L.map((g) => `<div class="li al-gl">${gemb(g, 34)}<span class="grow"><b>${h(g.name)}</b><br><span class="xs muted">niv. ${g.lvl} · ${g.n} membres</span></span><button class="btn sm primary" data-act="al-invite2" data-g="${g.id}">Inviter</button></div>`).join("") || `<div class="empty">Aucune autre guilde.</div>`}</div>
       <div class="row"><button class="btn" data-act="closesheet">Fermer</button></div>`);
   }

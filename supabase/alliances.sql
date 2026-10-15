@@ -319,7 +319,7 @@ begin
   if (select count(*) from alliance_requests where alliance_id = a.id and kind = 'invite') >= 5 then return g_err('5 invitations en attente au plus.'); end if;
   insert into alliance_requests (alliance_id, guild_id, kind, by_user) values (a.id, t.id, 'invite', me)
     on conflict (alliance_id, guild_id) do update set kind = 'invite', by_user = excluded.by_user, at = now();
-  perform g_log(t.id, format('🤝 L''alliance %s invite votre guilde (le Meneur répond dans Guilde › Alliance).', a.name));
+  perform g_log(t.id, format('🤝 L''alliance %s invite votre guilde (le Meneur répond dans Communauté › Guilde › Alliance).', a.name));
   perform al_say_sys(a.id, format('%s invite la guilde %s.', pseudo_of(me), t.name));
   return jsonb_build_object('ok', true);
 end $$;

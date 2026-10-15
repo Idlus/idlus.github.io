@@ -119,6 +119,23 @@ const MOCK = () => {
     if (name === "guild_bounty") { if (gm.chest < a.p_k) return ok({ err: "coffre" }); gm.chest -= a.p_k; gm.bnty = a.p_k; return ok({ ok: true, chest: gm.chest }); }
     if (name === "perco_collect") { gm.col = true; gm.op = d.op = Math.max(gm.op, d.op || 100) + 1; return ok({ ok: true, k: 108000, res: { "Laine de Bouftou": 40 }, item: null, gxp: 5000, txp: 0.02, zl: 30, ops: [{ id: gm.op, p: { res: { "Laine de Bouftou": 40 } }, t: "Percepteur récolté" }] }); }
     if (name === "gboss_claim") return ok({ ok: 0, k: 0, dust: 0, titles: [], ops: [] });
+    /* Alliances et prismes (1.1, supabase/alliances.sql) : invitation, prismes, bataille en cours, Percepteur allié attaqué */
+    if (name === "ally_me") {
+      const am = (gm.al = gm.al || { in: false, used: 3, pts: { 1: 4, 2: 6 } }); const z1 = E.SUBS[sid].zone;
+      const AL = { 1: { name: "Les Gardiens d'Émeraude", tag: "GDE", ic: "couronne", col: "#8cc63f" }, 2: { name: "Pacte de Djaul", tag: "DJL", ic: "combat", col: "#e0674f" } };
+      const base = { now: iso(), w: E.gbossWeek(), battle: { on: true, start: iso(-20 * 60e3), end: iso(40 * 60e3), done: false }, gid: 3, glvl: 14, rank: 0, chest: gm.chest, alliances: AL,
+        prisms: [{ zone: z1, aid: 1, gid: 3, g: "Les Bouftous", by: "Kralamour", at: iso(-864e5), mods: { rempart: 2, sagesse: 1, ralliement: 1 } }, { zone: "cania", aid: 2, gid: 6, g: "Les Fils de Djaul", by: "Nyx", at: iso(-2 * 864e5), mods: { rempart: 1 } }],
+        score: { [z1]: { 1: 9, 2: 7 }, cania: am.pts }, fights: { used: am.used, max: 10, extra: {} }, mine: [], top: [Object.assign({ id: 2, n: 2, regions: 1, wins: 13 }, AL[2]), Object.assign({ id: 1, n: 2, regions: 1, wins: 9 }, AL[1])], last: null, claim: false };
+      if (!am.in) return ok(Object.assign(base, { al: null, invites: [{ aid: 1, name: AL[1].name, tag: "GDE", ic: "couronne", col: "#8cc63f", n: 1, by: "Kraken" }], asked: [], list: [{ id: 2, name: AL[2].name, tag: "DJL", ic: "combat", col: "#e0674f", n: 2, regions: 1, guilds: ["Les Fils de Djaul", "Brâkmar Éternel"] }], dom: [], help: [] }));
+      return ok(Object.assign(base, { al: Object.assign({ id: 1, founder: 4, created: iso(-3 * 864e5), lead: false, asks: [], invited: [],
+          guilds: [Object.assign({ n: 12, joined: iso(-3 * 864e5), chef: "Kraken", percos: 2 }, G4), Object.assign({ n: 5, joined: iso(), chef: "Kralamour", percos: 2 }, G3)] }, AL[1]),
+        invites: [], asked: [], list: null, dom: [{ zone: "moon", gid: 4, g: "Ordre du Kralamour" }],
+        help: [{ id: 88, sid, zone: "Plaine des Scarafeuilles", ends: iso(72 * 60e3), by: "Nyx", dg: G4, ag: G5, tried: false, n: 1 }] }));
+    }
+    if (name === "ally_answer") { gm.al.in = true; return ok({ ok: true }); }
+    if (name === "ally_chat") return ok((gm.al && gm.al.in) ? [{ id: 5, ch: "a", user_id: "u9", pseudo: "Kraken", cls: "iop", lvl: 200, body: "Tous à Cania ce soir !", kind: "msg", gname: "Ordre du Kralamour", created_at: iso(-60e3) }] : []);
+    if (name === "ally_say") return ok(null);
+    if (name === "prism_place") { if (gm.chest < 1000000) return ok({ err: "coffre" }); gm.chest -= 1000000; gm.al.placed = a.p_zone; return ok({ ok: true, chest: gm.chest }); }
     return undefined;
   };
   /* fonction serveur « record » pour les guildes : boss, défense contre les monstres, attaques */
@@ -126,6 +143,7 @@ const MOCK = () => {
     const d = db(); const gm = (d.gm = d.gm || {}); gm.calls = (gm.calls || []).concat([body]); let r;
     if (body.raid && body.raid.def) { gm.def = true; r = { ok: true, raid: true, def: true, win: true, rounds: 7, by: "Nyx" }; }
     else if (body.raid && body.raid.go) { gm.go = true; r = { ok: true, raid: true, id: 80, ends: new Date(Date.now() + 7200e3).toISOString(), zone: "la zone", g: "Ordre du Kralamour", left: 2 }; }
+    else if (body.prism) { gm.al.used = (gm.al.used || 0) + 1; gm.al.pts = { 1: 5, 2: 6 }; r = { ok: true, prism: true, zone: body.prism, def: false, free: false, win: true, rounds: 9, used: gm.al.used, extra: false, pts: { 1: 5, 2: 6 } }; }
     else if (body.gboss) { gm.bp = 42410; gm.tok = 3.3; r = { ok: true, gboss: true, boss: "Boss", points: 310, rounds: 15, alive: 3, pts: 42410, goal: 125000, left: 0, phase: 3, done: 2, tok: 3.3, every: 25 }; }
     else r = { ok: false, err: "refusé" };
     put(d); return { data: r, error: null };
@@ -143,7 +161,7 @@ const MOCK = () => {
     channel: () => { const hs = []; const ch = { on: (ev, o, cb) => { if (ev === "postgres_changes") hs.push(cb); return ch; }, subscribe: (cb) => { window.__chatSub = cb; if (cb) setTimeout(() => cb("SUBSCRIBED"), 0); return ch; }, track: () => {}, presenceState: () => ({ u1: [{}], u9: [{}], u8: [{}] }) };
       window.__chatEmit = (m) => hs.forEach((cb) => cb({ new: m })); return ch; },
     removeChannel: () => {},
-    functions: { invoke: async (name, o) => { if (o.body.gboss || o.body.raid || o.body.perco) return guildInvoke(o.body); const d = db();
+    functions: { invoke: async (name, o) => { if (o.body.gboss || o.body.raid || o.body.perco || o.body.prism) return guildInvoke(o.body); const d = db();
       if (o.body.dofus) { d.dofusSent = (d.dofusSent || []).concat([o.body.dofus]); put(d); return { data: { ok: true, giga: true }, error: null }; } // 1.0.30 : GIGA annonce d'un Dofus
       if (o.body.songe) { d.songeSub = (d.songeSub || 0) + 1; put(d); return { data: { ok: true, songe: 1, w: Math.floor((Date.now() / 864e5 + 3) / 7), ii: 2, waves: 20, claim: 20, best: 20, improved: true, rank: 3, fii: 2, fwaves: 20 }, error: null }; } // 1.0.30 : Songe infini rejoué par le serveur
       d.invoked = (d.invoked || []).concat([o.body.did]); put(d); return { data: Object.assign({ ok: true, did: o.body.did, dname: "Donjon test", k: 3, t: 72, improved: true, rank: 2 }, d.recordReply || {}), error: null }; } },
@@ -292,7 +310,7 @@ const MOCK = () => {
       if (name === "hdv_order_new") { const held = a.p_qty * a.p_price + Math.ceil(a.p_qty * a.p_price * 0.02); d.ordMine = [{ id: 9, cat: a.p_cat, key: a.p_key, name: a.p_name, qty: a.p_qty, filled: 0, price: a.p_price, held, st: "open", exp: new Date(Date.now() + 864e5 * a.p_days).toISOString() }]; put(d);
         return { data: { ok: true, ops: [{ id: 3, p: { k: -held }, t: "Offre d'achat" }] }, error: null }; }
       if (name === "hdv_order_fill") { d.ordSold = true; put(d); return { data: { ok: true, n: a.p_qty, k: a.p_qty * 30, ops: [{ id: 2, p: { k: a.p_qty * 30, res: { "Laine de Bouftou": -a.p_qty } }, t: "Vendu à une offre d'achat" }] }, error: null }; }
-      if (/^(guild_|perco_|gboss_)/.test(name) || name === "gift_redeem") { const r = guildMock(name, a, d, u, me); if (r) return r; } // 1.0.30 : refonte des guildes
+      if (/^(guild_|perco_|gboss_|ally_|prism_)/.test(name) || name === "gift_redeem") { const r = guildMock(name, a, d, u, me); if (r) return r; } // 1.0.30 : refonte des guildes
       if (name === "adm_hdv") return { data: { open: 1, sellers: 1, sales7: 0, vol7: 0, trades7: 0, last: [], top: [{ id: 1, name: T.name, qty: 1, price: 5000, s: "Kralamour" }] }, error: null };
       // 0.1.36 : boîte à idées
       if (name === "idea_send") { const L = (d.ideas = d.ideas || []); if (L.some((x) => x.user_id === u.id && Date.now() - x.t < 600000)) return { data: "Une idée toutes les 10 minutes : réessaie un peu plus tard.", error: null };
@@ -1001,6 +1019,27 @@ const MOCK = () => {
     await page.evaluate(() => { window.DX.ui.mapTier = -1; window.DX.render(); }); await page.waitForTimeout(200);
     if (!/domine/.test(await page.textContent("#main"))) fail("chasse : domination absente de la carte");
     await gwide("la carte des Percepteurs", "guilde-carte");
+    // Alliances et prismes (1.1) : invitation acceptée, bataille en cours, combat, Percepteur allié, salon du chat, carte
+    await page.evaluate(() => { const G = window.GUILD.G; G.tab = "alliance"; G.atk = null; G.view = null; window.DX.ui.tab = "guild"; window.DX.render(); window.ALLY.load(true); });
+    await page.waitForSelector('[data-act="al-inv"][data-v="1"]', { timeout: 8000 }).catch(() => fail("alliances : invitation absente"));
+    { const t = await gtxt(); ["Fonder une alliance", "Alliogemme", "Pacte de Djaul", "Les Gardiens d'Émeraude"].forEach((x) => { if (!t.includes(x)) fail("alliances : « " + x + " » absent (sans alliance)"); }); }
+    await gwide("l'alliance (sans alliance)", "alliance-fonder");
+    await page.click('[data-act="al-inv"][data-v="1"]'); await page.waitForSelector(".al-ban", { timeout: 8000 }).catch(() => fail("alliances : l'alliance ne s'affiche pas après l'invitation"));
+    { const t = await gtxt(); ["Bataille des prismes", "Nos prismes", "Rempart rang 2", "Percepteurs alliés", "Aider à défendre", "Poser un prisme", "Île de Moon", "Classement des alliances", "Tes combats : 3 / 10"].forEach((x) => { if (!t.includes(x)) fail("alliances : « " + x + " » absent"); }); }
+    await gwide("l'alliance", "alliance");
+    await page.click('[data-act="al-fight"][data-z="cania"]'); await page.waitForTimeout(1000);
+    if (!((await mock()).gm.calls || []).some((b) => b.prism === "cania")) fail("alliances : combat de bataille non envoyé au serveur");
+    if (!/Victoire à <b>|Victoire à Plaines de Cania/.test(await page.innerHTML("#main")) || !/Tes combats : 4 \/ 10/.test(await gtxt())) fail("alliances : résultat du combat mal affiché");
+    if (!(await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; const sub0 = S.sub; const sid = Object.keys(E.SUBS).find((k) => E.SUBS[k].zone === window.ALLY.A.d.prisms[0].zone); S.sub = sid; const a = E.guildBonus(S, "xp"); S.sub = "zzz"; const b = E.guildBonus(S, "xp"); S.sub = sub0; return a - b === 6; }))) fail("alliances : le prisme ne donne pas +5 % (+1 % de Sagesse) d'XP dans sa région");
+    await page.click('[data-act="g-rdef"][data-g="88"]'); await page.waitForTimeout(800);
+    if (!((await mock()).gm.calls || []).some((b) => b.raid && b.raid.def === 88)) fail("alliances : défense d'un Percepteur allié non envoyée");
+    await page.click('[data-act="al-chat"]'); await page.waitForTimeout(800);
+    if (!(await page.$('#chat [data-act="ch-tab"][data-v="a"]'))) fail("alliances : salon Alliance absent du chat");
+    if (!/Tous à Cania ce soir/.test(await page.textContent("#chat"))) fail("alliances : messages de l'alliance absents du chat");
+    await page.click('[data-act="ch-close"]').catch(() => {});
+    await page.evaluate(() => { window.DX.ui.tab = "world"; window.DX.ui.world = "map"; window.DX.ui.mapTier = -1; window.DX.render(); }); await page.waitForTimeout(300);
+    if (!(await page.$(".al-legend")) || !(await page.$(".zonefold .al-chip"))) fail("alliances : prismes absents de la carte du Monde");
+    await gwide("la carte des prismes", "alliance-carte");
     await page.click('#nav [data-nk="world"]');
     // 7h. 1.0.30 : la Communauté. Alignement (camp du serveur, guerre de la semaine), Songe infini classé, Panel Xener
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const W = window.ENGINE.weekIdx();
