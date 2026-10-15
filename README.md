@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.36.1 « Compteurs complets en vert »
+
+Demande de Mathis (15/10/2026) : « dans quêtes de région, quand on a 32/32 ce n'est pas en vert comme les autres ». `counter()` de `js/questui.js` met la classe `ok` sur les compteurs région, Dofus, succès et ornements quand ils sont complets.
+
 ## 1.0.36 « La Scène »
 
 Choix de Mathis (15/10/2026) : vue Scène en plateau isométrique avec bandeau d'infos (1A 2A), nouvelles animations (1A-4A), sorts et boss animés (1A 2A 3A 4A + mise en scène de Gargandyas, puis 1A-6A sur la seconde maquette), publiés ensemble. La Formation reste la vue par défaut. Code : `arenaLayout`/`sceneHud`/`anStart` dans `js/ui.js`, sorts et boss des lots 1 et 2 dans `js/animsorts.js` (complète `SG` et `BXSP` via `window.DX.anim`). Le moteur ajoute `msp` (nom du sort de monstre) aux évènements de lancer, purement visuel.

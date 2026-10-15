@@ -1,6 +1,13 @@
 {
-  "version": "1.0.36",
+  "version": "1.0.36.1",
   "versions": [
+    {
+      "v": "1.0.36.1",
+      "name": "Compteurs complets en vert",
+      "items": [
+        "Quêtes : le compteur des quêtes de région passe en vert quand elles sont toutes terminées (32/32), comme les autres. Pareil pour les Dofus, les succès et les ornements une fois la collection complète"
+      ]
+    },
     {
       "v": "1.0.36",
       "name": "La Scène",

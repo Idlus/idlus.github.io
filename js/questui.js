@@ -53,15 +53,15 @@
       case "almanax": { const a = almState(s); return a.A.done ? ["faite", "ok"] : a.ready ? ["prête", "todo"] : ["à faire", ""]; }
       case "bounty": { const B0 = s.belite; return [`${(s.bounties || []).length + (B0 && B0.key && !B0.done ? 1 : 0)}`, ""]; }
       case "hebdo": { const W = s.wk; if (!W) return ["", ""]; const d = W.list.filter((q) => q.done).length; return [`${d}/${W.list.length}`, W.claimed ? "ok" : ""]; }
-      case "region": { const L = E.REGIONS || []; return [`${E.rqDoneCount(s)}/${L.length}`, L.some((R) => E.rqReady(s, R)) ? "todo" : ""]; }
+      case "region": { const L = E.REGIONS || []; const d = E.rqDoneCount(s); return [`${d}/${L.length}`, L.length && d >= L.length ? "ok" : L.some((R) => E.rqReady(s, R)) ? "todo" : ""]; }
       case "tresor": { const T = E.tresorState(s); return T.cur ? ["en cours", "todo"] : T.stock.length ? [`${T.stock.length}`, "todo"] : ["", ""]; }
       case "commandes": { const C = E.cmdState(s); const done = C.dn || 0; return [`${done}/${E.CMD_DAY_MAX}`, done >= E.CMD_DAY_MAX ? "ok" : C.list.some((o) => cmdReady(s, o)) ? "todo" : ""]; }
       case "temples": { const all = E.templeClasses(s).length; const left = templeLeft(s).length; return all ? [`${all - left}/${all}`, left ? "todo" : "ok"] : ["", ""]; }
       case "main": return [`${Math.min(s.quest.step, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}`, s.quest.step >= E.MAIN_QUEST.length ? "ok" : ""];
-      case "dofus": return [`${E.dofusCount(s)}/${E.DOFUS_ORDER.length}`, ""];
+      case "dofus": { const d = E.dofusCount(s); return [`${d}/${E.DOFUS_ORDER.length}`, d >= E.DOFUS_ORDER.length ? "ok" : ""]; }
       case "align": return [s.align ? `rang ${E.alignRankIdx(s)}` : "", ""];
-      case "ach": return [`${Object.keys(s.ach).length}/${E.ACH.length}`, ""];
-      case "orn": { const ids = Object.keys(E.ORN); return [`${ids.filter((id) => E.ornUnlocked(s, id)).length}/${ids.length}`, ""]; }
+      case "ach": { const d = Object.keys(s.ach).length; return [`${d}/${E.ACH.length}`, d >= E.ACH.length ? "ok" : ""]; }
+      case "orn": { const ids = Object.keys(E.ORN); const d = ids.filter((id) => E.ornUnlocked(s, id)).length; return [`${d}/${ids.length}`, d >= ids.length ? "ok" : ""]; }
     }
     return ["", ""];
   }
