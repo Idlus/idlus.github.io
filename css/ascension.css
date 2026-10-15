@@ -69,3 +69,16 @@
 .as-best img{height:52px;object-fit:contain}
 .li.me{background:var(--panel3)}
 .as-tabsp .subtabs{flex:1;min-width:0}
+/* mode manuel : barre de sorts pendant le tour du héros, ennemi visé */
+.as-ent.pick{cursor:pointer;border-radius:10px;padding:2px}
+.as-ent.pick:hover{background:rgba(216,67,58,.10)}
+.as-ent.tgt{outline:2px solid var(--hp);background:rgba(216,67,58,.14)}
+.as-ent.tgt::before{content:"🎯";font-size:14px;line-height:1}
+.as-bar{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:12px;background:var(--panel3);border:2px solid var(--gold)}
+.as-bar.wait{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;border-color:var(--line)}
+.as-casts{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.as-cast{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:10px;border:2px solid var(--frame);background:var(--panel2);color:var(--ink);cursor:pointer;min-width:0}
+.as-cast:hover:not(:disabled){border-color:var(--gold)}
+.as-cast:disabled{opacity:.4;cursor:not-allowed}
+.as-cast small{font-size:11px;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-pa{position:absolute;top:-6px;right:4px;font-size:10px;font-weight:900;background:#2f86d6;color:#fff;border-radius:6px;padding:0 5px}

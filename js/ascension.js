@@ -428,7 +428,16 @@
     if (W.rule === "eclats") { const d = Math.round(m.hpMax * 0.15); F.ents.forEach((x) => { if (x !== m && x.alive) { x.hp -= Math.round(d * (x.side === "m" ? 1 : 0.5)); if (x.hp <= 0) { x.hp = 0; x.alive = false; } } }); F.log.push({ txt: `${m.name} explose (−${d}) !`, cls: "ko" }); }
   };
   /* joue un combat d'un coup (simulation, mode auto hors écran) */
-  E.ascSim = (S, W) => { for (let g = 0; g < 100000 && !W.F.over; g++) E.ascStep(S, W); return E.ascResult(W); };
+  E.ascSim = (S, W) => { W.S2.manualLive = false; for (let g = 0; g < 100000 && !W.F.over; g++) E.ascStep(S, W); return E.ascResult(W); };
+  /* mode manuel (demande de Mathis) : le joueur choisit ses sorts et ses cibles pendant le combat, comme le mode manuel du jeu
+     (E.manualCast). Le combat attend son choix ; « Ce tour en auto » ou « Ce combat en auto » le rendent à l'IA. */
+  E.ascManual = (W, on) => { W.S2.settings.manual = !!on; W.S2.manualLive = !!on; };
+  E.ascAwait = (W) => { const F = W.F; const A = F && !F.over && F.await; return A && W.S2.manualLive ? A : null; };
+  const inFight = (S, W, fn) => { const F = W.F; const rng0 = E.getRng(), evLen = E.events.length; E.setRng(W.rng); E.ASC_DEFS = W.defs || E.ASC_DEFS;
+    try { const r = fn(); F.ents.forEach((m, i) => { if (m.side !== "m" || m.alive || W.dead[i]) return; W.dead[i] = 1; dieFx(W, m); }); return r; } finally { E.setRng(rng0); E.events.length = evLen; } };
+  E.ascCanCast = (W, i) => { const A = E.ascAwait(W); const d = W.defs && W.defs[i]; if (!A || !d) return false; E.ASC_DEFS = W.defs; return E.manualCanCast(W.S2, d); };
+  E.ascManualCast = (S, W, i, tgt) => { if (!E.ascAwait(W)) return "Ce n'est pas ton tour."; return inFight(S, W, () => E.manualCast(W.S2, "a~" + i, tgt)); };
+  E.ascManualEnd = (S, W) => { if (!E.ascAwait(W)) return null; inFight(S, W, () => E.manualEnd(W.S2)); return null; };
   E.ascResult = (W) => { const F = W.F; const mons = F.ents.filter((e) => e.side === "m" && !e.summon);
     return { win: F.result === "win", rounds: F.round, monHp: mons.map((m) => (m.alive ? m.hp / m.hpMax : 0)), heroHp: F.ents[W.hero].alive ? F.ents[W.hero].hp / F.ents[W.hero].hpMax : 0,
       recruits: F.ents.filter((e) => e.recruit !== undefined).map((e) => ({ n: e.recruit, hp: e.alive ? e.hp / e.hpMax : 0 })) }; };

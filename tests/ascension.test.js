@@ -132,4 +132,18 @@ const A = E.ASC;
   E.ascSetAuto(S, true); const o = E.ascStepFloor(S, true); if (o && o.win) assert.strictEqual(o.frag, Math.round(E.ASC_FRAG(101, false) * A.autoFrag));
   console.log("ok - ascension : auto et Au-delà");
 }
+// 9. Mode manuel (demande de Mathis) : le combat attend le sort choisi par le joueur, puis reprend.
+{
+  const S = E.newState("M", "iop"); const Q = E.ascState(S); Q.vol = 1e6;
+  E.act(S, "ascStart", "n", E.ascClassChoices(S)[0]); E.act(S, "ascChoose", [0, 1, 2]);
+  const W = E.ascNewFight(S); E.ascManual(W, true); let casts = 0, waits = 0;
+  for (let g = 0; g < 5000 && !W.F.over; g++) {
+    if (E.ascAwait(W)) { const seq = W.F.seq; E.ascStep(S, W); if (W.F.seq === seq) waits++; const i = W.defs.findIndex((d, j) => E.ascCanCast(W, j));
+      if (i >= 0 && !E.ascManualCast(S, W, i, W.F.ents.findIndex((e) => e.side === "m" && e.alive))) casts++; else E.ascManualEnd(S, W); continue; }
+    E.ascStep(S, W);
+  }
+  assert.ok(W.F.over && casts > 0 && waits > 0, `sorts lancés à la main : ${casts}, attentes : ${waits}`);
+  const W2 = E.ascNewFight(S); E.ascManual(W2, true); const r = E.ascSim(S, W2); assert.ok(W2.F.over && r, "quitter la page finit le combat en auto");
+  console.log("ok - ascension : mode manuel,", casts, "sorts choisis");
+}
 console.log("ascension : tout est bon");

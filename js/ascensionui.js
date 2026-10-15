@@ -136,17 +136,33 @@
   /* ---------- le combat ---------- */
   function arenaHtml(s) {
     const W = st.live; if (!W) return "";
-    const F = W.F; const brume = W.rule === "brouillard";
+    const F = W.F; const brume = W.rule === "brouillard"; const aw = E.ascAwait(W);
     const ent = (e, i) => { const pc = e.hpMax ? Math.max(0, e.hp / e.hpMax) : 0; const st0 = W.start ? W.start[i] : 1;
       const img = e.side === "c" && !e.summon ? X().lookLocal(e.cls, (S().chars[0] || {}).sex, 0) : e.img ? `assets/m/${e.img}.png` : monImg(e.key || e.base);
       const who = e.side === "c" ? (e.summon ? (e.recruit !== undefined ? "Recrue" : "Âme invoquée") : "Toi") : h(e.name);
-      return `<div class="as-ent ${e.alive ? "" : "ko"} ${e.side === "c" && e.summon && e.recruit === undefined ? "soul" : ""}"><img src="${img}" alt="" onerror="this.style.visibility='hidden'"><b class="xs">${who}</b>
+      const pickable = e.side === "m" && e.alive && aw; const on = pickable && i === tgtOf(W);
+      return `<div class="as-ent ${e.alive ? "" : "ko"} ${e.side === "c" && e.summon && e.recruit === undefined ? "soul" : ""} ${pickable ? "pick" : ""} ${on ? "tgt" : ""}" ${pickable ? `data-act="as-tgt" data-i="${i}" role="button" aria-label="Viser ${h(e.name)}"` : ""}><img src="${img}" alt="" onerror="this.style.visibility='hidden'"><b class="xs">${who}</b>
         <span class="as-hp ${e.side === "c" ? "ally" : ""}">${e.side === "m" && brume ? `<i style="width:100%;opacity:.25"></i>` : `<i style="width:${Math.round(pc * 100)}%"></i>${e.side === "m" && st0 < 1 ? `<s style="left:${Math.round(st0 * 100)}%;width:${Math.round((1 - st0) * 100)}%"></s>` : ""}`}</span></div>`; };
     const allies = F.ents.map((e, i) => (e.side === "c" ? ent(e, i) : "")).join(""); const foes = F.ents.map((e, i) => (e.side === "m" ? ent(e, i) : "")).join("");
     const log = (F.log || []).slice(-5).map((l) => `<span>${h(l.txt)}</span>`).join("");
     return `<div class="row between"><b>${h(F.label || "")}</b><span class="row">${W.rule ? ruleTag(W.rule) : ""}<span class="tag soft">Tour ${F.round}</span></span></div>
-      <div class="as-arena"><div class="as-side">${allies}</div><span class="as-vs">VS</span><div class="as-side">${foes}</div></div><div class="as-log">${log}</div>`;
+      <div class="as-arena"><div class="as-side">${allies}</div><span class="as-vs">VS</span><div class="as-side">${foes}</div></div>${barHtml(W, aw)}<div class="as-log">${log}</div>`;
   }
+  /* mode manuel : la barre de sorts du héros pendant son tour */
+  const OFF = ["dmg", "drain", "dot", "apdrain", "mpdrain", "push", "weaken", "vuln", "poison"];
+  const offensive = (d) => { const g = d && d.grades && d.grades[0]; return !!g && g.fx.some((f) => OFF.includes(f.k)); };
+  function tgtOf(W) { const F = W.F; const t = F.ents[st.tgt]; if (t && t.side === "m" && t.alive) return st.tgt;
+    let bi = -1; F.ents.forEach((e, i) => { if (e.side === "m" && e.alive && (bi < 0 || e.hp < F.ents[bi].hp)) bi = i; }); return bi; }
+  function barHtml(W, aw) {
+    const Q = E.ascState(S()); if (Q.auto) return "";
+    if (!aw) return W.S2.manualLive ? `<div class="as-bar wait"><span class="xs muted">Les ennemis jouent…</span><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></div>` : `<div class="as-bar wait"><span class="xs muted">Ce combat se joue en auto.</span><button class="btn sm" data-act="as-fman">Reprendre la main</button></div>`;
+    const sp = W.defs.map((d, i) => { if (!d) return ""; const g = E.spellGrade(d, E.ascLvl(W.f)); const ok = E.ascCanCast(W, i); const x = E.ascSpell(d.id);
+      const f = g.fx.find((y) => y.min !== undefined);
+      return `<button class="as-cast" data-act="as-cast" data-i="${i}" ${ok ? "" : "disabled"} data-tip="${h(`${d.name} : ${g.pa} PA${f ? `, ${f.min}-${f.max}` : ""}${g.cd ? `, relance ${g.cd}` : ""}${offensive(d) ? " (sur la cible choisie)" : ""}`)}">${spIco(x || d)}<small>${h(d.name)}</small><span class="as-pa">${g.pa}</span></button>`; }).join("");
+    return `<div class="as-bar"><div class="row between"><b class="small">À toi de jouer : <span class="num">${aw.pa} PA</span></b><span class="xs muted">Touche un ennemi pour le viser.</span></div><div class="as-casts">${sp}</div>
+      <div class="row"><button class="btn sm primary" data-act="as-endturn">Finir le tour</button><button class="btn sm" data-act="as-tauto">Ce tour en auto</button><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></div></div>`;
+  }
+  const arenaKey = (W) => { const A = E.ascAwait(W); return `${W.F.seq}|${W.F.round}|${A ? A.pa + ":" + A.n : "-"}|${st.tgt}|${W.S2.manualLive}`; };
 
   /* ---------- la montée ---------- */
   function runHtml(s) {
@@ -163,7 +179,7 @@
       <div class="as-stat"><span class="muted">Fragments gagnés</span><b>${fmt(R.frag)}</b></div>
       <div class="as-stat"><span class="muted">Mode</span><span class="seg"><button data-act="as-auto" data-v="0" aria-pressed="${!Q.auto}">Manuel</button><button data-act="as-auto" data-v="1" aria-pressed="${!!Q.auto}">Auto</button></span></div>
       ${Q.auto ? `<div class="as-stat"><span class="muted">L'auto préfère</span><select data-act="as-prio" aria-label="Priorité de l'auto">${[["dmg", "les dégâts"], ["heal", "les soins"], ["ctrl", "la protection"], ["cls", "les sorts de ta classe"]].map(([k, n]) => `<option value="${k}" ${Q.prio === k ? "selected" : ""}>${n}</option>`).join("")}</select></div>` : ""}
-      <p class="xs muted">${Q.auto ? "Auto : la tour avance et choisit sans toi, mais −30 % de Fragments sur ces étages, pas d'événement risqué, et ces étages ne comptent pas pour le classement Rapidité." : "Manuel : la tour t'attend à chaque choix. Les combats se jouent seuls."}</p>
+      <p class="xs muted">${Q.auto ? "Auto : la tour avance et choisit sans toi, mais −30 % de Fragments sur ces étages, pas d'événement risqué, et ces étages ne comptent pas pour le classement Rapidité." : "Manuel : la tour t'attend à chaque choix, et pendant les combats c'est toi qui choisis tes sorts et tes cibles."}</p>
       <div class="row between">${st.msg ? `<span class="small">${h(st.msg)}</span>` : "<span></span>"}<button class="btn sm danger" data-act="as-quit">${st.quit ? "Vraiment abandonner ?" : "Abandonner"}</button></div></div></section>`;
   }
 
@@ -237,7 +253,7 @@
     if (!["fight", "boss"].includes(fl.t)) { E.ascStepFloor(s, Q.auto); X().markDirty(); paint(); return; }
     const e = E.ascPay(s); if (e) { if (st.msg !== e) { st.msg = e; paint(); } return; }
     st.msg = null; const W = E.ascNewFight(s); if (!W) { st.msg = "Combat impossible."; paint(); return; }
-    W.start = W.F.ents.map((x) => (x.hpMax ? x.hp / x.hpMax : 1)); st.live = W; X().markDirty(); paint();
+    W.start = W.F.ents.map((x) => (x.hpMax ? x.hp / x.hpMax : 1)); st.live = W; st.tgt = -1; if (!E.ascState(s).auto) E.ascManual(W, true); X().markDirty(); paint();
   }
   function liveEnd(s, instant) {
     const W = st.live; if (!W) return; const Q = E.ascState(s);
@@ -261,10 +277,12 @@
     const R = Q.run;
     if (R.pend) { if (Q.auto && Date.now() - R.pend.at > 4000) { E.ascAutoPick(s); st.sel = []; st.rep = -1; X().markDirty(); paint(); } else if (Q.auto) { const t = document.querySelector(".as-choice .tag.soft"); if (t) t.textContent = `Auto : choix fait dans ${Math.max(0, Math.ceil((R.pend.at + 4000 - Date.now()) / 1000))} s`; } return; }
     if (st.live) {
+      const W = st.live; if (W.F.over) { liveEnd(s, false); return; }
+      if (E.ascAwait(W)) { const k = arenaKey(W); if (k !== st.akey) { st.akey = k; const a = $("#asArena"); if (a) a.innerHTML = arenaHtml(s); } return; } // le combat attend ton sort
       const sp = A.stepMs / (s.settings && s.settings.fastAsc ? 3 : 1);
       if (Date.now() - lastStep < sp) return; lastStep = Date.now();
-      const r = E.ascStep(s, st.live);
-      if (r === "end") liveEnd(s, false); else { const a = $("#asArena"); if (a) a.innerHTML = arenaHtml(s); }
+      const r = E.ascStep(s, W);
+      if (r === "end") liveEnd(s, false); else { st.akey = arenaKey(W); const a = $("#asArena"); if (a) a.innerHTML = arenaHtml(s); }
       return;
     }
     if (Date.now() < st.wait) return;
@@ -321,6 +339,12 @@
       case "as-auto": done(E.act(s, "ascSetAuto", d.v === "1")); return;
       case "as-quit": if (!st.quit) { st.quit = true; paint(); setTimeout(() => { if (st.quit) { st.quit = false; paint(); } }, 5000); return; }
         st.quit = false; if (st.live) st.live = null; done(E.act(s, "ascQuit")); return;
+      case "as-tgt": st.tgt = +d.i; return;
+      case "as-cast": { const W = st.live; if (!W) return; const def = W.defs[+d.i]; const r = E.ascManualCast(s, W, +d.i, offensive(def) ? tgtOf(W) : null); if (r) X().toast(r); return; }
+      case "as-endturn": if (st.live) E.ascManualEnd(s, st.live); return;
+      case "as-tauto": { const W = st.live; if (!W || !E.ascAwait(W)) return; W.S2.manualLive = false; E.ascStep(s, W); E.ascManual(W, true); return; }
+      case "as-fauto": if (st.live) E.ascManual(st.live, false); return;
+      case "as-fman": if (st.live) E.ascManual(st.live, true); return;
       case "as-drink": done(E.act(s, "ascDrink")); return;
       case "as-brew": { const r = E.act(s, "ascBrew"); if (!r) X().toast("Fiole de Volonté préparée."); done(r); return; }
       case "as-unl": done(E.act(s, "ascUnlock", d.v)); return;
