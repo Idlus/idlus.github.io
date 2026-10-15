@@ -52,7 +52,7 @@
     const dofus = (E.DOFUS_ORDER || []).filter((id) => Object.values(items).some((it) => it.tpl === "dofus_" + id)).map((id) => (E.DOFUS[id] || {}).name || id);
     const G = S.songe || {}; const best = G.best && E.SG_INT && E.SG_INT[G.best.ii];
     let quest = "—"; try { const q = E.questStep(S); const n = (S.quest && S.quest.step) || 0; quest = q ? `${h(q.title)} (étape ${n + 1})` : `terminée (${n} étapes)`; } catch (e) {}
-    let ach = 0, achTot = (E.ACH || []).length, pts = 0; try { ach = Object.keys(S.ach || {}).filter((k) => S.ach[k]).length; pts = E.achPoints ? E.achPoints(S) : 0; } catch (e) {}
+    let ach = 0, achTot = (E.ACH || []).length, pts = 0; try { ach = E.achCount ? E.achCount(S) : Object.keys(S.ach || {}).filter((k) => S.ach[k]).length; pts = E.achPoints ? E.achPoints(S) : 0; } catch (e) {}
     let crafts = S.crafts || {}; // 1.0.19 : une partie pas encore rechargée montre ses métiers déjà convertis (comme les classements)
     if (S.craftObj === undefined && E.craftObjConvert) { const C = { crafts: JSON.parse(JSON.stringify(crafts)) }; E.craftObjConvert(C); crafts = C.crafts; }
     const jobs = Object.entries(S.jobs || {}).map(([k, j]) => [((D.GATHER_JOBS || {})[k] || {}).name || k, j.lvl || 1])

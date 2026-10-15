@@ -60,7 +60,7 @@
       case "main": return [`${Math.min(s.quest.step, E.MAIN_QUEST.length)}/${E.MAIN_QUEST.length}`, s.quest.step >= E.MAIN_QUEST.length ? "ok" : ""];
       case "dofus": { const d = E.dofusCount(s); return [`${d}/${E.DOFUS_ORDER.length}`, d >= E.DOFUS_ORDER.length ? "ok" : ""]; }
       case "align": return [s.align ? `rang ${E.alignRankIdx(s)}` : "", ""];
-      case "ach": { const d = Object.keys(s.ach).length; return [`${d}/${E.ACH.length}`, d >= E.ACH.length ? "ok" : ""]; }
+      case "ach": { const d = E.achCount(s); return [`${d}/${E.ACH.length}`, d >= E.ACH.length ? "ok" : ""]; }
       case "orn": { const ids = Object.keys(E.ORN); const d = ids.filter((id) => E.ornUnlocked(s, id)).length; return [`${d}/${ids.length}`, d >= ids.length ? "ok" : ""]; }
     }
     return ["", ""];

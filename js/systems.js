@@ -1212,7 +1212,7 @@
     ailes:     { name: (S) => (S.align ? `Ailes de ${ALIGN[S.align.side].name}` : "Ailes d'alignement"), req: "Choisir un alignement (Bonta ou Brâkmar) — elles grandissent avec le rang", ok: (S) => !!S.align },
     couronne:  { name: () => "Couronne du Maître des donjons", req: "Vaincre chaque boss de donjon au moins une fois", ok: (S) => Object.keys(DUNGEONS).every((d) => S.progress.bossKills[d]) },
     epines:    { name: () => "Épines d'Archimonstre", req: "Vaincre 25 archimonstres", ok: (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= 25 },
-    lauriers:  { name: () => "Lauriers", req: "Obtenir 20 succès", ok: (S) => Object.keys(S.ach || {}).length >= 20 },
+    lauriers:  { name: () => "Lauriers", req: "Obtenir 20 succès", ok: (S) => (E.achCount ? E.achCount(S) : Object.keys(S.ach || {}).length) >= 20 },
     flammes:   { name: () => "Flammes Rayonnantes", req: "Porter 3 objets Rayonnants en même temps sur un héros", ok: (S) => !!(S.ornSeen && S.ornSeen.flammes) },
     solitaire: { name: () => "Aura du Solitaire", req: "Ancien Emblème du Solitaire niveau 100 (retiré en 0.1.8.2 : seuls ceux qui l'avaient le gardent)", ok: (S) => !!(S.unlocks && S.unlocks.solitaire) },
     stasis:    { name: () => "Sceau du Maître de la stasis", req: "Terminer un donjon en stasis 10", ok: (S) => !!S.unlocks.stasis10 },

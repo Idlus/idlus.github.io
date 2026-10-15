@@ -148,11 +148,16 @@
   }
   E.mtTree = build;
   const NKS = [["Œil de l'Éternel", { res: 15, d: -5 }], ["Larme d'Eliatrope", { d: 10, hp: 10, pm: -1 }], ["Souffle d'Ogrest", { t1: 100, hp: -15 }]];
-  E.mtGot = (c, lo) => { const M = E.mt(c); const T = build(c.cls); return new Set([T.start, ...(M.t[lo === undefined ? M.lo : lo] || [])]); };
+  /* 2.0.3 : seules comptent les étoiles qui existent, reliées au départ par des étoiles prises (Nébuleuse fermée sous E.MT_OPEN points) : un code d'arbre ou une sauvegarde abîmée ne donne rien de plus */
+  E.mtClean = (c, ids) => { const T = build(c.cls); const neb = E.mtPts(c) >= E.MT_OPEN; const want = new Set((ids || []).filter((id) => Number.isInteger(id) && T.N[id] && T.N[id].t !== "start" && (neb || !T.N[id].neb)));
+    const seen = new Set([T.start]); const q = [T.start]; while (q.length) { const x = q.pop(); for (const y of T.N[x].adj) if (want.has(y) && !seen.has(y)) { seen.add(y); q.push(y); } } seen.delete(T.start); return [...seen]; };
+  E.mtGot = (c, lo) => { const M = E.mt(c); const T = build(c.cls); return new Set([T.start, ...E.mtClean(c, M.t[lo === undefined ? M.lo : lo])]); };
+  /* 2.0.3 : un joyau ne sert qu'à un héros (le premier de l'équipe qui l'a serti) */
+  E.joyOwner = (S, uid) => { for (const h of S.chars || []) if (h.mt && h.mt.j && Object.values(h.mt.j).includes(uid)) return h; return null; };
   E.mtStats = (S, c, set) => { const T = build(c.cls); const got = set || E.mtGot(c); const t = {}; const ks = [];
     got.forEach((id) => { const n = T.N[id]; if (!n) return; if (n.t === "ks" || n.t === "cks") ks.push(n); (n.b || []).forEach(([s, v]) => (t[s] = (t[s] || 0) + v)); });
     const sym = T.coreIds.every((id) => got.has(id)); if (sym) t[`Passif ${T.pas} (%)`] = (t[`Passif ${T.pas} (%)`] || 0) + 5;
-    const M = E.mt(c); for (const id in M.j) if (got.has(+id)) { const J = (S.joy || []).find((x) => x.uid === M.j[id]); if (J && JOY[J.k]) { const [s, v] = JOY[J.k].b; t[s] = (t[s] || 0) + v; } }
+    const M = E.mt(c); for (const id in M.j) if (got.has(+id)) { const J = (S.joy || []).find((x) => x.uid === M.j[id]); if (J && JOY[J.k] && E.joyOwner(S, J.uid) === c) { const [s, v] = JOY[J.k].b; t[s] = (t[s] || 0) + v; } }
     return { t, ks, sym }; };
   /* partager : un code par arbre (bits des étoiles prises) */
   E.mtCode = (c) => { const T = build(c.cls); const got = E.mtGot(c); const by = new Uint8Array(Math.ceil(T.N.length / 8)); got.forEach((id) => (by[id >> 3] |= 1 << (id & 7))); let s = ""; by.forEach((b) => (s += String.fromCharCode(b))); return `IDLUS-MT-${c.cls}-${btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`; };
@@ -190,6 +195,7 @@
     if ([5, 10, 15, 20].includes(t1)) E.emit(S, "bestiaire", { r, t: t1 });
   };
   E.btTitle = (r) => `Fléau des ${raceName(r)}`;
+  E.btTitleSync = (S) => { for (const r in E.RACE_MONS) if (E.btTier(S, r) >= 15) { const t = E.btTitle(r); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t); } }; // 2.0.3 : au chargement, titre aussi pour les familles déjà au palier 15 avant la 2.0
   E.btOrnSync = (S) => { if (!E.ORN) return; for (const r in E.RACE_MONS) { const id = "bt_" + r; if (!E.ORN[id] && E.btTier(S, r) >= 5) E.ORN[id] = { name: () => `Sceau des ${raceName(r)}`, req: `Palier 5 du Bestiaire : ${raceName(r)}`, ok: (s) => E.btTier(s, r) >= 5, bt: r }; } };
   /* palier 10 : +2 % de butin sur la famille (en proportion des monstres du combat) */
   E.btLoot = (S, mons) => { if (!mons || !mons.length) return 1; let n = 0; mons.forEach((m) => { const r = RACE_OF[m.base || m.key]; if (r !== undefined && E.btTier(S, r) >= 10) n++; }); return 1 + 0.02 * n / mons.length; };
@@ -201,11 +207,11 @@
   E.mtFx = (S, c) => {
     if (!E.mtOn(c) || !c.mt) return null; const M = c.mt; const ids = M.t[M.lo] || [];
     if (!ids.length) return null;
-    const key = `${c.cls}|${M.lo}|${ids.join(",")}|${JSON.stringify(M.j || {})}|${(S.joy || []).length}`; const hit = CACHE.get(M); if (hit && hit.key === key) return hit.fx;
+    const key = `${c.cls}|${M.lo}|${ids.join(",")}|${E.mtPts(c) >= E.MT_OPEN}|${JSON.stringify(M.j || {})}|${Object.values(M.j || {}).map((u) => E.joyOwner(S, u) === c ? 1 : 0).join("")}|${(S.joy || []).length}`; const hit = CACHE.get(M); if (hit && hit.key === key) return hit.fx;
     const { t, ks } = E.mtStats(S, c); const fx = { st: {} }; FXK.forEach((k) => (fx[k] = 0));
     for (const lb in t) { if (lb.startsWith("Passif ")) { fx.pass += t[lb]; continue; } const m = LBL[lb]; if (!m) continue; if (m[0] === "st") fx.st[m[1]] = (fx.st[m[1]] || 0) + t[lb]; else fx[m[1]] += t[lb]; }
     ks.forEach((n) => { for (const k in n.fx || {}) { if (k === "pp" || k === "ini") fx.st[k] = (fx.st[k] || 0) + n.fx[k]; else if (k === "rev") fx.rev = Math.max(fx.rev, n.fx[k]); else fx[k] += n.fx[k]; } });
-    fx.n = ids.length; CACHE.set(M, { key, fx }); return fx;
+    fx.n = E.mtGot(c).size - 1; CACHE.set(M, { key, fx }); return fx;
   };
 
   if (typeof module !== "undefined") module.exports = E;

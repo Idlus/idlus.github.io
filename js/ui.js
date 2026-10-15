@@ -21,9 +21,18 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.2";
+const GAME_VERSION = "2.0.3";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.3", name: "Chasse aux bugs de la Maîtrise", guide: "maitrise", items: [
+    "L'XP en trop au passage du niveau 200 n'est plus perdue : elle part dans la Maîtrise",
+    "Arbre de Maîtrise : un code de partage ne peut plus donner des étoiles non reliées au départ ni la Nébuleuse avant 1 000 points, et une sauvegarde abîmée n'empêche plus d'ouvrir l'arbre",
+    "Joyaux : un joyau ne se sertit plus chez plusieurs héros à la fois, et rendre l'étoile rend le joyau",
+    "« Tout rendre » demande confirmation quand il coûte des kamas et ne s'annule plus sans les rendre",
+    "Le titre « Fléau des … » arrive aussi pour les familles du Bestiaire déjà au palier 15 avant la 2.0",
+    "Le classement de la Maîtrise ne reste plus bloqué sur « Chargement… »",
+    "Compteurs de succès justes (les anciens succès de Renaissance ne comptent plus), XP/h du carnet avec la Maîtrise, textes du Guide mis à jour"
+  ] },
   { v: "2.0.2", name: "Chemins du ciel", guide: "maitrise", items: [
     "Maîtrise : le ciel de chaque classe est redessiné pour que les chemins suivent les liens visibles. Les branches ne traversent plus la branche voisine, les cercles d'étoiles ne se chevauchent plus et les passages entre deux branches ne coupent plus un cercle (de 200 croisements de liens à une vingtaine)",
     "Les étoiles et les liens restent les mêmes : vos points placés, vos arbres enregistrés et vos codes de partage ne changent pas"
@@ -2825,7 +2834,7 @@ function homeHtml() {
     <div class="stack" style="gap:14px">
       <div class="panel"><div class="phead"><h2>Quête</h2><button class="btn sm" data-tab="quests">Toutes les quêtes</button></div><div class="pad stack" style="gap:8px">
         ${q ? `<div><b>${h(q.title)}</b><div class="small muted">${h(q.txt)}</div><div class="row" style="margin-top:6px"><div class="bar grow"><i style="width:${pct(qp[0], qp[1])}%"></i></div><span class="num small">${fmt(qp[0])}/${fmt(qp[1])}</span>${questGoBtn(q, "")}</div></div>` : `<p class="note">Quête principale terminée. Bravo, Héros d'Amakna !</p>`}
-        <div class="ac-stats xs"><span><b class="num">${fmt(S.stats.wins)}</b> victoires</span><span><b class="num">${Object.keys(S.ach || {}).length}/${E.ACH.length}</b> succès</span><span><b class="num" style="color:var(--archi)">${archis}</b> archimonstres</span><span><b class="num" style="color:var(--gold)">${S.radiants || 0}</b> rayonnants</span><span><b class="num">${E.havreTotal(S)}</b> Havre-Sac</span></div>
+        <div class="ac-stats xs"><span><b class="num">${fmt(S.stats.wins)}</b> victoires</span><span><b class="num">${E.achCount(S)}/${E.ACH.length}</b> succès</span><span><b class="num" style="color:var(--archi)">${archis}</b> archimonstres</span><span><b class="num" style="color:var(--gold)">${S.radiants || 0}</b> rayonnants</span><span><b class="num">${E.havreTotal(S)}</b> Havre-Sac</span></div>
       </div></div>
       <section class="panel"><div class="phead"><nav class="subtabs" style="margin:0"><button data-act="hjtab" data-v="j" aria-pressed="${jt === "j"}">Journal</button><button data-act="hjtab" data-v="c" aria-pressed="${jt === "c"}">Derniers combats</button></nav>${more ? `<button class="btn sm" data-act="hjall">${ui.hjAll ? "Moins" : "Tout voir"}</button>` : ""}</div>${jour}</section>
     </div>
@@ -7338,7 +7347,7 @@ function almanaxHtml() {
     <p class="note">Chaque jour du calendrier a son Méryde et son bonus, les mêmes que dans DOFUS, adaptés à Idlus. La cible (famille, zone, donjon) suit le niveau de ton meilleur héros. L'offrande change chaque jour ; les ressources viennent des monstres, l'encyclopédie dit qui les lâche.</p></div></section>`;
 }
 function achHtml() {
-  const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = Object.keys(S.ach).length;
+  const cats = [...new Set(E.ACH.map((a) => a.cat))]; const n = E.achCount(S);
   const ICO = { Progression: G("star"), Combat: IC("combat"), Donjons: IC("cle"), Chasse: IC("carte"), Objets: IC("dofus"), Métiers: IC("pioche"), Forgemagie: IC("forge"), Quêtes: IC("quetes"), Alignement: IC("ailes"), "Havre-Sac": IC("havre"), Idoles: `<img class="uico" src="assets/id/pro.webp" alt="">`, Archimonstres: IC("dofus") };
   return `<section class="panel"><div class="phead"><h2>Ornements</h2><span class="xs muted">à équiper dans Héros (contour de la carte)</span></div><div class="pad achgrid">${Object.entries(E.ORN).map(([id, O]) => `<div class="ach ${E.ornUnlocked(S, id) ? "ok" : ""}"><span class="ic">${E.ornUnlocked(S, id) ? G("sparkle") : G("lock")}</span><span><b>${h(O.name(S))}</b><br><span class="xs muted">${h(O.req)}</span></span></div>`).join("")}</div></section>
     <section class="panel"><div class="phead"><h2>Succès</h2><span class="small muted num">${n}/${E.ACH.length}</span></div><div class="pad stack">${cats.map((cat) => `<h3 class="sec">${ICO[cat] || "•"} ${h(cat)}</h3><div class="achgrid">${E.ACH.filter((a) => a.cat === cat).map((a) => { const pr = !S.ach[a.id] && E.achProgress(S, a.id); return `<div class="ach ${S.ach[a.id] ? "ok" : ""}"><span class="ic">${S.ach[a.id] ? IC("trophee") : "·"}</span><span class="grow"><b>${h(a.name)}</b>${pr ? ` <span class="xs num">${fmt(Math.min(pr[0], pr[1]))}/${fmt(pr[1])}</span>` : ""}<br><span class="xs muted">${h(a.desc)} · ${fmt(a.kamas)} k${a.title ? ` · titre « ${h(a.title)} »` : ""}</span></span>${pr ? pinBtn({ k: "ach", id: a.id }) : ""}</div>`; }).join("")}</div>`).join("")}</div></section>`;
@@ -8700,7 +8709,7 @@ function renderCarnet() {
 }
 function carnetText() {
   const x = E.carnetSummary(S);
-  return [`Carnet de bord Idlus ${GAME_VERSION} (7 jours)`, `Niveau max ${x.lvl}, ${x.team} héros, ${x.ren} renaissances`,
+  return [`Carnet de bord Idlus ${GAME_VERSION} (7 jours)`, `Niveau max ${x.lvl}, ${x.team} héros, ${x.mt || 0} points de Maîtrise`,
     `XP/h ${fmtK(x.xph)} · kamas/h ${fmtK(x.kh)} · ${fmt(x.f)} combats, ${x.win} % gagnés · ${x.h} h de combat, ${x.offH} h hors ligne`,
     `Gagnés : ${x.inn.map(([k, v]) => `${E.CARNET_IN[k] || k} ${fmtK(v)}`).join(", ") || "rien"}`,
     `Dépensés : ${x.out.map(([k, v]) => `${E.CARNET_OUT[k] || k} ${fmtK(v)}`).join(", ") || "rien"}`,

@@ -1,6 +1,6 @@
 /* ============================================================================
    IDLUS 2.0 — LA MAÎTRISE : l'affichage (page Héros › Maîtrise, DX.pages.maitrise)
-   Onglets Arbre (ciel de constellation par classe, 3 arbres enregistrés, recherche, chemin planifié, annuler,
+   Onglets Arbre (ciel de constellation par classe, 3 arbres enregistrés, recherche, chemin vers une étoile, annuler,
    comparer, partager, joyaux), Bestiaire et Classement ; ligne de la fiche du héros, aura des clés de voûte
    dans la Scène, ornements du Bestiaire. Le moteur est dans js/maitrise_moteur.js.
    Actions « mt-… » relayées par ui.js.
@@ -26,6 +26,7 @@
   const canEdit = () => !st.view && E.mtOn(hero());
   let got = new Set();
   const loadGot = () => { const c = hero(); const T = build(treeCls()); got = st.view ? new Set([T.start]) : E.mtGot(c); };
+  const pushHist = (h) => { st.hist.push(h); if (st.hist.length > E.MT_UNDO) st.hist.shift(); };
   const pts = () => (st.view ? E.MT_OPEN + 200 : E.mtPts(hero()));
   const used = () => got.size - 1;
   const nebOpen = () => pts() >= E.MT_OPEN;
@@ -36,7 +37,7 @@
     while (hd < q.length) { const x = q[hd++]; if (x === t) break; for (const y of N[x].adj) { if (!allowed(y) || prev.has(y)) continue; prev.set(y, x); q.push(y); } }
     if (!prev.has(t)) return null; const p = []; let x = t; while (!got.has(x)) { p.push(x); x = prev.get(x); } return p.reverse(); };
   const connectedWithout = (rm) => { const N = T().N, s0 = T().start; const seen = new Set([s0]); const q = [s0]; while (q.length) { const x = q.pop(); for (const y of N[x].adj) if (got.has(y) && y !== rm && !seen.has(y)) { seen.add(y); q.push(y); } } return seen.size === got.size - 1; };
-  const save = () => { if (st.view) return; const M = E.mt(hero()); M.t[M.lo] = [...got].filter((x) => x !== T().start); };
+  const save = () => { if (st.view) return; const M = E.mt(hero()); M.t[M.lo] = [...got].filter((x) => x !== T().start); for (const id in M.j) if (!got.has(+id)) delete M.j[id]; }; // 2.0.3 : une étoile rendue rend son joyau
   const domCol = (n) => (n.t === "start" || n.t === "cls" || n.t === "cks" ? CLASSES[treeCls()].color : DOM[n.d].c);
 
   /* ---------- dessin ---------- */
@@ -133,7 +134,7 @@
     const n = T().N[id]; st.sel = id; if (st.hov != null) st.hov = id;
     if (canEdit() && allowed(id)) { const before = [...got];
       if (got.has(id)) { if (connectedWithout(id)) got.delete(id); } else { const p = pathTo(id); if (p) p.slice(0, Math.max(0, pts() - used())).forEach((x) => got.add(x)); }
-      if (got.size !== before.length) { st.hist.push(before); if (st.hist.length > E.MT_UNDO) st.hist.shift(); save(); } }
+      if (got.size !== before.length) { pushHist(before); save(); } }
     side(); draw();
   }
 
@@ -142,10 +143,10 @@
   function infoHtml() {
     if (st.sel == null) return `<span class="mt-ty muted">Étoile</span><b>Touche une étoile</b><span class="muted xs">Son effet s'affiche ici. Un clic sur une étoile lointaine prend le chemin le plus court.</span>`;
     const n = T().N[st.sel]; const p = got.has(n.id) ? null : pathTo(n.id); const left = pts() - used();
-    const who = st.view ? "Arbre d'une autre classe : lecture seule." : !E.mtOn(hero()) ? "La Maîtrise s'ouvre au niveau 200." : got.has(n.id) ? "Prise." : p ? (p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""} avec le chemin.` : `Chemin de ${p.length} points, planifié : il se prendra tout seul aux prochains niveaux.`) : n.t === "start" ? "" : n.neb ? `S'ouvre à ${fmt(E.MT_OPEN)} points.` : "Pas atteignable.";
+    const who = st.view ? "Arbre d'une autre classe : lecture seule." : !E.mtOn(hero()) ? "La Maîtrise s'ouvre au niveau 200." : got.has(n.id) ? "Prise." : p ? (p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""} avec le chemin.` : (left > 0 ? `Chemin de ${p.length} points : un clic prend les ${left} premières étoiles, la suite aux prochains niveaux.` : `Chemin de ${p.length} points : gagne des niveaux de Maîtrise pour le prendre.`)) : n.t === "start" ? "" : n.neb ? `S'ouvre à ${fmt(E.MT_OPEN)} points.` : "Pas atteignable.";
     let joy = "";
     if (n.t === "joy" && got.has(n.id) && !st.view) { const M = E.mt(hero()); const cur = M.j[n.id]; const J = cur && (S().joy || []).find((z) => z.uid === cur);
-      const free = (S().joy || []).filter((z) => !Object.values(M.j).includes(z.uid));
+      const free = (S().joy || []).filter((z) => !E.joyOwner(S(), z.uid)); // 2.0.3 : un joyau serti chez un autre héros n'est pas libre
       joy = `<div class="mt-joyset">${J ? `<span class="mt-jw" style="--jc:${JOY[J.k].c}">◆ ${h(JOY[J.k].n)} · +${JOY[J.k].b[1]} ${h(JOY[J.k].b[0])}</span><button class="btn xs" data-act="mt-unsock">Retirer</button>` : free.length ? `<span class="xs muted">Sertir :</span>${free.slice(0, 6).map((z) => `<button class="btn xs mt-jw" style="--jc:${JOY[z.k].c}" data-act="mt-sock" data-v="${z.uid}">◆ ${h(JOY[z.k].n)}</button>`).join("")}` : `<span class="xs muted">Aucun joyau libre : ils tombent sur les boss en stasis 10 et plus.</span>`}</div>`; }
     return `<span class="mt-ty" style="color:${domCol(n)}">${TYP[n.t]}${["start", "cls", "cks"].includes(n.t) ? " · " + h(CLASSES[treeCls()].name) : n.neb ? " · Nébuleuse" : " · " + DOM[n.d].n}</span><b>${h(n.n)}</b><span class="small">${h(n.txt)}</span><span class="muted xs">${h(who)}</span>${joy}`;
   }
@@ -213,7 +214,7 @@
     const ON = window.ONLINE && window.ONLINE.enabled ? window.ONLINE : null; if (!ON || !ON.db || RK.busy || Date.now() - RK.at < 60000) return;
     RK.busy = true;
     try { const { data, error } = await ON.db().from("lb_level").select("user_id,pseudo,heroes").order("level", { ascending: false }).limit(1000); if (error) throw error;
-      const rows = []; (data || []).forEach((r) => { let acct = 0; (r.heroes || []).forEach((x) => { if (x && x.mt > 0) { acct += x.mt; rows.push({ p: r.pseudo, u: r.user_id, n: x.name, cls: x.cls, mt: x.mt, ks: x.ks || [] }); } }); r.acct = acct; });
+      const rows = []; (data || []).forEach((r) => { let acct = 0; (Array.isArray(r.heroes) ? r.heroes : []).forEach((x) => { const mt = x ? Math.floor(+x.mt) : 0; if (mt > 0 && CLASSES[x.cls]) { acct += mt; rows.push({ p: r.pseudo, u: r.user_id, n: x.name, cls: x.cls, mt, ks: Array.isArray(x.ks) ? x.ks : [] }); } }); /* 2.0.3 : une ligne abîmée du serveur ne bloque plus le classement */ r.acct = acct; });
       RK.rows = rows.sort((x, y) => y.mt - x.mt); RK.acct = (data || []).filter((r) => r.acct).sort((x, y) => y.acct - x.acct).slice(0, 20).map((r) => ({ p: r.pseudo, u: r.user_id, mt: r.acct })); RK.err = null;
     } catch (e) { RK.err = "Classement indisponible pour l'instant."; }
     RK.at = Date.now(); RK.busy = false; if (st.tab === "rank" && ui().tab === "maitrise") window.DX.render();
@@ -251,15 +252,15 @@
       case "mt-view": st.view = d.v && d.v !== hero().cls ? d.v : null; st.hist = []; st.z = 0; rer(); return;
       case "mt-z": if (d.v === "in") st.z = Math.min(3, st.z * 1.35); else if (d.v === "out") st.z = Math.max(0.12, st.z / 1.35); else if (d.v === "c") return center(); else return fitAll(); draw(); return;
       case "mt-undo": if (st.hist.length) { got = new Set(st.hist.pop()); save(); side(); draw(); } return;
-      case "mt-reset": { const cost = Math.max(0, used() - E.MT_FREE) * E.MT_RESPEC; if (cost > S().kamas) { X().toast("Pas assez de kamas pour tout rendre.", "info"); return; } S().kamas -= cost; st.hist.push([...got]); got = new Set([T().start]); save(); side(); draw(); return; }
+      case "mt-reset": { const cost = Math.max(0, used() - E.MT_FREE) * E.MT_RESPEC; if (cost > S().kamas) { X().toast("Pas assez de kamas pour tout rendre.", "info"); return; } if (cost && !confirm(`Rendre les ${used()} points de l'arbre coûte ${fmt(cost)} kamas. Continuer ?`)) return; S().kamas -= cost; if (cost) st.hist = []; else pushHist([...got]); got = new Set([T().start]); save(); side(); draw(); return; } // 2.0.3 : une remise payée ne s'annule pas
       case "mt-share": st.share = !st.share; side(); return;
       case "mt-copy": { const code = E.mtCode(c); try { navigator.clipboard.writeText(code).then(() => X().toast("Code de l'arbre copié.", "info"), () => {}); } catch (e) {} return; }
       case "mt-imp": { const v = document.getElementById("mtImp"); const R = v && E.mtRead(v.value); if (!R || R.cls !== c.cls) { X().toast(R ? "Ce code est pour une autre classe." : "Code illisible.", "info"); return; }
-        const ids = R.ids.filter((id) => id !== T().start && T().N[id]); if (ids.length > pts()) { X().toast(`Cet arbre demande ${ids.length} points.`, "info"); return; } st.hist.push([...got]); got = new Set([T().start, ...ids]); save(); side(); draw(); return; }
+        const raw = R.ids.filter((id) => id !== T().start); const ids = E.mtClean(c, raw); if (ids.length !== raw.length) { X().toast("Ce code d'arbre n'est pas valable ici (étoiles non reliées ou Nébuleuse fermée).", "info"); return; } if (ids.length > pts()) { X().toast(`Cet arbre demande ${ids.length} points.`, "info"); return; } pushHist([...got]); got = new Set([T().start, ...ids]); save(); side(); draw(); return; }
       case "mt-lo": { const l = +d.v; if (l === E.mt(c).lo) return; st.cmp = l; side(); return; }
       case "mt-cno": st.cmp = null; side(); return;
       case "mt-cgo": E.mt(c).lo = st.cmp; st.cmp = null; st.hist = []; rer(); return;
-      case "mt-sock": { if (st.sel == null) return; E.mt(c).j[st.sel] = +d.v; side(); draw(); return; }
+      case "mt-sock": { if (st.sel == null || !got.has(st.sel) || E.joyOwner(S(), +d.v)) return; E.mt(c).j[st.sel] = +d.v; side(); draw(); return; }
       case "mt-unsock": { if (st.sel == null) return; delete E.mt(c).j[st.sel]; side(); draw(); return; }
       case "mt-fam": st.fam = d.v; rer(); return;
       case "mt-rkc": RK.cls = d.v || ""; rer(); return;

@@ -164,7 +164,7 @@
         `Un héros plus de ${N(() => E.XP_PEN.free, 6)} niveaux au-dessus des monstres perd de l'XP (−5 % par niveau, jusqu'à 30 % gardés).`,
         "Boss ×6, archimonstre ×5, Champion ×3 d'XP.",
         "Chaque niveau donne 5 points de caractéristiques.",
-        "Après une Renaissance, il faut plus d'XP par niveau (voir Renaissance).",
+        "Au niveau 200, l'XP remplit la Maîtrise (voir Maîtrise).",
       ]],
     ] });
 
@@ -196,7 +196,6 @@
         "Chaque sort peut avoir une **condition** (par exemple « si un allié a moins de 50 % de vie ») et une **cible** préférée.",
         "Une **stratégie** est une barre enregistrée ; elle peut être liée à une zone.",
         "L'arme équipée ajoute un **coup d'arme** sur la barre (voir Équipement).",
-        "Après une Renaissance, la Mémoire des vies permet d'équiper des sorts d'autres classes (1 dès la I, 2 dès la V, 3 à la X).",
         "Chaque sort a sa propre **mécanique** (cumul, retardement, piège, glyphe, bombe, portail…), expliquée dans le bloc « Identité du sort » de sa fiche. En combat, les noms des sorts ne s'affichent pas : on reconnaît un sort à son animation.",
         `Le bloc **« Ce que fera ton héros »** le fait taper un **Poutch de ${N(() => E.POUTCH_HP)} PV** qui ne riposte pas, pendant ${N(() => E.POUTCH_TOURS)} tours, seul ou avec l'équipe : chaque tour, ses sorts, leurs dégâts, leurs mécaniques et ses PA. C'est le moyen de vérifier ses instructions. Une seule cible : les sorts de zone y partent moins qu'en vrai combat.`,
       ]],
@@ -256,7 +255,7 @@
         `**Fusion** : deux Sceaux au rang max donnent un Sceau double avec les deux pouvoirs à ${pc(V(() => E.SEAL_FUSE_PCT, 0))}.`,
         `**Cri du Champion** : une fois par combat, sous ${pc(V(() => E.SEAL_CRI_HP, 0))} de vie, les pouvoirs du Sceau doublent pendant ${N(() => E.SEAL_CRI_TURNS)} tours (rang max ou Sceau fusionné).`,
         `**Conclave** : 4 héros portant 4 pouvoirs différents donnent +${N(() => E.SEAL_RESO * (E.SEAL_RESO < 1 ? 100 : 1))} % de dégâts et de vie.`,
-        "Les Sceaux sont gardés à la Renaissance et coupés au Kolizéum.",
+        "Les Sceaux sont coupés au Kolizéum.",
       ]],
       ["h", "Trophée de zone, pistes et légendaire"],
       ["ul", [
@@ -383,13 +382,13 @@
       ["ul", [
         "Un **ciel par classe** d'environ 1 500 étoiles : le cœur renforce le passif de la classe (son symbole s'allume quand les 26 étoiles du cœur sont prises), 6 domaines (les deux éléments forts de la classe en haut) et des **clés de voûte** qui changent le style de jeu avec une contrepartie.",
         "**Voir l'effet d'une étoile** : survole-la sur PC, ou touche-la une fois sur téléphone (une seconde fois pour la prendre). La bulle montre son effet, ce que tout le chemin ajoute et son coût ; le total de l'arbre est dans « Total des bonus ».",
-        "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche, chemin planifié et code de partage.",
+        "3 arbres enregistrés par héros, comparaison avant de changer, annulation des 10 derniers points, recherche, chemin vers une étoile lointaine et code de partage.",
         "**Joyaux** : ils tombent sur les boss en stasis 10 et plus et se sertissent dans les emplacements ◆.",
         "**Maîtrise du compte** : +1 % d'XP pour tout le compte par tranche de 100 points, tous héros confondus.",
         "**Maîtrise du Bestiaire** : 20 paliers par famille de monstres, +0,5 % de dégâts contre la famille par palier ; ornement au palier 5, +2 % de butin au 10, titre « Fléau » au 15, aura au 20. La famille du jour compte double.",
       ]],
       ["h", "Et la Renaissance ?"],
-      ["p", `Depuis la 2.0, on ne renaît plus. Les vies passées sont devenues de la Maîtrise : ${N(() => E.REN_TO_MT * 100)} % de leur XP en niveaux de Maîtrise, 2 points par Éveil et 2 par sort appris ; un héros en cours de vie est revenu au niveau ${N(() => E.MAX_LVL)}. Le nombre de vies reste affiché, avec ses titres, son aura et son ornement.`],
+      ["p", `Depuis la 2.0, on ne renaît plus. Les vies passées sont devenues de la Maîtrise : ${N(() => E.REN_TO_MT * 100)} % de leur XP en niveaux de Maîtrise, 2 points par Éveil et 2 par sort appris ; un héros en cours de vie est revenu au niveau ${N(() => E.MAX_LVL)}. Les vies, leurs titres, leur aura et leur ornement ne s'affichent plus ; les comptes qui avaient renu gardent le titre « ${E.REN_TITLE} ».`],
       ["h", "Renaissance des métiers"],
       ["p", `Un métier niveau 200 peut renaître ${N(() => E.JOB_REN_MAX)} fois (${N(() => E.JOB_REN_COST)} kamas × le numéro de la renaissance) : +${N(() => E.JOB_REN_XP * (E.JOB_REN_XP < 1 ? 100 : 1))} % d'XP du métier à chaque fois, des jets d'artisanat plus hauts (jets parfaits à la X), et pour les forgemages plus de succès critiques et moins d'échecs.`],
     ] });
@@ -903,7 +902,7 @@
         "Dès la stasis 4, les monstres suivent le niveau de ton équipe : monter de niveau ne suffit plus, c'est l'équipement qui compte.",
         `Dès la stasis 9, les donjons ont une limite de tours (${N(() => E.STASIS_TL.room)} par salle, ${N(() => E.STASIS_TL.boss)} pour le boss) : il faut des dégâts, pas seulement de la survie.`,
         "La chance de Dofus ne monte plus après la stasis 10. Les stasis 11 à 15 servent aux gains, aux coffres de premier passage et au classement des temps.",
-        "Les leviers de fin de jeu : forgemagie près du jet parfait, Potentiel des Dofus, Sceaux des Champions, Éveils de Renaissance.",
+        "Les leviers de fin de jeu : forgemagie près du jet parfait, Potentiel des Dofus, Sceaux des Champions, arbre de Maîtrise.",
         "Retire les idoles quand tu bloques : elles augmentent la difficulté.",
         "Après une défaite, « Pourquoi j'ai perdu » dit ce qui a manqué (dégâts, survie, tours).",
         "Une Fiole de résurrection relance une fois le donjon perdu sans perdre la clé.",
@@ -985,8 +984,7 @@
     ["Sceau", "Bonus porté par un héros, qui grandit avec les Champions vaincus."],
     ["chromatique", "Monstre aux couleurs rares (1 sur " + N(() => Math.round(1 / E.CHROMA_CHANCE)) + "), pour l'album des Chromatiques."],
     ["Potentiel", "Rangs d'un Dofus (0 à " + N(() => E.DPOT_MAX) + "), montés avec des éclats gagnés en donjon."],
-    ["Renaissance", "Repartir niveau 1 avec un héros niveau 200 pour gagner des Éveils et des sorts d'autres classes."],
-    ["Éveil", "Bonus permanent choisi à chaque Renaissance."],
+    ["Maîtrise", "Après le niveau 200, l'XP donne des points à placer dans l'arbre de sa classe (elle remplace l'ancienne Renaissance)."],
     ["kolizetons", "Monnaie du Kolizéum."],
     ["Bribes de rêve", "Monnaie du Songe infini."],
     ["Doplons", "Monnaie des temples, gagnée contre les Dopeuls."],
@@ -1048,7 +1046,7 @@
       left -= c.xp || 0;
       const need = c.lvl < E.MAX_LVL ? E.heroXpNeed(c) : 0;
       return [`<div class="gd-cin"><label>Héros ${sel("xh", L.map((x) => [x.id, `${x.name} (niv. ${x.lvl})`]), c.id)}</label></div>`,
-        [["Niveau", fr(c.lvl) + (c.ren ? ` · Renaissance ${c.ren}` : "")], ["XP pour le niveau suivant", c.lvl < E.MAX_LVL ? fr(Math.max(0, need - (c.xp || 0))) : "niveau max"], ["XP jusqu'au niveau " + fr(E.MAX_LVL), fr(Math.max(0, left))], ["Multiplicateur de Renaissance", "×" + fr(V(() => E.renNeedMult(c), 1))]]];
+        [["Niveau", fr(c.lvl) + (c.ren ? ` · Renaissance ${c.ren}` : "")], ["XP pour le niveau suivant", c.lvl < E.MAX_LVL ? fr(Math.max(0, need - (c.xp || 0))) : "niveau max"], ["XP jusqu'au niveau " + fr(E.MAX_LVL), fr(Math.max(0, left))], ...(c.lvl >= E.MAX_LVL ? [["Maîtrise", fr(V(() => E.mt(c).lvl, 0)) + " niveaux, " + fr(V(() => E.mtPts(c), 0)) + " points"]] : [])]];
     },
   };
   const CALC_N = { dofus: "Calculateur : chance de Dofus", recrue: "Calculateur : recrutement", sablier: "Calculateur : Sablier", xp: "Calculateur : XP d'un héros" };
@@ -1088,7 +1086,7 @@
   const lowJob = () => V(() => { const J = sv().jobs || {}; const k = Object.keys(J).sort((a, b) => (J[a].lvl || 1) - (J[b].lvl || 1))[0]; return k ? [k, J[k].lvl || 1] : null; }, null);
   const PROG = {
     equipe: () => { const s = sv(); const n = s.chars.length, tm = V(() => E.TEAM_MAX, 8), mx = V(() => E.HERO_MAX, 19); const cl = new Set(V(() => E.team(s), []).map((c) => c.cls)).size;
-      return [`${n} héros sur ${mx}, ${fr(V(() => E.team(s).length, 0))} en équipe, ${cl} classe${cl > 1 ? "s" : ""} différente${cl > 1 ? "s" : ""}.`, n < tm ? `Recruter le ${n + 1}e héros (${N(() => E.recruitCost(n + 1))} kamas).` : n < mx ? "Recruter des héros de réserve pour la récolte, les expéditions et les Renaissances." : null]; },
+      return [`${n} héros sur ${mx}, ${fr(V(() => E.team(s).length, 0))} en équipe, ${cl} classe${cl > 1 ? "s" : ""} différente${cl > 1 ? "s" : ""}.`, n < tm ? `Recruter le ${n + 1}e héros (${N(() => E.recruitCost(n + 1))} kamas).` : n < mx ? "Recruter des héros de réserve pour la récolte et les expéditions." : null]; },
     niveaux: () => { const T = V(() => E.team(sv()), []); if (!T.length) return null; const lo = T.slice().sort((a, b) => a.lvl - b.lvl)[0];
       return [`Meilleur héros niveau ${best()}, équipe en moyenne niveau ${fr(Math.round(T.reduce((a, c) => a + c.lvl, 0) / T.length))}.`, lo.lvl < V(() => E.MAX_LVL, 200) ? `Faire monter ${lo.name} (niveau ${lo.lvl}), le plus bas de l'équipe.` : null]; },
     donjons: () => { const sk = stasisTop(); return [`${fr(bossDone())} donjon${bossDone() > 1 ? "s" : ""} terminé${bossDone() > 1 ? "s" : ""} sur ${N(() => Object.keys(D.DUNGEONS).length)}, meilleure stasis réussie : ${sk}.`, !bossDone() ? "Terminer un premier donjon." : sk < 4 ? "Atteindre la stasis 4." : sk < 7 ? "Atteindre la stasis 7 avec une équipe bien équipée." : sk < 10 ? "Atteindre la stasis 10." : sk < V(() => E.STASIS_MAX, 15) ? `Pousser jusqu'à la stasis ${N(() => E.STASIS_MAX)}.` : null]; },

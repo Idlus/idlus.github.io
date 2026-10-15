@@ -1,6 +1,20 @@
 {
-  "version": "2.0.2",
+  "version": "2.0.3",
   "versions": [
+    {
+      "v": "2.0.3",
+      "name": "Chasse aux bugs de la Maîtrise",
+      "guide": "maitrise",
+      "items": [
+        "L'XP en trop au passage du niveau 200 n'est plus perdue : elle part dans la Maîtrise",
+        "Arbre de Maîtrise : un code de partage ne peut plus donner des étoiles non reliées au départ ni la Nébuleuse avant 1 000 points, et une sauvegarde abîmée n'empêche plus d'ouvrir l'arbre",
+        "Joyaux : un joyau ne se sertit plus chez plusieurs héros à la fois, et rendre l'étoile rend le joyau",
+        "« Tout rendre » demande confirmation quand il coûte des kamas et ne s'annule plus sans les rendre",
+        "Le titre « Fléau des … » arrive aussi pour les familles du Bestiaire déjà au palier 15 avant la 2.0",
+        "Le classement de la Maîtrise ne reste plus bloqué sur « Chargement… »",
+        "Compteurs de succès justes (les anciens succès de Renaissance ne comptent plus), XP/h du carnet avec la Maîtrise, textes du Guide mis à jour"
+      ]
+    },
     {
       "v": "2.0.2",
       "name": "Chemins du ciel",

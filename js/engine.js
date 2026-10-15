@@ -2519,6 +2519,7 @@
       const nw = CLASSES[c.cls].spells.filter((s) => s.lvl === c.lvl);
       nw.forEach((s) => note(S, `${c.name} apprend ${s.name}.`, "up"));
     }
+    if (c.lvl >= E.MAX_LVL && c.xp > 0) { const r = c.xp; c.xp = 0; E.giveXp(S, c, r); } // 2.0.3 : l'XP en trop au passage du niveau 200 va dans la Maîtrise
     return up;
   };
 
@@ -3693,6 +3694,7 @@
       const ev = E.events.length; let lines = [];
       S.chars.forEach((c) => {
         const n = Math.min(E.REN_MAX, c.ren || 0); if (!n) return;
+        if (c.renMt) { if (c.lvl < E.MAX_LVL) { S.recLv = (S.recLv || 0) + (E.MAX_LVL - c.lvl); while (c.lvl < E.MAX_LVL) { c.lvl++; c.pts += 5; } c.xp = 0; E.autoAllocate(S, c); } c.eveils = {}; c.mem = []; c.memPend = 0; c.memOffer = null; c.ren = 0; E.refreshSpells(c, E.charStats(S, c)); return; } // 2.0.3 : déjà converti (renaissance refaite sur une ancienne version du jeu restée en cache) : retour au niveau 200 sans nouveaux points
         let xp = 0; for (let k = 0; k < n; k++) for (let l = 1; l < E.MAX_LVL; l++) xp += Math.floor(E.xpNeed(l) * (1 + 0.5 * k)); // chaque vie demandait +50 % d'XP par renaissance
         const M = E.mt(c); const lv = Math.floor(xp * E.REN_TO_MT / E.mtNeed());
         const evs = Object.values(c.eveils || {}).reduce((a, b) => a + (+b || 0), 0), sp = Math.max((c.mem || []).length, n); const bn = 2 * evs + 2 * sp;
@@ -3737,7 +3739,7 @@
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »
     S.v = E.VERSION;
-    if (E.btOrnSync) E.btOrnSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
+    if (E.btOrnSync) E.btOrnSync(S); if (E.btTitleSync) E.btTitleSync(S); // 2.0 : ornements du Bestiaire déjà gagnés
     return S;
   };
 

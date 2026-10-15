@@ -118,7 +118,7 @@
     C.kLast = S.kamas; C.tag = 0; C.hop = (S.hdv && S.hdv.op) || 0;
     return r;
   };
-  const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.heroXpNeed(c, l); return s + x; }, 0);
+  const totXp = (S) => S.chars.reduce((s, c) => { let x = c.xp || 0; for (let l = 1; l < c.lvl; l++) x += E.heroXpNeed(c, l); if (c.mt && E.mtNeed) x += (c.mt.lvl || 0) * E.mtNeed() + (c.mt.xp || 0); return s + x; }, 0); /* 2.0.3 : l'XP de Maîtrise compte dans l'XP/h */
   const catch0 = E.catchUp;
   E.catchUp = (S, seconds) => {
     if (!live(S)) return catch0(S, seconds);
@@ -200,7 +200,7 @@
     const T = E.carnetTotals(S, 7), L = E.carnetLedger(S, 7);
     const top = Math.max(...S.chars.map((c) => c.lvl));
     return {
-      lvl: top, team: E.team(S).length, ren: S.chars.reduce((s, c) => s + (c.ren || 0), 0),
+      lvl: top, team: E.team(S).length, ren: S.chars.reduce((s, c) => s + (c.ren || 0), 0), mt: E.mtAcct ? E.mtAcct(S) : 0,
       xph: Math.round(T.xph), kh: Math.round(T.kh), f: Math.round(T.f), win: Math.round(T.win * 100), h: Math.round(T.actH), offH: T.offH,
       inn: L.inn.slice(0, 6).map((x) => [x.k, x.v]), out: L.out.slice(0, 6).map((x) => [x.k, x.v]),
       zones: E.carnetZones(S, 3).map((z) => [z.name, Math.round(z.xph), Math.round(z.kh), Math.round(z.win * 100)]),

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.3 « Chasse aux bugs de la Maîtrise »
+
+L'XP en trop au passage du niveau 200 va dans la Maîtrise ; codes d'arbre et sauvegardes abîmées vérifiés (étoiles reliées, Nébuleuse à 1 000 points) ; un joyau pour un seul héros ; « Tout rendre » confirmé et non annulable gratuitement ; titres du Bestiaire déjà mérités ; classement de la Maîtrise robuste ; compteurs de succès et textes du Guide sans la Renaissance.
+
 ## 2.0.2 « Chemins du ciel »
 
 Maîtrise : le ciel de chaque classe est redessiné (mêmes étoiles et mêmes liens) pour que les chemins suivent les liens visibles, sans branches qui se croisent ni cercles qui se chevauchent.

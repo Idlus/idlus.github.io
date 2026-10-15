@@ -379,6 +379,7 @@
 
   /* points de succès et paliers */
   E.achPts = (a) => (a.pts ? a.pts : a.kamas < 1000 ? 5 : a.kamas < 5000 ? 10 : a.kamas < 20000 ? 20 : 40);
+  E.achCount = (S) => ACH.filter((a) => S.ach && S.ach[a.id]).length; /* 2.0.3 : seuls les succès qui existent encore (les anciens succès de Renaissance ne comptent plus) */
   E.achPoints = (S) => ACH.reduce((s, a) => s + (S.ach && S.ach[a.id] ? E.achPts(a) : 0), 0);
   E.ACH_PALIERS = [
     { n: 250, txt: "Coffre en argent", give: (S) => E.addCons(S, "coffre_argent") },

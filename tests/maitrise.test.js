@@ -60,4 +60,20 @@ assert.strictEqual(E.btFx(S)[r], 0.5);
   let n = 0, last = null; for (let t = 0; t < 600000; t += 1000) { E.tick(S3, 1000); const F = S3.fight; if (F && F.over && F !== last) { last = F; n++; } }
   assert.ok(n > 0, "des combats ont eu lieu"); console.log(`ok - ${n} combats avec la Maîtrise`);
 }
+
+// 2.0.3 : l'XP en trop au passage du niveau 200 va dans la Maîtrise ; arbre nettoyé ; un joyau pour un seul héros ; renaissance refaite sur un vieux client
+{ const S4 = E.newState("Ov", "iop"); const a = S4.chars[0]; a.lvl = 199; a.xp = 0; E.giveXp(S4, a, E.heroXpNeed(a) + E.mtNeed() * 2);
+  assert.strictEqual(a.lvl, 200); assert.strictEqual(a.mt.lvl, 2, "deux niveaux de Maîtrise après 200"); assert.strictEqual(a.xp, 0);
+  const T = E.mtTree(a.cls); const M = E.mt(a); M.lvl = 60; const ks = T.N.filter((n) => n.t === "ks").map((n) => n.id);
+  M.t[0] = [...ks, 99999, -1, "x"]; assert.strictEqual(E.mtGot(a).size, 1, "étoiles non reliées ou inconnues ignorées"); { const f = E.mtFx(S4, a); assert.ok(!f || (f.n === 0 && !f.t1 && !f.rev), "aucune clé de voûte en combat"); }
+  const nb = T.N[T.start].adj.filter((x) => !T.N[x].neb)[0]; M.t[0] = [nb]; assert.strictEqual(E.mtGot(a).size, 2);
+  const nebs = T.N.filter((n) => n.neb).map((n) => n.id); assert.ok(E.mtClean(a, nebs).length === 0, "Nébuleuse fermée sous 1 000 points");
+  S4.joy = [{ uid: 5, k: Object.keys(E.JOY)[0] }]; const b = JSON.parse(JSON.stringify(a)); b.id = a.id + 1; S4.chars.push(b); M.j = { [nb]: 5 }; b.mt.j = { [nb]: 5 };
+  assert.strictEqual(E.joyOwner(S4, 5), a); const t1 = E.mtStats(S4, a).t, t2 = E.mtStats(S4, b).t; const jk = E.JOY[S4.joy[0].k].b[0];
+  assert.ok((t1[jk] || 0) > (t2[jk] || 0), "le joyau ne compte que pour le premier héros");
+  const o5 = E.newState("Re", "cra"); const r = o5.chars[0]; r.ren = 2; r.lvl = 80; const raw5 = JSON.parse(JSON.stringify(o5)); raw5.v = 10;
+  const S5 = E.deserialize(JSON.stringify(raw5)); const r5 = (S5.S || S5.state || S5).chars[0]; const pts5 = E.mtPts(r5);
+  r5.ren = 1; r5.lvl = 1; const raw6 = JSON.parse(JSON.stringify(S5.S || S5.state || S5)); raw6.v = 10; const r6 = (() => { const D = E.deserialize(JSON.stringify(raw6)); return (D.S || D.state || D).chars[0]; })();
+  assert.strictEqual(r6.lvl, 200); assert.strictEqual(r6.ren, 0); assert.strictEqual(E.mtPts(r6), pts5, "pas de nouveaux points pour une renaissance refaite");
+  console.log("ok - 2.0.3 : XP au passage du 200, arbre nettoyé, joyau unique, pas de double conversion"); }
 console.log("maitrise.test.js : OK");

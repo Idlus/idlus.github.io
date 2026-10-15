@@ -22,7 +22,7 @@
     // 0.1.35 : jusqu'à 12 héros, mais le classement compte les 8 meilleurs (comme l'équipe)
     const level = heroes.map((h) => h.lvl + h.ren * V.REB_LVL).sort((x, y) => y - x).slice(0, 8).reduce((a, n) => a + n, 0);
     const album = E.soulCount ? E.soulCount(S) : Object.keys(S.souls || {}).length;
-    const succes = Object.keys(S.ach || {}).filter((k) => S.ach[k]).length;
+    const succes = E.achCount ? E.achCount(S) : Object.keys(S.ach || {}).filter((k) => S.ach[k]).length;
     const lvl200 = heroes.some((h) => h.lvl >= 200 || h.ren > 0);
     const dofus = E.DOFUS_ORDER && E.dofusOwned ? E.DOFUS_ORDER.filter((id) => E.dofusOwned(S, id)) : [];
     // 1.0.8 : niveau et XP des métiers d'artisanat (classement des métiers ; le serveur ne garde que les métiers connus)

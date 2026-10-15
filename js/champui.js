@@ -64,7 +64,7 @@
       ${fz ? `<div class="ch-fz">${fz}</div>` : ""}<div class="xs muted">${ready.length < 2 ? "Deux Sceaux au rang 5 se fusionnent en un Sceau double au nom unique (les deux pouvoirs à 70 %)." : toFuse.length ? "Deux Sceaux au rang 5 donnent un Sceau double au nom unique, qui garde les deux pouvoirs à 70 %." : "Toutes les fusions possibles avec tes Sceaux sont découvertes."}</div></div>`;
     return `<div class="panel ch-panel"><div class="phead"><h2>${crown} Sceau de champion</h2>${chips}</div><div class="pad">${head}
       <div class="ch-seals">${tiles}</div>${fusions}
-      <p class="ch-foot xs muted">Un Sceau par héros. Chaque Champion vaincu fait monter le Sceau de son pouvoir (rangs à 1, 5, 15, 40 et 100). Le premier rang 5 donne un titre. Les Sceaux sont gardés à la Renaissance.</p></div></div>`;
+      <p class="ch-foot xs muted">Un Sceau par héros. Chaque Champion vaincu fait monter le Sceau de son pouvoir (rangs à 1, 5, 15, 40 et 100). Le premier rang 5 donne un titre.</p></div></div>`;
   }
 
   /* ---------- combat : bandeau et panneau de la sous-zone ---------- */
