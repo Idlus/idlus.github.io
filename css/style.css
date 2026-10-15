@@ -11,6 +11,7 @@
   color-scheme:light;
 }
 :root[data-theme="dark"]{
+  --bg1:rgba(91,60,160,.35); --bg2:rgba(40,140,170,.18);
   --page:#120e0a; --panel:#221b13; --panel2:#2e251a; --panel3:#3a2f21; --frame:#6b5636; --frame2:#3b3022; --gold:#e4b955; --gold2:#f3d998;
   --ink:#f5ead2; --muted:#c2b395; --title:#e8c063; --tshadow:0 2px 0 rgba(0,0,0,.65);
   --action:#8fbd4f; --action2:#5f8a2a; --action-ink:#1a1510; --danger:#e0674f;
@@ -694,6 +695,7 @@ a.btn{text-decoration:none}
 
 /* ===================== 3.1.2 — thème « Émeraude » (couleurs du logo DOFUS 3) ===================== */
 :root[data-theme="emerald"]{
+  --bg1:rgba(110,170,60,.22); --bg2:rgba(60,140,90,.16);
   --glw:179,224,92; --kama:#e7c46a; --med-bg:#3c4d2e; --med-bg2:#172012; --med-ring:#dcbb74;
   --page:#0d100b; --panel:#161b12; --panel2:#1e2518; --panel3:#273120; --frame:#3e5232; --frame2:#1d2617; --gold:#b3e05c; --gold2:#e2f5ae;
   --ink:#efe9df; --muted:#a8ae98; --title:#f2ede4; --tshadow:0 0 12px rgba(179,224,92,.4),0 2px 0 rgba(0,0,0,.75);
@@ -5654,7 +5656,7 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 
 /* ===================== 1.2 « Réorganisation des menus » (Mathis 12ABCD) : quatre thèmes posés par-dessus Émeraude, html[data-skin] ===================== */
 /* Givre de Frigost */
-:root[data-theme="emerald"][data-skin="givre"]{--glw:127,211,255;--med-bg:#2c4257;--med-bg2:#111b26;--med-ring:#c8d9e8;--page:#0a1017;--panel:#111923;--panel2:#17212d;--panel3:#1f2c3b;--frame:#35506b;--frame2:#16202b;--gold:#7fd3ff;--gold2:#d6f2ff;--ink:#eaf1f7;--muted:#97a8b8;--title:#f1f6fb;--tshadow:0 0 12px rgba(127,211,255,.4),0 2px 0 rgba(0,0,0,.75);--action:#7fd3ff;--action2:#5fb6e6;--action-ink:#06202e;--line:color-mix(in srgb,#97a8b8 16%,transparent)}
+:root[data-theme="emerald"][data-skin="givre"]{--bg1:rgba(90,170,230,.22);--bg2:rgba(140,200,255,.12);--glw:127,211,255;--med-bg:#2c4257;--med-bg2:#111b26;--med-ring:#c8d9e8;--page:#0a1017;--panel:#111923;--panel2:#17212d;--panel3:#1f2c3b;--frame:#35506b;--frame2:#16202b;--gold:#7fd3ff;--gold2:#d6f2ff;--ink:#eaf1f7;--muted:#97a8b8;--title:#f1f6fb;--tshadow:0 0 12px rgba(127,211,255,.4),0 2px 0 rgba(0,0,0,.75);--action:#7fd3ff;--action2:#5fb6e6;--action-ink:#06202e;--line:color-mix(in srgb,#97a8b8 16%,transparent)}
 :root[data-theme="emerald"][data-skin="givre"] body{background:radial-gradient(1200px 600px at 80% -10%,rgba(90,170,230,.22),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(140,200,255,.12),transparent 60%),var(--page)}
 :root[data-theme="emerald"][data-skin="givre"] .status{background:linear-gradient(180deg,#1c2734,#101822);border-color:rgba(127,211,255,.5)}
 :root[data-theme="emerald"][data-skin="givre"] nav.main button[aria-current="page"],:root[data-theme="emerald"][data-skin="givre"] .subtabs button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="givre"] .seg button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="givre"] .catchips button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="givre"] .btn.primary,:root[data-theme="emerald"][data-skin="givre"] .dgtog[aria-pressed="true"],:root[data-theme="emerald"][data-skin="givre"] .chx .ic{background:linear-gradient(180deg,#b9ecff,#5fb6e6);color:#06202e;border-color:#5fb6e6}
@@ -5664,7 +5666,7 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 :root[data-theme="emerald"][data-skin="givre"] .scene::after,:root[data-theme="emerald"][data-skin="givre"] .arena::after{background:linear-gradient(180deg,rgba(127,211,255,.08),transparent 55%,rgba(127,211,255,.05))}
 :root[data-theme="emerald"][data-skin="givre"] .scene .crumb,:root[data-theme="emerald"][data-skin="givre"] .arena .turn,:root[data-theme="emerald"][data-skin="givre"] .arena .idle div,:root[data-theme="emerald"][data-skin="givre"] .hero-banner .card{background:color-mix(in srgb,#0a1017 88%,transparent)!important}
 /* Ambre d'Amakna */
-:root[data-theme="emerald"][data-skin="ambre"]{--glw:242,181,78;--med-bg:#4a3520;--med-bg2:#1a120a;--med-ring:#e8c27a;--page:#120d08;--panel:#1b140d;--panel2:#231a11;--panel3:#2e2216;--frame:#5c4126;--frame2:#21180f;--gold:#f2b54e;--gold2:#ffe2a8;--ink:#f3ebdf;--muted:#b5a58d;--title:#fbf3e6;--tshadow:0 0 12px rgba(242,181,78,.4),0 2px 0 rgba(0,0,0,.75);--action:#f2b54e;--action2:#d99a2e;--action-ink:#2a1a05;--line:color-mix(in srgb,#b5a58d 16%,transparent)}
+:root[data-theme="emerald"][data-skin="ambre"]{--bg1:rgba(220,150,60,.22);--bg2:rgba(170,110,50,.14);--glw:242,181,78;--med-bg:#4a3520;--med-bg2:#1a120a;--med-ring:#e8c27a;--page:#120d08;--panel:#1b140d;--panel2:#231a11;--panel3:#2e2216;--frame:#5c4126;--frame2:#21180f;--gold:#f2b54e;--gold2:#ffe2a8;--ink:#f3ebdf;--muted:#b5a58d;--title:#fbf3e6;--tshadow:0 0 12px rgba(242,181,78,.4),0 2px 0 rgba(0,0,0,.75);--action:#f2b54e;--action2:#d99a2e;--action-ink:#2a1a05;--line:color-mix(in srgb,#b5a58d 16%,transparent)}
 :root[data-theme="emerald"][data-skin="ambre"] body{background:radial-gradient(1200px 600px at 80% -10%,rgba(220,150,60,.22),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(170,110,50,.14),transparent 60%),var(--page)}
 :root[data-theme="emerald"][data-skin="ambre"] .status{background:linear-gradient(180deg,#2c2116,#18110a);border-color:rgba(242,181,78,.5)}
 :root[data-theme="emerald"][data-skin="ambre"] nav.main button[aria-current="page"],:root[data-theme="emerald"][data-skin="ambre"] .subtabs button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ambre"] .seg button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ambre"] .catchips button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ambre"] .btn.primary,:root[data-theme="emerald"][data-skin="ambre"] .dgtog[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ambre"] .chx .ic{background:linear-gradient(180deg,#ffd98a,#d99a2e);color:#2a1a05;border-color:#d99a2e}
@@ -5674,7 +5676,7 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 :root[data-theme="emerald"][data-skin="ambre"] .scene::after,:root[data-theme="emerald"][data-skin="ambre"] .arena::after{background:linear-gradient(180deg,rgba(242,181,78,.08),transparent 55%,rgba(242,181,78,.05))}
 :root[data-theme="emerald"][data-skin="ambre"] .scene .crumb,:root[data-theme="emerald"][data-skin="ambre"] .arena .turn,:root[data-theme="emerald"][data-skin="ambre"] .arena .idle div,:root[data-theme="emerald"][data-skin="ambre"] .hero-banner .card{background:color-mix(in srgb,#120d08 88%,transparent)!important}
 /* Braise de Brâkmar */
-:root[data-theme="emerald"][data-skin="braise"]{--glw:255,134,80;--med-bg:#4a2420;--med-bg2:#170c0b;--med-ring:#e3a77f;--page:#100909;--panel:#1a0f0f;--panel2:#231414;--panel3:#2f1a1a;--frame:#5e2c28;--frame2:#200f0f;--gold:#ff8650;--gold2:#ffd2bd;--ink:#f4e8e4;--muted:#b49b95;--title:#fbefeb;--tshadow:0 0 12px rgba(255,134,80,.4),0 2px 0 rgba(0,0,0,.75);--action:#ff8650;--action2:#e0602e;--action-ink:#2b0c03;--line:color-mix(in srgb,#b49b95 16%,transparent)}
+:root[data-theme="emerald"][data-skin="braise"]{--bg1:rgba(230,90,50,.22);--bg2:rgba(170,40,40,.16);--glw:255,134,80;--med-bg:#4a2420;--med-bg2:#170c0b;--med-ring:#e3a77f;--page:#100909;--panel:#1a0f0f;--panel2:#231414;--panel3:#2f1a1a;--frame:#5e2c28;--frame2:#200f0f;--gold:#ff8650;--gold2:#ffd2bd;--ink:#f4e8e4;--muted:#b49b95;--title:#fbefeb;--tshadow:0 0 12px rgba(255,134,80,.4),0 2px 0 rgba(0,0,0,.75);--action:#ff8650;--action2:#e0602e;--action-ink:#2b0c03;--line:color-mix(in srgb,#b49b95 16%,transparent)}
 :root[data-theme="emerald"][data-skin="braise"] body{background:radial-gradient(1200px 600px at 80% -10%,rgba(230,90,50,.22),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(170,40,40,.16),transparent 60%),var(--page)}
 :root[data-theme="emerald"][data-skin="braise"] .status{background:linear-gradient(180deg,#2d1917,#170d0c);border-color:rgba(255,134,80,.5)}
 :root[data-theme="emerald"][data-skin="braise"] nav.main button[aria-current="page"],:root[data-theme="emerald"][data-skin="braise"] .subtabs button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="braise"] .seg button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="braise"] .catchips button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="braise"] .btn.primary,:root[data-theme="emerald"][data-skin="braise"] .dgtog[aria-pressed="true"],:root[data-theme="emerald"][data-skin="braise"] .chx .ic{background:linear-gradient(180deg,#ffb48a,#e0602e);color:#2b0c03;border-color:#e0602e}
@@ -5684,7 +5686,7 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 :root[data-theme="emerald"][data-skin="braise"] .scene::after,:root[data-theme="emerald"][data-skin="braise"] .arena::after{background:linear-gradient(180deg,rgba(255,134,80,.08),transparent 55%,rgba(255,134,80,.05))}
 :root[data-theme="emerald"][data-skin="braise"] .scene .crumb,:root[data-theme="emerald"][data-skin="braise"] .arena .turn,:root[data-theme="emerald"][data-skin="braise"] .arena .idle div,:root[data-theme="emerald"][data-skin="braise"] .hero-banner .card{background:color-mix(in srgb,#100909 88%,transparent)!important}
 /* Écume de Sufokia */
-:root[data-theme="emerald"][data-skin="ecume"]{--glw:79,224,196;--med-bg:#1f4a4b;--med-bg2:#0a1819;--med-ring:#9fd8cf;--page:#071315;--panel:#0d1c1f;--panel2:#122529;--panel3:#183037;--frame:#2a5b61;--frame2:#0e1d20;--gold:#4fe0c4;--gold2:#c4fff1;--ink:#e6f4f2;--muted:#8fb0ac;--title:#effaf8;--tshadow:0 0 12px rgba(79,224,196,.4),0 2px 0 rgba(0,0,0,.75);--action:#4fe0c4;--action2:#2fb79c;--action-ink:#04221c;--line:color-mix(in srgb,#8fb0ac 16%,transparent)}
+:root[data-theme="emerald"][data-skin="ecume"]{--bg1:rgba(50,190,170,.22);--bg2:rgba(60,120,200,.14);--glw:79,224,196;--med-bg:#1f4a4b;--med-bg2:#0a1819;--med-ring:#9fd8cf;--page:#071315;--panel:#0d1c1f;--panel2:#122529;--panel3:#183037;--frame:#2a5b61;--frame2:#0e1d20;--gold:#4fe0c4;--gold2:#c4fff1;--ink:#e6f4f2;--muted:#8fb0ac;--title:#effaf8;--tshadow:0 0 12px rgba(79,224,196,.4),0 2px 0 rgba(0,0,0,.75);--action:#4fe0c4;--action2:#2fb79c;--action-ink:#04221c;--line:color-mix(in srgb,#8fb0ac 16%,transparent)}
 :root[data-theme="emerald"][data-skin="ecume"] body{background:radial-gradient(1200px 600px at 80% -10%,rgba(50,190,170,.22),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(60,120,200,.14),transparent 60%),var(--page)}
 :root[data-theme="emerald"][data-skin="ecume"] .status{background:linear-gradient(180deg,#16292c,#0b1719);border-color:rgba(79,224,196,.5)}
 :root[data-theme="emerald"][data-skin="ecume"] nav.main button[aria-current="page"],:root[data-theme="emerald"][data-skin="ecume"] .subtabs button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ecume"] .seg button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ecume"] .catchips button[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ecume"] .btn.primary,:root[data-theme="emerald"][data-skin="ecume"] .dgtog[aria-pressed="true"],:root[data-theme="emerald"][data-skin="ecume"] .chx .ic{background:linear-gradient(180deg,#a6f5e3,#2fb79c);color:#04221c;border-color:#2fb79c}
@@ -5693,3 +5695,21 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 :root[data-theme="emerald"][data-skin="ecume"] .hcard .art{background:radial-gradient(circle at 50% 62%,color-mix(in srgb,var(--el) 60%,transparent),transparent 64%),linear-gradient(180deg,#183037,#071315)}
 :root[data-theme="emerald"][data-skin="ecume"] .scene::after,:root[data-theme="emerald"][data-skin="ecume"] .arena::after{background:linear-gradient(180deg,rgba(79,224,196,.08),transparent 55%,rgba(79,224,196,.05))}
 :root[data-theme="emerald"][data-skin="ecume"] .scene .crumb,:root[data-theme="emerald"][data-skin="ecume"] .arena .turn,:root[data-theme="emerald"][data-skin="ecume"] .arena .idle div,:root[data-theme="emerald"][data-skin="ecume"] .hero-banner .card{background:color-mix(in srgb,#071315 88%,transparent)!important}
+
+/* 28 : fond de page animé (CSS seul, derrière tout le contenu) : html[data-bgfx] = aur (A Aurore), rid (D Rideaux), vag (E Vagues), neb (F Nébuleuse).
+   Suit le réglage « Ambiance animée » ; éteint avec les animations réduites ou les mouvements désactivés */
+:root[data-bgfx] body,:root[data-theme="emerald"][data-bgfx] body,:root[data-theme="emerald"][data-skin][data-bgfx] body{background:var(--page)}
+:root[data-bgfx] body::before,:root[data-bgfx] body::after{content:"";position:fixed;left:-25%;top:-25%;width:150%;height:150%;z-index:-1;pointer-events:none;will-change:transform}
+:root[data-bgfx] body::before{background:radial-gradient(45% 35% at 72% 18%,var(--bg1),transparent 70%),radial-gradient(38% 32% at 18% 82%,var(--bg2),transparent 70%)}
+:root[data-bgfx="aur"] body::before{animation:bgaur 20s ease-in-out infinite alternate}
+@keyframes bgaur{to{transform:translate(-5%,4%) scale(1.08) rotate(2deg)}}
+:root[data-bgfx="rid"] body::after{background:linear-gradient(100deg,transparent 0 18%,var(--bg1) 26%,transparent 34%,transparent 52%,var(--bg2) 60%,transparent 68%,transparent 84%,var(--bg1) 92%,transparent);filter:blur(18px);animation:bgrid 24s ease-in-out infinite alternate}
+@keyframes bgrid{from{transform:translateX(-12%) skewX(-10deg);opacity:.5}50%{opacity:1}to{transform:translateX(12%) skewX(-16deg);opacity:.6}}
+:root[data-bgfx="vag"] body::after{left:-60%;width:220%;background:repeating-linear-gradient(115deg,transparent 0 90px,var(--bg1) 135px,transparent 195px,transparent 285px,var(--bg2) 345px,transparent 405px);filter:blur(8px);animation:bgvag 14s linear infinite}
+@keyframes bgvag{to{transform:translateX(-405px)}}
+:root[data-bgfx="neb"] body::after{left:-70%;top:-120%;width:240%;height:340%;background:conic-gradient(from 0deg,var(--bg1),transparent 25%,var(--bg2) 45%,transparent 60%,var(--bg1) 80%,transparent);filter:blur(24px);animation:bgneb 60s linear infinite}
+:root[data-bgfx="neb"] body::before{animation:bgresp 6s ease-in-out infinite}
+@keyframes bgneb{to{transform:rotate(360deg)}}
+@keyframes bgresp{50%{opacity:.45;transform:scale(1.06)}}
+body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::after{animation:none}
+@media (prefers-reduced-motion:reduce){:root[data-bgfx] body::before,:root[data-bgfx] body::after{animation:none}}

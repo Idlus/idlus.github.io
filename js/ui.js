@@ -7588,8 +7588,11 @@ const themeId = (t) => (THEMES.some((x) => x[0] === t) ? t : "emerald");
 function applySkin(t) { t = themeId(t); const r = document.documentElement; r.dataset.theme = t === "violet" ? "dark" : "emerald"; if (t === "emerald" || t === "violet") delete r.dataset.skin; else r.dataset.skin = t; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = THEMES.find((x) => x[0] === t)[2]; }
 function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); applyAmbiance(); }
 /* 1.2 (13A) : effet d'ambiance du thème (js/ambiance.js), discret par défaut ; jamais pendant l'Halouine (qui a ses braises) ni avec les animations réduites */
+const BG_FX = "aur"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse), réglé au choix de Mathis
 function applyAmbiance() {
-  if (!window.AMB) return; const a = S && S.settings.ambiance || "soft";
+  const a = S && S.settings.ambiance || "soft"; const r = document.documentElement;
+  if (S && a !== "off" && animLvl() === "full" && !calm()) r.dataset.bgfx = BG_FX; else delete r.dataset.bgfx; // le fond suit le même réglage que l'ambiance
+  if (!window.AMB) return;
   const on = !!S && a !== "off" && animLvl() === "full" && !calm() && !halOn();
   if (!on) return window.AMB.stop();
   window.AMB.start(THEMES.find((x) => x[0] === themeId(S.settings.theme))[3], a === "strong" ? 1 : .55);
@@ -7633,7 +7636,7 @@ function displayOptionsHtml() {
   return optSec("Écran", "se voit tout de suite",
       optLine("Taille du texte", "", seg("settext", E.TEXT_SIZES.map((v) => [v, `${v}&nbsp;%`]), z)) // 1.0.12.8 : « 90 % » ne se coupe plus sur deux lignes
     + optLine("Thème", "", seg("settheme", THEMES.map((t) => [t[0], t[1]]), themeId(S.settings.theme)))
-    + optLine("Ambiance animée", "lucioles, flocons, bulles… selon le thème", seg("setamb", [["soft", "Discrète"], ["strong", "Marquée"], ["off", "Aucune"]], S.settings.ambiance || "soft", "Petits effets qui flottent par-dessus la page, dans l'esprit du thème. Ils s'arrêtent aussi avec « Animations réduites » et les mouvements désactivés."))
+    + optLine("Ambiance animée", "fond qui bouge et lucioles, flocons, bulles… selon le thème", seg("setamb", [["soft", "Discrète"], ["strong", "Marquée"], ["off", "Aucune"]], S.settings.ambiance || "soft", "Le fond de page bouge lentement et de petits effets flottent par-dessus, dans l'esprit du thème. Tout s'arrête aussi avec « Animations réduites » et les mouvements désactivés."))
     + (halPeriod() ? optLine("Ambiance d'Halouine", "du 24 octobre au 3 novembre", seg("sethal", [["on", "Activée"], ["off", "Désactivée"]], S.settings.halouine === false ? "off" : "on")) : "")
     + optChk(`data-act="setcontrast"`, S.settings.contrast, "Contraste renforcé", "texte plus foncé, bordures plus nettes")
     + optLine("Notifications", "où apparaissent les petits messages (butin, niveaux, ventes…)", seg("settoast", [["auto", "Auto"], ["top", "En haut"], ["bottom", "En bas"]], S.settings.toastPos || "auto", "Auto : en bas, et elles s'écartent du chat quand il est ouvert. En haut : toujours en haut au centre. En bas : toujours en bas, même par-dessus le chat."))
@@ -9621,7 +9624,7 @@ function renderMenu() {
   if ($("#sheet").innerHTML && !MENU.copies) closeSheet();
   $("#status").style.display = "none"; $("#nav").innerHTML = ""; $("#subnav").innerHTML = ""; $("#updbar").innerHTML = "";
   document.body.classList.remove("hasnav", "navmini");
-  applySkin(menuPref().theme); applyHal(); if (window.AMB) window.AMB.stop();
+  applySkin(menuPref().theme); applyHal(); if (window.AMB) window.AMB.stop(); delete document.documentElement.dataset.bgfx;
   const user = ON && ON.user, id = user ? ON.identities() : null;
   const acc = !ON || menuStuck() ? `<div class="svacc"><span class="who"><span class="dot off"></span><span><b>Serveur injoignable</b><br><span class="small muted">Tes parties de cet appareil restent jouables.${ON ? " Recharge la page quand il reviendra pour retrouver ton compte : ta progression d'ici partira alors en ligne." : ""}</span></span></span>${ON ? `<button class="btn sm" data-act="sv-retry">Réessayer</button>` : ""}</div>`
     : user ? `<div class="svacc"><span class="who"><span class="dot${MENU.off ? " off" : ""}"></span><span><b>Connecté${ON.profile ? ` : ${h(ON.profile.pseudo)}` : ""}</b><br><span class="small muted">${MENU.off ? "Serveur injoignable : tes parties de cet appareil restent jouables et partiront en ligne à son retour." : `${id && id.discord ? `Discord (${h(id.discord)}) · ` : ""}la partie 1 est gardée en ligne${ON.slotsOk ? ", les parties 2 et 3 aussi" : ""}`}</span></span></span><button class="btn sm" data-act="sv-logout">Se déconnecter</button></div>`
