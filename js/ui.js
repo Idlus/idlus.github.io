@@ -21,9 +21,22 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.10.5";
+const GAME_VERSION = "2.0";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0", name: "La Maîtrise", guide: "maitrise", items: [
+    "Après le niveau 200, l'expérience remplit la Maîtrise : chaque niveau de Maîtrise donne un point à placer dans la Constellation, un arbre de talents propre à chaque classe (Héros › Maîtrise)",
+    "La Constellation : six domaines, des cœurs de classe et des étoiles clés, une Nébuleuse cachée à 1 000 points, 3 arbres enregistrés, lien de partage, recherche et 10 retours en arrière. Réinitialisation gratuite jusqu'à 50 points",
+    "Les points restent propres à chaque héros. La Maîtrise de tout le compte donne +1 % d'expérience par tranche de 100 points",
+    "Au niveau 200, vous choisissez la part d'expérience qui va à la monture : de 0 à 50 %",
+    "Joyaux de Maîtrise : les boss des donjons à partir de la stasis 10 peuvent en lâcher",
+    "Maîtrise du Bestiaire : 20 paliers par famille de monstres, un bonus de dégâts contre elle, une famille du jour qui compte double, des ornements et le titre « Fléau des … »",
+    "Classement de la Maîtrise : serveur, par classe et votre compte",
+    "La Renaissance des héros disparaît : 2 % de l'expérience de vos vies passées devient des niveaux de Maîtrise, chaque Éveil et chaque sort appris rapporte 2 points. Un héros en pleine vie revient au niveau 200",
+    "Les comptes qui avaient fait renaître un héros reçoivent le titre « Le Phénix renaît de ses cendres »",
+    "Nouveau départ des classements de donjons par stasis, avec le classement des « Premiers » et le titre « Pionnier des boss »",
+    "Semaine de la Maîtrise : expérience et butin x2 jusqu'au jeudi 22 octobre à 23 h"
+  ] },
   { v: "1.2.10.5", name: "Compteurs en direct", items: [
     "Fiche d'une zone (Monde) : le nombre de monstres tués, le palier de chasse et la progression du trophée se mettent à jour pendant les combats, sans changer d'onglet",
     "Encyclopédie : pareil pour le Bestiaire, les Familles, les Boss et les Trophées. La page garde sa position, seuls les chiffres changent"

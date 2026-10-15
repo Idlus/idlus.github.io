@@ -1,6 +1,24 @@
 {
-  "version": "1.2.10.5",
+  "version": "2.0",
   "versions": [
+    {
+      "v": "2.0",
+      "name": "La Maîtrise",
+      "guide": "maitrise",
+      "items": [
+        "Après le niveau 200, l'expérience remplit la Maîtrise : chaque niveau de Maîtrise donne un point à placer dans la Constellation, un arbre de talents propre à chaque classe (Héros › Maîtrise)",
+        "La Constellation : six domaines, des cœurs de classe et des étoiles clés, une Nébuleuse cachée à 1 000 points, 3 arbres enregistrés, lien de partage, recherche et 10 retours en arrière. Réinitialisation gratuite jusqu'à 50 points",
+        "Les points restent propres à chaque héros. La Maîtrise de tout le compte donne +1 % d'expérience par tranche de 100 points",
+        "Au niveau 200, vous choisissez la part d'expérience qui va à la monture : de 0 à 50 %",
+        "Joyaux de Maîtrise : les boss des donjons à partir de la stasis 10 peuvent en lâcher",
+        "Maîtrise du Bestiaire : 20 paliers par famille de monstres, un bonus de dégâts contre elle, une famille du jour qui compte double, des ornements et le titre « Fléau des … »",
+        "Classement de la Maîtrise : serveur, par classe et votre compte",
+        "La Renaissance des héros disparaît : 2 % de l'expérience de vos vies passées devient des niveaux de Maîtrise, chaque Éveil et chaque sort appris rapporte 2 points. Un héros en pleine vie revient au niveau 200",
+        "Les comptes qui avaient fait renaître un héros reçoivent le titre « Le Phénix renaît de ses cendres »",
+        "Nouveau départ des classements de donjons par stasis, avec le classement des « Premiers » et le titre « Pionnier des boss »",
+        "Semaine de la Maîtrise : expérience et butin x2 jusqu'au jeudi 22 octobre à 23 h"
+      ]
+    },
     {
       "v": "1.2.10.5",
       "name": "Compteurs en direct",

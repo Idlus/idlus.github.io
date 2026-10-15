@@ -2322,7 +2322,7 @@
   E.effProspection = (pp) => (pp <= 100 ? pp : pp <= 300 ? 100 + (pp - 100) / 2 : 200 + (pp - 300) / 4);
   E.teamProspection = (S) => E.effProspection(E.teamProspectionRaw(S));
   /* 0.1.28.3 : événement « Double gain », XP et butin x2 pour tout le monde (dates fixes ; 21 h → dimanche 18 octobre 23 h, heure de Paris ; prolongé en 0.1.48.6) */
-  E.EVENT = { name: "Double gain", from: Date.parse("2026-10-12T19:00:00Z"), to: Date.parse("2026-10-18T21:00:00Z"), xp: 2, drop: 2 };
+  E.EVENT = { name: "Semaine de la Maîtrise", from: Date.parse("2026-10-12T19:00:00Z"), to: Date.parse("2026-10-22T21:00:00Z"), xp: 2, drop: 2 };
   E.eventOn = (t = E.now()) => !!E.EVENT && t >= E.EVENT.from && t < E.EVENT.to;
   E.evMult = (kind, t) => (E.eventOn(t) ? E.EVENT[kind] || 1 : 1);
   E.dropMult = (S) => {
