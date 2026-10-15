@@ -425,3 +425,28 @@ begin
     insert into public.ops_done (id) values ('raz-semaine-metiers-2026-10-13');
   end if;
 end $$;
+-- 1.2.8.x « Nouveau départ des stasis » (Mathis, 15/10/2026, avec les sorts uniques des boss) : les classements des stasis de donjon
+-- repartent de zéro pour tout le monde. Avant d'effacer, une copie est gardée dans records_s1 (tous les records) et
+-- records_week_s1 (la semaine en cours), invisibles pour les joueurs. Les stasis débloquées, l'équipement, les semaines passées
+-- (titre « Maître de la semaine ») et les Premiers gravés ne changent pas. La saison 2 ne compte que les stasis terminées
+-- depuis la mise à jour (E.stasisSaison dans js/engine.js, lu par la fonction serveur « record »).
+create table if not exists public.records_s1 (like public.records including all);
+create table if not exists public.records_week_s1 (like public.records_week including all);
+alter table public.records_s1 enable row level security; -- aucune règle : archive invisible pour les joueurs
+alter table public.records_week_s1 enable row level security;
+do $$
+declare wnow int := floor((extract(epoch from now()) / 86400 + 3) / 7)::int;
+begin
+  if not exists (select 1 from public.ops_done where id = 'raz-stasis-sorts-des-boss-2026-10-15') then
+    insert into public.records_s1 select * from public.records on conflict do nothing;
+    insert into public.records_week_s1 select * from public.records_week where w = wnow on conflict do nothing;
+    delete from public.records;
+    delete from public.records_week where w = wnow;
+    insert into public.ops_done (id) values ('raz-stasis-sorts-des-boss-2026-10-15');
+  end if;
+end $$;
+-- Premiers depuis les sorts des boss : pour chaque donjon, la stasis la plus haute déjà prise (firsts kind « sb », key « donjon:stasis »)
+create or replace view public.lb_first_sb as
+  select distinct on (split_part(f.key, ':', 1)) split_part(f.key, ':', 1) as did, split_part(f.key, ':', 2)::int as k, f.pseudo, f.user_id, f.at
+  from public.firsts f where f.kind = 'sb' order by split_part(f.key, ':', 1), split_part(f.key, ':', 2)::int desc;
+grant select on public.lb_first_sb to anon, authenticated;

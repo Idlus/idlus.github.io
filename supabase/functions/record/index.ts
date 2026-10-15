@@ -62,9 +62,10 @@ Deno.serve(async (req) => {
   if (lad && lad.flagged) return json({ ok: false, err: "en vérification" });
 
   // stasis la plus haute terminée dans la partie en ligne ; 1.0.30 : et l'équipe qui la rejoue (classes des héros, gardées avec le record)
+  // Saison des sorts des boss (15/10/2026) : seules les stasis terminées depuis le nouveau départ des classements comptent (E.stasisSaison)
   let k = 0, team: string[] = [];
-  try { const S = E.deserialize(save.data); E.events.length = 0; k = ((S.stasis || {})[did] || {}).max || 0; team = E.team(S).map((c: { cls: string }) => String(c.cls)).slice(0, 12); } catch (_) { return json({ ok: false, err: "partie illisible" }); }
-  if (k < 1) return json({ ok: false, err: "aucune stasis terminée dans ce donjon" });
+  try { const S = E.deserialize(save.data); E.events.length = 0; k = E.stasisSaison ? E.stasisSaison(S, did).k : ((S.stasis || {})[did] || {}).max || 0; team = E.team(S).map((c: { cls: string }) => String(c.cls)).slice(0, 12); } catch (_) { return json({ ok: false, err: "partie illisible" }); }
+  if (k < 1) return json({ ok: false, err: "aucune stasis terminée dans ce donjon depuis les sorts des boss" });
 
   let best: number | null = null, why = "";
   for (let i = 0; i < TRIES; i++) {
@@ -103,6 +104,15 @@ Deno.serve(async (req) => {
   for (const fk of [10, 15]) if (k >= fk) {
     const { error } = await db.from("firsts").insert({ kind: "s" + fk, key: did, label: `Premier en stasis ${fk} : ${dg.name}`, user_id: user.id, pseudo: prof.pseudo, at: new Date(now).toISOString() });
     if (!error && fk === k) out.first = true;
+  }
+  // Premiers depuis les sorts des boss : le premier compte à terminer chaque stasis de chaque donjon pendant la saison
+  // (firsts, kind « sb », key « donjon:stasis »). Une stasis plus haute prend aussi les stasis en dessous encore libres.
+  if (E.STASIS_SAISON) {
+    const rows = [];
+    for (let j = 1; j <= k; j++) rows.push({ kind: "sb", key: `${did}:${j}`, label: `Premier en stasis ${j} depuis les sorts des boss : ${dg.name}`, user_id: user.id, pseudo: prof.pseudo, at: new Date(now).toISOString() });
+    const { data: won } = await db.from("firsts").upsert(rows, { onConflict: "kind,key", ignoreDuplicates: true }).select("key");
+    const ks = (won || []).map((r: { key: string }) => Number(String(r.key).split(":")[1]) || 0);
+    if (ks.length) out.firstSb = Math.max(...ks);
   }
   return json(out);
 });

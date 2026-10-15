@@ -45,9 +45,11 @@
     const L = LB(), c = "user_id,pseudo,main,k,t" + (week ? ",r" : "") + (L.ml ? ",main_lvl" : "") + (L.rteam ? ",team" : "");
     const q = () => (week ? db.from("lb_week").select(c).eq("w", weekNow()) : db.from("lb_records").select(c)).eq("did", did);
     const rec = (r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, fl: r.main_lvl, k: r.k, t: r.t, team: teamOf(r.team) });
-    const { data, error } = await q().order("k", { ascending: false }).order("t", { ascending: true }).limit(N);
+    const [{ data, error }, sb] = await Promise.all([q().order("k", { ascending: false }).order("t", { ascending: true }).limit(N),
+      db.from("firsts").select("key,pseudo").eq("kind", "sb").like("key", did + ":%").then((r) => r, () => ({}))]);
     if (error) return { err: true };
-    const out = { rows: (data || []).map(rec), me: null };
+    const out = { rows: (data || []).map(rec), me: null, sb: {} };
+    ((sb && sb.data) || []).forEach((r) => { const k = +String(r.key).split(":")[1]; if (k) out.sb[k] = r.pseudo; }); // Premiers depuis les sorts des boss
     if (me && !out.rows.some((r) => r.u === me)) {
       const { data: m } = await q().eq("user_id", me).limit(1);
       if (m && m[0]) {
@@ -82,8 +84,11 @@
     else if (ON.solo && ON.solo()) foot.push("Ta partie solo n'entre pas aux classements : seule la partie 1 y compte.");
     else if (!inTop && !c.me && c.rows.length) foot.push("Toi : pas encore classé ici.");
     if (c.rows.some((r) => r.team.length) || (c.me && c.me.team.length)) foot.push("Les équipes sont celles du combat vérifié par le serveur.");
+    // Premiers depuis les sorts des boss : la stasis la plus haute déjà prise et la prochaine encore libre
+    const sbK = Object.keys(c.sb || {}).map(Number).sort((a, b) => b - a), sbTop = sbK[0], sbFree = Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1).find((k) => !(c.sb || {})[k]);
+    const sbLine = `<span class="xs dgr-sb">${X().IC("couronne")} <b>Premiers depuis les sorts des boss</b> : ${sbTop ? `stasis ${sbTop} par ${h(c.sb[sbTop] || "?")}. ` : ""}${sbFree ? `La stasis ${sbFree} attend encore son premier.` : "toutes les stasis ont leur premier."}</span>`;
     const list = c.rows.length || c.me ? `<div class="lbt">${c.rows.map((r, i) => row(r, i, false)).join("")}${c.me ? row(c.me, 0, true) : ""}</div>` : "";
-    return `${head}${list}${foot.length ? `<span class="xs muted">${foot.join(" ")}</span>` : ""}${all}`;
+    return `${head}${list}${foot.length ? `<span class="xs muted">${foot.join(" ")}</span>` : ""}${sbLine}${all}`;
   }
   /* après un record envoyé (recSubmit) : la fiche du donjon montre la nouvelle place */
   function reset(did) { Object.keys(DGR.cache).forEach((k) => { if (!did || k.startsWith(did + "|")) delete DGR.cache[k]; }); }
