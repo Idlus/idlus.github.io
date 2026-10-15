@@ -5219,7 +5219,7 @@ span.fch{cursor:default;padding-left:8px}
 @keyframes anfly{0%,100%{transform:translateY(-8px) rotate(1.5deg)}50%{transform:translateY(-18px) rotate(-2deg)}}
 @media (prefers-reduced-motion:reduce){.arena.v2.anlive .ent .look,.arena.v2.anlive .ent img.sprite{animation:none}}
 
-/* maquette « effets visibles », nouveaux sorts, boss des mondes */
+/* « Sorts et boss animés » : effets visibles, sorts signature, boss des mondes */
 .axp.anorb{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,#fff 15%,var(--c) 60%,transparent 72%);box-shadow:0 0 10px var(--c)}
 .axp.anarw{width:14px;height:18px;filter:drop-shadow(0 0 4px #c77dff)}.axp.anarw svg{width:100%;height:100%;display:block}
 .axp.ancross{width:46px;height:46px;border-radius:50%;border:3px solid #ff5a5a;box-shadow:0 0 10px #ff5a5a,inset 0 0 8px rgba(255,90,90,.6);background:linear-gradient(#ff5a5a,#ff5a5a) center/2px 100% no-repeat,linear-gradient(#ff5a5a,#ff5a5a) center/100% 2px no-repeat}
@@ -5239,3 +5239,24 @@ span.fch{cursor:default;padding-left:8px}
 .arena.v2.iso .ent.m.boss.antitan::after{width:calc(var(--tw,64px) * 2.1);height:calc(var(--tw,64px) * 1.02);background:rgba(255,80,60,.35)}
 .axp.sg.anult{width:80px;height:80px;border-radius:50%;border:4px solid #ff3b2f;box-shadow:0 0 20px #ff3b2f;animation:anult 1s ease-out both}
 @keyframes anult{0%{transform:translate(-50%,-50%) scale(.2);opacity:1}100%{transform:translate(-50%,-50%) scale(5);opacity:0}}
+.axp.sg.anp{border-radius:50%;background:radial-gradient(circle,#fff 10%,var(--c) 55%,transparent 72%);box-shadow:0 0 8px var(--c)}
+.axp.sg.ansvg svg{width:100%;height:100%;display:block;overflow:visible}
+.axp.sg.ansvg{filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.axp.sg.anglyph{filter:drop-shadow(0 0 6px rgba(255,255,255,.35))}
+.axp.sg.anspike{transform:translate(-50%,-100%);transform-origin:50% 100%;clip-path:polygon(50% 0,100% 100%,0 100%);background:linear-gradient(90deg,color-mix(in srgb,var(--c) 70%,#000),var(--c) 45%,color-mix(in srgb,var(--c) 60%,#fff))}
+.axp.sg.anspike.ice{opacity:.92;filter:drop-shadow(0 0 6px #9fe3ff)}
+.axp.sg.anslash{height:6px;border-radius:50%;background:linear-gradient(90deg,transparent,var(--c) 25%,#fff 50%,var(--c) 75%,transparent);box-shadow:0 0 12px var(--c)}
+.axp.sg.anneedle{width:3px;height:26px;border-radius:2px;background:linear-gradient(#e6e6e6,#8a8f96);box-shadow:0 0 3px rgba(0,0,0,.5)}
+.axp.sg.anmound{transform:translate(-50%,-100%);transform-origin:50% 100%;border-radius:50% 50% 12% 12%/90% 90% 10% 10%;background:radial-gradient(ellipse at 50% 20%,#c9a46a,#8a6534 65%,#5a3f1c);animation:anmound 1.1s ease-out both}
+@keyframes anmound{0%{transform:translate(-50%,-100%) scaleY(0)}30%{transform:translate(-50%,-100%) scaleY(1.1)}75%{transform:translate(-50%,-100%) scaleY(1)}100%{transform:translate(-50%,-100%) scaleY(0);opacity:.5}}
+.axp.sg.anbeamv{transform:translate(-50%,0);transform-origin:50% 0;border-radius:40% 40% 8px 8px;background:linear-gradient(rgba(255,255,255,.1),rgba(255,236,170,.9) 70%,#fff);box-shadow:0 0 22px rgba(255,220,120,.8);mix-blend-mode:screen}
+.axp.sg.anbeamv.gold{background:linear-gradient(rgba(255,216,77,.1),rgba(255,216,77,.85) 70%,#fff8d0);box-shadow:0 0 26px #ffd84d}
+.axp.sg.anwind{width:60px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(220,200,255,.95),transparent)}
+.axp.sg.annote.q{color:#e6b8ff;text-shadow:0 0 6px #a046e0,0 1px 0 #000;font-size:22px}
+.axp.sg.anrock{border-radius:40% 55% 45% 50%;background:radial-gradient(circle at 35% 30%,#a9957c,#6e5a44 60%,#3c2f22);box-shadow:inset -3px -4px 0 rgba(0,0,0,.3),0 4px 6px rgba(0,0,0,.4)}
+.axp.sg.bx.ancrack{left:0!important;top:0!important;width:100%;height:100%;transform:none;opacity:.85;animation:anplan 1.8s ease-out both;background:linear-gradient(115deg,transparent 48.6%,#2a1338 49%,#c77dff 49.4%,#2a1338 49.8%,transparent 50.2%) 0 60%/100% 45% no-repeat,linear-gradient(65deg,transparent 48.6%,#2a1338 49%,#c77dff 49.4%,#2a1338 49.8%,transparent 50.2%) 0 100%/60% 40% no-repeat,linear-gradient(160deg,transparent 48.6%,#2a1338 49%,#c77dff 49.4%,#2a1338 49.8%,transparent 50.2%) 100% 100%/50% 50% no-repeat}
+.axp.sg.sclone.anfrost img{filter:brightness(1.6) saturate(.2) hue-rotate(160deg) drop-shadow(0 0 6px #bfe8ff);opacity:.75}
+.axp.sg.sclone.anghost img{filter:grayscale(.4) brightness(1.3);opacity:.7}
+.arena.sg-frost .ent,.arena.sg-frost svg.bg{filter:saturate(.4) brightness(1.1) hue-rotate(170deg)}
+.arena.sg-warp .ent,.arena.sg-warp svg.bg{filter:sepia(.6) hue-rotate(170deg) contrast(1.1)}
+.arena.sg-ultdark .ent:not(.boss){filter:brightness(.45) saturate(.7);transition:filter .3s}

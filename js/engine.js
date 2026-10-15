@@ -1900,7 +1900,7 @@
         const ok = e.sp.filter((s) => !(e.cds[s.n] > 0) && (!s.fx.some((f) => f.k === "heal" || f.k === "healpct") || allyHurt));
         if (ok.length) sp = pick(ok);
       }
-      F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e) });
+      F.fx.push({ seq: F.seq, k: "cast", s: F.ents.indexOf(e), ...(sp ? { msp: sp.n } : {}) });
       if (!sp) { const t = pickHero(F, targets, e); if (dodged(F, t, e)) { flog(F, `${t.name} esquive l'attaque de ${e.name}.`, "dim"); continue; } const d = dealDamage(F, e, t, monCrit(e, e.dmg * mdmg * lowPa * rf(0.85, 1.15)), e.el === "n" ? null : e.el); if (e.vamp) doHeal(e, d * e.vamp, F); flog(F, `${e.name} · ${e.atk} → ${t.name} : −${d}`, "m"); if (!t.alive) flog(F, `${t.name} est à terre.`, "ko"); continue; }
       if (sp.cd) e.cds[sp.n] = sp.cd + 1;
       const parts = []; let didDmg = false;
