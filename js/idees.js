@@ -52,9 +52,8 @@
   function render(main) { if (main) { readForm(); main.innerHTML = html(); } } // 1.0.10.3 : le texte en cours n'est plus effacé par un redessin de la page
   const repaint = () => { if (window.DX.ui.tab === "sugg") { readForm(); render($("#main")); } };
 
-  function check() {
-    if (!F.tag) return "Choisis ce que ton idée concerne.";
-    const t = F.title.trim(), b = F.body.trim();
+  function check(tag, t, b) {
+    if (!tag) return "Choisis ce que ton idée concerne.";
     if (t.length < 4) return "Donne un titre à ton idée (4 caractères au moins).";
     if (b.length < 10) return "Explique un peu plus ton idée (10 caractères au moins).";
     return "";
@@ -64,29 +63,41 @@
     s.ideas = [{ t: t.slice(0, MAXT), g, d: Date.now() }].concat(s.ideas || []).slice(0, 10);
   }
 
-  async function send() {
-    readForm(); F.err = check(); if (F.err) return repaint();
-    const t = F.title.trim().replace(/\s+/g, " "), b = F.body.trim();
+  /* Envoi d'une idée, partagé avec l'onglet « Idée » de la fenêtre Signaler un bug (1.2.3.2) :
+     renvoie { ok: titre }, { err: message } ou { copied: true } (hors ligne : copiée, le Discord s'ouvre). */
+  async function post(tag, title, body) {
+    const t = (title || "").trim().replace(/\s+/g, " "), b = (body || "").trim();
+    const err = check(tag, t, b); if (err) return { err };
     if (!online()) {
-      const txt = `${t}\n\n${b}\n\n— ${author()}${info() ? ` (${info()})` : ""}, catégorie ${F.tag}`;
+      const txt = `${t}\n\n${b}\n\n— ${author()}${info() ? ` (${info()})` : ""}, catégorie ${tag}`;
       const open = () => window.open(DISCORD, "_blank", "noopener");
       try { navigator.clipboard.writeText(txt).then(() => { X().toast("Idée copiée : ouvre un fil dans le forum Idées et colle-la."); open(); }, open); } catch (e) { open(); }
-      return;
+      return { copied: true };
     }
-    if (F.busy) return; F.busy = true; repaint();
+    const left = waitLeft(); if (left) return { err: `Une idée toutes les 10 minutes : la prochaine dans ${Math.ceil(left / 60000)} min.` };
     const s = S(); if (s && !s.gid) s.gid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); // identifiant de la partie pour les joueurs sans compte
-    const r = await ON.rpc("idea_send", { p_tag: F.tag, p_title: t, p_body: b, p_info: info(), p_guest: ON.user ? null : s.gid, p_name: author() });
+    const r = await ON.rpc("idea_send", { p_tag: tag, p_title: t, p_body: b, p_info: info(), p_guest: ON.user ? null : s.gid, p_name: author() });
+    if (r.err) return { err: /fetch|connexion|network/i.test(r.err) ? "Pas de connexion au serveur. Réessaie dans un moment." : "Impossible d'envoyer l'idée pour le moment." };
+    if (r.data) return { err: r.data };
+    s.ideaAt = Date.now(); remember(t, tag);
+    return { ok: t };
+  }
+  const thanks = (t) => `<h2>✅ Merci, ton idée est partie !</h2>
+      <p class="small" style="margin:0">« <b>${h(t)}</b> » sera publiée dans le forum Idées du Discord dans la demi-heure. Les autres joueurs pourront voter pour elle avec 👍.</p>
+      <p class="xs muted" style="margin:0">Tu pourras en proposer une autre dans 10 minutes.</p>
+      <div class="row"><a class="btn" href="${DISCORD}" target="_blank" rel="noopener">Voir le Discord</a><button class="btn primary sm" data-act="closesheet">Fermer</button></div>`;
+
+  async function send() {
+    readForm(); if (F.busy) return;
+    F.busy = true; F.err = ""; repaint();
+    const r = await post(F.tag, F.title, F.body);
     F.busy = false;
-    if (r.err) { F.err = /fetch|connexion|network/i.test(r.err) ? "Pas de connexion au serveur. Réessaie dans un moment." : "Impossible d'envoyer l'idée pour le moment."; return repaint(); }
-    if (r.data) { F.err = r.data; return repaint(); }
-    s.ideaAt = Date.now(); remember(t, F.tag);
+    if (r.err) { F.err = r.err; return repaint(); }
+    if (r.copied) return repaint();
     Object.assign(F, { tag: "", title: "", body: "", err: "" });
     ["#idTitle", "#idBody"].forEach((q) => { const el = $(q); if (el) el.value = ""; }); // 1.0.10.3 : sinon repaint() relisait l'ancien texte et le formulaire restait rempli
     repaint();
-    X().openSheet(`<h2>✅ Merci, ton idée est partie !</h2>
-      <p class="small" style="margin:0">« <b>${h(t)}</b> » sera publiée dans le forum Idées du Discord dans la demi-heure. Les autres joueurs pourront voter pour elle avec 👍.</p>
-      <p class="xs muted" style="margin:0">Tu pourras en proposer une autre dans 10 minutes.</p>
-      <div class="row"><a class="btn" href="${DISCORD}" target="_blank" rel="noopener">Voir le Discord</a><button class="btn primary sm" data-act="closesheet">Fermer</button></div>`);
+    X().openSheet(thanks(r.ok));
   }
 
   /* ---------- panel admin (onglet « Suggestions ») ---------- */
@@ -116,5 +127,5 @@
     const c = $("#idCnt"); if (c) c.textContent = `${ev.target.value.length} / ${MAXB}`;
   });
 
-  window.IDEES = { render, adminHtml };
+  window.IDEES = { render, adminHtml, post, thanks, TAGS, MAXT, MAXB, waitLeft };
 })();

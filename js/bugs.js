@@ -15,7 +15,7 @@
   const h = (s) => X().h(s);
   const DISCORD_BUGS = "https://discord.gg/2xX6F9764Z";
   const MAXW = 1000, MAXX = 500;
-  const F = { what: "", exp: "", diag: true, busy: false, err: "", ctx: null, mine: null, at: 0 };
+  const F = { mode: "bug", what: "", exp: "", diag: true, busy: false, err: "", ctx: null, mine: null, at: 0, tag: "", title: "", body: "" };
   const ST = { nouveau: ["Reçu", "v"], transmis: ["Reçu, en examen", "v"], en_cours: ["Correction en cours", "mod"], corrige: ["Corrigé", "ok"], pas_un_bug: ["Pas un bug", "m"], a_voir: ["Regardé par Xener", "mod"] };
 
   const S = () => window.DX.S;
@@ -32,7 +32,7 @@
     const m = /^Onglet : (.*)$/m.exec(diag);
     return { diag: diag.slice(0, 4000), page: (m ? m[1] : DX.ui.tab || "").slice(0, 80), version: (/idlus ([0-9.]+)/.exec(diag) || [])[1] || "" };
   }
-  function readForm() { const w = $("#bgWhat"), x = $("#bgExp"), c = $("#bgDiag"); if (w) F.what = w.value; if (x) F.exp = x.value; if (c) F.diag = c.checked; }
+  function readForm() { const w = $("#bgWhat"), x = $("#bgExp"), c = $("#bgDiag"), t = $("#bgTitle"), b = $("#bgBody"); if (w) F.what = w.value; if (x) F.exp = x.value; if (c) F.diag = c.checked; if (t) F.title = t.value; if (b) F.body = b.value; }
 
   function mineHtml() {
     if (!online()) return "";
@@ -43,9 +43,25 @@
     }).join("");
     return `<div class="bg-mine"><b class="small">Tes signalements</b>${rows}</div>`;
   }
+  /* 1.2.3.2 (demande de Mathis) : onglet « Idée » dans la même fenêtre ; l'idée part dans la Boîte à idées (forum Idées du Discord), jamais en ticket de bug */
+  const modes = () => `<div class="chips bg-mode" role="tablist"><button role="tab" aria-pressed="${F.mode === "bug"}" data-act="bg-mode" data-v="bug"><img class="uico" src="assets/ui/bug.webp" alt=""> Bug</button><button role="tab" aria-pressed="${F.mode === "idee"}" data-act="bg-mode" data-v="idee">${X().IC("idee")} Idée</button></div>`;
+  function ideaHtml() {
+    const I = window.IDEES; const on = online(); const left = on ? I.waitLeft() : 0;
+    const chips = I.TAGS.map(([n, e]) => `<button aria-pressed="${F.tag === n}" data-act="bg-tag" data-v="${h(n)}">${e} ${h(n)}</button>`).join("");
+    return `${modes()}<h2>${X().IC("idee")} Proposer une idée</h2>
+      <p class="small muted" style="margin:0">${on ? "Ton idée est publiée dans le forum <b>Idées</b> du Discord, où les joueurs votent avec 👍. Chaque dimanche, les 5 idées les plus votées arrivent chez Xener."
+        : "Le serveur n'est pas joignable ici : ton idée sera copiée et le Discord s'ouvrira, il suffira de la coller dans le forum <b>Idées</b>."}</p>
+      <div><b class="small">Ça concerne…</b><div class="chips id-tags">${chips}</div></div>
+      <label class="id-f"><b class="small">Titre</b><input type="text" id="bgTitle" maxlength="${I.MAXT}" value="${h(F.title)}" placeholder="Un donjon pour le Bouftou Royal" autocomplete="off"></label>
+      <label class="id-f"><b class="small">Ton idée</b><textarea id="bgBody" maxlength="${I.MAXB}" placeholder="Explique ce que tu aimerais voir dans le jeu, et pourquoi.">${h(F.body)}</textarea>
+        <span class="xs muted id-meta"><span>Signé <b>${h(author())}</b></span><span id="bgICnt">${F.body.length} / ${I.MAXB}</span></span></label>
+      ${F.err ? `<div class="small bad">${h(F.err)}</div>` : ""}
+      <div class="row id-send"><button class="btn primary" data-act="bg-idea" ${F.busy || left ? "disabled" : ""}>${F.busy ? "Envoi…" : on ? "Envoyer l'idée" : "Copier et ouvrir Discord"}</button><span class="grow"></span>${left ? `<span class="xs muted">Prochaine idée dans ${Math.ceil(left / 60000)} min</span>` : ""}<button class="btn sm" data-act="closesheet">Annuler</button></div>`;
+  }
   function html() {
+    if (F.mode === "idee" && window.IDEES) return ideaHtml();
     const on = online();
-    return `<h2>${X().G("bug")} Signaler un bug</h2>
+    return `${window.IDEES ? modes() : ""}<h2>${X().G("bug")} Signaler un bug</h2>
       <p class="small muted" style="margin:0">${on ? "Ton signalement part directement chez Claude et Xener pour être corrigé. Tu verras ici quand il est réparé, et dans quelle version."
         : "Le serveur n'est pas joignable ici : ton signalement sera copié et le forum Bugs du Discord s'ouvrira, il suffira de le coller."}</p>
       <label class="id-f"><b class="small">Que s'est-il passé ?</b><textarea id="bgWhat" maxlength="${MAXW}" placeholder="Ex. : en ouvrant l'Inventaire, ma Cape Bouffante a disparu de l'équipement de mon Iop.">${h(F.what)}</textarea>
@@ -69,8 +85,8 @@
     repaint();
   }
 
-  function open() {
-    F.ctx = snapshot(); F.err = ""; F.busy = false;
+  function open(mode) {
+    F.ctx = snapshot(); F.err = ""; F.busy = false; F.mode = mode === "idee" ? "idee" : "bug";
     X().openSheet(`<div class="bg-sheet">${html()}</div>`);
     const w = $("#bgWhat"); if (w && window.innerWidth > 700) w.focus();
     loadMine();
@@ -105,6 +121,17 @@
       <div class="row"><span class="grow"></span><button class="btn primary sm" data-act="closesheet">Fermer</button></div></div>`);
   }
 
+  async function sendIdea() {
+    readForm(); if (F.busy) return;
+    F.busy = true; F.err = ""; repaint();
+    const r = await window.IDEES.post(F.tag, F.title, F.body);
+    F.busy = false;
+    if (r.err) { F.err = r.err; return repaint(); }
+    if (r.copied) return repaint();
+    Object.assign(F, { tag: "", title: "", body: "", err: "" });
+    X().openSheet(`<div class="bg-sheet">${window.IDEES.thanks(r.ok)}</div>`);
+  }
+
   /* ---------- panel admin (onglet « Bugs ») ---------- */
   const REPO = "https://github.com/idlus/idlus.github.io/issues/";
   function adminHtml(list) {
@@ -122,9 +149,14 @@
     const t = ev.target.closest("[data-act]"); if (!t) return;
     const a = t.dataset.act;
     if (a === "bg-send") { send(); return; }
+    if (a === "bg-mode") { readForm(); F.mode = t.dataset.v === "idee" ? "idee" : "bug"; F.err = ""; repaint(); return; }
+    if (a === "bg-tag") { readForm(); F.tag = F.tag === t.dataset.v ? "" : t.dataset.v; F.err = ""; repaint(); return; }
+    if (a === "bg-idea") { sendIdea(); return; }
   });
   document.addEventListener("input", (ev) => {
-    if (!ev.target || ev.target.id !== "bgWhat") return;
+    if (!ev.target) return;
+    if (ev.target.id === "bgBody") { const c = $("#bgICnt"); if (c) c.textContent = `${ev.target.value.length} / ${window.IDEES.MAXB}`; return; }
+    if (ev.target.id !== "bgWhat") return;
     const c = $("#bgCnt"); if (c) c.textContent = `${ev.target.value.length} / ${MAXW}`;
   });
 

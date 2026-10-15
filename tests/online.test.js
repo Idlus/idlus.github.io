@@ -745,6 +745,9 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (!bug || bug.what !== "Ma cape a disparu de l'équipement de mon héros." || bug.expected !== "La cape reste équipée." || !/Diagnostic idlus/.test(bug.diag || "") || !/Suggestions/.test(bug.page || "") || !bug.version) fail("bugs : signalement mal envoyé " + JSON.stringify(bug && Object.assign({}, bug, { diag: (bug.diag || "").slice(0, 80) })));
     await page.click('.sheet [data-act="closesheet"]'); await page.click('#main [data-act="reportbug"]');
     await page.waitForFunction(() => /Corrigé dans la 1\.1\.0\.9/.test((document.querySelector(".sheet") || {}).textContent || ""), null, { timeout: 5000 }).catch(() => fail("bugs : suivi « Corrigé dans la … » absent"));
+    // 1.2.3.2 : onglet « Idée » de la même fenêtre (Boîte à idées : ici l'attente de 10 minutes après l'idée envoyée plus haut)
+    await page.click('.sheet [data-act="bg-mode"][data-v="idee"]'); await page.waitForSelector("#bgTitle", { timeout: 5000 });
+    if (!(await page.$('.sheet [data-act="bg-idea"][disabled]')) || !/Prochaine idée dans 10 min/.test(await page.textContent(".sheet"))) fail("bugs : onglet Idée sans l'attente de 10 minutes");
     await page.click('.sheet [data-act="closesheet"]');
     await page.click('#status [data-act="adm-open"]'); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
     await page.click('.adm [data-act="adm-tab"][data-v="idees"]'); await page.waitForSelector('.adm [data-act="id-hide"]', { timeout: 5000 });

@@ -1,6 +1,13 @@
 {
-  "version": "1.2.4",
+  "version": "1.2.4.1",
   "versions": [
+    {
+      "v": "1.2.4.1",
+      "name": "Une idée ?",
+      "items": [
+        "La fenêtre « Signaler un bug » a un onglet « Idée » : propose une idée sans quitter la page, elle part dans le forum Idées du Discord comme depuis la Boîte à idées."
+      ]
+    },
     {
       "v": "1.2.4",
       "name": "Le Guide",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.4.1 « Une idée ? »
+
+La fenêtre « Signaler un bug » a maintenant deux onglets, Bug et Idée. Une idée envoyée depuis là part dans la Boîte à idées (forum Idées du Discord, votes 👍), jamais en ticket de bug.
+
 ## 1.2.4 « Le Guide »
 
 Guide en jeu (`js/guide.js`, `css/guide.css`) : page Journal › Guide et bouton « ? » en haut de chaque page, 73 chapitres dont les chiffres sont lus dans ENGINE et DATA à l'ouverture (rien dans la boucle de 3 s). Parcours calculé sur la partie, calculateurs, glossaire, stratégie, fiches de classe, FAQ, favoris et chapitres lus (`S.guideLu`, `S.guideFav`, succès « Érudit d'Idlus »), lien `?guide=<chapitre>`, astuce du jour au Havre-Sac, boutons `GUIDE.q()` dans les pages.
