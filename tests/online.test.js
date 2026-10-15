@@ -97,7 +97,7 @@ const MOCK = () => {
       const rIn = gm.def ? [] : [{ id: 77, pid: 31, sid, zone, st: "open", at: iso(-42 * 60e3), ends: iso(78 * 60e3), res: null, by: "Nyx", me: false, heads: [hd("sram", 196), hd("eni", 190), hd("osa", 185)], lvl: 190, ag: G5, dg: G3, tries: [{ p: "Lynaë", win: false, at: iso(-31 * 60e3), heads: [hd("eni", 187)] }], tried: false }];
       const rOut = [{ id: 70, pid: 99, sid, zone: "Coin des Bouftous", st: "won", at: iso(-3 * 3600e3), ends: iso(-3600e3), res: { k: 31000, res: { "Laine de Bouftou": 212, "Corne de Boufton": 208 }, part: 0.25, half: true, fort: false, zone: "Coin des Bouftous" }, by: pseudo, me: true, heads: [], lvl: 150, ag: G3, dg: { id: 6, name: "Les Bouftous Fous", ic: "trophee", col: "#e8c063", lvl: 4 }, tries: [{ p: "Gloubi", win: false, at: iso(-2 * 3600e3) }, { p: "Rakoon", win: false, at: iso(-2 * 3600e3) }], tried: false }]
         .concat(gm.go ? [{ id: 80, pid: 41, sid, zone, st: "open", at: iso(), ends: iso(2 * 3600e3), res: null, by: pseudo, me: true, heads: [], lvl: 150, ag: G3, dg: G4, tries: [], tried: false }] : []);
-      return ok({ boss: { w: E.gbossWeek(), pts: gm.bp || 42100, goal: 125000, lvl: 150, done: 2, tok: gm.tok != null ? gm.tok : 4.3, every: 25, next: 420, mine: 3200, today: 3, hitters: [{ p: "Kralamour", pts: 9000, n: 30, best: 410 }],
+      return ok({ boss: { w: E.gbossWeek(), pts: gm.bp || 25000, goal: 75000, active: 5, members: 6, lvl: 150, done: 2, tok: gm.tok != null ? gm.tok : 4.3, every: 120, next: 420, mine: 3200, tries: 2, today: 3, hitters: [{ p: "Kralamour", pts: 9000, n: 30, best: 410 }, { p: "Lynaë", pts: 600, n: 2, best: 320 }],
           top: [Object.assign({ pts: 60000, who: 12, ph: 3 }, G4), Object.assign({ pts: 42100, who: 5, ph: 2 }, G3)], last: [], trophies: [], claim: false },
         percos: [{ id: 31, sid, name: zone, zlvl: E.percoLvl(sid), dj: false, cap, fill: 0.82, by: "Lynaë", placed: iso(-864e5), wins: 3, losses: 1, next: iso(10 * 3600e3), shield: null, raided: !gm.def, atk: null },
           { id: 32, sid, name: zone + " (bis)", zlvl: E.percoLvl(sid), dj: false, cap, fill: gm.col ? 0 : 1, by: "Baloo", placed: iso(-864e5), wins: 0, losses: 0, next: iso(12 * 3600e3), shield: null, raided: false, atk: null }],
@@ -114,7 +114,7 @@ const MOCK = () => {
     const d = db(); const gm = (d.gm = d.gm || {}); gm.calls = (gm.calls || []).concat([body]); let r;
     if (body.raid && body.raid.def) { gm.def = true; r = { ok: true, raid: true, def: true, win: true, rounds: 7, by: "Nyx" }; }
     else if (body.raid && body.raid.go) { gm.go = true; r = { ok: true, raid: true, id: 80, ends: new Date(Date.now() + 7200e3).toISOString(), zone: "la zone", g: "Ordre du Kralamour", left: 2 }; }
-    else if (body.gboss) { gm.bp = 42410; gm.tok = 3.3; r = { ok: true, gboss: true, boss: "Boss", points: 310, rounds: 15, alive: 3, pts: 42410, goal: 125000, left: 0, phase: 3, done: 2, tok: 3.3, every: 25 }; }
+    else if (body.gboss) { gm.bp = (gm.bp || 25000) + 310; gm.tok = (gm.tok != null ? gm.tok : 4.3) - 1; gm.bn = (gm.bn || 0) + 1; r = { ok: true, gboss: true, boss: "Boss", points: 310, rounds: 15, alive: 3, pts: gm.bp, goal: 75000, left: 0, phase: 3, done: 2, tok: gm.tok, every: 120, n: gm.bn, w: window.ENGINE.gbossWeek(), heroes: [{ n: "Iop", d: 52000 }, { n: "Eni", d: 9000 }], mech: ["Totem"] }; }
     else r = { ok: false, err: "refusé" };
     put(d); return { data: r, error: null };
   };
@@ -921,7 +921,7 @@ const MOCK = () => {
     await page.waitForFunction(() => /phase 3 \/ 5/i.test(document.querySelector("#main").textContent), null, { timeout: 8000 }).catch(() => fail("guildes : boss absent de l'accueil"));
     { const t = await gtxt(); if (!/Dans le coffre/.test(t) || !/6e place/.test(t) || !/Guerre des Percepteurs/.test(t) || !/attaqué par Les Tofus Enragés/.test(t)) fail("guildes : accueil incomplet"); }
     if ((await page.$$("#main .gx-ph > div")).length !== 5) fail("guildes : barre de vie du boss absente de l'accueil");
-    if (!(await page.$('#main [data-act="g-boss"]:not([disabled])')) || !/Affronter le boss \(4 en réserve\)/.test(await gtxt())) fail("guildes : bouton « Affronter le boss » absent de l'accueil"); // 1.0.32.9
+    if (!(await page.$('#main [data-act="g-boss"]:not([disabled])')) || !/Lancer mes 4 essais/.test(await gtxt())) fail("guildes : bouton « Lancer mes essais » absent de l'accueil"); // 1.0.32.9, 1.0.33
     await gwide("l'accueil", "guilde-accueil");
     // coffre : dépôt (opération de partie) et part des ventes
     await page.click('[data-act="g-tab"][data-v="coffre"]'); await page.waitForSelector("#gDep");
@@ -954,9 +954,18 @@ const MOCK = () => {
     if (/Victoire !/.test(await gtxt())) fail("guildes : l'encart de victoire ne se ferme pas");
     // boss en 5 phases, essais en réserve
     await page.click('[data-act="g-tab"][data-v="boss"]'); await page.waitForSelector(".gx-ph");
-    if ((await page.$$(".gx-ph > div")).length !== 5 || !/4 en réserve/.test(await gtxt())) fail("guildes : boss en 5 phases incomplet");
-    await page.click('[data-act="g-boss"]'); await page.waitForTimeout(1000);
-    if (!/310 points en 15 tours/.test(await gtxt()) || !/3 en réserve/.test(await gtxt())) fail("guildes : essai de boss mal affiché");
+    if ((await page.$$(".gx-ph > div")).length !== 5 || !/4 essais en réserve \(12 au plus\)/.test(await gtxt()) || !/5 membres actifs sur 6/.test(await gtxt()) || !/2 \/ 3 essais/.test(await gtxt())) fail("guildes : boss en 5 phases incomplet");
+    await page.click('[data-act="g-boss"]:not([data-all])'); await page.waitForTimeout(1000);
+    if (!/310 points en 15 tours/.test(await gtxt()) || !/3 essais en réserve/.test(await gtxt()) || !(await page.$(".gbrep .gbrow")) || !/Mécaniques du boss : Totem/.test(await gtxt())) fail("guildes : essai de boss mal affiché (1.0.33 : rapport d'essai)");
+    // 1.0.33 (6B) : revoir l'essai, puis revenir à la guilde
+    await page.click('[data-act="g-bwatch"]'); await page.waitForSelector("#arena", { timeout: 5000 }).catch(() => fail("guildes : « Revoir le combat » ne s'ouvre pas"));
+    await page.click('[data-act="sm-wskip"]').catch(() => {}); await page.waitForTimeout(400);
+    await page.click('[data-act="sm-wquit"]'); await page.waitForSelector('[data-act="g-tab"][data-v="boss"]', { timeout: 5000 }).catch(() => fail("guildes : pas de retour à la guilde après le revisionnage"));
+    // 1.0.33 (1A) : « Lancer mes essais » joue toute la réserve
+    await page.waitForSelector('[data-act="g-boss"][data-all]:not([disabled])', { timeout: 5000 });
+    { const n0 = ((await mock()).gm.calls || []).filter((b) => b.gboss).length; await page.click('[data-act="g-boss"][data-all]');
+      await page.waitForFunction(() => /3 essais · 930 points/.test(document.querySelector("#main").textContent), null, { timeout: 20000 }).catch(() => fail("guildes : « Lancer mes essais » incomplet"));
+      if (((await mock()).gm.calls || []).filter((b) => b.gboss).length - n0 !== 3) fail("guildes : « Lancer mes essais » n'a pas joué 3 essais"); }
     await gwide("le boss", "guilde-boss");
     // autres guildes : fiche (avec l'Espionnage) puis attaque
     await page.click('[data-act="g-tab"][data-v="others"]'); await page.waitForSelector('[data-act="g-view"][data-g="4"]', { timeout: 8000 });

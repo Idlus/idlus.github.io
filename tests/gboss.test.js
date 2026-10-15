@@ -26,7 +26,9 @@ assert.deepStrictEqual(r1, r2, "même essai, même résultat");
 assert.strictEqual(E.serialize(G), before, "la partie n'est pas touchée");
 assert.ok(r1.points >= 0 && r1.rounds <= E.GBOSS_ROUNDS);
 assert.strictEqual(E.gbossGoal(2), 3 * E.GBOSS_PER_MEMBER, "au moins 3 membres comptés"); assert.strictEqual(E.gbossGoal(12), 12 * E.GBOSS_PER_MEMBER);
-assert.deepStrictEqual(E.gbossChest(50, 100), { k: 52000, dust: 30 }, "même coffre que gb_chest (supabase/gboss.sql)");
+assert.deepStrictEqual(E.gbossChest(50, 100), { k: 208000, dust: 30, res: 10 }, "1.0.33 (4A) : même coffre que gb_chest (supabase/gboss.sql), kamas ×4 + ressources du boss");
+assert.deepStrictEqual(Object.keys(r1.heroes[0] || {}).sort(), ["d", "n"], "6A : dégâts par héros");
+assert.ok(Array.isArray(r1.mech), "6A : mécaniques du boss");
 console.log("ok - boss : essai rejouable, coffres");
 
 // 3. Percepteurs : places, poche, défense rejouable.
@@ -39,25 +41,51 @@ assert.deepStrictEqual(p1, p2, "même défense, même résultat"); assert.strict
 const p3 = E.percoSim(G, "ast_champs", 3, seed, t); assert.ok(p3.foes > p1.foes, "un monstre de plus par défenseur battu");
 console.log("ok - Percepteurs : places, poche, défense rejouable");
 
-// 4. 1.0.30 « Refonte des guildes » : boss en 5 phases (choix 12A et 20A).
+let G8;
+// 4. 1.0.33 « Boss de guilde rééquilibré » (choix 1A 2A 3A de Mathis) : 5 phases puis Ultimes sans fin.
 {
   const goal = E.gbossGoal(5);
-  assert.strictEqual(goal, 125000, "25 000 points de vie par membre");
+  assert.strictEqual(goal, 75000, "15 000 points de vie par membre actif");
   const T = E.gbossThr(goal);
-  assert.deepStrictEqual(T.map((x, i) => x - (i ? T[i - 1] : 0)), [10000, 17500, 25000, 32500, 40000], "phases de la maquette pour 5 membres");
-  assert.deepStrictEqual(E.gbossPhase(0, goal), { p: 1, done: 0, cur: 0, need: 10000, T });
-  assert.strictEqual(E.gbossPhase(10000, goal).p, 2); assert.strictEqual(E.gbossPhase(14600 + 10000, goal).cur, 14600);
-  assert.strictEqual(E.gbossPhase(125000, goal).done, 5, "boss vaincu");
-  assert.strictEqual(E.GBOSS_PHASE_K.reduce((a, b) => a + b, 0), 4500000, "4,5 M au coffre pour les 5 phases");
-  assert.ok(E.gbossDmg(1) === 1 && E.gbossDmg(3) > E.gbossDmg(2) && E.gbossDmg(5) > E.gbossDmg(4), "chaque phase plus dure");
-  // réserve : +1 toutes les 25 min (20 avec le Cor), 6 au plus
-  assert.strictEqual(E.gbossTok(0, 0, 25 * 60000), 1); assert.strictEqual(E.gbossTok(0, 0, 40 * 60000, 20), 2);
-  assert.strictEqual(E.gbossTok(5, 0, 99 * 3600000), E.GBOSS_RESERVE, "6 en réserve au plus");
-  assert.strictEqual(E.gbossNextIn(6), 0); assert.strictEqual(E.gbossNextIn(2.5), 12.5 * 60000);
+  assert.deepStrictEqual(T.map((x, i) => x - (i ? T[i - 1] : 0)), [6000, 10500, 15000, 19500, 24000], "phases pour 5 membres");
+  assert.deepStrictEqual(E.gbossPhase(0, goal), { p: 1, done: 0, cur: 0, need: 6000, T });
+  assert.strictEqual(E.gbossPhase(6000, goal).p, 2); assert.strictEqual(E.gbossPhase(6000 + 4600, goal).cur, 4600);
+  const v = E.gbossPhase(75000, goal);
+  assert.strictEqual(v.done, 5, "boss vaincu"); assert.strictEqual(v.ult, 1, "puis Ultime 1"); assert.strictEqual(v.need, 7500, "Ultime : 10 % de la vie");
+  assert.deepStrictEqual([E.gbossPhase(75000 + 7500 * 2 + 10, goal).ult, E.gbossPhase(75000 + 7500 * 2 + 10, goal).done], [3, 7], "Ultimes sans fin");
+  assert.strictEqual(E.gbossPhaseName(7), "Ultime 2");
+  assert.ok(E.gbossDmg(1) === 1 && E.gbossDmg(3) > E.gbossDmg(2) && E.gbossDmg(5) > E.gbossDmg(4) && E.gbossDmg(9) > E.gbossDmg(8), "chaque phase plus dure, Ultimes compris");
+  // réserve : +1 toutes les 2 h (1 h 40 avec le Cor), 12 au plus
+  assert.strictEqual(E.gbossTok(0, 0, 120 * 60000), 1); assert.strictEqual(E.gbossTok(0, 0, 200 * 60000, 100), 2);
+  assert.strictEqual(E.gbossTok(5, 0, 99 * 3600000), 12, "12 en réserve au plus (24 h)");
+  assert.strictEqual(E.gbossNextIn(12), 0); assert.strictEqual(E.gbossNextIn(2.5), 60 * 60000);
+  // équipe de 8 héros niveau 200 équipés (Mathis : équilibrage à 8)
+  const W8 = { vit: 0.25, sa: 2, pui: 1, pa: 60, cri: 3, dcri: 1.5, so: 1.5, dt: 3, dn: 3, df: 3, de: 3, da: 3 };
+  const sc = (T, m) => Object.keys(T.stats).reduce((s, k) => s + ((T.stats[k][0] + T.stats[k][1]) / 2) * (k === m ? 1 : W8[k] || 0), 0);
+  const top = (slot, m) => Object.keys(D.ITEMS).filter((id) => D.ITEMS[id].slot === slot && D.ITEMS[id].lvl <= 200).sort((x, y) => sc(D.ITEMS[y], m) - sc(D.ITEMS[x], m));
+  G8 = E.newState("Huit", "iop"); G8.chars = [];
+  ["iop", "eni", "feca", "sacri", "osa", "panda", "enu", "eca"].forEach((k, i) => { E.addChar(G8, k, "H" + i, 200).inTeam = true; });
+  for (const c of G8.chars) {
+    const m = D.CLASSES[c.cls].main, put = (tpl, slot) => { if (!tpl) return; const it = E.rollItem(G8, tpl, { radiant: false }); for (const k in it.stats) { const [x, y] = D.ITEMS[tpl].stats[k]; it.stats[k] = Math.round((x + y) / 2); } E.equip(G8, c.id, it.uid, slot); };
+    for (const sl of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes", "bouclier"]) put(top(sl, m)[0], sl);
+    const r = top("anneau", m); put(r[0], "anneau1"); put(r[1], "anneau2");
+    E.refreshSpells(c, E.charStats(G8, c));
+  }
   // la phase rend le boss plus dur, même graine = même essai
-  const a = E.gbossSim(G, def, 1, t, 1), b = E.gbossSim(G, def, 1, t, 5), c = E.gbossSim(G, def, 1, t, 5);
+  const a = E.gbossSim(G8, def, 1, t, 1), b = E.gbossSim(G8, def, 1, t, 5), c = E.gbossSim(G8, def, 1, t, 5);
   assert.deepStrictEqual(b, c); assert.strictEqual(b.raw, a.raw, "même essai, même combat"); assert.ok(a.points > 10 && b.points < a.points, "phase 5 : le boss résiste davantage");
-  console.log("ok - boss : 5 phases, réserve d'essais");
+  // le revisionnage (6B) rejoue exactement l'essai
+  const W = E.gbossWatch(G8, def, 1, t, 1); while (!W.done) E.gbossWatchStep(W);
+  assert.deepStrictEqual(E.gbossResult(W), a, "« Revoir le combat » = même essai");
+  console.log("ok - boss : 5 phases, Ultimes, réserve de 12, revisionnage");
+}
+
+// 4 bis. Les mécaniques du boss se règlent sur sa vie normale, pas sur ses PV ×1 000 (totems, bombe…).
+{
+  let zero = 0, n = 0;
+  for (const did of Object.keys(E.GBOSS_POW).filter((_, i) => i % 4 === 0)) { const r = E.gbossSim(G8, { boss: D.DUNGEONS[did].boss, did, pow: E.GBOSS_POW[did], w: 1 }, 2, t, 1); n++; if (r.points < 1) zero++; }
+  assert.ok(zero / n < 0.1, `trop d'essais à 0 point (${zero}/${n})`);
+  console.log("ok - boss : plus d'essais à 0 point dus aux mécaniques");
 }
 
 // 5. Percepteurs 1.0.30 : donjons, gains, améliorations, attaques entre guildes.

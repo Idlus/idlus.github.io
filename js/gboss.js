@@ -17,18 +17,24 @@
   const E = root.ENGINE || require("./engine.js");
   const { DUNGEONS, MONSTERS } = D;
 
-  E.GBOSS_EVERY = 25;         // 1.0.30 : minutes pour un essai (avant : 3 essais par jour)
-  E.GBOSS_EVERY_COR = 20;     // avec le Cor de ralliement
-  E.GBOSS_RESERVE = 6;        // essais gardés en réserve au plus (2 h 30)
+  E.GBOSS_EVERY = 120;        // 1.0.33 (choix 1A de Mathis) : minutes pour un essai (1.0.30 : 25)
+  E.GBOSS_EVERY_COR = 100;    // avec le Cor de ralliement (1 h 40)
+  E.GBOSS_RESERVE = 12;       // essais gardés en réserve au plus (24 h : une visite par jour suffit)
   E.GBOSS_ROUNDS = 15;        // tours par essai
   E.GBOSS_HP_MULT = 1000;     // le boss ne tombe pas pendant un essai : on compte les dégâts
-  E.GBOSS_PER_MEMBER = 25000; // vie totale du boss par membre (au moins 3 membres comptés)
+  E.GBOSS_PER_MEMBER = 15000; // 1.0.33 (2A) : vie totale du boss par membre actif (au moins 3 comptés)
   E.GBOSS_MIN_MEMBERS = 3;
+  E.GBOSS_ACTIVE_DAYS = 14;   // membre actif : partie en ligne envoyée (ou arrivée dans la guilde) depuis moins de 14 jours
   E.GBOSS_PHASES = [8, 14, 20, 26, 32];                         // part de la vie totale de chaque phase (%)
   E.GBOSS_PHASE_K = [300000, 600000, 900000, 1200000, 1500000]; // kamas versés au coffre de guilde quand la phase tombe
   E.GBOSS_PHASE_NAMES = ["Éveillé", "Furieux", "Enragé", "Déchaîné", "Ultime"];
   E.GBOSS_PHASE_DMG = 8;      // +8 % de résistance du boss à chaque phase après la première : points ÷ (1 + 8 % par phase), soit ÷ 1,32 en phase 5 (≈ 300 points en phase 1, ≈ 230 en phase 5). Plus de dommages des monstres donnait plus de points à certaines équipes (renvoi, riposte).
+  E.GBOSS_ULT = 10;           // 1.0.33 (3A) : après la phase 5, phases Ultimes sans fin de 10 % de la vie chacune (+8 % de résistance de plus à chaque fois)
+  E.GBOSS_ULT_DUST = 30;      // Poussières de stasis par phase Ultime tombée, pour chaque membre qui a frappé
   E.GBOSS_STEPS = [25, 50, 75, 100]; // coffres des membres : phase p tombée = palier 25 × p (phases 1 à 4)
+  E.GBOSS_CHEST_K = 4;        // 1.0.33 (4A) : kamas des coffres ×4
+  E.GBOSS_CHEST_RES = 5;      // ressources du boss par coffre : 5 × numéro de la phase
+  E.GBOSS_MIN_TRIES = 3;      // 1.0.33 (5A) : essais dans la semaine pour recevoir les coffres
   E.GBOSS_TITLE = "Pourfendeur de boss"; // titre gardé par les membres des 3 meilleures guildes de la semaine
   E.GBOSS_FIRST_TITLE = "Avant-garde de guilde"; // 1.0.30 : membres de la première guilde du serveur qui finit le boss de la semaine
 
@@ -43,11 +49,15 @@
   /* Force de chaque boss retenu : multiplicateur de points pour qu'une équipe bien équipée fasse environ
      300 points par essai quel que soit le boss. Les boss à mécanique bloquante (invulnérables…) sont écartés.
      Table générée par `node tools/gboss_calib.js` (à relancer après un gros rééquilibrage). */
-  E.GBOSS_POW = /*GBOSS_POW*/{"antichambre_gloursons":6.52,"antre_blop_multicolore":1.01,"antre_crocabulia":0.84,"antre_dragon_cochon":5.45,"antre_korriandre":0.84,"arbre_moon":1.58,"atelier_tanukoui":0.76,"bateau_chouque":0.71,"belvedere_ilyzaelle":1.08,"biblio_corbac":0.92,"boyau_pere_ver":1.41,"cache_kankreblath":0.85,"camp_razof":1.43,"caverne_el_piko":0.97,"caverne_koulosse":0.84,"cavernes_kolosso":1.05,"chapiteau_riktus":0.79,"chateau_ensable":1.43,"clairiere_chene_mou":1.36,"clos_blops":0.63,"cour_bouftou_royal":0.85,"croquanterie":0.92,"domaine_ancestral":0.89,"donjon_bworks":0.92,"donjon_harebourg":0.88,"donjon_scarafeuilles":0.89,"donjon_squelettes":0.6,"donjon_tofus":0.79,"epave_grolandais":5.45,"fabrique_foux":0.96,"forgefroide_frizz":1.52,"galerie_phossile":0.91,"grange_tournesol":1.02,"grotte_bworker":1.1,"grotte_kanigroula":2.11,"horologium_xlii":0.9,"hypogee_obsidiantre":0.88,"labo_brumen":0.83,"labo_nileza":2.16,"labo_tynril":0.62,"labyrinthe_minotoror":0.76,"megalithe_fraktale":0.96,"mine_sakai":1.86,"nid_kwakwa":1.28,"oeil_vortex":1.24,"palais_nidas":1.03,"pitons_craqueleur":0.96,"pyramide_ombre":0.83,"repaire_kharnozor":0.83,"repaire_skeunk":0.99,"repaire_sphincter":1.49,"salle_minotot":5.41,"serre_royalmouth":1.22,"taniere_givrefoux":0.73,"taniere_meulou":0.89,"temple_ougah":0.85,"terrier_wa_wabbit":0.74,"tertre_long_sommeil":0.8,"tofulailler_royal":0.86,"tombe_tofugawa":0.7,"transporteur_sylargh":1.45,"vallee_dame_eaux":0.74,"voliere_haute_truche":0.81}/*/GBOSS_POW*/;
-  const pool = () => Object.keys(E.GBOSS_POW).filter((id) => DUNGEONS[id]).sort();
+  E.GBOSS_POW = /*GBOSS_POW*/{"akademie_gobs":0.53,"antichambre_gloursons":0.8,"antre_blop_multicolore":0.71,"antre_crocabulia":0.62,"antre_dragon_cochon":0.69,"antre_korriandre":0.57,"antre_reine_nyee":0.63,"aquadome_merkator":0.67,"arbre_moon":1.04,"arbre_mort":0.91,"atelier_tanukoui":0.56,"aurore_pourpre":1.34,"autel_dechireuse":0.63,"bambusaie_damadrya":0.62,"bastion_marteaux":0.59,"bateau_chouque":0.55,"belvedere_ilyzaelle":0.74,"biblio_corbac":0.72,"boyau_pere_ver":0.69,"brasserie_dazak":1.05,"breuil_venerable":0.78,"cache_kankreblath":0.61,"cale_arche_otomai":1.09,"camp_razof":1.08,"canopee_kimbo":1,"cave_toxoliath":0.66,"caverne_el_piko":0.69,"caverne_koulosse":0.63,"cavernes_kolosso":0.71,"chambre_malefices":0.71,"chambre_tal_kasha":0.71,"chapiteau_riktus":0.65,"chateau_ensable":0.64,"chateau_wa_wabbit":0.59,"cimetiere_mastodontes":0.7,"clairiere_chene_mou":0.73,"clos_blops":0.25,"cour_bouftou_royal":0.62,"croquanterie":0.54,"defi_chaloeil":0.67,"demeure_esprits":0.52,"dojo_vent":0.6,"domaine_ancestral":0.74,"donjon_bworks":0.75,"donjon_forgerons":0.5,"donjon_harebourg":0.57,"donjon_larves":0.55,"donjon_scarafeuilles":0.67,"donjon_squelettes":0.47,"donjon_tofus":0.56,"epave_grolandais":0.81,"epreuve_draegnerys":0.68,"excavation_mansot":0.79,"fabrique_foux":0.72,"fabrique_mallefisk":0.58,"fers_tyrannie":1.08,"fonderie_waddicts":0.67,"forgefroide_frizz":1.18,"galerie_phossile":0.68,"garde_manger_rat_blanc":0.53,"gelaxieme_dimension":0.41,"goulet_rasboul":1.1,"grange_tournesol":0.57,"grotte_bworker":0.71,"grotte_hesque":0.51,"grotte_kanigroula":0.62,"horologium_xlii":0.61,"hypogee_obsidiantre":0.61,"labo_brumen":0.64,"labo_nileza":0.68,"labo_tynril":0.45,"labyrinthe_minotoror":0.59,"maison_fantome":0.55,"manoir_katrepat":0.81,"megalithe_fraktale":0.64,"memoire_orukam":0.9,"miausolee_pounicheur":0.64,"mine_sakai":0.67,"nid_kwakwa":0.97,"oeil_vortex":0.97,"palais_dantinea":0.83,"palais_nidas":0.71,"pitons_craqueleur":0.51,"plateau_ush":0.66,"poste_supervizoeuf":0.66,"pyramide_ombre":0.53,"refuge_sylvestre":0.57,"repaire_kharnozor":0.57,"repaire_skeunk":0.76,"repaire_sphincter":1.04,"ring_ekarlatte":0.66,"rituel_kabahal":1.38,"salle_minotot":0.61,"salons_klime":0.8,"sanctuaire_torkelonia":0.71,"sentence_balance":0.89,"serre_royalmouth":0.78,"sousouriciere_rat_noir":0.64,"souvenir_imagiro":0.88,"taniere_givrefoux":0.63,"taniere_meulou":0.74,"tempete_eliocalypse":0.92,"temple_kao":0.69,"temple_koutoulou":1.12,"temple_ougah":0.62,"terrier_wa_wabbit":0.64,"tertre_long_sommeil":0.57,"theatre_dramak":0.52,"tofulailler_royal":0.72,"tombe_tofugawa":0.55,"tour_bethel":0.78,"tour_solar":0.72,"transporteur_sylargh":0.76,"trone_cour_sombre":0.73,"vaisseau_meno":0.9,"vallee_dame_eaux":0.56,"ventre_baleine":0.87,"village_kanniboul":0.54,"voliere_haute_truche":0.63}/*/GBOSS_POW*/;
+  /* 1.0.33 : avec les mécaniques corrigées, 119 boss passent le réglage au lieu de 63. Les semaines d'avant E.GBOSS_POOL2_W gardent
+     l'ancienne liste, pour que le boss de la semaine en cours ne change pas à la mise à jour (à régler sur la semaine qui suit la publication). */
+  E.GBOSS_POOL2_W = 2964;
+  E.GBOSS_POOL_OLD = ["antichambre_gloursons", "antre_blop_multicolore", "antre_crocabulia", "antre_dragon_cochon", "antre_korriandre", "arbre_moon", "atelier_tanukoui", "bateau_chouque", "belvedere_ilyzaelle", "biblio_corbac", "boyau_pere_ver", "cache_kankreblath", "camp_razof", "caverne_el_piko", "caverne_koulosse", "cavernes_kolosso", "chapiteau_riktus", "chateau_ensable", "clairiere_chene_mou", "clos_blops", "cour_bouftou_royal", "croquanterie", "domaine_ancestral", "donjon_bworks", "donjon_harebourg", "donjon_scarafeuilles", "donjon_squelettes", "donjon_tofus", "epave_grolandais", "fabrique_foux", "forgefroide_frizz", "galerie_phossile", "grange_tournesol", "grotte_bworker", "grotte_kanigroula", "horologium_xlii", "hypogee_obsidiantre", "labo_brumen", "labo_nileza", "labo_tynril", "labyrinthe_minotoror", "megalithe_fraktale", "mine_sakai", "nid_kwakwa", "oeil_vortex", "palais_nidas", "pitons_craqueleur", "pyramide_ombre", "repaire_kharnozor", "repaire_skeunk", "repaire_sphincter", "salle_minotot", "serre_royalmouth", "taniere_givrefoux", "taniere_meulou", "temple_ougah", "terrier_wa_wabbit", "tertre_long_sommeil", "tofulailler_royal", "tombe_tofugawa", "transporteur_sylargh", "vallee_dame_eaux", "voliere_haute_truche"];
+  const pool = (w) => (w < E.GBOSS_POOL2_W ? E.GBOSS_POOL_OLD : Object.keys(E.GBOSS_POW)).filter((id) => DUNGEONS[id]).sort();
   E.gboss = (w = E.gbossWeek()) => {
-    const P = pool(); const did = P[hash(`idlus|gboss|${w}`) % P.length]; const dg = DUNGEONS[did];
-    return { w, did, boss: dg.boss, name: MONSTERS[dg.boss].name, dname: dg.name, pow: E.GBOSS_POW[did] || 1 };
+    const P = pool(w); const did = P[hash(`idlus|gboss|${w}`) % P.length]; const dg = DUNGEONS[did];
+    return { w, did, boss: dg.boss, name: MONSTERS[dg.boss].name, dname: dg.name, pow: E.GBOSS_POW[did] || 1, res: E.gbossRes ? E.gbossRes({ boss: dg.boss }) : null };
   };
   E.gbossGoal = (members) => E.GBOSS_PER_MEMBER * Math.max(E.GBOSS_MIN_MEMBERS, members || 0);
   /* 1.0.30 : seuils cumulés des 5 phases (8, 22, 42, 68 et 100 % de la vie totale), même calcul que gb_thr (supabase/gboss.sql) */
@@ -55,19 +65,26 @@
   /* où en est le boss : p = phase en cours (1 à 5, 6 s'il est vaincu), done = phases tombées, cur / need = points dans la phase en cours */
   E.gbossPhase = (pts, goal) => {
     const T = E.gbossThr(goal); let i = 0; while (i < T.length && pts >= T[i]) i++;
-    if (i >= T.length) { const need = T[T.length - 1] - T[T.length - 2]; return { p: T.length + 1, done: T.length, cur: need, need, T }; }
+    if (i >= T.length) { // 1.0.33 : phases Ultimes (6, 7, 8…) de 10 % de la vie chacune, même calcul que gb_nph
+      const need = Math.max(1, Math.floor((goal * E.GBOSS_ULT) / 100)); const over = Math.max(0, pts - T[T.length - 1]); const u = Math.floor(over / need);
+      return { p: T.length + 1 + u, done: T.length + u, ult: u + 1, cur: over - u * need, need, T };
+    }
     const lo = i ? T[i - 1] : 0; return { p: i + 1, done: i, cur: Math.max(0, pts - lo), need: T[i] - lo, T };
   };
-  /* résistance du boss à la phase p (×1, ×1,08, ×1,16… ×1,32) : les points de l'essai sont divisés par ce nombre */
-  E.gbossDmg = (p) => 1 + (E.GBOSS_PHASE_DMG * Math.max(0, Math.min(5, p || 1) - 1)) / 100;
+  /* résistance du boss à la phase p (×1, ×1,08, ×1,16… ×1,32 en phase 5, puis +8 % par phase Ultime) : les points de l'essai sont divisés par ce nombre */
+  E.gbossDmg = (p) => 1 + (E.GBOSS_PHASE_DMG * Math.max(0, (p || 1) - 1)) / 100;
+  /* nom d'une phase : « Éveillé »… « Ultime », puis « Ultime 1 », « Ultime 2 »… */
+  E.gbossPhaseName = (p) => (p <= 5 ? E.GBOSS_PHASE_NAMES[Math.max(0, p - 1)] : `Ultime ${p - 5}`);
   /* essais en réserve : t essais au moment at, +1 toutes les « every » minutes, E.GBOSS_RESERVE au plus (même calcul que gb_tok) */
   E.gbossTok = (t, at, now, every) => Math.min(E.GBOSS_RESERVE, (+t || 0) + Math.max(0, now - at) / ((every || E.GBOSS_EVERY) * 60000));
   /* temps avant le prochain essai (0 si la réserve est pleine) */
   E.gbossNextIn = (tok, every) => (tok >= E.GBOSS_RESERVE ? 0 : Math.ceil((1 - (tok % 1)) * (every || E.GBOSS_EVERY) * 60000));
 
-  /* Un essai, joué d'un coup. n = numéro de l'essai de la semaine (0, 1, 2…) : il fixe le hasard.
-     phase (1.0.30) : phase du boss, de plus en plus dure (E.gbossDmg). Renvoie { points, dmg, rounds, alive } ou { err }. */
-  E.gbossSim = (S, def, n, now = E.now(), phase = 1) => {
+  /* Un essai. n = numéro de l'essai de la semaine (0, 1, 2…) : il fixe le hasard. phase (1.0.30) : phase du boss, de plus en plus dure (E.gbossDmg).
+     1.0.33 (choix 6B de Mathis) : découpé en E.gbossWatch (préparer), E.gbossWatchStep (un pas) et E.gbossResult, pour « Revoir le combat » :
+     le même essai est rejoué pas à pas avec le même hasard. Les mécaniques du boss (totems, âme liée, bombes, soins en %) se calculent
+     sur ses PV normaux (hpRef, js/engine.js) : avant, ses PV ×1 000 rendaient certains essais nuls. */
+  E.gbossWatch = (S, def, n, now = E.now(), phase = 1) => {
     const S2 = JSON.parse(E.serialize(S));
     S2.fight = null; S2.pause = 0; S2.acc = 0; S2.hunting = false; S2.protector = null; S2.manualLive = false;
     S2.settings = Object.assign({}, S2.settings, { manual: false });
@@ -75,25 +92,67 @@
     S2.idols = Object.assign({}, S2.idols, { active: [] }); // pas d'idoles : le même boss pour tous
     const dg = DUNGEONS[def.did]; const team = E.team(S2);
     if (!team.length || !dg) return { err: "Il faut au moins un héros dans l'équipe." };
+    const W = { def, n, phase, now, S2, rng: mulberry(hash(`idlus|gboss|${def.w}|${n}`)), done: false, dm: E.gbossDmg(phase) };
     const rng0 = E.getRng(), clock0 = E.getClock(), evLen = E.events.length;
     try {
-      E.setRng(mulberry(hash(`idlus|gboss|${def.w}|${n}`))); E.setClock(() => now);
+      E.setRng(W.rng); E.setClock(() => now);
       S2.dungeon = { id: def.did, room: dg.rooms.length, stasis: 4, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: [], eliteRoom: -1, gboss: true };
       const F = E.startFight(S2); if (!F) return { err: "Combat impossible." };
       const B = F.ents[F.bossIdx]; if (!B) return { err: "Boss introuvable." };
-      const base = B.hpMax; B.hpMax = B.hp = base * E.GBOSS_HP_MULT; if (B.shield) B.shield = 0;
-      const dm = E.gbossDmg(phase); // 1.0.30 : la phase suivante est plus dure (le boss résiste davantage)
-      for (let g = 0; g < 200000 && !F.over && F.round <= E.GBOSS_ROUNDS; g++) E.step(S2);
-      const dmg = Math.max(0, B.hpMax - Math.max(0, B.hp));
-      const alive = F.ents.filter((e) => e.side === "c" && !e.summon && e.alive).length;
-      const raw = (dmg / base) * 100;
-      return { points: Math.round((raw * (def.pow || 1)) / dm), raw: Math.round(raw), dmg: Math.round(dmg), rounds: Math.min(F.round, E.GBOSS_ROUNDS), alive };
+      W.base = B.hpMax; B.hpRef = W.base; B.hpMax = B.hp = W.base * E.GBOSS_HP_MULT; if (B.shield) B.shield = 0;
+      F.label = `Boss de guilde · ${MONSTERS[def.boss] ? MONSTERS[def.boss].name : def.name}`; F.gboss = true;
+      W.F = F; W.B = B;
+      return W;
     } finally { E.setRng(rng0); E.setClock(clock0); E.events.length = evLen; }
+  };
+  E.gbossWatchStep = (W) => {
+    if (W.done) return "end";
+    const F = W.F; const rng0 = E.getRng(), clock0 = E.getClock(), evLen = E.events.length;
+    try {
+      E.setRng(W.rng); E.setClock(() => W.now);
+      E.step(W.S2);
+      if (F.over || F.round > E.GBOSS_ROUNDS) { W.done = true; return "end"; }
+      return "step";
+    } finally { E.setRng(rng0); E.setClock(clock0); E.events.length = evLen; }
+  };
+  /* points de l'essai (aussi pendant qu'on le regarde), dégâts de chaque héros et mécaniques du boss (rapport d'essai, 6A) */
+  E.gbossPts = (W) => { const B = W.B; const dmg = Math.max(0, B.hpMax - Math.max(0, B.hp)); return Math.round(((dmg / W.base) * 100 * (W.def.pow || 1)) / W.dm); };
+  E.gbossResult = (W) => {
+    const F = W.F, B = W.B; const dmg = Math.max(0, B.hpMax - Math.max(0, B.hp));
+    const alive = F.ents.filter((e) => e.side === "c" && !e.summon && e.alive).length;
+    const heroes = E.fightStats(F).map((x) => ({ n: x.n, d: x.d }));
+    const mech = (B.mech || []).map((k) => (E.BOSS_MECHS && E.BOSS_MECHS[k] ? E.BOSS_MECHS[k].name : k));
+    return { points: E.gbossPts(W), raw: Math.round((dmg / W.base) * 100), dmg: Math.round(dmg), rounds: Math.min(F.round, E.GBOSS_ROUNDS), alive, heroes, mech };
+  };
+  /* Un essai joué d'un coup (le serveur le rejoue avec la partie en ligne). Renvoie { points, raw, dmg, rounds, alive, heroes, mech } ou { err }. */
+  E.gbossSim = (S, def, n, now = E.now(), phase = 1) => {
+    const W = E.gbossWatch(S, def, n, now, phase); if (W.err) return W;
+    for (let g = 0; g < 200000 && !W.done; g++) E.gbossWatchStep(W);
+    return E.gbossResult(W);
   };
 
   /* Coffre d'un palier : kamas et poussière de stasis, selon le niveau du meilleur héros (même calcul dans supabase/gboss.sql). */
   E.GBOSS_CHEST_NAMES = { 25: "Coffre de l'assaut", 50: "Coffre de la brèche", 75: "Coffre du siège", 100: "Coffre de la victoire" }; // 0.1.30
-  E.gbossChest = (step, lvl) => { const i = E.GBOSS_STEPS.indexOf(step) + 1; return { k: Math.round((1000 + lvl * 250) * i), dust: 15 * i }; };
+  /* 1.0.33 (4A) : kamas ×4, et 5 × la phase en ressources du boss (E.gbossRes) ; même calcul dans supabase/gboss.sql (gb_chest) */
+  E.gbossChest = (step, lvl) => { const i = E.GBOSS_STEPS.indexOf(step) + 1; return { k: Math.round((1000 + lvl * 250) * i * E.GBOSS_CHEST_K), dust: 15 * i, res: E.GBOSS_CHEST_RES * i }; };
+  E.GBOSS_EQ_CHEST = "Coffre du trophée"; // phase 5 : un équipement du donjon du boss
+  /* ressource du boss pour les coffres : sa ressource propre la plus rare (entre 5 et 50 % de chances), sinon la plus rare qu'il donne */
+  E.gbossRes = (def) => {
+    const M = MONSTERS[def.boss] || {}; const items = new Set(Object.values(D.ITEMS || {}).map((t) => t.name));
+    const ok = (M.drops || []).filter(([nm, c]) => c > 0 && !items.has(nm) && !/dofus|bo[iî]te|barre|bouloute|sachet|bidoche|minowang|lagon|muldo|oueille|pollenectar|cœur|clef|image|défaite|âmes|zinuzide|écho|koinkoin|fiole/i.test(nm));
+    const word = (M.name || "").split(" ").pop().toLowerCase(); const own = ok.filter(([nm]) => word.length > 2 && nm.toLowerCase().includes(word));
+    const by = (L) => L.filter(([, c]) => c >= 5 && c <= 50).sort((a, b) => a[1] - b[1])[0] || L.slice().sort((a, b) => a[1] - b[1])[0];
+    const pick = by(own) || by(ok);
+    return pick ? pick[0] : "Poussière de stasis";
+  };
+
+  /* équipements du donjon du boss pour le Coffre du trophée (phase 5) : ses objets et ceux de ses monstres, avec les fourchettes de jets (le serveur tire le jet) */
+  E.gbossEq = (def) => {
+    const dg = DUNGEONS[def.did]; if (!dg) return [];
+    const mobs = new Set([def.boss]); (dg.rooms || []).forEach((r) => (r.mobs || []).forEach((m) => mobs.add(m)));
+    const seen = {}; mobs.forEach((id) => ((MONSTERS[id] && MONSTERS[id].items) || []).forEach(([tpl]) => { const T = D.ITEMS && D.ITEMS[tpl]; if (T && T.slot !== "dofus" && !T.noDrop && T.stats) seen[tpl] = 1; }));
+    return Object.keys(seen).sort().slice(0, 12).map((tpl) => ({ tpl, s: D.ITEMS[tpl].stats }));
+  };
 
   /* ============================================================================
      PERCEPTEURS (version 3, 1.0.30 « Refonte des guildes », choix 7A et 8A de Mathis)

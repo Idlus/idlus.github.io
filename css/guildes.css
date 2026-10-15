@@ -22,6 +22,17 @@
 .gx-ph div i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#c2412d,#f08a3c)}
 .gx-ph div b{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 0 3px #000;white-space:nowrap}
 .gx-ph div.done{background:linear-gradient(90deg,var(--gold),var(--gold2));border-color:var(--gold)}
+.gx-ph.gx-ult{grid-template-columns:repeat(3,minmax(0,1fr))}
+.gx-ph.gx-ult div i{background:linear-gradient(90deg,#7a3cf0,#c06cff)}
+.gx-ph.gx-ult div.done{background:linear-gradient(90deg,#6b3fd0,#a77bff);border-color:#a77bff}
+.gbw .chalov,.gbw .chalbar{display:none} /* 1.0.33 : pas de challenges au boss de guilde */
+.gbrep{display:flex;flex-direction:column;gap:6px;padding:10px 12px;margin:8px 0;border-radius:10px;border:2px solid var(--frame);background:var(--panel3)}
+.gbrep .gbt{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;font-size:13px}
+.gbrow{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.gbn{width:118px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gbrow em{width:64px;flex:none;text-align:right;font-style:normal;font-weight:800}
+.gbbar{flex:1;height:8px;border-radius:5px;background:rgba(128,128,128,.25);overflow:hidden}
+.gbbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
 /* améliorations */
 .gx-up{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .gx-uq{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}

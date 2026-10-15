@@ -1,5 +1,5 @@
 /* Calibrage du boss de guilde (0.1.22) : fait jouer chaque boss candidat par des équipes bien équipées
-   (niveaux 60, 120 et 200, quatre classes) et écrit dans js/gboss.js la table E.GBOSS_POW :
+   (niveaux 60, 120 et 200, quatre classes ; 1.0.33 : équipes de 8 héros, comme le demande Mathis, au lieu de 4) et écrit dans js/gboss.js la table E.GBOSS_POW :
    multiplicateur de points pour viser 300 points par essai. Les boss sous 40 points bruts sont écartés.
    Usage : node tools/gboss_calib.js [--print] */
 "use strict";
@@ -16,7 +16,7 @@ const best = (slot, lvl, main) => memo[slot + lvl + main] || (memo[slot + lvl + 
 const give = (S, c, tpl, slot) => { const it = E.rollItem(S, tpl, { radiant: false }); for (const k in it.stats) { const [a, b] = D.ITEMS[tpl].stats[k]; it.stats[k] = Math.round((a + b) / 2); } E.equip(S, c.id, it.uid, slot); };
 const team = (cls, lvl) => {
   const S = E.newState("Sim", "iop"); S.chars = [];
-  [cls, "eni", "feca", "sacri"].forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
+  [cls, ...["eni", "feca", "sacri", "osa", "panda", "enu", "eca", "zobal"].filter((x) => x !== cls)].slice(0, 8).forEach((x, i) => { const c = E.addChar(S, x, "H" + i, lvl); c.inTeam = true; });
   S.chars.forEach((c) => { const m = D.CLASSES[c.cls].main;
     for (const s of ["arme", "coiffe", "cape", "amulette", "ceinture", "bottes", "bouclier"]) { const t = best(s, c.lvl, m)[0]; if (t) give(S, c, t, s); }
     const r = best("anneau", c.lvl, m); if (r[0]) give(S, c, r[0], "anneau1"); if (r[1]) give(S, c, r[1], "anneau2");
