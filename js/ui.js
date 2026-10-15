@@ -21,9 +21,28 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.36";
+const GAME_VERSION = "1.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1", name: "La 1.1", items: [
+    "L'Ascension (Jouer › L'Ascension) : une tour de 100 étages qui change chaque mois. Un héros neuf niveau 1, 3 classes tirées au sort, sorts et échos, Volonté, Fragments et Écus",
+    "Course de lancement : les 10 premiers comptes à l'étage 100 de L'Ascension en Difficile gagnent le titre « Légende de la 1.1 »",
+    "Stasis 11 à 15 : +12 % de PV et de dégâts par niveau au-delà de 10, 3 modificateurs dès la 12, boss à 4 mécaniques en 14, titre « Maître du temps » en 15. Poussière ×2 et Pierre d'âme dorée au premier passage",
+    "4 nouveaux Dofus avec leurs quêtes : Alliances, Trool, Onirique et Idlus. Les 10 premiers à réunir les 4 reçoivent l'ornement « Gardien de la 1.1 »",
+    "Menu Héros › Dofus : vitrine des 35 œufs, « À faire maintenant », collection par passif, cartes par héros, Dofus animés",
+    "Champions : des Sceaux à équiper sur chaque héros, gagnés en battant des Champions ; Champion légendaire ; menu Héros › Chasse avec tes zones et tes pistes",
+    "Élevage (Héros › Élevage) : étoiles et capacités, ascendance, 41 couleurs, Essence, objets d'élevage, éleveur automatique même hors ligne, quête « Apprenti éleveur » et classement Élevage",
+    "Familiers et montiliers : une aptitude de famille en combat, avec sa pastille sur le héros",
+    "Défi du jour : mode héroïque (jusqu'à 2 règles en plus), rappel « série en danger », carnet des 30 derniers jours, score à montrer dans le chat, vote de la règle du Grand défi",
+    "Inventaire plus lisible : « À trier », « Panoplies », « Tout équiper au mieux », comparer avec n'importe quel héros",
+    "Boss de guilde rééquilibré : 5 phases puis phases Ultimes jusqu'à lundi ; les coffres vont aux membres qui ont fait 3 essais dans la semaine",
+    "Chasse aux Percepteurs : Percepteurs ennemis rangés par guilde, revanche, primes, Nuit des Percepteurs, régions dominées (+5 % de kamas)",
+    "Alliances et prismes : jusqu'à 3 guildes, un prisme par région (+5 % d'XP, de kamas et de butin), bataille des prismes le samedi de 21 h à 22 h, titre « Souverain des Douze »",
+    "Raccourcis clavier sur PC : une lettre par page, « ? » pour la liste, à couper dans Options › Jeu",
+  ] },
+  { v: "1.0.36.1", name: "Compteurs complets en vert", items: [
+    "Quêtes : le compteur des quêtes de région passe en vert quand elles sont toutes terminées (32/32), comme les autres. Pareil pour les Dofus, les succès et les ornements une fois la collection complète",
+  ] },
   { v: "1.0.36", name: "La Scène", items: [
     "Vue Scène refaite : chaque combattant a sa case sur un plateau isométrique façon DOFUS, le boss au premier plan. Les noms, PV, invocations et passifs passent dans un bandeau sous la scène. La Formation reste la vue par défaut (bouton « Scène » au-dessus du combat)",
     "Nouvelles animations sur le plateau : chacun respire à son rythme, les héros arrivent en bondissant et les monstres tombent sur leur case, on recule sous les coups (plus loin sur un critique), celui qui joue fait un pas en avant",
