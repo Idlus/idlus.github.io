@@ -2704,6 +2704,7 @@ img.dop,.cico.dop img,.arena .ent.m img.sprite.dop,.arena.v2 .ent.m img.sprite.d
 .dfline{display:flex;gap:10px;align-items:center;width:100%;padding:9px 12px;border-radius:12px;background:var(--panel2);border:1.5px solid rgba(var(--glw),.5);color:inherit;font:inherit;text-align:left;cursor:pointer}
 .dfline:hover{border-color:rgba(var(--glw),.9)}
 .dfline .chev{font-size:18px;color:var(--muted)}
+@media (max-width:600px){.dfline{flex-wrap:wrap;row-gap:4px}.dfline .wk{flex:1 0 100%}.dfline .grow{flex:1 1 0;min-width:0}} /* 1.1 : la ligne du défi tenait sur une colonne étroite au téléphone */
 .df-goal .bar{margin-top:4px}
 .df-goal.ok b{color:var(--gold2)}
 /* 1.1 : refonte du Défi du jour (règles du jour, score en points, bourses, Grand défi du dimanche) */
