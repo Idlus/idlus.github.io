@@ -3411,7 +3411,7 @@
      La vitesse ×2 retire 1 s de réserve par seconde, ×3 en retire 2 : la réserve est du « temps de jeu en plus ».
      Il se débloque à la fin d'Incarnam (quête principale « La Crypte de Kardorim » terminée). Hors ligne, rien n'accélère. */
   E.SAB_RATE = 7.5 / 60;          // +7 min 30 par heure = 3 h par jour
-  E.SAB_MAX = 15 * 3600;          // 5 jours de réserve (1.1.2.11 : 9 h avant)
+  E.SAB_MAX = 15 * 3600;          // 5 jours de réserve (1.2.2 : 9 h avant)
   E.SAB_UNLOCK_STEP = 6;          // étapes de la quête principale à finir (jusqu'à la Crypte de Kardorim)
   E.sabUnlocked = (S) => !!(S.sablier && S.sablier.open) || !!(S.quest && S.quest.step >= E.SAB_UNLOCK_STEP);
   E.sab = (S) => {

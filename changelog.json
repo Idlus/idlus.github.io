@@ -1,6 +1,14 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "versions": [
+    {
+      "v": "1.2.2",
+      "name": "Sablier plus grand",
+      "items": [
+        "Sablier de Xélor : la réserve monte à 15 h (9 h avant). La recharge reste de 3 h par jour, même jeu fermé",
+        "La fenêtre du Sablier montre « Comment en obtenir » : recharge du jour, Bureau des primes, Comptoir de la cité, Comptoir des temples, Kolizéum, coffres de l'Ascension, Foire du Trool et codes cadeaux, chacun avec un bouton « Y aller »"
+      ]
+    },
     {
       "v": "1.2.1",
       "name": "Fond de page allégé",

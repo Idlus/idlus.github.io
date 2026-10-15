@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.1";
+const GAME_VERSION = "1.2.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.2", name: "Sablier plus grand", items: [
+    "Sablier de Xélor : la réserve monte à 15 h (9 h avant). La recharge reste de 3 h par jour, même jeu fermé",
+    "La fenêtre du Sablier montre « Comment en obtenir » : recharge du jour, Bureau des primes, Comptoir de la cité, Comptoir des temples, Kolizéum, coffres de l'Ascension, Foire du Trool et codes cadeaux, chacun avec un bouton « Y aller »",
+  ] },
   { v: "1.2.1", name: "Fond de page allégé", items: [
     "Le jeu tournait au ralenti depuis la 1.2 : le voile d'aurore du fond de page était flouté par un filtre recalculé à chaque image. Le flou vient maintenant du dégradé lui-même, le jeu retrouve ses 60 images par seconde (mesuré sur PC et téléphone)" ] },
   { v: "1.2", name: "Les menus", items: [
@@ -2439,7 +2443,7 @@ function sabSheet() {
     ${sabWhereHtml()}
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
-/* 1.1.2.11 « Sablier plus grand » : d'où viennent les heures de Sablier (chaque ligne mène à sa page) */
+/* 1.2.2 « Sablier plus grand » : d'où viennent les heures de Sablier (chaque ligne mène à sa page) */
 const SAB_WHERE = [
   ["cristal", "Recharge du jour", `+3 h par jour, même jeu fermé, jusqu'à ${E.SAB_MAX / 3600} h.`, ""],
   ["quetes", "Bureau des primes", "1 h pour 12 Jetons de chasseur, une fois par jour.", "cpt:prime"],
