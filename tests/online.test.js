@@ -378,7 +378,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     // 2. partie sans compte, puis connexion depuis les Options : la partie de l'appareil est proposée
     await page.click('[data-act="startgame"]'); await page.waitForSelector("#nav [data-nk]");
     await page.evaluate(() => { window.DX.S.kamas = 4321; window.DX.saveNow(); });
-    await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-loginscreen"]');
+    await page.evaluate(() => window.DX.social.options("sauvegarde")); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-loginscreen"]');
     await page.waitForSelector('[data-act="on-discord"]', { timeout: 10000 });
     await page.click('[data-act="on-discord"]');
     await page.waitForSelector("#onPseudo", { timeout: 10000 });
@@ -1164,7 +1164,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) await page.screenshot({ path: process.env.SHOTS + "/notif-tel.png" });
     await page.click("#chat .ch-x");
     // 8 bis. 0.1.50.1 : changer son pseudo depuis Options › Sauvegarde, puis refus avant 30 jours
-    await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-renpseudo"]');
+    await page.evaluate(() => window.DX.social.options("sauvegarde")); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-renpseudo"]');
     await page.waitForSelector("#onRenPseudo"); await page.fill("#onRenPseudo", "Bouftoune"); await page.press("#onRenPseudo", "Enter"); await page.waitForTimeout(400);
     m = await mock(); if (m.profiles[0].pseudo !== "Bouftoune") fail("pseudo : changement non enregistré");
     if (!/Bouftoune/.test(await page.textContent(".sheet"))) fail("pseudo : nouveau pseudo absent des Options");
@@ -1198,7 +1198,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await page.waitForTimeout(300);
     m = await mock(); { const mt = (m.saves.u1 || {}).meta || {}; if (!(mt.dsub || []).includes("emeraude") || !(mt.dofus || []).includes("emeraude")) fail("Dofus Sublimé absent du résumé envoyé : " + JSON.stringify(mt.dsub)); }
     // 9. suppression du compte
-    await page.click('[data-act="options"]'); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
+    await page.evaluate(() => window.DX.social.options("sauvegarde")); await page.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await page.click('.sheet [data-act="on-askdelete"]');
     await page.fill("#onDelPseudo", "bouftoune"); await page.click('[data-act="on-delete"]'); await page.waitForTimeout(400);
     m = await mock(); if (m.saves.u1 || m.profiles.length) fail("compte non supprimé");
     if (!(await S())) fail("partie de l'appareil perdue après suppression");
@@ -1226,7 +1226,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     await p2.click(`${card(1)} [data-act="sv-play"]`); await p2.waitForSelector("#nav [data-nk]", { timeout: 10000 });
     if ((await S2()).kamas !== 50000) fail("parties : la partie 1 en ligne n'est pas chargée");
     // partie 2 : nouvelle aventure, sauvegarde à part (sur l'appareil et en ligne), jamais dans saves
-    await p2.click('[data-act="options"]'); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]');
+    await p2.evaluate(() => window.DX.social.options("sauvegarde")); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]');
     if (!/Partie 1/.test(await p2.textContent(".sheet"))) fail("parties : la partie en cours n'est pas indiquée dans les Options");
     await p2.click('.sheet [data-act="sv-menu"]'); await p2.waitForSelector(".svm", { timeout: 10000 });
     if (!(await p2.$(`${card(1)}.last`))) fail("parties : « Dernière jouée » absent");
@@ -1262,7 +1262,7 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if ((await S2()).kamas !== 9999) fail("parties : version en ligne de la partie 2 non chargée");
     if (!(await p2.evaluate(() => JSON.parse(localStorage.getItem("dofousxen-save-beta-2-copies") || "[]").some((c) => c.why === "avant")))) fail("parties : l'autre version de la partie 2 n'est pas gardée en copie");
     // supprimer la partie 2 : effacée de l'appareil et du compte, une copie reste
-    await p2.click('[data-act="options"]'); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await p2.click('.sheet [data-act="sv-menu"]'); await p2.waitForSelector(".svm", { timeout: 10000 });
+    await p2.evaluate(() => window.DX.social.options("sauvegarde")); await p2.click('.sheet [data-act="opttab"][data-v="sauvegarde"]'); await p2.click('.sheet [data-act="sv-menu"]'); await p2.waitForSelector(".svm", { timeout: 10000 });
     await p2.click(`${card(2)} [data-act="sv-del"]`); await p2.click(`${card(2)} [data-act="sv-delgo"]`); await p2.waitForSelector(`${card(2)}.empty`, { timeout: 5000 });
     m2 = await mock2();
     if (m2.slots["u2:2"] || (await p2.evaluate(() => localStorage.getItem("dofousxen-save-beta-2")))) fail("parties : partie 2 pas supprimée");
