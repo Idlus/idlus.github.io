@@ -164,7 +164,7 @@
     const ord = order.map((i, k) => `<span class="as-oi ${F.ents[i].side === "c" ? "al" : "fo"} ${k === 0 && i === cur ? "now" : ""}"><img src="${imgOf(F.ents[i])}" alt=""></span>`).join("");
     const log = (F.log || []).slice(-3).map((l) => `<span>${h(l.txt)}</span>`).join("");
     const dec = E.ascDecor(S(), W.mode, W.f); const dg = dec && D.DUNGEONS[dec];
-    return `<div class="as-stage ${aw ? "mine" : ""} ${dec ? "deco" : ""}">${dec ? `<div class="as-bg" style="background-image:url(assets/asc/${dec}.webp)" title="${h(dg.name)}"></div><div class="as-motes">${Array.from({ length: 9 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div><div class="as-veil"></div>` : ""}
+    return `<div class="as-stage ${aw ? "mine" : ""} ${dec ? "deco" : ""}">${dec ? `<div class="as-bg" style="background-image:url(assets/asc/${dec}.webp)" title="${h(dg.name)}"></div><div class="as-motes">${Array.from({ length: 9 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div><div class="as-veil"></div><span class="as-credit">${h(dg.name)} · rendu de carte DofusDB</span>` : ""}
         <div class="as-top"><span class="as-fln">${h(F.label || "")}</span><span class="as-ord">${ord}</span><span class="row">${W.rule ? ruleTag(W.rule) : ""}<span class="tag soft">Tour ${F.round}</span></span></div>
         ${F.ents.map(ent).join("")}<div class="as-fxl"></div>${aw && st.turnK !== (st.turnK = F.id + ":" + F.round + ":" + aw.ei) ? `<div class="as-turn">À toi de jouer</div>` : ""}</div>${barHtml(W, aw)}<div class="as-log">${log}</div>`;
   }
