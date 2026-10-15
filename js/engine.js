@@ -70,11 +70,23 @@
     const m = MONSTERS[id];
     m.drops.forEach(([r]) => { RES_LVL[r] = Math.max(RES_LVL[r] || 0, m.lvl[1]); });
   }
-  Object.values(GATHER_JOBS).forEach((j) => j.items.forEach(([r, l]) => (RES_LVL[r] = Math.max(1, Math.round(l / 2)))));
+  /* 1.0.35 « Cours rééquilibré » : le prix suit le monstre le plus faible qui donne la ressource (là où elle se farme),
+     plus le plus fort : Pollenectar et Oueille (Pious niveau 11-15… jusqu'au niveau 200) valaient le prix du niveau 200.
+     E.PRICE_LVL : "min" (choix de Mathis), "med" (niveau médian), "max" (avant 1.0.35). Le niveau affiché (E.resLvl) ne change pas. */
+  const PRICE_LVLS = {};
+  for (const id in MONSTERS) MONSTERS[id].drops.forEach(([r]) => (PRICE_LVLS[r] = PRICE_LVLS[r] || []).push(MONSTERS[id].lvl[1]));
+  Object.values(PRICE_LVLS).forEach((a) => a.sort((x, y) => x - y));
+  Object.values(GATHER_JOBS).forEach((j) => j.items.forEach(([r, l]) => { RES_LVL[r] = Math.max(1, Math.round(l / 2)); delete PRICE_LVLS[r]; }));
+  E.PRICE_LVL = "min";
+  E.resPriceLvl = (name) => {
+    const a = PRICE_LVLS[name];
+    if (a && E.PRICE_LVL === "min") return a[0];
+    if (a && E.PRICE_LVL === "med") return a[Math.floor(a.length / 2)];
+    return RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
+  };
   E.resPrice = (name) => {
     if (SPECIAL_CRAFTS[name]) return 0;
-    const l = RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
-    return Math.max(1, Math.round(2 + l * 0.7));
+    return Math.max(1, Math.round(2 + E.resPriceLvl(name) * 0.7));
   };
   E.resLvl = (name) => RES_LVL[name] || (RES[name] && RES[name].lvl) || 5;
   E.isKey = (name) => /^Clef /.test(name);
