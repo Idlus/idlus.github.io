@@ -118,20 +118,22 @@
   function ring(x, y, r, col = "#7fffd4") { g.strokeStyle = col; g.lineWidth = 2.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke(); }
   const center = () => { st.z = Math.min(W, H) / 760; st.ox = 0; st.oy = 0; draw(); };
   const fitAll = () => { const N = T().N.filter((n) => !(n.neb && !nebOpen())); let a = 1e9, b = -1e9, c2 = 1e9, d = -1e9; N.forEach((n) => { a = Math.min(a, n.X); b = Math.max(b, n.X); c2 = Math.min(c2, n.Y); d = Math.max(d, n.Y); }); st.z = Math.min(W / (b - a + 160), H / (d - c2 + 160)); st.ox = -(a + b) / 2; st.oy = -(c2 + d) / 2; draw(); };
-  const pick = (mx, my) => { let best = null, bd = 1e9; for (const n of T().N) { if (n.neb && !nebOpen()) continue; const [x, y] = toS(n); const dd = Math.hypot(x - mx, y - my); if (dd < rad(n) + 7 && dd < bd) { bd = dd; best = n.id; } } return best; };
+  const pick = (mx, my) => { let best = null, bd = 1e9; for (const n of T().N) { if (n.neb && !nebOpen()) continue; const [x, y] = toS(n); const dd = Math.hypot(x - mx, y - my); if (dd < Math.max(16, rad(n) + 10) && dd < bd) { bd = dd; best = n.id; } } return best; };
   function mount() {
     const box = document.getElementById("mtCv"); if (!box) return; cv = box.querySelector("canvas"); g = cv.getContext("2d");
     const resize = () => { dpr = Math.min(2, devicePixelRatio || 1); W = box.clientWidth; H = box.clientHeight; cv.width = W * dpr; cv.height = H * dpr; if (!st.z) center(); else draw(); };
     new ResizeObserver(resize).observe(box); resize();
+    /* 2.0.4 : position du pointeur en pixels du dessin, même avec le zoom de l'interface (Options) : offsetX se décalait avec le zoom */
+    const P = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * (W / (r.width || W)), (e.clientY - r.top) * (H / (r.height || H))]; };
     const ptrs = new Map(); let drag = null, moved = 0, pinch = null;
-    box.addEventListener("pointerdown", (e) => { if (e.target.closest(".mt-zoom")) return; box.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; drag = [e.offsetX, e.offsetY, st.ox, st.oy]; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = [Math.hypot(a[0] - b[0], a[1] - b[1]), st.z]; } });
-    box.addEventListener("pointermove", (e) => { if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, [e.offsetX, e.offsetY]);
+    box.addEventListener("pointerdown", (e) => { if (e.target.closest(".mt-zoom")) return; box.setPointerCapture(e.pointerId); const q = P(e); ptrs.set(e.pointerId, q); moved = 0; drag = [q[0], q[1], st.ox, st.oy]; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = [Math.hypot(a[0] - b[0], a[1] - b[1]), st.z]; } });
+    box.addEventListener("pointermove", (e) => { const q = P(e); if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, q);
       if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; st.z = Math.max(0.12, Math.min(3, pinch[1] * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch[0])); moved = 99; draw(); return; }
-      if (drag && ptrs.size === 1) { const dx = e.offsetX - drag[0], dy = e.offsetY - drag[1]; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); if (moved > 4) { st.ox = drag[2] + dx / st.z; st.oy = drag[3] + dy / st.z; draw(); } return; }
-      if (e.pointerType === "mouse") { const hv = pick(e.offsetX, e.offsetY); if (hv !== st.hov) { st.hov = hv; draw(); } } });
-    const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (drag && moved <= 4 && e.type === "pointerup" && !e.target.closest(".mt-zoom")) { const id = pick(e.offsetX, e.offsetY); if (id == null) { if (st.sel != null) { st.sel = null; draw(); } } else if (e.pointerType !== "mouse" && st.sel !== id) { st.sel = id; st.hov = null; side(); draw(); } else clickNode(id); } if (!ptrs.size) drag = null; };
+      if (drag && ptrs.size === 1) { const dx = q[0] - drag[0], dy = q[1] - drag[1]; moved = Math.max(moved, Math.abs(dx) + Math.abs(dy)); if (moved > 8) { st.ox = drag[2] + dx / st.z; st.oy = drag[3] + dy / st.z; draw(); } return; }
+      if (e.pointerType === "mouse") { const hv = pick(q[0], q[1]); if (hv !== st.hov) { st.hov = hv; draw(); } } });
+    const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (drag && moved <= 8 && e.type === "pointerup" && !e.target.closest(".mt-zoom")) { const id = pick(...P(e)); if (id == null) { if (st.sel != null) { st.sel = null; draw(); } } else if (e.pointerType !== "mouse" && st.sel !== id) { st.sel = id; st.hov = null; side(); draw(); } else clickNode(id); } if (!ptrs.size) drag = null; };
     box.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse" && st.hov != null) { st.hov = null; draw(); } }); box.addEventListener("pointerup", up); box.addEventListener("pointercancel", up);
-    box.addEventListener("wheel", (e) => { e.preventDefault(); const nz = Math.max(0.12, Math.min(3, st.z * Math.exp(-e.deltaY * 0.0015))); const mx = (e.offsetX - W / 2) / st.z - st.ox, my = (e.offsetY - H / 2) / st.z - st.oy; st.z = nz; st.ox = (e.offsetX - W / 2) / st.z - mx; st.oy = (e.offsetY - H / 2) / st.z - my; draw(); }, { passive: false });
+    box.addEventListener("wheel", (e) => { e.preventDefault(); const nz = Math.max(0.12, Math.min(3, st.z * Math.exp(-e.deltaY * 0.0015))); const [ex, ey] = P(e); const mx = (ex - W / 2) / st.z - st.ox, my = (ey - H / 2) / st.z - st.oy; st.z = nz; st.ox = (ex - W / 2) / st.z - mx; st.oy = (ey - H / 2) / st.z - my; draw(); }, { passive: false });
   }
   function clickNode(id) {
     const n = T().N[id]; st.sel = id; if (st.hov != null) st.hov = id;

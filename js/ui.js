@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.4";
+const GAME_VERSION = "2.0.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.5", name: "Étoiles au bon endroit", guide: "maitrise", items: [
+    "Arbre de Maîtrise : la souris vise de nouveau la bonne étoile quand le zoom de l'interface (Options) n'est pas à 100 %. Avant, le clic et le survol tombaient à côté",
+    "Étoiles plus faciles à prendre : la zone de clic est plus grande (l'étoile la plus proche du curseur) et un petit glissement pendant le clic ne l'annule plus"
+  ] },
   { v: "2.0.4", name: "Étoiles rendues", guide: "maitrise", items: [
     "Arbre de Maîtrise : rendre des étoiles coûte pareil partout. Une étoile rendue, un passage sur un autre arbre enregistré, un code de partage ou « Tout rendre » : gratuit jusqu'à 50 points placés, puis 20 000 kamas par point rendu. Le coût s'affiche avant (bulle, comparaison des arbres) et « Annuler » reprend toujours gratuitement les derniers points placés",
     "Les comptes dont le héros rené avait été congédié reçoivent aussi le titre « Le Phénix renaît de ses cendres » à la place des anciens titres de la Renaissance",

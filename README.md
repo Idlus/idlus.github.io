@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.5 « Étoiles au bon endroit »
+
+Arbre de Maîtrise : la souris vise la bonne étoile avec le zoom de l'interface, zones de clic plus grandes, un petit glissement n'annule plus le clic.
+
 ## 2.0.4 « Étoiles rendues »
 
 Rendre des étoiles de l'arbre de Maîtrise coûte pareil partout (une étoile, un autre arbre enregistré, un code, Tout rendre) : gratuit jusqu'à 50 points placés, puis 20 000 kamas par point rendu. Titre souvenir de la Renaissance aussi pour les comptes dont le héros rené a été congédié. Classement de niveau sans les anciennes vies.

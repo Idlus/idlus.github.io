@@ -1,6 +1,15 @@
 {
-  "version": "2.0.4",
+  "version": "2.0.5",
   "versions": [
+    {
+      "v": "2.0.5",
+      "name": "Étoiles au bon endroit",
+      "guide": "maitrise",
+      "items": [
+        "Arbre de Maîtrise : la souris vise de nouveau la bonne étoile quand le zoom de l'interface (Options) n'est pas à 100 %. Avant, le clic et le survol tombaient à côté",
+        "Étoiles plus faciles à prendre : la zone de clic est plus grande (l'étoile la plus proche du curseur) et un petit glissement pendant le clic ne l'annule plus"
+      ]
+    },
     {
       "v": "2.0.4",
       "name": "Étoiles rendues",
