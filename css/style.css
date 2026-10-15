@@ -5697,23 +5697,24 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 :root[data-theme="emerald"][data-skin="ecume"] .scene .crumb,:root[data-theme="emerald"][data-skin="ecume"] .arena .turn,:root[data-theme="emerald"][data-skin="ecume"] .arena .idle div,:root[data-theme="emerald"][data-skin="ecume"] .hero-banner .card{background:color-mix(in srgb,#071315 88%,transparent)!important}
 
 /* 28 : fond de page animé (CSS seul, derrière tout le contenu) : html[data-bgfx] = aur (A Aurore), rid (D Rideaux), vag (E Vagues), neb (F Nébuleuse).
-   Suit le réglage « Ambiance animée » ; éteint avec les animations réduites ou les mouvements désactivés */
+   Suit le réglage « Ambiance animée » ; éteint avec les animations réduites ou les mouvements désactivés.
+   1.2.1 : plus aucun filter:blur sur ces couches (un flou de 22 px sur une couche de 150 % de l'écran recalculé à chaque image faisait tomber le jeu à 20 images/s) : le flou vient des dégradés eux-mêmes */
 :root[data-bgfx] body,:root[data-theme="emerald"][data-bgfx] body,:root[data-theme="emerald"][data-skin][data-bgfx] body{background:var(--page)}
 :root[data-bgfx] body::before,:root[data-bgfx] body::after{content:"";position:fixed;left:-25%;top:-25%;width:150%;height:150%;z-index:-1;pointer-events:none;will-change:transform}
 :root[data-bgfx] body::before{background:radial-gradient(45% 35% at 72% 18%,var(--bg1),transparent 70%),radial-gradient(38% 32% at 18% 82%,var(--bg2),transparent 70%)}
 :root[data-bgfx="aur"] body::before{animation:bgaur 20s ease-in-out infinite alternate}
 @keyframes bgaur{to{transform:translate(-5%,4%) scale(1.08) rotate(2deg)}}
-:root[data-bgfx="rid"] body::after{background:linear-gradient(100deg,transparent 0 18%,var(--bg1) 26%,transparent 34%,transparent 52%,var(--bg2) 60%,transparent 68%,transparent 84%,var(--bg1) 92%,transparent);filter:blur(18px);animation:bgrid 24s ease-in-out infinite alternate}
+:root[data-bgfx="rid"] body::after{background:linear-gradient(100deg,transparent 0 18%,var(--bg1) 26%,transparent 34%,transparent 52%,var(--bg2) 60%,transparent 68%,transparent 84%,var(--bg1) 92%,transparent);animation:bgrid 24s ease-in-out infinite alternate}
 @keyframes bgrid{from{transform:translateX(-12%) skewX(-10deg);opacity:.5}50%{opacity:1}to{transform:translateX(12%) skewX(-16deg);opacity:.6}}
-:root[data-bgfx="vag"] body::after{left:-60%;width:220%;background:repeating-linear-gradient(115deg,transparent 0 90px,var(--bg1) 135px,transparent 195px,transparent 285px,var(--bg2) 345px,transparent 405px);filter:blur(8px);animation:bgvag 14s linear infinite}
+:root[data-bgfx="vag"] body::after{left:-60%;width:220%;background:repeating-linear-gradient(115deg,transparent 0 90px,var(--bg1) 135px,transparent 195px,transparent 285px,var(--bg2) 345px,transparent 405px);animation:bgvag 14s linear infinite}
 @keyframes bgvag{to{transform:translateX(-405px)}}
-:root[data-bgfx="neb"] body::after{left:-70%;top:-120%;width:240%;height:340%;background:conic-gradient(from 0deg,var(--bg1),transparent 25%,var(--bg2) 45%,transparent 60%,var(--bg1) 80%,transparent);filter:blur(24px);animation:bgneb 60s linear infinite}
+:root[data-bgfx="neb"] body::after{left:-70%;top:-120%;width:240%;height:340%;background:conic-gradient(from 0deg,var(--bg1),transparent 25%,var(--bg2) 45%,transparent 60%,var(--bg1) 80%,transparent);animation:bgneb 60s linear infinite}
 :root[data-bgfx="neb"] body::before{animation:bgresp 6s ease-in-out infinite}
 @keyframes bgneb{to{transform:rotate(360deg)}}
 @keyframes bgresp{50%{opacity:.45;transform:scale(1.06)}}
 /* G (mix A + D) : les halos dérivent, un rideau d'aurore passe de temps en temps */
 :root[data-bgfx="mix"] body::before{animation:bgaur 20s ease-in-out infinite alternate}
-:root[data-bgfx="mix"] body::after{background:linear-gradient(100deg,transparent 0 30%,var(--bg1) 42%,transparent 54%,transparent 70%,var(--bg2) 80%,transparent 90%);filter:blur(22px);opacity:0;animation:bgmix 18s ease-in-out infinite}
+:root[data-bgfx="mix"] body::after{background:linear-gradient(100deg,transparent 0 24%,var(--bg1) 42%,transparent 60%,transparent 64%,var(--bg2) 80%,transparent 96%);opacity:0;animation:bgmix 18s ease-in-out infinite}
 @keyframes bgmix{0%{opacity:0;transform:translateX(-18%) skewX(-12deg)}35%{opacity:.75}70%{opacity:.45}100%{opacity:0;transform:translateX(18%) skewX(-18deg)}}
 body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::after{animation:none}
 @media (prefers-reduced-motion:reduce){:root[data-bgfx] body::before,:root[data-bgfx] body::after{animation:none}}

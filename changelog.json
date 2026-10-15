@@ -1,6 +1,13 @@
 {
-  "version": "1.2",
+  "version": "1.2.1",
   "versions": [
+    {
+      "v": "1.2.1",
+      "name": "Fond de page allégé",
+      "items": [
+        "Le jeu tournait au ralenti depuis la 1.2 : le voile d'aurore du fond de page était flouté par un filtre recalculé à chaque image. Le flou vient maintenant du dégradé lui-même, le jeu retrouve ses 60 images par seconde (mesuré sur PC et téléphone)"
+      ]
+    },
     {
       "v": "1.2",
       "name": "Les menus",

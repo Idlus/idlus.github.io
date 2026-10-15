@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2";
+const GAME_VERSION = "1.2.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.1", name: "Fond de page allégé", items: [
+    "Le jeu tournait au ralenti depuis la 1.2 : le voile d'aurore du fond de page était flouté par un filtre recalculé à chaque image. Le flou vient maintenant du dégradé lui-même, le jeu retrouve ses 60 images par seconde (mesuré sur PC et téléphone)" ] },
   { v: "1.2", name: "Les menus", items: [
     "Les pages sont rangées en six familles : Aventure, Défis, Héros, Économie, Communauté et Journal. Sur PC, une famille s'ouvre à la fois dans la colonne de gauche, les autres affichent le nombre de choses à faire",
     "« Aller à une page » en haut du menu : tapez trois lettres, la page sort, Entrée l'ouvre. Sur téléphone, la même recherche en haut du bouton Menu",
