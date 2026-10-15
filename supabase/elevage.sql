@@ -6,7 +6,7 @@
 -- 2) Classement Élevage (choix 12A) : le résumé porte « elev » = { c : couleurs trouvées, s : étoiles de l'écurie,
 --    chr : chromatiques }. Bornes : 41 couleurs, 400 étoiles, 41 chromatiques.
 -- Rien ne rapporte de kamas ni d'objet. Relançable : create ... if not exists, create or replace, drop trigger if exists.
--- Aucune donnée de joueur n'est modifiée ni supprimée.
+-- Aucune donnée de joueur n'est modifiée ni supprimée. (Ajouté à la liste « tous » du workflow Serveur en ligne à la sortie de la 1.1.)
 -- ============================================================================
 create table if not exists public.mount_births (
   user_id uuid not null references auth.users (id) on delete cascade,

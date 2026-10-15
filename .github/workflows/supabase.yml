@@ -29,7 +29,7 @@ jobs:
         env:
           AVANT: ${{ github.event.before }}
         run: |
-          tous="supabase/schema.sql supabase/classements.sql supabase/chat.sql supabase/defi.sql supabase/hdv_data.sql supabase/hdv.sql supabase/guildes.sql supabase/carnet.sql supabase/percos_data.sql supabase/gboss.sql supabase/codes.sql supabase/idees.sql supabase/builds.sql supabase/brisage.sql supabase/koli.sql supabase/wboss.sql supabase/fiches.sql supabase/collections.sql supabase/alignement.sql supabase/songe.sql supabase/vente_data.sql supabase/vente.sql supabase/foire.sql supabase/chromatiques.sql supabase/alliances_data.sql supabase/alliances.sql supabase/ascension.sql"
+          tous="supabase/schema.sql supabase/classements.sql supabase/chat.sql supabase/defi.sql supabase/hdv_data.sql supabase/hdv.sql supabase/guildes.sql supabase/carnet.sql supabase/percos_data.sql supabase/gboss.sql supabase/codes.sql supabase/idees.sql supabase/builds.sql supabase/brisage.sql supabase/koli.sql supabase/wboss.sql supabase/fiches.sql supabase/collections.sql supabase/alignement.sql supabase/songe.sql supabase/vente_data.sql supabase/vente.sql supabase/foire.sql supabase/chromatiques.sql supabase/alliances_data.sql supabase/alliances.sql supabase/ascension.sql supabase/elevage.sql"
           # Fichiers modifiés par ce push (tous si lancé à la main, ou si le commit d'avant est introuvable)
           if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$AVANT" ] && ! echo "$AVANT" | grep -qE '^0+$' && git fetch -q --depth=1 origin "$AVANT" 2>/dev/null; then
             changes=$(git diff --name-only "$AVANT" "$GITHUB_SHA" -- supabase/) || changes=$(echo $tous | tr ' ' '\n')
