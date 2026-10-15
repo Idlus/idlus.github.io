@@ -242,6 +242,177 @@
       await c.wait(300); }
     for (const n of c.heroes) { c.anim(n, [{ transform: "none" }, { transform: "translateX(-26px) rotate(-12deg)", offset: 0.3 }, { transform: "none" }], 600); c.hit(n); await c.wait(70); }
     c.flush(); await c.wait(700); c.cls("rumble", false); c.cancel(sn); c.z(sn, false); c.cls("ultdark", false); dm.remove(); await c.wait(200); }
+  /* ===== lot 2 : le deuxième sort le plus joué de chaque classe (les sorts d'invocation gardent l'apparition de leur invocation) ===== */
+  const SV2 = {
+    heart: '<svg viewBox="0 0 40 36"><path d="M20 34C8 25 2 18 2 11a9 9 0 0 1 18-3 9 9 0 0 1 18 3c0 7-6 14-18 23z" fill="#ff4f3a" stroke="#7a1208" stroke-width="2"/><path d="M11 9q3-3 6 0" stroke="#ffd0a0" stroke-width="2" fill="none"/></svg>',
+    yarn: '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#e8546a" stroke="#8a1f30" stroke-width="2"/><path d="M6 14q14 6 28-2M5 22q15 8 30-4M9 30q12 4 24-6M14 5q-2 16 8 31" stroke="#ffb3bf" stroke-width="2" fill="none"/></svg>',
+    boot: '<svg viewBox="0 0 40 40"><path d="M10 2h12v20l14 6v8H6l2-14z" fill="#6b3f1c" stroke="#2a160a" stroke-width="2"/><path d="M6 34h30" stroke="#2a160a" stroke-width="4"/></svg>',
+    turbine: '<svg viewBox="0 0 60 60"><g fill="#c9d2d9" stroke="#4a5560" stroke-width="2">' + [0, 72, 144, 216, 288].map((a) => `<path transform="rotate(${a} 30 30)" d="M30 30C34 18 42 10 52 8 46 18 40 26 30 30z"/>`).join("") + '</g><circle cx="30" cy="30" r="6" fill="#ff8a2a" stroke="#4a5560" stroke-width="2"/></svg>',
+    barrel: '<svg viewBox="0 0 40 46"><rect x="5" y="3" width="30" height="40" rx="10" fill="#a0672e" stroke="#3a220c" stroke-width="2.5"/><path d="M5 13h30M5 33h30" stroke="#3a220c" stroke-width="3"/><circle cx="20" cy="23" r="5" fill="#ffd0e0"/></svg>',
+    nugget: '<svg viewBox="0 0 30 24"><path d="M3 15l6-10 10-2 8 7-2 10-12 2z" fill="#ffd84d" stroke="#8a6410" stroke-width="2"/><path d="M10 8l5 3" stroke="#fff6c0" stroke-width="2"/></svg>',
+    portal: (col) => `<svg viewBox="0 0 60 30"><ellipse cx="30" cy="15" rx="27" ry="12" fill="rgba(10,30,40,.75)" stroke="${col}" stroke-width="4"/><ellipse cx="30" cy="15" rx="18" ry="7" fill="none" stroke="#fff" stroke-width="1.5" opacity=".7"/></svg>`,
+  };
+  const orbsTo = async (c, from, to, col, k = 4) => { for (let i = 0; i < k; i++) { const o = c.mk("anorb", from.x, from.y, { "--c": col }); fly(c, o, { x: from.x + c.rnd(-10, 10), y: from.y + c.rnd(-10, 10) }, to, 500, -40); c.later(o, 520); await c.wait(70); } };
+  Object.assign(SG, {
+    /* Iop · Vitalité : il plante son épée, une colonne dorée monte sur chaque allié */
+    s13120: async (c) => { c.hold(900); const f = c.foot(c.me); c.anim(c.me, [{ transform: "none" }, { transform: "translateY(-14px)", offset: 0.4 }, { transform: "scale(1.08,.92)", offset: 0.7 }, { transform: "none" }], 500);
+      await c.wait(280); c.shake("shake"); burst(c, f.x, f.y, "#ffd84d", 12, 50, 500, 6);
+      for (const k of c.allies) { const q = c.foot(k), r = R(c, k); rise(c, q.x, q.y, r.width * 0.7, "#ffe27a", 8, r.height, 700, 5); }
+      await c.wait(250); c.rest(); await c.wait(400); },
+    /* Crâ · Flèche Détonante : la flèche se plante, crépite, puis trois explosions */
+    s32444: async (c) => { c.hold(1200); const t = c.foes[0], a = c.pt(c.me, 0.45), b = c.pt(t, 0.5), r = R(c, t); c.proj(a, b, "f", "arrow", 220); await c.wait(240);
+      for (let i = 0; i < 3; i++) { await c.wait(i ? 170 : 220); const x = b.x + c.rnd(-r.width * 0.3, r.width * 0.3), y = b.y + c.rnd(-r.height * 0.25, r.height * 0.2); c.puff(x, y, "rgba(255,150,60,.9)", 5); burst(c, x, y, "#ffb347", 8, 34, 380, 5); c.shake("shake"); if (i === 0) c.hit(t); }
+      await c.hitAll(60); await c.wait(300); },
+    /* Eniripsa · Mot Tapageur : un mot crié explose sur la cible, des cœurs montent sur les alliés */
+    s25858: async (c) => { c.hold(1000); const t = c.foes[0], a = c.pt(c.me, 0.3), b = c.pt(t, 0.4);
+      const w = c.mk("annote", a.x, a.y); w.textContent = "!!"; fly(c, w, a, b, 360, -30); c.later(w, 380); await c.wait(360);
+      burst(c, b.x, b.y, "#ff7ad9", 12, 50, 450, 6); c.anim(t, [{ transform: "none" }, { transform: "scale(1.1,.9)" }, { transform: "none" }], 300); c.hit(t); await c.hitAll(50);
+      for (const k of c.allies) { const q = c.pt(k, 0.4); for (let i = 0; i < 3; i++) { const h = c.mk("annote", q.x + c.rnd(-12, 12), q.y); h.textContent = "♥"; h.animate([{ transform: "translate(-50%,-50%)", opacity: 1 }, { transform: "translate(-50%,-180%)", opacity: 0 }], { duration: 700 * c.T, delay: i * 90 * c.T, fill: "both" }); c.later(h, 900); } }
+      c.rest(); await c.wait(400); },
+    /* Féca · Manœuvre : un glyphe d'air s'ouvre sous la cible, deux rafales la fouettent */
+    s13012: async (c) => { c.hold(1000); const t = c.foes[0]; glyph(c, t, "#9be7c4", 1100); await c.wait(300);
+      slash(c, t, "#bff5dc", -30); await c.wait(120); slash(c, t, "#bff5dc", 30); const f = c.foot(t), r = R(c, t); rise(c, f.x, f.y, r.width * 0.6, "#bff5dc", 8, r.height, 600, 4);
+      c.anim(t, [{ transform: "none" }, { transform: "rotate(-6deg) translateX(6px)" }, { transform: "rotate(5deg)" }, { transform: "none" }], 450); c.hit(t); await c.hitAll(60); await c.wait(350); },
+    /* Osamodas · Cœur Sauvage : un cœur de feu bat deux fois au-dessus de la cible, puis éclate */
+    s31140: async (c) => { c.hold(1100); const t = c.foes[0], a = c.pt(c.me, 0.3), b = c.pt(t, 0.25), r = R(c, t);
+      const h = art(c, "anheart", a.x, a.y, 34, 30, SV2.heart); fly(c, h, a, b, 380, -50); await c.wait(400);
+      h.animate([{ transform: "translate(-50%,-50%) scale(1)" }, { transform: "translate(-50%,-50%) scale(1.35)" }, { transform: "translate(-50%,-50%) scale(1)" }, { transform: "translate(-50%,-50%) scale(1.5)" }, { transform: "translate(-50%,-50%) scale(.2)", opacity: 0 }], { duration: 600 * c.T, fill: "forwards" }); c.later(h, 650);
+      await c.wait(380); burst(c, b.x, b.y + r.height * 0.2, "#ff6a3a", 14, 60, 500, 7); c.shake("shake"); c.hit(t); await c.hitAll(60); await c.wait(350); },
+    /* Enutrof · Gisement : des pépites jaillissent du sol sous la cible, une pluie d'or soigne les alliés */
+    s14273: async (c) => { c.hold(1100); const t = c.foes[0], f = c.foot(t), r = R(c, t); spikes(c, t, "#ffd84d", 5, 0.6); await c.wait(220);
+      for (let i = 0; i < 6; i++) { const n = art(c, "annug", f.x, f.y - 6, 20, 16, SV2.nugget); n.animate([{ transform: "translate(-50%,-50%)" }, { transform: `translate(calc(-50% + ${c.rnd(-40, 40)}px),calc(-50% - ${c.rnd(40, 80)}px)) rotate(${c.rnd(-200, 200)}deg)`, offset: 0.5 }, { transform: `translate(calc(-50% + ${c.rnd(-50, 50)}px),-50%) rotate(${c.rnd(-300, 300)}deg)`, opacity: 0 }], { duration: 700 * c.T, delay: i * 40 * c.T, fill: "both" }); c.later(n, 800 + i * 40); }
+      c.anim(t, [{ transform: "none" }, { transform: `translateY(${-r.height * 0.2}px)` }, { transform: "none" }], 400); c.hit(t); await c.hitAll(60);
+      for (const k of c.allies) { const q = c.foot(k), rr = R(c, k); rise(c, q.x, q.y, rr.width * 0.6, "#ffd84d", 6, rr.height * 0.8, 600, 5); } c.rest(); await c.wait(400); },
+    /* Sram · Piège Sournois : un piège caché claque sous la cible et l'enflamme */
+    s12906: async (c) => { c.hold(900); const t = c.foes[0], f = c.foot(t), r = R(c, t);
+      const tp = art(c, "antrap", f.x, f.y - 6, r.width * 0.9, r.width * 0.35, SV.trap); tp.style.filter = "hue-rotate(-30deg) brightness(.8)"; tp.animate([{ transform: "translate(-50%,-50%) scaleY(1)", opacity: 0 }, { opacity: 0.6, offset: 0.4 }, { transform: "translate(-50%,-50%) scaleY(-1)", opacity: 1, offset: 0.6 }, { transform: "translate(-50%,-50%) scaleY(-1)", opacity: 0 }], { duration: 700 * c.T, fill: "forwards" }); c.later(tp, 750);
+      await c.wait(420); rise(c, f.x, f.y, r.width * 0.6, "#ff7a3c", 12, r.height * 0.9, 600, 6); c.anim(t, [{ transform: "none" }, { transform: "translateY(-14px)" }, { transform: "none" }], 350); c.shake("shake"); c.hit(t); await c.hitAll(60); await c.wait(300); },
+    /* Xélor · Fuite du Temps : une petite horloge tourne à l'envers au-dessus de l'allié, du sable bleu le soigne */
+    s13251: async (c) => { c.hold(1000); for (const k of c.allies.slice(0, 3)) { const p = c.pt(k, 0.05), r = R(c, k);
+        const ck = art(c, "anclock", p.x, p.y - 20, 40, 40, SV.clock); ck.animate([{ transform: "translate(-50%,-50%) scale(0)" }, { transform: "translate(-50%,-50%) scale(1)", offset: 0.25 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-50%) scale(.6)", opacity: 0 }], { duration: 1000 * c.T, fill: "forwards" }); c.later(ck, 1050);
+        const hd = ck.querySelector(".hand"); hd.style.transformOrigin = "30px 30px"; hd.animate([{ transform: "rotate(0)" }, { transform: "rotate(-540deg)" }], { duration: 900 * c.T, easing: "ease-in-out" });
+        const q = c.foot(k); rise(c, q.x, q.y, r.width * 0.6, "#9fd6ff", 8, r.height, 700, 4); await c.wait(120); }
+      await c.wait(300); c.rest(); await c.wait(300); },
+    /* Ecaflip · Pelotage : une pelote de laine rebondit jusqu'à la cible et la ligote */
+    s14310: async (c) => { c.hold(1100); const t = c.foes[0], a = c.foot(c.me), b = c.foot(t);
+      const y = art(c, "anyarn", a.x, a.y - 12, 26, 26, SV2.yarn); const kf = []; for (let i = 0; i <= 12; i++) { const u = i / 12, bump = Math.abs(Math.sin(u * Math.PI * 3)) * 40; kf.push({ left: a.x + (b.x - a.x) * u + "px", top: a.y - 12 + (b.y - a.y) * u - bump + "px", transform: `translate(-50%,-50%) rotate(${u * 900}deg)` }); }
+      y.animate(kf, { duration: 650 * c.T, fill: "forwards" }); c.later(y, 1100); await c.wait(650);
+      y.animate([{ transform: "translate(-50%,-50%) scale(1)" }, { transform: "translate(-50%,-50%) scale(1.6,.6)", opacity: 0 }], { duration: 300 * c.T, fill: "forwards" });
+      c.anim(t, [{ transform: "none" }, { transform: "scale(.92,1.06) rotate(4deg)" }, { transform: "scale(.94,1.04) rotate(-4deg)" }, { transform: "none" }], 500); c.hit(t); await c.wait(150); await c.hitAll(80); await c.wait(300); },
+    /* Sadida · Ronce Apaisante : des ronces sortent sous la cible et l'affaiblissent, des feuilles soignent un allié */
+    s13525: async (c) => { c.hold(1100); const t = c.foes[0], f = c.foot(t), r = R(c, t);
+      [-1, 1].forEach((k) => { const ro = art(c, "anroot", f.x + k * r.width * 0.22, f.y, r.width * 0.28, r.height * 0.7, SV.root); if (k > 0) ro.firstChild.style.transform = "scaleX(-1)"; ro.animate([{ transform: "translate(-50%,-100%) scaleY(0)" }, { transform: "translate(-50%,-100%) scaleY(1)", offset: 0.35 }, { transform: "translate(-50%,-100%) scaleY(1)", offset: 0.8 }, { transform: "translate(-50%,-100%) scaleY(0)" }], { duration: 1000 * c.T, fill: "forwards" }); c.later(ro, 1050); });
+      await c.wait(300); c.hit(t); await c.hitAll(60);
+      for (const k of c.allies) { const q = c.pt(k, 0.3), rr = R(c, k); for (let i = 0; i < 5; i++) { const l = dot(c, q.x + c.rnd(-rr.width * 0.4, rr.width * 0.4), q.y - 20, "#7bc043", 7); l.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(-50%,calc(-50% + ${rr.height * 0.5}px)) rotate(200deg)`, opacity: 0 }], { duration: 800 * c.T, delay: i * 60 * c.T, fill: "both" }); c.later(l, 1100); } }
+      c.rest(); await c.wait(400); },
+    /* Sacrieur · Condensation : des gouttes s'assemblent en orbe au-dessus de la cible, qui éclate trois fois */
+    s12745: async (c) => { c.hold(1200); const t = c.foes[0], b = c.pt(t, 0.15), r = R(c, t);
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2, d = dot(c, b.x + Math.cos(a) * 60, b.y + Math.sin(a) * 40, "#3aa0ff", 7); fly(c, d, { x: b.x + Math.cos(a) * 60, y: b.y + Math.sin(a) * 40 }, b, 380, -10); c.later(d, 400); }
+      await c.wait(380); const o = dot(c, b.x, b.y, "#5fb4ff", 26); o.animate([{ transform: "translate(-50%,-50%) scale(.3)" }, { transform: "translate(-50%,-50%) scale(1.2)" }], { duration: 250 * c.T, fill: "forwards" }); c.later(o, 300); await c.wait(260);
+      for (let i = 0; i < 3; i++) { const y = b.y + r.height * (0.2 + i * 0.15); burst(c, b.x + c.rnd(-10, 10), y, "#8fd0ff", 9, 40, 380, 6); if (i === 0) c.hit(t); c.shake("shake"); await c.wait(140); }
+      await c.hitAll(60); await c.wait(300); },
+    /* Pandawa · Bombance : il lève un tonneau et boit, des bulles roses le soignent */
+    s12804: async (c) => { c.hold(1000); const p = c.pt(c.me, 0.1), f = c.foot(c.me), r = R(c, c.me);
+      const br = art(c, "anbarrel", p.x, p.y - 10, 28, 32, SV2.barrel); br.animate([{ transform: "translate(-50%,-50%) translateY(20px) rotate(0)", opacity: 0 }, { transform: "translate(-50%,-50%) rotate(0)", opacity: 1, offset: 0.3 }, { transform: "translate(-50%,-50%) rotate(-70deg)", offset: 0.7 }, { transform: "translate(-50%,-50%) rotate(-70deg)", opacity: 0 }], { duration: 900 * c.T, fill: "forwards" }); c.later(br, 950);
+      c.anim(c.me, [{ transform: "none" }, { transform: "rotate(-8deg) scale(1.05)", offset: 0.5 }, { transform: "none" }], 800); await c.wait(500);
+      for (const k of c.allies) { const q = c.foot(k), rr = R(c, k); rise(c, q.x, q.y, rr.width * 0.7, "#ff9ce0", 9, rr.height, 700, 7); } rise(c, f.x, f.y, r.width * 0.7, "#ff9ce0", 9, r.height, 700, 7);
+      c.rest(); await c.wait(500); },
+    /* Roublard · Botte : un coup de botte au sol, une onde bleue protège les alliés */
+    s13434: async (c) => { c.hold(900); const f = c.foot(c.me), d = c.allies.length && c.dir(c.allies[0]) || 1;
+      const bt = art(c, "anboot", f.x + d * 12, f.y - 60, 30, 30, SV2.boot); bt.animate([{ transform: "translate(-50%,-50%)", opacity: 0 }, { opacity: 1, offset: 0.3 }, { transform: "translate(-50%,calc(-50% + 50px))", offset: 0.6 }, { transform: "translate(-50%,calc(-50% + 50px))", opacity: 0 }], { duration: 600 * c.T, fill: "forwards" }); c.later(bt, 650);
+      await c.wait(360); c.shake("shake"); axDust(c.A, f.x, f.y, 4);
+      const w = c.mkg("anring", f.x, f.y); w.animate([{ transform: "translate(-50%,-50%) scale(.2)", opacity: 1 }, { transform: "translate(-50%,-50%) scale(4)", opacity: 0 }], { duration: 600 * c.T, fill: "forwards" }); c.later(w, 650);
+      await c.wait(200); c.rest(); await c.wait(400); },
+    /* Zobal · Cabriole : une pirouette jusqu'à la cible, deux coups de pied et retour */
+    s13395: async (c) => { c.hold(1100); const t = c.foes[0], a = c.pt(c.me), b = c.pt(t), d = c.dir(t), dx = b.x - a.x - d * 40, dy = b.y - a.y; c.z(c.me, true);
+      c.anim(c.me, [{ transform: "none" }, { transform: `translate(${dx * 0.5}px,${dy * 0.5 - 50}px) rotate(${d * 360}deg)`, offset: 0.3 }, { transform: `translate(${dx}px,${dy}px) rotate(${d * 720}deg)`, offset: 0.5 }, { transform: `translate(${dx}px,${dy}px) rotate(${d * 720}deg)`, offset: 0.7 }, { transform: "none" }], 900);
+      await c.wait(470); slash(c, t, "#d6c8ff", -20); c.hit(t); await c.wait(120); slash(c, t, "#d6c8ff", 25); await c.hitAll(60); await c.wait(350); c.z(c.me, false); },
+    /* Steamer · Turbine : une hélice de cuivre tourne au-dessus des cibles et souffle de la vapeur brûlante */
+    s13874: async (c) => { c.hold(1200); const t = c.foes[0], b = c.pt(t, 0.1), r = R(c, t);
+      const tb = art(c, "anturb", b.x, b.y - 20, 56, 56, SV2.turbine); tb.animate([{ transform: "translate(-50%,-50%) scale(0) rotate(0)" }, { transform: "translate(-50%,-50%) scale(1) rotate(720deg)", offset: 0.3 }, { transform: "translate(-50%,-50%) scale(1) rotate(2160deg)", offset: 0.85 }, { transform: "translate(-50%,-50%) scale(0) rotate(2500deg)" }], { duration: 1100 * c.T, fill: "forwards" }); c.later(tb, 1150);
+      await c.wait(300); for (let i = 0; i < 10; i++) { const s = dot(c, b.x + c.rnd(-20, 20), b.y, "rgba(255,255,255,.8)", 14); s.style.filter = "blur(2px)"; s.animate([{ transform: "translate(-50%,-50%)", opacity: 0.9 }, { transform: `translate(calc(-50% + ${c.rnd(-40, 40)}px),calc(-50% + ${r.height * 0.8}px)) scale(2)`, opacity: 0 }], { duration: 600 * c.T, delay: i * 40 * c.T, fill: "both" }); c.later(s, 1000); }
+      c.hit(t); await c.hitAll(70); await c.wait(500); },
+    /* Éliotrope · Portail : deux portails, l'un sous l'Éliotrope, l'autre sous l'allié : un éclat de lumière passe de l'un à l'autre */
+    s14574: async (c) => { c.hold(1000); const k = c.allies[0]; if (!k) return; const a = c.foot(c.me), b = c.foot(k), r = R(c, k);
+      const ps = [a, b].map((p) => { const g = art(c, "anportal", p.x, p.y, 60, 26, SV2.portal("#6ff0e6")); if (c.A.fxg) c.A.fxg.appendChild(g); g.animate([{ transform: "translate(-50%,-50%) scale(0)" }, { transform: "translate(-50%,-50%) scale(1)", offset: 0.2 }, { transform: "translate(-50%,-50%) scale(1)", offset: 0.85 }, { transform: "translate(-50%,-50%) scale(0)" }], { duration: 1000 * c.T, fill: "forwards" }); c.later(g, 1050); return g; });
+      await c.wait(250); const o = c.mk("anorb", a.x, a.y - 10, { "--c": "#6ff0e6" }); o.style.width = o.style.height = "16px"; fly(c, o, { x: a.x, y: a.y - 10 }, { x: b.x, y: b.y - 10 }, 380, -70); c.later(o, 400); await c.wait(380);
+      rise(c, b.x, b.y, r.width * 0.6, "#6ff0e6", 8, r.height, 600, 5); c.rest(); await c.wait(450); },
+    /* Huppermage · Drain Élémentaire : quatre runes tournent autour de la cible, leur énergie revient au Huppermage */
+    s13672: async (c) => { c.hold(1200); const t = c.foes[0], b = c.pt(t, 0.45), a = c.pt(c.me, 0.45); const cols = ["#ff7a3c", "#4fa8ff", "#c08a3e", "#57d06a"];
+      const rs = cols.map((col, i) => { const d = dot(c, b.x, b.y, col, 12); const kf = []; for (let j = 0; j <= 8; j++) { const ang = i * Math.PI / 2 + j * 0.6; kf.push({ transform: `translate(calc(-50% + ${Math.cos(ang) * 34}px),calc(-50% + ${Math.sin(ang) * 22}px))` }); } d.animate(kf, { duration: 600 * c.T, fill: "forwards" }); c.later(d, 650); return d; });
+      await c.wait(600); c.hit(t); await c.hitAll(50); for (const col of cols) { const o = c.mk("anorb", b.x, b.y, { "--c": col }); fly(c, o, b, a, 450, -50); c.later(o, 470); await c.wait(60); }
+      await c.wait(400); c.rest(); },
+    /* Ouginak · Cubitus : un os s'abat sur la cible, la vie volée revient en orbes rouges */
+    s13760: async (c) => { c.hold(1100); const t = c.foes[0], b = c.pt(t, 0.3), a = c.pt(c.me, 0.45), r = R(c, t);
+      const bn = art(c, "anbone", b.x, b.y - 60, r.width * 0.8, r.width * 0.27, SV.bone); bn.animate([{ transform: "translate(-50%,-50%) rotate(-90deg)", opacity: 0 }, { transform: "translate(-50%,-50%) rotate(-90deg)", opacity: 1, offset: 0.3 }, { transform: "translate(-50%,calc(-50% + 60px)) rotate(20deg)", offset: 0.6 }, { transform: "translate(-50%,calc(-50% + 60px)) rotate(20deg)", opacity: 0 }], { duration: 650 * c.T, fill: "forwards" }); c.later(bn, 700);
+      await c.wait(390); c.shake("shake"); c.anim(t, [{ transform: "none" }, { transform: "scale(1.08,.88)" }, { transform: "none" }], 300); c.hit(t); await c.hitAll(50); await orbsTo(c, b, a, "#ff5a5a", 4); await c.wait(400); },
+    /* Forgelance · Moulin Rouge : la lance tourne comme un moulin, un cercle de feu balaie les ennemis proches */
+    s23755: async (c) => { c.hold(1200); const a = c.pt(c.me, 0.5), r = R(c, c.me); c.z(c.me, true);
+      const ring = c.mk("anring fire", a.x, a.y); ring.style.width = ring.style.height = r.width * 2 + "px"; ring.animate([{ transform: "translate(-50%,-50%) rotate(0) scale(.4)", opacity: 0 }, { transform: "translate(-50%,-50%) rotate(360deg) scale(1)", opacity: 1, offset: 0.3 }, { transform: "translate(-50%,-50%) rotate(1080deg) scale(1.6)", opacity: 0 }], { duration: 900 * c.T, fill: "forwards" }); c.later(ring, 950);
+      c.anim(c.me, [{ transform: "none" }, { transform: "rotate(-10deg)" }, { transform: "rotate(10deg)" }, { transform: "rotate(-10deg)" }, { transform: "none" }], 800);
+      await c.wait(400); for (const n of c.foes) { const p = c.pt(n, 0.5); burst(c, p.x, p.y, "#ff7a3c", 8, 40, 400, 6); c.hit(n); await c.wait(70); } await c.wait(400); c.z(c.me, false); },
+  });
+  /* ===== lot 2 des boss : les 12 premiers donjons (ceux que tout le monde fait), une attaque à eux ===== */
+  const fall = (c, cls, x, y0, y1, w, h, dur, spin = 0) => { const d = c.b(cls, x, y0); if (w) { d.style.width = w + "px"; d.style.height = (h || w) + "px"; } d.animate([{ top: y0 + "px", transform: "translate(-50%,-50%) rotate(0)" }, { top: y1 + "px", transform: `translate(-50%,-50%) rotate(${spin}deg)` }], { duration: dur * c.T, easing: "ease-in", fill: "forwards" }); return d; };
+  const targets = (c, k = 4) => (c.tg.length ? c.tg : c.heroes).slice(0, k);
+  Object.assign(BXSP, {
+    /* Kardorim · Casse-crâne : un crâne géant tombe sur un héros et se brise */
+    1287: async (c) => { c.hold(1500); c.banner("Casse-crâne"); const t = targets(c, 1)[0]; if (!t) return; const p = c.pt(t, 0.2), f = c.foot(t);
+      c.anim(c.me, [{ transform: "none" }, { transform: "translateY(-12px) scale(1.06)" }, { transform: "none" }], 500); await c.wait(250);
+      const sk = fall(c, "b-skull", p.x, -40, p.y, 0, 0, 420, 200); c.later(sk, 450); await c.wait(420);
+      c.shake("shake2"); c.scatter(p.x, p.y, "b-bone", 6, 50, 500); c.dust(f.x, f.y, 4); c.hit(t); await c.hitSeq(c.tg, 60); await c.wait(400); },
+    /* Tournesol Affamé · Pétales : ses pétales tournent en cercle puis filent sur les héros */
+    445: async (c) => { c.hold(1700); c.banner("Pétales tranchants"); const a = c.pt(c.me, 0.3), T = targets(c);
+      const ps = []; for (let i = 0; i < 10; i++) { const d = c.b("b-leaf", a.x, a.y); d.style.background = "linear-gradient(90deg,#e0a800,#ffe27a)"; d.style.animation = "none"; const ang = (i / 10) * Math.PI * 2; d.animate([{ transform: "translate(-50%,-50%)" }, { transform: `translate(calc(-50% + ${Math.cos(ang) * 50}px),calc(-50% + ${Math.sin(ang) * 30}px)) rotate(${ang}rad)` }], { duration: 400 * c.T, fill: "forwards" }); ps.push([d, ang]); }
+      await c.wait(500); ps.forEach(([d, ang], i) => { const n = T[i % T.length], b = c.pt(n, 0.45); fly(c, d, { x: a.x + Math.cos(ang) * 50, y: a.y + Math.sin(ang) * 30 }, b, 380, -20, 360); c.later(d, 400); });
+      await c.wait(380); await c.hitSeq(T, 60); await c.wait(400); },
+    /* Mob l'Éponge · Bulles de savon : des bulles flottent jusqu'aux héros et éclatent en mousse */
+    513: async (c) => { c.hold(1800); c.banner("Bulles de savon"); const a = c.pt(c.me, 0.4), T = targets(c);
+      T.forEach((n, i) => { const b = c.pt(n, 0.4); const bb = c.b("b-bubfly", a.x, a.y); bb.style.width = bb.style.height = "34px"; fly(c, bb, a, b, 800 + i * 120, -60); c.later(bb, 820 + i * 120);
+        setTimeout(() => { c.scatter(b.x, b.y, "b-foam", 6, 40, 500); c.hit(n); }, (800 + i * 120) * c.T); });
+      await c.wait(800 + T.length * 120 + 400); },
+    /* Kankreblath · Pinces : il fonce sur un héros et le pince deux fois */
+    1245: async (c) => { c.hold(1600); c.banner("Pinces"); const t = targets(c, 1)[0]; if (!t) return;
+      await c.charge(c.me, t, async () => { slash(c, t, "#ff8a6a", -35, 1); c.hit(t); await c.wait(140); slash(c, t, "#ff8a6a", 35, 1); c.shake("shake"); }, 900); await c.hitSeq(c.tg, 60); },
+    /* Chafer Rōnin · Bushido : trois éclairs de sabre traversent la ligne des héros */
+    916: async (c) => { c.hold(1600); c.banner("Bushido"); const T = targets(c); c.anim(c.me, [{ transform: "none" }, { transform: "translateX(-8px) scale(.95)" }], { duration: 300, fill: "forwards" }); await c.wait(320);
+      c.whiteout(120); for (let i = 0; i < 3; i++) { for (const n of T) slash(c, n, "#e6f2ff", -40 + i * 40, 1.8); c.shake("shake"); if (i === 0) await c.hitSeq(T, 0); await c.wait(150); }
+      c.cancel(c.me); await c.wait(400); },
+    /* Scarabosse Doré · Nuée dorée : une nuée de scarabées dorés fond sur les héros */
+    443: async (c) => { c.hold(1700); c.banner("Nuée dorée"); const a = c.pt(c.me, 0.4), T = targets(c);
+      for (let i = 0; i < 18; i++) { const n = T[i % T.length], b = c.pt(n, c.rnd(0.2, 0.7)); const d = dot(c, a.x, a.y, "#ffd84d", 6); fly(c, d, a, { x: b.x + c.rnd(-12, 12), y: b.y }, 500 + c.rnd(0, 200), c.rnd(-60, 20)); c.later(d, 720); if (i % 6 === 0) await c.wait(60); }
+      await c.wait(480); await c.hitSeq(T, 60); await c.wait(400); },
+    /* Boostache · Le Dentiste : une mâchoire fantôme claque sur un héros */
+    846: async (c) => { c.hold(1500); c.banner("Le Dentiste"); const t = targets(c, 1)[0]; if (!t) return; const b = c.pt(t, 0.4), r = R(c, t);
+      const m = art(c, "anmaw", b.x, b.y, r.width * 1.1, r.width * 0.8, SV.maw); m.style.opacity = ".85"; m.style.filter = "drop-shadow(0 0 8px #b9a6ff) grayscale(.5)";
+      m.animate([{ transform: "translate(-50%,-50%) scale(.2,1.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1,1.3)", opacity: 0.85, offset: 0.4 }, { transform: "translate(-50%,-50%) scale(1,.1)", offset: 0.7 }, { transform: "translate(-50%,-50%) scale(1,.1)", opacity: 0 }], { duration: 800 * c.T, fill: "forwards" }); c.later(m, 850);
+      await c.wait(560); c.shake("shake"); c.hit(t); await c.hitSeq(c.tg, 60); await c.wait(400); },
+    /* Bworkette · Coup de massue : elle abat sa massue, une onde de choc court au sol */
+    265: async (c) => { c.hold(1600); c.banner("Coup de massue"); const f = c.foot(c.me), T = targets(c);
+      c.anim(c.me, [{ transform: "none" }, { transform: "translateY(-16px) rotate(-8deg)", offset: 0.5 }, { transform: "scale(1.1,.85)", offset: 0.8 }, { transform: "none" }], 600); await c.wait(480);
+      c.shake("shake2"); c.dust(f.x, f.y, 6); const w = c.mkg("anring", f.x, f.y); w.style.borderColor = "#c08a3e"; w.animate([{ transform: "translate(-50%,-50%) scale(.3)", opacity: 1 }, { transform: "translate(-50%,-50%) scale(8)", opacity: 0 }], { duration: 700 * c.T, fill: "forwards" }); c.later(w, 750);
+      await c.wait(200); for (const n of T) { const q = c.foot(n); c.dust(q.x, q.y, 2); c.anim(n, [{ transform: "none" }, { transform: "translateY(-14px)" }, { transform: "none" }], 350); c.hit(n); await c.wait(70); } await c.wait(400); },
+    /* Kwakwa · Tempête de plumes : des plumes de toutes les couleurs balaient l'équipe */
+    854: async (c) => { c.hold(1700); c.banner("Tempête de plumes"); const T = targets(c); const W = c.W(); const cols = ["#ff7a3c", "#4fa8ff", "#c08a3e", "#57d06a"];
+      c.anim(c.me, [{ transform: "none" }, { transform: "scale(1.12) translateY(-8px)" }, { transform: "none" }], 500);
+      for (let i = 0; i < 20; i++) { const y = c.H() * c.rnd(0.3, 0.85); const d = c.b("b-feather", W, y); d.style.background = cols[i % 4]; d.animate([{ left: W + "px", transform: "translate(-50%,-50%) rotate(0)" }, { left: "-20px", transform: `translate(-50%,-50%) rotate(${c.rnd(400, 900)}deg)` }], { duration: 700 * c.T, delay: i * 30 * c.T, fill: "both" }); c.later(d, 800 + i * 30); }
+      await c.wait(400); await c.hitSeq(T, 80); await c.wait(500); },
+    /* Directeur Grunob · Cuvée des Gobs : il lance des tonneaux qui éclatent en mousse */
+    2279: async (c) => { c.hold(1800); c.banner("Cuvée des Gobs"); const a = c.pt(c.me, 0.3), T = targets(c, 3);
+      for (const n of T) { const b = c.pt(n, 0.4); const br = art(c, "anbarrel", a.x, a.y, 26, 30, SV2.barrel); fly(c, br, a, b, 520, -90, 540); c.later(br, 540);
+        setTimeout(() => { c.scatter(b.x, b.y, "b-foam", 7, 45, 500); c.puff(b.x, b.y, "rgba(255,200,120,.8)", 4); c.hit(n); c.shake("shake"); }, 520 * c.T); await c.wait(180); }
+      await c.wait(800); },
+    /* Rakoopeur · Serpette : deux arcs de serpette fauchent la première ligne */
+    2319: async (c) => { c.hold(1500); c.banner("Serpette"); const T = targets(c);
+      for (let k = 0; k < 2; k++) { c.anim(c.me, [{ transform: "none" }, { transform: `rotate(${k ? 12 : -12}deg)` }, { transform: "none" }], 300); for (const n of T) slash(c, n, "#d0f0a0", k ? 20 : -20, 1.6); c.shake("shake"); if (k === 0) await c.hitSeq(T, 0); await c.wait(260); }
+      await c.wait(400); },
+    /* Coffre des Forgerons · Pluie de marteaux : des marteaux tombent sur les héros */
+    98: async (c) => { c.hold(1700); c.banner("Pluie de marteaux"); const T = targets(c);
+      c.anim(c.me, [{ transform: "none" }, { transform: "translateY(-10px) scaleY(1.1)" }, { transform: "none" }], 400);
+      for (const n of T) { const p = c.pt(n, 0.15), f = c.foot(n); const h = fall(c, "b-club", p.x, -30, p.y, 0, 0, 380, 260); c.later(h, 420);
+        setTimeout(() => { c.scatter(p.x, p.y, "b-rock", 5, 40, 450); axDust(c.A, f.x, f.y, 3); c.hit(n); c.shake("shake"); }, 380 * c.T); await c.wait(150); }
+      await c.wait(800); },
+  });
   /* choix de l'animation d'un tour de boss ; null = rien de spécial.
      first = true : l'ultime des boss des mondes, une fois à partir des tours 4, 8 et 12 (il passe avant les mécaniques) ; sinon : les sorts de Gargandyas */
   window.anBossPick = (F, A, src, cast, hitsLeft, first) => {
