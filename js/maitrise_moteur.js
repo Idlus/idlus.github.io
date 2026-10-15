@@ -105,7 +105,7 @@
       { n: "Le Traqueur", c: "#ff7a4a", sm: [["% chance de Champion", 0.3, "cri"], ["% dégâts aux Champions", 0.5, "pui"]], nt: [["Piste", [["% chance de Champion", 1.5]]], ["Trophée de chasse", [["% dégâts aux Champions", 3], ["% chance de Champion", 1]]]], ks: ["Grand veneur", { champ: 15, res: -8 }], big: ["Légende de la chasse", [["% chance de Champion", 5]]] },
     ],
   };
-  E.MT_BRTH.mix = [E.MT_BRTH.combat[0], E.MT_BRTH.combat[2], E.MT_BRTH.farm[0], E.MT_BRTH.combat[3], E.MT_BRTH.farm[2], E.MT_BRTH.combat[5], E.MT_BRTH.farm[1], E.MT_BRTH.combat[4], E.MT_BRTH.farm[4], E.MT_BRTH.combat[1]];
+  E.MT_BRTH.mix = [E.MT_BRTH.combat[0], E.MT_BRTH.farm[0], E.MT_BRTH.combat[2], E.MT_BRTH.farm[2], E.MT_BRTH.combat[3], E.MT_BRTH.farm[1], E.MT_BRTH.combat[4], E.MT_BRTH.farm[3], E.MT_BRTH.combat[1], E.MT_BRTH.farm[4]];
   E.MT_BRTH.farm = E.MT_BRTH.farm.concat(E.MT_BRTH.combat.slice(0, 5));
   if (!DOM[6]) DOM[6] = { n: "Constellation lointaine", c: "#9fe7ff", st: [["% dégâts", 0.5, "pui"]], nt: ["Porte"], ks: [] };
   /* ---------- un ciel par classe ---------- */
@@ -179,9 +179,9 @@
       const nearSp = (th) => { let bi = 0, bd = 9; SP.forEach((x, i) => { const dd = Math.abs(((x.th - th + TAU * 1.5) % TAU) - Math.PI); if (dd < bd) { bd = dd; bi = i; } }); return bi; };
       let ti = 0;
       bounds.forEach((kb) => { const tb = TAU * kb / 6; const si = nearSp(tb - 0.2236); const A = SP[si], B = SP[(si + 1) % SP.length];
-        const porte = add(P({ t: "s", d: 6, n: "Porte des étoiles", b: [["% dégâts", 0.5]], txt: "+0,5 % dégâts. Ouvre une Constellation lointaine.", ic: "pui" }, tb, 1430)); link(A.lv[4][2], porte); link(B.lv[4][6], porte);
-        const fan = CF.n === 10 ? [-0.075, 0.075] : [0];
-        fan.forEach((o) => { const Tm = TH[ti++ % TH.length]; const th = tb + o; const tag = (x) => Object.assign(x, { d: 6, br: Tm.n, col: Tm.c });
+        const GB = [["Kabahal", 12], ["Roi Imagami", 13], ["L'Éternel Conflit", 13], ["Belladone", 14], ["Déchireuse", 15]][bounds.indexOf(kb) % 5]; const porte = add(P({ t: "s", d: 6, n: GB[0], gate: { b: GB[0], s: GB[1] }, b: [["% dégâts", 0.5]], txt: `+0,5 % dégâts. S'ouvre en battant ${GB[0]} en stasis ${GB[1]} ou plus.`, ic: "pui", col: "#9fe7ff" }, tb, 1430)); N[porte].gated = porte; link(A.lv[4][2], porte); link(B.lv[4][6], porte);
+        const fan = CF.n === 10 ? [-0.13, 0.13] : [0];
+        fan.forEach((o) => { const Tm = TH[ti++ % TH.length]; const th = tb + o; const tag = (x) => Object.assign(x, { d: 6, br: Tm.n, col: Tm.c, gated: porte });
           const sm = (i) => { const s = Tm.sm[i % Tm.sm.length]; return tag({ t: "s", n: s[0], b: [[s[0], s[1]]], txt: `+${nf(s[1])} ${s[0]}`, ic: s[2] || "pui" }); };
           const ntb = (j) => { const q = Tm.nt[j]; return tag({ t: "nt", n: q[0], b: q[1], txt: q[1].map(([s, v]) => `+${nf(v)} ${s}`).join(" · "), ic: (Tm.sm[0][2]) || "pui" }); };
           let prev = porte, r = 1480;

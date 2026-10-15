@@ -34,7 +34,8 @@
   const used = () => got.size - 1;
   const nebOpen = () => pts() >= E.MT_OPEN;
   const T = () => build(treeCls());
-  const allowed = (id) => { const n = T().N[id]; return n.t !== "start" && !(n.neb && !nebOpen()); };
+  const gateOpen = (pid) => { const o = (window.__MTBR && window.__MTBR.open) || []; return o.includes(T().N[pid].gate.b); }; // MAQUETTE
+  const allowed = (id) => { const n = T().N[id]; return n.t !== "start" && !(n.neb && !nebOpen()) && !(n.gated != null && !gateOpen(n.gated)); };
   const pathTo = (t) => { const N = T().N; if (got.has(t)) return []; if (!allowed(t)) return null;
     const prev = new Map(); const q = [...got]; q.forEach((x) => prev.set(x, -1)); let hd = 0;
     while (hd < q.length) { const x = q[hd++]; if (x === t) break; for (const y of N[x].adj) { if (!allowed(y) || prev.has(y)) continue; prev.set(y, x); q.push(y); } }
@@ -71,13 +72,14 @@
     }
     /* domaines */
     if (st.z > 0.1) { g.save(); g.font = `400 ${Math.max(14, 30 * st.z)}px Kavoon, Georgia, serif`; g.textAlign = "center";
-      DOM.forEach((D0, d) => { if (Tr.domTh[d] == null) return; const R = 1680; const x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); Tr.N.forEach((n) => { if (!n.end) return; const R = n.r + 90; const x = W / 2 + (Math.sin(n.th) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(n.th) * R + st.oy) * st.z; g.font = `400 ${Math.max(12, 22 * st.z)}px Kavoon, Georgia, serif`; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(n.br, x, y); g.fillStyle = n.col; g.fillText(n.br, x, y); }); g.restore(); }
+      DOM.forEach((D0, d) => { if (Tr.domTh[d] == null) return; const R = 1680; const x = W / 2 + (Math.sin(Tr.domTh[d]) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(Tr.domTh[d]) * R + st.oy) * st.z; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(D0.n, x, y); g.fillStyle = D0.c; g.fillText(D0.n, x, y); }); Tr.N.forEach((n) => { if (!n.end || st.z < 0.12) return; const R = n.r + 150; const x = W / 2 + (Math.sin(n.th) * R + st.ox) * st.z, y = H / 2 + (-Math.cos(n.th) * R + st.oy) * st.z; const pg = Tr.N[n.gated]; const qx = W / 2 + (pg.X + st.ox) * st.z; g.textAlign = Math.abs(x - qx) < 8 ? "center" : x < qx ? "right" : "left"; g.font = `400 ${Math.max(12, 20 * Math.min(1, st.z * 1.4))}px Kavoon, Georgia, serif`; g.lineWidth = 4; g.strokeStyle = "rgba(0,0,0,.7)"; g.strokeText(n.br, x, y); g.fillStyle = n.col; g.fillText(n.br, x, y); }); g.restore(); }
     /* étoiles */
     const M = st.view ? { j: {} } : E.mt(hero());
     for (const n of N) {
       if (n.neb && !nebOpen()) continue;
       const [x, y] = toS(n); if (x < -50 || x > W + 50 || y < -50 || y > H + 50) continue;
-      const r = rad(n), on = got.has(n.id), pp = ps.has(n.id), dc = domCol(n);
+      const r = rad(n), on = got.has(n.id), pp = ps.has(n.id), dc = domCol(n); const lock = n.gated != null && !gateOpen(n.gated); g.globalAlpha = lock && !n.gate ? 0.38 : 1;
+      if (n.gate && st.z > 0.2) { g.save(); g.font = `800 ${Math.max(11, 15 * Math.min(1, st.z * 1.6))}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.85)"; const t0 = lock ? `🔒 ${n.gate.b} · stasis ${n.gate.s}+` : `Porte ouverte · ${n.gate.b}`; const yy = y - r - 9 - 60 * st.z; g.strokeText(t0, x, yy); g.fillStyle = lock ? "#9fe7ff" : "#bdf09b"; g.fillText(t0, x, yy); g.restore(); }
       if (n.t === "start") { g.shadowColor = cc; g.shadowBlur = 26; g.fillStyle = cc; g.strokeStyle = "#e2f5ae"; g.lineWidth = 3.5; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); g.stroke(); g.shadowBlur = 0;
         const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const s = r * 1.7; g.drawImage(im, x - s / 2, y - s / 2, s, s); } continue; }
       if (!on && !pp && n.t === "s" && !HIT.has(n.id) && n.id !== st.sel) { g.fillStyle = "rgba(200,210,255,.75)"; g.beginPath(); g.arc(x, y, r * 0.42, 0, TAU); g.fill(); continue; }
@@ -92,9 +94,11 @@
       g.shadowBlur = 0;
       if (n.ic && r > 6) { const im = img("s_" + n.ic, `assets/c/${n.ic}.png`); if (im.naturalWidth) { const s = r * (n.t === "nt" ? 1.25 : 1.3); g.globalAlpha = on ? 1 : 0.7; g.drawImage(im, x - s / 2, y - s / 2, s, s); g.globalAlpha = 1; } }
       else if (n.t === "cls" && r > 6) { const im = img("c_" + Tr.cls, sym(Tr.cls)); if (im.naturalWidth) { const s = r * 1.4; g.globalAlpha = on ? 1 : 0.55; g.drawImage(im, x - s / 2, y - s / 2, s, s); g.globalAlpha = 1; } }
+      if (n.gate) { g.globalAlpha = 1; ring(x, y, r + 7, lock ? "#9fe7ff" : "#bdf09b"); ring(x, y, r + 13, lock ? "rgba(159,231,255,.4)" : "rgba(189,240,155,.5)"); }
       if (HIT.has(n.id)) ring(x, y, r + 6); if (n.id === st.sel) ring(x, y, r + 4, "#fff");
       if (((n.t === "ks" || n.t === "cks") && st.z > 0.3) || (n.t === "nt" && st.z > 0.85)) { g.font = `800 ${n.t === "nt" ? 11.5 : 13}px Nunito, system-ui, sans-serif`; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.8)"; g.strokeText(n.n, x, y - r - 7); g.fillStyle = n.t === "cks" ? "#e2f5ae" : n.t === "ks" ? "#ffd2b0" : "#f6e3b0"; g.fillText(n.n, x, y - r - 7); }
     }
+    g.globalAlpha = 1;
     tip(fo);
   }
   /* 2.0.1 : l'effet d'une étoile s'affiche sur l'arbre, au survol (souris) ou au premier toucher, avec ce que le chemin rapporte */
@@ -109,8 +113,9 @@
     if (id == null || T().N[id].t === "start" || (T().N[id].neb && !nebOpen())) { el.hidden = true; return; }
     const n = T().N[id], on = got.has(id), p = on ? [] : canEdit() ? pathTo(id) || [] : [], left = pts() - used();
     const gl = gainOf(on || st.view ? [id] : p.length ? p : [id]);
-    const foot = st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
-    el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${TYP[n.t]}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
+    const lkN = n.gated != null && !gateOpen(n.gated) ? T().N[n.gated].gate : null;
+    const foot = lkN ? `🔒 Fermée : bats ${lkN.b} en stasis ${lkN.s} ou plus` : st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
+    el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${n.gate ? "Porte des étoiles" : TYP[n.t]}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
     el.hidden = false; const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
     let lx = x + rad(n) + 12, ly = y - bh / 2; if (lx + bw > W - 8) lx = x - rad(n) - 12 - bw; if (lx < 8) { lx = Math.max(8, Math.min(W - bw - 8, x - bw / 2)); ly = y + rad(n) + 12; if (ly + bh > H - 8) ly = y - rad(n) - 12 - bh; }
     el.style.left = Math.round(lx) + "px"; el.style.top = Math.round(Math.max(8, Math.min(H - bh - 8, ly))) + "px";
