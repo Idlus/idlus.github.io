@@ -1,6 +1,31 @@
 {
-  "version": "1.2.10.2",
+  "version": "1.2.10.5",
   "versions": [
+    {
+      "v": "1.2.10.5",
+      "name": "Compteurs en direct",
+      "items": [
+        "Fiche d'une zone (Monde) : le nombre de monstres tués, le palier de chasse et la progression du trophée se mettent à jour pendant les combats, sans changer d'onglet",
+        "Encyclopédie : pareil pour le Bestiaire, les Familles, les Boss et les Trophées. La page garde sa position, seuls les chiffres changent"
+      ]
+    },
+    {
+      "v": "1.2.10.4",
+      "name": "Placement en un clic",
+      "guide": "equipe",
+      "items": [
+        "Équipe et héros : une flèche ↑ ou ↓ à côté de chaque héros de l'équipe le fait passer en première ligne ou à l'arrière en un clic (au survol sur PC, toujours visible sur téléphone).",
+        "La fiche du héros a un bouton « Passer devant » ou « Passer derrière » à côté de « Mettre en réserve ».",
+        "« Réorganiser » ne garde que le plateau à glisser, avec la case « Placement automatique » au-dessus : le cadre à boutons en double a été retiré."
+      ]
+    },
+    {
+      "v": "1.2.10.3",
+      "name": "Idole Djim revue",
+      "items": [
+        "Idole Djim : ses Champions (un par combat) gardent leur difficulté et leur butin doublé, mais ne font plus monter les Sceaux, les trophées de zone ni la traque. Les Sceaux et les Éclats déjà gagnés ne bougent pas."
+      ]
+    },
     {
       "v": "1.2.10.2",
       "name": "Rayonnants sans PA en plus",

@@ -73,7 +73,7 @@
     const m = F.ents.find((x) => x.side === "m" && x.champ && x.alive); if (!m) return "";
     const P = e.CHAMP_POWERS[m.champ];
     if (m.champLeg) return `<div class="ch-ban leg"><span class="ch-bi">${crown}</span><div><b>${h(m.name)}</b><small>Champion légendaire, tous les pouvoirs · PV ×${e.CHAMP_LEG_HP}, dégâts ×${e.CHAMP_LEG_DMG} · récompense : titre et ${e.CHAMP_LEG_SHARDS} Éclats</small></div></div>`;
-    const tail = e.SEALS && e.SEALS[m.champ] ? `fait monter ton Sceau ${e.SEALS[m.champ].name}` : "butin doublé";
+    const tail = !m.idolChamp && e.SEALS && e.SEALS[m.champ] ? `fait monter ton Sceau ${e.SEALS[m.champ].name}` : "butin doublé";
     return `<div class="ch-ban"><span class="ch-bi">${ico(m.champ)}</span><div><b>Champion ${h(P.name)} : ${h(m.name)}</b><small>${h(P.desc.replace(/\.$/, ""))} · PV ×2, dégâts +20 % · ${tail}</small></div></div>`;
   }
   function huntPanel(S) {

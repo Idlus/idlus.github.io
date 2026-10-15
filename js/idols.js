@@ -35,7 +35,7 @@
     ["pro", "tynril",   "Tynril",   10, 30,  "Les monstres commencent le combat avec un bouclier de 15 % de leurs PV.",         { shield0: 15 }, "blindes"],
     ["pro", "gakri",    "Gakri",    15, 65,  "Les monstres ignorent les poisons et les dégâts sur la durée.",                   { noDot: true }],
     ["pro", "kori",     "Kori",     20, 85,  "Les monstres gagnent un bouclier de 5 % de leurs PV à chaque tour.",              { shieldRegen: 5 }],
-    ["pro", "djim",     "Djim",     30, 160, "Un monstre de chaque combat est un Champion : PV ×2, un pouvoir, butin doublé.",  { champion: true }, "champions"],
+    ["pro", "djim",     "Djim",     30, 160, "Un monstre de chaque combat est un Champion : PV ×2, un pouvoir, butin doublé (ne compte pas pour les Sceaux).",  { champion: true }, "champions"],
     ["nb", "farle",     "Farle",    15, 40,  "Un monstre de plus dans chaque combat.",                                          { extra: 1 }, "nombreux"],
     ["nb", "serpi",     "Serpi",    20, 90,  "Quand un monstre meurt, un renfort arrive (une fois par combat).",                { reinforce: true }, "renforts"],
     ["nb", "nahuss",    "Nahuss",   30, 130, "Deux monstres de plus dans chaque combat.",                                       { extra: 2 }, "nombreux"],

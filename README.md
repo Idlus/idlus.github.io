@@ -9,6 +9,18 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.10.5 « Compteurs en direct »
+
+Le nombre de monstres tués (fiche de zone, Encyclopédie) se met à jour pendant les combats, sans changer d'onglet.
+
+## 1.2.10.4 « Placement en un clic »
+
+Mathis (15/10/2026) : « comment on déplace un perso « arrière » devant ? » puis « c'est le plus ergonomique ? » → choix A. `rowBtn(c, cls)` (js/ui.js) : flèche `.tr-mv` à côté de chaque héros de l'équipe dans la liste (enveloppe `.trw`, visible au survol, toujours sur écran tactile) et bouton « Passer devant / derrière » sur la fiche, via `E.setRow`. `placementHtml` ne garde que la case « Placement automatique » (le cadre à boutons en double est retiré, `#placement` reste la cible de « Ouvrir le placement »). Chapitre Équipe du guide mis à jour.
+
+## 1.2.10.3 « Idole Djim revue »
+
+Mathis (15/10/2026, choix « Changer l'effet ») : l'idole Djim donnait un Champion à chaque combat, et chacun faisait monter les Sceaux. Le Champion de Djim porte `idolChamp` (js/engine.js) ; `E.champKill` (js/champions.js) l'ignore : ni Sceau, ni trophée de zone, ni piste. Difficulté et butin doublé gardés. Rien de retiré aux joueurs.
+
 ## 1.2.10.2 « Rayonnants sans PA en plus »
 
 Le bonus d'un objet Rayonnant ne donne plus de PA, de Portée ni d'Invocation en plus (un objet à 1 PA restait arrondi à 2 PA). Les Rayonnants déjà obtenus reviennent à leur PA, Portée et Invocation normaux, le reste du bonus est gardé.

@@ -21,9 +21,19 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.10.2";
+const GAME_VERSION = "1.2.10.5";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.10.5", name: "Compteurs en direct", items: [
+    "Fiche d'une zone (Monde) : le nombre de monstres tués, le palier de chasse et la progression du trophée se mettent à jour pendant les combats, sans changer d'onglet",
+    "Encyclopédie : pareil pour le Bestiaire, les Familles, les Boss et les Trophées. La page garde sa position, seuls les chiffres changent"
+  ] },
+  { v: "1.2.10.4", name: "Placement en un clic", guide: "equipe", items: [
+    "Équipe et héros : une flèche ↑ ou ↓ à côté de chaque héros de l'équipe le fait passer en première ligne ou à l'arrière en un clic (au survol sur PC, toujours visible sur téléphone).",
+    "La fiche du héros a un bouton « Passer devant » ou « Passer derrière » à côté de « Mettre en réserve ».",
+    "« Réorganiser » ne garde que le plateau à glisser, avec la case « Placement automatique » au-dessus : le cadre à boutons en double a été retiré." ] },
+  { v: "1.2.10.3", name: "Idole Djim revue", items: [
+    "Idole Djim : ses Champions (un par combat) gardent leur difficulté et leur butin doublé, mais ne font plus monter les Sceaux, les trophées de zone ni la traque. Les Sceaux et les Éclats déjà gagnés ne bougent pas." ] },
   { v: "1.2.10.2", name: "Rayonnants sans PA en plus", items: [
     "Un objet Rayonnant ne donne plus de PA, de Portée ni d'Invocation en plus : son bonus ne touche que les autres caractéristiques (comme le PM). Avant, l'arrondi faisait passer un objet à 1 PA à 2 PA.",
     "Les Rayonnants déjà obtenus reviennent à leur PA, Portée et Invocation normaux (2 PA → 1 PA) ; le reste de leur bonus est gardé."
@@ -3061,6 +3071,12 @@ function fstSheet(t) {
 /* ---------- MONDE ---------- */
 function renderWorld() {
   if (ui.zoneView) return renderZoneView(ui.zoneView);
+  if (ui.world === "tresor") ui.world = "map";
+  const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
+  repaintKeep($("#main"), worldHtml()); // 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
+  if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
+}
+function worldHtml() {
   const tabs = [["map", "Carte"], ["tresor", "Trésor"]]; // 0.1.31 : Donjons et Encyclopédie sont des pages du menu
   const solo = ui.world === "dungeons" || ui.world === "enc";
   let body = "";
@@ -3070,14 +3086,11 @@ function renderWorld() {
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
-  else if (ui.world === "tresor") { ui.world = "map"; return renderWorld(); }
   else body = encyclopediaHtml();
-  const zl = $("#main .enczones"); const zTop = zl ? zl.scrollTop : 0; // 1.0.12.8 : la liste des zones de l'Encyclopédie garde son défilement
-  repaintKeep($("#main"), `
+  return `
 <div class="pagehead"><h1>${solo ? (ui.world === "dungeons" ? "Donjons" : "Encyclopédie") : "Le Monde des Douze"}</h1>${S.dungeon ? `<span class="tag warn">En donjon</span>` : ""}<span class="grow"></span>${archiBtn()}</div>
     ${solo ? "" : `<nav class="subtabs">${tabs.map(([id, n]) => `<button data-act="worldtab" data-v="${id}" aria-pressed="${ui.world === id}">${n}</button>`).join("")}</nav>`}
-    <div class="stack">${body}</div>`); // 1.0.22.1 : la recherche de l'Encyclopédie garde le focus et le curseur si la page se redessine
-  if (zTop) { const z2 = $("#main .enczones"); if (z2) z2.scrollTop = zTop; }
+    <div class="stack">${body}</div>`;
 }
 function lockReason(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone);
@@ -3186,13 +3199,14 @@ function mountZoneBox(sid) {
     <div class="loot">${Z.wild.map((c) => `<div class="lcard"><span class="icobox">${im(mountImg(sp, c), "", E.mountName({ sp, c }))}</span><div><div class="n">${h(E.mountName({ sp, c }))}${seen[c] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p"><span class="pct">${dropPct(R.col * 100)} %</span> <span class="muted">par victoire (1 sur ${fmt(R.colOneIn)})</span></div></div></div>`).join("")}</div>
     ${nets ? "" : `<div class="xs" style="margin-top:6px"><span class="tag soft">${emo("🪢")} Aucun filet</span> <span class="muted">sans filet, aucune capture : ${fmt(E.NET_COST)} kamas l'unité (Héros › Élevage › Capture) ou fabriqué par le Bricoleur niveau 40.</span></div>`}`;
 }
-function renderZoneView(sid) {
+function renderZoneView(sid) { $("#main").innerHTML = zoneViewHtml(sid); }
+function zoneViewHtml(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone); const un = E.subUnlocked(S, sid);
   const here = S.hunting && S.sub === sid && !S.dungeon;
   const res = subResources(s); const its = subItems(s); const rate = E.zoneRate(S, sid);
   const dg = s.dungeon ? DUNGEONS[s.dungeon] : null;
   const trophyDone = S.trophies && S.trophies[sid]; const traq = s.monsters.filter((k) => E.huntTier(S, k) >= 1).length;
-  $("#main").innerHTML = `
+  return `
   <div class="row" style="margin-bottom:10px">${ui.zoneFromEnc === sid ? `<button class="btn sm primary" data-act="zonebackenc">← Encyclopédie</button>` : ""}<button class="btn sm" data-act="zoneback">← Carte</button></div>
   <section class="panel">
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}${window.DECORS ? window.DECORS.html({ sub: s.id }) : ""}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
@@ -5419,7 +5433,7 @@ function teamRow(x, al) {
 }
 function teamListHtml() {
   const al = teamAlerts(); const team = E.team(S); const fs = E.frontSet(S);
-  const grp = (t, sub, list) => (list.length ? `<div class="tgrp"><div class="tgt"><b>${t}</b><span class="xs muted">${sub}</span></div>${list.map((x) => teamRow(x, al)).join("")}</div>` : "");
+  const grp = (t, sub, list) => (list.length ? `<div class="tgrp"><div class="tgt"><b>${t}</b><span class="xs muted">${sub}</span></div>${list.map((x) => { const mv = rowBtn(x, "tr-mv"); return mv ? `<div class="trw">${teamRow(x, al)}${mv}</div>` : teamRow(x, al); }).join("")}</div>` : "");
   const front = team.filter((x) => fs.has(x.id)), back = team.filter((x) => !fs.has(x.id)), res = S.chars.filter((x) => !team.includes(x));
   const price = recruitPrice();
   return `${grp("Première ligne", `${front.length} / ${E.frontMax(team.length)}`, front)}${grp(team.length > 1 ? "Arrière" : "Équipe", `${back.length}`, back)}${grp("Réserve", `${res.length} · hors combat`, res)}
@@ -5456,7 +5470,7 @@ function heroesHtml() {
       <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
       ${c.ren && c.renMt ? `<div class="small renev"><span class="tag ren">${E.roman(c.ren)} vie${c.ren > 1 ? "s" : ""}</span> <span class="muted">Ses vies passées sont devenues ${fmt(c.renMt.lv + c.renMt.bn)} points de Maîtrise.</span></div>` : ""}
       </div>
-    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
+    <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
   <nav class="subtabs htabs"><span class="ht-h">${head(c)}<b>${h(c.name)}</b></span>${[["equip", "Équipement"], ["pet", `Familier<span class="htl"> & monture</span>`], ["stats", "Caractéristiques"], ["spells", `Sorts<span class="htl"> & stratégies</span>`]].map(([id, n]) => `<button data-act="herotab" data-v="${id}" aria-pressed="${ui.hero === id}">${n}${id === "stats" && !c.autoStat && c.pts > 0 ? ` <span class="ptsbadge" title="Points à répartir">${c.pts}</span>` : ""}</button>`).join("")}</nav>
   <section>${ui.hero === "stats" ? charStatsView(c, st) : ui.hero === "equip" ? charEquipView(c, st) : ui.hero === "pet" ? charPetView(c, st) : charSpellsView(c)}</section>`;
@@ -5468,19 +5482,21 @@ function heroRailKey(dir) {
   ui.cid = ids[(i + dir + ids.length) % ids.length]; ui.slot = null; ui.heroMore = false; render(); return true;
 }
 /* 3.3.0 : placement de l'équipe (première ligne / arrière) */
+/* 1.2.10.4 « Placement en un clic » : la ligne se change depuis la liste et la fiche du héros ; « Réorganiser » ne garde que le plateau
+   et ce bandeau (placement automatique). Le cadre à boutons en double a été retiré. */
 function placementHtml() {
   const team = E.team(S); if (team.length < 2) return "";
-  const fs = E.frontSet(S); const max = E.frontMax(team.length); const auto = E.isAutoPlace(S);
-  const card = (c, f) => { const st = E.charStats(S, c);
-    return `<div class="pcard">${head(c)}<div class="tx"><b>${h(c.name)} <span class="muted xs">${h(CLASSES[c.cls].name)} niv. ${c.lvl}</span></b><span class="xs muted num">${fmt(st.hpMax)} PV · Rés. moy. ${Math.round(E.avgRes(st))} %</span></div><button class="btn sm" data-act="setrow" data-id="${c.id}" data-v="${f ? "b" : "f"}">${f ? "↓ Arrière" : "↑ Première ligne"}</button></div>`; };
-  const L = (f) => team.filter((c) => fs.has(c.id) === f).map((c) => card(c, f)).join("");
-  return `<section class="panel placement${ui.placeFlash ? " flash" : ""}" id="placement" style="margin-bottom:12px"><div class="pad stack" style="gap:10px">
-    <div class="row between"><h3 style="margin:0">Placement de l'équipe</h3><span class="xs muted">Première ligne : 1 à ${max} héros sur ${team.length}</span></div>
-    <div class="row between"><label class="row small"><input type="checkbox" data-act="placeauto" ${auto ? "checked" : ""}> <b>Placement automatique</b></label>${auto ? "" : `<button class="btn sm" data-act="placeautob">Revenir au placement automatique</button>`}</div>
-    <div class="plines"><div class="pline front"><div class="lt">${G("shield")} Première ligne <span class="xs muted">reçoit 3 coups sur 4</span></div>${L(true)}</div>
-      <div class="pline"><div class="lt">Arrière <span class="xs muted">exposé si la première ligne tombe</span></div>${L(false)}</div></div>
-    <p class="note xs" style="margin:0">En automatique, le jeu place devant les héros qui encaissent le mieux (PV et résistances). Les Rôdeurs visent l'arrière et les Bondisseurs ignorent les rangées.</p>
+  const max = E.frontMax(team.length); const auto = E.isAutoPlace(S);
+  return `<section class="panel placement${ui.placeFlash ? " flash" : ""}" id="placement" style="margin-bottom:12px"><div class="pad stack" style="gap:6px">
+    <div class="row between"><label class="row small"><input type="checkbox" data-act="placeauto" ${auto ? "checked" : ""}> <b>Placement automatique</b></label>${auto ? `<span class="xs muted">Première ligne : 1 à ${max} héros sur ${team.length}</span>` : `<button class="btn sm" data-act="placeautob">Revenir au placement automatique</button>`}</div>
+    <p class="note xs" style="margin:0">En automatique, le jeu place devant les héros qui encaissent le mieux (PV et résistances). Glisser un héros entre Première ligne et Arrière passe en manuel. Les Rôdeurs visent l'arrière et les Bondisseurs ignorent les rangées.</p>
   </div></section>`;
+}
+/* bouton qui fait passer un héros de l'équipe devant ou derrière (null hors équipe ou équipe d'un seul héros) */
+function rowBtn(c, cls) {
+  const z = teamZone(c); if (!["f", "b"].includes(z) || E.team(S).length < 2) return "";
+  const f = z === "f"; const tip = f ? `Passer ${c.name} à l'arrière` : `Passer ${c.name} en première ligne`;
+  return `<button class="${cls}" data-act="setrow" data-id="${c.id}" data-v="${f ? "b" : "f"}" data-tip="${h(tip)}" aria-label="${h(tip)}">${f ? "↓" : "↑"}${cls.includes("btn") ? (f ? " Passer derrière" : " Passer devant") : ""}</button>`;
 }
 function statCell(k, v) { return `<div class="s"${tipAttr(k)}><span>${sIco(k === "hpMax" ? "vit" : k)}${k === "hpMax" ? "Vitalité (Points de vie)" : STATS[k].name.replace("% ", "")}</span><b>${k === "hpMax" ? fmt(v) : fmtStatVal(k, v)}</b></div>`; }
 const DOLL_L = ["coiffe", "amulette", "anneau1", "anneau2"], DOLL_R = ["cape", "ceinture", "bottes", "bouclier"];
@@ -10722,6 +10738,7 @@ function loop() {
     else if (ui.tab === "team" && !ui.teamBoard && sinceView > 4000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; const tt = $("#teamtop"); if (tt) morphTo(tt, teamTopHtml()); const tl = $("#tlist"); if (tl) morphTo(tl, teamListHtml()); renderNav(); } // seuls le haut et la liste se rafraîchissent (mise à jour ciblée), la fiche reste telle quelle
     else if (ui.tab === "quests" && !["ach", "orn"].includes(ui.qt) && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; renderQuests(true); renderNav(); }
     else if (ui.tab === "dofus" && PAGES.dofus && sinceView > 3000 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; PAGES.dofus($("#main"), true); } // 1.0.33 : page Dofus, mise à jour ciblée
+    else if (ui.tab === "world" && (ui.zoneView || (ui.world === "enc" && ["best", "fam", "boss", "tro"].includes(ui.enc && ui.enc.tab))) && sinceView > 2500 && !$("#sheet").innerHTML && !isEditing()) { sinceView = 0; morphTo($("#main"), ui.zoneView ? zoneViewHtml(ui.zoneView) : worldHtml()); } // 1.2.10.5 : fiche de zone et Encyclopédie, compteurs de monstres tués à jour sans changer d'onglet (mise à jour ciblée)
     if (sinceSave > 15000) { sinceSave = 0; saveNow(); }
     sinceTip += dt; if (sinceTip > 3000) { sinceTip = 0; tipTick(); } else tipRing();
     if (ON) { sincePush += dt; if (sincePush > 30000 && onLive() && ON.state !== "conflict" && ON.state !== "sync") { sincePush = 0; onPush(); } }
