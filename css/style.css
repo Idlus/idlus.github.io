@@ -5168,3 +5168,45 @@ span.fch{cursor:default;padding-left:8px}
 .c19c .ck{position:absolute;top:1px;right:4px;font-style:normal;font-weight:800;color:var(--gold)}
 @media (max-width:600px){.c19p{display:none}.c19g{grid-template-columns:repeat(5,minmax(0,1fr))}.c19c img{width:24px;height:24px}.c19{margin:0 0 10px}}
 .hcard .orn.c19{filter:drop-shadow(0 0 8px #ffd84d)}
+/* 1.0.33 « Plateau » : sol isométrique façon DOFUS, une case par combattant ; noms et PV dans le bandeau (.schud) */
+.arena.v2.iso::before{content:"";position:absolute;left:0;right:0;bottom:0;height:64%;z-index:1;pointer-events:none;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='32'%3E%3Cpath d='M32 1L63 16L32 31L1 16Z' fill='rgba(255,255,255,.035)' stroke='rgba(255,255,255,.15)'/%3E%3C/svg%3E");
+ background-size:var(--tw,64px) calc(var(--tw,64px) / 2);background-position:center bottom;-webkit-mask:linear-gradient(transparent,#000 45%);mask:linear-gradient(transparent,#000 45%)}
+.arena.v2.iso .ent>.who,.arena.v2.iso .ent>.hpb{visibility:hidden;height:0;margin:0}
+.arena.v2.iso .ent>.pas,.arena.v2.iso .ent>.sts{display:none}
+.arena.v2.iso .ent::after{width:calc(var(--tw,64px) * .95);height:calc(var(--tw,64px) * .48);bottom:-6px;border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:rgba(120,200,255,.26)}
+.arena.v2.iso .ent.m::after{background:rgba(255,110,100,.24)}
+.arena.v2.iso .ent.summon::after{width:calc(var(--tw,64px) * .6);height:calc(var(--tw,64px) * .3);bottom:-4px}
+.arena.v2.iso .ent.cur::after{background:rgba(255,226,110,.6);height:calc(var(--tw,64px) * .48)}
+.arena.v2.iso .ent.dead::after{display:none}
+.arena.v2.iso .ent.m.boss::after{width:calc(var(--tw,64px) * 1.35);height:calc(var(--tw,64px) * .66);bottom:-10px;background:rgba(255,150,60,.34);box-shadow:none}
+.arena.v2.iso .ent.m.boss.cur::after{background:rgba(255,226,110,.6)}
+.arena.v2.iso .ent.m.boss img.sprite{width:calc(var(--h) * 1.4);height:calc(var(--h) * 1.4)}
+.arena.v2.iso .ent.summon img.sprite{width:calc(var(--h) * .42);height:calc(var(--h) * .42)}
+.arena.v2.iso .float{font-size:17px}.arena.v2.iso .float.crit{font-size:21px}.arena.v2.iso .float.crit small{font-size:8.5px}
+.schud{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px;background:var(--panel2);border-top:1px solid var(--line)}
+.schud .hside{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;align-content:start}
+.schud .hside.m{direction:rtl}.schud .hside.m>.hc{direction:ltr}
+.schud .hc{display:grid;grid-template-columns:30px 1fr;gap:2px 7px;align-items:center;padding:4px 7px;border-radius:9px;background:var(--panel3,rgba(255,255,255,.04));border:1.5px solid transparent;min-width:0;cursor:pointer}
+.schud .hc.now{border-color:var(--gold);box-shadow:0 0 0 1px rgba(0,0,0,.2),0 0 10px rgba(179,224,92,.25)}
+.schud .hc.ko{opacity:.38;filter:grayscale(1)}
+.schud .hc.boss{border-color:rgba(255,120,80,.5);grid-column:1/-1}.schud .hc.boss .hbar{height:8px}
+.schud .hp{width:30px;height:30px;border-radius:50%;overflow:hidden;background:rgba(0,0,0,.28);display:grid;place-items:center}
+.schud .hp img{width:100%;height:100%;object-fit:contain}
+.schud .hb{min-width:0;display:grid;gap:2px}
+.schud .hb b{font-size:12px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:3px;align-items:center}
+.schud .hb b svg{width:12px;height:12px;color:#ffd84d;flex:none}
+.schud .hbar{height:6px;border-radius:3px;background:rgba(0,0,0,.45);position:relative;overflow:hidden}
+.schud .hbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#8fe06a,#3fa34d);transition:width .3s}
+.schud .hc.m .hbar i{background:linear-gradient(90deg,#ff6b5e,#e0453a)}
+.schud .hbar u{position:absolute;inset:0 auto 0 0;background:rgba(160,220,255,.85);transition:width .3s}
+.schud .hpv{font-size:10px;font-weight:800;color:#ffe3a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1}
+.schud .hpv:empty{display:none}
+.schud .hss{grid-column:1/-1;display:flex;gap:3px;flex-wrap:wrap}
+.schud .hss:empty{display:none}
+.schud .hsum{position:relative;width:22px;height:22px;border-radius:6px;background:rgba(0,0,0,.35);overflow:hidden;display:grid;place-items:center}
+.schud .hsum img{width:100%;height:100%;object-fit:contain}
+.schud .hsum i{position:absolute;left:0;bottom:0;height:3px;background:#8fe06a}
+@media (max-width:640px){.schud{gap:6px;padding:6px}.schud .hside{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+ .schud .hc{grid-template-columns:1fr;justify-items:center;padding:3px 2px;gap:2px}.schud .hb{width:100%}.schud .hb b,.schud .hpv{display:none}
+ .schud .hp{width:26px;height:26px}.schud .hss{justify-content:center}.schud .hc.boss{grid-column:span 2}.schud .hsum{width:15px;height:15px}}

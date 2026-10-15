@@ -3350,27 +3350,31 @@ function spellBarFor(c, ent, F) {
 }
 /* vue de combat : scène (personnages en pied) ou compacte (cartes) */
 function combatView() { if (window.FORMUI) return window.FORMUI.view(S); /* 1.0.30 : Formation par défaut (js/formation.js) */ const v = S.settings.cview; if (v === "scene" || v === "compact") return v; return window.innerWidth < 640 && E.team(S).length >= 6 ? "compact" : "scene"; }
-/* formation en quinconce : rangée avant (basse) puis rangées arrière décalées d'un demi-pas */
+/* 1.0.33 « Plateau » : chaque combattant sur sa case d'un sol isométrique façon DOFUS, sans chevauchement.
+   Par camp : colonnes depuis le centre (la première ligne au plus près des ennemis), rangées en profondeur décalées d'un demi-pas.
+   On choisit le nombre de rangées qui donne les plus grandes cases ; les invocations prennent la case voisine de leur maître. */
 function arenaLayout(F) {
   const mob = window.innerWidth < 640;
+  const AW = (ui.arena && ui.arena.el && ui.arena.el.clientWidth) || (mob ? 360 : 600);
   const sides = { c: [], m: [] }, sums = []; F.ents.forEach((e, i) => (e.summon ? sums : sides[e.side === "c" ? "c" : "m"]).push(i));
-  sides.c.sort((a, b) => (F.ents[a].row === "b") - (F.ents[b].row === "b")); // 3.3.0 : la première ligne devant
-  const rowsOf = (n) => (n <= 1 ? 1 : n <= 6 ? 2 : 3);
-  const rows = Math.max(rowsOf(sides.c.length), rowsOf(sides.m.length));
-  const perRow = Math.max(1, ...["c", "m"].map((k) => Math.ceil(sides[k].length / Math.max(1, rowsOf(sides[k].length)))));
-  const h = mob ? (rows <= 2 ? (perRow >= 3 ? 92 : 104) : 76) : (rows <= 2 ? (perRow >= 4 ? 128 : 148) : 112);
-  const plate = mob ? 30 : 36, lift = rows <= 2 ? (mob ? 0.7 : 0.76) : 0.55;
-  const step = mob ? Math.min(21, 41 / perRow) : Math.min(14, 41 / perRow), x0 = mob ? 40 : 43;
-  const AW = (ui.arena && ui.arena.el && ui.arena.el.clientWidth) || (mob ? 360 : 700);
-  const w = Math.max(56, Math.min(mob ? 82 : 110, Math.round((step / 100) * AW * 1.05)));
-  const pos = [];
-  ["c", "m"].forEach((k) => { const L = sides[k], R = rowsOf(L.length);
-    L.forEach((ei, n) => { const r = n % R, jx = Math.floor(n / R); const x = x0 - jx * step - r * step / 2;
-      pos[ei] = { x: k === "c" ? x : 100 - x, y: 8 + r * (plate + h * lift), z: 30 - r * 10 - jx }; }); });
-  /* invocations : petites, devant l'équipe, au centre de l'arène */
-  sums.forEach((ei, k) => { pos[ei] = { x: (mob ? 47 : 48) - (k % 3) * (mob ? 7 : 5), y: 8 + Math.floor(k / 3) * (plate + h * 0.3) + (k % 2) * 10, z: 40 - k }; });
-  const H = Math.max(mob ? 250 : 300, Math.round(8 + (rows - 1) * (plate + h * lift) + plate + h + (mob ? 34 : 40)));
-  return { h, plate, w, pos, H };
+  sides.c.sort((a, b) => (F.ents[a].row === "b") - (F.ents[b].row === "b"));
+  sides.m.sort((a, b) => !!F.ents[b].boss - !!F.ents[a].boss); // le boss sur la première case, face à l'équipe // la première ligne devant
+  const Wd = AW / 2 - AW * 0.04, cap = mob ? 62 : 78, minT = mob ? 26 : 40;
+  const fit = (n, R) => { const cols = Math.max(1, Math.ceil(n / R)); return Wd / (0.8 + (cols - 1) * 1.45 + (R - 1) * 0.8 + 0.6); };
+  const pick = (n) => { let best = { R: 1, t: 0 }; for (let R = 1; R <= Math.min(4, Math.max(1, n)); R++) { const t = fit(n, R); if (t > best.t * 1.08) best = { R, t }; } return best; };
+  const P = { c: pick(sides.c.length), m: pick(sides.m.length) };
+  const tw = Math.round(Math.max(minT, Math.min(cap, P.c.t, P.m.t)));
+  const h = Math.round(tw * 1.55), w = Math.round(tw * 1.1), rowY = tw * 1.0, base = Math.round(tw * 0.42);
+  const R = Math.max(P.c.R, P.m.R), pos = [], px = (v) => (v / AW) * 100;
+  ["c", "m"].forEach((k) => { const Rk = P[k].R;
+    sides[k].forEach((ei, q) => { const r = q % Rk, j = Math.floor(q / Rk);
+      const xpx = AW / 2 - tw * (0.8 + j * 1.45 + r * 0.8);
+      pos[ei] = { x: k === "c" ? px(xpx) : 100 - px(xpx), y: base + r * rowY, z: 30 - r * 6 - j }; }); });
+  sums.forEach((ei) => { const e = F.ents[ei], o = pos[e.owner] || { x: 30, y: base, z: 30 };
+    const sib = sums.filter((x) => F.ents[x].owner === e.owner).indexOf(ei);
+    pos[ei] = { x: o.x + px(tw * (0.6 + sib * 0.45)), y: Math.max(2, o.y - tw * 0.34), z: o.z + 2 }; });
+  const H = Math.max(mob ? 200 : 240, Math.round(base + (R - 1) * rowY + h * 1.15 + (mob ? 26 : 34)));
+  return { h, plate: 0, w, pos, H, tw };
 }
 /* l'arène reste visible en haut (mobile) seulement si elle laisse de la place au reste */
 function stickyCheck() { const st = document.querySelector(".arenasticky"); if (!st) return; st.classList.toggle("stick", st.offsetHeight < window.innerHeight * 0.58); }
@@ -3378,8 +3382,38 @@ function placeEnts(F) {
   const A = ui.arena; if (!A || A.view !== "scene" || !F) return;
   const L = arenaLayout(F); A.el.style.height = L.H + "px";
   A.el.style.setProperty("--h", L.h + "px"); A.el.style.setProperty("--plate", L.plate + "px"); A.el.style.setProperty("--w", L.w + "px");
+  A.el.style.setProperty("--tw", L.tw + "px");
   F.ents.forEach((e, i) => { const n = A.nodes[i], p = L.pos[i]; if (!n || !p) return; n.style.left = p.x + "%"; n.style.bottom = p.y + "px"; n.style.zIndex = p.z; });
   stickyCheck();
+}
+/* 1.0.33 « Plateau » : le bandeau sous la scène porte les noms, les PV, les invocations et les passifs ;
+   la structure ne se redessine que si la liste change, les barres se mettent à jour en place */
+function hudPic(e) {
+  const c = e.side === "c" && !e.summon ? char(e.cid) || { cls: e.cls, sex: e.sex } : null;
+  return c ? im(headImg(c), "", e.name) : e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name) : e.img ? im(`assets/m/${e.img}.png`, "", e.name) : "✦";
+}
+function sceneHud(F) {
+  const A = ui.arena; const wrap = A && A.el ? A.el.parentNode : null; if (!wrap) return;
+  let hd = wrap.querySelector(".schud");
+  if (!F || A.view !== "scene") { if (hd) hd.remove(); return; }
+  if (!hd) { hd = document.createElement("div"); hd.className = "schud"; wrap.appendChild(hd); }
+  const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1;
+  const own = (i) => F.ents.map((x, k) => [x, k]).filter(([x]) => x.summon && x.owner === i);
+  const key = F.id + "|" + F.ents.map((e) => `${e.name}${e.summon ? "^" + e.owner : ""}`).join(",");
+  if (hd.dataset.k !== key) { hd.dataset.k = key;
+    const card = (e, i) => `<div class="hc ${e.side === "c" ? "c" : "m"}${e.boss ? " boss" : ""}${e.champ ? " champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}"><span class="hp">${hudPic(e)}</span><span class="hb"><b>${e.champ ? G("crown") : ""}${h(e.name)}</b><span class="hbar"><i></i><u></u></span><span class="hpv"></span></span><span class="hss"></span></div>`;
+    const L = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => !e.summon && (e.side === "c") === (k === "c")).sort((a, b) => !!b[0].boss - !!a[0].boss).map(([e, i]) => card(e, i)).join("");
+    hd.innerHTML = `<div class="hside">${L("c")}</div><div class="hside m">${L("m")}</div>`; }
+  hd.querySelectorAll(".hc").forEach((n) => { const i = +n.dataset.i, e = F.ents[i]; if (!e) return;
+    n.classList.toggle("ko", !e.alive); n.classList.toggle("now", i === curI && !F.over);
+    n.querySelector(".hbar i").style.width = pct(Math.max(0, e.hp), e.hpMax) + "%";
+    n.querySelector(".hbar u").style.width = Math.min(100, pct(e.shield || 0, e.hpMax)) + "%";
+    const pv = n.querySelector(".hpv"); let t = "";
+    if (e.side === "c" && !e.summon) { const P = E.passiveInfo(e, F); if (P) t = h(P.n); } else if (e.role && E.MON_ROLES[e.role]) t = h(E.MON_ROLES[e.role].name);
+    if (pv.dataset.k !== t) { pv.innerHTML = t; pv.dataset.k = t; }
+    const ss = n.querySelector(".hss"); const live = own(i).filter(([x]) => x.alive); const sk = live.map(([, k]) => k).join(",");
+    if (ss.dataset.k !== sk) { ss.dataset.k = sk; ss.innerHTML = live.map(([x, k]) => `<span class="hsum" data-i="${k}" title="${h(x.name)}">${x.img ? `<img src="assets/m/${x.img}.png" alt="${h(x.name)}" onerror="this.style.visibility='hidden'">` : "✦"}<i></i></span>`).join(""); }
+    ss.querySelectorAll(".hsum").forEach((c) => { const x = F.ents[+c.dataset.i]; if (x) c.lastChild.style.width = pct(Math.max(0, x.hp), x.hpMax) + "%"; }); });
 }
 /* 3.3.0 : infobulles et classes de rangée, Champion et rôle */
 const rowCls = (e) => (e.side === "c" && !e.summon ? (e.row === "b" ? "back" : "front") : "");
@@ -3396,7 +3430,8 @@ function buildArena(F) {
   const view = combatView();
   const so = { fx: decoFx() && !(F && F.dungeon) ? subWeather(F ? F.sub : S.sub) : "", boss: !!(F && F.bossIdx !== undefined), anim: decoFx() };
   ui.arena = { el: arena, fid: F ? F.id : null, nodes: [], lastSeq: 0, lastLog: -1, over: false, theme: isDark(), view };
-  arena.className = "arena " + (view === "compact" ? "cmpmode" : view === "form" ? "fmode" : "v2"); arena.style.height = ""; // 1.0.30 : fmode = Formation (js/formation.js)
+  arena.className = "arena " + (view === "compact" ? "cmpmode" : view === "form" ? "fmode" : "v2 iso"); arena.style.height = ""; // 1.0.30 : fmode = Formation (js/formation.js) ; 1.0.33 : iso = plateau
+  { const old = arena.parentNode && arena.parentNode.querySelector(".schud"); if (old && (view !== "scene" || !F)) old.remove(); }
   if (!F) {
     arena.innerHTML = (view === "form" ? "" : sceneSVG(S.sub ? deco : "sky", 270, "arena" + (S.sub || ""), { fx: so.fx })) + `<div class="idle"><div>${E.expActive(S) && S.exp.pick !== null ? "Le combat de la salle commence…" : E.expActive(S) ? (E.expPending(S) ? "Un choix t'attend." : "Choisis la salle suivante sur la carte.") : S.hunting || S.dungeon ? "Recherche d'un groupe de monstres…" : `Votre équipe se repose.<br><button class="btn primary sm" data-tab="world" style="margin-top:8px">Choisir une zone</button>`}</div></div>`;
     return;
@@ -4518,6 +4553,7 @@ function updateCombat(force) {
       const hn = n.querySelector(".hpn"); if (hn) hn.textContent = `${fmt(Math.max(0, Math.round(e.hp)))} / ${fmt(e.hpMax)}`;
       if (e.side === "c" && !e.summon) { const pn = n.querySelector(".pas"); if (pn) { const P = E.passiveInfo(e, F); const html = P ? `${h(P.n)}${P.m ? ` <span class="pg">${Array.from({ length: Math.min(P.m, 12) }, (_, k) => `<i class="${k < Math.round(P.v * Math.min(P.m, 12) / P.m) ? "on" : ""}"></i>`).join("")}</span>` : ""}` : ""; if (pn.dataset.k !== html) { pn.innerHTML = html; pn.dataset.k = html; } } }
     });
+    sceneHud(F); // 1.0.33 « Plateau »
     // mode manuel : héros à qui c'est le tour, cibles possibles
     const AW = F.await && !F.over ? F.await : null; const aw = $("#await");
     if (AW) {
