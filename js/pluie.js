@@ -38,7 +38,7 @@
       const s = left();
       const btn = t.mine ? `<span class="tag soft">C'est ta pluie : les joueurs la voient sur leur accueil.</span>`
         : t.in ? `<span class="tag good">✓ Tu participes</span><span class="xs muted">Reste tranquille : ta part arrive à la fin, même si tu changes de page.</span>`
-          : `<button class="btn primary" data-act="pl-join" ${P.busy ? "disabled" : ""}>Je participe</button><span class="xs muted">${ON.user ? "Un clic suffit : la pluie est partagée à parts égales entre tous les participants à la fin." : "Il faut être connecté à un compte (gratuit) pour participer."}</span>`;
+          : (s <= 0 ? `<button class="btn" disabled>Partage en cours…</button>` : `<button class="btn primary" data-act="pl-join" ${P.busy ? "disabled" : ""}>Je participe</button>`) + `<span class="xs muted">${ON.user ? "Un clic suffit : la pluie est partagée à parts égales entre tous les participants à la fin." : "Il faut être connecté à un compte (gratuit) pour participer."}</span>`;
       return `<section class="panel pl-card" style="margin-top:14px">${drops}<div class="phead"><h2>${X().IC("kamas")} Pluie de kamas de ${h(t.by || "Xener")}</h2><span class="tag good">en direct</span></div><div class="pad stack">
         <div class="pl-row"><div class="stack" style="gap:2px"><span class="xs muted">À partager entre les joueurs qui participent</span><span class="pl-sum num">${fmt(t.total)} kamas</span></div>
           <div class="stack pl-end" style="gap:2px"><span class="xs muted">Fin de la pluie dans</span><span class="pl-big num" data-pl="left">${mmss(s)}</span></div></div>

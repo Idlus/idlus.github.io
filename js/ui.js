@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.9.3";
+const GAME_VERSION = "1.2.9.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.9.4", name: "Poisons des monstres", items: [
+    "Les sorts de poison des monstres font enfin ce que dit leur fiche (Venin, Effroi, Gel, Vampirisme, Saignement), comme les sorts uniques du Minotot (Destinos) et du Kabahal (Ratafia Putride). L'équilibrage ne bouge presque pas (vérifié par simulation).",
+    "Songe infini : Corruption, Blop Coco Royal et Ben le Ripate appellent leurs vrais serviteurs au lieu de copies d'eux-mêmes.",
+    "Combat : le bandeau annonce « prépare son attaque signature » sans donner le nom du sort.",
+    "Pluie de kamas : à la fin du compte à rebours, le bouton passe à « Partage en cours… » au lieu de rester cliquable pour rien." ] },
   { v: "1.2.9.3", name: "Le menu reste en place", items: [
     "Le menu de gauche (PC) ne remonte plus tout seul en haut pendant un combat : il garde l'endroit où tu l'as fait défiler, même quand « Combat en cours » se met à jour."
   ] },

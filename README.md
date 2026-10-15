@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.9.4 « Poisons des monstres »
+
+Choix de Mathis 1A 2A 3B après la relecture de la 1.2.8. `monsterTurn` (js/engine.js) appelle `E.midHit` aussi pour les sorts de poison (valeur d'un tick), les mécaniques des sorts « dot » et les uniques du Minotot et du Kabahal marchent. `minionKey` (js/identboss.js) : un boss invoque les `bossMobs` de son donjon, même hors donjon (Songe infini), jamais une copie de lui-même. js/identmon.js : « prépare son attaque signature… » sans nom. js/pluie.js : bouton désactivé à 00:00. Difficulté de la 1.2.8 gardée (3B). Simulation `--essais 2` avant / après : écarts dans le bruit.
+
 ## 1.2.9.3 « Le menu reste en place »
 
 Le menu de gauche ne remonte plus tout seul en haut quand on le fait défiler pendant un combat.

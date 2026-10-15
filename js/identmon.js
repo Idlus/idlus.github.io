@@ -99,7 +99,7 @@
     if (!E.MID_SIG || !e.boss || !e.sp) return; const s = sig[e.key]; if (!s) return;
     e.midT = (e.midT || 0) + 1;
     if (e.midPrep) { e.midGo = e.midPrep; e.midPrep = null; return; }
-    if (e.midT % 3 === 2) { e.midPrep = s; say(F, e, "m_prep"); API().flog(F, `${e.name} prépare ${s}…`, "m"); }
+    if (e.midT % 3 === 2) { e.midPrep = s; say(F, e, "m_prep"); API().flog(F, `${e.name} prépare son attaque signature…`, "m"); } // sans le nom du sort (choix 1A de la 1.2.6)
   };
   /* choix du sort : la signature préparée part en premier */
   E.midPick = (F, e, sp) => {

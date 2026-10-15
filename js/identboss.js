@@ -11,6 +11,11 @@
   try { if (typeof process !== "undefined" && process.env && process.env.NO_UBOSS) return; } catch (e) { /* navigateur */ }
   const API = () => E.fightApi;
   const rnd = () => E.rnd();
+  const DG = () => ((root.DATA || (typeof require !== "undefined" ? require("./data.js") : {})).DUNGEONS || {});
+  /* les serviteurs d'un boss : ceux de son donjon, même hors du donjon (Songe infini) ; jamais une copie du boss (1.2.9.4) */
+  const minionKey = (F, e) => { const bk = e.base || e.key; let k = F.dungeonId ? API().mobKey(F, e) : null;
+    if (!k || k === bk) { const L = Object.values(DG()).filter((d) => d.boss === bk && d.bossMobs && d.bossMobs.length); const d = L.length ? L[Math.floor(rnd() * L.length)] : null; k = d ? d.bossMobs[Math.floor(rnd() * d.bossMobs.length)] : null; }
+    return k && k !== bk ? k : null; };
   const P = () => E.MID_P;
 
   /* boîte à outils : chaque mécanique unique est une combinaison de ces gestes */
@@ -47,7 +52,7 @@
       buff: (v, max, tag) => { if (e.buffs.filter((b) => b[tag]).length >= max) return; e.buffs.push({ mdmg: Math.round(v * p), turns: 99, [tag]: 1 }); say(e, "m_rage"); },
       tbuff: (x, v, n) => { x.buffs.push({ mdmg: Math.round(v * p), turns: n }); say(x, "m_rage"); },
       cleanse: () => { e.debuffs = e.debuffs.filter((d) => d.turns > 50); e.dots = []; say(e, "m_soin"); },
-      summon: (max, hp) => { if (mons().filter((m) => m.midSum === e.key).length >= max || mons().length >= 9) return null; const k = F.dungeonId ? A.mobKey(F, e) : e.base || e.key; const m = A.spawnMon(F, k, e.lvl - 3, { fake: true, hp: e.hpMax * hp }); m.midSum = e.key; m.dmg *= 0.6; return m; },
+      summon: (max, hp) => { if (mons().filter((m) => m.midSum === e.key).length >= max || mons().length >= 9) return null; const k = minionKey(F, e); if (!k) return null; const m = A.spawnMon(F, k, e.lvl - 3, { fake: true, hp: e.hpMax * hp }); m.midSum = e.key; m.dmg *= 0.6; return m; },
       rand: (l) => (l.length ? l[Math.floor(rnd() * l.length)] : null),
       low: (l) => l.slice().sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0],
       frail: (l) => l.slice().sort((a, b) => a.hpMax - b.hpMax)[0],

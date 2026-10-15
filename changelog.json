@@ -1,6 +1,16 @@
 {
-  "version": "1.2.9.3",
+  "version": "1.2.9.4",
   "versions": [
+    {
+      "v": "1.2.9.4",
+      "name": "Poisons des monstres",
+      "items": [
+        "Les sorts de poison des monstres font enfin ce que dit leur fiche (Venin, Effroi, Gel, Vampirisme, Saignement), comme les sorts uniques du Minotot (Destinos) et du Kabahal (Ratafia Putride). L'équilibrage ne bouge presque pas (vérifié par simulation).",
+        "Songe infini : Corruption, Blop Coco Royal et Ben le Ripate appellent leurs vrais serviteurs au lieu de copies d'eux-mêmes.",
+        "Combat : le bandeau annonce « prépare son attaque signature » sans donner le nom du sort.",
+        "Pluie de kamas : à la fin du compte à rebours, le bouton passe à « Partage en cours… » au lieu de rester cliquable pour rien."
+      ]
+    },
     {
       "v": "1.2.9.3",
       "name": "Le menu reste en place",

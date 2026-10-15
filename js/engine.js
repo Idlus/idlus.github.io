@@ -1943,7 +1943,7 @@
           const base = monCrit(e, e.dmg * mdmg * lowPa * ratio * (f.n > 1 ? 0.7 : 1) * rf(0.85, 1.15));
           const el = f.el && f.el !== "best" ? f.el : e.el === "n" ? null : e.el;
           const hits = [];
-          ts.forEach((t) => { if (f.k === "dot") t.dots.push({ v: base * 0.5 * (E.midMul ? E.midMul(F, e, sp, t) : 1), turns: f.t || 2, el, src: e.name }); else { const d = dealDamage(F, e, t, base * (E.midMul ? E.midMul(F, e, sp, t) : 1), el); if (E.midHit) E.midHit(F, e, sp, t, d, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
+          ts.forEach((t) => { if (f.k === "dot") { const v = base * 0.5 * (E.midMul ? E.midMul(F, e, sp, t) : 1); t.dots.push({ v, turns: f.t || 2, el, src: e.name }); if (E.midHit) E.midHit(F, e, sp, t, v, el); } else { const d = dealDamage(F, e, t, base * (E.midMul ? E.midMul(F, e, sp, t) : 1), el); if (E.midHit) E.midHit(F, e, sp, t, d, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
           F.midB = base; F.midEl = el; F.midTs = ts;
           parts.push(f.k === "dot" ? `poison sur ${ts.map((t) => t.name).join(", ")}` : hits.join(", "));
         } else if (f.k === "heal" || f.k === "healpct") {
