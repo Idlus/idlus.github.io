@@ -1,6 +1,13 @@
 {
-  "version": "1.0.35",
+  "version": "1.0.35.1",
   "versions": [
+    {
+      "v": "1.0.35.1",
+      "name": "Textes de la Renaissance",
+      "items": [
+        "Les anciens textes qui parlaient de « +30 % d'XP par renaissance » sont corrigés (conseil d'accueil, notes de mise à jour) : depuis la 1.0.35, chaque renaissance apprend un sort d'une autre classe et demande +50 % d'XP par niveau"
+      ]
+    },
     {
       "v": "1.0.35",
       "name": "Mémoire des vies",
@@ -2427,7 +2434,7 @@
       "name": "Renaissance",
       "items": [
         "Renaissance : au niveau 200, un héros peut renaître à la Statue du Phénix (Équipe › Renaissance, ou le bouton sur sa fiche). Il repart au niveau 1 en gardant son apparence, ses titres et ornements, ses Dofus et trophées (toujours équipés), son familier, sa monture et ses parchemins ; son équipement est rangé dans le sac",
-        "Chaque renaissance donne à ce héros +30 % d'XP (en plus du plafond commun) et un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
+        "Chaque renaissance donne à ce héros un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
         "Renaissances V et X : l'Éveil de classe, qui renforce le passif de la classe (la Colère du Iop éclate à 5 puis 4 charges, le Crâ garde son bonus un tour de plus, l'Horloge du Xélor sonne plus tôt…) ; 10 renaissances au plus par héros",
         "Récompenses visibles : médaillon du Phénix sur la carte du héros, aura Braise, Flamme, Brasier puis Phénix, titres « Né des cendres », « Flamme éternelle » et « Phénix d'Idlus », ornement « Ailes du Phénix » à la dixième ; trois succès",
         "Courbe d'XP : au-delà du niveau 100, l'XP demandée par niveau baisse progressivement (moitié vers 160, un tiers à 200) ; la première montée 1 → 200 prend environ 250 h pour une équipe équipée au lieu de 1 400 h (simulation). Les niveaux 1 à 100 ne changent pas ; les héros qui avaient déjà l'XP nécessaire montent à l'ouverture de la partie",

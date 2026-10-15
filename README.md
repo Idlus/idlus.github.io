@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.35.1 « Textes de la Renaissance »
+
+Demande de Mathis (15/10/2026) : « enleve Chaque renaissance lui donne +30 % d'XP ». Conseil d'accueil (`js/welcome.js`) et ancienne note 0.1.12 (`js/ui.js`) corrigés : plus de bonus d'XP depuis la 1.0.35.
+
 ## 1.0.35 « Mémoire des vies »
 
 Demande de Mathis (15/10/2026) : « Nerf l'xp de la Renaissance et trouvé un véritable intérêt », choix 1A 2A 3A avec +50 %. `E.REN_XP = 0` (plus de bonus d'XP) et `E.heroXpNeed(c, l)` = `E.xpNeed(l) × (1 + 0,5 × ren)`, utilisé partout à la place de `E.xpNeed(c.lvl)`. Mémoire des vies (`js/renaissance.js`) : `E.memOffer` (3 sorts de 3 autres classes, sans invocation, gardés dans `c.memOffer`), action `memPick`, `c.mem` / `c.memPend` ; `E.spellDef` retrouve un sort d'une autre classe (`E.memDef`, paire `m:<id>`), limite `E.MEM_SLOTS` (1, 2 dès la V, 3 à la X) appliquée par `E.memFit`, `E.equipSpell`, `E.autoLoadout`. `E.VERSION` 10 : les héros déjà renés reçoivent `memPend = ren`. Écrans : `memSheet`, section du Grimoire, `spPlace`. Simulation : +2 % de dégâts en moyenne à la Ren I, +8 % à la X. Test : `tests/memoire.test.js`.

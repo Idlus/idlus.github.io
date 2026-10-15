@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.35";
+const GAME_VERSION = "1.0.35.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.35.1", name: "Textes de la Renaissance", items: [
+    "Les anciens textes qui parlaient de « +30 % d'XP par renaissance » sont corrigés (conseil d'accueil, notes de mise à jour) : depuis la 1.0.35, chaque renaissance apprend un sort d'une autre classe et demande +50 % d'XP par niveau",
+  ] },
   { v: "1.0.35", name: "Mémoire des vies", items: [
     "Renaissance : plus de bonus d'XP. À la place, chaque renaissance rend la vie suivante plus longue : +50 % d'XP par niveau à chaque renaissance (×6 à la Renaissance X). Les héros gardent leur niveau et leur XP",
     "Mémoire des vies : à chaque renaissance, le héros apprend pour toujours un sort d'une autre classe, au choix parmi 3 (3 classes différentes, sans invocation). Il en équipe 1 dans sa barre, 2 dès la Renaissance V, 3 à la X",
@@ -1432,7 +1435,7 @@ const CHANGELOG = [
     "Page Équipe, choix du héros et plateau Réorganiser : nom doré et médaillon pour les héros renés" ] },
   { v: "0.1.12", name: "Renaissance", items: [
     "Renaissance : au niveau 200, un héros peut renaître à la Statue du Phénix (Équipe › Renaissance, ou le bouton sur sa fiche). Il repart au niveau 1 en gardant son apparence, ses titres et ornements, ses Dofus et trophées (toujours équipés), son familier, sa monture et ses parchemins ; son équipement est rangé dans le sac",
-    "Chaque renaissance donne à ce héros +30 % d'XP (en plus du plafond commun) et un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
+    "Chaque renaissance donne à ce héros un Éveil au choix parmi 8, chacun en 3 rangs : Fureur (dégâts), Robustesse (PV), Écorce (résistances), Lame affûtée (critiques), Main bienveillante (soins et boucliers), Premier sang (dégâts au tour 1), Œil du chercheur (prospection), Meneur (dégâts de toute l'équipe)",
     "Renaissances V et X : l'Éveil de classe, qui renforce le passif de la classe (la Colère du Iop éclate à 5 puis 4 charges, le Crâ garde son bonus un tour de plus, l'Horloge du Xélor sonne plus tôt…) ; 10 renaissances au plus par héros",
     "Récompenses visibles : médaillon du Phénix sur la carte du héros, aura Braise, Flamme, Brasier puis Phénix, titres « Né des cendres », « Flamme éternelle » et « Phénix d'Idlus », ornement « Ailes du Phénix » à la dixième ; trois succès",
     "Courbe d'XP : au-delà du niveau 100, l'XP demandée par niveau baisse progressivement (moitié vers 160, un tiers à 200) ; la première montée 1 → 200 prend environ 250 h pour une équipe équipée au lieu de 1 400 h (simulation). Les niveaux 1 à 100 ne changent pas ; les héros qui avaient déjà l'XP nécessaire montent à l'ouverture de la partie",
