@@ -1,0 +1,49 @@
+/* ============================================================================
+   ÉLEVAGE (refonte de la 1.1) : page Héros › Élevage (js/elevageui.js)
+   ========================================================================== */
+.el-page .el-2c{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;align-items:start}
+.el-page .el-2c>.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (max-width:899px){.el-page .el-2c{grid-template-columns:1fr}}
+.el-st{color:#ffd36b;letter-spacing:1px;font-size:14px;white-space:nowrap}.el-st i{color:var(--panel3);font-style:normal}
+.tag.el-cap{background:rgba(180,120,255,.18)!important;color:#e2c9ff!important;border:1px solid rgba(180,120,255,.45)}
+.tag.el-chrt{background:rgba(255,211,107,.16)!important;color:#ffd36b!important;border:1px solid rgba(255,211,107,.5)}
+img.el-chr{filter:hue-rotate(140deg) saturate(1.6) drop-shadow(0 0 5px #ffd36b) drop-shadow(0 0 1px #fff)}
+.el-ess{color:#c79bff}
+.el-sw{width:42px;height:24px;border-radius:999px;background:var(--panel3);border:1px solid var(--frame);position:relative;cursor:pointer;flex:none;padding:0}
+.el-sw::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.el-sw.on{background:#6fbf3a;border-color:#6fbf3a}.el-sw.on::after{left:21px}
+.el-log{display:flex;flex-direction:column;gap:3px;font-size:12px;max-height:240px;overflow:auto}
+.el-log b{color:var(--muted);font-weight:700;margin-right:4px}
+.el-couple{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:12px;padding:10px}
+.el-couple.free{border:1px dashed var(--frame);background:none}
+.el-couple .bpair{display:flex;align-items:center;gap:2px;flex:none}.el-couple .bpair img{width:44px;height:44px;object-fit:contain}
+.el-couple .bar,.el-bal .bar,.el-sp .bar{height:6px;margin-top:4px;border-radius:9px;background:var(--panel3);overflow:hidden}
+.el-couple .bar i,.el-bal .bar i,.el-sp .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.el-odds{display:flex;flex-wrap:wrap;gap:2px 10px;margin:2px 0}.el-odds b.neu{color:#c79bff}
+.el-its{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.el-it{display:inline-flex;align-items:center;gap:4px;font-size:12px;border:1px solid var(--frame);border-radius:999px;padding:2px 4px 2px 9px;background:var(--panel2)}
+.el-x{border:0;background:none;color:var(--muted);font-weight:900;cursor:pointer;padding:0 4px;font-size:14px;line-height:1}
+.el-essbox{display:flex;gap:12px;align-items:center;background:var(--panel);border-radius:12px;padding:10px}
+.el-essbox .big{font-size:24px;font-weight:900;color:#c79bff}
+.el-shop{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:12px;padding:8px 10px}
+.el-tiers{display:flex;gap:4px;margin-top:4px}
+.el-tier{min-width:30px;border:1px solid var(--frame);background:var(--panel2);color:inherit;border-radius:8px;font-weight:800;font-size:12px;padding:2px 6px;cursor:pointer}
+.el-tier[aria-pressed="true"]{background:var(--gold);color:#1b1408;border-color:var(--gold)}
+.el-ord,.el-bal{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:12px;padding:8px 10px}
+.el-ord img,.el-bal img{width:44px;height:44px;object-fit:contain;flex:none}
+.el-ord.done{opacity:.6}
+.el-mass{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border-radius:12px;padding:8px 10px}
+.el-sp{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--frame)}.el-sp:last-of-type{border:0}
+.el-sp img{width:42px;height:42px;object-fit:contain;flex:none}
+.el-sheet{display:flex;flex-direction:column;gap:10px}
+.el-big{width:84px;height:84px;border-radius:14px;background:radial-gradient(circle,var(--panel3),var(--panel2));border:1px solid var(--frame);display:grid;place-items:center;flex:none}
+.el-big img{width:72px;height:72px;object-fit:contain}
+.el-fam{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;font-size:12px}
+.el-fam>span:nth-child(even){display:flex;flex-wrap:wrap;gap:4px}
+.el-anc{display:inline-flex;align-items:center;gap:3px;background:var(--panel3);border-radius:8px;padding:2px 7px 2px 3px}
+.el-anc img{width:24px;height:24px;object-fit:contain}
+.el-acts{display:flex;flex-wrap:wrap;gap:6px}
+/* 11A : la monture montée, à côté du héros sur la fiche Équipement */
+.el-fig{position:absolute;left:-6px;bottom:18px;width:64px;height:64px;display:grid;place-items:center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));pointer-events:auto}
+.el-fig img{width:64px;height:64px;object-fit:contain}
+@media (max-width:640px){.el-fig{width:48px;height:48px;left:-2px}.el-fig img{width:48px;height:48px}.el-couple{flex-wrap:wrap}.el-couple>.btn{width:100%}.el-shop{flex-wrap:wrap}.el-shop>.btn{width:100%}}

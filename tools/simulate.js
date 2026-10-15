@@ -12,7 +12,7 @@
 "use strict";
 const E = require("../js/engine.js");
 require("../js/systems.js");
-require("../js/pets.js"); require("../js/mounts.js"); require("../js/idols.js"); require("../js/renaissance.js");
+require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/idols.js"); require("../js/renaissance.js");
 const D = require("../js/data.js");
 
 const arg = (k, def) => { const i = process.argv.indexOf("--" + k); return i > 0 && process.argv[i + 1] && !process.argv[i + 1].startsWith("--") ? process.argv[i + 1] : def; };
@@ -88,9 +88,10 @@ const petFor = (c) => { const main = D.CLASSES[c.cls].main;
 const givePets = (S) => { if (!FAM) return; S.chars.forEach((c) => { const id = petFor(c); if (!id) return; const uid = S.petUid++; S.pets[uid] = { uid, id, g: 100, t: 0 }; c.pet = uid; E.refreshSpells(c, E.charStats(S, c)); }); };
 /* --montures dd|mu|vk : chaque héros monte, au niveau 100, la monture de son élément (ou la première couleur) de cette espèce */
 const MNT = arg("montures", "");
+const MST = +arg("etoiles", "0"); // 1.1 : --etoiles 7 = montures ★7 Endurantes (refonte de l'élevage, js/elevage.js)
 const giveMounts = (S) => { if (!MNT || !E.MOUNTS[MNT]) return; S.enclos.built = true; S.chars.forEach((c) => { const main = D.CLASSES[c.cls].main; const cols = E.MOUNTS[MNT].cols;
   const col = Object.keys(cols).find((k) => cols[k].s[main]) || Object.keys(cols).find((k) => cols[k].s.pui) || Object.keys(cols)[0];
-  const M = E.giveMount(S, MNT, col, "", { quiet: true }); if (!M) return; M.lvl = 100; c.mount = M.uid; E.refreshSpells(c, E.charStats(S, c)); }); E.events.length = 0; };
+  const M = E.giveMount(S, MNT, col, "", { quiet: true }); if (!M) return; M.lvl = 100; if (MST) { M.st = MST; M.cap = "endu"; } c.mount = M.uid; E.refreshSpells(c, E.charStats(S, c)); }); E.events.length = 0; };
 /* --idoles hebdo,dynamo,farle : active ces idoles (0.1.10) pour toutes les équipes ; « max » = les 6 idoles de plus haut score */
 const IDOLS = arg("idoles", "");
 const giveIdols = (S) => { if (!IDOLS) return; let ids = IDOLS.split(",").map((x) => x.trim()).filter((x) => E.IDOLS[x]);

@@ -4,7 +4,7 @@
 "use strict";
 const assert = require("assert");
 const E = require("../js/engine.js");
-require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js");
+require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
 require("../js/welcome.js"); require("../js/defi.js"); require("../js/legendaires.js"); require("../js/songe.js");
 const D = require("../js/data.js");

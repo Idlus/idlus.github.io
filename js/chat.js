@@ -240,7 +240,7 @@
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
     if (m.kind === "ann" && m.data && m.data.kind === "race10") return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
-    if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
+    if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "mrare" ? "ailes" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
     const chip = it ? `<button class="itm" data-act="ch-item" data-tpl="${h(m.item.tpl)}"><img src="${X().itemImg(m.item.tpl)}" alt="">[${h(it.name)}]</button>` : "";
@@ -265,6 +265,8 @@
       case "jack": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} remporte le Jackpot du Trool : ${b(`${(+d.k || 0).toLocaleString("fr-FR")} kamas`)} !`); // 1.0.30.6
       case "giga": return window.GIGA ? window.GIGA.txt(m, plain) : t(`${p} obtient le ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} !`); // 1.0.30
       case "dsub": return t(`${p} sublime son ${b((DOF[d.id] && DOF[d.id].name) || "Dofus")} : Potentiel X !`); // 1.0.30 : Potentiel des Dofus (supabase/collections.sql)
+      case "mrare": { const SP = { dd: "Dragodinde", mu: "Muldo", vk: "Volkorne" }; const f = d.sp === "dd"; const un = f ? "une" : "un"; const nm = `${SP[d.sp] || "Monture"} ${String(d.c || "")}`; // 1.1 : naissance exceptionnelle à l'enclos (supabase/elevage.sql)
+        return t(d.k === "chr" ? `${p} fait naître ${un} ${b(nm + " chromatique")} : une naissance sur 150 !` : d.k === "st" ? `${p} fait naître ${un} ${b(nm)} ${"★".repeat(Math.max(1, Math.min(7, +d.st || 5)))} !` : `${p} fait naître ${f ? "sa première" : "son premier"} ${b(nm)}, couleur de dernière génération !`); }
       case "koli": return t(`${p} atteint le grade ${b(["Bronze", "Argent", "Or", "Cristal", "Diamant"][d.g] || "Or")} au Kolizéum (cote ${(+d.cote || 0).toLocaleString("fr-FR")}) !`); // 0.1.44
       case "admin": return t(`${plain ? "Annonce" : "<b>Annonce</b>"} : ${h(m.body || "")}`);
       case "wb": return t(d.ev === "dead" ? `${b(d.name || "Le boss")} est tombé ! Dernier coup : ${p}.` : d.ev === "ph" ? `${b(d.name || "Le boss")} passe en phase ${d.ph} !` : `Boss des mondes : ${b(d.name || "un boss")} arrive !`); // 0.1.49

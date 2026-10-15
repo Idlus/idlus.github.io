@@ -7,7 +7,7 @@
    Usage : node tools/idle_sim.js [--niveaux 20,50,110,200] [--donjons id1,id2] [--rendement 0.25] [--rapide] [--graine 1] */
 "use strict";
 const E = require("../js/engine.js");
-require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/idols.js"); require("../js/renaissance.js");
+require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js"); require("../js/idols.js"); require("../js/renaissance.js");
 require("../js/archis.js"); require("../js/defi.js"); require("../js/expeditions.js");
 const D = require("../js/data.js");
 

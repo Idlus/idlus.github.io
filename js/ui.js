@@ -1912,7 +1912,7 @@ const ICONS = {
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
   { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
-  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["pets", "Familiers et montures", "../p/18003"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
+  { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["pets", "Familiers et montures", "../p/18003"], ["elev", "Élevage", "../mt/97021"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
   // 0.1.36 : Suggestions est toujours là, même sans serveur (le formulaire renvoie alors vers le Discord)
@@ -5249,11 +5249,11 @@ function mountCard(M, c, opts = {}) {
   return `<div class="petcard mountcard ${opts.big ? "big" : ""}">
     <span class="peticon">${im(mountImg(M.sp, M.c), "", E.mountName(M))}</span>
     <div class="grow stack" style="gap:3px;min-width:0">
-      <div><b>${h(E.mountName(M))}</b> <span class="xs muted">génération ${E.gen(M.sp, M.c)}${E.isBico(M.c) ? " · bicolore" : ""}${owner && owner.id !== c.id ? ` · montée par ${h(owner.name)}` : ""}</span></div>
+      <div><b>${h(M.nm ? `« ${M.nm} »` : E.mountName(M))}</b> ${window.ELEVUI ? window.ELEVUI.starsOf(M) + " " + window.ELEVUI.capTag(M.cap) : ""} <span class="xs muted">génération ${E.gen(M.sp, M.c)}${E.isBico(M.c) ? " · bicolore" : ""}${owner && owner.id !== c.id ? ` · montée par ${h(owner.name)}` : ""}</span></div>
       ${mountBar(M)}
       <div class="small"><span class="muted">Maintenant :</span> <b class="pbon">${mountStatTxt(cur) || "—"}</b></div>
       ${M.lvl < E.MOUNT_MAX ? `<div class="xs muted">Au niveau ${E.MOUNT_MAX} : ${mountStatTxt(mx)}</div>` : ""}
-      ${opts.big ? `<div class="xs muted">Petits : ${M.kids}/${E.kidsCap(S)}${why ? ` · élevage : ${why}` : " · peut aller à l'enclos"}</div>` : ""}
+      ${opts.big ? `<div class="xs muted">Petits : ${M.kids}/${E.kidsCap(S, M)}${why ? ` · élevage : ${why}` : " · peut aller à l'enclos"}</div>` : ""}
     </div>
     ${opts.act ? `<div class="stack" style="gap:4px">${c.mount === M.uid ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="mounton" data-uid="${M.uid}" ${ok ? "" : "disabled"}>${ok ? (owner ? `Prendre à ${h(owner.name)}` : "Monter") : "Niv. " + E.mountReq(M)}</button>`}<button class="btn sm" data-act="mountfree" data-uid="${M.uid}" ${E.inPair(S, M.uid) ? `disabled data-tip="À l'enclos"` : ""}>Relâcher</button></div>` : ""}
   </div>`;
@@ -5271,7 +5271,7 @@ function mountPanel(c) {
           <p class="note xs" style="margin:0">${share ? `${h(c.name)} garde ${100 - share} % de son XP et sa monture reçoit le reste` : "La monture ne gagne pas d'XP pour l'instant"} · niveau ${M.lvl + 1} dans ${fmt(Math.ceil(E.mountXpNeed(M.sp, M.lvl) - M.xp))} XP. Quand elle atteint le niveau ${E.MOUNT_MAX}, la part repasse toute seule à 0 %.</p></div>` : "")
       : `<div class="empty">${c.lvl < E.MOUNT_LVL ? `Une monture se monte dès le niveau ${E.MOUNT_LVL}.` : mine.length ? "Aucune monture montée : choisissez-en une ci-dessous." : "Aucune monture pour l'instant : chassez dans une zone sauvage avec un filet de capture dans le sac."}</div>`}
   </div></div>
-  ${others.length ? `<div class="panel"><div class="phead"><h2>Écurie</h2><span class="xs muted">${E.stableN(S)} / ${E.stableCap(S)} places${S.enclos.built ? "" : " · +10 avec l'enclos"}</span></div><div class="list">${others.map((x) => `<div class="li">${mountCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
+  ${others.length ? `<div class="panel"><div class="phead"><h2>Écurie</h2><span class="xs muted">${E.stableN(S)} / ${E.stableCap(S)} places${S.enclos.built ? "" : " · +10 avec l'enclos"}</span>${window.ELEVUI ? `<button class="btn sm" data-act="el-go" data-v="ecurie">Ouvrir l'Élevage</button>` : ""}</div><div class="list">${others.map((x) => `<div class="li">${mountCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
   <div class="panel"><div class="phead"><h2>Capture</h2><span class="row small">${emo("🪢")} <b class="num">${nets}</b> filet${nets > 1 ? "s" : ""}<button class="btn sm ${S.kamas >= E.NET_COST ? "primary" : ""}" data-act="buynet" ${S.kamas >= E.NET_COST ? "" : "disabled"}>Acheter 1 · ${fmt(E.NET_COST)} k</button></span></div>
     <div class="list">${zones}</div>
     <div class="pad"><p class="note xs" style="margin:0">Avec un filet dans le sac, chaque victoire dans une zone sauvage peut capturer une monture de niveau 1 (dragodindes : environ une toutes les 30 min de chasse, muldos : une par heure, volkornes : une toutes les 3 h), en ligne comme hors ligne. Le filet n'est utilisé que si la capture réussit. Le Bricoleur en fabrique dès le niveau 40. Les autres couleurs naissent à l'enclos du Havre-Sac.</p></div></div>`;
@@ -5283,6 +5283,7 @@ const seenCol = (sp, c) => !!(S.mountSeen[sp] && S.mountSeen[sp][c]);
 const mtChip = (sp, c) => { const own = seenCol(sp, c); const n = Object.values(S.mounts).filter((M) => M.sp === sp && M.c === c).length;
   return `<span class="mtchip ${own ? "own" : ""}" data-tip="${h(own ? `${E.MOUNTS[sp].name} ${E.colourName(sp, c)} · au niveau 100 : ${mountStatTxt(E.mountStatsMax(sp, c))}${E.MOUNTS[sp].cols[c] && E.MOUNTS[sp].cols[c].p ? ` · ${E.MOUNTS[sp].cols[c].p.join(" + ")}` : " · capture"}` : "Couleur jamais obtenue")}">${im(mountImg(sp, c), "", own ? c : "?")}${n > 1 ? `<em>×${n}</em>` : ""}</span>`; };
 function enclosBody() {
+  if (window.ELEVUI) return window.ELEVUI.roomHtml(); // 1.1 : tout l'élevage est dans Héros › Élevage (js/elevageui.js)
   if (!S.enclos.built) return `<p class="note">L'enclos ouvre l'élevage : deux montures de la même espèce, niveau ${E.BREED_LVL} au moins, donnent un petit après ${E.BIRTH_MS / 3600e3} h, même hors ligne. Il ajoute aussi ${E.STABLE_ENCLOS} places à l'écurie.</p><button class="btn sm ${S.kamas >= E.ENCLOS_COST ? "primary" : ""}" data-act="enclosbuild" ${S.kamas >= E.ENCLOS_COST ? "" : "disabled"}>Construire · ${fmt(E.ENCLOS_COST)} k</button>`;
   const sp = mtSp(); const Sp = E.MOUNTS[sp]; const next = E.nextCrosses(S, sp);
   const pairs = S.enclos.pairs.map((p, i) => { const A = S.mounts[p.a], B = S.mounts[p.b]; if (!A || !B) return "";
@@ -5374,7 +5375,7 @@ function charEquipView(c, st) {
       <div class="dtop"><span class="xs muted">${upN ? `${upN} emplacement${upN > 1 ? "s" : ""} avec mieux dans le sac` : "Rien de mieux dans le sac"}</span><span class="row" style="gap:8px;flex-wrap:wrap">${focusSel(c)}<button class="btn sm ${upN ? "primary" : ""}" data-act="teamfix" data-v="gear" data-id="${c.id}" ${upN ? "" : "disabled"}>Équiper au mieux${upN ? ` (${upN})` : ""}</button></span></div>
       <div class="doll">
         <div class="dcol">${DOLL_L.map((s) => dollSlot(c, s)).join("")}</div>
-        <div class="dcenter" style="--cc:${CLASSES[c.cls].color}"><div class="dfig">${lookImg(c, "dlook")}<span class="dlv">Niveau ${c.lvl}</span></div>
+        <div class="dcenter" style="--cc:${CLASSES[c.cls].color}"><div class="dfig">${lookImg(c, "dlook")}${window.ELEVUI ? window.ELEVUI.figMount(c) : ""}<span class="dlv">Niveau ${c.lvl}</span></div>
           <b>${h(c.name)}</b><span class="xs muted">${CLASSES[c.cls].name} niv. ${c.lvl}</span>
           <div class="dstats">${["hpMax", "pa", mainK, "pui", "pp", "sa"].map((k) => `<span${tipAttr(k)}>${sIco(k) || "❤"}<b class="num">${k === "hpMax" ? fmt(st.hpMax) : fmtStatVal(k, st[k])}</b></span>`).join("")}</div></div>
         <div class="dcol">${DOLL_R.map((s) => dollSlot(c, s)).join("")}</div>
@@ -6980,7 +6981,8 @@ function celebrate(ev) {
   if (!celeOn) { celeOn = "wait"; setTimeout(nextCele, 60); }
 }
 function celeHtml(ev) {
-  if (window.COLL && window.COLL.cele) { const x = window.COLL.cele(ev); if (x) return x; } // 1.0.30 : Potentiel des Dofus et Collection de panoplies (js/collui.js)
+  if (window.COLL && window.COLL.cele) { const x = window.COLL.cele(ev); if (x) return x; }
+  if (window.ELEVUI) { const x = window.ELEVUI.cele(ev); if (x) return x; } // 1.1 : naissances exceptionnelles, carnet complet (js/elevageui.js) // 1.0.30 : Potentiel des Dofus et Collection de panoplies (js/collui.js)
   if (ev.t === "radiant") { const T = ITEMS[ev.tpl];
     return `<div class="cele-art radiant"><span class="icobox radiant">${im(itemImg(ev.tpl), "", T.name)}</span></div><div class="cele-k">${G("sparkle")} Objet Rayonnant</div><div class="cele-t">${h(T.name)}</div><div class="cele-s">+${ev.pct} % sur ses caractéristiques · niveau ${T.lvl}</div>`; }
   if (ev.t === "dropit") { const T = ITEMS[ev.tpl]; if (!T) return ""; /* 1.0.15 : équipement jamais obtenu */
@@ -8377,7 +8379,7 @@ document.addEventListener("click", (ev) => {
     case "petall": ui.petAll = true; break;
     case "mounton": { const o = E.mountOwner(S, +d.uid); const r = E.equipMount(S, c.id, +d.uid); msg(r); if (!r && o && o !== c) toast(`${o.name} n'a plus de monture.`); dirty = true; break; } // 1.0.12.8 : idem pour la monture
     case "mountoff": E.equipMount(S, c.id, null); dirty = true; break;
-    case "mountfree": { const M = S.mounts[+d.uid]; if (!M) return; if (!confirm(`Relâcher ${E.mountName(M)} (niveau ${M.lvl}) ? Elle disparaît pour toujours et libère une place à l'écurie.`)) return; const r = E.act(S, "releaseMount", +d.uid); if (r) { toast(r); return; } toast(`${E.mountName(M)} est relâché${M.sp === "dd" ? "e" : ""}.`); dirty = true; break; } // 1.0.32
+    case "mountfree": { const M = S.mounts[+d.uid]; if (!M) return; if (!confirm(`Relâcher ${E.mountName(M)} (niveau ${M.lvl}) ? Elle disparaît pour toujours, libère une place à l'écurie${E.releaseEss ? ` et rend ${fmt(E.releaseEss(M))} Essence` : ""}.`)) return; const r = E.act(S, "releaseMount", +d.uid); if (r) { toast(r); return; } toast(`${E.mountName(M)} est relâché${M.sp === "dd" ? "e" : ""}.`); dirty = true; break; } // 1.0.32
     case "mountshare": E.setMountShare(S, c.id, +d.v); dirty = true; break;
     case "buynet": { const r = E.buyNets(S, 1); if (r) { toast(r); return; } toast("Filet de capture acheté."); dirty = true; break; }
     case "enclosbuild": { const r = E.buildEnclos(S); if (r) { toast(r); return; } dirty = true; break; }
@@ -9029,7 +9031,7 @@ async function onBoot() {
 const VF = window.VERIFY;
 const LB = { tab: "race", job: "tous", jgrp: "craft", jmode: "all", jwho: "p", cls: "", dmode: "week", did: null, cache: {} };
 const lbKey = () => [LB.tab, LB.cls, LB.dmode, LB.did, LB.dtier, LB.job, LB.jgrp, LB.jmode, LB.jwho].join("|");
-const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["job", "Métiers"], ["first", "Premiers"]];
+const LB_TABS = [["race", "Course"], ["lvl", "Niveau"], ["defi", "Défi du jour"], ["dj", "Donjons"], ["album", "Album"], ["succ", "Succès"], ["job", "Métiers"], ["elev", "Élevage"], ["first", "Premiers"]];
 /* 0.1.26 : le médaillon prend le cadre du héros (anneau de métal selon le niveau, de feu s'il est rené) */
 const cmFr = (lvl, ren) => (ren ? ` data-fr="feu"` : lvl ? ` data-fr="${E.frameKey(lvl)}"` : "");
 const cmed = (cls, lvl, ren) => (CLASSES[cls] ? `<span class="cm"${cmFr(lvl, ren)} style="--cc:${CLASSES[cls].color}"><img src="${symImg(cls)}" alt="${h(CLASSES[cls].name)}"></span>` : `<span class="cm"></span>`);
@@ -9099,6 +9101,11 @@ async function lbFetch() {
     const { data } = await db.from("lb_level").select(`user_id,pseudo,main,${col}${LB.ml ? ",main_lvl" : ""}`).order(col, { ascending: false }).limit(50);
     out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r[col]), fl: r.main_lvl }));
     if (me && mine) { const v = t === "lvl" ? mine.level : t === "album" ? mine.album : col === "pts" ? mine.pts : mine.succes; out.me = { u: me, cls: mine.main, sc: fmtv(v), fl: mine.mainLvl, rank: await count(db.from("lb_level").select("user_id", { count: "exact", head: true }).gt(col, v)) }; }
+  } else if (t === "elev") { // 1.1 : classement Élevage (supabase/elevage.sql) : couleurs trouvées, puis étoiles
+    const fmtv = (r) => `${r.colours} couleur${r.colours > 1 ? "s" : ""} · ${fmt(r.stars)} ★${r.chroma ? ` · ${r.chroma} chromatique${r.chroma > 1 ? "s" : ""}` : ""}`;
+    const { data } = await db.from("lb_elevage").select("user_id,pseudo,main,main_lvl,colours,stars,chroma").order("colours", { ascending: false }).order("stars", { ascending: false }).limit(50);
+    out.rows = (data || []).map((r) => ({ u: r.user_id, p: r.pseudo, cls: r.main, sc: fmtv(r), fl: r.main_lvl }));
+    if (me && mine && mine.elev) { const m = mine.elev; out.me = { u: me, cls: mine.main, sc: fmtv({ colours: m.c, stars: m.s, chroma: m.chr }), fl: mine.mainLvl, rank: await count(db.from("lb_elevage").select("user_id", { count: "exact", head: true }).gt("colours", m.c)) }; }
   } else if (t === "dj") {
     const did = LB.did || lbDefaultDid(); LB.did = did;
     if (window.DGRANK) await window.DGRANK.cols(db); // 1.0.30 : équipe des records (colonne team), si le serveur l'a
@@ -9353,6 +9360,7 @@ function renderLadder() {
     : LB.tab === "race" ? ""
     : LB.tab === "job" ? jobLbHead()
     : LB.tab === "first" ? `<span class="small muted">Gravés pour toujours, même quand d'autres font mieux ensuite.</span>`
+    : LB.tab === "elev" ? `<span class="small muted">Couleurs de montures trouvées (${E.elevColoursTotal ? E.elevColoursTotal() : 41} au total), puis étoiles de toute l'écurie.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
   const login = ON.user ? (SLOT !== 1 ? soloPanel("les classements") : "") : `<div class="panel"><div class="pad row between"><span><b>Tu n'apparais pas dans les classements</b><br><span class="small muted">Connecte-toi pour que ta partie et tes records y entrent.</span></span><button class="btn primary sm" data-act="on-loginscreen">Se connecter</button></div></div>`;
   $("#main").innerHTML = `<div class="pagehead"><h1>Classements</h1></div>

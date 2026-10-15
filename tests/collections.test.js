@@ -7,7 +7,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const E = require("../js/engine.js");
-require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js");
+require("../js/systems.js"); require("../js/pets.js"); require("../js/mounts.js"); require("../js/elevage.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
 require("../js/welcome.js"); require("../js/defi.js"); require("../js/koli.js"); require("../js/legendaires.js"); require("../js/dofusp.js");
 require("../js/collections.js");

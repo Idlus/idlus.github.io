@@ -80,7 +80,7 @@
   const kindTxt = (e) => (e.sp ? `monture, génération ${e.gen}, héros niveau ${e.req}` : e.kind === "monti" ? `montilier ${(E.PET_FAMS[e.fam] || "").toLowerCase().replace(/s$/, "")}, niv. ${e.lvl}` : e.kind === "boss" ? `familier rare de boss, niv. ${e.lvl}` : `familier de zone, niv. ${e.lvl}`);
   function goBtn(e) {
     const b = (attr) => `<button class="btn sm" ${attr}>${IC("carte")} Y aller</button>`;
-    if (e.sp) return e.wild ? b(`data-act="searchzone" data-id="${h(e.sub)}"`) : b(`data-act="hvroomgo" data-v="enclos"`);
+    if (e.sp) return e.wild ? b(`data-act="searchzone" data-id="${h(e.sub)}"`) : window.ELEVUI ? b(`data-act="el-go" data-v="carnet"`) : b(`data-act="hvroomgo" data-v="enclos"`);
     if (e.dg && DUNGEONS[e.dg]) return b(`data-act="dgopen" data-id="${h(e.dg)}"`);
     if (e.sub && E.SUBS[e.sub]) return b(`data-act="searchzone" data-id="${h(e.sub)}"`);
     return "";
