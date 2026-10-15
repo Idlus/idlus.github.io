@@ -1,6 +1,6 @@
 /* ============================================================================
    COMPTOIRS, Idlus 1.0.30 « L'économie » (choix 35A)
-   Les 6 boutiques du jeu réunies (page Jouer › Comptoirs, js/comptoirsui.js), chacune avec sa monnaie :
+   Les 6 boutiques du jeu réunies (page Économie › Comptoirs, js/comptoirsui.js), chacune avec sa monnaie :
    Bureau des primes (jetons), Comptoir de la cité (insignes), Comptoir des temples (Doplons), Kolizéum (Kolizetons),
    Marché onirique (Bribes de rêve) et Boss des mondes (Fragments d'anomalie).
    Les boutiques gardent leurs règles et leurs fonctions d'achat (E.buyShop, E.sgBuy, E.wbBuy) : rien n'est cassé,
@@ -73,7 +73,7 @@
   const FRAG = () => E.WB_FRAG || "Fragment d'anomalie";
   E.CPT = [
     fromShop("prime", "quetes", { desc: "Jetons de chasseur : un par avis de recherche rempli (deux pour un boss)." }),
-    fromShop("cite", "ailes", { desc: "Insignes de cité : 3 par mission d'alignement, 5 pour un boss.", need: (S) => (S.align ? null : "Choisis d'abord un alignement (Suivi › Quêtes › Alignement).") }),
+    fromShop("cite", "ailes", { desc: "Insignes de cité : 3 par mission d'alignement, 5 pour un boss.", need: (S) => (S.align ? null : "Choisis d'abord un alignement (Journal › Quêtes › Alignement).") }),
     fromShop("temple", "cristal", { desc: "Doplons : en battant les Dopeuls des temples." }),
     fromShop("koli", "combat", { desc: "Kolizetons : en combattant au Kolizéum.", page: "koli" }),
     { id: "songe", icon: "carte", name: () => "Marché onirique", cur: () => E.BRIBES || "Bribes de rêve", desc: "Bribes de rêve : au Songe infini.", page: "exp",

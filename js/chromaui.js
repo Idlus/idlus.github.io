@@ -185,5 +185,5 @@
     window.COLL.cele = (ev) => cele(ev) || (c0 ? c0(ev) : "");
   }
   window.CHROMA = { kpi, html, pill, winHtml, act, dyeHtml, profile, auraCls, cele, fiche };
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "chroma")) E.SEARCH_PAGES.push(["chroma", "Album chromatique", "Suivi › Encyclopédie › Chromatiques : album, vitrine, Atelier du prisme"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "chroma")) E.SEARCH_PAGES.push(["chroma", "Album chromatique", "Journal › Encyclopédie › Chromatiques : album, vitrine, Atelier du prisme"]);
 })();

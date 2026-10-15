@@ -330,7 +330,7 @@
     if (E.misRun(S, c.id)) return `${c.name} est déjà en expédition.`;
     if (M.runs.length >= E.misSlots(S)) return `Toutes les places d'expédition sont prises (${E.misSlots(S)}).`;
     if (c.inTeam && !c.job) return `${c.name} est dans l'équipe : seuls les héros hors de l'équipe partent en expédition.`;
-    if (E.koliState && E.koliState(S).team.includes(c.id)) return `${c.name} est dans l'équipe d'arène : retire-le d'abord (Jouer › Kolizéum).`;
+    if (E.koliState && E.koliState(S).team.includes(c.id)) return `${c.name} est dans l'équipe d'arène : retire-le d'abord (Défis › Kolizéum).`;
     if (c.lvl < m.lvl - E.misGap(m.lvl)) return `Niveau ${m.lvl - E.misGap(m.lvl)} au moins pour cette mission.`;
     if (c.job) { E.gatherPartial(S, c); c.job = null; }
     c.inTeam = false;
@@ -357,7 +357,7 @@
     return null;
   };
   /* un héros en mission ne peut pas rejoindre l'équipe, récolter, s'entraîner, aller à l'atelier, renaître ni partir */
-  E.misAwayTxt = (S, c) => { const r = E.misRun(S, c.id); return r ? `${c.name} est en expédition (retour dans ${hrsTxt((r.t1 - E.now()) / 1000)}). Rappelle-le depuis Jouer › Havre-Sac › Expéditions.` : null; };
+  E.misAwayTxt = (S, c) => { const r = E.misRun(S, c.id); return r ? `${c.name} est en expédition (retour dans ${hrsTxt((r.t1 - E.now()) / 1000)}). Rappelle-le depuis Havre-Sac › Expéditions.` : null; };
   const away = (S, cid) => { if (!S || !S.mis || !S.mis.runs || !S.mis.runs.length || cid == null) return null; const c = S.chars.find((x) => x.id === +cid); return c && E.misRun(S, c.id) ? E.misAwayTxt(S, c) : null; };
   const guard = (name, cidOf) => {
     const f = E[name]; if (typeof f !== "function" || f.__mis) return;

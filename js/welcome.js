@@ -27,7 +27,7 @@
       txt: "À chaque niveau, un héros gagne 5 points. La Force fait taper les sorts de Terre, l'Intelligence ceux de Feu, la Vitalité donne des PV. Tu peux aussi laisser le jeu répartir tout seul (Héros › Caractéristiques)." },
     { id: "harvest", name: "La récolte", hint: "quête « Mettre la main à la pâte »", anchor: '#nav [data-nk="metiers"], #nav [data-nk="menu"]',
       cond: (S) => qstep(S) >= 4,
-      txt: "Un héros envoyé récolter ne combat plus, mais remplit tes ressources, même hors ligne. Artisanat › Métiers › Récolte : choisis un métier, puis ce qu'il ramasse." },
+      txt: "Un héros envoyé récolter ne combat plus, mais remplit tes ressources, même hors ligne. Économie › Métiers › Récolte : choisis un métier, puis ce qu'il ramasse." },
     { id: "protector", name: "Les protecteurs", hint: "premier protecteur", anchor: '[data-act="protgo"]',
       cond: (S) => !!(S.protector && S.protector.until > E.now()),
       txt: "Un gardien de ressource est apparu pendant la récolte. Seule l'équipe qui chasse peut l'affronter : clique sur « Combattre », les héros qui récoltent reviennent le temps du combat puis reprennent leur travail. Victoire : cette ressource ×2 pendant 20 min." },
@@ -45,7 +45,7 @@
       txt: "Ton Havre-Sac est une maison qui s'améliore avec des kamas : expérience, butin, récolte, place dans le sac… Ses meubles donnent leurs bonus à toute l'équipe (onglet Havre-Sac, « Ma maison »)." },
     { id: "almanax", name: "L'Almanax", hint: "quête « Dévotion »", dofus: true, anchor: '#nav [data-nk="quests"], #nav [data-nk="menu"]',
       cond: (S) => qstep(S) >= 11,
-      txt: "Chaque jour, l'Almanax demande une offrande (quelques ressources) et donne un bonus jusqu'à minuit. Suivi › Quêtes › Almanax." },
+      txt: "Chaque jour, l'Almanax demande une offrande (quelques ressources) et donne un bonus jusqu'à minuit. Journal › Quêtes › Almanax." },
     { id: "pets", name: "Les familiers", hint: "niveau 10", dofus: true, anchor: '[data-act="herotab"][data-v="pet"]',
       cond: (S) => maxLvl(S) >= (E.PET_LVL || 10),
       txt: "Dès le niveau 10, un héros peut adopter un familier. Il mange tes ressources et grandit, puis donne un bonus. Chaque sous-zone cache le sien (Héros › Familier)." },
@@ -54,10 +54,10 @@
       txt: "Une zone gagne une étoile toutes les 2 h sans chasse, jusqu'à 5 : +10 % d'XP et de butin par étoile. Elles fondent quand tu y chasses : change de zone pour en profiter." },
     { id: "align", name: "L'alignement", hint: "niveau 30", dofus: true, anchor: '#nav [data-nk="quests"], #nav [data-nk="menu"]',
       cond: (S) => maxLvl(S) >= 30,
-      txt: "Au niveau 30, choisis Bonta ou Brâkmar dans Suivi › Quêtes › Alignement : des quêtes, des grades et des ailes qui grandissent avec toi." },
+      txt: "Au niveau 30, choisis Bonta ou Brâkmar dans Journal › Quêtes › Alignement : des quêtes, des grades et des ailes qui grandissent avec toi." },
     { id: "fm", name: "La forgemagie", hint: "quête « Briseur de runes »", dofus: true, anchor: '#nav [data-nk="forge"], #nav [data-nk="menu"]',
       cond: (S) => qstep(S) >= 16 || ((S.cnt && S.cnt.fm) || 0) > 0,
-      txt: "Le brisage change un objet en runes, et la forgemagie les pose sur un objet pour monter ses jets (Artisanat › Forgemagie). Comme dans DOFUS, une rune donne un succès critique, un succès neutre ou un échec critique ; le reliquat de l'objet garde ce qui a été perdu." },
+      txt: "Le brisage change un objet en runes, et la forgemagie les pose sur un objet pour monter ses jets (Économie › Forgemagie). Comme dans DOFUS, une rune donne un succès critique, un succès neutre ou un échec critique ; le reliquat de l'objet garde ce qui a été perdu." },
     { id: "mounts", name: "Les montures", hint: "niveau 60", dofus: true, anchor: '[data-act="herotab"][data-v="pet"]',
       cond: (S) => maxLvl(S) >= (E.MOUNT_LVL || 60),
       txt: "À partir du niveau 60, capture une monture avec un filet dans les Plaines de Cania. Elle grandit avec l'XP de son héros et lui donne des bonus (Héros › Familier)." },
@@ -120,13 +120,13 @@
   E.SEARCH_KINDS = { page: "Pages", dg: "Donjons", zone: "Zones", item: "Objets", set: "Panoplies", res: "Ressources", mon: "Monstres", dofus: "Dofus", idol: "Idoles", pet: "Familiers", mount: "Montures", cons: "Consommables", ach: "Succès" };
   E.SEARCH_PAGES = [
     ["home", "Havre-Sac", "ta maison, la chasse en cours, le journal"], ["world", "Monde", "carte des zones de chasse"],
-    ["combat", "Combat", "le combat en cours"], ["quests", "Quêtes", "quête principale"], ["dofusq", "Quêtes des Dofus", "Héros › Dofus › Quêtes et butin"], ["bounty", "Avis de recherche", "Suivi › Quêtes › Avis"],
-    ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Suivi › Succès"], ["ladder", "Classements", "Communauté › Classements"], ["defi", "Défi du jour", "Jouer › Défi du jour"], ["dungeons", "Donjons", "clés, stasis et coffres"], ["enc", "Encyclopédie", "monstres, objets, panoplies"], ["exp", "Songe infini", "Jouer › Songe infini"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
+    ["combat", "Combat", "le combat en cours"], ["quests", "Quêtes", "quête principale"], ["dofusq", "Quêtes des Dofus", "Héros › Dofus › Quêtes et butin"], ["bounty", "Avis de recherche", "Journal › Quêtes › Avis"],
+    ["align", "Alignement", "Bonta ou Brâkmar"], ["almanax", "Almanax", "offrande du jour"], ["ach", "Succès", "Journal › Succès"], ["ladder", "Classements", "Communauté › Classements"], ["defi", "Défi du jour", "Défis › Défi du jour"], ["dungeons", "Donjons", "clés, stasis et coffres"], ["enc", "Encyclopédie", "monstres, objets, panoplies"], ["exp", "Songe infini", "Aventure › Songe infini"], ["wardrobe", "Garde-robe", "apparence des héros"], ["card", "Partager mon équipe", "carte d'équipe"],
     ["team", "Équipe et héros", "composition et placement"], ["heroes", "Héros", "équipement du héros"], ["hstats", "Caractéristiques", "Héros › Caractéristiques"], ["spells", "Sorts", "Héros › Sorts"],
     ["pet", "Familier et monture", "Héros › Familier"], ["inv", "Inventaire", "objets"], ["invres", "Ressources", "Héros › Inventaire › Ressources"], ["invcons", "Consommables", "Héros › Inventaire › Consommables"],
-    ["sets", "Carnet de panoplies", "Héros › Inventaire › Panoplies"], ["ren", "Renaissance", "Héros › Renaissance"], ["recolte", "Récolte", "Artisanat › Métiers › Récolte"], ["craft", "Artisanat", "Artisanat › Métiers › Artisanat"],
+    ["sets", "Carnet de panoplies", "Héros › Inventaire › Panoplies"], ["ren", "Renaissance", "Héros › Renaissance"], ["recolte", "Récolte", "Économie › Métiers › Récolte"], ["craft", "Artisanat", "Économie › Métiers › Artisanat"],
     ["forge", "Forgemagie", "runes et puits"], ["options", "Options", "thème, affichage, sauvegarde"], ["account", "Compte en ligne", "Options › Compte"], ["archis", "Album des archimonstres", "âmes capturées"],
-    ["idols", "Idoles", "difficulté et bonus"], ["koli", "Kolizéum", "Jouer › Kolizéum : combats contre d'autres équipes"], ["wb", "Boss des mondes", "Jouer › Boss des mondes"], ["metiers", "Métiers", "Artisanat › Métiers : récolte et artisanat"], ["sugg", "Suggestions", "Communauté › Suggestions"], ["hdv", "Hôtel de vente", "Communauté › Hôtel de vente"], ["guild", "Guilde", "Communauté › Guilde"], ["tips", "Carnet des découvertes", "relire les bulles d'aide"], ["changelog", "Nouveautés", "notes de mise à jour"],
+    ["idols", "Idoles", "difficulté et bonus"], ["koli", "Kolizéum", "Défis › Kolizéum : combats contre d'autres équipes"], ["wb", "Boss des mondes", "Défis › Boss des mondes"], ["metiers", "Métiers", "Économie › Métiers : récolte et artisanat"], ["sugg", "Suggestions", "Communauté › Suggestions"], ["hdv", "Hôtel de vente", "Économie › Hôtel de vente"], ["guild", "Guilde", "Communauté › Guilde"], ["tips", "Carnet des découvertes", "relire les bulles d'aide"], ["changelog", "Nouveautés", "notes de mise à jour"],
   ];
   E.searchIndex = () => {
     if (INDEX) return INDEX;

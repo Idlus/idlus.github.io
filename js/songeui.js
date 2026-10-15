@@ -1,6 +1,6 @@
 /* ============================================================================
    LE SONGE INFINI — interface (0.1.48). La logique est dans js/songe.js, les légendaires dans js/legendaires.js.
-   Page Jouer › Songe infini : le Puits des Songes (intensités, entrer), la carte du songe en cours et les
+   Page Aventure › Songe infini : le Puits des Songes (intensités, entrer), la carte du songe en cours et les
    salles suivantes, le Marché onirique, la collection des objets légendaires. Fiches : Faveur, Fontaine,
    Gobledore, vague suivante, Sable de Draconiros, réveil. Dans l'onglet Combat : la barre du songe et les salles.
    Utilise les outils de l'interface exposés par ui.js (window.DX.social).

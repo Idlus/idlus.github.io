@@ -629,7 +629,7 @@
   /* Chasse : on choisit une sous-zone et l'équipe y combat en boucle */
   E.startHunt = (S, sid) => {
     if (S.dungeon) return "Vous êtes en donjon.";
-    if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Jouer › Songe infini).";
+    if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Aventure › Songe infini).";
     if (!E.setSub(S, sid)) return "Sous-zone verrouillée.";
     pinStars(S, sid); // les étoiles cessent de monter et fondent à partir de maintenant
     S.hunting = true; S.fight = null; S.pause = E.PAUSE_MS;
@@ -2928,7 +2928,7 @@
     if (k > SI.max + 1) return `Stasis ${k} verrouillée : terminez d'abord la stasis ${SI.max + 1}.`;
     if (!E.dungeonUnlocked(S, did)) return "Donjon verrouillé.";
     if (S.dungeon) return "Vous êtes déjà en donjon.";
-    if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Jouer › Songe infini).";
+    if (E.expActive && E.expActive(S)) return "L'équipe est dans le Songe infini : réveille-la d'abord (Aventure › Songe infini).";
     if ((S.res[dg.key] || 0) < 1) return `Il vous faut : ${dg.key}.`;
     S.res[dg.key]--; if (!S.res[dg.key]) delete S.res[dg.key];
     const W = E.weekly(S); const FL = W && W.did === did ? null : E.flashOf(S, did); const wk = W && W.did === did ? W.mod : FL ? FL.mod : null;

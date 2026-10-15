@@ -3,7 +3,7 @@
    - Havre-Sac › Expéditions (ui.home = "expe") : missions en cours, une carte par héros hors de l'équipe avec la mission
      conseillée (Envoyer / Changer), le tableau du jour, les places (Salle des cartes) et les derniers retours.
      Tuile « Expéditions » dans « Aujourd'hui » de l'accueil.
-   - Jouer › Donjons : encadré « Donjon pendant ton absence » (heures en banque, donjon et stasis, interrupteur, estimation,
+   - Aventure › Donjons : encadré « Donjon pendant ton absence » (heures en banque, donjon et stasis, interrupteur, estimation,
      dernière absence).
    - Fenêtre « Pendant votre absence » : compte rendu du donjon et retours d'expédition.
    Actions « ex-… » (une ligne dans le clic de js/ui.js) ; listes de choix : écouteur « change » ici.

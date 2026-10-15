@@ -1,6 +1,6 @@
 /* ============================================================================
    COMPTOIRS (interface), Idlus 1.0.30 « L'économie » (choix 35A)
-   Page Jouer › Comptoirs : les 6 boutiques du jeu (js/comptoirs.js) avec leur monnaie, l'offre de la semaine,
+   Page Économie › Comptoirs : les 6 boutiques du jeu (js/comptoirs.js) avec leur monnaie, l'offre de la semaine,
    les objets qu'on rachète, et les étiquettes NOUVEAU (achetable et pas encore vu) / ACHETÉ.
    Un point sur le menu tant qu'une monnaie peut acheter quelque chose de neuf (vu = montré sur cette page).
    Les pages Kolizéum, Songe infini et Boss des mondes gardent leur boutique : un bouton y mène.

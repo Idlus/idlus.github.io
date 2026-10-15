@@ -1,6 +1,6 @@
 /* ============================================================================
    FOIRE DU TROOL (interface), Idlus 1.0.30 « L'économie » (choix 28C + Jackpot, écran v-foire)
-   Page Jouer › Foire du Trool : le Jackpot du serveur (supabase/foire.sql : ticket 10 000 k, tirage toutes les
+   Page Économie › Foire du Trool : le Jackpot du serveur (supabase/foire.sql : ticket 10 000 k, tirage toutes les
    heures, gain versé comme une vente de l'HdV) et les Caisses du Trool (js/foire.js : 3 caisses, 5 raretés
    aux chances affichées, ouverture qui défile, 20 par jour).
    La page n'est dessinée qu'à l'ouverture et après une action ; le compte à rebours et le pot se mettent à jour

@@ -12,9 +12,9 @@ const dir = path.join(__dirname, "..", "js");
 const ui = fs.readFileSync(path.join(dir, "ui.js"), "utf8");
 const navSrc = ui.slice(ui.indexOf("const NAV = ["), ui.indexOf("];", ui.indexOf("const NAV = [")));
 const GROUPS = {};
-for (const m of navSrc.matchAll(/n: "([^"]+)", pages: ([^\n]+)/g)) GROUPS[m[1]] = [...m[2].matchAll(/\["[a-z]+", "([^"]+)"/g)].map((x) => x[1]);
-assert.deepStrictEqual(Object.keys(GROUPS), ["Jouer", "Héros", "Artisanat", "Suivi", "Communauté"], "les 5 groupes du menu sont lus");
-GROUPS.Jouer.push("Combat"); // bouton Combat à part (navName)
+for (const m of navSrc.matchAll(/n: "([^"]+)", ic: [^,]+, pages: ([^\n]+)/g)) GROUPS[m[1]] = [...m[2].matchAll(/\["[a-z]+", "([^"]+)"/g)].map((x) => x[1]);
+assert.deepStrictEqual(Object.keys(GROUPS), ["Aventure", "Défis", "Héros", "Économie", "Communauté", "Journal"], "les 6 familles du menu (1.2) sont lues");
+GROUPS.Aventure.push("Combat"); // bouton Combat à part (barre du bas du téléphone)
 // les onglets de la fiche d'un héros s'écrivent « Héros › Sorts » : la barre du bas du téléphone a un bouton Héros
 GROUPS["Héros"].push("Équipement", "Caractéristiques", "Sorts", "Familier", "Ornement", "Apparence");
 const PAGES = new Map(); for (const g in GROUPS) for (const p of GROUPS[g]) if (!GROUPS[p]) PAGES.set(p, g);

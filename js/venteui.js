@@ -4,7 +4,7 @@
      calcule la remontée (E.venteNow, js/vente.js).
    - Fiche d'une ressource (Héros › Inventaire › Ressources) : prix, tendance, jauge ×0,1 à ×3, courbe des 48 h,
      « Vendre » et « Vendre à l'HdV » ; une flèche ▲ ▼ sur chaque case.
-   - Page Communauté › Cours des ressources : les plus chères, les plus vendues, ton sac au prix du moment.
+   - Page Économie › Cours des ressources : les plus chères, les plus vendues, ton sac au prix du moment.
    - Surplus (« Garder au maximum », limite de banque des absences) vendu au prix du moment toutes les 10 minutes.
    Compte connecté (partie 1) obligatoire pour vendre ; sans compte, hors ligne ou en partie solo, le marchand de
    secours rachète le surplus comme avant (E.venteHook, js/vente.js). Le serveur vérifie tout (hdv_save, hdv_qty).
@@ -159,7 +159,7 @@
     return `<div class="row small vd-inote"><span class="xs muted grow">Les ressources sont partagées entre tous vos héros. Pour vendre : la vente directe au prix du serveur ou l'hôtel de vente, depuis la fiche d'une ressource${V.at ? " (▲ le prix remonte, ▼ il baisse)" : ""}.</span>${online() ? `<button class="btn sm" data-act="nav" data-v="cours">${X().IC("kamas")} Cours des ressources</button>` : ""}</div>`;
   };
 
-  /* ---------- page Communauté › Cours des ressources ---------- */
+  /* ---------- page Économie › Cours des ressources ---------- */
   function row(n) {
     const s = S(); const x = now(n); const b = E.resPrice(n); const own = s.res[n] || 0;
     return `<div class="li small vd-row">${X().im(X().resImg(n), "ico", n)}<span class="grow"><b>${h(n)}</b><br><span class="xs muted">base ${fmt(b)} k${x.q24 ? ` · ${fmt(x.q24)} vendues en 24 h` : ""}${own ? ` · tu en as ${fmt(own)}` : ""}</span></span>

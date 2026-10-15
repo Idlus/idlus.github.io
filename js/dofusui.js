@@ -5,7 +5,7 @@
    - Quêtes et butin : la page de quêtes de js/questui.js (étapes, « Y aller », épingle, butin des boss) ;
    - Potentiel : la page de js/collui.js (rangs, éclat, Sublimé) ;
    - Par héros : une carte par héros (6 emplacements, primordiaux de l'Éveil des Dragons, Dofus libres qui lui iraient).
-   Affichage seulement : rien ici ne touche aux chances d'obtenir un Dofus. Suivi › Quêtes › Dofus ouvre cette page.
+   Affichage seulement : rien ici ne touche aux chances d'obtenir un Dofus. Journal › Quêtes › Dofus ouvre cette page.
    ========================================================================== */
 (function () {
   "use strict";

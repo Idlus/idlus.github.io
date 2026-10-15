@@ -1,5 +1,5 @@
 /* ============================================================================
-   ALIGNEMENT — interface (1.0.30, choix 34A). Page Suivi › Quêtes › Alignement :
+   ALIGNEMENT — interface (1.0.30, choix 34A). Page Journal › Quêtes › Alignement :
    - les deux cités (ton camp, joueurs de chaque camp, bonus), la guerre des cités de la semaine
      (barre des points, tes points, gagnant de la semaine passée et son bonus de +5 % d'XP et de butin),
    - les quêtes de ta cité (5 chapitres de 5 étapes, js/alignement.js), « Y aller » et « Remettre »,

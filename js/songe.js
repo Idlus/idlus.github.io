@@ -646,7 +646,7 @@
   if (E.TIPS) { const i = E.TIPS.findIndex((t) => t.id === "expedition"); if (i >= 0) E.TIPS.splice(i, 1); }
   if (E.TIPS && !E.TIPS.some((t) => t.id === "songe")) E.TIPS.push({ id: "songe", name: "Le Songe infini", hint: "niveau 10", anchor: '#nav [data-nk="exp"], #nav [data-nk="menu"]',
     cond: (S) => S.chars.some((c) => c.lvl >= E.EXP_MIN_LVL),
-    txt: "Jouer › Songe infini : une carte de 26 salles, la même pour tous chaque semaine. Choisis ton couloir, gagne des bonus et des points de rêve, puis tiens les vagues de la Fin du rêve pour valider le songe et gagner des Bribes de rêve." });
+    txt: "Aventure › Songe infini : une carte de 26 salles, la même pour tous chaque semaine. Choisis ton couloir, gagne des bonus et des points de rêve, puis tiens les vagues de la Fin du rêve pour valider le songe et gagner des Bribes de rêve." });
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);

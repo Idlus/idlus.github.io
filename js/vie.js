@@ -272,7 +272,7 @@
     if (!E.ORN.tablier) E.ORN.tablier = { name: () => "Tablier d'artisan", req: "Livrer 100 commandes d'artisans", ok: (S) => (S.cmd && S.cmd.n || 0) >= 100 };
     if (!E.ORN.dopeul) E.ORN.dopeul = { name: () => "Reflet du temple", req: "Comptoir des temples (50 Doplons)", ok: (S) => !!(S.unlocks && S.unlocks.dopeul) };
   }
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "commandes")) E.SEARCH_PAGES.push(["commandes", "Commandes d'artisans", "Suivi › Quêtes › Commandes : livrer des ressources"], ["temples", "Temples et Dopeuls", "Suivi › Quêtes › Temples : Doplons"], ["consignes", "Consignes d'absence", "Options : ce que fait l'équipe pendant ton absence"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "commandes")) E.SEARCH_PAGES.push(["commandes", "Commandes d'artisans", "Journal › Quêtes › Commandes : livrer des ressources"], ["temples", "Temples et Dopeuls", "Journal › Quêtes › Temples : Doplons"], ["consignes", "Consignes d'absence", "Options : ce que fait l'équipe pendant ton absence"]);
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -2039,7 +2039,7 @@ function shopIng(e) { return E.shopIng(S, e); }
 function shopName(e) { return E.shopName(S, e); }
 /* 3.2.2 : bouton « suivre » (bande d'objectifs) */
 /* 1.0.6.4 : bouton « Y aller » d'une étape de la quête principale (zone, donjon, ou la page où se fait l'étape) */
-const QUEST_GO = { havre: "Havre-Sac (accueil)", harvest: "Artisanat › Métiers › Récolte", craft: "Artisanat › Métiers › Artisanat", brk: "Artisanat › Forgemagie › Brisage", equip: "Héros › Équipe et héros › Équipement", almanax: "Suivi › Quêtes › Almanax", bounty: "Suivi › Quêtes › Avis de recherche", align: "Suivi › Quêtes › Alignement" };
+const QUEST_GO = { havre: "Havre-Sac (accueil)", harvest: "Économie › Métiers › Récolte", craft: "Économie › Métiers › Artisanat", brk: "Économie › Forgemagie › Brisage", equip: "Héros › Équipe et héros › Équipement", almanax: "Journal › Quêtes › Almanax", bounty: "Journal › Quêtes › Avis de recherche", align: "Journal › Quêtes › Alignement" };
 function questGoBtn(q, cls) {
   if (!q) return "";
   if (q.sub) return `<button class="btn sm ${cls}" data-act="zoneview" data-id="${q.sub}" data-gotab="world">Y aller</button>`;
@@ -5159,7 +5159,7 @@ function teamBoardHtml() {
     const n = z === "f" ? `${list.length} / ${E.frontMax(E.team(S).length)}` : z === "b" ? `${list.length}` : z === "train" ? `${list.length} / 1` : `${list.length}`;
     const sel = ui.teamSel != null ? char(ui.teamSel) : null; const tgt = sel && teamZone(sel) !== z;
     return `<div class="tzone ${tgt ? "target" : ""}" data-act="teamdrop" data-v="${z}" data-zone="${z}"><div class="tzt"><b>${TZ[z][0]}</b><span class="xs muted">${TZ[z][1]} · ${n}</span></div><div class="tslots">${list.map((c) => { const at = teamZone(c) === "atelier"; const mi = teamZone(c) === "mis"; // 1.0.30 : en expédition
-      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at || mi ? `disabled title="${mi ? "En expédition (Jouer › Havre-Sac › Expéditions)" : "Travaille à l'atelier du Havre-Sac"}"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline sm">${E.roman(c.ren)}</span>` : ""} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : mi ? " · en expédition" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
+      return `<button class="ttok ${ui.teamSel === c.id ? "sel" : ""}" ${at || mi ? `disabled title="${mi ? "En expédition (Havre-Sac › Expéditions)" : "Travaille à l'atelier du Havre-Sac"}"` : `draggable="true" data-act="teamsel" data-id="${c.id}" data-tok="${c.id}"`}>${head(c)}<span><b class="${c.ren ? "rname" : ""}">${h(c.name)}${c.ren ? ` <span class="renm inline sm">${E.roman(c.ren)}</span>` : ""} <span class="tlv">${c.lvl}</span></b><span class="xs muted">${h(CLASSES[c.cls].name)}${at ? " · atelier" : mi ? " · en expédition" : ""}</span></span></button>`; }).join("") || `<span class="tempty">${canHover ? "Glissez un héros ici" : "vide"}</span>`}</div></div>`; };
   return `<div class="tboard"><p class="note xs" style="margin:0">${canHover ? "Glissez un héros d'une zone à l'autre, ou cliquez sur lui puis sur une zone." : "Touchez un héros, puis la zone où l'envoyer."}${ui.teamSel != null && char(ui.teamSel) ? ` <b>${h(char(ui.teamSel).name)}</b> est choisi.` : ""} Pour la récolte, le jeu vous demande la ressource.</p>
     <div class="tcols"><div class="tcol">${zone("f")}${zone("b")}</div><div class="tcol">${zone("job")}${zone("train")}${zone("rest")}</div></div></div>`;
 }
@@ -7326,7 +7326,7 @@ function offlineSheet(r) {
 function migrationSheet(list) {
   openSheet(`<h2>Votre partie a été mise à jour</h2><p class="small">Niveaux, kamas, objets, ressources, métiers sont conservés.</p>
     <ul class="small">${list.map((x) => `<li>${h(x)}</li>`).join("")}</ul>
-    <p class="small muted">À découvrir : la stasis des donjons (Jouer › Donjons), l'apparence de vos héros (Héros › Apparence), les nouveaux passifs et les parchemins de caractéristiques.</p>
+    <p class="small muted">À découvrir : la stasis des donjons (Aventure › Donjons), l'apparence de vos héros (Héros › Apparence), les nouveaux passifs et les parchemins de caractéristiques.</p>
     <div><button class="btn primary" data-act="closesheet">C'est parti</button></div>`);
 }
 
@@ -7500,7 +7500,7 @@ function celeHtml(ev) {
   if (ev.t === "mount") { const M = S.mounts[ev.uid]; if (!M) return "";
     return `<div class="cele-art pet">${im(mountImg(M.sp, M.c), "celepet", E.mountName(M))}</div><div class="cele-k">${G("star")} ${ev.neu ? "Nouvelle couleur" : "Nouvelle monture"}</div><div class="cele-t">${h(E.mountName(M))}</div><div class="cele-s">Au niveau ${E.MOUNT_MAX} : ${h(mountStatTxt(E.mountStatsMax(M.sp, M.c)))}</div>`; }
   if (ev.t === "exp") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Le Songe infini</div><div class="cele-t">${h(ev.int || "")} validé</div><div class="cele-s">Titre « ${h(ev.title)} » débloqué (onglet Héros)</div>`;
-  if (ev.t === "songe") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Nouveau mode de jeu</div><div class="cele-t">Le Songe infini</div><div class="cele-s">Une carte de rêve par semaine, la même pour tous. Menu Jouer › Songe infini.</div>`;
+  if (ev.t === "songe") return `<div class="cele-art pet">${IC("carte", "celepet")}</div><div class="cele-k">${G("star")} Nouveau mode de jeu</div><div class="cele-t">Le Songe infini</div><div class="cele-s">Une carte de rêve par semaine, la même pour tous. Menu Aventure › Songe infini.</div>`;
   if (ev.t === "leg") { const T = ITEMS[ev.tpl]; const x = E.legByTpl(ev.tpl); if (!T || !x) return ""; // 0.1.48 : objet légendaire
     return `<div class="cele-art radiant"><span class="icobox lx cf ${ev.ev >= 5 ? "e5" : ev.ev <= 2 ? "e1" : ""}">${im(itemImg(ev.tpl), "", T.name)}${ev.ev >= 5 ? '<span class="lxsp"></span>' : ""}</span></div><div class="cele-k">${G("sparkle")} ${ev.up ? `Éveil ${["I", "II", "III", "IV", "V"][ev.ev - 1]}` : "Objet légendaire"}</div><div class="cele-t"><span class="lxn cf">${h(T.name)}</span></div><div class="cele-s">${h(E.legTxt(x, ev.ev))}</div>`; }
   if (ev.t === "rq") return `<div class="cele-art pet"><img class="celeorn" src="assets/ui/orn/orn_${h(ev.id)}.svg" alt=""></div><div class="cele-k">${IC("monde")} Quête de région terminée</div><div class="cele-t">${h(ev.name)}</div><div class="cele-s">Titre « ${h(ev.title)} » et ornement « Emblème de ${h(ev.name)} » débloqués (Héros › Ornement).</div>`;
@@ -7814,7 +7814,7 @@ function itemSheet(tpl) {
     ${T.slot === "arme" ? wpBlockHtml(tpl, null, ui.cid ? char(ui.cid) : S.chars[0]) : ""}
     <div class="xs">${window.FORGEUI && !T.dofus ? (() => { const best = Object.values(S.items).filter((x) => x.tpl === tpl).sort((a, b) => E.itemQuality(b) - E.itemQuality(a))[0] || null; return tplStatsHtml(Object.assign({}, T, { stats: {} })) + (best ? `<div class="xs muted">Ton meilleur exemplaire · jet ${Math.round(E.itemQuality(best) * 100)} %</div>` : "") + window.FORGEUI.statGrid(T, best, window.FORGEUI.wornRef(tpl, best)); })() : tplStatsHtml(T)}</div>
     <h3 class="sec">${T.dofus ? "Comment l'obtenir" : "Où le trouver"}</h3>
-    <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Jouer › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
+    <div class="list">${T.dofus && E.DOFUS[T.dofus] ? dofusQuestLineHtml(T.dofus) + dofusDropHtml(T.dofus) : lines.join("") || (T.wboss ? `<div class="li"><span class="icobox">${im(imgM(T.wboss), "", "Boss des mondes")}</span><span class="grow"><b>Boss des mondes</b> · boutique de Fragments d'anomalie<br><span class="xs muted">Défis › Boss des mondes : chaque essai et la mort du boss donnent des Fragments.</span></span><button class="btn sm" data-act="wb-go">Voir</button></div>` : `<div class="li muted">Source inconnue pour l'instant.</div>`)}</div>
     <div class="row">${owned ? `<span class="tag good">✓ ${owned} dans le sac</span><button class="btn sm" data-act="searchinv" data-tpl="${tpl}">Voir dans le sac</button>` : `<span class="tag soft">pas encore dans le sac</span>`}
       ${T.craft ? `<button class="btn sm" data-act="shoppin" data-k="tpl" data-id="${tpl}">${G("cart")} ${inShop ? "Retirer de la liste de courses" : "Liste de courses"}</button>` : ""}
       ${T.set ? `<button class="btn sm" data-act="searchset" data-id="${T.set}">Carnet de panoplies</button>` : ""}
@@ -8972,7 +8972,7 @@ document.addEventListener("click", (ev) => {
     case "atstop": E.setAtelier(S, null); break;
     case "mettab": ui.met = d.v; ui.confirm = null; break;
     case "fgtab": ui.fg = d.v; ui.confirm = null; break;
-    case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Jouer › Comptoirs ; 1.0.33 : Héros › Dofus
+    case "qtab": if (d.v === "shops" && PAGES.comptoirs) { navGo("comptoirs"); window.scrollTo(0, 0); break; } if (d.v === "dofus" && window.DOFUI) { window.DOFUI.open("quetes"); return; } ui.qt = d.v; ui.confirm = null; break; // 1.0.30 : Économie › Comptoirs ; 1.0.33 : Héros › Dofus
     case "goquest": ui.tab = "quests"; ui.qt = d.v; break;
     case "gathersheet": ui.gs = { cid: d.cid ? +d.cid : d.job ? gatherPick(d.job) : (ui.cid || S.chars[0].id), job: d.job || null }; gatherSheet(); return;
     case "gsjob": ui.gs.job = d.v; ui.gs.res = null; gatherSheet(); return;

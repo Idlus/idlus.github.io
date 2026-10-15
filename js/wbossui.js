@@ -1,6 +1,6 @@
 /* ============================================================================
    BOSS DES MONDES — interface (0.1.49). Les règles et le combat sont dans js/wboss.js.
-   Page Jouer › Boss des mondes : le boss, sa barre de PV commune (phases à 66 % et 33 %), tes essais du jour,
+   Page Défis › Boss des mondes : le boss, sa barre de PV commune (phases à 66 % et 33 %), tes essais du jour,
    le grade de chaque essai, le classement, la boutique de Fragments d'anomalie et la rotation.
    Autour : la carte animée dans le chat Général (card), l'effet plein écran à l'arrivée d'un boss (une fois par joueur,
    coupable dans Options), le bandeau violet en haut tant qu'il est en vie et le bandeau du bonus d'XP après sa mort.

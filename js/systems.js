@@ -1048,7 +1048,7 @@
     const lvl = Math.max(c.lvl, ...E.team(S).map((x) => x.lvl), 1);
     const mon = pool.slice().sort((a, b) => Math.abs(MONSTERS[a].lvl[0] - lvl) - Math.abs(MONSTERS[b].lvl[0] - lvl))[0];
     S.protector = { job: W.job, res: W.res, mon, cid: c.id, until: now + E.PROT_WAIT_S * 1000, at: now };
-    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min : bouton « Combattre » sur l'Accueil ou dans Artisanat › Métiers.`, "rare");
+    note(S, `${E.PROT_TITLE[W.job]} apparaît pendant que ${c.name} récolte : ${MONSTERS[mon].name} garde le ${W.res}. Vous avez 15 min : bouton « Combattre » sur l'Accueil ou dans Économie › Métiers.`, "rare");
   };
   E.protCanFight = (S) => { const P = E.protActive(S); if (!P) return "Aucun protecteur."; if (S.dungeon) return "Impossible pendant un donjon."; if (!E.team(S).length) return "Votre équipe est vide."; if (!S.hunting || !S.sub) return "Partez chasser avec l'équipe pour l'affronter."; return null; };
   /* 0.1.29.3 : « Combattre » prépare tout seul le combat. Si les héros de l'équipe récoltent, ils reviennent ; si l'équipe ne chasse pas,
@@ -1425,19 +1425,19 @@
     { title: "Un peu d'expérience", txt: "Atteignez le niveau 5.", t: "lvl", n: 5 },
     { title: "S'équiper", txt: "Équipez 2 objets sur un même héros (Héros › Équipe et héros › Équipement).", t: "equip", n: 2 },
     { title: "La forêt d'Incarnam", txt: "Chassez dans la Forêt d'Incarnam.", t: "kill", sub: "inc_foret", n: 20 },
-    { title: "Mettre la main à la pâte", txt: "Récoltez 30 ressources (Artisanat › Métiers › Récolte : envoyez un héros récolter).", t: "harvest", n: 30 },
+    { title: "Mettre la main à la pâte", txt: "Récoltez 30 ressources (Économie › Métiers › Récolte : envoyez un héros récolter).", t: "harvest", n: 30 },
     { title: "La Crypte de Kardorim", txt: "Trouvez la clé au Cimetière d'Incarnam et vainquez Kardorim.", t: "boss", dg: "crypte_kardorim" },
     { title: "Bienvenue à Astrub", txt: "Chassez dans la Cité d'Astrub.", t: "kill", sub: "ast_cite", n: 20 },
-    { title: "Apprenti artisan", txt: "Fabriquez un objet (Artisanat › Métiers › Artisanat).", t: "craft", n: 1 },
+    { title: "Apprenti artisan", txt: "Fabriquez un objet (Économie › Métiers › Artisanat).", t: "craft", n: 1 },
     { title: "Le Havre-Sac", txt: "Achetez 3 améliorations du Havre-Sac (sur l'accueil, « Ma maison »).", t: "havre", n: 3 },
     { title: "Monter en puissance", txt: "Atteignez le niveau 15.", t: "lvl", n: 15 },
     { title: "Le Tournesol Affamé", txt: "Vainquez le boss de la Grange du Tournesol Affamé.", t: "boss", dg: "grange_tournesol" },
-    { title: "Dévotion", txt: "Faites une offrande à l'Almanax (Suivi › Quêtes › Almanax).", t: "almanax", n: 1 },
-    { title: "Chasseur de primes", txt: "Remplissez 3 avis de recherche (Suivi › Quêtes › Avis de recherche).", t: "bounty", n: 3 },
+    { title: "Dévotion", txt: "Faites une offrande à l'Almanax (Journal › Quêtes › Almanax).", t: "almanax", n: 1 },
+    { title: "Chasseur de primes", txt: "Remplissez 3 avis de recherche (Journal › Quêtes › Avis de recherche).", t: "bounty", n: 3 },
     { title: "Le Bouftou Royal", txt: "Vainquez le Bouftou Royal.", t: "boss", dg: "cour_bouftou_royal" },
     { title: "Les terres d'Amakna", txt: "Chassez dans la Forêt d'Amakna.", t: "kill", sub: "ama_foret", n: 30 },
-    { title: "Le choix d'un camp", txt: `Atteignez le niveau ${30} et choisissez Bonta ou Brâkmar (Suivi › Quêtes › Alignement).`, t: "align" },
-    { title: "Briseur de runes", txt: "Brisez un objet en runes (Artisanat › Forgemagie › Brisage). Les six métiers de forgemagie sont ouverts dès le départ.", t: "brk", n: 1 }, // 1.0.12.9 : plus de niveau 65 requis
+    { title: "Le choix d'un camp", txt: `Atteignez le niveau ${30} et choisissez Bonta ou Brâkmar (Journal › Quêtes › Alignement).`, t: "align" },
+    { title: "Briseur de runes", txt: "Brisez un objet en runes (Économie › Forgemagie › Brisage). Les six métiers de forgemagie sont ouverts dès le départ.", t: "brk", n: 1 }, // 1.0.12.9 : plus de niveau 65 requis
     { title: "Le Scarabosse Doré", txt: "Vainquez le Donjon des Scarafeuilles.", t: "boss", dg: "donjon_scarafeuilles" },
     { title: "Les plaines de Cania", txt: "Chassez dans la Plaine des Porkass.", t: "kill", sub: "can_porkass", n: 30 },
     { title: "La Bworkette", txt: "Vainquez le Donjon des Bworks.", t: "boss", dg: "donjon_bworks" },

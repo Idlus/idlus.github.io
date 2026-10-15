@@ -459,7 +459,7 @@
   if (E.carnetWrap) E.carnetWrap();
   const refresh0 = E.refreshSystems;
   E.refreshSystems = (S) => { refresh0(S); try { E.wkState(S); E.eliteState(S); rqCheck(S); palCheck(S); } catch (e) {} };
-  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "region")) E.SEARCH_PAGES.push(["region", "Quêtes de région", "Suivi › Quêtes › Aventures : une histoire par région"], ["hebdo", "Quêtes de la semaine", "Suivi › Quêtes › Aujourd'hui › Semaine : 3 quêtes chaque lundi"]);
+  if (E.SEARCH_PAGES && !E.SEARCH_PAGES.some((p) => p[0] === "region")) E.SEARCH_PAGES.push(["region", "Quêtes de région", "Journal › Quêtes › Aventures : une histoire par région"], ["hebdo", "Quêtes de la semaine", "Journal › Quêtes › Aujourd'hui › Semaine : 3 quêtes chaque lundi"]);
 
   if (typeof module !== "undefined" && module.exports) module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);

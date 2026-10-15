@@ -399,7 +399,7 @@
       case "qj-dfil": st.dfil = d.v; break;
       case "qj-dfam": st.dfam = d.v; break; // 1.0.16
       case "qj-cat": st.cat = d.v; break;
-      case "qj-shop": if (window.CPTUI) { X().closeSheet(); window.CPTUI.open(d.v); return; } st.shop = d.v; ui.tab = "quests"; ui.qt = "shops"; X().closeSheet(); break; // 1.0.30 : Jouer › Comptoirs (js/comptoirsui.js)
+      case "qj-shop": if (window.CPTUI) { X().closeSheet(); window.CPTUI.open(d.v); return; } st.shop = d.v; ui.tab = "quests"; ui.qt = "shops"; X().closeSheet(); break; // 1.0.30 : Économie › Comptoirs (js/comptoirsui.js)
       case "qj-chap": st.chap = +d.v; break;
       case "qj-reg": st.reg = d.v; ui.tab = "quests"; ui.qt = "region"; if (!regFil(S(), E.REGION[d.v], st.rf, top(S()))) st.rf = "all"; X().closeSheet(); window.scrollTo(0, 0); break;
       case "qj-rf": st.rf = d.v; break;
