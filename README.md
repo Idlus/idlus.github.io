@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.8 « Maîtrise plafonnée »
+
+Arbre de Maîtrise : en combat, un héros ne profite jamais de plus d'étoiles que de points de Maîtrise (E.mtClean). Rien ne change pour un arbre construit dans le jeu. Étape « wb-retrait » du workflow Serveur OVH prête pour retirer les essais du bug du Dom de Pin (choix 3B, avec la phrase de Mathis).
+
 ## 2.0.7 « Notables uniques »
 
 Maîtrise : les 126 notables de chaque ciel ont leur propre nom et bonus (nouveaux : dégâts critiques, premier tour, sous la moitié des PV, bouclier de départ). Rendre des étoiles est gratuit jusqu'au 22/10 à 23 h. La fiche du héros montre sa Maîtrise et ses bonus.

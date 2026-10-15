@@ -82,3 +82,14 @@ assert.strictEqual(E.btFx(S)[r], 0.5);
   const o8 = E.newState("Neuf", "iop"); const raw8 = JSON.parse(JSON.stringify(o8)); raw8.v = 11; const D8 = E.deserialize(JSON.stringify(raw8)); assert.ok(!((D8.S || D8.state || D8).titlesExtra || []).includes(E.REN_TITLE), "pas de titre sans renaissance");
   console.log("ok - 2.0.4 : souvenir de la Renaissance même quand le héros rené a été congédié"); }
 console.log("maitrise.test.js : OK");
+
+// 2.0.8 (choix de Mathis 2A) : en combat, pas plus d'étoiles que de points (sauvegarde modifiée)
+{
+  const S9 = E.newState("Cap", "cra"); const h9 = S9.chars[0]; h9.lvl = 200; const T9 = E.mtTree("cra"); const M9 = E.mt(h9);
+  const all = T9.N.filter((n) => n.t !== "start" && !n.neb).map((n) => n.id); M9.lvl = 40; M9.bn = 0; M9.t[0] = all;
+  assert.strictEqual(E.mtGot(h9).size - 1, 40, "40 points = 40 étoiles au plus");
+  const got = E.mtGot(h9); const seen = new Set([T9.start]); const q = [T9.start]; while (q.length) { const x = q.pop(); for (const y of T9.N[x].adj) if (got.has(y) && !seen.has(y)) { seen.add(y); q.push(y); } }
+  assert.strictEqual(seen.size, got.size, "les étoiles gardées restent reliées au départ");
+  assert.strictEqual(E.mtFx(S9, h9).n, 40); M9.lvl = 0; assert.strictEqual(E.mtFx(S9, h9).n, 0, "0 point : aucune étoile en combat");
+  console.log("ok - étoiles plafonnées aux points en combat");
+}

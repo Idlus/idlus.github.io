@@ -30,7 +30,7 @@ on:
       etape:
         description: "Étape"
         type: choice
-        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites]
+        options: [verifier, installer, copier, bascule, rouvrir, diagnostic, couper-boucle, guildes-zero-essai, guildes-zero, soft-reset-comptage, compensation-fm-essai, compensation-fm, fonctions-limites, wb-retrait-essai, wb-retrait]
         default: verifier
       domaine:
         description: "Domaine du serveur (vide = <ip>.sslip.io)"
@@ -169,6 +169,16 @@ jobs:
           f="$RUNNER_TEMP/guildes_reset.sql"
           sed "s/^\\\\set CONFIRMATION 'non'$/\\\\set CONFIRMATION 'JE DISSOUS TOUTES LES GUILDES'/" tools/serveur/guildes_reset.sql > "$f"
           grep -qx "\\\\set CONFIRMATION 'JE DISSOUS TOUTES LES GUILDES'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
+          bash tools/serveur/vps_sql.sh fichier "$f"
+      - name: Boss des mondes, essais du bug du Dom de Pin (essai, rien n'est changé)
+        if: inputs.etape == 'wb-retrait-essai'
+        run: bash tools/serveur/vps_sql.sh fichier tools/serveur/wb_retrait_bug.sql
+      - name: Boss des mondes, retrait des essais du bug du Dom de Pin (pour de vrai, choix 3B de Mathis)
+        if: inputs.etape == 'wb-retrait'
+        run: |
+          f="$RUNNER_TEMP/wb_retrait_bug.sql"
+          sed "s/^\\\\set CONFIRMATION 'non'$/\\\\set CONFIRMATION 'RETIRE LES ESSAIS DU BUG'/" tools/serveur/wb_retrait_bug.sql > "$f"
+          grep -qx "\\\\set CONFIRMATION 'RETIRE LES ESSAIS DU BUG'" "$f" || { echo "Ligne CONFIRMATION introuvable : rien n'est lancé." >&2; exit 1; }
           bash tools/serveur/vps_sql.sh fichier "$f"
       - name: Comptage du soft reset des jets (lecture seule)
         if: inputs.etape == 'soft-reset-comptage'

@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.7";
+const GAME_VERSION = "2.0.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.8", name: "Maîtrise plafonnée", guide: "maitrise", items: [
+    "Arbre de Maîtrise : en combat, un héros ne profite jamais de plus d'étoiles que de points de Maîtrise. Rien ne change pour un arbre construit dans le jeu"
+  ] },
   { v: "2.0.7", name: "Notables uniques", guide: "maitrise", items: [
     "Maîtrise : les 126 notables d'un ciel (les grandes étoiles au bout des branches) ont chacune leur nom et leur bonus, aucune en double",
     "Nouveaux bonus rares sur certaines notables : dégâts critiques, dégâts au premier tour, dégâts sous la moitié des PV et bouclier de départ",

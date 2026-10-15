@@ -154,7 +154,8 @@
   const NKS = [["Œil de l'Éternel", { res: 15, d: -5 }], ["Larme d'Eliatrope", { d: 10, hp: 10, pm: -1 }], ["Souffle d'Ogrest", { t1: 100, hp: -15 }]];
   /* 2.0.3 : seules comptent les étoiles qui existent, reliées au départ par des étoiles prises (Nébuleuse fermée sous E.MT_OPEN points) : un code d'arbre ou une sauvegarde abîmée ne donne rien de plus */
   E.mtClean = (c, ids) => { const T = build(c.cls); const neb = E.mtPts(c) >= E.MT_OPEN; const want = new Set((ids || []).filter((id) => Number.isInteger(id) && T.N[id] && T.N[id].t !== "start" && (neb || !T.N[id].neb)));
-    const seen = new Set([T.start]); const q = [T.start]; while (q.length) { const x = q.pop(); for (const y of T.N[x].adj) if (want.has(y) && !seen.has(y)) { seen.add(y); q.push(y); } } seen.delete(T.start); return [...seen]; };
+    /* 2.0.8 (choix de Mathis 2A) : pas plus d'étoiles que de points ; on garde les premières trouvées depuis le départ (toujours reliées) */
+    const cap = E.mtPts(c); const seen = new Set([T.start]); const q = [T.start]; while (q.length && seen.size <= cap) { const x = q.pop(); for (const y of T.N[x].adj) if (want.has(y) && !seen.has(y) && seen.size <= cap) { seen.add(y); q.push(y); } } seen.delete(T.start); return [...seen]; };
   E.mtGot = (c, lo) => { const M = E.mt(c); const T = build(c.cls); return new Set([T.start, ...E.mtClean(c, M.t[lo === undefined ? M.lo : lo])]); };
   /* 2.0.3 : un joyau ne sert qu'à un héros (le premier de l'équipe qui l'a serti) */
   E.joyOwner = (S, uid) => { for (const h of S.chars || []) if (h.mt && h.mt.j && Object.values(h.mt.j).includes(uid)) return h; return null; };
@@ -211,7 +212,7 @@
   E.mtFx = (S, c) => {
     if (!E.mtOn(c) || !c.mt) return null; const M = c.mt; const ids = M.t[M.lo] || [];
     if (!ids.length) return null;
-    const key = `${c.cls}|${M.lo}|${ids.join(",")}|${E.mtPts(c) >= E.MT_OPEN}|${JSON.stringify(M.j || {})}|${Object.values(M.j || {}).map((u) => E.joyOwner(S, u) === c ? 1 : 0).join("")}|${(S.joy || []).length}`; const hit = CACHE.get(M); if (hit && hit.key === key) return hit.fx;
+    const key = `${c.cls}|${M.lo}|${ids.join(",")}|${E.mtPts(c)}|${JSON.stringify(M.j || {})}|${Object.values(M.j || {}).map((u) => E.joyOwner(S, u) === c ? 1 : 0).join("")}|${(S.joy || []).length}`; const hit = CACHE.get(M); if (hit && hit.key === key) return hit.fx;
     const { t, ks } = E.mtStats(S, c); const fx = { st: {} }; FXK.forEach((k) => (fx[k] = 0));
     for (const lb in t) { if (lb.startsWith("Passif ")) { fx.pass += t[lb]; continue; } const m = LBL[lb]; if (!m) continue; if (m[0] === "st") fx.st[m[1]] = (fx.st[m[1]] || 0) + t[lb]; else fx[m[1]] += t[lb]; }
     ks.forEach((n) => { for (const k in n.fx || {}) { if (k === "pp" || k === "ini") fx.st[k] = (fx.st[k] || 0) + n.fx[k]; else if (k === "rev") fx.rev = Math.max(fx.rev, n.fx[k]); else fx[k] += n.fx[k]; } });

@@ -1,6 +1,14 @@
 {
-  "version": "2.0.7",
+  "version": "2.0.8",
   "versions": [
+    {
+      "v": "2.0.8",
+      "name": "Maîtrise plafonnée",
+      "guide": "maitrise",
+      "items": [
+        "Arbre de Maîtrise : en combat, un héros ne profite jamais de plus d'étoiles que de points de Maîtrise. Rien ne change pour un arbre construit dans le jeu"
+      ]
+    },
     {
       "v": "2.0.7",
       "name": "Notables uniques",
