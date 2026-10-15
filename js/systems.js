@@ -1275,6 +1275,7 @@
     essence:    { name: "Essence", give: (S, q) => E.addEss(S, q) },
     fragments:  { name: "Fragments de l'Ascension", give: (S, q) => { const A = E.ascState(S); A.frag = (A.frag || 0) + q; } },
     ecus:       { name: "Écus de l'Ascension", give: (S, q) => { const A = E.ascState(S); A.ecus = (A.ecus || 0) + q; } },
+    volonte:    { name: "Volonté (L'Ascension)", give: (S, q) => { if (E.ascVolSync) E.ascVolSync(S); const A = E.ascState(S); A.vol = Math.min(99, (A.vol || 0) + q); } }, // 1.2.5.4 (Mathis) : peut dépasser le maximum de 30, comme une Fiole
   };
   const unl = (S, k) => { S.unlocks = S.unlocks || {}; S.unlocks[k] = 1; };
   const mountLabel = (sp, c) => `${E.MOUNTS[sp].name} ${E.colourName(sp, c)}`;
@@ -1326,6 +1327,8 @@
             give: (S) => { const C = E.chroma(S); C.shop = C.shop || {}; if (!C.shop.aura) C.shop.aura = E.now(); }, txt: () => "Aura chromatique" },
     dofus:{ name: "Dofus", list: () => (E.DOFUS_ORDER || []).filter((k) => E.DOFUS[k]).map((k) => [k, E.DOFUS[k].name]), ok: (id) => !!(E.DOFUS && E.DOFUS[id]), // 1.1.2.1 (Mathis, réponse B) : pour des cas rares (compensation, concours)
             give: (S, id) => { if (!E.dofusOwned(S, id)) E.giveDofus(S, id, "code cadeau"); }, txt: (id) => E.DOFUS[id].name },
+    rel:  { name: "Relique (Reliquaire)", list: () => (E.RELICS || []).map((x) => [x.id, x.n]), ok: (id) => !!(E.relById && E.relById(id)), // 1.2.5.4 : la relique entre au Reliquaire (collection), pas dans une montée
+            give: (S, id) => E.relSeen(S, id), txt: (id) => `relique « ${E.relById(id).n} » au Reliquaire` },
     part: { name: "Partition", list: () => Object.keys(tracks()).map((k) => [k, `Partition « ${tracks()[k]} »`]), ok: (id) => !!tracks()[id],
             give: (S, id) => { S.partitions = S.partitions || {}; if (!S.partitions[id]) S.partitions[id] = Date.now(); }, txt: (id) => `partition « ${tracks()[id] || id} »` },
   };

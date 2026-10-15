@@ -1,6 +1,13 @@
 {
-  "version": "1.2.5.3",
+  "version": "1.2.5.4",
   "versions": [
+    {
+      "v": "1.2.5.4",
+      "name": "Volonté et reliques dans les codes cadeaux",
+      "items": [
+        "Les codes cadeaux peuvent offrir de la Volonté pour L'Ascension (même au-delà du maximum de 30, comme une Fiole de Volonté) et des reliques pour le Reliquaire"
+      ]
+    },
     {
       "v": "1.2.5.3",
       "name": "Sommaire du guide",

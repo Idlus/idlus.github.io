@@ -1,7 +1,7 @@
 /* 1.1.1.4 : codes cadeaux : tout ce qui se gagne dans le jeu peut être offert (récompense « x ») */
 const assert = require("assert");
 const E = require("../js/engine.js");
-["systems", "pets", "mounts", "elevage", "idols", "renaissance", "archis", "chroma", "koli", "alliance", "legendaires", "champions", "songe", "expeditions", "suivi", "comptoirs", "ascension"].forEach((f) => require(`../js/${f}.js`));
+["systems", "pets", "mounts", "elevage", "idols", "renaissance", "archis", "chroma", "koli", "alliance", "legendaires", "champions", "songe", "expeditions", "suivi", "comptoirs", "ascension", "reliques"].forEach((f) => require(`../js/${f}.js`));
 
 const S = E.newState("Test", "iop");
 let n = 0;
@@ -41,6 +41,12 @@ assert.ok(S.titlesExtra.includes("Ami d'Idlus"));
 assert.ok(E.ornUnlocked(S, "couronne"), "ornement offert"); assert.ok(E.sframeOk(S, "dofus"), "cadre offert");
 assert.ok(S.unlocks.wing_sombre && S.unlocks.teint_temple && S.chroma.shop.aura);
 assert.ok(E.dgh(S).b <= E.DGH.max);
+/* 1.2.5.4 : Volonté de L'Ascension, au-delà du maximum */
+{ const S4 = E.newState("V", "iop"); const v0 = E.ascState(S4).vol; E.giveGift(S4, { id: "v", x: [["m", "volonte", 10]], c: [["fiole_volonte", 2]] });
+  assert.strictEqual(E.ascState(S4).vol, Math.min(99, v0 + 10)); assert.strictEqual(S4.cons.fiole_volonte, 2);
+  assert.ok(/10 Volonté/.test(E.giftText({ x: [["m", "volonte", 10]] }))); }
+/* 1.2.5.4 : une relique entre au Reliquaire */
+{ const S5 = E.newState("R", "iop"); const id = E.RELICS[0].id; E.giveGift(S5, { id: "r", x: [["rel", id]] }); assert.strictEqual(E.relCount(S5), 1); }
 /* l'ancienne forme « o » marche aussi pour un ornement gagné autrement */
 const S2 = E.newState("B", "cra"); E.giveGift(S2, { id: "x", o: "lauriers" }); assert.ok(E.ornUnlocked(S2, "lauriers"));
 /* 1.1.2.1 : un Dofus par code, pas redonné s'il est déjà là */

@@ -275,6 +275,7 @@
   ];
   const BY = {}; RELICS.forEach((x) => (BY[x.id] = x));
   E.relById = (id) => BY[id] || null;
+  E.RELICS = RELICS; // 1.2.5.4 : liste pour les codes cadeaux (Reliquaire)
   E.REL_SLOTS = ["arme", "coiffe", "cape", "anneau", "amulette", "bottes"];
   E.REL_SLOT_NAME = { arme: "Arme", coiffe: "Coiffe", cape: "Cape", anneau: "Anneau", amulette: "Amulette", bottes: "Bottes" };
   E.REL_RAR = { c: { name: "Commune", price: 40, w: 0 }, r: { name: "Rare", price: 80, w: 1 }, l: { name: "Légendaire", price: 160, w: 2 } };
