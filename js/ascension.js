@@ -36,7 +36,6 @@
     heroHp: 2, heroPui: 20, heroPuiLv: 2, bossHp: 2.5, bossDmg: 0.7, resCap: 25, monHpLv: 0.012, monDmgLv: 0.006, // le grimpeur est seul : bénédiction de la Tour (réglée par tools/ascension_sim.js ; 1.2.2 : un peu moins forte, les reliques compensent)
     stepMs: 260,                   // un pas de combat affiché (l'interface)
     fightPauseMs: 1500,            // pause entre deux étages
-    autoPickMs: 30000,             // l'auto choisit après ce délai si personne ne le fait
     souls: { turns: 3, pow: 0.5, cd: 4 },
     soulCost: 150,                 // Fragments pour mettre un boss du bestiaire dans la pioche
   };
@@ -410,11 +409,12 @@
     E.ASC_DEFS = W.defs || E.ASC_DEFS; E.REL_W = W;
     try {
       if (F.round !== W.round) { W.round = F.round; roundFx(S, W, R); }
+      E.roundHook = (F2) => { if (F2 === F && F.round !== W.round) { W.round = F.round; roundFx(S, W, R); } }; // 1.2.9.1 : les effets du tour avant que quelqu'un joue (avant : un tour de retard)
       E.step(W.S2);
       F.ents.forEach((m, i) => { if (m.side !== "m" || m.alive || W.dead[i]) return; W.dead[i] = 1; dieFx(W, m); });
       if (F.over) return "end";
       return "step";
-    } finally { E.setRng(rng0); E.events.length = evLen; }
+    } finally { E.roundHook = null; E.setRng(rng0); E.events.length = evLen; }
   };
   const roundFx = (S, W, R) => {
     const F = W.F; const hero = F.ents[W.hero]; const rule = W.rule; const SO = W.souls || A.souls;
@@ -468,6 +468,7 @@
   E.ascPay = (S) => { const Q = E.ascState(S); const R = Q.run; E.ascVolSync(S); const c = E.ascCost(S, R.mode, R.f); if (c > Q.vol) return "Plus de Volonté : elle remonte de 1 toutes les 20 minutes (ou bois une Fiole de Volonté)."; Q.vol -= c; if (c && Q.vol < A.volMax && Q.vol + c >= A.volMax) Q.volT = E.now(); return null; };
   E.ascApply = (S, W, res, auto) => {
     const Q = E.ascState(S); const R = Q.run; const fl = W.fl; const out = { win: res.win, f: R.f };
+    if (E.relCommit) E.relCommit(S, R, W); // 1.2.9.1
     R.fights++; R.used = R.used || {}; if (R.mode === "d" && R.f > 90) R.r91 = (R.r91 || 0) + res.rounds;
     (W.F.fx || []).forEach((x) => { if (x.k === "cast" && x.sp && String(x.sp).startsWith("a~")) { const d = W.defs[+x.sp.slice(2)]; if (d) R.used[d.id] = (R.used[d.id] || 0) + 1; } });
     res.recruits.forEach((x) => { if (R.recruits[x.n]) R.recruits[x.n].hp = x.hp; }); if (E.relRecruits) E.relRecruits(S, R); R.recruits = R.recruits.filter((x) => x.hp > 0);
@@ -618,7 +619,7 @@
     E.ascVolSync(S);
     const R = Q.run; if (!R || E.ASC_LIVE) return; // l'interface joue le combat en cours
     R.pause = (R.pause || 0) + dt; if (R.pause < A.fightPauseMs * 4) return; R.pause = 0;
-    if (R.pend && (Q.auto || (Q.autoPick !== false && E.now() - R.pend.at > A.autoPickMs && Q.auto))) { if (E.ascAutoPick(S) && R.pend) R.pend = null; return; }
+    if (R.pend && Q.auto) { if (E.ascAutoPick(S) && R.pend) R.pend = null; return; } // 1.2.9.1 : en Auto, le choix se fait seul (4 s sur la page, tout de suite ailleurs) ; en Manuel, la tour attend le joueur
     if (R.pend) return;
     const fl = E.ascFloor(S, R.mode, R.f);
     if (["fight", "boss"].includes(fl.t) && E.ascCost(S, R.mode, R.f) > Q.vol) return;

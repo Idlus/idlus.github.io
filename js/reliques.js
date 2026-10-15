@@ -242,7 +242,7 @@
     {id:"cape-de-l-horloge",slot:"cape",r:"r",n:"Cape de l'Horloge",ic:17254,st:{vit:40},fx:{k:"paFrom",n:5,v:2},d:"+2 PA à partir du 5e tour"},
     {id:"cape-de-l-ame-fidele",slot:"cape",r:"l",n:"Cape de l'Âme Fidèle",ic:17012,st:{vit:60},fx:{k:"soulAlways"},d:"Chaque boss vaincu te propose son âme, et elle se bat 1 tour de plus"},
     {id:"cape-du-prophete",slot:"cape",r:"l",n:"Cape du Prophète",ic:17150,st:{vit:80},fx:{k:"nextLeg"},d:"La première relique de ta prochaine montée sera légendaire"},
-    {id:"anneau-du-change",slot:"anneau",r:"c",n:"Anneau du Change",ic:9374,fx:{k:"ecus",v:20},d:"20 % de tes Fragments gagnés tombent aussi en Écus"},
+    {id:"anneau-du-change",slot:"anneau",r:"c",n:"Anneau du Change",ic:9374,fx:{k:"ecus",v:7},d:"7 % de tes Fragments gagnés tombent aussi en Écus"},
     {id:"anneau-de-patience",slot:"anneau",r:"c",n:"Anneau de Patience",ic:9330,st:{pui:3},fx:{k:"relicPity",n:3},d:"Après 3 paliers sans relique légendaire, la suivante l'est"},
     {id:"anneau-du-forgeron",slot:"anneau",r:"c",n:"Anneau du Forgeron",ic:9079,st:{pui:4},fx:{k:"fragHp",cost:10,v:1,max:30},d:"À chaque étage gagné, 10 Fragments deviennent +1 % de PV max (max +30 %)"},
     {id:"anneau-du-mercenaire",slot:"anneau",r:"c",n:"Anneau du Mercenaire",ic:9253,fx:{k:"mercFree"},d:"Les mercenaires te suivent gratuitement"},
@@ -427,7 +427,7 @@
     if (E.relHas(R, "survive")) rl.survive = 1; if (E.relHas(R, "phoenix") && !R.relPhoenix) rl.phoenix = 1; if (E.relHas(R, "fragRevive")) rl.fragRev = 1;
     const ga = E.relHas(R, "gamble"); if (ga) { rl.gamble = W.rng() < 0.5 ? ga.up : -ga.down; F.log.push({ txt: `Dague du Parieur : ${rl.gamble > 0 ? "pile, +" : "face, "}${rl.gamble} % de dégâts.`, cls: "dim" }); }
     if (E.relHas(R, "dice")) { rl.dice = pickOf(["pa", "dmg", "shield", "pm"], W.rng); if (rl.dice === "shield") hero.shield = Math.max(hero.shield || 0, Math.round(hero.hpMax * 0.25)); if (rl.dice === "pm") rl.dodge += 5; F.log.push({ txt: `Anneau du Dé : ${{ pa: "+2 PA", dmg: "+30 % de dégâts", shield: "un bouclier de 25 %", pm: "+1 PM" }[rl.dice]} pour ce combat.`, cls: "dim" }); }
-    if (R.relPaNext) { rl.paNext += R.relPaNext; R.relPaNext = 0; }
+    if (R.relPaNext) rl.paNext += R.relPaNext; // 1.2.9.1 : remis à 0 à la fin du combat (E.relCommit), un combat rejoué après rechargement le garde
     /* les monstres */
     const md = E.relSum(R, "monDmg"); if (md) mons(F).forEach((m) => { m.dmg *= 1 + md / 100; });
     /* recrues et invocations */
@@ -469,7 +469,7 @@
     if (E.relHas(R, "swap") && rd === 3 && !rl.swapped) { const t = Ms.slice().sort((a, b) => b.hp / b.hpMax - a.hp / a.hpMax)[0]; if (t && t.hp / t.hpMax > hero.hp / hero.hpMax) { rl.swapped = 1; const ph = hero.hp / hero.hpMax, pm = t.hp / t.hpMax; hero.hp = Math.max(1, Math.round(hero.hpMax * pm)); t.hp = Math.max(1, Math.round(t.hpMax * ph)); F.log.push({ txt: "Couronne de l'Échange : tes PV et ceux du monstre le plus en forme sont échangés !", cls: "c" }); } }
     /* coups critiques du tour passé */
     const hc = E.relSum(R, "healCrit"), cf = E.relSum(R, "critFrag");
-    if ((hc || cf) && rd > 1) { const n = F.fx.filter((x) => x.k === "hit" && x.crit && x.seq > rl.seq && (x.s === W.hero || F.fx.some((c) => c.seq === x.seq && c.k === "cast" && c.s === W.hero))).length; if (n) { if (hc) heal(F, hero, hero.hpMax * hc * n / 100); if (cf) R.frag += cf * n; } }
+    if ((hc || cf) && rd > 1) { const n = F.fx.filter((x) => x.k === "hit" && x.crit && x.seq > rl.seq && (x.s === W.hero || F.fx.some((c) => c.seq === x.seq && c.k === "cast" && c.s === W.hero))).length; if (n) { if (hc) heal(F, hero, hero.hpMax * hc * n / 100); if (cf) rl.dFrag = (rl.dFrag || 0) + cf * n; } }
     rl.seq = F.seq; rl.roundSeq = F.seq; rl.hitRound = 0; rl.paHitRound = 0;
     /* recrues : dernier souffle, retour au combat */
     const RS = recs(F); if (RS.length < rl.recAlive && E.relHas(R, "lastStand")) { rl.lastStand = 1; F.log.push({ txt: "Dernier Souffle : une recrue est tombée, tes dégâts montent.", cls: "c" }); }
@@ -480,6 +480,7 @@
   /* ---------- le combat : les dégâts (hook E.legPre du moteur, après résistances) ---------- */
   const castDef = (W, hi) => { const F = W.F; for (let i = F.fx.length - 1; i >= 0 && i > F.fx.length - 40; i--) { const x = F.fx[i]; if (x.k === "cast" && x.s === hi) return x.sp && String(x.sp).startsWith("a~") ? (W.defs || E.ASC_DEFS)[+x.sp.slice(2)] || null : null; } return null; };
   const elOf = (d, hero) => { if (!d) return null; if (d.el && d.el !== "best") return d.el; const st = hero.st || {}; const best = ["t", "f", "e", "a"].map((el) => [el, st[(D.ELEMENTS[el] || {}).stat] || 0]).sort((a, b) => b[1] - a[1])[0]; return best ? best[0] : null; };
+  const fragNow = (R, rl) => R.frag + ((rl && rl.dFrag) || 0);
   const relDmg = (W, src, tgt, v) => {
     const F = W.F; const R = W.R; const rl = W.rel; if (!R || !rl) return v; const hero = F.ents[W.hero]; const Ms = mons(F);
     if (src === hero) {
@@ -501,7 +502,7 @@
       const ls = E.relSum(R, "dmgLowSelf"); if (ls && hero.hp < hero.hpMax * 0.3) m *= 1 + ls / 100;
       const bz = E.relHas(R, "berserk"); if (bz) m *= 1 + Math.min(bz.max, Math.round((1 - hero.hp / hero.hpMax) * 100)) / 100;
       const pc = E.relHas(R, "pacte"); if (pc) m *= 1 + pc.v / 100;
-      const fd = E.relHas(R, "fragDmg"); if (fd) m *= 1 + Math.min(fd.max, Math.floor(R.frag / fd.per) * fd.v) / 100;
+      const fd = E.relHas(R, "fragDmg"); if (fd) m *= 1 + Math.min(fd.max, Math.floor(fragNow(R, rl) / fd.per) * fd.v) / 100;
       const rb = E.relHas(R, "reliquaireBonus"); if (rb) m *= 1 + Math.min(rb.max, Math.floor((rl.reliqN || 0) / rb.per)) / 100;
       const vs = E.relSum(R, "dmgVsSummon"); if (vs && tgt.summon) m *= 1 + vs / 100;
       const lst = E.relSum(R, "lastStand"); if (lst && rl.lastStand) m *= 1 + lst / 100;
@@ -526,16 +527,16 @@
       E.relAll(R, "resEl").forEach((f) => { if (src.el === f.el) m *= 1 - f.v / 100; });
       const rbs = E.relSum(R, "resBoss"); if (rbs && src.boss) m *= 1 - rbs / 100; const rnb = E.relSum(R, "resNonBoss"); if (rnb && !src.boss) m *= 1 - rnb / 100;
       const rf = E.relSum(R, "resFirst"); if (rf && F.round === 1) m *= 1 - rf / 100;
-      const fa = E.relHas(R, "fragArmor"); if (fa && R.frag >= fa.cost) { R.frag -= fa.cost; m *= 1 - fa.v / 100; }
+      const fa = E.relHas(R, "fragArmor"); if (fa && fragNow(R, rl) >= fa.cost) { rl.dFrag = (rl.dFrag || 0) - fa.cost; m *= 1 - fa.v / 100; }
       v *= m;
       const sh = E.relHas(R, "dmgShare"); if (sh) { const RS = recs(F); if (RS.length) { const part = v * sh.v / 100; RS.forEach((s) => hurt(F, s, part / RS.length, src.el)); v -= part; } }
       if (E.relHas(R, "monPaHit") && !rl.paHitRound) { rl.paHitRound = 1; src.paLoss = Math.min(2, (src.paLoss || 0) + 1); }
       const rfl = E.relSum(R, "reflect") + (src.boss ? E.relSum(R, "reflectBoss") : 0); if (rfl && src.alive) hurt(F, src, v * rfl / 100);
       v = Math.max(1, Math.round(v));
       if (v >= hero.hp + (hero.shield || 0)) { const after = v - Math.min(hero.shield || 0, v); const fr = E.relHas(R, "fragRevive");
-        if (rl.phoenix) { rl.phoenix = 0; R.relPhoenix = 1; hero.hp = Math.round(hero.hpMax * 0.5) + after; F.log.push({ txt: "Bottes du Phénix : tu renais à 50 % de tes PV !", cls: "c" }); }
+        if (rl.phoenix) { rl.phoenix = 0; rl.dPhoenix = 1; hero.hp = Math.round(hero.hpMax * 0.5) + after; F.log.push({ txt: "Bottes du Phénix : tu renais à 50 % de tes PV !", cls: "c" }); }
         else if (rl.survive) { rl.survive = 0; hero.hp = 1 + after; F.log.push({ txt: "Heaume du Sursis : le coup te laisse à 1 PV.", cls: "c" }); }
-        else if (rl.fragRev && fr && R.frag >= fr.cost) { rl.fragRev = 0; R.frag -= fr.cost; hero.hp = Math.round(hero.hpMax * 0.5) + after; F.log.push({ txt: `Cœur de Fragments : ${fr.cost} Fragments te ramènent à 50 % de tes PV.`, cls: "c" }); } }
+        else if (rl.fragRev && fr && fragNow(R, rl) >= fr.cost) { rl.fragRev = 0; rl.dFrag = (rl.dFrag || 0) - fr.cost; hero.hp = Math.round(hero.hpMax * 0.5) + after; F.log.push({ txt: `Cœur de Fragments : ${fr.cost} Fragments te ramènent à 50 % de tes PV.`, cls: "c" }); } }
       return v;
     }
     return v;
@@ -549,13 +550,17 @@
     E.relAll(R, "paKill").forEach((f) => { rl.paNext += f.v; if (f.heal) heal(F, hero, hero.hpMax * f.heal / 100); });
     const hk = E.relSum(R, "healKill"); if (hk) heal(F, hero, hero.hpMax * hk / 100);
     const sk = E.relSum(R, "shieldKill"); if (sk) hero.shield = Math.min(Math.round(hero.hpMax * 0.5), (hero.shield || 0) + Math.round(hero.hpMax * sk / 100));
-    const fk = E.relSum(R, "fragKill"); if (fk) R.frag += fk;
-    const gl = E.relHas(R, "glutton"); if (gl) { heal(F, hero, hero.hpMax * gl.heal / 100); if ((R.relHpG || 0) < gl.max) { R.relHpG = (R.relHpG || 0) + gl.hp; hero.hpMax += Math.round(hero.hpMax * gl.hp / 100); } }
+    const fk = E.relSum(R, "fragKill"); if (fk) rl.dFrag = (rl.dFrag || 0) + fk;
+    const gl = E.relHas(R, "glutton"); if (gl) { heal(F, hero, hero.hpMax * gl.heal / 100); if ((R.relHpG || 0) + (rl.dHpG || 0) < gl.max) { rl.dHpG = (rl.dHpG || 0) + gl.hp; hero.hpMax += Math.round(hero.hpMax * gl.hp / 100); } }
     const ch = E.relHas(R, "chain"); if (ch) { const n = mons(F)[0]; if (n) { hurt(F, n, m.hpMax * ch.v / 100); F.log.push({ txt: `Hache de l'Écho : ${n.name} encaisse le coup.`, cls: "c" }); } }
     const ex = E.relHas(R, "explode"); if (ex) { const L = mons(F); if (L.length) { L.forEach((o) => hurt(F, o, m.hpMax * ex.v / 100, "f")); F.log.push({ txt: `${m.name} explose (Marteau Explosif) !`, cls: "c" }); } }
   };
 
   /* ---------- fin d'un étage ---------- */
+  /* 1.2.9.1 : ce que les reliques changent à la montée pendant le combat (Fragments, Phénix, Glouton, PA du Talisman) ne s'applique qu'ici,
+     une fois le combat fini : un combat rejoué après un rechargement de la page ne donne plus rien en double et ne perd rien */
+  E.relCommit = (S, R, W) => { const rl = W && W.rel; if (!rl || rl.done) return; rl.done = 1;
+    if (rl.dFrag) R.frag = Math.max(0, R.frag + rl.dFrag); if (rl.dPhoenix) R.relPhoenix = 1; if (rl.dHpG) R.relHpG = (R.relHpG || 0) + rl.dHpG; R.relPaNext = 0; };
   E.relFrag = (S, R, fr, fl) => { const M = E.relMods(R); fr = Math.round(fr * (1 + Math.max(-90, M.frag) / 100)) + E.relSum(R, "fragFloor") + (fl.t === "boss" ? E.relSum(R, "treasure") : 0);
     const ec = E.relSum(R, "ecus"); if (ec) R.ecus += Math.round(fr * ec / 100); return Math.max(0, fr); };
   E.relRecruits = (S, R) => { // avant que les recrues mortes ne soient retirées

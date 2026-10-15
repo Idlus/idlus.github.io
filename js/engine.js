@@ -1518,7 +1518,7 @@
   const doHeal = (t, v, F) => {
     if (t.side === "c" && F && F.idol && F.idol.heals) { if (F.idol.heals === "none") return 0; v *= 0.5; } // idoles Ougah et Bihilete
     if (F && F.pvp && F.ero) v *= 1 - F.ero / 100; // érosion du Kolizéum
-    if (t.side === "m" && E.idHealIn) v *= E.idHealIn(t); // identité : Érosion
+    if (t.side === "m" && E.idHealIn) v *= E.idHealIn(t, F); // identité : Érosion
     if (t.side === "c") { const cut = debSum(t, "healcut") + (F && F.rot >= F.round ? 50 : 0); if (cut) v *= 1 - Math.min(80, cut) / 100; if (t.healIn) v *= 1 + t.healIn / 100; }
     if (F && E.dofpHealIn && F.actor && F.actor.side === t.side && (t.dp || F.actor.dp)) v *= E.dofpHealIn(F, t) * E.dofpHealOut(F, F.actor); // 1.0.16 : Kaliptus, Dofawa
     const before = t.hp; t.hp = Math.min(t.hpMax, t.hp + Math.round(v)); const g = t.hp - before;
@@ -2085,7 +2085,8 @@
     if (F.exp && E.expBonuses) E.expBonuses(S, F); // 0.1.24 : reliques et bénédictions de l'expédition
   };
 
-  /* Un pas de combat = le tour d'une entité */
+  /* Un pas de combat = le tour d'une entité ; E.roundHook(F) : début de chaque tour, avant le premier à jouer (L'Ascension, 1.2.9.1) */
+  E.roundHook = null;
   E.step = (S) => {
     let F = S.fight;
     if (!F || F.over) return;
@@ -2098,7 +2099,7 @@
       return checkEnd(S);
     }
     F.seq++; if (F.fx.length > 80) F.fx.splice(0, F.fx.length - 80);
-    if (F.oi >= F.order.length) { F.round++; newRound(F); if (F.round > 60) return endFight(S, false, "Le combat s'éternise : retraite.");
+    if (F.oi >= F.order.length) { F.round++; newRound(F); if (E.roundHook) E.roundHook(F); if (F.round > 60) return endFight(S, false, "Le combat s'éternise : retraite.");
       const lim = F.bossIdx !== undefined ? E.STASIS_TL.boss : E.STASIS_TL.room; if (F.stasis >= 9 && F.round > lim) return endFight(S, false, `Stasis 9 : le temps est écoulé (${lim} tours maximum dans cette salle).`); }
     const e = F.ents[F.order[F.oi++]];
     if (!e || !e.alive) return E.step(S);

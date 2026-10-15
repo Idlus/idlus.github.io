@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.9.1 « Reliques au bon tour »
+
+Choix de Mathis après l'audit (1A 2A 3A 4A 5B 6A). `E.roundHook(F)` dans `E.step` (js/engine.js) juste après `newRound` : L'Ascension y branche `roundFx`, les effets du tour arrivent avant le premier à jouer. `E.relCommit` (js/reliques.js) : Fragments, Phénix, Glouton et PA du Talisman gagnés en combat sont gardés dans `W.rel` et appliqués au début de `E.ascApply`. Anneau du Change 20 → 7 %. `E.idHealIn(t, F)` : l'Érosion expire (`ero >= F.round`). `E.percoSim` vide `S.ch.pend`. `autoPickMs` retiré : en Auto le choix se fait seul, en Manuel la tour attend. Simulation 30 × 20 montées, Normal et Difficile : médianes inchangées (32 / 23 à la 1re montée).
+
 ## 1.2.9 « Pluie de kamas »
 
 Xener lance depuis Panel › Annonces une pluie de kamas pris sur son propre compte (2 à 30 min, bandeau + chat Général). Les joueurs connectés à un compte cliquent « Je participe » (carte sur l'accueil, pastille ailleurs) ; à la fin, le serveur partage à parts égales et envoie les kamas par les opérations de l'hôtel de vente. Reste de la division, pluie sans participant ou annulée : retour à Xener (supabase/pluie.sql, js/pluie.js).

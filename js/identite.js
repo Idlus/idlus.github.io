@@ -282,7 +282,7 @@
     if (src && src.idn && src.idn.trap && src.side === "m" && tgt.side === "c" && !F.idTrapping) { const tr = src.idn.trap; src.idn.trap = null; F.idTrapping = 1; const d = API().dealDamage(F, tr.src, src, tr.v, tr.el); F.idTrapping = 0; API().flog(F, `Piège ! ${src.name} −${d}`, "c"); say(F, src, "Piège !", "piege2"); }
     return v;
   };
-  E.idHealIn = (t) => (t.side === "m" && t.idn && t.idn.ero >= 0 ? 0.6 : 1);
+  E.idHealIn = (t, F) => (t.side === "m" && t.idn && t.idn.ero >= (F ? F.round : Infinity) ? 0.6 : 1); // 1.2.9.1 : 2 tours, plus tout le combat
 
   if (typeof module !== "undefined") module.exports = E;
 })(typeof window !== "undefined" ? window : globalThis);

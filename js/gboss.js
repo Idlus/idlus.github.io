@@ -239,6 +239,7 @@
     const S2 = JSON.parse(E.serialize(S)); const dg = E.percoIsDj(sid) ? DUNGEONS[sid] : null;
     const sub = SUBS()[sid] || (dg && SUBS()[dg.access]); // 1.0.30 : un Percepteur de donjon se défend devant l'entrée du donjon
     S2.fight = null; S2.pause = 0; S2.acc = 0; S2.dungeon = null; S2.protector = null; S2.manualLive = false;
+    if (S2.ch) S2.ch.pend = null; // 1.2.9.1 : le Champion légendaire appelé attend le prochain vrai combat, pas l'attaque du Percepteur
     S2.settings = Object.assign({}, S2.settings, { manual: false });
     S2.cons = Object.assign({}, S2.cons); delete S2.cons.fiole_resu;
     S2.idols = Object.assign({}, S2.idols, { active: [] });

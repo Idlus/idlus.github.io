@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.9";
+const GAME_VERSION = "1.2.9.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.9.1", name: "Reliques au bon tour", items: [
+    "L'Ascension : les effets « à chaque tour » des reliques (PA du tour, Bottes de Mercure, +1 PA au premier tour…) arrivent au bon tour ; avant, ils avaient un tour de retard. L'équilibrage reste le même (vérifié par simulation).",
+    "L'Ascension : recharger la page pendant un combat ne donne plus deux fois les Fragments d'une relique et ne fait plus perdre les Bottes du Phénix ni les PA du Talisman du Sursis.",
+    "L'Anneau du Change donne maintenant 7 % de tes Fragments en Écus (20 % avant, trop généreux pour une relique commune).",
+    "Sorts : l'Érosion réduit les soins d'un monstre pendant 2 tours comme annoncé, plus pendant tout le combat.",
+    "Percepteurs : un Champion légendaire que tu as appelé ne se joint plus à l'attaque de ton Percepteur, il t'attend au prochain combat de chasse." ] },
   { v: "1.2.9", name: "Pluie de kamas", guide: "aide", items: [
     "Pluie de kamas : de temps en temps, Xener donne des kamas de son propre compte pendant quelques minutes. Une carte apparaît sur l'accueil (et une pastille sur les autres pages) : clique « Je participe » !",
     "À la fin du compte à rebours, la pluie est partagée à parts égales entre tous les participants. Les kamas arrivent dans ta partie quelques secondes après, et le chat Général annonce la part de chacun.",
