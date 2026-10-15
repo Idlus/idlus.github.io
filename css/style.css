@@ -5711,5 +5711,9 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 :root[data-bgfx="neb"] body::before{animation:bgresp 6s ease-in-out infinite}
 @keyframes bgneb{to{transform:rotate(360deg)}}
 @keyframes bgresp{50%{opacity:.45;transform:scale(1.06)}}
+/* G (mix A + D) : les halos dérivent, un rideau d'aurore passe de temps en temps */
+:root[data-bgfx="mix"] body::before{animation:bgaur 20s ease-in-out infinite alternate}
+:root[data-bgfx="mix"] body::after{background:linear-gradient(100deg,transparent 0 30%,var(--bg1) 42%,transparent 54%,transparent 70%,var(--bg2) 80%,transparent 90%);filter:blur(22px);opacity:0;animation:bgmix 18s ease-in-out infinite}
+@keyframes bgmix{0%{opacity:0;transform:translateX(-18%) skewX(-12deg)}35%{opacity:.75}70%{opacity:.45}100%{opacity:0;transform:translateX(18%) skewX(-18deg)}}
 body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::after{animation:none}
 @media (prefers-reduced-motion:reduce){:root[data-bgfx] body::before,:root[data-bgfx] body::after{animation:none}}

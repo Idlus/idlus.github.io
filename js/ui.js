@@ -7588,7 +7588,7 @@ const themeId = (t) => (THEMES.some((x) => x[0] === t) ? t : "emerald");
 function applySkin(t) { t = themeId(t); const r = document.documentElement; r.dataset.theme = t === "violet" ? "dark" : "emerald"; if (t === "emerald" || t === "violet") delete r.dataset.skin; else r.dataset.skin = t; const mc = document.querySelector('meta[name="theme-color"]'); if (mc) mc.content = THEMES.find((x) => x[0] === t)[2]; }
 function setTheme() { const t = themeId(S && S.settings.theme); if (S) { S.settings.theme = t; if (menuPref().theme !== t) setMenuPref({ theme: t }); } /* 1.0.11 : l'écran de choix reprend le thème de la dernière partie */ applySkin(t); document.body.classList.toggle("reduced", !!(S && S.settings.reduced)); applyDisplay(); applyHal(); applyAmbiance(); }
 /* 1.2 (13A) : effet d'ambiance du thème (js/ambiance.js), discret par défaut ; jamais pendant l'Halouine (qui a ses braises) ni avec les animations réduites */
-const BG_FX = "aur"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse), réglé au choix de Mathis
+const BG_FX = "mix"; // 28 : fond de page animé (aur Aurore, rid Rideaux, vag Vagues, neb Nébuleuse, mix = Aurore + rideau de temps en temps), réglé au choix de Mathis
 function applyAmbiance() {
   const a = S && S.settings.ambiance || "soft"; const r = document.documentElement;
   if (S && a !== "off" && animLvl() === "full" && !calm()) r.dataset.bgfx = BG_FX; else delete r.dataset.bgfx; // le fond suit le même réglage que l'ambiance
