@@ -94,6 +94,7 @@ const N4 = ["alliances", "trool", "onirique", "idlus"];
   const ea = F.ents.find((e) => e.cid === a.id), eb = F.ents.find((e) => e.cid === b.id), ed = F.ents.find((e) => e.cid === S.chars[3].id);
   const m = F.ents.find((e) => e.side === "m");
   const hit = () => { ed.dpBloom = 0; return E.dofpDmg(F, ed, m, false, 1000); }; assert.deepStrictEqual(ed.dp, []);
+  ea.alive = eb.alive = true; // le combat a pu tourner pendant l'attente : les deux porteurs debout pour la mesure
   const d1 = hit(); ea.alive = false; const d2 = hit(); eb.alive = false; const d3 = hit(); ea.alive = eb.alive = true;
   assert.ok(Math.abs(d1 / d3 - 1.03) < 0.002 && Math.abs(d2 / d3 - 1.03) < 0.002, `+3 % une seule fois (${d1} ${d2} ${d3})`);
   F.round = 4; F.dpOni = null; E.dofpTurn(S, F, F.ents.find((e) => e.cid === c.id));
