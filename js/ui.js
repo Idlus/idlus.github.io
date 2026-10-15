@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.3";
+const GAME_VERSION = "2.0.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.4", name: "Étoiles rendues", guide: "maitrise", items: [
+    "Arbre de Maîtrise : rendre des étoiles coûte pareil partout. Une étoile rendue, un passage sur un autre arbre enregistré, un code de partage ou « Tout rendre » : gratuit jusqu'à 50 points placés, puis 20 000 kamas par point rendu. Le coût s'affiche avant (bulle, comparaison des arbres) et « Annuler » reprend toujours gratuitement les derniers points placés",
+    "Les comptes dont le héros rené avait été congédié reçoivent aussi le titre « Le Phénix renaît de ses cendres » à la place des anciens titres de la Renaissance",
+    "Classement : les héros renés des joueurs pas encore revenus depuis la 2.0 comptent pour le niveau 200, comme tout le monde"
+  ] },
   { v: "2.0.3", name: "Chasse aux bugs de la Maîtrise", guide: "maitrise", items: [
     "L'XP en trop au passage du niveau 200 n'est plus perdue : elle part dans la Maîtrise",
     "Arbre de Maîtrise : un code de partage ne peut plus donner des étoiles non reliées au départ ni la Nébuleuse avant 1 000 points, et une sauvegarde abîmée n'empêche plus d'ouvrir l'arbre",

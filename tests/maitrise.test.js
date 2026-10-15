@@ -76,4 +76,9 @@ assert.strictEqual(E.btFx(S)[r], 0.5);
   r5.ren = 1; r5.lvl = 1; const raw6 = JSON.parse(JSON.stringify(S5.S || S5.state || S5)); raw6.v = 10; const r6 = (() => { const D = E.deserialize(JSON.stringify(raw6)); return (D.S || D.state || D).chars[0]; })();
   assert.strictEqual(r6.lvl, 200); assert.strictEqual(r6.ren, 0); assert.strictEqual(E.mtPts(r6), pts5, "pas de nouveaux points pour une renaissance refaite");
   console.log("ok - 2.0.3 : XP au passage du 200, arbre nettoyé, joyau unique, pas de double conversion"); }
+{ const o7 = E.newState("Co", "iop"); o7.stats.ren = 2; o7.titlesExtra = ["Né des cendres", "Autre"]; o7.chars[0].title = "Flamme éternelle"; o7.chars[0].orn = "phenix";
+  const raw7 = JSON.parse(JSON.stringify(o7)); raw7.v = 11; const D7 = E.deserialize(JSON.stringify(raw7)); const S7 = D7.S || D7.state || D7;
+  assert.ok(S7.titlesExtra.includes(E.REN_TITLE) && !S7.titlesExtra.includes("Né des cendres") && S7.titlesExtra.includes("Autre")); assert.strictEqual(S7.chars[0].title, null); assert.strictEqual(S7.chars[0].orn, null);
+  const o8 = E.newState("Neuf", "iop"); const raw8 = JSON.parse(JSON.stringify(o8)); raw8.v = 11; const D8 = E.deserialize(JSON.stringify(raw8)); assert.ok(!((D8.S || D8.state || D8).titlesExtra || []).includes(E.REN_TITLE), "pas de titre sans renaissance");
+  console.log("ok - 2.0.4 : souvenir de la Renaissance même quand le héros rené a été congédié"); }
 console.log("maitrise.test.js : OK");

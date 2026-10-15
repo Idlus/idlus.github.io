@@ -378,7 +378,7 @@
     voir: ["niveaux", "sorts", "metiers"],
     b: () => [
       ["p", `Au niveau ${N(() => E.MAX_LVL)}, l'XP d'un héros remplit des **niveaux de Maîtrise**, sans fin. Chaque niveau coûte l'XP du niveau ${N(() => E.MAX_LVL - 1)} → ${N(() => E.MAX_LVL)} et donne 1 point à placer dans le ciel de sa classe. Les points sont propres à chaque héros et n'agissent qu'au niveau ${N(() => E.MAX_LVL)}.`],
-      ["kv", [["XP par niveau de Maîtrise", N(() => E.mtNeed())], ["Tout rendre gratuit jusqu'à", N(() => E.MT_FREE) + " points"], ["Ensuite, par point rendu", N(() => E.MT_RESPEC) + " kamas"], ["Nébuleuse cachée", N(() => E.MT_OPEN) + " points"], ["Part de la monture au niveau 200", "0 à 50 %"]]],
+      ["kv", [["XP par niveau de Maîtrise", N(() => E.mtNeed())], ["Rendre des étoiles gratuit jusqu'à", N(() => E.MT_FREE) + " points placés"], ["Ensuite, par point rendu", N(() => E.MT_RESPEC) + " kamas"], ["Nébuleuse cachée", N(() => E.MT_OPEN) + " points"], ["Part de la monture au niveau 200", "0 à 50 %"]]],
       ["ul", [
         "Un **ciel par classe** d'environ 1 500 étoiles : le cœur renforce le passif de la classe (son symbole s'allume quand les 26 étoiles du cœur sont prises), 6 domaines (les deux éléments forts de la classe en haut) et des **clés de voûte** qui changent le style de jeu avec une contrepartie.",
         "**Voir l'effet d'une étoile** : survole-la sur PC, ou touche-la une fois sur téléphone (une seconde fois pour la prendre). La bulle montre son effet, ce que tout le chemin ajoute et son coût ; le total de l'arbre est dans « Total des bonus ».",
@@ -933,7 +933,7 @@
           "**Le cœur d'abord** pour un héros qui vit de son passif (Iop, Sram, Xélor…) : les 26 étoiles allument le symbole de la classe.",
           "**Un domaine qui suit l'élément** de l'équipement : les deux éléments forts de la classe sont en haut du ciel.",
           "**Une clé de voûte à la fois** : chacune a une contrepartie ; compare avant de changer d'arbre enregistré.",
-          `**Tout rendre** est gratuit jusqu'à ${N(() => E.MT_FREE)} points placés : essaie, puis garde ce qui marche.`,
+          `Rendre des étoiles (une à une, en changeant d'arbre enregistré, avec un code ou avec **Tout rendre**) est gratuit jusqu'à ${N(() => E.MT_FREE)} points placés, puis coûte ${N(() => E.MT_RESPEC)} kamas par point rendu. **Annuler** reprend gratuitement les derniers points placés.`,
         ]],
         ["p", c200.length ? `Héros qui ont une Maîtrise : ${c200.map((c) => `**${c.name}** (${fr(V(() => E.mtPts(c), 0))} points)`).join(", ")}.` : `Aucun héros niveau ${N(() => E.MAX_LVL)} pour l'instant (meilleur : niveau ${best()}).`],
       ]; } });

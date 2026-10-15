@@ -450,3 +450,20 @@ create or replace view public.lb_first_sb as
   select distinct on (split_part(f.key, ':', 1)) split_part(f.key, ':', 1) as did, split_part(f.key, ':', 2)::int as k, f.pseudo, f.user_id, f.at
   from public.firsts f where f.kind = 'sb' order by split_part(f.key, ':', 1), split_part(f.key, ':', 2)::int desc;
 grant select on public.lb_first_sb to anon, authenticated;
+-- 2.0.4 « Classement sans les vies » (Mathis, 16/10/2026, choix 2A) : la Renaissance est devenue la Maîtrise en 2.0 et le jeu ramène
+-- chaque héros rené au niveau 200. Les comptes pas encore reconnectés depuis gardaient niveau + 200 × vies (jusqu'à 2 200 par héros)
+-- et restaient devant tout le monde. Une seule fois : leurs héros renés passent à 200 (ren 0), le niveau du compte (8 meilleurs héros)
+-- et le score de classe sont plafonnés de la même façon. Rien ne change dans les parties ; les autres comptes ne bougent pas.
+do $$
+begin
+  if not exists (select 1 from public.ops_done where id = 'classement-sans-vies-2026-10-16') then
+    update public.ladder l set
+      heroes = (select coalesce(jsonb_agg(case when coalesce((x->>'ren')::int, 0) > 0 then x || jsonb_build_object('lvl', 200, 'ren', 0) else x end), '[]'::jsonb)
+        from jsonb_array_elements(case when jsonb_typeof(l.heroes) = 'array' then l.heroes else '[]'::jsonb end) x),
+      level = (select coalesce(sum(v), 0) from (select case when coalesce((x->>'ren')::int, 0) > 0 then 200 else coalesce((x->>'lvl')::int, 0) end as v
+        from jsonb_array_elements(case when jsonb_typeof(l.heroes) = 'array' then l.heroes else '[]'::jsonb end) x order by 1 desc limit 8) t)
+    where exists (select 1 from jsonb_array_elements(case when jsonb_typeof(l.heroes) = 'array' then l.heroes else '[]'::jsonb end) x where coalesce((x->>'ren')::int, 0) > 0);
+    update public.ladder_class set score = 200 where score > 200;
+    insert into public.ops_done (id) values ('classement-sans-vies-2026-10-16');
+  end if;
+end $$;

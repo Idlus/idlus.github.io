@@ -26,6 +26,9 @@
   const canEdit = () => !st.view && E.mtOn(hero());
   let got = new Set();
   const loadGot = () => { const c = hero(); const T = build(treeCls()); got = st.view ? new Set([T.start]) : E.mtGot(c); };
+  /* 2.0.4 (choix de Mathis 3B) : rendre des étoiles coûte pareil partout (une étoile, un autre arbre enregistré, un code, Tout rendre) : E.MT_RESPEC par point rendu au-delà des E.MT_FREE premiers */
+  const respecCost = (n) => Math.max(0, Math.min(n, used() - E.MT_FREE)) * E.MT_RESPEC;
+  const payRespec = (n, what) => { const cost = respecCost(n); if (!cost) return true; if (cost > S().kamas) { X().toast(`Pas assez de kamas : ${what} coûte ${fmt(cost)} kamas.`, "info"); return false; } if (n > 1 && !confirm(`${what.charAt(0).toUpperCase() + what.slice(1)} rend ${n} points et coûte ${fmt(cost)} kamas. Continuer ?`)) return false; S().kamas -= cost; st.hist = []; st.paid = true; return true; };
   const pushHist = (h) => { st.hist.push(h); if (st.hist.length > E.MT_UNDO) st.hist.shift(); };
   const pts = () => (st.view ? E.MT_OPEN + 200 : E.mtPts(hero()));
   const used = () => got.size - 1;
@@ -106,7 +109,7 @@
     if (id == null || T().N[id].t === "start" || (T().N[id].neb && !nebOpen())) { el.hidden = true; return; }
     const n = T().N[id], on = got.has(id), p = on ? [] : canEdit() ? pathTo(id) || [] : [], left = pts() - used();
     const gl = gainOf(on || st.view ? [id] : p.length ? p : [id]);
-    const foot = st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
+    const foot = st.view ? "" : !E.mtOn(hero()) ? "S'ouvre au niveau 200" : on ? "✓ Prise" + (respecCost(1) ? ` · la rendre coûte ${fmt(respecCost(1))} kamas` : "") + (st.sel === id && !matchMedia("(hover: hover)").matches ? " · touche encore pour la rendre" : "") : !p.length ? "" : p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""}${matchMedia("(hover: hover)").matches ? " · clic pour prendre" : " · touche encore pour prendre"}` : `Chemin de ${p.length} points (${fmt(left)} à placer)`;
     el.innerHTML = `<span class="mt-ty" style="color:${domCol(n)}">${TYP[n.t]}</span><b>${h(n.n)}</b><span>${h(n.txt)}</span>${gl.length ? `<div class="mt-gain"><i>${on ? "Cette étoile donne" : p.length > 1 ? `Avec le chemin (${p.length} étoiles)` : "Gain"}</i>${gl.slice(0, 6).map(([k, v]) => `<div><span>${h(k)}</span>${v == null ? "" : `<b class="num">+${E.mtNf(v)}</b>`}</div>`).join("")}</div>` : ""}${foot ? `<em>${foot}</em>` : ""}`;
     el.hidden = false; const [x, y] = toS(n); const bw = el.offsetWidth, bh = el.offsetHeight;
     let lx = x + rad(n) + 12, ly = y - bh / 2; if (lx + bw > W - 8) lx = x - rad(n) - 12 - bw; if (lx < 8) { lx = Math.max(8, Math.min(W - bw - 8, x - bw / 2)); ly = y + rad(n) + 12; if (ly + bh > H - 8) ly = y - rad(n) - 12 - bh; }
@@ -132,9 +135,9 @@
   }
   function clickNode(id) {
     const n = T().N[id]; st.sel = id; if (st.hov != null) st.hov = id;
-    if (canEdit() && allowed(id)) { const before = [...got];
-      if (got.has(id)) { if (connectedWithout(id)) got.delete(id); } else { const p = pathTo(id); if (p) p.slice(0, Math.max(0, pts() - used())).forEach((x) => got.add(x)); }
-      if (got.size !== before.length) { pushHist(before); save(); } }
+    if (canEdit() && allowed(id)) { const before = [...got]; st.paid = false;
+      if (got.has(id)) { if (connectedWithout(id) && payRespec(1, "rendre cette étoile")) got.delete(id); } else { const p = pathTo(id); if (p) p.slice(0, Math.max(0, pts() - used())).forEach((x) => got.add(x)); }
+      if (got.size !== before.length) { if (!st.paid) pushHist(before); save(); } }
     side(); draw();
   }
 
@@ -143,7 +146,7 @@
   function infoHtml() {
     if (st.sel == null) return `<span class="mt-ty muted">Étoile</span><b>Touche une étoile</b><span class="muted xs">Son effet s'affiche ici. Un clic sur une étoile lointaine prend le chemin le plus court.</span>`;
     const n = T().N[st.sel]; const p = got.has(n.id) ? null : pathTo(n.id); const left = pts() - used();
-    const who = st.view ? "Arbre d'une autre classe : lecture seule." : !E.mtOn(hero()) ? "La Maîtrise s'ouvre au niveau 200." : got.has(n.id) ? "Prise." : p ? (p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""} avec le chemin.` : (left > 0 ? `Chemin de ${p.length} points : un clic prend les ${left} premières étoiles, la suite aux prochains niveaux.` : `Chemin de ${p.length} points : gagne des niveaux de Maîtrise pour le prendre.`)) : n.t === "start" ? "" : n.neb ? `S'ouvre à ${fmt(E.MT_OPEN)} points.` : "Pas atteignable.";
+    const who = st.view ? "Arbre d'une autre classe : lecture seule." : !E.mtOn(hero()) ? "La Maîtrise s'ouvre au niveau 200." : got.has(n.id) ? (respecCost(1) ? `Prise. La rendre coûte ${fmt(respecCost(1))} kamas.` : "Prise.") : p ? (p.length <= left ? `Coûte ${p.length} point${p.length > 1 ? "s" : ""} avec le chemin.` : (left > 0 ? `Chemin de ${p.length} points : un clic prend les ${left} premières étoiles, la suite aux prochains niveaux.` : `Chemin de ${p.length} points : gagne des niveaux de Maîtrise pour le prendre.`)) : n.t === "start" ? "" : n.neb ? `S'ouvre à ${fmt(E.MT_OPEN)} points.` : "Pas atteignable.";
     let joy = "";
     if (n.t === "joy" && got.has(n.id) && !st.view) { const M = E.mt(hero()); const cur = M.j[n.id]; const J = cur && (S().joy || []).find((z) => z.uid === cur);
       const free = (S().joy || []).filter((z) => !E.joyOwner(S(), z.uid)); // 2.0.3 : un joyau serti chez un autre héros n'est pas libre
@@ -159,16 +162,16 @@
     if (st.cmp == null) return ""; const c = hero(); const A = E.mtStats(S(), c, got), B = E.mtStats(S(), c, E.mtGot(c, st.cmp));
     const keys = [...new Set([...Object.keys(A.t), ...Object.keys(B.t)])]; const rows = keys.map((k) => [k, (B.t[k] || 0) - (A.t[k] || 0)]).filter(([, d]) => d).sort((a, b) => b[1] - a[1]);
     const an = new Set(A.ks.map((k) => k.n)), bn = new Set(B.ks.map((k) => k.n)); const kin = [...bn].filter((k) => !an.has(k)), kout = [...an].filter((k) => !bn.has(k));
-    return `<div class="mt-cmp"><b>Passer à « ${LO[st.cmp]} »</b>${kin.map((k) => `<div class="up"><span>✦ ${h(k)}</span><b>gagnée</b></div>`).join("")}${kout.map((k) => `<div class="dn"><span>✦ ${h(k)}</span><b>perdue</b></div>`).join("")}${rows.map(([k, d]) => `<div class="${d > 0 ? "up" : "dn"}"><span>${h(k)}</span><b class="num">${d > 0 ? "+" : "−"}${E.mtNf(Math.abs(d))}</b></div>`).join("") || (kin.length || kout.length ? "" : `<span class="muted xs">Aucune différence.</span>`)}<div class="mt-row"><button class="btn sm primary" data-act="mt-cgo">Changer</button><button class="btn sm" data-act="mt-cno">Garder</button></div></div>`;
+    return `<div class="mt-cmp"><b>Passer à « ${LO[st.cmp]} »</b>${kin.map((k) => `<div class="up"><span>✦ ${h(k)}</span><b>gagnée</b></div>`).join("")}${kout.map((k) => `<div class="dn"><span>✦ ${h(k)}</span><b>perdue</b></div>`).join("")}${rows.map(([k, d]) => `<div class="${d > 0 ? "up" : "dn"}"><span>${h(k)}</span><b class="num">${d > 0 ? "+" : "−"}${E.mtNf(Math.abs(d))}</b></div>`).join("") || (kin.length || kout.length ? "" : `<span class="muted xs">Aucune différence.</span>`)}${(() => { const tg = E.mtGot(hero(), st.cmp); const rm = [...got].filter((x) => !tg.has(x)).length; const cost = respecCost(rm); return cost ? `<span class="xs muted">Changer rend ${rm} points de l'arbre actuel : ${fmt(cost)} kamas.</span>` : ""; })()}<div class="mt-row"><button class="btn sm primary" data-act="mt-cgo">Changer</button><button class="btn sm" data-act="mt-cno">Garder</button></div></div>`;
   }
   const LO = ["Donjons", "Ascension", "Chasse"];
   function sideHtml() {
     const c = hero(); const M = E.mt(c); const lv = pts(), left = lv - used(), on = E.mtOn(c);
-    const respec = Math.max(0, used() - E.MT_FREE) * E.MT_RESPEC;
+    const respec = respecCost(used());
     const lvCard = st.view ? `<div class="mt-card"><h3>Ciel ${h(CLASSES[st.view].name)}</h3><p class="xs muted">Tu regardes l'arbre d'une autre classe, sans y placer de points. Tes héros ${h(CLASSES[st.view].name)} l'ouvriront au niveau 200.</p><button class="btn sm" data-act="mt-view" data-v="">Revenir à ${h(c.name)}</button></div>`
       : `<div class="mt-card"><h3>Maîtrise de ${h(c.name)}</h3>${on ? `<div class="mt-pts"><b class="num">${fmt(lv)}</b><span class="muted">points · <b class="num">${fmt(left)}</b> à placer</span></div><div class="bar xp"><i style="width:${pctf(M.xp, E.mtNeed(c))}%"></i></div><span class="xs muted num">Maîtrise ${fmt(M.lvl)} · ${fmt(M.xp)} / ${fmt(E.mtNeed(c))} XP vers le niveau ${fmt(M.lvl + 1)}</span>${M.bn ? `<span class="xs muted">Dont ${fmt(M.bn)} points venus des Éveils et des sorts de ses vies passées.</span>` : ""}` : `<p class="small">La Maîtrise s'ouvre au <b>niveau 200</b>. ${h(c.name)} est niveau ${c.lvl} : au niveau 200, toute son XP remplit la Maîtrise.</p>`}
         ${on ? `<div class="mt-row"><button class="btn sm" data-act="mt-undo" ${st.hist.length ? "" : "disabled"}>Annuler${st.hist.length ? ` (${st.hist.length})` : ""}</button><button class="btn sm" data-act="mt-reset" ${used() ? "" : "disabled"}>Tout rendre${used() ? respec ? ` · ${fmt(respec)} kamas` : " · gratuit" : ""}</button><button class="btn sm" data-act="mt-share">Partager</button></div>
-        <span class="xs muted">Annuler revient sur les ${E.MT_UNDO} derniers points. Tout rendre est gratuit jusqu'à ${E.MT_FREE} points placés.</span>` : ""}
+        <span class="xs muted">Annuler revient sur les ${E.MT_UNDO} derniers points. Rendre des étoiles (une à une, en changeant d'arbre ou avec un code) est gratuit jusqu'à ${E.MT_FREE} points placés, puis coûte ${fmt(E.MT_RESPEC)} kamas par point rendu.</span>` : ""}
         ${st.share && on ? `<div class="mt-share"><code>${h(E.mtCode(c))}</code><div class="mt-row"><button class="btn xs" data-act="mt-copy">Copier</button><input id="mtImp" placeholder="Coller le code d'un ami" aria-label="Code d'un arbre"><button class="btn xs" data-act="mt-imp">Charger</button></div></div>` : ""}</div>
       <div class="mt-card"><h3>Arbres enregistrés</h3><div class="seg">${LO.map((n, i) => `<button data-act="mt-lo" data-v="${i}" aria-pressed="${M.lo === i}">${n}</button>`).join("")}</div>${cmpHtml()}</div>`;
     const joys = (S().joy || []); const setJ = new Set(Object.values(M.j));
@@ -252,14 +255,14 @@
       case "mt-view": st.view = d.v && d.v !== hero().cls ? d.v : null; st.hist = []; st.z = 0; rer(); return;
       case "mt-z": if (d.v === "in") st.z = Math.min(3, st.z * 1.35); else if (d.v === "out") st.z = Math.max(0.12, st.z / 1.35); else if (d.v === "c") return center(); else return fitAll(); draw(); return;
       case "mt-undo": if (st.hist.length) { got = new Set(st.hist.pop()); save(); side(); draw(); } return;
-      case "mt-reset": { const cost = Math.max(0, used() - E.MT_FREE) * E.MT_RESPEC; if (cost > S().kamas) { X().toast("Pas assez de kamas pour tout rendre.", "info"); return; } if (cost && !confirm(`Rendre les ${used()} points de l'arbre coûte ${fmt(cost)} kamas. Continuer ?`)) return; S().kamas -= cost; if (cost) st.hist = []; else pushHist([...got]); got = new Set([T().start]); save(); side(); draw(); return; } // 2.0.3 : une remise payée ne s'annule pas
+      case "mt-reset": { const cost = respecCost(used()); if (!payRespec(used(), "tout rendre")) return; if (!cost) pushHist([...got]); got = new Set([T().start]); save(); side(); draw(); return; } // 2.0.3 : une remise payée ne s'annule pas
       case "mt-share": st.share = !st.share; side(); return;
       case "mt-copy": { const code = E.mtCode(c); try { navigator.clipboard.writeText(code).then(() => X().toast("Code de l'arbre copié.", "info"), () => {}); } catch (e) {} return; }
       case "mt-imp": { const v = document.getElementById("mtImp"); const R = v && E.mtRead(v.value); if (!R || R.cls !== c.cls) { X().toast(R ? "Ce code est pour une autre classe." : "Code illisible.", "info"); return; }
-        const raw = R.ids.filter((id) => id !== T().start); const ids = E.mtClean(c, raw); if (ids.length !== raw.length) { X().toast("Ce code d'arbre n'est pas valable ici (étoiles non reliées ou Nébuleuse fermée).", "info"); return; } if (ids.length > pts()) { X().toast(`Cet arbre demande ${ids.length} points.`, "info"); return; } pushHist([...got]); got = new Set([T().start, ...ids]); save(); side(); draw(); return; }
+        const raw = R.ids.filter((id) => id !== T().start); const ids = E.mtClean(c, raw); if (ids.length !== raw.length) { X().toast("Ce code d'arbre n'est pas valable ici (étoiles non reliées ou Nébuleuse fermée).", "info"); return; } if (ids.length > pts()) { X().toast(`Cet arbre demande ${ids.length} points.`, "info"); return; } const keep = new Set(ids); const rm = [...got].filter((x) => x !== T().start && !keep.has(x)).length; const paid = respecCost(rm); if (!payRespec(rm, "ce code")) return; if (!paid) pushHist([...got]); got = new Set([T().start, ...ids]); save(); side(); draw(); return; }
       case "mt-lo": { const l = +d.v; if (l === E.mt(c).lo) return; st.cmp = l; side(); return; }
       case "mt-cno": st.cmp = null; side(); return;
-      case "mt-cgo": E.mt(c).lo = st.cmp; st.cmp = null; st.hist = []; rer(); return;
+      case "mt-cgo": { const tg = E.mtGot(c, st.cmp); if (!payRespec([...got].filter((x) => !tg.has(x)).length, "changer d'arbre")) return; E.mt(c).lo = st.cmp; st.cmp = null; st.hist = []; rer(); return; }
       case "mt-sock": { if (st.sel == null || !got.has(st.sel) || E.joyOwner(S(), +d.v)) return; E.mt(c).j[st.sel] = +d.v; side(); draw(); return; }
       case "mt-unsock": { if (st.sel == null) return; delete E.mt(c).j[st.sel]; side(); draw(); return; }
       case "mt-fam": st.fam = d.v; rer(); return;

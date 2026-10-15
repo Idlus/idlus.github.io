@@ -1,6 +1,16 @@
 {
-  "version": "2.0.3",
+  "version": "2.0.4",
   "versions": [
+    {
+      "v": "2.0.4",
+      "name": "Étoiles rendues",
+      "guide": "maitrise",
+      "items": [
+        "Arbre de Maîtrise : rendre des étoiles coûte pareil partout. Une étoile rendue, un passage sur un autre arbre enregistré, un code de partage ou « Tout rendre » : gratuit jusqu'à 50 points placés, puis 20 000 kamas par point rendu. Le coût s'affiche avant (bulle, comparaison des arbres) et « Annuler » reprend toujours gratuitement les derniers points placés",
+        "Les comptes dont le héros rené avait été congédié reçoivent aussi le titre « Le Phénix renaît de ses cendres » à la place des anciens titres de la Renaissance",
+        "Classement : les héros renés des joueurs pas encore revenus depuis la 2.0 comptent pour le niveau 200, comme tout le monde"
+      ]
+    },
     {
       "v": "2.0.3",
       "name": "Chasse aux bugs de la Maîtrise",

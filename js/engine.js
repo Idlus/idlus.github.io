@@ -16,7 +16,7 @@
   if (Object.keys(DROPS).length) for (const k in MONSTERS) { const m = MONSTERS[k]; if (!m.dbItems) m.dbItems = m.items || []; m.items = DROPS[k] || []; }
 
   const E = {};
-  E.VERSION = 11; // 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise)
+  E.VERSION = 12; // 11 : 2.0 « La Maîtrise » (la Renaissance devient de la Maîtrise) ; 12 : 2.0.4, titres de la Renaissance retirés aussi quand le héros rené a été congédié
   /* Points d'extension (systèmes v2.6 : Havre-Sac, Almanax, alignement, quêtes…) */
   E.bonus = () => 0;          // E.bonus(S, kind) -> % (xp, drop, kamas, gather, dmg, hp, offtime, offrate, bag)
   E.emit = () => {};          // E.emit(S, type, data)
@@ -3711,6 +3711,11 @@
       E.events.length = ev;
       report.push(`2.0 « La Maîtrise » : la Renaissance laisse place à la Maîtrise. Les vies passées de tes héros deviennent des points de Maîtrise (2 % de leur XP, 2 points par Éveil et par sort appris) : ${lines.join(" ; ")}. Place-les dans Héros › Maîtrise. En souvenir, ton compte reçoit le titre « ${E.REN_TITLE} ».`);
     }
+    { const old = ["Né des cendres", "Flamme éternelle", "Phénix d'Idlus"]; // 2.0.4 (choix de Mathis 1A) : un compte qui a renu garde le souvenir même si le héros rené a été congédié
+      if (S.v < 12 && ((S.stats && S.stats.ren > 0) || (S.titlesExtra || []).some((t) => old.includes(t)) || (S.unlocks && S.unlocks.phenix) || S.chars.some((c) => c.renMt || old.includes(c.title) || c.orn === "phenix"))) {
+        const had = (S.titlesExtra || []).includes(E.REN_TITLE); S.titlesExtra = (S.titlesExtra || []).filter((t) => !old.includes(t)); if (!had) S.titlesExtra.push(E.REN_TITLE);
+        S.chars.forEach((c) => { if (old.includes(c.title)) c.title = null; if (c.orn === "phenix") c.orn = null; }); if (S.unlocks) delete S.unlocks.phenix;
+        if (!had) report.push(`2.0.4 : les titres et l'ornement de la Renaissance laissent place au titre « ${E.REN_TITLE} », en souvenir des vies de tes héros.`); } }
     if (S.craftObj === undefined) E.craftObjConvert(S, report); // avant de compléter avec la partie neuve (qui a déjà craftObj)
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
     Object.keys(GATHER_JOBS).forEach((j) => { if (!S.jobs[j]) S.jobs[j] = fresh.jobs[j]; });
