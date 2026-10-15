@@ -110,6 +110,33 @@ console.log(`ok - défi : coffre, série (${wins}/9 victoires)`);
   console.log("ok - défi 1.1 série 3 : équipe du défi, calendrier, saison");
 }
 
+// 4 quater. Série 4 : mode héroïque, vote du dimanche, série en danger, carnet, mois doré.
+{
+  t = Date.UTC(2030, 2, 4, 12, 0); const day = E.defiDay(); const def = E.defi("dec");
+  assert.strictEqual(def.extra.length, 3); assert.ok(def.extra.every((r) => !def.rules.includes(r) && E.CHALLENGES[r]), "3 règles héroïques différentes des règles du jour");
+  const X = E.newState("Héroïque", "iop"); X.chars[0].lvl = 50; ["feca", "cra"].forEach((k, i) => { const x = E.addChar(X, k, "X" + i, 50); x.inTeam = true; }); fitTeam(X, def);
+  assert.strictEqual(E.defiToggleHero(X, "dec", def.extra[0]), null); assert.strictEqual(E.defiToggleHero(X, "dec", def.extra[1]), null);
+  assert.ok(typeof E.defiToggleHero(X, "dec", def.extra[2]) === "string", "2 règles héroïques au plus");
+  const r = E.defiPlay(X, "dec"); assert.deepStrictEqual(r.hero, def.extra.slice(0, 2), "les règles héroïques comptent dans le combat");
+  if (r.win) { const held = def.extra.slice(0, 2).filter((k) => r.rules[k]).length; assert.strictEqual(r.pts.hero, held * E.DEFI_PTS.hero, "+150 par règle héroïque tenue"); assert.ok(X.defiLog[0].day === day && X.defiLog[0].score === r.score, "carnet du défi"); }
+  const back = E.defiSim(JSON.parse(E.serialize(X)), def, t); assert.strictEqual(back.score, r.score, "le serveur rejoue avec les mêmes règles héroïques");
+  // vote : 3 règles par semaine, la plus votée devient la 4e règle du dimanche
+  let sd = day; while (!E.defiSunday(sd)) sd++; const wk = E.defiWeek(sd); const opts = E.defiVoteOpts(wk);
+  assert.strictEqual(new Set(opts).size, 3); assert.strictEqual(E.defiVoteWin(wk), opts[0], "aucun vote : la 1re proposée");
+  E.DEFI_VOTE[wk] = { [opts[2]]: 5, [opts[1]]: 3 }; const sun = E.defi("ave", sd);
+  assert.strictEqual(sun.rules.length, 4); assert.strictEqual(sun.rules[3], opts[2], "règle votée le dimanche"); assert.ok(sun.rules.slice(0, 3).every((r) => !opts.includes(r)));
+  assert.ok(!E.defiVoteOpen(sd) && E.defiVoteOpen(sd - 1)); delete E.DEFI_VOTE[wk];
+  // série en danger : moins de 4 h, joker déjà pris
+  const Z = E.newState("Danger", "iop"); E.defiState(Z); Z.defiStreak = { n: 5, last: day - 1, best: 5, days: [day - 1], jw: E.defiWeek(day) };
+  assert.strictEqual(E.defiDanger(Z), 0, "en pleine journée : pas d'alerte");
+  const lateT = Date.UTC(2030, 2, 4, 21, 0); // 22 h à Paris
+  assert.ok(E.defiDanger(Z, lateT) > 0, "le soir, joker pris : alerte"); Z.defiStreak.jw = -1; assert.strictEqual(E.defiDanger(Z, lateT), 0, "joker libre : pas d'alerte");
+  // mois doré
+  const G2 = E.newState("Or", "iop"); G2.defiHist = {}; let m0 = E.defiMonth(day), d0 = day; while (E.defiMonth(d0 - 1) === m0) d0--;
+  for (let i = 0; i < 20; i++) G2.defiHist[d0 + i] = 3; assert.strictEqual(E.defiGoldCount(G2, d0 + 20), 20);
+  console.log("ok - défi 1.1 série 4 : mode héroïque, vote, série en danger, carnet, mois doré");
+}
+
 // 5. Garde-robe : tout ce qu'on possède y entre, on garde l'apparence après avoir vendu l'objet.
 const W = E.newState("Garde", "iop");
 const coiffe = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].slot === "coiffe" && D.ITEMS[k].lvl <= 20);

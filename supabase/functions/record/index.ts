@@ -129,6 +129,8 @@ async function defi(db: any, uid: string, tier: string) {
   try { S = E.deserialize(save.data); } catch (_) { return json({ ok: false, err: "partie illisible" }); }
   E.events.length = 0;
   if (!E.defiTierOk(S, tier)) return json({ ok: false, err: "palier interdit pour cette équipe" });
+  /* 1.1 : le dimanche, la règle votée par les joueurs (supabase/defi.sql, defi_vote_count) */
+  if (E.defiSunday(day)) { const { data: vc } = await db.from("defi_vote_count").select("rule,n").eq("week", E.defiWeek(day)); const c: Record<string, number> = {}; (vc || []).forEach((x: { rule: string; n: number }) => { c[x.rule] = x.n; }); E.DEFI_VOTE[E.defiWeek(day)] = c; }
   const def = E.defi(tier, day);
   const te = E.defiTeamErr(S, def); if (te) return json({ ok: false, err: te });
   const r = E.defiSim(S, def, now);

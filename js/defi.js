@@ -48,7 +48,10 @@
     noiop: { name: "Sans Iop", desc: "Les Iop restent au Havre-Sac aujourd'hui.", ok: (t) => !t.some((c) => c.cls === "iop"), fix: () => "Un Iop est dans ton équipe." },
   };
   /* le score : victoire, règles tenues, tours sous le temps de référence (6 par salle), PV restants */
-  E.DEFI_PTS = { win: 1000, rule: 250, turn: 10, par: 6, hp: 2 };
+  E.DEFI_PTS = { win: 1000, rule: 250, hero: 150, turn: 10, par: 6, hp: 2 };
+  E.DEFI_HERO_MAX = 2;             // 1.1 (série 4, 1A) : règles héroïques gardées au plus
+  E.DEFI_DANGER_H = 4;             // 1.1 (série 4, 2A) : rappel de série en danger dans les 4 dernières heures
+  E.DEFI_GOLD_MONTH = 20;          // 1.1 (série 4, 5A) : « Mois doré » à 20 bourses en or dans le mois
   E.DEFI_MEDALS = [{ id: "br", name: "Bronze", pts: 1000 }, { id: "ar", name: "Argent", pts: 1500 }, { id: "or", name: "Or", pts: 2000 }];
   E.DEFI_TITLE = "Habitué du défi";
   E.DEFI_TITLE100 = "Inarrêtable";
@@ -80,6 +83,12 @@
   E.defiSunday = (day) => (day + 4) % 7 === 0;
   E.defiWeek = (day = E.defiDay()) => Math.floor((day + 3) / 7);
   const pickN = (pool, n, hf, tag) => { const p = pool.slice(), out = []; for (let i = 0; i < n && p.length; i++) out.push(p.splice(hf(tag + i) % p.length, 1)[0]); return out; };
+  /* 1.1 (série 4, 4A) : vote de la règle du Grand défi. Les 3 règles proposées dépendent de la semaine (les mêmes pour tous) ;
+     E.DEFI_VOTE[semaine] = comptes de votes { règle: n }, lus au serveur (le jeu et la fonction record). Égalité ou aucun vote : la 1re proposée. */
+  E.DEFI_VOTE = {};
+  E.defiVoteOpts = (wk) => pickN(E.DEFI_RULES, 3, (s) => hash(`idlus|defivote|${wk}|${s}`), "opt");
+  E.defiVoteWin = (wk) => { const o = E.defiVoteOpts(wk); const c = E.DEFI_VOTE[wk] || {}; return o.reduce((b, r) => ((c[r] || 0) > (c[b] || 0) ? r : b), o[0]); };
+  E.defiVoteOpen = (day = E.defiDay()) => !E.defiSunday(day);
   E.defi = (tid, day = E.defiDay()) => {
     const T = E.defiTier(tid); if (!T) return null;
     const ids = Object.keys(DUNGEONS).sort().filter((d) => DUNGEONS[d].lvl >= (T.id === "eli" ? 141 : T.lo) && DUNGEONS[d].lvl <= T.hi && DUNGEONS[d].rooms && DUNGEONS[d].rooms.length);
@@ -91,9 +100,13 @@
     const did = ids[h("donjon") % ids.length];
     const k = Math.min(10, T.k[0] + (h("stasis") % (T.k[1] - T.k[0] + 1)));
     const mods = pickN(E.DEFI_MODS, (T.mods || 2) + (sun ? 1 : 0), h, "mod");
-    const rules = pickN(E.DEFI_RULES, sun ? 4 : 3, h, "regle");
+    /* 1.1 (série 4, 4A) : le dimanche, 3 règles tirées hors des 3 règles soumises au vote de la semaine, plus la règle votée */
+    const opts = E.defiVoteOpts(E.defiWeek(day));
+    const rules = sun ? pickN(E.DEFI_RULES.filter((r) => !opts.includes(r)), 3, h, "regle").concat([E.defiVoteWin(E.defiWeek(day))]) : pickN(E.DEFI_RULES, 3, h, "regle");
+    /* 1.1 (série 4, 1A) : mode héroïque, 3 règles en plus proposées (le joueur en garde 0, 1 ou 2) */
+    const extra = pickN(E.DEFI_RULES.filter((r) => !rules.includes(r)), 3, h, "heroique");
     const tk = Object.keys(E.DEFI_TEAM); const team = tk[h("equipe") % tk.length];
-    return { day, tier: T.id, did, k, mods, rules, team, sun, mult: sun ? 3 : 1, seed: h("hasard") };
+    return { day, tier: T.id, did, k, mods, rules, extra, team, sun, mult: sun ? 3 : 1, seed: h("hasard") };
   };
   const topTeam = (S) => Math.max(0, ...E.team(S).map((c) => c.lvl));
   /* on peut viser plus haut que son niveau, jamais plus bas que son héros le plus fort */
@@ -123,6 +136,25 @@
     for (const c of cand) { if (out.length >= n) break; if (R.ok(out.concat([c]))) out.push(c); }
     return out.length && tierFits(out, T) ? S.chars.filter((c) => out.includes(c)) : [];
   };
+  /* 1.1 (série 4, 1A) : règles héroïques choisies (S.defiHero, pour ce jour et ce palier), parmi les 3 proposées */
+  E.defiHeroRules = (S, def) => { const P = S.defiHero; return P && def && P.day === def.day && P.tier === def.tier && Array.isArray(P.ids) ? P.ids.filter((r) => (def.extra || []).includes(r)).slice(0, E.DEFI_HERO_MAX) : []; };
+  /* Action : ajouter ou retirer une règle héroïque */
+  E.defiToggleHero = (S, tid, rule) => {
+    const def = E.defi(tid); if (!def || !(def.extra || []).includes(rule)) return "Règle inconnue.";
+    const cur = E.defiHeroRules(S, def); const on = cur.includes(rule);
+    if (!on && cur.length >= E.DEFI_HERO_MAX) return `${E.DEFI_HERO_MAX} règles héroïques au plus.`;
+    S.defiHero = { day: def.day, tier: tid, ids: on ? cur.filter((r) => r !== rule) : cur.concat([rule]) };
+    return null;
+  };
+  /* 1.1 (série 4, 2A) : la série va casser ce soir (défi pas réussi, peu de temps, joker déjà pris ou série tenue par le joker) */
+  E.defiDanger = (S, t = E.now()) => {
+    const day = E.defiDay(t); const st = S.defiStreak; const n = E.defiStreakNow(S, day);
+    if (!st || n < 1 || (S.defi && S.defi.day === day && S.defi.chest)) return 0;
+    const left = E.defiLeft(t); if (left > E.DEFI_DANGER_H * 3600000) return 0;
+    return st.jw === E.defiWeek(day) || st.last === day - 2 ? left : 0;
+  };
+  /* 1.1 (série 4, 5A) : nombre de bourses en or du mois (calendrier S.defiHist) */
+  E.defiGoldCount = (S, day = E.defiDay()) => { const m = E.defiMonth(day); return Object.keys(S.defiHist || {}).filter((d) => S.defiHist[d] === 3 && E.defiMonth(+d) === m).length; };
   /* Action : garder (ids) ou oublier (null) l'équipe du défi du jour */
   E.defiSetPick = (S, tid, ids) => {
     if (!ids) { delete S.defiPick; return null; }
@@ -150,7 +182,8 @@
     const te = E.defiTeamErr(S2, def); if (te) { W.done = true; W.err = te; return W; }
     /* 1.1 : les héros suivent les règles du jour (comme l'option « Respecter les challenges »), pour tout le monde */
     S2.settings.chalAI = true; S2.chars.forEach((c) => { delete c.chalOff; });
-    S2.dungeon = { id: def.did, room: 0, stasis: def.k, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: def.mods.slice(), eliteRoom: def.k >= 5 ? Math.floor(dg.rooms.length / 2) : -1, defi: def.tier, rules: (def.rules || []).slice() };
+    W.hero = E.defiHeroRules(S2, def);
+    S2.dungeon = { id: def.did, room: 0, stasis: def.k, chain: 1, t: 0, syncLvl: Math.round(team.reduce((a, c) => a + c.lvl, 0) / team.length), mods: def.mods.slice(), eliteRoom: def.k >= 5 ? Math.floor(dg.rooms.length / 2) : -1, defi: def.tier, rules: (def.rules || []).concat(W.hero), hero: W.hero.slice() };
     W.nRooms = dg.rooms.length + 1;
     return W;
   };
@@ -180,16 +213,16 @@
   E.defiResult = (W) => {
     const turns = W.rooms.reduce((a, r) => a + r.turns, 0), hp = W.win ? W.hp : 0;
     /* une règle est tenue si elle l'est dans toutes les salles (et que le défi est gagné) */
-    const rules = {}; (W.def.rules || []).forEach((id) => { rules[id] = W.win && W.rooms.every((r) => !r.ch || r.ch.every((c) => c.id !== id || c.ok)); });
-    const sc = E.defiScore({ win: W.win, turns, hp, rules, nRooms: W.nRooms });
-    return { win: W.win, turns, hp, rooms: W.rooms, rules, score: sc.score, pts: sc, kamas: Math.round(W.kam), dust: E.defiDust(W.def) };
+    const hero = W.hero || []; const rules = {}; (W.def.rules || []).concat(hero).forEach((id) => { rules[id] = W.win && W.rooms.every((r) => !r.ch || r.ch.every((c) => c.id !== id || c.ok)); });
+    const sc = E.defiScore({ win: W.win, turns, hp, rules, hero, nRooms: W.nRooms });
+    return { win: W.win, turns, hp, rooms: W.rooms, rules, hero, score: sc.score, pts: sc, kamas: Math.round(W.kam), dust: E.defiDust(W.def) };
   };
   E.defiDust = (def) => (def.k * 2 + (def.k >= 4 ? 4 : 0)) * (def.mult || 1);
   E.defiScore = (r) => {
-    const P = E.DEFI_PTS; if (!r.win) return { score: 0, win: 0, rules: 0, turns: 0, hp: 0, par: 0 };
-    const held = Object.values(r.rules || {}).filter(Boolean).length; const par = P.par * (r.nRooms || 1);
-    const o = { win: P.win, rules: held * P.rule, turns: Math.max(0, par - r.turns) * P.turn, hp: Math.round(r.hp * P.hp), par };
-    o.score = o.win + o.rules + o.turns + o.hp; return o;
+    const P = E.DEFI_PTS; if (!r.win) return { score: 0, win: 0, rules: 0, hero: 0, turns: 0, hp: 0, par: 0 };
+    const hero = r.hero || []; const held = Object.keys(r.rules || {}).filter((k) => r.rules[k] && !hero.includes(k)).length; const heldH = hero.filter((k) => r.rules && r.rules[k]).length; const par = P.par * (r.nRooms || 1);
+    const o = { win: P.win, rules: held * P.rule, hero: heldH * P.hero, turns: Math.max(0, par - r.turns) * P.turn, hp: Math.round(r.hp * P.hp), par };
+    o.score = o.win + o.rules + o.hero + o.turns + o.hp; return o;
   };
   E.defiMedal = (score) => { let m = null; E.DEFI_MEDALS.forEach((x) => { if (score >= x.pts) m = x; }); return m; };
   E.defiSim = (S, def, now = E.now()) => {
@@ -229,7 +262,10 @@
     const prev = st.best[tid] || null;
     const out = Object.assign({ tier: tid, did: def.did, k: def.k, mods: def.mods, def, day, team, n: st.tries.filter((x) => x.tier === tid).length + 1 }, r);
     out.improved = E.defiBetter(r, prev); out.prev = prev;
-    if (out.improved) { st.best[tid] = { win: true, score: r.score, turns: r.turns, hp: r.hp, rules: r.rules, pts: r.pts, team: team.map((x) => x.cls), names: team.map((x) => x.name), t: now }; st.sends[tid + "!"] = 0; }
+    if (out.improved) { st.best[tid] = { win: true, score: r.score, turns: r.turns, hp: r.hp, rules: r.rules, hero: r.hero, pts: r.pts, team: team.map((x) => x.cls), names: team.map((x) => x.name), t: now }; st.sends[tid + "!"] = 0;
+      /* 1.1 (série 4, 3A) : carnet du défi, le meilleur score de chaque jour et palier (30 derniers jours) */
+      const L = (S.defiLog = (S.defiLog || []).filter((x) => !(x.day === day && x.tier === tid) && x.day > day - 30));
+      L.unshift({ day, tier: tid, did: def.did, k: def.k, score: r.score, team: team.map((x) => x.cls), names: team.map((x) => x.name), rules: r.rules, hero: r.hero }); L.sort((a, b) => b.day - a.day || (a.tier < b.tier ? -1 : 1)); }
     st.tries.unshift({ tier: tid, win: r.win, score: r.score, turns: r.turns, hp: r.hp, team: team.map((x) => x.name), n: out.n, t: now }); if (st.tries.length > 12) st.tries.length = 12;
     S.cnt = S.cnt || {}; S.cnt.defiTries = (S.cnt.defiTries || 0) + 1;
     if (r.win) {
@@ -249,6 +285,8 @@
         out.chest = Object.assign(got, { medal: lvl, from: st.medal }); st.medal = lvl;
         /* 1.1 (série 3, 1A) : le calendrier du mois garde la meilleure bourse de chaque jour (62 jours) */
         const H = (S.defiHist = S.defiHist || {}); H[day] = lvl; Object.keys(H).forEach((d) => { if (+d < day - 62) delete H[d]; });
+        if (lvl === 3) { const m = E.defiMonth(day); S.defiGold = S.defiGold || [];
+          if (!S.defiGold.includes(m) && E.defiGoldCount(S, day) >= E.DEFI_GOLD_MONTH) { S.defiGold.push(m); S.unlocks = S.unlocks || {}; S.unlocks.moisDore = 1; out.gold = m; } }
       }
       if (!st.chest) {
         st.chest = true;
@@ -302,6 +340,7 @@
   E.ACTIONS.setShow = "choisir l'apparence montrée (garde-robe)";
   E.ACTIONS.defiPlay = "jouer le défi du jour";
   E.ACTIONS.defiSetPick = "choisir l'équipe du défi du jour";
+  E.ACTIONS.defiToggleHero = "choisir une règle héroïque du défi";
 
   /* ---------- résumé de l'équipe (carte à partager) ---------- */
   E.teamCardData = (S) => {
@@ -324,6 +363,7 @@
     add({ id: "garde50", cat: "Progression", name: "Collectionneur", desc: "Réunir 50 coiffes et capes dans la garde-robe.", test: (S) => E.wardrobeCount(S) >= 50, kamas: 15000, title: "le Collectionneur" });
   }
   if (E.ORN && !E.ORN.sablier) E.ORN.sablier = { name: () => "Sablier du défi", req: "Réussir le défi du jour 30 jours de suite", ok: (S) => !!(S.unlocks && S.unlocks.sablier) };
+  if (E.ORN && !E.ORN.moisDore) E.ORN.moisDore = { name: (S) => (S && S.defiGold && S.defiGold.length > 1 ? `Mois doré ×${S.defiGold.length}` : "Mois doré"), req: `Gagner ${E.DEFI_GOLD_MONTH} bourses en or au défi du jour dans un même mois`, ok: (S) => !!(S.unlocks && S.unlocks.moisDore) };
   if (E.ORN && !E.ORN.couronneDefi) E.ORN.couronneDefi = { name: (S) => (S && S.defiCrown ? `Couronne ${E.defiDeMois(S.defiCrown.m)}` : "Couronne du défi"), req: "Finir dans les 3 premiers d'un palier à la saison du défi (un mois)", ok: (S) => !!(S.unlocks && S.unlocks.couronneDefi) };
   if (E.ORN && !E.ORN.cadreDefi) E.ORN.cadreDefi = { name: () => "Cadre du défi", req: "Réussir le défi du jour 100 jours de suite", ok: (S) => !!(S.unlocks && S.unlocks.cadreDefi) };
   /* 1.1 : « Champion du défi », porté la semaine qui suit une première place au classement de la semaine */

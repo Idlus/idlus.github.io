@@ -1277,7 +1277,7 @@
     const F = S.fight = { id: (S.fightSeq = (S.fightSeq || 0) + 1), label, ents, round: 1, order: [], oi: 0, log: [], over: false, result: null, dur: 0, dungeon: !!S.dungeon, seq: 0, fx: [], sub: fsub, dungeonId: fdg, deaths: [] };
     if (!S.dungeon && S.protector && S.protector.fighting) F.prot = true;
     F.stasis = S.dungeon ? S.dungeon.stasis || 1 : 0; F.weekly = S.dungeon && S.dungeon.weekly || null; F.flash = S.dungeon && S.dungeon.flash || null;
-    if (S.dungeon && S.dungeon.rules) F.defiRules = true;
+    if (S.dungeon && S.dungeon.rules) { F.defiRules = true; F.defiHero = S.dungeon.hero || []; } // 1.1 (série 4) : règles héroïques à +150
     F.chals = S.dungeon && S.dungeon.rules ? E.fixedChals(F, S.dungeon.rules) : pickChallenges(S, F, (S.dungeon ? 2 : 1) + E.almMult(S, "chal1"));
     if (XP) F.exp = XP.exp;
     F.idol = IX; if (IX) { F.idolScore = IX.score; F.idolBonus = IX.bonus; }

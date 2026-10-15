@@ -117,3 +117,29 @@ begin
 end $$;
 revoke all on function public.defi_share(text) from public, anon;
 grant execute on function public.defi_share(text) to authenticated;
+-- ---------- 1.1, série 4 : vote de la règle du Grand défi ----------
+-- Du lundi au samedi, un vote par compte et par semaine (modifiable). Les 3 règles proposées et le choix de la gagnante
+-- (le plus de votes parmi elles, égalité : la 1re proposée) sont calculés par le jeu et la fonction record (E.defiVoteOpts / E.defiVoteWin).
+create table if not exists public.defi_vote (
+  week int not null, user_id uuid not null references auth.users (id) on delete cascade, rule text not null,
+  at timestamptz not null default now(), primary key (week, user_id)
+);
+alter table public.defi_vote enable row level security;
+drop view if exists public.defi_vote_count;
+create view public.defi_vote_count as
+  select v.week, v.rule, count(*)::int as n from public.defi_vote v join public.ladder l on l.user_id = v.user_id where not l.flagged group by v.week, v.rule;
+grant select on public.defi_vote_count to anon, authenticated;
+create or replace function public.defi_vote(p_week int, p_rule text) returns text language plpgsql security definer set search_path = public
+as $$
+declare me uuid := auth.uid(); d int := defi_today();
+begin
+  if me is null then return 'Connecte-toi pour voter.'; end if;
+  if p_week is distinct from (d + 3) / 7 then return 'Ce vote est terminé.'; end if;
+  if (d + 4) % 7 = 0 then return 'Le vote est fermé le dimanche : il rouvre lundi.'; end if;
+  if p_rule not in ('survivant', 'versatile', 'econome', 'focus', 'elitiste', 'incurable', 'elementaire', 'barbare', 'rapide') then return 'Règle inconnue.'; end if;
+  if not exists (select 1 from ladder where user_id = me and not flagged) then return 'Joue en ligne (partie 1) pour voter.'; end if;
+  insert into defi_vote (week, user_id, rule) values (p_week, me, p_rule) on conflict (week, user_id) do update set rule = excluded.rule, at = now();
+  return null;
+end $$;
+revoke all on function public.defi_vote(int, text) from public, anon;
+grant execute on function public.defi_vote(int, text) to authenticated;
