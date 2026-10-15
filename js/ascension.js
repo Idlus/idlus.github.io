@@ -171,6 +171,8 @@
     if (t === "event") fl.ev = ["prisoner", "merc", "tame"][Math.floor(r() * 3)];
     return fl;
   };
+  /* le décor d'un étage : la salle du boss qui attend en haut de la dizaine (vraie salle DOFUS, assets/asc) */
+  E.ascDecor = (S, mode, f, t = E.now()) => { const top = Math.ceil(Math.max(1, f) / 10) * 10; const b = E.ascFloor(S, mode, top, t); return b && b.did && DUNGEONS[b.did] ? b.did : null; };
   E.ascKey = (S, mode, t = E.now()) => (mode === "x" ? `x${E.weekIdx(t)}` : `${mode}${E.ascMonth(t)}`);
   E.ascFloor = (S, mode, f, t = E.now()) => { const key = E.ascKey(S, mode, t); const ck = key + "|" + f; if (towerCache[ck]) return towerCache[ck];
     return (towerCache[ck] = E.ascFloorAt(key, f, !!(E.halWin && E.halWin(t)))); };

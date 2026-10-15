@@ -156,3 +156,16 @@
 }
 @media (prefers-reduced-motion:reduce){.as-u img,.as-u.cur .as-ring,.as-aim{animation:none}}
 .as-bar.wait{display:flex}
+/* vrai décor DOFUS (la salle du boss de la dizaine) : lent travelling, poussières qui flottent, voile pour lire les combattants */
+.as-stage.deco{background:#0c0a08}
+.as-bg{position:absolute;inset:-6%;z-index:0;background-size:cover;background-position:50% 55%;animation:asPan 38s ease-in-out infinite alternate;will-change:transform}
+.as-veil{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(0,0,0,.42),rgba(0,0,0,.08) 35%,rgba(0,0,0,.12) 70%,rgba(0,0,0,.5)),radial-gradient(90% 70% at 50% 45%,transparent 50%,rgba(0,0,0,.45));animation:asLight 5s ease-in-out infinite alternate}
+.as-motes{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.as-motes i{position:absolute;bottom:-4%;left:calc(6% + var(--i) * 10.5%);width:5px;height:5px;border-radius:50%;background:radial-gradient(circle,#ffe9a8,rgba(255,233,168,0));opacity:0;animation:asMote calc(9s + var(--i) * 1.3s) linear infinite;animation-delay:calc(var(--i) * -1.7s)}
+.as-stage.deco .as-top .as-fln,.as-stage.deco .as-uh b{color:#f6efdc;text-shadow:0 1px 3px #000}
+.as-stage.deco .as-uh small{color:#e9e0c8;text-shadow:0 1px 2px #000}
+.as-stage.deco .as-turn{color:#ffe08a;text-shadow:0 2px 8px #000}
+@keyframes asPan{from{transform:scale(1) translate(0,0)}to{transform:scale(1.09) translate(-2.5%,1.5%)}}
+@keyframes asLight{from{opacity:1}to{opacity:.86}}
+@keyframes asMote{0%{transform:translate(0,0);opacity:0}12%{opacity:.9}60%{opacity:.6}100%{transform:translate(calc(18px - var(--i) * 4px),-460px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.as-bg,.as-veil,.as-motes i{animation:none}}
