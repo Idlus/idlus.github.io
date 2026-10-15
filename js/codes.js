@@ -78,13 +78,18 @@
   }, 600);
 
   /* ---------- panel admin (onglet « Codes cadeaux », Mathis seulement) ---------- */
-  const TYPES = [["k", "Kamas"], ["r", "Ressource"], ["c", "Consommable"], ["i", "Objet"], ["t", "Titre"], ["o", "Ornement"], ["s", "Heures de sablier"]];
+  /* 1.1.1.4 : en plus des 7 types d'origine, tout ce que le jeu sait offrir (E.GIFT_X : monnaies, familiers, montures, idoles…) */
+  const XT = () => Object.keys(E.GIFT_X || {}).filter((t) => t !== "tit" && t !== "orn");
+  const TYPES_ = [["k", "Kamas"], ["r", "Ressource"], ["c", "Consommable"], ["i", "Objet"], ["t", "Titre"], ["o", "Ornement"], ["s", "Heures de sablier"]];
+  let TYPES = null; const types = () => TYPES || (TYPES = TYPES_.concat(XT().map((t) => ["x:" + t, E.GIFT_X[t].name])));
+  const isX = (t) => /^x:/.test(t); const XG = (t) => E.GIFT_X[t.slice(2)];
+  const xList = (t) => { const T = XG(t); return T ? T.list() : []; };
   const F = { code: "", rows: [{ t: "k", n: "", q: "" }], max: "", end: "", msg: "", acc: false, ann: false, pub: null, users: null };
   const consByName = () => { const o = {}; for (const id in D.CONSUMABLES) o[D.CONSUMABLES[id].name.toLowerCase()] = id; return o; };
   const itemByName = () => { const o = {}; for (const id in D.ITEMS) { const k = D.ITEMS[id].name.toLowerCase(); if (!o[k]) o[k] = id; } return o; };
   /* 1.0.4.8 : liste de choix maison (la liste du navigateur se refermait dès que la page bougeait un peu) */
   const NAMES = {}; const fold = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const names = (k) => NAMES[k] || (NAMES[k] = k === "r" ? Object.keys(D.RES).sort() : k === "c" ? Object.values(D.CONSUMABLES).map((c) => c.name) : [...new Set(Object.keys(D.ITEMS).filter((id) => !/^trophee_/.test(id)).map((id) => D.ITEMS[id].name))].sort());
+  const names = (k) => NAMES[k] || (NAMES[k] = isX(k) ? [...new Set(xList(k).map((x) => x[1]))].sort((a, b) => a.localeCompare(b, "fr")) : k === "r" ? Object.keys(D.RES).sort() : k === "c" ? Object.values(D.CONSUMABLES).map((c) => c.name) : [...new Set(Object.keys(D.ITEMS).filter((id) => !/^trophee_/.test(id)).map((id) => D.ITEMS[id].name))].sort());
   const SUG = { inp: null, list: [], on: -1 };
   function sugShow(inp) {
     const box = inp.parentNode.querySelector(".gc-sug"); if (!box) return;
@@ -115,8 +120,16 @@
       const q = Math.round(+r.q) || 0, n = String(r.n || "").trim();
       if (r.t === "k") { if (q > 0) w.k = (w.k || 0) + q; continue; }
       if (r.t === "s") { if (q > 0) w.s = Math.min(24, (w.s || 0) + q); continue; }
-      if (r.t === "t") { if (n) w.t = n.slice(0, 40); continue; }
-      if (r.t === "o") { if (n && E.ORN[n]) w.o = n; continue; }
+      if (r.t === "t") { if (n) { if (!w.t) w.t = n.slice(0, 40); else (w.x = w.x || []).push(["tit", n.slice(0, 40)]); } continue; } // plusieurs titres : les suivants passent dans « x »
+      if (r.t === "o") { if (n && E.ORN[n]) { if (!w.o) w.o = n; else (w.x = w.x || []).push(["orn", n]); } continue; }
+      if (isX(r.t)) {
+        const T = XG(r.t); if (!T) continue; const L = T.list();
+        const id = L.length === 1 ? L[0][0] : (L.find((x) => fold(x[1]) === fold(n)) || L.find((x) => x[0] === n) || [])[0];
+        if (!n && L.length !== 1) continue;
+        if (!id) return { err: `Introuvable dans « ${T.name} » : ${n}. Choisis un nom dans la liste.` };
+        if (T.qty && q < 1) return { err: `Indique une quantité pour « ${n || T.name} ».` };
+        (w.x = w.x || []).push(T.qty ? [r.t.slice(2), id, Math.min(T.max || 1e9, q)] : [r.t.slice(2), id]); continue;
+      }
       if (!n) continue;
       if (q < 1) return { err: `Indique une quantité pour « ${n} ».` };
       if (r.t === "r") { const k = Object.keys(D.RES).find((x) => x.toLowerCase() === n.toLowerCase()); if (!k) return { err: `Ressource inconnue : ${n}` }; (w.r = w.r || []).push([k, q]); }
@@ -129,13 +142,16 @@
   const endTxt = (d) => (d ? new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "sans fin");
 
   function rowHtml(r, i) {
-    const sel = `<select id="gcT${i}" data-gc="type" data-i="${i}" aria-label="Type de récompense">${TYPES.map(([k, n]) => `<option value="${k}" ${k === r.t ? "selected" : ""}>${n}</option>`).join("")}</select>`;
+    const sel = `<select id="gcT${i}" data-gc="type" data-i="${i}" aria-label="Type de récompense">${types().map(([k, n]) => `<option value="${k}" ${k === r.t ? "selected" : ""}>${n}</option>`).join("")}</select>`;
     const qty = (ph) => `<input type="number" id="gcQ${i}" min="1" value="${h(r.q)}" placeholder="${ph}" aria-label="Quantité">`;
     let mid = "", q = "";
     if (r.t === "k") q = `<input type="number" id="gcQ${i}" min="1" step="1000" value="${h(r.q)}" placeholder="50000" aria-label="Kamas" style="grid-column:span 2">`;
     else if (r.t === "s") q = `<input type="number" id="gcQ${i}" min="1" max="24" value="${h(r.q)}" placeholder="3" aria-label="Heures de sablier" style="grid-column:span 2">`;
     else if (r.t === "t") mid = `<input type="text" id="gcN${i}" maxlength="40" value="${h(r.n)}" placeholder="Citrouille d'Amakna" aria-label="Titre" style="grid-column:span 2">`;
-    else if (r.t === "o") mid = `<select id="gcN${i}" aria-label="Ornement" style="grid-column:span 2"><option value="">Choisir…</option>${Object.keys(E.ORN).map((k) => `<option value="${k}" ${k === r.n ? "selected" : ""}>${h(E.ORN[k].name(null))}</option>`).join("")}</select>`;
+    else if (r.t === "o") mid = `<select id="gcN${i}" aria-label="Ornement" style="grid-column:span 2"><option value="">Choisir…</option>${Object.keys(E.ORN).map((k) => `<option value="${k}" ${k === r.n ? "selected" : ""}>${h(E.ORN[k].name({}))}</option>`).join("")}</select>`;
+    else if (isX(r.t)) { const T = XG(r.t) || {}; const one = xList(r.t).length === 1;
+      if (one) q = T.qty ? `<input type="number" id="gcQ${i}" min="1" ${T.max ? `max="${T.max}"` : ""} value="${h(r.q)}" placeholder="1" aria-label="Quantité" style="grid-column:span 2">` : `<span class="small muted" style="grid-column:span 2;align-self:center">${h(T.name)}</span>`;
+      else { mid = `<span class="gc-ac"${T.qty ? "" : ` style="grid-column:span 2"`}><input type="text" id="gcN${i}" data-gc="name" data-k="${r.t}" data-i="${i}" autocomplete="off" value="${h(r.n)}" placeholder="${h(T.name)}" aria-label="Nom"><span class="gc-sug" hidden></span></span>`; if (T.qty) q = qty(T.max ? `1 (max ${T.max})` : "1"); } }
     else { mid = `<span class="gc-ac"><input type="text" id="gcN${i}" data-gc="name" data-k="${r.t}" data-i="${i}" autocomplete="off" value="${h(r.n)}" placeholder="${r.t === "r" ? "Blé" : r.t === "c" ? "Coffre" : "Nom de l'objet"}" aria-label="Nom"><span class="gc-sug" hidden></span></span>`; q = qty(r.t === "i" ? "1 (max 10)" : "1"); }
     return `<div class="gc-rw">${sel}${mid}${q}<button class="btn sm" data-act="gc-del" data-i="${i}" aria-label="Retirer" ${F.rows.length < 2 ? "disabled" : ""}>×</button></div>`;
   }

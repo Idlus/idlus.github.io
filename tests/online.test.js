@@ -693,6 +693,12 @@ const MOCK = () => {
     if (!(await page.evaluate(() => document.activeElement.id === "gcN1" && document.activeElement.value === "coffr" && document.querySelectorAll(".gc-sug:not([hidden]) .gc-opt").length > 0))) fail("codes cadeaux : la liste de choix se referme au redessin");
     await page.click(".gc-sug .gc-opt"); await page.waitForTimeout(300);
     if (!/^Coffre/.test(await page.inputValue("#gcN1")) || !/Coffre/.test(await page.textContent(".gc-card"))) fail("codes cadeaux : choix dans la liste non pris");
+    // 1.1.1.4 : tout le reste dans les codes : une monture et des Kolizetons s'ajoutent et s'affichent dans l'aperçu
+    await page.click('[data-act="gc-add"]'); await page.waitForSelector("#gcT2"); await page.selectOption("#gcT2", "x:mt"); await page.waitForSelector("#gcN2");
+    await page.click("#gcN2"); await page.keyboard.type("Dragodinde Rous"); await page.waitForTimeout(300); await page.click("#gcN2 ~ .gc-sug .gc-opt"); await page.waitForTimeout(300);
+    await page.click('[data-act="gc-add"]'); await page.waitForSelector("#gcT3"); await page.selectOption("#gcT3", "x:m"); await page.waitForSelector("#gcN3");
+    await page.click("#gcN3"); await page.keyboard.type("Kolizet"); await page.waitForTimeout(300); await page.click("#gcN3 ~ .gc-sug .gc-opt"); await page.fill("#gcQ3", "40"); await page.waitForTimeout(400);
+    { const t = await page.textContent(".gc-card"); if (!/monture Dragodinde Rousse/.test(t) || !/40 Kolizetons/.test(t)) fail("codes cadeaux : monture ou monnaie absente de l'aperçu : " + t); }
     await page.click('.adm [data-act="adm-tab"][data-v="hdv"]'); await page.waitForSelector('.adm [data-act="mk-admdel"]', { timeout: 5000 });
     // 0.1.52.1 : fiches joueurs (réservées à l'admin), avec la partie lue par le jeu
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.12.8 : chat ouvert à 1280 px, le menu en icônes laisse la bulle « Découverte » sur la liste des joueurs

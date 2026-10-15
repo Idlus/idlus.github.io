@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.1.4 « Tout dans les codes cadeaux »
+
+Les codes cadeaux (panel Xener › Codes cadeaux) peuvent offrir presque tout ce qui se gagne : monnaies (Kolizetons, Doplons, jetons, insignes, Bribes, Éclats, Essence, Fragments, Écus, heures de donjon), familiers, montures, idoles, légendaires, runes, meubles, trophées de zone, objets d'élevage, ailes, palettes, aura, partitions, plusieurs titres et ornements, cadres de héros. Les Dofus et les âmes d'archimonstres restent hors des codes.
+
 ## 1.1.1.3 « Signaler un bug »
 
 Demande de Mathis (15/10/2026) : « Créer un bouton report bug, pour te permettre d'automatiser les corrections de bug », plus « une liaison sur le serveur discord ». Fenêtre `js/bugs.js` (Communauté › Signaler un bug, Options › Aide, page Suggestions ; diagnostic de `diagText()` joint), table et fonctions `supabase/bugs.sql` (`bug_send` avec ou sans compte, `bug_mine`, `adm_bugs`, onglet admin « Bugs »). Le workflow « Bugs signalés » (`bugs-signales.yml`, toutes les 15 min) en fait un ticket GitHub `bug-joueur` sans pseudo (`tools/bugs_github.js`) et un fil dans le forum #bugs du Discord (`discord_bot.js bugs`), puis recopie l'état des tickets (fermé + « Corrigé dans la x » → le joueur et le fil Discord le voient). Une tâche planifiée de Claude reprend les tickets ouverts pour les corriger.

@@ -1,6 +1,15 @@
 {
-  "version": "1.1.1.3",
+  "version": "1.1.1.4",
   "versions": [
+    {
+      "v": "1.1.1.4",
+      "name": "Tout dans les codes cadeaux",
+      "items": [
+        "Les codes cadeaux peuvent maintenant offrir presque tout ce qui se gagne dans le jeu : Kolizetons, Doplons, jetons et insignes, Bribes de rêve, Éclats chromatiques et de champion, Essence, Fragments et Écus de l'Ascension, heures de donjon",
+        "Mais aussi des familiers, des montures (même chromatiques), des idoles, des objets légendaires, des runes, des meubles du Havre-Sac, des trophées de zone, des objets d'élevage, des ailes, des palettes, l'aura chromatique et des partitions",
+        "Un code peut donner plusieurs titres et ornements, et tous les ornements et cadres de héros peuvent être offerts"
+      ]
+    },
     {
       "v": "1.1.1.3",
       "name": "Signaler un bug",

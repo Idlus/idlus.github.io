@@ -1176,7 +1176,8 @@
     (d.i || []).forEach(([id, q]) => p.push(`${q} × ${(ITEMS[id] || { name: id }).name}`)); // 0.1.26 : objets d'équipement
     if (d.s) p.push(`${d.s} h de Sablier de Xélor`);
     if (d.t) p.push(`titre « ${d.t} »`);
-    if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name(null)} »`);
+    if (d.o && ORN[d.o]) p.push(`ornement « ${ORN[d.o].name({})} »`);
+    (d.x || []).forEach((row) => { if (gxOk(row)) p.push(E.GIFT_X[row[0]].txt(row[1], gxQ(row))); }); // 1.1.1.4 : tout le reste
     return p.join(", "); };
   /* Donne le contenu d'un code déjà vérifié (ancien code IDLUS-… ou code du serveur, 0.1.26). */
   E.giveGift = (S, d, now = E.now()) => {
@@ -1188,7 +1189,8 @@
     if (d.s && E.sabGift) E.sabGift(S, Math.min(24, Math.max(0, +d.s || 0))); // heures de Sablier de Xélor (peut dépasser le maximum)
     S.titlesExtra = S.titlesExtra || []; S.unlocks = S.unlocks || {};
     if (d.t && !S.titlesExtra.includes(d.t)) S.titlesExtra.push(String(d.t).slice(0, 40));
-    if (d.o && ORN[d.o]) S.unlocks[d.o] = 1;
+    if (d.o && ORN[d.o]) { S.unlocks[d.o] = 1; S.unlocks["gift_o_" + d.o] = 1; } // 1.1.1.4 : aussi les ornements qui se gagnent autrement (quête, succès…)
+    (d.x || []).forEach((row) => { if (gxOk(row)) try { E.GIFT_X[row[0]].give(S, row[1], gxQ(row)); } catch (e) {} });
     S.gifts[d.id] = now;
     const txt = E.giftText(d); note(S, `Code cadeau : ${txt}${d.m ? ` · ${d.m}` : ""}`, "rare");
     return { ok: true, txt, msg: d.m || "" };
@@ -1253,8 +1255,81 @@
   /* 1.1 : les 10 premiers comptes à réunir les 4 Dofus de la 1.1 (le serveur les grave dans « Premiers », kind gardien11) */
   E.grantGardien = (S, rank) => { if (S.unlocks.gardien) return false; S.unlocks.gardien = rank || 1; return true; };
   E.ORN = ORN;
-  E.ornUnlocked = (S, id) => !!ORN[id] && ORN[id].ok(S);
+  E.ornUnlocked = (S, id) => !!ORN[id] && (!!(S.unlocks && S.unlocks["gift_o_" + id]) || ORN[id].ok(S)); // 1.1.1.4 : ou offert par un code cadeau
   E.setOrn = (S, cid, id) => { const c = S.chars.find((x) => x.id === cid); if (!c) return; if (id && !E.ornUnlocked(S, id)) return "Ornement verrouillé."; c.orn = id || null; return null; };
+
+  /* 1.1.1.4 : tout le reste dans les codes cadeaux. Récompense « x » : liste de [type, id, quantité].
+     Chaque type dit comment lister ses choix (pour le panel), comment le donner et comment l'écrire.
+     Les Dofus et les âmes d'archimonstres n'y sont pas : ils restent gagnés en jeu (quête, boss). */
+  const gxNum = (q, max) => clamp(Math.round(+q) || 1, 1, max || 1e9);
+  const gxTok = (k) => (S, q) => { S.tokens = S.tokens || {}; S.tokens[k] = (S.tokens[k] || 0) + q; };
+  const MONEY_X = {
+    jetons:     { name: "Jetons de chasseur", give: gxTok("jetons") },
+    insignes:   { name: "Insignes de cité", give: gxTok("insignes") },
+    doplons:    { name: "Doplons", give: gxTok("doplons") },
+    kolizetons: { name: "Kolizetons", give: gxTok("kolizetons") },
+    bribes:     { name: "Bribes de rêve", give: (S, q) => E.sgGive && E.sgGive(S, q) },
+    eclats:     { name: "Éclats chromatiques", give: (S, q) => { const C = E.chroma(S); C.ec = (C.ec || 0) + q; } },
+    teintures:  { name: "Teintures chromatiques", give: (S, q) => { const C = E.chroma(S); C.dyes = (C.dyes || 0) + q; } },
+    champion:   { name: "Éclats de champion", give: (S, q) => { const C = E.champState(S); C.sh = (C.sh || 0) + q; } },
+    essence:    { name: "Essence", give: (S, q) => E.addEss(S, q) },
+    fragments:  { name: "Fragments de l'Ascension", give: (S, q) => { const A = E.ascState(S); A.frag = (A.frag || 0) + q; } },
+    ecus:       { name: "Écus de l'Ascension", give: (S, q) => { const A = E.ascState(S); A.ecus = (A.ecus || 0) + q; } },
+  };
+  const unl = (S, k) => { S.unlocks = S.unlocks || {}; S.unlocks[k] = 1; };
+  const mountLabel = (sp, c) => `${E.MOUNTS[sp].name} ${E.colourName(sp, c)}`;
+  const runeKeys = () => { const L = [];
+    Object.keys(STATS).forEach((s) => { if (!STATS[s].short || E.EXO_STATS.includes(s)) return; ["", "pa", "ra"].forEach((t) => L.push(E.runeKey(t, s))); });
+    E.EXO_STATS.forEach((s) => STATS[s] && L.push(E.runeKey("ga", s)));
+    Object.keys(E.TRANS || {}).forEach((s) => STATS[s] && L.push(E.runeKey("ta", s)));
+    return L; };
+  const tracks = () => (root.IdlusAudio && root.IdlusAudio.tracks) || {};
+  E.GIFT_X = {
+    m:    { name: "Monnaie", qty: true, list: () => Object.keys(MONEY_X).map((k) => [k, MONEY_X[k].name]),
+            ok: (id) => !!MONEY_X[id], give: (S, id, q) => MONEY_X[id].give(S, q), txt: (id, q) => `${q.toLocaleString("fr-FR")} ${MONEY_X[id].name}` },
+    dgh:  { name: "Heures de donjon", qty: true, max: 8, list: () => [["h", "Heures de donjon"]], ok: () => true,
+            give: (S, id, q) => { const H = E.dgh(S); H.b = Math.min(E.DGH.max, H.b + q * 3600); }, txt: (id, q) => `${q} h de donjon` },
+    pet:  { name: "Familier", list: () => Object.keys(E.PETS || {}).map((k) => [k, E.PETS[k].name]),
+            ok: (id) => !!(E.PETS && E.PETS[id]), give: (S, id) => E.givePet(S, id, "code cadeau"), txt: (id) => `familier ${E.PETS[id].name}` },
+    mt:   { name: "Monture", qty: true, max: 10,
+            list: () => { const L = []; (E.MOUNT_ORDER || []).forEach((sp) => { const M = E.MOUNTS[sp]; Object.keys(M.cols).forEach((c) => L.push([sp + "/" + c, mountLabel(sp, c)])); Object.keys(M.bico || {}).forEach((c) => L.push([sp + "/" + c, mountLabel(sp, c)])); }); return L; },
+            ok: (id) => { const [sp, c] = String(id).split("/"); const M = E.MOUNTS && E.MOUNTS[sp]; return !!M && !!(M.cols[c] || (M.bico && M.bico[c])); },
+            give: (S, id, q) => { const [sp, c] = id.split("/"); for (let i = 0; i < q; i++) E.giveMount(S, sp, c, "code cadeau"); }, txt: (id, q) => { const [sp, c] = id.split("/"); return `${q > 1 ? q + " × " : ""}monture ${mountLabel(sp, c)}`; } },
+    mtc:  { name: "Monture chromatique", qty: true, max: 10, list: () => E.GIFT_X.mt.list(), ok: (id) => E.GIFT_X.mt.ok(id),
+            give: (S, id, q) => { const [sp, c] = id.split("/"); for (let i = 0; i < q; i++) E.giveMount(S, sp, c, "code cadeau", { chr: 1 }); }, txt: (id, q) => `${E.GIFT_X.mt.txt(id, q)} chromatique` },
+    idol: { name: "Idole", list: () => (E.IDOL_ORDER || []).map((k) => [k, E.IDOLS[k].name]),
+            ok: (id) => !!(E.IDOLS && E.IDOLS[id]), give: (S, id) => E.giveIdol(S, id, "code cadeau"), txt: (id) => `idole ${E.IDOLS[id].name}` },
+    leg:  { name: "Objet légendaire", qty: true, max: 10, list: () => (E.LEG_LIST || []).map((x) => [x.k, x.name]),
+            ok: (id) => !!(E.LEG && E.LEG[id]), give: (S, id, q) => { for (let i = 0; i < q; i++) E.giveLeg(S, id, "code cadeau"); }, txt: (id, q) => `${q} × ${E.LEG[id].name}` },
+    rune: { name: "Rune de forgemagie", qty: true, list: () => runeKeys().map((k) => [k, E.runeName(k)]),
+            ok: (id) => runeKeys().includes(id), give: (S, id, q) => { S.runes = S.runes || {}; S.runes[id] = (S.runes[id] || 0) + q; }, txt: (id, q) => `${q} × ${E.runeName(id)}` },
+    furn: { name: "Meuble du Havre-Sac", list: () => Object.keys(E.FURN || {}).map((k) => [k, k]),
+            ok: (id) => !!(E.FURN && E.FURN[id]), give: (S, id) => E.giveFurn(S, id, "code cadeau"), txt: (id) => `meuble ${id}` },
+    tro:  { name: "Trophée de zone", list: () => Object.keys(SUBS).filter((k) => ITEMS["trophee_" + k]).map((k) => [k, ITEMS["trophee_" + k].name]),
+            ok: (id) => !!(SUBS[id] && ITEMS["trophee_" + id]), give: (S, id) => { S.trophies = S.trophies || {}; if (!S.trophies[id]) { S.trophies[id] = 1; E.emit(S, "trophy", { sub: id }); } }, txt: (id) => ITEMS["trophee_" + id].name },
+    elv:  { name: "Objet d'élevage", qty: true, max: 10,
+            list: () => { const L = []; (E.ELV_ORDER || []).forEach((k) => E.ROMAN5.forEach((r, t) => L.push([k + "/" + t, `${E.ELV_ITEMS[k].name} ${r}`]))); return L; },
+            ok: (id) => { const [k, t] = String(id).split("/"); return !!(E.ELV_ITEMS && E.ELV_ITEMS[k]) && +t >= 0 && +t <= 4; },
+            give: (S, id, q) => { const [k, t] = id.split("/"); const v = E.elevState(S); for (let i = 0; i < q; i++) v.inv.push({ k, t: +t, n: E.ITEM_USES }); },
+            txt: (id, q) => { const [k, t] = id.split("/"); return `${q} × ${E.ELV_ITEMS[k].name} ${E.ROMAN5[+t]}`; } },
+    tit:  { name: "Titre", free: true, list: () => [], ok: (id) => !!String(id || "").trim(),
+            give: (S, id) => { S.titlesExtra = S.titlesExtra || []; const t = String(id).slice(0, 40); if (!S.titlesExtra.includes(t)) S.titlesExtra.push(t); }, txt: (id) => `titre « ${id} »` },
+    orn:  { name: "Ornement", list: () => Object.keys(ORN).map((k) => [k, ORN[k].name({})]), ok: (id) => !!ORN[id],
+            give: (S, id) => unl(S, "gift_o_" + id), txt: (id) => `ornement « ${ORN[id].name({})} »` },
+    fr:   { name: "Cadre de héros", list: () => Object.keys(E.SFRAMES).map((k) => [k, E.SFRAMES[k].name({})]), ok: (id) => !!E.SFRAMES[id],
+            give: (S, id) => unl(S, "gift_f_" + id), txt: (id) => `cadre « ${E.SFRAMES[id].name({})} »` },
+    wing: { name: "Ailes", list: () => [["or", "Ailes dorées"], ["argent", "Ailes argentées"], ["sombre", "Ailes sombres"]], ok: (id) => ["or", "argent", "sombre"].includes(id),
+            give: (S, id) => unl(S, "wing_" + id), txt: (id) => E.GIFT_X.wing.list().find((x) => x[0] === id)[1] },
+    pal:  { name: "Palette de couleurs", list: () => (E.TEINTURES || []).map((t) => [t.id, `Palette ${t.name}`]), ok: (id) => (E.TEINTURES || []).some((t) => t.id === id),
+            give: (S, id) => unl(S, "teint_" + id), txt: (id) => `palette ${E.TEINTURES.find((t) => t.id === id).name}` },
+    aura: { name: "Aura chromatique", list: () => [["aura", "Aura chromatique"]], ok: () => true,
+            give: (S) => { const C = E.chroma(S); C.shop = C.shop || {}; if (!C.shop.aura) C.shop.aura = E.now(); }, txt: () => "Aura chromatique" },
+    part: { name: "Partition", list: () => Object.keys(tracks()).map((k) => [k, `Partition « ${tracks()[k]} »`]), ok: (id) => !!tracks()[id],
+            give: (S, id) => { S.partitions = S.partitions || {}; if (!S.partitions[id]) S.partitions[id] = Date.now(); }, txt: (id) => `partition « ${tracks()[id] || id} »` },
+  };
+  /* une ligne valable : type connu, choix connu (sinon elle est ignorée, par exemple sur une partie trop ancienne) */
+  const gxOk = (row) => Array.isArray(row) && E.GIFT_X[row[0]] && (() => { try { return E.GIFT_X[row[0]].ok(row[1]); } catch (e) { return false; } })();
+  const gxQ = (row) => { const T = E.GIFT_X[row[0]]; return T.qty ? gxNum(row[2], T.max) : 1; };
 
   /* ---------------- Carte de héros : cadres et élément dominant ---------------- */
   // 0.1.26 : cadres « Métal orné » : 5 métaux en deux rangs (un rang tous les 20 niveaux), puis Krosmoz au niveau 200
@@ -1277,7 +1352,7 @@
     guilde:   { name: () => "Cadre de guilde", req: "Être dans une guilde de niveau 10 ou plus (aux couleurs de la guilde)", ok: (S) => !!(S.guild && S.guild.id) && (S.guild.lvl || 1) >= 10 },
     halouine: { name: () => "Cadre d'Halouine", req: "Gagner un combat pendant Halouine (du 24 octobre au 3 novembre)", ok: (S) => !!(S.unlocks && S.unlocks.frHal) },
   };
-  E.sframeOk = (S, id) => !!E.SFRAMES[id] && E.SFRAMES[id].ok(S);
+  E.sframeOk = (S, id) => !!E.SFRAMES[id] && (!!(S.unlocks && S.unlocks["gift_f_" + id]) || E.SFRAMES[id].ok(S)); // 1.1.1.4 : ou offert par un code cadeau
   /* clé du cadre montré : cadre spécial choisi, sinon feu (rené), sinon métal du niveau */
   E.heroFrame = (S, c) => (c.frame && E.sframeOk(S, c.frame) ? c.frame : c.ren ? "feu" : E.frameKey(c.lvl));
   E.setFrame = (S, cid, id) => {

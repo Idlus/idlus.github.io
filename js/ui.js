@@ -21,9 +21,14 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.1.3";
+const GAME_VERSION = "1.1.1.4";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.1.4", name: "Tout dans les codes cadeaux", items: [
+    "Les codes cadeaux peuvent maintenant offrir presque tout ce qui se gagne dans le jeu : Kolizetons, Doplons, jetons et insignes, Bribes de rêve, Éclats chromatiques et de champion, Essence, Fragments et Écus de l'Ascension, heures de donjon",
+    "Mais aussi des familiers, des montures (même chromatiques), des idoles, des objets légendaires, des runes, des meubles du Havre-Sac, des trophées de zone, des objets d'élevage, des ailes, des palettes, l'aura chromatique et des partitions",
+    "Un code peut donner plusieurs titres et ornements, et tous les ornements et cadres de héros peuvent être offerts",
+  ] },
   { v: "1.1.1.3", name: "Signaler un bug", items: [
     "Nouveau bouton « Signaler un bug » (Communauté, Options › Aide et page Suggestions) : décrivez le bug, le jeu joint tout seul la version, l'appareil, la page ouverte et les dernières erreurs. Avec ou sans compte",
     "Chaque signalement part directement pour être corrigé et arrive aussi dans le forum Bugs du Discord, où les autres joueurs peuvent dire s'ils ont le même",
