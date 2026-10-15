@@ -211,7 +211,7 @@ async function raid(db: any, uid: string, q: any) {
     lastTry.set(uid + ":rdend", now);
     const { data: st, error } = await db.rpc("rd_end_start", { p_user: uid, p_raid: id });
     if (error || !st || st.err) return json({ ok: false, err: (st && st.err) || "serveur indisponible" });
-    const seed = E.raidSeed(id, "perco"); const B = E.percoGuards(seed, st.lvl, st.rob);
+    const seed = E.raidSeed(id, "perco"); const B = E.percoGuards(seed, st.lvl, st.rob, st.stars); // Chasse aux Percepteurs : +2 % par étoile de vétéran
     const r = E.koliSim(st.att, B, seed);
     const { data: done, error: e2 } = await db.rpc("rd_end_done", { p_raid: id, p_win: !!r.win, p_rounds: r.rounds });
     if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });

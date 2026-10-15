@@ -100,3 +100,24 @@ console.log("ok - Percepteurs : places, poche, défense rejouable");
   assert.notStrictEqual(E.raidSeed(12, "u1"), E.raidSeed(12, "u2"));
   console.log("ok - Percepteurs 1.0.30 : donjons, gains, améliorations, attaques");
 }
+
+// Chasse aux Percepteurs : vétérans (+2 % par étoile, comme 2/3 de rang de Robustesse), nom fixe, Nuit des Percepteurs, domination
+{
+  const g0 = E.percoGuards(77, 120, 0, 0), g5 = E.percoGuards(77, 120, 0, 5), g9 = E.percoGuards(77, 120, 0, 9);
+  assert.deepStrictEqual(E.percoGuards(77, 120, 0), g0, "sans étoile : mêmes gardes qu'avant");
+  assert.ok(Math.abs(g5[0].st.dsort - g0[0].st.dsort - 10) < 1e-9, "5 étoiles : +10 % de dommages");
+  assert.deepStrictEqual(g9, g5, "5 étoiles au plus");
+  assert.strictEqual(E.percoNick(41), E.percoNick(41)); assert.ok(/^\S+ \S+$/.test(E.percoNick(41)));
+  assert.ok(new Set([1, 2, 3, 4, 5, 6, 7, 8].map(E.percoNick)).size >= 7, "noms variés");
+  const sat = (h, m) => Date.UTC(2026, 9, 17, h - 2, m || 0); // samedi 17/10/2026, Paris = UTC+2
+  assert.ok(!E.huntNight(sat(19, 59)) && E.huntNight(sat(20)) && E.huntNight(sat(22, 59)) && !E.huntNight(sat(23)), "samedi de 20 h à 23 h, heure de Paris");
+  assert.ok(!E.huntNight(Date.UTC(2026, 9, 16, 19)), "pas le vendredi");
+  assert.deepStrictEqual(E.huntNightLeft(sat(19)), { on: false, ms: 3600e3 }); assert.deepStrictEqual(E.huntNightLeft(sat(21, 30)), { on: true, ms: 5400e3 });
+  assert.strictEqual(E.huntNightLeft(sat(23)).ms, 7 * 864e5 - 3 * 3600e3, "la suivante : samedi prochain");
+  const subs = Object.keys(E.SUBS).filter((k) => E.SUBS[k].zone === E.SUBS[Object.keys(E.SUBS)[0]].zone);
+  const dj = Object.keys(E.DUNGEON_SUB).find((d) => subs.includes(E.DUNGEON_SUB[d]));
+  const z = E.huntRegion(subs[0]); assert.strictEqual(E.huntRegion(dj), z, "un donjon compte dans la région de sa zone");
+  assert.deepStrictEqual(E.huntDomination([{ sid: subs[0], gid: 1 }, { sid: dj, gid: 1 }, { sid: subs[1], gid: 2 }])[z], { gid: 1, n: 2, tot: 3, tie: false });
+  assert.deepStrictEqual(E.huntDomination([{ sid: subs[0], gid: 1 }, { sid: subs[1], gid: 2 }])[z], { gid: null, n: 1, tot: 2, tie: true }, "égalité : territoire disputé");
+  console.log("ok - Chasse aux Percepteurs : vétérans, Nuit des Percepteurs, domination");
+}

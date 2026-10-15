@@ -2656,7 +2656,7 @@ function renderWorld() {
   let body = "";
   if (ui.world === "map") {
     const t = mapTier(); const bands = MAP_TIERS.map((b, i) => [i, b[0] + "–" + b[1]]).concat([[-1, "Tout"]]);
-    body = tresorBanner() + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
+    body = tresorBanner() + (window.CHASSE ? window.CHASSE.mapLegend() : "") + `<div class="row between maptiers"><span class="small muted">Niveaux</span><span class="seg">${bands.map(([i, n]) => `<button data-act="maptier" data-v="${i}" aria-pressed="${t === i}">${n}</button>`).join("")}</span></div>`
       + (ZONES.map((z) => zonePanel(z, t, mapOpenZone(t) === z.id)).join("") || `<div class="empty">Aucune zone dans cette tranche.</div>`);
   }
   else if (ui.world === "dungeons") body = (window.EXPUI ? window.EXPUI.dghPanel() : "") + dungeonsHtml(); // 1.0.30 : donjon pendant l'absence (js/expeditionsui.js)
@@ -2712,7 +2712,7 @@ function zonePanel(z, tier = -1, open = false) {
   const tro = subs.filter((s) => S.trophies && S.trophies[s.id]).length;
   const prog = `<span class="zf-prog" data-tip="${traq}/${mons.length} monstres Traqueur · ${tro}/${subs.length} trophée${subs.length > 1 ? "s" : ""}"><span class="bar"><i style="width:${pct(traq, mons.length)}%"></i></span>${IC("trophee")}<span class="xs num">${tro}/${subs.length}</span></span>`;
   const head = `<button class="zonefold" data-act="zonefold" data-id="${z.id}" aria-expanded="${open}"><span class="zf-name">${h(z.name)}</span>
-    <span class="zf-meta">${hunting ? `<span class="tag good">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
+    <span class="zf-meta">${window.CHASSE ? window.CHASSE.foldTag(z) : ""}${hunting ? `<span class="tag good">Chasse en cours</span>` : hasBest ? `<span class="tag best">${G("star")} Zone conseillée</span>` : ""}${zu ? "" : `<span class="lockmsg">${G("lock")} ${h(lockReason(z.subs[0].id))}</span>`}<span class="xs muted">niv. ${lo === hi ? lo : lo + "–" + hi} · ${nUn}/${subs.length} zone${subs.length > 1 ? "s" : ""}</span>${zu ? prog : ""}</span><span class="chev">${open ? "▾" : "▸"}</span></button>`;
   if (!open) return `<section class="panel zonefoldp">${head}</section>`;
   return `<section class="panel zonefoldp open">${head}<div class="small muted zf-desc">${h(z.desc)}</div>
     <div class="subrows">${subs.map((s) => {
@@ -2723,7 +2723,7 @@ function zonePanel(z, tier = -1, open = false) {
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
         <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</span>
           <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")} Meilleure zone</span>` : ""}</span>
-          ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
+          ${window.CHASSE ? window.CHASSE.subChip(s.id) : ""}${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
 }
 /* 0.1.34 : repère de difficulté d'après les derniers combats de l'équipe dans la zone */
@@ -2770,7 +2770,7 @@ function renderZoneView(sid) {
   <section class="panel">
     <div class="scene" style="height:210px">${sceneSVG(s.deco, 210, s.id)}<div class="crumb">${h(z.name)}<span class="title">${h(s.name)}</span>Niveau conseillé : ${s.lvl[0]} – ${s.lvl[1]}</div>
       <div class="troupe">${s.monsters.map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</div></div>
-    <div class="pad stack">
+    <div class="pad stack">${window.CHASSE ? window.CHASSE.zoneBox(sid) : ""}
       <div class="row">${!un ? `<span class="tag soft">${G("lock")} ${h(lockReason(sid))}</span>` : here ? `<button class="btn" data-act="stophunt">Rentrer au repos</button><button class="btn primary" data-tab="combat">Voir le combat</button>` : `<button class="btn primary" data-act="hunt" data-id="${sid}" ${S.dungeon ? "disabled" : ""}>${IC("combat")} Partir chasser</button>`}${un ? idolBtn(null) + archiBtn() : ""}
         <span class="small muted">${E.team(S).length} héros${E.synergy(S) ? ` · Synergie +${E.synergy(S)} %` : ""} · ${lvlHint(s)}</span></div>
       ${un ? `<div class="row small"><span data-tip="Étoiles de zone">${starsHtml(sid, true)}</span><span class="muted">${here ? "Les étoiles fondent pendant la chasse (une toutes les 30 min)." : "Une étoile toutes les 2 h sans chasse, +10 % d'XP et de butin chacune."}</span></div>` : ""}
@@ -8285,6 +8285,10 @@ document.addEventListener("click", (ev) => {
     case "stophunt": msg(E.stopHunt(S)); break;
     case "hunt": { closeSheet(); const r = E.startHunt(S, d.id); if (r) { toast(r); return; } ui.tab = "combat"; ui.zoneView = null; window.scrollTo(0, 0); break; }
     case "zoneview": ui.zoneFromEnc = null; ui.zoneView = d.id; window.scrollTo(0, 0); break;
+    /* Chasse aux Percepteurs (js/chasse.js) : de la carte vers l'onglet de la guilde, et retour */
+    case "hc-hunt": if (window.GUILD) Object.assign(window.GUILD.G, { tab: "chasse", atk: null, view: null }); ui.tab = "guild"; window.scrollTo(0, 0); break;
+    case "hc-map": ui.tab = "world"; ui.zoneView = null; ui.world = "map"; window.scrollTo(0, 0); break;
+    case "g-atk": if (!t.dataset.gotab) return; break; // attaquer depuis la carte (js/guilds.js a déjà préparé l'attaque)
     case "zoneback": ui.zoneView = null; ui.zoneFromEnc = null; break;
     case "zoneall": ui.zoneAll = ui.zoneAll === d.id ? null : d.id; break;
     case "zonebackenc": { ui.zoneView = null; ui.zoneFromEnc = null; ui.tab = "world"; ui.world = "enc"; const y = ui.encScroll || 0; render(); window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y)); return; }

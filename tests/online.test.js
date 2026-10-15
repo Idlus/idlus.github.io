@@ -84,6 +84,9 @@ const MOCK = () => {
       gm.chest -= price; if (a.p_k === "place") gm.seats++; else gm.ups = Object.assign({}, gm.ups, { [a.p_k]: r + 1 });
       gm.chestlog.unshift({ at: iso(), k: -price, t: a.p_k + " acheté", n: 1 }); return ok({ ok: true, ups: gm.ups, seats: gm.seats, chest: gm.chest });
     }
+    if (name === "guild_view" && a.p_id === 6) // Chasse aux Percepteurs : la guilde de la revanche
+      return ok({ id: 6, name: "Les Bouftous Fous", ic: "trophee", col: "#e8c063", lvl: 12, motd: "", n: 4, cap: 5, created: iso(-864e5), chef: "Bouf", shield: null, pvp: [1, 3], war: null, boss: 0, trophies: 0, rob: 1, fort: null, spy: false, mine: false, mylvl: 14, members: [],
+        percos: [{ id: 61, sid, name: zone, zlvl: E.percoLvl(sid), dj: false, fill: 1, shield: null, monsters: false, raid: null, pocket: null, stars: 1 }] });
     if (name === "guild_view") {
       const spy = !!gm.ups.espionnage;
       return ok(Object.assign({ motd: "On farm et on assume.", n: 12, cap: 12, created: iso(-2 * 864e5), chef: "Kraken", shield: null, pvp: [18, 4], war: { pts: 20, win: 6, loss: 1 }, boss: 3, trophies: 1, rob: 6, fort: spy ? false : null, spy, mine: false, mylvl: 14,
@@ -102,8 +105,18 @@ const MOCK = () => {
           { id: 32, sid, name: zone + " (bis)", zlvl: E.percoLvl(sid), dj: false, cap, fill: gm.col ? 0 : 1, by: "Baloo", placed: iso(-864e5), wins: 0, losses: 0, next: iso(12 * 3600e3), shield: null, raided: false, atk: null }],
         slots: 3, ko: [], raids_in: rIn, raids_out: rOut, left: gm.go ? 2 : 3, max: 3,
         war: { me: { pts: 7, win: 2, loss: 1, def: 1 }, rank: 2, top: [Object.assign({ pts: 20, win: 6, loss: 1, def: 2 }, G4), Object.assign({ pts: 7, win: 2, loss: 1, def: 1 }, G3)], last: [] },
-        taken: {}, holds: {}, glvl: 14, rank: 1, ups: gm.ups, now: iso() });
+        taken: {}, holds: {}, glvl: 14, rank: 1, ups: gm.ups, now: iso(), nuit: false,
+        revenge: [{ gid: 6, name: "Les Bouftous Fous", ic: "trophee", col: "#e8c063", zone, at: iso(-40 * 60e3), until: iso(320 * 60e3), used: false }] });
     }
+    /* Chasse aux Percepteurs : tous les Percepteurs du serveur, primes */
+    if (name === "perco_map") {
+      const z2 = Object.keys(E.SUBS).filter((k) => E.SUBS[k].zone !== E.SUBS[sid].zone && E.percoCap(k)); const dj = Object.keys(E.DUNGEON_SUB).find((k) => E.percoCap(k));
+      const P = (id, gid, s2, o) => Object.assign({ id, gid, sid: s2, zlvl: E.percoLvl(s2), dj: E.percoIsDj(s2), fill: 0.7, stars: 0, shield: null, monsters: false, raid: null, bounty: null }, o);
+      return ok({ now: iso(), nuit: false, me: gm.in ? 3 : null, percos: [P(31, 3, sid, { fill: 0.82 }), P(32, 3, sid, { fill: 1 }), P(41, 4, sid, { stars: 3, bounty: gm.bnty ? [{ k: gm.bnty, gid: 3, by: "Les Bouftous", until: iso(3 * 864e5) }] : [{ k: 750000, gid: 5, by: "Les Tofus Enragés", until: iso(2 * 864e5) }] }),
+        P(42, 4, z2[5], { shield: iso(4 * 3600e3) }), P(43, 4, z2[9], { fill: 0.4 }), P(51, 5, z2[5 + 1], { fill: 0.9 }), P(61, 6, z2[20], { fill: 1, stars: 1 }), P(62, 6, dj, { fill: 0.6 })],
+        guilds: { 3: Object.assign({ rob: 2, young: null }, G3), 4: Object.assign({ rob: 6, young: null }, G4), 5: Object.assign({ rob: 0, young: iso(70 * 60e3) }, G5), 6: { name: "Les Bouftous Fous", ic: "trophee", col: "#e8c063", lvl: 12, rob: 1, young: null } } });
+    }
+    if (name === "guild_bounty") { if (gm.chest < a.p_k) return ok({ err: "coffre" }); gm.chest -= a.p_k; gm.bnty = a.p_k; return ok({ ok: true, chest: gm.chest }); }
     if (name === "perco_collect") { gm.col = true; gm.op = d.op = Math.max(gm.op, d.op || 100) + 1; return ok({ ok: true, k: 108000, res: { "Laine de Bouftou": 40 }, item: null, gxp: 5000, txp: 0.02, zl: 30, ops: [{ id: gm.op, p: { res: { "Laine de Bouftou": 40 } }, t: "Percepteur récolté" }] }); }
     if (name === "gboss_claim") return ok({ ok: 0, k: 0, dust: 0, titles: [], ops: [] });
     return undefined;
@@ -968,6 +981,26 @@ const MOCK = () => {
     await page.click('[data-act="g-rgo"]'); await page.waitForTimeout(1000);
     if (!((await mock()).gm.calls || []).some((b) => b.raid && b.raid.go === 41)) fail("guildes : attaque non envoyée au serveur");
     if (!/Attaque en cours/.test(await gtxt())) fail("guildes : attaque en cours absente des Percepteurs");
+    // Chasse aux Percepteurs : liste groupée par guilde, revanche, prime, vétérans, carte et domination
+    await page.click('[data-act="g-tab"][data-v="chasse"]'); await page.waitForSelector(".pc-grp", { timeout: 8000 }).catch(() => fail("chasse : onglet vide"));
+    { const t = await gtxt(); ["Revanche contre Les Bouftous Fous", "Ordre du Kralamour", "Avis de recherche", "Nuit des Percepteurs", "Prime 750 000 k", "★★★"].forEach((x) => { if (!t.includes(x)) fail("chasse : « " + x + " » absent"); });
+      if ((await page.$$(".pc-grp")).length !== 3) fail("chasse : 3 guildes ennemies attendues");
+      if (!/Les Bouftous Fous/.test(await page.textContent(".pc-grp"))) fail("chasse : la guilde de la revanche n'est pas en tête"); }
+    await page.click('[data-act="hc-f"][data-v="dj"]'); await page.waitForTimeout(200);
+    if ((await page.$$(".pc-row")).length !== 1) fail("chasse : filtre Donjons");
+    await page.click('[data-act="hc-f"][data-v="all"]'); await page.waitForTimeout(200);
+    await gwide("la chasse aux Percepteurs", "guilde-chasse");
+    { const c0 = (await mock()).gm.chest;
+      await page.click('[data-act="hc-bnty"][data-p="43"]'); await page.waitForSelector("#chBnty"); await page.fill("#chBnty", "300000"); await page.click('[data-act="hc-bnty2"]'); await page.waitForTimeout(800);
+      if ((await mock()).gm.chest !== c0 - 300000) fail("chasse : prime non payée par le coffre"); }
+    await page.click('.pc-rev'); await page.waitForSelector('[data-act="g-rgo"]', { timeout: 5000 }).catch(() => fail("chasse : la revanche n'ouvre pas l'attaque"));
+    if (!/Lancer la revanche/.test(await gtxt()) || !/ne compte pas dans tes attaques du jour/.test(await gtxt())) fail("chasse : écran de revanche incomplet");
+    await page.click('[data-act="g-atkback"]');
+    if (!(await page.evaluate(() => { const S = window.DX.S, E = window.ENGINE; const sub0 = S.sub; const sid = window.CHASSE.find(31).sid; S.sub = sid; const a = E.guildBonus(S, "kamas"); S.sub = sub0; return a >= E.HUNT.dom; }))) fail("chasse : la région dominée ne donne pas +5 % de kamas");
+    await page.click('[data-act="hc-map"]'); await page.waitForSelector(".pc-legend", { timeout: 5000 }).catch(() => fail("chasse : légende absente de la carte"));
+    await page.evaluate(() => { window.DX.ui.mapTier = -1; window.DX.render(); }); await page.waitForTimeout(200);
+    if (!/domine/.test(await page.textContent("#main"))) fail("chasse : domination absente de la carte");
+    await gwide("la carte des Percepteurs", "guilde-carte");
     await page.click('#nav [data-nk="world"]');
     // 7h. 1.0.30 : la Communauté. Alignement (camp du serveur, guerre de la semaine), Songe infini classé, Panel Xener
     await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); const W = window.ENGINE.weekIdx();

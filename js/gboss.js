@@ -247,6 +247,37 @@
      Classement de la semaine : 3 points par attaque gagnée, 1 par attaque repoussée ; titre « Conquérant ».
      ========================================================================== */
   E.RAID = { h: 2, hVigie: 3, day: 3, dayBanniere: 4, shield: 6, ko: 12, hold: 1, loot: 50, lootFort: 25, gap: 10, base: 0.2, rob: 0.03, win: 3, def: 1 };
+  /* « Chasse aux Percepteurs » (choix 1C, 2C et 6A à 10A de Mathis), serveur dans supabase/gboss.sql :
+     - Vétérans (8A) : un Percepteur gagne une étoile par attaque de guilde repoussée (5 au plus) ; chacune donne
+       +2 % de PV et de dommages à lui et à ses gardes ; il les perd s'il est pillé. Il porte un nom (E.percoNick).
+     - Revanche (6A) : une guilde pillée a 6 h pour attaquer un Percepteur de la guilde pilleuse, une fois par membre,
+       sans utiliser ses attaques du jour, avec +25 % de butin.
+     - Primes (7A) : le Meneur ou un Bras droit met une prime sur un Percepteur ennemi (50 000 à 2 000 000 kamas, payés
+       par le coffre) ; celui qui le pille la touche, sinon elle revient au coffre au bout de 3 jours.
+     - Domination (9A) : la guilde qui a le plus de Percepteurs dans une région (zone de la carte, donjons compris) la
+       domine ; ses membres y gagnent +5 % de kamas et de butin (sous les plafonds du jeu).
+     - Nuit des Percepteurs (10A) : chaque samedi de 20 h à 23 h (Paris), butin ×1,5, boucliers des Percepteurs réduits
+       de moitié, une attaque de plus pour chacun ; titre « Ombre de la nuit » pour la guilde qui pille le plus. */
+  E.HUNT = { star: 0.02, stars: 5, revenge: 6, revengeLoot: 25, bountyMin: 50000, bountyMax: 2000000, bountyDays: 3, dom: 5, nightDay: 6, nightFrom: 20, nightTo: 23, nightLoot: 1.5, nightTitle: "Ombre de la nuit" };
+  const NICK_A = ["Ush", "Krou", "Gwen", "Ebe", "Dark", "Lou", "Ot", "Rol", "Mak", "Bwak", "Kal", "Sim", "Ar", "Ny", "Mo", "Ga", "Tor", "Fen", "Zil", "Pou"];
+  const NICK_B = ["Galesh", "Tinto", "Mazzo", "Ruby", "Drak", "Plof", "Zinzin", "Boufo", "Kawa", "Tork", "Lifa", "Pandor", "Krokro", "Grillos", "Waba", "Zoth", "Mulou", "Picor", "Blop", "Sadoul"];
+  /* nom d'un Percepteur (le même pour tous : tiré de son numéro) */
+  E.percoNick = (id) => { const n = hash(`idlus|perco|${Math.floor(+id || 0)}`) >>> 0; return `${NICK_A[n % NICK_A.length]} ${NICK_B[Math.floor(n / NICK_A.length) % NICK_B.length]}`; };
+  /* Nuit des Percepteurs : en cours à l'instant t (heure de Paris) ; next = début de la prochaine (ms) */
+  const parisParts = (t) => { const f = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(t)); const o = {}; f.forEach((p) => { o[p.type] = p.value; }); return { wd: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(o.weekday) + 1, h: +o.hour, m: +o.minute }; };
+  E.huntNight = (t) => { const p = parisParts(t == null ? E.now() : t); return p.wd === E.HUNT.nightDay && p.h >= E.HUNT.nightFrom && p.h < E.HUNT.nightTo; };
+  /* temps avant le début (ou la fin, si elle est en cours) de la Nuit des Percepteurs, en ms, à la minute près */
+  E.huntNightLeft = (t) => { t = t == null ? E.now() : t; const p = parisParts(t); const cur = ((p.wd - 1) * 24 + p.h) * 60 + p.m;
+    const st = ((E.HUNT.nightDay - 1) * 24 + E.HUNT.nightFrom) * 60, en = ((E.HUNT.nightDay - 1) * 24 + E.HUNT.nightTo) * 60;
+    if (cur >= st && cur < en) return { on: true, ms: (en - cur) * 60000 };
+    return { on: false, ms: (((st - cur) % 10080 + 10080) % 10080) * 60000 }; };
+  /* Domination (9A) : pour une liste de Percepteurs [{ sid, gid }], la guilde qui domine chaque région (zone de la carte) ;
+     égalité en tête : « disputé » (gid null). Renvoie { zoneId: { gid, n, tot, tie } }. */
+  E.huntRegion = (sid) => { const sub = E.SUBS && E.SUBS[sid]; if (sub) return sub.zone; const acc = E.DUNGEON_SUB && E.DUNGEON_SUB[sid]; return acc && E.SUBS[acc] ? E.SUBS[acc].zone : null; };
+  E.huntDomination = (L) => { const by = {}; (L || []).forEach((p) => { const z = E.huntRegion(p.sid); if (!z) return; const c = (by[z] = by[z] || {}); c[p.gid] = (c[p.gid] || 0) + 1; });
+    const out = {}; for (const z in by) { const e = Object.entries(by[z]).sort((a, b) => b[1] - a[1]); const tot = e.reduce((a, x) => a + x[1], 0);
+      out[z] = { gid: e[1] && e[1][1] === e[0][1] ? null : +e[0][0], n: e[0][1], tot, tie: !!(e[1] && e[1][1] === e[0][1]) }; }
+    return out; };
   E.WAR_TITLE = "Conquérant";
   /* part de la poche pillée (0,5 ; 0,25 ; divisée par 2 si la guilde visée a 10 niveaux de moins) */
   E.raidPart = (attLvl, defLvl, coffreFort) => ((coffreFort ? E.RAID.lootFort : E.RAID.loot) / 100) * ((defLvl || 1) <= (attLvl || 1) - E.RAID.gap ? 0.5 : 1);
@@ -255,9 +286,9 @@
   /* Le Percepteur et ses gardes : une équipe de Fantômes d'arène (js/koli.js) au niveau de la zone ou de l'attaquant
      (le plus haut), +20 % de PV et de dommages, et +3 % par rang de Robustesse. Calibré par simulation : une bonne
      équipe d'arène gagne environ 8 fois sur 10 sans Robustesse, environ 1 fois sur 2 contre la Robustesse 10. */
-  E.percoGuards = (seed, lvl, rob) => {
+  E.percoGuards = (seed, lvl, rob, stars) => {
     const T = E.koliGhost(seed >>> 0, Math.max(1, Math.min(200, Math.round(lvl || 1))));
-    const m = E.RAID.base + E.RAID.rob * Math.max(0, Math.min(10, rob || 0));
+    const m = E.RAID.base + E.RAID.rob * Math.max(0, Math.min(10, rob || 0)) + E.HUNT.star * Math.max(0, Math.min(E.HUNT.stars, stars || 0));
     return T.map((h, i) => { const st = Object.assign({}, h.st); st.hpMax = Math.round(st.hpMax * (1 + m)); st.dsort = (st.dsort || 0) + m * 100;
       return Object.assign({}, h, { n: i ? "Garde du Percepteur" : "Percepteur", st }); });
   };

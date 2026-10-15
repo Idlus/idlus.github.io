@@ -522,7 +522,7 @@ begin
         'team', case when spy then k.heads end) order by x.rank, x.joined_at), '[]'::jsonb)
       from guild_members x left join ladder l on l.user_id = x.user_id left join koli k on k.user_id = x.user_id where x.guild_id = g.id),
     'percos', (select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'sid', p.sid, 'name', z.name, 'zlvl', z.lvl, 'dj', z.kind = 'dj', 'fill', least(1, pc_fill(p)),
-        'shield', case when p.shield_until > now() then p.shield_until end, 'monsters', p.atk_at is not null,
+        'shield', case when pc_shield(p) > now() then pc_shield(p) end, 'monsters', p.atk_at is not null, 'stars', p.stars, -- Chasse aux Percepteurs : bouclier ÷ 2 la nuit, vétérans
         'raid', (select jsonb_build_object('id', r.id, 'ends', r.ends, 'by', pseudo_of(r.att_user), 'g', (select name from guilds where id = r.att_guild), 'st', r.status)
           from perco_raids r where r.perco_id = p.id and r.status in ('open', 'fight') order by r.id desc limit 1),
         'pocket', case when spy then pc_gain(z.cap, pc_fill(p), g.ups) end) order by p.placed_at), '[]'::jsonb)
