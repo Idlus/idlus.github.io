@@ -12,8 +12,8 @@
    - Traque (chasse seulement) : chaque Champion laisse une piste dans sa sous-zone. À 3 pistes, le Champion légendaire
      de la zone (tous les pouvoirs, PV ×12, dégâts ×2) peut être appelé ; le vaincre consomme les pistes et donne le titre
      « Traqueur de <sous-zone> » et 10 Éclats de champion (un Éclat = un Champion de plus au Sceau de son choix).
-   Les Champions restent en chasse seulement (3A) : pas de nouveau Champion en donjon (les mutateurs et l'idole Djim
-   gardent les leurs, qui comptent pour les Sceaux). Pas de DOM ici : l'affichage est dans js/champui.js.
+   Les Champions restent en chasse seulement (3A) : pas de nouveau Champion en donjon (les mutateurs gardent les leurs,
+   qui comptent pour les Sceaux ; ceux de l'idole Djim ne comptent pas, 1.2.10.3). Pas de DOM ici : l'affichage est dans js/champui.js.
    Chargé aussi par les tests, le simulateur et le serveur (les Sceaux comptent dans les combats rejoués).
    État : S.ch = { k: Champions vaincus par pouvoir, f: fusions découvertes, z: trophées par sous-zone,
    t: pistes par sous-zone, l: légendaires vaincus par sous-zone, sh: Éclats, pend: sous-zone du légendaire appelé } ;
@@ -123,6 +123,7 @@
       E.note(S, `Champion légendaire vaincu ! Titre « ${title} » et ${E.CHAMP_LEG_SHARDS} Éclats de champion.`, "rare");
       return { leg: sid };
     }
+    if (m.idolChamp) return null; // 1.2.10.3 : Champion de l'idole Djim, ni Sceau, ni trophée, ni piste
     const k = m.champ; if (!E.SEALS[k]) return null;
     addKill(S, k, 1);
     const sid = S.sub;

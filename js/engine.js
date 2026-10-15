@@ -1266,7 +1266,7 @@
       if (X.noDot) m.noDot = true;
     });
     if (X.payo && !opts.late) { const t = mons.filter((m) => !m.boss).sort((a, b) => b.hpMax - a.hpMax)[0]; if (t) { t.hpMax = t.hp = t.hpMax * 3; t.payo = true; } }
-    if (X.champion && !opts.late && !mons.some((m) => m.champ)) { const c = mons.filter((m) => !m.archi && !m.boss); if (c.length) E.makeChampion(c[c.length - 1]); }
+    if (X.champion && !opts.late && !mons.some((m) => m.champ)) { const c = mons.filter((m) => !m.archi && !m.boss); if (c.length) E.makeChampion(c[c.length - 1]).idolChamp = true; } // 1.2.10.3 : le Champion de Djim ne compte pas pour les Sceaux (js/champions.js)
     mons.forEach((m) => { if (X.shield0) m.shield = Math.max(m.shield || 0, Math.round(m.hpMax * X.shield0 / 100)); });
     return mons;
   };

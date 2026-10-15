@@ -1,6 +1,13 @@
 {
-  "version": "1.2.10.2",
+  "version": "1.2.10.3",
   "versions": [
+    {
+      "v": "1.2.10.3",
+      "name": "Idole Djim revue",
+      "items": [
+        "Idole Djim : ses Champions (un par combat) gardent leur difficulté et leur butin doublé, mais ne font plus monter les Sceaux, les trophées de zone ni la traque. Les Sceaux et les Éclats déjà gagnés ne bougent pas."
+      ]
+    },
     {
       "v": "1.2.10.2",
       "name": "Rayonnants sans PA en plus",
