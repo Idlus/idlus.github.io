@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.7 « Notables uniques »
+
+Maîtrise : les 126 notables de chaque ciel ont leur propre nom et bonus (nouveaux : dégâts critiques, premier tour, sous la moitié des PV, bouclier de départ). Rendre des étoiles est gratuit jusqu'au 22/10 à 23 h. La fiche du héros montre sa Maîtrise et ses bonus.
+
 ## 2.0.6 « Boss des mondes réparé »
 
 Boss des mondes et boss de guilde : le Dom de Pin et le Lance-Éclair de Menalt (coups en % des PV de la cible) comptent sur les PV normaux du boss et plus sur ses PV ×1 000 (un essai pouvait faire 10 millions de PV).

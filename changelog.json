@@ -1,6 +1,17 @@
 {
-  "version": "2.0.6",
+  "version": "2.0.7",
   "versions": [
+    {
+      "v": "2.0.7",
+      "name": "Notables uniques",
+      "guide": "maitrise",
+      "items": [
+        "Maîtrise : les 126 notables d'un ciel (les grandes étoiles au bout des branches) ont chacune leur nom et leur bonus, aucune en double",
+        "Nouveaux bonus rares sur certaines notables : dégâts critiques, dégâts au premier tour, dégâts sous la moitié des PV et bouclier de départ",
+        "Semaine de la Maîtrise : rendre des étoiles est gratuit pour tout le monde jusqu'au jeudi 22 octobre à 23 h, profitez-en pour refaire vos arbres",
+        "Fiche du héros : un bloc Maîtrise montre son niveau, ses points, l'XP du prochain niveau, ses clés de voûte et le total de ses bonus, avec un bouton vers son arbre"
+      ]
+    },
     {
       "v": "2.0.6",
       "name": "Boss des mondes réparé",

@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.6";
+const GAME_VERSION = "2.0.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.7", name: "Notables uniques", guide: "maitrise", items: [
+    "Maîtrise : les 126 notables d'un ciel (les grandes étoiles au bout des branches) ont chacune leur nom et leur bonus, aucune en double",
+    "Nouveaux bonus rares sur certaines notables : dégâts critiques, dégâts au premier tour, dégâts sous la moitié des PV et bouclier de départ",
+    "Semaine de la Maîtrise : rendre des étoiles est gratuit pour tout le monde jusqu'au jeudi 22 octobre à 23 h, profitez-en pour refaire vos arbres",
+    "Fiche du héros : un bloc Maîtrise montre son niveau, ses points, l'XP du prochain niveau, ses clés de voûte et le total de ses bonus, avec un bouton vers son arbre"
+  ] },
   { v: "2.0.6", name: "Boss des mondes réparé", items: [
     "Boss des mondes et boss de guilde : la pomme de pin du Dofus Dom de Pin et l'éclair du Lance-Éclair de Menalt comptent sur les PV normaux du boss. Avant, ils prenaient un pourcentage de ses PV géants et un seul essai pouvait faire 10 millions de PV"
   ] },
@@ -5511,6 +5517,7 @@ function heroesHtml() {
       <div class="hb-xp xpwrap" data-act="xptip" data-tip="${h(xpTipTxt(c))}"><div class="bar xp"><i style="width:${pct(c.xp, need)}%"></i></div><span class="xs muted num">${c.lvl >= E.MAX_LVL ? "Niveau maximum" : `${fmt(c.xp)} / ${fmt(need)} XP`}</span></div>${ui.xpTip === c.id ? `<div class="xs muted xptip">${h(xpTipTxt(c))}</div>` : ""}${window.MAITUI ? window.MAITUI.heroLine(c) : ""}
       <div class="small hb-pass" data-tip="${h(C.passive.desc)}"><span class="tag soft">Passif</span> <b>${h(C.passive.name)}</b> <span class="muted">${h(C.passive.desc)}</span>${others}</div>
       ${c.renMt ? `<div class="small muted renev">Ses vies passées sont devenues ${fmt(c.renMt.lv + c.renMt.bn)} points de Maîtrise.</div>` : ""}
+      ${mtSheetHtml(c)}
       </div>
     <div class="hb-acts">${c.job ? `<button class="btn sm" data-act="unjob" data-id="${c.id}">Rappeler pour chasser</button>` : `${rowBtn(c, "btn sm")}<button class="btn sm" data-act="toggleteam" data-id="${c.id}">${c.inTeam ? "Mettre en réserve" : "Mettre en équipe"}</button><button class="btn sm" data-act="gathersheet" data-cid="${c.id}">${IC("pioche")} Récolter</button>`}<button class="btn sm" data-act="looksheet" data-id="${c.id}">${IC("teinture")} Apparence</button><span class="hmw"><button class="btn sm hmore ${ui.heroMore ? "on" : ""}" data-act="heromore" aria-expanded="${!!ui.heroMore}">⋯ Plus</button>${more}</span></div>
   </div>
@@ -9455,7 +9462,8 @@ document.addEventListener("click", (ev) => {
     case "ctab": ui.ctab = d.v; { const g = document.querySelector(".combatgrid"); if (g) { g.dataset.ctab = d.v; g.querySelectorAll(".ctabs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === d.v)); } } return;
     case "gospells": ui.tab = "heroes"; ui.hero = "spells"; ui.cid = ui.combatCid || ui.cid; break;
     case "options": ui.confirm = null; optionsSheet(); return;
-    case "nav": if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
+    case "nav": if (d.v === "maitrise" && d.mtc && window.MAITUI) { const mc = S.chars.find((x) => String(x.id) === d.mtc); if (mc) { MAITUI.st.cid = mc.id; MAITUI.st.view = null; MAITUI.st.z = 0; } } // 2.0.6 : ouvre l'arbre du héros de la fiche
+      if (d.v === "bug" && window.BUGS) { window.BUGS.open(); return; } if (t.closest("#nav,#subnav") && ev) { const r = t.getBoundingClientRect(); navFx = { k: d.v, x: r.width ? (ev.clientX - r.left) / r.width : .5, y: r.height ? (ev.clientY - r.top) / r.height : .5 }; } navGo(d.v); closeSheet(); window.scrollTo(0, 0); break; // 1.2 : 6 familles ; 20A onde au clic
     case "questgo": { const t = d.v; // 1.0.6.4 : la page où se fait l'étape de la quête principale
       if (t === "havre") navGo("havre");
       else if (t === "harvest" || t === "craft") { navGo("metiers"); ui.met = t === "craft" ? "craft" : "recolte"; }
@@ -10916,5 +10924,16 @@ Object.assign(window.DX.social, { furnIco, dofpBlock, dofpFc, dofpFcOf: (f) => (
 if (BETA) Object.defineProperties(window.DX, { S: { get: () => S, set: (v) => { S = v; } }, speed: { get: () => testSpeed, set: (v) => { testSpeed = v; } } });
 window.DX.anim = { SG, BXSP, axMk, axLater, axDust, axPt, axRnd, anFoot, pulse, sgPlay, bxRun, axBody, axC, ID_ICO }; // 1.0.36 : js/animsorts.js complète les sorts et boss animés
 if (BETA) Object.assign(window.DX, { testerOk, LS_KEY, openSheet, closeSheet, toast, saveNow, renderStatus, offlineSheet, pushCopy, setTheme, h, fmt, G, markDirty: () => { dirty = true; } });
+/* 2.0.6 (demande de Mathis) : sur la fiche du héros, sa Maîtrise et le total de ses bonus, qui grandit à chaque étoile placée */
+function mtSheetHtml(c) {
+  if (!c || c.lvl < E.MAX_LVL || !E.mtStats || !E.mtNeed) return "";
+  const M = E.mt(c), tot = E.mtPts(c), placed = Math.max(0, E.mtGot(c).size - 1), need = E.mtNeed();
+  const R = E.mtStats(S, c); const rows = Object.entries(R.t).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
+  const chips = R.ks.map((k) => `<span class="mts-k ${k.t === "cks" ? "cl" : ""}" title="${h(k.txt || "")}">✦ ${h(k.n)}</span>`).join("") + (R.sym ? `<span class="mts-k cl">✦ Symbole allumé · +5 %</span>` : "")
+    + rows.map(([k, v]) => `<span class="mts-b"><b class="num">+${E.mtNf(v)}</b> ${h(k)}</span>`).join("");
+  return `<div class="mts"><div class="mts-h"><b>Maîtrise ${fmt(M.lvl)}</b><span class="muted small num">${fmt(placed)} / ${fmt(tot)} points placés${tot - placed > 0 ? ` · <b class="mts-left">${fmt(tot - placed)} à placer</b>` : ""}</span><button class="btn xs" data-act="nav" data-v="maitrise" data-mtc="${c.id}">Ouvrir l'arbre</button></div>
+    <div class="bar xp"><i style="width:${Math.min(100, M.xp / need * 100).toFixed(1)}%"></i></div><span class="xs muted num">${fmt(M.xp)} / ${fmt(need)} XP vers la Maîtrise ${fmt(M.lvl + 1)}</span>
+    <div class="mts-l">${chips || `<span class="xs muted">Aucune étoile placée : ses bonus de Maîtrise s'afficheront ici.</span>`}</div></div>`;
+}
 start();
 })();
