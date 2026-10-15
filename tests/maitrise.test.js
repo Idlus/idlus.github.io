@@ -24,7 +24,8 @@ assert.strictEqual(h2.lvl, 200, "retour au niveau 200");
 assert.ok(h2.mt.lvl >= 48 && h2.mt.lvl <= 56, "≈ 52 niveaux venus de 10 vies : " + h2.mt.lvl);
 assert.strictEqual(h2.mt.bn, 40, "2 points × (10 Éveils + 10 sorts)");
 assert.deepStrictEqual(h2.eveils, {}); assert.deepStrictEqual(h2.mem, []);
-assert.strictEqual(h2.ren, 10, "le nombre de vies reste comme souvenir");
+assert.strictEqual(h2.ren, 0, "plus d'affichage des vies (Mathis)"); assert.strictEqual(h2.renMt.n, 10);
+assert.ok(S2.titlesExtra.includes("Le Phénix renaît de ses cendres"), "le titre souvenir");
 assert.strictEqual(E.mtPts(h2), h2.mt.lvl + 40);
 
 // 3. L'arbre agit en combat

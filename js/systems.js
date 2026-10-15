@@ -1219,7 +1219,6 @@
     pionnier:  { name: () => "Pousse du Pionnier", req: "Tester la version de test avant le multijoueur (récompense exclusive)", ok: (S) => !!S.unlocks.pionnier },
     fondateur: { name: () => "Sceau du Fondateur", req: "Jouer pendant la semaine de lancement de la 1.0 (récompense exclusive)", ok: (S) => !!S.unlocks.fondateur },
     legende:   { name: () => "Couronne de la Légende", req: "Être l'un des 10 premiers comptes à finir la quête principale après la sortie de la 1.0 (récompense unique)", ok: (S) => !!S.unlocks.legende },
-    phenix:    { name: () => "Ailes du Phénix", req: "Dix renaissances sur un même héros", ok: (S) => !!(S.unlocks && S.unlocks.phenix) },
     enclume:   { name: () => "Enclume du Phénix", req: "Dix renaissances sur un même métier", ok: (S) => !!(S.unlocks && S.unlocks.enclume) }, // 1.0.25
     classes19: { name: () => "Blason des 19 classes", req: "Monter un héros de chaque classe au niveau 200", ok: (S) => E.classesN(S) >= 19 }, // 1.0.34
     gardien:   { name: () => "Gardien de la 1.1", req: "Être l'un des 10 premiers comptes à réunir les 4 Dofus de la 1.1 (récompense unique)", ok: (S) => !!(S.unlocks && S.unlocks.gardien) }, // 1.1
@@ -1549,8 +1548,7 @@
   const ACH = [];
   const add = (id, cat, name, desc, test, kamas, extra = {}) => ACH.push(Object.assign({ id, cat, name, desc, test, kamas }, extra));
   // 0.1.12 : Renaissance (les titres sont donnés par la renaissance elle-même)
-  [[1, "Première renaissance", "Un héros renaît une première fois.", 5000], [5, "Cinq renaissances", "Un héros atteint sa cinquième renaissance.", 25000], [10, "Phénix", "Un héros atteint sa dixième renaissance.", 100000]]
-    .forEach(([n, nm, d, k]) => add("ren" + n, "Progression", nm, d, (S) => S.chars.some((c) => (c.ren || 0) >= n), k));
+  // 2.0 « La Maîtrise » : les succès de Renaissance n'existent plus (on ne renaît plus)
   // 1.0.34 : collection « Les 19 classes » (une classe compte dès qu'un de ses héros a atteint le niveau 200)
   [[5, "Cinq classes au niveau 200", 25000], [10, "Dix classes au niveau 200", 60000], [19, "Maître des 19 classes", 250000]]
     .forEach(([n, nm, k]) => add("cls" + n, "Progression", nm, n === 19 ? "Monter un héros de chaque classe au niveau 200." : `Monter ${n} classes différentes au niveau 200.`, (S) => E.classesN(S) >= n, k, n === 19 ? { title: "Maître des 19 classes" } : {}));

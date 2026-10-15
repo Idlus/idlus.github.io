@@ -103,6 +103,7 @@
   E.REN_MAX = 10; E.REN_XP = 0; // 1.0.35 « Vies plus longues » : plus de bonus d'XP (avant : +30 % par renaissance)
   E.renXpMult = (c) => 1 + E.REN_XP * (c.ren || 0);
   /* 1.0.35 : chaque renaissance demande +50 % d'XP pour remonter (×6 à la X) : renaître devient un objectif de fin de jeu */
+  E.REN_TITLE = "Le Phénix renaît de ses cendres"; // 2.0 : seul souvenir de la Renaissance, pour les comptes qui avaient renu
   E.REN_TO_MT = 0.02; // 2.0 : part de l'XP des vies passées qui devient de la Maîtrise (choix de Mathis)
   E.REN_NEED = 0; // 2.0 « La Maîtrise » : plus de renaissance, plus d'XP en plus par vie (avant : +50 % par renaissance)
   E.renNeedMult = (c) => 1 + E.REN_NEED * Math.min(E.REN_MAX, (c && c.ren) || 0);
@@ -3699,9 +3700,14 @@
         if (c.lvl < E.MAX_LVL) { S.recLv = (S.recLv || 0) + (E.MAX_LVL - c.lvl); while (c.lvl < E.MAX_LVL) { c.lvl++; c.pts += 5; } c.xp = 0; E.autoAllocate(S, c); } // en cours de vie : retour au niveau 200 (le serveur ne prend pas ces niveaux pour de la triche)
         c.eveils = {}; c.mem = []; c.memPend = 0; c.memOffer = null; E.refreshSpells(c, E.charStats(S, c));
         lines.push(`${c.name} : ${lv + bn} points (${lv} niveaux venus de ${n} vie${n > 1 ? "s" : ""}, ${bn} des Éveils et des sorts)`);
+        c.ren = 0; // Mathis : plus d'affichage des vies (chiffre, aura, cadre de feu)
       });
+      /* titres, aura et ornement de la Renaissance retirés ; un seul titre en souvenir (choix de Mathis) */
+      const old = ["Né des cendres", "Flamme éternelle", "Phénix d'Idlus"]; S.titlesExtra = (S.titlesExtra || []).filter((t) => !old.includes(t));
+      if (!S.titlesExtra.includes(E.REN_TITLE)) S.titlesExtra.push(E.REN_TITLE);
+      S.chars.forEach((c) => { if (old.includes(c.title)) c.title = null; if (c.orn === "phenix") c.orn = null; }); if (S.unlocks) delete S.unlocks.phenix;
       E.events.length = ev;
-      report.push(`2.0 « La Maîtrise » : la Renaissance laisse place à la Maîtrise. Les vies passées de tes héros deviennent des points de Maîtrise (2 % de leur XP, 2 points par Éveil et par sort appris) : ${lines.join(" ; ")}. Place-les dans Héros › Maîtrise.`);
+      report.push(`2.0 « La Maîtrise » : la Renaissance laisse place à la Maîtrise. Les vies passées de tes héros deviennent des points de Maîtrise (2 % de leur XP, 2 points par Éveil et par sort appris) : ${lines.join(" ; ")}. Place-les dans Héros › Maîtrise. En souvenir, ton compte reçoit le titre « ${E.REN_TITLE} ».`);
     }
     if (S.craftObj === undefined) E.craftObjConvert(S, report); // avant de compléter avec la partie neuve (qui a déjà craftObj)
     for (const k in fresh) if (S[k] === undefined) S[k] = fresh[k];
