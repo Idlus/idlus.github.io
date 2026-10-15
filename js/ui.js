@@ -3237,10 +3237,10 @@ function renderCombat() {
     <div class="panel combatpanel">
       <div class="arenasticky">
         <div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="seg viewtog" data-tip="Formation : ton équipe et les ennemis en colonnes (arrière, première ligne), l'ordre de jeu en haut. Scène : les personnages en pied. Compacte : une carte par combattant.">${[["form", "Formation"], ["scene", "Scène"], ["compact", "Compacte"]].map(([v, n]) => `<button data-act="cview" data-v="${v}" aria-pressed="${combatView() === v}">${n}</button>`).join("")}</span><span class="ctour" id="ctour"></span></div>
-        <div class="arenawrap"><div class="arena" id="arena"></div></div>
+        <div id="champban"></div><div class="arenawrap"><div class="arena" id="arena"></div></div>
         <div class="ftick" id="turn"></div>
       </div>
-      <div class="chalbar" id="chalbar"></div>
+      <div id="champpanm" class="ch-slot-m"></div><div class="chalbar" id="chalbar"></div>
       <div id="await"></div>
       <div class="ctabs">${[["sorts", "Sorts"], ["journal", "Journal"], ["stats", "Stats"], ["butin", "Butin"]].map(([v, n]) => `<button data-act="ctab" data-v="${v}" aria-pressed="${(ui.ctab || "sorts") === v}">${n}</button>`).join("")}</div>
       <div class="csec-sorts">
@@ -3251,7 +3251,7 @@ function renderCombat() {
       </div>
       <div class="csec-journal"><div class="log" id="flog"></div></div>
     </div>
-    <div class="stack cside">
+    <div class="stack cside"><div id="champpand" class="ch-slot-d"></div>
       <div class="panel csec-butin"><div class="phead"><h2>Butin</h2><span class="small muted" id="fres"></span></div><div class="pad" id="floot"></div></div>
       <div class="panel csec-stats"><div class="phead"><h2>Statistiques</h2></div><div class="pad" id="fstats"></div></div>
       <div class="panel csec-butin"><div class="phead"><h2>Derniers combats</h2></div><div class="pad" id="fhist">${historyHtml(6)}</div></div>
@@ -4432,6 +4432,8 @@ function updateCombat(force) {
   }
   stickyCheck(); // 1.0.10.3 : en vue Compacte, l'arène grandit en cours de combat (invocations) : elle ne reste collée que si elle laisse de la place
   const ct = $("#ctour"); if (ct) ct.textContent = F ? `Tour ${F.round}` : "";
+  if (window.CHAMPUI && !ui.watch) { const cb = $("#champban"); if (cb) { const v = window.CHAMPUI.banner(S, F); if (cb.dataset.k !== v) { cb.dataset.k = v; cb.innerHTML = v; } } // refonte du Champion : bandeau doré, panneau de la sous-zone
+    const v = window.CHAMPUI.huntPanel(S); ["#champpanm", "#champpand"].forEach((id) => { const el = $(id); if (el && el.dataset.k !== v) { el.dataset.k = v; el.innerHTML = v; } }); }
   const fs = $("#fstats"); if (fs) { const k = `${F ? F.id + ":" + F.seq + ":" + F.over : "-"}:${ui.fstv}:${S.fstat ? S.fstat.n : 0}`; if (force || fs.dataset.k !== k) { fs.dataset.k = k; fs.innerHTML = fstPanel(F); } } // 1.0.4
   const csub = $("#csub"); if (csub && !ui.watch) { const v = combatSub(); if (csub.dataset.k !== v) { csub.innerHTML = v; csub.dataset.k = v; } } // 0.1.37.1 : salle et course à jour
   const cdr = $("#cdgrate"); if (cdr && S.dungeon) { const v = dgRateLine(E.dgChainRate(S)); if (cdr.dataset.k !== v) { cdr.innerHTML = v; cdr.dataset.k = v; } } // 1.0.25.1
@@ -5366,6 +5368,7 @@ function charEquipView(c, st) {
         <div class="drow">${dollSlot(c, "arme")}${petSlot(c)}${mountSlot(c)}<span class="dsep"></span>${D.DOFUS_SLOTS.map((s) => dollSlot(c, s)).join("")}</div>
       </div></div></div>
     ${ui.slot ? pick + dofpHeroPanel(c) : dofpHeroPanel(c) + pick}
+    ${window.CHAMPUI ? window.CHAMPUI.heroPanel(S, c) : ""}
     ${gearHtml(c)}
     ${sets ? `<div class="panel"><div class="phead"><h2>Panoplies actives</h2></div><div class="pad">${sets}</div></div>` : ""}
     <p class="note xs">▲ en vert : un objet plus intéressant est disponible dans le sac pour cet emplacement.</p></div>`;
@@ -8095,6 +8098,7 @@ document.addEventListener("click", (ev) => {
   if (a && a.startsWith("wb-")) { if (window.WBUI) window.WBUI.act(a, t); return; } // 0.1.49 : Boss des mondes (js/wbossui.js)
   if (a && a.startsWith("ex-")) { if (S && window.EXPUI) window.EXPUI.act(a, t); return; } // 1.0.30 : Expéditions et donjon pendant l'absence (js/expeditionsui.js)
   if (a && a.startsWith("co-")) { if (S && window.COLL) window.COLL.act(a, t); return; } // 1.0.30 : collections (js/collui.js)
+  if (a && a.startsWith("chp-")) { if (S && window.CHAMPUI) window.CHAMPUI.act(a, t); return; } // refonte du Champion (js/champui.js)
   if (a && a.startsWith("al-")) { if (S && window.ALIGNUI) window.ALIGNUI.act(a, t); return; } // 1.0.30 : alignement (js/alignui.js)
   const d = t.dataset; const c = ui.cid && S ? char(ui.cid) : null;
   switch (a) {

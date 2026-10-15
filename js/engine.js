@@ -885,6 +885,7 @@
       lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
       dp: E.dofpOf ? E.dofpOf(S, c) : null, dpBoost: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus, Éveil des Dragons
       wsp: E.weaponSpell(S, c), // 0.1.53 : coup d'arme
+      seal: E.sealOf ? E.sealOf(S, c) : null, // Refonte du Champion : Sceau porté (js/champions.js)
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
@@ -959,8 +960,8 @@
     esquive:  { name: "Insaisissable", min: 25, desc: "Esquive 20 % des coups.", re: /Wabbit|Chacha|Renar|Lapin|Kanig|Kanib|Kaniblou|Chak|Félyg|Panth|Orfélin|Écurouille|Milimulou|Souris|Kilibriss|Fourbasse|Chasquatch|Ronronchon|Tigrimas/ },
   };
   E.monRole = (key, lvl) => { const m = MONSTERS[key]; if (!m || m.boss) return null; for (const k in E.MON_ROLES) { const R = E.MON_ROLES[k]; if (R.re.test(m.name)) return lvl !== undefined && R.min && lvl < R.min ? null : k; } return null; };
-  /* Champions de chasse : 1 combat sur 100, un monstre du groupe devient Champion (PV ×2, dégâts +20 %, un pouvoir) */
-  E.CHAMP_CHANCE = 1 / 100;
+  /* Champions de chasse : 1 combat sur 50 (refonte : js/champions.js), un monstre du groupe devient Champion (PV ×2, dégâts +20 %, un pouvoir) */
+  E.CHAMP_CHANCE = 1 / 50; // Refonte du Champion : 1 combat sur 50 (choix 2B)
   E.CHAMP_POWERS = {
     enrage:   { name: "Enragé",     desc: "+25 % de dégâts sous 50 % de PV." },
     blinde:   { name: "Blindé",     desc: "Bouclier de 15 % de ses PV au début du combat." },
@@ -1282,6 +1283,7 @@
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     if (E.legFight) E.legFight(S, F); // 0.1.48 : passifs des objets légendaires
     if (E.dofpFight) E.dofpFight(S, F); // 1.0.16 : passifs des Dofus
+    if (E.sealFight) E.sealFight(S, F); // Sceaux de champion (js/champions.js)
     newRound(F);
     return F;
   };
@@ -1421,6 +1423,7 @@
     if (wc && wc.wfx === "grace" && tgt && tgt.hp < tgt.hpMax * 0.3) v *= 1.25;
     if (e.lg && E.legDmg) { const o = E.legDmg(F, e, tgt, el, crit, v); v = o.v; crit = o.crit; } // 0.1.48 : passifs des légendaires
     if (e.dp && E.dofpDmg) v = E.dofpDmg(F, e, tgt, crit, v); // 1.0.16 : passifs des Dofus
+    if (E.sealDmg && (e.seal || (F && (F.sealMen || F.sealReso)))) v = E.sealDmg(F, e, tgt, v); // Sceaux de champion, Meneur et Conclave
     v *= 1 + (e.dmgBonus || 0) / 100;
     v *= 1 + (e.st.dsort || 0) / 100;
     v *= mult;
@@ -2271,7 +2274,7 @@
       out.kamas += Math.round((m.lvl * 1.5 + ri(0, m.lvl)) * (m.boss ? 8 : 1) * (E.teamHas(S, "enu") ? 1.15 : 1) * (1 + E.bonus(S, "kamas") / 100) * (opts.kamasMult || 1) * E.almMult(S, "kamas", m));
       S.bestiary[m.key] = (S.bestiary[m.key] || 0) + 1;
       if (m.archi) { S.archis[m.key] = (S.archis[m.key] || 0) + 1; note(S, `Archimonstre vaincu : ${m.name} !`, "rare"); E.exoArchi(S, m); if (E.captureSoul && E.captureSoul(S, m, opts) === "new") (out.souls = out.souls || []).push(m.key); } // 0.1.13 : âme pour l'album
-      if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); }
+      if (m.champ) { S.champs = (S.champs || 0) + 1; out.champ = { name: m.name, power: m.champ, key: m.base || m.key }; if (!opts.offline) note(S, `Champion vaincu : ${m.name} !`, "rare"); if (E.champKill) out.champ.ch = E.champKill(S, m, opts); }
     });
     xp *= 1 + (mons.length - 1) * 0.1; // bonus de groupe
     const zr = E.zoneRew(S, opts) * E.trophyZoneMult(S, opts); xp *= zr; out.kamas = Math.round(out.kamas * zr); // 1.0.7.4 : rendement de la sous-zone (XP et kamas), réglé par simulation
