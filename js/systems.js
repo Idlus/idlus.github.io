@@ -1218,6 +1218,7 @@
     legende:   { name: () => "Couronne de la Légende", req: "Être l'un des 10 premiers comptes à finir la quête principale après la sortie de la 1.0 (récompense unique)", ok: (S) => !!S.unlocks.legende },
     phenix:    { name: () => "Ailes du Phénix", req: "Dix renaissances sur un même héros", ok: (S) => !!(S.unlocks && S.unlocks.phenix) },
     enclume:   { name: () => "Enclume du Phénix", req: "Dix renaissances sur un même métier", ok: (S) => !!(S.unlocks && S.unlocks.enclume) }, // 1.0.25
+    classes19: { name: () => "Blason des 19 classes", req: "Monter un héros de chaque classe au niveau 200", ok: (S) => E.classesN(S) >= 19 }, // 1.0.34
   };
   /* Récompense des testeurs : titre et ornement exclusifs, donnés à toute partie jouée sur la version de test. */
   E.PIONEER_TITLE = "Pionnier d'Idlus";
@@ -1464,6 +1465,9 @@
   // 0.1.12 : Renaissance (les titres sont donnés par la renaissance elle-même)
   [[1, "Première renaissance", "Un héros renaît une première fois.", 5000], [5, "Cinq renaissances", "Un héros atteint sa cinquième renaissance.", 25000], [10, "Phénix", "Un héros atteint sa dixième renaissance.", 100000]]
     .forEach(([n, nm, d, k]) => add("ren" + n, "Progression", nm, d, (S) => S.chars.some((c) => (c.ren || 0) >= n), k));
+  // 1.0.34 : collection « Les 19 classes » (une classe compte dès qu'un de ses héros a atteint le niveau 200)
+  [[5, "Cinq classes au niveau 200", 25000], [10, "Dix classes au niveau 200", 60000], [19, "Maître des 19 classes", 250000]]
+    .forEach(([n, nm, k]) => add("cls" + n, "Progression", nm, n === 19 ? "Monter un héros de chaque classe au niveau 200." : `Monter ${n} classes différentes au niveau 200.`, (S) => E.classesN(S) >= n, k, n === 19 ? { title: "Maître des 19 classes" } : {}));
   [10, 20, 30, 40, 50, 60, 70].forEach((l) => add("lvl" + l, "Progression", `Niveau ${l}`, `Un héros atteint le niveau ${l}.`, (S) => topLvl(S) >= l, l * 40, l === 50 ? { title: "le Vétéran" } : {}));
   [[100, ""], [1000, ""], [10000, "Fléau des monstres"]].forEach(([n, t]) => add("win" + n, "Combat", `${n.toLocaleString("fr-FR")} victoires`, `Gagner ${n.toLocaleString("fr-FR")} combats.`, (S) => S.stats.wins >= n, Math.round(Math.sqrt(n) * 60), t ? { title: t } : {}));
   [[1, ""], [10, ""], [25, "Chasseur d'Archis"]].forEach(([n, t]) => add("archi" + n, "Combat", n === 1 ? "Premier archimonstre" : `${n} archimonstres`, `Vaincre ${n} archimonstre${n > 1 ? "s" : ""}.`, (S) => Object.values(S.archis).reduce((a, b) => a + b, 0) >= n, 300 * n, t ? { title: t } : {}));

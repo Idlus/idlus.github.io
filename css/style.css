@@ -5147,3 +5147,20 @@ span.fch{cursor:default;padding-left:8px}
 .lweak{font-size:10.5px;font-weight:900;background:color-mix(in srgb,var(--el-a) 35%,var(--panel));border-radius:999px;padding:0 6px}.lres{font-size:10.5px;font-weight:900;background:color-mix(in srgb,var(--danger) 30%,var(--panel));border-radius:999px;padding:0 6px}.lrole{opacity:.8}
 .gcell.lock .gsn,.gcell.offel .gsn{display:none}
 .log .lnew{white-space:normal;align-items:flex-start}.log .lnew>span{overflow:visible}
+/* 1.0.34 : collection « Les 19 classes » (page Équipe et héros) */
+.c19{margin:-4px 0 12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;gap:6px}
+.c19h{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.c19t{font-family:var(--fdisp,inherit);font-size:15px;color:var(--title)}
+.c19n,.c19b{font-size:12px;font-weight:800;padding:1px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);background:color-mix(in srgb,var(--gold) 16%,transparent);color:var(--gold)}
+.c19b{color:var(--ink)}
+.c19bar{height:7px;border-radius:6px;background:var(--panel3);overflow:hidden}.c19bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--kama,#f0c35a))}
+.c19p{margin:0}
+.c19g{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:6px}
+.c19c{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 2px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:11px;text-align:center;min-width:0}
+.c19c img{width:28px;height:28px;object-fit:contain}.c19c b{font-size:12px}
+.c19c .c19nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c19c.done{border-color:var(--gold);background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 22%,transparent),var(--panel2))}
+.c19c.no{opacity:.42;filter:grayscale(1)}
+.c19c .ck{position:absolute;top:1px;right:4px;font-style:normal;font-weight:800;color:var(--gold)}
+@media (max-width:600px){.c19p{display:none}.c19g{grid-template-columns:repeat(5,minmax(0,1fr))}.c19c img{width:24px;height:24px}.c19{margin:0 0 10px}}
+.hcard .orn.c19{filter:drop-shadow(0 0 8px #ffd84d)}
