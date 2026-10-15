@@ -1,6 +1,16 @@
 {
-  "version": "1.0.34.3",
+  "version": "1.0.35",
   "versions": [
+    {
+      "v": "1.0.35",
+      "name": "Mémoire des vies",
+      "items": [
+        "Renaissance : plus de bonus d'XP. À la place, chaque renaissance rend la vie suivante plus longue : +50 % d'XP par niveau à chaque renaissance (×6 à la Renaissance X). Les héros gardent leur niveau et leur XP",
+        "Mémoire des vies : à chaque renaissance, le héros apprend pour toujours un sort d'une autre classe, au choix parmi 3 (3 classes différentes, sans invocation). Il en équipe 1 dans sa barre, 2 dès la Renaissance V, 3 à la X",
+        "Les héros déjà renés reçoivent un choix par renaissance déjà faite : bouton « Apprendre un sort » sur la page Renaissance et dans le Grimoire",
+        "Grimoire : nouvelle section « Mémoire des vies » avec le blason de la classe de chaque sort appris"
+      ]
+    },
     {
       "v": "1.0.34.3",
       "name": "Cours rééquilibré",

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.35 « Mémoire des vies »
+
+Demande de Mathis (15/10/2026) : « Nerf l'xp de la Renaissance et trouvé un véritable intérêt », choix 1A 2A 3A avec +50 %. `E.REN_XP = 0` (plus de bonus d'XP) et `E.heroXpNeed(c, l)` = `E.xpNeed(l) × (1 + 0,5 × ren)`, utilisé partout à la place de `E.xpNeed(c.lvl)`. Mémoire des vies (`js/renaissance.js`) : `E.memOffer` (3 sorts de 3 autres classes, sans invocation, gardés dans `c.memOffer`), action `memPick`, `c.mem` / `c.memPend` ; `E.spellDef` retrouve un sort d'une autre classe (`E.memDef`, paire `m:<id>`), limite `E.MEM_SLOTS` (1, 2 dès la V, 3 à la X) appliquée par `E.memFit`, `E.equipSpell`, `E.autoLoadout`. `E.VERSION` 10 : les héros déjà renés reçoivent `memPend = ren`. Écrans : `memSheet`, section du Grimoire, `spPlace`. Simulation : +2 % de dégâts en moyenne à la Ren I, +8 % à la X. Test : `tests/memoire.test.js`.
+
 ## 1.0.34.3 « Cours rééquilibré »
 
 Demande de Mathis (15/10/2026) : « réequilibre le cours des ressources », choix 1A 2B 3A sur la maquette https://claude.ai/artifact/KzhF1woyfPJ3Zvsp8vbQ9r. `E.resPrice` prenait le niveau du monstre le plus fort qui donne la ressource : Pollenectar et Oueille (624 et 547 monstres, dès les Pious niveau 11-15, à 100 %) valaient 142 et rapportaient la moitié des 114 M de kamas de la vente directe en 13 h. Désormais `E.resPriceLvl` prend le monstre le plus faible (`E.PRICE_LVL = "min"`) ; `E.resLvl` (niveau affiché, tranches de la Foire) ne change pas. Rejouées sur les vraies ventes du serveur : 53 M au lieu de 114 M. `supabase/vente_data.sql` régénéré (`node tools/build_vente.js`, 183 prix). Le cours (VOL 2 000, ×0,1 à ×3) ne change pas (2B).

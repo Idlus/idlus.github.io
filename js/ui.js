@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.34.3";
+const GAME_VERSION = "1.0.35";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.35", name: "Mémoire des vies", items: [
+    "Renaissance : plus de bonus d'XP. À la place, chaque renaissance rend la vie suivante plus longue : +50 % d'XP par niveau à chaque renaissance (×6 à la Renaissance X). Les héros gardent leur niveau et leur XP",
+    "Mémoire des vies : à chaque renaissance, le héros apprend pour toujours un sort d'une autre classe, au choix parmi 3 (3 classes différentes, sans invocation). Il en équipe 1 dans sa barre, 2 dès la Renaissance V, 3 à la X",
+    "Les héros déjà renés reçoivent un choix par renaissance déjà faite : bouton « Apprendre un sort » sur la page Renaissance et dans le Grimoire",
+    "Grimoire : nouvelle section « Mémoire des vies » avec le blason de la classe de chaque sort appris",
+  ] },
   { v: "1.0.34.3", name: "Cours rééquilibré", items: [
     "Vente directe : le prix de base d'une ressource suit maintenant le monstre le plus faible qui la donne, là où on la farme. Avant, il suivait le plus fort : le Pollenectar et l'Oueille, que donnent des Pious niveau 11, valaient le prix d'une ressource niveau 200 (142 au lieu de 13)",
     "183 ressources baissent (Pollenectar, Oueille, Minowang, Muldo d'eau, Sachets, Tonneaux…). Les ressources rares, données seulement par des monstres forts, ne changent pas, et aucun prix ne monte",
