@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2";
+const GAME_VERSION = "1.1.2.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.2.1", name: "Dofus dans les codes cadeaux", items: [
+    "Les codes cadeaux peuvent aussi offrir un Dofus, pour des cas rares (compensation, concours). Un Dofus déjà possédé n'est pas donné une deuxième fois",
+  ] },
   { v: "1.1.2", name: "Les décors", items: [
     "Le combat se joue sur de vraies cartes de DOFUS (rendus de cartes DofusDB) : chaque sous-zone a la sienne, chaque donjon sa salle de boss, avec un lent travelling, des poussières qui flottent et une lumière qui respire (vue Scène)",
     "L'Ascension a sa propre scène de combat en face à face : les monstres en face, votre héros au premier plan, l'ordre de jeu en haut, les sorts qui partent en projectiles et les dégâts qui s'envolent. Le décor est la salle du boss qui attend en haut de la dizaine",

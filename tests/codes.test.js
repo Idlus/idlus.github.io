@@ -43,6 +43,9 @@ assert.ok(S.unlocks.wing_sombre && S.unlocks.teint_temple && S.chroma.shop.aura)
 assert.ok(E.dgh(S).b <= E.DGH.max);
 /* l'ancienne forme « o » marche aussi pour un ornement gagné autrement */
 const S2 = E.newState("B", "cra"); E.giveGift(S2, { id: "x", o: "lauriers" }); assert.ok(E.ornUnlocked(S2, "lauriers"));
-/* jamais de Dofus par code */
-assert.ok(!Object.keys(E.GIFT_X).some((t) => /dofus/i.test(t)));
+/* 1.1.2.1 : un Dofus par code, pas redonné s'il est déjà là */
+const S3 = E.newState("C", "eca"); const df = E.DOFUS_ORDER[0];
+E.giveGift(S3, { id: "d1", x: [["dofus", df]] }); E.giveGift(S3, { id: "d2", x: [["dofus", df]] });
+assert.strictEqual(Object.values(S3.items).filter((it) => it.tpl === "dofus_" + df).length, 1);
+assert.ok(new RegExp(E.DOFUS[df].name).test(E.giftText({ x: [["dofus", df]] })));
 console.log(`codes cadeaux : OK (${n} choix offrables)`);

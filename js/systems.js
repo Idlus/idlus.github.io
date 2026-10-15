@@ -1260,7 +1260,7 @@
 
   /* 1.1.1.4 : tout le reste dans les codes cadeaux. Récompense « x » : liste de [type, id, quantité].
      Chaque type dit comment lister ses choix (pour le panel), comment le donner et comment l'écrire.
-     Les Dofus et les âmes d'archimonstres n'y sont pas : ils restent gagnés en jeu (quête, boss). */
+     Les âmes d'archimonstres n'y sont pas. Un Dofus déjà possédé n'est pas redonné. */
   const gxNum = (q, max) => clamp(Math.round(+q) || 1, 1, max || 1e9);
   const gxTok = (k) => (S, q) => { S.tokens = S.tokens || {}; S.tokens[k] = (S.tokens[k] || 0) + q; };
   const MONEY_X = {
@@ -1324,6 +1324,8 @@
             give: (S, id) => unl(S, "teint_" + id), txt: (id) => `palette ${E.TEINTURES.find((t) => t.id === id).name}` },
     aura: { name: "Aura chromatique", list: () => [["aura", "Aura chromatique"]], ok: () => true,
             give: (S) => { const C = E.chroma(S); C.shop = C.shop || {}; if (!C.shop.aura) C.shop.aura = E.now(); }, txt: () => "Aura chromatique" },
+    dofus:{ name: "Dofus", list: () => (E.DOFUS_ORDER || []).filter((k) => E.DOFUS[k]).map((k) => [k, E.DOFUS[k].name]), ok: (id) => !!(E.DOFUS && E.DOFUS[id]), // 1.1.2.1 (Mathis, réponse B) : pour des cas rares (compensation, concours)
+            give: (S, id) => { if (!E.dofusOwned(S, id)) E.giveDofus(S, id, "code cadeau"); }, txt: (id) => E.DOFUS[id].name },
     part: { name: "Partition", list: () => Object.keys(tracks()).map((k) => [k, `Partition « ${tracks()[k]} »`]), ok: (id) => !!tracks()[id],
             give: (S, id) => { S.partitions = S.partitions || {}; if (!S.partitions[id]) S.partitions[id] = Date.now(); }, txt: (id) => `partition « ${tracks()[id] || id} »` },
   };

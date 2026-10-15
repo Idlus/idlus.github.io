@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.1 « Dofus dans les codes cadeaux »
+
+Le panel Xener peut mettre un Dofus dans un code cadeau (cas rares : compensation, concours). Un Dofus déjà possédé n'est pas redonné.
+
 ## 1.1.2 « Les décors »
 
 Mathis (15/10/2026) : « Pour le mode manuel de l'ascension je veux que ce soit nous qui choisissions les sorts », « créer moi une vraie scène de combat pour le mode », « Non pas sur ce modèle » (pas La Scène), « Je veux des véritables décors animés, en lien avec DOFUS », « applique les nouvelles scènes sur les zones et donjon » ; réponses 1A à 8A sur le prototype, puis « Garder avec crédit » pour la licence DofusDB et « sans crédit pour les scènes ». Ascension manuelle : `E.ascManual`, `E.ascManualCast`, `E.ascManualEnd`, `E.ascCanCast` (js/ascension.js), le combat attend le joueur sans limite (`F.dur` n'avance pas dans `ascStep`) ; scène face à face `arenaHtml` / `playFx` (js/ascensionui.js, css/ascension.css : `.as-stage`, `.as-u`, projectiles `.as-orb`, chiffres `.as-num`). Décors : rendus de cartes DofusDB (`api.dofusdb.fr/img/maps/1/<id>.jpg`, filigrane coupé, 1100 px webp) — `assets/asc/<donjon>.webp` = dernière carte du donjon (121, 3,9 Mo), `assets/z/<sous-zone>.webp` = une carte extérieure de la sous-zone (`map-positions` avec `outdoor`, 187, 8,5 Mo ; 3 sous-zones sans carte propre prennent celle d'une voisine) ; `E.ascDecor` (salle du boss de la dizaine) et `js/decors.js` (`DECORS.of(F)` : donjon → salle du boss, sinon sous-zone ; Kolizéum, Boss des mondes et PvP gardent leur décor, 8A) branché dans `buildArena` (vue Scène seulement). Pas de crédit sur la scène (Mathis : « sans crédit pour les scènes ») : la mention ci-dessous et la ligne d'Options › À propos tiennent lieu d'attribution.
@@ -17,7 +21,7 @@ Mathis (15/10/2026) : « Pour le mode manuel de l'ascension je veux que ce soit 
 
 ## 1.1.1.4 « Tout dans les codes cadeaux »
 
-Les codes cadeaux (panel Xener › Codes cadeaux) peuvent offrir presque tout ce qui se gagne : monnaies (Kolizetons, Doplons, jetons, insignes, Bribes, Éclats, Essence, Fragments, Écus, heures de donjon), familiers, montures, idoles, légendaires, runes, meubles, trophées de zone, objets d'élevage, ailes, palettes, aura, partitions, plusieurs titres et ornements, cadres de héros. Les Dofus et les âmes d'archimonstres restent hors des codes.
+Les codes cadeaux (panel Xener › Codes cadeaux) peuvent offrir presque tout ce qui se gagne : monnaies (Kolizetons, Doplons, jetons, insignes, Bribes, Éclats, Essence, Fragments, Écus, heures de donjon), familiers, montures, idoles, légendaires, runes, meubles, trophées de zone, objets d'élevage, ailes, palettes, aura, partitions, plusieurs titres et ornements, cadres de héros. Les âmes d'archimonstres restent hors des codes.
 
 ## 1.1.1.3 « Signaler un bug »
 

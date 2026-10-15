@@ -1,6 +1,13 @@
 {
-  "version": "1.1.2",
+  "version": "1.1.2.1",
   "versions": [
+    {
+      "v": "1.1.2.1",
+      "name": "Dofus dans les codes cadeaux",
+      "items": [
+        "Les codes cadeaux peuvent aussi offrir un Dofus, pour des cas rares (compensation, concours). Un Dofus déjà possédé n'est pas donné une deuxième fois"
+      ]
+    },
     {
       "v": "1.1.2",
       "name": "Les décors",
