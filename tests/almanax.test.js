@@ -1,7 +1,7 @@
 /* Almanax 0.1.39 : calendrier de DOFUS, bonus ciblés, offrande. Lancer : node tests/almanax.test.js */
 "use strict";
 const assert = require("assert");
-const E = require("../js/engine.js"); require("../js/systems.js"); require("../js/mounts.js");
+const E = require("../js/engine.js"); require("../js/systems.js"); require("../js/mounts.js"); require("../js/elevage.js");
 const D = require("../js/data.js");
 const at = (d) => Date.parse(d + "T10:00:00");
 let now = at("2026-10-13"); E.now = () => now;

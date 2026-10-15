@@ -5,7 +5,7 @@ const assert = require("assert");
 const E = require("../js/engine.js");
 require("../js/systems.js");
 require("../js/pets.js");
-require("../js/mounts.js");
+require("../js/mounts.js"); require("../js/elevage.js");
 require("../js/idols.js"); require("../js/renaissance.js"); require("../js/archis.js");
 const D = require("../js/data.js");
 

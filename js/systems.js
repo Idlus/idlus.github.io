@@ -363,7 +363,7 @@
     "Mangeoire":               { room: "enclos",  kind: "mxp",     v: 1,  src: "Bricoleur niveau 50", txt: "Les montures à l'écurie gagnent 10 % de l'XP de l'équipe" },
     "Abreuvoir":               { room: "enclos",  kind: "birth",   v: 1,  src: "Bricoleur niveau 70", txt: "Naissance en 6 h au lieu de 8" },
     "Caresseur":               { room: "enclos",  kind: "kids",    v: 1,  src: "Butin rare à Cania", zone: "cania", txt: "Chaque monture peut avoir 4 petits au lieu de 3" },
-    "Deuxième couple":         { room: "enclos",  kind: "pair2",   v: 1,  src: "Succès : 10 naissances à l'enclos", txt: "Deux couples à l'enclos en même temps" },    /* 0.1.54 : boutique de la maison (achetés en kamas) */
+    "Deuxième couple":         { room: "enclos",  kind: "pair2",   v: 1,  src: "Succès : 10 naissances à l'enclos", txt: "Souvenir de l'ancien enclos : il accueille maintenant 3 couples" },    /* 0.1.54 : boutique de la maison (achetés en kamas) */
     "Pupitre de lecture":      { room: "biblio",   kind: "xp",      v: 1,  shop: 500000 },
     "Encyclopédie d'Amakna":   { room: "biblio",   kind: "xp",      v: 2,  shop: 3000000 },
     "Planétarium d'Osamodas":  { room: "biblio",   kind: "xp",      v: 3,  shop: 18000000 },
