@@ -276,13 +276,26 @@
     return `<section class="panel as-tabsp"><div class="phead"><div class="subtabs" style="margin:0">${TABS.map(([k, n]) => `<button data-act="as-tab" data-v="${k}" aria-pressed="${st.tab === k}">${n}</button>`).join("")}</div></div><div class="pad stack">${body}</div></section>`;
   }
 
+  /* 1.1.2.8 : en manuel, la tour n'enchaîne plus les combats toute seule (Mathis : « Ne pas rentrer directement dans le prochain combat ») :
+     entre deux étages, un encadré présente l'étage qui vient et c'est le joueur qui lance le combat */
+  function readyHtml(s) {
+    const Q = E.ascState(s); const R = Q.run; if (!R || R.pend || Q.auto) return "";
+    const fl = E.ascFloor(s, R.mode, R.f); const fight = ["fight", "boss"].includes(fl.t);
+    const what = fl.t === "boss" ? `<b>Boss : ${h(monName(fl.boss))}</b>` : fl.t === "event" ? "Un événement t'attend." : fl.t === "shop" ? "Le marchand t'attend." : fl.t === "altar" ? "Un autel maudit t'attend." : `${fl.mobs.map((k) => `<img class="as-mini" src="${monImg(k)}" alt="" data-tip="${h(monName(k))}">`).join("")}${fl.rule ? ruleTag(fl.rule) : ""}`;
+    const cost = fight ? (E.ascCost(s, R.mode, R.f) ? "1 ✦ Volonté" : "gratuit (étage déjà réussi)") : "";
+    const btn = fight ? "⚔️ Lancer le combat" : "Entrer";
+    return `<section class="panel as-ready"><div class="pad stack"><div class="row between"><div><b>Étage ${R.f}</b> · ${fl.t === "boss" ? "boss" : fl.t === "fight" ? `${fl.mobs.length} monstre${fl.mobs.length > 1 ? "s" : ""}` : "sans combat"}${cost ? ` · <span class="muted">${cost}</span>` : ""}</div></div>
+      <div class="row as-ready-what">${what}</div>
+      <div class="row">${st.msg ? `<span class="small">${h(st.msg)}</span>` : ""}<button class="btn primary" data-act="as-next">${btn}</button></div></div></section>`;
+  }
+
   /* ---------- la page ---------- */
   function page(main) {
     const s = S(); const Q = E.ascState(s); const R = Q.run;
     const head = `<div class="pagehead"><h1>L'Ascension</h1><span class="small muted">${plural(Q.frag, "Fragment")} · ${plural(Q.ecus, "Écu")}</span></div>`;
     let body;
     if (!R) body = startHtml(s);
-    else body = `${pendHtml(s)}${st.live ? `<section class="panel"><div class="pad stack" id="asArena">${arenaHtml(s)}</div></section>` : ""}
+    else body = `${pendHtml(s)}${st.live ? `<section class="panel"><div class="pad stack" id="asArena">${arenaHtml(s)}</div></section>` : readyHtml(s)}
       <div class="as-side2"><section class="panel"><div class="phead"><h2>${R.mode === "x" ? "L'Au-delà" : `Tour de ${E.ascMonthName(E.ascMonth())}`}</h2><span class="tag soft">${E.ASC_MODES[R.mode]}</span></div><div class="pad">${towerHtml(s)}</div></section>${runHtml(s)}</div>`;
     main.innerHTML = `${head}<div class="stack">${volHtml(s)}${body}${tabsHtml(s)}</div>`;
     st.key = keyOf(s);
@@ -332,6 +345,7 @@
       return;
     }
     if (Date.now() < st.wait) return;
+    if (!Q.auto) return; // 1.1.2.8 : en manuel, c'est le joueur qui lance l'étage suivant (bouton « Lancer le combat »)
     liveStart(s);
   }, 120);
   /* la Volonté qui remonte, et la page qui suit la montée jouée ailleurs (onglet de fond, mode auto) */
@@ -383,6 +397,7 @@
       case "as-shop": done(E.act(s, "ascChoose", +d.i)); return;
       case "as-altar": done(E.act(s, "ascChoose", +d.v)); return;
       case "as-auto": done(E.act(s, "ascSetAuto", d.v === "1")); return;
+      case "as-next": { st.wait = 0; liveStart(s); if (st.live) window.scrollTo(0, 0); return; }
       case "as-quit": if (!st.quit) { st.quit = true; paint(); setTimeout(() => { if (st.quit) { st.quit = false; paint(); } }, 5000); return; }
         st.quit = false; if (st.live) st.live = null; done(E.act(s, "ascQuit")); return;
       case "as-tgt": { st.tgt = +d.i; const a = $("#asArena"); if (a && st.live) { st.akey = arenaKey(st.live); a.innerHTML = arenaHtml(s); } return; }

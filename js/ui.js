@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2.7";
+const GAME_VERSION = "1.1.2.8";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.2.8", name: "La tour t'attend", items: [
+    "L'Ascension en manuel n'enchaîne plus les combats toute seule : entre deux étages, un encadré présente l'étage qui vient (monstres, règle, coût en Volonté) et c'est vous qui appuyez sur « Lancer le combat » (ou « Entrer » pour un événement, le marchand ou l'autel). Le mode auto continue d'avancer seul" ] },
   { v: "1.1.2.7", name: "Taux des montures", items: [
     "Fiche de zone des Plaines Rocheuses de Cania, des Plaines herbeuses d'Otomaï et de la Plaine de Sakaï : nouvelle section « Montures sauvages » avec le taux de capture de chaque couleur, comme les butins (dragodinde 1 sur 80 par victoire, muldo 1 sur 240, volkorne 1 sur 400)",
     "Une chance par victoire et non par héros, avec un filet dans le sac ; les bonus de butin ne changent pas ce taux. Avec tes combats dans la zone, le jeu estime le temps moyen entre deux captures",

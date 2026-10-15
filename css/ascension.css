@@ -170,3 +170,5 @@
 @keyframes asMote{0%{transform:translate(0,0);opacity:0}12%{opacity:.9}60%{opacity:.6}100%{transform:translate(calc(18px - var(--i) * 4px),-460px);opacity:0}}
 @media (prefers-reduced-motion:reduce){.as-bg,.as-veil,.as-motes i{animation:none}}
 .arena .as-bg{z-index:1}.arena .as-veil{z-index:1}.arena .as-motes{z-index:1}
+/* 1.1.2.8 : l'encadré entre deux étages (manuel : le joueur lance le combat) */
+.as-ready .as-ready-what{align-items:center;gap:6px;min-height:40px}.as-ready .as-mini{width:40px;height:40px;object-fit:contain}

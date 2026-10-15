@@ -1,6 +1,13 @@
 {
-  "version": "1.1.2.7",
+  "version": "1.1.2.8",
   "versions": [
+    {
+      "v": "1.1.2.8",
+      "name": "La tour t'attend",
+      "items": [
+        "L'Ascension en manuel n'enchaîne plus les combats toute seule : entre deux étages, un encadré présente l'étage qui vient (monstres, règle, coût en Volonté) et c'est vous qui appuyez sur « Lancer le combat » (ou « Entrer » pour un événement, le marchand ou l'autel). Le mode auto continue d'avancer seul"
+      ]
+    },
     {
       "v": "1.1.2.7",
       "name": "Taux des montures",

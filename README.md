@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.1.2.8 « La tour t'attend »
+
+Mathis (15/10/2026) : « Ne pas rentrer directement dans le prochain combat pour l'ascension ». En manuel, la boucle de js/ascensionui.js ne lance plus `liveStart` toute seule : `readyHtml` affiche l'étage qui vient et le bouton `as-next` lance le combat. Le mode auto et la montée en arrière-plan (`E.ascTick`) ne changent pas.
+
 ## 1.1.2.7 « Taux des montures »
 
 Demande de Mathis (15/10/2026) : « connaître le taux de drop des dragodindes, muldos et volkornes comme sur les loots de la zone ». Section « Montures sauvages » dans la fiche des trois zones de capture (`mountZoneBox` de `js/ui.js`) : chance par couleur et par victoire, au format des butins ; taux aussi dans Élevage › Capture, la fiche Monture des héros et la collection. `E.mountCatch` (`js/mounts.js`) donne le taux réel (`E.MOUNT_SP[sp].rate`, une chance par victoire avec un filet, sans bonus de butin) et l'estimation par heure d'après `S.zoneStats`.
