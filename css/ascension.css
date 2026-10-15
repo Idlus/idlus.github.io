@@ -1,0 +1,71 @@
+/* L'Ascension (1.1) : page Jouer › L'Ascension (js/ascensionui.js). Couleurs du thème (Émeraude, Nuit violette). */
+.as-vol{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-radius:16px;background:linear-gradient(90deg,rgba(47,134,214,.16),var(--panel));border:2px solid rgba(47,134,214,.45)}
+.as-vol .grow{display:flex;flex-direction:column;gap:3px;min-width:200px}
+.as-volico,.as-tileico{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#5fa8ff,#1d3a5c);color:#fff;font-size:18px;flex:none}
+.as-tileico{width:32px;height:32px;font-size:16px}
+.as-volbar i{background:linear-gradient(90deg,#5fa8ff,#bcdcff)}
+.as-g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.as-g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.as-g4{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+@media (max-width:700px){.as-g3{grid-template-columns:1fr}}
+.as-cls{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:var(--panel2);border:2px solid var(--line);min-width:0}
+.as-sym{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,var(--cc) 0%,transparent 70%);flex:none}
+.as-sym img{width:32px;height:32px}
+.as-look{height:120px;max-width:100%;object-fit:contain;margin:0 auto}
+.as-sp{display:flex;gap:8px;align-items:center;min-width:0}
+.as-sp .grow{display:flex;flex-direction:column}
+.as-opt{display:flex;gap:10px;align-items:center;text-align:left;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);cursor:pointer;min-width:0;position:relative;color:var(--ink)}
+.as-opt .grow{display:flex;flex-direction:column;gap:1px;min-width:0}
+.as-opt .grow b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-opt.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,154,46,.18)}
+.as-opt.rar-r{border-color:#2f86d6}.as-opt.rar-e{border-color:#9b4dff}.as-opt.rar-l{border-color:#e4a11b;background:linear-gradient(135deg,rgba(228,161,27,.14),var(--panel2))}
+.as-opt.soul{border-color:#9b4dff;background:linear-gradient(135deg,rgba(155,77,255,.14),var(--panel2))}
+.as-ck{position:absolute;top:6px;right:8px;font-style:normal;font-weight:900;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#1a1510;font-size:12px}
+.as-soulimg{width:42px;height:42px;object-fit:contain;flex:none}
+.as-soulbig{width:72px;height:72px;object-fit:contain;flex:none}
+.as-choice{border-color:var(--gold)}
+.as-side2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:860px){.as-side2{grid-template-columns:1fr}}
+.as-tower{display:flex;flex-direction:column;gap:6px}
+.as-fl{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.as-fl.cur{border:2px solid var(--gold);background:var(--panel3)}
+.as-fl.done{opacity:.55}
+.as-fl.boss{border-color:var(--hp);background:linear-gradient(90deg,rgba(216,67,58,.16),var(--panel2))}
+.as-n{font-family:var(--font-title);font-size:19px;text-align:center;color:var(--gold2)}
+.as-mid{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.as-mini{width:26px;height:26px;object-fit:contain}
+.as-rule{text-transform:none;letter-spacing:0}
+.as-hp{display:block;position:relative;height:8px;border-radius:6px;background:var(--hp-bg);overflow:hidden;width:100%}
+.as-mid .as-hp{flex:1 1 100%}
+.as-hp i{display:block;height:100%;background:linear-gradient(90deg,#d64545,#ff8a6b);transition:width .2s}
+.as-hp.ally i{background:linear-gradient(90deg,#3fa34d,#8fe06a)}
+.as-hp s{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(216,67,58,.45) 0 4px,transparent 4px 8px);text-decoration:none}
+.as-arena{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.3fr);gap:10px;align-items:end;padding:12px;border-radius:12px;background:radial-gradient(400px 160px at 50% 100%,rgba(201,154,46,.16),transparent 70%),var(--panel2)}
+@media (max-width:600px){.as-arena{grid-template-columns:1fr}.as-vs{display:none}}
+.as-side{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.as-ent{display:flex;flex-direction:column;align-items:center;gap:3px;width:84px;text-align:center}
+.as-ent img{height:72px;max-width:84px;object-fit:contain}
+.as-ent.ko{opacity:.35;filter:grayscale(1)}
+.as-ent.soul img{filter:drop-shadow(0 0 8px #9b4dff)}
+.as-ent b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-vs{font-family:var(--font-title);font-size:24px;color:var(--muted);align-self:center}
+.as-log{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--muted);min-height:5em}
+.as-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px}
+.as-sl,.as-slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;min-width:0;padding:6px 4px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.as-slot{cursor:pointer;color:var(--ink);border-width:2px}
+.as-slot.on{border-color:var(--hp);background:rgba(216,67,58,.12)}
+.as-sl.soul{border-color:#9b4dff}
+.as-sl img{width:38px;height:38px;object-fit:contain}
+.as-sl small,.as-slot small{font-size:11px;line-height:1.15;color:var(--muted);overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
+.as-lv{position:absolute;top:-6px;right:4px;font-size:10px;font-weight:900;background:var(--gold);color:#1a1510;border-radius:6px;padding:0 4px}
+.as-gl{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
+.as-gl i{font-style:normal;font-size:9.5px;font-weight:900;padding:0 4px;border-radius:4px;background:rgba(155,77,255,.18);color:var(--ink);border:1px solid rgba(155,77,255,.5)}
+.as-stat{display:flex;justify-content:space-between;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.as-stat b{text-align:right}
+.as-offer{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);min-width:0}
+.as-offer .btn{align-self:flex-start}
+.as-best{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px;background:var(--panel2);border:1px dashed var(--line);text-align:center}
+.as-best.on{border:1px solid #9b4dff}
+.as-best img{height:52px;object-fit:contain}
+.li.me{background:var(--panel3)}
+.as-tabsp .subtabs{flex:1;min-width:0}

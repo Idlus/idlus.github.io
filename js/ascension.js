@@ -463,8 +463,9 @@
     return out;
   };
   /* classements (choix 20 A B C D F) : Rapidité (étages 91-100 en Difficile, sans auto, en tours de combat), par classe, sans Sursis, Puriste, Au-delà */
-  E.ascRkNote = (S, R, done, auto) => { const Q = E.ascState(S); const K = Q.rk && Q.rk.m === Q.m && Q.rk.w === Q.w ? Q.rk : (Q.rk = { m: Q.m, w: Q.w, cls: {}, nos: 0, pur: 0, spd: 0, x: 0 });
-    if (R.mode === "x") { K.x = Math.max(K.x, done); return; }
+  E.ascRk = (S) => { const Q = E.ascState(S); if (!Q.rk || Q.rk.m !== Q.m) Q.rk = { m: Q.m, cls: {}, nos: 0, pur: 0, spd: 0 }; if (!Q.rkx || Q.rkx.w !== Q.w) Q.rkx = { w: Q.w, x: 0 }; return Q.rk; };
+  E.ascRkNote = (S, R, done, auto) => { const Q = E.ascState(S); const K = E.ascRk(S);
+    if (R.mode === "x") { Q.rkx.x = Math.max(Q.rkx.x, done); return; }
     if (R.mode !== "d") return; // les classements du mois se jouent en Difficile
     K.cls[R.cls] = Math.max(K.cls[R.cls] || 0, done);
     if (!R.usedSursis) K.nos = Math.max(K.nos, done);
@@ -528,10 +529,10 @@
   };
 
   /* ---------- Fragments : progression permanente (choix 9A) ---------- */
-  E.ascUnlocks = (S) => { const Q = E.ascState(S); const out = [];
+  E.ascUnlocks = (S) => { const Q = E.ascState(S); const out = []; const du = (n) => (/^[AEIOUÉÈ]/.test(n) ? `de l'${n}` : `du ${n}`), le = (n) => (/^[AEIOUÉÈ]/.test(n) ? `L'${n}` : `Le ${n}`);
     D.CLASS_ORDER.filter((c) => !E.ASC_BASE_CLS.includes(c)).forEach((c, i) => {
-      if (!(Q.unl.pool || []).includes(c)) out.push({ id: "pool:" + c, kind: "pool", name: `Sorts du ${CLASSES[c].name}`, d: `Ajoute les sorts du ${CLASSES[c].name} à la pioche.`, price: 150 + 50 * i });
-      if (!(Q.unl.cls || []).includes(c)) out.push({ id: "cls:" + c, kind: "cls", name: `Classe ${CLASSES[c].name}`, d: `Le ${CLASSES[c].name} peut sortir au tirage des classes.`, price: 250 + 50 * i });
+      if (!(Q.unl.pool || []).includes(c)) out.push({ id: "pool:" + c, kind: "pool", name: `Sorts ${du(CLASSES[c].name)}`, d: `Ajoute les sorts ${du(CLASSES[c].name)} à la pioche.`, price: 150 + 50 * i });
+      if (!(Q.unl.cls || []).includes(c)) out.push({ id: "cls:" + c, kind: "cls", name: `Classe ${CLASSES[c].name}`, d: `${le(CLASSES[c].name)} peut sortir au tirage des classes.`, price: 250 + 50 * i });
     });
     if (!Q.unl.bonus.glyph) out.push({ id: "bonus:glyph", kind: "bonus", name: "Glyphe de départ", d: "Chaque montée commence avec un glyphe sur ton sort signature.", price: 400 });
     if (!Q.unl.bonus.sursis) out.push({ id: "bonus:sursis", kind: "bonus", name: "Second Sursis", d: "Chaque montée commence avec 2 Sursis.", price: 900 });
@@ -599,7 +600,7 @@
   E.ascSetPrio = (S, p) => { if (!["dmg", "heal", "ctrl", "cls"].includes(p)) return "Priorité inconnue."; E.ascState(S).prio = p; return null; };
 
   /* ---------- Fioles de Volonté (+5) : où en trouver hors de l'Ascension (choix A B C E F) ---------- */
-  D.CONSUMABLES[A.fioleId] = { name: "Fiole de Volonté", icon: "🧪", kind: "util", desc: "+5 Volonté pour L'Ascension (au-delà du maximum de 30). Se boit sur la page L'Ascension." };
+  D.CONSUMABLES[A.fioleId] = { name: "Fiole de Volonté", icon: "🧪", pimg: 26002, kind: "util", desc: "+5 Volonté pour L'Ascension (au-delà du maximum de 30). Se boit sur la page L'Ascension." };
   const useSp0 = E.useSpecial;
   E.useSpecial = (S, id, arg) => (id === A.fioleId ? E.ascDrink(S) : useSp0 ? useSp0(S, id, arg) : "Inutilisable.");
   const giveFiole = (S, why) => { E.addCons(S, A.fioleId, 1); E.note(S, `Fiole de Volonté obtenue (${why}).`, "rare"); };

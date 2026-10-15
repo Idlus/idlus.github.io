@@ -1943,7 +1943,7 @@ const ICONS = {
    (Accueil, Monde, Combat, Héros, Menu) et un bouton Menu qui ouvre toutes les pages en tuiles.
    Une page : [clé, nom, icône]. Icône null : symbole de classe du héros principal. Les clés sont lues par navKey / navGo. */
 const NAV = [
-  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
+  { id: "play", n: "Jouer", pages: [["home", "Havre-Sac", "logo"], ["comptoirs", "Comptoirs", "havre"], ["world", "Monde", "monde"], ["dungeons", "Donjons", "coffre"], ["exp", "Songe infini", "carte"], ["asc", "L'Ascension", "ailes"], ["defi", "Défi du jour", "cle"], ["koli", "Kolizéum", "combat"], ["foire", "Foire du Trool", "bonbon"], ["wb", "Boss des mondes", "couronne"]] }, // 1.0.30 : Comptoirs (js/comptoirsui.js) et Foire du Trool (js/foireui.js)
   { id: "heroes", n: "Héros", pages: [["team", "Équipe et héros", null], ["pets", "Familiers et montures", "../p/18003"], ["inv", "Inventaire", "sac"], ["ren", "Renaissance", "phenix"]] }, // 1.0.30 : Familiers et montures (js/collui.js)
   { id: "craft", n: "Artisanat", pages: [["metiers", "Métiers", "metiers"], ["forge", "Forgemagie", "forge"]] },
   { id: "track", n: "Suivi", pages: [["quests", "Quêtes", "quetes"], ["succes", "Succès", "trophee"], ["enc", "Encyclopédie", "cristal"], ["carnet", "Carnet", "parchemin_or"]] },
@@ -2338,6 +2338,7 @@ function homeTiles() {
   { const wt = window.WBUI && window.WBUI.tile(); if (wt) out.push(tile(wt)); }
   { const xt = window.EXPUI && window.EXPUI.tile(); if (xt) out.push(tile(xt)); } // 1.0.30 : Expéditions (js/expeditionsui.js)
   { const st = window.SGUI && window.SGUI.tile && window.SGUI.tile(); if (st) out.push(tile(st)); } // 1.0.30 : Songe infini (js/songeui.js)
+  { const at = window.ASCUI && window.ASCUI.tile(); if (at) out.push(tile(at)); } // 1.1 : L'Ascension (js/ascensionui.js)
   /* Almanax : « Offrir » fait l'offrande si les ressources sont là, sinon ouvre la page */
   const A = E.almanax(S); const have = S.res[A.res] || 0; const ok = have >= A.qty;
   out.push(tile({ ic: IC("almanax"), t: `Almanax · ${h(A.mer)}`, s: A.done ? h(A.bonus.txt) : `${resTag(A.res, A.qty)} <span class="${ok ? "plus" : "bad-t"}">(${fmt(have)}/${A.qty})</span>`, done: A.done, hot: ok,
