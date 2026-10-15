@@ -5718,3 +5718,10 @@ body.amb-on .as-motes{display:none} /* une seule couche de particules : celles d
 @keyframes bgmix{0%{opacity:0;transform:translateX(-18%) skewX(-12deg)}35%{opacity:.75}70%{opacity:.45}100%{opacity:0;transform:translateX(18%) skewX(-18deg)}}
 body.reduced::before,body.nomotion::before,body.reduced::after,body.nomotion::after{animation:none}
 @media (prefers-reduced-motion:reduce){:root[data-bgfx] body::before,:root[data-bgfx] body::after{animation:none}}
+/* 1.1.2.11 : Sablier de Xélor, « Comment en obtenir » */
+.sab-where{background:var(--panel2);border:2px solid var(--line, var(--frame));border-radius:12px;padding:10px 12px}
+.sab-src{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid color-mix(in srgb, var(--ink) 12%, transparent)}
+.sab-src:first-of-type{border-top:0}
+.sab-src .sab-ic{flex:0 0 28px;display:grid;place-items:center}
+.sab-src .sab-ic .uico{width:26px;height:26px}
+.sab-src .btn{flex:none}

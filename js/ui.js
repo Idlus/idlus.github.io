@@ -2436,7 +2436,30 @@ function sabSheet() {
       <li>Jeu fermé : le sablier se remplit, les gains hors ligne ne changent pas.</li>
       <li>Les bonus à durée (potions, événements, donjons Éclair, Almanax) restent en vrai temps.</li>
     </ul>
+    ${sabWhereHtml()}
     <div class="row" style="justify-content:flex-end"><button class="btn" data-act="closesheet">Fermer</button></div>`);
+}
+/* 1.1.2.11 « Sablier plus grand » : d'où viennent les heures de Sablier (chaque ligne mène à sa page) */
+const SAB_WHERE = [
+  ["cristal", "Recharge du jour", `+3 h par jour, même jeu fermé, jusqu'à ${E.SAB_MAX / 3600} h.`, ""],
+  ["quetes", "Bureau des primes", "1 h pour 12 Jetons de chasseur, une fois par jour.", "cpt:prime"],
+  ["ailes", "Comptoir de la cité", "1 h pour 40 Insignes de cité, une fois par jour.", "cpt:cite"],
+  ["cristal", "Comptoir des temples", "1 h pour 8 Doplons, une fois par jour.", "cpt:temple"],
+  ["combat", "Kolizéum", "1 h pour 60 Kolizetons dans la boutique, deux fois par jour.", "koli"],
+  ["trophee", "L'Ascension", "Coffres des étages 50, 75 et 100 : 1 h (2 h en Difficile).", "asc"],
+  ["bonbon", "Foire du Trool", "Un lot rare d'une caisse peut donner 1 à 3 h.", "foire"],
+  ["cle", "Codes cadeaux", "Donnés sur le Discord, à entrer dans Options › Jeu.", "gift"],
+];
+function sabWhereHtml() {
+  return `<div class="sab-where"><b>Comment en obtenir</b>
+    <p class="xs muted" style="margin:2px 0 6px">Achats, coffres et codes peuvent dépasser le maximum, jusqu'à ${E.SAB_GIFT_MAX / 3600} h.</p>
+    ${SAB_WHERE.map(([ic, t, d, v]) => `<div class="sab-src"><span class="sab-ic">${IC(ic)}</span><span class="grow small"><b>${t}</b><br><span class="muted">${d}</span></span>${v ? `<button class="btn sm" data-act="sabgo" data-v="${v}">Y aller</button>` : ""}</div>`).join("")}</div>`;
+}
+function sabGo(v) {
+  closeSheet();
+  if (v === "gift") { ui.optTab = "jeu"; optionsSheet(); setTimeout(() => { const n = $("#giftCode"); if (n) { n.scrollIntoView({ block: "center" }); n.focus(); } }, 50); return; }
+  if (v.startsWith("cpt:") && window.CPTUI) { window.CPTUI.open(v.slice(4)); return; }
+  navGo(v); render(); window.scrollTo(0, 0);
 }
 function renderStatus() { const el = $("#status"); el.innerHTML = statusHtml(); el.style.display = S ? "" : "none"; renderObjs(); renderUpdBar(); requestAnimationFrame(() => { document.documentElement.style.setProperty("--sth", Math.max(0, el.getBoundingClientRect().bottom) + "px"); dustRefresh(); }); }
 /* ---------- 3.2.2 : bande d'objectifs épinglés ---------- */
@@ -9057,6 +9080,7 @@ document.addEventListener("click", (ev) => {
     case "bontoggle": ui.bonOpen = ui.bonOpen === false; break;
     case "altar": { const r = E.buyAltar(S); if (r) { toast(r); return; } toast(`Autel des Douze niveau ${E.altarLvl(S)} : plafonds relevés de +${E.ALTAR.per} !`, "rare"); break; }
     case "csetsheet": combatSetSheet(); return;
+    case "sabgo": sabGo(d.v); return;
     case "sabspd": { let v = d.v; if (t.closest("#status") && matchMedia("(max-width:640px)").matches && +v === E.sab(S).spd) v = String((E.sab(S).spd % 3) + 1); // 0.1.57 : sur téléphone, un appui fait tourner ×1 → ×2 → ×3
       const r = E.sabSet(S, v); if (r) { toast(r); return; } dirty = true; renderStatus(); if ($("#sheet").innerHTML && $("#sheet .sheet h2") && /Sablier/.test($("#sheet .sheet h2").textContent)) sabSheet(); return; }
     case "reloadgame": reloadTo(false); return; // 1.0.11 : on revient directement dans la partie en cours
