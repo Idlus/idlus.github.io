@@ -451,7 +451,7 @@
   /* ---------------- Objets ---------------- */
   /* Objets Rayonnants : très rares, +10 à +50 % sur les statistiques positives de l'objet */
   E.RADIANT_CHANCE = 1 / 400;
-  E.RADIANT_SKIP = { pm: 1 }; // 1.0.30 : le bonus Rayonnant ne donne pas de PM en plus (un objet à 1 PM reste à 1 PM)
+  E.RADIANT_SKIP = { pa: 1, pm: 1, po: 1, inv: 1 }; // 1.0.30 : le bonus Rayonnant ne donne pas de PM en plus (un objet à 1 PM reste à 1 PM) ; 1.2.10.2 : ni PA, ni Portée, ni Invocation (avant, l'arrondi au-dessus faisait 1 PA → 2 PA), comme E.PERFECT_SKIP
   E.radiantBonus = () => Math.round(10 + 40 * Math.pow(rnd(), 2.2));
   /* Raretés (3.2) : déduites de l'origine de l'objet. Pour en ajouter une plus tard (ex. Mythique),
      ajouter une entrée ici (dans l'ordre croissant) et la donner aux objets via ITEMS[x].rarity ou la règle ci-dessous. */
@@ -3336,8 +3336,18 @@
     return miss.length;
   };
   /* sac, trop-plein ; from : seulement les objets arrivés depuis (uid ≥ from), comme ceux de l'HdV */
+  /* 1.2.10.2 (choix de Mathis) : les Rayonnants obtenus avant la 1.2.10.2 rendent le PA, la Portée et l'Invocation gagnés par l'arrondi
+     de leur bonus (1 PA → 2 PA) ; le reste du bonus est gardé. Une seule fois par objet (it.radFix), aussi pour ceux venus de l'HdV. */
+  E.radiantSkipFix = (it) => {
+    if (!it || !it.radiant || it.radFix || !it.stats) return 0; it.radFix = 1; let n = 0;
+    for (const k in E.RADIANT_SKIP) {
+      const r = it.roll && it.roll[k] !== undefined ? it.roll[k] : null; if (!(r > 0)) continue;
+      const d = Math.ceil(r * (1 + it.radiant / 100)) - r; if (d > 0 && it.stats[k] >= r + d) { it.stats[k] -= d; n++; }
+    }
+    return n ? 1 : 0;
+  };
   E.caracsMigrate = (S, from = 0) => {
-    let n = 0; const fix = (it) => { if (it && it.uid >= from && E.caracsFix(S, it)) n++; };
+    let n = 0; const fix = (it) => { if (it && it.uid >= from && E.caracsFix(S, it)) n++; if (E.radiantSkipFix(it)) S.radFixN = (S.radFixN || 0) + 1; };
     for (const uid in S.items || {}) fix(S.items[uid]);
     if (Array.isArray(S.over)) S.over.forEach(fix);
     S.caracsUid = S.nextUid;
@@ -3668,6 +3678,7 @@
     E.syncGearLocks(S); // 1.0.25.11 : objets des tenues déjà enregistrées verrouillés au chargement
     if (!S.wellReset) { for (const uid in S.items) delete S.items[uid].well; S.wellReset = 1; } // 1.0.15.1 : reliquats gonflés par le bug de forgemagie remis à 0 (choix de Mathis), caractéristiques inchangées
     { const n = E.caracsMigrate(S); if (n) note(S, `Nouvelles caractéristiques : ${n} objet${n > 1 ? "s ont" : " a"} reçu ${n > 1 ? "leurs" : "ses"} lignes de PM, Tacle, Fuite ou Dommages de poussée, comme dans DOFUS.`, "info"); } // 1.0.30 (41A)
+    if (S.radFixN) { note(S, `Rayonnants : ${S.radFixN > 1 ? `${S.radFixN} objets reviennent à leurs` : "1 objet revient à ses"} PA, Portée et Invocation normaux (le bonus Rayonnant ne les augmente plus) ; le reste du bonus est gardé.`, "info"); S.radFixN = 0; } // 1.2.10.2
     if (!S.coefT0) S.coefT0 = E.now(); // 1.0.30 : départ des coefficients de brisage au-dessus de 100 % (une seule fois)
     { const now = E.now(), base = E.coefAt(100, S.coefT0, now); for (const k in S.coef || {}) { const c = S.coef[k]; if (!c || E.coefAt(c.v, c.t, now) >= base) delete S.coef[k]; } } // 1.0.30 : coefficients revenus au niveau d'un objet jamais brisé
     (S.losses || []).forEach((x) => { if (x && x.tgt && !Number.isFinite(x.tgt.pct)) { x.tgt.pct = 100; x.cause = "bug"; x.gear = []; x.place = 0; x.txt = `${x.tgt.name || "Le monstre"} ne pouvait plus perdre de PV (bug de la 1.2.6, corrigé) : cette défaite n'était pas de ta faute.`; } }); // 1.2.6.3 : rapports de défaite « NaN % de PV »

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.10.2 « Rayonnants sans PA en plus »
+
+Le bonus d'un objet Rayonnant ne donne plus de PA, de Portée ni d'Invocation en plus (un objet à 1 PA restait arrondi à 2 PA). Les Rayonnants déjà obtenus reviennent à leur PA, Portée et Invocation normaux, le reste du bonus est gardé.
+
 ## 1.2.10.1 « Le chat entre de bonnes mains »
 
 Modération du chat pour le compte admin Xener : supprimer un message, sanctions depuis le pseudo (muet 10 min à 7 jours, bannir), effacer les messages publics d'un joueur, vider un salon, fermer le chat (supabase/chat.sql : adm_msg_del, adm_msg_purge, adm_chat_clear, adm_chat_close ; suppression en direct par le temps réel DELETE).
