@@ -87,7 +87,7 @@
     C.p.forEach((m) => { if (m.user_id && m.pseudo) C.names[m.user_id] = m.pseudo; });
   }
   /* 0.1.33.2 : les annonces automatiques (exploits, records de stasis, niveau 200, Renaissance, Dofus) ont leur onglet « Hauts faits » ; les annonces de Mathis restent dans le Général */
-  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.t === "jack" || m.data.kind === "race10")); // 1.0.5 : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
+  const isFeat = (m) => m.kind === "ann" && !(m.data && (m.data.t === "admin" || m.data.t === "wb" || m.data.t === "giga" || m.data.t === "jack" || /^race1[01]$/.test(m.data.kind))); // 1.0.5 (race11 : course de la 1.1, L'Ascension) : la course de lancement aussi // 0.1.49 : le Boss des mondes s'annonce dans le Général // 1.0.30 : la GIGA annonce d'un Dofus aussi
   /* 0.1.53.7 : mentions « @pseudo ». Surlignées dans le message ; le joueur mentionné voit le message mis en évidence
      et une pastille « @ » sur le chat et le salon, même s'il lit un autre salon. Seules les 3 premières mentions d'un
      message comptent (pas de mention de masse), un joueur ignoré ne prévient pas, et le mode lent du serveur s'applique. */
@@ -145,7 +145,7 @@
     if (m.kind === "ann" && m.data && m.data.t === "admin" && m.data.banner) setTimeout(banner, 800);
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI && C.loaded) window.WBUI.onAnn(m); // 0.1.49 : arrivée, phase, mort du boss
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) window.GIGA.onAnn(m); // 1.0.30 (Jackpot du Trool : 1.0.30.6) : GIGA annonce d'un Dofus, en plein écran chez tous (js/giga.js)
-    if (m.kind === "ann" && m.data && m.data.kind === "race10" && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
+    if (m.kind === "ann" && m.data && /^race1[01]$/.test(m.data.kind) && C.loaded) { X().toast(`👑 ${raceTxt(m, true)}`, "rare"); if (window.DX.raceRefresh) window.DX.raceRefresh(); } // 1.0.5 : prévient tout le monde
     if (PING.includes(m.ch || "g") && pingsMe(m) && !(C.open && C.tab === (m.ch || "g"))) { X().toast(`${m.pseudo || "Un joueur"} t'a mentionné dans le chat ${CH_NAME[m.ch || "g"]}.`); if (window.DX.sndPlay) window.DX.sndPlay("msg"); } // 0.1.53.7, son 1.0.22
     paint(true);
   }
@@ -239,7 +239,7 @@
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
     if (m.kind === "ann" && m.data && m.data.t === "wb" && window.WBUI) return window.WBUI.card(m); // 0.1.49 : carte animée du Boss des mondes
     if (m.kind === "ann" && m.data && (m.data.t === "giga" || m.data.t === "jack") && window.GIGA) return window.GIGA.card(m); // 1.0.30 : ligne dorée, un clic remontre l'annonce
-    if (m.kind === "ann" && m.data && m.data.kind === "race10") return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
+    if (m.kind === "ann" && m.data && /^race1[01]$/.test(m.data.kind)) return `<div class="ann race">${X().IC("couronne")}<span>${raceTxt(m)}</span></div>`; // 1.0.5 : carte dorée
     if (m.kind === "ann") return `<div class="ann${m.data && m.data.t === "admin" ? " ann-adm" : ""}${m.data && m.data.t === "chroma" ? " ann-chroma" : ""}">${X().IC(m.data && (m.data.t === "dofus" || m.data.t === "dsub") ? "dofus" : m.data && m.data.t === "admin" ? "parchemin_or" : "trophee")}<span>${annTxt(m)}</span></div>`;
     const me = m.user_id === myId();
     const it = m.item && window.DATA.ITEMS[m.item.tpl];
@@ -248,8 +248,8 @@
   }
   /* 1.0.5 : course de lancement : « X prend la 3e place ! Plus que 7 places » */
   function raceTxt(m, plain) {
-    const n = +m.data.key || 1, left = 10 - n, b = (x) => (plain ? x : `<b>${x}</b>`);
-    return `${b(h(m.pseudo || "?"))} prend la ${b(`${n === 1 ? "1re" : n + "e"} place`)} de la Course de lancement !${plain ? " " : "<small>"}${left > 0 ? `Plus que ${left} place${left > 1 ? "s" : ""} pour le titre « Légende de la 1.0 ».` : "La course est finie : les 10 Légendes de la 1.0 sont connues."}${plain ? "" : "</small>"}`;
+    const n = +m.data.key || 1, left = 10 - n, b = (x) => (plain ? x : `<b>${x}</b>`); const v = m.data.kind === "race11" ? "1.1" : "1.0"; // 1.1 : l'étage 100 de L'Ascension en Difficile
+    return `${b(h(m.pseudo || "?"))} prend la ${b(`${n === 1 ? "1re" : n + "e"} place`)} de la Course de lancement${v === "1.1" ? " de L'Ascension" : ""} !${plain ? " " : "<small>"}${left > 0 ? `Plus que ${left} place${left > 1 ? "s" : ""} pour le titre « Légende de la ${v} ».` : `La course est finie : les 10 Légendes de la ${v} sont connues.`}${plain ? "" : "</small>"}`;
   }
   function annTxt(m, plain) {
     const d = Object.assign({}, m.data); if (typeof d.t !== "string") d.t = d.did ? "top1" : ""; // 0.1.18-0.1.20 : le temps du record écrasait le type (t)

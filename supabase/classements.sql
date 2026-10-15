@@ -344,6 +344,16 @@ begin
         on conflict do nothing;
     end if;
   end if;
+  -- 1.1 : course de lancement de la 1.1 : les 10 premiers comptes à l'étage 100 de L'Ascension en Difficile (titre « Légende de la 1.1 »)
+  if not bad and coalesce((m->>'ascd100')::boolean, false)
+     and not exists (select 1 from public.firsts where kind = 'race11' and user_id = new.user_id) then
+    select count(*) into rk from public.firsts where kind = 'race11';
+    if rk < 10 then
+      insert into public.firsts (kind, key, label, user_id, pseudo)
+        select 'race11', (rk + 1)::text, format('Course de lancement de la 1.1 (L''Ascension) : n° %s sur 10', rk + 1), new.user_id, p.pseudo from public.profiles p where p.id = new.user_id
+        on conflict do nothing;
+    end if;
+  end if;
   return new;
 end $$;
 drop trigger if exists saves_ladder on public.saves;
