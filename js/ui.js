@@ -10346,7 +10346,7 @@ function sbGrid(sb) {
   const me = ON.user && ON.user.id, ks = Array.from({ length: E.STASIS_MAX }, (_, i) => i + 1), next = ks.find((k) => !sb[k]);
   return `<div class="sbfirst"><b>${IC("couronne")} Premiers depuis les sorts des boss</b><div class="sbgrid">${ks.map((k) => { const r = sb[k];
     return `<span class="sbk${r ? " on" : ""}${r && me && r.user_id === me ? " mine" : ""}"${r ? ` data-tip="${h(`${r.pseudo || "compte supprimé"}, ${raceDate(r.at)}`)}"` : ""}><small>S${k}</small><b>${r ? h(r.pseudo || "?") : "libre"}</b></span>`; }).join("")}</div>
-    <span class="xs muted">${next ? `Stasis ${next} : personne encore. Le premier à la finir y grave son nom pour toujours.` : "Toutes les stasis de ce donjon ont leur premier."}</span></div>`;
+    <span class="xs muted">${next ? `Stasis ${next} : personne encore. Le premier à la finir y grave son nom pour toujours.` : "Toutes les stasis de ce donjon ont leur premier."} Dès la stasis ${E.SB_TITLE_K}, le premier gagne aussi le titre « ${h(E.SB_TITLE)} ».</span></div>`;
 }
 function lbListHtml(d) {
   if (LB.tab === "race") return raceHtml(d);
@@ -10490,7 +10490,7 @@ function renderLadder() {
     : LB.tab === "race" ? ""
     : LB.tab === "job" ? jobLbHead()
     : LB.tab === "first" ? `<div class="row"><span class="seg">${[["sb", "Sorts des boss"], ["all", "Pour toujours"]].map(([v, n]) => `<button data-act="lb-fview" data-v="${v}" aria-pressed="${LB.fview === v}">${n}</button>`).join("")}</span></div>
-      <span class="small muted">${LB.fview === "sb" ? `Depuis l'arrivée des sorts uniques des boss, tout le monde repart de zéro : le premier compte à finir chaque stasis de chaque donjon y est gravé. Ici, la stasis la plus haute prise dans chaque donjon ; le détail est dans Communauté › Classements › Donjons.` : "Gravés pour toujours, même quand d'autres font mieux ensuite."}</span>`
+      <span class="small muted">${LB.fview === "sb" ? `Depuis l'arrivée des sorts uniques des boss, tout le monde repart de zéro : le premier compte à finir chaque stasis de chaque donjon y est gravé (et gagne le titre « ${h(E.SB_TITLE)} » dès la stasis ${E.SB_TITLE_K}). Ici, la stasis la plus haute prise dans chaque donjon ; le détail est dans Communauté › Classements › Donjons.` : "Gravés pour toujours, même quand d'autres font mieux ensuite."}</span>`
     : LB.tab === "chr" ? `<span class="small muted">Chromatiques dans l'album (${fmt(E.CHROMA_TOTAL || 0)} espèces). Le nombre part avec la sauvegarde en ligne.</span>`
     : LB.tab === "elev" ? `<span class="small muted">Couleurs de montures trouvées (${E.elevColoursTotal ? E.elevColoursTotal() : 41} au total), puis étoiles de toute l'écurie.</span>`
     : `<span class="small muted">${LB.tab === "album" ? "Âmes d'archimonstres dans l'album (${E.ARCHI_TOTAL} au total)." : "Succès débloqués."}</span>`;
@@ -10553,6 +10553,7 @@ async function recSubmit() {
   if (recBoot) recBoot[did] = rec[did];
   Object.keys(LB.cache).forEach((k) => delete LB.cache[k]);
   if (window.DGRANK) window.DGRANK.reset(did); // 1.0.30 : classement dans la fiche du donjon (js/dgrank.js)
+  if (r.firstSb >= E.SB_TITLE_K) sbTitle(true);
   if (r.ok && (r.improved || r.weekImproved || r.firstSb) && isFresh) recordSheet(r);
 }
 function recordSheet(r) {
@@ -10561,13 +10562,23 @@ function recordSheet(r) {
     <div class="chk"><div><span class="okc">✓</span><span>Partie envoyée au serveur</span></div><div><span class="okc">✓</span><span>Le serveur a rejoué la stasis avec ton équipe et l'a terminée en ${recTime(r.t)} (temps officiel)</span></div>
     <div><span class="okc">✓</span><span><b>Record vérifié</b> : ${r.rank}${r.rank === 1 ? "er" : "e"} sur ce donjon${r.week ? ` · ${r.weekRank}${r.weekRank === 1 ? "er" : "e"} cette semaine` : ""}</span></div>
     ${r.first ? `<div><span class="okc">★</span><span>Tu es le premier joueur à finir ce donjon en stasis ${r.k} : ton nom est gravé dans l'onglet Premiers.</span></div>` : ""}
-    ${r.firstSb ? `<div><span class="okc">★</span><span><b>Premier depuis les sorts des boss</b> : personne n'avait encore fini ce donjon en stasis ${r.firstSb} depuis la mise à jour. Ton nom est gravé dans Communauté › Classements › Premiers.</span></div>` : ""}</div>
+    ${r.firstSb ? `<div><span class="okc">★</span><span><b>Premier depuis les sorts des boss</b> : personne n'avait encore fini ce donjon en stasis ${r.firstSb} depuis la mise à jour. Ton nom est gravé dans Communauté › Classements › Premiers.${r.firstSb >= E.SB_TITLE_K ? ` Titre « ${h(E.SB_TITLE)} » débloqué !` : ""}</span></div>` : ""}</div>
     <div class="row"><button class="btn primary" data-act="lb-goto" data-v="${h(r.did)}" data-w="${r.week ? 1 : 0}">Voir le classement</button><button class="btn" data-act="closesheet">Fermer</button></div>`);
 }
 /* Titre « Maître de la semaine » : porté la semaine qui suit un podium. */
 const WEEK_TITLE = "Maître de la semaine";
+/* Titre « Pionnier des boss » : premier compte à finir une stasis 10 ou plus d'un donjon depuis les sorts des boss (firsts kind sb) */
+function sbTitle(silent) {
+  S.titlesExtra = S.titlesExtra || []; if (S.titlesExtra.includes(E.SB_TITLE)) return;
+  S.titlesExtra.push(E.SB_TITLE); dirty = true;
+  if (!silent) toast(`Premier depuis les sorts des boss : titre « ${E.SB_TITLE} » débloqué (Équipe et héros).`, "rare");
+}
 async function lbTitles() {
   if (!ranked()) return;
+  try { // titre « Pionnier des boss » gagné sur un autre appareil ou avant une restauration
+    if (!(S.titlesExtra || []).includes(E.SB_TITLE)) { const { data } = await ON.db().from("firsts").select("key").eq("kind", "sb").eq("user_id", ON.user.id).limit(300);
+      if ((data || []).some((r) => +String(r.key).split(":")[1] >= E.SB_TITLE_K)) sbTitle(); }
+  } catch (e) {}
   try {
     const { data } = await ON.db().from("lb_week").select("did,r").eq("w", weekNow() - 1).eq("user_id", ON.user.id).lte("r", 3).limit(1);
     S.titlesExtra = S.titlesExtra || []; const has = S.titlesExtra.includes(WEEK_TITLE);

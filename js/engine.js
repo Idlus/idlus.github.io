@@ -1159,6 +1159,7 @@
      relancer sa meilleure stasis. La fonction serveur « record » lit E.stasisSaison pour les records et les Premiers. */
   E.STASIS_SAISON = 2;
   E.STASIS_SAISON_NOM = "sorts des boss";
+  E.SB_TITLE = "Pionnier des boss"; E.SB_TITLE_K = 10; // titre du premier compte à finir une stasis 10 ou plus d'un donjon depuis les sorts des boss (Mathis 2A + 2B)
   E.stasisSaison = (S, did) => { const SI = ((S && S.stasis) || {})[did]; return SI && SI.sz === E.STASIS_SAISON && SI.sk > 0 ? { k: SI.sk, t: SI.st || 0 } : { k: 0, t: 0 }; };
   E.STASIS_TL = { room: 15, boss: 24 };
   E.STASIS_MODS = {
