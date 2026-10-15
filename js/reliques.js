@@ -325,12 +325,12 @@
   E.relSlotOf = (R, slot) => E.relOf(R).find((x) => x.slot === slot) || null;
 
   /* ---------- tirage d'un palier : 3 reliques de 3 emplacements différents ---------- */
-  E.relPickN = (R) => (E.relHas(R, "pickMore") || {}).v || 3;
+  E.relPickN = (R) => Math.max(3, ...E.relAll(R, "pickMore").map((f) => f.v || 3)); // 1.2.7.2 : la meilleure, quel que soit l'ordre des reliques
   E.relChoices = (S, n, forceLeg) => {
     const Q = E.ascState(S); const R = Q.run; if (!R) return [];
     const r = seeded(hash(`relic|${Q.runs}|${R.f}|${R.fights}|${R.relRoll || 0}|${R.relOffered || 0}`)); // relOffered : les 6 reliques de départ de l'Au-delà diffèrent
     const T = E.relRarTable(Math.max(1, R.f - (R.fights ? 1 : 0))); // au départ de l'Au-delà (étage 101, aucun combat) : la table de l'Au-delà
-    const worn = E.relWorn(R); const n0 = n || (E.relHas(R, "pickMore") || {}).relics || 3;
+    const worn = E.relWorn(R); const n0 = n || Math.max(3, ...E.relAll(R, "pickMore").map((f) => f.relics || 3));
     const up = !!E.relHas(R, "relicUp"); const pity = E.relHas(R, "relicPity"); const leg = forceLeg || (pity && (R.relNoLeg || 0) >= pity.n);
     const out = []; const base = !R.fights && R.mode === "x" ? E.REL_SLOTS.filter((sl) => !E.relSlotOf(R, sl)) : E.REL_SLOTS; // départ de l'Au-delà : un emplacement vide par choix
     const slots = shuffle(base.length ? base : E.REL_SLOTS, r).slice(0, Math.min(6, n0));
@@ -344,14 +344,14 @@
   /* le choix en attente (après le sort du palier) ; « nextLeg » rend légendaire la première offre de la montée suivante */
   E.relPend = (S) => {
     const Q = E.ascState(S); const R = Q.run; if (!R) return false;
-    const leg = !!Q.relNextLeg && !R.relOffered; const opts = E.relChoices(S, 0, leg); if (!opts.length) return false;
+    const leg = !!Q.relNextLeg && !R.relOffered; const pity = E.relHas(R, "relicPity"); const lg = leg || !!(pity && (R.relNoLeg || 0) >= pity.n); const opts = E.relChoices(S, 0, leg); if (!opts.length) return false;
     R.relOffered = (R.relOffered || 0) + 1; if (leg) delete Q.relNextLeg;
-    R.pend = { t: "relic", opts, at: E.now(), rr: E.relHas(R, "reroll") ? 1 : 0 };
+    R.pend = { t: "relic", opts, at: E.now(), rr: E.relHas(R, "reroll") ? 1 : 0, lg: lg ? 1 : 0 };
     if (opts.some((id) => BY[id].r === "l")) R.relNoLeg = 0; else R.relNoLeg = (R.relNoLeg || 0) + 1;
     return true;
   };
   E.relReroll = (S) => { const Q = E.ascState(S); const R = Q.run; const P = R && R.pend; if (!P || P.t !== "relic") return "Rien à relancer."; if (!P.rr) return "Plus de relance pour ce palier.";
-    P.rr = 0; R.relRoll = (R.relRoll || 0) + 1; P.opts = E.relChoices(S); return null; };
+    P.rr = 0; R.relRoll = (R.relRoll || 0) + 1; P.opts = E.relChoices(S, 0, !!P.lg); return null; }; // 1.2.7.2 : la relance garde la légendaire promise (Cape du Prophète, nextLeg)
   /* après un palier (sort, âme) ou un boss : la relique due, puis le marchand du Colporteur */
   E.relNext = (S, R) => {
     if (R.pend) return false;
@@ -362,7 +362,7 @@
   E.relDue = (R, done) => { if (done % A.relEvery === 0) R.relDue = 1; };
   /* l'auto : la meilleure rareté, un emplacement vide avant un remplacement */
   E.relAuto = (S) => { const R = E.ascState(S).run; const P = R && R.pend; if (!P || P.t !== "relic") return -1;
-    let bi = -1, bs = -1; P.opts.forEach((id, i) => { const x = BY[id]; if (!x) return; const s = E.REL_RAR[x.r].w * 10 + (E.relSlotOf(R, x.slot) ? 0 : 5) + (x.fx ? 1 : 0); if (s > bs) { bs = s; bi = i; } });
+    let bi = -1, bs = -1; P.opts.forEach((id, i) => { const x = BY[id]; if (!x) return; const o = E.relSlotOf(R, x.slot); const s = o ? (E.REL_RAR[x.r].w - E.REL_RAR[o.r].w) * 10 + (x.fx ? 1 : 0) - (o.fx ? 1 : 0) : 20 + E.REL_RAR[x.r].w * 10 + (x.fx ? 1 : 0); if (s > 0 && s > bs) { bs = s; bi = i; } }); // 1.2.7.2 : jamais une relique moins bonne à la place de celle portée
     return bi; };
 
   /* ---------- le marchand ---------- */
@@ -422,7 +422,7 @@
     const dr = E.relHas(R, "drain"); if (dr) hero.vamp = (hero.vamp || 0) + dr.v / 100;
     const po = E.relHas(R, "poison"); if (po) hero.expPoison = po.v;
     if (E.relHas(R, "eyeBoss")) W.seeHp = 1;
-    const ini = E.relHas(R, "ini"); if (ini) hero.expFirst = true;
+    const iniL = E.relAll(R, "ini"); const ini = iniL.length ? { rec: iniL.some((f) => f.rec) } : null; if (ini) hero.expFirst = true; // 1.2.7.2 : Bottes du Coureur + Cape du Lève-tôt
     const sh = E.relSum(R, "shieldStart"); if (sh) hero.shield = Math.round(hero.hpMax * sh / 100);
     if (E.relHas(R, "survive")) rl.survive = 1; if (E.relHas(R, "phoenix") && !R.relPhoenix) rl.phoenix = 1; if (E.relHas(R, "fragRevive")) rl.fragRev = 1;
     const ga = E.relHas(R, "gamble"); if (ga) { rl.gamble = W.rng() < 0.5 ? ga.up : -ga.down; F.log.push({ txt: `Dague du Parieur : ${rl.gamble > 0 ? "pile, +" : "face, "}${rl.gamble} % de dégâts.`, cls: "dim" }); }
@@ -449,7 +449,7 @@
     const F = W.F; const rl = W.rel; if (!rl) return; const hero = F.ents[W.hero]; if (!hero || !hero.alive) return; const rd = F.round; const Ms = mons(F);
     /* PA du tour */
     let pa = rl.pa0 + rl.paNext; rl.paNext = 0;
-    E.relAll(R, "paFirst").forEach((f) => { if (rd === 1 && (!f.sig || (W.defs || E.ASC_DEFS || []).some((d) => d && d.ascSig))) { pa += f.v; if (f.pm) rl.dodge += 5 * f.pm; } });
+    E.relAll(R, "paFirst").forEach((f) => { if (rd === 1 && (!f.sig || (W.defs || E.ASC_DEFS || []).some((d) => d && d.ascSig))) { pa += f.v; if (f.pm) rl.pmX = (rl.pmX || 0) + f.pm; } }); // 1.2.7.2 : le PM ne compte qu'au premier tour
     E.relAll(R, "paTurn").forEach((f) => { if (!f.heal || (W.defs || E.ASC_DEFS || []).some((d) => d && E.spellKind(d.grades[0]) === "heal")) pa += f.v; });
     E.relAll(R, "paEvery").forEach((f) => { if (rd % f.n === 0) pa += f.v; }); E.relAll(R, "paFrom").forEach((f) => { if (rd >= f.n) pa += f.v; });
     const pb = E.relHas(R, "paBar"); if (pb && R.spells.length >= pb.n) pa += pb.v;
@@ -511,13 +511,13 @@
       const ds = E.relSum(R, "dmgSecond"); if (ds && F.fx.filter((x) => x.k === "cast" && x.s === W.hero && x.seq > rl.roundSeq).length === 2) m *= 1 + ds / 100;
       const eh = E.relSum(R, "echoHit"); if (eh) m *= 1 + eh / 100;
       const dc = E.relHas(R, "doubleCast"); if (dc && W.rng() * 100 < dc.p) { m *= 2; if (rl.dcSeq !== F.seq) { rl.dcSeq = F.seq; F.log.push({ txt: "Anneau du Double : le sort est lancé deux fois !", cls: "c" }); } }
-      if (E.relHas(R, "ignoreRes")) { const rs = Math.max(0, ...Object.values(tgt.res || {})); m *= 1 / (1 - Math.min(A.resCap, rs) / 100); }
+      if (E.relHas(R, "ignoreRes")) { const rs = Math.max(0, el ? (tgt.res || {})[el] || 0 : Math.max(0, ...Object.values(tgt.res || {}))); m *= 1 / (1 - Math.min(A.resCap, rs) / 100); } // 1.2.7.2 : la résistance de l'élément du sort
       const hcst = E.relSum(R, "healCast"); if (hcst && rl.hcSeq !== F.seq) { rl.hcSeq = F.seq; heal(F, hero, hero.hpMax * hcst / 100); }
       const rhc = E.relSum(R, "recHealCast"); if (rhc && rl.rhSeq !== F.seq) { rl.rhSeq = F.seq; recs(F).forEach((s) => heal(F, s, s.hpMax * rhc / 100)); }
       return v * m;
     }
     if (tgt === hero && src.side === "m") {
-      let dodge = rl.dodge; if (rl.pmFirst && F.round === 1) dodge += 5 * E.relSum(R, "pmFirst");
+      let dodge = rl.dodge; if (rl.pmFirst && F.round === 1) dodge += 5 * E.relSum(R, "pmFirst"); if (rl.pmX && F.round === 1) dodge += 5 * rl.pmX;
       if (!rl.hitRound) dodge += E.relSum(R, "dodgeFirst"); if (F.round % 2 === 1) dodge += E.relSum(R, "dodgeOdd"); if (hero.hp < hero.hpMax * 0.25) dodge += E.relSum(R, "fleeLow");
       if (dodge > 0 && W.rng() * 100 < Math.min(60, dodge)) { F.fx.push({ seq: F.seq, k: "buff", t: W.hero, txt: "Esquive" }); rl.afterDodge = 1; rl.adSeq = 0;
         const ct = E.relHas(R, "counter"); if (ct && src.alive) { hurt(F, src, src.hpMax * ct.v / 100); F.log.push({ txt: `Cape de Contre : ${src.name} perd ${ct.v} % de ses PV.`, cls: "c" }); } return 0; }

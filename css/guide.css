@@ -76,3 +76,4 @@ abbr.gd-g{text-decoration:underline dotted;text-underline-offset:3px;cursor:help
   .gd-sumb{display:inline-flex;align-self:flex-start}
   .gd.sum .gd-list{display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:12px;border:2px solid var(--frame);background:var(--panel)}
 }
+h3[id^="gd-"],.gd-main{scroll-margin-top:calc(var(--sth,56px) + 10px)} /* 1.2.7.2 : un lien vers un paragraphe ne cache plus son titre sous la barre du haut */

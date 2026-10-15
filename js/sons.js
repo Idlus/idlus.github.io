@@ -16,7 +16,7 @@
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + len); g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.04); n.connect(fl); fl.connect(g); g.connect(o); n.start(t, Math.random()); n.stop(t + len + 0.1); }
   const pizz = (t, m, v, o) => H.pluck(t, m, 0.22, v, o, { damp: 0.985, cut: 2400, hp: 140, rel: 0.08 });
   const cel = (t, m, v, o, len) => H.bell(t, m, 0.6, v, o, { parts: [[1, 1, 0.9 * (len || 1)], [2, 0.1, 0.3], [4, 0.14, 0.18]] });
-  const coin = (t, v, o) => H.bell(t, 100 + Math.floor(Math.random() * 7), 0.2, v, o, { parts: [[1, 1, 0.22], [2.76, 0.6, 0.14], [5.4, 0.35, 0.07], [8.9, 0.15, 0.04]] });
+  const coin = (t, v, o) => H.bell(t, 100 + Math.floor(Math.random() * 7), 0.2, v, o, { parts: [[1, 1, 0.22], [2.76, 0.6, 0.14], [5.4, 0.35, 0.07]] }); // 1.2.7.2 : sans le partiel ×8,9 (au-delà de ce que le navigateur sait jouer)
   const tri = (t, v, o) => H.drum(t, "tri", v, o);
   const drop = (t, m, v, o) => { const f = H.mtof(m); H.sweep(t, f * 0.6, f * 1.25, 0.07, v * 0.5, o); H.bell(t + 0.03, m, 0.3, v * 0.35, o, { parts: [[1, 1, 0.25], [2, 0.15, 0.1]] }); }; // goutte d'eau
   const anvil = (t, m, v, o) => H.bell(t, m, 0.3, v, o, { parts: [[1, 1, 0.3], [2.76, 0.5, 0.16], [5.4, 0.3, 0.08]] });

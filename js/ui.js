@@ -21,9 +21,24 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.7.1";
+const GAME_VERSION = "1.2.7.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.7.2", name: "Chasse aux bugs du soir", items: [
+    "L'Ascension : l'auto ne remplace plus une relique par une moins rare, et passe le palier si rien n'est mieux que ce que tu portes.",
+    "L'Ascension : l'Anneau du Collectionneur et l'Amulette du Destin, les Bottes du Coureur et la Cape du Lève-tôt marchent dans n'importe quel ordre.",
+    "L'Ascension : le Bâton des Quatre Vents compense la résistance de l'élément du sort lancé, plus la plus forte du monstre.",
+    "L'Ascension : la relance de l'Anneau du Destin garde l'offre légendaire promise (Cape du Prophète, Anneau de Patience).",
+    "L'Ascension : la Couronne du Sommet ne donne plus son esquive pendant tout le combat, seulement au premier tour comme annoncé.",
+    "L'Ascension : avec l'Anneau Glyphique, l'auto pose bien le 3e glyphe et la fenêtre affiche la bonne limite.",
+    "L'Au-delà : le compteur « relique de départ x / 6 » avance aussi quand tu passes une relique ; le bandeau de la course disparaît quand les 10 places sont prises.",
+    "Menu : la case « Aller à une page » ne se vide plus pendant que tu écris, et Entrée ouvre d'abord la page dont le nom correspond (« for » → Forgemagie).",
+    "Menu : épingler une page sans être connecté n'efface plus tes épinglés Hôtel de vente, Guilde ou Classements.",
+    "Raccourcis PC : les flèches ← → ne butent plus sur Signaler un bug et partent aussi du Havre-Sac ; la touche H ramène au Havre-Sac.",
+    "Guide : liens « Voir aussi » réparés, icônes du glossaire et de la Ménagerie, chiffre de l'Autel des Douze lu dans le jeu, tous les thèmes cités dans Options, le titre visé par un lien n'est plus caché sous la barre du haut.",
+    "Sons : « Victoire ! » et « Défaite… » s'affichent de nouveau à la fin des combats sur la page Combat.",
+    "Sons : la bulle « Nouveaux sons » ne revient plus après un clic sur le haut-parleur ; les messages privés, mentions et erreurs sonnent de nouveau avec « Sons du jeu » ; ton ancien réglage de volume est repris (les sons n'arrivent plus beaucoup plus forts).",
+    "Hors ligne : le Kolizéum, le Songe, les boss et quelques autres fichiers sont gardés dès l'installation de l'appli." ] },
   { v: "1.2.7.1", name: "Monstres immortels corrigés", items: [
     "Corrigé : certains monstres (ex. Fongeur au donjon du Korriandre) affichaient « NaN » PV et ne pouvaient plus mourir. Cause : la mécanique Cumul de quelques sorts (Gousset du Xélor, Tromperie de l'Ecaflip, Brèche du Huppermage) n'avait pas de valeur depuis la 1.2.6",
     "Ces sorts cumulent maintenant normalement (+10 % de dégâts par lancer, jusqu'à 3 fois), et un coup invalide ne peut plus jamais rendre un monstre immortel",
@@ -2180,7 +2195,7 @@ const navFamPages = (F) => F.pages.filter((p) => navParent(p[0]) === p[0]);
 const navIsNew = (k) => E.now() < NAV_NEW.until && NAV_NEW.pages.includes(k);
 const navPins = () => { if (!S.settings.pins) S.settings.pins = NAV_PINS_DEF.slice(); return S.settings.pins.filter((k) => navPage(k)); };
 const navNorm = (t) => String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { if (navNorm(p[1]).includes(n) || navNorm(NAV_DESC[p[0]] || "").includes(n)) out.push(p); })); return out; }
+function navSearchHits(q) { const n = navNorm(q.trim()); if (!n) return []; const out = []; NAV.forEach((F) => F.pages.forEach((p) => { const nm = navNorm(p[1]); const r = nm.startsWith(n) ? 0 : nm.includes(n) ? 1 : navNorm(NAV_DESC[p[0]] || "").includes(n) ? 2 : -1; if (r >= 0) out.push([r, out.length, p]); })); return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]); } // 1.2.7.2 : le nom de la page avant sa description
 /* la page du menu qui correspond à l'écran affiché */
 function navKey() {
   const t = ui.tab;
@@ -2387,7 +2402,9 @@ function renderNav() {
   const restDot = NAV.some((F) => F !== F0 && F !== FH && famCount(F).n) || !!B.comptoirs;
   const mob = `<div class="sn-mob">${mb("home", "Havre-Sac", "logo", k === "home")}${mb(F0.pages[0][0], F0.n, F0.ic, famOn(F0), famBadge(F0))}<button class="navfight" data-act="nav" data-v="combat" data-nk="combat" ${fight ? 'aria-current="page"' : ""}>${med("combat")}<span>Combat</span></button>${mb("team", "Héros", null, famOn(FH), famBadge(FH))}<button class="sn-menu" data-act="navmenu" data-nk="menu" ${menuOn ? 'aria-current="page"' : ""}><i class="sn-burger" aria-hidden="true"><b></b><b></b><b></b></i><span>Menu</span>${restDot ? '<span class="navdot"></span>' : ""}</button></div>`;
   nav.className = "main sidenav" + (fight ? " infight" : "");
+  const qf = document.activeElement && document.activeElement.id === "navq" ? document.activeElement : null; const qs = qf ? [qf.value, qf.selectionStart, qf.selectionEnd] : null; // 1.2.7.2 : le menu se redessine en tâche de fond, la case « Aller à une page » garde ce qui est tapé
   nav.innerHTML = side + mob;
+  if (qs) { const n = $("#navq"); if (n) { n.value = qs[0]; n.focus(); try { n.setSelectionRange(qs[1], qs[2]); } catch (e) {} } }
   /* 5A : bandeau de la famille en haut de chaque page, et 3A les onglets des pages rangées ensemble */
   let strip = "";
   if (curFam && !fight && k !== "home") {
@@ -5004,7 +5021,7 @@ function updateCombat(force) {
       const last = F.log[F.log.length - 1]; const t = $("#turn"); if (t) t.textContent = last ? last.txt : F.label;
     }
     if (F.over && !A.over) {
-      A.over = true; axVictory(F, A); cbtEnd(F); // 1.3 : jingle de fin du combat affiché $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`;
+      A.over = true; axVictory(F, A); cbtEnd(F); $("#fresult").innerHTML = `<span class="${F.result === "win" ? "" : "lose"}">${F.result === "win" ? "Victoire !" : "Défaite…"}</span>`; // 1.3 : jingle de fin du combat affiché ; 1.2.7.2 : « Victoire ! » / « Défaite… » revient (il était passé dans le commentaire)
       lootHtml(F); const fh = $("#fhist"); if (fh) fh.innerHTML = historyHtml(6);
     } else if (!F.over && (force || ($("#floot") && $("#floot").dataset.none))) { $("#floot").innerHTML = `<p class="note">Le butin apparaîtra à la fin du combat.</p>`; delete $("#floot").dataset.none; $("#fres").textContent = `Tour ${F.round}`; } // 1.0.10.3 : plus de « Aucun combat en cours » pendant le premier combat
   } else if (force) { $("#flog").innerHTML = ""; $("#floot").innerHTML = `<p class="note">Aucun combat en cours.</p>`; $("#floot").dataset.none = "1"; }
@@ -7979,7 +7996,7 @@ document.addEventListener("keydown", (ev) => {
    D'autres pages de la 1.1 s'ajoutent ici avec leur lettre. */
 const HOTKEYS = [["h", "home"], ["m", "world"], ["d", "dungeons"], ["c", "combat"], ["s", "exp"], ["j", "defi"], ["k", "koli"], ["b", "wb"], ["e", "team"], ["i", "inv"], ["r", "ren"],
   ["t", "metiers"], ["f", "forge"], ["q", "quests"], ["u", "succes"], ["n", "enc"], ["v", "hdv"], ["g", "guild"], ["l", "ladder"], ["a", "asc"], ["p", "pets"], ["y", "dofus"]];
-const hotPages = () => { const out = ["combat"]; NAV.forEach((F) => F.pages.forEach((p) => out.push(p[0]))); return out; };
+const hotPages = () => { const out = ["home", "combat"]; NAV.forEach((F) => F.pages.forEach((p) => { if (p[0] !== "bug" && p[0] !== "admin") out.push(p[0]); })); return out; }; // 1.2.7.2 : les flèches ne butent plus sur Signaler un bug
 function hotGo(k) { if (k === "bug" && window.BUGS) { window.BUGS.open(); return; } navGo(k); closeSheet(); render(); window.scrollTo(0, 0); }
 function hotkey(ev) {
   const k = ev.key; if (!S || (S.settings && S.settings.keysOff) || isEditing() || ev.ctrlKey || ev.metaKey || ev.altKey) return false;
@@ -8701,7 +8718,7 @@ const SND = { last: 0, kinds: {}, live: true, gest: false, prev: null, fan: {}, 
 /* 1.0.30 : fan = fanfares des grands moments, cls = thème de chaque classe, cbt = sons de combat, amb + avol = ambiances seules */
 const SND_DEF0 = { on: false, vol: 50, all: false, bg: false, mus: false, mvol: 40, mbg: false, juke: "zone", fix: "", style: "bois", clic: "imp", mute: false, asked: false, fan: true, cbt: false, amb: false, avol: 40,
   ui: false, gvol: 80, ivol: 50, cvol: 50, rvol: 80, sty: "theme", cmode: "scene", nv13: false }; // 1.3 « Refonte des sons » : interface (ui, ivol), combat (cvol, cmode), récompenses (on, rvol), volume général (gvol), timbre (sty = « theme » ou un thème)
-const sndCfg = () => Object.assign({}, SND_DEF0, (S && S.settings.snd) || {});
+const sndCfg = () => { const s = S && S.settings.snd; if (s && s.rvol == null && s.vol != null) s.rvol = s.vol; return Object.assign({}, SND_DEF0, s || {}); }; // 1.2.7.2 : l'ancien volume des sons devient celui des récompenses (plus de sons 6× plus forts)
 const sndSet = (o) => { S.settings.snd = Object.assign(sndCfg(), o); dirty = true; };
 const SND_MAP = { level: "niveau", boss: "donjon", magic: "dofus", coin: "commande", rare: "butin", gong: "donjon", win: "victoire", msg: "message", err: "erreur", clic: "clic" };
 /* 1.3 : tous les sons passent par js/sons.js (window.SONS) ; un son a sa famille : interface (menus), récompenses (grands moments), combat */
@@ -8725,7 +8742,7 @@ function sndPlay(kind, force) {
 }
 /* sons de l'interface (2A) : chaque geste des menus, très doux, dans le timbre du thème */
 function uiSnd(kind, force) {
-  if (!window.SONS) return; const c = sndCfg(); if (!force && !(c.ui && sndLive(c, false))) return;
+  if (!window.SONS) return; const c = sndCfg(); const alert = kind === "message" || kind === "erreur"; if (!force && !(c.ui && sndLive(c, false)) && !(alert && c.on && sndLive(c, c.bg))) return; // 1.2.7.2 : messages privés et erreurs suivent aussi « Sons du jeu », même onglet caché si permis
   const now = performance.now(); if (!force && (now - SND.uiT < 45 || now - (SND.uiK[kind] || 0) < 90)) return; SND.uiT = now; SND.uiK[kind] = now;
   sndVol(); try { window.SONS.play(`ui:${sndTheme()}:${kind}`); } catch (e) {}
 }
@@ -8964,7 +8981,7 @@ function jukeboxHtml(c, T) {
 function viChange(a, t) {
   if (a === "vi-cons") { E.act(S, "consigneSet", t.dataset.k, t.checked); toast(t.checked ? "Consigne activée." : "Consigne désactivée."); }
   else if (a === "vi-cap") { E.act(S, "consigneSet", "cap", +t.value || 0); toast(+t.value > 0 ? `Pendant l'absence, le surplus au-delà de ${fmt(+t.value)} par ressource ${window.VENTEUI ? window.VENTEUI.bankTxt(true) : "ira au marchand de secours"}.` : "Plus de limite de banque."); }
-  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, ...(["on", "mus", "amb", "cbt", "ui"].includes(k) && t.checked ? { mute: false } : {}) }); SND.gest = true; if (k === "on" && t.checked) sndPlay("rare", true); musSync(); renderStatus(); }
+  else if (a === "vi-snd") { const k = t.dataset.k; sndSet({ [k]: t.checked, asked: true, nv13: true, ...(["on", "mus", "amb", "cbt", "ui"].includes(k) && t.checked ? { mute: false } : {}) }); SND.gest = true; if (k === "on" && t.checked) sndPlay("rare", true); musSync(); renderStatus(); }
   else if (a === "vi-vk") { const k = t.dataset.k; sndSet({ [k]: +t.value }); const v = $("#mixv-" + k); if (v) v.textContent = t.value + " %"; SND.gest = true; sndVol(true); // 1.3 : on entend le volume choisi
     if (k === "ivol" || k === "gvol") uiSnd("page", true); else if (k === "rvol") sndPlay("rare", true); else if (k === "cvol") cbtTest(true); }
   else if (a === "vi-sty") { sndSet({ sty: t.value }); SND.gest = true; uiSnd("theme", true); optionsSheet(); }
@@ -8987,7 +9004,7 @@ function viAct(a, t) {
     case "vi-test": case "vi-rtest": SND.gest = true; sndVol(true); ["rare", "quete", "evt:coffre"].forEach((k, i) => setTimeout(() => sndPlay(k, true), i * 900)); return;
     case "vi-itest": SND.gest = true; sndVol(true); ["famille", "page", "onglet", "inter", "fenetre", "fermer"].forEach((k, i) => setTimeout(() => uiSnd(k, true), i * 380)); return;
     case "vi-sndseg": sndSet({ [d.k]: d.v }); SND.gest = true; if (d.k === "cmode") { if (d.v === "fin") cbtPlayK("cbt:victoire", true); else cbtTest(); } else if (d.v !== "none") uiSnd("clic", true); optionsSheet(); return;
-    case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on && !c.ui && !c.cbt && !c.amb) sndSet(SND_ALL); else sndSet({ mute: !c.mute, asked: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; }
+    case "vi-mute": { const c = sndCfg(); if (!c.mus && !c.on && !c.ui && !c.cbt && !c.amb) sndSet(SND_ALL); else sndSet({ mute: !c.mute, asked: true, nv13: true }); const x = $("#sndask"); if (x) x.remove(); musSync(); renderStatus(); toast(sndOn() ? "Musique et sons remis." : "Musique et sons coupés."); return; } // 1.2.7.2 : la bulle « Nouveaux sons » ne revient plus
     case "vi-sndyes": sndSet(SND_ALL); t.closest("#sndask").remove(); musSync(); renderStatus(); return;
     case "vi-snd13": sndSet(Object.assign({}, SND_ALL, { mus: sndCfg().mus })); t.closest("#sndask").remove(); SND.gest = true; musSync(); renderStatus(); uiSnd("theme", true); toast("Nouveaux sons activés. Chaque famille se règle dans Options › Sons."); return;
     case "vi-snd13no": sndSet({ nv13: true }); t.closest("#sndask").remove(); return;
@@ -8995,7 +9012,7 @@ function viAct(a, t) {
     case "vi-jkplay": if (!partHas(d.v)) return; SND.gest = true; SND.prev = SND.prev === d.v ? null : d.v; musSync(); optionsSheet(); return;
     case "vi-fantest": { const A = window.IdlusAudio; if (!A || !A.fanfare) return; SND.gest = true; const K = ["donjon", "niveau", "dofus", "boss"], k = K[(SND.fanN = ((SND.fanN || 0) + 1)) % K.length]; A.setMusicVol(sndCfg().mvol / 100); A.fanfare(k); toast(`Fanfare : ${A.fanfares[k]}.`); return; }
     case "vi-cbttest": SND.gest = true; cbtTest(); return;
-    case "vi-jkfix": { if (!partHas(d.v)) return; const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
+    case "vi-jkfix": { if (!partHas(d.v)) return; const c = sndCfg(), on = c.juke === "fixe" && c.fix === d.v; SND.prev = null; sndSet(on ? { juke: "zone" } : { juke: "fixe", fix: d.v, mus: true, mute: false, asked: true, nv13: true }); musSync(); renderStatus(); optionsSheet(); toast(on ? "La musique suit de nouveau l'endroit." : `« ${window.IdlusAudio.tracks[d.v]} » joue partout.`); return; }
     case "vi-jkmode": { const c = sndCfg(); SND.prev = null; sndSet(d.v === "fixe" ? { juke: "fixe", fix: window.IdlusAudio && window.IdlusAudio.tracks[c.fix] ? c.fix : musPlace() } : { juke: "zone" }); musSync(); optionsSheet(); return; }
     case "vi-jkall": ui.jukeAll = !ui.jukeAll; optionsSheet(); return;
     case "vi-optcons": pageGo("consignes"); return;
@@ -9334,7 +9351,8 @@ document.addEventListener("click", (ev) => {
     case "navmini": S.settings.navMini = !S.settings.navMini; ui.navFly = null; dirty = true; renderNav(); return;
     case "navfam": { const cf = navFam(navKey()); const was = d.v in navFams ? !!navFams[d.v] : !!(cf && cf.id === d.v); navFams[d.v] = !was; navFamSave(); ui.navJust = was ? null : d.v; renderNav(); return; } // 1.2.5.5 : chaque famille s'ouvre et se ferme seule, plusieurs à la fois
     case "navfly": ui.navFly = ui.navFly === d.v ? null : d.v; renderNav(); return;
-    case "navpin": { const P = navPins(); const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (P.length >= NAV_PINS_MAX) { toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); S.settings.pins = P; dirty = true; renderNav(); return; }
+    case "navpin": { navPins(); const P = S.settings.pins; const i = P.indexOf(d.v); if (i >= 0) P.splice(i, 1); else if (navPins().length >= NAV_PINS_MAX) { // 1.2.7.2 : hors ligne, les épinglés en ligne (HdV, Guilde) restent gardés
+ toast(`${NAV_PINS_MAX} épinglés au maximum : retire-en un d'abord.`); return; } else P.push(d.v); dirty = true; renderNav(); return; }
     case "navq": ui.navQ = ""; { const m = !!t.closest(".navsheet"); if (m) navMenuSheet(); else renderNav(); const i = $(m ? "#navqm" : "#navq"); if (i) i.focus(); } return;
     case "opttab": ui.optTab = d.v; ui.confirm = null; optionsSheet(); { const sh = $(".sheet"); if (sh) sh.scrollTop = 0; } return;
     /* 0.1.42 : accueil du jour */

@@ -52,7 +52,7 @@
 
   add({ id: "absence", f: "Bien débuter", n: "Absence et hors-ligne", ic: "phenix", page: null, k: "hors ligne offline absence retour consignes",
     ou: "le bilan s'ouvre quand tu reviens · Options › Jeu › Consignes d'absence", de: "dès le début",
-    voir: ["sablier", "havre"],
+    voir: ["sablier", "home"],
     b: () => [
       ["p", "Quand le jeu est fermé (ou l'onglet caché), le temps passé dehors est simulé à ton retour, à partir de tes derniers combats : même taux de victoire, même durée de combat. Un bilan montre ce que l'équipe a gagné."],
       ["kv", [
@@ -83,7 +83,7 @@
 
   add({ id: "sablier", f: "Bien débuter", n: "Sablier de Xélor", ic: "cristal", page: null, k: "vitesse x2 x3 accélérer",
     ou: "la pastille du sablier dans la barre du haut", de: "après « La Crypte de Kardorim », à la fin d'Incarnam (étape " + N(() => E.SAB_UNLOCK_STEP) + " de la quête principale)",
-    voir: ["absence", "codes"],
+    voir: ["absence", "aide"],
     b: () => [
       ["p", "Le Sablier est une réserve de temps rapide : il fait tourner le jeu ×2 ou ×3 tant qu'il reste du sable. Il se remplit en temps réel, jeu ouvert ou fermé, et commence plein."],
       ["kv", [
@@ -244,7 +244,7 @@
     ] });
   add({ id: "chasse", f: "Héros", n: "Champions, Sceaux et Éclats", ic: "trophee", page: "chasse", k: "champion sceau eclat legendaire pouvoir cri conclave fusion piste",
     ou: "Héros › Chasse", de: "le premier Champion vaincu débloque son Sceau",
-    voir: ["monde", "combat"],
+    voir: ["world", "combat"],
     b: () => [
       ["p", `En chasse, environ 1 groupe sur ${N(() => Math.round(1 / E.CHAMP_CHANCE))} cache un **Champion** : un monstre avec un pouvoir (Enragé, Blindé, Vampirique, Véloce, Meneur ou Traqueur), deux fois plus de vie et 20 % de dégâts en plus. Il rapporte XP ×3, butin ×2 et sa ressource la plus rare.`],
       ["h", "Sceaux"],
@@ -361,7 +361,7 @@
 
   add({ id: "inventaire", f: "Héros", n: "Inventaire et sac", ic: "sac", page: "inv", pages: ["invres", "invcons"], k: "sac trop plein place ressources consommables runes briser doublons",
     ou: "Héros › Inventaire", de: "dès le début",
-    voir: ["equipement", "forgemagie", "havre"],
+    voir: ["equipement", "forgemagie", "home"],
     b: () => [
       ["p", "Le sac garde les équipements. Ressources, consommables et runes ont leurs onglets et ne sont pas limités."],
       ["kv", [["Places du sac de base", N(() => E.ITEM_CAP)], ["Ta taille de sac", V(() => fr(E.itemCap(S())))], ["Trop-plein de base", N(() => E.OVER_CAP)], ["Ton trop-plein", V(() => fr(E.overCap(S())))]]],
@@ -456,7 +456,7 @@
       ["p", "Le prix monte à chaque niveau. Les bonus additionnés ont un plafond :"],
       ["kv", [["XP", "+" + N(() => E.BONUS_CAP.xp) + " %"], ["Butin", "+" + N(() => E.BONUS_CAP.drop) + " %"], ["Kamas", "+" + N(() => E.BONUS_CAP.kamas) + " %"], ["Durée hors-ligne", "+" + N(() => E.BONUS_CAP.offtime) + " h"], ["Efficacité hors-ligne", "+" + N(() => E.BONUS_CAP.offrate) + " %"]]],
       ["ul", [
-        `**Autel des Douze** : ${N(() => E.ALTAR.max)} niveaux, chacun relève les plafonds de ${N(() => E.ALTAR.cap || 5)} %.`,
+        `**Autel des Douze** : ${N(() => E.ALTAR.max)} niveaux, chacun relève les plafonds de ${N(() => E.ALTAR.per)} %.`,
         `**Salles et meubles** : chaque salle a des places pour des meubles ; seuls les meubles posés comptent. Les meubles tombent en chasse (1 / ${N(() => Math.round(1 / E.FURN_DROP))} par victoire), s'achètent ou se gagnent. Les trophées de boss arrivent en finissant un donjon en stasis ${N(() => E.TROPHY_STASIS)}.`,
         `**Formation** : un héros hors équipe reçoit ${pc(V(() => E.TRAIN_SHARE, 0))} de l'XP de l'équipe.`,
         `**Atelier** (${N(() => E.ATELIER_COST)} kamas) : fabrique seul une recette toutes les ${N(() => E.ATELIER_PERIOD_S / 60)} min.`,
@@ -810,7 +810,7 @@
     voir: ["absence"],
     b: () => [
       ["ul", [
-        "**Affichage** : thème (Émeraude, Nuit violette ; Halouine du 24 octobre au 3 novembre), taille du texte, contraste, animations de combat, mouvements réduits.",
+        "**Affichage** : thème (Émeraude, Nuit violette, Givre, Ambre, Braise, Écume ; Halouine du 24 octobre au 3 novembre), ambiance animée, taille du texte, contraste, animations de combat, mouvements réduits.",
         "**Sons** : table de mixage (volume général, musique, fanfares et récompenses, interface, combat, ambiances), timbre selon le thème, juke-box des partitions trouvées.",
         "**Jeu** : consignes d'absence, raccourcis clavier, notifications, code cadeau.",
         "**Sauvegarde** : la partie est enregistrée dans le navigateur toutes les 15 s et des copies de secours sont gardées. « Changer d'appareil » exporte et importe la partie.",
@@ -1177,10 +1177,10 @@
     almanax: "almanax", "hotel-de-vente": "bourse", "chasse-au-tresor": "carte", "avis-de-recherche": "parchemin_or", ameliorations: "havre", parchemins: "parchemin_or", panoplies: "sac",
     defaite: "combat", "mode-manuel": "combat", "trophees-de-zone": "trophee", "etoiles-de-zone": "trophee", "boss-de-guilde": "couronne", percepteurs: "bourse", "les-obtenir": "coffre",
     "renaissance-des-metiers": "phenix", passif: "idee", semaine: "quetes", "commandes-d-artisans": "metiers", "temples-et-dopeuls": "kamas", "heures-de-donjon": "coffre", missions: "carte",
-    "la-boucle-de-jeu": "logo", "consignes-d-absence": "phenix", "sorts-cles-au-fil-des-niveaux": "idee", "album-de-la-menagerie": "meubles", "collection-de-panoplies": "sac" };
-  const GICON = { kolizetons: "koli", Doplons: "kamas", "Bribes de rêve": "cristal", Essence: "poussiere", Potentiel: "dofus", Sablier: "cristal", Sceau: "couronne", Champion: "couronne",
+    "la-boucle-de-jeu": "logo", "consignes-d-absence": "phenix", "sorts-cles-au-fil-des-niveaux": "idee", "album-de-la-menagerie": "meuble", "collection-de-panoplies": "sac" };
+  const GICON = { kolizetons: "combat", Doplons: "kamas", "Bribes de rêve": "cristal", Essence: "poussiere", Potentiel: "dofus", Sablier: "cristal", Sceau: "couronne", Champion: "couronne",
     Renaissance: "phenix", "Éveil": "phenix", stasis: "coffre", "trophée de zone": "trophee", exo: "forge", puits: "forge", archimonstre: "dofus", chromatique: "teinture", Rayonnant: "cristal",
-    "trop-plein": "sac", synergie: "combat", PA: "combat", PM: "combat", PO: "combat", XP: "trophee", Initiative: "combat", "érosion": "koli" };
+    "trop-plein": "sac", synergie: "combat", PA: "combat", PM: "combat", PO: "combat", XP: "trophee", Initiative: "combat", "érosion": "combat" };
 
   /* ---------- rendu ---------- */
   const norm = (s) => (E.searchNorm ? E.searchNorm(s) : String(s || "").toLowerCase());

@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.7.2 « Chasse aux bugs du soir »
+
+Audit après les mises à jour du 15/10 (1.2 à 1.2.7). Reliques (`js/reliques.js`) : `relAuto` compare à la relique portée, `pickMore` et `ini` lus sur toutes les reliques (`relAll`), `ignoreRes` sur l'élément du sort, la relance garde `pend.lg`, PM de la Couronne du Sommet au tour 1 seulement (`rl.pmX`). L'Ascension : auto des glyphes avec `relGlyphMax`, compteur des reliques de départ, bandeau de course masqué si `ui.raceInfo.left <= 0`. Menu (`js/ui.js`) : `renderNav` garde le focus de `#navq`, `navSearchHits` classe nom puis description, `navpin` sur la liste brute, `hotPages` sans `bug`/`admin` et avec `home`. Guide : liens « Voir aussi », icônes, `E.ALTAR.per`, thèmes, `scroll-margin-top`. `sw.js` : PRECACHE complété.
+
 ## 1.2.7.1 « Monstres immortels corrigés »
 
 Quelques sorts recevaient la mécanique d'identité « cumul » sans ses réglages (`a`, `max`) quand elle était ajoutée pour départager deux sorts d'une même classe (`js/identite.js`, build) : `1 + undefined × n` donnait des dégâts NaN, et un monstre à PV NaN ne meurt jamais. Les mécaniques ajoutées reçoivent maintenant leurs réglages, `dealDamage` remplace un coup non fini par 1 (filet de sécurité), et les rapports de défaite enregistrés pendant le bug sont réécrits au chargement. Test dans `tests/fight.test.js`.

@@ -594,7 +594,7 @@
     if (P.t === "start") { const sc = P.opts.map((k, i) => [score(k), i]).sort((a, b) => b[0] - a[0]).slice(0, A.keep).map((x) => x[1]); return E.ascChoose(S, sc); }
     if (P.t === "pick") { let bi = 0; P.opts.forEach((k, i) => { if (score(k) > score(P.opts[bi])) bi = i; }); return E.ascChoose(S, bi, worst()); }
     if (P.t === "soul") return E.ascChoose(S, 0, worst());
-    if (P.t === "glyph") { const i = R.spells.findIndex((s) => !s.soul && (s.gl || []).length < 2 && !s.gl.includes(P.g)); return E.ascChoose(S, i >= 0 ? i : -1); }
+    if (P.t === "glyph") { const gm = E.relGlyphMax ? E.relGlyphMax(R) : 2; const i = R.spells.findIndex((s) => !s.soul && (s.gl || []).length < gm && !(s.gl || []).includes(P.g)); return E.ascChoose(S, i >= 0 ? i : -1); } // 1.2.7.2 : Anneau glyphique (3 glyphes)
     if (P.t === "relic") return E.ascChoose(S, E.relAuto ? E.relAuto(S) : -1); // 1.2.x : la meilleure rareté, un emplacement vide d'abord
     if (P.t === "event") return E.ascChoose(S, P.ev === "prisoner" ? 1 : P.ev === "merc" && R.frag >= P.price + 40 && R.recruits.length < A.recruitsMax ? 0 : 1); // 1.1.0.1 : pas de mercenaire de plus quand l'équipe a déjà ses recrues (la montée restait bloquée) // l'auto ne libère pas de prisonnier (événement risqué)
     if (P.t === "shop") return E.ascChoose(S, -1);

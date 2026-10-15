@@ -1,6 +1,26 @@
 {
-  "version": "1.2.7.1",
+  "version": "1.2.7.2",
   "versions": [
+    {
+      "v": "1.2.7.2",
+      "name": "Chasse aux bugs du soir",
+      "items": [
+        "L'Ascension : l'auto ne remplace plus une relique par une moins rare, et passe le palier si rien n'est mieux que ce que tu portes.",
+        "L'Ascension : l'Anneau du Collectionneur et l'Amulette du Destin, les Bottes du Coureur et la Cape du Lève-tôt marchent dans n'importe quel ordre.",
+        "L'Ascension : le Bâton des Quatre Vents compense la résistance de l'élément du sort lancé, plus la plus forte du monstre.",
+        "L'Ascension : la relance de l'Anneau du Destin garde l'offre légendaire promise (Cape du Prophète, Anneau de Patience).",
+        "L'Ascension : la Couronne du Sommet ne donne plus son esquive pendant tout le combat, seulement au premier tour comme annoncé.",
+        "L'Ascension : avec l'Anneau Glyphique, l'auto pose bien le 3e glyphe et la fenêtre affiche la bonne limite.",
+        "L'Au-delà : le compteur « relique de départ x / 6 » avance aussi quand tu passes une relique ; le bandeau de la course disparaît quand les 10 places sont prises.",
+        "Menu : la case « Aller à une page » ne se vide plus pendant que tu écris, et Entrée ouvre d'abord la page dont le nom correspond (« for » → Forgemagie).",
+        "Menu : épingler une page sans être connecté n'efface plus tes épinglés Hôtel de vente, Guilde ou Classements.",
+        "Raccourcis PC : les flèches ← → ne butent plus sur Signaler un bug et partent aussi du Havre-Sac ; la touche H ramène au Havre-Sac.",
+        "Guide : liens « Voir aussi » réparés, icônes du glossaire et de la Ménagerie, chiffre de l'Autel des Douze lu dans le jeu, tous les thèmes cités dans Options, le titre visé par un lien n'est plus caché sous la barre du haut.",
+        "Sons : « Victoire ! » et « Défaite… » s'affichent de nouveau à la fin des combats sur la page Combat.",
+        "Sons : la bulle « Nouveaux sons » ne revient plus après un clic sur le haut-parleur ; les messages privés, mentions et erreurs sonnent de nouveau avec « Sons du jeu » ; ton ancien réglage de volume est repris (les sons n'arrivent plus beaucoup plus forts).",
+        "Hors ligne : le Kolizéum, le Songe, les boss et quelques autres fichiers sont gardés dès l'installation de l'appli."
+      ]
+    },
     {
       "v": "1.2.7.1",
       "name": "Monstres immortels corrigés",
