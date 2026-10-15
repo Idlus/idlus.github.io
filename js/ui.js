@@ -3458,7 +3458,7 @@ function buildArena(F) {
   ui.arena.fxl = arena.querySelector(".fxl"); ui.arena.fxg = arena.querySelector(".fxg"); if (view === "scene") ui.arena.nodes.forEach((n, i) => axDecor(n, F.ents[i]));
   ui.arena.entHtml = entHtml; ui.arena.nEnts = F.ents.length;
   const t = $("#turn"); if (t) t.textContent = F.label;
-  placeEnts(F); stickyCheck();
+  placeEnts(F); stickyCheck(); if (view === "scene") anStart(F, ui.arena);
   if (F.bossIdx !== undefined && F.round === 1 && !F.over && ui.bossIntro !== F.id) bossIntro(F);
 }
 /* bandeau des challenges et mécaniques de boss */
@@ -3731,11 +3731,60 @@ function axMechBanner(A, txt, who) {
   A.fxl.appendChild(d); axLater(d, 2000);
 }
 /* effet d'un événement (impact, soin, bonus, invocation) */
+/* maquette « Nouvelles animations » : window.__an = { idle, entry, hit, turn } (A, B ou C) */
+const AN = () => window.__an || {};
+const AN_FLY = /Tofu|Moskito|Chauve|Corbac|Pious|Abeille|Kwak|Libellule|Papillon|Fantôme|Spectre|Larve ailée|Mouche|Vampyre|Dragodinde volante|Kaniglou|Scarafeuille|Bwork Mage|Chafer Volant|Croc Gland|Floribonde|Aéro|Plume|Ailé|Kanimate|Krokille|Toror|Wabbit Squelette/;
+function anStart(F, A) {
+  const o = AN(); if (!A || !A.el || !axOn()) return;
+  if (o.idle === "A" || o.idle === "B") {
+    A.el.classList.add("an-idle-" + o.idle);
+    A.nodes.forEach((n, i) => { if (!n) return; const e = F.ents[i];
+      n.style.setProperty("--bp", (2.2 + Math.random() * 1.4).toFixed(2) + "s"); n.style.setProperty("--bd", (-Math.random() * 3).toFixed(2) + "s");
+      if (o.idle === "A" && e.side === "m" && AN_FLY.test(e.name)) n.classList.add("anfly"); });
+    if (o.idle === "A") { clearInterval(A._gt); A._gt = setInterval(() => { if (ui.arena !== A || !A.el.isConnected) return clearInterval(A._gt); const G = S.fight; if (!G) return;
+      const cur = G.order && G.oi > 0 ? G.order[G.oi - 1] : -1;
+      const pool = A.nodes.map((n, i) => [n, i]).filter(([n, i]) => n && G.ents[i] && G.ents[i].alive && !G.ents[i].summon && i !== cur);
+      if (!pool.length) return; const [n, i] = pool[(Math.random() * pool.length) | 0], e = G.ents[i], b = axBody(n); if (!b || !b.animate || b.getAnimations().length) return;
+      const d = e.side === "c" ? 1 : -1, r = Math.random();
+      b.animate(r < 0.45 ? [{ transform: "none" }, { transform: "translateY(-16px)", offset: 0.3 }, { transform: "scale(1.06,.92)", offset: 0.55 }, { transform: "translateY(-6px)", offset: 0.75 }, { transform: "none" }]
+        : r < 0.75 ? [{ transform: "none" }, { transform: "scaleX(-1)", offset: 0.15 }, { transform: "scaleX(-1)", offset: 0.75 }, { transform: "none" }]
+        : [{ transform: "none" }, { transform: `rotate(${d * 7}deg) translateX(${d * 6}px)`, offset: 0.35 }, { transform: `rotate(${d * 7}deg) translateX(${d * 6}px)`, offset: 0.6 }, { transform: "none" }],
+        { duration: r < 0.45 ? 620 : 1100, easing: "ease-in-out" }); }, 1300); }
+  }
+  if ((o.entry === "A" || o.entry === "B") && F.round <= 1 && !F.over) {
+    const W = A.el.clientWidth; let kh = 0, km = 0;
+    A.nodes.forEach((n, i) => { const e = F.ents[i], b = axBody(n); if (!n || !e || !b || !b.animate || e.summon) return;
+      const p = axFoot(A, n);
+      if (o.entry === "A") {
+        if (e.side === "c") { const dist = p.x + 60, dl = kh++ * 70;
+          b.animate([{ transform: `translateX(${-dist}px)`, opacity: 0 }, { transform: `translate(${-dist * 0.7}px,-26px)`, opacity: 1, offset: 0.22 }, { transform: `translateX(${-dist * 0.45}px)`, offset: 0.42 }, { transform: `translate(${-dist * 0.2}px,-20px)`, offset: 0.62 }, { transform: "scale(1.05,.9)", offset: 0.84 }, { transform: "none" }], { duration: 760, delay: dl, easing: "ease-out", fill: "backwards" });
+          setTimeout(() => axDust(A, p.x, p.y, 4, 1), dl + 640);
+        } else { const dl = 180 + km++ * 60, big = e.boss;
+          b.animate([{ transform: `translateY(${-(p.y + 40)}px)`, opacity: 0 }, { transform: `translateY(${-(p.y + 40) * 0.6}px)`, opacity: 1, offset: 0.25 }, { transform: "translateY(0) scale(1.12,.8)", offset: 0.72 }, { transform: "scale(.96,1.05)", offset: 0.86 }, { transform: "none" }], { duration: big ? 820 : 620, delay: dl, easing: "cubic-bezier(.5,0,.9,.5)", fill: "backwards" });
+          setTimeout(() => { axDust(A, p.x, p.y, big ? 9 : 5); if (big) pulse(A.el, "shake2"); }, dl + (big ? 600 : 450)); }
+      } else { const dl = (e.side === "c" ? kh++ : 3 + km++) * 70;
+        setTimeout(() => { if (!n.isConnected) return; const r = axMk(A, "ring", p.x, p.y - 6, { "--c": e.side === "c" ? "#7fc8ff" : "#ff8a7a" }); axLater(r, 700); n.classList.add("anglow"); setTimeout(() => n.classList.remove("anglow"), 700); }, dl);
+        b.animate([{ opacity: 0, transform: "scale(.2,.05)", filter: "brightness(3)" }, { opacity: 0, transform: "scale(.2,.05)", filter: "brightness(3)", offset: 0.25 }, { opacity: 1, transform: "scale(1.1,1.15)", filter: "brightness(1.8)", offset: 0.7 }, { opacity: 1, transform: "none", filter: "none" }], { duration: 640, delay: dl, easing: "ease-out", fill: "backwards" }); }
+    });
+  }
+}
+function anHit(A, n, e, f) {
+  const v = AN().hit; if (!v || v === "C" || !axOn() || !e) return; const b = axBody(n); if (!b || !b.animate) return;
+  const d = e.side === "c" ? -1 : 1, k = f.crit ? 2.2 : 1;
+  if (v === "A") b.animate([{ transform: "none", filter: "none" }, { transform: `translateX(${d * 12 * k}px) ${f.crit ? "translateY(-12px) " : ""}rotate(${d * 6}deg)`, filter: "brightness(2.6) saturate(.4)", offset: 0.2 }, { transform: `translateX(${d * 9 * k}px) rotate(${d * 3}deg)`, filter: "none", offset: 0.5 }, { transform: f.crit ? `translateX(${d * 4}px) translateY(-4px)` : `translateX(${d * 3}px)`, offset: 0.75 }, { transform: "none" }], { duration: f.crit ? 560 : 420, easing: "ease-out" });
+  else b.animate([{ transform: "none", filter: "none" }, { transform: "scale(1.18,.74)", filter: "brightness(2.2)", offset: 0.2 }, { transform: "scale(.9,1.12)", filter: "none", offset: 0.5 }, { transform: "scale(1.04,.96)", offset: 0.75 }, { transform: "none" }], { duration: 420, easing: "ease-out" });
+}
+function anTurn(F, A, curI) {
+  if (AN().turn !== "A" || !axOn() || A.view !== "scene" || F.over || curI < 0 || A._turn === F.oi + ":" + F.round) return; A._turn = F.oi + ":" + F.round;
+  const n = A.nodes[curI], e = F.ents[curI], b = n && axBody(n); if (!b || !e || !e.alive || !b.animate) return;
+  const tw = parseFloat(A.el.style.getPropertyValue("--tw")) || 60, d = e.side === "c" ? 1 : -1;
+  b.animate([{ translate: "0 0" }, { translate: `${d * tw * 0.45}px -4px`, offset: 0.18 }, { translate: `${d * tw * 0.45}px 0`, offset: 0.24 }, { translate: `${d * tw * 0.45}px 0`, offset: 0.78 }, { translate: "0 0" }], { duration: Math.max(500, E.STEP_MS * axSpd() * 0.95), easing: "ease-in-out" });
+}
 function axEvent(F, A, f) {
   if (ui.arena !== A) return; cbtSnd(F, f); // 1.0.30 : sons de combat
   const n = A.nodes[f.t];
   if (f.k === "hit") { if (!n) return; const e = F.ents[f.t];
-    pulse(n, "hit");
+    pulse(n, "hit"); anHit(A, n, e, f);
     if (f.crit && axOn()) { floatAt(n, "−" + f.v, "#ffd84d", false, "crit"); if (axFull()) { const p = axPt(A, n); const fl = axMk(A, "flashw", p.x, p.y); axLater(fl, 220); const b = axBody(n); if (b && b.animate) b.animate([{ filter: "brightness(3)" }, { filter: "brightness(3)", offset: 0.6 }, { filter: "none" }], { duration: 160 }); pulse(A.el, "shake"); } }
     else if (f.s < 0 && axOn()) floatAt(n, "−" + f.v, "#b6ff9a", true);
     else floatAt(n, "-" + f.v, elVar(f.el));
@@ -4570,7 +4619,7 @@ function updateCombat(force) {
       if (ui.manualSpell) ui.manualSpell = null;
       A.nodes.forEach((n) => n && n.classList.remove("targetable", "turnnow"));
     }
-    const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; A.nodes.forEach((n, i) => n && n.classList.toggle("cur", i === curI && !F.over));
+    const curI = F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; A.nodes.forEach((n, i) => n && n.classList.toggle("cur", i === curI && !F.over)); anTurn(F, A, curI);
     if (A.view === "form") window.FORMUI.update(F, A, force); // 1.0.30 : ordre de jeu, PV, icônes et colonnes de la Formation
     const fresh = F.fx.filter((f) => f.seq > A.lastSeq);
     if (fresh.length) {
