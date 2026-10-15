@@ -5,6 +5,10 @@
 -- 1.0.30 « Refonte des guildes » (choix 7A à 12A, 19A et 20A de Mathis) :
 -- - Boss de la semaine en 5 phases : 25 000 points de vie par membre (au moins 3 comptés), vie figée à la
 --   première frappe de la semaine. Un essai toutes les 25 min (20 avec le Cor de ralliement), 6 en réserve.
+-- 1.0.33 « Boss de guilde rééquilibré » (choix 1A à 6A de Mathis) : un essai toutes les 2 h (1 h 40 avec le Cor), 12 en réserve ;
+--   vie = 15 000 points par membre actif (partie en ligne ou arrivée depuis moins de 14 jours, au moins 3) ; après la phase 5,
+--   phases Ultimes sans fin (10 % de la vie chacune, 30 Poussières par membre) ; coffres : kamas ×4 et ressources du boss,
+--   Coffre du trophée (un équipement du donjon) en phase 5 ; coffres pour les membres qui ont fait au moins 3 essais.
 --   Chaque phase tombée verse des kamas au coffre de guilde et ouvre un coffre pour chaque membre qui a frappé ;
 --   la 5e donne le trophée du boss, et un titre aux membres de la première guilde du serveur qui le finit.
 -- - Percepteurs : en zone finie ou en donjon fait en stasis 1 ou plus, un seul par zone sur tout le serveur,
@@ -54,6 +58,9 @@ create table if not exists public.gboss_goal (
   primary key (w, guild_id)
 );
 alter table public.gboss_goal enable row level security;
+-- 1.0.33 : ressource du boss (coffres des phases 1 à 4) et équipements de son donjon (Coffre du trophée), envoyés par la fonction « record »
+alter table public.gboss_goal add column if not exists res text;
+alter table public.gboss_goal add column if not exists eq jsonb;
 -- 1.0.30 : phases tombées
 create table if not exists public.gboss_phase (
   w int not null, guild_id bigint not null references public.guilds (id) on delete cascade, phase int not null,
@@ -148,29 +155,35 @@ alter table public.perco_war enable row level security;
 create or replace function public.gb_day() returns date language sql stable as $$ select (now() at time zone 'Europe/Paris')::date $$;
 -- même semaine que E.gbossWeek (js/gboss.js) : jours depuis le 1er janvier 1970 (un jeudi), ramenés au lundi
 create or replace function public.gb_week() returns int language sql stable as $$ select ((gb_day() - date '1970-01-01') + 3) / 7 $$;
--- 1.0.30 : vie du boss (E.gbossGoal) : 25 000 par membre, au moins 3 comptés, figée à la première frappe de la semaine
+-- 1.0.33 : membres actifs (E.GBOSS_ACTIVE_DAYS) : partie en ligne envoyée, ou arrivée dans la guilde, depuis moins de 14 jours
+create or replace function public.gb_active(g bigint) returns int language sql stable security definer set search_path = public
+as $$ select count(*)::int from guild_members m left join saves s on s.user_id = m.user_id
+  where m.guild_id = g and (m.joined_at > now() - interval '14 days' or s.updated_at > now() - interval '14 days') $$;
+-- vie du boss (E.gbossGoal) : 1.0.33 : 15 000 par membre actif (1.0.30 : 25 000 par membre), au moins 3 comptés, figée à la première frappe de la semaine
 create or replace function public.gb_goalw(g bigint, wk int) returns int language sql stable security definer set search_path = public
-as $$ select coalesce((select goal from gboss_goal where w = wk and guild_id = g), 25000 * greatest(3, g_count(g))) $$;
+as $$ select coalesce((select goal from gboss_goal where w = wk and guild_id = g), 15000 * greatest(3, gb_active(g))) $$;
 create or replace function public.gb_goal(g bigint) returns int language sql stable security definer set search_path = public
 as $$ select gb_goalw(g, gb_week()) $$;
--- phases tombées pour pts points (seuils cumulés 8, 22, 42, 68 et 100 % : E.gbossThr)
+-- phases tombées pour pts points (seuils cumulés 8, 22, 42, 68 et 100 % : E.gbossThr) ;
+-- 1.0.33 : puis une phase Ultime tous les 10 % de la vie (E.gbossPhase)
 create or replace function public.gb_nph(pts bigint, goal int) returns int language sql immutable
-as $$ select count(*)::int from unnest(array[8, 22, 42, 68, 100]) c where pts >= floor(goal::numeric * c / 100) $$;
+as $$ select case when pts >= goal then 5 + floor((pts - goal)::numeric / greatest(1, floor(goal::numeric * 10 / 100)))::int
+  else (select count(*)::int from unnest(array[8, 22, 42, 68, 100]) c where pts >= floor(goal::numeric * c / 100)) end $$;
 -- kamas versés au coffre quand la phase tombe (E.GBOSS_PHASE_K)
 create or replace function public.gb_phase_k(p int) returns bigint language sql immutable
 as $$ select (array[300000, 600000, 900000, 1200000, 1500000]::bigint[])[greatest(1, least(5, p))] $$;
--- minutes pour un essai (Cor de ralliement : 20)
+-- minutes pour un essai (1.0.33 : 120, Cor de ralliement : 100 ; avant 25 et 20)
 create or replace function public.gb_every(g bigint) returns int language sql stable security definer set search_path = public
-as $$ select case when g_up(g, 'cor') > 0 then 20 else 25 end $$;
--- essais en réserve (E.gbossTok) ; une première fois : réserve pleine
+as $$ select case when g_up(g, 'cor') > 0 then 100 else 120 end $$;
+-- essais en réserve (E.gbossTok) ; une première fois : réserve pleine (1.0.33 : 12 au plus, 24 h)
 create or replace function public.gb_tok(u uuid, g bigint) returns real language sql stable security definer set search_path = public
-as $$ select least(6, coalesce(c.t, 6) + extract(epoch from (now() - coalesce(c.at, now()))) / (gb_every(g) * 60.0))::real
+as $$ select least(12, coalesce(c.t, 12) + extract(epoch from (now() - coalesce(c.at, now()))) / (gb_every(g) * 60.0))::real
   from (select 1) x left join gboss_charge c on c.user_id = u $$;
 create or replace function public.gb_pts(g bigint, wk int) returns bigint language sql stable security definer set search_path = public
 as $$ select coalesce(sum(points), 0)::bigint from gboss_hits where guild_id = g and w = wk $$;
--- même coffre que E.gbossChest (step 25, 50, 75, 100 = phases 1 à 4)
+-- même coffre que E.gbossChest (step 25, 50, 75, 100 = phases 1 à 4) ; 1.0.33 : kamas ×4, n = ressources du boss (5 × la phase)
 create or replace function public.gb_chest(step int, lvl int) returns jsonb language sql immutable
-as $$ select jsonb_build_object('k', round((1000 + lvl * 250) * (step / 25)), 'res', jsonb_build_object('Poussière de stasis', 15 * (step / 25))) $$;
+as $$ select jsonb_build_object('k', round((1000 + lvl * 250) * (step / 25) * 4), 'res', jsonb_build_object('Poussière de stasis', 15 * (step / 25)), 'n', 5 * (step / 25)) $$;
 -- course entre guildes d'une semaine : phases tombées, puis points
 create or replace function public.gb_top(wk int, lim int default 10) returns jsonb language sql stable security definer set search_path = public
 as $$ select coalesce(jsonb_agg(x order by x.ph desc, x.pts desc), '[]'::jsonb) from (
@@ -280,17 +293,29 @@ as $$ select jsonb_build_object('id', r.id, 'pid', r.perco_id, 'sid', r.sid, 'zo
 create or replace function public.gb_claim_do(me uuid, dry boolean) returns jsonb language plpgsql security definer set search_path = public
 as $$
 declare wk int := gb_week(); x int; gid bigint; lv int; p int; k numeric := 0; dust int := 0; n int := 0; titles text[] := '{}'; c jsonb; m guild_members := g_me(me); top jsonb; w0 date;
+  res jsonb := '{}'::jsonb; items jsonb := '[]'::jsonb; gg gboss_goal; it jsonb; tries int;
 begin
   foreach x in array array[wk - 1, wk] loop
     gid := null;
-    select guild_id, max(lvl) into gid, lv from gboss_hits where user_id = me and w = x group by guild_id order by max(id) desc limit 1;
+    select guild_id, max(lvl), count(*) into gid, lv, tries from gboss_hits where user_id = me and w = x group by guild_id order by max(id) desc limit 1;
     if gid is null then continue; end if;
-    for p in select phase from gboss_phase where w = x and guild_id = gid and phase <= 4 order by phase loop
+    select * into gg from gboss_goal where w = x and guild_id = gid;
+    -- 1.0.33 (5A) : coffres pour les membres qui ont fait au moins 3 essais dans la semaine (ils restent à ouvrir tant que la semaine suivante dure)
+    if tries >= 3 then
+    for p in select phase from gboss_phase where w = x and guild_id = gid order by phase loop
       if not exists (select 1 from gboss_claims where user_id = me and w = x and step = 1000 + p) then
         if not dry then insert into gboss_claims (user_id, w, step) values (me, x, 1000 + p); end if;
-        c := gb_chest(25 * p, lv); k := k + (c->>'k')::numeric; dust := dust + (c->'res'->>'Poussière de stasis')::int; n := n + 1;
+        if p <= 4 then
+          c := gb_chest(25 * p, lv); k := k + (c->>'k')::numeric; dust := dust + (c->'res'->>'Poussière de stasis')::int; n := n + 1;
+          if gg.res is not null then res := jsonb_set(res, array[gg.res], to_jsonb(coalesce((res->>gg.res)::int, 0) + (c->>'n')::int)); end if;
+        elsif p = 5 then
+          n := n + 1; it := pc_item(jsonb_build_object('eq', coalesce(gg.eq, '[]'::jsonb))); if it is not null then items := items || jsonb_build_array(it); end if;
+        else
+          dust := dust + 30; n := n + 1;
+        end if;
       end if;
     end loop;
+    end if;
     if exists (select 1 from guild_trophies t where t.guild_id = gid and t.w = x and t.first)
        and not exists (select 1 from gboss_claims where user_id = me and w = x and step = 1100) then
       if not dry then insert into gboss_claims (user_id, w, step) values (me, x, 1100); end if;
@@ -310,11 +335,11 @@ begin
       titles := titles || 'Conquérant'::text;
     end if;
   end if;
-  return jsonb_build_object('n', n, 'k', k, 'dust', dust, 'titles', to_jsonb(titles));
+  return jsonb_build_object('n', n, 'k', k, 'dust', dust, 'res', res, 'items', items, 'titles', to_jsonb(titles));
 end $$;
 
 do $$ declare f text; begin
-  foreach f in array array['gb_goal(bigint)', 'gb_goalw(bigint, int)', 'gb_pts(bigint, int)', 'gb_top(int, int)', 'g_addxp(bigint, bigint)', 'pc_tick(bigint)', 'pc_name(text)',
+  foreach f in array array['gb_goal(bigint)', 'gb_active(bigint)', 'gb_goalw(bigint, int)', 'gb_pts(bigint, int)', 'gb_top(int, int)', 'g_addxp(bigint, bigint)', 'pc_tick(bigint)', 'pc_name(text)',
     'gb_every(bigint)', 'gb_tok(uuid, bigint)', 'pc_fillsec(bigint)', 'pc_kind(text)', 'pc_next(text)', 'pc_slots(bigint)', 'pc_used(bigint)', 'pc_raided(bigint)', 'pc_item(jsonb)',
     'pw_add(bigint, int, int, int, int)', 'pw_top(int, int)', 'rd_max(bigint)', 'rd_today(uuid)', 'rd_json(perco_raids, uuid)', 'gb_claim_do(uuid, boolean)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
@@ -337,8 +362,10 @@ begin
   return jsonb_build_object(
     'boss', jsonb_build_object('w', wk, 'pts', bp, 'goal', goal, 'lvl', mylvl,
       'done', (select count(*) from gboss_phase where w = wk and guild_id = g.id),
-      'tok', tok, 'every', ev, 'next', case when tok >= 6 then 0 else ceil((1 - (tok - floor(tok))) * ev * 60) end,
+      'tok', tok, 'every', ev, 'next', case when tok >= 12 then 0 else ceil((1 - (tok - floor(tok))) * ev * 60) end,
       'mine', (select coalesce(sum(points), 0) from gboss_hits where user_id = me and w = wk),
+      'tries', (select count(*) from gboss_hits where user_id = me and w = wk),
+      'active', gb_active(g.id), 'members', g_count(g.id), 'res', (select res from gboss_goal where w = wk and guild_id = g.id),
       'today', (select count(*) from gboss_hits where user_id = me and day = gb_day()),
       'hitters', (select coalesce(jsonb_agg(x order by x.pts desc), '[]'::jsonb) from (
         select pseudo_of(user_id) p, sum(points)::bigint pts, count(*) n, max(points) best from gboss_hits where guild_id = g.id and w = wk group by user_id) x),
@@ -375,14 +402,19 @@ begin
   if me is null then return g_err('non connecté'); end if;
   perform pg_advisory_xact_lock(hashtext('hdv' || me::text));
   c := gb_claim_do(me, false); n := (c->>'n')::int; k := (c->>'k')::numeric; dust := (c->>'dust')::int;
-  if n > 0 then perform hdv_op(me, jsonb_build_object('k', k, 'res', jsonb_build_object('Poussière de stasis', dust)), format('Boss de guilde : %s coffre%s ouvert%s (%s kamas, %s Poussières de stasis)', n, case when n > 1 then 's' else '' end, case when n > 1 then 's' else '' end, g_fmt(k::bigint), dust)); end if;
+  -- 1.0.33 : ressources du boss et équipement du Coffre du trophée dans la même ligne
+  if n > 0 then perform hdv_op(me, jsonb_build_object('k', k, 'res', jsonb_build_object('Poussière de stasis', dust) || coalesce(c->'res', '{}'::jsonb))
+      || case when jsonb_array_length(coalesce(c->'items', '[]'::jsonb)) > 0 then jsonb_build_object('add', c->'items') else '{}'::jsonb end,
+    format('Boss de guilde : %s coffre%s ouvert%s (%s kamas, %s Poussières de stasis%s%s)', n, case when n > 1 then 's' else '' end, case when n > 1 then 's' else '' end, g_fmt(k::bigint), dust,
+      (select coalesce(string_agg(format(', %s %s', value, key), ''), '') from jsonb_each_text(coalesce(c->'res', '{}'::jsonb))),
+      case when jsonb_array_length(coalesce(c->'items', '[]'::jsonb)) > 0 then ', un équipement' else '' end)); end if;
   for t in select jsonb_array_elements_text(c->'titles') loop
     perform hdv_op(me, jsonb_build_object('title', t), case t
       when 'Conquérant' then 'Guerre des Percepteurs : ta guilde a gagné la semaine, titre « Conquérant » !'
       when 'Avant-garde de guilde' then 'Boss de guilde : ta guilde est la première du serveur à le finir, titre « Avant-garde de guilde » !'
       else 'Boss de guilde : ta guilde finit dans les 3 meilleures de la semaine, titre « Pourfendeur de boss » !' end);
   end loop;
-  return jsonb_build_object('ok', n, 'k', k, 'dust', dust, 'titles', c->'titles', 'ops', hdv_ops_after(me, p_after));
+  return jsonb_build_object('ok', n, 'k', k, 'dust', dust, 'res', c->'res', 'items', c->'items', 'titles', c->'titles', 'ops', hdv_ops_after(me, p_after));
 end $$;
 
 -- ---------- Percepteurs ----------
@@ -481,48 +513,56 @@ begin
   if p_w <> gb_week() then return g_err('Nouvelle semaine : réessaie.'); end if;
   tok := gb_tok(p_user, m.guild_id);
   if tok < 1 then return g_err(format('Prochain essai dans %s min.', ceil((1 - tok) * gb_every(m.guild_id)))); end if;
-  done := (select count(*) from gboss_phase where w = p_w and guild_id = m.guild_id);
-  if done >= 5 then return g_err('Le boss de la semaine est vaincu : un nouveau boss arrive lundi.'); end if;
+  -- 1.0.33 (3A) : après la phase 5, les phases Ultimes continuent jusqu'à lundi (phase d'après les points, comme E.gbossPhase)
+  done := gb_nph(gb_pts(m.guild_id, p_w), gb_goalw(m.guild_id, p_w));
   return jsonb_build_object('ok', true, 'n', (select count(*) from gboss_hits where user_id = p_user and w = p_w), 'gid', m.guild_id, 'phase', done + 1);
 end $$;
 -- Boss : enregistre l'essai rejoué, retire un essai de la réserve ; phases tombées : kamas au coffre, XP de guilde, trophée.
-create or replace function public.gb_done(p_user uuid, p_w int, p_n int, p_points int, p_raw int, p_lvl int, p_rounds int, p_alive int) returns jsonb language plpgsql security definer set search_path = public
+-- 1.0.33 : p_res / p_eq = ressource du boss et équipements de son donjon (js/gboss.js E.gbossRes, E.gbossEq), gardés avec la vie ;
+-- phases Ultimes (6 et plus) sans kamas ni XP ; chaque phase atteinte et pas encore notée est notée (la vie a pu baisser à la mise à jour).
+drop function if exists public.gb_done(uuid, int, int, int, int, int, int, int);
+create or replace function public.gb_done(p_user uuid, p_w int, p_n int, p_points int, p_raw int, p_lvl int, p_rounds int, p_alive int, p_res text default null, p_eq jsonb default null) returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare m guild_members := g_me(p_user); before bigint; after bigint; goal int; tok real; d0 int; d1 int; p int; g guilds; gx bigint; fst boolean;
+declare m guild_members := g_me(p_user); before bigint; after bigint; goal int; tok real; d1 int; p int; g guilds; gx bigint; fst boolean;
 begin
   if m.user_id is null then return g_err('Rejoins une guilde pour affronter le boss.'); end if;
   perform pg_advisory_xact_lock(hashtext('gboss' || m.guild_id));
   perform pg_advisory_xact_lock(hashtext('gbtok' || p_user::text));
   tok := gb_tok(p_user, m.guild_id);
   if tok < 1 then return g_err('Plus d''essai en réserve : patiente un peu.'); end if;
-  insert into gboss_goal (w, guild_id, goal) values (p_w, m.guild_id, 25000 * greatest(3, g_count(m.guild_id))) on conflict do nothing;
+  insert into gboss_goal (w, guild_id, goal, res, eq) values (p_w, m.guild_id, 15000 * greatest(3, gb_active(m.guild_id)), p_res, p_eq)
+    on conflict (w, guild_id) do update set res = coalesce(gboss_goal.res, excluded.res), eq = coalesce(gboss_goal.eq, excluded.eq);
   goal := gb_goalw(m.guild_id, p_w);
   before := gb_pts(m.guild_id, p_w);
-  if gb_nph(before, goal) >= 5 then return g_err('Le boss de la semaine est vaincu : un nouveau boss arrive lundi.'); end if;
   begin
     insert into gboss_hits (w, guild_id, user_id, n, day, points, raw, lvl, rounds, alive) values (p_w, m.guild_id, p_user, p_n, gb_day(), greatest(0, p_points), greatest(0, p_raw), p_lvl, p_rounds, p_alive);
   exception when unique_violation then return g_err('Essai déjà compté.'); end;
   insert into gboss_charge (user_id, t, at) values (p_user, tok - 1, now()) on conflict (user_id) do update set t = excluded.t, at = excluded.at;
   after := before + greatest(0, p_points);
-  d0 := gb_nph(before, goal); d1 := gb_nph(after, goal);
+  d1 := gb_nph(after, goal);
   perform g_log(m.guild_id, format('%s inflige %s points au boss de la semaine.', pseudo_of(p_user), p_points), false);
   select * into g from guilds where id = m.guild_id;
-  for p in d0 + 1 .. d1 loop
+  for p in 1 .. d1 loop
     insert into gboss_phase (w, guild_id, phase) values (p_w, m.guild_id, p) on conflict do nothing;
+    if not found then continue; end if;
+    if p > 5 then
+      perform g_log(m.guild_id, format('Boss de la semaine : phase Ultime %s tombée ! 30 Poussières de stasis pour chaque membre qui a fait 3 essais.', p - 5));
+      continue;
+    end if;
     perform g_chest(m.guild_id, gb_phase_k(p), format('Boss de la semaine : phase %s tombée', p));
     gx := round(g_need(g.lvl) * 0.02 * p);
     perform g_addxp(m.guild_id, gx);
     if p < 5 then
-      perform g_log(m.guild_id, format('Boss de la semaine : phase %s tombée ! +%s kamas au coffre, +%s XP de guilde, et un coffre pour chaque membre qui a frappé.', p, g_fmt(gb_phase_k(p)), g_fmt(gx)));
+      perform g_log(m.guild_id, format('Boss de la semaine : phase %s tombée ! +%s kamas au coffre, +%s XP de guilde, et un coffre pour chaque membre qui a fait 3 essais.', p, g_fmt(gb_phase_k(p)), g_fmt(gx)));
     else
       perform pg_advisory_xact_lock(hashtext('gbfirst' || p_w));
       fst := not exists (select 1 from guild_trophies where w = p_w and first);
       insert into guild_trophies (guild_id, w, first) values (m.guild_id, p_w, fst) on conflict do nothing;
-      perform g_log(m.guild_id, format('🏆 Boss de la semaine vaincu ! +%s kamas au coffre, +%s XP de guilde et son trophée.%s', g_fmt(gb_phase_k(p)), g_fmt(gx),
+      perform g_log(m.guild_id, format('🏆 Boss de la semaine vaincu ! +%s kamas au coffre, +%s XP de guilde, son trophée et le Coffre du trophée. Il se relève : phases Ultimes jusqu''à lundi.%s', g_fmt(gb_phase_k(p)), g_fmt(gx),
         case when fst then ' Première guilde du serveur à le finir : titre « Avant-garde de guilde » pour ceux qui ont frappé !' else '' end));
     end if;
   end loop;
-  return jsonb_build_object('ok', true, 'pts', after, 'goal', goal, 'done', d1, 'tok', tok - 1, 'every', gb_every(m.guild_id));
+  return jsonb_build_object('ok', true, 'pts', after, 'goal', goal, 'done', d1, 'tok', tok - 1, 'every', gb_every(m.guild_id), 'n', p_n);
 end $$;
 -- Percepteur (monstres) : vérifie que l'attaque est en cours et que ce joueur n'a pas encore tenté.
 create or replace function public.pc_start(p_user uuid, p_id bigint) returns jsonb language plpgsql security definer set search_path = public
@@ -696,9 +736,20 @@ begin
 end $$;
 
 do $$ declare f text; begin
-  foreach f in array array['gb_start(uuid, int)', 'gb_done(uuid, int, int, int, int, int, int, int)', 'pc_start(uuid, bigint)', 'pc_done(uuid, bigint, bigint, boolean)',
+  foreach f in array array['gb_start(uuid, int)', 'gb_done(uuid, int, int, int, int, int, int, int, text, jsonb)', 'pc_start(uuid, bigint)', 'pc_done(uuid, bigint, bigint, boolean)',
     'rd_open(uuid, bigint, jsonb, jsonb, int)', 'rd_def_start(uuid, bigint)', 'rd_def_done(uuid, bigint, boolean, jsonb, int)', 'rd_end_start(uuid, bigint)', 'rd_end_done(bigint, boolean, int)'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
     execute format('grant execute on function public.%s to service_role', f);
   end loop;
+end $$;
+
+-- 1.0.33 : une seule fois, la vie du boss de la semaine en cours passe au nouveau calcul (15 000 par membre actif) :
+-- les guildes qui avaient déjà frappé gardent leurs points ; les phases atteintes sont notées au prochain essai.
+create table if not exists public.gboss_resets (v text primary key, at timestamptz not null default now());
+alter table public.gboss_resets enable row level security;
+do $$ begin
+  if not exists (select 1 from gboss_resets where v = '1.0.33') then
+    update gboss_goal set goal = 15000 * greatest(3, gb_active(guild_id)) where w = gb_week();
+    insert into gboss_resets (v) values ('1.0.33');
+  end if;
 end $$;

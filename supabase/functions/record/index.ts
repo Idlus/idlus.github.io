@@ -164,9 +164,11 @@ async function gboss(db: any, uid: string) {
   const r = E.gbossSim(g.S, def, st.n, g.now, st.phase || 1); // 1.0.30 : la phase en cours (de plus en plus dure)
   if (r.err) return json({ ok: false, err: r.err });
   const lvl = Math.max(1, ...E.team(g.S).map((c: { lvl: number; ren?: number }) => (c.ren ? 200 : c.lvl)));
-  const { data: done, error: e2 } = await db.rpc("gb_done", { p_user: uid, p_w: w, p_n: st.n, p_points: r.points, p_raw: r.raw, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive });
+  // 1.0.33 : ressource du boss et équipements de son donjon pour les coffres (gardés avec la vie du boss de la semaine)
+  const { data: done, error: e2 } = await db.rpc("gb_done", { p_user: uid, p_w: w, p_n: st.n, p_points: r.points, p_raw: r.raw, p_lvl: lvl, p_rounds: r.rounds, p_alive: r.alive, p_res: E.gbossRes(def), p_eq: E.gbossEq(def) });
   if (e2 || !done || done.err) return json({ ok: false, err: (done && done.err) || "serveur indisponible" });
-  return json({ ok: true, gboss: true, boss: def.name, points: r.points, rounds: r.rounds, alive: r.alive, pts: done.pts, goal: done.goal, left: done.left, phase: st.phase || 1, done: done.done, tok: done.tok, every: done.every });
+  // 1.0.33 (6A et 6B) : rapport d'essai (dégâts de chaque héros, mécaniques) ; n et phase permettent de revoir le combat
+  return json({ ok: true, gboss: true, boss: def.name, n: st.n, w, points: r.points, rounds: r.rounds, alive: r.alive, heroes: r.heroes, mech: r.mech, pts: done.pts, goal: done.goal, left: done.left, phase: st.phase || 1, done: done.done, tok: done.tok, every: done.every });
 }
 // ---------- Boss des mondes : un essai contre le boss de tout le serveur ----------
 // deno-lint-ignore no-explicit-any

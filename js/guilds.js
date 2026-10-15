@@ -318,47 +318,83 @@
       <section class="panel"><div class="phead"><h2>Guilde</h2></div><div class="list">${seatLine(true)}</div></section>`;
   }
 
-  /* --- boss de la semaine (12A et 20A : 5 phases, un essai toutes les 25 min, 6 en réserve) --- */
+  /* --- boss de la semaine (12A et 20A : 5 phases ; 1.0.33 « Boss de guilde rééquilibré », choix 1A à 6A de Mathis :
+     un essai toutes les 2 h, 12 en réserve, « Lancer mes essais » ; vie par membre actif ; phases Ultimes ; rapport d'essai et « Revoir le combat ») --- */
   const tok = (b) => E.gbossTok(b.tok, G.exAt || Date.now(), Date.now(), b.every);
+  const phName = (p) => E.gbossPhaseName(p);
+  /* rapport du dernier essai (6A) : points, dégâts de chaque héros, mécaniques ; bouton « Revoir le combat » (6B) */
+  function bossReport() {
+    const r = G.res && G.res.gboss ? G.res : null; if (!r) return "";
+    const B = G.batch; const hs = (r.heroes || []).filter((x) => x.d > 0); const tot = hs.reduce((a, x) => a + x.d, 0) || 1; const top = Math.max(1, ...hs.map((x) => x.d));
+    const best = (G.ex && G.ex.boss && (G.ex.boss.hitters || []).find((x) => x.p === (ON.profile && ON.profile.pseudo))) || null;
+    const head = B && B.n > 1 ? `<b>${B.n} essais · ${fmt(B.pts)} points pour ta guilde</b>` : `<b>${fmt(r.points)} points pour ta guilde</b>`;
+    return `<div class="gbrep"><div class="row between small" style="gap:8px;flex-wrap:wrap">${head}${best ? `<span class="xs muted">ton meilleur essai de la semaine : ${fmt(best.best)}</span>` : ""}</div>
+      <span class="xs muted">${B && B.n > 1 ? "Dernier essai : " : ""}<b>${fmt(r.points)} points</b> en ${r.rounds} tours, ${r.alive} héros debout${r.phase > 1 ? ` · phase ${h(phName(r.phase))} (+${Math.round((E.gbossDmg(r.phase) - 1) * 100)} % de résistance)` : ""}.${(r.mech || []).length ? ` Mécaniques du boss : <b>${r.mech.map(h).join(", ")}</b>.` : ""}</span>
+      ${hs.map((x) => `<div class="gbrow"><span class="xs gbn">${h(x.n)}</span><div class="gbbar"><i style="width:${((x.d / top) * 100).toFixed(1)}%"></i></div><span class="xs num">${Math.round((x.d / tot) * 100)} %</span></div>`).join("")}
+      ${r.n != null && r.w ? `<div class="row"><button class="btn sm" data-act="g-bwatch">Revoir le combat</button><span class="xs muted">rejoué pas à pas avec ta partie</span></div>` : ""}</div>`;
+  }
   /* 1.0.32.9 : la carte du boss (vie, phases, bouton Affronter) sert à l'onglet Boss et à l'accueil de la guilde (home = version courte) */
   function bossCard(home) {
     const b = G.ex && G.ex.boss; if (!b) return home ? `<section class="panel gboss"><div class="empty">Boss de la semaine : chargement…</div></section>` : `<div class="empty">Chargement…</div>`;
     const def = E.gboss(b.w); const M = D().MONSTERS[def.boss] || {};
     const ph = E.gbossPhase(b.pts, b.goal); const t = tok(b); const n = Math.floor(t); const every = b.every || E.GBOSS_EVERY;
-    const r = G.res && G.res.gboss ? G.res : null; const over = ph.p > 5;
-    const segs = E.GBOSS_PHASES.map((_, i) => { const d = i < ph.done, cur = i === ph.done && !over; return `<div class="${d ? "done" : ""}">${cur && ph.cur > 0 ? `<i style="width:${Math.min(100, (ph.cur / ph.need) * 100).toFixed(1)}%"></i>` : ""}<b>${d ? "✓ " : ""}Phase ${i + 1}</b></div>`; }).join("");
-    const nextIn = E.gbossNextIn(t, every);
-    const fight = over ? `<div class="row"><span class="tag good">Boss vaincu ✓</span><span class="xs muted">Un nouveau boss arrive lundi.</span></div>`
-      : `<div class="row"><button class="btn primary" data-act="g-boss" ${!n || G.busy || G.fighting ? "disabled" : ""}>${G.fighting === true ? "Combat en cours…" : n ? `Affronter le boss (${n} en réserve)` : "Pas d'essai en réserve"}</button>
-        <span class="xs muted">${n} essai${n > 1 ? "s" : ""} en réserve (${E.GBOSS_RESERVE} au plus)${nextIn ? ` · le prochain dans ${left(nextIn)}` : ""}</span></div>`;
-    const res = r ? `<span class="small"><b class="num">${fmt(r.points)}</b> points en ${r.rounds} tours · ${r.alive} héros debout</span>` : "";
+    const ult = ph.p > 5;
+    const segs = E.GBOSS_PHASES.map((_, i) => { const d = i < ph.done, cur = i === ph.done; return `<div class="${d ? "done" : ""}">${cur && ph.cur > 0 ? `<i style="width:${Math.min(100, (ph.cur / ph.need) * 100).toFixed(1)}%"></i>` : ""}<b>${d ? "✓ " : ""}Phase ${i + 1}</b></div>`; }).join("");
+    const u0 = Math.max(1, ph.p - 6); // phases Ultimes montrées : la précédente, celle en cours, la suivante
+    const ultBar = ult ? `<div class="gx-ph gx-ult">${[u0, u0 + 1, u0 + 2].map((u) => { const d = u < ph.ult, cur = u === ph.ult; return `<div class="${d ? "done" : ""}">${cur && ph.cur > 0 ? `<i style="width:${Math.min(100, (ph.cur / ph.need) * 100).toFixed(1)}%"></i>` : ""}<b>${d ? "✓ " : ""}Ultime ${u}</b></div>`; }).join("")}</div>` : "";
+    const busy = G.fighting || G.busy; const B = G.batch;
+    const fight = `<div class="row" style="gap:8px;flex-wrap:wrap">${n > 1 ? `<button class="btn primary" data-act="g-boss" data-all="1" ${!n || busy ? "disabled" : ""}>${B && B.run ? `Essai ${B.i} sur ${B.of}…` : `Lancer mes ${n} essais`}</button>` : ""}
+        <button class="btn ${n > 1 ? "" : "primary"}" data-act="g-boss" ${!n || busy ? "disabled" : ""}>${G.fighting === true && !(B && B.run) ? "Combat en cours…" : n === 1 ? "Affronter le boss" : n ? "Un seul essai" : "Pas d'essai en réserve"}</button>
+        ${B && B.run ? `<button class="btn sm" data-act="g-bstop">Arrêter</button>` : ""}
+        <span class="xs muted">${n} essai${n > 1 ? "s" : ""} en réserve (${E.GBOSS_RESERVE} au plus)${E.gbossNextIn(t, every) ? ` · le prochain dans ${left(E.gbossNextIn(t, every))}` : ""}</span></div>`;
     return `<section class="panel gboss"><div class="gbhead">${M.img ? `<img class="gbimg" src="${X().imgM(def.boss)}" alt="">` : ""}<div class="stack grow" style="gap:4px">
         <span class="xs muted">Boss de la semaine · change dans ${left(E.gbossLeft(srvNow()))}</span><h2 style="font-size:24px">${h(def.name)}</h2>
-        <span class="small muted">${over ? "Vaincu ! Un nouveau boss arrive lundi." : `Phase ${ph.p} / 5 : « ${E.GBOSS_PHASE_NAMES[ph.p - 1]} »${ph.p > 1 ? `, +${Math.round((E.gbossDmg(ph.p) - 1) * 100)} % de résistance` : ""}`} · ${h(def.dname)}</span></div></div>
+        <span class="small muted">${ult ? `Vaincu ! Phase ${h(phName(ph.p))}` : `Phase ${ph.p} / 5 : « ${h(phName(ph.p))} »`}${ph.p > 1 ? `, +${Math.round((E.gbossDmg(ph.p) - 1) * 100)} % de résistance` : ""} · ${h(def.dname)}</span></div></div>
       <div class="pad stack">
-        <div class="row between small"><b>Vie du boss</b><span>${over ? `${fmt(b.pts)} points` : `phase ${ph.p} : ${fmt(ph.cur)} / ${fmt(ph.need)} points`}</span></div>
-        <div class="gx-ph">${segs}</div>
-        ${home ? "" : `<span class="xs muted">Un essai toutes les ${every} min. Ils s'accumulent jusqu'à ${E.GBOSS_RESERVE} (${left(E.GBOSS_RESERVE * every * 60000)}) : un joueur qui revient après une pause en a plusieurs d'avance. Tes points cette semaine : <b>${fmt(b.mine)}</b>.</span>`}
-        ${fight}${res}
+        <div class="row between small"><b>Vie du boss</b><span>${ult ? `Ultime ${ph.ult} : ${fmt(ph.cur)} / ${fmt(ph.need)} points` : `phase ${ph.p} : ${fmt(ph.cur)} / ${fmt(ph.need)} points`}</span></div>
+        <div class="gx-ph">${segs}</div>${ultBar}
+        ${ult && !home ? `<span class="xs muted">Le boss est vaincu, mais il se relève jusqu'à lundi : chaque phase Ultime (+8 % de résistance de plus) donne ${E.GBOSS_ULT_DUST} Poussières de stasis aux membres qui ont fait ${E.GBOSS_MIN_TRIES} essais, et fait monter la guilde au classement.</span>` : ""}
+        ${home ? "" : `<span class="xs muted">Un essai toutes les ${left(every * 60000)}. Ils s'accumulent jusqu'à ${E.GBOSS_RESERVE} (${Math.round((E.GBOSS_RESERVE * every) / 60)} h) : une visite par jour suffit, « Lancer mes essais » les joue tous d'un coup. Tes points cette semaine : <b>${fmt(b.mine)}</b> en ${b.tries || 0} essai${(b.tries || 0) > 1 ? "s" : ""}.</span>`}
+        ${fight}${home ? "" : bossReport()}
         ${home ? `<div class="row between"><span class="xs muted">Tes points cette semaine : <b>${fmt(b.mine)}</b></span><button class="btn sm" data-act="g-tab" data-v="boss">Classement et récompenses</button></div>` : ""}
       </div></section>`;
   }
   function bossHtml() {
     const b = G.ex && G.ex.boss; if (!b) return `<div class="empty">Chargement…</div>`;
     const ph = E.gbossPhase(b.pts, b.goal); const s = S(); const lvl = b.lvl || Math.max(...E.team(s).map((c) => (c.ren ? 200 : c.lvl)), 1);
-    const T = ph.T; const names = Object.values(E.GBOSS_CHEST_NAMES);
+    const def = E.gboss(b.w); const res = b.res || def.res || E.gbossRes(def);
+    const T = ph.T; const names = Object.values(E.GBOSS_CHEST_NAMES); const ult = ph.p > 5;
     const phases = E.GBOSS_PHASES.map((_, i) => { const need = T[i] - (i ? T[i - 1] : 0); const c = i < 4 ? E.gbossChest(E.GBOSS_STEPS[i], lvl) : null;
-      return `<div class="li small ${i < ph.done ? "" : "lock"}"><b class="lv">Phase ${i + 1}</b><span class="grow">${big(E.GBOSS_PHASE_K[i])} au coffre · ${i < 4 ? `<span data-tip="${fmt(c.k)} kamas et ${c.dust} Poussières de stasis pour chaque membre qui a frappé">${names[i]}</span>` : "trophée du boss, titre pour la 1re guilde"}<br><span class="xs muted">« ${E.GBOSS_PHASE_NAMES[i]} » · ${fmt(need)} points</span></span>${i < ph.done ? "✓" : ""}</div>`; }).join("");
-    const top = (b.top || []).map((g, i) => `<div class="li small ${g.id === G.me.g.id ? "gme" : ""}"><b class="num lv">${i + 1}</b>${emb(g.ic, g.col, 26)}<span class="grow">${h(g.name)} <span class="xs muted">· niv. ${g.lvl} · ${g.who} membre${g.who > 1 ? "s" : ""}</span></span><b>${g.ph >= 5 ? "vaincu ✓" : `phase ${g.ph + 1}`}</b></div>`).join("") || `<div class="empty">Aucune guilde n'a encore frappé.</div>`;
+      const rw = i < 4 ? `<b>${names[i]}</b> : ${fmt(c.k)} k, ${c.dust} Poussières et ${c.res} ${h(res)}` : `<b>${E.GBOSS_EQ_CHEST}</b> : un équipement du donjon, trophée, titre pour la 1re guilde`;
+      return `<div class="li small ${i < ph.done ? "" : "lock"}"><b class="lv">Phase ${i + 1}</b><span class="grow">${big(E.GBOSS_PHASE_K[i])} au coffre · ${rw}<br><span class="xs muted">« ${E.GBOSS_PHASE_NAMES[i]} » · ${fmt(need)} points</span></span>${i < ph.done ? "✓" : ""}</div>`; }).join("")
+      + `<div class="li small ${ult ? "" : "lock"}"><b class="lv">Ultime</b><span class="grow">${E.GBOSS_ULT_DUST} Poussières par phase, sans fin jusqu'à lundi<br><span class="xs muted">${fmt(Math.floor((b.goal * E.GBOSS_ULT) / 100))} points chacune, +8 % de résistance à chaque fois</span></span>${ult ? `${ph.ult - 1} ✓` : ""}</div>`;
+    const tot = E.GBOSS_STEPS.reduce((a, st) => a + E.gbossChest(st, lvl).k, 0);
+    const top = (b.top || []).map((g, i) => `<div class="li small ${g.id === G.me.g.id ? "gme" : ""}"><b class="num lv">${i + 1}</b>${emb(g.ic, g.col, 26)}<span class="grow">${h(g.name)} <span class="xs muted">· niv. ${g.lvl} · ${g.who} membre${g.who > 1 ? "s" : ""}</span></span><b>${g.ph >= 5 ? (g.ph > 5 ? `Ultime ${g.ph - 5} ✓` : "vaincu ✓") : `phase ${g.ph + 1}`}</b></div>`).join("") || `<div class="empty">Aucune guilde n'a encore frappé.</div>`;
     const last = (b.last || []).length ? `<div class="pad xs muted">Semaine passée : ${b.last.map((g, i) => `${i + 1}. ${h(g.name)}`).join(" · ")}</div>` : "";
-    const hit = (b.hitters || []).map((x, i) => `<div class="li small"><b class="num lv">${i + 1}</b><span class="grow">${X().pname(x.p, x.u)} <span class="xs muted">· ${x.n} essai${x.n > 1 ? "s" : ""} · meilleur ${fmt(x.best)}</span></span><b class="num">${fmt(x.pts)}</b></div>`).join("") || `<div class="empty">Personne n'a encore frappé cette semaine.</div>`;
+    const need = E.GBOSS_MIN_TRIES;
+    const hit = (b.hitters || []).map((x, i) => `<div class="li small"><b class="num lv">${i + 1}</b><span class="grow">${X().pname(x.p, x.u)} <span class="xs muted">· ${x.n} essai${x.n > 1 ? "s" : ""} · meilleur ${fmt(x.best)}</span></span>${x.n >= need ? `<span class="tag good">coffres ✓</span>` : `<span class="tag warn">${x.n} / ${need} essais</span>`}<b class="num">${fmt(x.pts)}</b></div>`).join("") || `<div class="empty">Personne n'a encore frappé cette semaine.</div>`;
     const tro = (b.trophies || []).length ? `<div class="list">${b.trophies.map((x) => { const d2 = E.gboss(x.w); return `<div class="li small">${X().IC("trophee")}<span class="grow">${h(d2.name)}${x.first ? ` <span class="tag good">1re guilde</span>` : ""}</span><span class="xs muted">${since(x.at)}</span></div>`; }).join("")}</div>` : `<div class="empty">Finissez la phase 5 pour gagner le trophée du boss.</div>`;
+    const act = b.active != null ? `vie pour ${b.active} membre${b.active > 1 ? "s" : ""} actif${b.active > 1 ? "s" : ""}${b.members ? ` sur ${b.members}` : ""} (${fmt(b.goal)} points)` : `vie pour ta guilde (${fmt(b.goal)} points)`;
     return `${bossCard()}
-      <div class="grid2g even"><section class="panel"><div class="phead"><h2>Phases</h2><span class="xs muted">vie pour ta guilde (${fmt(b.goal)} points)</span></div><div class="list">${phases}</div><div class="pad xs muted">Chaque phase tombée : des kamas dans le coffre de guilde, de l'XP de guilde et un coffre pour chaque membre qui a frappé. La phase suivante est plus dure.</div></section>
-      <section class="panel"><div class="phead"><h2>Course entre guildes</h2><span class="xs muted">titre « ${h(E.GBOSS_TITLE)} » pour le podium</span></div><div class="list">${top}</div>${last}<div class="pad xs muted">Un essai rapporte environ 300 points avec une bonne équipe. Le boss entier vaut ${fmt(E.GBOSS_PER_MEMBER)} points par membre (au moins ${E.GBOSS_MIN_MEMBERS} comptés) : une guilde qui joue tous les jours le finit en fin de semaine.</div></section></div>
-      <div class="grid2g even"><section class="panel"><div class="phead"><h2>Dans ta guilde</h2></div><div class="list">${hit}</div></section>
+      <div class="grid2g even"><section class="panel"><div class="phead"><h2>Phases</h2><span class="xs muted">${act}</span></div><div class="list">${phases}</div><div class="pad xs muted">Chaque phase tombée : des kamas dans le coffre de guilde, de l'XP de guilde et un coffre pour chaque membre qui a fait au moins ${need} essais dans la semaine. Pour toi, environ ${big(tot)} kamas, ${E.GBOSS_STEPS.reduce((a, st) => a + E.gbossChest(st, lvl).res, 0)} ${h(res)} et un équipement par semaine. La phase suivante est plus dure.<br>Membre actif : partie envoyée en ligne (ou arrivée dans la guilde) depuis moins de ${E.GBOSS_ACTIVE_DAYS} jours. ${fmt(E.GBOSS_PER_MEMBER)} points par membre actif (au moins ${E.GBOSS_MIN_MEMBERS}), comptés à la première frappe de la semaine.</div></section>
+      <section class="panel"><div class="phead"><h2>Course entre guildes</h2><span class="xs muted">titre « ${h(E.GBOSS_TITLE)} » pour le podium</span></div><div class="list">${top}</div>${last}<div class="pad xs muted">Classement aux phases tombées, phases Ultimes comprises, puis aux points. Un essai rapporte environ 300 points avec une bonne équipe de 8 héros : une guilde bien équipée qui joue ses essais tous les jours finit le boss vers le 5e jour.</div></section></div>
+      <div class="grid2g even"><section class="panel"><div class="phead"><h2>Dans ta guilde</h2></div><div class="list">${hit}</div><div class="pad xs muted">Coffres pour les membres qui ont fait au moins ${need} essais dans la semaine : une visite suffit avec la réserve.</div></section>
       <section class="panel"><div class="phead"><h2>Trophées de la guilde</h2></div>${tro}</section></div>
       <p class="xs muted">Le combat est rejoué par le serveur avec ta partie en ligne : le boss est au niveau de ton équipe, ses PV ne baissent pas vraiment, on compte les dégâts (100 points = ses PV normaux). Pas d'idoles ni de seconde chance : même boss pour tout le monde.</p>`;
+  }
+  /* 1.0.33 (6B) : revoir le dernier essai, pas à pas (même hasard que le serveur, avec la partie de cet appareil) */
+  function bossWatch() {
+    const r = G.res; if (!r || r.n == null || !r.w) return;
+    const def = E.gboss(r.w); const W = E.gbossWatch(S(), def, r.n, Date.now(), r.phase || 1); if (W.err) { X().toast(W.err); return; }
+    X().extWatchStart(W, { step: E.gbossWatchStep, back: "guild", res: r, def,
+      html: (w) => `<div class="pagehead combathead"><div><div class="small muted">${X().IC("couronne")} Boss de guilde · essai ${r.n + 1} <span id="wroom"></span></div><h1>${h(def.name)}${r.phase > 1 ? ` · ${h(phName(r.phase))}` : ""}</h1></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap"><span class="seg" data-tip="Vitesse de lecture">${[1, 2, 4].map((v) => `<button data-act="sm-wspd" data-v="${v}" aria-pressed="${(w.spd || 1) === v}">×${v}</button>`).join("")}</span><button class="btn sm" data-act="sm-wskip">Passer</button><button class="btn sm" data-act="sm-wquit">Quitter</button></div></div>
+      <section class="panel combatpanel watchpanel gbw"><div class="pad row between"><b id="gbwPts">0 point</b><span class="xs muted">${r.points} points comptés par le serveur</span></div>
+        <div class="arenasticky"><div class="cstrip"><div class="chalov" id="chalov"></div><span class="cstreak" id="cstreak"></span><span class="ctour" id="ctour"></span></div>
+          <div class="arenawrap"><div class="arena" id="arena"></div></div><div class="ftick" id="turn"></div></div>
+        <div class="chalbar" id="chalbar"></div><div id="await"></div><div class="pad" id="watchEnd"></div><div class="log" id="flog"></div><div hidden><span id="fres"></span><div id="floot"></div></div></section>`,
+      head: (w) => { const F = w.W.F; const el = document.getElementById("wroom"); if (el && F) el.textContent = `· tour ${Math.min(F.round || 1, E.GBOSS_ROUNDS)} sur ${E.GBOSS_ROUNDS}`; const p = document.getElementById("gbwPts"); if (p) p.textContent = `${fmt(E.gbossPts(w.W))} points`; },
+      end: (w) => { const R = E.gbossResult(w.W); return `<div class="row between" style="gap:10px;flex-wrap:wrap"><span><b>${fmt(R.points)} points en ${R.rounds} tours</b><br><span class="small muted">${R.alive} héros debout.${R.points !== r.points ? " Ta partie a changé depuis l'essai : le serveur avait compté " + fmt(r.points) + " points." : ""}</span></span><button class="btn sm primary" data-act="sm-wquit">Retour à la guilde</button></div>`; } });
   }
 
   /* --- Percepteurs (7A, 8A, 9B, 10A, 11A, 19A) --- */
@@ -563,21 +599,30 @@
     if (!/^g-/.test(a)) return;
     switch (a) {
       case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; G.sureBuy = null; G.atk = null; if (d.v !== "others") G.view = null; paint(); if (d.v === "boss" || d.v === "percos" || d.v === "home") loadEx(); if (d.v === "others") loadList(); if (d.v === "coffre" || d.v === "upg") load(); return;
+      case "g-bwatch": bossWatch(); return;
+      case "g-bstop": if (G.batch) G.batch.stop = true; return;
       case "g-boss": case "g-def": {
         if (G.fighting) return;
         if (!mine()) { solo(); return; }
-        G.fighting = a === "g-def" ? +d.g : true; G.res = null; paint();
+        /* 1.0.33 (1A) : « Lancer mes essais » joue toute la réserve, un essai après l'autre (le serveur en accepte un toutes les 5 s) */
+        const all = a === "g-boss" && d.all && G.ex && G.ex.boss ? Math.floor(tok(G.ex.boss)) : 1;
+        G.fighting = a === "g-def" ? +d.g : true; G.res = null; G.batch = a === "g-boss" ? { n: 0, pts: 0, i: 1, of: all, run: all > 1 } : null; paint();
         try { await X().onPush(); } catch (e) {} // le serveur rejoue avec la partie en ligne
-        const r = await ON.submitGuild(a === "g-def" ? { perco: +d.g } : { gboss: 1 });
-        G.fighting = false;
-        if (r.net) X().toast("Pas de connexion au serveur : réessaie dans un moment.");
-        else if (!r.ok) X().toast(r.err || "Refusé par le serveur.");
-        else {
+        let was = G.ex && G.ex.boss ? E.gbossPhase(G.ex.boss.pts, G.ex.boss.goal).done : 0;
+        for (let i = 0; i < all; i++) {
+          if (i) { await new Promise((ok) => setTimeout(ok, 5200)); if (G.batch && G.batch.stop) break; if (G.batch) { G.batch.i = i + 1; paint(); } }
+          const r = await ON.submitGuild(a === "g-def" ? { perco: +d.g } : { gboss: 1 });
+          if (r.net) { X().toast("Pas de connexion au serveur : réessaie dans un moment."); break; }
+          if (!r.ok) { X().toast(r.err || "Refusé par le serveur."); break; }
           G.res = Object.assign({ id: +d.g || 0 }, r);
-          if (r.gboss && G.ex && G.ex.boss) { const b = G.ex.boss; const was = E.gbossPhase(b.pts, b.goal).done; Object.assign(b, { pts: r.pts, goal: r.goal || b.goal, tok: r.tok != null ? r.tok : b.tok, every: r.every || b.every }); G.exAt = Date.now();
-            const now2 = E.gbossPhase(b.pts, b.goal).done; if (now2 > was) X().toast(now2 >= 5 ? "🏆 Boss de la semaine vaincu ! Trophée pour la guilde." : `Phase ${now2} tombée ! Des kamas dans le coffre et un coffre pour chaque membre qui a frappé.`, "rare"); }
-          X().toast(r.gboss ? `Boss de la semaine : ${fmt(r.points)} points pour ta guilde !` : r.win ? "Percepteur défendu !" : "Défense ratée : un autre membre peut encore tenter.", r.win || r.gboss ? "rare" : undefined);
+          if (r.gboss && G.batch) { G.batch.n++; G.batch.pts += r.points || 0; }
+          if (r.gboss && G.ex && G.ex.boss) { const b = G.ex.boss; Object.assign(b, { pts: r.pts, goal: r.goal || b.goal, tok: r.tok != null ? r.tok : b.tok, every: r.every || b.every, mine: (b.mine || 0) + (r.points || 0), tries: (b.tries || 0) + 1 }); G.exAt = Date.now();
+            const now2 = E.gbossPhase(b.pts, b.goal).done; if (now2 > was) X().toast(now2 > 5 ? `Phase Ultime ${now2 - 5} tombée ! ${E.GBOSS_ULT_DUST} Poussières pour chaque membre qui a fait ${E.GBOSS_MIN_TRIES} essais.` : now2 === 5 ? "🏆 Boss de la semaine vaincu ! Trophée et Coffre du trophée. Il se relève : phases Ultimes jusqu'à lundi." : `Phase ${now2} tombée ! Des kamas dans le coffre et un coffre pour chaque membre qui a fait ${E.GBOSS_MIN_TRIES} essais.`, "rare"); was = now2; }
+          if (all === 1) X().toast(r.gboss ? `Boss de la semaine : ${fmt(r.points)} points pour ta guilde !` : r.win ? "Percepteur défendu !" : "Défense ratée : un autre membre peut encore tenter.", r.win || r.gboss ? "rare" : undefined);
+          else paint();
         }
+        if (all > 1 && G.batch && G.batch.n) X().toast(`Boss de la semaine : ${G.batch.n} essais, ${fmt(G.batch.pts)} points pour ta guilde !`, "rare");
+        G.fighting = false; if (G.batch) G.batch.run = false;
         await loadEx(); return; }
       /* 1.0.30 : attaques entre guildes (rejouées par la fonction serveur record, supabase/gboss.sql rd_*) */
       case "g-rgo": case "g-rdef": {

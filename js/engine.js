@@ -1295,6 +1295,8 @@
   };
   const flog = (F, txt, cls = "") => { F.log.push({ txt, cls }); if (F.log.length > 40) F.log.shift(); };
   const alive = (F, side) => F.ents.filter((e) => e.alive && e.side === side);
+  /* 1.0.33 : vie de référence des mécaniques (soins en %, totems, bombes, âme liée, boucliers) : le boss de guilde a ses PV multipliés par 1 000 (E.gbossSim pose hpRef = ses PV normaux) */
+  const hpR = (e) => e.hpRef || e.hpMax;
   /* 0.1.44 : Kolizéum. Un héros est « joueur » côté c, ou n'importe où dans un combat d'équipes (F.pvp) ;
      le glyphe du Féca et l'érosion y sont propres à chaque équipe (tm 0 ou 1). */
   const isHero = (F, t) => t.side === "c" || !!(F && F.pvp && t.st);
@@ -1870,8 +1872,8 @@
           ts.forEach((t) => { if (f.k === "dot") t.dots.push({ v: base * 0.5, turns: f.t || 2, el, src: e.name }); else { const d = dealDamage(F, e, t, base, el); hits.push(`${t.name} : −${d}`); if (f.k === "drain") doHeal(e, d / 2, F); if (e.vamp) doHeal(e, d * e.vamp, F); } });
           parts.push(f.k === "dot" ? `poison sur ${ts.map((t) => t.name).join(", ")}` : hits.join(", "));
         } else if (f.k === "heal" || f.k === "healpct") {
-          const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (!t) continue; const h = doHeal(t, f.k === "healpct" ? t.hpMax * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
-        } else if (f.k === "shield") { e.shield = Math.max(e.shield, Math.round(e.hpMax * Math.min(20, f.pct) / 100)); parts.push("bouclier");
+          const t = alive(F, "m").sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (!t) continue; const h = doHeal(t, f.k === "healpct" ? hpR(t) * Math.min(25, f.v) / 100 : e.dmg * 1.4, F); if (h) parts.push(`soigne ${t.name} (+${h})`);
+        } else if (f.k === "shield") { e.shield = Math.max(e.shield, Math.round(hpR(e) * Math.min(20, f.pct) / 100)); parts.push("bouclier");
         } else if (f.k === "buff") { e.buffs.push({ mdmg: 20, turns: 2 }); parts.push("se renforce");
         } else if (f.k === "apdrain") { const t = pick(targets); if (resists(t, "epa")) continue; t.paLoss = Math.min(2, (t.paLoss || 0) + 1); parts.push(`−1 PA à ${t.name}`);
         } else if (f.k === "weaken") { const t = pick(targets); t.debuffs.push({ weak: 15, turns: 1 }); parts.push(`affaiblit ${t.name}`);
@@ -1896,8 +1898,8 @@
   /* rôles des monstres : soin, bouclier, invocation */
   const roleTurn = (S, F, e) => {
     e.rt = (e.rt || 0) + 1;
-    if (e.role === "soigneur" && e.rt % 2 === 0) { const t = alive(F, "m").filter((m) => m.hp < m.hpMax * 0.9 && !m.fake).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (t) { const h = doHeal(t, t.hpMax * 0.1, F); if (h) flog(F, `${e.name} soigne ${t.name} (+${h}).`, "m"); } }
-    if (e.role === "protect" && e.rt % 3 === 1) { alive(F, "m").forEach((m) => { m.shield = Math.max(m.shield || 0, Math.round(m.hpMax * 0.1)); }); flog(F, `${e.name} protège ses alliés d'un bouclier.`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Protection" }); }
+    if (e.role === "soigneur" && e.rt % 2 === 0) { const t = alive(F, "m").filter((m) => m.hp < m.hpMax * 0.9 && !m.fake).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (t) { const h = doHeal(t, hpR(t) * 0.1, F); if (h) flog(F, `${e.name} soigne ${t.name} (+${h}).`, "m"); } }
+    if (e.role === "protect" && e.rt % 3 === 1) { alive(F, "m").forEach((m) => { m.shield = Math.max(m.shield || 0, Math.round(hpR(m) * 0.1)); }); flog(F, `${e.name} protège ses alliés d'un bouclier.`, "m"); F.fx.push({ seq: F.seq, k: "buff", t: F.ents.indexOf(e), txt: "Protection" }); }
     if (e.role === "invoc" && e.rt % 3 === 0 && (e.invN || 0) < 3 && alive(F, "m").length < 10) { e.invN = (e.invN || 0) + 1; const m = spawnMon(F, e.base || e.key, e.lvl - 5, { fake: true, name: `${e.name} (invoqué)` }); m.hpMax = m.hp = Math.round(m.hpMax * 0.35); m.dmg *= 0.5; flog(F, `${e.name} invoque un allié !`, "m"); }
   };
   const ELS4 = ["t", "f", "e", "a"];
@@ -1906,13 +1908,13 @@
     const say = (txt, tag) => { flog(F, txt, "m"); if (tag) F.fx.push({ seq: F.seq, k: "buff", t: ei, txt: tag }); };
     const hitAll = (list, mult) => list.forEach((h) => { const d = dealDamage(F, e, h, e.dmg * mult * rf(0.9, 1.1), e.el === "n" ? null : e.el); if (!h.alive) flog(F, `${h.name} est à terre (−${d}).`, "ko"); });
     const victim = (list) => (list.length ? pick(list) : null);
-    if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, e.hpMax * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: ei });
+    if (e.phase2 && !e.p2done && e.hp < e.hpMax * 0.3) { e.p2done = true; doHeal(e, hpR(e) * 0.2, F); flog(F, `${e.name} entre dans sa seconde phase : il se régénère et appelle des renforts !`, "m"); F.fx.push({ seq: F.seq, k: "phase", t: ei });
       if (F.dungeonId) for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl - 3); }
     if (has("enrage") && !e.enraged && e.hp < e.hpMax * 0.5) { e.enraged = true; e.dmg *= 1.4; e.debuffs.push({ vuln: 15, turns: 999 }); say(`${e.name} entre dans une rage folle !`, "Rage !"); }
-    if (has("shield") && e.shieldPhase === 1 && e.hp < e.hpMax * 0.5) { e.shieldPhase = 2; e.shield += Math.round(e.hpMax * 0.2); say(`${e.name} se couvre d'une carapace !`, "Carapace"); }
+    if (has("shield") && e.shieldPhase === 1 && e.hp < e.hpMax * 0.5) { e.shieldPhase = 2; e.shield += Math.round(hpR(e) * 0.2); say(`${e.name} se couvre d'une carapace !`, "Carapace"); }
     if (has("summon")) {
       const minions = alive(F, "m").filter((m) => m.minion && !m.fake);
-      if (minions.length) { const h = doHeal(e, e.hpMax * 0.04, F); if (h) flog(F, `${e.name} est soigné par ses serviteurs (+${h}).`, "m"); }
+      if (minions.length) { const h = doHeal(e, hpR(e) * 0.04, F); if (h) flog(F, `${e.name} est soigné par ses serviteurs (+${h}).`, "m"); }
       if (t % 3 === 0 && minions.length < 3 && F.dungeonId) { const m = spawnMon(F, mobKey(F, e), e.lvl - 3); flog(F, `${e.name} appelle ${m.name} en renfort !`, "m"); }
     }
     if (has("abordage") && t % 4 === 0 && alive(F, "m").length < 9) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl - 3); say(`${e.name} crie « À l'abordage ! » : deux pirates arrivent.`, "Abordage"); }
@@ -1922,7 +1924,7 @@
     if (has("miasmes")) { const p = Math.min(0.05, 0.01 + 0.005 * t); heroesOf(F).forEach((h) => dealDamage(F, null, h, h.hpMax * p, null)); flog(F, `Les miasmes de ${e.name} rongent l'équipe (−${Math.round(p * 100)} % des PV).`, "m"); }
     if ((has("devoreur") || has("appetit") || has("banquet")) && t % 3 === 0 && (has("banquet") || e.hp < e.hpMax * 0.9)) {
       const m = alive(F, "m").find((x) => x.minion && !x.totem && !x.bomb && !x.linked);
-      if (m) { m.hp = 0; m.alive = false; const h = doHeal(e, e.hpMax * 0.15, F); if (has("banquet")) e.dmg *= 1.1; say(`${e.name} dévore ${m.name} (+${h} PV${has("banquet") ? ", +10 % de dégâts" : ""}) !`, "Festin"); }
+      if (m) { m.hp = 0; m.alive = false; const h = doHeal(e, hpR(e) * 0.15, F); if (has("banquet")) e.dmg *= 1.1; say(`${e.name} dévore ${m.name} (+${h} PV${has("banquet") ? ", +10 % de dégâts" : ""}) !`, "Festin"); }
     }
     if (has("brise") && t % 3 === 0 && alive(F, "c").some((h) => h.shield > 0)) { alive(F, "c").forEach((h) => (h.shield = 0)); say(`${e.name} brise les boucliers de l'équipe !`, "Brise-garde"); }
     if (has("aspiration") && t % 3 === 0) { const sum = alive(F, "c").reduce((a, h) => a + (h.shield || 0), 0); if (sum > 0) { alive(F, "c").forEach((h) => (h.shield = 0)); const h = doHeal(e, sum, F); say(`${e.name} aspire les boucliers de l'équipe (+${h} PV) !`, "Aspiration"); } }
@@ -1944,13 +1946,13 @@
     if (has("dore") && t % 4 === 2 && heroesOf(F).length > 1) { const h = pick(heroesOf(F)); h.gold = 2; say(`${e.name} change ${h.name} en or pour 2 tours.`, "Toucher doré"); }
     if (has("distorsion") && t % 4 === 0) { heroesOf(F).forEach((h) => { for (const k in h.cd) if (h.cd[k] > 0) h.cd[k]++; if (!resists(h, "epa")) h.paLoss = Math.max(h.paLoss || 0, 1); }); say(`${e.name} distord le temps : recharges rallongées et −1 PA pour l'équipe.`, "Distorsion"); }
     if (has("frenesie") && t % 4 === 0) e.extraAtk = 1;
-    if (has("totems") && (t === 1 || (t % 6 === 0 && !alive(F, "m").some((m) => m.totem)))) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, totem: true, name: "Totem", hp: e.hpMax * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} dresse deux totems : il est invulnérable tant qu'ils tiennent debout !`, "Totems"); }
-    if (has("liens") && !e.linkDone) { e.linkDone = true; spawnMon(F, mobKey(F, e), e.lvl, { fake: true, linked: true, name: "Âme liée", hp: e.hpMax * 0.3 }); say(`${e.name} lie son âme à un serviteur : les dégâts sont partagés.`, "Âmes liées"); }
+    if (has("totems") && (t === 1 || (t % 6 === 0 && !alive(F, "m").some((m) => m.totem)))) { for (let i = 0; i < 2; i++) spawnMon(F, mobKey(F, e), e.lvl, { fake: true, totem: true, name: "Totem", hp: hpR(e) * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} dresse deux totems : il est invulnérable tant qu'ils tiennent debout !`, "Totems"); }
+    if (has("liens") && !e.linkDone) { e.linkDone = true; spawnMon(F, mobKey(F, e), e.lvl, { fake: true, linked: true, name: "Âme liée", hp: hpR(e) * 0.3 }); say(`${e.name} lie son âme à un serviteur : les dégâts sont partagés.`, "Âmes liées"); }
     if (has("inventions")) {
       alive(F, "m").filter((m) => m.bomb).forEach((b) => { b.fuse--; if (b.fuse <= 0) { b.hp = 0; b.alive = false; flog(F, `La bombe de ${e.name} explose !`, "m"); hitAll(heroesOf(F), 2.5); } else flog(F, `Une bombe va exploser dans ${b.fuse} tour${b.fuse > 1 ? "s" : ""}.`, "m"); });
-      if (t % 4 === 1) { spawnMon(F, mobKey(F, e), e.lvl, { fake: true, bomb: true, fuse: 3, name: "Bombe", hp: e.hpMax * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} pose une bombe : détruisez-la avant 3 tours !`, "Bombe"); }
+      if (t % 4 === 1) { spawnMon(F, mobKey(F, e), e.lvl, { fake: true, bomb: true, fuse: 3, name: "Bombe", hp: hpR(e) * 0.06, attacks: 0, dmg: 0 }); say(`${e.name} pose une bombe : détruisez-la avant 3 tours !`, "Bombe"); }
     }
-    if (has("double") && !e.isDouble && !e.doubled && e.hp < e.hpMax * 0.5) { e.doubled = true; const m = spawnMon(F, e.key, e.lvl, { fake: true, isDouble: true, name: `Double de ${e.name}`, hp: e.hpMax * 0.4, dmg: e.dmg * 0.7, mech: M.filter((x) => x !== "double"), mturn: 0 }); m.attacks = e.attacks; say(`${e.name} se dédouble !`, "Dédoublement"); }
+    if (has("double") && !e.isDouble && !e.doubled && e.hp < e.hpMax * 0.5) { e.doubled = true; const m = spawnMon(F, e.key, e.lvl, { fake: true, isDouble: true, name: `Double de ${e.name}`, hp: hpR(e) * 0.4, dmg: e.dmg * 0.7, mech: M.filter((x) => x !== "double"), mturn: 0 }); m.attacks = e.attacks; say(`${e.name} se dédouble !`, "Dédoublement"); }
     if ((has("rebours") || has("horloge")) && !e.isDouble) {
       if (F.round >= 20) { heroesOf(F).concat(alive(F, "c").filter((h) => h.summon)).forEach((h) => { h.hp = 0; h.alive = false; killed(F, h); }); say(`${e.name} : le temps est écoulé, l'équipe est anéantie !`, "Temps écoulé"); return true; }
       if (F.round >= 15) say(`${e.name} : plus que ${20 - F.round} tour${20 - F.round > 1 ? "s" : ""} avant l'anéantissement !`);
