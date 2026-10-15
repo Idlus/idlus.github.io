@@ -21,9 +21,11 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.2.9.1";
+const GAME_VERSION = "1.2.9.2";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.2.9.2", name: "Nouvelle stratégie réparée", items: [
+    "Sorts & stratégies : le bouton « + Nouvelle stratégie » enregistre de nouveau tes sorts. Il partageait son nom avec les jeux d'idoles et ne créait rien." ] },
   { v: "1.2.9.1", name: "Reliques au bon tour", items: [
     "L'Ascension : les effets « à chaque tour » des reliques (PA du tour, Bottes de Mercure, +1 PA au premier tour…) arrivent au bon tour ; avant, ils avaient un tour de retard. L'équilibrage reste le même (vérifié par simulation).",
     "L'Ascension : recharger la page pendant un combat ne donne plus deux fois les Fragments d'une relique et ne fait plus perdre les Bottes du Phénix ni les PA du Talisman du Sursis.",
@@ -9499,8 +9501,8 @@ document.addEventListener("click", (ev) => {
     case "idols": idolSheet(); return;
     case "idoltog": { const r = E.toggleIdol(S, d.id); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
     case "idolclear": E.clearIdols(S); dirty = true; idolSheet(); break;
-    case "idolpsave": E.savePreset(S, +d.i); dirty = true; toast(`Jeu ${+d.i + 1} enregistré : ${S.idols.active.map((x) => E.IDOLS[x].name).join(", ")}.`); idolSheet(); return;
-    case "idolpload": { const r = E.loadPreset(S, +d.i); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
+    case "idolpsave": E.saveIdolPreset(S, +d.i); dirty = true; toast(`Jeu ${+d.i + 1} enregistré : ${S.idols.active.map((x) => E.IDOLS[x].name).join(", ")}.`); idolSheet(); return;
+    case "idolpload": { const r = E.loadIdolPreset(S, +d.i); if (r) { toast(r); return; } dirty = true; idolSheet(); break; }
     case "archis": archiSheet(); return;
     case "aztab": ui.az = d.v; archiSheet(); return;
     case "azf": ui.azf = d.v; archiSheet(); return;

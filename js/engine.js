@@ -3701,7 +3701,7 @@
     overTake: "reprendre un objet du trop-plein", overBreak: "briser un objet du trop-plein", overBreakAll: "vider le trop-plein", breakDupes: "briser les doublons",
     saveGear: "enregistrer un équipement", applyGear: "porter un équipement enregistré", deleteGear: "supprimer un équipement enregistré",
     applyBuild: "appliquer un build partagé", applyAuto: "réglages du tri automatique",
-    savePreset: "enregistrer un préréglage", loadPreset: "charger un préréglage", applyPreset: "appliquer un préréglage", deletePreset: "supprimer un préréglage",
+    savePreset: "enregistrer une stratégie de sorts", saveIdolPreset: "enregistrer un jeu d'idoles", loadIdolPreset: "charger un jeu d'idoles", applyPreset: "appliquer un préréglage", deletePreset: "supprimer un préréglage",
     saveComp: "enregistrer une composition", applyComp: "appliquer une composition", delComp: "supprimer une composition", setZonePreset: "préréglage par zone",
     // chasse, donjons, combat
     startHunt: "partir chasser", stopHunt: "arrêter de chasser", enterDungeon: "entrer en donjon", leaveDungeon: "quitter le donjon", stopChain: "arrêter l'enchaînement de donjons",

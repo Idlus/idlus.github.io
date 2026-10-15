@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.2.9.2 « Nouvelle stratégie réparée »
+
+Le bouton « + Nouvelle stratégie » (Héros › Sorts & stratégies) ne créait rien : js/idols.js redéfinissait `E.savePreset` / `E.loadPreset` pour les jeux d'idoles et écrasait la version des stratégies de sorts (js/engine.js). Les fonctions des idoles s'appellent maintenant `E.saveIdolPreset` / `E.loadIdolPreset`. Au chargement, `S.idols.presets` est ramené à 3 jeux (les anciens clics y rangeaient un jeu fantôme au numéro du héros).
+
 ## 1.2.9.1 « Reliques au bon tour »
 
 Choix de Mathis après l'audit (1A 2A 3A 4A 5B 6A). `E.roundHook(F)` dans `E.step` (js/engine.js) juste après `newRound` : L'Ascension y branche `roundFx`, les effets du tour arrivent avant le premier à jouer. `E.relCommit` (js/reliques.js) : Fragments, Phénix, Glouton et PA du Talisman gagnés en combat sont gardés dans `W.rel` et appliqués au début de `E.ascApply`. Anneau du Change 20 → 7 %. `E.idHealIn(t, F)` : l'Érosion expire (`ero >= F.round`). `E.percoSim` vide `S.ch.pend`. `autoPickMs` retiré : en Auto le choix se fait seul, en Manuel la tour attend. Simulation 30 × 20 montées, Normal et Difficile : médianes inchangées (32 / 23 à la 1re montée).

@@ -97,8 +97,11 @@
     A.push(id); return null;
   };
   E.clearIdols = (S) => { st(S).active = []; };
-  E.savePreset = (S, i, name) => { const P = st(S).presets; P[i] = { name: name || P[i] && P[i].name || `Jeu ${i + 1}`, ids: st(S).active.slice() }; };
-  E.loadPreset = (S, i) => { const P = st(S).presets[i]; if (!P) return "Préréglage vide."; st(S).active = P.ids.filter((id) => E.IDOLS[id] && st(S).own[id]); return null; };
+  // 1.2.9.x : noms propres aux idoles (E.savePreset / E.loadPreset étaient déjà ceux des stratégies de sorts et les écrasaient)
+  E.saveIdolPreset = (S, i, name) => { const P = st(S).presets; P[i] = { name: name || P[i] && P[i].name || `Jeu ${i + 1}`, ids: st(S).active.slice() }; };
+  E.loadIdolPreset = (S, i) => { const P = st(S).presets[i]; if (!P) return "Préréglage vide."; st(S).active = P.ids.filter((id) => E.IDOLS[id] && st(S).own[id]); return null; };
+  /* les anciens clics sur « + Nouvelle stratégie » rangeaient un jeu d'idoles fantôme au numéro du héros : on ne garde que les 3 jeux */
+  { const d0 = E.deserialize; if (d0) E.deserialize = (txt) => { const S = d0(txt); try { if (S && S.idols && Array.isArray(S.idols.presets) && S.idols.presets.length > 3) S.idols.presets.length = 3; } catch (e) {} return S; }; }
   /* idoles qui comptent pour un combat : celles qui font doublon avec un modificateur de stasis sont ignorées */
   E.idolsFor = (S, dungeon) => { const mods = dungeon && dungeon.mods || []; return st(S).active.filter((id) => E.IDOLS[id] && !(E.IDOLS[id].dup && mods.includes(E.IDOLS[id].dup))); };
   E.idolScore = (S, dungeon, ids) => (ids || E.idolsFor(S, dungeon)).reduce((a, id) => a + E.IDOLS[id].score, 0);

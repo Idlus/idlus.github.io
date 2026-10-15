@@ -208,7 +208,7 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   assert.ok(E.toggleIdol(S, "hadibel"), "7e idole refusée"); assert.strictEqual(S.idols.active.length, 6, "6 actives");
   assert.strictEqual(E.idolScore(S, null), 40 + 10 + 15 + 15 + 15 + 15, "score 110"); assert.strictEqual(E.idolBonus(S, null), 55, "+55 % en chasse"); assert.strictEqual(E.idolBonus(S, { mods: [] }), 30, "+30 % au plafond du donjon");
   assert.strictEqual(E.idolScore(S, { mods: ["nombreux"] }), 95, "Farle ne compte pas avec le modificateur Nombreux");
-  E.savePreset(S, 0, "Test"); E.clearIdols(S); assert.strictEqual(S.idols.active.length, 0, "tout retiré"); assert.strictEqual(E.loadPreset(S, 0), null, "jeu rechargé"); assert.strictEqual(S.idols.active.length, 6, "6 idoles rechargées"); assert.ok(E.loadPreset(S, 2), "jeu vide");
+  E.saveIdolPreset(S, 0, "Test"); E.clearIdols(S); assert.strictEqual(S.idols.active.length, 0, "tout retiré"); assert.strictEqual(E.loadIdolPreset(S, 0), null, "jeu rechargé"); assert.strictEqual(S.idols.active.length, 6, "6 idoles rechargées"); assert.ok(E.loadIdolPreset(S, 2), "jeu vide");
   // en combat : Walet double les PV des monstres, Farle ajoute un monstre, Ougah annule les soins
   const seed0 = seed; E.clearIdols(S); E.startHunt(S, firstSub); E.startFight(S); const F0 = S.fight; const hp0 = F0.ents.filter((e) => e.side === "m").map((e) => e.hpMax); S.fight = null; S.hunting = false;
   seed = seed0; E.toggleIdol(S, "walet"); E.toggleIdol(S, "farle"); E.startHunt(S, firstSub); E.startFight(S); const F1 = S.fight; const hp1 = F1.ents.filter((e) => e.side === "m").map((e) => e.hpMax);

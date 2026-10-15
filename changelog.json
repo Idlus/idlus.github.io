@@ -1,6 +1,13 @@
 {
-  "version": "1.2.9.1",
+  "version": "1.2.9.2",
   "versions": [
+    {
+      "v": "1.2.9.2",
+      "name": "Nouvelle stratégie réparée",
+      "items": [
+        "Sorts & stratégies : le bouton « + Nouvelle stratégie » enregistre de nouveau tes sorts. Il partageait son nom avec les jeux d'idoles et ne créait rien."
+      ]
+    },
     {
       "v": "1.2.9.1",
       "name": "Reliques au bon tour",
