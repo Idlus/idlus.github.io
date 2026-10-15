@@ -134,19 +134,62 @@
   }
 
   /* ---------- le combat ---------- */
+  /* le combat en face à face (choix de Mathis) : les monstres en face, ton héros et ses alliés au premier plan,
+     l'ordre de jeu en haut, les sorts en bas ; les coups partent en projectiles et les dégâts s'envolent */
+  const imgOf = (e) => (e.side === "c" && !e.summon ? X().lookLocal(e.cls, (S().chars[0] || {}).sex, 0) : e.img ? `assets/m/${e.img}.png` : monImg(e.key || e.base));
+  function spots(F) {
+    const mob = window.innerWidth < 600; const P = [];
+    const foes = [], al = []; F.ents.forEach((e, i) => (e.side === "m" ? foes : al).push(i));
+    foes.sort((a, b) => !!F.ents[b].boss - !!F.ents[a].boss);
+    const nf = foes.length; const two = nf > (mob ? 3 : 4);
+    foes.forEach((ei, k) => { const r = two ? k % 2 : 0; const j = two ? Math.floor(k / 2) : k; const cols = two ? Math.ceil(nf / 2) : nf;
+      const x0 = mob ? 18 : 50, x1 = mob ? 84 : 90; const x = cols > 1 ? x0 + (x1 - x0) * j / (cols - 1) + (r ? (mob ? 6 : 4) : 0) : (x0 + x1) / 2;
+      P[ei] = { x, y: (mob ? 44 : 40) + (r ? (mob ? 13 : 16) : 0) + (two ? 0 : (j % 2) * 4), z: 10 - r, s: (F.ents[ei].boss ? 1.8 : 1.45) * (mob ? 0.8 : 1) }; });
+    al.forEach((ei, k) => { const e = F.ents[ei];
+      P[ei] = k === 0 && !e.summon ? { x: mob ? 22 : 14, y: mob ? 6 : 8, z: 30, s: mob ? 1.45 : 1.6 } : { x: (mob ? 46 : 28) + (k - 1) * (mob ? 16 : 9), y: (mob ? 10 : 14) + ((k - 1) % 2) * 6, z: 25 - k, s: 0.95 }; });
+    return P;
+  }
   function arenaHtml(s) {
     const W = st.live; if (!W) return "";
-    const F = W.F; const brume = W.rule === "brouillard"; const aw = E.ascAwait(W);
-    const ent = (e, i) => { const pc = e.hpMax ? Math.max(0, e.hp / e.hpMax) : 0; const st0 = W.start ? W.start[i] : 1;
-      const img = e.side === "c" && !e.summon ? X().lookLocal(e.cls, (S().chars[0] || {}).sex, 0) : e.img ? `assets/m/${e.img}.png` : monImg(e.key || e.base);
-      const who = e.side === "c" ? (e.summon ? (e.recruit !== undefined ? "Recrue" : "Âme invoquée") : "Toi") : h(e.name);
-      const pickable = e.side === "m" && e.alive && aw; const on = pickable && i === tgtOf(W);
-      return `<div class="as-ent ${e.alive ? "" : "ko"} ${e.side === "c" && e.summon && e.recruit === undefined ? "soul" : ""} ${pickable ? "pick" : ""} ${on ? "tgt" : ""}" ${pickable ? `data-act="as-tgt" data-i="${i}" role="button" aria-label="Viser ${h(e.name)}"` : ""}><img src="${img}" alt="" onerror="this.style.visibility='hidden'"><b class="xs">${who}</b>
-        <span class="as-hp ${e.side === "c" ? "ally" : ""}">${e.side === "m" && brume ? `<i style="width:100%;opacity:.25"></i>` : `<i style="width:${Math.round(pc * 100)}%"></i>${e.side === "m" && st0 < 1 ? `<s style="left:${Math.round(st0 * 100)}%;width:${Math.round((1 - st0) * 100)}%"></s>` : ""}`}</span></div>`; };
-    const allies = F.ents.map((e, i) => (e.side === "c" ? ent(e, i) : "")).join(""); const foes = F.ents.map((e, i) => (e.side === "m" ? ent(e, i) : "")).join("");
-    const log = (F.log || []).slice(-5).map((l) => `<span>${h(l.txt)}</span>`).join("");
-    return `<div class="row between"><b>${h(F.label || "")}</b><span class="row">${W.rule ? ruleTag(W.rule) : ""}<span class="tag soft">Tour ${F.round}</span></span></div>
-      <div class="as-arena"><div class="as-side">${allies}</div><span class="as-vs">VS</span><div class="as-side">${foes}</div></div>${barHtml(W, aw)}<div class="as-log">${log}</div>`;
+    const F = W.F; const brume = W.rule === "brouillard"; const aw = E.ascAwait(W); const P = spots(F);
+    const cur = aw ? aw.ei : F.order && F.oi > 0 ? F.order[F.oi - 1] : -1; const tg = aw ? tgtOf(W) : -1;
+    const ent = (e, i) => { const pc = e.hpMax ? Math.max(0, e.hp / e.hpMax) : 0; const st0 = W.start ? W.start[i] : 1; const p = P[i] || { x: 50, y: 30, z: 1, s: 1 };
+      const who = e.side === "c" ? (e.summon ? (e.recruit !== undefined ? h(e.name || "Recrue") : "Âme invoquée") : "Toi") : h(e.name);
+      const pickable = e.side === "m" && e.alive && aw;
+      const hp = e.side === "m" && brume ? `<i style="width:100%;opacity:.25"></i>` : `<i style="width:${Math.round(pc * 100)}%"></i>${e.side === "m" && st0 < 1 ? `<s style="left:${Math.round(st0 * 100)}%;width:${Math.round((1 - st0) * 100)}%"></s>` : ""}`;
+      return `<div class="as-u ${e.side === "c" ? "al" : "fo"} ${e.alive ? "" : "ko"} ${e.boss ? "boss" : ""} ${e.side === "c" && e.summon && e.recruit === undefined ? "soul" : ""} ${pickable ? "pick" : ""} ${i === tg ? "aimed" : ""} ${i === cur && !F.over ? "cur" : ""}" data-u="${i}" style="left:${p.x}%;bottom:${p.y}%;z-index:${p.z};--s:${p.s}" ${pickable ? `data-act="as-tgt" data-i="${i}" role="button" aria-label="Viser ${h(e.name)}"` : ""}>
+        <div class="as-uh"><b>${who}</b><span class="as-hp ${e.side === "c" ? "ally" : ""}">${hp}</span>${e.side === "m" && !brume ? `<small>${fmt(Math.max(0, Math.round(e.hp)))}</small>` : ""}</div>
+        <span class="as-ring"></span><img src="${imgOf(e)}" alt="" onerror="this.style.visibility='hidden'">${i === tg ? `<span class="as-aim">🎯</span>` : ""}</div>`; };
+    const order = (F.order || []).slice(Math.max(0, F.oi - 1)).concat(F.order || []).filter((i) => F.ents[i] && F.ents[i].alive).slice(0, 8);
+    const ord = order.map((i, k) => `<span class="as-oi ${F.ents[i].side === "c" ? "al" : "fo"} ${k === 0 && i === cur ? "now" : ""}"><img src="${imgOf(F.ents[i])}" alt=""></span>`).join("");
+    const log = (F.log || []).slice(-3).map((l) => `<span>${h(l.txt)}</span>`).join("");
+    return `<div class="as-stage ${aw ? "mine" : ""}" style="--fl:'${W.f || ""}'">
+        <div class="as-top"><span class="as-fln">${h(F.label || "")}</span><span class="as-ord">${ord}</span><span class="row">${W.rule ? ruleTag(W.rule) : ""}<span class="tag soft">Tour ${F.round}</span></span></div>
+        ${F.ents.map(ent).join("")}<div class="as-fxl"></div>${aw && st.turnK !== (st.turnK = F.id + ":" + F.round + ":" + aw.ei) ? `<div class="as-turn">À toi de jouer</div>` : ""}</div>${barHtml(W, aw)}<div class="as-log">${log}</div>`;
+  }
+  /* effets : ce qui s'est passé depuis le dernier dessin (projectiles, chiffres, recul) */
+  function playFx(W) {
+    const F = W.F; const root = $("#asArena .as-stage"); if (!root) return;
+    if (st.fxF !== F) { st.fxF = F; st.fxSeq = F.seq; return; }
+    const fresh = F.fx.filter((f) => f.seq > st.fxSeq).slice(-14); st.fxSeq = F.seq; if (!fresh.length || document.visibilityState !== "visible") return;
+    const L = root.querySelector(".as-fxl"); const R = root.getBoundingClientRect();
+    const node = (i) => root.querySelector(`.as-u[data-u="${i}"]`);
+    const mid = (n) => { const r = n.querySelector("img").getBoundingClientRect(); return { x: r.left - R.left + r.width / 2, y: r.top - R.top + r.height * 0.45 }; };
+    const add = (cls, x, y, txt, col, delay) => { const d = document.createElement("span"); d.className = cls; d.style.left = x + "px"; d.style.top = y + "px"; if (col) d.style.setProperty("--c", col); if (txt) d.textContent = txt; if (delay) d.style.animationDelay = delay + "ms"; L.appendChild(d); setTimeout(() => d.remove(), 1400 + (delay || 0)); return d; };
+    const casters = new Map(); fresh.forEach((f) => { if (f.k === "cast") casters.set(f.seq, f.s); });
+    const shot = new Set(); let k = 0;
+    fresh.forEach((f) => {
+      if (f.k === "cast") { const n = node(f.s); if (n) n.classList.add("act"); return; }
+      const n = node(f.t); if (!n) return; const to = mid(n); const src = f.s !== undefined && f.s >= 0 ? f.s : casters.get(f.seq);
+      const col = f.k === "heal" ? "#7ee06a" : f.k === "buff" ? "var(--gold2)" : `var(--el-${f.el || "n"})`; const dl = Math.min(k++, 5) * 70;
+      if (f.k === "hit" && src !== undefined && src >= 0 && !shot.has(f.seq + ":" + f.t)) { const sn = node(src); shot.add(f.seq + ":" + f.t);
+        if (sn && sn !== n) { const fr = mid(sn); const o = add("as-orb", fr.x, fr.y, "", col, 0);
+          o.animate([{ transform: "translate(-50%,-50%) scale(.6)" }, { transform: `translate(calc(-50% + ${to.x - fr.x}px),calc(-50% + ${to.y - fr.y}px)) scale(1.2)` }], { duration: 260, easing: "ease-in", fill: "forwards" }); setTimeout(() => o.remove(), 300); } }
+      if (f.k === "hit") { setTimeout(() => { n.classList.add("hit"); add("as-boom", to.x, to.y, "", col, 0); }, 240); add("as-num", to.x, to.y - 20, "-" + fmt(f.v), col, 240 + dl); }
+      else if (f.k === "heal") add("as-num", to.x, to.y - 20, "+" + fmt(f.v), col, dl);
+      else if (f.k === "buff" && f.txt) add("as-num sm", to.x, to.y - 34, f.txt, col, dl);
+      else if (f.k === "summon") n.classList.add("pop");
+    });
   }
   /* mode manuel : la barre de sorts du héros pendant son tour */
   const OFF = ["dmg", "drain", "dot", "apdrain", "mpdrain", "push", "weaken", "vuln", "poison"];
@@ -159,8 +202,10 @@
     const sp = W.defs.map((d, i) => { if (!d) return ""; const g = E.spellGrade(d, E.ascLvl(W.f)); const ok = E.ascCanCast(W, i); const x = E.ascSpell(d.id);
       const f = g.fx.find((y) => y.min !== undefined);
       return `<button class="as-cast" data-act="as-cast" data-i="${i}" ${ok ? "" : "disabled"} data-tip="${h(`${d.name} : ${g.pa} PA${f ? `, ${f.min}-${f.max}` : ""}${g.cd ? `, relance ${g.cd}` : ""}${offensive(d) ? " (sur la cible choisie)" : ""}`)}">${spIco(x || d)}<small>${h(d.name)}</small><span class="as-pa">${g.pa}</span></button>`; }).join("");
-    return `<div class="as-bar"><div class="row between"><b class="small">À toi de jouer : <span class="num">${aw.pa} PA</span></b><span class="xs muted">Touche un ennemi pour le viser.</span></div><div class="as-casts">${sp}</div>
-      <div class="row"><button class="btn sm primary" data-act="as-endturn">Finir le tour</button><button class="btn sm" data-act="as-tauto">Ce tour en auto</button><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></div></div>`;
+    const me = W.F.ents[aw.ei]; const pa0 = Math.max(aw.pa, (me && me.st && me.st.pa) || aw.pa);
+    const pips = Array.from({ length: Math.min(pa0, 14) }, (_, k) => `<i class="${k < aw.pa ? "" : "off"}"></i>`).join("");
+    return `<div class="as-bar"><div class="as-pas" data-tip="Tes points d'action pour ce tour"><span class="as-pips">${pips}</span><b class="num">${aw.pa} PA</b></div><div class="as-casts">${sp}</div>
+      <div class="as-endb"><button class="btn primary as-end" data-act="as-endturn">Finir le tour</button><span class="row"><button class="btn sm" data-act="as-tauto">Ce tour en auto</button><button class="btn sm" data-act="as-fauto">Ce combat en auto</button></span></div></div>`;
   }
   const arenaKey = (W) => { const A = E.ascAwait(W); return `${W.F.seq}|${W.F.round}|${A ? A.pa + ":" + A.n : "-"}|${st.tgt}|${W.S2.manualLive}`; };
 
@@ -278,11 +323,11 @@
     if (R.pend) { if (Q.auto && Date.now() - R.pend.at > 4000) { E.ascAutoPick(s); st.sel = []; st.rep = -1; X().markDirty(); paint(); } else if (Q.auto) { const t = document.querySelector(".as-choice .tag.soft"); if (t) t.textContent = `Auto : choix fait dans ${Math.max(0, Math.ceil((R.pend.at + 4000 - Date.now()) / 1000))} s`; } return; }
     if (st.live) {
       const W = st.live; if (W.F.over) { liveEnd(s, false); return; }
-      if (E.ascAwait(W)) { const k = arenaKey(W); if (k !== st.akey) { st.akey = k; const a = $("#asArena"); if (a) a.innerHTML = arenaHtml(s); } return; } // le combat attend ton sort
+      if (E.ascAwait(W)) { const k = arenaKey(W); if (k !== st.akey) { st.akey = k; const a = $("#asArena"); if (a) { a.innerHTML = arenaHtml(s); playFx(W); } } return; } // le combat attend ton sort
       const sp = A.stepMs / (s.settings && s.settings.fastAsc ? 3 : 1);
       if (Date.now() - lastStep < sp) return; lastStep = Date.now();
       const r = E.ascStep(s, W);
-      if (r === "end") liveEnd(s, false); else { st.akey = arenaKey(W); const a = $("#asArena"); if (a) a.innerHTML = arenaHtml(s); }
+      if (r === "end") liveEnd(s, false); else { st.akey = arenaKey(W); const a = $("#asArena"); if (a) { a.innerHTML = arenaHtml(s); playFx(W); } }
       return;
     }
     if (Date.now() < st.wait) return;
@@ -339,7 +384,7 @@
       case "as-auto": done(E.act(s, "ascSetAuto", d.v === "1")); return;
       case "as-quit": if (!st.quit) { st.quit = true; paint(); setTimeout(() => { if (st.quit) { st.quit = false; paint(); } }, 5000); return; }
         st.quit = false; if (st.live) st.live = null; done(E.act(s, "ascQuit")); return;
-      case "as-tgt": st.tgt = +d.i; return;
+      case "as-tgt": { st.tgt = +d.i; const a = $("#asArena"); if (a && st.live) { st.akey = arenaKey(st.live); a.innerHTML = arenaHtml(s); } return; }
       case "as-cast": { const W = st.live; if (!W) return; const def = W.defs[+d.i]; const r = E.ascManualCast(s, W, +d.i, offensive(def) ? tgtOf(W) : null); if (r) X().toast(r); return; }
       case "as-endturn": if (st.live) E.ascManualEnd(s, st.live); return;
       case "as-tauto": { const W = st.live; if (!W || !E.ascAwait(W)) return; W.S2.manualLive = false; E.ascStep(s, W); E.ascManual(W, true); return; }
