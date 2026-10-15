@@ -37,7 +37,7 @@
   /* ---------- bonus de guilde (sous les plafonds du jeu) ---------- */
   const perks = (l) => ({ xp: Math.floor(l / 5), drop: Math.floor(l / 10), kamas: Math.floor(l / 10) });
   const inGuild = () => { const s = S(); return !!(s && s.guild && s.guild.id); };
-  E.guildBonus = (s, kind) => { const g = s && s.guild; if (!g || !g.id) return 0; return (perks(g.lvl || 1)[kind] || 0) + (window.CHASSE ? window.CHASSE.domBonus(s, kind) : 0); }; // Chasse aux Percepteurs : région dominée (9A)
+  E.guildBonus = (s, kind) => { const g = s && s.guild; if (!g || !g.id) return 0; return (perks(g.lvl || 1)[kind] || 0) + (window.CHASSE ? window.CHASSE.domBonus(s, kind) : 0) + (window.ALLY ? window.ALLY.bonus(s, kind) : 0); }; // Chasse aux Percepteurs : région dominée (9A) ; Alliances : prisme de son alliance (6A, js/allianceui.js)
   E.guildXpShare = (s, c, g) => {
     const q = s && s.guild; if (!q || !q.id || !(q.share > 0) || g <= 0) return 0;
     const d = Math.floor(g * Math.min(90, q.share) / 100); q.pend = (q.pend || 0) + d; return d;
@@ -239,10 +239,10 @@
       <div class="gbar"><i style="width:${pct.toFixed(1)}%"></i><b>${g.next ? `${fmt(g.xp - g.base)} / ${fmt(span)} XP` : "niveau maximum"}</b></div>
       ${g.motd ? `<div class="gmotd">${h(g.motd)}</div>` : ""}</div></section>`;
     const asks = (G.me.asks || []).length;
-    const tabs = `<nav class="subtabs">${[["home", "Accueil"], ["coffre", "Coffre"], ["upg", "Améliorations"], ["percos", `Percepteurs${hot() ? " ⚔" : ""}`], ["chasse", `Chasse aux Percepteurs${revNow() ? " ⚔" : ""}`], ["boss", "Boss"], ["members", `Membres${asks ? ` · ${asks} demande${asks > 1 ? "s" : ""}` : ""}`], ["others", "Autres guildes"], ["log", "Journal"]].map(([id, t]) => `<button data-act="g-tab" data-v="${id}" aria-pressed="${G.tab === id || (id === "members" && G.tab === "set")}">${t}</button>`).join("")}
+    const tabs = `<nav class="subtabs">${[["home", "Accueil"], ["coffre", "Coffre"], ["upg", "Améliorations"], ["percos", `Percepteurs${hot() ? " ⚔" : ""}`], ["chasse", `Chasse aux Percepteurs${revNow() ? " ⚔" : ""}`], ["boss", "Boss"], ...(window.ALLY ? [["alliance", "Alliance"]] : []), ["members", `Membres${asks ? ` · ${asks} demande${asks > 1 ? "s" : ""}` : ""}`], ["others", "Autres guildes"], ["log", "Journal"]].map(([id, t]) => `<button data-act="g-tab" data-v="${id}" aria-pressed="${G.tab === id || (id === "members" && G.tab === "set")}">${t}</button>`).join("")}
       <button class="btn sm mktrade" data-act="g-chat">${X().G("chat")} Chat de guilde</button></nav>`;
     const T = G.tab;
-    const body = G.atk ? attackHtml() : T === "coffre" ? coffreHtml() : T === "upg" ? upgHtml() : T === "boss" ? bossHtml() : T === "percos" ? percosHtml() : T === "chasse" && window.CHASSE ? window.CHASSE.huntHtml() : T === "members" || T === "set" ? membersHtml() + setHtml() : T === "others" ? othersHtml() : T === "log" ? logHtml() : homeHtml(); // 1.0.30 : les réglages sont sous les membres (8 onglets, comme la maquette)
+    const body = G.atk ? attackHtml() : T === "coffre" ? coffreHtml() : T === "upg" ? upgHtml() : T === "boss" ? bossHtml() : T === "percos" ? percosHtml() : T === "chasse" && window.CHASSE ? window.CHASSE.huntHtml() : T === "alliance" && window.ALLY ? window.ALLY.pageHtml() : T === "members" || T === "set" ? membersHtml() + setHtml() : T === "others" ? othersHtml() : T === "log" ? logHtml() : homeHtml(); // 1.0.30 : les réglages sont sous les membres (8 onglets, comme la maquette)
     return `<div class="stack">${banner}${tabs}${body}</div>`;
   }
 
@@ -576,7 +576,7 @@
     const t = ev.target.closest("[data-act]"); if (!t) return; const a = t.dataset.act, d = t.dataset;
     if (!/^g-/.test(a)) return;
     switch (a) {
-      case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; G.sureBuy = null; G.atk = null; if (d.v !== "others") G.view = null; paint(); if (d.v === "boss" || d.v === "percos" || d.v === "home" || d.v === "chasse") loadEx(); if ((d.v === "chasse" || d.v === "percos") && window.CHASSE) window.CHASSE.load(d.v === "chasse"); if (d.v === "others") loadList(); if (d.v === "coffre" || d.v === "upg") load(); return;
+      case "g-tab": G.tab = d.v; G.leave = false; G.setInit = false; G.sureRm = null; G.sureBuy = null; G.atk = null; if (d.v !== "others") G.view = null; paint(); if (d.v === "boss" || d.v === "percos" || d.v === "home" || d.v === "chasse") loadEx(); if ((d.v === "chasse" || d.v === "percos") && window.CHASSE) window.CHASSE.load(d.v === "chasse"); if (d.v === "alliance" && window.ALLY) window.ALLY.load(true); if (d.v === "others") loadList(); if (d.v === "coffre" || d.v === "upg") load(); return;
       case "g-boss": case "g-def": {
         if (G.fighting) return;
         if (!mine()) { solo(); return; }
@@ -606,6 +606,7 @@
         else if (a === "g-rgo") { X().toast(`⚔ ${r.free ? "Revanche lancée" : "Attaque lancée"} sur le Percepteur de ${r.zone} ! ${r.g} a ${E.RAID.h} h pour la repousser, puis ton équipe affrontera le Percepteur et ses gardes.`, "rare"); G.atk = null; G.view = null; G.tab = "percos"; }
         else X().toast(r.win ? `🛡 Attaque repoussée ! Bouclier de ${E.RAID.shield} h pour le Percepteur, +${E.RAID.def} point de Guerre des Percepteurs.` : `Défaite contre l'équipe de ${r.by} : un autre membre peut encore tenter.`, r.win ? "rare" : undefined);
         if (window.CHASSE) window.CHASSE.load(true);
+        if (window.ALLY && G.tab === "alliance") window.ALLY.load(true); // Alliances (9A) : défense d'un Percepteur allié
         await loadEx(); return; }
       case "g-rend": { const x = ((G.ex && G.ex.raids_out) || []).concat((G.ex && G.ex.raids_in) || []).find((y) => y.id === +d.g); if (x) { G.endTry[x.id] = 0; endRaid(x, false); } return; }
       case "g-rseen": seenAdd(+d.g); paint(); return;

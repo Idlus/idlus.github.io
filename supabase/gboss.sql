@@ -693,6 +693,9 @@ begin
   perform pg_advisory_xact_lock(hashtext('raid:' || p_perco));
   select * into p from guild_percos where id = p_perco for update; if not found then return g_err('Ce Percepteur n''est plus là.'); end if;
   if p.guild_id = m.guild_id then return g_err('C''est un Percepteur de ta guilde.'); end if;
+  if to_regprocedure('public.al_allied(bigint, bigint)') is not null then -- Alliances (9A) : les alliés ne s'attaquent pas (supabase/alliances.sql)
+    if al_allied(p.guild_id, m.guild_id) then return g_err('C''est un Percepteur d''une guilde de ton alliance.'); end if;
+  end if;
   select * into dg from guilds where id = p.guild_id; select * into ag from guilds where id = m.guild_id;
   if dg.shield_until > now() then return g_err(format('Jeune guilde protégée encore %s min.', ceil(extract(epoch from (dg.shield_until - now())) / 60))); end if;
   sh := pc_shield(p); -- Chasse aux Percepteurs : moitié moins long pendant la Nuit des Percepteurs
@@ -720,7 +723,11 @@ as $$
 declare m guild_members := g_me(p_user); r perco_raids;
 begin
   select * into r from perco_raids where id = p_raid; if not found then return g_err('Cette attaque n''existe plus.'); end if;
-  if m.user_id is null or m.guild_id <> r.def_guild then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+  if m.user_id is null then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  if m.guild_id <> r.def_guild then -- Alliances (9A) : les guildes alliées défendent aussi (supabase/alliances.sql)
+    if to_regprocedure('public.al_allied(bigint, bigint)') is null then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+    if not al_allied(m.guild_id, r.def_guild) then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  end if;
   if r.status <> 'open' or now() >= r.ends then return g_err('L''attaque est finie.'); end if;
   if exists (select 1 from jsonb_array_elements(r.tries) t where t->>'u' = p_user::text) then return g_err('Tu as déjà défendu pendant cette attaque.'); end if;
   return jsonb_build_object('ok', true, 'att', r.att_team, 'by', pseudo_of(r.att_user));
@@ -731,7 +738,11 @@ declare m guild_members := g_me(p_user); r perco_raids; z text;
 begin
   perform pg_advisory_xact_lock(hashtext('raid:' || (select perco_id from perco_raids where id = p_raid)));
   select * into r from perco_raids where id = p_raid for update; if not found then return g_err('Cette attaque n''existe plus.'); end if;
-  if m.user_id is null or m.guild_id <> r.def_guild then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+  if m.user_id is null then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  if m.guild_id <> r.def_guild then -- Alliances (9A) : les guildes alliées défendent aussi (supabase/alliances.sql)
+    if to_regprocedure('public.al_allied(bigint, bigint)') is null then return g_err('Seuls les membres de la guilde attaquée défendent.'); end if;
+    if not al_allied(m.guild_id, r.def_guild) then return g_err('Seuls les membres de la guilde attaquée (et de son alliance) défendent.'); end if;
+  end if;
   if r.status <> 'open' or now() >= r.ends then return g_err('L''attaque est finie.'); end if;
   if exists (select 1 from jsonb_array_elements(r.tries) t where t->>'u' = p_user::text) then return g_err('Tu as déjà défendu pendant cette attaque.'); end if;
   update perco_raids set tries = tries || jsonb_build_array(jsonb_build_object('u', p_user, 'p', pseudo_of(p_user), 'heads', coalesce(p_heads, '[]'::jsonb), 'win', p_win, 'at', now(), 'rounds', p_rounds)) where id = r.id;
@@ -744,8 +755,14 @@ begin
   update guild_percos set shield_until = now() + interval '6 hours', stars = least(5, stars + 1) where id = r.perco_id; -- Chasse aux Percepteurs (8A) : une étoile
   update guilds set pvp_win = pvp_win + 1 where id = r.def_guild;
   update guilds set pvp_loss = pvp_loss + 1 where id = r.att_guild;
-  perform pw_add(r.def_guild, 1, 0, 0, 1); perform pw_add(r.att_guild, 0, 0, 1, 0);
+  -- Alliances (9A) : un allié qui repousse l'attaque gagne le point pour sa propre guilde
+  perform pw_add(m.guild_id, 1, 0, 0, 1); perform pw_add(r.att_guild, 0, 0, 1, 0);
+  if m.guild_id <> r.def_guild then
+    perform g_log(r.def_guild, format('🛡 %s (%s, guilde alliée) repousse l''attaque de %s sur le Percepteur de %s ! Bouclier de 6 h et une étoile de vétéran.', pseudo_of(p_user), (select name from guilds where id = m.guild_id), pseudo_of(r.att_user), z));
+    perform g_log(m.guild_id, format('🛡 %s défend le Percepteur de %s (%s, guilde alliée) contre %s : +1 point de Guerre des Percepteurs.', pseudo_of(p_user), z, (select name from guilds where id = r.def_guild), pseudo_of(r.att_user)));
+  else
   perform g_log(r.def_guild, format('🛡 %s repousse l''attaque de %s sur le Percepteur de %s ! Bouclier de 6 h, une étoile de vétéran, +1 point de Guerre des Percepteurs.', pseudo_of(p_user), pseudo_of(r.att_user), z));
+  end if;
   perform g_log(r.att_guild, format('L''attaque de %s sur le Percepteur de %s (%s) est repoussée par %s.', pseudo_of(r.att_user), z, (select name from guilds where id = r.def_guild), pseudo_of(p_user)), false);
   return jsonb_build_object('ok', true, 'win', true);
 end $$;
@@ -753,7 +770,7 @@ end $$;
 -- Peut être lancée par l'attaquant ou un membre de l'une des deux guildes, une fois l'heure passée.
 create or replace function public.rd_end_start(p_user uuid, p_raid bigint) returns jsonb language plpgsql security definer set search_path = public
 as $$
-declare m guild_members := g_me(p_user); r perco_raids; zl int;
+declare m guild_members := g_me(p_user); r perco_raids; zl int; al boolean := false;
 begin
   select * into r from perco_raids where id = p_raid for update; if not found then return g_err('Cette attaque n''existe plus.'); end if;
   if r.att_user <> p_user and (m.user_id is null or m.guild_id not in (r.att_guild, r.def_guild)) then return g_err('Cette attaque ne te concerne pas.'); end if;
@@ -766,8 +783,10 @@ begin
   end if;
   update perco_raids set status = 'fight', fight_at = now() where id = r.id;
   zl := coalesce((select lvl from perco_zones where sid = r.sid), 1);
+  if to_regprocedure('public.al_prism_cover(bigint, text)') is not null then al := al_prism_cover(r.def_guild, r.sid); end if; -- Alliances (6A)
   return jsonb_build_object('ok', true, 'att', r.att_team, 'lvl', greatest(zl, r.att_lvl), 'rob', g_up(r.def_guild, 'robustesse'),
-    'stars', (select stars from guild_percos where id = r.perco_id)); -- Chasse aux Percepteurs (8A) : +2 % par étoile (E.percoGuards)
+    'stars', (select stars from guild_percos where id = r.perco_id), -- Chasse aux Percepteurs (8A) : +2 % par étoile (E.percoGuards)
+    'ally', al); -- Alliances (6A) : +20 % de PV dans une région du prisme de son alliance (E.allyPercoBoost)
 end $$;
 -- Résultat du combat contre le Percepteur et ses gardes : pillage (50 %, 25 % contre un Coffre-fort, ÷ 2 si la guilde
 -- visée a 10 niveaux de moins), Percepteur renvoyé (sa guilde garde le reste de la poche), place assommée 12 h,

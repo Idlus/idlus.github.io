@@ -56,7 +56,7 @@
   let cuAt = 0, cuWait = 60000, cuBusy = false, missed = false; // missed : messages peut-être manqués pendant que le chat était fermé
   async function catchUp(minGap) {
     if (cuBusy || !C.loaded || !C.open || document.hidden || Date.now() - cuAt < minGap) return;
-    const k = C.tab === "p" ? (canWrite() ? "p" : null) : C.tab === "c" || C.tab === "v" ? C.tab : C.tab === "u" ? null : "g"; // la guilde a sa propre mise à jour
+    const k = C.tab === "p" ? (canWrite() ? "p" : null) : C.tab === "c" || C.tab === "v" ? C.tab : C.tab === "u" || C.tab === "a" ? null : "g"; // la guilde (et l'alliance) a sa propre mise à jour
     if (!k) return;
     cuBusy = true; cuAt = Date.now();
     const l = await ON.chatLoad(k);
@@ -111,7 +111,7 @@
   function cands(q) {
     const me = myPs(), seen = new Set(), out = [];
     const add = (p, u) => { if (!p) return; const l = p.toLowerCase(); if (l === me || seen.has(l) || (u && C.ign.has(u))) return; seen.add(l); out.push(p); };
-    const cur = C.tab === "u" && window.GUILD ? window.GUILD.msgs : C[C.tab] || [];
+    const cur = C.tab === "u" && window.GUILD ? window.GUILD.msgs : C.tab === "a" && window.ALLY ? window.ALLY.msgs : C[C.tab] || [];
     [cur, C.g, C.c, C.v].forEach((L) => [...L].reverse().forEach((m) => { if (m.kind === "msg") add(m.pseudo, m.user_id); }));
     (ON.onlinePseudos ? ON.onlinePseudos() : []).forEach((p) => add(p));
     q = q.toLowerCase();
@@ -233,7 +233,7 @@
       : `<button class="ch-tab${C.tab === k ? " on" : ""}" data-act="ch-tab" data-v="${k}">${G(ic)}<span>${n}</span>${C.tab === k ? "" : PING.includes(k) && pings(k) ? atNb(pings(k)) : nb(unread)}</button>`;
     const guild = window.GUILD && window.GUILD.inGuild();
     return `<div class="ch-head"><div class="ch-top"><span class="ch-ttl">${G("chat")} Chat</span><span class="ch-on">${onlineTxt()}</span><button class="ch-x" data-act="ch-close" title="Réduire" aria-label="Réduire le chat">–</button></div>
-      <div class="ch-tabs" role="tablist">${tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
+      <div class="ch-tabs" role="tablist">${tab("g", "chat", "Général", C.unread)}${tab("c", "cart", "Commerce", C.unreadC)}${tab("v", "target", "PvP", C.unreadV)}${tab("u", "shield", "Guilde", guild ? window.GUILD.unread : 0, guild ? "" : "Rejoins une guilde (Communauté › Guilde) pour discuter avec elle.")}${window.ALLY && window.ALLY.inAlliance() ? tab("a", "crown", "Alliance", window.ALLY.unread) : ""}${tab("p", "share", "Privé", C.unreadP, canWrite() ? "" : "Connecte-toi pour écrire en privé.")}${tab("h", "star", "Hauts faits", C.unreadH)}</div></div>`;
   }
   function msgHtml(m) {
     if (m.kind === "ann" && !annTxt(m, true).trim()) return ""; // annonce illisible : on ne montre pas de barre vide
@@ -287,6 +287,10 @@
       const th = C.p.filter((m) => m.user_id === C.peer || m.to_id === C.peer);
       return `<div class="sys">Conversation privée avec <b>${h(C.names[C.peer] || "ce joueur")}</b>. Personne d'autre ne la voit.</div>` + th.map(msgHtml).join("");
     }
+    if (C.tab === "a") { // Alliances (11A) : salon des guildes de l'alliance (js/allianceui.js)
+      if (!window.ALLY || !window.ALLY.inAlliance()) { C.tab = "g"; return listHtml(); }
+      return `<div class="sys">Chat de ton alliance : seuls les membres de ses guildes le voient.</div>` + window.ALLY.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
+    }
     if (C.tab === "u") {
       if (!window.GUILD || !window.GUILD.inGuild()) { C.tab = "g"; return listHtml(); }
       return `<div class="sys">Chat de ta guilde : seuls ses membres le voient.</div>` + window.GUILD.msgs.map((m) => (m.kind === "sys" ? `<div class="sys">${h(m.body)}</div>` : msgHtml(m))).join("");
@@ -312,7 +316,7 @@
     const it = C.item && window.DATA.ITEMS[C.item];
     const wait = Math.max(0, Math.ceil((nextAt() - Date.now()) / 1000));
     return `${C.tab === "p" ? `<div class="ch-back"><button class="lnk" data-act="ch-peer" data-u="">← Toutes les conversations</button></div>` : ""}${it ? `<div class="ch-att"><span class="itm"><img src="${X().itemImg(C.item)}" alt="">[${h(it.name)}]</span><button class="lnk" data-act="ch-unitem">retirer</button></div>` : ""}
-      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
+      ${acHtml()}<div class="ch-in"><input id="chIn" value="${h(typed)}" maxlength="200" autocomplete="off" placeholder="${C.tab === "p" ? `Écrire à ${h(C.names[C.peer] || "ce joueur")}…` : C.tab === "u" ? "Écrire à ta guilde…" : C.tab === "a" ? "Écrire à ton alliance…" : C.tab === "c" ? "Vendre, acheter, échanger…" : C.tab === "v" ? "Kolizéum, adversaires…" : "Écrire à tout le monde…"}"><button class="btn sm primary" data-act="ch-send">Envoyer</button></div>
       <div class="ch-hint">${C.err ? `<span class="bad">${h(C.err)}</span>` : `<span>${C.tab === "p" ? "Bouton « Montrer dans le chat » sur la fiche d'un objet" : "@pseudo pour mentionner un joueur"}</span>`}<span id="chCnt">${wait ? `encore ${wait} s` : `${typed.length}/200`}</span></div>`; // 1.0.12.8 : texte d'aide du PvP raccourci (coupé au téléphone)
   }
 
@@ -332,7 +336,7 @@
     if (!body && !C.item) return;
     if (Date.now() < nextAt()) { C.err = C.tab === "c" ? "Commerce : un message toutes les 30 secondes." : "Doucement : attends quelques secondes."; C.errWait = C.err; return paint(true); }
     const to = C.tab === "p" ? C.peer : null; const ch = C.tab === "c" || C.tab === "v" ? C.tab : null;
-    const err = C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
+    const err = C.tab === "a" && window.ALLY ? await window.ALLY.say(body) : C.tab === "u" && window.GUILD ? await window.GUILD.say(body, C.item ? { tpl: C.item } : null) : await ON.chatSend(body, to, C.item ? { tpl: C.item } : null, ch);
     if (err) { C.err = err; if (/muet/.test(err)) C.me = await ON.chatMe(); return paint(true); }
     C.err = ""; C.item = null; C.ac = null; i.value = ""; pref.draft = ""; savePref(); C.next = Date.now() + 4000; if (ch === "c") C.nextC = Date.now() + 30000;
     // le message revient par le temps réel ; on recharge au cas où la connexion temps réel serait coupée
@@ -538,7 +542,7 @@
       case "ch-bottom": { const l = $("#chat .ch-list"); C.below = false; t.remove(); if (l) l.scrollTop = l.scrollHeight; return; }
       case "ch-retry": refresh(); return;
       case "ch-close": C.open = false; pref.open = false; pref.draft = $("#chIn") ? $("#chIn").value : ""; savePref(); paint(); return;
-      case "ch-tab": C.tab = d.v; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
+      case "ch-tab": C.tab = d.v; C.err = ""; C.ac = null; if (d.v === "g") C.unread = 0; if (d.v === "h") C.unreadH = 0; if (d.v === "c") C.unreadC = 0; if (d.v === "v") C.unreadV = 0; if (d.v === "u" && window.GUILD) window.GUILD.chatSeen(); if (d.v === "a" && window.ALLY) { window.ALLY.chatSeen(); window.ALLY.chatPoll(); } if (d.v === "p" && !C.peer) C.unreadP = 0; paint(); return;
       case "ch-peer": C.peer = d.u || null; C.err = ""; if (C.peer) C.unreadP = 0; paint(); return;
       case "ch-send": send(); return;
       case "ch-acpick": acPick(d.p); return;

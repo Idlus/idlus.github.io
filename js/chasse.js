@@ -55,6 +55,7 @@
     const g = guildOf(p); const t = now();
     if (p.gid === myGid()) return { ok: false, mine: true, html: `<span class="tag soft">ta guilde</span>` };
     if (!myGid()) return { ok: false, html: `<span class="xs muted">rejoins une guilde pour attaquer</span>` };
+    if (window.ALLY && window.ALLY.allied(p.gid)) return { ok: false, html: `<span class="tag soft" data-tip="Les guildes d'une même alliance ne s'attaquent pas : aide plutôt à le défendre (Guilde › Alliance).">guilde alliée</span>` }; // Alliances (9A)
     if (g.young && Date.parse(g.young) > t) return { ok: false, html: `<span class="gx-shield">🛡 jeune guilde ${left(Date.parse(g.young) - t)}</span>` };
     if (p.raid) return { ok: false, html: `<span class="tag warn">attaqué par ${h(p.raid)}</span>` };
     if (p.shield && Date.parse(p.shield) > t) return { ok: false, html: `<span class="gx-shield">🛡 ${left(Date.parse(p.shield) - t)}</span>` };
