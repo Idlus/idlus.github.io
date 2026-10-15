@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 1.0.33.1 « Sac de 3 000 places »
+
+Demande de Mathis (15/10/2026) : « Enlever la limite de stockage dans les sacs ou propose moi d'autres idées », réponse « 1B 2A 3A » sur la maquette. `E.ITEM_CAP` 1 000 → 3 000, Grenier `per` 50 → 100 (max 5 000). Rangement compact dans le navigateur seulement (`E.packSave` / `E.unpackSave`, appelés par `js/save.js` quand le support est `SV.local`) : `items` devient `zItems` (uid, n° de modèle, valeurs, autres champs) avec la liste `zk` « modèle:caractéristiques » écrite dans la sauvegarde ; `SV.read()` (envoyé en ligne) et `E.serialize` gardent le format normal, `E.deserialize` lit les deux. Jauge `SV.usage()` dans Options › Sauvegarde. Règle automatique « Bas niveau » (`S.settings.auto.low`, `E.lowItem`). Tests : `tests/sac.test.js`.
+
 ## 1.0.33 « Chromatiques »
 - Monstres chromatiques : 1 monstre sur 4 096, en chasse et en donjon (boss compris), a les couleurs inversées et un halo doré. Même force, mais butin et XP ×3 et 1 Éclat chromatique.
 - La chaîne : rester dans la même zone fait monter la chance, jusqu'à ×3 après 500 victoires d'affilée. Elle repart à zéro quand on change de zone.

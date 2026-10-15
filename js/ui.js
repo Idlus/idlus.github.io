@@ -21,9 +21,15 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.0.33";
+const GAME_VERSION = "1.0.33.1";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.0.33.1", name: "Sac de 3 000 places", items: [
+    "Le sac d'équipements passe de 1 000 à 3 000 places, et chaque niveau de Grenier en ajoute 100 au lieu de 50 (jusqu'à 5 000 places)",
+    "Sauvegarde plus légère : dans le navigateur, les objets sont rangés en compact. La partie en ligne et l'export ne changent pas",
+    "Options › Sauvegarde : une jauge montre le poids de ta partie et la place utilisée dans le navigateur",
+    "Règles automatiques (Inventaire) : nouvelle règle « Bas niveau », qui brise les objets 20, 30 ou 50 niveaux sous ton héros le plus faible. Panoplies, Rayonnants, exo, parfaits et objets sous cadenas sont gardés. Éteinte au départ",
+  ] },
   { v: "1.0.33", name: "Chromatiques", items: [
     "Monstres chromatiques : 1 monstre sur 4 096, en chasse et en donjon (boss compris), a les couleurs inversées et un halo doré. Même force, mais butin et XP ×3 et 1 Éclat chromatique",
     "La chaîne : rester dans la même zone fait monter la chance, jusqu'à ×3 après 500 victoires d'affilée. Elle repart à zéro quand on change de zone",
@@ -5932,12 +5938,13 @@ function resDetail(n) {
 }
 function autoRulesHtml() {
   const A = S.settings.auto;
-  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}</summary>
+  return `<details class="panel" ${ui.autoOpen ? "open" : ""}><summary class="pad" style="cursor:pointer;font-weight:800" data-act="autotoggle">${G("gear")} Règles automatiques ${A.action !== "none" ? `<span class="tag good">Brisage si jet &lt; ${A.q} %</span>` : `<span class="tag soft">désactivées</span>`}${A.low > 0 ? ` <span class="tag good">Bas niveau −${A.low}</span>` : ""}</summary>
     <div class="pad stack" style="padding-top:0;gap:8px">
       <p class="note">S'applique aux objets lâchés par les monstres. Les objets Rayonnants, protégés par cadenas et équipés ne sont jamais touchés.</p>
       <div class="row"><label class="row small">Action <select data-act="autoaction"><option value="none" ${A.action === "none" ? "selected" : ""}>Aucune</option><option value="break" ${A.action === "break" ? "selected" : ""}>Briser (runes)</option></select></label>
         <label class="row small">si le jet est inférieur à <input type="number" min="0" max="100" step="5" data-act="autoq" value="${A.q}" style="width:70px"> %</label>
         <label class="row small"><input type="checkbox" data-act="autosets" ${A.keepSets ? "checked" : ""}> garder les objets de panoplie</label></div>
+      <label class="row small">Bas niveau <select data-act="autolow"><option value="" ${!(A.low > 0) ? "selected" : ""}>garder</option>${[20, 30, 50].map((v) => `<option value="${v}" ${A.low === v ? "selected" : ""}>briser à ${v} niveaux sous mon héros le plus faible</option>`).join("")}</select> <span class="tag soft">panoplies, Rayonnants et exo gardés</span></label>
       <label class="row small">Doublons <select data-act="autorecycle"><option value="" ${!A.recycle ? "selected" : ""}>garder</option><option value="break" ${A.recycle === "break" ? "selected" : ""}>briser si j'ai déjà mieux ou égal</option></select></label>
       <div><button class="btn sm" data-act="autonow">Appliquer maintenant aux objets du sac</button></div></div></details>`;
 }
@@ -6802,6 +6809,15 @@ function showNotif(title, body) {
   try { if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.ready.then((r) => r.showNotification(`idlus · ${title}`, opts)).catch(() => { try { new Notification(`idlus · ${title}`, opts); } catch (e) {} }); else new Notification(`idlus · ${title}`, opts); } catch (e) {}
 }
 /* 0.1.25 : les Options rangées en onglets ; une carte par thème, chaque réglage sur une ligne (nom et explication à gauche, choix à droite) */
+/* 1.0.33.1 : poids de la sauvegarde dans le navigateur (environ 5 millions de caractères par site, copies de secours comprises) */
+function saveWeightHtml() {
+  const u = SV.usage && SV.usage(); if (!u) return "";
+  const ko = (n) => fmt(Math.max(1, Math.round(n / 1024))), pct = Math.min(100, Math.round(u.total / u.max * 100));
+  return optSec("Poids de la sauvegarde", "le navigateur garde environ 5 Mo par site, copies de secours comprises", `<div class="stack small" style="gap:6px">
+    <div class="row between"><span>Ta partie : <b class="num">${ko(u.game)} Ko</b> <span class="xs muted">(${fmt(E.itemCount(S))} objets, rangés en compact) · copies de secours : ${ko(u.copies)} Ko</span></span><span class="tag ${pct >= 80 ? "warn" : pct >= 50 ? "soft" : "good"}">${pct} % utilisés</span></div>
+    <div class="savebar"><i style="width:${Math.max(1, pct)}%"></i></div>
+    ${pct >= 80 ? `<span class="xs minus">Presque plein : brise ou vends des objets, ou supprime une partie de test.</span>` : ""}</div>`);
+}
 const OPT_TABS = [["affichage", "Affichage"], ["sons", "Sons"], ["jeu", "Jeu"], ["sauvegarde", "Sauvegarde"], ["aide", "Aide"]];
 const optSec = (t, hint, body, id) => `<section class="optsec"${id ? ` id="${id}"` : ""}><div class="optsec-h"><b>${t}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</div>${body}</section>`;
 const optName = (n, hint, tip) => `<span class="optname"${tip ? ` data-tip="${h(tip)}"` : ""}><b>${n}</b>${hint ? `<span class="xs muted">${hint}</span>` : ""}</span>`;
@@ -6821,6 +6837,7 @@ function optionsSheet() {
   else if (tab === "sauvegarde") body = (menuOn() ? optSec(`Partie ${SLOT}`, SLOT === 1 ? "celle des classements, de l'Hôtel de vente, de la guilde et du Kolizéum classé" : "solo : hors classements, sans Hôtel de vente, guilde, Kolizéum classé ni boss des mondes", `<div class="row"><button class="btn sm primary" data-act="sv-menu">Changer de partie</button><span class="xs muted">3 parties : la 1 pour les classements, la 2 et la 3 en solo</span></div>`) : "")
     + (ON ? optSec("Compte en ligne", "", accountHtml()) : "")
     + optSec("Sauvegarde", `automatique dans ce navigateur${ON && ON.user && ON.profile && ON.slotOnline() ? " et sur ton compte en ligne" : ""}`, `<div class="row"><button class="btn sm" data-act="savenow">Sauvegarder maintenant</button>${lastSaveOk ? `<span class="xs muted">dernière : ${new Date(lastSaveOk).toLocaleTimeString("fr-FR")}</span>` : ""}</div>`)
+    + saveWeightHtml()
     + optSec("Copies de secours", "une toutes les 10 min de jeu, et une avant chaque mise à jour", `<div class="stack small" style="gap:6px">${copiesHtml()}</div>`)
     + optSec("Changer d'appareil", "copie la sauvegarde ici, puis colle-la sur l'autre appareil", `<div class="stack" style="gap:6px"><b class="small">Exporter</b><textarea id="exp" readonly>${h(btoa(unescape(encodeURIComponent(E.serialize(S)))))}</textarea><div><button class="btn sm" data-act="copyexp">Copier</button></div>
       <b class="small">Importer</b> <span class="xs muted">remplace la partie actuelle ; les sauvegardes v1 sont converties</span><textarea id="imp" placeholder="Collez la sauvegarde ici"></textarea><div><button class="btn sm" data-act="import">Importer</button> <span id="impmsg" class="minus"></span></div></div>`)
@@ -8615,6 +8632,7 @@ document.addEventListener("change", (ev) => {
   else if (a === "autoq") { S.settings.auto.q = Math.max(0, Math.min(100, +t.value || 0)); ui.autoOpen = true; }
   else if (a === "invshoweq") { S.settings.invShowEq = t.checked; dirty = true; }
   else if (a === "autosets") { S.settings.auto.keepSets = t.checked; ui.autoOpen = true; }
+  else if (a === "autolow") { S.settings.auto.low = +t.value || 0; ui.autoOpen = true; }
   else if (a === "autorecycle") { S.settings.auto.recycle = t.value || false; ui.autoOpen = true; }
   else if (a === "resf") ui.resF = t.value;
   else if (a === "ressort") ui.resSort = t.value;

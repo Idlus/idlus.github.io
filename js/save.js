@@ -38,11 +38,16 @@
   };
 
   /* ---------- la partie ---------- */
-  SV.read = () => store.get(KEY);
+  /* 1.0.33.1 : dans le navigateur, les objets sont rangés en compact (E.packSave) ; la lecture rend le format normal
+     (c'est lui qui part en ligne). */
+  const pack = (txt) => (store === SV.local && E && E.packSave ? E.packSave(txt) : txt);
+  const unpack = (txt) => { if (!txt || !E || !E.unpackSave) return txt; try { return E.unpackSave(txt); } catch (e) { return txt; } };
+  SV.read = () => unpack(store.get(KEY));
   /* Écrit la partie (texte déjà sérialisé). Une copie automatique toutes les 10 min de jeu. */
   SV.write = (txt, st) => {
+    const full = txt; txt = pack(txt);
     if (!store.set(KEY, txt) && !SV.makeRoom(() => store.set(KEY, txt))) return false;
-    if (now() - SV.lastCopy() > COPY_EVERY) SV.pushCopy(txt, "auto", st);
+    if (now() - SV.lastCopy() > COPY_EVERY) SV.pushCopy(full, "auto", st);
     return true;
   };
   SV.remove = () => store.del(KEY);
@@ -70,6 +75,14 @@
     return false;
   };
 
+  /* 1.0.33.1 : place prise dans le navigateur (en caractères) : la partie, ses copies, et tout le site. */
+  SV.usage = () => {
+    const keys = store.keys ? store.keys() : []; let total = 0;
+    keys.forEach((k) => { const v = store.get(k); total += (k ? k.length : 0) + (v ? v.length : 0); });
+    const len = (k) => { const v = store.get(k); return v ? v.length : 0; };
+    return { game: len(KEY), copies: len(copyKey()), total, max: 5000000 };
+  };
+
   /* ---------- copies de secours ----------
      3 copies tournantes (une toutes les 10 min de jeu), une avant chaque mise à jour du jeu
      et une avant chaque restauration. Si la sauvegarde est illisible, la plus récente prend le relais. */
@@ -88,6 +101,7 @@
   };
   SV.pushCopy = (txt, why, st, v) => {
     if (!txt) return;
+    txt = pack(txt);
     const meta = st && st.chars ? { lvl: Math.max(...st.chars.map((c) => c.lvl || 1)), n: st.chars.length } : {};
     const a = SV.copies(), same = a.filter((c) => c.why === why).sort((x, y) => y.t - x.t).slice(0, COPY_MAX[why] - 1);
     writeCopies([Object.assign({ t: now(), why, v: v || VER, txt }, meta), ...same, ...a.filter((c) => c.why !== why)]);

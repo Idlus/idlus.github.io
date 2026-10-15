@@ -27,7 +27,7 @@
     { id: "kamas",   name: "Coffre-fort",           icon: "💰", per: 3,  max: 40, base: 250,  g: 1.5, unit: "% de kamas" },
     { id: "hp",      name: "Salle d'entraînement",  icon: "🥊", per: 1,  max: 30, base: 600,  g: 1.45, unit: "% de PV en combat" },
     { id: "gather",  name: "Jardin",                icon: "🌿", per: 4,  max: 30, base: 300,  g: 1.5, unit: "% de ressources récoltées" },
-    { id: "bag",     name: "Grenier",               icon: "🎒", per: 50, max: 20, base: 500,  g: 1.5,  unit: " places dans le sac (et 10 de trop-plein)" },
+    { id: "bag",     name: "Grenier",               icon: "🎒", per: 100, max: 20, base: 500,  g: 1.5,  unit: " places dans le sac (et 10 de trop-plein)" },
     { id: "offtime", name: "Lit douillet",          icon: "🛏", per: 1,  max: 8,  base: 2000, g: 1.9,  unit: " h de progression hors ligne (8 h de base)" },
     { id: "offrate", name: "Majordome",             icon: "🎩", per: 5,  max: 7,  base: 2500, g: 1.9,  unit: " % d'efficacité hors ligne (25 % de base)" },
   ];

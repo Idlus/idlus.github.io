@@ -1,6 +1,16 @@
 {
-  "version": "1.0.33",
+  "version": "1.0.33.1",
   "versions": [
+    {
+      "v": "1.0.33.1",
+      "name": "Sac de 3 000 places",
+      "items": [
+        "Le sac d'équipements passe de 1 000 à 3 000 places, et chaque niveau de Grenier en ajoute 100 au lieu de 50 (jusqu'à 5 000 places)",
+        "Sauvegarde plus légère : dans le navigateur, les objets sont rangés en compact. La partie en ligne et l'export ne changent pas",
+        "Options › Sauvegarde : une jauge montre le poids de ta partie et la place utilisée dans le navigateur",
+        "Règles automatiques (Inventaire) : nouvelle règle « Bas niveau », qui brise les objets 20, 30 ou 50 niveaux sous ton héros le plus faible. Panoplies, Rayonnants, exo, parfaits et objets sous cadenas sont gardés. Éteinte au départ"
+      ]
+    },
     {
       "v": "1.0.33",
       "name": "Chromatiques",

@@ -114,15 +114,16 @@ console.log("ok - sauvegarde (écriture, copies, partie illisible, reprise)");
   console.log("ok - 12 héros, 8 en équipe, congédier un héros");
 }
 
-// 0.1.37 : sac de 1 000 places, Coffre de trop-plein (rien n'est perdu), « Briser les doublons »
+// 0.1.37 : sac de 1 000 places (3 000 depuis 1.0.33.1), Coffre de trop-plein (rien n'est perdu), « Briser les doublons »
 {
   E.setRng(mulberry(37)); const S = E.newState("Sac", "iop");
-  assert.strictEqual(E.itemCap(S), 1000);
+  assert.strictEqual(E.itemCap(S), 3000);
+  const CAP = E.itemCap(S);
   const tpl = Object.keys(D.ITEMS).find((k) => D.ITEMS[k].lvl === 20 && D.ITEMS[k].slot === "coiffe");
-  for (let i = 0; i < 1000 - E.itemCount(S); ) E.rollItem(S, tpl, { radiant: false });
+  for (let i = 0; i < CAP - E.itemCount(S); ) E.rollItem(S, tpl, { radiant: false });
   const last = E.rollItem(S, tpl, { radiant: false }); E.rollItem(S, tpl, { radiant: false });
   E.tick(S, 10);
-  assert.strictEqual(E.itemCount(S), 1000, "le sac reste à sa taille");
+  assert.strictEqual(E.itemCount(S), CAP, "le sac reste à sa taille");
   assert.strictEqual(S.over.length, 2, "les deux objets en trop sont dans le trop-plein");
   assert.ok(S.over.some((o) => o.uid === last.uid), "les plus récents vont au trop-plein");
   assert.ok(/Sac plein/.test(E.overTake(S, last.uid)), "reprendre un objet : sac plein");

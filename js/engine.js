@@ -509,7 +509,7 @@
   };
   E.qualityTier = (q) => (q >= 0.999 ? "parfait" : q >= 0.8 ? "excellent" : q >= 0.5 ? "bon" : "commun");
   E.itemCount = (S) => Object.keys(S.items).length;
-  E.ITEM_CAP = 1000; // 0.1.37 : 300 → 1 000 places
+  E.ITEM_CAP = 3000; // 0.1.37 : 300 → 1 000 places ; 1.0.33.1 : 3 000 places
   E.itemCap = (S) => E.ITEM_CAP + Math.round(E.bonus(S, "bag"));
   E.equippedBy = (S, uid) => S.chars.find((c) => Object.values(c.equip).includes(uid));
   E.slotFor = (c, it) => {
@@ -2369,6 +2369,14 @@
   /* 0.1.34 : malus adouci (avant : dès 5 niveaux d'écart, −10 % par niveau jusqu'à −95 %) ; une zone plus basse reste un repli correct */
   E.XP_PEN = { free: 6, step: 0.05, min: 0.3 };
   E.xpPenalty = (diff) => (diff > E.XP_PEN.free ? Math.max(E.XP_PEN.min, 1 - (diff - E.XP_PEN.free) * E.XP_PEN.step) : 1);
+  /* 1.0.33.1 : règle « Bas niveau » : un objet trop bas pour l'équipe (A.low niveaux sous son héros le plus faible) est
+     brisé. Jamais : panoplies, Rayonnants, exo, parfaits, verrouillés, trophées, Dofus et légendaires. */
+  E.lowItem = (S, it, gap) => {
+    const T = ITEMS[it && it.tpl]; if (!T || !(gap > 0) || T.slot === "dofus" || T.trophy || T.leg || T.set) return false;
+    if (it.radiant || it.exo || it.locked || (E.isPerfect && E.isPerfect(it))) return false;
+    const team = E.team(S); if (!team.length) return false;
+    return T.lvl < Math.min(...team.map((c) => c.lvl)) - gap;
+  };
   /* Règles automatiques de vente / brisage des objets lâchés */
   E.applyAuto = (S, it) => {
     const A = S.settings.auto; if (!A || it.radiant || it.locked || E.inGear(S, it.uid)) return null;
@@ -2377,6 +2385,7 @@
       const better = Object.values(S.items).some((x) => x !== it && x.tpl === it.tpl && (x.radiant || E.itemQuality(x) >= q));
       if (better) { E.breakItem(S, it.uid, null); return "recycle"; }
     }
+    if (A.low > 0 && E.lowItem(S, it, A.low)) { E.breakItem(S, it.uid, null); return "low"; }
     if (A.action === "none") return null;
     const T = ITEMS[it.tpl]; if (A.keepSets && T.set) return null;
     if (E.itemQuality(it) * 100 >= A.q) return null;
@@ -3454,8 +3463,54 @@
     const o = {}; for (const k in S) if (!TRANSIENT.includes(k)) o[k] = S[k];
     return JSON.stringify(o);
   };
+  /* 1.0.33.1 « Sac de 3 000 places » : rangement compact des objets dans le stockage du navigateur (environ 3 fois plus
+     léger). Seule la copie écrite dans le navigateur est compacte : E.serialize, la sauvegarde en ligne, l'export et le
+     serveur gardent le format normal. Un objet devient [uid, n° de modèle, valeurs…, {autres champs}] ; la liste des modèles
+     avec leurs caractéristiques (zk) est écrite dans la sauvegarde, donc un changement des données du jeu ne la fausse pas. */
+  const ZBASE = { uid: 1, tpl: 1, stats: 1 };
+  E.packSave = (txt) => {
+    if (typeof txt !== "string" || txt.indexOf('"zItems"') >= 0) return txt;
+    let o; try { o = JSON.parse(txt); } catch (e) { return txt; }
+    if (!o || typeof o !== "object" || !o.items || typeof o.items !== "object") return txt;
+    const zk = [], zi = {};
+    const one = (it) => {
+      if (!it || typeof it !== "object" || Array.isArray(it) || typeof it.tpl !== "string" || typeof it.uid !== "number" || !it.stats || typeof it.stats !== "object") return it;
+      const ks = Object.keys(it.stats); if (ks.some((k) => typeof it.stats[k] !== "number")) return it;
+      if (it.tpl.indexOf(":") >= 0) return it;
+      const sig = it.tpl + ":" + ks.join(","); let n = zi[sig]; if (n === undefined) { n = zi[sig] = zk.length; zk.push(sig); }
+      const a = [it.uid, n]; ks.forEach((k) => a.push(it.stats[k]));
+      const ex = {}; let m = 0; for (const k in it) if (!ZBASE[k]) { ex[k] = it[k]; m++; } if (m) a.push(ex);
+      return a;
+    };
+    const out = {}; for (const k in o) {
+      if (k === "items") { out.zItems = Object.keys(o.items).map((u) => (+u === o.items[u].uid ? one(o.items[u]) : o.items[u])); continue; }
+      if (k === "over" && Array.isArray(o.over)) { out.zOver = o.over.map(one); continue; }
+      out[k] = o[k];
+    }
+    out.zk = zk;
+    return JSON.stringify(out);
+  };
+  E.unpackSave = (txt) => {
+    if (typeof txt !== "string" || txt.indexOf('"zItems"') < 0) return txt;
+    const o = JSON.parse(txt); if (!o || !Array.isArray(o.zItems)) return txt;
+    const zk = (Array.isArray(o.zk) ? o.zk : []).map((s) => { const i = String(s).indexOf(":"); const ks = String(s).slice(i + 1); return { tpl: String(s).slice(0, i), ks: ks ? ks.split(",") : [] }; });
+    const one = (a) => {
+      if (!Array.isArray(a)) return a;
+      const z = zk[a[1]] || { tpl: "", ks: [] }; const it = { uid: a[0], tpl: z.tpl, stats: {} };
+      z.ks.forEach((k, i) => { it.stats[k] = a[2 + i]; });
+      const ex = a[2 + z.ks.length]; if (ex && typeof ex === "object") Object.assign(it, ex);
+      return it;
+    };
+    const out = {}; for (const k in o) {
+      if (k === "zItems") { out.items = {}; o.zItems.forEach((a) => { const it = one(a); if (it && it.uid !== undefined) out.items[it.uid] = it; }); continue; }
+      if (k === "zOver") { out.over = o.zOver.map(one); continue; }
+      if (k === "zk") continue;
+      out[k] = o[k];
+    }
+    return JSON.stringify(out);
+  };
   E.deserialize = (txt) => {
-    const S = JSON.parse(txt);
+    const S = JSON.parse(E.unpackSave(txt));
     if (!S || !Array.isArray(S.chars) || !S.chars.length) throw new Error("Sauvegarde invalide");
     const fresh = E.newState("x", "iop");
     const report = [];
