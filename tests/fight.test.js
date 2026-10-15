@@ -381,3 +381,22 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   for (let t = 0; t < 5 * 60 * 1000; t += 250) { E.tick(S, 250); if (S.fight) for (const e of S.fight.ents) assert.ok(Number.isFinite(e.hp), `PV invalides pour ${e.name}`); }
   console.log("ok - identité des sorts : aucune mécanique sans réglage, aucun PV NaN");
 }
+
+// 1.2.10 « Le Poutch » : l'aperçu des sorts joue 8 tours contre un Poutch, sans toucher à la partie ni à l'aléatoire
+{
+  for (const cls of D.CLASS_ORDER) {
+    const S = E.newState("Test", cls); const c = S.chars[0]; c.lvl = 120; c.pts = 119 * 5; E.autoAllocate(S, c); E.refreshSpells(c, E.charStats(S, c));
+    const before = JSON.stringify(S); const r0 = E.rnd(); const ev = E.events.length;
+    const P = E.poutchPreview(S, c.id);
+    assert.ok(P && P.rounds.length === E.POUTCH_TOURS, `${cls} : aperçu Poutch sans ${E.POUTCH_TOURS} tours`);
+    assert.ok(P.total > 0, `${cls} : aucun dégât sur le Poutch`);
+    assert.ok(P.rounds.some((r) => r.casts.length), `${cls} : aucun sort lancé sur le Poutch`);
+    assert.strictEqual(JSON.stringify(S), before, `${cls} : l'aperçu Poutch modifie la partie`);
+    assert.strictEqual(E.events.length, ev, `${cls} : l'aperçu Poutch laisse des événements`);
+    assert.ok(Number.isFinite(r0) && Number.isFinite(E.rnd()), "aléatoire cassé après l'aperçu");
+  }
+  const S = E.newState("Test", "iop"); E.recruit(S, "eni", "Soin"); S.chars.forEach((c) => { c.lvl = 100; c.inTeam = true; E.resetPoints(S, c.id); E.refreshSpells(c, E.charStats(S, c)); });
+  const A = E.poutchPreview(S, S.chars[0].id), B = E.poutchPreview(S, S.chars[0].id, { team: true });
+  assert.ok(A && B && B.team && !A.team, "Poutch seul / avec l'équipe");
+  console.log("ok - aperçu des sorts contre le Poutch (8 tours, seul ou en équipe, partie intacte)");
+}

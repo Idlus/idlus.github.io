@@ -1,6 +1,17 @@
 {
-  "version": "1.2.9.4",
+  "version": "1.2.10",
   "versions": [
+    {
+      "v": "1.2.10",
+      "name": "Le Poutch",
+      "guide": "sorts",
+      "items": [
+        "Sorts & stratégies : « Ce que fera ton héros » le fait maintenant taper un Poutch de 100 000 PV qui ne riposte pas, pendant 8 tours, comme dans DOFUS. Toute sa séquence s'affiche, recharges comprises : c'est le moyen de vérifier ses instructions.",
+        "Chaque sort lancé montre ses dégâts et ses mécaniques (Bombe, Piège, Cumul…), avec les PA de chaque tour, puis le nombre de lancers de chaque sort sur les 8 tours et ceux qui ne partent jamais.",
+        "Deux boutons : « Seul » pour voir uniquement ses instructions, ou « Avec l'équipe » pour que ses alliés jouent aussi (conditions sur les alliés comprises).",
+        "Avant, l'aperçu ne jouait que 3 tours contre des monstres de la zone : il oubliait 40 % des dégâts et un sort sur deux dans certains cas."
+      ]
+    },
     {
       "v": "1.2.9.4",
       "name": "Poisons des monstres",
