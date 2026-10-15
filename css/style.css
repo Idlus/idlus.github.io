@@ -729,6 +729,7 @@ nav.main button[aria-current="page"] .med{background:radial-gradient(circle at 4
 @media (max-width:859px){nav.main .med{width:30px;height:30px}nav.main button{padding-left:0}}
 .status .it .uico{width:18px;height:18px}
 .status .ic-btn svg.uico{width:18px;height:18px}
+.status .ic-btn.ic-bug img.uico{width:20px;height:20px;display:block} /* Signaler un bug, toujours visible */
 .qnum .uico,.qnum svg{width:18px;height:18px}
 .chx .ic .uico.mono{width:20px;height:20px}
 .catchips .uico{width:18px;height:18px}
@@ -4166,7 +4167,7 @@ button.cmdico{padding:0;cursor:pointer}
 /* 0.1.57 « Affichage plus clair » */
 /* barre du haut : plus de logo (il est dans le menu), tout tient sur une ligne */
 .status .brand{display:none}
-.status .ic-btn[data-act="search"]{margin-left:auto}
+.status .ic-btn[data-act="search"]{margin-left:auto}.status .ic-btn.ic-bug{margin-left:auto}.status .ic-bug+.ic-btn[data-act="search"]{margin-left:0}
 /* une seule ligne de pastilles : objectifs suivis, événement, boss des mondes, protecteur */
 .topchips{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:-7px 0 9px;padding:3px 2px}
 .topchips::-webkit-scrollbar{display:none}
@@ -4224,7 +4225,7 @@ body:not(.toast-bot) .toasts .toast{padding:6px 14px;font-size:13px}
   .status{gap:4px;padding:6px 8px;justify-content:space-between;margin-left:-6px;margin-right:-6px}
   .status .it{gap:3px;font-size:13px}
   .status .sabpill{gap:3px;padding-left:6px}
-  .status .ic-btn[data-act="search"]{margin-left:0}
+  .status .ic-btn[data-act="search"],.status .ic-btn.ic-bug{margin-left:0}
   .status .sabpill .seg button[aria-pressed="false"]{display:none}
   .status .sabpill .seg button{padding:2px 7px}
   .status .flame{padding:1px 6px}

@@ -1,6 +1,13 @@
 {
-  "version": "1.1.2.1",
+  "version": "1.1.2.2",
   "versions": [
+    {
+      "v": "1.1.2.2",
+      "name": "Bouton bug à l'écran",
+      "items": [
+        "Le bouton « Signaler un bug » (la coccinelle) est maintenant toujours visible en haut de l'écran, à côté de la recherche, sur PC comme sur téléphone"
+      ]
+    },
     {
       "v": "1.1.2.1",
       "name": "Dofus dans les codes cadeaux",
