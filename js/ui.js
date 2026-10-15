@@ -21,9 +21,13 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "1.1.2.6";
+const GAME_VERSION = "1.1.2.7";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "1.1.2.7", name: "Taux des montures", items: [
+    "Fiche de zone des Plaines Rocheuses de Cania, des Plaines herbeuses d'Otomaï et de la Plaine de Sakaï : nouvelle section « Montures sauvages » avec le taux de capture de chaque couleur, comme les butins (dragodinde 1 sur 80 par victoire, muldo 1 sur 240, volkorne 1 sur 400)",
+    "Une chance par victoire et non par héros, avec un filet dans le sac ; les bonus de butin ne changent pas ce taux. Avec tes combats dans la zone, le jeu estime le temps moyen entre deux captures",
+    "Le taux est aussi affiché dans Élevage › Capture, sur la fiche Monture des héros et dans la collection des montures" ] },
   { v: "1.1.2.6", name: "La zone à l'accueil", items: [
     "La vraie carte de la zone (ou la salle du boss du donjon) s'affiche aussi derrière le bandeau du Havre-Sac pendant une chasse, et sur la fiche de chaque sous-zone" ] },
   { v: "1.1.2.5", name: "Bouton des Éclats", items: [
@@ -2914,6 +2918,17 @@ function mapOpenZone(t) {
     z = best ? best[1] : null; }
   return (ui.mapOpen[key] = z);
 }
+/* 1.1.2.7 : taux de capture des montures sauvages, dans le format des butins (fiche de zone) */
+const mountRateTxt = (sp) => { const R = E.mountCatch(S, sp); return R ? `${dropPct(R.pct)} % par victoire (1 sur ${fmt(R.oneIn)})` : ""; };
+function mountZoneBox(sid) {
+  const sp = E.mountSpOfSub && E.mountSpOfSub(sid); if (!sp) return "";
+  const Z = E.MOUNT_SP[sp], R = E.mountCatch(S, sp); const nets = S.cons.filet || 0;
+  const seen = (S.mountSeen || {})[sp] || {};
+  return `<h3 class="sec">Montures sauvages <span class="tag soft">${Z.wild.length}</span></h3>
+    <div class="xs muted" style="margin:-4px 0 6px">Une chance par victoire, pas par héros : ${mountRateTxt(sp)} de capturer ${sp === "dd" ? "une dragodinde" : sp === "mu" ? "un muldo" : "un volkorne"} de niveau 1, avec un filet dans le sac. La couleur est tirée au hasard. Se monte dès le niveau ${Z.req}. Les bonus de butin ne changent pas ce taux.${R.perH ? ` Avec vos combats ici : ${E.mountEveryTxt(R.perH)}.` : ""}</div>
+    <div class="loot">${Z.wild.map((c) => `<div class="lcard"><span class="icobox">${im(mountImg(sp, c), "", E.mountName({ sp, c }))}</span><div><div class="n">${h(E.mountName({ sp, c }))}${seen[c] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p"><span class="pct">${dropPct(R.col * 100)} %</span> <span class="muted">par victoire (1 sur ${fmt(R.colOneIn)})</span></div></div></div>`).join("")}</div>
+    ${nets ? "" : `<div class="xs" style="margin-top:6px"><span class="tag soft">${emo("🪢")} Aucun filet</span> <span class="muted">sans filet, aucune capture : ${fmt(E.NET_COST)} kamas l'unité (Héros › Élevage › Capture) ou fabriqué par le Bricoleur niveau 40.</span></div>`}`;
+}
 function renderZoneView(sid) {
   const s = E.SUBS[sid]; const z = ZONES.find((x) => x.id === s.zone); const un = E.subUnlocked(S, sid);
   const here = S.hunting && S.sub === sid && !S.dungeon;
@@ -2938,6 +2953,7 @@ function renderZoneView(sid) {
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
       <div class="loot">${res.map((r) => `<div class="lcard">${im(resImg(r.n), "ico", r.n)}<div><div class="n">${h(r.n)}</div><div class="p"><span class="pct">${E.resRate(r.p).toFixed(1).replace(".", ",")} %</span> · ${r.from} monstre${r.from > 1 ? "s" : ""}${S.res[r.n] ? ` · <span class="num">${fmt(S.res[r.n])}</span> en stock` : ""}</div></div></div>`).join("") || `<div class="note">Aucune ressource.</div>`}</div>
+      ${mountZoneBox(sid)}
       ${its.length ? (() => { const own0 = E.ownedTpls(S); const show = ui.zoneAll === sid ? its : its.slice(0, 12); const nT = Math.max(1, E.team(S).length); /* 1.0.15 : chance par héros, 12 premiers puis « Tout voir » */
         return `<h3 class="sec">Équipements à looter <span class="tag soft">${its.length}</span></h3><div class="xs muted" style="margin:-4px 0 6px">Une chance par héros et par monstre : avec ${nT} héros, ${nT} chances. Chaque équipement tombe dans la zone qui donne ses ingrédients.</div><div class="loot">${show.map((e) => { const p = e.p * E.ITEM_DROP_SCALE; return `<div class="lcard" data-act="encitem" data-v="${e.t}" style="cursor:pointer"><span class="icobox">${im(itemImg(e.t), "", ITEMS[e.t].name)}</span><div><div class="n">${h(ITEMS[e.t].name)}${own0[e.t] ? ` <span class="tag good">✓</span>` : ""}</div><div class="p">niv. ${ITEMS[e.t].lvl} · <span class="pct">${dropPct(p)} %</span> <span class="muted">par héros (1 sur ${fmt(Math.max(1, Math.round(100 / p)))})</span></div></div></div>`; }).join("")}</div>${its.length > 12 ? `<div class="row"><button class="btn sm" data-act="zoneall" data-id="${sid}">${ui.zoneAll === sid ? "Réduire" : `Tout voir (${its.length})`}</button></div>` : ""}`; })() : ""}
       ${dg ? `<h3 class="sec">Donjon${(s.dungeons || []).length > 1 ? "s" : ""}</h3>${(s.dungeons || [s.dungeon]).map(dungeonCard).join("")}` : ""}
@@ -5568,7 +5584,7 @@ function mountPanel(c) {
   const others = mine.filter((x) => x.uid !== (M && M.uid));
   const nets = S.cons.filet || 0; const hunting = S.hunting && S.sub;
   const zones = E.MOUNT_ORDER.map((sp) => { const Z = E.MOUNT_SP[sp]; const s = E.SUBS[Z.sub]; const here = hunting === Z.sub;
-    return `<div class="li ${here ? "" : ""}"><span class="icobox">${im(mountImg(sp, Z.wild[0]), "", E.MOUNTS[sp].name)}</span><span class="grow"><b>${mountSpName(sp)} sauvages</b> <span class="xs muted">héros niveau ${Z.req}</span><br><span class="xs muted">${h(s.name)} (niv. ${s.lvl[0]}-${s.lvl[1]}) · couleurs : ${Z.wild.join(", ")}</span></span>${here ? `<span class="tag good">en chasse ici</span>` : ""}</div>`; }).join("");
+    return `<div class="li ${here ? "" : ""}"><span class="icobox">${im(mountImg(sp, Z.wild[0]), "", E.MOUNTS[sp].name)}</span><span class="grow"><b>${mountSpName(sp)} sauvages</b> <span class="xs muted">héros niveau ${Z.req}</span><br><span class="xs muted">${h(s.name)} (niv. ${s.lvl[0]}-${s.lvl[1]}) · couleurs : ${Z.wild.join(", ")}<br><span class="pct">${mountRateTxt(sp)}</span></span></span>${here ? `<span class="tag good">en chasse ici</span>` : ""}</div>`; }).join("");
   return `<div class="panel"><div class="phead"><h2>Monture ${h(deNom(c.name))}</h2>${M && !blocked ? `<button class="btn sm" data-act="mountoff">Descendre</button>` : ""}</div><div class="pad stack">
     ${blocked ? `<div class="empty">Le montilier prend la place de la monture. Retirez-le pour monter une dragodinde, un muldo ou un volkorne.</div>`
       : M ? mountCard(M, c, { big: true }) + (M.lvl < E.MOUNT_MAX ? `<div class="mtshare"><span class="small"><b>Part d'XP donnée à la monture</b></span>${c.lvl >= E.MAX_LVL ? `<span class="tag good">toute l'XP (héros au niveau maximum)</span>` : `<span class="seg">${E.MOUNT_SHARES.map((v) => `<button data-act="mountshare" data-v="${v}" aria-pressed="${share === v}">${v} %</button>`).join("")}</span>`}

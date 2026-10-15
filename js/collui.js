@@ -58,7 +58,7 @@
       Object.keys(Sp.cols).forEach((c) => {
         const col = Sp.cols[c]; const L = Object.values(s.mounts || {}).filter((M) => M.sp === sp && M.c === c).sort((a, b) => b.lvl - a.lvl);
         const wild = Z.wild.includes(c);
-        const where = wild ? `Capture : ${subName(Z.sub)}${sb && sb.lvl ? ` (niv. ${sb.lvl[0]}-${sb.lvl[1]})` : ""}, avec un filet` : `Enclos : ${col.p ? col.p.join(" + ") : "élevage"}`;
+        const where = wild ? `Capture : ${subName(Z.sub)}${sb && sb.lvl ? ` (niv. ${sb.lvl[0]}-${sb.lvl[1]})` : ""}, avec un filet, 1 sur ${Math.round(Z.wild.length / Z.rate)} par victoire` : `Enclos : ${col.p ? col.p.join(" + ") : "élevage"}`;
         const worn = L.map((M) => E.mountOwner(s, M.uid)).find(Boolean) || null;
         out.push({ key: sp + ":" + c, sp, c, name: E.mountName({ sp, c }), img: mountImg(sp, c), stats: E.mountStatsMax(sp, c), lvl: Z.req, own: L.length > 0, L, worn, where, wild, sub: Z.sub, gen: col.g || 1, req: Math.max(E.MOUNT_LVL || 0, Z.req) });
       }); });

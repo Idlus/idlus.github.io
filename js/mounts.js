@@ -103,6 +103,21 @@
     S.stats.captures = (S.stats.captures || 0) + 1;
     return M;
   };
+  /* 1.1.2.7 : taux de capture affiché (fiche de zone, Monture, Élevage, Collection). Une chance par victoire (pas par héros),
+     les bonus de butin ne comptent pas ; chaque couleur sauvage a la même chance. perH : captures par heure d'après vos combats ici. */
+  E.mountCatch = (S, sp) => {
+    const Z = E.MOUNT_SP[sp]; if (!Z) return null;
+    const z = S && S.zoneStats && S.zoneStats[Z.sub];
+    const perH = z && z.s > 0 && z.w > 0 ? (z.w * 3600 / z.s) * Z.rate : 0;
+    return { rate: Z.rate, pct: Z.rate * 100, oneIn: Math.round(1 / Z.rate), col: Z.rate / Z.wild.length, colOneIn: Math.round(Z.wild.length / Z.rate), perH };
+  };
+  E.mountEveryTxt = (perH) => {
+    if (!(perH > 0)) return "";
+    if (perH >= 1) return `≈ ${String(+perH.toFixed(1)).replace(".", ",")} par heure`;
+    const m = 60 / perH; if (m < 90) return `≈ une toutes les ${Math.max(5, Math.round(m / 5) * 5)} min`;
+    const hh = m / 60; return `≈ une toutes les ${hh < 10 ? String(+hh.toFixed(1)).replace(".", ",") : Math.round(hh)} h`;
+  };
+  E.mountSpOfSub = (sid) => E.MOUNT_ORDER.find((k) => E.MOUNT_SP[k].sub === sid) || null;
   /* 1.0.32 : relâcher une monture pour libérer une place à l'écurie (définitif ; refusé si elle est à l'enclos) */
   E.releaseMount = (S, uid) => {
     const M = S.mounts && S.mounts[uid]; if (!M) return "Monture introuvable.";
