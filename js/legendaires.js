@@ -308,7 +308,7 @@
     if (p === "miroir" && S0.turns % 3 === 0) { S0.mirror = true; pop(F, e, "Miroir"); }
     if (p === "eclair" && S0.turns % 3 === 0) {
       const fs = foesOf(F, e).filter((m) => !m.fake); if (fs.length) { say(F, `Lance-Éclair de Menalt : un éclair frappe tous les ennemis !`);
-        fs.forEach((m) => { F.lgEcho = true; A().dealDamage(F, e, m, m.hpMax * val / 100 * (m.boss || m.st ? 0.5 : 1), "a"); F.lgEcho = false; }); }
+        fs.forEach((m) => { F.lgEcho = true; A().dealDamage(F, e, m, E.hpRef(m) * val / 100 * (m.boss || m.st ? 0.5 : 1), "a"); F.lgEcho = false; }); }
     }
     return true;
   };

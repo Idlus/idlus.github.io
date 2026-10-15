@@ -21,9 +21,12 @@ const BETA = /\/beta\//.test(location.pathname) || TESTMODE;
 const testerOk = () => BETA && (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || !!(window.CHAT && window.CHAT.role === "admin") || (() => { try { return localStorage.getItem("idlus-testeur") === "1"; } catch (e) { return false; } })()); // idlus-testeur : compte admin connecté sur le jeu public de ce navigateur
 let LS_KEY = BETA ? "dofousxen-save-beta" : "dofousxen-save"; // 1.0.11 : partie 1 ; les parties 2 et 3 ajoutent « -2 » et « -3 » (setSlot)
 /* ---------- Notes de mise à jour (bandeau « mise à jour appliquée ») ---------- */
-const GAME_VERSION = "2.0.5";
+const GAME_VERSION = "2.0.6";
 const DISCORD = "https://discord.gg/9ApPgWjPUM", DISCORD_BUGS = "https://discord.gg/2xX6F9764Z"; // invitation qui ouvre directement le forum des bugs
 const CHANGELOG = [
+  { v: "2.0.6", name: "Boss des mondes réparé", items: [
+    "Boss des mondes et boss de guilde : la pomme de pin du Dofus Dom de Pin et l'éclair du Lance-Éclair de Menalt comptent sur les PV normaux du boss. Avant, ils prenaient un pourcentage de ses PV géants et un seul essai pouvait faire 10 millions de PV"
+  ] },
   { v: "2.0.5", name: "Étoiles au bon endroit", guide: "maitrise", items: [
     "Arbre de Maîtrise : la souris vise de nouveau la bonne étoile quand le zoom de l'interface (Options) n'est pas à 100 %. Avant, le clic et le survol tombaient à côté",
     "Étoiles plus faciles à prendre : la zone de clic est plus grande (l'étoile la plus proche du curseur) et un petit glissement pendant le clic ne l'annule plus"

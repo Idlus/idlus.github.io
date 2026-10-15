@@ -9,6 +9,10 @@ Vos héros combattent automatiquement : à vous d'optimiser leur équipement, le
 
 La version de test (`/beta/`) est fermée depuis le 14/10/2026 : l'adresse renvoie vers le jeu (un lien `?code=` suit) et son service worker se désinstalle. La partie de test se lance depuis le panel admin du jeu public.
 
+## 2.0.6 « Boss des mondes réparé »
+
+Boss des mondes et boss de guilde : le Dom de Pin et le Lance-Éclair de Menalt (coups en % des PV de la cible) comptent sur les PV normaux du boss et plus sur ses PV ×1 000 (un essai pouvait faire 10 millions de PV).
+
 ## 2.0.5 « Étoiles au bon endroit »
 
 Arbre de Maîtrise : la souris vise la bonne étoile avec le zoom de l'interface, zones de clic plus grandes, un petit glissement n'annule plus le clic.

@@ -1368,6 +1368,7 @@
   const alive = (F, side) => F.ents.filter((e) => e.alive && e.side === side);
   /* 1.0.33 : vie de référence des mécaniques (soins en %, totems, bombes, âme liée, boucliers) : le boss de guilde a ses PV multipliés par 1 000 (E.gbossSim pose hpRef = ses PV normaux) */
   const hpR = (e) => e.hpRef || e.hpMax;
+  E.hpRef = hpR; // 2.0.6 : aussi pour les coups en % des PV de la cible (Dom de Pin, Lance-Éclair) contre les boss aux PV ×1 000
   /* 0.1.44 : Kolizéum. Un héros est « joueur » côté c, ou n'importe où dans un combat d'équipes (F.pvp) ;
      le glyphe du Féca et l'érosion y sont propres à chaque équipe (tm 0 ou 1). */
   const isHero = (F, t) => t.side === "c" || !!(F && F.pvp && t.st);

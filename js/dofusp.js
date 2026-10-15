@@ -215,7 +215,7 @@
     if (has(e, "sylvestre")) { const low = F.ents.filter((m) => m.alive && m.side === e.side && !m.summon && m.hp < m.hpMax).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0]; if (low) { A().doHeal(low, low.hpMax * V(F, "sylvestre", e) / 100, F); proc(F, e, "sylvestre", low.name); } }
     if (has(e, "emeraude") && F.round > 1 && (F.round - 1) % 4 === 0 && S0.emR !== F.round) { S0.emR = F.round; e.shield = (e.shield || 0) + Math.round(e.hpMax * V(F, "emeraude", e) / 100); proc(F, e, "emeraude", "bouclier"); }
     if (has(e, "dompin")) { const o = F.ents.filter((m) => m.alive && m.side !== e.side && !m.fake); const t = o[Math.floor(rnd() * o.length)];
-      if (t) { F.dpEcho = true; const d = A().dealDamage(F, e, t, t.hpMax * V(F, "dompin", e) / 100 * (t.boss ? 0.5 : 1), "t"); F.dpEcho = false; proc(F, e, "dompin", `${t.name} −${d}`); if (!t.alive) A().flog(F, `${t.name} est vaincu.`, "ko"); } }
+      if (t) { F.dpEcho = true; const d = A().dealDamage(F, e, t, E.hpRef(t) * V(F, "dompin", e) / 100 * (t.boss ? 0.5 : 1), "t"); F.dpEcho = false; proc(F, e, "dompin", `${t.name} −${d}`); if (!t.alive) A().flog(F, `${t.name} est vaincu.`, "ko"); } }
   };
   E.dofusTurn = (S, F, e) => E.dofpTurn(S, F, e);
   /* le Dokoko n'a pas de caractéristiques : sa ligne de bonus renvoie à son passif */

@@ -1,6 +1,13 @@
 {
-  "version": "2.0.5",
+  "version": "2.0.6",
   "versions": [
+    {
+      "v": "2.0.6",
+      "name": "Boss des mondes réparé",
+      "items": [
+        "Boss des mondes et boss de guilde : la pomme de pin du Dofus Dom de Pin et l'éclair du Lance-Éclair de Menalt comptent sur les PV normaux du boss. Avant, ils prenaient un pourcentage de ses PV géants et un seul essai pouvait faire 10 millions de PV"
+      ]
+    },
     {
       "v": "2.0.5",
       "name": "Étoiles au bon endroit",

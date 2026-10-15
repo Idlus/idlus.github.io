@@ -58,3 +58,16 @@ const html = require("fs").readFileSync(require("path").join(__dirname, "..", "i
 ["js/wboss.js", "js/wbossui.js"].forEach((f) => assert.ok(html.includes(`<script src="${f}?v=`), `${f} absent de index.html`));
 assert.ok(html.indexOf("js/legendaires.js") < html.indexOf("js/wboss.js"), "wboss.js après legendaires.js");
 console.log("ok - index.html charge le Boss des mondes");
+
+// 5. 2.0.6 : un coup en % des PV de la cible (Dom de Pin) compte sur les PV normaux du boss, pas sur ses PV ×1 000
+//    (avant : un seul porteur faisait 50 000 à 110 000 points, soit 5 à 11 millions de PV en un essai).
+{
+  require("../js/legendaires.js"); require("../js/dofusp.js");
+  const T = E.newState("Pin", "iop"); T.chars[0].lvl = 200; ["eni", "feca", "cra"].forEach((k, i) => { const x = E.addChar(T, k, "P" + i, 200); x.inTeam = true; });
+  T.chars.forEach((c) => E.refreshSpells(c, E.charStats(T, c)));
+  const def = E.wbDef(1), seed = E.wbSeed(1, "pin", 0);
+  const sans = E.wbSim(T, def, 1, seed, t).points;
+  const o = E.dofpOf; E.dofpOf = (S, c) => (c === S.chars[0] ? ["dompin"] : o(S, c));
+  try { const avec = E.wbSim(T, def, 1, seed, t).points; assert.ok(avec < sans * 2 + 300, `Dom de Pin au Boss des mondes : ${sans} → ${avec} points`); console.log(`ok - Dom de Pin au Boss des mondes (${sans} → ${avec} points)`); }
+  finally { E.dofpOf = o; }
+}

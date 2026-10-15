@@ -116,7 +116,7 @@
       const B = F.ents[F.bossIdx]; if (!B) return { err: "Boss introuvable." };
       F.ents.forEach((e) => { if (e.side === "m" && e !== B) { e.alive = false; e.hp = 0; e.gone = true; } }); // seul contre le boss
       B.mech = E.wbMechs(def); B.mturn = 0; B.shield = 0;
-      W.base = B.hpMax; B.hpMax = B.hp = W.base * E.WB_HP_MULT;
+      W.base = B.hpMax; B.hpRef = W.base; B.hpMax = B.hp = W.base * E.WB_HP_MULT; // 2.0.6 : vie de référence (comme le boss de guilde)
       const R = { n: 0, t: 0, f: 0, e: 0, a: 0 }; R[def.weak] = -50; R[def.res] = 50; B.res = R;
       if (phase >= 2) B.dmg *= 1.3;
       if (phase >= 3) B.debuffs.push({ vuln: 25, turns: 9999 });
