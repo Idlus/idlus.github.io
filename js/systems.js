@@ -326,6 +326,7 @@
     { id: "chambre",  name: "Chambre",              icon: "almanax",      color: "#c7a0ff", desc: "Progression hors ligne",    ups: ["offtime", "offrate"], slots: () => 2 },
     { id: "atelier",  name: "Atelier",              icon: "forge",        color: "#9ad0c2", desc: "Fabrication automatique",   ups: [], post: "atelier", slots: () => 2 },
     { id: "enclos",   name: "Enclos",               icon: "ailes",        color: "#d9a066", desc: "Élevage des montures",       ups: [], post: "enclos", slots: () => 3 },
+    { id: "menagerie", name: "Ménagerie",           icon: "ailes",        color: "#e6bd57", desc: "Tes familiers s'y promènent", ups: [], post: "menagerie" }, // 1.1 : album de la ménagerie, palier 75
   ];
   E.room = (id) => E.ROOMS.find((r) => r.id === id);
   E.roomSlots = (S, id) => { const R = E.room(id); return R && R.slots ? R.slots(S) + E.roomGrow(S, id) : 0; };

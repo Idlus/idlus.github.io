@@ -106,20 +106,54 @@ console.log(`ok - 10 min de chasse simulée : ${S.stats.wins}/${S.stats.fights} 
   E.flash = realFlash; E.dungeonUnlocked = realUnl;
   console.log(`ok - mutateur éclair : ${L.map((x) => x.mod).join(", ")} ; ${E.FLASH_MODS.length} modificateurs joués jusqu'au bout`);
 }
-// 0.1.8 : familiers et montiliers (repas, croissance, stats, obtention, sauvegarde)
+// 0.1.8 : familiers et montiliers ; 1.1 : âmes, friandises, montilier à l'XP, Éveil, traces, aptitudes, album
 {
   const S6 = E.newState("Test", "iop"); const c = S6.chars[0]; c.lvl = 70;
   const ids = Object.keys(E.PETS); assert.ok(ids.length >= 140, "familiers manquants");
-  ids.forEach((id) => { const p = E.PETS[id]; assert.ok(p.icon && Object.keys(p.stats).length, id + " sans icône ou bonus"); for (const k in p.stats) assert.ok(D.STATS[k], `${id} : stat inconnue ${k}`); assert.ok(p.kind === "zone" ? E.SUBS[p.sub] : D.DUNGEONS[p.dg], id + " sans lieu"); });
+  ids.forEach((id) => { const p = E.PETS[id]; assert.ok(p.icon && Object.keys(p.stats).length, id + " sans icône ou bonus"); for (const k in p.stats) assert.ok(D.STATS[k], `${id} : stat inconnue ${k}`); assert.ok(p.kind === "unique" || (p.kind === "zone" ? E.SUBS[p.sub] : D.DUNGEONS[p.dg]), id + " sans lieu"); assert.ok(E.petApts(id).length && E.petApts(id).every((a) => E.PET_APT[a]), id + " sans aptitude"); });
   const before = E.charStats(S6, c).age;
   const P = E.givePet(S6, "siroko"); assert.strictEqual(c.pet, P.uid, "le montilier doit être porté d'office");
   assert.ok(E.charStats(S6, c).age > before, "le montilier doit donner de l'Agilité");
-  S6.res["Blé"] = 1000; S6.petKeep["Blé"] = true; E.petTick(S6, 3 * 3600e3); assert.strictEqual(P.g, 0, "une ressource protégée ne se mange pas");
-  delete S6.petKeep["Blé"]; E.petTick(S6, 10 * 3600e3); assert.strictEqual(P.g, 20, "20 repas en 10 h");
-  const S7 = E.deserialize(E.serialize ? E.serialize(S6) : JSON.stringify(S6)); assert.ok(S7.pets[P.uid] && S7.chars[0].pet === P.uid, "familier perdu à la sauvegarde");
+  assert.ok(E.charStats(S6, c).vit > 0 && E.petStatsAt("siroko", 100).vit === E.MONTI_BONUS.vit, "bonus du montilier (Vitalité)");
+  S6.res["Blé"] = 1000; E.petTick(S6, 10 * 3600e3); assert.strictEqual(S6.res["Blé"], 1000, "plus de repas automatiques");
+  // le montilier grandit avec l'XP du héros (40 %)
+  const g0 = P.g; const kept = 1e9 - E.montiXpShare(S6, c, 1e9); assert.strictEqual(kept, 6e8, "40 % de l'XP au montilier"); assert.ok(P.g > g0, "le montilier grandit avec l'XP");
+  // un familier grandit avec les âmes ; ses proies comptent triple
+  const c2 = E.addChar ? null : null; void c2;
+  E.equipPet(S6, c.id, null); const Q = E.givePet(S6, "gelutin"); E.equipPet(S6, c.id, Q.uid); assert.strictEqual(Q.g, 1, "un nouveau familier commence niveau 1");
+  c.inTeam = true; const prey = [...E.petPrey("gelutin")][0]; assert.ok(prey, "le Gelutin a des proies");
+  E.petSouls(S6, Array.from({ length: 84 }, () => ({ key: prey, lvl: 1 }))); assert.strictEqual(Q.g, 2, "252 âmes = 1 niveau (proies ×3)");
+  E.petSouls(S6, [{ key: "zzz", lvl: 1 }]); assert.strictEqual(Q.s, 3, "un autre monstre donne 1 âme");
+  // friandises : 20 Blé = +1 niveau, 5 par jour
+  for (let i = 0; i < 6; i++) E.petTreat(S6, Q.uid); assert.strictEqual(Q.g, 7, "5 friandises par jour"); assert.strictEqual(S6.res["Blé"], 900, "20 Blé par friandise");
+  // Éveil : niveau 100, Essence et kamas ; un double donne de l'Essence
+  assert.ok(E.petAwaken(S6, Q.uid), "pas d'Éveil avant le niveau 100");
+  Q.g = 100; E.givePet(S6, "gelutin"); assert.strictEqual(E.petEss(S6), E.PET_DUP_ESS, "un double donne de l'Essence");
+  E.addEss(S6, 100); S6.kamas = 60000; assert.strictEqual(E.petAwaken(S6, Q.uid), null, "Éveil ★1"); assert.strictEqual(Q.st, 1); assert.strictEqual(E.petEss(S6), 50);
+  assert.strictEqual(E.petStats(S6, c).vit, Math.round(60 * 1.1), "+10 % par étoile");
+  // traces : 600 victoires → 1 sur 1 500 pour toujours
+  delete S6.pets[Q.uid]; c.pet = null; assert.strictEqual(E.petHuntRate(S6, "inc_champs"), E.PET_ZONE_RATE);
+  const rr = E.rnd; E.rnd = () => 0.9; for (let i = 0; i < 700; i++) E.petHunt(S6, "inc_champs"); E.rnd = rr;
+  assert.strictEqual(E.petTraces(S6, "inc_champs"), 600, "600 traces au plus"); assert.strictEqual(E.petHuntRate(S6, "inc_champs"), 1 / 1500, "1 sur 1 500 après 600 traces");
+  const S7 = E.deserialize(E.serialize ? E.serialize(S6) : JSON.stringify(S6)); assert.ok(S7.pets[P.uid], "familier perdu à la sauvegarde");
   const old = JSON.parse(JSON.stringify(S6)); delete old.pets; delete old.petKeep; delete old.petLuck; delete old.petUid; delete old.chars[0].pet; const S8 = E.deserialize(JSON.stringify(old)); assert.ok(S8.pets && S8.petKeep && S8.petUid === 1, "ancienne sauvegarde sans familiers");
   let n = 0; for (let i = 0; i < 60; i++) { const o = []; E.petBoss(S6, "plateau_ush", 6, o); n += o.length; } assert.ok(n >= 1, "garantie du montilier à la 60e victoire");
-  console.log(`ok - familiers : ${ids.length} familiers et montiliers, repas, croissance, garantie`);
+  // album : paliers, Chacha Doré et titre à 140
+  const S9 = E.newState("Album", "iop"); ids.filter((id) => E.PETS[id].kind !== "unique").slice(0, 140).forEach((id) => E.givePet(S9, id));
+  assert.ok(E.petOwned(S9, "chacha_dore") && (S9.titlesExtra || []).includes(E.PET_TITLE), "Chacha Doré et titre au palier 140");
+  assert.strictEqual(E.petAlbum(S9), 140, "le Chacha Doré ne compte pas dans l'album");
+  console.log(`ok - familiers : ${ids.length} familiers et montiliers, âmes, friandises, Éveil, traces, album`);
+}
+// 1.1 : aptitudes des familiers en combat (pastille, souffle, écaille, esquive, dernier compagnon)
+{
+  const S = E.newState("Apt", "iop"); const c = S.chars[0]; c.lvl = 100; c.inTeam = true;
+  const P = E.givePet(S, "bwak_de_feu"); P.g = 100; P.st = 5; c.pet = P.uid;
+  const ent = E.petEnt(S, c); assert.ok(ent && ent.apts[0] === "souffle" && ent.aura, "aptitude et aura du Bwak ★5");
+  let procs = 0, fights = 0; E.startHunt(S, "inc_champs");
+  for (let i = 0; i < 40 && procs === 0; i++) { S.fight = null; E.startFight(S); const F = S.fight; if (!F) break; fights++;
+    assert.ok(F.ents.some((e) => e.pet && e.pet.id === "bwak_de_feu"), "le héros garde son familier en combat"); let n = 0; while (!F.over && n++ < 5000) E.step(S); procs += (F.petN || {})["Flammèche"] || 0; }
+  assert.ok(fights && procs > 0, "la Flammèche se déclenche en combat");
+  console.log(`ok - aptitudes des familiers : ${fights} combats, ${procs} Flammèches`);
 }
 // 0.1.9 : montures (données, capture, part d'XP, enclos, sauvegarde)
 {

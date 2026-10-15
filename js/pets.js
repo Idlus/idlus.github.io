@@ -1,13 +1,24 @@
 /* ============================================================================
-   FAMILIERS ET MONTILIERS (0.1.8) — Idlus
-   Un familier se porte dès le niveau 10 ; il grandit en mangeant les ressources du sac
-   (un repas toutes les 30 min, même hors ligne ; sa nourriture préférée compte double ;
-   aucune pénalité s'il a faim). Un montilier prend à la fois la place du familier et
+   FAMILIERS ET MONTILIERS (0.1.8, refonte 1.1) — Idlus
+   Un familier se porte dès le niveau 10 ; un montilier prend à la fois la place du familier et
    celle de la monture, dès le niveau 60.
+   1.1 (choix de Mathis 1A à 7A) :
+   - Croissance au combat : chaque monstre vaincu par l'équipe donne 1 âme au familier porté, 3 pour ses
+     proies préférées (les monstres de sa zone ou de son donjon). 250 âmes = 1 niveau, niveau 1 à 100.
+     Sa nourriture préférée devient une friandise : 20 ressources = +1 niveau, 5 fois par jour et par familier.
+   - Un montilier grandit avec l'XP du héros (40 %, comme une monture) et vaut un peu plus qu'un familier
+     et une monture réunis (+300 Vitalité, +30 Puissance en plus de ses bonus).
+   - Aptitude de famille au niveau 100 (soin, flair, écaille, esquive, souffle, griffe, racines).
+   - Éveil ★1 à ★5 : +10 % de bonus par étoile, payé en Essence (la même que l'Élevage) et en kamas ; aura à ★5.
+     Un double donne de l'Essence (+150, +600 pour un montilier).
+   - Traces : chaque victoire dans la zone d'un familier qu'on n'a pas laisse une trace ; à 600 traces,
+     sa chance passe pour toujours de 1 sur 2 000 à 1 sur 1 500 (rien n'est garanti).
+   - Album de la ménagerie : paliers 10 Pension, 25 Sifflet, 40 Dernier compagnon, 50 Pistage, 75 Ménagerie,
+     100 Mue, 140 Chacha Doré (unique) et le titre « Maître de la ménagerie ».
    Obtention : familier de zone 1 chance sur 2 000 par victoire dans sa sous-zone ;
    familier rare de boss 1 sur 25 en stasis 7+ ; montilier 1 sur 25 en stasis 6+, garanti
    à la 60e victoire ; montilier légendaire (+1 PA) 1 sur 250 en stasis 8+, un peu plus
-   à chaque échec. Un double nourrit le familier déjà possédé (+20 % de croissance).
+   à chaque échec.
    Noms et icônes : familiers officiels DOFUS (DofusDB) — contenu © Ankama Games.
    ========================================================================== */
 (function (root) {
@@ -159,30 +170,43 @@
     "kwaltess": {"name":"Kwaltess","icon":121009,"stats":{"pa":1,"pui":30},"kind":"monti","fam":"l","dg":"trone_cour_sombre","lvl":60,"stasis":8},
     "kougnard": {"name":"Kougnard","icon":121014,"stats":{"pa":1,"ini":300},"kind":"monti","fam":"l","dg":"forgefroide_frizz","lvl":60,"stasis":8},
     "monture_du_venerable": {"name":"Monture du Vénérable","icon":121164,"stats":{"pa":1,"inv":1},"kind":"monti","fam":"l","dg":"chambre_tal_kasha","lvl":60,"stasis":8},
+    /* 1.1 : familier unique, donné au palier 140 de l'Album de la ménagerie */
+    "chacha_dore": {"name":"Chacha Doré","icon":18001,"stats":{"vit":200,"pui":40,"so":10},"kind":"unique","lvl":1,"gold":true},
   };
   E.PETS = PETS;
   E.PET_FAMS = { e: "Élémentaires", t: "Tactiques", c: "Combat", l: "Légendaires" };
   E.PET_LVL = 10; E.MONTI_LVL = 60;
-  E.PET_MEAL_MS = 30 * 60000; E.PET_MEAL_N = 5; E.PET_DUP_G = 20;
   E.PET_ZONE_RATE = 1 / 2000; E.PET_BOSS_RATE = 1 / 25; E.MONTI_RATE = 1 / 25; E.MONTI_PITY = 60;
   E.MONTI_LEG_RATE = 1 / 250; E.MONTI_LEG_STEP = 0.000004; // +0,0004 point de chance par échec (1 sur 125 après 1 000 échecs)
+  /* 1.1 : croissance, Éveil, traces */
+  E.PET_SOUL_LVL = 250; E.PET_PREY = 3; E.PET_PENSION = 0.5;
+  E.PET_TREAT_N = 20; E.PET_TREAT_DAY = 5;
+  E.MONTI_SHARE = 40; E.MONTI_LVL_FRAC = 0.05; // un niveau de montilier = 5 % d'un niveau du héros, en XP donnée
+  E.MONTI_BONUS = { vit: 300, pui: 30 };
+  E.PET_STAR_PCT = 10; E.PET_STAR_COST = [[200, 50000], [500, 150000], [1000, 400000], [1800, 800000], [2500, 1500000]];
+  E.PET_DUP_ESS = 150; E.MONTI_DUP_ESS = 600;
+  E.PET_TRACE_N = 600; E.PET_TRACE_RATE = 1 / 1500;
+  E.PET_TITLE = "Maître de la ménagerie";
   E.petSubs = {}; E.petDgs = {};
   for (const id in PETS) { const p = PETS[id]; if (p.sub) E.petSubs[p.sub] = id; if (p.dg) (E.petDgs[p.dg] = E.petDgs[p.dg] || []).push(id); }
 
   const isMonti = (id) => !!PETS[id] && PETS[id].kind === "monti";
   E.isMonti = isMonti;
   E.petReqLvl = (id) => (isMonti(id) ? E.MONTI_LVL : E.PET_LVL);
-  /* stats entières (PA, PM, Invocation) : seulement à 100 % de croissance ; les autres vont de 20 % à 100 % du maximum */
+  /* stats entières (PA, PM, Invocation) : seulement au niveau 100 ; les autres vont de 20 % à 100 % du maximum, +10 % par étoile.
+     Un montilier ajoute +300 Vitalité et +30 Puissance (1.1). */
   const WHOLE = ["pa", "pm", "inv"];
-  E.petStatsAt = (id, g) => {
-    const p = PETS[id]; const o = {}; if (!p) return o;
-    for (const k in p.stats) { const m = p.stats[k]; o[k] = WHOLE.includes(k) ? (g >= 100 ? m : 0) : Math.max(1, Math.round(m * (0.2 + 0.8 * Math.min(100, g) / 100))); }
+  E.petMax = (id) => { const p = PETS[id]; if (!p) return {}; if (p.kind !== "monti") return p.stats; const o = Object.assign({}, p.stats); for (const k in E.MONTI_BONUS) o[k] = (o[k] || 0) + E.MONTI_BONUS[k]; return o; };
+  E.petStatsAt = (id, g, st) => {
+    const p = PETS[id]; const o = {}; if (!p) return o; const m = E.petMax(id); const sm = 1 + (st || 0) * E.PET_STAR_PCT / 100;
+    for (const k in m) { const v = m[k]; o[k] = WHOLE.includes(k) ? (g >= 100 ? v : 0) : Math.max(1, Math.round(v * (0.2 + 0.8 * Math.min(100, g) / 100) * sm)); }
     return o;
   };
   E.petOf = (S, c) => { const P = c && c.pet && S.pets && S.pets[c.pet]; return P && PETS[P.id] ? P : null; };
-  E.petStats = (S, c) => { const P = E.petOf(S, c); return P && c.lvl >= E.petReqLvl(P.id) ? E.petStatsAt(P.id, P.g) : null; };
+  E.petStats = (S, c) => { const P = E.petOf(S, c); return P && c.lvl >= E.petReqLvl(P.id) ? E.petStatsAt(P.id, P.g, P.st) : null; };
   E.petOwner = (S, uid) => S.chars.find((c) => c.pet === uid);
   E.petOwned = (S, id) => Object.values(S.pets).find((P) => P.id === id);
+  E.petLvl = (P) => Math.max(1, Math.min(100, Math.floor(P.g || 0))); // le niveau affiché (l'ancienne croissance en %)
 
   E.equipPet = (S, cid, uid) => {
     const c = S.chars.find((x) => x.id === cid); if (!c) return "Héros introuvable.";
@@ -190,24 +214,42 @@
     const P = S.pets[uid]; if (!P) return "Familier introuvable.";
     if (c.lvl < E.petReqLvl(P.id)) return `Niveau ${E.petReqLvl(P.id)} requis.`;
     const o = E.petOwner(S, uid); if (o) delete o.pet;
+    if (S.petPension === uid) delete S.petPension;
     c.pet = uid; E.emit(S, "equip", {}); return null;
   };
 
-  /* gain d'un familier ; un double nourrit celui qu'on a déjà */
+  /* ---------- Essence (partagée avec l'Élevage) ---------- */
+  E.petEss = (S) => (S.elev && S.elev.ess) || 0;
+  E.addEss = (S, n) => { S.elev = S.elev || {}; S.elev.ess = Math.max(0, (S.elev.ess || 0) + n); };
+
+  /* gain d'un familier ; un double donne de l'Essence (1.1) */
   E.givePet = (S, id, why) => {
     const p = PETS[id]; if (!p) return null;
     const have = E.petOwned(S, id);
-    if (have) { have.g = Math.min(100, have.g + E.PET_DUP_G); E.note(S, `${p.name} en double : il nourrit le vôtre (+${E.PET_DUP_G} % de croissance).`, "rare"); return have; }
-    const uid = S.petUid++; const P = S.pets[uid] = { uid, id, g: 0, t: 0, got: E.now() };
+    if (have) { const n = isMonti(id) ? E.MONTI_DUP_ESS : E.PET_DUP_ESS; E.addEss(S, n); E.note(S, `${p.name} en double : +${n} Essence pour l'Éveil.`, "rare"); return have; }
+    const uid = S.petUid++; const P = S.pets[uid] = { uid, id, g: 1, s: 0, st: 0, got: E.now() };
+    if (isMonti(id)) P.x = 0;
+    if (S.petTrace && p.sub) delete S.petTrace[p.sub];
     E.note(S, `${isMonti(id) ? "Montilier" : "Familier"} obtenu : ${p.name}${why ? " (" + why + ")" : ""} !`, "rare");
     E.celebrate({ t: "pet", id });
     // porté d'office par le premier héros de l'équipe qui n'en a pas
     const free = E.team(S).concat(S.chars).find((c) => !c.pet && c.lvl >= E.petReqLvl(id)); if (free) free.pet = uid;
+    if (p.kind !== "unique") E.petAlbumCheck(S);
     return P;
   };
 
-  /* chasse : petite chance d'obtenir le familier de la sous-zone */
-  E.petHunt = (S, sid) => { const id = E.petSubs[sid]; return id && rnd() < E.PET_ZONE_RATE ? E.givePet(S, id, "trouvé en chasse") : null; };
+  /* chasse : petite chance d'obtenir le familier de la sous-zone ; les traces la montent à 1 sur 1 500 pour toujours (4A, version de Mathis) */
+  E.petTraces = (S, sid) => (S.petTrace && S.petTrace[sid]) || 0;
+  E.petHuntRate = (S, sid) => (E.petTraces(S, sid) >= E.PET_TRACE_N ? E.PET_TRACE_RATE : E.PET_ZONE_RATE);
+  E.petHunt = (S, sid) => {
+    const id = E.petSubs[sid]; if (!id) return null;
+    if (E.petOwned(S, id)) return rnd() < E.PET_ZONE_RATE ? E.givePet(S, id, "trouvé en chasse") : null; // un double reste possible (Essence)
+    const ok = rnd() < E.petHuntRate(S, sid);
+    S.petTrace = S.petTrace || {};
+    if (ok) return E.givePet(S, id, "trouvé en chasse");
+    if (S.petTrace[sid] === undefined || S.petTrace[sid] < E.PET_TRACE_N) S.petTrace[sid] = Math.min(E.PET_TRACE_N, Math.round(((S.petTrace[sid] || 0) + (E.petAlbum(S) >= 50 ? 1.25 : 1)) * 100) / 100);
+    return null;
+  };
   /* boss : familiers rares et montiliers */
   E.petBoss = (S, did, k, out) => {
     for (const id of E.petDgs[did] || []) {
@@ -221,37 +263,224 @@
     }
   };
 
-  /* repas : la nourriture préférée si elle est là (+2), sinon la ressource la plus abondante non protégée (+1) */
-  E.petEdible = (S, r) => !!RES[r] && !E.isKey(r) && r !== E.POUSSIERE && !S.petKeep[r];
-  const eat = (S, r, n) => { S.res[r] -= n; if (S.res[r] <= 0) delete S.res[r]; };
-  E.petMeal = (S, P) => {
-    const p = PETS[P.id]; const N = E.PET_MEAL_N;
-    if (p.food && (S.res[p.food] || 0) >= N && E.petEdible(S, p.food)) { eat(S, p.food, N); P.g = Math.min(100, P.g + 2); P.last = p.food; P.hungry = false; return 2; }
-    let best = null, bn = N - 1; for (const r in S.res) if (S.res[r] > bn && E.petEdible(S, r)) { best = r; bn = S.res[r]; }
-    if (!best) { P.hungry = true; return 0; }
-    eat(S, best, N); P.g = Math.min(100, P.g + 1); P.last = best; P.hungry = false; return 1;
+  /* ---------- 1.1 : croissance au combat (âmes) ---------- */
+  const preyCache = {};
+  E.petPrey = (id) => {
+    if (preyCache[id]) return preyCache[id]; const p = PETS[id]; const set = new Set();
+    if (p && p.sub && E.SUBS && E.SUBS[p.sub]) (E.SUBS[p.sub].monsters || []).forEach((m) => set.add(m));
+    const dg = p && p.dg && DUNGEONS[p.dg];
+    if (dg) { (dg.rooms || []).forEach((r) => (r.mobs || []).forEach((m) => set.add(m))); (dg.bossMobs || []).forEach((m) => set.add(m)); if (dg.boss) set.add(dg.boss); }
+    return (preyCache[id] = set);
   };
-  /* temps réel (ms), en jeu comme hors ligne ; seuls les familiers portés mangent */
-  E.petTick = (S, ms) => {
-    for (const c of S.chars) {
-      const P = E.petOf(S, c); if (!P || P.g >= 100) continue;
-      P.t = (P.t || 0) + ms; let guard = 0;
-      while (P.t >= E.PET_MEAL_MS && guard++ < 500) {
-        P.t -= E.PET_MEAL_MS;
-        if (E.petMeal(S, P) && P.g >= 100) { P.t = 0; E.note(S, `${PETS[P.id].name} a fini de grandir : bonus au maximum !`, "up"); break; }
-      }
+  const lvlUp = (S, P, n) => {
+    const was = P.g; P.g = Math.min(100, Math.floor(P.g) + n);
+    if (P.g >= 100 && was < 100) { P.s = 0; E.note(S, `${PETS[P.id].name} atteint le niveau 100 : bonus au maximum et aptitude « ${E.petAptName(P)} » !`, "up"); const o = E.petOwner(S, P.uid); if (o && E.refreshSpells) E.refreshSpells(o, E.charStats(S, o)); }
+  };
+  const addSouls = (S, P, n) => {
+    if (!P || P.g >= 100 || n <= 0 || isMonti(P.id)) return 0;
+    P.s = (P.s || 0) + n; let up = 0;
+    while (P.s >= E.PET_SOUL_LVL && P.g + up < 100) { P.s -= E.PET_SOUL_LVL; up++; }
+    if (up) lvlUp(S, P, up);
+    if (P.g >= 100) P.s = 0;
+    return up;
+  };
+  E.petSoulsFor = (id, mons) => { const prey = E.petPrey(id); return mons.reduce((a, m) => a + (prey.has(m.base || m.key) ? E.PET_PREY : 1), 0); };
+  /* appelé à chaque victoire (en ligne comme hors ligne) */
+  E.petSouls = (S, mons) => {
+    if (!mons || !mons.length) return;
+    const done = new Set();
+    for (const c of E.team(S)) { const P = E.petOf(S, c); if (!P || done.has(P.uid) || c.lvl < E.petReqLvl(P.id)) continue; done.add(P.uid); addSouls(S, P, E.petSoulsFor(P.id, mons)); }
+    const Q = E.petPensioner(S); if (Q && !done.has(Q.uid)) addSouls(S, Q, E.petSoulsFor(Q.id, mons) * E.PET_PENSION);
+  };
+  /* Pension (album 10) : un familier que personne ne porte grandit à moitié vitesse */
+  E.petPensioner = (S) => { const P = S.petPension && S.pets[S.petPension]; return P && E.petAlbum(S) >= 10 && !E.petOwner(S, P.uid) && !isMonti(P.id) && P.g < 100 ? P : null; };
+  E.setPension = (S, uid) => {
+    if (!uid) { delete S.petPension; return null; }
+    if (E.petAlbum(S) < 10) return "La Pension s'ouvre au palier 10 de l'album.";
+    const P = S.pets[uid]; if (!P) return "Familier introuvable.";
+    if (isMonti(P.id)) return "Un montilier grandit avec l'XP de son héros.";
+    if (P.g >= 100) return "Il est déjà au niveau 100.";
+    const o = E.petOwner(S, uid); if (o) delete o.pet;
+    S.petPension = uid; return null;
+  };
+  /* friandise : 20 de sa nourriture préférée = +1 niveau, 5 fois par jour et par familier */
+  E.petTreatsLeft = (S, uid) => { const T = S.petTreat; return E.PET_TREAT_DAY - (T && T.d === E.dayKey() ? (T.n[uid] || 0) : 0); };
+  E.petTreat = (S, uid) => {
+    const P = S.pets[uid]; if (!P) return "Familier introuvable."; const p = PETS[P.id];
+    if (!p.food) return "Ce familier n'a pas de friandise.";
+    if (P.g >= 100) return "Il est déjà au niveau 100.";
+    if (E.petTreatsLeft(S, uid) <= 0) return `${E.PET_TREAT_DAY} friandises par jour au plus : revenez demain.`;
+    if ((S.res[p.food] || 0) < E.PET_TREAT_N) return `Il faut ${E.PET_TREAT_N} × ${p.food}.`;
+    S.res[p.food] -= E.PET_TREAT_N; if (S.res[p.food] <= 0) delete S.res[p.food];
+    const d = E.dayKey(); if (!S.petTreat || S.petTreat.d !== d) S.petTreat = { d, n: {} }; S.petTreat.n[uid] = (S.petTreat.n[uid] || 0) + 1;
+    lvlUp(S, P, 1); return null;
+  };
+  /* les repas automatiques n'existent plus (1.1) : rien n'est mangé tout seul dans le sac */
+  E.petTick = () => 0;
+  /* montilier : une part de l'XP du héros, comme une monture (retourne ce que le héros ne garde pas) */
+  E.montiShare = (S, c) => { const P = E.petOf(S, c); if (!P || !isMonti(P.id) || P.g >= 100 || c.lvl < E.MONTI_LVL) return 0; return c.lvl >= E.MAX_LVL ? 100 : E.MONTI_SHARE; };
+  E.montiXpShare = (S, c, g) => {
+    const sh = E.montiShare(S, c); if (!sh || g <= 0) return 0; const P = E.petOf(S, c);
+    const mg = Math.round(g * sh / 100); const need = E.xpNeed(Math.min(c.lvl, E.MAX_LVL - 1)) * E.MONTI_LVL_FRAC;
+    P.x = (P.x || 0) + mg / need; const up = Math.floor(P.x); if (up > 0) { P.x -= up; lvlUp(S, P, up); } if (P.g >= 100) P.x = 0;
+    return mg;
+  };
+  /* temps restant estimé (en victoires) avant le niveau 100, pour un familier porté */
+  E.petSoulsLeft = (P) => Math.max(0, (100 - Math.floor(P.g)) * E.PET_SOUL_LVL - (P.s || 0));
+
+  /* ---------- Éveil ★1 à ★5 ---------- */
+  E.petStarCost = (P) => E.PET_STAR_COST[P.st || 0] || null;
+  E.petAwaken = (S, uid) => {
+    const P = S.pets[uid]; if (!P) return "Familier introuvable.";
+    if (P.g < 100) return "L'Éveil s'ouvre au niveau 100.";
+    const C = E.petStarCost(P); if (!C) return "Déjà éveillé au maximum (★5).";
+    if (E.petEss(S) < C[0]) return `Il faut ${C[0].toLocaleString("fr-FR")} Essence.`;
+    if (S.kamas < C[1]) return `Il faut ${C[1].toLocaleString("fr-FR")} kamas.`;
+    E.addEss(S, -C[0]); S.kamas -= C[1]; P.st = (P.st || 0) + 1;
+    E.note(S, `${PETS[P.id].name} s'éveille : ★${P.st}${P.st >= 5 ? ", avec son aura en combat" : ""} !`, "up");
+    if (P.st >= 5) E.celebrate({ t: "pet", id: P.id });
+    const o = E.petOwner(S, uid); if (o && E.refreshSpells) E.refreshSpells(o, E.charStats(S, o));
+    return null;
+  };
+
+  /* ---------- Aptitudes de famille (niveau 100) ---------- */
+  E.PET_APT = {
+    soin: { name: "Soin", txt: (m) => `${pc(8 * m)} % de chances par attaque de soigner l'allié le plus blessé (${pc(5 * m)} % de ses PV)` },
+    flair: { name: "Flair", txt: (m) => `+${pc(5 * m)} % de butin pour l'équipe (15 % au plus avec plusieurs familiers)` },
+    ecaille: { name: "Écaille", txt: (m) => `bouclier de ${pc(5 * m)} % des PV au début du combat` },
+    esquive: { name: "Esquive", txt: (m) => `${pc(6 * m)} % de chances d'esquiver une attaque` },
+    souffle: { name: "Souffle", txt: (m) => `${pc(8 * m)} % de chances par attaque d'un second coup (${pc(25 * m)} % des dégâts) sur l'ennemi le plus faible` },
+    griffe: { name: "Griffe", txt: (m) => `vole ${pc(5 * m)} % des dégâts infligés en PV` },
+    racines: { name: "Racines", txt: (m) => `−${pc(10 * m)} % de dégâts subis pendant les 2 premiers tours` },
+  };
+  const pc = (v) => String(Math.round(v * 10) / 10).replace(".", ",");
+  const TACT = ["tac", "fui", "epa", "epm", "rpa", "rpm", "ini", "pm", "po", "esq"];
+  const DEF = ["vit", "rt", "rf", "re", "ra", "rn", "dt", "df", "de", "da", "dn"];
+  const MONTI_APT = { e: "souffle", t: "esquive", c: "griffe", l: "racines" };
+  /* nom propre de l'aptitude quand la famille s'y prête (Bwak : Flammèche, Bouftou : Coup de tête…) */
+  const APT_NAME = [[/^Bwak/, "souffle", "Flammèche"], [/Bouf/, "souffle", "Coup de tête"], [/^Chacha|^Chaton|^Mini-Chacha/, "griffe", "Coup de griffe"], [/Tofu|Tofoudre|Tofüm/, "esquive", "Battement d'ailes"], [/Dragoune|Dragouf/, "ecaille", "Écailles de dragon"], [/^Kompost/, "racines", "Racines"]];
+  E.petApts = (id) => {
+    const p = PETS[id]; if (!p) return [];
+    if (p.kind === "unique") return ["griffe", "souffle"];
+    const nm = APT_NAME.find(([re]) => re.test(p.name)); if (nm) return [nm[1]];
+    if (p.kind === "monti") return [MONTI_APT[p.fam] || "souffle"];
+    const k = Object.keys(p.stats)[0];
+    if (k === "so") return ["soin"];
+    if (k === "pp" || k === "sa" || k === "pod") return ["flair"];
+    if (DEF.includes(k)) return ["ecaille"];
+    if (TACT.includes(k)) return ["esquive"];
+    return ["souffle"];
+  };
+  E.petAptMult = (id) => (PETS[id] && (PETS[id].kind === "monti" || PETS[id].kind === "unique") ? 1.5 : 1);
+  E.petAptName = (P) => { const id = P.id || P; const p = PETS[id]; const nm = p && APT_NAME.find(([re]) => re.test(p.name)); return E.petApts(id).map((a, i) => (i === 0 && nm ? nm[2] : E.PET_APT[a].name)).join(" + "); };
+  E.petAptTxt = (id) => E.petApts(id).map((a) => E.PET_APT[a].txt(E.petAptMult(id))).join(" ; ");
+  E.PET_AURA = 1; E.PET_AURA_MAX = 3; // ★5 : +1 % de dégâts à toute l'équipe par aura (3 % au plus, réglé par simulation)
+  E.petHasAura = (P) => !!P && ((P.st || 0) >= 5 || PETS[P.id].kind === "unique") && P.g >= 100;
+  /* ce que le combat retient du familier d'un héros (null avant le niveau 100) */
+  E.petEnt = (S, c) => {
+    const P = E.petOf(S, c); if (!P || c.lvl < E.petReqLvl(P.id)) return null;
+    const p = PETS[P.id]; const img = PETS[P.skin] ? PETS[P.skin].icon : p.icon;
+    return { id: P.id, name: p.name, icon: img, gold: !!p.gold || (P.skin && PETS[P.skin] && PETS[P.skin].gold), apts: P.g >= 100 ? E.petApts(P.id) : [], m: E.petAptMult(P.id), aura: E.petHasAura(P), apn: E.petAptName(P), last: E.petAlbum(S) >= 40 };
+  };
+  /* Flair : un peu plus de butin (15 % au plus) */
+  E.petFlair = (S) => Math.min(0.15, E.team(S).reduce((a, c) => { const P = E.petOf(S, c); return a + (P && P.g >= 100 && c.lvl >= E.petReqLvl(P.id) && E.petApts(P.id).includes("flair") ? 0.05 * E.petAptMult(P.id) : 0); }, 0));
+
+  /* ---------- combat : crochets appelés par engine.js ---------- */
+  const A = () => E.fightApi;
+  const has = (e, a) => !!(e && e.pet && e.pet.apts.includes(a));
+  const show = (F, e, txt, what) => {
+    const N = F.petN || (F.petN = {}); N[txt] = (N[txt] || 0) + 1;
+    const i = F.ents.indexOf(e); if (F.fx && i >= 0) F.fx.push({ seq: F.seq, k: "buff", t: i, txt, pet: 1 });
+    const seen = F.petSeen || (F.petSeen = {}); const key = i + ":" + txt; if (seen[key] === F.round) return; seen[key] = F.round;
+    A().flog(F, `🐾 ${txt} · ${e.pet.name} de ${e.name}${what ? " : " + what : ""}`, "buff dofpl");
+  };
+  E.petFight = (S, F) => {
+    if (F.pvp) return; let au = 0;
+    for (const e of F.ents) {
+      if (!e.pet || e.summon || e.side !== "c") continue;
+      if (e.pet.aura) au++;
+      if (has(e, "ecaille")) { e.shield = (e.shield || 0) + Math.round(e.hpMax * 0.05 * e.pet.m); show(F, e, PETS[e.pet.id] && /Dragou/.test(e.pet.name) ? "Écailles de dragon" : "Écaille"); }
+    }
+    F.petAura = Math.min(E.PET_AURA_MAX, au * E.PET_AURA) / 100;
+    if (au) A().flog(F, `🐾 Aura des familiers : +${Math.round(F.petAura * 100)} % de dégâts pour l'équipe.`, "buff dofpl");
+  };
+  E.petPre = (F, src, tgt, v) => {
+    if (F.pvp) return v;
+    if (F.petAura && src.side === "c" && tgt.side === "m") v *= 1 + F.petAura;
+    if (tgt.pet && tgt.side === "c" && src.side === "m") {
+      if (has(tgt, "esquive") && rnd() < 0.06 * tgt.pet.m) { show(F, tgt, "Esquive !"); return 0; }
+      if (has(tgt, "racines") && F.round <= 2) v *= 1 - 0.1 * tgt.pet.m;
+    }
+    return v;
+  };
+  E.petHit = (F, src, tgt, v, el) => {
+    if (F.pvp || F.petEcho || F.dpEcho || !src.pet || src.summon || src.side !== "c" || tgt.side !== "m" || v <= 0) return;
+    src.petLast = v; const m = src.pet.m; const R = src.petR || (src.petR = {});
+    if (has(src, "griffe") && src.alive) A().doHeal(src, v * 0.05 * m, F);
+    if (has(src, "soin") && R.soin !== F.round && rnd() < 0.08 * m) {
+      const low = F.ents.filter((x) => x.alive && x.side === "c" && !x.summon && x.hp < x.hpMax).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax)[0];
+      if (low) { R.soin = F.round; A().doHeal(low, low.hpMax * 0.05 * m, F); show(F, src, "Soin", low.name); }
+    }
+    if (has(src, "souffle") && R.souffle !== F.round && rnd() < 0.08 * m) {
+      const t = F.ents.filter((x) => x.alive && x.side === "m" && !x.fake).sort((a, b) => a.hp - b.hp)[0];
+      if (t) { R.souffle = F.round; F.petEcho = true; F.dpEcho = true; const d = A().dealDamage(F, src, t, v * 0.25 * m, el); F.petEcho = false; F.dpEcho = false;
+        show(F, src, src.pet.apn.split(" + ").find((n) => n !== "Coup de griffe") || "Souffle", `${t.name} −${d}`); if (!t.alive) A().flog(F, `${t.name} est vaincu.`, "ko"); }
     }
   };
-  /* temps restant avant 100 % (en ms), si les repas suivent */
-  E.petEta = (S, P) => {
-    const left = 100 - P.g; if (left <= 0) return 0; const p = PETS[P.id];
-    const fav = p.food && !S.petKeep[p.food] && (S.res[p.food] || 0) >= E.PET_MEAL_N * Math.ceil(left / 2);
-    return Math.max(0, Math.ceil(left / (fav ? 2 : 1)) * E.PET_MEAL_MS - (P.t || 0));
+  /* Dernier compagnon (album 40) : quand un héros tombe, son familier frappe une dernière fois l'ennemi le plus faible */
+  E.petDeath = (F, tgt) => {
+    if (F.pvp || !tgt.pet || !tgt.pet.last || tgt.summon || tgt.side !== "c" || tgt.petGone || !tgt.petLast) return; tgt.petGone = 1;
+    const t = F.ents.filter((x) => x.alive && x.side === "m" && !x.fake).sort((a, b) => a.hp - b.hp)[0]; if (!t) return;
+    F.petEcho = true; F.dpEcho = true; const d = A().dealDamage(F, tgt, t, tgt.petLast * 0.5, null); F.petEcho = false; F.dpEcho = false;
+    show(F, tgt, "Dernier compagnon", `${t.name} −${d}`); if (!t.alive) A().flog(F, `${t.name} est vaincu.`, "ko");
   };
+
+  /* ---------- Album de la ménagerie (7A, paliers inédits) ---------- */
+  E.PET_TIERS = [
+    { n: 10, id: "pension", name: "Pension", txt: "un familier que personne ne porte grandit à moitié vitesse" },
+    { n: 25, id: "sifflet", name: "Sifflet", txt: "les familiers sont enregistrés dans les équipes sauvegardées" },
+    { n: 40, id: "dernier", name: "Dernier compagnon", txt: "quand un héros tombe, son familier frappe une dernière fois" },
+    { n: 50, id: "pistage", name: "Pistage", txt: "les familiers manquants sont montrés sur la carte, traces +25 %" },
+    { n: 75, id: "menagerie", name: "Ménagerie", txt: "une pièce du Havre-Sac où tes familiers se promènent" },
+    { n: 100, id: "mue", name: "Mue", txt: "un familier prend l'apparence d'un autre que tu possèdes" },
+    { n: 140, id: "dore", name: "Chacha Doré", txt: "un familier unique (2 aptitudes, aura) et le titre « Maître de la ménagerie »" },
+  ];
+  E.petAlbumAll = () => Object.keys(PETS).filter((id) => PETS[id].kind !== "unique").length;
+  E.petAlbum = (S) => { if (!S || !S.pets) return 0; const seen = new Set(); for (const u in S.pets) { const P = S.pets[u]; if (PETS[P.id] && PETS[P.id].kind !== "unique") seen.add(P.id); } return seen.size; };
+  E.petTierOn = (S, id) => { const T = E.PET_TIERS.find((t) => t.id === id); return !!T && E.petAlbum(S) >= T.n; };
+  E.petAlbumCheck = (S) => {
+    const n = E.petAlbum(S); S.petTiers = S.petTiers || [];
+    for (const T of E.PET_TIERS) {
+      if (n < T.n || S.petTiers.includes(T.id)) continue; S.petTiers.push(T.id);
+      E.note(S, `Album de la ménagerie, palier ${T.n} : ${T.name} (${T.txt}) !`, "rare");
+      if (T.id === "dore") { if (!E.petOwned(S, "chacha_dore")) E.givePet(S, "chacha_dore", "Album de la ménagerie"); S.titlesExtra = S.titlesExtra || []; if (!S.titlesExtra.includes(E.PET_TITLE)) S.titlesExtra.push(E.PET_TITLE); }
+    }
+  };
+  /* Mue (album 100) : l'apparence d'un autre familier possédé */
+  E.setPetSkin = (S, uid, id) => {
+    const P = S.pets[uid]; if (!P) return "Familier introuvable.";
+    if (!id || id === P.id) { delete P.skin; return null; }
+    if (E.petAlbum(S) < 100) return "La Mue s'ouvre au palier 100 de l'album.";
+    if (!E.petOwned(S, id)) return "Il faut posséder ce familier.";
+    P.skin = id; return null;
+  };
+  E.petIcon = (P) => (P && PETS[P.skin] ? PETS[P.skin].icon : P && PETS[P.id] ? PETS[P.id].icon : 0);
+  /* Sifflet (album 25) : les équipes sauvegardées retiennent les familiers */
+  const compOf0 = E.compOf, applyComp0 = E.applyComp;
+  if (compOf0) E.compOf = (S) => { const K = compOf0(S); if (E.petAlbum(S) >= 25) { K.pets = {}; E.team(S).forEach((c) => { if (c.pet) K.pets[c.id] = c.pet; }); } return K; };
+  if (applyComp0) E.applyComp = (S, i) => {
+    const r = applyComp0(S, i); const K = (S.comps || [])[i];
+    if (r && !r.err && K && K.pets && E.petAlbum(S) >= 25) for (const cid in K.pets) { const c = S.chars.find((x) => String(x.id) === cid); const uid = K.pets[cid]; if (c && S.pets[uid] && c.pet !== uid && c.lvl >= E.petReqLvl(S.pets[uid].id)) E.equipPet(S, c.id, uid); }
+    return r;
+  };
+
+  if (E.ACTIONS) Object.assign(E.ACTIONS, { petTreat: "donner une friandise", petAwaken: "éveiller un familier", setPension: "mettre un familier en pension", setPetSkin: "changer l'apparence d'un familier" });
+
   /* Pods : plus de butin pendant l'absence (+5 % par 100 Pods dans l'équipe, 50 % au plus) */
   E.podBonus = (S) => Math.min(0.5, E.team(S).reduce((a, c) => a + ((E.petStats(S, c) || {}).pod || 0), 0) / 100 * 0.05);
   E.petWhere = (id) => {
     const p = PETS[id]; if (!p) return "";
+    if (p.kind === "unique") return "Album de la ménagerie : palier 140";
     if (p.songe) return "Marché onirique du Songe infini (10 000 Bribes de rêve)";
     if (p.kind === "zone") { const s = E.SUBS[p.sub]; return s ? `Chasse : ${s.name} (niv. ${s.lvl[0]}-${s.lvl[1]})` : ""; }
     return `Boss : ${DUNGEONS[p.dg].name}, stasis ${p.stasis} et plus`;
