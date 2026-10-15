@@ -2750,6 +2750,7 @@ function homeHtml() {
     </div>
     ${reco}
   </section>
+  ${window.PLUIE ? window.PLUIE.homeHtml() : ""}
   <section class="panel" style="margin-top:14px"><div class="phead"><h2>${G("target")} Aujourd'hui</h2><span class="xs muted ac-hide">${todo ? `${todo} chose${todo > 1 ? "s" : ""} à faire` : "rien d'urgent"} · renouvelé à minuit</span></div><div class="ac-tds">${tiles}</div></section>${window.GUIDE ? GUIDE.tipDay() : ""}
   ${houseHtml()}
   <section class="grid2 ac-grid" style="margin-top:14px">
@@ -10683,6 +10684,7 @@ function bootGame(pushNow) {
   if (ON && ON.enabled) setTimeout(staffLoad, 200);
   if (ON && window.CHAT) setTimeout(() => window.CHAT.start(), 300);
   if (ON && window.MARKET) setTimeout(() => window.MARKET.start(), 600);
+  if (ON && window.PLUIE) setTimeout(() => window.PLUIE.start(), 900); // 1.2.8 : pluie de kamas (js/pluie.js)
   if (ON && window.GUILD) setTimeout(() => window.GUILD.start(), 700);
   if (ON) { setTimeout(brisageNet, 5000); setInterval(brisageNet, 15000); }
   if (pushNow) setTimeout(() => onPush().then((r) => { if (r === "ok") toast("Partie envoyée sur ton compte."); }), 400);

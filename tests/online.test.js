@@ -289,6 +289,11 @@ const MOCK = () => {
       if (name === "adm_loop_save") { log(); d.loops = d.loops || []; const x = a.p_id ? d.loops.find((l) => l.id === a.p_id) : { id: d.loops.length + 1, sent: 0, active: true }; Object.assign(x, { body: a.p_body, every_min: a.p_every, banner: a.p_banner, chat: a.p_chat, show_min: a.p_show, ends: a.p_ends, next_at: a.p_now ? new Date().toISOString() : new Date(Date.now() + a.p_every * 6e4).toISOString() }); if (!a.p_id) d.loops.push(x); put(d); return { data: null, error: null }; }
       if (name === "adm_loop_on") { log(); const x = (d.loops || []).find((l) => l.id === a.p_id); if (x) x.active = a.p_on; put(d); return { data: null, error: null }; }
       if (name === "adm_loop_del") { log(); d.loops = (d.loops || []).filter((l) => l.id !== a.p_id); put(d); return { data: null, error: null }; }
+      // 1.2.8 : pluie de kamas (supabase/pluie.sql) : d.rain = état renvoyé par rain_state
+      if (name === "rain_state") return { data: d.rain || null, error: null };
+      if (name === "rain_join") { if (!d.rain || d.rain.st !== "open") return { data: { err: "Cette pluie de kamas est déjà finie." }, error: null }; d.rainJoin = (d.rainJoin || 0) + 1; d.rain.in = true; d.rain.n++; put(d); return { data: d.rain, error: null }; }
+      if (name === "adm_rain_open") { log(); d.rain = { id: 1, st: "open", total: a.p_total, msg: a.p_msg, by: "Xener", ends: new Date(Date.now() + a.p_min * 6e4).toISOString(), now: new Date().toISOString(), n: 0, share: 0, in: false, mine: true }; put(d); return { data: { ok: true, id: 1, ops: [] }, error: null }; } // pas d'opération : les numéros de l'hôtel de vente du test restent libres
+      if (name === "adm_rains") return { data: d.rain ? [Object.assign({ status: d.rain.st, at: new Date().toISOString() }, d.rain)] : [], error: null };
       if (name === "adm_announce") { log(); d.views = d.views || {}; (d.views.announces = d.views.announces || []).push({ id: 7, body: a.p_body, banner: true, until: null }); put(d); return { data: null, error: null }; }
       // 0.1.20 : hôtel de vente (une seule annonce, achetée une fois)
       const tpl = Object.keys(window.DATA.ITEMS).find((k) => window.DATA.ITEMS[k].lvl === 60 && window.DATA.ITEMS[k].slot === "coiffe"); const T = window.DATA.ITEMS[tpl];
@@ -704,6 +709,31 @@ const navClick = async (page, k) => { const how = await page.evaluate((k) => { c
     if (process.env.SHOTS) { await page.screenshot({ path: process.env.SHOTS + "/annonces-boucle.png", fullPage: true }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300); await page.screenshot({ path: process.env.SHOTS + "/annonces-boucle-mob.png", fullPage: true }); await page.setViewportSize(vp); }
     await page.click('[data-act="adm-loopon"][data-v="0"]'); await page.waitForTimeout(500);
     if (!/en pause/.test(await page.textContent(".adm"))) fail("annonces en boucle : pause non prise");
+    // 1.2.8 : pluie de kamas : Xener la lance depuis l'onglet Annonces (avec confirmation), un joueur participe depuis l'accueil puis reçoit sa part
+    const rk0 = await page.evaluate(() => window.DX.S.kamas);
+    await page.evaluate(() => { window.DX.S.kamas = 1e6; window.PLUIE.P.f.total = ""; window.CHAT.repaintAdmin(); }); await page.waitForSelector("#plTot", { timeout: 5000 });
+    await page.fill("#plTot", "5000"); await page.click('[data-act="pl-open"]'); await page.waitForSelector('[data-act="pl-open"][data-v="1"]', { timeout: 3000 });
+    await page.click('[data-act="pl-open"][data-v="1"]'); await page.waitForTimeout(800);
+    m = await mock(); if (!(m.admCalls || []).some((x) => x[0] === "adm_rain_open" && x[1].p_total === 5000 && x[1].p_min === 5 && x[1].p_announce === true)) fail("pluie de kamas : lancement non envoyé");
+    if (!/En cours/.test(await page.textContent("#plAdm"))) fail("pluie de kamas : pluie en cours absente du panel");
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); d.rain.mine = false; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.PLUIE.poll()); await page.waitForSelector("#plpill", { timeout: 3000 });
+    if (process.env.SHOTS) { await page.evaluate(() => { document.querySelectorAll("#wtip,#sndask").forEach((w) => w.remove()); }); await page.screenshot({ path: process.env.SHOTS + "/pluie-pastille.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await page.screenshot({ path: process.env.SHOTS + "/pluie-pastille-mob.png" }); await page.setViewportSize(vp); }
+    await page.evaluate(() => { window.DX.ui.tab = "home"; window.DX.ui.home = "apercu"; window.DX.render(); }); await page.waitForSelector('.pl-card [data-act="pl-join"]', { timeout: 3000 }); await page.waitForTimeout(1200);
+    if (await page.$("#plpill")) fail("pluie de kamas : pastille affichée en plus de la carte sur l'accueil");
+    if (process.env.SHOTS) { await page.evaluate(() => { document.querySelectorAll("#wtip,#sndask").forEach((w) => w.remove()); const c = document.querySelector(".pl-card"); scrollTo(0, Math.max(0, c.getBoundingClientRect().top + scrollY - 120)); }); await page.screenshot({ path: process.env.SHOTS + "/pluie-avant.png" }); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await page.evaluate(() => { const c = document.querySelector(".pl-card"); scrollTo(0, Math.max(0, c.getBoundingClientRect().top + scrollY - 120)); }); await page.screenshot({ path: process.env.SHOTS + "/pluie-avant-mob.png" }); await page.setViewportSize(vp); }
+    await page.click('.pl-card [data-act="pl-join"]'); await page.waitForTimeout(800);
+    if (!/Tu participes/.test(await page.textContent(".pl-card"))) fail("pluie de kamas : participation non affichée");
+    if (process.env.SHOTS) { const shot = async (f) => { await page.evaluate(() => { document.querySelectorAll("#wtip,#sndask").forEach((w) => w.remove()); const c = document.querySelector(".pl-card"); scrollTo(0, Math.max(0, c.getBoundingClientRect().top + scrollY - 120)); }); await page.screenshot({ path: process.env.SHOTS + f }); };
+      await shot("/pluie-accueil.png"); const vp = page.viewportSize(); await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); await shot("/pluie-accueil-mob.png"); await page.setViewportSize(vp); }
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); Object.assign(d.rain, { st: "done", share: 5000 }); localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.PLUIE.poll()); await page.waitForTimeout(300);
+    if (!/\+5[\s\u202f\u00a0]?000 kamas/.test(await page.textContent(".pl-card"))) fail("pluie de kamas : part reçue non affichée : " + await page.textContent(".pl-card"));
+    await page.evaluate(() => { const d = JSON.parse(localStorage.getItem("__mock")); delete d.rain; localStorage.setItem("__mock", JSON.stringify(d)); });
+    await page.evaluate(() => window.PLUIE.poll()); await page.waitForTimeout(300);
+    if (await page.$(".pl-card")) fail("pluie de kamas : carte encore là sans pluie");
+    await page.evaluate((k) => { window.DX.S.kamas = k; }, rk0);
+    await page.evaluate(() => window.CHAT.openAdmin("vue")); await page.waitForSelector(".adm .kpis", { timeout: 5000 });
     // 1.0.5.2 : codes cadeaux, la liste de choix reste ouverte quand le panel se redessine
     await page.click('.adm [data-act="adm-tab"][data-v="codes"]'); await page.waitForSelector("#gcCode", { timeout: 5000 });
     await page.evaluate(() => { const w = document.querySelector("#wtip"); if (w) w.remove(); }); // 1.0.30 : le menu a deux pages de plus, la bulle « Équiper un objet » descend sur le bouton

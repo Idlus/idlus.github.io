@@ -432,7 +432,7 @@
     if (A.tab === "sig") A.reps = await r("adm_reports");
     if (A.tab === "verif") A.flag = await r("adm_flagged");
     if (A.tab === "equipe") A.mods = await r("adm_mods");
-    if (A.tab === "ann") { A.anns = await ON.announces(); A.loops = await r("adm_loops"); } // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql)
+    if (A.tab === "ann") { A.anns = await ON.announces(); A.loops = await r("adm_loops"); if (window.PLUIE) await window.PLUIE.admLoad(); } // 1.1.2.4 : annonces en boucle (supabase/annonces_boucle.sql)
     if (A.tab === "hdv") A.hdv = await r("adm_hdv"); // 0.1.20, voir js/market.js
     if (A.tab === "guildes") A.guildes = await r("adm_guilds"); // 0.1.21, voir js/guilds.js
     if (A.tab === "codes") A.codes = await r("adm_gifts"); // 0.1.26, voir js/codes.js
@@ -456,7 +456,7 @@
     const b = id && document.getElementById(id); if (!b || b === document.activeElement) return;
     b.focus({ preventScroll: true }); try { if (s0 !== null && s0 !== undefined) b.setSelectionRange(s0, s1); } catch (e) {}
   }
-  const repaintAdm = () => { const m = $("#main"); if (m && window.DX.ui.tab === "admin") { if (window.GIFTS) window.GIFTS.readForm(); keepFocus(() => (m.innerHTML = admHtml(false))); } };
+  const repaintAdm = () => { const m = $("#main"); if (m && window.DX.ui.tab === "admin") { if (window.GIFTS) window.GIFTS.readForm(); if (window.PLUIE) window.PLUIE.readForm(); keepFocus(() => (m.innerHTML = admHtml(false))); } };
   function admHtml(loading) {
     if (window.PANEL && window.PANEL.html) return window.PANEL.html(loading); // 1.0.30 : Panel Xener, menu par thème et recherche (js/panel.js)
     const tabs = `<div class="atabs">${ATABS().map(([k, n, c]) => `<button class="${k === A.tab ? "on" : ""}" data-act="adm-tab" data-v="${k}">${n}${c ? ` <span class="n">${c}</span>` : ""}</button>`).join("")}</div>`;
@@ -516,6 +516,7 @@
         <div class="row small"><span class="muted">Où :</span><label class="row"><input type="checkbox" id="admAnnB" ${a.banner ? "checked" : ""}> Bandeau en haut du jeu</label><label class="row"><input type="checkbox" id="admAnnC" ${a.chat ? "checked" : ""}> Message dans le chat</label></div>
         <div class="row small"><span class="muted">Bandeau pendant :</span><select id="admAnnH">${[[1, "1 h"], [24, "24 h"], [168, "7 jours"], [0, "jusqu'à ce que je l'enlève"]].map(([v, n]) => `<option value="${v}" ${a.hours === v ? "selected" : ""}>${n}</option>`).join("")}</select><button class="btn primary" style="margin-left:auto" data-act="adm-announce">Publier</button></div></div>
         ${loopBox()}
+        <div id="plAdm">${window.PLUIE ? window.PLUIE.adminBox() : ""}</div>
         <div class="box"><h2>Bandeaux affichés</h2>${(A.anns || []).map((x) => `<div class="ln"><span class="grow">${h(x.body)}</span><span class="t">${x.until ? `jusqu'à ${new Date(x.until).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" })}` : "sans fin"}</span><button class="btn sm" data-act="adm-annend" data-id="${x.id}">Retirer</button></div>`).join("") || `<div class="ln muted">Aucun bandeau en ce moment.</div>`}</div>`;
     }
     if (A.tab === "equipe") {

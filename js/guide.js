@@ -800,13 +800,14 @@
       ["p", "**Chat** : canaux Général, Commerce, PvP, Guilde, Alliance, Privé et Hauts faits. Messages de 200 caractères au plus."],
     ] });
 
-  add({ id: "aide", f: "Communauté", n: "Suggestions, bugs et codes cadeaux", ic: "idee", page: "sugg", k: "suggestion idee bug signaler code cadeau discord",
+  add({ id: "aide", f: "Communauté", n: "Suggestions, bugs et codes cadeaux", ic: "idee", page: "sugg", k: "suggestion idee bug signaler code cadeau discord pluie de kamas cagnotte",
     ou: "Communauté › Suggestions · « Signaler un bug » en bas du menu · Options › Jeu › Code cadeau", de: "dès le début",
     b: () => [
       ["ul", [
         "**Suggestions** : propose une idée (titre et texte courts) ; sans serveur, elle est copiée et le Discord s'ouvre.",
         "**Signaler un bug** (en bas du menu) : décris ce qui s'est passé ; le diagnostic (version, appareil, page, dernières erreurs) peut être joint. Le rapport part directement pour être corrigé.",
         "**Codes cadeaux** : dans Options › Jeu, un code par partie. Ils sont annoncés en jeu et sur le Discord.",
+        "**Pluie de kamas** : de temps en temps, Xener donne des kamas de son propre compte pendant quelques minutes (annoncé dans le bandeau et le chat). Clique « Je participe » sur l'accueil : à la fin, la pluie est partagée à parts égales entre tous les participants. Il faut un compte.",
       ]],
     ] });
 

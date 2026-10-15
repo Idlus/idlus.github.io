@@ -73,7 +73,7 @@
       s.hdv.op = o.id; n++; if (p.got) got = true;
       // 1.0.30 : la vente directe (p.vd, js/venteui.js) a son propre journal (le surplus part toutes les 10 minutes) ; le Jackpot du Trool (p.jack) s'annonce
       if (o.t && p.vd) { s.venteLog = (Array.isArray(s.venteLog) ? s.venteLog : []); s.venteLog.unshift({ t: o.t, at: Date.now(), k: p.k || 0 }); s.venteLog = s.venteLog.slice(0, 20); }
-      else if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got || p.jack)) X().toast(o.t, "rare"); }
+      else if (o.t) { s.hdv.log.unshift(Object.assign({ t: o.t, at: Date.now(), k: p.k || 0 }, p.sold ? { s: 1 } : {})); if (!quiet && (p.sold || p.got || p.jack || p.rain)) X().toast(o.t, "rare"); }
     });
     s.hdv.log = s.hdv.log.slice(0, 40);
     if (n) { X().markDirty(); X().onPush(); X().renderStatus(); }

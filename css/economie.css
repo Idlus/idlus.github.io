@@ -89,3 +89,20 @@
 .fo-roll:after{bottom:auto;height:14px}
 .fo-roll:before{content:"";position:absolute;left:50%;bottom:0;height:14px;width:3px;margin-left:-1px;background:var(--gold);box-shadow:0 0 8px var(--gold);z-index:2}
 .fo-roll:has(.fo-idle):before,.fo-roll:has(.fo-idle):after{display:none}
+
+/* 1.2.8 : pluie de kamas (js/pluie.js) */
+.pl-card{position:relative;overflow:hidden;border-color:color-mix(in srgb,var(--gold) 50%,transparent)}
+.pl-card .phead{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 20%,transparent),transparent)}
+.pl-card .pad{position:relative}
+.pl-row{display:flex;justify-content:space-between;align-items:flex-end;gap:8px 14px;flex-wrap:wrap}
+.pl-end{text-align:right}
+.pl-sum{font-size:26px;font-weight:800;color:var(--gold);line-height:1.1}
+.pl-big{font-size:32px;font-weight:800;line-height:1}
+.pl-rain{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pl-rain i{position:absolute;top:-24px;width:15px;height:15px;background:url(../assets/ui/kamas.webp) center/contain no-repeat;opacity:.55;animation:plFall 3s linear infinite}
+.pl-card.done .pl-rain{display:none}
+@keyframes plFall{to{transform:translateY(260px) rotate(200deg)}}
+.pl-pill{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));white-space:nowrap;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-radius:999px;border:1.5px solid var(--gold);background:var(--panel);color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,.45)}
+.pl-pill .pl-go{background:var(--gold);color:var(--page);font-weight:800;border-radius:999px;padding:4px 10px}
+@media (max-width:640px){.pl-sum{font-size:22px}.pl-big{font-size:26px}.pl-pill{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:reduce){.pl-rain i{animation:none;top:auto;bottom:6px}}
