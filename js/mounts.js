@@ -132,7 +132,7 @@
   };
   /* part d'XP du héros donnée à sa monture (retourne ce que le héros ne garde pas) */
   E.mountXpShare = (S, c, g) => {
-    const M = E.mountOf(S, c); const sh = E.mountShare(S, c); if (!M || !sh || g <= 0) return 0;
+    const M = E.mountOf(S, c); const sh = E.mountShare(S, c); if (!M || !sh || g <= 0 || E.mountBlocked(S, c)) return 0; // 1.1 : rien pour la monture tant qu'un montilier la remplace
     const mg = Math.round(g * sh / 100); E.giveMountXp(S, M, mg); return mg;
   };
   /* Mangeoire : les montures à l'écurie (non montées) reçoivent une part de l'XP moyenne de l'équipe */

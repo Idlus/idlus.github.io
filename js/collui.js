@@ -32,6 +32,8 @@
 
   /* ---------- petits rendus ---------- */
   const petImg = (id) => (E.PETS[id] ? `assets/p/${E.PETS[id].icon}.webp` : "");
+  const petPic = (P) => `assets/p/${E.petIcon(P)}.webp`; // 1.1 : Mue (apparence d'un autre familier)
+  const starsHtml = (n) => `<span class="co-pst" aria-label="Éveil ${n} sur 5">${"★".repeat(n)}<i>${"★".repeat(5 - n)}</i></span>`;
   const mountImg = (sp, c) => `assets/mt/${E.mountIcon(sp, c)}.webp`;
   const PCT = ["cri", "rt", "rf", "re", "ra", "rn", "dsort"];
   const statName = (k) => (k === "pa" ? "PA" : k === "pm" ? "PM" : k === "po" ? "Portée" : k === "inv" ? "Invocation" : STATS[k] ? STATS[k].name.replace("% ", "") : k);
@@ -47,7 +49,7 @@
   function petEntries(s, monti) {
     return Object.keys(E.PETS).filter((id) => (E.PETS[id].kind === "monti") === monti).map((id) => {
       const p = E.PETS[id]; const P = E.petOwned(s, id) || null; const worn = P ? E.petOwner(s, P.uid) : null;
-      return { key: id, name: p.name, img: petImg(id), stats: p.stats, lvl: p.lvl, own: !!P, P, worn, where: E.petWhere(id), kind: p.kind, fam: p.fam, food: p.food, sub: p.sub, dg: p.dg, req: E.petReqLvl(id) };
+      return { key: id, name: p.name, img: P ? petPic(P) : petImg(id), gold: !!p.gold, stats: E.petMax(id), lvl: p.lvl, own: !!P, P, worn, where: E.petWhere(id), kind: p.kind, fam: p.fam, food: p.food, sub: p.sub, dg: p.dg, req: E.petReqLvl(id) };
     });
   }
   function mountEntries(s) {
@@ -94,23 +96,56 @@
       return `<button class="btn sm ${on ? "on" : ""}" data-act="co-peq" data-cid="${c.id}" data-v="${h(e.key)}" ${on || !ok ? "disabled" : ""} title="${h(tip)}">${X().cmed(c.cls, c.lvl, c.ren)} ${h(c.name)}${on ? " ✓" : !ok ? ` <span class="xs">niv. ${e.req}</span>` : ""}</button>`;
     }).join("");
   }
+  /* 1.1 : croissance, aptitude, friandise, Éveil, Pension, Mue */
+  function petGrow(s, e) {
+    const P = e.P; const id = e.key; const p = E.PETS[id]; const lv = E.petLvl(P); const mon = p.kind === "monti";
+    const pctNext = P.g >= 100 ? 100 : mon ? Math.floor((P.x || 0) * 100) : Math.floor((P.s || 0) / E.PET_SOUL_LVL * 100);
+    const barTxt = P.g >= 100 ? "Niveau 100 · bonus au maximum" : mon ? `Niveau ${lv} · ${pctNext} % vers le suivant` : `Niveau ${lv} · ${fmt(Math.floor(P.s || 0))} / ${E.PET_SOUL_LVL} âmes`;
+    const cur = E.petStatsAt(id, P.g, P.st);
+    const aptOn = P.g >= 100;
+    const prey = [...E.petPrey(id)].map((k) => (MONSTERS[k] ? MONSTERS[k].name : "")).filter(Boolean);
+    const lines = [`<div class="pbar co-pbar"><i style="width:${P.g >= 100 ? 100 : P.g}%"></i><span>${barTxt}</span></div>`, `<div class="small"><span class="muted">Maintenant :</span> <b class="pbon">${h(bonusTxt(cur)) || "—"}</b></div>`];
+    lines.push(`<div class="co-apt ${aptOn ? "on" : ""}"><b>🐾 ${h(E.petAptName(P))}</b><span class="xs">${h(E.petAptTxt(id))}${aptOn ? "" : " · au niveau 100"}</span></div>`);
+    if (E.petHasAura(P)) lines.push(`<div class="xs co-gold">Aura : +${E.PET_AURA} % de dégâts pour toute l'équipe en combat (${E.PET_AURA_MAX} % au plus).</div>`);
+    const btns = [];
+    if (P.g < 100 && mon) lines.push(`<div class="xs muted">Il grandit avec l'XP de son héros : ${E.MONTI_SHARE} % de l'XP gagnée lui revient jusqu'au niveau 100 (toute l'XP si le héros est niveau ${E.MAX_LVL}).</div>`);
+    if (P.g < 100 && !mon) {
+      lines.push(`<div class="xs muted">1 âme par monstre vaincu par l'équipe, ${E.PET_PREY} pour ses proies${prey.length ? ` (${h(prey.slice(0, 4).join(", "))}${prey.length > 4 ? "…" : ""})` : ""}. Encore ${fmt(E.petSoulsLeft(P))} âmes avant le niveau 100.</div>`);
+      if (p.food) { const have = s.res[p.food] || 0; const left = E.petTreatsLeft(s, P.uid); const ok = have >= E.PET_TREAT_N && left > 0;
+        btns.push(`<button class="btn sm ${ok ? "primary" : ""}" data-act="co-ptreat" data-uid="${P.uid}" ${ok ? "" : "disabled"} title="${h(`${E.PET_TREAT_N} × ${p.food} = +1 niveau (${left} sur ${E.PET_TREAT_DAY} aujourd'hui)`)}">Friandise · ${E.PET_TREAT_N} ${h(p.food)} <span class="xs">(${fmt(have)} · ${left}/${E.PET_TREAT_DAY})</span></button>`); }
+      if (E.petAlbum(s) >= 10) btns.push(s.petPension === P.uid ? `<button class="btn sm on" data-act="co-ppension" data-uid="0">En pension ✓</button>` : `<button class="btn sm" data-act="co-ppension" data-uid="${P.uid}" title="Il grandit à moitié vitesse sans être porté">Mettre en pension</button>`);
+    }
+    if (P.g >= 100) { const C = E.petStarCost(P);
+      lines.push(`<div class="small row" style="gap:8px;flex-wrap:wrap"><span><span class="muted">Éveil :</span> ${starsHtml(P.st || 0)}</span>${C ? `<span class="xs muted">★${(P.st || 0) + 1} : ${fmt(C[0])} Essence + ${fmt(C[1])} k · tu as ${fmt(E.petEss(s))} Essence</span>` : `<span class="xs co-gold">Éveil au maximum</span>`}</div>`);
+      if (C) { const ok = E.petEss(s) >= C[0] && s.kamas >= C[1]; btns.push(`<button class="btn sm ${ok ? "primary" : ""}" data-act="co-pawake" data-uid="${P.uid}" ${ok ? "" : "disabled"}>Éveiller ★${(P.st || 0) + 1}</button>`); } }
+    if (E.petAlbum(s) >= 100) { const own = Object.values(s.pets).map((Q) => Q.id).filter((x, i, A) => A.indexOf(x) === i && x !== id && E.PETS[x]).sort((a, b) => E.PETS[a].name.localeCompare(E.PETS[b].name, "fr"));
+      lines.push(`<label class="small row" style="gap:6px">Mue <select data-co="skin" data-uid="${P.uid}"><option value="">Son apparence</option>${own.map((x) => `<option value="${x}" ${P.skin === x ? "selected" : ""}>${h(E.PETS[x].name)}</option>`).join("")}</select></label>`); }
+    return lines.join("") + (btns.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${btns.join("")}</div>` : "");
+  }
+  function albumHtml(s) {
+    const n = E.petAlbum(s), all = E.petAlbumAll();
+    return `<section class="panel co-album"><div class="phead"><h2>Album de la ménagerie</h2><span class="small"><b class="num">${n}</b> / ${all} · Essence <b class="num">${fmt(E.petEss(s))}</b></span></div>
+      <div class="pad"><div class="co-mil">${E.PET_TIERS.map((T) => { const ok = n >= T.n; return `<div class="${ok ? "ok" : ""}"><b class="n">${T.n}</b><span><b>${h(T.name)}</b>${ok ? " ✓" : ""} · ${h(T.txt)}</span></div>`; }).join("")}</div></div></section>`;
+  }
   function petFiche(s, e) {
     const word = st.pk === "mt" ? "montures" : st.pk === "monti" ? "montiliers" : "familiers";
     let bar = "";
-    if (e.P) bar = `<div class="pbar"><i style="width:${e.P.g}%"></i><span>${e.P.g < 100 ? `Croissance ${e.P.g} %` : "Adulte : bonus au maximum"}</span></div>`;
     if (e.sp && e.L.length) { const M = e.L[0]; bar = `<div class="pbar"><i style="width:${M.lvl >= E.MOUNT_MAX ? 100 : Math.round(M.lvl / E.MOUNT_MAX * 100)}%"></i><span>Niveau ${M.lvl}${e.L.length > 1 ? ` · ${e.L.length} à l'écurie` : ""}</span></div>`; }
     const wearer = e.worn ? `<div class="small"><span class="muted">${e.sp ? "Montée par" : "Porté par"} :</span> ${h(e.worn.name)}</div>` : "";
     return `<div class="phead"><h2>${h(e.name)}</h2><span class="tag ${e.own ? "good" : "soft"}">${e.own ? "possédé" : "manquant"}</span></div><div class="pad co-pd">
-      <div class="big">${im(e.img, "", e.name)}<div class="stack" style="gap:3px;min-width:0"><b>${h(bonusTxt(e.stats))}</b><span class="xs muted">au maximum · ${h(kindTxt(e))}</span>${bar}</div></div>
+      <div class="big ${e.gold ? "co-pgold" : ""}">${im(e.img, "", e.name)}<div class="stack" style="gap:3px;min-width:0"><b>${h(bonusTxt(e.stats))}</b><span class="xs muted">au maximum${e.sp ? "" : " (avant l'Éveil)"} · ${h(kindTxt(e))}</span>${bar}</div></div>
+      ${e.P ? petGrow(s, e) : ""}
       <div class="small co-where"><span><span class="muted">Où :</span> ${h(e.where)}</span>${e.own ? "" : goBtn(e)}</div>
-      ${e.food ? `<div class="small"><span class="muted">Aime :</span> ${h(e.food)} <span class="xs muted">(compte double)</span></div>` : ""}
+      ${e.food && !e.P ? `<div class="small"><span class="muted">Friandise :</span> ${h(e.food)} <span class="xs muted">(${E.PET_TREAT_N} = +1 niveau)</span></div>` : ""}
+      ${!e.sp && !e.P && E.PETS[e.key] ? `<div class="co-apt"><b>🐾 ${h(E.petAptName(e.key))}</b><span class="xs">${h(E.petAptTxt(e.key))} · au niveau 100</span></div>` : ""}
+      ${!e.own && e.kind === "zone" && !E.PETS[e.key].songe ? (() => { const t = E.petTraces(s, e.sub); return `<div class="co-trace"><div class="row between small"><span>Traces <b class="num">${fmt(Math.floor(t))}</b> / ${E.PET_TRACE_N}</span><span class="${t >= E.PET_TRACE_N ? "co-gold" : "muted"} xs">${t >= E.PET_TRACE_N ? "1 chance sur 1 500, pour toujours" : "1 chance sur 2 000 · 1 sur 1 500 à 600 traces"}</span></div><div class="co-mini"><i style="width:${Math.min(100, t / E.PET_TRACE_N * 100)}%"></i></div></div>`; })() : ""}
       ${wearer}
       ${e.sp && e.L.length ? `<div class="small muted">À l'écurie (${E.stableN(s)} / ${E.stableCap(s)} places) :</div><div class="stack" style="gap:4px">${e.L.map((M) => { const o = E.mountOwner(s, M.uid); const enc = E.inPair(s, M.uid);
         return `<div class="row between small"><span>Niveau ${M.lvl} · petits ${M.kids}/${E.kidsCap(s)}${o ? ` · montée par ${h(o.name)}` : ""}${enc ? " · à l'enclos" : ""}</span><button class="btn sm" data-act="co-mfree" data-uid="${M.uid}" ${enc ? "disabled" : ""}>Relâcher</button></div>`; }).join("")}</div>` : ""}
-      ${e.own ? `<div class="small muted">Équiper sur :</div><div class="co-heroes">${heroBtns(s, e)}</div>` : `<p class="note xs">${e.sp ? (e.wild ? "Avec un filet dans le sac, chaque victoire dans cette zone sauvage peut la capturer, en ligne comme hors ligne." : "Cette couleur naît à l'enclos du Havre-Sac, en faisant se reproduire les deux couleurs indiquées.") : e.kind === "zone" ? "1 chance sur 2 000 par victoire dans sa sous-zone, même hors ligne." : e.kind === "boss" ? "Sur son boss, à partir de la stasis 7 : 1 chance sur 25." : "Sur son boss, à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire."}</p>`}
+      ${e.own ? `<div class="small muted">Équiper sur :</div><div class="co-heroes">${heroBtns(s, e)}</div>` : `<p class="note xs">${e.sp ? (e.wild ? "Avec un filet dans le sac, chaque victoire dans cette zone sauvage peut la capturer, en ligne comme hors ligne." : "Cette couleur naît à l'enclos du Havre-Sac, en faisant se reproduire les deux couleurs indiquées.") : e.kind === "unique" ? "Il rejoint ta ménagerie quand l'album atteint 140 familiers." : e.kind === "zone" ? `1 chance sur 2 000 par victoire dans sa sous-zone, même hors ligne. Chaque victoire laisse une trace : à ${E.PET_TRACE_N} traces, la chance passe à 1 sur 1 500 pour toujours${E.petAlbum(s) >= 50 ? " (Pistage : traces +25 %)" : ""}.` : e.kind === "boss" ? "Sur son boss, à partir de la stasis 7 : 1 chance sur 25." : "Sur son boss, à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire."}</p>`}
       <div class="xs muted">Les ${word} que tu n'as pas encore : touche-les pour voir où les trouver, avec « Y aller ».</div></div>`;
   }
-  const tileHtml = (e, sel) => `<button class="co-pt ${e.own ? "" : "no"} ${sel ? "sel" : ""}" data-act="co-psel" data-v="${h(e.key)}" aria-pressed="${sel}">${im(e.img, "", e.name)}${e.own ? `<span class="own">✓</span>` : ""}${e.worn ? `<span class="worn">${e.sp ? "montée" : "porté"}</span>` : ""}<b>${h(e.name)}</b><span>${h(bonusTxt(e.stats))}</span><span>${h(e.own ? (e.sp ? `niv. ${e.L[0].lvl}` : `niv. ${e.lvl}`) : e.where)}</span></button>`;
+  const tileHtml = (e, sel) => `<button class="co-pt ${e.own ? "" : "no"} ${sel ? "sel" : ""} ${e.gold ? "co-pgold" : ""}" data-act="co-psel" data-v="${h(e.key)}" aria-pressed="${sel}">${im(e.img, "", e.name)}${e.own ? `<span class="own">✓</span>` : ""}${e.worn ? `<span class="worn">${e.sp ? "montée" : "porté"}</span>` : ""}<b>${h(e.name)}</b><span>${h(bonusTxt(e.stats))}</span><span>${h(e.own ? (e.sp ? `niv. ${e.L[0].lvl}` : `niveau ${E.petLvl(e.P)}${e.P.st ? " · " + "★".repeat(e.P.st) : ""}`) : e.where)}</span></button>`;
   function petsHtml(s) {
     const { all, L, n } = listOf(s);
     const counts = PK.map(([k]) => { const A = entriesOf(s, k); return [A.filter((e) => e.own).length, A.length]; });
@@ -127,6 +162,7 @@
         <span class="co-chips">${chips.map(([k, nm, c]) => `<button class="co-chip" data-act="co-pf" data-v="${k}" aria-pressed="${st.f === k}">${nm} <span class="n">${c}</span></button>`).join("")}</span>
         <select data-co="bon" aria-label="Bonus"><option value="all">Tous les bonus</option>${keys.map((k) => `<option value="${k}" ${st.bon === k ? "selected" : ""}>${h(statName(k))}</option>`).join("")}</select>
         <select data-co="sort" aria-label="Tri">${[["lvl", "Tri : niveau"], ["nom", "Tri : nom"], ["bonus", "Tri : bonus"], ["own", "Possédés d'abord"]].map(([k, nm]) => `<option value="${k}" ${st.sort === k ? "selected" : ""}>${nm}</option>`).join("")}</select></div>
+      ${st.pk === "mt" ? "" : albumHtml(s)}
       <div class="co-2c"><section class="panel"><div class="phead"><h2>${title}</h2><span class="xs muted">${n.own} possédé${n.own > 1 ? "s" : ""} sur ${n.all}</span></div><div class="pad"><div class="co-pg">${grid}</div></div></section>
         ${phone() || !sel ? "" : `<section class="panel co-fiche">${petFiche(s, sel)}</section>`}</div></div>`;
   }
@@ -273,6 +309,22 @@
     try { if (e.side === "c" && E.collHas(S(), "aura")) c += " co-gold"; } catch (x) { /* partie pas encore chargée */ }
     return c;
   }
+  /* 1.1 : pastille du familier à côté de son héros en combat ; elle s'anime quand l'aptitude se déclenche */
+  function petBadge(e) {
+    if (!e || !e.pet || e.summon || e.side !== "c") return "";
+    return `<span class="petb ${e.pet.gold ? "gold" : ""} ${e.pet.aura ? "aura" : ""} ${e.pet.apts.length ? "" : "young"}" data-tip="${h(`${e.pet.name}${e.pet.apts.length ? " · " + e.pet.apn : " · aptitude au niveau 100"}`)}"><img src="assets/p/${e.pet.icon}.webp" alt="" loading="lazy"></span>`;
+  }
+  function petPulse(n) { const b = n && n.querySelector(".petb"); if (!b) return; b.classList.remove("go"); void b.offsetWidth; b.classList.add("go"); }
+  /* 1.1 : Ménagerie du Havre-Sac (album 75) : les familiers se promènent */
+  function menagerieHtml() {
+    const s = S(); const n = E.petAlbum(s);
+    if (n < 75) return `<p class="note">La Ménagerie s'ouvre au palier 75 de l'Album de la ménagerie (tu en as ${n}). Tes familiers viendront s'y promener.</p><button class="btn sm" data-act="nav" data-v="pets">Voir l'album</button>`;
+    const L = Object.values(s.pets).filter((P) => E.PETS[P.id]).sort((a, b) => (b.st || 0) - (a.st || 0) || b.g - a.g).slice(0, 24);
+    const pens = E.petPensioner(s);
+    return `<div class="co-men" aria-label="Ménagerie">${L.map((P, i) => { const p = E.PETS[P.id]; const w = E.petOwner(s, P.uid);
+      return `<span class="co-menp ${p.gold || (P.skin && E.PETS[P.skin] && E.PETS[P.skin].gold) ? "gold" : ""}" style="--x:${(i % 6) * 14 + 2 + ((i * 7) % 4)}%;--y:${Math.floor(i / 6) * 21 + 4 + ((i * 11) % 7)}%;--d:${6 + (i % 5) * 1.3}s;--dl:-${(i * 0.7) % 5}s" title="${h(`${p.name} · niveau ${E.petLvl(P)}${P.st ? " ★" + P.st : ""}${w ? " · avec " + w.name : ""}`)}"><img src="assets/p/${E.petIcon(P)}.webp" alt="${h(p.name)}" loading="lazy"></span>`; }).join("")}</div>
+      <p class="xs muted" style="margin:6px 0 0">${L.length} familier${L.length > 1 ? "s" : ""} se promènent${pens ? ` · en pension : ${h(E.PETS[pens.id].name)} (niveau ${E.petLvl(pens)})` : ""}.</p>`;
+  }
   if (window.VERIFY && window.VERIFY.summary && !window.VERIFY.summary.dsub) {
     const sum0 = window.VERIFY.summary;
     window.VERIFY.summary = (E0, S0) => { const r = sum0(E0, S0); try { const L = E.dpotSublimes(S0); if (L.length && r) r.dsub = L; } catch (x) { /* résumé sans Potentiel */ } return r; };
@@ -299,6 +351,12 @@
         if (!confirm(`Relâcher ${E.mountName(M)} (niveau ${M.lvl}) ? Elle disparaît pour toujours et libère une place à l'écurie.`)) return;
         const r = E.act(s, "releaseMount", M.uid); if (r) { X().toast(r, "warn"); return; }
         X().markDirty(); X().toast(`${E.mountName(M)} est relâché${M.sp === "dd" ? "e" : ""}.`); X().render(); paintSheet(); return; }
+      case "co-ptreat": case "co-pawake": case "co-ppension": { // 1.1 : friandise, Éveil, Pension
+        const uid = +d.uid; const P = s.pets[uid]; const nm = P ? E.PETS[P.id].name : "";
+        const r = a === "co-ptreat" ? E.act(s, "petTreat", uid) : a === "co-pawake" ? E.act(s, "petAwaken", uid) : E.act(s, "setPension", uid || null);
+        if (r) { X().toast(r, "warn"); return; }
+        X().markDirty(); X().toast(a === "co-ptreat" ? `${nm} : +1 niveau (niveau ${E.petLvl(P)}).` : a === "co-pawake" ? `${nm} s'éveille : ★${P.st} !` : uid ? `${nm} est en pension : il grandit à moitié vitesse.` : "Pension libérée.");
+        X().render(); paintSheet(); return; }
       case "co-regall": st.regAll = !st.regAll; break;
       case "co-sf": st.sf = d.v; st.sn = 30; break;
       case "co-smore": st.sn += 30; break;
@@ -326,14 +384,15 @@
     if (t.dataset.co === "q") st.q = t.value; else if (t.dataset.co === "sq") { st.sq = t.value; st.sn = 30; } else return;
     clearTimeout(qT); qT = setTimeout(() => { const m = $("#main"); if (!m) return; if (UI().tab === "pets") renderPets(m, true); else if ($("#main .co-sets-page")) X().render(); }, 160); }); // le champ garde le focus (repaintKeep)
   document.addEventListener("change", (ev) => { const t = ev.target; if (!t || !t.dataset || !t.dataset.co) return;
-    const k = t.dataset.co; if (k === "bon") st.bon = t.value; else if (k === "sort") st.sort = t.value; else if (k === "scid") { st.scid = t.value; st.sn = 30; } else return;
+    const k = t.dataset.co; if (k === "skin") { const r = E.act(S(), "setPetSkin", +t.dataset.uid, t.value || null); if (r) X().toast(r, "warn"); else X().markDirty(); X().render(); paintSheet(); return; } // 1.1 : Mue
+    if (k === "bon") st.bon = t.value; else if (k === "sort") st.sort = t.value; else if (k === "scid") { st.scid = t.value; st.sn = 30; } else return;
     X().render(); });
   /* un filtre de la page Dofus (Tous, En cours…) ramène à la liste des quêtes */
   document.addEventListener("click", (ev) => { const t = ev.target.closest && ev.target.closest('[data-act="qj-dfil"],[data-act="qj-dof"]'); if (t) st.pot = false;
     const g = ev.target.closest && ev.target.closest('.co-sheet [data-act="hvroomgo"]'); if (g) X().closeSheet(); }, true); // « Y aller » vers l'enclos depuis la fenêtre du téléphone
 
   window.COLL = {
-    render: renderPets, act, setsHtml, potBtn, potHtml, potLink, potOn: () => st.pot, cele, auraCls,
+    render: renderPets, act, setsHtml, potBtn, potHtml, potLink, potOn: () => st.pot, cele, auraCls, petBadge, petPulse, menagerieHtml,
     pickDofus: (id) => { if (id) st.dsel = id; st.pot = true; },
     setQuery: (q) => { st.sq = q || ""; st.sf = "all"; st.sn = 30; },
     /* recherche du jeu : un familier ou une monture ouvre sa fiche dans la page */

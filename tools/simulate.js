@@ -82,7 +82,7 @@ const FAM = flag("familiers");
 const EXO = arg("exo", "");
 const giveExo = (S) => { if (!EXO || !["pa", "pm", "po"].includes(EXO)) return; S.chars.forEach((c) => { const uid = c.equip.arme || c.equip.coiffe; const it = uid && S.items[uid]; if (it) it.exo = EXO; }); };
 const petFor = (c) => { const main = D.CLASSES[c.cls].main;
-  const ok = Object.keys(E.PETS).filter((id) => { const p = E.PETS[id]; return p.kind !== "boss" && p.fam !== "l" && c.lvl >= E.petReqLvl(id) && p.lvl <= c.lvl && (p.stats[main] || p.stats.pui); });
+  const ok = Object.keys(E.PETS).filter((id) => { const p = E.PETS[id]; return p.kind !== "boss" && p.kind !== "unique" && p.fam !== "l" && c.lvl >= E.petReqLvl(id) && p.lvl <= c.lvl && (p.stats[main] || p.stats.pui); });
   const val = (id) => { const st = E.PETS[id].stats; return (st[main] || 0) + (st.pui || 0) * 1.2 + (st.cri || 0) * 4; };
   return ok.sort((a, b) => val(b) - val(a))[0]; };
 const givePets = (S) => { if (!FAM) return; S.chars.forEach((c) => { const id = petFor(c); if (!id) return; const uid = S.petUid++; S.pets[uid] = { uid, id, g: 100, t: 0 }; c.pet = uid; E.refreshSpells(c, E.charStats(S, c)); }); };

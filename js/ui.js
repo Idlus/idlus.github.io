@@ -2415,7 +2415,7 @@ function houseHtml() {
     const lvl = H ? E.havreLvl(S, id) : 0; const cost = H ? E.havreCost(S, id) : 0; const can = !!H && lvl < H.max && S.kamas >= cost;
     const pl = R.slots ? placedOf(R) : []; const slots = R.slots ? E.roomSlots(S, R.id) : 0; const free = furn.filter((f) => E.FURN[f] && E.FURN[f].room === R.id && !E.isPlaced(S, f)).length;
     const t = R.post === "train" ? E.trainee(S) : null;
-    const sumb = H ? `+${fmt(lvl * H.per)}${H.unit.split(" (")[0]}` : R.post === "atelier" ? (lock ? `à construire · ${fmt(E.ATELIER_COST)} k` : "fabrication automatique") : "élevage des montures";
+    const sumb = H ? `+${fmt(lvl * H.per)}${H.unit.split(" (")[0]}` : R.post === "atelier" ? (lock ? `à construire · ${fmt(E.ATELIER_COST)} k` : "fabrication automatique") : R.post === "menagerie" ? (E.petAlbum && E.petAlbum(S) >= 75 ? "tes familiers s'y promènent" : `album ${E.petAlbum ? E.petAlbum(S) : 0}/75`) : "élevage des montures";
     const icons = pl.slice(0, 5).map((f) => `<span class="hvfi" data-tip="${h(f)}">${furnIco(f)}</span>`).join("");
     const empty = Math.max(0, slots - pl.length);
     const tip = free ? `Place libre : ${free} meuble${free > 1 ? "s" : ""} à placer` : `Place libre : voir les meubles pour ${R.name}`; // 1.0.24.2 : une place vide se clique
@@ -2471,6 +2471,7 @@ function houseShopHtml() {
 const roomSum = (R) => {
   const p = R.ups.map((id) => { const H = E.HAVRE.find((x) => x.id === id); return `+${fmt(E.havreLvl(S, id) * H.per)}${H.unit.split(" (")[0]}`; });
   if (R.slots) p.push(`meubles ${E.placed(S, R.id).length}/${E.roomSlots(S, R.id)}`);
+  if (R.post === "menagerie") { const n = E.petAlbum ? E.petAlbum(S) : 0; p.push(n >= 75 ? `${Object.keys(S.pets || {}).length} familiers en promenade` : `s'ouvre au palier 75 de l'album (${n}/75)`); }
   if (R.post === "train") { const t = E.trainee(S); p.push(t ? `${t.name} s'entraîne` : "personne à l'entraînement"); }
   if (R.post === "atelier") { const c = E.atelierHero(S); p.push(!S.atelier.built ? `à construire · ${fmt(E.ATELIER_COST)} k` : c ? `${c.name} fabrique` : "personne à l'atelier"); }
   if (R.post === "enclos") { const n = E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(S.mountSeen[sp] || {}).filter((c) => !E.isBico(c)).length, 0); const all = E.MOUNT_ORDER.reduce((a, sp) => a + Object.keys(E.MOUNTS[sp].cols).length, 0);
@@ -2481,6 +2482,7 @@ function roomBody(R) {
   if (R.soon) return `<p class="note">Bientôt.</p>`;
   let b = "";
   if (R.post === "enclos") b = enclosBody();
+  if (R.post === "menagerie") return window.COLL && window.COLL.menagerieHtml ? window.COLL.menagerieHtml() : ""; // 1.1 : album de la ménagerie, palier 75
   if (R.post === "train") { const t = E.trainee(S);
     b = t ? `<div class="trainee">${head(t)}<div class="grow"><b>${h(t.name)}</b> <span class="xs muted">${CLASSES[t.cls].name} niv. ${t.lvl}</span><div class="xs">Gagne <b class="plus">${fmt(Math.round(E.trainShare(S, t) * 1000) / 10)} %</b> de l'XP moyenne de l'équipe, sans combattre${E.trainMult(S, t) < 1 ? ` <span class="muted">(malus : ${E.trainGap(S, t)} niveaux sous l'équipe)</span>` : ""}</div><div class="bar xp"><i style="width:${t.lvl >= E.MAX_LVL ? 100 : pct(t.xp, E.xpNeed(t.lvl))}%"></i></div></div><button class="btn sm" data-act="trainpick">Changer</button></div>`
       : `<div class="trainee"><div class="grow small">Un héros hors de l'équipe peut s'entraîner ici : il gagne <b class="plus">${Math.round(E.TRAIN_SHARE * 100)} %</b> de l'XP moyenne de l'équipe, sans combattre, moins s'il a plus de ${E.TRAIN_FREE_GAP} niveaux de retard.</div><button class="btn sm primary" data-act="trainpick">Choisir</button></div>`; }
@@ -2734,11 +2736,17 @@ function zonePanel(z, tier = -1, open = false) {
       const wins = S.progress.wins[s.id] || 0; const isBest = s.id === best; const weak = un && E.xpPenalty(topTeamLvl() - s.lvl[1]) <= 0.5;
       return `<button class="subrow ${un ? "" : "locked"} ${here ? "here" : ""} ${isBest ? "best" : ""} ${weak && !here ? "weak" : ""}" data-act="zoneview" data-id="${s.id}">
         <span class="sr-mons">${s.monsters.slice(0, 3).map((k) => im(imgM(k), "", MONSTERS[k].name)).join("")}</span>
-        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}</span>
+        <span class="sr-txt"><span class="sr-name"><b>${h(s.name)}</b>${s.dungeon ? `<span data-tip="Donjon dans cette zone">${IC("cle")}</span>` : ""}${S.trophies && S.trophies[s.id] ? `<span data-tip="Trophée obtenu">${IC("trophee")}</span>` : ""}${petMark(s.id)}</span>
           <span class="sr-sub">${lvlHint(s)}${un ? diffTag(s.id) + starsHtml(s.id) : ""}${isBest ? `<span class="tag best" data-tip="Monstres autour du niveau de votre équipe, sans malus d'XP, et pas trop dure d'après vos derniers combats">${G("star")} Meilleure zone</span>` : ""}</span>
           ${here ? `<span class="tag good" style="align-self:flex-start">Chasse en cours</span>` : un ? `<span class="xs muted">${wins} victoire${wins > 1 ? "s" : ""}</span>` : `<span class="lockmsg">${G("lock")} ${h(lockReason(s.id))}</span>`}</span>
       </button>`; }).join("")}</div></section>`;
 }
+/* 1.1 : le familier de la sous-zone et ses traces (1 sur 1 500 après 600 traces) */
+const petZoneLine = (sid) => { const id = E.petSubs && E.petSubs[sid]; if (!id || !E.PETS[id]) return ""; const p = E.PETS[id]; const own = E.petOwned(S, id); const t = Math.floor(E.petTraces(S, sid));
+  return `<div><div class="row between small"><span>${im(`assets/p/${p.icon}.webp`, "rico", p.name)} Familier : <b>${h(p.name)}</b>${own ? " · possédé ✓" : ""}</span><span class="num ${t >= E.PET_TRACE_N ? "co-gold" : "muted"}">${own ? "un double donne de l'Essence" : t >= E.PET_TRACE_N ? "1 chance sur 1 500, pour toujours" : `traces ${fmt(t)} / ${E.PET_TRACE_N}`}</span></div>${own ? "" : `<div class="bar"><i style="width:${pct(t, E.PET_TRACE_N)}%"></i></div>`}</div>`; };
+/* 1.1 : Pistage (album de la ménagerie, palier 50) : le familier manquant de la sous-zone et ses traces */
+const petMark = (sid) => { const id = E.petSubs && E.petSubs[sid]; if (!id || !E.petTierOn || !E.petTierOn(S, "pistage") || E.petOwned(S, id)) return "";
+  const p = E.PETS[id]; const t = Math.floor(E.petTraces(S, sid)); return `<span class="srpet" data-tip="${h(`Familier à trouver : ${p.name} · traces ${t} / ${E.PET_TRACE_N}${t >= E.PET_TRACE_N ? " (1 sur 1 500)" : ""}`)}">${im(`assets/p/${p.icon}.webp`, "", p.name)}</span>`; };
 /* 0.1.34 : repère de difficulté d'après les derniers combats de l'équipe dans la zone */
 const DIFF_TXT = { easy: ["Facile", "L'équipe gagne presque tous ses combats ici."], mid: ["Équilibrée", "L'équipe perd parfois ici."], hard: ["Difficile", "L'équipe perd souvent ici : plus assez d'équipement ou de niveau pour cette zone."] };
 function diffTag(sid) {
@@ -2791,6 +2799,7 @@ function renderZoneView(sid) {
       ${E.trophyRegionN(S, s.zone) ? `<div class="troact">${IC("trophee")}<span class="grow"><b>Trophées de ${h(z.name)} : +${regPct(s.zone)} % d'XP, de butin et de kamas ici</b><br><span class="xs muted">${E.trophyRegionN(S, s.zone)} trophée${E.trophyRegionN(S, s.zone) > 1 ? "s" : ""} de la région × ${Math.round(E.TROPHY_REGION * 100)} %, en plus des étoiles de zone, hors plafond.${trophyDone ? " Le trophée de cette zone est actif." : ""}</span></span></div>` : ""}
       <div><div class="row between small"><span data-tip="Quand tous les monstres de la zone atteignent le palier Traqueur (250 tués), vous recevez le trophée de la zone. Il ne s'équipe pas : +${Math.round(E.TROPHY_REGION * 100)} % d'XP, de butin et de kamas dans toute la région, et ses bonus vont dans la Vitrine de tous vos héros.">${IC("trophee")} Trophée ${h(s.name)}${trophyDone ? " : obtenu" : ""}</span><span class="num">${traq}/${s.monsters.length} monstres Traqueur</span></div><div class="bar"><i style="width:${pct(traq, s.monsters.length)}%"></i></div>
         <div class="tromons">${s.monsters.map((k) => { const n = Math.min(250, S.bestiary[k] || 0), ok = n >= 250; return `<div class="${ok ? "ok" : ""}">${im(imgM(k), "", MONSTERS[k].name)}<span class="grow"><b class="small">${h(MONSTERS[k].name)}</b><br><span class="xs ${ok ? "plus" : "muted"} num">${ok ? "Traqueur ✓" : `${fmt(n)} / 250 tués`}</span>${ok ? "" : `<span class="bar"><i style="width:${pct(n, 250)}%"></i></span>`}</span></div>`; }).join("")}</div></div>
+      ${petZoneLine(sid)}
       <h3 class="sec">Monstres</h3>
       <div class="mons">${s.monsters.map((k) => monCard(k)).join("")}</div>
       <h3 class="sec">Ressources</h3>
@@ -3359,12 +3368,12 @@ function buildArena(F) {
     const pic = c ? `<span class="cico hd" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</span>` : e.dop ? `<span class="cico dop">${im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "", e.name)}</span>` : e.img ? `<span class="cico">${im(`assets/m/${e.img}.png`, "", e.name)}</span>` : `<span class="cico">✦</span>`;
     const rn = c && c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : "";
     const own = e.summon ? F.ents[e.owner] : null; // 1.0.12.8 : on voit à qui est l'invocation
-    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}${window.COLL ? window.COLL.auraCls(e) : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(own ? `${e.name}, invocation ${deNom(own.name)}` : entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : own ? `<span class="sown">${h(deNom(own.name))}</span>` : ""}</div></div></div>`;
+    return `<div class="ent card ${e.side === "c" ? "hero" : "m"} ${e.summon ? "summon" : ""} ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""} ${rowCls(e)} ${c && c.ren ? "ren" : ""}${window.COLL ? window.COLL.auraCls(e) : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(own ? `${e.name}, invocation ${deNom(own.name)}` : entTip(e))}">${pic}<div class="t"><div class="who">${h(e.name)}${rn}</div><div class="hpb"><i></i><b></b></div><div class="row2"><span class="hpn"></span>${c ? pasDiv : own ? `<span class="sown">${h(deNom(own.name))}</span>` : ""}</div></div>${window.COLL && window.COLL.petBadge ? window.COLL.petBadge(e) : ""}</div>`;
   } : ([e, i]) => {
     if (e.summon) return `<div class="ent hero summon" data-i="${i}" data-act="mtarget" data-tip="${h(e.name)} (invocation)"><div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.img ? im(`assets/m/${e.img}.png`, "sprite", e.name) : `<span class="medal">✦</span>`}</div>`;
     if (e.side === "c") { const c = char(e.cid) || { cls: e.cls, sex: e.sex || "m", head: e.head, name: e.name };
       const cst = c.id ? E.charStats(S, c) : null; const rad = c.id ? E.radiantWorn(S, c) : 0;
-      return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}${window.COLL ? window.COLL.auraCls(e) : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}</div>`; }
+      return `<div class="ent hero ${rad ? "radiant" : ""} ${rowCls(e)} ${c.ren ? "ren" : ""}${window.COLL ? window.COLL.auraCls(e) : ""}" data-i="${i}" data-act="mtarget" style="--el:${cst ? elVar(E.domEl(cst)) : "transparent"}"${e.row === "f" ? ` data-tip="${h(e.name)} · première ligne"` : ""}><div class="who">${e.row === "f" ? `<span class="rowmk">${G("shield")}</span>` : ""}${h(e.name)}${c.ren ? `<span class="renk">✦ ${E.roman(c.ren)}</span>` : ""}</div><div class="hpb"><i></i><b></b></div>${pasDiv}${c.ren ? `<span class="fire"></span>` : ""}${c.id && LK.CLASS_LOOKS[e.cls] ? `<div class="lookwrap">${lookImg(c, "look")}</div>` : `<div class="medal" style="--cc:${CLASSES[e.cls].color}">${im(headImg(c), "", e.name)}</div>`}${window.COLL && window.COLL.petBadge ? window.COLL.petBadge(e) : ""}</div>`; }
     return `<div class="ent m ${e.archi ? "archi" : ""} ${e.boss ? "boss" : ""} ${e.champ ? "champ" : ""}" data-i="${i}" data-act="mtarget" data-tip="${h(entTip(e))}">${e.champ ? `<span class="crown">${G("crown")}</span>` : ""}<div class="who">${h(e.name)}</div><div class="hpb"><i></i><b></b></div>${e.role ? `<span class="mrole">${h(E.MON_ROLES[e.role].name)}</span>` : ""}${e.dop ? im(lookLocal(e.dop.cls, e.dop.sex, e.dop.head), "sprite dop", e.name) : im(`assets/m/${e.img}.png`, "sprite", e.name)}</div>`;
   };
   const list = (k) => F.ents.map((e, i) => [e, i]).filter(([e]) => (e.side === "c") === (k === "c")).map(entHtml).join("");
@@ -3663,7 +3672,7 @@ function axEvent(F, A, f) {
   } else if (f.k === "heal") { if (!n) return; floatAt(n, "+" + f.v, "#7ee06a");
     if (axOn()) { const p = axPt(A, n, 0.6); for (let i = 0; i < (axFull() ? 8 : 4); i++) { const s = axMk(A, "streak", p.x + axRnd(-24, 24), p.y + axRnd(-12, 12), { "--c": "#b6ff8a" }); s.style.animationDelay = i * 40 + "ms"; axLater(s, 1100); } const r = axMk(A, "ring", p.x, p.y, { "--c": "#8fe36a" }); axLater(r, 520); }
     else burst(n, "h");
-  } else if (f.k === "buff") { if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true);
+  } else if (f.k === "buff") { if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (!n || A.view === "compact") return; floatAt(n, f.txt, "var(--gold2)", true);
     const e = F.ents[f.t]; if (e && e.side === "m" && e.mech && !/^[+−-]|^Bouclier|^Esquive|^Invulnérable|^Condamné/.test(f.txt) && !(axFull() && bxFor(e, f.txt))) axMechBanner(A, f.txt, e.name);
   } else if (f.k === "phase") { const e = F.ents[f.t]; if (e && e.mech && e.mech.includes("immortel") && e.revived && axFull() && n) bxRun(F, A, e, n, [], [], "n", BXM.immortel, null); else phaseFlash(); }
 }
@@ -4500,7 +4509,7 @@ function updateCombat(force) {
         if (f.k === "cast") pulse(A.nodes[f.s], "act");
         else if (f.k === "hit") { const n = A.nodes[f.t]; if (n) { pulse(n, "hit"); floatAt(n, "-" + f.v, elVar(f.el)); burst(n, f.el || "n"); const e = F.ents[f.t]; if (e && (!e.alive || f.v > e.hpMax * 0.3)) pulse(A.el, "shake"); } }
         else if (f.k === "heal") { const n = A.nodes[f.t]; if (n) { floatAt(n, "+" + f.v, "#7ee06a"); burst(n, "h"); } }
-        else if (f.k === "buff") { const n = A.nodes[f.t]; if (n && A.view !== "compact") floatAt(n, f.txt, "var(--gold2)", true); }
+        else if (f.k === "buff") { const n = A.nodes[f.t]; if (f.pet && n && window.COLL) window.COLL.petPulse(n); if (n && A.view !== "compact") floatAt(n, f.txt, "var(--gold2)", true); }
         else if (f.k === "phase") phaseFlash();
       });
     }
@@ -4749,7 +4758,6 @@ function teamAlerts(force) {
   S.chars.forEach((c) => {
     if (!c.autoStat && c.pts > 0) v.push({ c, k: "pts", t: `${c.pts} point${c.pts > 1 ? "s" : ""} à répartir` });
     if (c.inTeam && !c.job && gearAlert(c)) v.push({ c, k: "gear", t: "Meilleur équipement dispo" });
-    const P = E.petOf && E.petOf(S, c); if (P && P.hungry) v.push({ c, k: "pet", t: "Familier affamé" });
   });
   alertCache = { t: Date.now(), v }; return v;
 }
@@ -5201,20 +5209,20 @@ const petBonus = (stats) => Object.entries(stats).filter(([, v]) => v).map(([k, 
 const petKind = (p) => (p.kind === "monti" ? `Montilier ${E.PET_FAMS[p.fam].toLowerCase().replace(/s$/, "")}` : p.kind === "boss" ? "Familier rare de boss" : "Familier de zone");
 function petSlot(c) {
   const P = E.petOf(S, c); const p = P && E.PETS[P.id];
-  return `<button class="dslot pet ${P ? "filled" : ""} ${p && p.kind === "monti" ? "monti" : ""}" data-act="herotab" data-v="pet" data-tip="${P ? h(`${p.name} · ${petKind(p)} · croissance ${P.g} %`) : c.lvl < E.PET_LVL ? `Familier : dès le niveau ${E.PET_LVL}` : "Familier : vide"}">
-    ${P ? im(petImg(P.id), "", p.name) : `<span class="dlabel">Familier</span>`}${P && P.g < 100 ? `<i class="pgrow" style="width:${P.g}%"></i>` : ""}</button>`;
+  return `<button class="dslot pet ${P ? "filled" : ""} ${p && p.kind === "monti" ? "monti" : ""}" data-act="herotab" data-v="pet" data-tip="${P ? h(`${p.name} · ${petKind(p)} · niveau ${E.petLvl(P)}${P.st ? " ★" + P.st : ""}`) : c.lvl < E.PET_LVL ? `Familier : dès le niveau ${E.PET_LVL}` : "Familier : vide"}">
+    ${P ? im(`assets/p/${E.petIcon(P)}.webp`, "", p.name) : `<span class="dlabel">Familier</span>`}${P && P.g < 100 ? `<i class="pgrow" style="width:${P.g}%"></i>` : ""}</button>`;
 }
 function petCard(P, c, opts = {}) {
-  const p = E.PETS[P.id]; const cur = E.petStatsAt(P.id, P.g); const owner = E.petOwner(S, P.uid); const lvlOk = c.lvl >= E.petReqLvl(P.id);
-  const eta = P.g < 100 ? E.petEta(S, P) : 0;
-  return `<div class="petcard ${p.kind} ${p.fam ? "f-" + p.fam : ""} ${opts.big ? "big" : ""}">
-    <span class="peticon">${im(petImg(P.id), "", p.name)}</span>
+  const p = E.PETS[P.id]; const cur = E.petStatsAt(P.id, P.g, P.st); const owner = E.petOwner(S, P.uid); const lvlOk = c.lvl >= E.petReqLvl(P.id);
+  const lv = E.petLvl(P); const mon = p.kind === "monti";
+  return `<div class="petcard ${p.kind} ${p.fam ? "f-" + p.fam : ""} ${opts.big ? "big" : ""} ${p.gold ? "co-pgold" : ""}">
+    <span class="peticon">${im(`assets/p/${E.petIcon(P)}.webp`, "", p.name)}</span>
     <div class="grow stack" style="gap:3px;min-width:0">
-      <div><b>${h(p.name)}</b> <span class="xs muted">${petKind(p)}${owner && owner.id !== c.id ? ` · porté par ${h(owner.name)}` : ""}</span></div>
-      <div class="pbar"><i style="width:${P.g}%"></i><span>${P.g < 100 ? `Croissance ${P.g} %` : "Adulte : bonus au maximum"}</span></div>
+      <div><b>${h(p.name)}</b>${P.st ? ` <span class="co-pst">${"★".repeat(P.st)}</span>` : ""} <span class="xs muted">${petKind(p)}${owner && owner.id !== c.id ? ` · porté par ${h(owner.name)}` : S.petPension === P.uid ? " · en pension" : ""}</span></div>
+      <div class="pbar"><i style="width:${Math.min(100, P.g)}%"></i><span>${P.g < 100 ? `Niveau ${lv}` : "Niveau 100 : bonus au maximum"}</span></div>
       <div class="small"><span class="muted">Maintenant :</span> <b class="pbon">${petBonus(cur) || "—"}</b></div>
-      ${P.g < 100 ? `<div class="xs muted">Au maximum : ${petBonus(p.stats)}</div>` : ""}
-      ${opts.big ? `<div class="xs muted">${p.food ? `Nourriture préférée : <b>${resTag(p.food)}</b> (compte double) · ` : ""}${P.g < 100 ? (P.hungry ? `<span class="warnt">a faim : rien à manger dans le sac</span>` : `adulte dans ${E.etaTxt(Math.round(eta / 1000))} environ`) + (P.last ? ` · dernier repas : ${h(P.last)}` : "") : "ne mange plus"}</div>` : ""}
+      ${opts.big ? `<div class="xs"><b>🐾 ${h(E.petAptName(P))}</b> <span class="muted">${h(E.petAptTxt(P.id))}${P.g >= 100 ? "" : " · au niveau 100"}</span></div>
+      <div class="xs muted">${P.g >= 100 ? ((P.st || 0) >= 5 ? `Éveil au maximum : aura de +${E.PET_AURA} % de dégâts pour l'équipe en combat.` : "Il peut s'éveiller (★1 à ★5) dans Familiers et montures.") : mon ? `Il grandit avec ${E.MONTI_SHARE} % de l'XP de son héros.` : `Encore ${fmt(E.petSoulsLeft(P))} âmes avant le niveau 100 (1 par monstre vaincu, ${E.PET_PREY} pour ses proies)${p.food ? ` · friandise : ${E.PET_TREAT_N} ${resTag(p.food)} = +1 niveau` : ""}.`}</div>` : ""}
     </div>
     ${opts.act ? (c.pet === P.uid ? `<button class="btn sm" data-act="petoff">Retirer</button>` : `<button class="btn sm ${owner ? "" : "primary"}" data-act="peton" data-uid="${P.uid}" ${lvlOk ? "" : "disabled"}>${lvlOk ? (owner ? `Prendre à ${h(owner.name)}` : p.kind === "monti" ? "Monter" : "Équiper") : "Niv. " + E.petReqLvl(P.id)}</button>`) : ""}
   </div>`;
@@ -5224,25 +5232,20 @@ function charPetView(c) {
   const others = mine.filter((x) => x.uid !== (P && P.uid));
   const coll = ui.petColl || "zone"; const list = Object.entries(E.PETS).filter(([, p]) => (coll === "monti" ? p.kind === "monti" : coll === "boss" ? p.kind === "boss" : p.kind === "zone")).sort((a, b) => a[1].lvl - b[1].lvl);
   const nOwn = (k) => Object.entries(E.PETS).filter(([id, p]) => p.kind === k && E.petOwned(S, id)).length; const nAll = (k) => Object.values(E.PETS).filter((p) => p.kind === k).length;
-  const keep = Object.keys(S.petKeep).filter((r) => S.petKeep[r]);
-  const topRes = Object.entries(S.res).filter(([r]) => !E.isKey(r) && r !== E.POUSSIERE && D.RES[r]).sort((a, b) => b[1] - a[1]).slice(0, 40);
   return `<div class="stack">
     <div class="panel"><div class="phead"><h2>${P && E.isMonti(P.id) ? "Montilier" : "Familier"} ${h(deNom(c.name))}</h2>${P ? `<button class="btn sm" data-act="petoff">Retirer</button>` : ""}</div><div class="pad stack">
       ${P ? petCard(P, c, { big: true }) + (E.isMonti(P.id) ? `<p class="note xs" style="margin:0">Un montilier prend à la fois la place du familier et celle de la monture.</p>` : "") : `<div class="empty">${c.lvl < E.PET_LVL ? `Un familier se porte dès le niveau ${E.PET_LVL}.` : mine.length ? "Aucun familier porté : choisissez-en un ci-dessous." : "Aucun familier pour l'instant. Chaque sous-zone de chasse cache le sien (rare), et les boss en stasis 6 et plus gardent des familiers rares et des montiliers."}</div>`}
     </div></div>
     ${mountPanel(c)}
     ${others.length ? `<div class="panel"><div class="phead"><h2>Vos familiers</h2><span class="xs muted">${mine.length} au total</span></div><div class="list">${others.map((x) => `<div class="li">${petCard(x, c, { act: true })}</div>`).join("")}</div></div>` : ""}
-    <div class="panel"><div class="phead"><h2>Repas</h2><span class="xs muted">un repas toutes les 30 min, même hors ligne</span></div><div class="pad stack">
-      <p class="note xs" style="margin:0">Chaque familier porté mange ${E.PET_MEAL_N} ressources par repas : sa nourriture préférée si vous en avez (+2 % de croissance), sinon la ressource la plus abondante du sac (+1 %). Il ne touche jamais aux clés, à la poussière de stasis ni aux ressources protégées. S'il n'a rien à manger, il attend, sans pénalité.</p>
-      <div class="xs muted">Ressources protégées (touchez pour protéger ou libérer) :</div>
-      <div class="row" style="gap:4px;flex-wrap:wrap">${topRes.map(([r, n]) => `<button class="pill keep ${S.petKeep[r] ? "on" : ""}" data-act="petkeep" data-r="${h(r)}" aria-pressed="${!!S.petKeep[r]}">${S.petKeep[r] ? "🔒 " : ""}${im(resImg(r), "rico", r)}${h(r)} <span class="muted num">${fmt(n)}</span></button>`).join("") || `<span class="muted xs">Sac vide.</span>`}
-        ${keep.filter((r) => !topRes.some(([x]) => x === r)).map((r) => `<button class="pill keep on" data-act="petkeep" data-r="${h(r)}" aria-pressed="true">🔒 ${im(resImg(r), "rico", r)}${h(r)}</button>`).join("")}</div>
+    <div class="panel"><div class="phead"><h2>Croissance</h2><button class="btn sm" data-act="nav" data-v="pets">Familiers et montures</button></div><div class="pad">
+      <p class="note xs" style="margin:0">Un familier grandit au combat : 1 âme par monstre vaincu, ${E.PET_PREY} pour ses proies, ${E.PET_SOUL_LVL} âmes par niveau. Sa nourriture préférée sert de friandise (${E.PET_TREAT_N} = +1 niveau, ${E.PET_TREAT_DAY} par jour). Un montilier grandit avec l'XP de son héros. Au niveau 100 : aptitude de famille, puis Éveil ★1 à ★5 avec l'Essence.</p>
     </div></div>
     <div class="panel"><div class="phead"><h2>Collection</h2><span class="seg">${[["zone", "Zones"], ["boss", "Boss"], ["monti", "Montiliers"]].map(([v, n]) => `<button data-act="petcoll" data-v="${v}" aria-pressed="${coll === v}">${n} ${nOwn(v)}/${nAll(v)}</button>`).join("")}</span></div>
       <div class="pad"><div class="petgrid">${(ui.petAll ? list : list.filter(([id]) => E.petOwned(S, id)).concat(list.filter(([id]) => !E.petOwned(S, id))).slice(0, 18)).map(([id, p]) => { const own = E.petOwned(S, id);
-        return `<div class="pettile ${own ? "own" : ""} ${p.fam ? "f-" + p.fam : ""}" data-tip="${h(`${p.name} · ${petKind(p)} · au maximum : ${petBonus(p.stats)} · ${E.petWhere(id)}${p.food ? " · aime : " + p.food : ""}`)}">${im(petImg(id), "", p.name)}<b>${h(p.name)}</b><span>${h(petBonus(p.stats))}</span><span class="where">${h(E.petWhere(id))}</span></div>`; }).join("")}</div>
+        return `<div class="pettile ${own ? "own" : ""} ${p.fam ? "f-" + p.fam : ""}" data-tip="${h(`${p.name} · ${petKind(p)} · au maximum : ${petBonus(p.stats)} · ${E.petWhere(id)}${p.food ? " · friandise : " + p.food : ""}`)}">${im(petImg(id), "", p.name)}<b>${h(p.name)}</b><span>${h(petBonus(p.stats))}</span><span class="where">${h(E.petWhere(id))}</span></div>`; }).join("")}</div>
       ${!ui.petAll && list.length > 18 ? `<div style="text-align:center;margin-top:8px"><button class="btn sm" data-act="petall">Voir les ${list.length - 18} autres</button></div>` : ""}
-      <p class="note xs">${coll === "zone" ? "Chaque sous-zone de chasse a son familier : 1 chance sur 2 000 par victoire, même hors ligne." : coll === "boss" ? "Les familiers rares tombent sur leur boss à partir de la stasis 7 (1 chance sur 25)." : "Les montiliers tombent sur leur boss à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire. Les légendaires (+1 PA) : stasis 8 et plus, 1 chance sur 250, un peu plus à chaque échec. Dès le niveau 60."} Un double nourrit celui que vous avez déjà (+${E.PET_DUP_G} %).</p></div></div>
+      <p class="note xs">${coll === "zone" ? `Chaque sous-zone de chasse a son familier : 1 chance sur 2 000 par victoire, même hors ligne, et 1 sur 1 500 après ${E.PET_TRACE_N} traces.` : coll === "boss" ? "Les familiers rares tombent sur leur boss à partir de la stasis 7 (1 chance sur 25)." : "Les montiliers tombent sur leur boss à partir de la stasis 6 : 1 chance sur 25, et forcément au plus tard à la 60e victoire. Les légendaires (+1 PA) : stasis 8 et plus, 1 chance sur 250, un peu plus à chaque échec. Dès le niveau 60."} Un double donne de l'Essence pour l'Éveil (+${E.PET_DUP_ESS}, +${E.MONTI_DUP_ESS} pour un montilier).</p></div></div>
   </div>`;
 }
 /* ---------- 0.1.9 : montures (dragodindes, muldos, volkornes) ---------- */

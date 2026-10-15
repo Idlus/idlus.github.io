@@ -885,6 +885,7 @@
       lg: E.legOf ? E.legOf(S, c) : null, // 0.1.48 : objet légendaire porté (passif)
       dp: E.dofpOf ? E.dofpOf(S, c) : null, dpBoost: E.dofpReso ? E.dofpReso(S, c) : false, // 1.0.16 : passifs des Dofus, Éveil des Dragons
       wsp: E.weaponSpell(S, c), // 0.1.53 : coup d'arme
+      pet: E.petEnt ? E.petEnt(S, c) : null, // 1.1 : familier (pastille, aptitude de famille)
     };
   };
   /* Bonus « petit groupe » en donjon : PV en plus et dégâts subis en moins pour les équipes de 1 ou 2 héros. */
@@ -1282,6 +1283,7 @@
     const b = ents.find((e) => e.mech); if (b) { F.bossIdx = ents.indexOf(b); if (b.mech.includes("shield")) { b.shield = Math.round(b.hpMax * 0.2); b.shieldPhase = 1; } }
     if (E.legFight) E.legFight(S, F); // 0.1.48 : passifs des objets légendaires
     if (E.dofpFight) E.dofpFight(S, F); // 1.0.16 : passifs des Dofus
+    if (E.petFight) E.petFight(S, F); // 1.1 : aptitudes des familiers (écaille, aura)
     newRound(F);
     return F;
   };
@@ -1308,6 +1310,7 @@
     if (tgt.alive) return; const idx = F.ents.indexOf(tgt); if (F.deaths.includes(idx)) return; F.deaths.push(idx);
     if (tgt.side === "m" && F.lastBy && F.lastBy[idx] !== undefined) { const kr = F.ents[F.lastBy[idx]]; if (kr) kr.kills = (kr.kills || 0) + 1; } // 1.0.4 : statistiques de combat
     if (E.dofpDeath) E.dofpDeath(F, tgt); // 1.0.16 : Colère du Bworker
+    if (E.petDeath && tgt.pet) E.petDeath(F, tgt); // 1.1 : Dernier compagnon (album de la ménagerie)
     if (tgt.side === "c" && !tgt.summon) { failChal(F, "survivant", `${tgt.name} est tombé`); const lh = F.lastHit && F.lastHit.t === idx ? F.lastHit : null; (F.deathInfo = F.deathInfo || []).push({ i: idx, r: F.round, by: lh ? lh.s : -1, el: lh ? lh.el : null }); }
     if (tgt.side === "m" && tgt.role === "kamikaze" && !tgt.boom) { tgt.boom = true; const fr = alive(F, "c").filter((h) => rowOf(h) === "f");
       if (fr.length) { flog(F, `${tgt.name} explose en mourant !`, "m"); fr.forEach((h) => dealDamage(F, null, h, tgt.dmg * 1.5 * rf(0.9, 1.1), tgt.el === "n" ? null : tgt.el)); } }
@@ -1356,6 +1359,7 @@
     if (src && src.expVs && tgt.side === "m") v *= 1 + ((tgt.boss ? src.expVs.boss : 0) + (tgt.hp > tgt.hpMax * 0.8 ? src.expVs.fresh : 0)) / 100; // 0.1.24 : reliques d'expédition
     if (F && src && E.legPre) { v = E.legPre(F, src, tgt, v); if (v <= 0) return 0; } // 0.1.48 : légendaires (esquive, garde, miroir)
     if (F && src && E.dofpPre) { v = E.dofpPre(F, src, tgt, v); if (v <= 0) return 0; } // 1.0.16 : passifs des Dofus (marque, défenses)
+    if (F && src && E.petPre && (F.petAura || tgt.pet)) { v = E.petPre(F, src, tgt, v); if (v <= 0) return 0; } // 1.1 : familiers (esquive, racines, aura)
     v = Math.max(1, Math.round(v));
     if (F && tgt.side === "m" && tgt.mech) { // une partie des dégâts part sur un serviteur
       const share = (m) => { const p = Math.min(m.hp, Math.round(v * 0.5)); if (p <= 0) return; v -= p; m.hp -= p; F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(m), s: -1, v: p, el: el || "n" }); if (m.hp <= 0) { m.hp = 0; m.alive = false; killed(F, m); } };
@@ -1397,6 +1401,7 @@
     if (F && F.fx) F.fx.push({ seq: F.seq, k: "hit", t: F.ents.indexOf(tgt), s: src ? F.ents.indexOf(src) : -1, v, el: el || "n" });
     if (F && src && v > 0 && !F.pushHit) { if (src.lg && E.legHit) E.legHit(F, src, tgt, v, el); if (tgt.lg && E.legHurt) E.legHurt(F, src, tgt, v); } // 0.1.48 : légendaires (1.0.30 : pas sur la poussée)
     if (F && src && v > 0 && E.dofpHit && !F.pushHit) { if (src.dp) E.dofpHit(F, src, tgt, v, el); if (tgt.dp) E.dofpHurt(F, src, tgt, v); } // 1.0.16 : passifs des Dofus
+    if (F && src && src.pet && v > 0 && E.petHit && !F.pushHit) E.petHit(F, src, tgt, v, el); // 1.1 : familiers (souffle, soin, griffe)
     return v;
   };
   E.fightApi = { dealDamage: (...a) => dealDamage(...a), killed: (...a) => killed(...a), doHeal: (...a) => doHeal(...a), flog: (...a) => flog(...a) };
@@ -2231,7 +2236,7 @@
   E.eventOn = (t = E.now()) => !!E.EVENT && t >= E.EVENT.from && t < E.EVENT.to;
   E.evMult = (kind, t) => (E.eventOn(t) ? E.EVENT[kind] || 1 : 1);
   E.dropMult = (S) => {
-    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100);
+    return (1 + E.teamProspection(S) / 100) * (1 + E.freeSpirit(S) / 100) * (1 + E.bonus(S, "drop") / 100) * (1 + (E.petFlair ? E.petFlair(S) : 0)); // 1.1 : Flair des familiers
   };
 
   /* 1.0.5.1 (Mathis) : part de l'XP du combat reçue par chaque héros. Avant : 2/(n+1) plus l'Esprit Libre (+100 % en solo),
@@ -2283,6 +2288,7 @@
       const boost = 1 + (opts.xpBoost !== undefined ? opts.xpBoost : E.boostPct(S, "xp")) / 100;
       let g = Math.round(xp * share * (1 + st.sa / 100) * pen * boost * (opts.xpMult || 1) * E.roamMult(S) * (1 + ((E.dofpXpBonus ? E.dofpXpBonus(S, c) : E.bonus(S, "xp")) + E.synergy(S)) / 100) * E.renXpMult(c) * E.evMult("xp")); // 1.0.16 : Jyfus (XP du porteur, dans le plafond)
       out.xp[c.id] = g; if (pen < 1) (out.pen = out.pen || {})[c.id] = [pen, diff, maxLvl]; // 1.0.30.5 : malus de niveau affiché dans le résultat
+      if (E.montiXpShare) g -= E.montiXpShare(S, c, g); // 1.1 : le montilier grandit avec l'XP du héros
       g -= E.mountXpShare(S, c, g); // 0.1.9 : part donnée à la monture
       g -= E.guildXpShare(S, c, g); // 0.1.21 : part donnée à la guilde
       const ups = E.giveXp(S, c, g); if (ups) out.ups.push([c.name, c.lvl]);
@@ -2339,6 +2345,7 @@
     });
     { const cd = E.almCandy(S); if (cd) { out.cons = (out.cons || 0) + 1; note(S, `Nuit d'Halouine : ${CONSUMABLES[cd].name} dans le butin !`, "rare"); } }
     if (!opts.dungeon && sub && E.petHunt(S, S.sub)) out.pet = true; // familier de la sous-zone
+    if (E.petSouls) E.petSouls(S, mons); // 1.1 : les familiers grandissent au combat (âmes)
     if (!opts.dungeon && sub && E.mountHunt(S, S.sub)) out.mount = true; // capture d'une monture sauvage
     // Trésors de l'Enutrof : une ressource bonus des monstres du combat
     for (let i = 0; i < (opts.treasure || 0); i++) { const pool = mons.flatMap((m) => (MONSTERS[m.base || m.key].drops || []).map(([r]) => r)); if (!pool.length) break; const r = pick(pool); addRes(S, r, 1); out.res[r] = (out.res[r] || 0) + 1; }
