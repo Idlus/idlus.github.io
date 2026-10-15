@@ -1,6 +1,13 @@
 {
-  "version": "1.2.10",
+  "version": "1.2.10.1",
   "versions": [
+    {
+      "v": "1.2.10.1",
+      "name": "Le chat entre de bonnes mains",
+      "items": [
+        "Modération du chat : Xener peut supprimer un message, rendre muet (10 min à 7 jours) ou bannir directement depuis le pseudo, effacer tous les messages d'un joueur, vider un salon ou fermer le chat le temps de calmer les choses."
+      ]
+    },
     {
       "v": "1.2.10",
       "name": "Le Poutch",

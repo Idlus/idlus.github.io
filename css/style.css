@@ -2356,6 +2356,7 @@ body:has(#wtip:not(.below):not(.side)) .app{padding-bottom:calc(var(--wtipb,0px)
 .chmenu button:hover{background:var(--panel3)}
 .chmenu button.red{color:var(--danger)}
 .chmenu .uico{width:18px;height:18px}
+.chmenu{max-height:calc(100vh - 16px);overflow-y:auto}.chmenu .sub{padding:6px 8px 2px;border-top:1px solid var(--line);margin-top:4px;text-transform:uppercase;letter-spacing:.04em} /* 1.2.10.1 : sanctions dans le menu du pseudo */
 .rep-opts{display:flex;flex-direction:column;gap:6px}
 .rep-opts label{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:var(--panel2);border:2px solid var(--line);font-weight:700;cursor:pointer}
 .rep-opts label:has(input:checked){border-color:var(--gold)}
